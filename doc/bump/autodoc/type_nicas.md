@@ -23,4 +23,4 @@
 | subroutine | [nicas%] [test_randomization](https://github.com/JCSDA/saber/src/bump/type_nicas.F90#L1865) | test NICAS randomization method with respect to theoretical error statistics |
 | subroutine | [nicas%] [test_consistency](https://github.com/JCSDA/saber/src/bump/type_nicas.F90#L1986) | test HDIAG-NICAS consistency with a randomization method |
 | subroutine | [nicas%] [test_optimality](https://github.com/JCSDA/saber/src/bump/type_nicas.F90#L2053) | test HDIAG localization optimality with a randomization method |
-| subroutine | [define_test_vectors](https://github.com/JCSDA/saber/src/bump/type_nicas.F90#L2243) | define test vectors |
+| subroutine | [define_test_vectors](https://github.com/JCSDA/saber/src/bump/type_nicas.F90#L2242) | define test vectors |
