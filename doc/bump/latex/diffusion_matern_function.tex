@@ -1,0 +1,138 @@
+\documentclass[12pt]{scrartcl}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsbsy}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{bm}
+\usepackage{verbatim}
+\usepackage[english]{babel}
+\usepackage{color}
+\usepackage{url}
+\usepackage{fancybox}
+\usepackage[stable]{footmisc}
+\usepackage[format=plain,labelfont=bf]{caption}
+\usepackage{fancyhdr}
+\usepackage{natbib}
+\usepackage{calc}
+\usepackage{textcomp}
+\usepackage[pdftex,pdfborder={0 0 0}]{hyperref}
+\usepackage{pdfpages}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,decorations.pathmorphing}
+
+\renewcommand*{\familydefault}{\sfdefault}
+
+% Margins
+\addtolength{\textheight}{1.0cm}
+\addtolength{\oddsidemargin}{-0.5cm}
+\addtolength{\evensidemargin}{-0.5cm}
+\addtolength{\textwidth}{1.0cm}
+\parindent=0em
+
+% New math commands
+\newcommand{\overbar}[1]{\mkern 1.5mu\overline{\mkern-1.5mu#1\mkern-1.5mu}\mkern 1.5mu}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\Diag}{Diag}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\Cor}{Cor}
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\setbox0\hbox{$#1#2$}%
+\copy0\kern-\wd0\mkern4mu\box0}} 
+
+% Appropriate font for \mathcal{}
+\DeclareSymbolFont{cmmathcal}{OMS}{cmsy}{m}{n}
+\DeclareSymbolFontAlphabet{\mathcal}{cmmathcal}
+
+% Set subscript and superscripts positions
+\everymath{
+\fontdimen13\textfont2=5pt
+\fontdimen14\textfont2=5pt
+\fontdimen15\textfont2=5pt
+\fontdimen16\textfont2=5pt
+\fontdimen17\textfont2=5pt
+}
+
+% Bibliography style
+\setlength{\bibsep}{1pt}
+
+% Part
+\renewcommand\partheadstartvskip{\clearpage\null\vfil}
+\renewcommand\partheadmidvskip{\par\nobreak\vskip 20pt\thispagestyle{empty}}
+\renewcommand\partheadendvskip{\vfil\clearpage}
+\renewcommand\raggedpart{\centering}
+
+\begin{document}
+\title{Diffusion and Matern functions}
+\author{Benjamin Ménétrier}
+\date{Last update: \today}
+
+\thispagestyle{empty}
+
+\maketitle
+\begin{center}
+Documentation for the code "BUMP", distributed under the CeCILL-C license.\\
+Copyright \copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+\end{center}
+
+\section{Goal}
+The aim is to find a practical way to compute the Matern function:
+\begin{align}
+c_\nu(\tilde{r}) = \alpha_\nu \tilde{r}^\nu K_\nu(\tilde{r})
+\end{align}
+where $K_\nu$ is the modified Bessel function of second kind and the factor $\alpha_\nu$ ensures that $c_\nu$ is normalized ($c_\nu(0) = 1$).
+
+\section{Explicit formula}
+For the particular case where $\nu-1/2 \in \mathbb{Z}$, there is a special formula for the modified Bessel function of second kind (\url{http://functions.wolfram.com/Bessel-TypeFunctions/BesselK/introductions/Bessels/05/}):
+\begin{align}
+K_\nu(\tilde{r}) = \sqrt{\pi} e^{-\tilde{r}} \sum_{j=0}^{\lfloor |\nu|-1/2 \rfloor} \frac{\left(|\nu|-1/2+j\right)!}{j!\left(|\nu|-1/2-j\right)!}(2\tilde{r})^{-j-1/2}
+\end{align}
+Thus for $\nu>0$:
+\begin{align}
+c_\nu(\tilde{r}) & = \alpha_\nu \tilde{r}^\nu K_\nu(\tilde{r}) \\
+& = \alpha_\nu \frac{\sqrt{\pi}}{2^\nu} e^{-\tilde{r}} \sum_{j=0}^{\nu-1/2} \frac{\left(\nu-1/2+j\right)!}{j!\left(\nu-1/2-j\right)!} (2\tilde{r})^{\nu-1/2-j} \\
+\end{align}
+
+\section{Practical computation}
+For the implicit diffusion, $\nu = M-d/2$ where $M \in \mathbb{N}$ is the number of implicit steps, and $d$ the dimension. So only the cases $d=1$ and $d=3$ are valid here:
+\begin{align}
+c_\nu(\tilde{r}) & = \alpha_\nu \frac{\sqrt{\pi}}{2^{M-d/2}} e^{-\tilde{r}} \sum_{j=0}^{M-(d+1)/2} \beta_{j,M-(d+1)/2} (2\tilde{r})^{M-(d+1)/2-j}
+\end{align}
+where
+\begin{align}
+\beta_{j,M} & = \frac{\left(M+j\right)!}{j!\left(M-j\right)!}
+\end{align}
+can be computed recursively:
+\begin{align}
+\beta_{0,M} & = 1
+\end{align}
+and 
+\begin{align}
+\beta_{j+1,M} & = \frac{\left(M+j+1\right)!}{(j+1)!\left(M-(j+1)\right)!} \\
+& = \frac{(M+j+1)(M-j)}{j+1} \beta_{j,M}
+\end{align}
+Thus, the normalization becomes:
+\begin{align}
+c_\nu(0) & = \alpha_\nu \frac{\sqrt{\pi}}{2^{M-d/2}} \beta_{M-(d+1)/2,M-(d+1)/2} = 1
+\end{align}
+leading to
+\begin{align}
+\alpha_\nu = \frac{2^{M-d/2}}{\sqrt{\pi}} \frac{1}{\beta_{M-(d+1)/2,M-(d+1)/2}}
+\end{align}
+And finally:
+\begin{align}
+c_\nu(\tilde{r}) = \frac{1}{\beta_{M-(d+1)/2,M-(d+1)/2}} e^{-\tilde{r}} \sum_{j=0}^{M-(d+1)/2} \beta_{j,M-(d+1)/2} (2\tilde{r})^{M-(d+1)/2-j}
+\end{align}
+The case $d=2$ would require another method.
+
+\bibliographystyle{mybib-en}
+\bibliography{diffusion_matern_function}
+\end{document}

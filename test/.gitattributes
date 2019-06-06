@@ -1,0 +1,2 @@
+testref/*/*.nc filter=lfs diff=lfs merge=lfs -text
+testdata/*.nc filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,54 @@
+&general_param
+datadir = "testdata/bump_nicas_pos_def",
+prefix = "test__MPI_-_OMP_",
+model = "qg",
+default_seed = .true.,
+/
+
+&driver_param
+method = "cor",
+strategy = "common_univariate",
+new_nicas = .true.,
+check_pos_def = .true.,
+/
+
+&model_param
+nl = 2,
+levs = 1,2,
+nv = 2,
+varname = "u","q",
+nts = 2,
+timeslot = 0,6,
+/
+
+&ens1_param
+/
+
+&ens2_param
+/
+
+&sampling_param
+ntry = 30,
+/
+
+&diag_param
+/
+
+&fit_param
+/
+
+&nicas_param
+resol = 8.0,
+mpicom = 2,
+subsamp = "h",
+forced_radii = .true.,
+rh = 4000.0e3,
+rv = 6000.0
+/
+
+&obsop_param
+/
+
+&output_param
+/
+

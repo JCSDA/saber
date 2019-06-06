@@ -1,0 +1,59 @@
+&general_param
+datadir = "testdata/bump_read-write_nicas_2",
+prefix = "test__MPI_-_OMP_",
+model = "qg",
+default_seed = .true.,
+/
+
+&driver_param
+method = "cor",
+strategy = "specific_univariate",
+load_nicas = .true.,
+check_adjoints = .true.,
+check_dirac = .true.,
+/
+
+&model_param
+nl = 2,
+levs = 1,2,
+nv = 2,
+varname = "u","q",
+nts = 2,
+timeslot = 0,6,
+nomask = .true.,
+/
+
+&ens1_param
+ens1_ne = 50,
+/
+
+&ens2_param
+/
+
+&sampling_param
+/
+
+&diag_param
+/
+
+&fit_param
+/
+
+&nicas_param
+lsqrt = .true.,
+mpicom = 2,
+subsamp = "hvh",
+ndir = 1,
+londir = -85.0,
+latdir = 65.0,
+levdir = 1,
+ivdir = 1,
+itsdir = 1,
+/
+
+&obsop_param
+/
+
+&output_param
+/
+

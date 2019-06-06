@@ -1,0 +1,126 @@
+!----------------------------------------------------------------------
+! Subroutine: model_res_coord
+! Purpose: get RES coordinates
+!----------------------------------------------------------------------
+subroutine model_res_coord(model,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(model_type),intent(inout) :: model ! Model
+type(mpl_type),intent(inout) :: mpl      ! MPI data
+type(nam_type),intent(in) :: nam         ! Namelist
+
+! Local variables
+integer :: img,il0
+integer :: ncid,nmg_id,nlev_id,lon_id,lat_id,alt_id,area_id,mask_id
+real(kind_real),allocatable :: lon(:,:),lat(:,:),alt(:,:),area(:,:),mask(:,:)
+character(len=1024),parameter :: subr = 'model_res_coord'
+
+! Open file and get dimensions
+model%nlon = mpl%msv%vali
+model%nlat = mpl%msv%vali
+call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
+call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nhcells',nmg_id))
+call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nmg_id,len=model%nmg))
+call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nlev',nlev_id))
+call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
+
+! Allocation
+call model%alloc
+allocate(lon(model%nmg,model%nlev))
+allocate(lat(model%nmg,model%nlev))
+allocate(alt(model%nmg,model%nlev))
+allocate(area(model%nmg,model%nlev))
+allocate(mask(model%nmg,model%nlev))
+
+! Read data and close file
+call mpl%ncerr(subr,nf90_inq_varid(ncid,'longitude',lon_id))
+call mpl%ncerr(subr,nf90_inq_varid(ncid,'latitude',lat_id))
+call mpl%ncerr(subr,nf90_inq_varid(ncid,'altitude',alt_id))
+call mpl%ncerr(subr,nf90_inq_varid(ncid,'horzArea',area_id))
+call mpl%ncerr(subr,nf90_inq_varid(ncid,'activeCells',mask_id))
+call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon))
+call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat))
+call mpl%ncerr(subr,nf90_get_var(ncid,alt_id,alt))
+call mpl%ncerr(subr,nf90_get_var(ncid,area_id,area))
+call mpl%ncerr(subr,nf90_get_var(ncid,mask_id,mask))
+call mpl%ncerr(subr,nf90_close(ncid))
+
+! Model grid
+model%lon = (sum(lon,dim=2)/real(model%nlev,kind_real))/req
+model%lat = (sum(lat,dim=2)/real(model%nlev,kind_real))/req
+model%area = sum(area,dim=2)/real(model%nlev,kind_real)/req**2
+model%mask = (mask(:,nam%levs(1:model%nl0))>0.5)
+
+! Vertical unit
+if (nam%logpres) call mpl%abort(subr,'pressure logarithm vertical coordinate is not available for this model')
+do il0=1,model%nl0
+   do img=1,model%nmg
+      model%vunit(img,il0) = alt(img,nam%levs(il0))
+   end do
+end do
+
+! Release memory
+deallocate(lon)
+deallocate(lat)
+deallocate(alt)
+deallocate(area)
+deallocate(mask)
+
+end subroutine model_res_coord
+
+!----------------------------------------------------------------------
+! Subroutine: model_res_read
+! Purpose: read RES field
+!----------------------------------------------------------------------
+subroutine model_res_read(model,mpl,nam,filename,its,fld)
+
+implicit none
+
+! Passed variables
+class(model_type),intent(inout) :: model                        ! Model
+type(mpl_type),intent(inout) :: mpl                             ! MPI data
+type(nam_type),intent(in) :: nam                                ! Namelist
+character(len=*),intent(in) :: filename                         ! File name
+integer,intent(in) :: its                                       ! Timeslot index
+real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
+
+! Local variables
+integer :: iv,il0
+integer :: ncid,fld_id
+real(kind_real) :: fld_mg(model%nmg,model%nl0)
+character(len=1024),parameter :: subr = 'model_res_read'
+
+! Open file
+if (mpl%main) call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid))
+
+do iv=1,nam%nv
+   if (mpl%main) then
+      ! 3d variable
+
+      ! Get variable id
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
+
+      ! Read data
+      do il0=1,nam%nl
+         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,il0),(/1,nam%levs(il0)/),(/model%nmg,1/)))
+      end do
+
+      if (trim(nam%addvar2d(iv))/='') then
+         ! 2d variable
+
+         ! Get id
+         call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%addvar2d(iv)),fld_id))
+
+         ! Read data
+         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,il0)))
+      end if
+   end if
+   call mpl%glb_to_loc(model%nl0,model%nmg,model%mg_to_proc,model%mg_to_mga,fld_mg,model%nmga,fld(:,:,iv))
+end do
+
+! Close file
+if (mpl%main) call mpl%ncerr(subr,nf90_close(ncid))
+
+end subroutine model_res_read

@@ -1,0 +1,57 @@
+&general_param
+datadir = "testdata/bump_lct_two_scales",
+prefix = "test__MPI_-_OMP_",
+model = "qg",
+default_seed = .true.,
+/
+
+&driver_param
+method = "cor",
+strategy = "specific_univariate",
+new_lct = .true.,
+write_lct = .true.,
+write_cmat = .false.,
+/
+
+&model_param
+nl = 2,
+levs = 1,2,
+nv = 2,
+varname = "u","q",
+nts = 2,
+timeslot = 0,6,
+/
+
+&ens1_param
+ens1_ne = 50,
+/
+
+&ens2_param
+/
+
+&sampling_param
+nc1 = 100,
+nc2 = 100,
+ntry = 30,
+nc3 = 50,
+nl0r = 2,
+/
+
+&diag_param
+ne = 50,
+/
+
+&fit_param
+minim_algo = "hooke",
+lct_nscales = 2,
+/
+
+&nicas_param
+/
+
+&obsop_param
+/
+
+&output_param
+/
+
