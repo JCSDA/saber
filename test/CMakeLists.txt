@@ -125,7 +125,7 @@ foreach(test ${saber_test})
 
     ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_compare
                      TYPE SCRIPT
-                     COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
+                     COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
                      ARGS ${test} ${mpi} ${omp}
                      TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
 endforeach()
@@ -156,7 +156,7 @@ foreach(test ${saber_test_2})
     foreach(suffix 1 2)
         ecbuild_add_test(TARGET test_${test}_${suffix}_${mpi}-${omp}_compare
                          TYPE SCRIPT
-                         COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
                          ARGS ${test}_${suffix} ${mpi} ${omp}
                          TEST_DEPENDS test_${test}_${suffix}_${mpi}-${omp}_run)
     endforeach()
@@ -187,7 +187,7 @@ if(${SABER_MPI_TEST} MATCHES 1)
 
         ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_compare
                          TYPE SCRIPT
-                         COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
                          ARGS ${test} ${mpi} ${omp}
                          TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
     endforeach()
@@ -218,7 +218,7 @@ if(${SABER_MPI_TEST} MATCHES 1)
         foreach(suffix 1 2)
             ecbuild_add_test(TARGET test_${test}_${suffix}_${mpi}-${omp}_compare
                              TYPE SCRIPT
-                             COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
+                             COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
                              ARGS ${test}_${suffix} ${mpi} ${omp}
                              TEST_DEPENDS test_${test}_${suffix}_${mpi}-${omp}_run)
         endforeach()
@@ -250,7 +250,7 @@ if(${SABER_OMP_TEST} MATCHES 1)
 
         ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_compare
                          TYPE SCRIPT
-                         COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
                          ARGS ${test} ${mpi} ${omp}
                          TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
     endforeach()
@@ -281,7 +281,7 @@ if(${SABER_OMP_TEST} MATCHES 1)
         foreach(suffix 1 2)
             ecbuild_add_test(TARGET test_${test}_${suffix}_${mpi}-${omp}_compare
                              TYPE SCRIPT
-                             COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
+                             COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
                              ARGS ${test}_${suffix} ${mpi} ${omp}
                              TEST_DEPENDS test_${test}_${suffix}_${mpi}-${omp}_run)
         endforeach()

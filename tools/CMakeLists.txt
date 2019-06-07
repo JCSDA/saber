@@ -1,6 +1,6 @@
 # Create Data directory for test input data
 list( APPEND test_files
-  compare.sh
+  comparesaber.sh
   compare_specific.sh
   setref.sh
   setup.sh
