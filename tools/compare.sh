@@ -63,7 +63,7 @@ if test "${test%%_*}" = "bump" ; then
 
       # Check for "Close listings" line
       grep -q "\-\-\- Close listings" ${file}
-            exit_code=$?
+      exit_code=$?
       if test "${exit_code}" != "0" ; then
          echo "\e[31mTest failed checking: "${file#testoutput/}"\e[0m"
          status=2
