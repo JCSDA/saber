@@ -186,7 +186,7 @@ if (mpl%main) then
 
    ! Define dimensions and coordinates if necessary
    nc0_id = mpl%ncdimcheck(subr,ncid,'nc0',geom%nc0,.true.)
-   nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.)
+   nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.,.true.)
    info_coord = nf90_inq_varid(ncid,'lon',lon_id)
    if (info_coord/=nf90_noerr) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nc0_id/),lon_id))
@@ -227,7 +227,7 @@ if (mpl%main) then
    end if
 
    ! Write variable
-   call mpl%ncerr(subr,nf90_put_var(ncid,fld_id,fld_c0))
+   call mpl%ncerr(subr,nf90_put_var(ncid,fld_id,fld_c0,(/1,1/),(/geom%nc0,geom%nl0/)))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))
@@ -640,7 +640,7 @@ if (mpl%main) then
    ! Define dimensions and coordinates if necessary
    nlon_gridded_id = mpl%ncdimcheck(subr,ncid,'nlon_gridded',io%nlon,.true.)
    nlat_gridded_id = mpl%ncdimcheck(subr,ncid,'nlat_gridded',io%nlat,.true.)
-   nlev_id = mpl%ncdimcheck(subr,ncid,'nlev',geom%nl0,.true.)
+   nlev_id = mpl%ncdimcheck(subr,ncid,'nlev',geom%nl0,.true.,.true.)
    info_coord = nf90_inq_varid(ncid,'lon_gridded',lon_gridded_id)
    if (info_coord/=nf90_noerr) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'lon_gridded',nc_kind_real,(/nlon_gridded_id/),lon_gridded_id))
@@ -687,7 +687,7 @@ if (mpl%main) then
    end if
 
    ! Write variable
-   call mpl%ncerr(subr,nf90_put_var(ncid,fld_id,fld_grid))
+   call mpl%ncerr(subr,nf90_put_var(ncid,fld_id,fld_grid,(/1,1,1/),(/io%nlon,io%nlat,geom%nl0/)))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))

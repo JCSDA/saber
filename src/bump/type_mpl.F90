@@ -475,7 +475,7 @@ end subroutine mpl_prog_final
 ! Subroutine: mpl_ncdimcheck
 ! Purpose: check if NetCDF file dimension exists and has the right size
 !----------------------------------------------------------------------
-function mpl_ncdimcheck(mpl,subr,ncid,dimname,dimsize,mode) result (dimid)
+function mpl_ncdimcheck(mpl,subr,ncid,dimname,dimsize,mode,inftol) result (dimid)
 
 implicit none
 
@@ -486,12 +486,14 @@ integer,intent(in) :: ncid             ! NetCDF file ID
 character(len=*),intent(in) :: dimname ! Dimension name
 integer,intent(in) :: dimsize          ! Dimension size
 logical,intent(in) :: mode             ! Mode (.true.: create and return id if missing, abort if present but wrong size / .false.: return id if present and has right size, else return missing value)
+logical,intent(in),optional :: inftol  ! Tolerate if dimsize is lower than what is found in the file
 
 ! Result
 integer :: dimid                       ! NetCDF dimension ID
 
 ! Local variables
 integer :: info,dimsize_test
+logical :: linftol,test
 
 ! End definition mode
 if (mode) call mpl%ncerr(subr,nf90_enddef(ncid))
@@ -503,7 +505,13 @@ if (info==nf90_noerr) then
    ! Get dimension size
    call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
 
-   if (dimsize_test==dimsize) then
+   ! Test
+   linftol = .false.
+   if (present(inftol)) linftol = inftol
+   test = (dimsize==dimsize_test)
+   if (linftol) test = test.or.((dimsize==1).and.(dimsize<=dimsize_test))
+
+   if (test) then
       ! Definition mode
       if (mode) call mpl%ncerr(subr,nf90_redef(ncid))
    else

@@ -37,6 +37,7 @@ type samp_type
    logical,allocatable :: mask_hor_c0(:)            ! Union of horizontal masks on subset Sc0, global
    integer,allocatable :: nc0_mask(:)               ! Horizontal mask size on subset Sc0
    integer,allocatable :: c1_to_c0(:)               ! First sampling index
+   logical,allocatable :: c1l0_check(:,:)           ! Mask boundaries checking activation
    logical,allocatable :: c1l0_log(:,:)             ! Log for the first sampling index
    integer,allocatable :: c1c3_to_c0(:,:)           ! Second horizontal sampling index
    logical,allocatable :: c1c3l0_log(:,:,:)         ! Log for the second horizontal sampling index
@@ -165,6 +166,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 allocate(samp%rh_c0(geom%nc0))
 allocate(samp%c1_to_c0(nam%nc1))
 allocate(samp%c1l0_log(nam%nc1,geom%nl0))
+allocate(samp%c1l0_check(nam%nc1,geom%nl0))
 allocate(samp%c1c3_to_c0(nam%nc1,nam%nc3))
 allocate(samp%c1c3l0_log(nam%nc1,nam%nc3,geom%nl0))
 if (nam%new_vbal.or.nam%new_lct.or.(nam%new_hdiag.and.(nam%local_diag.or.nam%adv_diag))) then
@@ -202,6 +204,7 @@ if (allocated(samp%mask_hor_c0)) deallocate(samp%mask_hor_c0)
 if (allocated(samp%nc0_mask)) deallocate(samp%nc0_mask)
 if (allocated(samp%c1_to_c0)) deallocate(samp%c1_to_c0)
 if (allocated(samp%c1l0_log)) deallocate(samp%c1l0_log)
+if (allocated(samp%c1l0_check)) deallocate(samp%c1l0_check)
 if (allocated(samp%c1c3_to_c0)) deallocate(samp%c1c3_to_c0)
 if (allocated(samp%c1c3l0_log)) deallocate(samp%c1c3l0_log)
 if (allocated(samp%c2_to_c1)) deallocate(samp%c2_to_c1)
@@ -254,9 +257,9 @@ logical,intent(out) :: new_sampling    ! Status flag
 ! Local variables
 integer :: il0,il0i,ic1,jc3
 integer :: info,ncid,nl0_id,nl0r_id,nc3_id,nc1_id,nc2_id
-integer :: c1_to_c0_id,c1l0_log_id,c1c3_to_c0_id,c1c3l0_log_id
+integer :: c1_to_c0_id,c1l0_log_id,c1l0_check_id,c1c3_to_c0_id,c1c3l0_log_id
 integer :: c2_to_c1_id,c2_to_c0_id
-integer :: c1l0_logint(nam%nc1,geom%nl0),c1c3l0_logint(nam%nc1,nam%nc3,geom%nl0)
+integer :: c1l0_logint(nam%nc1,geom%nl0),c1l0_checkint(nam%nc1,geom%nl0),c1c3l0_logint(nam%nc1,nam%nc3,geom%nl0)
 character(len=3) :: il0ichar
 character(len=1024),parameter :: subr = 'samp_read'
 
@@ -294,6 +297,7 @@ call mpl%flush
 ! Get arrays ID
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1_to_c0',c1_to_c0_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1l0_log',c1l0_log_id))
+call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1l0_check',c1l0_check_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1c3_to_c0',c1c3_to_c0_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1c3l0_log',c1c3l0_log_id))
 if (nam%new_lct.or.nam%local_diag.or.nam%adv_diag) then
@@ -304,6 +308,7 @@ end if
 ! Read arrays
 call mpl%ncerr(subr,nf90_get_var(ncid,c1_to_c0_id,samp%c1_to_c0))
 call mpl%ncerr(subr,nf90_get_var(ncid,c1l0_log_id,c1l0_logint))
+call mpl%ncerr(subr,nf90_get_var(ncid,c1l0_check_id,c1l0_checkint))
 do il0=1,geom%nl0
    do ic1=1,nam%nc1
       if (c1l0_logint(ic1,il0)==0) then
@@ -312,6 +317,13 @@ do il0=1,geom%nl0
          samp%c1l0_log(ic1,il0) = .true.
       else
          call mpl%abort(subr,'wrong c1l0_log')
+      end if
+      if (c1l0_checkint(ic1,il0)==0) then
+         samp%c1l0_check(ic1,il0) = .false.
+      else if (c1l0_checkint(ic1,il0)==1) then
+         samp%c1l0_check(ic1,il0) = .true.
+      else
+         call mpl%abort(subr,'wrong c1l0_check')
       end if
    end do
 end do
@@ -379,9 +391,9 @@ type(bpar_type),intent(in) :: bpar  ! Block parameters
 ! Local variables
 integer :: il0,il0i,ic1,jc3
 integer :: ncid,nl0_id,nl0r_id,nc1_id,nc2_id,nc3_id
-integer :: lat_id,lon_id,smax_id,c1_to_c0_id,c1l0_log_id,c1c3_to_c0_id,c1c3l0_log_id
+integer :: lat_id,lon_id,smax_id,c1_to_c0_id,c1l0_log_id,c1l0_check_id,c1c3_to_c0_id,c1c3l0_log_id
 integer :: c2_to_c1_id,c2_to_c0_id
-integer :: c1l0_logint(nam%nc1,geom%nl0),c1c3l0_logint(nam%nc1,nam%nc3,geom%nl0)
+integer :: c1l0_logint(nam%nc1,geom%nl0),c1l0_checkint(nam%nc1,geom%nl0),c1c3l0_logint(nam%nc1,nam%nc3,geom%nl0)
 real(kind_real) :: lon(nam%nc1,nam%nc3,geom%nl0),lat(nam%nc1,nam%nc3,geom%nl0)
 character(len=3) :: il0ichar
 character(len=1024),parameter :: subr = 'samp_write'
@@ -416,6 +428,8 @@ call mpl%ncerr(subr,nf90_def_var(ncid,'c1_to_c0',nf90_int,(/nc1_id/),c1_to_c0_id
 call mpl%ncerr(subr,nf90_put_att(ncid,c1_to_c0_id,'_FillValue',mpl%msv%vali))
 call mpl%ncerr(subr,nf90_def_var(ncid,'c1l0_log',nf90_int,(/nc1_id,nl0_id/),c1l0_log_id))
 call mpl%ncerr(subr,nf90_put_att(ncid,c1l0_log_id,'_FillValue',mpl%msv%vali))
+call mpl%ncerr(subr,nf90_def_var(ncid,'c1l0_check',nf90_int,(/nc1_id,nl0_id/),c1l0_check_id))
+call mpl%ncerr(subr,nf90_put_att(ncid,c1l0_check_id,'_FillValue',mpl%msv%vali))
 call mpl%ncerr(subr,nf90_def_var(ncid,'c1c3_to_c0',nf90_int,(/nc1_id,nc3_id/),c1c3_to_c0_id))
 call mpl%ncerr(subr,nf90_put_att(ncid,c1c3_to_c0_id,'_FillValue',mpl%msv%vali))
 call mpl%ncerr(subr,nf90_def_var(ncid,'c1c3l0_log',nf90_int,(/nc1_id,nc3_id,nl0_id/),c1c3l0_log_id))
@@ -434,6 +448,18 @@ call mpl%ncerr(subr,nf90_enddef(ncid))
 lon = mpl%msv%valr
 lat = mpl%msv%valr
 do il0=1,geom%nl0
+   do ic1=1,nam%nc1
+      if (samp%c1l0_log(ic1,il0)) then
+         c1l0_logint(ic1,il0) = 1
+      else
+         c1l0_logint(ic1,il0) = 0
+      end if
+      if (samp%c1l0_check(ic1,il0)) then
+         c1l0_checkint(ic1,il0) = 1
+      else
+         c1l0_checkint(ic1,il0) = 0
+      end if
+   end do
    do jc3=1,nam%nc3
       do ic1=1,nam%nc1
          if (samp%c1c3l0_log(ic1,jc3,il0)) then
@@ -445,13 +471,6 @@ do il0=1,geom%nl0
          end if
       end do
    end do
-   do ic1=1,nam%nc1
-      if (samp%c1l0_log(ic1,il0)) then
-         c1l0_logint(ic1,il0) = 1
-      else
-         c1l0_logint(ic1,il0) = 0
-      end if
-   end do
 end do
 
 ! Write variables
@@ -460,6 +479,7 @@ call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat))
 call mpl%ncerr(subr,nf90_put_var(ncid,smax_id,real(count(samp%c1c3l0_log,dim=1),kind_real)))
 call mpl%ncerr(subr,nf90_put_var(ncid,c1_to_c0_id,samp%c1_to_c0))
 call mpl%ncerr(subr,nf90_put_var(ncid,c1l0_log_id,c1l0_logint))
+call mpl%ncerr(subr,nf90_put_var(ncid,c1l0_check_id,c1l0_checkint))
 call mpl%ncerr(subr,nf90_put_var(ncid,c1c3_to_c0_id,samp%c1c3_to_c0))
 call mpl%ncerr(subr,nf90_put_var(ncid,c1c3l0_log_id,c1c3l0_logint))
 if (nam%new_lct.or.nam%local_diag.or.nam%adv_diag) then
@@ -790,8 +810,6 @@ elseif (trim(nam%mask_type)=='ldwv') then
    end do
 elseif (trim(nam%mask_type)=='stddev') then
    ! Standard-deviation threshold
-   write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th,' used as a '//trim(nam%mask_lu)//' bound for standard-deviation'
-   call mpl%flush
 
    ! Allocation
    allocate(var(geom%nc0a,geom%nl0,nam%nv,nam%nts))
@@ -804,8 +822,11 @@ elseif (trim(nam%mask_type)=='stddev') then
    var = var/real(ens%ne-ens%nsub,kind_real)
 
    ! Check standard-deviation value
-   do its=1,nam%nts
-      do iv=1,nam%nv
+   do iv=1,nam%nv
+      write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th,' used as a '//trim(nam%mask_lu) &
+    & //' bound for standard-deviation'
+      call mpl%flush
+      do its=1,nam%nts
          if (trim(nam%mask_lu)=='lower') then
             mask_c0a = mask_c0a.and.(var(:,:,iv,its)>nam%mask_th**2)
          elseif (trim(nam%mask_lu)=='upper') then
@@ -852,10 +873,10 @@ samp%mask_hor_c0 = any(samp%mask_c0,dim=2)
 samp%nc0_mask = count(samp%mask_c0,dim=1)
 
 ! Print results
-write(mpl%info,'(a7,a)') '','HDIAG sampling valid points (% of domain mask):'
+write(mpl%info,'(a7,a)') '','Sampling valid points (% of domain mask):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a10,a,i3,a,f5.1,a)') '','Level',nam%levs(il0),' ~> ',100.0*real(count(samp%mask_c0(:,il0)),kind_real) &
+   write(mpl%info,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ',100.0*real(count(samp%mask_c0(:,il0)),kind_real) &
  & /real(count(geom%mask_c0(:,il0)),kind_real),'%'
    call mpl%flush
 end do
@@ -878,7 +899,7 @@ type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic0,jc0,ic1,il0i,jb,ildwv,jldwv,ifor
+integer :: ic0,jc0,ic1,il0i,jb,ildwv,jldwv,ifor,il0
 integer,allocatable :: for(:)
 real(kind_real) :: norm
 logical :: valid
@@ -976,6 +997,14 @@ else
    ! Not enough points remaining in the sampling mask
    call mpl%abort(subr,'not enough points remaining in sampling mask')
 end if
+
+! Define whether this point should be checked for boundaries
+do il0=1,geom%nl0
+   do ic1=1,nam%nc1
+      ic0 = samp%c1_to_c0(ic1)
+      samp%c1l0_check(ic1,il0) = (nam%mask_check.and.samp%mask_c0(ic0,il0))
+   end do
+end do
 
 end subroutine samp_compute_sampling_zs
 
@@ -1152,26 +1181,7 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
       do jc3=1,nam%nc3
          jc0 = nn_index(jc3)
          samp%c1c3_to_c0(ic1,jc3) = nn_index(jc3)
-         do il0=1,geom%nl0
-            samp%c1c3l0_log(ic1,jc3,il0) = samp%mask_c0(jc0,il0)
-         end do
       end do
-
-      if (nam%mask_check) then
-         ! Check that great circle to neighbors is not crossing mask boundaries
-         do il0=1,geom%nl0
-            !$omp parallel do schedule(static) private(jc3,ic0,jc0)
-            do jc3=1,nam%nc3
-               ! Indices
-               ic0 = samp%c1_to_c0(ic1)
-               jc0 = samp%c1c3_to_c0(ic1,jc3)
-
-               ! Check arc validity
-               call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),samp%c1c3l0_log(ic1,jc3,il0))
-            end do
-            !$omp end parallel do
-         end do
-      end if
    end if
 
    ! Update
@@ -1181,7 +1191,14 @@ call mpl%prog_final
 
 ! MPI sharing
 call mpl%share(nam%nc1,nam%nc3,nc1_loc,samp%c1c3_to_c0)
-call mpl%share(nam%nc1,nam%nc3,geom%nl0,nc1_loc,samp%c1c3l0_log)
+
+! Define whether this point should be checked for boundaries
+do il0=1,geom%nl0
+   do ic1=1,nam%nc1
+      ic0 = samp%c1_to_c0(ic1)
+      if (samp%c1l0_check(ic1,il0)) samp%c1l0_check(ic1,il0) = any(.not.samp%mask_c0(samp%c1c3_to_c0(ic1,:),il0))
+   end do
+end do
 
 end subroutine samp_compute_sampling_lct
 
@@ -1200,7 +1217,7 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: il0,jc3,ic1,ic0,jc0,i
+integer :: il0,jc3,ic1,ic0,jc0
 integer :: nc1_loc(0:mpl%nproc),ic1_loc
 logical :: valid
 
@@ -1213,23 +1230,21 @@ end do
 call mpl%split(nam%nc1,nc1_loc)
 
 ! Second point
-if (nam%mask_check) then
-   write(mpl%info,'(a7,a)') '','Check mask boundaries: '
-   call mpl%flush(.false.)
-   call mpl%prog_init(nc1_loc(mpl%myproc)*nam%nc3*geom%nl0)
-   i = 0
-end if
+write(mpl%info,'(a7,a)') '','Check sampling mask: '
+call mpl%flush(.false.)
+call mpl%prog_init(nc1_loc(mpl%myproc))
 
 ! Check mask
-do il0=1,geom%nl0
-   do jc3=1,nam%nc3
-      do ic1_loc=1,nc1_loc(mpl%myproc)
-         ! MPI offset
-         ic1 = sum(nc1_loc(0:mpl%myproc-1))+ic1_loc
+do ic1_loc=1,nc1_loc(mpl%myproc)
+   ! MPI offset
+   ic1 = sum(nc1_loc(0:mpl%myproc-1))+ic1_loc
 
+   !$omp parallel do schedule(static) private(il0,jc3,ic0,jc0,valid)
+   do il0=1,geom%nl0
+      do jc3=1,nam%nc3
          ! Indices
-         ic0 = samp%c1c3_to_c0(ic1,jc3)
-         jc0 = samp%c1c3_to_c0(ic1,1)
+         ic0 = samp%c1_to_c0(ic1)
+         jc0 = samp%c1c3_to_c0(ic1,jc3)
 
          ! Check point index
          valid = mpl%msv%isnoti(ic0).and.mpl%msv%isnoti(jc0)
@@ -1238,22 +1253,21 @@ do il0=1,geom%nl0
             ! Check mask
             valid = samp%mask_c0(ic0,il0).and.samp%mask_c0(jc0,il0)
 
-            ! Check mask bounds
-            if (nam%mask_check) then
-               if (valid) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),valid)
-            end if
+            ! Check mask boundaries
+            if (valid.and.samp%c1l0_check(ic1,il0)) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0), &
+          & geom%lon(jc0),geom%lat(jc0),valid)
          end if
-         samp%c1c3l0_log(ic1,jc3,il0) = valid
 
-         ! Update
-         if (nam%mask_check) then
-            i = i+1
-            call mpl%prog_print(i)
-         end if
+         ! Copy result
+         samp%c1c3l0_log(ic1,jc3,il0) = valid
       end do
    end do
+   !$omp end parallel do
+
+   ! Update
+   call mpl%prog_print(ic1_loc)
 end do
-if (nam%mask_check) call mpl%prog_final
+call mpl%prog_final
 
 ! MPI sharing
 call mpl%share(nam%nc1,nam%nc3,geom%nl0,nc1_loc,samp%c1c3l0_log)

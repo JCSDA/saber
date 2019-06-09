@@ -499,13 +499,13 @@ do ib=1,bpar%nb
       call mpl%f_comm%allreduce(rmse,rmse_tot,fckit_mpi_sum())
       call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
       if (norm_tot>0.0) rmse_tot = sqrt(rmse_tot/norm_tot)
-      write(mpl%info,'(a10,a,e15.8,a,i8,a)') '','LCT fit RMSE:          ',rmse_tot,' for ',int(norm_tot),' diagnostic points'
+      write(mpl%info,'(a10,a,e15.8,a,i10,a)') '','LCT fit RMSE:          ',rmse_tot,' for ',int(norm_tot),' diagnostic points'
       call mpl%flush
       if (nam%diag_rhflt>0.0) then
          call mpl%f_comm%allreduce(rmse_filt,rmse_filt_tot,fckit_mpi_sum())
          call mpl%f_comm%allreduce(norm_filt,norm_filt_tot,fckit_mpi_sum())
          if (norm_filt_tot>0.0) rmse_filt_tot = sqrt(rmse_filt_tot/norm_filt_tot)
-         write(mpl%info,'(a10,a,e15.8,a,i8,a)') '','LCT filtered fit RMSE: ',rmse_filt_tot,' for ',int(norm_tot), &
+         write(mpl%info,'(a10,a,e15.8,a,i10,a)') '','LCT filtered fit RMSE: ',rmse_filt_tot,' for ',int(norm_tot), &
        & ' diagnostic points'
          call mpl%flush
       end if

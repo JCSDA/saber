@@ -273,8 +273,8 @@ end if
 
 ! Define dimensions and coordinates if necessary
 nc3_id = mpl%ncdimcheck(subr,ncid,'nc3',nam%nc3,.true.)
-nl0r_id = mpl%ncdimcheck(subr,ncid,'nl0r',bpar%nl0rmax,.true.)
-nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.)
+nl0r_id = mpl%ncdimcheck(subr,ncid,'nl0r',bpar%nl0rmax,.true.,.true.)
+nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.,.true.)
 nbinsp1_id = mpl%ncdimcheck(subr,ncid,'nbinsp1',nam%avg_nbins+1,.true.)
 nbins_id = mpl%ncdimcheck(subr,ncid,'nbins',nam%avg_nbins,.true.)
 info_coord = nf90_inq_varid(ncid,'disth',disth_id)
@@ -350,21 +350,31 @@ call mpl%ncerr(subr,nf90_enddef(ncid))
 
 ! Write coordinates if necessary
 if (info_coord/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_put_var(ncid,disth_id,geom%disth(1:nam%nc3)))
+   call mpl%ncerr(subr,nf90_put_var(ncid,disth_id,geom%disth(1:bpar%nc3(ib)),(/1/),(/bpar%nc3(ib)/)))
    call mpl%ncerr(subr,nf90_put_var(ncid,vunit_id,geom%vunitavg))
 end if
 
 ! Write variables
-call mpl%ncerr(subr,nf90_put_var(ncid,m11_bins_id,avg_blk%m11_bins))
-call mpl%ncerr(subr,nf90_put_var(ncid,m11_hist_id,avg_blk%m11_hist))
-call mpl%ncerr(subr,nf90_put_var(ncid,m11m11_bins_id,avg_blk%m11m11_bins))
-call mpl%ncerr(subr,nf90_put_var(ncid,m11m11_hist_id,avg_blk%m11m11_hist))
-call mpl%ncerr(subr,nf90_put_var(ncid,m2m2_bins_id,avg_blk%m2m2_bins))
-call mpl%ncerr(subr,nf90_put_var(ncid,m2m2_hist_id,avg_blk%m2m2_hist))
-call mpl%ncerr(subr,nf90_put_var(ncid,m22_bins_id,avg_blk%m22_bins))
-call mpl%ncerr(subr,nf90_put_var(ncid,m22_hist_id,avg_blk%m22_hist))
-call mpl%ncerr(subr,nf90_put_var(ncid,cor_bins_id,avg_blk%cor_bins))
-call mpl%ncerr(subr,nf90_put_var(ncid,cor_hist_id,avg_blk%cor_hist))
+call mpl%ncerr(subr,nf90_put_var(ncid,m11_bins_id,avg_blk%m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,m11_hist_id,avg_blk%m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,m11m11_bins_id,avg_blk%m11m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,m11m11_hist_id,avg_blk%m11m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,m2m2_bins_id,avg_blk%m2m2_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,m2m2_hist_id,avg_blk%m2m2_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,m22_bins_id,avg_blk%m22_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,m22_hist_id,avg_blk%m22_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,cor_bins_id,avg_blk%cor_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,cor_hist_id,avg_blk%cor_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+ & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
 
 ! Close file
 call mpl%ncerr(subr,nf90_close(ncid))
@@ -392,7 +402,7 @@ type(samp_type),intent(in) :: samp           ! Sampling
 type(mom_blk_type),intent(in) :: mom_blk     ! Moments
 
 ! Local variables
-integer :: il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,nc1a_cor
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,nc1a_cor
 real(kind_real) :: m2_1,m2_2
 real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
 real(kind_real) :: min_m11_tot,max_m11_tot,min_m11m11_tot,max_m11m11_tot,min_m2m2_tot,max_m2m2_tot,min_m22_tot,max_m22_tot
@@ -402,6 +412,10 @@ logical :: involved,valid
 
 ! Associate
 associate(ic2=>avg_blk%ic2,ib=>avg_blk%ib)
+
+! Variables indices
+iv = bpar%b_to_v1(ib)
+jv = bpar%b_to_v2(ib)
 
 if ((ic2==0).or.nam%local_diag) then
    ! Copy variance
@@ -466,9 +480,14 @@ if ((ic2==0).or.nam%local_diag) then
                      m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
                      m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
                      if (trim(nam%mask_lu)=='lower') then
-                        valid = valid.and.(m2_1>nam%mask_th**2).and.(m2_2>nam%mask_th**2)
+                        valid = valid.and.(m2_1>nam%mask_th**2)
                      elseif (trim(nam%mask_lu)=='upper') then
-                        valid = valid.and.(m2_1<nam%mask_th**2).and.(m2_2<nam%mask_th**2)
+                        valid = valid.and.(m2_1<nam%mask_th**2)
+                     end if
+                     if (trim(nam%mask_lu)=='lower') then
+                        valid = valid.and.(m2_2>nam%mask_th**2)
+                     elseif (trim(nam%mask_lu)=='upper') then
+                        valid = valid.and.(m2_2<nam%mask_th**2)
                      end if
                   end if
 
