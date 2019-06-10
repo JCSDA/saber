@@ -157,7 +157,7 @@ character(len=1024) :: filename
 
 if (mpl%main) then
    filename = trim(nam%prefix)//'_avg'
-   do ib=1,bpar%nbe
+   do ib=1,bpar%nb
       if (bpar%diag_block(ib)) call avg%blk(0,ib)%write(mpl,nam,geom,bpar,filename)
    end do
 end if
