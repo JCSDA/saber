@@ -7,6 +7,7 @@
 !----------------------------------------------------------------------
 module type_nam
 
+use fckit_configuration_module, only: fckit_configuration
 use iso_c_binding
 use netcdf, only: nf90_put_att,nf90_global
 !$ use omp_lib, only: omp_get_num_procs
@@ -169,6 +170,7 @@ contains
    procedure :: init => nam_init
    procedure :: read => nam_read
    procedure :: bcast => nam_bcast
+   procedure :: from_conf => nam_from_conf
    procedure :: setup_internal => nam_setup_internal
    procedure :: check => nam_check
    procedure :: write => nam_write
@@ -874,6 +876,250 @@ call mpl%f_comm%broadcast(nam%grid_resol,mpl%ioproc-1)
 call mpl%f_comm%broadcast(nam%grid_interp,mpl%ioproc-1)
 
 end subroutine nam_bcast
+
+!----------------------------------------------------------------------
+! Subroutine: nam_from_conf
+! Purpose: intialize from configuration
+!----------------------------------------------------------------------
+subroutine nam_from_conf(nam,conf)
+
+implicit none
+
+! Passed variable
+class(nam_type),intent(inout) :: nam            ! Namelist
+type(fckit_configuration),intent(inout) :: conf ! Configuration
+
+! Local variables
+integer,allocatable :: integer_array(:)
+real(kind_real),allocatable :: real_array(:)
+logical,allocatable :: logical_array(:)
+character(len=:),allocatable :: str
+character(kind=c_char,len=1024),allocatable :: char_array(:)
+integer(c_size_t),parameter :: csize = 1024
+
+! general_param
+if (conf%has("datadir")) then
+   call conf%get_or_die("datadir",str)
+   nam%datadir = str
+end if
+if (conf%has("prefix")) then
+   call conf%get_or_die("prefix",str)
+   nam%prefix = str
+end if
+if (conf%has("model")) then
+   call conf%get_or_die("model",str)
+   nam%model = str
+end if
+if (conf%has("verbosity")) then
+   call conf%get_or_die("verbosity",str)
+   nam%verbosity = str
+end if
+if (conf%has("colorlog")) call conf%get_or_die("colorlog",nam%colorlog)
+if (conf%has("default_seed")) call conf%get_or_die("default_seed",nam%default_seed)
+
+! driver_param
+if (conf%has("method")) then
+   call conf%get_or_die("method",str)
+   nam%method = str
+end if
+if (conf%has("strategy")) then
+   call conf%get_or_die("strategy",str)
+   nam%strategy = str
+end if
+if (conf%has("new_cortrack")) call conf%get_or_die("new_cortrack",nam%new_cortrack)
+if (conf%has("new_vbal")) call conf%get_or_die("new_vbal",nam%new_vbal)
+if (conf%has("load_vbal")) call conf%get_or_die("load_vbal",nam%load_vbal)
+if (conf%has("write_vbal")) call conf%get_or_die("write_vbal",nam%write_vbal)
+if (conf%has("new_mom")) call conf%get_or_die("new_mom",nam%new_mom)
+if (conf%has("load_mom")) call conf%get_or_die("load_mom",nam%load_mom)
+if (conf%has("write_mom")) call conf%get_or_die("write_mom",nam%write_mom)
+if (conf%has("new_hdiag")) call conf%get_or_die("new_hdiag",nam%new_hdiag)
+if (conf%has("write_hdiag")) call conf%get_or_die("write_hdiag",nam%write_hdiag)
+if (conf%has("new_lct")) call conf%get_or_die("new_lct",nam%new_lct)
+if (conf%has("write_lct")) call conf%get_or_die("write_lct",nam%write_lct)
+if (conf%has("load_cmat")) call conf%get_or_die("load_cmat",nam%load_cmat)
+if (conf%has("write_cmat")) call conf%get_or_die("write_cmat",nam%write_cmat)
+if (conf%has("new_nicas")) call conf%get_or_die("new_nicas",nam%new_nicas)
+if (conf%has("load_nicas")) call conf%get_or_die("load_nicas",nam%load_nicas)
+if (conf%has("write_nicas")) call conf%get_or_die("write_nicas",nam%write_nicas)
+if (conf%has("new_obsop")) call conf%get_or_die("new_obsop",nam%new_obsop)
+if (conf%has("load_obsop")) call conf%get_or_die("load_obsop",nam%load_obsop)
+if (conf%has("write_obsop")) call conf%get_or_die("write_obsop",nam%write_obsop)
+if (conf%has("check_vbal")) call conf%get_or_die("check_vbal",nam%check_vbal)
+if (conf%has("check_adjoints")) call conf%get_or_die("check_adjoints",nam%check_adjoints)
+if (conf%has("check_pos_def")) call conf%get_or_die("check_pos_def",nam%check_pos_def)
+if (conf%has("check_dirac")) call conf%get_or_die("check_dirac",nam%check_dirac)
+if (conf%has("check_randomization")) call conf%get_or_die("check_randomization",nam%check_randomization)
+if (conf%has("check_consistency")) call conf%get_or_die("check_consistency",nam%check_consistency)
+if (conf%has("check_optimality")) call conf%get_or_die("check_optimality",nam%check_optimality)
+if (conf%has("check_obsop")) call conf%get_or_die("check_obsop",nam%check_obsop)
+
+! model_param
+if (conf%has("nl")) call conf%get_or_die("nl",nam%nl)
+if (conf%has("levs")) then
+   call conf%get_or_die("levs",integer_array)
+   nam%levs(1:nam%nl) = integer_array(1:nam%nl)
+end if
+if (conf%has("logpres")) call conf%get_or_die("logpres",nam%logpres)
+if (conf%has("nv")) call conf%get_or_die("nv",nam%nv)
+if (conf%has("varname")) then
+   call conf%get_or_die("varname",csize,char_array)
+   nam%varname(1:nam%nv) = char_array(1:nam%nv)
+end if
+if (conf%has("addvar2d")) then
+   call conf%get_or_die("addvar2d",csize,char_array)
+   nam%addvar2d(1:nam%nv) = char_array(1:nam%nv)
+end if
+if (conf%has("nts")) call conf%get_or_die("nts",nam%nts)
+if (conf%has("timeslot")) then
+   call conf%get_or_die("timeslot",integer_array)
+   nam%timeslot(1:nam%nts) = integer_array(1:nam%nts)
+end if
+if (conf%has("nomask")) call conf%get_or_die("nomask",nam%nomask)
+
+! ens1_param
+if (conf%has("ens1_ne")) call conf%get_or_die("ens1_ne",nam%ens1_ne)
+if (conf%has("ens1_nsub")) call conf%get_or_die("ens1_nsub",nam%ens1_nsub)
+
+! ens2_param
+if (conf%has("ens2_ne")) call conf%get_or_die("ens2_ne",nam%ens2_ne)
+if (conf%has("ens2_nsub")) call conf%get_or_die("ens2_nsub",nam%ens2_nsub)
+
+! sampling_param
+if (conf%has("sam_read")) call conf%get_or_die("sam_read",nam%sam_read)
+if (conf%has("sam_write")) call conf%get_or_die("sam_write",nam%sam_write)
+if (conf%has("mask_type")) then
+   call conf%get_or_die("mask_type",str)
+   nam%mask_type = str
+end if
+if (conf%has("mask_lu")) then
+   call conf%get_or_die("mask_lu",str)
+   nam%mask_lu = str
+end if
+if (conf%has("mask_th")) call conf%get_or_die("mask_th",nam%mask_th)
+if (conf%has("ncontig_th")) call conf%get_or_die("ncontig_th",nam%ncontig_th)
+if (conf%has("mask_check")) call conf%get_or_die("mask_check",nam%mask_check)
+if (conf%has("draw_type")) then
+   call conf%get_or_die("draw_type",str)
+   nam%draw_type = str
+end if
+if (conf%has("Lcoast")) call conf%get_or_die("Lcoast",nam%Lcoast)
+if (conf%has("rcoast")) call conf%get_or_die("rcoast",nam%rcoast)
+if (conf%has("nc1")) call conf%get_or_die("nc1",nam%nc1)
+if (conf%has("nc2")) call conf%get_or_die("nc2",nam%nc2)
+if (conf%has("ntry")) call conf%get_or_die("ntry",nam%ntry)
+if (conf%has("nrep")) call conf%get_or_die("nrep",nam%nrep)
+if (conf%has("nc3")) call conf%get_or_die("nc3",nam%nc3)
+if (conf%has("dc")) call conf%get_or_die("dc",nam%dc)
+if (conf%has("nl0r")) call conf%get_or_die("nl0r",nam%nl0r)
+if (conf%has("irmax")) call conf%get_or_die("irmax",nam%irmax)
+
+! diag_param
+if (conf%has("ne")) call conf%get_or_die("ne",nam%ne)
+if (conf%has("gau_approx")) call conf%get_or_die("gau_approx",nam%gau_approx)
+if (conf%has("avg_nbins")) call conf%get_or_die("avg_nbins",nam%avg_nbins)
+if (conf%has("vbal_block")) then
+   call conf%get_or_die("vbal_block",logical_array)
+   nam%vbal_block(1:nam%nv*(nam%nv-1)/2) = logical_array(1:nam%nv*(nam%nv-1)/2)
+end if
+if (conf%has("vbal_rad")) call conf%get_or_die("vbal_rad",nam%vbal_rad)
+if (conf%has("var_filter")) call conf%get_or_die("var_filter",nam%var_filter)
+if (conf%has("var_niter")) call conf%get_or_die("var_niter",nam%var_niter)
+if (conf%has("var_rhflt")) call conf%get_or_die("var_rhflt",nam%var_rhflt)
+if (conf%has("local_diag")) call conf%get_or_die("local_diag",nam%local_diag)
+if (conf%has("local_rad")) call conf%get_or_die("local_rad",nam%local_rad)
+if (conf%has("adv_diag")) call conf%get_or_die("adv_diag",nam%adv_diag)
+if (conf%has("adv_rad")) call conf%get_or_die("adv_rad",nam%adv_rad)
+if (conf%has("adv_niter")) call conf%get_or_die("adv_niter",nam%adv_niter)
+if (conf%has("adv_rhflt")) call conf%get_or_die("adv_rhflt",nam%adv_rhflt)
+
+! fit_param
+if (conf%has("minim_algo")) then
+   call conf%get_or_die("minim_algo",str)
+   nam%minim_algo = str
+end if
+if (conf%has("double_fit")) then
+   call conf%get_or_die("double_fit",logical_array)
+   nam%double_fit(0:nam%nv) = logical_array(1:nam%nv+1)
+end if
+if (conf%has("lhomh")) call conf%get_or_die("lhomh",nam%lhomh)
+if (conf%has("lhomv")) call conf%get_or_die("lhomv",nam%lhomv)
+if (conf%has("rvflt")) call conf%get_or_die("rvflt",nam%rvflt)
+if (conf%has("lct_nscales")) call conf%get_or_die("lct_nscales",nam%lct_nscales)
+if (conf%has("lct_diag")) then
+   call conf%get_or_die("lct_diag",logical_array)
+   nam%lct_diag(1:nam%lct_nscales) = logical_array(1:nam%lct_nscales)
+end if
+
+! nicas_param
+if (conf%has("nonunit_diag")) call conf%get_or_die("nonunit_diag",nam%nonunit_diag)
+if (conf%has("lsqrt")) call conf%get_or_die("lsqrt",nam%lsqrt)
+if (conf%has("resol")) call conf%get_or_die("resol",nam%resol)
+if (conf%has("fast_sampling")) call conf%get_or_die("fast_sampling",nam%fast_sampling)
+if (conf%has("subsamp")) then
+   call conf%get_or_die("subsamp",str)
+   nam%subsamp = str
+end if
+if (conf%has("nicas_interp")) then
+   call conf%get_or_die("nicas_interp",str)
+   nam%nicas_interp = str
+end if
+if (conf%has("network")) call conf%get_or_die("network",nam%network)
+if (conf%has("mpicom")) call conf%get_or_die("mpicom",nam%mpicom)
+if (conf%has("adv_mode")) call conf%get_or_die("adv_mode",nam%adv_mode)
+if (conf%has("forced_radii")) call conf%get_or_die("forced_radii",nam%forced_radii)
+if (conf%has("rh")) call conf%get_or_die("rh",nam%rh)
+if (conf%has("rv")) call conf%get_or_die("rv",nam%rv)
+if (conf%has("write_grids")) call conf%get_or_die("write_grids",nam%write_grids)
+if (conf%has("ndir")) call conf%get_or_die("ndir",nam%ndir)
+if (conf%has("londir")) then
+   call conf%get_or_die("londir",real_array)
+   nam%londir(1:nam%ndir) = real_array(1:nam%ndir)
+end if
+if (conf%has("latdir")) then
+   call conf%get_or_die("londir",real_array)
+   nam%londir(1:nam%ndir) = real_array(1:nam%ndir)
+end if
+if (conf%has("levdir")) then
+   call conf%get_or_die("londir",integer_array)
+   nam%londir(1:nam%ndir) = integer_array(1:nam%ndir)
+end if
+if (conf%has("ivdir")) then
+   call conf%get_or_die("ivdir",integer_array)
+   nam%ivdir(1:nam%ndir) = integer_array(1:nam%ndir)
+end if
+if (conf%has("itsdir")) then
+   call conf%get_or_die("itsdir",integer_array)
+   nam%itsdir(1:nam%ndir) = integer_array(1:nam%ndir)
+end if
+
+! output_param
+if (conf%has("nldwv")) call conf%get_or_die("nldwv",nam%nldwv)
+if (conf%has("lon_ldwv")) then
+   call conf%get_or_die("lon_ldwv",real_array)
+   nam%lon_ldwv(1:nam%nldwv) = real_array(1:nam%nldwv)
+end if
+if (conf%has("lat_ldwv")) then
+   call conf%get_or_die("lat_ldwv",real_array)
+   nam%lat_ldwv(1:nam%nldwv) = real_array(1:nam%nldwv)
+end if
+if (conf%has("name_ldwv")) then
+   call conf%get_or_die("name_ldwv",csize,char_array)
+   nam%name_ldwv(1:nam%nldwv) = char_array(1:nam%nldwv)
+end if
+if (conf%has("diag_rhflt")) call conf%get_or_die("diag_rhflt",nam%diag_rhflt)
+if (conf%has("diag_interp")) then
+   call conf%get_or_die("diag_interp",str)
+   nam%diag_interp = str
+end if
+if (conf%has("grid_output")) call conf%get_or_die("grid_output",nam%grid_output)
+if (conf%has("grid_resol")) call conf%get_or_die("grid_resol",nam%grid_resol)
+if (conf%has("grid_interp")) then
+   call conf%get_or_die("grid_interp",str)
+   nam%grid_interp = str
+end if
+
+end subroutine nam_from_conf
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_setup_internal
