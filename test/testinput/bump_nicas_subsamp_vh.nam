@@ -1,0 +1,69 @@
+&general_param
+datadir = "testdata/bump_nicas_subsamp_vh",
+prefix = "test__MPI_-_OMP_",
+model = "qg",
+default_seed = .true.,
+/
+
+&driver_param
+method = "cor",
+strategy = "common_univariate",
+new_hdiag = .true.,
+write_hdiag = .false.,
+write_cmat = .false.,
+new_nicas = .true.,
+check_adjoints = .true.,
+check_dirac = .true.,
+/
+
+&model_param
+nl = 4,
+levs = 1,2,3,4,
+nv = 2,
+varname = "u","q",
+nts = 2,
+timeslot = 0,6,
+nomask = .true.,
+/
+
+&ens1_param
+ens1_ne = 50,
+/
+
+&ens2_param
+/
+
+&sampling_param
+nc1 = 500,
+ntry = 30,
+nc3 = 15,
+dc = 400.0e3,
+nl0r = 3,
+/
+
+&diag_param
+ne = 50,
+/
+
+&fit_param
+minim_algo = "hooke",
+/
+
+&nicas_param
+resol = 8.0,
+mpicom = 2,
+subsamp = "vh",
+ndir = 1,
+londir = -85.0,
+latdir = 65.0,
+levdir = 1,
+ivdir = 1,
+itsdir = 1,
+/
+
+&obsop_param
+/
+
+&output_param
+/
+

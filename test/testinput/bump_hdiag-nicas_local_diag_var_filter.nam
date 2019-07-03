@@ -1,0 +1,74 @@
+&general_param
+datadir = "testdata/bump_hdiag-nicas_local_diag_var_filter",
+prefix = "test__MPI_-_OMP_",
+model = "qg",
+default_seed = .true.,
+/
+
+&driver_param
+method = "loc",
+strategy = "common",
+new_hdiag = .true.,
+write_hdiag = .true.,
+write_cmat = .false.,
+new_nicas = .true.,
+check_adjoints = .true.,
+check_dirac = .true.,
+/
+
+&model_param
+nl = 2,
+levs = 1,2,
+nv = 2,
+varname = "u","q",
+nts = 2,
+timeslot = 0,6,
+/
+
+&ens1_param
+ens1_ne = 50,
+/
+
+&ens2_param
+/
+
+&sampling_param
+nc1 = 500,
+nc2 = 150,
+ntry = 30,
+nc3 = 15,
+dc = 400.0e3,
+nl0r = 2,
+/
+
+&diag_param
+ne = 50,
+var_filter = .true.,
+var_niter = 10,
+var_rhflt = 1000.0e3,
+local_diag = .true.,
+local_rad = 1000.0e3,
+/
+
+&fit_param
+minim_algo = "hooke",
+/
+
+&nicas_param
+resol = 8.0,
+mpicom = 2,
+subsamp = "h",
+ndir = 1,
+londir = -85.0,
+latdir = 65.0,
+levdir = 1,
+ivdir = 1,
+itsdir = 1,
+/
+
+&obsop_param
+/
+
+&output_param
+/
+

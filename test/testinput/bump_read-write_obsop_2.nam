@@ -1,0 +1,46 @@
+&general_param
+datadir = "testdata/bump_read-write_obsop_2",
+prefix = "test__MPI_-_OMP_",
+model = "qg",
+default_seed = .true.,
+/
+
+&driver_param
+load_obsop = .true.,
+check_obsop = .true.,
+/
+
+&model_param
+nl = 2,
+levs = 1,2,
+nv = 1,
+varname = "q",
+nts = 2,
+timeslot = 0,6,
+/
+
+&ens1_param
+/
+
+&ens2_param
+/
+
+&sampling_param
+/
+
+&diag_param
+/
+
+&fit_param
+/
+
+&nicas_param
+/
+
+&obsop_param
+nobs = 100,
+/
+
+&output_param
+/
+
