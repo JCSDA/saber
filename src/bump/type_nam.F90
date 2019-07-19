@@ -1077,12 +1077,12 @@ if (conf%has("londir")) then
    nam%londir(1:nam%ndir) = real_array(1:nam%ndir)
 end if
 if (conf%has("latdir")) then
-   call conf%get_or_die("londir",real_array)
-   nam%londir(1:nam%ndir) = real_array(1:nam%ndir)
+   call conf%get_or_die("latdir",real_array)
+   nam%latdir(1:nam%ndir) = real_array(1:nam%ndir)
 end if
 if (conf%has("levdir")) then
-   call conf%get_or_die("londir",integer_array)
-   nam%londir(1:nam%ndir) = integer_array(1:nam%ndir)
+   call conf%get_or_die("levdir",integer_array)
+   nam%levdir(1:nam%ndir) = integer_array(1:nam%ndir)
 end if
 if (conf%has("ivdir")) then
    call conf%get_or_die("ivdir",integer_array)
