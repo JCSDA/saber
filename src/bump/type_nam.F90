@@ -1097,7 +1097,7 @@ end if
 if (conf%has("nldwv")) call conf%get_or_die("nldwv",nam%nldwv)
 if (conf%has("img_ldwv")) then
    call conf%get_or_die("img_ldwv",real_array)
-   nam%img_ldwv(1:nam%ndir) = real_array(1:nam%ndir)
+   nam%img_ldwv(1:nam%nldwv) = real_array(1:nam%nldwv)
 end if
 if (conf%has("lon_ldwv")) then
    call conf%get_or_die("lon_ldwv",real_array)
