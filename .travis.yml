@@ -35,8 +35,9 @@ before_install:
 
 #  do no switch to develop branch by removing 
 #  develop UPDATE in CMakeLists.txt in saber-bundle
-
-  - cd saber-bundle
+  - ls
+  - ls ${REPO_SOURCE_DIR}
+  - cd ${REPO_SOURCE_DIR}/saber-bundle
   - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
   - cat CMakeLists.txt
   - cd ${REPO_SOURCE_DIR}
