@@ -1,0 +1,81 @@
+#======================================================================
+# Project settings
+#======================================================================
+branches:
+  only:
+    - develop
+
+language: cpp
+
+services:
+  - docker
+
+before_install:
+  - date
+  - REPO_SOURCE_DIR=${TRAVIS_BUILD_DIR}/jcsda/src_repo
+
+#  create the same file structure on Travis VM and Docker container
+  - mkdir -p ${TRAVIS_BUILD_DIR}/jcsda/src_repo
+# echo branch info
+  - echo $TRAVIS_PULL_REQUEST
+  - echo $TRAVIS_PULL_REQUEST_BRANCH
+  - echo $TRAVIS_BRANCH
+  - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+  - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
+#======================================================================
+# Clone all repos
+#======================================================================
+  - pwd 
+  - git clone https://github.com/jcsda/saber-bundle.git ${REPO_SOURCE_DIR}/saber-bundle
+  - git clone  https://github.com/jcsda/fckit.git ${REPO_SOURCE_DIR}/saber-bundle/fckit
+
+#  clone the testing branch of saber
+  - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber 
+
+
+#  do no switch to develop branch by removing 
+#  develop UPDATE in CMakeLists.txt in saber-bundle
+
+  - cd saber-bundle
+  - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
+  - cat CMakeLists.txt
+  - cd ${REPO_SOURCE_DIR}
+  - ls ${REPO_SOURCE_DIR}
+  - ls ${REPO_SOURCE_DIR}/saber-bundle
+  - find . -name \* -exec chmod 777 {} \;
+
+#======================================================================
+# get docker image
+# FROM  jcsda/docker:latest
+#======================================================================
+  - cd ${REPO_SOURCE_DIR}/saber-bundle/saber
+  - date
+  - docker build -t jcsda/dockerl2 --build-arg=Dockerfile .  #Dockerfile handles ssh for mpi
+  - date
+  - docker images
+# request codecov to detect CI environment to pass through to docker
+  - ci_env=`bash <(curl -s https://codecov.io/env)`
+  - docker run -d -t $ci_env --name jcsda_container -v ${REPO_SOURCE_DIR}/saber-bundle:/jcsda/src_repo jcsda/dockerl2
+  - docker ps -a
+  - date
+
+#======================================================================
+# Here are the run steps
+#======================================================================
+script:
+  - docker exec jcsda_container ls
+  - docker exec jcsda_container bash -c 'cp -r /jcsda/.openmpi/ ~/' 
+##  use cmake with flags to generate test coverage reports
+  - date
+  - docker exec jcsda_container bash -c 'cd /build_container && cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON  /jcsda/src_repo'
+  - date
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && make -j4'
+  - date
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && ctest'
+  - date
+##  run lcov inside container
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --capture --directory . --output-file coverage.info'
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --remove coverage.info "/usr/*" --output-file coverage.info'  #  filter system-files 
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --list coverage.info'  #  debug info
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && bash <(curl -s https://codecov.io/bash) -t b8d1ec3a-1248-4948-afe1-5afc97fc24c7 -X gcov -f coverage.info -R /jcsda/src_repo/saber/'
+
