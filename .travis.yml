@@ -56,6 +56,7 @@ before_install:
   - docker images
 # request codecov to detect CI environment to pass through to docker
   - ci_env=`bash <(curl -s https://codecov.io/env)`
+
   - docker run -d -t $ci_env --name jcsda_container -v ${REPO_SOURCE_DIR}/saber-bundle:/jcsda/src_repo jcsda/dockerl2
   - docker ps -a
   - date
@@ -65,14 +66,23 @@ before_install:
 #======================================================================
 script:
   - docker exec jcsda_container ls
-  - docker exec jcsda_container bash -c 'cp -r /jcsda/.openmpi/ ~/' 
-##  reduce the number of tests
-  - export SABER_TEST_TIER=1
-  - export SABER_MPI_TEST=0
-  - export SABER_OMP_TEST=0
+  - docker exec jcsda_container bash -c 'cp -r /jcsda/.openmpi/ ~/'
 ##  use cmake with flags to generate test coverage reports
   - date
-  - docker exec jcsda_container bash -c 'cd /build_container && cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON  /jcsda/src_repo'
+# set different test tiers for cron vs pr jobs
+  - if [ "$TRAVIS_EVENT_TYPE" != "cron" ]; then 
+      docker exec jcsda_container bash -c 'cd /build_container &&
+        export SABER_TEST_TIER=1 &&
+        export SABER_MPI_TIER=0 &&
+        export SABER_OMP_TIER=0 &&
+        cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON /jcsda/src_repo';
+    else 
+      docker exec jcsda_container bash -c 'cd /build_container &&
+        export SABER_TEST_TIER=3 &&
+        export SABER_MPI_TIER=1 &&
+        export SABER_OMP_TIER=1 &&
+        cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON /jcsda/src_repo';
+    fi
   - date
   - docker exec jcsda_container bash -c 'cd /build_container/saber && make -j4'
   - date
