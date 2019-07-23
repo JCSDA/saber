@@ -66,6 +66,10 @@ before_install:
 script:
   - docker exec jcsda_container ls
   - docker exec jcsda_container bash -c 'cp -r /jcsda/.openmpi/ ~/' 
+##  reduce the number of tests
+  - export SABER_TEST_TIER=1
+  - export SABER_MPI_TEST=0
+  - export SABER_OMP_TEST=0
 ##  use cmake with flags to generate test coverage reports
   - date
   - docker exec jcsda_container bash -c 'cd /build_container && cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON  /jcsda/src_repo'
