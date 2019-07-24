@@ -1,6 +1,9 @@
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+# (C) Copyright 2017-2019 UCAR.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-list( APPEND bump_src_files
+set( bump_src_files
 
 tools_const.F90
 tools_fit.F90
@@ -45,16 +48,9 @@ type_vbal.F90
 external/tools_asa007.F90
 external/tools_qsort.F90
 external/tools_stripack.F90
-)
 
-# macro to create a symlink from src to dst
-function(CREATE_SYMLINK src dst)
-    foreach (FILENAME ${ARGN})
-        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-            ${src}/${FILENAME}
-            ${dst}/${FILENAME} )
-        endforeach(FILENAME)
-endfunction(CREATE_SYMLINK)
+PARENT_SCOPE
+)
 
 function(generate_fortran_bindings output filename)
 
@@ -85,11 +81,3 @@ function(generate_fortran_bindings output filename)
   endif()
   set_source_files_properties(${outfile} PROPERTIES GENERATED TRUE)
 endfunction()
-
-ecbuild_add_library( TARGET     bump
-                     SOURCES    ${FORTRAN_BINDINGS}
-                                ${bump_src_files}
-                     LIBS       ${NETCDF_LIBRARIES} fckit eckit_mpi eckit
-                     INSTALL_HEADERS LISTED
-                     LINKER_LANGUAGE ${SABER_LINKER_LANGUAGE}
-                   )
