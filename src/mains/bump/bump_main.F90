@@ -1,12 +1,13 @@
 !----------------------------------------------------------------------
-! Program: main
-! Purpose: command line arguments parsing and call to the BUMP library
+! subroutine: bump_main
+! Purpose: call to the BUMP library
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
-program main
+subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
 
+use iso_c_binding
 use iso_fortran_env, only : output_unit
 use tools_const, only: rad2deg,req
 use tools_kinds,only: kind_real
@@ -18,8 +19,14 @@ use type_timer, only: timer_type
 
 implicit none
 
+! Passed variables
+integer,intent(in) :: n1
+character,intent(in) :: arg1(n1)
+integer,intent(in) :: n2
+character,intent(in) :: arg2(n2)
+
 ! Local variables
-integer :: narg,iproc,ie,ifileunit
+integer :: i,iproc,ie,ifileunit
 character(len=1024) :: namelname,logdir,filename
 type(bump_type) :: bump
 type(model_type) :: model
@@ -27,20 +34,15 @@ type(mpl_type) :: mpl
 type(rng_type) :: rng
 type(timer_type) :: timer
 
-! Parse arguments
-narg = command_argument_count()
-if (narg<2) then
-   write(output_unit,'(a)') 'Error: namelist path and log directory should be provided as arguments'
-   call flush(output_unit)
-   error stop 1
-elseif (narg==2) then
-   call get_command_argument(1,namelname)
-   call get_command_argument(2,logdir)
-else
-   write(output_unit,'(a)') 'Error: two arguments only are required (namelist path and log directory)'
-   call flush(output_unit)
-   error stop 2
-end if
+! Copy namelname and logdir
+namelname = ''
+do i=1,n1
+   namelname(i:i) = arg1(i)
+end do
+logdir = ''
+do i=1,n2
+   logdir(i:i) = arg2(i)
+end do
 
 ! Set missing values
 call mpl%msv%init(-999,-999.0_kind_real)
@@ -202,4 +204,4 @@ call mpl%final
 call bump%dealloc
 call model%dealloc
 
-end program main
+end subroutine bump_main

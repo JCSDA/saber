@@ -82,7 +82,7 @@ include_directories( ${FCKIT_INCLUDE_DIRS} )
 # Export package info
 ################################################################################
 
-list( APPEND SABER_TPLS MPI NetCDF eckit fckit )
+list( APPEND SABER_TPLS MPI NetCDF eckit eckit_mpi fckit )
 
 set( SABER_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
                         ${CMAKE_CURRENT_BINARY_DIR}/src
