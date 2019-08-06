@@ -1,0 +1,34 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo Executing install phase
+    finally:
+      - echo install Finally
+  pre_build:
+    commands:
+      - echo Executing pre_build phase
+      - pwd
+      - ls
+      - git clone https://github.com/jcsda/oops 
+      - git clone https://github.com/jcsda/saber-bundle
+      - ls 
+    finally:
+      - echo pre_build Finally
+
+  build:
+    commands:
+      - echo Executing build phase
+    finally:
+      - echo build Finally
+
+  post_build:
+    commands:
+      - echo Executing post_build phase
+    finally:
+      - echo post_build Finally
+
+
+
+

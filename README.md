@@ -1,3 +1,6 @@
+[![travis develop](https://travis-ci.com/JCSDA/saber.svg?token=zswWHqwVimHTBAygfenZ&branch=develop&logo=travis)](https://travis-ci.com/JCSDA/saber)
+[![codecov](https://codecov.io/gh/JCSDA/saber/branch/develop/graph/badge.svg?token=aLmdMnzx1C)](https://codecov.io/gh/JCSDA/saber)
+![AWS-CodeBuild](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoibXdyU1U0RHNkYmlZRXpVaHpqTU4wY2hoVmRtcnhWT1E5U05pdVBpMTh5VDhJUVB1VlcwV2tpajl4cE5QSTU3bUxJV2U1TnM2aE41dVRrTDJpdElEUmRzPSIsIml2UGFyYW1ldGVyU3BlYyI6Im00MWJOeGk5NE1QRmRUd0YiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master)
 # SABER
 &copy; Copyright 2019 UCAR
 
