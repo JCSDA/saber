@@ -1,5 +1,11 @@
 version: 0.2
 
+env:
+#  parameter-store:
+#    GIT_USER:
+#    GIT_PASS:
+  git-credential-helper: yes
+
 phases:
   install:
     commands:
@@ -11,8 +17,12 @@ phases:
       - echo Executing pre_build phase
       - pwd
       - ls
-      - git clone https://github.com/jcsda/oops 
-      - git clone https://github.com/jcsda/saber-bundle
+      - cd ../ 
+      - git clone https://github.com/jcsda/saber-bundle saber-bundle
+      - git clone https://github.com/jcsda/oops saber-bundle/oops 
+      - git clone https://github.com/jcsda/fckit saber-bundle/fckit
+      - mv saber saber-bundle
+
       - ls 
     finally:
       - echo pre_build Finally
