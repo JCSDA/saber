@@ -10,6 +10,7 @@ phases:
   install:
     commands:
       - echo Executing install phase
+      - echo {{ssm:helloWorld}}
     finally:
       - echo install Finally
   pre_build:
