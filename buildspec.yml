@@ -1,7 +1,8 @@
 version: 0.2
 
 env:
-#  parameter-store:
+  parameter-store:
+     envvar: "helloWord"
 #    GIT_USER:
 #    GIT_PASS:
   git-credential-helper: yes
@@ -11,6 +12,7 @@ phases:
     commands:
       - echo Executing install phase
       - echo {{ssm:helloWorld}}
+      - echo {envvar}
     finally:
       - echo install Finally
   pre_build:
