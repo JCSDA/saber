@@ -17,6 +17,7 @@ phases:
       - echo install Finally
   pre_build:
     commands:
+      - ecbuild 
       - echo Executing pre_build phase
       - pwd
       - ls
