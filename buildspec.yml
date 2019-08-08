@@ -1,8 +1,8 @@
 version: 0.2
 
 env:
- parameter-store:
-     envvar: helloWorld
+  parameter-store:
+    envvar: helloWorld
 #    GIT_USER:
 #    GIT_PASS:
   git-credential-helper: yes
