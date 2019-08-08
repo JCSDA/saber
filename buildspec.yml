@@ -4,7 +4,7 @@ env:
   parameter-store:
     evnvar: helloWorldSecure
     GIT_USER: GIT_USER
-    GIT_PASS: GIT_PASS
+#    GIT_PASS: GIT_PASS
   git-credential-helper: yes
 
 phases:
