@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   parameter-store:
-    envvar: helloWorld
+    envvar: helloWorldSecure
 #    GIT_USER:
 #    GIT_PASS:
   git-credential-helper: yes
@@ -11,7 +11,8 @@ phases:
   install:
     commands:
       - echo Executing install phase
-      - echo {{ssm:helloWorld}}
+      - echo {{ssm:alias/aws/ssm/helloWorldSecure}}
+      - echo {ssm:alias/aws/ssm/helloWorldSecure}
 #      - echo {envvar}
     finally:
       - echo install Finally
