@@ -3,8 +3,9 @@ version: 0.2
 env:
   parameter-store:
     #    envvar: "/CodeBuild/TestEnvVar"
-    GIT_USER: "/CodeBuild/Git_USER"
-    #    GIT_PASS: "GIT_PASS"
+    GIT_USER_CB: "/CodeBuild/Git_USER"
+    GIT_USER: "GIT_USER"
+    #GIT_PASS: "GIT_PASS"
     git-credential-helper: yes
 
 phases:
