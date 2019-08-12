@@ -3,17 +3,17 @@ version: 0.2
 env:
   parameter-store:
     #    envvar: "/CodeBuild/TestEnvVar"
-    GIT_USER: "GIT_USER"
+    #GIT_USER: "GIT_USER"
     #    GIT_PASS: "GIT_PASS"
-  git-credential-helper: yes
+    #git-credential-helper: yes
 
 phases:
   install:
     commands:
       - printenv
       - echo Executing install phase
-      - echo {GIT_USER}
-        #      - echo {ssm:helloWorldSecure}
+        #- echo {GIT_USER}
+      #      - echo {ssm:helloWorldSecure}
     finally:
       - echo install Finally
   pre_build:
