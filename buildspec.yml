@@ -8,7 +8,6 @@ env:
 phases:
   install:
     commands:
-      - printenv
       - echo Executing install phase
     finally:
       - echo install Finally
@@ -22,17 +21,19 @@ phases:
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/oops saber-bundle/oops 
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
       - mv saber saber-bundle
-
-      - ls 
+      - mkdir build
+      - ls
+      - ls saber-bundle
     finally:
       - echo pre_build Finally
 
   build:
     commands:
       - echo Executing build phase
-    finally:
-      - echo build Finally
-
+      - cd build
+      - ecbuild ../saber-bundle
+      - make -j4
+      - ctest 
   post_build:
     commands:
       - echo Executing post_build phase
