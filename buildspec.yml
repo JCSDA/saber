@@ -24,9 +24,9 @@ phases:
       - mkdir build
       - ls
       - ls saber-bundle
-    finally:
-      - echo pre_build Finally
-
+      - cd saber-bundle
+      - sed -i 's/BRANCH develop  UPDATE//' CMakeLists.txt
+      - cd ..
   build:
     commands:
       - echo Executing build phase
