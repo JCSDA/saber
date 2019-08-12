@@ -10,12 +10,10 @@ phases:
     commands:
       - printenv
       - echo Executing install phase
-      - echo $GIT_USER_CB
     finally:
       - echo install Finally
   pre_build:
     commands:
-      - ecbuild 
       - echo Executing pre_build phase
       - pwd
       - ls
