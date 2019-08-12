@@ -1,11 +1,11 @@
 version: 0.2
 
-#env:
-#  parameter-store:
+env:
+  parameter-store:
     #    envvar: "/CodeBuild/TestEnvVar"
-    #GIT_USER: "GIT_USER"
+    GIT_USER: "/CodeBuild/GIT_USER"
     #    GIT_PASS: "GIT_PASS"
-    #git-credential-helper: yes
+    git-credential-helper: yes
 
 phases:
   install:
