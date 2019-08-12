@@ -2,9 +2,9 @@ version: 0.2
 
 env:
   parameter-store:
-    evnvar: helloWorldSecure
-    GIT_USER: GIT_USER
-#    GIT_PASS: GIT_PASS
+    evnvar: "helloWorldSecure"
+    GIT_USER: "GIT_USER"
+    GIT_PASS: "GIT_PASS"
   git-credential-helper: yes
 
 phases:
@@ -12,7 +12,7 @@ phases:
     commands:
       - echo Executing install phase
       - echo {GIT_USER}
-      - echo {helloWorldSecure}
+      - echo {ssm:helloWorldSecure}
     finally:
       - echo install Finally
   pre_build:
