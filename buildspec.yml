@@ -25,7 +25,7 @@ phases:
       - ls
       - ls saber-bundle
       - cd saber-bundle
-      - sed -i 's/BRANCH develop  UPDATE//' CMakeLists.txt
+      - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
       - cat CMakeLists.txt
       - cd ..
   build:
