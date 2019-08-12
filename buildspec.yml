@@ -1,6 +1,6 @@
 version: 0.2
 
-env:
+#env:
 #  parameter-store:
     #    envvar: "/CodeBuild/TestEnvVar"
     #GIT_USER: "GIT_USER"
