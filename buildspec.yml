@@ -4,12 +4,13 @@ env:
   parameter-store:
     evnvar: "helloWorldSecure"
     GIT_USER: "GIT_USER"
-    GIT_PASS: "GIT_PASS"
+    #    GIT_PASS: "GIT_PASS"
   git-credential-helper: yes
 
 phases:
   install:
     commands:
+      - printenv
       - echo Executing install phase
       - echo {GIT_USER}
       - echo {ssm:helloWorldSecure}
