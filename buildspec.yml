@@ -10,10 +10,10 @@ version: 0.2
 phases:
   install:
     commands:
-      - printenv
+    #      - printenv
       - echo Executing install phase
-        #- echo {GIT_USER}
-      #      - echo {ssm:helloWorldSecure}
+    #- echo {GIT_USER}
+    #      - echo {ssm:helloWorldSecure}
     finally:
       - echo install Finally
   pre_build:
