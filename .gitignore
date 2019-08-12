@@ -28,3 +28,4 @@ Documents/*.aux
 Documents/*.pdf
 Data/
 ifs/
+build/

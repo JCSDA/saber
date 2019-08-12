@@ -212,9 +212,6 @@ class(mpl_type),intent(inout) :: mpl ! MPI data
 ! Release memory
 if (allocated(mpl%done)) deallocate(mpl%done)
 
-! Finalize MPI communicator
-call mpl%f_comm%final
-
 end subroutine mpl_final
 
 !----------------------------------------------------------------------

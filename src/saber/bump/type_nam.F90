@@ -886,8 +886,8 @@ subroutine nam_from_conf(nam,conf)
 implicit none
 
 ! Passed variable
-class(nam_type),intent(inout) :: nam            ! Namelist
-type(fckit_configuration),intent(inout) :: conf ! Configuration
+class(nam_type),intent(inout) :: nam         ! Namelist
+type(fckit_configuration),intent(in) :: conf ! Configuration
 
 ! Local variables
 integer,allocatable :: integer_array(:)

@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 ################################################################################
-# SABER 
+# SABER
 ################################################################################
 
 cmake_minimum_required( VERSION 3.3.2 FATAL_ERROR )
@@ -38,6 +38,7 @@ set( SABER_LINKER_LANGUAGE CXX )
 ################################################################################
 
 include( saber_compiler_flags )
+include( saber_extra_macros )
 
 ################################################################################
 # Dependencies
@@ -63,8 +64,7 @@ else()
 endif()
 
 # NetCDF
-set( NETCDF_F90 ON CACHE BOOL "Compile with Fortran NetCDF" )
-find_package( NetCDF REQUIRED )
+find_package( NetCDF REQUIRED COMPONENTS F90 )
 include_directories( ${NETCDF_INCLUDE_DIR} )
 
 # eckit
@@ -82,9 +82,11 @@ include_directories( ${FCKIT_INCLUDE_DIRS} )
 # Export package info
 ################################################################################
 
-list( APPEND SABER_TPLS MPI NetCDF eckit fckit )
+list( APPEND SABER_TPLS MPI NetCDF eckit eckit_mpi fckit )
 
-set( SABER_INCLUDE_DIRS ${CMAKE_Fortran_MODULE_DIRECTORY} )
+set( SABER_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
+                        ${CMAKE_CURRENT_BINARY_DIR}/src
+                        ${CMAKE_Fortran_MODULE_DIRECTORY} )
 
 set( SABER_LIBRARIES saber )
 
@@ -102,13 +104,17 @@ endforeach()
 ################################################################################
 
 include_directories( ${SABER_INCLUDE_DIRS}
-                     ${SABER_EXTRA_INCLUDE_DIRS} )
+                     ${SABER_EXTRA_INCLUDE_DIRS}
+                     ${CMAKE_CURRENT_SOURCE_DIR}/src )
 
-add_subdirectory( doc/bump )
-add_subdirectory( mains )
-add_subdirectory( src/bump )
+add_subdirectory( doc )
+add_subdirectory( src )
 add_subdirectory( test )
 add_subdirectory( tools )
+
+if(ECBUILD_INSTALL_FORTRAN_MODULES)
+  install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/${CMAKE_CFG_INTDIR} DESTINATION ${INSTALL_INCLUDE_DIR} )
+endif()
 
 ################################################################################
 # Finalise configuration

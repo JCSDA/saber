@@ -102,7 +102,7 @@ end do
 !$omp end parallel do
 
 ! Communication
-call mpl%f_comm%alltoallv(sbuf,com%jexclcounts,com%jexcldispls,rbuf,com%jhalocounts,com%jhalodispls)
+call mpl%f_comm%alltoall(sbuf,com%jexclcounts,com%jexcldispls,rbuf,com%jhalocounts,com%jhalodispls)
 
 ! Copy interior
 !$omp parallel do schedule(static) private(ired)
@@ -154,7 +154,7 @@ jexclcounts = com%jexclcounts*nl
 jexcldispls = com%jexcldispls*nl
 jhalocounts = com%jhalocounts*nl
 jhalodispls = com%jhalodispls*nl
-call mpl%f_comm%alltoallv(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodispls)
+call mpl%f_comm%alltoall(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodispls)
 
 ! Copy interior
 !$omp parallel do schedule(static) private(il,ired)
@@ -202,7 +202,7 @@ end do
 !$omp end parallel do
 
 ! Communication
-call mpl%f_comm%alltoallv(sbuf,com%jhalocounts,com%jhalodispls,rbuf,com%jexclcounts,com%jexcldispls)
+call mpl%f_comm%alltoall(sbuf,com%jhalocounts,com%jhalodispls,rbuf,com%jexclcounts,com%jexcldispls)
 
 ! Copy interior
 !$omp parallel do schedule(static) private(ired)
@@ -259,7 +259,7 @@ end do
 !$omp end parallel do
 
 ! Communication
-call mpl%f_comm%alltoallv(sbuf,com%jhalocounts*nl,com%jhalodispls*nl,rbuf,com%jexclcounts*nl,com%jexcldispls*nl)
+call mpl%f_comm%alltoall(sbuf,com%jhalocounts*nl,com%jhalodispls*nl,rbuf,com%jexclcounts*nl,com%jexcldispls*nl)
 
 ! Copy interior
 !$omp parallel do schedule(static) private(il,ired)

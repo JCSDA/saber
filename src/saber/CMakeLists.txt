@@ -1,0 +1,24 @@
+# (C) Copyright 2017-2019 UCAR.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+
+add_subdirectory( bump )
+
+PREPEND( _p_bump_src_files "bump" ${bump_src_files} )
+
+list( APPEND saber_src_files
+  ${_p_bump_src_files}
+)
+
+list( APPEND SABER_LIB_DEPS
+  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit
+)
+
+ecbuild_add_library( TARGET     saber
+                     SOURCES    ${FORTRAN_BINDINGS}
+                                ${saber_src_files}
+                     LIBS       ${SABER_LIB_DEPS}
+                     INSTALL_HEADERS LISTED
+                     LINKER_LANGUAGE ${SABER_LINKER_LANGUAGE}
+                   )
