@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   parameter-store:
-    evnvar: "helloWorldSecure"
+    evnvar: "/CodeBuild/TestEnvVar"
     GIT_USER: "GIT_USER"
     #    GIT_PASS: "GIT_PASS"
   git-credential-helper: yes
