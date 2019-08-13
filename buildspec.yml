@@ -51,6 +51,7 @@ phases:
       - cd ../
       - ls
       - git lfs install
+      - cat ~/.gitconfig
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
       - ls
@@ -73,10 +74,7 @@ phases:
         && ls
         && ecbuild /jcsda/saber-bundle/
         && make -j4
-        && ctest -VV -R test_bump_cortrack_1-1_setup
-        && ctest -VV -R test_bump_cortrack_1-1_run
-        && ctest -VV -R test_bump_cortrack_1-1_compare"
-        #        && ctest" 
+        && ctest" 
   post_build:
     commands:
       - echo Executing post_build phase
