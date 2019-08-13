@@ -74,7 +74,10 @@ phases:
         && ls
         && ecbuild /jcsda/saber-bundle/
         && make -j4
-        && ctest" 
+        && ctest -VV -R est_bump_hdiag_cor_diag_all_1-1_setup
+        && ctest -VV -R est_bump_hdiag_cor_diag_all_1-1_run
+        && ctest -VV -R est_bump_hdiag_cor_diag_all_1-1_compelete"
+        #        && ctest" 
   post_build:
     commands:
       - echo Executing post_build phase
