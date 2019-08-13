@@ -51,7 +51,7 @@ phases:
       - cd ../
       - ls
       - git lfs install
-      - cat ~/.gitconfig
+      - cp ~/.gitconfig /home/jcsdauser/
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
       - ls
