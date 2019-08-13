@@ -31,7 +31,7 @@ phases:
       - su - jcsdauser -c "whoami 
         && whoami"
 
-      - ssu - jcsdauser -c "sh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
+      - su - jcsdauser -c "sh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
         && chmod 600 /jcsda/.ssh/config
         && chmod 700 /jcsda/.ssh
         && cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys"
@@ -53,9 +53,8 @@ phases:
       - ls
       - ls saber-bundle
       - cd saber-bundle
+      - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
-      - cat CMakeLists.txt
-      - cd ..
   build:
     commands:
       - echo Executing build phase
