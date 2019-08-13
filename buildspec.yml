@@ -64,7 +64,7 @@ phases:
       - ls -ln
       - cd /build_container
       - ls -ln /jcsda/saber-bundle
-      - su - jcsdauser -c "pwd 
+      - su - jcsdauser -c "cd /build_container 
         && ls
         && ecbuild /jcsda/saber-bundle/
         && make -j4
