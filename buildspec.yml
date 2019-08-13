@@ -65,6 +65,7 @@ phases:
       - printenv
   build:
     commands:
+      - git lfs
       - echo Executing build phase
       - ls -ln
       - cd /build_container
