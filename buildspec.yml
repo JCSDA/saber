@@ -47,10 +47,10 @@ phases:
       - cd ../
       - ls
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/oops saber-bundle/oops 
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
       - ls
-      - mv saber saber-bundle
+      - cp -r saber saber-bundle/
+      - ls
       - mv saber-bundle /jcsda/
       - cd /jcsda
       - ls
