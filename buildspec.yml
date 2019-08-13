@@ -55,7 +55,7 @@ phases:
       - ls /
       - echo $CODEBUILD_SRC_DIR
       - ls /codebuild/output/
-     - ls $CODEBUILD_SRC_DIR
+      - ls $CODEBUILD_SRC_DIR
       - cd saber-bundle
       - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
