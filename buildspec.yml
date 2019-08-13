@@ -68,7 +68,7 @@ phases:
         && ls
         && ecbuild /jcsda/saber-bundle/
         && make -j4
-        && ctest" 
+        && ctest -VV -R fckit_test_mpi" 
   post_build:
     commands:
       - echo Executing post_build phase
