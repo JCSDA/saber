@@ -16,6 +16,7 @@ phases:
       - sed -i 's/#RSAAuthentication yes/RSAAuthentication yes/g' /etc/ssh/sshd_config
       - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
 
+      - cd ..
       - groupadd jcsda -g 9999
       - useradd jcsdauser
       - mkdir -p /jcsda build_container
@@ -44,7 +45,7 @@ phases:
       - echo Executing pre_build phase
       - pwd
       - ls
-      - cd ../ 
+        #- cd ../ 
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/oops saber-bundle/oops 
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
