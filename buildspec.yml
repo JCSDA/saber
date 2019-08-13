@@ -28,8 +28,8 @@ phases:
       - chown -R jcsdauser:jcsda /jcsda/
 
       - whoami
-      - su - jcsdauser -c whoami
-      - whoami
+      - su - jcsdauser -c "whoami \
+        && whoami"
       - cat /etc/passwd
 
       - ssh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
