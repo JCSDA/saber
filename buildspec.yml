@@ -27,9 +27,13 @@ phases:
         
       - cp default-mca-params.conf /jcsda/.openmpi/mca-params.conf
       - cp -r /jcsda/.openmpi /jcsda/build_container/
+      - ls /jcsda/build_container/
       - cp -r /jcsda/.openmpi ~/
+      - ls ~/
       - cp -r /jcsda/.openmpi $HOME/
+      - ls $HOME 
       - cp -r /jcsda/.openmpi /home/jcsdauser/
+      - ls /home/jcsdauser
       - chown -R jcsdauser:jcsda /jcsda/
 
       - whoami
