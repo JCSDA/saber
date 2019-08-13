@@ -27,6 +27,10 @@ phases:
       - cp default-mca-params.conf /jcsda/.openmpi/mca-params.conf
       - chown -R jcsdauser:jcsda /jcsda/
 
+      - whoami
+      - su jcsdauser
+      - whoami
+
     finally:
       - echo install Finally
   pre_build:
