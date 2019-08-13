@@ -29,7 +29,6 @@ phases:
 
       - whoami
       - su - jcsdauser
-      - strace su - jcsdauser
       - whoami
       - cat /etc/passwd
 
