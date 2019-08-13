@@ -64,8 +64,8 @@ phases:
     commands:
       - echo Executing build phase
       - ls -ln
-      - ls -ln ../saber-bundle
       - cd build_container
+      - ls -ln ../saber-bundle
       - su - jcsdauser -c "ecbuild ../saber-bundle 
         && make -j4
         && ctest" 
