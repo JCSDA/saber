@@ -63,7 +63,8 @@ phases:
   build:
     commands:
       - echo Executing build phase
-      - whoami
+      - ls -ln
+      - ls -ln ../saber-bundle
       - cd build_container
       - su - jcsdauser -c "ecbuild ../saber-bundle 
         && make -j4
