@@ -49,14 +49,15 @@ phases:
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/oops saber-bundle/oops 
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
       - mv saber saber-bundle
+      - mv saber-bundle /jcsda/
       - mkdir build
       - ls
       - ls $HOME
       - ls /
       - echo $CODEBUILD_SRC_DIR
       - ls /codebuild/output/
-      - ls $CODEBUILD_SRC_DIR
-      - cd saber-bundle
+      - ls CODEBUILD_SRC_DIR
+      - cd /jcsda/saber-bundle
       - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
       - cd ..
@@ -65,10 +66,10 @@ phases:
       - echo Executing build phase
       - ls -ln
       - cd build_container
-      - ls -ln ../saber-bundle
+      - ls -ln /jcsda/saber-bundle
       - su - jcsdauser -c "pwd 
         && ls
-        && ecbuild $CODEBUILD_SRC_DIR/saber-bundle/
+        && ecbuild /jcsda/saber-bundle/
         && make -j4
         && ctest" 
   post_build:
