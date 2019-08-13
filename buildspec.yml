@@ -9,6 +9,14 @@ phases:
   install:
     commands:
       - echo Executing install phase
+      - echo MPI setup for Docker
+      - mkdir -p /var/run/sshd
+      - ssh-keygen -A \
+      - sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config \
+      - sed -i 's/#RSAAuthentication yes/RSAAuthentication yes/g' /etc/ssh/sshd_config \
+      - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+
+
     finally:
       - echo install Finally
   pre_build:
