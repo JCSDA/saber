@@ -31,11 +31,11 @@ phases:
       - su - jcsdauser -c "whoami 
         && whoami"
 
-      - su - jcsdauser -c "sh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
+      - su -u jcsdauser -c "ssh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
         && chmod 600 /jcsda/.ssh/config
         && chmod 700 /jcsda/.ssh
-        && cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys"
-      - echo MPI setup for Docker done
+        && cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys
+        && echo MPI setup for Docker done"
 
     finally:
       - echo install Finally
@@ -55,13 +55,15 @@ phases:
       - cd saber-bundle
       - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
+      - cd ..
   build:
     commands:
       - echo Executing build phase
-      - cd /build_container
-      - su - jcsdauser -c "ecbuild ~/saber-bundle
-        && make -j4
-        && ctest" 
+      - whoami
+      - cd build
+      - ecbuild ../saber-bundle
+      - make -j4
+      - ctest 
   post_build:
     commands:
       - echo Executing post_build phase
