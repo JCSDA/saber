@@ -27,6 +27,7 @@ phases:
       - cp default-mca-params.conf /jcsda/.openmpi/mca-params.conf
       - cp -r /jcsda/.openmpi/ /jcsda/build_container/
       - cp -r /jcsda/.openmpi/ ~/
+      - cp -r /jcsda/.openmpi/ /home/jcsdauser/
       - chown -R jcsdauser:jcsda /jcsda/
 
       - whoami
@@ -60,6 +61,7 @@ phases:
       - cd /jcsda/saber-bundle
       - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
+      - printenv
   build:
     commands:
       - echo Executing build phase
