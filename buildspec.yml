@@ -23,8 +23,8 @@ phases:
       - chmod 6755 /jcsda /build_container /usr/local
 
       - mkdir /jcsda/.ssh ; echo "StrictHostKeyChecking no" > /jcsda/.ssh/config
-      - cp default-mca-params.conf /jcsda/.openmpi/mca-params.conf
       - mkdir -p /jcsda/.openmpi
+      - cp default-mca-params.conf /jcsda/.openmpi/mca-params.conf
       - chown -R jcsdauser:jcsda /jcsda/
 
     finally:
