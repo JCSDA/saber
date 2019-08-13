@@ -17,7 +17,7 @@ phases:
       - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
 
       - groupadd jcsda -g 9999
-      - adduser jcsdauser
+      - useradd jcsdauser
       - mkdir -p /jcsda /build_container
       - chown -R jcsdauser:jcsda /build_container  /usr/local
       - chmod 6755 /jcsda /build_container /usr/local
@@ -29,8 +29,6 @@ phases:
 
       - whoami
       - su jcsdauser
-      - whoami
-      - su jedi
       - whoami
       - cat /etc/passwd
 
