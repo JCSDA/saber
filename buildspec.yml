@@ -18,7 +18,7 @@ phases:
 
       - groupadd jcsda -g 9999
       - useradd jcsdauser
-      - mkdir -p /jcsda /build_container
+      - mkdir -p /jcsda build_container
       - chown -R jcsdauser:jcsda /build_container  /usr/local
       - chmod 6755 /jcsda /build_container /usr/local
 
@@ -64,8 +64,8 @@ phases:
     commands:
       - echo Executing build phase
       - whoami
-      - cd /build_container
-      - su - jcsdauser "ecbuild $CODEBUILD_SRC_DIR/saber-bundle 
+      - cd build_container
+      - su - jcsdauser "ecbuild ../saber-bundle 
         && make -j4
         && ctest" 
   post_build:
