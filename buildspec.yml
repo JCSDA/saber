@@ -25,7 +25,10 @@ phases:
       - mkdir /jcsda/.ssh ; echo "StrictHostKeyChecking no" > /jcsda/.ssh/config
       - mkdir -p /jcsda/.openmpi
       - cp default-mca-params.conf /jcsda/.openmpi/mca-params.conf
+      - cp default-mca-params.conf /jcsda/build_container/.openmpi/mca-params.conf
+      - cp default-mca-params.conf ~/
       - chown -R jcsdauser:jcsda /jcsda/
+      - WORKDIR /jcsda
 
       - whoami
       - su - jcsdauser -c "whoami 
