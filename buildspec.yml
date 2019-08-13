@@ -50,6 +50,7 @@ phases:
       - ls
       - cd ../
       - ls
+      - git lfs install
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
       - ls
@@ -62,10 +63,8 @@ phases:
       - cd /jcsda/saber-bundle
       - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
-      - printenv
   build:
     commands:
-      - git lfs
       - echo Executing build phase
       - ls -ln
       - cd /build_container
