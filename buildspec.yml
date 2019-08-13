@@ -28,7 +28,7 @@ phases:
       - chown -R jcsdauser:jcsda /jcsda/
 
       - whoami
-      - su - jcsdauser
+      - su  jcsdauser
       - whoami
       - cat /etc/passwd
 
