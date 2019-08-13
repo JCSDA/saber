@@ -28,8 +28,14 @@ phases:
       - chown -R jcsdauser:jcsda /jcsda/
 
       - whoami
-      - su jcsdauser
+      - su -u jcsdauser
       - whoami
+
+      - RUN ssh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
+      - chmod 600 /jcsda/.ssh/config \
+      - chmod 700 /jcsda/.ssh \
+      - cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys
+      - echo MPI setup for Docker done
 
     finally:
       - echo install Finally
