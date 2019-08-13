@@ -19,8 +19,8 @@ phases:
       - groupadd jcsda -g 9999
       - useradd jcsdauser
       - mkdir -p /jcsda build_container
-      - chown -R jcsdauser:jcsda /build_container  /usr/local
-      - chmod 6755 /jcsda /build_container /usr/local
+      - chown -R jcsdauser:jcsda build_container  /usr/local
+      - chmod 6755 /jcsda build_container /usr/local
 
       - mkdir /jcsda/.ssh ; echo "StrictHostKeyChecking no" > /jcsda/.ssh/config
       - mkdir -p /jcsda/.openmpi
