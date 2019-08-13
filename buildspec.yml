@@ -28,7 +28,6 @@ phases:
       - cp -r /jcsda/.openmpi/ /jcsda/build_container/
       - cp -r /jcsda/.openmpi/ ~/
       - chown -R jcsdauser:jcsda /jcsda/
-      - WORKDIR /jcsda
 
       - whoami
       - su - jcsdauser -c "whoami 
