@@ -29,9 +29,11 @@ phases:
 
       - whoami
       - su - jcsdauser
+      - strace su - jcsdauser
       - whoami
+      - cat /etc/passwd
 
-      - RUN ssh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
+      - ssh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
       - chmod 600 /jcsda/.ssh/config
       - chmod 700 /jcsda/.ssh
       - cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys
