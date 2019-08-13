@@ -51,7 +51,8 @@ phases:
       - mv saber saber-bundle
       - mkdir build
       - ls
-      - ls ~
+      - ls $HOME
+      - ls /
       - cd saber-bundle
       - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
@@ -60,7 +61,7 @@ phases:
     commands:
       - echo Executing build phase
       - whoami
-      - cd build_container
+      - cd /build_container
       - su - jcsdauser "ecbuild ~/saber-bundle 
         && make -j4
         && ctest" 
