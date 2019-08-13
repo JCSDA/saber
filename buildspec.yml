@@ -55,7 +55,7 @@ phases:
       - ls /
       - echo $CODEBUILD_SRC_DIR
       - ls /codebuild/output/
-     #- ls $CODEBUILD_SRC_DIR
+     - ls $CODEBUILD_SRC_DIR
       - cd saber-bundle
       - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
@@ -68,7 +68,7 @@ phases:
       - ls -ln ../saber-bundle
       - su - jcsdauser -c "pwd 
         && ls
-        && ecbuild ../saber-bundle 
+        && ecbuild $CODEBUILD_SRC_DIR/saber-bundle/
         && make -j4
         && ctest" 
   post_build:
