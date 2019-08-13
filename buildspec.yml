@@ -44,22 +44,20 @@ phases:
       - echo Executing pre_build phase
       - pwd
       - ls
-      - cd ../ 
+      - cd ../
+      - ls
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/oops saber-bundle/oops 
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
+      - ls
       - mv saber saber-bundle
       - mv saber-bundle /jcsda/
-      - mkdir build
+      - cd /jcsda
       - ls
-      - ls $HOME
-      - ls /
       - echo $CODEBUILD_SRC_DIR
-      - ls /codebuild/output/
       - cd /jcsda/saber-bundle
       - pwd
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
-      - cd ..
   build:
     commands:
       - echo Executing build phase
