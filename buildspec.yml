@@ -27,12 +27,14 @@ phases:
       - cp default-mca-params.conf /jcsda/.openmpi/mca-params.conf
       - cp -r /jcsda/.openmpi/ /jcsda/build_container/
       - cp -r /jcsda/.openmpi/ ~/
+      - cp -r /jcsda/.openmpi/ $HOME/
       - cp -r /jcsda/.openmpi/ /home/jcsdauser/
       - chown -R jcsdauser:jcsda /jcsda/
 
       - whoami
       - su - jcsdauser -c "whoami 
         && whoami"
+      - su - jcsdauser -c pwd
 
       - su - jcsdauser -c "ssh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
         && chmod 600 /jcsda/.ssh/config
