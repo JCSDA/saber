@@ -11,9 +11,14 @@ phases:
       - echo Executing install phase
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
-      - branch_name=$(echo $CODEBUILD_WEBHOOK_BASE_REF | sed 's/branch//')
-      - echo $branch_name
 
+      - CODEBUILD_GIT_BRANCH=`git symbolic-ref HEAD --short 2>/dev/null`
+      - if [ "$CODEBUILD_GIT_BRANCH" == "" ] ; then
+          CODEBUILD_GIT_BRANCH=`git branch -a --contains HEAD | sed -n 2p | awk '{ printf $1 }'`
+          CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/}
+        fi
+
+      - echo $CODEBUILD_GIT_BRANCH
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
       - ssh-keygen -A 
