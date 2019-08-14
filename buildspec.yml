@@ -12,13 +12,9 @@ phases:
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
 
-      - CODEBUILD_GIT_BRANCH=`git symbolic-ref HEAD --short 2>/dev/null`
-      - if [ "$CODEBUILD_GIT_BRANCH" == "" ] ; then
-          CODEBUILD_GIT_BRANCH=`git branch -a --contains HEAD | sed -n 2p | awk '{ printf $1 }'`
-          CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/}
-        fi
-
+      - bash -c "$(curl -fsSL https://raw.githubusercontent.com/thii/aws-codebuild-extras/master/install)"
       - echo $CODEBUILD_GIT_BRANCH
+
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
       - ssh-keygen -A 
