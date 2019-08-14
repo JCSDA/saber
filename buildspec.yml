@@ -11,7 +11,8 @@ phases:
       - echo Executing install phase
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
-
+      - branch_name=$(echo $CODEBUILD_WEBHOOK_BASE_REF | sed 's/branch//')
+      - echo $branch_name
 
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
