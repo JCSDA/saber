@@ -53,9 +53,10 @@ phases:
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
       - ls
-      - cp -r saber saber-bundle/
+        #- cp -r saber saber-bundle/
       - ls
       - mv saber-bundle /jcsda/
       - cd /jcsda
