@@ -12,9 +12,6 @@ phases:
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
 
-      - bash -c "$(curl -fsSL https://raw.githubusercontent.com/thii/aws-codebuild-extras/master/install)"
-      - echo $CODEBUILD_GIT_BRANCH
-
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
       - ssh-keygen -A 
