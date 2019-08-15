@@ -43,7 +43,8 @@ phases:
     commands:
       - echo Executing pre_build phase
       - cd ../
-      - ls /etc/
+      - cat /etc/bash.bashrc
+      - echo $0
       - source /etc/bash.bashrc
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
