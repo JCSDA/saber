@@ -44,6 +44,8 @@ phases:
       - echo Executing pre_build phase
       - cd ../
       - echo $0
+      - sed -i '1i\#!/bin/bash' /etc/bash.bashrc
+      - cat /etc/bash.bashrc
       - . /etc/bash.bashrc
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
