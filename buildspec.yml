@@ -43,6 +43,8 @@ phases:
     commands:
       - echo Executing pre_build phase
       - cd ../
+      - ls /etc/
+      - source /etc/bash.bashrc
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
