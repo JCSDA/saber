@@ -118,8 +118,6 @@ phases:
   build:
     commands:
       - echo Executing build phase
-      - ecbuild /jcsda/saber-bundle/
-      - make -j4
       - su - jcsdauser -c "cd /build_container 
         && ls
         && ecbuild /jcsda/saber-bundle/
