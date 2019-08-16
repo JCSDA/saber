@@ -70,12 +70,12 @@ phases:
       - export CC=mpiicc
       - export CXX=mpiicpc
 
+        #&& export mpiifort=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort
+        #&& export mpiicc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc
+        #&& export mpiicpc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc
 
       - su - jcsdauser -c "echo $PATH
         && echo $LD_LIBRARY_PATH
-        && export mpiifort=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort
-        && export mpiicc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc
-        && export mpiicpc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc
         && export FC=mpiifort
         && export CC=mpiicc
         && export CXX=mpiicpc
