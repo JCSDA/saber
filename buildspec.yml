@@ -26,8 +26,10 @@ phases:
         && export CC=mpicc
         && export CXX=mpicxx
         && cat /etc/passwd
+        && source /etc/bash.bashrc 
+        && echo $LD_LIBRARY_PATH
+        && whereis $FC
 
-      - cat /etc/passwd
       - mkdir -p /jcsda /build_container
       - chown -R jcsdauser:jcsda /build_container  /usr/local
       - chmod 6755 /jcsda /build_container /usr/local
