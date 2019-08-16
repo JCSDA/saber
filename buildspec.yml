@@ -43,6 +43,7 @@ phases:
     commands:
       - echo Executing pre_build phase
       - cd ../
+      - ls -ls /opt/intel/compilers_and_libraries/linux/bin/
       - source /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64
       - export FC=mpiifort
       - export CC=mpiicc
