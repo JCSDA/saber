@@ -45,6 +45,9 @@ phases:
       - cd ../
       - echo $0
       - bash
+        && export SOME_ENV=SOMEENV
+        && echo $SOME_ENV
+      - echo $SOME_ENV
       - echo $0
       - sed -i '1i\#!/bin/bash' /etc/bash.bashrc
       - cat /etc/bash.bashrc
