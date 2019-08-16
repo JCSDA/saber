@@ -51,7 +51,7 @@ phases:
         && echo $$
         && ps -ef $$
         && sed -i '1i\#!/bin/bash' /etc/bash.bashrc
-        && . /etc/bash.bashrc
+        && /etc/bash.bashrc
         && export SOME_ENV=SOMEENV
         && echo $SOME_ENV
       - echo $SOME_ENV
