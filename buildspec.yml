@@ -43,16 +43,21 @@ phases:
     commands:
       - echo Executing pre_build phase
       - cd ../
-      - export LD_LIBRARY_PATH=/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64:/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/lib:/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/mic/lib:/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2017.1.132/linux/mkl/lib/intel64_lin:/usr/local/lib
+      - source /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64
       - export FC=mpiifort
       - export CC=mpiicc
       - export CXX=mpiicpc
       - export PATH=/opt/intel/compilers_and_libraries_2017.1.132/linux/bin/intel64:/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - export LD_LIBRARY_PATH=/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64:/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/lib:/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/mic/lib:/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2017.1.132/linux/mkl/lib/intel64_lin:/usr/local/lib
       - export LIBRARY_PATH=/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2017.1.132/linux/mkl/lib/intel64_lin:/usr/local/lib
+
+      - source /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64
+
       - echo $LD_LIBRARY_PATH
-      - export LD_LIBRARY_PATH=/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin_mic/:$LD_LIBRARY_PATH
-      - echo $LD_LIBRARY_PATH
-      - echo $0
+      - echo $FC
+      - echo $CC
+      - echo $CXX
+      - whereis $FC $CC $CXX
       - cat $0 | head
       - echo $$
         && ps -ef $$
