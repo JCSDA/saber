@@ -20,12 +20,15 @@ phases:
       - sed -i 's/#RSAAuthentication yes/RSAAuthentication yes/g' /etc/ssh/sshd_config
       - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
 
+      - echo $SHELL
+
       - groupadd jcsda -g 9999
       - useradd -s/bin/bash jcsdauser
         && export FC=mpifort
         && export CC=mpicc
         && export CXX=mpicxx
         && cat /etc/passwd
+        && echo $SHELL
         && source /etc/bash.bashrc 
         && echo $LD_LIBRARY_PATH
         && whereis $FC
