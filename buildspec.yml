@@ -21,10 +21,11 @@ phases:
       - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
 
       - groupadd jcsda -g 9999
-      - useradd -U -k /etc/skel -s/bin/bash jcsdauser
+      - useradd -s/bin/bash jcsdauser
         && export FC=mpifort
         && export CC=mpicc
         && export CXX=mpicxx
+
       - mkdir -p /jcsda /build_container
       - chown -R jcsdauser:jcsda /build_container  /usr/local
       - chmod 6755 /jcsda /build_container /usr/local
