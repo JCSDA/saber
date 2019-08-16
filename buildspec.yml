@@ -63,9 +63,9 @@ phases:
       - echo $CXX
       - whereis $FC $CC $CXX
  
-      - alias mpiifort /opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort
-      - alias mpiicc /opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc
-      - alias mpiicpc /opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc
+      - mpiifort='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort'
+      - mpiicc='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc'
+      - mpiicpc='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc'
       - export FC=mpiifort
       - export CC=mpiicc
       - export CXX=mpiicpc
