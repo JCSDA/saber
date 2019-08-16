@@ -45,6 +45,8 @@ phases:
       - cd ../
       - echo $0
       - cat $0 | head
+      - echo $$
+      - ps -ef $$
       - bash
         && sed -i '1i\#!/bin/bash' /etc/bash.bashrc
         && . /etc/bash.bashrc
