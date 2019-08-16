@@ -45,6 +45,8 @@ phases:
       - cd ../
       - ls -ls /opt/intel/compilers_and_libraries/linux/bin/
       - sed '12s/INTEL_TARGET_ARCH=/INTEL_TARGET_ARCH=intel64/' /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+      - export COMPILERVARS_ARCHITECTURE=intel64
+      - export COMPILERVARS_PLATFORM=linux
       - . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
       - export FC=mpiifort
       - export CC=mpiicc
