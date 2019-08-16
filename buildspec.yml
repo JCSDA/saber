@@ -21,7 +21,10 @@ phases:
       - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
 
       - groupadd jcsda -g 9999
-      - useradd jcsdauser
+      - useradd -U -k /etc/skel -s/bin/bash jcsdauser
+        && export FC=mpifort
+        && export CC=mpicc
+        && export CXX=mpicxx
       - mkdir -p /jcsda /build_container
       - chown -R jcsdauser:jcsda /build_container  /usr/local
       - chmod 6755 /jcsda /build_container /usr/local
@@ -74,7 +77,9 @@ phases:
         #&& export mpiicc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc
         #&& export mpiicpc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc
 
-      - su - jcsdauser -c "echo $PATH
+      - su - jcsdauser -c "echo $$
+        && ps -ef $$
+        && echo $PATH
         && echo $LD_LIBRARY_PATH
         && export FC=mpiifort
         && export CC=mpiicc
