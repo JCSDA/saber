@@ -44,7 +44,8 @@ phases:
       - echo Executing pre_build phase
       - cd ../
       - ls -ls /opt/intel/compilers_and_libraries/linux/bin/
-      - . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64 linux
+      - sed '12s/INTEL_TARGET_ARCH=/INTEL_TARGET_ARCH=intel64/' /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+      - . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
       - export FC=mpiifort
       - export CC=mpiicc
       - export CXX=mpiicpc
@@ -52,7 +53,7 @@ phases:
       - export LD_LIBRARY_PATH=/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64:/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/lib:/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/mic/lib:/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2017.1.132/linux/mkl/lib/intel64_lin:/usr/local/lib
       - export LIBRARY_PATH=/opt/intel/compilers_and_libraries_2017.1.132/linux/compiler/lib/intel64_lin:/opt/intel/compilers_and_libraries_2017.1.132/linux/mkl/lib/intel64_lin:/usr/local/lib
 
-      - . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64 linux
+      - . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
 
       - echo $LD_LIBRARY_PATH
       - echo $FC
