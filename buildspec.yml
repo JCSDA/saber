@@ -79,6 +79,7 @@ phases:
         && export FC=mpiifort
         && export CC=mpiicc
         && export CXX=mpiicpc
+        && ls -ls /opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/
         && echo $FC
         && echo $CC
         && echo $CXX
