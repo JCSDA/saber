@@ -62,6 +62,12 @@ phases:
       - echo $CC
       - echo $CXX
       - whereis $FC $CC $CXX
+ 
+      - su - jcsdauser -c "echo $LD_LIBRARY_PATH
+        && echo $FC
+        && echo $CC
+        && echo $CXX"
+        
       - cat $0 | head
       - echo $$
         && ps -ef $$
