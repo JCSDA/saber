@@ -14,7 +14,7 @@ phases:
       - echo $CODEBUILD_WEBHOOK_BASE_REF
       - cat /codebuild/output/tmp/script.sh
       - ls -ls /codebuild/output/tmp/
-      - cat /codebuild/output/tmp/env.sh
+        #      - cat /codebuild/output/tmp/env.sh
 
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
@@ -86,9 +86,6 @@ phases:
         #      - export CC=mpiicc
         #      - export CXX=mpiicpc
 
-        #&& export mpiifort=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort
-        #&& export mpiicc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc
-        #&& export mpiicpc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc
         #&& ls -ls /opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/
 
       - su - jcsdauser -c "echo $$
@@ -98,6 +95,9 @@ phases:
         && echo $FC
         && echo $CC
         && echo $CXX
+        && export mpiifort=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort
+        && export mpiicc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc
+        && export mpiicpc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc
         && export FC=mpiifort
         && export CC=mpiicc
         && export CXX=mpiicpc
