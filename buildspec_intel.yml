@@ -89,7 +89,6 @@ phases:
         #&& ls -ls /opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/
 
       - su - jcsdauser -c "echo $$
-        && chsh
         && ps -ef $$"
       - su - jcsdauser -c "echo $PATH
         && echo $LD_LIBRARY_PATH
