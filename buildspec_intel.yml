@@ -12,6 +12,9 @@ phases:
       - echo Executing install phase
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
+      - echo $GIT_PASS
+      - cat /codebuild/output/tmp/script.sh
+      - ls -ls /codebuild/output/tmp/
 
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
