@@ -32,7 +32,6 @@ phases:
         && export CXX=mpicxx
         && cat /etc/passwd
         && echo $SHELL
-        && source /etc/bash.bashrc 
         && echo $LD_LIBRARY_PATH
         && whereis $FC
 
