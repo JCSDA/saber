@@ -57,11 +57,14 @@ phases:
     commands:
       - echo Executing pre_build phase
       - cd ../
+        #trying to follow what is in bash.bashrc because we cannot source it   
       - ls -ls /opt/intel/compilers_and_libraries/linux/bin/
       - sed '12s/INTEL_TARGET_ARCH=/INTEL_TARGET_ARCH=intel64/' /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
       - export COMPILERVARS_ARCHITECTURE=intel64
       - export COMPILERVARS_PLATFORM=linux
       - . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+
+
       - export FC=mpiifort
       - export CC=mpiicc
       - export CXX=mpiicpc
@@ -77,31 +80,34 @@ phases:
       - echo $CXX
       - whereis $FC $CC $CXX
  
-      - mpiifort='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort'
-      - mpiicc='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc'
-      - mpiicpc='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc'
-      - export FC=mpiifort
-      - export CC=mpiicc
-      - export CXX=mpiicpc
+        #      - mpiifort='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort'
+        #      - mpiicc='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc'
+        #        #      - mpiicpc='/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc'
+        #      - export FC=mpiifort
+        #      - export CC=mpiicc
+        #      - export CXX=mpiicpc
 
         #&& export mpiifort=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiifort
         #&& export mpiicc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicc
         #&& export mpiicpc=/opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/mpiicpc
+        #&& ls -ls /opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/
 
       - su - jcsdauser -c "echo $$
-        && ps -ef $$
-        && echo $PATH
+        && ps -ef $$"
+      - su - jcsdauser -c "echo $PATH
         && echo $LD_LIBRARY_PATH
+        && echo $FC
+        && echo $CC
+        && echo $CXX
         && export FC=mpiifort
         && export CC=mpiicc
         && export CXX=mpiicpc
-        && ls -ls /opt/intel/compilers_and_libraries_2017.1.132/linux/mpi/intel64/bin/
         && echo $FC
         && echo $CC
         && echo $CXX
         && whereis $FC $CC $CXX"
 
-      - cat $0 | head
+        #      - cat $0 | head
       - echo $$
         && ps -ef $$
         #      - bash
@@ -119,7 +125,7 @@ phases:
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber2
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber2 saber-bundle/saber #to fail
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
 
       - mv saber-bundle /jcsda/
