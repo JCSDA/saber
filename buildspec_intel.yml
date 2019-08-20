@@ -139,10 +139,18 @@ phases:
       - su - jcsdauser -c "export COMPILERVARS_ARCHITECTURE=intel64
         && export COMPILERVARS_PLATFORM=linux
         && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+        && export FC=mpiifort
+        && export CC=mpiicc
+        && export CXX=mpiicpc
+        && export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        && export LD_LIBRARY_PATH=/usr/local/lib:
+        && export LIBRARY_PATH=/usr/local/lib:
+        && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
         && cd /build_container 
         && ls
-        && FFLAGS="-openmp" FC=ifort CC=icc CXX=icpc  ecbuild /jcsda/saber-bundle/
+        && FFLAGS="-openmp" ecbuild /jcsda/saber-bundle/
         && VERBOSE=1 make -j4
+        && ctest -VV -R test_bump_cortrack_1-1_*
         && ctest" 
   post_build:
     commands:
