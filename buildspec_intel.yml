@@ -102,7 +102,7 @@ phases:
         && export CC=mpiicc
         && export CXX=mpiicpc
         && export COMPILERVARS_ARCHITECTURE=intel64
-        && export COMPILERVARS_PLATFORM=linu
+        && export COMPILERVARS_PLATFORM=linux
         && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
         && echo $FC
         && echo $CC
