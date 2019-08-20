@@ -41,6 +41,19 @@ phases:
         && cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys
         && echo MPI setup for Docker done"
 
+      ## cannot source /etc/bash.bashrc so copy what's there for root 
+      - sed '12s/INTEL_TARGET_ARCH=/INTEL_TARGET_ARCH=intel64/' /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+      - export COMPILERVARS_ARCHITECTURE=intel64
+      - export COMPILERVARS_PLATFORM=linux
+      - . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+      - export FC=mpiifort
+      - export CC=mpiicc
+      - export CXX=mpiicpc
+      - export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - export LD_LIBRARY_PATH=/usr/local/lib
+      - export LIBRARY_PATH=/usr/local/lib
+      - . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+
   pre_build:
     commands:
       - echo Executing pre_build phase
@@ -58,8 +71,7 @@ phases:
   build:
     commands:
       - echo Executing build phase
-      ## cannot source /etc/bash.bashrc so copy what's there 
-      - sed '12s/INTEL_TARGET_ARCH=/INTEL_TARGET_ARCH=intel64/' /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+      ## cannot source /etc/bash.bashrc so copy what's there for jscdauser
       - su - jcsdauser -c "export COMPILERVARS_ARCHITECTURE=intel64
         && export COMPILERVARS_PLATFORM=linux
         && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
