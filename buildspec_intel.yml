@@ -101,7 +101,7 @@ phases:
         && export FC=mpiifort
         && export CC=mpiicc
         && export CXX=mpiicpc
-        && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+        && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64 linux
         && echo $FC
         && echo $CC
         && echo $CXX
