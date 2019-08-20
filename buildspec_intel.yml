@@ -141,8 +141,8 @@ phases:
         && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
         && cd /build_container 
         && ls
-        && ecbuild /jcsda/saber-bundle/
-        && make -j4
+        && FFLAGS="-openmp" ecbuild /jcsda/saber-bundle/
+        && VERBOSE=1 make -j4
         && ctest" 
   post_build:
     commands:
