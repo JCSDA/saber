@@ -135,6 +135,7 @@ phases:
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
   build:
     commands:
+      #&& FFLAGS="-qopenmp" ecbuild /jcsda/saber-bundle/
       - echo Executing build phase
       - su - jcsdauser -c "export COMPILERVARS_ARCHITECTURE=intel64
         && export COMPILERVARS_PLATFORM=linux
@@ -148,9 +149,8 @@ phases:
         && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
         && cd /build_container 
         && ls
-        && FFLAGS="-openmp" ecbuild /jcsda/saber-bundle/
-        && VERBOSE=1 make -j4
-        && ctest -VV -R test_bump_cortrack_1-1_*
+        && ecbuild /jcsda/saber-bundle/
+        && make -j4
         && ctest" 
   post_build:
     commands:
