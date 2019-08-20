@@ -136,7 +136,10 @@ phases:
   build:
     commands:
       - echo Executing build phase
-      - su - jcsdauser -c "cd /build_container 
+      - su - jcsdauser -c "export COMPILERVARS_ARCHITECTURE=intel64
+        && export COMPILERVARS_PLATFORM=linu
+        && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
+        && cd /build_container 
         && ls
         && ecbuild /jcsda/saber-bundle/
         && make -j4
