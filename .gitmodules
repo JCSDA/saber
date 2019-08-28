@@ -1,0 +1,6 @@
+[submodule "fckit"]
+	path = fckit
+	url = https://github.com/jcsda/fckit
+[submodule "saber-bundle"]
+	path = saber-bundle
+	url = https://github.com/jcsda/saber-bundle
