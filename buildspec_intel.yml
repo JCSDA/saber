@@ -13,7 +13,8 @@ phases:
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
  
-      - ls 
+      - ls saber-bundle
+      - ls fckit 
       - mv saber-bundle ../
       - mv fckit ../saber-bundle/
       - cd ../saber-bundle
