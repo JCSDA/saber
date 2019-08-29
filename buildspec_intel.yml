@@ -13,17 +13,6 @@ phases:
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
 
-      - ls
-      - pwd 
-      - ls saber-bundle
-      - ls fckit 
-      - mv saber-bundle ../
-      - mv fckit ../saber-bundle/
-      - cd ../saber-bundle
-      - pwd
-      - mv ../saber .
-      - ls
-
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
       - ssh-keygen -A 
@@ -68,16 +57,25 @@ phases:
   pre_build:
     commands:
       - echo Executing pre_build phase
-      - cd ../
-      - my_branch=$(echo $CODEBUILD_WEBHOOK_TRIGGER| cut -d"/" -f2-)
-      - echo $my_branch
-      - git lfs install
-      - cp ~/.gitconfig /home/jcsdauser/
+        #- cd ../
+        #- my_branch=$(echo $CODEBUILD_WEBHOOK_TRIGGER| cut -d"/" -f2-)
+        #- echo $my_branch
+        #- git lfs install
+        #- cp ~/.gitconfig /home/jcsdauser/
         #      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
         #      - git clone -b $my_branch https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
         #      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
 
+      # rearrange files in correct structure
+      
       - mv saber-bundle /jcsda/
+      - mv fckit /jcsda/saber-bundle/
+      - cd ..
+      - mv saber /jcsda/saber-bundle/
+      - ls
+      - ls /jcsda
+      - ls /jcsda/saber-bundle
+
       - cd /jcsda/saber-bundle
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
       - cd /jcsda/saber-bundle/saber
