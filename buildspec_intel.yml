@@ -12,6 +12,13 @@ phases:
       - echo Executing install phase
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
+ 
+      - ls 
+      - mv saber-bundle ../
+      - mv fckit ../saber-bundle/
+      - cd ../saber-bundle
+      - mv ../saber .
+      - ls
 
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
@@ -62,9 +69,9 @@ phases:
       - echo $my_branch
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
-      - git clone -b $my_branch https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
+        #      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
+        #      - git clone -b $my_branch https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
+        #      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
 
       - mv saber-bundle /jcsda/
       - cd /jcsda/saber-bundle
