@@ -12,7 +12,8 @@ phases:
       - echo Executing install phase
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
- 
+
+      - ls  
       - ls saber-bundle
       - ls fckit 
       - mv saber-bundle ../
