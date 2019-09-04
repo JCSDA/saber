@@ -1,3 +1,8 @@
+[![travis develop](https://travis-ci.com/JCSDA/saber.svg?token=zswWHqwVimHTBAygfenZ&branch=develop&logo=travis)](https://travis-ci.com/JCSDA/saber)
+[![codecov](https://codecov.io/gh/JCSDA/saber/branch/develop/graph/badge.svg?token=aLmdMnzx1C)](https://codecov.io/gh/JCSDA/saber)
+[![AWS-gnu](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiV2dVMmxFVENKL2dCVzN5UlgyZHJuSmhvbTV6dDhOalYwTEJDaXdZWGFDbXp2YlU4VzdsV3ZRNm9mT25mRnM3NlVYWXE2R2pmYVlZbWhxbHJ1OXFpdzVjPSIsIml2UGFyYW1ldGVyU3BlYyI6Ilp2T04vNnBRR0xFYmQ3UzAiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop)](https://us-east-1.console.aws.amazon.com/codesuite/codebuild/projects/automated-testing-saber-gnu/history)
+[![AWS-intel](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiYUROTE5DZVdranpBQTBKbTlBam1vb2pVWXJteDdEMk1RLzhWdmlQU2NUQUhueFF2UnhINWxDcGZ1eWFqcFpBUVRDMGpYdVhzSWdmazNYcmRDeUdOd0xRPSIsIml2UGFyYW1ldGVyU3BlYyI6IjhqZnUxOHpObWFGSnFtUzYiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop)](https://us-east-1.console.aws.amazon.com/codesuite/codebuild/projects/automated-testing-saber-intel/history?region=us-east-1)
+
 # SABER
 &copy; Copyright 2019 UCAR
 

@@ -1,0 +1,68 @@
+version: 0.2
+
+env:
+  parameter-store:
+    GIT_USER: "/CodeBuild/Git_USER"
+    GIT_PASS: "/CodeBuild/Git_PASS"
+
+phases:
+  install:
+    commands:
+      - echo Executing install phase
+      - echo $CODEBUILD_WEBHOOK_TRIGGER
+      - echo $CODEBUILD_WEBHOOK_BASE_REF
+
+      - echo MPI setup for Docker
+      - mkdir -p /var/run/sshd
+      - ssh-keygen -A 
+      - sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
+      - sed -i 's/#RSAAuthentication yes/RSAAuthentication yes/g' /etc/ssh/sshd_config
+      - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
+
+      - groupadd jcsda -g 9999
+      - useradd jcsdauser
+      - mkdir -p /jcsda /build_container
+      - chown -R jcsdauser:jcsda /build_container  /usr/local
+      - chmod 6755 /jcsda /build_container /usr/local
+
+      - mkdir /jcsda/.ssh ; echo "StrictHostKeyChecking no" > /jcsda/.ssh/config
+      - mkdir -p /jcsda/.openmpi
+      - mkdir -p /home/jcsdauser/.openmpi
+        
+      - cp default-mca-params.conf /home/jcsdauser/.openmpi/mca-params.conf
+      - cat /home/jcsdauser/.openmpi/mca-params.conf
+      - chown -R jcsdauser:jcsda /jcsda/
+
+      - su - jcsdauser -c "ssh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
+        && chmod 600 /jcsda/.ssh/config
+        && chmod 700 /jcsda/.ssh
+        && cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys
+        && echo MPI setup for Docker done"
+  pre_build:
+    commands:
+      - echo Executing pre_build phase
+      - cd ../
+      - my_branch=$(echo $CODEBUILD_WEBHOOK_TRIGGER| cut -d"/" -f2-)
+      - echo $my_branch
+      - git lfs install
+      - cp ~/.gitconfig /home/jcsdauser/
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
+      - git clone -b $my_branch https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
+
+      - mv saber-bundle /jcsda/
+      - cd /jcsda/saber-bundle
+      - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
+      - sed -i '/PROJECT eckit/d' CMakeLists.txt
+
+  build:
+    commands:
+      - echo Executing build phase
+      - su - jcsdauser -c "cd /build_container 
+        && ls
+        && ecbuild /jcsda/saber-bundle/
+        && make -j4
+        && ctest" 
+  post_build:
+    commands:
+      - echo Executing post_build phase
