@@ -44,14 +44,8 @@ include( saber_extra_macros )
 # Dependencies
 ################################################################################
 
-
 # Boost
 include_directories( ${Boost_INCLUDE_DIR} )
-
-# MPI
-ecbuild_find_mpi( COMPONENTS CXX Fortran REQUIRED )
-ecbuild_include_mpi()
-link_libraries(${MPI_CXX_LIBRARIES} ${MPI_Fortran_LIBRARIES})
 
 # OpenMP
 ecbuild_add_option( FEATURE OMP
@@ -67,15 +61,15 @@ endif()
 find_package( NetCDF REQUIRED COMPONENTS F90 )
 include_directories( ${NETCDF_INCLUDE_DIR} )
 
-# eckit
-ecbuild_use_package( PROJECT eckit VERSION 0.18.0 REQUIRED )
+# eckit and MPI
+ecbuild_use_package( PROJECT eckit VERSION 1.1.0 REQUIRED )
 include_directories( ${ECKIT_INCLUDE_DIRS} )
 if ( NOT ECKIT_HAVE_MPI )
   ecbuild_error("SABER requested to build with MPI but eckit wasn't built with MPI: ECKIT_HAVE_MPI = ${ECKIT_HAVE_MPI}")
 endif()
 
 # fckit
-ecbuild_use_package( PROJECT fckit VERSION 0.4.1 REQUIRED )
+ecbuild_use_package( PROJECT fckit VERSION 0.6.3 REQUIRED )
 include_directories( ${FCKIT_INCLUDE_DIRS} )
 
 ################################################################################
