@@ -331,7 +331,7 @@ do isub=1,ens%nsub
          jts = bpar%b_to_ts2(ib)
 
          ! Halo extension
-         if ((iv==jv).and.(its==jts)) call samp%com_AC%ext(mpl,geom%nl0,ens%fld(:,:,iv,its,ie),fld_ext(:,:,iv,its))
+         if ((iv==jv).and.(its==jts)) call samp%com_AC%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv,its),fld_ext(:,:,iv,its))
       end do
 
       do ib=1,bpar%nb

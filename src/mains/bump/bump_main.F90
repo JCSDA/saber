@@ -148,27 +148,29 @@ call bump%setup_online(model%nmga,model%nl0,bump%nam%nv,bump%nam%nts, &
                      & nobs=model%nobsa,lonobs=model%lonobs*rad2deg,latobs=model%latobs*rad2deg, &
                      & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
-! Add members
+! Transfer members
 if (bump%nam%ens1_ne>0) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Add members of ensemble 1'
+   write(mpl%info,'(a)') '--- Transfer members of ensemble 1'
    call mpl%flush
    do ie=1,model%ens1_ne
       write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',model%ens1_ne
       call mpl%flush
-      call bump%add_member(model%ens1(:,:,:,:,ie),ie,1)
+      call bump%add_member(model%ens1(ie)%fld,ie,1)
+      deallocate(model%ens1(ie)%fld)
    end do
 end if
 if (bump%nam%ens2_ne>0) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Add members of ensemble 2'
+   write(mpl%info,'(a)') '--- Transfer members of ensemble 2'
    call mpl%flush
    do ie=1,model%ens2_ne
       write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',model%ens2_ne
       call mpl%flush
-      call bump%add_member(model%ens2(:,:,:,:,ie),ie,2)
+      call bump%add_member(model%ens2(ie)%fld,ie,2)
+      deallocate(model%ens2(ie)%fld)
    end do
 end if
 

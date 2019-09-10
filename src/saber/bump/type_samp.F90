@@ -817,7 +817,7 @@ elseif (trim(nam%mask_type)=='stddev') then
    ! Compute variances
    var = 0.0
    do ie=1,ens%ne
-      var = var+ens%fld(:,:,:,:,ie)**2
+      var = var+ens%mem(ie)%fld**2
    end do
    var = var/real(ens%ne-ens%nsub,kind_real)
 

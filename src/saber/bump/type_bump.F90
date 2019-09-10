@@ -49,6 +49,7 @@ contains
    procedure :: setup_online => bump_setup_online
    procedure :: run_drivers => bump_run_drivers
    procedure :: add_member => bump_add_member
+   procedure :: remove_member => bump_remove_member
    procedure :: apply_vbal => bump_apply_vbal
    procedure :: apply_vbal_inv => bump_apply_vbal_inv
    procedure :: apply_vbal_ad => bump_apply_vbal_ad
@@ -497,8 +498,21 @@ integer :: its,iv,nnonzero,nzero,nmask
 real(kind_real) :: norm,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 character(len=1024),parameter :: subr = 'bump_add_member'
 
+! Check ensemble number
+if ((iens/=1).and.(iens/=2)) call bump%mpl%abort(subr,'wrong ensemble number')
+
+! Allocate member
+if (iens==1) then
+   if (.not.allocated(bump%ens1%mem(ie)%fld)) &
+ & allocate(bump%ens1%mem(ie)%fld(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+elseif (iens==2) then
+   if (.not.allocated(bump%ens2%mem(ie)%fld)) &
+ & allocate(bump%ens2%mem(ie)%fld(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+end if
+
 ! Add member
 write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' added to ensemble ',iens
+call bump%mpl%flush()
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       ! Model grid to subset Sc0
@@ -506,25 +520,75 @@ do its=1,bump%nam%nts
 
       ! Copy to ensemble structure
       if (iens==1) then
-         bump%ens1%fld(:,:,iv,its,ie) = fld_c0a
+         bump%ens1%mem(ie)%fld(:,:,iv,its) = fld_c0a
       elseif (iens==2) then
-         bump%ens2%fld(:,:,iv,its,ie) = fld_c0a
-      else
-         call bump%mpl%abort(subr,'wrong ensemble number')
+         bump%ens2%mem(ie)%fld(:,:,iv,its) = fld_c0a
       end if
 
       ! Print norm
       norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
       write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
+      call bump%mpl%flush()
       nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
       nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
       nmask = count(.not.bump%geom%mask_c0a)
       write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
     & nnonzero,' / ',nzero,' / ',nmask
+      call bump%mpl%flush()
    end do
 end do
 
 end subroutine bump_add_member
+
+!----------------------------------------------------------------------
+! Subroutine: bump_remove_member
+! Purpose: remove member into bump%ens[1,2]
+!----------------------------------------------------------------------
+subroutine bump_remove_member(bump,fld_mga,ie,iens)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump                                                          ! BUMP
+real(kind_real),intent(inout) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
+integer,intent(in) :: ie                                                                        ! Member index
+integer,intent(in) :: iens                                                                      ! Ensemble number
+
+! Local variables
+integer :: its,iv,isub
+real(kind_real) :: norm,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
+character(len=1024),parameter :: subr = 'bump_remove_member'
+
+! Check ensemble number
+if ((iens/=1).and.(iens/=2)) call bump%mpl%abort(subr,'wrong ensemble number')
+
+! Remove member
+write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' removed from ensemble ',iens
+call bump%mpl%flush()
+do its=1,bump%nam%nts
+   do iv=1,bump%nam%nv
+      ! Copy from ensemble structure and add mean
+      if (iens==1) then
+         isub = (ie-1)*bump%ens1%nsub/bump%ens1%ne+1
+         fld_c0a = bump%ens1%mem(ie)%fld(:,:,iv,its)+bump%ens1%mean(isub)%fld(:,:,iv,its)
+      elseif (iens==2) then
+         isub = (ie-1)*bump%ens2%nsub/bump%ens2%ne+1
+         fld_c0a = bump%ens2%mem(ie)%fld(:,:,iv,its)+bump%ens2%mean(isub)%fld(:,:,iv,its)
+      end if
+
+      ! Model grid to subset Sc0
+      call bump%geom%copy_mga_to_c0a(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
+   end do
+end do
+
+! Release memory
+if (iens==1) then
+   deallocate(bump%ens1%mem(ie)%fld)
+elseif (iens==2) then
+   deallocate(bump%ens2%mem(ie)%fld)
+end if
+
+end subroutine bump_remove_member
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal
@@ -1128,12 +1192,12 @@ case default
       end do
    case default
       if (param(1:6)=='ens1u_') then
-         if (.not.allocated(bump%ens1u%fld)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+         if (.not.allocated(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
          read(param(7:10),'(i4.4)') ie
-         if (ie>size(bump%ens1u%fld,5)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
+         if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
          iv = bump%bpar%b_to_v1(ib)
          its = bump%bpar%b_to_ts1(ib)
-         call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1u%fld(:,:,iv,its,ie),fld_mga)
+         call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1u%mem(ie)%fld(:,:,iv,its),fld_mga)
       else
          call bump%mpl%abort(subr,'parameter '//trim(param)//' not yet implemented in get_parameter')
       end if

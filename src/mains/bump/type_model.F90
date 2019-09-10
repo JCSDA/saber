@@ -25,52 +25,58 @@ integer,parameter :: ntile = 6               ! Number of tiles for FV3
 logical,parameter :: test_no_obs = .false.   ! Test observation operator with no observation on the last MPI task
 logical,parameter :: test_no_point = .false. ! Test BUMP with no grid point on the last MPI task
 
+! Member field derived type
+type member_field_type
+   real(kind_real),allocatable :: fld(:,:,:,:)    ! Ensemble perturbation
+end type member_field_type
+
+! Model derived type
 type model_type
    ! Global dimensions
-   integer :: nlon                               ! Longitude size
-   integer :: nlat                               ! Latitude size
-   integer :: nmg                                ! Number of model grid points
-   integer :: nlev                               ! Number of levels
-   integer :: nl0                                ! Number of levels in subset Sl0
+   integer :: nlon                                ! Longitude size
+   integer :: nlat                                ! Latitude size
+   integer :: nmg                                 ! Number of model grid points
+   integer :: nlev                                ! Number of levels
+   integer :: nl0                                 ! Number of levels in subset Sl0
 
    ! Packing arrays
-   integer,allocatable :: mg_to_lon(:)           ! Model grid to longitude index
-   integer,allocatable :: mg_to_lat(:)           ! Model grid to latgitude index
-   integer,allocatable :: mg_to_tile(:)          ! Model grid to tile index
+   integer,allocatable :: mg_to_lon(:)            ! Model grid to longitude index
+   integer,allocatable :: mg_to_lat(:)            ! Model grid to latgitude index
+   integer,allocatable :: mg_to_tile(:)           ! Model grid to tile index
 
    ! Coordinates
-   real(kind_real),allocatable :: lon(:)         ! TODO
-   real(kind_real),allocatable :: lat(:)
-   real(kind_real),allocatable :: area(:)
-   real(kind_real),allocatable :: vunit(:,:)
-   logical,allocatable :: mask(:,:)
+   real(kind_real),allocatable :: lon(:)          ! Longitude
+   real(kind_real),allocatable :: lat(:)          ! Latitude
+   real(kind_real),allocatable :: area(:)         ! Area
+   real(kind_real),allocatable :: vunit(:,:)      ! Vertical unit
+   logical,allocatable :: mask(:,:)               ! Mask
 
    ! Local distribution
-   integer :: nmga
-   integer,allocatable :: mg_to_proc(:)
-   integer,allocatable :: mg_to_mga(:)
-   integer,allocatable :: mga_to_mg(:)
+   integer :: nmga                                ! Halo A size for model grid
+   integer,allocatable :: mg_to_proc(:)           ! Model grid to local task
+   integer,allocatable :: mg_to_mga(:)            ! Model grid, global to halo A
+   integer,allocatable :: mga_to_mg(:)            ! Model grid, halo A to global
 
    ! Local coordinates
-   real(kind_real),allocatable :: lon_mga(:)
-   real(kind_real),allocatable :: lat_mga(:)
-   real(kind_real),allocatable :: area_mga(:)
-   real(kind_real),allocatable :: vunit_mga(:,:)
-   logical,allocatable :: mask_mga(:,:)
-   logical,allocatable :: smask_mga(:,:)
+   real(kind_real),allocatable :: lon_mga(:)      ! Longitude on model grid, halo A
+   real(kind_real),allocatable :: lat_mga(:)      ! Latitude on model grid, halo A
+   real(kind_real),allocatable :: area_mga(:)     ! Area on model grid, halo A
+   real(kind_real),allocatable :: vunit_mga(:,:)  ! Vertical unit on model grid, halo A
+   logical,allocatable :: mask_mga(:,:)           ! Mask on model grid, halo A
+   logical,allocatable :: smask_mga(:,:)          ! Sampling mask on model grid, halo A
 
    ! Ensembles
-   integer :: ens1_ne
-   integer :: ens1_nsub
-   integer :: ens2_ne
-   integer :: ens2_nsub
-   real(kind_real),allocatable :: ens1(:,:,:,:,:)
-   real(kind_real),allocatable :: ens2(:,:,:,:,:)
+   integer :: ens1_ne                             ! Ensemble 1 size
+   integer :: ens1_nsub                           ! Ensemble 1 sub-ensembles number
+   integer :: ens2_ne                             ! Ensemble 2 size
+   integer :: ens2_nsub                           ! Ensemble 2 sub-ensembles number
+   type(member_field_type),allocatable :: ens1(:) ! Ensemble 1 members
+   type(member_field_type),allocatable :: ens2(:) ! Ensemble 2 members
 
    ! Observations locations
-   integer :: nobsa
-   real(kind_real),allocatable :: lonobs(:)
-   real(kind_real),allocatable :: latobs(:)
+   integer :: nobsa                               ! Number of observations, halo A 
+   real(kind_real),allocatable :: lonobs(:)       ! Observations longitudes, halo A
+   real(kind_real),allocatable :: latobs(:)       ! Observations latitudes, halo A
 contains
    ! Model specific procedures
    procedure :: aro_coord => model_aro_coord
@@ -161,6 +167,9 @@ implicit none
 ! Passed variables
 class(model_type),intent(inout) :: model ! Model
 
+! Local variables
+integer :: ie
+
 ! Release memory
 if (allocated(model%lon)) deallocate(model%lon)
 if (allocated(model%lat)) deallocate(model%lat)
@@ -174,8 +183,18 @@ if (allocated(model%lat_mga)) deallocate(model%lat_mga)
 if (allocated(model%area_mga)) deallocate(model%area_mga)
 if (allocated(model%mask_mga)) deallocate(model%mask_mga)
 if (allocated(model%smask_mga)) deallocate(model%smask_mga)
-if (allocated(model%ens1)) deallocate(model%ens1)
-if (allocated(model%ens2)) deallocate(model%ens2)
+if (allocated(model%ens1)) then
+   do ie=1,size(model%ens1)
+      if (allocated(model%ens1(ie)%fld)) deallocate(model%ens1(ie)%fld)
+   end do
+   deallocate(model%ens1)
+end if
+if (allocated(model%ens2)) then
+   do ie=1,size(model%ens2)
+      if (allocated(model%ens2(ie)%fld)) deallocate(model%ens2(ie)%fld)
+   end do
+   deallocate(model%ens2)
+end if
 if (allocated(model%lonobs)) deallocate(model%lonobs)
 if (allocated(model%latobs)) deallocate(model%latobs)
 
@@ -596,7 +615,7 @@ type(nam_type),intent(in) :: nam         ! Namelist
 character(len=*),intent(in) :: filename  ! Filename ('ens1' or 'ens2')
 
 ! Local variables
-integer :: ne,nsub,isub,ie,ietot
+integer :: ne,ie,nsub,isub,ie_sub
 real(kind_real),allocatable :: mean(:,:,:,:,:)
 character(len=1024),parameter :: subr = 'model_load_ens'
 
@@ -614,10 +633,15 @@ case ('ens1')
 
    if (ne>0) then
       ! Allocation
-      allocate(model%ens1(model%nmga,model%nl0,nam%nv,nam%nts,ne))
+      allocate(model%ens1(ne))
+      do ie=1,ne
+         allocate(model%ens1(ie)%fld(model%nmga,model%nl0,nam%nv,nam%nts))
+      end do
 
       ! Initialization
-      model%ens1 = mpl%msv%valr
+      do ie=1,ne
+         model%ens1(ie)%fld = mpl%msv%valr
+      end do
    end if
 case ('ens2')
    ! Initialization
@@ -627,11 +651,15 @@ case ('ens2')
    model%ens2_nsub = nam%ens2_nsub
 
    if (ne>0) then
-      ! Allocation
-      allocate(model%ens2(model%nmga,model%nl0,nam%nv,nam%nts,ne))
+      allocate(model%ens2(ne))
+      do ie=1,ne
+         allocate(model%ens2(ie)%fld(model%nmga,model%nl0,nam%nv,nam%nts))
+      end do
 
       ! Initialization
-      model%ens2 = mpl%msv%valr
+      do ie=1,ne
+         model%ens2(ie)%fld = mpl%msv%valr
+      end do
    end if
 case default
    call mpl%abort(subr,'wrong filename in model_load_ens')
@@ -640,29 +668,24 @@ end select
 ! Allocation
 if (ne>0) allocate(mean(model%nmga,model%nl0,nam%nv,nam%nts,nsub))
 
-! Initialization
-ietot = 1
-
 ! Loop over sub-ensembles
 do isub=1,nsub
    write(mpl%info,'(a7,a)') '','Reading ensemble member:'
    call mpl%flush(.false.)
 
    ! Loop over members for a given sub-ensemble
-   do ie=1,ne/nsub
-      write(mpl%info,'(i4)') ie
+   do ie_sub=1,ne/nsub
+      write(mpl%info,'(i4)') ie_sub
       call mpl%flush(.false.)
 
       ! Read member
+      ie = ie_sub+(isub-1)*ne/nsub
       select case (trim(filename))
       case ('ens1')
-         call model%read_member(mpl,nam,filename,ie,model%ens1(:,:,:,:,ietot))
+         call model%read_member(mpl,nam,filename,ie_sub,model%ens1(ie)%fld)
       case ('ens2')
-         call model%read_member(mpl,nam,filename,ie,model%ens2(:,:,:,:,ietot))
+         call model%read_member(mpl,nam,filename,ie_sub,model%ens2(ie)%fld)
       end select
-
-      ! Update
-      ietot = ietot+1
    end do
    write(mpl%info,'(a)') ''
    call mpl%flush

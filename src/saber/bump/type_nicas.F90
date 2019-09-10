@@ -1597,7 +1597,7 @@ type(ens_type),intent(out) :: ens     ! Ensemble
 
 ! Local variable
 integer :: ie,ic0a,il0,its,iv
-real(kind_real) :: mean(geom%nc0a,geom%nl0,nam%nv,nam%nts),std(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: std(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 type(cv_type) :: cv_ens(ne)
 
 ! Allocation
@@ -1607,15 +1607,15 @@ do ie=1,ne
    ! Generate random control vector
    call nicas%random_cv(mpl,rng,bpar,cv_ens(ie))
 
+   ! Allocate member
+   if (.not.allocated(ens%mem(ie)%fld)) allocate(ens%mem(ie)%fld(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+
    ! Apply square-root
-   call nicas%apply_sqrt(mpl,nam,geom,bpar,cv_ens(ie),ens%fld(:,:,:,:,ie))
+   call nicas%apply_sqrt(mpl,nam,geom,bpar,cv_ens(ie),ens%mem(ie)%fld)
 end do
 
 ! Remove mean
-mean = sum(ens%fld,dim=5)/real(ne,kind_real)
-do ie=1,ne
-   ens%fld(:,:,:,:,ie) = ens%fld(:,:,:,:,ie)-mean
-end do
+call ens%remove_mean
 
 ! Compute standard deviation
 !$omp parallel do schedule(static) private(its,iv,il0,ic0a)
@@ -1623,7 +1623,13 @@ do its=1,nam%nts
    do iv=1,nam%nv
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) std(ic0a,il0,iv,its) = sqrt(sum(ens%fld(ic0a,il0,iv,its,:)**2)/real(ne-1,kind_real))
+            if (geom%mask_c0a(ic0a,il0)) then
+               std(ic0a,il0,iv,its) = 0.0
+               do ie=1,ne
+                  std(ic0a,il0,iv,its) = std(ic0a,il0,iv,its)+ens%mem(ie)%fld(ic0a,il0,iv,its)**2
+               end do
+               std(ic0a,il0,iv,its) = sqrt(std(ic0a,il0,iv,its)/real(ne-1,kind_real))
+            end if
          end do
       end do
    end do
@@ -1631,13 +1637,15 @@ end do
 !$omp end parallel do
 
 ! Normalize perturbations
-!$omp parallel do schedule(static) private(its,iv,il0,ic0a)
-do its=1,nam%nts
-   do iv=1,nam%nv
-      do il0=1,geom%nl0
-         do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) ens%fld(ic0a,il0,iv,its,:) = ens%fld(ic0a,il0,iv,its,:) &
-                                                                    & /std(ic0a,il0,iv,its)
+!$omp parallel do schedule(static) private(ie,its,iv,il0,ic0a)
+do ie=1,ne
+   do its=1,nam%nts
+      do iv=1,nam%nv
+         do il0=1,geom%nl0
+            do ic0a=1,geom%nc0a
+               if (geom%mask_c0a(ic0a,il0)) ens%mem(ie)%fld(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its) &
+                                                                             & /std(ic0a,il0,iv,its)
+            end do
          end do
       end do
    end do
@@ -1678,7 +1686,7 @@ if (nam%adv_mode==-1) call nicas%blk(bpar%nbe)%apply_adv_ad(mpl,nam,geom,fld_cop
 fld = 0.0
 do ie=1,ens%ne
    ! Compute perturbation
-   pert = ens%fld(:,:,:,:,ie)
+   pert = ens%mem(ie)%fld
 
    ! Inverse advection
    if (nam%adv_mode==-1) call nicas%blk(bpar%nbe)%apply_adv_inv(mpl,nam,geom,pert)

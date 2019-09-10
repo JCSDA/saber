@@ -448,8 +448,8 @@ do iv=1,nam%nv
                         ic0a = geom%c0_to_c0a(ic0)
 
                         ! Copy points
-                        fld_1(ic1a,il0) = ensu%fld(ic0a,il0,iv,1,ie)
-                        fld_2(ic1a,il0) = ensu%fld(ic0a,il0,jv,1,ie)
+                        fld_1(ic1a,il0) = ensu%mem(ie)%fld(ic0a,il0,iv,1)
+                        fld_2(ic1a,il0) = ensu%mem(ie)%fld(ic0a,il0,jv,1)
                      end if
                   end do
                end do
@@ -597,9 +597,9 @@ do iv=1,nam%nv
          call mpl%flush(.false.)
          do jv=1,iv-1
             if (bpar%vbal_block(iv,jv)) then
-               fld = ensu%fld(:,:,jv,1,ie)
+               fld = ensu%mem(ie)%fld(:,:,jv,1)
                call vbal%blk(iv,jv)%apply(geom,vbal%np,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld)
-               ensu%fld(:,:,iv,1,ie) = ensu%fld(:,:,iv,1,ie)-fld
+               ensu%mem(ie)%fld(:,:,iv,1) = ensu%mem(ie)%fld(:,:,iv,1)-fld
             end if
          end do
       end do

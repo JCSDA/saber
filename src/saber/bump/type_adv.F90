@@ -401,8 +401,8 @@ do its=2,nam%nts
 
          do iv=1,nam%nv
             ! Halo extension
-            call com_AD%ext(mpl,geom%nl0,ens%fld(:,:,iv,1,ie),fld_ext_1)
-            call com_AD%ext(mpl,geom%nl0,ens%fld(:,:,iv,its,ie),fld_ext_2)
+            call com_AD%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv,1),fld_ext_1)
+            call com_AD%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv,its),fld_ext_2)
 
             !$omp parallel do schedule(static) private(il0,ic2a,jn,ic0,jc0,ic0d,jc0d,fld_1,fld_2)
             do il0=1,geom%nl0
@@ -1008,7 +1008,7 @@ do its=2,nam%nts
 
       do ie=1,ens%ne
          ! Halo extension from zone A to zone D
-         call com_ADinv%ext(mpl,geom%nl0,ens%fld(:,:,iv,its,ie),fld_d)
+         call com_ADinv%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv,its),fld_d)
 
          ! Interpolation
          !$omp parallel do schedule(static) private(il0)
@@ -1018,11 +1018,11 @@ do its=2,nam%nts
          !$omp end parallel do
 
          ! Compute variance/covariance
-         m2_1 = m2_1+ens%fld(:,:,iv,1,ie)**2
-         m2_2_loc = m2_2_loc+ens%fld(:,:,iv,its,ie)**2
+         m2_1 = m2_1+ens%mem(ie)%fld(:,:,iv,1)**2
+         m2_2_loc = m2_2_loc+ens%mem(ie)%fld(:,:,iv,its)**2
          m2_2_adv = m2_2_adv+fld**2
-         m11_loc = m11_loc+ens%fld(:,:,iv,1,ie)*ens%fld(:,:,iv,its,ie)
-         m11_adv = m11_adv+ens%fld(:,:,iv,1,ie)*fld
+         m11_loc = m11_loc+ens%mem(ie)%fld(:,:,iv,1)*ens%mem(ie)%fld(:,:,iv,its)
+         m11_adv = m11_adv+ens%mem(ie)%fld(:,:,iv,1)*fld
       end do
 
       ! Compute correlation
