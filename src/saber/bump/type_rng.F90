@@ -7,12 +7,13 @@
 !----------------------------------------------------------------------
 module type_rng
 
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 use iso_fortran_env, only: int64
 use tools_const, only: pi
-use tools_func, only: sphere_dist,gc99
+use tools_func, only: sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup,infeq
+use tools_repro, only: repro,inf,sup,infeq
 use type_tree, only: tree_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -23,7 +24,6 @@ integer,parameter :: default_seed = 140587            ! Default seed
 integer(kind=int64),parameter :: a = 1103515245_int64 ! Linear congruential multiplier
 integer(kind=int64),parameter :: c = 12345_int64      ! Linear congruential offset
 integer(kind=int64),parameter :: m = 2147483648_int64 ! Linear congruential modulo
-logical,parameter :: nn_stats = .false.               ! Compute and print subsampling statistics
 
 type rng_type
    integer(kind=int64) :: seed
@@ -373,7 +373,7 @@ real(kind_real) :: gasdev,fac,gset,rsq,v1,v2
 ! Normal distribution
 iset = 0
 do i=1,size(rr,1)
-   if( iset==0) then
+   if (iset==0) then
       rsq = 0.0
       do while((rsq>=1.0).or.(rsq<=0.0))
          call rng%rand_real(0.0_kind_real,1.0_kind_real,v1)
@@ -426,153 +426,308 @@ end subroutine rng_rand_gau_5d
 ! Subroutine: rng_initialize_sampling
 ! Purpose: intialize sampling
 !----------------------------------------------------------------------
-subroutine rng_initialize_sampling(rng,mpl,n,lon,lat,mask,nfor,for,rh,ntry,nrep,ns,ihor,fast)
+subroutine rng_initialize_sampling(rng,mpl,n_loc,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ntry,nrep,ns2_glb,sam2_glb,fast)
 
 implicit none
 
 ! Passed variables
-class(rng_type),intent(inout) :: rng ! Random number generator
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-integer,intent(in) :: n              ! Number of points
-real(kind_real),intent(in) :: lon(n) ! Longitudes
-real(kind_real),intent(in) :: lat(n) ! Latitudes
-logical,intent(in) :: mask(n)        ! Mask
-integer,intent(in) :: nfor           ! Number of forced points (included into the subsampling)
-integer,intent(in) :: for(nfor)      ! Forced points
-real(kind_real),intent(in) :: rh(n)  ! Horizontal support radius
-integer,intent(in) :: ntry           ! Number of tries
-integer,intent(in) :: nrep           ! Number of replacements
-integer,intent(in) :: ns             ! Number of samplings points
-integer,intent(out) :: ihor(ns)      ! Horizontal sampling index
-logical,intent(in),optional :: fast  ! Fast sampling flag
+class(rng_type),intent(inout) :: rng          ! Random number generator
+type(mpl_type),intent(inout) :: mpl           ! MPI data
+integer,intent(in) :: n_loc                   ! Number of points (local)
+real(kind_real),intent(in) :: lon_loc(n_loc)  ! Longitudes (local)
+real(kind_real),intent(in) :: lat_loc(n_loc)  ! Latitudes (local)
+logical,intent(in) :: mask_loc(n_loc)         ! Mask (local)
+real(kind_real),intent(in) :: rh_loc(n_loc)   ! Horizontal support radius (local)
+integer,intent(in) :: loc_to_glb(n_loc)       ! Local to global index
+integer,intent(in) :: ntry                    ! Number of tries
+integer,intent(in) :: nrep                    ! Number of replacements
+integer,intent(in) :: ns2_glb                 ! Number of samplings points (global)
+integer,intent(out) :: sam2_glb(ns2_glb)      ! Horizontal sampling index (global)
+logical,intent(in),optional :: fast           ! Fast sampling flag
 
 ! Local variables
-integer :: system_clock_start,system_clock_end,count_rate,count_max
-integer :: is,js,ifor,i,irep,irmax,itry,irval,irvalmin,irvalmax,i_red,ir,ismin,nval,nrep_eff,nn_index(2)
-integer,allocatable :: val_to_full(:),ihor_tmp(:)
-real(kind_real) :: elapsed
-real(kind_real) :: d,distmax,distmin,nn_dist(2)
-real(kind_real) :: nn_sdist_min,nn_sdist_max,nn_sdist_avg,nn_sdist_std
-real(kind_real) :: cdf_norm,rr
+integer :: n_glb,n_loc_eff,n_glb_eff,n_loc_val,i_loc,i_loc_val,i_glb,is1_loc,is2_glb,iproc,js,irep,irmax,itry,is1_glb,ir
+integer :: irval,irvalmin,irvalmax,is2_glb_min,nrep_eff,nn_index(2),proc_to_ns1_loc(mpl%nproc),offset,ns1_loc,ns1_glb
+integer :: ns1_glb_val
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:),sam1_loc(:),sam1_glb(:),to_valid(:),sam2_glb_tmp(:),order(:)
+real(kind_real) :: rhsq_loc,rhsq_glb,d,distmax,distmin,nn_dist(2),cdf_norm,rr
+real(kind_real),allocatable :: lon1_glb(:),lat1_glb(:),rh1_glb(:)
 real(kind_real),allocatable :: cdf(:)
 real(kind_real),allocatable :: lon_rep(:),lat_rep(:),dist(:)
-real(kind_real),allocatable :: sdist(:,:),nn_sdist(:)
 logical :: lfast
-logical,allocatable :: lmask(:),smask(:),rmask(:)
+logical,allocatable :: mask_glb(:),lmask(:),smask(:),rmask(:)
 character(len=1024),parameter :: subr = 'rng_initialize_sampling'
+type(fckit_mpi_status) :: status
 type(tree_type) :: tree
 
-if (mpl%main) then
-   ! Check forced points
-   do ifor=1,nfor
-      if (.not.mask(for(ifor))) call mpl%abort(subr,'a forced point is out of the mask')
-   end do
-   if (ns<nfor) call mpl%abort(subr,'ns lower than the number of forced points')
+! Number of effective points
+n_loc_eff = count(mask_loc)
+call mpl%f_comm%allreduce(n_loc_eff,n_glb_eff,fckit_mpi_sum())
 
-   ! Check mask size
-   nval = count(mask)
-   if (nval==0) then
-       call mpl%abort(subr,'empty mask in initialize sampling')
-   elseif (nval<ns) then
-      call mpl%abort(subr,'ns greater than mask size in initialize_sampling')
-   elseif (nval==ns) then
-      write(mpl%info,'(a)') ' all points are used'
-      call mpl%flush
+! Check mask size
+if (n_glb_eff==0) then
+   call mpl%abort(subr,'empty mask in initialize sampling')
+elseif (n_glb_eff<ns2_glb) then
+   call mpl%abort(subr,'ns2_glb greater than n_glb_eff in initialize_sampling')
+elseif (n_glb_eff==ns2_glb) then
+   write(mpl%info,'(a)') ' all points are used'
+   call mpl%flush
 
-      ! Allocation
-      allocate(lmask(n))
+   ! Global size
+   call mpl%f_comm%allreduce(n_loc,n_glb,fckit_mpi_sum())
 
-      ! Initialization
-      lmask = mask
-      is = 0
+   ! Allocation
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+   allocate(mask_glb(n_glb))
 
-      ! Forced points
-      do ifor=1,nfor
-         is = is+1
-         ir = for(ifor)
-         ihor(ifor) = ir
-         lmask(ir) = .false.
+   ! Communication
+   call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+   call mpl%loc_to_glb(n_loc,mask_loc,n_glb,glb_to_proc,glb_to_loc,.false.,mask_glb)  
+
+   if (mpl%main) then
+      ! Use all valid points
+      is2_glb = 0
+      do i_glb=1,n_glb
+         if (mask_glb(i_glb)) then
+            is2_glb = is2_glb+1
+            sam2_glb(is2_glb) = i_glb
+         end if
       end do
+   end if
 
-      ! Other points
-      do i=1,n
-         if (lmask(i)) then
-            is = is+1
-            ihor(is) = i
+   ! Release memory
+   deallocate(glb_to_loc)
+   deallocate(glb_to_proc)
+   deallocate(mask_glb)
+else
+   ! Define number of subsampling points for the first step
+   if (repro) then
+      ! First step is skipped
+      ns1_loc = n_loc_eff
+   else
+      ! First subsampling depends on horizontal radius
+      rhsq_loc = sum(rh_loc**2,mask=mask_loc)
+      call mpl%f_comm%allreduce(rhsq_loc,rhsq_glb,fckit_mpi_sum())
+      ns1_loc = int(5.0*real(ns2_glb,kind_real)*rhsq_loc/rhsq_glb)
+      ns1_loc = min(ns1_loc,n_loc_eff)
+   end if
+
+   ! Communication
+   if (mpl%main) then
+      ! Receive data on rootproc
+      do iproc=1,mpl%nproc
+         if (iproc==mpl%rootproc) then
+            ! Copy data
+            proc_to_ns1_loc(iproc) = ns1_loc
+         else
+            ! Receive data
+            call mpl%f_comm%receive(proc_to_ns1_loc(iproc),iproc-1,mpl%tag,status)
          end if
       end do
    else
-      if (nn_stats) then
-         ! Save initial time
-         call system_clock(count=system_clock_start)
-      end if
+      ! Send data to rootproc
+      call mpl%f_comm%send(ns1_loc,mpl%rootproc-1,mpl%tag)
+   end if
+   call mpl%update_tag(1)
 
-      ! Allocation
-      nrep_eff = min(nrep,nval-ns)
-      allocate(ihor_tmp(ns+nrep_eff))
-      allocate(lmask(n))
-      allocate(smask(n))
-      allocate(val_to_full(nval))
+   ! Global size
+   if (mpl%main) ns1_glb = sum(proc_to_ns1_loc)
 
-      ! Initialization
-      ihor_tmp = mpl%msv%vali
-      lmask = mask
-      smask = .false.
-      val_to_full = mpl%msv%vali
-      i_red = 0
-      do i=1,n
-         if (lmask(i)) then
-            i_red = i_red+1
-            val_to_full(i_red) = i
+   ! Allocation
+   allocate(sam1_loc(ns1_loc))
+   
+   ! First subsampling
+   if (n_loc_eff==0) then
+      ! No point on this task
+      write(mpl%info,'(a)') ' no point on this task'
+      call mpl%flush
+   elseif (ns1_loc==n_loc_eff) then
+      ! All points are used
+      write(mpl%info,'(a)') ' all points are used'
+      call mpl%flush(.false.)
+
+      is1_loc = 0
+      do i_loc=1,n_loc
+         if (mask_loc(i_loc)) then
+            is1_loc = is1_loc+1
+            sam1_loc(is1_loc) = i_loc
          end if
       end do
-      call mpl%prog_init(ns+nrep_eff)
+   else
+      ! Define sampling with a cumulative distribution function
+
+      ! Allocation
+      n_loc_val = n_loc_eff
+      allocate(to_valid(n_loc_val))
+      allocate(cdf(n_loc_val))
+
+      ! Initialization
+      sam1_loc = mpl%msv%vali
+      to_valid = mpl%msv%vali
+      i_loc_val = 0
+      do i_loc=1,n_loc
+         if (mask_loc(i_loc)) then
+            i_loc_val = i_loc_val+1
+            to_valid(i_loc_val) = i_loc
+         end if
+      end do
+      cdf(1) = 0.0
+      do i_loc_val=2,n_loc_val
+         i_loc = to_valid(i_loc_val)
+         cdf(i_loc_val) = cdf(i_loc_val-1)+1.0/rh_loc(i_loc)**2
+      end do
+      cdf_norm = 1.0/cdf(n_loc_val)
+      cdf = cdf*cdf_norm
+      call mpl%prog_init(ns1_loc)
+
+      do is1_loc=1,ns1_loc
+         ! Generate random number
+         call rng%rand_real(0.0_kind_real,1.0_kind_real,rr)
+
+         ! Dichotomy to find the value
+         irval = 1
+         irvalmin = 1
+         irvalmax = n_loc_val
+         do while (irvalmax-irvalmin>1)
+            irval = (irvalmin+irvalmax)/2
+            if ((cdf(irvalmin)-rr)*(cdf(irval)-rr)>0.0) then
+               irvalmin = irval
+            else
+               irvalmax = irval
+            end if
+         end do
+
+         ! New sampling point
+         ir = to_valid(irval)
+         sam1_loc(is1_loc) = ir
+
+         ! Shift valid points array
+         if (irval<n_loc_val) then
+            cdf(irval:n_loc_val-1) = cdf(irval+1:n_loc_val)
+            to_valid(irval:n_loc_val-1) = to_valid(irval+1:n_loc_val)
+         end if
+         n_loc_val = n_loc_val-1
+
+         ! Renormalize cdf
+         cdf_norm = 1.0/cdf(n_loc_val)
+         cdf(1:n_loc_val) = cdf(1:n_loc_val)*cdf_norm
+
+         ! Update
+         call mpl%prog_print(is1_loc)
+      end do
+      call mpl%prog_final(.false.)
+
+      ! Release memory
+      deallocate(to_valid)
+      deallocate(cdf)
+   end if
+
+   if (n_loc_eff>0) then
+      ! Continue printing
+      write(mpl%info,'(a)') ' => '
+      call mpl%flush(.false.)
+   end if
+
+   ! Communication
+   if (mpl%main) then
+      ! Allocation
+      allocate(sam1_glb(ns1_glb))
+      allocate(lon1_glb(ns1_glb))
+      allocate(lat1_glb(ns1_glb))
+      allocate(rh1_glb(ns1_glb))
+
+      ! Receive data on rootproc
+      offset = 0
+      do iproc=1,mpl%nproc
+         if (proc_to_ns1_loc(iproc)>0) then
+            if (iproc==mpl%rootproc) then
+               ! Copy data
+               sam1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = loc_to_glb(sam1_loc)
+               lon1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = lon_loc(sam1_loc)
+               lat1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = lat_loc(sam1_loc)
+               rh1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = rh_loc(sam1_loc)   
+            else
+               ! Receive data
+               call mpl%f_comm%receive(sam1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag,status)
+               call mpl%f_comm%receive(lon1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag+1,status)
+               call mpl%f_comm%receive(lat1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag+2,status)
+               call mpl%f_comm%receive(rh1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag+3,status)
+            end if
+
+            ! Update
+            offset = offset+proc_to_ns1_loc(iproc)
+         end if
+      end do
+
+      if (repro) then
+         ! Reorder data
+         allocate(order(ns1_glb))
+         call qsort(ns1_glb,sam1_glb,order)
+         lon1_glb = lon1_glb(order)
+         lat1_glb = lat1_glb(order)
+         rh1_glb = rh1_glb(order)
+         deallocate(order)
+      end if
+   else
+      if (ns1_loc>0) then
+         ! Send data to rootproc
+         call mpl%f_comm%send(loc_to_glb(sam1_loc),mpl%rootproc-1,mpl%tag)
+         call mpl%f_comm%send(lon_loc(sam1_loc),mpl%rootproc-1,mpl%tag+1)
+         call mpl%f_comm%send(lat_loc(sam1_loc),mpl%rootproc-1,mpl%tag+2)
+         call mpl%f_comm%send(rh_loc(sam1_loc),mpl%rootproc-1,mpl%tag+3)
+      end if
+   end if
+   call mpl%update_tag(4)
+
+   ! Release memory
+   deallocate(sam1_loc)
+
+   if (mpl%main) then
+      ! Allocation
+      nrep_eff = min(nrep,ns1_glb-ns2_glb)
+      allocate(sam2_glb_tmp(ns2_glb+nrep_eff))
+      allocate(lmask(ns1_glb))
+      allocate(smask(ns1_glb))
+      allocate(to_valid(ns1_glb))
+
+      ! Initialization
+      sam2_glb_tmp = mpl%msv%vali
+      lmask = .true.
+      smask = .false.
+      to_valid = mpl%msv%vali
+      do is1_glb=1,ns1_glb
+         to_valid(is1_glb) = is1_glb
+      end do
+      call mpl%prog_init(ns2_glb+nrep_eff)
       lfast = .false.
       if (present(fast)) lfast = fast
 
-      ! Forced points
-      do ifor=1,nfor
-         ir = for(ifor)
-         irval = mpl%msv%vali
-         do i=1,nval
-            if (val_to_full(i)==ir) then
-               irval = i
-               exit
-            end if
-         end do
-         if (mpl%msv%isi(irval)) call mpl%abort(subr,'cannot find irval in initialize_sampling')
-         ihor_tmp(ifor) = ir
-         lmask(ir) = .false.
-         smask(ir) = .true.
-
-         ! Shift valid points array
-         if (irval<nval) val_to_full(irval:nval-1) = val_to_full(irval+1:nval)
-         nval = nval-1
-      end do
-
       if (lfast) then
+         ! Define sampling with a cumulative distribution function
+
          ! Allocation
-         allocate(cdf(nval))
+         allocate(cdf(ns1_glb))
 
-         ! Define sampling with cumulative distribution function
+         ! Initialization
+         ns1_glb_val = ns1_glb
          cdf(1) = 0.0
-         do i_red=2,nval
-             i = val_to_full(i_red)
-             cdf(i_red) = cdf(i_red-1)+1.0/rh(i)**2
+         do is1_glb=2,ns1_glb
+            cdf(is1_glb) = cdf(is1_glb-1)+1.0/rh1_glb(is1_glb)**2
          end do
-         cdf_norm = 1.0/cdf(nval)
-         cdf(1:nval) = cdf(1:nval)*cdf_norm
+         cdf_norm = 1.0/cdf(ns1_glb)
+         cdf = cdf*cdf_norm
 
-         do is=1+nfor,ns+nrep_eff
+         do is2_glb=1,ns2_glb+nrep_eff
             ! Generate random number
             call rng%rand_real(0.0_kind_real,1.0_kind_real,rr)
 
             ! Dichotomy to find the value
             irvalmin = 1
-            irvalmax = nval
+            irvalmax = ns1_glb_val
             do while (irvalmax-irvalmin>1)
                irval = (irvalmin+irvalmax)/2
-               if ((cdf(irvalmin)-rr)*(cdf(irval)-rr)>0.0) then
+               if ((sup(cdf(irvalmin),rr).and.sup(cdf(irval),rr)).or.(inf(cdf(irvalmin),rr).and.inf(cdf(irval),rr))) then
                   irvalmin = irval
                else
                   irvalmax = irval
@@ -580,37 +735,40 @@ if (mpl%main) then
             end do
 
             ! New sampling point
-            ir = val_to_full(irval)
-            ihor_tmp(is) = ir
-            lmask(ir) = .false.
+            ir = to_valid(irval)
+            sam2_glb_tmp(is2_glb) = ir
 
             ! Shift valid points array
-            if (irval<nval) then
-               cdf(irval:nval-1) = cdf(irval+1:nval)
-               val_to_full(irval:nval-1) = val_to_full(irval+1:nval)
+            if (irval<ns1_glb_val) then
+               cdf(irval:ns1_glb_val-1) = cdf(irval+1:ns1_glb_val)
+               to_valid(irval:ns1_glb_val-1) = to_valid(irval+1:ns1_glb_val)
             end if
-            nval = nval-1
+            ns1_glb_val = ns1_glb_val-1
 
             ! Renormalize cdf
-            cdf_norm = 1.0/cdf(nval)
-            cdf(1:nval) = cdf(1:nval)*cdf_norm
+            cdf_norm = 1.0/cdf(ns1_glb_val)
+            cdf(1:ns1_glb_val) = cdf(1:ns1_glb_val)*cdf_norm
 
             ! Update
-            call mpl%prog_print(is)
+            call mpl%prog_print(is2_glb)
          end do
          call mpl%prog_final(.false.)
 
          ! Release memory
          deallocate(cdf)
       else
-         ! Define sampling with KD-tree
-         do is=1+nfor,ns+nrep_eff
-            if (is>2) then
+         ! Define sampling with a KD-tree
+
+         ! Initialization
+         ns1_glb_val = ns1_glb
+
+         do is2_glb=1,ns2_glb+nrep_eff
+            if (is2_glb>2) then
                ! Allocation
-               call tree%alloc(mpl,n,mask=smask)
+               call tree%alloc(mpl,ns1_glb,mask=smask)
 
                ! Initialization
-               call tree%init(lon,lat)
+               call tree%init(lon1_glb,lat1_glb)
             end if
 
             ! Initialization
@@ -622,23 +780,24 @@ if (mpl%main) then
             ! Find a new point
             do itry=1,ntry
                ! Generate a random index among valid points
-               call rng%rand_integer(1,nval,irval)
-               ir = val_to_full(irval)
+               call rng%rand_integer(1,ns1_glb_val,irval)
+               ir = to_valid(irval)
 
                ! Check point validity
-               if (is==1) then
+               if (is2_glb==1) then
                   ! Accept point
                   irvalmax = irval
                   irmax = ir
                else
-                  if (is==2) then
+                  if (is2_glb==2) then
                      ! Compute distance
-                     call sphere_dist(lon(ir),lat(ir),lon(ihor_tmp(1)),lat(ihor_tmp(1)),d)
+                     nn_index(1) = sam2_glb_tmp(1)
+                     call sphere_dist(lon1_glb(ir),lat1_glb(ir),lon1_glb(nn_index(1)),lat1_glb(nn_index(1)),nn_dist(1))
                   else
                      ! Find nearest neighbor distance
-                     call tree%find_nearest_neighbors(lon(ir),lat(ir),1,nn_index(1:1),nn_dist(1:1))
-                     d = nn_dist(1)**2/(rh(ir)**2+rh(nn_index(1))**2)
+                     call tree%find_nearest_neighbors(lon1_glb(ir),lat1_glb(ir),1,nn_index(1:1),nn_dist(1:1))
                   end if
+                  d = nn_dist(1)**2/(rh1_glb(ir)**2+rh1_glb(nn_index(1))**2)
 
                   ! Check distance
                   if (sup(d,distmax)) then
@@ -650,45 +809,44 @@ if (mpl%main) then
             end do
 
             ! Delete tree
-            if (is>2) call tree%dealloc
+            if (is2_glb>2) call tree%dealloc
 
             ! Add point to sampling
             if (irmax>0) then
                ! New sampling point
-               ihor_tmp(is) = irmax
+               sam2_glb_tmp(is2_glb) = irmax
                lmask(irmax) = .false.
                smask(irmax) = .true.
 
                ! Shift valid points array
-               if (irvalmax<nval) val_to_full(irvalmax:nval-1) = val_to_full(irvalmax+1:nval)
-               nval = nval-1
+               if (irvalmax<ns1_glb_val) to_valid(irvalmax:ns1_glb_val-1) = to_valid(irvalmax+1:ns1_glb_val)
+               ns1_glb_val = ns1_glb_val-1
             end if
 
             ! Update
-            call mpl%prog_print(is)
+            call mpl%prog_print(is2_glb)
          end do
          call mpl%prog_final(.false.)
-
-         ! Release memory
-         deallocate(smask)
       end if
 
       if (nrep_eff>0) then
-         ! Continue printing
-         write(mpl%info,'(a)') ' => '
-         call mpl%flush(.false.)
+         if (n_loc_eff>0) then
+            ! Continue printing
+            write(mpl%info,'(a)') ' => '
+            call mpl%flush(.false.)
+         end if
 
          ! Allocation
-         allocate(rmask(ns+nrep_eff))
-         allocate(lon_rep(ns+nrep_eff))
-         allocate(lat_rep(ns+nrep_eff))
-         allocate(dist(ns+nrep_eff))
+         allocate(rmask(ns2_glb+nrep_eff))
+         allocate(lon_rep(ns2_glb+nrep_eff))
+         allocate(lat_rep(ns2_glb+nrep_eff))
+         allocate(dist(ns2_glb+nrep_eff))
 
          ! Initialization
          rmask = .true.
-         do is=1,ns+nrep_eff
-            lon_rep(is) = lon(ihor_tmp(is))
-            lat_rep(is) = lat(ihor_tmp(is))
+         do is2_glb=1,ns2_glb+nrep_eff
+            lon_rep(is2_glb) = lon1_glb(sam2_glb_tmp(is2_glb))
+            lat_rep(is2_glb) = lat1_glb(sam2_glb_tmp(is2_glb))
          end do
          dist = mpl%msv%valr
          call mpl%prog_init(nrep_eff)
@@ -696,24 +854,25 @@ if (mpl%main) then
          ! Remove closest points
          do irep=1,nrep_eff
             ! Allocation
-            call tree%alloc(mpl,ns+nrep_eff,mask=rmask)
+            call tree%alloc(mpl,ns2_glb+nrep_eff,mask=rmask)
 
             ! Initialization
             call tree%init(lon_rep,lat_rep)
 
             ! Get minimum distance
-            do is=1+nfor,ns+nrep_eff
-               if (rmask(is)) then
+            do is2_glb=1,ns2_glb+nrep_eff
+               if (rmask(is2_glb)) then
                   ! Find nearest neighbor distance
-                  call tree%find_nearest_neighbors(lon(ihor_tmp(is)),lat(ihor_tmp(is)),2,nn_index,nn_dist)
-                  if (nn_index(1)==is) then
-                     dist(is) = nn_dist(2)
-                  elseif (nn_index(2)==is) then
-                     dist(is) = nn_dist(1)
+                  call tree%find_nearest_neighbors(lon1_glb(sam2_glb_tmp(is2_glb)),lat1_glb(sam2_glb_tmp(is2_glb)), &
+                & 2,nn_index,nn_dist)
+                  if (nn_index(1)==is2_glb) then
+                     dist(is2_glb) = nn_dist(2)
+                  elseif (nn_index(2)==is2_glb) then
+                     dist(is2_glb) = nn_dist(1)
                   else
                      call mpl%abort(subr,'wrong index in replacement')
                   end if
-                  dist(is) = dist(is)**2/(rh(ihor_tmp(nn_index(1)))**2+rh(ihor_tmp(nn_index(2)))**2)
+                  dist(is2_glb) = dist(is2_glb)**2/(rh1_glb(sam2_glb_tmp(nn_index(1)))**2+rh1_glb(sam2_glb_tmp(nn_index(2)))**2)
                end if
             end do
 
@@ -722,28 +881,28 @@ if (mpl%main) then
 
             ! Remove worst point
             distmin = huge(1.0)
-            ismin = mpl%msv%vali
-            do is=1+nfor,ns+nrep_eff
-               if (rmask(is)) then
-                  if (inf(dist(is),distmin)) then
-                     ismin = is
-                     distmin = dist(is)
+            is2_glb_min = mpl%msv%vali
+            do is2_glb=1,ns2_glb+nrep_eff
+               if (rmask(is2_glb)) then
+                  if (inf(dist(is2_glb),distmin)) then
+                     is2_glb_min = is2_glb
+                     distmin = dist(is2_glb)
                   end if
                end if
             end do
-            rmask(ismin) = .false.
+            rmask(is2_glb_min) = .false.
 
              ! Update
             call mpl%prog_print(irep)
          end do
          call mpl%prog_final
 
-         ! Copy ihor
+         ! Copy sam2_glb
          js = 0
-         do is=1,ns+nrep_eff
-            if (rmask(is)) then
+         do is2_glb=1,ns2_glb+nrep_eff
+            if (rmask(is2_glb)) then
                js = js+1
-               ihor(js) = ihor_tmp(is)
+               sam2_glb(js) = sam2_glb_tmp(is2_glb)
             end if
          end do
 
@@ -753,82 +912,39 @@ if (mpl%main) then
          deallocate(lat_rep)
          deallocate(dist)
       else
+         if (n_loc_eff>0) then
+            ! Stop printing
+            write(mpl%info,'(a)') ''
+            call mpl%flush
+         end if
+
+         ! Copy sam2_glb
+         sam2_glb = sam2_glb_tmp
+      end if
+
+      ! Apply first sampling step
+      sam2_glb = sam1_glb(sam2_glb)
+
+      ! Release memory
+      deallocate(sam1_glb)
+      deallocate(lon1_glb)
+      deallocate(lat1_glb)
+      deallocate(rh1_glb)
+      deallocate(sam2_glb_tmp)
+      deallocate(lmask)
+      deallocate(smask)
+      deallocate(to_valid)
+   else
+      if (n_loc_eff>0) then
          ! Stop printing
          write(mpl%info,'(a)') ''
          call mpl%flush
-
-         ! Copy ihor
-         ihor = ihor_tmp
       end if
-
-      if (nn_stats) then
-         ! Save final time
-         call system_clock(count=system_clock_end)
-         call system_clock(count_rate=count_rate,count_max=count_max)
-         if (system_clock_end<system_clock_start) then
-            elapsed = real(system_clock_end-system_clock_start+count_max,kind_real) &
-                    & /real(count_rate,kind_real)
-         else
-            elapsed = real(system_clock_end-system_clock_start,kind_real) &
-                    & /real(count_rate,kind_real)
-         end if
-
-         ! Allocation
-         allocate(sdist(ns,ns))
-         allocate(nn_sdist(ns))
-
-         ! Compute normalized distances between sampling points
-         do is=1,ns
-            sdist(is,is) = huge(1.0)
-            do js=1,is-1
-               call sphere_dist(lon(ihor(is)),lat(ihor(is)),lon(ihor(js)),lat(ihor(js)),sdist(is,js))
-               sdist(is,js) = sdist(is,js)/sqrt(rh(ihor(is))**2+rh(ihor(js))**2)
-               sdist(js,is) = sdist(is,js)
-            end do
-         end do
-
-         ! Find nearest neighbor normalized distance
-         do is=1,ns
-            nn_sdist(is) = minval(sdist(:,is))
-         end do
-
-         ! Compute statistics
-         nn_sdist_min = minval(nn_sdist)
-         nn_sdist_max = maxval(nn_sdist)
-         nn_sdist_avg = sum(nn_sdist)/real(ns,kind_real)
-         nn_sdist_std = sqrt(sum((nn_sdist-nn_sdist_avg)**2)/real(ns-1,kind_real))
-
-         ! Print statistics
-         write(mpl%info,'(a10,a)') '','Nearest neighbor normalized distance statistics:'
-         call mpl%flush
-         write(mpl%info,'(a13,a,e9.2)') '','Minimum: ',nn_sdist_min
-         call mpl%flush
-         write(mpl%info,'(a13,a,e9.2)') '','Maximum: ',nn_sdist_max
-         call mpl%flush
-         write(mpl%info,'(a13,a,e9.2)') '','Average: ',nn_sdist_avg
-         call mpl%flush
-         write(mpl%info,'(a13,a,e9.2)') '','Std-dev: ',nn_sdist_std
-         call mpl%flush
-         write(mpl%info,'(a10,a,f8.3,a)') '','Elapsed time to compute the subsampling: ',elapsed,' s'
-         call mpl%flush
-
-         ! Release memory
-         deallocate(sdist)
-         deallocate(nn_sdist)
-      end if
-
-      ! Release memory
-      deallocate(ihor_tmp)
-      deallocate(lmask)
-      deallocate(val_to_full)
    end if
-else
-   write(mpl%info,'(a)') ''
-   call mpl%flush
 end if
 
 ! Broadcast
-call mpl%f_comm%broadcast(ihor,mpl%ioproc-1)
+call mpl%f_comm%broadcast(sam2_glb,mpl%rootproc-1)
 
 end subroutine rng_initialize_sampling
 

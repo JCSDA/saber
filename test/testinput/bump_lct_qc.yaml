@@ -1,0 +1,44 @@
+# general_param
+datadir: "testdata/bump_lct_qc"
+prefix: "test__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+method: "cor"
+strategy: "specific_univariate"
+new_lct: 1
+write_cmat: 0
+
+# model_param
+nl: 2
+levs: [1,2]
+nv: 2
+varname: ["u","q"]
+nts: 2
+timeslot: [0,6]
+
+# ens1_param
+ens1_ne: 50
+
+# ens2_param
+
+# sampling_param
+nc1: 100
+nc2: 100
+ntry: 30
+nc3: 50
+nl0r: 2
+
+# diag_param
+ne: 50
+
+# fit_param
+lct_nscales: 1
+lct_qc_max: 0.2
+
+# nicas_param
+
+# obsop_param
+
+# output_param
+

@@ -218,7 +218,7 @@ if (info_coord/=nf90_noerr) then
 end if
 
 ! Define variables if necessary
-if (mpl%msv%isanynotr(diag_blk%raw_coef_ens)) then
+if (mpl%msv%isanynot(diag_blk%raw_coef_ens)) then
   info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_raw_coef_ens',raw_coef_ens_id)
   if (info/=nf90_noerr) then
      call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_raw_coef_ens',nc_kind_real,(/nl0_1_id/),raw_coef_ens_id))
@@ -226,7 +226,7 @@ if (mpl%msv%isanynotr(diag_blk%raw_coef_ens)) then
   end if
 end if
 if ((ic2a==0).or.nam%local_diag) then
-   if (mpl%msv%isanynotr(diag_blk%raw)) then
+   if (mpl%msv%isanynot(diag_blk%raw)) then
       info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_raw',raw_id)
       if (info/=nf90_noerr) then
          call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_raw',nc_kind_real,(/nc3_id,nl0r_id,nl0_1_id/),raw_id))
@@ -245,14 +245,14 @@ if ((ic2a==0).or.nam%local_diag) then
          end if
       end if
    end if
-   if (mpl%msv%isnotr(diag_blk%raw_coef_sta)) then
+   if (mpl%msv%isnot(diag_blk%raw_coef_sta)) then
       info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_raw_coef_sta',raw_coef_sta_id)
       if (info/=nf90_noerr) then
          call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_raw_coef_sta',nc_kind_real,(/one_id/),raw_coef_sta_id))
          call mpl%ncerr(subr,nf90_put_att(ncid,raw_coef_sta_id,'_FillValue',mpl%msv%valr))
       end if
    end if
-   if ((trim(nam%minim_algo)/='none').and.(mpl%msv%isanynotr(diag_blk%fit))) then
+   if ((trim(nam%minim_algo)/='none').and.(mpl%msv%isanynot(diag_blk%fit))) then
       info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_fit',fit_id)
       if (info/=nf90_noerr) then
          call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_fit',nc_kind_real,(/nc3_id,nl0r_id,nl0_1_id/),fit_id))
@@ -305,10 +305,10 @@ if (info_coord/=nf90_noerr) then
 end if
 
 ! Write variables
-if (mpl%msv%isanynotr(diag_blk%raw_coef_ens)) call mpl%ncerr(subr,nf90_put_var(ncid,raw_coef_ens_id,diag_blk%raw_coef_ens, &
+if (mpl%msv%isanynot(diag_blk%raw_coef_ens)) call mpl%ncerr(subr,nf90_put_var(ncid,raw_coef_ens_id,diag_blk%raw_coef_ens, &
  & (/1/),(/geom%nl0/)))
 if ((ic2a==0).or.nam%local_diag) then
-   if (mpl%msv%isanynotr(diag_blk%raw)) then
+   if (mpl%msv%isanynot(diag_blk%raw)) then
       call mpl%ncerr(subr,nf90_put_var(ncid,raw_id,diag_blk%raw(1:bpar%nc3(ib),1:bpar%nl0r(ib),:), &
     & (/1,1,1/),(/bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
       call mpl%ncerr(subr,nf90_put_var(ncid,valid_id,diag_blk%valid(1:bpar%nc3(ib),1:bpar%nl0r(ib),:), &
@@ -322,8 +322,8 @@ if ((ic2a==0).or.nam%local_diag) then
          end do
       end if
    end if
-   if (mpl%msv%isnotr(diag_blk%raw_coef_sta)) call mpl%ncerr(subr,nf90_put_var(ncid,raw_coef_sta_id,diag_blk%raw_coef_sta))
-   if ((trim(nam%minim_algo)/='none').and.(mpl%msv%isanynotr(diag_blk%fit))) then
+   if (mpl%msv%isnot(diag_blk%raw_coef_sta)) call mpl%ncerr(subr,nf90_put_var(ncid,raw_coef_sta_id,diag_blk%raw_coef_sta))
+   if ((trim(nam%minim_algo)/='none').and.(mpl%msv%isanynot(diag_blk%fit))) then
       call mpl%ncerr(subr,nf90_put_var(ncid,fit_id,diag_blk%fit(1:bpar%nc3(ib),1:bpar%nl0r(ib),:), &
     & (/1,1,1/),(/bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
       if (bpar%nl0rmax/=geom%nl0) then
@@ -377,7 +377,7 @@ associate(ib=>diag_blk%ib)
 ! Get diagonal values
 do il0=1,geom%nl0
    jl0r = bpar%il0rz(il0,ib)
-   if (mpl%msv%isnotr(diag_blk%raw(1,jl0r,il0))) then
+   if (mpl%msv%isnot(diag_blk%raw(1,jl0r,il0))) then
       diag_blk%raw_coef_ens(il0) = diag_blk%raw(1,jl0r,il0)
    else
       diag_blk%raw_coef_ens(il0) = mpl%msv%valr
@@ -389,8 +389,8 @@ do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
       do jc3=1,bpar%nc3(ib)
-         if (mpl%msv%isnotr(diag_blk%raw(jc3,jl0r,il0)).and.mpl%msv%isnotr(diag_blk%raw_coef_ens(il0)) &
-       & .and.mpl%msv%isnotr(diag_blk%raw_coef_ens(jl0))) &
+         if (mpl%msv%isnot(diag_blk%raw(jc3,jl0r,il0)).and.mpl%msv%isnot(diag_blk%raw_coef_ens(il0)) &
+       & .and.mpl%msv%isnot(diag_blk%raw_coef_ens(jl0))) &
        & diag_blk%raw(jc3,jl0r,il0) = diag_blk%raw(jc3,jl0r,il0)/sqrt(diag_blk%raw_coef_ens(il0)*diag_blk%raw_coef_ens(jl0))
       end do
    end do
@@ -474,24 +474,24 @@ do il0=1,geom%nl0
     jl0r = bpar%il0rz(il0,ib)
 
    ! Horizontal fast fit
-   call fast_fit(mpl,nam%nc3,1,geom%disth,diag_blk%raw(:,jl0r,il0),diag_blk%fit_rh(il0))
+   call fast_fit(mpl,nam%fit_type,nam%nc3,1,geom%disth,diag_blk%raw(:,jl0r,il0),diag_blk%fit_rh(il0))
 
    ! Vertical fast fit
    rawv = diag_blk%raw(1,:,il0)
    distv = diag_blk%distv(bpar%l0rl0b_to_l0(:,il0,ib),il0)
-   call fast_fit(mpl,bpar%nl0r(ib),jl0r,distv,rawv,diag_blk%fit_rv(il0))
+   call fast_fit(mpl,nam%fit_type,bpar%nl0r(ib),jl0r,distv,rawv,diag_blk%fit_rv(il0))
 end do
 
-if (any(mpl%msv%isnotr(diag_blk%fit_rh)).and.any(mpl%msv%isnotr(diag_blk%fit_rv))) then
+if (any(mpl%msv%isnot(diag_blk%fit_rh)).and.any(mpl%msv%isnot(diag_blk%fit_rv))) then
    ! Fill missing values
    call ver_fill(mpl,geom%nl0,vunit,diag_blk%fit_rh)
    call ver_fill(mpl,geom%nl0,vunit,diag_blk%fit_rv)
 
    ! Vertically homogeneous case
-   if (nam%lhomh) diag_blk%fit_rh = sum(diag_blk%fit_rh,mask=mpl%msv%isnotr(diag_blk%fit_rh)) &
- & /real(count(mpl%msv%isnotr(diag_blk%fit_rh)),kind_real)
-   if (nam%lhomv) diag_blk%fit_rv = sum(diag_blk%fit_rv,mask=mpl%msv%isnotr(diag_blk%fit_rv)) &
- & /real(count(mpl%msv%isnotr(diag_blk%fit_rv)),kind_real)
+   if (nam%lhomh) diag_blk%fit_rh = sum(diag_blk%fit_rh,mask=mpl%msv%isnot(diag_blk%fit_rh)) &
+ & /real(count(mpl%msv%isnot(diag_blk%fit_rh)),kind_real)
+   if (nam%lhomv) diag_blk%fit_rv = sum(diag_blk%fit_rv,mask=mpl%msv%isnot(diag_blk%fit_rv)) &
+ & /real(count(mpl%msv%isnot(diag_blk%fit_rv)),kind_real)
 
    ! Double-fit default parameters
    if (diag_blk%double_fit) then
@@ -500,7 +500,7 @@ if (any(mpl%msv%isnotr(diag_blk%fit_rh)).and.any(mpl%msv%isnotr(diag_blk%fit_rv)
    end if
 
    ! Scaling optimization (brute-force)
-   if (all(mpl%msv%isnotr(diag_blk%fit_rh)).and.all(mpl%msv%isnotr(diag_blk%fit_rv))) then
+   if (all(mpl%msv%isnot(diag_blk%fit_rh)).and.all(mpl%msv%isnot(diag_blk%fit_rv))) then
       mse_opt = huge(1.0)
       alpha_opt = 1.0
       do isc=1,nsc
@@ -513,14 +513,15 @@ if (any(mpl%msv%isnotr(diag_blk%fit_rh)).and.any(mpl%msv%isnotr(diag_blk%fit_rv)
 
          ! Define fit
          if (diag_blk%double_fit) then
-            call fit_diag_dble(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
-          & fit_rh,fit_rv,diag_blk%fit_rv_rfac,diag_blk%fit_rv_coef,fit)
+            call fit_diag_dble(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+          & diag_blk%distv,fit_rh,fit_rv,diag_blk%fit_rv_rfac,diag_blk%fit_rv_coef,fit)
          else
-            call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv,fit_rh,fit_rv,fit)
+            call fit_diag(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
+          & fit_rh,fit_rv,fit)
          end if
 
          ! MSE
-         mse = sum((fit-diag_blk%raw)**2,mask=mpl%msv%isnotr(diag_blk%raw))
+         mse = sum((fit-diag_blk%raw)**2,mask=mpl%msv%isnot(diag_blk%raw))
          if (mse<mse_opt) then
             mse_opt = mse
             alpha_opt = alpha
@@ -614,6 +615,7 @@ if (any(mpl%msv%isnotr(diag_blk%fit_rh)).and.any(mpl%msv%isnotr(diag_blk%fit_rv)
          minim%cost_function = 'fit_diag'
       end if
       minim%algo = nam%minim_algo
+      minim%fit_type = nam%fit_type
       minim%nc3 = nam%nc3
       minim%nl0r = bpar%nl0r(ib)
       minim%nl0 = geom%nl0
@@ -672,7 +674,7 @@ end if
 
 ! Set to missing values if no point available
 do il0=1,geom%nl0
-   if (mpl%msv%isallr(diag_blk%raw(:,:,il0))) then
+   if (mpl%msv%isall(diag_blk%raw(:,:,il0))) then
       diag_blk%fit_rh(il0) = mpl%msv%valr
       diag_blk%fit_rv(il0) = mpl%msv%valr
       if (diag_blk%double_fit) then
@@ -717,7 +719,7 @@ associate(ib=>diag_blk%ib)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
-         if (mpl%msv%isnotr(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%m11sq(jc3,jl0r,il0))) then
+         if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0))) then
             ! Compute localization
             diag_blk%raw(jc3,jl0r,il0) = avg_blk%m11asysq(jc3,jl0r,il0)/avg_blk%m11sq(jc3,jl0r,il0)
             diag_blk%valid(jc3,jl0r,il0) = avg_blk%nc1a(jc3,jl0r,il0)
@@ -768,8 +770,8 @@ do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
       do jc3=1,bpar%nc3(ib)
-         if (mpl%msv%isnotr(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%m11sq(jc3,jl0r,il0)) &
-       & .and.mpl%msv%isnotr(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%stasq(jc3,jl0r,il0))) then
+         if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0)) &
+       & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jl0r,il0))) then
             wgt = geom%disth(jc3)*diag_blk%distv(jl0,il0)/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real)
             num = num+wgt*(1.0-avg_blk%m11asysq(jc3,jl0r,il0)/avg_blk%m11sq(jc3,jl0r,il0))*avg_blk%m11sta(jc3,jl0r,il0)
             den = den+wgt*(avg_blk%stasq(jc3,jl0r,il0)-avg_blk%m11sta(jc3,jl0r,il0)**2/avg_blk%m11sq(jc3,jl0r,il0))
@@ -785,8 +787,8 @@ if ((num>0.0).and.(den>0.0)) then
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          do jc3=1,bpar%nc3(ib)
-            if (mpl%msv%isnotr(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnotr(diag_blk%raw_coef_sta) &
-          & .and.mpl%msv%isnotr(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%m11sq(jc3,jl0r,il0))) then
+            if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(diag_blk%raw_coef_sta) &
+          & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0))) then
                ! Compute localization
                diag_blk%raw(jc3,jl0r,il0) = (avg_blk%m11asysq(jc3,jl0r,il0)-diag_blk%raw_coef_sta &
                                           & *avg_blk%m11sta(jc3,jl0r,il0))/avg_blk%m11sq(jc3,jl0r,il0)
@@ -850,9 +852,9 @@ allocate(den(bpar%nc3(ib)))
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
-         if (mpl%msv%isnotr(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%m11sq(jc3,jl0r,il0)) &
-       & .and.mpl%msv%isnotr(avg_blk%m11lrm11asy(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%m11lrm11(jc3,jl0r,il0)) &
-       & .and.mpl%msv%isnotr(avg_lr_blk%m11sq(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%m11lrm11asy(jc3,jl0r,il0))) then
+         if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0)) &
+       & .and.mpl%msv%isnot(avg_blk%m11lrm11asy(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11lrm11(jc3,jl0r,il0)) &
+       & .and.mpl%msv%isnot(avg_lr_blk%m11sq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11lrm11asy(jc3,jl0r,il0))) then
             num(jc3) = avg_blk%m11asysq(jc3,jl0r,il0)*avg_lr_blk%m11sq(jc3,jl0r,il0) &
                     & -avg_blk%m11lrm11asy(jc3,jl0r,il0)*avg_blk%m11lrm11(jc3,jl0r,il0)
             num_lr(jc3) = avg_blk%m11lrm11asy(jc3,jl0r,il0)*avg_blk%m11sq(jc3,jl0r,il0) &

@@ -13,7 +13,7 @@ use tools_const, only: pi,rad2deg
 use tools_func, only: lonlat2xyz,sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
-use tools_repro, only: rth,sup
+use tools_repro, only: repro,rth,sup,indist
 use type_mpl, only: mpl_type
 
 implicit none
@@ -159,8 +159,8 @@ class(tree_type),intent(in) :: tree                 ! Tree
 real(kind_real),intent(in) :: lon                   ! Point longitude (in radians)
 real(kind_real),intent(in) :: lat                   ! Point latitude (in radians)
 integer,intent(in) :: nn                            ! Number of nearest neighbors to find
-integer,intent(out) :: nn_index(nn)                 ! Neareast neighbors index
-real(kind_real),intent(out),optional :: nn_dist(nn) ! Neareast neighbors distance
+integer,intent(out) :: nn_index(nn)                 ! Nearest neighbors index
+real(kind_real),intent(out),optional :: nn_dist(nn) ! Nearest neighbors distance
 
 ! Local variables
 integer :: nn_tmp,i,j,nid
@@ -184,15 +184,15 @@ if (nn>0) then
       ! Check distance between reference and last nearest neighbors
       call sphere_dist(lon,lat,tree%lon(nn_index_tmp(nn)),tree%lat(nn_index_tmp(nn)),dist_ref)
       call sphere_dist(lon,lat,tree%lon(nn_index_tmp(nn_tmp)),tree%lat(nn_index_tmp(nn_tmp)),dist_last)
-      if (sup(dist_last,dist_ref).or.(nn_tmp==tree%neff)) then
-         ! Last neighbor is significantly further away (or all points are used)
-         separate = .true.
-      else
+      if (repro.and.indist(dist_last,dist_ref).and.(nn_tmp<tree%neff)) then
          ! Last neighbor is at the same distance as the reference neighbor, increase number of neighbors
          nn_tmp = min(int(nn_inc*real(nn_tmp,kind_real)),tree%neff)
 
          ! Release memory
          deallocate(nn_index_tmp)
+      else
+         ! Last neighbor is significantly further away (or all points are used)
+         separate = .true.
       end if
    end do
 
@@ -207,28 +207,30 @@ if (nn>0) then
    ! Transform indices
    nn_index_tmp = tree%from_eff(nn_index_tmp)
 
-   ! Reorder neighbors based on their index
-   i = 1
-   do while (i<nn_tmp)
-      ! Count indistinguishable neighbors
-      nid = 1
-      do j=i+1,nn_tmp
-         if (abs(nn_dist_tmp(i)-nn_dist_tmp(j))<rth*nn_dist_tmp(i)) nid = nid+1
-      end do
-
-      ! Reorder
-      if (nid>1) then
-         allocate(order(nid))
-         call qsort(nid,nn_index_tmp(i:i+nid-1),order)
-         do j=1,nid
-            nn_dist_tmp(i+j-1) = nn_dist_tmp(i+order(j)-1)
+   if (repro) then
+      ! Reorder neighbors based on their index
+      i = 1
+      do while (i<nn_tmp)
+         ! Count indistinguishable neighbors
+         nid = 1
+         do j=i+1,nn_tmp
+            if (indist(nn_dist_tmp(i),nn_dist_tmp(j))) nid = nid+1
          end do
-         deallocate(order)
-      end if
 
-      ! Update
-      i = i+nid
-   end do
+         ! Reorder
+         if (nid>1) then
+            allocate(order(nid))
+            call qsort(nid,nn_index_tmp(i:i+nid-1),order)
+            do j=1,nid
+               nn_dist_tmp(i+j-1) = nn_dist_tmp(i+order(j)-1)
+            end do
+            deallocate(order)
+         end if
+
+         ! Update
+         i = i+nid
+      end do
+   end if
 
    ! Copy nn_index
    nn_index = nn_index_tmp(1:nn)

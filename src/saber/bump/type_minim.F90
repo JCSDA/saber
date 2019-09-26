@@ -16,7 +16,7 @@ use type_mpl, only: mpl_type
 implicit none
 
 real(kind_real),parameter :: rho = 0.5_kind_real    ! Convergence parameter for the Hooke algorithm
-real(kind_real),parameter :: tol = 1.0e-6_kind_real ! Tolerance for the Hooke algorithm
+real(kind_real),parameter :: tol = 1.0e-4_kind_real ! Tolerance for the Hooke algorithm
 integer,parameter :: itermax = 10                   ! Maximum number of iteration for the Hooke algorithm
 
 ! Minimization data derived type
@@ -39,6 +39,7 @@ type minim_type
    integer :: nc3                             ! Number of classes
 
    ! Specific data (fit)
+   character(len=1024) :: fit_type            ! Fit function type
    integer :: nl0r                            ! Reduced number of levels
    logical :: lhomh                           ! Vertically homogenous horizontal support radius key
    logical :: lhomv                           ! Vertically homogenous vertical support radius key
@@ -48,9 +49,10 @@ type minim_type
 
    ! Specific data (LCT)
    integer :: nscales                         ! Number of LCT scales
-   real(kind_real),allocatable :: dx(:,:)     ! Zonal separation
-   real(kind_real),allocatable :: dy(:,:)     ! Meridian separation
-   real(kind_real),allocatable :: dz(:,:)     ! Vertical separation
+   real(kind_real),allocatable :: dxsq(:,:)   ! Zonal separation squared
+   real(kind_real),allocatable :: dysq(:,:)   ! Meridian separation squared
+   real(kind_real),allocatable :: dxdy(:,:)   ! Zonal x meridional separation product
+   real(kind_real),allocatable :: dzsq(:,:)   ! Vertical separation squared
    logical,allocatable :: dmask(:,:)          ! Mask
 contains
    procedure :: compute => minim_compute
@@ -202,14 +204,14 @@ else
 end if
 
 ! Compute function
-call fit_diag(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,fit_rh,fit_rv,fit)
+call fit_diag(mpl,minim%fit_type,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,fit_rh,fit_rv,fit)
 
 ! Pack
 fit_pack = pack(fit,mask=.true.)
 
 ! Observations penalty
-fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnotr(minim%obs).and.mpl%msv%isnotr(fit_pack))
-norm = sum(minim%obs**2,mask=mpl%msv%isnotr(minim%obs).and.mpl%msv%isnotr(fit_pack))
+fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
+norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
 if (norm>0.0) fo = fo/norm
 
 ! Smoothing penalty
@@ -280,15 +282,15 @@ else
 end if
 
 ! Compute function
-call fit_diag_dble(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,fit_rh,fit_rv, &
+call fit_diag_dble(mpl,minim%fit_type,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,fit_rh,fit_rv, &
  & fit_rv_rfac,fit_rv_coef,fit)
 
 ! Pack
 fit_pack = pack(fit,mask=.true.)
 
 ! Observations penalty
-fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnotr(minim%obs).and.mpl%msv%isnotr(fit_pack))
-norm = sum(minim%obs**2,mask=mpl%msv%isnotr(minim%obs).and.mpl%msv%isnotr(fit_pack))
+fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
+norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
 if (norm>0.0) fo = fo/norm
 
 ! Smoothing penalty
@@ -352,15 +354,15 @@ if (minim%nscales>1) then
 else
    coef(1) = 1.0
 end if
-call fit_lct(mpl,minim%nc3,minim%nl0,minim%dx,minim%dy,minim%dz,minim%dmask,minim%nscales, &
+call fit_lct(mpl,minim%nc3,minim%nl0,minim%dxsq,minim%dysq,minim%dxdy,minim%dzsq,minim%dmask,minim%nscales, &
  & xtmp(1:minim%nscales*4),coef,fit)
 
 ! Pack
 fit_pack = pack(fit,mask=.true.)
 
 ! Observations penalty
-f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnotr(minim%obs).and.mpl%msv%isnotr(fit_pack))
-norm = sum(minim%obs**2,mask=mpl%msv%isnotr(minim%obs).and.mpl%msv%isnotr(fit_pack))
+f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
+norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
 if (norm>0.0) f = f/norm
 
 end subroutine minim_cost_fit_lct

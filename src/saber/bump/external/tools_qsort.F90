@@ -12,6 +12,7 @@
 module tools_qsort
 
 use tools_kinds, only: kind_real
+use tools_repro, only: inf,sup
 
 implicit none
 
@@ -177,12 +178,12 @@ else
     ! Scan list from left end until element >= reference is found
     do
       i = i+1
-      if (list(i)>=reference) exit
+      if (.not.inf(list(i),reference)) exit
     end do
     ! Scan list from right end until element <= reference is found
     do
       j = j-1
-      if (list(j)<=reference) exit
+      if (.not.sup(list(j),reference)) exit
     end do
 
     if (i<j) then
@@ -262,7 +263,7 @@ real(kind_real) :: temp
 
 do i=left_end,right_end-1
   do j=i+1,right_end
-    if (list(i)>list(j)) then
+    if (sup(list(i),list(j))) then
       temp = list(i)
       list(i) = list(j)
       list(j) = temp

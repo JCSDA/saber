@@ -1,6 +1,6 @@
 #!/bin/sh
 #----------------------------------------------------------------------
-# Shell script: compare
+# Shell script: comparesaber
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -31,7 +31,7 @@ if test "${test%%_*}" = "bump" ; then
       else
          # Build reference file name, with a special case where the file is mpi-dependent
          fileref=testref/${test}/test_1-1_${suffix}.nc
-         for special in "mom" "nicas" "obs" "split" "vbal" ; do
+         for special in "mom" "lct_cor" "nicas" "obs" "split" "vbal" ; do
             if printf %s\\n "${suffix}" | grep -qF "${special}" ; then
                fileref=testref/${test}/test_${mpi}-1_${suffix}.nc
             fi
@@ -45,9 +45,12 @@ if test "${test%%_*}" = "bump" ; then
             if test "${exit_code}" != "0" ; then
                echo "\e[31mTest failed checking: "${file#testdata/}"\e[0m"
                status=1
+               exit ${status}
             fi
          else
-            echo "Cannot find command: nccmp"
+            echo "\e[31mCannot find command: nccmp\e[0m"
+            status=2
+            exit ${status}
          fi
       fi
    done
@@ -58,7 +61,8 @@ if test "${test%%_*}" = "bump" ; then
       exit_code=$?
       if test "${exit_code}" = "0" ; then
          echo "\e[31mTest failed checking: "${file#testoutput/}"\e[0m"
-         status=2
+         status=3
+         exit ${status}
       fi
 
       # Check for "Close listings" line
@@ -66,7 +70,8 @@ if test "${test%%_*}" = "bump" ; then
       exit_code=$?
       if test "${exit_code}" != "0" ; then
          echo "\e[31mTest failed checking: "${file#testoutput/}"\e[0m"
-         status=2
+         status=3
+         exit ${status}
       fi
    done
 fi

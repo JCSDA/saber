@@ -1,0 +1,43 @@
+# general_param
+datadir: "testdata/bump_cortrack"
+prefix: "test__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+method: "cor"
+strategy: "specific_univariate"
+new_cortrack: 1
+
+# model_param
+nl: 2
+levs: [1,2]
+nv: 1
+varname: ["q"]
+nts: 2
+timeslot: [0,6]
+
+# ens1_param
+ens1_ne: 50
+
+# ens2_param
+
+# sampling_param
+
+# diag_param
+ne: 50
+adv_rad: 1000.0e3
+
+# fit_param
+
+# nicas_param
+ndir: 1
+londir: [-85.0]
+latdir: [65.0]
+levdir: [1]
+ivdir: [1]
+itsdir: [1]
+
+# obsop_param
+
+# output_param
+

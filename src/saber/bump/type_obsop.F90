@@ -130,7 +130,8 @@ obsop%h%prefix = 'o'
 call obsop%h%read(mpl,ncid)
 
 ! Read communication
-call obsop%com%read(mpl,ncid,'com')
+obsop%com%prefix = 'com'
+call obsop%com%read(mpl,ncid)
 
 ! Close file
 call mpl%ncerr(subr,nf90_close(ncid))
@@ -228,19 +229,12 @@ type(nam_type),intent(in) :: nam         ! Namelist
 type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: offset,iobs,jobs,iobsa,iproc,i_s,ic0,ic0b,i,ic0a,delta,nres,ind(1),lunit,nobs_eff,nobsa_eff
-integer :: nn_index(1),imin(1),imax(1),nmoves,imoves
-integer :: proc_to_nobsa(mpl%nproc),proc_to_nobsa_eff(mpl%nproc),nobs_to_move(mpl%nproc),nobs_to_move_tmp(mpl%nproc)
+integer :: iobsa,iproc,i_s,ic0,jc0,ic0b,ic0a,nobsa_eff
+integer :: nobs_eff,nn_index(1),proc_to_nobsa(mpl%nproc),proc_to_nobsa_eff(mpl%nproc)
 integer :: c0_to_c0b(geom%nc0),c0a_to_c0b(geom%nc0a)
-integer,allocatable :: nop(:),iop(:),srcproc(:,:),srcic0(:,:),order(:),obs_moved(:,:)
-integer,allocatable :: obs_to_proc(:),obs_to_obsa(:),c0b_to_c0(:)
+integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
-real(kind_real),allocatable :: lonobs(:),latobs(:),list(:)
 logical :: maskobsa(obsop%nobsa),lcheck_nc0b(geom%nc0)
-logical,allocatable :: maskobs(:)
-character(len=1024),parameter :: subr = 'obsop_run_obsop'
-type(fckit_mpi_status) :: status
-type(linop_type) :: hfull
 
 ! Check whether observations are inside the mesh
 do iobsa=1,obsop%nobsa
@@ -260,7 +254,7 @@ obsop%nobs = sum(proc_to_nobsa)
 nobs_eff = sum(proc_to_nobsa_eff)
 
 ! Print input
-write(mpl%info,'(a7,a)') '','Number of observations / valid observations per MPI task on input:'
+write(mpl%info,'(a7,a)') '','Number of observations / valid observations per MPI task:'
 call mpl%flush
 do iproc=1,mpl%nproc
    write(mpl%info,'(a10,a,i3,a,i8,a,i8)') '','Task ',iproc,': ',proc_to_nobsa(iproc),' / ',proc_to_nobsa_eff(iproc)
@@ -269,281 +263,30 @@ end do
 write(mpl%info,'(a10,a,i8,a,i8)') '','Total   : ',obsop%nobs,' / ',nobs_eff
 call mpl%flush
 
-! Allocation
-allocate(lonobs(obsop%nobs))
-allocate(latobs(obsop%nobs))
-allocate(maskobs(obsop%nobs))
-
-! Get observations coordinates on main task
-if (mpl%main) then
-   offset = 0
-   do iproc=1,mpl%nproc
-      if (proc_to_nobsa(iproc)>0) then
-         if (iproc==mpl%ioproc) then
-            ! Copy data
-            lonobs(offset+1:offset+proc_to_nobsa(iproc)) = obsop%lonobs
-            latobs(offset+1:offset+proc_to_nobsa(iproc)) = obsop%latobs
-            maskobs(offset+1:offset+proc_to_nobsa(iproc)) = maskobsa
-         else
-            ! Receive data on ioproc
-            call mpl%f_comm%receive(lonobs(offset+1:offset+proc_to_nobsa(iproc)),iproc-1,mpl%tag,status)
-            call mpl%f_comm%receive(latobs(offset+1:offset+proc_to_nobsa(iproc)),iproc-1,mpl%tag+1,status)
-            call mpl%f_comm%receive(maskobs(offset+1:offset+proc_to_nobsa(iproc)),iproc-1,mpl%tag+2,status)
-         end if
-      end if
-
-      ! Update offset
-      offset = offset+proc_to_nobsa(iproc)
-   end do
-else
-   if (obsop%nobsa>0) then
-      ! Send data to ioproc
-      call mpl%f_comm%send(obsop%lonobs,mpl%ioproc-1,mpl%tag)
-      call mpl%f_comm%send(obsop%latobs,mpl%ioproc-1,mpl%tag+1)
-      call mpl%f_comm%send(maskobsa,mpl%ioproc-1,mpl%tag+2)
-   end if
-end if
-call mpl%update_tag(3)
-
-! Broadcast data
-call mpl%f_comm%broadcast(lonobs,mpl%ioproc-1)
-call mpl%f_comm%broadcast(latobs,mpl%ioproc-1)
-call mpl%f_comm%broadcast(maskobs,mpl%ioproc-1)
-
-! Allocation
-allocate(nop(obsop%nobs))
-allocate(iop(obsop%nobs))
-allocate(obs_to_proc(obsop%nobs))
-allocate(obs_to_obsa(obsop%nobs))
-
 ! Compute interpolation
-hfull%prefix = 'o'
+obsop%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call hfull%interp(mpl,geom%mesh,geom%tree,geom%nc0,geom%mask_hor_c0,obsop%nobs,lonobs,latobs,maskobs,nam%obsop_interp)
+call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,geom%mask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs,maskobsa)
 
-! Count interpolation points
-nop = 0
-do i_s=1,hfull%n_s
-   iobs = hfull%row(i_s)
-   nop(iobs) = nop(iobs)+1
-end do
-
-! Allocation
-allocate(srcproc(maxval(nop),obsop%nobs))
-allocate(srcic0(maxval(nop),obsop%nobs))
-
-! Find grid points origin
-iop = 0
-srcproc = mpl%msv%vali
-srcic0 = mpl%msv%vali
-do i_s=1,hfull%n_s
-   ic0 = hfull%col(i_s)
-   iproc = geom%c0_to_proc(ic0)
-   iobs = hfull%row(i_s)
-   iop(iobs) = iop(iobs)+1
-   srcproc(iop(iobs),iobs) = iproc
-   srcic0(iop(iobs),iobs) = ic0
-end do
-
-! Generate observation distribution on processors
-select case (trim(nam%obsdis))
-case('')
-   ! Observations distributed as provided by user
-   write(mpl%info,'(a7,a)') '','Observations distributed as provided by user'
-   call mpl%flush
-
-   ! Fill obs_to_proc
-   iobs = 0
-   do iproc=1,mpl%nproc
-      do iobsa=1,proc_to_nobsa(iproc)
-         iobs = iobs+1
-         obs_to_proc(iobs) = iproc
-      end do
-   end do
-case('random')
-   ! Observations randomly distributed
-   write(mpl%info,'(a7,a)') '','Observations randomly distributed'
-   call mpl%flush
-
-   if (mpl%main) then
-      ! Allocation
-      allocate(list(obsop%nobs))
-      allocate(order(obsop%nobs))
-
-      ! Generate random order
-      call rng%rand_real(0.0_kind_real,1.0_kind_real,list)
-      call qsort(obsop%nobs,list,order)
-
-      ! Split observations
-      iproc = 1
-      do iobs=1,obsop%nobs
-         jobs = order(iobs)
-         obs_to_proc(jobs) = iproc
-         iproc = iproc+1
-         if (iproc>mpl%nproc) iproc = 1
-      end do
-
-      ! Release memory
-      deallocate(list)
-      deallocate(order)
-   end if
-
-   ! Broadcast
-   call mpl%f_comm%broadcast(obs_to_proc,mpl%ioproc-1)
-case ('local','adjusted')
-   ! Grid-based repartition
-   do iobs=1,obsop%nobs
-      if (maskobs(iobs)) then
-         ! Set observation proc
-         if (mpl%msv%isnoti(srcproc(2,iobs)).and.(srcproc(2,iobs)==srcproc(3,iobs))) then
-            ! Set to second point proc
-            obs_to_proc(iobs) = srcproc(2,iobs)
-         else
-            ! Set to first point proc
-            obs_to_proc(iobs) = srcproc(1,iobs)
-         end if
-      else
-         ! Missing obs on main task
-         obs_to_proc(iobs) = mpl%ioproc
-      end if
-   end do
-
-   if (trim(nam%obsdis)=='adjusted') then
-      ! Observations distribution adjusted
-      write(mpl%info,'(a7,a)') '','Observations distribution adjusted'
-      call mpl%flush
-
-      ! Proc to nobsa
-      proc_to_nobsa = 0
-      do iobs=1,obsop%nobs
-         if (maskobs(iobs)) then
-            ! Concerned proc
-            iproc = obs_to_proc(iobs)
-
-            ! Number of observations per proc
-            proc_to_nobsa(iproc) = proc_to_nobsa(iproc)+1
-         end if
-      end do
-
-      ! Target nobsa, nobsa to move
-      nres = nobs_eff
-      do iproc=1,mpl%nproc
-         delta = nobs_eff/mpl%nproc
-         if (nres>(mpl%nproc-iproc+1)*delta) delta = delta+1
-         nobs_to_move(iproc) = delta
-         nres = nres-delta
-      end do
-      nobs_to_move = int(real(proc_to_nobsa-nobs_to_move,kind_real))
-      if (sum(nobs_to_move)>0) then
-         ind = maxloc(nobs_to_move)
-      elseif (sum(nobs_to_move)<0) then
-         ind = minloc(nobs_to_move)
-      else
-         ind = 1
-      end if
-      nobs_to_move(ind(1)) = nobs_to_move(ind(1))-sum(nobs_to_move)
-
-      ! Select observations to move
-      allocate(obs_moved(maxval(abs(nobs_to_move)),mpl%nproc))
-      obs_moved = mpl%msv%vali
-      nobs_to_move_tmp = nobs_to_move
-      do iobs=1,obsop%nobs
-         if (maskobs(iobs)) then
-            iproc = obs_to_proc(iobs)
-            if (nobs_to_move_tmp(iproc)>0) then
-               ! Move this observation from iproc
-               obs_moved(nobs_to_move_tmp(iproc),iproc) = iobs
-               nobs_to_move_tmp(iproc) = nobs_to_move_tmp(iproc)-1
-            end if
-         end if
-      end do
-
-      ! Select destination proc
-      do while (any(nobs_to_move<0))
-         imin = minloc(nobs_to_move)
-         imax = maxloc(nobs_to_move)
-         nmoves = min(nobs_to_move(imax(1)),-nobs_to_move(imin(1)))
-         do imoves=1,nmoves
-            iobs = obs_moved(nobs_to_move(imax(1)),imax(1))
-            obs_moved(nobs_to_move(imax(1)),imax(1)) = mpl%msv%vali
-            obs_to_proc(iobs) = imin(1)
-            nobs_to_move(imax(1)) = nobs_to_move(imax(1))-1
-            nobs_to_move(imin(1)) = nobs_to_move(imin(1))+1
-         end do
-      end do
-
-      ! Release memory
-      deallocate(obs_moved)
-   else
-      ! Observations distribution based on grid distribution
-      write(mpl%info,'(a7,a)') '','Observations distribution based on grid distribution'
-      call mpl%flush
-   end if
-case default
-   call mpl%abort(subr,'wrong obsdis')
-end select
-
-! Release memory
-deallocate(obsop%lonobs)
-deallocate(obsop%latobs)
-
-! Allocation
-obsop%nobsa = count(obs_to_proc==mpl%myproc)
-allocate(obsop%obsa_to_obs(obsop%nobsa))
-allocate(obsop%lonobs(obsop%nobsa))
-allocate(obsop%latobs(obsop%nobsa))
-
-! Fill proc_to_nobsa, obs_to_obsa and obsa_to_obs
-proc_to_nobsa = 0
-proc_to_nobsa_eff = 0
-do iobs=1,obsop%nobs
-   ! Concerned proc
-   iproc = obs_to_proc(iobs)
-
-   ! Number of observations per proc
-   proc_to_nobsa(iproc) = proc_to_nobsa(iproc)+1
-   if (maskobs(iobs)) proc_to_nobsa_eff(iproc) = proc_to_nobsa_eff(iproc)+1
-
-   ! Observations local index
-   iobsa = proc_to_nobsa(iproc)
-   obs_to_obsa(iobs) = iobsa
-   if (iproc==mpl%myproc) obsop%obsa_to_obs(iobsa) = iobs
-
-   ! Fill lonobs/latobs
-   if (iproc==mpl%myproc) then
-      obsop%lonobs(iobsa) = lonobs(iobs)
-      obsop%latobs(iobsa) = latobs(iobs)
-   end if
-end do
-
-! Count number of local interpolation operations
-obsop%h%n_s = 0
-do i_s=1,hfull%n_s
-   iobs = hfull%row(i_s)
-   iproc = obs_to_proc(iobs)
-   if (iproc==mpl%myproc) obsop%h%n_s = obsop%h%n_s+1
-end do
-
-! Count halo points
+! Define halo B
 lcheck_nc0b = .false.
 do ic0a=1,geom%nc0a
    ic0 = geom%c0a_to_c0(ic0a)
    if (geom%c0_to_proc(ic0)==mpl%myproc) lcheck_nc0b(ic0) = .true.
 end do
-do iobs=1,obsop%nobs
-   iproc = obs_to_proc(iobs)
-   if (iproc==mpl%myproc) then
-      do i=1,iop(iobs)
-         ic0 = srcic0(i,iobs)
-         lcheck_nc0b(ic0) = .true.
-      end do
-   end if
+do iobsa=1,obsop%nobsa
+   do i_s=1,obsop%h%n_s
+      jc0 = obsop%h%col(i_s)
+      lcheck_nc0b(jc0) = .true.
+   end do
 end do
 obsop%nc0b = count(lcheck_nc0b)
 
-! Define halo points
+! Allocation
 allocate(c0b_to_c0(obsop%nc0b))
+
+! Global-local conversion for halo B
 c0_to_c0b = mpl%msv%vali
 ic0b = 0
 do ic0=1,geom%nc0
@@ -554,46 +297,29 @@ do ic0=1,geom%nc0
    end if
 end do
 
-! Split interpolation data
-obsop%h%prefix = 'o'
-obsop%h%n_src = obsop%nc0b
-obsop%h%n_dst = obsop%nobsa
-call obsop%h%alloc
-obsop%h%n_s = 0
-do i_s=1,hfull%n_s
-   iobs = hfull%row(i_s)
-   ic0 = hfull%col(i_s)
-   iproc = obs_to_proc(iobs)
-   if (iproc==mpl%myproc) then
-      obsop%h%n_s = obsop%h%n_s+1
-      obsop%h%row(obsop%h%n_s) = obs_to_obsa(iobs)
-      obsop%h%col(obsop%h%n_s) = c0_to_c0b(ic0)
-      obsop%h%S(obsop%h%n_s) = hfull%S(i_s)
-   end if
-end do
-
-! Inter-halo conversions
+! Halos A-B conversion
 do ic0a=1,geom%nc0a
    ic0 = geom%c0a_to_c0(ic0a)
    ic0b = c0_to_c0b(ic0)
    c0a_to_c0b(ic0a) = ic0b
 end do
 
+! Local interpolation source
+obsop%h%n_src = obsop%nc0b
+do i_s=1,obsop%h%n_s
+   obsop%h%col(i_s) = c0_to_c0b(obsop%h%col(i_s))
+end do
+call obsop%h%reorder(mpl)
+
 ! Setup communications
-call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
+call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
 
 ! Compute scores
 call mpl%f_comm%allreduce(real(obsop%com%nhalo,kind_real),C_max,fckit_mpi_max())
 C_max = C_max/(3.0*real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
 N_max = real(maxval(proc_to_nobsa_eff),kind_real)/(real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
 
-! Print output
-write(mpl%info,'(a7,a)') '','Number of observations / valid observations per MPI task on output:'
-call mpl%flush
-do iproc=1,mpl%nproc
-   write(mpl%info,'(a10,a,i3,a,i8,a,i8)') '','Task ',iproc,': ',proc_to_nobsa(iproc),' / ',proc_to_nobsa_eff(iproc)
-   call mpl%flush
-end do
+! Print results
 write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa_eff) &
  & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
 call mpl%flush
@@ -606,26 +332,7 @@ call mpl%flush
 ! Write observation operator
 if (nam%write_obsop) call obsop%write(mpl,nam)
 
-if (mpl%main.and.nam%write_obsop) then
-   ! Write scores
-   if (mpl%nproc>1) then
-      call mpl%newunit(lunit)
-      open(unit=lunit,file=trim(nam%datadir)//'/'//trim(nam%prefix)//'_obs_scores_'//trim(nam%obsdis)//'.dat',status='replace')
-      write(lunit,*) N_max,C_max
-      close(unit=lunit)
-   end if
-end if
-
 ! Release memory
-deallocate(lonobs)
-deallocate(latobs)
-deallocate(maskobs)
-deallocate(nop)
-deallocate(iop)
-deallocate(obs_to_proc)
-deallocate(obs_to_obsa)
-deallocate(srcproc)
-deallocate(srcic0)
 deallocate(c0b_to_c0)
 
 end subroutine obsop_run_obsop
@@ -761,7 +468,7 @@ call obsop%apply_ad(mpl,geom,yobs_save,fld)
 ! Compute adjoint test
 call mpl%dot_prod(fld,fld_save,sum1)
 if (obsop%nobsa>0) then
-   sum2_loc = sum(yobs*yobs_save,mask=mpl%msv%isnotr(yobs))
+   sum2_loc = sum(yobs*yobs_save,mask=mpl%msv%isnot(yobs))
 else
    sum2_loc = 0.0
 end if
@@ -813,18 +520,18 @@ if (obsop%nobsa>0) then
    ! Remove points close to the longitude discontinuity and to the poles
    dist = mpl%msv%valr
    do iobsa=1,obsop%nobsa
-      if (mpl%msv%isnotr(ylon(iobsa,1)).and.mpl%msv%isnotr(ylat(iobsa,1))) then
+      if (mpl%msv%isnot(ylon(iobsa,1)).and.mpl%msv%isnot(ylat(iobsa,1))) then
          if ((abs(obsop%lonobs(iobsa))<0.8*pi).and.(abs(obsop%latobs(iobsa))<0.4*pi)) then
             call sphere_dist(ylon(iobsa,1),ylat(iobsa,1),obsop%lonobs(iobsa),obsop%latobs(iobsa),dist(iobsa))
             dist(iobsa) = dist(iobsa)*reqkm
          end if
       end if
    end do
-   norm = real(count(mpl%msv%isnotr(dist)),kind_real)
+   norm = real(count(mpl%msv%isnot(dist)),kind_real)
    if (norm>0) then
-      distmin = minval(dist,mask=mpl%msv%isnotr(dist))
-      distmax = maxval(dist,mask=mpl%msv%isnotr(dist))
-      distsum = sum(dist,mask=mpl%msv%isnotr(dist))
+      distmin = minval(dist,mask=mpl%msv%isnot(dist))
+      distmax = maxval(dist,mask=mpl%msv%isnot(dist))
+      distsum = sum(dist,mask=mpl%msv%isnot(dist))
    else
       distmin = huge(1.0)
       distmax = 0.0
@@ -847,7 +554,7 @@ call mpl%f_comm%allreduce(distsum,distsum_tot,fckit_mpi_sum())
 ! Maximum error detail
 iprocmax = maxloc(proc_to_distmax)
 if (iprocmax(1)==mpl%myproc) then
-   iobsamax = maxloc(dist,mask=mpl%msv%isnotr(dist))
+   iobsamax = maxloc(dist,mask=mpl%msv%isnot(dist))
    lonmax = obsop%lonobs(iobsamax(1))
    latmax = obsop%latobs(iobsamax(1))
    ylonmax = ylon(iobsamax(1),1)

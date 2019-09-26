@@ -49,6 +49,7 @@ phases:
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
       - git clone -b $my_branch https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
+      - git clone -b 0.18.1 https://$GIT_USER:$GIT_PASS@github.com/ecmwf/atlas saber-bundle/atlas
 
       - mv saber-bundle /jcsda/
       - cd /jcsda/saber-bundle
@@ -60,6 +61,9 @@ phases:
       - echo Executing build phase
       - su - jcsdauser -c "cd /build_container 
         && ls
+        && export FC=mpifort
+        && export CC=mpicc
+        && export CXX=mpicxx
         && ecbuild /jcsda/saber-bundle/
         && make -j4
         && ctest" 

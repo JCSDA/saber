@@ -7,7 +7,7 @@
 !----------------------------------------------------------------------
 module tools_fit
 
-use tools_func, only: gc99
+use tools_func, only: fit_func
 use tools_kinds, only: kind_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
@@ -25,17 +25,18 @@ contains
 ! Subroutine: fast_fit
 ! Purpose: fast fit length-scale estimation based on the value at mid-height
 !----------------------------------------------------------------------
-subroutine fast_fit(mpl,n,iz,dist,raw,fit_r)
+subroutine fast_fit(mpl,fit_type,n,iz,dist,raw,fit_r)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: n               ! Vector size
-integer,intent(in) :: iz              ! Zero separation index
-real(kind_real),intent(in) :: dist(n) ! Distance
-real(kind_real),intent(in) :: raw(n)  ! Raw data
-real(kind_real),intent(out) :: fit_r  ! Fast fit result
+type(mpl_type),intent(inout) :: mpl     ! MPI data
+character(len=*),intent(in) :: fit_type ! Fit function type
+integer,intent(in) :: n                 ! Vector size
+integer,intent(in) :: iz                ! Zero separation index
+real(kind_real),intent(in) :: dist(n)   ! Distance
+real(kind_real),intent(in) :: raw(n)    ! Raw data
+real(kind_real),intent(out) :: fit_r    ! Fast fit result
 
 ! Local variables
 integer :: di,i,im,ip,iter
@@ -62,40 +63,36 @@ if (raw(iz)>0.0) then
       valid = .false.
       do i=1,n
         if (i/=iz) then
-           if (raw_tmp(i)>0.0) valid = .true.
+           if (raw_tmp(i)>0.0) then
+              valid = .true.
+              exit
+           end if
         end if
       end do
 
       if (valid) then
-         ! Define threshold and its inverse
-         if (inf(minval(raw_tmp/raw_tmp(iz),mask=(raw_tmp>0.0)),0.5_kind_real)) then
-            ! Default threshold
-            th = 0.5
-            thinv = 0.33827292796125663
-         else
-            ! Curve-dependent threshold
-            th = minval(raw_tmp/raw_tmp(iz),mask=(raw_tmp>0.0))+1.0e-6
+         ! Curve-dependent threshold
+         th = 0.5*(minval(raw_tmp/raw_tmp(iz),mask=(raw_tmp>0.0))+raw_tmp(iz))
 
-            ! Find inverse threshold by dichotomy
-            thinv = 0.5
-            dthinv = 0.25
-            do iter=1,itermax
-               thtest = gc99(mpl,thinv)
-               if (sup(th,thtest)) then
-                  thinv = thinv-dthinv
-               else
-                  thinv = thinv+dthinv
-               end if
-               dthinv = 0.5*dthinv
-            end do
-         end if
+         ! Find inverse threshold with a dichotomy
+         thinv = 0.5
+         dthinv = 0.25
+         do iter=1,itermax
+            thtest = fit_func(mpl,fit_type,thinv)
+            if (sup(th,thtest)) then
+               thinv = thinv-dthinv
+            else
+               thinv = thinv+dthinv
+            end if
+            dthinv = 0.5*dthinv
+         end do
 
          ! Find support radius, lower value
          fit_rm = mpl%msv%valr
          ip = iz
          do di=1,n
             ! Check whether fit value has been found
-            if (mpl%msv%isr(fit_rm)) then
+            if (mpl%msv%is(fit_rm)) then
                ! Index
                im = iz-di
 
@@ -121,7 +118,7 @@ if (raw(iz)>0.0) then
          im = iz
          do di=1,n
             ! Check whether fit value has been found
-            if (mpl%msv%isr(fit_rp)) then
+            if (mpl%msv%is(fit_rp)) then
                ! Index
                ip = iz+di
 
@@ -143,32 +140,31 @@ if (raw(iz)>0.0) then
          end do
 
          ! Gather values
-         if (mpl%msv%isnotr(fit_rm).and.mpl%msv%isnotr(fit_rp)) then
+         if (mpl%msv%isnot(fit_rm).and.mpl%msv%isnot(fit_rp)) then
             fit_r = 0.5*(fit_rm+fit_rp)
-         elseif (mpl%msv%isnotr(fit_rm)) then
+         elseif (mpl%msv%isnot(fit_rm)) then
             fit_r = fit_rm
-         elseif (mpl%msv%isnotr(fit_rp)) then
+         elseif (mpl%msv%isnot(fit_rp)) then
             fit_r = fit_rp
          end if
 
          ! Normalize
-         if (mpl%msv%isnotr(fit_r)) fit_r = fit_r/thinv
+         if (mpl%msv%isnot(fit_r)) fit_r = fit_r/thinv
 
          ! Check positivity
-         if (inf(fit_r,0.0_kind_real)) then
-            call mpl%warning(subr,'negative fit_r in fast_fit')
-            fit_r = 0.0
-         end if
+         if (inf(fit_r,0.0_kind_real)) fit_r = mpl%msv%valr
       else
          ! Only the zero-separation point is valid, zero radius
-         fit_r = 0.0
+         fit_r = mpl%msv%valr
       end if
 
       ! Set minimum distance
-      distmin = huge(1.0)
-      if (iz>1) distmin = min(distmin,abs(dist(iz-1)-dist(iz)))
-      if (iz<n) distmin = min(distmin,abs(dist(iz+1)-dist(iz)))
-      fit_r = max(fit_r,distmin)
+      if (mpl%msv%isnot(fit_r)) then
+         distmin = huge(1.0)
+         if (iz>1) distmin = min(distmin,abs(dist(iz-1)-dist(iz)))
+         if (iz<n) distmin = min(distmin,abs(dist(iz+1)-dist(iz)))
+         fit_r = max(fit_r,distmin)
+      end if
    else
       ! Only one point, zero radius
       fit_r = 0.0
@@ -202,15 +198,15 @@ character(len=1024),parameter :: subr = 'ver_smooth'
 
 if (rv<0.0) call mpl%abort(subr,'negative filtering support radius in ver_smooth')
 
-if ((rv>0.0).and.mpl%msv%isanynotr(profile)) then
+if ((rv>0.0).and.mpl%msv%isanynot(profile)) then
    ! Vertical smoothing kernel
    kernel = 0.0
    do i=1,n
       do j=1,n
-         if (mpl%msv%isnotr(profile(j))) then
+         if (mpl%msv%isnot(profile(j))) then
             ! Gaspari-Cohn (1999) function
             distnorm = abs(x(j)-x(i))/rv
-            kernel(i,j) = gc99(mpl,distnorm)
+            kernel(i,j) = fit_func(mpl,'gc99',distnorm)
          end if
       end do
    end do
@@ -253,31 +249,31 @@ integer :: i,j,iinf,isup
 real(kind_real) :: profile_init(n)
 character(len=1024),parameter :: subr = 'ver_fill'
 
-if (mpl%msv%isanynotr(profile)) then
+if (mpl%msv%isanynot(profile)) then
    ! Initialization
    profile_init = profile
    iinf = mpl%msv%vali
 
    do i=1,n
-      if (mpl%msv%isnotr(profile_init(i))) then
+      if (mpl%msv%isnot(profile_init(i))) then
          ! Valid inferior point
          iinf = i
       else
          ! Look for a superior point
          isup = mpl%msv%vali
          j = i+1
-         do while ((j<=n).and.(mpl%msv%isi(isup)))
-            if (mpl%msv%isnotr(profile_init(j))) isup = j
+         do while ((j<=n).and.(mpl%msv%is(isup)))
+            if (mpl%msv%isnot(profile_init(j))) isup = j
             j = j+1
          end do
 
-         if (mpl%msv%isnoti(iinf).and.mpl%msv%isnoti(isup)) then
+         if (mpl%msv%isnot(iinf).and.mpl%msv%isnot(isup)) then
             ! Interpolation
             profile(i) = profile_init(iinf)+(x(i)-x(iinf))*(profile_init(isup)-profile_init(iinf))/(x(isup)-x(iinf))
-         elseif (mpl%msv%isnoti(isup)) then
+         elseif (mpl%msv%isnot(isup)) then
             ! Extrapolation with nearest superior point
             profile(i) = profile(isup)
-         elseif (mpl%msv%isnoti(iinf)) then
+         elseif (mpl%msv%isnot(iinf)) then
             ! Extrapolation with nearest inferior point
             profile(i) = profile(iinf)
          else

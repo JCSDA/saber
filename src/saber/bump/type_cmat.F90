@@ -12,8 +12,6 @@ use netcdf
 use tools_const, only: rad2deg,reqkm,req
 use tools_func, only: lct_d2h,lct_h2r
 use tools_kinds, only: kind_real
-use type_adv, only: adv_type
-use type_avg, only: avg_type
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_diag, only: diag_type
@@ -39,6 +37,7 @@ contains
    procedure :: cmat_alloc_blk
    generic :: alloc => cmat_alloc,cmat_alloc_blk
    procedure :: init => cmat_init
+   procedure :: partial_dealloc => cmat_partial_dealloc
    procedure :: dealloc => cmat_dealloc
    procedure :: read => cmat_read
    procedure :: write => cmat_write
@@ -142,6 +141,30 @@ end do
 end subroutine cmat_init
 
 !----------------------------------------------------------------------
+! Subroutine: cmat_partial_dealloc
+! Purpose: release memory (partial)
+!----------------------------------------------------------------------
+subroutine cmat_partial_dealloc(cmat)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat ! C matrix
+
+! Local variables
+integer :: ib
+
+! Release memory
+if (allocated(cmat%blk)) then
+   do ib=1,size(cmat%blk)
+      call cmat%blk(ib)%partial_bump_dealloc
+      call cmat%blk(ib)%partial_dealloc
+   end do
+end if
+
+end subroutine cmat_partial_dealloc
+
+!----------------------------------------------------------------------
 ! Subroutine: cmat_dealloc
 ! Purpose: release memory
 !----------------------------------------------------------------------
@@ -187,7 +210,7 @@ type(io_type),intent(in) :: io         ! I/O
 ! Local variables
 integer :: ib,ncid,double_fit,anisotropic,its
 character(len=3) :: itschar
-character(len=1024) :: filename
+character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'cmat_read'
 
 ! Allocation
@@ -217,8 +240,8 @@ do ib=1,bpar%nbe
       end if
 
       ! Broadcast
-      call mpl%f_comm%broadcast(cmat%blk(ib)%double_fit,mpl%ioproc-1)
-      call mpl%f_comm%broadcast(cmat%blk(ib)%anisotropic,mpl%ioproc-1)
+      call mpl%f_comm%broadcast(cmat%blk(ib)%double_fit,mpl%rootproc-1)
+      call mpl%f_comm%broadcast(cmat%blk(ib)%anisotropic,mpl%rootproc-1)
    end if
 end do
 
@@ -281,7 +304,7 @@ type(io_type),intent(in) :: io      ! I/O
 ! Local variables
 integer :: ib,ncid,its
 character(len=3) :: itschar
-character(len=1024) :: filename
+character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'cmat_write'
 
 do ib=1,bpar%nbe
@@ -461,7 +484,7 @@ do ib=1,bpar%nbe
             ! Copy to C matrix
             cmat%blk(ib)%coef_ens = fld_c0a(:,:,1)
             call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
-            cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(count(geom%mask_c0),kind_real)
+            cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%coef_sta = fld_c0a(:,:,2)
             cmat%blk(ib)%rh = fld_c0a(:,:,3)
             cmat%blk(ib)%rv = fld_c0a(:,:,4)
@@ -775,7 +798,7 @@ do ib=1,bpar%nbe
          write(mpl%info,'(a7,a,a)') '','Standard import from BUMP for block ',trim(bpar%blockname(ib))
          cmat%blk(ib)%coef_ens = cmat%blk(ib)%bump_coef_ens
          call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
-         cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(count(geom%mask_c0),kind_real)
+         cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
          cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
          cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
       end if
@@ -814,6 +837,9 @@ do ib=1,bpar%nbe
          cmat%blk(ib)%wgt = 1.0
       end if
    end if
+
+   ! Release memory (partial)
+   call cmat%blk(ib)%partial_bump_dealloc
 end do
 
 end subroutine cmat_from_bump

@@ -105,18 +105,17 @@ end subroutine vbal_blk_dealloc
 ! Subroutine: vbal_blk_apply
 ! Purpose: apply vertical balance block
 !----------------------------------------------------------------------
-subroutine vbal_blk_apply(vbal_blk,geom,np,h_n_s,h_c2b,h_S,fld)
+subroutine vbal_blk_apply(vbal_blk,geom,h_n_s,h_c2b,h_S,fld)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(in) :: vbal_blk               ! Vertical balance block
-type(geom_type),intent(in) :: geom                        ! Geometry
-integer,intent(in) :: np                                  ! Maximum number of neighbors
-integer,intent(in) :: h_n_s(geom%nc0a,geom%nl0i)          ! Number of neighbors for the horizontal interpolation
-integer,intent(in) :: h_c2b(np,geom%nc0a,geom%nl0i)       ! Index of neighbors for the horizontal interpolation
-real(kind_real),intent(in) :: h_S(np,geom%nc0a,geom%nl0i) ! Weight of neighbors for the horizontal interpolation
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0)  ! Source/destination vector
+class(vbal_blk_type),intent(in) :: vbal_blk              ! Vertical balance block
+type(geom_type),intent(in) :: geom                       ! Geometry
+integer,intent(in) :: h_n_s(geom%nc0a,geom%nl0i)         ! Number of neighbors for the horizontal interpolation
+integer,intent(in) :: h_c2b(3,geom%nc0a,geom%nl0i)       ! Index of neighbors for the horizontal interpolation
+real(kind_real),intent(in) :: h_S(3,geom%nc0a,geom%nl0i) ! Weight of neighbors for the horizontal interpolation
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) ! Source/destination vector
 
 ! Local variables
 integer :: ic0a,il0,jl0,i_s,ic2b
@@ -150,18 +149,17 @@ end subroutine vbal_blk_apply
 ! Subroutine: vbal_blk_apply_ad
 ! Purpose: apply adjoint vertical balance block
 !----------------------------------------------------------------------
-subroutine vbal_blk_apply_ad(vbal_blk,geom,np,h_n_s,h_c2b,h_S,fld)
+subroutine vbal_blk_apply_ad(vbal_blk,geom,h_n_s,h_c2b,h_S,fld)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(in) :: vbal_blk               ! Vertical balance block
-type(geom_type),intent(in) :: geom                        ! Geometry
-integer,intent(in) :: np                                  ! Maximum number of neighbors
-integer,intent(in) :: h_n_s(geom%nc0a,geom%nl0i)          ! Number of neighbors for the horizontal interpolation
-integer,intent(in) :: h_c2b(np,geom%nc0a,geom%nl0i)       ! Index of neighbors for the horizontal interpolation
-real(kind_real),intent(in) :: h_S(np,geom%nc0a,geom%nl0i) ! Weight of neighbors for the horizontal interpolation
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0)  ! Source/destination vector
+class(vbal_blk_type),intent(in) :: vbal_blk              ! Vertical balance block
+type(geom_type),intent(in) :: geom                       ! Geometry
+integer,intent(in) :: h_n_s(geom%nc0a,geom%nl0i)         ! Number of neighbors for the horizontal interpolation
+integer,intent(in) :: h_c2b(3,geom%nc0a,geom%nl0i)       ! Index of neighbors for the horizontal interpolation
+real(kind_real),intent(in) :: h_S(3,geom%nc0a,geom%nl0i) ! Weight of neighbors for the horizontal interpolation
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) ! Source/destination vector
 
 ! Local variables
 integer :: ic0a,il0,jl0,i_s,ic2b

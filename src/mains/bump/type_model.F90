@@ -20,10 +20,8 @@ use type_rng, only: rng_type
 
 implicit none
 
-character(len=1024) :: zone = 'C+I'          ! Computation zone for AROME ('C', 'C+I' or 'C+I+E')
-integer,parameter :: ntile = 6               ! Number of tiles for FV3
-logical,parameter :: test_no_obs = .false.   ! Test observation operator with no observation on the last MPI task
-logical,parameter :: test_no_point = .false. ! Test BUMP with no grid point on the last MPI task
+character(len=1024) :: zone = 'C+I'               ! Computation zone for AROME ('C', 'C+I' or 'C+I+E')
+integer,parameter :: ntile = 6                    ! Number of tiles for FV3
 
 ! Member field derived type
 type member_field_type
@@ -204,24 +202,22 @@ end subroutine model_dealloc
 ! Subroutine: model_setup
 ! Purpose: setup model
 !----------------------------------------------------------------------
-subroutine model_setup(model,mpl,rng,nam)
+subroutine model_setup(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
 class(model_type),intent(inout) :: model ! Model
 type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(rng_type),intent(inout) :: rng      ! Random number generator
 type(nam_type),intent(inout) :: nam      ! Namelist variables
 
 ! Local variables
 integer :: iv,img,info,iproc,imga,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw
 integer :: ncid,nmg_id,mg_to_proc_id,mg_to_mga_id,lon_id,lat_id
-integer :: nn_index(1),bnd(0)
-integer,allocatable :: center_to_mg(:),nx(:),imga_arr(:)
+integer :: nn_index(1)
+integer,allocatable :: nx(:),imga_arr(:)
 real(kind_real) :: dlat,dlon
-real(kind_real),allocatable :: rh(:),lon_center(:),lat_center(:),fld(:,:,:)
-logical,allocatable :: mask_hor(:)
+real(kind_real),allocatable :: lon_center(:),lat_center(:),fld(:,:,:)
 character(len=4) :: nprocchar
 character(len=1024) :: varname,filename
 character(len=1024),dimension(nvmax) :: varname_save,addvar2d_save
@@ -266,7 +262,13 @@ elseif (mpl%nproc>1) then
       filename = trim(nam%prefix)//'_distribution_'//nprocchar//'.nc'
       info = nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid)
    end if
-   call mpl%f_comm%broadcast(info,mpl%ioproc-1)
+   call mpl%f_comm%broadcast(info,mpl%rootproc-1)
+
+   ! No points on the last task
+   if (nam%check_no_point) then
+      info = nf90_noerr+1
+      if (mpl%main) call mpl%ncerr(subr,nf90_close(ncid))
+   end if
 
    if (info==nf90_noerr) then
       ! Read local distribution
@@ -287,8 +289,8 @@ elseif (mpl%nproc>1) then
       end if
 
       ! Broadcast distribution
-      call mpl%f_comm%broadcast(model%mg_to_proc,mpl%ioproc-1)
-      call mpl%f_comm%broadcast(model%mg_to_mga,mpl%ioproc-1)
+      call mpl%f_comm%broadcast(model%mg_to_proc,mpl%rootproc-1)
+      call mpl%f_comm%broadcast(model%mg_to_mga,mpl%rootproc-1)
 
       ! Check
       if (maxval(model%mg_to_proc)>mpl%nproc) call mpl%abort(subr,'wrong distribution')
@@ -300,59 +302,28 @@ elseif (mpl%nproc>1) then
       allocate(lat_center(mpl%nproc))
       allocate(imga_arr(mpl%nproc))
 
-      ! Define distribution centers
-      if (.false.) then
-         ! Using a random sampling
-
-         ! Allocation
-         allocate(mask_hor(model%nmg))
-         allocate(rh(model%nmg))
-         allocate(center_to_mg(mpl%nproc))
-
-         ! Initialization
-         mask_hor = any(model%mask,dim=2)
-         rh = 1.0
-
-         ! Compute sampling
-         write(mpl%info,'(a7,a)') '','Define distribution centers:'
-         call mpl%flush(.false.)
-         call rng%initialize_sampling(mpl,model%nmg,model%lon,model%lat,mask_hor,0,bnd,rh,nam%ntry,nam%nrep, &
-       & mpl%nproc,center_to_mg)
-
-         ! Define centers coordinates
-         lon_center = model%lon(center_to_mg)
-         lat_center = model%lat(center_to_mg)
-
-         ! Release memory
-         deallocate(mask_hor)
-         deallocate(rh)
-         deallocate(center_to_mg)
-      else
-         ! Using a regular splitting
-
-         ! Allocation
-         ny = nint(sqrt(real(mpl%nproc,kind_real)))
-         if (ny**2<mpl%nproc) ny = ny+1
-         allocate(nx(ny))
-         nres = mpl%nproc
-         do iy=1,ny
-            delta = mpl%nproc/ny
-            if (nres>(ny-iy+1)*delta) delta = delta+1
-            nx(iy) = delta
-            nres = nres-delta
+      ! Define distribution centers using a regular splitting
+      ny = nint(sqrt(real(mpl%nproc,kind_real)))
+      if (ny**2<mpl%nproc) ny = ny+1
+      allocate(nx(ny))
+      nres = mpl%nproc
+      do iy=1,ny
+         delta = mpl%nproc/ny
+         if (nres>(ny-iy+1)*delta) delta = delta+1
+         nx(iy) = delta
+         nres = nres-delta
+      end do
+      if (sum(nx)/=mpl%nproc) call mpl%abort(subr,'wrong number of tiles in define_distribution')
+      dlat = (maxval(model%lat)-minval(model%lat))/ny
+      iproc = 0
+      do iy=1,ny
+         dlon = (maxval(model%lon)-minval(model%lon))/nx(iy)
+         do ix=1,nx(iy)
+            iproc = iproc+1
+            lat_center(iproc) = minval(model%lat)+(real(iy,kind_real)-0.5)*dlat
+            lon_center(iproc) = minval(model%lon)+(real(ix,kind_real)-0.5)*dlon
          end do
-         if (sum(nx)/=mpl%nproc) call mpl%abort(subr,'wrong number of tiles in define_distribution')
-         dlat = (maxval(model%lat)-minval(model%lat))/ny
-         iproc = 0
-         do iy=1,ny
-            dlon = (maxval(model%lon)-minval(model%lon))/nx(iy)
-            do ix=1,nx(iy)
-               iproc = iproc+1
-               lat_center(iproc) = minval(model%lat)+(real(iy,kind_real)-0.5)*dlat
-               lon_center(iproc) = minval(model%lon)+(real(ix,kind_real)-0.5)*dlon
-            end do
-         end do
-      end if
+      end do
 
       if (mpl%main) then
          ! Allocation
@@ -377,14 +348,15 @@ elseif (mpl%nproc>1) then
       end if
 
       ! Broadcast distribution
-      call mpl%f_comm%broadcast(model%mg_to_proc,mpl%ioproc-1)
-      call mpl%f_comm%broadcast(model%mg_to_mga,mpl%ioproc-1)
+      call mpl%f_comm%broadcast(model%mg_to_proc,mpl%rootproc-1)
+      call mpl%f_comm%broadcast(model%mg_to_mga,mpl%rootproc-1)
 
-      if (test_no_point) then
-         ! Count points on the penultimate processor
+      ! No points on the last task
+      if (nam%check_no_point) then
+         ! Count points on the penultimate task
          nmga = count(model%mg_to_proc==mpl%nproc-1)
 
-         ! Move all point from the last to the penultimate processor
+         ! Move all points from the last to the penultimate task
          do img=1,model%nmg
             if (model%mg_to_proc(img)==mpl%nproc) then
                nmga = nmga+1
@@ -457,16 +429,18 @@ do img=1,model%nmg
    end if
 end do
 
+! All points of the last task are masked
+if (nam%check_no_point_mask) then
+   if (mpl%myproc==mpl%nproc) model%mask_mga = .false.
+end if
+
 ! Define sampling mask
+model%smask_mga = model%mask_mga
 select case(trim(nam%mask_type))
 case ('none','stddev')
    ! All points accepted in sampling
-   model%smask_mga = .true.
 case ('ldwv')
    ! All points accepted in sampling
-   model%smask_mga = .true.
-
-   ! Print points coordinates
    do ildw=1,nam%nldwv
       if (nam%img_ldwv(ildw)>0) then
          ! Find lon/lat based on model grid index
@@ -484,8 +458,7 @@ case ('ldwv')
    end do
 case default
    if (nam%mask_type(1:3)=='lat') then
-      ! Latitude band mask
-      model%smask_mga = .true.
+      ! All points accepted in sampling
    else
       i = index(trim(nam%mask_type),'@')
       if (i>1) then
@@ -494,7 +467,7 @@ case default
          filename = trim(nam%mask_type(i+1:))
          write(mpl%info,'(a7,a)') '','Read sampling mask from variable '//trim(varname)//' in file '//trim(filename)
          call mpl%flush
-         write(mpl%info,'(a7,a,e10.3,a)') '','Threshold ',nam%mask_th,' used as a '//trim(nam%mask_lu)//' bound'
+         write(mpl%info,'(a7,a,e10.3,a)') '','Threshold ',nam%mask_th(1),' used as a '//trim(nam%mask_lu(1))//' bound'
          call mpl%flush
    
          ! Save namelist parameters
@@ -512,10 +485,10 @@ case default
          call model%read(mpl,nam,filename,1,fld)
 
          ! Compute mask
-         if (trim(nam%mask_lu)=='lower') then
-            model%smask_mga = (fld(:,:,1)>nam%mask_th)
-         elseif (trim(nam%mask_lu)=='upper') then
-            model%smask_mga = (fld(:,:,1)<nam%mask_th)
+         if (trim(nam%mask_lu(1))=='lower') then
+            model%smask_mga = model%smask_mga.and.(fld(:,:,1)>nam%mask_th(1))
+         elseif (trim(nam%mask_lu(1))=='upper') then
+            model%smask_mga = model%smask_mga.and.(fld(:,:,1)<nam%mask_th(1))
          else
             call mpl%abort(subr,'mask_lu not recognized')
          end if
@@ -708,7 +681,7 @@ type(rng_type),intent(inout) :: rng      ! Random number generator
 type(nam_type),intent(in) :: nam         ! Namelist
 
 ! Local variables
-integer :: nres,delta,iproc,iobs
+integer :: nres,delta,iproc,iobs,proc_to_nobsa(mpl%nproc)
 logical :: valid
 character(len=1024),parameter :: subr = 'model_generate_obs'
 type(mesh_type) :: mesh
@@ -721,17 +694,25 @@ nres = nam%nobs
 do iproc=1,mpl%nproc
    delta = nam%nobs/mpl%nproc
    if (nres>(mpl%nproc-iproc+1)*delta) delta = delta+1
-   if (mpl%myproc==iproc) model%nobsa = delta
+   proc_to_nobsa(iproc) = delta
    nres = nres-delta
 end do
 
+! No observations on the last task
+if (nam%check_no_obs) then
+   if (mpl%nproc==1) call mpl%abort(subr,'at least 2 MPI tasks required for test_no_obs')
+   proc_to_nobsa(mpl%nproc-1) = proc_to_nobsa(mpl%nproc-1)+proc_to_nobsa(mpl%nproc)
+   proc_to_nobsa(mpl%nproc) = 0
+end if
+
 ! Allocation
+model%nobsa = proc_to_nobsa(mpl%myproc)
 allocate(model%lonobs(model%nobsa))
 allocate(model%latobs(model%nobsa))
 call mesh%alloc(model%nmg)
 
 ! Initialization
-call mesh%init(mpl,rng,model%lon,model%lat)
+call mesh%init(mpl,rng,model%lon,model%lat,.true.)
 
 ! Generate random observation network
 iobs = 1
