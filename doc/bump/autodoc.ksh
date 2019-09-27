@@ -7,7 +7,7 @@
 #----------------------------------------------------------------------
 
 # Directories
-src=$1/../../src/bump
+src=$1/../../src/saber/bump
 doc=$1
 mkdir -p ${doc}
 autodoc=$1/autodoc
@@ -110,9 +110,9 @@ EOFMOD
             # New subroutine/function
             if test "${new_subfunc}" = "true" ; then
                if test "${type_bound}" = "true" ; then
-                  printf "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/src/bump/${module}.F90#L${i}) | ${purpose} |\n" >> ${autodoc}/${module}.md
+                  printf "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/src/saber/bump/${module}.F90#L${i}) | ${purpose} |\n" >> ${autodoc}/${module}.md
                else
-                  printf "| ${subfunc_type} | [${subfunc}](https://github.com/JCSDA/saber/src/bump/${module}.F90#L${i}) | ${purpose} |\n" >> ${autodoc}/${module}.md
+                  printf "| ${subfunc_type} | [${subfunc}](https://github.com/JCSDA/saber/src/saber/bump/${module}.F90#L${i}) | ${purpose} |\n" >> ${autodoc}/${module}.md
                fi
                new_subfunc=false
                type_bound=false

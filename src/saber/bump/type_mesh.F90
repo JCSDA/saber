@@ -11,7 +11,7 @@ module type_mesh
 use tools_const, only: pi,req
 use tools_func, only: sphere_dist,lonlat2xyz,xyz2lonlat,vector_product
 use tools_kinds, only: kind_real
-use tools_stripack, only: addnod,areas,bnodes,crlist,inside,trfind,trlist,trmesh
+use tools_stripack, only: addnod,bnodes,inside,trfind,trlist,trmesh
 use type_mpl, only: mpl_type
 use type_rng, only: rng_type
 
@@ -61,8 +61,6 @@ contains
    procedure :: check => mesh_check
    procedure :: inside => mesh_inside
    procedure :: barycentric => mesh_barycentric
-   procedure :: addnode => mesh_addnode
-   procedure :: polygon => mesh_polygon
 end type mesh_type
 
 private
@@ -103,21 +101,23 @@ end subroutine mesh_alloc
 ! Subroutine: mesh_init
 ! Purpose: intialization
 !----------------------------------------------------------------------
-subroutine mesh_init(mesh,mpl,rng,lon,lat)
+subroutine mesh_init(mesh,mpl,rng,lon,lat,bcast)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh    ! Mesh
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-type(rng_type),intent(inout) :: rng       ! Random number generator
-real(kind_real),intent(in) :: lon(mesh%n) ! Longitudes
-real(kind_real),intent(in) :: lat(mesh%n) ! Latitudes
+class(mesh_type),intent(inout) :: mesh            ! Mesh
+type(mpl_type),intent(inout) :: mpl               ! MPI data
+type(rng_type),intent(inout) :: rng               ! Random number generator
+real(kind_real),intent(in) :: lon(mesh%n)         ! Longitudes
+real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
+logical,intent(in) :: bcast                       ! Broadcast flag
 
 ! Local variables
 integer :: i,k,info
 integer :: jtab(mesh%n),near(mesh%n),next(mesh%n)
 real(kind_real) :: dist(mesh%n)
+character(len=1024),parameter :: subr = 'mesh_init'
 
 ! Points order
 do i=1,mesh%n
@@ -126,8 +126,12 @@ end do
 
 if (shuffle) then
    ! Shuffle order (more efficient to compute the Delaunay triangulation)
-   if (mpl%main) call rng%rand_integer(1,mesh%n,jtab)
-   call mpl%f_comm%broadcast(jtab,mpl%ioproc-1)
+   if (bcast) then
+      if (mpl%main) call rng%rand_integer(1,mesh%n,jtab)
+      call mpl%f_comm%broadcast(jtab,mpl%rootproc-1)
+   else
+      call rng%rand_integer(1,mesh%n,jtab)
+   end if
    do i=mesh%n,2,-1
       k = mesh%order(jtab(i))
       mesh%order(jtab(i)) = mesh%order(i)
@@ -147,6 +151,7 @@ call mesh%store(mpl,lon,lat)
 ! Create mesh
 mesh%list = 0
 call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist,info)
+if (info/=0) call mpl%abort(subr,'trmesh failed')
 
 ! Boundaries not computed yet
 mesh%nb = mpl%msv%vali
@@ -423,7 +428,7 @@ real(kind_real) :: v(3),vf(3),vt(3),tlat,tlon,dist_t1,dist_t2
 character(len=1024),parameter :: subr = 'mesh_find_bdist'
 
 ! Check
-if (mpl%msv%isi(mesh%nb)) call mpl%abort(subr,'boundary arcs have not been computed')
+if (mpl%msv%is(mesh%nb)) call mpl%abort(subr,'boundary arcs have not been computed')
 
 ! Initialization
 bdist = pi
@@ -475,11 +480,11 @@ logical,intent(in),optional :: fix     ! Fix mesh flag
 
 ! Local variables
 integer :: it,i,iend,navg,j,ind_avg(40),ii
-real(kind_real),allocatable :: a(:),b(:),c(:),cd(:),cp(:)
+real(kind_real),allocatable :: a(:),b(:),c(:),cd(:),cp(:),v1(:),v2(:)
 logical :: validt(mesh%nt),lfix,init
 character(len=1024),parameter :: subr = 'mesh_check'
 
-!$omp parallel do schedule(static) private(it) firstprivate(a,b,c,cd,cp)
+!$omp parallel do schedule(static) private(it) firstprivate(a,b,c,cd,cp,v1,v2)
 do it=1,mesh%nt
    ! Allocation
    allocate(a(3))
@@ -487,17 +492,21 @@ do it=1,mesh%nt
    allocate(c(3))
    allocate(cd(3))
    allocate(cp(3))
+   allocate(v1(3))
+   allocate(v2(3))
 
    ! Check vertices status
-   if (mpl%msv%isallnotr(mesh%x(mesh%ltri(:,it))).and.mpl%msv%isallnotr(mesh%y(mesh%ltri(:,it))) &
- & .and.mpl%msv%isallnotr(mesh%z(mesh%ltri(:,it)))) then
+   if (mpl%msv%isallnot(mesh%x(mesh%ltri(:,it))).and.mpl%msv%isallnot(mesh%y(mesh%ltri(:,it))) &
+ & .and.mpl%msv%isallnot(mesh%z(mesh%ltri(:,it)))) then
       ! Vertices
       a = (/mesh%x(mesh%ltri(1,it)),mesh%y(mesh%ltri(1,it)),mesh%z(mesh%ltri(1,it))/)
       b = (/mesh%x(mesh%ltri(2,it)),mesh%y(mesh%ltri(2,it)),mesh%z(mesh%ltri(2,it))/)
       c = (/mesh%x(mesh%ltri(3,it)),mesh%y(mesh%ltri(3,it)),mesh%z(mesh%ltri(3,it))/)
 
       ! Cross-product (c-b)x(a-b)
-      call vector_product(c-b,a-b,cp)
+      v1 = c-b
+      v2 = a-b
+      call vector_product(v1,v2,cp)
 
       ! Centroid
       cd = (a+b+c)/3.0
@@ -515,6 +524,8 @@ do it=1,mesh%nt
    deallocate(c)
    deallocate(cd)
    deallocate(cp)
+   deallocate(v1)
+   deallocate(v2)
 end do
 !$omp end parallel do
 
@@ -568,8 +579,8 @@ if (lfix) then
          allocate(cp(3))
 
          ! Check vertices status
-         if (mpl%msv%isallnotr(mesh%x(mesh%ltri(:,it))).and.mpl%msv%isallnotr(mesh%y(mesh%ltri(:,it))) &
-       & .and.mpl%msv%isallnotr(mesh%z(mesh%ltri(:,it)))) then
+         if (mpl%msv%isallnot(mesh%x(mesh%ltri(:,it))).and.mpl%msv%isallnot(mesh%y(mesh%ltri(:,it))) &
+       & .and.mpl%msv%isallnot(mesh%z(mesh%ltri(:,it)))) then
             ! Vertices
             a = (/mesh%x(mesh%ltri(1,it)),mesh%y(mesh%ltri(1,it)),mesh%z(mesh%ltri(1,it))/)
             b = (/mesh%x(mesh%ltri(2,it)),mesh%y(mesh%ltri(2,it)),mesh%z(mesh%ltri(2,it))/)
@@ -674,153 +685,5 @@ ib = 0
 call trfind(istart,p,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
 
 end subroutine mesh_barycentric
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_addnode
-! Purpose: add node to a mesh
-!----------------------------------------------------------------------
-subroutine mesh_addnode(mesh,mpl,lonnew,latnew)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-real(kind_real),intent(in) :: lonnew   ! Longitude
-real(kind_real),intent(in) :: latnew   ! Latitude
-
-! Local variables
-integer :: info
-integer,allocatable :: order(:),order_inv(:),list(:),lptr(:),lend(:)
-real(kind_real),allocatable :: lon(:),lat(:),x(:),y(:),z(:)
-
-! Allocation
-allocate(order(mesh%n))
-allocate(order_inv(mesh%n))
-allocate(lon(mesh%n))
-allocate(lat(mesh%n))
-allocate(x(mesh%n))
-allocate(y(mesh%n))
-allocate(z(mesh%n))
-allocate(list(6*(mesh%n-2)))
-allocate(lptr(6*(mesh%n-2)))
-allocate(lend(mesh%n))
-
-! Copy
-order = mesh%order
-order_inv = mesh%order_inv
-lon = mesh%lon
-lat = mesh%lat
-x = mesh%x
-y = mesh%y
-z = mesh%z
-list = mesh%list
-lptr = mesh%lptr
-lend = mesh%lend
-
-! Release memory
-call mesh%dealloc
-
-! Reallocation
-mesh%n = mesh%n+1
-allocate(mesh%order(mesh%n))
-allocate(mesh%order_inv(mesh%n))
-allocate(mesh%lon(mesh%n))
-allocate(mesh%lat(mesh%n))
-allocate(mesh%x(mesh%n))
-allocate(mesh%y(mesh%n))
-allocate(mesh%z(mesh%n))
-allocate(mesh%list(6*(mesh%n-2)))
-allocate(mesh%lptr(6*(mesh%n-2)))
-allocate(mesh%lend(mesh%n))
-
-! Copy
-mesh%order(1:mesh%n-1) = order
-mesh%order_inv(1:mesh%n-1) = order_inv
-mesh%lon(1:mesh%n-1) = lon
-mesh%lat(1:mesh%n-1) = lat
-mesh%x(1:mesh%n-1) = x
-mesh%y(1:mesh%n-1) = y
-mesh%z(1:mesh%n-1) = z
-mesh%list(1:6*(mesh%n-3)) = list
-mesh%lptr(1:6*(mesh%n-3)) = lptr
-mesh%lend(1:mesh%n-1) = lend
-
-! Compute new element coordinates
-call lonlat2xyz(mpl,lonnew,latnew,mesh%x(mesh%n),mesh%y(mesh%n),mesh%z(mesh%n))
-
-! Update mesh
-mesh%order(mesh%n) = mesh%n
-mesh%order_inv(mesh%n) = mesh%n
-mesh%lon(mesh%n) = lonnew
-mesh%lat(mesh%n) = latnew
-call addnod(mpl,1,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,info)
-
-! Release memory
-deallocate(order)
-deallocate(order_inv)
-deallocate(lon)
-deallocate(lat)
-deallocate(x)
-deallocate(y)
-deallocate(z)
-deallocate(list)
-deallocate(lptr)
-deallocate(lend)
-
-end subroutine mesh_addnode
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_polygon
-! Purpose: compute polygon area
-!----------------------------------------------------------------------
-subroutine mesh_polygon(mesh,np,plist,area_polygon)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(in) :: mesh             ! Mesh
-integer,intent(in) :: np                        ! Number of points
-integer,intent(in) :: plist(np)                 ! List of indices
-real(kind_real),intent(out) :: area_polygon(np) ! Area
-
-! Local variables
-integer :: ip,i_src,index_triangle,i_src_last,i_src_new,i_src_stop,vertex_last,vertex_new,nb,info
-integer :: lnew_tmp,lptr_tmp(6*(mesh%n-2)),lbtri(6,mesh%n),listc(6*(mesh%n-2))
-real(kind_real) :: area_triangle,v1(3),v2(3),v3(3)
-real(kind_real) :: xc(6*(mesh%n-2)),yc(6*(mesh%n-2)),zc(6*(mesh%n-2)),rc(6*(mesh%n-2))
-logical :: loop
-
-! Copy
-lptr_tmp = mesh%lptr
-lnew_tmp = mesh%lnew
-
-! Compute Voronoi polygons
-call crlist(mesh%n,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lend,lptr_tmp,lnew_tmp,lbtri,listc,nb,xc,yc,zc,rc,info)
-
-do ip=1,np
-   i_src = plist(ip)
-   area_polygon(ip) = 0.0
-   index_triangle = 0
-   i_src_stop = mesh%lend(i_src)
-   i_src_new = i_src_stop
-   vertex_new = listc(i_src_new)
-   loop = .true.
-   do while (loop)
-      index_triangle = index_triangle+1
-      i_src_last = i_src_new
-      i_src_new = lptr_tmp(i_src_last)
-      vertex_last = vertex_new
-      vertex_new = listc(i_src_new)
-      v1 = (/mesh%x(i_src),mesh%y(i_src),mesh%z(i_src)/)
-      v2 = (/xc(vertex_last),yc(vertex_last),zc(vertex_last)/)
-      v3 = (/xc(vertex_new),yc(vertex_new),zc(vertex_new)/)
-      area_triangle = areas(v1,v2,v3)
-      area_polygon(ip) = area_polygon(ip)+area_triangle
-      loop = (i_src_new/=i_src_stop)
-   end do
-end do
-
-end subroutine mesh_polygon
 
 end module type_mesh

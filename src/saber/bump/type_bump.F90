@@ -7,10 +7,12 @@
 !----------------------------------------------------------------------
 module type_bump
 
-use netcdf
+use iso_fortran_env, only : output_unit
+use mpi
 use tools_const, only: req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
 use tools_kinds,only: kind_real
+use tools_repro,only: repro
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
 use type_cv, only: cv_type
@@ -49,6 +51,7 @@ contains
    procedure :: setup_online => bump_setup_online
    procedure :: run_drivers => bump_run_drivers
    procedure :: add_member => bump_add_member
+   procedure :: remove_member => bump_remove_member
    procedure :: apply_vbal => bump_apply_vbal
    procedure :: apply_vbal_inv => bump_apply_vbal_inv
    procedure :: apply_vbal_ad => bump_apply_vbal_ad
@@ -64,9 +67,6 @@ contains
    procedure :: copy_to_field => bump_copy_to_field
    procedure :: set_parameter => bump_set_parameter
    procedure :: copy_from_field => bump_copy_from_field
-   procedure :: bump_crtm_neighbors_3d
-   procedure :: bump_crtm_neighbors_2d
-   generic :: crtm_neighbors => bump_crtm_neighbors_3d,bump_crtm_neighbors_2d
    procedure :: dealloc => bump_dealloc
    procedure :: partial_dealloc => bump_partial_dealloc
 end type bump_type
@@ -81,7 +81,7 @@ contains
 ! Purpose: online setup
 !----------------------------------------------------------------------
 subroutine bump_setup_online(bump,nmga,nl0,nv,nts,lon,lat,area,vunit,gmask,smask,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub, &
-                           & nobs,lonobs,latobs,namelname,lunit,msvali,msvalr)
+                           & nobs,lonobs,latobs,namelname,lunit,msvali,msvalr,mpi_comm)
 
 implicit none
 
@@ -108,12 +108,14 @@ character(len=*),intent(in),optional :: namelname ! Namelist name
 integer,intent(in),optional :: lunit              ! Listing unit
 integer,intent(in),optional :: msvali             ! Missing value for integers
 real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
+integer,intent(in),optional :: mpi_comm           ! Main MPI communicator
 
 ! Local variables
-integer :: lmsvali,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
+integer :: lmsvali,lmpi_comm,length,info,info_loc,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
 real(kind_real) :: lmsvalr
-logical :: lgmask(nmga,nl0)
+logical :: init,lgmask(nmga,nl0)
 character(len=1024),parameter :: subr = 'bump_setup_online'
+character(len=mpi_max_error_string) :: message
 
 ! Set missing values
 lmsvali = -999
@@ -123,13 +125,40 @@ if (present(msvalr)) lmsvalr = msvalr
 call bump%mpl%msv%init(lmsvali,lmsvalr)
 
 ! Initialize MPL
-call bump%mpl%init
+if (present(mpi_comm)) then
+   lmpi_comm = mpi_comm
+else
+   ! Check if MPI is already initialized
+   call mpi_initialized(init,info)
+   if (info/=mpi_success) then
+      call mpi_error_string(info,message,length,info_loc)
+      write(output_unit,'(a)') '!!! Error:',trim(message)
+      call flush(output_unit)
+      call mpi_abort(mpi_comm_world,1,info)
+   end if
+
+   if (.not.init) then
+      ! Initialize MPI
+      call mpi_init(info)
+      if (info/=mpi_success) then
+         call mpi_error_string(info,message,length,info_loc)
+         write(output_unit,'(a)') '!!! Error:',trim(message)
+         call flush(output_unit)
+         call mpi_abort(mpi_comm_world,1,info)
+      end if
+   end if
+   lmpi_comm = mpi_comm_world
+end if
+call bump%mpl%init(lmpi_comm)
 
 if (present(namelname)) then
    ! Read and broadcast namelist
    call bump%nam%read(bump%mpl,namelname)
    call bump%nam%bcast(bump%mpl)
 end if
+
+! Set reproducibility parameter
+repro = bump%nam%repro
 
 ! Set internal namelist parameters
 lens1_ne = 0
@@ -210,15 +239,13 @@ lgmask = gmask.or.bump%nam%nomask
 call bump%geom%setup(bump%mpl,bump%rng,bump%nam,nmga,nl0,lon,lat,area,vunit,lgmask)
 if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
-if (bump%nam%grid_output) then
-   ! Initialize fields regridding
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Initialize fields regridding'
-   call bump%mpl%flush
-   call bump%io%grid_init(bump%mpl,bump%rng,bump%nam,bump%geom)
-   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
-end if
+! Initialize fields output
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- Initialize fields output'
+call bump%mpl%flush
+call bump%io%init(bump%mpl,bump%rng,bump%nam,bump%geom)
+if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
 ! Initialize block parameters
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -309,7 +336,7 @@ if (bump%nam%new_cortrack) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run correlation tracker'
    call bump%mpl%flush
-   call bump%ens1%cortrack(bump%mpl,bump%rng,bump%nam,bump%geom,bump%io)
+   call bump%ens1%cortrack(bump%mpl,bump%nam,bump%geom,bump%io)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
@@ -319,7 +346,7 @@ if (bump%nam%new_vbal) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run vertical balance driver'
    call bump%mpl%flush
-   call bump%vbal%run_vbal(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,bump%ens1u)
+   call bump%vbal%run_vbal(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%ens1,bump%ens1u)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 elseif (bump%nam%load_vbal) then
    ! Read vertical balance
@@ -359,6 +386,9 @@ if (bump%nam%new_hdiag) then
    write(bump%mpl%info,'(a)') '--- Copy HDIAG into C matrix'
    call bump%mpl%flush
    call bump%cmat%from_hdiag(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%hdiag)
+
+   ! Release memory
+   call bump%hdiag%dealloc
 end if
 
 if (bump%nam%new_lct) then
@@ -376,6 +406,9 @@ if (bump%nam%new_lct) then
    write(bump%mpl%info,'(a)') '--- Copy LCT into C matrix'
    call bump%mpl%flush
    call bump%cmat%from_lct(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%lct)
+
+   ! Release memory (partial)
+   call bump%lct%partial_dealloc
 end if
 
 if (bump%nam%load_cmat) then
@@ -438,8 +471,11 @@ elseif (bump%nam%load_nicas) then
    call bump%nicas%read(bump%mpl,bump%nam,bump%geom,bump%bpar)
 end if
 
-if (bump%nam%check_adjoints.or.bump%nam%check_pos_def.or.bump%nam%check_dirac.or.bump%nam%check_randomization.or. &
- & bump%nam%check_consistency.or.bump%nam%check_optimality) then
+! Release memory (partial)
+call bump%cmat%partial_dealloc
+
+if (bump%nam%check_adjoints.or.bump%nam%check_dirac.or.bump%nam%check_randomization.or.bump%nam%check_consistency.or. &
+ & bump%nam%check_optimality) then
    ! Run NICAS tests driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -497,8 +533,21 @@ integer :: its,iv,nnonzero,nzero,nmask
 real(kind_real) :: norm,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 character(len=1024),parameter :: subr = 'bump_add_member'
 
+! Check ensemble number
+if ((iens/=1).and.(iens/=2)) call bump%mpl%abort(subr,'wrong ensemble number')
+
+! Allocate member
+if (iens==1) then
+   if (.not.allocated(bump%ens1%mem(ie)%fld)) &
+ & allocate(bump%ens1%mem(ie)%fld(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+elseif (iens==2) then
+   if (.not.allocated(bump%ens2%mem(ie)%fld)) &
+ & allocate(bump%ens2%mem(ie)%fld(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+end if
+
 ! Add member
 write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' added to ensemble ',iens
+call bump%mpl%flush()
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       ! Model grid to subset Sc0
@@ -506,25 +555,75 @@ do its=1,bump%nam%nts
 
       ! Copy to ensemble structure
       if (iens==1) then
-         bump%ens1%fld(:,:,iv,its,ie) = fld_c0a
+         bump%ens1%mem(ie)%fld(:,:,iv,its) = fld_c0a
       elseif (iens==2) then
-         bump%ens2%fld(:,:,iv,its,ie) = fld_c0a
-      else
-         call bump%mpl%abort(subr,'wrong ensemble number')
+         bump%ens2%mem(ie)%fld(:,:,iv,its) = fld_c0a
       end if
 
       ! Print norm
       norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
       write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
+      call bump%mpl%flush()
       nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
       nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
       nmask = count(.not.bump%geom%mask_c0a)
       write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
     & nnonzero,' / ',nzero,' / ',nmask
+      call bump%mpl%flush()
    end do
 end do
 
 end subroutine bump_add_member
+
+!----------------------------------------------------------------------
+! Subroutine: bump_remove_member
+! Purpose: remove member into bump%ens[1,2]
+!----------------------------------------------------------------------
+subroutine bump_remove_member(bump,fld_mga,ie,iens)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump                                                          ! BUMP
+real(kind_real),intent(inout) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
+integer,intent(in) :: ie                                                                        ! Member index
+integer,intent(in) :: iens                                                                      ! Ensemble number
+
+! Local variables
+integer :: its,iv,isub
+real(kind_real) :: norm,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
+character(len=1024),parameter :: subr = 'bump_remove_member'
+
+! Check ensemble number
+if ((iens/=1).and.(iens/=2)) call bump%mpl%abort(subr,'wrong ensemble number')
+
+! Remove member
+write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' removed from ensemble ',iens
+call bump%mpl%flush()
+do its=1,bump%nam%nts
+   do iv=1,bump%nam%nv
+      ! Copy from ensemble structure and add mean
+      if (iens==1) then
+         isub = (ie-1)*bump%ens1%nsub/bump%ens1%ne+1
+         fld_c0a = bump%ens1%mem(ie)%fld(:,:,iv,its)+bump%ens1%mean(isub)%fld(:,:,iv,its)
+      elseif (iens==2) then
+         isub = (ie-1)*bump%ens2%nsub/bump%ens2%ne+1
+         fld_c0a = bump%ens2%mem(ie)%fld(:,:,iv,its)+bump%ens2%mean(isub)%fld(:,:,iv,its)
+      end if
+
+      ! Model grid to subset Sc0
+      call bump%geom%copy_mga_to_c0a(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
+   end do
+end do
+
+! Release memory
+if (iens==1) then
+   deallocate(bump%ens1%mem(ie)%fld)
+elseif (iens==2) then
+   deallocate(bump%ens2%mem(ie)%fld)
+end if
+
+end subroutine bump_remove_member
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal
@@ -1020,7 +1119,7 @@ case ('cor_rh')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rh,fld_mga)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnotr(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
       end do
    end do
 case ('cor_rv')
@@ -1040,7 +1139,7 @@ case ('loc_rh')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rh,fld_mga)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnotr(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
       end do
    end do
 case ('loc_rv')
@@ -1054,7 +1153,7 @@ case ('loc_D11','loc_D22')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rh,fld_mga)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnotr(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
       end do
    end do
    do il0=1,bump%geom%nl0
@@ -1083,7 +1182,7 @@ case default
       call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D11(:,:,iscales),fld_mga)
       do il0=1,bump%geom%nl0
          do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnotr(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
          end do
       end do
    case ('D22_')
@@ -1093,7 +1192,7 @@ case default
       call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D22(:,:,iscales),fld_mga)
       do il0=1,bump%geom%nl0
          do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnotr(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
          end do
       end do
    case ('D33_')
@@ -1108,7 +1207,7 @@ case default
       call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D12(:,:,iscales),fld_mga)
       do il0=1,bump%geom%nl0
          do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnotr(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
          end do
       end do
    case ('Dcoe')
@@ -1123,17 +1222,17 @@ case default
       call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%DLh(:,:,iscales),fld_mga)
       do il0=1,bump%geom%nl0
          do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnotr(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
          end do
       end do
    case default
       if (param(1:6)=='ens1u_') then
-         if (.not.allocated(bump%ens1u%fld)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+         if (.not.allocated(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
          read(param(7:10),'(i4.4)') ie
-         if (ie>size(bump%ens1u%fld,5)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
+         if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
          iv = bump%bpar%b_to_v1(ib)
          its = bump%bpar%b_to_ts1(ib)
-         call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1u%fld(:,:,iv,its,ie),fld_mga)
+         call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1u%mem(ie)%fld(:,:,iv,its),fld_mga)
       else
          call bump%mpl%abort(subr,'parameter '//trim(param)//' not yet implemented in get_parameter')
       end if
@@ -1229,7 +1328,7 @@ case ('cor_rh')
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rh)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnotr(bump%cmat%blk(ib)%bump_rh(imga,il0))) &
+         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_rh(imga,il0))) &
        & bump%cmat%blk(ib)%bump_rh(imga,il0) = bump%cmat%blk(ib)%bump_rh(imga,il0)/req
       end do
    end do
@@ -1250,7 +1349,7 @@ case ('loc_rh')
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rh)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnotr(bump%cmat%blk(ib)%bump_rh(imga,il0))) &
+         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_rh(imga,il0))) &
        & bump%cmat%blk(ib)%bump_rh(imga,il0) = bump%cmat%blk(ib)%bump_rh(imga,il0)/req
       end do
    end do
@@ -1265,7 +1364,7 @@ case ('D11')
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D11)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnotr(bump%cmat%blk(ib)%bump_D11(imga,il0))) &
+         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D11(imga,il0))) &
        & bump%cmat%blk(ib)%bump_D11(imga,il0) = bump%cmat%blk(ib)%bump_D11(imga,il0)/req**2
       end do
    end do
@@ -1274,7 +1373,7 @@ case ('D22')
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D22)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnotr(bump%cmat%blk(ib)%bump_D22(imga,il0))) &
+         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D22(imga,il0))) &
        & bump%cmat%blk(ib)%bump_D22(imga,il0) = bump%cmat%blk(ib)%bump_D22(imga,il0)/req**2
       end do
    end do
@@ -1286,7 +1385,7 @@ case ('D12')
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D12)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnotr(bump%cmat%blk(ib)%bump_D12(imga,il0))) &
+         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D12(imga,il0))) &
        & bump%cmat%blk(ib)%bump_D12(imga,il0) = bump%cmat%blk(ib)%bump_D12(imga,il0)/req**2
       end do
    end do
@@ -1298,80 +1397,6 @@ case default
 end select
 
 end subroutine bump_copy_from_field
-
-!----------------------------------------------------------------------
-! Subroutine: bump_crtm_neighbors_3d
-! Purpose: find nearest neighbors for CRTM, 3D
-!----------------------------------------------------------------------
-subroutine bump_crtm_neighbors_3d(bump,fld_mga,nobs,lon,lat,nn,nn_val,nn_dist)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                              ! BUMP
-real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0) ! Field
-integer,intent(in) :: nobs                                          ! Number of observations
-real(kind_real),intent(in) :: lon(nobs)                             ! Observation longiutde
-real(kind_real),intent(in) :: lat(nobs)                             ! Observation latitude
-integer,intent(in) :: nn                                            ! Number of nearest neighbors
-real(kind_real),intent(out) :: nn_val(bump%geom%nl0,nn,nobs)        ! Nearest neighbors values
-real(kind_real),intent(out) :: nn_dist(nn,nobs)                     ! Nearest neighbors distances
-
-! Local variables
-integer :: iobs,nn_index_c0a(nn),i,nn_index_mga,il0
-
-do iobs=1,nobs
-   ! Get neighbors indices and distances
-   call bump%geom%tree%find_nearest_neighbors(lon(iobs),lat(iobs),nn,nn_index_c0a,nn_dist(:,iobs))
-
-   do i=1,nn
-      ! Convert indices
-      nn_index_mga = bump%geom%c0a_to_mga(nn_index_c0a(i))
-
-      ! Get neighbors
-      do il0=1,bump%geom%nl0
-         nn_val(il0,i,iobs) = fld_mga(nn_index_mga,il0)
-      end do
-   end do
-end do
-
-end subroutine bump_crtm_neighbors_3d
-
-!----------------------------------------------------------------------
-! Subroutine: bump_crtm_neighbors_2d
-! Purpose: find nearest neighbors for CRTM, 2D
-!----------------------------------------------------------------------
-subroutine bump_crtm_neighbors_2d(bump,fld_mga,nobs,lon,lat,nn,nn_val,nn_dist)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                ! BUMP
-real(kind_real),intent(in) :: fld_mga(bump%geom%nmga) ! Field
-integer,intent(in) :: nobs                            ! Number of observations
-real(kind_real),intent(in) :: lon(nobs)               ! Observation longiutde
-real(kind_real),intent(in) :: lat(nobs)               ! Observation latitude
-integer,intent(in) :: nn                              ! Number of nearest neighbors
-real(kind_real),intent(out) :: nn_val(nn,nobs)        ! Nearest neighbors values
-real(kind_real),intent(out) :: nn_dist(nn,nobs)       ! Nearest neighbors distances
-
-! Local variables
-integer :: iobs,nn_index_c0a(nn),i,nn_index_mga
-
-do iobs=1,nobs
-   ! Get neighbors indices and distances
-   call bump%geom%tree%find_nearest_neighbors(lon(iobs),lat(iobs),nn,nn_index_c0a,nn_dist(:,iobs))
-
-   do i=1,nn
-      ! Convert indices
-      nn_index_mga = bump%geom%c0a_to_mga(nn_index_c0a(i))
-
-      ! Get neighbors
-      nn_val(i,iobs) = fld_mga(nn_index_mga)
-   end do
-end do
-
-end subroutine bump_crtm_neighbors_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_partial_dealloc
@@ -1386,14 +1411,14 @@ class(bump_type),intent(inout) :: bump ! BUMP
 
 ! Release memory
 call bump%bpar%dealloc
-call bump%cmat%dealloc
+call bump%cmat%partial_dealloc
 call bump%ens1%dealloc
 call bump%ens1u%dealloc
 call bump%ens2%dealloc
 call bump%geom%dealloc
 call bump%hdiag%dealloc
 call bump%io%dealloc
-call bump%lct%dealloc
+call bump%lct%partial_dealloc
 call bump%nicas%partial_dealloc
 call bump%obsop%partial_dealloc
 call bump%vbal%partial_dealloc

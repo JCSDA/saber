@@ -3,17 +3,38 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-set(SABER_TEST_TIER 3)
+# Test selection
+set(SABER_TEST_TIER 1)
 if(DEFINED ENV{SABER_TEST_TIER})
     set(SABER_TEST_TIER "$ENV{SABER_TEST_TIER}")
 endif()
-set(SABER_MPI_TEST 1)
+set(SABER_MPI_TEST 0)
 if(DEFINED ENV{SABER_MPI_TEST})
     set(SABER_MPI_TEST "$ENV{SABER_MPI_TEST}")
 endif()
-set(SABER_OMP_TEST 1)
+set(SABER_MPI4_TEST 0)
+if(DEFINED ENV{SABER_MPI4_TEST})
+    set(SABER_MPI4_TEST "$ENV{SABER_MPI4_TEST}")
+endif(DEFINED ENV{SABER_MPI4_TEST})
+set(SABER_OMP_TEST 0)
 if(DEFINED ENV{SABER_OMP_TEST})
     set(SABER_OMP_TEST "$ENV{SABER_OMP_TEST}")
+endif()
+set(SABER_NEMOVAR_TEST 0)
+if(DEFINED ENV{SABER_NEMOVAR_TEST})
+    set(SABER_NEMOVAR_TEST "$ENV{SABER_NEMOVAR_TEST}")
+    set(SABER_NEMOVAR_DIR "$ENV{SABER_NEMOVAR_DIR}")
+endif()
+
+# Summary
+message( "-- saber tests variables:" )
+message( "     SABER_TEST_TIER:      " ${SABER_TEST_TIER} )
+message( "     SABER_MPI_TEST:       " ${SABER_MPI_TEST} )
+message( "     SABER_MPI4_TEST:      " ${SABER_MPI4_TEST} )
+message( "     SABER_OMP_TEST:       " ${SABER_OMP_TEST} )
+message( "     SABER_NEMOVAR_TEST:   " ${SABER_NEMOVAR_TEST} )
+if(${SABER_NEMOVAR_TEST})
+    message( "     -> SABER_NEMOVAR_DIR: " ${SABER_NEMOVAR_DIR} )
 endif()
 
 # TIER 1
@@ -55,28 +76,31 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_hdiag_mask_stddev_ncontig
         bump_hdiag-nicas_cor_common_univariate
         bump_hdiag-nicas_double_fit
+        bump_hdiag-nicas_fit_type
         bump_hdiag-nicas_lhom
         bump_hdiag-nicas_loc_common_univariate
         bump_hdiag-nicas_loc_common_weighted
         bump_hdiag-nicas_loc_specific_multivariate
         bump_hdiag-nicas_loc_specific_univariate
         bump_hdiag-nicas_nonunit_diag
+        bump_hdiag-nicas_nprocio
         bump_hdiag-nicas_nrep
         bump_hdiag-nicas_rvflt
         bump_lct-nicas_diagonal
         bump_lct-nicas_mask_check
         bump_lct-nicas_network
+        bump_lct_qc
         bump_lct_two_scales
+        bump_lct_write_cor
         bump_nicas_mpicom_lsqrt_a
         bump_nicas_mpicom_lsqrt_b
         bump_nicas_mpicom_lsqrt_c
-        bump_nicas_pos_def
+        bump_nicas_pos_def_test
         bump_nicas_subsamp_h
         bump_nicas_subsamp_hv
         bump_nicas_subsamp_vh
-        bump_obsop_adjusted
-        bump_obsop_local
-        bump_obsop_random
+        bump_nicas_write_grids
+        bump_obsop
     )
 endif()
 
@@ -84,10 +108,25 @@ endif()
 if(${SABER_TEST_TIER} GREATER 2)
     list(APPEND saber_test
         bump_hdiag-nicas_loc_adv
+        bump_hdiag-nicas_loc_adv_cor_tracker
         bump_hdiag-nicas_loc_adv_inv
         bump_hdiag_optimality
         bump_nicas_consistency
         bump_nicas_randomization
+    )
+endif()
+
+# Quadcore tests (should be among saber_test)
+if(${SABER_MPI4_TEST} MATCHES 1)
+    list(APPEND saber_test_quad
+        bump_hdiag-nicas_nprocio
+    )
+endif()
+
+# NEMOVAR tests
+if(${SABER_NEMOVAR_TEST})
+    list(APPEND saber_test_nemovar
+        bump_nemovar
     )
 endif()
 
@@ -110,6 +149,14 @@ foreach(test ${saber_test_2})
          ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}_1
          ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}_1)
 endforeach(test)
+if(${SABER_NEMOVAR_TEST})
+    foreach(test ${saber_test_nemovar})
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test})
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+             ${SABER_NEMOVAR_DIR}/testref/${test}
+             ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
+    endforeach(test)
+endif()
 
 # Inter-tests links
 foreach(test ${saber_test_2})
@@ -132,8 +179,7 @@ foreach(test ${saber_test_2})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test}_2)
 endforeach(test)
 
-
-# Monocore tests: setup / run / compare
+# Monocore tests
 set(mpi 1)
 set(omp 1)
 foreach(test ${saber_test})
@@ -146,7 +192,7 @@ foreach(test ${saber_test})
                      MPI    ${mpi}
                      OMP    ${omp}
                      COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                     ARGS testinput/${test}_${mpi}-${omp}.nam testoutput/${test}
+                     ARGS testinput/${test}_${mpi}-${omp}.yaml testoutput/${test}
                      DEPENDS bump.x
                      TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
 
@@ -168,7 +214,7 @@ foreach(test ${saber_test_2})
                      MPI    ${mpi}
                      OMP    ${omp}
                      COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                     ARGS testinput/${test}_1_${mpi}-${omp}.nam testoutput/${test}_1
+                     ARGS testinput/${test}_1_${mpi}-${omp}.yaml testoutput/${test}_1
                      DEPENDS bump.x
                      TEST_DEPENDS test_${test}_1_${mpi}-${omp}_setup)
 
@@ -176,7 +222,7 @@ foreach(test ${saber_test_2})
                      MPI    ${mpi}
                      OMP    ${omp}
                      COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                     ARGS testinput/${test}_2_${mpi}-${omp}.nam testoutput/${test}_2
+                     ARGS testinput/${test}_2_${mpi}-${omp}.yaml testoutput/${test}_2
                      DEPENDS bump.x
                      TEST_DEPENDS test_${test}_2_${mpi}-${omp}_setup test_${test}_1_${mpi}-${omp}_run)
 
@@ -189,7 +235,7 @@ foreach(test ${saber_test_2})
     endforeach()
 endforeach()
 
-# Dualcore test: MPI
+# Dualcore tests (MPI)
 if(${SABER_MPI_TEST} MATCHES 1)
     set(mpi 2)
     set(omp 1)
@@ -204,7 +250,7 @@ if(${SABER_MPI_TEST} MATCHES 1)
                          MPI    ${mpi}
                          OMP    ${omp}
                          COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS testinput/${test}_${mpi}-${omp}.nam testoutput/${test}
+                         ARGS testinput/${test}_${mpi}-${omp}.yaml testoutput/${test}
                          DEPENDS bump.x
                          TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
 
@@ -226,7 +272,7 @@ if(${SABER_MPI_TEST} MATCHES 1)
                          MPI    ${mpi}
                          OMP    ${omp}
                          COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS testinput/${test}_1_${mpi}-${omp}.nam testoutput/${test}_1
+                         ARGS testinput/${test}_1_${mpi}-${omp}.yaml testoutput/${test}_1
                          DEPENDS bump.x
                          TEST_DEPENDS test_${test}_1_${mpi}-${omp}_setup)
 
@@ -234,7 +280,7 @@ if(${SABER_MPI_TEST} MATCHES 1)
                          MPI    ${mpi}
                          OMP    ${omp}
                          COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS testinput/${test}_2_${mpi}-${omp}.nam testoutput/${test}_2
+                         ARGS testinput/${test}_2_${mpi}-${omp}.yaml testoutput/${test}_2
                          DEPENDS bump.x
                          TEST_DEPENDS test_${test}_2_${mpi}-${omp}_setup test_${test}_1_${mpi}-${omp}_run)
 
@@ -248,7 +294,7 @@ if(${SABER_MPI_TEST} MATCHES 1)
     endforeach()
 endif()
 
-# Dualcore test: OpenMP
+# Dualcore tests (OpenMP)
 if(${SABER_OMP_TEST} MATCHES 1)
     set(mpi 1)
     set(omp 2)
@@ -263,7 +309,7 @@ if(${SABER_OMP_TEST} MATCHES 1)
                          MPI    ${mpi}
                          OMP    ${omp}
                          COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS testinput/${test}_${mpi}-${omp}.nam testoutput/${test}
+                         ARGS testinput/${test}_${mpi}-${omp}.yaml testoutput/${test}
                          DEPENDS bump.x
                          TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
 
@@ -285,7 +331,7 @@ if(${SABER_OMP_TEST} MATCHES 1)
                          MPI    ${mpi}
                          OMP    ${omp}
                          COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS testinput/${test}_1_${mpi}-${omp}.nam testoutput/${test}_1
+                         ARGS testinput/${test}_1_${mpi}-${omp}.yaml testoutput/${test}_1
                          DEPENDS bump.x
                          TEST_DEPENDS test_${test}_1_${mpi}-${omp}_setup)
 
@@ -293,7 +339,7 @@ if(${SABER_OMP_TEST} MATCHES 1)
                          MPI    ${mpi}
                          OMP    ${omp}
                          COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS testinput/${test}_2_${mpi}-${omp}.nam testoutput/${test}_2
+                         ARGS testinput/${test}_2_${mpi}-${omp}.yaml testoutput/${test}_2
                          DEPENDS bump.x
                          TEST_DEPENDS test_${test}_2_${mpi}-${omp}_setup test_${test}_1_${mpi}-${omp}_run)
 
@@ -307,19 +353,73 @@ if(${SABER_OMP_TEST} MATCHES 1)
     endforeach()
 endif()
 
+# Quadcore tests (MPI)
+if(${SABER_MPI4_TEST} MATCHES 1)
+    set(mpi 4)
+    set(omp 1)
+    foreach(test ${saber_test_quad})
+        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_setup
+                         TYPE SCRIPT
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/setup.sh
+                         ARGS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${test} ${mpi} ${omp}
+                         TEST_DEPENDS test_${test}_1-1_setup)
+
+        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_run
+                         MPI    ${mpi}
+                         OMP    ${omp}
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
+                         ARGS testinput/${test}_${mpi}-${omp}.yaml testoutput/${test}
+                         DEPENDS bump.x
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
+
+        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_compare
+                         TYPE SCRIPT
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
+                         ARGS ${test} ${mpi} ${omp}
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+    endforeach()
+endif()
+
 # Specific compare (TIER > 1)
 if(${SABER_TEST_TIER} GREATER 1)
     ecbuild_add_test(TARGET test_bump_nicas_mpicom_lsqrt_a-b_dirac
                      TYPE SCRIPT
-                     COMMAND ${CMAKE_BINARY_DIR}/bin/compare_specific.sh
+                     COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber_specific.sh
                      ARGS bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_b dirac
                      TEST_DEPENDS test_bump_nicas_mpicom_lsqrt_a_1-1_run
                                   test_bump_nicas_mpicom_lsqrt_b_1-1_run)
 
     ecbuild_add_test(TARGET test_bump_nicas_mpicom_lsqrt_a-c_dirac
                      TYPE SCRIPT
-                     COMMAND ${CMAKE_BINARY_DIR}/bin/compare_specific.sh
+                     COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber_specific.sh
                      ARGS bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_c dirac
                      TEST_DEPENDS test_bump_nicas_mpicom_lsqrt_a_1-1_run
                                   test_bump_nicas_mpicom_lsqrt_c_1-1_run)
+endif()
+
+# NEMOVAR tests
+if(${SABER_NEMOVAR_TEST})
+    set(mpi 4)
+    set(omp 1)
+    foreach(test ${saber_test_nemovar})
+        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_setup
+                         TYPE SCRIPT
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/setup.sh
+                         ARGS ${SABER_NEMOVAR_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${test} ${mpi} ${omp}
+                         TEST_DEPENDS test_${test}_1-1_setup)
+
+        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_run
+                         MPI    ${mpi}
+                         OMP    ${omp}
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/bump.x
+                         ARGS testinput/${test}_${mpi}-${omp}.yaml testoutput/${test}
+                         DEPENDS bump.x
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
+
+        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_compare
+                         TYPE SCRIPT
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
+                         ARGS ${test} ${mpi} ${omp}
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+    endforeach()
 endif()

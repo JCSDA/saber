@@ -1,0 +1,60 @@
+# general_param
+datadir: "testdata/bump_hdiag-nicas_loc_adv_inv"
+prefix: "test__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+method: "loc"
+strategy: "common"
+new_hdiag: 1
+write_cmat: 0
+new_nicas: 1
+check_adjoints: 1
+check_dirac: 1
+
+# model_param
+nl: 2
+levs: [1,2]
+nv: 1
+varname: ["q"]
+nts: 2
+timeslot: [0,6]
+nomask: 1
+
+# ens1_param
+ens1_ne: 50
+
+# ens2_param
+
+# sampling_param
+nc1: 500
+nc2: 250
+ntry: 30
+nc3: 15
+dc: [400.0e3]
+nl0r: 2
+
+# diag_param
+ne: 50
+adv_diag: 1
+adv_rad: 1000.0e3
+adv_niter: 10
+adv_rhflt: 1000.0e3
+
+# fit_param
+
+# nicas_param
+resol: 8.0
+mpicom: 2
+adv_mode: -1
+ndir: 1
+londir: [-85.0]
+latdir: [65.0]
+levdir: [1]
+ivdir: [1]
+itsdir: [1]
+
+# obsop_param
+
+# output_param
+

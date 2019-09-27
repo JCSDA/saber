@@ -19,6 +19,11 @@ use type_rng, only: rng_type
 
 implicit none
 
+! Member field derived type
+type member_field_type
+   real(kind_real),allocatable :: fld(:,:,:,:)    ! Ensemble perturbation
+end type member_field_type
+
 ! Ensemble derived type
 type ens_type
    ! Attributes
@@ -27,15 +32,14 @@ type ens_type
    logical :: allocated                           ! Allocation flag
 
    ! Data
-   real(kind_real),allocatable :: fld(:,:,:,:,:)  ! Ensemble perturbation
-   real(kind_real),allocatable :: mean(:,:,:,:,:) ! Ensemble mean
+   type(member_field_type),allocatable :: mem(:)  ! Members
+   type(member_field_type),allocatable :: mean(:) ! Ensemble mean
 contains
    procedure :: set_att => ens_set_att
    procedure :: alloc => ens_alloc
    procedure :: dealloc => ens_dealloc
    procedure :: copy => ens_copy
    procedure :: remove_mean => ens_remove_mean
-   procedure :: from => ens_from
    procedure :: apply_bens => ens_apply_bens
    procedure :: cortrack => ens_cortrack
 end type ens_type
@@ -80,13 +84,19 @@ type(geom_type),intent(in) :: geom   ! Geometry
 integer,intent(in) :: ne             ! Ensemble size
 integer,intent(in) :: nsub           ! Number of sub-ensembles
 
+! Local variables
+integer :: ie,isub
+
 ! Copy attributes
 call ens%set_att(ne,nsub)
 
 ! Allocation
 if (ne>0) then
-   allocate(ens%fld(geom%nc0a,geom%nl0,nam%nv,nam%nts,ne))
-   allocate(ens%mean(geom%nc0a,geom%nl0,nam%nv,nam%nts,nsub))
+   allocate(ens%mem(ne))
+   allocate(ens%mean(nsub))
+   do isub=1,nsub
+      allocate(ens%mean(isub)%fld(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+   end do
    ens%allocated = .true.
 end if
 
@@ -103,9 +113,22 @@ implicit none
 ! Passed variables
 class(ens_type),intent(inout) :: ens ! Ensemble
 
+! Local variables
+integer :: ie,isub
+
 ! Release memory
-if (allocated(ens%fld)) deallocate(ens%fld)
-if (allocated(ens%mean)) deallocate(ens%mean)
+if (allocated(ens%mem)) then
+   do ie=1,ens%ne
+      if (allocated(ens%mem(ie)%fld)) deallocate(ens%mem(ie)%fld)
+   end do
+   deallocate(ens%mem)
+end if
+if (allocated(ens%mean)) then
+   do isub=1,ens%nsub
+      if (allocated(ens%mean(isub)%fld)) deallocate(ens%mean(isub)%fld)
+   end do
+   deallocate(ens%mean)
+end if
 ens%allocated = .false.
 
 end subroutine ens_dealloc
@@ -122,9 +145,24 @@ implicit none
 class(ens_type),intent(inout) :: ens_out ! Output ensemble
 type(ens_type),intent(in) :: ens_in      ! Input ensemble
 
+! Local variables
+integer :: ie,isub
+
 ! Copy data
-if (allocated(ens_in%fld)) ens_out%fld = ens_in%fld
-if (allocated(ens_in%mean)) ens_out%mean = ens_in%mean
+if (allocated(ens_in%mem)) then
+   do ie=1,ens_in%ne
+      if (.not.allocated(ens_out%mem(ie)%fld)) allocate(ens_out%mem(ie)%fld(size(ens_in%mem(ie)%fld,1), &
+                                                                          & size(ens_in%mem(ie)%fld,2), &
+                                                                          & size(ens_in%mem(ie)%fld,3), &
+                                                                          & size(ens_in%mem(ie)%fld,4)))
+      ens_out%mem(ie)%fld = ens_in%mem(ie)%fld
+   end do
+end if
+if (allocated(ens_in%mean)) then
+   do isub=1,ens_in%nsub
+      ens_out%mean(isub)%fld = ens_in%mean(isub)%fld
+   end do
+end if
 
 end subroutine ens_copy
 
@@ -146,61 +184,22 @@ if (ens%allocated) then
    ! Loop over sub-ensembles
    do isub=1,ens%nsub
       ! Compute mean
-      ens%mean(:,:,:,:,isub) = 0.0
+      ens%mean(isub)%fld = 0.0
       do ie_sub=1,ens%ne/ens%nsub
          ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-         ens%mean(:,:,:,:,isub) = ens%mean(:,:,:,:,isub)+ens%fld(:,:,:,:,ie)
+         ens%mean(isub)%fld = ens%mean(isub)%fld+ens%mem(ie)%fld
       end do
-      ens%mean(:,:,:,:,isub) = ens%mean(:,:,:,:,isub)/(ens%ne/ens%nsub)
+      ens%mean(isub)%fld = ens%mean(isub)%fld/(ens%ne/ens%nsub)
 
       ! Remove mean
       do ie_sub=1,ens%ne/ens%nsub
          ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-         ens%fld(:,:,:,:,ie) = ens%fld(:,:,:,:,ie)-ens%mean(:,:,:,:,isub)
+         ens%mem(ie)%fld = ens%mem(ie)%fld-ens%mean(isub)%fld
       end do
    end do
 end if
 
 end subroutine ens_remove_mean
-
-!----------------------------------------------------------------------
-! Subroutine: ens_from
-! Purpose: copy ensemble array into ensemble data
-!----------------------------------------------------------------------
-subroutine ens_from(ens,nam,geom,ne,ens_mga)
-
-implicit none
-
-! Passed variables
-class(ens_type),intent(inout) :: ens                                        ! Ensemble
-type(nam_type),intent(in) :: nam                                            ! Namelist
-type(geom_type),intent(in) :: geom                                          ! Geometry
-integer,intent(in) :: ne                                                    ! Ensemble size
-real(kind_real),intent(in) :: ens_mga(geom%nmga,geom%nl0,nam%nv,nam%nts,ne) ! Ensemble on model grid, halo A
-
-! Local variables
-integer :: ie,its,iv,il0
-
-! Allocation
-call ens%alloc(nam,geom,ne,1)
-
-if (ens%allocated) then
-   ! Copy
-   do ie=1,ens%ne
-      do its=1,nam%nts
-         do iv=1,nam%nv
-            do il0=1,geom%nl0
-               ens%fld(:,il0,iv,its,ie) = ens_mga(geom%c0a_to_mga,il0,iv,its,ie)
-            end do
-         end do
-      end do
-   end do
-
-   ! Remove mean
-   call ens%remove_mean
-end if
-
-end subroutine ens_from
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_apply_bens
@@ -236,7 +235,11 @@ do ie=1,nam%ens1_ne
       do iv=1,nam%nv
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) pert(ic0a,il0,iv,its) = ens%fld(ic0a,il0,iv,its,ie)/norm
+               if (geom%mask_c0a(ic0a,il0)) then
+                  pert(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its)/norm
+               else
+                  pert(ic0a,il0,iv,its) = mpl%msv%valr
+               end if
             end do
          end do
       end do
@@ -266,27 +269,24 @@ end subroutine ens_apply_bens
 ! Subroutine: ens_cortrack
 ! Purpose: correlation tracker
 !----------------------------------------------------------------------
-subroutine ens_cortrack(ens,mpl,rng,nam,geom,io)
+subroutine ens_cortrack(ens,mpl,nam,geom,io)
 
 implicit none
 
 ! Passed variables
 class(ens_type),intent(in) :: ens   ! Ensemble
 type(mpl_type),intent(inout) :: mpl ! MPI data
-type(rng_type),intent(inout) :: rng ! Random number generator
 type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 type(io_type),intent(in) :: io      ! I/O
 
 ! Local variable
-integer :: ic0a,ic0,il0,jc0a,jc0,ie,its,ind(2)
-integer :: proc_to_ic0a(mpl%nproc),iproc(1),nn_index(1)
-real(kind_real) :: dist,proc_to_val(mpl%nproc),lon,lat,val,var_dirac
-real(kind_real) :: u(geom%nc0a,geom%nl0,nam%nts),v(geom%nc0a,geom%nl0,nam%nts),ffsq(geom%nc0a,geom%nl0,nam%nts)
-real(kind_real) :: var(geom%nc0a,geom%nl0,nam%nts),dirac(geom%nc0a,geom%nl0,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+integer :: ic0a,ic0,il0,ie,its,iproc(1),ind(2)
+real(kind_real) :: proc_to_val(mpl%nproc),val,var_dirac
+real(kind_real) :: var(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: dirac(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 character(len=2) :: timeslotchar
 character(len=1024) :: filename
-character(len=1024),parameter :: subr = 'ens_cortrack'
 
 ! File name
 filename = trim(nam%prefix)//'_cortrack'
@@ -297,152 +297,100 @@ write(mpl%info,'(a7,a)') '','Compute variance'
 call mpl%flush
 var = 0.0
 do ie=1,ens%ne
-   var = var+ens%fld(:,:,1,:,ie)**2
+   var = var+ens%mem(ie)%fld**2
 end do
 var = var/real(ens%ne-ens%nsub,kind_real)
 
-if (nam%nv==3) then
-   ! Compute wind speed squared (variables 2 and 3 should be u and v)
-   write(mpl%info,'(a7,a)') '','Compute wind speed'
-   call mpl%flush
-   u = sum(ens%mean(:,:,2,:,:),dim=4)/real(ens%nsub,kind_real)
-   v = sum(ens%mean(:,:,3,:,:),dim=4)/real(ens%nsub,kind_real)
-   ffsq = u**2+v**2
-
-   ! Write wind
-   write(mpl%info,'(a7,a)') '','Write wind'
-   call mpl%flush
-   do its=1,nam%nts
-      write(timeslotchar,'(i2.2)') nam%timeslot(its)
-      call io%fld_write(mpl,nam,geom,filename,'u_'//timeslotchar,u(:,:,its))
-      call io%fld_write(mpl,nam,geom,filename,'v_'//timeslotchar,v(:,:,its))
-   end do
-
-   if (.true.) then
-      ! Find local maximum value and index
-      write(mpl%info,'(a7,a)') '','Dirac point based on maximum wind speed'
-      call mpl%flush
-      val = maxval(ffsq(:,:,1))
-      ind = maxloc(ffsq(:,:,1))
-      ic0a = ind(1)
-      il0 = ind(2)
-      call mpl%f_comm%allgather(val,proc_to_val)
-      call mpl%f_comm%allgather(ic0a,proc_to_ic0a)
-      iproc = maxloc(proc_to_val)
-   else
-      ! Find local minimum value and index
-      write(mpl%info,'(a7,a)') '','Dirac point based on minimum wind speed'
-      call mpl%flush
-      val = minval(ffsq(:,:,1))
-      ind = minloc(ffsq(:,:,1))
-      ic0a = ind(1)
-      il0 = ind(2)
-      call mpl%f_comm%allgather(val,proc_to_val)
-      call mpl%f_comm%allgather(ic0a,proc_to_ic0a)
-      iproc = minloc(proc_to_val)
-   end if
-   call mpl%f_comm%broadcast(ic0a,iproc(1)-1)
-   call mpl%f_comm%broadcast(il0,iproc(1)-1)
-else
-   if (.false.) then
-      ! Define lon/lat at the domain center
-      lon = 0.5*(minval(geom%lon)+maxval(geom%lon))
-      lat = 0.5*(minval(geom%lat)+maxval(geom%lat))
-
-      ! Find nearest neighbor
-      call geom%tree%find_nearest_neighbors(lon,lat,1,nn_index)
-      ic0 = nn_index(1)
-   else
-      ! Random point
-      if (mpl%main) call rng%rand_integer(1,geom%nc0,ic0)
-      call mpl%f_comm%broadcast(ic0,mpl%ioproc-1)
-   end if
-   if (mpl%main) call rng%rand_integer(1,geom%nl0,il0)
-   call mpl%f_comm%broadcast(il0,mpl%ioproc-1)
-
-   ! Broadcast dirac point
-   ic0a = mpl%msv%vali
-   iproc(1) = geom%c0_to_proc(ic0)
-   if (mpl%myproc==iproc(1)) ic0a = geom%c0_to_c0a(ic0)
-   call mpl%f_comm%broadcast(ic0a,iproc(1)-1)
-   lon = geom%lon(ic0)
-   lat = geom%lat(ic0)
-   write(mpl%info,'(a7,a,i2,a,e10.3,a,e10.3)') '','Timeslot ',nam%timeslot(1),' ~> lon / lat:       ', &
- & lon*rad2deg,' / ',lat*rad2deg
-   call mpl%flush
-end if
-
 ! Generate dirac field
 dirac = 0.0
-if (mpl%myproc==iproc(1)) dirac(ic0a,il0,1) = 1.0
+if (geom%iprocdir(1)==mpl%myproc) dirac(geom%ic0adir(1),geom%il0dir(1),1,geom%itsdir(1)) = 1.0
 
 ! Apply raw ensemble covariance
-cor = 0.0
-cor(:,:,1,:) = dirac
+write(mpl%info,'(a10,a)') '','Apply raw ensemble covariance'
+call mpl%flush
+cor = dirac
 call ens%apply_bens(mpl,nam,geom,cor)
 
-! Normalize
+! Normalize correlation
+write(mpl%info,'(a10,a)') '','Normalize correlation'
+call mpl%flush
 call mpl%f_comm%allreduce(sum(dirac*var),var_dirac,fckit_mpi_sum())
-cor(:,:,1,:) = cor(:,:,1,:)/sqrt(var*var_dirac)
+cor = cor/sqrt(var*var_dirac)
+
+! Correlation maximum displacement
+write(mpl%info,'(a10,a)') '','Correlation maximum displacement'
+call mpl%flush
+do its=1,nam%nts
+   val = maxval(cor(:,:,1,its))
+   call mpl%f_comm%allgather(val,proc_to_val)
+   iproc = maxloc(proc_to_val)
+   if (mpl%myproc==iproc(1)) then
+      ind = maxloc(cor(:,:,1,its))
+      ic0a = ind(1)
+      il0 = ind(2)
+      ic0 = geom%c0a_to_c0(ic0a)
+   end if
+   call mpl%f_comm%broadcast(ic0,iproc(1)-1)
+   call mpl%f_comm%broadcast(il0,iproc(1)-1)
+   write(mpl%info,'(a13,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / lev / val: ', &
+ & geom%lon(ic0)*rad2deg,' / ',geom%lat(ic0)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
+   call mpl%flush
+end do
 
 ! Write correlation
+write(mpl%info,'(a10,a)') '','Write correlation'
+call mpl%flush
 do its=1,nam%nts
    write(timeslotchar,'(i2.2)') nam%timeslot(its)
-   call io%fld_write(mpl,nam,geom,filename,'cor_'//timeslotchar,cor(:,:,1,its))
+   call io%fld_write(mpl,nam,geom,filename,'cor_'//timeslotchar,cor(:,:,:,its))
 end do
 
 ! Correlation tracker
+write(mpl%info,'(a7,a)') '','Correlation tracker'
+call mpl%flush
 write(timeslotchar,'(i2.2)') nam%timeslot(1)
-call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_0',cor(:,:,1,1))
-call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,1,2))
+call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_0',cor(:,:,:,1))
+call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,:,2))
 do its=2,nam%nts-1
-   ! Locate correlation maximum and index
-   val = 0.0
+   ! Correlation maximum displacement
    ic0a = mpl%msv%vali
-   do jc0a=1,geom%nc0a
-      jc0 = geom%c0a_to_c0(jc0a)
-      call sphere_dist(lon,lat,geom%lon(jc0),geom%lat(jc0),dist)
-      if (dist<nam%adv_rad) then
-         if (cor(jc0a,il0,1,its)>val) then
-            val = cor(jc0a,il0,1,its)
-            ic0a = jc0a
-         end if
-      end if
-   end do
-   if (mpl%msv%isi(ic0a)) call mpl%abort(subr,'cannot locate correlation maximum and index')
+   val = maxval(cor(:,:,1,its))
    call mpl%f_comm%allgather(val,proc_to_val)
-   call mpl%f_comm%allgather(ic0a,proc_to_ic0a)
    iproc = maxloc(proc_to_val)
    if (mpl%myproc==iproc(1)) then
-      ic0a = proc_to_ic0a(iproc(1))
+      ind = maxloc(cor(:,:,1,its))
+      ic0a = ind(1)
+      il0 = ind(2)
       ic0 = geom%c0a_to_c0(ic0a)
-      val = cor(ic0a,il0,1,its)
    end if
    call mpl%f_comm%broadcast(ic0,iproc(1)-1)
-   lon = geom%lon(ic0)
-   lat = geom%lat(ic0)
-   call mpl%f_comm%broadcast(val,iproc(1)-1)
-   write(mpl%info,'(a7,a,i2,a,e10.3,a,e10.3,a,f6.1)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / val: ', &
- & lon*rad2deg,' / ',lat*rad2deg,' / ',val
+   call mpl%f_comm%broadcast(il0,iproc(1)-1)
+   write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / lev / val: ', &
+ & geom%lon(ic0)*rad2deg,' / ',geom%lat(ic0)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
    call mpl%flush
 
    ! Generate dirac field
    dirac = 0.0
-   if (mpl%myproc==iproc(1)) dirac(ic0a,il0,its) = 1.0
+   if (iproc(1)==mpl%myproc) dirac(ic0a,il0,1,its) = 1.0
 
    ! Apply raw ensemble covariance
-   cor = 0.0
-   cor(:,:,1,:) = dirac
+   write(mpl%info,'(a13,a)') '','Apply raw ensemble covariance'
+   call mpl%flush
+   cor = dirac
    call ens%apply_bens(mpl,nam,geom,cor)
 
-   ! Normalize
+   ! Normalize correlation tracker
+   write(mpl%info,'(a13,a)') '','Normalize correlation tracker'
+   call mpl%flush
    call mpl%f_comm%allreduce(sum(dirac*var),var_dirac,fckit_mpi_sum())
-   cor(:,:,1,:) = cor(:,:,1,:)/sqrt(var*var_dirac)
+   cor = cor/sqrt(var*var_dirac)
 
    ! Write correlation tracker
+   write(mpl%info,'(a13,a)') '','Write correlation tracker'
+   call mpl%flush
    write(timeslotchar,'(i2.2)') nam%timeslot(its)
-   call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_0',cor(:,:,1,its))
-   call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,1,its+1))
+   call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_0',cor(:,:,:,its))
+   call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,:,its+1))
 end do
 
 end subroutine ens_cortrack

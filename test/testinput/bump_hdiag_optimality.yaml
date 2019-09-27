@@ -1,0 +1,47 @@
+# general_param
+datadir: "testdata/bump_hdiag_optimality"
+prefix: "test__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+method: "cor"
+strategy: "common_univariate"
+write_cmat: 0
+new_nicas: 1
+write_nicas: 0
+check_optimality: 1
+
+# model_param
+nl: 1
+levs: [1]
+nv: 1
+varname: ["q"]
+nts: 1
+
+# ens1_param
+ens1_ne: 50
+
+# ens2_param
+
+# sampling_param
+nc1: 1500
+ntry: 30
+nc3: 15
+dc: [400.0e3]
+nl0r: 1
+
+# diag_param
+ne: 50
+
+# fit_param
+
+# nicas_param
+resol: 8.0
+mpicom: 2
+forced_radii: 1
+rh: 4000.0e3
+
+# obsop_param
+
+# output_param
+

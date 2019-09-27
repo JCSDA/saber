@@ -23,7 +23,7 @@ implicit none
 
 ! Averaged statistics block derived type
 type avg_blk_type
-   integer :: ic2                                        ! Global index
+   integer :: ic2a                                       ! Local index
    integer :: ib                                         ! Block index
    character(len=1024) :: name                           ! Name
    integer :: ne                                         ! Ensemble size
@@ -62,10 +62,12 @@ contains
    procedure :: dealloc => avg_blk_dealloc
    procedure :: copy => avg_blk_copy
    procedure :: write => avg_blk_write
-   procedure :: compute => avg_blk_compute
+   procedure :: compute_global => avg_blk_compute_global
+   procedure :: compute_local => avg_blk_compute_local
    procedure :: compute_asy => avg_blk_compute_asy
    procedure :: compute_hyb => avg_blk_compute_hyb
-   procedure :: compute_deh => avg_blk_compute_deh
+   procedure :: compute_deh_global => avg_blk_compute_deh_global
+   procedure :: compute_deh_local => avg_blk_compute_deh_local
    procedure :: compute_asy_deh => avg_blk_compute_asy_deh
 end type avg_blk_type
 
@@ -78,7 +80,7 @@ contains
 ! Subroutine: avg_blk_alloc
 ! Purpose: allocation
 !----------------------------------------------------------------------
-subroutine avg_blk_alloc(avg_blk,nam,geom,bpar,ic2,ib,ne,nsub,prefix)
+subroutine avg_blk_alloc(avg_blk,nam,geom,bpar,ic2a,ib,ne,nsub,prefix)
 
 implicit none
 
@@ -88,14 +90,14 @@ class(avg_blk_type),intent(inout) :: avg_blk ! Averaged statistics block
 type(nam_type),intent(in) :: nam             ! Namelist
 type(geom_type),intent(in) :: geom           ! Geometry
 type(bpar_type),intent(in) :: bpar           ! Block parameters
-integer,intent(in) :: ic2                    ! Global index
+integer,intent(in) :: ic2a                   ! Local index
 integer,intent(in) :: ib                     ! Block index
 integer,intent(in) :: ne                     ! Ensemble size
 integer,intent(in) :: nsub                   ! Sub-ensembles number
 character(len=*),intent(in) :: prefix        ! Prefix
 
 ! Set attributes
-avg_blk%ic2 = ic2
+avg_blk%ic2a = ic2a
 avg_blk%ib = ib
 avg_blk%ne = ne
 avg_blk%nsub = nsub
@@ -103,7 +105,7 @@ avg_blk%name = trim(prefix)//'_'//trim(bpar%blockname(ib))
 
 ! Allocation
 if (bpar%diag_block(ib).and.(.not.allocated(avg_blk%nc1a))) then
-   if ((ic2==0).or.nam%local_diag) then
+   if ((ic2a==0).or.nam%local_diag) then
       allocate(avg_blk%nc1a(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%m2(geom%nl0,avg_blk%nsub))
       if (nam%var_filter) then
@@ -130,7 +132,7 @@ if (bpar%diag_block(ib).and.(.not.allocated(avg_blk%nc1a))) then
          allocate(avg_blk%m11lrm11asy(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       end select
    end if
-   if ((nam%avg_nbins>0).and.(ic2==0)) then
+   if ((nam%avg_nbins>0).and.(ic2a==0)) then
       allocate(avg_blk%m11_bins(nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%m11_hist(nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%m11m11_bins(nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
@@ -385,10 +387,10 @@ end associate
 end subroutine avg_blk_write
 
 !----------------------------------------------------------------------
-! Subroutine: avg_blk_compute
-! Purpose: compute averaged statistics via spatial-angular erogodicity assumption
+! Subroutine: avg_blk_compute_global
+! Purpose: compute globally averaged statistics via spatial-angular erogodicity assumption
 !----------------------------------------------------------------------
-subroutine avg_blk_compute(avg_blk,mpl,nam,geom,bpar,samp,mom_blk)
+subroutine avg_blk_compute_global(avg_blk,mpl,nam,geom,bpar,samp,mom_blk)
 
 implicit none
 
@@ -402,267 +404,392 @@ type(samp_type),intent(in) :: samp           ! Sampling
 type(mom_blk_type),intent(in) :: mom_blk     ! Moments
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,nc1a_cor
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,nc1a_cor,n1,n2,npack,offset
 real(kind_real) :: m2_1,m2_2
 real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
 real(kind_real) :: min_m11_tot,max_m11_tot,min_m11m11_tot,max_m11m11_tot,min_m2m2_tot,max_m2m2_tot,min_m22_tot,max_m22_tot
 real(kind_real) :: min_cor_tot,max_cor_tot
-real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:),hist(:,:,:,:)
-logical :: involved,valid
+real(kind_real) :: norm
+real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
+real(kind_real),allocatable :: list1(:),list2(:)
+real(kind_real),allocatable :: sbuf(:),rbuf(:)
+logical :: valid
+logical,allocatable :: mask_0(:,:,:),mask_1(:,:,:,:),mask_2(:,:,:,:,:),mask_3(:,:,:,:)
 
 ! Associate
-associate(ic2=>avg_blk%ic2,ib=>avg_blk%ib)
+associate(ib=>avg_blk%ib)
 
 ! Variables indices
 iv = bpar%b_to_v1(ib)
 jv = bpar%b_to_v2(ib)
 
-if ((ic2==0).or.nam%local_diag) then
-   ! Copy variance
-   if (ic2==0) then
-      do isub=1,avg_blk%nsub
-         do il0=1,geom%nl0
-            jl0r = bpar%il0rz(il0,ib)
-            avg_blk%m2(il0,isub) = sum(mom_blk%m2_1(:,il0,isub),mask=mpl%msv%isnotr(mom_blk%m2_1(:,il0,isub))) &
-                                 & /real(count(samp%c1l0_log(:,il0)),kind_real)
-            if (nam%var_filter.and.(.not.nam%gau_approx)) avg_blk%m4(il0,isub) = sum(mom_blk%m22(:,1,jl0r,il0,isub), &
-          & mask=mpl%msv%isnotr(mom_blk%m22(:,1,jl0r,il0,isub)))/real(count(samp%c1l0_log(:,il0)),kind_real)
-         end do
-      end do
-   else
-      avg_blk%m2 = 0.0
-      if (nam%var_filter.and.(.not.nam%gau_approx)) avg_blk%m4 = 0.0
-      do ic1a=1,samp%nc1a
-         ic1 = samp%c1a_to_c1(ic1a)
-         if (ic1==samp%c2_to_c1(ic2)) then
-            do isub=1,avg_blk%nsub
-               do il0=1,geom%nl0
-                  jl0r = bpar%il0rz(il0,ib)
-                  avg_blk%m2(il0,isub) = mom_blk%m2_1(ic1a,il0,isub)
-                  if (nam%var_filter.and.(.not.nam%gau_approx)) avg_blk%m4(il0,isub) = mom_blk%m22(ic1a,1,jl0r,il0,isub)
+! Variance and univariate fourth-order moment
+do isub=1,avg_blk%nsub
+   do il0=1,geom%nl0
+      avg_blk%m2(il0,isub) = sum(mom_blk%m2_1(:,il0,isub),mask=mpl%msv%isnot(mom_blk%m2_1(:,il0,isub)))
+      if (nam%var_filter.and.(.not.nam%gau_approx)) then
+         jl0r = bpar%il0rz(il0,ib)
+         avg_blk%m4(il0,isub) = sum(mom_blk%m22(:,1,jl0r,il0,isub),mask=mpl%msv%isnot(mom_blk%m22(:,1,jl0r,il0,isub)))
+      end if
+   end do
+end do
+
+! Allocation
+allocate(list_m11(samp%nc1a))
+allocate(list_m11m11(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
+allocate(list_m2m2(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
+if (.not.nam%gau_approx) allocate(list_m22(samp%nc1a,avg_blk%nsub))
+allocate(list_cor(samp%nc1a))
+
+! Average
+do il0=1,geom%nl0
+   do jl0r=1,bpar%nl0r(ib)
+      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+
+      do jc3=1,bpar%nc3(ib)
+         ! Fill lists
+         !$omp parallel do schedule(static) private(ic1a,ic1,valid,m2_1,m2_2,isub,jsub)
+         do ic1a=1,samp%nc1a
+            ! Index
+            ic1 = samp%c1a_to_c1(ic1a)
+
+            ! Check validity
+            valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+            if (trim(nam%mask_type)=='stddev') then
+               m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
+               m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
+               if (trim(nam%mask_lu(iv))=='lower') then
+                  valid = valid.and.(m2_1>nam%mask_th(iv)**2)
+               elseif (trim(nam%mask_lu(iv))=='upper') then
+                  valid = valid.and.(m2_1<nam%mask_th(iv)**2)
+               end if
+               if (trim(nam%mask_lu(jv))=='lower') then
+                  valid = valid.and.(m2_2>nam%mask_th(jv)**2)
+               elseif (trim(nam%mask_lu(jv))=='upper') then
+                  valid = valid.and.(m2_2<nam%mask_th(jv)**2)
+               end if
+            end if
+
+            if (valid) then
+               ! Averages for diagnostics
+               list_m11(ic1a) = sum(mom_blk%m11(ic1a,jc3,jl0r,il0,:))/real(avg_blk%nsub,kind_real)
+               do isub=1,avg_blk%nsub
+                  do jsub=1,avg_blk%nsub
+                     list_m11m11(ic1a,jsub,isub) = mom_blk%m11(ic1a,jc3,jl0r,il0,isub)*mom_blk%m11(ic1a,jc3,jl0r,il0,jsub)
+                     list_m2m2(ic1a,jsub,isub) = mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jl0,jsub)
+                  end do
+                  if (.not.nam%gau_approx) list_m22(ic1a,isub) = mom_blk%m22(ic1a,jc3,jl0r,il0,isub)
                end do
+
+               ! Correlation
+               m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
+               m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
+               if ((m2_1>0.0).and.(m2_2>0.0)) then
+                  list_cor(ic1a) = list_m11(ic1a)/sqrt(m2_1*m2_2)
+                  if (sup(abs(list_cor(ic1a)),1.0_kind_real)) list_cor(ic1a) = mpl%msv%valr
+               else
+                  list_cor(ic1a) = mpl%msv%valr
+               end if
+            else
+               ! Missing value
+               list_m11(ic1a) = mpl%msv%valr
+               do isub=1,avg_blk%nsub
+                  do jsub=1,avg_blk%nsub
+                     list_m11m11(ic1a,jsub,isub) = mpl%msv%valr
+                     list_m2m2(ic1a,jsub,isub) = mpl%msv%valr
+                  end do
+                  if (.not.nam%gau_approx) list_m22(ic1a,isub) = mpl%msv%valr
+               end do
+               list_cor(ic1a) = mpl%msv%valr
+            end if
+         end do
+         !$omp end parallel do
+
+         ! Number of valid points
+         nc1a = count(mpl%msv%isnot(list_m11))
+         nc1a_cor = count(mpl%msv%isnot(list_cor))
+         avg_blk%nc1a(jc3,jl0r,il0) = real(nc1a,kind_real)
+         avg_blk%nc1a_cor(jc3,jl0r,il0) = real(nc1a_cor,kind_real)
+
+         ! Average
+         if (nc1a>0) then
+            avg_blk%m11(jc3,jl0r,il0) = sum(list_m11,mask=mpl%msv%isnot(list_m11))
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = sum(list_m11m11(:,jsub,isub),mask=mpl%msv%isnot(list_m11))
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = sum(list_m2m2(:,jsub,isub),mask=mpl%msv%isnot(list_m11))
+               end do
+               if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = sum(list_m22(:,isub),mask=mpl%msv%isnot(list_m11))
+            end do
+         else
+            avg_blk%m11(jc3,jl0r,il0) = 0.0
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = 0.0
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = 0.0
+               end do
+               if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = 0.0
             end do
          end if
+         if (nc1a_cor>0) then
+            avg_blk%cor(jc3,jl0r,il0) = sum(list_cor,mask=mpl%msv%isnot(list_cor))
+         else
+            avg_blk%cor(jc3,jl0r,il0) = 0.0
+         end if
+
+         if (nam%avg_nbins>0) then
+            ! Allocation
+            if (.not.nam%gau_approx) n1 = samp%nc1a*avg_blk%nsub
+            n2 = samp%nc1a*avg_blk%nsub**2
+            if (.not.nam%gau_approx) allocate(list1(n1))
+            allocate(list2(n2))
+
+            ! Get min/max values for each task
+            if (nc1a>0) then
+               min_m11 = minval(list_m11,mask=mpl%msv%isnot(list_m11))
+               max_m11 = maxval(list_m11,mask=mpl%msv%isnot(list_m11))
+               min_m11m11 = minval(list_m11m11,mask=mpl%msv%isnot(list_m11m11))
+               max_m11m11 = maxval(list_m11m11,mask=mpl%msv%isnot(list_m11m11))
+               min_m2m2 = minval(list_m2m2,mask=mpl%msv%isnot(list_m2m2))
+               max_m2m2 = maxval(list_m2m2,mask=mpl%msv%isnot(list_m2m2))
+               if (.not.nam%gau_approx) then
+                  min_m22 = minval(list_m22,mask=mpl%msv%isnot(list_m22))
+                  max_m22 = maxval(list_m22,mask=mpl%msv%isnot(list_m22))
+               end if
+            else
+               min_m11 = huge(1.0)
+               max_m11 = -huge(1.0)
+               min_m11m11 = huge(1.0)
+               max_m11m11 = -huge(1.0)
+               min_m2m2 = huge(1.0)
+               max_m2m2 = -huge(1.0)
+               if (.not.nam%gau_approx) then
+                  min_m22 = huge(1.0)
+                  max_m22 = -huge(1.0)
+               end if
+            end if
+            if (nc1a>0) then
+               min_cor = minval(list_cor,mask=mpl%msv%isnot(list_cor))
+               max_cor = maxval(list_cor,mask=mpl%msv%isnot(list_cor))
+            else
+               min_m11 = huge(1.0)
+               max_cor = -huge(1.0)
+            end if
+
+            ! Gather min/max values
+            call mpl%f_comm%allreduce(min_m11,min_m11_tot,fckit_mpi_min())
+            call mpl%f_comm%allreduce(max_m11,max_m11_tot,fckit_mpi_max())
+            call mpl%f_comm%allreduce(min_m11m11,min_m11m11_tot,fckit_mpi_min())
+            call mpl%f_comm%allreduce(max_m11m11,max_m11m11_tot,fckit_mpi_max())
+            call mpl%f_comm%allreduce(min_m2m2,min_m2m2_tot,fckit_mpi_min())
+            call mpl%f_comm%allreduce(max_m2m2,max_m2m2_tot,fckit_mpi_max())
+            if (.not.nam%gau_approx) then
+               call mpl%f_comm%allreduce(min_m22,min_m22_tot,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m22,max_m22_tot,fckit_mpi_max())
+            end if
+            call mpl%f_comm%allreduce(min_cor,min_cor_tot,fckit_mpi_min())
+            call mpl%f_comm%allreduce(max_cor,max_cor_tot,fckit_mpi_max())
+
+            ! Compute histograms on each task
+            call histogram(mpl,samp%nc1a,list_m11,nam%avg_nbins,min_m11_tot,max_m11_tot,avg_blk%m11_bins(:,jc3,jl0r,il0), &
+          & avg_blk%m11_hist(:,jc3,jl0r,il0))
+            list2 = pack(list_m11m11,mask=.true.)
+            call histogram(mpl,n2,list2,nam%avg_nbins,min_m11m11_tot,max_m11m11_tot,avg_blk%m11m11_bins(:,jc3,jl0r,il0), &
+          & avg_blk%m11m11_hist(:,jc3,jl0r,il0))
+            list2 = pack(list_m2m2,mask=.true.)
+            call histogram(mpl,n2,list2,nam%avg_nbins,min_m2m2_tot,max_m2m2_tot,avg_blk%m2m2_bins(:,jc3,jl0r,il0), &
+          & avg_blk%m2m2_hist(:,jc3,jl0r,il0))
+            if (.not.nam%gau_approx) then
+               list1 = pack(list_m22,mask=.true.)
+               call histogram(mpl,n1,list1,nam%avg_nbins,min_m22_tot,max_m22_tot,avg_blk%m22_bins(:,jc3,jl0r,il0), &
+             & avg_blk%m22_hist(:,jc3,jl0r,il0))
+            end if
+            call histogram(mpl,samp%nc1a,list_cor,nam%avg_nbins,min_cor_tot,max_cor_tot,avg_blk%cor_bins(:,jc3,jl0r,il0), &
+             & avg_blk%cor_hist(:,jc3,jl0r,il0))
+
+            ! Release memory
+            if (.not.nam%gau_approx) deallocate(list1)
+            deallocate(list2)
+         end if
       end do
+   end do
+end do
+
+! Release memory
+deallocate(list_m11)
+deallocate(list_m11m11)
+deallocate(list_m2m2)
+if (.not.nam%gau_approx) deallocate(list_m22)
+deallocate(list_cor)
+
+if (mpl%nproc>1) then
+   ! Get packing size
+   npack = geom%nl0*avg_blk%nsub
+   if (nam%var_filter.and.(.not.nam%gau_approx)) npack = npack+geom%nl0*avg_blk%nsub
+   npack = npack+(4+2*avg_blk%nsub**2)*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   if (.not.nam%gau_approx) npack = npack+avg_blk%nsub*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   if (nam%avg_nbins>0) then
+      npack = npack+4*nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      if (.not.nam%gau_approx) npack = npack+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
    end if
 
-   ! Check whether this task is involved
-   if (ic2>0) then
-      involved = any(samp%local_mask(:,ic2))
-   else
-      involved = .true.
+   ! Allocation
+   allocate(sbuf(npack))
+   allocate(rbuf(npack))
+   allocate(mask_0(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
+   allocate(mask_1(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub))
+   allocate(mask_2(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub,avg_blk%nsub))
+   allocate(mask_3(nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
+
+   ! Initialization
+   mask_0 = .true.
+   mask_1 = .true.
+   mask_2 = .true.
+   mask_3 = .true.
+
+   ! Pack data
+   offset = 0
+   sbuf = 0.0
+   sbuf(offset+1:offset+geom%nl0*avg_blk%nsub) = pack(avg_blk%m2,.true.)
+   offset = offset+geom%nl0*avg_blk%nsub
+   if (nam%var_filter.and.(.not.nam%gau_approx)) then
+      sbuf(offset+1:offset+geom%nl0*avg_blk%nsub) = pack(avg_blk%m4,.true.)
+      offset = offset+geom%nl0*avg_blk%nsub
+   end if
+   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%nc1a,.true.)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%m11,.true.)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2) = pack(avg_blk%m11m11,.true.)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
+   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2) = pack(avg_blk%m2m2,.true.)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
+   if (.not.nam%gau_approx) then
+      sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub) = pack(avg_blk%m22,.true.)
+      offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub
+   end if
+   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%nc1a_cor,.true.)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%cor,.true.)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   if (nam%avg_nbins>0) then
+      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%m11_hist,.true.)
+      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%m11m11_hist,.true.)
+      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%m2m2_hist,.true.)
+      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      if (.not.nam%gau_approx) then
+         sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%m22_hist,.true.)
+         offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      end if
+      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%cor_hist,.true.)
+      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
    end if
 
-   if (involved) then
-      ! Allocation
-      allocate(list_m11(samp%nc1a))
-      allocate(list_m11m11(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
-      allocate(list_m2m2(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
-      if (.not.nam%gau_approx) allocate(list_m22(samp%nc1a,avg_blk%nsub))
-      allocate(list_cor(samp%nc1a))
+   ! Reduce data
+   call mpl%f_comm%allreduce(sbuf,rbuf,fckit_mpi_sum())
 
-      ! Average
-      do il0=1,geom%nl0
-         do jl0r=1,bpar%nl0r(ib)
-            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-
-            do jc3=1,bpar%nc3(ib)
-               ! Fill lists
-               !$omp parallel do schedule(static) private(ic1a,ic1,valid,m2_1,m2_2,isub,jsub)
-               do ic1a=1,samp%nc1a
-                  ! Index
-                  ic1 = samp%c1a_to_c1(ic1a)
-
-                  ! Check validity
-                  valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
-                  if (ic2>0) valid = valid.and.samp%local_mask(ic1a,ic2)
-                  if (trim(nam%mask_type)=='stddev') then
-                     m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
-                     m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
-                     if (trim(nam%mask_lu)=='lower') then
-                        valid = valid.and.(m2_1>nam%mask_th**2)
-                     elseif (trim(nam%mask_lu)=='upper') then
-                        valid = valid.and.(m2_1<nam%mask_th**2)
-                     end if
-                     if (trim(nam%mask_lu)=='lower') then
-                        valid = valid.and.(m2_2>nam%mask_th**2)
-                     elseif (trim(nam%mask_lu)=='upper') then
-                        valid = valid.and.(m2_2<nam%mask_th**2)
-                     end if
-                  end if
-
-                  if (valid) then
-                     ! Averages for diagnostics
-                     list_m11(ic1a) = sum(mom_blk%m11(ic1a,jc3,jl0r,il0,:))/real(avg_blk%nsub,kind_real)
-                     do isub=1,avg_blk%nsub
-                        do jsub=1,avg_blk%nsub
-                           list_m11m11(ic1a,jsub,isub) = mom_blk%m11(ic1a,jc3,jl0r,il0,isub)*mom_blk%m11(ic1a,jc3,jl0r,il0,jsub)
-                           list_m2m2(ic1a,jsub,isub) = mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jl0,jsub)
-                        end do
-                        if (.not.nam%gau_approx) list_m22(ic1a,isub) = mom_blk%m22(ic1a,jc3,jl0r,il0,isub)
-                     end do
-
-                     ! Correlation
-                     m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
-                     m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
-                     if ((m2_1>0.0).and.(m2_2>0.0)) then
-                        list_cor(ic1a) = list_m11(ic1a)/sqrt(m2_1*m2_2)
-                        if (sup(abs(list_cor(ic1a)),1.0_kind_real)) list_cor(ic1a) = mpl%msv%valr
-                     else
-                        list_cor(ic1a) = mpl%msv%valr
-                     end if
-                  else
-                     ! Missing value
-                     list_m11(ic1a) = mpl%msv%valr
-                     do isub=1,avg_blk%nsub
-                        do jsub=1,avg_blk%nsub
-                           list_m11m11(ic1a,jsub,isub) = mpl%msv%valr
-                           list_m2m2(ic1a,jsub,isub) = mpl%msv%valr
-                        end do
-                        if (.not.nam%gau_approx) list_m22(ic1a,isub) = mpl%msv%valr
-                     end do
-                     list_cor(ic1a) = mpl%msv%valr
-                  end if
-               end do
-               !$omp end parallel do
-
-               ! Number of valid points
-               nc1a = count(mpl%msv%isnotr(list_m11))
-               nc1a_cor = count(mpl%msv%isnotr(list_cor))
-               avg_blk%nc1a(jc3,jl0r,il0) = real(nc1a,kind_real)
-               avg_blk%nc1a_cor(jc3,jl0r,il0) = real(nc1a_cor,kind_real)
-
-               ! Average
-               if (nc1a>0) then
-                  avg_blk%m11(jc3,jl0r,il0) = sum(list_m11,mask=mpl%msv%isnotr(list_m11))
-                  do isub=1,avg_blk%nsub
-                     do jsub=1,avg_blk%nsub
-                        avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = sum(list_m11m11(:,jsub,isub),mask=mpl%msv%isnotr(list_m11))
-                        avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = sum(list_m2m2(:,jsub,isub),mask=mpl%msv%isnotr(list_m11))
-                     end do
-                     if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = sum(list_m22(:,isub),mask=mpl%msv%isnotr(list_m11))
-                  end do
-               else
-                  avg_blk%m11(jc3,jl0r,il0) = 0.0
-                  do isub=1,avg_blk%nsub
-                     do jsub=1,avg_blk%nsub
-                        avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = 0.0
-                        avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = 0.0
-                     end do
-                     if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = 0.0
-                  end do
-               end if
-               if (nc1a_cor>0) then
-                  avg_blk%cor(jc3,jl0r,il0) = sum(list_cor,mask=mpl%msv%isnotr(list_cor))
-               else
-                  avg_blk%cor(jc3,jl0r,il0) = 0.0
-               end if
-
-               if ((nam%avg_nbins>0).and.(ic2==0)) then
-                  ! Get min/max values for each task
-                  if (nc1a>0) then
-                     min_m11 = minval(list_m11,mask=mpl%msv%isnotr(list_m11))
-                     max_m11 = maxval(list_m11,mask=mpl%msv%isnotr(list_m11))
-                     min_m11m11 = minval(list_m11m11,mask=mpl%msv%isnotr(list_m11m11))
-                     max_m11m11 = maxval(list_m11m11,mask=mpl%msv%isnotr(list_m11m11))
-                     min_m2m2 = minval(list_m2m2,mask=mpl%msv%isnotr(list_m2m2))
-                     max_m2m2 = maxval(list_m2m2,mask=mpl%msv%isnotr(list_m2m2))
-                     if (.not.nam%gau_approx) then
-                        min_m22 = minval(list_m22,mask=mpl%msv%isnotr(list_m22))
-                        max_m22 = maxval(list_m22,mask=mpl%msv%isnotr(list_m22))
-                     end if
-                  else
-                     min_m11 = huge(1.0)
-                     max_m11 = -huge(1.0)
-                     min_m11m11 = huge(1.0)
-                     max_m11m11 = -huge(1.0)
-                     min_m2m2 = huge(1.0)
-                     max_m2m2 = -huge(1.0)
-                     if (.not.nam%gau_approx) then
-                        min_m22 = huge(1.0)
-                        max_m22 = -huge(1.0)
-                     end if
-                  end if
-                  if (nc1a>0) then
-                     min_cor = minval(list_cor,mask=mpl%msv%isnotr(list_cor))
-                     max_cor = maxval(list_cor,mask=mpl%msv%isnotr(list_cor))
-                  else
-                     min_m11 = huge(1.0)
-                     max_cor = -huge(1.0)
-                  end if
-
-                  ! Gather min/max values
-                  call mpl%f_comm%allreduce(min_m11,min_m11_tot,fckit_mpi_min())
-                  call mpl%f_comm%allreduce(max_m11,max_m11_tot,fckit_mpi_max())
-                  call mpl%f_comm%allreduce(min_m11m11,min_m11m11_tot,fckit_mpi_min())
-                  call mpl%f_comm%allreduce(max_m11m11,max_m11m11_tot,fckit_mpi_max())
-                  call mpl%f_comm%allreduce(min_m2m2,min_m2m2_tot,fckit_mpi_min())
-                  call mpl%f_comm%allreduce(max_m2m2,max_m2m2_tot,fckit_mpi_max())
-                  if (.not.nam%gau_approx) then
-                     call mpl%f_comm%allreduce(min_m22,min_m22_tot,fckit_mpi_min())
-                     call mpl%f_comm%allreduce(max_m22,max_m22_tot,fckit_mpi_max())
-                  end if
-                  call mpl%f_comm%allreduce(min_cor,min_cor_tot,fckit_mpi_min())
-                  call mpl%f_comm%allreduce(max_cor,max_cor_tot,fckit_mpi_max())
-
-                  ! Compute histograms on each task
-                  call histogram(mpl,samp%nc1a,list_m11,nam%avg_nbins,min_m11_tot,max_m11_tot,avg_blk%m11_bins(:,jc3,jl0r,il0), &
-                & avg_blk%m11_hist(:,jc3,jl0r,il0))
-                  call histogram(mpl,samp%nc1a*avg_blk%nsub**2,pack(list_m11m11,mask=.true.),nam%avg_nbins,min_m11m11_tot, &
-                & max_m11m11_tot,avg_blk%m11m11_bins(:,jc3,jl0r,il0),avg_blk%m11m11_hist(:,jc3,jl0r,il0))
-                  call histogram(mpl,samp%nc1a*avg_blk%nsub**2,pack(list_m2m2,mask=.true.),nam%avg_nbins,min_m2m2_tot, &
-                & max_m2m2_tot,avg_blk%m2m2_bins(:,jc3,jl0r,il0),avg_blk%m2m2_hist(:,jc3,jl0r,il0))
-                  if (.not.nam%gau_approx) call histogram(mpl,samp%nc1a*avg_blk%nsub,pack(list_m22,mask=.true.), &
-                   & nam%avg_nbins,min_m22_tot,max_m22_tot,avg_blk%m22_bins(:,jc3,jl0r,il0),avg_blk%m22_hist(:,jc3,jl0r,il0))
-                  call histogram(mpl,samp%nc1a,list_cor,nam%avg_nbins,min_cor_tot,max_cor_tot,avg_blk%cor_bins(:,jc3,jl0r,il0), &
-                   & avg_blk%cor_hist(:,jc3,jl0r,il0))
-               end if
-            end do
-         end do
-      end do
-
-      ! Release memory
-      deallocate(list_m11)
-      deallocate(list_m11m11)
-      deallocate(list_m2m2)
-      if (.not.nam%gau_approx) deallocate(list_m22)
-      deallocate(list_cor)
-   else
-      ! Set to zero for this task
-      avg_blk%nc1a = 0
-      avg_blk%m11 = 0.0
-      avg_blk%m11m11 = 0.0
-      avg_blk%m2m2 = 0.0
-      if (.not.nam%gau_approx) avg_blk%m22 = 0.0
-      avg_blk%nc1a_cor = 0.0
-      avg_blk%cor = 0.0
+   ! Unpack data
+   offset = 0
+   avg_blk%m2 = unpack(rbuf(offset+1:offset+geom%nl0*avg_blk%nsub),mask_1(1,1,:,:),avg_blk%m2)
+   offset = offset+geom%nl0*avg_blk%nsub
+   if (nam%var_filter.and.(.not.nam%gau_approx)) then
+      avg_blk%m4 = unpack(rbuf(offset+1:offset+geom%nl0*avg_blk%nsub),mask_1(1,1,:,:),avg_blk%m4)
+      offset = offset+geom%nl0*avg_blk%nsub
    end if
+   avg_blk%nc1a = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_0,avg_blk%nc1a)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   avg_blk%m11 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_0,avg_blk%m11)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   avg_blk%m11m11 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2), &
+             & mask_2,avg_blk%m11m11)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
+   avg_blk%m2m2 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2), &
+             & mask_2,avg_blk%m2m2)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
+   if (.not.nam%gau_approx) then
+      avg_blk%m22 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub), &
+    & mask_1,avg_blk%m22)
+      offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub
+   end if
+   avg_blk%nc1a_cor = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0), &
+                            & mask_0,avg_blk%nc1a_cor)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   avg_blk%cor = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_0,avg_blk%cor)
+   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   if (nam%avg_nbins>0) then
+      avg_blk%m11_hist = unpack(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_3,avg_blk%m11_hist)
+      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      avg_blk%m11m11_hist = unpack(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_3, &
+    & avg_blk%m11m11_hist)
+      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      avg_blk%m2m2_hist = unpack(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_3,avg_blk%m2m2_hist)
+      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      if (.not.nam%gau_approx) then
+         avg_blk%m22_hist = unpack(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_3,avg_blk%m22_hist)
+         offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      end if
+      avg_blk%cor_hist = unpack(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_3,avg_blk%cor_hist)
+      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   end if
+
+   ! Release memory
+   deallocate(sbuf)
+   deallocate(rbuf)
+   deallocate(mask_0)
+   deallocate(mask_1)
+   deallocate(mask_2)
+   deallocate(mask_3)
 end if
 
-
-! Gather histograms
-if ((nam%avg_nbins>0).and.(ic2==0)) then
-   ! Allocation
-   allocate(hist(nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
-
-   ! Gather data
-   hist = avg_blk%m11_hist
-   call mpl%f_comm%allreduce(hist,avg_blk%m11_hist,fckit_mpi_sum())
-   hist = avg_blk%m11m11_hist
-   call mpl%f_comm%allreduce(hist,avg_blk%m11m11_hist,fckit_mpi_sum())
-   hist = avg_blk%m2m2_hist
-   call mpl%f_comm%allreduce(hist,avg_blk%m2m2_hist,fckit_mpi_sum())
-   if (.not.nam%gau_approx) then
-      hist = avg_blk%m22_hist
-      call mpl%f_comm%allreduce(hist,avg_blk%m22_hist,fckit_mpi_sum())
-   end if
-   hist = avg_blk%cor_hist
-   call mpl%f_comm%allreduce(hist,avg_blk%cor_hist,fckit_mpi_sum())
-
-   ! Normalization
-   do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0r(ib)
-         do jc3=1,bpar%nc3(ib)
+! Normalize
+!$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,isub,jsub,norm)
+do il0=1,geom%nl0
+   do isub=1,avg_blk%nsub
+      if (any(samp%c1l0_log(:,il0))) then
+         avg_blk%m2(il0,isub) = avg_blk%m2(il0,isub)/real(count(samp%c1l0_log(:,il0)),kind_real)
+      else
+         avg_blk%m2(il0,isub) = mpl%msv%valr
+      end if
+      if (nam%var_filter.and.(.not.nam%gau_approx)) then
+         jl0r = bpar%il0rz(il0,ib)
+         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+         if (any(samp%c1l0_log(:,il0).and.samp%c1c3l0_log(:,1,jl0))) then
+            avg_blk%m4(il0,isub) = avg_blk%m4(il0,isub)/real(count(samp%c1l0_log(:,il0).and.samp%c1c3l0_log(:,1,jl0)),kind_real)
+         else
+            avg_blk%m4(il0,isub) = mpl%msv%valr
+         end if
+      end if
+   end do
+   do jl0r=1,bpar%nl0r(ib)
+      do jc3=1,bpar%nc3(ib)
+         if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
+            norm = 1.0/avg_blk%nc1a(jc3,jl0r,il0)
+            avg_blk%m11(jc3,jl0r,il0) = avg_blk%m11(jc3,jl0r,il0)*norm
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = avg_blk%m11m11(jc3,jl0r,il0,jsub,isub)*norm
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)*norm
+                end do
+               if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = avg_blk%m22(jc3,jl0r,il0,isub)*norm
+            end do
+         else
+            avg_blk%m11(jc3,jl0r,il0) = mpl%msv%valr
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
+               end do
+               if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = mpl%msv%valr
+            end do
+         end if
+         if (avg_blk%nc1a_cor(jc3,jl0r,il0)>0.0) then
+            avg_blk%cor(jc3,jl0r,il0) = avg_blk%cor(jc3,jl0r,il0)/avg_blk%nc1a_cor(jc3,jl0r,il0)
+         else
+            avg_blk%cor(jc3,jl0r,il0) = mpl%msv%valr
+         end if
+         if (nam%avg_nbins>0) then
             if (sum(avg_blk%m11_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m11_hist(:,jc3,jl0r,il0) = &
           & avg_blk%m11_hist(:,jc3,jl0r,il0)/sum(avg_blk%m11_hist(:,jc3,jl0r,il0))
             if (sum(avg_blk%m11m11_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m11m11_hist(:,jc3,jl0r,il0) = &
@@ -675,18 +802,225 @@ if ((nam%avg_nbins>0).and.(ic2==0)) then
             end if
             if (sum(avg_blk%cor_hist(:,jc3,jl0r,il0))>0.0) avg_blk%cor_hist(:,jc3,jl0r,il0) = &
           & avg_blk%cor_hist(:,jc3,jl0r,il0)/sum(avg_blk%cor_hist(:,jc3,jl0r,il0))
-         end do
+         end if
       end do
    end do
-
-   ! Release memory
-   deallocate(hist)
-end if
+end do
+!$omp end parallel do
 
 ! End associate
 end associate
 
-end subroutine avg_blk_compute
+end subroutine avg_blk_compute_global
+
+!----------------------------------------------------------------------
+! Subroutine: avg_blk_compute_local
+! Purpose: compute locally averaged statistics via spatial-angular erogodicity assumption
+!----------------------------------------------------------------------
+subroutine avg_blk_compute_local(avg_blk,mpl,nam,geom,bpar,samp,mom_blk)
+
+implicit none
+
+! Passed variables
+class(avg_blk_type),intent(inout) :: avg_blk ! Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          ! MPI data
+type(nam_type),intent(in) :: nam             ! Namelist
+type(geom_type),intent(in) :: geom           ! Geometry
+type(bpar_type),intent(in) :: bpar           ! Block parameters
+type(samp_type),intent(in) :: samp           ! Sampling
+type(mom_blk_type),intent(in) :: mom_blk     ! Moments
+
+! Local variables
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,nc1max,ic1d,i,ic1,nc1a,nc1a_cor,ic2
+real(kind_real) :: m2_1,m2_2,norm
+real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
+logical :: valid
+
+! Associate
+associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
+
+! Variables indices
+iv = bpar%b_to_v1(ib)
+jv = bpar%b_to_v2(ib)
+
+! Index
+ic2 = samp%c2a_to_c2(ic2a)
+
+! Copy variance
+avg_blk%m2 = 0.0
+if (nam%var_filter.and.(.not.nam%gau_approx)) avg_blk%m4 = 0.0
+do ic1d=1,samp%nc1a
+   ic1 = samp%c1d_to_c1(ic1d)
+   if (ic1==samp%c2_to_c1(ic2)) then
+      do isub=1,avg_blk%nsub
+         do il0=1,geom%nl0
+            jl0r = bpar%il0rz(il0,ib)
+            avg_blk%m2(il0,isub) = mom_blk%m2_1(ic1d,il0,isub)
+            if (nam%var_filter.and.(.not.nam%gau_approx)) avg_blk%m4(il0,isub) = mom_blk%m22(ic1d,1,jl0r,il0,isub)
+         end do
+      end do
+   end if
+end do
+
+! Allocation
+nc1max = count(samp%local_mask(:,ic2a))
+allocate(list_m11(nc1max))
+allocate(list_m11m11(nc1max,avg_blk%nsub,avg_blk%nsub))
+allocate(list_m2m2(nc1max,avg_blk%nsub,avg_blk%nsub))
+if (.not.nam%gau_approx) allocate(list_m22(nc1max,avg_blk%nsub))
+allocate(list_cor(nc1max))
+
+! Average
+do il0=1,geom%nl0
+   do jl0r=1,bpar%nl0r(ib)
+      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+
+      do jc3=1,bpar%nc3(ib)
+         ! Fill lists
+         i = 0
+         do ic1=1,nam%nc1
+            if (samp%local_mask(ic1,ic2a)) then
+               ! Update
+               i = i+1
+
+               ! Index
+               ic1d = samp%c1_to_c1d(ic1)
+
+               ! Check validity
+               valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+               if (trim(nam%mask_type)=='stddev') then
+                  m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_blk%nsub,kind_real)
+                  m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
+                  if (trim(nam%mask_lu(iv))=='lower') then
+                     valid = valid.and.(m2_1>nam%mask_th(iv)**2)
+                  elseif (trim(nam%mask_lu(iv))=='upper') then
+                     valid = valid.and.(m2_1<nam%mask_th(iv)**2)
+                  end if
+                  if (trim(nam%mask_lu(jv))=='lower') then
+                     valid = valid.and.(m2_2>nam%mask_th(jv)**2)
+                  elseif (trim(nam%mask_lu(jv))=='upper') then
+                     valid = valid.and.(m2_2<nam%mask_th(jv)**2)
+                  end if
+               end if
+
+               if (valid) then
+                  ! Averages for diagnostics
+                  list_m11(i) = sum(mom_blk%m11(ic1d,jc3,jl0r,il0,:))/real(avg_blk%nsub,kind_real)
+
+                  do isub=1,avg_blk%nsub
+                     do jsub=1,avg_blk%nsub
+                        list_m11m11(i,jsub,isub) = mom_blk%m11(ic1d,jc3,jl0r,il0,isub)*mom_blk%m11(ic1d,jc3,jl0r,il0,jsub)
+                        list_m2m2(i,jsub,isub) = mom_blk%m2_1(ic1d,il0,isub)*mom_blk%m2_2(ic1d,jc3,jl0,jsub)
+                     end do
+                     if (.not.nam%gau_approx) list_m22(i,isub) = mom_blk%m22(ic1d,jc3,jl0r,il0,isub)
+                  end do
+
+                  ! Correlation
+                  m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_blk%nsub,kind_real)
+                  m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
+                  if ((m2_1>0.0).and.(m2_2>0.0)) then
+                     list_cor(i) = list_m11(i)/sqrt(m2_1*m2_2)
+                     if (sup(abs(list_cor(i)),1.0_kind_real)) list_cor(i) = mpl%msv%valr
+                  else
+                     list_cor(i) = mpl%msv%valr
+                  end if
+               else
+                  ! Missing value
+                  list_m11(i) = mpl%msv%valr
+                  do isub=1,avg_blk%nsub
+                     do jsub=1,avg_blk%nsub
+                        list_m11m11(i,jsub,isub) = mpl%msv%valr
+                        list_m2m2(i,jsub,isub) = mpl%msv%valr
+                     end do
+                     if (.not.nam%gau_approx) list_m22(i,isub) = mpl%msv%valr
+                  end do
+                  list_cor(i) = mpl%msv%valr
+               end if
+            end if
+         end do
+
+         ! Number of valid points
+         nc1a = count(mpl%msv%isnot(list_m11))
+         nc1a_cor = count(mpl%msv%isnot(list_cor))
+         avg_blk%nc1a(jc3,jl0r,il0) = real(nc1a,kind_real)
+         avg_blk%nc1a_cor(jc3,jl0r,il0) = real(nc1a_cor,kind_real)
+
+         ! Average
+         if (nc1a>0) then
+            avg_blk%m11(jc3,jl0r,il0) = sum(list_m11,mask=mpl%msv%isnot(list_m11))
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = sum(list_m11m11(:,jsub,isub),mask=mpl%msv%isnot(list_m11))
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = sum(list_m2m2(:,jsub,isub),mask=mpl%msv%isnot(list_m11))
+               end do
+               if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = sum(list_m22(:,isub),mask=mpl%msv%isnot(list_m11))
+            end do
+          else
+            avg_blk%m11(jc3,jl0r,il0) = 0.0
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = 0.0
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = 0.0
+               end do
+               if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = 0.0
+            end do
+         end if
+         if (nc1a_cor>0) then
+            avg_blk%cor(jc3,jl0r,il0) = sum(list_cor,mask=mpl%msv%isnot(list_cor))
+          else
+            avg_blk%cor(jc3,jl0r,il0) = 0.0
+         end if
+      end do
+   end do
+end do
+
+
+! Normalize
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub,norm)
+do il0=1,geom%nl0
+   do jl0r=1,bpar%nl0r(ib)
+      do jc3=1,bpar%nc3(ib)
+         if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
+            norm = 1.0/avg_blk%nc1a(jc3,jl0r,il0)
+            avg_blk%m11(jc3,jl0r,il0) = avg_blk%m11(jc3,jl0r,il0)*norm
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = avg_blk%m11m11(jc3,jl0r,il0,jsub,isub)*norm
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)*norm
+                end do
+               if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = avg_blk%m22(jc3,jl0r,il0,isub)*norm
+            end do
+         else
+            avg_blk%m11(jc3,jl0r,il0) = mpl%msv%valr
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
+               end do
+               if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = mpl%msv%valr
+            end do
+         end if
+         if (avg_blk%nc1a_cor(jc3,jl0r,il0)>0.0) then
+            avg_blk%cor(jc3,jl0r,il0) = avg_blk%cor(jc3,jl0r,il0)/avg_blk%nc1a_cor(jc3,jl0r,il0)
+         else
+            avg_blk%cor(jc3,jl0r,il0) = mpl%msv%valr
+         end if
+      end do
+   end do
+end do
+!$omp end parallel do
+
+! Release memory
+deallocate(list_m11)
+deallocate(list_m11m11)
+deallocate(list_m2m2)
+if (.not.nam%gau_approx) deallocate(list_m22)
+deallocate(list_cor)
+
+! End associate
+end associate
+
+end subroutine avg_blk_compute_local
 
 !----------------------------------------------------------------------
 ! Subroutine: avg_blk_compute_asy
@@ -710,9 +1044,9 @@ real(kind_real) :: P1,P3,P4,P7,P8,P9,P10,P11,P12,P13,P14,P15,P16,P17
 real(kind_real),allocatable :: m11asysq(:,:),m2m2asy(:,:),m22asy(:)
 
 ! Associate
-associate(ic2=>avg_blk%ic2,ib=>avg_blk%ib)
+associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
 
-if ((ic2==0).or.nam%local_diag) then
+if ((ic2a==0).or.nam%local_diag) then
    ! Ensemble size-dependent coefficients
    n = ne
    P1 = 1.0/real(n,kind_real)
@@ -777,24 +1111,24 @@ if ((ic2==0).or.nam%local_diag) then
             if (.not.nam%gau_approx) avg_blk%m22asy(jc3,jl0r,il0) = sum(m22asy)/real(avg_blk%nsub,kind_real)
 
             ! Check positivity
-            if (avg_blk%m11asysq(jc3,jl0r,il0)<0.0) avg_blk%m11asysq(jc3,jl0r,il0) = mpl%msv%valr
-            if (avg_blk%m2m2asy(jc3,jl0r,il0)<0.0) avg_blk%m2m2asy(jc3,jl0r,il0) = mpl%msv%valr
+            if (.not.(avg_blk%m11asysq(jc3,jl0r,il0)>0.0)) avg_blk%m11asysq(jc3,jl0r,il0) = mpl%msv%valr
+            if (.not.(avg_blk%m2m2asy(jc3,jl0r,il0)>0.0)) avg_blk%m2m2asy(jc3,jl0r,il0) = mpl%msv%valr
             if (.not.nam%gau_approx) then
-               if (avg_blk%m22asy(jc3,jl0r,il0)<0.0) avg_blk%m22asy(jc3,jl0r,il0) = mpl%msv%valr
+               if (.not.(avg_blk%m22asy(jc3,jl0r,il0)>0.0)) avg_blk%m22asy(jc3,jl0r,il0) = mpl%msv%valr
             end if
 
             ! Squared covariance average
             if (nam%gau_approx) then
                ! Gaussian approximation
-               if (mpl%msv%isnotr(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%m2m2asy(jc3,jl0r,il0))) then
+               if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m2m2asy(jc3,jl0r,il0))) then
                   avg_blk%m11sq(jc3,jl0r,il0) = P16*avg_blk%m11asysq(jc3,jl0r,il0)+P4*avg_blk%m2m2asy(jc3,jl0r,il0)
                else
                   avg_blk%m11sq(jc3,jl0r,il0) = mpl%msv%valr
                end if
             else
                ! General case
-               if (mpl%msv%isnotr(avg_blk%m22asy(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk%m11asysq(jc3,jl0r,il0)) &
-             & .and.mpl%msv%isnotr(avg_blk%m2m2asy(jc3,jl0r,il0))) then
+               if (mpl%msv%isnot(avg_blk%m22asy(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)) &
+             & .and.mpl%msv%isnot(avg_blk%m2m2asy(jc3,jl0r,il0))) then
                   avg_blk%m11sq(jc3,jl0r,il0) = P1*avg_blk%m22asy(jc3,jl0r,il0)+P14*avg_blk%m11asysq(jc3,jl0r,il0) &
                                       & +P3*avg_blk%m2m2asy(jc3,jl0r,il0)
                else
@@ -803,7 +1137,7 @@ if ((ic2==0).or.nam%local_diag) then
             end if
 
             ! Check value
-            if (mpl%msv%isr(avg_blk%m11sq(jc3,jl0r,il0))) then
+            if (mpl%msv%is(avg_blk%m11sq(jc3,jl0r,il0))) then
                if (inf(avg_blk%m11sq(jc3,jl0r,il0),avg_blk%m11asysq(jc3,jl0r,il0))) avg_blk%m11sq(jc3,jl0r,il0) = mpl%msv%valr
                if (inf(avg_blk%m11sq(jc3,jl0r,il0),avg_blk%m11(jc3,jl0r,il0)**2)) avg_blk%m11sq(jc3,jl0r,il0) = mpl%msv%valr
             end if
@@ -847,7 +1181,7 @@ associate(ib=>avg_blk_hyb%ib)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
-         if (mpl%msv%isnotr(avg_blk_hyb%m11(jc3,jl0r,il0)).and.mpl%msv%isnotr(avg_blk_sta%m11(jc3,jl0r,il0))) then
+         if (mpl%msv%isnot(avg_blk_hyb%m11(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk_sta%m11(jc3,jl0r,il0))) then
             ! Compute product
             avg_blk_hyb%m11sta(jc3,jl0r,il0) = avg_blk_hyb%m11(jc3,jl0r,il0)*avg_blk_sta%m11(jc3,jl0r,il0)
             avg_blk_hyb%stasq(jc3,jl0r,il0) = avg_blk_sta%m11(jc3,jl0r,il0)**2
@@ -866,10 +1200,10 @@ end associate
 end subroutine avg_blk_compute_hyb
 
 !----------------------------------------------------------------------
-! Subroutine: avg_blk_compute_deh
-! Purpose: compute averaged statistics via spatial-angular erogodicity assumption, for LR covariance/HR covariance and LR covariance/HR asymptotic covariance products
+! Subroutine: avg_blk_compute_deh_global
+! Purpose: compute globally averaged statistics via spatial-angular erogodicity assumption, for LR covariance/HR covariance and LR covariance/HR asymptotic covariance products
 !----------------------------------------------------------------------
-subroutine avg_blk_compute_deh(avg_blk,mpl,nam,geom,bpar,samp,mom_blk,mom_lr_blk)
+subroutine avg_blk_compute_deh_global(avg_blk,mpl,nam,geom,bpar,samp,mom_blk,mom_lr_blk)
 
 implicit none
 
@@ -884,80 +1218,284 @@ type(mom_blk_type),intent(in) :: mom_blk     ! Moments block
 type(mom_blk_type),intent(in) :: mom_lr_blk  ! Low-resolution moments block
 
 ! Local variables
-integer :: il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1amax,nc1a
-real(kind_real),allocatable :: list_m11lrm11(:,:,:)
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,npack
+real(kind_real) :: m2_1,m2_2
+real(kind_real),allocatable :: list_m11lrm11sub(:,:,:),sbuf(:),rbuf(:)
 logical :: valid
-character(len=1024),parameter :: subr = 'avg_blk_compute_deh'
+logical,allocatable :: mask_2(:,:,:,:,:)
+character(len=1024),parameter :: subr = 'avg_blk_compute_deh_global'
 
 ! Associate
-associate(ic2=>avg_blk%ic2,ib=>avg_blk%ib)
+associate(ib=>avg_blk%ib)
 
-if ((ic2==0).or.nam%local_diag) then
-   ! Check number of sub-ensembles
-   if (avg_blk%nsub/=avg_blk%nsub) call mpl%abort(subr,'different number of sub-ensembles')
+! Variables indices
+iv = bpar%b_to_v1(ib)
+jv = bpar%b_to_v2(ib)
 
-   ! Average
-   !$omp parallel do schedule(static) private(il0,jl0r,jl0,nc1amax,list_m11lrm11,jc3,nc1a,ic1a,ic1,valid,isub,jsub)
-   do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0r(ib)
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+! Check number of sub-ensembles
+if (avg_blk%nsub/=avg_blk%nsub) call mpl%abort(subr,'different number of sub-ensembles')
 
-         ! Allocation
-         if (ic2>0) then
-            nc1amax = count(samp%local_mask(:,ic2))
-         else
-            nc1amax = samp%nc1a
-         end if
-         allocate(list_m11lrm11(nc1amax,avg_blk%nsub,avg_blk%nsub))
+! Average
+!$omp parallel do schedule(static) private(il0,jl0r,jl0,list_m11lrm11sub,jc3,nc1a,ic1a,ic1,valid,m2_1,m2_2,isub,jsub)
+do il0=1,geom%nl0
+   do jl0r=1,bpar%nl0r(ib)
+      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
 
-         do jc3=1,bpar%nc3(ib)
-            ! Fill lists
-            nc1a = 0
-            do ic1a=1,samp%nc1a
-               ! Index
-               ic1 = samp%c1a_to_c1(ic1a)
+      ! Allocation
+      allocate(list_m11lrm11sub(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
 
-               ! Check validity
-               valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
-               if (ic2>0) valid = valid.and.samp%local_mask(ic1a,ic2)
+      do jc3=1,bpar%nc3(ib)
+         ! Fill lists
+         nc1a = 0
+         do ic1a=1,samp%nc1a
+            ! Index
+            ic1 = samp%c1a_to_c1(ic1a)
 
-               if (valid) then
-                  ! Update
-                  nc1a = nc1a+1
-
-                  ! Averages for diagnostics
-                  do isub=1,avg_blk%nsub
-                     do jsub=1,avg_blk%nsub
-                        list_m11lrm11(nc1a,jsub,isub) = mom_blk%m11(ic1a,jc3,jl0r,il0,isub)*mom_lr_blk%m11(ic1a,jc3,jl0r,il0,jsub)
-                     end do
-                  end do
+            ! Check validity
+            valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+            if (trim(nam%mask_type)=='stddev') then
+               m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
+               m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
+               if (trim(nam%mask_lu(iv))=='lower') then
+                  valid = valid.and.(m2_1>nam%mask_th(iv)**2)
+               elseif (trim(nam%mask_lu(iv))=='upper') then
+                  valid = valid.and.(m2_1<nam%mask_th(iv)**2)
                end if
-            end do
+               if (trim(nam%mask_lu(jv))=='lower') then
+                  valid = valid.and.(m2_2>nam%mask_th(jv)**2)
+               elseif (trim(nam%mask_lu(jv))=='upper') then
+                  valid = valid.and.(m2_2<nam%mask_th(jv)**2)
+               end if
+            end if
 
-            ! Average
-            avg_blk%nc1a(jc3,jl0r,il0) = real(nc1a,kind_real)
-            do isub=1,avg_blk%nsub
-               do jsub=1,avg_blk%nsub
-                  if (avg_blk%nc1a(jc3,jl0r,il0)>0) then
-                     avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = sum(list_m11lrm11(1:nc1a,jsub,isub))
-                  else
-                     avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
-                  end if
+            if (valid) then
+               ! Update
+               nc1a = nc1a+1
+
+               ! Averages for diagnostics
+               do isub=1,avg_blk%nsub
+                  do jsub=1,avg_blk%nsub
+                     list_m11lrm11sub(nc1a,jsub,isub) = mom_blk%m11(ic1a,jc3,jl0r,il0,isub)*mom_lr_blk%m11(ic1a,jc3,jl0r,il0,jsub)
+                  end do
                end do
-            end do
+            end if
          end do
 
-         ! Release memory
-         deallocate(list_m11lrm11)
+         ! Average
+         avg_blk%nc1a(jc3,jl0r,il0) = real(nc1a,kind_real)
+         do isub=1,avg_blk%nsub
+             do jsub=1,avg_blk%nsub
+               if (avg_blk%nc1a(jc3,jl0r,il0)>0) then
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = sum(list_m11lrm11sub(1:nc1a,jsub,isub))
+               else
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+
+      ! Release memory
+      deallocate(list_m11lrm11sub)
+   end do
+end do
+!$omp end parallel do
+
+if (mpl%nproc>1) then
+   ! Get packing size
+   npack = bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
+
+   ! Allocation
+   allocate(sbuf(npack))
+   allocate(rbuf(npack))
+   allocate(mask_2(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub,avg_blk%nsub))
+
+   ! Initialization
+   mask_2 = .true.
+
+   ! Pack data
+   sbuf = pack(avg_blk%m11lrm11sub,.true.)
+
+   ! Reduce data
+   call mpl%f_comm%allreduce(sbuf,rbuf,fckit_mpi_sum())
+
+   ! Unpack data
+   avg_blk%m11lrm11sub = unpack(rbuf,mask_2,avg_blk%m11m11)
+
+   ! Release memory
+   deallocate(sbuf)
+   deallocate(rbuf)
+   deallocate(mask_2)
+end if
+
+! Normalize
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub)
+do il0=1,geom%nl0
+   do jl0r=1,bpar%nl0r(ib)
+      do jc3=1,bpar%nc3(ib)
+         if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) &
+                                                              & /avg_blk%nc1a(jc3,jl0r,il0)
+                end do
+            end do
+         else
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
+               end do
+            end do
+         end if
       end do
    end do
-   !$omp end parallel do
-end if
+end do
+!$omp end parallel do
 
 ! End associate
 end associate
 
-end subroutine avg_blk_compute_deh
+end subroutine avg_blk_compute_deh_global
+
+!----------------------------------------------------------------------
+! Subroutine: avg_blk_compute_deh_local
+! Purpose: compute averaged statistics via spatial-angular erogodicity assumption, for LR covariance/HR covariance and LR covariance/HR asymptotic covariance products
+!----------------------------------------------------------------------
+subroutine avg_blk_compute_deh_local(avg_blk,mpl,nam,geom,bpar,samp,mom_blk,mom_lr_blk)
+
+implicit none
+
+! Passed variables
+class(avg_blk_type),intent(inout) :: avg_blk ! Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          ! MPI data
+type(nam_type),intent(in) :: nam             ! Namelist
+type(geom_type),intent(in) :: geom           ! Geometry
+type(bpar_type),intent(in) :: bpar           ! Block parameters
+type(samp_type),intent(in) :: samp           ! Sampling
+type(mom_blk_type),intent(in) :: mom_blk     ! Moments block
+type(mom_blk_type),intent(in) :: mom_lr_blk  ! Low-resolution moments block
+
+! Local variables
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1d,ic1,nc1max,nc1a,i
+real(kind_real) :: m2_1,m2_2
+real(kind_real),allocatable :: list_m11lrm11sub(:,:,:)
+logical :: valid
+
+! Associate
+associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
+
+! Variables indices
+iv = bpar%b_to_v1(ib)
+jv = bpar%b_to_v2(ib)
+
+! Allocation
+nc1max = count(samp%local_mask(:,ic2a))
+allocate(list_m11lrm11sub(nc1max,avg_blk%nsub,avg_blk%nsub))
+
+! Average
+do il0=1,geom%nl0
+   do jl0r=1,bpar%nl0r(ib)
+      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+
+      do jc3=1,bpar%nc3(ib)
+         ! Fill lists
+         i = 0
+         do ic1=1,nam%nc1
+            if (samp%local_mask(ic1,ic2a)) then
+               ! Update
+               i = i+1
+
+               ! Index
+               ic1d = samp%c1_to_c1d(ic1)
+
+               ! Check validity
+               valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+               if (trim(nam%mask_type)=='stddev') then
+                  m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_blk%nsub,kind_real)
+                  m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
+                  if (trim(nam%mask_lu(iv))=='lower') then
+                     valid = valid.and.(m2_1>nam%mask_th(iv)**2)
+                  elseif (trim(nam%mask_lu(iv))=='upper') then
+                     valid = valid.and.(m2_1<nam%mask_th(iv)**2)
+                  end if
+                  if (trim(nam%mask_lu(jv))=='lower') then
+                     valid = valid.and.(m2_2>nam%mask_th(jv)**2)
+                  elseif (trim(nam%mask_lu(jv))=='upper') then
+                     valid = valid.and.(m2_2<nam%mask_th(jv)**2)
+                  end if
+               end if
+
+               if (valid) then
+                  ! Averages for diagnostics
+                  do isub=1,avg_blk%nsub
+                     do jsub=1,avg_blk%nsub
+                        list_m11lrm11sub(i,jsub,isub) = mom_blk%m11(ic1d,jc3,jl0r,il0,isub)*mom_lr_blk%m11(ic1d,jc3,jl0r,il0,jsub)
+                     end do
+                  end do
+               else
+                  ! Missing value
+                  do isub=1,avg_blk%nsub
+                     do jsub=1,avg_blk%nsub
+                        list_m11lrm11sub(i,jsub,isub) = mpl%msv%valr
+                     end do
+                  end do
+               end if
+            end if
+         end do
+
+         ! Number of valid points
+         nc1a = count(mpl%msv%isnot(list_m11lrm11sub))
+         avg_blk%nc1a(jc3,jl0r,il0) = real(nc1a,kind_real)
+
+         ! Average
+         if (nc1a>0) then
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = sum(list_m11lrm11sub,mask=mpl%msv%isnot(list_m11lrm11sub))
+               end do
+            end do
+          else
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = 0.0
+               end do
+            end do
+         end if
+      end do
+   end do
+end do
+
+! Release memory
+deallocate(list_m11lrm11sub)
+
+! Normalize
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub)
+do il0=1,geom%nl0
+   do jl0r=1,bpar%nl0r(ib)
+      do jc3=1,bpar%nc3(ib)
+         if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) &
+                                                                & /avg_blk%nc1a(jc3,jl0r,il0)
+                end do
+            end do
+         else
+            do isub=1,avg_blk%nsub
+               do jsub=1,avg_blk%nsub
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = mpl%msv%valr
+               end do
+            end do
+         end if
+      end do
+   end do
+end do
+!$omp end parallel do
+
+! End associate
+end associate
+
+end subroutine avg_blk_compute_deh_local
 
 !----------------------------------------------------------------------
 ! Subroutine: avg_blk_compute_asy_deh
@@ -975,41 +1513,21 @@ type(geom_type),intent(in) :: geom           ! Geometry
 type(bpar_type),intent(in) :: bpar           ! Block parameters
 
 ! Local variables
-integer :: il0,jl0r,jc3,isub,jsub
+integer :: il0,jl0r,jc3
 
 ! Associate
-associate(ic2=>avg_blk%ic2,ib=>avg_blk%ib)
+associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
 
-if ((ic2==0).or.nam%local_diag) then
-   ! Normalize
-   !$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub)
-   do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0r(ib)
-         do jc3=1,bpar%nc3(ib)
-            if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
-               do isub=1,avg_blk%nsub
-                  do jsub=1,avg_blk%nsub
-                     avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) &
-                                                                 & /avg_blk%nc1a(jc3,jl0r,il0)
-                  end do
-               end do
-            else
-               avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:) = mpl%msv%valr
-            end if
-         end do
-      end do
-   end do
-   !$omp end parallel do
-
+if ((ic2a==0).or.nam%local_diag) then
    ! Average over sub-ensembles
    !$omp parallel do schedule(static) private(il0,jl0r,jc3)
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          do jc3=1,bpar%nc3(ib)
-            if (mpl%msv%isanynotr(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))) then
+            if (mpl%msv%isanynot(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))) then
                avg_blk%m11lrm11(jc3,jl0r,il0) = sum(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:), &
-                                              & mask=mpl%msv%isnotr(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))) &
-                                              & /real(count(mpl%msv%isnotr(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))),kind_real)
+                                              & mask=mpl%msv%isnot(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))) &
+                                              & /real(count(mpl%msv%isnot(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))),kind_real)
             else
                avg_blk%m11lrm11(jc3,jl0r,il0) = mpl%msv%valr
             end if

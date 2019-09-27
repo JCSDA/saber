@@ -9,14 +9,16 @@ module tools_repro
 
 use tools_const, only: pi
 use tools_kinds, only: kind_real
+use type_mpl, only: mpl_type
 
 implicit none
 
+logical :: repro = .true.                  ! Reproducibility flag
 real(kind_real),parameter :: rth = 1.0e-12 ! Reproducibility threshold
 
 private
-public :: rth
-public :: eq,inf,infeq,sup,supeq,indist
+public :: repro,rth
+public :: eq,inf,infeq,sup,supeq,indist,small
 
 contains
 
@@ -35,7 +37,11 @@ real(kind_real),intent(in) :: y ! Second real
 ! Returned variable
 logical :: eq
 
-eq = abs(x-y)<rth
+if (repro) then
+   eq = indist(x,y)
+else
+   eq = .not.(abs(x-y)>0.0)
+end if
 
 end function eq
 
@@ -54,7 +60,8 @@ real(kind_real),intent(in) :: y ! Second real
 ! Returned variable
 logical :: inf
 
-inf = (abs(x-y)>rth*abs(x+y)).and.(x<y)
+inf = (x<y)
+if (repro) inf = inf.and.(.not.indist(x,y))
 
 end function inf
 
@@ -92,7 +99,8 @@ real(kind_real),intent(in) :: y ! Second real
 ! Returned variable
 logical :: sup
 
-sup = (abs(x-y)>rth*abs(x+y)).and.(x>y)
+sup = (x>y)
+if (repro) sup = sup.and.(.not.indist(x,y))
 
 end function sup
 
@@ -130,8 +138,29 @@ real(kind_real),intent(in) :: y ! Second real
 ! Returned variable
 logical :: indist
 
-indist = abs(x)<rth*abs(y)
+indist = .false.
+if (repro) indist = abs(x-y)<rth*(abs(x+y))
 
 end function indist
+
+!----------------------------------------------------------------------
+! Function: small
+! Purpose: small value test
+!----------------------------------------------------------------------
+function small(x,y)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: x ! First real
+real(kind_real),intent(in) :: y ! Second real
+
+! Returned variable
+logical :: small
+
+small = .false.
+if (repro) small = abs(x)<rth*abs(y)
+
+end function small
 
 end module tools_repro

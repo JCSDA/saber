@@ -56,6 +56,8 @@ type cmat_blk_type
 contains
    procedure :: alloc => cmat_blk_alloc
    procedure :: init => cmat_blk_init
+   procedure :: partial_bump_dealloc => cmat_blk_partial_bump_dealloc
+   procedure :: partial_dealloc => cmat_blk_partial_dealloc
    procedure :: dealloc => cmat_blk_dealloc
 end type cmat_blk_type
 
@@ -163,10 +165,10 @@ end associate
 end subroutine cmat_blk_init
 
 !----------------------------------------------------------------------
-! Subroutine: cmat_blk_dealloc
-! Purpose: release memory
+! Subroutine: cmat_blk_partial_bump_dealloc
+! Purpose: release memory (partial)
 !----------------------------------------------------------------------
-subroutine cmat_blk_dealloc(cmat_blk)
+subroutine cmat_blk_partial_bump_dealloc(cmat_blk)
 
 implicit none
 
@@ -185,12 +187,21 @@ if (allocated(cmat_blk%bump_D22)) deallocate(cmat_blk%bump_D22)
 if (allocated(cmat_blk%bump_D33)) deallocate(cmat_blk%bump_D33)
 if (allocated(cmat_blk%bump_D12)) deallocate(cmat_blk%bump_D12)
 if (allocated(cmat_blk%bump_Dcoef)) deallocate(cmat_blk%bump_Dcoef)
-if (allocated(cmat_blk%coef_ens)) deallocate(cmat_blk%coef_ens)
-if (allocated(cmat_blk%coef_sta)) deallocate(cmat_blk%coef_sta)
-if (allocated(cmat_blk%rh)) deallocate(cmat_blk%rh)
-if (allocated(cmat_blk%rv)) deallocate(cmat_blk%rv)
-if (allocated(cmat_blk%rv_rfac)) deallocate(cmat_blk%rv_rfac)
-if (allocated(cmat_blk%rv_coef)) deallocate(cmat_blk%rv_coef)
+
+end subroutine cmat_blk_partial_bump_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_blk_partial_dealloc
+! Purpose: release memory (partial)
+!----------------------------------------------------------------------
+subroutine cmat_blk_partial_dealloc(cmat_blk)
+
+implicit none
+
+! Passed variables
+class(cmat_blk_type),intent(inout) :: cmat_blk ! C matrix data block
+
+! Release memory
 if (allocated(cmat_blk%rhs)) deallocate(cmat_blk%rhs)
 if (allocated(cmat_blk%rvs)) deallocate(cmat_blk%rvs)
 if (allocated(cmat_blk%H11)) deallocate(cmat_blk%H11)
@@ -200,6 +211,29 @@ if (allocated(cmat_blk%H12)) deallocate(cmat_blk%H12)
 if (allocated(cmat_blk%Hcoef)) deallocate(cmat_blk%Hcoef)
 if (allocated(cmat_blk%adv_lon)) deallocate(cmat_blk%adv_lon)
 if (allocated(cmat_blk%adv_lat)) deallocate(cmat_blk%adv_lat)
+
+end subroutine cmat_blk_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_blk_dealloc
+! Purpose: release memory
+!----------------------------------------------------------------------
+subroutine cmat_blk_dealloc(cmat_blk)
+
+implicit none
+
+! Passed variables
+class(cmat_blk_type),intent(inout) :: cmat_blk ! C matrix data block
+
+! Release memory
+call cmat_blk%partial_bump_dealloc
+call cmat_blk%partial_dealloc
+if (allocated(cmat_blk%coef_ens)) deallocate(cmat_blk%coef_ens)
+if (allocated(cmat_blk%coef_sta)) deallocate(cmat_blk%coef_sta)
+if (allocated(cmat_blk%rh)) deallocate(cmat_blk%rh)
+if (allocated(cmat_blk%rv)) deallocate(cmat_blk%rv)
+if (allocated(cmat_blk%rv_rfac)) deallocate(cmat_blk%rv_rfac)
+if (allocated(cmat_blk%rv_coef)) deallocate(cmat_blk%rv_coef)
 
 end subroutine cmat_blk_dealloc
 

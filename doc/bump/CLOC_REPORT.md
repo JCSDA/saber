@@ -6,12 +6,11 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 39 | 5073 | 7883 | 20366 | 38 |
-| CMake | 1 | 10 | 1 | 84 | 1 |
-| Markdown | 1 | 6 | 0 | 27 | 0 |
+| Fortran 90 | 39 | 5278 | 8214 | 21007 | 39 |
+| CMake | 1 | 9 | 4 | 70 | 5 |
 
 **External code:** 
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 3 | 473 | 2229 | 2083 | 107 |
+| Fortran 90 | 3 | 339 | 1640 | 1490 | 110 |

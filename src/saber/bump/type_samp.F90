@@ -11,7 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 use netcdf
 !$ use omp_lib
 use tools_const, only: pi,req,reqkm,deg2rad,rad2deg
-use tools_func, only: gc99,sphere_dist
+use tools_func, only: sphere_dist,fit_func
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: eq,inf
@@ -32,9 +32,11 @@ implicit none
 ! Sampling derived type
 type samp_type
    ! Sampling
-   real(kind_real),allocatable :: rh_c0(:)          ! Sampling radius on subset Sc0
-   logical,allocatable :: mask_c0(:,:)              ! Mask on subset Sc0
+   logical :: new_sampling                          ! New sampling flag
+   logical,allocatable :: mask_c0(:,:)              ! Mask on subset Sc0, global
+   logical,allocatable :: mask_c0a(:,:)             ! Mask on subset Sc0, halo A
    logical,allocatable :: mask_hor_c0(:)            ! Union of horizontal masks on subset Sc0, global
+   logical,allocatable :: mask_hor_c0a(:)           ! Union of horizontal masks on subset Sc0, halo A
    integer,allocatable :: nc0_mask(:)               ! Horizontal mask size on subset Sc0
    integer,allocatable :: c1_to_c0(:)               ! First sampling index
    logical,allocatable :: c1l0_check(:,:)           ! Mask boundaries checking activation
@@ -46,13 +48,12 @@ type samp_type
    logical,allocatable :: mask_c2(:,:)              ! Mask on subset Sc2
 
    ! Local data
-   logical,allocatable ::  vbal_mask(:,:)           ! Vertical balance mask
-   logical,allocatable ::  local_mask(:,:)          ! Local mask
+   logical,allocatable :: vbal_mask(:,:)            ! Vertical balance mask
+   logical,allocatable :: local_mask(:,:)          ! Local mask
    integer,allocatable :: nn_c2a_index(:,:)         ! Nearest diagnostic neighbors from diagnostic points
    real(kind_real),allocatable :: nn_c2a_dist(:,:)  ! Nearest diagnostic neighbors distance from diagnostic points
 
    ! Forced points
-   integer :: nfor                                  ! Number of forced points
    integer,allocatable :: ldwv_to_c0(:)             ! Local diagnostics profiles to subset Sc0
    integer,allocatable :: ldwv_to_c2(:)             ! Local diagnostics profiles to subset Sc2
 
@@ -67,51 +68,45 @@ type samp_type
    real(kind_real),allocatable :: adv_lat(:,:,:)    ! Interpolated advected latitude
 
    ! Interpolations
-   type(linop_type),allocatable :: hfull(:)         ! Horizontal interpolation from Sc2 to Sc0 (global)
    type(linop_type),allocatable :: h(:)             ! Horizontal interpolation from Sc2 to Sc0 (local)
    type(linop_type),allocatable :: d(:,:)           ! Advection interpolation
 
    ! MPI distribution
    integer :: nc0c                                  ! Number of points in subset Sc0, halo C
    integer :: nc1a                                  ! Number of points in subset Sc1, halo A
+   integer :: nc1d                                  ! Number of points in subset Sc1, halo D
+   logical :: sc2                                   ! Subset Sc2 flag
    integer :: nc2a                                  ! Number of points in subset Sc2, halo A
    integer :: nc2b                                  ! Number of points in subset Sc2, halo B
    integer :: nc2f                                  ! Number of points in subset Sc2, halo F
    logical,allocatable :: lcheck_c0a(:)             ! Detection of halo A on subset Sc0
-   logical,allocatable :: lcheck_c0c(:)             ! Detection of halo C on subset Sc0
    logical,allocatable :: lcheck_c1a(:)             ! Detection of halo A on subset Sc1
    logical,allocatable :: lcheck_c2a(:)             ! Detection of halo A on subset Sc2
-   logical,allocatable :: lcheck_c2b(:)             ! Detection of halo B on subset Sc2
-   logical,allocatable :: lcheck_c2f(:)             ! Detection of halo F on subset Sc2
-   logical,allocatable :: lcheck_h(:,:)             ! Detection of horizontal interpolation coefficients
-   logical,allocatable :: lcheck_d(:,:,:)           ! Detection of advection interpolation coefficients
-   integer,allocatable :: c0c_to_c0(:)              ! Subset Sc0, halo C to global
    integer,allocatable :: c0_to_c0c(:)              ! Subset Sc0, global to halo C
-   integer,allocatable :: c0a_to_c0c(:)             ! Subset Sc0, halo A to halo C
    integer,allocatable :: c1a_to_c1(:)              ! Subset Sc1, halo A to global
    integer,allocatable :: c1_to_c1a(:)              ! Subset Sc1, global to halo A
+   integer,allocatable :: c1d_to_c1(:)              ! Subset Sc1, halo D to global
+   integer,allocatable :: c1_to_c1d(:)              ! Subset Sc1, global to halo D
    integer,allocatable :: c2a_to_c2(:)              ! Subset Sc2, halo A to global
    integer,allocatable :: c2_to_c2a(:)              ! Subset Sc2, global to halo A
    logical,allocatable :: mask_c2a(:,:)             ! Mask on subset Sc2, halo A
    integer,allocatable :: c2b_to_c2(:)              ! Subset Sc2, halo B to global
-   integer,allocatable :: c2_to_c2b(:)              ! Subset Sc2, global to halo B
-   integer,allocatable :: c2a_to_c2b(:)             ! Subset Sc2, halo A to halo B
-   integer,allocatable :: c2f_to_c2(:)              ! Subset Sc2, halo B to global
-   integer,allocatable :: c2_to_c2f(:)              ! Subset Sc2, global to halo B
-   integer,allocatable :: c2a_to_c2f(:)             ! Subset Sc2, halo A to halo B
+   integer,allocatable :: c2_to_c2f(:)              ! Subset Sc2, global to halo F
    integer,allocatable :: c2_to_proc(:)             ! Subset Sc2, global to processor
-   integer,allocatable :: proc_to_nc2a(:)           ! Number of points in subset Sc2, halo A, for each processor
-   type(com_type) :: com_AC                         ! Communication between halos A and C
    type(com_type) :: com_AB                         ! Communication between halos A and B
+   type(com_type) :: com_AC                         ! Communication between halos A and C
+   type(com_type) :: com_AD                         ! Communication between halos A and D (diagnostic)
    type(com_type) :: com_AF                         ! Communication between halos A and F (filtering)
 contains
    procedure :: samp_alloc_mask
    procedure :: samp_alloc_other
    generic :: alloc => samp_alloc_mask,samp_alloc_other
+   procedure :: partial_dealloc => samp_partial_dealloc
    procedure :: dealloc => samp_dealloc
    procedure :: read => samp_read
    procedure :: write => samp_write
-   procedure :: setup_sampling => samp_setup_sampling
+   procedure :: compute_sampling_c1 => samp_compute_sampling_c1
+   procedure :: compute_sampling_c2 => samp_compute_sampling_c2
    procedure :: compute_mask => samp_compute_mask
    procedure :: compute_sampling_zs => samp_compute_sampling_zs
    procedure :: compute_sampling_ps => samp_compute_sampling_ps
@@ -120,6 +115,7 @@ contains
    procedure :: compute_mpi_a => samp_compute_mpi_a
    procedure :: compute_mpi_ab => samp_compute_mpi_ab
    procedure :: compute_mpi_c => samp_compute_mpi_c
+   procedure :: compute_mpi_d => samp_compute_mpi_d
    procedure :: compute_mpi_f => samp_compute_mpi_f
    procedure :: diag_filter => samp_diag_filter
    procedure :: diag_fill => samp_diag_fill
@@ -134,18 +130,21 @@ contains
 ! Subroutine: samp_alloc_mask
 ! Purpose: allocation for mask
 !----------------------------------------------------------------------
-subroutine samp_alloc_mask(samp,geom)
+subroutine samp_alloc_mask(samp,mpl,geom)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(inout) :: samp ! Sampling
+type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Allocation
-allocate(samp%mask_c0(geom%nc0,geom%nl0))
-allocate(samp%mask_hor_c0(geom%nc0))
-allocate(samp%nc0_mask(geom%nl0))
+if (mpl%main) allocate(samp%mask_c0(geom%nc0,geom%nl0))
+allocate(samp%mask_c0a(geom%nc0a,geom%nl0))
+if (mpl%main) allocate(samp%mask_hor_c0(geom%nc0))
+allocate(samp%mask_hor_c0a(geom%nc0a))
+allocate(samp%nc0_mask(0:geom%nl0))
 
 end subroutine samp_alloc_mask
 
@@ -162,18 +161,19 @@ class(samp_type),intent(inout) :: samp ! Sampling
 type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
+! Initialization
+samp%sc2 = nam%new_vbal.or.nam%new_lct.or.(nam%new_hdiag.and.(nam%local_diag.or.nam%adv_diag))
+
 ! Allocation
-allocate(samp%rh_c0(geom%nc0))
 allocate(samp%c1_to_c0(nam%nc1))
 allocate(samp%c1l0_log(nam%nc1,geom%nl0))
 allocate(samp%c1l0_check(nam%nc1,geom%nl0))
 allocate(samp%c1c3_to_c0(nam%nc1,nam%nc3))
 allocate(samp%c1c3l0_log(nam%nc1,nam%nc3,geom%nl0))
-if (nam%new_vbal.or.nam%new_lct.or.(nam%new_hdiag.and.(nam%local_diag.or.nam%adv_diag))) then
+if (samp%sc2) then
    allocate(samp%c2_to_c1(nam%nc2))
    allocate(samp%c2_to_c0(nam%nc2))
    allocate(samp%mask_c2(nam%nc2,geom%nl0))
-   allocate(samp%hfull(geom%nl0i))
    call samp%mesh%alloc(nam%nc2)
 end if
 if (nam%adv_diag) then
@@ -182,6 +182,31 @@ if (nam%adv_diag) then
 end if
 
 end subroutine samp_alloc_other
+
+!----------------------------------------------------------------------
+! Subroutine: samp_partial_dealloc
+! Purpose: release memory (partial)
+!----------------------------------------------------------------------
+subroutine samp_partial_dealloc(samp)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(inout) :: samp ! Sampling
+
+! Release memory
+if (allocated(samp%mask_c0)) deallocate(samp%mask_c0)
+if (allocated(samp%mask_c0a)) deallocate(samp%mask_c0a)
+if (allocated(samp%mask_hor_c0)) deallocate(samp%mask_hor_c0)
+if (allocated(samp%mask_hor_c0a)) deallocate(samp%mask_hor_c0a)
+if (allocated(samp%nc0_mask)) deallocate(samp%nc0_mask)
+if (allocated(samp%c1l0_check)) deallocate(samp%c1l0_check)
+if (allocated(samp%adv_nn)) deallocate(samp%adv_nn)
+if (allocated(samp%adv_nn_index)) deallocate(samp%adv_nn_index)
+if (allocated(samp%lcheck_c1a)) deallocate(samp%lcheck_c1a)
+if (allocated(samp%lcheck_c2a)) deallocate(samp%lcheck_c2a)
+
+end subroutine samp_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_dealloc
@@ -195,46 +220,56 @@ implicit none
 class(samp_type),intent(inout) :: samp ! Sampling
 
 ! Local variables
-integer :: il0
+integer :: il0,its
 
 ! Release memory
-if (allocated(samp%rh_c0)) deallocate(samp%rh_c0)
-if (allocated(samp%mask_c0)) deallocate(samp%mask_c0)
-if (allocated(samp%mask_hor_c0)) deallocate(samp%mask_hor_c0)
-if (allocated(samp%nc0_mask)) deallocate(samp%nc0_mask)
+call samp%partial_dealloc
 if (allocated(samp%c1_to_c0)) deallocate(samp%c1_to_c0)
 if (allocated(samp%c1l0_log)) deallocate(samp%c1l0_log)
-if (allocated(samp%c1l0_check)) deallocate(samp%c1l0_check)
 if (allocated(samp%c1c3_to_c0)) deallocate(samp%c1c3_to_c0)
 if (allocated(samp%c1c3l0_log)) deallocate(samp%c1c3l0_log)
 if (allocated(samp%c2_to_c1)) deallocate(samp%c2_to_c1)
 if (allocated(samp%c2_to_c0)) deallocate(samp%c2_to_c0)
 if (allocated(samp%mask_c2)) deallocate(samp%mask_c2)
-if (allocated(samp%c2a_to_c2)) deallocate(samp%c2a_to_c2)
-if (allocated(samp%c2_to_c2a)) deallocate(samp%c2_to_c2a)
-if (allocated(samp%mask_c2a)) deallocate(samp%mask_c2a)
 if (allocated(samp%vbal_mask)) deallocate(samp%vbal_mask)
 if (allocated(samp%local_mask)) deallocate(samp%local_mask)
 if (allocated(samp%nn_c2a_index)) deallocate(samp%nn_c2a_index)
 if (allocated(samp%nn_c2a_dist)) deallocate(samp%nn_c2a_dist)
-if (allocated(samp%adv_nn)) deallocate(samp%adv_nn)
-if (allocated(samp%adv_nn_index)) deallocate(samp%adv_nn_index)
-if (allocated(samp%hfull)) then
-   do il0=1,size(samp%hfull)
-      call samp%hfull(il0)%dealloc
-   end do
-   deallocate(samp%hfull)
-end if
+if (allocated(samp%ldwv_to_c0)) deallocate(samp%ldwv_to_c0)
+if (allocated(samp%ldwv_to_c2)) deallocate(samp%ldwv_to_c2)
+call samp%mesh%dealloc
+if (allocated(samp%adv_lon)) deallocate(samp%adv_lon)
+if (allocated(samp%adv_lat)) deallocate(samp%adv_lat)
 if (allocated(samp%h)) then
    do il0=1,size(samp%h)
       call samp%h(il0)%dealloc
    end do
    deallocate(samp%h)
 end if
-if (allocated(samp%ldwv_to_c0)) deallocate(samp%ldwv_to_c0)
-if (allocated(samp%ldwv_to_c2)) deallocate(samp%ldwv_to_c2)
-if (allocated(samp%adv_lon)) deallocate(samp%adv_lon)
-if (allocated(samp%adv_lat)) deallocate(samp%adv_lat)
+if (allocated(samp%d)) then
+   do its=1,size(samp%d,2)
+      do il0=1,size(samp%d,1)
+         call samp%d(il0,its)%dealloc
+      end do
+   end do
+   deallocate(samp%d)
+end if
+if (allocated(samp%lcheck_c0a)) deallocate(samp%lcheck_c0a)
+if (allocated(samp%c0_to_c0c)) deallocate(samp%c0_to_c0c)
+if (allocated(samp%c1a_to_c1)) deallocate(samp%c1a_to_c1)
+if (allocated(samp%c1_to_c1a)) deallocate(samp%c1_to_c1a)
+if (allocated(samp%c1d_to_c1)) deallocate(samp%c1d_to_c1)
+if (allocated(samp%c1_to_c1d)) deallocate(samp%c1_to_c1d)
+if (allocated(samp%c2a_to_c2)) deallocate(samp%c2a_to_c2)
+if (allocated(samp%c2_to_c2a)) deallocate(samp%c2_to_c2a)
+if (allocated(samp%mask_c2a)) deallocate(samp%mask_c2a)
+if (allocated(samp%c2b_to_c2)) deallocate(samp%c2b_to_c2)
+if (allocated(samp%c2_to_c2f)) deallocate(samp%c2_to_c2f)
+if (allocated(samp%c2_to_proc)) deallocate(samp%c2_to_proc)
+call samp%com_AB%dealloc
+call samp%com_AC%dealloc
+call samp%com_AD%dealloc
+call samp%com_AF%dealloc
 
 end subroutine samp_dealloc
 
@@ -242,7 +277,7 @@ end subroutine samp_dealloc
 ! Subroutine: samp_read
 ! Purpose: read
 !----------------------------------------------------------------------
-subroutine samp_read(samp,mpl,nam,geom,bpar,new_sampling)
+subroutine samp_read(samp,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -252,25 +287,23 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
-logical,intent(out) :: new_sampling    ! Status flag
 
 ! Local variables
-integer :: il0,il0i,ic1,jc3
+integer :: il0,ic1,jc3
 integer :: info,ncid,nl0_id,nl0r_id,nc3_id,nc1_id,nc2_id
 integer :: c1_to_c0_id,c1l0_log_id,c1l0_check_id,c1c3_to_c0_id,c1c3l0_log_id
 integer :: c2_to_c1_id,c2_to_c0_id
 integer :: c1l0_logint(nam%nc1,geom%nl0),c1l0_checkint(nam%nc1,geom%nl0),c1c3l0_logint(nam%nc1,nam%nc3,geom%nl0)
-character(len=3) :: il0ichar
 character(len=1024),parameter :: subr = 'samp_read'
 
 ! Initialization
-new_sampling = .false.
+samp%new_sampling = .false.
 
 ! Open file
 info = nf90_open(trim(nam%datadir)//'/'//trim(nam%prefix)//'_sampling.nc',nf90_nowrite,ncid)
 if (info/=nf90_noerr) then
    call mpl%warning(subr,'cannot find sampling to read, recomputing sampling')
-   new_sampling = .true.
+   samp%new_sampling = .true.
    return
 end if
 
@@ -279,16 +312,16 @@ nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.false.)
 nl0r_id = mpl%ncdimcheck(subr,ncid,'nl0r',bpar%nl0rmax,.false.)
 nc3_id = mpl%ncdimcheck(subr,ncid,'nc3',nam%nc3,.false.)
 nc1_id = mpl%ncdimcheck(subr,ncid,'nc1',nam%nc1,.false.)
-if (nam%new_lct.or.nam%local_diag.or.nam%adv_diag) then
+if (samp%sc2) then
    nc2_id = mpl%ncdimcheck(subr,ncid,'nc2',nam%nc2,.false.)
 else
    nc2_id = 0
 end if
-if (mpl%msv%isi(nl0_id).or.mpl%msv%isi(nl0r_id).or.mpl%msv%isi(nc3_id).or.mpl%msv%isi(nc1_id) &
- & .or.mpl%msv%isi(nc2_id)) then
+if (mpl%msv%is(nl0_id).or.mpl%msv%is(nl0r_id).or.mpl%msv%is(nc3_id).or.mpl%msv%is(nc1_id) &
+ & .or.mpl%msv%is(nc2_id)) then
    call mpl%warning(subr,'wrong dimension when reading sampling, recomputing sampling')
    call mpl%ncerr(subr,nf90_close(ncid))
-   new_sampling = .true.
+   samp%new_sampling = .true.
    return
 end if
 write(mpl%info,'(a7,a)') '','Read sampling'
@@ -300,7 +333,7 @@ call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1l0_log',c1l0_log_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1l0_check',c1l0_check_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1c3_to_c0',c1c3_to_c0_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'c1c3l0_log',c1c3l0_log_id))
-if (nam%new_lct.or.nam%local_diag.or.nam%adv_diag) then
+if (samp%sc2) then
    call mpl%ncerr(subr,nf90_inq_varid(ncid,'c2_to_c1',c2_to_c1_id))
    call mpl%ncerr(subr,nf90_inq_varid(ncid,'c2_to_c0',c2_to_c0_id))
 end if
@@ -342,34 +375,13 @@ do il0=1,geom%nl0
       end do
    end do
 end do
-if (nam%new_lct.or.nam%local_diag.or.nam%adv_diag) then
+if (samp%sc2) then
    call mpl%ncerr(subr,nf90_get_var(ncid,c2_to_c1_id,samp%c2_to_c1))
    call mpl%ncerr(subr,nf90_get_var(ncid,c2_to_c0_id,samp%c2_to_c0))
 end if
 
 ! Close file
 call mpl%ncerr(subr,nf90_close(ncid))
-
-if (nam%new_vbal.or.nam%new_lct.or.(nam%new_hdiag.and.(nam%local_diag.or.nam%adv_diag))) then
-   ! Read interpolation
-   do il0i=1,geom%nl0i
-      ! Open file
-      write(il0ichar,'(i3.3)') il0i
-      info = nf90_open(trim(nam%datadir)//'/'//trim(nam%prefix)//'_sampling_'//il0ichar//'.nc',nf90_nowrite,ncid)
-      if (info/=nf90_noerr) then
-         call mpl%warning(subr,'cannot find interpolation data to read, recomputing sampling')
-         new_sampling = .true.
-         return
-      end if
-
-      ! Interpolation
-      write(samp%hfull(il0i)%prefix,'(a,i3.3)') 'hfull_',il0i
-      call samp%hfull(il0i)%read(mpl,ncid)
-
-      ! Close file
-      call mpl%ncerr(subr,nf90_close(ncid))
-   end do
-end if
 
 end subroutine samp_read
 
@@ -389,13 +401,12 @@ type(geom_type),intent(in) :: geom  ! Geometry
 type(bpar_type),intent(in) :: bpar  ! Block parameters
 
 ! Local variables
-integer :: il0,il0i,ic1,jc3
+integer :: il0,ic1,jc3
 integer :: ncid,nl0_id,nl0r_id,nc1_id,nc2_id,nc3_id
 integer :: lat_id,lon_id,smax_id,c1_to_c0_id,c1l0_log_id,c1l0_check_id,c1c3_to_c0_id,c1c3l0_log_id
 integer :: c2_to_c1_id,c2_to_c0_id
 integer :: c1l0_logint(nam%nc1,geom%nl0),c1l0_checkint(nam%nc1,geom%nl0),c1c3l0_logint(nam%nc1,nam%nc3,geom%nl0)
 real(kind_real) :: lon(nam%nc1,nam%nc3,geom%nl0),lat(nam%nc1,nam%nc3,geom%nl0)
-character(len=3) :: il0ichar
 character(len=1024),parameter :: subr = 'samp_write'
 
 ! Processor verification
@@ -414,8 +425,7 @@ call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0',geom%nl0,nl0_id))
 call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0r',bpar%nl0rmax,nl0r_id))
 call mpl%ncerr(subr,nf90_def_dim(ncid,'nc3',nam%nc3,nc3_id))
 call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1',nam%nc1,nc1_id))
-if (nam%new_vbal.or.nam%new_lct.or.(nam%new_hdiag.and.(nam%local_diag.or.nam%adv_diag))) &
- & call mpl%ncerr(subr,nf90_def_dim(ncid,'nc2',nam%nc2,nc2_id))
+if (samp%sc2) call mpl%ncerr(subr,nf90_def_dim(ncid,'nc2',nam%nc2,nc2_id))
 
 ! Define variables
 call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nc1_id,nc3_id,nl0_id/),lat_id))
@@ -434,7 +444,7 @@ call mpl%ncerr(subr,nf90_def_var(ncid,'c1c3_to_c0',nf90_int,(/nc1_id,nc3_id/),c1
 call mpl%ncerr(subr,nf90_put_att(ncid,c1c3_to_c0_id,'_FillValue',mpl%msv%vali))
 call mpl%ncerr(subr,nf90_def_var(ncid,'c1c3l0_log',nf90_int,(/nc1_id,nc3_id,nl0_id/),c1c3l0_log_id))
 call mpl%ncerr(subr,nf90_put_att(ncid,c1c3l0_log_id,'_FillValue',mpl%msv%vali))
-if (nam%new_lct.or.nam%local_diag.or.nam%adv_diag) then
+if (samp%sc2) then
    call mpl%ncerr(subr,nf90_def_var(ncid,'c2_to_c1',nf90_int,(/nc2_id/),c2_to_c1_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,c2_to_c1_id,'_FillValue',mpl%msv%vali))
    call mpl%ncerr(subr,nf90_def_var(ncid,'c2_to_c0',nf90_int,(/nc2_id/),c2_to_c0_id))
@@ -482,7 +492,7 @@ call mpl%ncerr(subr,nf90_put_var(ncid,c1l0_log_id,c1l0_logint))
 call mpl%ncerr(subr,nf90_put_var(ncid,c1l0_check_id,c1l0_checkint))
 call mpl%ncerr(subr,nf90_put_var(ncid,c1c3_to_c0_id,samp%c1c3_to_c0))
 call mpl%ncerr(subr,nf90_put_var(ncid,c1c3l0_log_id,c1c3l0_logint))
-if (nam%new_lct.or.nam%local_diag.or.nam%adv_diag) then
+if (samp%sc2) then
    call mpl%ncerr(subr,nf90_put_var(ncid,c2_to_c1_id,samp%c2_to_c1))
    call mpl%ncerr(subr,nf90_put_var(ncid,c2_to_c0_id,samp%c2_to_c0))
 end if
@@ -490,35 +500,13 @@ end if
 ! Close file
 call mpl%ncerr(subr,nf90_close(ncid))
 
-if (nam%new_vbal.or.nam%new_lct.or.(nam%new_hdiag.and.(nam%local_diag.or.nam%adv_diag))) then
-   ! Write interpolation
-   do il0i=1,geom%nl0i
-      ! Create file
-      write(il0ichar,'(i3.3)') il0i
-      call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(nam%prefix)//'_sampling_'//il0ichar//'.nc', &
-    & or(nf90_clobber,nf90_64bit_offset),ncid))
-
-      ! Write namelist parameters
-      call nam%write(mpl,ncid)
-
-      ! End definition mode
-      call mpl%ncerr(subr,nf90_enddef(ncid))
-
-      ! Write variables
-      call samp%hfull(il0i)%write(mpl,ncid)
-
-      ! Close file
-      call mpl%ncerr(subr,nf90_close(ncid))
-   end do
-end if
-
 end subroutine samp_write
 
 !----------------------------------------------------------------------
-! Subroutine: samp_setup_sampling
-! Purpose: setup sampling
+! Subroutine: samp_compute_sampling_c1
+! Purpose: compute sampling, subset Sc1
 !----------------------------------------------------------------------
-subroutine samp_setup_sampling(samp,mpl,rng,nam,geom,bpar,io,ens)
+subroutine samp_compute_sampling_c1(samp,mpl,rng,nam,geom,bpar,ens)
 
 implicit none
 
@@ -529,25 +517,19 @@ type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
-type(io_type),intent(in) :: io         ! I/O
 type(ens_type),intent(in) :: ens       ! Ensemble
 
 ! Local variables
-integer :: ic0,il0,ic1,ic2,ildw,jc3,il0i,ifor,ival,nn_index(geom%nc0)
-integer,allocatable :: vbot(:),vtop(:),for(:)
-real(kind_real) :: rh_c0a(geom%nc0a,geom%nl0)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:)
-real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
-real(kind_real),allocatable :: rh_c1(:)
-logical :: new_sampling
-logical,allocatable :: mask_c1(:)
+integer :: ic0,jc0,il0,jc3,ildwv,jldwv,ival,nn_index(geom%nc0)
 character(len=8) :: ivalformat
-character(len=1024) :: filename,color
-character(len=1024),parameter :: subr = 'samp_setup_sampling'
-type(linop_type) :: hbase
+character(len=1024) :: color
+character(len=1024),parameter :: subr = 'samp_compute_sampling_c1'
 
 ! Allocation
-call samp%alloc(geom)
+call samp%alloc(mpl,geom)
+
+! Compute sampling mask
+call samp%compute_mask(mpl,nam,geom,ens)
 
 ! Compute nearest neighbors for local diagnostics output
 if (nam%nldwv>0) then
@@ -557,29 +539,42 @@ if (nam%nldwv>0) then
    ! Allocation
    allocate(samp%ldwv_to_c0(nam%nldwv))
 
-   ! Find nearest neighbors
+   ! Initialization
    samp%ldwv_to_c0 = mpl%msv%vali
-   do ildw=1,nam%nldwv
-      ic0 = 0
-      do while (mpl%msv%isi(samp%ldwv_to_c0(ildw)))
-         ic0 = ic0+1
-         call geom%tree%find_nearest_neighbors(nam%lon_ldwv(ildw),nam%lat_ldwv(ildw),ic0,nn_index(1:ic0))
-         if (geom%mask_hor_c0(nn_index(ic0))) samp%ldwv_to_c0(ildw) = nn_index(ic0)
-      end do
-      write(mpl%info,'(a10,a,e15.8,a,e15.8)') '','Profile '//trim(nam%name_ldwv(ildw))//' computed at lon/lat: ', &
-    & geom%lon(samp%ldwv_to_c0(ildw))*rad2deg,' / ',geom%lat(samp%ldwv_to_c0(ildw))*rad2deg
+
+   do ildwv=1,nam%nldwv
+      if (mpl%main) then
+         ! Find nearest neighbors
+         ic0 = 0
+         do while (mpl%msv%is(samp%ldwv_to_c0(ildwv)))
+            ic0 = ic0+1
+            call geom%tree%find_nearest_neighbors(nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),ic0,nn_index(1:ic0))
+            if (samp%mask_hor_c0(nn_index(ic0))) samp%ldwv_to_c0(ildwv) = nn_index(ic0)
+         end do
+      end if
+      call mpl%f_comm%broadcast(samp%ldwv_to_c0,mpl%rootproc-1)
+
+      ! Print results
+      write(mpl%info,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
+    & geom%lon(samp%ldwv_to_c0(ildwv))*rad2deg,' / ',geom%lat(samp%ldwv_to_c0(ildwv))*rad2deg
       call mpl%flush
+
+      ! Check redundancy
+      ic0 = samp%ldwv_to_c0(ildwv)
+      do jldwv=1,ildwv-1
+         jc0 = samp%ldwv_to_c0(jldwv)
+         if (eq(geom%lon(ic0),geom%lon(jc0)).and.eq(geom%lat(ic0),geom%lat(jc0))) &
+       & call mpl%abort(subr,'profiles'//trim(nam%name_ldwv(ildwv))//' and '//trim(nam%name_ldwv(jldwv))// &
+       & 'are located grid point')
+      end do
    end do
 end if
 
-! Compute sampling mask
-call samp%compute_mask(mpl,nam,geom,ens)
-
 ! Check subsampling size
-if (nam%nc1>count(samp%mask_hor_c0)) then
+if (nam%nc1>samp%nc0_mask(0)) then
    ! Not enough points remaining in the sampling mask
    call mpl%warning(subr,'not enough points remaining in sampling mask, resetting nc1 to the largest possible value')
-   nam%nc1 = count(samp%mask_hor_c0)
+   nam%nc1 = samp%nc0_mask(0)
 end if
 if (nam%nc2>nam%nc1) then
    ! Subsampling should have less points
@@ -589,21 +584,18 @@ end if
 
 ! Allocation
 call samp%alloc(nam,geom)
-allocate(lon_c1(nam%nc1))
-allocate(lat_c1(nam%nc1))
-allocate(mask_c1(nam%nc1))
 
 ! Initialization
 samp%c1_to_c0 = mpl%msv%vali
 samp%c1c3_to_c0 = mpl%msv%vali
 
 ! Read or compute sampling data
-new_sampling = .true.
+samp%new_sampling = .true.
 if (nam%sam_read) then
-   call samp%read(mpl,nam,geom,bpar,new_sampling)
-   if (new_sampling) nam%sam_write = .true.
+   call samp%read(mpl,nam,geom,bpar)
+   if (samp%new_sampling) nam%sam_write = .true.
 end if
-if (new_sampling) then
+if (samp%new_sampling) then
    ! Compute zero-separation sampling
    call samp%compute_sampling_zs(mpl,rng,nam,geom)
 
@@ -617,100 +609,6 @@ if (new_sampling) then
 
    ! Check sampling mask
    call samp%check_mask(mpl,nam,geom)
-end if
-
-if (nam%new_vbal.or.nam%new_lct.or.(nam%new_hdiag.and.(nam%local_diag.or.nam%adv_diag))) then
-   if (new_sampling) then
-      ! Allocation
-      allocate(rh_c1(nam%nc1))
-      allocate(for(samp%nfor))
-
-      ! Define subsampling
-      write(mpl%info,'(a7,a)') '','Define subsampling:'
-      call mpl%flush(.false.)
-      lon_c1 = geom%lon(samp%c1_to_c0)
-      lat_c1 = geom%lat(samp%c1_to_c0)
-      mask_c1 = any(samp%c1l0_log(:,:),dim=2)
-      do ifor=1,samp%nfor
-         for(ifor) = ifor
-      end do
-      rh_c1 = 1.0
-      call rng%initialize_sampling(mpl,nam%nc1,lon_c1,lat_c1,mask_c1,samp%nfor,for,rh_c1, &
-    & nam%ntry,nam%nrep,nam%nc2,samp%c2_to_c1)
-      samp%c2_to_c0 = samp%c1_to_c0(samp%c2_to_c1)
-
-      ! Release memory
-      deallocate(rh_c1)
-      deallocate(for)
-   end if
-
-   ! Define mask on subset Sc2
-   do il0=1,geom%nl0
-      do ic2=1,nam%nc2
-         ic1 = samp%c2_to_c1(ic2)
-         samp%mask_c2(ic2,il0) = samp%c1l0_log(ic1,il0)
-      end do
-   end do
-
-   ! Allocation
-   allocate(lon_c2(nam%nc2))
-   allocate(lat_c2(nam%nc2))
-
-   ! Initialization
-   lon_c2 = geom%lon(samp%c2_to_c0)
-   lat_c2 = geom%lat(samp%c2_to_c0)
-   call samp%mesh%init(mpl,rng,lon_c2,lat_c2)
-
-   ! Compute triangles list
-   write(mpl%info,'(a7,a)') '','Compute triangles list '
-   call mpl%flush
-   call samp%mesh%trlist(mpl)
-
-   ! Find boundary nodes
-   write(mpl%info,'(a7,a)') '','Find boundary nodes'
-   call mpl%flush
-   call samp%mesh%bnodes(mpl)
-
-   if (new_sampling) then
-      ! Allocation
-      allocate(vbot(nam%nc2))
-      allocate(vtop(nam%nc2))
-
-      ! Initialize vbot and vtop
-      vbot = 1
-      vtop = geom%nl0
-
-      ! Compute grid interpolation
-      write(mpl%info,'(a7,a)') '','Compute grid interpolation'
-      call mpl%flush
-      do il0i=1,geom%nl0i
-         ! Compute grid interpolation
-         write(samp%hfull(il0i)%prefix,'(a,i3.3)') 'hfull_',il0i
-         call samp%hfull(il0i)%interp(mpl,rng,geom,il0i,nam%nc2,samp%c2_to_c0,nam%mask_check,vbot,vtop,nam%diag_interp,hbase)
-      end do
-
-      ! Release memory
-      deallocate(vbot)
-      deallocate(vtop)
-   end if
-
-   ! Release memory
-   deallocate(lon_c2)
-   deallocate(lat_c2)
-end if
-
-! Write sampling data
-if (nam%sam_write) then
-   if (mpl%main) call samp%write(mpl,nam,geom,bpar)
-
-   ! Write rh_c0
-   if (trim(nam%draw_type)=='random_coast') then
-      rh_c0a = mpl%msv%valr
-      call mpl%glb_to_loc(geom%nc0,geom%c0_to_proc,geom%c0_to_c0a,samp%rh_c0,geom%nc0a,rh_c0a(:,1))
-      filename = trim(nam%prefix)//'_sampling_rh_c0'
-      call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
-      call io%fld_write(mpl,nam,geom,filename,'rh_c0',rh_c0a)
-   end if
 end if
 
 ! Print results
@@ -745,7 +643,96 @@ do il0=1,geom%nl0
    call mpl%flush
 end do
 
-end subroutine samp_setup_sampling
+end subroutine samp_compute_sampling_c1
+
+!----------------------------------------------------------------------
+! Subroutine: samp_compute_sampling_c2
+! Purpose: compute sampling, subset Sc2
+!----------------------------------------------------------------------
+subroutine samp_compute_sampling_c2(samp,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(inout) :: samp ! Sampling
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(rng_type),intent(inout) :: rng    ! Random number generator
+type(nam_type),intent(inout) :: nam    ! Namelist
+type(geom_type),intent(in) :: geom     ! Geometry
+
+! Local variables
+integer :: il0,ic1a,ic1,ic2,ildwv,ic0
+real(kind_real),allocatable :: lon_c1a(:),lat_c1a(:)
+real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
+real(kind_real),allocatable :: rh_c1a(:)
+logical,allocatable :: mask_c1a(:)
+
+if (samp%new_sampling) then
+   ! Allocation
+   allocate(lon_c1a(samp%nc1a))
+   allocate(lat_c1a(samp%nc1a))
+   allocate(mask_c1a(samp%nc1a))
+   allocate(rh_c1a(samp%nc1a))
+
+   ! Define subsampling
+   write(mpl%info,'(a7,a)') '','Define subsampling:'
+   call mpl%flush(.false.)
+   lon_c1a = geom%lon(samp%c1_to_c0(samp%c1a_to_c1))
+   lat_c1a = geom%lat(samp%c1_to_c0(samp%c1a_to_c1))
+   mask_c1a = any(samp%c1l0_log(samp%c1a_to_c1,:),dim=2)
+   rh_c1a = 1.0
+   do ildwv=1,nam%nldwv
+      ic1 = ildwv
+      samp%c2_to_c1(ic1) = ic1
+      ic0 = samp%c1_to_c0(ic1)
+      if (mpl%myproc==geom%c0_to_proc(ic0)) then
+         ic1a = samp%c1_to_c1a(ic1)
+         mask_c1a(ic1a) = .false.
+      end if
+   end do
+   call rng%initialize_sampling(mpl,samp%nc1a,lon_c1a,lat_c1a,mask_c1a,rh_c1a,samp%c1a_to_c1, &
+ & nam%ntry,nam%nrep,nam%nc2-nam%nldwv,samp%c2_to_c1(nam%nldwv+1:nam%nc2))
+   samp%c2_to_c0 = samp%c1_to_c0(samp%c2_to_c1)
+
+   ! Release memory
+   deallocate(lon_c1a)
+   deallocate(lat_c1a)
+   deallocate(mask_c1a)
+   deallocate(rh_c1a)
+end if
+
+! Define mask on subset Sc2
+do il0=1,geom%nl0
+   do ic2=1,nam%nc2
+      ic1 = samp%c2_to_c1(ic2)
+      samp%mask_c2(ic2,il0) = samp%c1l0_log(ic1,il0)
+   end do
+end do
+
+! Allocation
+allocate(lon_c2(nam%nc2))
+allocate(lat_c2(nam%nc2))
+
+! Initialization
+lon_c2 = geom%lon(samp%c2_to_c0)
+lat_c2 = geom%lat(samp%c2_to_c0)
+
+if (nam%adv_diag) then
+   ! Initialization
+   call samp%mesh%init(mpl,rng,lon_c2,lat_c2,.true.)
+
+   ! Compute triangles list
+   write(mpl%info,'(a7,a)') '','Compute triangles list '
+   call mpl%flush
+   call samp%mesh%trlist(mpl)
+
+   ! Find boundary nodes
+   write(mpl%info,'(a7,a)') '','Find boundary nodes'
+   call mpl%flush
+   call samp%mesh%bnodes(mpl)
+end if
+
+end subroutine samp_compute_sampling_c2
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mask
@@ -763,121 +750,144 @@ type(geom_type),intent(in) :: geom     ! Geometry
 type(ens_type),intent(in) :: ens       ! Ensemble
 
 ! Local variables
-integer :: ic0a,ic0,il0,ildw,iv,its,ie,ncontig,ncontigmax
-integer :: latmin,latmax
+integer :: nsmask,nsmask_tot,ic0a,ic0,il0,ildwv,iv,its,ie,ncontig,ncontigmax,latmin,latmax
 real(kind_real) :: dist
 real(kind_real),allocatable :: var(:,:,:,:)
-logical :: valid,mask_c0a(geom%nc0a,geom%nl0)
+logical :: valid
 character(len=1024),parameter :: subr = 'samp_compute_mask'
 
-! Compute sampling mask
-write(mpl%info,'(a7,a)') '','Compute sampling mask'
-call mpl%flush
-
-! Copy geometry mask
-mask_c0a = geom%mask_c0a
-if (allocated(geom%smask_c0a)) mask_c0a = mask_c0a.and.geom%smask_c0a
-
-! Mask restriction
-if (nam%mask_type(1:3)=='lat') then
-   ! Latitude band
-   read(nam%mask_type(4:6),'(i3)') latmin
-   read(nam%mask_type(7:9),'(i3)') latmax
-   write(mpl%info,'(a10,a,i3,a,i3)') '','Latitude band between ',latmin,' and ',latmax
-   call mpl%flush
-   if (latmin>=latmax) call mpl%abort(subr,'latmin should be lower than latmax')
-   do ic0a=1,geom%nc0a
-      ic0 = geom%c0a_to_c0(ic0a)
-      valid = (geom%lat(ic0)>=real(latmin,kind_real)*deg2rad).and.(geom%lat(ic0)<=real(latmax,kind_real)*deg2rad)
-      do il0=1,geom%nl0
-         mask_c0a(ic0a,il0) = mask_c0a(ic0a,il0).and.valid
-      end do
-   end do
-elseif (trim(nam%mask_type)=='ldwv') then
-   ! Disk around vertical diagnostic points
-   write(mpl%info,'(a10,a,e10.3,a)') '','Disk of ',1.1*nam%local_rad*reqkm,' km around vertical diagonstic points'
-   call mpl%flush
-   do ic0a=1,geom%nc0a
-      ic0 = geom%c0a_to_c0(ic0a)
-      valid = .false.
-      do ildw=1,nam%nldwv
-         call sphere_dist(geom%lon(samp%ldwv_to_c0(ildw)),geom%lat(samp%ldwv_to_c0(ildw)),geom%lon(ic0),geom%lat(ic0),dist)
-         valid = valid.or.(dist<1.1*nam%local_rad)
-      end do
-      do il0=1,geom%nl0
-         mask_c0a(ic0a,il0) = mask_c0a(ic0a,il0).and.valid
-      end do
-   end do
-elseif (trim(nam%mask_type)=='stddev') then
-   ! Standard-deviation threshold
-
-   ! Allocation
-   allocate(var(geom%nc0a,geom%nl0,nam%nv,nam%nts))
-
-   ! Compute variances
-   var = 0.0
-   do ie=1,ens%ne
-      var = var+ens%fld(:,:,:,:,ie)**2
-   end do
-   var = var/real(ens%ne-ens%nsub,kind_real)
-
-   ! Check standard-deviation value
-   do iv=1,nam%nv
-      write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th,' used as a '//trim(nam%mask_lu) &
-    & //' bound for standard-deviation'
-      call mpl%flush
-      do its=1,nam%nts
-         if (trim(nam%mask_lu)=='lower') then
-            mask_c0a = mask_c0a.and.(var(:,:,iv,its)>nam%mask_th**2)
-         elseif (trim(nam%mask_lu)=='upper') then
-            mask_c0a = mask_c0a.and.(var(:,:,iv,its)<nam%mask_th**2)
-         end if
-      end do
-   end do
-
-   ! Release memory
-   deallocate(var)
-elseif (trim(nam%mask_type)=='none') then
-   ! Nothing to do
+if (allocated(geom%smask_c0a)) then
+   nsmask = count(geom%mask_c0a.and..not.geom%smask_c0a)
+   call mpl%f_comm%allreduce(nsmask,nsmask_tot,fckit_mpi_sum())
 else
-   if (.not.allocated(geom%smask_c0a)) call mpl%abort(subr,'mask_type not recognized')
+   nsmask_tot = 0
 end if
 
-! Check vertically contiguous points
-if (nam%ncontig_th>0) then
-   write(mpl%info,'(a10,a,i3,a)') '','Mask restricted with at least ',min(nam%ncontig_th,geom%nl0),' vertically contiguous points'
+if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
+   ! Compute sampling mask
+   write(mpl%info,'(a7,a)') '','Compute sampling mask'
    call mpl%flush
-   do ic0a=1,geom%nc0a
-      ncontig = 0
-      ncontigmax = 0
-      do il0=1,geom%nl0
-         if (mask_c0a(ic0a,il0)) then
-            ncontig = ncontig+1
-         else
-            ncontig = 0
-         end if
-         if (ncontig>ncontigmax) ncontigmax = ncontig
+
+   ! Copy geometry mask
+   samp%mask_c0a = geom%mask_c0a
+   if (allocated(geom%smask_c0a)) samp%mask_c0a = samp%mask_c0a.and.geom%smask_c0a
+   
+   ! Mask restriction
+   if (nam%mask_type(1:3)=='lat') then
+      ! Latitude band
+      read(nam%mask_type(4:6),'(i3)') latmin
+      read(nam%mask_type(7:9),'(i3)') latmax
+      write(mpl%info,'(a10,a,i3,a,i3)') '','Latitude band between ',latmin,' and ',latmax
+      call mpl%flush
+      if (latmin>=latmax) call mpl%abort(subr,'latmin should be lower than latmax')
+      do ic0a=1,geom%nc0a
+         ic0 = geom%c0a_to_c0(ic0a)
+         valid = (geom%lat(ic0)>=real(latmin,kind_real)*deg2rad).and.(geom%lat(ic0)<=real(latmax,kind_real)*deg2rad)
+         do il0=1,geom%nl0
+            samp%mask_c0a(ic0a,il0) = samp%mask_c0a(ic0a,il0).and.valid
+         end do
       end do
-      mask_c0a(ic0a,:) = mask_c0a(ic0a,:).and.(ncontigmax>=min(nam%ncontig_th,geom%nl0))
-   end do
+   elseif (trim(nam%mask_type)=='ldwv') then
+      ! Disk around vertical diagnostic points
+      write(mpl%info,'(a10,a,e10.3,a)') '','Disk of ',1.1*nam%local_rad*reqkm,' km around vertical diagonstic points'
+      call mpl%flush
+      do ic0a=1,geom%nc0a
+         ic0 = geom%c0a_to_c0(ic0a)
+         valid = .false.
+         do ildwv=1,nam%nldwv
+            call sphere_dist(nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),geom%lon(ic0),geom%lat(ic0),dist)
+            valid = valid.or.(dist<1.1*nam%local_rad)
+         end do
+         do il0=1,geom%nl0
+            samp%mask_c0a(ic0a,il0) = samp%mask_c0a(ic0a,il0).and.valid
+         end do
+      end do
+   elseif (trim(nam%mask_type)=='stddev') then
+      ! Standard-deviation threshold
+   
+      ! Allocation
+      allocate(var(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+   
+      ! Compute variances
+      var = 0.0
+      do ie=1,ens%ne
+         var = var+ens%mem(ie)%fld**2
+      end do
+      var = var/real(ens%ne-ens%nsub,kind_real)
+   
+      ! Check standard-deviation value
+      do iv=1,nam%nv
+         write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
+       & //' bound for standard-deviation'
+         call mpl%flush
+         do its=1,nam%nts
+            if (trim(nam%mask_lu(iv))=='lower') then
+               samp%mask_c0a = samp%mask_c0a.and.(var(:,:,iv,its)>nam%mask_th(iv)**2)
+            elseif (trim(nam%mask_lu(iv))=='upper') then
+               samp%mask_c0a = samp%mask_c0a.and.(var(:,:,iv,its)<nam%mask_th(iv)**2)
+            end if
+         end do
+      end do
+   
+      ! Release memory
+      deallocate(var)
+   else
+      if (.not.allocated(geom%smask_c0a)) call mpl%abort(subr,'mask_type not recognized')
+   end if
+   
+   ! Check vertically contiguous points
+   if (nam%ncontig_th>0) then
+      write(mpl%info,'(a10,a,i3,a)') '','Mask restricted with at least ',min(nam%ncontig_th,geom%nl0), &
+   &  ' vertically contiguous points'
+      call mpl%flush
+      do ic0a=1,geom%nc0a
+         ncontig = 0
+         ncontigmax = 0
+         do il0=1,geom%nl0
+            if (samp%mask_c0a(ic0a,il0)) then
+               ncontig = ncontig+1
+            else
+               ncontig = 0
+            end if
+            if (ncontig>ncontigmax) ncontigmax = ncontig
+         end do
+         samp%mask_c0a(ic0a,:) = samp%mask_c0a(ic0a,:).and.(ncontigmax>=min(nam%ncontig_th,geom%nl0))
+      end do
+   end if
+   
+   ! Local to global
+   call mpl%loc_to_glb(geom%nl0,geom%nc0a,samp%mask_c0a,geom%nc0,geom%c0_to_proc,geom%c0_to_c0a,.false.,samp%mask_c0)
+   
+   ! Other masks
+   samp%mask_hor_c0a = any(samp%mask_c0a,dim=2)
+   if (mpl%main) then
+      samp%mask_hor_c0 = any(samp%mask_c0,dim=2)
+      samp%nc0_mask(0) = count(samp%mask_hor_c0)
+      samp%nc0_mask(1:geom%nl0) = count(samp%mask_c0,dim=1)
+   end if
+   call mpl%f_comm%broadcast(samp%nc0_mask,mpl%rootproc-1)
+
+   ! Check mask size
+   if (samp%nc0_mask(0)==0) call mpl%abort(subr,'no more points in the sampling mask')
+else
+   ! Copy geometry mask
+   write(mpl%info,'(a7,a)') '','Copy geometry mask'
+   call mpl%flush
+
+   if (mpl%main) samp%mask_c0 = geom%mask_c0
+   samp%mask_c0a = geom%mask_c0a
+   if (mpl%main) samp%mask_hor_c0 = geom%mask_hor_c0
+   samp%mask_hor_c0a = geom%mask_hor_c0a
+   samp%nc0_mask(0) = count(geom%mask_hor_c0)
+   samp%nc0_mask(1:geom%nl0) = count(geom%mask_c0,dim=1)
 end if
-
-! Local to global
-call mpl%loc_to_glb(geom%nl0,geom%nc0a,mask_c0a,geom%nc0,geom%c0_to_proc,geom%c0_to_c0a,.true.,samp%mask_c0)
-
-! Check mask size
-if (count(samp%mask_c0)==0) call mpl%abort(subr,'no more points in the sampling mask')
-
-! Other masks
-samp%mask_hor_c0 = any(samp%mask_c0,dim=2)
-samp%nc0_mask = count(samp%mask_c0,dim=1)
 
 ! Print results
 write(mpl%info,'(a7,a)') '','Sampling valid points (% of domain mask):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ',100.0*real(count(samp%mask_c0(:,il0)),kind_real) &
- & /real(count(geom%mask_c0(:,il0)),kind_real),'%'
+   write(mpl%info,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ',100.0*real(samp%nc0_mask(il0),kind_real) &
+ & /real(geom%nc0_mask(il0),kind_real),'%'
    call mpl%flush
 end do
 
@@ -899,112 +909,78 @@ type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic0,jc0,ic1,il0i,jb,ildwv,jldwv,ifor,il0
-integer,allocatable :: for(:)
-real(kind_real) :: norm
-logical :: valid
+integer :: ic0,ic0a,ic1,il0i,ildwv,il0
+real(kind_real) :: rh_c0a(geom%nc0a),norm,norm_tot
+logical :: mask_hor_c0a(geom%nc0a)
 character(len=1024),parameter :: subr = 'samp_compute_sampling_zs'
 
 ! Compute subset
-if (count(samp%mask_hor_c0)>nam%nc1) then
+if (samp%nc0_mask(0)>nam%nc1) then
    write(mpl%info,'(a7,a)') '','Compute horizontal subset C1: '
    call mpl%flush(.false.)
    select case (trim(nam%draw_type))
    case ('random_uniform')
       ! Random draw
-      do ic0=1,geom%nc0
-         if (samp%mask_hor_c0(ic0)) samp%rh_c0(ic0) = 1.0
-      end do
+      rh_c0a = 1.0
    case ('random_coast')
       ! More points around coasts
-      if (all(samp%mask_c0)) call mpl%abort(subr,'random_coast is not relevant if there is no coast')
-      samp%rh_c0 = 0.0
+      if (all(geom%mask_c0)) call mpl%abort(subr,'random_coast is not relevant if there is no coast')
+      rh_c0a = 0.0
       norm = 0.0
       do il0i=1,geom%nl0i
-         if (any(.not.samp%mask_c0(:,il0i))) then
-            do ic0=1,geom%nc0
-               if (samp%mask_c0(ic0,il0i)) then
-                  samp%rh_c0(ic0) = samp%rh_c0(ic0)+exp(-geom%mdist(ic0,il0i)/nam%Lcoast)
-               else
-                  samp%rh_c0(ic0) = samp%rh_c0(ic0)+1.0
-               end if
-            end do
+         do ic0a=1,geom%nc0a
+            if (geom%mask_c0a(ic0a,il0i)) then
+               ic0 = geom%c0a_to_c0(ic0a)
+               rh_c0a(ic0a) = rh_c0a(ic0a)+exp(-geom%mdist(ic0,il0i)/nam%Lcoast)
+            else
+               rh_c0a(ic0a) = rh_c0a(ic0a)+1.0
+            end if
             norm = norm+1.0
-         end if
+         end do
       end do
-      samp%rh_c0 = nam%rcoast+(1.0-nam%rcoast)*(1.0-samp%rh_c0/norm)
+      call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
+      rh_c0a = nam%rcoast+(1.0-nam%rcoast)*(1.0-rh_c0a/norm_tot)
    end select
 
-   ! Count forced points
-   samp%nfor = 0
+   ! Initialize sampling
+   mask_hor_c0a = samp%mask_hor_c0a
    do ildwv=1,nam%nldwv
       ic0 = samp%ldwv_to_c0(ildwv)
-      valid = .true.
-      do jb=1,geom%mesh%nb
-         jc0 = geom%mesh%order(geom%mesh%bnd(jb))
-         if (eq(geom%lon(ic0),geom%lon(jc0)).and.eq(geom%lat(ic0),geom%lat(jc0))) valid = .false.
-      end do
-      do jldwv=1,ildwv-1
-         jc0 = samp%ldwv_to_c0(jldwv)
-         if (eq(geom%lon(ic0),geom%lon(jc0)).and.eq(geom%lat(ic0),geom%lat(jc0))) valid = .false.
-      end do
-      if (valid) then
-         if (samp%mask_hor_c0(ic0)) samp%nfor = samp%nfor+1
+      samp%c1_to_c0(ildwv) = ic0
+      if (mpl%myproc==geom%c0_to_proc(ic0)) then
+         ic0a = geom%c0_to_c0a(ic0)
+         mask_hor_c0a(ic0a) = .false.
       end if
    end do
-
-   ! Allocation
-   allocate(for(samp%nfor))
-
-   if (samp%nfor>0) then
-      ! Initialization
-      ifor = 0
-
-      ! Add local diagnostic profiles
-      do ildwv=1,nam%nldwv
-         ic0 = samp%ldwv_to_c0(ildwv)
-         valid = .true.
-         do jb=1,geom%mesh%nb
-            jc0 = geom%mesh%order(geom%mesh%bnd(jb))
-            if (eq(geom%lon(ic0),geom%lon(jc0)).and.eq(geom%lat(ic0),geom%lat(jc0))) valid = .false.
-         end do
-         do jldwv=1,ildwv-1
-            jc0 = samp%ldwv_to_c0(jldwv)
-            if (eq(geom%lon(ic0),geom%lon(jc0)).and.eq(geom%lat(ic0),geom%lat(jc0))) valid = .false.
-         end do
-         if (valid) then
-            if (samp%mask_hor_c0(ic0)) then
-               ifor = ifor+1
-               for(ifor) = ic0
-            end if
+   call rng%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
+ & nam%ntry,nam%nrep,nam%nc1-nam%nldwv,samp%c1_to_c0(nam%nldwv+1:nam%nc1))
+elseif (samp%nc0_mask(0)==nam%nc1) then
+   ! Keep all remaining points
+   if (mpl%main) then
+      ic1 = 0
+      do ic0=1,geom%nc0
+         if (samp%mask_hor_c0(ic0)) then
+            ic1 = ic1+1
+            samp%c1_to_c0(ic1) = ic0
          end if
       end do
    end if
-
-   ! Initialize sampling
-   call rng%initialize_sampling(mpl,geom%nc0,geom%lon,geom%lat,samp%mask_hor_c0,samp%nfor,for,samp%rh_c0, &
- & nam%ntry,nam%nrep,nam%nc1,samp%c1_to_c0)
-elseif (count(samp%mask_hor_c0)==nam%nc1) then
-   ! Keep all remaining points
-   ic1 = 0
-   do ic0=1,geom%nc0
-      if (samp%mask_hor_c0(ic0)) then
-         ic1 = ic1+1
-         samp%c1_to_c0(ic1) = ic0
-      end if
-   end do
+   call mpl%f_comm%broadcast(samp%c1_to_c0,mpl%rootproc-1)
 else
    ! Not enough points remaining in the sampling mask
    call mpl%abort(subr,'not enough points remaining in sampling mask')
 end if
 
-! Define whether this point should be checked for boundaries
-do il0=1,geom%nl0
-   do ic1=1,nam%nc1
-      ic0 = samp%c1_to_c0(ic1)
-      samp%c1l0_check(ic1,il0) = (nam%mask_check.and.samp%mask_c0(ic0,il0))
+if (mpl%main) then
+   ! Define whether this point should be checked for boundaries
+   do il0=1,geom%nl0
+      do ic1=1,nam%nc1
+         ic0 = samp%c1_to_c0(ic1)
+         samp%c1l0_check(ic1,il0) = (nam%mask_check.and.samp%mask_c0(ic0,il0))
+      end do
    end do
-end do
+end if
+call mpl%f_comm%broadcast(samp%c1l0_check,mpl%rootproc-1)
 
 end subroutine samp_compute_sampling_zs
 
@@ -1030,112 +1006,117 @@ real(kind_real) :: d
 real(kind_real),allocatable :: x(:),y(:),z(:),v1(:),v2(:),va(:),vp(:),t(:)
 logical :: found
 
-! First class
-samp%c1c3_to_c0(:,1) = samp%c1_to_c0
+if (mpl%main) then
+   ! First class
+   samp%c1c3_to_c0 = mpl%msv%vali
+   samp%c1c3_to_c0(:,1) = samp%c1_to_c0
 
-if (nam%nc3>1) then
-   ! Initialize
-   do jc3=1,nam%nc3
-      if (jc3/=1) samp%c1c3_to_c0(:,jc3) = mpl%msv%vali
-   end do
-
-   ! Define valid nodes vector
-   nvc0 = count(samp%mask_hor_c0)
-   allocate(vic0(nvc0))
-   ivc0 = 0
-   do ic0=1,geom%nc0
-      if (samp%mask_hor_c0(ic0)) then
-         ivc0 = ivc0+1
-         vic0(ivc0) = ic0
-      end if
-   end do
-
-   ! Sample classes of positive separation
-   write(mpl%info,'(a7,a)') '','Compute positive separation sampling: '
-   call mpl%flush(.false.)
-   call mpl%prog_init(nam%nc3*nam%nc1)
-   ir = 0
-   irmaxloc = nam%irmax
-   do while ((.not.all(mpl%msv%isnoti(samp%c1c3_to_c0))).and.(nvc0>1).and.(ir<=irmaxloc))
-      ! Try a random point
-      if (mpl%main) call rng%rand_integer(1,nvc0,i)
-      call mpl%f_comm%broadcast(i,mpl%ioproc-1)
-      ir = ir+1
-      jc0 = vic0(i)
-
-      !$omp parallel do schedule(static) private(ic1,ic0,d,jc3,icinf,icsup,found,ictest) firstprivate(x,y,z,v1,v2,va,vp,t)
-      do ic1=1,nam%nc1
-         ! Allocation
-         allocate(x(2))
-         allocate(y(2))
-         allocate(z(2))
-         allocate(v1(3))
-         allocate(v2(3))
-         allocate(va(3))
-         allocate(vp(3))
-         allocate(t(4))
-
-         ! Check if there is a valid first point
-         if (mpl%msv%isnoti(samp%c1_to_c0(ic1))) then
-            ! Compute the distance
-            ic0 = samp%c1_to_c0(ic1)
-            call sphere_dist(geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),d)
-
-            ! Find the class (dichotomy method)
-            if ((d>0.0).and.(d<(real(nam%nc3,kind_real)-0.5)*nam%dc)) then
-               jc3 = 1
-               icinf = 1
-               icsup = nam%nc3
-               found = .false.
-               do while (.not.found)
-                  ! New value
-                  ictest = (icsup+icinf)/2
-
-                  ! Update
-                  if (d<(real(ictest,kind_real)-0.5)*nam%dc) icsup = ictest
-                  if (d>(real(ictest,kind_real)-0.5)*nam%dc) icinf = ictest
-
-                  ! Exit test
-                  if (icsup==icinf+1) then
-                     if (abs((real(icinf,kind_real)-0.5)*nam%dc-d)<abs((real(icsup,kind_real)-0.5)*nam%dc-d)) then
-                        jc3 = icinf
-                     else
-                        jc3 = icsup
-                     end if
-                     found = .true.
-                  end if
-               end do
-
-               ! Find if this class has not been aready filled
-               if ((jc3/=1).and.(mpl%msv%isi(samp%c1c3_to_c0(ic1,jc3)))) samp%c1c3_to_c0(ic1,jc3) = jc0
-            end if
+   if (nam%nc3>1) then
+      ! Define valid nodes vector
+      nvc0 = samp%nc0_mask(0)
+      allocate(vic0(nvc0))
+      ivc0 = 0
+      do ic0=1,geom%nc0
+         if (samp%mask_hor_c0(ic0)) then
+            ivc0 = ivc0+1
+            vic0(ivc0) = ic0
          end if
-
-         ! Release memory
-         deallocate(x)
-         deallocate(y)
-         deallocate(z)
-         deallocate(v1)
-         deallocate(v2)
-         deallocate(va)
-         deallocate(vp)
-         deallocate(t)
       end do
-      !$omp end parallel do
-
-      ! Update valid nodes vector
-      vic0(i) = vic0(nvc0)
-      nvc0 = nvc0-1
-
-      ! Update
-      mpl%done = pack(mpl%msv%isnoti(samp%c1c3_to_c0),mask=.true.)
-      call mpl%prog_print
-   end do
-   call mpl%prog_final
-
-   ! Release memory
-   deallocate(vic0)
+   
+      ! Initialization
+      write(mpl%info,'(a7,a)') '','Compute positive separation sampling: '
+      call mpl%flush(.false.)
+      call mpl%prog_init(nam%nc3*nam%nc1)
+      do ic1=1,nam%nc1
+         mpl%done((ic1-1)*nam%nc3+1) = .true.
+      end do
+      ir = 0
+      irmaxloc = nam%irmax
+   
+      ! Sample classes of positive separation
+      do while ((.not.all(mpl%done)).and.(nvc0>1).and.(ir<=irmaxloc))
+         ! Try a random point
+         call rng%rand_integer(1,nvc0,i)
+         ir = ir+1
+         jc0 = vic0(i)
+   
+         !$omp parallel do schedule(static) private(ic1,ic0,d,jc3,icinf,icsup,found,ictest) firstprivate(x,y,z,v1,v2,va,vp,t)
+         do ic1=1,nam%nc1
+            ! Allocation
+            allocate(x(2))
+            allocate(y(2))
+            allocate(z(2))
+            allocate(v1(3))
+            allocate(v2(3))
+            allocate(va(3))
+            allocate(vp(3))
+            allocate(t(4))
+   
+            ! Check if there is a valid first point
+            if (mpl%msv%isnot(samp%c1_to_c0(ic1))) then
+               ! Compute the distance
+               ic0 = samp%c1_to_c0(ic1)
+               call sphere_dist(geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),d)
+   
+               ! Find the class (dichotomy method)
+               if ((d>0.0).and.(d<(real(nam%nc3,kind_real)-0.5)*nam%dc)) then
+                  jc3 = 1
+                  icinf = 1
+                  icsup = nam%nc3
+                  found = .false.
+                  do while (.not.found)
+                     ! New value
+                     ictest = (icsup+icinf)/2
+   
+                     ! Update
+                     if (d<(real(ictest,kind_real)-0.5)*nam%dc) icsup = ictest
+                     if (d>(real(ictest,kind_real)-0.5)*nam%dc) icinf = ictest
+   
+                     ! Exit test
+                     if (icsup==icinf+1) then
+                        if (abs((real(icinf,kind_real)-0.5)*nam%dc-d)<abs((real(icsup,kind_real)-0.5)*nam%dc-d)) then
+                           jc3 = icinf
+                        else
+                           jc3 = icsup
+                        end if
+                        found = .true.
+                     end if
+                  end do
+   
+                  ! Find if this class has not been aready filled
+                  if ((jc3/=1).and.(mpl%msv%is(samp%c1c3_to_c0(ic1,jc3)))) then
+                     samp%c1c3_to_c0(ic1,jc3) = jc0
+                     mpl%done((ic1-1)*nam%nc3+jc3) = .true.
+                  end if
+               end if
+            end if
+   
+            ! Release memory
+            deallocate(x)
+            deallocate(y)
+            deallocate(z)
+            deallocate(v1)
+            deallocate(v2)
+            deallocate(va)
+            deallocate(vp)
+            deallocate(t)
+         end do
+         !$omp end parallel do
+   
+         ! Update
+         vic0(i) = vic0(nvc0)
+         nvc0 = nvc0-1
+         call mpl%prog_print
+      end do
+      call mpl%prog_final
+   
+      ! Release memory
+      deallocate(vic0)
+   end if
 end if
+
+! Broadcast
+call mpl%f_comm%broadcast(samp%c1c3_to_c0,mpl%rootproc-1)
 
 end subroutine samp_compute_sampling_ps
 
@@ -1160,7 +1141,7 @@ integer :: nc1_loc(0:mpl%nproc),ic1_loc
 real(kind_real) :: nn_dist(nam%nc3)
 
 ! MPI splitting
-call mpl%split(nam%nc1,nc1_loc)
+call mpl%split_loop(nam%nc1,nc1_loc)
 
 ! Initialization
 write(mpl%info,'(a7,a)') '','Compute LCT sampling: '
@@ -1172,7 +1153,7 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
    ic1 = sum(nc1_loc(0:mpl%myproc-1))+ic1_loc
 
    ! Check location validity
-   if (mpl%msv%isnoti(samp%c1_to_c0(ic1))) then
+   if (mpl%msv%isnot(samp%c1_to_c0(ic1))) then
       ! Find neighbors
       call geom%tree%find_nearest_neighbors(geom%lon(samp%c1_to_c0(ic1)),geom%lat(samp%c1_to_c0(ic1)), &
     & nam%nc3,nn_index,nn_dist)
@@ -1192,13 +1173,16 @@ call mpl%prog_final
 ! MPI sharing
 call mpl%share(nam%nc1,nam%nc3,nc1_loc,samp%c1c3_to_c0)
 
-! Define whether this point should be checked for boundaries
-do il0=1,geom%nl0
-   do ic1=1,nam%nc1
-      ic0 = samp%c1_to_c0(ic1)
-      if (samp%c1l0_check(ic1,il0)) samp%c1l0_check(ic1,il0) = any(.not.samp%mask_c0(samp%c1c3_to_c0(ic1,:),il0))
+if (mpl%main) then
+   ! Define whether this point should be checked for boundaries
+   do il0=1,geom%nl0
+      do ic1=1,nam%nc1
+         ic0 = samp%c1_to_c0(ic1)
+         if (samp%c1l0_check(ic1,il0)) samp%c1l0_check(ic1,il0) = any(.not.samp%mask_c0(samp%c1c3_to_c0(ic1,:),il0))
+      end do
    end do
-end do
+end if
+call mpl%f_comm%broadcast(samp%c1l0_check,mpl%rootproc-1)
 
 end subroutine samp_compute_sampling_lct
 
@@ -1221,13 +1205,35 @@ integer :: il0,jc3,ic1,ic0,jc0
 integer :: nc1_loc(0:mpl%nproc),ic1_loc
 logical :: valid
 
-! First point
-do il0=1,geom%nl0
-   samp%c1l0_log(:,il0) = samp%mask_c0(samp%c1_to_c0,il0)
-end do
+if (mpl%main) then
+   do il0=1,geom%nl0
+      ! First point
+      samp%c1l0_log(:,il0) = samp%mask_c0(samp%c1_to_c0,il0)
+   
+      ! Second point
+      do jc3=1,nam%nc3
+         do ic1=1,nam%nc1
+            ! Indices
+            ic0 = samp%c1_to_c0(ic1)
+            jc0 = samp%c1c3_to_c0(ic1,jc3)
+
+            ! Check point index
+            valid = mpl%msv%isnot(ic0).and.mpl%msv%isnot(jc0)
+ 
+            ! Check sampling mask
+            if (valid) valid = samp%mask_c0(ic0,il0).and.samp%mask_c0(jc0,il0)
+
+            ! Copy validity
+            samp%c1c3l0_log(ic1,jc3,il0) = valid
+         end do
+      end do
+   end do
+end if
+call mpl%f_comm%broadcast(samp%c1l0_log,mpl%rootproc-1)
+call mpl%f_comm%broadcast(samp%c1c3l0_log,mpl%rootproc-1)
 
 ! MPL split
-call mpl%split(nam%nc1,nc1_loc)
+call mpl%split_loop(nam%nc1,nc1_loc)
 
 ! Second point
 write(mpl%info,'(a7,a)') '','Check sampling mask: '
@@ -1242,24 +1248,15 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
    !$omp parallel do schedule(static) private(il0,jc3,ic0,jc0,valid)
    do il0=1,geom%nl0
       do jc3=1,nam%nc3
-         ! Indices
-         ic0 = samp%c1_to_c0(ic1)
-         jc0 = samp%c1c3_to_c0(ic1,jc3)
-
-         ! Check point index
-         valid = mpl%msv%isnoti(ic0).and.mpl%msv%isnoti(jc0)
-
-         if (valid) then
-            ! Check mask
-            valid = samp%mask_c0(ic0,il0).and.samp%mask_c0(jc0,il0)
+         if (samp%c1c3l0_log(ic1,jc3,il0)) then
+            ! Indices
+            ic0 = samp%c1_to_c0(ic1)
+            jc0 = samp%c1c3_to_c0(ic1,jc3)
 
             ! Check mask boundaries
-            if (valid.and.samp%c1l0_check(ic1,il0)) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0), &
-          & geom%lon(jc0),geom%lat(jc0),valid)
+            if (samp%c1l0_check(ic1,il0)) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0), &
+          & samp%c1c3l0_log(ic1,jc3,il0))
          end if
-
-         ! Copy result
-         samp%c1c3l0_log(ic1,jc3,il0) = valid
       end do
    end do
    !$omp end parallel do
@@ -1295,9 +1292,7 @@ integer :: ic0a,ic0,ic1a,ic1
 allocate(samp%lcheck_c0a(geom%nc0))
 allocate(samp%lcheck_c1a(nam%nc1))
 
-! Halo definitions
-
-! Halo A
+! Define halo A
 samp%lcheck_c0a = .false.
 samp%lcheck_c1a = .false.
 do ic0a=1,geom%nc0a
@@ -1308,15 +1303,13 @@ do ic1=1,nam%nc1
    ic0 = samp%c1_to_c0(ic1)
    if (geom%c0_to_proc(ic0)==mpl%myproc) samp%lcheck_c1a(ic1) = .true.
 end do
-
-! Halo sizes
 samp%nc1a = count(samp%lcheck_c1a)
 
-! Global <-> local conversions for fields
-
-! Halo A
+! Allocation
 allocate(samp%c1a_to_c1(samp%nc1a))
 allocate(samp%c1_to_c1a(nam%nc1))
+
+! Global-local conversion for halo A
 ic1a = 0
 do ic1=1,nam%nc1
    if (samp%lcheck_c1a(ic1)) then
@@ -1325,6 +1318,7 @@ do ic1=1,nam%nc1
       samp%c1_to_c1a(ic1) = ic1a
    end if
 end do
+call mpl%glb_to_loc_index(samp%nc1a,samp%c1a_to_c1,nam%nc1,samp%c1_to_c1a)
 
 ! Print results
 write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
@@ -1346,72 +1340,66 @@ end subroutine samp_compute_mpi_a
 ! Subroutine: samp_compute_mpi_ab
 ! Purpose: compute sampling MPI distribution, halos A-B
 !----------------------------------------------------------------------
-subroutine samp_compute_mpi_ab(samp,mpl,nam,geom)
+subroutine samp_compute_mpi_ab(samp,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(inout) :: samp ! Sampling
 type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: iproc,ic0,ic2a,ic2b,ic2,jc2,i_s,i_s_loc,h_n_s_max,il0i,il0,h_n_s_max_loc,jc1,kc1a,kc1,kc0
-integer,allocatable :: interph_lg(:,:),nn_c1_index(:)
+integer :: ic0,ic2a,ic2b,ic2,jc2,i_s,il0i,il0,jc1,kc1a,kc1,kc0
+integer,allocatable :: nn_c1_index(:),c2_to_c2b(:),c2a_to_c2b(:)
 real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),nn_c1_dist(:)
+logical :: lcheck_c2b(nam%nc2)
 logical,allocatable :: mask_c1(:)
 type(tree_type) :: tree
 
 ! Allocation
-h_n_s_max = 0
-do il0i=1,geom%nl0i
-   h_n_s_max = max(h_n_s_max,samp%hfull(il0i)%n_s)
-end do
 allocate(samp%c2_to_proc(nam%nc2))
-allocate(samp%proc_to_nc2a(mpl%nproc))
-allocate(samp%h(geom%nl0i))
 allocate(samp%lcheck_c2a(nam%nc2))
-allocate(samp%lcheck_c2b(nam%nc2))
-allocate(samp%lcheck_h(h_n_s_max,geom%nl0i))
+allocate(samp%h(geom%nl0i))
 
-! Halo definitions
+! Compute interpolation
+lon_c2 = geom%lon(samp%c2_to_c0)
+lat_c2 = geom%lat(samp%c2_to_c0)
+do il0i=1,geom%nl0i
+   write(samp%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
+   call samp%h(il0i)%interp(mpl,rng,nam,geom,il0i,nam%nc2,lon_c2,lat_c2,samp%mask_c2(:,il0i),geom%nc0a, &
+ & geom%lon_c0a,geom%lat_c0a,geom%mask_c0a(:,il0i))
+end do
 
-! Halo A
+! Define halo A
 samp%lcheck_c2a = .false.
 do ic2=1,nam%nc2
    ic0 = samp%c2_to_c0(ic2)
    if (geom%c0_to_proc(ic0)==mpl%myproc) samp%lcheck_c2a(ic2) = .true.
 end do
+samp%nc2a = count(samp%lcheck_c2a)
 
-! Halo B
-samp%lcheck_h = .false.
-samp%lcheck_c2b = .false.
+! Define halo B
+lcheck_c2b = samp%lcheck_c2a
 do il0i=1,geom%nl0i
-   do i_s=1,samp%hfull(il0i)%n_s
-      ic0 = samp%hfull(il0i)%row(i_s)
-      iproc = geom%c0_to_proc(ic0)
-      if (iproc==mpl%myproc) then
-         jc2 = samp%hfull(il0i)%col(i_s)
-         samp%lcheck_h(i_s,il0i) = .true.
-         samp%lcheck_c2b(jc2) = .true.
-      end if
+   do i_s=1,samp%h(il0i)%n_s
+      jc2 = samp%h(il0i)%col(i_s)
+      lcheck_c2b(jc2) = .true.
    end do
 end do
+samp%nc2b = count(lcheck_c2b)
 
-! Halo sizes
-samp%nc2a = count(samp%lcheck_c2a)
-do il0i=1,geom%nl0i
-   samp%h(il0i)%n_s = count(samp%lcheck_h(:,il0i))
-end do
-samp%nc2b = count(samp%lcheck_c2b)
-
-! Global <-> local conversions for fields
-
-! Halo A
+! Allocation
 allocate(samp%c2a_to_c2(samp%nc2a))
 allocate(samp%c2_to_c2a(nam%nc2))
+allocate(samp%c2b_to_c2(samp%nc2b))
+allocate(c2_to_c2b(nam%nc2))
+allocate(c2a_to_c2b(samp%nc2a))
+
+! Global-local conversion for halo A
 ic2a = 0
 do ic2=1,nam%nc2
    if (samp%lcheck_c2a(ic2)) then
@@ -1421,74 +1409,41 @@ do ic2=1,nam%nc2
 end do
 call mpl%glb_to_loc_index(samp%nc2a,samp%c2a_to_c2,nam%nc2,samp%c2_to_c2a)
 
-! Halo B
-allocate(samp%c2b_to_c2(samp%nc2b))
-allocate(samp%c2_to_c2b(nam%nc2))
+! Global-local conversion for halo B
 ic2b = 0
+c2_to_c2b = mpl%msv%vali
 do ic2=1,nam%nc2
-   if (samp%lcheck_c2b(ic2)) then
+   if (lcheck_c2b(ic2)) then
       ic2b = ic2b+1
       samp%c2b_to_c2(ic2b) = ic2
-      samp%c2_to_c2b(ic2) = ic2b
+      c2_to_c2b(ic2) = ic2b
    end if
 end do
 
-! Inter-halo conversions
-allocate(samp%c2a_to_c2b(samp%nc2a))
+! Halos A-B conversion
 do ic2a=1,samp%nc2a
    ic2 = samp%c2a_to_c2(ic2a)
-   ic2b = samp%c2_to_c2b(ic2)
-   samp%c2a_to_c2b(ic2a) = ic2b
+   ic2b = c2_to_c2b(ic2)
+   c2a_to_c2b(ic2a) = ic2b
 end do
 
-! Global <-> local conversions for data
-h_n_s_max_loc = 0
+! Local interpolation source
 do il0i=1,geom%nl0i
-   h_n_s_max_loc = max(h_n_s_max_loc,samp%h(il0i)%n_s)
-end do
-allocate(interph_lg(h_n_s_max_loc,geom%nl0i))
-do il0i=1,geom%nl0i
-   i_s_loc = 0
-   do i_s=1,samp%hfull(il0i)%n_s
-      if (samp%lcheck_h(i_s,il0i)) then
-         i_s_loc = i_s_loc+1
-         interph_lg(i_s_loc,il0i) = i_s
-      end if
-   end do
-end do
-
-! Local data
-
-! Horizontal interpolation
-do il0i=1,geom%nl0i
-   write(samp%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
    samp%h(il0i)%n_src = samp%nc2b
-   samp%h(il0i)%n_dst = geom%nc0a
-   call samp%h(il0i)%alloc
-   do i_s_loc=1,samp%h(il0i)%n_s
-      i_s = interph_lg(i_s_loc,il0i)
-      samp%h(il0i)%row(i_s_loc) = geom%c0_to_c0a(samp%hfull(il0i)%row(i_s))
-      samp%h(il0i)%col(i_s_loc) = samp%c2_to_c2b(samp%hfull(il0i)%col(i_s))
-      samp%h(il0i)%S(i_s_loc) = samp%hfull(il0i)%S(i_s)
+   do i_s=1,samp%h(il0i)%n_s
+      samp%h(il0i)%col(i_s) = c2_to_c2b(samp%h(il0i)%col(i_s))
    end do
    call samp%h(il0i)%reorder(mpl)
 end do
 
-! Release memory
-deallocate(interph_lg)
-
-! MPI splitting
+! MPI splitting on subset Sc2
 do ic2=1,nam%nc2
    ic0 = samp%c2_to_c0(ic2)
    samp%c2_to_proc(ic2) = geom%c0_to_proc(ic0)
 end do
-do iproc=1,mpl%nproc
-   samp%proc_to_nc2a(iproc) = count(samp%c2_to_proc==iproc)
-end do
 
 ! Setup communications
-call samp%com_AB%setup(mpl,'com_AB',nam%nc2,samp%nc2a,samp%nc2b,samp%c2b_to_c2,samp%c2a_to_c2b,samp%c2_to_proc, &
- & samp%c2_to_c2a)
+call samp%com_AB%setup(mpl,'com_AB',nam%nc2,samp%nc2a,samp%nc2b,samp%nc2a,samp%c2b_to_c2,c2a_to_c2b,samp%c2_to_proc,samp%c2_to_c2a)
 
 ! Mask on subset Sc2, halo A
 allocate(samp%mask_c2a(samp%nc2a,geom%nl0))
@@ -1499,7 +1454,6 @@ do il0=1,geom%nl0
    end do
 end do
 
-
 ! Find nearest neighbors
 
 ! Allocation
@@ -1508,8 +1462,6 @@ allocate(samp%nn_c2a_dist(nam%nc2,samp%nc2a))
 call tree%alloc(mpl,nam%nc2)
 
 ! Initialization
-lon_c2 = geom%lon(samp%c2_to_c0)
-lat_c2 = geom%lat(samp%c2_to_c0)
 call tree%init(lon_c2,lat_c2)
 
 ! Find nearest neighbors
@@ -1522,15 +1474,13 @@ end do
 ! Release memory
 call tree%dealloc
 
-! Compute local masks
-if (nam%new_vbal.or.nam%local_diag) then
+! Compute vertical balance operator mask
+if (nam%new_vbal) then
    ! Allocation
-   if (nam%new_vbal) allocate(samp%vbal_mask(samp%nc1a,nam%nc2))
-   if (nam%local_diag) allocate(samp%local_mask(samp%nc1a,nam%nc2))
+   allocate(samp%vbal_mask(samp%nc1a,nam%nc2))
 
    ! Initialization
-   if (nam%new_vbal) samp%vbal_mask = .false.
-   if (nam%local_diag) samp%local_mask = .false.
+   samp%vbal_mask = .false.
 
    ! Allocation
    allocate(nn_c1_index(nam%nc1))
@@ -1559,8 +1509,7 @@ if (nam%new_vbal.or.nam%local_diag) then
          kc0 = samp%c1_to_c0(kc1)
          if (geom%c0_to_proc(kc0)==mpl%myproc) then
             kc1a = samp%c1_to_c1a(kc1)
-            if (nam%new_vbal) samp%vbal_mask(kc1a,ic2) = (jc1==1).or.(nn_c1_dist(jc1)<nam%vbal_rad)
-            if (nam%local_diag) samp%local_mask(kc1a,ic2) = (jc1==1).or.(nn_c1_dist(jc1)<nam%local_rad)
+            samp%vbal_mask(kc1a,ic2) = (jc1==1).or.(nn_c1_dist(jc1)<nam%vbal_rad)
          end if
       end do
    end do
@@ -1573,6 +1522,10 @@ if (nam%new_vbal.or.nam%local_diag) then
    deallocate(mask_c1)
    call tree%dealloc
 end if
+
+! Release memory
+deallocate(c2_to_c2b)
+deallocate(c2a_to_c2b)
 
 ! Print results
 write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
@@ -1593,173 +1546,123 @@ end subroutine samp_compute_mpi_ab
 ! Subroutine: samp_compute_mpi_c
 ! Purpose: compute sampling MPI distribution, halo C
 !----------------------------------------------------------------------
-subroutine samp_compute_mpi_c(samp,mpl,nam,geom)
+subroutine samp_compute_mpi_c(samp,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp        ! Sampling
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(nam_type),intent(in) :: nam              ! Namelist
-type(geom_type),intent(in) :: geom            ! Geometry
+class(samp_type),intent(inout) :: samp ! Sampling
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(rng_type),intent(inout) :: rng    ! Random number generator
+type(nam_type),intent(in) :: nam       ! Namelist
+type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: jc3,ic0,ic0a,ic0c,ic1,ic1a,its,il0,d_n_s_max,d_n_s_max_loc,i_s,i_s_loc
-integer,allocatable :: interpd_lg(:,:,:)
-real(kind_real),allocatable :: adv_lon(:,:),adv_lat(:,:),lon_c1(:),lat_c1(:)
-type(linop_type),allocatable :: dfull(:,:)
+integer :: jc3,ic0,ic0a,ic0c,ic1,ic1a,its,il0,i_s
+integer,allocatable :: c0c_to_c0(:),c0a_to_c0c(:)
+real(kind_real),allocatable :: lon_c1a(:),lat_c1a(:)
+logical :: lcheck_c0c(geom%nc0)
+logical,allocatable :: mask_c1a(:)
 
 if (nam%adv_diag) then
    write(mpl%info,'(a7,a)') '','Compute advection interpolation'
    call mpl%flush
 
    ! Allocation
-   allocate(dfull(geom%nl0,nam%nts))
-   allocate(adv_lon(geom%nc0,geom%nl0))
-   allocate(adv_lat(geom%nc0,geom%nl0))
-   allocate(lon_c1(nam%nc1))
-   allocate(lat_c1(nam%nc1))
-
-   ! Prepare advection interpolation
-   do its=1,nam%nts
-      ! Local to global
-      call mpl%loc_to_glb(geom%nl0,geom%nc0a,samp%adv_lon(:,:,its),geom%nc0,geom%c0_to_proc,geom%c0_to_c0a,.true.,adv_lon)
-      call mpl%loc_to_glb(geom%nl0,geom%nc0a,samp%adv_lat(:,:,its),geom%nc0,geom%c0_to_proc,geom%c0_to_c0a,.true.,adv_lat)
-
-      do il0=1,geom%nl0
-         ! Copy Sc1 points
-         do ic1=1,nam%nc1
-            ic0 = samp%c1_to_c0(ic1)
-            lon_c1(ic1) = adv_lon(ic0,il0)
-            lat_c1(ic1) = adv_lat(ic0,il0)
-         end do
-
-         ! Compute interpolation
-         call dfull(il0,its)%interp(mpl,geom%mesh,geom%tree,geom%nc0,geom%mask_c0(:,il0),nam%nc1,lon_c1,lat_c1, &
-       & samp%c1l0_log(:,il0),nam%diag_interp)
-      end do
-   end do
-
-   ! Allocation
-   d_n_s_max = 0
-   do its=1,nam%nts
-      do il0=1,geom%nl0
-         d_n_s_max = max(d_n_s_max,dfull(il0,its)%n_s)
-      end do
-   end do
-   allocate(samp%lcheck_d(d_n_s_max,geom%nl0,nam%nts))
+   samp%nc1a = count(geom%c0_to_proc(samp%c1_to_c0)==mpl%myproc)
+   allocate(lon_c1a(samp%nc1a))
+   allocate(lat_c1a(samp%nc1a))
+   allocate(mask_c1a(samp%nc1a))
    allocate(samp%d(geom%nl0,nam%nts))
 
-   ! Release memory
-   deallocate(adv_lon)
-   deallocate(adv_lat)
-   deallocate(lon_c1)
-   deallocate(lat_c1)
-end if
-allocate(samp%lcheck_c0c(geom%nc0))
+   ! Compute interpolation
+   do its=1,nam%nts
+      do il0=1,geom%nl0
+         do ic1a=1,samp%nc1a
+            ic1 = samp%c1a_to_c1(ic1a)
+            ic0 = samp%c1_to_c0(ic1)
+            ic0a = geom%c0_to_c0a(ic0)
+            lon_c1a(ic1a) = samp%adv_lon(ic0a,il0,its)
+            lat_c1a(ic1a) = samp%adv_lat(ic0a,il0,its)
+            mask_c1a(ic1a) = samp%c1l0_log(ic1,il0)
+         end do
+         write(samp%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
+         call samp%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),samp%nc1a, &
+       & lon_c1a,lat_c1a,mask_c1a)
+      end do
+   end do
 
-! Halo C
-samp%lcheck_c0c = samp%lcheck_c0a
+   ! Release memory
+   deallocate(lon_c1a)
+   deallocate(lat_c1a)
+   deallocate(mask_c1a)
+end if
+
+! Define halo C
+lcheck_c0c = samp%lcheck_c0a
 do jc3=1,nam%nc3
    do ic1a=1,samp%nc1a
       ic1 = samp%c1a_to_c1(ic1a)
       if (any(samp%c1c3l0_log(ic1,jc3,:))) then
          ic0 = samp%c1c3_to_c0(ic1,jc3)
-         samp%lcheck_c0c(ic0) = .true.
+         lcheck_c0c(ic0) = .true.
       end if
    end do
 end do
 if (nam%adv_diag) then
-   samp%lcheck_d = .false.
    do its=1,nam%nts
       do il0=1,geom%nl0
-         do i_s=1,dfull(il0,its)%n_s
-            ic0 = dfull(il0,its)%col(i_s)
-            ic1 = dfull(il0,its)%row(i_s)
-            if (samp%lcheck_c1a(ic1)) then
-               samp%lcheck_c0c(ic0) = .true.
-               samp%lcheck_d(i_s,il0,its) = .true.
-            end if
+         do i_s=1,samp%d(il0,its)%n_s
+            ic0 = samp%d(il0,its)%col(i_s)
+            ic1a = samp%d(il0,its)%row(i_s)
+            ic1 = samp%c1a_to_c1(ic1a)
+            if (samp%lcheck_c1a(ic1)) lcheck_c0c(ic0) = .true.
          end do
       end do
    end do
 end if
-samp%nc0c = count(samp%lcheck_c0c)
-if (nam%adv_diag) then
-   do its=1,nam%nts
-      do il0=1,geom%nl0
-         samp%d(il0,its)%n_s = count(samp%lcheck_d(:,il0,its))
-      end do
-   end do
-end if
+samp%nc0c = count(lcheck_c0c)
 
-! Global <-> local conversions for fields
-
-! Halo C
-allocate(samp%c0c_to_c0(samp%nc0c))
+! Global-local conversion for halo C
+allocate(c0c_to_c0(samp%nc0c))
 allocate(samp%c0_to_c0c(geom%nc0))
 samp%c0_to_c0c = mpl%msv%vali
 ic0c = 0
 do ic0=1,geom%nc0
-   if (samp%lcheck_c0c(ic0)) then
+   if (lcheck_c0c(ic0)) then
       ic0c = ic0c+1
-      samp%c0c_to_c0(ic0c) = ic0
+      c0c_to_c0(ic0c) = ic0
       samp%c0_to_c0c(ic0) = ic0c
    end if
 end do
 
-! Inter-halo conversions
-allocate(samp%c0a_to_c0c(geom%nc0a))
+! Halos A-C conversion
+allocate(c0a_to_c0c(geom%nc0a))
 do ic0a=1,geom%nc0a
    ic0 = geom%c0a_to_c0(ic0a)
    ic0c = samp%c0_to_c0c(ic0)
-   samp%c0a_to_c0c(ic0a) = ic0c
+   c0a_to_c0c(ic0a) = ic0c
 end do
 
 if (nam%adv_diag) then
-   ! Global <-> local conversions for data
-   d_n_s_max_loc = 0
+   ! Local interpolation source
    do its=1,nam%nts
       do il0=1,geom%nl0
-         d_n_s_max_loc = max(d_n_s_max_loc,samp%d(il0,its)%n_s)
-      end do
-   end do
-   allocate(interpd_lg(d_n_s_max_loc,geom%nl0,nam%nts))
-   do its=1,nam%nts
-      do il0=1,geom%nl0
-         i_s_loc = 0
-         do i_s=1,dfull(il0,its)%n_s
-            if (samp%lcheck_d(i_s,il0,its)) then
-               i_s_loc = i_s_loc+1
-               interpd_lg(i_s_loc,il0,its) = i_s
-            end if
-         end do
-      end do
-   end do
-
-   ! Local data
-   do its=1,nam%nts
-      do il0=1,geom%nl0
-         write(samp%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
          samp%d(il0,its)%n_src = samp%nc0c
-         samp%d(il0,its)%n_dst = samp%nc1a
-         call samp%d(il0,its)%alloc
-         do i_s_loc=1,samp%d(il0,its)%n_s
-            i_s = interpd_lg(i_s_loc,il0,its)
-            samp%d(il0,its)%row(i_s_loc) = samp%c1_to_c1a(dfull(il0,its)%row(i_s))
-            samp%d(il0,its)%col(i_s_loc) = samp%c0_to_c0c(dfull(il0,its)%col(i_s))
-            samp%d(il0,its)%S(i_s_loc) = dfull(il0,its)%S(i_s)
+         do i_s=1,samp%d(il0,its)%n_s
+            samp%d(il0,its)%col(i_s) = samp%c0_to_c0c(samp%d(il0,its)%col(i_s))
          end do
          call samp%d(il0,its)%reorder(mpl)
       end do
    end do
-
-   ! Release memory
-   deallocate(interpd_lg)
 end if
 
 ! Setup communications
-call samp%com_AC%setup(mpl,'com_AC',geom%nc0,geom%nc0a,samp%nc0c,samp%c0c_to_c0,samp%c0a_to_c0c,geom%c0_to_proc,geom%c0_to_c0a)
+call samp%com_AC%setup(mpl,'com_AC',geom%nc0,geom%nc0a,samp%nc0c,geom%nc0a,c0c_to_c0,c0a_to_c0c,geom%c0_to_proc,geom%c0_to_c0a)
+
+! Release memory
+deallocate(c0c_to_c0)
+deallocate(c0a_to_c0c)
 
 ! Print results
 write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
@@ -1768,6 +1671,120 @@ write(mpl%info,'(a10,a,i8)') '','nc0c =      ',samp%nc0c
 call mpl%flush
 
 end subroutine samp_compute_mpi_c
+
+!----------------------------------------------------------------------
+! Subroutine: samp_compute_mpi_d
+! Purpose: compute sampling MPI distribution, halo D
+!----------------------------------------------------------------------
+subroutine samp_compute_mpi_d(samp,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(inout) :: samp ! Sampling
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(nam_type),intent(in) :: nam       ! Namelist
+type(geom_type),intent(in) :: geom     ! Geometry
+
+! Local variables
+integer :: ic2a,ic2,ic0,nn,i,ic1d,ic1,ic1a,jc1
+integer,allocatable :: nn_index(:),c1a_to_c1d(:),c1_to_proc(:)
+real(kind_real) :: lon_c1(nam%nc1),lat_c1(nam%nc1)
+logical :: mask_c1(nam%nc1),lcheck_c1d(nam%nc1)
+type(tree_type) :: tree
+
+! Allocation
+allocate(samp%local_mask(nam%nc1,samp%nc2a))
+
+! Initialization
+mask_c1 = any(samp%c1l0_log,dim=2)
+lon_c1 = geom%lon(samp%c1_to_c0)
+lat_c1 = geom%lat(samp%c1_to_c0)
+samp%local_mask = .false.
+lcheck_c1d = samp%lcheck_c1a
+
+! Allocation
+call tree%alloc(mpl,nam%nc1,mask=mask_c1)
+
+! Initialization
+call tree%init(lon_c1,lat_c1)
+
+! Halo C
+do ic2a=1,samp%nc2a
+   ! Indices
+   ic2 = samp%c2a_to_c2(ic2a)
+   ic1 = samp%c2_to_c1(ic2)
+   ic0 = samp%c2_to_c0(ic2)
+
+   ! Count nearest neighbors
+   call tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nam%local_rad,nn)
+
+   ! Allocation
+   allocate(nn_index(nn))
+
+   ! Find nearest neighbors
+   call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn,nn_index)
+
+   ! Update lcheck
+   samp%local_mask(ic1,ic2a) = .true.
+   do i=1,nn
+      jc1 = nn_index(i)
+      samp%local_mask(jc1,ic2a) = .true.
+      lcheck_c1d(jc1) = .true.
+   end do
+
+   ! Release memory
+   deallocate(nn_index)
+end do
+samp%nc1d = count(lcheck_c1d)
+
+! Release memory
+call tree%dealloc
+
+! Global <-> local conversions for fields
+
+! Halo D
+allocate(samp%c1d_to_c1(samp%nc1d))
+allocate(samp%c1_to_c1d(nam%nc1))
+samp%c1_to_c1d = mpl%msv%vali
+ic1d = 0
+do ic1=1,nam%nc1
+   if (lcheck_c1d(ic1)) then
+      ic1d = ic1d+1
+      samp%c1d_to_c1(ic1d) = ic1
+      samp%c1_to_c1d(ic1) = ic1d
+   end if
+end do
+
+! Inter-halo conversions
+allocate(c1a_to_c1d(samp%nc1a))
+do ic1a=1,samp%nc1a
+   ic1 = samp%c1a_to_c1(ic1a)
+   ic1d = samp%c1_to_c1d(ic1)
+   c1a_to_c1d(ic1a) = ic1d
+end do
+
+! MPI splitting
+allocate(c1_to_proc(nam%nc1))
+do ic1=1,nam%nc1
+   ic0 = samp%c1_to_c0(ic1)
+   c1_to_proc(ic1) = geom%c0_to_proc(ic0)
+end do
+
+! Setup communications
+call samp%com_AD%setup(mpl,'com_AD',nam%nc1,samp%nc1a,samp%nc1d,samp%nc1a,samp%c1d_to_c1,c1a_to_c1d,c1_to_proc,samp%c1_to_c1a)
+
+! Release memory
+deallocate(c1a_to_c1d)
+deallocate(c1_to_proc)
+
+! Print results
+write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
+call mpl%flush
+write(mpl%info,'(a10,a,i8)') '','nc1d =      ',samp%nc1d
+call mpl%flush
+
+end subroutine samp_compute_mpi_d
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_f
@@ -1784,51 +1801,49 @@ type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Local variables
 integer :: ic2a,ic2f,ic2,jc2,kc2
+integer,allocatable :: c2f_to_c2(:),c2a_to_c2f(:)
+logical :: lcheck_c2f(nam%nc2)
 
-! Allocation
-allocate(samp%lcheck_c2f(nam%nc2))
-
-! Halo definitions
-
-! Halo F
-samp%lcheck_c2f = samp%lcheck_c2a
+! Define halo F
+lcheck_c2f = samp%lcheck_c2a
 do ic2a=1,samp%nc2a
    jc2 = 1
    do while (samp%nn_c2a_dist(jc2,ic2a)<nam%diag_rhflt)
       kc2 = samp%nn_c2a_index(jc2,ic2a)
-      samp%lcheck_c2f(kc2) = .true.
+      lcheck_c2f(kc2) = .true.
       jc2 = jc2+1
       if (jc2>nam%nc2) exit
    end do
 end do
-samp%nc2f = count(samp%lcheck_c2f)
+samp%nc2f = count(lcheck_c2f)
 
-! Global <-> local conversions for fields
-
-! Halo F
-allocate(samp%c2f_to_c2(samp%nc2f))
+! Global-local conversion for halo F
+allocate(c2f_to_c2(samp%nc2f))
 allocate(samp%c2_to_c2f(nam%nc2))
 samp%c2_to_c2f = mpl%msv%vali
 ic2f = 0
 do ic2=1,nam%nc2
-   if (samp%lcheck_c2f(ic2)) then
+   if (lcheck_c2f(ic2)) then
       ic2f = ic2f+1
-      samp%c2f_to_c2(ic2f) = ic2
+      c2f_to_c2(ic2f) = ic2
       samp%c2_to_c2f(ic2) = ic2f
    end if
 end do
 
-! Inter-halo conversions
-allocate(samp%c2a_to_c2f(samp%nc2a))
+! Halos A-F conversion
+allocate(c2a_to_c2f(samp%nc2a))
 do ic2a=1,samp%nc2a
    ic2 = samp%c2a_to_c2(ic2a)
    ic2f = samp%c2_to_c2f(ic2)
-   samp%c2a_to_c2f(ic2a) = ic2f
+   c2a_to_c2f(ic2a) = ic2f
 end do
 
 ! Setup communications
-call samp%com_AF%setup(mpl,'com_AF',nam%nc2,samp%nc2a,samp%nc2f,samp%c2f_to_c2,samp%c2a_to_c2f,samp%c2_to_proc, &
- & samp%c2_to_c2a)
+call samp%com_AF%setup(mpl,'com_AF',nam%nc2,samp%nc2a,samp%nc2f,samp%nc2a,c2f_to_c2,c2a_to_c2f,samp%c2_to_proc,samp%c2_to_c2a)
+
+! Release memory
+deallocate(c2f_to_c2)
+deallocate(c2a_to_c2f)
 
 ! Print results
 write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
@@ -1905,7 +1920,7 @@ if (rflt>0.0) then
          else
             kc2_glb = kc2
          end if
-         if (mpl%msv%isnotr(diag_glb(kc2_glb))) then
+         if (mpl%msv%isnot(diag_glb(kc2_glb))) then
             nc2eff = nc2eff+1
             diag_eff(nc2eff) = diag_glb(kc2_glb)
             diag_eff_dist(nc2eff) = samp%nn_c2a_dist(jc2,ic2a)
@@ -1927,7 +1942,7 @@ if (rflt>0.0) then
             norm = 0.0
             do jc2=1,nc2eff
                distnorm = diag_eff_dist(jc2)/rflt
-               wgt = gc99(mpl,distnorm)
+               wgt = fit_func(mpl,'gc99',distnorm)
                diag(ic2a) = diag(ic2a)+wgt*diag_eff(jc2)
                norm = norm+wgt
             end do
@@ -1991,12 +2006,11 @@ real(kind_real),allocatable :: diag_glb(:)
 
 ! Count missing points
 if (samp%nc2a>0) then
-   nmsr = count(mpl%msv%isr(diag))
+   nmsr = count(mpl%msv%is(diag))
 else
    nmsr = 0
 end if
 call mpl%f_comm%allreduce(nmsr,nmsr_tot,fckit_mpi_sum())
-
 
 if (nmsr_tot>0) then
    ! Allocation
@@ -2008,9 +2022,9 @@ if (nmsr_tot>0) then
    do ic2a=1,samp%nc2a
       ic2 = samp%c2a_to_c2(ic2a)
       jc2 = 1
-      do while (mpl%msv%isr(diag(ic2a)))
+      do while (mpl%msv%is(diag(ic2a)))
          kc2 = samp%nn_c2a_index(jc2,ic2a)
-         if (mpl%msv%isnotr(diag_glb(kc2))) diag(ic2a) = diag_glb(kc2)
+         if (mpl%msv%isnot(diag_glb(kc2))) diag(ic2a) = diag_glb(kc2)
          jc2 = jc2+1
          if (jc2>nam%nc2) exit
       end do

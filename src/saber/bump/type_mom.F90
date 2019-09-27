@@ -71,14 +71,8 @@ mom%prefix = trim(prefix)
 ! Allocation
 allocate(mom%blk(bpar%nb))
 do ib=1,bpar%nb
-   if (bpar%diag_block(ib)) then
-      mom%blk(ib)%ne = ne
-      mom%blk(ib)%nsub = nsub
-      allocate(mom%blk(ib)%m2_1(samp%nc1a,geom%nl0,mom%blk(ib)%nsub))
-      allocate(mom%blk(ib)%m2_2(samp%nc1a,bpar%nc3(ib),geom%nl0,mom%blk(ib)%nsub))
-      allocate(mom%blk(ib)%m11(samp%nc1a,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,mom%blk(ib)%nsub))
-      if (.not.nam%gau_approx) allocate(mom%blk(ib)%m22(samp%nc1a,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,mom%blk(ib)%nsub))
-   end if
+   mom%blk(ib)%ib = ib
+   if (bpar%diag_block(ib)) call mom%blk(ib)%alloc(samp%nc1a,nam,geom,bpar,ne,nsub)
 end do
 
 end subroutine mom_alloc
@@ -128,10 +122,7 @@ integer :: ib
 ! Release memory
 if (allocated(mom%blk)) then
    do ib=1,size(mom%blk)
-      if (allocated(mom%blk(ib)%m2_1)) deallocate(mom%blk(ib)%m2_1)
-      if (allocated(mom%blk(ib)%m2_2)) deallocate(mom%blk(ib)%m2_2)
-      if (allocated(mom%blk(ib)%m11)) deallocate(mom%blk(ib)%m11)
-      if (allocated(mom%blk(ib)%m22)) deallocate(mom%blk(ib)%m22)
+      call mom%blk(ib)%dealloc
    end do
    deallocate(mom%blk)
 end if
@@ -331,7 +322,7 @@ do isub=1,ens%nsub
          jts = bpar%b_to_ts2(ib)
 
          ! Halo extension
-         if ((iv==jv).and.(its==jts)) call samp%com_AC%ext(mpl,geom%nl0,ens%fld(:,:,iv,its,ie),fld_ext(:,:,iv,its))
+         if ((iv==jv).and.(its==jts)) call samp%com_AC%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv,its),fld_ext(:,:,iv,its))
       end do
 
       do ib=1,bpar%nb

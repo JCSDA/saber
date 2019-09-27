@@ -261,7 +261,7 @@ do ib=1,bpar%nbe
    iv = bpar%b_to_v1(ib)
    jv = bpar%b_to_v2(ib)
    if (bpar%vbal_block(iv,jv).or.bpar%diag_block(ib).or.bpar%avg_block(ib).or.bpar%fit_block(ib).or.bpar%B_block(ib) &
-     & .or.bpar%nicas_block(ib).or.mpl%msv%isnoti(bpar%cv_block(ib))) then
+     & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib))) then
       write(mpl%info,'(a7,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
       write(mpl%info,'(a10,a,i3)') '','Effective number of levels:    ',bpar%nl0r(ib)
@@ -282,7 +282,7 @@ do ib=1,bpar%nbe
       call mpl%flush
       write(mpl%info,'(a10,a,l1)') '','NICAS block:                     ',bpar%nicas_block(ib)
       call mpl%flush
-      if (mpl%msv%isnoti(bpar%cv_block(ib))) then
+      if (mpl%msv%isnot(bpar%cv_block(ib))) then
          write(mpl%info,'(a10,a,i3)') '','Control variable block index:  ',bpar%cv_block(ib)
          call mpl%flush
       end if

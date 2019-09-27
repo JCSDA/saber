@@ -1,0 +1,52 @@
+# general_param
+datadir: "testdata/bump_nicas_mpicom_lsqrt_b"
+prefix: "test__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+method: "cor"
+strategy: "common_univariate"
+write_cmat: 0
+new_nicas: 1
+check_adjoints: 1
+check_dirac: 1
+
+# model_param
+nl: 2
+levs: [1,2]
+nv: 2
+varname: ["u","q"]
+nts: 2
+timeslot: [0,6]
+
+# ens1_param
+ens1_ne: 50
+
+# ens2_param
+
+# sampling_param
+ntry: 30
+
+# diag_param
+
+# fit_param
+
+# nicas_param
+lsqrt: 0
+resol: 8.0
+subsamp: "h"
+mpicom: 2
+forced_radii: 1
+rh: 4000.0e3
+rv: 6000.0
+ndir: 1
+londir: [-85.0]
+latdir: [65.0]
+levdir: [1]
+ivdir: [1]
+itsdir: [1]
+
+# obsop_param
+
+# output_param
+

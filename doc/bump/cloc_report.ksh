@@ -8,7 +8,7 @@
 
 if type "cloc" > /dev/null ; then
    # Directories
-   src=$1/../../src/bump
+   src=$1/../../src/saber/bump
    doc=$1
    mkdir -p ${doc}
 

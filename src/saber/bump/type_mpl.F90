@@ -7,10 +7,9 @@
 !----------------------------------------------------------------------
 module type_mpl
 
-use iso_c_binding
 use iso_fortran_env, only : output_unit
-use fckit_log_module, only: fckit_log
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
+use fckit_log_module, only: fckit_log
 use netcdf
 !$ use omp_lib
 use tools_kinds, only: kind_real
@@ -23,16 +22,17 @@ integer,parameter :: lunit_max=1000 ! Maximum unit number
 integer,parameter :: ddis = 5       ! Progression display step
 
 type mpl_type
-   ! MPI parameters
+   ! MPI communicator
+   integer :: mpi_comm              ! MPI communicator
+   type(fckit_mpi_comm) :: f_comm   ! MPI data
    integer :: nproc                 ! Number of MPI tasks
    integer :: myproc                ! MPI task index
-   integer :: ioproc                ! Main task index
+   integer :: rootproc              ! Main task index
    logical :: main                  ! Main task logical
    integer :: tag                   ! MPI tag
-   integer :: nthread               ! Number of OpenMP threads
 
-   ! fckit communicator
-   type(fckit_mpi_comm) :: f_comm   ! fckit communicator
+   ! Number of OpenMP threads
+   integer :: nthread               ! Number of OpenMP threads
 
    ! Missing values
    type(msv_type) :: msv            ! Missing values
@@ -65,19 +65,14 @@ contains
    procedure :: flush => mpl_flush
    procedure :: abort => mpl_abort
    procedure :: warning => mpl_warning
-   procedure :: prog_init => mpl_prog_init
-   procedure :: prog_print => mpl_prog_print
-   procedure :: prog_final => mpl_prog_final
-   procedure :: ncdimcheck => mpl_ncdimcheck
-   procedure :: ncerr => mpl_ncerr
    procedure :: update_tag => mpl_update_tag
-   procedure :: bcast => mpl_bcast_string_1d
+   procedure :: broadcast => mpl_broadcast_string_1d
    procedure :: mpl_dot_prod_1d
    procedure :: mpl_dot_prod_2d
    procedure :: mpl_dot_prod_3d
    procedure :: mpl_dot_prod_4d
    generic :: dot_prod => mpl_dot_prod_1d,mpl_dot_prod_2d,mpl_dot_prod_3d,mpl_dot_prod_4d
-   procedure :: split => mpl_split
+   procedure :: split_loop => mpl_split_loop
    procedure :: mpl_share_integer_1d
    procedure :: mpl_share_integer_2d
    procedure :: mpl_share_real_1d
@@ -86,15 +81,21 @@ contains
    procedure :: mpl_share_logical_3d
    procedure :: mpl_share_logical_4d
    generic :: share => mpl_share_integer_1d,mpl_share_integer_2d,mpl_share_real_1d,mpl_share_real_4d, &
-            & mpl_share_logical_1d,mpl_share_logical_3d,mpl_share_logical_4d
+                     & mpl_share_logical_1d,mpl_share_logical_3d,mpl_share_logical_4d
    procedure :: glb_to_loc_index => mpl_glb_to_loc_index
    procedure :: mpl_glb_to_loc_real_1d
    procedure :: mpl_glb_to_loc_real_2d
    generic :: glb_to_loc => mpl_glb_to_loc_real_1d,mpl_glb_to_loc_real_2d
    procedure :: mpl_loc_to_glb_real_1d
    procedure :: mpl_loc_to_glb_real_2d
+   procedure :: mpl_loc_to_glb_logical_1d
    procedure :: mpl_loc_to_glb_logical_2d
-   generic :: loc_to_glb => mpl_loc_to_glb_real_1d,mpl_loc_to_glb_real_2d,mpl_loc_to_glb_logical_2d
+   generic :: loc_to_glb => mpl_loc_to_glb_real_1d,mpl_loc_to_glb_real_2d,mpl_loc_to_glb_logical_1d,mpl_loc_to_glb_logical_2d
+   procedure :: prog_init => mpl_prog_init
+   procedure :: prog_print => mpl_prog_print
+   procedure :: prog_final => mpl_prog_final
+   procedure :: ncdimcheck => mpl_ncdimcheck
+   procedure :: ncerr => mpl_ncerr
    procedure :: mpl_write_integer
    procedure :: mpl_write_integer_array
    procedure :: mpl_write_real
@@ -147,15 +148,19 @@ end subroutine mpl_newunit
 ! Subroutine: mpl_init
 ! Purpose: initialize MPL object
 !----------------------------------------------------------------------
-subroutine mpl_init(mpl)
+subroutine mpl_init(mpl,mpi_comm)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl ! MPI data
+integer,intent(in) :: mpi_comm       ! MPI communicator
 
-! Get MPI communicator
-mpl%f_comm = fckit_mpi_comm()
+! Copy main MPI communicator
+mpl%mpi_comm = mpi_comm
+
+! Get MPI communicator wrapper
+mpl%f_comm = fckit_mpi_comm(mpi_comm)
 
 ! Get MPI size
 mpl%nproc = mpl%f_comm%size()
@@ -164,15 +169,15 @@ mpl%nproc = mpl%f_comm%size()
 mpl%myproc = mpl%f_comm%rank()+1
 
 ! Define main task
-mpl%ioproc = 1
-mpl%main = (mpl%myproc==mpl%ioproc)
+mpl%rootproc = 1
+mpl%main = (mpl%myproc==mpl%rootproc)
 
 ! Time-based tag
 if (mpl%main) then
    call system_clock(count=mpl%tag)
-   call mpl%update_tag(0)
 end if
-call mpl%f_comm%broadcast(mpl%tag,mpl%ioproc-1)
+call mpl%f_comm%broadcast(mpl%tag,mpl%rootproc-1)
+call mpl%update_tag(0)
 
 ! Set max number of OpenMP threads
 mpl%nthread = 1
@@ -238,14 +243,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
    if (trim(mpl%info)/='no_message') then
       ! Write message
       if (ladvance_flag) then
-         if (mpl%msv%isi(mpl%lunit)) then
+         if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info(trim(mpl%info))
          else
             write(mpl%lunit,'(a)') trim(mpl%info)
             call flush(mpl%lunit)
          end if
       else
-         if (mpl%msv%isi(mpl%lunit)) then
+         if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info(trim(mpl%info),newl=.false.)
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%info)
@@ -261,14 +266,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
    if (trim(mpl%trace)/='no_message') then
       ! Write message
       if (ladvance_flag) then
-         if (mpl%msv%isi(mpl%lunit)) then
+         if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('OOPS_TRACE: '//trim(mpl%trace))
          else
             write(mpl%lunit,'(a)') 'OOPS_TRACE: '//trim(mpl%trace)
             call flush(mpl%lunit)
          end if
       else
-         if (mpl%msv%isi(mpl%lunit)) then
+         if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('OOPS_TRACE: '//trim(mpl%trace),newl=.false.)
          else
             write(mpl%lunit,'(a)',advance='no') 'OOPS_TRACE: '//trim(mpl%trace)
@@ -284,14 +289,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
    if (trim(mpl%stats)/='no_message') then
       ! Write message
       if (ladvance_flag) then
-         if (mpl%msv%isi(mpl%lunit)) then
+         if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('OOPS_STATS: '//trim(mpl%stats))
          else
             write(mpl%lunit,'(a)') 'OOPS_STATS: '//trim(mpl%stats)
             call flush(mpl%lunit)
          end if
       else
-         if (mpl%msv%isi(mpl%lunit)) then
+         if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('OOPS_STATS: '//trim(mpl%stats),newl=.false.)
          else
             write(mpl%lunit,'(a)',advance='no') 'OOPS_STATS: '//trim(mpl%stats)
@@ -307,14 +312,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
    if (trim(mpl%test)/='no_message') then
       ! Write message
       if (ladvance_flag) then
-         if (mpl%msv%isi(mpl%lunit)) then
+         if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('Test     : '//trim(mpl%test))
          else
             write(mpl%lunit,'(a)') 'Test     : '//trim(mpl%test)
             call flush(mpl%lunit)
          end if
       else
-         if (mpl%msv%isi(mpl%lunit)) then
+         if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('Test     : '//trim(mpl%test),newl=.false.)
          else
             write(mpl%lunit,'(a)',advance='no') 'Test     : '//trim(mpl%test)
@@ -342,19 +347,12 @@ class(mpl_type),intent(inout) :: mpl   ! MPI data
 character(len=*),intent(in) :: subr    ! Calling subroutine
 character(len=*),intent(in) :: message ! Message
 
-! Write message
-write(mpl%info,'(a)') trim(mpl%err)//'!!! Error in '//trim(subr)//': '//trim(message)//trim(mpl%black)
-
-! Flush listing
-call mpl%flush
-
 ! Write standard output message
 write(output_unit,'(a,i4.4,a)') '!!! ABORT in '//trim(subr)//' on task #',mpl%myproc,': '//trim(message)
 call flush(output_unit)
 
-! Abort MPI
+! Abort with proper MPI communicator
 call mpl%f_comm%abort(1)
-
 
 end subroutine mpl_abort
 
@@ -377,194 +375,18 @@ call mpl%flush
 
 end subroutine mpl_warning
 
-!----------------------------------------------------------------------
-! Subroutine: mpl_prog_init
-! Purpose: initialize progression display
-!----------------------------------------------------------------------
-subroutine mpl_prog_init(mpl,nprog)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: nprog          ! Array size
-
-! Print message
-write(mpl%info,'(a)') ' 0%'
-call mpl%flush(.false.)
-
-! Allocation
-allocate(mpl%done(nprog))
-
-! Initialization
-mpl%nprog = nprog
-mpl%progint = ddis
-mpl%done = .false.
-
-end subroutine mpl_prog_init
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_prog_print
-! Purpose: print progression display
-!----------------------------------------------------------------------
-subroutine mpl_prog_print(mpl,i)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in),optional :: i     ! Index
-
-! Local variables
-integer :: ithread
-real(kind_real) :: prog
-
-! Update progression array
-if (present(i)) mpl%done(i) = .true.
-
-! Print message
-prog = 100.0*real(count(mpl%done),kind_real)/real(mpl%nprog,kind_real)
-ithread = 0
-!$ ithread = omp_get_thread_num()
-if ((int(prog)>mpl%progint).and.(ithread==0)) then
-   if (mpl%progint<100) then
-      if (mpl%progint<10) then
-         write(mpl%info,'(i2,a)') mpl%progint,'% '
-      else
-         write(mpl%info,'(i3,a)') mpl%progint,'% '
-      end if
-      call mpl%flush(.false.)
-   end if
-   mpl%progint = mpl%progint+ddis
-end if
-
-end subroutine mpl_prog_print
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_prog_final
-! Purpose: finalize progression display
-!----------------------------------------------------------------------
-subroutine mpl_prog_final(mpl,advance_flag)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl        ! MPI data
-logical,intent(in),optional :: advance_flag ! Advance flag
-
-! Local variables
-logical :: ladvance_flag
-
-! Set advance flag
-ladvance_flag = .true.
-if (present(advance_flag)) ladvance_flag = advance_flag
-
-! Print message
-write(mpl%info,'(a)') ' 100%'
-call mpl%flush(ladvance_flag)
-
-! Release memory
-deallocate(mpl%done)
-
-end subroutine mpl_prog_final
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_ncdimcheck
-! Purpose: check if NetCDF file dimension exists and has the right size
-!----------------------------------------------------------------------
-function mpl_ncdimcheck(mpl,subr,ncid,dimname,dimsize,mode,inftol) result (dimid)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-character(len=*),intent(in) :: subr    ! Calling subroutine
-integer,intent(in) :: ncid             ! NetCDF file ID
-character(len=*),intent(in) :: dimname ! Dimension name
-integer,intent(in) :: dimsize          ! Dimension size
-logical,intent(in) :: mode             ! Mode (.true.: create and return id if missing, abort if present but wrong size / .false.: return id if present and has right size, else return missing value)
-logical,intent(in),optional :: inftol  ! Tolerate if dimsize is lower than what is found in the file
-
-! Result
-integer :: dimid                       ! NetCDF dimension ID
-
-! Local variables
-integer :: info,dimsize_test
-logical :: linftol,test
-
-! End definition mode
-if (mode) call mpl%ncerr(subr,nf90_enddef(ncid))
-
-! Get dimension ID
-info = nf90_inq_dimid(ncid,trim(dimname),dimid)
-
-if (info==nf90_noerr) then
-   ! Get dimension size
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
-
-   ! Test
-   linftol = .false.
-   if (present(inftol)) linftol = inftol
-   test = (dimsize==dimsize_test)
-   if (linftol) test = test.or.((dimsize==1).and.(dimsize<=dimsize_test))
-
-   if (test) then
-      ! Definition mode
-      if (mode) call mpl%ncerr(subr,nf90_redef(ncid))
-   else
-      ! Wrong dimension
-      if (mode) then
-         ! Abort
-         call mpl%abort(subr,'dimension '//trim(dimname)//' has a different size in file')
-      else
-         ! Return missing value
-         dimid = mpl%msv%vali
-      end if
-   end if
-else
-   if (mode) then
-      ! Definition mode
-      call mpl%ncerr(subr,nf90_redef(ncid))
-
-      ! Create dimension
-      call mpl%ncerr(subr,nf90_def_dim(ncid,trim(dimname),dimsize,dimid))
-   else
-      ! Return missing value
-      dimid = mpl%msv%vali
-   end if
-end if
-
-end function mpl_ncdimcheck
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_ncerr
-! Purpose: handle NetCDF error
-!----------------------------------------------------------------------
-subroutine mpl_ncerr(mpl,subr,info)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-character(len=*),intent(in) :: subr  ! Calling subroutine
-integer,intent(in) :: info           ! Info index
-
-! Check status
-if (info/=nf90_noerr) call mpl%abort(subr,trim(nf90_strerror(info)))
-
-end subroutine mpl_ncerr
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_update_tag
-! Purpose: update MPL tag
+! Purpose: update MPI tag
 !----------------------------------------------------------------------
 subroutine mpl_update_tag(mpl,add)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: add            ! Tag update incrememnt
+class(mpl_type),intent(inout) :: mpl   ! MPI data
+integer,intent(in) :: add              ! Tag update incrememnt
 
 ! Update tag
 mpl%tag = mpl%tag+add
@@ -576,10 +398,10 @@ mpl%tag = max(mpl%tag,1)
 end subroutine mpl_update_tag
 
 !----------------------------------------------------------------------
-! Subroutine: mpl_bcast_string_1d
+! Subroutine: mpl_broadcast_string_1d
 ! Purpose: broadcast 1d string array
 !----------------------------------------------------------------------
-subroutine mpl_bcast_string_1d(mpl,var,root)
+subroutine mpl_broadcast_string_1d(mpl,var,root)
 
 implicit none
 
@@ -596,7 +418,7 @@ do i=1,size(var)
    call mpl%f_comm%broadcast(var(i),root)
 end do
 
-end subroutine mpl_bcast_string_1d
+end subroutine mpl_broadcast_string_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_dot_prod_1d
@@ -617,7 +439,7 @@ real(kind_real) :: dp_loc(1),dp_out(1)
 
 ! Product and sum
 dp_loc(1) = 0.0
-dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnotr(fld1).and.mpl%msv%isnotr(fld2))
+dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
 
 ! Allreduce
 dp_out = 0.0
@@ -625,7 +447,7 @@ call mpl%f_comm%allreduce(dp_loc,dp_out,fckit_mpi_sum())
 dp = dp_out(1)
 
 ! Broadcast
-call mpl%f_comm%broadcast(dp,mpl%ioproc-1)
+call mpl%f_comm%broadcast(dp,mpl%rootproc-1)
 
 end subroutine mpl_dot_prod_1d
 
@@ -648,7 +470,7 @@ real(kind_real) :: dp_loc(1),dp_out(1)
 
 ! Product and sum
 dp_loc(1) = 0.0
-dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnotr(fld1).and.mpl%msv%isnotr(fld2))
+dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
 
 ! Allreduce
 dp_out = 0.0
@@ -656,7 +478,7 @@ call mpl%f_comm%allreduce(dp_loc,dp_out,fckit_mpi_sum())
 dp = dp_out(1)
 
 ! Broadcast
-call mpl%f_comm%broadcast(dp,mpl%ioproc-1)
+call mpl%f_comm%broadcast(dp,mpl%rootproc-1)
 
 end subroutine mpl_dot_prod_2d
 
@@ -679,7 +501,7 @@ real(kind_real) :: dp_loc(1),dp_out(1)
 
 ! Product and sum
 dp_loc(1) = 0.0
-dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnotr(fld1).and.mpl%msv%isnotr(fld2))
+dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
 
 ! Allreduce
 dp_out = 0.0
@@ -687,7 +509,7 @@ call mpl%f_comm%allreduce(dp_loc,dp_out,fckit_mpi_sum())
 dp = dp_out(1)
 
 ! Broadcast
-call mpl%f_comm%broadcast(dp,mpl%ioproc-1)
+call mpl%f_comm%broadcast(dp,mpl%rootproc-1)
 
 end subroutine mpl_dot_prod_3d
 
@@ -710,7 +532,7 @@ real(kind_real) :: dp_loc(1),dp_out(1)
 
 ! Product and sum
 dp_loc(1) = 0.0
-dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnotr(fld1).and.mpl%msv%isnotr(fld2))
+dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
 
 ! Allreduce
 dp_out = 0.0
@@ -718,15 +540,15 @@ call mpl%f_comm%allreduce(dp_loc,dp_out,fckit_mpi_sum())
 dp = dp_out(1)
 
 ! Broadcast
-call mpl%f_comm%broadcast(dp,mpl%ioproc-1)
+call mpl%f_comm%broadcast(dp,mpl%rootproc-1)
 
 end subroutine mpl_dot_prod_4d
 
 !----------------------------------------------------------------------
-! Subroutine: mpl_split
-! Purpose: split array over different MPI tasks
+! Subroutine: mpl_split_loop
+! Purpose: split loop over different MPI tasks
 !----------------------------------------------------------------------
-subroutine mpl_split(mpl,n,n_loc)
+subroutine mpl_split_loop(mpl,n,n_loc)
 
 implicit none
 
@@ -752,7 +574,7 @@ do iproc=1,mpl%nproc
    nres = nres-delta
 end do
 
-end subroutine mpl_split
+end subroutine mpl_split_loop
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_share_integer_1d
@@ -1191,22 +1013,22 @@ if (mpl%main) then
    if (present(glb_to_proc)) glb_to_proc = mpl%msv%vali
 
    do iproc=1,mpl%nproc
-      if (iproc==mpl%ioproc) then
+      if (iproc==mpl%rootproc) then
          ! Copy dimension
          n_loc_tmp = n_loc
       else
-         ! Receive dimension on ioproc
+         ! Receive dimension on rootproc
          call mpl%f_comm%receive(n_loc_tmp,iproc-1,mpl%tag,status)
       end if
 
       ! Allocation
       allocate(loc_to_glb_tmp(n_loc_tmp))
 
-      if (iproc==mpl%ioproc) then
+      if (iproc==mpl%rootproc) then
          ! Copy data
          loc_to_glb_tmp = loc_to_glb
       else
-         ! Receive data on ioproc
+         ! Receive data on rootproc
          call mpl%f_comm%receive(loc_to_glb_tmp,iproc-1,mpl%tag+1,status)
       end if
 
@@ -1220,17 +1042,17 @@ if (mpl%main) then
       deallocate(loc_to_glb_tmp)
    end do
 else
-   ! Send dimensions to ioproc
-   call mpl%f_comm%send(n_loc,mpl%ioproc-1,mpl%tag)
+   ! Send dimensions to rootproc
+   call mpl%f_comm%send(n_loc,mpl%rootproc-1,mpl%tag)
 
-   ! Send data to ioproc
-   call mpl%f_comm%send(loc_to_glb,mpl%ioproc-1,mpl%tag+1)
+   ! Send data to rootproc
+   call mpl%f_comm%send(loc_to_glb,mpl%rootproc-1,mpl%tag+1)
 end if
 call mpl%update_tag(2)
 
 ! Broadcast
-call mpl%f_comm%broadcast(glb_to_loc,mpl%ioproc-1)
-if (present(glb_to_proc)) call mpl%f_comm%broadcast(glb_to_proc,mpl%ioproc-1)
+call mpl%f_comm%broadcast(glb_to_loc,mpl%rootproc-1)
+if (present(glb_to_proc)) call mpl%f_comm%broadcast(glb_to_proc,mpl%rootproc-1)
 
 end subroutine mpl_glb_to_loc_index
 
@@ -1277,7 +1099,7 @@ if (mpl%main) then
          end if
       end do
 
-      if (iproc==mpl%ioproc) then
+      if (iproc==mpl%rootproc) then
          ! Copy data
          loc = sbuf
       else
@@ -1289,8 +1111,8 @@ if (mpl%main) then
       deallocate(sbuf)
    end do
 else
-   ! Receive data from ioproc
-   call mpl%f_comm%receive(loc,mpl%ioproc-1,mpl%tag,status)
+   ! Receive data from rootproc
+   call mpl%f_comm%receive(loc,mpl%rootproc-1,mpl%tag,status)
 end if
 call mpl%update_tag(1)
 
@@ -1346,7 +1168,7 @@ if (mpl%main) then
          end if
       end do
 
-      if (iproc==mpl%ioproc) then
+      if (iproc==mpl%rootproc) then
          ! Copy data
          rbuf = sbuf
       else
@@ -1358,8 +1180,8 @@ if (mpl%main) then
       deallocate(sbuf)
    end do
 else
-   ! Receive data from ioproc
-   call mpl%f_comm%receive(rbuf,mpl%ioproc-1,mpl%tag,status)
+   ! Receive data from rootproc
+   call mpl%f_comm%receive(rbuf,mpl%rootproc-1,mpl%tag,status)
 end if
 call mpl%update_tag(1)
 
@@ -1410,7 +1232,7 @@ if (mpl%main) then
       n_loc_tmp = count(glb_to_proc==iproc)
       allocate(rbuf(n_loc_tmp))
 
-      if (iproc==mpl%ioproc) then
+      if (iproc==mpl%rootproc) then
           ! Copy data
           rbuf = loc
       else
@@ -1431,13 +1253,13 @@ if (mpl%main) then
       deallocate(rbuf)
    end do
 else
-   ! Send data to ioproc
-   call mpl%f_comm%send(loc,mpl%ioproc-1,mpl%tag)
+   ! Send data to rootproc
+   call mpl%f_comm%send(loc,mpl%rootproc-1,mpl%tag)
 end if
 call mpl%update_tag(1)
 
 ! Broadcast
-if (bcast) call mpl%f_comm%broadcast(glb,mpl%ioproc-1)
+if (bcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
 
 end subroutine mpl_loc_to_glb_real_1d
 
@@ -1488,7 +1310,7 @@ if (mpl%main) then
       n_loc_tmp = count(glb_to_proc==iproc)
       allocate(rbuf(n_loc_tmp*nl))
 
-      if (iproc==mpl%ioproc) then
+      if (iproc==mpl%rootproc) then
           ! Copy data
           rbuf = sbuf
       else
@@ -1511,18 +1333,84 @@ if (mpl%main) then
       deallocate(rbuf)
    end do
 else
-   ! Send data to ioproc
-   call mpl%f_comm%send(sbuf,mpl%ioproc-1,mpl%tag)
+   ! Send data to rootproc
+   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
 end if
 call mpl%update_tag(1)
 
 ! Broadcast
-if (bcast) call mpl%f_comm%broadcast(glb,mpl%ioproc-1)
+if (bcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
 
 ! Release memory
 deallocate(sbuf)
 
 end subroutine mpl_loc_to_glb_real_2d
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_loc_to_glb_logical_1d
+! Purpose: local to global, 1d array
+!----------------------------------------------------------------------
+subroutine mpl_loc_to_glb_logical_1d(mpl,n_loc,loc,n_glb,glb_to_proc,glb_to_loc,bcast,glb)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl     ! MPI data
+integer,intent(in) :: n_loc              ! Local array size
+logical,intent(in) :: loc(n_loc)         ! Local array
+integer,intent(in) :: n_glb              ! Global array size
+integer,intent(in) :: glb_to_proc(n_glb) ! Global index to task index
+integer,intent(in) :: glb_to_loc(n_glb)  ! Global index to local index
+logical,intent(in) :: bcast              ! Broadcast option
+logical,intent(out) :: glb(:)            ! Global array
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
+logical,allocatable :: rbuf(:)
+character(len=1024),parameter :: subr = 'mpl_loc_to_glb_logical_1d'
+type(fckit_mpi_status) :: status
+
+! Check global array size
+if (mpl%main.or.bcast) then
+   if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_loc_to_glb_logical_1d')
+end if
+
+if (mpl%main) then
+   do iproc=1,mpl%nproc
+      ! Allocation
+      n_loc_tmp = count(glb_to_proc==iproc)
+      allocate(rbuf(n_loc_tmp))
+
+      if (iproc==mpl%rootproc) then
+          ! Copy data
+          rbuf = loc
+      else
+          ! Receive data from iproc
+          call mpl%f_comm%receive(rbuf,iproc-1,mpl%tag,status)
+      end if
+
+      ! Add data to glb
+      do i_glb=1,n_glb
+         jproc = glb_to_proc(i_glb)
+         if (iproc==jproc) then
+            i_loc = glb_to_loc(i_glb)
+            glb(i_glb) = rbuf(i_loc)
+         end if
+      end do
+
+      ! Release memory
+      deallocate(rbuf)
+   end do
+else
+   ! Send data to rootproc
+   call mpl%f_comm%send(loc,mpl%rootproc-1,mpl%tag)
+end if
+call mpl%update_tag(1)
+
+! Broadcast
+if (bcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+
+end subroutine mpl_loc_to_glb_logical_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_loc_to_glb_logical_2d
@@ -1571,7 +1459,7 @@ if (mpl%main) then
       n_loc_tmp = count(glb_to_proc==iproc)
       allocate(rbuf(n_loc_tmp*nl))
 
-      if (iproc==mpl%ioproc) then
+      if (iproc==mpl%rootproc) then
           ! Copy data
           rbuf = sbuf
       else
@@ -1594,13 +1482,13 @@ if (mpl%main) then
       deallocate(rbuf)
    end do
 else
-   ! Send data to ioproc
-   call mpl%f_comm%send(sbuf,mpl%ioproc-1,mpl%tag)
+   ! Send data to rootproc
+   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
 end if
 call mpl%update_tag(1)
 
 ! Broadcast
-if (bcast) call mpl%f_comm%broadcast(glb,mpl%ioproc-1)
+if (bcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
 
 ! Release memory
 deallocate(sbuf)
@@ -1608,39 +1496,239 @@ deallocate(sbuf)
 end subroutine mpl_loc_to_glb_logical_2d
 
 !----------------------------------------------------------------------
+! Subroutine: mpl_prog_init
+! Purpose: initialize progression display
+!----------------------------------------------------------------------
+subroutine mpl_prog_init(mpl,nprog)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl ! MPI data
+integer,intent(in) :: nprog          ! Array size
+
+! Local variables
+integer :: ithread
+
+! Print message
+ithread = 0
+!$ ithread = omp_get_thread_num()
+if (ithread==0) then
+   write(mpl%info,'(a)') ' 0%'
+   call mpl%flush(.false.)
+end if
+
+! Allocation
+allocate(mpl%done(nprog))
+
+! Initialization
+mpl%nprog = nprog
+mpl%progint = ddis
+mpl%done = .false.
+
+end subroutine mpl_prog_init
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_prog_print
+! Purpose: print progression display
+!----------------------------------------------------------------------
+subroutine mpl_prog_print(mpl,i)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl ! MPI data
+integer,intent(in),optional :: i     ! Index
+
+! Local variables
+integer :: ithread
+real(kind_real) :: prog
+
+! Update progression array
+if (present(i)) mpl%done(i) = .true.
+
+! Print message
+prog = 100.0*real(count(mpl%done),kind_real)/real(mpl%nprog,kind_real)
+ithread = 0
+!$ ithread = omp_get_thread_num()
+do while ((int(prog)>mpl%progint).and.(ithread==0))
+   if (mpl%progint<100) then
+      if (mpl%progint<10) then
+         write(mpl%info,'(i2,a)') mpl%progint,'% '
+      else
+         write(mpl%info,'(i3,a)') mpl%progint,'% '
+      end if
+      call mpl%flush(.false.)
+   end if
+   mpl%progint = mpl%progint+ddis
+end do
+
+end subroutine mpl_prog_print
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_prog_final
+! Purpose: finalize progression display
+!----------------------------------------------------------------------
+subroutine mpl_prog_final(mpl,advance_flag)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl        ! MPI data
+logical,intent(in),optional :: advance_flag ! Advance flag
+
+! Local variables
+integer :: ithread
+logical :: ladvance_flag
+
+! Set advance flag
+ladvance_flag = .true.
+if (present(advance_flag)) ladvance_flag = advance_flag
+
+! Print message
+ithread = 0
+!$ ithread = omp_get_thread_num()
+do while ((mpl%progint<=100).and.(ithread==0))
+   if (mpl%progint<100) then
+      if (mpl%progint<10) then
+         write(mpl%info,'(i2,a)') mpl%progint,'% '
+      else
+         write(mpl%info,'(i3,a)') mpl%progint,'% '
+      end if
+      call mpl%flush(.false.)
+   else
+      write(mpl%info,'(a)') ' 100%'
+      call mpl%flush(ladvance_flag)
+   end if
+   mpl%progint = mpl%progint+ddis
+end do
+
+! Release memory
+deallocate(mpl%done)
+
+end subroutine mpl_prog_final
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_ncdimcheck
+! Purpose: check if NetCDF file dimension exists and has the right size
+!----------------------------------------------------------------------
+function mpl_ncdimcheck(mpl,subr,ncid,dimname,dimsize,mode,inftol) result (dimid)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl   ! MPI data
+character(len=*),intent(in) :: subr    ! Calling subroutine
+integer,intent(in) :: ncid             ! NetCDF file ID
+character(len=*),intent(in) :: dimname ! Dimension name
+integer,intent(in) :: dimsize          ! Dimension size
+logical,intent(in) :: mode             ! Mode (.true.: create and return id if missing, abort if present but wrong size / .false.: return id if present and has right size, else return missing value)
+logical,intent(in),optional :: inftol  ! Tolerate if dimsize is lower than what is found in the file
+
+! Returned variable
+integer :: dimid                       ! NetCDF dimension ID
+
+! Local variables
+integer :: info,dimsize_test
+logical :: linftol,test
+
+! End definition mode
+if (mode) call mpl%ncerr(subr,nf90_enddef(ncid))
+
+! Get dimension ID
+info = nf90_inq_dimid(ncid,trim(dimname),dimid)
+
+if (info==nf90_noerr) then
+   ! Get dimension size
+   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
+
+   ! Test
+   linftol = .false.
+   if (present(inftol)) linftol = inftol
+   test = (dimsize==dimsize_test)
+   if (linftol) test = test.or.((dimsize==1).and.(dimsize<=dimsize_test))
+
+   if (test) then
+      ! Definition mode
+      if (mode) call mpl%ncerr(subr,nf90_redef(ncid))
+   else
+      ! Wrong dimension
+      if (mode) then
+         ! Abort
+         call mpl%abort(subr,'dimension '//trim(dimname)//' has a different size in file')
+      else
+         ! Return missing value
+         dimid = mpl%msv%vali
+      end if
+   end if
+else
+   if (mode) then
+      ! Definition mode
+      call mpl%ncerr(subr,nf90_redef(ncid))
+
+      ! Create dimension
+      call mpl%ncerr(subr,nf90_def_dim(ncid,trim(dimname),dimsize,dimid))
+   else
+      ! Return missing value
+      dimid = mpl%msv%vali
+   end if
+end if
+
+end function mpl_ncdimcheck
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_ncerr
+! Purpose: handle NetCDF error
+!----------------------------------------------------------------------
+subroutine mpl_ncerr(mpl,subr,info)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl ! MPI data
+character(len=*),intent(in) :: subr  ! Calling subroutine
+integer,intent(in) :: info           ! Info index
+
+! Check status
+if (info/=nf90_noerr) call mpl%abort(subr,trim(nf90_strerror(info)))
+
+end subroutine mpl_ncerr
+
+!----------------------------------------------------------------------
 ! Subroutine: mpl_write_integer
 ! Purpose: write integer into a log file or into a NetCDF file
 !----------------------------------------------------------------------
-subroutine mpl_write_integer(mpl,ncid,varname,var)
+subroutine mpl_write_integer(mpl,ncid,prefix,varname,var)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: ncid             ! NetCDF file id
+character(len=*),intent(in) :: prefix  ! Prefix
 character(len=*),intent(in) :: varname ! Variable name
 integer,intent(in) :: var              ! Integer
 
 ! Local variables
 integer :: delta
-character(len=1024) :: str
+character(len=1024) :: for
 character(len=1024),parameter :: subr = 'mpl_write_integer'
 
-if (mpl%msv%isi(ncid)) then
+if (mpl%msv%is(ncid)) then
    ! Write integer into a log file
    delta = 2
    if (var<0) delta = delta+1
    if (abs(var)>0) then
-      write(str,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,i', &
+      write(for,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,i', &
        & floor(log(abs(real(var,kind_real)))/log(10.0))+delta,',a)'
    else
-      write(str,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,i',delta,',a)'
+      write(for,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,i',delta,',a)'
    end if
-   write(mpl%info,str) '',trim(varname),'',':',var
+   write(mpl%info,for) '',trim(varname),'',':',var
    call mpl%flush
 else
    ! Write integer into a NetCDF file
-   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),var))
+   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),var))
 end if
 
 end subroutine mpl_write_integer
@@ -1649,36 +1737,37 @@ end subroutine mpl_write_integer
 ! Subroutine: mpl_write_integer_array
 ! Purpose: write integer array into a log file or into a NetCDF file
 !----------------------------------------------------------------------
-subroutine mpl_write_integer_array(mpl,ncid,varname,n,var)
+subroutine mpl_write_integer_array(mpl,ncid,prefix,varname,n,var)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: ncid             ! NetCDF file id
+character(len=*),intent(in) :: prefix  ! Prefix
 character(len=*),intent(in) :: varname ! Variable name
 integer,intent(in) :: n                ! Integer array size
 integer,intent(in) :: var(n)           ! Integer array
 
 ! Local variables
 integer :: i,delta
-character(len=1024) :: str,fullstr
+character(len=1024) :: for,fullstr
 character(len=1024),parameter :: subr = 'mpl_write_integer_array'
 
-if (mpl%msv%isi(ncid)) then
+if (mpl%msv%is(ncid)) then
    ! Write integer array into a log file
-   write(str,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a)'
-   write(mpl%info,str) '',trim(varname),'',':'
+   write(for,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a)'
+   write(mpl%info,for) '',trim(varname),'',':'
    call mpl%flush(.false.)
    do i=1,n
       delta = 2
       if (var(i)<0) delta = delta+1
       if (abs(var(i))>0) then
-         write(str,'(a,i4.4,a)') '(i',floor(log(abs(real(var(i),kind_real)))/log(10.0))+delta,',a)'
+         write(for,'(a,i4.4,a)') '(i',floor(log(abs(real(var(i),kind_real)))/log(10.0))+delta,',a)'
       else
-         write(str,'(a,i4.4,a)') '(i',delta,',a)'
+         write(for,'(a,i4.4,a)') '(i',delta,',a)'
       end if
-      write(mpl%info,str) var(i),','
+      write(mpl%info,for) var(i),','
       call mpl%flush(.false.)
    end do
    write(mpl%info,'(a)') ''
@@ -1688,10 +1777,9 @@ else
    if (n>0) then
       write(fullstr,'(i3.3)') var(1)
       do i=2,n
-         write(str,'(i3.3)') var(i)
-         fullstr = trim(fullstr)//':'//trim(str)
+         write(fullstr,'(a,i3.3)') trim(fullstr(1:1024-4))//':',var(i)
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),trim(fullstr)))
    end if
 end if
 
@@ -1701,31 +1789,32 @@ end subroutine mpl_write_integer_array
 ! Subroutine: mpl_write_real
 ! Purpose: write real into a log file or into a NetCDF file
 !----------------------------------------------------------------------
-subroutine mpl_write_real(mpl,ncid,varname,var)
+subroutine mpl_write_real(mpl,ncid,prefix,varname,var)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: ncid             ! NetCDF file id
+character(len=*),intent(in) :: prefix  ! Prefix
 character(len=*),intent(in) :: varname ! Variable name
 real(kind_real),intent(in) :: var      ! Real
 
 ! Local variables
 integer :: delta
-character(len=1024) :: str
+character(len=1024) :: for
 character(len=1024),parameter :: subr = 'mpl_write_real'
 
-if (mpl%msv%isi(ncid)) then
+if (mpl%msv%is(ncid)) then
    ! Write real into a log file
    delta = 10
    if (var<0.0) delta = delta+1
-   write(str,'(a,i4.4,a,i4.4,a,i2,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,e',delta,'.3,a)'
-   write(mpl%info,str) '',trim(varname),'',':',var
+   write(for,'(a,i4.4,a,i4.4,a,i2,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,e',delta,'.3,a)'
+   write(mpl%info,for) '',trim(varname),'',':',var
    call mpl%flush
 else
    ! Write real into a NetCDF file
-   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),var))
+   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),var))
 end if
 
 end subroutine mpl_write_real
@@ -1734,32 +1823,33 @@ end subroutine mpl_write_real
 ! Subroutine: mpl_write_real_array
 ! Purpose: write real array into a log file or into a NetCDF file
 !----------------------------------------------------------------------
-subroutine mpl_write_real_array(mpl,ncid,varname,n,var)
+subroutine mpl_write_real_array(mpl,ncid,prefix,varname,n,var)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: ncid             ! NetCDF file id
+character(len=*),intent(in) :: prefix  ! Prefix
 character(len=*),intent(in) :: varname ! Variable name
 integer,intent(in) :: n                ! Real array size
 real(kind_real),intent(in) :: var(n)   ! Real array
 
 ! Local variables
 integer :: i,delta
-character(len=1024) :: str,fullstr
+character(len=1024) :: for,fullstr
 character(len=1024),parameter :: subr = 'mpl_write_real_array'
 
-if (mpl%msv%isi(ncid)) then
+if (mpl%msv%is(ncid)) then
    ! Write real array into a log file
-   write(str,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a)'
-   write(mpl%info,str) '',trim(varname),'',':'
+   write(for,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a)'
+   write(mpl%info,for) '',trim(varname),'',':'
    call mpl%flush(.false.)
    do i=1,n
       delta = 10
       if (var(i)<0.0) delta = delta+1
-      write(str,'(a,i2,a)') '(e',delta,'.3,a)'
-      write(mpl%info,str) var(i),','
+      write(for,'(a,i2,a)') '(e',delta,'.3,a)'
+      write(mpl%info,for) var(i),','
       call mpl%flush(.false.)
    end do
    write(mpl%info,'(a)') ''
@@ -1769,10 +1859,9 @@ else
    if (n>0) then
       write(fullstr,'(e10.3)') var(1)
       do i=2,n
-         write(str,'(e10.3)') var(i)
-         fullstr = trim(fullstr)//':'//trim(str)
+         write(fullstr,'(a,e10.3)') trim(fullstr(1:1024-11))//':',var(i)
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),trim(fullstr)))
    end if
 end if
 
@@ -1782,31 +1871,32 @@ end subroutine mpl_write_real_array
 ! Subroutine: mpl_write_logical
 ! Purpose: write logical into a log file or into a NetCDF file
 !----------------------------------------------------------------------
-subroutine mpl_write_logical(mpl,ncid,varname,var)
+subroutine mpl_write_logical(mpl,ncid,prefix,varname,var)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: ncid             ! NetCDF file id
+character(len=*),intent(in) :: prefix  ! Prefix
 character(len=*),intent(in) :: varname ! Variable name
 logical,intent(in) :: var              ! Logical
 
 ! Local variables
-character(len=1024) :: str
+character(len=1024) :: for
 character(len=1024),parameter :: subr = 'mpl_write_logical'
 
-if (mpl%msv%isi(ncid)) then
+if (mpl%msv%is(ncid)) then
    ! Write logical into a log file
-   write(str,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,l2,a)'
-   write(mpl%info,str) '',trim(varname),'',':',var
+   write(for,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,l2,a)'
+   write(mpl%info,for) '',trim(varname),'',':',var
    call mpl%flush
 else
    ! Write logical into a NetCDF file
    if (var) then
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),'.true.'))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),'.true.'))
    else
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),'.false.'))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),'.false.'))
    end if
 end if
 
@@ -1816,30 +1906,31 @@ end subroutine mpl_write_logical
 ! Subroutine: mpl_write_logical_array
 ! Purpose: write logical array into a log file or into a NetCDF file
 !----------------------------------------------------------------------
-subroutine mpl_write_logical_array(mpl,ncid,varname,n,var)
+subroutine mpl_write_logical_array(mpl,ncid,prefix,varname,n,var)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: ncid             ! NetCDF file id
+character(len=*),intent(in) :: prefix  ! Prefix
 character(len=*),intent(in) :: varname ! Variable name
 integer,intent(in) :: n                ! Real array size
 logical,intent(in) :: var(n)           ! Logical array
 
 ! Local variables
 integer :: i
-character(len=1024) :: str,fullstr
+character(len=1024) :: for,fullstr
 character(len=1024),parameter :: subr = 'mpl_write_logical_array'
 
-if (mpl%msv%isi(ncid)) then
+if (mpl%msv%is(ncid)) then
    ! Write logical array into a log file
-   write(str,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a)'
-   write(mpl%info,str) '',trim(varname),'',':'
+   write(for,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a)'
+   write(mpl%info,for) '',trim(varname),'',':'
    call mpl%flush(.false.)
    do i=1,n
-      write(str,'(a)') '(l2,a)'
-      write(mpl%info,str) var(i),','
+      write(for,'(a)') '(l2,a)'
+      write(mpl%info,for) var(i),','
       call mpl%flush(.false.)
    end do
    write(mpl%info,'(a)') ''
@@ -1848,19 +1939,18 @@ else
    ! Write real array into a NetCDF file
    if (n>0) then
       if (var(1)) then
-         write(fullstr,'(a6)') '.true.'
+         fullstr = '.true.'
       else
-         write(fullstr,'(a7)') '.false.'
+         fullstr = '.false.'
       end if
       do i=2,n
          if (var(i)) then
-            write(str,'(a6)') '.true.'
+            fullstr = trim(fullstr(1:1024-7))//':'//'.true.'
          else
-            write(str,'(a7)') '.false.'
+            fullstr = trim(fullstr(1:1024-8))//':'//'.false.'
          end if
-         fullstr = trim(fullstr)//':'//trim(str)
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),trim(fullstr)))
    end if
 end if
 
@@ -1870,13 +1960,14 @@ end subroutine mpl_write_logical_array
 ! Subroutine: mpl_write_string
 ! Purpose: write string into a log file or into a NetCDF file
 !----------------------------------------------------------------------
-subroutine mpl_write_string(mpl,ncid,varname,var)
+subroutine mpl_write_string(mpl,ncid,prefix,varname,var)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: ncid             ! NetCDF file id
+character(len=*),intent(in) :: prefix  ! Prefix
 character(len=*),intent(in) :: varname ! Variable name
 character(len=*),intent(in) :: var     ! String
 
@@ -1884,7 +1975,7 @@ character(len=*),intent(in) :: var     ! String
 character(len=1024) :: str
 character(len=1024),parameter :: subr = 'mpl_write_string'
 
-if (mpl%msv%isi(ncid)) then
+if (mpl%msv%is(ncid)) then
    ! Write string into a log file
    if (len_trim(var)>0) then
       write(str,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a,a1,a',len_trim(var),')'
@@ -1896,7 +1987,7 @@ if (mpl%msv%isi(ncid)) then
    call mpl%flush
 else
    ! Write string into a NetCDF file
-   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),trim(var)))
+   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),trim(var)))
 end if
 
 end subroutine mpl_write_string
@@ -1905,31 +1996,32 @@ end subroutine mpl_write_string
 ! Subroutine: mpl_write_string_array
 ! Purpose: write string array into a log file or into a NetCDF file
 !----------------------------------------------------------------------
-subroutine mpl_write_string_array(mpl,ncid,varname,n,var)
+subroutine mpl_write_string_array(mpl,ncid,prefix,varname,n,var)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: ncid             ! NetCDF file id
+character(len=*),intent(in) :: prefix  ! Prefix
 character(len=*),intent(in) :: varname ! Variable name
 integer,intent(in) :: n                ! String array size
 character(len=*),intent(in) :: var(n)  ! String array
 
 ! Local variables
 integer :: i
-character(len=1024) :: str,fullstr
+character(len=1024) :: for,fullstr
 character(len=1024),parameter :: subr = 'mpl_write_string_array'
 
-if (mpl%msv%isi(ncid)) then
+if (mpl%msv%is(ncid)) then
    ! Write string array into a log file
-   write(str,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a)'
-   write(mpl%info,str) '',trim(varname),'',':'
+   write(for,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(varname),',a',25-len_trim(varname),',a)'
+   write(mpl%info,for) '',trim(varname),'',':'
    call mpl%flush(.false.)
    do i=1,n
       if (len_trim(var(i))>0) then
-         write(str,'(a,i4.4,a)') '(a1,a',len_trim(var(i)),',a)'
-         write(mpl%info,str) '',trim(var(i)),','
+         write(for,'(a,i4.4,a)') '(a1,a',len_trim(var(i)),',a)'
+         write(mpl%info,for) '',trim(var(i)),','
       else
          write(mpl%info,'(a1,a)') '',','
       end if
@@ -1944,7 +2036,7 @@ else
       do i=2,n
          fullstr = trim(fullstr)//':'//trim(var(i))
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(varname),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(varname),trim(fullstr)))
    end if
 end if
 

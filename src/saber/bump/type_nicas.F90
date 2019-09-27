@@ -14,24 +14,25 @@ use tools_func, only: sphere_dist,cholesky,fit_diag
 use tools_kinds, only: kind_real,nc_kind_real
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
-use type_com, only: com_type
+use type_com, only: com_type,com_ntag
 use type_cv, only: cv_type
 use type_diag, only: diag_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_hdiag, only: hdiag_type
 use type_io, only: io_type
-use type_linop, only: linop_type
-use type_nicas_blk, only: nicas_blk_type
+use type_linop, only: linop_type,linop_ntag
+use type_nicas_blk, only: nicas_blk_type,nicas_blk_ntag
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_rng, only: rng_type
 
 implicit none
 
-integer,parameter :: nfac = 9               ! Number of length-scale factors
-integer,parameter :: ntest = 50             ! Number of tests
-logical,parameter :: pos_def_test = .false. ! Positive-definiteness test
+integer,parameter :: nfac_rnd = 9 ! Number of ensemble size factors for randomization
+integer,parameter :: nfac_opt = 4 ! Number of length-scale factors for optimization
+integer,parameter :: ntest = 50   ! Number of tests
+
 
 ! NICAS derived type
 type nicas_type
@@ -44,7 +45,6 @@ contains
    procedure :: dealloc => nicas_dealloc
    procedure :: read => nicas_read
    procedure :: write => nicas_write
-   procedure :: write_mpi_summary => nicas_write_mpi_summary
    procedure :: run_nicas => nicas_run_nicas
    procedure :: run_nicas_tests => nicas_run_nicas_tests
    procedure :: alloc_cv => nicas_alloc_cv
@@ -95,8 +95,8 @@ do ib=1,bpar%nbe
 
    ! Set name
    if (nam%lsqrt) then
-      write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'-sqrt_',mpl%nproc,'-',mpl%myproc, &
-    & '_',trim(bpar%blockname(ib))
+      write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'-sqrt_',mpl%nproc,'-', &
+    & mpl%myproc,'_',trim(bpar%blockname(ib))
    else
       write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'_',mpl%nproc,'-',mpl%myproc, &
     & '_',trim(bpar%blockname(ib))
@@ -173,140 +173,63 @@ type(geom_type),intent(in) :: geom       ! Geometry
 type(bpar_type),intent(in) :: bpar       ! Block parameters
 
 ! Local variables
-integer :: ib,il0i,il1,its,il0
-integer :: info
-integer :: ncid,nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nc0d_id,nc0dinv_id
-integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,sa_to_sc_id,sb_to_sc_id,norm_id,coef_ens_id
-integer :: vlev_int(geom%nl0)
-character(len=1024) :: filename
-character(len=1024),parameter :: subr = 'nicas_read'
+integer :: ib,iproc,iprocio
+type(nicas_type) :: nicas_tmp
 
 ! Allocation
 call nicas%alloc(mpl,nam,bpar,'nicas')
 
+! Write NICAS blocks
 do ib=1,bpar%nbe
    if (bpar%B_block(ib)) then
-      ! Open file and get dimensions
-      filename = trim(nam%prefix)//'_'//trim(nicas%blk(ib)%name)
-      call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+      do iproc=1,mpl%nproc
+         ! Reading task
+         iprocio = mod(iproc,nam%nprocio)
+         if (iprocio==0) iprocio = nam%nprocio
 
-      ! Get dimensions
-      nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.false.)
-      if (bpar%nicas_block(ib)) then
-         if (geom%nc0a>0) then
-            nc0a_id = mpl%ncdimcheck(subr,ncid,'nc0a',geom%nc0a,.false.)
-         end if
-         info = nf90_inq_dimid(ncid,'nc1b',nc1b_id)
-         if (info==nf90_noerr) then
-            call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc1b_id,len=nicas%blk(ib)%nc1b))
-         else
-            nicas%blk(ib)%nc1b = 0
-         end if
-         call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nl1',nl1_id))
-         call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nl1_id,len=nicas%blk(ib)%nl1))
-         info = nf90_inq_dimid(ncid,'nsa',nsa_id)
-         if (info==nf90_noerr) then
-            call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nsa_id,len=nicas%blk(ib)%nsa))
-         else
-            nicas%blk(ib)%nsa = 0
-         end if
-         info = nf90_inq_dimid(ncid,'nsb',nsb_id)
-         if (info==nf90_noerr) then
-            call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nsb_id,len=nicas%blk(ib)%nsb))
-         else
-            nicas%blk(ib)%nsb = 0
-         end if
-         call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'nsc',nicas%blk(ib)%nsc))
-      end if
-      if ((ib==bpar%nbe).and.(abs(nam%adv_mode)==1)) then
-         call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nc0d',nc0d_id))
-         call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc0d_id,len=nicas%blk(ib)%nc0d))
-         call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nc0dinv',nc0dinv_id))
-         call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc0dinv_id,len=nicas%blk(ib)%nc0dinv))
-      end if
+         if (mpl%myproc==iprocio) then
+            if (iproc==iprocio) then
+               write(mpl%info,'(a7,a,i4,a)') '','NICAS data of task ',iproc,' read by its own task'
+               call mpl%flush
 
-      ! Allocation
-      if (bpar%nicas_block(ib)) then
-         allocate(nicas%blk(ib)%vlev(geom%nl0))
-         if (nicas%blk(ib)%nsb>0) allocate(nicas%blk(ib)%sb_to_c1b(nicas%blk(ib)%nsb))
-         if (nicas%blk(ib)%nsb>0) allocate(nicas%blk(ib)%sb_to_l1(nicas%blk(ib)%nsb))
-         if (nicas%blk(ib)%nsa>0) allocate(nicas%blk(ib)%sa_to_s(nicas%blk(ib)%nsa))
-         if (nicas%blk(ib)%nsa>0) allocate(nicas%blk(ib)%sa_to_sc(nicas%blk(ib)%nsa))
-         if (nicas%blk(ib)%nsb>0) allocate(nicas%blk(ib)%sb_to_sc(nicas%blk(ib)%nsb))
-         allocate(nicas%blk(ib)%norm(geom%nc0a,geom%nl0))
-         allocate(nicas%blk(ib)%coef_ens(geom%nc0a,geom%nl0))
-         allocate(nicas%blk(ib)%h(geom%nl0i))
-         allocate(nicas%blk(ib)%s(nicas%blk(ib)%nl1))
-      end if
-      if ((ib==bpar%nbe).and.(abs(nam%adv_mode)==1)) then
-         allocate(nicas%blk(ib)%d(geom%nl0,2:nam%nts))
-         allocate(nicas%blk(ib)%dinv(geom%nl0,2:nam%nts))
-      end if
-
-      ! Get variable id
-      if (bpar%nicas_block(ib)) then
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,'vlev',vlev_id))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,'sb_to_c1b',sb_to_c1b_id))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,'sb_to_l1',sb_to_l1_id))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,'sa_to_s',sa_to_s_id))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,'sa_to_sc',sa_to_sc_id))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,'sb_to_sc',sb_to_sc_id))
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,'norm',norm_id))
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,'coef_ens',coef_ens_id))
-      end if
-
-      ! Read data
-      if (bpar%nicas_block(ib)) then
-         call mpl%ncerr(subr,nf90_get_var(ncid,vlev_id,vlev_int))
-         do il0=1,geom%nl0
-            if (vlev_int(il0)==0) then
-               nicas%blk(ib)%vlev(il0) = .false.
-            elseif (vlev_int(il0)==1) then
-               nicas%blk(ib)%vlev(il0) = .true.
+               ! Read data
+               call nicas%blk(ib)%read(mpl,nam,geom,bpar)
             else
-               call mpl%abort(subr,'wrong vlev')
+               write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' send from task ',iprocio,' after reading'
+               call mpl%flush
+
+               ! Allocation
+               call nicas_tmp%alloc(mpl,nam,bpar,'nicas')
+
+               ! Set name
+               if (nam%lsqrt) then
+                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'-sqrt_', &
+                & mpl%nproc,'-',iproc,'_',trim(bpar%blockname(ib))
+               else
+                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'_', &
+                & mpl%nproc,'-',iproc,'_',trim(bpar%blockname(ib))
+               end if
+
+               ! Read data
+               call nicas_tmp%blk(ib)%read(mpl,nam,geom,bpar)
+
+               ! Send data to iproc
+               call nicas_tmp%blk(ib)%send(mpl,nam,geom,bpar,iproc,mpl%tag)
+
+               ! Release memory
+               call nicas_tmp%dealloc
             end if
-         end do
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_get_var(ncid,sb_to_c1b_id,nicas%blk(ib)%sb_to_c1b))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_get_var(ncid,sb_to_l1_id,nicas%blk(ib)%sb_to_l1))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_get_var(ncid,sa_to_s_id,nicas%blk(ib)%sa_to_s))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_get_var(ncid,sa_to_sc_id,nicas%blk(ib)%sa_to_sc))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_get_var(ncid,sb_to_sc_id,nicas%blk(ib)%sb_to_sc))
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_get_var(ncid,norm_id,nicas%blk(ib)%norm))
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_get_var(ncid,coef_ens_id,nicas%blk(ib)%coef_ens))
-         call nicas%blk(ib)%com_AB%read(mpl,ncid,'com_AB')
-         call nicas%blk(ib)%com_AC%read(mpl,ncid,'com_AC')
-         nicas%blk(ib)%c%prefix = 'c'
-         call nicas%blk(ib)%c%read(mpl,ncid)
-         do il0i=1,geom%nl0i
-            write(nicas%blk(ib)%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
-            call nicas%blk(ib)%h(il0i)%read(mpl,ncid)
-         end do
-         nicas%blk(ib)%v%prefix = 'v'
-         call nicas%blk(ib)%v%read(mpl,ncid)
-         do il1=1,nicas%blk(ib)%nl1
-            write(nicas%blk(ib)%s(il1)%prefix,'(a,i3.3)') 's_',il1
-            call nicas%blk(ib)%s(il1)%read(mpl,ncid)
-         end do
-      end if
-      if ((ib==bpar%nbe).and.(abs(nam%adv_mode)==1)) then
-         call nicas%blk(ib)%com_AD%read(mpl,ncid,'com_AD')
-         call nicas%blk(ib)%com_ADinv%read(mpl,ncid,'com_ADinv')
-         do its=2,nam%nts
-            do il0=1,geom%nl0
-               write(nicas%blk(ib)%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
-               call nicas%blk(ib)%d(il0,its)%read(mpl,ncid)
-               write(nicas%blk(ib)%dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'dinv_',il0,'_',its
-               call nicas%blk(ib)%dinv(il0,its)%read(mpl,ncid)
-            end do
-         end do
-      end if
+         elseif (mpl%myproc==iproc) then
+            write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' received from task ',iprocio,' after reading'
+            call mpl%flush
 
-      ! Read main weight
-      call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'wgt',nicas%blk(ib)%wgt))
+            ! Receive data from iprocio
+            call nicas%blk(ib)%receive(mpl,nam,geom,bpar,iprocio,mpl%tag)
+         end if
 
-      ! Close file
-      call mpl%ncerr(subr,nf90_close(ncid))
+         ! Update tag
+         call mpl%update_tag(nicas_blk_ntag+4*com_ntag+(2+geom%nl0i+geom%nl0+(nam%nts-1)*geom%nl0)*linop_ntag)
+      end do
    end if
 end do
 
@@ -328,189 +251,69 @@ type(geom_type),intent(in) :: geom    ! Geometry
 type(bpar_type),intent(in) :: bpar    ! Block parameters
 
 ! Local variables
-integer :: ib,il0i,il1,its,il0
-integer :: ncid,nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nc0d_id,nc0dinv_id
-integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,sa_to_sc_id,sb_to_sc_id,norm_id,coef_ens_id
-integer :: vlev_int(geom%nl0)
-character(len=1024) :: filename
-character(len=1024),parameter :: subr = 'nicas_write'
+integer :: ib,iproc,iprocio
+type(nicas_type) :: nicas_tmp
 
+! Write NICAS blocks
 do ib=1,bpar%nbe
    if (bpar%B_block(ib)) then
-      ! Create file
-      filename = trim(nam%prefix)//'_'//trim(nicas%blk(ib)%name)
-      call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+      do iproc=1,mpl%nproc
+         ! Writing task
+         iprocio = mod(iproc,nam%nprocio)
+         if (iprocio==0) iprocio = nam%nprocio
+         if (mpl%myproc==iprocio) then
+            if (iproc==iprocio) then
+               write(mpl%info,'(a7,a,i4,a)') '','NICAS data of task ',iproc,' written by its own task'
+               call mpl%flush
 
-      ! Write namelist parameters
-      call nam%write(mpl,ncid)
+               ! Write data
+               call nicas%blk(ib)%write(mpl,nam,geom,bpar)
 
-      ! Define dimensions
-      call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0',geom%nl0,nl0_id))
-      if (bpar%nicas_block(ib)) then
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0a',geom%nc0a,nc0a_id))
-         call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'nl0i',geom%nl0i))
-         if (nicas%blk(ib)%nc1b>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1b',nicas%blk(ib)%nc1b,nc1b_id))
-         call mpl%ncerr(subr,nf90_def_dim(ncid,'nl1',nicas%blk(ib)%nl1,nl1_id))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsa',nicas%blk(ib)%nsa,nsa_id))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsb',nicas%blk(ib)%nsb,nsb_id))
-         call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'nsc',nicas%blk(ib)%nsc))
-      end if
-      if ((ib==bpar%nbe).and.nam%adv_diag) then
-         call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0d',nicas%blk(ib)%nc0d,nc0d_id))
-         call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0dinv',nicas%blk(ib)%nc0dinv,nc0dinv_id))
-      end if
-
-      ! Write main weight
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'wgt',nicas%blk(ib)%wgt))
-
-      ! Define variables
-      if (bpar%nicas_block(ib)) then
-         call mpl%ncerr(subr,nf90_def_var(ncid,'vlev',nf90_int,(/nl0_id/),vlev_id))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_def_var(ncid,'sb_to_c1b',nf90_int,(/nsb_id/),sb_to_c1b_id))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_def_var(ncid,'sb_to_l1',nf90_int,(/nsb_id/),sb_to_l1_id))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_s',nf90_int,(/nsa_id/),sa_to_s_id))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_sc',nf90_int,(/nsa_id/),sa_to_sc_id))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_def_var(ncid,'sb_to_sc',nf90_int,(/nsb_id/),sb_to_sc_id))
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_def_var(ncid,'norm',nc_kind_real,(/nc0a_id,nl0_id/),norm_id))
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_def_var(ncid,'coef_ens',nc_kind_real,(/nc0a_id,nl0_id/),coef_ens_id))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_s_id,'_FillValue',mpl%msv%vali))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_sc_id,'_FillValue',mpl%msv%vali))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_put_att(ncid,sb_to_sc_id,'_FillValue',mpl%msv%vali))
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_put_att(ncid,norm_id,'_FillValue',mpl%msv%valr))
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_put_att(ncid,coef_ens_id,'_FillValue',mpl%msv%valr))
-      end if
-
-      ! End definition mode
-      call mpl%ncerr(subr,nf90_enddef(ncid))
-
-      ! Write variables
-      if (bpar%nicas_block(ib)) then
-         do il0=1,geom%nl0
-            if (nicas%blk(ib)%vlev(il0)) then
-               vlev_int(il0) = 1
+               ! Write grids
+               if (nam%write_grids) call nicas%blk(ib)%write_grids(mpl,nam,geom,bpar)
             else
-               vlev_int(il0) = 0
-            end if
-         end do
-         call mpl%ncerr(subr,nf90_put_var(ncid,vlev_id,vlev_int))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_put_var(ncid,sb_to_c1b_id,nicas%blk(ib)%sb_to_c1b))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_put_var(ncid,sb_to_l1_id,nicas%blk(ib)%sb_to_l1))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_put_var(ncid,sa_to_s_id,nicas%blk(ib)%sa_to_s))
-         if (nicas%blk(ib)%nsa>0) call mpl%ncerr(subr,nf90_put_var(ncid,sa_to_sc_id,nicas%blk(ib)%sa_to_sc))
-         if (nicas%blk(ib)%nsb>0) call mpl%ncerr(subr,nf90_put_var(ncid,sb_to_sc_id,nicas%blk(ib)%sb_to_sc))
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_put_var(ncid,norm_id,nicas%blk(ib)%norm))
-         if (geom%nc0a>0) call mpl%ncerr(subr,nf90_put_var(ncid,coef_ens_id,nicas%blk(ib)%coef_ens))
-         call nicas%blk(ib)%com_AB%write(mpl,ncid)
-         call nicas%blk(ib)%com_AC%write(mpl,ncid)
-         call nicas%blk(ib)%c%write(mpl,ncid)
-         do il0i=1,geom%nl0i
-            call nicas%blk(ib)%h(il0i)%write(mpl,ncid)
-         end do
-         call nicas%blk(ib)%v%write(mpl,ncid)
-         do il1=1,nicas%blk(ib)%nl1
-            call nicas%blk(ib)%s(il1)%write(mpl,ncid)
-         end do
-      end if
-      if ((ib==bpar%nbe).and.nam%adv_diag) then
-         call nicas%blk(ib)%com_AD%write(mpl,ncid)
-         call nicas%blk(ib)%com_ADinv%write(mpl,ncid)
-         do its=2,nam%nts
-            do il0=1,geom%nl0
-               call nicas%blk(ib)%d(il0,its)%write(mpl,ncid)
-               call nicas%blk(ib)%dinv(il0,its)%write(mpl,ncid)
-            end do
-         end do
-      end if
+               write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' received from task ',iprocio,' to be written'
+               call mpl%flush
 
-      ! Close file
-      call mpl%ncerr(subr,nf90_close(ncid))
+               ! Allocation
+               call nicas_tmp%alloc(mpl,nam,bpar,'nicas')
+
+               ! Set name
+               if (nam%lsqrt) then
+                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'-sqrt_', &
+                & mpl%nproc,'-',iproc,'_',trim(bpar%blockname(ib))
+               else
+                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'_', &
+                & mpl%nproc,'-',iproc,'_',trim(bpar%blockname(ib))
+               end if
+
+               ! Receive data from iproc
+               call nicas_tmp%blk(ib)%receive(mpl,nam,geom,bpar,iproc,mpl%tag)
+
+               ! Write data
+               call nicas_tmp%blk(ib)%write(mpl,nam,geom,bpar)
+
+               ! Write grids
+               if (nam%write_grids) call nicas_tmp%blk(ib)%write_grids(mpl,nam,geom,bpar)
+
+               ! Release memory
+               call nicas_tmp%dealloc
+            end if
+         elseif (mpl%myproc==iproc) then
+            write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' send to task ',iprocio,' for writing'
+            call mpl%flush
+
+            ! Send data to iprocio
+            call nicas%blk(ib)%send(mpl,nam,geom,bpar,iprocio,mpl%tag)
+         end if
+
+         ! Update tag
+         call mpl%update_tag(nicas_blk_ntag+4*com_ntag+(2+geom%nl0i+geom%nl0+(nam%nts-1)*geom%nl0)*linop_ntag)
+      end do
    end if
 end do
 
 end subroutine nicas_write
-
-!----------------------------------------------------------------------
-! Subroutine: nicas_write_mpi_summary
-! Purpose: write MPI related data summary
-!----------------------------------------------------------------------
-subroutine nicas_write_mpi_summary(nicas,mpl,nam,geom,bpar)
-
-implicit none
-
-! Passed variables
-class(nicas_type),intent(in) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-
-! Local variables
-integer :: ib,is,ic1,il1
-integer :: ncid,nc0_id,nc1_id,nl1_id
-integer :: lon_id,lat_id,c0_to_proc_id,c1_to_c0_id,l1_to_l0_id,lcheck_id
-real(kind_real),allocatable :: lcheck(:,:)
-character(len=1024) :: filename
-character(len=1024),parameter :: subr = 'nicas_write_mpi_summary'
-
-do ib=1,bpar%nbe
-   if (bpar%nicas_block(ib)) then
-      ! Allocation
-      allocate(lcheck(nicas%blk(ib)%nc1,nicas%blk(ib)%nl1))
-
-      ! Create summary file
-      filename = trim(nam%prefix)//'_'//trim(nicas%blk(ib)%name)//'_summary'
-      call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
-
-      ! Write namelist parameters
-      call nam%write(mpl,ncid)
-
-      ! Define dimensions
-      call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0',geom%nc0,nc0_id))
-      call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1',nicas%blk(ib)%nc1,nc1_id))
-      call mpl%ncerr(subr,nf90_def_dim(ncid,'nl1',nicas%blk(ib)%nl1,nl1_id))
-
-      ! Define variables
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nc0_id/),lon_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nc0_id/),lat_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'c0_to_proc',nf90_int,(/nc0_id/),c0_to_proc_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'c1_to_c0',nf90_int,(/nc1_id/),c1_to_c0_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'l1_to_l0',nf90_int,(/nl1_id/),l1_to_l0_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lcheck',nc_kind_real,(/nc1_id,nl1_id/),lcheck_id))
-
-      ! End definition mode
-      call mpl%ncerr(subr,nf90_enddef(ncid))
-
-      ! Write variables
-      call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,geom%lon*rad2deg))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,geom%lat*rad2deg))
-      call mpl%ncerr(subr,nf90_put_var(ncid,c0_to_proc_id,geom%c0_to_proc))
-      call mpl%ncerr(subr,nf90_put_var(ncid,c1_to_c0_id,nicas%blk(ib)%c1_to_c0))
-      call mpl%ncerr(subr,nf90_put_var(ncid,l1_to_l0_id,nicas%blk(ib)%l1_to_l0))
-      lcheck = mpl%msv%valr
-      do is=1,nicas%blk(ib)%ns
-         ic1 = nicas%blk(ib)%s_to_c1(is)
-         il1 = nicas%blk(ib)%s_to_l1(is)
-         if (nicas%blk(ib)%lcheck_sa(is)) then
-            lcheck(ic1,il1) = 1.0
-         elseif (nicas%blk(ib)%lcheck_sb(is)) then
-            lcheck(ic1,il1) = 2.0
-         elseif (nicas%blk(ib)%lcheck_sc(is)) then
-            lcheck(ic1,il1) = 3.0
-         else
-            lcheck(ic1,il1) = 4.0
-         end if
-      end do
-      call mpl%ncerr(subr,nf90_put_var(ncid,lcheck_id,lcheck))
-
-      ! Close summary file
-      call mpl%ncerr(subr,nf90_close(ncid))
-
-      ! Release memory
-      deallocate(lcheck)
-   end if
-end do
-
-end subroutine nicas_write_mpi_summary
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_run_nicas
@@ -573,15 +376,6 @@ if (nam%write_nicas) then
    write(mpl%info,'(a)') '--- Write NICAS parameters'
    call mpl%flush
    call nicas%write(mpl,nam,geom,bpar)
-
-   if (mpl%main.and.nam%write_grids) then
-      ! Write NICAS MPI summary
-      write(mpl%info,'(a)') '-------------------------------------------------------------------'
-      call mpl%flush
-      write(mpl%info,'(a)') '--- Write NICAS MPI summary'
-      call mpl%flush
-      call nicas%write_mpi_summary(mpl,nam,geom,bpar)
-   end if
 end if
 
 end subroutine nicas_run_nicas
@@ -605,8 +399,7 @@ type(io_type),intent(in) :: io            ! I/O
 type(ens_type),intent(in) :: ens          ! Ensemble
 
 ! Local variables
-integer :: ib,info
-character(len=1024),parameter :: subr = 'nicas_run_nicas_tests'
+integer :: ib
 
 if (nam%check_adjoints) then
    ! Test adjoint
@@ -633,34 +426,12 @@ if (nam%check_adjoints) then
    call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
 end if
 
-if (nam%check_pos_def) then
-   ! Test NICAS positive definiteness
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Test NICAS positive definiteness'
-   call mpl%flush
-
-   do ib=1,bpar%nbe
-      if (bpar%nicas_block(ib)) then
-         write(mpl%info,'(a)') '-------------------------------------------------------------------'
-         call mpl%flush
-         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
-         call mpl%flush
-         call nicas%blk(ib)%test_pos_def(mpl,rng,nam,geom)
-      end if
-   end do
-end if
-
 if (nam%check_dirac) then
    ! Apply NICAS to diracs
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
    write(mpl%info,'(a)') '--- Apply NICAS to diracs'
    call mpl%flush
-
-   ! Remove dirac file
-   call execute_command_line('rm -f '//trim(nam%datadir)//'/'//trim(nam%prefix)//'_dirac.nc',cmdstat=info)
-   if (info/=0) call mpl%abort(subr,'dirac file removal failed')
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
@@ -740,7 +511,7 @@ cv%n = 0
 cv%nbe = bpar%nbe
 
 do ib=1,bpar%nbe
-   if (mpl%msv%isnoti(bpar%cv_block(ib))) then
+   if (mpl%msv%isnot(bpar%cv_block(ib))) then
       ! Copy block size
       cv%blk(ib)%n = nicas%blk(bpar%cv_block(ib))%nsa
 
@@ -790,7 +561,7 @@ do ib=1,bpar%nbe
    ! CV block
    jb = bpar%cv_block(ib)
 
-   if (mpl%msv%isnoti(jb)) then
+   if (mpl%msv%isnot(jb)) then
       ! Get total size
       call mpl%f_comm%allreduce(nicas%blk(jb)%nsa,ns,fckit_mpi_sum())
 
@@ -845,7 +616,7 @@ real(kind_real),allocatable :: wgt(:,:),wgt_diag(:)
 real(kind_real),allocatable :: fld_save(:,:,:,:)
 character(len=1024),parameter :: subr = 'nicas_apply'
 
-if (pos_def_test) then
+if (nam%pos_def_test) then
    ! Save field for positive-definiteness test
    allocate(fld_save(geom%nc0a,geom%nl0,nam%nv,nam%nts))
    fld_save = fld
@@ -1077,7 +848,7 @@ case ('specific_multivariate')
    call mpl%abort(subr,'specific multivariate strategy should not be called from apply_NICAS (lsqrt required)')
 end select
 
-if (pos_def_test) then
+if (nam%pos_def_test) then
    ! Positive-definiteness test
    prod = sum(fld_save*fld)
    call mpl%f_comm%allreduce(prod,prod_tot,fckit_mpi_sum())
@@ -1114,7 +885,7 @@ real(kind_real),allocatable :: fld_save(:,:,:,:)
 character(len=1024),parameter :: subr = 'nicas_apply_from_sqrt'
 type(cv_type) :: cv
 
-if (pos_def_test) then
+if (nam%pos_def_test) then
    ! Save field for positivity test
    allocate(fld_save(geom%nc0a,geom%nl0,nam%nv,nam%nts))
    fld_save = fld
@@ -1126,7 +897,7 @@ call nicas%apply_sqrt_ad(mpl,nam,geom,bpar,fld,cv)
 ! Apply square-root
 call nicas%apply_sqrt(mpl,nam,geom,bpar,cv,fld)
 
-if (pos_def_test) then
+if (nam%pos_def_test) then
    ! Positivity test
    prod = sum(fld_save*fld)
    call mpl%f_comm%allreduce(prod,prod_tot,fckit_mpi_sum())
@@ -1193,7 +964,7 @@ case ('common_univariate')
    allocate(fld_4d(geom%nc0a,geom%nl0,nam%nv))
 
    do ib=1,bpar%nb
-      if (mpl%msv%isnoti(bpar%cv_block(ib))) then
+      if (mpl%msv%isnot(bpar%cv_block(ib))) then
          ! Variable index
          iv = bpar%b_to_v1(ib)
 
@@ -1253,7 +1024,7 @@ case ('common_weighted')
    call cholesky(mpl,nam%nv,wgt,wgt_u)
 
    do ib=1,bpar%nb
-      if (mpl%msv%isnoti(bpar%cv_block(ib))) then
+      if (mpl%msv%isnot(bpar%cv_block(ib))) then
          ! Variable index
          iv = bpar%b_to_v1(ib)
 
@@ -1419,7 +1190,7 @@ case ('common_univariate')
    end do
 
    do ib=1,bpar%nb
-      if (mpl%msv%isnoti(bpar%cv_block(ib))) then
+      if (mpl%msv%isnot(bpar%cv_block(ib))) then
          ! Variable index
          iv = bpar%b_to_v1(ib)
 
@@ -1488,7 +1259,7 @@ case ('common_weighted')
    end do
 
    do ib=1,bpar%nb
-      if (mpl%msv%isnoti(bpar%cv_block(ib))) then
+      if (mpl%msv%isnot(bpar%cv_block(ib))) then
          ! Variable index
          iv = bpar%b_to_v1(ib)
 
@@ -1597,7 +1368,7 @@ type(ens_type),intent(out) :: ens     ! Ensemble
 
 ! Local variable
 integer :: ie,ic0a,il0,its,iv
-real(kind_real) :: mean(geom%nc0a,geom%nl0,nam%nv,nam%nts),std(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: std(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 type(cv_type) :: cv_ens(ne)
 
 ! Allocation
@@ -1607,15 +1378,15 @@ do ie=1,ne
    ! Generate random control vector
    call nicas%random_cv(mpl,rng,bpar,cv_ens(ie))
 
+   ! Allocate member
+   if (.not.allocated(ens%mem(ie)%fld)) allocate(ens%mem(ie)%fld(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+
    ! Apply square-root
-   call nicas%apply_sqrt(mpl,nam,geom,bpar,cv_ens(ie),ens%fld(:,:,:,:,ie))
+   call nicas%apply_sqrt(mpl,nam,geom,bpar,cv_ens(ie),ens%mem(ie)%fld)
 end do
 
 ! Remove mean
-mean = sum(ens%fld,dim=5)/real(ne,kind_real)
-do ie=1,ne
-   ens%fld(:,:,:,:,ie) = ens%fld(:,:,:,:,ie)-mean
-end do
+call ens%remove_mean
 
 ! Compute standard deviation
 !$omp parallel do schedule(static) private(its,iv,il0,ic0a)
@@ -1623,7 +1394,13 @@ do its=1,nam%nts
    do iv=1,nam%nv
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) std(ic0a,il0,iv,its) = sqrt(sum(ens%fld(ic0a,il0,iv,its,:)**2)/real(ne-1,kind_real))
+            if (geom%mask_c0a(ic0a,il0)) then
+               std(ic0a,il0,iv,its) = 0.0
+               do ie=1,ne
+                  std(ic0a,il0,iv,its) = std(ic0a,il0,iv,its)+ens%mem(ie)%fld(ic0a,il0,iv,its)**2
+               end do
+               std(ic0a,il0,iv,its) = sqrt(std(ic0a,il0,iv,its)/real(ne-1,kind_real))
+            end if
          end do
       end do
    end do
@@ -1631,13 +1408,15 @@ end do
 !$omp end parallel do
 
 ! Normalize perturbations
-!$omp parallel do schedule(static) private(its,iv,il0,ic0a)
-do its=1,nam%nts
-   do iv=1,nam%nv
-      do il0=1,geom%nl0
-         do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) ens%fld(ic0a,il0,iv,its,:) = ens%fld(ic0a,il0,iv,its,:) &
-                                                                    & /std(ic0a,il0,iv,its)
+!$omp parallel do schedule(static) private(ie,its,iv,il0,ic0a)
+do ie=1,ne
+   do its=1,nam%nts
+      do iv=1,nam%nv
+         do il0=1,geom%nl0
+            do ic0a=1,geom%nc0a
+               if (geom%mask_c0a(ic0a,il0)) ens%mem(ie)%fld(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its) &
+                                                                             & /std(ic0a,il0,iv,its)
+            end do
          end do
       end do
    end do
@@ -1678,7 +1457,7 @@ if (nam%adv_mode==-1) call nicas%blk(bpar%nbe)%apply_adv_ad(mpl,nam,geom,fld_cop
 fld = 0.0
 do ie=1,ens%ne
    ! Compute perturbation
-   pert = ens%fld(:,:,:,:,ie)
+   pert = ens%mem(ie)%fld
 
    ! Inverse advection
    if (nam%adv_mode==-1) call nicas%blk(bpar%nbe)%apply_adv_inv(mpl,nam,geom,pert)
@@ -1879,13 +1658,17 @@ type(geom_type),intent(in) :: geom    ! Geometry
 type(bpar_type),intent(in) :: bpar    ! Block parameters
 
 ! Local variables
-integer :: ifac,itest,nefac(nfac),ens1_ne
+integer :: ifac,itest,nefac(nfac_rnd),ens1_ne
 integer :: ncid,ntest_id,nfac_id,mse_id,mse_th_id
-real(kind_real) :: fld_ref(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest),fld_save(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest)
-real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts),mse(ntest,nfac),mse_th(ntest,nfac),mse_avg,mse_th_avg
+real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts),mse(ntest,nfac_rnd),mse_th(ntest,nfac_rnd),mse_avg,mse_th_avg
+real(kind_real),allocatable :: fld_ref(:,:,:,:,:),fld_save(:,:,:,:,:)
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'nicas_test_randomization'
 type(ens_type) :: ens
+
+! Allocation
+allocate(fld_ref(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest))
+allocate(fld_save(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest))
 
 ! Define test vectors
 write(mpl%info,'(a4,a)') '','Define test vectors'
@@ -1911,9 +1694,9 @@ ens1_ne = nam%ens1_ne
 
 write(mpl%info,'(a4,a)') '','Test randomization for various ensemble sizes:'
 call mpl%flush
-do ifac=1,nfac
+do ifac=1,nfac_rnd
    ! Ensemble size
-   nefac(ifac) = max(int(real(ifac,kind_real)/real(nfac,kind_real)*real(ens1_ne,kind_real)),3)
+   nefac(ifac) = max(int(real(ifac,kind_real)/real(nfac_rnd,kind_real)*real(ens1_ne,kind_real)),3)
    nam%ens1_ne = nefac(ifac)
    write(mpl%info,'(a7,a,i4,a)') '','Ensemble sizes: ',nefac(ifac),' members'
    call mpl%flush
@@ -1956,30 +1739,36 @@ end do
 ! Reset namelist variables
 nam%ens1_ne = ens1_ne
 
-! Create file
-filename = trim(nam%prefix)//'_randomization'
-call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+if (mpl%main) then
+   ! Create file 
+   filename = trim(nam%prefix)//'_randomization'
+   call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+   
+   ! Write namelist parameters
+   call nam%write(mpl,ncid)
+   
+   ! Define dimensions
+   call mpl%ncerr(subr,nf90_def_dim(ncid,'ntest',ntest,ntest_id))
+   call mpl%ncerr(subr,nf90_def_dim(ncid,'nfac',nfac_rnd,nfac_id))
+   
+   ! Define variables
+   call mpl%ncerr(subr,nf90_def_var(ncid,'mse',nc_kind_real,(/ntest_id,nfac_id/),mse_id))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'mse_th',nc_kind_real,(/ntest_id,nfac_id/),mse_th_id))
+   
+   ! End definition mode
+   call mpl%ncerr(subr,nf90_enddef(ncid))
+   
+   ! Write variables
+   call mpl%ncerr(subr,nf90_put_var(ncid,mse_id,mse))
+   call mpl%ncerr(subr,nf90_put_var(ncid,mse_th_id,mse_th))
+   
+   ! Close file
+   call mpl%ncerr(subr,nf90_close(ncid))
+end if
 
-! Write namelist parameters
-call nam%write(mpl,ncid)
-
-! Define dimensions
-call mpl%ncerr(subr,nf90_def_dim(ncid,'ntest',ntest,ntest_id))
-call mpl%ncerr(subr,nf90_def_dim(ncid,'nfac',nfac,nfac_id))
-
-! Define variables
-call mpl%ncerr(subr,nf90_def_var(ncid,'mse',nc_kind_real,(/ntest_id,nfac_id/),mse_id))
-call mpl%ncerr(subr,nf90_def_var(ncid,'mse_th',nc_kind_real,(/ntest_id,nfac_id/),mse_th_id))
-
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
-
-! Write variables
-call mpl%ncerr(subr,nf90_put_var(ncid,mse_id,mse))
-call mpl%ncerr(subr,nf90_put_var(ncid,mse_th_id,mse_th))
-
-! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
+! Release memory
+deallocate(fld_ref)
+deallocate(fld_save)
 
 end subroutine nicas_test_randomization
 
@@ -2069,7 +1858,7 @@ type(io_type),intent(in) :: io        ! I/O
 
 ! Local variables
 integer :: ib,ifac,itest,il0
-real(kind_real) :: fac(nfac),mse(ntest,nfac),mse_sum,mse_max,rh_sum,rh_tot,rv_sum,rv_tot
+real(kind_real) :: fac(-nfac_opt:nfac_opt),mse(ntest,-nfac_opt:nfac_opt),mse_sum,mse_max,rh_sum,rh_tot,rv_sum,rv_tot
 real(kind_real) :: fld_ref(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest),fld_save(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest)
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 character(len=1024) :: method
@@ -2124,7 +1913,7 @@ call loc_opt%alloc(mpl,nam,geom,bpar,hdiag%samp,'loc_opt',.false.)
 ! Initialization
 mse_max = huge(1.0)
 
-do ifac=1,nfac
+do ifac=-nfac_opt,nfac_opt
    ! Copy HDIAG into C matrix
    call cmat%from_hdiag(mpl,nam,geom,bpar,hdiag)
 
@@ -2132,7 +1921,7 @@ do ifac=1,nfac
    call cmat%setup_sampling(nam,geom,bpar)
 
    ! Multiplication factor
-   fac(ifac) = 1.0+real(nfac/2+ifac-nfac,kind_real)/real(nfac/2+1,kind_real)
+   fac(ifac) = 1.0+real(ifac,kind_real)/real(nfac_opt+1,kind_real)
 
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
@@ -2175,7 +1964,7 @@ do ifac=1,nfac
       call nicas_test%apply_bens(mpl,nam,geom,bpar,ens_test,fld)
 
       ! RMSE
-      mse_sum = sum((fld-fld_ref(:,:,:,:,itest))**2,mask=mpl%msv%isnotr(fld_ref(:,:,:,:,itest)))
+      mse_sum = sum((fld-fld_ref(:,:,:,:,itest))**2,mask=mpl%msv%isnot(fld_ref(:,:,:,:,itest)))
       call mpl%f_comm%allreduce(mse_sum,mse(itest,ifac),fckit_mpi_sum())
    end do
 
@@ -2185,11 +1974,11 @@ do ifac=1,nfac
       do ib=1,bpar%nbe
          if (bpar%nicas_block(ib)) then
             do il0=1,geom%nl0
-               rh_sum = sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnotr(cmat%blk(ib)%rh(:,il0)))
+               rh_sum = sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rh(:,il0)))
                call mpl%f_comm%allreduce(rh_sum,rh_tot,fckit_mpi_sum())
                loc_opt%blk(0,ib)%fit_rh = rh_tot/real(geom%nc0_mask(il0),kind_real)
                if ((nam%nl>1).and.(nam%rv>0.0)) then
-                  rv_sum = sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnotr(cmat%blk(ib)%rv(:,il0)))
+                  rv_sum = sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rv(:,il0)))
                   call mpl%f_comm%allreduce(rv_sum,rv_tot,fckit_mpi_sum())
                   loc_opt%blk(0,ib)%fit_rv = rv_tot/real(geom%nc0_mask(il0),kind_real)
                end if
@@ -2215,7 +2004,7 @@ write(mpl%info,'(a)') '---------------------------------------------------------
 call mpl%flush
 write(mpl%info,'(a)') '--- Optimality results summary'
 call mpl%flush
-do ifac=1,nfac
+do ifac=-nfac_opt,nfac_opt
    write(mpl%info,'(a7,a,f4.2,a,e15.8)') '','Factor ',fac(ifac),', MSE: ',sum(mse(:,ifac))/real(ntest,kind_real)
    call mpl%flush
 end do
@@ -2223,8 +2012,8 @@ end do
 ! Best fit
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,loc_opt%blk(0,ib)%distv, &
-    & loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit)
+      call fit_diag(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+    & loc_opt%blk(0,ib)%distv,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit)
       call loc_opt%blk(0,ib)%write(mpl,nam,geom,bpar,trim(nam%prefix)//'_diag')
    end if
 end do
@@ -2269,8 +2058,8 @@ if (mpl%main) then
       end do
    end do
 end if
-call mpl%f_comm%broadcast(ic0dir,mpl%ioproc-1)
-call mpl%f_comm%broadcast(il0dir,mpl%ioproc-1)
+call mpl%f_comm%broadcast(ic0dir,mpl%rootproc-1)
+call mpl%f_comm%broadcast(il0dir,mpl%rootproc-1)
 ivdir = 1
 itsdir = 1
 

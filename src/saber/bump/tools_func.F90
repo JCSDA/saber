@@ -11,7 +11,7 @@ use fckit_geometry_module, only: sphere_distance,sphere_lonlat2xyz,sphere_xyz2lo
 use tools_asa007, only: asa007_cholesky,asa007_syminv
 use tools_const, only: pi,deg2rad,rad2deg
 use tools_kinds, only: kind_real
-use tools_repro, only: inf,sup,infeq
+use tools_repro, only: inf,sup,infeq,small
 use type_mpl, only: mpl_type
 
 implicit none
@@ -20,12 +20,12 @@ real(kind_real),parameter :: gc2gau = 0.28            ! GC99 support radius to G
 real(kind_real),parameter :: gau2gc = 3.57            ! Gaussian Daley length-scale to GC99 support radius (empirical)
 real(kind_real),parameter :: Dmin = 1.0e-12_kind_real ! Minimum tensor diagonal value
 real(kind_real),parameter :: condmax = 1.0e3          ! Maximum tensor conditioning number
-integer,parameter :: M = 0                            ! Number of implicit iteration for the Matern function (Gaussian function if M = 0)
+integer,parameter :: M = 0                            ! Number of implicit iteration for the Matern function (0: Gaussian)
 
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: lonlatmod,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product,add,divide, &
-        & fit_diag,fit_diag_dble,gc99,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
+        & fit_diag,fit_diag_dble,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
 
@@ -135,7 +135,7 @@ real(kind_real),intent(out) :: z    ! Z coordinate
 ! Local variables
 character(len=1024),parameter :: subr = 'lonlat2xyz'
 
-if (mpl%msv%isnotr(lat).and.mpl%msv%isnotr(lon)) then
+if (mpl%msv%isnot(lat).and.mpl%msv%isnot(lon)) then
    ! Check longitude/latitude
    if (inf(lon,-pi).and.sup(lon,pi)) call mpl%abort(subr,'wrong longitude')
    if (inf(lat,-0.5*pi).and.sup(lat,-0.5*pi)) call mpl%abort(subr,'wrong latitude')
@@ -167,7 +167,7 @@ real(kind_real),intent(in) :: z    ! Z coordinate
 real(kind_real),intent(out) :: lon ! Longitude (radians)
 real(kind_real),intent(out) :: lat ! Latitude (radians)
 
-if (mpl%msv%isnotr(x).and.mpl%msv%isnotr(y).and.mpl%msv%isnotr(z)) then
+if (mpl%msv%isnot(x).and.mpl%msv%isnot(y).and.mpl%msv%isnot(z)) then
    ! Call fckit
    call sphere_xyz2lonlat(x,y,z,lon,lat)
    lon = lon*deg2rad
@@ -211,7 +211,7 @@ end subroutine vector_product
 ! Subroutine: vector_triple_product
 ! Purpose: compute vector triple product
 !----------------------------------------------------------------------
-subroutine vector_triple_product(v1,v2,v3,p)
+subroutine vector_triple_product(v1,v2,v3,p,cflag)
 
 implicit none
 
@@ -220,17 +220,28 @@ real(kind_real),intent(in) :: v1(3) ! First vector
 real(kind_real),intent(in) :: v2(3) ! Second vector
 real(kind_real),intent(in) :: v3(3) ! Third vector
 real(kind_real),intent(out) :: p    ! Triple product
+logical,intent(out) :: cflag        ! Confidence flag
 
 ! Local variable
-real(kind_real) :: vp(3)
+integer :: i
+real(kind_real) :: terms(6)
 
-! Vector product
-vp(1) = v1(2)*v2(3)-v1(3)*v2(2)
-vp(2) = v1(3)*v2(1)-v1(1)*v2(3)
-vp(3) = v1(1)*v2(2)-v1(2)*v2(1)
+! Terms
+terms(1) = v1(2)*v2(3)*v3(1)
+terms(2) = -v1(3)*v2(2)*v3(1)
+terms(3) = v1(3)*v2(1)*v3(2)
+terms(4) = -v1(1)*v2(3)*v3(2)
+terms(5) = v1(1)*v2(2)*v3(3)
+terms(6) = -v1(2)*v2(1)*v3(3)
 
-! Scalar product
-p = sum(vp*v3)
+! Sum
+p = sum(terms)
+
+! Confidence flag
+cflag = .true.
+do i=1,6
+   if ((abs(terms(i))>0.0).and.small(p,terms(i))) cflag = .false.
+end do
 
 end subroutine vector_triple_product
 
@@ -257,7 +268,7 @@ lwgt = 1.0
 if (present(wgt)) lwgt = wgt
 
 ! Add value to cumul
-if (mpl%msv%isnotr(val)) then
+if (mpl%msv%isnot(val)) then
    cumul = cumul+lwgt*val
    num = num+lwgt
 end if
@@ -290,12 +301,13 @@ end subroutine divide
 ! Subroutine: fit_diag
 ! Purpose: compute diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,rh,rv,fit)
+subroutine fit_diag(mpl,fit_type,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,rh,rv,fit)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl              ! MPI data
+character(len=*),intent(in) :: fit_type          ! Fit function type
 integer,intent(in) :: nc3                        ! Number of classes
 integer,intent(in) :: nl0r                       ! Reduced number of levels
 integer,intent(in) :: nl0                        ! Number of levels
@@ -316,8 +328,6 @@ logical :: add_to_front
 ! Initialization
 fit = 0.0
 
-!$omp parallel do schedule(static) private(il0,np,jl0r,np_new,ip,jc3,jl0,kc3,kl0r,kl0,rhsq,rvsq,distnorm,disttest,add_to_front), &
-!$omp&                             private(jp) firstprivate(plist,plist_new,dist)
 do il0=1,nl0
    ! Allocation
    allocate(plist(nc3*nl0r,2))
@@ -348,12 +358,12 @@ do il0=1,nl0
          do kc3=max(jc3-1,1),min(jc3+1,nc3)
             do kl0r=max(jl0r-1,1),min(jl0r+1,nl0r)
                kl0 = l0rl0_to_l0(kl0r,il0)
-               if (mpl%msv%isnotr(rh(jl0)).and.mpl%msv%isnotr(rh(kl0))) then
+               if (mpl%msv%isnot(rh(jl0)).and.mpl%msv%isnot(rh(kl0))) then
                   rhsq = 0.5*(rh(jl0)**2+rh(kl0)**2)
                else
                   rhsq = 0.0
                end if
-               if (mpl%msv%isnotr(rv(jl0)).and.mpl%msv%isnotr(rv(kl0))) then
+               if (mpl%msv%isnot(rv(jl0)).and.mpl%msv%isnot(rv(kl0))) then
                   rvsq = 0.5*(rv(jl0)**2+rv(kl0)**2)
                else
                   rvsq = 0.0
@@ -405,9 +415,9 @@ do il0=1,nl0
 
    do jl0r=1,nl0r
       do jc3=1,nc3
-         ! Gaspari-Cohn (1999) function
+         ! Fit function
          distnorm = dist(jc3,jl0r)
-         fit(jc3,jl0r,il0) = gc99(mpl,distnorm)
+         fit(jc3,jl0r,il0) = fit_func(mpl,fit_type,distnorm)
       end do
    end do
 
@@ -416,7 +426,6 @@ do il0=1,nl0
    deallocate(plist_new)
    deallocate(dist)
 end do
-!$omp end parallel do
 
 end subroutine fit_diag
 
@@ -424,12 +433,13 @@ end subroutine fit_diag
 ! Subroutine: fit_diag_dble
 ! Purpose: compute diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag_dble(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,rh,rv,rv_rfac,rv_coef,fit)
+subroutine fit_diag_dble(mpl,fit_type,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,rh,rv,rv_rfac,rv_coef,fit)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl              ! MPI data
+character(len=*),intent(in) :: fit_type          ! Fit function type
 integer,intent(in) :: nc3                        ! Number of classes
 integer,intent(in) :: nl0r                       ! Reduced number of levels
 integer,intent(in) :: nl0                        ! Number of levels
@@ -452,8 +462,6 @@ logical :: add_to_front
 ! Initialization
 fit = 0.0
 
-!$omp parallel do schedule(static) private(il0,np,jl0r,np_new,ip,jc3,jl0,kc3,kl0r,kl0,rhsq,rvsq,distnorm,disttest,add_to_front), &
-!$omp&                             private(jp,distnormv,rfac,coef,distnormh) firstprivate(plist,plist_new,dist)
 do il0=1,nl0
    ! Allocation
    allocate(plist(nc3*nl0r,2))
@@ -484,12 +492,12 @@ do il0=1,nl0
          do kc3=max(jc3-1,1),min(jc3+1,nc3)
             do kl0r=max(jl0r-1,1),min(jl0r+1,nl0r)
                kl0 = l0rl0_to_l0(kl0r,il0)
-               if (mpl%msv%isnotr(rh(jl0)).and.mpl%msv%isnotr(rh(kl0))) then
+               if (mpl%msv%isnot(rh(jl0)).and.mpl%msv%isnot(rh(kl0))) then
                   rhsq = 0.5*(rh(jl0)**2+rh(kl0)**2)
                else
                   rhsq = 0.0
                end if
-               if (mpl%msv%isnotr(rv(jl0)).and.mpl%msv%isnotr(rv(kl0))) then
+               if (mpl%msv%isnot(rv(jl0)).and.mpl%msv%isnot(rv(kl0))) then
                   rvsq = 0.5*(rv(jl0)**2+rv(kl0)**2)
                else
                   rvsq = 0.0
@@ -553,10 +561,11 @@ do il0=1,nl0
           coef = sqrt(rv_coef(il0)*rv_coef(jl0))
       end if
       do jc3=1,nc3
-         ! Double Gaspari-Cohn (1999) function
+         ! Double fit function
          distnorm = dist(jc3,jl0r)
          distnormh = sqrt(distnorm**2-distnormv**2)
-         fit(jc3,jl0r,il0) = gc99(mpl,distnormh)*((1.0+coef)*gc99(mpl,distnormv)-coef*gc99(mpl,distnormv*rfac))
+         fit(jc3,jl0r,il0) = fit_func(mpl,fit_type,distnormh)*((1.0+coef)*fit_func(mpl,fit_type,distnormv) &
+                           & -coef*fit_func(mpl,fit_type,distnormv*rfac))
       end do
    end do
 
@@ -565,7 +574,6 @@ do il0=1,nl0
    deallocate(plist_new)
    deallocate(dist)
 end do
-!$omp end parallel do
 
 end subroutine fit_diag_dble
 
@@ -573,20 +581,13 @@ end subroutine fit_diag_dble
 ! Function: gc99
 ! Purpose: Gaspari and Cohn (1999) function, with the support radius as a parameter
 !----------------------------------------------------------------------
-function gc99(mpl,distnorm)
+function gc99(distnorm)
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    ! MPI data
 real(kind_real),intent(in) :: distnorm ! Normalized distance
 
 ! Returned variable
 real(kind_real) :: gc99
-
-! Local variables
-character(len=1024),parameter :: subr = 'gc99'
-
-! Distance check bound
-if (distnorm<0.0) call mpl%abort(subr,'negative normalized distance')
 
 ! Gaspari and Cohn (1999) function
 if (distnorm<0.5) then
@@ -597,16 +598,151 @@ else
    gc99 = 0.0
 end if
 
-! Enforce positivity
-gc99 = max(gc99,0.0_kind_real)
-
 end function gc99
+
+!----------------------------------------------------------------------
+! Function: cres
+! Purpose: reservoir code correlation function, with the support radius as a parameter
+!----------------------------------------------------------------------
+function cres(distnorm)
+
+! Passed variables
+real(kind_real),intent(in) :: distnorm ! Normalized distance
+
+! Returned variable
+real(kind_real) :: cres
+
+! Reservoir code function
+if (distnorm<1.0) then
+   cres = 1.0-1.5*distnorm+0.5*distnorm**3
+else
+   cres = 0.0
+end if
+
+end function cres
+
+!----------------------------------------------------------------------
+! Function: poly4
+! Purpose: 4th order polynomial correlation function, with the support radius as a parameter
+!----------------------------------------------------------------------
+function poly4(distnorm)
+
+! Passed variables
+real(kind_real),intent(in) :: distnorm ! Normalized distance
+
+! Returned variable
+real(kind_real) :: poly4
+
+! Reservoir code function
+if (distnorm<1.0) then
+   poly4 = 1.0-4.0*distnorm+6.0*distnorm**2-4.0*distnorm**3+distnorm**4
+else
+   poly4 = 0.0
+end if
+
+end function poly4
+
+!----------------------------------------------------------------------
+! Function: fb07_gc99
+! Purpose: normalized Furrer and Bengtsson (2007) localization function, with the support radius of the related gc99 function as a parameter
+!----------------------------------------------------------------------
+function fb07_gc99(distnorm,ne)
+
+! Passed variables
+real(kind_real),intent(in) :: distnorm ! Normalized distance
+integer,intent(in) :: ne               ! Ensemble size
+
+! Returned variable
+real(kind_real) :: fb07_gc99
+
+! Local variables
+real(kind_real) :: cor
+
+! Correlation function
+cor = gc99(distnorm)
+
+! Normalized Furrer and Bengtsson (2007) localization function
+fb07_gc99 = cor**2*real(ne+2,kind_real)/(1.0+cor**2*real(ne+1,kind_real))
+
+end function fb07_gc99
+
+!----------------------------------------------------------------------
+! Function: fb07_cres
+! Purpose: normalized Furrer and Bengtsson (2007) localization function, with the support radius of the related cres function as a parameter
+!----------------------------------------------------------------------
+function fb07_cres(distnorm,ne)
+
+! Passed variables
+real(kind_real),intent(in) :: distnorm ! Normalized distance
+integer,intent(in) :: ne               ! Ensemble size
+
+! Returned variable
+real(kind_real) :: fb07_cres
+
+! Local variables
+real(kind_real) :: cor
+
+! Correlation function
+cor = cres(distnorm)
+
+! Normalized Furrer and Bengtsson (2007) localization function
+fb07_cres = cor**2*real(ne+2,kind_real)/(1.0+cor**2*real(ne+1,kind_real))
+
+end function fb07_cres
+
+!----------------------------------------------------------------------
+! Function: fit_func
+! Purpose: fit_function
+!----------------------------------------------------------------------
+function fit_func(mpl,fit_type,distnorm)
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl     ! MPI data
+character(len=*),intent(in) :: fit_type ! Fit function type
+real(kind_real),intent(in) :: distnorm  ! Normalized distance
+
+! Returned variable
+real(kind_real) :: fit_func
+
+! Local variables
+integer :: ne
+character(len=1024),parameter :: subr = 'fit_func'
+
+! Distance check bound
+if (distnorm<0.0) call mpl%abort(subr,'negative normalized distance')
+
+fit_func = 0.0
+select case (fit_type(1:4))
+case ('gc99')
+   fit_func = gc99(distnorm)
+case ('cres')
+   fit_func = cres(distnorm)
+case ('poly4')
+   fit_func = poly4(distnorm)
+case ('fb07')
+   read(fit_type(11:14),'(i4.4)') ne
+   select case (fit_type(6:9))
+   case ('gc99')
+      fit_func = fb07_gc99(distnorm,ne)
+   case ('cres')
+      fit_func = fb07_cres(distnorm,ne)
+   case default
+      call mpl%abort(subr,'wrong fit function type')
+   end select
+case default
+   call mpl%abort(subr,'wrong fit function type')
+end select
+
+! Enforce positivity
+fit_func = max(fit_func,0.0_kind_real)
+
+end function fit_func
 
 !----------------------------------------------------------------------
 ! Subroutine: fit_lct
 ! Purpose: LCT fit
 !----------------------------------------------------------------------
-subroutine fit_lct(mpl,nc,nl0,dx,dy,dz,dmask,nscales,D,coef,fit)
+subroutine fit_lct(mpl,nc,nl0,dxsq,dysq,dxdy,dzsq,dmask,nscales,D,coef,fit)
 
 implicit none
 
@@ -614,9 +750,10 @@ implicit none
 type(mpl_type),intent(inout) :: mpl         ! MPI data
 integer,intent(in) :: nc                    ! Number of classes
 integer,intent(in) :: nl0                   ! Number of levels
-real(kind_real),intent(in) :: dx(nc,nl0)    ! Zonal separation
-real(kind_real),intent(in) :: dy(nc,nl0)    ! Meridian separation
-real(kind_real),intent(in) :: dz(nc,nl0)    ! Vertical separation
+real(kind_real),intent(in) :: dxsq(nc,nl0)  ! Zonal separation squared
+real(kind_real),intent(in) :: dysq(nc,nl0)  ! Meridian separation squared
+real(kind_real),intent(in) :: dxdy(nc,nl0)  ! Zonal x meridian separations product
+real(kind_real),intent(in) :: dzsq(nc,nl0)  ! Vertical separation squared
 logical,intent(in) :: dmask(nc,nl0)         ! Mask
 integer,intent(in) :: nscales               ! Number of LCT scales
 real(kind_real),intent(in) :: D(4,nscales)  ! LCT components
@@ -649,7 +786,6 @@ do iscales=1,nscales
    call lct_d2h(mpl,D11,D22,D33,D12,H11,H22,H33,H12)
 
    ! Homogeneous anisotropic approximation
-   !$omp parallel do schedule(static) private(jl0,jc3,rsq)
    do jl0=1,nl0
       do jc3=1,nc
          if (dmask(jc3,jl0)) then
@@ -657,7 +793,7 @@ do iscales=1,nscales
             if (iscales==1) fit(jc3,jl0) = 0.0
 
             ! Squared distance
-            rsq = H11*dx(jc3,jl0)**2+H22*dy(jc3,jl0)**2+H33*dz(jc3,jl0)**2+2.0*H12*dx(jc3,jl0)*dy(jc3,jl0)
+            rsq = H11*dxsq(jc3,jl0)+H22*dysq(jc3,jl0)+H33*dzsq(jc3,jl0)+2.0*H12*dxdy(jc3,jl0)
 
             if (M==0) then
                ! Gaussian function
@@ -669,7 +805,6 @@ do iscales=1,nscales
          end if
       end do
    end do
-   !$omp end parallel do
 end do
 
 end subroutine fit_lct
@@ -999,8 +1134,8 @@ character(len=1024) :: subr = 'histogram'
 ! Check data
 if (nbins<=0) call mpl%abort(subr,'the number of bins should be positive')
 if (histmax>histmin) then
-   if (minval(list,mask=mpl%msv%isnotr(list))<histmin) call mpl%abort(subr,'values below histogram minimum')
-   if (maxval(list,mask=mpl%msv%isnotr(list))>histmax) call mpl%abort(subr,'values over histogram maximum')
+   if (minval(list,mask=mpl%msv%isnot(list))<histmin) call mpl%abort(subr,'values below histogram minimum')
+   if (maxval(list,mask=mpl%msv%isnot(list))>histmax) call mpl%abort(subr,'values over histogram maximum')
 
    ! Compute bins
    delta = (histmax-histmin)/real(nbins,kind_real)
@@ -1017,7 +1152,7 @@ if (histmax>histmin) then
    ! Compute histogram
    hist = 0.0
    do ilist=1,nlist
-      if (mpl%msv%isnotr(list(ilist))) then
+      if (mpl%msv%isnot(list(ilist))) then
          ibins = 0
          found = .false.
          do while (.not.found)
@@ -1030,12 +1165,13 @@ if (histmax>histmin) then
          end do
       end if
    end do
-   if (abs(sum(hist)-real(count(mpl%msv%isnotr(list)),kind_real))>0.5) &
+   if (abs(sum(hist)-real(count(mpl%msv%isnot(list)),kind_real))>0.5) &
     & call mpl%abort(subr,'histogram sum is not equal to the number of valid elements')
 else
    bins = mpl%msv%valr
    hist = 0.0
 end if
+
 end subroutine histogram
 
 end module tools_func

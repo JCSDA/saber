@@ -17,6 +17,7 @@ set( ECBUILD_DEFAULT_BUILD_TYPE Release )
 set( ENABLE_OS_TESTS           OFF CACHE BOOL "Disable OS tests" FORCE )
 set( ENABLE_LARGE_FILE_SUPPORT OFF CACHE BOOL "Disable testing of large file support" FORCE )
 set( ENABLE_MPI ON CACHE BOOL "Compile with MPI" )
+set( BUILD_BUMP_DOC OFF )
 
 include( ecbuild_system NO_POLICY_SCOPE )
 
