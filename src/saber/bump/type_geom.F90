@@ -351,6 +351,21 @@ end if
 call mpl%f_comm%broadcast(mg_to_c0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(c0_to_mg,mpl%rootproc-1)
 
+! Size of subset SC0, halo A
+allocate(geom%proc_to_nc0a(mpl%nproc))
+if (mpl%main) then
+   geom%proc_to_nc0a = 0
+   img = 0
+   do iproc=1,mpl%nproc
+      do imga=1,proc_to_nmga(iproc)
+         img = img+1
+         if (mask_hor_mg(img)) geom%proc_to_nc0a(iproc) = geom%proc_to_nc0a(iproc)+1
+      end do
+   end do
+end if
+call mpl%f_comm%broadcast(geom%proc_to_nc0a,mpl%rootproc-1)
+geom%nc0a = geom%proc_to_nc0a(mpl%myproc)
+
 ! Allocation
 allocate(mg_to_mga(geom%nmg))
 allocate(mga_to_mg(geom%nmga))
@@ -365,27 +380,12 @@ allocate(geom%mask_c0(geom%nc0,geom%nl0))
 allocate(geom%mask_hor_c0(geom%nc0))
 allocate(geom%mask_ver_c0(geom%nl0))
 allocate(geom%nc0_mask(0:geom%nl0))
-allocate(geom%proc_to_nc0a(mpl%nproc))
 allocate(geom%lon_c0a(geom%nc0a))
 allocate(geom%lat_c0a(geom%nc0a))
 allocate(geom%vunit_c0a(geom%nc0a,geom%nl0))
 allocate(geom%mask_c0a(geom%nc0a,geom%nl0))
 allocate(geom%mask_hor_c0a(geom%nc0a))
 allocate(mga_to_c0(geom%nmga))
-
-! Size of subset SC0, halo A
-if (mpl%main) then
-   geom%proc_to_nc0a = 0
-   img = 0
-   do iproc=1,mpl%nproc
-      do imga=1,proc_to_nmga(iproc)
-         img = img+1
-         if (mask_hor_mg(img)) geom%proc_to_nc0a(iproc) = geom%proc_to_nc0a(iproc)+1
-      end do
-   end do
-end if
-call mpl%f_comm%broadcast(geom%proc_to_nc0a,mpl%rootproc-1)
-geom%nc0a = geom%proc_to_nc0a(mpl%myproc)
 
 ! Model grid conversions and Sc0 size on halo A
 img = 0
