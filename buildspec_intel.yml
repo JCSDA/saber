@@ -63,7 +63,6 @@ phases:
   pre_build:
     commands:
       - echo Executing pre_build phase
-      - cd ../
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
 
