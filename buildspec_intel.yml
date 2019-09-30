@@ -67,6 +67,8 @@ phases:
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
 
+      - pwd
+      - ls  
       - if [ "$CODEBUILD_WEBHOOK_EVENT" = "PULL_REQUEST_MERGED" ];
         then export CODEBUILD_GIT_BRANCH="develop";
         echo "Merging to develop";
