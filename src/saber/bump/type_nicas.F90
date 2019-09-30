@@ -270,7 +270,7 @@ do ib=1,bpar%nbe
                call nicas%blk(ib)%write(mpl,nam,geom,bpar)
 
                ! Write grids
-               if (nam%write_grids) call nicas%blk(ib)%write_grids(mpl,nam,geom,bpar)
+               if (nam%write_grids) call nicas%blk(ib)%write_grids(mpl,nam,bpar)
             else
                write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' received from task ',iprocio,' to be written'
                call mpl%flush
@@ -294,7 +294,7 @@ do ib=1,bpar%nbe
                call nicas_tmp%blk(ib)%write(mpl,nam,geom,bpar)
 
                ! Write grids
-               if (nam%write_grids) call nicas_tmp%blk(ib)%write_grids(mpl,nam,geom,bpar)
+               if (nam%write_grids) call nicas_tmp%blk(ib)%write_grids(mpl,nam,bpar)
 
                ! Release memory
                call nicas_tmp%dealloc

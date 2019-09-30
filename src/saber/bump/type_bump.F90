@@ -591,7 +591,7 @@ integer,intent(in) :: iens                                                      
 
 ! Local variables
 integer :: its,iv,isub
-real(kind_real) :: norm,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 character(len=1024),parameter :: subr = 'bump_remove_member'
 
 ! Check ensemble number

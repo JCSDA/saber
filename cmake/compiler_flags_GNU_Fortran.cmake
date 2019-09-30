@@ -23,7 +23,7 @@ set( CMAKE_Fortran_FLAGS_RELEASE "-O3 -funroll-all-loops -finline-functions ")
 # DEBUG FLAGS
 ####################################################################
 
-set( CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fcheck=bounds -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace" )
+set( CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -Wextra -Wall -pedantic -ftrapv -fall-intrinsics -fcheck=all -fimplicit-none -ffpe-trap=invalid,zero,underflow,overflow,denormal -fbacktrace " )
 
 ####################################################################
 # BIT REPRODUCIBLE FLAGS
