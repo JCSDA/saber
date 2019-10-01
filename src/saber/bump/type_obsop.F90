@@ -314,20 +314,22 @@ call obsop%h%reorder(mpl)
 ! Setup communications
 call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
 
-! Compute scores
-call mpl%f_comm%allreduce(real(obsop%com%nhalo,kind_real),C_max,fckit_mpi_max())
-C_max = C_max/(3.0*real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
-N_max = real(maxval(proc_to_nobsa_eff),kind_real)/(real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
+! Compute scores, only if there observations present globally
+if ( nobs_eff > 0 ) then
+  call mpl%f_comm%allreduce(real(obsop%com%nhalo,kind_real),C_max,fckit_mpi_max())
+  C_max = C_max/(3.0*real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
+  N_max = real(maxval(proc_to_nobsa_eff),kind_real)/(real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
 
-! Print results
-write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa_eff) &
- & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
-call mpl%flush
-write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
- & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo
-call mpl%flush
-write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
-call mpl%flush
+  ! Print results
+  write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa_eff) &
+  & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+  call mpl%flush
+  write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
+  & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo
+  call mpl%flush
+  write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
+  call mpl%flush
+end if
 
 ! Write observation operator
 if (nam%write_obsop) call obsop%write(mpl,nam)
