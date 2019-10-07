@@ -23,7 +23,6 @@ integer,parameter :: ddis = 5       ! Progression display step
 
 type mpl_type
    ! MPI communicator
-   integer :: mpi_comm              ! MPI communicator
    type(fckit_mpi_comm) :: f_comm   ! MPI data
    integer :: nproc                 ! Number of MPI tasks
    integer :: myproc                ! MPI task index
@@ -148,19 +147,16 @@ end subroutine mpl_newunit
 ! Subroutine: mpl_init
 ! Purpose: initialize MPL object
 !----------------------------------------------------------------------
-subroutine mpl_init(mpl,mpi_comm)
+subroutine mpl_init(mpl,f_comm)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: mpi_comm       ! MPI communicator
+class(mpl_type),intent(inout) :: mpl             ! MPI data
+type(fckit_mpi_comm),intent(in),target :: f_comm ! FCKIT MPI communicator wrapper
 
-! Copy main MPI communicator
-mpl%mpi_comm = mpi_comm
-
-! Get MPI communicator wrapper
-mpl%f_comm = fckit_mpi_comm(mpi_comm)
+! Get BUMP own FCKIT MPI communicator wrapper
+mpl%f_comm = f_comm
 
 ! Get MPI size
 mpl%nproc = mpl%f_comm%size()

@@ -7,7 +7,7 @@
 !----------------------------------------------------------------------
 module type_io
 
-use mpi
+use fckit_mpi_module, only: fckit_mpi_comm
 use netcdf
 use tools_const, only: pi,deg2rad,rad2deg,reqkm
 use tools_kinds, only: kind_real,nc_kind_real
@@ -29,7 +29,6 @@ type io_type
    integer,allocatable :: c0io_to_c0(:)          ! Subset Sc0, I/O chunk to global
    integer,allocatable :: procio_to_proc(:)      ! I/O task to main communicator task
    type(com_type) :: com_AIO                     ! Communication between halo A and I/O chunk
-   integer :: comm                               ! I/O communicator for parallel NetCDF
 
    ! Field regridding and output
    integer :: nlon                               ! Number of output grid longitudes
@@ -56,7 +55,6 @@ type io_type
    integer,allocatable :: ogio_to_og(:)          ! Output grid, I/O chunk to global
    integer,allocatable :: procio_to_proc_grid(:) ! I/O task to main communicator task
    type(com_type) :: com_AIO_grid                ! Communication between halo A and I/O chunk
-   integer :: comm_grid                          ! I/O communicator for parallel NetCDF
 contains
    procedure :: dealloc => io_dealloc
    procedure :: fld_read => io_fld_read
@@ -171,11 +169,13 @@ character(len=*),intent(in) :: varname                ! Variable name
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 
 ! Local variables
-integer :: ic0a,il0,info,info_coord
+integer :: ic0a,il0,info,info_coord,color
 integer :: ncid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: fld_c0io(:,:),lon(:),lat(:)
+character(len=1024) :: cname
 character(len=1024),parameter :: subr = 'io_fld_write'
+type(fckit_mpi_comm) :: f_comm
 
 ! Apply mask
 do il0=1,geom%nl0
@@ -194,14 +194,25 @@ allocate(fld_c0io(io%nc0io,geom%nl0))
 ! Communication
 call io%com_AIO%ext(mpl,geom%nl0,fld_c0a,fld_c0io)
 
+! Create communicator for parallel NetCDF I/O
+if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
+   color = 1
+   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_io'
+else
+   color = 0
+   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_no_io'
+endif
+f_comm = mpl%f_comm%split(color,cname)
+
+! Parallel I/O
 if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    ! Check if the file exists
    info = nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
-        & comm=io%comm,info=mpi_info_null)
+        & comm=f_comm%communicator(),info=f_comm%info_null())
    if (info/=nf90_noerr) then
       ! Open file
       call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc', &
-    & ior(nf90_write,ior(nf90_netcdf4,nf90_mpiio)),ncid,comm=io%comm,info=mpi_info_null))
+    & ior(nf90_write,ior(nf90_netcdf4,nf90_mpiio)),ncid,comm=f_comm%communicator(),info=f_comm%info_null()))
 
       ! Enter definition mode
       call mpl%ncerr(subr,nf90_redef(ncid))
@@ -277,6 +288,7 @@ end if
 
 ! Release memory
 deallocate(fld_c0io)
+call f_comm%delete()
 
 ! Gridded field output
 if (nam%grid_output) call io%fld_write_grid(mpl,nam,geom,trim(filename)//'_gridded',varname,fld_c0a)
@@ -304,12 +316,14 @@ character(len=*),intent(in) :: varname                ! Variable name
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 
 ! Local variables
-integer :: il0,info,info_coord,ilonio,ilat,iogio,ioga
+integer :: il0,info,info_coord,ilonio,ilat,iogio,ioga,color
 integer :: ncid,nlon_id,nlat_id,nlev_id,fld_id,lon_id,lat_id,lev_id
 real(kind_real) :: fld_c0b(io%nc0b,geom%nl0)
 real(kind_real) :: fld_oga(io%noga,geom%nl0)
 real(kind_real),allocatable :: fld_ogio(:,:),fld_loniolat(:,:,:),lon(:),lat(:)
+character(len=1024) :: cname
 character(len=1024),parameter :: subr = 'io_fld_write_grid'
+type(fckit_mpi_comm) :: f_comm
 
 ! Halo extension and interpolation
 call io%com_AB%ext(mpl,geom%nl0,fld,fld_c0b)
@@ -339,15 +353,25 @@ do ilonio=1,io%nlonio
    end do
 end do
 
+! Create communicator for parallel NetCDF I/O
+if (any(io%procio_to_proc_grid==mpl%myproc).and.(io%nlonio>0)) then
+   color = 1
+   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_io_grid'
+else
+   color = 0
+   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_no_io_grid'
+endif
+f_comm = mpl%f_comm%split(color,cname)
+
 ! Parallel I/O
 if (any(io%procio_to_proc_grid==mpl%myproc).and.(io%nlonio>0)) then
    ! Check if the file exists
    info = nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
-        & comm=io%comm_grid,info=mpi_info_null)
+        & comm=f_comm%communicator(),info=f_comm%info_null())
    if (info/=nf90_noerr) then
       ! Open file
       call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc', &
-    & ior(nf90_write,ior(nf90_netcdf4,nf90_mpiio)),ncid,comm=io%comm_grid,info=mpi_info_null))
+    & ior(nf90_write,ior(nf90_netcdf4,nf90_mpiio)),ncid,comm=f_comm%communicator(),info=f_comm%info_null()))
 
       ! Enter definition mode
       call mpl%ncerr(subr,nf90_redef(ncid))
@@ -414,6 +438,7 @@ end if
 ! Release memory
 deallocate(fld_ogio)
 deallocate(fld_loniolat)
+call f_comm%delete()
 
 end subroutine io_fld_write_grid
 
@@ -434,8 +459,7 @@ type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
 integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,nc0own,ic0own,iproc,jproc
-integer :: info,global_group,io_group
-integer,allocatable :: procio_to_nc0io(:),list(:),order(:),c0own_to_c0io(:),members(:)
+integer,allocatable :: procio_to_nc0io(:),list(:),order(:),c0own_to_c0io(:)
 logical,allocatable :: proc_isio(:)
 
 ! Allocation
@@ -444,7 +468,6 @@ allocate(list(mpl%nproc))
 allocate(order(mpl%nproc))
 allocate(proc_isio(mpl%nproc))
 allocate(io%procio_to_proc(nam%nprocio))
-allocate(members(nam%nprocio))
 
 ! Initialization
 nres = geom%nc0
@@ -547,19 +570,12 @@ end do
 call io%com_AIO%setup(mpl,'com_AIO',geom%nc0,geom%nc0a,io%nc0io,nc0own,io%c0io_to_c0,c0own_to_c0io,geom%c0_to_proc, &
  & geom%c0_to_c0a)
 
-! Create communicator for parallel NetCDF I/O
-call mpi_comm_group(mpl%mpi_comm,global_group,info)
-members = io%procio_to_proc-1
-call mpi_group_incl(global_group,nam%nprocio,members,io_group,info)
-call mpi_comm_create(mpl%mpi_comm,io_group,io%comm,info)
-
 ! Release memory
 deallocate(procio_to_nc0io)
 deallocate(list)
 deallocate(order)
 deallocate(proc_isio)
 deallocate(c0own_to_c0io)
-deallocate(members)
 
 if (nam%grid_output) call io%init_grid(mpl,rng,nam,geom)
 
@@ -583,8 +599,7 @@ type(geom_type),intent(in) :: geom  ! Geometry
 ! Local variables
 integer :: ilon,ilat,i_s,iog,ic0,ic0a,ic0b,ioga,il0,nn_index(1)
 integer :: nres,iprocio,delta,ilonio,ilon_s,ilon_e,nogown,iogown,iproc,jproc,iogio
-integer :: info,global_group,io_group
-integer,allocatable :: procio_to_nlonio(:),list(:),order(:),ogown_to_ogio(:),members(:)
+integer,allocatable :: procio_to_nlonio(:),list(:),order(:),ogown_to_ogio(:)
 real(kind_real) :: dlon,dlat
 real(kind_real),allocatable :: lon_og(:),lat_og(:),lon_oga(:),lat_oga(:)
 logical :: mask_c0(geom%nc0)
@@ -747,7 +762,6 @@ allocate(list(mpl%nproc))
 allocate(order(mpl%nproc))
 allocate(proc_isio(mpl%nproc))
 allocate(io%procio_to_proc_grid(nam%nprocio))
-allocate(members(nam%nprocio))
 
 ! Initialization
 nres = io%nlon
@@ -863,19 +877,12 @@ end do
 call io%com_AIO_grid%setup(mpl,'com_AIO_grid',io%nog,io%noga,io%nlonio*io%nlat,nogown,io%ogio_to_og,ogown_to_ogio,io%og_to_proc, &
  & io%og_to_oga)
 
-! Create communicator for parallel NetCDF I/O
-call mpi_comm_group(mpl%mpi_comm,global_group,info)
-members = io%procio_to_proc_grid-1
-call mpi_group_incl(global_group,nam%nprocio,members,io_group,info)
-call mpi_comm_create(mpl%mpi_comm,io_group,io%comm_grid,info)
-
 ! Release memory
 deallocate(procio_to_nlonio)
 deallocate(list)
 deallocate(order)
 deallocate(proc_isio)
 deallocate(ogown_to_ogio)
-deallocate(members)
 
 ! Print results
 write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
