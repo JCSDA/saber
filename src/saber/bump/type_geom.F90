@@ -860,10 +860,10 @@ end do
 
 if (geom%nc0==geom%nmg) then
    ! Model grid and subset Sc0 are identical
-   fld_mga = fld_c0a
+   fld_mga = fld_c0a_masked
 else
    ! Extend subset Sc0 to model grid
-   call geom%com_mg%ext(mpl,geom%nl0,fld_c0a,fld_mga)
+   call geom%com_mg%ext(mpl,geom%nl0,fld_c0a_masked,fld_mga)
 end if
 
 end subroutine geom_copy_c0a_to_mga
