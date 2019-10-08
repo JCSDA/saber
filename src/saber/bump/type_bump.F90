@@ -7,8 +7,8 @@
 !----------------------------------------------------------------------
 module type_bump
 
+use fckit_mpi_module, only: fckit_mpi_comm
 use iso_fortran_env, only : output_unit
-use mpi
 use tools_const, only: req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
 use tools_kinds,only: kind_real
@@ -80,13 +80,14 @@ contains
 ! Subroutine: bump_setup_online
 ! Purpose: online setup
 !----------------------------------------------------------------------
-subroutine bump_setup_online(bump,nmga,nl0,nv,nts,lon,lat,area,vunit,gmask,smask,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub, &
-                           & nobs,lonobs,latobs,namelname,lunit,msvali,msvalr,mpi_comm)
+subroutine bump_setup_online(bump,f_comm,nmga,nl0,nv,nts,lon,lat,area,vunit,gmask,smask,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub, &
+                           & nobs,lonobs,latobs,namelname,lunit,msvali,msvalr)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump            ! BUMP
+type(fckit_mpi_comm),intent(in) :: f_comm         ! FCKIT MPI communicator wrapper
 integer,intent(in) :: nmga                        ! Halo A size
 integer,intent(in) :: nl0                         ! Number of levels in subset Sl0
 integer,intent(in) :: nv                          ! Number of variables
@@ -108,14 +109,12 @@ character(len=*),intent(in),optional :: namelname ! Namelist name
 integer,intent(in),optional :: lunit              ! Listing unit
 integer,intent(in),optional :: msvali             ! Missing value for integers
 real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
-integer,intent(in),optional :: mpi_comm           ! Main MPI communicator
 
 ! Local variables
-integer :: lmsvali,lmpi_comm,length,info,info_loc,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
+integer :: lmsvali,length,info,info_loc,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
 real(kind_real) :: lmsvalr
 logical :: init,lgmask(nmga,nl0)
 character(len=1024),parameter :: subr = 'bump_setup_online'
-character(len=mpi_max_error_string) :: message
 
 ! Set missing values
 lmsvali = -999
@@ -125,31 +124,7 @@ if (present(msvalr)) lmsvalr = msvalr
 call bump%mpl%msv%init(lmsvali,lmsvalr)
 
 ! Initialize MPL
-if (present(mpi_comm)) then
-   lmpi_comm = mpi_comm
-else
-   ! Check if MPI is already initialized
-   call mpi_initialized(init,info)
-   if (info/=mpi_success) then
-      call mpi_error_string(info,message,length,info_loc)
-      write(output_unit,'(a)') '!!! Error:',trim(message)
-      call flush(output_unit)
-      call mpi_abort(mpi_comm_world,1,info)
-   end if
-
-   if (.not.init) then
-      ! Initialize MPI
-      call mpi_init(info)
-      if (info/=mpi_success) then
-         call mpi_error_string(info,message,length,info_loc)
-         write(output_unit,'(a)') '!!! Error:',trim(message)
-         call flush(output_unit)
-         call mpi_abort(mpi_comm_world,1,info)
-      end if
-   end if
-   lmpi_comm = mpi_comm_world
-end if
-call bump%mpl%init(lmpi_comm)
+call bump%mpl%init(f_comm)
 
 if (present(namelname)) then
    ! Read and broadcast namelist

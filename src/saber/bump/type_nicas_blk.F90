@@ -2819,8 +2819,6 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
                jl0 = nicas_blk%l1_to_l0(jl1)
 
                ! Check valid arc for both levels
-write(14,*) ic1_loc,ic1,ic0,j,jc1,jc0,il1,il0,djl1,jl1,jl0,geom%mask_c0(ic0,il0),geom%mask_c0(jc0,jl0), &
- & valid_arc(ic1,il1,j),valid_arc(ic1,jl1,j)
                if (geom%mask_c0(ic0,il0).and.geom%mask_c0(jc0,jl0).and.valid_arc(ic1,il1,j).and.valid_arc(ic1,jl1,j)) then
                   ! Squared support radii
                   if (nicas_blk%anisotropic) then

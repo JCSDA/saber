@@ -39,6 +39,7 @@ before_install:
   - ls ${REPO_SOURCE_DIR}
   - cd ${REPO_SOURCE_DIR}/saber-bundle
   - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
+  - sed -i '/PROJECT eckit/d' CMakeLists.txt
   - cat CMakeLists.txt
   - cd ${REPO_SOURCE_DIR}
   - ls ${REPO_SOURCE_DIR}
