@@ -849,7 +849,7 @@ ic2 = samp%c2a_to_c2(ic2a)
 ! Copy variance
 avg_blk%m2 = 0.0
 if (nam%var_filter.and.(.not.nam%gau_approx)) avg_blk%m4 = 0.0
-do ic1d=1,samp%nc1a
+do ic1d=1,samp%nc1d
    ic1 = samp%c1d_to_c1(ic1d)
    if (ic1==samp%c2_to_c1(ic2)) then
       do isub=1,avg_blk%nsub
