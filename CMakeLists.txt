@@ -59,7 +59,7 @@ else()
 endif()
 
 # NetCDF
-find_package( NetCDF REQUIRED COMPONENTS F90 )
+find_package( NetCDF REQUIRED COMPONENTS Fortran )
 include_directories( ${NETCDF_INCLUDE_DIR} )
 
 # eckit and MPI
