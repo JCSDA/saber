@@ -95,9 +95,6 @@ phases:
       - echo Executing build phase
       - su - jcsdauser -c "cd /build_container 
         && ls
-        && export FC=mpifort
-        && export CC=mpicc
-        && export CXX=mpicxx
         && ecbuild /jcsda/saber-bundle/
         && make -j4
         && ctest" 

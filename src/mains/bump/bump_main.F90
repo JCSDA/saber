@@ -7,9 +7,9 @@
 !----------------------------------------------------------------------
 subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
 
+use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
 use iso_fortran_env, only : output_unit
-use mpi, only: mpi_comm_world
 use tools_const, only: rad2deg,req
 use tools_kinds,only: kind_real
 use type_bump, only: bump_type
@@ -30,10 +30,14 @@ character,intent(in) :: arg2(n2)
 integer :: i,narg,info,ppos,iproc,ie,ifileunit
 character(len=1024) :: inputfile,logdir,ext,filename
 type(bump_type) :: bump
+type(fckit_mpi_comm) :: f_comm
 type(model_type) :: model
 type(mpl_type) :: mpl
 type(rng_type) :: rng
 type(timer_type) :: timer
+
+! Initialize MPI
+f_comm = fckit_mpi_comm()
 
 ! Copy inputfile and logdir
 inputfile = ''
@@ -49,8 +53,7 @@ end do
 call mpl%msv%init(-999,-999.0_kind_real)
 
 ! Initialize MPL
-call mpi_init(info)
-call mpl%init(mpi_comm_world)
+call mpl%init(f_comm)
 
 ! Initialize timer
 call timer%start(mpl)
@@ -166,12 +169,12 @@ model%lat_mga = model%lat_mga*rad2deg
 model%area_mga = model%area_mga*req**2
 
 ! BUMP setup
-call bump%setup_online(model%nmga,model%nl0,bump%nam%nv,bump%nam%nts, &
+call bump%setup_online(f_comm,model%nmga,model%nl0,bump%nam%nv,bump%nam%nts, &
                      & model%lon_mga,model%lat_mga,model%area_mga,model%vunit_mga,model%mask_mga, &
                      & smask=model%smask_mga, &
                      & ens1_ne=model%ens1_ne,ens1_nsub=model%ens1_nsub,ens2_ne=model%ens2_ne,ens2_nsub=model%ens2_nsub, &
                      & nobs=model%nobsa,lonobs=model%lonobs*rad2deg,latobs=model%latobs*rad2deg, &
-                     & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr,mpi_comm=mpi_comm_world)
+                     & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
 ! Transfer members
 if (bump%nam%ens1_ne>0) then
