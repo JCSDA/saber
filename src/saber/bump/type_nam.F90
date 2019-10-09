@@ -305,10 +305,10 @@ do iv=1,nvmax*(nvmax-1)/2
 end do
 nam%vbal_rad = 0.0
 do iv=1,nvmax*(nvmax-1)/2
-   nam%vbal_diag_auto(iv) = .true.
+   nam%vbal_diag_auto(iv) = .false.
 end do
 do iv=1,nvmax*(nvmax-1)/2
-   nam%vbal_diag_reg(iv) = .true.
+   nam%vbal_diag_reg(iv) = .false.
 end do
 nam%var_filter = .false.
 nam%var_niter = 0
