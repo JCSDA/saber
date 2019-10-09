@@ -16,7 +16,6 @@ set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH})
 set( ECBUILD_DEFAULT_BUILD_TYPE Release )
 set( ENABLE_OS_TESTS           OFF CACHE BOOL "Disable OS tests" FORCE )
 set( ENABLE_LARGE_FILE_SUPPORT OFF CACHE BOOL "Disable testing of large file support" FORCE )
-set( ENABLE_MPI ON CACHE BOOL "Compile with MPI" )
 set( BUILD_BUMP_DOC OFF )
 
 include( ecbuild_system NO_POLICY_SCOPE )
@@ -59,8 +58,8 @@ else()
 endif()
 
 # NetCDF
-find_package( NetCDF REQUIRED COMPONENTS F90 )
-include_directories( ${NETCDF_INCLUDE_DIR} )
+find_package( NetCDF REQUIRED COMPONENTS Fortran )
+include_directories( ${NETCDF_INCLUDE_DIRS} )
 
 # eckit and MPI
 ecbuild_use_package( PROJECT eckit VERSION 1.1.0 REQUIRED )
@@ -77,7 +76,7 @@ include_directories( ${FCKIT_INCLUDE_DIRS} )
 # Export package info
 ################################################################################
 
-list( APPEND SABER_TPLS MPI NetCDF eckit eckit_mpi fckit )
+list( APPEND SABER_TPLS eckit eckit_mpi fckit )
 
 set( SABER_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
                         ${CMAKE_CURRENT_BINARY_DIR}/src
