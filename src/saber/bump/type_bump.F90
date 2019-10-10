@@ -1025,6 +1025,9 @@ real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,
 ! Local variables
 integer :: ib,iv,jv,its,jts
 
+write(bump%mpl%info,'(a,a,a)') '--- Get parameter ',trim(param),' from BUMP'
+call bump%mpl%flush()
+
 select case (trim(param))
 case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
    select case (trim(bump%nam%strategy))
@@ -1231,6 +1234,9 @@ real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,b
 
 ! Local variables
 integer :: ib,iv,jv,its,jts
+
+write(bump%mpl%info,'(a,a,a)') '--- Set parameter ',trim(param),' into BUMP'
+call bump%mpl%flush()
 
 select case (trim(param))
 case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')

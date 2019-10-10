@@ -28,6 +28,7 @@ character,intent(in) :: arg2(n2)
 
 ! Local variables
 integer :: i,narg,info,ppos,iproc,ie,ifileunit
+real(kind_real),allocatable :: fld_mga(:,:,:,:)
 character(len=1024) :: inputfile,logdir,ext,filename
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
@@ -202,12 +203,86 @@ if (bump%nam%ens2_ne>0) then
    end do
 end if
 
+! Test interfaces
+if (bump%nam%check_set_param_cor.or.bump%nam%check_set_param_hyb.or.bump%nam%check_set_param_lct) then
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+   ! Random initialization
+   call rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Set parameter
+   if (bump%nam%check_set_param_cor) then
+      call bump%set_parameter('var',fld_mga)
+      call bump%set_parameter('cor_rh',fld_mga)
+      call bump%set_parameter('cor_rv',fld_mga)
+      call bump%set_parameter('cor_rv_rfac',fld_mga)
+      call bump%set_parameter('cor_rv_coef',fld_mga)
+   elseif (bump%nam%check_set_param_hyb) then
+      call bump%set_parameter('loc_coef',fld_mga)
+      call bump%set_parameter('loc_rh',fld_mga)
+      call bump%set_parameter('loc_rv',fld_mga)
+      call bump%set_parameter('hyb_coef',fld_mga)
+   elseif (bump%nam%check_set_param_lct) then
+      call bump%set_parameter('D11',fld_mga)
+      call bump%set_parameter('D22',fld_mga)
+      call bump%set_parameter('D33',fld_mga)
+      call bump%set_parameter('D12',fld_mga)
+      call bump%set_parameter('Dcoef',fld_mga)
+   end if
+
+   ! Release memory
+   deallocate(fld_mga)
+end if
+
 ! Run drivers
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
 write(mpl%info,'(a)') '--- Run drivers'
 call mpl%flush
 call bump%run_drivers
+
+! Test interfaces
+if (bump%nam%check_get_param_cor.or.bump%nam%check_get_param_hyb.or.bump%nam%check_get_param_Dloc &
+ & .or.bump%nam%check_get_param_lct) then
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+   ! Get parameter
+   if (bump%nam%check_get_param_cor) then
+      call bump%get_parameter('var',fld_mga)
+      call bump%get_parameter('cor_rh',fld_mga)
+      call bump%get_parameter('cor_rv',fld_mga)
+      call bump%get_parameter('cor_rv_rfac',fld_mga)
+      call bump%get_parameter('cor_rv_coef',fld_mga)
+   elseif (bump%nam%check_get_param_hyb) then
+      call bump%get_parameter('loc_coef',fld_mga)
+      call bump%get_parameter('loc_rh',fld_mga)
+      call bump%get_parameter('loc_rv',fld_mga)
+      call bump%get_parameter('hyb_coef',fld_mga)
+   elseif (bump%nam%check_get_param_Dloc) then
+      call bump%get_parameter('loc_D11',fld_mga)
+      call bump%get_parameter('loc_D22',fld_mga)
+      call bump%get_parameter('loc_D33',fld_mga)
+      call bump%get_parameter('loc_D12',fld_mga)
+   elseif (bump%nam%check_get_param_lct) then
+      call bump%get_parameter('D11_1',fld_mga)
+      call bump%get_parameter('D22_1',fld_mga)
+      call bump%get_parameter('D33_1',fld_mga)
+      call bump%get_parameter('D12_1',fld_mga)
+      call bump%get_parameter('Dcoef_1',fld_mga)
+      call bump%get_parameter('DLh_1',fld_mga)
+      call bump%get_parameter('D11_2',fld_mga)
+      call bump%get_parameter('D22_2',fld_mga)
+      call bump%get_parameter('D33_2',fld_mga)
+      call bump%get_parameter('D12_2',fld_mga)
+      call bump%get_parameter('Dcoef_2',fld_mga)
+      call bump%get_parameter('DLh_2',fld_mga)
+   end if
+
+   ! Release memory
+   deallocate(fld_mga)
+end if
 
 ! Execution stats
 write(mpl%info,'(a)') '-------------------------------------------------------------------'

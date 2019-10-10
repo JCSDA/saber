@@ -66,6 +66,10 @@ list(APPEND saber_test_2
 # TIER > 1
 if(${SABER_TEST_TIER} GREATER 1)
     list(APPEND saber_test
+        bump_get_param_cor
+        bump_get_param_Dloc
+        bump_get_param_hyb
+        bump_get_param_lct
         bump_hdiag_draw_type
         bump_hdiag_hyb-avg_common
         bump_hdiag_ldwv
@@ -101,6 +105,9 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_nicas_subsamp_vh
         bump_nicas_write_grids
         bump_obsop
+        bump_set_param_cor
+        bump_set_param_hyb
+        bump_set_param_lct
     )
 endif()
 
