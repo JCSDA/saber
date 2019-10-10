@@ -1025,11 +1025,12 @@ real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,
 ! Local variables
 integer :: ib,iv,jv,its,jts
 
-write(bump%mpl%info,'(a,a,a)') '--- Get parameter ',trim(param),' from BUMP'
+write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
 call bump%mpl%flush()
 
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
+case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
+ & 'loc_D12','loc_Dcoef','loc_DLh')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -1089,8 +1090,8 @@ character(len=1024),parameter :: subr = 'bump_copy_to_field'
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D12', &
-   & 'loc_D33')
+case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
+ & 'loc_D12','loc_Dcoef','loc_DLh')
    if (.not.allocated(bump%cmat%blk)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
 case default
    select case (param(1:4))
@@ -1149,25 +1150,35 @@ case ('loc_D11','loc_D22')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rh,fld_mga)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) then
+            tmp = fld_mga(imga,il0)*req
+            call lct_r2d(tmp,fld_mga(imga,il0))
+         end if
       end do
    end do
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         tmp = fld_mga(imga,il0)
-         call lct_r2d(tmp,fld_mga(imga,il0))
-      end do
-   end do
-case ('loc_D12')
-   if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   fld_mga = 0.0
 case ('loc_D33')
    if (.not.allocated(bump%cmat%blk(ib)%rv)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv,fld_mga)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         tmp = fld_mga(imga,il0)
-         call lct_r2d(tmp,fld_mga(imga,il0))
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) then
+            tmp = fld_mga(imga,il0)
+            call lct_r2d(tmp,fld_mga(imga,il0))
+         end if
+      end do
+   end do
+case ('loc_D12')
+   if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   fld_mga = 0.0
+case ('loc_Dcoef')
+   if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%coef_ens,fld_mga)
+case ('loc_DLh')
+   if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rh,fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
       end do
    end do
 end select
@@ -1253,7 +1264,7 @@ real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,b
 ! Local variables
 integer :: ib,iv,jv,its,jts
 
-write(bump%mpl%info,'(a,a,a)') '--- Set parameter ',trim(param),' into BUMP'
+write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush()
 
 select case (trim(param))

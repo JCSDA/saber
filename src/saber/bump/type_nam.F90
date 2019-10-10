@@ -1454,7 +1454,7 @@ if (nam%check_no_point_nicas.and..not.(nam%new_nicas.or.nam%load_nicas)) &
 if (nam%check_no_point_nicas.and.(mpl%nproc<2)) call mpl%abort(subr,'at least 2 MPI tasks required for check_no_point_nicas')
 if ((nam%check_set_param_cor.or.nam%check_set_param_cor.or.nam%check_set_param_cor).and..not.nam%new_nicas) &
  & call mpl%abort(subr,'new_nicas required for check_set_param_[...]')
-if (nam%check_get_param_cor.and..not.(nam%new_hdiag.and.(trim(nam%method)=='cor').and.all(nam%double_fit))) &
+if (nam%check_get_param_cor.and..not.(nam%new_hdiag.and.(trim(nam%method)=='cor').and.all(nam%double_fit(1:nam%nv)))) &
  & call mpl%abort(subr,'new_hdiag, cor method and double fit required for check_get_param_cor')
 if (nam%check_get_param_hyb.and..not.(nam%new_hdiag.and.(trim(nam%method)=='hyb-avg'))) &
  & call mpl%abort(subr,'new_hdiag and hyb-avg method required for check_get_param_hyb')

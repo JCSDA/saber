@@ -27,8 +27,8 @@ integer,intent(in) :: n2
 character,intent(in) :: arg2(n2)
 
 ! Local variables
-integer :: i,narg,info,ppos,iproc,ie,ifileunit
-real(kind_real),allocatable :: fld_mga(:,:,:,:)
+integer :: i,narg,info,ppos,iproc,ie,ifileunit,iv,its
+real(kind_real),allocatable :: fld_c0(:,:),fld_c0a(:,:),fld_mga(:,:,:,:)
 character(len=1024) :: inputfile,logdir,ext,filename
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
@@ -203,29 +203,43 @@ if (bump%nam%ens2_ne>0) then
    end do
 end if
 
-! Test interfaces
+! Test set_parameters interfaces
 if (bump%nam%check_set_param_cor.or.bump%nam%check_set_param_hyb.or.bump%nam%check_set_param_lct) then
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(bump%mpl%info,'(a)') '--- Set parameters into BUMP'
+   call bump%mpl%flush()
+
    ! Allocation
+   if (mpl%main) allocate(fld_c0(bump%geom%nc0,bump%geom%nl0))
+   allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0))
    allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
 
    ! Random initialization
-   call rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+   do its=1,bump%nam%nts
+      do iv=1,bump%nam%nv
+         if (mpl%main) call rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0)
+         call bump%mpl%glb_to_loc(bump%geom%nl0,bump%geom%nc0,bump%geom%c0_to_proc,bump%geom%c0_to_c0a, &
+       & fld_c0,bump%geom%nc0a,fld_c0a)
+         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
+      end do
+   end do
 
    ! Set parameter
    if (bump%nam%check_set_param_cor) then
       call bump%set_parameter('var',fld_mga)
-      call bump%set_parameter('cor_rh',fld_mga)
+      call bump%set_parameter('cor_rh',fld_mga*req)
       call bump%set_parameter('cor_rv',fld_mga)
       call bump%set_parameter('cor_rv_rfac',fld_mga)
       call bump%set_parameter('cor_rv_coef',fld_mga)
    elseif (bump%nam%check_set_param_hyb) then
       call bump%set_parameter('loc_coef',fld_mga)
-      call bump%set_parameter('loc_rh',fld_mga)
+      call bump%set_parameter('loc_rh',fld_mga*req)
       call bump%set_parameter('loc_rv',fld_mga)
       call bump%set_parameter('hyb_coef',fld_mga)
    elseif (bump%nam%check_set_param_lct) then
-      call bump%set_parameter('D11',fld_mga)
-      call bump%set_parameter('D22',fld_mga)
+      call bump%set_parameter('D11',fld_mga*req**2)
+      call bump%set_parameter('D22',fld_mga*req**2)
       call bump%set_parameter('D33',fld_mga)
       call bump%set_parameter('D12',fld_mga)
       call bump%set_parameter('Dcoef',fld_mga)
@@ -242,9 +256,14 @@ write(mpl%info,'(a)') '--- Run drivers'
 call mpl%flush
 call bump%run_drivers
 
-! Test interfaces
+! Test get_parameter interfaces
 if (bump%nam%check_get_param_cor.or.bump%nam%check_get_param_hyb.or.bump%nam%check_get_param_Dloc &
  & .or.bump%nam%check_get_param_lct) then
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(bump%mpl%info,'(a)') '--- Get parameters from BUMP'
+   call bump%mpl%flush()
+
    ! Allocation
    allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
 
@@ -265,6 +284,8 @@ if (bump%nam%check_get_param_cor.or.bump%nam%check_get_param_hyb.or.bump%nam%che
       call bump%get_parameter('loc_D22',fld_mga)
       call bump%get_parameter('loc_D33',fld_mga)
       call bump%get_parameter('loc_D12',fld_mga)
+      call bump%get_parameter('loc_Dcoef',fld_mga)
+      call bump%get_parameter('loc_DLh',fld_mga)
    elseif (bump%nam%check_get_param_lct) then
       call bump%get_parameter('D11_1',fld_mga)
       call bump%get_parameter('D22_1',fld_mga)
