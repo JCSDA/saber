@@ -123,6 +123,7 @@ type nam_type
    logical :: vbal_block(nvmax*(nvmax-1)/2)             ! Activation of vertical balance (ordered line by line in the lower triangular formulation)
    real(kind_real) :: vbal_rad                          ! Vertical balance diagnostic radius
    logical :: vbal_diag_auto(nvmax*(nvmax-1)/2)         ! Diagonal auto-covariance for the inversion
+   logical :: vbal_diag_reg(nvmax*(nvmax-1)/2)          ! Diagonal regression
    logical :: var_filter                                ! Filter variances
    integer :: var_niter                                 ! Number of iteration for the variances filtering
    real(kind_real) ::  var_rhflt                        ! Variances initial filtering support radius
@@ -318,7 +319,10 @@ do iv=1,nvmax*(nvmax-1)/2
 end do
 nam%vbal_rad = 0.0
 do iv=1,nvmax*(nvmax-1)/2
-   nam%vbal_diag_auto(iv) = .true.
+   nam%vbal_diag_auto(iv) = .false.
+end do
+do iv=1,nvmax*(nvmax-1)/2
+   nam%vbal_diag_reg(iv) = .false.
 end do
 nam%var_filter = .false.
 nam%var_niter = 0
@@ -418,9 +422,9 @@ logical :: new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nic
 logical :: check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality,check_obsop,check_no_obs
 logical :: check_no_point,check_no_point_mask,check_no_point_nicas,check_set_param_cor,check_set_param_hyb,check_set_param_lct
 logical :: check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,logpres,nomask,sam_write,sam_read
-logical :: mask_check,vbal_block(nvmax*(nvmax-1)/2),vbal_diag_auto(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
-logical :: adv_cor_tracker,double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt,fast_sampling
-logical :: network,forced_radii,pos_def_test,write_grids,grid_output
+logical :: mask_check,vbal_block(nvmax*(nvmax-1)/2),vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter
+logical :: gau_approx,local_diag,adv_diag,adv_cor_tracker,double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor
+logical :: nonunit_diag,lsqrt,fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
 character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,mask_type,mask_lu(nvmax),draw_type,minim_algo,fit_type
 character(len=1024) :: subsamp
 character(len=1024),dimension(nvmax) :: varname,addvar2d
@@ -439,7 +443,7 @@ namelist/ens1_param/ens1_ne,ens1_nsub
 namelist/ens2_param/ens2_ne,ens2_nsub
 namelist/sampling_param/sam_write,sam_read,mask_type,mask_lu,mask_th,ncontig_th,mask_check,draw_type,Lcoast,rcoast,nc1,nc2,ntry, &
                       & nrep,nc3,dc,nl0r,irmax
-namelist/diag_param/ne,gau_approx,avg_nbins,vbal_block,vbal_rad,vbal_diag_auto,var_filter,var_niter,var_rhflt, &
+namelist/diag_param/ne,gau_approx,avg_nbins,vbal_block,vbal_rad,vbal_diag_auto,vbal_diag_reg,var_filter,var_niter,var_rhflt, &
                   & local_diag,local_rad,adv_diag,adv_rad,adv_cor_tracker,adv_niter,adv_rhflt,adv_max_std_ratio
 namelist/fit_param/minim_algo,fit_type,double_fit,lhomh,lhomv,rvflt,lct_nscales,lct_scale_ratio,lct_cor_min,lct_diag,lct_qc_th, &
                  & lct_qc_max,lct_write_cor
@@ -553,6 +557,9 @@ if (mpl%main) then
    vbal_rad = 0.0
    do iv=1,nvmax*(nvmax-1)/2
       vbal_diag_auto(iv) = .true.
+   end do
+   do iv=1,nvmax*(nvmax-1)/2
+      vbal_diag_reg(iv) = .true.
    end do
    var_filter = .false.
    var_niter = 0
@@ -732,6 +739,7 @@ if (mpl%main) then
    if (nv>1) nam%vbal_block(1:nam%nv*(nam%nv-1)/2) = vbal_block(1:nam%nv*(nam%nv-1)/2)
    nam%vbal_rad = vbal_rad
    if (nv>1) nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2) = vbal_diag_auto(1:nam%nv*(nam%nv-1)/2)
+   if (nv>1) nam%vbal_diag_reg(1:nam%nv*(nam%nv-1)/2) = vbal_diag_reg(1:nam%nv*(nam%nv-1)/2)
    nam%var_filter = var_filter
    nam%var_niter = var_niter
    nam%var_rhflt = var_rhflt
@@ -943,6 +951,7 @@ call mpl%f_comm%broadcast(nam%avg_nbins,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_block,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_rad,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_diag_auto,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_diag_reg,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_filter,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_niter,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_rhflt,mpl%rootproc-1)
@@ -1171,6 +1180,10 @@ if (conf%has("vbal_rad")) call conf%get_or_die("vbal_rad",nam%vbal_rad)
 if (conf%has("vbal_diag_auto")) then
    call conf%get_or_die("vbal_diag_auto",logical_array)
    nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2) = logical_array(1:nam%nv*(nam%nv-1)/2)
+end if
+if (conf%has("vbal_diag_reg")) then
+   call conf%get_or_die("vbal_diag_reg",logical_array)
+   nam%vbal_diag_reg(1:nam%nv*(nam%nv-1)/2) = logical_array(1:nam%nv*(nam%nv-1)/2)
 end if
 if (conf%has("var_filter")) call conf%get_or_die("var_filter",nam%var_filter)
 if (conf%has("var_niter")) call conf%get_or_die("var_niter",nam%var_niter)
@@ -1819,6 +1832,7 @@ call mpl%write(lncid,'nam','draw_type',nam%draw_type)
 call mpl%write(lncid,'nam','Lcoast',nam%Lcoast*req)
 call mpl%write(lncid,'nam','rcoast',nam%rcoast)
 call mpl%write(lncid,'nam','nc1',nam%nc1)
+call mpl%write(lncid,'nam','nc2',nam%nc2)
 call mpl%write(lncid,'nam','ntry',nam%ntry)
 call mpl%write(lncid,'nam','nrep',nam%nrep)
 call mpl%write(lncid,'nam','nc3',nam%nc3)
