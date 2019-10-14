@@ -21,13 +21,13 @@ use type_timer, only: timer_type
 implicit none
 
 ! Passed variables
-integer,intent(in) :: n1
-character,intent(in) :: arg1(n1)
-integer,intent(in) :: n2
-character,intent(in) :: arg2(n2)
+integer(c_int),intent(in) :: n1
+character(c_char),intent(in) :: arg1(n1)
+integer(c_int),intent(in) :: n2
+character(c_char),intent(in) :: arg2(n2)
 
 ! Local variables
-integer :: i,narg,info,ppos,iproc,ie,ifileunit
+integer :: i,info,ppos,iproc,ie,ifileunit
 character(len=1024) :: inputfile,logdir,ext,filename
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
