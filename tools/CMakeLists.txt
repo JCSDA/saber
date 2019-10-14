@@ -4,6 +4,7 @@ list( APPEND test_files
   comparesaber_specific.sh
   setref.sh
   setup.sh
+  valgrind.sh
 )
 
 foreach(FILENAME ${test_files})

@@ -779,7 +779,7 @@ end subroutine nicas_blk_write
 ! Subroutine: nicas_blk_write_grids
 ! Purpose: write NICAS grids
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_grids(nicas_blk,mpl,nam,geom,bpar)
+subroutine nicas_blk_write_grids(nicas_blk,mpl,nam,bpar)
 
 implicit none
 
@@ -787,7 +787,6 @@ implicit none
 class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
 type(mpl_type),intent(inout) :: mpl           ! MPI data
 type(nam_type),intent(in) :: nam              ! Namelist
-type(geom_type),intent(in) :: geom            ! Geometry
 type(bpar_type),intent(in) :: bpar            ! Block parameters
 
 ! Local variables
@@ -1373,7 +1372,7 @@ if (nam%write_grids) then
    ! Compute grids coordinates
    write(mpl%info,'(a7,a)') '','Compute grids coordinates'
    call mpl%flush
-   call nicas_blk%compute_grids(mpl,nam,geom)
+   call nicas_blk%compute_grids(nam,geom)
 end if
 
 ! Print results
@@ -3636,13 +3635,12 @@ end subroutine nicas_blk_compute_normalization
 ! Subroutine: nicas_blk_compute_grids
 ! Purpose: compute grids
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_grids(nicas_blk,mpl,nam,geom)
+subroutine nicas_blk_compute_grids(nicas_blk,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
 type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 
