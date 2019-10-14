@@ -315,6 +315,16 @@ if (bump%nam%new_cortrack) then
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
+if (bump%nam%new_corstats) then
+   ! Run correlation statistics
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Run correlation statistics'
+   call bump%mpl%flush
+   call bump%ens1%corstats(bump%mpl,bump%rng,bump%nam,bump%geom)
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
+end if
+
 if (bump%nam%new_vbal) then
    ! Run vertical balance driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'

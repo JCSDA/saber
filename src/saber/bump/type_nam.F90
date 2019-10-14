@@ -40,6 +40,7 @@ type nam_type
    character(len=1024) :: method                        ! Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
    character(len=1024) :: strategy                      ! Localization strategy ('diag_all', 'common', 'common_univariate', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
    logical :: new_cortrack                              ! New correlation tracker
+   logical :: new_corstats                              ! New correlation statistics
    logical :: new_vbal                                  ! Compute new vertical balance operator
    logical :: load_vbal                                 ! Load existing vertical balance operator
    logical :: write_vbal                                ! Write vertical balance operator
@@ -223,6 +224,7 @@ nam%nprocio = 1
 nam%method = ''
 nam%strategy = ''
 nam%new_cortrack = .false.
+nam%new_corstats = .false.
 nam%new_vbal = .false.
 nam%load_vbal = .false.
 nam%write_vbal = .true.
@@ -403,9 +405,9 @@ integer :: levdir(ndirmax),ivdir(ndirmax),itsdir(ndirmax),nobs,nldwv,img_ldwv(nl
 real(kind_real) :: mask_th(nvmax),Lcoast,rcoast,dc,vbal_rad,var_rhflt,local_rad,adv_rad,adv_rhflt,adv_max_std_ratio
 real(kind_real) :: rvflt,lct_cor_min,lct_scale_ratio,lct_qc_th,lct_qc_max,lon_ldwv(nldwvmax),lat_ldwv(nldwvmax),diag_rhflt,resol,rh
 real(kind_real) :: rv,londir(ndirmax),latdir(ndirmax),grid_resol
-logical :: colorlog,default_seed,repro,new_cortrack,new_vbal,load_vbal,write_vbal,new_mom,load_mom,write_mom,new_hdiag,write_hdiag
-logical :: new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop,load_obsop,write_obsop,check_vbal
-logical :: check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality,check_obsop,check_no_obs
+logical :: colorlog,default_seed,repro,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_mom,load_mom,write_mom,new_hdiag
+logical :: write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop,load_obsop,write_obsop
+logical :: check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality,check_obsop,check_no_obs
 logical :: check_no_point,check_no_point_mask,check_no_point_nicas,logpres,nomask,sam_write,sam_read,mask_check
 logical :: vbal_block(nvmax*(nvmax-1)/2),vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx
 logical :: local_diag,adv_diag,adv_cor_tracker,double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
@@ -417,9 +419,9 @@ character(len=1024),dimension(nldwvmax) :: name_ldwv
 
 ! Namelist blocks
 namelist/general_param/datadir,prefix,model,verbosity,colorlog,default_seed,repro,nprocio
-namelist/driver_param/method,strategy,new_cortrack,new_vbal,load_vbal,new_mom,load_mom,write_mom,write_vbal,new_hdiag, &
-                    & write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop,load_obsop, &
-                    & write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency, &
+namelist/driver_param/method,strategy,new_cortrack,new_corstats,new_vbal,load_vbal,new_mom,load_mom,write_mom,write_vbal, &
+                    & new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop, &
+                    & load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency, &
                     & check_optimality,check_obsop,check_no_obs,check_no_point,check_no_point_mask,check_no_point_nicas
 namelist/model_param/nl,levs,logpres,nv,varname,addvar2d,nts,timeslot,nomask
 namelist/ens1_param/ens1_ne,ens1_nsub
@@ -450,6 +452,7 @@ if (mpl%main) then
    method = ''
    strategy = ''
    new_cortrack = .false.
+   new_corstats = .false.
    new_vbal = .false.
    load_vbal = .false.
    write_vbal = .true.
@@ -623,6 +626,7 @@ if (mpl%main) then
    nam%method = method
    nam%strategy = strategy
    nam%new_cortrack = new_cortrack
+   nam%new_corstats = new_corstats
    nam%new_vbal = new_vbal
    nam%load_vbal = load_vbal
    nam%write_vbal = write_vbal
@@ -837,6 +841,7 @@ call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%strategy,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_cortrack,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%new_corstats,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_vbal,mpl%rootproc-1)
@@ -1030,6 +1035,7 @@ if (conf%has("strategy")) then
    nam%strategy = str
 end if
 if (conf%has("new_cortrack")) call conf%get_or_die("new_cortrack",nam%new_cortrack)
+if (conf%has("new_corstats")) call conf%get_or_die("new_corstats",nam%new_corstats)
 if (conf%has("new_vbal")) call conf%get_or_die("new_vbal",nam%new_vbal)
 if (conf%has("load_vbal")) call conf%get_or_die("load_vbal",nam%load_vbal)
 if (conf%has("write_vbal")) call conf%get_or_die("write_vbal",nam%write_vbal)
@@ -1430,7 +1436,7 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cm
 end if
 
 ! Check ens1_param
-if (nam%new_cortrack.or.nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%check_randomization &
+if (nam%new_cortrack.or.nam%new_corstats.or.nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%check_randomization &
  & .or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%ens1_nsub<1) call mpl%abort(subr,'ens1_nsub should be positive')
    if (mod(nam%ens1_ne,nam%ens1_nsub)/=0) call mpl%abort(subr,'ens1_nsub should be a divider of ens1_ne')
@@ -1610,7 +1616,7 @@ if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomiz
       call mpl%abort(subr,'wrong subsampling structure for NICAS')
    end select
 end if
-if (nam%new_cortrack.or.nam%check_dirac) then
+if (nam%new_cortrack.or.nam%new_corstats.or.nam%check_dirac) then
    if (nam%ndir<1) call mpl%abort(subr,'ndir should be positive')
    do idir=1,nam%ndir
       if ((nam%londir(idir)<-pi).or.(nam%londir(idir)>pi)) call mpl%abort(subr,'londir should lie between -180 and 180')
@@ -1693,6 +1699,7 @@ end if
 call mpl%write(lncid,'nam','method',nam%method)
 call mpl%write(lncid,'nam','strategy',nam%strategy)
 call mpl%write(lncid,'nam','new_cortrack',nam%new_cortrack)
+call mpl%write(lncid,'nam','new_corstats',nam%new_corstats)
 call mpl%write(lncid,'nam','new_vbal',nam%new_vbal)
 call mpl%write(lncid,'nam','load_vbal',nam%load_vbal)
 call mpl%write(lncid,'nam','write_vbal',nam%write_vbal)

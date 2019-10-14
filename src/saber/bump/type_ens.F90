@@ -7,10 +7,11 @@
 !----------------------------------------------------------------------
 module type_ens
 
-use fckit_mpi_module, only: fckit_mpi_sum
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_max
+use netcdf
 use tools_const, only: deg2rad,rad2deg
 use tools_func, only: sphere_dist
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_real,nc_kind_real
 use type_geom, only: geom_type
 use type_io, only: io_type
 use type_mpl, only: mpl_type
@@ -42,6 +43,7 @@ contains
    procedure :: remove_mean => ens_remove_mean
    procedure :: apply_bens => ens_apply_bens
    procedure :: cortrack => ens_cortrack
+   procedure :: corstats => ens_corstats
 end type ens_type
 
 private
@@ -394,5 +396,117 @@ do its=2,nam%nts-1
 end do
 
 end subroutine ens_cortrack
+
+!----------------------------------------------------------------------
+! Subroutine: ens_corstats
+! Purpose: correlation tracker
+!----------------------------------------------------------------------
+subroutine ens_corstats(ens,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(ens_type),intent(in) :: ens   ! Ensemble
+type(mpl_type),intent(inout) :: mpl ! MPI data
+type(rng_type),intent(inout) :: rng ! Random number generator
+type(nam_type),intent(in) :: nam    ! Namelist
+type(geom_type),intent(in) :: geom  ! Geometry
+
+! Local variable
+integer,parameter :: ntest = 1000
+integer :: ie,il0,itest,ic0dir,iprocdir,ic0adir,its,iv
+integer :: ncid,ntest_id,nl0_id,nv_id,nts_id,cor_max_id
+real(kind_real) :: var_dirac,var(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: dirac(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,nam%nts)
+character(len=1024) :: filename
+character(len=1024) :: subr = 'ens_corstats'
+
+! Compute variance
+write(mpl%info,'(a7,a)') '','Compute variance'
+call mpl%flush
+var = 0.0
+do ie=1,ens%ne
+   var = var+ens%mem(ie)%fld**2
+end do
+var = var/real(ens%ne-ens%nsub,kind_real)
+
+! Compute correlation maximum statistics
+write(mpl%info,'(a7,a)') '','Compute correlation maximum statistics'
+call mpl%flush
+do il0=1,geom%nl0
+   write(mpl%info,'(a10,a,i3,a)') '','Level ',il0,': '
+   call mpl%flush(.false.)
+
+   ! Initialization
+   itest = 1
+   call mpl%prog_init(ntest)
+
+   do while (itest<=ntest)
+      ! Generate random dirac point
+      if (mpl%main) call rng%rand_integer(1,geom%nc0,ic0dir)
+      call mpl%f_comm%broadcast(ic0dir,mpl%rootproc-1)
+
+      if (geom%mask_c0(ic0dir,il0)) then
+         ! Get processor and local index
+         iprocdir = geom%c0_to_proc(ic0dir)
+         if (iprocdir==mpl%myproc) ic0adir = geom%c0_to_c0a(ic0dir)
+
+         do its=1,nam%nts
+            do iv=1,nam%nv
+               ! Generate dirac field
+               dirac = 0.0
+               if (iprocdir==mpl%myproc) dirac(ic0adir,il0,iv,its) = 1.0
+
+               ! Apply raw ensemble covariance
+               cor = dirac
+               call ens%apply_bens(mpl,nam,geom,cor)
+
+               ! Normalize correlation
+               call mpl%f_comm%allreduce(sum(dirac*var),var_dirac,fckit_mpi_sum())
+               cor = cor/sqrt(var*var_dirac)
+
+               ! Save correlation maximum
+               call mpl%f_comm%allreduce(maxval(cor(:,il0,iv,1)),cor_max(itest,il0,iv,its),fckit_mpi_max())
+            end do
+         end do
+
+         ! Update
+         call mpl%prog_print(itest)
+         itest = itest+1
+      end if
+   end do
+   call mpl%prog_final
+end do
+
+if (mpl%main) then
+   ! Create file
+   filename = trim(nam%prefix)//'_corstats'
+   call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+
+   ! Write namelist parameters
+   call nam%write(mpl,ncid)
+
+   ! Define dimensions
+   ntest_id = mpl%ncdimcheck(subr,ncid,'ntest',ntest,.true.)
+   nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.)
+   nv_id = mpl%ncdimcheck(subr,ncid,'nv',nam%nv,.true.)
+   nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
+
+   ! Define variable
+   call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max',nc_kind_real,(/ntest_id,nl0_id,nv_id,nts_id/),cor_max_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,cor_max_id,'_FillValue',mpl%msv%valr))
+
+   ! End definition mode
+   call mpl%ncerr(subr,nf90_enddef(ncid))
+
+   ! Write variables
+   call mpl%ncerr(subr,nf90_put_var(ncid,cor_max_id,cor_max))
+
+   ! Close file
+   call mpl%ncerr(subr,nf90_close(ncid))
+end if
+
+end subroutine ens_corstats
 
 end module type_ens

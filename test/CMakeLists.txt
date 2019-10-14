@@ -40,7 +40,7 @@ message( "     SABER_MODEL_TEST:   " ${SABER_MODEL_TEST} )
 if(${SABER_MODEL_TEST})
     message( "     -> SABER_MODEL_DIR: " ${SABER_MODEL_DIR} )
 endif()
-message( "     SABER_VALGRIND_TEST:  " ${SABER_NEMOVAR_TEST} )
+message( "     SABER_VALGRIND_TEST:  " ${SABER_VALGRIND_TEST} )
 
 # TIER 1
 list(APPEND saber_test
@@ -131,8 +131,9 @@ endif()
 # Model tests
 if(${SABER_MODEL_TEST})
     list(APPEND saber_test_model
-        bump_nemovar
+        bump_geos
         bump_mpas
+        bump_nemovar
     )
 endif()
 
