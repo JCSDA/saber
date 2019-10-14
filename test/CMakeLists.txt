@@ -25,6 +25,10 @@ if(DEFINED ENV{SABER_NEMOVAR_TEST})
     set(SABER_NEMOVAR_TEST "$ENV{SABER_NEMOVAR_TEST}")
     set(SABER_NEMOVAR_DIR "$ENV{SABER_NEMOVAR_DIR}")
 endif()
+set(SABER_VALGRIND_TEST 0)
+if(DEFINED ENV{SABER_VALGRIND_TEST})
+    set(SABER_VALGRIND_TEST "$ENV{SABER_VALGRIND_TEST}")
+endif()
 
 # Summary
 message( "-- saber tests variables:" )
@@ -36,6 +40,7 @@ message( "     SABER_NEMOVAR_TEST:   " ${SABER_NEMOVAR_TEST} )
 if(${SABER_NEMOVAR_TEST})
     message( "     -> SABER_NEMOVAR_DIR: " ${SABER_NEMOVAR_DIR} )
 endif()
+message( "     SABER_VALGRIND_TEST:  " ${SABER_NEMOVAR_TEST} )
 
 # TIER 1
 list(APPEND saber_test
@@ -201,6 +206,16 @@ foreach(test ${saber_test})
                      COMMAND ${CMAKE_BINARY_DIR}/bin/comparesaber.sh
                      ARGS ${test} ${mpi} ${omp}
                      TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+
+    if(${SABER_VALGRIND_TEST})
+        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_valgrind
+                         MPI    ${mpi}
+                         OMP    ${omp}
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/valgrind.sh
+                         ARGS ${CMAKE_BINARY_DIR}/bin/bump.x testinput/${test}_${mpi}-${omp}.yaml testoutput/${test}
+                         DEPENDS bump.x
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
+    endif()
 endforeach()
 foreach(test ${saber_test_2})
     foreach(suffix 1 2)
@@ -233,6 +248,18 @@ foreach(test ${saber_test_2})
                          ARGS ${test}_${suffix} ${mpi} ${omp}
                          TEST_DEPENDS test_${test}_${suffix}_${mpi}-${omp}_run)
     endforeach()
+
+    if(${SABER_VALGRIND_TEST})
+        foreach(suffix 1 2)
+            ecbuild_add_test(TARGET test_${test}_${suffix}_${mpi}-${omp}_valgrind
+                             MPI    ${mpi}
+                             OMP    ${omp}
+                             COMMAND ${CMAKE_BINARY_DIR}/bin/valgrind.sh
+                             ARGS ${CMAKE_BINARY_DIR}/bin/bump.x testinput/${test}_${suffix}_${mpi}-${omp}.yaml testoutput/${test}_${suffix}
+                             DEPENDS bump.x
+                             TEST_DEPENDS test_${test}_${suffix}_${mpi}-${omp}_setup)
+        endforeach()
+    endif()
 endforeach()
 
 # Dualcore tests (MPI)
