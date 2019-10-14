@@ -85,7 +85,7 @@ integer,intent(in) :: ne             ! Ensemble size
 integer,intent(in) :: nsub           ! Number of sub-ensembles
 
 ! Local variables
-integer :: ie,isub
+integer :: isub
 
 ! Copy attributes
 call ens%set_att(ne,nsub)
