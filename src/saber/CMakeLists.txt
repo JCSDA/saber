@@ -4,11 +4,17 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 add_subdirectory( bump )
+add_subdirectory( external )
+add_subdirectory( util )
 
 PREPEND( _p_bump_src_files "bump" ${bump_src_files} )
+PREPEND( _p_external_src_files "external" ${external_src_files} )
+PREPEND( _p_util_src_files "util" ${util_src_files} )
 
 list( APPEND saber_src_files
   ${_p_bump_src_files}
+  ${_p_external_src_files}
+  ${_p_util_src_files}
 )
 
 list( APPEND SABER_LIB_DEPS
