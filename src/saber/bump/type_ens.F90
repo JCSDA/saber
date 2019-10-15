@@ -415,10 +415,10 @@ type(geom_type),intent(in) :: geom  ! Geometry
 ! Local variable
 integer,parameter :: ntest = 1000
 integer :: ie,il0,itest,ic0dir,iprocdir,ic0adir,its,iv
-integer :: ncid,ntest_id,nl0_id,nv_id,nts_id,cor_max_id
+integer :: ncid,ntest_id,nl0_id,nv_id,nts_id,cor_max_id,cor_max_avg_id,cor_max_std_id
 real(kind_real) :: var_dirac,var(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real) :: dirac(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
-real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,nam%nts),cor_max_avg(geom%nl0,nam%nv,nam%nts),cor_max_std(geom%nl0,nam%nv,nam%nts)
 character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_corstats'
 
@@ -452,22 +452,22 @@ do il0=1,geom%nl0
          iprocdir = geom%c0_to_proc(ic0dir)
          if (iprocdir==mpl%myproc) ic0adir = geom%c0_to_c0a(ic0dir)
 
-         do its=1,nam%nts
-            do iv=1,nam%nv
-               ! Generate dirac field
-               dirac = 0.0
-               if (iprocdir==mpl%myproc) dirac(ic0adir,il0,iv,its) = 1.0
+         do iv=1,nam%nv
+            ! Generate dirac field
+            dirac = 0.0
+            if (iprocdir==mpl%myproc) dirac(ic0adir,il0,iv,nam%nts) = 1.0
 
-               ! Apply raw ensemble covariance
-               cor = dirac
-               call ens%apply_bens(mpl,nam,geom,cor)
+            ! Apply raw ensemble covariance
+            cor = dirac
+            call ens%apply_bens(mpl,nam,geom,cor)
 
-               ! Normalize correlation
-               call mpl%f_comm%allreduce(sum(dirac*var),var_dirac,fckit_mpi_sum())
-               cor = cor/sqrt(var*var_dirac)
+            ! Normalize correlation
+            call mpl%f_comm%allreduce(sum(dirac*var),var_dirac,fckit_mpi_sum())
+            cor = cor/sqrt(var*var_dirac)
 
-               ! Save correlation maximum
-               call mpl%f_comm%allreduce(maxval(cor(:,il0,iv,1)),cor_max(itest,il0,iv,its),fckit_mpi_max())
+            ! Save correlation maximum
+            do its=1,nam%nts
+               call mpl%f_comm%allreduce(maxval(cor(:,il0,iv,its)),cor_max(itest,il0,iv,its),fckit_mpi_max())
             end do
          end do
 
@@ -477,6 +477,14 @@ do il0=1,geom%nl0
       end if
    end do
    call mpl%prog_final
+
+   ! Compute average and standard-deviation
+   do its=1,nam%nts
+      do iv=1,nam%nv
+         cor_max_avg(il0,iv,its) = sum(cor_max(:,il0,iv,its))/real(ntest,kind_real)
+         cor_max_std(il0,iv,its) = sqrt(sum((cor_max(:,il0,iv,its)-cor_max_avg(il0,iv,its))**2)/real(ntest-1,kind_real))
+      end do
+   end do
 end do
 
 if (mpl%main) then
@@ -493,15 +501,22 @@ if (mpl%main) then
    nv_id = mpl%ncdimcheck(subr,ncid,'nv',nam%nv,.true.)
    nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
 
-   ! Define variable
+   ! Define variables
    call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max',nc_kind_real,(/ntest_id,nl0_id,nv_id,nts_id/),cor_max_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,cor_max_id,'_FillValue',mpl%msv%valr))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max_avg',nc_kind_real,(/nl0_id,nv_id,nts_id/),cor_max_avg_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,cor_max_avg_id,'_FillValue',mpl%msv%valr))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max_std',nc_kind_real,(/nl0_id,nv_id,nts_id/),cor_max_std_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,cor_max_std_id,'_FillValue',mpl%msv%valr))
+
 
    ! End definition mode
    call mpl%ncerr(subr,nf90_enddef(ncid))
 
    ! Write variables
    call mpl%ncerr(subr,nf90_put_var(ncid,cor_max_id,cor_max))
+   call mpl%ncerr(subr,nf90_put_var(ncid,cor_max_avg_id,cor_max_avg))
+   call mpl%ncerr(subr,nf90_put_var(ncid,cor_max_std_id,cor_max_std))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))
