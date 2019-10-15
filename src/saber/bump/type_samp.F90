@@ -15,6 +15,7 @@ use tools_func, only: sphere_dist,fit_func
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: eq,inf
+use tools_samp, only: initialize_sampling
 use type_bpar, only: bpar_type
 use type_com, only: com_type
 use type_ens, only: ens_type
@@ -690,7 +691,7 @@ if (samp%new_sampling) then
          mask_c1a(ic1a) = .false.
       end if
    end do
-   call rng%initialize_sampling(mpl,samp%nc1a,lon_c1a,lat_c1a,mask_c1a,rh_c1a,samp%c1a_to_c1, &
+   call initialize_sampling(mpl,rng,samp%nc1a,lon_c1a,lat_c1a,mask_c1a,rh_c1a,samp%c1a_to_c1, &
  & nam%ntry,nam%nrep,nam%nc2-nam%nldwv,samp%c2_to_c1(nam%nldwv+1:nam%nc2))
    samp%c2_to_c0 = samp%c1_to_c0(samp%c2_to_c1)
 
@@ -952,7 +953,7 @@ if (samp%nc0_mask(0)>nam%nc1) then
          mask_hor_c0a(ic0a) = .false.
       end if
    end do
-   call rng%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
+   call initialize_sampling(mpl,rng,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
  & nam%ntry,nam%nrep,nam%nc1-nam%nldwv,samp%c1_to_c0(nam%nldwv+1:nam%nc1))
 elseif (samp%nc0_mask(0)==nam%nc1) then
    ! Keep all remaining points
