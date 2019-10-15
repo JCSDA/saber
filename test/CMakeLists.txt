@@ -40,7 +40,7 @@ message( "     SABER_NEMOVAR_TEST:   " ${SABER_NEMOVAR_TEST} )
 if(${SABER_NEMOVAR_TEST})
     message( "     -> SABER_NEMOVAR_DIR: " ${SABER_NEMOVAR_DIR} )
 endif()
-message( "     SABER_VALGRIND_TEST:  " ${SABER_NEMOVAR_TEST} )
+message( "     SABER_VALGRIND_TEST:  " ${SABER_VALGRIND_TEST} )
 
 # TIER 1
 list(APPEND saber_test

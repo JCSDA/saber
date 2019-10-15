@@ -15,6 +15,7 @@ use tools_func, only: gc2gau,lonlatmod,sphere_dist,fit_func
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf
+use tools_samp, only: initialize_sampling
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_com, only: com_type,com_ntag
@@ -1530,7 +1531,7 @@ if (nam%check_no_point_nicas) then
 end if
 
 ! Compute subsampling
-call rng%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rhs_min,geom%c0a_to_c0,nam%ntry,nam%nrep, &
+call initialize_sampling(mpl,rng,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rhs_min,geom%c0a_to_c0,nam%ntry,nam%nrep, &
  & nicas_blk%nc1,nicas_blk%c1_to_c0,fast=nam%fast_sampling)
 nicas_blk%c1_to_proc = geom%c0_to_proc(nicas_blk%c1_to_c0)
 
@@ -1733,7 +1734,7 @@ do il1=1,nicas_blk%nl1
          ! Initialize sampling
          mask_c1a = nicas_blk%mask_c1(nicas_blk%c1a_to_c1,il1)
          rhs_c1a = cmat_blk%rhs(nicas_blk%c1a_to_c0a,il0)
-         call rng%initialize_sampling(mpl,nicas_blk%nc1a,lon_c1a,lat_c1a,mask_c1a,rhs_c1a,nicas_blk%c1a_to_c1, &
+         call initialize_sampling(mpl,rng,nicas_blk%nc1a,lon_c1a,lat_c1a,mask_c1a,rhs_c1a,nicas_blk%c1a_to_c1, &
        & nam%ntry,nam%nrep,nicas_blk%nc2(il1),c2_to_c1,fast=nam%fast_sampling)
 
          ! Fill C2 mask
