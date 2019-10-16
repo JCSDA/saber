@@ -1888,7 +1888,7 @@ do il0i=1,geom%nl0i
    mask_c1 = geom%mask_c0(nicas_blk%c1_to_c0,il0i)
    write(nicas_blk%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
    call nicas_blk%h(il0i)%interp(mpl,rng,nam,geom,il0i,nicas_blk%nc1,lon_c1,lat_c1,mask_c1,geom%nc0a, &
-    & geom%lon_c0a,geom%lat_c0a,geom%mask_c0a(:,il0i))
+    & geom%lon_c0a,geom%lat_c0a,geom%mask_c0a(:,il0i),10)
 end do
 
 ! Define halo A
@@ -1939,7 +1939,7 @@ do il1=1,nicas_blk%nl1
    ! Compute interpolation
    il0 = nicas_blk%l1_to_l0(il1)
    call nicas_blk%s(il1)%interp(mpl,rng,nam,geom,il0,nicas_blk%nc1,lon_c1,lat_c1,nicas_blk%mask_c2(:,il1),nc1b_h, &
- & lon_c1b_h,lat_c1b_h,mask_c1b_h)
+ & lon_c1b_h,lat_c1b_h,mask_c1b_h,10)
 
    ! Release memory
    deallocate(lon_c1b_h)
@@ -3744,12 +3744,12 @@ do its=2,nam%nts
       ! Direct      
       write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
       call nicas_blk%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,adv_lon(:,il0),adv_lat(:,il0),geom%mask_c0(:,il0),geom%nc0a, &
-    & geom%lon(geom%c0a_to_c0),geom%lat(geom%c0a_to_c0),geom%mask_c0a(:,il0))
+    & geom%lon(geom%c0a_to_c0),geom%lat(geom%c0a_to_c0),geom%mask_c0a(:,il0),10)
 
       ! Inverse
       write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'dinv_',il0,'_',its
       call nicas_blk%dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),geom%nc0a, &
-    & cmat_blk%adv_lon(:,il0,its),cmat_blk%adv_lat(:,il0,its),geom%mask_c0a(:,il0))
+    & cmat_blk%adv_lon(:,il0,its),cmat_blk%adv_lat(:,il0,its),geom%mask_c0a(:,il0),10)
    end do
 end do
 

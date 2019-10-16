@@ -82,20 +82,21 @@ end subroutine hdiag_dealloc
 ! Subroutine: hdiag_run_hdiag
 ! Purpose: HDIAG driver
 !----------------------------------------------------------------------
-subroutine hdiag_run_hdiag(hdiag,mpl,rng,nam,geom,bpar,io,ens1,ens2)
+subroutine hdiag_run_hdiag(hdiag,mpl,rng,nam,geom,bpar,io,ens1,ens2,fld_uv)
 
 implicit none
 
 ! Passed variables
-class(hdiag_type),intent(inout) :: hdiag   ! Hybrid diagnostics
-type(mpl_type),intent(inout) :: mpl        ! MPI data
-type(rng_type),intent(inout) :: rng        ! Random number generator
-type(nam_type),intent(inout) :: nam        ! Namelist
-type(geom_type),intent(in) :: geom         ! Geometry
-type(bpar_type),intent(in) :: bpar         ! Block parameters
-type(io_type),intent(in) :: io             ! I/O
-type(ens_type),intent(in) :: ens1          ! Ensemble 1
-type(ens_type),intent(in),optional :: ens2 ! Ensemble 2
+class(hdiag_type),intent(inout) :: hdiag                                    ! Hybrid diagnostics
+type(mpl_type),intent(inout) :: mpl                                         ! MPI data
+type(rng_type),intent(inout) :: rng                                         ! Random number generator
+type(nam_type),intent(inout) :: nam                                         ! Namelist
+type(geom_type),intent(in) :: geom                                          ! Geometry
+type(bpar_type),intent(in) :: bpar                                          ! Block parameters
+type(io_type),intent(in) :: io                                              ! I/O
+type(ens_type),intent(in) :: ens1                                           ! Ensemble 1
+type(ens_type),intent(in),optional :: ens2                                  ! Ensemble 2
+real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
 
 ! Compute sampling, subset Sc1
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -135,7 +136,11 @@ if (nam%adv_diag) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Compute advection diagnostic'
    call mpl%flush
-   call hdiag%adv%compute(mpl,rng,nam,geom,bpar,hdiag%samp,io,ens1)
+   if (present(fld_uv)) then
+      call hdiag%adv%compute(mpl,rng,nam,geom,bpar,hdiag%samp,io,ens1,fld_uv)
+   else
+      call hdiag%adv%compute(mpl,rng,nam,geom,bpar,hdiag%samp,io,ens1)
+   end if
 end if
 
 ! Compute MPI distribution, halo C

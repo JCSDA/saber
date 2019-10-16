@@ -9,11 +9,12 @@ module type_ens
 
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_max
 use netcdf
-use tools_const, only: deg2rad,rad2deg
-use tools_func, only: sphere_dist
+use tools_const, only: deg2rad,rad2deg,req
+use tools_func, only: sphere_dist,lonlat2xyz,xyz2lonlat
 use tools_kinds, only: kind_real,nc_kind_real
 use type_geom, only: geom_type
 use type_io, only: io_type
+use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_rng, only: rng_type
@@ -30,7 +31,7 @@ type ens_type
    ! Attributes
    integer :: ne                                  ! Ensemble size
    integer :: nsub                                ! Number of sub-ensembles
-   logical :: allocated                           ! Allocation flag
+   logical :: allocated = .false.                 ! Allocation flag
 
    ! Data
    type(member_field_type),allocatable :: mem(:)  ! Members
@@ -45,6 +46,8 @@ contains
    procedure :: cortrack => ens_cortrack
    procedure :: corstats => ens_corstats
 end type ens_type
+
+integer,parameter :: nt = 10 ! Number of substeps for wind advection
 
 private
 public :: ens_type
@@ -271,24 +274,32 @@ end subroutine ens_apply_bens
 ! Subroutine: ens_cortrack
 ! Purpose: correlation tracker
 !----------------------------------------------------------------------
-subroutine ens_cortrack(ens,mpl,nam,geom,io)
+subroutine ens_cortrack(ens,mpl,rng,nam,geom,io,fld_uv)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(in) :: ens   ! Ensemble
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(nam_type),intent(in) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom  ! Geometry
-type(io_type),intent(in) :: io      ! I/O
+class(ens_type),intent(in) :: ens                                          ! Ensemble
+type(mpl_type),intent(inout) :: mpl                                        ! MPI data
+type(rng_type),intent(inout) :: rng                                        ! Random number generator
+type(nam_type),intent(in) :: nam                                           ! Namelist
+type(geom_type),intent(in) :: geom                                         ! Geometry
+type(io_type),intent(in) :: io                                             ! I/O
+real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nv) ! Wind field
 
 ! Local variable
-integer :: ic0a,ic0,il0,ie,its,iproc(1),ind(2)
+integer :: ic0a,ic0,il0,ie,its,iproc(1),ind(2),it
+integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id
 real(kind_real) :: proc_to_val(mpl%nproc),val,var_dirac
 real(kind_real) :: var(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real) :: dirac(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,uz,x,y,z
+real(kind_real) :: londir(nam%nts),latdir(nam%nts),londir_tracker(nam%nts),latdir_tracker(nam%nts)
+real(kind_real) :: londir_wind(nam%nts),latdir_wind(nam%nts)
 character(len=2) :: timeslotchar
 character(len=1024) :: filename
+character(len=1024) :: subr = 'ens_cortrack'
+type(linop_type) :: h
 
 ! File name
 filename = trim(nam%prefix)//'_cortrack'
@@ -323,6 +334,7 @@ cor = cor/sqrt(var*var_dirac)
 write(mpl%info,'(a10,a)') '','Correlation maximum displacement'
 call mpl%flush
 do its=1,nam%nts
+   ! Find maximum
    val = maxval(cor(:,:,1,its))
    call mpl%f_comm%allgather(val,proc_to_val)
    iproc = maxloc(proc_to_val)
@@ -334,8 +346,14 @@ do its=1,nam%nts
    end if
    call mpl%f_comm%broadcast(ic0,iproc(1)-1)
    call mpl%f_comm%broadcast(il0,iproc(1)-1)
+
+   ! Save results
+   londir(its) = geom%lon(ic0)
+   latdir(its) = geom%lat(ic0)
+
+   ! Print results
    write(mpl%info,'(a13,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / lev / val: ', &
- & geom%lon(ic0)*rad2deg,' / ',geom%lat(ic0)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
+ & londir(its)*rad2deg,' / ',latdir(its)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
    call mpl%flush
 end do
 
@@ -350,10 +368,15 @@ end do
 ! Correlation tracker
 write(mpl%info,'(a7,a)') '','Correlation tracker'
 call mpl%flush
+londir_tracker(1) = geom%londir(1)
+latdir_tracker(1) = geom%latdir(1)
+write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(1),' ~> lon / lat / lev / val: ', &
+ & londir_tracker(1)*rad2deg,' / ',latdir_tracker(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
+call mpl%flush
 write(timeslotchar,'(i2.2)') nam%timeslot(1)
 call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_0',cor(:,:,:,1))
 call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,:,2))
-do its=2,nam%nts-1
+do its=2,nam%nts
    ! Correlation maximum displacement
    ic0a = mpl%msv%vali
    val = maxval(cor(:,:,1,its))
@@ -367,8 +390,14 @@ do its=2,nam%nts-1
    end if
    call mpl%f_comm%broadcast(ic0,iproc(1)-1)
    call mpl%f_comm%broadcast(il0,iproc(1)-1)
+
+   ! Save results
+   londir_tracker(its) = geom%lon(ic0)
+   latdir_tracker(its) = geom%lat(ic0)
+
+   ! Print results
    write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / lev / val: ', &
- & geom%lon(ic0)*rad2deg,' / ',geom%lat(ic0)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
+ & londir_tracker(its)*rad2deg,' / ',latdir_tracker(its)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
    call mpl%flush
 
    ! Generate dirac field
@@ -392,8 +421,113 @@ do its=2,nam%nts-1
    call mpl%flush
    write(timeslotchar,'(i2.2)') nam%timeslot(its)
    call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_0',cor(:,:,:,its))
-   call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,:,its+1))
+   if (its<nam%nts) call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,:,its+1))
 end do
+
+if (present(fld_uv)) then
+   ! Wind tracker
+   write(mpl%info,'(a7,a)') '','Wind tracker'
+   call mpl%flush
+
+   ! Initialization
+   londir_wind(1) = geom%londir(1)
+   latdir_wind(1) = geom%latdir(1)
+   write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(1),' ~> lon / lat / lev / val: ', &
+ & londir_wind(1)*rad2deg,' / ',latdir_wind(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
+   call mpl%flush
+   dtl = nam%dts/nt
+
+   do its=2,nam%nts
+      ! Copy results
+      londir_wind(its) = londir_wind(its-1)
+      latdir_wind(its) = latdir_wind(its-1)
+   
+      do it=1,nt
+         ! Compute interpolation
+         call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,geom%il0dir(1)), &
+       & 1,londir_wind(its:its),latdir_wind(its:its),(/.true./),13)
+   
+         ! Interpolate wind value at dirac point
+         call h%apply(mpl,fld_uv(:,geom%il0dir(1),1,its-1),um) 
+         call h%apply(mpl,fld_uv(:,geom%il0dir(1),2,its-1),vm)
+         call h%apply(mpl,fld_uv(:,geom%il0dir(1),1,its),up)
+         call h%apply(mpl,fld_uv(:,geom%il0dir(1),2,its),vp)
+   
+         ! Transform wind to cartesian coordinates
+         uxm = -sin(londir_wind(its))*um(1)-cos(londir_wind(its))*sin(latdir_wind(its))*vm(1)
+         uym = cos(londir_wind(its))*um(1)-sin(londir_wind(its))*sin(latdir_wind(its))*vm(1)
+         uzm = cos(latdir_wind(its))*vm(1)
+         uxp = -sin(londir_wind(its))*up(1)-cos(londir_wind(its))*sin(latdir_wind(its))*vp(1)
+         uyp = cos(londir_wind(its))*up(1)-sin(londir_wind(its))*sin(latdir_wind(its))*vp(1)
+         uzp = cos(latdir_wind(its))*vp(1)
+   
+         ! Define internal time
+         t = real(it-1,kind_real)/real(nt,kind_real)
+   
+         ! Define wind in cartesian coordinates
+         ux = (1.0-t)*uxm+t*uxp
+         uy = (1.0-t)*uym+t*uyp
+         uz = (1.0-t)*uzm+t*uzp
+   
+         ! Transform location to cartesian coordinates
+         call lonlat2xyz(mpl,londir_wind(its),latdir_wind(its),x,y,z)
+   
+         ! Propagate location
+         x = x+ux*dtl
+         y = y+uy*dtl
+         z = z+uz*dtl
+   
+         ! Back to spherical coordinates
+         call xyz2lonlat(mpl,x,y,z,londir_wind(its),latdir_wind(its))
+      end do
+
+      ! Print results
+      write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / lev: ', &
+    & londir_wind(its)*rad2deg,' / ',latdir_wind(its)*rad2deg,' / ',nam%levs(geom%il0dir(1))
+      call mpl%flush
+   end do
+end if
+
+if (mpl%main) then
+   ! Open file
+   filename = trim(nam%prefix)//'_cortrack_coord'
+   call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+
+   ! Define dimension
+   nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
+   
+   ! Define variables
+   call mpl%ncerr(subr,nf90_def_var(ncid,'londir',nc_kind_real,(/nts_id/),londir_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,londir_id,'_FillValue',mpl%msv%valr))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'latdir',nc_kind_real,(/nts_id/),latdir_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,latdir_id,'_FillValue',mpl%msv%valr))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'londir_tracker',nc_kind_real,(/nts_id/),londir_tracker_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,londir_tracker_id,'_FillValue',mpl%msv%valr))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_tracker',nc_kind_real,(/nts_id/),latdir_tracker_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,latdir_tracker_id,'_FillValue',mpl%msv%valr))
+   if (present(fld_uv)) then
+      call mpl%ncerr(subr,nf90_def_var(ncid,'londir_wind',nc_kind_real,(/nts_id/),londir_wind_id))
+      call mpl%ncerr(subr,nf90_put_att(ncid,londir_wind_id,'_FillValue',mpl%msv%valr))
+      call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_wind',nc_kind_real,(/nts_id/),latdir_wind_id))
+      call mpl%ncerr(subr,nf90_put_att(ncid,latdir_wind_id,'_FillValue',mpl%msv%valr))
+   end if
+   
+   ! End definition mode
+   call mpl%ncerr(subr,nf90_enddef(ncid))
+
+   ! Write variables
+   call mpl%ncerr(subr,nf90_put_var(ncid,londir_id,londir*rad2deg))
+   call mpl%ncerr(subr,nf90_put_var(ncid,latdir_id,latdir*rad2deg))
+   call mpl%ncerr(subr,nf90_put_var(ncid,londir_tracker_id,londir_tracker*rad2deg))
+   call mpl%ncerr(subr,nf90_put_var(ncid,latdir_tracker_id,latdir_tracker*rad2deg))
+   if (present(fld_uv)) then
+      call mpl%ncerr(subr,nf90_put_var(ncid,londir_wind_id,londir_wind*rad2deg))
+      call mpl%ncerr(subr,nf90_put_var(ncid,latdir_wind_id,latdir_wind*rad2deg))
+   end if
+
+   ! Close file
+   call mpl%ncerr(subr,nf90_close(ncid))
+end if
 
 end subroutine ens_cortrack
 
@@ -455,7 +589,7 @@ do il0=1,geom%nl0
          do iv=1,nam%nv
             ! Generate dirac field
             dirac = 0.0
-            if (iprocdir==mpl%myproc) dirac(ic0adir,il0,iv,nam%nts) = 1.0
+            if (iprocdir==mpl%myproc) dirac(ic0adir,il0,iv,1) = 1.0
 
             ! Apply raw ensemble covariance
             cor = dirac

@@ -149,6 +149,13 @@ else
    model%ens2_nsub = 0
 end if
 
+! Read wind fields
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Read wind fields'
+call mpl%flush
+call model%read_wind(mpl,bump%nam)
+
 if (bump%nam%new_obsop) then
    ! Generate observations locations
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -174,7 +181,7 @@ call bump%setup_online(f_comm,model%nmga,model%nl0,bump%nam%nv,bump%nam%nts, &
                      & smask=model%smask_mga, &
                      & ens1_ne=model%ens1_ne,ens1_nsub=model%ens1_nsub,ens2_ne=model%ens2_ne,ens2_nsub=model%ens2_nsub, &
                      & nobs=model%nobsa,lonobs=model%lonobs*rad2deg,latobs=model%latobs*rad2deg, &
-                     & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+                     & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr,fld_uv=model%fld_uv)
 
 ! Transfer members
 if (bump%nam%ens1_ne>0) then

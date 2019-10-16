@@ -47,6 +47,7 @@ type bump_type
    type(obsop_type) :: obsop
    type(rng_type) :: rng
    type(vbal_type) :: vbal
+   real(kind_real),allocatable :: fld_uv(:,:,:,:)
 contains
    procedure :: setup_online => bump_setup_online
    procedure :: run_drivers => bump_run_drivers
@@ -81,7 +82,7 @@ contains
 ! Purpose: online setup
 !----------------------------------------------------------------------
 subroutine bump_setup_online(bump,f_comm,nmga,nl0,nv,nts,lon,lat,area,vunit,gmask,smask,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub, &
-                           & nobs,lonobs,latobs,namelname,lunit,msvali,msvalr)
+                           & nobs,lonobs,latobs,namelname,lunit,msvali,msvalr,fld_uv)
 
 implicit none
 
@@ -109,9 +110,10 @@ character(len=*),intent(in),optional :: namelname ! Namelist name
 integer,intent(in),optional :: lunit              ! Listing unit
 integer,intent(in),optional :: msvali             ! Missing value for integers
 real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
+real(kind_real),intent(in),optional :: fld_uv(nmga,nl0,2,nts) ! Wind field
 
 ! Local variables
-integer :: lmsvali,length,info,info_loc,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
+integer :: lmsvali,length,info,info_loc,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub,its
 real(kind_real) :: lmsvalr
 logical :: init,lgmask(nmga,nl0)
 character(len=1024),parameter :: subr = 'bump_setup_online'
@@ -252,6 +254,20 @@ else
    call bump%ens2%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
 end if
 
+if (present(fld_uv)) then
+   ! Initialize wind fields
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Initialize wind fields'
+   call bump%mpl%flush
+   allocate(bump%fld_uv(bump%geom%nc0a,bump%geom%nl0,2,bump%nam%nts))
+   do its=1,bump%nam%nts
+      call bump%geom%copy_mga_to_c0a(bump%mpl,fld_uv(:,:,1,its),bump%fld_uv(:,:,1,its))
+      call bump%geom%copy_mga_to_c0a(bump%mpl,fld_uv(:,:,2,its),bump%fld_uv(:,:,2,its))
+   end do
+   bump%fld_uv = bump%fld_uv/req
+end if
+
 if (present(nobs)) then
    ! Check arguments consistency
    if ((.not.present(lonobs)).or.(.not.present(latobs))) call bump%mpl%abort(subr,'lonobs and latobs are missing')
@@ -311,7 +327,11 @@ if (bump%nam%new_cortrack) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run correlation tracker'
    call bump%mpl%flush
-   call bump%ens1%cortrack(bump%mpl,bump%nam,bump%geom,bump%io)
+   if (allocated(bump%fld_uv)) then
+      call bump%ens1%cortrack(bump%mpl,bump%rng,bump%nam,bump%geom,bump%io,bump%fld_uv)
+   else
+      call bump%ens1%cortrack(bump%mpl,bump%rng,bump%nam,bump%geom,bump%io)
+   end if
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
@@ -359,9 +379,18 @@ if (bump%nam%new_hdiag) then
    write(bump%mpl%info,'(a)') '--- Run HDIAG driver'
    call bump%mpl%flush
    if ((trim(bump%nam%method)=='hyb-rnd').or.(trim(bump%nam%method)=='dual-ens')) then
-      call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,bump%ens2)
+      if (allocated(bump%fld_uv)) then
+         call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,ens2=bump%ens2, &
+       & fld_uv=bump%fld_uv)
+      else
+         call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,ens2=bump%ens2)
+      end if
    else
-      call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1)
+      if (allocated(bump%fld_uv)) then
+         call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,fld_uv=bump%fld_uv)
+      else
+         call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1)
+      end if
    end if
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
@@ -531,8 +560,6 @@ elseif (iens==2) then
 end if
 
 ! Add member
-write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' added to ensemble ',iens
-call bump%mpl%flush()
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       ! Model grid to subset Sc0
@@ -545,16 +572,18 @@ do its=1,bump%nam%nts
          bump%ens2%mem(ie)%fld(:,:,iv,its) = fld_c0a
       end if
 
-      ! Print norm
-      norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
-      write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
-      call bump%mpl%flush()
-      nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
-      nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
-      nmask = count(.not.bump%geom%mask_c0a)
-      write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
-    & nnonzero,' / ',nzero,' / ',nmask
-      call bump%mpl%flush()
+      if (.false.) then
+         ! Print norm
+         norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
+         write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
+         call bump%mpl%flush()
+         nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
+         nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
+         nmask = count(.not.bump%geom%mask_c0a)
+         write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
+       & nnonzero,' / ',nzero,' / ',nmask
+         call bump%mpl%flush()
+      end if
    end do
 end do
 
@@ -583,8 +612,6 @@ character(len=1024),parameter :: subr = 'bump_remove_member'
 if ((iens/=1).and.(iens/=2)) call bump%mpl%abort(subr,'wrong ensemble number')
 
 ! Remove member
-write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' removed from ensemble ',iens
-call bump%mpl%flush()
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       ! Copy from ensemble structure and add mean
@@ -1430,6 +1457,7 @@ call bump%lct%partial_dealloc
 call bump%nicas%partial_dealloc
 call bump%obsop%partial_dealloc
 call bump%vbal%partial_dealloc
+if (allocated(bump%fld_uv)) deallocate(bump%fld_uv)
 
 end subroutine bump_partial_dealloc
 
@@ -1457,6 +1485,7 @@ call bump%lct%dealloc
 call bump%nicas%dealloc
 call bump%obsop%dealloc
 call bump%vbal%dealloc
+if (allocated(bump%fld_uv)) deallocate(bump%fld_uv)
 
 end subroutine bump_dealloc
 
