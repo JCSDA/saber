@@ -43,6 +43,7 @@ contains
    procedure :: copy => ens_copy
    procedure :: remove_mean => ens_remove_mean
    procedure :: apply_bens => ens_apply_bens
+   procedure :: apply_bens_dirac => ens_apply_bens_dirac
    procedure :: cortrack => ens_cortrack
    procedure :: corstats => ens_corstats
 end type ens_type
@@ -230,18 +231,18 @@ real(kind_real) :: pert(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 ! Initialization
 fld_copy = fld
 
-! Apply localized ensemble covariance formula
+! Apply ensemble covariance formula
 fld = 0.0
-norm = sqrt(real(nam%ens1_ne-1,kind_real))
-do ie=1,nam%ens1_ne
-   ! Compute perturbation
+norm = 1.0/real(ens%ne-1,kind_real)
+do ie=1,ens%ne
+   ! Set perturbation
    !$omp parallel do schedule(static) private(its,iv,il0,ic0a)
    do its=1,nam%nts
       do iv=1,nam%nv
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
                if (geom%mask_c0a(ic0a,il0)) then
-                  pert(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its)/norm
+                  pert(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its)
                else
                   pert(ic0a,il0,iv,its) = mpl%msv%valr
                end if
@@ -260,7 +261,7 @@ do ie=1,nam%ens1_ne
       do iv=1,nam%nv
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)+alpha*pert(ic0a,il0,iv,its)
+               if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)+alpha*pert(ic0a,il0,iv,its)*norm
             end do
          end do
       end do
@@ -269,6 +270,59 @@ do ie=1,nam%ens1_ne
 end do
 
 end subroutine ens_apply_bens
+
+!----------------------------------------------------------------------
+! Subroutine: ens_apply_bens_dirac
+! Purpose: apply raw ensemble covariance to a Dirac (faster formulation)
+!----------------------------------------------------------------------
+subroutine ens_apply_bens_dirac(ens,mpl,nam,geom,iprocdir,ic0adir,il0dir,ivdir,itsdir,fld)
+
+implicit none
+
+! Passed variables
+class(ens_type),intent(in) :: ens                                     ! Ensemble
+type(mpl_type),intent(inout) :: mpl                                   ! MPI data
+type(nam_type),intent(in) :: nam                                      ! Namelist
+type(geom_type),intent(in) :: geom                                    ! Geometry
+integer,intent(in) :: iprocdir                                        ! Processor index for dirac function
+integer,intent(in) :: ic0adir                                         ! Subset Sc0, halo A index for dirac function
+integer,intent(in) :: il0dir                                          ! Subset Sl0 index for dirac function
+integer,intent(in) :: ivdir                                           ! Variable index for dirac function
+integer,intent(in) :: itsdir                                          ! Timeslot index for dirac function
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Field
+
+! Local variable
+integer :: ie,ic0a,il0,iv,its
+real(kind_real) :: alpha(ens%ne),norm
+
+! Apply ensemble covariance formula for a Dirac function
+norm = 1.0/real(ens%ne-1,kind_real)
+if (mpl%myproc==iprocdir) then
+   do ie=1,ens%ne
+      alpha(ie) = ens%mem(ie)%fld(ic0adir,il0dir,ivdir,itsdir)
+   end do
+end if
+call mpl%f_comm%broadcast(alpha,iprocdir-1)
+fld = 0.0
+!$omp parallel do schedule(static) private(ie,its,iv,il0,ic0a)
+do ie=1,ens%ne
+   do its=1,nam%nts
+      do iv=1,nam%nv
+         do il0=1,geom%nl0
+            do ic0a=1,geom%nc0a
+               if (geom%mask_c0a(ic0a,il0)) then
+                  fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)+alpha(ie)*ens%mem(ie)%fld(ic0a,il0,iv,its)*norm
+               else
+                  fld(ic0a,il0,iv,its) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+end do
+!$omp end parallel do
+
+end subroutine ens_apply_bens_dirac
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_cortrack
@@ -290,9 +344,8 @@ real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nv) ! Win
 ! Local variable
 integer :: ic0a,ic0,il0,ie,its,iproc(1),ind(2),it
 integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id
-real(kind_real) :: proc_to_val(mpl%nproc),val,var_dirac
-real(kind_real) :: var(geom%nc0a,geom%nl0,nam%nv,nam%nts)
-real(kind_real) :: dirac(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: proc_to_val(mpl%nproc),val,var_loc
+real(kind_real) :: var(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,uz,x,y,z
 real(kind_real) :: londir(nam%nts),latdir(nam%nts),londir_tracker(nam%nts),latdir_tracker(nam%nts)
 real(kind_real) :: londir_wind(nam%nts),latdir_wind(nam%nts)
@@ -314,21 +367,17 @@ do ie=1,ens%ne
 end do
 var = var/real(ens%ne-ens%nsub,kind_real)
 
-! Generate dirac field
-dirac = 0.0
-if (geom%iprocdir(1)==mpl%myproc) dirac(geom%ic0adir(1),geom%il0dir(1),1,geom%itsdir(1)) = 1.0
-
-! Apply raw ensemble covariance
-write(mpl%info,'(a10,a)') '','Apply raw ensemble covariance'
+! Apply ensemble covariance to a Dirac function
+write(mpl%info,'(a10,a)') '','Apply ensemble covariance to a Dirac function'
 call mpl%flush
-cor = dirac
-call ens%apply_bens(mpl,nam,geom,cor)
+call ens%apply_bens_dirac(mpl,nam,geom,geom%iprocdir(1),geom%ic0adir(1),geom%il0dir(1),1,geom%itsdir(1),cor)
 
 ! Normalize correlation
 write(mpl%info,'(a10,a)') '','Normalize correlation'
 call mpl%flush
-call mpl%f_comm%allreduce(sum(dirac*var),var_dirac,fckit_mpi_sum())
-cor = cor/sqrt(var*var_dirac)
+if (geom%iprocdir(1)==mpl%myproc) var_loc = var(geom%ic0adir(1),geom%il0dir(1),1,geom%itsdir(1))
+call mpl%f_comm%broadcast(var_loc,geom%iprocdir(1)-1)
+cor = cor/sqrt(var*var_loc)
 
 ! Correlation maximum displacement
 write(mpl%info,'(a10,a)') '','Correlation maximum displacement'
@@ -400,21 +449,17 @@ do its=2,nam%nts
  & londir_tracker(its)*rad2deg,' / ',latdir_tracker(its)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
    call mpl%flush
 
-   ! Generate dirac field
-   dirac = 0.0
-   if (iproc(1)==mpl%myproc) dirac(ic0a,il0,1,its) = 1.0
-
-   ! Apply raw ensemble covariance
-   write(mpl%info,'(a13,a)') '','Apply raw ensemble covariance'
+   ! Apply ensemble covariance to a Dirac function
+   write(mpl%info,'(a13,a)') '','Apply ensemble covariance to a Dirac function'
    call mpl%flush
-   cor = dirac
-   call ens%apply_bens(mpl,nam,geom,cor)
+   call ens%apply_bens_dirac(mpl,nam,geom,iproc(1),ic0a,il0,1,its,cor)
 
    ! Normalize correlation tracker
    write(mpl%info,'(a13,a)') '','Normalize correlation tracker'
    call mpl%flush
-   call mpl%f_comm%allreduce(sum(dirac*var),var_dirac,fckit_mpi_sum())
-   cor = cor/sqrt(var*var_dirac)
+   if (iproc(1)==mpl%myproc) var_loc = var(ic0a,il0,1,its)
+   call mpl%f_comm%broadcast(var_loc,iproc(1)-1)
+   cor = cor/sqrt(var*var_loc)
 
    ! Write correlation tracker
    write(mpl%info,'(a13,a)') '','Write correlation tracker'
@@ -533,7 +578,7 @@ end subroutine ens_cortrack
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_corstats
-! Purpose: correlation tracker
+! Purpose: correlation statistics
 !----------------------------------------------------------------------
 subroutine ens_corstats(ens,mpl,rng,nam,geom)
 
@@ -548,13 +593,15 @@ type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variable
 integer,parameter :: ntest = 1000
-integer :: ie,il0,itest,ic0dir,iprocdir,ic0adir,its,iv
+integer :: ie,il0,itest,ic0dir,iprocdir,ic0adir,its,iv,ic0a
 integer :: ncid,ntest_id,nl0_id,nv_id,nts_id,cor_max_id,cor_max_avg_id,cor_max_std_id
-real(kind_real) :: var_dirac,var(geom%nc0a,geom%nl0,nam%nv,nam%nts)
-real(kind_real) :: dirac(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: var(geom%nc0a,geom%nl0,nam%nv,nam%nts),alpha(ens%ne),var_loc,cor(geom%nc0a,nam%nts),norm
 real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,nam%nts),cor_max_avg(geom%nl0,nam%nv,nam%nts),cor_max_std(geom%nl0,nam%nv,nam%nts)
 character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_corstats'
+
+! Initialization
+norm = 1.0/real(ens%ne-1,kind_real)
 
 ! Compute variance
 write(mpl%info,'(a7,a)') '','Compute variance'
@@ -563,7 +610,7 @@ var = 0.0
 do ie=1,ens%ne
    var = var+ens%mem(ie)%fld**2
 end do
-var = var/real(ens%ne-ens%nsub,kind_real)
+var = var*norm
 
 ! Compute correlation maximum statistics
 write(mpl%info,'(a7,a)') '','Compute correlation maximum statistics'
@@ -587,21 +634,36 @@ do il0=1,geom%nl0
          if (iprocdir==mpl%myproc) ic0adir = geom%c0_to_c0a(ic0dir)
 
          do iv=1,nam%nv
-            ! Generate dirac field
-            dirac = 0.0
-            if (iprocdir==mpl%myproc) dirac(ic0adir,il0,iv,1) = 1.0
-
-            ! Apply raw ensemble covariance
-            cor = dirac
-            call ens%apply_bens(mpl,nam,geom,cor)
+            ! Apply ensemble covariance formula for a Dirac function
+            if (iprocdir==mpl%myproc) then
+               do ie=1,ens%ne
+                  alpha(ie) = ens%mem(ie)%fld(ic0adir,il0,iv,1)
+               end do
+            end if
+            call mpl%f_comm%broadcast(alpha,iprocdir-1)
+            cor = 0.0
+            !$omp parallel do schedule(static) private(ie,its,ic0a)
+            do ie=1,ens%ne
+               do its=1,nam%nts
+                  do ic0a=1,geom%nc0a
+                     if (geom%mask_c0a(ic0a,il0)) then
+                        cor(ic0a,its) = cor(ic0a,its)+alpha(ie)*ens%mem(ie)%fld(ic0a,il0,iv,its)*norm
+                     else
+                        cor(ic0a,its) = mpl%msv%valr
+                     end if
+                  end do
+               end do
+            end do
+            !$omp end parallel do
 
             ! Normalize correlation
-            call mpl%f_comm%allreduce(sum(dirac*var),var_dirac,fckit_mpi_sum())
-            cor = cor/sqrt(var*var_dirac)
+            if (iprocdir==mpl%myproc) var_loc = var(ic0adir,il0,iv,1)
+            call mpl%f_comm%broadcast(var_loc,iprocdir-1)
+            cor = cor/sqrt(var(:,il0,iv,:)*var_loc)
 
             ! Save correlation maximum
             do its=1,nam%nts
-               call mpl%f_comm%allreduce(maxval(cor(:,il0,iv,its)),cor_max(itest,il0,iv,its),fckit_mpi_max())
+               call mpl%f_comm%allreduce(maxval(cor(:,its)),cor_max(itest,il0,iv,its),fckit_mpi_max())
             end do
          end do
 
