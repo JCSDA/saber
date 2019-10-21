@@ -8,7 +8,6 @@
 module type_bump
 
 use fckit_mpi_module, only: fckit_mpi_comm
-use iso_fortran_env, only : output_unit
 use tools_const, only: req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
 use tools_kinds,only: kind_real
@@ -111,9 +110,9 @@ integer,intent(in),optional :: msvali             ! Missing value for integers
 real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
 
 ! Local variables
-integer :: lmsvali,length,info,info_loc,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
+integer :: lmsvali,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
 real(kind_real) :: lmsvalr
-logical :: init,lgmask(nmga,nl0)
+logical :: lgmask(nmga,nl0)
 character(len=1024),parameter :: subr = 'bump_setup_online'
 
 ! Set missing values

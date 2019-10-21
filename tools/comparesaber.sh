@@ -37,7 +37,7 @@ if test "${test%%_*}" = "bump" ; then
             fi
          done
 
-         if type "nccmp" > /dev/null ; then
+         if [ -x "$(command -v nccmp)" ] ; then
             # Compare files with NCCMP
             echo "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}"
             nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}
