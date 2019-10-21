@@ -141,7 +141,7 @@ type(samp_type),intent(in) :: samp     ! Sampling
 
 ! Local variables
 integer :: ib,i,ic2,ic0,il0,il0i,iproc,ic2a,ildw,n
-real(kind_real) :: fld_c2a(samp%nc2a,geom%nl0),fld_c2b(samp%nc2b,geom%nl0),fld_c0a(geom%nc0a,geom%nl0)
+real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
 character(len=2*1024+12) :: filename
 character(len=1024),parameter :: subr = 'diag_write'
 
@@ -153,6 +153,11 @@ if (mpl%main) then
 end if
 
 if ((trim(diag%prefix)/='cov').and.nam%local_diag) then
+   ! Allocation
+   allocate(fld_c2a(samp%nc2a,geom%nl0))
+   allocate(fld_c2b(samp%nc2b,geom%nl0))
+   allocate(fld_c0a(geom%nc0a,geom%nl0))
+
    do ib=1,bpar%nbe
       if (bpar%fit_block(ib)) then
          filename = trim(nam%prefix)//'_local_diag_'//trim(diag%prefix)
@@ -200,6 +205,11 @@ if ((trim(diag%prefix)/='cov').and.nam%local_diag) then
          end do
       end if
    end do
+
+   ! Release memory
+   deallocate(fld_c2a)
+   deallocate(fld_c2b)
+   deallocate(fld_c0a)
 end if
 
 do ildw=1,nam%nldwv
