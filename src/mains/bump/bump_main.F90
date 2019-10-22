@@ -15,7 +15,6 @@ use tools_kinds,only: kind_real
 use type_bump, only: bump_type
 use type_model, only: model_type
 use type_mpl, only: mpl_type
-use type_rng, only: rng_type
 use type_timer, only: timer_type
 
 implicit none
@@ -27,14 +26,12 @@ integer(c_int),intent(in) :: n2
 character(c_char),intent(in) :: arg2(n2)
 
 ! Local variables
-integer :: i,narg,info,ppos,iproc,ie,ifileunit,iv,its
-real(kind_real),allocatable :: fld_c0(:,:),fld_c0a(:,:),fld_mga(:,:,:,:)
+integer :: i,ppos,iproc,ie,ifileunit
 character(len=1024) :: inputfile,logdir,ext,filename
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
 type(model_type) :: model
 type(mpl_type) :: mpl
-type(rng_type) :: rng
 type(timer_type) :: timer
 
 ! Initialize MPI
@@ -114,13 +111,6 @@ call mpl%flush
 write(mpl%info,'(a)') '--- Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT -----'
 call mpl%flush
 
-! Initialize random number generator
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Initialize random number generator'
-call mpl%flush
-call rng%init(mpl,bump%nam)
-
 ! Model setup
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
@@ -156,8 +146,7 @@ if (bump%nam%new_obsop) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Generate observations locations'
    call mpl%flush
-   call model%generate_obs(mpl,rng,bump%nam)
-   if (bump%nam%default_seed) call rng%reseed(mpl)
+   call model%generate_obs(mpl,bump%nam)
 else
    model%nobsa = 0
    allocate(model%lonobs(model%nobsa))
@@ -205,48 +194,12 @@ end if
 
 ! Test set_parameters interfaces
 if (bump%nam%check_set_param_cor.or.bump%nam%check_set_param_hyb.or.bump%nam%check_set_param_lct) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Set parameters into BUMP'
    call bump%mpl%flush()
-
-   ! Allocation
-   if (mpl%main) allocate(fld_c0(bump%geom%nc0,bump%geom%nl0))
-   allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0))
-   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
-
-   ! Random initialization
-   do its=1,bump%nam%nts
-      do iv=1,bump%nam%nv
-         if (mpl%main) call rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0)
-         call bump%mpl%glb_to_loc(bump%geom%nl0,bump%geom%nc0,bump%geom%c0_to_proc,bump%geom%c0_to_c0a, &
-       & fld_c0,bump%geom%nc0a,fld_c0a)
-         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
-      end do
-   end do
-
-   ! Set parameter
-   if (bump%nam%check_set_param_cor) then
-      call bump%set_parameter('var',fld_mga)
-      call bump%set_parameter('cor_rh',fld_mga*req)
-      call bump%set_parameter('cor_rv',fld_mga)
-      call bump%set_parameter('cor_rv_rfac',fld_mga)
-      call bump%set_parameter('cor_rv_coef',fld_mga)
-   elseif (bump%nam%check_set_param_hyb) then
-      call bump%set_parameter('loc_coef',fld_mga)
-      call bump%set_parameter('loc_rh',fld_mga*req)
-      call bump%set_parameter('loc_rv',fld_mga)
-      call bump%set_parameter('hyb_coef',fld_mga)
-   elseif (bump%nam%check_set_param_lct) then
-      call bump%set_parameter('D11',fld_mga*req**2)
-      call bump%set_parameter('D22',fld_mga*req**2)
-      call bump%set_parameter('D33',fld_mga)
-      call bump%set_parameter('D12',fld_mga)
-      call bump%set_parameter('Dcoef',fld_mga)
-   end if
-
-   ! Release memory
-   deallocate(fld_mga)
+   call bump%test_set_parameter
+   if (bump%nam%default_seed) call bump%rng%reseed(mpl)
 end if
 
 ! Run drivers
@@ -259,50 +212,12 @@ call bump%run_drivers
 ! Test get_parameter interfaces
 if (bump%nam%check_get_param_cor.or.bump%nam%check_get_param_hyb.or.bump%nam%check_get_param_Dloc &
  & .or.bump%nam%check_get_param_lct) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Get parameters from BUMP'
    call bump%mpl%flush()
-
-   ! Allocation
-   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
-
-   ! Get parameter
-   if (bump%nam%check_get_param_cor) then
-      call bump%get_parameter('var',fld_mga)
-      call bump%get_parameter('cor_rh',fld_mga)
-      call bump%get_parameter('cor_rv',fld_mga)
-      call bump%get_parameter('cor_rv_rfac',fld_mga)
-      call bump%get_parameter('cor_rv_coef',fld_mga)
-   elseif (bump%nam%check_get_param_hyb) then
-      call bump%get_parameter('loc_coef',fld_mga)
-      call bump%get_parameter('loc_rh',fld_mga)
-      call bump%get_parameter('loc_rv',fld_mga)
-      call bump%get_parameter('hyb_coef',fld_mga)
-   elseif (bump%nam%check_get_param_Dloc) then
-      call bump%get_parameter('loc_D11',fld_mga)
-      call bump%get_parameter('loc_D22',fld_mga)
-      call bump%get_parameter('loc_D33',fld_mga)
-      call bump%get_parameter('loc_D12',fld_mga)
-      call bump%get_parameter('loc_Dcoef',fld_mga)
-      call bump%get_parameter('loc_DLh',fld_mga)
-   elseif (bump%nam%check_get_param_lct) then
-      call bump%get_parameter('D11_1',fld_mga)
-      call bump%get_parameter('D22_1',fld_mga)
-      call bump%get_parameter('D33_1',fld_mga)
-      call bump%get_parameter('D12_1',fld_mga)
-      call bump%get_parameter('Dcoef_1',fld_mga)
-      call bump%get_parameter('DLh_1',fld_mga)
-      call bump%get_parameter('D11_2',fld_mga)
-      call bump%get_parameter('D22_2',fld_mga)
-      call bump%get_parameter('D33_2',fld_mga)
-      call bump%get_parameter('D12_2',fld_mga)
-      call bump%get_parameter('Dcoef_2',fld_mga)
-      call bump%get_parameter('DLh_2',fld_mga)
-   end if
-
-   ! Release memory
-   deallocate(fld_mga)
+   call bump%test_get_parameter
+   if (bump%nam%default_seed) call bump%rng%reseed(mpl)
 end if
 
 ! Execution stats

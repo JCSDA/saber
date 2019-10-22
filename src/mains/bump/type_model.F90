@@ -674,25 +674,27 @@ end subroutine model_load_ens
 ! Subroutine: model_generate_obs
 ! Purpose: generate observations locations
 !----------------------------------------------------------------------
-subroutine model_generate_obs(model,mpl,rng,nam)
+subroutine model_generate_obs(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
 class(model_type),intent(inout) :: model ! Model
 type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(rng_type),intent(inout) :: rng      ! Random number generator
 type(nam_type),intent(in) :: nam         ! Namelist
 
 ! Local variables
 integer :: nres,delta,iproc,iobs,proc_to_nobsa(mpl%nproc),nn_index(10),img,inb
 real(kind_real) :: nn_dist(10),dist_obs
-logical :: valid
 character(len=1024),parameter :: subr = 'model_generate_obs'
+type(rng_type) :: rng
 type(tree_type) :: tree
 
 ! Check observation number
 if (nam%nobs<1) call mpl%abort(subr,'nobs should be positive for offline observation operator')
+
+! Initialize random number generator
+call rng%init(mpl,nam)
 
 ! Set number of observations for each processor
 nres = nam%nobs

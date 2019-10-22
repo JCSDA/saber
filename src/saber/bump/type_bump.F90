@@ -65,8 +65,10 @@ contains
    procedure :: apply_obsop_ad => bump_apply_obsop_ad
    procedure :: get_parameter => bump_get_parameter
    procedure :: copy_to_field => bump_copy_to_field
+   procedure :: test_get_parameter => bump_test_get_parameter
    procedure :: set_parameter => bump_set_parameter
    procedure :: copy_from_field => bump_copy_from_field
+   procedure :: test_set_parameter => bump_test_set_parameter
    procedure :: dealloc => bump_dealloc
    procedure :: partial_dealloc => bump_partial_dealloc
 end type bump_type
@@ -111,9 +113,9 @@ integer,intent(in),optional :: msvali             ! Missing value for integers
 real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
 
 ! Local variables
-integer :: lmsvali,length,info,info_loc,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
+integer :: lmsvali,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub
 real(kind_real) :: lmsvalr
-logical :: init,lgmask(nmga,nl0)
+logical :: lgmask(nmga,nl0)
 character(len=1024),parameter :: subr = 'bump_setup_online'
 
 ! Set missing values
@@ -1184,69 +1186,129 @@ case ('loc_DLh')
 end select
 
 ! Select parameter from lct
-select case (param(1:4))
-case ('D11_')
-   if (.not.allocated(bump%lct%blk(ib)%D11)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   read(param(5:5),'(i1)') iscales
-   if (iscales>size(bump%lct%blk(ib)%D11,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D11(:,:,iscales),fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+if (len(param)>=4) then
+   select case (param(1:4))
+   case ('D11_')
+      if (.not.allocated(bump%lct%blk(ib)%D11)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+      read(param(5:5),'(i1)') iscales
+      if (iscales>size(bump%lct%blk(ib)%D11,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D11(:,:,iscales),fld_mga)
+      do il0=1,bump%geom%nl0
+         do imga=1,bump%geom%nmga
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+         end do
       end do
-   end do
-case ('D22_')
-   if (.not.allocated(bump%lct%blk(ib)%D22)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   read(param(5:5),'(i1)') iscales
-   if (iscales>size(bump%lct%blk(ib)%D22,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D22(:,:,iscales),fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+   case ('D22_')
+      if (.not.allocated(bump%lct%blk(ib)%D22)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+      read(param(5:5),'(i1)') iscales
+      if (iscales>size(bump%lct%blk(ib)%D22,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D22(:,:,iscales),fld_mga)
+      do il0=1,bump%geom%nl0
+         do imga=1,bump%geom%nmga
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+         end do
       end do
-   end do
-case ('D33_')
-   if (.not.allocated(bump%lct%blk(ib)%D33)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   read(param(5:5),'(i1)') iscales
-   if (iscales>size(bump%lct%blk(ib)%D33,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D33(:,:,iscales),fld_mga)
-case ('D12_')
-   if (.not.allocated(bump%lct%blk(ib)%D12)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   read(param(5:5),'(i1)') iscales
-   if (iscales>size(bump%lct%blk(ib)%D12,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D12(:,:,iscales),fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+   case ('D33_')
+      if (.not.allocated(bump%lct%blk(ib)%D33)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+      read(param(5:5),'(i1)') iscales
+      if (iscales>size(bump%lct%blk(ib)%D33,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D33(:,:,iscales),fld_mga)
+   case ('D12_')
+      if (.not.allocated(bump%lct%blk(ib)%D12)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+      read(param(5:5),'(i1)') iscales
+      if (iscales>size(bump%lct%blk(ib)%D12,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D12(:,:,iscales),fld_mga)
+      do il0=1,bump%geom%nl0
+         do imga=1,bump%geom%nmga
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+         end do
       end do
-   end do
-case ('Dcoe')
-   if (.not.allocated(bump%lct%blk(ib)%Dcoef)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   read(param(7:7),'(i1)') iscales
-   if (iscales>size(bump%lct%blk(ib)%Dcoef,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%Dcoef(:,:,iscales),fld_mga)
-case ('DLh_')
-   if (.not.allocated(bump%lct%blk(ib)%DLh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   read(param(5:5),'(i1)') iscales
-   if (iscales>size(bump%lct%blk(ib)%DLh,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%DLh(:,:,iscales),fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+   case ('Dcoe')
+      if (.not.allocated(bump%lct%blk(ib)%Dcoef)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+      read(param(7:7),'(i1)') iscales
+      if (iscales>size(bump%lct%blk(ib)%Dcoef,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%Dcoef(:,:,iscales),fld_mga)
+   case ('DLh_')
+      if (.not.allocated(bump%lct%blk(ib)%DLh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+      read(param(5:5),'(i1)') iscales
+      if (iscales>size(bump%lct%blk(ib)%DLh,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%DLh(:,:,iscales),fld_mga)
+      do il0=1,bump%geom%nl0
+         do imga=1,bump%geom%nmga
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         end do
       end do
-   end do
-end select
+   end select
+end if
 
-! Select parameter from ens1u
-if (param(1:6)=='ens1u_') then
-   read(param(7:10),'(i4.4)') ie
-   if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
-   iv = bump%bpar%b_to_v1(ib)
-   its = bump%bpar%b_to_ts1(ib)
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1u%mem(ie)%fld(:,:,iv,its),fld_mga)
+if (len(param)>=6) then
+   ! Select parameter from ens1u
+   if (param(1:6)=='ens1u_') then
+      read(param(7:10),'(i4.4)') ie
+      if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
+      iv = bump%bpar%b_to_v1(ib)
+      its = bump%bpar%b_to_ts1(ib)
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1u%mem(ie)%fld(:,:,iv,its),fld_mga)
+   end if
 end if
 
 end subroutine bump_copy_to_field
+
+!----------------------------------------------------------------------
+! Subroutine: bump_test_get_parameter
+! Purpose: test get_parameter
+!----------------------------------------------------------------------
+subroutine bump_test_get_parameter(bump)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump ! BUMP
+
+! Local variables
+real(kind_real),allocatable :: fld_mga(:,:,:,:)
+
+! Allocation
+allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+! Get parameter
+if (bump%nam%check_get_param_cor) then
+   call bump%get_parameter('var',fld_mga)
+   call bump%get_parameter('cor_rh',fld_mga)
+   call bump%get_parameter('cor_rv',fld_mga)
+   call bump%get_parameter('cor_rv_rfac',fld_mga)
+   call bump%get_parameter('cor_rv_coef',fld_mga)
+elseif (bump%nam%check_get_param_hyb) then
+   call bump%get_parameter('loc_coef',fld_mga)
+   call bump%get_parameter('loc_rh',fld_mga)
+   call bump%get_parameter('loc_rv',fld_mga)
+   call bump%get_parameter('hyb_coef',fld_mga)
+elseif (bump%nam%check_get_param_Dloc) then
+   call bump%get_parameter('loc_D11',fld_mga)
+   call bump%get_parameter('loc_D22',fld_mga)
+   call bump%get_parameter('loc_D33',fld_mga)
+   call bump%get_parameter('loc_D12',fld_mga)
+   call bump%get_parameter('loc_Dcoef',fld_mga)
+   call bump%get_parameter('loc_DLh',fld_mga)
+elseif (bump%nam%check_get_param_lct) then
+   call bump%get_parameter('D11_1',fld_mga)
+   call bump%get_parameter('D22_1',fld_mga)
+   call bump%get_parameter('D33_1',fld_mga)
+   call bump%get_parameter('D12_1',fld_mga)
+   call bump%get_parameter('Dcoef_1',fld_mga)
+   call bump%get_parameter('DLh_1',fld_mga)
+   call bump%get_parameter('D11_2',fld_mga)
+   call bump%get_parameter('D22_2',fld_mga)
+   call bump%get_parameter('D33_2',fld_mga)
+   call bump%get_parameter('D12_2',fld_mga)
+   call bump%get_parameter('Dcoef_2',fld_mga)
+   call bump%get_parameter('DLh_2',fld_mga)
+end if
+
+! Release memory
+deallocate(fld_mga)
+
+end subroutine bump_test_get_parameter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_set_parameter
@@ -1412,6 +1474,63 @@ case default
 end select
 
 end subroutine bump_copy_from_field
+
+!----------------------------------------------------------------------
+! Subroutine: bump_test_set_parameter
+! Purpose: test set_parameter
+!----------------------------------------------------------------------
+subroutine bump_test_set_parameter(bump)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump ! BUMP
+
+! Local variables
+integer :: iv,its
+real(kind_real),allocatable :: fld_c0(:,:),fld_c0a(:,:),fld_mga(:,:,:,:)
+
+! Allocation
+allocate(fld_c0(bump%geom%nc0,bump%geom%nl0))
+allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0))
+allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+! Random initialization
+do its=1,bump%nam%nts
+   do iv=1,bump%nam%nv
+      if (bump%mpl%main) call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0)
+      call bump%mpl%glb_to_loc(bump%geom%nl0,bump%geom%nc0,bump%geom%c0_to_proc,bump%geom%c0_to_c0a, &
+    & fld_c0,bump%geom%nc0a,fld_c0a)
+      call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
+   end do
+end do
+
+! Set parameter
+if (bump%nam%check_set_param_cor) then
+   call bump%set_parameter('var',fld_mga)
+   call bump%set_parameter('cor_rh',fld_mga*req)
+   call bump%set_parameter('cor_rv',fld_mga)
+   call bump%set_parameter('cor_rv_rfac',fld_mga)
+   call bump%set_parameter('cor_rv_coef',fld_mga)
+elseif (bump%nam%check_set_param_hyb) then
+   call bump%set_parameter('loc_coef',fld_mga)
+   call bump%set_parameter('loc_rh',fld_mga*req)
+   call bump%set_parameter('loc_rv',fld_mga)
+   call bump%set_parameter('hyb_coef',fld_mga)
+elseif (bump%nam%check_set_param_lct) then
+   call bump%set_parameter('D11',fld_mga*req**2)
+   call bump%set_parameter('D22',fld_mga*req**2)
+   call bump%set_parameter('D33',fld_mga)
+   call bump%set_parameter('D12',fld_mga)
+   call bump%set_parameter('Dcoef',fld_mga)
+end if
+
+! Release memory
+deallocate(fld_c0)
+deallocate(fld_c0a)
+deallocate(fld_mga)
+
+end subroutine bump_test_set_parameter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_partial_dealloc
