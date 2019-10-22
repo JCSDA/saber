@@ -521,7 +521,7 @@ end if
 
 ! Add member
 write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' added to ensemble ',iens
-call bump%mpl%flush()
+call bump%mpl%flush
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       ! Model grid to subset Sc0
@@ -537,13 +537,13 @@ do its=1,bump%nam%nts
       ! Print norm
       norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
       write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
-      call bump%mpl%flush()
+      call bump%mpl%flush
       nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
       nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
       nmask = count(.not.bump%geom%mask_c0a)
       write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
     & nnonzero,' / ',nzero,' / ',nmask
-      call bump%mpl%flush()
+      call bump%mpl%flush
    end do
 end do
 
@@ -573,7 +573,7 @@ if ((iens/=1).and.(iens/=2)) call bump%mpl%abort(subr,'wrong ensemble number')
 
 ! Remove member
 write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' removed from ensemble ',iens
-call bump%mpl%flush()
+call bump%mpl%flush
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       ! Copy from ensemble structure and add mean
