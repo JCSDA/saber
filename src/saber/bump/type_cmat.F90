@@ -383,7 +383,7 @@ type(hdiag_type),intent(in) :: hdiag   ! Hybrid diagnostics
 
 ! Local variables
 integer :: ib,n,i,il0,il0i,ic2a,ic0a
-real(kind_real) :: fld_c2a(hdiag%samp%nc2a,geom%nl0,6),fld_c2b(hdiag%samp%nc2b,geom%nl0),fld_c0a(geom%nc0a,geom%nl0,6)
+real(kind_real),allocatable :: fld_c2a(:,:,:),fld_c2b(:,:),fld_c0a(:,:,:)
 character(len=1024),parameter :: subr = 'cmat_from_hdiag'
 
 ! Allocation
@@ -410,6 +410,11 @@ end do
 
 ! Allocation
 call cmat%alloc(nam,geom,bpar)
+if (nam%local_diag) then
+   allocate(fld_c2a(hdiag%samp%nc2a,geom%nl0,6))
+   allocate(fld_c2b(hdiag%samp%nc2b,geom%nl0))
+   allocate(fld_c0a(geom%nc0a,geom%nl0,6))
+end if
 
 ! Initialization
 call cmat%init(mpl,nam,bpar)
@@ -587,6 +592,13 @@ end do
 if (nam%adv_diag) then
    cmat%blk(bpar%nbe)%adv_lon = hdiag%samp%adv_lon
    cmat%blk(bpar%nbe)%adv_lat = hdiag%samp%adv_lat
+end if
+
+! Release memory
+if (nam%local_diag) then
+   deallocate(fld_c2a)
+   deallocate(fld_c2b)
+   deallocate(fld_c0a)
 end if
 
 end subroutine cmat_from_hdiag
