@@ -20,10 +20,10 @@ set(SABER_OMP_TEST 0)
 if(DEFINED ENV{SABER_OMP_TEST})
     set(SABER_OMP_TEST "$ENV{SABER_OMP_TEST}")
 endif()
-set(SABER_NEMOVAR_TEST 0)
-if(DEFINED ENV{SABER_NEMOVAR_TEST})
-    set(SABER_NEMOVAR_TEST "$ENV{SABER_NEMOVAR_TEST}")
-    set(SABER_NEMOVAR_DIR "$ENV{SABER_NEMOVAR_DIR}")
+set(SABER_MODEL_TEST 0)
+if(DEFINED ENV{SABER_MODEL_TEST})
+    set(SABER_MODEL_TEST "$ENV{SABER_MODEL_TEST}")
+    set(SABER_MODEL_DIR "$ENV{SABER_MODEL_DIR}")
 endif()
 set(SABER_VALGRIND_TEST 0)
 if(DEFINED ENV{SABER_VALGRIND_TEST})
@@ -32,13 +32,13 @@ endif()
 
 # Summary
 message( "-- saber tests variables:" )
-message( "     SABER_TEST_TIER:      " ${SABER_TEST_TIER} )
-message( "     SABER_MPI_TEST:       " ${SABER_MPI_TEST} )
-message( "     SABER_MPI4_TEST:      " ${SABER_MPI4_TEST} )
-message( "     SABER_OMP_TEST:       " ${SABER_OMP_TEST} )
-message( "     SABER_NEMOVAR_TEST:   " ${SABER_NEMOVAR_TEST} )
-if(${SABER_NEMOVAR_TEST})
-    message( "     -> SABER_NEMOVAR_DIR: " ${SABER_NEMOVAR_DIR} )
+message( "     SABER_TEST_TIER:    " ${SABER_TEST_TIER} )
+message( "     SABER_MPI_TEST:     " ${SABER_MPI_TEST} )
+message( "     SABER_MPI4_TEST:    " ${SABER_MPI4_TEST} )
+message( "     SABER_OMP_TEST:     " ${SABER_OMP_TEST} )
+message( "     SABER_MODEL_TEST:   " ${SABER_MODEL_TEST} )
+if(${SABER_MODEL_TEST})
+    message( "     -> SABER_MODEL_DIR: " ${SABER_MODEL_DIR} )
 endif()
 message( "     SABER_VALGRIND_TEST:  " ${SABER_VALGRIND_TEST} )
 
@@ -128,10 +128,11 @@ if(${SABER_MPI4_TEST} MATCHES 1)
     )
 endif()
 
-# NEMOVAR tests
-if(${SABER_NEMOVAR_TEST})
-    list(APPEND saber_test_nemovar
+# Model tests
+if(${SABER_MODEL_TEST})
+    list(APPEND saber_test_model
         bump_nemovar
+        bump_mpas
     )
 endif()
 
@@ -154,11 +155,11 @@ foreach(test ${saber_test_2})
          ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}_1
          ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}_1)
 endforeach(test)
-if(${SABER_NEMOVAR_TEST})
-    foreach(test ${saber_test_nemovar})
+if(${SABER_MODEL_TEST})
+    foreach(test ${saber_test_model})
         file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test})
         execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-             ${SABER_NEMOVAR_DIR}/testref/${test}
+             ${SABER_MODEL_DIR}/testref/${test}
              ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
     endforeach(test)
 endif()
@@ -183,6 +184,11 @@ foreach(test ${saber_test_2})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test}_1)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test}_2)
 endforeach(test)
+if(${SABER_MODEL_TEST})
+    foreach(test ${saber_test_model})
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test})
+    endforeach(test)
+endif()
 
 # Monocore tests
 set(mpi 1)
@@ -424,15 +430,15 @@ if(${SABER_TEST_TIER} GREATER 1)
                                   test_bump_nicas_mpicom_lsqrt_c_1-1_run)
 endif()
 
-# NEMOVAR tests
-if(${SABER_NEMOVAR_TEST})
+# Model tests
+if(${SABER_MODEL_TEST})
     set(mpi 4)
     set(omp 1)
-    foreach(test ${saber_test_nemovar})
+    foreach(test ${saber_test_model})
         ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_setup
                          TYPE SCRIPT
                          COMMAND ${CMAKE_BINARY_DIR}/bin/setup.sh
-                         ARGS ${SABER_NEMOVAR_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${test} ${mpi} ${omp}
+                         ARGS ${SABER_MODEL_DIR}/${test} ${CMAKE_CURRENT_BINARY_DIR} ${test} ${mpi} ${omp}
                          TEST_DEPENDS test_${test}_1-1_setup)
 
         ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_run
