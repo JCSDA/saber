@@ -328,7 +328,7 @@ type(ens_type), intent(in) :: ens      ! Ensemble
 type(ens_type),intent(inout) :: ensu   ! Unbalanced ensemble
 
 ! Local variables
-integer :: il0i,i_s,ic0a,ic2b,ic2,ie,ie_sub,ic0,jl0,il0,isub,ic1,ic1a,iv,jv,offset,nc1a
+integer :: il0i,i_s,ic0a,ic2b,ic2,ie,ie_sub,ic0,jl0_min,jl0_max,jl0,il0,isub,ic1,ic1a,iv,jv,offset,nc1a
 real(kind_real) :: fld(geom%nc0a,geom%nl0)
 real(kind_real) :: auto_avg(nam%nc2,geom%nl0,geom%nl0),cross_avg(nam%nc2,geom%nl0,geom%nl0),auto_inv(geom%nl0,geom%nl0)
 real(kind_real) :: sbuf(2*nam%nc2*geom%nl0**2),rbuf(2*nam%nc2*geom%nl0**2)
@@ -467,15 +467,29 @@ do iv=1,nam%nv
             call mpl%flush
          end do
 
+         ! Initialization
+         auto_avg = 0.0
+         cross_avg = 0.0
+
          ! Average covariances
          write(mpl%info,'(a10,a)') '','Average covariances: '
          call mpl%flush(.false.)
          call mpl%prog_init(nam%nc2)
          do ic2=1,nam%nc2
-            !$omp parallel do schedule(static) private(il0,jl0,nc1a,ic1a,ic1,valid,isub), &
+            !$omp parallel do schedule(static) private(il0,jl0_min,jl0_max,jl0,nc1a,ic1a,ic1,valid,isub), &
             !$omp&                             firstprivate(list_auto,list_cross)
             do il0=1,geom%nl0
-               do jl0=1,geom%nl0
+               ! Indices
+               if (nam%vbal_diag_reg((iv-1)*(iv-2)/2+jv)) then
+                  ! Diagonal regression
+                  jl0_min = il0
+                  jl0_max = il0
+               else
+                  jl0_min = 1
+                  jl0_max = geom%nl0
+               end if
+
+               do jl0=jl0_min,jl0_max
                   ! Allocation
                   allocate(list_auto(vbal%samp%nc1a))
                   allocate(list_cross(vbal%samp%nc1a))
@@ -503,9 +517,6 @@ do iv=1,nam%nv
                   if (nc1a>0) then
                      auto_avg(ic2,jl0,il0) = sum(list_auto(1:nc1a))
                      cross_avg(ic2,jl0,il0) = sum(list_cross(1:nc1a))
-                  else
-                     auto_avg(ic2,jl0,il0) = 0.0
-                     cross_avg(ic2,jl0,il0) = 0.0
                   end if
 
                   ! Release memory
@@ -554,7 +565,7 @@ do iv=1,nam%nv
             ! Global index
             ic2 = vbal%samp%c2b_to_c2(ic2b)
 
-            if (nam%vbal_diag_auto((iv-1)*(iv-2)/2+jv)) then
+            if (nam%vbal_diag_auto((iv-1)*(iv-2)/2+jv).or.nam%vbal_diag_reg((iv-1)*(iv-2)/2+jv)) then
                ! Diagonal inversion
                auto_inv = 0.0
                do il0=1,geom%nl0

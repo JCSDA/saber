@@ -244,6 +244,11 @@ if (trim(nam%model)=='qg') call model%qg_coord(mpl,nam)
 if (trim(nam%model)=='res') call model%res_coord(mpl,nam)
 if (trim(nam%model)=='wrf') call model%wrf_coord(mpl,nam)
 
+! Set longitude and latitude bounds
+do img=1,model%nmg
+   call lonlatmod(model%lon(img),model%lat(img))
+end do
+
 ! Allocation
 allocate(model%mg_to_proc(model%nmg))
 allocate(model%mg_to_mga(model%nmg))
