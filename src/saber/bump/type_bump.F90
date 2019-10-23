@@ -1169,7 +1169,7 @@ case ('loc_D33')
 end select
 
 ! Select parameter from lct
-select case (param(1:4))
+select case (param(1:min(len(param),4)))
 case ('D11_')
    if (.not.allocated(bump%lct%blk(ib)%D11)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    read(param(5:5),'(i1)') iscales
@@ -1223,7 +1223,7 @@ case ('DLh_')
 end select
 
 ! Select parameter from ens1u
-if (param(1:6)=='ens1u_') then
+if (param(1:min(6,len(param)))=='ens1u_') then
    read(param(7:10),'(i4.4)') ie
    if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
    iv = bump%bpar%b_to_v1(ib)
