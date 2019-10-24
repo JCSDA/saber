@@ -8,7 +8,6 @@
 module type_bump
 
 use fckit_mpi_module, only: fckit_mpi_comm
-use iso_fortran_env, only : output_unit
 use tools_const, only: req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
 use tools_kinds,only: kind_real
@@ -524,7 +523,7 @@ end if
 
 ! Add member
 write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' added to ensemble ',iens
-call bump%mpl%flush()
+call bump%mpl%flush
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       ! Model grid to subset Sc0
@@ -540,13 +539,13 @@ do its=1,bump%nam%nts
       ! Print norm
       norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
       write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
-      call bump%mpl%flush()
+      call bump%mpl%flush
       nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
       nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
       nmask = count(.not.bump%geom%mask_c0a)
       write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
     & nnonzero,' / ',nzero,' / ',nmask
-      call bump%mpl%flush()
+      call bump%mpl%flush
    end do
 end do
 
@@ -576,7 +575,7 @@ if ((iens/=1).and.(iens/=2)) call bump%mpl%abort(subr,'wrong ensemble number')
 
 ! Remove member
 write(bump%mpl%info,'(a7,a,i3,a,i1)') '','Member ',ie,' removed from ensemble ',iens
-call bump%mpl%flush()
+call bump%mpl%flush
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       ! Copy from ensemble structure and add mean
@@ -1172,6 +1171,15 @@ case ('loc_D33')
 case ('loc_D12')
    if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    fld_mga = 0.0
+case ('loc_D33')
+   if (.not.allocated(bump%cmat%blk(ib)%rv)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv,fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         tmp = fld_mga(imga,il0)
+         call lct_r2d(tmp,fld_mga(imga,il0))
+      end do
+   end do
 case ('loc_Dcoef')
    if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%coef_ens,fld_mga)
@@ -1186,70 +1194,66 @@ case ('loc_DLh')
 end select
 
 ! Select parameter from lct
-if (len(param)>=4) then
-   select case (param(1:4))
-   case ('D11_')
-      if (.not.allocated(bump%lct%blk(ib)%D11)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-      read(param(5:5),'(i1)') iscales
-      if (iscales>size(bump%lct%blk(ib)%D11,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D11(:,:,iscales),fld_mga)
-      do il0=1,bump%geom%nl0
-         do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
-         end do
+select case (param(1:min(len(param),4)))
+case ('D11_')
+   if (.not.allocated(bump%lct%blk(ib)%D11)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   read(param(5:5),'(i1)') iscales
+   if (iscales>size(bump%lct%blk(ib)%D11,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D11(:,:,iscales),fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
       end do
-   case ('D22_')
-      if (.not.allocated(bump%lct%blk(ib)%D22)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-      read(param(5:5),'(i1)') iscales
-      if (iscales>size(bump%lct%blk(ib)%D22,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D22(:,:,iscales),fld_mga)
-      do il0=1,bump%geom%nl0
-         do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
-         end do
+   end do
+case ('D22_')
+   if (.not.allocated(bump%lct%blk(ib)%D22)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   read(param(5:5),'(i1)') iscales
+   if (iscales>size(bump%lct%blk(ib)%D22,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D22(:,:,iscales),fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
       end do
-   case ('D33_')
-      if (.not.allocated(bump%lct%blk(ib)%D33)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-      read(param(5:5),'(i1)') iscales
-      if (iscales>size(bump%lct%blk(ib)%D33,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D33(:,:,iscales),fld_mga)
-   case ('D12_')
-      if (.not.allocated(bump%lct%blk(ib)%D12)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-      read(param(5:5),'(i1)') iscales
-      if (iscales>size(bump%lct%blk(ib)%D12,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D12(:,:,iscales),fld_mga)
-      do il0=1,bump%geom%nl0
-         do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
-         end do
+   end do
+case ('D33_')
+   if (.not.allocated(bump%lct%blk(ib)%D33)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   read(param(5:5),'(i1)') iscales
+   if (iscales>size(bump%lct%blk(ib)%D33,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D33(:,:,iscales),fld_mga)
+case ('D12_')
+   if (.not.allocated(bump%lct%blk(ib)%D12)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   read(param(5:5),'(i1)') iscales
+   if (iscales>size(bump%lct%blk(ib)%D12,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%D12(:,:,iscales),fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
       end do
-   case ('Dcoe')
-      if (.not.allocated(bump%lct%blk(ib)%Dcoef)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-      read(param(7:7),'(i1)') iscales
-      if (iscales>size(bump%lct%blk(ib)%Dcoef,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%Dcoef(:,:,iscales),fld_mga)
-   case ('DLh_')
-      if (.not.allocated(bump%lct%blk(ib)%DLh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-      read(param(5:5),'(i1)') iscales
-      if (iscales>size(bump%lct%blk(ib)%DLh,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%DLh(:,:,iscales),fld_mga)
-      do il0=1,bump%geom%nl0
-         do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
-         end do
+   end do
+case ('Dcoe')
+   if (.not.allocated(bump%lct%blk(ib)%Dcoef)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   read(param(7:7),'(i1)') iscales
+   if (iscales>size(bump%lct%blk(ib)%Dcoef,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%Dcoef(:,:,iscales),fld_mga)
+case ('DLh_')
+   if (.not.allocated(bump%lct%blk(ib)%DLh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   read(param(5:5),'(i1)') iscales
+   if (iscales>size(bump%lct%blk(ib)%DLh,3)) call bump%mpl%abort(subr,trim(param)//' has fewer scales in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%lct%blk(ib)%DLh(:,:,iscales),fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
       end do
-   end select
-end if
+   end do
+end select
 
-if (len(param)>=6) then
-   ! Select parameter from ens1u
-   if (param(1:6)=='ens1u_') then
-      read(param(7:10),'(i4.4)') ie
-      if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
-      iv = bump%bpar%b_to_v1(ib)
-      its = bump%bpar%b_to_ts1(ib)
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1u%mem(ie)%fld(:,:,iv,its),fld_mga)
-   end if
+! Select parameter from ens1u
+if (param(1:min(6,len(param)))=='ens1u_') then
+   read(param(7:10),'(i4.4)') ie
+   if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
+   iv = bump%bpar%b_to_v1(ib)
+   its = bump%bpar%b_to_ts1(ib)
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1u%mem(ie)%fld(:,:,iv,its),fld_mga)
 end if
 
 end subroutine bump_copy_to_field
