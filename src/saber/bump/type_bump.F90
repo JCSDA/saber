@@ -1171,15 +1171,6 @@ case ('loc_D33')
 case ('loc_D12')
    if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    fld_mga = 0.0
-case ('loc_D33')
-   if (.not.allocated(bump%cmat%blk(ib)%rv)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv,fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         tmp = fld_mga(imga,il0)
-         call lct_r2d(tmp,fld_mga(imga,il0))
-      end do
-   end do
 case ('loc_Dcoef')
    if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%coef_ens,fld_mga)
