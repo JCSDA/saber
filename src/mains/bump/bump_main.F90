@@ -27,7 +27,7 @@ integer(c_int),intent(in) :: n2
 character(c_char),intent(in) :: arg2(n2)
 
 ! Local variables
-integer :: i,info,ppos,iproc,ie,ifileunit
+integer :: i,ppos,iproc,ie,ifileunit
 character(len=1024) :: inputfile,logdir,ext,filename
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm

@@ -14,7 +14,7 @@ output=$3
 # Initialize exit status
 status=0
 
-if type "valgrind --help" > /dev/null ; then
+if [ -x "$(command -v valgrind)" ] ; then
    # Run valgrind
    valgrind --log-file="${output}/valgrind.out" -q ${exe} ${input} ${output}
 
