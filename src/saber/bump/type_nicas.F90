@@ -566,27 +566,23 @@ do ib=1,bpar%nbe
       call mpl%f_comm%allreduce(nicas%blk(jb)%nsa,ns,fckit_mpi_sum())
 
       ! Allocation
+      allocate(alpha(ns))
       allocate(s_to_sa(ns))
       allocate(s_to_proc(ns))
 
+      ! Random vector
+      call rng%rand_gau(alpha)
+
       ! Get conversions
       call mpl%glb_to_loc_index(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_s,ns,s_to_sa,s_to_proc)
-
-      if (mpl%main) then
-         ! Allocation
-         allocate(alpha(ns))
-
-         ! Random vector
-         call rng%rand_gau(alpha)
-      end if
 
       ! Global to local
       call mpl%glb_to_loc(ns,s_to_proc,s_to_sa,alpha,nicas%blk(jb)%nsa,cv%blk(ib)%alpha)
 
       ! Release memory
+      deallocate(alpha)
       deallocate(s_to_sa)
       deallocate(s_to_proc)
-      if (mpl%main) deallocate(alpha)
    end if
 end do
 
