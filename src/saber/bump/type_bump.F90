@@ -66,8 +66,8 @@ contains
    procedure :: copy_to_field => bump_copy_to_field
    procedure :: set_parameter => bump_set_parameter
    procedure :: copy_from_field => bump_copy_from_field
-   procedure :: dealloc => bump_dealloc
    procedure :: partial_dealloc => bump_partial_dealloc
+   procedure :: dealloc => bump_dealloc
 end type bump_type
 
 private
@@ -1412,7 +1412,7 @@ call bump%cmat%partial_dealloc
 call bump%ens1%dealloc
 call bump%ens1u%dealloc
 call bump%ens2%dealloc
-call bump%geom%dealloc
+call bump%geom%partial_dealloc
 call bump%hdiag%dealloc
 call bump%io%dealloc
 call bump%lct%partial_dealloc

@@ -27,7 +27,8 @@ integer(c_int),intent(in) :: n2
 character(c_char),intent(in) :: arg2(n2)
 
 ! Local variables
-integer :: i,ppos,iproc,ie,ifileunit
+integer :: i,ppos,iproc,ie,ifileunit,n
+real(kind_real),allocatable :: fld_mga(:,:,:,:),pcv(:),obs(:,:)
 character(len=1024) :: inputfile,logdir,ext,filename
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
@@ -209,6 +210,49 @@ write(mpl%info,'(a)') '--- Run drivers'
 call mpl%flush
 call bump%run_drivers
 
+! Release memory (partial)
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Release memory (partial)'
+call mpl%flush
+call bump%partial_dealloc
+
+! Test interfaces
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Test interfaces'
+call mpl%flush
+if (bump%nam%new_vbal.or.bump%nam%load_vbal) then
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+   call bump%rnd%rand_real(fld_mga)
+   call bump%apply_vbal(fld_mga)
+   call bump%apply_vbal_inv(fld_mga)
+   call bump%apply_vbal_ad(fld_mga)
+   call bump%apply_vbal_inv_ad(fld_mga)
+   deallocate(fld_mga)
+end if
+if (bump%nam%new_nicas.or.bump%nam%load_nicas) then
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+   call bump%rnd%rand_real(fld_mga)
+   call bump%apply_nicas(fld_mga)
+   call bump%get_cv_size(n)
+   allocate(pcv(n))
+   call bump%apply_nicas_sqrt(pcv,fld_mga)
+   call bump%apply_nicas_sqrt_ad(fld_mga,pcv)
+   deallocate(pcv)
+   call bump%randomize(fld_mga)
+   deallocate(fld_mga)
+end if
+if (bump%nam%new_obsop.or.bump%nam%load_obsop) then
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,1,1))
+   allocate(obs(bump%obsop%nobsa,bump%geom%nl0))
+   call bump%rnd%rand_real(fld_mga)
+   call bump%apply_obsop(fld_mga(:,:,1,1),obs)
+   call bump%apply_obsop_ad(obs,fld_mga(:,:,1,1)
+   deallocate(fld_mga)
+   deallocate(obs)
+end if
+
 ! Execution stats
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
@@ -227,11 +271,11 @@ if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and
    close(unit=mpl%lunit)
 end if
 
-! Finalize MPL
-call mpl%final
-
 ! Release memory
 call bump%dealloc
 call model%dealloc
+
+! Finalize MPL
+call mpl%final
 
 end subroutine bump_main
