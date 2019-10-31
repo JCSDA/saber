@@ -1407,7 +1407,6 @@ implicit none
 class(bump_type),intent(inout) :: bump ! BUMP
 
 ! Release memory
-call bump%bpar%dealloc
 call bump%cmat%partial_dealloc
 call bump%ens1%dealloc
 call bump%ens1u%dealloc

@@ -100,10 +100,10 @@ public :: geom_type
 contains
 
 !----------------------------------------------------------------------
-! Subroutine: geom_partial dealloc
+! Subroutine: geom_partial_dealloc
 ! Purpose: release memory (partial)
 !----------------------------------------------------------------------
-subroutine geom_partial(geom)
+subroutine geom_partial_dealloc(geom)
 
 implicit none
 
@@ -138,7 +138,7 @@ if (allocated(geom%c0_to_c0a)) deallocate(geom%c0_to_c0a)
 if (allocated(geom%c0a_to_c0)) deallocate(geom%c0a_to_c0)
 if (allocated(geom%proc_to_nc0a)) deallocate(geom%proc_to_nc0a)
 
-end subroutine geom_partial
+end subroutine geom_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_dealloc

@@ -223,32 +223,53 @@ call mpl%flush
 write(mpl%info,'(a)') '--- Test interfaces'
 call mpl%flush
 if (bump%nam%new_vbal.or.bump%nam%load_vbal) then
+   ! Allocation
    allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
-   call bump%rnd%rand_real(fld_mga)
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
    call bump%apply_vbal(fld_mga)
    call bump%apply_vbal_inv(fld_mga)
    call bump%apply_vbal_ad(fld_mga)
    call bump%apply_vbal_inv_ad(fld_mga)
+
+   ! Release memory
    deallocate(fld_mga)
 end if
 if (bump%nam%new_nicas.or.bump%nam%load_nicas) then
+   ! Allocation
    allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
-   call bump%rnd%rand_real(fld_mga)
-   call bump%apply_nicas(fld_mga)
    call bump%get_cv_size(n)
    allocate(pcv(n))
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
+   call bump%apply_nicas(fld_mga)
    call bump%apply_nicas_sqrt(pcv,fld_mga)
    call bump%apply_nicas_sqrt_ad(fld_mga,pcv)
-   deallocate(pcv)
    call bump%randomize(fld_mga)
+
+   ! Release memory
+   deallocate(pcv)
    deallocate(fld_mga)
 end if
 if (bump%nam%new_obsop.or.bump%nam%load_obsop) then
+   ! Allocation
    allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,1,1))
    allocate(obs(bump%obsop%nobsa,bump%geom%nl0))
-   call bump%rnd%rand_real(fld_mga)
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
    call bump%apply_obsop(fld_mga(:,:,1,1),obs)
-   call bump%apply_obsop_ad(obs,fld_mga(:,:,1,1)
+   call bump%apply_obsop_ad(obs,fld_mga(:,:,1,1))
+
+   ! Release memory
    deallocate(fld_mga)
    deallocate(obs)
 end if
