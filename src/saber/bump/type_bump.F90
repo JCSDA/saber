@@ -68,8 +68,9 @@ contains
    procedure :: set_parameter => bump_set_parameter
    procedure :: copy_from_field => bump_copy_from_field
    procedure :: test_set_parameter => bump_test_set_parameter
-   procedure :: dealloc => bump_dealloc
+   procedure :: test_apply_interfaces => bump_test_apply_interfaces
    procedure :: partial_dealloc => bump_partial_dealloc
+   procedure :: dealloc => bump_dealloc
 end type bump_type
 
 private
@@ -1528,6 +1529,91 @@ deallocate(fld_mga)
 end subroutine bump_test_set_parameter
 
 !----------------------------------------------------------------------
+! Subroutine: bump_test_apply_interfaces
+! Purpose: test BUMP apply interfaces
+!----------------------------------------------------------------------
+subroutine bump_test_apply_interfaces(bump)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump ! BUMP
+
+! Local variables
+integer :: n
+real(kind_real),allocatable :: fld_mga(:,:,:,:),pcv(:),obs(:,:)
+
+! Test apply_vbal
+if (bump%nam%check_apply_vbal) then
+   write(bump%mpl%info,'(a7,a)') '','Test apply_vbal'
+   call bump%mpl%flush
+
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
+   call bump%apply_vbal(fld_mga)
+   call bump%apply_vbal_inv(fld_mga)
+   call bump%apply_vbal_ad(fld_mga)
+   call bump%apply_vbal_inv_ad(fld_mga)
+
+   ! Release memory
+   deallocate(fld_mga)
+end if
+
+! Test apply_nicas
+if (bump%nam%check_apply_nicas) then
+   write(bump%mpl%info,'(a7,a)') '','Test apply_nicas'
+   call bump%mpl%flush
+
+   ! Get control variable size
+   call bump%get_cv_size(n)
+
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+   allocate(pcv(n))
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
+   call bump%apply_nicas(fld_mga)
+   call bump%apply_nicas_sqrt(pcv,fld_mga)
+   call bump%apply_nicas_sqrt_ad(fld_mga,pcv)
+   call bump%randomize(fld_mga)
+
+   ! Release memory
+   deallocate(fld_mga)
+   deallocate(pcv)
+end if
+
+! Test apply_obsop
+if (bump%nam%check_apply_obsop) then
+   write(bump%mpl%info,'(a7,a)') '','Test apply_obsop'
+   call bump%mpl%flush
+
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+   allocate(obs(bump%obsop%nobsa,bump%geom%nl0))
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
+   call bump%apply_obsop(fld_mga(:,:,1,1),obs)
+   call bump%apply_obsop_ad(obs,fld_mga(:,:,1,1))
+
+   ! Release memory
+   deallocate(fld_mga)
+   deallocate(obs)
+end if
+
+end subroutine bump_test_apply_interfaces
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_partial_dealloc
 ! Purpose: release memory (partial)
 !----------------------------------------------------------------------
@@ -1539,12 +1625,11 @@ implicit none
 class(bump_type),intent(inout) :: bump ! BUMP
 
 ! Release memory
-call bump%bpar%dealloc
 call bump%cmat%partial_dealloc
 call bump%ens1%dealloc
 call bump%ens1u%dealloc
 call bump%ens2%dealloc
-call bump%geom%dealloc
+call bump%geom%partial_dealloc
 call bump%hdiag%dealloc
 call bump%io%dealloc
 call bump%lct%partial_dealloc

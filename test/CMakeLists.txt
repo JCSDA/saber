@@ -95,6 +95,9 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_hdiag-nicas_nprocio
         bump_hdiag-nicas_nrep
         bump_hdiag-nicas_rvflt
+        bump_interface_nicas
+        bump_interface_obsop
+        bump_interface_vbal
         bump_lct-nicas_diagonal
         bump_lct-nicas_mask_check
         bump_lct-nicas_network

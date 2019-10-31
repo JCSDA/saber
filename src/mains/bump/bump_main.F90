@@ -196,7 +196,7 @@ end if
 if (bump%nam%check_set_param_cor.or.bump%nam%check_set_param_hyb.or.bump%nam%check_set_param_lct) then
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Set parameters into BUMP'
+   write(bump%mpl%info,'(a)') '--- Test set_parameters interfaces'
    call bump%mpl%flush()
    call bump%test_set_parameter
    if (bump%nam%default_seed) call bump%rng%reseed(mpl)
@@ -214,11 +214,25 @@ if (bump%nam%check_get_param_cor.or.bump%nam%check_get_param_hyb.or.bump%nam%che
  & .or.bump%nam%check_get_param_lct) then
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Get parameters from BUMP'
+   write(bump%mpl%info,'(a)') '--- Test get_parameter interfaces'
    call bump%mpl%flush()
    call bump%test_get_parameter
    if (bump%nam%default_seed) call bump%rng%reseed(mpl)
 end if
+
+! Release memory (partial)
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Release memory (partial)'
+call mpl%flush
+call bump%partial_dealloc
+
+! Test interfaces
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Test apply interfaces'
+call mpl%flush
+call bump%test_apply_interfaces
 
 ! Execution stats
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
