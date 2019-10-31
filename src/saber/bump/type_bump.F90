@@ -67,7 +67,6 @@ contains
    procedure :: set_parameter => bump_set_parameter
    procedure :: copy_from_field => bump_copy_from_field
    procedure :: partial_dealloc => bump_partial_dealloc
-   procedure :: test_apply_interfaces => bump_test_apply_interfaces
    procedure :: dealloc => bump_dealloc
 end type bump_type
 

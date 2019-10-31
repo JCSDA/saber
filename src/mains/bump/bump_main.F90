@@ -209,13 +209,6 @@ write(mpl%info,'(a)') '--- Run drivers'
 call mpl%flush
 call bump%run_drivers
 
-! Release memory (partial)
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Release memory (partial)'
-call mpl%flush
-call bump%partial_dealloc
-
 ! Execution stats
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
@@ -234,11 +227,11 @@ if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and
    close(unit=mpl%lunit)
 end if
 
+! Finalize MPL
+call mpl%final
+
 ! Release memory
 call bump%dealloc
 call model%dealloc
-
-! Finalize MPL
-call mpl%final
 
 end subroutine bump_main
