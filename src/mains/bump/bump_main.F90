@@ -27,8 +27,7 @@ integer(c_int),intent(in) :: n2
 character(c_char),intent(in) :: arg2(n2)
 
 ! Local variables
-integer :: i,ppos,iproc,ie,ifileunit,n
-real(kind_real),allocatable :: fld_mga(:,:,:,:),pcv(:),obs(:,:)
+integer :: i,ppos,iproc,ie,ifileunit
 character(len=1024) :: inputfile,logdir,ext,filename
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
@@ -216,63 +215,6 @@ call mpl%flush
 write(mpl%info,'(a)') '--- Release memory (partial)'
 call mpl%flush
 call bump%partial_dealloc
-
-! Test interfaces
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Test interfaces'
-call mpl%flush
-if (bump%nam%new_vbal.or.bump%nam%load_vbal) then
-   ! Allocation
-   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
-
-   ! Initialization
-   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
-
-   ! Calls
-   call bump%apply_vbal(fld_mga)
-   call bump%apply_vbal_inv(fld_mga)
-   call bump%apply_vbal_ad(fld_mga)
-   call bump%apply_vbal_inv_ad(fld_mga)
-
-   ! Release memory
-   deallocate(fld_mga)
-end if
-if (bump%nam%new_nicas.or.bump%nam%load_nicas) then
-   ! Allocation
-   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
-   call bump%get_cv_size(n)
-   allocate(pcv(n))
-
-   ! Initialization
-   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
-
-   ! Calls
-   call bump%apply_nicas(fld_mga)
-   call bump%apply_nicas_sqrt(pcv,fld_mga)
-   call bump%apply_nicas_sqrt_ad(fld_mga,pcv)
-   call bump%randomize(fld_mga)
-
-   ! Release memory
-   deallocate(pcv)
-   deallocate(fld_mga)
-end if
-if (bump%nam%new_obsop.or.bump%nam%load_obsop) then
-   ! Allocation
-   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,1,1))
-   allocate(obs(bump%obsop%nobsa,bump%geom%nl0))
-
-   ! Initialization
-   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
-
-   ! Calls
-   call bump%apply_obsop(fld_mga(:,:,1,1),obs)
-   call bump%apply_obsop_ad(obs,fld_mga(:,:,1,1))
-
-   ! Release memory
-   deallocate(fld_mga)
-   deallocate(obs)
-end if
 
 ! Execution stats
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
