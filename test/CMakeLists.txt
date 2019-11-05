@@ -31,16 +31,16 @@ if(DEFINED ENV{SABER_VALGRIND_TEST})
 endif()
 
 # Summary
-message( "-- saber tests variables:" )
-message( "     SABER_TEST_TIER:    " ${SABER_TEST_TIER} )
-message( "     SABER_MPI_TEST:     " ${SABER_MPI_TEST} )
-message( "     SABER_MPI4_TEST:    " ${SABER_MPI4_TEST} )
-message( "     SABER_OMP_TEST:     " ${SABER_OMP_TEST} )
-message( "     SABER_MODEL_TEST:   " ${SABER_MODEL_TEST} )
+message(STATUS "saber tests variables:" )
+message(STATUS "  SABER_TEST_TIER:    " ${SABER_TEST_TIER} )
+message(STATUS "  SABER_MPI_TEST:     " ${SABER_MPI_TEST} )
+message(STATUS "  SABER_MPI4_TEST:    " ${SABER_MPI4_TEST} )
+message(STATUS "  SABER_OMP_TEST:     " ${SABER_OMP_TEST} )
+message(STATUS "  SABER_MODEL_TEST:   " ${SABER_MODEL_TEST} )
 if(${SABER_MODEL_TEST})
-    message( "     -> SABER_MODEL_DIR: " ${SABER_MODEL_DIR} )
+    message(STATUS "     -> SABER_MODEL_DIR: " ${SABER_MODEL_DIR} )
 endif()
-message( "     SABER_VALGRIND_TEST:  " ${SABER_VALGRIND_TEST} )
+message(STATUS "     SABER_VALGRIND_TEST:  " ${SABER_VALGRIND_TEST} )
 
 # TIER 1
 list(APPEND saber_test
