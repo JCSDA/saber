@@ -94,8 +94,8 @@ integer,intent(in) :: nmga                        ! Halo A size
 integer,intent(in) :: nl0                         ! Number of levels in subset Sl0
 integer,intent(in) :: nv                          ! Number of variables
 integer,intent(in) :: nts                         ! Number of time slots
-real(kind_real),intent(in) :: lon(nmga)           ! Longitude (in degrees: -180 to 180)
-real(kind_real),intent(in) :: lat(nmga)           ! Latitude (in degrees: -90 to 90)
+real(kind_real),intent(in) :: lon(nmga)           ! Longitude (in degrees)
+real(kind_real),intent(in) :: lat(nmga)           ! Latitude (in degrees)
 real(kind_real),intent(in) :: area(nmga)          ! Area (in m^2)
 real(kind_real),intent(in) :: vunit(nmga,nl0)     ! Vertical unit
 logical,intent(in) :: gmask(nmga,nl0)             ! Geometry mask
@@ -105,8 +105,8 @@ integer,intent(in),optional :: ens1_nsub          ! Ensemble 1 number of sub-ens
 integer,intent(in),optional :: ens2_ne            ! Ensemble 2 size
 integer,intent(in),optional :: ens2_nsub          ! Ensemble 2 size of sub-ensembles
 integer,intent(in),optional :: nobs               ! Number of observations
-real(kind_real),intent(in),optional :: lonobs(:)  ! Observations longitude (in degrees: -180 to 180)
-real(kind_real),intent(in),optional :: latobs(:)  ! Observations latitude (in degrees: -90 to 90)
+real(kind_real),intent(in),optional :: lonobs(:)  ! Observations longitude (in degrees)
+real(kind_real),intent(in),optional :: latobs(:)  ! Observations latitude (in degrees)
 character(len=*),intent(in),optional :: namelname ! Namelist name
 integer,intent(in),optional :: lunit              ! Listing unit
 integer,intent(in),optional :: msvali             ! Missing value for integers
