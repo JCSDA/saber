@@ -10,7 +10,7 @@ module type_obsop
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 use netcdf
 use tools_const, only: pi,deg2rad,rad2deg,req,reqkm
-use tools_func, only: sphere_dist
+use tools_func, only: lonlatmod,sphere_dist
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth
@@ -195,6 +195,9 @@ integer,intent(in) :: nobsa                 ! Number of observations
 real(kind_real),intent(in) :: lonobs(nobsa) ! Observations longitudes (in degrees)
 real(kind_real),intent(in) :: latobs(nobsa) ! Observations latitudes (in degrees)
 
+! Local variables
+integer :: iobsa
+
 ! Get size
 obsop%nobsa = nobsa
 
@@ -209,6 +212,11 @@ if (obsop%nobsa>0) then
    ! Copy
    obsop%lonobs = lonobs*deg2rad
    obsop%latobs = latobs*deg2rad
+
+   ! Enforce correct bounds
+   do iobsa=1,obsop%nobsa
+      call lonlatmod(obsop%lonobs(iobsa),obsop%latobs(iobsa))
+   end do
 end if
 
 end subroutine obsop_from

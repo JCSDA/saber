@@ -286,7 +286,7 @@ if (mpl%main) then
    lon_mg = lon_mg*deg2rad
    lat_mg = lat_mg*deg2rad
 
-   ! Set longitude and latitude bounds
+   ! Enforce correct bounds
    do img=1,geom%nmg
       call lonlatmod(lon_mg(img),lat_mg(img))
    end do
