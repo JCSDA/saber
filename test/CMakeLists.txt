@@ -66,13 +66,13 @@ list(APPEND saber_ref saber_ref_1.tar.gz)
 file(STRINGS testlist/saber_ref_to_data.txt saber_ref_to_data_tmp )
 list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 if(${SABER_TEST_MPI})
+    list(APPEND saber_data saber_data_mpi.tar.gz)
     list(APPEND saber_ref saber_ref_mpi_1.tar.gz)
     file(STRINGS testlist/saber_ref_to_data_mpi.txt saber_ref_to_data_tmp )
     list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 endif()
 if(${SABER_TEST_OMP})
-    file(STRINGS testlist/saber_ref_to_data_omp.txt saber_ref_to_data_tmp )
-    list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
+    list(APPEND saber_data saber_data_omp.tar.gz)
 endif()
 
 # TIER > 1
@@ -121,14 +121,7 @@ ecbuild_get_test_multidata(TARGET  get_saber_data
                            NAMES   ${saber_data}
                            DIRNAME testdata
                            DIRSAVE testdata
-                           EXTRACT
-                           NOCHECK)
-
-# Clean data files
-ecbuild_add_test(TARGET  clean_saber_data
-                         COMMAND ${CMAKE_COMMAND}
-                         ARGS -E chdir ${CMAKE_CURRENT_BINARY_DIR}/testdata rm -f ${saber_data}
-                         TEST_DEPENDS get_saber_data)
+                           EXTRACT)
 
 # Download and extract reference files
 ecbuild_get_test_multidata(TARGET  get_saber_ref
@@ -136,14 +129,7 @@ ecbuild_get_test_multidata(TARGET  get_saber_ref
                            NAMES   ${saber_ref}
                            DIRNAME testref
                            DIRSAVE testref
-                           EXTRACT
-                           NOCHECK)
-
-# Clean reference files
-ecbuild_add_test(TARGET  clean_saber_ref
-                         COMMAND ${CMAKE_COMMAND}
-                         ARGS -E chdir ${CMAKE_CURRENT_BINARY_DIR}/testref rm -f ${saber_ref}
-                         TEST_DEPENDS get_saber_ref)
+                           EXTRACT)
 
 # Link reference files into data directory
 foreach(file ${saber_ref_to_data})
@@ -168,7 +154,7 @@ foreach(test ${saber_test})
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                          DEPENDS      bump.x
                          TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
-                                      clean_saber_data)
+                                      get_saber_data)
     endif()
 
     if(${SABER_TEST_COMPARE})
@@ -177,7 +163,7 @@ foreach(test ${saber_test})
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                          ARGS         ${test} ${mpi} ${omp}
                          TEST_DEPENDS test_${test}_${mpi}-${omp}_run
-                                      clean_saber_ref)
+                                      get_saber_ref)
     endif()
 
     if(${SABER_TEST_VALGRIND})
@@ -208,7 +194,7 @@ if(${SABER_TEST_MPI} MATCHES 1)
                              ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                              DEPENDS      bump.x
                              TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
-                                          clean_saber_data)
+                                          get_saber_data)
         endif()
     
         if(${SABER_TEST_COMPARE})
@@ -217,7 +203,7 @@ if(${SABER_TEST_MPI} MATCHES 1)
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                              ARGS         ${test} ${mpi} ${omp}
                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run
-                                          clean_saber_ref)
+                                          get_saber_ref)
         endif()
     endforeach()
 endif()
@@ -239,7 +225,7 @@ if(${SABER_TEST_OMP} MATCHES 1)
                              ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                              DEPENDS      bump.x
                              TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
-                                          clean_saber_data)
+                                          get_saber_data)
         endif()
     
         if(${SABER_TEST_COMPARE})
@@ -248,7 +234,7 @@ if(${SABER_TEST_OMP} MATCHES 1)
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                              ARGS         ${test} ${mpi} ${omp}
                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run
-                                          clean_saber_ref)
+                                          get_saber_ref)
         endif()
     endforeach()
 endif()
@@ -270,7 +256,7 @@ if(${SABER_TEST_MPI4} MATCHES 1)
                              ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                              DEPENDS      bump.x
                              TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
-                                          clean_saber_data)
+                                          get_saber_data)
         endif()
     
         if(${SABER_TEST_COMPARE})
@@ -279,7 +265,7 @@ if(${SABER_TEST_MPI4} MATCHES 1)
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                              ARGS         ${test} ${mpi} ${omp}
                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run
-                                          clean_saber_ref)
+                                          get_saber_ref)
         endif()
     endforeach()
 endif()
@@ -319,6 +305,6 @@ if(${SABER_TEST_MODEL})
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                          DEPENDS      bump.x
                          TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
-                                          clean_saber_data)
+                                          get_saber_data)
     endforeach()
 endif()
