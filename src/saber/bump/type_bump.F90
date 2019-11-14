@@ -65,10 +65,13 @@ contains
    procedure :: apply_obsop_ad => bump_apply_obsop_ad
    procedure :: get_parameter => bump_get_parameter
    procedure :: copy_to_field => bump_copy_to_field
+   procedure :: test_get_parameter => bump_test_get_parameter
    procedure :: set_parameter => bump_set_parameter
    procedure :: copy_from_field => bump_copy_from_field
-   procedure :: dealloc => bump_dealloc
+   procedure :: test_set_parameter => bump_test_set_parameter
+   procedure :: test_apply_interfaces => bump_test_apply_interfaces
    procedure :: partial_dealloc => bump_partial_dealloc
+   procedure :: dealloc => bump_dealloc
 end type bump_type
 
 private
@@ -92,8 +95,8 @@ integer,intent(in) :: nmga                        ! Halo A size
 integer,intent(in) :: nl0                         ! Number of levels in subset Sl0
 integer,intent(in) :: nv                          ! Number of variables
 integer,intent(in) :: nts                         ! Number of time slots
-real(kind_real),intent(in) :: lon(nmga)           ! Longitude (in degrees: -180 to 180)
-real(kind_real),intent(in) :: lat(nmga)           ! Latitude (in degrees: -90 to 90)
+real(kind_real),intent(in) :: lon(nmga)           ! Longitude (in degrees)
+real(kind_real),intent(in) :: lat(nmga)           ! Latitude (in degrees)
 real(kind_real),intent(in) :: area(nmga)          ! Area (in m^2)
 real(kind_real),intent(in) :: vunit(nmga,nl0)     ! Vertical unit
 logical,intent(in) :: gmask(nmga,nl0)             ! Geometry mask
@@ -103,8 +106,8 @@ integer,intent(in),optional :: ens1_nsub          ! Ensemble 1 number of sub-ens
 integer,intent(in),optional :: ens2_ne            ! Ensemble 2 size
 integer,intent(in),optional :: ens2_nsub          ! Ensemble 2 size of sub-ensembles
 integer,intent(in),optional :: nobs               ! Number of observations
-real(kind_real),intent(in),optional :: lonobs(:)  ! Observations longitude (in degrees: -180 to 180)
-real(kind_real),intent(in),optional :: latobs(:)  ! Observations latitude (in degrees: -90 to 90)
+real(kind_real),intent(in),optional :: lonobs(:)  ! Observations longitude (in degrees)
+real(kind_real),intent(in),optional :: latobs(:)  ! Observations latitude (in degrees)
 character(len=*),intent(in),optional :: namelname ! Namelist name
 integer,intent(in),optional :: lunit              ! Listing unit
 integer,intent(in),optional :: msvali             ! Missing value for integers
@@ -1061,8 +1064,12 @@ real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,
 ! Local variables
 integer :: ib,iv,jv,its,jts
 
+write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
+call bump%mpl%flush()
+
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
+case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
+ & 'loc_D12','loc_Dcoef','loc_DLh')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -1122,8 +1129,8 @@ character(len=1024),parameter :: subr = 'bump_copy_to_field'
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D12', &
-   & 'loc_D33')
+case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
+ & 'loc_D12','loc_Dcoef','loc_DLh')
    if (.not.allocated(bump%cmat%blk)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
 case default
    select case (param(1:4))
@@ -1182,25 +1189,35 @@ case ('loc_D11','loc_D22')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rh,fld_mga)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) then
+            tmp = fld_mga(imga,il0)*req
+            call lct_r2d(tmp,fld_mga(imga,il0))
+         end if
       end do
    end do
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         tmp = fld_mga(imga,il0)
-         call lct_r2d(tmp,fld_mga(imga,il0))
-      end do
-   end do
-case ('loc_D12')
-   if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   fld_mga = 0.0
 case ('loc_D33')
    if (.not.allocated(bump%cmat%blk(ib)%rv)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv,fld_mga)
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
-         tmp = fld_mga(imga,il0)
-         call lct_r2d(tmp,fld_mga(imga,il0))
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) then
+            tmp = fld_mga(imga,il0)
+            call lct_r2d(tmp,fld_mga(imga,il0))
+         end if
+      end do
+   end do
+case ('loc_D12')
+   if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   fld_mga = 0.0
+case ('loc_Dcoef')
+   if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%coef_ens,fld_mga)
+case ('loc_DLh')
+   if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rh,fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
       end do
    end do
 end select
@@ -1271,6 +1288,62 @@ end if
 end subroutine bump_copy_to_field
 
 !----------------------------------------------------------------------
+! Subroutine: bump_test_get_parameter
+! Purpose: test get_parameter
+!----------------------------------------------------------------------
+subroutine bump_test_get_parameter(bump)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump ! BUMP
+
+! Local variables
+real(kind_real),allocatable :: fld_mga(:,:,:,:)
+
+! Allocation
+allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+! Get parameter
+if (bump%nam%check_get_param_cor) then
+   call bump%get_parameter('var',fld_mga)
+   call bump%get_parameter('cor_rh',fld_mga)
+   call bump%get_parameter('cor_rv',fld_mga)
+   call bump%get_parameter('cor_rv_rfac',fld_mga)
+   call bump%get_parameter('cor_rv_coef',fld_mga)
+elseif (bump%nam%check_get_param_hyb) then
+   call bump%get_parameter('loc_coef',fld_mga)
+   call bump%get_parameter('loc_rh',fld_mga)
+   call bump%get_parameter('loc_rv',fld_mga)
+   call bump%get_parameter('hyb_coef',fld_mga)
+elseif (bump%nam%check_get_param_Dloc) then
+   call bump%get_parameter('loc_D11',fld_mga)
+   call bump%get_parameter('loc_D22',fld_mga)
+   call bump%get_parameter('loc_D33',fld_mga)
+   call bump%get_parameter('loc_D12',fld_mga)
+   call bump%get_parameter('loc_Dcoef',fld_mga)
+   call bump%get_parameter('loc_DLh',fld_mga)
+elseif (bump%nam%check_get_param_lct) then
+   call bump%get_parameter('D11_1',fld_mga)
+   call bump%get_parameter('D22_1',fld_mga)
+   call bump%get_parameter('D33_1',fld_mga)
+   call bump%get_parameter('D12_1',fld_mga)
+   call bump%get_parameter('Dcoef_1',fld_mga)
+   call bump%get_parameter('DLh_1',fld_mga)
+   call bump%get_parameter('D11_2',fld_mga)
+   call bump%get_parameter('D22_2',fld_mga)
+   call bump%get_parameter('D33_2',fld_mga)
+   call bump%get_parameter('D12_2',fld_mga)
+   call bump%get_parameter('Dcoef_2',fld_mga)
+   call bump%get_parameter('DLh_2',fld_mga)
+end if
+
+! Release memory
+deallocate(fld_mga)
+
+end subroutine bump_test_get_parameter
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_set_parameter
 ! Purpose: set a parameter
 !----------------------------------------------------------------------
@@ -1285,6 +1358,9 @@ real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,b
 
 ! Local variables
 integer :: ib,iv,jv,its,jts
+
+write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
+call bump%mpl%flush()
 
 select case (trim(param))
 case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
@@ -1433,6 +1509,148 @@ end select
 end subroutine bump_copy_from_field
 
 !----------------------------------------------------------------------
+! Subroutine: bump_test_set_parameter
+! Purpose: test set_parameter
+!----------------------------------------------------------------------
+subroutine bump_test_set_parameter(bump)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump ! BUMP
+
+! Local variables
+integer :: iv,its
+real(kind_real),allocatable :: fld_c0(:,:),fld_c0a(:,:),fld_mga(:,:,:,:)
+
+! Allocation
+allocate(fld_c0(bump%geom%nc0,bump%geom%nl0))
+allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0))
+allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+! Random initialization
+do its=1,bump%nam%nts
+   do iv=1,bump%nam%nv
+      if (bump%mpl%main) call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0)
+      call bump%mpl%glb_to_loc(bump%geom%nl0,bump%geom%nc0,bump%geom%c0_to_proc,bump%geom%c0_to_c0a, &
+    & fld_c0,bump%geom%nc0a,fld_c0a)
+      call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
+   end do
+end do
+
+! Set parameter
+if (bump%nam%check_set_param_cor) then
+   call bump%set_parameter('var',fld_mga)
+   call bump%set_parameter('cor_rh',fld_mga*req)
+   call bump%set_parameter('cor_rv',fld_mga)
+   call bump%set_parameter('cor_rv_rfac',fld_mga)
+   call bump%set_parameter('cor_rv_coef',fld_mga)
+elseif (bump%nam%check_set_param_hyb) then
+   call bump%set_parameter('loc_coef',fld_mga)
+   call bump%set_parameter('loc_rh',fld_mga*req)
+   call bump%set_parameter('loc_rv',fld_mga)
+   call bump%set_parameter('hyb_coef',fld_mga)
+elseif (bump%nam%check_set_param_lct) then
+   call bump%set_parameter('D11',fld_mga*req**2)
+   call bump%set_parameter('D22',fld_mga*req**2)
+   call bump%set_parameter('D33',fld_mga)
+   call bump%set_parameter('D12',fld_mga)
+   call bump%set_parameter('Dcoef',fld_mga)
+end if
+
+! Release memory
+deallocate(fld_c0)
+deallocate(fld_c0a)
+deallocate(fld_mga)
+
+end subroutine bump_test_set_parameter
+
+!----------------------------------------------------------------------
+! Subroutine: bump_test_apply_interfaces
+! Purpose: test BUMP apply interfaces
+!----------------------------------------------------------------------
+subroutine bump_test_apply_interfaces(bump)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump ! BUMP
+
+! Local variables
+integer :: n
+real(kind_real),allocatable :: fld_mga(:,:,:,:),pcv(:),obs(:,:)
+
+! Test apply_vbal
+if (bump%nam%check_apply_vbal) then
+   write(bump%mpl%info,'(a7,a)') '','Test apply_vbal'
+   call bump%mpl%flush
+
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
+   call bump%apply_vbal(fld_mga)
+   call bump%apply_vbal_inv(fld_mga)
+   call bump%apply_vbal_ad(fld_mga)
+   call bump%apply_vbal_inv_ad(fld_mga)
+
+   ! Release memory
+   deallocate(fld_mga)
+end if
+
+! Test apply_nicas
+if (bump%nam%check_apply_nicas) then
+   write(bump%mpl%info,'(a7,a)') '','Test apply_nicas'
+   call bump%mpl%flush
+
+   ! Get control variable size
+   call bump%get_cv_size(n)
+
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+   allocate(pcv(n))
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
+   call bump%apply_nicas(fld_mga)
+   call bump%apply_nicas_sqrt(pcv,fld_mga)
+   call bump%apply_nicas_sqrt_ad(fld_mga,pcv)
+   call bump%randomize(fld_mga)
+
+   ! Release memory
+   deallocate(fld_mga)
+   deallocate(pcv)
+end if
+
+! Test apply_obsop
+if (bump%nam%check_apply_obsop) then
+   write(bump%mpl%info,'(a7,a)') '','Test apply_obsop'
+   call bump%mpl%flush
+
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+   allocate(obs(bump%obsop%nobsa,bump%geom%nl0))
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Calls
+   call bump%apply_obsop(fld_mga(:,:,1,1),obs)
+   call bump%apply_obsop_ad(obs,fld_mga(:,:,1,1))
+
+   ! Release memory
+   deallocate(fld_mga)
+   deallocate(obs)
+end if
+
+end subroutine bump_test_apply_interfaces
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_partial_dealloc
 ! Purpose: release memory (partial)
 !----------------------------------------------------------------------
@@ -1444,12 +1662,11 @@ implicit none
 class(bump_type),intent(inout) :: bump ! BUMP
 
 ! Release memory
-call bump%bpar%dealloc
 call bump%cmat%partial_dealloc
 call bump%ens1%dealloc
 call bump%ens1u%dealloc
 call bump%ens2%dealloc
-call bump%geom%dealloc
+call bump%geom%partial_dealloc
 call bump%hdiag%dealloc
 call bump%io%dealloc
 call bump%lct%partial_dealloc

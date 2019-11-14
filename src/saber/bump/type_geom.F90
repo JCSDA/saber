@@ -84,6 +84,7 @@ type geom_type
    integer,allocatable :: c0a_to_mga(:)          ! Subset Sc0 to model grid, halo A
    type(com_type) :: com_mg                      ! Communication between subset Sc0 and model grid
 contains
+   procedure :: partial_dealloc => geom_partial_dealloc
    procedure :: dealloc => geom_dealloc
    procedure :: setup => geom_setup
    procedure :: define_dirac => geom_define_dirac
@@ -99,10 +100,10 @@ public :: geom_type
 contains
 
 !----------------------------------------------------------------------
-! Subroutine: geom_dealloc
-! Purpose: release memory
+! Subroutine: geom_partial_dealloc
+! Purpose: release memory (partial)
 !----------------------------------------------------------------------
-subroutine geom_dealloc(geom)
+subroutine geom_partial_dealloc(geom)
 
 implicit none
 
@@ -120,7 +121,6 @@ if (allocated(geom%vunit_c0a)) deallocate(geom%vunit_c0a)
 if (allocated(geom%vunitavg)) deallocate(geom%vunitavg)
 if (allocated(geom%disth)) deallocate(geom%disth)
 if (allocated(geom%mask_c0)) deallocate(geom%mask_c0)
-if (allocated(geom%mask_c0a)) deallocate(geom%mask_c0a)
 if (allocated(geom%mask_hor_c0)) deallocate(geom%mask_hor_c0)
 if (allocated(geom%mask_hor_c0a)) deallocate(geom%mask_hor_c0a)
 if (allocated(geom%mask_ver_c0)) deallocate(geom%mask_ver_c0)
@@ -137,6 +137,23 @@ if (allocated(geom%c0_to_proc)) deallocate(geom%c0_to_proc)
 if (allocated(geom%c0_to_c0a)) deallocate(geom%c0_to_c0a)
 if (allocated(geom%c0a_to_c0)) deallocate(geom%c0a_to_c0)
 if (allocated(geom%proc_to_nc0a)) deallocate(geom%proc_to_nc0a)
+
+end subroutine geom_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: geom_dealloc
+! Purpose: release memory
+!----------------------------------------------------------------------
+subroutine geom_dealloc(geom)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom ! Geometry
+
+! Release memory
+call geom%partial_dealloc
+if (allocated(geom%mask_c0a)) deallocate(geom%mask_c0a)
 if (allocated(geom%c0a_to_mga)) deallocate(geom%c0a_to_mga)
 call geom%com_mg%dealloc
 
@@ -269,7 +286,7 @@ if (mpl%main) then
    lon_mg = lon_mg*deg2rad
    lat_mg = lat_mg*deg2rad
 
-   ! Set longitude and latitude bounds
+   ! Enforce correct bounds
    do img=1,geom%nmg
       call lonlatmod(lon_mg(img),lat_mg(img))
    end do

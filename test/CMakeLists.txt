@@ -31,16 +31,16 @@ if(DEFINED ENV{SABER_VALGRIND_TEST})
 endif()
 
 # Summary
-message( "-- saber tests variables:" )
-message( "     SABER_TEST_TIER:    " ${SABER_TEST_TIER} )
-message( "     SABER_MPI_TEST:     " ${SABER_MPI_TEST} )
-message( "     SABER_MPI4_TEST:    " ${SABER_MPI4_TEST} )
-message( "     SABER_OMP_TEST:     " ${SABER_OMP_TEST} )
-message( "     SABER_MODEL_TEST:   " ${SABER_MODEL_TEST} )
+message(STATUS "saber tests variables:" )
+message(STATUS "  SABER_TEST_TIER:    " ${SABER_TEST_TIER} )
+message(STATUS "  SABER_MPI_TEST:     " ${SABER_MPI_TEST} )
+message(STATUS "  SABER_MPI4_TEST:    " ${SABER_MPI4_TEST} )
+message(STATUS "  SABER_OMP_TEST:     " ${SABER_OMP_TEST} )
+message(STATUS "  SABER_MODEL_TEST:   " ${SABER_MODEL_TEST} )
 if(${SABER_MODEL_TEST})
-    message( "     -> SABER_MODEL_DIR: " ${SABER_MODEL_DIR} )
+    message(STATUS "     -> SABER_MODEL_DIR: " ${SABER_MODEL_DIR} )
 endif()
-message( "     SABER_VALGRIND_TEST:  " ${SABER_VALGRIND_TEST} )
+message(STATUS "     SABER_VALGRIND_TEST:  " ${SABER_VALGRIND_TEST} )
 
 # TIER 1
 list(APPEND saber_test
@@ -71,6 +71,10 @@ list(APPEND saber_test_2
 # TIER > 1
 if(${SABER_TEST_TIER} GREATER 1)
     list(APPEND saber_test
+        bump_get_param_cor
+        bump_get_param_Dloc
+        bump_get_param_hyb
+        bump_get_param_lct
         bump_hdiag_draw_type
         bump_hdiag_hyb-avg_common
         bump_hdiag_ldwv
@@ -91,6 +95,9 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_hdiag-nicas_nprocio
         bump_hdiag-nicas_nrep
         bump_hdiag-nicas_rvflt
+        bump_interface_nicas
+        bump_interface_obsop
+        bump_interface_vbal
         bump_lct-nicas_diagonal
         bump_lct-nicas_mask_check
         bump_lct-nicas_network
@@ -106,6 +113,9 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_nicas_subsamp_vh
         bump_nicas_write_grids
         bump_obsop
+        bump_set_param_cor
+        bump_set_param_hyb
+        bump_set_param_lct
     )
 endif()
 
