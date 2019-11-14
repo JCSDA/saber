@@ -61,30 +61,27 @@ message(STATUS "  SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
 # TIER 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
 list(APPEND saber_test ${saber_test_tmp})
-file(STRINGS testlist/saber_data.txt saber_data_tmp )
-list(APPEND saber_data ${saber_data_tmp})
-file(STRINGS testlist/saber_ref_1.txt saber_ref_tmp )
-list(APPEND saber_ref ${saber_ref_tmp})
+list(APPEND saber_data saber_data.tar.gz)
+list(APPEND saber_ref saber_ref_1.tar.gz)
+file(STRINGS testlist/saber_ref_to_data.txt saber_ref_to_data_tmp )
+list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 if(${SABER_TEST_MPI})
-    file(STRINGS testlist/saber_data_mpi.txt saber_data_tmp )
-    list(APPEND saber_data ${saber_data_tmp})
-    file(STRINGS testlist/saber_ref_mpi_1.txt saber_ref_tmp )
-    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref saber_ref_mpi_1.tar.gz)
+    file(STRINGS testlist/saber_ref_to_data_mpi.txt saber_ref_to_data_tmp )
+    list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 endif()
 if(${SABER_TEST_OMP})
-    file(STRINGS testlist/saber_data_omp.txt saber_data_tmp )
-    list(APPEND saber_data ${saber_data_tmp})
+    file(STRINGS testlist/saber_ref_to_data_omp.txt saber_ref_to_data_tmp )
+    list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 endif()
 
 # TIER > 1
 if(${SABER_TEST_TIER} GREATER 1)
     file(STRINGS testlist/saber_test_2.txt saber_test_tmp )
     list(APPEND saber_test ${saber_test_tmp})
-    file(STRINGS testlist/saber_ref_2.txt saber_ref_tmp )
-    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref saber_ref_2.tar.gz)
     if(${SABER_TEST_MPI})
-        file(STRINGS testlist/saber_ref_mpi_2.txt saber_ref_tmp )
-        list(APPEND saber_ref ${saber_ref_tmp})
+        list(APPEND saber_ref saber_ref_mpi_2.tar.gz)
     endif()
 endif()
 
@@ -92,11 +89,9 @@ endif()
 if(${SABER_TEST_TIER} GREATER 2)
     file(STRINGS testlist/saber_test_3.txt saber_test_tmp )
     list(APPEND saber_test ${saber_test_tmp})
-    file(STRINGS testlist/saber_ref_3.txt saber_ref_tmp )
-    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref saber_ref_3.tar.gz)
     if(${SABER_TEST_MPI})
-        file(STRINGS testlist/saber_ref_mpi_3.txt saber_ref_tmp )
-        list(APPEND saber_ref ${saber_ref_tmp})
+        list(APPEND saber_ref saber_ref_mpi_3.tar.gz)
     endif()
 endif()
 
@@ -104,16 +99,14 @@ endif()
 if(${SABER_TEST_MPI4} MATCHES 1)
     file(STRINGS testlist/saber_test_quad.txt saber_test_quad_tmp )
     list(APPEND saber_test_quad ${saber_test_quad_tmp})
-    file(STRINGS testlist/saber_ref_quad.txt saber_ref_tmp )
-    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref saber_ref_quad.tar.gz)
 endif()
 
 # Model tests
 if(${SABER_TEST_MODEL} MATCHES 1)
     file(STRINGS testlist/saber_test_model.txt saber_test_model_tmp )
     list(APPEND saber_test_model ${saber_test_model_tmp})
-    file(STRINGS testlist/saber_data_model.txt saber_data_tmp )
-    list(APPEND saber_data ${saber_data_tmp})
+    list(APPEND saber_data saber_data_model.tar.gz)
 endif()
 
 # Make directories
@@ -122,18 +115,41 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
 
-# Link input data files
-foreach(file ${saber_data})
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${CMAKE_CURRENT_SOURCE_DIR}/${file}
-                    ${CMAKE_CURRENT_BINARY_DIR}/${file})
-endforeach()
+# Download and extract data files
+ecbuild_get_test_multidata(TARGET  get_saber_data
+                           URL     https://jedi-test-files.s3.amazonaws.com/saber
+                           NAMES   ${saber_data}
+                           DIRNAME testdata
+                           DIRSAVE testdata
+                           EXTRACT
+                           NOCHECK)
 
-# Link reference files
-foreach(file ${saber_ref})
+# Clean data files
+ecbuild_add_test(TARGET  clean_saber_data
+                         COMMAND ${CMAKE_COMMAND}
+                         ARGS -E chdir ${CMAKE_CURRENT_BINARY_DIR}/testdata rm -f ${saber_data}
+                         TEST_DEPENDS get_saber_data)
+
+# Download and extract reference files
+ecbuild_get_test_multidata(TARGET  get_saber_ref
+                           URL     https://jedi-test-files.s3.amazonaws.com/saber
+                           NAMES   ${saber_ref}
+                           DIRNAME testref
+                           DIRSAVE testref
+                           EXTRACT
+                           NOCHECK)
+
+# Clean reference files
+ecbuild_add_test(TARGET  clean_saber_ref
+                         COMMAND ${CMAKE_COMMAND}
+                         ARGS -E chdir ${CMAKE_CURRENT_BINARY_DIR}/testref rm -f ${saber_ref}
+                         TEST_DEPENDS get_saber_ref)
+
+# Link reference files into data directory
+foreach(file ${saber_ref_to_data})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${CMAKE_CURRENT_SOURCE_DIR}/${file}
-                    ${CMAKE_CURRENT_BINARY_DIR}/${file})
+                    ${CMAKE_CURRENT_BINARY_DIR}/testref/${file}
+                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 
 # Monocore tests
@@ -151,7 +167,8 @@ foreach(test ${saber_test})
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                          DEPENDS      bump.x
-                         TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
+                                      clean_saber_data)
     endif()
 
     if(${SABER_TEST_COMPARE})
@@ -159,7 +176,8 @@ foreach(test ${saber_test})
                          TYPE SCRIPT
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                          ARGS         ${test} ${mpi} ${omp}
-                         TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_run
+                                      clean_saber_ref)
     endif()
 
     if(${SABER_TEST_VALGRIND})
@@ -189,7 +207,8 @@ if(${SABER_TEST_MPI} MATCHES 1)
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
                              ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                              DEPENDS      bump.x
-                             TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
+                             TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
+                                          clean_saber_data)
         endif()
     
         if(${SABER_TEST_COMPARE})
@@ -197,7 +216,8 @@ if(${SABER_TEST_MPI} MATCHES 1)
                              TYPE SCRIPT
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                              ARGS         ${test} ${mpi} ${omp}
-                             TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+                             TEST_DEPENDS test_${test}_${mpi}-${omp}_run
+                                          clean_saber_ref)
         endif()
     endforeach()
 endif()
@@ -218,7 +238,8 @@ if(${SABER_TEST_OMP} MATCHES 1)
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
                              ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                              DEPENDS      bump.x
-                             TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
+                             TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
+                                          clean_saber_data)
         endif()
     
         if(${SABER_TEST_COMPARE})
@@ -226,7 +247,8 @@ if(${SABER_TEST_OMP} MATCHES 1)
                              TYPE SCRIPT
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                              ARGS         ${test} ${mpi} ${omp}
-                             TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+                             TEST_DEPENDS test_${test}_${mpi}-${omp}_run
+                                          clean_saber_ref)
         endif()
     endforeach()
 endif()
@@ -247,7 +269,8 @@ if(${SABER_TEST_MPI4} MATCHES 1)
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
                              ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                              DEPENDS      bump.x
-                             TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
+                             TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
+                                          clean_saber_data)
         endif()
     
         if(${SABER_TEST_COMPARE})
@@ -255,7 +278,8 @@ if(${SABER_TEST_MPI4} MATCHES 1)
                              TYPE SCRIPT
                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                              ARGS         ${test} ${mpi} ${omp}
-                             TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+                             TEST_DEPENDS test_${test}_${mpi}-${omp}_run
+                                          clean_saber_ref)
         endif()
     endforeach()
 endif()
@@ -294,6 +318,7 @@ if(${SABER_TEST_MODEL})
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                          DEPENDS      bump.x
-                         TEST_DEPENDS test_${test}_${mpi}-${omp}_setup)
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
+                                          clean_saber_data)
     endforeach()
 endif()
