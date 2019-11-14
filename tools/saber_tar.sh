@@ -7,12 +7,10 @@
 #----------------------------------------------------------------------
 
 # Parameters
-dir=$1
-list=$2
-name=$3
-
-# Go to data directory
-cd ${dir}
+testdir=$1
+datadir=$2
+list=$3
+name=$4
 
 # Loop over files
 files=''
@@ -22,4 +20,9 @@ do
 done < ${list}
 
 # Archive
+cd ${testdir}/${datadir}
 tar -cvzf ${name}.tar.gz ${files}
+
+# Compute MD5 checksum for
+cd ${testdir}
+md5sum ${datadir}/${name}.tar.gz > ${datadir}/${name}.tar.gz.md5
