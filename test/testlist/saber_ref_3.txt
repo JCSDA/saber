@@ -1,0 +1,15 @@
+testref/bump_hdiag-nicas_loc_adv_1-1_adv_diag.nc
+testref/bump_hdiag-nicas_loc_adv_1-1_diag.nc
+testref/bump_hdiag-nicas_loc_adv_1-1_dirac.nc
+testref/bump_hdiag-nicas_loc_adv_1-1_nicas-2-sqrt_0001-0001_common.nc
+testref/bump_hdiag-nicas_loc_adv_cor_tracker_1-1_adv_diag.nc
+testref/bump_hdiag-nicas_loc_adv_cor_tracker_1-1_diag.nc
+testref/bump_hdiag-nicas_loc_adv_cor_tracker_1-1_dirac.nc
+testref/bump_hdiag-nicas_loc_adv_cor_tracker_1-1_nicas-2-sqrt_0001-0001_common.nc
+testref/bump_hdiag-nicas_loc_adv_inv_1-1_adv_diag.nc
+testref/bump_hdiag-nicas_loc_adv_inv_1-1_diag.nc
+testref/bump_hdiag-nicas_loc_adv_inv_1-1_dirac.nc
+testref/bump_hdiag-nicas_loc_adv_inv_1-1_nicas-2-sqrt_0001-0001_common.nc
+testref/bump_hdiag_optimality_1-1_diag.nc
+testref/bump_nicas_consistency_1-1_diag.nc
+testref/bump_nicas_randomization_1-1_randomization.nc

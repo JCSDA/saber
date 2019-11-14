@@ -1,0 +1,6 @@
+testref/bump_hdiag-nicas_loc_adv_2-1_nicas-2-sqrt_0002-0001_common.nc
+testref/bump_hdiag-nicas_loc_adv_2-1_nicas-2-sqrt_0002-0002_common.nc
+testref/bump_hdiag-nicas_loc_adv_cor_tracker_2-1_nicas-2-sqrt_0002-0001_common.nc
+testref/bump_hdiag-nicas_loc_adv_cor_tracker_2-1_nicas-2-sqrt_0002-0002_common.nc
+testref/bump_hdiag-nicas_loc_adv_inv_2-1_nicas-2-sqrt_0002-0001_common.nc
+testref/bump_hdiag-nicas_loc_adv_inv_2-1_nicas-2-sqrt_0002-0002_common.nc

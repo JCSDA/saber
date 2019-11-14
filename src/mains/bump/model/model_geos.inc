@@ -2,7 +2,7 @@
 ! Subroutine: model_geos_coord
 ! Purpose: get GEOS coordinates
 !----------------------------------------------------------------------
-subroutine model_geos_coord(model,mpl,nam)
+subroutine model_geos_coord(model,mpl,nam,filename)
 
 implicit none
 
@@ -10,6 +10,7 @@ implicit none
 class(model_type),intent(inout) :: model ! Model
 type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(in) :: nam         ! Namelist
+character(len=*),intent(in) :: filename  ! File name
 
 ! Local variables
 integer :: img,il0,ilon,ilat
@@ -19,7 +20,7 @@ real(kind=8),allocatable :: lon(:,:),lat(:,:),delp(:,:,:)
 character(len=1024),parameter :: subr = 'model_geos_coord'
 
 ! Open file and get dimensions
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
+call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_share,ncid))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'lon',nlon_id))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'lat',nlat_id))
 call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
@@ -111,7 +112,7 @@ if (mpl%main) then
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid))
+   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 end if
 
 do iv=1,nam%nv

@@ -1,6 +1,6 @@
 # general_param
-datadir: "testdata/bump_lct-nicas_one_scale"
-prefix: "test__MPI_-_OMP_"
+datadir: "testdata"
+prefix: "bump_lct-nicas_one_scale__MPI_-_OMP_"
 model: "qg"
 
 # driver_param

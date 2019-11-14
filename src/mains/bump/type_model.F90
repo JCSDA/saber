@@ -218,7 +218,7 @@ integer,allocatable :: nx(:),imga_arr(:)
 real(kind_real) :: dlat,dlon
 real(kind_real),allocatable :: lon_center(:),lat_center(:),fld(:,:,:)
 character(len=4) :: nprocchar
-character(len=1024) :: varname,filename
+character(len=1024) :: fullname,varname,filename
 character(len=1024),dimension(nvmax) :: varname_save,addvar2d_save
 character(len=1024),parameter :: subr = 'model_define_distribution'
 type(tree_type) :: tree
@@ -229,19 +229,26 @@ do iv=1,nam%nv
    if (trim(nam%addvar2d(iv))/='') model%nl0 = nam%nl+1
 end do
 
+! Full name
+if (trim(nam%prefix_input)=='') then
+   fullname = 'grid'
+else
+   fullname = trim(nam%prefix_input)//'_grid'
+end if
+
 ! Select model
-if (trim(nam%model)=='aro') call model%aro_coord(mpl,nam)
-if (trim(nam%model)=='arp') call model%arp_coord(mpl,nam)
-if (trim(nam%model)=='fv3') call model%fv3_coord(mpl,nam)
-if (trim(nam%model)=='gem') call model%gem_coord(mpl,nam)
-if (trim(nam%model)=='geos') call model%geos_coord(mpl,nam)
-if (trim(nam%model)=='gfs') call model%gfs_coord(mpl,nam)
-if (trim(nam%model)=='ifs') call model%ifs_coord(mpl,nam)
-if (trim(nam%model)=='mpas') call model%mpas_coord(mpl,nam)
-if (trim(nam%model)=='nemo') call model%nemo_coord(mpl,nam)
-if (trim(nam%model)=='qg') call model%qg_coord(mpl,nam)
-if (trim(nam%model)=='res') call model%res_coord(mpl,nam)
-if (trim(nam%model)=='wrf') call model%wrf_coord(mpl,nam)
+if (trim(nam%model)=='aro') call model%aro_coord(mpl,nam,fullname)
+if (trim(nam%model)=='arp') call model%arp_coord(mpl,nam,fullname)
+if (trim(nam%model)=='fv3') call model%fv3_coord(mpl,nam,fullname)
+if (trim(nam%model)=='gem') call model%gem_coord(mpl,nam,fullname)
+if (trim(nam%model)=='geos') call model%geos_coord(mpl,nam,fullname)
+if (trim(nam%model)=='gfs') call model%gfs_coord(mpl,nam,fullname)
+if (trim(nam%model)=='ifs') call model%ifs_coord(mpl,nam,fullname)
+if (trim(nam%model)=='mpas') call model%mpas_coord(mpl,nam,fullname)
+if (trim(nam%model)=='nemo') call model%nemo_coord(mpl,nam,fullname)
+if (trim(nam%model)=='qg') call model%qg_coord(mpl,nam,fullname)
+if (trim(nam%model)=='res') call model%res_coord(mpl,nam,fullname)
+if (trim(nam%model)=='wrf') call model%wrf_coord(mpl,nam,fullname)
 
 ! Set longitude and latitude bounds
 do img=1,model%nmg
@@ -569,7 +576,7 @@ fld = mpl%msv%valr
 
 do its=1,nam%nts
    ! Define filename
-   write(fullname,'(a,a,i2.2,a,i4.4,a)') trim(filename),'_',nam%timeslot(its),'_',ie,'.nc'
+   write(fullname,'(a,a,i2.2,a,i4.4)') trim(filename),'_',nam%timeslot(its),'_',ie
 
    ! Read file
    call model%read(mpl,nam,fullname,its,fld(:,:,:,its))
@@ -594,6 +601,7 @@ character(len=*),intent(in) :: filename  ! Filename ('ens1' or 'ens2')
 ! Local variables
 integer :: ne,ie,nsub,isub,ie_sub
 real(kind_real),allocatable :: mean(:,:,:,:,:)
+character(len=1024) :: fullname
 character(len=1024),parameter :: subr = 'model_load_ens'
 
 ! Initialization
@@ -655,13 +663,20 @@ do isub=1,nsub
       write(mpl%info,'(i4)') ie_sub
       call mpl%flush(.false.)
 
+      ! Full name
+      if (trim(nam%prefix_input)=='') then
+         fullname = trim(filename)
+      else
+         fullname = trim(nam%prefix_input)//'_'//trim(filename)
+      end if
+
       ! Read member
       ie = ie_sub+(isub-1)*ne/nsub
       select case (trim(filename))
       case ('ens1')
-         call model%read_member(mpl,nam,filename,ie_sub,model%ens1(ie)%fld)
+         call model%read_member(mpl,nam,fullname,ie_sub,model%ens1(ie)%fld)
       case ('ens2')
-         call model%read_member(mpl,nam,filename,ie_sub,model%ens2(ie)%fld)
+         call model%read_member(mpl,nam,fullname,ie_sub,model%ens2(ie)%fld)
       end select
    end do
    write(mpl%info,'(a)') ''

@@ -1,6 +1,6 @@
 # general_param
-datadir: "testdata/bump_hdiag_grid"
-prefix: "test__MPI_-_OMP_"
+datadir: "testdata"
+prefix: "bump_hdiag_grid__MPI_-_OMP_"
 model: "qg"
 
 # driver_param

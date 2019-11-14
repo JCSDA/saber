@@ -1,6 +1,6 @@
 # general_param
-datadir: "testdata/bump_hdiag-nicas_nprocio"
-prefix: "test__MPI_-_OMP_"
+datadir: "testdata"
+prefix: "bump_hdiag-nicas_nprocio__MPI_-_OMP_"
 model: "qg"
 nprocio: 2
 

@@ -1,0 +1,46 @@
+# general_param
+datadir: "testdata"
+prefix: "bump_read_vbal__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+method: "cor"
+strategy: "specific_univariate"
+load_vbal: 1
+new_hdiag: 1
+write_cmat: 0
+check_vbal: 1
+
+# model_param
+nl: 4
+levs: [1,2,3,4]
+nv: 2
+varname: ["u","q"]
+nts: 1
+
+# ens1_param
+ens1_ne: 50
+
+# ens2_param
+
+# sampling_param
+nc1: 500
+nc2: 250
+ntry: 30
+nc3: 15
+dc: [400.0e3]
+nl0r: 3
+
+# diag_param
+ne: 50
+vbal_block: [1]
+vbal_rad: 2000.0e3
+
+# fit_param
+
+# nicas_param
+
+# obsop_param
+
+# output_param
+

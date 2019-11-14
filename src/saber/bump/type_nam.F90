@@ -28,7 +28,8 @@ integer,parameter :: nldwvmax = 99  ! Maximum number of local diagnostic profile
 type nam_type
    ! general_param
    character(len=1024) :: datadir                       ! Data directory
-   character(len=1024) :: prefix                        ! Files prefix
+   character(len=1024) :: prefix                        ! BUMP files prefix (mandatory)
+   character(len=1024) :: prefix_input                  ! Input files prefix (for ensemble members and grid, optional)
    character(len=1024) :: model                         ! Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'qg, 'res' or 'wrf')
    character(len=1024) :: verbosity                     ! Verbosity level ('all', 'main' or 'none')
    logical :: colorlog                                  ! Add colors to the log (for display on terminal)
@@ -222,6 +223,7 @@ integer :: iv,ildwv
 ! general_param default
 nam%datadir = '.'
 nam%prefix = ''
+nam%prefix_input = ''
 nam%model = ''
 nam%verbosity = 'all'
 nam%colorlog = .false.
@@ -432,13 +434,13 @@ logical :: check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_b
 logical :: vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
 logical :: adv_cor_tracker,double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt,fast_sampling
 logical :: network,forced_radii,pos_def_test,write_grids,grid_output
-character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,mask_type,mask_lu(nvmax),draw_type,minim_algo,fit_type
-character(len=1024) :: subsamp
+character(len=1024) :: datadir,prefix,prefix_input,model,verbosity,strategy,method,mask_type,mask_lu(nvmax),draw_type,minim_algo
+character(len=1024) :: fit_type,subsamp
 character(len=1024),dimension(nvmax) :: varname,addvar2d
 character(len=1024),dimension(nldwvmax) :: name_ldwv
 
 ! Namelist blocks
-namelist/general_param/datadir,prefix,model,verbosity,colorlog,default_seed,repro,nprocio
+namelist/general_param/datadir,prefix,prefix_input,model,verbosity,colorlog,default_seed,repro,nprocio
 namelist/driver_param/method,strategy,new_cortrack,new_vbal,load_vbal,new_mom,load_mom,write_mom,write_vbal,new_hdiag, &
                     & write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop,load_obsop, &
                     & write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency, &
@@ -463,6 +465,7 @@ if (mpl%main) then
    ! general_param default
    datadir = '.'
    prefix = ''
+   prefix_input = ''
    model = ''
    verbosity = 'all'
    colorlog = .false.
@@ -645,6 +648,7 @@ if (mpl%main) then
    read(lunit,nml=general_param)
    nam%datadir = datadir
    nam%prefix = prefix
+   nam%prefix_input = prefix_input
    nam%model = model
    nam%verbosity = verbosity
    nam%colorlog = colorlog
@@ -870,6 +874,7 @@ type(mpl_type),intent(inout) :: mpl  ! MPI data
 ! general_param
 call mpl%f_comm%broadcast(nam%datadir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%prefix,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%prefix_input,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%model,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%verbosity,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%colorlog,mpl%rootproc-1)
@@ -1060,6 +1065,10 @@ end if
 if (conf%has("prefix")) then
    call conf%get_or_die("prefix",str)
    nam%prefix = str
+end if
+if (conf%has("prefix_input")) then
+   call conf%get_or_die("prefix_input",str)
+   nam%prefix_input = str
 end if
 if (conf%has("model")) then
    call conf%get_or_die("model",str)
@@ -1759,6 +1768,7 @@ if (mpl%msv%is(lncid)) then
 end if
 call mpl%write(lncid,'nam','datadir',nam%datadir)
 call mpl%write(lncid,'nam','prefix',nam%prefix)
+call mpl%write(lncid,'nam','prefix_input',nam%prefix_input)
 call mpl%write(lncid,'nam','model',nam%model)
 call mpl%write(lncid,'nam','verbosity',nam%verbosity)
 call mpl%write(lncid,'nam','colorlog',nam%colorlog)
