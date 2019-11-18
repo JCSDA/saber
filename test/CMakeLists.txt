@@ -303,9 +303,9 @@ if(${SABER_TEST_MODEL})
     set(mpi 4)
     set(omp 1)
     foreach(test ${saber_test_model})
-        execute_process(COMMAND     sed "-e s/_MPI_/${mpi}/g;s/_OMP_/${omp}/g"
-                        INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
-                        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml)
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                        ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                        ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml)
 
         ecbuild_add_test(TARGET       test_${test}_link
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_links.ksh

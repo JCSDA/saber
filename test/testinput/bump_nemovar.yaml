@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_nemovar__MPI_-_OMP_"
+prefix: "bump_nemovar"
 prefix_input: "bump_nemovar"
 model: "nemo"
 

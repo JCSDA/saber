@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_geos__MPI_-_OMP_"
+prefix: "bump_geos"
 prefix_input: "bump_geos"
 model: "geos"
 

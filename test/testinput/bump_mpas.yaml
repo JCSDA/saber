@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_mpas__MPI_-_OMP_"
+prefix: "bump_mpas"
 prefix_input: "bump_mpas"
 model: "mpas"
 

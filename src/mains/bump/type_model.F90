@@ -270,8 +270,8 @@ elseif (mpl%nproc>1) then
    if (mpl%main) then
       ! Open file
       write(nprocchar,'(i4.4)') mpl%nproc
-      filename = trim(nam%prefix)//'_distribution_'//nprocchar//'.nc'
-      info = nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid)
+      filename = trim(nam%prefix)//'_distribution_'//nprocchar
+      info = nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid)
    end if
    call mpl%f_comm%broadcast(info,mpl%rootproc-1)
 
