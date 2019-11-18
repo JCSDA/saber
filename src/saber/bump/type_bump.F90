@@ -289,7 +289,7 @@ end if
 ! Copy sampling mask
 if (present(smask)) then
    allocate(bump%geom%smask_c0a(bump%geom%nc0a,bump%geom%nl0))
-   bump%geom%smask_c0a = smask(bump%geom%c0a_to_mga,:)
+   bump%geom%smask_c0a = smask(bump%geom%c0a_to_mga,:).or.bump%nam%nomask
 end if
 
 end subroutine bump_setup_online
@@ -574,18 +574,16 @@ do its=1,bump%nam%nts
          bump%ens2%mem(ie)%fld(:,:,iv,its) = fld_c0a
       end if
 
-      if (.false.) then
-         ! Print norm
-         norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
-         write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
-         call bump%mpl%flush()
-         nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
-         nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
-         nmask = count(.not.bump%geom%mask_c0a)
-         write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
-       & nnonzero,' / ',nzero,' / ',nmask
-         call bump%mpl%flush()
-      end if
+      ! Print norm
+      norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
+      write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
+      call bump%mpl%flush()
+      nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
+      nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
+      nmask = count(.not.bump%geom%mask_c0a)
+      write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
+    & nnonzero,' / ',nzero,' / ',nmask
+      call bump%mpl%flush()
    end do
 end do
 

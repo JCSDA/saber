@@ -125,6 +125,7 @@ if(${SABER_TEST_TIER} GREATER 2)
         bump_hdiag-nicas_loc_adv
         bump_hdiag-nicas_loc_adv_cor_tracker
         bump_hdiag-nicas_loc_adv_inv
+        bump_hdiag-nicas_loc_adv_wind
         bump_hdiag_optimality
         bump_nicas_consistency
         bump_nicas_randomization

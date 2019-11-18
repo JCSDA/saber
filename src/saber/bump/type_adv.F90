@@ -170,10 +170,8 @@ call adv%alloc(nam,geom,samp)
 ! Compute raw advection from maximum displacement
 call adv%compute_max(mpl,nam,geom,samp,ens)
 
-if (nam%adv_wind) then
-   ! Recompute raw advection from wind
-   call adv%compute_wind(mpl,rng,nam,geom,samp,fld_uv)
-end if
+! Compute raw advection from wind
+if (nam%adv_wind) call adv%compute_wind(mpl,rng,nam,geom,samp,fld_uv)
 
 if (nam%adv_niter>0) then
    ! Filter advection
@@ -647,12 +645,16 @@ type(samp_type),intent(inout) :: samp                              ! Sampling
 real(kind_real),intent(in) :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
 
 ! Local variables
-integer :: ic0,ic2,ic2a,il0,its,it
+integer :: ic0,ic0a,ic0w,ic0own,i_s,ic2,ic2a,il0,its,it,nc0w,nc0own
+integer :: c0_to_c0w(geom%nc0)
+integer,allocatable :: c0w_to_c0(:),c0own_to_c0w(:)
 real(kind_real) :: dist_sum,norm,norm_tot
 real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2)
 real(kind_real) :: dtl,t,um(samp%nc2a),vm(samp%nc2a),up(samp%nc2a),vp(samp%nc2a)
 real(kind_real) :: uxm,uym,uzm,uxp,uyp,uzp,ux,uy,uz,x,y,z
-logical :: valid_c2(nam%nc2)
+real(kind_real),allocatable :: fld_uv_ext(:,:,:)
+logical :: lcheck(geom%nc0),valid_c2(nam%nc2)
+type(com_type) :: com_AW
 type(linop_type) :: h
 type(mesh_type) :: mesh
 
@@ -705,12 +707,77 @@ do its=2,nam%nts
          ! Compute interpolation
          call h%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0), &
        & samp%nc2a,adv%lon_c2a_raw(:,il0,its),adv%lat_c2a_raw(:,il0,its),samp%mask_c2a(:,il0),19)
-   
-         ! Interpolate wind value at dirac point
-         call h%apply(mpl,fld_uv(:,il0,1,its-1),um) 
-         call h%apply(mpl,fld_uv(:,il0,2,its-1),vm)
-         call h%apply(mpl,fld_uv(:,il0,1,its),up)
-         call h%apply(mpl,fld_uv(:,il0,2,its),vp)
+
+         ! Define halo W
+         lcheck = .false.
+         do i_s=1,h%n_s
+            ic0 = h%col(i_s)
+            lcheck(ic0) = .true.
+         end do
+         nc0w = count(lcheck)
+
+         ! Count owned points
+         nc0own = 0
+         do ic0a=1,geom%nc0a
+            ic0 = geom%c0a_to_c0(ic0a)
+            if (lcheck(ic0)) nc0own = nc0own+1
+         end do
+
+         ! Allocation
+         allocate(c0w_to_c0(nc0w))
+         allocate(c0own_to_c0w(nc0own))
+         allocate(fld_uv_ext(nc0w,2,2))
+
+         ! Global-local conversion for halo W
+         ic0w = 0
+         ic0own = 0
+         c0_to_c0w = mpl%msv%vali
+         do ic0=1,geom%nc0
+            if (lcheck(ic0)) then
+               ic0w = ic0w+1
+               c0w_to_c0(ic0w) = ic0
+               c0_to_c0w(ic0) = ic0w
+            end if
+         end do
+
+         ! Owned points conversion
+         ic0own = 0
+         do ic0a=1,geom%nc0a
+            ic0 = geom%c0a_to_c0(ic0a)
+            if (lcheck(ic0)) then
+               ic0own = ic0own+1
+               ic0w = c0_to_c0w(ic0)
+               c0own_to_c0w(ic0own) = ic0w
+            end if
+         end do
+
+         ! Local interpolation source
+         h%n_src = nc0w
+         do i_s=1,h%n_s
+            h%col(i_s) = c0_to_c0w(h%col(i_s))
+         end do
+
+         ! Setup communication
+         call com_AW%setup(mpl,'com_AW',geom%nc0,geom%nc0a,nc0w,nc0own,c0w_to_c0,c0own_to_c0w,geom%c0_to_proc,geom%c0_to_c0a)
+
+         ! Communication
+         call com_AW%ext(mpl,fld_uv(:,il0,1,its-1),fld_uv_ext(:,1,1))
+         call com_AW%ext(mpl,fld_uv(:,il0,2,its-1),fld_uv_ext(:,2,1))
+         call com_AW%ext(mpl,fld_uv(:,il0,1,its),fld_uv_ext(:,1,2))
+         call com_AW%ext(mpl,fld_uv(:,il0,2,its),fld_uv_ext(:,2,2))
+
+         ! Interpolate wind value at diagnostic points
+         call h%apply(mpl,fld_uv_ext(:,1,1),um) 
+         call h%apply(mpl,fld_uv_ext(:,2,1),vm)
+         call h%apply(mpl,fld_uv_ext(:,1,2),up)
+         call h%apply(mpl,fld_uv_ext(:,2,2),vp)
+
+         ! Release memory
+         call h%dealloc
+         deallocate(c0w_to_c0)
+         deallocate(c0own_to_c0w)
+         call com_AW%dealloc
+         deallocate(fld_uv_ext)
 
          do ic2a=1,samp%nc2a
             if (samp%mask_c2a(ic2a,il0)) then
@@ -773,9 +840,9 @@ do its=2,nam%nts
       adv%dist_raw(il0,its) = adv%dist_raw(il0,its)/norm_tot
 
       ! Print results
-      write(mpl%info,'(a16,a,f5.1,a)') '','Valid points:            ',100.0*adv%valid_raw(il0,its),'%'
+      write(mpl%info,'(a19,a,f5.1,a)') '','Valid points:            ',100.0*adv%valid_raw(il0,its),'%'
       call mpl%flush
-      write(mpl%info,'(a16,a,f10.1,a)') '','Advection distance: ',adv%dist_raw(il0,its)*reqkm,' km'
+      write(mpl%info,'(a19,a,f10.1,a)') '','Advection distance: ',adv%dist_raw(il0,its)*reqkm,' km'
       call mpl%flush
       call mpl%flush
    end do

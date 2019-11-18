@@ -304,8 +304,8 @@ if (mpl%myproc==iprocdir) then
 end if
 call mpl%f_comm%broadcast(alpha,iprocdir-1)
 fld = 0.0
-!$omp parallel do schedule(static) private(ie,its,iv,il0,ic0a)
 do ie=1,ens%ne
+   !$omp parallel do schedule(static) private(its,iv,il0,ic0a)
    do its=1,nam%nts
       do iv=1,nam%nv
          do il0=1,geom%nl0
@@ -319,8 +319,8 @@ do ie=1,ens%ne
          end do
       end do
    end do
+   !$omp end parallel do
 end do
-!$omp end parallel do
 
 end subroutine ens_apply_bens_dirac
 
@@ -342,13 +342,14 @@ type(io_type),intent(in) :: io                                             ! I/O
 real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nv) ! Wind field
 
 ! Local variable
-integer :: ic0a,ic0,il0,ie,its,iproc(1),ind(2),it
+integer :: ic0a,ic0,il0,ie,its,iproc(1),ind(2),it,i_s
 integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id
 real(kind_real) :: proc_to_val(mpl%nproc),val,var_loc
 real(kind_real) :: var(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,uz,x,y,z
 real(kind_real) :: londir(nam%nts),latdir(nam%nts),londir_tracker(nam%nts),latdir_tracker(nam%nts)
 real(kind_real) :: londir_wind(nam%nts),latdir_wind(nam%nts)
+real(kind_real),allocatable :: fld_uv_tmp(:,:,:),fld_uv_interp(:,:,:)
 character(len=2) :: timeslotchar
 character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_cortrack'
@@ -492,12 +493,35 @@ if (present(fld_uv)) then
          call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,geom%il0dir(1)), &
        & 1,londir_wind(its:its),latdir_wind(its:its),(/.true./),13)
    
+         ! Allocation
+         allocate(fld_uv_tmp(h%n_s,2,2))
+         allocate(fld_uv_interp(h%n_s,2,2))
+
+         ! Gather interpolation value
+         fld_uv_tmp = 0.0
+         do i_s=1,h%n_s
+            ic0 = h%col(i_s)
+            h%col(i_s) = i_s
+            if (geom%c0_to_proc(ic0)==mpl%myproc) then
+               ic0a = geom%c0_to_c0a(ic0)
+               fld_uv_tmp(i_s,1,1) = fld_uv(ic0a,geom%il0dir(1),1,its-1)
+               fld_uv_tmp(i_s,2,1) = fld_uv(ic0a,geom%il0dir(1),2,its-1)
+               fld_uv_tmp(i_s,1,2) = fld_uv(ic0a,geom%il0dir(1),1,its)
+               fld_uv_tmp(i_s,2,2) = fld_uv(ic0a,geom%il0dir(1),2,its)
+            end if
+         end do
+         call mpl%f_comm%allreduce(fld_uv_tmp,fld_uv_interp,fckit_mpi_sum())
+
          ! Interpolate wind value at dirac point
-         call h%apply(mpl,fld_uv(:,geom%il0dir(1),1,its-1),um) 
-         call h%apply(mpl,fld_uv(:,geom%il0dir(1),2,its-1),vm)
-         call h%apply(mpl,fld_uv(:,geom%il0dir(1),1,its),up)
-         call h%apply(mpl,fld_uv(:,geom%il0dir(1),2,its),vp)
-   
+         call h%apply(mpl,fld_uv_interp(:,1,1),um) 
+         call h%apply(mpl,fld_uv_interp(:,2,1),vm)
+         call h%apply(mpl,fld_uv_interp(:,1,2),up)
+         call h%apply(mpl,fld_uv_interp(:,2,2),vp)
+
+         ! Release memory
+         deallocate(fld_uv_tmp)
+         deallocate(fld_uv_interp)
+
          ! Transform wind to cartesian coordinates
          uxm = -sin(londir_wind(its))*um(1)-cos(londir_wind(its))*sin(latdir_wind(its))*vm(1)
          uym = cos(londir_wind(its))*um(1)-sin(londir_wind(its))*sin(latdir_wind(its))*vm(1)
