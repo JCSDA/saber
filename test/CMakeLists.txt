@@ -49,6 +49,12 @@ math(EXPR TMP "${CODE} / 10")
 math(EXPR SABER_TEST_MODEL "${CODE}-${TMP}*10")
 set(CODE ${TMP})
 
+# Model data directory
+set(SABER_TEST_MODEL_DIR "")
+if(DEFINED ENV{SABER_TEST_MODEL_DIR})
+    set(SABER_TEST_MODEL_DIR "$ENV{SABER_TEST_MODEL_DIR}")
+endif()
+
 # Summary
 message(STATUS "SABER_TEST_TIER: " ${SABER_TEST_TIER})
 message(STATUS "SABER_TEST_CODE: " ${SABER_TEST_CODE})
@@ -57,6 +63,9 @@ message(STATUS "  SABER_TEST_MPI4:      " ${SABER_TEST_MPI4})
 message(STATUS "  SABER_TEST_OMP:       " ${SABER_TEST_OMP})
 message(STATUS "  SABER_TEST_VALGRIND:  " ${SABER_TEST_VALGRIND})
 message(STATUS "  SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
+if(${SABER_MODEL_DIR} MATCHES 1)
+    message(STATUS "  SABER_TEST_MODEL_DIR: " ${SABER_TEST_MODEL_DIR})
+endif()
 
 # TIER 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
@@ -296,15 +305,19 @@ if(${SABER_TEST_MODEL})
     foreach(test ${saber_test_model})
         execute_process(COMMAND     sed "-e s/_MPI_/${mpi}/g;s/_OMP_/${omp}/g"
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
-                        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
+                        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml)
 
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
+        ecbuild_add_test(TARGET       test_${test}_link
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_links.ksh
+                         ARGS         ${SABER_TEST_MODEL_DIR} ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test})
+
+        ecbuild_add_test(TARGET       test_${test}_run
                          MPI          ${mpi}
                          OMP          ${omp}
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
+                         ARGS         testinput/${test}.yaml testoutput
                          DEPENDS      bump.x
                          TEST_DEPENDS test_${test}_${mpi}-${omp}_setup
-                                          get_saber_data)
+                                      test_${test}_link)
     endforeach()
 endif()
