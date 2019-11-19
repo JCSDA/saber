@@ -124,9 +124,11 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
 
+# Set download URL
+set(ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber)
+
 # Download and extract data files
 ecbuild_get_test_multidata(TARGET  get_saber_data
-                           URL     https://jedi-test-files.s3.amazonaws.com/saber
                            NAMES   ${saber_data}
                            DIRNAME testdata
                            DIRSAVE testdata
@@ -134,7 +136,6 @@ ecbuild_get_test_multidata(TARGET  get_saber_data
 
 # Download and extract reference files
 ecbuild_get_test_multidata(TARGET  get_saber_ref
-                           URL     https://jedi-test-files.s3.amazonaws.com/saber
                            NAMES   ${saber_ref}
                            DIRNAME testref
                            DIRSAVE testref
