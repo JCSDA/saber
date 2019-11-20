@@ -26,7 +26,7 @@ endif()
 
 # TIER 1
 
-# Monocore tests, set 1
+# Mono-core tests, set 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
 list(APPEND saber_test ${saber_test_tmp})
 list(APPEND saber_data saber_data.tar.gz)
@@ -36,14 +36,14 @@ list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 
 # TIER > 1
 if(${SABER_TEST_TIER} GREATER 1)
-    # Monocore tests, set 2
+    # Mono-core tests, set 2
     file(STRINGS testlist/saber_test_2.txt saber_test_tmp )
     list(APPEND saber_test ${saber_test_tmp})
     list(APPEND saber_ref saber_ref_2.tar.gz)
     file(STRINGS testlist/saber_ref_to_data_mpi.txt saber_ref_to_data_tmp )
     list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 
-    # Dualcore tests MPI, set 1 and 2
+    # Dual-core tests MPI, set 1 and 2
     file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
     list(APPEND saber_test_mpi ${saber_test_tmp})
     file(STRINGS testlist/saber_test_2.txt saber_test_tmp )
@@ -52,7 +52,7 @@ if(${SABER_TEST_TIER} GREATER 1)
     list(APPEND saber_ref saber_ref_mpi_1.tar.gz)
     list(APPEND saber_ref saber_ref_mpi_2.tar.gz)
 
-    # Dualcore tests OpenMP, set 1 and 2
+    # Dual-core tests OpenMP, set 1 and 2
     file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
     list(APPEND saber_test_omp ${saber_test_tmp})
     file(STRINGS testlist/saber_test_2.txt saber_test_tmp )
@@ -62,21 +62,21 @@ endif()
 
 # TIER > 2
 if(${SABER_TEST_TIER} GREATER 2)
-    # Monocore tests, set 2
+    # Mono-core tests, set 2
     file(STRINGS testlist/saber_test_3.txt saber_test_tmp )
     list(APPEND saber_test ${saber_test_tmp})
     list(APPEND saber_ref saber_ref_3.tar.gz)
 
-    # Dualcore tests MPI, set 3
+    # Dual-core tests MPI, set 3
     file(STRINGS testlist/saber_test_3.txt saber_test_tmp )
     list(APPEND saber_test_mpi ${saber_test_tmp})
     list(APPEND saber_ref saber_ref_mpi_3.tar.gz)
 
-    # Dualcore tests OpenMP, set 3
+    # Dual-core tests OpenMP, set 3
     file(STRINGS testlist/saber_test_3.txt saber_test_tmp )
     list(APPEND saber_test_omp ${saber_test_tmp})
 
-    # Quadcore tests MPI, specific set
+    # Quad-core tests MPI, specific set
     file(STRINGS testlist/saber_test_quad.txt saber_test_quad_tmp )
     list(APPEND saber_test_quad ${saber_test_quad_tmp})
     list(APPEND saber_ref saber_ref_quad.tar.gz)
@@ -84,7 +84,7 @@ endif()
 
 # TIER > 3
 if(${SABER_TEST_TIER} GREATER 3)
-    # Monocore tests using valgrind, set 1, 2 and 3
+    # Mono-core tests using valgrind, set 1, 2 and 3
     file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
     list(APPEND saber_test_valgrind ${saber_test_tmp})
     file(STRINGS testlist/saber_test_2.txt saber_test_tmp )
@@ -130,7 +130,7 @@ foreach(file ${saber_ref_to_data})
                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 
-# Monocore tests
+# Mono-core tests
 set(mpi 1)
 set(omp 1)
 foreach(test ${saber_test})
@@ -154,7 +154,7 @@ foreach(test ${saber_test})
                                   get_saber_ref)
 endforeach()
 
-# Dualcore tests MPI
+# Dual-core tests MPI
 set(mpi 2)
 set(omp 1)
 foreach(test ${saber_test_mpi})
@@ -178,7 +178,7 @@ foreach(test ${saber_test_mpi})
                                   get_saber_ref)
 endforeach()
 
-# Dualcore tests OpenMP
+# Dual-core tests OpenMP
 set(mpi 1)
 set(omp 2)
 foreach(test ${saber_test_omp})
@@ -202,7 +202,7 @@ foreach(test ${saber_test_omp})
                                   get_saber_ref)
 endforeach()
 
-# Quadcore tests MPI
+# Quad-core tests MPI
 set(mpi 4)
 set(omp 1)
 foreach(test ${saber_test_quad})
@@ -226,7 +226,7 @@ foreach(test ${saber_test_quad})
                                   get_saber_ref)
 endforeach()
 
-# Monocore tests using valgrind
+# Mono-core tests using valgrind
 set(mpi 1)
 set(omp 1)
 foreach(test ${saber_test_valgrind})
