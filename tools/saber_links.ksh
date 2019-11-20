@@ -50,9 +50,13 @@ while [ ${i} -lt ${ne} ] ; do
 
    # FV3
    if test ${test} = "bump_fv3" ; then
-      ne=10
-      date=20170801.000000
-      ln -sf ${modeldata}/${test}/ens1_00_${i4}.nc ${testdata}/${test}_ens1_01_${i4}.nc
+      ne=80
+      date=20190612
+      hh=12
+      resol=c0384
+      for itile in $(seq 1 1 6); do
+         ln -sf ${modeldata}/${test}/${date}_${hh}/mem${i3}/${date}.${hh}0000.bmat.fv_core.res.tile${itile}.nc ${testdata}/${test}_ens1_01_${i4}_tile${itile}.nc
+      done
    fi
 
    # GEM
@@ -243,10 +247,12 @@ fi
 # FV3
 if test ${test} = "bump_fv3" ; then
    # Copy grid.nc
-   origin=${modeldata}/${test}/grid.nc
+   origin_h=${modeldata}/${test}/${date}_${hh}/fv3files/fv3grid_${resol}.nc4
+   origin_v=${modeldata}/${test}/${date}_${hh}/fv3files/akbk64.nc4
    grid=${testdata}/${test}_grid.nc
    rm -f ${grid}
-   cp -f ${origin} ${grid}
+   ncks -O -v flons,flats ${origin_h} ${grid}
+   ncks -A -v ak,bk ${origin_v} ${grid}
 fi
 
 # GEM
@@ -334,7 +340,13 @@ if test ${test} = "bump_mpas" ; then
 fi
 
 # NEMO
-if test ${test} = "bump_nemo" ; then
+if test ${test} = "bump_nemovar" ; then
+   origin=${modeldata}/${test}/mesh_mask
+   grid=${testdata}/${test}_grid.nc
+   rm -f ${grid}
+   ncks -O -v nav_lat,nav_lon,tmask,e1t,e2t,e3t ${origin} ${grid}
+fi
+if test ${test} = "bump_cera-20c" ; then
    origin=${modeldata}/${test}/mesh_mask
    grid=${testdata}/${test}_grid.nc
    rm -f ${grid}

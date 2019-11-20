@@ -1,0 +1,64 @@
+# general_param
+datadir: "testdata"
+prefix: "bump_fv3"
+prefix_input: "bump_fv3"
+model: "fv3"
+
+# driver_param
+method: "cor"
+strategy: "specific_univariate"
+new_vbal: 0
+new_hdiag: 1
+new_nicas: 0
+
+# model_param
+nl: 10
+levs: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]
+nv: 3
+varname: ["psi","chi","T"]
+nts: 1
+timeslot: [1]
+
+# ens1_param
+ens1_ne: 10
+
+# ens2_param
+
+# sampling_param
+nc1: 3500
+nc2: 200
+ntry: 30
+nc3: 25
+dc: [100.0e3]
+nl0r: 10
+
+# diag_param
+ne: 10
+vbal_block: [0]
+vbal_rad: 500.0e3
+vbal_diag_auto: [1]
+vbal_var_th: 0.8
+var_filter: 0
+var_niter: 0
+var_rhflt: 0.0
+local_diag: 0
+local_rad: 0.0
+
+# fit_param
+
+# nicas_param
+resol: 8.0
+subsamp: "hv"
+mpicom: 2
+ndir: 1
+londir: [0.0]
+latdir: [0.0]
+levdir: [64]
+ivdir: [1]
+itsdir: [1]
+
+# obsop_param
+
+# output_param
+grid_output: 1
+grid_resol: 100.0e3
