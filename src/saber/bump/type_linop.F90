@@ -510,7 +510,7 @@ if ((linop%n_s>0).and.(linop%n_s<reorder_max)) then
    ! Sort col and S
    linop%col = linop%col(order)
    if (linop%nvec>0) then
-      linop%Svec = linop%Svec(order,:)
+      linop%Svec(:,:) = linop%Svec(order,:)
    else
       linop%S = linop%S(order)
    end if
