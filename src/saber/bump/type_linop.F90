@@ -931,10 +931,12 @@ allocate(col(3*n_dst))
 allocate(S(3*n_dst))
 
 ! Compute interpolation
-write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
-write(mpl%info,cfmt) '','Compute interpolation: '
-call mpl%flush(.false.)
-call mpl%prog_init(n_dst)
+if (ifmt>0) then
+   write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
+   write(mpl%info,cfmt) '','Compute interpolation: '
+   call mpl%flush(.false.)
+   call mpl%prog_init(n_dst)
+end if
 n_s = 0
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
@@ -992,9 +994,9 @@ do i_dst=1,n_dst
    end if
 
    ! Update
-   call mpl%prog_print(i_dst)
+   if (ifmt>0) call mpl%prog_print(i_dst)
 end do
-call mpl%prog_final
+if (ifmt>0) call mpl%prog_final
 
 ! Check interpolation
 allocate(missing(n_dst))

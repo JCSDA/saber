@@ -167,11 +167,13 @@ if (nam%adv_wind.and.(.not.present(fld_uv))) call mpl%abort(subr,'wind field abs
 ! Allocation
 call adv%alloc(nam,geom,samp)
 
-! Compute raw advection from maximum displacement
-call adv%compute_max(mpl,nam,geom,samp,ens)
-
-! Compute raw advection from wind
-if (nam%adv_wind) call adv%compute_wind(mpl,rng,nam,geom,samp,fld_uv)
+if (nam%adv_wind) then
+   ! Compute raw advection from wind
+   call adv%compute_wind(mpl,rng,nam,geom,samp,fld_uv)
+else
+   ! Compute raw advection from maximum displacement
+   call adv%compute_max(mpl,nam,geom,samp,ens)
+end if
 
 if (nam%adv_niter>0) then
    ! Filter advection
@@ -677,6 +679,7 @@ do il0=1,geom%nl0
    end do
 end do
 dtl = nam%dts/nt
+adv%cor_avg_max = mpl%msv%valr
 
 do its=2,nam%nts
    write(mpl%info,'(a10,a,i2)') '','Timeslot ',its
@@ -697,16 +700,16 @@ do its=2,nam%nts
    adv%dist_c2a_raw(:,:,its) = mpl%msv%valr
 
    do il0=1,geom%nl0
-      write(mpl%info,'(a16,a,i3)') '','Level ',nam%levs(il0)
-      call mpl%flush
-
+      write(mpl%info,'(a16,a,i3,a)') '','Level ',nam%levs(il0),': '
+      call mpl%flush(.false.)
+      call mpl%prog_init(nt)
       do it=1,nt
          ! Define internal time
          t = real(it-1,kind_real)/real(nt,kind_real)
 
          ! Compute interpolation
          call h%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0), &
-       & samp%nc2a,adv%lon_c2a_raw(:,il0,its),adv%lat_c2a_raw(:,il0,its),samp%mask_c2a(:,il0),19)
+       & samp%nc2a,adv%lon_c2a_raw(:,il0,its),adv%lat_c2a_raw(:,il0,its),samp%mask_c2a(:,il0),0)
 
          ! Define halo W
          lcheck = .false.
@@ -810,7 +813,11 @@ do its=2,nam%nts
                call xyz2lonlat(mpl,x,y,z,adv%lon_c2a_raw(ic2a,il0,its),adv%lat_c2a_raw(ic2a,il0,its))
             end if
          end do
+
+         ! Update
+         call mpl%prog_print(it)
       end do
+      call mpl%prog_final
 
       do ic2a=1,samp%nc2a
          if (samp%mask_c2a(ic2a,il0)) then
