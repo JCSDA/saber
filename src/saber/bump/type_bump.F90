@@ -920,9 +920,9 @@ subroutine bump_apply_nicas_sqrt_ad(bump,fld_mga,pcv)
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                                                   ! BUMP
+class(bump_type),intent(inout) :: bump                                                       ! BUMP
 real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
-real(kind_real),intent(inout) :: pcv(:)                                                  ! Packed control variable
+real(kind_real),intent(inout) :: pcv(:)                                                      ! Packed control variable
 
 ! Local variables
 integer :: its,iv
@@ -1590,13 +1590,14 @@ if (bump%nam%check_apply_vbal) then
    ! Allocation
    allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
 
-   ! Initialization
+   ! Initialization and calls
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
-
-   ! Calls
    call bump%apply_vbal(fld_mga)
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
    call bump%apply_vbal_inv(fld_mga)
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
    call bump%apply_vbal_ad(fld_mga)
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
    call bump%apply_vbal_inv_ad(fld_mga)
 
    ! Release memory
@@ -1615,14 +1616,15 @@ if (bump%nam%check_apply_nicas) then
    allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
    allocate(pcv(n))
 
-   ! Initialization
+   ! Initialization and calls
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
-
-   ! Calls
    call bump%apply_nicas(fld_mga)
-   call bump%apply_nicas_sqrt(pcv,fld_mga)
-   call bump%apply_nicas_sqrt_ad(fld_mga,pcv)
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
    call bump%randomize(fld_mga)
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+   call bump%apply_nicas_sqrt_ad(fld_mga,pcv)
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,pcv)
+   call bump%apply_nicas_sqrt(pcv,fld_mga)
 
    ! Release memory
    deallocate(fld_mga)
@@ -1638,11 +1640,10 @@ if (bump%nam%check_apply_obsop) then
    allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
    allocate(obs(bump%obsop%nobsa,bump%geom%nl0))
 
-   ! Initialization
+   ! Initialization and calls
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
-
-   ! Calls
    call bump%apply_obsop(fld_mga(:,:,1,1),obs)
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,obs)
    call bump%apply_obsop_ad(obs,fld_mga(:,:,1,1))
 
    ! Release memory
