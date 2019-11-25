@@ -137,12 +137,11 @@ type nam_type
    logical :: local_diag                                ! Activate local diagnostics
    real(kind_real) ::  local_rad                        ! Local diagnostics calculation radius
    logical :: adv_diag                                  ! Activate advection diagnostic
+   character(len=1024) :: adv_type                      ! Advection diagnostic type ('max', 'wind' or 'wind+max') 
    real(kind_real) ::  adv_rad                          ! Advection diagnostic calculation radius
-   logical :: adv_cor_tracker                           ! Tracker method for the advection diagnostic
-   logical :: adv_wind                                  ! Wind method for the advection diagnostic
    integer :: adv_niter                                 ! Number of iteration for the advection filtering
    real(kind_real) ::  adv_rhflt                        ! Advection initial filtering support radius
-   real(kind_real) :: adv_max_std_ratio                 ! Minimum ratio between correlation maximum and local standard deviation to compute advection diagnostic
+   real(kind_real) :: adv_valid                         ! Required proportion of valid points for filtering convergence 
 
    ! fit_param
    character(len=1024) :: minim_algo                    ! Minimization algorithm ('none', 'fast' or 'hooke')
@@ -345,12 +344,11 @@ nam%var_rhflt = 0.0
 nam%local_diag = .false.
 nam%local_rad = 0.0
 nam%adv_diag = .false.
+nam%adv_type = ''
 nam%adv_rad = 0.0
-nam%adv_cor_tracker = .false.
-nam%adv_wind = .false.
 nam%adv_niter = 0
 nam%adv_rhflt = 0.0
-nam%adv_max_std_ratio = 2.5
+nam%adv_valid = 0.99
 
 ! fit_param default
 nam%minim_algo = 'hooke'
@@ -430,7 +428,7 @@ integer :: lunit
 integer :: nprocio,nl,levs(nlmax),nv,nts,timeslot(ntsmax),ens1_ne,ens1_nsub,ens2_ne,ens2_nsub
 integer :: ncontig_th,nc1,nc2,ntry,nrep,nc3,nl0r,irmax,ne,avg_nbins,var_niter,adv_niter,lct_nscales,mpicom,adv_mode,nc1max,ndir
 integer :: levdir(ndirmax),ivdir(ndirmax),itsdir(ndirmax),nobs,nldwv,img_ldwv(nldwvmax),ildwv
-real(kind_real) :: dts,mask_th(nvmax),Lcoast,rcoast,dc,vbal_rad,var_rhflt,local_rad,adv_rad,adv_rhflt,adv_max_std_ratio
+real(kind_real) :: dts,mask_th(nvmax),Lcoast,rcoast,dc,vbal_rad,var_rhflt,local_rad,adv_rad,adv_rhflt,adv_valid
 real(kind_real) :: rvflt,lct_cor_min,lct_scale_ratio,lct_qc_th,lct_qc_max,lon_ldwv(nldwvmax),lat_ldwv(nldwvmax),diag_rhflt,resol,rh
 real(kind_real) :: rv,londir(ndirmax),latdir(ndirmax),grid_resol
 logical :: colorlog,default_seed,repro,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_mom,load_mom,write_mom,new_hdiag
@@ -440,10 +438,10 @@ logical :: check_no_point,check_no_point_mask,check_no_point_nicas,check_set_par
 logical :: check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal,check_apply_nicas
 logical :: check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_block(nvmax*(nvmax-1)/2)
 logical :: vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
-logical :: adv_cor_tracker,adv_wind,double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
+logical :: double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
 logical :: fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
 character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,wind_filename,wind_varname(2),mask_type,mask_lu(nvmax)
-character(len=1024) :: draw_type,minim_algo,fit_type,subsamp
+character(len=1024) :: draw_type,adv_type,minim_algo,fit_type,subsamp
 character(len=1024),dimension(nvmax) :: varname,addvar2d
 character(len=1024),dimension(nldwvmax) :: name_ldwv
 
@@ -461,7 +459,7 @@ namelist/ens2_param/ens2_ne,ens2_nsub
 namelist/sampling_param/sam_write,sam_read,mask_type,mask_lu,mask_th,ncontig_th,mask_check,draw_type,Lcoast,rcoast,nc1,nc2,ntry, &
                       & nrep,nc3,dc,nl0r,irmax
 namelist/diag_param/ne,gau_approx,avg_nbins,vbal_block,vbal_rad,vbal_diag_auto,vbal_diag_reg,var_filter,var_niter,var_rhflt, &
-                  & local_diag,local_rad,adv_diag,adv_rad,adv_cor_tracker,adv_wind,adv_niter,adv_rhflt,adv_max_std_ratio
+                  & local_diag,local_rad,adv_diag,adv_type,adv_rad,adv_niter,adv_rhflt,adv_valid
 namelist/fit_param/minim_algo,fit_type,double_fit,lhomh,lhomv,rvflt,lct_nscales,lct_scale_ratio,lct_cor_min,lct_diag,lct_qc_th, &
                  & lct_qc_max,lct_write_cor
 namelist/nicas_param/nonunit_diag,lsqrt,resol,nc1max,fast_sampling,subsamp,network,mpicom,adv_mode,forced_radii,rh,rv, &
@@ -591,12 +589,11 @@ if (mpl%main) then
    local_diag = .false.
    local_rad = 0.0
    adv_diag = .false.
+   adv_type = ''
    adv_rad = 0.0
-   adv_cor_tracker = .false.
-   adv_wind = .false.
    adv_niter = 0
    adv_rhflt = 0.0
-   adv_max_std_ratio = 2.5
+   adv_valid = 0.99
 
    ! fit_param default
    minim_algo = 'hooke'
@@ -778,12 +775,11 @@ if (mpl%main) then
    nam%local_diag = local_diag
    nam%local_rad = local_rad
    nam%adv_diag = adv_diag
+   nam%adv_type = adv_type
    nam%adv_rad = adv_rad
-   nam%adv_cor_tracker = adv_cor_tracker
-   nam%adv_wind = adv_wind
    nam%adv_niter = adv_niter
    nam%adv_rhflt = adv_rhflt
-   nam%adv_max_std_ratio = adv_max_std_ratio
+   nam%adv_valid = adv_valid
 
    ! fit_param
    read(lunit,nml=fit_param)
@@ -998,12 +994,11 @@ call mpl%f_comm%broadcast(nam%var_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%local_diag,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%local_rad,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%adv_diag,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%adv_type,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%adv_rad,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_cor_tracker,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_wind,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%adv_niter,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%adv_rhflt,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_max_std_ratio,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%adv_valid,mpl%rootproc-1)
 
 ! fit_param
 call mpl%f_comm%broadcast(nam%minim_algo,mpl%rootproc-1)
@@ -1245,12 +1240,14 @@ if (conf%has("var_rhflt")) call conf%get_or_die("var_rhflt",nam%var_rhflt)
 if (conf%has("local_diag")) call conf%get_or_die("local_diag",nam%local_diag)
 if (conf%has("local_rad")) call conf%get_or_die("local_rad",nam%local_rad)
 if (conf%has("adv_diag")) call conf%get_or_die("adv_diag",nam%adv_diag)
+if (conf%has("adv_type")) then
+   call conf%get_or_die("adv_type",str)
+   nam%adv_type = str
+end if
 if (conf%has("adv_rad")) call conf%get_or_die("adv_rad",nam%adv_rad)
-if (conf%has("adv_cor_tracker")) call conf%get_or_die("adv_cor_tracker",nam%adv_cor_tracker)
-if (conf%has("adv_wind")) call conf%get_or_die("adv_wind",nam%adv_wind)
 if (conf%has("adv_niter")) call conf%get_or_die("adv_niter",nam%adv_niter)
 if (conf%has("adv_rhflt")) call conf%get_or_die("adv_rhflt",nam%adv_rhflt)
-if (conf%has("adv_max_std_ratio")) call conf%get_or_die("adv_max_std_ratio",nam%adv_max_std_ratio)
+if (conf%has("adv_valid")) call conf%get_or_die("adv_valid",nam%adv_valid)
 
 ! fit_param
 if (conf%has("minim_algo")) then
@@ -1641,7 +1638,8 @@ if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
       if (.not.(nam%adv_rad>0.0)) call mpl%abort(subr,'adv_rad should be positive')
       if (nam%adv_niter<=0) call mpl%abort(subr,'adv_niter should be positive')
       if (.not.(nam%adv_rhflt>0.0)) call mpl%abort(subr,'adv_rhflt should be positive')
-      if (.not.(nam%adv_max_std_ratio>0.0)) call mpl%abort(subr,'adv_max_std_ratio should be positive')
+      if (nam%adv_valid<0.0) call mpl%abort(subr,'adv_valid should be non-negative')
+      if (nam%adv_valid>1.0) call mpl%abort(subr,'adv_valid should be not be higher than 1.0')
    end if
 end if
 
@@ -1728,7 +1726,7 @@ if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomiz
    end select
 end if
 if (nam%write_grids.and.(.not.nam%new_nicas)) call mpl%abort(subr,'new_nicas required for write_grids')
-if (nam%new_cortrack.or.nam%new_corstats.or.nam%check_dirac) then
+if (nam%new_cortrack.or.nam%check_dirac) then
    if (nam%ndir<1) call mpl%abort(subr,'ndir should be positive')
    do idir=1,nam%ndir
       if ((nam%londir(idir)<-pi).or.(nam%londir(idir)>pi)) call mpl%abort(subr,'londir should lie between -180 and 180')
@@ -1928,12 +1926,11 @@ call mpl%write(lncid,'nam','var_rhflt',nam%var_rhflt*req)
 call mpl%write(lncid,'nam','local_diag',nam%local_diag)
 call mpl%write(lncid,'nam','local_rad',nam%local_rad*req)
 call mpl%write(lncid,'nam','adv_diag',nam%adv_diag)
+call mpl%write(lncid,'nam','adv_type',nam%adv_type)
 call mpl%write(lncid,'nam','adv_rad',nam%adv_rad*req)
-call mpl%write(lncid,'nam','adv_cor_tracker',nam%adv_cor_tracker)
-call mpl%write(lncid,'nam','adv_wind',nam%adv_wind)
 call mpl%write(lncid,'nam','adv_niter',nam%adv_niter)
 call mpl%write(lncid,'nam','adv_rhflt',nam%adv_rhflt*req)
-call mpl%write(lncid,'nam','adv_max_std_ratio',nam%adv_max_std_ratio)
+call mpl%write(lncid,'nam','adv_valid',nam%adv_valid)
 
 ! fit_param
 if (mpl%msv%is(lncid)) then

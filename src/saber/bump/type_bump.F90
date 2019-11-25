@@ -74,6 +74,8 @@ contains
    procedure :: dealloc => bump_dealloc
 end type bump_type
 
+logical :: print_member = .false. ! Print info when adding member to BUMP 
+
 private
 public :: bump_type
 
@@ -574,16 +576,18 @@ do its=1,bump%nam%nts
          bump%ens2%mem(ie)%fld(:,:,iv,its) = fld_c0a
       end if
 
-      ! Print norm
-      norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
-      write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
-      call bump%mpl%flush()
-      nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
-      nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
-      nmask = count(.not.bump%geom%mask_c0a)
-      write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
-    & nnonzero,' / ',nzero,' / ',nmask
-      call bump%mpl%flush()
+      if (print_member) then
+         ! Print norm
+         norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
+         write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
+         call bump%mpl%flush
+         nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
+         nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
+         nmask = count(.not.bump%geom%mask_c0a)
+         write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
+       & nnonzero,' / ',nzero,' / ',nmask
+         call bump%mpl%flush
+      end if
    end do
 end do
 
@@ -1063,7 +1067,7 @@ real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,
 integer :: ib,iv,jv,its,jts
 
 write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
-call bump%mpl%flush()
+call bump%mpl%flush
 
 select case (trim(param))
 case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
@@ -1358,7 +1362,7 @@ real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,b
 integer :: ib,iv,jv,its,jts
 
 write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
-call bump%mpl%flush()
+call bump%mpl%flush
 
 select case (trim(param))
 case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')

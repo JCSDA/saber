@@ -45,6 +45,7 @@ message(STATUS "     SABER_VALGRIND_TEST:  " ${SABER_VALGRIND_TEST} )
 # TIER 1
 list(APPEND saber_test
     bump_cortrack
+    bump_corstats
     bump_hdiag_cor_diag_all
     bump_hdiag_grid
     bump_hdiag_hyb-rnd_common
@@ -122,10 +123,10 @@ endif()
 # TIER > 2
 if(${SABER_TEST_TIER} GREATER 2)
     list(APPEND saber_test
-        bump_hdiag-nicas_loc_adv
-        bump_hdiag-nicas_loc_adv_cor_tracker
         bump_hdiag-nicas_loc_adv_inv
+        bump_hdiag-nicas_loc_adv_max
         bump_hdiag-nicas_loc_adv_wind
+        bump_hdiag-nicas_loc_adv_windmax
         bump_hdiag_optimality
         bump_nicas_consistency
         bump_nicas_randomization

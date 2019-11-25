@@ -48,7 +48,7 @@ contains
    procedure :: corstats => ens_corstats
 end type ens_type
 
-integer,parameter :: nt = 10 ! Number of substeps for wind advection
+integer,parameter :: nt = 6 ! Number of substeps for wind advection
 
 private
 public :: ens_type
@@ -666,7 +666,6 @@ do il0=1,geom%nl0
             end if
             call mpl%f_comm%broadcast(alpha,iprocdir-1)
             cor = 0.0
-            !$omp parallel do schedule(static) private(ie,its,ic0a)
             do ie=1,ens%ne
                do its=1,nam%nts
                   do ic0a=1,geom%nc0a
@@ -678,7 +677,6 @@ do il0=1,geom%nl0
                   end do
                end do
             end do
-            !$omp end parallel do
 
             ! Normalize correlation
             if (iprocdir==mpl%myproc) var_loc = var(ic0adir,il0,iv,1)
