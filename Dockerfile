@@ -1,4 +1,3 @@
-#FROM  jcsda/docker:latest
 FROM jcsda/docker-clang-mpich-dev
 
 RUN touch /env.txt
