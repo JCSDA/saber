@@ -30,7 +30,6 @@ phases:
   pre_build:
     commands:
       - echo Executing pre_build phase
-
       - git lfs install
  
       # saber-bundle
