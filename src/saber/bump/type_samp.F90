@@ -1083,7 +1083,7 @@ if (mpl%main) then
                         end if
 
                         ! Check class
-                        if (d<max((real(jc3-1,kind_real)-0.5)*nam%dc,0.0)) call mpl%abort(subr,'jc3 is too high')
+                        if (d<max((real(jc3-1,kind_real)-0.5)*nam%dc,0.0_kind_real)) call mpl%abort(subr,'jc3 is too high')
                         if (d>(real(jc3,kind_real)-0.5)*nam%dc) call mpl%abort(subr,'jc3 is too low')
                         found = .true.
                      end if
