@@ -1481,13 +1481,16 @@ if (mpl%main) then
    deallocate(dist_c2_flt)
 end if
 
+! Define filename
+filename = trim(nam%prefix)//'_adv_test'
+
 ! Write test
 do ib=1,bpar%nb
    iv = bpar%b_to_v1(ib)
    jv = bpar%b_to_v2(ib)
    its = bpar%b_to_ts1(ib)
    jts = bpar%b_to_ts2(ib)
-   if ((iv>1).and.(iv==jv).and.(its==jts)) then
+   if ((iv==jv).and.(its>=2).and.(its==jts)) then
       call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_cor_loc',adv%cor_loc(:,:,iv,its))
       call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_cor_adv',adv%cor_adv(:,:,iv,its))
    end if
