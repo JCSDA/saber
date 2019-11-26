@@ -698,7 +698,7 @@ allocate(model%fld_uv(model%nmga,model%nl0,2,nam%nts))
 ! Initialization
 model%fld_uv = mpl%msv%valr
 
-if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='wind+max')) then 
+if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='windmax')) then
    ! Save namelist parameters
    nv_save = nam%nv
    varname_save(1:nam%nv) = nam%varname(1:nam%nv)

@@ -1006,6 +1006,7 @@ integer,allocatable :: vic0(:)
 real(kind_real) :: d
 real(kind_real),allocatable :: x(:),y(:),z(:),v1(:),v2(:),va(:),vp(:),t(:)
 logical :: found
+character(len=1024),parameter :: subr = 'samp_compute_sampling_ps'
 
 if (mpl%main) then
    ! First class
@@ -1070,16 +1071,20 @@ if (mpl%main) then
                      ictest = (icsup+icinf)/2
    
                      ! Update
-                     if (d<(real(ictest,kind_real)-0.5)*nam%dc) icsup = ictest
-                     if (d>(real(ictest,kind_real)-0.5)*nam%dc) icinf = ictest
+                     if (d<(real(ictest-1,kind_real)-0.5)*nam%dc) icsup = ictest
+                     if (d>(real(ictest-1,kind_real)-0.5)*nam%dc) icinf = ictest
    
                      ! Exit test
                      if (icsup==icinf+1) then
-                        if (abs((real(icinf,kind_real)-0.5)*nam%dc-d)<abs((real(icsup,kind_real)-0.5)*nam%dc-d)) then
+                        if (abs(real(icinf-1,kind_real)*nam%dc-d)<abs(real(icsup-1,kind_real)*nam%dc-d)) then
                            jc3 = icinf
                         else
                            jc3 = icsup
                         end if
+
+                        ! Check class
+                        if (d<max((real(jc3-1,kind_real)-0.5)*nam%dc,0.0_kind_real)) call mpl%abort(subr,'jc3 is too high')
+                        if (d>(real(jc3,kind_real)-0.5)*nam%dc) call mpl%abort(subr,'jc3 is too low')
                         found = .true.
                      end if
                   end do
