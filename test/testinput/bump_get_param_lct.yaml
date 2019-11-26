@@ -24,10 +24,10 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-nc1: 500
+nc1: 100
+nc2: 100
 ntry: 30
-nc3: 15
-dc: [400.0e3]
+nc3: 50
 nl0r: 2
 
 # diag_param

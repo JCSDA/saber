@@ -620,7 +620,8 @@ integer,parameter :: ntest = 1000
 integer :: ie,il0,itest,ic0dir,iprocdir,ic0adir,its,iv,ic0a
 integer :: ncid,ntest_id,nl0_id,nv_id,nts_id,cor_max_id,cor_max_avg_id,cor_max_std_id
 real(kind_real) :: var(geom%nc0a,geom%nl0,nam%nv,nam%nts),alpha(ens%ne),var_loc,cor(geom%nc0a,nam%nts),norm
-real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,nam%nts),cor_max_avg(geom%nl0,nam%nv,nam%nts),cor_max_std(geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,2:nam%nts)
+real(kind_real) :: cor_max_avg(geom%nl0,nam%nv,2:nam%nts),cor_max_std(geom%nl0,nam%nv,2:nam%nts)
 character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_corstats'
 
@@ -684,7 +685,7 @@ do il0=1,geom%nl0
             cor = cor/sqrt(var(:,il0,iv,:)*var_loc)
 
             ! Save correlation maximum
-            do its=1,nam%nts
+            do its=2,nam%nts
                call mpl%f_comm%allreduce(maxval(cor(:,its)),cor_max(itest,il0,iv,its),fckit_mpi_max())
             end do
          end do
@@ -697,7 +698,7 @@ do il0=1,geom%nl0
    call mpl%prog_final
 
    ! Compute average and standard-deviation
-   do its=1,nam%nts
+   do its=2,nam%nts
       do iv=1,nam%nv
          cor_max_avg(il0,iv,its) = sum(cor_max(:,il0,iv,its))/real(ntest,kind_real)
          cor_max_std(il0,iv,its) = sqrt(sum((cor_max(:,il0,iv,its)-cor_max_avg(il0,iv,its))**2)/real(ntest-1,kind_real))
@@ -717,7 +718,7 @@ if (mpl%main) then
    ntest_id = mpl%ncdimcheck(subr,ncid,'ntest',ntest,.true.)
    nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.)
    nv_id = mpl%ncdimcheck(subr,ncid,'nv',nam%nv,.true.)
-   nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
+   nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts-1,.true.)
 
    ! Define variables
    call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max',nc_kind_real,(/ntest_id,nl0_id,nv_id,nts_id/),cor_max_id))
