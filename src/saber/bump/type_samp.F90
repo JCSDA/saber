@@ -1377,7 +1377,7 @@ lat_c2 = geom%lat(samp%c2_to_c0)
 do il0i=1,geom%nl0i
    write(samp%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
    call samp%h(il0i)%interp(mpl,rng,nam,geom,il0i,nam%nc2,lon_c2,lat_c2,samp%mask_c2(:,il0i),geom%nc0a, &
- & geom%lon_c0a,geom%lat_c0a,geom%mask_c0a(:,il0i))
+ & geom%lon_c0a,geom%lat_c0a,geom%mask_c0a(:,il0i),7)
 end do
 
 ! Define halo A
@@ -1594,7 +1594,7 @@ if (nam%adv_diag) then
          end do
          write(samp%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
          call samp%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),samp%nc1a, &
-       & lon_c1a,lat_c1a,mask_c1a)
+       & lon_c1a,lat_c1a,mask_c1a,10)
       end do
    end do
 

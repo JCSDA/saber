@@ -32,13 +32,14 @@ implicit none
 ! Advection derived type
 type adv_type
    integer :: niter                                   ! Number of stored iterations
-   real(kind_real),allocatable :: search_rad(:,:)     ! Search radius
-   real(kind_real),allocatable :: lon_c2a(:,:)        ! Longitude origin
-   real(kind_real),allocatable :: lat_c2a(:,:)        ! Latitude origin
+   real(kind_real),allocatable :: lon_c2a(:)          ! Origin longitude
+   real(kind_real),allocatable :: lat_c2a(:)          ! Origin latitude
+   real(kind_real),allocatable :: x_c2a(:)            ! Origin x coordinate
+   real(kind_real),allocatable :: y_c2a(:)            ! Origin y coordinate
+   real(kind_real),allocatable :: z_c2a(:)            ! Origin z coordinate
    real(kind_real),allocatable :: lon_c2a_raw(:,:,:)  ! Raw advected longitude
    real(kind_real),allocatable :: lat_c2a_raw(:,:,:)  ! Raw advected latitude
    real(kind_real),allocatable :: dist_c2a_raw(:,:,:) ! Raw advection distance
-   real(kind_real),allocatable :: cor_avg_max(:,:,:)  ! Maximum averaged correlation
    real(kind_real),allocatable :: dist_raw(:,:)       ! Averaged raw advection distance
    real(kind_real),allocatable :: valid_raw(:,:)      ! Averaged raw advection validity
    real(kind_real),allocatable :: lon_c2a_flt(:,:,:)  ! Filtered advected longitude
@@ -48,18 +49,23 @@ type adv_type
    real(kind_real),allocatable :: valid_flt(:,:)      ! Averaged filtered advection validity
    real(kind_real),allocatable :: rhflt(:,:)          ! Optimal filtering support radius
    real(kind_real),allocatable :: cor_loc(:,:,:,:)    ! Local correlation
-   real(kind_real),allocatable :: cor_max(:,:,:,:)    ! Maximum correlation
    real(kind_real),allocatable :: cor_adv(:,:,:,:)    ! Advected correlation
+   real(kind_real),allocatable :: score_loc(:)        ! Local correlation score
+   real(kind_real),allocatable :: score_adv(:)        ! Advected correlation score
 contains
    procedure :: alloc => adv_alloc
+   procedure :: init => adv_init
    procedure :: dealloc => adv_dealloc
    procedure :: compute => adv_compute
-   procedure :: compute_raw => adv_compute_raw
+   procedure :: compute_max => adv_compute_max
+   procedure :: compute_wind => adv_compute_wind
    procedure :: filter => adv_filter
    procedure :: interp => adv_interp
    procedure :: test => adv_test
    procedure :: write => adv_write
 end type adv_type
+
+integer,parameter :: nt = 6 ! Number of substeps for wind advection
 
 private
 public :: adv_type
@@ -81,13 +87,14 @@ type(geom_type),intent(in) :: geom   ! Geometry
 type(samp_type),intent(in) :: samp   ! Sampling
 
 ! Allocation
-allocate(adv%search_rad(geom%nc0,geom%nl0))
-allocate(adv%lon_c2a(samp%nc2a,geom%nl0))
-allocate(adv%lat_c2a(samp%nc2a,geom%nl0))
+allocate(adv%lon_c2a(samp%nc2a))
+allocate(adv%lat_c2a(samp%nc2a))
+allocate(adv%x_c2a(samp%nc2a))
+allocate(adv%y_c2a(samp%nc2a))
+allocate(adv%z_c2a(samp%nc2a))
 allocate(adv%lon_c2a_raw(samp%nc2a,geom%nl0,2:nam%nts))
 allocate(adv%lat_c2a_raw(samp%nc2a,geom%nl0,2:nam%nts))
 allocate(adv%dist_c2a_raw(samp%nc2a,geom%nl0,2:nam%nts))
-allocate(adv%cor_avg_max(samp%nc2a,geom%nl0,2:nam%nts))
 allocate(adv%dist_raw(geom%nl0,2:nam%nts))
 allocate(adv%valid_raw(geom%nl0,2:nam%nts))
 allocate(adv%lon_c2a_flt(samp%nc2a,geom%nl0,2:nam%nts))
@@ -97,8 +104,9 @@ allocate(adv%dist_flt(geom%nl0,2:nam%nts))
 allocate(adv%valid_flt(geom%nl0,2:nam%nts))
 allocate(adv%rhflt(geom%nl0,2:nam%nts))
 allocate(adv%cor_loc(geom%nc0a,geom%nl0,nam%nv,2:nam%nts))
-allocate(adv%cor_max(geom%nc0a,geom%nl0,nam%nv,2:nam%nts))
 allocate(adv%cor_adv(geom%nc0a,geom%nl0,nam%nv,2:nam%nts))
+allocate(adv%score_loc(2:nam%nts))
+allocate(adv%score_adv(2:nam%nts))
 
 end subroutine adv_alloc
 
@@ -114,13 +122,14 @@ implicit none
 class(adv_type),intent(inout) :: adv ! Advection
 
 ! Release memory
-if (allocated(adv%search_rad)) deallocate(adv%search_rad)
 if (allocated(adv%lon_c2a)) deallocate(adv%lon_c2a)
 if (allocated(adv%lat_c2a)) deallocate(adv%lat_c2a)
+if (allocated(adv%x_c2a)) deallocate(adv%x_c2a)
+if (allocated(adv%y_c2a)) deallocate(adv%y_c2a)
+if (allocated(adv%z_c2a)) deallocate(adv%z_c2a)
 if (allocated(adv%lon_c2a_raw)) deallocate(adv%lon_c2a_raw)
 if (allocated(adv%lat_c2a_raw)) deallocate(adv%lat_c2a_raw)
 if (allocated(adv%dist_c2a_raw)) deallocate(adv%dist_c2a_raw)
-if (allocated(adv%cor_avg_max)) deallocate(adv%cor_avg_max)
 if (allocated(adv%dist_raw)) deallocate(adv%dist_raw)
 if (allocated(adv%valid_raw)) deallocate(adv%valid_raw)
 if (allocated(adv%lon_c2a_flt)) deallocate(adv%lon_c2a_flt)
@@ -130,8 +139,9 @@ if (allocated(adv%dist_flt)) deallocate(adv%dist_flt)
 if (allocated(adv%valid_flt)) deallocate(adv%valid_flt)
 if (allocated(adv%rhflt)) deallocate(adv%rhflt)
 if (allocated(adv%cor_loc)) deallocate(adv%cor_loc)
-if (allocated(adv%cor_max)) deallocate(adv%cor_max)
 if (allocated(adv%cor_adv)) deallocate(adv%cor_adv)
+if (allocated(adv%score_loc)) deallocate(adv%score_loc)
+if (allocated(adv%score_adv)) deallocate(adv%score_adv)
 
 end subroutine adv_dealloc
 
@@ -139,39 +149,63 @@ end subroutine adv_dealloc
 ! Subroutine: adv_compute
 ! Purpose: compute advection
 !----------------------------------------------------------------------
-subroutine adv_compute(adv,mpl,rng,nam,geom,bpar,samp,io,ens)
+subroutine adv_compute(adv,mpl,rng,nam,geom,bpar,samp,io,ens,fld_uv)
 
 implicit none
 
 ! Passed variables
-class(adv_type),intent(inout) :: adv  ! Advection
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(rng_type),intent(inout) :: rng   ! Random number generator
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-type(samp_type),intent(inout) :: samp ! Sampling
-type(io_type),intent(in) :: io        ! I/O
-type(ens_type), intent(in) :: ens     ! Ensemble
+class(adv_type),intent(inout) :: adv                                        ! Advection
+type(mpl_type),intent(inout) :: mpl                                         ! MPI data
+type(rng_type),intent(inout) :: rng                                         ! Random number generator
+type(nam_type),intent(in) :: nam                                            ! Namelist
+type(geom_type),intent(in) :: geom                                          ! Geometry
+type(bpar_type),intent(in) :: bpar                                          ! Block parameters
+type(samp_type),intent(inout) :: samp                                       ! Sampling
+type(io_type),intent(in) :: io                                              ! I/O
+type(ens_type), intent(in) :: ens                                           ! Ensemble
+real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
+
+! Local variables
+type(adv_type) :: adv_wind
+character(len=1024),parameter :: subr = 'adv_compute'
 
 ! Allocation
 call adv%alloc(nam,geom,samp)
 
-! Compute raw advection
-call adv%compute_raw(mpl,nam,geom,samp,ens)
+! Allocation
+call adv%init(mpl,geom,samp)
 
-if (nam%adv_niter>0) then
-   ! Filter advection
-   call adv%filter(mpl,nam,geom,samp)
-else
-   ! Copy
-   adv%lon_c2a_flt = adv%lon_c2a_raw
-   adv%lat_c2a_flt = adv%lat_c2a_raw
-   adv%dist_c2a_flt = adv%dist_c2a_raw
-   adv%dist_flt = adv%dist_raw
-   adv%valid_flt = adv%valid_raw
-   adv%rhflt = mpl%msv%valr
-end if
+select case (trim(nam%adv_type))
+case ('max')
+   ! Compute raw advection from maximum displacement, no guess
+   call adv%compute_max(mpl,nam,geom,samp,ens)
+case ('wind')
+   ! Check wind field
+   if (.not.present(fld_uv)) call mpl%abort(subr,'wind field absent')
+
+   ! Compute raw advection from wind
+   call adv%compute_wind(mpl,rng,nam,geom,samp,fld_uv)
+case ('windmax')
+   ! Check wind field
+   if (.not.present(fld_uv)) call mpl%abort(subr,'wind field absent')
+
+   ! Allocation
+   call adv_wind%alloc(nam,geom,samp)
+
+   ! Initialization
+   call adv_wind%init(mpl,geom,samp)
+
+   ! Compute raw advection from wind
+   call adv_wind%compute_wind(mpl,rng,nam,geom,samp,fld_uv)
+
+   ! Compute raw advection from maximum displacement, using filtered wind advection as a guess
+   call adv%compute_max(mpl,nam,geom,samp,ens,adv_wind)
+
+   ! Release memory
+   call adv_wind%dealloc
+case default
+   call mpl%abort(subr,'wrong advection diagnostic type')
+end select
 
 ! Interpolate advection
 call adv%interp(mpl,nam,geom,samp)
@@ -188,29 +222,64 @@ call adv%dealloc
 end subroutine adv_compute
 
 !----------------------------------------------------------------------
-! Subroutine: adv_compute_raw
-! Purpose: compute raw advection
+! Subroutine: adv_init
+! Purpose: initialize advection computation
 !----------------------------------------------------------------------
-subroutine adv_compute_raw(adv,mpl,nam,geom,samp,ens)
+subroutine adv_init(adv,mpl,geom,samp)
 
 implicit none
 
 ! Passed variables
 class(adv_type),intent(inout) :: adv  ! Advection
 type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(nam_type),intent(in) :: nam      ! Namelist
 type(geom_type),intent(in) :: geom    ! Geometry
 type(samp_type),intent(inout) :: samp ! Sampling
-type(ens_type), intent(in) :: ens     ! Ensemble
+
+! Local variables
+integer :: il0,ic2a,ic2,ic0
+
+! Initialization
+do ic2a=1,samp%nc2a
+   ic2 = samp%c2a_to_c2(ic2a)
+   ic0 = samp%c2_to_c0(ic2)
+   adv%lon_c2a(ic2a) = geom%lon(ic0)
+   adv%lat_c2a(ic2a) = geom%lat(ic0)
+   call lonlat2xyz(mpl,adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%x_c2a(ic2a),adv%y_c2a(ic2a),adv%z_c2a(ic2a))
+end do
+do il0=1,geom%nl0
+   do ic2a=1,samp%nc2a
+      ic2 = samp%c2a_to_c2(ic2a)
+      samp%mask_c2a(ic2a,il0) = samp%mask_c2(ic2,il0)
+   end do
+end do
+
+end subroutine adv_init
+
+!----------------------------------------------------------------------
+! Subroutine: adv_compute_max
+! Purpose: compute raw advection from correlation maximum
+!----------------------------------------------------------------------
+subroutine adv_compute_max(adv,mpl,nam,geom,samp,ens,adv_wind)
+
+implicit none
+
+! Passed variables
+class(adv_type),intent(inout) :: adv           ! Advection
+type(mpl_type),intent(inout) :: mpl            ! MPI data
+type(nam_type),intent(in) :: nam               ! Namelist
+type(geom_type),intent(in) :: geom             ! Geometry
+type(samp_type),intent(inout) :: samp          ! Sampling
+type(ens_type),intent(in) :: ens               ! Ensemble
+type(adv_type),intent(in),optional :: adv_wind ! Wind advection
 
 ! Local variables
 integer :: ic0,ic2,ic2a,jn,jc0,il0,il0i,isub,iv,its,ie,ie_sub,ic0a,nc0d,ic0d,jc0d,jnmax,nnmax
-integer :: nn(samp%nc2a,geom%nl0),ic0_rac(samp%nc2a,geom%nl0)
+integer :: nn(samp%nc2a,geom%nl0),ic0_rac(1)
 integer :: c0_to_c0d(geom%nc0),c0a_to_c0d(geom%nc0a)
 integer,allocatable :: jc0_ra(:,:,:),c0d_to_c0(:)
-real(kind_real) :: m2m2,fld_1,fld_2,cov
-real(kind_real) :: mean,stddev,dist_sum,cor_avg_max_sum,cor_avg_max_tot,cor_avg_max_sqsum,cor_avg_max_sqtot,norm,norm_tot
-real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2)
+real(kind_real) :: search_rad,m2m2,fld_1,fld_2,cov
+real(kind_real) :: dist_sum,cor_avg_max,norm,norm_tot
+real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2),lon_rac(samp%nc2a,geom%nl0),lat_rac(samp%nc2a,geom%nl0)
 real(kind_real),allocatable :: fld_ext_1(:,:),fld_ext_2(:,:)
 real(kind_real),allocatable :: m2_1(:,:,:,:,:),m2_2(:,:,:,:,:)
 real(kind_real),allocatable :: m11(:,:,:,:,:)
@@ -220,35 +289,8 @@ logical,allocatable :: lcheck_c0d(:),mask_nn(:,:,:),mask_nn_tmp(:)
 type(com_type) :: com_AD
 type(mesh_type) :: mesh
 
-write(mpl%info,'(a7,a)') '','Compute raw advection'
+write(mpl%info,'(a7,a)') '','Compute raw advection using correlation maximum'
 call mpl%flush
-
-! Initialization
-do il0=1,geom%nl0
-   do ic2a=1,samp%nc2a
-      ic2 = samp%c2a_to_c2(ic2a)
-      ic0 = samp%c2_to_c0(ic2)
-      adv%lon_c2a(ic2a,il0) = geom%lon(ic0)
-      adv%lat_c2a(ic2a,il0) = geom%lat(ic0)
-   end do
-end do
-adv%cor_max = mpl%msv%valr
-do il0=1,geom%nl0
-   do ic2a=1,samp%nc2a
-      ic2 = samp%c2a_to_c2(ic2a)
-      samp%mask_c2a(ic2a,il0) = samp%mask_c2(ic2,il0)
-   end do
-end do
-adv%cor_avg_max = mpl%msv%valr
-
-! Advection for timeslot 1
-do il0=1,geom%nl0
-   do ic0a=1,geom%nc0a
-      ic0 = geom%c0a_to_c0(ic0a)
-      samp%adv_lon(ic0a,il0,1) = geom%lon(ic0)
-      samp%adv_lat(ic0a,il0,1) = geom%lat(ic0)
-   end do
-end do
 
 do its=2,nam%nts
    write(mpl%info,'(a10,a,i2)') '','Timeslot ',its
@@ -261,30 +303,21 @@ do its=2,nam%nts
       do ic2a=1,samp%nc2a
          if (samp%mask_c2a(ic2a,il0)) then
             ! Research area center
-            if (nam%adv_cor_tracker.and.(its>2)) then
-               ! Find closer point to previous timeslot advected mesh point
-               call geom%tree%find_nearest_neighbors(adv%lon_c2a_raw(ic2a,il0,its-1),adv%lat_c2a_raw(ic2a,il0,its-1),1, &
-             & ic0_rac(ic2a:ic2a,il0))
+            if (present(adv_wind)) then
+               ! Use wind-based estimation
+               lon_rac(ic2a,il0) = adv_wind%lon_c2a_flt(ic2a,il0,its)
+               lat_rac(ic2a,il0) = adv_wind%lat_c2a_flt(ic2a,il0,its)
             else
-               ! Set at origin mesh point
-               ic2 = samp%c2a_to_c2(ic2a)
-               ic0_rac(ic2a,il0) = samp%c2_to_c0(ic2)
+               if (its==2) then
+                  ! Set at origin point
+                  lon_rac(ic2a,il0) = adv%lon_c2a(ic2a)
+                  lat_rac(ic2a,il0) = adv%lat_c2a(ic2a)
+               else
+                  ! Use previous timeslot filtered estimation
+                  lon_rac(ic2a,il0) = adv%lon_c2a_flt(ic2a,il0,its-1)
+                  lat_rac(ic2a,il0) = adv%lat_c2a_flt(ic2a,il0,its-1)
+               end if
             end if
-         end if
-      end do
-   end do
-
-   ! Define search radius
-   write(mpl%info,'(a13,a)') '','Define search radius'
-   call mpl%flush
-   do il0=1,geom%nl0
-      il0i = min(il0,geom%nl0i)
-      do ic0=1,geom%nc0
-         if (nam%adv_cor_tracker) then
-            adv%search_rad(ic0,il0) = min(nam%adv_rad,min(geom%mdist(ic0,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0))))
-         else
-            adv%search_rad(ic0,il0) = min(real(its-1,kind_real)*nam%adv_rad,min(geom%mdist(ic0,il0i), &
-          & geom%mesh%bdist(geom%mesh%order_inv(ic0))))
          end if
       end do
    end do
@@ -298,10 +331,14 @@ do its=2,nam%nts
       do ic2a=1,samp%nc2a
          if (samp%mask_c2a(ic2a,il0)) then
             ! Index
-            ic0 = ic0_rac(ic2a,il0)
+            call geom%tree%find_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),1,ic0_rac)
+
+            ! Define search radius
+            il0i = min(il0,geom%nl0i)
+            search_rad = min(nam%adv_rad,min(geom%mdist(ic0_rac(1),il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0_rac(1)))))
 
             ! Count nearest neighbors
-            call geom%tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),adv%search_rad(ic0,il0),nn(ic2a,il0))
+            call geom%tree%count_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),search_rad,nn(ic2a,il0))
 
             ! Update
             call mpl%prog_print((il0-1)*samp%nc2a+ic2a)
@@ -329,11 +366,8 @@ do its=2,nam%nts
    do il0=1,geom%nl0
       do ic2a=1,samp%nc2a
          if (samp%mask_c2a(ic2a,il0)) then
-            ! Index
-            ic0 = ic0_rac(ic2a,il0)
-
             ! Find nearest neighbors
-            call geom%tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn(ic2a,il0),jc0_ra(1:nn(ic2a,il0),ic2a,il0))
+            call geom%tree%find_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),nn(ic2a,il0),jc0_ra(1:nn(ic2a,il0),ic2a,il0))
 
             ! Check points
             do jn=1,nn(ic2a,il0)
@@ -382,13 +416,10 @@ do its=2,nam%nts
    do il0=1,geom%nl0
       do ic2a=1,samp%nc2a
          if (samp%mask_c2a(ic2a,il0)) then
-            ic0 = ic0_rac(ic2a,il0)
-            if (geom%mask_c0(ic0,il0)) then
-               do jn=1,nn(ic2a,il0)
-                  jc0 = jc0_ra(jn,ic2a,il0)
-                  mask_nn(jn,ic2a,il0) = geom%mask_c0(jc0,il0)
-               end do
-            end if
+            do jn=1,nn(ic2a,il0)
+               jc0 = jc0_ra(jn,ic2a,il0)
+               mask_nn(jn,ic2a,il0) = geom%mask_c0(jc0,il0)
+             end do
          end if
       end do
    end do
@@ -423,14 +454,15 @@ do its=2,nam%nts
             call com_AD%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv,1),fld_ext_1)
             call com_AD%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv,its),fld_ext_2)
 
-            !$omp parallel do schedule(static) private(il0,ic2a,jn,ic0,jc0,ic0d,jc0d,fld_1,fld_2)
+            !$omp parallel do schedule(static) private(il0,ic2a,jn,ic2,ic0,jc0,ic0d,jc0d,fld_1,fld_2)
             do il0=1,geom%nl0
                do ic2a=1,samp%nc2a
                   if (samp%mask_c2a(ic2a,il0)) then
                      do jn=1,nn(ic2a,il0)
                         if (mask_nn(jn,ic2a,il0)) then
                            ! Indices
-                           ic0 = ic0_rac(ic2a,il0)
+                           ic2 = samp%c2a_to_c2(ic2a)
+                           ic0 = samp%c2_to_c0(ic2)
                            jc0 = jc0_ra(jn,ic2a,il0)
 
                            ! Halo D indices
@@ -463,100 +495,92 @@ do its=2,nam%nts
    write(mpl%info,'(a13,a)') '','Find correlation propagation'
    call mpl%flush
 
-   ! Initialization
-   adv%lon_c2a_raw(:,:,its) = adv%lon_c2a
-   adv%lat_c2a_raw(:,:,its) = adv%lat_c2a
-   adv%dist_c2a_raw(:,:,its) = 0.0
-
    do il0=1,geom%nl0
       write(mpl%info,'(a16,a,i3)') '','Level ',nam%levs(il0)
       call mpl%flush
 
-      !$omp parallel do schedule(static) private(ic2a,jn,iv,cov,m2m2,jnmax,jc0,ic2,ic0,ic0a,mean,stddev), &
+      ! Initialization
+      adv%lon_c2a_raw(:,il0,its) = adv%lon_c2a
+      adv%lat_c2a_raw(:,il0,its) = adv%lat_c2a
+      adv%dist_c2a_raw(:,il0,its) = mpl%msv%valr
+
+      !$omp parallel do schedule(static) private(ic2a,jn,iv,cov,m2m2,jnmax,cor_avg_max,jc0,ic2,ic0,ic0a), &
       !$omp&                             firstprivate(cor,cor_avg,mask_nn_tmp)
       do ic2a=1,samp%nc2a
          if (samp%mask_c2a(ic2a,il0)) then
-            ! Allocation
-            allocate(cor(nn(ic2a,il0),nam%nv))
-            allocate(cor_avg(nn(ic2a,il0)))
-            allocate(mask_nn_tmp(nn(ic2a,il0)))
+            if (nn(ic2a,il0)>0) then
+               ! Allocation
+               allocate(cor(nn(ic2a,il0),nam%nv))
+               allocate(cor_avg(nn(ic2a,il0)))
+               allocate(mask_nn_tmp(nn(ic2a,il0)))
 
-            ! Index
-            ic0 = ic0_rac(ic2a,il0)
+               ! Initialization
+               mask_nn_tmp = .false.
+               jnmax = mpl%msv%vali
+               cor_avg_max = 0.0
 
-            ! Initialization
-            mask_nn_tmp = .false.
-            jnmax = mpl%msv%vali
-            adv%cor_avg_max(ic2a,il0,its) = 0.0
+               do jn=1,nn(ic2a,il0)
+                  if (mask_nn(jn,ic2a,il0)) then
+                     ! Compute covariance and correlation
+                     do iv=1,nam%nv
+                        ! Covariance
+                        cov = sum(m11(jn,ic2a,il0,iv,:))/real(ens%nsub,kind_real)
 
-            do jn=1,nn(ic2a,il0)
-               if (mask_nn(jn,ic2a,il0)) then
-                  ! Compute covariance and correlation
-                  do iv=1,nam%nv
-                     ! Covariance
-                     cov = sum(m11(jn,ic2a,il0,iv,:))/real(ens%nsub,kind_real)
+                        ! Correlation
+                        m2m2 = sum(m2_1(jn,ic2a,il0,iv,:))*sum(m2_2(jn,ic2a,il0,iv,:))/real(ens%nsub**2,kind_real)
+                        if (m2m2>0.0) then
+                           cor(jn,iv) = cov/sqrt(m2m2)
+                        else
+                           cor(jn,iv) = mpl%msv%valr
+                        end if
+                     end do
 
-                     ! Correlation
-                     m2m2 = sum(m2_1(jn,ic2a,il0,iv,:))*sum(m2_2(jn,ic2a,il0,iv,:))/real(ens%nsub**2,kind_real)
-                     if (m2m2>0.0) then
-                        cor(jn,iv) = cov/sqrt(m2m2)
+                     ! Average correlation over variables
+                     if (mpl%msv%isanynot(cor(jn,:))) then
+                        cor_avg(jn) = sum(cor(jn,:),mask=mpl%msv%isnot(cor(jn,:)))/real(count(mpl%msv%isnot(cor(jn,:))),kind_real)
                      else
-                        cor(jn,iv) = mpl%msv%valr
+                        cor_avg(jn) = mpl%msv%valr
                      end if
-                  end do
 
-                  ! Average correlation over variables
-                  if (mpl%msv%isanynot(cor(jn,:))) then
-                     cor_avg(jn) = sum(cor(jn,:),mask=mpl%msv%isnot(cor(jn,:)))/real(count(mpl%msv%isnot(cor(jn,:))),kind_real)
-                  else
-                     cor_avg(jn) = mpl%msv%valr
+                     ! Set mask
+                     mask_nn_tmp(jn) = (cor_avg(jn)>0.0).and.mpl%msv%isnot(cor_avg(jn))
                   end if
 
-                  ! Set mask
-                  mask_nn_tmp(jn) = (cor_avg(jn)>0.0).and.mpl%msv%isnot(cor_avg(jn))
-               end if
-
-               ! Locate the maximum correlation
-               if (mask_nn_tmp(jn)) then
-                  if (sup(cor_avg(jn),adv%cor_avg_max(ic2a,il0,its))) then
-                     jnmax = jn
-                     adv%cor_avg_max(ic2a,il0,its) = cor_avg(jn)
+                  ! Locate the maximum correlation
+                  if (mask_nn_tmp(jn)) then
+                     if (sup(cor_avg(jn),cor_avg_max)) then
+                        jnmax = jn
+                        cor_avg_max = cor_avg(jn)
+                     end if
                   end if
+               end do
+
+               if (mpl%msv%isnot(jnmax)) then
+                  ! Indices
+                  jc0 = jc0_ra(jnmax,ic2a,il0)
+
+                  ! Save advection
+                  adv%lon_c2a_raw(ic2a,il0,its) = geom%lon(jc0)
+                  adv%lat_c2a_raw(ic2a,il0,its) = geom%lat(jc0)
+
+                  ! Compute distance
+                  call sphere_dist(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%lon_c2a_raw(ic2a,il0,its), &
+                & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
                end if
-            end do
 
-            ! Save maximum correlation
-            if (mpl%msv%isnot(jnmax)) then
-               ic0a = geom%c0_to_c0a(ic0)
-               adv%cor_max(ic0a,il0,:,its) = cor(jnmax,:)
-            end if
-
-            ! Apply threshold on standard-deviation
-            if (count(mask_nn_tmp)>2) then
-               mean = sum(cor_avg,mask=mask_nn_tmp)/real(count(mask_nn_tmp),kind_real)
-               stddev = sqrt(sum((cor_avg-mean)**2,mask=mask_nn_tmp)/real(count(mask_nn_tmp)-1,kind_real))
+               ! Release memory
+               deallocate(cor)
+               deallocate(cor_avg)
+               deallocate(mask_nn_tmp)
             else
-               stddev = 0.0
-            end if
-            if (adv%cor_avg_max(ic2a,il0,its)<nam%adv_max_std_ratio*stddev) jnmax = mpl%msv%vali
-
-            if (mpl%msv%isnot(jnmax)) then
-               ! Indices
-               jc0 = jc0_ra(jnmax,ic2a,il0)
-
                ! Save advection
-               adv%lon_c2a_raw(ic2a,il0,its) = geom%lon(jc0)
-               adv%lat_c2a_raw(ic2a,il0,its) = geom%lat(jc0)
+               adv%lon_c2a_raw(ic2a,il0,its) = lon_rac(ic2a,il0)
+               adv%lat_c2a_raw(ic2a,il0,its) = lat_rac(ic2a,il0)
 
                ! Compute distance
-               call sphere_dist(adv%lon_c2a(ic2a,il0),adv%lat_c2a(ic2a,il0),adv%lon_c2a_raw(ic2a,il0,its), &
+               call sphere_dist(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%lon_c2a_raw(ic2a,il0,its), &
              & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
             end if
-
-            ! Release memory
-            deallocate(cor)
-            deallocate(cor_avg)
-            deallocate(mask_nn_tmp)
          end if
       end do
       !$omp end parallel do
@@ -571,7 +595,7 @@ do its=2,nam%nts
       end if
       call mpl%f_comm%broadcast(valid_c2,mpl%rootproc-1)
       adv%valid_raw(il0,its) = real(count(valid_c2.and.samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real) &
-                           & /real(count(samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real)
+                             & /real(count(samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real)
 
       ! Average distance
       dist_sum = sum(adv%dist_c2a_raw(:,il0,its),mask=mpl%msv%isnot(adv%dist_c2a_raw(:,il0,its)))
@@ -580,24 +604,10 @@ do its=2,nam%nts
       call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
       adv%dist_raw(il0,its) = adv%dist_raw(il0,its)/norm_tot
 
-      ! Average maximum average correlation
-      cor_avg_max_sum = sum(adv%cor_avg_max(:,il0,its),mask=mpl%msv%isnot(adv%cor_avg_max(:,il0,its)))
-      cor_avg_max_sqsum = sum(adv%cor_avg_max(:,il0,its)**2,mask=mpl%msv%isnot(adv%cor_avg_max(:,il0,its)))
-      norm = real(count(mpl%msv%isnot(adv%cor_avg_max(:,il0,its))),kind_real)
-      call mpl%f_comm%allreduce(cor_avg_max_sum,cor_avg_max_tot,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(cor_avg_max_sqsum,cor_avg_max_sqtot,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
-      cor_avg_max_tot = cor_avg_max_tot/norm_tot
-      cor_avg_max_sqtot = cor_avg_max_sqtot/norm_tot
-
-      ! Print results
-      write(mpl%info,'(a16,a,f5.1,a)') '','Valid points:            ',100.0*adv%valid_raw(il0,its),'%'
+      ! Filter advection
+      write(mpl%info,'(a16,a)') '','Filter advection'
       call mpl%flush
-      write(mpl%info,'(a16,a,f10.1,a)') '','Advection distance: ',adv%dist_raw(il0,its)*reqkm,' km'
-      call mpl%flush
-      write(mpl%info,'(a16,a,f5.3,a,f5.3,a)') '','Maximum correlation:     ',cor_avg_max_tot,' (', &
-    & sqrt(cor_avg_max_sqtot-cor_avg_max_tot**2),')'
-      call mpl%flush
+      call adv%filter(mpl,nam,geom,samp,il0,its)
    end do
 
    ! Release memory
@@ -612,45 +622,44 @@ do its=2,nam%nts
    deallocate(fld_ext_2)
 end do
 
-end subroutine adv_compute_raw
+end subroutine adv_compute_max
 
 !----------------------------------------------------------------------
-! Subroutine: adv_filter
-! Purpose: filter advection
+! Subroutine: adv_compute_wind
+! Purpose: compute raw advection from wind field
 !----------------------------------------------------------------------
-subroutine adv_filter(adv,mpl,nam,geom,samp)
+subroutine adv_compute_wind(adv,mpl,rng,nam,geom,samp,fld_uv)
 
 implicit none
 
 ! Passed variables
-class(adv_type),intent(inout) :: adv  ! Advection
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(samp_type),intent(inout) :: samp ! Sampling
+class(adv_type),intent(inout) :: adv                               ! Advection
+type(mpl_type),intent(inout) :: mpl                                ! MPI data
+type(rng_type),intent(inout) :: rng                                ! Random number generator
+type(nam_type),intent(in) :: nam                                   ! Namelist
+type(geom_type),intent(in) :: geom                                 ! Geometry
+type(samp_type),intent(inout) :: samp                              ! Sampling
+real(kind_real),intent(in) :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
 
 ! Local variables
-integer :: ic0,ic2,ic2a,il0,il0i,its,iter
-real(kind_real) :: dist_sum,norm,norm_tot,valid_flt,dist_flt,rhflt,drhflt
-real(kind_real) :: lon_c2a(samp%nc2a),lat_c2a(samp%nc2a),dist_c2a(samp%nc2a)
-real(kind_real) :: x_ori(samp%nc2a),y_ori(samp%nc2a),z_ori(samp%nc2a)
-real(kind_real) :: dx_ini(samp%nc2a),dy_ini(samp%nc2a),dz_ini(samp%nc2a)
-real(kind_real) :: dx(samp%nc2a),dy(samp%nc2a),dz(samp%nc2a),dd(samp%nc2a)
+integer :: ic0,ic0a,ic0w,ic0own,i_s,ic2a,il0,its,it,nc0w,nc0own
+integer :: c0_to_c0w(geom%nc0)
+integer,allocatable :: c0w_to_c0(:),c0own_to_c0w(:)
+real(kind_real) :: dist_sum,norm,norm_tot
 real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2)
-logical :: dichotomy,convergence
-logical :: valid_c2(nam%nc2)
-character(len=1024),parameter :: subr = 'adv_filter'
+real(kind_real) :: dtl,t,um(samp%nc2a),vm(samp%nc2a),up(samp%nc2a),vp(samp%nc2a)
+real(kind_real) :: uxm,uym,uzm,uxp,uyp,uzp,ux,uy,uz,x,y,z
+real(kind_real),allocatable :: fld_uv_ext(:,:,:)
+logical :: lcheck(geom%nc0),valid_c2(nam%nc2)
+type(com_type) :: com_AW
+type(linop_type) :: h
 type(mesh_type) :: mesh
 
-write(mpl%info,'(a7,a)') '','Filter advection'
+write(mpl%info,'(a7,a)') '','Compute raw advection using wind field'
 call mpl%flush
 
 ! Initialization
-do ic2a=1,samp%nc2a
-   ic2 = samp%c2a_to_c2(ic2a)
-   ic0 = samp%c2_to_c0(ic2)
-   call lonlat2xyz(mpl,geom%lon(ic0),geom%lat(ic0),x_ori(ic2a),y_ori(ic2a),z_ori(ic2a))
-end do
+dtl = nam%dts/nt
 
 do its=2,nam%nts
    write(mpl%info,'(a10,a,i2)') '','Timeslot ',its
@@ -660,113 +669,299 @@ do its=2,nam%nts
       write(mpl%info,'(a13,a,i3)') '','Level ',nam%levs(il0)
       call mpl%flush
 
-      ! Convert to cartesian coordinates
+      ! Initialization
+      if (its==2) then
+         adv%lon_c2a_raw(:,il0,its) = adv%lon_c2a
+         adv%lat_c2a_raw(:,il0,its) = adv%lat_c2a
+      else
+         adv%lon_c2a_raw(:,il0,its) = adv%lon_c2a_flt(:,il0,its-1)
+         adv%lat_c2a_raw(:,il0,its) = adv%lat_c2a_flt(:,il0,its-1)
+      end if
+      adv%dist_c2a_raw(:,il0,its) = mpl%msv%valr
+
+      write(mpl%info,'(a16,a)') '','Propagate locations: '
+      call mpl%flush(.false.)
+
+      call mpl%prog_init(nt)
+      do it=1,nt
+         ! Define internal time
+         t = real(it-1,kind_real)/real(nt,kind_real)
+
+         ! Compute interpolation
+         call h%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0), &
+       & samp%nc2a,adv%lon_c2a_raw(:,il0,its),adv%lat_c2a_raw(:,il0,its),samp%mask_c2a(:,il0),0)
+
+         ! Define halo W
+         lcheck = .false.
+         do i_s=1,h%n_s
+            ic0 = h%col(i_s)
+            lcheck(ic0) = .true.
+         end do
+         nc0w = count(lcheck)
+
+         ! Count owned points
+         nc0own = 0
+         do ic0a=1,geom%nc0a
+            ic0 = geom%c0a_to_c0(ic0a)
+            if (lcheck(ic0)) nc0own = nc0own+1
+         end do
+
+         ! Allocation
+         allocate(c0w_to_c0(nc0w))
+         allocate(c0own_to_c0w(nc0own))
+         allocate(fld_uv_ext(nc0w,2,2))
+
+         ! Global-local conversion for halo W
+         ic0w = 0
+         ic0own = 0
+         c0_to_c0w = mpl%msv%vali
+         do ic0=1,geom%nc0
+            if (lcheck(ic0)) then
+               ic0w = ic0w+1
+               c0w_to_c0(ic0w) = ic0
+               c0_to_c0w(ic0) = ic0w
+            end if
+         end do
+
+         ! Owned points conversion
+         ic0own = 0
+         do ic0a=1,geom%nc0a
+            ic0 = geom%c0a_to_c0(ic0a)
+            if (lcheck(ic0)) then
+               ic0own = ic0own+1
+               ic0w = c0_to_c0w(ic0)
+               c0own_to_c0w(ic0own) = ic0w
+            end if
+         end do
+
+         ! Local interpolation source
+         h%n_src = nc0w
+         do i_s=1,h%n_s
+            h%col(i_s) = c0_to_c0w(h%col(i_s))
+         end do
+
+         ! Setup communication
+         call com_AW%setup(mpl,'com_AW',geom%nc0,geom%nc0a,nc0w,nc0own,c0w_to_c0,c0own_to_c0w,geom%c0_to_proc,geom%c0_to_c0a)
+
+         ! Communication
+         call com_AW%ext(mpl,fld_uv(:,il0,1,its-1),fld_uv_ext(:,1,1))
+         call com_AW%ext(mpl,fld_uv(:,il0,2,its-1),fld_uv_ext(:,2,1))
+         call com_AW%ext(mpl,fld_uv(:,il0,1,its),fld_uv_ext(:,1,2))
+         call com_AW%ext(mpl,fld_uv(:,il0,2,its),fld_uv_ext(:,2,2))
+
+         ! Interpolate wind value at diagnostic points
+         call h%apply(mpl,fld_uv_ext(:,1,1),um)
+         call h%apply(mpl,fld_uv_ext(:,2,1),vm)
+         call h%apply(mpl,fld_uv_ext(:,1,2),up)
+         call h%apply(mpl,fld_uv_ext(:,2,2),vp)
+
+         ! Release memory
+         call h%dealloc
+         deallocate(c0w_to_c0)
+         deallocate(c0own_to_c0w)
+         call com_AW%dealloc
+         deallocate(fld_uv_ext)
+
+         do ic2a=1,samp%nc2a
+            if (samp%mask_c2a(ic2a,il0)) then
+               ! Transform wind to cartesian coordinates
+               uxm = -sin(adv%lon_c2a_raw(ic2a,il0,its))*um(ic2a)- &
+                   & cos(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vm(ic2a)
+               uym = cos(adv%lon_c2a_raw(ic2a,il0,its))*um(ic2a)- &
+                   & sin(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vm(ic2a)
+               uzm = cos(adv%lat_c2a_raw(ic2a,il0,its))*vm(ic2a)
+               uxp = -sin(adv%lon_c2a_raw(ic2a,il0,its))*up(ic2a)- &
+                   & cos(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
+               uyp = cos(adv%lon_c2a_raw(ic2a,il0,its))*up(ic2a)- &
+                   & sin(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
+               uzp = cos(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
+
+               ! Define wind in cartesian coordinates
+               ux = (1.0-t)*uxm+t*uxp
+               uy = (1.0-t)*uym+t*uyp
+               uz = (1.0-t)*uzm+t*uzp
+
+               ! Transform location to cartesian coordinates
+               call lonlat2xyz(mpl,adv%lon_c2a_raw(ic2a,il0,its),adv%lat_c2a_raw(ic2a,il0,its),x,y,z)
+
+               ! Propagate location
+               x = x+ux*dtl
+               y = y+uy*dtl
+               z = z+uz*dtl
+
+               ! Back to spherical coordinates
+               call xyz2lonlat(mpl,x,y,z,adv%lon_c2a_raw(ic2a,il0,its),adv%lat_c2a_raw(ic2a,il0,its))
+            end if
+         end do
+
+         ! Update
+         call mpl%prog_print(it)
+      end do
+      call mpl%prog_final
+
       do ic2a=1,samp%nc2a
          if (samp%mask_c2a(ic2a,il0)) then
-            call lonlat2xyz(mpl,adv%lon_c2a_raw(ic2a,il0,its),adv%lat_c2a_raw(ic2a,il0,its),dx_ini(ic2a),dy_ini(ic2a),dz_ini(ic2a))
-            if (mpl%msv%isnot(dx_ini(ic2a))) dx_ini(ic2a) = dx_ini(ic2a)-x_ori(ic2a)
-            if (mpl%msv%isnot(dy_ini(ic2a))) dy_ini(ic2a) = dy_ini(ic2a)-y_ori(ic2a)
-            if (mpl%msv%isnot(dz_ini(ic2a))) dz_ini(ic2a) = dz_ini(ic2a)-z_ori(ic2a)
-         else
-            dx_ini(ic2a) = mpl%msv%valr
-            dy_ini(ic2a) = mpl%msv%valr
-            dz_ini(ic2a) = mpl%msv%valr
+            ! Compute distance
+            call sphere_dist(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%lon_c2a_raw(ic2a,il0,its), &
+          & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
          end if
       end do
 
-      ! Dichotomy initialization
-      convergence = .true.
-      dichotomy = .false.
-      rhflt = nam%adv_rhflt
-      drhflt = rhflt
+      ! Check raw mesh
+      call mpl%loc_to_glb(samp%nc2a,adv%lon_c2a_raw(:,il0,its),nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lon_c2)
+      call mpl%loc_to_glb(samp%nc2a,adv%lat_c2a_raw(:,il0,its),nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lat_c2)
+      if (mpl%main) then
+         call mesh%copy(samp%mesh)
+         call mesh%store(mpl,lon_c2,lat_c2)
+         call mesh%check(mpl,valid_c2)
+      end if
+      call mpl%f_comm%broadcast(valid_c2,mpl%rootproc-1)
+      adv%valid_raw(il0,its) = real(count(valid_c2.and.samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real) &
+                             & /real(count(samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real)
 
-      do iter=1,nam%adv_niter
-         ! Copy advection
-         dx = dx_ini
-         dy = dy_ini
-         dz = dz_ini
+      ! Average distance
+      dist_sum = sum(adv%dist_c2a_raw(:,il0,its),mask=mpl%msv%isnot(adv%dist_c2a_raw(:,il0,its)))
+      norm = real(count(mpl%msv%isnot(adv%dist_c2a_raw(:,il0,its))),kind_real)
+      call mpl%f_comm%allreduce(dist_sum,adv%dist_raw(il0,its),fckit_mpi_sum())
+      call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
+      adv%dist_raw(il0,its) = adv%dist_raw(il0,its)/norm_tot
 
-         ! Median filter to remove extreme values
-         dd = dx**2+dy**2+dz**2
-         call samp%diag_filter(mpl,nam,'median',rhflt,dx,dd)
-         call samp%diag_filter(mpl,nam,'median',rhflt,dy,dd)
-         call samp%diag_filter(mpl,nam,'median',rhflt,dz,dd)
+      ! Filter advection
+      write(mpl%info,'(a16,a)') '','Filter advection'
+      call mpl%flush
+      call adv%filter(mpl,nam,geom,samp,il0,its)
+   end do
+end do
 
-         ! Average filter to smooth values
-         call samp%diag_filter(mpl,nam,'gc99',rhflt,dx)
-         call samp%diag_filter(mpl,nam,'gc99',rhflt,dy)
-         call samp%diag_filter(mpl,nam,'gc99',rhflt,dz)
+end subroutine adv_compute_wind
 
-         ! Back to spherical coordinates
-         dx = x_ori+dx
-         dy = y_ori+dy
-         dz = z_ori+dz
-         do ic2a=1,samp%nc2a
-            if (samp%mask_c2a(ic2a,il0)) then
-               call xyz2lonlat(mpl,dx(ic2a),dy(ic2a),dz(ic2a),lon_c2a(ic2a),lat_c2a(ic2a))
-            else
-               lon_c2a(ic2a) = adv%lon_c2a(ic2a,il0)
-               lat_c2a(ic2a) = adv%lat_c2a(ic2a,il0)
-            end if
-         end do
+!----------------------------------------------------------------------
+! Subroutine: adv_filter
+! Purpose: filter advection
+!----------------------------------------------------------------------
+subroutine adv_filter(adv,mpl,nam,geom,samp,il0,its)
 
-         ! Reduce distance with respect to the boundary
-         il0i = min(il0,geom%nl0i)
-         do ic2a=1,samp%nc2a
-            ic2 = samp%c2a_to_c2(ic2a)
-            ic0 = samp%c2_to_c0(ic2)
-            call reduce_arc(adv%lon_c2a(ic2a,il0),adv%lat_c2a(ic2a,il0),lon_c2a(ic2a),lat_c2a(ic2a), &
-          & adv%search_rad(ic0,il0i),dist_c2a(ic2a))
-         end do
+implicit none
 
-         ! Check mesh
-         call mpl%loc_to_glb(samp%nc2a,lon_c2a,nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lon_c2)
-         call mpl%loc_to_glb(samp%nc2a,lat_c2a,nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lat_c2)
-         if (mpl%main) then
-            call mesh%copy(samp%mesh)
-            call mesh%store(mpl,lon_c2,lat_c2)
-            call mesh%check(mpl,valid_c2)
-         end if
-         call mpl%f_comm%broadcast(valid_c2,mpl%rootproc-1)
-         valid_flt = real(count(valid_c2.and.samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real) &
-                   & /real(count(samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real)
+! Passed variables
+class(adv_type),intent(inout) :: adv ! Advection
+type(mpl_type),intent(inout) :: mpl  ! MPI data
+type(nam_type),intent(in) :: nam     ! Namelist
+type(geom_type),intent(in) :: geom   ! Geometry
+type(samp_type),intent(in) :: samp   ! Sampling
+integer,intent(in) :: il0            ! Level index
+integer,intent(in) :: its            ! Timeslot index
 
-         ! Average distance
-         dist_sum = sum(dist_c2a,mask=mpl%msv%isnot(dist_c2a))
-         norm = real(count(mpl%msv%isnot(dist_c2a)),kind_real)
-         call mpl%f_comm%allreduce(dist_sum,dist_flt,fckit_mpi_sum())
-         call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
-         dist_flt = dist_flt/norm_tot
+! Local variables
+integer :: ic0,ic2,ic2a,il0i,iter
+real(kind_real) :: dist_sum,norm,norm_tot,valid_flt,dist_flt,rhflt,drhflt
+real(kind_real) :: lon_c2a(samp%nc2a),lat_c2a(samp%nc2a),dist_c2a(samp%nc2a)
+real(kind_real) :: dx_ini(samp%nc2a),dy_ini(samp%nc2a),dz_ini(samp%nc2a)
+real(kind_real) :: dx(samp%nc2a),dy(samp%nc2a),dz(samp%nc2a),dd(samp%nc2a)
+real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2)
+logical :: dichotomy,convergence
+logical :: valid_c2(nam%nc2)
+character(len=1024),parameter :: subr = 'adv_filter'
+type(mesh_type) :: mesh
 
-         ! Print result
-         write(mpl%info,'(a16,a,i2,a,f10.2,a,f7.3,a)') '','Iteration ',iter,': rhflt = ', &
-       & rhflt*reqkm,' km, validity = ',100.0*valid_flt,'%'
-         call mpl%flush
+if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
+   ! Convert to cartesian coordinates
+   do ic2a=1,samp%nc2a
+      if (samp%mask_c2a(ic2a,il0)) then
+         call lonlat2xyz(mpl,adv%lon_c2a_raw(ic2a,il0,its),adv%lat_c2a_raw(ic2a,il0,its),dx_ini(ic2a),dy_ini(ic2a), &
+       & dz_ini(ic2a))
+         if (mpl%msv%isnot(dx_ini(ic2a))) dx_ini(ic2a) = dx_ini(ic2a)-adv%x_c2a(ic2a)
+         if (mpl%msv%isnot(dy_ini(ic2a))) dy_ini(ic2a) = dy_ini(ic2a)-adv%y_c2a(ic2a)
+         if (mpl%msv%isnot(dz_ini(ic2a))) dz_ini(ic2a) = dz_ini(ic2a)-adv%z_c2a(ic2a)
+      else
+         dx_ini(ic2a) = mpl%msv%valr
+         dy_ini(ic2a) = mpl%msv%valr
+         dz_ini(ic2a) = mpl%msv%valr
+      end if
+   end do
 
-         ! Update support radius
-         if (inf(valid_flt,1.0_kind_real)) then
-            ! Increase filtering support radius
-            if (dichotomy) then
-               drhflt = 0.5*drhflt
-               if (iter<nam%adv_niter) rhflt = rhflt+drhflt
-            else
-               convergence = .false.
-               if (iter<nam%adv_niter) rhflt = rhflt+drhflt
-               drhflt = 2.0*drhflt
-            end if
+   ! Dichotomy initialization
+   convergence = .false.
+   dichotomy = .false.
+   rhflt = nam%adv_rhflt
+   drhflt = rhflt
+   adv%rhflt(il0,its) = huge(1.0)
+
+   do iter=1,nam%adv_niter
+      ! Copy advection
+      dx = dx_ini
+      dy = dy_ini
+      dz = dz_ini
+
+      ! Median filter to remove extreme values
+      dd = dx**2+dy**2+dz**2
+      call samp%diag_filter(mpl,nam,'median',rhflt,dx,dd)
+      call samp%diag_filter(mpl,nam,'median',rhflt,dy,dd)
+      call samp%diag_filter(mpl,nam,'median',rhflt,dz,dd)
+
+      ! Average filter to smooth values
+      call samp%diag_filter(mpl,nam,'gc99',rhflt,dx)
+      call samp%diag_filter(mpl,nam,'gc99',rhflt,dy)
+      call samp%diag_filter(mpl,nam,'gc99',rhflt,dz)
+
+      ! Back to spherical coordinates
+      dx = adv%x_c2a+dx
+      dy = adv%y_c2a+dy
+      dz = adv%z_c2a+dz
+      do ic2a=1,samp%nc2a
+         if (samp%mask_c2a(ic2a,il0)) then
+            call xyz2lonlat(mpl,dx(ic2a),dy(ic2a),dz(ic2a),lon_c2a(ic2a),lat_c2a(ic2a))
          else
-            ! Convergence
-            convergence = .true.
+            lon_c2a(ic2a) = adv%lon_c2a(ic2a)
+            lat_c2a(ic2a) = adv%lat_c2a(ic2a)
+         end if
+      end do
 
-            ! Change dichotomy status
-            if (.not.dichotomy) then
-               dichotomy = .true.
-               drhflt = 0.5*drhflt
-            end if
+      ! Reduce distance with respect to the boundary
+      il0i = min(il0,geom%nl0i)
+      do ic2a=1,samp%nc2a
+         ic2 = samp%c2a_to_c2(ic2a)
+         ic0 = samp%c2_to_c0(ic2)
+         call reduce_arc(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),lon_c2a(ic2a),lat_c2a(ic2a), &
+       & min(geom%mdist(ic0,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0))),dist_c2a(ic2a))
+      end do
 
-            ! Decrease filtering support radius
+      ! Check mesh
+      call mpl%loc_to_glb(samp%nc2a,lon_c2a,nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lon_c2)
+      call mpl%loc_to_glb(samp%nc2a,lat_c2a,nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lat_c2)
+      if (mpl%main) then
+         call mesh%copy(samp%mesh)
+         call mesh%store(mpl,lon_c2,lat_c2)
+         call mesh%check(mpl,valid_c2)
+      end if
+      call mpl%f_comm%broadcast(valid_c2,mpl%rootproc-1)
+      valid_flt = real(count(valid_c2.and.samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real) &
+                & /real(count(samp%mesh%valid.and.samp%mask_c2(:,il0)),kind_real)
+
+      ! Print result
+      write(mpl%info,'(a19,a,i2,a,f10.2,a,f7.3,a)') '','Iteration ',iter,': rhflt = ', &
+    & rhflt*reqkm,' km, validity = ',100.0*valid_flt,'%'
+      call mpl%flush
+
+      ! Update support radius
+      if (inf(valid_flt,nam%adv_valid)) then
+         ! Increase filtering support radius
+         if (dichotomy) then
             drhflt = 0.5*drhflt
-            if (iter<nam%adv_niter) rhflt = rhflt-drhflt
+            if (iter<nam%adv_niter) rhflt = rhflt+drhflt
+         else
+            convergence = .false.
+            if (iter<nam%adv_niter) rhflt = rhflt+drhflt
+            drhflt = 2.0*drhflt
+         end if
+      else
+         if (inf(rhflt,adv%rhflt(il0,its))) then
+            ! Average distance
+            dist_sum = sum(dist_c2a,mask=mpl%msv%isnot(dist_c2a))
+            norm = real(count(mpl%msv%isnot(dist_c2a)),kind_real)
+            call mpl%f_comm%allreduce(dist_sum,dist_flt,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
+            dist_flt = dist_flt/norm_tot
 
             ! Save values
             adv%lon_c2a_flt(:,il0,its) = lon_c2a
@@ -776,22 +971,45 @@ do its=2,nam%nts
             adv%dist_flt(il0,its) = dist_flt
             adv%rhflt(il0,its) = rhflt
          end if
-      end do
 
-      ! Check convergence
-      if (.not.convergence) call mpl%abort(subr,'convergence failed in adv%compute')
+         ! Convergence
+         convergence = .true.
 
-      ! Print results
-      write(mpl%info,'(a16,a,f10.2,a)') '','Optimal filtering support radius: ',adv%rhflt(il0,its)*reqkm,' km'
-      call mpl%flush
-      write(mpl%info,'(a16,a,f5.1,a,f5.1,a)') '','Valid points:             ',100.0*adv%valid_raw(il0,its),'%  ~> ', &
-    & 100.0*adv%valid_flt(il0,its),'%'
-      call mpl%flush
-      write(mpl%info,'(a16,a,f10.1,a,f10.1,a)') '','Advection distance: ',adv%dist_raw(il0,its)*reqkm,' km ~> ', &
-    & adv%dist_flt(il0,its)*reqkm,' km'
-      call mpl%flush
+         ! Change dichotomy status
+         if (.not.dichotomy) then
+            dichotomy = .true.
+            drhflt = 0.5*drhflt
+         end if
+
+         ! Decrease filtering support radius
+         drhflt = 0.5*drhflt
+         if (iter<nam%adv_niter) rhflt = rhflt-drhflt
+      end if
    end do
-end do
+
+   ! Check convergence
+   if (.not.convergence) call mpl%warning(subr,'convergence failed in adv%compute')
+else
+   ! Advection filtering not required
+   adv%lon_c2a_flt(:,il0,its) = adv%lon_c2a_raw(:,il0,its)
+   adv%lat_c2a_flt(:,il0,its) = adv%lat_c2a_raw(:,il0,its)
+   adv%dist_c2a_flt(:,il0,its) = adv%dist_c2a_raw(:,il0,its)
+   adv%valid_flt(il0,its) = adv%valid_raw(il0,its)
+   adv%dist_flt(il0,its) = adv%dist_raw(il0,its)
+   adv%rhflt(il0,its) = 0.0
+end if
+
+if (nam%adv_niter>0) then
+   ! Print results
+   write(mpl%info,'(a19,a,f10.2,a)') '','Optimal filtering support radius: ',adv%rhflt(il0,its)*reqkm,' km'
+   call mpl%flush
+   write(mpl%info,'(a19,a,f5.1,a,f5.1,a)') '','Valid points:             ',100.0*adv%valid_raw(il0,its),'%  ~> ', &
+ & 100.0*adv%valid_flt(il0,its),'%'
+   call mpl%flush
+    write(mpl%info,'(a19,a,f10.1,a,f10.1,a)') '','Advection distance: ',adv%dist_raw(il0,its)*reqkm,' km ~> ', &
+ & adv%dist_flt(il0,its)*reqkm,' km'
+   call mpl%flush
+end if
 
 end subroutine adv_filter
 
@@ -811,9 +1029,8 @@ type(geom_type),intent(in) :: geom    ! Geometry
 type(samp_type),intent(inout) :: samp ! Sampling
 
 ! Local variables
-integer :: ic0,ic2,ic2a,il0,il0i,its,ic0a
+integer :: ic0,ic2a,il0,il0i,its,ic0a
 real(kind_real) :: reduced_dist
-real(kind_real) :: x_ori(samp%nc2a),y_ori(samp%nc2a),z_ori(samp%nc2a)
 real(kind_real) :: dx(samp%nc2a),dy(samp%nc2a),dz(samp%nc2a)
 real(kind_real) :: dx_c2b(samp%nc2b),dy_c2b(samp%nc2b),dz_c2b(samp%nc2b)
 real(kind_real) :: dx_c0a(geom%nc0a),dy_c0a(geom%nc0a),dz_c0a(geom%nc0a)
@@ -823,14 +1040,18 @@ write(mpl%info,'(a7,a)') '','Interpolate advection'
 call mpl%flush
 
 ! Initialization
-do ic2a=1,samp%nc2a
-   ic2 = samp%c2a_to_c2(ic2a)
-   ic0 = samp%c2_to_c0(ic2)
-   call lonlat2xyz(mpl,geom%lon(ic0),geom%lat(ic0),x_ori(ic2a),y_ori(ic2a),z_ori(ic2a))
-end do
 do ic0a=1,geom%nc0a
    ic0 = geom%c0a_to_c0(ic0a)
    call lonlat2xyz(mpl,geom%lon(ic0),geom%lat(ic0),x_ori_c0a(ic0a),y_ori_c0a(ic0a),z_ori_c0a(ic0a))
+end do
+
+! Advection for timeslot 1
+do il0=1,geom%nl0
+   do ic0a=1,geom%nc0a
+      ic0 = geom%c0a_to_c0(ic0a)
+      samp%adv_lon(ic0a,il0,1) = geom%lon(ic0)
+      samp%adv_lat(ic0a,il0,1) = geom%lat(ic0)
+   end do
 end do
 
 do its=2,nam%nts
@@ -839,9 +1060,9 @@ do its=2,nam%nts
       do ic2a=1,samp%nc2a
          if (samp%mask_c2a(ic2a,il0)) then
             call lonlat2xyz(mpl,adv%lon_c2a_flt(ic2a,il0,its),adv%lat_c2a_flt(ic2a,il0,its),dx(ic2a),dy(ic2a),dz(ic2a))
-            if (mpl%msv%isnot(dx(ic2a))) dx(ic2a) = dx(ic2a)-x_ori(ic2a)
-            if (mpl%msv%isnot(dy(ic2a))) dy(ic2a) = dy(ic2a)-y_ori(ic2a)
-            if (mpl%msv%isnot(dz(ic2a))) dz(ic2a) = dz(ic2a)-z_ori(ic2a)
+            if (mpl%msv%isnot(dx(ic2a))) dx(ic2a) = dx(ic2a)-adv%x_c2a(ic2a)
+            if (mpl%msv%isnot(dy(ic2a))) dy(ic2a) = dy(ic2a)-adv%y_c2a(ic2a)
+            if (mpl%msv%isnot(dz(ic2a))) dz(ic2a) = dz(ic2a)-adv%z_c2a(ic2a)
          else
             dx(ic2a) = 0.0
             dy(ic2a) = 0.0
@@ -872,7 +1093,7 @@ do its=2,nam%nts
          if (geom%mask_c0a(ic0a,il0)) then
             ic0 = geom%c0a_to_c0(ic0a)
             call reduce_arc(geom%lon(ic0),geom%lat(ic0),samp%adv_lon(ic0a,il0,its),samp%adv_lat(ic0a,il0,its), &
-          & adv%search_rad(ic0,il0i),reduced_dist)
+          & min(geom%mdist(ic0,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0))),reduced_dist)
          end if
       end do
    end do
@@ -901,8 +1122,7 @@ type(ens_type), intent(in) :: ens     ! Ensemble
 integer :: its,il0,ic0,ic0a,i_s,jc0,nc0d,ie,iv,ic0d
 integer :: c0_to_c0d(geom%nc0),c0a_to_c0d(geom%nc0a)
 integer,allocatable :: c0d_to_c0(:)
-real(kind_real) :: score_loc,score_max,score_adv,norm
-real(kind_real) :: score_loc_tot,score_max_tot,score_adv_tot,norm_tot
+real(kind_real) :: score_loc,score_adv,norm_loc,norm_adv,norm_loc_tot,norm_adv_tot
 real(kind_real) :: m2_1(geom%nc0a,geom%nl0),m2_2_loc(geom%nc0a,geom%nl0),m11_loc(geom%nc0a,geom%nl0)
 real(kind_real) :: m2_2_adv(geom%nc0a,geom%nl0),m11_adv(geom%nc0a,geom%nl0)
 real(kind_real) :: fld(geom%nc0a,geom%nl0)
@@ -919,7 +1139,7 @@ do its=2,nam%nts
    do il0=1,geom%nl0
       write(dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
       call dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),geom%nc0a, &
-    & samp%adv_lon(:,il0,its),samp%adv_lat(:,il0,its),geom%mask_c0a(:,il0))
+    & samp%adv_lon(:,il0,its),samp%adv_lat(:,il0,its),geom%mask_c0a(:,il0),10)
    end do
 end do
 
@@ -1026,18 +1246,17 @@ end do
 
 ! Print results
 do its=2,nam%nts
-   score_loc = sum(adv%cor_loc(:,:,:,its),mask=mpl%msv%isnot(adv%cor_max(:,:,:,its)))
-   score_max = sum(adv%cor_max(:,:,:,its),mask=mpl%msv%isnot(adv%cor_max(:,:,:,its)))
-   score_adv = sum(adv%cor_adv(:,:,:,its),mask=mpl%msv%isnot(adv%cor_max(:,:,:,its)))
-   norm = real(count(mpl%msv%isnot(adv%cor_max(:,:,:,its))),kind_real)
-   call mpl%f_comm%allreduce(score_loc,score_loc_tot,fckit_mpi_sum())
-   call mpl%f_comm%allreduce(score_max,score_max_tot,fckit_mpi_sum())
-   call mpl%f_comm%allreduce(score_adv,score_adv_tot,fckit_mpi_sum())
-   call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
-   score_loc = score_loc/norm
-   score_max = score_max/norm
-   score_adv = score_adv/norm
-   write(mpl%info,'(a10,a,i2,a,f6.3,a,f6.3,a,f6.3)') '','Timeslot ',its,': ',score_loc,' ~> ',score_adv,' < ',score_max
+   score_loc = sum(adv%cor_loc(:,:,:,its),mask=mpl%msv%isnot(adv%cor_loc(:,:,:,its)))
+   score_adv = sum(adv%cor_adv(:,:,:,its),mask=mpl%msv%isnot(adv%cor_adv(:,:,:,its)))
+   norm_loc = real(count(mpl%msv%isnot(adv%cor_loc(:,:,:,its))),kind_real)
+   norm_adv = real(count(mpl%msv%isnot(adv%cor_adv(:,:,:,its))),kind_real)
+   call mpl%f_comm%allreduce(score_loc,adv%score_loc(its),fckit_mpi_sum())
+   call mpl%f_comm%allreduce(score_adv,adv%score_adv(its),fckit_mpi_sum())
+   call mpl%f_comm%allreduce(norm_loc,norm_loc_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(norm_adv,norm_adv_tot,fckit_mpi_sum())
+   adv%score_loc(its) = adv%score_loc(its)/norm_loc_tot
+   adv%score_adv(its) = adv%score_adv(its)/norm_adv_tot
+   write(mpl%info,'(a10,a,i2,a,f6.3,a,f6.3,a,f6.3)') '','Timeslot ',its,': ',adv%score_loc(its),' ~> ',adv%score_adv(its)
    call mpl%flush
 end do
 
@@ -1062,12 +1281,13 @@ type(samp_type),intent(in) :: samp  ! Sampling
 
 ! Local variables
 integer :: ncid,nc2_id,nl0_id,nts_id,na_id,vunit_id,larc_s_id,larc_e_id
-integer :: lon_c2_id,lat_c2_id,lon_c2_raw_id,lat_c2_raw_id,dist_c2_raw_id,cor_avg_max_id,valid_raw_id,dist_raw_id
+integer :: lon_c2_id,lat_c2_id,lon_c2_raw_id,lat_c2_raw_id,dist_c2_raw_id,valid_raw_id,dist_raw_id
 integer :: lon_c2_flt_id,lat_c2_flt_id,dist_c2_flt_id,valid_flt_id,dist_flt_id,rhflt_id
+integer :: score_loc_id,score_adv_id
 integer :: iproc,its,il0,ic2a,ic2,i,ib,iv,jv,jts,proc_to_nc2a(mpl%nproc)
 integer,allocatable :: c2a_to_c2(:)
 real(kind_real),allocatable :: sbuf(:),rbuf(:),lon_c2(:,:),lat_c2(:,:)
-real(kind_real),allocatable :: lon_c2_raw(:,:,:),lat_c2_raw(:,:,:),dist_c2_raw(:,:,:),cor_avg_max(:,:,:)
+real(kind_real),allocatable :: lon_c2_raw(:,:,:),lat_c2_raw(:,:,:),dist_c2_raw(:,:,:)
 real(kind_real),allocatable :: lon_c2_flt(:,:,:),lat_c2_flt(:,:,:),dist_c2_flt(:,:,:)
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'adv_write'
@@ -1077,15 +1297,15 @@ write(mpl%info,'(a7,a)') '','Write advection'
 call mpl%flush
 
 ! Allocation
-allocate(sbuf(samp%nc2a*geom%nl0*(2+(nam%nts-1)*7)))
+allocate(sbuf(samp%nc2a*geom%nl0*(2+(nam%nts-1)*6)))
 
 ! Prepare buffer
 i = 1
 do il0=1,geom%nl0
    do ic2a=1,samp%nc2a
-      sbuf(i) = adv%lon_c2a(ic2a,il0)*rad2deg
+      sbuf(i) = adv%lon_c2a(ic2a)*rad2deg
       i = i+1
-      sbuf(i) = adv%lat_c2a(ic2a,il0)*rad2deg
+      sbuf(i) = adv%lat_c2a(ic2a)*rad2deg
       i = i+1
       do its=2,nam%nts
          sbuf(i) = adv%lon_c2a_raw(ic2a,il0,its)*rad2deg
@@ -1093,8 +1313,6 @@ do il0=1,geom%nl0
          sbuf(i) = adv%lat_c2a_raw(ic2a,il0,its)*rad2deg
          i = i+1
          sbuf(i) = adv%dist_c2a_raw(ic2a,il0,its)*reqkm
-         i = i+1
-         sbuf(i) = adv%cor_avg_max(ic2a,il0,its)
          i = i+1
          sbuf(i) = adv%lon_c2a_flt(ic2a,il0,its)*rad2deg
          i = i+1
@@ -1113,7 +1331,6 @@ if (mpl%main) then
    allocate(lon_c2_raw(nam%nc2,geom%nl0,nam%nts-1))
    allocate(lat_c2_raw(nam%nc2,geom%nl0,nam%nts-1))
    allocate(dist_c2_raw(nam%nc2,geom%nl0,nam%nts-1))
-   allocate(cor_avg_max(nam%nc2,geom%nl0,nam%nts-1))
    allocate(lon_c2_flt(nam%nc2,geom%nl0,nam%nts-1))
    allocate(lat_c2_flt(nam%nc2,geom%nl0,nam%nts-1))
    allocate(dist_c2_flt(nam%nc2,geom%nl0,nam%nts-1))
@@ -1126,7 +1343,7 @@ if (mpl%main) then
    do iproc=1,mpl%nproc
       ! Allocation
       allocate(c2a_to_c2(proc_to_nc2a(iproc)))
-      allocate(rbuf(proc_to_nc2a(iproc)*geom%nl0*(2+(nam%nts-1)*7)))
+      allocate(rbuf(proc_to_nc2a(iproc)*geom%nl0*(2+(nam%nts-1)*6)))
 
       if (iproc==mpl%rootproc) then
          ! Copy buffer
@@ -1153,8 +1370,6 @@ if (mpl%main) then
                lat_c2_raw(ic2,il0,its-1) = rbuf(i)
                i = i+1
                dist_c2_raw(ic2,il0,its-1) = rbuf(i)
-               i = i+1
-               cor_avg_max(ic2,il0,its-1) = rbuf(i)
                i = i+1
                lon_c2_flt(ic2,il0,its-1) = rbuf(i)
                i = i+1
@@ -1208,8 +1423,6 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_put_att(ncid,lat_c2_raw_id,'_FillValue',mpl%msv%valr))
    call mpl%ncerr(subr,nf90_def_var(ncid,'dist_c2_raw',nc_kind_real,(/nc2_id,nl0_id,nts_id/),dist_c2_raw_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,dist_c2_raw_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'cor_avg_max',nc_kind_real,(/nc2_id,nl0_id,nts_id/),cor_avg_max_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,cor_avg_max_id,'_FillValue',mpl%msv%valr))
    call mpl%ncerr(subr,nf90_def_var(ncid,'valid_raw',nc_kind_real,(/nl0_id,nts_id/),valid_raw_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,valid_raw_id,'_FillValue',mpl%msv%valr))
    call mpl%ncerr(subr,nf90_def_var(ncid,'dist_raw',nc_kind_real,(/nl0_id,nts_id/),dist_raw_id))
@@ -1226,6 +1439,8 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_put_att(ncid,dist_flt_id,'_FillValue',mpl%msv%valr))
    call mpl%ncerr(subr,nf90_def_var(ncid,'rhflt',nc_kind_real,(/nl0_id,nts_id/),rhflt_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,rhflt_id,'_FillValue',mpl%msv%valr))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'score_loc',nc_kind_real,(/nts_id/),score_loc_id))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'score_adv',nc_kind_real,(/nts_id/),score_adv_id))
    call mpl%ncerr(subr,nf90_def_var(ncid,'larc_s',nf90_int,(/na_id/),larc_s_id))
    call mpl%ncerr(subr,nf90_def_var(ncid,'larc_e',nf90_int,(/na_id/),larc_e_id))
 
@@ -1239,7 +1454,6 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_put_var(ncid,lon_c2_raw_id,lon_c2_raw))
    call mpl%ncerr(subr,nf90_put_var(ncid,lat_c2_raw_id,lat_c2_raw))
    call mpl%ncerr(subr,nf90_put_var(ncid,dist_c2_raw_id,dist_c2_raw))
-   call mpl%ncerr(subr,nf90_put_var(ncid,cor_avg_max_id,cor_avg_max))
    call mpl%ncerr(subr,nf90_put_var(ncid,valid_raw_id,adv%valid_raw))
    call mpl%ncerr(subr,nf90_put_var(ncid,dist_raw_id,adv%dist_raw*reqkm))
    call mpl%ncerr(subr,nf90_put_var(ncid,lon_c2_flt_id,lon_c2_flt))
@@ -1248,6 +1462,8 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_put_var(ncid,valid_flt_id,adv%valid_flt))
    call mpl%ncerr(subr,nf90_put_var(ncid,dist_flt_id,adv%dist_flt*reqkm))
    call mpl%ncerr(subr,nf90_put_var(ncid,rhflt_id,adv%rhflt*reqkm))
+   call mpl%ncerr(subr,nf90_put_var(ncid,score_loc_id,adv%score_loc))
+   call mpl%ncerr(subr,nf90_put_var(ncid,score_adv_id,adv%score_adv))
    call mpl%ncerr(subr,nf90_put_var(ncid,larc_s_id,samp%mesh%order(samp%mesh%larc(1,:))))
    call mpl%ncerr(subr,nf90_put_var(ncid,larc_e_id,samp%mesh%order(samp%mesh%larc(2,:))))
 
@@ -1260,11 +1476,13 @@ if (mpl%main) then
    deallocate(lon_c2_raw)
    deallocate(lat_c2_raw)
    deallocate(dist_c2_raw)
-   deallocate(cor_avg_max)
    deallocate(lon_c2_flt)
    deallocate(lat_c2_flt)
    deallocate(dist_c2_flt)
 end if
+
+! Define filename
+filename = trim(nam%prefix)//'_adv_test'
 
 ! Write test
 do ib=1,bpar%nb
@@ -1272,10 +1490,9 @@ do ib=1,bpar%nb
    jv = bpar%b_to_v2(ib)
    its = bpar%b_to_ts1(ib)
    jts = bpar%b_to_ts2(ib)
-   if ((iv>1).and.(iv==jv).and.(its==jts)) then
+   if ((iv==jv).and.(its>=2).and.(its==jts)) then
       call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_cor_loc',adv%cor_loc(:,:,iv,its))
-      call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_cor_max',adv%cor_adv(:,:,iv,its))
-      call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_cor_adv',adv%cor_max(:,:,iv,its))
+      call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_cor_adv',adv%cor_adv(:,:,iv,its))
    end if
 end do
 
