@@ -607,7 +607,7 @@ do jc3=1,nam%nc3
 end do
 
 ! Define dirac points
-if (nam%new_cortrack.or.nam%check_dirac.and.(nam%ndir>0)) call geom%define_dirac(mpl,nam)
+if (nam%new_cortrack.or.nam%new_corstats.or.nam%check_dirac.and.(nam%ndir>0)) call geom%define_dirac(mpl,nam)
 
 if (nam%mask_check) then
    ! Allocation
