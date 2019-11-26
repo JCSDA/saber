@@ -211,9 +211,15 @@ call mesh_out%dealloc
 ! Allocation
 call mesh_out%alloc(mesh_in%n)
 if (allocated(mesh_in%bnd)) allocate(mesh_out%bnd(mesh_in%nb))
+if (allocated(mesh_in%barc)) allocate(mesh_out%barc(2,mesh_in%nb))
+if (allocated(mesh_in%barc_lon)) allocate(mesh_out%barc_lon(2,mesh_in%nb))
+if (allocated(mesh_in%barc_lat)) allocate(mesh_out%barc_lat(2,mesh_in%nb))
+if (allocated(mesh_in%barc_dist)) allocate(mesh_out%barc_dist(mesh_in%nb))
+if (allocated(mesh_in%barc_vp)) allocate(mesh_out%barc_vp(3,mesh_in%nb))
+if (allocated(mesh_in%bdist)) allocate(mesh_out%bdist(mesh_in%n))
 if (allocated(mesh_in%ltri)) allocate(mesh_out%ltri(3,mesh_in%nt))
 if (allocated(mesh_in%larc)) allocate(mesh_out%larc(2,mesh_in%na))
-if (allocated(mesh_in%bdist)) allocate(mesh_out%bdist(mesh_in%n))
+if (allocated(mesh_in%valid)) allocate(mesh_out%valid(mesh_in%n))
 
 ! Copy data
 mesh_out%order = mesh_in%order
@@ -228,6 +234,7 @@ mesh_out%lptr = mesh_in%lptr
 mesh_out%lend = mesh_in%lend
 mesh_out%lnew = mesh_in%lnew
 mesh_out%nb = mesh_in%nb
+if (allocated(mesh_in%bnd)) mesh_out%bnd = mesh_in%bnd
 if (allocated(mesh_in%barc)) mesh_out%barc = mesh_in%barc
 if (allocated(mesh_in%barc_lon)) mesh_out%barc_lon = mesh_in%barc_lon
 if (allocated(mesh_in%barc_lat)) mesh_out%barc_lat = mesh_in%barc_lat
@@ -235,7 +242,7 @@ if (allocated(mesh_in%barc_dist)) mesh_out%barc_dist = mesh_in%barc_dist
 if (allocated(mesh_in%barc_vp)) mesh_out%barc_vp = mesh_in%barc_vp
 mesh_out%nt = mesh_in%nt
 mesh_out%na = mesh_in%na
-if (allocated(mesh_in%bnd)) mesh_out%bnd = mesh_in%bnd
+if (allocated(mesh_in%bdist)) mesh_out%bdist = mesh_in%bdist
 if (allocated(mesh_in%ltri)) mesh_out%ltri = mesh_in%ltri
 if (allocated(mesh_in%larc)) mesh_out%larc = mesh_in%larc
 if (allocated(mesh_in%valid)) mesh_out%valid = mesh_in%valid

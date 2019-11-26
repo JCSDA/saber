@@ -333,13 +333,13 @@ subroutine ens_cortrack(ens,mpl,rng,nam,geom,io,fld_uv)
 implicit none
 
 ! Passed variables
-class(ens_type),intent(in) :: ens                                          ! Ensemble
-type(mpl_type),intent(inout) :: mpl                                        ! MPI data
-type(rng_type),intent(inout) :: rng                                        ! Random number generator
-type(nam_type),intent(in) :: nam                                           ! Namelist
-type(geom_type),intent(in) :: geom                                         ! Geometry
-type(io_type),intent(in) :: io                                             ! I/O
-real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nv) ! Wind field
+class(ens_type),intent(in) :: ens                                           ! Ensemble
+type(mpl_type),intent(inout) :: mpl                                         ! MPI data
+type(rng_type),intent(inout) :: rng                                         ! Random number generator
+type(nam_type),intent(in) :: nam                                            ! Namelist
+type(geom_type),intent(in) :: geom                                          ! Geometry
+type(io_type),intent(in) :: io                                              ! I/O
+real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
 
 ! Local variable
 integer :: ic0a,ic0,il0,ie,its,iproc(1),ind(2),it,i_s
