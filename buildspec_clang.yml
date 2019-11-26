@@ -69,7 +69,7 @@ phases:
     commands:
       - echo Executing build phase
       - cd /build_container
-      - ecbuild /saber-bundle/saber-bundle/
+      - ecbuild /src_repo/saber-bundle/
       - cd /build_container/saber
       - make -j4
 
