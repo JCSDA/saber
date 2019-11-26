@@ -96,15 +96,26 @@ phases:
       - su - jcsdauser -c "cd /build_container 
         && ls
         && ecbuild /jcsda/saber-bundle/
-        && make -j4
-        && ctest" 
+        && cd /jcsda/saber-bundle/saber
+        && make -j4"
+
+      - export BUILD_STATUS="0"
+      - echo $BUILD_STATUS
+      - echo $CODEBUILD_BUILD_SUCCEEDING
+      - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
+        then export BUILD_STATUS="1";
+        echo "Build passed";
+        fi
+
+      - su - jcsdauser -c "cd /build_container/saber
+        && ctest"
+
   post_build:
     commands:
       - echo Executing post_build phase
       - echo $CODEBUILD_BUILD_SUCCEEDING
-      - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ];
-        then echo "Build Failing";
-        su - jcsdauser -c "cd /build_container/ufo
+      - if [ "$BUILD_STATUS" = "1" ] && [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ];
+        then echo "Build passed, rerun failed tests";
+        su - jcsdauser -c "cd /build_container/saber
         && ctest -VV --rerun-failed";
-        else echo "CODEBUILD_BUILD_SUCCEEDING=$CODEBUILD_BUILD_SUCCEEDING";
         fi
