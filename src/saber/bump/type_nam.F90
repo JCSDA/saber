@@ -137,7 +137,7 @@ type nam_type
    logical :: local_diag                                ! Activate local diagnostics
    real(kind_real) ::  local_rad                        ! Local diagnostics calculation radius
    logical :: adv_diag                                  ! Activate advection diagnostic
-   character(len=1024) :: adv_type                      ! Advection diagnostic type ('max', 'wind' or 'wind+max') 
+   character(len=1024) :: adv_type                      ! Advection diagnostic type ('max', 'wind' or 'windmax')
    real(kind_real) ::  adv_rad                          ! Advection diagnostic calculation radius
    integer :: adv_niter                                 ! Number of iteration for the advection filtering
    real(kind_real) ::  adv_rhflt                        ! Advection initial filtering support radius

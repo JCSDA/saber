@@ -201,7 +201,7 @@ case ('windmax')
    ! Compute raw advection from maximum displacement, using filtered wind advection as a guess
    call adv%compute_max(mpl,nam,geom,samp,ens,adv_wind)
 
-   ! Release memory 
+   ! Release memory
    call adv_wind%dealloc
 case default
    call mpl%abort(subr,'wrong advection diagnostic type')
@@ -311,7 +311,7 @@ do its=2,nam%nts
                if (its==2) then
                   ! Set at origin point
                   lon_rac(ic2a,il0) = adv%lon_c2a(ic2a)
-                  lat_rac(ic2a,il0) = adv%lat_c2a(ic2a)                   
+                  lat_rac(ic2a,il0) = adv%lat_c2a(ic2a)
                else
                   ! Use previous timeslot filtered estimation
                   lon_rac(ic2a,il0) = adv%lon_c2a_flt(ic2a,il0,its-1)
@@ -750,7 +750,7 @@ do its=2,nam%nts
          call com_AW%ext(mpl,fld_uv(:,il0,2,its),fld_uv_ext(:,2,2))
 
          ! Interpolate wind value at diagnostic points
-         call h%apply(mpl,fld_uv_ext(:,1,1),um) 
+         call h%apply(mpl,fld_uv_ext(:,1,1),um)
          call h%apply(mpl,fld_uv_ext(:,2,1),vm)
          call h%apply(mpl,fld_uv_ext(:,1,2),up)
          call h%apply(mpl,fld_uv_ext(:,2,2),vp)
@@ -774,21 +774,21 @@ do its=2,nam%nts
                    & cos(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
                uyp = cos(adv%lon_c2a_raw(ic2a,il0,its))*up(ic2a)- &
                    & sin(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
-               uzp = cos(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a) 
-      
+               uzp = cos(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
+
                ! Define wind in cartesian coordinates
                ux = (1.0-t)*uxm+t*uxp
                uy = (1.0-t)*uym+t*uyp
                uz = (1.0-t)*uzm+t*uzp
-      
+
                ! Transform location to cartesian coordinates
                call lonlat2xyz(mpl,adv%lon_c2a_raw(ic2a,il0,its),adv%lat_c2a_raw(ic2a,il0,its),x,y,z)
- 
+
                ! Propagate location
                x = x+ux*dtl
                y = y+uy*dtl
                z = z+uz*dtl
-      
+
                ! Back to spherical coordinates
                call xyz2lonlat(mpl,x,y,z,adv%lon_c2a_raw(ic2a,il0,its),adv%lat_c2a_raw(ic2a,il0,its))
             end if

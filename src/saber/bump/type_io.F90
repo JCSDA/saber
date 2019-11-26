@@ -241,7 +241,7 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
          ! Allocation
          allocate(lon(geom%nc0))
          allocate(lat(geom%nc0))
-   
+
          ! Convert to degrees
          lon = geom%lon*rad2deg
          lat = geom%lat*rad2deg
@@ -346,11 +346,11 @@ end do
 if (any(io%procio_to_proc_grid==mpl%myproc).and.(io%nlonio>0)) then
    ! Check if the file exists
    info = nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
-        & comm=io%f_comm%communicator(),info=io%f_comm%info_null())
+        & comm=io%f_comm_grid%communicator(),info=io%f_comm_grid%info_null())
    if (info/=nf90_noerr) then
       ! Open file
       call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc', &
-    & ior(nf90_write,ior(nf90_netcdf4,nf90_mpiio)),ncid,comm=io%f_comm%communicator(),info=io%f_comm%info_null()))
+    & ior(nf90_write,ior(nf90_netcdf4,nf90_mpiio)),ncid,comm=io%f_comm_grid%communicator(),info=io%f_comm_grid%info_null()))
 
       ! Enter definition mode
       call mpl%ncerr(subr,nf90_redef(ncid))
