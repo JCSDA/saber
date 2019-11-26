@@ -91,29 +91,29 @@ subroutine bump_setup_online(bump,f_comm,nmga,nl0,nv,nts,lon,lat,area,vunit,gmas
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump            ! BUMP
-type(fckit_mpi_comm),intent(in) :: f_comm         ! FCKIT MPI communicator wrapper
-integer,intent(in) :: nmga                        ! Halo A size
-integer,intent(in) :: nl0                         ! Number of levels in subset Sl0
-integer,intent(in) :: nv                          ! Number of variables
-integer,intent(in) :: nts                         ! Number of time slots
-real(kind_real),intent(in) :: lon(nmga)           ! Longitude (in degrees)
-real(kind_real),intent(in) :: lat(nmga)           ! Latitude (in degrees)
-real(kind_real),intent(in) :: area(nmga)          ! Area (in m^2)
-real(kind_real),intent(in) :: vunit(nmga,nl0)     ! Vertical unit
-logical,intent(in) :: gmask(nmga,nl0)             ! Geometry mask
-logical,intent(in),optional :: smask(nmga,nl0)    ! Sampling mask
-integer,intent(in),optional :: ens1_ne            ! Ensemble 1 size
-integer,intent(in),optional :: ens1_nsub          ! Ensemble 1 number of sub-ensembles
-integer,intent(in),optional :: ens2_ne            ! Ensemble 2 size
-integer,intent(in),optional :: ens2_nsub          ! Ensemble 2 size of sub-ensembles
-integer,intent(in),optional :: nobs               ! Number of observations
-real(kind_real),intent(in),optional :: lonobs(:)  ! Observations longitude (in degrees)
-real(kind_real),intent(in),optional :: latobs(:)  ! Observations latitude (in degrees)
-character(len=*),intent(in),optional :: namelname ! Namelist name
-integer,intent(in),optional :: lunit              ! Listing unit
-integer,intent(in),optional :: msvali             ! Missing value for integers
-real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
+class(bump_type),intent(inout) :: bump                        ! BUMP
+type(fckit_mpi_comm),intent(in) :: f_comm                     ! FCKIT MPI communicator wrapper
+integer,intent(in) :: nmga                                    ! Halo A size
+integer,intent(in) :: nl0                                     ! Number of levels in subset Sl0
+integer,intent(in) :: nv                                      ! Number of variables
+integer,intent(in) :: nts                                     ! Number of time slots
+real(kind_real),intent(in) :: lon(nmga)                       ! Longitude (in degrees)
+real(kind_real),intent(in) :: lat(nmga)                       ! Latitude (in degrees)
+real(kind_real),intent(in) :: area(nmga)                      ! Area (in m^2)
+real(kind_real),intent(in) :: vunit(nmga,nl0)                 ! Vertical unit
+logical,intent(in) :: gmask(nmga,nl0)                         ! Geometry mask
+logical,intent(in),optional :: smask(nmga,nl0)                ! Sampling mask
+integer,intent(in),optional :: ens1_ne                        ! Ensemble 1 size
+integer,intent(in),optional :: ens1_nsub                      ! Ensemble 1 number of sub-ensembles
+integer,intent(in),optional :: ens2_ne                        ! Ensemble 2 size
+integer,intent(in),optional :: ens2_nsub                      ! Ensemble 2 size of sub-ensembles
+integer,intent(in),optional :: nobs                           ! Number of observations
+real(kind_real),intent(in),optional :: lonobs(:)              ! Observations longitude (in degrees)
+real(kind_real),intent(in),optional :: latobs(:)              ! Observations latitude (in degrees)
+character(len=*),intent(in),optional :: namelname             ! Namelist name
+integer,intent(in),optional :: lunit                          ! Listing unit
+integer,intent(in),optional :: msvali                         ! Missing value for integers
+real(kind_real),intent(in),optional :: msvalr                 ! Missing value for reals
 real(kind_real),intent(in),optional :: fld_uv(nmga,nl0,2,nts) ! Wind field
 
 ! Local variables
