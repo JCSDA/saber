@@ -70,6 +70,9 @@ type model_type
    type(member_field_type),allocatable :: ens1(:) ! Ensemble 1 members
    type(member_field_type),allocatable :: ens2(:) ! Ensemble 2 members
 
+   ! Wind
+   real(kind_real),allocatable :: fld_uv(:,:,:,:) ! Wind
+
    ! Observations locations
    integer :: nobsa                               ! Number of observations, halo A 
    real(kind_real),allocatable :: lonobs(:)       ! Observations longitudes, halo A
@@ -108,6 +111,7 @@ contains
    procedure :: read => model_read
    procedure :: read_member => model_read_member
    procedure :: load_ens => model_load_ens
+   procedure :: read_wind => model_read_wind
    procedure :: generate_obs => model_generate_obs
 end type model_type
 
@@ -192,6 +196,7 @@ if (allocated(model%ens2)) then
    end do
    deallocate(model%ens2)
 end if
+if (allocated(model%fld_uv)) deallocate(model%fld_uv)
 if (allocated(model%lonobs)) deallocate(model%lonobs)
 if (allocated(model%latobs)) deallocate(model%latobs)
 
@@ -560,7 +565,7 @@ subroutine model_read_member(model,mpl,nam,filename,ie,fld)
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
+class(model_type),intent(inout) :: model                                ! Model
 type(mpl_type),intent(inout) :: mpl                                     ! MPI data
 type(nam_type),intent(in) :: nam                                        ! Namelist
 character(len=*),intent(in) :: filename                                 ! File name
@@ -684,6 +689,56 @@ do isub=1,nsub
 end do
 
 end subroutine model_load_ens
+
+!----------------------------------------------------------------------
+! Subroutine: model_read_wind
+! Purpose: read wind field
+!----------------------------------------------------------------------
+subroutine model_read_wind(model,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(model_type),intent(inout) :: model  ! Model
+type(mpl_type),intent(inout) :: mpl       ! MPI data
+type(nam_type),intent(inout) :: nam       ! Namelist
+
+! Local variables
+integer :: nv_save,its
+character(len=1024) :: varname_save(nam%nv),addvar2d_save(nam%nv),fullname
+
+! Allocation
+allocate(model%fld_uv(model%nmga,model%nl0,2,nam%nts))
+
+! Initialization
+model%fld_uv = mpl%msv%valr
+
+if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='windmax')) then
+   ! Save namelist parameters
+   nv_save = nam%nv
+   varname_save(1:nam%nv) = nam%varname(1:nam%nv)
+   addvar2d_save(1:nam%nv) = nam%addvar2d(1:nam%nv)
+
+   ! Update namelist parameters
+   nam%nv = 2
+   nam%varname(1:2) = nam%wind_varname
+   nam%addvar2d(1:2) = (/'',''/)
+
+   do its=1,nam%nts
+      ! Define filename
+      write(fullname,'(a,a,i2.2,a)') trim(nam%wind_filename),'_',nam%timeslot(its)
+
+      ! Read file
+      call model%read(mpl,nam,fullname,its,model%fld_uv(:,:,:,its))
+   end do
+
+   ! Reset namelist
+   nam%nv = nv_save
+   nam%varname(1:nam%nv) = varname_save(1:nam%nv)
+   nam%addvar2d(1:nam%nv) = addvar2d_save(1:nam%nv)
+end if
+
+end subroutine model_read_wind
 
 !----------------------------------------------------------------------
 ! Subroutine: model_generate_obs

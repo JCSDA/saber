@@ -7,22 +7,24 @@
 #----------------------------------------------------------------------
 
 # Parameters
-testdir=$1
-datadir=$2
-list=$3
-name=$4
+datadir=$1
+listdir=$2
+name=$3
 
 # Loop over files
 files=''
 while IFS= read -r line
 do
    files=${files}' '${line}   
-done < ${list}
+done < ${listdir}/${name}.txt
 
 # Archive
-cd ${testdir}/${datadir}
+cd ${datadir}
 tar -cvzf ${name}.tar.gz ${files}
 
-# Compute MD5 checksum for
-cd ${testdir}
-md5sum ${datadir}/${name}.tar.gz > ${datadir}/${name}.tar.gz.md5
+# Compute MD5 checksum
+md5sum ${name}.tar.gz > ${name}.tar.gz.md5
+
+# Send to S3
+aws s3 cp ${name}.tar.gz s3://jedi-test-files/saber/ --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers
+aws s3 cp ${name}.tar.gz.md5 s3://jedi-test-files/saber/ --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers

@@ -67,27 +67,41 @@ endif()
 # TIER 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
 list(APPEND saber_test ${saber_test_tmp})
-list(APPEND saber_data saber_data.tar.gz)
-list(APPEND saber_ref saber_ref_1.tar.gz)
+file(STRINGS testlist/saber_data.txt saber_data_tmp )
+list(APPEND saber_data ${saber_data_tmp})
+list(APPEND saber_data_tar saber_data.tar.gz)
+file(STRINGS testlist/saber_ref_1.txt saber_ref_tmp )
+list(APPEND saber_ref ${saber_ref_tmp})
+list(APPEND saber_ref_tar saber_ref_1.tar.gz)
 file(STRINGS testlist/saber_ref_to_data.txt saber_ref_to_data_tmp )
 list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 if(${SABER_TEST_MPI})
-    list(APPEND saber_data saber_data_mpi.tar.gz)
-    list(APPEND saber_ref saber_ref_mpi_1.tar.gz)
+    file(STRINGS testlist/saber_data_mpi.txt saber_data_tmp )
+    list(APPEND saber_data ${saber_data_tmp})
+    list(APPEND saber_data_tar saber_data_mpi.tar.gz)
+    file(STRINGS testlist/saber_ref_mpi_1.txt saber_ref_tmp )
+    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref_tar saber_ref_mpi_1.tar.gz)
     file(STRINGS testlist/saber_ref_to_data_mpi.txt saber_ref_to_data_tmp )
     list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 endif()
 if(${SABER_TEST_OMP})
-    list(APPEND saber_data saber_data_omp.tar.gz)
+    file(STRINGS testlist/saber_data_omp.txt saber_data_tmp )
+    list(APPEND saber_data ${saber_data_tmp})
+    list(APPEND saber_data_tar saber_data_omp.tar.gz)
 endif()
 
 # TIER > 1
 if(${SABER_TEST_TIER} GREATER 1)
     file(STRINGS testlist/saber_test_2.txt saber_test_tmp )
     list(APPEND saber_test ${saber_test_tmp})
-    list(APPEND saber_ref saber_ref_2.tar.gz)
+    file(STRINGS testlist/saber_ref_2.txt saber_ref_tmp )
+    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref_tar saber_ref_2.tar.gz)
     if(${SABER_TEST_MPI})
-        list(APPEND saber_ref saber_ref_mpi_2.tar.gz)
+        file(STRINGS testlist/saber_ref_mpi_2.txt saber_ref_tmp )
+        list(APPEND saber_ref ${saber_ref_tmp})
+        list(APPEND saber_ref_tar saber_ref_mpi_2.tar.gz)
     endif()
 endif()
 
@@ -95,9 +109,13 @@ endif()
 if(${SABER_TEST_TIER} GREATER 2)
     file(STRINGS testlist/saber_test_3.txt saber_test_tmp )
     list(APPEND saber_test ${saber_test_tmp})
-    list(APPEND saber_ref saber_ref_3.tar.gz)
+    file(STRINGS testlist/saber_ref_3.txt saber_ref_tmp )
+    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref_tar saber_ref_3.tar.gz)
     if(${SABER_TEST_MPI})
-        list(APPEND saber_ref saber_ref_mpi_3.tar.gz)
+        file(STRINGS testlist/saber_ref_mpi_3.txt saber_ref_tmp )
+        list(APPEND saber_ref ${saber_ref_tmp})
+        list(APPEND saber_ref_tar saber_ref_mpi_3.tar.gz)
     endif()
 endif()
 
@@ -105,14 +123,18 @@ endif()
 if(${SABER_TEST_QUAD} MATCHES 1)
     file(STRINGS testlist/saber_test_quad.txt saber_test_quad_tmp )
     list(APPEND saber_test_quad ${saber_test_quad_tmp})
-    list(APPEND saber_ref saber_ref_quad.tar.gz)
+    file(STRINGS testlist/saber_ref_quad.txt saber_ref_tmp )
+    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref_tar saber_ref_quad.tar.gz)
 endif()
 
 # Model tests
 if(${SABER_TEST_MODEL} MATCHES 1)
     file(STRINGS testlist/saber_test_model.txt saber_test_model_tmp )
     list(APPEND saber_test_model ${saber_test_model_tmp})
-    list(APPEND saber_data saber_data_model.tar.gz)
+    file(STRINGS testlist/saber_data_model.txt saber_data_tmp )
+    list(APPEND saber_data ${saber_data_tmp})
+    list(APPEND saber_data_tar saber_data_model.tar.gz)
 endif()
 
 # Make directories
@@ -126,23 +148,35 @@ set(ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber)
 
 # Download and extract data files
 ecbuild_get_test_multidata(TARGET  get_saber_data
-                           NAMES   ${saber_data}
-                           DIRNAME testdata
+                           NAMES   ${saber_data_tar}
+                           DIRNAME "."
                            DIRSAVE testdata
                            EXTRACT)
 
+# Link data files into build directory
+foreach(file ${saber_data})
+    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                    ${PROJECT_SOURCE_DIR}/test_data_download/testdata/${file}
+                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
+endforeach()
+foreach(file ${saber_ref_to_data})
+    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                    ${PROJECT_SOURCE_DIR}/test_data_download/testref/${file}
+                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
+endforeach()
+
 # Download and extract reference files
 ecbuild_get_test_multidata(TARGET  get_saber_ref
-                           NAMES   ${saber_ref}
-                           DIRNAME testref
+                           NAMES   ${saber_ref_tar}
+                           DIRNAME "."
                            DIRSAVE testref
                            EXTRACT)
 
-# Link reference files into data directory
-foreach(file ${saber_ref_to_data})
+# Link reference files into build directory
+foreach(file ${saber_ref})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${CMAKE_CURRENT_BINARY_DIR}/testref/${file}
-                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
+                    ${PROJECT_SOURCE_DIR}/test_data_download/testref/${file}
+                    ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
 endforeach()
 
 # Mono-core tests

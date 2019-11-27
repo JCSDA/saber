@@ -275,7 +275,8 @@ call mpl%flush
 obsop%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,geom%mask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs,maskobsa)
+call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,geom%mask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs, &
+ & maskobsa,10)
 
 ! Define halo B
 lcheck_nc0b = .false.

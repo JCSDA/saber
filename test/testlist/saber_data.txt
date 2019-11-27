@@ -109,3 +109,5 @@ ens2_00_0008.nc
 ens2_00_0009.nc
 ens2_00_0010.nc
 grid.nc
+wind_00.nc
+wind_06.nc

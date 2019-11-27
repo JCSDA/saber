@@ -12,6 +12,7 @@ testdata=$2
 
 saber_test="
 bump_cortrack
+bump_corstats
 bump_hdiag_cor_diag_all
 bump_hdiag_grid
 bump_hdiag_hyb-rnd_common
@@ -81,9 +82,10 @@ bump_obsop
 bump_set_param_cor
 bump_set_param_hyb
 bump_set_param_lct
-bump_hdiag-nicas_loc_adv
-bump_hdiag-nicas_loc_adv_cor_tracker
 bump_hdiag-nicas_loc_adv_inv
+bump_hdiag-nicas_loc_adv_max
+bump_hdiag-nicas_loc_adv_wind
+bump_hdiag-nicas_loc_adv_windmax
 bump_hdiag_optimality
 bump_nicas_consistency
 bump_nicas_randomization"

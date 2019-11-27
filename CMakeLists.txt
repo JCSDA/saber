@@ -74,6 +74,9 @@ endif()
 ecbuild_use_package( PROJECT fckit VERSION 0.6.3 REQUIRED )
 include_directories( ${FCKIT_INCLUDE_DIRS} )
 
+# git
+find_package( Git )
+
 ################################################################################
 # Export package info
 ################################################################################

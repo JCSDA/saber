@@ -1,4 +1,6 @@
 bump_cortrack_1-1_cortrack.nc
+bump_cortrack_1-1_cortrack_coord.nc
+bump_corstats_1-1_corstats.nc
 bump_hdiag_cor_diag_all_1-1_diag.nc
 bump_hdiag_grid_1-1_diag.nc
 bump_hdiag_grid_1-1_local_diag_cor_gridded.nc

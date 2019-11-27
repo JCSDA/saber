@@ -1,4 +1,5 @@
 bump_cortrack
+bump_corstats
 bump_hdiag_cor_diag_all
 bump_hdiag_grid
 bump_hdiag_hyb-rnd_common

@@ -21,8 +21,8 @@ character(len=1024),parameter :: subr = 'model_geos_coord'
 
 ! Open file and get dimensions
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_share,ncid))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'lon',nlon_id))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'lat',nlat_id))
+call mpl%ncerr(subr,nf90_inq_dimid(ncid,'Xdim',nlon_id))
+call mpl%ncerr(subr,nf90_inq_dimid(ncid,'Ydim',nlat_id))
 call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
 call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
 model%nmg = model%nlon*model%nlat
@@ -36,8 +36,8 @@ allocate(lat(model%nlon,model%nlat))
 allocate(delp(model%nlon,model%nlat,model%nlev))
 
 ! Read data and close file
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'lon',lon_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'lat',lat_id))
+call mpl%ncerr(subr,nf90_inq_varid(ncid,'lons',lon_id))
+call mpl%ncerr(subr,nf90_inq_varid(ncid,'lats',lat_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'delp',delp_id))
 call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon))
 call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat))
@@ -51,8 +51,8 @@ do ilon=1,model%nlon
       img = img+1
       model%mg_to_lon(img) = ilon
       model%mg_to_lat(img) = ilat
-      model%lon(img) = real(lon(ilon,ilat),kind_real)
-      model%lat(img) = real(lat(ilon,ilat),kind_real)
+      model%lon(img) = real(lon(ilon,ilat),kind_real)*deg2rad
+      model%lat(img) = real(lat(ilon,ilat),kind_real)*deg2rad
    end do
 end do
 model%area = 4.0*pi/real(model%nmg,kind_real)
