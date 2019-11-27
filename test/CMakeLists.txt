@@ -146,10 +146,18 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
 # Set download URL
 set(ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber)
 
+# Get the current working branch
+execute_process(
+    COMMAND git rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # Download and extract data files
 ecbuild_get_test_multidata(TARGET  get_saber_data
                            NAMES   ${saber_data_tar}
-                           DIRNAME "."
+                           DIRNAME ${GIT_BRANCH}
                            DIRSAVE testdata
                            EXTRACT)
 
@@ -168,7 +176,7 @@ endforeach()
 # Download and extract reference files
 ecbuild_get_test_multidata(TARGET  get_saber_ref
                            NAMES   ${saber_ref_tar}
-                           DIRNAME "."
+                           DIRNAME ${GIT_BRANCH}
                            DIRSAVE testref
                            EXTRACT)
 
