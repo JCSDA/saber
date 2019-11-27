@@ -94,7 +94,7 @@ phases:
       - cd $CODEBUILD_SRC_DIR
 
       # atlas  
-      - git clone -b 0.18.1 https://$GIT_USER:$GIT_PASS@github.com/ecmwf/atlas saber-bundle/atlas
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/atlas saber-bundle/atlas
 
       - mv saber-bundle /jcsda/
       - cd /jcsda/saber-bundle
