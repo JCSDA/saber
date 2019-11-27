@@ -96,7 +96,7 @@ phases:
       - su - jcsdauser -c "cd /build_container 
         && ls
         && ecbuild /jcsda/saber-bundle/
-        && cd /jcsda/saber-bundle/saber
+        && cd /build_container/saber
         && make -j4"
 
       - export BUILD_STATUS="0"
