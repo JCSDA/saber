@@ -10,7 +10,7 @@ module type_obsop
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 use netcdf
 use tools_const, only: pi,deg2rad,rad2deg,req,reqkm
-use tools_func, only: sphere_dist
+use tools_func, only: lonlatmod,sphere_dist
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth
@@ -195,6 +195,9 @@ integer,intent(in) :: nobsa                 ! Number of observations
 real(kind_real),intent(in) :: lonobs(nobsa) ! Observations longitudes (in degrees)
 real(kind_real),intent(in) :: latobs(nobsa) ! Observations latitudes (in degrees)
 
+! Local variables
+integer :: iobsa
+
 ! Get size
 obsop%nobsa = nobsa
 
@@ -209,6 +212,11 @@ if (obsop%nobsa>0) then
    ! Copy
    obsop%lonobs = lonobs*deg2rad
    obsop%latobs = latobs*deg2rad
+
+   ! Enforce correct bounds
+   do iobsa=1,obsop%nobsa
+      call lonlatmod(obsop%lonobs(iobsa),obsop%latobs(iobsa))
+   end do
 end if
 
 end subroutine obsop_from
@@ -267,7 +275,8 @@ call mpl%flush
 obsop%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,geom%mask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs,maskobsa)
+call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,geom%mask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs, &
+ & maskobsa,10)
 
 ! Define halo B
 lcheck_nc0b = .false.
@@ -314,20 +323,22 @@ call obsop%h%reorder(mpl)
 ! Setup communications
 call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
 
-! Compute scores
-call mpl%f_comm%allreduce(real(obsop%com%nhalo,kind_real),C_max,fckit_mpi_max())
-C_max = C_max/(3.0*real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
-N_max = real(maxval(proc_to_nobsa_eff),kind_real)/(real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
+! Compute scores, only if there observations present globally
+if ( nobs_eff > 0 ) then
+  call mpl%f_comm%allreduce(real(obsop%com%nhalo,kind_real),C_max,fckit_mpi_max())
+  C_max = C_max/(3.0*real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
+  N_max = real(maxval(proc_to_nobsa_eff),kind_real)/(real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
 
-! Print results
-write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa_eff) &
- & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
-call mpl%flush
-write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
- & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo
-call mpl%flush
-write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
-call mpl%flush
+  ! Print results
+  write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa_eff) &
+  & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+  call mpl%flush
+  write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
+  & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo
+  call mpl%flush
+  write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
+  call mpl%flush
+end if
 
 ! Write observation operator
 if (nam%write_obsop) call obsop%write(mpl,nam)

@@ -13,7 +13,6 @@ use tools_func, only: lonlatmod
 use tools_kinds,only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use type_tree, only: tree_type
-use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type,nvmax
 use type_rng, only: rng_type
@@ -71,6 +70,9 @@ type model_type
    type(member_field_type),allocatable :: ens1(:) ! Ensemble 1 members
    type(member_field_type),allocatable :: ens2(:) ! Ensemble 2 members
 
+   ! Wind
+   real(kind_real),allocatable :: fld_uv(:,:,:,:) ! Wind
+
    ! Observations locations
    integer :: nobsa                               ! Number of observations, halo A 
    real(kind_real),allocatable :: lonobs(:)       ! Observations longitudes, halo A
@@ -109,6 +111,7 @@ contains
    procedure :: read => model_read
    procedure :: read_member => model_read_member
    procedure :: load_ens => model_load_ens
+   procedure :: read_wind => model_read_wind
    procedure :: generate_obs => model_generate_obs
 end type model_type
 
@@ -193,6 +196,7 @@ if (allocated(model%ens2)) then
    end do
    deallocate(model%ens2)
 end if
+if (allocated(model%fld_uv)) deallocate(model%fld_uv)
 if (allocated(model%lonobs)) deallocate(model%lonobs)
 if (allocated(model%latobs)) deallocate(model%latobs)
 
@@ -554,7 +558,7 @@ subroutine model_read_member(model,mpl,nam,filename,ie,fld)
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
+class(model_type),intent(inout) :: model                                ! Model
 type(mpl_type),intent(inout) :: mpl                                     ! MPI data
 type(nam_type),intent(in) :: nam                                        ! Namelist
 character(len=*),intent(in) :: filename                                 ! File name
@@ -672,27 +676,80 @@ end do
 end subroutine model_load_ens
 
 !----------------------------------------------------------------------
+! Subroutine: model_read_wind
+! Purpose: read wind field
+!----------------------------------------------------------------------
+subroutine model_read_wind(model,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(model_type),intent(inout) :: model  ! Model
+type(mpl_type),intent(inout) :: mpl       ! MPI data
+type(nam_type),intent(inout) :: nam       ! Namelist
+
+! Local variables
+integer :: nv_save,its
+character(len=1024) :: varname_save(nam%nv),addvar2d_save(nam%nv),fullname
+
+! Allocation
+allocate(model%fld_uv(model%nmga,model%nl0,2,nam%nts))
+
+! Initialization
+model%fld_uv = mpl%msv%valr
+
+if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='windmax')) then
+   ! Save namelist parameters
+   nv_save = nam%nv
+   varname_save(1:nam%nv) = nam%varname(1:nam%nv)
+   addvar2d_save(1:nam%nv) = nam%addvar2d(1:nam%nv)
+
+   ! Update namelist parameters
+   nam%nv = 2
+   nam%varname(1:2) = nam%wind_varname
+   nam%addvar2d(1:2) = (/'',''/)
+
+   do its=1,nam%nts
+      ! Define filename
+      write(fullname,'(a,a,i2.2,a)') trim(nam%wind_filename),'_',nam%timeslot(its),'.nc'
+
+      ! Read file
+      call model%read(mpl,nam,fullname,its,model%fld_uv(:,:,:,its))
+   end do
+
+   ! Reset namelist
+   nam%nv = nv_save
+   nam%varname(1:nam%nv) = varname_save(1:nam%nv)
+   nam%addvar2d(1:nam%nv) = addvar2d_save(1:nam%nv)
+end if
+
+end subroutine model_read_wind
+
+!----------------------------------------------------------------------
 ! Subroutine: model_generate_obs
 ! Purpose: generate observations locations
 !----------------------------------------------------------------------
-subroutine model_generate_obs(model,mpl,rng,nam)
+subroutine model_generate_obs(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
 class(model_type),intent(inout) :: model ! Model
 type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(rng_type),intent(inout) :: rng      ! Random number generator
 type(nam_type),intent(in) :: nam         ! Namelist
 
 ! Local variables
-integer :: nres,delta,iproc,iobs,proc_to_nobsa(mpl%nproc)
-logical :: valid
+integer :: nres,delta,iproc,iobs,proc_to_nobsa(mpl%nproc),nn_index(10),img,inb
+real(kind_real) :: nn_dist(10),dist_obs
 character(len=1024),parameter :: subr = 'model_generate_obs'
-type(mesh_type) :: mesh
+type(rng_type) :: rng
+type(tree_type) :: tree
 
 ! Check observation number
 if (nam%nobs<1) call mpl%abort(subr,'nobs should be positive for offline observation operator')
+
+! Initialize random number generator
+call rng%init(mpl,nam)
 
 ! Set number of observations for each processor
 nres = nam%nobs
@@ -714,10 +771,10 @@ end if
 model%nobsa = proc_to_nobsa(mpl%myproc)
 allocate(model%lonobs(model%nobsa))
 allocate(model%latobs(model%nobsa))
-call mesh%alloc(model%nmg)
+call tree%alloc(mpl,model%nmg)
 
 ! Initialization
-call mesh%init(mpl,rng,model%lon,model%lat,.true.)
+call tree%init(model%lon,model%lat)
 
 ! Generate random observation network
 iobs = 1
@@ -726,13 +783,21 @@ do while (iobs<=model%nobsa)
    call rng%rand_real(-pi,pi,model%lonobs(iobs))
    call rng%rand_real(-0.5*pi,0.5*pi,model%latobs(iobs))
 
-   ! Check if it is inside the domain
-   call mesh%inside(mpl,model%lonobs(iobs),model%latobs(iobs),valid)
-   if (valid) iobs=iobs+1
+   ! Check distance with nearest neighbor
+   call tree%find_nearest_neighbors(model%lonobs(iobs),model%latobs(iobs),1,nn_index(1:1),nn_dist(1:1))
+   img = nn_index(1)
+   dist_obs = nn_dist(1)
+   call tree%find_nearest_neighbors(model%lon(img),model%lat(img),10,nn_index,nn_dist)
+   do inb=1,10
+      if (nn_dist(inb)>0.0) then
+         if (dist_obs<nn_dist(inb)) iobs=iobs+1
+         exit
+      end if
+   end do
 end do
 
 ! Release memory
-call mesh%dealloc
+call tree%dealloc
 
 end subroutine model_generate_obs
 

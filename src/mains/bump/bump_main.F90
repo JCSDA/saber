@@ -15,7 +15,6 @@ use tools_kinds,only: kind_real
 use type_bump, only: bump_type
 use type_model, only: model_type
 use type_mpl, only: mpl_type
-use type_rng, only: rng_type
 use type_timer, only: timer_type
 
 implicit none
@@ -33,7 +32,6 @@ type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
 type(model_type) :: model
 type(mpl_type) :: mpl
-type(rng_type) :: rng
 type(timer_type) :: timer
 
 ! Initialize MPI
@@ -113,13 +111,6 @@ call mpl%flush
 write(mpl%info,'(a)') '--- Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT -----'
 call mpl%flush
 
-! Initialize random number generator
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Initialize random number generator'
-call mpl%flush
-call rng%init(mpl,bump%nam)
-
 ! Model setup
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
@@ -149,14 +140,20 @@ else
    model%ens2_nsub = 0
 end if
 
+! Read wind fields
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Read wind fields'
+call mpl%flush
+call model%read_wind(mpl,bump%nam)
+
 if (bump%nam%new_obsop) then
    ! Generate observations locations
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
    write(mpl%info,'(a)') '--- Generate observations locations'
    call mpl%flush
-   call model%generate_obs(mpl,rng,bump%nam)
-   if (bump%nam%default_seed) call rng%reseed(mpl)
+   call model%generate_obs(mpl,bump%nam)
 else
    model%nobsa = 0
    allocate(model%lonobs(model%nobsa))
@@ -174,7 +171,7 @@ call bump%setup_online(f_comm,model%nmga,model%nl0,bump%nam%nv,bump%nam%nts, &
                      & smask=model%smask_mga, &
                      & ens1_ne=model%ens1_ne,ens1_nsub=model%ens1_nsub,ens2_ne=model%ens2_ne,ens2_nsub=model%ens2_nsub, &
                      & nobs=model%nobsa,lonobs=model%lonobs*rad2deg,latobs=model%latobs*rad2deg, &
-                     & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+                     & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr,fld_uv=model%fld_uv)
 
 ! Transfer members
 if (bump%nam%ens1_ne>0) then
@@ -202,12 +199,47 @@ if (bump%nam%ens2_ne>0) then
    end do
 end if
 
+! Test set_parameters interfaces
+if (bump%nam%check_set_param_cor.or.bump%nam%check_set_param_hyb.or.bump%nam%check_set_param_lct) then
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Test set_parameters interfaces'
+   call bump%mpl%flush()
+   call bump%test_set_parameter
+   if (bump%nam%default_seed) call bump%rng%reseed(mpl)
+end if
+
 ! Run drivers
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
 write(mpl%info,'(a)') '--- Run drivers'
 call mpl%flush
 call bump%run_drivers
+
+! Test get_parameter interfaces
+if (bump%nam%check_get_param_cor.or.bump%nam%check_get_param_hyb.or.bump%nam%check_get_param_Dloc &
+ & .or.bump%nam%check_get_param_lct) then
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Test get_parameter interfaces'
+   call bump%mpl%flush()
+   call bump%test_get_parameter
+   if (bump%nam%default_seed) call bump%rng%reseed(mpl)
+end if
+
+! Release memory (partial)
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Release memory (partial)'
+call mpl%flush
+call bump%partial_dealloc
+
+! Test interfaces
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Test apply interfaces'
+call mpl%flush
+call bump%test_apply_interfaces
 
 ! Execution stats
 write(mpl%info,'(a)') '-------------------------------------------------------------------'

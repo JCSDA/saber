@@ -1006,6 +1006,7 @@ integer,allocatable :: vic0(:)
 real(kind_real) :: d
 real(kind_real),allocatable :: x(:),y(:),z(:),v1(:),v2(:),va(:),vp(:),t(:)
 logical :: found
+character(len=1024),parameter :: subr = 'samp_compute_sampling_ps'
 
 if (mpl%main) then
    ! First class
@@ -1070,16 +1071,20 @@ if (mpl%main) then
                      ictest = (icsup+icinf)/2
    
                      ! Update
-                     if (d<(real(ictest,kind_real)-0.5)*nam%dc) icsup = ictest
-                     if (d>(real(ictest,kind_real)-0.5)*nam%dc) icinf = ictest
+                     if (d<(real(ictest-1,kind_real)-0.5)*nam%dc) icsup = ictest
+                     if (d>(real(ictest-1,kind_real)-0.5)*nam%dc) icinf = ictest
    
                      ! Exit test
                      if (icsup==icinf+1) then
-                        if (abs((real(icinf,kind_real)-0.5)*nam%dc-d)<abs((real(icsup,kind_real)-0.5)*nam%dc-d)) then
+                        if (abs(real(icinf-1,kind_real)*nam%dc-d)<abs(real(icsup-1,kind_real)*nam%dc-d)) then
                            jc3 = icinf
                         else
                            jc3 = icsup
                         end if
+
+                        ! Check class
+                        if (d<max((real(jc3-1,kind_real)-0.5)*nam%dc,0.0_kind_real)) call mpl%abort(subr,'jc3 is too high')
+                        if (d>(real(jc3,kind_real)-0.5)*nam%dc) call mpl%abort(subr,'jc3 is too low')
                         found = .true.
                      end if
                   end do
@@ -1372,7 +1377,7 @@ lat_c2 = geom%lat(samp%c2_to_c0)
 do il0i=1,geom%nl0i
    write(samp%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
    call samp%h(il0i)%interp(mpl,rng,nam,geom,il0i,nam%nc2,lon_c2,lat_c2,samp%mask_c2(:,il0i),geom%nc0a, &
- & geom%lon_c0a,geom%lat_c0a,geom%mask_c0a(:,il0i))
+ & geom%lon_c0a,geom%lat_c0a,geom%mask_c0a(:,il0i),7)
 end do
 
 ! Define halo A
@@ -1589,7 +1594,7 @@ if (nam%adv_diag) then
          end do
          write(samp%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
          call samp%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),samp%nc1a, &
-       & lon_c1a,lat_c1a,mask_c1a)
+       & lon_c1a,lat_c1a,mask_c1a,10)
       end do
    end do
 

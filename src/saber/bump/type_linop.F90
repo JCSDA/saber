@@ -26,6 +26,18 @@ logical,parameter :: check_data = .false.             ! Activate data check for 
 integer,parameter :: reorder_max = 1000000            ! Maximum size of linear operation to allow reordering
 real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum interpolation coefficient
 
+! Interpolation data derived type
+type interp_type
+   integer :: n_src_eff
+   integer,allocatable :: src_eff_to_src(:)
+   real(kind_real),allocatable :: lon_src_eff(:)
+   real(kind_real),allocatable :: lat_src_eff(:)
+   type(tree_type) :: tree
+   type(mesh_type) :: mesh
+contains
+   procedure :: dealloc => interp_dealloc
+end type
+
 ! Linear operator derived type
 type linop_type
    character(len=1024) :: prefix            ! Operator prefix (for I/O)
@@ -37,6 +49,7 @@ type linop_type
    real(kind_real),allocatable :: S(:)      ! Coefficients
    integer :: nvec                          ! Size of the vector of linear operators with similar row and col
    real(kind_real),allocatable :: Svec(:,:) ! Coefficients of the vector of linear operators with similar row and col
+   type(interp_type) :: interp_data         ! Interpolation data
 contains
    procedure :: alloc => linop_alloc
    procedure :: dealloc => linop_dealloc
@@ -60,6 +73,26 @@ private
 public :: linop_type,linop_ntag
 
 contains
+
+!----------------------------------------------------------------------
+! Subroutine: interp_dealloc
+! Purpose: release memory
+!----------------------------------------------------------------------
+subroutine interp_dealloc(interp_data)
+
+implicit none
+
+! Passed variables
+class(interp_type),intent(inout) :: interp_data ! Interpolation data
+
+! Release memory
+if (allocated(interp_data%src_eff_to_src)) deallocate(interp_data%src_eff_to_src)
+if (allocated(interp_data%lon_src_eff)) deallocate(interp_data%lon_src_eff)
+if (allocated(interp_data%lat_src_eff)) deallocate(interp_data%lat_src_eff)
+call interp_data%mesh%dealloc
+call interp_data%tree%dealloc
+
+end subroutine interp_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_alloc
@@ -107,6 +140,7 @@ if (allocated(linop%row)) deallocate(linop%row)
 if (allocated(linop%col)) deallocate(linop%col)
 if (allocated(linop%S)) deallocate(linop%S)
 if (allocated(linop%Svec)) deallocate(linop%Svec)
+call linop%interp_data%dealloc
 
 end subroutine linop_dealloc
 
@@ -809,7 +843,7 @@ end subroutine linop_gather
 ! Subroutine: linop_interp
 ! Purpose: compute horizontal interpolation
 !----------------------------------------------------------------------
-subroutine linop_interp(linop,mpl,rng,nam,geom,il0,n_src,lon_src,lat_src,mask_src,n_dst,lon_dst,lat_dst,mask_dst)
+subroutine linop_interp(linop,mpl,rng,nam,geom,il0,n_src,lon_src,lat_src,mask_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt)
 
 implicit none
 
@@ -828,6 +862,7 @@ integer,intent(in) :: n_dst                  ! Destination size
 real(kind_real),intent(in) :: lon_dst(n_dst) ! Destination longitudes
 real(kind_real),intent(in) :: lat_dst(n_dst) ! Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)        ! Destination mask
+integer,intent(in) :: ifmt                   ! Format indentation
 
 ! Local variables
 integer :: n_src_eff,i_src,i_src_eff,i,i_dst,nn_index(1),n_s,ib(3),i_s
@@ -836,9 +871,8 @@ real(kind_real) :: nn_dist(1),b(3)
 real(kind_real),allocatable :: lon_src_eff(:),lat_src_eff(:),S(:)
 logical :: valid,valid_arc
 logical,allocatable :: missing(:)
+character(len=7) :: cfmt
 character(len=1024),parameter :: subr = 'linop_interp'
-type(tree_type) :: tree
-type(mesh_type) :: mesh
 
 ! Count non-missing source points
 n_src_eff = count(mask_src)
@@ -859,13 +893,37 @@ end do
 lon_src_eff = lon_src(src_eff_to_src)
 lat_src_eff = lat_src(src_eff_to_src)
 
-! Allocation
-call mesh%alloc(n_src_eff)
-call tree%alloc(mpl,n_src_eff)
+if (allocated(linop%interp_data%src_eff_to_src)) then
+   ! Check that source is the same
+   if (n_src_eff/=linop%interp_data%n_src_eff) call mpl%abort(subr,'wrong n_src_eff')
+   if (any(src_eff_to_src/=linop%interp_data%src_eff_to_src)) call mpl%abort(subr,'wrong src_eff_to_src')
+   if (any(abs(lon_src_eff-linop%interp_data%lon_src_eff)>0.0)) call mpl%abort(subr,'wrong lon_src_eff')
+   if (any(abs(lat_src_eff-linop%interp_data%lat_src_eff)>0.0)) call mpl%abort(subr,'wrong lat_src_eff')
 
-! Initialization
-call mesh%init(mpl,rng,lon_src_eff,lat_src_eff,.true.)
-call tree%init(lon_src_eff,lat_src_eff)
+   ! Release memory
+   deallocate(linop%row)
+   deallocate(linop%col)
+   deallocate(linop%S)
+else
+   ! Allocation
+   allocate(linop%interp_data%src_eff_to_src(n_src_eff))
+   allocate(linop%interp_data%lon_src_eff(n_src_eff))
+   allocate(linop%interp_data%lat_src_eff(n_src_eff))
+
+   ! Copy source data
+   linop%interp_data%n_src_eff = n_src_eff
+   linop%interp_data%src_eff_to_src = src_eff_to_src
+   linop%interp_data%lon_src_eff = lon_src_eff
+   linop%interp_data%lat_src_eff = lat_src_eff
+
+   ! Allocation
+   call linop%interp_data%mesh%alloc(n_src_eff)
+   call linop%interp_data%tree%alloc(mpl,n_src_eff)
+
+   ! Initialization
+   call linop%interp_data%mesh%init(mpl,rng,lon_src_eff,lat_src_eff,.true.)
+   call linop%interp_data%tree%init(lon_src_eff,lat_src_eff)
+end if
 
 ! Allocation
 allocate(row(3*n_dst))
@@ -873,26 +931,29 @@ allocate(col(3*n_dst))
 allocate(S(3*n_dst))
 
 ! Compute interpolation
-write(mpl%info,'(a10,a)') '','Compute interpolation: '
-call mpl%flush(.false.)
-call mpl%prog_init(n_dst)
+if (ifmt>0) then
+   write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
+   write(mpl%info,cfmt) '','Compute interpolation: '
+   call mpl%flush(.false.)
+   call mpl%prog_init(n_dst)
+end if
 n_s = 0
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
       ! Find nearest neighbor
-      call tree%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),1,nn_index,nn_dist)
+      call linop%interp_data%tree%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),1,nn_index,nn_dist)
 
       if (abs(nn_dist(1))>0.0) then
          ! Compute barycentric coordinates
-         call mesh%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),nn_index(1),b,ib)
+         call linop%interp_data%mesh%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),nn_index(1),b,ib)
 
          valid = all(ib>0)
          if (valid) then
             if (nam%mask_check) then
                ! Check if arc is crossing boundary arcs
                do i=1,3
-                  call geom%check_arc(mpl,il0,lon_src_eff(mesh%order(ib(i))),lat_src_eff(mesh%order(ib(i))), &
-                & lon_dst(i_dst),lat_dst(i_dst),valid_arc)
+                  call geom%check_arc(mpl,il0,lon_src_eff(linop%interp_data%mesh%order(ib(i))), &
+                & lat_src_eff(linop%interp_data%mesh%order(ib(i))),lon_dst(i_dst),lat_dst(i_dst),valid_arc)
                   if (.not.valid_arc) valid = .false.
                end do
             end if
@@ -908,7 +969,7 @@ do i_dst=1,n_dst
                   if (b(i)>0.0) then
                      n_s = n_s+1
                      row(n_s) = i_dst
-                     col(n_s) = mesh%order(ib(i))
+                     col(n_s) = linop%interp_data%mesh%order(ib(i))
                      S(n_s) = b(i)
                   end if
                end do
@@ -933,9 +994,9 @@ do i_dst=1,n_dst
    end if
 
    ! Update
-   call mpl%prog_print(i_dst)
+   if (ifmt>0) call mpl%prog_print(i_dst)
 end do
-call mpl%prog_final
+if (ifmt>0) call mpl%prog_final
 
 ! Check interpolation
 allocate(missing(n_dst))
@@ -963,8 +1024,6 @@ linop%S = S(1:linop%n_s)
 deallocate(src_eff_to_src)
 deallocate(lon_src_eff)
 deallocate(lat_src_eff)
-call mesh%dealloc
-call tree%dealloc
 deallocate(row)
 deallocate(col)
 deallocate(S)

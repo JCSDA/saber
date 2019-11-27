@@ -693,7 +693,7 @@ do ioga=1,io%noga
 end do
 mask_c0 = .true.
 write(io%og%prefix,'(a,i3.3)') 'og'
-call io%og%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,mask_c0,io%noga,lon_oga,lat_oga,mask_oga)
+call io%og%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,mask_c0,io%noga,lon_oga,lat_oga,mask_oga,10)
 
 ! Allocation
 allocate(lcheck_c0b(geom%nc0))
