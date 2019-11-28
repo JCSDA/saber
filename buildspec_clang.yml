@@ -27,38 +27,10 @@ phases:
       - echo "CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH}"
       - echo "CODEBUILD_SOURCE_VERSION=${CODEBUILD_SOURCE_VERSION}"
 
-      - echo MPI setup for Docker
-      - mkdir -p /var/run/sshd
-      - ssh-keygen -A 
-      - sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
-      - sed -i 's/#RSAAuthentication yes/RSAAuthentication yes/g' /etc/ssh/sshd_config
-      - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
-
-      - groupadd jcsda -g 9999
-      - useradd jcsdauser
-      - mkdir -p /jcsda /build_container
-      - chown -R jcsdauser:jcsda /build_container  /usr/local
-      - chmod 6755 /jcsda /build_container /usr/local
-
-      - mkdir /jcsda/.ssh ; echo "StrictHostKeyChecking no" > /jcsda/.ssh/config
-      - mkdir -p /jcsda/.openmpi
-      - mkdir -p /home/jcsdauser/.openmpi
-        
-      - cp default-mca-params.conf /home/jcsdauser/.openmpi/mca-params.conf
-      - cat /home/jcsdauser/.openmpi/mca-params.conf
-      - chown -R jcsdauser:jcsda /jcsda/
-
-      - su - jcsdauser -c "ssh-keygen -f /jcsda/.ssh/id_rsa -t rsa -N ''
-        && chmod 600 /jcsda/.ssh/config
-        && chmod 700 /jcsda/.ssh
-        && cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys
-        && echo MPI setup for Docker done"
   pre_build:
     commands:
       - echo Executing pre_build phase
-
       - git lfs install
-      - cp ~/.gitconfig /home/jcsdauser/
  
       # saber-bundle
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
@@ -84,8 +56,11 @@ phases:
       - ls
       - pwd
 
-      - mv saber-bundle /jcsda/
-      - cd /jcsda/saber-bundle
+      - mkdir /build_container
+      - mkdir /src_repo
+      - mv saber-bundle /src_repo/
+
+      - cd /src_repo/saber-bundle
       - ls
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
       - sed -i '/PROJECT eckit/d' CMakeLists.txt
@@ -93,22 +68,21 @@ phases:
   build:
     commands:
       - echo Executing build phase
-      - su - jcsdauser -c "cd /build_container 
-        && ls
-        && ecbuild /jcsda/saber-bundle/
-        && cd /build_container/saber
-        && make -j4"
+      - cd /build_container
+      - ecbuild /src_repo/saber-bundle/
+      - cd /build_container/saber
+      - make -j4
 
       - export BUILD_STATUS="0"
       - echo $BUILD_STATUS
       - echo $CODEBUILD_BUILD_SUCCEEDING
+
       - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
         then export BUILD_STATUS="1";
         echo "Build passed";
         fi
-
-      - su - jcsdauser -c "cd /build_container/saber
-        && ctest"
+      - echo $BUILD_STATUS
+      - ctest
 
   post_build:
     commands:
@@ -116,6 +90,6 @@ phases:
       - echo $CODEBUILD_BUILD_SUCCEEDING
       - if [ "$BUILD_STATUS" = "1" ] && [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ];
         then echo "Build passed, rerun failed tests";
-        su - jcsdauser -c "cd /build_container/saber
-        && ctest -VV --rerun-failed";
+        cd /build_container/saber;
+        ctest -VV --rerun-failed;
         fi
