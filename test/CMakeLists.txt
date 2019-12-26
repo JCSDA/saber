@@ -53,6 +53,14 @@ if(DEFINED ENV{SABER_TEST_MODEL_DIR})
     set(SABER_TEST_MODEL_DIR "$ENV{SABER_TEST_MODEL_DIR}")
 endif()
 
+# Default new test files flag
+set(SABER_TEST_NEW 0)
+
+# Override new test files flag using environment variables
+if(DEFINED ENV{SABER_TEST_NEW})
+    set(SABER_TEST_NEW "$ENV{SABER_TEST_NEW}")
+endif()
+
 # Summary
 message(STATUS "SABER_TEST_TIER:      " ${SABER_TEST_TIER})
 message(STATUS "SABER_TEST_MPI:       " ${SABER_TEST_MPI})
@@ -146,7 +154,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
 # Set download URL
 set(ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber)
 
-# Get the current working branch
+# Get the current git branch
 execute_process(
     COMMAND git rev-parse --abbrev-ref HEAD
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -154,11 +162,26 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+# Check whether the URL exists or not
+ecbuild_check_multiurl(NAMES   ${saber_data_tar}
+                       DIRHOST ${GIT_BRANCH}
+                       RESULT  SPECIFIC_TEST_FILES)
+
+# Set distant directory
+if(${SPECIFIC_TEST_FILES} MATCHES 0)
+    # Download and extract new test files (distant directory = git branch)
+    set(DIRHOST ${GIT_BRANCH})
+else()
+    # Download and extract develop test files (distant directory = develop)
+    set(DIRHOST "develop")
+endif()
+message(STATUS "Test data downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
+
 # Download and extract data files
 ecbuild_get_test_multidata(TARGET  get_saber_data
                            NAMES   ${saber_data_tar}
-                           DIRNAME ${GIT_BRANCH}
-                           DIRSAVE testdata
+                           DIRHOST ${DIRHOST}
+                           DIRLOCAL testdata
                            EXTRACT)
 
 # Link data files into build directory
@@ -173,11 +196,26 @@ foreach(file ${saber_ref_to_data})
                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 
+# Check whether the URL exists or not
+ecbuild_check_multiurl(NAMES   ${saber_ref_tar}
+                       DIRHOST ${GIT_BRANCH}
+                       RESULT  SPECIFIC_TEST_FILES)
+
+# Set distant directory
+if(${SPECIFIC_TEST_FILES} MATCHES 0)
+    # Download and extract new test files (distant directory = git branch)
+    set(DIRHOST ${GIT_BRANCH})
+else()
+    # Download and extract develop test files (distant directory = develop)
+    set(DIRHOST "develop")
+endif()
+message(STATUS "Reference data downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
+
 # Download and extract reference files
 ecbuild_get_test_multidata(TARGET  get_saber_ref
                            NAMES   ${saber_ref_tar}
-                           DIRNAME ${GIT_BRANCH}
-                           DIRSAVE testref
+                           DIRHOST ${DIRHOST}
+                           DIRLOCAL testref
                            EXTRACT)
 
 # Link reference files into build directory
