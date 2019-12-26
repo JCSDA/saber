@@ -53,14 +53,6 @@ if(DEFINED ENV{SABER_TEST_MODEL_DIR})
     set(SABER_TEST_MODEL_DIR "$ENV{SABER_TEST_MODEL_DIR}")
 endif()
 
-# Default new test files flag
-set(SABER_TEST_NEW 0)
-
-# Override new test files flag using environment variables
-if(DEFINED ENV{SABER_TEST_NEW})
-    set(SABER_TEST_NEW "$ENV{SABER_TEST_NEW}")
-endif()
-
 # Summary
 message(STATUS "SABER_TEST_TIER:      " ${SABER_TEST_TIER})
 message(STATUS "SABER_TEST_MPI:       " ${SABER_TEST_MPI})
