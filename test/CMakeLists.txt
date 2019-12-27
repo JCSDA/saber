@@ -137,11 +137,15 @@ if(${SABER_TEST_MODEL} MATCHES 1)
     list(APPEND saber_data_tar saber_data_model.tar.gz)
 endif()
 
-# Make directories
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
+# Define local path for test files
+if(DEFINED ENV{LOCAL_PATH_TESTFILES})
+    set(LOCAL_PATH_TESTFILES "$ENV{LOCAL_PATH_TESTFILES}")
+endif()
+if(NOT DEFINED LOCAL_PATH_TESTFILES)
+  set(TESTFILE_DIR ${CMAKE_BINARY_DIR}/test_data/saber CACHE PATH "data dir for test data")
+else()
+  set(TESTFILE_DIR ${LOCAL_PATH_TESTFILES})
+endif()
 
 # Set download URL
 set(ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber)
@@ -170,23 +174,11 @@ endif()
 message(STATUS "Test data downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
 
 # Download and extract data files
-ecbuild_get_test_multidata(TARGET  get_saber_data
-                           NAMES   ${saber_data_tar}
-                           DIRHOST ${DIRHOST}
-                           DIRLOCAL testdata
+ecbuild_get_test_multidata(TARGET   get_saber_data
+                           NAMES    ${saber_data_tar}
+                           DIRHOST  ${DIRHOST}
+                           DIRLOCAL ${TESTFILE_DIR}/testdata
                            EXTRACT)
-
-# Link data files into build directory
-foreach(file ${saber_data})
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${PROJECT_SOURCE_DIR}/test_data_download/testdata/${file}
-                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
-endforeach()
-foreach(file ${saber_ref_to_data})
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${PROJECT_SOURCE_DIR}/test_data_download/testref/${file}
-                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
-endforeach()
 
 # Check whether the URL exists or not
 ecbuild_check_multiurl(NAMES   ${saber_ref_tar}
@@ -204,17 +196,35 @@ endif()
 message(STATUS "Reference data downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
 
 # Download and extract reference files
-ecbuild_get_test_multidata(TARGET  get_saber_ref
-                           NAMES   ${saber_ref_tar}
-                           DIRHOST ${DIRHOST}
-                           DIRLOCAL testref
+ecbuild_get_test_multidata(TARGET   get_saber_ref
+                           NAMES    ${saber_ref_tar}
+                           DIRHOST  ${DIRHOST}
+                           DIRLOCAL ${TESTFILE_DIR}/testref
                            EXTRACT)
 
-# Link reference files into build directory
+# Make directories
+file(MAKE_DIRECTORY ${TESTFILE_DIR}/testdata)
+file(MAKE_DIRECTORY ${TESTFILE_DIR}/testref)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
+
+# Link data/reference files
+foreach(file ${saber_data})
+    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                    ${TESTFILE_DIR}/testdata/${file}
+                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
+endforeach()
 foreach(file ${saber_ref})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${PROJECT_SOURCE_DIR}/test_data_download/testref/${file}
+                    ${TESTFILE_DIR}/testref/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
+endforeach()
+foreach(file ${saber_ref_to_data})
+    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                    ${TESTFILE_DIR}/testref/${file}
+                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 
 # Mono-core tests
