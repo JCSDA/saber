@@ -385,7 +385,7 @@ elseif (mpl%nproc>1) then
       ! Write distribution
       if (mpl%main) then
          ! Create file
-         call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename),or(nf90_clobber,nf90_64bit_offset),ncid))
+         call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
          ! Write namelist parameters
          call nam%write(mpl,ncid)
