@@ -18,6 +18,7 @@ real(kind=4),allocatable :: lon(:),lat(:),pres(:)
 character(len=1024),parameter :: subr = 'model_mpas_coord'
 
 ! Open file and get dimensions
+model%ntile = 1
 model%nlon = mpl%msv%vali
 model%nlat = mpl%msv%vali
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
@@ -42,6 +43,7 @@ call mpl%ncerr(subr,nf90_get_var(ncid,pres_id,pres))
 call mpl%ncerr(subr,nf90_close(ncid))
 
 ! Model grid
+model%mg_to_tile = 1
 model%lon = lon
 model%lat = lat
 model%area = 4.0*pi/real(model%nmg,kind_real)
@@ -87,7 +89,7 @@ real(kind_real) :: fld_mg(model%nmg,model%nl0)
 character(len=1024),parameter :: subr = 'model_mpas_read'
 
 ! Open file
-if (mpl%main) call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid))
+if (mpl%main) call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
 do iv=1,nam%nv
    if (mpl%main) then
