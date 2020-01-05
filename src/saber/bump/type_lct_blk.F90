@@ -21,11 +21,10 @@ use type_minim, only: minim_type
 use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_rng, only: rng_type
 use type_samp, only: samp_type
 
 implicit none
-
-logical,parameter :: lprt = .false. ! Optimization print
 
 ! LCT block data derived type
 type lct_blk_type
@@ -186,13 +185,14 @@ end subroutine lct_blk_dealloc
 ! Subroutine: lct_blk_compute
 ! Purpose: compute raw correlation and fit to get LCT components
 !----------------------------------------------------------------------
-subroutine lct_blk_compute(lct_blk,mpl,nam,geom,bpar,samp,mom_blk)
+subroutine lct_blk_compute(lct_blk,mpl,rng,nam,geom,bpar,samp,mom_blk)
 
 implicit none
 
 ! Passed variables
 class(lct_blk_type),intent(inout) :: lct_blk ! LCT block
 type(mpl_type),intent(inout) :: mpl          ! MPI data
+type(rng_type),intent(inout) :: rng          ! Random number generator
 type(nam_type),intent(in) :: nam             ! Namelist
 type(geom_type),intent(in) :: geom           ! Geometry
 type(bpar_type),intent(in) :: bpar           ! Block parameters
@@ -222,6 +222,18 @@ do il0=1,geom%nl0
    do ic1a=1,samp%nc1a
       ! Global index
       ic1 = samp%c1a_to_c1(ic1a)
+
+      select case (trim(nam%minim_algo))
+      case ('hooke')
+         ! Hooke parameters
+         minim%hooke_rho = 0.5
+         minim%hooke_tol = 1.0e-4
+         minim%hooke_itermax = 10
+      case ('praxis')
+         ! Praxis parameters
+         minim%praxis_tol = 1.0
+         minim%praxis_itermax = 5
+      end select
 
       ! Allocation
       allocate(norm_raw(nam%nc3,bpar%nl0r(ib)))
@@ -303,8 +315,8 @@ do il0=1,geom%nl0
                do jc3=1,nam%nc3
                   if (minim%dmask(jc3,jl0r)) then
                      distsq = minim%dxsq(jc3,jl0r)+minim%dysq(jc3,jl0r)
-                     if (sup(lct_blk%raw(jc3,jl0r,ic1a,il0),nam%lct_cor_min).and.inf(lct_blk%raw(jc3,jl0r,ic1a,il0),1.0_kind_real) &
-                   & .and.(distsq>0.0)) Dh(jc3) = -distsq/(2.0*log(lct_blk%raw(jc3,jl0r,ic1a,il0)))
+                     if (sup(lct_blk%raw(jc3,jl0r,ic1a,il0),nam%lct_cor_min).and.inf(lct_blk%raw(jc3,jl0r,ic1a,il0), &
+                   & 1.0_kind_real).and.(distsq>0.0)) Dh(jc3) = -distsq/(2.0*log(lct_blk%raw(jc3,jl0r,ic1a,il0)))
                   end if
                end do
             end if
@@ -381,7 +393,7 @@ do il0=1,geom%nl0
             minim%nscales = lct_blk%nscales
 
             ! Compute fit
-            call minim%compute(mpl,lprt)
+            call minim%compute(mpl,rng)
 
             ! Copy parameters
             do iscales=1,lct_blk%nscales

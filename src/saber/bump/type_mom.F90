@@ -99,7 +99,7 @@ do ib=1,bpar%nb
       mom%blk(ib)%m2_1 = 0.0
       mom%blk(ib)%m2_2 = 0.0
       mom%blk(ib)%m11 = 0.0
-      if (.not.nam%gau_approx) mom%blk(ib)%m22 = 0.0
+      mom%blk(ib)%m22 = 0.0
    end if
 end do
 
@@ -177,13 +177,13 @@ do ib=1,bpar%nb
          call mpl%ncerr(subr,nf90_inq_varid(ncid,'m2_1',m2_1_id))
          call mpl%ncerr(subr,nf90_inq_varid(ncid,'m2_2',m2_2_id))
          call mpl%ncerr(subr,nf90_inq_varid(ncid,'m11',m11_id))
-         if (.not.nam%gau_approx) call mpl%ncerr(subr,nf90_inq_varid(ncid,'m22',m22_id))
+         call mpl%ncerr(subr,nf90_inq_varid(ncid,'m22',m22_id))
 
          ! Read data
          call mpl%ncerr(subr,nf90_get_var(ncid,m2_1_id,mom%blk(ib)%m2_1(:,:,isub)))
          call mpl%ncerr(subr,nf90_get_var(ncid,m2_2_id,mom%blk(ib)%m2_2(:,:,:,isub)))
          call mpl%ncerr(subr,nf90_get_var(ncid,m11_id,mom%blk(ib)%m11(:,:,:,:,isub)))
-         if (.not.nam%gau_approx) call mpl%ncerr(subr,nf90_get_var(ncid,m22_id,mom%blk(ib)%m22(:,:,:,:,isub)))
+         call mpl%ncerr(subr,nf90_get_var(ncid,m22_id,mom%blk(ib)%m22(:,:,:,:,isub)))
 
          ! Close file
          call mpl%ncerr(subr,nf90_close(ncid))
@@ -239,11 +239,8 @@ do ib=1,bpar%nb
          call mpl%ncerr(subr,nf90_put_att(ncid,m2_2_id,'_FillValue',mpl%msv%valr))
          call mpl%ncerr(subr,nf90_def_var(ncid,'m11',nc_kind_real,(/nc1a_id,nc3_id,nl0r_id,nl0_id/),m11_id))
          call mpl%ncerr(subr,nf90_put_att(ncid,m11_id,'_FillValue',mpl%msv%valr))
-         if (.not.nam%gau_approx) then
-            call mpl%ncerr(subr,nf90_def_var(ncid,'m22',nc_kind_real,(/nc1a_id,nc3_id,nl0r_id,nl0_id/), &
-          & m22_id))
-            call mpl%ncerr(subr,nf90_put_att(ncid,m22_id,'_FillValue',mpl%msv%valr))
-         end if
+         call mpl%ncerr(subr,nf90_def_var(ncid,'m22',nc_kind_real,(/nc1a_id,nc3_id,nl0r_id,nl0_id/),m22_id))
+         call mpl%ncerr(subr,nf90_put_att(ncid,m22_id,'_FillValue',mpl%msv%valr))
 
          ! End definition mode
          call mpl%ncerr(subr,nf90_enddef(ncid))
@@ -252,7 +249,7 @@ do ib=1,bpar%nb
          call mpl%ncerr(subr,nf90_put_var(ncid,m2_1_id,mom%blk(ib)%m2_1(:,:,isub)))
          call mpl%ncerr(subr,nf90_put_var(ncid,m2_2_id,mom%blk(ib)%m2_2(:,:,:,isub)))
          call mpl%ncerr(subr,nf90_put_var(ncid,m11_id,mom%blk(ib)%m11(:,:,:,:,isub)))
-         if (.not.nam%gau_approx) call mpl%ncerr(subr,nf90_put_var(ncid,m22_id,mom%blk(ib)%m22(:,:,:,:,isub)))
+         call mpl%ncerr(subr,nf90_put_var(ncid,m22_id,mom%blk(ib)%m22(:,:,:,:,isub)))
 
          ! Close file
          call mpl%ncerr(subr,nf90_close(ncid))
@@ -387,8 +384,7 @@ do isub=1,ens%nsub
 
                   do jc3=1,bpar%nc3(ib)
                      ! Fourth-order moment
-                     if (.not.nam%gau_approx) mom%blk(ib)%m22(:,jc3,jl0r,il0,isub) = mom%blk(ib)%m22(:,jc3,jl0r,il0,isub) &
-                                                                                   & +fld_1(:,il0)**2*fld_2(:,jc3,jl0)**2
+                     mom%blk(ib)%m22(:,jc3,jl0r,il0,isub) = mom%blk(ib)%m22(:,jc3,jl0r,il0,isub)+(fld_1(:,il0)*fld_2(:,jc3,jl0))**2
 
                      ! Covariance
                      mom%blk(ib)%m11(:,jc3,jl0r,il0,isub) = mom%blk(ib)%m11(:,jc3,jl0r,il0,isub)+fld_1(:,il0)*fld_2(:,jc3,jl0)
@@ -441,11 +437,11 @@ do ib=1,bpar%nb
                   if (samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)) then
                      mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) &
                                                           & /real(mom%ne/mom%nsub-1,kind_real)
-                     if (.not.nam%gau_approx) mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) &
-                                                                                   & /real(mom%ne/mom%nsub,kind_real)
+                     mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) &
+                                                          & /real(mom%ne/mom%nsub,kind_real)
                   else
                      mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mpl%msv%valr
-                     if (.not.nam%gau_approx) mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mpl%msv%valr
+                     mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mpl%msv%valr
                   end if
                end do
             end do

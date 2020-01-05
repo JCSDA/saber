@@ -12,15 +12,19 @@ use tools_func, only: fit_diag,fit_diag_dble,fit_lct
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
+use type_rng, only: rng_type
 
 implicit none
 
-real(kind_real),parameter :: rho = 0.5_kind_real    ! Convergence parameter for the Hooke algorithm
-real(kind_real),parameter :: tol = 1.0e-4_kind_real ! Tolerance for the Hooke algorithm
-integer,parameter :: itermax = 10                   ! Maximum number of iteration for the Hooke algorithm
-
 ! Minimization data derived type
 type minim_type
+   ! Minimizer data
+   real(kind_real) :: hooke_rho               ! Convergence parameter for the Hooke algorithm
+   real(kind_real) :: hooke_tol               ! Tolerance for the Hooke algorithm
+   integer :: hooke_itermax                   ! Maximum number of iteration for the Hooke algorithm
+   real(kind_real) :: praxis_tol              ! Tolerance for the praxis algorithm
+   integer :: praxis_itermax                  ! Maximum number of iteration for the praxis algorithm
+
    ! Generic data
    integer :: nx                              ! Control vector size
    integer :: ny                              ! Function output size
@@ -39,13 +43,18 @@ type minim_type
    integer :: nc3                             ! Number of classes
 
    ! Specific data (fit)
+   integer :: dl0                             ! Number of levels between interpolation levels
+   integer :: nl1                             ! Number of interpolation levels
+   integer,allocatable :: il1inf(:)           ! Inferior interpolation level
+   real(kind_real),allocatable :: rinf(:)     ! Inferior interpolation coefficient
+   integer,allocatable :: il1sup(:)           ! Superior interpolation level
+   real(kind_real),allocatable :: rsup(:)     ! Superior interpolation coefficient
    character(len=1024) :: fit_type            ! Fit function type
-   integer :: nl0r                            ! Reduced number of levels
-   logical :: lhomh                           ! Vertically homogenous horizontal support radius key
-   logical :: lhomv                           ! Vertically homogenous vertical support radius key
-   integer,allocatable :: l0rl0_to_l0(:,:)    ! Reduced level to level
+   integer :: nl0r                            ! Effective number of levels
+   integer,allocatable :: l0rl0_to_l0(:,:)    ! Effective level to level
    real(kind_real),allocatable :: disth(:)    ! Horizontal distance
    real(kind_real),allocatable :: distv(:,:)  ! Vertical distance
+   logical :: double_fit                      ! Double fit flag
 
    ! Specific data (LCT)
    integer :: nscales                         ! Number of LCT scales
@@ -58,13 +67,25 @@ contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
    procedure :: cost_fit_diag => minim_cost_fit_diag
-   procedure :: cost_fit_diag_dble => minim_cost_fit_diag_dble
    procedure :: cost_fit_lct => minim_cost_fit_lct
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
+   procedure :: praxis => minim_praxis
+   procedure :: flin => minim_flin
+   procedure :: quad => minim_quad
+   procedure :: minny => minim_minny
    procedure :: vt_dir => minim_vt_dir
    procedure :: vt_inv => minim_vt_inv
 end type minim_type
+
+! Praxis precision parameters
+real(kind_real),parameter :: machep = epsilon(1.0_kind_real)
+real(kind_real),parameter :: small = machep**2
+real(kind_real),parameter :: vsmall = small**2
+real(kind_real),parameter :: large = 1.0/small
+real(kind_real),parameter :: vlarge = 1.0/vsmall
+real(kind_real),parameter :: m2 = sqrt(machep)
+real(kind_real),parameter :: m4 = sqrt(m2)
 
 private
 public :: minim_type
@@ -75,17 +96,16 @@ contains
 ! subroutine: minim_compute
 ! Purpose: minimize ensuring bounds constraints
 !----------------------------------------------------------------------
-subroutine minim_compute(minim,mpl,lprt)
+subroutine minim_compute(minim,mpl,rng)
 
 implicit none
 
 ! Passed variables
 class(minim_type),intent(inout) :: minim ! Minimization data
 type(mpl_type),intent(inout) :: mpl      ! MPI data
-logical,intent(in) :: lprt               ! Print key
+type(rng_type),intent(inout) :: rng      ! Random number generator
 
 ! Local variables
-real(kind_real) :: guess(minim%nx)
 character(len=1024),parameter :: subr = 'minim_compute'
 
 ! Check
@@ -93,33 +113,28 @@ if (minim%nx<=0) call mpl%abort(subr,'nx should be positive to minimize')
 if (minim%ny<=0) call mpl%abort(subr,'nx should be positive to minimize')
 
 ! Initialization
-guess = minim%guess
-call minim%vt_inv(mpl,guess)
+call minim%vt_inv(mpl,minim%guess)
 
 ! Initial cost
-call minim%cost(mpl,guess,minim%f_guess)
+call minim%cost(mpl,minim%guess,minim%f_guess)
 
 select case (trim(minim%algo))
 case ('hooke')
    ! Hooke algorithm
-   call minim%hooke(mpl,guess)
+   call minim%hooke(mpl,minim%guess)
+case ('praxis')
+   ! Praxis algorithm
+   call minim%praxis(mpl,rng,minim%guess)
 end select
 
 ! Final cost
 call minim%cost(mpl,minim%x,minim%f_min)
 
-! Test
-if (minim%f_min<minim%f_guess) then
-   call minim%vt_dir(minim%x)
-   if (lprt) then
-      write(mpl%info,'(a13,a,f6.1,a,e9.2,a,e9.2,a)') '','Minimizer '//trim(minim%algo)//', cost function decrease:', &
-    & abs(minim%f_min-minim%f_guess)/minim%f_guess*100.0,'% (',minim%f_guess,' to ',minim%f_min,')'
-      call mpl%flush
-   end if
-else
-   minim%x = minim%guess
-   if (lprt) call mpl%warning(subr,'Minimizer '//trim(minim%algo)//' failed')
-end if
+! Check improvement
+if (minim%f_min>minim%f_guess) minim%x = minim%guess
+
+! Direct transform
+call minim%vt_dir(minim%x)
 
 end subroutine minim_compute
 
@@ -137,13 +152,16 @@ type(mpl_type),intent(inout) :: mpl       ! MPI data
 real(kind_real),intent(in) :: x(minim%nx) ! Control vector
 real(kind_real),intent(out) :: f          ! Cost function value
 
-select case (minim%cost_function)
+! Local variables
+character(len=1024) :: subr = 'minim_cost'
+
+select case (trim(minim%cost_function))
 case ('fit_diag')
    call minim%cost_fit_diag(mpl,x,f)
-case ('fit_diag_dble')
-   call minim%cost_fit_diag_dble(mpl,x,f)
 case ('fit_lct')
    call minim%cost_fit_lct(mpl,x,f)
+case default
+   call mpl%abort(subr,'wrong cost function')
 end select
 
 end subroutine minim_cost
@@ -164,91 +182,8 @@ real(kind_real),intent(out) :: f          ! Cost function value
 
 ! Local variables
 integer :: offset,il0
-real(kind_real) :: fo,fh,fv,norm,fit_rh_avg,fit_rv_avg
-real(kind_real) :: fit_rh(minim%nl0),fit_rv(minim%nl0)
-real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
-real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
-
-! Check control vector size
-offset = 0
-if (minim%lhomh) then
-   offset = offset+1
-else
-   offset = offset+minim%nl0
-end if
-if (minim%lhomv) then
-   offset = offset+1
-else
-   offset = offset+minim%nl0
-end if
-
-! Renormalize
-xtmp = x
-call minim%vt_dir(xtmp)
-
-! Get data
-offset = 0
-if (minim%lhomh) then
-   fit_rh = xtmp(offset+1)
-   offset = offset+1
-else
-   fit_rh = xtmp(offset+1:offset+minim%nl0)
-   offset = offset+minim%nl0
-end if
-if (minim%lhomv) then
-   fit_rv = xtmp(offset+1)
-   offset = offset+1
-else
-   fit_rv = xtmp(offset+1:offset+minim%nl0)
-   offset = offset+minim%nl0
-end if
-
-! Compute function
-call fit_diag(mpl,minim%fit_type,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,fit_rh,fit_rv,fit)
-
-! Pack
-fit_pack = pack(fit,mask=.true.)
-
-! Observations penalty
-fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
-norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
-if (norm>0.0) fo = fo/norm
-
-! Smoothing penalty
-fh = 0.0
-fv = 0.0
-do il0=2,minim%nl0-1
-   fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
-   norm = fit_rh_avg**2
-   if (norm>0.0) fh = fh+(fit_rh(il0)-fit_rh_avg)**2/norm
-   fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
-   norm = fit_rv_avg**2
-   if (norm>0.0) fv = fv+(fit_rv(il0)-fit_rv_avg)**2/norm
-end do
-
-! Full penalty function
-f = fo+fh+fv
-
-end subroutine minim_cost_fit_diag
-
-!----------------------------------------------------------------------
-! Subroutine: minim_cost_fit_diag_dble
-! Purpose: diagnosic fit function cost, double fit
-!----------------------------------------------------------------------
-subroutine minim_cost_fit_diag_dble(minim,mpl,x,f)
-
-implicit none
-
-! Passed variables
-class(minim_type),intent(in) :: minim     ! Minimization data
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-real(kind_real),intent(in) :: x(minim%nx) ! Control vector
-real(kind_real),intent(out) :: f          ! Cost function value
-
-! Local variables
-integer :: offset,il0
 real(kind_real) :: fo,fh,fv,fr,fc,norm,fit_rh_avg,fit_rv_avg,fit_rv_rfac_avg,fit_rv_coef_avg
-real(kind_real) :: fit_rh(minim%nl0),fit_rv(minim%nl0),fit_rv_rfac(minim%nl0),fit_rv_coef(minim%nl0)
+real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_rv(minim%nl0),fit_rv_rfac(minim%nl0),fit_rv_coef(minim%nl0)
 real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
@@ -257,33 +192,36 @@ xtmp = x
 call minim%vt_dir(xtmp)
 
 ! Get data
-offset = 0
-if (minim%lhomh) then
-   fit_rh = xtmp(offset+1)
-   offset = offset+1
+if (minim%dl0==1) then
+   coef = xtmp(0*minim%nl0+1:1*minim%nl0)
+   fit_rh = xtmp(1*minim%nl0+1:2*minim%nl0)
+   fit_rv = xtmp(2*minim%nl0+1:3*minim%nl0)
+   if (minim%double_fit) then
+      fit_rv_rfac = xtmp(3*minim%nl0+1:4*minim%nl0)
+      fit_rv_coef = xtmp(4*minim%nl0+1:5*minim%nl0)
+   end if
 else
-   fit_rh = xtmp(offset+1:offset+minim%nl0)
-   offset = offset+minim%nl0
-end if
-if (minim%lhomv) then
-   fit_rv = xtmp(offset+1)
-   offset = offset+1
-   fit_rv_rfac = xtmp(offset+1)
-   offset = offset+1
-   fit_rv_coef = xtmp(offset+1)
-   offset = offset+1
-else
-   fit_rv = xtmp(offset+1:offset+minim%nl0)
-   offset = offset+minim%nl0
-   fit_rv_rfac = xtmp(offset+1:offset+minim%nl0)
-   offset = offset+minim%nl0
-   fit_rv_coef = xtmp(offset+1:offset+minim%nl0)
-   offset = offset+minim%nl0
+   do il0=1,minim%nl0
+      coef(il0) = minim%rinf(il0)*xtmp(0*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(0*minim%nl1+minim%il1sup(il0))
+      fit_rh(il0) = minim%rinf(il0)*xtmp(1*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(1*minim%nl1+minim%il1sup(il0))
+      fit_rv(il0) = minim%rinf(il0)*xtmp(2*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(2*minim%nl1+minim%il1sup(il0))
+      if (minim%double_fit) then
+         fit_rv_rfac(il0) = minim%rinf(il0)*xtmp(3*minim%nl1+minim%il1inf(il0)) &
+                          & +minim%rsup(il0)*xtmp(3*minim%nl1+minim%il1sup(il0))
+         fit_rv_coef(il0) = minim%rinf(il0)*xtmp(4*minim%nl1+minim%il1inf(il0)) &
+                          & +minim%rsup(il0)*xtmp(4*minim%nl1+minim%il1sup(il0))
+      end if
+   end do
 end if
 
 ! Compute function
-call fit_diag_dble(mpl,minim%fit_type,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,fit_rh,fit_rv, &
- & fit_rv_rfac,fit_rv_coef,fit)
+if (minim%double_fit) then
+   call fit_diag_dble(mpl,minim%fit_type,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef, &
+ & fit_rh,fit_rv,fit_rv_rfac,fit_rv_coef,fit)
+else
+   call fit_diag(mpl,minim%fit_type,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef,fit_rh,fit_rv, &
+ & fit)
+end if
 
 ! Pack
 fit_pack = pack(fit,mask=.true.)
@@ -305,18 +243,20 @@ do il0=2,minim%nl0-1
    fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
    norm = fit_rv_avg**2
    if (norm>0.0) fv = fv+(fit_rv(il0)-fit_rv_avg)**2/norm
-   fit_rv_rfac_avg = 0.5*(fit_rv_rfac(il0-1)+fit_rv_rfac(il0+1))
-   norm = fit_rv_rfac_avg**2
-   if (norm>0.0) fr = fr+(fit_rv_rfac(il0)-fit_rv_rfac_avg)**2/norm
-   fit_rv_coef_avg = 0.5*(fit_rv_coef(il0-1)+fit_rv_coef(il0+1))
-   norm = fit_rv_coef_avg**2
-   if (norm>0.0) fc = fc+(fit_rv_coef(il0)-fit_rv_coef_avg)**2/norm
+   if (minim%double_fit) then
+      fit_rv_rfac_avg = 0.5*(fit_rv_rfac(il0-1)+fit_rv_rfac(il0+1))
+      norm = fit_rv_rfac_avg**2
+      if (norm>0.0) fr = fr+(fit_rv_rfac(il0)-fit_rv_rfac_avg)**2/norm
+      fit_rv_coef_avg = 0.5*(fit_rv_coef(il0-1)+fit_rv_coef(il0+1))
+      norm = fit_rv_coef_avg**2
+      if (norm>0.0) fc = fc+(fit_rv_coef(il0)-fit_rv_coef_avg)**2/norm
+   end if
 end do
 
 ! Full penalty function
 f = fo+fh+fv+fr+fc
 
-end subroutine minim_cost_fit_diag_dble
+end subroutine minim_cost_fit_diag
 
 !----------------------------------------------------------------------
 ! Function: minim_cost_fit_lct
@@ -391,22 +331,22 @@ newx = guess
 minim%x = guess
 do i=1,minim%nx
    if (sup(abs(guess(i)),rth)) then
-      delta(i) = rho*abs(guess(i))
+      delta(i) = minim%hooke_rho*abs(guess(i))
    else
-      delta(i) = rho
+      delta(i) = minim%hooke_rho
    end if
 end do
 funevals = 0
-steplength = rho
+steplength = minim%hooke_rho
 iters = 0
 call minim%cost(mpl,newx,fbefore)
-funevals = funevals + 1
+funevals = funevals+1
 newf = fbefore
 
 ! Iterative search
-do while ((iters<itermax).and.inf(tol,steplength))
+do while ((iters<minim%hooke_itermax).and.inf(minim%hooke_tol,steplength))
    ! Update iteration
-   iters = iters + 1
+   iters = iters+1
 
    ! Find best new point, one coordinate at a time
    newx = minim%x
@@ -439,7 +379,7 @@ do while ((iters<itermax).and.inf(tol,steplength))
 
       ! Make sure that the differences between the new and the old points
       ! are due to actual displacements; beware of roundoff errors that
-      ! might cause NEWF < FBEFORE.
+      ! might cause NEWF<FBEFORE.
       keep = 0
 
       do i=1,minim%nx
@@ -450,9 +390,9 @@ do while ((iters<itermax).and.inf(tol,steplength))
       end do
    end do
 
-   if (infeq(tol,steplength).and.infeq(fbefore,newf)) then
-      steplength = steplength*rho
-      delta = delta*rho
+   if (infeq(minim%hooke_tol,steplength).and.infeq(fbefore,newf)) then
+      steplength = steplength*minim%hooke_rho
+      delta = delta*minim%hooke_rho
    end if
 end do
 
@@ -508,6 +448,789 @@ end do
 point = z
 
 end subroutine minim_best_nearby
+
+!----------------------------------------------------------------------
+! Subroutine: minim_praxis
+! Purpose: seeks a minimizer of a scalar function of several variables
+! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine minim_praxis(minim,mpl,rng,guess)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim      ! Minimization data
+type(mpl_type),intent(inout) :: mpl           ! MPI data
+type(rng_type),intent(inout) :: rng           ! Random number generator
+real(kind_real),intent(in) :: guess(minim%nx) ! Guess
+
+! Local variables
+integer :: i,j,jsearch,k,k2,kl,kt,ktm,nits,nl,nf,iter
+real(kind_real) :: h0,d2,df,dmin,dn,dni,f1,fx,h,ldfac,lds,ldt,qa,qb,qc,qd0,qd1,qf1,r,s,scbd,sf,sl,t,t2,val
+real(kind_real) :: d(minim%nx),q0(minim%nx),q1(minim%nx),v(minim%nx,minim%nx),y(minim%nx),z(minim%nx)
+logical :: fk,illc
+
+! Initialization
+minim%x = guess
+h0 = 0.1*sqrt(real(minim%nx,kind_real))
+
+! Heuristic numbers
+scbd = 1.0
+illc = .false.
+ktm = 1
+if (illc) then
+   ldfac = 0.1
+else
+   ldfac = 0.01
+end if
+kt = 0
+nl = 0
+nf = 1
+call minim%cost(mpl,minim%x,fx)
+qf1 = fx
+t = small+abs(minim%praxis_tol)
+t2 = t
+dmin = small
+h = h0
+h = max(h,100.0*t)
+ldt = h
+
+! The initial set of search directions v is the identity matrix
+v = 0.0
+do i = 1, minim%nx
+   v(i,i) = 1.0
+end do
+d = 0.0
+qa = 0.0
+qb = 0.0
+qc = 0.0
+qd0 = 0.0
+qd1 = 0.0
+q0 = minim%x
+q1 = minim%x
+iter = 0
+
+do while(iter<minim%praxis_itermax)
+   iter = iter+1
+   sf = d(1)
+   d(1) = 0.0
+
+   ! Minimize along the first direction v(*,1)
+   jsearch = 1
+   nits = 2
+   d2 = d(1)
+   s = 0.0
+   val = fx
+   fk = .false.
+   call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
+   d(1) = d2
+   if (.not.(s>0.0)) v(:,1) = -v(:,1)
+   if (infeq(sf,0.9*d(1)).or.infeq(d(1),0.9*sf)) d(2:minim%nx) = 0.0
+
+   ! The inner loop starts here
+   do k=2,minim%nx
+      y = minim%x
+      sf = fx
+      if (0<kt) illc = .true.
+      do
+         kl = k
+         df = 0.0
+
+         ! A random step follows, to avoid resolution valleys
+         if (illc) then
+            do i=1,minim%nx
+               call rng%rand_real(0.0_kind_real,1.0_kind_real,r)
+               s = (0.1*ldt+t2*10.0**kt)*(r-0.5)
+               z(i) = s
+               minim%x = minim%x+s*v(:,i)
+            end do
+            call minim%cost(mpl,minim%x,fx)
+            nf = nf+1
+         end if
+
+        ! Minimize along the "non-conjugate" directions v(*,k),...,v(*,minim%nx).
+        do k2=k,minim%nx
+          sl = fx
+          jsearch = k2
+          nits = 2
+          d2 = d(k2)
+          s = 0.0
+          val = fx
+          fk = .false.
+          call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
+          d(k2) = d2
+          if (illc) then
+            s = d(k2)*(s+z(k2))**2
+          else
+            s = sl-fx
+          end if
+
+          if (infeq(df,s)) then
+            df = s
+            kl = k2
+          end if
+       end do
+
+       ! If there was not much improvement on the first try, set illc to true and start the inner loop again
+       if (illc) exit
+       if (infeq(abs(100.0*machep*fx),df)) exit
+       illc = .true.
+    end do
+
+    ! Minimize along the "conjugate" directions v(*,1),...,v(*,k-1).
+     do k2=1,k-1
+        jsearch = k2
+        nits = 2
+        d2 = d(k2)
+        s = 0.0
+        val = fx
+        fk = .false.
+        call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
+        d(k2) = d2
+     end do
+     f1 = fx
+     fx = sf
+     lds = 0.0
+     do i=1,minim%nx
+        sl = minim%x(i)
+        minim%x(i) = y(i)
+        sl = sl-y(i)
+        y(i) = sl
+        lds = lds+sl**2
+     end do
+     lds = sqrt(lds)
+
+     ! Discard direction v(*,kl), if no random step was taken, v(*,kl) is the "non-conjugate" direction along which the greatest improvement was made
+     if (inf(small,lds)) then
+        do j=kl-1,k,-1
+           v(:,j+1) = v(:,j)
+           d(j+1) = d(j)
+        end do
+        d(k) = 0.0
+        v(:,k) = y/lds
+
+        !  Minimize along the new "conjugate" direction v(*,k), which is the normalized vector: (new x)-(old x)
+        jsearch = k
+        nits = 4
+        d2 = d(k)
+        val = f1
+        fk = .true.
+        call minim%minny(mpl,jsearch,nits,d2,lds,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
+        d(k) = d2
+        if (.not.(lds>0.0)) then
+           lds = -lds
+           v(:,k) = -v(:,k)
+        end if
+     end if
+     ldt = ldfac*ldt
+     ldt = max(ldt,lds)
+     t2 = m2*sqrt(sum(minim%x**2))+t
+
+     ! See whether the length of the step taken since starting the inner loop exceeds half the tolerance
+      if (inf(0.5*t2,ldt)) then
+         kt = -1
+      end if
+      kt = kt+1
+      if (ktm<kt) return
+   end do
+
+   ! Try quadratic extrapolation in case we are in a curved valley
+   call minim%quad(mpl,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qf1,qa,qb,qc,qd0,qd1)
+   d = 1.0/sqrt(d)
+   dn = maxval(d)
+   do j=1,minim%nx
+      v(:,j) = d(j)/dn*v(:,j)
+   end do
+
+   ! Scale the axes to try to reduce the condition number
+   if (inf(1.0_kind_real,scbd)) then
+      do i=1,minim%nx
+         z(i) = max(m4,sqrt(sum(v(i,:)**2)))
+      end do
+      s = minval(z)
+      do i=1,minim%nx
+         sl = s/z(i)
+         z(i) = 1.0/sl
+         if (inf(scbd,z(i))) then
+            sl = 1.0/scbd
+            z(i) = scbd
+         end if
+         v(i,:) = sl*v(i,:)
+      end do
+   end if
+
+   ! Calculate a new set of orthogonal directions before repeating the main loop
+
+   ! Call minfit to find the singular value decomposition of v
+   v = transpose(v)
+   call minfit(mpl,minim%nx,vsmall,v,d)
+
+   ! Unscale the axes
+   if (inf(1.0_kind_real,scbd)) then
+      do i=1,minim%nx
+         v(i,:) = z(i)*v(i,:)
+      end do
+      do i=1,minim%nx
+         s = sqrt(sum(v(:,i)**2))
+         d(i) = s*d(i)
+         v(:,i) = v(:,i)/s
+      end do
+   end if
+   do i=1,minim%nx
+      dni = dn*d(i)
+      if (inf(large,dni)) then
+        d(i) = vsmall
+      elseif (inf(dni,small)) then
+        d(i) = vlarge
+      else
+        d(i) = 1.0/dni**2
+      end if
+   end do
+
+   ! Sort the singular values and singular vectors
+   call svsort(minim%nx,d,v)
+
+   ! Determine the smallest eigenvalue
+   dmin = max(d(minim%nx),small)
+
+   ! The ratio of the smallest to largest eigenvalue determines whether the system is ill conditioned
+   illc = inf(dmin,m2*d(1))
+end do
+
+end subroutine minim_praxis
+
+!----------------------------------------------------------------------
+! Subroutine: minim_flin
+! Purpose: seeks a minimizer of a scalar function of one variable
+! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine minim_flin(minim,mpl,jsearch,l,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,flin)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim           ! Minimization data
+type(mpl_type),intent(inout) :: mpl                ! MPI data
+integer,intent(in) :: jsearch                      ! Kind of search
+real(kind_real),intent(in) :: l                    ! Particular point at which the function is to be evaluated
+real(kind_real),intent(in) :: x(minim%nx)          ! State
+integer,intent(inout) :: nf                        ! Number of function evaluations
+real(kind_real),intent(in) :: v(minim%nx,minim%nx) ! Search directions
+real(kind_real),intent(in) :: q0(minim%nx)         ! First auxiliary point
+real(kind_real),intent(in) :: q1(minim%nx)         ! Second auxiliary point
+real(kind_real),intent(in) :: qd0                  ! First auxiliary value
+real(kind_real),intent(in) :: qd1                  ! Second auxiliary value
+real(kind_real),intent(out) :: qa                  ! First combination coefficient
+real(kind_real),intent(out) :: qb                  ! Second combination coefficient
+real(kind_real),intent(out) :: qc                  ! Third combination coefficient
+real(kind_real),intent(out) :: flin                ! Value of the function at the minimizing point
+
+! Local variables
+real(kind_real) :: t(minim%nx)
+
+if (1<=jsearch) then
+   ! The search is linear
+   t = x+l*v(:,jsearch)
+else
+   ! The search is along a parabolic space curve
+   qa = l*(l-qd1)/(qd0+qd1)/qd0
+   qb = -(l+qd0)*(l-qd1)/qd1/qd0
+   qc = (l+qd0)*l/qd1/(qd0+qd1)
+   t = qa*q0+qb*x+qc*q1
+end if
+
+! The function evaluation counter nf is incremented
+nf = nf+1
+
+! Evaluate the function
+call minim%cost(mpl,t,flin)
+
+end subroutine minim_flin
+
+!----------------------------------------------------------------------
+! Subroutine: minim_quad
+! Purpose: minimize the scalar function F along a particular curve
+! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine minim_quad(minim,mpl,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qf1,qa,qb,qc,qd0,qd1)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim           ! Minimization data
+type(mpl_type),intent(inout) :: mpl                ! MPI data
+real(kind_real),intent(in) :: t                    ! ?
+real(kind_real),intent(in) :: h                    ! ?
+real(kind_real),intent(in) :: v(minim%nx,minim%nx) ! Search directions
+real(kind_real),intent(inout) :: q0(minim%nx)      ! First auxiliary point
+real(kind_real),intent(inout) :: q1(minim%nx)      ! Second auxiliary point
+integer,intent(inout) :: nl                        ! Number of linear searches
+integer,intent(inout) :: nf                        ! Number of function evaluations
+real(kind_real),intent(in) :: dmin                 ! Smallest eigenvalue estimate
+real(kind_real),intent(in) :: ldt                  ! Step length
+real(kind_real),intent(inout) :: fx                ! Function value
+real(kind_real),intent(inout) :: qf1               ! ?
+real(kind_real),intent(inout) :: qa                ! First combination coefficient
+real(kind_real),intent(inout) :: qb                ! Second combination coefficient
+real(kind_real),intent(inout) :: qc                ! Third combination coefficient
+real(kind_real),intent(inout) :: qd0               ! First auxiliary value
+real(kind_real),intent(inout) :: qd1               ! Second auxiliary value
+
+! Local variables
+integer :: i,jsearch,nits
+real(kind_real) :: l,s,temp,val
+logical :: fk
+
+! Initialization
+temp = fx
+fx = qf1
+qf1 = temp
+call swap(minim%nx,minim%x,q1)
+qd1 = sqrt(sum((minim%x-q1)**2))
+l = qd1
+s = 0.0
+
+if ((.not.(qd0>0.0)).or.(.not.(qd1>0.0)).or.(nl<3*minim%nx**2)) then
+   fx = qf1
+   qa = 0.0
+   qb = 0.0
+   qc = 1.0
+else
+   jsearch = -1
+   nits = 2
+   val = qf1
+   fk = .true.
+   call minim%minny(mpl,jsearch,nits,s,l,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
+   qa = l*(l-qd1)/(qd0+qd1)/qd0
+   qb = -(l+qd0)*(l-qd1)/qd1/qd0
+   qc = (l+qd0)*l/qd1/(qd0+qd1)
+end if
+qd0 = qd1
+do i=1,minim%nx
+   s = q0(i)
+   q0(i) = minim%x(i)
+   minim%x(i) = qa*s+qb*minim%x(i)+qc*q1(i)
+end do
+
+end subroutine minim_quad
+
+!----------------------------------------------------------------------
+! Subroutine: minim_minny
+! Purpose: minimization of a scalar function of N variables along a line
+! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine minim_minny(minim,mpl,jsearch,nits,d2,x1,f1,fk,x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim           ! Minimization data
+type(mpl_type),intent(inout) :: mpl                ! MPI data
+integer,intent(in) :: jsearch                      ! Kind of search
+integer,intent(in) :: nits                         ! Maximum number of times the interval may be halved to retry the calculation
+real(kind_real),intent(inout) :: d2                ! Approximation to the second derivative of the function halved
+real(kind_real),intent(inout) :: x1                ! Estimate of the distance from x to the minimum along v(*,j)
+real(kind_real),intent(inout) :: f1                ! ?
+logical,intent(in) :: fk                           ! If fk is .true., then on input f1 contains the value fline(x1)
+real(kind_real),intent(inout) :: x(minim%nx)       ! State
+real(kind_real),intent(in) :: t                    ! ?
+real(kind_real),intent(in) :: h                    ! ?
+real(kind_real),intent(in) :: v(minim%nx,minim%nx) ! Search directions
+real(kind_real),intent(in) :: q0(minim%nx)         ! First auxiliary point
+real(kind_real),intent(in) :: q1(minim%nx)         ! Second auxiliary point
+integer,intent(inout) :: nl                        ! Number of linear searches
+integer,intent(inout) :: nf                        ! Number of function evaluations
+real(kind_real),intent(in) :: dmin                 ! Smallest eigenvalue estimate
+real(kind_real),intent(in) :: ldt                  ! Step length
+real(kind_real),intent(inout) :: fx                ! Function value
+real(kind_real),intent(inout) :: qa                ! First combination coefficient
+real(kind_real),intent(inout) :: qb                ! Second combination coefficient
+real(kind_real),intent(inout) :: qc                ! Third combination coefficient
+real(kind_real),intent(in) :: qd0                  ! First auxiliary value
+real(kind_real),intent(in) :: qd1                  ! Second auxiliary value
+
+! Local variables
+integer :: k
+real(kind_real) :: d1,f0,f2,fm,s,sf1,sx1,t2,temp,x2,xm
+logical :: dz,ok
+
+! Initialization
+sf1 = f1
+sx1 = x1
+k = 0
+xm = 0.0
+fm = fx
+f0 = fx
+dz = inf(d2,machep)
+
+! Find the step size
+s = sqrt(sum(x**2))
+if (dz) then
+   temp = dmin
+else
+   temp = d2
+end if
+t2 = m4*sqrt(abs(fx)/temp+s*ldt)+m2*ldt
+s = m4*s+t
+if (dz.and.inf(s,t2)) t2 = s
+t2 = max(t2,small)
+t2 = min(t2,0.01*h)
+if (fk.and.infeq(f1,fm)) then
+   xm = x1
+   fm = f1
+end if
+if ((.not.fk).or.inf(abs(x1),t2)) then
+   if (.not.(x1<0.0)) then
+      temp = 1.0
+   else
+      temp = -1.0
+   end if
+   x1 = temp*t2
+   call minim%flin(mpl,jsearch,x1,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,f1)
+end if
+if (infeq(f1,fm)) then
+   xm = x1
+   fm = f1
+end if
+
+! Evaluate flin at another point and estimate the second derivative
+do
+   if (dz) then
+      if (infeq(f1,f0)) then
+         x2 = 2.0*x1
+      else
+         x2 = -x1
+      end if
+      call minim%flin(mpl,jsearch,x2,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,f2)
+      if (infeq(f2,fm)) then
+        xm = x2
+        fm = f2
+      end if
+      d2 = (x2*(f1-f0)-x1*(f2-f0))/((x1*x2)*(x1-x2))
+   end if
+
+   ! Estimate the first derivative at 0
+   d1 = (f1-f0)/x1-x1*d2
+   dz = .true.
+
+   ! Predict the minimum
+   if (infeq(d2,small)) then
+      if (.not.(d1<0.0)) then
+         x2 = -h
+      else
+         x2 = h
+      end if
+   else
+      x2 = (-0.5*d1)/d2
+   end if
+   if (inf(h,abs(x2))) then
+      if (.not.(x2>0.0)) then
+         x2 = -h
+      else
+         x2 = h
+      end if
+   end if
+
+   ! Evaluate function at the predicted minimum
+   ok = .true.
+   do
+      call minim%flin (mpl,jsearch,x2,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,f2)
+      if ((nits<=k).or.infeq(f2,f0)) exit
+      k = k+1
+      if (inf(f0,f1).and.(x1*x2>0.0)) then
+         ok = .false.
+         exit
+      end if
+      x2 = 0.5*x2
+   end do
+   if (ok) exit
+end do
+
+! Increment the one-dimensional search counter
+nl = nl+1
+if (inf(fm,f2)) then
+   x2 = xm
+else
+   fm = f2
+end if
+
+! Get a new estimate of the second derivative
+if (inf(small,abs(x2*(x2-x1)))) then
+   d2 = (x2*(f1-f0)-x1*(fm-f0))/((x1*x2)*(x1-x2))
+else
+   if (0<k) d2 = 0.0
+end if
+d2 = max (d2,small)
+x1 = x2
+fx = fm
+if (inf(sf1,fx)) then
+   fx = sf1
+   x1 = sx1
+end if
+
+! Update X for linear but not parabolic search
+if (1<=jsearch) x = x+x1*v(:,jsearch)
+
+end subroutine minim_minny
+
+!----------------------------------------------------------------------
+! Subroutine: minfit
+! Purpose: singular value decomposition of an N by N array
+! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine minfit(mpl,n,tol,a,q)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl     ! MPI data
+integer,intent(in) :: n                 ! Order of the matrix
+real(kind_real),intent(in) :: tol       ! Tolerance
+real(kind_real),intent(inout) :: a(n,n) ! Matrix
+real(kind_real),intent(inout) :: q(n)   ! Singular values                
+
+! Local variables
+integer :: i,j,k,kt,l,l2
+integer,parameter :: kt_max = 30
+real(kind_real) :: c,e(n),eps,f,g,h,s,temp,x,y,z
+logical :: skip
+character(len=1024),parameter :: subr = 'minfit'
+
+! Householder's reduction to bidiagonal form
+if (n==1) then
+   q(1) = a(1,1)
+   a(1,1) = 1.0
+   return
+end if
+eps = machep
+g = 0.0
+x = 0.0
+do i=1,n
+   e(i) = g
+   l = i+1
+   s = sum(a(i:n,i)**2)
+   g = 0.0
+   if (infeq(tol,s)) then
+      f = a(i,i)
+      g = sqrt(s)
+      if (.not.(f>0.0)) g = -g
+      h = f*g-s
+      a(i,i) = f-g
+      do j=l,n
+         f = dot_product(a(i:n,i),a(i:n,j))/h
+         a(i:n,j) = a(i:n,j)+f*a(i:n,i)
+      end do
+   end if
+   q(i) = g
+   s = sum(a(i,l:n)**2)
+   g = 0.0
+   if (infeq(tol,s)) then
+      if (i/=n) f = a(i,i+1)
+      g = sqrt(s)
+      if (.not.(f<0.0)) g = -g
+      h = f*g-s
+      if (i/=n) then
+         a(i,i+1) = f-g
+         e(l:n) = a(i,l:n)/h
+         do j=l,n
+            s = dot_product(a(j,l:n),a(i,l:n))
+            a(j,l:n) = a(j,l:n)+s*e(l:n)
+         end do
+      end if
+   end if
+   y = abs(q(i))+abs(e(i))
+   x = max(x,y)
+end do
+
+! Accumulation of right-hand transformations
+a(n,n) = 1.0
+g = e(n)
+l = n
+do i=n-1,1,-1
+   if (abs(g)>0.0) then
+      h = a(i,i+1)*g
+      a(l:n,i) = a(i,l:n)/h
+      do j=l,n
+         s = dot_product(a(i,l:n),a(l:n,j))
+         a(l:n,j) = a(l:n,j)+s*a(l:n,i)
+      end do
+   end if
+   a(i,l:n) = 0.0
+   a(l:n,i) = 0.0
+   a(i,i) = 1.0
+   g = e(i)
+   l = i
+end do
+
+! Diagonalization of the bidiagonal form
+eps = eps*x
+do k=n,1,-1
+   kt = 0
+   do
+      kt = kt+1
+      if (kt_max<kt) then
+         e(k) = 0.0
+         call mpl%abort(subr,'QR algorithm failed to converge')
+      end if
+      skip = .false.
+      do l2=k,1,-1
+         l = l2
+         if (infeq(abs(e(l)),eps)) then
+            skip = .true.
+            exit
+         end if
+         if (l/=1) then
+            if (infeq(abs(q(l-1)),eps)) exit
+         end if
+      end do
+
+      ! Cancellation of E(L) if 1<L
+      if (.not.skip) then
+         c = 0.0
+         s = 1.0
+         do i=l,k
+            f = s*e(i)
+            e(i) = c*e(i)
+            if (infeq(abs(f),eps)) exit
+            g = q(i)
+            h = hypot(f,g)
+            q(i) = h
+            if (.not.(abs(h)>0.0)) then
+               g = 1.0
+               h = 1.0
+            end if
+            c = g/h
+            s = -f/h
+         end do
+      end if
+
+      ! Test for convergence for this index K
+      z = q(k)
+      if (l==k) then
+         if (z<0.0) then
+            q(k) = -z
+            a(1:n,k) = -a(1:n,k)
+         end if
+         exit
+      end if
+
+      ! Shift from bottom 2*2 minor
+      x = q(l)
+      y = q(k-1)
+      g = e(k-1)
+      h = e(k)
+      f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y)
+      g = hypot(f,1.0_kind_real)
+      if (f<0.0) then
+         temp = f-g
+      else
+         temp = f+g
+      end if
+      f = ((x-z)*(x+z)+h*(y/temp-h))/x
+
+      ! Next QR transformation
+      c = 1.0
+      s = 1.0
+      do i=l+1,k
+         g = e(i)
+         y = q(i)
+         h = s*g
+         g = g*c
+         z = hypot(f,h)
+         e(i-1) = z
+         if (.not.(abs(z)>0.0)) then
+            f = 1.0
+            z = 1.0
+         end if
+         c = f/z
+         s = h/z
+         f = x*c+g*s
+         g = -x*s+g*c
+         h = y*s
+         y = y*c
+
+         do j=1,n
+            x = a(j,i-1)
+            z = a(j,i)
+            a(j,i-1) = x*c+z*s
+            a(j,i) = -x*s+z*c
+         end do
+         z = hypot(f,h)
+         q(i-1) = z
+         if (.not.(abs(z)>0.0)) then
+            f = 1.0
+            z = 1.0
+         end if
+         c = f/z
+         s = h/z
+         f = c*g+s*y
+         x = -s*g+c*y
+      end do
+      e(l) = 0.0
+      e(k) = f
+      q(k) = x
+   end do
+end do
+
+end subroutine minfit
+
+!----------------------------------------------------------------------
+! Subroutine: swap
+! Purpose: swaps the entries of two vectors	
+! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine swap(n,a1,a2)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: n                ! Vectors size
+real(kind_real),intent(inout) :: a1(n) ! First vector
+real(kind_real),intent(inout) :: a2(n) ! Second vector
+
+! Local variable
+real(kind_real) :: a3(n)
+
+a3(1:n) = a1(1:n)
+a1(1:n) = a2(1:n)
+a2(1:n) = a3(1:n)
+
+end subroutine swap
+
+!----------------------------------------------------------------------
+! Subroutine: svsort
+! Purpose: descending sorts singular values D and adjusts V
+! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine svsort(n,d,v)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: n                 ! Vector and array size
+real(kind_real),intent(inout) :: d(n)   ! Vector to be sorted
+real(kind_real),intent(inout) :: v(n,n) ! Array to adjust as d is sorted
+
+! Local variables
+integer :: i,j,j2,j3
+real(kind_real) :: t
+
+do j=1,n-1
+   j3 = j
+   do j2=j+1,n
+      if (inf(d(j3),d(j2))) j3 = j2
+   end do
+   t = d(j)
+   d(j) = d(j3)
+   d(j3) = t
+   do i=1,n
+      t = v(i,j)
+      v(i,j) = v(i,j3)
+      v(i,j3) = t
+   end do
+end do
+
+end subroutine svsort
 
 !----------------------------------------------------------------------
 ! Subroutine: vt_dir

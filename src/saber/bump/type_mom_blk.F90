@@ -64,7 +64,7 @@ mom_blk%nsub = nsub
 allocate(mom_blk%m2_1(nc1,geom%nl0,nsub))
 allocate(mom_blk%m2_2(nc1,bpar%nc3(ib),geom%nl0,nsub))
 allocate(mom_blk%m11(nc1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,nsub))
-if (.not.nam%gau_approx) allocate(mom_blk%m22(nc1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,nsub))
+allocate(mom_blk%m22(nc1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,nsub))
 
 ! End associate
 end associate
@@ -105,7 +105,7 @@ type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 type(bpar_type),intent(in) :: bpar               ! Block parameters
 type(samp_type),intent(in) :: samp               ! Sampling
-class(mom_blk_type),intent(in) :: mom_blk_in     ! Reduced moments block
+type(mom_blk_type),intent(in) :: mom_blk_in      ! Reduced moments block
 
 ! Local variables
 integer :: npack,ipack,isub,il0,jc3,jl0r
@@ -117,8 +117,7 @@ associate(ib=>mom_blk_in%ib)
 ! Allocation
 mom_blk_out%ib = ib
 call mom_blk_out%alloc(samp%nc1d,nam,geom,bpar,mom_blk_in%ne,mom_blk_in%nsub)
-npack = (1+bpar%nc3(ib)*(1+bpar%nl0r(ib)))*geom%nl0*mom_blk_out%nsub
-if (.not.nam%gau_approx) npack = npack+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*mom_blk_out%nsub
+npack = (1+bpar%nc3(ib)*(1+2*bpar%nl0r(ib)))*geom%nl0*mom_blk_out%nsub
 allocate(sbuf(samp%nc1a,npack))
 allocate(rbuf(samp%nc1d,npack))
 
@@ -134,10 +133,8 @@ do isub=1,mom_blk_out%nsub
          do jl0r=1,bpar%nl0r(ib)
             ipack = ipack+1
             sbuf(:,ipack) = mom_blk_in%m11(:,jc3,jl0r,il0,isub)
-            if (.not.nam%gau_approx) then
-               ipack = ipack+1
-               sbuf(:,ipack) = mom_blk_in%m22(:,jc3,jl0r,il0,isub)
-            end if
+            ipack = ipack+1
+            sbuf(:,ipack) = mom_blk_in%m22(:,jc3,jl0r,il0,isub)
          end do
       end do
    end do
@@ -158,10 +155,8 @@ do isub=1,mom_blk_out%nsub
          do jl0r=1,bpar%nl0r(ib)
             ipack = ipack+1
             mom_blk_out%m11(:,jc3,jl0r,il0,isub) = rbuf(:,ipack)
-            if (.not.nam%gau_approx) then
-               ipack = ipack+1
-               mom_blk_out%m22(:,jc3,jl0r,il0,isub) = rbuf(:,ipack)
-            end if
+            ipack = ipack+1
+            mom_blk_out%m22(:,jc3,jl0r,il0,isub) = rbuf(:,ipack)
          end do
       end do
    end do

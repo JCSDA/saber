@@ -12,19 +12,20 @@ use netcdf
 use tools_fit, only: fast_fit,ver_fill
 use tools_func, only: fit_diag,fit_diag_dble
 use tools_kinds, only: kind_real,nc_kind_real
-use tools_repro, only: sup
+use tools_repro, only: inf,sup
 use type_avg_blk, only: avg_blk_type
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
 use type_minim, only: minim_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_rng, only: rng_type
 use type_samp, only: samp_type
 
 implicit none
 
 integer,parameter :: nsc = 50                          ! Number of iterations for the scaling optimization
-logical :: lprt = .false.                              ! Optimization print
+logical :: lprt = .true.                               ! Optimization print
 real(kind_real),parameter :: maxfactor = 2.0_kind_real ! Maximum factor for diagnostics with respect to the origin
 
 ! Diagnostic block derived type
@@ -36,8 +37,8 @@ type diag_blk_type
 
    real(kind_real),allocatable :: raw(:,:,:)      ! Raw diagnostic
    real(kind_real),allocatable :: valid(:,:,:)    ! Number of valid couples
-   real(kind_real),allocatable :: raw_coef_ens(:) ! Raw ensemble coefficient
-   real(kind_real) :: raw_coef_sta                ! Raw static coefficient
+   real(kind_real),allocatable :: coef_ens(:)     ! Ensemble coefficient
+   real(kind_real) :: coef_sta                    ! Static coefficient
    real(kind_real),allocatable :: fit(:,:,:)      ! Fit
    real(kind_real),allocatable :: fit_rh(:)       ! Horizontal fit support radius
    real(kind_real),allocatable :: fit_rv(:)       ! Vertical fit support radius
@@ -50,6 +51,7 @@ contains
    procedure :: write => diag_blk_write
    procedure :: normalization => diag_blk_normalization
    procedure :: fitting => diag_blk_fitting
+   procedure :: cost => diag_blk_cost
    procedure :: localization => diag_blk_localization
    procedure :: hybridization => diag_blk_hybridization
    procedure :: dualens => diag_blk_dualens
@@ -91,10 +93,10 @@ diag_blk%name = trim(prefix)//'_'//trim(bpar%blockname(ib))
 diag_blk%double_fit = double_fit
 
 ! Allocation
-allocate(diag_blk%raw_coef_ens(geom%nl0))
 if ((ic2a==0).or.nam%local_diag) then
    allocate(diag_blk%raw(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
    allocate(diag_blk%valid(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
+   allocate(diag_blk%coef_ens(geom%nl0))
    if (trim(nam%minim_algo)/='none') then
       allocate(diag_blk%fit(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(diag_blk%fit_rh(geom%nl0))
@@ -108,11 +110,11 @@ if ((ic2a==0).or.nam%local_diag) then
 end if
 
 ! Initialization
-diag_blk%raw_coef_ens = mpl%msv%valr
-diag_blk%raw_coef_sta = mpl%msv%valr
+diag_blk%coef_sta = mpl%msv%valr
 if ((ic2a==0).or.nam%local_diag) then
    diag_blk%raw = mpl%msv%valr
    diag_blk%valid = mpl%msv%valr
+   diag_blk%coef_ens = mpl%msv%valr
    if (trim(nam%minim_algo)/='none') then
       diag_blk%fit = mpl%msv%valr
       diag_blk%fit_rh = mpl%msv%valr
@@ -156,7 +158,7 @@ class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
 ! Release memory
 if (allocated(diag_blk%raw)) deallocate(diag_blk%raw)
 if (allocated(diag_blk%valid)) deallocate(diag_blk%valid)
-if (allocated(diag_blk%raw_coef_ens)) deallocate(diag_blk%raw_coef_ens)
+if (allocated(diag_blk%coef_ens)) deallocate(diag_blk%coef_ens)
 if (allocated(diag_blk%fit)) deallocate(diag_blk%fit)
 if (allocated(diag_blk%fit_rh)) deallocate(diag_blk%fit_rh)
 if (allocated(diag_blk%fit_rv)) deallocate(diag_blk%fit_rv)
@@ -184,7 +186,7 @@ character(len=*),intent(in) :: filename        ! File name
 
 ! Local variables
 integer :: info,info_coord,ncid,one_id,nc3_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,vunit_id
-integer :: raw_id,valid_id,raw_zs_id,raw_coef_ens_id,raw_coef_sta_id,l0rl0_to_l0_id
+integer :: raw_id,valid_id,coef_ens_id,raw_zs_id,coef_sta_id,l0rl0_to_l0_id
 integer :: fit_id,fit_zs_id,fit_rh_id,fit_rv_id,fit_rv_rfac_id,fit_rv_coef_id
 integer :: il0,jl0r,jl0
 character(len=1024),parameter :: subr = 'diag_blk_write'
@@ -218,13 +220,6 @@ if (info_coord/=nf90_noerr) then
 end if
 
 ! Define variables if necessary
-if (mpl%msv%isanynot(diag_blk%raw_coef_ens)) then
-  info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_raw_coef_ens',raw_coef_ens_id)
-  if (info/=nf90_noerr) then
-     call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_raw_coef_ens',nc_kind_real,(/nl0_1_id/),raw_coef_ens_id))
-     call mpl%ncerr(subr,nf90_put_att(ncid,raw_coef_ens_id,'_FillValue',mpl%msv%valr))
-  end if
-end if
 if ((ic2a==0).or.nam%local_diag) then
    if (mpl%msv%isanynot(diag_blk%raw)) then
       info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_raw',raw_id)
@@ -245,11 +240,18 @@ if ((ic2a==0).or.nam%local_diag) then
          end if
       end if
    end if
-   if (mpl%msv%isnot(diag_blk%raw_coef_sta)) then
-      info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_raw_coef_sta',raw_coef_sta_id)
+   if (mpl%msv%isanynot(diag_blk%coef_ens)) then
+      info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_coef_ens',coef_ens_id)
       if (info/=nf90_noerr) then
-         call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_raw_coef_sta',nc_kind_real,(/one_id/),raw_coef_sta_id))
-         call mpl%ncerr(subr,nf90_put_att(ncid,raw_coef_sta_id,'_FillValue',mpl%msv%valr))
+         call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_coef_ens',nc_kind_real,(/nl0_1_id/),coef_ens_id))
+         call mpl%ncerr(subr,nf90_put_att(ncid,coef_ens_id,'_FillValue',mpl%msv%valr))
+      end if
+   end if
+   if (mpl%msv%isnot(diag_blk%coef_sta)) then
+      info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_coef_sta',coef_sta_id)
+      if (info/=nf90_noerr) then
+         call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_coef_sta',nc_kind_real,(/one_id/),coef_sta_id))
+         call mpl%ncerr(subr,nf90_put_att(ncid,coef_sta_id,'_FillValue',mpl%msv%valr))
       end if
    end if
    if ((trim(nam%minim_algo)/='none').and.(mpl%msv%isanynot(diag_blk%fit))) then
@@ -305,8 +307,6 @@ if (info_coord/=nf90_noerr) then
 end if
 
 ! Write variables
-if (mpl%msv%isanynot(diag_blk%raw_coef_ens)) call mpl%ncerr(subr,nf90_put_var(ncid,raw_coef_ens_id,diag_blk%raw_coef_ens, &
- & (/1/),(/geom%nl0/)))
 if ((ic2a==0).or.nam%local_diag) then
    if (mpl%msv%isanynot(diag_blk%raw)) then
       call mpl%ncerr(subr,nf90_put_var(ncid,raw_id,diag_blk%raw(1:bpar%nc3(ib),1:bpar%nl0r(ib),:), &
@@ -322,7 +322,9 @@ if ((ic2a==0).or.nam%local_diag) then
          end do
       end if
    end if
-   if (mpl%msv%isnot(diag_blk%raw_coef_sta)) call mpl%ncerr(subr,nf90_put_var(ncid,raw_coef_sta_id,diag_blk%raw_coef_sta))
+   if (mpl%msv%isanynot(diag_blk%coef_ens)) call mpl%ncerr(subr,nf90_put_var(ncid,coef_ens_id,diag_blk%coef_ens,(/1/), &
+ & (/geom%nl0/)))
+   if (mpl%msv%isnot(diag_blk%coef_sta)) call mpl%ncerr(subr,nf90_put_var(ncid,coef_sta_id,diag_blk%coef_sta))
    if ((trim(nam%minim_algo)/='none').and.(mpl%msv%isanynot(diag_blk%fit))) then
       call mpl%ncerr(subr,nf90_put_var(ncid,fit_id,diag_blk%fit(1:bpar%nc3(ib),1:bpar%nl0r(ib),:), &
     & (/1,1,1/),(/bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
@@ -356,20 +358,17 @@ end subroutine diag_blk_write
 ! Subroutine: diag_blk_normalization
 ! Purpose: compute diagnostic block normalization
 !----------------------------------------------------------------------
-subroutine diag_blk_normalization(diag_blk,mpl,geom,bpar,remove_max)
+subroutine diag_blk_normalization(diag_blk,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
-type(mpl_type),intent(inout) :: mpl            ! MPI data
 type(geom_type),intent(in) :: geom             ! Geometry
 type(bpar_type),intent(in) :: bpar             ! Block parameters
-logical,intent(in),optional :: remove_max      ! Remove excessive values
 
 ! Local variables
-integer :: il0,jl0r,jl0,jc3
-logical :: lremove_max
+integer :: il0,jl0r
 
 ! Associate
 associate(ib=>diag_blk%ib)
@@ -377,42 +376,8 @@ associate(ib=>diag_blk%ib)
 ! Get diagonal values
 do il0=1,geom%nl0
    jl0r = bpar%il0rz(il0,ib)
-   if (mpl%msv%isnot(diag_blk%raw(1,jl0r,il0))) then
-      diag_blk%raw_coef_ens(il0) = diag_blk%raw(1,jl0r,il0)
-   else
-      diag_blk%raw_coef_ens(il0) = mpl%msv%valr
-   end if
+   diag_blk%coef_ens(il0) = diag_blk%raw(1,jl0r,il0)
 end do
-
-! Normalize
-do il0=1,geom%nl0
-   do jl0r=1,bpar%nl0r(ib)
-      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-      do jc3=1,bpar%nc3(ib)
-         if (mpl%msv%isnot(diag_blk%raw(jc3,jl0r,il0)).and.mpl%msv%isnot(diag_blk%raw_coef_ens(il0)) &
-       & .and.mpl%msv%isnot(diag_blk%raw_coef_ens(jl0))) &
-       & diag_blk%raw(jc3,jl0r,il0) = diag_blk%raw(jc3,jl0r,il0)/sqrt(diag_blk%raw_coef_ens(il0)*diag_blk%raw_coef_ens(jl0))
-      end do
-   end do
-end do
-
-! Remove excessive values compared to the origin point
-if (present(remove_max)) then
-   lremove_max = remove_max
-else
-   lremove_max = .false.
-end if
-if (lremove_max) then
-   !$omp parallel do schedule(static) private(il0,jl0r,jc3)
-   do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0r(ib)
-         do jc3=1,bpar%nc3(ib)
-            if (sup(diag_blk%raw(jc3,jl0r,il0),maxfactor)) diag_blk%raw(jc3,jl0r,il0) = mpl%msv%valr
-         end do
-      end do
-   end do
-   !$omp end parallel do
-end if
 
 ! End associate
 end associate
@@ -421,33 +386,41 @@ end subroutine diag_blk_normalization
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_fitting
-! Purpose: compute a semi-positive definite fit of a raw function
+! Purpose: compute a fit of a raw function
 !----------------------------------------------------------------------
-subroutine diag_blk_fitting(diag_blk,mpl,nam,geom,bpar,samp)
+subroutine diag_blk_fitting(diag_blk,mpl,rng,nam,geom,bpar,samp,dcoef)
 
 implicit none
 
 ! Passed variables
 class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
 type(mpl_type),intent(inout) :: mpl            ! MPI data
+type(rng_type),intent(inout) :: rng            ! Random number generator
 type(nam_type),intent(in) :: nam               ! Namelist
 type(geom_type),intent(in) :: geom             ! Geometry
 type(bpar_type),intent(in) :: bpar             ! Block parameters
 type(samp_type),intent(in) :: samp             ! Sampling
+logical,intent(in),optional :: dcoef           ! Diagonal coefficient estimation flag
 
 ! Local variables
-integer :: ic2,ic0,il0,jl0r,offset,isc
-real(kind_real) :: alpha,alpha_opt,mse,mse_opt
-real(kind_real) :: vunit(geom%nl0),fit_rh(geom%nl0),fit_rv(geom%nl0)
+integer :: ic2,ic0,il0,jl0r,jl0,kl0r,kl0,offset,isc,il0inf,il0sup,il1inf,il1sup
+real(kind_real) :: alpha,alpha_opt,cost,fast_cost,scaling_cost,full_cost
+real(kind_real) :: vunit(geom%nl0)
+real(kind_real) :: coef_ens(geom%nl0),fit_rh(geom%nl0),fit_rv(geom%nl0),fit_rv_rfac(geom%nl0),fit_rv_coef(geom%nl0)
 real(kind_real),allocatable :: rawv(:),distv(:),fit(:,:,:)
-type(minim_type) :: minim
+logical :: valid,ldcoef
 character(len=1024),parameter :: subr = 'diag_blk_fitting'
+type(minim_type) :: minim
 
 ! Associate
 associate(ic2a=>diag_blk%ic2a,ib=>diag_blk%ib)
 
 ! Check
 if (trim(nam%minim_algo)=='none') call mpl%abort(subr,'cannot compute fit if minim_algo = none')
+
+! Local diagonal coefficient estimation flag
+ldcoef = .true.
+if (present(dcoef)) ldcoef = dcoef
 
 ! Allocation
 allocate(rawv(bpar%nl0r(ib)))
@@ -471,7 +444,7 @@ end if
 ! Fast fit
 do il0=1,geom%nl0
    ! Get zero separation level
-    jl0r = bpar%il0rz(il0,ib)
+   jl0r = bpar%il0rz(il0,ib)
 
    ! Horizontal fast fit
    call fast_fit(mpl,nam%fit_type,nam%nc3,1,geom%disth,diag_blk%raw(:,jl0r,il0),diag_blk%fit_rh(il0))
@@ -482,16 +455,17 @@ do il0=1,geom%nl0
    call fast_fit(mpl,nam%fit_type,bpar%nl0r(ib),jl0r,distv,rawv,diag_blk%fit_rv(il0))
 end do
 
-if (any(mpl%msv%isnot(diag_blk%fit_rh)).and.any(mpl%msv%isnot(diag_blk%fit_rv))) then
-   ! Fill missing values
-   call ver_fill(mpl,geom%nl0,vunit,diag_blk%fit_rh)
-   call ver_fill(mpl,geom%nl0,vunit,diag_blk%fit_rv)
+! Check that there are some non-missing values to work with
+valid = .true.
+valid = valid.and.(mpl%msv%isanynot(diag_blk%coef_ens))
+valid = valid.and.(mpl%msv%isanynot(diag_blk%fit_rh))
+valid = valid.and.(mpl%msv%isanynot(diag_blk%fit_rv))
 
-   ! Vertically homogeneous case
-   if (nam%lhomh) diag_blk%fit_rh = sum(diag_blk%fit_rh,mask=mpl%msv%isnot(diag_blk%fit_rh)) &
- & /real(count(mpl%msv%isnot(diag_blk%fit_rh)),kind_real)
-   if (nam%lhomv) diag_blk%fit_rv = sum(diag_blk%fit_rv,mask=mpl%msv%isnot(diag_blk%fit_rv)) &
- & /real(count(mpl%msv%isnot(diag_blk%fit_rv)),kind_real)
+if (valid) then
+   ! Fill missing values
+   if (mpl%msv%isany(diag_blk%coef_ens)) call ver_fill(mpl,geom%nl0,vunit,diag_blk%coef_ens)
+   if (mpl%msv%isany(diag_blk%fit_rh)) call ver_fill(mpl,geom%nl0,vunit,diag_blk%fit_rh)
+   if (mpl%msv%isany(diag_blk%fit_rv)) call ver_fill(mpl,geom%nl0,vunit,diag_blk%fit_rv)
 
    ! Double-fit default parameters
    if (diag_blk%double_fit) then
@@ -499,62 +473,65 @@ if (any(mpl%msv%isnot(diag_blk%fit_rh)).and.any(mpl%msv%isnot(diag_blk%fit_rv)))
       diag_blk%fit_rv_coef = 0.5
    end if
 
+   ! Compute cost
+   call diag_blk%cost(mpl,nam,geom,bpar,ldcoef,fast_cost)
+
    ! Scaling optimization (brute-force)
-   if (all(mpl%msv%isnot(diag_blk%fit_rh)).and.all(mpl%msv%isnot(diag_blk%fit_rv))) then
-      mse_opt = huge(1.0)
-      alpha_opt = 1.0
-      do isc=1,nsc
-         ! Scaling factor
-         alpha = 0.5+real(isc-1,kind_real)/real(nsc-1,kind_real)*(2.0-0.5)
+   scaling_cost = fast_cost
+   alpha_opt = 1.0
+   fit_rh = diag_blk%fit_rh
+   fit_rv = diag_blk%fit_rv
+   do isc=1,nsc
+      ! Scaling factor
+      alpha = 0.5+real(isc-1,kind_real)/real(nsc-1,kind_real)*(2.0-0.5)
 
-         ! Scaled radii
-         fit_rh = alpha*diag_blk%fit_rh
-         fit_rv = alpha*diag_blk%fit_rv
+      ! Scaled radii
+      diag_blk%fit_rh = alpha*fit_rh
+      diag_blk%fit_rv = alpha*fit_rv
 
-         ! Define fit
-         if (diag_blk%double_fit) then
-            call fit_diag_dble(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
-          & diag_blk%distv,fit_rh,fit_rv,diag_blk%fit_rv_rfac,diag_blk%fit_rv_coef,fit)
-         else
-            call fit_diag(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
-          & fit_rh,fit_rv,fit)
-         end if
+      ! Compute cost
+      call diag_blk%cost(mpl,nam,geom,bpar,ldcoef,cost)
 
-         ! MSE
-         mse = sum((fit-diag_blk%raw)**2,mask=mpl%msv%isnot(diag_blk%raw))
-         if (mse<mse_opt) then
-            mse_opt = mse
-            alpha_opt = alpha
-         end if
-      end do
-      diag_blk%fit_rh = alpha_opt*diag_blk%fit_rh
-      diag_blk%fit_rv = alpha_opt*diag_blk%fit_rv
-
-      if (lprt) then
-         write(mpl%info,'(a)') ''
-         call mpl%flush
-         write(mpl%info,'(a13,a,f6.1,a)') '','Scaling optimization, cost function decrease:',abs(mse_opt-mse)/mse*100.0,'%'
-         call mpl%flush
+      if (cost<scaling_cost) then
+         ! Update cost
+         scaling_cost = cost
+         alpha_opt = alpha
       end if
-   end if
+   end do
+   diag_blk%fit_rh = alpha_opt*fit_rh
+   diag_blk%fit_rv = alpha_opt*fit_rv
 
+   ! Full optimization
+
+   ! Optimization parameters
    select case (trim(nam%minim_algo))
    case ('hooke')
+      ! Hooke parameters
+      minim%hooke_rho = 0.5
+      minim%hooke_tol = 1.0e-2
+      minim%hooke_itermax = 5
+   case ('praxis')
+      ! Praxis parameters
+      minim%praxis_tol = 5.0
+      minim%praxis_itermax = 5
+   end select
+
+   select case (trim(nam%minim_algo))
+   case ('hooke','praxis')
       ! Allocation
-      minim%nx = 0
-      if (nam%lhomh) then
-         minim%nx = minim%nx+1
+      minim%dl0 = nam%fit_dl0
+      if (mod(geom%nl0,minim%dl0)==1) then
+         minim%nl1 = geom%nl0/minim%dl0+1
       else
-         minim%nx = minim%nx+geom%nl0
+         minim%nl1 = geom%nl0/minim%dl0+2
       end if
-      if (nam%lhomv) then
-         minim%nx = minim%nx+1
-         if (diag_blk%double_fit) minim%nx = minim%nx+2
-      else
-         minim%nx = minim%nx+geom%nl0
-         if (diag_blk%double_fit) minim%nx = minim%nx+2*geom%nl0
-      end if
+      minim%nx = 3*minim%nl1
+      if (diag_blk%double_fit) minim%nx = minim%nx+2*minim%nl1
       minim%ny = nam%nc3*bpar%nl0r(ib)*geom%nl0
+      allocate(minim%il1inf(geom%nl0))
+      allocate(minim%rinf(geom%nl0))
+      allocate(minim%il1sup(geom%nl0))
+      allocate(minim%rsup(geom%nl0))
       allocate(minim%x(minim%nx))
       allocate(minim%guess(minim%nx))
       allocate(minim%binf(minim%nx))
@@ -565,100 +542,85 @@ if (any(mpl%msv%isnot(diag_blk%fit_rh)).and.any(mpl%msv%isnot(diag_blk%fit_rv)))
       allocate(minim%distv(geom%nl0,geom%nl0))
 
       ! Fill minim
-      offset = 0
-      if (nam%lhomh) then
-         minim%guess(offset+1) = diag_blk%fit_rh(1)
-         minim%binf(offset+1) = 0.5*minim%guess(offset+1)
-         minim%bsup(offset+1) = 1.5*minim%guess(offset+1)
-         offset = offset+1
+      il0sup = 1
+      do il1inf=1,minim%nl1
+         il1sup = min(il1inf+1,minim%nl1)
+         il0inf = il0sup
+         il0sup = min(il0inf+minim%dl0,geom%nl0)
+         do jl0=il0inf,il0sup
+            if (il0inf==il0sup) then
+               minim%il1inf(jl0) = il1inf
+               minim%rinf(jl0) = 1.0
+               minim%il1sup(jl0) = il1sup
+               minim%rsup(jl0) = 0.0
+            else
+               minim%il1inf(jl0) = il1inf
+               minim%rinf(jl0) = real(il0sup-jl0,kind_real)/real(il0sup-il0inf,kind_real)
+               minim%il1sup(jl0) = il1sup
+               minim%rsup(jl0) = real(jl0-il0inf,kind_real)/real(il0sup-il0inf,kind_real)
+            end if
+         end do
+         minim%guess(0*minim%nl1+il1inf) = diag_blk%coef_ens(il0inf)
+         minim%guess(1*minim%nl1+il1inf) = diag_blk%fit_rh(il0inf)
+         minim%guess(2*minim%nl1+il1inf) = diag_blk%fit_rv(il0inf)
+         if (diag_blk%double_fit) then
+            minim%guess(3*minim%nl1+il1inf) = diag_blk%fit_rv_rfac(il0inf)
+            minim%guess(4*minim%nl1+il1inf) = diag_blk%fit_rv_coef(il0inf)
+         end if
+      end do
+      if (.false.) then
+         minim%binf(0*minim%nl1+1:1*minim%nl1) = 0.9*minim%guess(0*minim%nl1+1:1*minim%nl1)
+         minim%bsup(0*minim%nl1+1:1*minim%nl1) = 1.1*minim%guess(0*minim%nl1+1:1*minim%nl1)
       else
-         minim%guess(offset+1:offset+geom%nl0) = diag_blk%fit_rh
-         minim%binf(offset+1:offset+geom%nl0) = 0.5*minim%guess(offset+1:offset+geom%nl0)
-         minim%bsup(offset+1:offset+geom%nl0) = 1.5*minim%guess(offset+1:offset+geom%nl0)
-         offset = offset+geom%nl0
+         minim%binf(0*minim%nl1+1:1*minim%nl1) = minim%guess(0*minim%nl1+1:1*minim%nl1)
+         minim%bsup(0*minim%nl1+1:1*minim%nl1) = minim%guess(0*minim%nl1+1:1*minim%nl1)
       end if
-      if (nam%lhomv) then
-         minim%guess(offset+1) = diag_blk%fit_rv(1)
-         minim%binf(offset+1) = 0.5*minim%guess(offset+1)
-         minim%bsup(offset+1) = 1.5*minim%guess(offset+1)
-         offset = offset+1
-         if (diag_blk%double_fit) then
-            minim%guess(offset+1) = diag_blk%fit_rv_rfac(1)
-            minim%binf(offset+1) = 0.0
-            minim%bsup(offset+1) = 1.0
-            offset = offset+1
-            minim%guess(offset+1) = diag_blk%fit_rv_coef(1)
-            minim%binf(offset+1) = 0.0
-            minim%bsup(offset+1) = 20.0
-            offset = offset+1
-         end if
-      else
-         minim%guess(offset+1:offset+geom%nl0) = diag_blk%fit_rv
-         minim%binf(offset+1:offset+geom%nl0) = 0.5*minim%guess(offset+1:offset+geom%nl0)
-         minim%bsup(offset+1:offset+geom%nl0) = 1.5*minim%guess(offset+1:offset+geom%nl0)
-         offset = offset+geom%nl0
-         if (diag_blk%double_fit) then
-            minim%guess(offset+1:offset+geom%nl0) = diag_blk%fit_rv_rfac
-            minim%binf(offset+1:offset+geom%nl0) = 0.0
-            minim%bsup(offset+1:offset+geom%nl0) = 1.0
-            offset = offset+geom%nl0
-            minim%guess(offset+1:offset+geom%nl0) = diag_blk%fit_rv_coef
-            minim%binf(offset+1:offset+geom%nl0) = 0.0
-            minim%bsup(offset+1:offset+geom%nl0) = 20.0
-            offset = offset+geom%nl0
-         end if
+      minim%binf(1*minim%nl1+1:2*minim%nl1) = 0.5*minim%guess(1*minim%nl1+1:2*minim%nl1)
+      minim%bsup(1*minim%nl1+1:2*minim%nl1) = 1.5*minim%guess(1*minim%nl1+1:2*minim%nl1)
+      minim%binf(2*minim%nl1+1:3*minim%nl1) = 0.5*minim%guess(2*minim%nl1+1:3*minim%nl1)
+      minim%bsup(2*minim%nl1+1:3*minim%nl1) = 1.5*minim%guess(2*minim%nl1+1:3*minim%nl1)
+      if (diag_blk%double_fit) then
+         minim%binf(3*minim%nl1+1:4*minim%nl1) = 0.0
+         minim%bsup(3*minim%nl1+1:4*minim%nl1) = 1.0
+         minim%binf(4*minim%nl1+1:5*minim%nl1) = 0.0
+         minim%bsup(4*minim%nl1+1:5*minim%nl1) = 20.0
       end if
       minim%obs = pack(diag_blk%raw,mask=.true.)
-      if (diag_blk%double_fit) then
-         minim%cost_function = 'fit_diag_dble'
-      else
-         minim%cost_function = 'fit_diag'
-      end if
+      minim%cost_function = 'fit_diag'
       minim%algo = nam%minim_algo
       minim%fit_type = nam%fit_type
       minim%nc3 = nam%nc3
       minim%nl0r = bpar%nl0r(ib)
       minim%nl0 = geom%nl0
-      minim%lhomh = nam%lhomh
-      minim%lhomv = nam%lhomv
       minim%l0rl0_to_l0 = bpar%l0rl0b_to_l0(:,:,ib)
       minim%disth = geom%disth
       minim%distv = diag_blk%distv
+      minim%double_fit = diag_blk%double_fit
 
       ! Compute fit
-      call minim%compute(mpl,lprt)
+      call minim%compute(mpl,rng)
 
       ! Apply bounds
       minim%x = max(minim%binf,min(minim%x,minim%bsup))
 
-      ! Copy parameters
-      offset = 0
-      if (nam%lhomh) then
-         diag_blk%fit_rh = minim%x(offset+1)
-         offset = offset+1
-      else
-         diag_blk%fit_rh = minim%x(offset+1:offset+geom%nl0)
-         offset = offset+geom%nl0
-      end if
-      if (nam%lhomv) then
-         diag_blk%fit_rv = minim%x(offset+1)
-         offset = offset+1
+      ! Interpolate parameters
+      do il0=1,geom%nl0
+         diag_blk%coef_ens(il0) = minim%rinf(il0)*minim%x(0*minim%nl1+minim%il1inf(il0)) &
+                                & +minim%rsup(il0)*minim%x(0*minim%nl1+minim%il1sup(il0))
+         diag_blk%fit_rh(il0) = minim%rinf(il0)*minim%x(1*minim%nl1+minim%il1inf(il0)) &
+                              & +minim%rsup(il0)*minim%x(1*minim%nl1+minim%il1sup(il0))
+         diag_blk%fit_rv(il0) = minim%rinf(il0)*minim%x(2*minim%nl1+minim%il1inf(il0)) &
+                              & +minim%rsup(il0)*minim%x(2*minim%nl1+minim%il1sup(il0))
          if (diag_blk%double_fit) then
-            diag_blk%fit_rv_rfac = minim%x(offset+1)
-            offset = offset+1
-            diag_blk%fit_rv_coef = minim%x(offset+1)
-            offset = offset+1
+            diag_blk%fit_rv_rfac(il0) = minim%rinf(il0)*minim%x(3*minim%nl1+minim%il1inf(il0)) &
+                                      & +minim%rsup(il0)*minim%x(3*minim%nl1+minim%il1sup(il0))
+            diag_blk%fit_rv_coef(il0) = minim%rinf(il0)*minim%x(4*minim%nl1+minim%il1inf(il0)) &
+                                      & +minim%rsup(il0)*minim%x(4*minim%nl1+minim%il1sup(il0))
          end if
-      else
-         diag_blk%fit_rv = minim%x(offset+1:offset+geom%nl0)
-         offset = offset+geom%nl0
-         if (diag_blk%double_fit) then
-            diag_blk%fit_rv_rfac = minim%x(offset+1:offset+geom%nl0)
-            offset = offset+geom%nl0
-            diag_blk%fit_rv_coef = minim%x(offset+1:offset+geom%nl0)
-            offset = offset+geom%nl0
-         end if
-      end if
+      end do
+
+      ! Copy cost
+      full_cost = minim%f_min
 
       ! Release memory
       deallocate(minim%x)
@@ -669,30 +631,136 @@ if (any(mpl%msv%isnot(diag_blk%fit_rh)).and.any(mpl%msv%isnot(diag_blk%fit_rv)))
       deallocate(minim%l0rl0_to_l0)
       deallocate(minim%disth)
       deallocate(minim%distv)
+   case default
+      ! Copy cost
+      full_cost = scaling_cost
    end select
-end if
 
-! Set to missing values if no point available
-do il0=1,geom%nl0
-   if (mpl%msv%isall(diag_blk%raw(:,:,il0))) then
-      diag_blk%fit_rh(il0) = mpl%msv%valr
-      diag_blk%fit_rv(il0) = mpl%msv%valr
-      if (diag_blk%double_fit) then
+   ! Print results
+   if (lprt) then
+      write(mpl%info,'(a13,a,e9.3,a,e9.3,a,e9.3,a,e9.3)') '','Fit optimization: ',fast_cost,' ~> ',scaling_cost,' ~> ',full_cost
+      call mpl%flush
+   end if
+
+   ! Set to missing values if no point available
+   do il0=1,geom%nl0
+      if (mpl%msv%isall(diag_blk%raw(:,:,il0))) then
          diag_blk%fit_rh(il0) = mpl%msv%valr
          diag_blk%fit_rv(il0) = mpl%msv%valr
+         if (diag_blk%double_fit) then
+            diag_blk%fit_rh(il0) = mpl%msv%valr
+            diag_blk%fit_rv(il0) = mpl%msv%valr
+         end if
       end if
-   end if
-end do
+   end do
 
-! Release memory
-deallocate(rawv)
-deallocate(distv)
-deallocate(fit)
+   ! Release memory
+   deallocate(rawv)
+   deallocate(distv)
+   deallocate(fit)
+end if
 
 ! End associate
 end associate
 
 end subroutine diag_blk_fitting
+
+!----------------------------------------------------------------------
+! Subroutine: diag_blk_cost
+! Purpose: compute cost function from fit parameters
+!----------------------------------------------------------------------
+subroutine diag_blk_cost(diag_blk,mpl,nam,geom,bpar,dcoef,cost)
+
+implicit none
+
+! Passed variables
+class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
+type(mpl_type),intent(inout) :: mpl            ! MPI data
+type(nam_type),intent(in) :: nam               ! Namelist
+type(geom_type),intent(in) :: geom             ! Geometry
+type(bpar_type),intent(in) :: bpar             ! Block parameters
+logical,intent(in) :: dcoef                    ! Diagonal coefficient estimation flag
+real(kind_real),intent(out) :: cost            ! Cost
+
+! Local variables
+integer :: offset
+type(minim_type) :: minim
+
+! Associate
+associate(ib=>diag_blk%ib)
+
+! Allocation
+minim%dl0 = 1
+minim%nx = 3*geom%nl0
+if (diag_blk%double_fit) minim%nx = minim%nx+2*geom%nl0
+minim%ny = nam%nc3*bpar%nl0r(ib)*geom%nl0
+allocate(minim%x(minim%nx))
+allocate(minim%guess(minim%nx))
+allocate(minim%binf(minim%nx))
+allocate(minim%bsup(minim%nx))
+allocate(minim%obs(minim%ny))
+allocate(minim%l0rl0_to_l0(bpar%nl0r(ib),geom%nl0))
+allocate(minim%disth(nam%nc3))
+allocate(minim%distv(geom%nl0,geom%nl0))
+
+! Fill minim
+offset = 0
+minim%guess(offset+1:offset+geom%nl0) = diag_blk%coef_ens
+if (dcoef) then
+   minim%binf(offset+1:offset+geom%nl0) = 0.9*minim%guess(offset+1:offset+geom%nl0)
+   minim%bsup(offset+1:offset+geom%nl0) = 1.1*minim%guess(offset+1:offset+geom%nl0)
+else
+   minim%binf(offset+1:offset+geom%nl0) = minim%guess(offset+1:offset+geom%nl0)
+   minim%bsup(offset+1:offset+geom%nl0) = minim%guess(offset+1:offset+geom%nl0)
+end if
+offset = offset+geom%nl0
+minim%guess(offset+1:offset+geom%nl0) = diag_blk%fit_rh
+minim%binf(offset+1:offset+geom%nl0) = 0.5*minim%guess(offset+1:offset+geom%nl0)
+minim%bsup(offset+1:offset+geom%nl0) = 1.5*minim%guess(offset+1:offset+geom%nl0)
+offset = offset+geom%nl0
+minim%guess(offset+1:offset+geom%nl0) = diag_blk%fit_rv
+minim%binf(offset+1:offset+geom%nl0) = 0.5*minim%guess(offset+1:offset+geom%nl0)
+minim%bsup(offset+1:offset+geom%nl0) = 1.5*minim%guess(offset+1:offset+geom%nl0)
+offset = offset+geom%nl0
+if (diag_blk%double_fit) then
+   minim%guess(offset+1:offset+geom%nl0) = diag_blk%fit_rv_rfac
+   minim%binf(offset+1:offset+geom%nl0) = 0.0
+   minim%bsup(offset+1:offset+geom%nl0) = 1.0
+   offset = offset+geom%nl0
+   minim%guess(offset+1:offset+geom%nl0) = diag_blk%fit_rv_coef
+   minim%binf(offset+1:offset+geom%nl0) = 0.0
+   minim%bsup(offset+1:offset+geom%nl0) = 20.0
+   offset = offset+geom%nl0
+end if
+minim%obs = pack(diag_blk%raw,mask=.true.)
+minim%cost_function = 'fit_diag'
+minim%fit_type = nam%fit_type
+minim%nc3 = nam%nc3
+minim%nl0r = bpar%nl0r(ib)
+minim%nl0 = geom%nl0
+minim%l0rl0_to_l0 = bpar%l0rl0b_to_l0(:,:,ib)
+minim%disth = geom%disth
+minim%distv = diag_blk%distv
+minim%double_fit = diag_blk%double_fit
+
+! Compute cost
+call minim%vt_inv(mpl,minim%guess)
+call minim%cost(mpl,minim%guess,cost)
+
+! Release memory
+deallocate(minim%x)
+deallocate(minim%guess)
+deallocate(minim%binf)
+deallocate(minim%bsup)
+deallocate(minim%obs)
+deallocate(minim%l0rl0_to_l0)
+deallocate(minim%disth)
+deallocate(minim%distv)
+
+! End associate
+end associate
+
+end subroutine diag_blk_cost
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_localization
@@ -734,7 +802,7 @@ end do
 !$omp end parallel do
 
 ! Hybrid weight
-diag_blk%raw_coef_sta = mpl%msv%valr
+diag_blk%coef_sta = mpl%msv%valr
 
 ! End associate
 end associate
@@ -781,16 +849,16 @@ do il0=1,geom%nl0
 end do
 if ((num>0.0).and.(den>0.0)) then
    ! Valid numerator and denominator
-   diag_blk%raw_coef_sta = num/den
+   diag_blk%coef_sta = num/den
 
    !$omp parallel do schedule(static) private(il0,jl0r,jc3)
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          do jc3=1,bpar%nc3(ib)
-            if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(diag_blk%raw_coef_sta) &
+            if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(diag_blk%coef_sta) &
           & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0))) then
                ! Compute localization
-               diag_blk%raw(jc3,jl0r,il0) = (avg_blk%m11asysq(jc3,jl0r,il0)-diag_blk%raw_coef_sta &
+               diag_blk%raw(jc3,jl0r,il0) = (avg_blk%m11asysq(jc3,jl0r,il0)-diag_blk%coef_sta &
                                           & *avg_blk%m11sta(jc3,jl0r,il0))/avg_blk%m11sq(jc3,jl0r,il0)
                diag_blk%valid(jc3,jl0r,il0) = avg_blk%nc1a(jc3,jl0r,il0)
 
@@ -810,7 +878,7 @@ if ((num>0.0).and.(den>0.0)) then
    !$omp end parallel do
 else
    ! Missing values
-   diag_blk%raw_coef_sta = mpl%msv%valr
+   diag_blk%coef_sta = mpl%msv%valr
    diag_blk%raw = mpl%msv%valr
 end if
 
@@ -879,7 +947,7 @@ do il0=1,geom%nl0
 end do
 
 ! Hybrid weight
-diag_blk%raw_coef_sta = mpl%msv%valr
+diag_blk%coef_sta = mpl%msv%valr
 
 ! Release memory
 deallocate(num)

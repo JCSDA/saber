@@ -205,15 +205,15 @@ do ib=1,bpar%nb
          do isub=1,avg%nsub
             ! Global sum
             m2sq = 0.0
-            if (.not.nam%gau_approx) m4 = 0.0
+            m4 = 0.0
             do ic2a=1,samp%nc2a
                if (mpl%msv%isnot(avg%blk(ic2a,ib)%m2(il0,isub))) then
                   m2sq = m2sq+avg%blk(ic2a,ib)%m2(il0,isub)**2
-                  if (.not.nam%gau_approx) m4 = m4+avg%blk(ic2a,ib)%m4(il0,isub)
+                  m4 = m4+avg%blk(ic2a,ib)%m4(il0,isub)
                end if
             end do
             call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
-            if (.not.nam%gau_approx) call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
 
             ! Asymptotic statistics
             if (nam%gau_approx) then

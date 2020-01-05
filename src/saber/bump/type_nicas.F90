@@ -2009,7 +2009,8 @@ end do
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
       call fit_diag(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
-    & loc_opt%blk(0,ib)%distv,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit)
+    & loc_opt%blk(0,ib)%distv,loc_opt%blk(0,ib)%coef_ens,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv, &
+    & loc_opt%blk(0,ib)%fit)
       call loc_opt%blk(0,ib)%write(mpl,nam,geom,bpar,trim(nam%prefix)//'_diag')
    end if
 end do

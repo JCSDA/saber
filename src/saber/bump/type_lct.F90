@@ -216,7 +216,7 @@ write(mpl%info,'(a)') '---------------------------------------------------------
 call mpl%flush
 write(mpl%info,'(a)') '--- Compute LCT'
 call mpl%flush
-call lct%compute(mpl,nam,geom,bpar)
+call lct%compute(mpl,rng,nam,geom,bpar)
 
 ! Filter LCT
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -256,12 +256,13 @@ end subroutine lct_run_lct
 ! Subroutine: lct_compute
 ! Purpose: compute LCT
 !----------------------------------------------------------------------
-subroutine lct_compute(lct,mpl,nam,geom,bpar)
+subroutine lct_compute(lct,mpl,rng,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(lct_type),intent(inout) :: lct ! LCT
+type(rng_type),intent(inout) :: rng  ! Random number generator
 type(mpl_type),intent(inout) :: mpl  ! MPI data
 type(nam_type),intent(in) :: nam     ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
@@ -281,7 +282,7 @@ do ib=1,bpar%nb
       ! Compute
       write(mpl%info,'(a10,a)') '','Compute'
       call mpl%flush
-      call lct%blk(ib)%compute(mpl,nam,geom,bpar,lct%samp,lct%mom%blk(ib))
+      call lct%blk(ib)%compute(mpl,rng,nam,geom,bpar,lct%samp,lct%mom%blk(ib))
 
       ! Release memory
       call lct%mom%blk(ib)%dealloc

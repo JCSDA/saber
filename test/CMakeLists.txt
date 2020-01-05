@@ -77,6 +77,7 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_get_param_hyb
         bump_get_param_lct
         bump_hdiag_draw_type
+        bump_hdiag_gen_kurt
         bump_hdiag_hyb-avg_common
         bump_hdiag_ldwv
         bump_hdiag_loc_gau_approx
