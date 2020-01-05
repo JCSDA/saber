@@ -1,8 +1,8 @@
 # general_param
-datadir: "testdata/bump_hdiag-nicas_reassign"
+datadir: "testdata/bump_hdiag-nicas_remap"
 prefix: "test__MPI_-_OMP_"
 model: "qg"
-reassign: 1
+remap: 1
 
 # driver_param
 method: "cor"
