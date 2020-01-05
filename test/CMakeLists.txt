@@ -95,7 +95,6 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_hdiag-nicas_nonunit_diag
         bump_hdiag-nicas_nprocio
         bump_hdiag-nicas_nrep
-        bump_hdiag-nicas_remap
         bump_hdiag-nicas_rvflt
         bump_interface_nicas
         bump_interface_obsop
@@ -119,6 +118,12 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_set_param_hyb
         bump_set_param_lct
     )
+
+    if(BUILD_METIS)
+        list(APPEND saber_test
+            bump_hdiag-nicas_remap
+        )
+    endif()
 endif()
 
 # TIER > 2
@@ -138,8 +143,13 @@ endif()
 if(${SABER_MPI4_TEST} MATCHES 1)
     list(APPEND saber_test_quad
         bump_hdiag-nicas_nprocio
-        bump_hdiag-nicas_remap
     )
+
+    if(BUILD_METIS)
+        list(APPEND saber_test_quad
+            bump_hdiag-nicas_remap
+        )
+    endif()
 endif()
 
 # Model tests

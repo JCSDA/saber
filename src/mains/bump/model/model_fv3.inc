@@ -18,7 +18,7 @@ real(kind_real) :: sigmaup,sigmadn,sigma
 real(kind_real),allocatable :: lon(:,:,:),lat(:,:,:),a(:),b(:)
 character(len=1024),parameter :: subr = 'model_fv3_coord'
 
-! Open file and get dimension
+! Open file and get dimensions
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'fxdim',nlon_id))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'fydim',nlat_id))
@@ -128,7 +128,7 @@ end if
 do iv=1,nam%nv
    if (model%ioproc(model%mytile)==mpl%myproc) then
       ! 3d variable
- 
+
       ! Get variable id
       call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
 
@@ -136,23 +136,23 @@ do iv=1,nam%nv
       do il0=1,nam%nl
           call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/),(/model%nlon,model%nlat,1,1/)))
       end do
- 
+
       if (trim(nam%addvar2d(iv))/='') then
          ! 2d variable
- 
+
          ! Get id
          call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%addvar2d(iv)),fld_id))
 
          ! Read data
          call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1,1,1/),(/model%nlon,model%nlat,1,1/)))
       end if
- 
+
       ! Pack
       do imgt=1,model%nmgt
          img = model%mgt_to_mg(imgt)
          ilon = model%mg_to_lon(img)
          ilat = model%mg_to_lat(img)
-         fld_mgt(imgt,:) = fld_tmp(ilon,ilat,:) 
+         fld_mgt(imgt,:) = fld_tmp(ilon,ilat,:)
       end do
    end if
    call mpl%glb_to_loc(model%nl0,model%nmgt,model%mgt_to_proc,model%mgt_to_mga,fld_mgt,model%nmga,fld(:,:,iv), &

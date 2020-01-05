@@ -1545,18 +1545,18 @@ end do
 if (bump%nam%check_set_param_cor) then
    call bump%set_parameter('var',fld_mga)
    call bump%set_parameter('cor_rh',fld_mga*req)
-   call bump%set_parameter('cor_rv',fld_mga)
+   call bump%set_parameter('cor_rv',(1.0+fld_mga)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)))
    call bump%set_parameter('cor_rv_rfac',fld_mga)
    call bump%set_parameter('cor_rv_coef',fld_mga)
 elseif (bump%nam%check_set_param_hyb) then
    call bump%set_parameter('loc_coef',fld_mga)
    call bump%set_parameter('loc_rh',fld_mga*req)
-   call bump%set_parameter('loc_rv',fld_mga)
+   call bump%set_parameter('loc_rv',(1.0+fld_mga)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)))
    call bump%set_parameter('hyb_coef',fld_mga)
 elseif (bump%nam%check_set_param_lct) then
    call bump%set_parameter('D11',fld_mga*req**2)
    call bump%set_parameter('D22',fld_mga*req**2)
-   call bump%set_parameter('D33',fld_mga)
+   call bump%set_parameter('D33',((1.0+fld_mga)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)))**2)
    call bump%set_parameter('D12',fld_mga)
    call bump%set_parameter('Dcoef',fld_mga)
 end if
