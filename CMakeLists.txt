@@ -74,11 +74,23 @@ endif()
 ecbuild_use_package( PROJECT fckit VERSION 0.6.3 REQUIRED )
 include_directories( ${FCKIT_INCLUDE_DIRS} )
 
+# metis
+if(BUILD_METIS)
+    ecbuild_use_package( PROJECT metis VERSION 0.0.0 REQUIRED )
+    include_directories( ${METIS_INCLUDE_DIRS} )
+    add_definitions( -DSABER_USE_METIS=1 )
+else()
+    add_definitions( -DSABER_USE_METIS=0 )
+endif()
+
 ################################################################################
 # Export package info
 ################################################################################
 
 list( APPEND SABER_TPLS eckit eckit_mpi fckit )
+if(BUILD_METIS)
+    list( APPEND SABER_TPLS metis )
+endif()
 
 set( SABER_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
                         ${CMAKE_CURRENT_BINARY_DIR}/src

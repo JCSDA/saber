@@ -291,7 +291,8 @@ end if
 ! Copy sampling mask
 if (present(smask)) then
    allocate(bump%geom%smask_c0a(bump%geom%nc0a,bump%geom%nl0))
-   bump%geom%smask_c0a = smask(bump%geom%c0a_to_mga,:).or.bump%nam%nomask
+   call bump%geom%copy_mga_to_c0a(bump%mpl,smask,bump%geom%smask_c0a)
+   bump%geom%smask_c0a = bump%geom%smask_c0a.or.bump%nam%nomask
 end if
 
 end subroutine bump_setup_online
@@ -658,7 +659,7 @@ integer :: its,iv
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 do its=1,bump%nam%nts
-   if (bump%geom%nc0==bump%geom%nmg) then
+   if (bump%geom%same_grid) then
        ! Apply vertical balance
       call bump%vbal%apply(bump%nam,bump%geom,bump%bpar,fld_mga(:,:,:,its))
    else
@@ -696,7 +697,7 @@ integer :: its,iv
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 do its=1,bump%nam%nts
-   if (bump%geom%nc0==bump%geom%nmg) then
+   if (bump%geom%same_grid) then
       ! Apply vertical balance, inverse
       call bump%vbal%apply_inv(bump%nam,bump%geom,bump%bpar,fld_mga(:,:,:,its))
    else
@@ -894,7 +895,7 @@ else
    call bump%mpl%abort(subr,'wrong control variable size in bump_apply_nicas_sqrt')
 end if
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
 else
@@ -920,9 +921,9 @@ subroutine bump_apply_nicas_sqrt_ad(bump,fld_mga,pcv)
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                                                       ! BUMP
+class(bump_type),intent(inout) :: bump                                                   ! BUMP
 real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
-real(kind_real),intent(inout) :: pcv(:)                                                      ! Packed control variable
+real(kind_real),intent(inout) :: pcv(:)                                                  ! Packed control variable
 
 ! Local variables
 integer :: its,iv
@@ -930,7 +931,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 character(len=1024),parameter :: subr = 'bump_apply_nicas_sqrt_ad'
 type(cv_type) :: cv
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root adjoint
    call bump%nicas%apply_sqrt_ad(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga,cv)
 else
@@ -975,7 +976,7 @@ type(cv_type) :: cv
 ! Generate random control vector
 call bump%nicas%random_cv(bump%mpl,bump%rng,bump%bpar,cv)
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
 else
@@ -1008,7 +1009,7 @@ real(kind_real),intent(out) :: obs(bump%obsop%nobsa,bump%geom%nl0)  ! Observatio
 ! Local variables
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply observation operator
    call bump%obsop%apply(bump%mpl,bump%geom,fld_mga,obs)
 else
@@ -1037,7 +1038,7 @@ real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0) ! Field
 ! Local variables
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply observation operator adjoint
    call bump%obsop%apply_ad(bump%mpl,bump%geom,obs,fld_mga)
 else
