@@ -25,7 +25,7 @@ use type_samp, only: samp_type
 implicit none
 
 integer,parameter :: nsc = 50                          ! Number of iterations for the scaling optimization
-logical :: lprt = .true.                               ! Optimization print
+logical :: lprt = .false.                              ! Optimization print
 real(kind_real),parameter :: maxfactor = 2.0_kind_real ! Maximum factor for diagnostics with respect to the origin
 
 ! Diagnostic block derived type

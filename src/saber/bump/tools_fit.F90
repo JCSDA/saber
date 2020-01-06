@@ -150,6 +150,14 @@ if (raw(iz)>0.0) then
          ! All positive-separation points are missing
          fit_r = mpl%msv%valr
       end if
+
+      ! Set minimum distance
+      if (mpl%msv%isnot(fit_r)) then
+         distmin = huge(1.0)
+         if (iz>1) distmin = min(distmin,1.0e-6*abs(dist(iz-1)-dist(iz)))
+         if (iz<n) distmin = min(distmin,1.0e-6*abs(dist(iz+1)-dist(iz)))
+         fit_r = max(fit_r,distmin)
+      end if
    else
       ! Only one point, zero radius
       fit_r = 0.0
@@ -157,14 +165,6 @@ if (raw(iz)>0.0) then
 else
    ! Zero-separation point is negative
    fit_r = mpl%msv%valr
-end if
-
-! Set minimum distance
-if (mpl%msv%isnot(fit_r)) then
-   distmin = huge(1.0)
-   if (iz>1) distmin = min(distmin,1.0e-6*abs(dist(iz-1)-dist(iz)))
-   if (iz<n) distmin = min(distmin,1.0e-6*abs(dist(iz+1)-dist(iz)))
-   fit_r = max(fit_r,distmin)
 end if
 
 end subroutine fast_fit

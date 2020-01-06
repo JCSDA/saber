@@ -322,7 +322,7 @@ real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) ! Fit
 ! Local variables
 integer :: jl0r,jl0,djl0,il0,kl0r,kl0,ic3,jc3,djc3,kc3,ip,jp,np,np_new,nc3max
 integer :: plist(nc3*nl0r,2),plist_new(nc3*nl0r,2)
-real(kind_real) :: rhsq,rvsq,distvsq,distnorm,disttest,rhmax
+real(kind_real) :: rhsq,rvsq,distvsq,disttest,rhmax
 real(kind_real) :: predistnorm(-1:1,nc3,-1:1,nl0),dist(nc3,nl0r)
 logical :: add_to_front
 

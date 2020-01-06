@@ -394,7 +394,7 @@ if (nam%diag_rvflt>0.0) then
 end if
 
 do ib=1,bpar%nbe
-   if (bpar%diag_block(ib)) then
+   if (bpar%diag_block(ib).and.bpar%fit_block(ib)) then
       ! Rebuild fit
       do ic2a=0,diag%nc2a
          if (diag%blk(0,ib)%double_fit) then

@@ -108,10 +108,8 @@ if (bpar%diag_block(ib).and.(.not.allocated(avg_blk%nc1a))) then
    if ((ic2a==0).or.nam%local_diag) then
       allocate(avg_blk%nc1a(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%m2(geom%nl0,avg_blk%nsub))
-      if (nam%var_filter) then
-         allocate(avg_blk%m4(geom%nl0,avg_blk%nsub))
-         allocate(avg_blk%m2flt(geom%nl0,avg_blk%nsub))
-      end if
+      allocate(avg_blk%m4(geom%nl0,avg_blk%nsub))
+      if (nam%var_filter) allocate(avg_blk%m2flt(geom%nl0,avg_blk%nsub))
       allocate(avg_blk%m11(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%m11m11(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub,avg_blk%nsub))
       allocate(avg_blk%m2m2(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub,avg_blk%nsub))
@@ -851,6 +849,13 @@ do il0=1,geom%nl0
       jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
 
       do jc3=1,bpar%nc3(ib)
+         ! Initialization
+         list_m11 = mpl%msv%valr
+         list_m11m11 = mpl%msv%valr
+         list_m2m2 = mpl%msv%valr
+         list_m22 = mpl%msv%valr
+         list_cor = mpl%msv%valr
+
          ! Fill lists
          i = 0
          do ic1=1,nam%nc1
@@ -892,17 +897,6 @@ do il0=1,geom%nl0
                else
                   list_cor(i) = mpl%msv%valr
                end if
-            else
-               ! Missing value
-               list_m11(i) = mpl%msv%valr
-               do isub=1,avg_blk%nsub
-                  do jsub=1,avg_blk%nsub
-                     list_m11m11(i,jsub,isub) = mpl%msv%valr
-                     list_m2m2(i,jsub,isub) = mpl%msv%valr
-                  end do
-                  list_m22(i,isub) = mpl%msv%valr
-               end do
-               list_cor(i) = mpl%msv%valr
             end if
          end do
 
