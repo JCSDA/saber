@@ -921,9 +921,9 @@ subroutine bump_apply_nicas_sqrt_ad(bump,fld_mga,pcv)
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                                                   ! BUMP
+class(bump_type),intent(inout) :: bump                                                       ! BUMP
 real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
-real(kind_real),intent(inout) :: pcv(:)                                                  ! Packed control variable
+real(kind_real),intent(inout) :: pcv(:)                                                      ! Packed control variable
 
 ! Local variables
 integer :: its,iv
