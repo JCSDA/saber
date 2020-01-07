@@ -708,7 +708,7 @@ if (bpar%nicas_block(ib)) then
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nl1',nicas_blk%nl1,nl1_id))
    if (nicas_blk%nsa>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsa',nicas_blk%nsa,nsa_id))
    if (nicas_blk%nsb>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsb',nicas_blk%nsb,nsb_id))
-   if (nicas_blk%nsb>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsc',nicas_blk%nsb,nsc_id))
+   if (nicas_blk%nsc>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsc',nicas_blk%nsc,nsc_id))
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0d',nicas_blk%nc0d,nc0d_id))
@@ -3479,7 +3479,7 @@ allocate(nicas_blk%inorm_nor(nicas_blk%nsc_nor))
 ! Compute normalization weights
 do isa=1,nicas_blk%nsa
    ! Index
-   isc = nicas_blk%sa_to_sc(isa)
+   isc = nicas_blk%sa_to_sc_nor(isa)
 
    ! Sum of squared values
    norm_a(isa) = 1.0+sum(c_S(1:inec(isc),isc)**2)
@@ -3996,6 +3996,9 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) ! Field
 ! Local variables
 real(kind_real) :: alpha_a(nicas_blk%nsa),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
 
+! Normalization
+fld = fld*nicas_blk%norm
+
 ! Adjoint interpolation
 call nicas_blk%apply_interp_ad(mpl,geom,fld,alpha_b)
 
@@ -4034,6 +4037,9 @@ call nicas_blk%com_AB%ext(mpl,alpha_a,alpha_b)
 
 ! Interpolation
 call nicas_blk%apply_interp(mpl,geom,alpha_b,fld)
+
+! Normalization
+fld = fld*nicas_blk%norm
 
 end subroutine nicas_blk_apply
 
@@ -4101,6 +4107,9 @@ call nicas_blk%com_AB%ext(mpl,alpha_a,alpha_b)
 ! Interpolation
 call nicas_blk%apply_interp(mpl,geom,alpha_b,fld)
 
+! Normalization
+fld = fld*nicas_blk%norm
+
 end subroutine nicas_blk_apply_sqrt
 
 !----------------------------------------------------------------------
@@ -4119,10 +4128,13 @@ real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 real(kind_real),intent(out) :: alpha(nicas_blk%nsa)   ! Subgrid field
 
 ! Local variable
-real(kind_real) :: alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
+real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
+
+! Normalization
+fld_tmp = fld*nicas_blk%norm
 
 ! Adjoint interpolation
-call nicas_blk%apply_interp_ad(mpl,geom,fld,alpha_b)
+call nicas_blk%apply_interp_ad(mpl,geom,fld_tmp,alpha_b)
 
 ! Halo reduction from zone B to zone A
 call nicas_blk%com_AB%red(mpl,alpha_b,alpha)
@@ -4171,9 +4183,6 @@ call nicas_blk%apply_interp_v(mpl,geom,gamma,delta)
 ! Horizontal interpolation
 call nicas_blk%apply_interp_h(mpl,geom,delta,fld)
 
-! Normalization
-fld = fld*nicas_blk%norm
-
 end subroutine nicas_blk_apply_interp
 
 !----------------------------------------------------------------------
@@ -4193,13 +4202,9 @@ real(kind_real),intent(out) :: alpha(nicas_blk%nsb)   ! Subgrid field
 
 ! Local variables
 real(kind_real) :: gamma(nicas_blk%nc1b,nicas_blk%nl1),delta(nicas_blk%nc1b,geom%nl0)
-real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0)
-
-! Normalization
-fld_tmp = fld*nicas_blk%norm
 
 ! Horizontal interpolation
-call nicas_blk%apply_interp_h_ad(mpl,geom,fld_tmp,delta)
+call nicas_blk%apply_interp_h_ad(mpl,geom,fld,delta)
 
 ! Vertical interpolation
 call nicas_blk%apply_interp_v_ad(mpl,geom,delta,gamma)
