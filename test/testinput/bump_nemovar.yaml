@@ -1,7 +1,6 @@
 # general_param
-datadir: "testdata"
-prefix: "bump_nemovar"
-prefix_input: "bump_nemovar"
+datadir: "testdata/bump_nemovar"
+prefix: "test"
 model: "nemo"
 
 # driver_param

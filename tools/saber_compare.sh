@@ -20,9 +20,9 @@ if test "${test%%_*}" = "bump" ; then
    nthreads=4
    tolerance=1.e-4
 
-   for file in `ls testdata/${test}_${mpi}-${omp}_*.nc` ; do
+   for file in `ls testdata/${test}/test_${mpi}-${omp}_*.nc` ; do
       # Get suffix
-      tmp=${file#testdata/${test}_${mpi}-${omp}_}
+      tmp=${file#testdata/${test}/test_${mpi}-${omp}_}
       suffix=${tmp%.nc}
 
       if printf %s\\n "${suffix}" | grep -qF "distribution" ; then
@@ -30,10 +30,10 @@ if test "${test%%_*}" = "bump" ; then
          rm -f ${file}
       else
          # Build reference file name, with a special case where the file is mpi-dependent
-         fileref=testref/${test}_1-1_${suffix}.nc
+         fileref=testref/${test}/test_1-1_${suffix}.nc
          for special in "mom" "lct_cor" "nicas" "obs" "split" "vbal" ; do
             if printf %s\\n "${suffix}" | grep -qF "${special}" ; then
-               fileref=testref/${test}_${mpi}-1_${suffix}.nc
+               fileref=testref/${test}/test_${mpi}-1_${suffix}.nc
             fi
          done
 
@@ -55,7 +55,7 @@ if test "${test%%_*}" = "bump" ; then
       fi
    done
 
-   for file in `ls testoutput/${test}_${mpi}-${omp}.0000.out` ; do
+   for file in `ls testoutput/${test}/test_${mpi}-${omp}.0000.out` ; do
       # Check for stars
       grep -q "*" ${file}
       exit_code=$?

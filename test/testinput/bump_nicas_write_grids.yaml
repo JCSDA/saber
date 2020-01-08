@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_nicas_write_grids__MPI_-_OMP_"
+prefix: "bump_nicas_write_grids/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param

@@ -2,7 +2,7 @@
 ! Subroutine: model_wrf_coord
 ! Purpose: get WRF coordinates
 !----------------------------------------------------------------------
-subroutine model_wrf_coord(model,mpl,nam,filename)
+subroutine model_wrf_coord(model,mpl,nam)
 
 implicit none
 
@@ -10,7 +10,6 @@ implicit none
 class(model_type),intent(inout) :: model ! Model
 type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(in) :: nam         ! Namelist
-character(len=*),intent(in) :: filename  ! File name
 
 ! Local variables
 integer :: img,ilon,ilat
@@ -20,7 +19,7 @@ real(kind_real),allocatable :: lon(:,:),lat(:,:),pres(:)
 character(len=1024),parameter :: subr = 'model_wrf_coord'
 
 ! Open file and get dimensions
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_share,ncid))
+call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'west_east',nlon_id))
 call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'south_north',nlat_id))
@@ -109,7 +108,7 @@ if (mpl%main) then
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid))
 end if
 
 do iv=1,nam%nv

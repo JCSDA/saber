@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_set_param_lct__MPI_-_OMP_"
+prefix: "bump_set_param_lct/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param

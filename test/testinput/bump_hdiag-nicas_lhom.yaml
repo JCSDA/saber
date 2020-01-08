@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_hdiag-nicas_lhom__MPI_-_OMP_"
+prefix: "bump_hdiag-nicas_lhom/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param

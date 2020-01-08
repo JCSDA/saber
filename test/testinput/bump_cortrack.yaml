@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_cortrack__MPI_-_OMP_"
+prefix: "bump_cortrack/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param

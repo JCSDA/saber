@@ -132,9 +132,6 @@ endif()
 if(${SABER_TEST_MODEL} MATCHES 1)
     file(STRINGS testlist/saber_test_model.txt saber_test_model_tmp )
     list(APPEND saber_test_model ${saber_test_model_tmp})
-    file(STRINGS testlist/saber_data_model.txt saber_data_tmp )
-    list(APPEND saber_data ${saber_data_tmp})
-    list(APPEND saber_data_tar saber_data_model.tar.gz)
 endif()
 
 # Define local path for test files
@@ -157,6 +154,7 @@ execute_process(
     OUTPUT_VARIABLE GIT_BRANCH
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+message(STATUS "Download sources:")
 
 # Check whether the URL exists or not
 ecbuild_check_multiurl(NAMES   ${saber_data_tar}
@@ -171,7 +169,7 @@ else()
     # Download and extract develop test files (distant directory = develop)
     set(DIRHOST "develop")
 endif()
-message(STATUS "Test data downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
+message(STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
 
 # Download and extract data files
 ecbuild_get_test_multidata(TARGET   get_saber_data
@@ -193,7 +191,7 @@ else()
     # Download and extract develop test files (distant directory = develop)
     set(DIRHOST "develop")
 endif()
-message(STATUS "Reference data downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
+message(STATUS "  Reference: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
 
 # Download and extract reference files
 ecbuild_get_test_multidata(TARGET   get_saber_ref
@@ -209,6 +207,11 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref)
+foreach(test ${saber_test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
+endforeach()
 
 # Link data/reference files
 foreach(file ${saber_data})

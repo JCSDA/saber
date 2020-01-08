@@ -21,8 +21,8 @@ if test "${test1%%_*}" = "bump" ; then
    tolerance=1.e-5
 
    # Build file names
-   file1=testref/${test1}_1-1_${suffix}.nc
-   file2=testref/${test2}_1-1_${suffix}.nc
+   file1=testref/${test1}/test_1-1_${suffix}.nc
+   file2=testref/${test2}/test_1-1_${suffix}.nc
 
    # Compare files with NCCMP
    if [ -x "$(command -v nccmp)" ] ; then

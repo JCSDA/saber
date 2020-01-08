@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_read_obsop__MPI_-_OMP_"
+prefix: "bump_read_obsop/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param

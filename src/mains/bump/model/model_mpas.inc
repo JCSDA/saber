@@ -2,7 +2,7 @@
 ! Subroutine: model_mpas_coord
 ! Purpose: get MPAS coordinates
 !----------------------------------------------------------------------
-subroutine model_mpas_coord(model,mpl,nam,filename)
+subroutine model_mpas_coord(model,mpl,nam)
 
 implicit none
 
@@ -10,7 +10,6 @@ implicit none
 class(model_type),intent(inout) :: model ! Model
 type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(in) :: nam         ! Namelist
-character(len=*),intent(in) :: filename  ! File name
 
 ! Local variables
 integer :: img
@@ -21,7 +20,7 @@ character(len=1024),parameter :: subr = 'model_mpas_coord'
 ! Open file and get dimensions
 model%nlon = mpl%msv%vali
 model%nlat = mpl%msv%vali
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_share,ncid))
+call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nCells',nmg_id))
 call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nmg_id,len=model%nmg))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nVertLevels',nlev_id))
@@ -88,7 +87,7 @@ real(kind_real) :: fld_mg(model%nmg,model%nl0)
 character(len=1024),parameter :: subr = 'model_mpas_read'
 
 ! Open file
-if (mpl%main) call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+if (mpl%main) call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid))
 
 do iv=1,nam%nv
    if (mpl%main) then

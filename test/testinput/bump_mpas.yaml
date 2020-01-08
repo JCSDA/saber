@@ -1,7 +1,6 @@
 # general_param
-datadir: "testdata"
-prefix: "bump_mpas"
-prefix_input: "bump_mpas"
+datadir: "testdata/bump_mpas"
+prefix: "test"
 model: "mpas"
 
 # driver_param
