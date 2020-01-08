@@ -294,6 +294,14 @@ end if
 
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
+write(mpl%info,'(a)') '--- Deal with generalized kurtosis'
+call mpl%flush
+
+! Deal with generalized kurtosis
+call hdiag%avg_1%gen_kurt(mpl,nam,geom,bpar,ens1,io)
+
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
 write(mpl%info,'(a)') '--- Compute covariance'
 call mpl%flush
 
