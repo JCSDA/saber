@@ -32,7 +32,7 @@ nl0r: 2
 
 # diag_param
 ne: 50
-gen_kurt: 18.0
+gen_kurt_th: 10.0
 
 # fit_param
 

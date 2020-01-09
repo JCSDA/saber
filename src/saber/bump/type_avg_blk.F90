@@ -38,7 +38,6 @@ type avg_blk_type
    real(kind_real),allocatable :: m22(:,:,:,:)           ! Fourth-order centered moment average
    real(kind_real),allocatable :: nc1a_cor(:,:,:)        ! Number of points in subset Sc1 on halo A with valid correlations
    real(kind_real),allocatable :: cor(:,:,:)             ! Correlation average
-   real(kind_real),allocatable :: gen_kurt(:,:,:)        ! Generalized kurtosis at zero separation
    real(kind_real),allocatable :: m11asysq(:,:,:)        ! Squared asymptotic covariance average
    real(kind_real),allocatable :: m2m2asy(:,:,:)         ! Product of asymptotic variances average
    real(kind_real),allocatable :: m22asy(:,:,:)          ! Asymptotic fourth-order centered moment average
@@ -117,7 +116,6 @@ if (bpar%diag_block(ib).and.(.not.allocated(avg_blk%nc1a))) then
       allocate(avg_blk%m22(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub))
       allocate(avg_blk%nc1a_cor(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%cor(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
-      allocate(avg_blk%gen_kurt(geom%nc0a,geom%nl0,avg_blk%nsub))
       allocate(avg_blk%m11asysq(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%m2m2asy(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%m22asy(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
@@ -169,7 +167,6 @@ if (allocated(avg_blk%m11m11)) deallocate(avg_blk%m11m11)
 if (allocated(avg_blk%m2m2)) deallocate(avg_blk%m2m2)
 if (allocated(avg_blk%nc1a_cor)) deallocate(avg_blk%nc1a_cor)
 if (allocated(avg_blk%cor)) deallocate(avg_blk%cor)
-if (allocated(avg_blk%gen_kurt)) deallocate(avg_blk%gen_kurt)
 if (allocated(avg_blk%m11asysq)) deallocate(avg_blk%m11asysq)
 if (allocated(avg_blk%m2m2asy)) deallocate(avg_blk%m2m2asy)
 if (allocated(avg_blk%m11sq)) deallocate(avg_blk%m11sq)
@@ -214,7 +211,6 @@ if (allocated(avg_blk_in%m2m2)) avg_blk_out%m2m2 = avg_blk_in%m2m2
 if (allocated(avg_blk_in%m22)) avg_blk_out%m22 = avg_blk_in%m22
 if (allocated(avg_blk_in%nc1a_cor)) avg_blk_out%nc1a_cor = avg_blk_in%nc1a_cor
 if (allocated(avg_blk_in%cor)) avg_blk_out%cor = avg_blk_in%cor
-if (allocated(avg_blk_in%gen_kurt)) avg_blk_out%gen_kurt = avg_blk_in%gen_kurt
 if (allocated(avg_blk_in%m11asysq)) avg_blk_out%m11asysq = avg_blk_in%m11asysq
 if (allocated(avg_blk_in%m2m2asy)) avg_blk_out%m2m2asy = avg_blk_in%m2m2asy
 if (allocated(avg_blk_in%m22asy)) avg_blk_out%m22asy = avg_blk_in%m22asy
@@ -443,9 +439,6 @@ allocate(list_m2m2(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
 allocate(list_m22(samp%nc1a,avg_blk%nsub))
 allocate(list_cor(samp%nc1a))
 
-! Initialization
-avg_blk%gen_kurt = mpl%msv%valr
-
 ! Average
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
@@ -467,13 +460,6 @@ do il0=1,geom%nl0
                   gen_kurt = 3.0*mom_blk%m22(ic1a,jc3,jl0r,il0,isub)/(2.0*mom_blk%m11(ic1a,jc3,jl0r,il0,isub)**2 &
                            & +mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jl0,isub))
                   if (gen_kurt>nam%gen_kurt_th) valid = .false.
-
-                  ! Save value for zero-separation class
-                  if ((il0==jl0).and.(jc3==1)) then
-                     ic0 = samp%c1_to_c0(ic1)
-                     ic0a = geom%c0_to_c0a(ic0)
-                     avg_blk%gen_kurt(ic0a,il0,isub) = gen_kurt
-                  end if
                end do
             end if
 

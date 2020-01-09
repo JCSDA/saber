@@ -519,6 +519,7 @@ if (valid) then
    select case (trim(nam%minim_algo))
    case ('hooke','praxis')
       ! Allocation
+      minim%smoothing_penalty = nam%smoothing_penalty
       minim%dl0 = nam%fit_dl0
       if (mod(geom%nl0,minim%dl0)==1) then
          minim%nl1 = geom%nl0/minim%dl0+1
@@ -690,6 +691,7 @@ type(minim_type) :: minim
 associate(ib=>diag_blk%ib)
 
 ! Allocation
+minim%smoothing_penalty = nam%smoothing_penalty
 minim%dl0 = 1
 minim%nx = 3*geom%nl0
 if (diag_blk%double_fit) minim%nx = minim%nx+2*geom%nl0

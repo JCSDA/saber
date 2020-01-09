@@ -9,9 +9,10 @@ module type_avg
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const,only: reqkm
+use netcdf
+use tools_const,only: reqkm,rad2deg
 use tools_func, only: add,divide
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use type_avg_blk, only: avg_blk_type
 use type_bpar, only: bpar_type
@@ -39,7 +40,6 @@ contains
    procedure :: write => avg_write
    procedure :: var_filter => avg_var_filter
    procedure :: compute => avg_compute
-   procedure :: gen_kurt => avg_gen_kurt
    procedure :: compute_hyb => avg_compute_hyb
    procedure :: compute_deh => avg_compute_deh
    procedure :: copy_wgt => avg_copy_wgt
@@ -83,7 +83,7 @@ avg%nsub = nsub
 allocate(avg%blk(0:samp%nc2a,bpar%nbe))
 do ib=1,bpar%nbe
    do ic2a=0,samp%nc2a
-      call avg%blk(ic2a,ib)%alloc(nam,geom,bpar,samp,ic2a,ib,ne,nsub,prefix)
+      call avg%blk(ic2a,ib)%alloc(nam,geom,bpar,ic2a,ib,ne,nsub,prefix)
    end do
 end do
 
@@ -296,83 +296,6 @@ do ib=1,bpar%nb
 end do
 
 end subroutine avg_var_filter
-
-!----------------------------------------------------------------------
-! Subroutine: avg_gen_kurt
-! Purpose: deal with generalized kurtosis
-!----------------------------------------------------------------------
-subroutine avg_gen_kurt(avg,mpl,nam,geom,bpar,ens)
-
-implicit none
-
-! Passed variables
-class(avg_type),intent(inout) :: avg  ! Averaged statistics
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-type(ens_type),intent(in) :: ens      ! Ensemble
-type(io_type),intent(in) :: io        ! I/O
-
-! Local variables
-integer :: ncid,ne_id,ens_id
-integer :: ib,iv,its,iproc,il0,ic0a
-character(len=1024) :: filename,varname
-character(len=1024),parameter :: subr = 'avg_gen_kurt'
-
-do ib=1,bpar%nb
-   if (bpar%diag_block(ib)) then
-      write(mpl%info,'(a7,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush
-
-      ! Write kurtosis
-      filename = trim(nam%prefix)//'_gen_kurt'
-      call io%fld_write(mpl,nam,geom,filename,'gen_kurt',avg(0,ib)%gen_kurt)
-
-      ! Indices
-      iv = bpar%b_to_v1(ib)
-      its = bpar%b_to_ts1(ib)
-
-      ! Write ensemble values
-      do iproc=1,mpl%nproc
-         ! Open file
-         call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
-
-         do il0=1,geom%nl0
-            do i0a=1,geom%nc0a
-               if (avg(0,ib)%gen_kurt(ic0a,il0)>nam%gen_kurt) then
-                  ! Redef mode
-                  call mpl%ncerr(subr,nf90_redef(ncid))
-
-                  ! Define dimensions if necessary
-                  ne_id = mpl%ncdimcheck(subr,ncid,'ne',ens1%ne,.true.)
-
-                  ! Define variables
-                  write(varname,'(a,i8.8)') 'ens_',geom%c0a_to_c0(ic0a)
-                  call mpl%ncerr(subr,nf90_def_var(ncid,trim(varname),nc_kind_real,(/ne_id/),ens_id))
-                  call mpl%ncerr(subr,nf90_put_att(ncid,ens_id,'_FillValue',mpl%msv%valr))
-
-                  ! End definition mode
-                  call mpl%ncerr(subr,nf90_enddef(ncid))
-
-                  ! Write variables
-                  do ie=1,ens1%ne
-                     call mpl%ncerr(subr,nf90_put_var(ncid,var_id,ens%mem(ie)%fld(ic0a,il0,iv,its),ie))
-                  end do
-               end if
-            end do
-         end do
-
-         ! Close file
-         call mpl%ncerr(subr,nf90_close(ncid))
-
-         ! Wait
-         call mpl%f_comm%barrier()
-      end do
-   end if
-end do
-
-end subroutine avg_gen_kurt
 
 !----------------------------------------------------------------------
 ! Subroutine: avg_compute

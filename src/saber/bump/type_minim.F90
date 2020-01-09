@@ -43,6 +43,7 @@ type minim_type
    integer :: nc3                             ! Number of classes
 
    ! Specific data (fit)
+   logical :: smoothing_penalty               ! Smoothing penalty flag
    integer :: dl0                             ! Number of levels between interpolation levels
    integer :: nl1                             ! Number of interpolation levels
    integer,allocatable :: il1inf(:)           ! Inferior interpolation level
@@ -236,22 +237,24 @@ fh = 0.0
 fv = 0.0
 fr = 0.0
 fc = 0.0
-do il0=2,minim%nl0-1
-   fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
-   norm = fit_rh_avg**2
-   if (norm>0.0) fh = fh+(fit_rh(il0)-fit_rh_avg)**2/norm
-   fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
-   norm = fit_rv_avg**2
-   if (norm>0.0) fv = fv+(fit_rv(il0)-fit_rv_avg)**2/norm
-   if (minim%double_fit) then
-      fit_rv_rfac_avg = 0.5*(fit_rv_rfac(il0-1)+fit_rv_rfac(il0+1))
-      norm = fit_rv_rfac_avg**2
-      if (norm>0.0) fr = fr+(fit_rv_rfac(il0)-fit_rv_rfac_avg)**2/norm
-      fit_rv_coef_avg = 0.5*(fit_rv_coef(il0-1)+fit_rv_coef(il0+1))
-      norm = fit_rv_coef_avg**2
-      if (norm>0.0) fc = fc+(fit_rv_coef(il0)-fit_rv_coef_avg)**2/norm
-   end if
-end do
+if (minim%smoothing_penalty) then
+   do il0=2,minim%nl0-1
+      fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
+      norm = fit_rh_avg**2
+      if (norm>0.0) fh = fh+(fit_rh(il0)-fit_rh_avg)**2/norm
+      fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
+      norm = fit_rv_avg**2
+      if (norm>0.0) fv = fv+(fit_rv(il0)-fit_rv_avg)**2/norm
+      if (minim%double_fit) then
+         fit_rv_rfac_avg = 0.5*(fit_rv_rfac(il0-1)+fit_rv_rfac(il0+1))
+         norm = fit_rv_rfac_avg**2
+         if (norm>0.0) fr = fr+(fit_rv_rfac(il0)-fit_rv_rfac_avg)**2/norm
+         fit_rv_coef_avg = 0.5*(fit_rv_coef(il0-1)+fit_rv_coef(il0+1))
+         norm = fit_rv_coef_avg**2
+         if (norm>0.0) fc = fc+(fit_rv_coef(il0)-fit_rv_coef_avg)**2/norm
+      end if
+   end do
+end if
 
 ! Full penalty function
 f = fo+fh+fv+fr+fc

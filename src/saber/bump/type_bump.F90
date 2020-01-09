@@ -325,6 +325,15 @@ if (bump%nam%ens2_ne>0) then
    call bump%ens2%remove_mean
 end if
 
+if (bump%nam%new_normality) then
+   ! Run normality tests
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Run normality tests'
+   call bump%mpl%flush
+   call bump%ens1%normality(bump%mpl,bump%nam,bump%geom,bump%io)
+end if
+
 if (bump%nam%new_cortrack) then
    ! Run correlation tracker
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
