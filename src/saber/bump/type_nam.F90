@@ -151,7 +151,7 @@ type nam_type
    real(kind_real) ::  diag_rvflt                       ! Vertical filtering support radius
    character(len=1024) :: fit_type                      ! Fit function type ('gc99', 'res', 'fb07_gc99' or 'fb07_res')
    logical :: double_fit(nvmax)                         ! Double fit to introduce negative lobes on the vertical
-   logical :: smoothing_penalty                         ! Smoothing penalty flag
+   logical :: smoothness_penalty                        ! Smoothness penalty flag
    integer :: fit_dl0                                   ! Number of levels between interpolation levels
    integer :: lct_nscales                               ! Number of LCT scales
    real(kind_real) :: lct_scale_ratio                   ! Factor between diffusion scales
@@ -362,7 +362,7 @@ nam%fit_type = 'gc99'
 do iv=1,nvmax
    nam%double_fit(iv) = .false.
 end do
-nam%smoothing_penalty = .true.
+nam%smoothness_penalty = .true.
 nam%fit_dl0 = 1
 nam%lct_nscales = 0
 nam%lct_scale_ratio = 10.0
@@ -443,7 +443,7 @@ logical :: check_obsop,check_no_obs,check_no_point,check_no_point_mask,check_no_
 logical :: check_set_param_lct,check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal
 logical :: check_apply_nicas,check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_block(nvmax*(nvmax-1)/2)
 logical :: vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
-logical :: double_fit(nvmax),smoothing_penalty,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
+logical :: double_fit(nvmax),smoothness_penalty,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
 logical :: fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
 character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,wind_filename,wind_varname(2),mask_type,mask_lu(nvmax)
 character(len=1024) :: draw_type,adv_type,minim_algo,fit_type,subsamp
@@ -466,7 +466,7 @@ namelist/sampling_param/sam_write,sam_read,mask_type,mask_lu,mask_th,ncontig_th,
                       & nrep,nc3,dc,nl0r,irmax
 namelist/diag_param/ne,gen_kurt_th,gau_approx,avg_nbins,vbal_block,vbal_rad,vbal_diag_auto,vbal_diag_reg,var_filter,var_niter, &
                   & var_rhflt,local_diag,local_rad,adv_diag,adv_type,adv_rad,adv_niter,adv_rhflt,adv_valid
-namelist/fit_param/minim_algo,diag_rhflt,diag_rvflt,fit_type,double_fit,smoothing_penalty,fit_dl0,lct_nscales,lct_scale_ratio, &
+namelist/fit_param/minim_algo,diag_rhflt,diag_rvflt,fit_type,double_fit,smoothness_penalty,fit_dl0,lct_nscales,lct_scale_ratio, &
                  & lct_cor_min,lct_diag,lct_qc_th,lct_qc_max,lct_write_cor
 namelist/nicas_param/nonunit_diag,lsqrt,resol,nc1max,fast_sampling,subsamp,network,mpicom,adv_mode,forced_radii,rh,rv, &
                    & pos_def_test,write_grids,ndir,londir,latdir,levdir,ivdir,itsdir
@@ -611,7 +611,7 @@ if (mpl%main) then
    do iv=1,nvmax
       double_fit(iv) = .false.
    end do
-   smoothing_penalty = .true.
+   smoothness_penalty = .true.
    fit_dl0 = 1
    lct_nscales = 0
    lct_scale_ratio = 10.0
@@ -799,7 +799,7 @@ if (mpl%main) then
    nam%diag_rvflt = diag_rvflt
    nam%fit_type = fit_type
    if (nv>0) nam%double_fit(1:nv) = double_fit(1:nv)
-   nam%smoothing_penalty = smoothing_penalty
+   nam%smoothness_penalty = smoothness_penalty
    nam%fit_dl0 = fit_dl0
    nam%lct_nscales = lct_nscales
    nam%lct_scale_ratio = lct_scale_ratio
@@ -1018,7 +1018,7 @@ call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_type,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%double_fit,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%smoothing_penalty,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%smoothness_penalty,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_nscales,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_scale_ratio,mpl%rootproc-1)
@@ -1278,7 +1278,7 @@ if (conf%has("double_fit")) then
    call conf%get_or_die("double_fit",logical_array)
    nam%double_fit(1:nam%nv) = logical_array(1:nam%nv)
 end if
-if (conf%has("smoothing_penalty")) call conf%get_or_die("smoothing_penalty",nam%smoothing_penalty)
+if (conf%has("smoothness_penalty")) call conf%get_or_die("smoothness_penalty",nam%smoothness_penalty)
 if (conf%has("fit_dl0")) call conf%get_or_die("fit_dl0",nam%fit_dl0)
 if (conf%has("lct_nscales")) call conf%get_or_die("lct_nscales",nam%lct_nscales)
 if (conf%has("lct_scale_ratio")) call conf%get_or_die("lct_scale_ratio",nam%lct_scale_ratio)
@@ -1958,7 +1958,7 @@ call mpl%write(lncid,'nam','diag_rhflt',nam%diag_rhflt*req)
 call mpl%write(lncid,'nam','diag_rvflt',nam%diag_rvflt)
 call mpl%write(lncid,'nam','fit_type',nam%fit_type(1:9))
 call mpl%write(lncid,'nam','double_fit',nam%nv,nam%double_fit(1:nam%nv))
-call mpl%write(lncid,'nam','smoothing_penalty',nam%smoothing_penalty)
+call mpl%write(lncid,'nam','smoothness_penalty',nam%smoothness_penalty)
 call mpl%write(lncid,'nam','fit_dl0',nam%fit_dl0)
 call mpl%write(lncid,'nam','lct_nscales',nam%lct_nscales)
 call mpl%write(lncid,'nam','lct_scale_ratio',nam%lct_scale_ratio)

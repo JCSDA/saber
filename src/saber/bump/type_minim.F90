@@ -43,7 +43,7 @@ type minim_type
    integer :: nc3                             ! Number of classes
 
    ! Specific data (fit)
-   logical :: smoothing_penalty               ! Smoothing penalty flag
+   logical :: smoothness_penalty              ! Smoothness penalty flag
    integer :: dl0                             ! Number of levels between interpolation levels
    integer :: nl1                             ! Number of interpolation levels
    integer,allocatable :: il1inf(:)           ! Inferior interpolation level
@@ -232,12 +232,12 @@ fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot
 norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
 if (norm>0.0) fo = fo/norm
 
-! Smoothing penalty
+! Smoothness penalty
 fh = 0.0
 fv = 0.0
 fr = 0.0
 fc = 0.0
-if (minim%smoothing_penalty) then
+if (minim%smoothness_penalty) then
    do il0=2,minim%nl0-1
       fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
       norm = fit_rh_avg**2
