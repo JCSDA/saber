@@ -158,45 +158,45 @@ message(STATUS "Download sources:")
 
 # Check whether the URL exists or not
 ecbuild_check_multiurl(NAMES   ${saber_data_tar}
-                       DIRHOST ${GIT_BRANCH}
+                       DIRNAME ${GIT_BRANCH}
                        RESULT  SPECIFIC_TEST_FILES)
 
 # Set distant directory
 if(${SPECIFIC_TEST_FILES} MATCHES 0)
     # Download and extract new test files (distant directory = git branch)
-    set(DIRHOST ${GIT_BRANCH})
+    set(DIRNAME ${GIT_BRANCH})
 else()
     # Download and extract develop test files (distant directory = develop)
-    set(DIRHOST "develop")
+    set(DIRNAME "develop")
 endif()
-message(STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
+message(STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME})
 
 # Download and extract data files
 ecbuild_get_test_multidata(TARGET   get_saber_data
                            NAMES    ${saber_data_tar}
-                           DIRHOST  ${DIRHOST}
+                           DIRNAME  ${DIRNAME}
                            DIRLOCAL ${TESTFILE_DIR}/testdata
                            EXTRACT)
 
 # Check whether the URL exists or not
 ecbuild_check_multiurl(NAMES   ${saber_ref_tar}
-                       DIRHOST ${GIT_BRANCH}
+                       DIRNAME ${GIT_BRANCH}
                        RESULT  SPECIFIC_TEST_FILES)
 
 # Set distant directory
 if(${SPECIFIC_TEST_FILES} MATCHES 0)
     # Download and extract new test files (distant directory = git branch)
-    set(DIRHOST ${GIT_BRANCH})
+    set(DIRNAME ${GIT_BRANCH})
 else()
     # Download and extract develop test files (distant directory = develop)
-    set(DIRHOST "develop")
+    set(DIRNAME "develop")
 endif()
-message(STATUS "  Reference: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRHOST})
+message(STATUS "  Reference: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME})
 
 # Download and extract reference files
 ecbuild_get_test_multidata(TARGET   get_saber_ref
                            NAMES    ${saber_ref_tar}
-                           DIRHOST  ${DIRHOST}
+                           DIRNAME  ${DIRNAME}
                            DIRLOCAL ${TESTFILE_DIR}/testref
                            EXTRACT)
 
