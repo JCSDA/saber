@@ -25,6 +25,7 @@ use type_nam, only: nam_type
 use type_nicas, only: nicas_type
 use type_obsop, only: obsop_type
 use type_rng, only: rng_type
+use type_var, only: var_type
 use type_vbal, only: vbal_type
 
 implicit none
@@ -45,6 +46,7 @@ type bump_type
    type(nicas_type) :: nicas
    type(obsop_type) :: obsop
    type(rng_type) :: rng
+   type(var_type) :: var
    type(vbal_type) :: vbal
    real(kind_real),allocatable :: fld_uv(:,:,:,:)
 contains
@@ -375,6 +377,24 @@ if (bump%nam%check_vbal) then
    call bump%vbal%run_vbal_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
+
+if (bump%nam%new_var) then
+   ! Run variance driver
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Run variance driver'
+   call bump%mpl%flush
+   call bump%var%run_var(bump%mpl,bump%nam,bump%geom,bump%ens1,bump%io)
+elseif (bump%nam%load_var) then
+   ! Read variance
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Read variance'
+   call bump%mpl%flush
+   call bump%var%read(bump%mpl,bump%nam,bump%geom,bump%io)
+end if
+
+call bump%mpl%abort('ok','ok')
 
 if (bump%nam%new_hdiag) then
    ! Run HDIAG driver
@@ -1675,6 +1695,7 @@ call bump%io%dealloc
 call bump%lct%partial_dealloc
 call bump%nicas%partial_dealloc
 call bump%obsop%partial_dealloc
+call bump%var%partial_dealloc
 call bump%vbal%partial_dealloc
 if (allocated(bump%fld_uv)) deallocate(bump%fld_uv)
 
@@ -1703,6 +1724,7 @@ call bump%io%dealloc
 call bump%lct%dealloc
 call bump%nicas%dealloc
 call bump%obsop%dealloc
+call bump%var%dealloc
 call bump%vbal%dealloc
 if (allocated(bump%fld_uv)) deallocate(bump%fld_uv)
 

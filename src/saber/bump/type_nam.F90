@@ -44,6 +44,9 @@ type nam_type
    logical :: new_vbal                                  ! Compute new vertical balance operator
    logical :: load_vbal                                 ! Load existing vertical balance operator
    logical :: write_vbal                                ! Write vertical balance operator
+   logical :: new_var                                   ! Compute new variance
+   logical :: load_var                                  ! Load existing variance
+   logical :: write_var                                 ! Write variance
    logical :: new_mom                                   ! Compute new sample moments
    logical :: load_mom                                  ! Load sample moments
    logical :: write_mom                                 ! Write sample moments
@@ -241,6 +244,9 @@ nam%new_corstats = .false.
 nam%new_vbal = .false.
 nam%load_vbal = .false.
 nam%write_vbal = .true.
+nam%new_var = .false.
+nam%load_var = .false.
+nam%write_var = .true.
 nam%new_mom = .true.
 nam%load_mom = .false.
 nam%write_mom = .false.
@@ -431,14 +437,14 @@ integer :: levdir(ndirmax),ivdir(ndirmax),itsdir(ndirmax),nobs,nldwv,img_ldwv(nl
 real(kind_real) :: dts,mask_th(nvmax),Lcoast,rcoast,dc,vbal_rad,var_rhflt,local_rad,adv_rad,adv_rhflt,adv_valid
 real(kind_real) :: rvflt,lct_cor_min,lct_scale_ratio,lct_qc_th,lct_qc_max,lon_ldwv(nldwvmax),lat_ldwv(nldwvmax),diag_rhflt,resol,rh
 real(kind_real) :: rv,londir(ndirmax),latdir(ndirmax),grid_resol
-logical :: colorlog,default_seed,repro,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_mom,load_mom,write_mom,new_hdiag
-logical :: write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop,load_obsop,write_obsop
-logical :: check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality,check_obsop,check_no_obs
-logical :: check_no_point,check_no_point_mask,check_no_point_nicas,check_set_param_cor,check_set_param_hyb,check_set_param_lct
-logical :: check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal,check_apply_nicas
-logical :: check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_block(nvmax*(nvmax-1)/2)
-logical :: vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
-logical :: double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
+logical :: colorlog,default_seed,repro,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_var,load_var,write_var,new_mom
+logical :: load_mom,write_mom,new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas
+logical :: new_obsop,load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency
+logical :: check_optimality,check_obsop,check_no_obs,check_no_point,check_no_point_mask,check_no_point_nicas,check_set_param_cor
+logical :: check_set_param_hyb,check_set_param_lct,check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct
+logical :: check_apply_vbal,check_apply_nicas,check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check
+logical :: vbal_block(nvmax*(nvmax-1)/2),vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx
+logical :: local_diag,adv_diag,double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
 logical :: fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
 character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,wind_filename,wind_varname(2),mask_type,mask_lu(nvmax)
 character(len=1024) :: draw_type,adv_type,minim_algo,fit_type,subsamp
@@ -447,12 +453,13 @@ character(len=1024),dimension(nldwvmax) :: name_ldwv
 
 ! Namelist blocks
 namelist/general_param/datadir,prefix,model,verbosity,colorlog,default_seed,repro,nprocio
-namelist/driver_param/method,strategy,new_cortrack,new_corstats,new_vbal,load_vbal,new_mom,load_mom,write_mom,write_vbal, &
-                    & new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop, &
-                    & load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency, &
-                    & check_optimality,check_obsop,check_no_obs,check_no_point,check_no_point_mask,check_no_point_nicas, &
-                    & check_set_param_cor,check_set_param_hyb,check_set_param_lct,check_get_param_cor,check_get_param_hyb, &
-                    & check_get_param_Dloc,check_get_param_lct,check_apply_vbal,check_apply_nicas,check_apply_obsop
+namelist/driver_param/method,strategy,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_var,load_var,write_var,new_mom, &
+                    & load_mom,write_mom,new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas, &
+                    & write_nicas,new_obsop,load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization, &
+                    & check_consistency,check_optimality,check_obsop,check_no_obs,check_no_point,check_no_point_mask, &
+                    & check_no_point_nicas,check_set_param_cor,check_set_param_hyb,check_set_param_lct,check_get_param_cor, &
+                    & check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal,check_apply_nicas, &
+                    & check_apply_obsop
 namelist/model_param/nl,levs,logpres,nv,varname,addvar2d,nts,timeslot,dts,nomask,wind_filename,wind_varname
 namelist/ens1_param/ens1_ne,ens1_nsub
 namelist/ens2_param/ens2_ne,ens2_nsub
@@ -486,6 +493,9 @@ if (mpl%main) then
    new_vbal = .false.
    load_vbal = .false.
    write_vbal = .true.
+   new_var = .false.
+   load_var = .false.
+   write_var = .true.
    new_mom = .true.
    load_mom = .false.
    write_mom = .false.
@@ -673,6 +683,9 @@ if (mpl%main) then
    nam%new_vbal = new_vbal
    nam%load_vbal = load_vbal
    nam%write_vbal = write_vbal
+   nam%new_var = new_var
+   nam%load_var = load_var
+   nam%write_var = write_var
    nam%new_mom = new_mom
    nam%load_mom = load_mom
    nam%write_mom = write_mom
@@ -901,6 +914,9 @@ call mpl%f_comm%broadcast(nam%new_corstats,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_vbal,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%new_var,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%load_var,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%write_var,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_mom,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_mom,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_mom,mpl%rootproc-1)
@@ -1108,6 +1124,9 @@ if (conf%has("new_corstats")) call conf%get_or_die("new_corstats",nam%new_corsta
 if (conf%has("new_vbal")) call conf%get_or_die("new_vbal",nam%new_vbal)
 if (conf%has("load_vbal")) call conf%get_or_die("load_vbal",nam%load_vbal)
 if (conf%has("write_vbal")) call conf%get_or_die("write_vbal",nam%write_vbal)
+if (conf%has("new_var")) call conf%get_or_die("new_var",nam%new_var)
+if (conf%has("load_var")) call conf%get_or_die("load_var",nam%load_var)
+if (conf%has("write_var")) call conf%get_or_die("write_var",nam%write_var)
 if (conf%has("new_mom")) call conf%get_or_die("new_mom",nam%new_mom)
 if (conf%has("load_mom")) call conf%get_or_die("load_mom",nam%load_mom)
 if (conf%has("write_mom")) call conf%get_or_die("write_mom",nam%write_mom)
@@ -1467,6 +1486,7 @@ if (nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat.or.nam%new_nicas.or.nam%load_n
    end select
 end if
 if (nam%new_vbal.and.nam%load_vbal) call mpl%abort(subr,'new_vbal and load_vbal are exclusive')
+if (nam%new_var.and.nam%load_var) call mpl%abort(subr,'new_var and load_var are exclusive')
 if (nam%new_mom.and.nam%load_mom) call mpl%abort(subr,'new_mom and load_mom are exclusive')
 if (nam%new_hdiag.and.nam%new_lct) call mpl%abort(subr,'new_hdiag and new_lct are exclusive')
 if ((nam%new_hdiag.or.nam%new_lct).and.nam%load_cmat) call mpl%abort(subr,'new_hdiag or new_lct and load_cmat are exclusive')
@@ -1527,7 +1547,8 @@ do il=1,nam%nl
    if (nam%levs(il)<=0) call mpl%abort(subr,'levs should be positive')
    if (count(nam%levs(1:nam%nl)==nam%levs(il))>1) call mpl%abort(subr,'redundant levels')
 end do
-if (nam%new_vbal.or.nam%load_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat.or.nam%new_nicas.or.nam%load_nicas) then
+if (nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%load_var.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat &
+ & .or.nam%new_nicas.or.nam%load_nicas) then
    if (nam%nv<=0) call mpl%abort(subr,'nv should be positive')
    do iv=1,nam%nv
       write(ivchar,'(i2.2)') iv
@@ -1544,8 +1565,8 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cm
 end if
 
 ! Check ens1_param
-if (nam%new_cortrack.or.nam%new_corstats.or.nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%check_randomization &
- & .or.nam%check_consistency.or.nam%check_optimality) then
+if (nam%new_cortrack.or.nam%new_corstats.or.nam%new_vbal.or.nam%new_var.or.nam%new_hdiag.or.nam%new_lct &
+ & .or.nam%check_randomization.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%ens1_nsub<1) call mpl%abort(subr,'ens1_nsub should be positive')
    if (mod(nam%ens1_ne,nam%ens1_nsub)/=0) call mpl%abort(subr,'ens1_nsub should be a divider of ens1_ne')
    if (nam%ens1_ne/nam%ens1_nsub<=3) call mpl%abort(subr,'ens1_ne/ens1_nsub should be larger than 3')
@@ -1621,16 +1642,17 @@ if (nam%new_vbal) then
  & call mpl%abort(subr,'no block selected for the vertical balance diagnostics')
    if (.not.(nam%vbal_rad>0.0)) call mpl%abort(subr,'vbal_rad should be positive')
 end if
+if (nam%new_var) then
+   if (nam%var_filter) then
+      if (nam%var_niter<=0) call mpl%abort(subr,'var_niter should be positive')
+      if (.not.(nam%var_rhflt>0.0)) call mpl%abort(subr,'var_rhflt should be positive')
+   end if
+end if
 if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    select case (trim(nam%method))
    case ('loc','hyb-avg','hyb-rnd','dual-ens')
       if (nam%ne<=3) call mpl%abort(subr,'ne should be larger than 3')
    end select
-   if (nam%var_filter.and.(.not.nam%local_diag)) call mpl%abort(subr,'local_diag required for var_filter')
-   if (nam%var_filter) then
-      if (nam%var_niter<=0) call mpl%abort(subr,'var_niter should be positive')
-      if (.not.(nam%var_rhflt>0.0)) call mpl%abort(subr,'var_rhflt should be positive')
-   end if
    if (nam%local_diag) then
       if (.not.(nam%local_rad>0.0)) call mpl%abort(subr,'local_rad should be positive')
    end if
@@ -1813,6 +1835,9 @@ call mpl%write(lncid,'nam','new_corstats',nam%new_corstats)
 call mpl%write(lncid,'nam','new_vbal',nam%new_vbal)
 call mpl%write(lncid,'nam','load_vbal',nam%load_vbal)
 call mpl%write(lncid,'nam','write_vbal',nam%write_vbal)
+call mpl%write(lncid,'nam','new_var',nam%new_var)
+call mpl%write(lncid,'nam','load_var',nam%load_var)
+call mpl%write(lncid,'nam','write_var',nam%write_var)
 call mpl%write(lncid,'nam','new_mom',nam%new_mom)
 call mpl%write(lncid,'nam','load_mom',nam%load_mom)
 call mpl%write(lncid,'nam','write_mom',nam%write_mom)

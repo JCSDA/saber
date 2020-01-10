@@ -1,0 +1,394 @@
+!----------------------------------------------------------------------
+! Module: type_var
+! Purpose: variance derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_var
+
+use fckit_mpi_module, only: fckit_mpi_sum
+!$ use omp_lib
+use tools_const, only: reqkm
+use tools_kinds, only: kind_real
+use type_ens, only: ens_type
+use type_geom, only: geom_type
+use type_io, only: io_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+
+implicit none
+
+! Variance derived type
+type var_type
+   integer :: ne                                  ! Ensemble size
+   real(kind_real),allocatable :: m2(:,:,:,:)     ! Variance
+   real(kind_real),allocatable :: m4(:,:,:,:)     ! Fourth-order centered moment
+   real(kind_real),allocatable :: m2flt(:,:,:,:)  ! Filtered variance
+   real(kind_real),allocatable :: m2sqrt(:,:,:,:) ! Variance square-root
+contains
+   procedure :: alloc => var_alloc
+   procedure :: partial_dealloc => var_partial_dealloc
+   procedure :: dealloc => var_dealloc
+   procedure :: read => var_read
+   procedure :: write => var_write
+   procedure :: run_var => var_run_var
+   procedure :: filter => var_filter
+   procedure :: apply_sqrt => var_apply_sqrt
+   procedure :: apply_sqrt_inv => var_apply_sqrt_inv
+end type var_type
+
+private
+public :: var_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: var_alloc
+! Purpose: allocation
+!----------------------------------------------------------------------
+subroutine var_alloc(var,nam,geom)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var ! Variance
+type(nam_type),intent(in) :: nam     ! Namelist
+type(geom_type),intent(in) :: geom   ! Geometry
+
+! Allocation
+allocate(var%m2(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+allocate(var%m4(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+
+end subroutine var_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: var_partial_dealloc
+! Purpose: release memory (partial)
+!----------------------------------------------------------------------
+subroutine var_partial_dealloc(var)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var ! Variance
+
+! Release memory
+if (allocated(var%m2)) deallocate(var%m2)
+if (allocated(var%m4)) deallocate(var%m4)
+if (allocated(var%m2flt)) deallocate(var%m2flt)
+
+end subroutine var_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: var_dealloc
+! Purpose: release memory (full)
+!----------------------------------------------------------------------
+subroutine var_dealloc(var)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var ! Variance
+
+! Release memory
+call var%partial_dealloc
+if (allocated(var%m2sqrt)) deallocate(var%m2sqrt)
+
+end subroutine var_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: var_read
+! Purpose: read
+!----------------------------------------------------------------------
+subroutine var_read(var,mpl,nam,geom,io)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var ! Variance
+type(mpl_type),intent(inout) :: mpl  ! MPI data
+type(nam_type),intent(in) :: nam     ! Namelist
+type(geom_type),intent(in) :: geom   ! Geometry
+type(io_type),intent(in) :: io       ! I/O
+
+! TODO
+
+end subroutine var_read
+
+!----------------------------------------------------------------------
+! Subroutine: var_write
+! Purpose: write
+!----------------------------------------------------------------------
+subroutine var_write(var,mpl,nam,geom,io)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var ! Variance
+type(mpl_type),intent(inout) :: mpl  ! MPI data
+type(nam_type),intent(in) :: nam     ! Namelist
+type(geom_type),intent(in) :: geom   ! Geometry
+type(io_type),intent(in) :: io       ! I/O
+
+! Local variables
+integer :: iv,its
+character(len=1024) :: filename,varname
+
+! Write variance
+write(mpl%info,'(a7,a)') '','Write variance'
+filename = trim(nam%prefix)//'_var'
+call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+do its=1,nam%nts
+   do iv=1,nam%nv
+      write(varname,'(a,i2.2,a,i2.2)') 'm2_',iv,'_',its
+      call io%fld_write(mpl,nam,geom,filename,varname,var%m2(:,:,iv,its))
+      write(varname,'(a,i2.2,a,i2.2)') 'm4_',iv,'_',its
+      call io%fld_write(mpl,nam,geom,filename,varname,var%m4(:,:,iv,its))
+      if (nam%var_filter) then
+         write(varname,'(a,i2.2,a,i2.2)') 'm2flt_',iv,'_',its
+         call io%fld_write(mpl,nam,geom,filename,varname,var%m2flt(:,:,iv,its))
+      end if
+      write(varname,'(a,i2.2,a,i2.2)') 'm2sqrt_',iv,'_',its
+      call io%fld_write(mpl,nam,geom,filename,varname,var%m2sqrt(:,:,iv,its))
+   end do
+end do
+
+end subroutine var_write
+
+!----------------------------------------------------------------------
+! Subroutine: var_run_var
+! Purpose: compute variance
+!----------------------------------------------------------------------
+subroutine var_run_var(var,mpl,nam,geom,ens,io)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var ! Variance
+type(mpl_type),intent(inout) :: mpl  ! MPI data
+type(nam_type),intent(inout) :: nam  ! Namelist
+type(geom_type),intent(in) :: geom   ! Geometry
+type(ens_type), intent(in) :: ens    ! Ensemble
+type(io_type),intent(in) :: io       ! I/O
+
+! Local variables
+integer :: ie,ic0a,il0
+real(kind_real) :: norm_m2,norm_m4
+
+! Allocation
+call var%alloc(nam,geom)
+
+! Initialization
+norm_m2 = 1.0/real(ens%ne-1,kind_real)
+norm_m4 = 1.0/real(ens%ne,kind_real)
+
+! Compute variance
+write(mpl%info,'(a7,a)') '','Compute variance'
+call mpl%flush
+var%ne = ens%ne
+var%m2 = 0.0
+var%m4 = 0.0
+do ie=1,ens%ne
+   var%m2 = var%m2+ens%mem(ie)%fld**2
+   var%m4 = var%m4+ens%mem(ie)%fld**4
+end do
+var%m2 = var%m2*norm_m2
+var%m4 = var%m4*norm_m4
+
+! Apply mask
+do il0=1,geom%nl0
+   do ic0a=1,geom%nc0a
+      if (.not.geom%mask_c0a(ic0a,il0)) then
+         var%m2(ic0a,il0,:,:) = mpl%msv%valr
+         var%m4(ic0a,il0,:,:) = mpl%msv%valr
+      end if
+   end do
+end do
+
+if (nam%var_filter) then
+   ! Filter variance
+   call var%filter(mpl,nam,geom)
+
+   ! Take square-root
+   var%m2sqrt = sqrt(var%m2flt)
+else
+   ! Take square-root
+   var%m2sqrt = sqrt(var%m2)
+end if
+
+! Write variance
+call var%write(mpl,nam,geom,io)
+
+end subroutine var_run_var
+
+!----------------------------------------------------------------------
+! Subroutine: var_filter
+! Purpose: filter variance
+!----------------------------------------------------------------------
+subroutine var_filter(var,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var ! Variance
+type(mpl_type),intent(inout) :: mpl  ! MPI data
+type(nam_type),intent(in) :: nam     ! Namelist
+type(geom_type),intent(in) :: geom   ! Geometry
+
+! Local variables
+integer :: n,its,iv,il0,iter
+real(kind_real) :: P9,P20,P21
+real(kind_real) :: m2sq,m2sq_tot,m4,m4_tot,m2sqasy,rhflt,drhflt
+real(kind_real) :: m2_ini(geom%nc0a),m2(geom%nc0a),m2prod,m2prod_tot
+logical :: dichotomy,convergence
+
+write(mpl%info,'(a7,a)') '','Filter variance'
+call mpl%flush
+
+! Ensemble size-dependent coefficients
+n = var%ne
+P9 = -real(n,kind_real)/real((n-2)*(n-3),kind_real)
+P20 = real((n-1)*(n**2-3*n+3),kind_real)/real(n*(n-2)*(n-3),kind_real)
+P21 = real(n-1,kind_real)/real(n+1,kind_real)
+
+do its=1,nam%nts
+   write(mpl%info,'(a10,a,i2.2)') '','Timeslot ',nam%timeslot(its)
+   call mpl%flush
+
+   do iv=1,nam%nv
+      write(mpl%info,'(a10,a,i2.2)') '','Variable ',trim(nam%varname(iv))
+      call mpl%flush
+
+      do il0=1,geom%nl0
+         write(mpl%info,'(a13,a,i3)') '','Level ',nam%levs(il0)
+         call mpl%flush
+
+         ! Global sum
+         m2sq = sum(var%m2(:,il0,iv,its)**2,mask=geom%mask_c0a(:,il0))
+         m4 = sum(var%m4(:,il0,iv,its),mask=geom%mask_c0a(:,il0))
+         call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
+         call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
+
+         ! Asymptotic statistics
+         if (nam%gau_approx) then
+            ! Gaussian approximation
+            m2sqasy = P21*m2sq_tot
+         else
+            ! General case
+            m2sqasy = P20*m2sq_tot+P9*m4_tot
+         end if
+
+         ! Dichotomy initialization
+         m2_ini = var%m2(:,il0,iv,its)
+         convergence = .true.
+         dichotomy = .false.
+         rhflt = nam%var_rhflt
+         drhflt = rhflt
+
+         do iter=1,nam%var_niter
+            ! Copy initial value
+            m2 = m2_ini
+
+            ! Smoother
+            ! TODO
+
+            ! Global product
+            m2prod = sum(m2*m2_ini,mask=geom%mask_c0a(:,il0))
+            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+
+            ! Print result
+            write(mpl%info,'(a19,a,i2,a,f10.2,a,e12.5)') '','Iteration ',iter,': rhflt = ', &
+          & rhflt*reqkm,' km, rel. diff. = ',(m2prod_tot-m2sqasy)/m2sqasy
+            call mpl%flush
+
+            ! Update support radius
+            if (m2prod_tot>m2sqasy) then
+               ! Increase filtering support radius
+               if (dichotomy) then
+                  drhflt = 0.5*drhflt
+                  rhflt = rhflt+drhflt
+               else
+                  convergence = .false.
+                  rhflt = rhflt+drhflt
+                  drhflt = 2.0*drhflt
+               end if
+            else
+               ! Convergence
+               convergence = .true.
+
+               ! Change dichotomy status
+               if (.not.dichotomy) then
+                  dichotomy = .true.
+                  drhflt = 0.5*drhflt
+               end if
+
+               ! Decrease filtering support radius
+               drhflt = 0.5*drhflt
+               rhflt = rhflt-drhflt
+            end if
+         end do
+
+         ! Copy final result
+         var%m2flt(:,il0,iv,its) = m2
+      end do
+   end do
+end do
+
+end subroutine var_filter
+
+!----------------------------------------------------------------------
+! Subroutine: var_apply_sqrt
+! Purpose: apply square-root variance
+!----------------------------------------------------------------------
+subroutine var_apply_sqrt(var,nam,geom,fld)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(in) :: var                                       ! Variance
+type(nam_type),intent(in) :: nam                                        ! Namelist
+type(geom_type),intent(in) :: geom                                      ! Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Source/destination vector
+
+! Local variables
+integer :: ic0a,il0
+
+! Apply variance
+do il0=1,geom%nl0
+   do ic0a=1,geom%nc0a
+      if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,:,:) = fld(ic0a,il0,:,:)*var%m2sqrt(ic0a,il0,:,:)
+   end do
+end do
+
+end subroutine var_apply_sqrt
+
+!----------------------------------------------------------------------
+! Subroutine: var_apply_sqrt_inv
+! Purpose: apply square-root variance inverse
+!----------------------------------------------------------------------
+subroutine var_apply_sqrt_inv(var,nam,geom,fld)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(in) :: var                                       ! Variance
+type(nam_type),intent(in) :: nam                                        ! Namelist
+type(geom_type),intent(in) :: geom                                      ! Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Source/destination vector
+
+! Local variables
+integer :: ic0a,il0
+
+! Apply inverse variance
+do il0=1,geom%nl0
+   do ic0a=1,geom%nc0a
+      if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,:,:) = fld(ic0a,il0,:,:)/var%m2sqrt(ic0a,il0,:,:)
+   end do
+end do
+
+end subroutine var_apply_sqrt_inv
+
+end module type_var

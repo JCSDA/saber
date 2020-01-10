@@ -457,17 +457,9 @@ do ib=1,bpar%nbe
       call mpl%flush(.false.)
       call mpl%prog_init(diag%nc2a+1)
 
-      ! Copy variance
-      do ic2a=0,diag%nc2a
-         if (nam%var_filter) then
-            diag%blk(ic2a,ib)%raw_coef_ens = sum(avg%blk(ic2a,ib)%m2flt,dim=2)/real(avg%nsub,kind_real)
-         else
-            diag%blk(ic2a,ib)%raw_coef_ens = sum(avg%blk(ic2a,ib)%m2,dim=2)/real(avg%nsub,kind_real)
-         end if
-      end do
-
       do ic2a=0,diag%nc2a
          ! Copy correlation
+         diag%blk(ic2a,ib)%raw_coef_ens = 1.0
          diag%blk(ic2a,ib)%raw = avg%blk(ic2a,ib)%cor
          diag%blk(ic2a,ib)%valid = avg%blk(ic2a,ib)%nc1a_cor
 

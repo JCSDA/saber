@@ -51,13 +51,14 @@ list(APPEND saber_test
     bump_hdiag_hyb-rnd_common
     bump_hdiag_mask_stddev_upper
     bump_hdiag-nicas_cor_specific_univariate
-    bump_hdiag-nicas_local_diag_var_filter
+    bump_hdiag-nicas_local_diag
     bump_hdiag-nicas_loc_common
     bump_hdiag-nicas_mask_check
     bump_hdiag-nicas_network
     bump_lct-nicas_one_scale
     bump_nicas_fast_sampling
     bump_nicas_subsamp_hvh
+    bump_var
 )
 
 list(APPEND saber_test_2
