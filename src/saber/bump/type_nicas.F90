@@ -104,6 +104,9 @@ do ib=1,bpar%nbe
 
    ! Set subsampling structure
    nicas%blk(ib)%subsamp = trim(nam%subsamp)
+
+   ! Smoother flag
+   nicas%blk(ib)%smoother = .false.
 end do
 
 ! Update allocation flag

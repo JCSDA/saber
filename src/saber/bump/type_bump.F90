@@ -384,7 +384,7 @@ if (bump%nam%new_var) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run variance driver'
    call bump%mpl%flush
-   call bump%var%run_var(bump%mpl,bump%nam,bump%geom,bump%ens1,bump%io)
+   call bump%var%run_var(bump%mpl,bump%rng,bump%nam,bump%geom,bump%ens1,bump%io)
 elseif (bump%nam%load_var) then
    ! Read variance
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'

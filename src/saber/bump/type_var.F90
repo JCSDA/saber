@@ -11,11 +11,14 @@ use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use tools_const, only: reqkm
 use tools_kinds, only: kind_real
+use type_cmat_blk, only: cmat_blk_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_io, only: io_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_nicas_blk, only: nicas_blk_type
+use type_rng, only: rng_type
 
 implicit none
 
@@ -162,13 +165,14 @@ end subroutine var_write
 ! Subroutine: var_run_var
 ! Purpose: compute variance
 !----------------------------------------------------------------------
-subroutine var_run_var(var,mpl,nam,geom,ens,io)
+subroutine var_run_var(var,mpl,rng,nam,geom,ens,io)
 
 implicit none
 
 ! Passed variables
 class(var_type),intent(inout) :: var ! Variance
 type(mpl_type),intent(inout) :: mpl  ! MPI data
+type(rng_type),intent(inout) :: rng  ! Random number generator
 type(nam_type),intent(inout) :: nam  ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
 type(ens_type), intent(in) :: ens    ! Ensemble
@@ -210,7 +214,7 @@ end do
 
 if (nam%var_filter) then
    ! Filter variance
-   call var%filter(mpl,nam,geom)
+   call var%filter(mpl,rng,nam,geom)
 
    ! Take square-root
    var%m2sqrt = sqrt(var%m2flt)
@@ -228,22 +232,27 @@ end subroutine var_run_var
 ! Subroutine: var_filter
 ! Purpose: filter variance
 !----------------------------------------------------------------------
-subroutine var_filter(var,mpl,nam,geom)
+subroutine var_filter(var,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(var_type),intent(inout) :: var ! Variance
 type(mpl_type),intent(inout) :: mpl  ! MPI data
+type(rng_type),intent(inout) :: rng  ! Random number generator
 type(nam_type),intent(in) :: nam     ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
 
 ! Local variables
 integer :: n,its,iv,il0,iter
 real(kind_real) :: P9,P20,P21
-real(kind_real) :: m2sq,m2sq_tot,m4,m4_tot,m2sqasy,rhflt,drhflt
-real(kind_real) :: m2_ini(geom%nc0a),m2(geom%nc0a),m2prod,m2prod_tot
-logical :: dichotomy,convergence
+real(kind_real) :: m2sq(geom%nl0),m2sq_tot(geom%nl0),m4(geom%nl0),m4_tot(geom%nl0),m2sqasy(geom%nl0)
+real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2prod_tot(geom%nl0)
+real(kind_real) :: m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0),dirac(geom%nc0a,geom%nl0)
+logical :: dichotomy(geom%nl0),convergence(geom%nl0)
+type(cmat_blk_type) :: cmat_blk
+type(nam_type) :: nam_nicas
+type(nicas_blk_type) :: nicas_blk
 
 write(mpl%info,'(a7,a)') '','Filter variance'
 call mpl%flush
@@ -254,88 +263,133 @@ P9 = -real(n,kind_real)/real((n-2)*(n-3),kind_real)
 P20 = real((n-1)*(n**2-3*n+3),kind_real)/real(n*(n-2)*(n-3),kind_real)
 P21 = real(n-1,kind_real)/real(n+1,kind_real)
 
+! C matrix block allocation
+cmat_blk%double_fit = .false.
+cmat_blk%anisotropic = .false.
+allocate(cmat_blk%coef_ens(geom%nc0a,geom%nl0))
+allocate(cmat_blk%coef_sta(geom%nc0a,geom%nl0))
+allocate(cmat_blk%rh(geom%nc0a,geom%nl0))
+allocate(cmat_blk%rv(geom%nc0a,geom%nl0))
+allocate(cmat_blk%rhs(geom%nc0a,geom%nl0))
+allocate(cmat_blk%rvs(geom%nc0a,geom%nl0))
+
+! C matrix block initialization
+cmat_blk%coef_ens = 1.0
+cmat_blk%coef_sta = 0.0
+cmat_blk%rv = 0.0
+cmat_blk%rvs = 0.0
+cmat_blk%wgt = 1.0
+
+! NICAS block initialization
+nicas_blk%smoother = .true.
+
 do its=1,nam%nts
    write(mpl%info,'(a10,a,i2.2)') '','Timeslot ',nam%timeslot(its)
    call mpl%flush
 
    do iv=1,nam%nv
-      write(mpl%info,'(a10,a,i2.2)') '','Variable ',trim(nam%varname(iv))
+      write(mpl%info,'(a13,a,a)') '','Variable ',trim(nam%varname(iv))
       call mpl%flush
 
+      ! Global sum
       do il0=1,geom%nl0
-         write(mpl%info,'(a13,a,i3)') '','Level ',nam%levs(il0)
+         m2sq(il0) = sum(var%m2(:,il0,iv,its)**2,mask=geom%mask_c0a(:,il0))
+         m4(il0) = sum(var%m4(:,il0,iv,its),mask=geom%mask_c0a(:,il0))
+      end do
+      call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
+
+      ! Asymptotic statistics
+      if (nam%gau_approx) then
+         ! Gaussian approximation
+         m2sqasy = P21*m2sq_tot
+      else
+         ! General case
+         m2sqasy = P20*m2sq_tot+P9*m4_tot
+      end if
+
+      ! Dichotomy initialization
+      m2_ini = var%m2(:,:,iv,its)
+      convergence = .true.
+      dichotomy = .false.
+      rhflt = nam%var_rhflt
+      drhflt = rhflt
+
+      do iter=1,nam%var_niter
+         ! Copy initial value
+         m2 = m2_ini
+
+         ! Smoother parameters
+         call nam_nicas%init
+         nam_nicas%levs = nam%levs
+         nam_nicas%ntry = 10
+         nam_nicas%lsqrt = .false.
+         nam_nicas%resol = 8.0
+         nam_nicas%subsamp = 'h'
+         nam_nicas%mpicom = 1
+         nam_nicas%adv_diag = .false.
+         nam_nicas%fast_sampling = .true.
+         do il0=1,geom%nl0
+            cmat_blk%rh(:,il0) = rhflt(il0)
+         end do
+         cmat_blk%rhs = cmat_blk%rh
+         call nicas_blk%compute_parameters(mpl,rng,nam_nicas,geom,cmat_blk)
+         call nicas_blk%apply(mpl,nam_nicas,geom,m2)
+
+         ! Global product
+         do il0=1,geom%nl0
+            m2prod(il0) = sum(m2(:,il0)*m2_ini(:,il0),mask=geom%mask_c0a(:,il0))
+         end do
+         call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+
+         ! Print results
+         write(mpl%info,'(a16,a,i2)') '','Iteration ',iter
          call mpl%flush
-
-         ! Global sum
-         m2sq = sum(var%m2(:,il0,iv,its)**2,mask=geom%mask_c0a(:,il0))
-         m4 = sum(var%m4(:,il0,iv,its),mask=geom%mask_c0a(:,il0))
-         call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
-         call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
-
-         ! Asymptotic statistics
-         if (nam%gau_approx) then
-            ! Gaussian approximation
-            m2sqasy = P21*m2sq_tot
-         else
-            ! General case
-            m2sqasy = P20*m2sq_tot+P9*m4_tot
-         end if
-
-         ! Dichotomy initialization
-         m2_ini = var%m2(:,il0,iv,its)
-         convergence = .true.
-         dichotomy = .false.
-         rhflt = nam%var_rhflt
-         drhflt = rhflt
-
-         do iter=1,nam%var_niter
-            ! Copy initial value
-            m2 = m2_ini
-
-            ! Smoother
-            ! TODO
-
-            ! Global product
-            m2prod = sum(m2*m2_ini,mask=geom%mask_c0a(:,il0))
-            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
-
-            ! Print result
-            write(mpl%info,'(a19,a,i2,a,f10.2,a,e12.5)') '','Iteration ',iter,': rhflt = ', &
-          & rhflt*reqkm,' km, rel. diff. = ',(m2prod_tot-m2sqasy)/m2sqasy
+         do il0=1,geom%nl0
+            write(mpl%info,'(a19,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm,' km, rel. diff. = ', &
+          & (m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
             call mpl%flush
+         end do
 
-            ! Update support radius
-            if (m2prod_tot>m2sqasy) then
+         ! Update support radius
+         do il0=1,geom%nl0
+            if (m2prod_tot(il0)>m2sqasy(il0)) then
                ! Increase filtering support radius
-               if (dichotomy) then
-                  drhflt = 0.5*drhflt
-                  rhflt = rhflt+drhflt
+               if (dichotomy(il0)) then
+                  drhflt(il0) = 0.5*drhflt(il0)
+                  rhflt(il0) = rhflt(il0)+drhflt(il0)
                else
-                  convergence = .false.
-                  rhflt = rhflt+drhflt
-                  drhflt = 2.0*drhflt
+                  convergence(il0) = .false.
+                  rhflt(il0) = rhflt(il0)+drhflt(il0)
+                  drhflt(il0) = 2.0*drhflt(il0)
                end if
             else
                ! Convergence
-               convergence = .true.
+               convergence(il0) = .true.
 
                ! Change dichotomy status
-               if (.not.dichotomy) then
-                  dichotomy = .true.
-                  drhflt = 0.5*drhflt
+               if (.not.dichotomy(il0)) then
+                  dichotomy(il0) = .true.
+                  drhflt(il0) = 0.5*drhflt(il0)
                end if
 
                ! Decrease filtering support radius
-               drhflt = 0.5*drhflt
-               rhflt = rhflt-drhflt
+               drhflt(il0) = 0.5*drhflt(il0)
+               rhflt(il0) = rhflt(il0)-drhflt(il0)
             end if
          end do
 
-         ! Copy final result
-         var%m2flt(:,il0,iv,its) = m2
+         ! Release memory
+         call nicas_blk%dealloc
       end do
+
+      ! Copy final result
+      var%m2flt(:,:,iv,its) = m2
    end do
 end do
+
+! Release memory
+call cmat_blk%dealloc
 
 end subroutine var_filter
 
