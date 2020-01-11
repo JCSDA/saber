@@ -158,7 +158,7 @@ message(STATUS "Download sources:")
 
 # Check whether the URL exists or not
 ecbuild_check_multiurl(NAMES   ${saber_data_tar}
-                       DIRNAME ${GIT_BRANCH}
+                       DIRHOST ${GIT_BRANCH}
                        RESULT  SPECIFIC_TEST_FILES)
 
 # Set distant directory
@@ -180,7 +180,7 @@ ecbuild_get_test_multidata(TARGET   get_saber_data
 
 # Check whether the URL exists or not
 ecbuild_check_multiurl(NAMES   ${saber_ref_tar}
-                       DIRNAME ${GIT_BRANCH}
+                       DIRHOST ${GIT_BRANCH}
                        RESULT  SPECIFIC_TEST_FILES)
 
 # Set distant directory
