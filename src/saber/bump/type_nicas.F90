@@ -93,6 +93,18 @@ do ib=1,bpar%nbe
    ! Set block index
    nicas%blk(ib)%ib = ib
 
+   ! Set number of communication steps
+   nicas%blk(ib)%mpicom = nam%mpicom
+
+   ! Set subsampling structure
+   nicas%blk(ib)%subsamp = trim(nam%subsamp)
+
+   ! Verbosity flag
+   nicas%blk(ib)%verbosity = .false.
+
+   ! Smoother flag
+   nicas%blk(ib)%smoother = .false.
+
    ! Set name
    if (nam%lsqrt) then
       write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'-sqrt_',mpl%nproc,'-', &
@@ -101,12 +113,6 @@ do ib=1,bpar%nbe
       write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'_',mpl%nproc,'-',mpl%myproc, &
     & '_',trim(bpar%blockname(ib))
    end if
-
-   ! Set subsampling structure
-   nicas%blk(ib)%subsamp = trim(nam%subsamp)
-
-   ! Smoother flag
-   nicas%blk(ib)%smoother = .false.
 end do
 
 ! Update allocation flag
@@ -655,7 +661,7 @@ case ('common')
    end if
 
    ! Apply common NICAS
-   call nicas%blk(bpar%nbe)%apply(mpl,nam,geom,fld_3d)
+   call nicas%blk(bpar%nbe)%apply(mpl,geom,fld_3d)
 
    if (nam%nonunit_diag) then
       ! Apply common ensemble coefficient square-root
@@ -707,7 +713,7 @@ case ('common_univariate')
       end if
 
       ! Apply common NICAS
-      call nicas%blk(bpar%nbe)%apply(mpl,nam,geom,fld_4d(:,:,iv))
+      call nicas%blk(bpar%nbe)%apply(mpl,geom,fld_4d(:,:,iv))
 
       if (nam%nonunit_diag) then
          ! Apply common ensemble coefficient square-root
@@ -776,7 +782,7 @@ case ('common_weighted')
       end if
 
       ! Apply common NICAS
-      call nicas%blk(bpar%nbe)%apply(mpl,nam,geom,fld_4d(:,:,iv))
+      call nicas%blk(bpar%nbe)%apply(mpl,geom,fld_4d(:,:,iv))
       if (nam%nonunit_diag) then
          ! Apply common ensemble coefficient square-root
          !$omp parallel do schedule(static) private(il0,ic0a)
@@ -828,7 +834,7 @@ case ('specific_univariate')
          end if
 
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply(mpl,nam,geom,fld(:,:,iv,its))
+         call nicas%blk(ib)%apply(mpl,geom,fld(:,:,iv,its))
 
          if (nam%nonunit_diag) then
             ! Apply common ensemble coefficient square-root

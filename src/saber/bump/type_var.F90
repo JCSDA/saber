@@ -245,13 +245,11 @@ type(geom_type),intent(in) :: geom   ! Geometry
 
 ! Local variables
 integer :: n,its,iv,il0,iter
-real(kind_real) :: P9,P20,P21
+real(kind_real) :: P9,P20,P21,diff,diff_abs_min
 real(kind_real) :: m2sq(geom%nl0),m2sq_tot(geom%nl0),m4(geom%nl0),m4_tot(geom%nl0),m2sqasy(geom%nl0)
 real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2prod_tot(geom%nl0)
-real(kind_real) :: m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0),dirac(geom%nc0a,geom%nl0)
+real(kind_real) :: m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
 logical :: dichotomy(geom%nl0),convergence(geom%nl0)
-type(cmat_blk_type) :: cmat_blk
-type(nam_type) :: nam_nicas
 type(nicas_blk_type) :: nicas_blk
 
 write(mpl%info,'(a7,a)') '','Filter variance'
@@ -262,26 +260,6 @@ n = var%ne
 P9 = -real(n,kind_real)/real((n-2)*(n-3),kind_real)
 P20 = real((n-1)*(n**2-3*n+3),kind_real)/real(n*(n-2)*(n-3),kind_real)
 P21 = real(n-1,kind_real)/real(n+1,kind_real)
-
-! C matrix block allocation
-cmat_blk%double_fit = .false.
-cmat_blk%anisotropic = .false.
-allocate(cmat_blk%coef_ens(geom%nc0a,geom%nl0))
-allocate(cmat_blk%coef_sta(geom%nc0a,geom%nl0))
-allocate(cmat_blk%rh(geom%nc0a,geom%nl0))
-allocate(cmat_blk%rv(geom%nc0a,geom%nl0))
-allocate(cmat_blk%rhs(geom%nc0a,geom%nl0))
-allocate(cmat_blk%rvs(geom%nc0a,geom%nl0))
-
-! C matrix block initialization
-cmat_blk%coef_ens = 1.0
-cmat_blk%coef_sta = 0.0
-cmat_blk%rv = 0.0
-cmat_blk%rvs = 0.0
-cmat_blk%wgt = 1.0
-
-! NICAS block initialization
-nicas_blk%smoother = .true.
 
 do its=1,nam%nts
    write(mpl%info,'(a10,a,i2.2)') '','Timeslot ',nam%timeslot(its)
@@ -314,27 +292,17 @@ do its=1,nam%nts
       dichotomy = .false.
       rhflt = nam%var_rhflt
       drhflt = rhflt
+      diff_abs_min = huge(1.0)
 
       do iter=1,nam%var_niter
          ! Copy initial value
          m2 = m2_ini
 
-         ! Smoother parameters
-         call nam_nicas%init
-         nam_nicas%levs = nam%levs
-         nam_nicas%ntry = 10
-         nam_nicas%lsqrt = .false.
-         nam_nicas%resol = 8.0
-         nam_nicas%subsamp = 'h'
-         nam_nicas%mpicom = 1
-         nam_nicas%adv_diag = .false.
-         nam_nicas%fast_sampling = .true.
-         do il0=1,geom%nl0
-            cmat_blk%rh(:,il0) = rhflt(il0)
-         end do
-         cmat_blk%rhs = cmat_blk%rh
-         call nicas_blk%compute_parameters(mpl,rng,nam_nicas,geom,cmat_blk)
-         call nicas_blk%apply(mpl,nam_nicas,geom,m2)
+         ! Set smoother parameters
+         call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
+
+         ! Apply smoother
+         call nicas_blk%apply(mpl,geom,m2)
 
          ! Global product
          do il0=1,geom%nl0
@@ -353,7 +321,8 @@ do its=1,nam%nts
 
          ! Update support radius
          do il0=1,geom%nl0
-            if (m2prod_tot(il0)>m2sqasy(il0)) then
+            diff = m2prod_tot(il0)-m2sqasy(il0)
+            if (diff>0.0) then
                ! Increase filtering support radius
                if (dichotomy(il0)) then
                   drhflt(il0) = 0.5*drhflt(il0)
@@ -377,19 +346,18 @@ do its=1,nam%nts
                drhflt(il0) = 0.5*drhflt(il0)
                rhflt(il0) = rhflt(il0)-drhflt(il0)
             end if
+            if (abs(diff)<diff_abs_min) then
+               ! Copy best result
+               diff_abs_min = abs(diff)
+               var%m2flt(:,:,iv,its) = m2
+            end if
          end do
 
          ! Release memory
          call nicas_blk%dealloc
       end do
-
-      ! Copy final result
-      var%m2flt(:,:,iv,its) = m2
    end do
 end do
-
-! Release memory
-call cmat_blk%dealloc
 
 end subroutine var_filter
 
