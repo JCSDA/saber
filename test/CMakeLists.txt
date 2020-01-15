@@ -77,6 +77,7 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_get_param_hyb
         bump_get_param_lct
         bump_hdiag_draw_type
+        bump_hdiag_fit_dl0
         bump_hdiag_gen_kurt
         bump_hdiag_hyb-avg_common
         bump_hdiag_ldwv
@@ -86,9 +87,9 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_hdiag_mask_stddev_lower
         bump_hdiag_mask_stddev_ncontig
         bump_hdiag-nicas_cor_common_univariate
+        bump_hdiag-nicas_diag_rvflt
         bump_hdiag-nicas_double_fit
         bump_hdiag-nicas_fit_type
-        bump_hdiag-nicas_lhom
         bump_hdiag-nicas_loc_common_univariate
         bump_hdiag-nicas_loc_common_weighted
         bump_hdiag-nicas_loc_specific_multivariate
@@ -96,7 +97,7 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_hdiag-nicas_nonunit_diag
         bump_hdiag-nicas_nprocio
         bump_hdiag-nicas_nrep
-        bump_hdiag-nicas_rvflt
+        bump_hdiag_no_smoothness_penalty
         bump_interface_nicas
         bump_interface_obsop
         bump_interface_vbal
@@ -114,6 +115,7 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_nicas_subsamp_hv
         bump_nicas_subsamp_vh
         bump_nicas_write_grids
+        bump_normality
         bump_obsop
         bump_set_param_cor
         bump_set_param_hyb

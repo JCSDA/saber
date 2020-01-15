@@ -22,7 +22,7 @@ if test "${test%%_*}" = "bump" ; then
    cp ${testdata}/${test}/test_1-1_*.nc ${test}
 
    # Copy 2-1 and 4-1 special files
-   for special in "mom" "lct_cor" "nicas" "obs" "split" "vbal" ; do
+   for special in "mom" "lct_cor" "nicas" "normality" "obs" "split" "vbal" ; do
       if ls ${testdata}/${test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
          cp -f ${testdata}/${test}/test_2-1_${special}*.nc ${test}
       fi

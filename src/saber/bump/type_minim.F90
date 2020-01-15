@@ -183,7 +183,7 @@ real(kind_real),intent(out) :: f          ! Cost function value
 
 ! Local variables
 integer :: offset,il0
-real(kind_real) :: fo,fh,fv,fr,fc,norm,fit_rh_avg,fit_rv_avg,fit_rv_rfac_avg,fit_rv_coef_avg
+real(kind_real) :: fo,fa,fh,fv,fr,fc,norm,coef_avg,fit_rh_avg,fit_rv_avg,fit_rv_rfac_avg,fit_rv_coef_avg
 real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_rv(minim%nl0),fit_rv_rfac(minim%nl0),fit_rv_coef(minim%nl0)
 real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
@@ -233,12 +233,16 @@ norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack
 if (norm>0.0) fo = fo/norm
 
 ! Smoothness penalty
+fa = 0.0
 fh = 0.0
 fv = 0.0
 fr = 0.0
 fc = 0.0
 if (minim%smoothness_penalty) then
    do il0=2,minim%nl0-1
+      coef_avg = 0.5*(coef(il0-1)+coef(il0+1))
+      norm = coef_avg**2
+      if (norm>0.0) fa = fa+(coef(il0)-coef_avg)**2/norm
       fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
       norm = fit_rh_avg**2
       if (norm>0.0) fh = fh+(fit_rh(il0)-fit_rh_avg)**2/norm
@@ -257,7 +261,7 @@ if (minim%smoothness_penalty) then
 end if
 
 ! Full penalty function
-f = fo+fh+fv+fr+fc
+f = fo+fa+fh+fv+fr+fc
 
 end subroutine minim_cost_fit_diag
 

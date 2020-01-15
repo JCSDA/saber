@@ -849,8 +849,15 @@ do il0=1,geom%nl0
       jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
 
       do jc3=1,bpar%nc3(ib)
-         ! Fill lists
+         ! Initialization
+         list_m11 = mpl%msv%valr
+         list_m11m11 = mpl%msv%valr
+         list_m2m2 = mpl%msv%valr
+         list_m22 = mpl%msv%valr
+         list_cor = mpl%msv%valr
          i = 0
+
+         ! Fill lists
          do ic1=1,nam%nc1
             ! Check mask validity
             valid = samp%local_mask(ic1,ic2a).and.samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
@@ -890,17 +897,6 @@ do il0=1,geom%nl0
                else
                   list_cor(i) = mpl%msv%valr
                end if
-            else
-               ! Missing value
-               list_m11(i) = mpl%msv%valr
-               do isub=1,avg_blk%nsub
-                  do jsub=1,avg_blk%nsub
-                     list_m11m11(i,jsub,isub) = mpl%msv%valr
-                     list_m2m2(i,jsub,isub) = mpl%msv%valr
-                  end do
-                  list_m22(i,isub) = mpl%msv%valr
-               end do
-               list_cor(i) = mpl%msv%valr
             end if
          end do
 
