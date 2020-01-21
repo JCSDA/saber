@@ -8,7 +8,7 @@
 module type_minim
 
 use tools_fit, only: ver_smooth
-use tools_func, only: fit_diag,fit_diag_dble,fit_lct
+use tools_func, only: fit_diag,fit_lct
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
@@ -50,12 +50,10 @@ type minim_type
    real(kind_real),allocatable :: rinf(:)     ! Inferior interpolation coefficient
    integer,allocatable :: il1sup(:)           ! Superior interpolation level
    real(kind_real),allocatable :: rsup(:)     ! Superior interpolation coefficient
-   character(len=1024) :: fit_type            ! Fit function type
    integer :: nl0r                            ! Effective number of levels
    integer,allocatable :: l0rl0_to_l0(:,:)    ! Effective level to level
    real(kind_real),allocatable :: disth(:)    ! Horizontal distance
    real(kind_real),allocatable :: distv(:,:)  ! Vertical distance
-   logical :: double_fit                      ! Double fit flag
 
    ! Specific data (LCT)
    integer :: nscales                         ! Number of LCT scales
@@ -182,9 +180,9 @@ real(kind_real),intent(in) :: x(minim%nx) ! Control vector
 real(kind_real),intent(out) :: f          ! Cost function value
 
 ! Local variables
-integer :: offset,il0
-real(kind_real) :: fo,fa,fh,fv,fr,fc,norm,coef_avg,fit_rh_avg,fit_rv_avg,fit_rv_rfac_avg,fit_rv_coef_avg
-real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_rv(minim%nl0),fit_rv_rfac(minim%nl0),fit_rv_coef(minim%nl0)
+integer :: il0
+real(kind_real) :: fo,fs,norm,coef_avg,fit_rh_avg,fit_rv_avg,fit_pk_avg
+real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_rv(minim%nl0),fit_pk(minim%nl0)
 real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
@@ -197,32 +195,18 @@ if (minim%dl0==1) then
    coef = xtmp(0*minim%nl0+1:1*minim%nl0)
    fit_rh = xtmp(1*minim%nl0+1:2*minim%nl0)
    fit_rv = xtmp(2*minim%nl0+1:3*minim%nl0)
-   if (minim%double_fit) then
-      fit_rv_rfac = xtmp(3*minim%nl0+1:4*minim%nl0)
-      fit_rv_coef = xtmp(4*minim%nl0+1:5*minim%nl0)
-   end if
+   fit_pk = xtmp(3*minim%nl0+1:4*minim%nl0)
 else
    do il0=1,minim%nl0
       coef(il0) = minim%rinf(il0)*xtmp(0*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(0*minim%nl1+minim%il1sup(il0))
       fit_rh(il0) = minim%rinf(il0)*xtmp(1*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(1*minim%nl1+minim%il1sup(il0))
       fit_rv(il0) = minim%rinf(il0)*xtmp(2*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(2*minim%nl1+minim%il1sup(il0))
-      if (minim%double_fit) then
-         fit_rv_rfac(il0) = minim%rinf(il0)*xtmp(3*minim%nl1+minim%il1inf(il0)) &
-                          & +minim%rsup(il0)*xtmp(3*minim%nl1+minim%il1sup(il0))
-         fit_rv_coef(il0) = minim%rinf(il0)*xtmp(4*minim%nl1+minim%il1inf(il0)) &
-                          & +minim%rsup(il0)*xtmp(4*minim%nl1+minim%il1sup(il0))
-      end if
+      fit_pk(il0) = minim%rinf(il0)*xtmp(3*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(3*minim%nl1+minim%il1sup(il0))
    end do
 end if
 
 ! Compute function
-if (minim%double_fit) then
-   call fit_diag_dble(mpl,minim%fit_type,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef, &
- & fit_rh,fit_rv,fit_rv_rfac,fit_rv_coef,fit)
-else
-   call fit_diag(mpl,minim%fit_type,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef,fit_rh,fit_rv, &
- & fit)
-end if
+call fit_diag(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef,fit_rh,fit_rv,fit_pk,fit)
 
 ! Pack
 fit_pack = pack(fit,mask=.true.)
@@ -233,35 +217,26 @@ norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack
 if (norm>0.0) fo = fo/norm
 
 ! Smoothness penalty
-fa = 0.0
-fh = 0.0
-fv = 0.0
-fr = 0.0
-fc = 0.0
-if (minim%smoothness_penalty) then
+fs = 0.0
+if (minim%smoothness_penalty.and..false.) then
    do il0=2,minim%nl0-1
       coef_avg = 0.5*(coef(il0-1)+coef(il0+1))
       norm = coef_avg**2
-      if (norm>0.0) fa = fa+(coef(il0)-coef_avg)**2/norm
+      if (norm>0.0) fs = fs+(coef(il0)-coef_avg)**2/norm
       fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
       norm = fit_rh_avg**2
-      if (norm>0.0) fh = fh+(fit_rh(il0)-fit_rh_avg)**2/norm
+      if (norm>0.0) fs = fs+(fit_rh(il0)-fit_rh_avg)**2/norm
       fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
       norm = fit_rv_avg**2
-      if (norm>0.0) fv = fv+(fit_rv(il0)-fit_rv_avg)**2/norm
-      if (minim%double_fit) then
-         fit_rv_rfac_avg = 0.5*(fit_rv_rfac(il0-1)+fit_rv_rfac(il0+1))
-         norm = fit_rv_rfac_avg**2
-         if (norm>0.0) fr = fr+(fit_rv_rfac(il0)-fit_rv_rfac_avg)**2/norm
-         fit_rv_coef_avg = 0.5*(fit_rv_coef(il0-1)+fit_rv_coef(il0+1))
-         norm = fit_rv_coef_avg**2
-         if (norm>0.0) fc = fc+(fit_rv_coef(il0)-fit_rv_coef_avg)**2/norm
-      end if
+      if (norm>0.0) fs = fs+(fit_rv(il0)-fit_rv_avg)**2/norm
+      fit_pk_avg = 0.5*(fit_pk(il0-1)+fit_pk(il0+1))
+      norm = fit_pk_avg**2
+      if (norm>0.0) fs = fs+(fit_pk(il0)-fit_pk_avg)**2/norm
    end do
 end if
 
 ! Full penalty function
-f = fo+fa+fh+fv+fr+fc
+f = fo+fs
 
 end subroutine minim_cost_fit_diag
 
@@ -337,10 +312,12 @@ real(kind_real) :: delta(minim%nx),newx(minim%nx)
 newx = guess
 minim%x = guess
 do i=1,minim%nx
-   if (sup(abs(guess(i)),rth)) then
-      delta(i) = minim%hooke_rho*abs(guess(i))
-   else
-      delta(i) = minim%hooke_rho
+   if (minim%bsup(i)>minim%binf(i)) then
+      if (sup(abs(guess(i)),rth)) then
+         delta(i) = minim%hooke_rho*abs(guess(i))
+      else
+         delta(i) = minim%hooke_rho
+      end if
    end if
 end do
 funevals = 0
@@ -364,17 +341,19 @@ do while ((iters<minim%hooke_itermax).and.inf(minim%hooke_tol,steplength))
 
    do while (inf(newf,fbefore).and.(keep==1))
       do i=1,minim%nx
-         ! Arrange the sign of delta
-         if (sup(newx(i),minim%x(i))) then
-            delta(i) = abs(delta(i))
-         else
-            delta(i) = -abs(delta(i))
-         end if
+         if (minim%bsup(i)>minim%binf(i)) then
+            ! Arrange the sign of delta
+            if (sup(newx(i),minim%x(i))) then
+               delta(i) = abs(delta(i))
+            else
+               delta(i) = -abs(delta(i))
+            end if
 
-         ! Now, move further in this direction.
-         tmp = minim%x(i)
-         minim%x(i) = newx(i)
-         newx(i) = newx(i)+newx(i)-tmp
+            ! Now, move further in this direction.
+            tmp = minim%x(i)
+            minim%x(i) = newx(i)
+            newx(i) = newx(i)+newx(i)-tmp
+         end if
       end do
 
       ! Update
@@ -390,9 +369,11 @@ do while ((iters<minim%hooke_itermax).and.inf(minim%hooke_tol,steplength))
       keep = 0
 
       do i=1,minim%nx
-         if (inf(0.5*abs(delta(i)),abs(newx(i)-minim%x(i)))) then
-            keep = 1
-            exit
+         if (minim%bsup(i)>minim%binf(i)) then
+            if (inf(0.5*abs(delta(i)),abs(newx(i)-minim%x(i)))) then
+               keep = 1
+               exit
+            end if
          end if
       end do
    end do
@@ -433,20 +414,22 @@ minf = prevbest
 z = point
 
 do i=1,minim%nx
-   z(i) = point(i)+delta(i)
-   call minim%cost(mpl,z,ftmp)
-   funevals = funevals+1
-   if (inf(ftmp,minf)) then
-      minf = ftmp
-   else
-      delta(i) = -delta(i)
+   if (minim%bsup(i)>minim%binf(i)) then
       z(i) = point(i)+delta(i)
       call minim%cost(mpl,z,ftmp)
       funevals = funevals+1
       if (inf(ftmp,minf)) then
          minf = ftmp
       else
-         z(i) = point(i)
+         delta(i) = -delta(i)
+         z(i) = point(i)+delta(i)
+         call minim%cost(mpl,z,ftmp)
+         funevals = funevals+1
+         if (inf(ftmp,minf)) then
+            minf = ftmp
+         else
+            z(i) = point(i)
+         end if
       end if
    end if
 end do

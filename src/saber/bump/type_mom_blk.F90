@@ -40,14 +40,13 @@ contains
 ! Subroutine: mom_blk_alloc
 ! Purpose: allocation
 !----------------------------------------------------------------------
-subroutine mom_blk_alloc(mom_blk,nc1,nam,geom,bpar,ne,nsub)
+subroutine mom_blk_alloc(mom_blk,nc1,geom,bpar,ne,nsub)
 
 implicit none
 
 ! Passed variables
 class(mom_blk_type),intent(inout) :: mom_blk ! Moments block
 integer,intent(in) :: nc1                    ! Subsampling size
-type(nam_type),intent(in) :: nam             ! Namelist
 type(geom_type),intent(in) :: geom           ! Geometry
 type(bpar_type),intent(in) :: bpar           ! Block parameters
 integer,intent(in) :: ne                     ! Ensemble size
@@ -94,14 +93,13 @@ end subroutine mom_blk_dealloc
 ! Subroutine: mom_blk_ext
 ! Purpose: halo extension
 !----------------------------------------------------------------------
-subroutine mom_blk_ext(mom_blk_out,mpl,nam,geom,bpar,samp,mom_blk_in)
+subroutine mom_blk_ext(mom_blk_out,mpl,geom,bpar,samp,mom_blk_in)
 
 implicit none
 
 ! Passed variables
 class(mom_blk_type),intent(inout) :: mom_blk_out ! Extended moments block
 type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 type(bpar_type),intent(in) :: bpar               ! Block parameters
 type(samp_type),intent(in) :: samp               ! Sampling
@@ -116,7 +114,7 @@ associate(ib=>mom_blk_in%ib)
 
 ! Allocation
 mom_blk_out%ib = ib
-call mom_blk_out%alloc(samp%nc1d,nam,geom,bpar,mom_blk_in%ne,mom_blk_in%nsub)
+call mom_blk_out%alloc(samp%nc1d,geom,bpar,mom_blk_in%ne,mom_blk_in%nsub)
 npack = (1+bpar%nc3(ib)*(1+2*bpar%nl0r(ib)))*geom%nl0*mom_blk_out%nsub
 allocate(sbuf(samp%nc1a,npack))
 allocate(rbuf(samp%nc1d,npack))

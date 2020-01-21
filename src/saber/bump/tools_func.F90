@@ -25,7 +25,7 @@ integer,parameter :: M = 0                            ! Number of implicit itera
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: lonlatmod,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product,add,divide, &
-        & fit_diag,fit_diag_dble,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
+        & fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
 
@@ -301,13 +301,12 @@ end subroutine divide
 ! Subroutine: fit_diag
 ! Purpose: compute diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag(mpl,fit_type,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,dcoef,rh,rv,fit)
+subroutine fit_diag(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,dcoef,rh,rv,pk,fit)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl              ! MPI data
-character(len=*),intent(in) :: fit_type          ! Fit function type
 integer,intent(in) :: nc3                        ! Number of classes
 integer,intent(in) :: nl0r                       ! Effective number of levels
 integer,intent(in) :: nl0                        ! Number of levels
@@ -317,13 +316,15 @@ real(kind_real),intent(in) :: distv(nl0,nl0)     ! Vertical distance
 real(kind_real),intent(in) :: dcoef(nl0)         ! Diagonal coefficient
 real(kind_real),intent(in) :: rh(nl0)            ! Horizontal support radius
 real(kind_real),intent(in) :: rv(nl0)            ! Vertical support radius
+real(kind_real),intent(in) :: pk(nl0)            ! Peakness
 real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) ! Fit
 
 ! Local variables
 integer :: jl0r,jl0,djl0,il0,kl0r,kl0,ic3,jc3,djc3,kc3,ip,jp,np,np_new,nc3max
 integer :: plist(nc3*nl0r,2),plist_new(nc3*nl0r,2)
-real(kind_real) :: rhsq,rvsq,distvsq,disttest,rhmax
-real(kind_real) :: predistnorm(-1:1,nc3,-1:1,nl0),dist(nc3,nl0r)
+real(kind_real) :: rhsq,rvsq,distvsq,disttest,rhmax,pk_loc
+real(kind_real) :: predistnorm(-1:1,nc3,-1:1,nl0),distnorm(nc3,nl0r)
+real(kind_real) :: fit_flat,fit_peak
 logical :: add_to_front
 
 ! Initialization
@@ -341,7 +342,10 @@ end do
 predistnorm = 1.0
 do il0=1,nl0
    do djl0=-1,1
+      ! Level index
       jl0 = max(1,min(il0+djl0,nl0))
+
+      ! Averaged fit parameters
       if (mpl%msv%isnot(rh(il0)).and.mpl%msv%isnot(rh(jl0))) then
          rhsq = 0.5*(rh(il0)**2+rh(jl0)**2)
       else
@@ -352,22 +356,32 @@ do il0=1,nl0
       else
          rvsq = 0.0
       end if
+
+      ! Squared vertical distance
       if (rvsq>0.0) then
          distvsq = distv(jl0,il0)**2/rvsq
       elseif (il0/=jl0) then
          distvsq = 1.0
       else
          distvsq = 0.0
-      end if        
+      end if
+
       do ic3=1,nc3max
          do djc3=-1,1
+            ! Horizontal index
             jc3 = max(1,min(ic3+djc3,nc3max))
+
+            ! Squared normalized distance initialization (squared vertical component)
             predistnorm(djc3,ic3,djl0,il0) = distvsq
+
+            ! Add squared horizontal component to squared normalized distance
             if (rhsq>0.0) then
                predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+(disth(jc3)-disth(ic3))**2/rhsq
             elseif (ic3/=jc3) then
                predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+1.0
             end if
+
+            ! Get normalized distance
             predistnorm(djc3,ic3,djl0,il0) = sqrt(predistnorm(djc3,ic3,djl0,il0))
          end do
       end do
@@ -383,8 +397,8 @@ do il0=1,nl0
    do jl0r=1,nl0r
       if (l0rl0_to_l0(jl0r,il0)==il0) plist(1,2) = jl0r
    end do
-   dist = 1.0
-   dist(plist(1,1),plist(1,2)) = 0.0
+   distnorm = 1.0
+   distnorm(plist(1,1),plist(1,2)) = 0.0
 
    do while (np>0)
       ! Propagate the front
@@ -400,13 +414,13 @@ do il0=1,nl0
          do kc3=max(jc3-1,1),min(jc3+1,nc3max)
             do kl0r=max(jl0r-1,1),min(jl0r+1,nl0r)
                kl0 = l0rl0_to_l0(kl0r,il0)
-               disttest = dist(jc3,jl0r)+predistnorm(kc3-jc3,jc3,kl0-jl0,jl0)
+               disttest = distnorm(jc3,jl0r)+predistnorm(kc3-jc3,jc3,kl0-jl0,jl0)
 
                if (disttest<1.0) then
                   ! Point is inside the support
-                  if (disttest<dist(kc3,kl0r)) then
+                  if (disttest<distnorm(kc3,kl0r)) then
                      ! Update distance
-                     dist(kc3,kl0r) = disttest
+                     distnorm(kc3,kl0r) = disttest
 
                      ! Check if the point should be added to the front (avoid duplicates)
                      add_to_front = .true.
@@ -435,9 +449,27 @@ do il0=1,nl0
    end do
 
    do jl0r=1,nl0r
-      do jc3=1,nc3max
-         ! Fit function
-         fit(jc3,jl0r,il0) = fit_func(mpl,fit_type,dist(jc3,jl0r))
+      ! Level index
+      jl0 = l0rl0_to_l0(jl0r,il0)
+
+      ! Averaged peakness
+      if ((pk(il0)<0.0).or.(pk(jl0)<0.0)) then
+         pk_loc = 0.0
+      elseif ((pk(il0)>1.0).or.(pk(jl0)>1.0)) then
+         pk_loc = 1.0
+      else
+         pk_loc = sqrt(0.5*(pk(il0)**2+pk(jl0)**2))
+      end if
+
+      do jc3=1,nc3
+         ! Flat function
+         fit_flat = fit_func(mpl,'flat',distnorm(jc3,jl0r))
+
+         ! Peaked function
+         fit_peak = fit_func(mpl,'peak',distnorm(jc3,jl0r))
+
+         ! Linear combination
+         fit(jc3,jl0r,il0) = (1.0-pk_loc)*fit_flat+pk_loc*fit_peak
       end do
    end do
 end do
@@ -451,178 +483,6 @@ do il0=1,nl0
 end do
 
 end subroutine fit_diag
-
-!----------------------------------------------------------------------
-! Subroutine: fit_diag_dble
-! Purpose: compute diagnostic fit function for double fit
-!----------------------------------------------------------------------
-subroutine fit_diag_dble(mpl,fit_type,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,dcoef,rh,rv,rv_rfac,rv_coef,fit)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-character(len=*),intent(in) :: fit_type          ! Fit function type
-integer,intent(in) :: nc3                        ! Number of classes
-integer,intent(in) :: nl0r                       ! Effective number of levels
-integer,intent(in) :: nl0                        ! Number of levels
-integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      ! Effective level to level
-real(kind_real),intent(in) :: disth(nc3)         ! Horizontal distance
-real(kind_real),intent(in) :: distv(nl0,nl0)     ! Vertical distance
-real(kind_real),intent(in) :: dcoef(nl0)         ! Diagonal coefficient
-real(kind_real),intent(in) :: rh(nl0)            ! Horizontal support radius
-real(kind_real),intent(in) :: rv(nl0)            ! Vertical support radius
-real(kind_real),intent(in) :: rv_rfac(nl0)       ! Vertical fit support radius ratio for the positive component
-real(kind_real),intent(in) :: rv_coef(nl0)       ! Vertical fit coefficient
-real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) ! Fit
-
-! Local variables
-integer :: jl0r,jl0,djl0,il0,kl0r,kl0,ic3,jc3,djc3,kc3,ip,jp,np,np_new,nc3max
-integer :: plist(nc3*nl0r,2),plist_new(nc3*nl0r,2)
-real(kind_real) :: rhsq,rvsq,distvsq,distnorm,disttest,rhmax,rfac,coef,distnormv,distnormh
-real(kind_real) :: predistnorm(-1:1,nc3,-1:1,nl0),dist(nc3,nl0r)
-logical :: add_to_front
-
-! Initialization
-fit = 0.0
-
-! Find maximum class
-rhmax = maxval(rh)
-nc3max = 0
-do ic3=1,nc3
-   if (disth(ic3)>rhmax) exit
-   nc3max = ic3
-end do
-
-! Precompute normalized local distances
-predistnorm = 1.0
-do il0=1,nl0
-   do djl0=-1,1
-      jl0 = max(1,min(il0+djl0,nl0))
-      if (mpl%msv%isnot(rh(il0)).and.mpl%msv%isnot(rh(jl0))) then
-         rhsq = 0.5*(rh(il0)**2+rh(jl0)**2)
-      else
-         rhsq = 0.0
-      end if
-      if (mpl%msv%isnot(rv(il0)).and.mpl%msv%isnot(rv(jl0))) then
-         rvsq = 0.5*(rv(il0)**2+rv(jl0)**2)
-      else
-         rvsq = 0.0
-      end if
-      if (rvsq>0.0) then
-         distvsq = distv(jl0,il0)**2/rvsq
-      elseif (il0/=jl0) then
-         distvsq = 1.0
-      else
-         distvsq = 0.0
-      end if        
-      do ic3=1,nc3max
-         do djc3=-1,1
-            jc3 = max(1,min(ic3+djc3,nc3max))
-            predistnorm(djc3,ic3,djl0,il0) = distvsq
-            if (rhsq>0.0) then
-               predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+(disth(jc3)-disth(ic3))**2/rhsq
-            elseif (ic3/=jc3) then
-               predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+1.0
-            end if
-            predistnorm(djc3,ic3,djl0,il0) = sqrt(predistnorm(djc3,ic3,djl0,il0))
-         end do
-      end do
-   end do
-end do
-
-! Compte fit
-do il0=1,nl0
-   ! Initialize the front
-   np = 1
-   plist = mpl%msv%vali
-   plist(1,1) = 1
-   do jl0r=1,nl0r
-      if (l0rl0_to_l0(jl0r,il0)==il0) plist(1,2) = jl0r
-   end do
-   dist = 1.0
-   dist(plist(1,1),plist(1,2)) = 0.0
-
-   do while (np>0)
-      ! Propagate the front
-      np_new = 0
-
-      do ip=1,np
-         ! Indices of the central point
-         jc3 = plist(ip,1)
-         jl0r = plist(ip,2)
-         jl0 = l0rl0_to_l0(jl0r,il0)
-
-         ! Loop over neighbors              
-         do kc3=max(jc3-1,1),min(jc3+1,nc3max)
-            do kl0r=max(jl0r-1,1),min(jl0r+1,nl0r)
-               kl0 = l0rl0_to_l0(kl0r,il0)
-               disttest = dist(jc3,jl0r)+predistnorm(kc3-jc3,jc3,kl0-jl0,jl0)
-
-               if (disttest<1.0) then
-                  ! Point is inside the support
-                  if (disttest<dist(kc3,kl0r)) then
-                     ! Update distance
-                     dist(kc3,kl0r) = disttest
-
-                     ! Check if the point should be added to the front (avoid duplicates)
-                     add_to_front = .true.
-                     do jp=1,np_new
-                        if ((plist_new(jp,1)==kc3).and.(plist_new(jp,2)==kl0r)) then
-                           add_to_front = .false.
-                           exit
-                        end if
-                     end do
-
-                     if (add_to_front) then
-                        ! Add point to the front
-                        np_new = np_new+1
-                        plist_new(np_new,1) = kc3
-                        plist_new(np_new,2) = kl0r
-                     end if
-                  end if
-               end if
-            end do
-         end do
-      end do
-
-      ! Copy new front
-      np = np_new
-      plist(1:np,:) = plist_new(1:np,:)
-   end do
-
-   do jl0r=1,nl0r
-      jl0 = l0rl0_to_l0(jl0r,il0)
-      distnormv = dist(1,jl0r)
-      if ((abs(rv_rfac(il0))<0.0).or.(abs(rv_rfac(jl0))<0.0)) then
-          rfac = 0.0
-      else
-          rfac = sqrt(rv_rfac(il0)*rv_rfac(jl0))
-      end if
-      if ((abs(rv_coef(il0))<0.0).or.(abs(rv_coef(jl0))<0.0)) then
-          coef = 0.0
-      else
-          coef = sqrt(rv_coef(il0)*rv_coef(jl0))
-      end if
-      do jc3=1,nc3
-         ! Double fit function
-         distnorm = dist(jc3,jl0r)
-         distnormh = sqrt(distnorm**2-distnormv**2)
-         fit(jc3,jl0r,il0) = fit_func(mpl,fit_type,distnormh)*((1.0+coef)*fit_func(mpl,fit_type,distnormv) &
-                           & -coef*fit_func(mpl,fit_type,distnormv*rfac))
-      end do
-   end do
-end do
-
-! Diagonal coefficient
-do il0=1,nl0
-   do jl0r=1,nl0r
-      jl0 = l0rl0_to_l0(jl0r,il0)
-      fit(:,jl0r,il0) = fit(:,jl0r,il0)*sqrt(dcoef(il0)*dcoef(jl0))
-   end do
-end do
-
-end subroutine fit_diag_dble
 
 !----------------------------------------------------------------------
 ! Function: gc99
@@ -648,27 +508,6 @@ end if
 end function gc99
 
 !----------------------------------------------------------------------
-! Function: cres
-! Purpose: reservoir code correlation function, with the support radius as a parameter
-!----------------------------------------------------------------------
-function cres(distnorm)
-
-! Passed variables
-real(kind_real),intent(in) :: distnorm ! Normalized distance
-
-! Returned variable
-real(kind_real) :: cres
-
-! Reservoir code function
-if (distnorm<1.0) then
-   cres = 1.0-1.5*distnorm+0.5*distnorm**3
-else
-   cres = 0.0
-end if
-
-end function cres
-
-!----------------------------------------------------------------------
 ! Function: poly4
 ! Purpose: 4th order polynomial correlation function, with the support radius as a parameter
 !----------------------------------------------------------------------
@@ -690,54 +529,6 @@ end if
 end function poly4
 
 !----------------------------------------------------------------------
-! Function: fb07_gc99
-! Purpose: normalized Furrer and Bengtsson (2007) localization function, with the support radius of the related gc99 function as a parameter
-!----------------------------------------------------------------------
-function fb07_gc99(distnorm,ne)
-
-! Passed variables
-real(kind_real),intent(in) :: distnorm ! Normalized distance
-integer,intent(in) :: ne               ! Ensemble size
-
-! Returned variable
-real(kind_real) :: fb07_gc99
-
-! Local variables
-real(kind_real) :: cor
-
-! Correlation function
-cor = gc99(distnorm)
-
-! Normalized Furrer and Bengtsson (2007) localization function
-fb07_gc99 = cor**2*real(ne+2,kind_real)/(1.0+cor**2*real(ne+1,kind_real))
-
-end function fb07_gc99
-
-!----------------------------------------------------------------------
-! Function: fb07_cres
-! Purpose: normalized Furrer and Bengtsson (2007) localization function, with the support radius of the related cres function as a parameter
-!----------------------------------------------------------------------
-function fb07_cres(distnorm,ne)
-
-! Passed variables
-real(kind_real),intent(in) :: distnorm ! Normalized distance
-integer,intent(in) :: ne               ! Ensemble size
-
-! Returned variable
-real(kind_real) :: fb07_cres
-
-! Local variables
-real(kind_real) :: cor
-
-! Correlation function
-cor = cres(distnorm)
-
-! Normalized Furrer and Bengtsson (2007) localization function
-fb07_cres = cor**2*real(ne+2,kind_real)/(1.0+cor**2*real(ne+1,kind_real))
-
-end function fb07_cres
-
-!----------------------------------------------------------------------
 ! Function: fit_func
 ! Purpose: fit_function
 !----------------------------------------------------------------------
@@ -752,7 +543,6 @@ real(kind_real),intent(in) :: distnorm  ! Normalized distance
 real(kind_real) :: fit_func
 
 ! Local variables
-integer :: ne
 character(len=1024),parameter :: subr = 'fit_func'
 
 ! Distance check bound
@@ -760,22 +550,10 @@ if (distnorm<0.0) call mpl%abort(subr,'negative normalized distance')
 
 fit_func = 0.0
 select case (fit_type(1:4))
-case ('gc99')
+case ('flat')
    fit_func = gc99(distnorm)
-case ('cres')
-   fit_func = cres(distnorm)
-case ('poly4')
+case ('peak')
    fit_func = poly4(distnorm)
-case ('fb07')
-   read(fit_type(11:14),'(i4.4)') ne
-   select case (fit_type(6:9))
-   case ('gc99')
-      fit_func = fb07_gc99(distnorm,ne)
-   case ('cres')
-      fit_func = fb07_cres(distnorm,ne)
-   case default
-      call mpl%abort(subr,'wrong fit function type')
-   end select
 case default
    call mpl%abort(subr,'wrong fit function type')
 end select

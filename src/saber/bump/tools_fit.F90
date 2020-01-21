@@ -25,18 +25,18 @@ contains
 ! Subroutine: fast_fit
 ! Purpose: fast fit length-scale estimation based on the value at mid-height
 !----------------------------------------------------------------------
-subroutine fast_fit(mpl,fit_type,n,iz,dist,raw,fit_r)
+subroutine fast_fit(mpl,n,iz,dist,raw,pk,fit_r)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl     ! MPI data
-character(len=*),intent(in) :: fit_type ! Fit function type
-integer,intent(in) :: n                 ! Vector size
-integer,intent(in) :: iz                ! Zero separation index
-real(kind_real),intent(in) :: dist(n)   ! Distance
-real(kind_real),intent(in) :: raw(n)    ! Raw data
-real(kind_real),intent(out) :: fit_r    ! Fast fit result
+type(mpl_type),intent(inout) :: mpl   ! MPI data
+integer,intent(in) :: n               ! Vector size
+integer,intent(in) :: iz              ! Zero separation index
+real(kind_real),intent(in) :: dist(n) ! Distance
+real(kind_real),intent(in) :: raw(n)  ! Raw data
+real(kind_real),intent(in) :: pk      ! Peakness
+real(kind_real),intent(out) :: fit_r  ! Fast fit result
 
 ! Local variables
 integer :: di,i,im,ip,iter
@@ -67,7 +67,7 @@ if (raw(iz)>0.0) then
             thinv = 0.5
             dthinv = 0.25
             do iter=1,itermax
-               thtest = fit_func(mpl,fit_type,thinv)
+               thtest = (1.0-pk)*fit_func(mpl,'flat',thinv)+pk*fit_func(mpl,'peak',thinv)
                if (sup(th,thtest)) then
                   thinv = thinv-dthinv
                else

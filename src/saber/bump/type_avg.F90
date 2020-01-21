@@ -336,7 +336,7 @@ do ib=1,bpar%nb
 
       if (nam%local_diag) then
          ! Moments block extension
-         call mom_blk%ext(mpl,nam,geom,bpar,samp,mom%blk(ib))
+         call mom_blk%ext(mpl,geom,bpar,samp,mom%blk(ib))
 
          ! Local average
          call mpl%prog_init(samp%nc2a)
@@ -469,8 +469,8 @@ do ib=1,bpar%nb
 
       if (nam%local_diag) then
          ! Moments block extension
-         call mom_blk_1%ext(mpl,nam,geom,bpar,samp,mom_1%blk(ib))
-         call mom_blk_2%ext(mpl,nam,geom,bpar,samp,mom_2%blk(ib))
+         call mom_blk_1%ext(mpl,geom,bpar,samp,mom_1%blk(ib))
+         call mom_blk_2%ext(mpl,geom,bpar,samp,mom_2%blk(ib))
 
          ! Local average
          call mpl%prog_init(samp%nc2a)

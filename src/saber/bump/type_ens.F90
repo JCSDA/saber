@@ -342,14 +342,14 @@ type(geom_type),intent(in) :: geom  ! Geometry
 type(io_type),intent(in) :: io      ! I/O
 
 ! Local variables
-integer :: info,ncid,nloc_id,ne_id,nem1_id,ic0_id,il0_id,iv_id,its_id,order_id,ens_norm_id,ens_step_id
+integer :: ncid,nloc_id,ne_id,nem1_id,ic0_id,il0_id,iv_id,its_id,order_id,ens_norm_id,ens_step_id
 integer :: iv,its,il0,ic0a,ie,nloc,iloc,nglb
 integer,allocatable :: ic0_loc(:),il0_loc(:),iv_loc(:),its_loc(:),order(:,:)
 real(kind_real) :: norm_m2,norm_m4,norm
 real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),m4(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real) :: kurt(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
-character(len=1024) :: filename,varname
+character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'ens_normality'
 
 ! File name

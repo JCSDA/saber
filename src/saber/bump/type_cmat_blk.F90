@@ -20,7 +20,6 @@ type cmat_blk_type
    ! Block index and name
    integer :: ib                                     ! Block index
    character(len=1024) :: name                       ! Name
-   logical :: double_fit                             ! Double fit
    logical :: anisotropic                            ! Anisoptropic tensor
 
    ! Read data
@@ -28,8 +27,7 @@ type cmat_blk_type
    real(kind_real),allocatable :: bump_coef_sta(:,:) ! BUMP static coefficient
    real(kind_real),allocatable :: bump_rh(:,:)       ! BUMP horizontal fit support radius
    real(kind_real),allocatable :: bump_rv(:,:)       ! BUMP vertical fit support radius
-   real(kind_real),allocatable :: bump_rv_rfac(:,:)  ! BUMP vertical fit support radius factor
-   real(kind_real),allocatable :: bump_rv_coef(:,:)  ! BUMP vertical fit coefficient
+   real(kind_real),allocatable :: bump_pk(:,:)       ! BUMP fit peakness
    real(kind_real),allocatable :: bump_D11(:,:)      ! BUMP Daley tensor component 11
    real(kind_real),allocatable :: bump_D22(:,:)      ! BUMP Daley tensor component 22
    real(kind_real),allocatable :: bump_D33(:,:)      ! BUMP Daley tensor component 33
@@ -41,8 +39,7 @@ type cmat_blk_type
    real(kind_real),allocatable :: coef_sta(:,:)      ! Static coefficient
    real(kind_real),allocatable :: rh(:,:)            ! Horizontal fit support radius
    real(kind_real),allocatable :: rv(:,:)            ! Vertical fit support radius
-   real(kind_real),allocatable :: rv_rfac(:,:)       ! Vertical fit support radius factor
-   real(kind_real),allocatable :: rv_coef(:,:)       ! Vertical fit coefficient
+   real(kind_real),allocatable :: pk(:,:)            ! Fit peakness
    real(kind_real),allocatable :: rhs(:,:)           ! Fit support radius  for sampling
    real(kind_real),allocatable :: rvs(:,:)           ! Fit support radius, for sampling
    real(kind_real) :: wgt                            ! Block weight
@@ -89,10 +86,7 @@ if (bpar%diag_block(ib)) then
    allocate(cmat_blk%coef_sta(geom%nc0a,geom%nl0))
    allocate(cmat_blk%rh(geom%nc0a,geom%nl0))
    allocate(cmat_blk%rv(geom%nc0a,geom%nl0))
-   if (cmat_blk%double_fit) then
-      allocate(cmat_blk%rv_rfac(geom%nc0a,geom%nl0))
-      allocate(cmat_blk%rv_coef(geom%nc0a,geom%nl0))
-   end if
+   allocate(cmat_blk%pk(geom%nc0a,geom%nl0))
    allocate(cmat_blk%rhs(geom%nc0a,geom%nl0))
    allocate(cmat_blk%rvs(geom%nc0a,geom%nl0))
    if (cmat_blk%anisotropic) then
@@ -138,10 +132,7 @@ if (bpar%diag_block(ib)) then
    cmat_blk%coef_sta = mpl%msv%valr
    cmat_blk%rh = mpl%msv%valr
    cmat_blk%rv = mpl%msv%valr
-   if (cmat_blk%double_fit) then
-      cmat_blk%rv_rfac = mpl%msv%valr
-      cmat_blk%rv_coef = mpl%msv%valr
-   end if
+   cmat_blk%pk = mpl%msv%valr
    cmat_blk%rhs = mpl%msv%valr
    cmat_blk%rvs = mpl%msv%valr
    if (cmat_blk%anisotropic) then
@@ -180,8 +171,7 @@ if (allocated(cmat_blk%bump_coef_ens)) deallocate(cmat_blk%bump_coef_ens)
 if (allocated(cmat_blk%bump_coef_sta)) deallocate(cmat_blk%bump_coef_sta)
 if (allocated(cmat_blk%bump_rh)) deallocate(cmat_blk%bump_rh)
 if (allocated(cmat_blk%bump_rv)) deallocate(cmat_blk%bump_rv)
-if (allocated(cmat_blk%bump_rv_rfac)) deallocate(cmat_blk%bump_rv_rfac)
-if (allocated(cmat_blk%bump_rv_coef)) deallocate(cmat_blk%bump_rv_coef)
+if (allocated(cmat_blk%bump_pk)) deallocate(cmat_blk%bump_pk)
 if (allocated(cmat_blk%bump_D11)) deallocate(cmat_blk%bump_D11)
 if (allocated(cmat_blk%bump_D22)) deallocate(cmat_blk%bump_D22)
 if (allocated(cmat_blk%bump_D33)) deallocate(cmat_blk%bump_D33)
@@ -232,8 +222,7 @@ if (allocated(cmat_blk%coef_ens)) deallocate(cmat_blk%coef_ens)
 if (allocated(cmat_blk%coef_sta)) deallocate(cmat_blk%coef_sta)
 if (allocated(cmat_blk%rh)) deallocate(cmat_blk%rh)
 if (allocated(cmat_blk%rv)) deallocate(cmat_blk%rv)
-if (allocated(cmat_blk%rv_rfac)) deallocate(cmat_blk%rv_rfac)
-if (allocated(cmat_blk%rv_coef)) deallocate(cmat_blk%rv_coef)
+if (allocated(cmat_blk%pk)) deallocate(cmat_blk%pk)
 
 end subroutine cmat_blk_dealloc
 

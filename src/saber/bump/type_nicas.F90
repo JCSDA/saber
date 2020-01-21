@@ -1853,8 +1853,10 @@ type(bpar_type),intent(in) :: bpar    ! Block parameters
 type(io_type),intent(in) :: io        ! I/O
 
 ! Local variables
-integer :: ib,ifac,itest,il0
-real(kind_real) :: fac(-nfac_opt:nfac_opt),mse(ntest,-nfac_opt:nfac_opt),mse_sum,mse_max,rh_sum,rh_tot,rv_sum,rv_tot
+integer :: ib,ifac,jfac,itest,il0
+real(kind_real) :: mse_sum,mse_max,rh_sum,rh_tot,rv_sum,rv_tot
+real(kind_real) :: fac_r(-nfac_opt:nfac_opt),fac_pk(-nfac_opt:nfac_opt)
+real(kind_real) :: mse_test(ntest,-nfac_opt:nfac_opt,-nfac_opt:nfac_opt),mse(-nfac_opt:nfac_opt,-nfac_opt:nfac_opt)
 real(kind_real) :: fld_ref(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest),fld_save(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest)
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 character(len=1024) :: method
@@ -1904,113 +1906,115 @@ call nicas%randomize(mpl,rng,nam,geom,bpar,nam%ne,ens_test)
 if (nam%default_seed) call rng%reseed(mpl)
 
 ! Allocation
-call loc_opt%alloc(mpl,nam,geom,bpar,hdiag%samp,'loc_opt',.false.)
+call loc_opt%alloc(mpl,nam,geom,bpar,hdiag%samp,'loc_opt')
 
 ! Initialization
 mse_max = huge(1.0)
 
-do ifac=-nfac_opt,nfac_opt
-   ! Copy HDIAG into C matrix
-   call cmat%from_hdiag(mpl,nam,geom,bpar,hdiag)
+do jfac=-nfac_opt,nfac_opt
+   do ifac=-nfac_opt,nfac_opt
+      ! Copy HDIAG into C matrix
+      call cmat%from_hdiag(mpl,nam,geom,bpar,hdiag)
 
-   ! Setup C matrix sampling
-   call cmat%setup_sampling(nam,geom,bpar)
+      ! Setup C matrix sampling
+      call cmat%setup_sampling(nam,geom,bpar)
 
-   ! Multiplication factor
-   fac(ifac) = 1.0+real(ifac,kind_real)/real(nfac_opt+1,kind_real)
+      ! Multiplication factor
+      fac_r(ifac) = 1.0+real(ifac,kind_real)/real(nfac_opt+1,kind_real)
+      fac_pk(jfac) = 1.0+real(jfac,kind_real)/real(nfac_opt+1,kind_real)
 
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a,f4.2,a)') '--- Generate NICAS with a multiplicative factor ',fac(ifac),' to length-scales'
-   call mpl%flush
+      write(mpl%info,'(a)') '-------------------------------------------------------------------'
+      call mpl%flush
+      write(mpl%info,'(a,f4.2,a,f4.2)') '--- Generate NICAS with a multiplicative factors ',fac_r(ifac),' / ',fac_pk(jfac)
+      call mpl%flush
 
-   ! Allocation
-   call nicas_test%alloc(mpl,nam,bpar,'nicas_test')
+      ! Allocation
+      call nicas_test%alloc(mpl,nam,bpar,'nicas_test')
 
-   do ib=1,bpar%nbe
-      if (bpar%nicas_block(ib)) then
-         ! Length-scales multiplication
-         cmat%blk(ib)%rhs = fac(ifac)*cmat%blk(ib)%rhs
-         cmat%blk(ib)%rvs = fac(ifac)*cmat%blk(ib)%rvs
-         cmat%blk(ib)%rh = fac(ifac)*cmat%blk(ib)%rh
-         cmat%blk(ib)%rv = fac(ifac)*cmat%blk(ib)%rv
-
-         ! Compute NICAS parameters
-         call nicas_test%blk(ib)%compute_parameters(mpl,rng,nam,geom,cmat%blk(ib))
-      end if
-
-      if (bpar%B_block(ib)) then
-         ! Copy weights
-         nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
-         if (bpar%nicas_block(ib)) then
-            allocate(nicas_test%blk(ib)%coef_ens(geom%nc0a,geom%nl0))
-            nicas_test%blk(ib)%coef_ens = cmat%blk(ib)%coef_ens
-         end if
-      end if
-   end do
-
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Apply ensemble B to test vectors'
-   call mpl%flush
-
-   do itest=1,ntest
-      ! Test NICAS
-      fld = fld_save(:,:,:,:,itest)
-      call nicas_test%apply_bens(mpl,nam,geom,bpar,ens_test,fld)
-
-      ! RMSE
-      mse_sum = sum((fld-fld_ref(:,:,:,:,itest))**2,mask=mpl%msv%isnot(fld_ref(:,:,:,:,itest)))
-      call mpl%f_comm%allreduce(mse_sum,mse(itest,ifac),fckit_mpi_sum())
-   end do
-
-   ! Test score
-   if (sum(mse(:,ifac))<mse_max) then
-      mse_max = sum(mse(:,ifac))
       do ib=1,bpar%nbe
          if (bpar%nicas_block(ib)) then
-            do il0=1,geom%nl0
-               rh_sum = sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rh(:,il0)))
-               call mpl%f_comm%allreduce(rh_sum,rh_tot,fckit_mpi_sum())
-               loc_opt%blk(0,ib)%fit_rh = rh_tot/real(geom%nc0_mask(il0),kind_real)
-               if ((nam%nl>1).and.(nam%rv>0.0)) then
-                  rv_sum = sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rv(:,il0)))
-                  call mpl%f_comm%allreduce(rv_sum,rv_tot,fckit_mpi_sum())
-                  loc_opt%blk(0,ib)%fit_rv = rv_tot/real(geom%nc0_mask(il0),kind_real)
-               end if
-            end do
+            ! Length-scales multiplication
+            cmat%blk(ib)%rhs = fac_r(ifac)*cmat%blk(ib)%rhs
+            cmat%blk(ib)%rvs = fac_r(ifac)*cmat%blk(ib)%rvs
+            cmat%blk(ib)%rh = fac_r(ifac)*cmat%blk(ib)%rh
+            cmat%blk(ib)%rv = fac_r(ifac)*cmat%blk(ib)%rv
+            cmat%blk(ib)%pk = fac_pk(jfac)*cmat%blk(ib)%pk
+
+            ! Compute NICAS parameters
+            call nicas_test%blk(ib)%compute_parameters(mpl,rng,nam,geom,cmat%blk(ib))
+         end if
+
+         if (bpar%B_block(ib)) then
+            ! Copy weights
+            nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
+            if (bpar%nicas_block(ib)) then
+               allocate(nicas_test%blk(ib)%coef_ens(geom%nc0a,geom%nl0))
+               nicas_test%blk(ib)%coef_ens = cmat%blk(ib)%coef_ens
+            end if
          end if
       end do
-   end if
 
-   ! Print scores
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a,f4.2,a,e15.8)') '--- Optimality results for a factor ',fac(ifac),', MSE: ', &
- & sum(mse(:,ifac))/real(ntest,kind_real)
-   call mpl%flush
+      write(mpl%info,'(a)') '-------------------------------------------------------------------'
+      call mpl%flush
+      write(mpl%info,'(a)') '--- Apply ensemble B to test vectors'
+      call mpl%flush
 
-   ! Release memory
-   call cmat%dealloc
-   call nicas_test%dealloc
+      do itest=1,ntest
+         ! Test NICAS
+         fld = fld_save(:,:,:,:,itest)
+         call nicas_test%apply_bens(mpl,nam,geom,bpar,ens_test,fld)
+
+         ! RMSE
+         mse_sum = sum((fld-fld_ref(:,:,:,:,itest))**2,mask=mpl%msv%isnot(fld_ref(:,:,:,:,itest)))
+         call mpl%f_comm%allreduce(mse_sum,mse_test(itest,ifac,jfac),fckit_mpi_sum())
+      end do
+
+      ! Test score
+      if (sum(mse_test(:,ifac,jfac))<mse_max) then
+         mse_max = sum(mse_test(:,ifac,jfac))
+         do ib=1,bpar%nbe
+            if (bpar%nicas_block(ib)) then
+               do il0=1,geom%nl0
+                  rh_sum = sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rh(:,il0)))
+                  call mpl%f_comm%allreduce(rh_sum,rh_tot,fckit_mpi_sum())
+                  loc_opt%blk(0,ib)%fit_rh = rh_tot/real(geom%nc0_mask(il0),kind_real)
+                  if ((nam%nl>1).and.(nam%rv>0.0)) then
+                     rv_sum = sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rv(:,il0)))
+                     call mpl%f_comm%allreduce(rv_sum,rv_tot,fckit_mpi_sum())
+                     loc_opt%blk(0,ib)%fit_rv = rv_tot/real(geom%nc0_mask(il0),kind_real)
+                  end if
+               end do
+            end if
+         end do
+      end if
+
+      ! Release memory
+      call cmat%dealloc
+      call nicas_test%dealloc
+   end do
 end do
+
+! Normalize MSE
+mse = sum(mse_test,dim=1)/real(ntest,kind_real)
+mse = mse-minval(mse)
 
 ! Print scores summary
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
 write(mpl%info,'(a)') '--- Optimality results summary'
 call mpl%flush
-do ifac=-nfac_opt,nfac_opt
-   write(mpl%info,'(a7,a,f4.2,a,e15.8)') '','Factor ',fac(ifac),', MSE: ',sum(mse(:,ifac))/real(ntest,kind_real)
-   call mpl%flush
+do jfac=-nfac_opt,nfac_opt
+   do ifac=-nfac_opt,nfac_opt
+      write(mpl%info,'(a7,a,f4.2,a,f4.2,a,e15.8)') '','Factor ',fac_r(ifac),'/',fac_pk(jfac),' MSE: ',mse(ifac,jfac)
+      call mpl%flush
+   end do
 end do
 
 ! Best fit
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      call fit_diag(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
-    & loc_opt%blk(0,ib)%distv,loc_opt%blk(0,ib)%coef_ens,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv, &
-    & loc_opt%blk(0,ib)%fit)
+      call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,loc_opt%blk(0,ib)%distv, &
+    & loc_opt%blk(0,ib)%coef_ens,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit_pk,loc_opt%blk(0,ib)%fit)
       call loc_opt%blk(0,ib)%write(mpl,nam,geom,bpar,trim(nam%prefix)//'_diag')
    end if
 end do

@@ -10,7 +10,7 @@ module type_diag
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: reqkm,rad2deg,pi
 use tools_fit, only: ver_smooth
-use tools_func, only: fit_diag,fit_diag_dble
+use tools_func, only: fit_diag
 use tools_kinds, only: kind_real,nc_kind_real
 use type_avg, only: avg_type
 use type_bpar, only: bpar_type
@@ -52,7 +52,7 @@ contains
 ! Subroutine: diag_alloc
 ! Purpose: allocation
 !----------------------------------------------------------------------
-subroutine diag_alloc(diag,mpl,nam,geom,bpar,samp,prefix,double_fit)
+subroutine diag_alloc(diag,mpl,nam,geom,bpar,samp,prefix)
 
 implicit none
 
@@ -64,7 +64,6 @@ type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 type(samp_type),intent(in) :: samp     ! Sampling
 character(len=*),intent(in) :: prefix  ! Block prefix
-logical,intent(in) :: double_fit       ! Double fit
 
 ! Local variables
 integer :: ib,ic2a
@@ -84,13 +83,7 @@ allocate(diag%blk(0:diag%nc2a,bpar%nbe))
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
       do ic2a=0,diag%nc2a
-         if (bpar%b_to_v1(ib)==0) then
-           ! Common block
-           call diag%blk(ic2a,ib)%alloc(mpl,nam,geom,bpar,samp,ic2a,ib,prefix,double_fit.and.any(nam%double_fit(1:nam%nv)))
-         else
-           ! Specific block
-           call diag%blk(ic2a,ib)%alloc(mpl,nam,geom,bpar,samp,ic2a,ib,prefix,double_fit.and.nam%double_fit(bpar%b_to_v1(ib)))
-         end if
+         call diag%blk(ic2a,ib)%alloc(mpl,nam,geom,bpar,samp,ic2a,ib,prefix)
       end do
    end if
 end do
@@ -167,10 +160,7 @@ if (nam%local_diag) then
          filename = trim(nam%prefix)//'_local_diag_'//trim(diag%prefix)
          call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
          n = 1
-         if (bpar%fit_block(ib).and.(trim(diag%prefix)/='cov')) then
-            n = n+2
-            if (diag%blk(0,ib)%double_fit) n = n+2
-         end if
+         if (bpar%fit_block(ib).and.(trim(diag%prefix)/='cov')) n = n+3
          do i=1,n
             ! Copy data
             do ic2a=1,samp%nc2a
@@ -181,9 +171,7 @@ if (nam%local_diag) then
                elseif (i==3) then
                   fld_c2a(ic2a,:) = diag%blk(ic2a,ib)%fit_rv
                elseif (i==4) then
-                  fld_c2a(ic2a,:) = diag%blk(ic2a,ib)%fit_rv_rfac
-               elseif (i==5) then
-                  fld_c2a(ic2a,:) = diag%blk(ic2a,ib)%fit_rv_coef
+                  fld_c2a(ic2a,:) = diag%blk(ic2a,ib)%fit_pk
                end if
             end do
    
@@ -202,9 +190,7 @@ if (nam%local_diag) then
             elseif (i==3) then
                call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_fit_rv',fld_c0a)
             elseif (i==4) then
-               call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_fit_rv_rfac',fld_c0a)
-            elseif (i==5) then
-               call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_fit_rv_coef',fld_c0a)
+               call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_fit_pk',fld_c0a)
             end if
          end do
       end if
@@ -261,7 +247,7 @@ type(samp_type),intent(in) :: samp     ! Sampling
 integer :: ib,il0,ic2a
 real(kind_real) :: rmse,norm,rmse_tot,norm_tot
 real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
-real(kind_real),allocatable :: rh_c2a(:,:),rv_c2a(:,:),rv_rfac_c2a(:,:),rv_coef_c2a(:,:)
+real(kind_real),allocatable :: rh_c2a(:,:),rv_c2a(:,:),pk_c2a(:,:)
 
 if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
    ! Horizontal filtering
@@ -274,10 +260,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
          if (bpar%fit_block(ib)) then
             allocate(rh_c2a(samp%nc2a,geom%nl0))
             allocate(rv_c2a(samp%nc2a,geom%nl0))
-            if (diag%blk(0,ib)%double_fit) then
-               allocate(rv_rfac_c2a(samp%nc2a,geom%nl0))
-               allocate(rv_coef_c2a(samp%nc2a,geom%nl0))
-            end if
+            allocate(pk_c2a(samp%nc2a,geom%nl0))
          end if
       
          do il0=1,geom%nl0
@@ -287,10 +270,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
                if (bpar%fit_block(ib)) then
                   rh_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rh(il0)
                   rv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rv(il0)
-                  if (diag%blk(0,ib)%double_fit) then
-                     rv_rfac_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rv_rfac(il0)
-                     rv_coef_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rv_coef(il0)
-                  end if
+                  pk_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_pk(il0)
                end if
       
                ! Apply bounds relatively to the global value
@@ -315,10 +295,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
             if (bpar%fit_block(ib)) then
                call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rh_c2a(:,il0))
                call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rv_c2a(:,il0))
-               if (diag%blk(0,ib)%double_fit) then
-                  call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rv_rfac_c2a(:,il0))
-                  call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rv_coef_c2a(:,il0))
-               end if
+               call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,pk_c2a(:,il0))
             end if
       
             ! Average filter to smooth data
@@ -326,10 +303,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
             if (bpar%fit_block(ib)) then
                call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rh_c2a(:,il0))
                call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rv_c2a(:,il0))
-               if (diag%blk(0,ib)%double_fit) then
-                  call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rv_rfac_c2a(:,il0))
-                  call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rv_coef_c2a(:,il0))
-               end if
+               call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,pk_c2a(:,il0))
             end if
       
             ! Fill missing values
@@ -337,10 +311,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
             if (bpar%fit_block(ib)) then
                call samp%diag_fill(mpl,nam,rh_c2a(:,il0))
                call samp%diag_fill(mpl,nam,rv_c2a(:,il0))
-               if (diag%blk(0,ib)%double_fit) then
-                  call samp%diag_fill(mpl,nam,rv_rfac_c2a(:,il0))
-                  call samp%diag_fill(mpl,nam,rv_coef_c2a(:,il0))
-               end if
+               call samp%diag_fill(mpl,nam,pk_c2a(:,il0))
             end if
       
             ! Copy data
@@ -349,10 +320,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
                if (bpar%fit_block(ib)) then
                   diag%blk(ic2a,ib)%fit_rh(il0) = rh_c2a(ic2a,il0)
                   diag%blk(ic2a,ib)%fit_rv(il0) = rv_c2a(ic2a,il0)
-                  if (diag%blk(0,ib)%double_fit) then
-                     diag%blk(ic2a,ib)%fit_rv_rfac(il0) = rv_rfac_c2a(ic2a,il0)
-                     diag%blk(ic2a,ib)%fit_rv_coef(il0) = rv_coef_c2a(ic2a,il0)
-                  end if
+                  diag%blk(ic2a,ib)%fit_pk(il0) = pk_c2a(ic2a,il0)
                end if
             end do
          end do
@@ -361,10 +329,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
          if (bpar%fit_block(ib)) then
             deallocate(rh_c2a)
             deallocate(rv_c2a)
-            if (diag%blk(0,ib)%double_fit) then
-               deallocate(rv_rfac_c2a)
-               deallocate(rv_coef_c2a)
-            end if
+            deallocate(pk_c2a)
          end if
       end if
    end do
@@ -383,10 +348,7 @@ if (nam%diag_rvflt>0.0) then
             if (bpar%fit_block(ib)) then
                call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rh)
                call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rv)
-               if (diag%blk(0,ib)%double_fit) then
-                  call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rv_rfac)
-                  call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rv_coef)
-               end if
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_pk)
             end if
          end do
       end if
@@ -397,15 +359,9 @@ do ib=1,bpar%nbe
    if (bpar%diag_block(ib).and.bpar%fit_block(ib)) then
       ! Rebuild fit
       do ic2a=0,diag%nc2a
-         if (diag%blk(0,ib)%double_fit) then
-            call fit_diag_dble(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
-          & diag%blk(ic2a,ib)%distv,diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_rv, &
-          & diag%blk(ic2a,ib)%fit_rv_rfac,diag%blk(ic2a,ib)%fit_rv_coef,diag%blk(ic2a,ib)%fit)
-         else
-            call fit_diag(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
-          & diag%blk(ic2a,ib)%distv,diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_rv, &
-          & diag%blk(ic2a,ib)%fit)
-         end if
+         call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag%blk(ic2a,ib)%distv, &
+       & diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit_pk, &
+       & diag%blk(ic2a,ib)%fit)
       end do
    
       ! Compute RMSE
@@ -449,7 +405,7 @@ character(len=*),intent(in) :: prefix  ! Diagnostic prefix
 integer :: ib,ic2a,il0
 
 ! Allocation
-call diag%alloc(mpl,nam,geom,bpar,samp,prefix,.false.)
+call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
@@ -511,7 +467,7 @@ character(len=*),intent(in) :: prefix  ! Diagnostic prefix
 integer :: ib,ic2a,il0
 
 ! Allocation
-call diag%alloc(mpl,nam,geom,bpar,samp,prefix,.true.)
+call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
@@ -544,12 +500,9 @@ do ib=1,bpar%nbe
              & trim(mpl%aqua),diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua), &
              & diag%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vert. unit'
                call mpl%flush
-               if (diag%blk(0,ib)%double_fit) then
-                  write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','cor. double fit:    ',trim(mpl%aqua), &
-                & diag%blk(0,ib)%fit_rv_rfac(il0),trim(mpl%black)//' / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv_coef(il0), &
-                & trim(mpl%black)
-                  call mpl%flush
-               end if
+               write(mpl%info,'(a27,a,a,f5.3,a)') '','cor. peakness:      ',trim(mpl%aqua),diag%blk(0,ib)%fit_pk(il0), &
+             & trim(mpl%black)
+               call mpl%flush
             end if
          end if
       end do
@@ -588,7 +541,7 @@ character(len=*),intent(in) :: prefix  ! Block prefix
 integer :: ib,ic2a,il0
 
 ! Allocation
-call diag%alloc(mpl,nam,geom,bpar,samp,prefix,.false.)
+call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
@@ -628,6 +581,9 @@ do ib=1,bpar%nbe
              & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
              & trim(mpl%black)//' vert. unit'
                call mpl%flush
+               write(mpl%info,'(a27,a,a,f5.3,a)') '','loc. peakness:      ',trim(mpl%aqua),diag%blk(0,ib)%fit_pk(il0), &
+             & trim(mpl%black)
+               call mpl%flush
             end if
          end if
       end do
@@ -666,7 +622,7 @@ character(len=*),intent(in) :: prefix  ! Diagnostic prefix
 integer :: ib,ic2a,il0
 
 ! Allocation
-call diag%alloc(mpl,nam,geom,bpar,samp,prefix,.false.)
+call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
@@ -702,6 +658,9 @@ do ib=1,bpar%nbe
                write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii: ',trim(mpl%aqua), &
              & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
              & trim(mpl%black)//' vert. unit'
+               call mpl%flush
+               write(mpl%info,'(a27,a,a,f5.3,a)') '','loc. peakness:      ',trim(mpl%aqua),diag%blk(0,ib)%fit_pk(il0), &
+             & trim(mpl%black)
                call mpl%flush
             end if
          end if
@@ -747,8 +706,8 @@ character(len=*),intent(in) :: prefix_lr ! LR diagnostic prefix
 integer :: ib,ic2a,il0
 
 ! Allocation
-call diag%alloc(mpl,nam,geom,bpar,samp,prefix,.false.)
-call diag_lr%alloc(mpl,nam,geom,bpar,samp,prefix_lr,.false.)
+call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
+call diag_lr%alloc(mpl,nam,geom,bpar,samp,prefix_lr)
 
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
@@ -791,14 +750,20 @@ do ib=1,bpar%nbe
          if (bpar%fit_block(ib)) then
             if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
                write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii (HR): ',trim(mpl%aqua), &
-             & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag_lr%blk(0,ib)%fit_rv(il0), &
+             & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
              & trim(mpl%black)//' vert. unit'
+               call mpl%flush
+               write(mpl%info,'(a27,a,a,f5.3,a)') '','loc. peakness (HR): ',trim(mpl%aqua),diag%blk(0,ib)%fit_pk(il0), &
+             & trim(mpl%black)
                call mpl%flush
             end if
             if (mpl%msv%isnot(diag_lr%blk(0,ib)%fit_rh(il0))) then
                write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii (LR): ',trim(mpl%aqua), &
              & diag_lr%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag_lr%blk(0,ib)%fit_rv(il0), &
              & trim(mpl%black)//' vert. unit'
+               call mpl%flush
+               write(mpl%info,'(a27,a,a,f5.3,a)') '','loc. peakness (LR): ',trim(mpl%aqua),diag_lr%blk(0,ib)%fit_pk(il0), &
+             & trim(mpl%black)
                call mpl%flush
             end if
          end if
