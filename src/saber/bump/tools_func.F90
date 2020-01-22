@@ -16,6 +16,7 @@ use type_mpl, only: mpl_type
 
 implicit none
 
+integer,parameter :: poly_exp = 8                     ! Polynomial function exponent
 real(kind_real),parameter :: gc2gau = 0.28            ! GC99 support radius to Gaussian Daley length-scale (empirical)
 real(kind_real),parameter :: gau2gc = 3.57            ! Gaussian Daley length-scale to GC99 support radius (empirical)
 real(kind_real),parameter :: Dmin = 1.0e-12_kind_real ! Minimum tensor diagonal value
@@ -508,25 +509,25 @@ end if
 end function gc99
 
 !----------------------------------------------------------------------
-! Function: poly4
-! Purpose: 4th order polynomial correlation function, with the support radius as a parameter
+! Function: poly
+! Purpose: polynomial correlation function, with the support radius as a parameter
 !----------------------------------------------------------------------
-function poly4(distnorm)
+function poly(distnorm)
 
 ! Passed variables
 real(kind_real),intent(in) :: distnorm ! Normalized distance
 
 ! Returned variable
-real(kind_real) :: poly4
+real(kind_real) :: poly
 
 ! Reservoir code function
 if (distnorm<1.0) then
-   poly4 = 1.0-4.0*distnorm+6.0*distnorm**2-4.0*distnorm**3+distnorm**4
+   poly = (1.0-distnorm)**poly_exp
 else
-   poly4 = 0.0
+   poly = 0.0
 end if
 
-end function poly4
+end function poly
 
 !----------------------------------------------------------------------
 ! Function: fit_func
@@ -553,7 +554,7 @@ select case (fit_type(1:4))
 case ('flat')
    fit_func = gc99(distnorm)
 case ('peak')
-   fit_func = poly4(distnorm)
+   fit_func = poly(distnorm)
 case default
    call mpl%abort(subr,'wrong fit function type')
 end select

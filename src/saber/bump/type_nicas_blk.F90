@@ -31,9 +31,9 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 
 implicit none
 
-real(kind_real),parameter :: sqrt_r = 0.81_kind_real  ! Square-root factor on support radius (empirical)
-real(kind_real),parameter :: sqrt_pk = 0.5_kind_real  ! Square-root factor on peakness (empirical)
-real(kind_real),parameter :: sqrt_h = 0.81_kind_real  ! Square-root factor on LCT (empirical)
+real(kind_real),parameter :: sqrt_r = 1.0_kind_real  ! Square-root factor on support radius (empirical)
+real(kind_real),parameter :: sqrt_pk = 1.0_kind_real  ! Square-root factor on peakness (empirical)
+real(kind_real),parameter :: sqrt_h = 1.0_kind_real  ! Square-root factor on LCT (empirical)
 real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum value for the convolution coefficients
 
 ! Ball data derived type
@@ -54,7 +54,8 @@ type nicas_blk_type
    integer :: ib                                   ! Block index
    character(len=1024) :: name                     ! Name
    character(len=1024) :: subsamp                  ! Subsampling structure
-   logical :: anisotropic                          ! Anisotropic tensor
+   logical :: sqrt_rescaling                       ! Square-root rescaling flag
+   logical :: anisotropic                          ! Anisotropic tensor flag
 
    ! Specific geometry
    integer :: nc1                                  ! Number of points in subset Sc1
@@ -1288,7 +1289,7 @@ end subroutine nicas_blk_send
 ! Subroutine: nicas_blk_compute_parameters
 ! Purpose: compute NICAS parameters
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom,cmat_blk)
+subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom,cmat_blk,sqrt_rescaling)
 
 implicit none
 
@@ -1299,9 +1300,14 @@ type(rng_type),intent(inout) :: rng              ! Random number generator
 type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
+logical,intent(in),optional :: sqrt_rescaling    ! Square-root rescaling flag
 
 ! Local variables
 integer :: il0i,il1
+
+! Set square-root rescaling flag
+nicas_blk%sqrt_rescaling = .true.
+if (present(sqrt_rescaling)) nicas_blk%sqrt_rescaling = sqrt_rescaling
 
 ! Copy subset Sc0 on halo size A
 nicas_blk%nc0a = geom%nc0a
@@ -2189,11 +2195,13 @@ call nicas_blk%tree%init(lon_c1,lat_c1)
 ! Find largest possible radius
 call mpl%f_comm%allreduce(maxval(cmat_blk%rh,mask=mpl%msv%isnot(cmat_blk%rh)),nicas_blk%rhmax,fckit_mpi_max())
 
-! Rescale largest possible radius
-if (nicas_blk%anisotropic) then
-   nicas_blk%rhmax = nicas_blk%rhmax*sqrt_h
-else
-   nicas_blk%rhmax = nicas_blk%rhmax*sqrt_r
+if (nicas_blk%sqrt_rescaling) then
+   ! Square-root rescaling of the largest possible radius
+   if (nicas_blk%anisotropic) then
+      nicas_blk%rhmax = nicas_blk%rhmax*sqrt_h
+   else
+      nicas_blk%rhmax = nicas_blk%rhmax*sqrt_r
+   end if
 end if
 
 if (nam%lsqrt) then
@@ -2349,18 +2357,20 @@ do il1=1,nicas_blk%nl1
             Hcoef_c1a(ic1a,il1) = cmat_blk%Hcoef(ic0a,il0)
          end if
 
-         ! Square-root rescaling
-         if (nicas_blk%anisotropic) then
-            rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_h
-            rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_h
-            H11_c1a(ic1a,il1) = H11_c1a(ic1a,il1)/sqrt_h**2
-            H22_c1a(ic1a,il1) = H22_c1a(ic1a,il1)/sqrt_h**2
-            H33_c1a(ic1a,il1) = H33_c1a(ic1a,il1)/sqrt_h**2
-            H12_c1a(ic1a,il1) = H12_c1a(ic1a,il1)/sqrt_h**2
-         else
-            rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
-            rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_r
-            pk_c1a(ic1a,il1) = pk_c1a(ic1a,il1)*sqrt_pk
+         if (nicas_blk%sqrt_rescaling) then
+            ! Square-root rescaling
+            if (nicas_blk%anisotropic) then
+               rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_h
+               rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_h
+               H11_c1a(ic1a,il1) = H11_c1a(ic1a,il1)/sqrt_h**2
+               H22_c1a(ic1a,il1) = H22_c1a(ic1a,il1)/sqrt_h**2
+               H33_c1a(ic1a,il1) = H33_c1a(ic1a,il1)/sqrt_h**2
+               H12_c1a(ic1a,il1) = H12_c1a(ic1a,il1)/sqrt_h**2
+            else
+               rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
+               rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_r
+               pk_c1a(ic1a,il1) = pk_c1a(ic1a,il1)*sqrt_pk
+            end if
          end if
       else
          ! Missing values
