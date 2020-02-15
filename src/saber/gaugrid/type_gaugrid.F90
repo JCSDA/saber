@@ -3,7 +3,7 @@
 ! Purpose: Gaussian grid derived type
 ! Author: Teppei Kinami
 ! Licensing: this code is distributed under the CeCILL-C license
-! Copyright © 019-... UCAR, CERFACS, METEO-FRANCE and IRIT
+! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
 module type_gaugrid
 
@@ -26,18 +26,24 @@ type gaussian_grid
   integer :: nlev                                      !> Number of levels
   integer :: nvar                                      !> Number of variables
 !  integer :: nts                                       !> Number of timeslots
-  character(len=16),allocatable :: vname(:)            !> Name of variables
+  character(len=32),allocatable :: vname(:)            !> Name of variables
   real(kind=kind_real),allocatable :: rlats(:)         !> Gaussian latitudes
   real(kind=kind_real),allocatable :: wlats(:)         !> Gaussian weights 
   real(kind=kind_real),allocatable :: rlons(:)         !> Gaussian longitudes 
   real(kind=kind_real),allocatable :: fld(:,:,:,:)     !> Data
+contains
+  procedure :: create => create_gaugrid
+  procedure :: delete => delete_gaugrid 
+  procedure :: fld3d_pointer => gaugrid_fld3d_pointer
+  procedure :: fld2d_pointer => gaugrid_fld2d_pointer
+  procedure :: calc_glb_latlon => gaugrid_calc_glb_latlon
+  procedure :: equals
+  generic :: assignment(=) => equals 
 end type gaussian_grid
 
 public :: gaussian_grid
-public :: create_gaugrid, delete_gaugrid
 public :: gaugrid_alloc_coord, gaugrid_dealloc_coord
 public :: gaugrid_alloc_field, gaugrid_dealloc_field
-public :: gaugrid_calc_ll_glb
 
 contains
 
@@ -84,7 +90,7 @@ subroutine gaugrid_alloc_coord(self)
   allocate(self%rlons(self%nlon)); self%rlons=zero
   allocate(self%rlats(self%nlat)); self%rlats=zero
   allocate(self%wlats(self%nlat)); self%wlats=zero
-  allocate(self%vname(self%nlev))
+  allocate(self%vname(self%nvar))
 
 end subroutine gaugrid_alloc_coord
 
@@ -97,10 +103,10 @@ subroutine gaugrid_dealloc_coord(self)
 ! Passed variables
   class(gaussian_grid),intent(inout) :: self
 
-  if (allocated(self%rlons)) deallocate(self%rlons)
-  if (allocated(self%rlats)) deallocate(self%rlats)
-  if (allocated(self%wlats)) deallocate(self%wlats)
-  if (allocated(self%vname)) deallocate(self%vname)
+  if (allocated(self%rlons))    deallocate(self%rlons)
+  if (allocated(self%rlats))    deallocate(self%rlats)
+  if (allocated(self%wlats))    deallocate(self%wlats)
+  if (allocated(self%vname))    deallocate(self%vname)
 
 end subroutine gaugrid_dealloc_coord
 
@@ -132,10 +138,10 @@ subroutine gaugrid_dealloc_field(self)
 end subroutine gaugrid_dealloc_field
 
 !----------------------------------------------------------------------
-! Subroutine: gaugrid_calc_ll_glb
-! Purpose: calculate Gaussian latitudes and longitudes
+! Subroutine: gaugrid_calc_glb_latlon
+! Purpose: calculate global Gaussian latitudes and longitudes
 !----------------------------------------------------------------------
-subroutine gaugrid_calc_ll_glb(self)
+subroutine gaugrid_calc_glb_latlon(self)
   implicit none
 ! Passed variables
   class(gaussian_grid),intent(inout) :: self
@@ -145,6 +151,7 @@ subroutine gaugrid_calc_ll_glb(self)
   integer :: i,j
   real(kind=kind_real) :: dlon
 
+  ! Gaussian latitudes
   allocate(slat(self%nlat-2))
   call splat(4,self%nlat-2,slat,self%wlats)
   self%rlats = zero
@@ -156,11 +163,67 @@ subroutine gaugrid_calc_ll_glb(self)
   end do
   deallocate(slat)
 
+  ! equally-spaced longitudes
   dlon = two*pi/real(self%nlon,kind_real)
   do i=1,self%nlon
     self%rlons(i) = real(i-1,kind_real)*dlon
   end do
 
-end subroutine gaugrid_calc_ll_glb
+end subroutine gaugrid_calc_glb_latlon
+
+!----------------------------------------------------------------------
+! Subroutine: gaugrid_fld3d_pointer
+! Purpose: Set 3D field pointer
+!----------------------------------------------------------------------
+subroutine gaugrid_fld3d_pointer(self,iv,var,fldpointer)
+  implicit none
+! Passed variables
+  class(gaussian_grid),target, intent(inout) :: self
+  integer,                     intent(in)    :: iv
+  character(len=*),            intent(in)    :: var
+  real(kind_real),     pointer,intent(inout) :: fldpointer(:,:,:)
+
+  self%vname(iv) = trim(var)
+  fldpointer => self%fld(1:self%nlat,1:self%nlon,1:self%nlev,iv)
+
+end subroutine gaugrid_fld3d_pointer
+
+!----------------------------------------------------------------------
+! Subroutine: gaugrid_fld2d_pointer
+! Purpose: Set 2D field pointer
+!----------------------------------------------------------------------
+subroutine gaugrid_fld2d_pointer(self,iv,var,fldpointer)
+  implicit none
+! Passed variables
+  class(gaussian_grid),target, intent(inout) :: self
+  integer,                     intent(in)    :: iv
+  character(len=*),            intent(in)    :: var
+  real(kind_real),     pointer,intent(inout) :: fldpointer(:,:)
+
+  self%vname(iv) = trim(var)
+  fldpointer => self%fld(1:self%nlat,1:self%nlon,1,iv)
+
+end subroutine gaugrid_fld2d_pointer
+
+!----------------------------------------------------------------------
+! Subroutine: equals
+! Purpose: create new gaussian grid from another
+!----------------------------------------------------------------------
+subroutine equals(self,rhs)
+  implicit none
+! Passed variables
+  class(gaussian_grid), intent(inout) :: self
+  type (gaussian_grid), intent(in)    :: rhs
+
+  call delete_gaugrid(self)
+  self%nlat = rhs%nlat; self%nlon = rhs%nlon
+  self%nlev = rhs%nlev; self%nvar = rhs%nvar
+  call create_gaugrid(self)
+  self%vname = rhs%vname
+  self%rlats = rhs%rlats; self%rlons = rhs%rlons
+  self%wlats = rhs%wlats
+  self%fld = rhs%fld
+
+end subroutine equals
 
 end module type_gaugrid
