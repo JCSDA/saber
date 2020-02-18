@@ -1,10 +1,7 @@
-!----------------------------------------------------------------------
-! Module: type_gaugrid
-! Purpose: Gaussian grid derived type
-! Author: Teppei Kinami
-! Licensing: this code is distributed under the CeCILL-C license
-! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
-!----------------------------------------------------------------------
+! (C) Copyright 2018-2019 UCAR
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 module type_gaugrid
 
 use tools_kinds, only: kind_real
@@ -207,7 +204,7 @@ end subroutine gaugrid_fld2d_pointer
 
 !----------------------------------------------------------------------
 ! Subroutine: equals
-! Purpose: create new gaussian grid from another
+! Purpose: create new gaussian grid from other
 !----------------------------------------------------------------------
 subroutine equals(self,rhs)
   implicit none

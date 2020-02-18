@@ -1,14 +1,7 @@
-!----------------------------------------------------------------------
-! Module: tools_sp
-! Purpose: spectrum transformations
-! Source: https://github.com/NCAR/NCEPlibs/tree/master/src/sp/v2.0.2
-! Author: Mark Iredell
-! Original licensing: none
-! Modified by Teppei Kinami
-! Fortran 90 version by Teppei Kinami
-! Licensing: this code is distributed under the CeCILL-C license
-! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
-!----------------------------------------------------------------------
+! (C) Copyright 2018-2019 UCAR
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 module tools_sp
 
 use tools_kinds, only: kind_real
@@ -227,7 +220,7 @@ subroutine lubksb(A,N,NP,INDX,B)
       do J=II,I-1
         SUM=SUM-A(I,J)*B(J)
       end do
-    else if(SUM.NE.0.) then
+    else if(SUM/=ZERO) then
       II=I
     end if
     B(I)=SUM
