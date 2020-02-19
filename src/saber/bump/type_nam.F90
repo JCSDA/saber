@@ -149,7 +149,7 @@ type nam_type
    character(len=1024) :: minim_algo                    ! Minimization algorithm ('none', 'fast' or 'hooke')
    real(kind_real) ::  diag_rhflt                       ! Horizontal filtering suport radius
    real(kind_real) ::  diag_rvflt                       ! Vertical filtering support radius
-   logical :: smoothness_penalty                        ! Smoothness penalty flag
+   real(kind_real) :: smoothness_penalty                ! Smoothness penalty weight (default 0.01)
    integer :: fit_dl0                                   ! Number of levels between interpolation levels
    integer :: lct_nscales                               ! Number of LCT scales
    real(kind_real) :: lct_scale_ratio                   ! Factor between diffusion scales
@@ -356,7 +356,7 @@ nam%adv_valid = 0.99
 nam%minim_algo = 'hooke'
 nam%diag_rhflt = 0.0
 nam%diag_rvflt = 0.0
-nam%smoothness_penalty = .true.
+nam%smoothness_penalty = 0.01
 nam%fit_dl0 = 1
 nam%lct_nscales = 0
 nam%lct_scale_ratio = 10.0
@@ -428,8 +428,8 @@ integer :: nprocio,nl,levs(nlmax),nv,nts,timeslot(ntsmax),ens1_ne,ens1_nsub,ens2
 integer :: ncontig_th,nc1,nc2,ntry,nrep,nc3,nl0r,irmax,ne,avg_nbins,var_niter,adv_niter,fit_dl0,lct_nscales,mpicom,adv_mode,nc1max
 integer :: ndir,levdir(ndirmax),ivdir(ndirmax),itsdir(ndirmax),nobs,nldwv,img_ldwv(nldwvmax),ildwv
 real(kind_real) :: dts,mask_th(nvmax),Lcoast,rcoast,dc,gen_kurt_th,vbal_rad,var_rhflt,local_rad,adv_rad,adv_rhflt,adv_valid
-real(kind_real) :: diag_rhflt,diag_rvflt,lct_cor_min,lct_scale_ratio,lct_qc_th,lct_qc_max,lon_ldwv(nldwvmax),lat_ldwv(nldwvmax)
-real(kind_real) :: resol,rh,rv,londir(ndirmax),latdir(ndirmax),grid_resol
+real(kind_real) :: diag_rhflt,diag_rvflt,smoothness_penalty,lct_cor_min,lct_scale_ratio,lct_qc_th,lct_qc_max,lon_ldwv(nldwvmax)
+real(kind_real) :: lat_ldwv(nldwvmax),resol,rh,rv,londir(ndirmax),latdir(ndirmax),grid_resol
 logical :: colorlog,default_seed,repro,new_normality,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_mom,load_mom
 logical :: write_mom,new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop
 logical :: load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality
@@ -437,8 +437,8 @@ logical :: check_obsop,check_no_obs,check_no_point,check_no_point_mask,check_no_
 logical :: check_set_param_lct,check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal
 logical :: check_apply_nicas,check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_block(nvmax*(nvmax-1)/2)
 logical :: vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
-logical :: smoothness_penalty,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
-logical :: fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
+logical :: lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt,fast_sampling,network,forced_radii,pos_def_test,write_grids
+logical :: grid_output
 character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,wind_filename,wind_varname(2),mask_type,mask_lu(nvmax)
 character(len=1024) :: draw_type,adv_type,minim_algo,subsamp
 character(len=1024),dimension(nvmax) :: varname,addvar2d
@@ -601,7 +601,7 @@ if (mpl%main) then
    minim_algo = 'hooke'
    diag_rhflt = 0.0
    diag_rvflt = 0.0
-   smoothness_penalty = .true.
+   smoothness_penalty = 0.01
    fit_dl0 = 1
    lct_nscales = 0
    lct_scale_ratio = 10.0
@@ -1644,7 +1644,8 @@ if (nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam%check_optimalit
    if (nam%new_lct.and.((trim(nam%minim_algo)=='none').or.(trim(nam%minim_algo)=='fast'))) &
  & call mpl%abort(subr,'wrong minim_algo for LCT')
    if (nam%diag_rhflt<0.0) call mpl%abort(subr,'diag_rhflt should be non-negative')
-   if (nam%diag_rvflt<0) call mpl%abort(subr,'diag_rvflt should be non-negative')
+   if (nam%diag_rvflt<0.0) call mpl%abort(subr,'diag_rvflt should be non-negative')
+   if (nam%smoothness_penalty<0.0) call mpl%abort(subr,'smoothness_penalty should be non-negative')
    if (nam%fit_dl0<=0) call mpl%abort(subr,'fit_dl0 should be postive')
 end if
 if (nam%new_lct) then

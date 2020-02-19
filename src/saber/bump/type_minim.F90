@@ -43,7 +43,7 @@ type minim_type
    integer :: nc3                             ! Number of classes
 
    ! Specific data (fit)
-   logical :: smoothness_penalty              ! Smoothness penalty flag
+   real(kind_real) :: smoothness_penalty      ! Smoothness penalty weight
    integer :: dl0                             ! Number of levels between interpolation levels
    integer :: nl1                             ! Number of interpolation levels
    integer,allocatable :: il1inf(:)           ! Inferior interpolation level
@@ -254,7 +254,7 @@ if (norm>0.0) fo = fo/norm
 
 ! Smoothness penalty
 fs = 0.0
-if (minim%smoothness_penalty) then
+if (minim%smoothness_penalty>0.0) then
    do il0=2,minim%nl0-1
       if (minim%lcoef) then
          coef_avg = 0.5*(coef(il0-1)+coef(il0+1))
@@ -275,7 +275,7 @@ if (minim%smoothness_penalty) then
 end if
 
 ! Full penalty function
-f = fo+fs
+f = fo+minim%smoothness_penalty*fs
 
 end subroutine minim_cost_fit_diag
 
