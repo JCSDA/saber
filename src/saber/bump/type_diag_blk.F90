@@ -40,7 +40,6 @@ type diag_blk_type
    real(kind_real),allocatable :: fit(:,:,:)      ! Fit
    real(kind_real),allocatable :: fit_rh(:)       ! Horizontal fit support radius
    real(kind_real),allocatable :: fit_rv(:)       ! Vertical fit support radius
-   real(kind_real),allocatable :: fit_pk(:)       ! Fit peakness
    real(kind_real),allocatable :: distv(:,:)      ! Reduced vertical distance
 contains
    procedure :: alloc => diag_blk_alloc
@@ -95,7 +94,6 @@ if ((ic2a==0).or.nam%local_diag) then
       allocate(diag_blk%fit(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(diag_blk%fit_rh(geom%nl0))
       allocate(diag_blk%fit_rv(geom%nl0))
-      allocate(diag_blk%fit_pk(geom%nl0))
       allocate(diag_blk%distv(geom%nl0,geom%nl0))
    end if
 end if
@@ -110,7 +108,6 @@ if ((ic2a==0).or.nam%local_diag) then
       diag_blk%fit = mpl%msv%valr
       diag_blk%fit_rh = mpl%msv%valr
       diag_blk%fit_rv = mpl%msv%valr
-      diag_blk%fit_pk = mpl%msv%valr
    end if
 end if
 
@@ -150,7 +147,6 @@ if (allocated(diag_blk%coef_ens)) deallocate(diag_blk%coef_ens)
 if (allocated(diag_blk%fit)) deallocate(diag_blk%fit)
 if (allocated(diag_blk%fit_rh)) deallocate(diag_blk%fit_rh)
 if (allocated(diag_blk%fit_rv)) deallocate(diag_blk%fit_rv)
-if (allocated(diag_blk%fit_pk)) deallocate(diag_blk%fit_pk)
 if (allocated(diag_blk%distv)) deallocate(diag_blk%distv)
 
 end subroutine diag_blk_dealloc
@@ -174,7 +170,7 @@ character(len=*),intent(in) :: filename        ! File name
 ! Local variables
 integer :: info,info_coord,ncid,one_id,nc3_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,vunit_id
 integer :: raw_id,valid_id,coef_ens_id,raw_zs_id,coef_sta_id,l0rl0_to_l0_id
-integer :: fit_id,fit_zs_id,fit_rh_id,fit_rv_id,fit_pk_id
+integer :: fit_id,fit_zs_id,fit_rh_id,fit_rv_id
 integer :: il0,jl0r,jl0
 character(len=1024),parameter :: subr = 'diag_blk_write'
 
@@ -264,11 +260,6 @@ if ((ic2a==0).or.nam%local_diag) then
          call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_fit_rv',nc_kind_real,(/nl0_1_id/),fit_rv_id))
          call mpl%ncerr(subr,nf90_put_att(ncid,fit_rv_id,'_FillValue',mpl%msv%valr))
       end if
-      info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_fit_pk',fit_pk_id)
-      if (info/=nf90_noerr) then
-         call mpl%ncerr(subr,nf90_def_var(ncid,trim(diag_blk%name)//'_fit_pk',nc_kind_real,(/nl0_1_id/),fit_pk_id))
-         call mpl%ncerr(subr,nf90_put_att(ncid,fit_pk_id,'_FillValue',mpl%msv%valr))
-      end if
    end if
    info = nf90_inq_varid(ncid,trim(diag_blk%name)//'_l0rl0_to_l0',l0rl0_to_l0_id)
    if (info/=nf90_noerr) then
@@ -318,7 +309,6 @@ if ((ic2a==0).or.nam%local_diag) then
       end if
       call mpl%ncerr(subr,nf90_put_var(ncid,fit_rh_id,diag_blk%fit_rh,(/1/),(/geom%nl0/)))
       call mpl%ncerr(subr,nf90_put_var(ncid,fit_rv_id,diag_blk%fit_rv,(/1/),(/geom%nl0/)))
-      call mpl%ncerr(subr,nf90_put_var(ncid,fit_pk_id,diag_blk%fit_pk,(/1/),(/geom%nl0/)))
    end if
    call mpl%ncerr(subr,nf90_put_var(ncid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib),(/1,1/),(/bpar%nl0r(ib),geom%nl0/)))
 end if
@@ -365,7 +355,7 @@ end subroutine diag_blk_normalization
 ! Subroutine: diag_blk_fitting
 ! Purpose: compute a fit of a raw function
 !----------------------------------------------------------------------
-subroutine diag_blk_fitting(diag_blk,mpl,rng,nam,geom,bpar,samp,dcoef)
+subroutine diag_blk_fitting(diag_blk,mpl,rng,nam,geom,bpar,samp,coef)
 
 implicit none
 
@@ -377,15 +367,15 @@ type(nam_type),intent(in) :: nam               ! Namelist
 type(geom_type),intent(in) :: geom             ! Geometry
 type(bpar_type),intent(in) :: bpar             ! Block parameters
 type(samp_type),intent(in) :: samp             ! Sampling
-logical,intent(in),optional :: dcoef           ! Diagonal coefficient estimation flag
+logical,intent(in),optional :: coef            ! Coefficient estimation flag
 
 ! Local variables
-integer :: ic2,ic0,il0,jl0r,jl0,isc,il0_prev,dl0,il0inf,il0sup,il1inf,il1sup
+integer :: ic2,ic0,il0,jl0r,jl0,isc,il0_prev,dl0,il0inf,il0sup,il1inf,il1sup,ivar
 real(kind_real) :: alpha,alpha_opt,fo,fo_opt
 real(kind_real) :: vunit(geom%nl0)
 real(kind_real) :: fit_rh(geom%nl0),fit_rv(geom%nl0)
 real(kind_real),allocatable :: rawv(:),distv(:),fit(:,:,:),fit_pack(:),obs_pack(:)
-logical :: valid,ldcoef
+logical :: valid,lcoef,lrh,lrv
 character(len=1024),parameter :: subr = 'diag_blk_fitting'
 type(minim_type) :: minim
 
@@ -395,9 +385,9 @@ associate(ic2a=>diag_blk%ic2a,ib=>diag_blk%ib)
 ! Check
 if (trim(nam%minim_algo)=='none') call mpl%abort(subr,'cannot compute fit if minim_algo = none')
 
-! Local diagonal coefficient estimation flag
-ldcoef = .true.
-if (present(dcoef)) ldcoef = dcoef
+! Local estimation flags
+lcoef = any(diag_blk%coef_ens>0.0)
+if (present(coef)) lcoef = coef
 
 ! Allocation
 allocate(rawv(bpar%nl0r(ib)))
@@ -420,21 +410,18 @@ else
    vunit = geom%vunit_c0(ic0,:)
 end if
 
-! Peakness default parameters
-diag_blk%fit_pk = 0.2
-
 ! Fast fit
 do il0=1,geom%nl0
    ! Get zero separation level
    jl0r = bpar%il0rz(il0,ib)
 
    ! Horizontal fast fit
-   call fast_fit(mpl,nam%nc3,1,geom%disth,diag_blk%raw(:,jl0r,il0),diag_blk%fit_pk(il0),diag_blk%fit_rh(il0))
+   call fast_fit(mpl,nam%nc3,1,geom%disth,diag_blk%raw(:,jl0r,il0),diag_blk%fit_rh(il0))
 
    ! Vertical fast fit
    rawv = diag_blk%raw(1,:,il0)
    distv = diag_blk%distv(bpar%l0rl0b_to_l0(:,il0,ib),il0)
-   call fast_fit(mpl,bpar%nl0r(ib),jl0r,distv,rawv,diag_blk%fit_pk(il0),diag_blk%fit_rv(il0))
+   call fast_fit(mpl,bpar%nl0r(ib),jl0r,distv,rawv,diag_blk%fit_rv(il0))
 end do
 
 ! Check that there are some non-missing values to work with
@@ -462,7 +449,7 @@ if (valid) then
 
       ! Compute fit
       call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
-    & diag_blk%coef_ens,fit_rh,fit_rv,diag_blk%fit_pk,fit)
+    & diag_blk%coef_ens,fit_rh,fit_rv,fit)
 
       ! Pack
       fit_pack = pack(fit,mask=.true.)
@@ -494,6 +481,8 @@ if (valid) then
       minim%praxis_tol = 5.0
       minim%praxis_itermax = 5
    end select
+   lrh = any(diag_blk%fit_rh>0.0)
+   lrv = any(diag_blk%fit_rv>0.0)
 
    select case (trim(nam%minim_algo))
    case ('hooke','praxis')
@@ -509,7 +498,10 @@ if (valid) then
             minim%nl1 = minim%nl1+1
          end if
       end do
-      minim%nx = 4*minim%nl1
+      minim%nx = 0
+      if (lcoef) minim%nx = minim%nx+minim%nl1
+      if (lrh) minim%nx = minim%nx+minim%nl1
+      if (lrv) minim%nx = minim%nx+minim%nl1
       minim%ny = nam%nc3*bpar%nl0r(ib)*geom%nl0
       allocate(minim%il1inf(geom%nl0))
       allocate(minim%rinf(geom%nl0))
@@ -543,22 +535,36 @@ if (valid) then
                minim%rsup(jl0) = real(jl0-il0inf,kind_real)/real(il0sup-il0inf,kind_real)
             end if
          end do
-         minim%guess(0*minim%nl1+il1inf) = diag_blk%coef_ens(il0inf)
-         minim%guess(1*minim%nl1+il1inf) = diag_blk%fit_rh(il0inf)
-         minim%guess(2*minim%nl1+il1inf) = diag_blk%fit_rv(il0inf)
-         minim%guess(3*minim%nl1+il1inf) = diag_blk%fit_pk(il0inf)
+         ivar = 0
+         if (lcoef) then
+            minim%guess(ivar*minim%nl1+il1inf) = diag_blk%coef_ens(il0inf)
+            ivar = ivar+1
+         end if
+         if (lrh) then
+            minim%guess(ivar*minim%nl1+il1inf) = diag_blk%fit_rh(il0inf)
+            ivar = ivar+1
+         end if
+         if (lrv) then
+            minim%guess(ivar*minim%nl1+il1inf) = diag_blk%fit_rv(il0inf)
+            ivar = ivar+1
+         end if
       end do
-      if (ldcoef) then
-         minim%binf(0*minim%nl1+1:1*minim%nl1) = 0.9*minim%guess(0*minim%nl1+1:1*minim%nl1)
-         minim%bsup(0*minim%nl1+1:1*minim%nl1) = 1.1*minim%guess(0*minim%nl1+1:1*minim%nl1)
-      else
-         minim%binf(0*minim%nl1+1:1*minim%nl1) = minim%guess(0*minim%nl1+1:1*minim%nl1)
-         minim%bsup(0*minim%nl1+1:1*minim%nl1) = minim%guess(0*minim%nl1+1:1*minim%nl1)
+      ivar = 0
+      if (lcoef) then
+         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 0.9*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 1.1*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         ivar = ivar+1
       end if
-      minim%binf(1*minim%nl1+1:3*minim%nl1) = 0.5*minim%guess(1*minim%nl1+1:3*minim%nl1)
-      minim%bsup(1*minim%nl1+1:3*minim%nl1) = 1.5*minim%guess(1*minim%nl1+1:3*minim%nl1)
-      minim%binf(3*minim%nl1+1:4*minim%nl1) = 0.0
-      minim%bsup(3*minim%nl1+1:4*minim%nl1) = 1.0
+      if (lrh) then
+         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 0.5*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 2.0*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         ivar = ivar+1
+      end if
+      if (lrv) then
+         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 0.5*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 2.0*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         ivar = ivar+1
+      end if
       minim%obs = pack(diag_blk%raw,mask=.true.)
       minim%cost_function = 'fit_diag'
       minim%algo = nam%minim_algo
@@ -568,6 +574,9 @@ if (valid) then
       minim%l0rl0_to_l0 = bpar%l0rl0b_to_l0(:,:,ib)
       minim%disth = geom%disth
       minim%distv = diag_blk%distv
+      minim%lcoef = lcoef
+      minim%lrh = lrh
+      minim%lrv = lrv
 
       ! Compute fit
       call minim%compute(mpl,rng)
@@ -577,14 +586,22 @@ if (valid) then
 
       ! Interpolate parameters
       do il0=1,geom%nl0
-         diag_blk%coef_ens(il0) = minim%rinf(il0)*minim%x(0*minim%nl1+minim%il1inf(il0)) &
-                                & +minim%rsup(il0)*minim%x(0*minim%nl1+minim%il1sup(il0))
-         diag_blk%fit_rh(il0) = minim%rinf(il0)*minim%x(1*minim%nl1+minim%il1inf(il0)) &
-                              & +minim%rsup(il0)*minim%x(1*minim%nl1+minim%il1sup(il0))
-         diag_blk%fit_rv(il0) = minim%rinf(il0)*minim%x(2*minim%nl1+minim%il1inf(il0)) &
-                              & +minim%rsup(il0)*minim%x(2*minim%nl1+minim%il1sup(il0))
-         diag_blk%fit_pk(il0) = minim%rinf(il0)*minim%x(3*minim%nl1+minim%il1inf(il0)) &
-                              & +minim%rsup(il0)*minim%x(3*minim%nl1+minim%il1sup(il0))
+         ivar = 0
+         if (lcoef) then
+            diag_blk%coef_ens(il0) = minim%rinf(il0)*minim%x(ivar*minim%nl1+minim%il1inf(il0)) &
+                                   & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
+            ivar = ivar+1
+         end if
+         if (lrh) then
+            diag_blk%fit_rh(il0) = minim%rinf(il0)*minim%x(ivar*minim%nl1+minim%il1inf(il0)) &
+                                 & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
+            ivar = ivar+1
+         end if
+         if (lrv) then
+            diag_blk%fit_rv(il0) = minim%rinf(il0)*minim%x(ivar*minim%nl1+minim%il1inf(il0)) &
+                                 & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
+            ivar = ivar+1
+         end if
       end do
 
       ! Release memory
@@ -601,16 +618,16 @@ if (valid) then
    ! Set to missing values if no point available
    do il0=1,geom%nl0
       if (mpl%msv%isall(diag_blk%raw(:,:,il0))) then
+         diag_blk%coef_ens(il0) = mpl%msv%valr
          diag_blk%fit_rh(il0) = mpl%msv%valr
          diag_blk%fit_rv(il0) = mpl%msv%valr
-         diag_blk%fit_pk(il0) = mpl%msv%valr
       end if
    end do
 else
    ! Set to missing values if no point available
+   diag_blk%coef_ens = mpl%msv%valr
    diag_blk%fit_rh = mpl%msv%valr
    diag_blk%fit_rv = mpl%msv%valr
-   diag_blk%fit_pk = mpl%msv%valr
 end if
 
 ! Release memory

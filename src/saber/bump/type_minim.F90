@@ -54,6 +54,9 @@ type minim_type
    integer,allocatable :: l0rl0_to_l0(:,:)    ! Effective level to level
    real(kind_real),allocatable :: disth(:)    ! Horizontal distance
    real(kind_real),allocatable :: distv(:,:)  ! Vertical distance
+   logical :: lcoef                           ! Diagonal coefficient flag
+   logical :: lrh                             ! Horizontal support radius flag
+   logical :: lrv                             ! Vertical support radius flag
 
    ! Specific data (LCT)
    integer :: nscales                         ! Number of LCT scales
@@ -180,9 +183,9 @@ real(kind_real),intent(in) :: x(minim%nx) ! Control vector
 real(kind_real),intent(out) :: f          ! Cost function value
 
 ! Local variables
-integer :: il0
-real(kind_real) :: fo,fs,norm,coef_avg,fit_rh_avg,fit_rv_avg,fit_pk_avg
-real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_rv(minim%nl0),fit_pk(minim%nl0)
+integer :: ivar,il0
+real(kind_real) :: fo,fs,norm,coef_avg,fit_rh_avg,fit_rv_avg
+real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_rv(minim%nl0)
 real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
@@ -192,21 +195,54 @@ call minim%vt_dir(xtmp)
 
 ! Get data
 if (minim%dl0==1) then
-   coef = xtmp(0*minim%nl0+1:1*minim%nl0)
-   fit_rh = xtmp(1*minim%nl0+1:2*minim%nl0)
-   fit_rv = xtmp(2*minim%nl0+1:3*minim%nl0)
-   fit_pk = xtmp(3*minim%nl0+1:4*minim%nl0)
+   ivar = 0
+   if (minim%lcoef) then
+      coef = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
+      ivar = ivar+1
+   else
+      coef = 1.0
+   end if
+   if (minim%lrh) then
+      fit_rh = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
+      ivar = ivar+1
+   else
+      fit_rh = 0.0
+   end if
+   if (minim%lrv) then
+      fit_rv = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
+      ivar = ivar+1
+   else
+      fit_rv = 0.0
+   end if
 else
    do il0=1,minim%nl0
-      coef(il0) = minim%rinf(il0)*xtmp(0*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(0*minim%nl1+minim%il1sup(il0))
-      fit_rh(il0) = minim%rinf(il0)*xtmp(1*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(1*minim%nl1+minim%il1sup(il0))
-      fit_rv(il0) = minim%rinf(il0)*xtmp(2*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(2*minim%nl1+minim%il1sup(il0))
-      fit_pk(il0) = minim%rinf(il0)*xtmp(3*minim%nl1+minim%il1inf(il0))+minim%rsup(il0)*xtmp(3*minim%nl1+minim%il1sup(il0))
+      ivar = 0
+      if (minim%lcoef) then
+         coef(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
+                   & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
+         ivar = ivar+1
+      else
+         coef(il0) = 1.0
+      end if
+      if (minim%lrh) then
+         fit_rh(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
+                     & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
+         ivar = ivar+1
+      else
+         fit_rh(il0) = 0.0
+      end if
+      if (minim%lrv) then
+         fit_rv(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
+                     & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
+         ivar = ivar+1
+      else
+         fit_rv(il0) = 0.0
+      end if
    end do
 end if
 
 ! Compute function
-call fit_diag(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef,fit_rh,fit_rv,fit_pk,fit)
+call fit_diag(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef,fit_rh,fit_rv,fit)
 
 ! Pack
 fit_pack = pack(fit,mask=.true.)
@@ -218,20 +254,23 @@ if (norm>0.0) fo = fo/norm
 
 ! Smoothness penalty
 fs = 0.0
-if (minim%smoothness_penalty.and..false.) then
+if (minim%smoothness_penalty) then
    do il0=2,minim%nl0-1
-      coef_avg = 0.5*(coef(il0-1)+coef(il0+1))
-      norm = coef_avg**2
-      if (norm>0.0) fs = fs+(coef(il0)-coef_avg)**2/norm
-      fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
-      norm = fit_rh_avg**2
-      if (norm>0.0) fs = fs+(fit_rh(il0)-fit_rh_avg)**2/norm
-      fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
-      norm = fit_rv_avg**2
-      if (norm>0.0) fs = fs+(fit_rv(il0)-fit_rv_avg)**2/norm
-      fit_pk_avg = 0.5*(fit_pk(il0-1)+fit_pk(il0+1))
-      norm = fit_pk_avg**2
-      if (norm>0.0) fs = fs+(fit_pk(il0)-fit_pk_avg)**2/norm
+      if (minim%lcoef) then
+         coef_avg = 0.5*(coef(il0-1)+coef(il0+1))
+         norm = coef_avg**2
+         if (norm>0.0) fs = fs+(coef(il0)-coef_avg)**2/norm
+      end if
+      if (minim%lrh) then
+         fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
+         norm = fit_rh_avg**2
+         if (norm>0.0) fs = fs+(fit_rh(il0)-fit_rh_avg)**2/norm
+      end if
+      if (minim%lrv) then
+         fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
+         norm = fit_rv_avg**2
+         if (norm>0.0) fs = fs+(fit_rv(il0)-fit_rv_avg)**2/norm
+      end if
    end do
 end if
 

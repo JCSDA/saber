@@ -25,7 +25,7 @@ contains
 ! Subroutine: fast_fit
 ! Purpose: fast fit length-scale estimation based on the value at mid-height
 !----------------------------------------------------------------------
-subroutine fast_fit(mpl,n,iz,dist,raw,pk,fit_r)
+subroutine fast_fit(mpl,n,iz,dist,raw,fit_r)
 
 implicit none
 
@@ -35,7 +35,6 @@ integer,intent(in) :: n               ! Vector size
 integer,intent(in) :: iz              ! Zero separation index
 real(kind_real),intent(in) :: dist(n) ! Distance
 real(kind_real),intent(in) :: raw(n)  ! Raw data
-real(kind_real),intent(in) :: pk      ! Peakness
 real(kind_real),intent(out) :: fit_r  ! Fast fit result
 
 ! Local variables
@@ -67,7 +66,7 @@ if (raw(iz)>0.0) then
             thinv = 0.5
             dthinv = 0.25
             do iter=1,itermax
-               thtest = (1.0-pk)*fit_func(mpl,'flat',thinv)+pk*fit_func(mpl,'peak',thinv)
+               thtest = fit_func(mpl,thinv)
                if (sup(th,thtest)) then
                   thinv = thinv-dthinv
                else
@@ -199,7 +198,7 @@ if ((rv>0.0).and.mpl%msv%isanynot(profile)) then
          if (mpl%msv%isnot(profile(j))) then
             ! Gaspari-Cohn (1999) function
             distnorm = abs(x(j)-x(i))/rv
-            kernel(i,j) = fit_func(mpl,'gc99',distnorm)
+            kernel(i,j) = fit_func(mpl,distnorm)
          end if
       end do
    end do

@@ -172,7 +172,6 @@ type nam_type
    logical :: forced_radii                              ! Force specific support radii
    real(kind_real) :: rh                                ! Forced horizontal support radius
    real(kind_real) :: rv                                ! Forced vertical support radius
-   real(kind_real) :: pk                                ! Forced peakness
    logical :: pos_def_test                              ! Positive-definiteness test
    logical :: write_grids                               ! Write NICAS grids
    integer :: ndir                                      ! Number of Diracs
@@ -380,7 +379,6 @@ nam%adv_mode = 0
 nam%forced_radii = .false.
 nam%rh = 0.0
 nam%rv = 0.0
-nam%pk = 0.0
 nam%pos_def_test = .false.
 nam%write_grids = .false.
 nam%ndir = 0
@@ -431,7 +429,7 @@ integer :: ncontig_th,nc1,nc2,ntry,nrep,nc3,nl0r,irmax,ne,avg_nbins,var_niter,ad
 integer :: ndir,levdir(ndirmax),ivdir(ndirmax),itsdir(ndirmax),nobs,nldwv,img_ldwv(nldwvmax),ildwv
 real(kind_real) :: dts,mask_th(nvmax),Lcoast,rcoast,dc,gen_kurt_th,vbal_rad,var_rhflt,local_rad,adv_rad,adv_rhflt,adv_valid
 real(kind_real) :: diag_rhflt,diag_rvflt,lct_cor_min,lct_scale_ratio,lct_qc_th,lct_qc_max,lon_ldwv(nldwvmax),lat_ldwv(nldwvmax)
-real(kind_real) :: resol,rh,rv,pk,londir(ndirmax),latdir(ndirmax),grid_resol
+real(kind_real) :: resol,rh,rv,londir(ndirmax),latdir(ndirmax),grid_resol
 logical :: colorlog,default_seed,repro,new_normality,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_mom,load_mom
 logical :: write_mom,new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop
 logical :: load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality
@@ -464,7 +462,7 @@ namelist/diag_param/ne,gen_kurt_th,gau_approx,avg_nbins,vbal_block,vbal_rad,vbal
                   & var_rhflt,local_diag,local_rad,adv_diag,adv_type,adv_rad,adv_niter,adv_rhflt,adv_valid
 namelist/fit_param/minim_algo,diag_rhflt,diag_rvflt,smoothness_penalty,fit_dl0,lct_nscales,lct_scale_ratio,lct_cor_min,lct_diag, &
                  & lct_qc_th,lct_qc_max,lct_write_cor
-namelist/nicas_param/nonunit_diag,lsqrt,resol,nc1max,fast_sampling,subsamp,network,mpicom,adv_mode,forced_radii,rh,rv,pk, &
+namelist/nicas_param/nonunit_diag,lsqrt,resol,nc1max,fast_sampling,subsamp,network,mpicom,adv_mode,forced_radii,rh,rv, &
                    & pos_def_test,write_grids,ndir,londir,latdir,levdir,ivdir,itsdir
 namelist/obsop_param/nobs
 namelist/output_param/nldwv,img_ldwv,lon_ldwv,lat_ldwv,name_ldwv,grid_output,grid_resol
@@ -626,7 +624,6 @@ if (mpl%main) then
    forced_radii = .false.
    rh = 0.0
    rv = 0.0
-   pk = 0.0
    pos_def_test = .false.
    write_grids = .false.
    ndir = 0
@@ -815,7 +812,6 @@ if (mpl%main) then
    nam%forced_radii = forced_radii
    nam%rh = rh
    nam%rv = rv
-   nam%pk = pk
    nam%pos_def_test = pos_def_test
    nam%write_grids = write_grids
    nam%ndir = ndir
@@ -1031,7 +1027,6 @@ call mpl%f_comm%broadcast(nam%adv_mode,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%pk,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_grids,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%ndir,mpl%rootproc-1)
@@ -1290,7 +1285,6 @@ if (conf%has("adv_mode")) call conf%get_or_die("adv_mode",nam%adv_mode)
 if (conf%has("forced_radii")) call conf%get_or_die("forced_radii",nam%forced_radii)
 if (conf%has("rh")) call conf%get_or_die("rh",nam%rh)
 if (conf%has("rv")) call conf%get_or_die("rv",nam%rv)
-if (conf%has("pk")) call conf%get_or_die("pk",nam%pk)
 if (conf%has("pos_def_test")) call conf%get_or_die("pos_def_test",nam%pos_def_test)
 if (conf%has("write_grids")) call conf%get_or_die("write_grids",nam%write_grids)
 if (conf%has("ndir")) call conf%get_or_die("ndir",nam%ndir)
@@ -1704,7 +1698,6 @@ if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomiz
     & call mpl%abort(subr,'new_hdiag, new_lct and load_cmat forbidden for forced_radii')
       if (nam%rh<0.0) call mpl%abort(subr,'rh should be non-negative')
       if (nam%rv<0.0) call mpl%abort(subr,'rv should be non-negative')
-      if (nam%pk<0.0) call mpl%abort(subr,'pk should be non-negative')
    end if
    if (abs(nam%adv_mode)>1) call mpl%abort(subr,'nam%adv_mode should be -1, 0 or 1')
    select case (trim(nam%subsamp))
@@ -1954,7 +1947,6 @@ call mpl%write(lncid,'nam','adv_mode',nam%adv_mode)
 call mpl%write(lncid,'nam','forced_radii',nam%forced_radii)
 call mpl%write(lncid,'nam','rh',nam%rh)
 call mpl%write(lncid,'nam','rv',nam%rv)
-call mpl%write(lncid,'nam','pk',nam%pk)
 call mpl%write(lncid,'nam','pos_def_test',nam%pos_def_test)
 call mpl%write(lncid,'nam','write_grids',nam%write_grids)
 call mpl%write(lncid,'nam','ndir',nam%ndir)

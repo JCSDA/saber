@@ -16,7 +16,6 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: poly_exp = 8                     ! Polynomial function exponent
 real(kind_real),parameter :: gc2gau = 0.28            ! GC99 support radius to Gaussian Daley length-scale (empirical)
 real(kind_real),parameter :: gau2gc = 3.57            ! Gaussian Daley length-scale to GC99 support radius (empirical)
 real(kind_real),parameter :: Dmin = 1.0e-12_kind_real ! Minimum tensor diagonal value
@@ -302,7 +301,7 @@ end subroutine divide
 ! Subroutine: fit_diag
 ! Purpose: compute diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,dcoef,rh,rv,pk,fit)
+subroutine fit_diag(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,coef,rh,rv,fit)
 
 implicit none
 
@@ -314,18 +313,16 @@ integer,intent(in) :: nl0                        ! Number of levels
 integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      ! Effective level to level
 real(kind_real),intent(in) :: disth(nc3)         ! Horizontal distance
 real(kind_real),intent(in) :: distv(nl0,nl0)     ! Vertical distance
-real(kind_real),intent(in) :: dcoef(nl0)         ! Diagonal coefficient
+real(kind_real),intent(in) :: coef(nl0)          ! Diagonal coefficient
 real(kind_real),intent(in) :: rh(nl0)            ! Horizontal support radius
 real(kind_real),intent(in) :: rv(nl0)            ! Vertical support radius
-real(kind_real),intent(in) :: pk(nl0)            ! Peakness
 real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) ! Fit
 
 ! Local variables
 integer :: jl0r,jl0,djl0,il0,kl0r,kl0,ic3,jc3,djc3,kc3,ip,jp,np,np_new,nc3max
 integer :: plist(nc3*nl0r,2),plist_new(nc3*nl0r,2)
-real(kind_real) :: rhsq,rvsq,distvsq,disttest,rhmax,pk_loc
+real(kind_real) :: rhsq,rvsq,distvsq,disttest,rhmax
 real(kind_real) :: predistnorm(-1:1,nc3,-1:1,nl0),distnorm(nc3,nl0r)
-real(kind_real) :: fit_flat,fit_peak
 logical :: add_to_front
 
 ! Initialization
@@ -453,24 +450,9 @@ do il0=1,nl0
       ! Level index
       jl0 = l0rl0_to_l0(jl0r,il0)
 
-      ! Averaged peakness
-      if ((pk(il0)<0.0).or.(pk(jl0)<0.0)) then
-         pk_loc = 0.0
-      elseif ((pk(il0)>1.0).or.(pk(jl0)>1.0)) then
-         pk_loc = 1.0
-      else
-         pk_loc = sqrt(0.5*(pk(il0)**2+pk(jl0)**2))
-      end if
-
       do jc3=1,nc3
-         ! Flat function
-         fit_flat = fit_func(mpl,'flat',distnorm(jc3,jl0r))
-
-         ! Peaked function
-         fit_peak = fit_func(mpl,'peak',distnorm(jc3,jl0r))
-
-         ! Linear combination
-         fit(jc3,jl0r,il0) = (1.0-pk_loc)*fit_flat+pk_loc*fit_peak
+         ! Fit function
+         fit(jc3,jl0r,il0) = fit_func(mpl,distnorm(jc3,jl0r))
       end do
    end do
 end do
@@ -479,7 +461,7 @@ end do
 do il0=1,nl0
    do jl0r=1,nl0r
       jl0 = l0rl0_to_l0(jl0r,il0)
-      fit(:,jl0r,il0) = fit(:,jl0r,il0)*sqrt(dcoef(il0)*dcoef(jl0))
+      fit(:,jl0r,il0) = fit(:,jl0r,il0)*sqrt(coef(il0)*coef(jl0))
    end do
 end do
 
@@ -509,36 +491,14 @@ end if
 end function gc99
 
 !----------------------------------------------------------------------
-! Function: poly
-! Purpose: polynomial correlation function, with the support radius as a parameter
-!----------------------------------------------------------------------
-function poly(distnorm)
-
-! Passed variables
-real(kind_real),intent(in) :: distnorm ! Normalized distance
-
-! Returned variable
-real(kind_real) :: poly
-
-! Reservoir code function
-if (distnorm<1.0) then
-   poly = (1.0-distnorm)**poly_exp
-else
-   poly = 0.0
-end if
-
-end function poly
-
-!----------------------------------------------------------------------
 ! Function: fit_func
 ! Purpose: fit_function
 !----------------------------------------------------------------------
-function fit_func(mpl,fit_type,distnorm)
+function fit_func(mpl,distnorm)
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl     ! MPI data
-character(len=*),intent(in) :: fit_type ! Fit function type
-real(kind_real),intent(in) :: distnorm  ! Normalized distance
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+real(kind_real),intent(in) :: distnorm ! Normalized distance
 
 ! Returned variable
 real(kind_real) :: fit_func
@@ -549,15 +509,8 @@ character(len=1024),parameter :: subr = 'fit_func'
 ! Distance check bound
 if (distnorm<0.0) call mpl%abort(subr,'negative normalized distance')
 
-fit_func = 0.0
-select case (fit_type(1:4))
-case ('flat')
-   fit_func = gc99(distnorm)
-case ('peak')
-   fit_func = poly(distnorm)
-case default
-   call mpl%abort(subr,'wrong fit function type')
-end select
+! Gaspari and Cohn (1999) function
+fit_func = gc99(distnorm)
 
 ! Enforce positivity
 fit_func = max(fit_func,0.0_kind_real)

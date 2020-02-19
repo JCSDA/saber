@@ -1786,25 +1786,32 @@ type(bpar_type),intent(in) :: bpar       ! Block parameters
 type(io_type),intent(in) :: io           ! I/O
 
 ! Local variables
-integer,parameter :: npk = 11
-integer :: ipk,ib,il0
-real(kind_real) :: pk(npk),rh_fac(npk),rv_fac(npk),pk_fac(npk),rh_norm,rv_norm,pk_norm
+integer,parameter :: nrad = 5
+integer :: irad,ib,il0
+real(kind_real) :: rh,rv,rad(nrad),rh_diag(nrad),rv_diag(nrad),rh_norm,rv_norm
+character(len=1024) :: prefix
 type(cmat_type) :: cmat
 type(ens_type) :: ens
 type(hdiag_type) :: hdiag
 type(nicas_type) :: nicas_test
 
-do ipk=1,npk
-   ! Set peakness
-   pk(ipk) = real(ipk-1,kind_real)/real(npk-1,kind_real)
+! Save namelist parameters
+prefix = nam%prefix
+rh = nam%rh
+rv = nam%rv
+
+do irad=1,nrad
+   ! Set radius factor
+   rad(irad) = real(irad,kind_real)/real(nrad,kind_real)
 
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a,f4.2)') '--- Peakness: ',pk(ipk)
+   write(mpl%info,'(a,f4.2)') '--- Radii factor: ',rad(irad)
    call mpl%flush
 
    ! Copy namelist support radii into C matrix
-   nam%pk = pk(ipk)
+   nam%rh = rh*rad(irad)
+   nam%rv = rv*rad(irad)
    call cmat%from_nam(mpl,nam,geom,bpar)
 
    ! Setup C matrix sampling
@@ -1815,7 +1822,7 @@ do ipk=1,npk
 
    do ib=1,bpar%nbe
       ! Compute NICAS parameters
-      if (bpar%nicas_block(ib)) call nicas_test%blk(ib)%compute_parameters(mpl,rng,nam,geom,cmat%blk(ib),.false.)
+      if (bpar%nicas_block(ib)) call nicas_test%blk(ib)%compute_parameters(mpl,rng,nam,geom,cmat%blk(ib),.true.)
 
       if (bpar%B_block(ib)) then
          ! Copy weights
@@ -1836,34 +1843,33 @@ do ipk=1,npk
    if (nam%default_seed) call rng%reseed(mpl)
 
    ! Save result
-   rh_fac(ipk) = 0.0
-   rv_fac(ipk) = 0.0
-   pk_fac(ipk) = 0.0
+   rh_diag(irad) = 0.0
+   rv_diag(irad) = 0.0
    rh_norm = 0.0
    rv_norm = 0.0
-   pk_norm = 0.0
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
          do il0=1,geom%nl0
-print*, ib,':',nam%rh,hdiag%cor_1%blk(0,ib)%fit_rh(il0),'/',nam%pk,hdiag%cor_1%blk(0,ib)%fit_pk(il0)
             if (hdiag%cor_1%blk(0,ib)%fit_rh(il0)>0.0) then
-               rh_fac(ipk) = rh_fac(ipk)+nam%rh/hdiag%cor_1%blk(0,ib)%fit_rh(il0)
+               rh_diag(irad) = rh_diag(irad)+hdiag%cor_1%blk(0,ib)%fit_rh(il0)
                rh_norm = rh_norm+1.0
             end if
             if (hdiag%cor_1%blk(0,ib)%fit_rv(il0)>0.0) then
-               rv_fac(ipk) = rv_fac(ipk)+nam%rv/hdiag%cor_1%blk(0,ib)%fit_rv(il0)
+               rv_diag(irad) = rv_diag(irad)+hdiag%cor_1%blk(0,ib)%fit_rv(il0)
                rv_norm = rv_norm+1.0
-            end if
-            if (hdiag%cor_1%blk(0,ib)%fit_pk(il0)>0.0) then
-               pk_fac(ipk) = pk_fac(ipk)+nam%pk/hdiag%cor_1%blk(0,ib)%fit_pk(il0)
-               pk_norm = pk_norm+1.0
             end if
          end do
       end if
    end do
-   if (rh_norm>0.0) rh_fac(ipk) = rh_fac(ipk)/rh_norm
-   if (rv_norm>0.0) rv_fac(ipk) = rv_fac(ipk)/rv_norm
-   if (pk_norm>0.0) pk_fac(ipk) = pk_fac(ipk)/pk_norm
+   if (rh_norm>0.0) rh_diag(irad) = rh_diag(irad)/rh_norm
+   if (rv_norm>0.0) rv_diag(irad) = rv_diag(irad)/rv_norm
+
+   ! Write
+   if (nam%write_hdiag) then
+      write(nam%prefix,'(a,a,i2.2)') trim(prefix),'_',int(rad(irad)*10.0)
+      call hdiag%cor_1%write(mpl,nam,geom,bpar,io,hdiag%samp)
+      nam%prefix = prefix
+   end if
 
    ! Release memory
    call cmat%dealloc
@@ -1873,12 +1879,25 @@ print*, ib,':',nam%rh,hdiag%cor_1%blk(0,ib)%fit_rh(il0),'/',nam%pk,hdiag%cor_1%b
 end do
 
 ! Print factors
-do ipk=1,npk
-   write(mpl%info,'(a7,a,f4.2,a)') '','Peakness: ',pk(ipk),':'
+do irad=1,nrad
+   write(mpl%info,'(a7,a,f4.2,a)') '','Radii factor: ',rad(irad),':'
    call mpl%flush
-   write(mpl%info,'(a10,a,f5.3,a,f5.3,a,f5.3)') '','Factors for rh / rv / pk :',rh_fac(ipk),' / ',rv_fac(ipk),' / ',pk_fac(ipk)
-   call mpl%flush
+   if (rh_diag(irad)>0.0) then
+      write(mpl%info,'(a10,a,f10.2,a,f10.2,a,f5.3,a)') '','Diagnostic for rh: ',rh*rad(irad)*reqkm,' ~> ',rh_diag(irad)*reqkm, &
+    & ' (',rh*rad(irad)/rh_diag(irad),')'
+      call mpl%flush
+   end if
+   if (rv_diag(irad)>0.0) then
+      write(mpl%info,'(a10,a,f10.2,a,f10.2,a,f5.3,a)') '','Diagnostic for rv: ',rv*rad(irad),' ~> ',rv_diag(irad), &
+    & ' (',rv*rad(irad)/rv_diag(irad),')'
+      call mpl%flush
+   end if
 end do
+
+! Reset namelist parameters
+nam%prefix = prefix
+nam%rh = rh
+nam%rv = rv
 
 end subroutine nicas_test_consistency
 
@@ -2056,7 +2075,7 @@ end do
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
       call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,loc_opt%blk(0,ib)%distv, &
-    & loc_opt%blk(0,ib)%coef_ens,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit_pk,loc_opt%blk(0,ib)%fit)
+    & loc_opt%blk(0,ib)%coef_ens,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit)
       call loc_opt%blk(0,ib)%write(mpl,nam,geom,bpar,trim(nam%prefix)//'_diag')
    end if
 end do

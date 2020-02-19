@@ -1079,8 +1079,8 @@ write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
 call bump%mpl%flush
 
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_pk','loc_coef','loc_rh','loc_rv','loc_pk','hyb_coef','loc_D11','loc_D22','loc_D33', &
- & 'loc_D12','loc_Dcoef','loc_DLh')
+case ('var','cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33','loc_D12','loc_Dcoef', &
+ & 'loc_DLh')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -1140,8 +1140,8 @@ character(len=1024),parameter :: subr = 'bump_copy_to_field'
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_pk','cor_rv_coef','loc_coef','loc_rh','loc_rv','loc_pk','hyb_coef','loc_D11','loc_D22', &
- & 'loc_D33','loc_D12','loc_Dcoef','loc_DLh')
+case ('var','cor_rh','cor_rv','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33','loc_D12', &
+ & 'loc_Dcoef','loc_DLh')
    if (.not.allocated(bump%cmat%blk)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
 case default
    select case (param(1:4))
@@ -1172,9 +1172,6 @@ case ('cor_rh')
 case ('cor_rv')
    if (.not.allocated(bump%cmat%blk(ib)%rv)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv,fld_mga)
-case ('cor_pk')
-   if (.not.allocated(bump%cmat%blk(ib)%pk)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%pk,fld_mga)
 case ('loc_coef')
    if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%coef_ens,fld_mga)
@@ -1189,9 +1186,6 @@ case ('loc_rh')
 case ('loc_rv')
    if (.not.allocated(bump%cmat%blk(ib)%rv)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv,fld_mga)
-case ('loc_pk')
-   if (.not.allocated(bump%cmat%blk(ib)%pk)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%pk,fld_mga)
 case ('hyb_coef')
    if (.not.allocated(bump%cmat%blk(ib)%coef_sta)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%coef_sta,fld_mga)
@@ -1320,12 +1314,10 @@ if (bump%nam%check_get_param_cor) then
    call bump%get_parameter('var',fld_mga)
    call bump%get_parameter('cor_rh',fld_mga)
    call bump%get_parameter('cor_rv',fld_mga)
-   call bump%get_parameter('cor_pk',fld_mga)
 elseif (bump%nam%check_get_param_hyb) then
    call bump%get_parameter('loc_coef',fld_mga)
    call bump%get_parameter('loc_rh',fld_mga)
    call bump%get_parameter('loc_rv',fld_mga)
-   call bump%get_parameter('loc_pk',fld_mga)
    call bump%get_parameter('hyb_coef',fld_mga)
 elseif (bump%nam%check_get_param_Dloc) then
    call bump%get_parameter('loc_D11',fld_mga)
@@ -1374,7 +1366,7 @@ write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush
 
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_pk','cor_rv_coef','loc_coef','loc_rh','loc_rv','loc_pk','hyb_coef')
+case ('var','cor_rh','cor_rv','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -1433,8 +1425,7 @@ character(len=1024),parameter :: subr = 'bump_copy_from_field'
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_pk','cor_rv_coef','loc_coef','loc_rh','loc_rv','loc_pk','hyb_coef','D11','D22','D33','D12', &
- & 'Dcoef')
+case ('var','cor_rh','cor_rv','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','D11','D22','D33','D12','Dcoef')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 case default
    call bump%mpl%abort(subr,'parameter '//trim(param)//' not yet implemented in set_parameter')
@@ -1457,9 +1448,6 @@ case ('cor_rh')
 case ('cor_rv')
    if (.not.allocated(bump%cmat%blk(ib)%bump_rv)) allocate(bump%cmat%blk(ib)%bump_rv(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rv)
-case ('cor_pk')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_pk)) allocate(bump%cmat%blk(ib)%bump_pk(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_pk)
 case ('loc_coef')
    if (.not.allocated(bump%cmat%blk(ib)%bump_coef_ens)) allocate(bump%cmat%blk(ib)%bump_coef_ens(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_coef_ens)
@@ -1475,9 +1463,6 @@ case ('loc_rh')
 case ('loc_rv')
    if (.not.allocated(bump%cmat%blk(ib)%bump_rv)) allocate(bump%cmat%blk(ib)%bump_rv(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rv)
-case ('loc_pk')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_pk)) allocate(bump%cmat%blk(ib)%bump_pk(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_pk)
 case ('hyb_coef')
    if (.not.allocated(bump%cmat%blk(ib)%bump_coef_sta)) allocate(bump%cmat%blk(ib)%bump_coef_sta(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_coef_sta)
@@ -1555,12 +1540,10 @@ if (bump%nam%check_set_param_cor) then
    call bump%set_parameter('var',fld_mga)
    call bump%set_parameter('cor_rh',fld_mga*req)
    call bump%set_parameter('cor_rv',fld_mga)
-   call bump%set_parameter('cor_pk',fld_mga)
 elseif (bump%nam%check_set_param_hyb) then
    call bump%set_parameter('loc_coef',fld_mga)
    call bump%set_parameter('loc_rh',fld_mga*req)
    call bump%set_parameter('loc_rv',fld_mga)
-   call bump%set_parameter('loc_pk',fld_mga)
    call bump%set_parameter('hyb_coef',fld_mga)
 elseif (bump%nam%check_set_param_lct) then
    call bump%set_parameter('D11',fld_mga*req**2)
