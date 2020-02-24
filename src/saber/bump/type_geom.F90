@@ -314,9 +314,7 @@ if (mpl%main) then
 
    ! Define points order
    do img=1,geom%nmg
-      list(img) = aint(abs(lon_mg(img))*1.0e6)+abs(lat_mg(img))*1.0e-1
-      if (lon_mg(img)<0.0) list(img) = list(img)+2.0e7
-      if (lat_mg(img)<0.0) list(img) = list(img)+1.0e7
+      list(img) = aint(abs(lon_mg(img)+pi)*1.0e6)+abs(lat_mg(img)+0.5*pi)*1.0e-1
    end do
    call qsort(geom%nmg,list,order)
 
@@ -543,9 +541,7 @@ allocate(list(geom%nc0))
 
 ! Define Sc0 points order
 do ic0=1,geom%nc0
-   list(ic0) = aint(abs(geom%lon(ic0))*1.0e6)+abs(geom%lat(ic0))*1.0e-1
-   if (geom%lon(ic0)<0.0) list(ic0) = list(ic0)+2.0e7
-   if (geom%lat(ic0)<0.0) list(ic0) = list(ic0)+1.0e7
+   list(ic0) = aint(abs(geom%lon(ic0)+pi)*1.0e6)+abs(geom%lat(ic0)+0.5*pi)*1.0e-1
 end do
 call qsort(geom%nc0,list,order)
 do ic0=1,geom%nc0

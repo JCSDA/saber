@@ -12,7 +12,6 @@ use netcdf
 use tools_const, only: pi,deg2rad,rad2deg,req,reqkm
 use tools_func, only: lonlatmod,sphere_dist
 use tools_kinds, only: kind_real,nc_kind_real
-use tools_qsort, only: qsort
 use tools_repro, only: rth
 use type_com, only: com_type
 use type_geom, only: geom_type
