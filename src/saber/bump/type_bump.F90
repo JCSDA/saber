@@ -394,8 +394,6 @@ elseif (bump%nam%load_var) then
    call bump%var%read(bump%mpl,bump%nam,bump%geom,bump%io)
 end if
 
-call bump%mpl%abort('ok','ok')
-
 if (bump%nam%new_hdiag) then
    ! Run HDIAG driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
