@@ -465,6 +465,15 @@ do il0=1,nl0
    end do
 end do
 
+! Set to missing values if no value available
+do il0=1,nl0
+   if (mpl%msv%is(coef(il0)).or.mpl%msv%is(rh(il0)).or.mpl%msv%is(rv(il0))) fit(:,:,il0) = mpl%msv%valr
+   do jl0r=1,nl0r
+      jl0 = l0rl0_to_l0(jl0r,il0)
+      if (mpl%msv%is(coef(jl0)).or.mpl%msv%is(rh(jl0)).or.mpl%msv%is(rv(jl0))) fit(:,jl0r,il0) = mpl%msv%valr
+   end do
+end do
+
 end subroutine fit_diag
 
 !----------------------------------------------------------------------

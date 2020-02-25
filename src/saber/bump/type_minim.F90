@@ -257,19 +257,25 @@ fs = 0.0
 if (minim%smoothness_penalty>0.0) then
    do il0=2,minim%nl0-1
       if (minim%lcoef) then
-         coef_avg = 0.5*(coef(il0-1)+coef(il0+1))
-         norm = coef_avg**2
-         if (norm>0.0) fs = fs+(coef(il0)-coef_avg)**2/norm
+         if (mpl%msv%isallnot(coef(il0-1:il0+1))) then
+            coef_avg = 0.5*(coef(il0-1)+coef(il0+1))
+            norm = coef_avg**2
+            if (norm>0.0) fs = fs+(coef(il0)-coef_avg)**2/norm
+         end if
       end if
       if (minim%lrh) then
-         fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
-         norm = fit_rh_avg**2
-         if (norm>0.0) fs = fs+(fit_rh(il0)-fit_rh_avg)**2/norm
+         if (mpl%msv%isallnot(fit_rh(il0-1:il0+1))) then
+            fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
+            norm = fit_rh_avg**2
+            if (norm>0.0) fs = fs+(fit_rh(il0)-fit_rh_avg)**2/norm
+         end if
       end if
       if (minim%lrv) then
-         fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
-         norm = fit_rv_avg**2
-         if (norm>0.0) fs = fs+(fit_rv(il0)-fit_rv_avg)**2/norm
+         if (mpl%msv%isallnot(fit_rv(il0-1:il0+1))) then
+            fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
+            norm = fit_rv_avg**2
+            if (norm>0.0) fs = fs+(fit_rv(il0)-fit_rv_avg)**2/norm
+         end if
       end if
    end do
 end if

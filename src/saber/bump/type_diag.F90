@@ -35,7 +35,8 @@ contains
    procedure :: alloc => diag_alloc
    procedure :: dealloc => diag_dealloc
    procedure :: write => diag_write
-   procedure :: fit_filter => diag_fit_filter
+   procedure :: filter_fit => diag_filter_fit
+   procedure :: build_fit => diag_build_fit
    procedure :: covariance => diag_covariance
    procedure :: correlation => diag_correlation
    procedure :: localization => diag_localization
@@ -224,10 +225,10 @@ end do
 end subroutine diag_write
 
 !----------------------------------------------------------------------
-! Subroutine: diag_fit_filter
+! Subroutine: diag_filter_fit
 ! Purpose: filter fit diagnostics
 !----------------------------------------------------------------------
-subroutine diag_fit_filter(diag,mpl,nam,geom,bpar,samp)
+subroutine diag_filter_fit(diag,mpl,nam,geom,bpar,samp)
 
 implicit none
 
@@ -241,7 +242,6 @@ type(samp_type),intent(in) :: samp     ! Sampling
 
 ! Local variables
 integer :: ib,il0,ic2a
-real(kind_real) :: rmse,norm,rmse_tot,norm_tot
 real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
 real(kind_real),allocatable :: rh_c2a(:,:),rv_c2a(:,:)
 
@@ -343,9 +343,30 @@ if (nam%diag_rvflt>0.0) then
    end do
 end if
 
+end subroutine diag_filter_fit
+
+!----------------------------------------------------------------------
+! Subroutine: diag_build_fit
+! Purpose: build fit function
+!----------------------------------------------------------------------
+subroutine diag_build_fit(diag,mpl,nam,geom,bpar)
+
+implicit none
+
+! Passed variables
+class(diag_type),intent(inout) :: diag ! Diagnostic
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(nam_type),intent(in) :: nam       ! Namelist
+type(geom_type),intent(in) :: geom     ! Geometry
+type(bpar_type),intent(in) :: bpar     ! Block parameters
+
+! Local variables
+integer :: ib,il0,jl0,jl0r,ic2a
+real(kind_real) :: rmse,norm,rmse_tot,norm_tot
+
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib).and.bpar%fit_block(ib)) then
-      ! Rebuild fit
+      ! Build fit
       do ic2a=0,diag%nc2a
          call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag%blk(ic2a,ib)%distv, &
        & diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit)
@@ -367,7 +388,7 @@ do ib=1,bpar%nbe
    end if
 end do
 
-end subroutine diag_fit_filter
+end subroutine diag_build_fit
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_covariance
@@ -493,8 +514,11 @@ do ib=1,bpar%nbe
    end if
 end do
 
-! Filtering
-call diag%fit_filter(mpl,nam,geom,bpar,samp)
+! Filter fit
+call diag%filter_fit(mpl,nam,geom,bpar,samp)
+
+! Build fit
+call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Write
 if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
@@ -571,8 +595,11 @@ do ib=1,bpar%nbe
    end if
 end do
 
-! Filtering
-call diag%fit_filter(mpl,nam,geom,bpar,samp)
+! Filter fit
+call diag%filter_fit(mpl,nam,geom,bpar,samp)
+
+! Build fit
+call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Write
 if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
@@ -649,8 +676,11 @@ do ib=1,bpar%nbe
    end if
 end do
 
-! Filtering
-call diag%fit_filter(mpl,nam,geom,bpar,samp)
+! Filter fit
+call diag%filter_fit(mpl,nam,geom,bpar,samp)
+
+! Build fit
+call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Write
 if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
@@ -743,9 +773,13 @@ do ib=1,bpar%nbe
    end if
 end do
 
-! Filtering
-call diag%fit_filter(mpl,nam,geom,bpar,samp)
-call diag_lr%fit_filter(mpl,nam,geom,bpar,samp)
+! Filter fit
+call diag%filter_fit(mpl,nam,geom,bpar,samp)
+call diag_lr%filter_fit(mpl,nam,geom,bpar,samp)
+
+! Build fit
+call diag%build_fit(mpl,nam,geom,bpar)
+call diag_lr%build_fit(mpl,nam,geom,bpar)
 
 ! Write
 if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
