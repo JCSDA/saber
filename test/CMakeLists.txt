@@ -121,7 +121,11 @@ if(${SABER_TEST_TIER} GREATER 1)
 
     if(BUILD_METIS)
         list(APPEND saber_test
-            bump_hdiag-nicas_remap
+            bump_hdiag-nicas_remap_metis
+        )
+    else()
+        list(APPEND saber_test
+            bump_hdiag-nicas_remap_no_metis
         )
     endif()
 endif()
@@ -147,7 +151,11 @@ if(${SABER_MPI4_TEST} MATCHES 1)
 
     if(BUILD_METIS)
         list(APPEND saber_test_quad
-            bump_hdiag-nicas_remap
+            bump_hdiag-nicas_remap_metis
+        )
+    else()
+        list(APPEND saber_test_quad
+            bump_hdiag-nicas_remap_no_metis
         )
     endif()
 endif()
