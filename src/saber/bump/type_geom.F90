@@ -478,7 +478,11 @@ if (nam%remap) then
       ! Modify distribution
       write(mpl%info,'(a7,a)') '','Remap points to improve load balance'
       call mpl%flush
+#if SABER_USE_METIS
       call geom%remap(mpl,rng,nam)
+#else
+      call geom%remap(mpl,nam)
+#endif
    else
       ! Warning message
       call mpl%warning(subr,'remapping with only one MPI task is not relevant')
@@ -816,28 +820,37 @@ end subroutine geom_setup
 ! Subroutine: geom_remap
 ! Purpose: remap points to improve load balance
 !----------------------------------------------------------------------
+#if SABER_USE_METIS
 subroutine geom_remap(geom,mpl,rng,nam)
+#else
+subroutine geom_remap(geom,mpl,nam)
+#endif
 
 implicit none
 
 ! Passed variables
 class(geom_type),intent(inout) :: geom ! Geometry
 type(mpl_type),intent(inout) :: mpl    ! MPI data
+#if SABER_USE_METIS
 type(rng_type),intent(inout) :: rng    ! Random number generator
+#endif
 type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Local variables
 integer :: ncid,nc0_id,lon_c0_id,lat_c0_id,c0_to_proc_init_id,c0_to_proc_id,info
-integer :: max_work,nadj,iadj,i,j,im,jm,iend,ic0,jc0,iproc,jproc,ipart,ierr,objval,imax(2),ipart_max,iproc_max
-integer :: c0_to_work(geom%nc0),proc_to_work(mpl%nproc),c0_to_part(geom%nc0)
-integer :: affinity(mpl%nproc,mpl%nproc),part_to_proc(mpl%nproc)
-integer,allocatable :: options(:),full_to_m(:),xadj(:),adjncy(:),vwgt(:),adjwgt(:),part(:)
-real(kind_real) :: avg_work
+integer :: max_work,ic0,iproc
+integer :: c0_to_work(geom%nc0),proc_to_work(mpl%nproc)
+#if SABER_USE_METIS
+integer :: i,j,jc0,iadj,iend,ierr,im,jm,jproc,imax(2),ipart,ipart_max,iproc_max,nadj,objval,part_to_proc(mpl%nproc)
+integer :: affinity(mpl%nproc,mpl%nproc),c0_to_part(geom%nc0)
+integer,allocatable :: adjncy(:),adjwgt(:),full_to_m(:),options(:),part(:),vwgt(:),xadj(:)
 logical :: init,affinity_mask(mpl%nproc,mpl%nproc)
+type(mesh_type) :: mesh
+#endif
+real(kind_real) :: avg_work
 character(len=4) :: nprocchar
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'geom_remap'
-type(mesh_type) :: mesh
 
 ! Initialization
 do ic0=1,geom%nc0

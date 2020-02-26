@@ -59,6 +59,15 @@ list(APPEND saber_test
     bump_nicas_fast_sampling
     bump_nicas_subsamp_hvh
 )
+if(BUILD_METIS)
+    list(APPEND saber_test
+        bump_hdiag-nicas_remap_metis
+    )
+else()
+    list(APPEND saber_test
+        bump_hdiag-nicas_remap_no_metis
+    )
+endif()
 
 list(APPEND saber_test_2
     bump_read-write_cmat
@@ -118,16 +127,6 @@ if(${SABER_TEST_TIER} GREATER 1)
         bump_set_param_hyb
         bump_set_param_lct
     )
-
-    if(BUILD_METIS)
-        list(APPEND saber_test
-            bump_hdiag-nicas_remap_metis
-        )
-    else()
-        list(APPEND saber_test
-            bump_hdiag-nicas_remap_no_metis
-        )
-    endif()
 endif()
 
 # TIER > 2

@@ -109,7 +109,7 @@ integer,intent(in) :: its                                       ! Timeslot index
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
-integer :: iv,il0,imgt,img,ilon,ilat,itile
+integer :: iv,il0,imgt,img,ilon,ilat
 integer :: ncid,fld_id
 real(kind_real) :: fld_mgt(model%nmgt,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
