@@ -10,7 +10,6 @@ module type_nam
 use fckit_configuration_module, only: fckit_configuration,fckit_yamlconfiguration
 use fckit_pathname_module, only : fckit_pathname
 use iso_c_binding
-!$ use omp_lib, only: omp_get_num_procs
 use tools_const, only: pi,req,deg2rad,rad2deg
 use tools_kinds,only: kind_real
 use type_mpl, only: mpl_type
@@ -84,12 +83,12 @@ type nam_type
    ! model_param
    integer :: nl                                        ! Number of levels
    integer :: levs(nlmax)                               ! Levels
+   character(len=1024) :: lev2d                         ! Level for 2D variables ('first' or 'last') 
    logical :: logpres                                   ! Use pressure logarithm as vertical coordinate (model level if .false.)
    integer :: nv                                        ! Number of variables
    character(len=1024),dimension(nvmax) :: varname      ! Variables names
-   character(len=1024),dimension(nvmax) :: addvar2d     ! Additionnal 2d variables names
    integer :: nts                                       ! Number of time slots
-   integer,dimension(ntsmax) :: timeslot                ! Timeslots
+   character(len=1024),dimension(ntsmax) :: timeslot    ! Timeslots
    real(kind_real) :: dts                               ! Timeslots width (in s)
    logical :: nomask                                    ! Do not use geometry mask
    character(len=1024) :: wind_filename                 ! Wind field file name
@@ -177,8 +176,8 @@ type nam_type
    real(kind_real) :: londir(ndirmax)                   ! Diracs longitudes (in degrees)
    real(kind_real) :: latdir(ndirmax)                   ! Diracs latitudes (in degrees)
    integer :: levdir(ndirmax)                           ! Diracs level
-   integer :: ivdir(ndirmax)                            ! Diracs variable
-   integer :: itsdir(ndirmax)                           ! Diracs timeslot
+   integer :: ivdir(ndirmax)                            ! Diracs variable indices
+   integer :: itsdir(ndirmax)                           ! Diracs timeslot indices
 
    ! obsop_param
    integer :: nobs                                      ! Number of observations
@@ -281,14 +280,14 @@ nam%check_apply_obsop = .false.
 ! model_param default
 nam%nl = 0
 nam%levs = 0
+nam%lev2d = 'first'
 nam%logpres = .false.
 nam%nv = 0
 do iv=1,nvmax
    nam%varname(iv) = ''
-   nam%addvar2d(iv) = ''
 end do
 nam%nts = 0
-nam%timeslot = 0
+nam%timeslot = ''
 nam%dts = 3600.0
 nam%nomask = .false.
 nam%wind_filename = ''
@@ -425,7 +424,7 @@ character(len=1024),parameter :: subr = 'nam_read'
 
 ! Namelist variables
 integer :: lunit
-integer :: nprocio,nl,levs(nlmax),nv,nts,timeslot(ntsmax),ens1_ne,ens1_nsub,ens2_ne,ens2_nsub
+integer :: nprocio,nl,levs(nlmax),nv,nts,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub
 integer :: ncontig_th,nc1,nc2,ntry,nrep,nc3,nl0r,irmax,ne,avg_nbins,var_niter,adv_niter,lct_nscales,mpicom,adv_mode,nc1max,ndir
 integer :: levdir(ndirmax),ivdir(ndirmax),itsdir(ndirmax),nobs,nldwv,img_ldwv(nldwvmax),ildwv
 real(kind_real) :: dts,mask_th(nvmax),Lcoast,rcoast,dc,vbal_rad,var_rhflt,local_rad,adv_rad,adv_rhflt,adv_valid
@@ -440,9 +439,10 @@ logical :: check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_b
 logical :: vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
 logical :: double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
 logical :: fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
-character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,wind_filename,wind_varname(2),mask_type,mask_lu(nvmax)
+character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,lev2d,wind_filename,wind_varname(2),mask_type,mask_lu(nvmax)
 character(len=1024) :: draw_type,adv_type,minim_algo,fit_type,subsamp
-character(len=1024),dimension(nvmax) :: varname,addvar2d
+character(len=1024),dimension(nvmax) :: varname
+character(len=1024),dimension(ntsmax) :: timeslot
 character(len=1024),dimension(nldwvmax) :: name_ldwv
 
 ! Namelist blocks
@@ -453,7 +453,7 @@ namelist/driver_param/method,strategy,new_cortrack,new_corstats,new_vbal,load_vb
                     & check_optimality,check_obsop,check_no_obs,check_no_point,check_no_point_mask,check_no_point_nicas, &
                     & check_set_param_cor,check_set_param_hyb,check_set_param_lct,check_get_param_cor,check_get_param_hyb, &
                     & check_get_param_Dloc,check_get_param_lct,check_apply_vbal,check_apply_nicas,check_apply_obsop
-namelist/model_param/nl,levs,logpres,nv,varname,addvar2d,nts,timeslot,dts,nomask,wind_filename,wind_varname
+namelist/model_param/nl,levs,lev2d,logpres,nv,varname,nts,timeslot,dts,nomask,wind_filename,wind_varname
 namelist/ens1_param/ens1_ne,ens1_nsub
 namelist/ens2_param/ens2_ne,ens2_nsub
 namelist/sampling_param/sam_write,sam_read,mask_type,mask_lu,mask_th,ncontig_th,mask_check,draw_type,Lcoast,rcoast,nc1,nc2,ntry, &
@@ -526,14 +526,14 @@ if (mpl%main) then
    ! model_param default
    nl = 0
    levs = 0
+   lev2d = 'first'
    logpres = .false.
    nv = 0
    do iv=1,nvmax
       varname(iv) = ''
-      addvar2d(iv) = ''
    end do
    nts = 0
-   timeslot = 0
+   timeslot = ''
    dts = 3600.0
    nomask = .false.
    wind_filename = ''
@@ -717,10 +717,10 @@ if (mpl%main) then
    if (nts>ntsmax) call mpl%abort(subr,'nts is too large')
    nam%nl = nl
    if (nl>0) nam%levs(1:nl) = levs(1:nl)
+   nam%lev2d = lev2d
    nam%logpres = logpres
    nam%nv = nv
    if (nv>0) nam%varname(1:nv) = varname(1:nv)
-   if (nv>0) nam%addvar2d(1:nv) = addvar2d(1:nv)
    nam%nts = nts
    if (nts>0) nam%timeslot(1:nts) = timeslot(1:nts)
    nam%dts = dts
@@ -941,12 +941,12 @@ call mpl%f_comm%broadcast(nam%check_apply_obsop,mpl%rootproc-1)
 ! model_param
 call mpl%f_comm%broadcast(nam%nl,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%levs,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%lev2d,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%logpres,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nv,mpl%rootproc-1)
 call mpl%broadcast(nam%varname,mpl%rootproc-1)
-call mpl%broadcast(nam%addvar2d,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nts,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%timeslot,mpl%rootproc-1)
+call mpl%broadcast(nam%timeslot,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%dts,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nomask,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%wind_filename,mpl%rootproc-1)
@@ -1151,20 +1151,20 @@ if (conf%has("levs")) then
    call conf%get_or_die("levs",integer_array)
    nam%levs(1:nam%nl) = integer_array(1:nam%nl)
 end if
+if (conf%has("lev2d")) then
+   call conf%get_or_die("lev2d",str)
+   nam%lev2d = str
+end if
 if (conf%has("logpres")) call conf%get_or_die("logpres",nam%logpres)
 if (conf%has("nv")) call conf%get_or_die("nv",nam%nv)
 if (conf%has("varname")) then
    call conf%get_or_die("varname",csize,char_array)
    nam%varname(1:nam%nv) = char_array(1:nam%nv)
 end if
-if (conf%has("addvar2d")) then
-   call conf%get_or_die("addvar2d",csize,char_array)
-   nam%addvar2d(1:nam%nv) = char_array(1:nam%nv)
-end if
 if (conf%has("nts")) call conf%get_or_die("nts",nam%nts)
 if (conf%has("timeslot")) then
-   call conf%get_or_die("timeslot",integer_array)
-   nam%timeslot(1:nam%nts) = integer_array(1:nam%nts)
+   call conf%get_or_die("timeslot",csize,char_array)
+   nam%timeslot(1:nam%nts) = char_array(1:nam%nts)
 end if
 if (conf%has("dts")) call conf%get_or_die("dts",nam%dts)
 if (conf%has("nomask")) call conf%get_or_die("nomask",nam%nomask)
@@ -1347,37 +1347,25 @@ end subroutine nam_from_conf
 ! Subroutine: nam_setup_internal
 ! Purpose: setup namelist parameters internally (model 'online')
 !----------------------------------------------------------------------
-subroutine nam_setup_internal(nam,nl0,nv,nts,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub)
+subroutine nam_setup_internal(nam,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(inout) :: nam      ! Namelist
-integer,intent(in) :: nl0                 ! Number of levels
-integer,intent(in) :: nv                  ! Number of variables
-integer,intent(in) :: nts                 ! Number of time-slots
-integer,intent(in) :: ens1_ne             ! Ensemble 1 size
-integer,intent(in) :: ens1_nsub           ! Ensemble 1 number of sub-ensembles
-integer,intent(in) :: ens2_ne             ! Ensemble 2 size
-integer,intent(in) :: ens2_nsub           ! Ensemble 2 size of sub-ensembles
+class(nam_type),intent(inout) :: nam                   ! Namelist
+integer,intent(in) :: ens1_ne                          ! Ensemble 1 size
+integer,intent(in) :: ens1_nsub                        ! Ensemble 1 number of sub-ensembles
+integer,intent(in) :: ens2_ne                          ! Ensemble 2 size
+integer,intent(in) :: ens2_nsub                        ! Ensemble 2 size of sub-ensembles
 
 ! Local variables
-integer :: il,iv,its
+integer :: il
 
 if (trim(nam%model)=='') then
+   ! Set namelist values
    nam%model = 'online'
-   nam%nl = nl0
    do il=1,nam%nl
       nam%levs(il) = il
-   end do
-   nam%nv = nv
-   do iv=1,nam%nv
-      write(nam%varname(iv),'(a,i2.2)') 'var_',iv
-      nam%addvar2d(iv) = ''
-   end do
-   nam%nts = nts
-   do its=1,nts
-      nam%timeslot(its) = its
    end do
    nam%ens1_ne = ens1_ne
    nam%ens1_nsub = ens1_nsub
@@ -1401,7 +1389,7 @@ type(mpl_type),intent(inout) :: mpl  ! MPI data
 
 ! Local variables
 integer :: iv,its,il,idir,ildwv
-character(len=2) :: ivchar,ildwvchar
+character(len=2) :: ivchar,itschar,ildwvchar
 character(len=1024),parameter :: subr = 'nam_check'
 
 ! Check maximum sizes
@@ -1527,6 +1515,7 @@ do il=1,nam%nl
    if (nam%levs(il)<=0) call mpl%abort(subr,'levs should be positive')
    if (count(nam%levs(1:nam%nl)==nam%levs(il))>1) call mpl%abort(subr,'redundant levels')
 end do
+if ((trim(nam%lev2d)/='first').and.(trim(nam%lev2d)/='last')) call mpl%abort(subr,'wrong lev2d value')
 if (nam%new_vbal.or.nam%load_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat.or.nam%new_nicas.or.nam%load_nicas) then
    if (nam%nv<=0) call mpl%abort(subr,'nv should be positive')
    do iv=1,nam%nv
@@ -1535,12 +1524,10 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cm
    end do
    if (nam%nts<=0) call mpl%abort(subr,'nts should be positive')
    do its=1,nam%nts
-      if (nam%timeslot(its)<0) call mpl%abort(subr,'timeslot should be non-negative')
+      write(itschar,'(i2.2)') its
+      if (trim(nam%timeslot(its))=='') call mpl%abort(subr,'timeslot not specified for '//itschar)
    end do
    if (.not.(nam%dts>0.0)) call mpl%abort(subr,'dts should be positive')
-   do iv=1,nam%nv
-      if (trim(nam%addvar2d(iv))/='') nam%levs(nam%nl+1) = maxval(nam%levs(1:nam%nl))+1
-   end do
 end if
 
 ! Check ens1_param
@@ -1731,8 +1718,7 @@ if (nam%new_cortrack.or.nam%check_dirac) then
    do idir=1,nam%ndir
       if ((nam%londir(idir)<-pi).or.(nam%londir(idir)>pi)) call mpl%abort(subr,'londir should lie between -180 and 180')
       if ((nam%latdir(idir)<-0.5*pi).or.(nam%latdir(idir)>0.5*pi)) call mpl%abort(subr,'latdir should lie between -90 and 90')
-      if (.not.(any(nam%levs(1:nam%nl)==nam%levdir(idir)).or.(any(nam%addvar2d(1:nam%nv)/='') &
-    & .and.(nam%levs(nam%nl+1)==nam%levdir(idir))))) call mpl%abort(subr,'wrong level for a Dirac')
+      if (.not.any(nam%levs(1:nam%nl)==nam%levdir(idir))) call mpl%abort(subr,'wrong level for a Dirac')
       if ((nam%ivdir(idir)<1).or.(nam%ivdir(idir)>nam%nv)) call mpl%abort(subr,'wrong variable for a Dirac')
       if ((nam%itsdir(idir)<1).or.(nam%itsdir(idir)>nam%nts)) call mpl%abort(subr,'wrong timeslot for a Dirac')
    end do
@@ -1857,10 +1843,10 @@ if (mpl%msv%is(lncid)) then
 end if
 call mpl%write(lncid,'nam','nl',nam%nl)
 call mpl%write(lncid,'nam','levs',nam%nl,nam%levs(1:nam%nl))
+call mpl%write(lncid,'nam','lev2d',nam%lev2d)
 call mpl%write(lncid,'nam','logpres',nam%logpres)
 call mpl%write(lncid,'nam','nv',nam%nv)
 call mpl%write(lncid,'nam','varname',nam%nv,nam%varname(1:nam%nv))
-call mpl%write(lncid,'nam','addvar2d',nam%nv,nam%addvar2d(1:nam%nv))
 call mpl%write(lncid,'nam','nts',nam%nts)
 call mpl%write(lncid,'nam','timeslot',nam%nts,nam%timeslot(1:nam%nts))
 call mpl%write(lncid,'nam','dts',nam%dts)

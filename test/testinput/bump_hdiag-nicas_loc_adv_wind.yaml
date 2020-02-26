@@ -18,7 +18,7 @@ levs: [1,2]
 nv: 1
 varname: ["q"]
 nts: 2
-timeslot: [0,6]
+timeslot: ["00","06"]
 nomask: 1
 wind_filename: "wind"
 wind_varname: ["u","v"]

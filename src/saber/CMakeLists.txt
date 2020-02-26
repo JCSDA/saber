@@ -21,7 +21,7 @@ list( APPEND saber_src_files
 )
 
 list( APPEND SABER_LIB_DEPS
-  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit
+  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f
 )
 
 ecbuild_add_library( TARGET     saber
