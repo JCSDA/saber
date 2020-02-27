@@ -63,7 +63,9 @@ contains
    procedure :: bump_apply_nicas_deprecated
    generic :: apply_nicas => bump_apply_nicas,bump_apply_nicas_deprecated
    procedure :: get_cv_size => bump_get_cv_size
-   procedure :: apply_nicas_sqrt => bump_apply_nicas_sqrt
+   procedure :: bump_apply_nicas_sqrt
+   procedure :: bump_apply_nicas_sqrt_deprecated
+   generic :: apply_nicas_sqrt => bump_apply_nicas_sqrt,bump_apply_nicas_sqrt_deprecated
    procedure :: apply_nicas_sqrt_ad => bump_apply_nicas_sqrt_ad
    procedure :: randomize => bump_randomize
    procedure :: bump_apply_obsop
@@ -75,7 +77,9 @@ contains
    procedure :: get_parameter => bump_get_parameter
    procedure :: copy_to_field => bump_copy_to_field
    procedure :: test_get_parameter => bump_test_get_parameter
-   procedure :: set_parameter => bump_set_parameter
+   procedure :: bump_set_parameter
+   procedure :: bump_set_parameter_deprecated
+   generic :: set_parameter => bump_set_parameter,bump_set_parameter_deprecated
    procedure :: copy_from_field => bump_copy_from_field
    procedure :: test_set_parameter => bump_test_set_parameter
    procedure :: test_apply_interfaces => bump_test_apply_interfaces
@@ -1186,6 +1190,56 @@ call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:b
 end subroutine bump_apply_nicas_sqrt
 
 !----------------------------------------------------------------------
+! Subroutine: bump_apply_nicas_sqrt_deprecated
+! Purpose: NICAS square-root application (deprecated)
+!----------------------------------------------------------------------
+subroutine bump_apply_nicas_sqrt_deprecated(bump,pcv,fld_mga)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump                                                          ! BUMP
+real(kind_real),intent(in) :: pcv(:)                                                            ! Packed control variable
+real(kind_real),intent(inout) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
+
+! Local variable
+integer :: its,iv
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
+character(len=1024),parameter :: subr = 'bump_apply_nicas_sqrt_deprecated'
+type(cv_type) :: cv
+
+! Deprecation warning
+call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
+
+! Allocation
+call bump%nicas%alloc_cv(bump%mpl,bump%bpar,cv)
+
+! Check dimension
+if (size(pcv)==cv%n) then
+   ! Unpack control variable
+   call cv%unpack(pcv)
+else
+   call bump%mpl%abort(subr,'wrong control variable size in bump_apply_nicas_sqrt')
+end if
+
+if (bump%geom%nc0==bump%geom%nmg) then
+   ! Apply NICAS square-root
+   call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
+else
+   ! Apply NICAS square-root
+   call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_c0a)
+
+   ! Subset Sc0 to model grid
+   do its=1,bump%nam%nts
+      do iv=1,bump%nam%nv
+         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv,its),fld_mga(:,:,iv,its))
+      end do
+   end do
+end if
+
+end subroutine bump_apply_nicas_sqrt_deprecated
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_sqrt_ad
 ! Purpose: NICAS square-root adjoint application
 !----------------------------------------------------------------------
@@ -1785,6 +1839,69 @@ case default
 end select
 
 end subroutine bump_set_parameter
+
+!----------------------------------------------------------------------
+! Subroutine: bump_set_parameter_deprecated
+! Purpose: set a parameter (deprecated)
+!----------------------------------------------------------------------
+subroutine bump_set_parameter_deprecated(bump,param,fld_mga)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump                                                       ! BUMP
+character(len=*),intent(in) :: param                                                         ! Parameter
+real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
+
+! Local variables
+integer :: ib,iv,jv,its,jts
+character(len=1024),parameter :: subr = 'bump_set_parameter_deprecated'
+
+! Deprecation warning
+call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
+
+write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
+call bump%mpl%flush()
+
+select case (trim(param))
+case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
+   select case (trim(bump%nam%strategy))
+   case ('specific_univariate','specific_multivariate')
+      do ib=1,bump%bpar%nb
+         ! Get indices
+         iv = bump%bpar%b_to_v1(ib)
+         jv = bump%bpar%b_to_v2(ib)
+         its = bump%bpar%b_to_ts1(ib)
+         jts = bump%bpar%b_to_ts2(ib)
+
+         ! Copy to field
+         if ((iv==jv).and.(its==jts)) call bump%copy_from_field(param,ib,fld_mga(:,:,iv,its))
+      end do
+   case ('common','common_univariate','common_weighted')
+      ! Set common index
+      ib = bump%bpar%nbe
+
+      do its=1,bump%nam%nts
+         do iv=1,bump%nam%nv
+            ! Copy to field
+            call bump%copy_from_field(param,ib,fld_mga(:,:,iv,its))
+         end do
+      end do
+   end select
+case default
+   do ib=1,bump%bpar%nb
+      ! Get indices
+      iv = bump%bpar%b_to_v1(ib)
+      jv = bump%bpar%b_to_v2(ib)
+      its = bump%bpar%b_to_ts1(ib)
+      jts = bump%bpar%b_to_ts2(ib)
+
+      ! Copy to field
+      if ((iv==jv).and.(its==jts)) call bump%copy_from_field(param,ib,fld_mga(:,:,iv,its))
+   end do
+end select
+
+end subroutine bump_set_parameter_deprecated
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_copy_from_field
