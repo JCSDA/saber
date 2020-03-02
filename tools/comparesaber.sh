@@ -43,7 +43,7 @@ if test "${test%%_*}" = "bump" ; then
             nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}
             exit_code=$?
             if test "${exit_code}" != "0" ; then
-               echo "\e[31mTest failed checking: "${file#testdata/}"\e[0m"
+               echo "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
                status=1
                exit ${status}
             fi
@@ -60,7 +60,7 @@ if test "${test%%_*}" = "bump" ; then
       grep -q "*" ${file}
       exit_code=$?
       if test "${exit_code}" = "0" ; then
-         echo "\e[31mTest failed checking: "${file#testoutput/}"\e[0m"
+         echo "\e[31mTest failed (stars in output) checking: "${file#testoutput/}"\e[0m"
          status=3
          exit ${status}
       fi
@@ -69,7 +69,7 @@ if test "${test%%_*}" = "bump" ; then
       grep -q "\-\-\- Close listings" ${file}
       exit_code=$?
       if test "${exit_code}" != "0" ; then
-         echo "\e[31mTest failed checking: "${file#testoutput/}"\e[0m"
+         echo "\e[31mTest failed (no listing closure) checking: "${file#testoutput/}"\e[0m"
          status=3
          exit ${status}
       fi

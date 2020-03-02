@@ -262,7 +262,7 @@ P20 = real((n-1)*(n**2-3*n+3),kind_real)/real(n*(n-2)*(n-3),kind_real)
 P21 = real(n-1,kind_real)/real(n+1,kind_real)
 
 do its=1,nam%nts
-   write(mpl%info,'(a10,a,i2.2)') '','Timeslot ',nam%timeslot(its)
+   write(mpl%info,'(a10,a,a)') '','Timeslot ',trim(nam%timeslot(its))
    call mpl%flush
 
    do iv=1,nam%nv

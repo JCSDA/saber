@@ -30,7 +30,7 @@ if test "${test1%%_*}" = "bump" ; then
       nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file1} ${file2}
       exit_code=$?
       if test "${exit_code}" != "0" ; then
-         echo "\e[31mTest failed checking: "${file#testdata/}"\e[0m"
+         echo "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
          status=1
          exit ${status}
       fi
