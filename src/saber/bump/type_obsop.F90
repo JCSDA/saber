@@ -406,7 +406,7 @@ if (obsop%nobsa>0) then
    ! Horizontal interpolation
    !$omp parallel do schedule(static) private(il0)
    do il0=1,geom%nl0
-      call obsop%h%apply(mpl,fld_ext(:,il0),obs(:,il0),msdst=.true.)
+      call obsop%h%apply(mpl,fld_ext(:,il0),obs(:,il0))
    end do
    !$omp end parallel do
 end if

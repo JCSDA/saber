@@ -85,7 +85,7 @@ end subroutine model_gem_coord
 ! Subroutine: model_gem_read
 ! Purpose: read GEM field
 !----------------------------------------------------------------------
-subroutine model_gem_read(model,mpl,nam,filename,its,fld)
+subroutine model_gem_read(model,mpl,nam,filename,fld)
 
 implicit none
 
@@ -94,7 +94,6 @@ class(model_type),intent(inout) :: model                        ! Model
 type(mpl_type),intent(inout) :: mpl                             ! MPI data
 type(nam_type),intent(in) :: nam                                ! Namelist
 character(len=*),intent(in) :: filename                         ! File name
-integer,intent(in) :: its                                       ! Timeslot index
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
@@ -117,8 +116,6 @@ end if
 
 do iv=1,nam%nv
    if (mpl%main) then
-      ! 3d variable
-
       ! Get variable id
       call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
 
@@ -139,27 +136,6 @@ do iv=1,nam%nv
       case default
          call mpl%abort(subr,'wrong variable type')
       end select
-
-      if (trim(nam%addvar2d(iv))/='') then
-         ! 2d variable
-
-         ! Get id
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%addvar2d(iv)),fld_id))
-
-         ! Check variable type and read data
-         call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,xtype=xt))
-         select case (xt)
-         case (nf90_short)
-            call mpl%ncerr(subr,nf90_get_att(ncid,fld_id,'add_offset',add_offset))
-            call mpl%ncerr(subr,nf90_get_att(ncid,fld_id,'scale_factor',scale_factor))
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp_int))
-            fld_tmp(:,:,model%nl0) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
-         case (nf90_double)
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0)))
-         case default
-            call mpl%abort(subr,'wrong variable type')
-         end select
-      end if
 
       ! Pack
       do il0=1,model%nl0
