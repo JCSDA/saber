@@ -12,30 +12,29 @@ implicit none
 
 private
 real(kind=kind_real):: zero = 0.0_kind_real
-real(kind=kind_real):: one  = 1.0_kind_real
 real(kind=kind_real):: two  = 2.0_kind_real
 real(kind=kind_real):: half = 0.5_kind_real
 
 ! Gaussian grid derived type
 type gaussian_grid
-  integer :: nlat                                      !> Number of longitudes 
+  integer :: nlat                                      !> Number of longitudes
   integer :: nlon                                      !> Number of latitudes
   integer :: nlev                                      !> Number of levels
   integer :: nvar                                      !> Number of variables
 !  integer :: nts                                       !> Number of timeslots
   character(len=32),allocatable :: vname(:)            !> Name of variables
   real(kind=kind_real),allocatable :: rlats(:)         !> Gaussian latitudes
-  real(kind=kind_real),allocatable :: wlats(:)         !> Gaussian weights 
-  real(kind=kind_real),allocatable :: rlons(:)         !> Gaussian longitudes 
+  real(kind=kind_real),allocatable :: wlats(:)         !> Gaussian weights
+  real(kind=kind_real),allocatable :: rlons(:)         !> Gaussian longitudes
   real(kind=kind_real),allocatable :: fld(:,:,:,:)     !> Data
 contains
   procedure :: create => create_gaugrid
-  procedure :: delete => delete_gaugrid 
+  procedure :: delete => delete_gaugrid
   procedure :: fld3d_pointer => gaugrid_fld3d_pointer
   procedure :: fld2d_pointer => gaugrid_fld2d_pointer
   procedure :: calc_glb_latlon => gaugrid_calc_glb_latlon
   procedure :: equals
-  generic :: assignment(=) => equals 
+  generic :: assignment(=) => equals
 end type gaussian_grid
 
 public :: gaussian_grid
@@ -81,7 +80,7 @@ end subroutine delete_gaugrid
 subroutine gaugrid_alloc_coord(self)
   implicit none
 ! Passed variables
-  class(gaussian_grid),intent(inout) :: self 
+  class(gaussian_grid),intent(inout) :: self
 
 ! Initialization
   allocate(self%rlons(self%nlon)); self%rlons=zero
@@ -114,7 +113,7 @@ end subroutine gaugrid_dealloc_coord
 subroutine gaugrid_alloc_field(self)
   implicit none
 ! Passed variables
-  class(gaussian_grid),intent(inout) :: self 
+  class(gaussian_grid),intent(inout) :: self
 
 ! Initialization
   allocate(self%fld(self%nlat,self%nlon,self%nlev,self%nvar))
@@ -128,7 +127,7 @@ end subroutine gaugrid_alloc_field
 subroutine gaugrid_dealloc_field(self)
   implicit none
 ! Passed variables
-  class(gaussian_grid),intent(inout) :: self 
+  class(gaussian_grid),intent(inout) :: self
 
   if (allocated(self%fld)) deallocate(self%fld)
 
