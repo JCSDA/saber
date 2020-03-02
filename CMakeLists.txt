@@ -74,6 +74,10 @@ endif()
 ecbuild_use_package( PROJECT fckit VERSION 0.6.3 REQUIRED )
 include_directories( ${FCKIT_INCLUDE_DIRS} )
 
+# atlas
+ecbuild_use_package( PROJECT atlas VERSION 0.18.1 REQUIRED )
+include_directories( ${ATLAS_INCLUDE_DIRS} )
+
 # metis
 if(BUILD_METIS)
     ecbuild_use_package( PROJECT metis VERSION 0.0.0 REQUIRED )
@@ -87,7 +91,7 @@ endif()
 # Export package info
 ################################################################################
 
-list( APPEND SABER_TPLS eckit eckit_mpi fckit )
+list( APPEND SABER_TPLS eckit eckit_mpi fckit atlas atlas_f )
 if(BUILD_METIS)
     list( APPEND SABER_TPLS metis )
 endif()

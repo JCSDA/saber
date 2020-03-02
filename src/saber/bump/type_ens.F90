@@ -350,7 +350,6 @@ real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,u
 real(kind_real) :: londir(nam%nts),latdir(nam%nts),londir_tracker(nam%nts),latdir_tracker(nam%nts)
 real(kind_real) :: londir_wind(nam%nts),latdir_wind(nam%nts)
 real(kind_real),allocatable :: fld_uv_tmp(:,:,:),fld_uv_interp(:,:,:)
-character(len=2) :: timeslotchar
 character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_cortrack'
 type(linop_type) :: h
@@ -402,7 +401,7 @@ do its=1,nam%nts
    latdir(its) = geom%lat(ic0)
 
    ! Print results
-   write(mpl%info,'(a13,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / lev / val: ', &
+   write(mpl%info,'(a13,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(its))//' ~> lon / lat / lev / val: ', &
  & londir(its)*rad2deg,' / ',latdir(its)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
    call mpl%flush
 end do
@@ -411,8 +410,7 @@ end do
 write(mpl%info,'(a10,a)') '','Write correlation'
 call mpl%flush
 do its=1,nam%nts
-   write(timeslotchar,'(i2.2)') nam%timeslot(its)
-   call io%fld_write(mpl,nam,geom,filename,'cor_'//timeslotchar,cor(:,:,:,its))
+   call io%fld_write(mpl,nam,geom,filename,'cor_'//trim(nam%timeslot(its)),cor(:,:,:,its))
 end do
 
 ! Correlation tracker
@@ -420,12 +418,11 @@ write(mpl%info,'(a7,a)') '','Correlation tracker'
 call mpl%flush
 londir_tracker(1) = geom%londir(1)
 latdir_tracker(1) = geom%latdir(1)
-write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(1),' ~> lon / lat / lev / val: ', &
+write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(1))//' ~> lon / lat / lev / val: ', &
  & londir_tracker(1)*rad2deg,' / ',latdir_tracker(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
 call mpl%flush
-write(timeslotchar,'(i2.2)') nam%timeslot(1)
-call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_0',cor(:,:,:,1))
-call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,:,2))
+call io%fld_write(mpl,nam,geom,filename,'tracker_'//trim(nam%timeslot(1))//'_0',cor(:,:,:,1))
+call io%fld_write(mpl,nam,geom,filename,'tracker_'//trim(nam%timeslot(1))//'_1',cor(:,:,:,2))
 do its=2,nam%nts
    ! Correlation maximum displacement
    ic0a = mpl%msv%vali
@@ -446,7 +443,7 @@ do its=2,nam%nts
    latdir_tracker(its) = geom%lat(ic0)
 
    ! Print results
-   write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / lev / val: ', &
+   write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(its))//' ~> lon / lat / lev / val: ', &
  & londir_tracker(its)*rad2deg,' / ',latdir_tracker(its)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
    call mpl%flush
 
@@ -465,9 +462,8 @@ do its=2,nam%nts
    ! Write correlation tracker
    write(mpl%info,'(a13,a)') '','Write correlation tracker'
    call mpl%flush
-   write(timeslotchar,'(i2.2)') nam%timeslot(its)
-   call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_0',cor(:,:,:,its))
-   if (its<nam%nts) call io%fld_write(mpl,nam,geom,filename,'tracker_'//timeslotchar//'_1',cor(:,:,:,its+1))
+   call io%fld_write(mpl,nam,geom,filename,'tracker_'//trim(nam%timeslot(its))//'_0',cor(:,:,:,its))
+   if (its<nam%nts) call io%fld_write(mpl,nam,geom,filename,'tracker_'//trim(nam%timeslot(its))//'_1',cor(:,:,:,its+1))
 end do
 
 if (present(fld_uv)) then
@@ -478,7 +474,7 @@ if (present(fld_uv)) then
    ! Initialization
    londir_wind(1) = geom%londir(1)
    latdir_wind(1) = geom%latdir(1)
-   write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot ',nam%timeslot(1),' ~> lon / lat / lev / val: ', &
+   write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(1))//' ~> lon / lat / lev / val: ', &
  & londir_wind(1)*rad2deg,' / ',latdir_wind(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
    call mpl%flush
    dtl = nam%dts/nt
@@ -551,7 +547,7 @@ if (present(fld_uv)) then
       end do
 
       ! Print results
-      write(mpl%info,'(a10,a,i2,a,f6.1,a,f6.1,a,i3)') '','Timeslot ',nam%timeslot(its),' ~> lon / lat / lev: ', &
+      write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3)') '','Timeslot '//trim(nam%timeslot(its))//' ~> lon / lat / lev: ', &
     & londir_wind(its)*rad2deg,' / ',latdir_wind(its)*rad2deg,' / ',nam%levs(geom%il0dir(1))
       call mpl%flush
    end do

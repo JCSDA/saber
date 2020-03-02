@@ -7,12 +7,14 @@
 !----------------------------------------------------------------------
 module type_geom
 
+use atlas_module
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 #if SABER_USE_METIS
 use metis_interface, only: metis_setdefaultoptions,metis_partgraphrecursive,metis_partgraphkway, &
                          & metis_noptions,metis_option_numbering,metis_ok
 #endif
 use netcdf
+use tools_atlas, only: create_atlas_function_space,field_to_fld
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
 use tools_kinds, only: kind_real,nc_kind_real
@@ -30,70 +32,82 @@ implicit none
 ! Geometry derived type
 type geom_type
    ! Number of points and levels
-   integer :: nmg                                ! Number of model grid points
-   integer :: nc0                                ! Number of points in subset Sc0
-   integer :: nl0                                ! Number of levels in subset Sl0
-   integer :: nl0i                               ! Number of independent levels in subset Sl0
+   integer :: nmg                                 ! Number of model grid points
+   integer :: nc0                                 ! Number of points in subset Sc0
+   integer :: nl0                                 ! Number of levels in subset Sl0
+   integer :: nl0i                                ! Number of independent levels in subset Sl0
+
+   ! Basic geometry data on model grid, halo A
+   real(kind_real),allocatable :: lon_mga(:)       ! Longitudes
+   real(kind_real),allocatable :: lat_mga(:)       ! Latitudes
+   real(kind_real),allocatable :: area_mga(:,:)    ! Domain area
+   real(kind_real),allocatable :: vunit_mga(:,:)   ! Vertical unit
+   logical,allocatable :: gmask_mga(:,:)           ! Geometry mask
+   logical,allocatable :: smask_mga(:,:)           ! Sampling ma
+
+   ! ATLAS function space
+   type(atlas_functionspace) :: afunctionspace_mg  ! ATLAS function space of model grid
 
    ! Basic geometry data
-   real(kind_real),allocatable :: lon(:)         ! Longitudes on subset Sc0, global
-   real(kind_real),allocatable :: lon_c0a(:)     ! Longitudes on subset Sc0, halo A
-   real(kind_real),allocatable :: lat(:)         ! Latitudes on subset Sc0, global
-   real(kind_real),allocatable :: lat_c0a(:)     ! Latitudes on subset Sc0, halo A
-   real(kind_real),allocatable :: area(:)        ! Domain area
-   real(kind_real),allocatable :: vunit_c0(:,:)  ! Vertical unit on subset Sc0, global
-   real(kind_real),allocatable :: vunit_c0a(:,:) ! Vertical unit on subset Sc0, halo A
-   real(kind_real),allocatable :: vunitavg(:)    ! Averaged vertical unit
-   real(kind_real),allocatable :: disth(:)       ! Horizontal distance
+   real(kind_real),allocatable :: lon(:)           ! Longitudes on subset Sc0, global
+   real(kind_real),allocatable :: lon_c0a(:)       ! Longitudes on subset Sc0, halo A
+   real(kind_real),allocatable :: lat(:)           ! Latitudes on subset Sc0, global
+   real(kind_real),allocatable :: lat_c0a(:)       ! Latitudes on subset Sc0, halo A
+   real(kind_real),allocatable :: area(:)          ! Domain area
+   real(kind_real),allocatable :: vunit_c0(:,:)    ! Vertical unit on subset Sc0, global
+   real(kind_real),allocatable :: vunit_c0a(:,:)   ! Vertical unit on subset Sc0, halo A
+   real(kind_real),allocatable :: vunitavg(:)      ! Averaged vertical unit
+   real(kind_real),allocatable :: disth(:)         ! Horizontal distance
 
    ! Masks
-   logical,allocatable :: mask_c0(:,:)           ! Mask on subset Sc0, global
-   logical,allocatable :: mask_c0a(:,:)          ! Mask on subset Sc0, halo A
-   logical,allocatable :: mask_hor_c0(:)         ! Union of horizontal masks on subset Sc0, global
-   logical,allocatable :: mask_hor_c0a(:)        ! Union of horizontal masks on subset Sc0, halo A
-   logical,allocatable :: mask_ver_c0(:)         ! Union of vertical masks
-   integer,allocatable :: nc0_mask(:)            ! Horizontal mask size on subset Sc0
-   logical,allocatable :: smask_c0a(:,:)         ! Sampling mask on subset Sc0, halo A
-   real(kind_real),allocatable :: mdist(:,:)     ! Minimum distance to mask
+   logical,allocatable :: mask_c0(:,:)             ! Mask on subset Sc0, global
+   logical,allocatable :: mask_c0a(:,:)            ! Mask on subset Sc0, halo A
+   logical,allocatable :: mask_hor_c0(:)           ! Union of horizontal masks on subset Sc0, global
+   logical,allocatable :: mask_hor_c0a(:)          ! Union of horizontal masks on subset Sc0, halo A
+   logical,allocatable :: mask_ver_c0(:)           ! Union of vertical masks
+   integer,allocatable :: nc0_mask(:)              ! Horizontal mask size on subset Sc0
+   logical,allocatable :: smask_c0a(:,:)           ! Sampling mask on subset Sc0, halo A  
+   real(kind_real),allocatable :: mdist(:,:)       ! Minimum distance to mask
 
    ! Mesh
-   type(mesh_type) :: mesh                       ! Mesh
+   type(mesh_type) :: mesh                         ! Mesh
 
    ! Tree
-   type(tree_type) :: tree                       ! Tree
+   type(tree_type) :: tree                         ! Tree
 
-   ! Boundary nodes
-   integer,allocatable :: nbnda(:)               ! Number of boundary arcs
-   real(kind_real),allocatable :: v1bnda(:,:,:)  ! Boundary arcs, first vector
-   real(kind_real),allocatable :: v2bnda(:,:,:)  ! Boundary arcs, second vector
-   real(kind_real),allocatable :: vabnda(:,:,:)  ! Boundary arcs, orthogonal vector
+   ! Boundary fields
+   integer,allocatable :: nbnda(:)                 ! Number of boundary arcs
+   real(kind_real),allocatable :: v1bnda(:,:,:)    ! Boundary arcs, first vector
+   real(kind_real),allocatable :: v2bnda(:,:,:)    ! Boundary arcs, second vector
+   real(kind_real),allocatable :: vabnda(:,:,:)    ! Boundary arcs, orthogonal vector
 
    ! Dirac information
-   integer :: ndir                               ! Number of valid Dirac points
-   real(kind_real),allocatable :: londir(:)      ! Dirac longitude
-   real(kind_real),allocatable :: latdir(:)      ! Dirac latitude
-   integer,allocatable :: iprocdir(:)            ! Dirac processor
-   integer,allocatable :: ic0adir(:)             ! Dirac gridpoint
-   integer,allocatable :: il0dir(:)              ! Dirac level
-   integer,allocatable :: ivdir(:)               ! Dirac variable
-   integer,allocatable :: itsdir(:)              ! Dirac timeslot
+   integer :: ndir                                 ! Number of valid Dirac points
+   real(kind_real),allocatable :: londir(:)        ! Dirac longitude
+   real(kind_real),allocatable :: latdir(:)        ! Dirac latitude
+   integer,allocatable :: iprocdir(:)              ! Dirac processor
+   integer,allocatable :: ic0adir(:)               ! Dirac gridpoint
+   integer,allocatable :: il0dir(:)                ! Dirac level
+   integer,allocatable :: ivdir(:)                 ! Dirac variable  
+   integer,allocatable :: itsdir(:)                ! Dirac timeslot
 
    ! MPI distribution
-   integer :: nmga                               ! Halo A size for model grid
-   integer :: nc0a                               ! Halo A size for subset Sc0
-   integer,allocatable :: proc_to_nmga(:)        ! Halo A size for each proc
-   integer,allocatable :: c0_to_proc_init(:)     ! Subset Sc0 to local task, initial version
-   integer,allocatable :: c0_to_proc(:)          ! Subset Sc0 to local task
-   logical :: same_grid                          ! Same grid and distribution flag
-   integer,allocatable :: c0_to_c0a(:)           ! Subset Sc0, global to halo A
-   integer,allocatable :: c0a_to_c0(:)           ! Subset Sc0, halo A to global
-   integer,allocatable :: proc_to_nc0a(:)        ! Halo A size for each proc
-   integer,allocatable :: c0a_to_mga(:)          ! Subset Sc0 to model grid, halo A
-   type(com_type) :: com_mg                      ! Communication between subset Sc0 and model grid
+   integer :: nmga                                 ! Halo A size for model grid
+   integer :: nc0a                                 ! Halo A size for subset Sc0
+   integer,allocatable :: proc_to_nmga(:)          ! Halo A size for each proc
+   integer,allocatable :: c0_to_proc_init(:)       ! Subset Sc0 to local task, initial version
+   integer,allocatable :: c0_to_proc(:)            ! Subset Sc0 to local task
+   logical :: same_grid                            ! Same grid and distribution flag
+   integer,allocatable :: c0_to_c0a(:)             ! Subset Sc0, global to halo A
+   integer,allocatable :: c0a_to_c0(:)             ! Subset Sc0, halo A to global
+   integer,allocatable :: proc_to_nc0a(:)          ! Halo A size for each proc
+   integer,allocatable :: c0a_to_mga(:)            ! Subset Sc0 to model grid, halo A
+   type(com_type) :: com_mg                        ! Communication between subset Sc0 and model grid
 contains
    procedure :: partial_dealloc => geom_partial_dealloc
    procedure :: dealloc => geom_dealloc
    procedure :: setup => geom_setup
+   procedure :: from_atlas => geom_from_atlas
    procedure :: remap => geom_remap
    procedure :: define_dirac => geom_define_dirac
    procedure :: check_arc => geom_check_arc
@@ -166,6 +180,7 @@ class(geom_type),intent(inout) :: geom ! Geometry
 
 ! Release memory
 call geom%partial_dealloc
+call geom%afunctionspace_mg%final()
 if (allocated(geom%mask_c0a)) deallocate(geom%mask_c0a)
 if (allocated(geom%c0a_to_mga)) deallocate(geom%c0a_to_mga)
 call geom%com_mg%dealloc
@@ -176,22 +191,17 @@ end subroutine geom_dealloc
 ! Subroutine: geom_setup
 ! Purpose: setup geometry
 !----------------------------------------------------------------------
-subroutine geom_setup(geom,mpl,rng,nam,nmga,nl0,lon,lat,area,vunit,lmask)
+subroutine geom_setup(geom,mpl,rng,nam,afunctionspace,afieldset)
 
 implicit none
 
 ! Passed variables
-class(geom_type),intent(inout) :: geom         ! Geometry
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-type(rng_type),intent(inout) :: rng            ! Random number generator
-type(nam_type),intent(in) :: nam               ! Namelists
-integer,intent(in) :: nmga                     ! Halo A size
-integer,intent(in) :: nl0                      ! Number of levels in subset Sl0
-real(kind_real),intent(in) :: lon(nmga)        ! Longitudes
-real(kind_real),intent(in) :: lat(nmga)        ! Latitudes
-real(kind_real),intent(in) :: area(nmga)       ! Area
-real(kind_real),intent(in) :: vunit(nmga,nl0)  ! Vertical unit
-logical,intent(in) :: lmask(nmga,nl0)          ! Mask
+class(geom_type),intent(inout) :: geom                 ! Geometry
+type(mpl_type),intent(inout) :: mpl                    ! MPI data
+type(rng_type),intent(inout) :: rng                    ! Random number generator
+type(nam_type),intent(in) :: nam                       ! Namelists
+type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
+type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset
 
 ! Local variables
 integer :: ic0,jc0,kc0,i,j,k,ic0a,jc3,il0,il0i,offset,iproc,img,imga,iend,ibnda,nn_index(1),nc0own,ic0own
@@ -200,14 +210,24 @@ integer,allocatable :: c0own_to_mga(:),order(:),order_inv(:),bnda_to_c0(:,:)
 real(kind_real) :: lat_arc(2),lon_arc(2),xbnda(2),ybnda(2),zbnda(2)
 real(kind_real),allocatable :: sbuf(:),rbuf(:),lon_mg(:),lat_mg(:),area_mg(:),vunit_mg(:,:),list(:)
 logical :: same_mask,init,imask,jmask,kmask
-logical,allocatable :: sbufl(:),rbufl(:),lmask_mg(:,:),mask_hor_mg(:),not_mask_c0(:)
+logical,allocatable :: sbufl(:),rbufl(:),gmask_mg(:,:),mask_hor_mg(:),not_mask_c0(:)
 character(len=1024),parameter :: subr = 'geom_setup'
 type(fckit_mpi_status) :: status
 type(tree_type) :: tree
 
-! Copy geometry variables
-geom%nmga = nmga
-geom%nl0 = nl0
+! Number of levels
+geom%nl0 = nam%nl
+
+! Copy function space pointer
+geom%afunctionspace_mg = atlas_functionspace(afunctionspace%c_ptr())
+if (present(afieldset)) then
+   call geom%from_atlas(mpl,afunctionspace,afieldset)
+else
+   call geom%from_atlas(mpl,afunctionspace)
+end if
+
+! No mask
+if (nam%nomask) geom%gmask_mga = .true.
 
 ! Allocation
 allocate(proc_to_nmga(mpl%nproc))
@@ -235,12 +255,12 @@ allocate(sbuf(geom%nmga*(3+geom%nl0)))
 allocate(sbufl(geom%nmga*geom%nl0))
 
 ! Prepare buffers
-sbuf(0*geom%nmga+1:1*geom%nmga) = lon
-sbuf(1*geom%nmga+1:2*geom%nmga) = lat
-sbuf(2*geom%nmga+1:3*geom%nmga) = area
+sbuf(0*geom%nmga+1:1*geom%nmga) = geom%lon_mga
+sbuf(1*geom%nmga+1:2*geom%nmga) = geom%lat_mga
+sbuf(2*geom%nmga+1:3*geom%nmga) = geom%area_mga(:,1)
 do il0=1,geom%nl0
-   sbuf((2+il0)*geom%nmga+1:(3+il0)*geom%nmga) = vunit(:,il0)
-   sbufl((il0-1)*geom%nmga+1:il0*geom%nmga) = lmask(:,il0)
+   sbuf((2+il0)*geom%nmga+1:(3+il0)*geom%nmga) = geom%vunit_mga(:,il0)
+   sbufl((il0-1)*geom%nmga+1:il0*geom%nmga) = geom%gmask_mga(:,il0)
 end do
 
 ! Communication of model grid points
@@ -253,7 +273,7 @@ if (mpl%main) then
    allocate(lat_mg(geom%nmg))
    allocate(area_mg(geom%nmg))
    allocate(vunit_mg(geom%nmg,geom%nl0))
-   allocate(lmask_mg(geom%nmg,geom%nl0))
+   allocate(gmask_mg(geom%nmg,geom%nl0))
 
    ! Receive data on rootproc
    offset = 0
@@ -278,7 +298,7 @@ if (mpl%main) then
       area_mg(offset+1:offset+proc_to_nmga(iproc)) = rbuf(2*proc_to_nmga(iproc)+1:3*proc_to_nmga(iproc))
       do il0=1,geom%nl0
          vunit_mg(offset+1:offset+proc_to_nmga(iproc),il0) = rbuf((2+il0)*proc_to_nmga(iproc)+1:(3+il0)*proc_to_nmga(iproc))
-         lmask_mg(offset+1:offset+proc_to_nmga(iproc),il0) = rbufl((il0-1)*proc_to_nmga(iproc)+1:il0*proc_to_nmga(iproc))
+         gmask_mg(offset+1:offset+proc_to_nmga(iproc),il0) = rbufl((il0-1)*proc_to_nmga(iproc)+1:il0*proc_to_nmga(iproc))
       end do
 
       ! Update
@@ -288,16 +308,14 @@ if (mpl%main) then
       deallocate(rbuf)
       deallocate(rbufl)
    end do
+else
+   ! Send data to rootproc
+   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
+   call mpl%f_comm%send(sbufl,mpl%rootproc-1,mpl%tag+1)
+end if
+call mpl%update_tag(2)
 
-   ! Convert to radians
-   lon_mg = lon_mg*deg2rad
-   lat_mg = lat_mg*deg2rad
-
-   ! Enforce correct bounds
-   do img=1,geom%nmg
-      call lonlatmod(lon_mg(img),lat_mg(img))
-   end do
-
+if (mpl%main) then
    ! Allocation
    allocate(mg_to_c0(geom%nmg))
    allocate(redundant(geom%nmg))
@@ -366,7 +384,7 @@ if (mpl%main) then
    ! Deal with mask on redundant points
    do il0=1,geom%nl0
       do img=1,geom%nmg
-         if (mpl%msv%isnot(redundant(img))) lmask_mg(img,il0) = lmask_mg(img,il0).or.lmask_mg(redundant(img),il0)
+         if (mpl%msv%isnot(redundant(img))) gmask_mg(img,il0) = gmask_mg(img,il0).or.gmask_mg(redundant(img),il0)
       end do
    end do
 
@@ -381,9 +399,9 @@ if (mpl%main) then
    geom%lon = lon_mg(c0_to_mg)
    geom%lat = lat_mg(c0_to_mg)
    do il0=1,geom%nl0
-      geom%area(il0) = sum(area_mg(c0_to_mg),lmask_mg(c0_to_mg,il0))/req**2
+      geom%area(il0) = sum(area_mg(c0_to_mg),gmask_mg(c0_to_mg,il0))/req**2
       geom%vunit_c0(:,il0) = vunit_mg(c0_to_mg,il0)
-      geom%mask_c0(:,il0) = lmask_mg(c0_to_mg,il0)
+      geom%mask_c0(:,il0) = gmask_mg(c0_to_mg,il0)
    end do
 
    ! Release memory
@@ -391,7 +409,7 @@ if (mpl%main) then
    deallocate(lat_mg)
    deallocate(area_mg)
    deallocate(vunit_mg)
-   deallocate(lmask_mg)
+   deallocate(gmask_mg)
    deallocate(redundant)
    deallocate(mask_hor_mg)
 else
@@ -814,7 +832,135 @@ do iproc=1,mpl%nproc
    call mpl%flush
 end do
 
+! Deallocate memory
+deallocate(geom%lon_mga)
+deallocate(geom%lat_mga)
+deallocate(geom%area_mga)
+deallocate(geom%vunit_mga)
+deallocate(geom%gmask_mga)
+deallocate(geom%smask_mga)
+
 end subroutine geom_setup
+
+!----------------------------------------------------------------------
+! Subroutine: geom_from_atlas
+! Purpose: set geometry from ATLAS fieldset
+!----------------------------------------------------------------------
+subroutine geom_from_atlas(geom,mpl,afunctionspace,afieldset)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom                 ! Geometry
+type(mpl_type),intent(inout) :: mpl                    ! MPI data
+type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
+type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset
+
+! Local variables
+integer :: il0,i,j,imga
+real(kind_real) :: lonlat(2)
+real(kind_real),pointer :: real_ptr(:,:)
+character(len=1024),parameter :: subr = 'geom_from_atlas'
+type(atlas_field) :: afield,afield_lonlat
+type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
+type(atlas_mesh_nodes) :: anodes
+type(atlas_structuredgrid) :: asgrid
+
+select case (afunctionspace%name())
+case ('NodeColumns')
+    ! Get node columns function space
+    afunctionspace_nc = atlas_functionspace_nodecolumns(afunctionspace%c_ptr())
+
+    ! Get number of nodes
+    geom%nmga = afunctionspace_nc%nb_nodes()
+
+    ! Allocation
+    allocate(geom%lon_mga(geom%nmga))
+    allocate(geom%lat_mga(geom%nmga))
+
+    ! Get lon/lat field
+    anodes = afunctionspace_nc%nodes()
+    afield_lonlat = anodes%lonlat()
+    call afield_lonlat%data(real_ptr)
+    geom%lon_mga = real_ptr(1,:)*deg2rad
+    geom%lat_mga = real_ptr(2,:)*deg2rad
+case ('StructuredColumns')
+    ! Get structured columns function space
+    afunctionspace_sc = atlas_functionspace_structuredcolumns(afunctionspace%c_ptr())
+
+    ! Get number of nodes
+    geom%nmga = afunctionspace_sc%size_owned()
+
+    ! Allocation
+    allocate(geom%lon_mga(geom%nmga))
+    allocate(geom%lat_mga(geom%nmga))
+
+    ! Get lon/lat
+    asgrid = afunctionspace_sc%grid()
+    imga = 0
+    do j=afunctionspace_sc%j_begin(),afunctionspace_sc%j_end()
+       do i=afunctionspace_sc%i_begin(j),afunctionspace_sc%i_end(j)
+          imga = imga+1
+          lonlat = asgrid%lonlat(i,j)
+          geom%lon_mga(imga) = lonlat(1)*deg2rad
+          geom%lat_mga(imga) = lonlat(2)*deg2rad
+       end do
+    end do
+case default
+   call mpl%abort(subr,'wrong function space: '//afunctionspace%name())
+end select
+
+! Enforce proper bounds
+do imga=1,geom%nmga
+   call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
+end do
+
+! Allocation
+allocate(geom%area_mga(geom%nmga,1))
+allocate(geom%vunit_mga(geom%nmga,geom%nl0))
+allocate(geom%gmask_mga(geom%nmga,geom%nl0))
+allocate(geom%smask_mga(geom%nmga,geom%nl0))
+
+! Default values
+geom%area_mga = 1.0_kind_real
+do il0=1,geom%nl0
+   geom%vunit_mga(:,il0) = real(il0,kind_real)
+end do
+geom%gmask_mga = .true.
+geom%smask_mga = .true.
+
+if (present(afieldset)) then
+   ! Get area
+   if (afieldset%has_field('area')) then
+      afield = afieldset%field('area')
+      call field_to_fld(mpl,afield,geom%area_mga)
+      call afield%final()
+   end if
+
+   ! Get vertical unit
+   if (afieldset%has_field('vunit')) then
+      afield = afieldset%field('vunit')
+      call field_to_fld(mpl,afield,geom%vunit_mga)
+      call afield%final()
+   end if
+
+   ! Get geometry mask
+   if (afieldset%has_field('gmask')) then
+      afield = afieldset%field('gmask')
+      call field_to_fld(mpl,afield,geom%gmask_mga)
+      call afield%final()
+   end if
+
+   ! Get sampling mask
+   if (afieldset%has_field('smask')) then
+      afield = afieldset%field('smask')
+      call field_to_fld(mpl,afield,geom%smask_mga)
+      call afield%final()
+   end if
+end if
+
+end subroutine geom_from_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_remap

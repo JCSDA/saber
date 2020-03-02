@@ -89,7 +89,7 @@ end subroutine model_geos_coord
 ! Subroutine: model_geos_read
 ! Purpose: read GEOS field
 !----------------------------------------------------------------------
-subroutine model_geos_read(model,mpl,nam,filename,its,fld)
+subroutine model_geos_read(model,mpl,nam,filename,fld)
 
 implicit none
 
@@ -98,7 +98,6 @@ class(model_type),intent(inout) :: model                        ! Model
 type(mpl_type),intent(inout) :: mpl                             ! MPI data
 type(nam_type),intent(in) :: nam                                ! Namelist
 character(len=*),intent(in) :: filename                         ! File name
-integer,intent(in) :: its                                       ! Timeslot index
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
@@ -118,8 +117,6 @@ end if
 
 do iv=1,nam%nv
    if (mpl%main) then
-      ! 3d variable
-
       ! Get variable id
       call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
 
@@ -128,16 +125,6 @@ do iv=1,nam%nv
          call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/), &
        & (/model%nlon,model%nlat,1,1/)))
       end do
-
-      if (trim(nam%addvar2d(iv))/='') then
-         ! 2d variable
-
-         ! Get id
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%addvar2d(iv)),fld_id))
-
-         ! Read data
-         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1,1/),(/model%nlon,model%nlat,1/)))
-      end if
 
       ! Pack
       do il0=1,model%nl0
