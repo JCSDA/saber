@@ -510,7 +510,9 @@ if ((linop%n_s>0).and.(linop%n_s<reorder_max)) then
    ! Sort col and S
    linop%col = linop%col(order)
    if (linop%nvec>0) then
-      linop%Svec = linop%Svec(order,:)
+      ! COMPILER_BUG: the following line requires "linop%Svec(:,:)=" instead of 
+      !  "linop%Svec=" due to an intel19/debug compiler bug
+      linop%Svec(:,:) = linop%Svec(order,:)
    else
       linop%S = linop%S(order)
    end if
