@@ -10,7 +10,6 @@ subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
 use iso_fortran_env, only : output_unit
-use tools_const, only: rad2deg,req
 use tools_kinds,only: kind_real
 use type_bump, only: bump_type
 use type_model, only: model_type
@@ -160,18 +159,10 @@ else
    allocate(model%latobs(model%nobsa))
 end if
 
-! Proper dimensions
-model%lon_mga = model%lon_mga*rad2deg
-model%lat_mga = model%lat_mga*rad2deg
-model%area_mga = model%area_mga*req**2
-
 ! BUMP setup
-call bump%setup_online(f_comm,model%nmga,model%nl0,bump%nam%nv,bump%nam%nts, &
-                     & model%lon_mga,model%lat_mga,model%area_mga,model%vunit_mga,model%mask_mga, &
-                     & smask=model%smask_mga, &
-                     & ens1_ne=model%ens1_ne,ens1_nsub=model%ens1_nsub,ens2_ne=model%ens2_ne,ens2_nsub=model%ens2_nsub, &
-                     & nobs=model%nobsa,lonobs=model%lonobs*rad2deg,latobs=model%latobs*rad2deg, &
-                     & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr,fld_uv=model%fld_uv)
+call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
+              & ens1_ne=model%ens1_ne,ens1_nsub=model%ens1_nsub,ens2_ne=model%ens2_ne,ens2_nsub=model%ens2_nsub, &
+              & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs,lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
 ! Transfer members
 if (bump%nam%ens1_ne>0) then
@@ -182,8 +173,8 @@ if (bump%nam%ens1_ne>0) then
    do ie=1,model%ens1_ne
       write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',model%ens1_ne
       call mpl%flush
-      call bump%add_member(model%ens1(ie)%fld,ie,1)
-      deallocate(model%ens1(ie)%fld)
+      call bump%add_member(model%ens1(ie)%afieldset,ie,1)
+      call model%ens1(ie)%afieldset%final()
    end do
 end if
 if (bump%nam%ens2_ne>0) then
@@ -194,8 +185,8 @@ if (bump%nam%ens2_ne>0) then
    do ie=1,model%ens2_ne
       write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',model%ens2_ne
       call mpl%flush
-      call bump%add_member(model%ens2(ie)%fld,ie,2)
-      deallocate(model%ens2(ie)%fld)
+      call bump%add_member(model%ens2(ie)%afieldset,ie,2)
+      call model%ens2(ie)%afieldset%final()
    end do
 end if
 

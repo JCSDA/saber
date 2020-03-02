@@ -108,7 +108,7 @@ end subroutine model_fv3_coord
 ! Subroutine: model_fv3_read
 ! Purpose: read FV3 field
 !----------------------------------------------------------------------
-subroutine model_fv3_read(model,mpl,nam,filename,its,fld)
+subroutine model_fv3_read(model,mpl,nam,filename,fld)
 
 implicit none
 
@@ -117,7 +117,6 @@ class(model_type),intent(inout) :: model                        ! Model
 type(mpl_type),intent(inout) :: mpl                             ! MPI data
 type(nam_type),intent(in) :: nam                                ! Namelist
 character(len=*),intent(in) :: filename                         ! File name
-integer,intent(in) :: its                                       ! Timeslot index
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
@@ -137,8 +136,6 @@ end if
 
 do iv=1,nam%nv
    if (mpl%main) then
-      ! 3d variable
-
       ! Get variable id
       call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
 
@@ -149,18 +146,6 @@ do iv=1,nam%nv
           & (/model%nlon,model%nlat,1,1/)))
          end do
       end do
-
-      if (trim(nam%addvar2d(iv))/='') then
-         ! 2d variable
-
-         ! Get id
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%addvar2d(iv)),fld_id))
-
-         ! Read data
-         do itile=1,ntile
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0,itile),(/1,1,itile/),(/model%nlon,model%nlat,1/)))
-         end do
-      end if
 
       ! Pack
       do il0=1,model%nl0
