@@ -25,7 +25,7 @@ before_install:
 #======================================================================
 # Clone all repos
 #======================================================================
-  - pwd 
+  - pwd
   - git clone https://github.com/jcsda/saber-bundle.git ${REPO_SOURCE_DIR}/saber-bundle
   - git clone https://github.com/jcsda/fckit.git ${REPO_SOURCE_DIR}/saber-bundle/fckit
 
@@ -33,13 +33,13 @@ before_install:
   - git clone https://github.com/jcsda/atlas.git ${REPO_SOURCE_DIR}/saber-bundle/atlas
   - cd ${REPO_SOURCE_DIR}/saber-bundle/atlas
   - git checkout $BRANCH || echo "No branch named $BRANCH in atlas repo"
-  - cd $REPO_SOURCE_DIR  
+  - cd $REPO_SOURCE_DIR
 
 #  clone the testing branch of saber
-  - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber 
+  - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber
 
 
-#  do no switch to develop branch by removing 
+#  do no switch to develop branch by removing
 #  develop UPDATE in CMakeLists.txt in saber-bundle
   - ls
   - ls ${REPO_SOURCE_DIR}
@@ -77,13 +77,13 @@ script:
 ##  use cmake with flags to generate test coverage reports
   - date
 # set different test tiers for cron vs pr jobs
-  - if [ "$TRAVIS_EVENT_TYPE" != "cron" ]; then 
+  - if [ "$TRAVIS_EVENT_TYPE" != "cron" ]; then
       docker exec jcsda_container bash -c 'cd /build_container &&
         export SABER_TEST_TIER=1 &&
         export SABER_MPI_TEST=0 &&
         export SABER_OMP_TEST=0 &&
         cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON /jcsda/src_repo';
-    else 
+    else
       docker exec jcsda_container bash -c 'cd /build_container &&
         export SABER_TEST_TIER=3 &&
         export SABER_MPI_TEST=1 &&
@@ -97,7 +97,7 @@ script:
   - date
 ##  run lcov inside container
   - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --capture --directory . --output-file coverage.info'
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --remove coverage.info "/usr/*" --output-file coverage.info'  #  filter system-files 
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --remove coverage.info "/usr/*" --output-file coverage.info'  #  filter system-files
   - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --list coverage.info'  #  debug info
   - docker exec jcsda_container bash -c 'cd /build_container/saber && bash <(curl -s https://codecov.io/bash) -t b8d1ec3a-1248-4948-afe1-5afc97fc24c7 -X gcov -f coverage.info -R /jcsda/src_repo/saber/'
 
