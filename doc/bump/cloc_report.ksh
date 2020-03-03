@@ -17,7 +17,7 @@ if type "cloc" > /dev/null ; then
    cd ..
    cloc --exclude-dir=external --quiet --csv --out=cloc.csv ${src}
    cloc --quiet --csv --out=cloc_external.csv ${src}/external
-   
+
    # Write report
    echo "       Refactor cloc report"
    printf "# CLOC_REPORT\n\n" > ${doc}/CLOC_REPORT.md

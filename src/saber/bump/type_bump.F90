@@ -87,7 +87,7 @@ contains
    procedure :: dealloc => bump_dealloc
 end type bump_type
 
-logical :: print_member = .false. ! Print info when adding member to BUMP 
+logical :: print_member = .false. ! Print info when adding member to BUMP
 
 private
 public :: bump_type
@@ -267,7 +267,7 @@ else
    call bump%ens2%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
 end if
 
-if (bump%nam%new_cortrack.or.(trim(bump%nam%adv_type)=='wind').or.(trim(bump%nam%adv_type)=='windmax')) then 
+if (bump%nam%new_cortrack.or.(trim(bump%nam%adv_type)=='wind').or.(trim(bump%nam%adv_type)=='windmax')) then
    ! Initialize wind fields
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush

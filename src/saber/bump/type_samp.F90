@@ -772,7 +772,7 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
    ! Copy geometry mask
    samp%mask_c0a = geom%mask_c0a
    if (allocated(geom%smask_c0a)) samp%mask_c0a = samp%mask_c0a.and.geom%smask_c0a
-   
+
    ! Mask restriction
    if (nam%mask_type(1:3)=='lat') then
       ! Latitude band
@@ -805,17 +805,17 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
       end do
    elseif (trim(nam%mask_type)=='stddev') then
       ! Standard-deviation threshold
-   
+
       ! Allocation
       allocate(var(geom%nc0a,geom%nl0,nam%nv,nam%nts))
-   
+
       ! Compute variances
       var = 0.0
       do ie=1,ens%ne
          var = var+ens%mem(ie)%fld**2
       end do
       var = var/real(ens%ne-ens%nsub,kind_real)
-   
+
       ! Check standard-deviation value
       do iv=1,nam%nv
          write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
@@ -829,13 +829,13 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
             end if
          end do
       end do
-   
+
       ! Release memory
       deallocate(var)
    else
       if (.not.allocated(geom%smask_c0a)) call mpl%abort(subr,'mask_type not recognized')
    end if
-   
+
    ! Check vertically contiguous points
    if (nam%ncontig_th>0) then
       write(mpl%info,'(a10,a,i3,a)') '','Mask restricted with at least ',min(nam%ncontig_th,geom%nl0), &
@@ -855,10 +855,10 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
          samp%mask_c0a(ic0a,:) = samp%mask_c0a(ic0a,:).and.(ncontigmax>=min(nam%ncontig_th,geom%nl0))
       end do
    end if
-   
+
    ! Local to global
    call mpl%loc_to_glb(geom%nl0,geom%nc0a,samp%mask_c0a,geom%nc0,geom%c0_to_proc,geom%c0_to_c0a,.false.,samp%mask_c0)
-   
+
    ! Other masks
    samp%mask_hor_c0a = any(samp%mask_c0a,dim=2)
    if (mpl%main) then
@@ -1024,7 +1024,7 @@ if (mpl%main) then
             vic0(ivc0) = ic0
          end if
       end do
-   
+
       ! Initialization
       write(mpl%info,'(a7,a)') '','Compute positive separation sampling: '
       call mpl%flush(.false.)
@@ -1034,14 +1034,14 @@ if (mpl%main) then
       end do
       ir = 0
       irmaxloc = nam%irmax
-   
+
       ! Sample classes of positive separation
       do while ((.not.all(mpl%done)).and.(nvc0>1).and.(ir<=irmaxloc))
          ! Try a random point
          call rng%rand_integer(1,nvc0,i)
          ir = ir+1
          jc0 = vic0(i)
-   
+
          !$omp parallel do schedule(static) private(ic1,ic0,d,jc3,icinf,icsup,found,ictest) firstprivate(x,y,z,v1,v2,va,vp,t)
          do ic1=1,nam%nc1
             ! Allocation
@@ -1053,13 +1053,13 @@ if (mpl%main) then
             allocate(va(3))
             allocate(vp(3))
             allocate(t(4))
-   
+
             ! Check if there is a valid first point
             if (mpl%msv%isnot(samp%c1_to_c0(ic1))) then
                ! Compute the distance
                ic0 = samp%c1_to_c0(ic1)
                call sphere_dist(geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),d)
-   
+
                ! Find the class (dichotomy method)
                if ((d>0.0).and.(d<(real(nam%nc3,kind_real)-0.5)*nam%dc)) then
                   jc3 = 1
@@ -1069,11 +1069,11 @@ if (mpl%main) then
                   do while (.not.found)
                      ! New value
                      ictest = (icsup+icinf)/2
-   
+
                      ! Update
                      if (d<(real(ictest-1,kind_real)-0.5)*nam%dc) icsup = ictest
                      if (d>(real(ictest-1,kind_real)-0.5)*nam%dc) icinf = ictest
-   
+
                      ! Exit test
                      if (icsup==icinf+1) then
                         if (abs(real(icinf-1,kind_real)*nam%dc-d)<abs(real(icsup-1,kind_real)*nam%dc-d)) then
@@ -1088,7 +1088,7 @@ if (mpl%main) then
                         found = .true.
                      end if
                   end do
-   
+
                   ! Find if this class has not been aready filled
                   if ((jc3/=1).and.(mpl%msv%is(samp%c1c3_to_c0(ic1,jc3)))) then
                      samp%c1c3_to_c0(ic1,jc3) = jc0
@@ -1096,7 +1096,7 @@ if (mpl%main) then
                   end if
                end if
             end if
-   
+
             ! Release memory
             deallocate(x)
             deallocate(y)
@@ -1108,14 +1108,14 @@ if (mpl%main) then
             deallocate(t)
          end do
          !$omp end parallel do
-   
+
          ! Update
          vic0(i) = vic0(nvc0)
          nvc0 = nvc0-1
          call mpl%prog_print
       end do
       call mpl%prog_final
-   
+
       ! Release memory
       deallocate(vic0)
    end if
@@ -1215,7 +1215,7 @@ if (mpl%main) then
    do il0=1,geom%nl0
       ! First point
       samp%c1l0_log(:,il0) = samp%mask_c0(samp%c1_to_c0,il0)
-   
+
       ! Second point
       do jc3=1,nam%nc3
          do ic1=1,nam%nc1
@@ -1225,7 +1225,7 @@ if (mpl%main) then
 
             ! Check point index
             valid = mpl%msv%isnot(ic0).and.mpl%msv%isnot(jc0)
- 
+
             ! Check sampling mask
             if (valid) valid = samp%mask_c0(ic0,il0).and.samp%mask_c0(jc0,il0)
 
