@@ -110,7 +110,7 @@ if (mpl%main) then
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid))
+   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
    ! Timeslot index
    read(nam%timeslot(its),'(i2)') timeslot

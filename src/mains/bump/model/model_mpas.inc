@@ -90,7 +90,7 @@ character(len=1024),parameter :: subr = 'model_mpas_read'
 
 if (mpl%main) then
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid))
+   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
    ! Timeslot index
    read(nam%timeslot(its),'(i2)') timeslot
