@@ -364,16 +364,16 @@ if (linop%n_s>0) then
    allocate(rbuf_int(n_int))
    allocate(rbuf_real(n_real))
    allocate(mask_Svec(linop%n_s,linop%nvec))
-   
+
    ! Initialization
    mask_Svec = .true.
-   
+
    ! Receive buffers
    if (n_int>0) call mpl%f_comm%receive(rbuf_int,iproc-1,tag,status)
    tag = tag+1
    if (n_real>0) call mpl%f_comm%receive(rbuf_real,iproc-1,tag,status)
    tag = tag+1
-   
+
    ! Copy data
    linop%row = rbuf_int(offset_int+1:offset_int+linop%n_s)
    offset_int = offset_int+linop%n_s
@@ -455,7 +455,7 @@ if (linop%n_s>0) then
    allocate(sbuf_int(n_int))
    allocate(sbuf_real(n_real))
    allocate(mask_Svec(linop%n_s,linop%nvec))
-   
+
    ! Initialization
    mask_Svec = .true.
 
@@ -510,7 +510,7 @@ if ((linop%n_s>0).and.(linop%n_s<reorder_max)) then
    ! Sort col and S
    linop%col = linop%col(order)
    if (linop%nvec>0) then
-      ! COMPILER_BUG: the following line requires "linop%Svec(:,:)=" instead of 
+      ! COMPILER_BUG: the following line requires "linop%Svec(:,:)=" instead of
       !  "linop%Svec=" due to an intel19/debug compiler bug
       linop%Svec(:,:) = linop%Svec(order,:)
    else

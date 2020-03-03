@@ -648,12 +648,12 @@ if (present(fld_uv)) then
       ! Copy results
       londir_wind(its) = londir_wind(its-1)
       latdir_wind(its) = latdir_wind(its-1)
-   
+
       do it=1,nt
          ! Compute interpolation
          call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,geom%il0dir(1)), &
        & 1,londir_wind(its:its),latdir_wind(its:its),(/.true./),13)
-   
+
          ! Allocation
          allocate(fld_uv_tmp(h%n_s,2,2))
          allocate(fld_uv_interp(h%n_s,2,2))
@@ -674,7 +674,7 @@ if (present(fld_uv)) then
          call mpl%f_comm%allreduce(fld_uv_tmp,fld_uv_interp,fckit_mpi_sum())
 
          ! Interpolate wind value at dirac point
-         call h%apply(mpl,fld_uv_interp(:,1,1),um) 
+         call h%apply(mpl,fld_uv_interp(:,1,1),um)
          call h%apply(mpl,fld_uv_interp(:,2,1),vm)
          call h%apply(mpl,fld_uv_interp(:,1,2),up)
          call h%apply(mpl,fld_uv_interp(:,2,2),vp)
@@ -690,23 +690,23 @@ if (present(fld_uv)) then
          uxp = -sin(londir_wind(its))*up(1)-cos(londir_wind(its))*sin(latdir_wind(its))*vp(1)
          uyp = cos(londir_wind(its))*up(1)-sin(londir_wind(its))*sin(latdir_wind(its))*vp(1)
          uzp = cos(latdir_wind(its))*vp(1)
-   
+
          ! Define internal time
          t = real(it-1,kind_real)/real(nt,kind_real)
-   
+
          ! Define wind in cartesian coordinates
          ux = (1.0-t)*uxm+t*uxp
          uy = (1.0-t)*uym+t*uyp
          uz = (1.0-t)*uzm+t*uzp
-   
+
          ! Transform location to cartesian coordinates
          call lonlat2xyz(mpl,londir_wind(its),latdir_wind(its),x,y,z)
-   
+
          ! Propagate location
          x = x+ux*dtl
          y = y+uy*dtl
          z = z+uz*dtl
-   
+
          ! Back to spherical coordinates
          call xyz2lonlat(mpl,x,y,z,londir_wind(its),latdir_wind(its))
       end do
@@ -725,7 +725,7 @@ if (mpl%main) then
 
    ! Define dimension
    nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
-   
+
    ! Define variables
    call mpl%ncerr(subr,nf90_def_var(ncid,'londir',nc_kind_real,(/nts_id/),londir_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,londir_id,'_FillValue',mpl%msv%valr))
@@ -741,7 +741,7 @@ if (mpl%main) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_wind',nc_kind_real,(/nts_id/),latdir_wind_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,latdir_wind_id,'_FillValue',mpl%msv%valr))
    end if
-   
+
    ! End definition mode
    call mpl%ncerr(subr,nf90_enddef(ncid))
 
