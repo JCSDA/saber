@@ -71,7 +71,7 @@ type model_type
    type(member_field_type),allocatable :: ens2(:) ! Ensemble 2 members
 
    ! Observations locations
-   integer :: nobsa                               ! Number of observations, halo A 
+   integer :: nobsa                               ! Number of observations, halo A
    real(kind_real),allocatable :: lonobs(:)       ! Observations longitudes, halo A
    real(kind_real),allocatable :: latobs(:)       ! Observations latitudes, halo A
 contains
@@ -461,7 +461,7 @@ do img=1,model%nmg
       area_ptr(imga) = model%area(img)*req**2
       vunit_ptr(:,imga) = model%vunit(img,:)
       do il0=1,model%nl0
-         if (model%mask(img,il0).and.(.not.nam%check_no_point_mask)) then 
+         if (model%mask(img,il0).and.(.not.nam%check_no_point_mask)) then
             gmask_ptr(il0,imga) = 1
          else
             gmask_ptr(il0,imga) = 0
@@ -505,15 +505,15 @@ case default
          call mpl%flush
          write(mpl%info,'(a7,a,e10.3,a)') '','Threshold ',nam%mask_th(1),' used as a '//trim(nam%mask_lu(1))//' bound'
          call mpl%flush
-   
+
          ! Save namelist parameters
          nv_save = nam%nv
          varname_save = nam%varname
-   
+
          ! Set namelist parameters
          nam%nv = 1
          nam%varname(1) = varname
-   
+
          ! Read file
          call model%read(mpl,nam,filename,1,afieldset)
 
@@ -735,7 +735,7 @@ type(nam_type),intent(inout) :: nam       ! Namelist
 integer :: nv_save,its
 character(len=1024) :: varname_save(nam%nv),fullname
 
-if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='windmax')) then 
+if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='windmax')) then
    ! Save namelist parameters
    nv_save = nam%nv
    varname_save(1:nam%nv) = nam%varname(1:nam%nv)

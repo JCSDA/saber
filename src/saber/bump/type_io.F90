@@ -249,7 +249,7 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
          ! Allocation
          allocate(lon(geom%nc0))
          allocate(lat(geom%nc0))
-   
+
          ! Convert to degrees
          lon = geom%lon*rad2deg
          lat = geom%lat*rad2deg

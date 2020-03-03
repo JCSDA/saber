@@ -12,7 +12,7 @@ if type "dot" > /dev/null ; then
    mkdir -p ${doc}
    architecture=$1/architecture
    mkdir -p ${architecture}
-   
+
    # Build diagrams
    filename=setup_online
    echo "       File: "${filename}
@@ -42,7 +42,7 @@ digraph callgraph {
 EOFDIAGRAM
    cat ${architecture}/${filename}.txt | dot -Nshape="box" -Grankdir="LR" -Tsvg > ${architecture}/${filename}.svg
    rm -f ${architecture}/${filename}.txt
-   
+
    filename=run_online
    echo "       File: "${filename}
 cat<<EOFDIAGRAM > ${architecture}/${filename}.txt
@@ -56,7 +56,7 @@ digraph callgraph {
 EOFDIAGRAM
    cat ${architecture}/${filename}.txt | dot -Nshape="box" -Grankdir="LR" -Tsvg > ${architecture}/${filename}.svg
    rm -f ${architecture}/${filename}.txt
-   
+
    filename=get_parameter
    echo "       File: "${filename}
 cat<<EOFDIAGRAM > ${architecture}/${filename}.txt
@@ -66,7 +66,7 @@ digraph callgraph {
 EOFDIAGRAM
    cat ${architecture}/${filename}.txt | dot -Nshape="box" -Grankdir="LR" -Tsvg > ${architecture}/${filename}.svg
    rm -f ${architecture}/${filename}.txt
-   
+
    filename=apply_vbal
    echo "       File: "${filename}
 cat<<EOFDIAGRAM > ${architecture}/${filename}.txt
@@ -79,7 +79,7 @@ digraph callgraph {
 EOFDIAGRAM
    cat ${architecture}/${filename}.txt | dot -Nshape="box" -Grankdir="LR" -Tsvg > ${architecture}/${filename}.svg
    rm -f ${architecture}/${filename}.txt
-   
+
    filename=apply_nicas
    echo "       File: "${filename}
 cat<<EOFDIAGRAM > ${architecture}/${filename}.txt
@@ -92,7 +92,7 @@ digraph callgraph {
 EOFDIAGRAM
    cat ${architecture}/${filename}.txt | dot -Nshape="box" -Grankdir="LR" -Tsvg > ${architecture}/${filename}.svg
    rm -f ${architecture}/${filename}.txt
-   
+
    filename=apply_obsop
    echo "       File: "${filename}
 cat<<EOFDIAGRAM > ${architecture}/${filename}.txt
@@ -103,7 +103,7 @@ digraph callgraph {
 EOFDIAGRAM
    cat ${architecture}/${filename}.txt | dot -Nshape="box" -Grankdir="LR" -Tsvg > ${architecture}/${filename}.svg
    rm -f ${architecture}/${filename}.txt
-   
+
    filename=deallocation
    echo "       File: "${filename}
 cat<<EOFDIAGRAM > ${architecture}/${filename}.txt
@@ -113,7 +113,7 @@ digraph callgraph {
 EOFDIAGRAM
    cat ${architecture}/${filename}.txt | dot -Nshape="box" -Grankdir="LR" -Tsvg > ${architecture}/${filename}.svg
    rm -f ${architecture}/${filename}.txt
-   
+
    filename=drivers
    echo "       File: "${filename}
 cat<<EOFDIAGRAM > ${architecture}/${filename}.txt
