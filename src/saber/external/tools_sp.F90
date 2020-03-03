@@ -220,7 +220,7 @@ subroutine lubksb(A,N,NP,INDX,B)
       do J=II,I-1
         SUM=SUM-A(I,J)*B(J)
       end do
-    else if(SUM/=ZERO) then
+    else if(ABS(SUM)>ZERO) then
       II=I
     end if
     B(I)=SUM
@@ -257,7 +257,7 @@ subroutine ludcmp(A,N,NP,INDX,D)
     do J=1,N
       if(abs(A(I,J))>AAMAX) AAMAX=abs(A(I,J))
     end do
-    if(AAMAX==ZERO) print *, 'SINGULAR MATRIX.'
+    if(.NOT.(ABS(AAMAX)>ZERO)) print *, 'SINGULAR MATRIX.'
     VV(I)=ONE/AAMAX
   end do
   do J=1,N
@@ -298,14 +298,14 @@ subroutine ludcmp(A,N,NP,INDX,D)
     end if
     INDX(J)=IMAX
     if(J/=N) then
-      if(A(J,J)==ZERO) A(J,J)=TINY
+      if(.NOT.(ABS(A(J,J))>ZERO)) A(J,J)=TINY
       DUM=ONE/A(J,J)
       do I=J+1,N
         A(I,J)=A(I,J)*DUM
       end do
     end if
   end do
-  if(A(N,N)==ZERO) A(N,N)=TINY
+  if(.NOT.(ABS(A(N,N))>ZERO)) A(N,N)=TINY
   return
 end subroutine ludcmp
 

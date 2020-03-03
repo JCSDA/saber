@@ -46,7 +46,7 @@
 \DeclareMathOperator{\Cor}{Cor}
 \newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
 \def\independenT#1#2{\mathrel{\setbox0\hbox{$#1#2$}%
-\copy0\kern-\wd0\mkern4mu\box0}} 
+\copy0\kern-\wd0\mkern4mu\box0}}
 
 % Appropriate font for \mathcal{}
 \DeclareSymbolFont{cmmathcal}{OMS}{cmsy}{m}{n}
@@ -84,7 +84,7 @@
 Documentation for the code "BUMP", distributed under the CeCILL-C license.\\
 Copyright \copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 \end{center}
-  
+
 \tableofcontents
 
 \clearpage
@@ -219,7 +219,7 @@ The normalized distance between two levels $i^l$ and $j^l$ is defined as
 \widehat{d}^v_\text{min}(i^l,j^l) = \frac{d^v(i^l,j^l)}{\displaystyle \sqrt{\frac{1}{2}\left(\left(r^v_\mathrm{min}(i^l)\right)^2+\left(r^v_\mathrm{min}(j^l)\right)^2\right)}}
 \end{align}
 where $d^v(i^l,j^l)$ is the vertical distance between levels $i^l$ and $j^l$ (measured in meters or in pressure logarithm for instance). We start from the first level (always in the $\mathcal{S}^l_1$ subset) and look for the next vertical level for which the vertical normalized distance $\widehat{d}^v_\text{min}$ with the first level is larger than $1/\rho$. Thus, the distance $d^v$ between these levels is approximately $r^v/\rho$. Once such a level is reached, the procedure starts again towards the next one. The last level is automatically included in the $\mathcal{S}^l_1$ subset.
- 
+
 \begin{center}
 \includegraphics[height=0.6\linewidth]{profile.pdf}
 \captionof{figure}{Black dots: ARPEGE levels; red dots: subset $\mathcal{S}^l_1$ with a homogeneous vertical support radius $r^v$ in pressure logarithm coordinate}
@@ -276,7 +276,7 @@ The convolution function used in NICAS is the famous \citet{gaspari_1999} functi
 \displaystyle
 0 & \text{if } 1 < \widehat{d}
 \end{array} \right.
-\end{align}                 
+\end{align}
 where $\widehat{d}$ is a normalized distance (great-circle distance divided by the compact support radius).\\
 $  $\\
 The 3D normalized distance between nodes with coordinates $(i^c,i^l)$ and $(j^c,j^l)$ is:
@@ -465,7 +465,7 @@ The cost of the direct and adjoint interpolations is directly linked to the kind
 \item the number of operations in $\mathbf{S}^v$ is bounded by $2 n^l_0 n^c_1$,
 \item the number of operations in $\mathbf{S}^s$ is bounded by $\displaystyle 3 \sum_{i^l \in \mathcal{S}^l_1} n^c_2(i^l) \le 3 n^c_1 n^l_1$
 \end{itemize}
-Thus, the dominant cost is in the horizontal interpolation $\mathbf{S}^h$, and the number of operations is bounded by $n^\mathrm{interp} = 3n$. In a parallel implementation with $p$ tasks, the cost per task becomes 
+Thus, the dominant cost is in the horizontal interpolation $\mathbf{S}^h$, and the number of operations is bounded by $n^\mathrm{interp} = 3n$. In a parallel implementation with $p$ tasks, the cost per task becomes
 \begin{align}
 n^\mathrm{interp}_\mathrm{MPI} = 3 \frac{n}{p}
 \end{align}
@@ -485,11 +485,11 @@ n^s = \frac{8 \pi}{3\sqrt{3}} \frac{\mathcal{V}}{\mathcal{V}_\mathrm{cs}} \rho^3
 \end{align}
 The density of nodes $\mathcal{D}$ is:
 \begin{align}
-\mathcal{D} = \frac{n_s}{\mathcal{V}} = \frac{8\pi}{3\sqrt{3}} \frac{\rho^3}{\mathcal{V}_\mathrm{cs}} 
+\mathcal{D} = \frac{n_s}{\mathcal{V}} = \frac{8\pi}{3\sqrt{3}} \frac{\rho^3}{\mathcal{V}_\mathrm{cs}}
 \end{align}
 so the number of points in the 3D compact support of the convolution function is:
 \begin{align}
-m^s = \mathcal{D} \mathcal{V}_\mathrm{cs} = \frac{8\pi \rho^3}{3\sqrt{3}} 
+m^s = \mathcal{D} \mathcal{V}_\mathrm{cs} = \frac{8\pi \rho^3}{3\sqrt{3}}
 \end{align}
 As a consequence, the number of operations for the convolution is approximately:
 \begin{align}
@@ -544,7 +544,7 @@ $  $\\
 A key aspect of the NICAS method is that communications are performed on the subgrid $\mathcal{G}^s$ and do not depend explicitly on the size of the full grid $\mathcal{G}^f$. However in the present implementation, the distribution of $\mathcal{G}^s$ points among tasks is still defined from the distribution of $\mathcal{G}^f$ points, which can introduce imbalances in the tasks load.
 
 \subsection{Resolution impact}
-The resolution parameter has been introduced to compute the subgrid size. Figures \ref{fig:resol_8}, \ref{fig:resol_6} and \ref{fig:resol_4} show the decrease of subgrid density with the resolution parameter. 
+The resolution parameter has been introduced to compute the subgrid size. Figures \ref{fig:resol_8}, \ref{fig:resol_6} and \ref{fig:resol_4} show the decrease of subgrid density with the resolution parameter.
 
 \begin{center}
 \includegraphics[height=0.75\linewidth,angle=90]{arp_6B60_mesh_001_resol-8.pdf}

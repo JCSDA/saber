@@ -61,7 +61,7 @@ type geom_type
    logical,allocatable :: mask_hor_c0a(:)          ! Union of horizontal masks on subset Sc0, halo A
    logical,allocatable :: mask_ver_c0(:)           ! Union of vertical masks
    integer,allocatable :: nc0_mask(:)              ! Horizontal mask size on subset Sc0
-   logical,allocatable :: smask_c0a(:,:)           ! Sampling mask on subset Sc0, halo A  
+   logical,allocatable :: smask_c0a(:,:)           ! Sampling mask on subset Sc0, halo A
    real(kind_real),allocatable :: mdist(:,:)       ! Minimum distance to mask
 
    ! Mesh
@@ -83,7 +83,7 @@ type geom_type
    integer,allocatable :: iprocdir(:)              ! Dirac processor
    integer,allocatable :: ic0adir(:)               ! Dirac gridpoint
    integer,allocatable :: il0dir(:)                ! Dirac level
-   integer,allocatable :: ivdir(:)                 ! Dirac variable  
+   integer,allocatable :: ivdir(:)                 ! Dirac variable
    integer,allocatable :: itsdir(:)                ! Dirac timeslot
 
    ! MPI distribution
