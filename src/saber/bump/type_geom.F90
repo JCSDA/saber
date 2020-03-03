@@ -412,10 +412,6 @@ if (mpl%main) then
    deallocate(gmask_mg)
    deallocate(redundant)
    deallocate(mask_hor_mg)
-else
-   ! Send data to rootproc
-   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
-   call mpl%f_comm%send(sbufl,mpl%rootproc-1,mpl%tag+1)
 end if
 call mpl%update_tag(2)
 
