@@ -162,6 +162,7 @@ endif()
 # Model tests
 if(${SABER_MODEL_TEST})
     list(APPEND saber_test_model
+        bump_fv3
         bump_geos
         bump_mpas
         bump_nemovar

@@ -224,7 +224,7 @@ type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(inout) :: nam      ! Namelist variables
 
 ! Local variables
-integer :: img,info,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,itile,ilon,ilat,ilonsub,ilatsub
+integer :: img,info,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,itile,ilon,ilat,ilonsub,ilatsub,imgt
 integer :: deltalon,deltalat,nprocpertile,nreslon,nreslat,nxmax
 integer :: ncid,nmg_id,mg_to_proc_id,mg_to_mga_id,lon_id,lat_id
 integer,allocatable :: nx(:),nlatsub(:),nlonsub(:,:),lonlattile_to_proc(:,:,:),imga_arr(:)
@@ -654,6 +654,57 @@ case default
       end if
    end if
 end select
+
+if (model%ntile>1) then
+   ! Allocation
+   allocate(model%tilepool(mpl%nproc,model%ntile))
+   allocate(model%ioproc(model%ntile))
+
+   ! Tile/task bind
+   model%tilepool = .false.
+   do img=1,model%nmg
+      itile = model%mg_to_tile(img)
+      iproc = model%mg_to_proc(img)
+      model%tilepool(iproc,itile) = .true.
+   end do
+
+   ! Check that a given task handles one tile only
+   do iproc=1,mpl%nproc
+      if (count(model%tilepool(iproc,:))>1) call mpl%abort(subr,'a given task should handle one tile only')
+   end do
+
+   do itile=1,model%ntile
+      ! Assign tiles
+      if (model%tilepool(mpl%myproc,itile)) model%mytile = itile
+
+      ! Assign reading task
+      do iproc=1,mpl%nproc
+         if (model%tilepool(iproc,itile)) then
+            model%ioproc(itile) = iproc
+            exit
+         end if
+      end do
+   end do
+
+   ! Count points on tile
+   model%nmgt = count(model%mg_to_tile==model%mytile)
+
+   ! Allocation
+   allocate(model%mgt_to_proc(model%nmgt))
+   allocate(model%mgt_to_mga(model%nmgt))
+   allocate(model%mgt_to_mg(model%nmgt))
+
+   ! Conversion
+   imgt = 0
+   do img=1,model%nmg
+      if (model%mg_to_tile(img)==model%mytile) then
+         imgt = imgt+1
+         model%mgt_to_proc(imgt) = model%mg_to_proc(img)
+         model%mgt_to_mga(imgt) = model%mg_to_mga(img)
+         model%mgt_to_mg(imgt) = img
+      end if
+   end do
+end if
 
 ! Release memory
 deallocate(lon_mga)
