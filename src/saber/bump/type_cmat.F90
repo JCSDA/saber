@@ -129,7 +129,7 @@ integer :: ib
 
 ! Initialize blocks
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat%blk(ib)%anisotropic = .false.
+   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) call cmat%blk(ib)%init(mpl,nam,bpar)
 end do
 
 end subroutine cmat_init
