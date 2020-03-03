@@ -1948,7 +1948,7 @@ if (rflt>0.0) then
             norm = 0.0
             do jc2=1,nc2eff
                distnorm = diag_eff_dist(jc2)/rflt
-               wgt = fit_func(mpl,'gc99',distnorm)
+               wgt = fit_func(mpl,distnorm)
                diag(ic2a) = diag(ic2a)+wgt*diag_eff(jc2)
                norm = norm+wgt
             end do

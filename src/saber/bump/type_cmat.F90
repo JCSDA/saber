@@ -116,12 +116,14 @@ end subroutine cmat_alloc_blk
 ! Subroutine: cmat_init
 ! Purpose: C matrix initialization
 !----------------------------------------------------------------------
-subroutine cmat_init(cmat,bpar)
+subroutine cmat_init(cmat,mpl,nam,bpar)
 
 implicit none
 
 ! Passed variables
 class(cmat_type),intent(inout) :: cmat ! C matrix
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(nam_type),intent(in) :: nam       ! Namelist
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
@@ -377,7 +379,7 @@ if (nam%local_diag) then
 end if
 
 ! Initialization
-call cmat%init(bpar)
+call cmat%init(mpl,nam,bpar)
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -569,7 +571,7 @@ end do
 call cmat%alloc(nam,geom,bpar)
 
 ! Initialization
-call cmat%init(bpar)
+call cmat%init(mpl,nam,bpar)
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -648,7 +650,7 @@ end do
 call cmat%alloc(nam,geom,bpar)
 
 ! Initialization
-call cmat%init(bpar)
+call cmat%init(mpl,nam,bpar)
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -701,7 +703,7 @@ if (.not.cmat%allocated) then
    call cmat%alloc(nam,geom,bpar)
 
    ! Initialization
-   call cmat%init(bpar)
+   call cmat%init(mpl,nam,bpar)
 end if
 
 do ib=1,bpar%nbe
