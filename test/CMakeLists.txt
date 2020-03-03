@@ -138,15 +138,15 @@ endif()
 set(ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber)
 
 # Define local path for test files
-if(DEFINED ENV{LOCAL_PATH_TESTFILES})
-    set(LOCAL_PATH_TESTFILES "$ENV{LOCAL_PATH_TESTFILES}")
+if(DEFINED ENV{LOCAL_PATH_TESTFILES_SABER})
+    set(LOCAL_PATH_TESTFILES_SABER "$ENV{LOCAL_PATH_TESTFILES_SABER}")
 endif()
 
 # If local path to testfiles is defined don't download
-if( NOT DEFINED LOCAL_PATH_TESTFILES )
-    # Set TESTFILE_DIR
-    set(TESTFILE_DIR ${CMAKE_BINARY_DIR}/test_data/saber)
-    file(MAKE_DIRECTORY ${TESTFILE_DIR})
+if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
+    # Set TESTFILE_DIR_SABER
+    set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber CACHE PATH "data dir for test data")
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER})
 
     # Get the current git branch
     execute_process(
@@ -155,7 +155,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES )
         OUTPUT_VARIABLE GIT_BRANCH
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    message(STATUS "Files downloaded into: "${TESTFILE_DIR})
+    message(STATUS "Files downloaded into: "${TESTFILE_DIR_SABER})
     message(STATUS "Download sources:")
 
     # Check whether the URL exists or not
@@ -177,7 +177,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES )
     ecbuild_get_test_multidata(TARGET   get_saber_data
                                NAMES    ${saber_data_tar}
                                DIRNAME  ${DIRNAME}
-                               DIRLOCAL ${TESTFILE_DIR}/testdata
+                               DIRLOCAL ${TESTFILE_DIR_SABER}/testdata
                                EXTRACT)
 
     # Check whether the URL exists or not
@@ -199,16 +199,16 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES )
     ecbuild_get_test_multidata(TARGET   get_saber_ref
                                NAMES    ${saber_ref_tar}
                                DIRNAME  ${DIRNAME}
-                               DIRLOCAL ${TESTFILE_DIR}/testref
+                               DIRLOCAL ${TESTFILE_DIR_SABER}/testref
                                EXTRACT)
 else()
-    set(TESTFILE_DIR ${LOCAL_PATH_TESTFILES})
-    message(STATUS "Files loaded from: "${TESTFILE_DIR})
+    set(TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER})
+    message(STATUS "Files loaded from: "${TESTFILE_DIR_SABER})
 endif()
 
 # Make directories
-file(MAKE_DIRECTORY ${TESTFILE_DIR}/testdata)
-file(MAKE_DIRECTORY ${TESTFILE_DIR}/testref)
+file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testdata)
+file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testref)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
@@ -222,17 +222,17 @@ endforeach()
 # Link data/reference files
 foreach(file ${saber_data})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR}/testdata/${file}
+                    ${TESTFILE_DIR_SABER}/testdata/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 foreach(file ${saber_ref})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR}/testref/${file}
+                    ${TESTFILE_DIR_SABER}/testref/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
 endforeach()
 foreach(file ${saber_ref_to_data})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR}/testref/${file}
+                    ${TESTFILE_DIR_SABER}/testref/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 
