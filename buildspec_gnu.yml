@@ -29,7 +29,7 @@ phases:
 
       - echo MPI setup for Docker
       - mkdir -p /var/run/sshd
-      - ssh-keygen -A 
+      - ssh-keygen -A
       - sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
       - sed -i 's/#RSAAuthentication yes/RSAAuthentication yes/g' /etc/ssh/sshd_config
       - sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
@@ -43,7 +43,7 @@ phases:
       - mkdir /jcsda/.ssh ; echo "StrictHostKeyChecking no" > /jcsda/.ssh/config
       - mkdir -p /jcsda/.openmpi
       - mkdir -p /home/jcsdauser/.openmpi
-        
+
       - cp default-mca-params.conf /home/jcsdauser/.openmpi/mca-params.conf
       - cat /home/jcsdauser/.openmpi/mca-params.conf
       - chown -R jcsdauser:jcsda /jcsda/
@@ -59,7 +59,7 @@ phases:
 
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
- 
+
       # saber-bundle
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
       - cd saber-bundle
@@ -77,8 +77,8 @@ phases:
       - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in fckit repo"
       - cd $CODEBUILD_SRC_DIR
       - ls
-      
-      # atlas  
+
+      # atlas
       - pwd
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/atlas saber-bundle/atlas
       - ls
@@ -93,7 +93,7 @@ phases:
   build:
     commands:
       - echo Executing build phase
-      - su - jcsdauser -c "cd /build_container 
+      - su - jcsdauser -c "cd /build_container
         && ls
         && ecbuild /jcsda/saber-bundle/
         && cd /build_container/saber

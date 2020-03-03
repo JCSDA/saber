@@ -1745,28 +1745,28 @@ end do
 nam%ens1_ne = ens1_ne
 
 if (mpl%main) then
-   ! Create file 
+   ! Create file
    filename = trim(nam%prefix)//'_randomization'
    call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
-   
+
    ! Write namelist parameters
    call nam%write(mpl,ncid)
-   
+
    ! Define dimensions
    call mpl%ncerr(subr,nf90_def_dim(ncid,'ntest',ntest,ntest_id))
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nfac',nfac_rnd,nfac_id))
-   
+
    ! Define variables
    call mpl%ncerr(subr,nf90_def_var(ncid,'mse',nc_kind_real,(/ntest_id,nfac_id/),mse_id))
    call mpl%ncerr(subr,nf90_def_var(ncid,'mse_th',nc_kind_real,(/ntest_id,nfac_id/),mse_th_id))
-   
+
    ! End definition mode
    call mpl%ncerr(subr,nf90_enddef(ncid))
-   
+
    ! Write variables
    call mpl%ncerr(subr,nf90_put_var(ncid,mse_id,mse))
    call mpl%ncerr(subr,nf90_put_var(ncid,mse_th_id,mse_th))
-   
+
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))
 end if

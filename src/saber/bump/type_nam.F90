@@ -86,7 +86,7 @@ type nam_type
    ! model_param
    integer :: nl                                        ! Number of levels
    integer :: levs(nlmax)                               ! Levels
-   character(len=1024) :: lev2d                         ! Level for 2D variables ('first' or 'last') 
+   character(len=1024) :: lev2d                         ! Level for 2D variables ('first' or 'last')
    logical :: logpres                                   ! Use pressure logarithm as vertical coordinate (model level if .false.)
    integer :: nv                                        ! Number of variables
    character(len=1024),dimension(nvmax) :: varname      ! Variables names
@@ -143,7 +143,7 @@ type nam_type
    real(kind_real) ::  adv_rad                          ! Advection diagnostic calculation radius
    integer :: adv_niter                                 ! Number of iteration for the advection filtering
    real(kind_real) ::  adv_rhflt                        ! Advection initial filtering support radius
-   real(kind_real) :: adv_valid                         ! Required proportion of valid points for filtering convergence 
+   real(kind_real) :: adv_valid                         ! Required proportion of valid points for filtering convergence
 
    ! fit_param
    character(len=1024) :: minim_algo                    ! Minimization algorithm ('none', 'fast' or 'hooke')

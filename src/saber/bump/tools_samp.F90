@@ -91,7 +91,7 @@ elseif (n_glb_eff==ns2_glb) then
 
    ! Communication
    call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
-   call mpl%loc_to_glb(n_loc,mask_loc,n_glb,glb_to_proc,glb_to_loc,.false.,mask_glb)  
+   call mpl%loc_to_glb(n_loc,mask_loc,n_glb,glb_to_proc,glb_to_loc,.false.,mask_glb)
 
    if (mpl%main) then
       ! Use all valid points
@@ -144,7 +144,7 @@ else
 
    ! Allocation
    allocate(sam1_loc(ns1_loc))
-   
+
    ! First subsampling
    if (n_loc_eff==0) then
       ! No point on this task
@@ -254,7 +254,7 @@ else
                sam1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = loc_to_glb(sam1_loc)
                lon1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = lon_loc(sam1_loc)
                lat1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = lat_loc(sam1_loc)
-               rh1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = rh_loc(sam1_loc)   
+               rh1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = rh_loc(sam1_loc)
             else
                ! Receive data
                call mpl%f_comm%receive(sam1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag,status)

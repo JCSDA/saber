@@ -46,7 +46,7 @@
 \DeclareMathOperator{\Cor}{Cor}
 \newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
 \def\independenT#1#2{\mathrel{\setbox0\hbox{$#1#2$}%
-\copy0\kern-\wd0\mkern4mu\box0}} 
+\copy0\kern-\wd0\mkern4mu\box0}}
 
 % Appropriate font for \mathcal{}
 \DeclareSymbolFont{cmmathcal}{OMS}{cmsy}{m}{n}
@@ -132,7 +132,7 @@ where $\mathbf{U}_i \in \mathbb{R}^{n_i \times m_i}$, $m_i$ being the size of th
 \mathbf{U}_1 \mathbf{U}_1^\mathrm{T} & 0 & \cdots & 0 \\
 0 & \mathbf{U}_2 \mathbf{U}_2^\mathrm{T} & \cdots & 0 \\
 \vdots & \vdots & \ddots & \vdots \\
-0 & 0 & \cdots & \mathbf{U}_p \mathbf{U}_p^\mathrm{T} 
+0 & 0 & \cdots & \mathbf{U}_p \mathbf{U}_p^\mathrm{T}
 \end{array} \right)
 \end{align}
 In this case, auto-localization blocks are well defined:
@@ -173,7 +173,7 @@ The resulting localization matrix is:
 \overbar{\mathbf{U}}_p \overbar{\mathbf{U}}_1^\mathrm{T} & \cdots & \overbar{\mathbf{U}}_p \overbar{\mathbf{U}}_p^\mathrm{T}
 \end{array} \right) \mathbf{S}^{\mathrm{s} \mathrm{T}}
 \end{align}
-In this case, each auto- or cross-localization block is given by: 
+In this case, each auto- or cross-localization block is given by:
 \begin{align}
 \mathbf{L}_{ij} = \mathbf{S}^\mathrm{s}_i \overbar{\mathbf{U}}_i \overbar{\mathbf{U}}_j^\mathrm{T} \mathbf{S}_j^{\mathrm{s} \mathrm{T}}
 \end{align}
@@ -196,13 +196,13 @@ A specific block $\mathbf{U}_i \in \mathbb{R}^{n_i \times m_i}$ is applied to ea
 \mathbf{U}_p
 \end{array} \right) \mathbf{S}^\mathrm{c}
 \end{align}
-The resulting localization matrix is $\mathbf{L} = \mathbf{U} \mathbf{U}^\mathrm{T}$ with each auto- or cross-localization block given by: 
+The resulting localization matrix is $\mathbf{L} = \mathbf{U} \mathbf{U}^\mathrm{T}$ with each auto- or cross-localization block given by:
 \begin{align}
 \mathbf{L}_{ij} = \mathbf{U}_i \mathbf{S}^\mathrm{c}_i \mathbf{S}_j^{\mathrm{c} \mathrm{T}} \mathbf{U}_j^\mathrm{T}
 \end{align}
 
 \subsection{Interpolation error}
-We assume that every interpolation $\mathbf{S}^\mathrm{s}$ or $\mathbf{S}^\mathrm{c}$ can be expanded as $\mathbf{S} = \mathbf{T} + \mathbf{E}$ where $\mathbf{T}$ is the "true" interpolation, i.e. the best we can get with a linear operator, and $\mathbf{E} = \mathbf{S} - \mathbf{T}$ the resulting error. 
+We assume that every interpolation $\mathbf{S}^\mathrm{s}$ or $\mathbf{S}^\mathrm{c}$ can be expanded as $\mathbf{S} = \mathbf{T} + \mathbf{E}$ where $\mathbf{T}$ is the "true" interpolation, i.e. the best we can get with a linear operator, and $\mathbf{E} = \mathbf{S} - \mathbf{T}$ the resulting error.
 Thus:
 \begin{itemize}
 \item For the state grid interpolation with specific blocks:
@@ -217,7 +217,7 @@ and similarly for the state grid interpolation with a common block.
 & = \mathbf{U}_i \mathbf{T}^\mathrm{c}_i \mathbf{T}_j^{\mathrm{c} \mathrm{T}} \mathbf{U}_j^\mathrm{T} + \mathbf{U}_i \mathbf{E}^\mathrm{c}_i \mathbf{T}_j^{\mathrm{c} \mathrm{T}} \mathbf{U}_j^\mathrm{T} + \mathbf{U}_i \mathbf{T}^\mathrm{c}_i \mathbf{E}_j^{\mathrm{c} \mathrm{T}} \mathbf{U}_j^\mathrm{T} + \mathbf{U}_i \mathbf{E}^\mathrm{c}_i \mathbf{E}_j^{\mathrm{c} \mathrm{T}} \mathbf{U}_j^\mathrm{T}
 \end{align}
 \end{itemize}
-Assuming that interpolation errors are random with a short correlation length-scale, the control grid interpolation looks like a better option since a smoothing is always applied as the last operator. However, even with the state grid interpolation: 
+Assuming that interpolation errors are random with a short correlation length-scale, the control grid interpolation looks like a better option since a smoothing is always applied as the last operator. However, even with the state grid interpolation:
 \begin{itemize}
 \item either the interpolation error is smoothed in subsequent operators,
 \item or the interpolation error is itself applied on smoothed fields at high-resolution, leading to small interpolation errors.
@@ -262,7 +262,7 @@ where $\mathbf{I}_{\overbar{n}} \in \mathbb{R}^{\overbar{n} \times \overbar{n}}$
 \overbar{\mathbf{U}} \overbar{\mathbf{U}}^\mathrm{T} & \cdots & \overbar{\mathbf{U}} \overbar{\mathbf{U}}^\mathrm{T}
 \end{array} \right) \mathbf{S}^{\mathrm{s} \mathrm{T}}
 \end{align}
-In this case, each auto- or cross-localization block is given by: 
+In this case, each auto- or cross-localization block is given by:
 \begin{align}
 \mathbf{L}_{ij} = \mathbf{S}^\mathrm{s}_i \overbar{\mathbf{U}} \overbar{\mathbf{U}}^\mathrm{T} \mathbf{S}_j^{\mathrm{s} \mathrm{T}}
 \end{align}
@@ -290,7 +290,7 @@ Q_{p,1} \mathbf{I}_{\overbar{n}} & \cdots & Q_{p,p-1} \mathbf{I}_{\overbar{n}} &
 \overbar{\mathbf{U}} & 0 & \cdots & 0 \\
 0 & \overbar{\mathbf{U}} & \ddots & \vdots \\
 \vdots & \ddots & \ddots & 0 \\
-0 & \cdots & 0 & \overbar{\mathbf{U}} 
+0 & \cdots & 0 & \overbar{\mathbf{U}}
 \end{array} \right)
 \end{align}
 where $\mathbf{I}_{\overbar{n}} \in \mathbb{R}^{\overbar{n} \times \overbar{n}}$ is the identity matrix. It should be noted that to apply $\mathbf{U}$, the matrix $\overbar{\mathbf{U}}$ needs to be applied $p$ times. The resulting localization matrix is:
@@ -301,7 +301,7 @@ W_{1,1} \overbar{\mathbf{U}} \overbar{\mathbf{U}}^\mathrm{T} & \cdots & W_{1,p} 
 W_{p,1} \overbar{\mathbf{U}} \overbar{\mathbf{U}}^\mathrm{T} & \cdots & W_{p,p} \overbar{\mathbf{U}} \overbar{\mathbf{U}}^\mathrm{T}
 \end{array} \right) \mathbf{S}^{\mathrm{s} \mathrm{T}}
 \end{align}
-where $\mathbf{W} = \mathbf{Q} \mathbf{Q}^\textrm{T}$. In this case, each auto- or cross-localization block is given by: 
+where $\mathbf{W} = \mathbf{Q} \mathbf{Q}^\textrm{T}$. In this case, each auto- or cross-localization block is given by:
 \begin{align}
 \mathbf{L}_{ij} = W_{i,j} \mathbf{S}^\mathrm{s}_i \overbar{\mathbf{U}} \overbar{\mathbf{U}}^\mathrm{T} \mathbf{S}_j^{\mathrm{s} \mathrm{T}}
 \end{align}
