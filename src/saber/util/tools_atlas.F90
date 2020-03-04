@@ -48,9 +48,10 @@ integer :: nmga,nl0
 real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
 character(len=1024),parameter :: subr = 'field_to_fld_real'
-type(atlas_functionspace) :: afs
-type(atlas_functionspace_nodecolumns) :: afs_nc
-type(atlas_functionspace_structuredcolumns) :: afs_sc
+type(atlas_functionspace) :: afunctionspace
+type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_pointcloud) :: afunctionspace_pc
+type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
 
 ! Local lev2d
 llev2d = 'first'
@@ -60,23 +61,29 @@ if (present(lev2d)) llev2d = lev2d
 if (afield%kind()/=atlas_real(kind_real)) call mpl%abort(subr,'wrong kind for field '//afield%name())
 
 ! Get generic FunctionSpace
-afs = afield%functionspace()
+afunctionspace = afield%functionspace()
 
-select case (afs%name())
+select case (afunctionspace%name())
 case ('NodeColumns')
    ! Get NodeColumns function space
-   afs_nc = afield%functionspace()
+   afunctionspace_nc = afield%functionspace()
 
    ! Get number of nodes
-   nmga = afs_nc%nb_nodes()
+   nmga = afunctionspace_nc%nb_nodes()
+case ('PointCloud')
+   ! Get PointCloud function space
+   afunctionspace_pc = afield%functionspace()
+
+   ! Get number of points
+   nmga = afunctionspace_pc%get_size()
 case ('StructuredColumns')
    ! Get StructuredColumns function space
-   afs_sc = afield%functionspace()
+   afunctionspace_sc = afield%functionspace()
 
    ! Get number of nodes
-   nmga = afs_sc%size_owned()
+   nmga = afunctionspace_sc%size_owned()
 case default
-   call mpl%abort(subr,'wrong function space for field '//afield%name()//': '//afs%name())
+   call mpl%abort(subr,'wrong function space for field '//afield%name()//': '//afunctionspace%name())
 end select
 
 ! Check number of nodes
@@ -130,9 +137,10 @@ integer,allocatable :: fld_int(:,:)
 integer,pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
 character(len=1024),parameter :: subr = 'field_to_fld_logical'
-type(atlas_functionspace) :: afs
-type(atlas_functionspace_nodecolumns) :: afs_nc
-type(atlas_functionspace_structuredcolumns) :: afs_sc
+type(atlas_functionspace) :: afunctionspace
+type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_pointcloud) :: afunctionspace_pc
+type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
 
 ! Local lev2d
 llev2d = 'first'
@@ -142,23 +150,29 @@ if (present(lev2d)) llev2d = lev2d
 if (afield%kind()/=atlas_integer(kind_int)) call mpl%abort(subr,'wrong kind for field '//afield%name())
 
 ! Get generic FunctionSpace
-afs = afield%functionspace()
+afunctionspace = afield%functionspace()
 
-select case (afs%name())
+select case (afunctionspace%name())
 case ('NodeColumns')
    ! Get NodeColumns function space
-   afs_nc = afield%functionspace()
+   afunctionspace_nc = afield%functionspace()
 
    ! Get number of nodes
-   nmga = afs_nc%nb_nodes()
+   nmga = afunctionspace_nc%nb_nodes()
+case ('PointCloud')
+   ! Get PointCloud function space
+   afunctionspace_pc = afield%functionspace()
+
+   ! Get number of points
+   nmga = afunctionspace_pc%get_size()
 case ('StructuredColumns')
    ! Get StructuredColumns function space
-   afs_sc = afield%functionspace()
+   afunctionspace_sc = afield%functionspace()
 
    ! Get number of nodes
-   nmga = afs_sc%size_owned()
+   nmga = afunctionspace_sc%size_owned()
 case default
-   call mpl%abort(subr,'wrong function space for field '//afield%name()//': '//afs%name())
+   call mpl%abort(subr,'wrong function space for field '//afield%name()//': '//afunctionspace%name())
 end select
 
 ! Check number of nodes
@@ -230,9 +244,10 @@ integer :: nmga,nl0
 real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
 character(len=1024),parameter :: subr = 'fld_to_field_real'
-type(atlas_functionspace) :: afs
-type(atlas_functionspace_nodecolumns) :: afs_nc
-type(atlas_functionspace_structuredcolumns) :: afs_sc
+type(atlas_functionspace) :: afunctionspace
+type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_pointcloud) :: afunctionspace_pc
+type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
 
 ! Local lev2d
 llev2d = 'first'
@@ -242,23 +257,29 @@ if (present(lev2d)) llev2d = lev2d
 if (afield%kind()/=atlas_real(kind_real)) call mpl%abort(subr,'wrong kind for field '//afield%name())
 
 ! Get generic FunctionSpace
-afs = afield%functionspace()
+afunctionspace = afield%functionspace()
 
-select case (afs%name())
+select case (afunctionspace%name())
 case ('NodeColumns')
    ! Get NodeColumns function space
-   afs_nc = afield%functionspace()
+   afunctionspace_nc = afield%functionspace()
 
    ! Get number of nodes
-   nmga = afs_nc%nb_nodes()
+   nmga = afunctionspace_nc%nb_nodes()
+case ('PointCloud')
+   ! Get PointCloud function space
+   afunctionspace_pc = afield%functionspace()
+
+   ! Get number of points
+   nmga = afunctionspace_pc%get_size()
 case ('StructuredColumns')
    ! Get StructuredColumns function space
-   afs_sc = afield%functionspace()
+   afunctionspace_sc = afield%functionspace()
 
    ! Get number of nodes
-   nmga = afs_sc%size_owned()
+   nmga = afunctionspace_sc%size_owned()
 case default
-   call mpl%abort(subr,'wrong function space for field '//afield%name()//': '//afs%name())
+   call mpl%abort(subr,'wrong function space for field '//afield%name()//': '//afunctionspace%name())
 end select
 
 ! Get number of levels
@@ -307,8 +328,6 @@ type(atlas_functionspace),intent(out) :: afunctionspace ! ATLAS function space
 integer :: imga
 real(kind_real) :: xy(2,nmga)
 type(atlas_unstructuredgrid) :: agrid
-type(atlas_meshgenerator) :: ameshgenerator
-type(atlas_mesh) :: amesh
 
 ! Create unstructured grid
 do imga=1,nmga
@@ -317,12 +336,8 @@ do imga=1,nmga
 end do
 agrid = atlas_unstructuredgrid(xy)
 
-! Create mesh
-ameshgenerator = atlas_meshgenerator('no_connectivity')
-amesh = ameshgenerator%generate(agrid)
-
-! Create function space NodeColumns
-afunctionspace = atlas_functionspace_nodecolumns(amesh,halo=0)
+! Create function space PointCloud
+afunctionspace = atlas_functionspace_pointcloud(agrid)
 
 end subroutine create_atlas_function_space
 

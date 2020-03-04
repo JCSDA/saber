@@ -781,6 +781,7 @@ real(kind_real),pointer :: real_ptr(:,:)
 character(len=1024),parameter :: subr = 'geom_from_atlas'
 type(atlas_field) :: afield,afield_lonlat
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_pointcloud) :: afunctionspace_pc
 type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
 type(atlas_mesh_nodes) :: anodes
 type(atlas_structuredgrid) :: asgrid
@@ -800,6 +801,22 @@ case ('NodeColumns')
     ! Get lon/lat field
     anodes = afunctionspace_nc%nodes()
     afield_lonlat = anodes%lonlat()
+    call afield_lonlat%data(real_ptr)
+    geom%lon_mga = real_ptr(1,:)*deg2rad
+    geom%lat_mga = real_ptr(2,:)*deg2rad
+case ('PointCloud')
+    ! Get point cloud function space
+    afunctionspace_pc = atlas_functionspace_pointcloud(afunctionspace%c_ptr())
+
+    ! Get number of points
+    geom%nmga = afunctionspace_pc%get_size()
+
+    ! Allocation
+    allocate(geom%lon_mga(geom%nmga))
+    allocate(geom%lat_mga(geom%nmga))
+
+    ! Get lon/lat field
+    afield_lonlat = afunctionspace_pc%lonlat()
     call afield_lonlat%data(real_ptr)
     geom%lon_mga = real_ptr(1,:)*deg2rad
     geom%lat_mga = real_ptr(2,:)*deg2rad
