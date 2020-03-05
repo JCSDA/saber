@@ -1025,7 +1025,7 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 ! ATLAS fieldset to field
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply NICAS
    if (bump%nam%lsqrt) then
       call bump%nicas%apply_from_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga)
@@ -1080,7 +1080,7 @@ character(len=1024),parameter :: subr = 'bump_apply_nicas_deprecated'
 ! Deprecation warning
 call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply NICAS
    if (bump%nam%lsqrt) then
       call bump%nicas%apply_from_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga)
@@ -1166,7 +1166,7 @@ else
    call bump%mpl%abort(subr,'wrong control variable size in bump_apply_nicas_sqrt')
 end if
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
 else
@@ -1219,7 +1219,7 @@ else
    call bump%mpl%abort(subr,'wrong control variable size in bump_apply_nicas_sqrt')
 end if
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
 else
@@ -1259,7 +1259,7 @@ type(cv_type) :: cv
 ! ATLAS fieldset to field
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root adjoint
    call bump%nicas%apply_sqrt_ad(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga,cv)
 else
@@ -1305,7 +1305,7 @@ type(cv_type) :: cv
 ! Generate random control vector
 call bump%nicas%random_cv(bump%mpl,bump%rng,bump%bpar,cv)
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
 else
@@ -1350,7 +1350,7 @@ if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_app
 ! ATLAS fieldset to field
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply observation operator
    call bump%obsop%apply(bump%mpl,bump%geom,fld_mga(:,:,1,1),obs)
 else
@@ -1387,7 +1387,7 @@ call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATL
 if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop')
 if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop')
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply observation operator
    call bump%obsop%apply(bump%mpl,bump%geom,fld_mga,obs)
 else
@@ -1422,7 +1422,7 @@ character(len=1024),parameter :: subr = 'bump_apply_obsop_ad'
 if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop_ad')
 if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop_ad')
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply observation operator adjoint
    call bump%obsop%apply_ad(bump%mpl,bump%geom,obs,fld_mga(:,:,1,1))
 else
@@ -1462,7 +1462,7 @@ call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATL
 if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop_ad')
 if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop_ad')
 
-   if (bump%geom%same_grid) then
+if (bump%geom%same_grid) then
    ! Apply observation operator adjoint
    call bump%obsop%apply_ad(bump%mpl,bump%geom,obs,fld_mga)
 else
