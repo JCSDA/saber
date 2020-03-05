@@ -326,18 +326,19 @@ type(atlas_functionspace),intent(out) :: afunctionspace ! ATLAS function space
 
 ! Local variables
 integer :: imga
-real(kind_real) :: xy(2,nmga)
-type(atlas_unstructuredgrid) :: agrid
+real(kind_real),pointer :: real_ptr(:,:)
+type(atlas_field) :: afield
 
-! Create unstructured grid
+! Create lon/lat field
+afield = atlas_field(name="lonlat",kind=atlas_real(kind_real),shape=(/2,nmga/))
+call afield%data(real_ptr)
 do imga=1,nmga
-   xy(1,imga) = lon_mga(imga)*rad2deg
-   xy(2,imga) = lat_mga(imga)*rad2deg
+   real_ptr(1,imga) = lon_mga(imga)*rad2deg
+   real_ptr(2,imga) = lat_mga(imga)*rad2deg
 end do
-agrid = atlas_unstructuredgrid(xy)
 
 ! Create function space PointCloud
-afunctionspace = atlas_functionspace_pointcloud(agrid)
+afunctionspace = atlas_functionspace_pointcloud(afield)
 
 end subroutine create_atlas_function_space
 
