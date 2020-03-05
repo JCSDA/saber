@@ -73,8 +73,6 @@ list(APPEND saber_data_tar saber_data.tar.gz)
 file(STRINGS testlist/saber_ref_1.txt saber_ref_tmp )
 list(APPEND saber_ref ${saber_ref_tmp})
 list(APPEND saber_ref_tar saber_ref_1.tar.gz)
-file(STRINGS testlist/saber_ref_to_data.txt saber_ref_to_data_tmp )
-list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 if(${SABER_TEST_MPI})
     file(STRINGS testlist/saber_data_mpi.txt saber_data_tmp )
     list(APPEND saber_data ${saber_data_tmp})
@@ -82,8 +80,6 @@ if(${SABER_TEST_MPI})
     file(STRINGS testlist/saber_ref_mpi_1.txt saber_ref_tmp )
     list(APPEND saber_ref ${saber_ref_tmp})
     list(APPEND saber_ref_tar saber_ref_mpi_1.tar.gz)
-    file(STRINGS testlist/saber_ref_to_data_mpi.txt saber_ref_to_data_tmp )
-    list(APPEND saber_ref_to_data ${saber_ref_to_data_tmp})
 endif()
 if(${SABER_TEST_OMP})
     file(STRINGS testlist/saber_data_omp.txt saber_data_tmp )
@@ -146,7 +142,6 @@ endif()
 if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     # Set TESTFILE_DIR_SABER
     set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber CACHE PATH "data dir for test data")
-    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER})
 
     # Get the current git branch
     execute_process(
@@ -155,8 +150,11 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
         OUTPUT_VARIABLE GIT_BRANCH
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    message(STATUS "Files downloaded into: "${TESTFILE_DIR_SABER})
+    message(STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER} "/" ${GIT_BRANCH})
     message(STATUS "Download sources:")
+
+    # Make specific data directory
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH})
 
     # Check whether the URL exists or not
     ecbuild_check_multiurl(NAMES   ${saber_data_tar}
@@ -171,13 +169,13 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
         # Download and extract develop test files (distant directory = develop)
         set(DIRNAME "develop")
     endif()
-    message(STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME})
+    message(STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL} "/" ${DIRNAME})
 
     # Download and extract data files
     ecbuild_get_test_multidata(TARGET   get_saber_data
                                NAMES    ${saber_data_tar}
                                DIRNAME  ${DIRNAME}
-                               DIRLOCAL ${TESTFILE_DIR_SABER}/testdata
+                               DIRLOCAL ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata
                                EXTRACT)
 
     # Check whether the URL exists or not
@@ -199,16 +197,16 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     ecbuild_get_test_multidata(TARGET   get_saber_ref
                                NAMES    ${saber_ref_tar}
                                DIRNAME  ${DIRNAME}
-                               DIRLOCAL ${TESTFILE_DIR_SABER}/testref
+                               DIRLOCAL ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref
                                EXTRACT)
 else()
     set(TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER})
-    message(STATUS "Files loaded from: "${TESTFILE_DIR_SABER})
+    message(STATUS "Files loaded from: " ${TESTFILE_DIR_SABER})
 endif()
 
 # Make directories
-file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testdata)
-file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testref)
+file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata)
+file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)
@@ -222,18 +220,13 @@ endforeach()
 # Link data/reference files
 foreach(file ${saber_data})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR_SABER}/testdata/${file}
+                    ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 foreach(file ${saber_ref})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR_SABER}/testref/${file}
+                    ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
-endforeach()
-foreach(file ${saber_ref_to_data})
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR_SABER}/testref/${file}
-                    ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 
 # Mono-core tests
