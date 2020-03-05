@@ -352,8 +352,8 @@ real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'ens_normality'
 
-! File name
-filename = trim(nam%prefix)//'_normality'
+! File name (univariate moment field)
+filename = trim(nam%prefix)//'_umf'
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 
 ! Initialization
