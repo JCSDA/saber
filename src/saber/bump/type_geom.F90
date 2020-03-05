@@ -809,7 +809,7 @@ case ('PointCloud')
     afunctionspace_pc = atlas_functionspace_pointcloud(afunctionspace%c_ptr())
 
     ! Get number of points
-    geom%nmga = afunctionspace_pc%get_size()
+    geom%nmga = afunctionspace_pc%size()
 
     ! Allocation
     allocate(geom%lon_mga(geom%nmga))

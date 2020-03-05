@@ -75,7 +75,7 @@ case ('PointCloud')
    afunctionspace_pc = afield%functionspace()
 
    ! Get number of points
-   nmga = afunctionspace_pc%get_size()
+   nmga = afunctionspace_pc%size()
 case ('StructuredColumns')
    ! Get StructuredColumns function space
    afunctionspace_sc = afield%functionspace()
@@ -164,7 +164,7 @@ case ('PointCloud')
    afunctionspace_pc = afield%functionspace()
 
    ! Get number of points
-   nmga = afunctionspace_pc%get_size()
+   nmga = afunctionspace_pc%size()
 case ('StructuredColumns')
    ! Get StructuredColumns function space
    afunctionspace_sc = afield%functionspace()
@@ -271,7 +271,7 @@ case ('PointCloud')
    afunctionspace_pc = afield%functionspace()
 
    ! Get number of points
-   nmga = afunctionspace_pc%get_size()
+   nmga = afunctionspace_pc%size()
 case ('StructuredColumns')
    ! Get StructuredColumns function space
    afunctionspace_sc = afield%functionspace()
