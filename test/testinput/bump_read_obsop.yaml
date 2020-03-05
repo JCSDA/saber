@@ -1,0 +1,34 @@
+# general_param
+datadir: "testdata"
+prefix: "bump_read_obsop/test__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+load_obsop: 1
+check_obsop: 1
+
+# model_param
+nl: 2
+levs: [1,2]
+nv: 1
+varname: ["q"]
+nts: 2
+timeslot: ["00","06"]
+
+# ens1_param
+
+# ens2_param
+
+# sampling_param
+
+# diag_param
+
+# fit_param
+
+# nicas_param
+
+# obsop_param
+nobs: 100
+
+# output_param
+

@@ -1,0 +1,5 @@
+bump_read_cmat/test_2-1_cmat_01_01_01_01.nc
+bump_read_cmat/test_2-1_cmat_01_01_02_02.nc
+bump_read_cmat/test_2-1_cmat_02_02_01_01.nc
+bump_read_cmat/test_2-1_cmat_02_02_02_02.nc
+bump_read_sampling/test_2-1_sampling.nc

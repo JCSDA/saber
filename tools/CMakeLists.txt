@@ -1,10 +1,9 @@
 # Create Data directory for test input data
 list( APPEND test_files
-  comparesaber.sh
-  comparesaber_specific.sh
-  setref.sh
-  setup.sh
-  valgrind.sh
+  saber_compare.sh
+  saber_compare_specific.sh
+  saber_links.ksh
+  saber_valgrind.sh
 )
 
 foreach(FILENAME ${test_files})

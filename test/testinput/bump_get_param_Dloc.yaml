@@ -1,6 +1,6 @@
 # general_param
-datadir: "testdata/bump_get_param_Dloc"
-prefix: "test__MPI_-_OMP_"
+datadir: "testdata"
+prefix: "bump_get_param_Dloc/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
