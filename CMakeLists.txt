@@ -78,6 +78,9 @@ include_directories( ${FCKIT_INCLUDE_DIRS} )
 ecbuild_use_package( PROJECT atlas VERSION 0.18.1 REQUIRED )
 include_directories( ${ATLAS_INCLUDE_DIRS} )
 
+# git
+find_package( Git )
+
 # metis
 if(BUILD_METIS)
     ecbuild_use_package( PROJECT metis VERSION 0.0.0 REQUIRED )
