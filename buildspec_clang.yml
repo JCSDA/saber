@@ -56,6 +56,10 @@ phases:
       - ls
       - pwd
 
+      # metis
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
+      - ls
+
       - mkdir /build_container
       - mkdir /src_repo
       - mv saber-bundle /src_repo/
@@ -69,6 +73,7 @@ phases:
     commands:
       - echo Executing build phase
       - cd /build_container
+      - export BUILD_METIS="1"
       - ecbuild /src_repo/saber-bundle/
       - cd /build_container/saber
       - make -j4
