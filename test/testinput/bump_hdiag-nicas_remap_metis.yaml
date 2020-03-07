@@ -1,6 +1,6 @@
 # general_param
-datadir: "testdata/bump_hdiag-nicas_remap_metis"
-prefix: "test__MPI_-_OMP_"
+datadir: "testdata"
+prefix: "bump_hdiag-nicas_remap_metis/test__MPI_-_OMP_"
 model: "qg"
 remap: 1
 
