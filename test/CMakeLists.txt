@@ -150,7 +150,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
         OUTPUT_VARIABLE GIT_BRANCH
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    message(STATUS "Files downloaded into: "${TESTFILE_DIR_SABER}/${GIT_BRANCH})
+    message(STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER} "/" ${GIT_BRANCH})
     message(STATUS "Download sources:")
 
     # Make specific data directory
@@ -169,7 +169,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
         # Download and extract develop test files (distant directory = develop)
         set(DIRNAME "develop")
     endif()
-    message(STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME})
+    message(STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL} "/" ${DIRNAME})
 
     # Download and extract data files
     ecbuild_get_test_multidata(TARGET   get_saber_data
@@ -201,7 +201,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
                                EXTRACT)
 else()
     set(TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER})
-    message(STATUS "Files loaded from: "${TESTFILE_DIR_SABER})
+    message(STATUS "Files loaded from: " ${TESTFILE_DIR_SABER})
 endif()
 
 # Make directories
