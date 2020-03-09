@@ -123,7 +123,6 @@ phases:
         && . /opt/intel/compilers_and_libraries/linux/bin/compilervars.sh
         && cd /build_container
         && ls
-        && export BUILD_METIS="1"
         && ecbuild /jcsda/saber-bundle/
         && cd /build_container/saber
         && make -j4"

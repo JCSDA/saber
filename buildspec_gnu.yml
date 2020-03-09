@@ -99,7 +99,6 @@ phases:
       - echo Executing build phase
       - su - jcsdauser -c "cd /build_container
         && ls
-        && export BUILD_METIS="1"
         && ecbuild /jcsda/saber-bundle/
         && cd /build_container/saber
         && make -j4"

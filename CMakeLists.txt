@@ -82,8 +82,8 @@ include_directories( ${ATLAS_INCLUDE_DIRS} )
 find_package( Git )
 
 # metis
-if(BUILD_METIS)
-    ecbuild_use_package( PROJECT metis VERSION 0.0.0 REQUIRED )
+ecbuild_use_package( PROJECT metis VERSION 0.0.0 )
+if (${METIS_FOUND})
     include_directories( ${METIS_INCLUDE_DIRS} )
     add_definitions( -DSABER_USE_METIS=1 )
 else()
@@ -95,7 +95,7 @@ endif()
 ################################################################################
 
 list( APPEND SABER_TPLS eckit eckit_mpi fckit atlas atlas_f )
-if(BUILD_METIS)
+if(${METIS_FOUND})
     list( APPEND SABER_TPLS metis )
 endif()
 

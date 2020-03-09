@@ -73,7 +73,6 @@ phases:
     commands:
       - echo Executing build phase
       - cd /build_container
-      - export BUILD_METIS="1"
       - ecbuild /src_repo/saber-bundle/
       - cd /build_container/saber
       - make -j4

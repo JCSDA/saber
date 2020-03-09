@@ -24,7 +24,7 @@ list( APPEND SABER_LIB_DEPS
   ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f
 )
 
-if(BUILD_METIS)
+if(${METIS_FOUND})
     list( APPEND SABER_LIB_DEPS metis )
 endif()
 

@@ -86,10 +86,6 @@ if(${SABER_TEST_OMP})
     list(APPEND saber_data ${saber_data_tmp})
     list(APPEND saber_data_tar saber_data_omp.tar.gz)
 endif()
-if(NOT BUILD_METIS)
-    file(STRINGS testlist/saber_test_metis.txt saber_test_tmp )
-    list(REMOVE_ITEM saber_test ${saber_test_tmp})
-endif()
 
 # TIER > 1
 if(${SABER_TEST_TIER} GREATER 1)
@@ -126,10 +122,6 @@ if(${SABER_TEST_QUAD} MATCHES 1)
     file(STRINGS testlist/saber_ref_quad.txt saber_ref_tmp )
     list(APPEND saber_ref ${saber_ref_tmp})
     list(APPEND saber_ref_tar saber_ref_quad.tar.gz)
-    if(NOT BUILD_METIS)
-        file(STRINGS testlist/saber_test_metis.txt saber_test_quad_tmp )
-        list(REMOVE_ITEM saber_test_quad ${saber_test_quad_tmp})
-    endif()
 endif()
 
 # Model tests
@@ -236,6 +228,16 @@ foreach(file ${saber_ref})
                     ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
 endforeach()
+
+if(NOT ${METIS_FOUND})
+    # Remove METIS tests
+    file(STRINGS testlist/saber_test_metis.txt saber_test_tmp )
+    list(REMOVE_ITEM saber_test ${saber_test_tmp})
+    if(${SABER_TEST_QUAD} MATCHES 1)
+        file(STRINGS testlist/saber_test_metis.txt saber_test_quad_tmp )
+        list(REMOVE_ITEM saber_test_quad ${saber_test_quad_tmp})
+    endif()
+endif()
 
 # Mono-core tests
 set(mpi 1)
