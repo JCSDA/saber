@@ -58,7 +58,7 @@ before_install:
 #======================================================================
 # get docker image
 # FROM  jcsda/docker:latest
-#=================================as=====================================
+#======================================================================
   - cd ${REPO_SOURCE_DIR}/saber-bundle/saber
   - date
   - docker build -t jcsda/dockerl2 --build-arg=Dockerfile .  #Dockerfile handles ssh for mpi
