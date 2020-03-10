@@ -25,7 +25,7 @@ list( APPEND SABER_LIB_DEPS
 )
 
 if(${METIS_FOUND})
-    list( APPEND SABER_LIB_DEPS metis )
+    list( APPEND SABER_LIB_DEPS metis metis_interface )
 endif()
 
 ecbuild_add_library( TARGET     saber

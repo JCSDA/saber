@@ -96,7 +96,7 @@ endif()
 
 list( APPEND SABER_TPLS eckit eckit_mpi fckit atlas atlas_f )
 if(${METIS_FOUND})
-    list( APPEND SABER_TPLS metis )
+    list( APPEND SABER_TPLS metis metis_interface )
 endif()
 
 set( SABER_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
