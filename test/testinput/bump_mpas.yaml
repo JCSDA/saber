@@ -1,0 +1,43 @@
+# general_param
+datadir: "testdata/bump_mpas"
+prefix: "test"
+model: "mpas"
+
+# driver_param
+method: "cor"
+strategy: "common"
+new_vbal: 1
+
+# model_param
+nl: 55
+levs: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55]
+nv: 2
+varname: ["exner","pressure_p"]
+nts: 1
+timeslot: ["01"]
+
+# ens1_param
+ens1_ne: 10
+
+# ens2_param
+
+# sampling_param
+nc1: 3500
+nc2: 200
+ntry: 30
+nc3: 10
+dc: [1000.0e3]
+nl0r: 55
+
+# diag_param
+vbal_block: [1]
+vbal_rad: 1000.0e3
+vbal_diag_auto: [1]
+
+# fit_param
+
+# nicas_param
+
+# obsop_param
+
+# output_param

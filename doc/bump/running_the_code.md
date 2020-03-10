@@ -1,7 +1,7 @@
 # Running the code
 
 To run the code, go the saber-bundle build directory and type:
- 
+
     cd bin
     export OMP_NUM_THREADS=$NTHREAD
     mpirun -n $NTASK ./bump.x your_namelist
