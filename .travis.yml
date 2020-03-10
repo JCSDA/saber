@@ -35,6 +35,9 @@ before_install:
   - git checkout $BRANCH || echo "No branch named $BRANCH in atlas repo"
   - cd $REPO_SOURCE_DIR
 
+#  clone metis
+  - git clone https://github.com/jcsda/metis.git ${REPO_SOURCE_DIR}/saber-bundle/metis
+
 #  clone the testing branch of saber
   - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber
 
