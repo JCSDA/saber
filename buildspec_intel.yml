@@ -96,6 +96,9 @@ phases:
       # atlas
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/atlas saber-bundle/atlas
 
+      # metis
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
+
       - mv saber-bundle /jcsda/
       - cd /jcsda/saber-bundle
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
