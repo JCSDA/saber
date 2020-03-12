@@ -29,6 +29,7 @@ for data in ${data_list}; do
    do
       line_tmp="$(echo ${line} | sed 's/read/write/g')"
       if test "${line}" != "${line_tmp}" ; then
+         rm -f ${datadir}/${line}
          cp -f ${datadir}/${line_tmp} ${datadir}/${line}
       fi
       files=${files}' '${line}   
