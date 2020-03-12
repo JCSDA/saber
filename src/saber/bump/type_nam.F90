@@ -16,13 +16,14 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: nvmax = 20     ! Maximum number of variables
-integer,parameter :: ntsmax = 99    ! Maximum number of time slots
-integer,parameter :: nlmax = 200    ! Maximum number of levels
-integer,parameter :: nc3max = 1000  ! Maximum number of classes
-integer,parameter :: nscalesmax = 5 ! Maximum number of variables
-integer,parameter :: ndirmax = 300  ! Maximum number of diracs
-integer,parameter :: nldwvmax = 99  ! Maximum number of local diagnostic profiles
+integer,parameter :: nvmax = 20      ! Maximum number of variables
+integer,parameter :: ntsmax = 99     ! Maximum number of time slots
+integer,parameter :: nlmax = 200     ! Maximum number of levels
+integer,parameter :: nc3max = 1000   ! Maximum number of classes
+integer,parameter :: nscalesmax = 5  ! Maximum number of variables
+integer,parameter :: ndirmax = 300   ! Maximum number of diracs
+integer,parameter :: nldwvmax = 99   ! Maximum number of local diagnostic profiles
+integer,parameter :: nprociomax = 20 ! Maximum number of I/O tasks
 
 type nam_type
    ! general_param
@@ -215,12 +216,13 @@ contains
 ! Subroutine: nam_init
 ! Purpose: intialize
 !----------------------------------------------------------------------
-subroutine nam_init(nam)
+subroutine nam_init(nam,nproc)
 
 implicit none
 
 ! Passed variable
 class(nam_type),intent(out) :: nam ! Namelist
+integer,intent(in) :: nproc        ! Number of MPI task
 
 ! Local variable
 integer :: iv,ildwv
@@ -233,7 +235,7 @@ nam%verbosity = 'all'
 nam%colorlog = .false.
 nam%default_seed = .true.
 nam%repro = .true.
-nam%nprocio = 1
+nam%nprocio = min(nproc,nprociomax)
 
 ! driver_param default
 nam%method = ''
@@ -483,7 +485,7 @@ if (mpl%main) then
    colorlog = .false.
    default_seed = .true.
    repro = .true.
-   nprocio = 1
+   nprocio = min(mpl%nproc,nprociomax)
 
    ! driver_param default
    method = ''
