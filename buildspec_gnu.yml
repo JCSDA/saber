@@ -86,10 +86,6 @@ phases:
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
       - ls
 
-      # metis
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
-      - ls
-
       - mv saber-bundle /jcsda/
       - cd /jcsda/saber-bundle
       - ls
