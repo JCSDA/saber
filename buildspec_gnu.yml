@@ -79,10 +79,12 @@ phases:
       - ls
 
       # atlas
-      - pwd
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/atlas saber-bundle/atlas
       - ls
-      - pwd
+
+      # metis
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
+      - ls
 
       # metis
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
