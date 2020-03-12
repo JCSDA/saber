@@ -1021,7 +1021,7 @@ if (mpl%main) then
    ! Get boundary nodes
    call mesh%bnodes(mpl)
 
-   ! Build adjency list
+   ! Build adjacency list
    nadj = 0
    im = 0
    do i=1,mesh%n
@@ -1032,9 +1032,9 @@ if (mpl%main) then
          iend = mesh%lend(i)
          init = .true.
          do while ((iend/=mesh%lend(i)).or.init)
-            j = mesh%list(iend)
+            j = abs(mesh%list(iend))
             jc0 = mesh%order(j)
-            if ((j>0).and.geom%mask_hor_c0(jc0)) nadj = nadj+1
+            if (geom%mask_hor_c0(jc0)) nadj = nadj+1
             iend = mesh%lptr(iend)
             init = .false.
          end do
@@ -1049,7 +1049,7 @@ if (mpl%main) then
    allocate(adjwgt(nadj))
    allocate(part(geom%nc0_mask(0)))
 
-   ! Build adjency list
+   ! Build adjacency list
    iadj = 1
    do i=1,mesh%n
       ic0 = mesh%order(i)
@@ -1061,9 +1061,9 @@ if (mpl%main) then
          iend = mesh%lend(i)
          init = .true.
          do while ((iend/=mesh%lend(i)).or.init)
-            j = mesh%list(iend)
+            j = abs(mesh%list(iend))
             jc0 = mesh%order(j)
-            if ((j>0).and.geom%mask_hor_c0(jc0)) then
+            if (geom%mask_hor_c0(jc0)) then
                jm = full_to_m(j)
                adjncy(iadj) = jm
                jproc = geom%c0_to_proc_init(jc0)
