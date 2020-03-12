@@ -56,7 +56,7 @@ call mpl%init(f_comm)
 call timer%start(mpl)
 
 ! Initialize namelist
-call bump%nam%init
+call bump%nam%init(mpl%nproc)
 
 ! Find whether input file is a namelist (xxx.nam) or a yaml (xxxx.yaml) and read it
 ppos = scan(trim(inputfile),".",back=.true.)
