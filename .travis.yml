@@ -82,7 +82,7 @@ script:
 # set different test tiers for cron vs pr jobs
   - if [ "$TRAVIS_EVENT_TYPE" != "cron" ]; then
       docker exec jcsda_container bash -c 'cd /build_container &&
-        export SABER_TEST_TIER=3 &&
+        export SABER_TEST_TIER=1 &&
         cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON /jcsda/src_repo';
     else
       docker exec jcsda_container bash -c 'cd /build_container &&
