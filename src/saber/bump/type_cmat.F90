@@ -705,22 +705,24 @@ call mpl%flush
 write(mpl%info,'(a)') '--- Copy namelist radii into C matrix'
 call mpl%flush
 
-! Allocation
-call cmat%alloc(bpar,'cmat')
+if (.not.cmat%allocated) then
+   ! Allocation
+   call cmat%alloc(bpar,'cmat')
 
-! Copy attributes
-do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      cmat%blk(ib)%double_fit = .false.
-      cmat%blk(ib)%anisotropic = .false.
-   end if
-end do
+   ! Set attributes
+   do ib=1,bpar%nbe
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+         cmat%blk(ib)%double_fit = .false.
+         cmat%blk(ib)%anisotropic = .false.
+      end if
+   end do
 
-! Allocation
-call cmat%alloc(nam,geom,bpar)
+   ! Allocation
+   call cmat%alloc(nam,geom,bpar)
 
-! Initialization
-call cmat%init(mpl,nam,bpar)
+   ! Initialization
+   call cmat%init(mpl,nam,bpar)
+end if
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -767,10 +769,16 @@ logical :: import_standard(bpar%nbe),import_static(bpar%nbe),import_double_fit(b
 if (.not.cmat%allocated) then
    ! Allocation
    call cmat%alloc(bpar,'cmat')
+
+   ! Set attributes
    do ib=1,bpar%nbe
-      cmat%blk(ib)%double_fit = .false.
-      cmat%blk(ib)%anisotropic = .false.
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+         cmat%blk(ib)%double_fit = .false.
+         cmat%blk(ib)%anisotropic = .false.
+      end if
    end do
+
+   ! Allocation
    call cmat%alloc(nam,geom,bpar)
 
    ! Initialization
@@ -799,9 +807,6 @@ do ib=1,bpar%nbe
       cmat%blk(ib)%anisotropic = cmat%blk(ib)%anisotropic.or.import_anisotropic(ib)
    end if
 end do
-
-! Allocation
-if (.not.cmat%allocated) call cmat%alloc(nam,geom,bpar)
 
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
