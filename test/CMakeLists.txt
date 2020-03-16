@@ -216,6 +216,11 @@ foreach(test ${saber_test})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
 endforeach()
+foreach(test ${saber_test_model})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
+endforeach()
 
 # Link data/reference files
 foreach(file ${saber_data})
