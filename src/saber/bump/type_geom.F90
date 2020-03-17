@@ -38,71 +38,71 @@ type geom_type
    integer :: nl0i                                ! Number of independent levels in subset Sl0
 
    ! Basic geometry data on model grid, halo A
-   real(kind_real),allocatable :: lon_mga(:)       ! Longitudes
-   real(kind_real),allocatable :: lat_mga(:)       ! Latitudes
-   real(kind_real),allocatable :: area_mga(:,:)    ! Domain area
-   real(kind_real),allocatable :: vunit_mga(:,:)   ! Vertical unit
-   logical,allocatable :: gmask_mga(:,:)           ! Geometry mask
-   logical,allocatable :: smask_mga(:,:)           ! Sampling ma
+   real(kind_real),allocatable :: lon_mga(:)      ! Longitudes
+   real(kind_real),allocatable :: lat_mga(:)      ! Latitudes
+   real(kind_real),allocatable :: area_mga(:,:)   ! Domain area
+   real(kind_real),allocatable :: vunit_mga(:,:)  ! Vertical unit
+   logical,allocatable :: gmask_mga(:,:)          ! Geometry mask
+   logical,allocatable :: smask_mga(:,:)          ! Sampling mask
 
    ! ATLAS function space
-   type(atlas_functionspace) :: afunctionspace_mg  ! ATLAS function space of model grid
+   type(atlas_functionspace) :: afunctionspace_mg ! ATLAS function space of model grid
 
    ! Basic geometry data
-   real(kind_real),allocatable :: lon(:)           ! Longitudes on subset Sc0, global
-   real(kind_real),allocatable :: lon_c0a(:)       ! Longitudes on subset Sc0, halo A
-   real(kind_real),allocatable :: lat(:)           ! Latitudes on subset Sc0, global
-   real(kind_real),allocatable :: lat_c0a(:)       ! Latitudes on subset Sc0, halo A
-   real(kind_real),allocatable :: area(:)          ! Domain area
-   real(kind_real),allocatable :: vunit_c0(:,:)    ! Vertical unit on subset Sc0, global
-   real(kind_real),allocatable :: vunit_c0a(:,:)   ! Vertical unit on subset Sc0, halo A
-   real(kind_real),allocatable :: vunitavg(:)      ! Averaged vertical unit
-   real(kind_real),allocatable :: disth(:)         ! Horizontal distance
+   real(kind_real),allocatable :: lon(:)          ! Longitudes on subset Sc0, global
+   real(kind_real),allocatable :: lon_c0a(:)      ! Longitudes on subset Sc0, halo A
+   real(kind_real),allocatable :: lat(:)          ! Latitudes on subset Sc0, global
+   real(kind_real),allocatable :: lat_c0a(:)      ! Latitudes on subset Sc0, halo A
+   real(kind_real),allocatable :: area(:)         ! Domain area
+   real(kind_real),allocatable :: vunit_c0(:,:)   ! Vertical unit on subset Sc0, global
+   real(kind_real),allocatable :: vunit_c0a(:,:)  ! Vertical unit on subset Sc0, halo A
+   real(kind_real),allocatable :: vunitavg(:)     ! Averaged vertical unit
+   real(kind_real),allocatable :: disth(:)        ! Horizontal distance
 
    ! Masks
-   logical,allocatable :: mask_c0(:,:)             ! Mask on subset Sc0, global
-   logical,allocatable :: mask_c0a(:,:)            ! Mask on subset Sc0, halo A
-   logical,allocatable :: mask_hor_c0(:)           ! Union of horizontal masks on subset Sc0, global
-   logical,allocatable :: mask_hor_c0a(:)          ! Union of horizontal masks on subset Sc0, halo A
-   logical,allocatable :: mask_ver_c0(:)           ! Union of vertical masks
-   integer,allocatable :: nc0_mask(:)              ! Horizontal mask size on subset Sc0
-   logical,allocatable :: smask_c0a(:,:)           ! Sampling mask on subset Sc0, halo A
-   real(kind_real),allocatable :: mdist(:,:)       ! Minimum distance to mask
+   logical,allocatable :: mask_c0(:,:)            ! Mask on subset Sc0, global
+   logical,allocatable :: mask_c0a(:,:)           ! Mask on subset Sc0, halo A
+   logical,allocatable :: mask_hor_c0(:)          ! Union of horizontal masks on subset Sc0, global
+   logical,allocatable :: mask_hor_c0a(:)         ! Union of horizontal masks on subset Sc0, halo A
+   logical,allocatable :: mask_ver_c0(:)          ! Union of vertical masks
+   integer,allocatable :: nc0_mask(:)             ! Horizontal mask size on subset Sc0
+   logical,allocatable :: smask_c0a(:,:)          ! Sampling mask on subset Sc0, halo A
+   real(kind_real),allocatable :: mdist(:,:)      ! Minimum distance to mask
 
    ! Mesh
-   type(mesh_type) :: mesh                         ! Mesh
+   type(mesh_type) :: mesh                        ! Mesh
 
    ! Tree
-   type(tree_type) :: tree                         ! Tree
+   type(tree_type) :: tree                        ! Tree
 
    ! Boundary fields
-   integer,allocatable :: nbnda(:)                 ! Number of boundary arcs
-   real(kind_real),allocatable :: v1bnda(:,:,:)    ! Boundary arcs, first vector
-   real(kind_real),allocatable :: v2bnda(:,:,:)    ! Boundary arcs, second vector
-   real(kind_real),allocatable :: vabnda(:,:,:)    ! Boundary arcs, orthogonal vector
+   integer,allocatable :: nbnda(:)                ! Number of boundary arcs
+   real(kind_real),allocatable :: v1bnda(:,:,:)   ! Boundary arcs, first vector
+   real(kind_real),allocatable :: v2bnda(:,:,:)   ! Boundary arcs, second vector
+   real(kind_real),allocatable :: vabnda(:,:,:)   ! Boundary arcs, orthogonal vector
 
    ! Dirac information
-   integer :: ndir                                 ! Number of valid Dirac points
-   real(kind_real),allocatable :: londir(:)        ! Dirac longitude
-   real(kind_real),allocatable :: latdir(:)        ! Dirac latitude
-   integer,allocatable :: iprocdir(:)              ! Dirac processor
-   integer,allocatable :: ic0adir(:)               ! Dirac gridpoint
-   integer,allocatable :: il0dir(:)                ! Dirac level
-   integer,allocatable :: ivdir(:)                 ! Dirac variable
-   integer,allocatable :: itsdir(:)                ! Dirac timeslot
+   integer :: ndir                                ! Number of valid Dirac points
+   real(kind_real),allocatable :: londir(:)       ! Dirac longitude
+   real(kind_real),allocatable :: latdir(:)       ! Dirac latitude
+   integer,allocatable :: iprocdir(:)             ! Dirac processor
+   integer,allocatable :: ic0adir(:)              ! Dirac gridpoint
+   integer,allocatable :: il0dir(:)               ! Dirac level
+   integer,allocatable :: ivdir(:)                ! Dirac variable
+   integer,allocatable :: itsdir(:)               ! Dirac timeslot
 
    ! MPI distribution
-   integer :: nmga                                 ! Halo A size for model grid
-   integer :: nc0a                                 ! Halo A size for subset Sc0
-   integer,allocatable :: proc_to_nmga(:)          ! Halo A size for each proc
-   integer,allocatable :: c0_to_proc_init(:)       ! Subset Sc0 to local task, initial version
-   integer,allocatable :: c0_to_proc(:)            ! Subset Sc0 to local task
-   logical :: same_grid                            ! Same grid and distribution flag
-   integer,allocatable :: c0_to_c0a(:)             ! Subset Sc0, global to halo A
-   integer,allocatable :: c0a_to_c0(:)             ! Subset Sc0, halo A to global
-   integer,allocatable :: proc_to_nc0a(:)          ! Halo A size for each proc
-   integer,allocatable :: c0a_to_mga(:)            ! Subset Sc0 to model grid, halo A
-   type(com_type) :: com_mg                        ! Communication between subset Sc0 and model grid
+   integer :: nmga                                ! Halo A size for model grid
+   integer :: nc0a                                ! Halo A size for subset Sc0
+   integer,allocatable :: proc_to_nmga(:)         ! Halo A size for each proc
+   integer,allocatable :: c0_to_proc_init(:)      ! Subset Sc0 to local task, initial version
+   integer,allocatable :: c0_to_proc(:)           ! Subset Sc0 to local task
+   logical :: same_grid                           ! Same grid and distribution flag
+   integer,allocatable :: c0_to_c0a(:)            ! Subset Sc0, global to halo A
+   integer,allocatable :: c0a_to_c0(:)            ! Subset Sc0, halo A to global
+   integer,allocatable :: proc_to_nc0a(:)         ! Halo A size for each proc
+   integer,allocatable :: c0a_to_mga(:)           ! Subset Sc0 to model grid, halo A
+   type(com_type) :: com_mg                       ! Communication between subset Sc0 and model grid
 contains
    procedure :: partial_dealloc => geom_partial_dealloc
    procedure :: dealloc => geom_dealloc
