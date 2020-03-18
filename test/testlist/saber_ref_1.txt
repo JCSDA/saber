@@ -23,10 +23,10 @@ bump_hdiag-nicas_loc_common/test_1-1_dirac.nc
 bump_hdiag-nicas_loc_common/test_1-1_nicas-2-sqrt_0001-0001_common.nc
 bump_hdiag-nicas_mask_check/test_1-1_diag.nc
 bump_hdiag-nicas_mask_check/test_1-1_dirac.nc
-bump_hdiag-nicas_mask_check/test_1-1_nicas-2-sqrt_0001-0001_common.nc
+bump_hdiag-nicas_mask_check/test_1-1_nicas-2-sqrt_0001-0001_01_01_01_01.nc
 bump_hdiag-nicas_network/test_1-1_diag.nc
 bump_hdiag-nicas_network/test_1-1_dirac.nc
-bump_hdiag-nicas_network/test_1-1_nicas-2-sqrt_0001-0001_common.nc
+bump_hdiag-nicas_network/test_1-1_nicas-2-sqrt_0001-0001_01_01_01_01.nc
 bump_lct-nicas_one_scale/test_1-1_dirac.nc
 bump_lct-nicas_one_scale/test_1-1_lct.nc
 bump_lct-nicas_one_scale/test_1-1_nicas-2-sqrt_0001-0001_01_01_01_01.nc
