@@ -456,7 +456,7 @@ do iv=1,nam%nv
                         ! Covariance
                         if (vbal%samp%c1l0_log(ic1,il0).and.vbal%samp%c1l0_log(ic1,jl0)) then
                            auto(ic1a,jl0,il0,isub) = auto(ic1a,jl0,il0,isub)+fld_2(ic1a,il0)*fld_2(ic1a,jl0)
-                           cross(ic1a,jl0,il0,isub) = cross(ic1a,jl0,il0,isub)+fld_1(ic1a,il0)*fld_2(ic1a,jl0)
+                           cross(ic1a,jl0,il0,isub) = cross(ic1a,jl0,il0,isub)+fld_2(ic1a,il0)*fld_1(ic1a,jl0)
                         end if
                      end do
                   end do
