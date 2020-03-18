@@ -1515,7 +1515,7 @@ type(cmat_blk_type) :: cmat_blk
 type(nam_type) :: nam_smoother
 
 ! Initialize local namelist
-call nam_smoother%init
+call nam_smoother%init(mpl%nproc)
 
 ! Set local namelist parameters
 nam_smoother%levs = nam%levs
