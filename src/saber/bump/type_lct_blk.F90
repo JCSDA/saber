@@ -10,7 +10,7 @@ module type_lct_blk
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 use netcdf
 !$ use omp_lib
-use tools_const, only: reqkm
+use tools_const, only: reqkm,rad2deg
 use tools_func, only: gau2gc,fit_lct,lct_d2h,check_cond,Dmin
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_repro, only: rth,inf,sup
@@ -867,12 +867,23 @@ type(samp_type),intent(in) :: samp           ! Sampling
 character(len=*),intent(in) :: filename      ! Filename
 
 ! Local variables
-integer :: info,ncid,nc3_id,nl0r_id,nc1a_id,nl0_id
-integer :: raw_id,fit_id,fit_filt_id
+integer :: info,ncid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,raw_id,fit_id,fit_filt_id
+integer :: ic1a,ic3,ic1,ic0
+real(kind_real) :: lon(nam%nc3,samp%nc1a),lat(nam%nc3,samp%nc1a)
 character(len=1024),parameter :: subr = 'lct_blk_write'
 
 ! Associate
 associate(ib=>lct_blk%ib)
+
+! Lon/lat initialization
+do ic1a=1,samp%nc1a
+   do ic3=1,nam%nc3
+      ic1 = samp%c1a_to_c1(ic1a)
+      ic0 = samp%c1c3_to_c0(ic1,ic3)
+      lon(ic3,ic1a) = geom%lon(ic0)*rad2deg
+      lat(ic3,ic1a) = geom%lat(ic0)*rad2deg
+   end do
+end do
 
 ! Check if the file exists
 info = nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_noclobber,nf90_64bit_offset),ncid)
@@ -894,6 +905,16 @@ nc1a_id = mpl%ncdimcheck(subr,ncid,'nc1a',samp%nc1a,.true.)
 nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.,.true.)
 
 ! Define variables if necessary
+info = nf90_inq_varid(ncid,'lon',lon_id)
+if (info/=nf90_noerr) then
+   call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nc3_id,nc1a_id/),lon_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'_FillValue',mpl%msv%valr))
+end if
+info = nf90_inq_varid(ncid,'lat',lat_id)
+if (info/=nf90_noerr) then
+   call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nc3_id,nc1a_id/),lat_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'_FillValue',mpl%msv%valr))
+end if
 info = nf90_inq_varid(ncid,'raw',raw_id)
 if (info/=nf90_noerr) then
    call mpl%ncerr(subr,nf90_def_var(ncid,'raw',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/),raw_id))
@@ -916,6 +937,8 @@ end if
 call mpl%ncerr(subr,nf90_enddef(ncid))
 
 ! Write variables
+call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon))
+call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat))
 call mpl%ncerr(subr,nf90_put_var(ncid,raw_id,lct_blk%raw(1:bpar%nc3(ib),1:bpar%nl0r(ib),:,:),(/1,1,1,1/), &
  & (/bpar%nc3(ib),bpar%nl0r(ib),samp%nc1a,geom%nl0/)))
 call mpl%ncerr(subr,nf90_put_var(ncid,fit_id,lct_blk%fit(1:bpar%nc3(ib),1:bpar%nl0r(ib),:,:),(/1,1,1,1/), &
