@@ -50,7 +50,7 @@ type samp_type
 
    ! Local data
    logical,allocatable :: vbal_mask(:,:)            ! Vertical balance mask
-   logical,allocatable :: local_mask(:,:)          ! Local mask
+   logical,allocatable :: local_mask(:,:)           ! Local mask
    integer,allocatable :: nn_c2a_index(:,:)         ! Nearest diagnostic neighbors from diagnostic points
    real(kind_real),allocatable :: nn_c2a_dist(:,:)  ! Nearest diagnostic neighbors distance from diagnostic points
 
@@ -76,6 +76,7 @@ type samp_type
    integer :: nc0c                                  ! Number of points in subset Sc0, halo C
    integer :: nc1a                                  ! Number of points in subset Sc1, halo A
    integer :: nc1d                                  ! Number of points in subset Sc1, halo D
+   integer :: nc1e                                  ! Number of points in subset Sc1, halo E
    logical :: sc2                                   ! Subset Sc2 flag
    integer :: nc2a                                  ! Number of points in subset Sc2, halo A
    integer :: nc2b                                  ! Number of points in subset Sc2, halo B
@@ -88,6 +89,8 @@ type samp_type
    integer,allocatable :: c1_to_c1a(:)              ! Subset Sc1, global to halo A
    integer,allocatable :: c1d_to_c1(:)              ! Subset Sc1, halo D to global
    integer,allocatable :: c1_to_c1d(:)              ! Subset Sc1, global to halo D
+   integer,allocatable :: c1e_to_c1(:)              ! Subset Sc1, halo E to global
+   integer,allocatable :: c1_to_c1e(:)              ! Subset Sc1, global to halo E
    integer,allocatable :: c2a_to_c2(:)              ! Subset Sc2, halo A to global
    integer,allocatable :: c2_to_c2a(:)              ! Subset Sc2, global to halo A
    logical,allocatable :: mask_c2a(:,:)             ! Mask on subset Sc2, halo A
@@ -97,6 +100,7 @@ type samp_type
    type(com_type) :: com_AB                         ! Communication between halos A and B
    type(com_type) :: com_AC                         ! Communication between halos A and C
    type(com_type) :: com_AD                         ! Communication between halos A and D (diagnostic)
+   type(com_type) :: com_AE                         ! Communication between halos A and E (vertical balance)
    type(com_type) :: com_AF                         ! Communication between halos A and F (filtering)
 contains
    procedure :: samp_alloc_mask
@@ -117,6 +121,7 @@ contains
    procedure :: compute_mpi_ab => samp_compute_mpi_ab
    procedure :: compute_mpi_c => samp_compute_mpi_c
    procedure :: compute_mpi_d => samp_compute_mpi_d
+   procedure :: compute_mpi_e => samp_compute_mpi_e
    procedure :: compute_mpi_f => samp_compute_mpi_f
    procedure :: diag_filter => samp_diag_filter
    procedure :: diag_fill => samp_diag_fill
@@ -261,6 +266,8 @@ if (allocated(samp%c1a_to_c1)) deallocate(samp%c1a_to_c1)
 if (allocated(samp%c1_to_c1a)) deallocate(samp%c1_to_c1a)
 if (allocated(samp%c1d_to_c1)) deallocate(samp%c1d_to_c1)
 if (allocated(samp%c1_to_c1d)) deallocate(samp%c1_to_c1d)
+if (allocated(samp%c1e_to_c1)) deallocate(samp%c1e_to_c1)
+if (allocated(samp%c1_to_c1e)) deallocate(samp%c1_to_c1e)
 if (allocated(samp%c2a_to_c2)) deallocate(samp%c2a_to_c2)
 if (allocated(samp%c2_to_c2a)) deallocate(samp%c2_to_c2a)
 if (allocated(samp%mask_c2a)) deallocate(samp%mask_c2a)
@@ -270,6 +277,7 @@ if (allocated(samp%c2_to_proc)) deallocate(samp%c2_to_proc)
 call samp%com_AB%dealloc
 call samp%com_AC%dealloc
 call samp%com_AD%dealloc
+call samp%com_AE%dealloc
 call samp%com_AF%dealloc
 
 end subroutine samp_dealloc
@@ -1358,12 +1366,10 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic0,ic2a,ic2b,ic2,jc2,i_s,il0i,il0,jc1,kc1a,kc1,kc0
-integer,allocatable :: nn_c1_index(:),c2_to_c2b(:),c2a_to_c2b(:)
+integer :: ic0,ic2a,ic2b,ic2,jc2,i_s,il0i,il0
+integer,allocatable :: c2_to_c2b(:),c2a_to_c2b(:)
 real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:),nn_c1_dist(:)
 logical :: lcheck_c2b(nam%nc2)
-logical,allocatable :: mask_c1(:)
 type(tree_type) :: tree
 
 ! Allocation
@@ -1479,55 +1485,6 @@ end do
 
 ! Release memory
 call tree%dealloc
-
-! Compute vertical balance operator mask
-if (nam%new_vbal) then
-   ! Allocation
-   allocate(samp%vbal_mask(samp%nc1a,nam%nc2))
-
-   ! Initialization
-   samp%vbal_mask = .false.
-
-   ! Allocation
-   allocate(nn_c1_index(nam%nc1))
-   allocate(nn_c1_dist(nam%nc1))
-   allocate(lon_c1(nam%nc1))
-   allocate(lat_c1(nam%nc1))
-   allocate(mask_c1(nam%nc1))
-
-   ! Initialization
-   mask_c1 = any(samp%c1l0_log,dim=2)
-   lon_c1 = geom%lon(samp%c1_to_c0)
-   lat_c1 = geom%lat(samp%c1_to_c0)
-
-   ! Allocation
-   call tree%alloc(mpl,nam%nc1,mask=mask_c1)
-
-   ! Initialization
-   call tree%init(lon_c1,lat_c1)
-
-   do ic2=1,nam%nc2
-      ! Find nearest neighbors
-      ic0 = samp%c2_to_c0(ic2)
-      call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nam%nc1,nn_c1_index,nn_c1_dist)
-      do jc1=1,nam%nc1
-         kc1 = nn_c1_index(jc1)
-         kc0 = samp%c1_to_c0(kc1)
-         if (geom%c0_to_proc(kc0)==mpl%myproc) then
-            kc1a = samp%c1_to_c1a(kc1)
-            samp%vbal_mask(kc1a,ic2) = (jc1==1).or.(nn_c1_dist(jc1)<nam%vbal_rad)
-         end if
-      end do
-   end do
-
-   ! Release memory
-   deallocate(nn_c1_index)
-   deallocate(nn_c1_dist)
-   deallocate(lon_c1)
-   deallocate(lat_c1)
-   deallocate(mask_c1)
-   call tree%dealloc
-end if
 
 ! Release memory
 deallocate(c2_to_c2b)
@@ -1707,7 +1664,7 @@ mask_c1 = any(samp%c1l0_log,dim=2)
 lon_c1 = geom%lon(samp%c1_to_c0)
 lat_c1 = geom%lat(samp%c1_to_c0)
 samp%local_mask = .false.
-lcheck_c1d = samp%lcheck_c1a
+lcheck_c1d = .false.
 
 ! Allocation
 call tree%alloc(mpl,nam%nc1,mask=mask_c1)
@@ -1715,7 +1672,7 @@ call tree%alloc(mpl,nam%nc1,mask=mask_c1)
 ! Initialization
 call tree%init(lon_c1,lat_c1)
 
-! Halo C
+! Halo D
 do ic2a=1,samp%nc2a
    ! Indices
    ic2 = samp%c2a_to_c2(ic2a)
@@ -1731,8 +1688,9 @@ do ic2a=1,samp%nc2a
    ! Find nearest neighbors
    call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn,nn_index)
 
-   ! Update lcheck
+   ! Update masks
    samp%local_mask(ic1,ic2a) = .true.
+   lcheck_c1d(ic1) = .true.
    do i=1,nn
       jc1 = nn_index(i)
       samp%local_mask(jc1,ic2a) = .true.
@@ -1791,6 +1749,121 @@ write(mpl%info,'(a10,a,i8)') '','nc1d =      ',samp%nc1d
 call mpl%flush
 
 end subroutine samp_compute_mpi_d
+
+!----------------------------------------------------------------------
+! Subroutine: samp_compute_mpi_e
+! Purpose: compute sampling MPI distribution, halo E
+!----------------------------------------------------------------------
+subroutine samp_compute_mpi_e(samp,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(inout) :: samp ! Sampling
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(nam_type),intent(in) :: nam       ! Namelist
+type(geom_type),intent(in) :: geom     ! Geometry
+
+! Local variables
+integer :: ic2b,ic2,ic0,nn,i,ic1e,ic1,ic1a,jc1
+integer,allocatable :: nn_index(:),c1a_to_c1e(:),c1_to_proc(:)
+real(kind_real) :: lon_c1(nam%nc1),lat_c1(nam%nc1)
+logical :: mask_c1(nam%nc1),lcheck_c1e(nam%nc1)
+type(tree_type) :: tree
+
+! Allocation
+allocate(samp%vbal_mask(nam%nc1,samp%nc2b))
+
+! Initialization
+mask_c1 = any(samp%c1l0_log,dim=2)
+lon_c1 = geom%lon(samp%c1_to_c0)
+lat_c1 = geom%lat(samp%c1_to_c0)
+samp%vbal_mask = .false.
+lcheck_c1e = .false.
+
+! Allocation
+call tree%alloc(mpl,nam%nc1,mask=mask_c1)
+
+! Initialization
+call tree%init(lon_c1,lat_c1)
+
+! Halo E
+do ic2b=1,samp%nc2b
+   ! Indices
+   ic2 = samp%c2b_to_c2(ic2b)
+   ic1 = samp%c2_to_c1(ic2)
+   ic0 = samp%c2_to_c0(ic2)
+
+   ! Count nearest neighbors
+   call tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nam%vbal_rad,nn)
+
+   ! Allocation
+   allocate(nn_index(nn))
+
+   ! Find nearest neighbors
+   call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn,nn_index)
+
+   ! Update masks
+   samp%vbal_mask(ic1,ic2b) = .true.
+   lcheck_c1e(ic1) = .true.
+   do i=1,nn
+      jc1 = nn_index(i)
+      samp%vbal_mask(jc1,ic2b) = .true.
+      lcheck_c1e(jc1) = .true.
+   end do
+
+   ! Release memory
+   deallocate(nn_index)
+end do
+samp%nc1e = count(lcheck_c1e)
+
+! Release memory
+call tree%dealloc
+
+! Global <-> local conversions for fields
+
+! Halo E
+allocate(samp%c1e_to_c1(samp%nc1e))
+allocate(samp%c1_to_c1e(nam%nc1))
+samp%c1_to_c1e = mpl%msv%vali
+ic1e = 0
+do ic1=1,nam%nc1
+   if (lcheck_c1e(ic1)) then
+      ic1e = ic1e+1
+      samp%c1e_to_c1(ic1e) = ic1
+      samp%c1_to_c1e(ic1) = ic1e
+   end if
+end do
+
+! Inter-halo conversions
+allocate(c1a_to_c1e(samp%nc1a))
+do ic1a=1,samp%nc1a
+   ic1 = samp%c1a_to_c1(ic1a)
+   ic1e = samp%c1_to_c1e(ic1)
+   c1a_to_c1e(ic1a) = ic1e
+end do
+
+! MPI splitting
+allocate(c1_to_proc(nam%nc1))
+do ic1=1,nam%nc1
+   ic0 = samp%c1_to_c0(ic1)
+   c1_to_proc(ic1) = geom%c0_to_proc(ic0)
+end do
+
+! Setup communications
+call samp%com_AE%setup(mpl,'com_AE',nam%nc1,samp%nc1a,samp%nc1e,samp%nc1a,samp%c1e_to_c1,c1a_to_c1e,c1_to_proc,samp%c1_to_c1a)
+
+! Release memory
+deallocate(c1a_to_c1e)
+deallocate(c1_to_proc)
+
+! Print results
+write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
+call mpl%flush
+write(mpl%info,'(a10,a,i8)') '','nc1e =      ',samp%nc1e
+call mpl%flush
+
+end subroutine samp_compute_mpi_e
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_f

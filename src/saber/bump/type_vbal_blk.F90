@@ -8,10 +8,13 @@
 module type_vbal_blk
 
 use tools_kinds, only: kind_real
+use tools_func, only: syminv
 use type_bpar, only: bpar_type
+use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_samp, only: samp_type
 
 implicit none
 
@@ -28,6 +31,8 @@ contains
    procedure :: alloc => vbal_blk_alloc
    procedure :: partial_dealloc => vbal_blk_partial_dealloc
    procedure :: dealloc => vbal_blk_dealloc
+   procedure :: compute_covariances => vbal_blk_compute_covariances
+   procedure :: compute_regression => vbal_blk_compute_regression
    procedure :: apply => vbal_blk_apply
    procedure :: apply_ad => vbal_blk_apply_ad
 end type vbal_blk_type
@@ -59,10 +64,10 @@ vbal_blk%jv = jv
 vbal_blk%name = trim(nam%varname(jv))//'-'//trim(nam%varname(iv))
 
 ! Allocation
-allocate(vbal_blk%auto(nc2b,geom%nl0,geom%nl0))
-allocate(vbal_blk%cross(nc2b,geom%nl0,geom%nl0))
-allocate(vbal_blk%auto_inv(nc2b,geom%nl0,geom%nl0))
-allocate(vbal_blk%reg(nc2b,geom%nl0,geom%nl0))
+allocate(vbal_blk%auto(geom%nl0,geom%nl0,nc2b))
+allocate(vbal_blk%cross(geom%nl0,geom%nl0,nc2b))
+allocate(vbal_blk%auto_inv(geom%nl0,geom%nl0,nc2b))
+allocate(vbal_blk%reg(geom%nl0,geom%nl0,nc2b))
 
 end subroutine vbal_blk_alloc
 
@@ -102,6 +107,194 @@ if (allocated(vbal_blk%reg)) deallocate(vbal_blk%reg)
 end subroutine vbal_blk_dealloc
 
 !----------------------------------------------------------------------
+! Subroutine: vbal_blk_compute_covariances
+! Purpose: compute auto- and cross-covariances
+!----------------------------------------------------------------------
+subroutine vbal_blk_compute_covariances(vbal_blk,mpl,geom,samp,ens,auto,cross)
+
+implicit none
+
+! Passed variables
+class(vbal_blk_type),intent(in) :: vbal_blk                                ! Vertical balance block
+type(mpl_type),intent(inout) :: mpl                                        ! MPI data
+type(geom_type),intent(in) :: geom                                         ! Geometry
+type(samp_type), intent(in) :: samp                                        ! Sampling
+type(ens_type), intent(in) :: ens                                          ! Ensemble
+real(kind_real),intent(out) :: auto(samp%nc1e,geom%nl0,geom%nl0,ens%nsub)  ! Auto-covariance
+real(kind_real),intent(out) :: cross(samp%nc1e,geom%nl0,geom%nl0,ens%nsub) ! Cross-covariance
+
+! Local variables
+integer :: isub,ie_sub,ie,il0,ic1a,ic1,ic0,ic0a,jl0,ic1e
+real(kind_real) :: fld_1(samp%nc1a,geom%nl0),fld_2(samp%nc1a,geom%nl0),fld_ext_1(samp%nc1e,geom%nl0),fld_ext_2(samp%nc1e,geom%nl0)
+
+! Initialization
+auto = 0.0
+cross = 0.0
+
+! Loop on sub-ensembles
+do isub=1,ens%nsub
+   if (ens%nsub==1) then
+      write(mpl%info,'(a10,a)') '','Full ensemble, member:'
+      call mpl%flush(.false.)
+   else
+      write(mpl%info,'(a10,a,i4,a)') '','Sub-ensemble ',isub,', member:'
+      call mpl%flush(.false.)
+   end if
+
+   ! Compute centered moments iteratively
+   do ie_sub=1,ens%ne/ens%nsub
+      write(mpl%info,'(i4)') ie_sub
+      call mpl%flush(.false.)
+
+      ! Full ensemble index
+      ie = ie_sub+(isub-1)*ens%ne/ens%nsub
+
+      ! Copy all separations points
+      fld_1 = 0.0
+      fld_2 = 0.0
+      !$omp parallel do schedule(static) private(il0,ic1a,ic1,ic0,ic0a)
+      do il0=1,geom%nl0
+         do ic1a=1,samp%nc1a
+            ! Indice
+            ic1 = samp%c1a_to_c1(ic1a)
+
+            if (samp%c1l0_log(ic1,il0)) then
+               ! Indice
+               ic0 = samp%c1_to_c0(ic1)
+               ic0a = geom%c0_to_c0a(ic0)
+
+               ! Copy points
+               fld_1(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%iv,1)
+               fld_2(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%jv,1)
+            end if
+         end do
+      end do
+      !$omp end parallel do
+
+      ! Halo extension
+      call samp%com_AE%ext(mpl,geom%nl0,fld_1,fld_ext_1)
+      call samp%com_AE%ext(mpl,geom%nl0,fld_2,fld_ext_2)
+
+      !$omp parallel do schedule(static) private(il0,jl0,ic1e,ic1)
+      do il0=1,geom%nl0
+         do jl0=1,geom%nl0
+            do ic1e=1,samp%nc1e
+               ! Indice
+               ic1 = samp%c1e_to_c1(ic1e)
+
+               ! Auto and cross-covariances
+               if (samp%c1l0_log(ic1,il0).and.samp%c1l0_log(ic1,jl0)) then
+                  auto(ic1e,jl0,il0,isub) = auto(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_2(ic1e,jl0)
+                  cross(ic1e,jl0,il0,isub) = cross(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_1(ic1e,jl0)
+               end if
+            end do
+         end do
+      end do
+      !$omp end parallel do
+   end do
+   write(mpl%info,'(a)') ''
+   call mpl%flush
+end do
+
+end subroutine vbal_blk_compute_covariances
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_blk_compute_regression
+! Purpose: compute regression
+!----------------------------------------------------------------------
+subroutine vbal_blk_compute_regression(vbal_blk,mpl,nam,geom,samp,nsub,auto,cross,ic2b)
+
+implicit none
+
+! Passed variables
+class(vbal_blk_type),intent(inout) :: vbal_blk                        ! Vertical balance block
+type(mpl_type),intent(inout) :: mpl                                   ! MPI data
+type(nam_type), intent(in) :: nam                                     ! Namelist
+type(geom_type),intent(in) :: geom                                    ! Geometry
+type(samp_type), intent(in) :: samp                                   ! Sampling
+integer,intent(in) :: nsub                                            ! Number of sub-ensembles
+real(kind_real),intent(in) :: auto(samp%nc1e,geom%nl0,geom%nl0,nsub)  ! Auto-covariance
+real(kind_real),intent(in) :: cross(samp%nc1e,geom%nl0,geom%nl0,nsub) ! Cross-covariance
+integer,intent(in) :: ic2b                                            ! Index
+
+! Local variables
+integer :: i,jl0_min,jl0_max,jl0,il0,ic1,ic1e,nc1a,nc1max
+real(kind_real),allocatable :: list_auto(:),list_cross(:)
+
+! Initialization
+vbal_blk%auto(:,:,ic2b) = mpl%msv%valr
+vbal_blk%cross(:,:,ic2b) = mpl%msv%valr
+vbal_blk%auto_inv(:,:,ic2b) = mpl%msv%valr
+vbal_blk%reg(:,:,ic2b) = mpl%msv%valr
+
+! Allocation
+nc1max = count(samp%vbal_mask(:,ic2b))
+allocate(list_auto(nc1max))
+allocate(list_cross(nc1max))
+
+do il0=1,geom%nl0
+   ! Indices
+   if (nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
+      ! Diagonal regression
+      jl0_min = il0
+      jl0_max = il0
+   else
+      jl0_min = 1
+      jl0_max = geom%nl0
+   end if
+
+   do jl0=jl0_min,jl0_max
+      ! Initialization
+      list_auto = mpl%msv%valr
+      list_cross = mpl%msv%valr
+
+      ! Fill lists
+      i = 0
+      do ic1=1,nam%nc1
+         if (samp%c1l0_log(ic1,il0).and.samp%c1l0_log(ic1,jl0).and.samp%vbal_mask(ic1,ic2b)) then
+            ! Update
+            i = i+1
+
+            ! Index
+            ic1e = samp%c1_to_c1e(ic1)
+
+            ! Averages over sub-ensembles
+            list_auto(i) = sum(auto(ic1e,jl0,il0,:))/real(nsub,kind_real)
+            list_cross(i) = sum(cross(ic1e,jl0,il0,:))/real(nsub,kind_real)
+         end if
+      end do
+
+      ! Average
+      nc1a = count(mpl%msv%isnot(list_auto))
+      if (nc1a>0) then
+         vbal_blk%auto(jl0,il0,ic2b) = sum(list_auto,mask=mpl%msv%isnot(list_auto))
+         vbal_blk%cross(jl0,il0,ic2b) = sum(list_cross,mask=mpl%msv%isnot(list_cross))
+      end if
+   end do
+end do
+
+! Release memory
+deallocate(list_auto)
+deallocate(list_cross)
+
+if (nam%vbal_diag_auto((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv) &
+ & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
+   ! Diagonal inversion
+   do il0=1,geom%nl0
+      if (vbal_blk%auto(il0,il0,ic2b)>0.0) vbal_blk%auto_inv(il0,il0,ic2b) = &
+                                                & 1.0/vbal_blk%auto(il0,il0,ic2b)
+   end do
+else
+   ! Inverse the vertical auto-covariance
+   call syminv(mpl,geom%nl0,vbal_blk%auto(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b))
+end if
+
+! Compute the regression
+vbal_blk%reg(:,:,ic2b) = matmul(vbal_blk%cross(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b))
+
+end subroutine vbal_blk_compute_regression
+
+!----------------------------------------------------------------------
 ! Subroutine: vbal_blk_apply
 ! Purpose: apply vertical balance block
 !----------------------------------------------------------------------
@@ -134,7 +327,7 @@ do ic0a=1,geom%nc0a
             S = h_S(i_s,ic0a,min(il0,geom%nl0i))
 
             ! Apply regression coefficient weighted by the neighbor weight
-            fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)+S*vbal_blk%reg(ic2b,il0,jl0)*fld(ic0a,jl0)
+            fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)+S*vbal_blk%reg(il0,jl0,ic2b)*fld(ic0a,jl0)
          end do
       end do
    end do
@@ -178,7 +371,7 @@ do ic0a=1,geom%nc0a
             S = h_S(i_s,ic0a,min(il0,geom%nl0i))
 
             ! Apply regression coefficient weighted by the neighbor weight
-            fld_tmp(ic0a,jl0) = fld_tmp(ic0a,jl0)+S*vbal_blk%reg(ic2b,il0,jl0)*fld(ic0a,il0)
+            fld_tmp(ic0a,jl0) = fld_tmp(ic0a,jl0)+S*vbal_blk%reg(il0,jl0,ic2b)*fld(ic0a,il0)
          end do
       end do
    end do

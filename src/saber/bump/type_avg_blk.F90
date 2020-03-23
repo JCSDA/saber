@@ -876,6 +876,17 @@ do il0=1,geom%nl0
       jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
 
       do jc3=1,bpar%nc3(ib)
+         ! Initialization
+         list_m11 = mpl%msv%valr
+         do isub=1,avg_blk%nsub
+            do jsub=1,avg_blk%nsub
+               list_m11m11(:,jsub,isub) = mpl%msv%valr
+               list_m2m2(:,jsub,isub) = mpl%msv%valr
+            end do
+            if (.not.nam%gau_approx) list_m22(:,isub) = mpl%msv%valr
+         end do
+         list_cor = mpl%msv%valr
+
          ! Fill lists
          i = 0
          do ic1=1,nam%nc1
@@ -924,17 +935,6 @@ do il0=1,geom%nl0
                   else
                      list_cor(i) = mpl%msv%valr
                   end if
-               else
-                  ! Missing value
-                  list_m11(i) = mpl%msv%valr
-                  do isub=1,avg_blk%nsub
-                     do jsub=1,avg_blk%nsub
-                        list_m11m11(i,jsub,isub) = mpl%msv%valr
-                        list_m2m2(i,jsub,isub) = mpl%msv%valr
-                     end do
-                     if (.not.nam%gau_approx) list_m22(i,isub) = mpl%msv%valr
-                  end do
-                  list_cor(i) = mpl%msv%valr
                end if
             end if
          end do
@@ -974,6 +974,12 @@ do il0=1,geom%nl0
    end do
 end do
 
+! Release memory
+deallocate(list_m11)
+deallocate(list_m11m11)
+deallocate(list_m2m2)
+if (.not.nam%gau_approx) deallocate(list_m22)
+deallocate(list_cor)
 
 ! Normalize
 !$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub,norm)
@@ -1009,13 +1015,6 @@ do il0=1,geom%nl0
    end do
 end do
 !$omp end parallel do
-
-! Release memory
-deallocate(list_m11)
-deallocate(list_m11m11)
-deallocate(list_m2m2)
-if (.not.nam%gau_approx) deallocate(list_m22)
-deallocate(list_cor)
 
 ! End associate
 end associate
