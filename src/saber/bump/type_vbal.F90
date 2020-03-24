@@ -327,7 +327,7 @@ type(ens_type), intent(in) :: ens      ! Ensemble
 type(ens_type),intent(inout) :: ensu   ! Unbalanced ensemble
 
 ! Local variables
-integer :: il0i,i_s,ic0a,ic2b,i,ic0,jl0_min,jl0_max,jl0,il0,ic1,ic1a,ic1e,iv,jv,nc1a,nc1max,ie
+integer :: il0i,i_s,ic0a,ic2b,iv,jv,ie
 real(kind_real) :: fld(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: auto(:,:,:,:),cross(:,:,:,:)
 
