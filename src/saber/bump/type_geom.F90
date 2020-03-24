@@ -8,7 +8,7 @@
 module type_geom
 
 use atlas_module
-use tools_atlas, only: create_atlas_function_space,field_to_fld
+use tools_atlas, only: field_to_fld
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,sphere_dist,lonlat2xyz,vector_product,vector_triple_product
 use tools_kinds, only: kind_real,nc_kind_real

@@ -402,7 +402,7 @@ bump%nam%lev2d = 'first'
 call create_atlas_function_space(nmga,lon*deg2rad,lat*deg2rad,afunctionspace)
 
 ! Create ATLAS fieldset with empty fields
-call create_atlas_fieldset(afunctionspace,bump%nam%nl,bump%nam%varname,bump%nam%timeslot,afieldset)
+call create_atlas_fieldset(afunctionspace,bump%nam%nl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset)
 
 ! Set geometry
 
@@ -1733,7 +1733,8 @@ class(bump_type),intent(inout) :: bump ! BUMP
 type(atlas_fieldset) :: afieldset
 
 ! Create ATLAS fieldset with empty fields
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
+ & bump%nam%timeslot(1:bump%nam%nts),afieldset)
 
 ! Get parameter
 if (bump%nam%check_get_param_cor) then
@@ -2038,9 +2039,12 @@ do its=1,bump%nam%nts
 end do
 
 ! Create ATLAS fieldset with empty fields
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset)
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset_req)
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset_reqsq)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
+ & bump%nam%timeslot(1:bump%nam%nts),afieldset)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
+ & bump%nam%timeslot(1:bump%nam%nts),afieldset_req)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
+ & bump%nam%timeslot(1:bump%nam%nts),afieldset_reqsq)
 
 ! Convert to ATLAS fieldset
 call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
@@ -2107,7 +2111,8 @@ if (bump%nam%check_apply_vbal) then
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
 
    ! Create ATLAS fieldset with empty fields
-   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset)
+   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
+ & bump%nam%timeslot(1:bump%nam%nts),afieldset)
 
    ! Convert to ATLAS fieldset
    call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
@@ -2139,7 +2144,8 @@ if (bump%nam%check_apply_nicas) then
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
 
    ! Create ATLAS fieldset with empty fields
-   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset)
+   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
+ & bump%nam%timeslot(1:bump%nam%nts),afieldset)
 
    ! Convert to ATLAS fieldset
    call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
