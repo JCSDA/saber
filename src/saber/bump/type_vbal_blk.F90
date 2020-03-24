@@ -155,11 +155,11 @@ do isub=1,ens%nsub
       !$omp parallel do schedule(static) private(il0,ic1a,ic1,ic0,ic0a)
       do il0=1,geom%nl0
          do ic1a=1,samp%nc1a
-            ! Indice
+            ! Index
             ic1 = samp%c1a_to_c1(ic1a)
 
             if (samp%c1l0_log(ic1,il0)) then
-               ! Indice
+               ! Index
                ic0 = samp%c1_to_c0(ic1)
                ic0a = geom%c0_to_c0a(ic0)
 
@@ -179,7 +179,7 @@ do isub=1,ens%nsub
       do il0=1,geom%nl0
          do jl0=1,geom%nl0
             do ic1e=1,samp%nc1e
-               ! Indice
+               ! Index
                ic1 = samp%c1e_to_c1(ic1e)
 
                ! Auto and cross-covariances
@@ -250,13 +250,13 @@ do il0=1,geom%nl0
 
       ! Fill lists
       i = 0
-      do ic1=1,nam%nc1
+      do ic1e=1,samp%nc1e
+         ! Index
+         ic1 = samp%c1e_to_c1(ic1e)
+
          if (samp%c1l0_log(ic1,il0).and.samp%c1l0_log(ic1,jl0).and.samp%vbal_mask(ic1,ic2b)) then
             ! Update
             i = i+1
-
-            ! Index
-            ic1e = samp%c1_to_c1e(ic1)
 
             ! Averages over sub-ensembles
             list_auto(i) = sum(auto(ic1e,jl0,il0,:))/real(nsub,kind_real)
@@ -267,8 +267,8 @@ do il0=1,geom%nl0
       ! Average
       nc1a = count(mpl%msv%isnot(list_auto))
       if (nc1a>0) then
-         vbal_blk%auto(jl0,il0,ic2b) = sum(list_auto,mask=mpl%msv%isnot(list_auto))
-         vbal_blk%cross(jl0,il0,ic2b) = sum(list_cross,mask=mpl%msv%isnot(list_cross))
+         vbal_blk%auto(jl0,il0,ic2b) = sum(list_auto,mask=mpl%msv%isnot(list_auto))/real(nc1a,kind_real)
+         vbal_blk%cross(jl0,il0,ic2b) = sum(list_cross,mask=mpl%msv%isnot(list_cross))/real(nc1a,kind_real)
       end if
    end do
 end do
