@@ -1664,7 +1664,7 @@ mask_c1 = any(samp%c1l0_log,dim=2)
 lon_c1 = geom%lon(samp%c1_to_c0)
 lat_c1 = geom%lat(samp%c1_to_c0)
 samp%local_mask = .false.
-lcheck_c1d = .false.
+lcheck_c1d = samp%lcheck_c1a
 
 ! Allocation
 call tree%alloc(mpl,nam%nc1,mask=mask_c1)
@@ -1690,7 +1690,6 @@ do ic2a=1,samp%nc2a
 
    ! Update masks
    samp%local_mask(ic1,ic2a) = .true.
-   lcheck_c1d(ic1) = .true.
    do i=1,nn
       jc1 = nn_index(i)
       samp%local_mask(jc1,ic2a) = .true.
@@ -1779,7 +1778,7 @@ mask_c1 = any(samp%c1l0_log,dim=2)
 lon_c1 = geom%lon(samp%c1_to_c0)
 lat_c1 = geom%lat(samp%c1_to_c0)
 samp%vbal_mask = .false.
-lcheck_c1e = .false.
+lcheck_c1e = samp%lcheck_c1a
 
 ! Allocation
 call tree%alloc(mpl,nam%nc1,mask=mask_c1)
