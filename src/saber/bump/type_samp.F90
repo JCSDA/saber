@@ -1886,7 +1886,7 @@ logical :: nam_rad
 character(len=1024),parameter :: subr = 'samp_diag_filter'
 
 ! Check radius
-nam_rad = .not.(abs(rflt-nam%diag_rhflt)>0.0)
+nam_rad = eq(rflt,nam%diag_rhflt)
 
 if (rflt>0.0) then
    if (nam_rad) then

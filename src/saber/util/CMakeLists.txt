@@ -12,6 +12,7 @@ tools_repro.F90
 type_mpl.F90
 type_msv.F90
 type_rng.F90
+type_timer.F90
 
 PARENT_SCOPE
 )

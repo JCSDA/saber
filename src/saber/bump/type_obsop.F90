@@ -9,10 +9,9 @@ module type_obsop
 
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 use netcdf
-use tools_const, only: pi,deg2rad,rad2deg,req,reqkm
+use tools_const, only: pi,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,sphere_dist
 use tools_kinds, only: kind_real,nc_kind_real
-use tools_qsort, only: qsort
 use tools_repro, only: rth
 use type_com, only: com_type
 use type_geom, only: geom_type
@@ -250,7 +249,7 @@ do iobsa=1,obsop%nobsa
    if (.not.maskobsa(iobsa)) then
       ! Check for very close points
       call geom%tree%find_nearest_neighbors(obsop%lonobs(iobsa),obsop%latobs(iobsa),1,nn_index,nn_dist)
-      if (nn_dist(1)<rth*req) maskobsa(iobsa) = .true.
+      if (nn_dist(1)<rth) maskobsa(iobsa) = .true.
    end if
 end do
 nobsa_eff = count(maskobsa)
@@ -580,8 +579,8 @@ call mpl%f_comm%broadcast(ylatmax,iprocmax(1)-1)
 
 ! Print results
 if (norm_tot>0.0) then
-   write(mpl%info,'(a7,a,f10.2,a,f10.2,a,f10.2,a)') '','Interpolation error (min/mean/max): ',distmin_tot, &
- & ' km / ',distsum_tot/norm_tot,' km / ',maxval(proc_to_distmax),' km'
+   write(mpl%info,'(a7,a,f10.2,a,f10.2,a,f10.2,a)') '','Interpolation error (min/mean/max): ',distmin_tot*reqkm, &
+ & ' km / ',distsum_tot*reqkm/norm_tot,' km / ',maxval(proc_to_distmax),' km'
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Max. interpolation error location (lon/lat): '
    call mpl%flush

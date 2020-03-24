@@ -1795,6 +1795,9 @@ type(ens_type) :: ens
 type(hdiag_type) :: hdiag
 type(nicas_type) :: nicas_test
 
+! Initialization
+cmat%allocated = .false.
+
 ! Save namelist parameters
 prefix = nam%prefix
 rh = nam%rh

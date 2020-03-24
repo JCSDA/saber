@@ -2,3 +2,7 @@ bump_hdiag-nicas_nprocio/test_4-1_nicas-2-sqrt_0004-0001_common.nc
 bump_hdiag-nicas_nprocio/test_4-1_nicas-2-sqrt_0004-0002_common.nc
 bump_hdiag-nicas_nprocio/test_4-1_nicas-2-sqrt_0004-0003_common.nc
 bump_hdiag-nicas_nprocio/test_4-1_nicas-2-sqrt_0004-0004_common.nc
+bump_hdiag-nicas_remap_metis/test_4-1_nicas-2-sqrt_0004-0001_common.nc
+bump_hdiag-nicas_remap_metis/test_4-1_nicas-2-sqrt_0004-0002_common.nc
+bump_hdiag-nicas_remap_metis/test_4-1_nicas-2-sqrt_0004-0003_common.nc
+bump_hdiag-nicas_remap_metis/test_4-1_nicas-2-sqrt_0004-0004_common.nc
