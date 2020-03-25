@@ -889,13 +889,13 @@ do il0=1,geom%nl0
 
          ! Fill lists
          i = 0
-         do ic1=1,nam%nc1
+         do ic1d=1,samp%nc1d
+            ! Index
+            ic1 = samp%c1d_to_c1(ic1d)
+
             if (samp%local_mask(ic1,ic2a)) then
                ! Update
                i = i+1
-
-               ! Index
-               ic1d = samp%c1_to_c1d(ic1)
 
                ! Check validity
                valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
@@ -955,7 +955,7 @@ do il0=1,geom%nl0
                end do
                if (.not.nam%gau_approx) avg_blk%m22(jc3,jl0r,il0,isub) = sum(list_m22(:,isub),mask=mpl%msv%isnot(list_m11))
             end do
-          else
+         else
             avg_blk%m11(jc3,jl0r,il0) = 0.0
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
@@ -1398,13 +1398,13 @@ do il0=1,geom%nl0
       do jc3=1,bpar%nc3(ib)
          ! Fill lists
          i = 0
-         do ic1=1,nam%nc1
+         do ic1d=1,samp%nc1d
+            ! Index
+            ic1 = samp%c1d_to_c1(ic1d)
+
             if (samp%local_mask(ic1,ic2a)) then
                ! Update
                i = i+1
-
-               ! Index
-               ic1d = samp%c1_to_c1d(ic1)
 
                ! Check validity
                valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)

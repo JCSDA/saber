@@ -18,6 +18,7 @@ bump_read_nicas
 bump_read_obsop
 bump_read_sampling
 bump_read_vbal
+bump_vbal
 bump_write_cmat
 bump_write_mom
 bump_write_nicas

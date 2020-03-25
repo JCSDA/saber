@@ -173,6 +173,8 @@ type nam_type
    real(kind_real) :: rv                                ! Forced vertical support radius
    logical :: pos_def_test                              ! Positive-definiteness test
    logical :: write_grids                               ! Write NICAS grids
+
+   ! dirac_param
    integer :: ndir                                      ! Number of Diracs
    real(kind_real) :: londir(ndirmax)                   ! Diracs longitudes (in degrees)
    real(kind_real) :: latdir(ndirmax)                   ! Diracs latitudes (in degrees)
@@ -383,6 +385,8 @@ nam%rh = 0.0
 nam%rv = 0.0
 nam%pos_def_test = .false.
 nam%write_grids = .false.
+
+! dirac_param default
 nam%ndir = 0
 nam%londir = 0.0
 nam%latdir = 0.0
@@ -465,7 +469,8 @@ namelist/diag_param/ne,gau_approx,avg_nbins,vbal_block,vbal_rad,vbal_diag_auto,v
 namelist/fit_param/minim_algo,fit_type,double_fit,lhomh,lhomv,rvflt,lct_nscales,lct_scale_ratio,lct_cor_min,lct_diag,lct_qc_th, &
                  & lct_qc_max,lct_write_cor
 namelist/nicas_param/nonunit_diag,lsqrt,resol,nc1max,fast_sampling,subsamp,network,mpicom,adv_mode,forced_radii,rh,rv, &
-                   & pos_def_test,write_grids,ndir,londir,latdir,levdir,ivdir,itsdir
+                   & pos_def_test,write_grids
+namelist/dirac_param/ndir,londir,latdir,levdir,ivdir,itsdir
 namelist/obsop_param/nobs
 namelist/output_param/nldwv,img_ldwv,lon_ldwv,lat_ldwv,name_ldwv,diag_rhflt,grid_output,grid_resol
 
@@ -629,6 +634,8 @@ if (mpl%main) then
    rv = 0.0
    pos_def_test = .false.
    write_grids = .false.
+
+   ! dirac_param default
    ndir = 0
    londir = 0.0
    latdir = 0.0
@@ -802,7 +809,6 @@ if (mpl%main) then
 
    ! nicas_param
    read(lunit,nml=nicas_param)
-   if (ndir>ndirmax) call mpl%abort(subr,'ndir is too large')
    nam%nonunit_diag = nonunit_diag
    nam%lsqrt = lsqrt
    nam%resol = resol
@@ -817,6 +823,9 @@ if (mpl%main) then
    nam%rv = rv
    nam%pos_def_test = pos_def_test
    nam%write_grids = write_grids
+
+   ! dirac_param
+   if (ndir>ndirmax) call mpl%abort(subr,'ndir is too large')
    nam%ndir = ndir
    if (ndir>0) nam%londir(1:ndir) = londir(1:ndir)
    if (ndir>0) nam%latdir(1:ndir) = latdir(1:ndir)
@@ -1032,6 +1041,8 @@ call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_grids,mpl%rootproc-1)
+
+! dirac_param
 call mpl%f_comm%broadcast(nam%ndir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%londir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%latdir,mpl%rootproc-1)
@@ -1296,6 +1307,8 @@ if (conf%has("rh")) call conf%get_or_die("rh",nam%rh)
 if (conf%has("rv")) call conf%get_or_die("rv",nam%rv)
 if (conf%has("pos_def_test")) call conf%get_or_die("pos_def_test",nam%pos_def_test)
 if (conf%has("write_grids")) call conf%get_or_die("write_grids",nam%write_grids)
+
+! dirac_param
 if (conf%has("ndir")) call conf%get_or_die("ndir",nam%ndir)
 if (conf%has("londir")) then
    call conf%get_or_die("londir",real_array)
@@ -1465,10 +1478,10 @@ if (nam%new_obsop.and.nam%load_obsop) call mpl%abort(subr,'new_obsop and load_ob
 if (nam%check_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) call mpl%abort(subr,'new_vbal or load_vbal required for check_vbal')
 if ((nam%new_hdiag.or.nam%new_lct).and.(.not.(nam%new_mom.or.nam%load_mom))) &
  & call mpl%abort(subr,'new_mom or load_mom required for new_hdiag and new_lct')
-if (nam%check_adjoints.and..not.(nam%new_nicas.or.nam%load_nicas)) &
- & call mpl%abort(subr,'new_nicas or load_nicas required for check_adjoints')
-if (nam%check_dirac.and..not.(nam%new_nicas.or.nam%load_nicas)) &
- & call mpl%abort(subr,'new_nicas or load_nicas required for check_dirac')
+if (nam%check_adjoints.and..not.(nam%new_vbal.or.nam%load_vbal.or.nam%new_nicas.or.nam%load_nicas)) &
+ & call mpl%abort(subr,'new_vbal, load_vbal, new_nicas or load_nicas required for check_adjoints')
+if (nam%check_dirac.and..not.(nam%new_vbal.or.nam%load_vbal.or.nam%new_nicas.or.nam%load_nicas)) &
+ & call mpl%abort(subr,'new_vbal, load_vbal, new_nicas or load_nicas required for check_dirac')
 if (nam%check_randomization) then
    if (trim(nam%method)/='cor') call mpl%abort(subr,'cor method required for check_randomization')
    if (.not.nam%new_nicas) call mpl%abort(subr,'new_nicas required for check_randomization')
@@ -1675,7 +1688,7 @@ if (nam%new_hdiag) then
 end if
 
 ! Check nicas_param
-if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomization) then
+if (nam%new_nicas.or.nam%load_nicas) then
    if (nam%lsqrt) then
       if (nam%mpicom==1) call mpl%abort(subr,'mpicom should be 2 for square-root application')
    end if
@@ -1715,6 +1728,8 @@ if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomiz
    end select
 end if
 if (nam%write_grids.and.(.not.nam%new_nicas)) call mpl%abort(subr,'new_nicas required for write_grids')
+
+! Check dirac_param
 if (nam%new_cortrack.or.nam%check_dirac) then
    if (nam%ndir<1) call mpl%abort(subr,'ndir should be positive')
    do idir=1,nam%ndir
@@ -1746,10 +1761,8 @@ if (nam%new_hdiag) then
       if (nam%diag_rhflt<0.0) call mpl%abort(subr,'diag_rhflt should be non-negative')
    end if
 end if
-if (nam%new_hdiag.or.nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomization.or.nam%new_lct) then
-   if (nam%grid_output) then
-      if (.not.(nam%grid_resol>0.0)) call mpl%abort(subr,'grid_resol should be positive')
-   end if
+if (nam%grid_output) then
+   if (.not.(nam%grid_resol>0.0)) call mpl%abort(subr,'grid_resol should be positive')
 end if
 
 end subroutine nam_check
@@ -1958,6 +1971,8 @@ call mpl%write(lncid,'nam','rh',nam%rh)
 call mpl%write(lncid,'nam','rv',nam%rv)
 call mpl%write(lncid,'nam','pos_def_test',nam%pos_def_test)
 call mpl%write(lncid,'nam','write_grids',nam%write_grids)
+
+! dirac_param
 call mpl%write(lncid,'nam','ndir',nam%ndir)
 allocate(londir(nam%ndir))
 allocate(latdir(nam%ndir))

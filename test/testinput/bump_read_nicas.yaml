@@ -33,6 +33,8 @@ ens1_ne: 50
 # nicas_param
 subsamp: "hvh"
 mpicom: 2
+
+# dirac_param
 ndir: 1
 londir: [-85.0]
 latdir: [65.0]

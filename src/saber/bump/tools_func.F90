@@ -1008,7 +1008,7 @@ end function matern
 ! Purpose: compute cholesky decomposition
 ! Author: Original FORTRAN77 version by Michael Healy, modifications by AJ Miller, FORTRAN90 version by John Burkardt.
 !----------------------------------------------------------------------
-subroutine cholesky(mpl,n,a,u)
+subroutine cholesky(mpl,n,a,u,ierr)
 
 implicit none
 
@@ -1017,6 +1017,7 @@ type(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: n               ! Matrix rank
 real(kind_real),intent(in) :: a(n,n)  ! Matrix
 real(kind_real),intent(out) :: u(n,n) ! Matrix square-root
+integer,intent(out) :: ierr           ! Error status
 
 ! Local variables
 integer :: nn,i,j,ij
@@ -1037,7 +1038,7 @@ do i=1,n
 end do
 
 ! Cholesky decomposition
-call asa007_cholesky(mpl,n,nn,apack,upack)
+call asa007_cholesky(mpl,n,nn,apack,upack,ierr)
 
 ! Unpack matrix
 ij = 0
@@ -1060,7 +1061,7 @@ end subroutine cholesky
 ! Purpose: compute inverse of a symmetric matrix
 ! Author: Original FORTRAN77 version by Michael Healy, modifications by AJ Miller, FORTRAN90 version by John Burkardt.
 !----------------------------------------------------------------------
-subroutine syminv(mpl,n,a,c)
+subroutine syminv(mpl,n,a,c,ierr)
 
 implicit none
 
@@ -1069,6 +1070,7 @@ type(mpl_type),intent(inout) :: mpl   ! MPI data
 integer,intent(in) :: n               ! Matrix rank
 real(kind_real),intent(in) :: a(n,n)  ! Matrix
 real(kind_real),intent(out) :: c(n,n) ! Matrix inverse
+integer,intent(out) :: ierr           ! Error status
 
 ! Local variables
 integer :: nn,i,j,ij
@@ -1089,7 +1091,7 @@ do i=1,n
 end do
 
 ! Matrix inversion
-call asa007_syminv(mpl,n,nn,apack,cpack)
+call asa007_syminv(mpl,n,nn,apack,cpack,ierr)
 
 ! Unpack matrix
 ij = 0

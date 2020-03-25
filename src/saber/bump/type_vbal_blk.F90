@@ -218,14 +218,13 @@ real(kind_real),intent(in) :: cross(samp%nc1e,geom%nl0,geom%nl0,nsub) ! Cross-co
 integer,intent(in) :: ic2b                                            ! Index
 
 ! Local variables
-integer :: i,jl0_min,jl0_max,jl0,il0,ic1,ic1e,nc1a,nc1max
+integer :: i,jl0_min,jl0_max,jl0,il0,ic1,ic1e,nc1a,nc1max,ierr
 real(kind_real),allocatable :: list_auto(:),list_cross(:)
+logical :: valid
 
 ! Initialization
-vbal_blk%auto(:,:,ic2b) = mpl%msv%valr
-vbal_blk%cross(:,:,ic2b) = mpl%msv%valr
-vbal_blk%auto_inv(:,:,ic2b) = mpl%msv%valr
-vbal_blk%reg(:,:,ic2b) = mpl%msv%valr
+vbal_blk%auto(:,:,ic2b) = 0.0
+vbal_blk%cross(:,:,ic2b) = 0.0
 
 ! Allocation
 nc1max = count(samp%vbal_mask(:,ic2b))
@@ -269,6 +268,9 @@ do il0=1,geom%nl0
       if (nc1a>0) then
          vbal_blk%auto(jl0,il0,ic2b) = sum(list_auto,mask=mpl%msv%isnot(list_auto))/real(nc1a,kind_real)
          vbal_blk%cross(jl0,il0,ic2b) = sum(list_cross,mask=mpl%msv%isnot(list_cross))/real(nc1a,kind_real)
+      else
+         vbal_blk%auto(jl0,il0,ic2b) = mpl%msv%valr
+         vbal_blk%cross(jl0,il0,ic2b) = mpl%msv%valr
       end if
    end do
 end do
@@ -277,20 +279,38 @@ end do
 deallocate(list_auto)
 deallocate(list_cross)
 
-if (nam%vbal_diag_auto((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv) &
- & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
-   ! Diagonal inversion
-   do il0=1,geom%nl0
-      if (vbal_blk%auto(il0,il0,ic2b)>0.0) vbal_blk%auto_inv(il0,il0,ic2b) = &
-                                                & 1.0/vbal_blk%auto(il0,il0,ic2b)
-   end do
-else
-   ! Inverse the vertical auto-covariance
-   call syminv(mpl,geom%nl0,vbal_blk%auto(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b))
-end if
+! Check if this column is valid (no missing values, positive diagonal for auto-covariance)
+valid = mpl%msv%isallnot(vbal_blk%auto(:,:,ic2b)).and.mpl%msv%isallnot(vbal_blk%cross(:,:,ic2b))
+do il0=1,geom%nl0
+   if (.not.(vbal_blk%auto(il0,il0,ic2b)>0.0)) valid = .false.
+end do
 
-! Compute the regression
-vbal_blk%reg(:,:,ic2b) = matmul(vbal_blk%cross(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b))
+if (valid) then
+   if (nam%vbal_diag_auto((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv) &
+    & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
+      ! Diagonal inversion
+      vbal_blk%auto_inv(:,:,ic2b) = 0.0
+      do il0=1,geom%nl0
+         vbal_blk%auto_inv(il0,il0,ic2b) = 1.0/vbal_blk%auto(il0,il0,ic2b)
+      end do
+   else
+      ! Inverse the vertical auto-covariance
+      call syminv(mpl,geom%nl0,vbal_blk%auto(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b),ierr)
+      if (ierr/=0) then
+         ! Diagonal inversion
+         vbal_blk%auto_inv(:,:,ic2b) = 0.0
+         do il0=1,geom%nl0
+            vbal_blk%auto_inv(il0,il0,ic2b) = 1.0/vbal_blk%auto(il0,il0,ic2b)
+         end do
+      end if
+   end if
+
+   ! Compute the regression
+   vbal_blk%reg(:,:,ic2b) = matmul(vbal_blk%cross(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b))
+else
+   ! No regression
+   vbal_blk%reg(:,:,ic2b) = 0.0
+end if
 
 end subroutine vbal_blk_compute_regression
 

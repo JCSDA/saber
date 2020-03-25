@@ -265,9 +265,7 @@ if (allocated(samp%c0_to_c0c)) deallocate(samp%c0_to_c0c)
 if (allocated(samp%c1a_to_c1)) deallocate(samp%c1a_to_c1)
 if (allocated(samp%c1_to_c1a)) deallocate(samp%c1_to_c1a)
 if (allocated(samp%c1d_to_c1)) deallocate(samp%c1d_to_c1)
-if (allocated(samp%c1_to_c1d)) deallocate(samp%c1_to_c1d)
 if (allocated(samp%c1e_to_c1)) deallocate(samp%c1e_to_c1)
-if (allocated(samp%c1_to_c1e)) deallocate(samp%c1_to_c1e)
 if (allocated(samp%c2a_to_c2)) deallocate(samp%c2a_to_c2)
 if (allocated(samp%c2_to_c2a)) deallocate(samp%c2_to_c2a)
 if (allocated(samp%mask_c2a)) deallocate(samp%mask_c2a)
@@ -611,7 +609,7 @@ if (samp%new_sampling) then
    if (nam%new_lct) then
       ! Compute LCT sampling
       call samp%compute_sampling_lct(mpl,nam,geom)
-   elseif (nam%new_vbal.or.nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
+   elseif (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
       ! Compute positive separation sampling
       call samp%compute_sampling_ps(mpl,rng,nam,geom)
    end if
@@ -1651,6 +1649,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
 integer :: ic2a,ic2,ic0,nn,i,ic1d,ic1,ic1a,jc1
+integer :: c1_to_c1d(nam%nc1)
 integer,allocatable :: nn_index(:),c1a_to_c1d(:),c1_to_proc(:)
 real(kind_real) :: lon_c1(nam%nc1),lat_c1(nam%nc1)
 logical :: mask_c1(nam%nc1),lcheck_c1d(nam%nc1)
@@ -1708,14 +1707,13 @@ call tree%dealloc
 
 ! Halo D
 allocate(samp%c1d_to_c1(samp%nc1d))
-allocate(samp%c1_to_c1d(nam%nc1))
-samp%c1_to_c1d = mpl%msv%vali
+c1_to_c1d = mpl%msv%vali
 ic1d = 0
 do ic1=1,nam%nc1
    if (lcheck_c1d(ic1)) then
       ic1d = ic1d+1
       samp%c1d_to_c1(ic1d) = ic1
-      samp%c1_to_c1d(ic1) = ic1d
+      c1_to_c1d(ic1) = ic1d
    end if
 end do
 
@@ -1723,7 +1721,7 @@ end do
 allocate(c1a_to_c1d(samp%nc1a))
 do ic1a=1,samp%nc1a
    ic1 = samp%c1a_to_c1(ic1a)
-   ic1d = samp%c1_to_c1d(ic1)
+   ic1d = c1_to_c1d(ic1)
    c1a_to_c1d(ic1a) = ic1d
 end do
 
@@ -1765,6 +1763,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
 integer :: ic2b,ic2,ic0,nn,i,ic1e,ic1,ic1a,jc1
+integer :: c1_to_c1e(nam%nc1)
 integer,allocatable :: nn_index(:),c1a_to_c1e(:),c1_to_proc(:)
 real(kind_real) :: lon_c1(nam%nc1),lat_c1(nam%nc1)
 logical :: mask_c1(nam%nc1),lcheck_c1e(nam%nc1)
@@ -1823,14 +1822,13 @@ call tree%dealloc
 
 ! Halo E
 allocate(samp%c1e_to_c1(samp%nc1e))
-allocate(samp%c1_to_c1e(nam%nc1))
-samp%c1_to_c1e = mpl%msv%vali
+c1_to_c1e = mpl%msv%vali
 ic1e = 0
 do ic1=1,nam%nc1
    if (lcheck_c1e(ic1)) then
       ic1e = ic1e+1
       samp%c1e_to_c1(ic1e) = ic1
-      samp%c1_to_c1e(ic1) = ic1e
+      c1_to_c1e(ic1) = ic1e
    end if
 end do
 
@@ -1838,7 +1836,7 @@ end do
 allocate(c1a_to_c1e(samp%nc1a))
 do ic1a=1,samp%nc1a
    ic1 = samp%c1a_to_c1(ic1a)
-   ic1e = samp%c1_to_c1e(ic1)
+   ic1e = c1_to_c1e(ic1)
    c1a_to_c1e(ic1a) = ic1e
 end do
 

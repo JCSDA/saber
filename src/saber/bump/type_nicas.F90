@@ -923,9 +923,10 @@ type(cv_type),intent(in) :: cv                                        ! Control 
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Field
 
 ! Local variable
-integer :: ib,its,iv,jv,ic0a,il0
+integer :: ib,its,iv,jv,ic0a,il0,ierr
 real(kind_real),allocatable :: fld_3d(:,:),fld_4d(:,:,:),fld_4d_tmp(:,:,:)
 real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
+character(len=1024),parameter :: subr = 'nicas_apply_sqrt'
 
 select case (nam%strategy)
 case ('common')
@@ -1017,7 +1018,8 @@ case ('common_weighted')
    end do
 
    ! Cholesky decomposition
-   call cholesky(mpl,nam%nv,wgt,wgt_u)
+   call cholesky(mpl,nam%nv,wgt,wgt_u,ierr)
+   if (ierr/=0) call mpl%abort(subr,'matrix is not positive semi-definite in Cholesky decomposition')
 
    do ib=1,bpar%nb
       if (mpl%msv%isnot(bpar%cv_block(ib))) then
@@ -1131,10 +1133,11 @@ real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Field
 type(cv_type),intent(out) :: cv                                      ! Control variable
 
 ! Local variable
-integer :: ib,its,iv,jv,ic0a,il0
+integer :: ib,its,iv,jv,ic0a,il0,ierr
 real(kind_real),allocatable :: fld_3d(:,:),fld_4d(:,:,:),fld_4d_tmp(:,:,:),fld_5d(:,:,:,:)
 real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
 type(cv_type) :: cv_tmp
+character(len=1024),parameter :: subr = 'nicas_apply_sqrt_ad'
 
 ! Allocation
 allocate(fld_5d(geom%nc0a,geom%nl0,nam%nv,nam%nts))
@@ -1238,7 +1241,8 @@ case ('common_weighted')
    end do
 
    ! Cholesky decomposition
-   call cholesky(mpl,nam%nv,wgt,wgt_u)
+   call cholesky(mpl,nam%nv,wgt,wgt_u,ierr)
+   if (ierr/=0) call mpl%abort(subr,'matrix is not positive semi-definite in Cholesky decomposition')
 
    ! Sum product over timeslots
    fld_4d = 0.0
@@ -1592,7 +1596,7 @@ type(ens_type),intent(in) :: ens          ! Ensemble
 
 ! Local variables
 integer :: idir,iv,its
-real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts),fld_loc(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real),allocatable :: fld_bens(:,:,:,:)
 character(len=2) :: itschar
 character(len=1024) :: filename
@@ -1603,22 +1607,21 @@ do idir=1,geom%ndir
    if (geom%iprocdir(idir)==mpl%myproc) fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir),geom%itsdir(idir)) = 1.0
 end do
 
-! Allocation
-if (ens%allocated) allocate(fld_bens(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+! Allocation and initialization
+if (ens%allocated) then
+   allocate(fld_bens(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+   fld_bens = fld
+end if
 
 ! Apply NICAS to dirac
-fld_loc = fld
 if (nam%lsqrt) then
-   call nicas%apply_from_sqrt(mpl,nam,geom,bpar,fld_loc)
+   call nicas%apply_from_sqrt(mpl,nam,geom,bpar,fld)
 else
-   call nicas%apply(mpl,nam,geom,bpar,fld_loc)
+   call nicas%apply(mpl,nam,geom,bpar,fld)
 end if
 
-if ((ens%allocated).and.(trim(nam%method)/='cor')) then
-   ! Apply localized ensemble covariance
-   fld_bens = fld
-   call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
-end if
+! Apply localized ensemble covariance
+if ((ens%allocated).and.(trim(nam%method)/='cor')) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
 
 ! Write field
 filename = trim(nam%prefix)//'_dirac'
@@ -1626,9 +1629,9 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 do its=1,nam%nts
    write(itschar,'(i2.2)') its
    do iv=1,nam%nv
-      call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_'//itschar,fld_loc(:,:,iv,its))
+      call io%fld_write(mpl,nam,geom,filename,'nicas_'//trim(nam%varname(iv))//'_'//itschar,fld(:,:,iv,its))
       if ((ens%allocated).and.(trim(nam%method)/='cor')) call io%fld_write(mpl,nam,geom,filename, &
-       & trim(nam%varname(iv))//'_'//itschar//'_Bens',fld_bens(:,:,iv,its))
+       & 'Bens_'//trim(nam%varname(iv))//'_'//itschar,fld_bens(:,:,iv,its))
    end do
 end do
 

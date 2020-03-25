@@ -47,6 +47,7 @@ contains
    procedure :: apply_inv_ad => vbal_apply_inv_ad
    procedure :: test_inverse => vbal_test_inverse
    procedure :: test_adjoint => vbal_test_adjoint
+   procedure :: test_dirac => vbal_test_dirac
 end type vbal_type
 
 private
@@ -461,7 +462,7 @@ end subroutine vbal_run_vbal
 ! Subroutine: vbal_run_vbal_tests
 ! Purpose: compute vertical balance tests
 !----------------------------------------------------------------------
-subroutine vbal_run_vbal_tests(vbal,mpl,rng,nam,geom,bpar)
+subroutine vbal_run_vbal_tests(vbal,mpl,rng,nam,geom,bpar,io)
 
 implicit none
 
@@ -472,12 +473,22 @@ type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
+type(io_type),intent(in) :: io         ! I/O
 
-! Test inverse
-call vbal%test_inverse(mpl,rng,nam,geom,bpar)
+if (nam%check_vbal) then
+   ! Test inverse
+   call vbal%test_inverse(mpl,rng,nam,geom,bpar)
+end if
 
-! Test adjoint
-call vbal%test_adjoint(mpl,rng,nam,geom,bpar)
+if (nam%check_adjoints) then
+   ! Test adjoint
+   call vbal%test_adjoint(mpl,rng,nam,geom,bpar)
+end if
+
+if (nam%check_dirac) then
+   ! Test dirac
+   call vbal%test_dirac(mpl,nam,geom,bpar,io)
+end if
 
 end subroutine vbal_run_vbal_tests
 
@@ -764,5 +775,48 @@ write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjo
 call mpl%flush
 
 end subroutine vbal_test_adjoint
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_test_dirac
+! Purpose: apply vertical balance to diracs
+!----------------------------------------------------------------------
+subroutine vbal_test_dirac(vbal,mpl,nam,geom,bpar,io)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(in) :: vbal ! Vertical balance
+type(mpl_type),intent(inout) :: mpl ! MPI data
+type(nam_type),intent(in) :: nam    ! Namelist
+type(geom_type),intent(in) :: geom  ! Geometry
+type(bpar_type),intent(in) :: bpar  ! Block parameters
+type(io_type),intent(in) :: io      ! I/O
+
+! Local variables
+integer :: idir,iv,its
+real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+character(len=2) :: itschar
+character(len=1024) :: filename
+
+! Generate dirac field
+fld = 0.0
+do idir=1,geom%ndir
+   if (geom%iprocdir(idir)==mpl%myproc) fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir),geom%itsdir(idir)) = 1.0
+end do
+
+! Apply vertical balance to dirac
+call vbal%apply(nam,geom,bpar,fld)
+
+! Write field
+filename = trim(nam%prefix)//'_dirac'
+call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+do its=1,nam%nts
+   write(itschar,'(i2.2)') its
+   do iv=1,nam%nv
+      call io%fld_write(mpl,nam,geom,filename,'vbal_'//trim(nam%varname(iv))//'_'//itschar,fld(:,:,iv,its))
+   end do
+end do
+
+end subroutine vbal_test_dirac
 
 end module type_vbal

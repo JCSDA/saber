@@ -27,6 +27,8 @@ timeslot: ["00","06"]
 
 # nicas_param
 
+# dirac_param
+
 # obsop_param
 nobs: 100
 

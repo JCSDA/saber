@@ -50,6 +50,8 @@ adv_rhflt: 1000.0e3
 resol: 8.0
 mpicom: 2
 adv_mode: 1
+
+# dirac_param
 ndir: 1
 londir: [-85.0]
 latdir: [65.0]

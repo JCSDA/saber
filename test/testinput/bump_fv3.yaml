@@ -49,6 +49,8 @@ local_rad: 0.0
 resol: 8.0
 subsamp: "hv"
 mpicom: 2
+
+# dirac_param
 ndir: 1
 londir: [0.0]
 latdir: [0.0]

@@ -29,7 +29,7 @@ contains
 ! Subroutine: asa007_cholesky
 ! Purpose: compute cholesky decomposition
 !----------------------------------------------------------------------
-subroutine asa007_cholesky(mpl,n,nn,a,u)
+subroutine asa007_cholesky(mpl,n,nn,a,u,ierr)
 
 implicit none
 
@@ -39,6 +39,7 @@ integer,intent(in) :: n              ! Matrix rank
 integer,intent(in) :: nn             ! Half-matrix size (n*(n-1)/2)
 real(kind_real),intent(in) :: a(nn)  ! Matrix
 real(kind_real),intent(out) :: u(nn) ! Matrix square-root
+integer,intent(out) :: ierr          ! Error status
 
 ! Local variables
 integer :: i,icol,ii,irow,j,k,kk,l,m
@@ -78,7 +79,10 @@ do icol=1,n
          u(k) = w/u(l)
       else
          u(k) = 0.0
-         if (inf(abs(x*a(k)),w**2)) call mpl%abort(subr,'A is not positive semi-definite')
+         if (inf(abs(x*a(k)),w**2)) then
+            ierr = 1
+            return
+         end if
       end if
    end do
 
@@ -86,11 +90,17 @@ do icol=1,n
    if (infeq(abs(w),abs(eta*a(k)))) then
       u(k) = 0.0
    else
-      if (w<0.0) call mpl%abort(subr,'A is not positive semi-definite')
+      if (w<0.0) then
+         ierr = 2
+         return
+      end if
       u(k) = sqrt(w)
    end if
    j = j+icol
 end do
+
+! No error
+ierr = 0
 
 end subroutine asa007_cholesky
 
@@ -98,7 +108,7 @@ end subroutine asa007_cholesky
 ! Subroutine: asa007_syminv
 ! Purpose: compute inverse of a symmetric matrix
 !----------------------------------------------------------------------
-subroutine asa007_syminv(mpl,n,nn,a,c)
+subroutine asa007_syminv(mpl,n,nn,a,c,ierr)
 
 implicit none
 
@@ -108,6 +118,7 @@ integer,intent(in) :: n              ! Matrix rank
 integer,intent(in) :: nn             ! Half-matrix size (n*(n-1)/2)
 real(kind_real),intent(in) :: a(nn)  ! Matrix
 real(kind_real),intent(out) :: c(nn) ! Matrix inverse
+integer,intent(out) :: ierr          ! Error status
 
 ! Local variables
 integer :: i,icol,irow,j,jcol,k,l,mdiag,ndiag,nrow
@@ -117,12 +128,13 @@ character(len=1024),parameter :: subr = 'asa007_syminv'
 ! Initialization
 nrow = n
 if (nn/=(n*(n+1))/2) then
-   call mpl%abort(subr,'wrong size in Cholesky decomposition')
+   call mpl%abort(subr,'wrong size in matrix inversion')
 end if
 w = 0.0
 
 ! Compute the Cholesky factorization of A
-call asa007_cholesky(mpl,n,nn,a,c)
+call asa007_cholesky(mpl,n,nn,a,c,ierr)
+if (ierr/=0) return
 
 ! Invert C and form the product (Cinv)' * Cinv, where Cinv is the inverse of C, row by row starting with the last row
 irow = nrow

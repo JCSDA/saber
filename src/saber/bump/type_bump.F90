@@ -538,13 +538,13 @@ elseif (bump%nam%load_vbal) then
    call bump%vbal%read(bump%mpl,bump%nam,bump%geom,bump%bpar)
 end if
 
-if (bump%nam%check_vbal) then
+if (bump%nam%check_vbal.or.bump%nam%check_adjoints.or.bump%nam%check_dirac) then
    ! Run vertical balance tests driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run vertical balance tests driver'
    call bump%mpl%flush
-   call bump%vbal%run_vbal_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar)
+   call bump%vbal%run_vbal_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
