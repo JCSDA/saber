@@ -24,6 +24,10 @@ list( APPEND SABER_LIB_DEPS
   ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f
 )
 
+if(${METIS_FOUND})
+    list( APPEND SABER_LIB_DEPS metis metis_interface )
+endif()
+
 ecbuild_add_library( TARGET     saber
                      SOURCES    ${FORTRAN_BINDINGS}
                                 ${saber_src_files}

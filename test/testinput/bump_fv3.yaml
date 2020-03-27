@@ -1,6 +1,6 @@
 # general_param
-datadir: "testdata/bump_fv3"
-prefix: "test"
+datadir: "testdata"
+prefix: "bump_fv3/test"
 model: "fv3"
 
 # driver_param
