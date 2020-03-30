@@ -1,3 +1,14 @@
+qg_3densvar_bump
+qg_3dvar_bump
+qg_3dvar_hybrid_bump
+qg_4densvar_bump
+qg_4dvar_drplanczos_bump
+qg_4dvar_drplanczos_hybrid_bump
+qg_dirac_bump_cov
+qg_dirac_bump_hyb
+qg_dirac_bump_lct
+qg_dirac_bump_loc_3d
+qg_dirac_bump_loc_4d
 qg_parameters_bump_cov
 qg_parameters_bump_hyb
 qg_parameters_bump_lct

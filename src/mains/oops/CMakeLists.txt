@@ -5,11 +5,17 @@
 
 add_definitions(-DATLASIFIED=1)
 
-list( APPEND qg_src_files
-  qgEstimateParams.cc
-)
+ecbuild_add_executable( TARGET  saber_qg_estimate_parameters.x
+                        SOURCES qgEstimateParams.cc
+                        LIBS    saber
+                      )
 
-ecbuild_add_executable( TARGET  qg_estimate_parameters.x
-                        SOURCES ${qg_src_files}
+ecbuild_add_executable( TARGET  saber_qg_dirac.x
+                        SOURCES qgDirac.cc
+                        LIBS    saber
+                      )
+
+ecbuild_add_executable( TARGET  saber_qg_4dvar.x
+                        SOURCES qg4DVar.cc
                         LIBS    saber
                       )

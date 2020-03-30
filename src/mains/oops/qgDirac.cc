@@ -9,14 +9,20 @@
  */
 
 #include "model/instantiateQgChangeVarFactory.h"
+#include "model/instantiateQgLocalizationFactory.h"
 #include "model/QgTraits.h"
+#include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
-#include "saber/oops/EstimateParams.h"
+#include "saber/oops/instantiateCovarFactory.h"
+#include "saber/oops/instantiateLocalizationFactory.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   qg::instantiateQgChangeVarFactory();
-  saber::EstimateParams<qg::QgTraits> dir;
+  qg::instantiateQgLocalizationFactory();
+  saber::instantiateCovarFactory<qg::QgTraits>();
+  saber::instantiateLocalizationFactory<qg::QgTraits>();
+  oops::Dirac<qg::QgTraits> dir;
   run.execute(dir);
   return 0;
 }

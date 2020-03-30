@@ -1,3 +1,14 @@
+qg_3densvar_bump/test.log.out
+qg_3dvar_bump/test.log.out
+qg_3dvar_hybrid_bump/test.log.out
+qg_4densvar_bump/test.log.out
+qg_4dvar_drplanczos_bump/test.log.out
+qg_4dvar_drplanczos_hybrid_bump/test.log.out
+qg_dirac_bump_cov/test.log.out
+qg_dirac_bump_hyb/test.log.out
+qg_dirac_bump_lct/test.log.out
+qg_dirac_bump_loc_3d/test.log.out
+qg_dirac_bump_loc_4d/test.log.out
 qg_parameters_bump_cov/test.log.out
 qg_parameters_bump_hyb/test.log.out
 qg_parameters_bump_lct/test.log.out
