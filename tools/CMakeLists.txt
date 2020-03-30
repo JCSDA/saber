@@ -11,6 +11,12 @@ list( APPEND test_files
   saber_valgrind.sh
 )
 
+if (${OOPS_FOUND})
+  list( APPEND test_files
+    saber_oops_links.sh
+  )
+endif()
+
 foreach(FILENAME ${test_files})
   execute_process( COMMAND ${CMAKE_COMMAND} -E copy
      ${PROJECT_SOURCE_DIR}/tools/${FILENAME}
