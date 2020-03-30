@@ -6,22 +6,25 @@
 add_subdirectory( bump )
 add_subdirectory( external )
 add_subdirectory( gaugrid )
+add_subdirectory( interfaces )
 add_subdirectory( util )
 
 PREPEND( _p_bump_src_files "bump" ${bump_src_files} )
 PREPEND( _p_external_src_files "external" ${external_src_files} )
 PREPEND( _p_gaugrid_src_files "gaugrid" ${gaugrid_src_files} )
+PREPEND( _p_interfaces_src_files "interfaces" ${interfaces_src_files} )
 PREPEND( _p_util_src_files "util" ${util_src_files} )
 
 list( APPEND saber_src_files
   ${_p_bump_src_files}
   ${_p_external_src_files}
   ${_p_gaugrid_src_files}
+  ${_p_interfaces_src_files}
   ${_p_util_src_files}
 )
 
 list( APPEND SABER_LIB_DEPS
-  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f
+  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f oops qg
 )
 
 ecbuild_add_library( TARGET     saber
@@ -29,5 +32,6 @@ ecbuild_add_library( TARGET     saber
                                 ${saber_src_files}
                      LIBS       ${SABER_LIB_DEPS}
                      INSTALL_HEADERS LISTED
-                     LINKER_LANGUAGE ${SABER_LINKER_LANGUAGE}
+                     HEADER_DESTINATION ${INSTALL_INCLUDE_DIR}/saber
+                     LINKER_LANGUAGE ${OOPS_LINKER_LANGUAGE}
                    )
