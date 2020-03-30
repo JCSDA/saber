@@ -39,7 +39,7 @@ namespace saber {
 /// Derived class of generic variable transform for statistical
 
 template <typename MODEL>
-class StatsVariableChange : public LinearVariableChangeBase<MODEL> {
+class StatsVariableChange : public oops::LinearVariableChangeBase<MODEL> {
   typedef oops::Geometry<MODEL>  Geometry_;
   typedef oops::Increment<MODEL> Increment_;
   typedef OoBump<MODEL>          OoBump_;

@@ -11,7 +11,7 @@
 #ifndef SRC_SABER_OOPS_INSTANTIATEVARIABLECHANGEFACTORY_H_
 #define SRC_SABER_OOPS_INSTANTIATEVARIABLECHANGEFACTORY_H_
 
-#include "oops/generic/instantiateStatsVariableChange.h"
+#include "oops/generic/instantiateVariableChangeFactory.h"
 
 #include "saber/oops/StatsVariableChange.h"
 
