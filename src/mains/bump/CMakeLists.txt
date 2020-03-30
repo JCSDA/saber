@@ -7,7 +7,6 @@ list( APPEND bump_src_files
   bump_main.cc
   bump_main.F90
   type_model.F90
-  type_timer.F90
 )
 
 ecbuild_add_executable( TARGET  bump.x

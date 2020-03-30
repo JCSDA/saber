@@ -1,0 +1,5 @@
+qg_parameters_bump_cov
+qg_parameters_bump_hyb
+qg_parameters_bump_lct
+qg_parameters_bump_loc_3d
+qg_parameters_bump_loc_4d

@@ -6,26 +6,30 @@
 add_subdirectory( bump )
 add_subdirectory( external )
 add_subdirectory( gaugrid )
-add_subdirectory( interfaces )
+add_subdirectory( oops )
 add_subdirectory( util )
 
 PREPEND( _p_bump_src_files "bump" ${bump_src_files} )
 PREPEND( _p_external_src_files "external" ${external_src_files} )
 PREPEND( _p_gaugrid_src_files "gaugrid" ${gaugrid_src_files} )
-PREPEND( _p_interfaces_src_files "interfaces" ${interfaces_src_files} )
+PREPEND( _p_oops_src_files "oops" ${oops_src_files} )
 PREPEND( _p_util_src_files "util" ${util_src_files} )
 
 list( APPEND saber_src_files
   ${_p_bump_src_files}
   ${_p_external_src_files}
   ${_p_gaugrid_src_files}
-  ${_p_interfaces_src_files}
+  ${_p_oops_src_files}
   ${_p_util_src_files}
 )
 
 list( APPEND SABER_LIB_DEPS
   ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f oops qg
 )
+
+if(${METIS_FOUND})
+    list( APPEND SABER_LIB_DEPS metis metis_interface )
+endif()
 
 ecbuild_add_library( TARGET     saber
                      SOURCES    ${FORTRAN_BINDINGS}
