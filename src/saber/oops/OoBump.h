@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SRC_SABER_OOPS_OOBUMP_H_
-#define SRC_SABER_OOPS_OOBUMP_H_
+#ifndef SABER_OOPS_OOBUMP_H_
+#define SABER_OOPS_OOBUMP_H_
 
 #include <algorithm>
 #include <memory>
@@ -543,4 +543,4 @@ void OoBump<MODEL>::setParam(const std::string & param, const Increment4D_ & dx)
 
 }  // namespace saber
 
-#endif  // SRC_SABER_OOPS_OOBUMP_H_
+#endif  // SABER_OOPS_OOBUMP_H_

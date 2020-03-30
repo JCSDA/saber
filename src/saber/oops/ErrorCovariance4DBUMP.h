@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SRC_SABER_OOPS_ERRORCOVARIANCE4DBUMP_H_
-#define SRC_SABER_OOPS_ERRORCOVARIANCE4DBUMP_H_
+#ifndef SABER_OOPS_ERRORCOVARIANCE4DBUMP_H_
+#define SABER_OOPS_ERRORCOVARIANCE4DBUMP_H_
 
 #include <memory>
 #include <string>
@@ -101,7 +101,8 @@ ErrorCovariance4DBUMP<MODEL>::ErrorCovariance4DBUMP(const Geometry_ & resol,
 
 template<typename MODEL>
 ErrorCovariance4DBUMP<MODEL>::~ErrorCovariance4DBUMP() {
-  oops::Log::trace() << "ErrorCovariance4DBUMP<MODEL>::~ErrorCovariance4DBUMP starting" << std::endl;
+  oops::Log::trace() << "ErrorCovariance4DBUMP<MODEL>::~ErrorCovariance4DBUMP starting"
+                     << std::endl;
   util::Timer timer(classname(), "~ErrorCovariance4DBUMP");
   oops::Log::trace() << "ErrorCovariance4DBUMP<MODEL>::~ErrorCovariance4DBUMP done" << std::endl;
 }
@@ -154,4 +155,4 @@ void ErrorCovariance4DBUMP<MODEL>::print(std::ostream & os) const {
 
 }  // namespace saber
 
-#endif  // SRC_SABER_OOPS_ERRORCOVARIANCE4DBUMP_H_
+#endif  // SABER_OOPS_ERRORCOVARIANCE4DBUMP_H_

@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SRC_SABER_OOPS_LOCALIZATIONBUMP_H_
-#define SRC_SABER_OOPS_LOCALIZATIONBUMP_H_
+#ifndef SABER_OOPS_LOCALIZATIONBUMP_H_
+#define SABER_OOPS_LOCALIZATIONBUMP_H_
 
 #include <memory>
 #include <sstream>
@@ -128,4 +128,4 @@ void LocalizationBUMP<MODEL>::print(std::ostream & os) const {
 
 }  // namespace saber
 
-#endif  // SRC_SABER_OOPS_LOCALIZATIONBUMP_H_
+#endif  // SABER_OOPS_LOCALIZATIONBUMP_H_

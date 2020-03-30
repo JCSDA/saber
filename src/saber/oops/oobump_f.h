@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SRC_SABER_OOPS_OOBUMP_F_H_
-#define SRC_SABER_OOPS_OOBUMP_F_H_
+#ifndef SABER_OOPS_OOBUMP_F_H_
+#define SABER_OOPS_OOBUMP_F_H_
 
 #include "atlas/field/FieldSet.h"
 #include "atlas/functionspace/detail/FunctionSpaceImpl.h"
@@ -50,4 +50,4 @@ namespace bump {
 }
 }  // namespace saber
 
-#endif  // SRC_SABER_OOPS_OOBUMP_F_H_
+#endif  // SABER_OOPS_OOBUMP_F_H_

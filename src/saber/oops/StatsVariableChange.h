@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SRC_SABER_OOPS_STATSVARIABLECHANGE_H_
-#define SRC_SABER_OOPS_STATSVARIABLECHANGE_H_
+#ifndef SABER_OOPS_STATSVARIABLECHANGE_H_
+#define SABER_OOPS_STATSVARIABLECHANGE_H_
 
 #include <memory>
 #include <string>
@@ -219,4 +219,4 @@ void StatsVariableChange<MODEL>::VariableLists(const std::vector<std::string> pa
 
 }  // namespace saber
 
-#endif  // SRC_SABER_OOPS_STATSVARIABLECHANGE_H_
+#endif  // SABER_OOPS_STATSVARIABLECHANGE_H_

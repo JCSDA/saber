@@ -8,8 +8,8 @@
  * does it submit to any jurisdiction.
  */
 
-#ifndef SRC_SABER_OOPS_ESTIMATEPARAMS_H_
-#define SRC_SABER_OOPS_ESTIMATEPARAMS_H_
+#ifndef SABER_OOPS_ESTIMATEPARAMS_H_
+#define SABER_OOPS_ESTIMATEPARAMS_H_
 
 #include <memory>
 #include <sstream>
@@ -133,4 +133,4 @@ template <typename MODEL> class EstimateParams : public oops::Application {
 };
 
 }  // namespace saber
-#endif  // SRC_SABER_OOPS_ESTIMATEPARAMS_H_
+#endif  // SABER_OOPS_ESTIMATEPARAMS_H_

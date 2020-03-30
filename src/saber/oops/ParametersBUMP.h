@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SRC_SABER_OOPS_PARAMETERSBUMP_H_
-#define SRC_SABER_OOPS_PARAMETERSBUMP_H_
+#ifndef SABER_OOPS_PARAMETERSBUMP_H_
+#define SABER_OOPS_PARAMETERSBUMP_H_
 
 #include <fstream>
 #include <memory>
@@ -278,4 +278,4 @@ void ParametersBUMP<MODEL>::write() const {
 
 }  // namespace saber
 
-#endif  // SRC_SABER_OOPS_PARAMETERSBUMP_H_
+#endif  // SABER_OOPS_PARAMETERSBUMP_H_
