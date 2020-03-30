@@ -403,7 +403,7 @@ call obsop%com%ext(mpl,geom%nl0,fld,fld_ext)
 
 if (obsop%nobsa>0) then
    ! Horizontal interpolation
-   !$omp parallel do schedule(static) private(il0)
+   !$omp parallel do schedule(static) private(il0) shared(geom,obsop,mpl,fld_ext,obs)
    do il0=1,geom%nl0
       call obsop%h%apply(mpl,fld_ext(:,il0),obs(:,il0))
    end do
@@ -433,7 +433,7 @@ real(kind_real) :: fld_ext(obsop%nc0b,geom%nl0)
 
 if (obsop%nobsa>0) then
    ! Horizontal interpolation
-   !$omp parallel do schedule(static) private(il0)
+   !$omp parallel do schedule(static) private(il0) shared(geom,obsop,mpl,obs,fld_ext)
    do il0=1,geom%nl0
       call obsop%h%apply_ad(mpl,obs(:,il0),fld_ext(:,il0))
    end do
