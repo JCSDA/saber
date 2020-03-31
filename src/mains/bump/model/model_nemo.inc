@@ -19,6 +19,7 @@ real(kind_real),allocatable :: lon(:,:),lat(:,:),e1t(:,:),e2t(:,:),e3t(:,:,:)
 character(len=1024),parameter :: subr = 'model_nemo_coord'
 
 ! Open file and get dimensions
+model%ntile = 1
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'x',nlon_id))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'y',nlat_id))
@@ -65,6 +66,7 @@ img = 0
 do ilon=1,model%nlon
    do ilat=1,model%nlat
       img = img+1
+      model%mg_to_tile(img) = 1
       model%mg_to_lon(img) = ilon
       model%mg_to_lat(img) = ilat
       model%lon(img) = lon(ilon,ilat)
@@ -129,7 +131,7 @@ if (mpl%main) then
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid))
+   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
    ! Timeslot index
    read(nam%timeslot(its),'(i2)') timeslot
