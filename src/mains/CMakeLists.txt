@@ -3,14 +3,4 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-list( APPEND bump_src_files
-  bump/bump_main.cc
-  bump/bump_main.F90
-  bump/type_model.F90
-  bump/type_timer.F90
-)
-
-ecbuild_add_executable( TARGET  bump.x
-                        SOURCES ${bump_src_files}
-                        LIBS    saber
-                       )
+add_subdirectory( bump )

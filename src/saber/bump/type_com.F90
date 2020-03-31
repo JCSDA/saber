@@ -11,6 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_status
 use netcdf
 !$ use omp_lib
 use tools_kinds, only: kind_real,nc_kind_real
+use tools_repro, only: eq
 use type_mpl, only: mpl_type
 use fckit_mpi_module, only: fckit_mpi_status
 
@@ -776,7 +777,7 @@ end subroutine com_ext_2d
 ! Subroutine: com_red_1d
 ! Purpose: communicate vector from halo (reduction)
 !----------------------------------------------------------------------
-subroutine com_red_1d(com,mpl,vec_ext,vec_red)
+subroutine com_red_1d(com,mpl,vec_ext,vec_red,nosum)
 
 implicit none
 
@@ -785,15 +786,27 @@ class(com_type),intent(in) :: com                ! Communication data
 type(mpl_type),intent(inout) :: mpl              ! MPI data
 real(kind_real),intent(in) :: vec_ext(com%next)  ! Extended vector
 real(kind_real),intent(out) :: vec_red(com%nred) ! Reduced vector
+logical,intent(in),optional :: nosum             ! No-sum flag
 
 ! Local variables
 integer :: ihalo,iown,ired,iexcl,ithread
 real(kind_real),allocatable :: sbuf(:),rbuf(:),vec_red_arr(:,:)
+logical :: lnosum
+logical,allocatable :: done(:)
+character(len=1024) :: subr = 'com_red_1d'
+
+! Set no-sum flag
+lnosum = .false.
+if (present(nosum)) lnosum = nosum
 
 ! Allocation
 allocate(sbuf(com%nhalo))
 allocate(rbuf(com%nexcl))
-allocate(vec_red_arr(com%nred,mpl%nthread))
+if (lnosum) then
+   allocate(done(com%nred))
+else
+   allocate(vec_red_arr(com%nred,mpl%nthread))
+end if
 
 ! Prepare buffers to send
 !$omp parallel do schedule(static) private(ihalo)
@@ -813,27 +826,53 @@ do iown=1,com%nown
 end do
 !$omp end parallel do
 
-! Copy halo
-vec_red_arr = 0.0
-!$omp parallel do schedule(static) private(iexcl,ithread)
-do iexcl=1,com%nexcl
-   ithread = 1
-!$ ithread = omp_get_thread_num()+1
-   vec_red_arr(com%excl(iexcl),ithread) = vec_red_arr(com%excl(iexcl),ithread)+rbuf(iexcl)
-end do
-!$omp end parallel do
-
-! Sum over threads
-do ithread=1,mpl%nthread
-   do ired=1,com%nred
-      vec_red(ired) = vec_red(ired)+vec_red_arr(ired,ithread)
+if (lnosum) then
+   ! Initialization
+   done = .false.
+   do iown=1,com%nown
+      done(com%own_to_red(iown)) = .true.
    end do
-end do
+
+   do iexcl=1,com%nexcl
+      if (done(com%excl(iexcl))) then
+         ! Check that the new value is not missing
+         if (mpl%msv%isnot(rbuf(iexcl))) then
+            ! Check that values are similar
+            if (.not.eq(vec_red(com%excl(iexcl)),rbuf(iexcl))) call mpl%abort(subr,'both redundant values are different')
+         end if
+      else
+         ! Copy value
+         vec_red(com%excl(iexcl)) = rbuf(iexcl)
+      end if
+      done(com%excl(iexcl)) = .true.
+   end do
+else
+   ! Copy halo
+   vec_red_arr = 0.0
+   !$omp parallel do schedule(static) private(iexcl,ithread)
+   do iexcl=1,com%nexcl
+      ithread = 1
+   !$ ithread = omp_get_thread_num()+1      
+      vec_red_arr(com%excl(iexcl),ithread) = vec_red_arr(com%excl(iexcl),ithread)+rbuf(iexcl)
+   end do
+   !$omp end parallel do
+
+   ! Sum over threads
+   do ithread=1,mpl%nthread
+      do ired=1,com%nred
+         vec_red(ired) = vec_red(ired)+vec_red_arr(ired,ithread)
+      end do
+   end do
+end if
 
 ! Release memory
 deallocate(sbuf)
 deallocate(rbuf)
-deallocate(vec_red_arr)
+if (lnosum) then
+   deallocate(done)
+else
+   deallocate(vec_red_arr)
+end if
 
 end subroutine com_red_1d
 
@@ -841,7 +880,7 @@ end subroutine com_red_1d
 ! Subroutine: com_red_2d
 ! Purpose: communicate vector from halo (reduction)
 !----------------------------------------------------------------------
-subroutine com_red_2d(com,mpl,nl,vec_ext,vec_red)
+subroutine com_red_2d(com,mpl,nl,vec_ext,vec_red,nosum)
 
 implicit none
 
@@ -851,15 +890,27 @@ type(mpl_type),intent(inout) :: mpl                 ! MPI data
 integer,intent(in) :: nl                            ! Number of levels
 real(kind_real),intent(in) :: vec_ext(com%next,nl)  ! Extended vector
 real(kind_real),intent(out) :: vec_red(com%nred,nl) ! Reduced vector
+logical,intent(in),optional :: nosum                ! No-sum flag
 
 ! Local variables
 integer :: il,ihalo,iown,ired,iexcl,ithread
 real(kind_real),allocatable :: sbuf(:),rbuf(:),vec_red_arr(:,:,:)
+logical :: lnosum
+logical,allocatable :: done(:)
+character(len=1024) :: subr = 'com_red_2d'
+
+! Set no-sum flag
+lnosum = .false.
+if (present(nosum)) lnosum = nosum
 
 ! Allocation
 allocate(sbuf(com%nhalo*nl))
 allocate(rbuf(com%nexcl*nl))
-allocate(vec_red_arr(com%nred,nl,mpl%nthread))
+if (lnosum) then
+   allocate(done(com%nred))
+else
+   allocate(vec_red_arr(com%nred,nl,mpl%nthread))
+end if
 
 ! Prepare buffers to send
 !$omp parallel do schedule(static) private(il,ihalo)
@@ -883,31 +934,60 @@ do il=1,nl
 end do
 !$omp end parallel do
 
-! Copy halo
-vec_red_arr = 0.0
-!$omp parallel do schedule(static) private(il,iexcl,ithread)
-do il=1,nl
-   do iexcl=1,com%nexcl
-      ithread = 1
-!$    ithread = omp_get_thread_num()+1
-      vec_red_arr(com%excl(iexcl),il,ithread) = vec_red_arr(com%excl(iexcl),il,ithread)+rbuf((iexcl-1)*nl+il)
-   end do
-end do
-!$omp end parallel do
-
-! Sum over threads
-do ithread=1,mpl%nthread
+if (lnosum) then
    do il=1,nl
-      do ired=1,com%nred
-         vec_red(ired,il) = vec_red(ired,il)+vec_red_arr(ired,il,ithread)
+      ! Initialization
+      done = .false.
+      do iown=1,com%nown
+         done(com%own_to_red(iown)) = .true.
+      end do
+
+      do iexcl=1,com%nexcl
+         if (done(com%excl(iexcl))) then
+            ! Check that the new value is not missing
+            if (mpl%msv%isnot(rbuf((iexcl-1)*nl+il))) then
+               ! Check that values are similar
+               if (.not.eq(vec_red(com%excl(iexcl),il),rbuf((iexcl-1)*nl+il))) &
+            &  call mpl%abort(subr,'both redundant values are different')
+            end if
+         else
+            ! Copy value
+            vec_red(com%excl(iexcl),il) = rbuf((iexcl-1)*nl+il)
+         end if
+         done(com%excl(iexcl)) = .true.
       end do
    end do
-end do
+else
+   ! Copy halo
+   vec_red_arr = 0.0
+   !$omp parallel do schedule(static) private(il,iexcl,ithread)
+   do il=1,nl
+      do iexcl=1,com%nexcl
+         ithread = 1
+      !$ ithread = omp_get_thread_num()+1
+         vec_red_arr(com%excl(iexcl),il,ithread) = vec_red_arr(com%excl(iexcl),il,ithread)+rbuf((iexcl-1)*nl+il)
+      end do
+   end do
+   !$omp end parallel do
+
+   ! Sum over threads
+   do ithread=1,mpl%nthread
+      do il=1,nl
+         do ired=1,com%nred
+            vec_red(ired,il) = vec_red(ired,il)+vec_red_arr(ired,il,ithread)
+         end do
+      end do
+   end do
+end if
 
 ! Release memory
 deallocate(sbuf)
 deallocate(rbuf)
-deallocate(vec_red_arr)
+if (lnosum) then
+   deallocate(done)
+else
+   deallocate(vec_red_arr)
+end if
 
 end subroutine com_red_2d
 

@@ -705,22 +705,24 @@ call mpl%flush
 write(mpl%info,'(a)') '--- Copy namelist radii into C matrix'
 call mpl%flush
 
-! Allocation
-call cmat%alloc(bpar,'cmat')
+if (.not.cmat%allocated) then
+   ! Allocation
+   call cmat%alloc(bpar,'cmat')
 
-! Copy attributes
-do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      cmat%blk(ib)%double_fit = .false.
-      cmat%blk(ib)%anisotropic = .false.
-   end if
-end do
+   ! Set attributes
+   do ib=1,bpar%nbe
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+         cmat%blk(ib)%double_fit = .false.
+         cmat%blk(ib)%anisotropic = .false.
+      end if
+   end do
 
-! Allocation
-call cmat%alloc(nam,geom,bpar)
+   ! Allocation
+   call cmat%alloc(nam,geom,bpar)
 
-! Initialization
-call cmat%init(mpl,nam,bpar)
+   ! Initialization
+   call cmat%init(mpl,nam,bpar)
+end if
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -767,10 +769,16 @@ logical :: import_standard(bpar%nbe),import_static(bpar%nbe),import_double_fit(b
 if (.not.cmat%allocated) then
    ! Allocation
    call cmat%alloc(bpar,'cmat')
+
+   ! Set attributes
    do ib=1,bpar%nbe
-      cmat%blk(ib)%double_fit = .false.
-      cmat%blk(ib)%anisotropic = .false.
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+         cmat%blk(ib)%double_fit = .false.
+         cmat%blk(ib)%anisotropic = .false.
+      end if
    end do
+
+   ! Allocation
    call cmat%alloc(nam,geom,bpar)
 
    ! Initialization
@@ -800,53 +808,59 @@ do ib=1,bpar%nbe
    end if
 end do
 
-! Allocation
-if (.not.cmat%allocated) call cmat%alloc(nam,geom,bpar)
-
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      ! Copy values
-      if (import_standard(ib)) then
-         write(mpl%info,'(a7,a,a)') '','Standard import from BUMP for block ',trim(bpar%blockname(ib))
-         cmat%blk(ib)%coef_ens = cmat%blk(ib)%bump_coef_ens
-         call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
-         cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
-         cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
-         cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
-      end if
-      if (import_static(ib)) then
-         write(mpl%info,'(a7,a,a)') '','Static import from BUMP for block ',trim(bpar%blockname(ib))
-         cmat%blk(ib)%coef_sta = cmat%blk(ib)%bump_coef_sta
-      end if
-      if (import_double_fit(ib)) then
-         write(mpl%info,'(a7,a,a)') '','Double-fit import from BUMP for block ',trim(bpar%blockname(ib))
-         cmat%blk(ib)%rv_rfac = cmat%blk(ib)%bump_rv_rfac
-         cmat%blk(ib)%rv_coef = cmat%blk(ib)%bump_rv_coef
-      end if
-      if (import_anisotropic(ib)) then
-         write(mpl%info,'(a7,a,a)') '','Anisotropic import from BUMP for block ',trim(bpar%blockname(ib))
-         do il0=1,geom%nl0
-            do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) then
-                  ! Copy LCT
-                  call lct_d2h(mpl,cmat%blk(ib)%bump_D11(ic0a,il0),cmat%blk(ib)%bump_D22(ic0a,il0), &
-                & cmat%blk(ib)%bump_D33(ic0a,il0),cmat%blk(ib)%bump_D12(ic0a,il0),cmat%blk(ib)%H11(ic0a,il0), &
-                & cmat%blk(ib)%H22(ic0a,il0),cmat%blk(ib)%H33(ic0a,il0),cmat%blk(ib)%H12(ic0a,il0))
+      if (import_standard(ib).or.import_static(ib).or.import_double_fit(ib).or.import_anisotropic(ib)) then
+         write(mpl%info,'(a7,a,a)') '','Block ',trim(bpar%blockname(ib))
+         call mpl%flush
 
-                  ! Copy scale coefficient
-                  cmat%blk(ib)%Hcoef(ic0a,il0) = cmat%blk(ib)%bump_Dcoef(ic0a,il0)
+         ! Copy values
+         if (import_standard(ib)) then
+            write(mpl%info,'(a10,a)') '','Standard import'
+            call mpl%flush
+            cmat%blk(ib)%coef_ens = cmat%blk(ib)%bump_coef_ens
+            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
+            cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
+            cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
+            cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
+         end if
+         if (import_static(ib)) then
+            write(mpl%info,'(a10,a)') '','Static import'
+            call mpl%flush
+            cmat%blk(ib)%coef_sta = cmat%blk(ib)%bump_coef_sta
+         end if
+         if (import_double_fit(ib)) then
+            write(mpl%info,'(a10,a)') '','Double-fit import'
+            call mpl%flush
+            cmat%blk(ib)%rv_rfac = cmat%blk(ib)%bump_rv_rfac
+            cmat%blk(ib)%rv_coef = cmat%blk(ib)%bump_rv_coef
+         end if
+         if (import_anisotropic(ib)) then
+            write(mpl%info,'(a10,a)') '','Anisotropic import'
+            call mpl%flush
+            do il0=1,geom%nl0
+               do ic0a=1,geom%nc0a
+                  if (geom%mask_c0a(ic0a,il0)) then
+                     ! Copy LCT
+                     call lct_d2h(mpl,cmat%blk(ib)%bump_D11(ic0a,il0),cmat%blk(ib)%bump_D22(ic0a,il0), &
+                   & cmat%blk(ib)%bump_D33(ic0a,il0),cmat%blk(ib)%bump_D12(ic0a,il0),cmat%blk(ib)%H11(ic0a,il0), &
+                   & cmat%blk(ib)%H22(ic0a,il0),cmat%blk(ib)%H33(ic0a,il0),cmat%blk(ib)%H12(ic0a,il0))
 
-                  ! Copy support radii
-                 call lct_h2r(mpl,cmat%blk(ib)%H11(ic0a,il0),cmat%blk(ib)%H22(ic0a,il0),cmat%blk(ib)%H33(ic0a,il0), &
-                & cmat%blk(ib)%H12(ic0a,il0),cmat%blk(ib)%rh(ic0a,il0),cmat%blk(ib)%rv(ic0a,il0))
-               end if
+                     ! Copy scale coefficient
+                     cmat%blk(ib)%Hcoef(ic0a,il0) = cmat%blk(ib)%bump_Dcoef(ic0a,il0)
+
+                     ! Copy support radii
+                     call lct_h2r(mpl,cmat%blk(ib)%H11(ic0a,il0),cmat%blk(ib)%H22(ic0a,il0),cmat%blk(ib)%H33(ic0a,il0), &   
+                   & cmat%blk(ib)%H12(ic0a,il0),cmat%blk(ib)%rh(ic0a,il0),cmat%blk(ib)%rv(ic0a,il0))
+                  end if
+               end do
             end do
-         end do
 
-         ! Set coefficients
-         cmat%blk(ib)%coef_ens = 1.0
-         cmat%blk(ib)%coef_sta = 0.0
-         cmat%blk(ib)%wgt = 1.0
+            ! Set coefficients
+            cmat%blk(ib)%coef_ens = 1.0
+            cmat%blk(ib)%coef_sta = 0.0
+            cmat%blk(ib)%wgt = 1.0
+         end if
       end if
    end if
 
