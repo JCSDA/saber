@@ -719,7 +719,7 @@ if (mpl%nproc>1) then
 end if
 
 ! Normalize
-!$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,isub,jsub,norm)
+!$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,isub,jsub,norm) shared(geom,bpar,avg_blk)
 do il0=1,geom%nl0
    do isub=1,avg_blk%nsub
       if (any(samp%c1l0_log(:,il0))) then
@@ -894,8 +894,6 @@ do il0=1,geom%nl0
                if ((m2_1>0.0).and.(m2_2>0.0)) then
                   list_cor(i) = list_m11(i)/sqrt(m2_1*m2_2)
                   if (sup(abs(list_cor(i)),1.0_kind_real)) list_cor(i) = mpl%msv%valr
-               else
-                  list_cor(i) = mpl%msv%valr
                end if
             end if
          end do
@@ -936,7 +934,7 @@ do il0=1,geom%nl0
 end do
 
 ! Normalize
-!$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub,norm)
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub,norm) shared(geom,bpar,avg_blk)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
@@ -1029,7 +1027,7 @@ if ((ic2a==0).or.nam%local_diag) then
 
    ! Asymptotic statistics
    !$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub) firstprivate(m11asysq_gau,m2m2asy_gau), &
-   !$omp&                                                             firstprivate(m11asysq,m2m2asy,m22asy)
+   !$omp&            firstprivate(m11asysq,m2m2asy,m22asy) shared(geom,bpar,avg_blk)
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          do jc3=1,bpar%nc3(ib)

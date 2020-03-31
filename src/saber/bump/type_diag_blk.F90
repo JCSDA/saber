@@ -663,7 +663,7 @@ integer :: il0,jl0r,jc3,jl0
 ! Associate
 associate(ib=>diag_blk%ib)
 
-!$omp parallel do schedule(static) private(il0,jl0r,jc3)
+!$omp parallel do schedule(static) private(il0,jl0r,jc3) shared(geom,bpar,diag_blk,avg_blk)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
@@ -731,7 +731,7 @@ if ((num>0.0).and.(den>0.0)) then
    ! Valid numerator and denominator
    diag_blk%coef_sta = num/den
 
-   !$omp parallel do schedule(static) private(il0,jl0r,jc3)
+   !$omp parallel do schedule(static) private(il0,jl0r,jc3) shared(geom,bpar,diag_blk)
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          do jc3=1,bpar%nc3(ib)
