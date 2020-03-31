@@ -35,7 +35,7 @@ if (${OOPS_FOUND})
 endif()
 
 list( APPEND SABER_LIB_DEPS
-  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f qg
+  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f
 )
 
 if(${METIS_FOUND})
@@ -43,7 +43,7 @@ if(${METIS_FOUND})
 endif()
 
 if (${OOPS_FOUND})
-    list( APPEND SABER_LIB_DEPS oops )
+    list( APPEND SABER_LIB_DEPS oops qg )
 endif()
 
 ecbuild_add_library( TARGET     saber
