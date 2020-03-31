@@ -744,7 +744,7 @@ if (mpl%nproc>1) then
 end if
 
 ! Normalize
-!$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,isub,jsub,norm)
+!$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,isub,jsub,norm) shared(geom,bpar,avg_blk)
 do il0=1,geom%nl0
    do isub=1,avg_blk%nsub
       if (any(samp%c1l0_log(:,il0))) then
@@ -982,7 +982,7 @@ if (.not.nam%gau_approx) deallocate(list_m22)
 deallocate(list_cor)
 
 ! Normalize
-!$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub,norm)
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub,norm) shared(geom,bpar,avg_blk)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
@@ -1067,7 +1067,8 @@ if ((ic2a==0).or.nam%local_diag) then
    P17 = real((n-1)**2,kind_real)/real((n-2)*(n+1),kind_real)
 
    ! Asymptotic statistics
-   !$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub) firstprivate(m11asysq,m2m2asy,m22asy)
+   !$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub) firstprivate(m11asysq,m2m2asy,m22asy), &
+   !$omp&            shared(geom,bpar,avg_blk)
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          do jc3=1,bpar%nc3(ib)

@@ -1,6 +1,6 @@
 # general_param
-datadir: "testdata/bump_geos"
-prefix: "test"
+datadir: "testdata"
+prefix: "bump_geos/test"
 model: "geos"
 
 # driver_param

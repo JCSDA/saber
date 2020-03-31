@@ -5,7 +5,7 @@ model: "qg"
 
 # driver_param
 method: "hyb-avg"
-strategy: "common"
+strategy: "specific_univariate"
 new_hdiag: 1
 write_cmat: 0
 check_get_param_hyb: 1
