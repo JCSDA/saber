@@ -216,6 +216,11 @@ foreach(test ${saber_test})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
 endforeach()
+foreach(test ${saber_test_model})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
+endforeach()
 
 # Link data/reference files
 foreach(file ${saber_data})
@@ -228,6 +233,16 @@ foreach(file ${saber_ref})
                     ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
 endforeach()
+
+if(NOT ${METIS_FOUND})
+    # Remove METIS tests
+    file(STRINGS testlist/saber_test_metis.txt saber_test_tmp )
+    list(REMOVE_ITEM saber_test ${saber_test_tmp})
+    if(${SABER_TEST_QUAD} MATCHES 1)
+        file(STRINGS testlist/saber_test_metis.txt saber_test_quad_tmp )
+        list(REMOVE_ITEM saber_test_quad ${saber_test_quad_tmp})
+    endif()
+endif()
 
 # Mono-core tests
 set(mpi 1)

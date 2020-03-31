@@ -81,11 +81,23 @@ include_directories( ${ATLAS_INCLUDE_DIRS} )
 # git
 find_package( Git )
 
+# metis
+ecbuild_use_package( PROJECT metis VERSION 0.0.0 )
+if (${METIS_FOUND})
+    include_directories( ${METIS_INCLUDE_DIRS} )
+    add_definitions( -DSABER_USE_METIS=1 )
+else()
+    add_definitions( -DSABER_USE_METIS=0 )
+endif()
+
 ################################################################################
 # Export package info
 ################################################################################
 
 list( APPEND SABER_TPLS eckit eckit_mpi fckit atlas atlas_f )
+if(${METIS_FOUND})
+    list( APPEND SABER_TPLS metis metis_interface )
+endif()
 
 set( SABER_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
                         ${CMAKE_CURRENT_BINARY_DIR}/src

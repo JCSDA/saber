@@ -139,7 +139,13 @@ real(kind_real),intent(in) :: y ! Second real
 logical :: indist
 
 indist = .false.
-if (repro) indist = abs(x-y)<rth*(abs(x+y))
+if (repro) then
+   if ((abs(x)>0.0).or.(abs(y)>0.0)) then
+      indist = abs(x-y)<rth*(abs(x+y))
+   else
+      indist = .true.
+   end if
+end if
 
 end function indist
 

@@ -14,6 +14,7 @@ use tools_const, only: deg2rad,rad2deg,req,ps,pi
 use tools_func, only: lonlatmod
 use tools_kinds,only: kind_int,kind_real,nc_kind_real
 use tools_qsort, only: qsort
+use tools_repro, only: inf
 use type_tree, only: tree_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type,nvmax
@@ -22,7 +23,6 @@ use type_rng, only: rng_type
 implicit none
 
 character(len=1024) :: zone = 'C+I'               ! Computation zone for AROME ('C', 'C+I' or 'C+I+E')
-integer,parameter :: ntile = 6                    ! Number of tiles for FV3
 
 ! Member field derived type
 type member_field_type
@@ -34,6 +34,7 @@ type model_type
    ! Global dimensions
    integer :: nlon                                ! Longitude size
    integer :: nlat                                ! Latitude size
+   integer :: ntile                               ! Number of tiles
    integer :: nmg                                 ! Number of model grid points
    integer :: nlev                                ! Number of levels
    integer :: nl0                                 ! Number of levels in subset Sl0
@@ -61,6 +62,15 @@ type model_type
 
    ! ATLAS fieldset
    type(atlas_fieldset) :: afieldset              ! ATLAS fieldset
+
+   ! Tiles distribution
+   logical,allocatable :: tilepool(:,:)          ! Pool of task for each task
+   integer :: mytile                              ! Tile handled by a given task
+   integer,allocatable :: ioproc(:)               ! I/O task for each tile
+   integer :: nmgt                                ! Number of model grid point on each tile
+   integer,allocatable :: mgt_to_proc(:)          ! Model grid on a tile to local task
+   integer,allocatable :: mgt_to_mga(:)           ! Model grid on a tile to model grid, halo A
+   integer,allocatable :: mgt_to_mg(:)     
 
    ! Ensembles
    integer :: ens1_ne                             ! Ensemble 1 size
@@ -176,6 +186,11 @@ if (allocated(model%mask)) deallocate(model%mask)
 if (allocated(model%mg_to_proc)) deallocate(model%mg_to_proc)
 if (allocated(model%mg_to_mga)) deallocate(model%mg_to_mga)
 if (allocated(model%mga_to_mg)) deallocate(model%mga_to_mg)
+if (allocated(model%tilepool)) deallocate(model%tilepool)
+if (allocated(model%ioproc)) deallocate(model%ioproc)
+if (allocated(model%mgt_to_proc)) deallocate(model%mgt_to_proc)
+if (allocated(model%mgt_to_mga)) deallocate(model%mgt_to_mga)
+if (allocated(model%mgt_to_mg)) deallocate(model%mgt_to_mg)
 if (allocated(model%ens1)) then
    do ie=1,size(model%ens1)
       call model%ens1(ie)%afieldset%final()
@@ -209,22 +224,23 @@ type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(inout) :: nam      ! Namelist variables
 
 ! Local variables
-integer :: img,info,iproc,imga,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,il0
+integer :: img,info,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,itile,ilon,ilat,ilonsub,ilatsub,imgt
+integer :: deltalon,deltalat,nprocpertile,nreslon,nreslat,nxmax
 integer :: ncid,nmg_id,mg_to_proc_id,mg_to_mga_id,lon_id,lat_id
-integer :: nn_index(1)
-integer,allocatable :: nx(:),imga_arr(:)
+integer,allocatable :: nx(:),nlatsub(:),nlonsub(:,:),lonlattile_to_proc(:,:,:),imga_arr(:)
 integer(kind_int),pointer :: gmask_ptr(:,:),smask_ptr(:,:)
 real(kind_real) :: dlat,dlon
-real(kind_real),allocatable :: lon_mga(:),lat_mga(:),lon_center(:),lat_center(:)
+real(kind_real),allocatable :: lon_mga(:),lat_mga(:)
+real(kind_real),allocatable :: lon_inf(:),lon_sup(:),lat_inf(:),lat_sup(:)
 real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:),real_ptr(:,:)
 logical :: maskval
+logical :: found
 character(len=4) :: nprocchar
 character(len=1024) :: varname,filename
 character(len=1024),dimension(nvmax) :: varname_save
 character(len=1024),parameter :: subr = 'model_define_distribution'
 type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask,afield_smask
 type(atlas_fieldset) :: afieldset
-type(tree_type) :: tree
 
 ! Number of levels
 model%nl0 = nam%nl
@@ -300,60 +316,152 @@ elseif (mpl%nproc>1) then
       if (maxval(model%mg_to_proc)>mpl%nproc) call mpl%abort(subr,'wrong distribution')
    else
       ! Generate a distribution
+      if (mpl%msv%isnot(model%ntile)) then
+         ! Special case for model with tiles
+         if (mod(mpl%nproc,model%ntile)/=0) call mpl%abort(subr, &
+      & 'the number of MPI tasks should be a multiple of the number of tiles')
+         nprocpertile = mpl%nproc/model%ntile
+      else
+         ! General case
+         nprocpertile = mpl%nproc
+      end if
 
-      ! Allocation
-      allocate(lon_center(mpl%nproc))
-      allocate(lat_center(mpl%nproc))
-      allocate(imga_arr(mpl%nproc))
-
-      ! Define distribution centers using a regular splitting
-      ny = nint(sqrt(real(mpl%nproc,kind_real)))
-      if (ny**2<mpl%nproc) ny = ny+1
+      ! Define number of subtiles in x and y directions
+      ny = nint(sqrt(real(nprocpertile,kind_real)))
+      if (ny**2<nprocpertile) ny = ny+1
       allocate(nx(ny))
-      nres = mpl%nproc
+      nres = nprocpertile
       do iy=1,ny
-         delta = mpl%nproc/ny
+         delta = nprocpertile/ny
          if (nres>(ny-iy+1)*delta) delta = delta+1
          nx(iy) = delta
          nres = nres-delta
       end do
-      if (sum(nx)/=mpl%nproc) call mpl%abort(subr,'wrong number of tiles in define_distribution')
-      dlat = (maxval(model%lat)-minval(model%lat))/ny
-      iproc = 0
-      do iy=1,ny
-         dlon = (maxval(model%lon)-minval(model%lon))/nx(iy)
-         do ix=1,nx(iy)
-            iproc = iproc+1
-            lat_center(iproc) = minval(model%lat)+(real(iy,kind_real)-0.5)*dlat
-            lon_center(iproc) = minval(model%lon)+(real(ix,kind_real)-0.5)*dlon
-         end do
-      end do
+      if (sum(nx)/=nprocpertile) call mpl%abort(subr,'wrong number of subtiles in define_distribution')
 
-      if (mpl%main) then
+      if (mpl%msv%isnot(model%nlon).and.mpl%msv%isnot(model%nlat)) then
+         ! Regular grid
+
          ! Allocation
-         call tree%alloc(mpl,mpl%nproc)
+         nxmax = maxval(nx)
+         allocate(nlatsub(ny))
+         allocate(nlonsub(nxmax,ny))
+         allocate(lonlattile_to_proc(model%nlon,model%nlat,model%ntile))
 
-         ! Initialization
-         call tree%init(lon_center,lat_center)
-
-         ! Local processor
-         do img=1,model%nmg
-            call tree%find_nearest_neighbors(model%lon(img),model%lat(img),1,nn_index)
-            model%mg_to_proc(img) = nn_index(1)
+         ! Split tile
+         nlatsub = 0
+         nlonsub = 0
+         nreslat = model%nlat
+         do iy=1,ny
+            deltalat = model%nlat/ny
+            if (nreslat>(ny-iy+1)*deltalat) deltalat = deltalat+1
+            nlatsub(iy) = deltalat
+            nreslat = nreslat-deltalat
+            nreslon = model%nlon
+            do ix=1,nx(iy)
+               deltalon = model%nlon/nx(iy)
+               if (nreslon>(nx(iy)-ix+1)*deltalon) deltalon = deltalon+1
+               nlonsub(ix,iy) = deltalon
+               nreslon = nreslon-deltalon
+            end do
          end do
 
-         ! Local index
-         imga_arr = 0
-         do img=1,model%nmg
-            iproc = model%mg_to_proc(img)
-            imga_arr(iproc) = imga_arr(iproc)+1
-            model%mg_to_mga(img) = imga_arr(iproc)
+         ! Assign task
+         iproc = 0
+         do itile=1,model%ntile
+            do iy=1,ny
+               do ix=1,nx(iy)
+                  iproc = iproc+1
+                  do ilatsub=1,nlatsub(iy)
+                     do ilonsub=1,nlonsub(ix,iy)
+                        ilat = ilatsub
+                        if (iy>1) ilat = ilat+sum(nlatsub(1:iy-1))
+                        ilon = ilonsub
+                        if (ix>1) ilon = ilon+sum(nlonsub(1:ix-1,iy))
+                        lonlattile_to_proc(ilon,ilat,itile) = iproc
+                     end do
+                  end do
+               end do
+            end do
          end do
+
+         ! Pack task
+         do img=1,model%nmg
+            itile = model%mg_to_tile(img)
+            ilon = model%mg_to_lon(img)
+            ilat = model%mg_to_lat(img)
+            model%mg_to_proc(img) = lonlattile_to_proc(ilon,ilat,itile)
+         end do
+
+         ! Release memory
+         deallocate(nlatsub)
+         deallocate(nlonsub)
+         deallocate(lonlattile_to_proc)
+      else
+         ! Unstructured grid
+         if ((model%ntile>1).and.inf(sum(model%area),4.0*pi)) call mpl%abort(subr, &
+       & 'unstructured grid requires a single tile and a global domain')
+
+         ! Allocation
+         allocate(lon_inf(nprocpertile))
+         allocate(lon_sup(nprocpertile))
+         allocate(lat_inf(nprocpertile))
+         allocate(lat_sup(nprocpertile))
+
+         ! Define distribution bounds using a regular splitting
+         dlat = (maxval(model%lat)-minval(model%lat))/ny
+         iproc = 0
+         do iy=1,ny
+            dlon = (maxval(model%lon)-minval(model%lon))/nx(iy)
+            do ix=1,nx(iy)
+               iproc = iproc+1
+               lon_inf(iproc) = minval(model%lon)+real(ix-1,kind_real)*dlon
+               lon_sup(iproc) = minval(model%lon)+real(ix,kind_real)*dlon
+               lat_inf(iproc) = minval(model%lat)+real(iy-1,kind_real)*dlat
+               lat_sup(iproc) = minval(model%lat)+real(iy,kind_real)*dlat
+            end do
+         end do
+
+         ! Define distribution
+         do img=1,model%nmg
+            ! Processor index
+            iproc = 1
+            found = .false.
+            do while (.not.found)
+               if (iproc<=nprocpertile) then
+                  if (((model%lon(img)>=lon_inf(iproc)).and.(model%lon(img)<=lon_sup(iproc)) &
+                & .and.(model%lat(img)>=lat_inf(iproc)).and.(model%lat(img)<=lat_sup(iproc)))) then
+                     model%mg_to_proc(img) = iproc
+                     found = .true.
+                  end if
+               else
+                  model%mg_to_proc(img) = nprocpertile
+                  found = .true.
+               end if
+               iproc = iproc+1
+            end do
+         end do
+
+         ! Release memory
+         deallocate(lon_inf)
+         deallocate(lon_sup)
+         deallocate(lat_inf)
+         deallocate(lat_sup)
       end if
 
-      ! Broadcast distribution
-      call mpl%f_comm%broadcast(model%mg_to_proc,mpl%rootproc-1)
-      call mpl%f_comm%broadcast(model%mg_to_mga,mpl%rootproc-1)
+      ! Allocation
+      allocate(imga_arr(mpl%nproc))
+
+      ! Local index
+      imga_arr = 0
+      do img=1,model%nmg
+         iproc = model%mg_to_proc(img)
+         imga_arr(iproc) = imga_arr(iproc)+1
+         model%mg_to_mga(img) = imga_arr(iproc)
+      end do
+
+      ! Release memory
+      deallocate(imga_arr)
 
       ! No points on the last task
       if (nam%check_no_point) then
@@ -399,11 +507,6 @@ elseif (mpl%nproc>1) then
          ! Close file
          call mpl%ncerr(subr,nf90_close(ncid))
       end if
-
-      ! Release memory
-      deallocate(lon_center)
-      deallocate(lat_center)
-      deallocate(imga_arr)
    end if
 end if
 
@@ -552,6 +655,57 @@ case default
    end if
 end select
 
+if (model%ntile>1) then
+   ! Allocation
+   allocate(model%tilepool(mpl%nproc,model%ntile))
+   allocate(model%ioproc(model%ntile))
+
+   ! Tile/task bind
+   model%tilepool = .false.
+   do img=1,model%nmg
+      itile = model%mg_to_tile(img)
+      iproc = model%mg_to_proc(img)
+      model%tilepool(iproc,itile) = .true.
+   end do
+
+   ! Check that a given task handles one tile only
+   do iproc=1,mpl%nproc
+      if (count(model%tilepool(iproc,:))>1) call mpl%abort(subr,'a given task should handle one tile only')
+   end do
+
+   do itile=1,model%ntile
+      ! Assign tiles
+      if (model%tilepool(mpl%myproc,itile)) model%mytile = itile
+
+      ! Assign reading task
+      do iproc=1,mpl%nproc
+         if (model%tilepool(iproc,itile)) then
+            model%ioproc(itile) = iproc
+            exit
+         end if
+      end do
+   end do
+
+   ! Count points on tile
+   model%nmgt = count(model%mg_to_tile==model%mytile)
+
+   ! Allocation
+   allocate(model%mgt_to_proc(model%nmgt))
+   allocate(model%mgt_to_mga(model%nmgt))
+   allocate(model%mgt_to_mg(model%nmgt))
+
+   ! Conversion
+   imgt = 0
+   do img=1,model%nmg
+      if (model%mg_to_tile(img)==model%mytile) then
+         imgt = imgt+1
+         model%mgt_to_proc(imgt) = model%mg_to_proc(img)
+         model%mgt_to_mga(imgt) = model%mg_to_mga(img)
+         model%mgt_to_mg(imgt) = img
+      end if
+   end do
+end if
+
 ! Release memory
 deallocate(lon_mga)
 deallocate(lat_mga)
@@ -640,7 +794,7 @@ afieldset = atlas_fieldset()
 
 do its=1,nam%nts
    ! Define filename
-   write(fullname,'(a,i4.4,a)') trim(filename)//'_'//trim(nam%timeslot(its))//'_',ie,'.nc'
+   write(fullname,'(a,i4.4)') trim(filename)//'_'//trim(nam%timeslot(its))//'_',ie
 
    ! Read file
    call model%read(mpl,nam,fullname,its,afieldset)
@@ -746,7 +900,7 @@ if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='wi
 
    do its=1,nam%nts
       ! Define filename
-      fullname = trim(nam%wind_filename)//'_'//trim(nam%timeslot(its))//'.nc'
+      fullname = trim(nam%wind_filename)//'_'//trim(nam%timeslot(its))
 
       ! Read file
       call model%read(mpl,nam,fullname,its,model%afieldset)
@@ -840,4 +994,3 @@ call tree%dealloc
 end subroutine model_generate_obs
 
 end module type_model
-

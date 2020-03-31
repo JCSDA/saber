@@ -107,7 +107,7 @@ implicit none
 class(bump_type),intent(inout) :: bump                 ! BUMP
 type(fckit_mpi_comm),intent(in) :: f_comm              ! FCKIT MPI communicator wrapper
 type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS functionspace
-type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset (containing geometry features: area, vunit, gmask, smask)
+type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset (containing geometry features: area, vunit, gmask, smask, wind)
 integer,intent(in),optional :: ens1_ne                 ! Ensemble 1 size
 integer,intent(in),optional :: ens1_nsub               ! Ensemble 1 number of sub-ensembles
 integer,intent(in),optional :: ens2_ne                 ! Ensemble 2 size
@@ -846,7 +846,7 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 do its=1,bump%nam%nts
-   if (bump%geom%nc0==bump%geom%nmg) then
+   if (bump%geom%same_grid) then
        ! Apply vertical balance
       call bump%vbal%apply(bump%nam,bump%geom,bump%bpar,fld_mga(:,:,:,its))
    else
@@ -891,7 +891,7 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 do its=1,bump%nam%nts
-   if (bump%geom%nc0==bump%geom%nmg) then
+   if (bump%geom%same_grid) then
       ! Apply vertical balance, inverse
       call bump%vbal%apply_inv(bump%nam,bump%geom,bump%bpar,fld_mga(:,:,:,its))
    else
@@ -936,7 +936,7 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 do its=1,bump%nam%nts
-   if (bump%geom%nc0==bump%geom%nmg) then
+   if (bump%geom%same_grid) then
       ! Apply vertical balance, adjoint
       call bump%vbal%apply_ad(bump%nam,bump%geom,bump%bpar,fld_mga(:,:,:,its))
    else
@@ -981,7 +981,7 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 do its=1,bump%nam%nts
-   if (bump%geom%nc0==bump%geom%nmg) then
+   if (bump%geom%same_grid) then
       ! Apply vertical balance, inverse adjoint
       call bump%vbal%apply_inv_ad(bump%nam,bump%geom,bump%bpar,fld_mga(:,:,:,its))
    else
@@ -1025,7 +1025,7 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 ! ATLAS fieldset to field
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS
    if (bump%nam%lsqrt) then
       call bump%nicas%apply_from_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga)
@@ -1080,7 +1080,7 @@ character(len=1024),parameter :: subr = 'bump_apply_nicas_deprecated'
 ! Deprecation warning
 call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS
    if (bump%nam%lsqrt) then
       call bump%nicas%apply_from_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga)
@@ -1166,7 +1166,7 @@ else
    call bump%mpl%abort(subr,'wrong control variable size in bump_apply_nicas_sqrt')
 end if
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
 else
@@ -1219,7 +1219,7 @@ else
    call bump%mpl%abort(subr,'wrong control variable size in bump_apply_nicas_sqrt')
 end if
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
 else
@@ -1259,7 +1259,7 @@ type(cv_type) :: cv
 ! ATLAS fieldset to field
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root adjoint
    call bump%nicas%apply_sqrt_ad(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga,cv)
 else
@@ -1305,7 +1305,7 @@ type(cv_type) :: cv
 ! Generate random control vector
 call bump%nicas%random_cv(bump%mpl,bump%rng,bump%bpar,cv)
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
 else
@@ -1350,7 +1350,7 @@ if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_app
 ! ATLAS fieldset to field
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply observation operator
    call bump%obsop%apply(bump%mpl,bump%geom,fld_mga(:,:,1,1),obs)
 else
@@ -1387,7 +1387,7 @@ call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATL
 if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop')
 if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop')
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply observation operator
    call bump%obsop%apply(bump%mpl,bump%geom,fld_mga,obs)
 else
@@ -1422,7 +1422,7 @@ character(len=1024),parameter :: subr = 'bump_apply_obsop_ad'
 if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop_ad')
 if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop_ad')
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply observation operator adjoint
    call bump%obsop%apply_ad(bump%mpl,bump%geom,obs,fld_mga(:,:,1,1))
 else
@@ -1462,7 +1462,7 @@ call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATL
 if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop_ad')
 if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop_ad')
 
-if (bump%geom%nc0==bump%geom%nmg) then
+if (bump%geom%same_grid) then
    ! Apply observation operator adjoint
    call bump%obsop%apply_ad(bump%mpl,bump%geom,obs,fld_mga)
 else
@@ -2021,7 +2021,7 @@ class(bump_type),intent(inout) :: bump ! BUMP
 ! Local variables
 integer :: iv,its
 real(kind_real),allocatable :: fld_c0(:,:),fld_c0a(:,:),fld_mga(:,:,:,:)
-type(atlas_fieldset) :: afieldset,afieldset_req,afieldset_reqsq
+type(atlas_fieldset) :: afieldset,afieldset_req,afieldset_reqsq,afieldset_vert,afieldset_vertsq
 
 ! Allocation
 allocate(fld_c0(bump%geom%nc0,bump%geom%nl0))
@@ -2045,6 +2045,10 @@ call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%va
  & bump%nam%timeslot(1:bump%nam%nts),afieldset_req)
 call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
  & bump%nam%timeslot(1:bump%nam%nts),afieldset_reqsq)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
+ & bump%nam%timeslot(1:bump%nam%nts),afieldset_vert)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
+ & bump%nam%timeslot(1:bump%nam%nts),afieldset_vertsq)
 
 ! Convert to ATLAS fieldset
 call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
@@ -2052,23 +2056,27 @@ call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:b
  & afieldset_req,bump%nam%lev2d)
 call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga*req**2, &
  & afieldset_reqsq,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts), &
+ & (1.0+fld_mga)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)),afieldset_vert,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts), &
+ & ((1.0+fld_mga)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg))),afieldset_vertsq,bump%nam%lev2d)
 
 ! Set parameter
 if (bump%nam%check_set_param_cor) then
    call bump%set_parameter('var',afieldset)
    call bump%set_parameter('cor_rh',afieldset_req)
-   call bump%set_parameter('cor_rv',afieldset)
+   call bump%set_parameter('cor_rv',afieldset_vert)
    call bump%set_parameter('cor_rv_rfac',afieldset)
    call bump%set_parameter('cor_rv_coef',afieldset)
 elseif (bump%nam%check_set_param_hyb) then
    call bump%set_parameter('loc_coef',afieldset)
    call bump%set_parameter('loc_rh',afieldset_req)
-   call bump%set_parameter('loc_rv',afieldset)
+   call bump%set_parameter('loc_rv',afieldset_vert)
    call bump%set_parameter('hyb_coef',afieldset)
 elseif (bump%nam%check_set_param_lct) then
    call bump%set_parameter('D11',afieldset_reqsq)
    call bump%set_parameter('D22',afieldset_reqsq)
-   call bump%set_parameter('D33',afieldset)
+   call bump%set_parameter('D33',afieldset_vertsq)
    call bump%set_parameter('D12',afieldset)
    call bump%set_parameter('Dcoef',afieldset)
 end if
@@ -2228,6 +2236,7 @@ call bump%lct%partial_dealloc
 call bump%nicas%partial_dealloc
 call bump%obsop%partial_dealloc
 call bump%vbal%partial_dealloc
+if (allocated(bump%fld_uv)) deallocate(bump%fld_uv)
 
 end subroutine bump_partial_dealloc
 
@@ -2255,6 +2264,7 @@ call bump%lct%dealloc
 call bump%nicas%dealloc
 call bump%obsop%dealloc
 call bump%vbal%dealloc
+if (allocated(bump%fld_uv)) deallocate(bump%fld_uv)
 
 end subroutine bump_dealloc
 

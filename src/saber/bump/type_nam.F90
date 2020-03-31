@@ -35,6 +35,7 @@ type nam_type
    logical :: default_seed                              ! Default seed for random numbers
    logical :: repro                                     ! Inter-compilers reproducibility
    integer :: nprocio                                   ! Number of IO processors
+   logical :: remap                                     ! Remap points to improve load balance
 
    ! driver_param
    character(len=1024) :: method                        ! Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
@@ -233,6 +234,7 @@ nam%colorlog = .false.
 nam%default_seed = .true.
 nam%repro = .true.
 nam%nprocio = min(nproc,nprociomax)
+nam%remap = .false.
 
 ! driver_param default
 nam%method = ''
@@ -432,12 +434,12 @@ integer :: levdir(ndirmax),ivdir(ndirmax),itsdir(ndirmax),nobs,nldwv,img_ldwv(nl
 real(kind_real) :: dts,mask_th(nvmax),Lcoast,rcoast,dc,vbal_rad,var_rhflt,local_rad,adv_rad,adv_rhflt,adv_valid
 real(kind_real) :: rvflt,lct_cor_min,lct_scale_ratio,lct_qc_th,lct_qc_max,lon_ldwv(nldwvmax),lat_ldwv(nldwvmax),diag_rhflt,resol,rh
 real(kind_real) :: rv,londir(ndirmax),latdir(ndirmax),grid_resol
-logical :: colorlog,default_seed,repro,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_mom,load_mom,write_mom,new_hdiag
-logical :: write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop,load_obsop,write_obsop
-logical :: check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality,check_obsop,check_no_obs
-logical :: check_no_point,check_no_point_mask,check_no_point_nicas,check_set_param_cor,check_set_param_hyb,check_set_param_lct
-logical :: check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal,check_apply_nicas
-logical :: check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_block(nvmax*(nvmax-1)/2)
+logical :: colorlog,default_seed,repro,remap,new_cortrack,new_corstats,new_vbal,load_vbal,write_vbal,new_mom,load_mom,write_mom
+logical :: new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop,load_obsop
+logical :: write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality,check_obsop
+logical :: check_no_obs,check_no_point,check_no_point_mask,check_no_point_nicas,check_set_param_cor,check_set_param_hyb
+logical :: check_set_param_lct,check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal
+logical :: check_apply_nicas,check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_block(nvmax*(nvmax-1)/2)
 logical :: vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
 logical :: double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
 logical :: fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
@@ -448,7 +450,7 @@ character(len=1024),dimension(ntsmax) :: timeslot
 character(len=1024),dimension(nldwvmax) :: name_ldwv
 
 ! Namelist blocks
-namelist/general_param/datadir,prefix,model,verbosity,colorlog,default_seed,repro,nprocio
+namelist/general_param/datadir,prefix,model,verbosity,colorlog,default_seed,repro,nprocio,remap
 namelist/driver_param/method,strategy,new_cortrack,new_corstats,new_vbal,load_vbal,new_mom,load_mom,write_mom,write_vbal, &
                     & new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nicas,load_nicas,write_nicas,new_obsop, &
                     & load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency, &
@@ -479,6 +481,7 @@ if (mpl%main) then
    default_seed = .true.
    repro = .true.
    nprocio = min(mpl%nproc,nprociomax)
+   remap = .false.
 
    ! driver_param default
    method = ''
@@ -665,6 +668,7 @@ if (mpl%main) then
    nam%default_seed = default_seed
    nam%repro = repro
    nam%nprocio = nprocio
+   nam%remap = remap
 
    ! driver_param
    read(lunit,nml=driver_param)
@@ -894,6 +898,7 @@ call mpl%f_comm%broadcast(nam%colorlog,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%default_seed,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%repro,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%remap,mpl%rootproc-1)
 
 ! driver_param
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
@@ -1095,6 +1100,7 @@ if (conf%has("colorlog")) call conf%get_or_die("colorlog",nam%colorlog)
 if (conf%has("default_seed")) call conf%get_or_die("default_seed",nam%default_seed)
 if (conf%has("repro")) call conf%get_or_die("repro",nam%repro)
 if (conf%has("nprocio")) call conf%get_or_die("nprocio",nam%nprocio)
+if (conf%has("remap")) call conf%get_or_die("remap",nam%remap)
 
 ! driver_param
 if (conf%has("method")) then
@@ -1788,6 +1794,7 @@ call mpl%write(lncid,'nam','colorlog',nam%colorlog)
 call mpl%write(lncid,'nam','default_seed',nam%default_seed)
 call mpl%write(lncid,'nam','repro',nam%repro)
 call mpl%write(lncid,'nam','nprocio',nam%nprocio)
+call mpl%write(lncid,'nam','remap',nam%remap)
 
 ! driver_param
 if (mpl%msv%is(lncid)) then
