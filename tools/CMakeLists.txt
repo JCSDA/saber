@@ -1,14 +1,14 @@
 # Create Data directory for test input data
 list( APPEND test_files
-  saber_compare.sh
-  saber_compare_specific.sh
-  saber_links.ksh
-  saber_parallel.sh
-  saber_set_ref.sh
-  saber_tar_data.sh
-  saber_tar_ref.sh
-  saber_valgrind.sh
-  saber_wrapper.sh
+  bump_compare.sh
+  bump_compare_specific.sh
+  bump_links.ksh
+  bump_parallel.sh
+  bump_set_ref.sh
+  bump_tar_data.sh
+  bump_tar_ref.sh
+  bump_valgrind.sh
+  bump_wrapper.sh
 )
 
 foreach(FILENAME ${test_files})

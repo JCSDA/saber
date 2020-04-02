@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------------------------------------------------------------
-# Bash script: saber_test_wrapper
+# Bash script: bump_test_wrapper
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -16,8 +16,7 @@ yamlname=$6
 outputdir=$7
 comparename=$8
 testname=$9
-ctol=${10}
-cpu_list=${11}
+cpu_list=${10}
 
 # Test run
 export OMP_NUM_THREADS=${omp}
@@ -28,7 +27,7 @@ else
 fi
 eval ${cmd}
 exit_code=$?
-if test "${exit_code}" == "0" ; then
+if test "${exit_code}" == "0"; then
     echo -e "Test run succeed"
 else
     echo -e "Test run failed with error code: ${exit_code} \n"
@@ -40,7 +39,7 @@ mpixomp=$((mpi*omp))
 cmd="${comparename} ${test} ${mpi} ${omp}"
 eval ${cmd}
 exit_code=$?
-if test "${exit_code}" == "0" ; then
+if test "${exit_code}" == "0"; then
    echo -e "Test compare succeed"
 else
     echo -e "Test compare failed with error code: ${exit_code}"

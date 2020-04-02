@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #----------------------------------------------------------------------
-# Shell script: saber_tar_ref
+# Bash script: bump_tar_ref
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -12,13 +12,13 @@ listdir=$2
 
 # References list
 ref_list="
-saber_ref_1
-saber_ref_2
-saber_ref_3
-saber_ref_mpi_1
-saber_ref_mpi_2
-saber_ref_mpi_3
-saber_ref_quad"
+bump_ref_1
+bump_ref_2
+bump_ref_3
+bump_ref_mpi_1
+bump_ref_mpi_2
+bump_ref_mpi_3
+bump_ref_quad"
 
 # Get git branch
 branch=`git rev-parse --abbrev-ref HEAD`

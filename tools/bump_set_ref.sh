@@ -1,0 +1,62 @@
+#!/bin/bash
+#----------------------------------------------------------------------
+# Bash script: bump_setref
+# Author: Benjamin Menetrier
+# Licensing: this code is distributed under the CeCILL-C license
+# Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+#----------------------------------------------------------------------
+
+# Parameters
+testdata=$1
+listdir=$2
+
+# Special suffixes list
+special_list="mom lct_cor nicas normality obs split vbal"
+
+for tier in $(seq 1 3); do
+   # Initialize lists
+   rm -f ${listdir}/bump_ref_${tier}.txt
+   rm -f ${listdir}/bump_ref_mpi_${tier}.txt
+
+   # Get list of tests
+   while IFS= read -r bump_test
+   do
+      # Copy 1-1 files
+      for file in `ls ${testdata}/${bump_test}/test_1-1_*.nc`; do
+         if test ! -L ${file}; then
+            echo ${bump_test}/"$(basename -- ${file})" >> ${listdir}/bump_ref_${tier}.txt
+         fi
+      done
+
+      # Copy 2-1 special files
+      for special in ${special_list}; do
+         if ls ${testdata}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
+            for file in `ls ${testdata}/${bump_test}/test_2-1_${special}*.nc`; do
+               if test ! -L ${file}; then
+                  echo ${bump_test}/"$(basename -- $file)" >> ${listdir}/bump_ref_mpi_${tier}.txt
+               fi
+            done
+         fi
+      done
+   done < ${listdir}/bump_test_${tier}.txt
+done
+
+# Quad-core tests
+
+# Initialize list
+rm -f ${listdir}/bump_ref_quad.txt
+
+# Get list of tests
+while IFS= read -r bump_test
+do
+   # Copy 4-1 special files
+   for special in ${special_list}; do
+      if ls ${testdata}/${bump_test}/test_4-1_${special}*.nc 1> /dev/null 2>&1; then
+         for file in `ls ${testdata}/${bump_test}/test_4-1_${special}*.nc`; do
+            if test ! -L ${file}; then
+               echo ${bump_test}/"$(basename -- $file)" >> ${listdir}/bump_ref_quad.txt
+            fi
+         done
+      fi
+   done
+done < ${listdir}/bump_test_quad.txt
