@@ -17,7 +17,6 @@ status=0
 # BUMP tests
 if test "${test1%%_*}" = "bump" ; then
    # NCCMP Parameters
-   nthreads=4
    tolerance=1.e-5
 
    # Build file names
@@ -26,8 +25,8 @@ if test "${test1%%_*}" = "bump" ; then
 
    # Compare files with NCCMP
    if [ -x "$(command -v nccmp)" ] ; then
-      echo "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file1} ${file2}"
-      nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file1} ${file2}
+      echo "Command: nccmp -dfFmqS -T ${tolerance} ${file1} ${file2}"
+      nccmp -dfFmqS -T ${tolerance} ${file1} ${file2}
       exit_code=$?
       if test "${exit_code}" != "0" ; then
          echo "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"

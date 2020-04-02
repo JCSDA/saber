@@ -244,6 +244,49 @@ if(NOT ${METIS_FOUND})
     endif()
 endif()
 
+# Function to add test
+function(bump_add_test)
+    set(options VALGRIND)
+    set(single_value_args TESTNAME MPI OMP)
+    set(multi_value_args DEPENDS TEST_DEPENDS)
+    cmake_parse_arguments(_p "${options}" "${single_value_args}" "${multi_value_args}" ${_FIRST_ARG} ${ARGN})
+
+    # Set default values
+    if (NOT _p_MPI)
+        set(_p_MPI 1)
+    endif()
+    if (NOT _p_OMP)
+        set(_p_OMP 1)
+    endif()
+
+    # Add tests
+    if (_p_VALGRIND)
+        ecbuild_add_test(TARGET       test_${_p_TESTNAME}_${_p_MPI}_${_p_OMP}
+                         TYPE SCRIPT
+                         COMMAND      ${CMAKE_SOURCE_DIR}/saber/tools/saber_valgrind.sh
+                         ARGS         ${CMAKE_BINARY_DIR}/bin/bump.x
+                                      testinput/${_p_TESTNAME}_${mpi}-${omp}.yaml
+                                      testoutput
+                         DEPENDS      ${_p_DEPENDS}
+                         TEST_DEPENDS ${_p_TEST_DEPENDS})
+     else()   
+        ecbuild_add_test(TARGET       test_${_p_TESTNAME}_${_p_MPI}_${_p_OMP}
+                         TYPE SCRIPT
+                         COMMAND      ${CMAKE_SOURCE_DIR}/saber/tools/saber_wrapper.sh
+                         ARGS         ${MPIEXEC}
+                                      ${MPIEXEC_NUMPROC_FLAG}
+                                      ${_p_MPI}
+                                      ${_p_OMP}
+                                      ${CMAKE_BINARY_DIR}/bin/bump.x
+                                      testinput/${_p_TESTNAME}_${mpi}-${omp}.yaml
+                                      testoutput
+                                      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
+                                      ${_p_TESTNAME}
+                         DEPENDS      ${_p_DEPENDS}
+                         TEST_DEPENDS ${_p_TEST_DEPENDS})
+    endif()
+endfunction()
+
 # Mono-core tests
 set(mpi 1)
 set(omp 1)
@@ -252,29 +295,21 @@ foreach(test ${saber_test})
                     INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                     OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-    ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
-                     MPI          ${mpi}
-                     OMP          ${omp}
-                     COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
-                     ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                     DEPENDS      bump.x
-                     TEST_DEPENDS get_saber_data)
- 
-    ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
-                     TYPE SCRIPT
-                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                     ARGS         ${test} ${mpi} ${omp}
-                     TEST_DEPENDS get_saber_ref
-                                  test_${test}_${mpi}-${omp}_run)
+    bump_add_test(TESTNAME     ${test}
+                  MPI          ${mpi}
+                  OMP          ${omp}
+                  DEPENDS      bump.x
+                  TEST_DEPENDS get_saber_data
+                               get_saber_ref)
 
     if(${SABER_TEST_VALGRIND})
-        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_valgrind
-                         MPI    ${mpi}
-                         OMP    ${omp}
-                         COMMAND ${CMAKE_BINARY_DIR}/bin/valgrind.sh
-                         ARGS ${CMAKE_BINARY_DIR}/bin/bump.x testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS bump.x
-                         TEST_DEPENDS get_saber_data)
+        bump_add_test(TESTNAME     ${test}
+                      MPI          ${mpi}
+                      OMP          ${omp}
+                      DEPENDS      bump.x
+                      TEST_DEPENDS get_saber_data
+                                   get_saber_ref
+                      VALGRIND)
     endif()
 endforeach()
 
@@ -287,20 +322,12 @@ if(${SABER_TEST_MPI} MATCHES 1)
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
-                         MPI          ${mpi}
-                         OMP          ${omp}
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS      bump.x
-                         TEST_DEPENDS get_saber_data)
-   
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
-                         TYPE SCRIPT
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                         ARGS         ${test} ${mpi} ${omp}
-                         TEST_DEPENDS get_saber_ref
-                                      test_${test}_${mpi}-${omp}_run)
+        bump_add_test(TESTNAME     ${test}
+                      MPI          ${mpi}
+                      OMP          ${omp}
+                      DEPENDS      bump.x
+                      TEST_DEPENDS get_saber_data
+                                   get_saber_ref)
     endforeach()
 endif()
 
@@ -313,20 +340,12 @@ if(${SABER_TEST_OMP} MATCHES 1)
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
-                         MPI          ${mpi}
-                         OMP          ${omp}
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS      bump.x
-                         TEST_DEPENDS get_saber_data)
-    
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
-                         TYPE SCRIPT
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                         ARGS         ${test} ${mpi} ${omp}
-                         TEST_DEPENDS get_saber_ref
-                                      test_${test}_${mpi}-${omp}_run)
+        bump_add_test(TESTNAME     ${test}
+                      MPI          ${mpi}
+                      OMP          ${omp}
+                      DEPENDS      bump.x
+                      TEST_DEPENDS get_saber_data
+                                   get_saber_ref)
     endforeach()
 endif()
 
@@ -339,20 +358,12 @@ if(${SABER_TEST_QUAD} MATCHES 1)
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
-                         MPI          ${mpi}
-                         OMP          ${omp}
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS      bump.x
-                         TEST_DEPENDS get_saber_data)
-
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
-                         TYPE SCRIPT
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                         ARGS         ${test} ${mpi} ${omp}
-                         TEST_DEPENDS get_saber_ref
-                                      test_${test}_${mpi}-${omp}_run)
+        bump_add_test(TESTNAME     ${test}
+                      MPI          ${mpi}
+                      OMP          ${omp}
+                      DEPENDS      bump.x
+                      TEST_DEPENDS get_saber_data
+                                   get_saber_ref)
     endforeach()
 endif()
 

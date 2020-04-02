@@ -3,10 +3,12 @@ list( APPEND test_files
   saber_compare.sh
   saber_compare_specific.sh
   saber_links.ksh
+  saber_parallel.sh
   saber_set_ref.sh
   saber_tar_data.sh
   saber_tar_ref.sh
   saber_valgrind.sh
+  saber_wrapper.sh
 )
 
 foreach(FILENAME ${test_files})

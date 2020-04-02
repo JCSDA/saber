@@ -14,10 +14,12 @@ omp=$3
 # Initialize exit status
 status=0
 
+# Number of threads
+nthreads=$((mpi*omp))
+
 # BUMP tests
 if test "${test%%_*}" = "bump" ; then
    # NCCMP Parameters
-   nthreads=4
    tolerance=1.e-4
 
    for file in `ls testdata/${test}/test_${mpi}-${omp}_*.nc` ; do
