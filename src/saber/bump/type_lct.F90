@@ -372,7 +372,6 @@ character(len=1024) :: filename
 
 ! Set file name
 filename = trim(nam%prefix)//'_lct'
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 
 ! Write vertical unit
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
