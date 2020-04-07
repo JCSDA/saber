@@ -337,7 +337,8 @@ write(mpl%info,'(a)') '---------------------------------------------------------
 call mpl%flush
 write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
 call mpl%flush
-call vbal%samp%compute_sampling_c1(mpl,rng,nam,geom,bpar,ens)
+vbal%samp%name = 'vbal'
+call vbal%samp%compute_sampling_c1(mpl,rng,nam,geom,ens)
 
 ! Compute MPI distribution, halo A
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -369,7 +370,8 @@ call vbal%samp%compute_mpi_e(mpl,nam,geom)
 
 ! Write sampling data
 if (nam%sam_write) then
-   if (mpl%main) call vbal%samp%write(mpl,nam,geom,bpar)
+   if (mpl%main) call vbal%samp%write(mpl,nam,geom)
+   if (nam%sam_write_grids) call vbal%samp%write_grids(mpl,nam,geom)
 end if
 
 ! Compute vertical balance operators

@@ -11,6 +11,9 @@ test=$1
 mpi=$2
 omp=$3
 
+# Special suffixes list
+special_list="mom lct_cor nicas normality obs sampling_grids vbal"
+
 # Initialize exit status
 status=0
 
@@ -32,7 +35,7 @@ if test "${test%%_*}" = "bump" ; then
          else
             # Build reference file name, with a special case where the file is mpi-dependent
             fileref=testref/${test}/test_1-1_${suffix}.nc
-            for special in "mom" "lct_cor" "nicas" "normality" "obs" "split" "vbal" ; do
+            for special in ${special_list} ; do
                if printf %s\\n "${suffix}" | grep -qF "${special}" ; then
                   fileref=testref/${test}/test_${mpi}-1_${suffix}.nc
                fi

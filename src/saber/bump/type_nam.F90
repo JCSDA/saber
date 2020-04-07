@@ -106,6 +106,7 @@ type nam_type
 
    ! sampling_param
    logical :: sam_write                                 ! Write sampling
+   logical :: sam_write_grids                           ! Write sampling grids
    logical :: sam_read                                  ! Read sampling
    character(len=1024) :: mask_type                     ! Mask restriction type
    character(len=1024),dimension(nvmax) :: mask_lu      ! Mask threshold side ("lower" if mask_th is the lower bound, "upper" if mask_th is the upper bound)
@@ -310,6 +311,7 @@ nam%ens2_nsub = 1
 
 ! sampling_param default
 nam%sam_write = .false.
+nam%sam_write_grids = .false.
 nam%sam_read = .false.
 nam%mask_type = 'none'
 do iv=1,nvmax
@@ -445,9 +447,9 @@ logical :: new_hdiag,write_hdiag,new_lct,write_lct,load_cmat,write_cmat,new_nica
 logical :: write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency,check_optimality,check_obsop
 logical :: check_no_obs,check_no_point,check_no_point_mask,check_no_point_nicas,check_set_param_cor,check_set_param_hyb
 logical :: check_set_param_lct,check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal
-logical :: check_apply_nicas,check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check,vbal_block(nvmax*(nvmax-1)/2)
-logical :: vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx,local_diag,adv_diag
-logical :: double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
+logical :: check_apply_nicas,check_apply_obsop,logpres,nomask,sam_write,sam_write_grids,sam_read,mask_check
+logical :: vbal_block(nvmax*(nvmax-1)/2),vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx
+logical :: local_diag,adv_diag,double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
 logical :: fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
 character(len=1024) :: datadir,prefix,model,verbosity,strategy,method,lev2d,wind_filename,wind_varname(2),mask_type,mask_lu(nvmax)
 character(len=1024) :: draw_type,adv_type,minim_algo,fit_type,subsamp
@@ -466,8 +468,8 @@ namelist/driver_param/method,strategy,new_cortrack,new_corstats,new_vbal,load_vb
 namelist/model_param/nl,levs,lev2d,logpres,nv,varname,nts,timeslot,dts,nomask,wind_filename,wind_varname
 namelist/ens1_param/ens1_ne,ens1_nsub
 namelist/ens2_param/ens2_ne,ens2_nsub
-namelist/sampling_param/sam_write,sam_read,mask_type,mask_lu,mask_th,ncontig_th,mask_check,draw_type,Lcoast,rcoast,nc1,nc2,ntry, &
-                      & nrep,nc3,dc,nl0r,irmax
+namelist/sampling_param/sam_write,sam_write_grids,sam_read,mask_type,mask_lu,mask_th,ncontig_th,mask_check,draw_type,Lcoast, &
+                      & rcoast,nc1,nc2,ntry,nrep,nc3,dc,nl0r,irmax
 namelist/diag_param/ne,gau_approx,avg_nbins,vbal_block,vbal_rad,vbal_dlat,vbal_diag_auto,vbal_diag_reg,var_filter,var_niter, &
                   & var_rhflt,local_diag,local_rad,adv_diag,adv_type,adv_rad,adv_niter,adv_rhflt,adv_valid
 namelist/fit_param/minim_algo,fit_type,double_fit,lhomh,lhomv,rvflt,lct_nscales,lct_scale_ratio,lct_cor_min,lct_diag,lct_qc_th, &
@@ -561,6 +563,7 @@ if (mpl%main) then
 
    ! sampling_param default
    sam_write = .false.
+   sam_write_grids = .false.
    sam_read = .false.
    mask_type = 'none'
    do iv=1,nvmax
@@ -758,6 +761,7 @@ if (mpl%main) then
    read(lunit,nml=sampling_param)
    if (nc3>nc3max) call mpl%abort(subr,'nc3 is too large')
    nam%sam_write = sam_write
+   nam%sam_write_grids = sam_write_grids
    nam%sam_read = sam_read
    nam%mask_type = mask_type
    if (nv>0) nam%mask_lu(1:nam%nv) = mask_lu(1:nam%nv)
@@ -982,6 +986,7 @@ call mpl%f_comm%broadcast(nam%ens2_nsub,mpl%rootproc-1)
 
 ! sampling_param
 call mpl%f_comm%broadcast(nam%sam_write,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%sam_write_grids,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%sam_read,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%mask_type,mpl%rootproc-1)
 call mpl%broadcast(nam%mask_lu,mpl%rootproc-1)
@@ -1212,6 +1217,7 @@ if (conf%has("ens2_nsub")) call conf%get_or_die("ens2_nsub",nam%ens2_nsub)
 ! sampling_param
 if (conf%has("sam_read")) call conf%get_or_die("sam_read",nam%sam_read)
 if (conf%has("sam_write")) call conf%get_or_die("sam_write",nam%sam_write)
+if (conf%has("sam_write_grids")) call conf%get_or_die("sam_write_grids",nam%sam_write_grids)
 if (conf%has("mask_type")) then
    call conf%get_or_die("mask_type",str)
    nam%mask_type = str
@@ -1576,6 +1582,7 @@ end if
 ! Check sampling_param
 if (nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%sam_write.and.nam%sam_read) call mpl%abort(subr,'sam_write and sam_read are both true')
+   if (nam%sam_write_grids.and.(.not.nam%sam_write)) call mpl%abort(subr,'sam_write required for sam_write_grids')
    select case (trim(nam%draw_type))
    case ('random_uniform')
    case ('random_coast')
@@ -1905,6 +1912,7 @@ if (mpl%msv%is(lncid)) then
    call mpl%flush
 end if
 call mpl%write(lncid,'nam','sam_write',nam%sam_write)
+call mpl%write(lncid,'nam','sam_write_grids',nam%sam_write_grids)
 call mpl%write(lncid,'nam','sam_read',nam%sam_read)
 call mpl%write(lncid,'nam','mask_type',nam%mask_type)
 call mpl%write(lncid,'nam','mask_lu',nam%nv,nam%mask_lu(1:nam%nv))
