@@ -116,6 +116,8 @@ bump_nicas_write_grids/test_1-1_dirac.nc
 bump_nicas_write_grids/test_1-1_nicas-2-sqrt_0001-0001_common_grids.nc
 bump_nicas_write_grids/test_1-1_nicas-2-sqrt_0001-0001_common.nc
 bump_obsop/test_1-1_obs_0001-0001.nc
+bump_vbal_dlat/test_1-1_dirac.nc
+bump_vbal_dlat/test_1-1_vbal_0001-0001.nc
 bump_vbal_diag_auto/test_1-1_dirac.nc
 bump_vbal_diag_auto/test_1-1_vbal_0001-0001.nc
 bump_vbal_diag_reg/test_1-1_dirac.nc

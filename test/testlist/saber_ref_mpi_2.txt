@@ -118,6 +118,8 @@ bump_nicas_write_grids/test_2-1_nicas-2-sqrt_0002-0002_common_grids.nc
 bump_nicas_write_grids/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_obsop/test_2-1_obs_0002-0001.nc
 bump_obsop/test_2-1_obs_0002-0002.nc
+bump_vbal_dlat/test_2-1_vbal_0002-0001.nc
+bump_vbal_dlat/test_2-1_vbal_0002-0002.nc
 bump_vbal_diag_auto/test_2-1_vbal_0002-0001.nc
 bump_vbal_diag_auto/test_2-1_vbal_0002-0002.nc
 bump_vbal_diag_reg/test_2-1_vbal_0002-0001.nc

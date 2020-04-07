@@ -1762,12 +1762,13 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic2b,ic2,ic0,nn,i,ic1e,ic1,ic1a,jc1
+integer :: ic2b,ic2,ic0,nn,i,ic1e,ic1,ic1a,jc1,jc0
 integer :: c1_to_c1e(nam%nc1)
 integer,allocatable :: nn_index(:),c1a_to_c1e(:),c1_to_proc(:)
 real(kind_real) :: lon_c1(nam%nc1),lat_c1(nam%nc1)
 logical :: mask_c1(nam%nc1),lcheck_c1e(nam%nc1)
 type(tree_type) :: tree
+character(len=1024),parameter :: subr = 'samp_compute_mpi_e'
 
 ! Allocation
 allocate(samp%vbal_mask(nam%nc1,samp%nc2b))
@@ -1792,26 +1793,41 @@ do ic2b=1,samp%nc2b
    ic1 = samp%c2_to_c1(ic2)
    ic0 = samp%c2_to_c0(ic2)
 
-   ! Count nearest neighbors
-   call tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nam%vbal_rad,nn)
-
-   ! Allocation
-   allocate(nn_index(nn))
-
-   ! Find nearest neighbors
-   call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn,nn_index)
-
-   ! Update masks
+   ! Origin point
    samp%vbal_mask(ic1,ic2b) = .true.
    lcheck_c1e(ic1) = .true.
-   do i=1,nn
-      jc1 = nn_index(i)
-      samp%vbal_mask(jc1,ic2b) = .true.
-      lcheck_c1e(jc1) = .true.
-   end do
 
-   ! Release memory
-   deallocate(nn_index)
+   if (nam%vbal_rad>0.0) then
+      ! Count nearest neighbors
+      call tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nam%vbal_rad,nn)
+
+      ! Allocation
+      allocate(nn_index(nn))
+
+      ! Find nearest neighbors
+      call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn,nn_index)
+
+      ! Update masks
+      do i=1,nn
+         jc1 = nn_index(i)
+         samp%vbal_mask(jc1,ic2b) = .true.
+         lcheck_c1e(jc1) = .true.
+      end do
+
+      ! Release memory
+      deallocate(nn_index)
+   elseif (nam%vbal_dlat>0.0) then
+      ! Update masks
+      do jc1=1,nam%nc1
+         jc0 = samp%c1_to_c0(jc1)
+         if (abs(geom%lat(ic0)-geom%lat(jc0))<nam%vbal_dlat) then
+            samp%vbal_mask(jc1,ic2b) = .true.
+            lcheck_c1e(jc1) = .true.
+         end if
+      end do
+   else
+      call mpl%abort(subr,'vbal_rad or vbal_dlat should be positive')
+   end if
 end do
 samp%nc1e = count(lcheck_c1e)
 

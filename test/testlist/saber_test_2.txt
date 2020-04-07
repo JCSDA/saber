@@ -40,6 +40,7 @@ bump_nicas_subsamp_hv
 bump_nicas_subsamp_vh
 bump_nicas_write_grids
 bump_obsop
+bump_vbal_dlat
 bump_vbal_diag_auto
 bump_vbal_diag_reg
 bump_set_param_cor
