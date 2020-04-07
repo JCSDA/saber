@@ -260,7 +260,7 @@ function(bump_add_test)
 
     # Add tests
     if (_p_VALGRIND)
-        ecbuild_add_test(TARGET       test_${_p_TESTNAME}_${_p_MPI}-${_p_OMP}
+        ecbuild_add_test(TARGET       test_${_p_TESTNAME}_${_p_MPI}-${_p_OMP}_valgrind
                          TYPE SCRIPT
                          COMMAND      ${CMAKE_SOURCE_DIR}/saber/tools/bump_valgrind.sh
                          ARGS         ${CMAKE_BINARY_DIR}/bin/bump.x
@@ -296,14 +296,14 @@ foreach(test ${saber_test})
                     INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                     OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-    bump_add_test(TESTNAME     ${test}
-                  MPI          ${mpi}
-                  OMP          ${omp})
+    bump_add_test(TESTNAME ${test}
+                  MPI      ${mpi}
+                  OMP      ${omp})
 
     if(${SABER_TEST_VALGRIND})
-        bump_add_test(TESTNAME     ${test}
-                      MPI          ${mpi}
-                      OMP          ${omp}
+        bump_add_test(TESTNAME ${test}
+                      MPI      ${mpi}
+                      OMP      ${omp}
                       VALGRIND)
     endif()
 endforeach()
@@ -317,9 +317,9 @@ if(${SABER_TEST_MPI} MATCHES 1)
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        bump_add_test(TESTNAME     ${test}
-                      MPI          ${mpi}
-                      OMP          ${omp})
+        bump_add_test(TESTNAME ${test}
+                      MPI      ${mpi}
+                      OMP      ${omp})
     endforeach()
 endif()
 
@@ -332,9 +332,9 @@ if(${SABER_TEST_OMP} MATCHES 1)
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        bump_add_test(TESTNAME     ${test}
-                      MPI          ${mpi}
-                      OMP          ${omp})
+        bump_add_test(TESTNAME ${test}
+                      MPI      ${mpi}
+                      OMP      ${omp})
     endforeach()
 endif()
 
@@ -347,9 +347,9 @@ if(${SABER_TEST_QUAD} MATCHES 1)
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        bump_add_test(TESTNAME     ${test}
-                      MPI          ${mpi}
-                      OMP          ${omp})
+        bump_add_test(TESTNAME ${test}
+                      MPI      ${mpi}
+                      OMP      ${omp})
     endforeach()
 endif()
 
