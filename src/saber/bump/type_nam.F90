@@ -82,6 +82,7 @@ type nam_type
    logical :: check_get_param_Dloc                      ! Test get_parameter interface for anisotropic localization
    logical :: check_get_param_lct                       ! Test get_parameter interface for LCT
    logical :: check_apply_vbal                          ! Test apply_vbal interfaces
+   logical :: check_apply_var                      ! Test apply_var_sqrt interfaces
    logical :: check_apply_nicas                         ! Test apply_nicas interfaces
    logical :: check_apply_obsop                         ! Test apply_obsop interfaces
 
@@ -284,6 +285,7 @@ nam%check_get_param_hyb = .false.
 nam%check_get_param_Dloc = .false.
 nam%check_get_param_lct = .false.
 nam%check_apply_vbal = .false.
+nam%check_apply_var = .false.
 nam%check_apply_nicas = .false.
 nam%check_apply_obsop = .false.
 
@@ -445,7 +447,7 @@ logical :: new_mom,load_mom,write_mom,new_hdiag,write_hdiag,new_lct,write_lct,lo
 logical :: new_obsop,load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization,check_consistency
 logical :: check_optimality,check_obsop,check_no_obs,check_no_point,check_no_point_mask,check_no_point_nicas,check_set_param_cor
 logical :: check_set_param_hyb,check_set_param_lct,check_get_param_cor,check_get_param_hyb,check_get_param_Dloc,check_get_param_lct
-logical :: check_apply_vbal,check_apply_nicas,check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check
+logical :: check_apply_vbal,check_apply_var,check_apply_nicas,check_apply_obsop,logpres,nomask,sam_write,sam_read,mask_check
 logical :: vbal_block(nvmax*(nvmax-1)/2),vbal_diag_auto(nvmax*(nvmax-1)/2),vbal_diag_reg(nvmax*(nvmax-1)/2),var_filter,gau_approx
 logical :: local_diag,adv_diag,double_fit(nvmax),lhomh,lhomv,lct_diag(nscalesmax),lct_write_cor,nonunit_diag,lsqrt
 logical :: fast_sampling,network,forced_radii,pos_def_test,write_grids,grid_output
@@ -462,8 +464,8 @@ namelist/driver_param/method,strategy,new_cortrack,new_corstats,new_vbal,load_vb
                     & write_nicas,new_obsop,load_obsop,write_obsop,check_vbal,check_adjoints,check_dirac,check_randomization, &
                     & check_consistency,check_optimality,check_obsop,check_no_obs,check_no_point,check_no_point_mask, &
                     & check_no_point_nicas,check_set_param_cor,check_set_param_hyb,check_set_param_lct,check_get_param_cor, &
-                    & check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal,check_apply_nicas, &
-                    & check_apply_obsop
+                    & check_get_param_hyb,check_get_param_Dloc,check_get_param_lct,check_apply_vbal,check_apply_var, &
+                    & check_apply_nicas,check_apply_obsop
 namelist/model_param/nl,levs,lev2d,logpres,nv,varname,nts,timeslot,dts,nomask,wind_filename,wind_varname
 namelist/ens1_param/ens1_ne,ens1_nsub
 namelist/ens2_param/ens2_ne,ens2_nsub
@@ -535,6 +537,7 @@ if (mpl%main) then
    check_get_param_Dloc = .false.
    check_get_param_lct = .false.
    check_apply_vbal = .false.
+   check_apply_var = .false.
    check_apply_nicas = .false.
    check_apply_obsop = .false.
 
@@ -726,6 +729,7 @@ if (mpl%main) then
    nam%check_get_param_Dloc = check_get_param_Dloc
    nam%check_get_param_lct = check_get_param_lct
    nam%check_apply_vbal = check_apply_vbal
+   nam%check_apply_var = check_apply_var
    nam%check_apply_nicas = check_apply_nicas
    nam%check_apply_obsop = check_apply_obsop
 
@@ -958,6 +962,7 @@ call mpl%f_comm%broadcast(nam%check_get_param_hyb,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_get_param_Dloc,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_get_param_lct,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_vbal,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%check_apply_var,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_obsop,mpl%rootproc-1)
 
@@ -1169,6 +1174,7 @@ if (conf%has("check_get_param_hyb")) call conf%get_or_die("check_get_param_hyb",
 if (conf%has("check_get_param_Dloc")) call conf%get_or_die("check_get_param_Dloc",nam%check_get_param_Dloc)
 if (conf%has("check_get_param_lct")) call conf%get_or_die("check_get_param_lct",nam%check_get_param_lct)
 if (conf%has("check_apply_vbal")) call conf%get_or_die("check_apply_vbal",nam%check_apply_vbal)
+if (conf%has("check_apply_var")) call conf%get_or_die("check_apply_var",nam%check_apply_var)
 if (conf%has("check_apply_nicas")) call conf%get_or_die("check_apply_nicas",nam%check_apply_nicas)
 if (conf%has("check_apply_obsop")) call conf%get_or_die("check_apply_obsop",nam%check_apply_obsop)
 
@@ -1532,6 +1538,8 @@ if (nam%check_get_param_lct.and..not.(nam%new_lct.and.(nam%lct_nscales==2))) &
  & call mpl%abort(subr,'new_lct and lct_nscales = 2 required for check_get_param_lct')
 if (nam%check_apply_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
  & call mpl%abort(subr,'new_vbal or load_vbal required for check_apply_vbal')
+if (nam%check_apply_var.and..not.(nam%new_var.or.nam%load_var)) &
+ & call mpl%abort(subr,'new_var or load_var required for check_apply_var')
 if (nam%check_apply_nicas.and..not.(nam%new_nicas.or.nam%load_nicas)) &
  & call mpl%abort(subr,'new_nicas or load_nicas required for check_apply_nicas')
 if (nam%check_apply_obsop.and..not.(nam%new_obsop.or.nam%load_obsop)) &
@@ -1867,6 +1875,7 @@ call mpl%write(lncid,'nam','check_get_param_hyb',nam%check_get_param_hyb)
 call mpl%write(lncid,'nam','check_get_param_Dloc',nam%check_get_param_Dloc)
 call mpl%write(lncid,'nam','check_get_param_lct',nam%check_get_param_lct)
 call mpl%write(lncid,'nam','check_apply_vbal',nam%check_apply_vbal)
+call mpl%write(lncid,'nam','check_apply_var',nam%check_apply_var)
 call mpl%write(lncid,'nam','check_apply_nicas',nam%check_apply_nicas)
 call mpl%write(lncid,'nam','check_apply_obsop',nam%check_apply_obsop)
 

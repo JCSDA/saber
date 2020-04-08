@@ -1,21 +1,20 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_var/test__MPI_-_OMP_"
+prefix: "bump_write_var/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
 method: "cor"
-strategy: "common"
+strategy: "specific_univariate"
 new_var: 1
-write_cmat: 0
 
 # model_param
-nl: 2
-levs: [1,2]
+nl: 4
+levs: [1,2,3,4]
 nv: 2
 varname: ["u","q"]
-nts: 2
-timeslot: ["00","06"]
+nts: 1
+timeslot: ["00"]
 
 # ens1_param
 ens1_ne: 50
@@ -25,10 +24,6 @@ ens1_ne: 50
 # sampling_param
 
 # diag_param
-ne: 50
-var_filter: 1
-var_niter: 10
-var_rhflt: 1000.0e3
 
 # fit_param
 
@@ -37,5 +32,4 @@ var_rhflt: 1000.0e3
 # obsop_param
 
 # output_param
-grid_output: 1
-grid_resol: 500.0e3
+

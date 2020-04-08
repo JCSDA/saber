@@ -61,6 +61,8 @@ contains
    procedure :: apply_vbal_inv => bump_apply_vbal_inv
    procedure :: apply_vbal_ad => bump_apply_vbal_ad
    procedure :: apply_vbal_inv_ad => bump_apply_vbal_inv_ad
+   procedure :: apply_var_sqrt => bump_apply_var_sqrt
+   procedure :: apply_var_sqrt_inv => bump_apply_vbal_inv
    procedure :: bump_apply_nicas
    procedure :: bump_apply_nicas_deprecated
    generic :: apply_nicas => bump_apply_nicas,bump_apply_nicas_deprecated
@@ -1022,6 +1024,96 @@ end do
 call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_vbal_inv_ad
+
+!----------------------------------------------------------------------
+! Subroutine: bump_apply_var_sqrt
+! Purpose: standard-deviation application
+!----------------------------------------------------------------------
+subroutine bump_apply_var_sqrt(bump,afieldset)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump          ! BUMP
+type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
+
+! Local variable
+integer :: its,iv
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
+real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
+
+! ATLAS fieldset to field
+call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+
+do its=1,bump%nam%nts
+   if (bump%geom%same_grid) then
+      ! Apply vertical balance, inverse adjoint
+      call bump%var%apply_sqrt(bump%nam,bump%geom,fld_mga(:,:,:,its))
+   else
+      ! Model grid to subset Sc0
+      do iv=1,bump%nam%nv
+         call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga(:,:,iv,its),fld_c0a(:,:,iv))
+      end do
+
+      ! Apply vertical balance, inverse adjoint
+      call bump%var%apply_sqrt(bump%nam,bump%geom,fld_c0a)
+
+      ! Subset Sc0 to model grid
+      do iv=1,bump%nam%nv
+         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv),fld_mga(:,:,iv,its))
+      end do
+   end if
+end do
+
+! Field to ATLAS fieldset
+call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+
+end subroutine bump_apply_var_sqrt
+
+!----------------------------------------------------------------------
+! Subroutine: bump_apply_var_sqrt_inv
+! Purpose: standard-deviation application, inverse
+!----------------------------------------------------------------------
+subroutine bump_apply_var_sqrt_inv(bump,afieldset)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump          ! BUMP
+type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
+
+! Local variable
+integer :: its,iv
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
+real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
+
+! ATLAS fieldset to field
+call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+
+do its=1,bump%nam%nts
+   if (bump%geom%same_grid) then
+      ! Apply vertical balance, inverse adjoint
+      call bump%var%apply_sqrt_inv(bump%nam,bump%geom,fld_mga(:,:,:,its))
+   else
+      ! Model grid to subset Sc0
+      do iv=1,bump%nam%nv
+         call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga(:,:,iv,its),fld_c0a(:,:,iv))
+      end do
+
+      ! Apply vertical balance, inverse adjoint
+      call bump%var%apply_sqrt_inv(bump%nam,bump%geom,fld_c0a)
+
+      ! Subset Sc0 to model grid
+      do iv=1,bump%nam%nv
+         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv),fld_mga(:,:,iv,its))
+      end do
+   end if
+end do
+
+! Field to ATLAS fieldset
+call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+
+end subroutine bump_apply_var_sqrt_inv
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas
@@ -2141,6 +2233,32 @@ if (bump%nam%check_apply_vbal) then
    call bump%apply_vbal_inv(afieldset)
    call bump%apply_vbal_ad(afieldset)
    call bump%apply_vbal_inv_ad(afieldset)
+
+   ! Release memory
+   deallocate(fld_mga)
+   call afieldset%final()
+end if
+
+! Test apply_var_sqrt
+if (bump%nam%check_apply_var) then
+   write(bump%mpl%info,'(a7,a)') '','Test apply_var'
+   call bump%mpl%flush
+
+   ! Allocation
+   allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
+
+   ! Initialization
+   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
+
+   ! Create ATLAS fieldset with empty fields
+   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset)
+
+   ! Convert to ATLAS fieldset
+   call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+
+   ! Calls
+!   call bump%apply_var_sqrt(afieldset)
+!   call bump%apply_var_sqrt_inv(afieldset)
 
    ! Release memory
    deallocate(fld_mga)

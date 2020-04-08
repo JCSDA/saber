@@ -78,6 +78,7 @@ bump_hdiag-nicas_rvflt/test_1-1_dirac.nc
 bump_hdiag-nicas_rvflt/test_1-1_nicas-2-sqrt_0001-0001_common.nc
 bump_interface_nicas/test_1-1_nicas-2-sqrt_0001-0001_common.nc
 bump_interface_obsop/test_1-1_obs_0001-0001.nc
+bump_interface_var/test_1-1_var.nc
 bump_interface_vbal/test_1-1_vbal_0001-0001.nc
 bump_lct-nicas_diagonal/test_1-1_dirac.nc
 bump_lct-nicas_diagonal/test_1-1_lct.nc

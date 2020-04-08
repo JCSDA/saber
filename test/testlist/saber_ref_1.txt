@@ -49,8 +49,7 @@ bump_read_mom/test_1-1_diag.nc
 bump_read_nicas/test_1-1_dirac.nc
 bump_read_sampling/test_1-1_diag.nc
 bump_read_vbal/test_1-1_diag.nc
-bump_var/test_1-1_var_gridded.nc
-bump_var/test_1-1_var.nc
+bump_var_filter/test_1-1_var.nc
 bump_write_cmat/test_1-1_cmat_01_01_01_01.nc
 bump_write_cmat/test_1-1_cmat_01_01_02_02.nc
 bump_write_cmat/test_1-1_cmat_02_02_01_01.nc
@@ -79,5 +78,6 @@ bump_write_nicas/test_1-1_nicas-2-sqrt_0001-0001_02_02_02_02.nc
 bump_write_obsop/test_1-1_obs_0001-0001.nc
 bump_write_sampling/test_1-1_diag.nc
 bump_write_sampling/test_1-1_sampling.nc
+bump_write_var/test_1-1_var.nc
 bump_write_vbal/test_1-1_diag.nc
 bump_write_vbal/test_1-1_vbal_0001-0001.nc

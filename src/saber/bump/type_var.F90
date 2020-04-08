@@ -117,7 +117,33 @@ type(nam_type),intent(in) :: nam     ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
 type(io_type),intent(in) :: io       ! I/O
 
-! TODO
+! Local variables
+integer :: iv,its
+character(len=1024) :: filename,varname
+
+write(mpl%info,'(a7,a)') '','Read variance'
+
+! Allocation
+call var%alloc(nam,geom)
+
+! Create file and write vertical unit
+filename = trim(nam%prefix)//'_var'
+
+! Write raw variance, fourth-order moment, filtered variance and standard-deviation
+do its=1,nam%nts
+   do iv=1,nam%nv
+      write(varname,'(a,i2.2,a,i2.2)') 'm2_',iv,'_',its
+      call io%fld_read(mpl,nam,geom,filename,varname,var%m2(:,:,iv,its))
+      write(varname,'(a,i2.2,a,i2.2)') 'm4_',iv,'_',its
+      call io%fld_read(mpl,nam,geom,filename,varname,var%m4(:,:,iv,its))
+      if (nam%var_filter) then
+         write(varname,'(a,i2.2,a,i2.2)') 'm2flt_',iv,'_',its
+         call io%fld_read(mpl,nam,geom,filename,varname,var%m2flt(:,:,iv,its))
+      end if
+      write(varname,'(a,i2.2,a,i2.2)') 'm2sqrt_',iv,'_',its
+      call io%fld_read(mpl,nam,geom,filename,varname,var%m2sqrt(:,:,iv,its))
+   end do
+end do
 
 end subroutine var_read
 
@@ -140,10 +166,13 @@ type(io_type),intent(in) :: io       ! I/O
 integer :: iv,its
 character(len=1024) :: filename,varname
 
-! Write variance
 write(mpl%info,'(a7,a)') '','Write variance'
+
+! Create file and write vertical unit
 filename = trim(nam%prefix)//'_var'
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+
+! Write raw variance, fourth-order moment, filtered variance and standard-deviation
 do its=1,nam%nts
    do iv=1,nam%nv
       write(varname,'(a,i2.2,a,i2.2)') 'm2_',iv,'_',its
