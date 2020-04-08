@@ -121,7 +121,9 @@ type(io_type),intent(in) :: io       ! I/O
 integer :: iv,its
 character(len=1024) :: filename,varname
 
+! Read variance
 write(mpl%info,'(a7,a)') '','Read variance'
+call mpl%flush
 
 ! Allocation
 call var%alloc(nam,geom)
@@ -166,7 +168,9 @@ type(io_type),intent(in) :: io       ! I/O
 integer :: iv,its
 character(len=1024) :: filename,varname
 
+! Write variance
 write(mpl%info,'(a7,a)') '','Write variance'
+call mpl%flush
 
 ! Create file and write vertical unit
 filename = trim(nam%prefix)//'_var'
@@ -217,13 +221,13 @@ call var%alloc(nam,geom)
 ! Initialization
 norm_m2 = 1.0/real(ens%ne-1,kind_real)
 norm_m4 = 1.0/real(ens%ne,kind_real)
+var%ne = ens%ne
+var%m2 = 0.0
+var%m4 = 0.0
 
 ! Compute variance
 write(mpl%info,'(a7,a)') '','Compute variance'
 call mpl%flush
-var%ne = ens%ne
-var%m2 = 0.0
-var%m4 = 0.0
 do ie=1,ens%ne
    var%m2 = var%m2+ens%mem(ie)%fld**2
    var%m4 = var%m4+ens%mem(ie)%fld**4
