@@ -100,7 +100,7 @@ do ib=1,bpar%nbe
    nicas%blk(ib)%subsamp = trim(nam%subsamp)
 
    ! Verbosity flag
-   nicas%blk(ib)%verbosity = .false.
+   nicas%blk(ib)%verbosity = .true.
 
    ! Smoother flag
    nicas%blk(ib)%smoother = .false.

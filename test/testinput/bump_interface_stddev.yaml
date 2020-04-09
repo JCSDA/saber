@@ -1,13 +1,13 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_interface_var/test__MPI_-_OMP_"
+prefix: "bump_interface_stddev/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
 new_var: 1
-check_apply_var: 1
+check_apply_stddev: 1
 
 # model_param
 nl: 2

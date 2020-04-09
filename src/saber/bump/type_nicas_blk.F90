@@ -14,7 +14,7 @@ use tools_const, only: pi,req,reqkm,deg2rad,rad2deg
 use tools_func, only: gc2gau,lonlatmod,sphere_dist,fit_func
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf
+use tools_repro, only: supeq,sup,inf,eq
 use tools_samp, only: initialize_sampling
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
@@ -1519,11 +1519,23 @@ call nam_smoother%init(mpl%nproc)
 
 ! Set local namelist parameters
 nam_smoother%levs = nam%levs
-if (nam_smoother%ntry==nam%ntry) nam_smoother%ntry = 10
+if (nam%ntry==nam_smoother%ntry) then
+   nam_smoother%ntry = 10
+else
+   nam_smoother%ntry = nam%ntry
+end if
 nam_smoother%lsqrt = .false.
-if (.not.(abs(nam_smoother%resol-nam%resol)>0.0)) nam_smoother%resol = 8.0
+if (eq(nam%resol,nam_smoother%resol)) then
+   nam_smoother%resol = 8.0
+else
+   nam_smoother%resol = nam%resol
+end if
 nam_smoother%adv_diag = .false.
-if (nam%fast_sampling) nam_smoother%fast_sampling = .true.
+if (nam%fast_sampling.eqv.nam_smoother%fast_sampling) then
+   nam_smoother%fast_sampling = nam%fast_sampling
+else
+   nam_smoother%fast_sampling = .false.
+end if
 
 ! Local cmat_blk allocation
 allocate(cmat_blk%coef_ens(geom%nc0a,geom%nl0))
@@ -1631,6 +1643,7 @@ if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='hv').or.(trim(n
    end do
    call mpl%f_comm%allreduce(sum(rhs_min,mask=geom%mask_hor_c0a),rhs_minavg,fckit_mpi_sum())
    rhs_minavg = rhs_minavg*norm(1)
+
    nicas_blk%nc1 = floor(2.0*maxval(geom%area)*nam%resol**2/(sqrt(3.0)*rhs_minavg**2))
    write(mpl%info,'(a10,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_blk%nc1
    if (nicas_blk%verbosity) call mpl%flush

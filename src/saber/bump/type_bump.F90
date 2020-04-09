@@ -61,8 +61,8 @@ contains
    procedure :: apply_vbal_inv => bump_apply_vbal_inv
    procedure :: apply_vbal_ad => bump_apply_vbal_ad
    procedure :: apply_vbal_inv_ad => bump_apply_vbal_inv_ad
-   procedure :: apply_var_sqrt => bump_apply_var_sqrt
-   procedure :: apply_var_sqrt_inv => bump_apply_vbal_inv
+   procedure :: apply_stddev => bump_apply_stddev
+   procedure :: apply_stddev_inv => bump_apply_stddev_inv
    procedure :: bump_apply_nicas
    procedure :: bump_apply_nicas_deprecated
    generic :: apply_nicas => bump_apply_nicas,bump_apply_nicas_deprecated
@@ -1026,10 +1026,10 @@ call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:b
 end subroutine bump_apply_vbal_inv_ad
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_var_sqrt
+! Subroutine: bump_apply_stddev
 ! Purpose: standard-deviation application
 !----------------------------------------------------------------------
-subroutine bump_apply_var_sqrt(bump,afieldset)
+subroutine bump_apply_stddev(bump,afieldset)
 
 implicit none
 
@@ -1039,42 +1039,44 @@ type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
 
 ! Local variable
 integer :: its,iv
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
-do its=1,bump%nam%nts
-   if (bump%geom%same_grid) then
-      ! Apply vertical balance, inverse adjoint
-      call bump%var%apply_sqrt(bump%nam,bump%geom,fld_mga(:,:,:,its))
-   else
-      ! Model grid to subset Sc0
+ if (bump%geom%same_grid) then
+   ! Apply standard-deviation
+   call bump%var%apply_sqrt(bump%nam,bump%geom,fld_mga)
+else
+   ! Model grid to subset Sc0
+   do its=1,bump%nam%nts
       do iv=1,bump%nam%nv
-         call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga(:,:,iv,its),fld_c0a(:,:,iv))
+         call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga(:,:,iv,its),fld_c0a(:,:,iv,its))
       end do
+   end do
 
-      ! Apply vertical balance, inverse adjoint
-      call bump%var%apply_sqrt(bump%nam,bump%geom,fld_c0a)
+   ! Apply standard-deviation
+   call bump%var%apply_sqrt(bump%nam,bump%geom,fld_c0a)
 
-      ! Subset Sc0 to model grid
+   ! Subset Sc0 to model grid
+   do its=1,bump%nam%nts
       do iv=1,bump%nam%nv
-         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv),fld_mga(:,:,iv,its))
+         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv,its),fld_mga(:,:,iv,its))
       end do
-   end if
-end do
+   end do
+end if
 
 ! Field to ATLAS fieldset
 call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
-end subroutine bump_apply_var_sqrt
+end subroutine bump_apply_stddev
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_var_sqrt_inv
+! Subroutine: bump_apply_stddev_inv
 ! Purpose: standard-deviation application, inverse
 !----------------------------------------------------------------------
-subroutine bump_apply_var_sqrt_inv(bump,afieldset)
+subroutine bump_apply_stddev_inv(bump,afieldset)
 
 implicit none
 
@@ -1084,36 +1086,38 @@ type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
 
 ! Local variable
 integer :: its,iv
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
-do its=1,bump%nam%nts
-   if (bump%geom%same_grid) then
-      ! Apply vertical balance, inverse adjoint
-      call bump%var%apply_sqrt_inv(bump%nam,bump%geom,fld_mga(:,:,:,its))
-   else
-      ! Model grid to subset Sc0
+ if (bump%geom%same_grid) then
+   ! Apply standard-deviation inverse
+   call bump%var%apply_sqrt_inv(bump%nam,bump%geom,fld_mga)
+else
+   ! Model grid to subset Sc0
+   do its=1,bump%nam%nts
       do iv=1,bump%nam%nv
-         call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga(:,:,iv,its),fld_c0a(:,:,iv))
+         call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga(:,:,iv,its),fld_c0a(:,:,iv,its))
       end do
+   end do
 
-      ! Apply vertical balance, inverse adjoint
-      call bump%var%apply_sqrt_inv(bump%nam,bump%geom,fld_c0a)
+   ! Apply standard-deviation
+   call bump%var%apply_sqrt_inv(bump%nam,bump%geom,fld_c0a)
 
-      ! Subset Sc0 to model grid
+   ! Subset Sc0 to model grid
+   do its=1,bump%nam%nts
       do iv=1,bump%nam%nv
-         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv),fld_mga(:,:,iv,its))
+         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv,its),fld_mga(:,:,iv,its))
       end do
-   end if
-end do
+   end do
+end if
 
 ! Field to ATLAS fieldset
 call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
-end subroutine bump_apply_var_sqrt_inv
+end subroutine bump_apply_stddev_inv
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas
@@ -1606,7 +1610,7 @@ write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
 call bump%mpl%flush()
 
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
+case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
  & 'loc_D12','loc_Dcoef','loc_DLh')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
@@ -1670,7 +1674,9 @@ character(len=1024),parameter :: subr = 'bump_copy_to_field'
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
+case ('stddev')
+   if (.not.allocated(bump%var%m2sqrt)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
  & 'loc_D12','loc_Dcoef','loc_DLh')
    if (.not.allocated(bump%cmat%blk)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
 case default
@@ -1688,9 +1694,11 @@ end select
 
 ! Select parameter from cmat
 select case (trim(param))
-case ('var')
-   if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%coef_ens,fld_mga)
+case ('stddev')
+   iv = bump%bpar%b_to_v1(ib)
+   its = bump%bpar%b_to_ts1(ib)
+   if (.not.allocated(bump%var%m2sqrt)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%var%m2sqrt(:,:,iv,its),fld_mga)
 case ('cor_rh')
    if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rh,fld_mga)
@@ -1846,8 +1854,9 @@ type(atlas_fieldset) :: afieldset
 call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset)
 
 ! Get parameter
-if (bump%nam%check_get_param_cor) then
-   call bump%get_parameter('var',afieldset)
+if (bump%nam%check_get_param_stddev) then
+   call bump%get_parameter('stddev',afieldset)
+elseif (bump%nam%check_get_param_cor) then
    call bump%get_parameter('cor_rh',afieldset)
    call bump%get_parameter('cor_rv',afieldset)
    call bump%get_parameter('cor_rv_rfac',afieldset)
@@ -1908,7 +1917,7 @@ write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush()
 
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
+case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -1971,7 +1980,7 @@ write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush()
 
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
+case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -2030,7 +2039,7 @@ character(len=1024),parameter :: subr = 'bump_copy_from_field'
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('var','cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','D11','D22','D33','D12','Dcoef')
+case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','D11','D22','D33','D12','Dcoef')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 case default
    call bump%mpl%abort(subr,'parameter '//trim(param)//' not yet implemented in set_parameter')
@@ -2038,9 +2047,6 @@ end select
 
 ! Select parameter from cmat
 select case (trim(param))
-case ('var')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_coef_ens)) allocate(bump%cmat%blk(ib)%bump_coef_ens(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_coef_ens)
 case ('cor_rh')
    if (.not.allocated(bump%cmat%blk(ib)%bump_rh)) allocate(bump%cmat%blk(ib)%bump_rh(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rh)
@@ -2167,7 +2173,6 @@ call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:b
 
 ! Set parameter
 if (bump%nam%check_set_param_cor) then
-   call bump%set_parameter('var',afieldset)
    call bump%set_parameter('cor_rh',afieldset_req)
    call bump%set_parameter('cor_rv',afieldset_vert)
    call bump%set_parameter('cor_rv_rfac',afieldset)
@@ -2239,9 +2244,9 @@ if (bump%nam%check_apply_vbal) then
    call afieldset%final()
 end if
 
-! Test apply_var_sqrt
-if (bump%nam%check_apply_var) then
-   write(bump%mpl%info,'(a7,a)') '','Test apply_var'
+! Test apply_stddev
+if (bump%nam%check_apply_stddev) then
+   write(bump%mpl%info,'(a7,a)') '','Test apply_stddev'
    call bump%mpl%flush
 
    ! Allocation
@@ -2257,8 +2262,8 @@ if (bump%nam%check_apply_var) then
    call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
    ! Calls
-!   call bump%apply_var_sqrt(afieldset)
-!   call bump%apply_var_sqrt_inv(afieldset)
+   call bump%apply_stddev(afieldset)
+   call bump%apply_stddev_inv(afieldset)
 
    ! Release memory
    deallocate(fld_mga)
