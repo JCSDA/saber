@@ -379,7 +379,7 @@ do its=1,nam%nts
                drhflt(il0) = 0.5*drhflt(il0)
                rhflt(il0) = rhflt(il0)-drhflt(il0)
             end if
-            if (abs(diff)<diff_abs_min) then
+            if ((abs(diff)<diff_abs_min).or.(nam%var_niter==1)) then
                ! Copy best result
                diff_abs_min = abs(diff)
                var%m2flt(:,:,iv,its) = m2
