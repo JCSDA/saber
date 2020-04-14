@@ -9,7 +9,7 @@ module type_model
 
 use atlas_module
 use netcdf
-use tools_atlas, only: create_atlas_function_space,create_atlas_fieldset
+use tools_atlas, only: create_atlas_function_space
 use tools_const, only: deg2rad,rad2deg,req,ps,pi
 use tools_func, only: lonlatmod
 use tools_kinds,only: kind_int,kind_real,nc_kind_real
