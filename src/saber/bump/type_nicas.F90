@@ -1608,7 +1608,7 @@ do idir=1,geom%ndir
 end do
 
 ! Allocation and initialization
-if (ens%allocated) then
+if (ens%allocated.and.(trim(nam%method)/='cor')) then
    allocate(fld_bens(geom%nc0a,geom%nl0,nam%nv,nam%nts))
    fld_bens = fld
 end if
@@ -1621,7 +1621,7 @@ else
 end if
 
 ! Apply localized ensemble covariance
-if ((ens%allocated).and.(trim(nam%method)/='cor')) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
+if (ens%allocated.and.(trim(nam%method)/='cor')) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
 
 ! Write field
 filename = trim(nam%prefix)//'_dirac'
@@ -1630,13 +1630,13 @@ do its=1,nam%nts
    write(itschar,'(i2.2)') its
    do iv=1,nam%nv
       call io%fld_write(mpl,nam,geom,filename,'nicas_'//trim(nam%varname(iv))//'_'//itschar,fld(:,:,iv,its))
-      if ((ens%allocated).and.(trim(nam%method)/='cor')) call io%fld_write(mpl,nam,geom,filename, &
+      if (ens%allocated.and.(trim(nam%method)/='cor')) call io%fld_write(mpl,nam,geom,filename, &
        & 'Bens_'//trim(nam%varname(iv))//'_'//itschar,fld_bens(:,:,iv,its))
    end do
 end do
 
 ! Release memory
-if (ens%allocated) deallocate(fld_bens)
+if (ens%allocated.and.(trim(nam%method)/='cor')) deallocate(fld_bens)
 
 end subroutine nicas_test_dirac
 
