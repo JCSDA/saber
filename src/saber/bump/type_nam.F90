@@ -707,7 +707,6 @@ namelist/nicas_param/nonunit_diag, &
                    & forced_radii, &
                    & rh, &
                    & rv, &
-                   &  &
                    & pos_def_test, &
                    & write_grids, &
                    & ndir, &
