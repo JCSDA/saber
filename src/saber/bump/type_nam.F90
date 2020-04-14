@@ -1721,6 +1721,9 @@ end if
 
 ! Check nicas_param
 if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomization) then
+   if (nam%nonunit_diag) then
+      if (nam%method=='cor') call mpl%abort(subr,'nonunit_diag is inconsistent with correlation, use variance operator instead')
+   end if
    if (nam%lsqrt) then
       if (nam%mpicom==1) call mpl%abort(subr,'mpicom should be 2 for square-root application')
    end if
