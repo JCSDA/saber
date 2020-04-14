@@ -757,12 +757,9 @@ real(kind_real),allocatable :: var(:,:,:,:)
 logical :: valid
 character(len=1024),parameter :: subr = 'samp_compute_mask'
 
-if (allocated(geom%smask_c0a)) then
-   nsmask = count(geom%mask_c0a.and..not.geom%smask_c0a)
-   call mpl%f_comm%allreduce(nsmask,nsmask_tot,fckit_mpi_sum())
-else
-   nsmask_tot = 0
-end if
+! Count extra masked points in sampling
+nsmask = count(geom%mask_c0a.and..not.geom%smask_c0a)
+call mpl%f_comm%allreduce(nsmask,nsmask_tot,fckit_mpi_sum())
 
 if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
    ! Compute sampling mask

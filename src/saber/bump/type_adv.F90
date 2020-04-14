@@ -284,8 +284,8 @@ real(kind_real),allocatable :: fld_ext_1(:,:),fld_ext_2(:,:)
 real(kind_real),allocatable :: m2_1(:,:,:,:,:),m2_2(:,:,:,:,:)
 real(kind_real),allocatable :: m11(:,:,:,:,:)
 real(kind_real),allocatable :: cor(:,:),cor_avg(:)
-logical :: valid_c2(nam%nc2)
-logical,allocatable :: lcheck_c0d(:),mask_nn(:,:,:),mask_nn_tmp(:)
+logical :: lcheck_c0d(geom%nc0),valid_c2(nam%nc2)
+logical,allocatable :: mask_nn(:,:,:),mask_nn_tmp(:)
 type(com_type) :: com_AD
 type(mesh_type) :: mesh
 
