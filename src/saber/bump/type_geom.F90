@@ -14,7 +14,7 @@ use metis_interface, only: metis_setdefaultoptions,metis_partgraphrecursive,meti
                          & metis_noptions,metis_option_numbering,metis_ok
 #endif
 use netcdf
-use tools_atlas, only: create_atlas_function_space,field_to_fld
+use tools_atlas, only: field_to_fld
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
 use tools_kinds, only: kind_real,nc_kind_real
@@ -137,6 +137,12 @@ implicit none
 class(geom_type),intent(inout) :: geom ! Geometry
 
 ! Release memory
+if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
+if (allocated(geom%lat_mga)) deallocate(geom%lat_mga)
+if (allocated(geom%area_mga)) deallocate(geom%area_mga)
+if (allocated(geom%vunit_mga)) deallocate(geom%vunit_mga)
+if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
+if (allocated(geom%smask_mga)) deallocate(geom%smask_mga)
 if (allocated(geom%lon)) deallocate(geom%lon)
 if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
 if (allocated(geom%lat)) deallocate(geom%lat)
@@ -227,7 +233,10 @@ else
 end if
 
 ! No mask
-if (nam%nomask) geom%gmask_mga = .true.
+if (nam%nomask) then
+   geom%gmask_mga = .true.
+   geom%smask_mga = .true.
+end if
 
 ! Allocation
 allocate(proc_to_nmga(mpl%nproc))
@@ -625,6 +634,7 @@ allocate(geom%lat_c0a(geom%nc0a))
 allocate(geom%vunit_c0a(geom%nc0a,geom%nl0))
 allocate(geom%mask_c0a(geom%nc0a,geom%nl0))
 allocate(geom%mask_hor_c0a(geom%nc0a))
+allocate(geom%smask_c0a(geom%nc0a,geom%nl0))
 
 ! Define other fields
 geom%lon_c0a = geom%lon(geom%c0a_to_c0)
@@ -632,6 +642,9 @@ geom%lat_c0a = geom%lat(geom%c0a_to_c0)
 geom%vunit_c0a = geom%vunit_c0(geom%c0a_to_c0,:)
 geom%mask_c0a = geom%mask_c0(geom%c0a_to_c0,:)
 geom%mask_hor_c0a = geom%mask_hor_c0(geom%c0a_to_c0)
+
+! Communicate sampling mask
+call geom%copy_mga_to_c0a(mpl,geom%smask_mga,geom%smask_c0a)
 
 ! Allocation
 call geom%mesh%alloc(geom%nc0)
