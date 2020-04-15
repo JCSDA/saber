@@ -501,6 +501,15 @@ if (bump%nam%ens2_ne>0) then
    call bump%ens2%remove_mean
 end if
 
+if (bump%nam%new_normality) then
+   ! Run normality tests
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Run normality tests'
+   call bump%mpl%flush
+   call bump%ens1%normality(bump%mpl,bump%nam,bump%geom,bump%io)
+end if
+
 if (bump%nam%new_cortrack) then
    ! Run correlation tracker
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -1607,10 +1616,10 @@ integer :: ib,iv,jv,its,jts
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
-call bump%mpl%flush()
+call bump%mpl%flush
 
 select case (trim(param))
-case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
+case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
  & 'loc_D12','loc_Dcoef','loc_DLh')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
@@ -1676,8 +1685,8 @@ character(len=1024),parameter :: subr = 'bump_copy_to_field'
 select case (trim(param))
 case ('stddev')
    if (.not.allocated(bump%var%m2sqrt)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33', &
- & 'loc_D12','loc_Dcoef','loc_DLh')
+case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','loc_D11','loc_D22','loc_D33','loc_D12', &
+ & 'loc_Dcoef','loc_DLh')
    if (.not.allocated(bump%cmat%blk)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
 case default
    select case (param(1:4))
@@ -1710,12 +1719,6 @@ case ('cor_rh')
 case ('cor_rv')
    if (.not.allocated(bump%cmat%blk(ib)%rv)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv,fld_mga)
-case ('cor_rv_rfac')
-   if (.not.allocated(bump%cmat%blk(ib)%rv_rfac)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv_rfac,fld_mga)
-case ('cor_rv_coef')
-   if (.not.allocated(bump%cmat%blk(ib)%rv_coef)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv_coef,fld_mga)
 case ('loc_coef')
    if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort(subr,trim(param)//' is not allocated in bump%copy_to_field')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%coef_ens,fld_mga)
@@ -1860,8 +1863,6 @@ if (bump%nam%check_get_param_stddev) then
 elseif (bump%nam%check_get_param_cor) then
    call bump%get_parameter('cor_rh',afieldset)
    call bump%get_parameter('cor_rv',afieldset)
-   call bump%get_parameter('cor_rv_rfac',afieldset)
-   call bump%get_parameter('cor_rv_coef',afieldset)
 elseif (bump%nam%check_get_param_hyb) then
    call bump%get_parameter('loc_coef',afieldset)
    call bump%get_parameter('loc_rh',afieldset)
@@ -1915,10 +1916,10 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
-call bump%mpl%flush()
+call bump%mpl%flush
 
 select case (trim(param))
-case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
+case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -1978,10 +1979,10 @@ character(len=1024),parameter :: subr = 'bump_set_parameter_deprecated'
 call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
 
 write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
-call bump%mpl%flush()
+call bump%mpl%flush
 
 select case (trim(param))
-case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef')
+case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -2040,7 +2041,7 @@ character(len=1024),parameter :: subr = 'bump_copy_from_field'
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('cor_rh','cor_rv','cor_rv_rfac','cor_rv_coef','loc_coef','loc_rh','loc_rv','hyb_coef','D11','D22','D33','D12','Dcoef')
+case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','D11','D22','D33','D12','Dcoef')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 case default
    call bump%mpl%abort(subr,'parameter '//trim(param)//' not yet implemented in set_parameter')
@@ -2060,12 +2061,6 @@ case ('cor_rh')
 case ('cor_rv')
    if (.not.allocated(bump%cmat%blk(ib)%bump_rv)) allocate(bump%cmat%blk(ib)%bump_rv(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rv)
-case ('cor_rv_rfac')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_rv_rfac)) allocate(bump%cmat%blk(ib)%bump_rv_rfac(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rv_rfac)
-case ('cor_rv_coef')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_rv_coef)) allocate(bump%cmat%blk(ib)%bump_rv_coef(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rv_coef)
 case ('loc_coef')
    if (.not.allocated(bump%cmat%blk(ib)%bump_coef_ens)) allocate(bump%cmat%blk(ib)%bump_coef_ens(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_coef_ens)
@@ -2181,8 +2176,6 @@ call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:b
 if (bump%nam%check_set_param_cor) then
    call bump%set_parameter('cor_rh',afieldset_req)
    call bump%set_parameter('cor_rv',afieldset_vert)
-   call bump%set_parameter('cor_rv_rfac',afieldset)
-   call bump%set_parameter('cor_rv_coef',afieldset)
 elseif (bump%nam%check_set_param_hyb) then
    call bump%set_parameter('loc_coef',afieldset)
    call bump%set_parameter('loc_rh',afieldset_req)

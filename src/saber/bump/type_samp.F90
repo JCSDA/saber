@@ -753,7 +753,7 @@ type(ens_type),intent(in) :: ens       ! Ensemble
 ! Local variables
 integer :: nsmask,nsmask_tot,ic0a,ic0,il0,ildwv,iv,its,ie,ncontig,ncontigmax,latmin,latmax
 real(kind_real) :: dist
-real(kind_real),allocatable :: var(:,:,:,:)
+real(kind_real),allocatable :: m2(:,:,:,:)
 logical :: valid
 character(len=1024),parameter :: subr = 'samp_compute_mask'
 
@@ -804,14 +804,14 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
       ! Standard-deviation threshold
 
       ! Allocation
-      allocate(var(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+      allocate(m2(geom%nc0a,geom%nl0,nam%nv,nam%nts))
 
-      ! Compute variances
-      var = 0.0
+      ! Compute variance and fourth-order moment
+      m2 = 0.0
       do ie=1,ens%ne
-         var = var+ens%mem(ie)%fld**2
+         m2 = m2+ens%mem(ie)%fld**2
       end do
-      var = var/real(ens%ne-ens%nsub,kind_real)
+      m2 = m2/real(ens%ne-ens%nsub,kind_real)
 
       ! Check standard-deviation value
       do iv=1,nam%nv
@@ -820,15 +820,15 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
          call mpl%flush
          do its=1,nam%nts
             if (trim(nam%mask_lu(iv))=='lower') then
-               samp%mask_c0a = samp%mask_c0a.and.(var(:,:,iv,its)>nam%mask_th(iv)**2)
+               samp%mask_c0a = samp%mask_c0a.and.(m2(:,:,iv,its)>nam%mask_th(iv)**2)
             elseif (trim(nam%mask_lu(iv))=='upper') then
-               samp%mask_c0a = samp%mask_c0a.and.(var(:,:,iv,its)<nam%mask_th(iv)**2)
+               samp%mask_c0a = samp%mask_c0a.and.(m2(:,:,iv,its)<nam%mask_th(iv)**2)
             end if
          end do
       end do
 
       ! Release memory
-      deallocate(var)
+      deallocate(m2)
    else
       if (.not.allocated(geom%smask_c0a)) call mpl%abort(subr,'mask_type not recognized')
    end if
@@ -1945,7 +1945,7 @@ if (rflt>0.0) then
             norm = 0.0
             do jc2=1,nc2eff
                distnorm = diag_eff_dist(jc2)/rflt
-               wgt = fit_func(mpl,'gc99',distnorm)
+               wgt = fit_func(mpl,distnorm)
                diag(ic2a) = diag(ic2a)+wgt*diag_eff(jc2)
                norm = norm+wgt
             end do
