@@ -18,6 +18,7 @@ saber_ref_3
 saber_ref_mpi_1
 saber_ref_mpi_2
 saber_ref_mpi_3
+saber_ref_oops
 saber_ref_quad"
 
 # Get git branch

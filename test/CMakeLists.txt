@@ -447,12 +447,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_estimate_parameters.x
                           TEST_DEPENDS get_saber_data )
 
-        ecbuild_add_test( TARGET test_qg_parameters_bump_cov_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_parameters_bump_cov/test.log.out testref/qg_parameters_bump_cov/test.log.out
-                          TEST_DEPENDS get_saber_ref test_qg_parameters_bump_cov_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_parameters_bump_hyb_run
@@ -462,12 +456,6 @@ if(${SABER_TEST_OOPS})
                           ARGS testinput/qg_parameters_bump_hyb.yaml testoutput/qg_parameters_bump_hyb/test.log.out
                           DEPENDS saber_qg_estimate_parameters.x
                           TEST_DEPENDS get_saber_data )
-
-        ecbuild_add_test( TARGET test_qg_parameters_bump_hyb_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_parameters_bump_hyb/test.log.out testref/qg_parameters_bump_hyb/test.log.out
-                          TEST_DEPENDS get_saber_ref test_qg_parameters_bump_hyb_run )
 
         #--------------------------------------------------------------------
 
@@ -479,12 +467,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_estimate_parameters.x
                           TEST_DEPENDS get_saber_data )
 
-        ecbuild_add_test( TARGET test_qg_parameters_bump_lct_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_parameters_bump_lct/test.log.out testref/qg_parameters_bump_lct/test.log.out
-                          TEST_DEPENDS get_saber_ref test_qg_parameters_bump_lct_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_parameters_bump_loc_3d_run
@@ -495,12 +477,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_estimate_parameters.x
                           TEST_DEPENDS get_saber_data )
 
-        ecbuild_add_test( TARGET test_qg_parameters_bump_loc_3d_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_parameters_bump_loc_3d/test.log.out testref/qg_parameters_bump_loc_3d/test.log.out
-                          TEST_DEPENDS get_saber_ref test_qg_parameters_bump_loc_3d_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_parameters_bump_loc_4d_run
@@ -510,12 +486,6 @@ if(${SABER_TEST_OOPS})
                           ARGS testinput/qg_parameters_bump_loc_4d.yaml testoutput/qg_parameters_bump_loc_4d/test.log.out
                           DEPENDS saber_qg_estimate_parameters.x
                           TEST_DEPENDS get_saber_data )
-
-        ecbuild_add_test( TARGET test_qg_parameters_bump_loc_4d_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_parameters_bump_loc_4d/test.log.out testref/qg_parameters_bump_loc_4d/test.log.out
-                          TEST_DEPENDS get_saber_ref test_qg_parameters_bump_loc_4d_run )
 
         #--------------------------------------------------------------------
         # BUMP links
@@ -542,12 +512,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_dirac.x
                           TEST_DEPENDS test_qg_bump_links )
 
-        ecbuild_add_test( TARGET test_qg_dirac_bump_cov_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_dirac_bump_cov/test.log.out testref/qg_dirac_bump_cov/test.log.out
-                          TEST_DEPENDS test_qg_dirac_bump_cov_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_dirac_bump_hyb_run
@@ -557,12 +521,6 @@ if(${SABER_TEST_OOPS})
                           ARGS testinput/qg_dirac_bump_hyb.yaml testoutput/qg_dirac_bump_hyb/test.log.out
                           DEPENDS saber_qg_dirac.x
                           TEST_DEPENDS test_qg_bump_links )
-
-        ecbuild_add_test( TARGET test_qg_dirac_bump_hyb_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_dirac_bump_hyb/test.log.out testref/qg_dirac_bump_hyb/test.log.out
-                          TEST_DEPENDS test_qg_dirac_bump_hyb_run )
 
         #--------------------------------------------------------------------
 
@@ -574,12 +532,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_dirac.x
                           TEST_DEPENDS test_qg_bump_links )
 
-        ecbuild_add_test( TARGET test_qg_dirac_bump_lct_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_dirac_bump_lct/test.log.out testref/qg_dirac_bump_lct/test.log.out
-                          TEST_DEPENDS test_qg_dirac_bump_lct_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_dirac_bump_loc_3d_run
@@ -590,12 +542,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_dirac.x
                           TEST_DEPENDS test_qg_bump_links )
 
-        ecbuild_add_test( TARGET test_qg_dirac_bump_loc_3d_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_dirac_bump_loc_3d/test.log.out testref/qg_dirac_bump_loc_3d/test.log.out
-                          TEST_DEPENDS test_qg_dirac_bump_loc_3d_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_dirac_bump_loc_4d_run
@@ -605,12 +551,6 @@ if(${SABER_TEST_OOPS})
                           ARGS testinput/qg_dirac_bump_loc_4d.yaml testoutput/qg_dirac_bump_loc_4d/test.log.out
                           DEPENDS saber_qg_dirac.x
                           TEST_DEPENDS test_qg_bump_links )
-
-        ecbuild_add_test( TARGET test_qg_dirac_bump_loc_4d_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_dirac_bump_loc_4d/test.log.out testref/qg_dirac_bump_loc_4d/test.log.out
-                          TEST_DEPENDS test_qg_dirac_bump_loc_4d_run )
 
         #--------------------------------------------------------------------
         # 3d variational tests
@@ -624,12 +564,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_4dvar.x
                           TEST_DEPENDS test_qg_bump_links )
 
-        ecbuild_add_test( TARGET test_qg_3densvar_bump_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_3densvar_bump/test.log.out testref/qg_3densvar_bump/test.log.out
-                          TEST_DEPENDS test_qg_3densvar_bump_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_3dvar_bump_run
@@ -640,12 +574,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_4dvar.x
                           TEST_DEPENDS test_qg_bump_links )
 
-        ecbuild_add_test( TARGET test_qg_3dvar_bump_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_3dvar_bump/test.log.out testref/qg_3dvar_bump/test.log.out
-                          TEST_DEPENDS test_qg_3dvar_bump_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_3dvar_hybrid_bump_run
@@ -655,12 +583,6 @@ if(${SABER_TEST_OOPS})
                           ARGS testinput/qg_3dvar_hybrid_bump.yaml testoutput/qg_3dvar_hybrid_bump/test.log.out
                           DEPENDS saber_qg_4dvar.x
                           TEST_DEPENDS test_qg_bump_links )
-
-        ecbuild_add_test( TARGET test_qg_3dvar_hybrid_bump_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_3dvar_hybrid_bump/test.log.out testref/qg_3dvar_hybrid_bump/test.log.out
-                          TEST_DEPENDS test_qg_3dvar_hybrid_bump_run )
 
         #--------------------------------------------------------------------
         # 4d variational tests
@@ -674,12 +596,6 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_4dvar.x
                           TEST_DEPENDS test_qg_bump_links )
 
-        ecbuild_add_test( TARGET test_qg_4densvar_bump_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_4densvar_bump/test.log.out testref/qg_4densvar_bump/test.log.out
-                          TEST_DEPENDS test_qg_4densvar_bump_run )
-
         #--------------------------------------------------------------------
 
         ecbuild_add_test( TARGET test_qg_4dvar_drplanczos_bump_run
@@ -689,12 +605,6 @@ if(${SABER_TEST_OOPS})
                           ARGS testinput/qg_4dvar_drplanczos_bump.yaml testoutput/qg_4dvar_drplanczos_bump/test.log.out
                           DEPENDS saber_qg_4dvar.x
                           TEST_DEPENDS test_qg_bump_links )
-
-        ecbuild_add_test( TARGET test_qg_4dvar_drplanczos_bump_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_4dvar_drplanczos_bump/test.log.out testref/qg_4dvar_drplanczos_bump/test.log.out
-                          TEST_DEPENDS test_qg_4dvar_drplanczos_bump_run )
 
         #--------------------------------------------------------------------
 
@@ -706,10 +616,16 @@ if(${SABER_TEST_OOPS})
                           DEPENDS saber_qg_4dvar.x
                           TEST_DEPENDS test_qg_bump_links )
 
-        ecbuild_add_test( TARGET test_qg_4dvar_drplanczos_hybrid_bump_compare
-                          TYPE SCRIPT
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/compare.sh
-                          ARGS testoutput/qg_4dvar_drplanczos_hybrid_bump/test.log.out testref/qg_4dvar_drplanczos_hybrid_bump/test.log.out
-                          TEST_DEPENDS test_qg_4dvar_drplanczos_hybrid_bump_run )
+        #--------------------------------------------------------------------
+        # Compare tests
+        #--------------------------------------------------------------------
+        foreach(test ${saber_test_oops})
+            ecbuild_add_test( TARGET test_${test}_compare
+                              TYPE SCRIPT
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_oops.sh
+                              ARGS ${test}
+                              TEST_DEPENDS get_saber_ref test_${test}_run )
+        endforeach()
+
     endif()
 endif()
