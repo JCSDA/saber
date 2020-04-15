@@ -122,7 +122,7 @@ implicit none
 
 ! Passed variables
 class(cmat_type),intent(inout) :: cmat ! C matrix
-type(mpl_type),intent(in) :: mpl       ! MPI data
+type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(nam_type),intent(in) :: nam       ! Namelist
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 
@@ -131,11 +131,7 @@ integer :: ib
 
 ! Initialize blocks
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      cmat%blk(ib)%double_fit = .false.
-      cmat%blk(ib)%anisotropic = .false.
-      call cmat%blk(ib)%init(mpl,nam,bpar)
-   end if
+   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) call cmat%blk(ib)%init(mpl,nam,bpar)
 end do
 
 end subroutine cmat_init
@@ -161,6 +157,9 @@ if (allocated(cmat%blk)) then
       call cmat%blk(ib)%partial_dealloc
    end do
 end if
+
+! Update allocation flag
+cmat%allocated = .false.
 
 end subroutine cmat_partial_dealloc
 
@@ -208,7 +207,7 @@ type(bpar_type),intent(in) :: bpar     ! Block parameters
 type(io_type),intent(in) :: io         ! I/O
 
 ! Local variables
-integer :: ib,ncid,double_fit,anisotropic,its
+integer :: ib,ncid,anisotropic,its
 character(len=3) :: itschar
 character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'cmat_read'
@@ -224,12 +223,6 @@ do ib=1,bpar%nbe
 
          ! Read attributes
          call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
-         call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'double_fit',double_fit))
-         if (double_fit==1) then
-            cmat%blk(ib)%double_fit = .true.
-         else
-            cmat%blk(ib)%double_fit = .false.
-         end if
          call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'anisotropic',anisotropic))
          if (anisotropic==1) then
             cmat%blk(ib)%anisotropic = .true.
@@ -240,7 +233,6 @@ do ib=1,bpar%nbe
       end if
 
       ! Broadcast
-      call mpl%f_comm%broadcast(cmat%blk(ib)%double_fit,mpl%rootproc-1)
       call mpl%f_comm%broadcast(cmat%blk(ib)%anisotropic,mpl%rootproc-1)
    end if
 end do
@@ -259,10 +251,6 @@ do ib=1,bpar%nbe
          call io%fld_read(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta)
          call io%fld_read(mpl,nam,geom,filename,'rh',cmat%blk(ib)%rh)
          call io%fld_read(mpl,nam,geom,filename,'rv',cmat%blk(ib)%rv)
-         if (cmat%blk(ib)%double_fit) then
-            call io%fld_read(mpl,nam,geom,filename,'rv_rfac',cmat%blk(ib)%rv_rfac)
-            call io%fld_read(mpl,nam,geom,filename,'rv_coef',cmat%blk(ib)%rv_coef)
-         end if
          call io%fld_read(mpl,nam,geom,filename,'rhs',cmat%blk(ib)%rhs)
          call io%fld_read(mpl,nam,geom,filename,'rvs',cmat%blk(ib)%rvs)
          if (cmat%blk(ib)%anisotropic) then
@@ -322,10 +310,6 @@ do ib=1,bpar%nbe
          call io%fld_write(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta)
          call io%fld_write(mpl,nam,geom,filename,'rh',cmat%blk(ib)%rh)
          call io%fld_write(mpl,nam,geom,filename,'rv',cmat%blk(ib)%rv)
-         if (cmat%blk(ib)%double_fit) then
-            call io%fld_write(mpl,nam,geom,filename,'rv_rfac',cmat%blk(ib)%rv_rfac)
-            call io%fld_write(mpl,nam,geom,filename,'rv_coef',cmat%blk(ib)%rv_coef)
-         end if
          call io%fld_write(mpl,nam,geom,filename,'rhs',cmat%blk(ib)%rhs)
          call io%fld_write(mpl,nam,geom,filename,'rvs',cmat%blk(ib)%rvs)
          if (cmat%blk(ib)%anisotropic) then
@@ -348,11 +332,6 @@ do ib=1,bpar%nbe
          ! Write attributes
          call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
          call mpl%ncerr(subr,nf90_redef(ncid))
-         if (cmat%blk(ib)%double_fit) then
-            call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'double_fit',1))
-         else
-            call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'double_fit',0))
-         end if
          if (cmat%blk(ib)%anisotropic) then
             call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'anisotropic',1))
          else
@@ -391,29 +370,15 @@ call cmat%alloc(bpar,'cmat')
 
 ! Copy attributes
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      select case (trim(nam%method))
-      case ('cor')
-         cmat%blk(ib)%double_fit = hdiag%cor_1%blk(0,ib)%double_fit
-      case ('loc')
-         cmat%blk(ib)%double_fit = hdiag%loc_1%blk(0,ib)%double_fit
-      case ('hyb-avg','hyb-rnd')
-         cmat%blk(ib)%double_fit = hdiag%loc_2%blk(0,ib)%double_fit
-      case ('dual-ens')
-         call mpl%abort(subr,'dual-ens not ready yet for C matrix')
-      case default
-         call mpl%abort(subr,'cmat not implemented yet for this method')
-      end select
-      cmat%blk(ib)%anisotropic = .false.
-   end if
+   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat%blk(ib)%anisotropic = .false.
 end do
 
 ! Allocation
 call cmat%alloc(nam,geom,bpar)
 if (nam%local_diag) then
-   allocate(fld_c2a(hdiag%samp%nc2a,geom%nl0,6))
+   allocate(fld_c2a(hdiag%samp%nc2a,geom%nl0,4))
    allocate(fld_c2b(hdiag%samp%nc2b,geom%nl0))
-   allocate(fld_c0a(geom%nc0a,geom%nl0,6))
+   allocate(fld_c0a(geom%nc0a,geom%nl0,4))
 end if
 
 ! Initialization
@@ -428,42 +393,30 @@ do ib=1,bpar%nbe
             fld_c2a = mpl%msv%valr
 
             ! Copy data
-            n = 4
-            if (cmat%blk(ib)%double_fit) n = n+2
+            n = 2
+            if (bpar%fit_block(ib)) n = n+2
             do ic2a=1,hdiag%samp%nc2a
                select case (trim(nam%method))
                case ('cor')
-                  fld_c2a(ic2a,:,1) = hdiag%cor_1%blk(ic2a,ib)%raw_coef_ens
+                  fld_c2a(ic2a,:,1) = hdiag%cov_1%blk(ic2a,ib)%coef_ens
                   fld_c2a(ic2a,:,2) = 0.0
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%cor_1%blk(ic2a,ib)%fit_rh
                      fld_c2a(ic2a,:,4) = hdiag%cor_1%blk(ic2a,ib)%fit_rv
-                     if (cmat%blk(ib)%double_fit) then
-                        fld_c2a(ic2a,:,5) = hdiag%cor_1%blk(ic2a,ib)%fit_rv_rfac
-                        fld_c2a(ic2a,:,6) = hdiag%cor_1%blk(ic2a,ib)%fit_rv_coef
-                     end if
                   end if
                case ('loc')
-                  fld_c2a(ic2a,:,1) = hdiag%loc_1%blk(ic2a,ib)%raw_coef_ens
+                  fld_c2a(ic2a,:,1) = hdiag%loc_1%blk(ic2a,ib)%coef_ens
                   fld_c2a(ic2a,:,2) = 0.0
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%loc_1%blk(ic2a,ib)%fit_rh
                      fld_c2a(ic2a,:,4) = hdiag%loc_1%blk(ic2a,ib)%fit_rv
-                     if (cmat%blk(ib)%double_fit) then
-                        fld_c2a(ic2a,:,5) = hdiag%loc_1%blk(ic2a,ib)%fit_rv_rfac
-                        fld_c2a(ic2a,:,6) = hdiag%loc_1%blk(ic2a,ib)%fit_rv_coef
-                     end if
                   end if
                case ('hyb-avg','hyb-rnd')
-                  fld_c2a(ic2a,:,1) = hdiag%loc_2%blk(ic2a,ib)%raw_coef_ens
-                  fld_c2a(ic2a,:,2) = hdiag%loc_2%blk(ic2a,ib)%raw_coef_sta
+                  fld_c2a(ic2a,:,1) = hdiag%loc_2%blk(ic2a,ib)%coef_ens
+                  fld_c2a(ic2a,:,2) = hdiag%loc_2%blk(ic2a,ib)%coef_sta
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%loc_2%blk(ic2a,ib)%fit_rh
                      fld_c2a(ic2a,:,4) = hdiag%loc_2%blk(ic2a,ib)%fit_rv
-                     if (cmat%blk(ib)%double_fit) then
-                        fld_c2a(ic2a,:,5) = hdiag%loc_2%blk(ic2a,ib)%fit_rv_rfac
-                        fld_c2a(ic2a,:,6) = hdiag%loc_2%blk(ic2a,ib)%fit_rv_coef
-                     end if
                   end if
                case ('dual-ens')
                   call mpl%abort(subr,'dual-ens not ready yet for C matrix')
@@ -491,22 +444,18 @@ do ib=1,bpar%nbe
             call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%coef_sta = fld_c0a(:,:,2)
-            cmat%blk(ib)%rh = fld_c0a(:,:,3)
-            cmat%blk(ib)%rv = fld_c0a(:,:,4)
-            if (cmat%blk(ib)%double_fit) then
-               cmat%blk(ib)%rv_rfac = fld_c0a(:,:,5)
-               cmat%blk(ib)%rv_coef = fld_c0a(:,:,6)
+            if (bpar%fit_block(ib)) then
+               cmat%blk(ib)%rh = fld_c0a(:,:,3)
+               cmat%blk(ib)%rv = fld_c0a(:,:,4)
             end if
          else
             ! Initialization
             cmat%blk(ib)%coef_ens = mpl%msv%valr
             cmat%blk(ib)%wgt = mpl%msv%valr
             cmat%blk(ib)%coef_sta = mpl%msv%valr
-            cmat%blk(ib)%rh = mpl%msv%valr
-            cmat%blk(ib)%rv = mpl%msv%valr
-            if (cmat%blk(ib)%double_fit) then
-               cmat%blk(ib)%rv_rfac = mpl%msv%valr
-               cmat%blk(ib)%rv_coef = mpl%msv%valr
+            if (bpar%fit_block(ib)) then
+               cmat%blk(ib)%rh = mpl%msv%valr
+               cmat%blk(ib)%rv = mpl%msv%valr
             end if
 
             ! Copy to C matrix
@@ -514,38 +463,30 @@ do ib=1,bpar%nbe
                ! Copy data
                select case (trim(nam%method))
                case ('cor')
-                  cmat%blk(ib)%coef_ens(:,il0) = hdiag%cor_1%blk(0,ib)%raw_coef_ens(il0)
-                  cmat%blk(ib)%wgt = sum(hdiag%cor_1%blk(0,ib)%raw_coef_ens)/real(geom%nl0,kind_real)
+                  cmat%blk(ib)%coef_ens(:,il0) = hdiag%cov_1%blk(0,ib)%coef_ens(il0)
+                  cmat%blk(ib)%wgt = sum(hdiag%cov_1%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
                   cmat%blk(ib)%coef_sta(:,il0) = 0.0
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rh(il0)
                      cmat%blk(ib)%rv(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rv(il0)
-                     if (cmat%blk(ib)%double_fit) then
-                        cmat%blk(ib)%rv_rfac(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rv_rfac(il0)
-                        cmat%blk(ib)%rv_coef(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rv_coef(il0)
-                     end if
                   else
 
                   end if
                case ('loc')
-                  cmat%blk(ib)%coef_ens(:,il0) = hdiag%loc_1%blk(0,ib)%raw_coef_ens(il0)
-                  cmat%blk(ib)%wgt = sum(hdiag%loc_1%blk(0,ib)%raw_coef_ens)/real(geom%nl0,kind_real)
+                  cmat%blk(ib)%coef_ens(:,il0) = hdiag%loc_1%blk(0,ib)%coef_ens(il0)
+                  cmat%blk(ib)%wgt = sum(hdiag%loc_1%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
                   cmat%blk(ib)%coef_sta(:,il0) = 0.0
-                  cmat%blk(ib)%rh(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rh(il0)
-                  cmat%blk(ib)%rv(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rv(il0)
-                  if (cmat%blk(ib)%double_fit) then
-                     cmat%blk(ib)%rv_rfac(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rv_rfac(il0)
-                     cmat%blk(ib)%rv_coef(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rv_coef(il0)
+                  if (bpar%fit_block(ib)) then
+                     cmat%blk(ib)%rh(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rh(il0)
+                     cmat%blk(ib)%rv(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rv(il0)
                   end if
                case ('hyb-avg','hyb-rnd')
-                  cmat%blk(ib)%coef_ens(:,il0) = hdiag%loc_2%blk(0,ib)%raw_coef_ens(il0)
-                  cmat%blk(ib)%wgt = sum(hdiag%loc_2%blk(0,ib)%raw_coef_ens)/real(geom%nl0,kind_real)
-                  cmat%blk(ib)%coef_sta(:,il0) = hdiag%loc_2%blk(0,ib)%raw_coef_sta
-                  cmat%blk(ib)%rh(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rh(il0)
-                  cmat%blk(ib)%rv(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rv(il0)
-                  if (cmat%blk(ib)%double_fit) then
-                     cmat%blk(ib)%rv_rfac(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rv_rfac(il0)
-                     cmat%blk(ib)%rv_coef(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rv_coef(il0)
+                  cmat%blk(ib)%coef_ens(:,il0) = hdiag%loc_2%blk(0,ib)%coef_ens(il0)
+                  cmat%blk(ib)%wgt = sum(hdiag%loc_2%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
+                  cmat%blk(ib)%coef_sta(:,il0) = hdiag%loc_2%blk(0,ib)%coef_sta
+                  if (bpar%fit_block(ib)) then
+                     cmat%blk(ib)%rh(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rh(il0)
+                     cmat%blk(ib)%rv(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rv(il0)
                   end if
                case ('dual-ens')
                   call mpl%abort(subr,'dual-ens not ready yet for C matrix')
@@ -561,11 +502,9 @@ do ib=1,bpar%nbe
                if (.not.geom%mask_c0a(ic0a,il0)) then
                   cmat%blk(ib)%coef_ens(ic0a,il0) = mpl%msv%valr
                   cmat%blk(ib)%coef_sta(ic0a,il0) = mpl%msv%valr
-                  cmat%blk(ib)%rh(ic0a,il0) = mpl%msv%valr
-                  cmat%blk(ib)%rv(ic0a,il0) = mpl%msv%valr
-                  if (cmat%blk(ib)%double_fit) then
-                     cmat%blk(ib)%rv_rfac(ic0a,il0) = mpl%msv%valr
-                     cmat%blk(ib)%rv_coef(ic0a,il0) = mpl%msv%valr
+                  if (bpar%fit_block(ib)) then
+                     cmat%blk(ib)%rh(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%rv(ic0a,il0) = mpl%msv%valr
                   end if
                end if
             end do
@@ -574,11 +513,11 @@ do ib=1,bpar%nbe
          ! Define weight only
          select case (trim(nam%method))
          case ('cor')
-            cmat%blk(ib)%wgt = sum(hdiag%cor_1%blk(0,ib)%raw_coef_ens)/real(geom%nl0,kind_real)
+            cmat%blk(ib)%wgt = sum(hdiag%cov_1%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
          case ('loc')
-            cmat%blk(ib)%wgt = sum(hdiag%loc_1%blk(0,ib)%raw_coef_ens)/real(geom%nl0,kind_real)
+            cmat%blk(ib)%wgt = sum(hdiag%loc_1%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
          case ('hyb-avg','hyb-rnd')
-            cmat%blk(ib)%wgt = sum(hdiag%loc_2%blk(0,ib)%raw_coef_ens)/real(geom%nl0,kind_real)
+            cmat%blk(ib)%wgt = sum(hdiag%loc_2%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
          case ('dual-ens')
             call mpl%abort(subr,'dual-ens not ready yet for C matrix')
          case default
@@ -628,10 +567,7 @@ call cmat%alloc(bpar,'cmat')
 
 ! Copy attributes
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      cmat%blk(ib)%double_fit = .false.
-      cmat%blk(ib)%anisotropic = .true.
-   end if
+   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat%blk(ib)%anisotropic = .true.
 end do
 
 ! Allocation
@@ -711,10 +647,7 @@ if (.not.cmat%allocated) then
 
    ! Set attributes
    do ib=1,bpar%nbe
-      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-         cmat%blk(ib)%double_fit = .false.
-         cmat%blk(ib)%anisotropic = .false.
-      end if
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat%blk(ib)%anisotropic = .false.
    end do
 
    ! Allocation
@@ -764,7 +697,7 @@ type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
 integer :: ib,il0,ic0a
-logical :: import_standard(bpar%nbe),import_static(bpar%nbe),import_double_fit(bpar%nbe),import_anisotropic(bpar%nbe)
+logical :: import_standard(bpar%nbe),import_static(bpar%nbe),import_anisotropic(bpar%nbe)
 
 if (.not.cmat%allocated) then
    ! Allocation
@@ -772,10 +705,7 @@ if (.not.cmat%allocated) then
 
    ! Set attributes
    do ib=1,bpar%nbe
-      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-         cmat%blk(ib)%double_fit = .false.
-         cmat%blk(ib)%anisotropic = .false.
-      end if
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat%blk(ib)%anisotropic = .false.
    end do
 
    ! Allocation
@@ -789,28 +719,24 @@ do ib=1,bpar%nbe
    ! Initialization
    import_standard(ib) = .false.
    import_static(ib) = .false.
-   import_double_fit(ib) = .false.
    import_anisotropic(ib) = .false.
 
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Define import configuration
-      import_standard(ib) = (allocated(cmat%blk(ib)%bump_coef_ens).and.allocated(cmat%blk(ib)%bump_rh) &
-                          & .and.allocated(cmat%blk(ib)%bump_rv))
-      import_static(ib) = (allocated(cmat%blk(ib)%bump_coef_sta))
-      import_double_fit(ib) = import_standard(ib).and.allocated(cmat%blk(ib)%bump_rv_rfac).and.allocated(cmat%blk(ib)%bump_rv_coef)
-      import_anisotropic(ib) = (allocated(cmat%blk(ib)%bump_D11).and.allocated(cmat%blk(ib)%bump_D22) &
+      import_standard(ib) = allocated(cmat%blk(ib)%bump_rh).and.allocated(cmat%blk(ib)%bump_rv)
+      import_static(ib) = allocated(cmat%blk(ib)%bump_coef_sta)
+      import_anisotropic(ib) = allocated(cmat%blk(ib)%bump_D11).and.allocated(cmat%blk(ib)%bump_D22) &
                              & .and.allocated(cmat%blk(ib)%bump_D33).and.allocated(cmat%blk(ib)%bump_D12) &
-                             & .and.allocated(cmat%blk(ib)%bump_Dcoef))
+                             & .and.allocated(cmat%blk(ib)%bump_Dcoef)
 
       ! Define attributes
-      cmat%blk(ib)%double_fit = cmat%blk(ib)%double_fit.or.import_double_fit(ib)
       cmat%blk(ib)%anisotropic = cmat%blk(ib)%anisotropic.or.import_anisotropic(ib)
    end if
 end do
 
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      if (import_standard(ib).or.import_static(ib).or.import_double_fit(ib).or.import_anisotropic(ib)) then
+      if (import_standard(ib).or.import_static(ib).or.import_anisotropic(ib)) then
          write(mpl%info,'(a7,a,a)') '','Block ',trim(bpar%blockname(ib))
          call mpl%flush
 
@@ -818,7 +744,11 @@ do ib=1,bpar%nbe
          if (import_standard(ib)) then
             write(mpl%info,'(a10,a)') '','Standard import'
             call mpl%flush
-            cmat%blk(ib)%coef_ens = cmat%blk(ib)%bump_coef_ens
+            if (allocated(cmat%blk(ib)%bump_coef_ens)) then
+               cmat%blk(ib)%coef_ens = cmat%blk(ib)%bump_coef_ens
+            else
+               cmat%blk(ib)%coef_ens = 1.0
+            end if
             call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
@@ -828,12 +758,6 @@ do ib=1,bpar%nbe
             write(mpl%info,'(a10,a)') '','Static import'
             call mpl%flush
             cmat%blk(ib)%coef_sta = cmat%blk(ib)%bump_coef_sta
-         end if
-         if (import_double_fit(ib)) then
-            write(mpl%info,'(a10,a)') '','Double-fit import'
-            call mpl%flush
-            cmat%blk(ib)%rv_rfac = cmat%blk(ib)%bump_rv_rfac
-            cmat%blk(ib)%rv_coef = cmat%blk(ib)%bump_rv_coef
          end if
          if (import_anisotropic(ib)) then
             write(mpl%info,'(a10,a)') '','Anisotropic import'

@@ -1,0 +1,45 @@
+Covariance:
+  covariance: BUMP
+  bump:
+    datadir: testdata
+    load_nicas: 1
+    method: cor
+    mpicom: 2
+    prefix: qg_dirac_bump_cov/test
+    strategy: specific_univariate
+  variable_changes:
+  - varchange: StdDev
+    inputVariables:
+      variables: [x]
+    outputVariables:
+      variables: [x]
+    bump:
+      datadir: testdata
+      load_var: 1
+      prefix: qg_dirac_bump_cov/test
+dirac:
+  ixdir: 
+  - 20
+  iydir:
+  - 10
+  izdir:
+  - 1
+initial:
+  date: 2010-01-01T12:00:00Z
+  filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H
+logging:
+  categories: Info, Test, Warning, Error
+model:
+  tstep: PT1H
+output_B:
+  datadir: testdata/qg_dirac_bump_cov
+  exp: B
+  type: an
+resolution:
+  nx: 40
+  ny: 20
+  depths:
+  - 4500.0
+  - 5500.0
+variables:
+- x

@@ -1,11 +1,5 @@
 bump_hdiag-nicas_cor_common_univariate/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_hdiag-nicas_cor_common_univariate/test_2-1_nicas-2-sqrt_0002-0002_common.nc
-bump_hdiag-nicas_double_fit/test_2-1_nicas-2-sqrt_0002-0001_common.nc
-bump_hdiag-nicas_double_fit/test_2-1_nicas-2-sqrt_0002-0002_common.nc
-bump_hdiag-nicas_fit_type/test_2-1_nicas-2-sqrt_0002-0001_common.nc
-bump_hdiag-nicas_fit_type/test_2-1_nicas-2-sqrt_0002-0002_common.nc
-bump_hdiag-nicas_lhom/test_2-1_nicas-2-sqrt_0002-0001_common.nc
-bump_hdiag-nicas_lhom/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_hdiag-nicas_loc_common_univariate/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_hdiag-nicas_loc_common_univariate/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_hdiag-nicas_loc_common_weighted/test_2-1_nicas-2-sqrt_0002-0001_01_01_01_01.nc
@@ -70,8 +64,6 @@ bump_hdiag-nicas_nprocio/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_hdiag-nicas_nprocio/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_hdiag-nicas_nrep/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_hdiag-nicas_nrep/test_2-1_nicas-2-sqrt_0002-0002_common.nc
-bump_hdiag-nicas_rvflt/test_2-1_nicas-2-sqrt_0002-0001_common.nc
-bump_hdiag-nicas_rvflt/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_interface_nicas/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_interface_nicas/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_interface_obsop/test_2-1_obs_0002-0001.nc

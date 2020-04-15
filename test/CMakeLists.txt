@@ -32,6 +32,11 @@ endif()
 set(SABER_TEST_VALGRIND 0)
 set(SABER_TEST_MODEL 0)
 set(SABER_TEST_MODEL_DIR "")
+if (${OOPS_FOUND})
+   set(SABER_TEST_OOPS 1)
+else()
+   set(SABER_TEST_OOPS 0)
+endif()
 
 # Override test selection variables using environment variables
 if(DEFINED ENV{SABER_TEST_MPI})
@@ -52,6 +57,9 @@ endif()
 if(DEFINED ENV{SABER_TEST_MODEL_DIR})
     set(SABER_TEST_MODEL_DIR "$ENV{SABER_TEST_MODEL_DIR}")
 endif()
+if(DEFINED ENV{SABER_TEST_OOPS})
+    set(SABER_TEST_OOPS "$ENV{SABER_TEST_OOPS}")
+endif()
 
 # Summary
 message(STATUS "SABER_TEST_TIER:      " ${SABER_TEST_TIER})
@@ -60,9 +68,10 @@ message(STATUS "SABER_TEST_OMP:       " ${SABER_TEST_OMP})
 message(STATUS "SABER_TEST_QUAD:      " ${SABER_TEST_QUAD})
 message(STATUS "SABER_TEST_VALGRIND:  " ${SABER_TEST_VALGRIND})
 message(STATUS "SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
-if(${SABER_TEST_MODEL} MATCHES 1)
+if(${SABER_TEST_MODEL})
     message(STATUS "  SABER_TEST_MODEL_DIR: " ${SABER_TEST_MODEL_DIR})
 endif()
+message(STATUS "SABER_TEST_OOPS:      " ${SABER_TEST_OOPS})
 
 # TIER 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
@@ -116,7 +125,7 @@ if(${SABER_TEST_TIER} GREATER 2)
 endif()
 
 # Quad-core tests
-if(${SABER_TEST_QUAD} MATCHES 1)
+if(${SABER_TEST_QUAD})
     file(STRINGS testlist/saber_test_quad.txt saber_test_quad_tmp )
     list(APPEND saber_test_quad ${saber_test_quad_tmp})
     file(STRINGS testlist/saber_ref_quad.txt saber_ref_tmp )
@@ -125,9 +134,21 @@ if(${SABER_TEST_QUAD} MATCHES 1)
 endif()
 
 # Model tests
-if(${SABER_TEST_MODEL} MATCHES 1)
+if(${SABER_TEST_MODEL})
     file(STRINGS testlist/saber_test_model.txt saber_test_model_tmp )
     list(APPEND saber_test_model ${saber_test_model_tmp})
+endif()
+
+# OOPS tests
+if(${SABER_TEST_OOPS})
+    file(STRINGS testlist/saber_test_oops.txt saber_test_oops_tmp )
+    list(APPEND saber_test_oops ${saber_test_oops_tmp})
+    file(STRINGS testlist/saber_data_oops.txt saber_data_tmp )
+    list(APPEND saber_data ${saber_data_tmp})
+    list(APPEND saber_data_tar saber_data_oops.tar.gz)
+    file(STRINGS testlist/saber_ref_oops.txt saber_ref_tmp )
+    list(APPEND saber_ref ${saber_ref_tmp})
+    list(APPEND saber_ref_tar saber_ref_oops.tar.gz)
 endif()
 
 # Set download URL
@@ -221,6 +242,11 @@ foreach(test ${saber_test_model})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test})
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
 endforeach()
+foreach(test ${saber_test_oops})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test})
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test})
+endforeach()
 
 # Link data/reference files
 foreach(file ${saber_data})
@@ -238,7 +264,7 @@ if(NOT ${METIS_FOUND})
     # Remove METIS tests
     file(STRINGS testlist/saber_test_metis.txt saber_test_tmp )
     list(REMOVE_ITEM saber_test ${saber_test_tmp})
-    if(${SABER_TEST_QUAD} MATCHES 1)
+    if(${SABER_TEST_QUAD})
         file(STRINGS testlist/saber_test_metis.txt saber_test_quad_tmp )
         list(REMOVE_ITEM saber_test_quad ${saber_test_quad_tmp})
     endif()
@@ -279,7 +305,7 @@ foreach(test ${saber_test})
 endforeach()
 
 # Dual-core tests (MPI)
-if(${SABER_TEST_MPI} MATCHES 1)
+if(${SABER_TEST_MPI})
     set(mpi 2)
     set(omp 1)
     foreach(test ${saber_test})
@@ -305,7 +331,7 @@ if(${SABER_TEST_MPI} MATCHES 1)
 endif()
 
 # Dual-core tests (OpenMP)
-if(${SABER_TEST_OMP} MATCHES 1)
+if(${SABER_TEST_OMP})
     set(mpi 1)
     set(omp 2)
     foreach(test ${saber_test})
@@ -331,7 +357,7 @@ if(${SABER_TEST_OMP} MATCHES 1)
 endif()
 
 # Quad-core tests (MPI)
-if(${SABER_TEST_QUAD} MATCHES 1)
+if(${SABER_TEST_QUAD})
     set(mpi 4)
     set(omp 1)
     foreach(test ${saber_test_quad})
@@ -394,4 +420,212 @@ if(${SABER_TEST_MODEL})
                          DEPENDS      bump.x
                          TEST_DEPENDS test_${test}_link)
     endforeach()
+endif()
+
+# OOPS tests
+if(${SABER_TEST_OOPS})
+    #--------------------------------------------------------------------
+    # Link to yaml files
+    #--------------------------------------------------------------------
+
+    foreach(test ${saber_test_oops})
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                        ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                        ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml)
+    endforeach()
+
+    if (${ENABLE_OOPS_TOYMODELS})
+        #--------------------------------------------------------------------
+        # Parameters tests
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_parameters_bump_cov_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                          ARGS testinput/qg_parameters_bump_cov.yaml testoutput/qg_parameters_bump_cov/test.log.out
+                          DEPENDS saber_qg_estimate_parameters.x
+                          TEST_DEPENDS get_saber_data )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_parameters_bump_hyb_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                          ARGS testinput/qg_parameters_bump_hyb.yaml testoutput/qg_parameters_bump_hyb/test.log.out
+                          DEPENDS saber_qg_estimate_parameters.x
+                          TEST_DEPENDS get_saber_data )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_parameters_bump_lct_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                          ARGS testinput/qg_parameters_bump_lct.yaml testoutput/qg_parameters_bump_lct/test.log.out
+                          DEPENDS saber_qg_estimate_parameters.x
+                          TEST_DEPENDS get_saber_data )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_parameters_bump_loc_3d_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                          ARGS testinput/qg_parameters_bump_loc_3d.yaml testoutput/qg_parameters_bump_loc_3d/test.log.out
+                          DEPENDS saber_qg_estimate_parameters.x
+                          TEST_DEPENDS get_saber_data )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_parameters_bump_loc_4d_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                          ARGS testinput/qg_parameters_bump_loc_4d.yaml testoutput/qg_parameters_bump_loc_4d/test.log.out
+                          DEPENDS saber_qg_estimate_parameters.x
+                          TEST_DEPENDS get_saber_data )
+
+        #--------------------------------------------------------------------
+        # BUMP links
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_bump_links
+                          TYPE SCRIPT
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_oops_links.sh
+                          TEST_DEPENDS test_qg_parameters_bump_cov_run
+                                       test_qg_parameters_bump_hyb_run
+                                       test_qg_parameters_bump_lct_run
+                                       test_qg_parameters_bump_loc_3d_run
+                                       test_qg_parameters_bump_loc_4d_run )
+
+        #--------------------------------------------------------------------
+        # BUMP dirac tests
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_dirac_bump_cov_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
+                          ARGS testinput/qg_dirac_bump_cov.yaml testoutput/qg_dirac_bump_cov/test.log.out
+                          DEPENDS saber_qg_dirac.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_dirac_bump_hyb_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
+                          ARGS testinput/qg_dirac_bump_hyb.yaml testoutput/qg_dirac_bump_hyb/test.log.out
+                          DEPENDS saber_qg_dirac.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_dirac_bump_lct_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
+                          ARGS testinput/qg_dirac_bump_lct.yaml testoutput/qg_dirac_bump_lct/test.log.out
+                          DEPENDS saber_qg_dirac.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_dirac_bump_loc_3d_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
+                          ARGS testinput/qg_dirac_bump_loc_3d.yaml testoutput/qg_dirac_bump_loc_3d/test.log.out
+                          DEPENDS saber_qg_dirac.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_dirac_bump_loc_4d_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
+                          ARGS testinput/qg_dirac_bump_loc_4d.yaml testoutput/qg_dirac_bump_loc_4d/test.log.out
+                          DEPENDS saber_qg_dirac.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+        # 3d variational tests
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_3densvar_bump_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
+                          ARGS testinput/qg_3densvar_bump.yaml testoutput/qg_3densvar_bump/test.log.out
+                          DEPENDS saber_qg_4dvar.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_3dvar_bump_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
+                          ARGS testinput/qg_3dvar_bump.yaml testoutput/qg_3dvar_bump/test.log.out
+                          DEPENDS saber_qg_4dvar.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_3dvar_hybrid_bump_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
+                          ARGS testinput/qg_3dvar_hybrid_bump.yaml testoutput/qg_3dvar_hybrid_bump/test.log.out
+                          DEPENDS saber_qg_4dvar.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+        # 4d variational tests
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_4densvar_bump_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
+                          ARGS testinput/qg_4densvar_bump.yaml testoutput/qg_4densvar_bump/test.log.out
+                          DEPENDS saber_qg_4dvar.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_4dvar_drplanczos_bump_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
+                          ARGS testinput/qg_4dvar_drplanczos_bump.yaml testoutput/qg_4dvar_drplanczos_bump/test.log.out
+                          DEPENDS saber_qg_4dvar.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+
+        ecbuild_add_test( TARGET test_qg_4dvar_drplanczos_hybrid_bump_run
+                          MPI    1
+                          OMP    2
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
+                          ARGS testinput/qg_4dvar_drplanczos_hybrid_bump.yaml testoutput/qg_4dvar_drplanczos_hybrid_bump/test.log.out
+                          DEPENDS saber_qg_4dvar.x
+                          TEST_DEPENDS test_qg_bump_links )
+
+        #--------------------------------------------------------------------
+        # Compare tests
+        #--------------------------------------------------------------------
+        foreach(test ${saber_test_oops})
+            ecbuild_add_test( TARGET test_${test}_compare
+                              TYPE SCRIPT
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_oops.sh
+                              ARGS ${test}
+                              TEST_DEPENDS get_saber_ref test_${test}_run )
+        endforeach()
+
+    endif()
 endif()

@@ -9,7 +9,6 @@ module type_avg
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const,only: reqkm
 use tools_func, only: add,divide
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
@@ -35,7 +34,6 @@ contains
    procedure :: dealloc => avg_dealloc
    procedure :: copy => avg_copy
    procedure :: write => avg_write
-   procedure :: var_filter => avg_var_filter
    procedure :: compute => avg_compute
    procedure :: compute_hyb => avg_compute_hyb
    procedure :: compute_deh => avg_compute_deh
@@ -165,136 +163,6 @@ end if
 end subroutine avg_write
 
 !----------------------------------------------------------------------
-! Subroutine: avg_var_filter
-! Purpose: filter variance
-!----------------------------------------------------------------------
-subroutine avg_var_filter(avg,mpl,nam,geom,bpar,samp)
-
-implicit none
-
-! Passed variables
-class(avg_type),intent(inout) :: avg ! Averaged statistics
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
-type(bpar_type),intent(in) :: bpar   ! Block parameters
-type(samp_type),intent(in) :: samp   ! Sampling
-
-! Local variables
-integer :: n,ib,il0,isub,ic2a,iter
-real(kind_real) :: P9,P20,P21
-real(kind_real) :: m2sq,m2sq_tot,m4,m4_tot,m2sqasy,rhflt,drhflt
-real(kind_real) :: m2_ini(samp%nc2a),m2(samp%nc2a),m2prod,m2prod_tot
-logical :: dichotomy,convergence
-
-! Ensemble/sub-ensemble size-dependent coefficients
-n = avg%ne/avg%nsub
-P9 = -real(n,kind_real)/real((n-2)*(n-3),kind_real)
-P20 = real((n-1)*(n**2-3*n+3),kind_real)/real(n*(n-2)*(n-3),kind_real)
-P21 = real(n-1,kind_real)/real(n+1,kind_real)
-
-do ib=1,bpar%nb
-   if (bpar%diag_block(ib)) then
-      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush
-
-      do il0=1,geom%nl0
-         write(mpl%info,'(a16,a,i3,a)') '','Level ',nam%levs(il0),':'
-         call mpl%flush
-
-         do isub=1,avg%nsub
-            ! Global sum
-            m2sq = 0.0
-            if (.not.nam%gau_approx) m4 = 0.0
-            do ic2a=1,samp%nc2a
-               if (mpl%msv%isnot(avg%blk(ic2a,ib)%m2(il0,isub))) then
-                  m2sq = m2sq+avg%blk(ic2a,ib)%m2(il0,isub)**2
-                  if (.not.nam%gau_approx) m4 = m4+avg%blk(ic2a,ib)%m4(il0,isub)
-               end if
-            end do
-            call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
-            if (.not.nam%gau_approx) call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
-
-            ! Asymptotic statistics
-            if (nam%gau_approx) then
-               ! Gaussian approximation
-               m2sqasy = P21*m2sq_tot
-            else
-               ! General case
-               m2sqasy = P20*m2sq_tot+P9*m4_tot
-            end if
-
-            ! Dichotomy initialization
-            do ic2a=1,samp%nc2a
-               m2_ini(ic2a) = avg%blk(ic2a,ib)%m2(il0,isub)
-            end do
-            convergence = .true.
-            dichotomy = .false.
-            rhflt = nam%var_rhflt
-            drhflt = rhflt
-
-            do iter=1,nam%var_niter
-               ! Copy initial value
-               m2 = m2_ini
-
-               ! Median filter to remove extreme values
-               call samp%diag_filter(mpl,nam,'median',rhflt,m2)
-
-               ! Average filter to smooth values
-               call samp%diag_filter(mpl,nam,'gc99',rhflt,m2)
-
-               ! Global product
-               m2prod = 0.0
-               do ic2a=1,samp%nc2a
-                  if (mpl%msv%isnot(m2_ini(ic2a))) m2prod = m2prod+m2(ic2a)*m2_ini(ic2a)
-               end do
-               call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
-
-               ! Print result
-               write(mpl%info,'(a19,a,i2,a,f10.2,a,e12.5)') '','Iteration ',iter,': rhflt = ', &
-             & rhflt*reqkm,' km, rel. diff. = ',(m2prod_tot-m2sqasy)/m2sqasy
-               call mpl%flush
-
-               ! Update support radius
-               if (m2prod_tot>m2sqasy) then
-                  ! Increase filtering support radius
-                  if (dichotomy) then
-                     drhflt = 0.5*drhflt
-                     rhflt = rhflt+drhflt
-                  else
-                     convergence = .false.
-                     rhflt = rhflt+drhflt
-                     drhflt = 2.0*drhflt
-                  end if
-               else
-                  ! Convergence
-                  convergence = .true.
-
-                  ! Change dichotomy status
-                  if (.not.dichotomy) then
-                     dichotomy = .true.
-                     drhflt = 0.5*drhflt
-                  end if
-
-                  ! Decrease filtering support radius
-                  drhflt = 0.5*drhflt
-                  rhflt = rhflt-drhflt
-               end if
-            end do
-
-            ! Copy final result
-            avg%blk(0,ib)%m2flt(il0,isub) = avg%blk(0,ib)%m2(il0,isub)
-            do ic2a=1,samp%nc2a
-               avg%blk(ic2a,ib)%m2flt(il0,isub) = m2(ic2a)
-            end do
-         end do
-      end do
-   end if
-end do
-
-end subroutine avg_var_filter
-
-!----------------------------------------------------------------------
 ! Subroutine: avg_compute
 ! Purpose: compute averaged statistics
 !----------------------------------------------------------------------
@@ -333,7 +201,7 @@ do ib=1,bpar%nb
 
       if (nam%local_diag) then
          ! Moments block extension
-         call mom_blk%ext(mpl,nam,geom,bpar,samp,mom%blk(ib))
+         call mom_blk%ext(mpl,geom,bpar,samp,mom%blk(ib))
 
          ! Local average
          call mpl%prog_init(samp%nc2a)
@@ -357,13 +225,6 @@ if (mpl%main.and.(nam%avg_nbins>0)) then
    write(mpl%info,'(a10,a)') '','Write histograms'
    call mpl%flush
    call avg%write(mpl,nam,geom,bpar)
-end if
-
-if (nam%var_filter) then
-   ! Filter variance
-   write(mpl%info,'(a10,a)') '','Filter variance'
-   call mpl%flush
-   call avg%var_filter(mpl,nam,geom,bpar,samp)
 end if
 
 ! Compute asymptotic statistics
@@ -466,8 +327,8 @@ do ib=1,bpar%nb
 
       if (nam%local_diag) then
          ! Moments block extension
-         call mom_blk_1%ext(mpl,nam,geom,bpar,samp,mom_1%blk(ib))
-         call mom_blk_2%ext(mpl,nam,geom,bpar,samp,mom_2%blk(ib))
+         call mom_blk_1%ext(mpl,geom,bpar,samp,mom_1%blk(ib))
+         call mom_blk_2%ext(mpl,geom,bpar,samp,mom_2%blk(ib))
 
          ! Local average
          call mpl%prog_init(samp%nc2a)
@@ -571,11 +432,6 @@ do ic2a=0,samp%nc2a
 
    if ((ic2a==0).or.nam%local_diag) then
       ! Initialization
-      if (nam%var_filter) then
-         avg%blk(ic2a,bpar%nbe)%m2flt = 1.0
-      else
-         avg%blk(ic2a,bpar%nbe)%m2 = 1.0
-      end if
       avg%blk(ic2a,bpar%nbe)%cor = 0.0
       cor = 0.0
       avg%blk(ic2a,bpar%nbe)%nc1a_cor = 0.0
