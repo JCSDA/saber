@@ -1,13 +1,12 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_hdiag_grid/test__MPI_-_OMP_"
+prefix: "bump_normality/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
 method: "cor"
-strategy: "common_univariate"
-new_hdiag: 1
-write_cmat: 0
+strategy: "specific_univariate"
+new_normality: 1
 
 # model_param
 nl: 2
@@ -23,17 +22,10 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-nc1: 500
-nc2: 250
-ntry: 30
-nc3: 15
-dc: [400.0e3]
-nl0r: 2
 
 # diag_param
 ne: 50
-local_diag: 1
-local_rad: 1000.0e3
+gen_kurt_th: 10.0
 
 # fit_param
 
@@ -42,5 +34,4 @@ local_rad: 1000.0e3
 # obsop_param
 
 # output_param
-grid_output: 1
-grid_resol: 500.0e3
+

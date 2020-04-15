@@ -31,11 +31,9 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 
 implicit none
 
-real(kind_real),parameter :: sqrt_r = 0.81_kind_real      ! Square-root factor (empirical)
-real(kind_real),parameter :: sqrt_r_dble = 0.96_kind_real ! Square-root factor (empirical)
-real(kind_real),parameter :: sqrt_rfac = 0.9_kind_real    ! Square-root factor (empirical)
-real(kind_real),parameter :: sqrt_coef = 0.54_kind_real   ! Square-root factor (empirical)
-real(kind_real),parameter :: S_inf = 1.0e-2_kind_real     ! Minimum value for the convolution coefficients
+real(kind_real),parameter :: sqrt_r = 0.725_kind_real ! Square-root factor on support radius (empirical)
+real(kind_real),parameter :: sqrt_h = 0.725_kind_real ! Square-root factor on LCT (empirical)
+real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum value for the convolution coefficients
 
 ! Ball data derived type
 type balldata_type
@@ -55,8 +53,8 @@ type nicas_blk_type
    integer :: ib                                   ! Block index
    character(len=1024) :: name                     ! Name
    character(len=1024) :: subsamp                  ! Subsampling structure
-   logical :: double_fit                           ! Double fit
-   logical :: anisotropic                          ! Anisotropic tensor
+   logical :: sqrt_rescaling                       ! Square-root rescaling flag
+   logical :: anisotropic                          ! Anisotropic tensor flag
 
    ! Specific geometry
    integer :: nc1                                  ! Number of points in subset Sc1
@@ -115,11 +113,8 @@ type nicas_blk_type
    real(kind_real),allocatable :: H22_c1(:,:)      ! Local correlation tensor, component 22, on subset Sc1
    real(kind_real),allocatable :: H33_c1(:,:)      ! Local correlation tensor, component 33, on subset Sc1
    real(kind_real),allocatable :: H12_c1(:,:)      ! Local correlation tensor, component 12, on subset Sc1
-   type(balldata_type),allocatable :: Hcoef(:)     ! Tensor coefficient on subset Sc1
    type(balldata_type),allocatable :: distnorm(:)  ! Normalized distance
-   type(balldata_type),allocatable :: distnormv(:) ! Normalized distance, vertical part
-   type(balldata_type),allocatable :: rfac(:)      ! Double-fit radius factor
-   type(balldata_type),allocatable :: coef(:)      ! Double-fit coefficient
+   type(balldata_type),allocatable :: Hcoef(:)     ! Tensor coefficient on subset Sc1
 
    ! Extended data for normalization computation
    integer :: nsc_nor                              ! Number of subgrid nodes on halo C (extended for normalization)
@@ -364,36 +359,17 @@ if (allocated(nicas_blk%H11_c1)) deallocate(nicas_blk%H11_c1)
 if (allocated(nicas_blk%H22_c1)) deallocate(nicas_blk%H22_c1)
 if (allocated(nicas_blk%H33_c1)) deallocate(nicas_blk%H33_c1)
 if (allocated(nicas_blk%H12_c1)) deallocate(nicas_blk%H12_c1)
-if (allocated(nicas_blk%Hcoef)) then
-   do isbb=1,nicas_blk%nsbb
-      call nicas_blk%Hcoef(isbb)%dealloc
-   end do
-   deallocate(nicas_blk%Hcoef)
-end if
-
 if (allocated(nicas_blk%distnorm)) then
    do isbb=1,nicas_blk%nsbb
       call nicas_blk%distnorm(isbb)%dealloc
    end do
    deallocate(nicas_blk%distnorm)
 end if
-if (allocated(nicas_blk%distnormv)) then
+if (allocated(nicas_blk%Hcoef)) then
    do isbb=1,nicas_blk%nsbb
-      call nicas_blk%distnormv(isbb)%dealloc
+      call nicas_blk%Hcoef(isbb)%dealloc
    end do
-   deallocate(nicas_blk%distnormv)
-end if
-if (allocated(nicas_blk%rfac)) then
-   do isbb=1,nicas_blk%nsbb
-      call nicas_blk%rfac(isbb)%dealloc
-   end do
-   deallocate(nicas_blk%rfac)
-end if
-if (allocated(nicas_blk%coef)) then
-   do isbb=1,nicas_blk%nsbb
-      call nicas_blk%coef(isbb)%dealloc
-   end do
-   deallocate(nicas_blk%coef)
+   deallocate(nicas_blk%Hcoef)
 end if
 if (allocated(nicas_blk%sc_nor_to_s)) deallocate(nicas_blk%sc_nor_to_s)
 if (allocated(nicas_blk%s_to_sc_nor)) deallocate(nicas_blk%s_to_sc_nor)
@@ -1305,7 +1281,7 @@ end subroutine nicas_blk_send
 ! Subroutine: nicas_blk_compute_parameters
 ! Purpose: compute NICAS parameters
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom,cmat_blk)
+subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom,cmat_blk,sqrt_rescaling)
 
 implicit none
 
@@ -1316,9 +1292,14 @@ type(rng_type),intent(inout) :: rng              ! Random number generator
 type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
+logical,intent(in),optional :: sqrt_rescaling    ! Square-root rescaling flag
 
 ! Local variables
 integer :: il0i,il1
+
+! Set square-root rescaling flag
+nicas_blk%sqrt_rescaling = .true.
+if (present(sqrt_rescaling)) nicas_blk%sqrt_rescaling = sqrt_rescaling
 
 ! Copy subset Sc0 on halo size A
 nicas_blk%nc0a = geom%nc0a
@@ -2178,14 +2159,13 @@ type(geom_type),intent(in) :: geom               ! Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 
 ! Local variables
-integer :: n_s_max,ithread,is,ic1,jc1,il1,il0,j,js,isb,ic1b,ic0,ic0a,ic1a,i_s,jc,kc,ks,jbd,jc0,jl0,jl1,ic1bb,isbb
+integer :: n_s_max,ithread,is,ic1,jc1,il1,il0,j,js,isb,ic1b,ic0,ic0a,ic1a,i_s,jc,kc,ks,jbd,jl1,ic1bb,isbb
 integer :: c_n_s(mpl%nthread)
 integer,allocatable :: nn(:),nn_index(:),inec(:),c_ind(:,:)
-real(kind_real) :: distvsq,rvsq
 real(kind_real) :: lon_c1(nicas_blk%nc1),lat_c1(nicas_blk%nc1)
-real(kind_real),allocatable :: rh_c1a(:,:),rv_c1a(:,:),rv_rfac_c1a(:,:),rv_rfac_c1(:,:),rv_coef_c1a(:,:),rv_coef_c1(:,:)
+real(kind_real),allocatable :: rh_c1a(:,:),rv_c1a(:,:)
 real(kind_real),allocatable :: H11_c1a(:,:),H22_c1a(:,:),H33_c1a(:,:),H12_c1a(:,:),Hcoef_c1a(:,:),Hcoef_c1(:,:)
-real(kind_real),allocatable :: distnormv(:,:),rfac(:,:),coef(:,:),Hcoef(:,:)
+real(kind_real),allocatable :: Hcoef(:,:)
 real(kind_real),allocatable :: c_S(:,:),c_S_conv(:)
 logical :: add_op,lcheck_c1bb(nicas_blk%nc1)
 type(linop_type) :: ctmp,c(mpl%nthread)
@@ -2193,8 +2173,7 @@ type(linop_type) :: ctmp,c(mpl%nthread)
 ! Associate
 associate(ib=>nicas_blk%ib)
 
-! Set double-fit parameter
-nicas_blk%double_fit = cmat_blk%double_fit
+! Set anisotropic parameter
 nicas_blk%anisotropic = cmat_blk%anisotropic
 
 ! Allocation
@@ -2207,10 +2186,14 @@ call nicas_blk%tree%init(lon_c1,lat_c1)
 
 ! Find largest possible radius
 call mpl%f_comm%allreduce(maxval(cmat_blk%rh,mask=mpl%msv%isnot(cmat_blk%rh)),nicas_blk%rhmax,fckit_mpi_max())
-if (nicas_blk%double_fit) then
-   nicas_blk%rhmax = nicas_blk%rhmax*sqrt_r_dble
-else
-   nicas_blk%rhmax = nicas_blk%rhmax*sqrt_r
+
+if (nicas_blk%sqrt_rescaling) then
+   ! Square-root rescaling of the largest possible radius
+   if (nicas_blk%anisotropic) then
+      nicas_blk%rhmax = nicas_blk%rhmax*sqrt_h
+   else
+      nicas_blk%rhmax = nicas_blk%rhmax*sqrt_r
+   end if
 end if
 
 if (nam%lsqrt) then
@@ -2327,15 +2310,6 @@ allocate(rh_c1a(nicas_blk%nc1a,nicas_blk%nl1))
 allocate(rv_c1a(nicas_blk%nc1a,nicas_blk%nl1))
 allocate(nicas_blk%rh_c1(nicas_blk%nc1,nicas_blk%nl1))
 allocate(nicas_blk%rv_c1(nicas_blk%nc1,nicas_blk%nl1))
-if (nicas_blk%double_fit) then
-   allocate(rv_rfac_c1a(nicas_blk%nc1a,nicas_blk%nl1))
-   allocate(rv_coef_c1a(nicas_blk%nc1a,nicas_blk%nl1))
-   allocate(rv_rfac_c1(nicas_blk%nc1,nicas_blk%nl1))
-   allocate(rv_coef_c1(nicas_blk%nc1,nicas_blk%nl1))
-   allocate(nicas_blk%rfac(nicas_blk%nsbb))
-   allocate(nicas_blk%coef(nicas_blk%nsbb))
-   allocate(nicas_blk%distnormv(nicas_blk%nsbb))
-end if
 if (nicas_blk%anisotropic) then
    allocate(H11_c1a(nicas_blk%nc1a,nicas_blk%nl1))
    allocate(H22_c1a(nicas_blk%nc1a,nicas_blk%nl1))
@@ -2363,10 +2337,6 @@ do il1=1,nicas_blk%nl1
          ! Copy
          rh_c1a(ic1a,il1) = cmat_blk%rh(ic0a,il0)
          rv_c1a(ic1a,il1) = cmat_blk%rv(ic0a,il0)
-         if (nicas_blk%double_fit) then
-            rv_rfac_c1a(ic1a,il1) = cmat_blk%rv_rfac(ic0a,il0)
-            rv_coef_c1a(ic1a,il1) = cmat_blk%rv_coef(ic0a,il0)
-         end if
          if (nicas_blk%anisotropic) then
             H11_c1a(ic1a,il1) = cmat_blk%H11(ic0a,il0)
             H22_c1a(ic1a,il1) = cmat_blk%H22(ic0a,il0)
@@ -2375,29 +2345,24 @@ do il1=1,nicas_blk%nl1
             Hcoef_c1a(ic1a,il1) = cmat_blk%Hcoef(ic0a,il0)
          end if
 
-         ! Square-root rescaling
-         rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
-         if (nicas_blk%double_fit) then
-            rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_r_dble
-            rv_rfac_c1a(ic1a,il1) = rv_rfac_c1a(ic1a,il1)*sqrt_rfac
-            rv_coef_c1a(ic1a,il1) = rv_coef_c1a(ic1a,il1)*sqrt_coef
-         else
-            rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_r
-         end if
-         if (nicas_blk%anisotropic) then
-            H11_c1a(ic1a,il1) = H11_c1a(ic1a,il1)/sqrt_r**2
-            H22_c1a(ic1a,il1) = H22_c1a(ic1a,il1)/sqrt_r**2
-            H33_c1a(ic1a,il1) = H33_c1a(ic1a,il1)/sqrt_r**2
-            H12_c1a(ic1a,il1) = H12_c1a(ic1a,il1)/sqrt_r**2
+         if (nicas_blk%sqrt_rescaling) then
+            ! Square-root rescaling
+            if (nicas_blk%anisotropic) then
+               rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_h
+               rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_h
+               H11_c1a(ic1a,il1) = H11_c1a(ic1a,il1)/sqrt_h**2
+               H22_c1a(ic1a,il1) = H22_c1a(ic1a,il1)/sqrt_h**2
+               H33_c1a(ic1a,il1) = H33_c1a(ic1a,il1)/sqrt_h**2
+               H12_c1a(ic1a,il1) = H12_c1a(ic1a,il1)/sqrt_h**2
+            else
+               rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
+               rv_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
+            end if
          end if
       else
          ! Missing values
          rh_c1a(ic1a,il1) = mpl%msv%valr
          rv_c1a(ic1a,il1) = mpl%msv%valr
-         if (nicas_blk%double_fit) then
-            rv_rfac_c1a(ic1a,il1) = mpl%msv%valr
-            rv_coef_c1a(ic1a,il1) = mpl%msv%valr
-         end if
          if (nicas_blk%anisotropic) then
             H11_c1a(ic1a,il1) = mpl%msv%valr
             H22_c1a(ic1a,il1) = mpl%msv%valr
@@ -2416,12 +2381,6 @@ call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,rh_c1a,nicas_blk%nc1,nicas_blk%
  & nicas_blk%rh_c1)
 call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,rv_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
  & nicas_blk%rv_c1)
-if (nicas_blk%double_fit) then
-   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,rv_rfac_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a, &
- & .true.,rv_rfac_c1)
-   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,rv_coef_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a, &
- & .true.,rv_coef_c1)
-end if
 if (nicas_blk%anisotropic) then
    call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,H11_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
  & nicas_blk%H11_c1)
@@ -2438,10 +2397,6 @@ end if
 ! Release memory
 deallocate(rh_c1a)
 deallocate(rv_c1a)
-if (nicas_blk%double_fit) then
-   deallocate(rv_rfac_c1a)
-   deallocate(rv_coef_c1a)
-end if
 if (nicas_blk%anisotropic) then
    deallocate(H11_c1a)
    deallocate(H22_c1a)
@@ -2462,6 +2417,7 @@ end if
 
 ! Release memory
 deallocate(nicas_blk%rh_c1)
+deallocate(nicas_blk%rv_c1)
 if (nicas_blk%anisotropic) then
    deallocate(nicas_blk%H11_c1)
    deallocate(nicas_blk%H22_c1)
@@ -2472,8 +2428,7 @@ end if
 ! Compute ball data
 write(mpl%info,'(a13,a)') '','Compute ball data'
 call mpl%flush
-!$omp parallel do schedule(static) private(isbb,is,ic1,il1,ic0,il0,jbd,jc1,jl1,jc0,jl0,distvsq,rvsq), &
-!$omp&                             firstprivate(distnormv,rfac,coef,Hcoef)
+!$omp parallel do schedule(static) private(isbb,is,ic1,il1,ic0,il0,jbd,jc1,jl1) firstprivate(Hcoef)
 do isbb=1,nicas_blk%nsbb
    ! Indices
    is = nicas_blk%sbb_to_s(isbb)
@@ -2483,67 +2438,27 @@ do isbb=1,nicas_blk%nsbb
    il0 = nicas_blk%l1_to_l0(il1)
 
    ! Allocation
-   if (nicas_blk%double_fit) then
-      allocate(distnormv(nicas_blk%nc1,nicas_blk%nl1))
-      allocate(rfac(nicas_blk%nc1,nicas_blk%nl1))
-      allocate(coef(nicas_blk%nc1,nicas_blk%nl1))
-   end if
    if (nicas_blk%anisotropic) allocate(Hcoef(nicas_blk%nc1,nicas_blk%nl1))
 
    ! Initialization
-   if (nicas_blk%double_fit) then
-      distnormv = mpl%msv%valr
-      rfac = mpl%msv%valr
-      coef = mpl%msv%valr
-   end if
    if (nicas_blk%anisotropic) Hcoef = mpl%msv%valr
 
    do jbd=1,nicas_blk%distnorm(isbb)%nbd
       ! Indices
       jc1 = nicas_blk%distnorm(isbb)%bd_to_c1(jbd)
       jl1 = nicas_blk%distnorm(isbb)%bd_to_l1(jbd)
-      jc0 = nicas_blk%c1_to_c0(jc1)
-      jl0 = nicas_blk%l1_to_l0(jl1)
-
-      if (nicas_blk%double_fit) then
-         ! Vertical distance
-         distvsq = (geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0))**2
-         rvsq = 0.5*(nicas_blk%rv_c1(ic1,il1)**2+nicas_blk%rv_c1(jc1,jl1)**2)
-         if (rvsq>0.0) then
-            distnormv(jc1,jl1) = sqrt(distvsq/rvsq)
-         elseif (distvsq>0.0) then
-            distnormv(jc1,jl1) = 0.5*huge(0.0)
-         end if
-         rfac(jc1,jl1) = sqrt(rv_rfac_c1(ic1,il1)*rv_rfac_c1(jc1,jl1))
-         coef(jc1,jl1) = sqrt(rv_coef_c1(ic1,il1)*rv_coef_c1(jc1,jl1))
-      end if
       if (nicas_blk%anisotropic) Hcoef(jc1,jl1) = sqrt(Hcoef_c1(ic1,il1)*Hcoef_c1(jc1,jl1))
    end do
 
    ! Pack data
-   if (nicas_blk%double_fit) then
-      call nicas_blk%distnormv(isbb)%pack(mpl,nicas_blk%nc1,nicas_blk%nl1,distnormv)
-      call nicas_blk%rfac(isbb)%pack(mpl,nicas_blk%nc1,nicas_blk%nl1,rfac)
-      call nicas_blk%coef(isbb)%pack(mpl,nicas_blk%nc1,nicas_blk%nl1,coef)
-   end if
    if (nicas_blk%anisotropic) call nicas_blk%Hcoef(isbb)%pack(mpl,nicas_blk%nc1,nicas_blk%nl1,Hcoef)
 
    ! Release memory
-   if (nicas_blk%double_fit) then
-      deallocate(distnormv)
-      deallocate(rfac)
-      deallocate(coef)
-   end if
    if (nicas_blk%anisotropic) deallocate(Hcoef)
 end do
 !$omp end parallel do
 
 ! Release memory
-deallocate(nicas_blk%rv_c1)
-if (nicas_blk%double_fit) then
-   deallocate(rv_rfac_c1)
-   deallocate(rv_coef_c1)
-end if
 if (nicas_blk%anisotropic) deallocate(Hcoef_c1)
 
 ! Compute weights
@@ -2552,19 +2467,9 @@ call nicas_blk%compute_convol_weights(mpl,nam,geom,ctmp)
 ! Release memory
 do isbb=1,nicas_blk%nsbb
    call nicas_blk%distnorm(isbb)%dealloc
-   if (nicas_blk%double_fit) then
-      call nicas_blk%distnormv(isbb)%dealloc
-      call nicas_blk%rfac(isbb)%dealloc
-      call nicas_blk%coef(isbb)%dealloc
-   end if
    if (nicas_blk%anisotropic) call nicas_blk%Hcoef(isbb)%dealloc
 end do
 deallocate(nicas_blk%distnorm)
-if (nicas_blk%double_fit) then
-   deallocate(nicas_blk%distnormv)
-   deallocate(nicas_blk%rfac)
-   deallocate(nicas_blk%coef)
-end if
 if (nicas_blk%anisotropic) deallocate(nicas_blk%Hcoef)
 
 if (nam%lsqrt) then
@@ -3161,7 +3066,7 @@ type(linop_type),intent(inout) :: ctmp           ! Convolution operator
 ! Local variables
 integer :: n_s_max,ithread,is,ic1,jc1,il1,jl1,il0,jbd,js,ic0,ic1bb,isbb
 integer :: c_n_s(mpl%nthread),c_nor_n_s(mpl%nthread)
-real(kind_real) :: disth,S_test
+real(kind_real) :: S_test
 logical :: add_op
 type(linop_type) :: c(mpl%nthread),c_nor(mpl%nthread)
 
@@ -3182,7 +3087,7 @@ c_n_s = 0
 c_nor_n_s = 0
 
 ! Compute weights
-!$omp parallel do schedule(static) private(isbb,is,ithread,ic1,ic1bb,ic0,il1,il0,jbd,jc1,jl1,js,disth,S_test,add_op)
+!$omp parallel do schedule(static) private(isbb,is,ithread,ic1,ic1bb,ic0,il1,il0,jbd,jc1,jl1,js,S_test,add_op)
 do isbb=1,nicas_blk%nsbb
    ! Indices
    is = nicas_blk%sbb_to_s(isbb)
@@ -3201,18 +3106,12 @@ do isbb=1,nicas_blk%nsbb
       jl1 = nicas_blk%distnorm(isbb)%bd_to_l1(jbd)
       js = nicas_blk%c1l1_to_s(jc1,jl1)
 
-      if (nicas_blk%double_fit) then
-         ! Double fit function
-         disth = sqrt(nicas_blk%distnorm(isbb)%val(jbd)**2-nicas_blk%distnormv(isbb)%val(jbd)**2)
-         S_test = fit_func(mpl,nam%fit_type,disth)*((1.0+nicas_blk%coef(isbb)%val(jbd))* &
-                & fit_func(mpl,nam%fit_type,nicas_blk%distnormv(isbb)%val(jbd)) &
-                & -nicas_blk%coef(isbb)%val(jbd) &
-                & *fit_func(mpl,nam%fit_type,nicas_blk%distnormv(isbb)%val(jbd)*nicas_blk%rfac(isbb)%val(jbd)))
+      ! Fit function
+      if (nicas_blk%anisotropic) then
+         S_test = nicas_blk%Hcoef(isbb)%val(jbd)*fit_func(mpl,nicas_blk%distnorm(isbb)%val(jbd))
       else
-         ! Fit function
-         S_test = fit_func(mpl,nam%fit_type,nicas_blk%distnorm(isbb)%val(jbd))
+         S_test = fit_func(mpl,nicas_blk%distnorm(isbb)%val(jbd))
       end if
-      if (nicas_blk%anisotropic) S_test = S_test*nicas_blk%Hcoef(isbb)%val(jbd)
 
       if (sup(S_test,S_inf)) then
          ! Store coefficient for convolution

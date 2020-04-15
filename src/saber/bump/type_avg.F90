@@ -9,13 +9,16 @@ module type_avg
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const,only: reqkm
+use netcdf
+use tools_const,only: reqkm,rad2deg
 use tools_func, only: add,divide
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use type_avg_blk, only: avg_blk_type
 use type_bpar, only: bpar_type
+use type_ens, only: ens_type
 use type_geom, only: geom_type
+use type_io, only: io_type
 use type_mom, only: mom_type
 use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
@@ -205,15 +208,15 @@ do ib=1,bpar%nb
          do isub=1,avg%nsub
             ! Global sum
             m2sq = 0.0
-            if (.not.nam%gau_approx) m4 = 0.0
+            m4 = 0.0
             do ic2a=1,samp%nc2a
                if (mpl%msv%isnot(avg%blk(ic2a,ib)%m2(il0,isub))) then
                   m2sq = m2sq+avg%blk(ic2a,ib)%m2(il0,isub)**2
-                  if (.not.nam%gau_approx) m4 = m4+avg%blk(ic2a,ib)%m4(il0,isub)
+                  m4 = m4+avg%blk(ic2a,ib)%m4(il0,isub)
                end if
             end do
             call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
-            if (.not.nam%gau_approx) call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
 
             ! Asymptotic statistics
             if (nam%gau_approx) then
@@ -333,7 +336,7 @@ do ib=1,bpar%nb
 
       if (nam%local_diag) then
          ! Moments block extension
-         call mom_blk%ext(mpl,nam,geom,bpar,samp,mom%blk(ib))
+         call mom_blk%ext(mpl,geom,bpar,samp,mom%blk(ib))
 
          ! Local average
          call mpl%prog_init(samp%nc2a)
@@ -466,8 +469,8 @@ do ib=1,bpar%nb
 
       if (nam%local_diag) then
          ! Moments block extension
-         call mom_blk_1%ext(mpl,nam,geom,bpar,samp,mom_1%blk(ib))
-         call mom_blk_2%ext(mpl,nam,geom,bpar,samp,mom_2%blk(ib))
+         call mom_blk_1%ext(mpl,geom,bpar,samp,mom_1%blk(ib))
+         call mom_blk_2%ext(mpl,geom,bpar,samp,mom_2%blk(ib))
 
          ! Local average
          call mpl%prog_init(samp%nc2a)

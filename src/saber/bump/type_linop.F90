@@ -564,7 +564,7 @@ logical,intent(in),optional :: msdst                ! Check for missing destinat
 ! Local variables
 integer :: i_s,i_dst
 logical :: lmssrc,lmsdst,valid
-logical,allocatable :: missing(:)
+logical,allocatable :: missing_src(:),missing_dst(:)
 character(len=1024),parameter :: subr = 'linop_apply'
 
 if (check_data) then
@@ -590,9 +590,13 @@ lmssrc = .false.
 if (present(mssrc)) lmssrc = mssrc
 lmsdst = .true.
 if (present(msdst)) lmsdst = msdst
+if (lmssrc) then
+   allocate(missing_src(linop%n_dst))
+   missing_src = .false.
+end if
 if (lmsdst) then
-   allocate(missing(linop%n_dst))
-   missing = .true.
+   allocate(missing_dst(linop%n_dst))
+   missing_dst = .true.
 end if
 
 ! Apply weights
@@ -613,18 +617,31 @@ do i_s=1,linop%n_s
       end if
 
       ! Check for missing destination
-      if (lmsdst) missing(linop%row(i_s)) = .false.
+      if (lmsdst) missing_dst(linop%row(i_s)) = .false.
+   else
+      ! Missing source
+      missing_src(linop%row(i_s)) = .true.
    end if
 end do
+
+if (lmssrc) then
+   ! Missing source values
+   do i_dst=1,linop%n_dst
+      if (missing_src(i_dst)) fld_dst(i_dst) = mpl%msv%valr
+   end do
+
+   ! Release memory
+   deallocate(missing_src)
+end if
 
 if (lmsdst) then
    ! Missing destination values
    do i_dst=1,linop%n_dst
-      if (missing(i_dst)) fld_dst(i_dst) = mpl%msv%valr
+      if (missing_dst(i_dst)) fld_dst(i_dst) = mpl%msv%valr
    end do
 
    ! Release memory
-   deallocate(missing)
+   deallocate(missing_dst)
 end if
 
 if (check_data) then

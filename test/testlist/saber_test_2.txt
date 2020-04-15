@@ -2,7 +2,11 @@ bump_get_param_cor
 bump_get_param_Dloc
 bump_get_param_hyb
 bump_get_param_lct
+bump_hdiag_diag_rhflt
+bump_hdiag_diag_rvflt
 bump_hdiag_draw_type
+bump_hdiag_fit_dl0
+bump_hdiag_gen_kurt
 bump_hdiag_hyb-avg_common
 bump_hdiag_ldwv
 bump_hdiag_loc_gau_approx
@@ -11,9 +15,6 @@ bump_hdiag_mask_lat
 bump_hdiag_mask_stddev_lower
 bump_hdiag_mask_stddev_ncontig
 bump_hdiag-nicas_cor_common_univariate
-bump_hdiag-nicas_double_fit
-bump_hdiag-nicas_fit_type
-bump_hdiag-nicas_lhom
 bump_hdiag-nicas_loc_common_univariate
 bump_hdiag-nicas_loc_common_weighted
 bump_hdiag-nicas_loc_specific_multivariate
@@ -21,7 +22,7 @@ bump_hdiag-nicas_loc_specific_univariate
 bump_hdiag-nicas_nonunit_diag
 bump_hdiag-nicas_nprocio
 bump_hdiag-nicas_nrep
-bump_hdiag-nicas_rvflt
+bump_hdiag_no_smoothness_penalty
 bump_interface_nicas
 bump_interface_obsop
 bump_interface_vbal
