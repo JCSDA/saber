@@ -38,6 +38,12 @@ before_install:
 #  clone metis
   - git clone https://github.com/jcsda/metis.git ${REPO_SOURCE_DIR}/saber-bundle/metis
 
+#  checkout for the same branch name in oops
+  - git clone https://github.com/jcsda/oops.git ${REPO_SOURCE_DIR}/saber-bundle/oops
+  - cd ${REPO_SOURCE_DIR}/saber-bundle/oops
+  - git checkout $BRANCH || echo "No branch named $BRANCH in oops repo"
+  - cd $REPO_SOURCE_DIR  
+
 #  clone the testing branch of saber
   - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber
 
