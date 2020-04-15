@@ -24,6 +24,7 @@ public :: oobump_type
 public :: oobump_registry
 public :: oobump_create, oobump_delete, oobump_get_cv_size, oobump_add_member, oobump_remove_member, oobump_run_drivers, &
         & oobump_multiply_vbal, oobump_multiply_vbal_inv, oobump_multiply_vbal_ad, oobump_multiply_vbal_inv_ad, &
+        & oobump_multiply_stddev, oobump_multiply_stddev_inv, &
         & oobump_multiply_nicas, oobump_multiply_nicas_sqrt, oobump_multiply_nicas_sqrt_ad, &
         & oobump_randomize_nicas, oobump_get_param, oobump_set_param
 ! ------------------------------------------------------------------------------
@@ -271,6 +272,34 @@ type(atlas_fieldset), intent(inout) :: afieldset !< ATLAS fieldset
 call self%bump%apply_vbal_inv_ad(afieldset)
 
 end subroutine oobump_multiply_vbal_inv_ad
+!-------------------------------------------------------------------------------
+!> Multiplication by BUMP standard-deviation
+subroutine oobump_multiply_stddev(self,afieldset)
+
+implicit none
+
+! Passed variables
+type(oobump_type), intent(inout) :: self         !< OOBUMP
+type(atlas_fieldset), intent(inout) :: afieldset !< ATLAS fieldset
+
+! Apply vertical balance
+call self%bump%apply_stddev(afieldset)
+
+end subroutine oobump_multiply_stddev
+!-------------------------------------------------------------------------------
+!> Multiplication by BUMP standard-deviation, inverse
+subroutine oobump_multiply_stddev_inv(self,afieldset)
+
+implicit none
+
+! Passed variables
+type(oobump_type), intent(inout) :: self         !< OOBUMP
+type(atlas_fieldset), intent(inout) :: afieldset !< ATLAS fieldset
+
+! Apply vertical balance
+call self%bump%apply_stddev_inv(afieldset)
+
+end subroutine oobump_multiply_stddev_inv
 !-------------------------------------------------------------------------------
 !> Multiplication by BUMP NICAS operator
 subroutine oobump_multiply_nicas(self,afieldset)

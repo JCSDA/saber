@@ -14,10 +14,8 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "oops/assimilation/GMRESR.h"
 #include "oops/assimilation/Increment4D.h"
 #include "oops/assimilation/State4D.h"
-#include "oops/base/IdentityMatrix.h"
 #include "oops/base/ModelSpaceCovariance4DBase.h"
 #include "oops/base/Variables.h"
 #include "oops/interface/Geometry.h"
@@ -135,9 +133,7 @@ void ErrorCovariance4DBUMP<MODEL>::doInverseMultiply(const Increment4D_ & dxi,
                                                      Increment4D_ & dxo) const {
   oops::Log::trace() << "ErrorCovariance4DBUMP<MODEL>::doInverseMultiply starting" << std::endl;
   util::Timer timer(classname(), "doInverseMultiply");
-  oops::IdentityMatrix<Increment4D_> Id;
-  dxo.zero();
-  GMRESR(dxo, dxi, *this, Id, 10, 1.0e-3);
+  ooBump_->inverseMultiplyNicas(dxi, dxo);
   oops::Log::trace() << "ErrorCovariance4DBUMP<MODEL>::doInverseMultiply done" << std::endl;
 }
 

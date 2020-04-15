@@ -11,12 +11,21 @@ cost_function:
         load_nicas: 1
         method: cor
         mpicom: 2
-        nonunit_diag: 1
         prefix: qg_4dvar_drplanczos_bump/test
         strategy: common
       covariance: BUMP
       timeslots:
       - 2010-01-01T00:00:00Z
+      variable_changes:
+      - varchange: StdDev
+        inputVariables:
+          variables: [x]
+        outputVariables:
+          variables: [x]
+        bump:
+          datadir: testdata
+          load_var: 1
+          prefix: qg_4dvar_drplanczos_bump/test
   Jc:
   - jcdfi:
       alpha: 1.0e-13

@@ -260,6 +260,50 @@ call oobump_multiply_vbal_inv_ad(self, afieldset)
 
 end subroutine oobump_multiply_vbal_inv_ad_c
 ! ------------------------------------------------------------------------------
+!> Multiplication by BUMP standard-deviation
+subroutine oobump_multiply_stddev_c(c_key_oobump, c_afieldset) bind(c, name='oobump_multiply_stddev_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int), intent(in) :: c_key_oobump  !< OOBUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
+
+! Local variables
+type(oobump_type), pointer :: self
+type(atlas_fieldset) :: afieldset
+
+! Interface
+call oobump_registry%get(c_key_oobump, self)
+afieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call oobump_multiply_stddev(self, afieldset)
+
+end subroutine oobump_multiply_stddev_c
+! ------------------------------------------------------------------------------
+!> Multiplication by BUMP standard-deviation inverse
+subroutine oobump_multiply_stddev_inv_c(c_key_oobump, c_afieldset) bind(c, name='oobump_multiply_stddev_inv_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int), intent(in) :: c_key_oobump  !< OOBUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
+
+! Local variables
+type(oobump_type), pointer :: self
+type(atlas_fieldset) :: afieldset
+
+! Interface
+call oobump_registry%get(c_key_oobump, self)
+afieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call oobump_multiply_stddev_inv(self, afieldset)
+
+end subroutine oobump_multiply_stddev_inv_c
+! ------------------------------------------------------------------------------
 !> Multiplication by BUMP NICAS operator
 subroutine oobump_multiply_nicas_c(c_key_oobump, c_afieldset) bind(c, name='oobump_multiply_nicas_f90')
 

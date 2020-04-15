@@ -36,6 +36,8 @@ extern "C" {
   void oobump_multiply_vbal_inv_f90(const int &, atlas::field::FieldSetImpl *);
   void oobump_multiply_vbal_ad_f90(const int &, atlas::field::FieldSetImpl *);
   void oobump_multiply_vbal_inv_ad_f90(const int &, atlas::field::FieldSetImpl *);
+  void oobump_multiply_stddev_f90(const int &, atlas::field::FieldSetImpl *);
+  void oobump_multiply_stddev_inv_f90(const int &, atlas::field::FieldSetImpl *);
   void oobump_multiply_nicas_f90(const int &, atlas::field::FieldSetImpl *);
   void oobump_multiply_nicas_sqrt_f90(const int &, const double *, atlas::field::FieldSetImpl *);
   void oobump_multiply_nicas_sqrt_ad_f90(const int &, atlas::field::FieldSetImpl *, const double *);

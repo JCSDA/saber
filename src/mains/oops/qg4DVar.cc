@@ -15,6 +15,7 @@
 #include "oops/runs/Variational.h"
 #include "saber/oops/instantiateCovarFactory.h"
 #include "saber/oops/instantiateLocalizationFactory.h"
+#include "saber/oops/instantiateVariableChangeFactory.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
@@ -22,6 +23,7 @@ int main(int argc,  char ** argv) {
   qg::instantiateQgLocalizationFactory();
   saber::instantiateCovarFactory<qg::QgTraits>();
   saber::instantiateLocalizationFactory<qg::QgTraits>();
+  saber::instantiateVariableChangeFactory<qg::QgTraits>();
   oops::Variational<qg::QgTraits> var;
   run.execute(var);
   return 0;

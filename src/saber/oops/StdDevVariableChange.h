@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_STATSVARIABLECHANGE_H_
-#define SABER_OOPS_STATSVARIABLECHANGE_H_
+#ifndef SABER_OOPS_STDDEVVARIABLECHANGE_H_
+#define SABER_OOPS_STDDEVVARIABLECHANGE_H_
 
 #include <memory>
 #include <string>
@@ -39,7 +39,7 @@ namespace saber {
 /// Derived class of generic variable transform for statistical
 
 template <typename MODEL>
-class StatsVariableChange : public oops::LinearVariableChangeBase<MODEL> {
+class StdDevVariableChange : public oops::LinearVariableChangeBase<MODEL> {
   typedef oops::Geometry<MODEL>  Geometry_;
   typedef oops::Increment<MODEL> Increment_;
   typedef OoBump<MODEL>          OoBump_;
@@ -48,11 +48,11 @@ class StatsVariableChange : public oops::LinearVariableChangeBase<MODEL> {
   typedef ParametersBUMP<MODEL>  Parameters_;
 
  public:
-  static const std::string classname() {return "saber::StatsVariableChange";}
+  static const std::string classname() {return "saber::StdDevVariableChange";}
 
-  StatsVariableChange(const State_ &, const State_ &,
+  StdDevVariableChange(const State_ &, const State_ &,
                       const Geometry_ &, const eckit::Configuration &);
-  virtual ~StatsVariableChange();
+  virtual ~StdDevVariableChange();
 
   void multiply(const Increment_ &, Increment_ &) const override;
   void multiplyInverse(const Increment_ &, Increment_ &) const override;
@@ -77,12 +77,12 @@ class StatsVariableChange : public oops::LinearVariableChangeBase<MODEL> {
 };
 
 template<typename MODEL>
-StatsVariableChange<MODEL>::StatsVariableChange(const State_ & xb, const State_ &,
+StdDevVariableChange<MODEL>::StdDevVariableChange(const State_ & xb, const State_ &,
                                                 const Geometry_ & resol,
                                                 const eckit::Configuration & conf)
   : oops::LinearVariableChangeBase<MODEL>(conf), ooBump_()
 {
-  oops::Log::trace() << "StatsVariableChange<MODEL>::StatsVariableChange starting" << std::endl;
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::StdDevVariableChange starting" << std::endl;
 
 // Setup variables
   const eckit::LocalConfiguration varConfig(conf, "inputVariables");
@@ -98,58 +98,58 @@ StatsVariableChange<MODEL>::StatsVariableChange(const State_ & xb, const State_ 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));
 
-  oops::Log::trace() << "StatsVariableChange<MODEL>::StatsVariableChange done" << std::endl;
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::StdDevVariableChange done" << std::endl;
 }
 
 template<typename MODEL>
-StatsVariableChange<MODEL>::~StatsVariableChange() {
-  oops::Log::trace() << "StatsVariableChange<MODEL>::~StatsVariableChange starting" << std::endl;
-  util::Timer timer(classname(), "~StatsVariableChange");
-  oops::Log::trace() << "StatsVariableChange<MODEL>::~StatsVariableChange done" << std::endl;
+StdDevVariableChange<MODEL>::~StdDevVariableChange() {
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::~StdDevVariableChange starting" << std::endl;
+  util::Timer timer(classname(), "~StdDevVariableChange");
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::~StdDevVariableChange done" << std::endl;
 }
 
 template<typename MODEL>
-void StatsVariableChange<MODEL>::multiply(const Increment_ & in, Increment_ & out) const {
-  oops::Log::trace() << "StatsVariableChange<MODEL>::multiply starting" << std::endl;
+void StdDevVariableChange<MODEL>::multiply(const Increment_ & in, Increment_ & out) const {
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::multiply starting" << std::endl;
 
-  ooBump_->multiplyVbal(in, out);
+  ooBump_->multiplyStdDev(in, out);
 
-  oops::Log::trace() << "StatsVariableChange<MODEL>::multiply done" << std::endl;
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::multiply done" << std::endl;
 }
 
 template<typename MODEL>
-void StatsVariableChange<MODEL>::multiplyInverse(const Increment_ & in, Increment_ & out) const {
-  oops::Log::trace() << "StatsVariableChange<MODEL>::multiplyInverse starting" << std::endl;
+void StdDevVariableChange<MODEL>::multiplyInverse(const Increment_ & in, Increment_ & out) const {
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::multiplyInverse starting" << std::endl;
 
-  ooBump_->multiplyVbalInv(in, out);
+  ooBump_->multiplyStdDevInv(in, out);
 
-  oops::Log::trace() << "StatsVariableChange<MODEL>::multiplyInverse done" << std::endl;
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::multiplyInverse done" << std::endl;
 }
 
 template<typename MODEL>
-void StatsVariableChange<MODEL>::multiplyAD(const Increment_ & in, Increment_ & out) const {
-  oops::Log::trace() << "StatsVariableChange<MODEL>::multiplyAD starting" << std::endl;
+void StdDevVariableChange<MODEL>::multiplyAD(const Increment_ & in, Increment_ & out) const {
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::multiplyAD starting" << std::endl;
 
-  ooBump_->multiplyVbalAd(in, out);
+  ooBump_->multiplyStdDev(in, out);
 
-  oops::Log::trace() << "StatsVariableChange<MODEL>::multiplyAD done" << std::endl;
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::multiplyAD done" << std::endl;
 }
 
 template<typename MODEL>
-void StatsVariableChange<MODEL>::multiplyInverseAD(const Increment_ & in, Increment_ & out) const {
-  oops::Log::trace() << "StatsVariableChange<MODEL>::multiplyInverseAD starting" << std::endl;
+void StdDevVariableChange<MODEL>::multiplyInverseAD(const Increment_ & in, Increment_ & out) const {
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::multiplyInverseAD starting" << std::endl;
 
-  ooBump_->multiplyVbalInvAd(in, out);
+  ooBump_->multiplyStdDevInv(in, out);
 
-  oops::Log::trace() << "StatsVariableChange<MODEL>::multiplyInverseAD done" << std::endl;
+  oops::Log::trace() << "StdDevVariableChange<MODEL>::multiplyInverseAD done" << std::endl;
 }
 
 template<typename MODEL>
-void StatsVariableChange<MODEL>::print(std::ostream & os) const {
+void StdDevVariableChange<MODEL>::print(std::ostream & os) const {
 }
 
 template<typename MODEL>
-std::string StatsVariableChange<MODEL>::ExtractFilename(std::string const pathString)
+std::string StdDevVariableChange<MODEL>::ExtractFilename(std::string const pathString)
 {
     int tempIndex;
     for (int iCharIndex = pathString.length(); iCharIndex > 0; --iCharIndex)
@@ -168,7 +168,7 @@ std::string StatsVariableChange<MODEL>::ExtractFilename(std::string const pathSt
 // from fileString
 
 template<typename MODEL>
-void StatsVariableChange<MODEL>::ExtractModelVarForCalc(std::string const fileString,
+void StdDevVariableChange<MODEL>::ExtractModelVarForCalc(std::string const fileString,
                                 std::string& modelVarToCalcString,
                                 std::string& varRegrByString)
 {
@@ -198,7 +198,7 @@ void StatsVariableChange<MODEL>::ExtractModelVarForCalc(std::string const fileSt
 
 // append the modelVarToCalcList and varRegrByList
 template<typename MODEL>
-void StatsVariableChange<MODEL>::VariableLists(const std::vector<std::string> pathStrList,
+void StdDevVariableChange<MODEL>::VariableLists(const std::vector<std::string> pathStrList,
                    std::vector<std::string>& modelVarToCalcList,
                    std::vector<std::string>& varRegrByList)
 {
@@ -219,4 +219,4 @@ void StatsVariableChange<MODEL>::VariableLists(const std::vector<std::string> pa
 
 }  // namespace saber
 
-#endif  // SABER_OOPS_STATSVARIABLECHANGE_H_
+#endif  // SABER_OOPS_STDDEVVARIABLECHANGE_H_

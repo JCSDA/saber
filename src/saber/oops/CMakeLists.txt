@@ -20,6 +20,7 @@ oobump_interface.F90
 oobump_mod.F90
 ParametersBUMP.h
 StatsVariableChange.h
+StdDevVariableChange.h
 
 PARENT_SCOPE
 )

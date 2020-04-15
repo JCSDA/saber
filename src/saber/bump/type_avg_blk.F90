@@ -28,8 +28,6 @@ type avg_blk_type
    character(len=1024) :: name                           ! Name
    integer :: ne                                         ! Ensemble size
    integer :: nsub                                       ! Sub-ensembles number
-   real(kind_real),allocatable :: m2(:,:)                ! Variance
-   real(kind_real),allocatable :: m4(:,:)                ! Fourth-order centered moment
    real(kind_real),allocatable :: m2flt(:,:)             ! Filtered variance
    real(kind_real),allocatable :: nc1a(:,:,:)            ! Number of points in subset Sc1 on halo A
    real(kind_real),allocatable :: m11(:,:,:)             ! Covariance average
@@ -107,9 +105,6 @@ avg_blk%name = trim(prefix)//'_'//trim(bpar%blockname(ib))
 if (bpar%diag_block(ib).and.(.not.allocated(avg_blk%nc1a))) then
    if ((ic2a==0).or.nam%local_diag) then
       allocate(avg_blk%nc1a(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
-      allocate(avg_blk%m2(geom%nl0,avg_blk%nsub))
-      allocate(avg_blk%m4(geom%nl0,avg_blk%nsub))
-      allocate(avg_blk%m2flt(geom%nl0,avg_blk%nsub))
       allocate(avg_blk%m11(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
       allocate(avg_blk%m11m11(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub,avg_blk%nsub))
       allocate(avg_blk%m2m2(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub,avg_blk%nsub))
@@ -158,9 +153,6 @@ implicit none
 class(avg_blk_type),intent(inout) :: avg_blk ! Averaged statistics block
 
 ! Allocation
-if (allocated(avg_blk%m2)) deallocate(avg_blk%m2)
-if (allocated(avg_blk%m4)) deallocate(avg_blk%m4)
-if (allocated(avg_blk%m2flt)) deallocate(avg_blk%m2flt)
 if (allocated(avg_blk%nc1a)) deallocate(avg_blk%nc1a)
 if (allocated(avg_blk%m11)) deallocate(avg_blk%m11)
 if (allocated(avg_blk%m11m11)) deallocate(avg_blk%m11m11)
@@ -201,9 +193,6 @@ class(avg_blk_type),intent(inout) :: avg_blk_out ! Output averaged statistics bl
 type(avg_blk_type),intent(in) :: avg_blk_in      ! Input averaged statistics block
 
 ! Copy data
-if (allocated(avg_blk_in%m2)) avg_blk_out%m2 = avg_blk_in%m2
-if (allocated(avg_blk_in%m4)) avg_blk_out%m4 = avg_blk_in%m4
-if (allocated(avg_blk_in%m2flt)) avg_blk_out%m2flt = avg_blk_in%m2flt
 if (allocated(avg_blk_in%nc1a)) avg_blk_out%nc1a = avg_blk_in%nc1a
 if (allocated(avg_blk_in%m11)) avg_blk_out%m11 = avg_blk_in%m11
 if (allocated(avg_blk_in%m11m11)) avg_blk_out%m11m11 = avg_blk_in%m11m11
@@ -421,17 +410,6 @@ associate(ib=>avg_blk%ib)
 iv = bpar%b_to_v1(ib)
 jv = bpar%b_to_v2(ib)
 
-! Variance and univariate fourth-order moment
-do isub=1,avg_blk%nsub
-   do il0=1,geom%nl0
-      avg_blk%m2(il0,isub) = sum(mom_blk%m2_1(:,il0,isub),mask=mpl%msv%isnot(mom_blk%m2_1(:,il0,isub)))
-      if (nam%var_filter) then
-         jl0r = bpar%il0rz(il0,ib)
-         avg_blk%m4(il0,isub) = sum(mom_blk%m22(:,1,jl0r,il0,isub),mask=mpl%msv%isnot(mom_blk%m22(:,1,jl0r,il0,isub)))
-      end if
-   end do
-end do
-
 ! Allocation
 allocate(list_m11(samp%nc1a))
 allocate(list_m11m11(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
@@ -611,9 +589,7 @@ deallocate(list_cor)
 
 if (mpl%nproc>1) then
    ! Get packing size
-   npack = geom%nl0*avg_blk%nsub
-   if (nam%var_filter) npack = npack+geom%nl0*avg_blk%nsub
-   npack = npack+(4+avg_blk%nsub+2*avg_blk%nsub**2)*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   npack = (4+avg_blk%nsub+2*avg_blk%nsub**2)*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
    if (nam%avg_nbins>0) npack = npack+5*nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
 
    ! Allocation
@@ -633,12 +609,6 @@ if (mpl%nproc>1) then
    ! Pack data
    offset = 0
    sbuf = 0.0
-   sbuf(offset+1:offset+geom%nl0*avg_blk%nsub) = pack(avg_blk%m2,.true.)
-   offset = offset+geom%nl0*avg_blk%nsub
-   if (nam%var_filter) then
-      sbuf(offset+1:offset+geom%nl0*avg_blk%nsub) = pack(avg_blk%m4,.true.)
-      offset = offset+geom%nl0*avg_blk%nsub
-   end if
    sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%nc1a,.true.)
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
    sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = pack(avg_blk%m11,.true.)
@@ -671,12 +641,6 @@ if (mpl%nproc>1) then
 
    ! Unpack data
    offset = 0
-   avg_blk%m2 = unpack(rbuf(offset+1:offset+geom%nl0*avg_blk%nsub),mask_1(1,1,:,:),avg_blk%m2)
-   offset = offset+geom%nl0*avg_blk%nsub
-   if (nam%var_filter) then
-      avg_blk%m4 = unpack(rbuf(offset+1:offset+geom%nl0*avg_blk%nsub),mask_1(1,1,:,:),avg_blk%m4)
-      offset = offset+geom%nl0*avg_blk%nsub
-   end if
    avg_blk%nc1a = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_0,avg_blk%nc1a)
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
    avg_blk%m11 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_0,avg_blk%m11)
@@ -721,22 +685,6 @@ end if
 ! Normalize
 !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,isub,jsub,norm) shared(geom,bpar,avg_blk)
 do il0=1,geom%nl0
-   do isub=1,avg_blk%nsub
-      if (any(samp%c1l0_log(:,il0))) then
-         avg_blk%m2(il0,isub) = avg_blk%m2(il0,isub)/real(count(samp%c1l0_log(:,il0)),kind_real)
-      else
-         avg_blk%m2(il0,isub) = mpl%msv%valr
-      end if
-      if (nam%var_filter) then
-         jl0r = bpar%il0rz(il0,ib)
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-         if (any(samp%c1l0_log(:,il0).and.samp%c1c3l0_log(:,1,jl0))) then
-            avg_blk%m4(il0,isub) = avg_blk%m4(il0,isub)/real(count(samp%c1l0_log(:,il0).and.samp%c1c3l0_log(:,1,jl0)),kind_real)
-         else
-            avg_blk%m4(il0,isub) = mpl%msv%valr
-         end if
-      end if
-   end do
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
          if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
@@ -818,22 +766,6 @@ jv = bpar%b_to_v2(ib)
 
 ! Index
 ic2 = samp%c2a_to_c2(ic2a)
-
-! Copy variance
-avg_blk%m2 = 0.0
-avg_blk%m4 = 0.0
-do ic1d=1,samp%nc1d
-   ic1 = samp%c1d_to_c1(ic1d)
-   if (ic1==samp%c2_to_c1(ic2)) then
-      do isub=1,avg_blk%nsub
-         do il0=1,geom%nl0
-            jl0r = bpar%il0rz(il0,ib)
-            avg_blk%m2(il0,isub) = mom_blk%m2_1(ic1d,il0,isub)
-            if (nam%var_filter) avg_blk%m4(il0,isub) = mom_blk%m22(ic1d,1,jl0r,il0,isub)
-         end do
-      end do
-   end if
-end do
 
 ! Allocation
 nc1max = count(samp%local_mask(:,ic2a))

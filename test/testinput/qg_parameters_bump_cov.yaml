@@ -14,11 +14,15 @@ bump:
   network: 1
   new_hdiag: 1
   new_nicas: 1
+  new_var: 1
   nl0r: 2
   ntry: 10
   prefix: qg_parameters_bump_cov/test
   resol: 8.0
   strategy: specific_univariate
+  var_filter: 1
+  var_niter: 10
+  var_rhflt: 3000.0e3
 ensemble:
   members:
   - date: 2010-01-01T12:00:00Z
@@ -48,8 +52,8 @@ logging:
 output:
 - datadir: testdata/qg_parameters_bump_cov
   date: 2010-01-01T12:00:00Z
-  exp: var
-  parameter: var
+  exp: stddev
+  parameter: stddev
   type: an
 - datadir: testdata/qg_parameters_bump_cov
   date: 2010-01-01T12:00:00Z

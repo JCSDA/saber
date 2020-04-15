@@ -37,6 +37,7 @@ type_nicas.F90
 type_obsop.F90
 type_samp.F90
 type_tree.F90
+type_var.F90
 type_vbal_blk.F90
 type_vbal.F90
 

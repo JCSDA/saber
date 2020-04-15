@@ -71,7 +71,7 @@ message(STATUS "SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
 if(${SABER_TEST_MODEL})
     message(STATUS "  SABER_TEST_MODEL_DIR: " ${SABER_TEST_MODEL_DIR})
 endif()
-message(STATUS "SABER_TEST_OOPS:     " ${SABER_TEST_OOPS})
+message(STATUS "SABER_TEST_OOPS:      " ${SABER_TEST_OOPS})
 
 # TIER 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )

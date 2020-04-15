@@ -658,7 +658,7 @@ type(bpar_type),intent(in) :: bpar             ! Block parameters
 type(avg_blk_type),intent(in) :: avg_blk       ! Averaged statistics block
 
 ! Local variables
-integer :: il0,jl0r,jc3,jl0
+integer :: il0,jl0r,jc3
 
 ! Associate
 associate(ib=>diag_blk%ib)

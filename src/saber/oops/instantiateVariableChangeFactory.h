@@ -14,6 +14,7 @@
 #include "oops/generic/instantiateVariableChangeFactory.h"
 
 #include "saber/oops/StatsVariableChange.h"
+#include "saber/oops/StdDevVariableChange.h"
 
 namespace saber {
 
@@ -22,6 +23,8 @@ void instantiateVariableChangeFactory() {
   oops::instantiateVariableChangeFactory<MODEL>();
   static oops::LinearVariableChangeMaker<MODEL, StatsVariableChange<MODEL> >
                         makerStatsVarChange_("StatsVariableChange");
+  static oops::LinearVariableChangeMaker<MODEL, StdDevVariableChange<MODEL> >
+                        makerStdDev_("StdDev");
 }
 
 }  // namespace saber

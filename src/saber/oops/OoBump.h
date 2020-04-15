@@ -21,7 +21,9 @@
 #include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
 
+#include "oops/assimilation/GMRESR.h"
 #include "oops/assimilation/Increment4D.h"
+#include "oops/base/IdentityMatrix.h"
 #include "oops/base/Variables.h"
 #if !ATLASIFIED
 #include "oops/generic/UnstructuredGrid.h"
@@ -73,14 +75,22 @@ template<typename MODEL> class OoBump : public boost::noncopyable {
   void multiplyVbalInv(const Increment_ &, Increment_ &) const;
   void multiplyVbalAd(const Increment_ &, Increment_ &) const;
   void multiplyVbalInvAd(const Increment_ &, Increment_ &) const;
+  void multiplyStdDev(const Increment_ &, Increment_ &) const;
+  void multiplyStdDevInv(const Increment_ &, Increment_ &) const;
   void multiplyNicas(Increment_ &) const;
   void multiplyNicas(const Increment_ &, Increment_ &) const;
+  void inverseMultiplyNicas(const Increment_ &, Increment_ &) const;
   void multiplyNicas(Increment4D_ &) const;
   void multiplyNicas(const Increment4D_ &, Increment4D_ &) const;
+  void inverseMultiplyNicas(const Increment4D_ &, Increment4D_ &) const;
   void randomizeNicas(Increment_ &) const;
   void randomizeNicas(Increment4D_ &) const;
   void getParam(const std::string &, Increment4D_ &) const;
   void setParam(const std::string &, const Increment4D_ &) const;
+
+  // Aliases for inversion with GMRESR
+  void multiply(const Increment_ & dxi, Increment_ & dxo) const {multiplyNicas(dxi, dxo);}
+  void multiply(const Increment4D_ & dxi, Increment4D_ & dxo) const {multiplyNicas(dxi, dxo);}
 
  private:
   std::vector<int> keyOoBump_;
@@ -386,6 +396,46 @@ void OoBump<MODEL>::multiplyVbalInvAd(const Increment_ & dxi, Increment_ & dxo) 
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
+void OoBump<MODEL>::multiplyStdDev(const Increment_ & dxi, Increment_ & dxo) const {
+  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
+#if ATLASIFIED
+  dxi.toAtlas(atlasFieldSet.get());
+#else
+  dxi.field_to_ug(*ug_.get());
+  ug_->toAtlas(atlasFieldSet.get());
+#endif
+  for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
+    oobump_multiply_stddev_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+  }
+#if ATLASIFIED
+  dxo.fromAtlas(atlasFieldSet.get());
+#else
+  ug_->fromAtlas(atlasFieldSet.get());
+  dxo.field_from_ug(*ug_.get());
+#endif
+}
+// -----------------------------------------------------------------------------
+template<typename MODEL>
+void OoBump<MODEL>::multiplyStdDevInv(const Increment_ & dxi, Increment_ & dxo) const {
+  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
+#if ATLASIFIED
+  dxi.toAtlas(atlasFieldSet.get());
+#else
+  dxi.field_to_ug(*ug_.get());
+  ug_->toAtlas(atlasFieldSet.get());
+#endif
+  for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
+    oobump_multiply_stddev_inv_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+  }
+#if ATLASIFIED
+  dxo.fromAtlas(atlasFieldSet.get());
+#else
+  ug_->fromAtlas(atlasFieldSet.get());
+  dxo.field_from_ug(*ug_.get());
+#endif
+}
+// -----------------------------------------------------------------------------
+template<typename MODEL>
 void OoBump<MODEL>::multiplyNicas(Increment_ & dx) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
 #if ATLASIFIED
@@ -426,6 +476,13 @@ void OoBump<MODEL>::multiplyNicas(const Increment_ & dxi, Increment_ & dxo) cons
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
+void OoBump<MODEL>::inverseMultiplyNicas(const Increment_ & dxi, Increment_ & dxo) const {
+  oops::IdentityMatrix<Increment_> Id;
+  dxo.zero();
+  GMRESR(dxo, dxi, *this, Id, 10, 1.0e-3);
+}
+// -----------------------------------------------------------------------------
+template<typename MODEL>
 void OoBump<MODEL>::multiplyNicas(Increment4D_ & dx) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
 #if ATLASIFIED
@@ -463,6 +520,13 @@ void OoBump<MODEL>::multiplyNicas(const Increment4D_ & dxi, Increment4D_ & dxo) 
   ug_->fromAtlas(atlasFieldSet.get());
   dxo.field_from_ug(*ug_.get());
 #endif
+}
+// -----------------------------------------------------------------------------
+template<typename MODEL>
+void OoBump<MODEL>::inverseMultiplyNicas(const Increment4D_ & dxi, Increment4D_ & dxo) const {
+  oops::IdentityMatrix<Increment4D_> Id;
+  dxo.zero();
+  GMRESR(dxo, dxi, *this, Id, 10, 1.0e-3);
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>

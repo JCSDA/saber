@@ -14,9 +14,6 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "oops/assimilation/GMRESR.h"
-#include "oops/assimilation/Increment4D.h"
-#include "oops/base/IdentityMatrix.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/Variables.h"
 #include "oops/interface/Geometry.h"
@@ -52,7 +49,6 @@ class ErrorCovarianceBUMP : public oops::ModelSpaceCovarianceBase<MODEL>,
                             private boost::noncopyable {
   typedef oops::Geometry<MODEL>    Geometry_;
   typedef oops::Increment<MODEL>   Increment_;
-  typedef oops::Increment4D<MODEL> Increment4D_;
   typedef OoBump<MODEL>            OoBump_;
   typedef oops::State<MODEL>       State_;
   typedef ParametersBUMP<MODEL>    Parameters_;
@@ -135,9 +131,7 @@ void ErrorCovarianceBUMP<MODEL>::doInverseMultiply(const Increment_ & dxi,
                                                    Increment_ & dxo) const {
   oops::Log::trace() << "ErrorCovarianceBUMP<MODEL>::doInverseMultiply starting" << std::endl;
   util::Timer timer(classname(), "doInverseMultiply");
-  oops::IdentityMatrix<Increment_> Id;
-  dxo.zero();
-  GMRESR(dxo, dxi, *this, Id, 10, 1.0e-3);
+  ooBump_->inverseMultiplyNicas(dxi, dxo);
   oops::Log::trace() << "ErrorCovarianceBUMP<MODEL>::doInverseMultiply done" << std::endl;
 }
 

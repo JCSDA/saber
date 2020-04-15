@@ -8,9 +8,11 @@
 
 # dirac_bump_cov
 ln -sf ../qg_parameters_bump_cov/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc testdata/qg_dirac_bump_cov/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc
+ln -sf ../qg_parameters_bump_cov/test_00_var.nc testdata/qg_dirac_bump_cov/test_00_var.nc 
 
 # dirac_bump_lct
 ln -sf ../qg_parameters_bump_lct/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc testdata/qg_dirac_bump_lct/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc
+ln -sf ../qg_parameters_bump_lct/test_00_var.nc testdata/qg_dirac_bump_lct/test_00_var.nc 
 
 # dirac_bump_hyb (hybrid localization is not very good, take localization alone instead)
 ln -sf ../qg_parameters_bump_loc_3d/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc testdata/qg_dirac_bump_hyb/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc
@@ -26,6 +28,7 @@ ln -sf ../qg_parameters_bump_loc_3d/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.n
 
 # 3dvar_bump
 ln -sf ../qg_parameters_bump_cov/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc testdata/qg_3dvar_bump/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc
+ln -sf ../qg_parameters_bump_cov/test_00_var.nc testdata/qg_3dvar_bump/test_00_var.nc
 
 # 3dvar_hybrid_bump (hybrid localization is not very good, take localization alone instead)
 ln -sf ../qg_parameters_bump_loc_3d/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc testdata/qg_3dvar_hybrid_bump/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc
@@ -38,6 +41,7 @@ ln -sf ../qg_parameters_bump_loc_4d/test_00_nicas-2-sqrt_0001-0001_common.nc tes
 
 # 4dvar_drplanczos_bump
 ln -sf ../qg_parameters_bump_cov/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc testdata/qg_4dvar_drplanczos_bump/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc
+ln -sf ../qg_parameters_bump_cov/test_00_var.nc testdata/qg_4dvar_drplanczos_bump/test_00_var.nc
 
 # 4dvar_drplanczos_hybrid_bump (hybrid localization is not very good, take localization alone instead)
 ln -sf ../qg_parameters_bump_loc_3d/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc testdata/qg_4dvar_drplanczos_hybrid_bump/test_00_nicas-2-sqrt_0001-0001_01_01_01_01.nc

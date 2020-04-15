@@ -723,12 +723,11 @@ do ib=1,bpar%nbe
 
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Define import configuration
-      import_standard(ib) = (allocated(cmat%blk(ib)%bump_coef_ens).and.allocated(cmat%blk(ib)%bump_rh) &
-                          & .and.allocated(cmat%blk(ib)%bump_rv))
-      import_static(ib) = (allocated(cmat%blk(ib)%bump_coef_sta))
-      import_anisotropic(ib) = (allocated(cmat%blk(ib)%bump_D11).and.allocated(cmat%blk(ib)%bump_D22) &
+      import_standard(ib) = allocated(cmat%blk(ib)%bump_rh).and.allocated(cmat%blk(ib)%bump_rv)
+      import_static(ib) = allocated(cmat%blk(ib)%bump_coef_sta)
+      import_anisotropic(ib) = allocated(cmat%blk(ib)%bump_D11).and.allocated(cmat%blk(ib)%bump_D22) &
                              & .and.allocated(cmat%blk(ib)%bump_D33).and.allocated(cmat%blk(ib)%bump_D12) &
-                             & .and.allocated(cmat%blk(ib)%bump_Dcoef))
+                             & .and.allocated(cmat%blk(ib)%bump_Dcoef)
 
       ! Define attributes
       cmat%blk(ib)%anisotropic = cmat%blk(ib)%anisotropic.or.import_anisotropic(ib)
@@ -745,7 +744,11 @@ do ib=1,bpar%nbe
          if (import_standard(ib)) then
             write(mpl%info,'(a10,a)') '','Standard import'
             call mpl%flush
-            cmat%blk(ib)%coef_ens = cmat%blk(ib)%bump_coef_ens
+            if (allocated(cmat%blk(ib)%bump_coef_ens)) then
+               cmat%blk(ib)%coef_ens = cmat%blk(ib)%bump_coef_ens
+            else
+               cmat%blk(ib)%coef_ens = 1.0
+            end if
             call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh

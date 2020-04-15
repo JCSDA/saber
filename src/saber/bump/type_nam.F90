@@ -46,6 +46,9 @@ type nam_type
    logical :: new_vbal                                  ! Compute new vertical balance operator
    logical :: load_vbal                                 ! Load existing vertical balance operator
    logical :: write_vbal                                ! Write vertical balance operator
+   logical :: new_var                                   ! Compute new variance
+   logical :: load_var                                  ! Load existing variance
+   logical :: write_var                                 ! Write variance
    logical :: new_mom                                   ! Compute new sample moments
    logical :: load_mom                                  ! Load sample moments
    logical :: write_mom                                 ! Write sample moments
@@ -75,11 +78,13 @@ type nam_type
    logical :: check_set_param_cor                       ! Test set_parameter interface for correlation
    logical :: check_set_param_hyb                       ! Test set_parameter interface for hybrid case
    logical :: check_set_param_lct                       ! Test set_parameter interface for LCT
+   logical :: check_get_param_stddev                    ! Test get_parameter interface for standard-deviation
    logical :: check_get_param_cor                       ! Test get_parameter interface for correlation
    logical :: check_get_param_hyb                       ! Test get_parameter interface for hybrid case
    logical :: check_get_param_Dloc                      ! Test get_parameter interface for anisotropic localization
    logical :: check_get_param_lct                       ! Test get_parameter interface for LCT
    logical :: check_apply_vbal                          ! Test apply_vbal interfaces
+   logical :: check_apply_stddev                        ! Test apply_stddev interfaces
    logical :: check_apply_nicas                         ! Test apply_nicas interfaces
    logical :: check_apply_obsop                         ! Test apply_obsop interfaces
 
@@ -245,6 +250,9 @@ nam%new_corstats = .false.
 nam%new_vbal = .false.
 nam%load_vbal = .false.
 nam%write_vbal = .true.
+nam%new_var = .false.
+nam%load_var = .false.
+nam%write_var = .true.
 nam%new_mom = .true.
 nam%load_mom = .false.
 nam%write_mom = .false.
@@ -274,11 +282,13 @@ nam%check_no_point_nicas = .false.
 nam%check_set_param_cor = .false.
 nam%check_set_param_hyb = .false.
 nam%check_set_param_lct = .false.
+nam%check_get_param_stddev = .false.
 nam%check_get_param_cor = .false.
 nam%check_get_param_hyb = .false.
 nam%check_get_param_Dloc = .false.
 nam%check_get_param_lct = .false.
 nam%check_apply_vbal = .false.
+nam%check_apply_stddev = .false.
 nam%check_apply_nicas = .false.
 nam%check_apply_obsop = .false.
 
@@ -442,6 +452,9 @@ logical :: new_corstats
 logical :: new_vbal
 logical :: load_vbal
 logical :: write_vbal
+logical :: new_var
+logical :: load_var
+logical :: write_var
 logical :: new_mom
 logical :: load_mom
 logical :: write_mom
@@ -471,11 +484,13 @@ logical :: check_no_point_nicas
 logical :: check_set_param_cor
 logical :: check_set_param_hyb
 logical :: check_set_param_lct
+logical :: check_get_param_stddev
 logical :: check_get_param_cor
 logical :: check_get_param_hyb
 logical :: check_get_param_Dloc
 logical :: check_get_param_lct
 logical :: check_apply_vbal
+logical :: check_apply_stddev
 logical :: check_apply_nicas
 logical :: check_apply_obsop
 integer :: nl
@@ -592,10 +607,13 @@ namelist/driver_param/method, &
                     & new_corstats, &
                     & new_vbal, &
                     & load_vbal, &
+                    & write_vbal, &
+                    & new_var, &
+                    & load_var, &
+                    & write_var, &
                     & new_mom, &
                     & load_mom, &
                     & write_mom, &
-                    & write_vbal, &
                     & new_hdiag, &
                     & write_hdiag, &
                     & new_lct, &
@@ -622,11 +640,13 @@ namelist/driver_param/method, &
                     & check_set_param_cor, &
                     & check_set_param_hyb, &
                     & check_set_param_lct, &
+                    & check_get_param_stddev, &
                     & check_get_param_cor, &
                     & check_get_param_hyb, &
                     & check_get_param_Dloc, &
                     & check_get_param_lct, &
                     & check_apply_vbal, &
+                    & check_apply_stddev, &
                     & check_apply_nicas, &
                     & check_apply_obsop
 namelist/model_param/nl, &
@@ -744,6 +764,9 @@ if (mpl%main) then
    new_vbal = .false.
    load_vbal = .false.
    write_vbal = .true.
+   new_var = .false.
+   load_var = .false.
+   write_var = .true.
    new_mom = .true.
    load_mom = .false.
    write_mom = .false.
@@ -773,11 +796,13 @@ if (mpl%main) then
    check_set_param_cor = .false.
    check_set_param_hyb = .false.
    check_set_param_lct = .false.
+   check_get_param_stddev = .false.
    check_get_param_cor = .false.
    check_get_param_hyb = .false.
    check_get_param_Dloc = .false.
    check_get_param_lct = .false.
    check_apply_vbal = .false.
+   check_apply_stddev = .false.
    check_apply_nicas = .false.
    check_apply_obsop = .false.
 
@@ -930,6 +955,9 @@ if (mpl%main) then
    nam%new_vbal = new_vbal
    nam%load_vbal = load_vbal
    nam%write_vbal = write_vbal
+   nam%new_var = new_var
+   nam%load_var = load_var
+   nam%write_var = write_var
    nam%new_mom = new_mom
    nam%load_mom = load_mom
    nam%write_mom = write_mom
@@ -959,11 +987,13 @@ if (mpl%main) then
    nam%check_set_param_cor = check_set_param_cor
    nam%check_set_param_hyb = check_set_param_hyb
    nam%check_set_param_lct = check_set_param_lct
+   nam%check_get_param_stddev = check_get_param_stddev
    nam%check_get_param_cor = check_get_param_cor
    nam%check_get_param_hyb = check_get_param_hyb
    nam%check_get_param_Dloc = check_get_param_Dloc
    nam%check_get_param_lct = check_get_param_lct
    nam%check_apply_vbal = check_apply_vbal
+   nam%check_apply_stddev = check_apply_stddev
    nam%check_apply_nicas = check_apply_nicas
    nam%check_apply_obsop = check_apply_obsop
 
@@ -1159,6 +1189,9 @@ call mpl%f_comm%broadcast(nam%new_corstats,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_vbal,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%new_var,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%load_var,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%write_var,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_mom,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_mom,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_mom,mpl%rootproc-1)
@@ -1188,11 +1221,13 @@ call mpl%f_comm%broadcast(nam%check_no_point_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_set_param_cor,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_set_param_hyb,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_set_param_lct,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%check_get_param_stddev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_get_param_cor,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_get_param_hyb,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_get_param_Dloc,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_get_param_lct,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_vbal,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%check_apply_stddev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_obsop,mpl%rootproc-1)
 
@@ -1367,6 +1402,9 @@ if (conf%has("new_corstats")) call conf%get_or_die("new_corstats",nam%new_corsta
 if (conf%has("new_vbal")) call conf%get_or_die("new_vbal",nam%new_vbal)
 if (conf%has("load_vbal")) call conf%get_or_die("load_vbal",nam%load_vbal)
 if (conf%has("write_vbal")) call conf%get_or_die("write_vbal",nam%write_vbal)
+if (conf%has("new_var")) call conf%get_or_die("new_var",nam%new_var)
+if (conf%has("load_var")) call conf%get_or_die("load_var",nam%load_var)
+if (conf%has("write_var")) call conf%get_or_die("write_var",nam%write_var)
 if (conf%has("new_mom")) call conf%get_or_die("new_mom",nam%new_mom)
 if (conf%has("load_mom")) call conf%get_or_die("load_mom",nam%load_mom)
 if (conf%has("write_mom")) call conf%get_or_die("write_mom",nam%write_mom)
@@ -1396,11 +1434,13 @@ if (conf%has("check_no_point_nicas")) call conf%get_or_die("check_no_point_nicas
 if (conf%has("check_set_param_cor")) call conf%get_or_die("check_set_param_cor",nam%check_set_param_cor)
 if (conf%has("check_set_param_hyb")) call conf%get_or_die("check_set_param_hyb",nam%check_set_param_hyb)
 if (conf%has("check_set_param_lct")) call conf%get_or_die("check_set_param_lct",nam%check_set_param_lct)
+if (conf%has("check_get_param_stddev")) call conf%get_or_die("check_get_param_stddev",nam%check_get_param_stddev)
 if (conf%has("check_get_param_cor")) call conf%get_or_die("check_get_param_cor",nam%check_get_param_cor)
 if (conf%has("check_get_param_hyb")) call conf%get_or_die("check_get_param_hyb",nam%check_get_param_hyb)
 if (conf%has("check_get_param_Dloc")) call conf%get_or_die("check_get_param_Dloc",nam%check_get_param_Dloc)
 if (conf%has("check_get_param_lct")) call conf%get_or_die("check_get_param_lct",nam%check_get_param_lct)
 if (conf%has("check_apply_vbal")) call conf%get_or_die("check_apply_vbal",nam%check_apply_vbal)
+if (conf%has("check_apply_stddev")) call conf%get_or_die("check_apply_stddev",nam%check_apply_stddev)
 if (conf%has("check_apply_nicas")) call conf%get_or_die("check_apply_nicas",nam%check_apply_nicas)
 if (conf%has("check_apply_obsop")) call conf%get_or_die("check_apply_obsop",nam%check_apply_obsop)
 
@@ -1707,6 +1747,7 @@ if (nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat.or.nam%new_nicas.or.nam%load_n
    end select
 end if
 if (nam%new_vbal.and.nam%load_vbal) call mpl%abort(subr,'new_vbal and load_vbal are exclusive')
+if (nam%new_var.and.nam%load_var) call mpl%abort(subr,'new_var and load_var are exclusive')
 if (nam%new_mom.and.nam%load_mom) call mpl%abort(subr,'new_mom and load_mom are exclusive')
 if (nam%new_hdiag.and.nam%new_lct) call mpl%abort(subr,'new_hdiag and new_lct are exclusive')
 if ((nam%new_hdiag.or.nam%new_lct).and.nam%load_cmat) call mpl%abort(subr,'new_hdiag or new_lct and load_cmat are exclusive')
@@ -1746,6 +1787,8 @@ if (nam%check_no_point_nicas.and..not.(nam%new_nicas.or.nam%load_nicas)) &
 if (nam%check_no_point_nicas.and.(mpl%nproc<2)) call mpl%abort(subr,'at least 2 MPI tasks required for check_no_point_nicas')
 if ((nam%check_set_param_cor.or.nam%check_set_param_cor.or.nam%check_set_param_cor).and..not.nam%new_nicas) &
  & call mpl%abort(subr,'new_nicas required for check_set_param_[...]')
+if (nam%check_get_param_stddev.and..not.(nam%new_var)) &
+ & call mpl%abort(subr,'new_var required for check_get_param_stddev')
 if (nam%check_get_param_hyb.and..not.(nam%new_hdiag.and.(trim(nam%method)=='hyb-avg'))) &
  & call mpl%abort(subr,'new_hdiag and hyb-avg method required for check_get_param_hyb')
 if (nam%check_get_param_Dloc.and..not.(nam%new_hdiag.and.(trim(nam%method)=='loc'))) &
@@ -1754,6 +1797,8 @@ if (nam%check_get_param_lct.and..not.(nam%new_lct.and.(nam%lct_nscales==2))) &
  & call mpl%abort(subr,'new_lct and lct_nscales = 2 required for check_get_param_lct')
 if (nam%check_apply_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
  & call mpl%abort(subr,'new_vbal or load_vbal required for check_apply_vbal')
+if (nam%check_apply_stddev.and..not.(nam%new_var.or.nam%load_var)) &
+ & call mpl%abort(subr,'new_var or load_var required for check_apply_stddev')
 if (nam%check_apply_nicas.and..not.(nam%new_nicas.or.nam%load_nicas)) &
  & call mpl%abort(subr,'new_nicas or load_nicas required for check_apply_nicas')
 if (nam%check_apply_obsop.and..not.(nam%new_obsop.or.nam%load_obsop)) &
@@ -1766,7 +1811,8 @@ do il=1,nam%nl
    if (count(nam%levs(1:nam%nl)==nam%levs(il))>1) call mpl%abort(subr,'redundant levels')
 end do
 if ((trim(nam%lev2d)/='first').and.(trim(nam%lev2d)/='last')) call mpl%abort(subr,'wrong lev2d value')
-if (nam%new_vbal.or.nam%load_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat.or.nam%new_nicas.or.nam%load_nicas) then
+if (nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%load_var.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat &
+ & .or.nam%new_nicas.or.nam%load_nicas) then
    if (nam%nv<=0) call mpl%abort(subr,'nv should be positive')
    do iv=1,nam%nv
       write(ivchar,'(i2.2)') iv
@@ -1781,7 +1827,7 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%load_cm
 end if
 
 ! Check ens1_param
-if (nam%new_normality.or.nam%new_cortrack.or.nam%new_corstats.or.nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct &
+if (nam%new_normality.or.nam%new_cortrack.or.nam%new_corstats.or.nam%new_vbal.or.nam%new_var.or.nam%new_hdiag.or.nam%new_lct &
  & .or.nam%check_randomization.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%ens1_nsub<1) call mpl%abort(subr,'ens1_nsub should be positive')
    if (mod(nam%ens1_ne,nam%ens1_nsub)/=0) call mpl%abort(subr,'ens1_nsub should be a divider of ens1_ne')
@@ -1858,17 +1904,18 @@ if (nam%new_vbal) then
  & call mpl%abort(subr,'no block selected for the vertical balance diagnostics')
    if (.not.(nam%vbal_rad>0.0)) call mpl%abort(subr,'vbal_rad should be positive')
 end if
+if (nam%new_var) then
+   if (nam%var_filter) then
+      if (nam%var_niter<=0) call mpl%abort(subr,'var_niter should be positive')
+      if (.not.(nam%var_rhflt>0.0)) call mpl%abort(subr,'var_rhflt should be positive')
+   end if
+end if
 if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    select case (trim(nam%method))
    case ('loc','hyb-avg','hyb-rnd','dual-ens')
       if (nam%ne<=3) call mpl%abort(subr,'ne should be larger than 3')
    end select
    if (.not.(nam%gen_kurt_th>0.0)) call mpl%abort(subr,'gen_kurt_th should be positive')
-   if (nam%var_filter.and.(.not.nam%local_diag)) call mpl%abort(subr,'local_diag required for var_filter')
-   if (nam%var_filter) then
-      if (nam%var_niter<=0) call mpl%abort(subr,'var_niter should be positive')
-      if (.not.(nam%var_rhflt>0.0)) call mpl%abort(subr,'var_rhflt should be positive')
-   end if
    if (nam%local_diag) then
       if (.not.(nam%local_rad>0.0)) call mpl%abort(subr,'local_rad should be positive')
    end if
@@ -1916,6 +1963,9 @@ end if
 
 ! Check nicas_param
 if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomization) then
+   if (nam%nonunit_diag) then
+      if (nam%method=='cor') call mpl%abort(subr,'nonunit_diag is inconsistent with correlation, use variance operator instead')
+   end if
    if (nam%lsqrt) then
       if (nam%mpicom==1) call mpl%abort(subr,'mpicom should be 2 for square-root application')
    end if
@@ -2040,6 +2090,9 @@ call mpl%write(lncid,'nam','new_corstats',nam%new_corstats)
 call mpl%write(lncid,'nam','new_vbal',nam%new_vbal)
 call mpl%write(lncid,'nam','load_vbal',nam%load_vbal)
 call mpl%write(lncid,'nam','write_vbal',nam%write_vbal)
+call mpl%write(lncid,'nam','new_var',nam%new_var)
+call mpl%write(lncid,'nam','load_var',nam%load_var)
+call mpl%write(lncid,'nam','write_var',nam%write_var)
 call mpl%write(lncid,'nam','new_mom',nam%new_mom)
 call mpl%write(lncid,'nam','load_mom',nam%load_mom)
 call mpl%write(lncid,'nam','write_mom',nam%write_mom)
@@ -2069,11 +2122,13 @@ call mpl%write(lncid,'nam','check_no_point_nicas',nam%check_no_point_nicas)
 call mpl%write(lncid,'nam','check_set_param_cor',nam%check_set_param_cor)
 call mpl%write(lncid,'nam','check_set_param_hyb',nam%check_set_param_hyb)
 call mpl%write(lncid,'nam','check_set_param_lct',nam%check_set_param_lct)
+call mpl%write(lncid,'nam','check_get_param_stddev',nam%check_get_param_stddev)
 call mpl%write(lncid,'nam','check_get_param_cor',nam%check_get_param_cor)
 call mpl%write(lncid,'nam','check_get_param_hyb',nam%check_get_param_hyb)
 call mpl%write(lncid,'nam','check_get_param_Dloc',nam%check_get_param_Dloc)
 call mpl%write(lncid,'nam','check_get_param_lct',nam%check_get_param_lct)
 call mpl%write(lncid,'nam','check_apply_vbal',nam%check_apply_vbal)
+call mpl%write(lncid,'nam','check_apply_stddev',nam%check_apply_stddev)
 call mpl%write(lncid,'nam','check_apply_nicas',nam%check_apply_nicas)
 call mpl%write(lncid,'nam','check_apply_obsop',nam%check_apply_obsop)
 
