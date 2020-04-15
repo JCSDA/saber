@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_StdDevVariableChange_H_
-#define SABER_OOPS_StdDevVariableChange_H_
+#ifndef SABER_OOPS_STDDEVVARIABLECHANGE_H_
+#define SABER_OOPS_STDDEVVARIABLECHANGE_H_
 
 #include <memory>
 #include <string>
@@ -219,4 +219,4 @@ void StdDevVariableChange<MODEL>::VariableLists(const std::vector<std::string> p
 
 }  // namespace saber
 
-#endif  // SABER_OOPS_StdDevVariableChange_H_
+#endif  // SABER_OOPS_STDDEVVARIABLECHANGE_H_

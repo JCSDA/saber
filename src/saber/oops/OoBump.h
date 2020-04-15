@@ -21,7 +21,7 @@
 #include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
 
-#include "oops/assimilation/GMRESR.h" 
+#include "oops/assimilation/GMRESR.h"
 #include "oops/assimilation/Increment4D.h"
 #include "oops/base/IdentityMatrix.h"
 #include "oops/base/Variables.h"
