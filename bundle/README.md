@@ -1,7 +1,8 @@
 # SABER bundle
 
-- [Setup](#setup)
-- [Run](#run)
+- [Building the SABER bundle](#building-the-saber-bundle)
+- [Working with the code](#working-with-the-code)
+- [Note about using git](#note-about-using-git)
 
 ## Building the SABER bundle
 
