@@ -65,7 +65,7 @@ phases:
       - ls
 
       # copy bundle CMakeLists.txt
-      - cp saber/bundle/CMakeLists.txt .
+      - cp saber-bundle/saber/bundle/CMakeLists.txt saber-bundle
       - ls
 
       - mkdir /build_container

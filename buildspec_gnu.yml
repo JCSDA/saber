@@ -93,7 +93,7 @@ phases:
       - ls
 
       # copy bundle CMakeLists.txt
-      - cp saber/bundle/CMakeLists.txt .
+      - cp saber-bundle/saber/bundle/CMakeLists.txt saber-bundle
       - ls
 
       - mv saber-bundle /jcsda/
