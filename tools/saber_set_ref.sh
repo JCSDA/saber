@@ -11,7 +11,7 @@ testdata=$1
 listdir=$2
 
 # Special suffixes list
-special_list="mom lct_cor nicas normality obs split vbal"
+special_list="mom lct_cor nicas normality obs sampling_grids vbal"
 
 for tier in $(seq 1 3); do
    # Initialize lists

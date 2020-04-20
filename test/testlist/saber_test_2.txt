@@ -14,6 +14,7 @@ bump_hdiag_loc_histograms
 bump_hdiag_mask_lat
 bump_hdiag_mask_stddev_lower
 bump_hdiag_mask_stddev_ncontig
+bump_hdiag_write_grids
 bump_hdiag-nicas_cor_common_univariate
 bump_hdiag-nicas_loc_common_univariate
 bump_hdiag-nicas_loc_common_weighted
@@ -33,6 +34,7 @@ bump_lct-nicas_network
 bump_lct_qc
 bump_lct_two_scales
 bump_lct_write_cor
+bump_lct_write_grids
 bump_nicas_mpicom_lsqrt_a
 bump_nicas_mpicom_lsqrt_b
 bump_nicas_mpicom_lsqrt_c
@@ -42,6 +44,10 @@ bump_nicas_subsamp_hv
 bump_nicas_subsamp_vh
 bump_nicas_write_grids
 bump_obsop
+bump_vbal_dlat
+bump_vbal_diag_auto
+bump_vbal_diag_reg
+bump_vbal_write_grids
 bump_set_param_cor
 bump_set_param_hyb
 bump_set_param_lct

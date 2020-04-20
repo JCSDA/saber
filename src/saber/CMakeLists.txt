@@ -35,7 +35,7 @@ if (${OOPS_FOUND})
 endif()
 
 list( APPEND SABER_LIB_DEPS
-  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit atlas atlas_f
+  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit
 )
 
 if(${METIS_FOUND})
@@ -57,3 +57,5 @@ ecbuild_add_library( TARGET     saber
                      HEADER_DESTINATION ${INSTALL_INCLUDE_DIR}/saber
                      LINKER_LANGUAGE ${SABER_LINKER_LANGUAGE}
                    )
+
+target_link_libraries(saber PUBLIC atlas atlas_f)

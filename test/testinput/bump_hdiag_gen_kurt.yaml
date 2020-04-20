@@ -24,7 +24,6 @@ ens1_ne: 50
 
 # sampling_param
 nc1: 500
-nc2: 250
 ntry: 30
 nc3: 15
 dc: [400.0e3]

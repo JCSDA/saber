@@ -551,13 +551,13 @@ elseif (bump%nam%load_vbal) then
    call bump%vbal%read(bump%mpl,bump%nam,bump%geom,bump%bpar)
 end if
 
-if (bump%nam%check_vbal) then
+if (bump%nam%new_vbal.or.bump%nam%load_vbal) then
    ! Run vertical balance tests driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run vertical balance tests driver'
    call bump%mpl%flush
-   call bump%vbal%run_vbal_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar)
+   call bump%vbal%run_vbal_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
@@ -693,8 +693,7 @@ end if
 ! Release memory (partial)
 call bump%cmat%partial_dealloc
 
-if (bump%nam%check_adjoints.or.bump%nam%check_dirac.or.bump%nam%check_randomization.or.bump%nam%check_consistency.or. &
- & bump%nam%check_optimality) then
+if (bump%nam%new_nicas.or.bump%nam%load_nicas) then
    ! Run NICAS tests driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -721,13 +720,13 @@ elseif (bump%nam%load_obsop) then
    call bump%obsop%read(bump%mpl,bump%nam)
 end if
 
-if (bump%nam%check_obsop) then
+if (bump%nam%new_obsop.or.bump%nam%load_obsop) then
    ! Run observation operator tests driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run observation operator tests driver'
    call bump%mpl%flush
-   call bump%obsop%run_obsop_tests(bump%mpl,bump%rng,bump%geom)
+   call bump%obsop%run_obsop_tests(bump%mpl,bump%nam,bump%rng,bump%geom)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 

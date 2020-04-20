@@ -45,6 +45,8 @@ adv_rhflt: 100.0e3
 # fit_param
 
 # nicas_param
+
+# dirac_param
 ndir: 1
 londir: [69.1]
 latdir: [41.82]

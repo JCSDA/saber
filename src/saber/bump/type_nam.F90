@@ -97,7 +97,7 @@ type nam_type
    character(len=1024),dimension(nvmax) :: varname      ! Variables names
    integer :: nts                                       ! Number of time slots
    character(len=1024),dimension(ntsmax) :: timeslot    ! Timeslots
-   real(kind_real) :: dts                               ! Timeslots width (in s)
+   real(kind_real) :: dts                               ! Timeslots width [in s]
    logical :: nomask                                    ! Do not use geometry mask
    character(len=1024) :: wind_filename                 ! Wind field file name
    character(len=1024) :: wind_varname(2)               ! Wind field variables names (u and v)
@@ -112,21 +112,22 @@ type nam_type
 
    ! sampling_param
    logical :: sam_write                                 ! Write sampling
+   logical :: sam_write_grids                           ! Write sampling grids
    logical :: sam_read                                  ! Read sampling
    character(len=1024) :: mask_type                     ! Mask restriction type
    character(len=1024),dimension(nvmax) :: mask_lu      ! Mask threshold side ("lower" if mask_th is the lower bound, "upper" if mask_th is the upper bound)
-   real(kind_real),dimension(nvmax) :: mask_th         ! Mask threshold
+   real(kind_real),dimension(nvmax) :: mask_th          ! Mask threshold
    integer :: ncontig_th                                ! Threshold on vertically contiguous points for sampling mask (0 to skip the test)
    logical :: mask_check                                ! Check that sampling couples and interpolations do not cross mask boundaries
    character(len=1024) :: draw_type                     ! Sampling draw type ('random_uniform','random_coast' or 'icosahedron')
-   real(kind_real) :: Lcoast                           ! Length-scale to increase sampling density along coasts
-   real(kind_real) :: rcoast                           ! Minimum value to increase sampling density along coasts
+   real(kind_real) :: Lcoast                            ! Length-scale to increase sampling density along coasts [in meters]
+   real(kind_real) :: rcoast                            ! Minimum value to increase sampling density along coasts
    integer :: nc1                                       ! Number of sampling points
    integer :: nc2                                       ! Number of diagnostic points
    integer :: ntry                                      ! Number of tries to get the most separated point for the zero-separation sampling
    integer :: nrep                                      ! Number of replacement to improve homogeneity of the zero-separation sampling
    integer :: nc3                                       ! Number of classes
-   real(kind_real) :: dc                               ! Class size (for sam_type='hor'), should be larger than the typical grid cell size
+   real(kind_real) :: dc                                ! Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
    integer :: nl0r                                      ! Reduced number of levels for diagnostics
    integer :: irmax                                     ! Maximum number of random number draws
 
@@ -136,19 +137,20 @@ type nam_type
    logical :: gau_approx                                ! Gaussian approximation for asymptotic quantities
    integer :: avg_nbins                                 ! Number of bins for averaged statistics histograms
    logical :: vbal_block(nvmax*(nvmax-1)/2)             ! Activation of vertical balance (ordered line by line in the lower triangular formulation)
-   real(kind_real) :: vbal_rad                          ! Vertical balance diagnostic radius
+   real(kind_real) :: vbal_rad                          ! Vertical balance diagnostic radius [in meters]
+   real(kind_real) :: vbal_dlat                         ! Vertical balance diagnostic latitude band half-width [in degrees]
    logical :: vbal_diag_auto(nvmax*(nvmax-1)/2)         ! Diagonal auto-covariance for the inversion
    logical :: vbal_diag_reg(nvmax*(nvmax-1)/2)          ! Diagonal regression
    logical :: var_filter                                ! Filter variances
    integer :: var_niter                                 ! Number of iteration for the variances filtering
-   real(kind_real) :: var_rhflt                        ! Variances initial filtering support radius
+   real(kind_real) :: var_rhflt                         ! Variances initial filtering support radius [in meters]
    logical :: local_diag                                ! Activate local diagnostics
-   real(kind_real) :: local_rad                        ! Local diagnostics calculation radius
+   real(kind_real) :: local_rad                         ! Local diagnostics calculation radius [in meters]
    logical :: adv_diag                                  ! Activate advection diagnostic
    character(len=1024) :: adv_type                      ! Advection diagnostic type ('max', 'wind' or 'windmax')
-   real(kind_real) :: adv_rad                          ! Advection diagnostic calculation radius
+   real(kind_real) :: adv_rad                           ! Advection diagnostic calculation radius [in meters]
    integer :: adv_niter                                 ! Number of iteration for the advection filtering
-   real(kind_real) :: adv_rhflt                        ! Advection initial filtering support radius
+   real(kind_real) :: adv_rhflt                         ! Advection initial filtering support radius [in meters]
    real(kind_real) :: adv_valid                         ! Required proportion of valid points for filtering convergence
 
    ! fit_param
@@ -176,13 +178,15 @@ type nam_type
    integer :: mpicom                                    ! Number of communication steps
    integer :: adv_mode                                  ! Advection mode (1: direct, -1: direct and inverse)
    logical :: forced_radii                              ! Force specific support radii
-   real(kind_real) :: rh                                ! Forced horizontal support radius
+   real(kind_real) :: rh                                ! Forced horizontal support radius [in meters]
    real(kind_real) :: rv                                ! Forced vertical support radius
    logical :: pos_def_test                              ! Positive-definiteness test
    logical :: write_grids                               ! Write NICAS grids
+
+   ! dirac_param
    integer :: ndir                                      ! Number of Diracs
-   real(kind_real) :: londir(ndirmax)                   ! Diracs longitudes (in degrees)
-   real(kind_real) :: latdir(ndirmax)                   ! Diracs latitudes (in degrees)
+   real(kind_real) :: londir(ndirmax)                   ! Diracs longitudes [in degrees]
+   real(kind_real) :: latdir(ndirmax)                   ! Diracs latitudes [in degrees]
    integer :: levdir(ndirmax)                           ! Diracs level
    integer :: ivdir(ndirmax)                            ! Diracs variable indices
    integer :: itsdir(ndirmax)                           ! Diracs timeslot indices
@@ -192,12 +196,12 @@ type nam_type
 
    ! output_param
    integer :: nldwv                                     ! Number of local diagnostics profiles to write (for local_diag = .true.)
-   integer :: img_ldwv(nldwvmax)                       ! Index on model grid of the local diagnostics profiles to write
-   real(kind_real) :: lon_ldwv(nldwvmax)               ! Longitudes (in degrees) of the local diagnostics profiles to write
-   real(kind_real) :: lat_ldwv(nldwvmax)               ! Latitudes (in degrees) of the local diagnostics profiles to write
+   integer :: img_ldwv(nldwvmax)                        ! Index on model grid of the local diagnostics profiles to write
+   real(kind_real) :: lon_ldwv(nldwvmax)                ! Longitudes of the local diagnostics profiles to write [in degrees]
+   real(kind_real) :: lat_ldwv(nldwvmax)                ! Latitudes of the local diagnostics profiles to write [in degrees]
    character(len=1024),dimension(nldwvmax) :: name_ldwv ! Name of the local diagnostics profiles to write
    logical :: grid_output                               ! Write regridded fields
-   real(kind_real) :: grid_resol                        ! Regridded fields resolution
+   real(kind_real) :: grid_resol                        ! Regridded fields resolution [in meters]
 contains
    procedure :: init => nam_init
    procedure :: read => nam_read
@@ -318,6 +322,7 @@ nam%ens2_nsub = 1
 
 ! sampling_param default
 nam%sam_write = .false.
+nam%sam_write_grids = .false.
 nam%sam_read = .false.
 nam%mask_type = 'none'
 do iv=1,nvmax
@@ -347,6 +352,7 @@ do iv=1,nvmax*(nvmax-1)/2
    nam%vbal_block(iv) = .false.
 end do
 nam%vbal_rad = 0.0
+nam%vbal_dlat = 0.0
 do iv=1,nvmax*(nvmax-1)/2
    nam%vbal_diag_auto(iv) = .false.
 end do
@@ -394,6 +400,8 @@ nam%rh = 0.0
 nam%rv = 0.0
 nam%pos_def_test = .false.
 nam%write_grids = .false.
+
+! dirac_param default
 nam%ndir = 0
 nam%londir = 0.0
 nam%latdir = 0.0
@@ -510,6 +518,7 @@ integer :: ens1_nsub
 integer :: ens2_ne
 integer :: ens2_nsub
 logical :: sam_write
+logical :: sam_write_grids
 logical :: sam_read
 character(len=1024) :: mask_type
 character(len=1024),dimension(nvmax) :: mask_lu
@@ -533,6 +542,7 @@ logical :: gau_approx
 integer :: avg_nbins
 logical :: vbal_block(nvmax*(nvmax-1)/2)
 real(kind_real) :: vbal_rad
+real(kind_real) :: vbal_dlat
 logical :: vbal_diag_auto(nvmax*(nvmax-1)/2)
 logical :: vbal_diag_reg(nvmax*(nvmax-1)/2)
 logical :: var_filter
@@ -666,6 +676,7 @@ namelist/ens1_param/ens1_ne, &
 namelist/ens2_param/ens2_ne, &
                   & ens2_nsub
 namelist/sampling_param/sam_write, &
+                      & sam_write_grids, &
                       & sam_read, &
                       & mask_type, &
                       & mask_lu, &
@@ -689,6 +700,7 @@ namelist/diag_param/ne, &
                   & avg_nbins, &
                   & vbal_block, &
                   & vbal_rad, &
+                  & vbal_dlat, &
                   & vbal_diag_auto, &
                   & vbal_diag_reg, &
                   & var_filter, &
@@ -740,6 +752,7 @@ namelist/output_param/nldwv, &
                     & lon_ldwv, &
                     & lat_ldwv, &
                     & name_ldwv, &
+                    & diag_rhflt, &
                     & grid_output, &
                     & grid_resol
 
@@ -832,6 +845,7 @@ if (mpl%main) then
 
    ! sampling_param default
    sam_write = .false.
+   sam_write_grids = .false.
    sam_read = .false.
    mask_type = 'none'
    do iv=1,nvmax
@@ -861,6 +875,7 @@ if (mpl%main) then
       vbal_block(iv) = .false.
    end do
    vbal_rad = 0.0
+   vbal_dlat = 0.0
    do iv=1,nvmax*(nvmax-1)/2
       vbal_diag_auto(iv) = .true.
    end do
@@ -908,6 +923,8 @@ if (mpl%main) then
    rv = 0.0
    pos_def_test = .false.
    write_grids = .false.
+
+   ! dirac_param default
    ndir = 0
    londir = 0.0
    latdir = 0.0
@@ -1029,6 +1046,7 @@ if (mpl%main) then
    read(lunit,nml=sampling_param)
    if (nc3>nc3max) call mpl%abort(subr,'nc3 is too large')
    nam%sam_write = sam_write
+   nam%sam_write_grids = sam_write_grids
    nam%sam_read = sam_read
    nam%mask_type = mask_type
    if (nv>0) nam%mask_lu(1:nam%nv) = mask_lu(1:nam%nv)
@@ -1055,6 +1073,7 @@ if (mpl%main) then
    nam%avg_nbins = avg_nbins
    if (nv>1) nam%vbal_block(1:nam%nv*(nam%nv-1)/2) = vbal_block(1:nam%nv*(nam%nv-1)/2)
    nam%vbal_rad = vbal_rad
+   nam%vbal_dlat = vbal_dlat
    if (nv>1) nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2) = vbal_diag_auto(1:nam%nv*(nam%nv-1)/2)
    if (nv>1) nam%vbal_diag_reg(1:nam%nv*(nam%nv-1)/2) = vbal_diag_reg(1:nam%nv*(nam%nv-1)/2)
    nam%var_filter = var_filter
@@ -1087,7 +1106,6 @@ if (mpl%main) then
 
    ! nicas_param
    read(lunit,nml=nicas_param)
-   if (ndir>ndirmax) call mpl%abort(subr,'ndir is too large')
    nam%nonunit_diag = nonunit_diag
    nam%lsqrt = lsqrt
    nam%resol = resol
@@ -1102,6 +1120,9 @@ if (mpl%main) then
    nam%rv = rv
    nam%pos_def_test = pos_def_test
    nam%write_grids = write_grids
+
+   ! dirac_param
+   if (ndir>ndirmax) call mpl%abort(subr,'ndir is too large')
    nam%ndir = ndir
    if (ndir>0) nam%londir(1:ndir) = londir(1:ndir)
    if (ndir>0) nam%latdir(1:ndir) = latdir(1:ndir)
@@ -1255,6 +1276,7 @@ call mpl%f_comm%broadcast(nam%ens2_nsub,mpl%rootproc-1)
 
 ! sampling_param
 call mpl%f_comm%broadcast(nam%sam_write,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%sam_write_grids,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%sam_read,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%mask_type,mpl%rootproc-1)
 call mpl%broadcast(nam%mask_lu,mpl%rootproc-1)
@@ -1280,6 +1302,7 @@ call mpl%f_comm%broadcast(nam%gau_approx,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%avg_nbins,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_block,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_rad,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_dlat,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_diag_auto,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_diag_reg,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_filter,mpl%rootproc-1)
@@ -1323,6 +1346,8 @@ call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_grids,mpl%rootproc-1)
+
+! dirac_param
 call mpl%f_comm%broadcast(nam%ndir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%londir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%latdir,mpl%rootproc-1)
@@ -1487,6 +1512,7 @@ if (conf%has("ens2_nsub")) call conf%get_or_die("ens2_nsub",nam%ens2_nsub)
 ! sampling_param
 if (conf%has("sam_read")) call conf%get_or_die("sam_read",nam%sam_read)
 if (conf%has("sam_write")) call conf%get_or_die("sam_write",nam%sam_write)
+if (conf%has("sam_write_grids")) call conf%get_or_die("sam_write_grids",nam%sam_write_grids)
 if (conf%has("mask_type")) then
    call conf%get_or_die("mask_type",str)
    nam%mask_type = str
@@ -1526,6 +1552,7 @@ if (conf%has("vbal_block")) then
    nam%vbal_block(1:nam%nv*(nam%nv-1)/2) = logical_array(1:nam%nv*(nam%nv-1)/2)
 end if
 if (conf%has("vbal_rad")) call conf%get_or_die("vbal_rad",nam%vbal_rad)
+if (conf%has("vbal_dlat")) call conf%get_or_die("vbal_dlat",nam%vbal_dlat)
 if (conf%has("vbal_diag_auto")) then
    call conf%get_or_die("vbal_diag_auto",logical_array)
    nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2) = logical_array(1:nam%nv*(nam%nv-1)/2)
@@ -1587,6 +1614,8 @@ if (conf%has("rh")) call conf%get_or_die("rh",nam%rh)
 if (conf%has("rv")) call conf%get_or_die("rv",nam%rv)
 if (conf%has("pos_def_test")) call conf%get_or_die("pos_def_test",nam%pos_def_test)
 if (conf%has("write_grids")) call conf%get_or_die("write_grids",nam%write_grids)
+
+! dirac_param
 if (conf%has("ndir")) call conf%get_or_die("ndir",nam%ndir)
 if (conf%has("londir")) then
    call conf%get_or_die("londir",real_array)
@@ -1697,6 +1726,7 @@ if (nam%nldwv>nldwvmax) call mpl%abort(subr,'nldwv is too large')
 nam%Lcoast = nam%Lcoast/req
 nam%dc = nam%dc/req
 nam%vbal_rad = nam%vbal_rad/req
+nam%vbal_dlat = nam%vbal_dlat*deg2rad
 nam%var_rhflt = nam%var_rhflt/req
 nam%local_rad = nam%local_rad/req
 nam%adv_rad = nam%adv_rad/req
@@ -1756,10 +1786,10 @@ if (nam%new_obsop.and.nam%load_obsop) call mpl%abort(subr,'new_obsop and load_ob
 if (nam%check_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) call mpl%abort(subr,'new_vbal or load_vbal required for check_vbal')
 if ((nam%new_hdiag.or.nam%new_lct).and.(.not.(nam%new_mom.or.nam%load_mom))) &
  & call mpl%abort(subr,'new_mom or load_mom required for new_hdiag and new_lct')
-if (nam%check_adjoints.and..not.(nam%new_nicas.or.nam%load_nicas)) &
- & call mpl%abort(subr,'new_nicas or load_nicas required for check_adjoints')
-if (nam%check_dirac.and..not.(nam%new_nicas.or.nam%load_nicas)) &
- & call mpl%abort(subr,'new_nicas or load_nicas required for check_dirac')
+if (nam%check_adjoints.and..not.(nam%new_vbal.or.nam%load_vbal.or.nam%new_nicas.or.nam%load_nicas.or.nam%new_obsop &
+ & .or.nam%load_obsop)) call mpl%abort(subr,'new or load for vbal, nicas or obsop required for check_adjoints')
+if (nam%check_dirac.and..not.(nam%new_vbal.or.nam%load_vbal.or.nam%new_nicas.or.nam%load_nicas)) &
+ & call mpl%abort(subr,'new or load for vbal or nicas required for check_dirac')
 if (nam%check_randomization) then
    if (trim(nam%method)/='cor') call mpl%abort(subr,'cor method required for check_randomization')
    if (.not.nam%new_nicas) call mpl%abort(subr,'new_nicas required for check_randomization')
@@ -1774,9 +1804,9 @@ if (nam%check_optimality) then
    if (.not.nam%write_hdiag) call mpl%abort(subr,'write_hdiag required for check_optimality')
 end if
 if (nam%check_obsop.and..not.(nam%new_obsop.or.nam%load_obsop)) &
- & call mpl%abort(subr,'new_obsop or load_obsop required for check_obsop')
+ & call mpl%abort(subr,'new or load obsop required for check_obsop')
 if (nam%check_no_obs.and..not.(nam%new_obsop.or.nam%load_obsop)) &
- & call mpl%abort(subr,'new_obsop or load_obsop required for check_no_obs')
+ & call mpl%abort(subr,'new or load_obsop required for check_no_obs')
 if (nam%check_no_obs.and.(mpl%nproc<2)) call mpl%abort(subr,'at least 2 MPI tasks required for check_no_obs')
 if (nam%check_no_point.and.nam%check_no_point_mask) &
  & call mpl%abort(subr,'check_no_point and check_no_point_mask are exclusive')
@@ -1789,6 +1819,8 @@ if ((nam%check_set_param_cor.or.nam%check_set_param_cor.or.nam%check_set_param_c
  & call mpl%abort(subr,'new_nicas required for check_set_param_[...]')
 if (nam%check_get_param_stddev.and..not.(nam%new_var)) &
  & call mpl%abort(subr,'new_var required for check_get_param_stddev')
+if (nam%check_get_param_cor.and..not.(nam%new_hdiag.and.(trim(nam%method)=='cor'))) &
+ & call mpl%abort(subr,'new_hdiag and cor method required for check_get_param_cor')
 if (nam%check_get_param_hyb.and..not.(nam%new_hdiag.and.(trim(nam%method)=='hyb-avg'))) &
  & call mpl%abort(subr,'new_hdiag and hyb-avg method required for check_get_param_hyb')
 if (nam%check_get_param_Dloc.and..not.(nam%new_hdiag.and.(trim(nam%method)=='loc'))) &
@@ -1844,6 +1876,7 @@ end if
 ! Check sampling_param
 if (nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%sam_write.and.nam%sam_read) call mpl%abort(subr,'sam_write and sam_read are both true')
+   if (nam%sam_write_grids.and.(.not.nam%sam_write)) call mpl%abort(subr,'sam_write required for sam_write_grids')
    select case (trim(nam%draw_type))
    case ('random_uniform')
    case ('random_coast')
@@ -1902,7 +1935,7 @@ if (nam%new_vbal) then
    if (nam%nv<2) call mpl%abort(subr,'at least two variables required to diagnose vertical balance')
    if (.not.(any(nam%vbal_block(1:nam%nv*(nam%nv-1)/2)))) &
  & call mpl%abort(subr,'no block selected for the vertical balance diagnostics')
-   if (.not.(nam%vbal_rad>0.0)) call mpl%abort(subr,'vbal_rad should be positive')
+   if ((.not.(nam%vbal_rad>0.0)).and.(.not.(nam%vbal_dlat>0.0))) call mpl%abort(subr,'vbal_rad or vbal_dlat should be positive')
 end if
 if (nam%new_var) then
    if (nam%var_filter) then
@@ -1962,7 +1995,7 @@ if (nam%new_hdiag) then
 end if
 
 ! Check nicas_param
-if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomization) then
+if (nam%new_nicas.or.nam%load_nicas) then
    if (nam%nonunit_diag) then
       if (nam%method=='cor') call mpl%abort(subr,'nonunit_diag is inconsistent with correlation, use variance operator instead')
    end if
@@ -2005,6 +2038,8 @@ if (nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomiz
    end select
 end if
 if (nam%write_grids.and.(.not.nam%new_nicas)) call mpl%abort(subr,'new_nicas required for write_grids')
+
+! Check dirac_param
 if (nam%new_cortrack.or.nam%check_dirac) then
    if (nam%ndir<1) call mpl%abort(subr,'ndir should be positive')
    do idir=1,nam%ndir
@@ -2172,6 +2207,7 @@ if (mpl%msv%is(lncid)) then
    call mpl%flush
 end if
 call mpl%write(lncid,'nam','sam_write',nam%sam_write)
+call mpl%write(lncid,'nam','sam_write_grids',nam%sam_write_grids)
 call mpl%write(lncid,'nam','sam_read',nam%sam_read)
 call mpl%write(lncid,'nam','mask_type',nam%mask_type)
 call mpl%write(lncid,'nam','mask_lu',nam%nv,nam%mask_lu(1:nam%nv))
@@ -2201,6 +2237,7 @@ call mpl%write(lncid,'nam','gau_approx',nam%gau_approx)
 call mpl%write(lncid,'nam','avg_nbins',nam%avg_nbins)
 call mpl%write(lncid,'nam','vbal_block',nam%nv*(nam%nv-1)/2,nam%vbal_block(1:nam%nv*(nam%nv-1)/2))
 call mpl%write(lncid,'nam','vbal_rad',nam%vbal_rad)
+call mpl%write(lncid,'nam','vbal_dlat',nam%vbal_dlat*rad2deg)
 call mpl%write(lncid,'nam','vbal_diag_auto',nam%nv*(nam%nv-1)/2,nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2))
 call mpl%write(lncid,'nam','vbal_diag_reg',nam%nv*(nam%nv-1)/2,nam%vbal_diag_reg(1:nam%nv*(nam%nv-1)/2))
 call mpl%write(lncid,'nam','var_filter',nam%var_filter)
@@ -2252,6 +2289,8 @@ call mpl%write(lncid,'nam','rh',nam%rh)
 call mpl%write(lncid,'nam','rv',nam%rv)
 call mpl%write(lncid,'nam','pos_def_test',nam%pos_def_test)
 call mpl%write(lncid,'nam','write_grids',nam%write_grids)
+
+! dirac_param
 call mpl%write(lncid,'nam','ndir',nam%ndir)
 allocate(londir(nam%ndir))
 allocate(latdir(nam%ndir))

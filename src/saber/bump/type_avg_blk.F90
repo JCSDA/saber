@@ -28,7 +28,6 @@ type avg_blk_type
    character(len=1024) :: name                           ! Name
    integer :: ne                                         ! Ensemble size
    integer :: nsub                                       ! Sub-ensembles number
-   real(kind_real),allocatable :: m2flt(:,:)             ! Filtered variance
    real(kind_real),allocatable :: nc1a(:,:,:)            ! Number of points in subset Sc1 on halo A
    real(kind_real),allocatable :: m11(:,:,:)             ! Covariance average
    real(kind_real),allocatable :: m11m11(:,:,:,:,:)      ! Product of covariances average
@@ -790,14 +789,14 @@ do il0=1,geom%nl0
          i = 0
 
          ! Fill lists
-         do ic1=1,nam%nc1
+         do ic1d=1,samp%nc1d
+            ! Index
+            ic1 = samp%c1d_to_c1(ic1d)
+
             ! Check mask validity
             valid = samp%local_mask(ic1,ic2a).and.samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
 
             if (valid) then
-               ! Index
-               ic1d = samp%c1_to_c1d(ic1)
-
                ! Check generalized kurtosis
                do isub=1,avg_blk%nsub
                   gen_kurt = 3.0*mom_blk%m22(ic1d,jc3,jl0r,il0,isub)/(2.0*mom_blk%m11(ic1d,jc3,jl0r,il0,isub)**2 &
@@ -846,7 +845,7 @@ do il0=1,geom%nl0
                end do
                avg_blk%m22(jc3,jl0r,il0,isub) = sum(list_m22(:,isub),mask=mpl%msv%isnot(list_m11))
             end do
-          else
+         else
             avg_blk%m11(jc3,jl0r,il0) = 0.0
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
@@ -864,6 +863,13 @@ do il0=1,geom%nl0
       end do
    end do
 end do
+
+! Release memory
+deallocate(list_m11)
+deallocate(list_m11m11)
+deallocate(list_m2m2)
+deallocate(list_m22)
+deallocate(list_cor)
 
 ! Normalize
 !$omp parallel do schedule(static) private(il0,jl0r,jc3,isub,jsub,norm) shared(geom,bpar,avg_blk)
@@ -899,13 +905,6 @@ do il0=1,geom%nl0
    end do
 end do
 !$omp end parallel do
-
-! Release memory
-deallocate(list_m11)
-deallocate(list_m11m11)
-deallocate(list_m2m2)
-deallocate(list_m22)
-deallocate(list_cor)
 
 ! End associate
 end associate
@@ -1298,13 +1297,13 @@ do il0=1,geom%nl0
       do jc3=1,bpar%nc3(ib)
          ! Fill lists
          i = 0
-         do ic1=1,nam%nc1
+         do ic1d=1,samp%nc1d
+            ! Index
+            ic1 = samp%c1d_to_c1(ic1d)
+
             if (samp%local_mask(ic1,ic2a)) then
                ! Update
                i = i+1
-
-               ! Index
-               ic1d = samp%c1_to_c1d(ic1)
 
                ! Check validity
                valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)

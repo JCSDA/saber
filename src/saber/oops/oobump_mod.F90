@@ -6,16 +6,12 @@
 module oobump_mod
 
 use atlas_module
-use datetime_mod
 use fckit_configuration_module, only: fckit_configuration
-use fckit_log_module, only: fckit_log
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
 use kinds
 use missing_values_mod
-use oops_variables_mod
 use type_bump, only: bump_type
-use type_nam, only: nvmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax 
 
 implicit none
 
@@ -31,6 +27,8 @@ public :: oobump_create, oobump_delete, oobump_get_cv_size, oobump_add_member, o
 type oobump_type
    integer :: separate_log !> Separate log files for BUMP
    type(bump_type) :: bump !> Instances of BUMP
+contains
+   final :: dummy
 end type oobump_type
 
 #define LISTED_TYPE oobump_type
@@ -388,5 +386,15 @@ type(atlas_fieldset), intent(inout) :: afieldset !< ATLAS fieldset
 call self%bump%set_parameter(param,afieldset)
 
 end subroutine oobump_set_param
+!-------------------------------------------------------------------------------
+!> Dummy finalization
+subroutine dummy(self)
+
+implicit none
+
+! Passed variables
+type(oobump_type), intent(inout) :: self !< OOBUMP
+
+end subroutine dummy
 !-------------------------------------------------------------------------------
 end module oobump_mod

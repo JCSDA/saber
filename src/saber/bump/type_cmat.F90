@@ -609,7 +609,7 @@ do ib=1,bpar%nbe
       end do
 
       ! Set coefficients
-      cmat%blk(ib)%coef_ens = lct%blk(ib)%coef_ens
+      cmat%blk(ib)%coef_ens = 1.0
       cmat%blk(ib)%coef_sta = 0.0
       cmat%blk(ib)%wgt = 1.0
    end if

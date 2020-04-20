@@ -386,14 +386,14 @@ endif()
 if(${SABER_TEST_TIER} GREATER 1)
     ecbuild_add_test(TARGET       test_bump_nicas_mpicom_lsqrt_a-b_dirac
                      TYPE SCRIPT
-                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare_specific.sh
+                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                      ARGS         bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_b dirac
                      TEST_DEPENDS test_bump_nicas_mpicom_lsqrt_a_1-1_run
                                   test_bump_nicas_mpicom_lsqrt_b_1-1_run)
 
     ecbuild_add_test(TARGET       test_bump_nicas_mpicom_lsqrt_a-c_dirac
                      TYPE SCRIPT
-                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare_specific.sh
+                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                      ARGS         bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_c dirac
                      TEST_DEPENDS test_bump_nicas_mpicom_lsqrt_a_1-1_run
                                   test_bump_nicas_mpicom_lsqrt_c_1-1_run)
@@ -622,7 +622,7 @@ if(${SABER_TEST_OOPS})
         foreach(test ${saber_test_oops})
             ecbuild_add_test( TARGET test_${test}_compare
                               TYPE SCRIPT
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_oops.sh
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                               ARGS ${test}
                               TEST_DEPENDS get_saber_ref test_${test}_run )
         endforeach()

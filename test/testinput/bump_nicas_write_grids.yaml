@@ -43,6 +43,8 @@ ne: 50
 resol: 8.0
 mpicom: 2
 write_grids: 1
+
+# dirac_param
 ndir: 1
 londir: [-85.0]
 latdir: [65.0]

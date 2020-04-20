@@ -22,6 +22,7 @@ bump_read_sampling
 bump_read_var
 bump_read_vbal
 bump_var_filter
+bump_vbal
 bump_write_cmat
 bump_write_mom
 bump_write_nicas

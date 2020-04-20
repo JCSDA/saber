@@ -148,7 +148,8 @@ write(mpl%info,'(a)') '---------------------------------------------------------
 call mpl%flush
 write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
 call mpl%flush
-call lct%samp%compute_sampling_c1(mpl,rng,nam,geom,bpar,ens)
+lct%samp%name = 'lct'
+call lct%samp%compute_sampling_c1(mpl,rng,nam,geom,ens)
 
 ! Compute MPI distribution, halo A
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -189,7 +190,8 @@ end if
 
 ! Write sampling data
 if (nam%sam_write) then
-   if (mpl%main) call lct%samp%write(mpl,nam,geom,bpar)
+   if (mpl%main) call lct%samp%write(mpl,nam,geom)
+   if (nam%sam_write_grids) call lct%samp%write_grids(mpl,nam,geom)
 end if
 
 ! Release memory (partial)

@@ -43,6 +43,8 @@ resol: 8.0
 subsamp: "h"
 network: 1
 mpicom: 2
+
+# dirac_param
 ndir: 1
 londir: [-85.0]
 latdir: [65.0]

@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_write_vbal/test__MPI_-_OMP_"
+prefix: "bump_vbal_dlat/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
@@ -29,7 +29,7 @@ ntry: 30
 
 # diag_param
 vbal_block: [1]
-vbal_rad: 2000.0e3
+vbal_dlat: 15.0
 
 # fit_param
 

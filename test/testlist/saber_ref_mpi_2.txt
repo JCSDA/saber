@@ -1,3 +1,5 @@
+bump_hdiag_write_grids/test_2-1_sampling_grids_0002-0001.nc
+bump_hdiag_write_grids/test_2-1_sampling_grids_0002-0002.nc
 bump_hdiag-nicas_cor_common_univariate/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_hdiag-nicas_cor_common_univariate/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_hdiag-nicas_loc_common_univariate/test_2-1_nicas-2-sqrt_0002-0001_common.nc
@@ -90,6 +92,8 @@ bump_lct_write_cor/test_2-1_lct_cor_0002-0002_01_01_01_01.nc
 bump_lct_write_cor/test_2-1_lct_cor_0002-0002_01_01_02_02.nc
 bump_lct_write_cor/test_2-1_lct_cor_0002-0002_02_02_01_01.nc
 bump_lct_write_cor/test_2-1_lct_cor_0002-0002_02_02_02_02.nc
+bump_lct_write_grids/test_2-1_sampling_grids_0002-0001.nc
+bump_lct_write_grids/test_2-1_sampling_grids_0002-0002.nc
 bump_nicas_mpicom_lsqrt_a/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_nicas_mpicom_lsqrt_a/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_nicas_mpicom_lsqrt_b/test_2-1_nicas-2_0002-0001_common.nc
@@ -110,6 +114,16 @@ bump_nicas_write_grids/test_2-1_nicas-2-sqrt_0002-0002_common_grids.nc
 bump_nicas_write_grids/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_obsop/test_2-1_obs_0002-0001.nc
 bump_obsop/test_2-1_obs_0002-0002.nc
+bump_vbal_dlat/test_2-1_vbal_0002-0001.nc
+bump_vbal_dlat/test_2-1_vbal_0002-0002.nc
+bump_vbal_diag_auto/test_2-1_vbal_0002-0001.nc
+bump_vbal_diag_auto/test_2-1_vbal_0002-0002.nc
+bump_vbal_diag_reg/test_2-1_vbal_0002-0001.nc
+bump_vbal_diag_reg/test_2-1_vbal_0002-0002.nc
+bump_vbal_write_grids/test_2-1_sampling_grids_0002-0001.nc
+bump_vbal_write_grids/test_2-1_sampling_grids_0002-0002.nc
+bump_vbal_write_grids/test_2-1_vbal_0002-0001.nc
+bump_vbal_write_grids/test_2-1_vbal_0002-0002.nc
 bump_set_param_cor/test_2-1_nicas-2-sqrt_0002-0001_01_01_01_01.nc
 bump_set_param_cor/test_2-1_nicas-2-sqrt_0002-0001_01_01_02_02.nc
 bump_set_param_cor/test_2-1_nicas-2-sqrt_0002-0001_02_02_01_01.nc

@@ -44,6 +44,8 @@ mpicom: 2
 forced_radii: 1
 rh: 4000.0e3
 rv: 6000.0
+
+# dirac_param
 ndir: 1
 londir: [-85.0]
 latdir: [65.0]
