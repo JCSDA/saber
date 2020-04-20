@@ -29,7 +29,7 @@ contains
 ! Subroutine: initialize_sampling
 ! Purpose: intialize sampling
 !----------------------------------------------------------------------
-subroutine initialize_sampling(mpl,rng,n_loc,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ntry,nrep,ns2_glb,sam2_glb,fast)
+subroutine initialize_sampling(mpl,rng,n_loc,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ntry,nrep,ns2_glb,sam2_glb,fast,verbosity)
 
 implicit none
 
@@ -47,6 +47,7 @@ integer,intent(in) :: nrep                   ! Number of replacements
 integer,intent(in) :: ns2_glb                ! Number of samplings points (global)
 integer,intent(out) :: sam2_glb(ns2_glb)     ! Horizontal sampling index (global)
 logical,intent(in),optional :: fast          ! Fast sampling flag
+logical,intent(in),optional :: verbosity     ! Verbosity flag
 
 ! Local variables
 integer :: n_glb,n_loc_eff,n_glb_eff,n_loc_val,i_loc,i_loc_val,i_glb,is1_loc,is2_glb,iproc,js,irep,irmax,itry,is1_glb,ir
@@ -57,11 +58,15 @@ real(kind_real) :: rhsq_loc,rhsq_glb,d,distmax,distmin,nn_dist(2),cdf_norm,rr
 real(kind_real),allocatable :: lon1_glb(:),lat1_glb(:),rh1_glb(:)
 real(kind_real),allocatable :: cdf(:)
 real(kind_real),allocatable :: lon_rep(:),lat_rep(:),dist(:)
-logical :: lfast
+logical :: lfast,lverbosity
 logical,allocatable :: mask_glb(:),lmask(:),smask(:),rmask(:)
 character(len=1024),parameter :: subr = 'rng_initialize_sampling'
 type(fckit_mpi_status) :: status
 type(tree_type) :: tree
+
+! Local verbosity flag
+lverbosity = .true.
+if (present(verbosity)) lverbosity = verbosity
 
 ! Number of effective points
 n_loc_eff = count(mask_loc)
@@ -74,7 +79,7 @@ elseif (n_glb_eff<ns2_glb) then
    call mpl%abort(subr,'ns2_glb greater than n_glb_eff in initialize_sampling')
 elseif (n_glb_eff==ns2_glb) then
    write(mpl%info,'(a)') ' all points are used'
-   call mpl%flush
+   if (lverbosity) call mpl%flush
 
    ! Global size
    call mpl%f_comm%allreduce(n_loc,n_glb,fckit_mpi_sum())
@@ -144,11 +149,11 @@ else
    if (n_loc_eff==0) then
       ! No point on this task
       write(mpl%info,'(a)') ' no point on this task'
-      call mpl%flush
+      if (lverbosity) call mpl%flush
    elseif (ns1_loc==n_loc_eff) then
       ! All points are used
       write(mpl%info,'(a)') ' all points are used'
-      call mpl%flush(.false.)
+      if (lverbosity) call mpl%flush(.false.)
 
       is1_loc = 0
       do i_loc=1,n_loc
@@ -182,7 +187,7 @@ else
       end do
       cdf_norm = 1.0/cdf(n_loc_val)
       cdf = cdf*cdf_norm
-      call mpl%prog_init(ns1_loc)
+      if (lverbosity) call mpl%prog_init(ns1_loc)
 
       do is1_loc=1,ns1_loc
          ! Generate random number
@@ -217,9 +222,9 @@ else
          cdf(1:n_loc_val) = cdf(1:n_loc_val)*cdf_norm
 
          ! Update
-         call mpl%prog_print(is1_loc)
+         if (lverbosity) call mpl%prog_print(is1_loc)
       end do
-      call mpl%prog_final(.false.)
+      if (lverbosity) call mpl%prog_final(.false.)
 
       ! Release memory
       deallocate(to_valid)
@@ -229,7 +234,7 @@ else
    if (n_loc_eff>0) then
       ! Continue printing
       write(mpl%info,'(a)') ' => '
-      call mpl%flush(.false.)
+      if (lverbosity) call mpl%flush(.false.)
    end if
 
    ! Communication
@@ -302,7 +307,7 @@ else
       do is1_glb=1,ns1_glb
          to_valid(is1_glb) = is1_glb
       end do
-      call mpl%prog_init(ns2_glb+nrep_eff)
+      if (lverbosity) call mpl%prog_init(ns2_glb+nrep_eff)
       lfast = .false.
       if (present(fast)) lfast = fast
 
@@ -353,9 +358,9 @@ else
             cdf(1:ns1_glb_val) = cdf(1:ns1_glb_val)*cdf_norm
 
             ! Update
-            call mpl%prog_print(is2_glb)
+            if (lverbosity) call mpl%prog_print(is2_glb)
          end do
-         call mpl%prog_final(.false.)
+         if (lverbosity) call mpl%prog_final(.false.)
 
          ! Release memory
          deallocate(cdf)
@@ -427,16 +432,16 @@ else
             end if
 
             ! Update
-            call mpl%prog_print(is2_glb)
+            if (lverbosity) call mpl%prog_print(is2_glb)
          end do
-         call mpl%prog_final(.false.)
+         if (lverbosity) call mpl%prog_final(.false.)
       end if
 
       if (nrep_eff>0) then
          if (n_loc_eff>0) then
             ! Continue printing
             write(mpl%info,'(a)') ' => '
-            call mpl%flush(.false.)
+            if (lverbosity) call mpl%flush(.false.)
          end if
 
          ! Allocation
@@ -452,7 +457,7 @@ else
             lat_rep(is2_glb) = lat1_glb(sam2_glb_tmp(is2_glb))
          end do
          dist = mpl%msv%valr
-         call mpl%prog_init(nrep_eff)
+         if (lverbosity) call mpl%prog_init(nrep_eff)
 
          ! Remove closest points
          do irep=1,nrep_eff
@@ -496,9 +501,9 @@ else
             rmask(is2_glb_min) = .false.
 
              ! Update
-            call mpl%prog_print(irep)
+            if (lverbosity) call mpl%prog_print(irep)
          end do
-         call mpl%prog_final
+         if (lverbosity) call mpl%prog_final
 
          ! Copy sam2_glb
          js = 0
@@ -518,7 +523,7 @@ else
          if (n_loc_eff>0) then
             ! Stop printing
             write(mpl%info,'(a)') ''
-            call mpl%flush
+            if (lverbosity) call mpl%flush
          end if
 
          ! Copy sam2_glb
@@ -541,7 +546,7 @@ else
       if (n_loc_eff>0) then
          ! Stop printing
          write(mpl%info,'(a)') ''
-         call mpl%flush
+         if (lverbosity) call mpl%flush
       end if
    end if
 end if

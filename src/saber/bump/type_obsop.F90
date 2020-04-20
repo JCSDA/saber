@@ -351,24 +351,27 @@ end subroutine obsop_run_obsop
 ! Subroutine: obsop_run_obsop_tests
 ! Purpose: observation operator tests driver
 !----------------------------------------------------------------------
-subroutine obsop_run_obsop_tests(obsop,mpl,rng,geom)
+subroutine obsop_run_obsop_tests(obsop,mpl,nam,rng,geom)
 
 implicit none
 
 ! Passed variables
 class(obsop_type),intent(inout) :: obsop ! Observation operator data
 type(mpl_type),intent(inout) :: mpl      ! MPI data
+type(nam_type),intent(in) :: nam         ! Namelist
 type(rng_type),intent(inout) :: rng      ! Random number generator
 type(geom_type),intent(in) :: geom       ! Geometry
 
-! Test adjoints
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Test observation operator adjoint'
-call mpl%flush
-call obsop%test_adjoint(mpl,rng,geom)
+if (nam%check_adjoints) then
+   ! Test adjoints
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Test observation operator adjoint'
+   call mpl%flush
+   call obsop%test_adjoint(mpl,rng,geom)
+end if
 
-if (allocated(obsop%obsa_to_obs)) then
+if (nam%check_obsop.and.allocated(obsop%obsa_to_obs)) then
    ! Test precision
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush

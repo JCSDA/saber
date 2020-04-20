@@ -1,6 +1,6 @@
 #!/bin/sh
 #----------------------------------------------------------------------
-# Shell script: saber_setref
+# Shell script: saber_set_ref
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -66,3 +66,15 @@ do
       done
    fi
 done < ${listdir}/saber_test_quad.txt
+
+# OOPS tests
+
+# Initialize list
+rm -f ${listdir}/saber_ref_oops.txt
+
+# Get list of tests
+while IFS= read -r oops_test
+do
+   # OOPS tests
+   echo ${oops_test}/"test.log.out" >> ${listdir}/saber_ref_oops.txt
+done < ${listdir}/saber_test_oops.txt

@@ -6,3 +6,7 @@ coverage:
   precision: 2
   round: down
   range: "70...100"
+
+ignore:
+  - "jcsda/src_repo/oops"
+  - "jcsda/src_repo/saber/test"

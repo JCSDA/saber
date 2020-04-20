@@ -24,6 +24,7 @@ ens1_ne: 50
 
 # sampling_param
 nc1: 500
+nc2: 150
 ntry: 30
 nc3: 15
 dc: [400.0e3]
@@ -31,8 +32,11 @@ nl0r: 2
 
 # diag_param
 ne: 50
+local_diag: 1
+local_rad: 1000.0e3
 
 # fit_param
+diag_rhflt: 2000.0e3
 
 # nicas_param
 
@@ -41,5 +45,4 @@ ne: 50
 # obsop_param
 
 # output_param
-diag_rhflt: 2000.0e3
 

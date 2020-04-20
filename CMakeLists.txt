@@ -90,13 +90,24 @@ else()
     add_definitions( -DSABER_USE_METIS=0 )
 endif()
 
+# oops
+ecbuild_use_package( PROJECT oops VERSION 0.2.1 )
+if (${OOPS_FOUND})
+    include_directories( ${OOPS_INCLUDE_DIRS} )
+endif()
+
 ################################################################################
 # Export package info
 ################################################################################
 
 list( APPEND SABER_TPLS eckit eckit_mpi fckit atlas atlas_f )
+
 if(${METIS_FOUND})
     list( APPEND SABER_TPLS metis metis_interface )
+endif()
+
+if (${OOPS_FOUND})
+    list( APPEND SABER_TPLS oops )
 endif()
 
 set( SABER_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src

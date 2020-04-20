@@ -325,7 +325,7 @@ call mpl%flush
 ! Compute ensemble 1 correlation
 write(mpl%info,'(a7,a)') '','Ensemble 1:'
 call mpl%flush
-call hdiag%cor_1%correlation(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'cor')
+call hdiag%cor_1%correlation(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'cor')
 
 select case (trim(nam%method))
 case ('hyb-avg','hyb-rnd','dual-ens')
@@ -334,9 +334,9 @@ case ('hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    select case (trim(nam%method))
    case ('hyb-avg','hyb-rnd')
-      call hdiag%cor_2%correlation(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cor_sta')
+      call hdiag%cor_2%correlation(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cor_sta')
    case ('dual-ens')
-      call hdiag%cor_2%correlation(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cor_lr')
+      call hdiag%cor_2%correlation(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cor_lr')
    end select
 end select
 
@@ -349,7 +349,7 @@ case ('loc','hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensemble 1:'
    call mpl%flush
-   call hdiag%loc_1%localization(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'loc')
+   call hdiag%loc_1%localization(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'loc')
 end select
 
 select case (trim(nam%method))
@@ -361,7 +361,7 @@ case ('hyb-avg','hyb-rnd')
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensemble 1 and 2:'
    call mpl%flush
-   call hdiag%loc_2%hybridization(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'loc_hyb')
+   call hdiag%loc_2%hybridization(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'loc_hyb')
 end select
 
 if (trim(nam%method)=='dual-ens') then
@@ -372,7 +372,7 @@ if (trim(nam%method)=='dual-ens') then
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensembles 1 and 2:'
    call mpl%flush
-   call hdiag%loc_2%dualens(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,hdiag%avg_2,hdiag%loc_3,'loc_deh','loc_deh_lr')
+   call hdiag%loc_2%dualens(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,hdiag%avg_2,hdiag%loc_3,'loc_deh','loc_deh_lr')
 end if
 
 end subroutine hdiag_run_hdiag

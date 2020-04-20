@@ -1,0 +1,75 @@
+background:
+  date: 2010-01-01T12:00:00Z
+  filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H
+bump:
+  datadir: testdata
+  dc: 500.0e3
+  default_seed: 1
+  method: cor
+  mpicom: 2
+  nc1: 500
+  nc2: 100
+  nc3: 20
+  ne: 50
+  network: 1
+  new_hdiag: 1
+  new_nicas: 1
+  new_var: 1
+  nl0r: 2
+  ntry: 10
+  prefix: qg_parameters_bump_cov/test
+  resol: 8.0
+  strategy: specific_univariate
+  var_filter: 1
+  var_niter: 10
+  var_rhflt: 3000.0e3
+ensemble:
+  members:
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H
+  - date: 2010-01-01T12:00:00Z
+    filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H
+  variables:
+  - x
+logging:
+  categories: Info, Test, Warning, Error
+output:
+- datadir: testdata/qg_parameters_bump_cov
+  date: 2010-01-01T12:00:00Z
+  exp: stddev
+  parameter: stddev
+  type: an
+- datadir: testdata/qg_parameters_bump_cov
+  date: 2010-01-01T12:00:00Z
+  exp: cor_rh
+  parameter: cor_rh
+  type: an
+- datadir: testdata/qg_parameters_bump_cov
+  date: 2010-01-01T12:00:00Z
+  exp: cor_rv
+  parameter: cor_rv
+  type: an
+resolution:
+  nx: 40
+  ny: 20
+  depths:
+  - 4500.0
+  - 5500.0
+variables:
+- x

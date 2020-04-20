@@ -93,6 +93,18 @@ do ib=1,bpar%nbe
    ! Set block index
    nicas%blk(ib)%ib = ib
 
+   ! Set number of communication steps
+   nicas%blk(ib)%mpicom = nam%mpicom
+
+   ! Set subsampling structure
+   nicas%blk(ib)%subsamp = trim(nam%subsamp)
+
+   ! Verbosity flag
+   nicas%blk(ib)%verbosity = .true.
+
+   ! Smoother flag
+   nicas%blk(ib)%smoother = .false.
+
    ! Set name
    if (nam%lsqrt) then
       write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'-sqrt_',mpl%nproc,'-', &
@@ -101,9 +113,6 @@ do ib=1,bpar%nbe
       write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'_',mpl%nproc,'-',mpl%myproc, &
     & '_',trim(bpar%blockname(ib))
    end if
-
-   ! Set subsampling structure
-   nicas%blk(ib)%subsamp = trim(nam%subsamp)
 end do
 
 ! Update allocation flag
@@ -652,7 +661,7 @@ case ('common')
    end if
 
    ! Apply common NICAS
-   call nicas%blk(bpar%nbe)%apply(mpl,nam,geom,fld_3d)
+   call nicas%blk(bpar%nbe)%apply(mpl,geom,fld_3d)
 
    if (nam%nonunit_diag) then
       ! Apply common ensemble coefficient square-root
@@ -704,7 +713,7 @@ case ('common_univariate')
       end if
 
       ! Apply common NICAS
-      call nicas%blk(bpar%nbe)%apply(mpl,nam,geom,fld_4d(:,:,iv))
+      call nicas%blk(bpar%nbe)%apply(mpl,geom,fld_4d(:,:,iv))
 
       if (nam%nonunit_diag) then
          ! Apply common ensemble coefficient square-root
@@ -773,7 +782,7 @@ case ('common_weighted')
       end if
 
       ! Apply common NICAS
-      call nicas%blk(bpar%nbe)%apply(mpl,nam,geom,fld_4d(:,:,iv))
+      call nicas%blk(bpar%nbe)%apply(mpl,geom,fld_4d(:,:,iv))
       if (nam%nonunit_diag) then
          ! Apply common ensemble coefficient square-root
          !$omp parallel do schedule(static) private(il0,ic0a)
@@ -825,7 +834,7 @@ case ('specific_univariate')
          end if
 
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply(mpl,nam,geom,fld(:,:,iv,its))
+         call nicas%blk(ib)%apply(mpl,geom,fld(:,:,iv,its))
 
          if (nam%nonunit_diag) then
             ! Apply common ensemble coefficient square-root
@@ -1789,52 +1798,121 @@ type(bpar_type),intent(in) :: bpar       ! Block parameters
 type(io_type),intent(in) :: io           ! I/O
 
 ! Local variables
-integer :: ib,il0
+integer,parameter :: nrad = 5
+integer :: irad,ib,il0
+real(kind_real) :: rh,rv,rad(nrad),rh_diag(nrad),rv_diag(nrad),rh_norm,rv_norm
+character(len=1024) :: prefix
+type(cmat_type) :: cmat
 type(ens_type) :: ens
 type(hdiag_type) :: hdiag
+type(nicas_type) :: nicas_test
 
-! Randomize ensemble
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Randomize ensemble'
-call mpl%flush
-call nicas%randomize(mpl,rng,nam,geom,bpar,nam%ens1_ne,ens)
-if (nam%default_seed) call rng%reseed(mpl)
+! Initialization
+cmat%allocated = .false.
 
-! Run HDIAG driver
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Run HDIAG driver'
-call mpl%flush
-call hdiag%run_hdiag(mpl,rng,nam,geom,bpar,io,ens)
-if (nam%default_seed) call rng%reseed(mpl)
+! Save namelist parameters
+prefix = nam%prefix
+rh = nam%rh
+rv = nam%rv
 
-! Print scores
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- NICAS/HDIAG consistency results'
-call mpl%flush
-do ib=1,bpar%nbe
-   if (bpar%nicas_block(ib)) then
-      write(mpl%info,'(a7,a,a)') '','Block: ',trim(bpar%blockname(ib))
-      call mpl%flush
-      do il0=1,geom%nl0
-         write(mpl%info,'(a10,a7,i3,a4,a,f8.1,a,f8.1,a,f5.3)') '','Level: ',nam%levs(il0),' ~> ', &
-       & 'horizontal length-scale (exp./th./ratio): ',hdiag%cor_1%blk(0,ib)%fit_rh(il0)*reqkm,' km         / ',nam%rh*reqkm, &
-       & ' km         / ',hdiag%cor_1%blk(0,ib)%fit_rh(il0)/nam%rh
-         call mpl%flush
-         if ((nam%nl>1).and.(nam%rv>0.0)) then
-            write(mpl%info,'(a24,a,f8.1,a,f8.1,a,f5.3)') '','vertical length-scale (exp./th./ratio):   ', &
-          & hdiag%cor_1%blk(0,ib)%fit_rv(il0),' vert. unit / ',nam%rv,' vert. unit / ',hdiag%cor_1%blk(0,ib)%fit_rv(il0)/nam%rv
-            call mpl%flush
+do irad=1,nrad
+   ! Set radius factor
+   rad(irad) = real(irad,kind_real)/real(nrad,kind_real)
+
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a,f4.2)') '--- Radii factor: ',rad(irad)
+   call mpl%flush
+
+   ! Copy namelist support radii into C matrix
+   nam%rh = rh*rad(irad)
+   nam%rv = rv*rad(irad)
+   call cmat%from_nam(mpl,nam,geom,bpar)
+
+   ! Setup C matrix sampling
+   call cmat%setup_sampling(nam,geom,bpar)
+
+   ! Allocation
+   call nicas_test%alloc(mpl,nam,bpar,'nicas_test')
+
+   do ib=1,bpar%nbe
+      ! Compute NICAS parameters
+      if (bpar%nicas_block(ib)) call nicas_test%blk(ib)%compute_parameters(mpl,rng,nam,geom,cmat%blk(ib),.true.)
+
+      if (bpar%B_block(ib)) then
+         ! Copy weights
+         nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
+         if (bpar%nicas_block(ib)) then
+            allocate(nicas_test%blk(ib)%coef_ens(geom%nc0a,geom%nl0))
+            nicas_test%blk(ib)%coef_ens = cmat%blk(ib)%coef_ens
          end if
-      end do
+      end if
+   end do
+
+   ! Randomize ensemble
+   call nicas_test%randomize(mpl,rng,nam,geom,bpar,nam%ens1_ne,ens)
+   if (nam%default_seed) call rng%reseed(mpl)
+
+   ! Run HDIAG driver
+   call hdiag%run_hdiag(mpl,rng,nam,geom,bpar,io,ens)
+   if (nam%default_seed) call rng%reseed(mpl)
+
+   ! Save result
+   rh_diag(irad) = 0.0
+   rv_diag(irad) = 0.0
+   rh_norm = 0.0
+   rv_norm = 0.0
+   do ib=1,bpar%nbe
+      if (bpar%nicas_block(ib)) then
+         do il0=1,geom%nl0
+            if (hdiag%cor_1%blk(0,ib)%fit_rh(il0)>0.0) then
+               rh_diag(irad) = rh_diag(irad)+hdiag%cor_1%blk(0,ib)%fit_rh(il0)
+               rh_norm = rh_norm+1.0
+            end if
+            if (hdiag%cor_1%blk(0,ib)%fit_rv(il0)>0.0) then
+               rv_diag(irad) = rv_diag(irad)+hdiag%cor_1%blk(0,ib)%fit_rv(il0)
+               rv_norm = rv_norm+1.0
+            end if
+         end do
+      end if
+   end do
+   if (rh_norm>0.0) rh_diag(irad) = rh_diag(irad)/rh_norm
+   if (rv_norm>0.0) rv_diag(irad) = rv_diag(irad)/rv_norm
+
+   ! Write
+   if (nam%write_hdiag) then
+      write(nam%prefix,'(a,a,i2.2)') trim(prefix),'_',int(rad(irad)*10.0)
+      call hdiag%cor_1%write(mpl,nam,geom,bpar,io,hdiag%samp)
+      nam%prefix = prefix
+   end if
+
+   ! Release memory
+   call cmat%dealloc
+   call nicas_test%dealloc
+   call ens%dealloc
+   call hdiag%dealloc
+end do
+
+! Print factors
+do irad=1,nrad
+   write(mpl%info,'(a7,a,f4.2,a)') '','Radii factor: ',rad(irad),':'
+   call mpl%flush
+   if (rh_diag(irad)>0.0) then
+      write(mpl%info,'(a10,a,f10.2,a,f10.2,a,f5.3,a)') '','Diagnostic for rh: ',rh*rad(irad)*reqkm,' ~> ',rh_diag(irad)*reqkm, &
+    & ' (',rh*rad(irad)/rh_diag(irad),')'
+      call mpl%flush
+   end if
+   if (rv_diag(irad)>0.0) then
+      write(mpl%info,'(a10,a,f10.2,a,f10.2,a,f5.3,a)') '','Diagnostic for rv: ',rv*rad(irad),' ~> ',rv_diag(irad), &
+    & ' (',rv*rad(irad)/rv_diag(irad),')'
+      call mpl%flush
    end if
 end do
 
-! Release memory
-call ens%dealloc
-call hdiag%dealloc
+! Reset namelist parameters
+nam%prefix = prefix
+nam%rh = rh
+nam%rv = rv
 
 end subroutine nicas_test_consistency
 
@@ -1907,7 +1985,7 @@ call nicas%randomize(mpl,rng,nam,geom,bpar,nam%ne,ens_test)
 if (nam%default_seed) call rng%reseed(mpl)
 
 ! Allocation
-call loc_opt%alloc(mpl,nam,geom,bpar,hdiag%samp,'loc_opt',.false.)
+call loc_opt%alloc(mpl,nam,geom,bpar,hdiag%samp,'loc_opt')
 
 ! Initialization
 mse_max = huge(1.0)
@@ -2011,8 +2089,8 @@ end do
 ! Best fit
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      call fit_diag(mpl,nam%fit_type,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
-    & loc_opt%blk(0,ib)%distv,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit)
+      call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,loc_opt%blk(0,ib)%distv, &
+    & loc_opt%blk(0,ib)%coef_ens,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit)
       call loc_opt%blk(0,ib)%write(mpl,nam,geom,bpar,trim(nam%prefix)//'_diag')
    end if
 end do
