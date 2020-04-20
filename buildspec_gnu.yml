@@ -61,15 +61,7 @@ phases:
       - cp ~/.gitconfig /home/jcsdauser/
 
       # saber-bundle
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
-      - cd saber-bundle
-      - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in saber-bundle repo"
-      - cd $CODEBUILD_SRC_DIR
-      - ls
-
-      # saber
-      - git clone -b $CODEBUILD_GIT_BRANCH https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
-      - ls
+      - mkdir -p saber-bundle
 
       # fckit
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
@@ -94,6 +86,14 @@ phases:
       - cd saber-bundle/oops
       - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in oops repo"
       - cd $CODEBUILD_SRC_DIR
+      - ls
+
+      # saber
+      - git clone -b $CODEBUILD_GIT_BRANCH https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
+      - ls
+
+      # copy bundle CMakeLists.txt
+      - cp saber/bundle/CMakeLists.txt .
       - ls
 
       - mv saber-bundle /jcsda/

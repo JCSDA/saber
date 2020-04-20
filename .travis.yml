@@ -26,7 +26,7 @@ before_install:
 # Clone all repos
 #======================================================================
   - pwd
-  - git clone https://github.com/jcsda/saber-bundle.git ${REPO_SOURCE_DIR}/saber-bundle
+  - mkdir -p ${REPO_SOURCE_DIR}/saber-bundle
   - git clone https://github.com/jcsda/fckit.git ${REPO_SOURCE_DIR}/saber-bundle/fckit
 
 #  checkout for the same branch name in atlas
@@ -47,6 +47,8 @@ before_install:
 #  clone the testing branch of saber
   - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber
 
+#  copy bundle CMakeLists.txt
+  - cp ${REPO_SOURCE_DIR}/saber-bundle/saber/bundle/CMakeLists.txt ${REPO_SOURCE_DIR}/saber-bundle
 
 #  do no switch to develop branch by removing
 #  develop UPDATE in CMakeLists.txt in saber-bundle
