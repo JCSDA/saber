@@ -17,6 +17,5 @@ int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   qg::instantiateQgChangeVarFactory();
   saber::EstimateParams<qg::QgTraits> dir;
-  run.execute(dir);
-  return 0;
+  return run.execute(dir);
 }

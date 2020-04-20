@@ -25,6 +25,5 @@ int main(int argc,  char ** argv) {
   saber::instantiateLocalizationFactory<qg::QgTraits>();
   saber::instantiateVariableChangeFactory<qg::QgTraits>();
   oops::Dirac<qg::QgTraits> dir;
-  run.execute(dir);
-  return 0;
+  return run.execute(dir);
 }
