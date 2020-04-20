@@ -97,7 +97,7 @@ type nam_type
    character(len=1024),dimension(nvmax) :: varname      ! Variables names
    integer :: nts                                       ! Number of time slots
    character(len=1024),dimension(ntsmax) :: timeslot    ! Timeslots
-   real(kind_real) :: dts                               ! Timeslots width (in s)
+   real(kind_real) :: dts                               ! Timeslots width [in s]
    logical :: nomask                                    ! Do not use geometry mask
    character(len=1024) :: wind_filename                 ! Wind field file name
    character(len=1024) :: wind_varname(2)               ! Wind field variables names (u and v)
@@ -178,7 +178,7 @@ type nam_type
    integer :: mpicom                                    ! Number of communication steps
    integer :: adv_mode                                  ! Advection mode (1: direct, -1: direct and inverse)
    logical :: forced_radii                              ! Force specific support radii
-   real(kind_real) :: rh                                ! Forced horizontal support radius
+   real(kind_real) :: rh                                ! Forced horizontal support radius [in meters]
    real(kind_real) :: rv                                ! Forced vertical support radius
    logical :: pos_def_test                              ! Positive-definiteness test
    logical :: write_grids                               ! Write NICAS grids

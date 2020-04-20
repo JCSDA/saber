@@ -868,7 +868,7 @@ end do
 deallocate(list_m11)
 deallocate(list_m11m11)
 deallocate(list_m2m2)
-if (.not.nam%gau_approx) deallocate(list_m22)
+deallocate(list_m22)
 deallocate(list_cor)
 
 ! Normalize
