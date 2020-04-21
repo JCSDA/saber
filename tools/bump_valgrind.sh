@@ -14,12 +14,15 @@ output=$3
 # Initialize exit status
 status=0
 
+# Prefix list
+prefix_list="bump_ type_ tools_"
+
 if test -x "$(command -v valgrind)"; then
    # Run valgrind
    valgrind --log-file="${output}/valgrind.out" -q ${exe} ${input} ${output}
 
    # Loop over file prefixes
-   for prefix in "bump_" "type_" "tools_"; do
+   for prefix in ${prefix_list}; do
       # Get error output, find files starting with a given prefix, select column with file and line, remove duplicates
       errorlist=`grep "  at" ${output}/valgrind.out | grep __${prefix} | awk '{print $5}' | awk '{for (i=1;i<=NF;i++) if (!a[$i]++) printf("%s%s",$i,FS)}{printf("\n")}'`
       for error in ${errorlist}; do

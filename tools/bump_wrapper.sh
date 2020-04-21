@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------------------------------------------------------------
-# Bash script: bump_test_wrapper
+# Bash script: bump_wrapper
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -18,7 +18,7 @@ comparename=$8
 testname=$9
 cpu_list=${10}
 
-# Test run
+# Run
 export OMP_NUM_THREADS=${omp}
 if test "${cpu_list}" = ""; then
    cmd="${mpiexec_cmd} ${mpiexec_n} ${mpi} ${exename} ${yamlname} ${outputdir}"
@@ -34,9 +34,8 @@ else
     exit ${exit_code}
 fi
 
-# Test compare
-mpixomp=$((mpi*omp))
-cmd="${comparename} ${test} ${mpi} ${omp}"
+# Compare
+cmd="${comparename} ${testname} ${mpi} ${omp}"
 eval ${cmd}
 exit_code=$?
 if test "${exit_code}" == "0"; then

@@ -79,25 +79,40 @@ phases:
       - echo "CODEBUILD_SOURCE_VERSION=${CODEBUILD_SOURCE_VERSION}"
 
       # saber-bundle
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber-bundle saber-bundle
-      - cd saber-bundle
-      - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in saber-bundle repo"
-      - cd $CODEBUILD_SRC_DIR
-
-      # saber
-      - git clone -b $CODEBUILD_GIT_BRANCH https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
+      - mkdir -p saber-bundle
 
       # fckit
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
       - cd saber-bundle/fckit
       - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in fckit repo"
       - cd $CODEBUILD_SRC_DIR
+      - ls
 
       # atlas
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/atlas saber-bundle/atlas
+      - cd saber-bundle/atlas
+      - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in atlas repo"
+      - cd $CODEBUILD_SRC_DIR
+      - ls
 
       # metis
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
+      - ls
+
+      # oops
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/oops saber-bundle/oops
+      - cd saber-bundle/oops
+      - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in oops repo"
+      - cd $CODEBUILD_SRC_DIR
+      - ls
+
+      # saber
+      - git clone -b $CODEBUILD_GIT_BRANCH https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
+      - ls
+
+      # copy bundle CMakeLists.txt
+      - cp saber-bundle/saber/bundle/CMakeLists.txt saber-bundle
+      - ls
 
       - mv saber-bundle /jcsda/
       - cd /jcsda/saber-bundle

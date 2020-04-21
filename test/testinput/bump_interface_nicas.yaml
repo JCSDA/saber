@@ -44,6 +44,8 @@ forced_radii: 1
 rh: 4000.0e3
 rv: 6000.0
 
+# dirac_param
+
 # obsop_param
 
 # output_param

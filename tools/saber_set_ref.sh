@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------------------------------------------------------------
-# Bash script: bump_setref
+# Bash script: saber_set_ref
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -10,15 +10,16 @@
 testdata=$1
 listdir=$2
 
-# Special suffixes list
-special_list="mom lct_cor nicas normality obs split vbal"
+# Special suffixes list for BUMP
+special_list="mom lct_cor nicas normality obs sampling_grids vbal"
 
+# Tier 1 to 3 tests for BUMP
 for tier in $(seq 1 3); do
-   # Initialize lists
+   # Remove lists
    rm -f ${listdir}/bump_ref_${tier}.txt
    rm -f ${listdir}/bump_ref_mpi_${tier}.txt
 
-   # Get list of tests
+   # Loop over tests
    while IFS= read -r bump_test
    do
       # Copy 1-1 files
@@ -29,7 +30,7 @@ for tier in $(seq 1 3); do
       done
 
       # Copy 2-1 special files
-      for special in ${special_list}; do
+      for special in ${special_list} ; do
          if ls ${testdata}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
             for file in `ls ${testdata}/${bump_test}/test_2-1_${special}*.nc`; do
                if test ! -L ${file}; then
@@ -41,16 +42,16 @@ for tier in $(seq 1 3); do
    done < ${listdir}/bump_test_${tier}.txt
 done
 
-# Quad-core tests
+# Quad-core tests for BUMP
 
-# Initialize list
+# Remove list
 rm -f ${listdir}/bump_ref_quad.txt
 
-# Get list of tests
+# Loop over tests
 while IFS= read -r bump_test
 do
    # Copy 4-1 special files
-   for special in ${special_list}; do
+   for special in ${special_list} ; do
       if ls ${testdata}/${bump_test}/test_4-1_${special}*.nc 1> /dev/null 2>&1; then
          for file in `ls ${testdata}/${bump_test}/test_4-1_${special}*.nc`; do
             if test ! -L ${file}; then
@@ -60,3 +61,14 @@ do
       fi
    done
 done < ${listdir}/bump_test_quad.txt
+
+# Tests for OOPS
+
+# Remove list
+rm -f ${listdir}/oops_ref.txt
+
+# Loop over tests
+while IFS= read -r oops_test
+do
+   echo ${oops_test}/"test.log.out" >> ${listdir}/oops_ref.txt
+done < ${listdir}/oops_test.txt

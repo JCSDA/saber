@@ -4,12 +4,10 @@ prefix: "bump_read_vbal/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
-method: "cor"
-strategy: "specific_univariate"
 load_vbal: 1
-new_hdiag: 1
-write_cmat: 0
 check_vbal: 1
+check_adjoints: 1
+check_dirac: 1
 
 # model_param
 nl: 4
@@ -20,7 +18,6 @@ nts: 1
 timeslot: ["00"]
 
 # ens1_param
-ens1_ne: 50
 
 # ens2_param
 
@@ -28,18 +25,22 @@ ens1_ne: 50
 nc1: 500
 nc2: 250
 ntry: 30
-nc3: 15
-dc: [400.0e3]
-nl0r: 3
 
 # diag_param
-ne: 50
 vbal_block: [1]
 vbal_rad: 2000.0e3
 
 # fit_param
 
 # nicas_param
+
+# dirac_param
+ndir: 1
+londir: [-85.0]
+latdir: [65.0]
+levdir: [1]
+ivdir: [1]
+itsdir: [1]
 
 # obsop_param
 

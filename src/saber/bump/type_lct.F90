@@ -148,7 +148,8 @@ write(mpl%info,'(a)') '---------------------------------------------------------
 call mpl%flush
 write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
 call mpl%flush
-call lct%samp%compute_sampling_c1(mpl,rng,nam,geom,bpar,ens)
+lct%samp%name = 'lct'
+call lct%samp%compute_sampling_c1(mpl,rng,nam,geom,ens)
 
 ! Compute MPI distribution, halo A
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -189,7 +190,8 @@ end if
 
 ! Write sampling data
 if (nam%sam_write) then
-   if (mpl%main) call lct%samp%write(mpl,nam,geom,bpar)
+   if (mpl%main) call lct%samp%write(mpl,nam,geom)
+   if (nam%sam_write_grids) call lct%samp%write_grids(mpl,nam,geom)
 end if
 
 ! Release memory (partial)
@@ -216,7 +218,7 @@ write(mpl%info,'(a)') '---------------------------------------------------------
 call mpl%flush
 write(mpl%info,'(a)') '--- Compute LCT'
 call mpl%flush
-call lct%compute(mpl,nam,geom,bpar)
+call lct%compute(mpl,rng,nam,geom,bpar)
 
 ! Filter LCT
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -256,12 +258,13 @@ end subroutine lct_run_lct
 ! Subroutine: lct_compute
 ! Purpose: compute LCT
 !----------------------------------------------------------------------
-subroutine lct_compute(lct,mpl,nam,geom,bpar)
+subroutine lct_compute(lct,mpl,rng,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(lct_type),intent(inout) :: lct ! LCT
+type(rng_type),intent(inout) :: rng  ! Random number generator
 type(mpl_type),intent(inout) :: mpl  ! MPI data
 type(nam_type),intent(in) :: nam     ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
@@ -281,7 +284,7 @@ do ib=1,bpar%nb
       ! Compute
       write(mpl%info,'(a10,a)') '','Compute'
       call mpl%flush
-      call lct%blk(ib)%compute(mpl,nam,geom,bpar,lct%samp,lct%mom%blk(ib))
+      call lct%blk(ib)%compute(mpl,rng,nam,geom,bpar,lct%samp,lct%mom%blk(ib))
 
       ! Release memory
       call lct%mom%blk(ib)%dealloc

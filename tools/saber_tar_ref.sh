@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------------------------------------------------------------
-# Bash script: bump_tar_ref
+# Bash script: saber_tar_ref
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -18,7 +18,8 @@ bump_ref_3
 bump_ref_mpi_1
 bump_ref_mpi_2
 bump_ref_mpi_3
-bump_ref_quad"
+bump_ref_quad
+oops_ref"
 
 # Get git branch
 branch=`git rev-parse --abbrev-ref HEAD`
@@ -26,16 +27,23 @@ branch=`git rev-parse --abbrev-ref HEAD`
 # Get initial pwd
 ipwd=`pwd`
 
+# Go to data directory
+cd ${datadir}
+
 for ref in ${ref_list}; do
    # Loop over files
    files=''
    while IFS= read -r line
    do
-      files=${files}' '${line}   
-   done < ${listdir}/${ref}.txt
+      files=${files}' '${line}
+
+      # Special case for OOPS references
+      if test ${ref} == "oops_ref"; then
+         grep -si 'Test     : ' ../testoutput/${line} > ${line}
+      fi  
+   done < ${ipwd}/${listdir}/${ref}.txt
 
    # Archive
-   cd ${datadir}
    tar -cvzf ${ref}.tar.gz ${files}
 
    # Compute MD5 checksum
@@ -47,7 +55,4 @@ for ref in ${ref_list}; do
 
    # Clean archive and MD5 checksum
    rm -f ${ref}.tar.gz ${ref}.tar.gz.md5
-
-   # Back to initial directory
-   cd ${ipwd}
 done

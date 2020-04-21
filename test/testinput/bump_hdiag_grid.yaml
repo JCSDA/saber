@@ -39,9 +39,10 @@ local_rad: 1000.0e3
 
 # nicas_param
 
+# dirac_param
+
 # obsop_param
 
 # output_param
 grid_output: 1
 grid_resol: 500.0e3
-

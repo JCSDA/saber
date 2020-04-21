@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------------------------------------------------------------
-# Bash script: bump_tar_data
+# Bash script: saber_tar_data
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -14,7 +14,8 @@ listdir=$2
 data_list="
 bump_data
 bump_data_mpi
-bump_data_omp"
+bump_data_omp
+oops_data"
 
 # Get git branch
 branch=`git rev-parse --abbrev-ref HEAD`

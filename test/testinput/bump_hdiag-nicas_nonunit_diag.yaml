@@ -4,7 +4,7 @@ prefix: "bump_hdiag-nicas_nonunit_diag/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
-method: "cor"
+method: "loc"
 strategy: "specific_univariate"
 new_hdiag: 1
 write_cmat: 0
@@ -42,6 +42,8 @@ nonunit_diag: 1
 resol: 8.0
 subsamp: "h"
 mpicom: 2
+
+# dirac_param
 ndir: 1
 londir: [-85.0]
 latdir: [65.0]

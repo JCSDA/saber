@@ -6,7 +6,7 @@
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 # ----------------------------------------------------------------------
 
-# Parameters
+# Parameters
 modeldata=$1
 testdata=$2
 test=$3
@@ -16,42 +16,42 @@ mkdir -p ${testdata}
 # Link members
 i=0
 ne=1
-while [ ${i} -lt ${ne} ]; do
-   # Update
+while [ ${i} -lt ${ne} ] ; do
+   # Update
    let i=i+1
    echo "Link member "${i}
 
-   # Copy and typeset
+   # Copy and typeset
    i3=$i
    typeset -RZ3 i3
    i4=$i
    typeset -RZ4 i4
 
    # AROME
-   if test ${test} = "bump_aro"; then
+   if test ${test} = "bump_aro" ; then
       ne=10
       xp=7G0N
 #      xp=7H8H
       date=20131221H00P
-      for timeslot in "02" "03" "04"; do
+      for timeslot in "02" "03" "04" ; do
          ln -sf ${modeldata}/${test}/${xp}/${date}/member_${i3}/forecast/ICMSHAROM+00${timeslot}.nc ${testdata}/ens1_${timeslot}_${i4}.nc
       done
    fi
 
-   # ARPEGE
-   if test ${test} = "bump_arp"; then
+   # ARPEGE
+   if test ${test} = "bump_arp" ; then
       ne=10
       xp=877D
 #      xp=86SV
       date=20170114H00A
 #      date=20131220H12A
-      for timeslot in "00" "06"; do
+      for timeslot in "00" "06" ; do
          ln -sf ${modeldata}/${test}/${xp}/${date}/ensemble4D/${i3}/ICMSHARPE+00${timeslot}.nc ${testdata}/ens1_${timeslot}_${i4}.nc
       done
    fi
 
    # FV3
-   if test ${test} = "bump_fv3"; then
+   if test ${test} = "bump_fv3" ; then
       ne=80
       date=20190612
       hh=12
@@ -62,19 +62,19 @@ while [ ${i} -lt ${ne} ]; do
    fi
 
    # GEM
-   if test ${test} = "bump_gem"; then
+   if test ${test} = "bump_gem" ; then
       ne=10
       date=2014101706
       ln -sf ${modeldata}/${test}/${date}_006_${i4}.nc ${testdata}/ens1_00_${i4}.nc
 
-      if test ${i} = 1; then
+      if test ${i} = 1 ; then
          j4=1
          typeset -RZ4 j4
-         for string in 'kfc' 'kuo'; do
-            for string2 in 'BLAC62' 'BOUJO'; do
+         for string in 'kfc' 'kuo' ; do
+            for string2 in 'BLAC62' 'BOUJO' ; do
                k4=1
                typeset -RZ4 k4
-               while [ ${k4} -le 64 ]; do
+               while [ ${k4} -le 64 ] ; do
                   ln -sf  ${modeldata}/${test}/member_${string}_${string2}_${k4}.nc ${testdata}/ens1_00_${j4}_${k4}.nc
                   let k4=k4+1
                done
@@ -85,65 +85,65 @@ while [ ${i} -lt ${ne} ]; do
    fi
 
    # GEOS
-   if test ${test} = "bump_geos"; then
+   if test ${test} = "bump_geos" ; then
       ne=224
       ts=0
       typeset -RZ2 ts
-      while [ ${ts} -lt 13 ]; do
+      while [ ${ts} -lt 13 ] ; do
          ln -sf ${modeldata}/${test}/mem${i3}/e200_C180.prog.eta.20180415_${ts}z.nc4 ${testdata}/ens1_${ts}_${i4}.nc
          let ts=ts+1
       done
    fi
 
    # GFS
-   if test ${test} = "bump_gfs"; then
+   if test ${test} = "bump_gfs" ; then
       ne=10
       date=2014040100
       ln -sf ${modeldata}/${test}/sfg_${date}_fhr06s_mem${i3}.nc4 ${testdata}/ens1_00_${i4}.nc
    fi
 
    # IFS
-   if test ${test} = "bump_ifs"; then
+   if test ${test} = "bump_ifs" ; then
       ne=10
       ln -sf ${modeldata}/${test}/member_${i}.nc ${testdata}/ens1_01_${i4}.nc
    fi
 
    # MPAS
-   if test ${test} = "bump_mpas"; then
+   if test ${test} = "bump_mpas" ; then
       ne=10
       ln -sf ${modeldata}/${test}/x1.40962.output.2012-06-25_21.00.00.e${i}.nc ${testdata}/ens1_01_${i4}.nc
    fi
 
    # NEMO
-   if test ${test} = "bump_nemovar"; then
+   if test ${test} = "bump_nemovar" ; then
       ne=19
       ln -sf ${modeldata}/${test}/ENSEMBLES/ECMWF/goqu/opa${i}/goqu_20110605_000000_restart.nc ${testdata}/ens1_01_${i4}.nc
    fi
-   if test ${test} = "bump_cera-20c"; then
+   if test ${test} = "bump_cera-20c" ; then
       ne=9
       j4=$i
       typeset -RZ4 j4
-      for date in "20090215" "20090216" "20090217" "20090218" "20090219" "20090221" "20090222" "20090223" "20090224"; do
+      for date in "20090215" "20090216" "20090217" "20090218" "20090219" "20090221" "20090222" "20090223" "20090224" ; do
          ln -sf ${modeldata}/${test}/CERA-20C/member_${date}+00_${i}.nc ${testdata}/ens1_01_${j4}.nc
          let j4=j4+9
       done
    fi
 
    # RES
-   if test ${test} = "bump_res"; then
+   if test ${test} = "bump_res" ; then
       ne=101
       ln -sf ${modeldata}/${test}/Ens_${i}.nc ${testdata}/ens1_01_${i4}.nc
    fi
 
-   # WRF
-   if test ${test} = "bump_wrf"; then
+   # WRF
+   if test ${test} = "bump_wrf" ; then
       ne=8
       date=2017-07-28_06:00:00
       ln -sf ${modeldata}/${test}/wrfout_d01_${date}.${i3} ${testdata}/ens1_01_${i4}.nc
    fi
 
    # Exit
-   if test ${i} = ${ne}; then
+   if test ${i} = ${ne} ; then
       break
    fi
 done
@@ -154,10 +154,10 @@ done
 echo "Link wind fields"
 
 # GEOS
-if test ${test} = "bump_geos"; then
+if test ${test} = "bump_geos" ; then
    ts=0
    typeset -RZ2 ts
-   while [ ${ts} -lt 12 ]; do
+   while [ ${ts} -lt 12 ] ; do
       ln -sf ${modeldata}/${test}/avg/e200_C180.prog.eta.20180415_${ts}z.nc4 ${testdata}/wind_${ts}.nc
       let ts=ts+1
    done
@@ -168,10 +168,10 @@ fi
 echo "Link grid"
 
 # AROME
-if test ${test} = "bump_aro"; then
+if test ${test} = "bump_aro" ; then
    grid=${testdata}/grid.nc
    saved_grid=${modeldata}/${test}/${xp}/grid.nc
-   if test -e ${saved_grid}; then
+   if test -e ${saved_grid} ; then
       # Copy grid.nc from data
       ln -sf ${saved_grid} ${grid}
    else
@@ -215,10 +215,10 @@ EOFNAM
 fi
 
 # ARPEGE
-if test ${test} = "bump_arp"; then
+if test ${test} = "bump_arp" ; then
    grid=${testdata}/grid.nc
    saved_grid=${modeldata}/${test}/${xp}/grid.nc
-   if test -e ${saved_grid}; then
+   if test -e ${saved_grid} ; then
       # Copy grid.nc from data
       ln -sf ${saved_grid} ${grid}
    else
@@ -247,7 +247,7 @@ EOFNAM
 fi
 
 # FV3
-if test ${test} = "bump_fv3"; then
+if test ${test} = "bump_fv3" ; then
    # Copy grid.nc
    origin_h=${modeldata}/${test}/${date}_${hh}/fv3files/fv3grid_${resol}.nc4
    origin_v=${modeldata}/${test}/${date}_${hh}/fv3files/akbk64.nc4
@@ -258,7 +258,7 @@ if test ${test} = "bump_fv3"; then
 fi
 
 # GEM
-if test ${test} = "bump_gem"; then
+if test ${test} = "bump_gem" ; then
    # Generate grid with ncks
    origin=${testdata}/ens1_00_0001.nc
    grid=${testdata}/grid.nc
@@ -267,7 +267,7 @@ if test ${test} = "bump_gem"; then
 fi
 
 # GEOS
-if test ${test} = "bump_geos"; then
+if test ${test} = "bump_geos" ; then
    # Generate grid with ncks and ncwa
    origin=${testdata}/wind_00.nc
    grid=${testdata}/grid.nc
@@ -276,7 +276,7 @@ if test ${test} = "bump_geos"; then
 fi
 
 # GFS
-if test ${test} = "bump_gfs"; then
+if test ${test} = "bump_gfs" ; then
    # Generate grid with ncks
    origin=${testdata}/ens1_00_0001.nc
    grid=${testdata}/grid.nc
@@ -285,7 +285,7 @@ if test ${test} = "bump_gfs"; then
 fi
 
 # IFS
-if test ${test} = "bump_ifs"; then
+if test ${test} = "bump_ifs" ; then
    # Generate grid.nc with ncks
    origin=${testdata}/ens1_01_0001.nc
    grid=${testdata}/grid.nc
@@ -295,7 +295,7 @@ if test ${test} = "bump_ifs"; then
    # Add pressure profile to grid.nc with ncl
    # Copy the full array found on http://www.ecmwf.int/en/forecasts/documentation-and-support/${nflevg}-model-levels into an ascii file "L${nflevg}") where ${nflevg} denotes the number of levels
    nflevg=`ncdump -h ${grid} | grep "level =" | gawk '{print $3}'`
-   if test -e "${modeldata}/${test}/L${nflevg}"; then
+   if test -e "${modeldata}/${test}/L${nflevg}" ; then
       # Remove level 0 and extract pf
       sed '1d' ${modeldata}/${test}/L${nflevg} | gawk '{print $5}' > pf_L${nflevg}
 
@@ -330,8 +330,8 @@ EOFNAM
    fi
 fi
 
-# MPAS
-if test ${test} = "bump_mpas"; then
+# MPAS
+if test ${test} = "bump_mpas" ; then
    origin=${modeldata}/${test}/x1.40962.init.2018-04-15_00.00.00.nc
    grid=${testdata}/grid.nc
    rm -f ${grid}
@@ -342,13 +342,13 @@ if test ${test} = "bump_mpas"; then
 fi
 
 # NEMO
-if test ${test} = "bump_nemovar"; then
+if test ${test} = "bump_nemovar" ; then
    origin=${modeldata}/${test}/mesh_mask
    grid=${testdata}/grid.nc
    rm -f ${grid}
    ncks -O -v nav_lat,nav_lon,tmask,e1t,e2t,e3t ${origin} ${grid}
 fi
-if test ${test} = "bump_cera-20c"; then
+if test ${test} = "bump_cera-20c" ; then
    origin=${modeldata}/${test}/mesh_mask
    grid=${testdata}/grid.nc
    rm -f ${grid}
@@ -356,7 +356,7 @@ if test ${test} = "bump_cera-20c"; then
 fi
 
 # RES
-if test ${test} = "bump_res"; then
+if test ${test} = "bump_res" ; then
    origin=${modeldata}/${test}/MyGrid.nc
    grid=${testdata}/grid.nc
    rm -f ${grid}
@@ -364,7 +364,7 @@ if test ${test} = "bump_res"; then
 fi
 
 # WRF
-if test ${test} = "bump_wrf"; then
+if test ${test} = "bump_wrf" ; then
    origin=${testdata}/ens1_01_0001.nc
    grid=${testdata}/grid.nc
    rm -f ${grid}
@@ -373,3 +373,4 @@ if test ${test} = "bump_wrf"; then
    ncks -A -v PB pressure.nc ${grid}
    rm -f pressure.nc
 fi
+
