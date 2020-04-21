@@ -16,6 +16,7 @@ PREPEND( _p_bump_src_files "bump" ${bump_src_files} )
 PREPEND( _p_external_src_files "external" ${external_src_files} )
 PREPEND( _p_gaugrid_src_files "gaugrid" ${gaugrid_src_files} )
 PREPEND( _p_util_src_files "util" ${util_src_files} )
+PREPEND( _p_interpolation_src_files "interpolation" ${interpolation_src_files} )
 
 if (${OOPS_FOUND})
   PREPEND( _p_oops_src_files "oops" ${oops_src_files} )
@@ -26,6 +27,7 @@ list( APPEND saber_src_files
   ${_p_external_src_files}
   ${_p_gaugrid_src_files}
   ${_p_util_src_files}
+  ${_p_interpolation_src_files}
 )
 
 if (${OOPS_FOUND})
