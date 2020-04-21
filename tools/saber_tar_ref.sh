@@ -40,7 +40,7 @@ for ref in ${ref_list}; do
       # Special case for OOPS references
       if test ${ref} == "oops_ref"; then
          grep -si 'Test     : ' ../testoutput/${line} > ${line}
-      fi  
+      fi
    done < ${ipwd}/${listdir}/${ref}.txt
 
    # Archive

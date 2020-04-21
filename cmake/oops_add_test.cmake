@@ -28,7 +28,7 @@ function(oops_add_test)
                     ARGS ${MPIEXEC}
                          ${MPIEXEC_NUMPROC_FLAG}
                          ${_p_MPI}
-                         ${_p_OMP} 
+                         ${_p_OMP}
                          ${CMAKE_BINARY_DIR}/bin/${_p_EXENAME}
                          ${_p_YAMLNAME}
                          ${_p_RUN_FILE}

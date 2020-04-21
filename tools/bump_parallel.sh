@@ -50,7 +50,7 @@ for get in ${list_get}; do
    echo "Handling process ${get}" >> bump_ctest_log/execution.log
    ctest -R ${get} > bump_ctest_log/${get}.log &
    pids[${get}]=$!
-done 
+done
 
 # Wait for all processes to finish
 while [ ${#pids[@]} -gt 0 ]; do
@@ -121,7 +121,7 @@ for run in ${list_test}; do
             for i in "${!cpus[@]}"; do
                if test "${cpus[${i}]}" = ""; then
                   navail=$((navail+1))
-               fi 
+               fi
                if test "${cpus[${i}]}" = "${crun}"; then
                   # This CPU is now available
                   cpus[${i}]=""
@@ -170,7 +170,7 @@ for run in ${list_test}; do
          fi
       fi
    done
-   
+
    # Fire!
    echo "   Process ${run} is launched on CPUs ${cpu_list}" >> bump_ctest_log/execution.log
    full_cmd="${cmd} ${cpu_list} > bump_ctest_log/${run}.log 2> bump_ctest_log/${run}.err &"

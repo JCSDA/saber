@@ -429,7 +429,7 @@ if(${SABER_TEST_OOPS} AND ${ENABLE_OOPS_TOYMODELS})
                           RUN_FILE testoutput/${test}/test.log.out
                           REF_FILE testref/${test}/test.log.out
                           DEPENDS saber_qg_dirac.x
-                          TEST_DEPENDS test_qg_links     
+                          TEST_DEPENDS test_qg_links
                           COMPARE)
         endif()
     endforeach()
@@ -448,7 +448,7 @@ if(${SABER_TEST_OOPS} AND ${ENABLE_OOPS_TOYMODELS})
                           RUN_FILE testoutput/${test}/test.log.out
                           REF_FILE testref/${test}/test.log.out
                           DEPENDS saber_qg_4dvar.x
-                          TEST_DEPENDS test_qg_links     
+                          TEST_DEPENDS test_qg_links
                           COMPARE)
         endif()
     endforeach()

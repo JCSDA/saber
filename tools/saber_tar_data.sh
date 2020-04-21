@@ -33,7 +33,7 @@ for data in ${data_list}; do
          rm -f ${datadir}/${line}
          cp -f ${datadir}/${line_tmp} ${datadir}/${line}
       fi
-      files=${files}' '${line}   
+      files=${files}' '${line}
    done < ${listdir}/${data}.txt
 
    # Archive

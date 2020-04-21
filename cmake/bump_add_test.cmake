@@ -22,7 +22,7 @@ function(bump_add_test)
                          DEPENDS      bump.x
                          TEST_DEPENDS get_saber_data
                                       get_saber_ref)
-     else()   
+     else()
         ecbuild_add_test(TARGET       test_${_p_TESTNAME}_${_p_MPI}-${_p_OMP}
                          TYPE SCRIPT
                          COMMAND      ${CMAKE_SOURCE_DIR}/saber/tools/bump_wrapper.sh
