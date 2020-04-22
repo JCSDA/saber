@@ -270,9 +270,8 @@ if(NOT ${METIS_FOUND})
     endif()
 endif()
 
-# Functions to add test
+# Function to add tests
 include(bump_add_test)
-include(oops_add_test)
 
 # Mono-core tests
 set(mpi 1)
@@ -381,25 +380,34 @@ endif()
 
 # OOPS tests
 if(${SABER_TEST_OOPS} AND ${ENABLE_OOPS_TOYMODELS})
-    # Link to yaml files
+    # Function to add tests
+    include(../../oops/cmake/oops_add_test)
+
     foreach(test ${saber_test_oops})
+        # Link to yaml files
         execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml)
+
+        # Link to reference files
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                        ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}/test.log.out
+                        ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test}/test.ref)
     endforeach()
 
     # Parameters tests
     foreach(test ${saber_test_oops})
         string(FIND ${test} "qg_parameters" qg_parameters)
         if (${qg_parameters} MATCHES 0)
-            oops_add_test(TESTNAME ${test}
+            string(SUBSTRING ${test} 3 -1 testname)
+            oops_add_test(TESTNAME ${testname}
                           MODELNAME qg
                           MPI 1
                           OMP 2
                           YAMLNAME testinput/${test}.yaml
                           EXENAME  saber_qg_estimate_parameters.x
-                          RUN_FILE testoutput/${test}/test.log.out
-                          REF_FILE testref/${test}/test.log.out
+                          RUN_FILE ${test}/test.log.out
+                          REF_FILE ${test}/test.ref
                           DEPENDS saber_qg_estimate_parameters.x
                           TEST_DEPENDS get_saber_data
                           COMPARE)
@@ -420,14 +428,15 @@ if(${SABER_TEST_OOPS} AND ${ENABLE_OOPS_TOYMODELS})
     foreach(test ${saber_test_oops})
         string(FIND ${test} "qg_dirac" qg_dirac)
         if (${qg_dirac} MATCHES 0)
-            oops_add_test(TESTNAME ${test}
+            string(SUBSTRING ${test} 3 -1 testname)
+            oops_add_test(TESTNAME ${testname}
                           MODELNAME qg
                           MPI 1
                           OMP 2
                           YAMLNAME testinput/${test}.yaml
                           EXENAME  saber_qg_dirac.x
-                          RUN_FILE testoutput/${test}/test.log.out
-                          REF_FILE testref/${test}/test.log.out
+                          RUN_FILE ${test}/test.log.out
+                          REF_FILE ${test}/test.ref
                           DEPENDS saber_qg_dirac.x
                           TEST_DEPENDS test_qg_links
                           COMPARE)
@@ -439,14 +448,15 @@ if(${SABER_TEST_OOPS} AND ${ENABLE_OOPS_TOYMODELS})
         string(FIND ${test} "qg_3d" qg_3d)
         string(FIND ${test} "qg_4d" qg_4d)
         if ((${qg_3d} MATCHES 0) OR (${qg_4d} MATCHES 0))
-            oops_add_test(TESTNAME ${test}
+            string(SUBSTRING ${test} 3 -1 testname)
+            oops_add_test(TESTNAME ${testname}
                           MODELNAME qg
                           MPI 1
                           OMP 2
                           YAMLNAME testinput/${test}.yaml
                           EXENAME  saber_qg_4dvar.x
-                          RUN_FILE testoutput/${test}/test.log.out
-                          REF_FILE testref/${test}/test.log.out
+                          RUN_FILE ${test}/test.log.out
+                          REF_FILE ${test}/test.ref
                           DEPENDS saber_qg_4dvar.x
                           TEST_DEPENDS test_qg_links
                           COMPARE)
