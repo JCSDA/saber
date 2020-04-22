@@ -124,9 +124,6 @@ if (bump%nam%ens1_ne>0) then
    write(mpl%info,'(a)') '--- Load ensemble 1'
    call mpl%flush
    call model%load_ens(mpl,bump%nam,'ens1')
-else
-   model%ens1_ne = 0
-   model%ens1_nsub = 0
 end if
 if (bump%nam%ens2_ne>0) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -134,9 +131,6 @@ if (bump%nam%ens2_ne>0) then
    write(mpl%info,'(a)') '--- Load ensemble 2'
    call mpl%flush
    call model%load_ens(mpl,bump%nam,'ens2')
-else
-   model%ens2_ne = 0
-   model%ens2_nsub = 0
 end if
 
 ! Read wind fields
@@ -161,7 +155,6 @@ end if
 
 ! BUMP setup
 call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
-              & ens1_ne=model%ens1_ne,ens1_nsub=model%ens1_nsub,ens2_ne=model%ens2_ne,ens2_nsub=model%ens2_nsub, &
               & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs,lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
 ! Transfer members
@@ -170,8 +163,8 @@ if (bump%nam%ens1_ne>0) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Transfer members of ensemble 1'
    call mpl%flush
-   do ie=1,model%ens1_ne
-      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',model%ens1_ne
+   do ie=1,bump%nam%ens1_ne
+      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',bump%nam%ens1_ne
       call mpl%flush
       call bump%add_member(model%ens1(ie)%afieldset,ie,1)
       call model%ens1(ie)%afieldset%final()
@@ -182,8 +175,8 @@ if (bump%nam%ens2_ne>0) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Transfer members of ensemble 2'
    call mpl%flush
-   do ie=1,model%ens2_ne
-      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',model%ens2_ne
+   do ie=1,bump%nam%ens2_ne
+      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',bump%nam%ens2_ne
       call mpl%flush
       call bump%add_member(model%ens2(ie)%afieldset,ie,2)
       call model%ens2(ie)%afieldset%final()

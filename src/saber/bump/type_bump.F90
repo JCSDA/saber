@@ -8,6 +8,7 @@
 module type_bump
 
 use atlas_module
+use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
 use tools_atlas, only: create_atlas_fieldset,create_atlas_function_space,atlas_to_fld,fld_to_atlas
 use tools_const, only: req,deg2rad
@@ -52,6 +53,7 @@ type bump_type
    type(vbal_type) :: vbal
    real(kind_real),allocatable :: fld_uv(:,:,:,:)
 contains
+   procedure :: create => bump_create
    procedure :: setup => bump_setup
    procedure :: setup_online => bump_setup_online_deprecated
    procedure :: run_drivers => bump_run_drivers
@@ -89,20 +91,72 @@ contains
    procedure :: test_apply_interfaces => bump_test_apply_interfaces
    procedure :: partial_dealloc => bump_partial_dealloc
    procedure :: dealloc => bump_dealloc
+   final :: dummy
 end type bump_type
 
 logical :: print_member = .false. ! Print info when adding member to BUMP
 
 private
 public :: bump_type
+public :: bump_registry
+
+! BUMP registry
+#define LISTED_TYPE bump_type
+
+! Linked list interface - defines registry_t type
+#include "saber/util/linkedList_i.f"
+
+! Global registry
+type(registry_t) :: bump_registry
 
 contains
+
+!----------------------------------------------------------------------
+! Linked list implementation
+!----------------------------------------------------------------------
+#include "saber/util/linkedList_c.f"
+
+!----------------------------------------------------------------------
+! Subroutine: bump_create
+! Purpose: create
+!----------------------------------------------------------------------
+subroutine bump_create(bump,comm,afunctionspace,afieldset,conf,grid)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump                 ! BUMP
+type(fckit_mpi_comm),intent(in) :: comm                ! FCKIT MPI communicator wrapper
+type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
+type(atlas_fieldset),intent(in) :: afieldset           ! ATLAS fieldset  (containing geometry features: area, vunit, gmask, smask, wind)
+type(fckit_configuration),intent(in) :: conf           ! FCKIT configuration
+type(fckit_configuration),intent(in) :: grid           ! FCKIT grid configuration
+
+! Local variables
+real(kind_real) :: msvalr
+
+! Initialize namelist
+call bump%nam%init(comm%size())
+
+! Read configuration
+call bump%nam%from_conf(conf)
+
+! Read grid configuration
+call bump%nam%from_conf(grid)
+
+! Get missing value
+call conf%get_or_die('msvalr',msvalr)
+
+! Setup BUMP
+call bump%setup(comm,afunctionspace,afieldset,msvalr=msvalr)
+
+end subroutine bump_create
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_setup
 ! Purpose: setup
 !----------------------------------------------------------------------
-subroutine bump_setup(bump,f_comm,afunctionspace,afieldset,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub, &
+subroutine bump_setup(bump,f_comm,afunctionspace,afieldset, &
                     & nobs,lonobs,latobs,namelname,lunit,msvali,msvalr)
 
 implicit none
@@ -112,10 +166,6 @@ class(bump_type),intent(inout) :: bump                 ! BUMP
 type(fckit_mpi_comm),intent(in) :: f_comm              ! FCKIT MPI communicator wrapper
 type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS functionspace
 type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset (containing geometry features: area, vunit, gmask, smask, wind)
-integer,intent(in),optional :: ens1_ne                 ! Ensemble 1 size
-integer,intent(in),optional :: ens1_nsub               ! Ensemble 1 number of sub-ensembles
-integer,intent(in),optional :: ens2_ne                 ! Ensemble 2 size
-integer,intent(in),optional :: ens2_nsub               ! Ensemble 2 size of sub-ensembles
 integer,intent(in),optional :: nobs                    ! Number of observations
 real(kind_real),intent(in),optional :: lonobs(:)       ! Observations longitude (in degrees)
 real(kind_real),intent(in),optional :: latobs(:)       ! Observations latitude (in degrees)
@@ -125,7 +175,7 @@ integer,intent(in),optional :: msvali                  ! Missing value for integ
 real(kind_real),intent(in),optional :: msvalr          ! Missing value for reals
 
 ! Local variables
-integer :: lmsvali,lens1_ne,lens1_nsub,lens2_ne,lens2_nsub,iv,its
+integer :: lmsvali,iv,its
 real(kind_real) :: lmsvalr
 real(kind_real),pointer :: real_ptr(:,:)
 character(len=1024) :: fieldname
@@ -150,17 +200,6 @@ end if
 
 ! Set reproducibility parameter
 repro = bump%nam%repro
-
-! Set internal namelist parameters
-lens1_ne = 0
-lens1_nsub = 1
-lens2_ne = 0
-lens2_nsub = 1
-if (present(ens1_ne)) lens1_ne = ens1_ne
-if (present(ens1_nsub)) lens1_nsub = ens1_nsub
-if (present(ens2_ne)) lens2_ne = ens2_ne
-if (present(ens2_ne)) lens2_nsub = ens2_nsub
-call bump%nam%setup_internal(lens1_ne,lens1_nsub,lens2_ne,lens2_nsub)
 
 ! Initialize listing
 bump%mpl%lunit = bump%mpl%msv%vali
@@ -356,7 +395,7 @@ integer,intent(in),optional :: msvali             ! Missing value for integers
 real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
 
 ! Local variables
-integer :: lens1_ne,lens1_nsub,lens2_ne,lens2_nsub,lnobs,lmsvali,llunit,imga,il0,iv,its
+integer :: lnobs,lmsvali,llunit,imga,il0,iv,its
 integer(kind_int),pointer :: int_ptr_2(:,:)
 real(kind_real) :: lmsvalr
 real(kind_real),allocatable :: llonobs(:),llatobs(:)
@@ -367,17 +406,9 @@ type(atlas_fieldset) :: afieldset
 type(atlas_functionspace) :: afunctionspace
 
 ! Force optional parameters
-lens1_ne = 0
-lens1_nsub = 1
-lens2_ne = 0
-lens2_nsub = 1
 lnobs = 0
 lmsvali = -999
 lmsvalr = -999.0
-if (present(ens1_ne)) lens1_ne = ens1_ne
-if (present(ens1_nsub)) lens1_nsub = ens1_nsub
-if (present(ens2_ne)) lens2_ne = ens2_ne
-if (present(ens2_ne)) lens2_nsub = ens2_nsub
 if (present(nobs)) lnobs = nobs
 allocate(llonobs(lnobs))
 allocate(llatobs(lnobs))
@@ -401,6 +432,10 @@ do its=1,bump%nam%nts
    write(bump%nam%timeslot(its),'(a,i2.2)') 'ts_',its
 end do
 bump%nam%lev2d = 'first'
+if (present(ens1_ne)) bump%nam%ens1_ne = ens1_ne
+if (present(ens1_nsub)) bump%nam%ens1_nsub = ens1_nsub
+if (present(ens2_ne)) bump%nam%ens2_ne = ens2_ne
+if (present(ens2_nsub)) bump%nam%ens2_nsub = ens2_nsub
 
 ! Create ATLAS function space
 call create_atlas_function_space(nmga,lon*deg2rad,lat*deg2rad,afunctionspace)
@@ -458,12 +493,12 @@ end if
 
 ! BUMP setup
 if (present(namelname)) then
-   call bump%setup(f_comm,afunctionspace,afieldset=afieldset,ens1_ne=lens1_ne,ens1_nsub=lens1_nsub, &
-                 & ens2_ne=lens2_ne,ens2_nsub=lens2_nsub,nobs=lnobs,lonobs=llonobs,latobs=llatobs,namelname=namelname, &
+   call bump%setup(f_comm,afunctionspace,afieldset=afieldset, &
+                 & nobs=lnobs,lonobs=llonobs,latobs=llatobs,namelname=namelname, &
                  & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
 else
-   call bump%setup(f_comm,afunctionspace,afieldset=afieldset,ens1_ne=lens1_ne,ens1_nsub=lens1_nsub, &
-                 & ens2_ne=lens2_ne,ens2_nsub=lens2_nsub,nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
+   call bump%setup(f_comm,afunctionspace,afieldset=afieldset, &
+                 & nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
                  & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
 end if
 
@@ -2402,5 +2437,18 @@ call bump%vbal%dealloc
 if (allocated(bump%fld_uv)) deallocate(bump%fld_uv)
 
 end subroutine bump_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: dummy
+! Purpose: dummy finalization
+!----------------------------------------------------------------------
+subroutine dummy(bump)
+
+implicit none
+
+! Passed variables
+type(bump_type),intent(inout) :: bump ! BUMP
+
+end subroutine dummy
 
 end module type_bump

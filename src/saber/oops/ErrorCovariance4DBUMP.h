@@ -111,7 +111,7 @@ template<typename MODEL>
 void ErrorCovariance4DBUMP<MODEL>::doRandomize(Increment4D_ & dx) const {
   oops::Log::trace() << "ErrorCovariance4DBUMP<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
-  ooBump_->randomizeNicas(dx);
+  ooBump_->randomize(dx);
   oops::Log::trace() << "ErrorCovariance4DBUMP<MODEL>::doRandomize done" << std::endl;
 }
 
