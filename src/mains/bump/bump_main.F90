@@ -47,7 +47,8 @@ do i=1,n2
 end do
 
 ! Set missing values
-call mpl%msv%init(-999,-999.0_kind_real)
+mpl%msv%vali = -999
+mpl%msv%valr = -999.0
 
 ! Initialize MPL
 call mpl%init(f_comm)
@@ -155,7 +156,8 @@ end if
 
 ! BUMP setup
 call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
-              & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs,lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+              & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs, &
+              & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
 ! Transfer members
 if (bump%nam%ens1_ne>0) then

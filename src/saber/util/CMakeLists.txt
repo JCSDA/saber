@@ -19,8 +19,8 @@ PARENT_SCOPE
 
 set ( util_header_files
 
-linkedList_c.f
-linkedList_i.f
+linkedList_c.h
+linkedList_i.h
 
 PARENT_SCOPE
 )

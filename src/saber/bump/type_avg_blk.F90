@@ -390,7 +390,7 @@ type(samp_type),intent(in) :: samp           ! Sampling
 type(mom_blk_type),intent(in) :: mom_blk     ! Moments
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,nc1a_cor,n1,n2,npack,offset,ic0,ic0a
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,nc1a_cor,n1,n2,npack,offset
 real(kind_real) :: m2_1,m2_2
 real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
 real(kind_real) :: min_m11_tot,max_m11_tot,min_m11m11_tot,max_m11m11_tot,min_m2m2_tot,max_m2m2_tot,min_m22_tot,max_m22_tot
@@ -423,7 +423,7 @@ do il0=1,geom%nl0
 
       do jc3=1,bpar%nc3(ib)
          ! Fill lists
-         !$omp parallel do schedule(static) private(ic1a,ic1,valid,gen_kurt,ic0,ic0a,m2_1,m2_2,isub,jsub)
+         !$omp parallel do schedule(static) private(ic1a,ic1,valid,gen_kurt,m2_1,m2_2,isub,jsub)
          do ic1a=1,samp%nc1a
             ! Index
             ic1 = samp%c1a_to_c1(ic1a)

@@ -279,6 +279,7 @@ character(len=*),intent(in) :: prefix ! Prefix
 integer :: ie,ie_sub,jc0,ic0c,jc0c,ic0,jl0r,jl0,il0,isub,jc3,ic1,ic1a,ib,jv,iv,jts,its
 real(kind_real),allocatable :: fld_ext(:,:,:,:),fld_1(:,:),fld_2(:,:,:)
 logical,allocatable :: mask_unpack(:,:)
+character(len=1024),parameter :: subr = 'mom_compute'
 
 ! Allocation
 call mom%alloc(geom,bpar,samp,ens%ne,ens%nsub,prefix)
@@ -347,19 +348,19 @@ do isub=1,ens%nsub
                ! Copy all separations points
                !$omp parallel do schedule(static) private(il0,jc3,ic1a,ic1,ic0,jc0,ic0c,jc0c)
                do il0=1,geom%nl0
-                  do jc3=1,bpar%nc3(ib)
-                     do ic1a=1,samp%nc1a
+                  do ic1a=1,samp%nc1a
+                     ! Indices
+                     ic1 = samp%c1a_to_c1(ic1a)
+
+                     if (samp%c1l0_log(ic1,il0)) then
                         ! Indices
-                        ic1 = samp%c1a_to_c1(ic1a)
+                        ic0 = samp%c1_to_c0(ic1)
+                        ic0c = samp%c0_to_c0c(ic0)
 
-                        if (samp%c1l0_log(ic1,il0)) then
-                           ! Indices
-                           ic0 = samp%c1_to_c0(ic1)
-                           ic0c = samp%c0_to_c0c(ic0)
+                        ! Copy field 1
+                        fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv,its)
 
-                           ! Copy field 1
-                           if (jc3==1) fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv,its)
-
+                        do jc3=1,bpar%nc3(ib)
                            if (samp%c1c3l0_log(ic1,jc3,il0)) then
                               ! Indices
                               jc0 = samp%c1c3_to_c0(ic1,jc3)
@@ -368,8 +369,8 @@ do isub=1,ens%nsub
                               ! Copy field 2
                               fld_2(ic1a,jc3,il0) = fld_ext(jc0c,il0,jv,jts)
                            end if
-                        end if
-                     end do
+                        end do
+                     end if
                   end do
                end do
                !$omp end parallel do
@@ -418,6 +419,10 @@ do ib=1,bpar%nb
             ic1 = samp%c1a_to_c1(ic1a)
             if (samp%c1l0_log(ic1,il0)) then
                mom%blk(ib)%m2_1(ic1a,il0,:) = mom%blk(ib)%m2_1(ic1a,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
+               do isub=1,mom%nsub
+                  if (.not.(abs(mom%blk(ib)%m2_1(ic1a,il0,isub))>0.0)) &
+                & call mpl%abort(subr,'zero variance at non-masked point, check your ensemble or use a mask')
+               end do
             else
                mom%blk(ib)%m2_1(ic1a,il0,:) = mpl%msv%valr
             end if
@@ -427,6 +432,10 @@ do ib=1,bpar%nb
                ic1 = samp%c1a_to_c1(ic1a)
                if (samp%c1c3l0_log(ic1,jc3,il0)) then
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mom%blk(ib)%m2_2(ic1a,jc3,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
+                  do isub=1,mom%nsub
+                     if (.not.(abs(mom%blk(ib)%m2_2(ic1a,jc3,il0,isub))>0.0)) &
+                   & call mpl%abort(subr,'zero variance at non-masked point, check your ensemble or use a mask')
+                  end do
                else
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mpl%msv%valr
                end if

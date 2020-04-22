@@ -1,8 +1,8 @@
 ! (C) Copyright 2009-2016 ECMWF.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
-! In applying this licence, ECMWF does not waive the privileges and immunities 
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation nor
 ! does it submit to any jurisdiction.
 
@@ -63,7 +63,7 @@ subroutine get_(self,key,ptr)
    exit
   endif
  enddo
- if (.not.associated(ptr)) call abor1_ftn("registry_t%get_: key not found")
+ if (.not.associated(ptr)) call abort
 end subroutine
 
 !> Remove element of the linked list
@@ -77,7 +77,7 @@ subroutine remove_(self,key)
  next => self%head%next
  prev => NULL()
 
- !sweep the linked list to find matching key, 
+ !sweep the linked list to find matching key,
  do while(associated(next))
   if(key.eq.next%key) exit
   prev => next

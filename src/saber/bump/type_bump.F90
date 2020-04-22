@@ -9,7 +9,7 @@ module type_bump
 
 use atlas_module
 use fckit_configuration_module, only: fckit_configuration
-use fckit_mpi_module, only: fckit_mpi_comm
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum
 use tools_atlas, only: create_atlas_fieldset,create_atlas_function_space,atlas_to_fld,fld_to_atlas
 use tools_const, only: req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
@@ -94,7 +94,10 @@ contains
    final :: dummy
 end type bump_type
 
-logical :: print_member = .false. ! Print info when adding member to BUMP
+integer,parameter :: dmsvali = -999           ! Default missing value for integers
+real(kind_real),parameter :: dmsvalr = -999.0 ! Default missing value for reals
+logical,parameter :: print_member = .false.   ! Print info when adding member to BUMP
+logical,parameter :: write_member = .false.   ! Write file when adding member to BUMP
 
 private
 public :: bump_type
@@ -104,7 +107,7 @@ public :: bump_registry
 #define LISTED_TYPE bump_type
 
 ! Linked list interface - defines registry_t type
-#include "saber/util/linkedList_i.f"
+#include "saber/util/linkedList_i.h"
 
 ! Global registry
 type(registry_t) :: bump_registry
@@ -114,7 +117,7 @@ contains
 !----------------------------------------------------------------------
 ! Linked list implementation
 !----------------------------------------------------------------------
-#include "saber/util/linkedList_c.f"
+#include "saber/util/linkedList_c.h"
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create
@@ -133,7 +136,8 @@ type(fckit_configuration),intent(in) :: conf           ! FCKIT configuration
 type(fckit_configuration),intent(in) :: grid           ! FCKIT grid configuration
 
 ! Local variables
-real(kind_real) :: msvalr
+integer :: lmsvali, llunit
+real(kind_real) :: lmsvalr
 
 ! Initialize namelist
 call bump%nam%init(comm%size())
@@ -144,11 +148,18 @@ call bump%nam%from_conf(conf)
 ! Read grid configuration
 call bump%nam%from_conf(grid)
 
-! Get missing value
-call conf%get_or_die('msvalr',msvalr)
+! Set missing values
+lmsvali = dmsvali
+lmsvalr = dmsvalr
+if (conf%has('msvali')) call conf%get_or_die('msvali',lmsvali)
+if (conf%has('msvalr')) call conf%get_or_die('msvalr',lmsvalr)
+
+! Set log unit
+llunit = lmsvali
+if (conf%has('lunit')) call conf%get_or_die('lunit',llunit)
 
 ! Setup BUMP
-call bump%setup(comm,afunctionspace,afieldset,msvalr=msvalr)
+call bump%setup(comm,afunctionspace,afieldset,lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
 
 end subroutine bump_create
 
@@ -157,7 +168,7 @@ end subroutine bump_create
 ! Purpose: setup
 !----------------------------------------------------------------------
 subroutine bump_setup(bump,f_comm,afunctionspace,afieldset, &
-                    & nobs,lonobs,latobs,namelname,lunit,msvali,msvalr)
+                    & nobs,lonobs,latobs,lunit,msvali,msvalr)
 
 implicit none
 
@@ -169,7 +180,6 @@ type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset (contain
 integer,intent(in),optional :: nobs                    ! Number of observations
 real(kind_real),intent(in),optional :: lonobs(:)       ! Observations longitude (in degrees)
 real(kind_real),intent(in),optional :: latobs(:)       ! Observations latitude (in degrees)
-character(len=*),intent(in),optional :: namelname      ! Namelist name
 integer,intent(in),optional :: lunit                   ! Listing unit
 integer,intent(in),optional :: msvali                  ! Missing value for integers
 real(kind_real),intent(in),optional :: msvalr          ! Missing value for reals
@@ -186,17 +196,10 @@ type(atlas_field) :: afield
 call bump%mpl%init(f_comm)
 
 ! Set missing values
-lmsvali = -999
-if (present(msvali)) lmsvali = msvali
-lmsvalr = -999.0
-if (present(msvalr)) lmsvalr = msvalr
-call bump%mpl%msv%init(lmsvali,lmsvalr)
-
-if (present(namelname)) then
-   ! Read and broadcast namelist
-   call bump%nam%read(bump%mpl,namelname)
-   call bump%nam%bcast(bump%mpl)
-end if
+bump%mpl%msv%vali = dmsvali
+bump%mpl%msv%valr = dmsvalr
+if (present(msvali)) bump%mpl%msv%vali = msvali
+if (present(msvalr)) bump%mpl%msv%valr = msvalr
 
 ! Set reproducibility parameter
 repro = bump%nam%repro
@@ -365,7 +368,7 @@ end subroutine bump_setup
 ! Purpose: online setup (deprecated)
 !----------------------------------------------------------------------
 subroutine bump_setup_online_deprecated(bump,f_comm,nmga,nl0,nv,nts,lon,lat,area,vunit,gmask,smask,ens1_ne,ens1_nsub, &
-                                      & ens2_ne,ens2_nsub,nobs,lonobs,latobs,namelname,lunit,msvali,msvalr)
+                                      & ens2_ne,ens2_nsub,nobs,lonobs,latobs,lunit,msvali,msvalr)
 
 implicit none
 
@@ -389,7 +392,6 @@ integer,intent(in),optional :: ens2_nsub          ! Ensemble 2 size of sub-ensem
 integer,intent(in),optional :: nobs               ! Number of observations
 real(kind_real),intent(in),optional :: lonobs(:)  ! Observations longitude (in degrees: -180 to 180)
 real(kind_real),intent(in),optional :: latobs(:)  ! Observations latitude (in degrees: -90 to 90)
-character(len=*),intent(in),optional :: namelname ! Namelist name
 integer,intent(in),optional :: lunit              ! Listing unit
 integer,intent(in),optional :: msvali             ! Missing value for integers
 real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
@@ -407,8 +409,8 @@ type(atlas_functionspace) :: afunctionspace
 
 ! Force optional parameters
 lnobs = 0
-lmsvali = -999
-lmsvalr = -999.0
+lmsvali = dmsvali
+lmsvalr = dmsvalr
 if (present(nobs)) lnobs = nobs
 allocate(llonobs(lnobs))
 allocate(llatobs(lnobs))
@@ -492,15 +494,9 @@ if (present(smask)) then
 end if
 
 ! BUMP setup
-if (present(namelname)) then
-   call bump%setup(f_comm,afunctionspace,afieldset=afieldset, &
-                 & nobs=lnobs,lonobs=llonobs,latobs=llatobs,namelname=namelname, &
-                 & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
-else
-   call bump%setup(f_comm,afunctionspace,afieldset=afieldset, &
-                 & nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
-                 & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
-end if
+call bump%setup(f_comm,afunctionspace,afieldset=afieldset, &
+              & nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
+              & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
 
 ! Deprecation warning
 call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
@@ -782,9 +778,10 @@ integer,intent(in) :: ie                        ! Member index
 integer,intent(in) :: iens                      ! Ensemble number
 
 ! Local variables
-integer :: its,iv,nnonzero,nzero,nmask
-real(kind_real) :: norm,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
+integer :: ic0a,il0,its,iv,nnonzero,nzero,nmask,nnonzero_tot,nzero_tot,nmask_tot
+real(kind_real) :: norm,norm_tot,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
+character(len=1024) :: filename,varname
 character(len=1024),parameter :: subr = 'bump_add_member'
 
 ! ATLAS fieldset to field
@@ -820,14 +817,36 @@ do its=1,bump%nam%nts
       if (print_member) then
          ! Print norm
          norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
+         call bump%mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
          write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
          call bump%mpl%flush
-         nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
-         nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
-         nmask = count(.not.bump%geom%mask_c0a)
-         write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Total / non-zero / zero / masked points: ',bump%geom%nc0a,' / ', &
-       & nnonzero,' / ',nzero,' / ',nmask
+         write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Global norm for variable ',iv,' and timeslot ',its,': ',norm_tot
          call bump%mpl%flush
+         if (bump%geom%nc0a>0) then
+            nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
+            nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
+            nmask = count(.not.bump%geom%mask_c0a)
+         else
+            nnonzero = 0
+            nzero = 0
+            nmask = bump%geom%nc0a
+         end if
+         call bump%mpl%f_comm%allreduce(nnonzero,nnonzero_tot,fckit_mpi_sum())
+         call bump%mpl%f_comm%allreduce(nzero,nzero_tot,fckit_mpi_sum())
+         call bump%mpl%f_comm%allreduce(nmask,nmask_tot,fckit_mpi_sum())
+         write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Local total / non-zero / zero / masked points: ', &
+       & bump%geom%nc0a*bump%geom%nl0,' / ',nnonzero,' / ',nzero,' / ',nmask
+         call bump%mpl%flush
+         write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Global total / non-zero / zero / masked points: ', &
+       & bump%geom%nc0*bump%geom%nl0,' / ',nnonzero_tot,' / ',nzero_tot,' / ',nmask_tot
+         call bump%mpl%flush
+      end if
+
+      if (write_member) then
+         ! Write member
+         write(filename,'(a,a,i4.4,a,i4.4)') trim(bump%nam%prefix),'_member_',iens,'-',ie
+         varname = trim(bump%nam%varname(iv))//'_'//trim(bump%nam%timeslot(its))
+         call bump%io%fld_write(bump%mpl,bump%nam,bump%geom,filename,varname,fld_c0a)
       end if
    end do
 end do
