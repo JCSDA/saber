@@ -107,7 +107,7 @@ public :: bump_registry
 #define LISTED_TYPE bump_type
 
 ! Linked list interface - defines registry_t type
-#include "saber/util/linkedList_i.h"
+#include "saber/util/linkedList_i.f"
 
 ! Global registry
 type(registry_t) :: bump_registry
@@ -117,7 +117,7 @@ contains
 !----------------------------------------------------------------------
 ! Linked list implementation
 !----------------------------------------------------------------------
-#include "saber/util/linkedList_c.h"
+#include "saber/util/linkedList_c.f"
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create
