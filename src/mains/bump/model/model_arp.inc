@@ -104,7 +104,7 @@ character(len=*),intent(in) :: filename                         ! File name
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
-integer :: iv,il0,img,ilon,ilat
+integer :: iv,il0,img,ilon,ilat,info
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
@@ -124,10 +124,22 @@ do iv=1,nam%nv
       do il0=1,nam%nl
          ! Get id
          write(ilchar,'(i3.3)') nam%levs(il0)
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,'S'//ilchar//trim(nam%varname(iv)),fld_id))
+         info = nf90_inq_varid(ncid,'S'//ilchar//trim(nam%varname(iv)),fld_id)
 
          ! Read data
-         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
+         if (info==nf90_noerr) then
+            ! 3D data
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
+         else
+            ! Check if the variable exists as 2D data
+            call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
+
+            ! 2D data
+            if (((trim(nam%lev2d)=='first').and.(il0==1)).or.((trim(nam%lev2d)=='last').and.(il0==model%nl0))) then
+               fld_tmp = mpl%msv%valr
+               call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
+            end if
+         end if
       end do
 
       ! Pack

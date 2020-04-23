@@ -1691,22 +1691,22 @@ character(len=1024),parameter :: subr = 'nicas_blk_compute_sampling_v'
 ! Allocation
 allocate(nicas_blk%slev(geom%nl0))
 
+! Initialization
+nicas_blk%il0_first = mpl%msv%vali
+nicas_blk%il0_last = mpl%msv%vali
+do il0=1,geom%nl0
+   if (nicas_blk%vlev(il0).and.mpl%msv%is(nicas_blk%il0_first)) nicas_blk%il0_first = il0
+end do
+do il0=geom%nl0,1,-1
+   if (nicas_blk%vlev(il0).and.mpl%msv%is(nicas_blk%il0_last)) nicas_blk%il0_last = il0
+end do
+il0_prev = nicas_blk%il0_first
+nicas_blk%slev = .false.
+
 if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) then
    ! Vertical sampling
    write(mpl%info,'(a10,a)') '','Compute vertical subset L1'
    if (nicas_blk%verbosity) call mpl%flush
-
-   ! Initialization
-   nicas_blk%il0_first = mpl%msv%vali
-   nicas_blk%il0_last = mpl%msv%vali
-   do il0=1,geom%nl0
-      if (nicas_blk%vlev(il0).and.mpl%msv%is(nicas_blk%il0_first)) nicas_blk%il0_first = il0
-   end do
-   do il0=geom%nl0,1,-1
-      if (nicas_blk%vlev(il0).and.mpl%msv%is(nicas_blk%il0_last)) nicas_blk%il0_last = il0
-   end do
-   il0_prev = nicas_blk%il0_first
-   nicas_blk%slev = .false.
 
    do il0=1,geom%nl0
       if (nicas_blk%vlev(il0)) then
@@ -1733,9 +1733,9 @@ if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(
    end do
 else
    ! No vertical sampling
-   nicas_blk%il0_first = 1
-   nicas_blk%il0_last = geom%nl0
-   nicas_blk%slev = .true.
+   do il0=nicas_blk%il0_first,nicas_blk%il0_last
+      nicas_blk%slev(il0) = .true.
+   end do
 end if
 
 ! Count effective levels
@@ -1840,7 +1840,8 @@ do il1=1,nicas_blk%nl1
    il0 = nicas_blk%l1_to_l0(il1)
    nicas_blk%mask_c1(:,il1) = geom%mask_c0(nicas_blk%c1_to_c0,il0)
 
-   if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) then
+   if (nicas_blk%vlev(il0).and.((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='vh').or. &
+ & (trim(nicas_blk%subsamp)=='hvh'))) then
       write(mpl%info,'(a13,a,i3,a)') '','Level ',il1,':'
       if (nicas_blk%verbosity) call mpl%flush
 
@@ -2579,7 +2580,6 @@ end if
 ! Compute ball data
 write(mpl%info,'(a13,a)') '','Compute ball data'
 if (nicas_blk%verbosity) call mpl%flush
-call mpl%flush
 !$omp parallel do schedule(static) private(isbb,is,ic1,il1,ic0,il0,jbd,jc1,jl1) firstprivate(Hcoef)
 do isbb=1,nicas_blk%nsbb
    ! Indices

@@ -120,7 +120,7 @@ integer,intent(in) :: its                                       ! Timeslot index
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
-integer :: iv,il0,img,ilon,ilat,timeslot
+integer :: iv,il0,img,ilon,ilat,timeslot,ndims
 integer :: ncid,fld_id
 real(kind_real) :: fld_tmp2,fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
@@ -142,35 +142,54 @@ do iv=1,nam%nv
       ! Get variable id
       call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
 
+      ! Check field size
+      call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,ndims=ndims))
+
       ! Read data
-      do il0=1,nam%nl
-         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),timeslot/), &
-       & (/model%nlon,model%nlat,1,1/)))
-         select case (trim(nam%varname(iv)))
-         case ('un')
-            do ilat=1,model%nlat
-               do ilon=1,model%nlon
-                  if (ilon==1) then
-                     call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp2,(/model%nlon,ilat,nam%levs(il0),timeslot/)))
-                  else
-                     call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp2,(/ilon-1,ilat,nam%levs(il0),timeslot/)))
-                  end if
-                  fld_tmp(ilon,ilat,il0) = 0.5*(fld_tmp(ilon,ilat,il0)+fld_tmp2)
+      select case (ndims)
+      case (3)
+         ! 2D data
+         fld_tmp = mpl%msv%valr
+         if (trim(nam%lev2d)=='first') then
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,1),(/1,1,timeslot/), &
+          & (/model%nlon,model%nlat,1/)))
+         elseif (trim(nam%lev2d)=='last') then
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1,timeslot/), &
+          & (/model%nlon,model%nlat,1/)))
+         end if
+      case (4) 
+         ! 3D data
+         do il0=1,nam%nl
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),timeslot/), &
+          & (/model%nlon,model%nlat,1,1/)))
+            select case (trim(nam%varname(iv)))
+            case ('un')
+               do ilat=1,model%nlat
+                  do ilon=1,model%nlon
+                     if (ilon==1) then
+                        call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp2,(/model%nlon,ilat,nam%levs(il0),timeslot/)))
+                     else
+                        call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp2,(/ilon-1,ilat,nam%levs(il0),timeslot/)))
+                     end if
+                     fld_tmp(ilon,ilat,il0) = 0.5*(fld_tmp(ilon,ilat,il0)+fld_tmp2)
+                  end do
                end do
-            end do
-         case ('vn')
-            do ilat=1,model%nlat
-               do ilon=1,model%nlon
-                  if (ilat==1) then
-                     call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp2,(/ilon,model%nlat,nam%levs(il0),timeslot/)))
-                  else
-                     call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp2,(/ilon,ilat-1,nam%levs(il0),timeslot/)))
-                  end if
-                  fld_tmp(ilon,ilat,il0) = 0.5*(fld_tmp(ilon,ilat,il0)+fld_tmp2)
+            case ('vn')
+               do ilat=1,model%nlat
+                  do ilon=1,model%nlon
+                     if (ilat==1) then
+                        call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp2,(/ilon,model%nlat,nam%levs(il0),timeslot/)))
+                     else
+                        call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp2,(/ilon,ilat-1,nam%levs(il0),timeslot/)))
+                     end if
+                     fld_tmp(ilon,ilat,il0) = 0.5*(fld_tmp(ilon,ilat,il0)+fld_tmp2)
+                  end do
                end do
-            end do
-         end select
-      end do
+            end select
+         end do
+      case default
+         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%varname(iv)))
+      end select
 
       ! Pack
       do il0=1,model%nl0

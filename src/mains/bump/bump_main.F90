@@ -77,7 +77,6 @@ end select
 
 ! Broadcast namelist
 call bump%nam%bcast(mpl)
-if (mpl%main) call bump%nam%write(mpl)
 
 ! Define info unit and open file
 do iproc=1,mpl%nproc
