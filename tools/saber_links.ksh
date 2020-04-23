@@ -1,12 +1,12 @@
 #!/bin/ksh
 # ----------------------------------------------------------------------
-# Korn shell script: saber_links
+# Korn shell script: bump_links
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 # ----------------------------------------------------------------------
 
-# Parameters
+# Parameters
 modeldata=$1
 testdata=$2
 test=$3
@@ -17,11 +17,11 @@ mkdir -p ${testdata}
 i=0
 ne=1
 while [ ${i} -lt ${ne} ] ; do
-   # Update
+   # Update
    let i=i+1
    echo "Link member "${i}
 
-   # Copy and typeset
+   # Copy and typeset
    i3=$i
    typeset -RZ3 i3
    i4=$i
@@ -38,7 +38,7 @@ while [ ${i} -lt ${ne} ] ; do
       done
    fi
 
-   # ARPEGE
+   # ARPEGE
    if test ${test} = "bump_arp" ; then
       ne=10
       xp=877D
@@ -135,7 +135,7 @@ while [ ${i} -lt ${ne} ] ; do
       ln -sf ${modeldata}/${test}/Ens_${i}.nc ${testdata}/ens1_01_${i4}.nc
    fi
 
-   # WRF
+   # WRF
    if test ${test} = "bump_wrf" ; then
       ne=8
       date=2017-07-28_06:00:00
@@ -330,15 +330,17 @@ EOFNAM
    fi
 fi
 
-# MPAS
+# MPAS
 if test ${test} = "bump_mpas" ; then
-   origin=${modeldata}/${test}/x1.40962.init.2018-04-15_00.00.00.nc
+#   origin=${modeldata}/${test}/x1.40962.init.2018-04-15_00.00.00.nc
+   origin=${modeldata}/${test}/grid.nc
    grid=${testdata}/grid.nc
    rm -f ${grid}
-   ncks -O -v latCell,lonCell ${origin} ${grid}
-   ncwa -O -v pressure_base -a Time,nCells ${origin} pressure.nc
-   ncks -A -v pressure_base pressure.nc ${grid}
-   rm -f pressure.nc
+#   ncks -O -v latCell,lonCell ${origin} ${grid}
+#   ncwa -O -v pressure_base -a Time,nCells ${origin} pressure.nc
+#   ncks -A -v pressure_base pressure.nc ${grid}
+#   rm -f pressure.nc
+   cp -f ${origin} ${grid}
 fi
 
 # NEMO
@@ -373,3 +375,4 @@ if test ${test} = "bump_wrf" ; then
    ncks -A -v PB pressure.nc ${grid}
    rm -f pressure.nc
 fi
+

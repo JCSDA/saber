@@ -4,19 +4,19 @@ prefix: "bump_nemovar/test"
 model: "nemo"
 
 # driver_param
-method: "loc"
-strategy: "common"
-new_hdiag: 0
+method: "cor"
+strategy: "specific_univariate"
+new_hdiag: 1
 write_cmat: 0
-new_nicas: 1
-check_adjoints: 1
-check_dirac: 1
+new_nicas: 0
+check_adjoints: 0
+check_dirac: 0
 
 # model_param
-nl: 1
+nl: 3
 levs: [1,2,3,4,5,6,7,8,9,10]
-nv: 1
-varname: ["tn"]
+nv: 2
+varname: ["tn","sshn"]
 nts: 1
 timeslot: ["01"]
 
@@ -43,7 +43,7 @@ resol: 8.0
 fast_sampling: 1
 subsamp: "h"
 mpicom: 2
-forced_radii: 1
+forced_radii: 0
 rh: 2500.0e3
 rv: 10.0
 
