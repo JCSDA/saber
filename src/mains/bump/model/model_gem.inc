@@ -99,7 +99,7 @@ character(len=*),intent(in) :: filename                         ! File name
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
-integer :: iv,il0,xt,img,ilon,ilat
+integer :: iv,il0,img,ilon,ilat,ndims
 integer :: ncid,fld_id
 integer,allocatable :: fld_tmp_int(:,:)
 real(kind_real) :: add_offset,scale_factor
@@ -122,21 +122,27 @@ do iv=1,nam%nv
       call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
 
       ! Check variable type and read data
-      call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,xtype=xt))
-      select case (xt)
-      case (nf90_short)
-         call mpl%ncerr(subr,nf90_get_att(ncid,fld_id,'add_offset',add_offset))
-         call mpl%ncerr(subr,nf90_get_att(ncid,fld_id,'scale_factor',scale_factor))
+      call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,ndims=ndims))
+      call mpl%ncerr(subr,nf90_get_att(ncid,fld_id,'add_offset',add_offset))
+      call mpl%ncerr(subr,nf90_get_att(ncid,fld_id,'scale_factor',scale_factor))
+      select case (ndims)
+      case (2)
+         ! 2D data
+         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp_int,(/1,1/),(/model%nlon,model%nlat/)))
+         fld_tmp = mpl%msv%valr
+         if (trim(nam%lev2d)=='first') then
+            fld_tmp(:,:,1) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
+         elseif (trim(nam%lev2d)=='last') then
+            fld_tmp(:,:,model%nl0) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
+         end if
+      case (3) 
+         ! 3D data
          do il0=1,nam%nl
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp_int,(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/)))
             fld_tmp(:,:,il0) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
          end do
-      case (nf90_double)
-         do il0=1,nam%nl
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/)))
-         end do
       case default
-         call mpl%abort(subr,'wrong variable type')
+         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%varname(iv)))
       end select
 
       ! Pack
