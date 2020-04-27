@@ -60,6 +60,7 @@ type nicas_blk_type
 
    ! Specific geometry
    integer :: nc1                                  ! Number of points in subset Sc1
+   logical :: var2d                                ! Flag for 2D variables in 3D fields
    integer,allocatable :: vbot(:)                  ! Bottom level in grid Gh
    integer,allocatable :: vtop(:)                  ! Top level in grid Gh
    integer,allocatable :: nc2(:)                   ! Number of points in subset Sc2
@@ -1571,7 +1572,7 @@ type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 ! Local variables
 integer :: il0,ic0,ic0a
 real(kind_real) :: rhs_sum(geom%nl0),rvs_sum(geom%nl0),rvs_avg(geom%nl0),norm(geom%nl0)
-real(kind_real) :: rhs_minavg
+real(kind_real) :: rhs_minavg,rhs_min_norm,rhs_min_norm_tot
 real(kind_real) :: rhs_min(geom%nc0a)
 logical :: mask_hor_c0a(geom%nc0a)
 character(len=1024),parameter :: subr = 'nicas_blk_compute_sampling_c1'
@@ -1602,27 +1603,26 @@ do il0=1,geom%nl0
       write(mpl%info,'(a13,a,i3,a,f10.2,a,f10.2,a)') '','Level ',nam%levs(il0),': '//trim(mpl%aqua), &
     & nicas_blk%rhs_avg(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),rvs_avg(il0),trim(mpl%black)//' vert. unit'
       if (nicas_blk%verbosity) call mpl%flush
-   else
-      write(mpl%info,'(a13,a,i3,a)') '','Level ',nam%levs(il0),': missing values'
-      if (nicas_blk%verbosity) call mpl%flush
    end if
 end do
+nicas_blk%var2d = (geom%nl0>1).and.(count(nicas_blk%vlev)==1)
+if (nicas_blk%var2d) then
+   write(mpl%info,'(a10,a)') '','This variable is 2D'
+   if (nicas_blk%verbosity) call mpl%flush
+end if
 if (.not.any(nicas_blk%vlev)) call mpl%abort(subr,'no valid level')
 
 if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='hvh')) then
    ! Basic horizontal mesh defined with the minimum support radius
-   norm(1) = 1.0/real(geom%nc0_mask(0),kind_real)
-   rhs_min = huge(1.0)
+   rhs_min = mpl%msv%valr
    do ic0a=1,geom%nc0a
-      ic0 = geom%c0a_to_c0(ic0a)
-      do il0=1,geom%nl0
-         if (geom%mask_c0(ic0,il0).and.nicas_blk%vlev(il0)) then
-            rhs_min(ic0a) = min(cmat_blk%rhs(ic0a,il0),rhs_min(ic0a))
-         end if
-      end do
+      if (any(nicas_blk%vlev.and.geom%mask_c0a(ic0a,:))) rhs_min(ic0a) = minval(cmat_blk%rhs(ic0a,:), &
+                                                       & mask=nicas_blk%vlev.and.geom%mask_c0a(ic0a,:))
    end do
-   call mpl%f_comm%allreduce(sum(rhs_min,mask=geom%mask_hor_c0a),rhs_minavg,fckit_mpi_sum())
-   rhs_minavg = rhs_minavg*norm(1)
+   call mpl%f_comm%allreduce(sum(rhs_min,mask=mpl%msv%isnot(rhs_min)),rhs_minavg,fckit_mpi_sum())
+   rhs_min_norm = real(count(mpl%msv%isnot(rhs_min)),kind_real)
+   call mpl%f_comm%allreduce(rhs_min_norm,rhs_min_norm_tot,fckit_mpi_sum())
+   rhs_minavg = rhs_minavg/rhs_min_norm_tot
    nicas_blk%nc1 = floor(2.0*maxval(geom%area)*nam%resol**2/(sqrt(3.0)*rhs_minavg**2))
    write(mpl%info,'(a10,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_blk%nc1
    if (nicas_blk%verbosity) call mpl%flush
@@ -1691,22 +1691,22 @@ character(len=1024),parameter :: subr = 'nicas_blk_compute_sampling_v'
 ! Allocation
 allocate(nicas_blk%slev(geom%nl0))
 
+! Initialization
+nicas_blk%il0_first = mpl%msv%vali
+nicas_blk%il0_last = mpl%msv%vali
+do il0=1,geom%nl0
+   if (nicas_blk%vlev(il0).and.mpl%msv%is(nicas_blk%il0_first)) nicas_blk%il0_first = il0
+end do
+do il0=geom%nl0,1,-1
+   if (nicas_blk%vlev(il0).and.mpl%msv%is(nicas_blk%il0_last)) nicas_blk%il0_last = il0
+end do
+il0_prev = nicas_blk%il0_first
+nicas_blk%slev = .false.
+
 if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) then
    ! Vertical sampling
    write(mpl%info,'(a10,a)') '','Compute vertical subset L1'
    if (nicas_blk%verbosity) call mpl%flush
-
-   ! Initialization
-   nicas_blk%il0_first = mpl%msv%vali
-   nicas_blk%il0_last = mpl%msv%vali
-   do il0=1,geom%nl0
-      if (nicas_blk%vlev(il0).and.mpl%msv%is(nicas_blk%il0_first)) nicas_blk%il0_first = il0
-   end do
-   do il0=geom%nl0,1,-1
-      if (nicas_blk%vlev(il0).and.mpl%msv%is(nicas_blk%il0_last)) nicas_blk%il0_last = il0
-   end do
-   il0_prev = nicas_blk%il0_first
-   nicas_blk%slev = .false.
 
    do il0=1,geom%nl0
       if (nicas_blk%vlev(il0)) then
@@ -1733,9 +1733,9 @@ if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(
    end do
 else
    ! No vertical sampling
-   nicas_blk%il0_first = 1
-   nicas_blk%il0_last = geom%nl0
-   nicas_blk%slev = .true.
+   do il0=nicas_blk%il0_first,nicas_blk%il0_last
+      nicas_blk%slev(il0) = .true.
+   end do
 end if
 
 ! Count effective levels
@@ -1760,29 +1760,38 @@ allocate(nicas_blk%vbot(nicas_blk%nc1))
 allocate(nicas_blk%vtop(nicas_blk%nc1))
 nicas_blk%vbot = mpl%msv%vali
 nicas_blk%vtop = mpl%msv%vali
-!$omp parallel do schedule(static) private(ic1,ic0,inside,il1,il0)
-do ic1=1,nicas_blk%nc1
-   ic0 = nicas_blk%c1_to_c0(ic1)
-   inside = .false.
-   nicas_blk%vtop(ic1) = geom%nl0
-   do il1=1,nicas_blk%nl1
-      il0 = nicas_blk%l1_to_l0(il1)
-      if (.not.inside.and.geom%mask_c0(ic0,il0)) then
-         ! Bottom level
-         nicas_blk%vbot(ic1) = il0
-         inside = .true.
-      end if
-      if (inside.and.(.not.geom%mask_c0(ic0,il0))) then
-         ! Top level
-         nicas_blk%vtop(ic1) = il0
-         inside = .false.
+if (nicas_blk%var2d) then
+   do il0=1,geom%nl0
+      if (nicas_blk%vlev(il0)) then
+         nicas_blk%vbot = il0
+         nicas_blk%vtop = il0
       end if
    end do
-   if (mpl%msv%is(nicas_blk%vbot(ic1))) call mpl%abort(subr,'bottom level not found')
-   if (mpl%msv%is(nicas_blk%vtop(ic1))) call mpl%abort(subr,'top level not found')
-   if (nicas_blk%vbot(ic1)>nicas_blk%vtop(ic1)) call mpl%abort(subr,'non contiguous mask')
-end do
-!$omp end parallel do
+else
+   !$omp parallel do schedule(static) private(ic1,ic0,inside,il1,il0)
+   do ic1=1,nicas_blk%nc1
+      ic0 = nicas_blk%c1_to_c0(ic1)
+      inside = .false.
+      nicas_blk%vtop(ic1) = geom%nl0
+      do il1=1,nicas_blk%nl1
+         il0 = nicas_blk%l1_to_l0(il1)
+         if (.not.inside.and.geom%mask_c0(ic0,il0)) then
+            ! Bottom level
+            nicas_blk%vbot(ic1) = il0
+            inside = .true.
+         end if
+         if (inside.and.(.not.geom%mask_c0(ic0,il0))) then
+            ! Top level
+            nicas_blk%vtop(ic1) = il0
+            inside = .false.
+         end if
+      end do
+      if (mpl%msv%is(nicas_blk%vbot(ic1))) call mpl%abort(subr,'bottom level not found')
+      if (mpl%msv%is(nicas_blk%vtop(ic1))) call mpl%abort(subr,'top level not found')
+      if (nicas_blk%vbot(ic1)>nicas_blk%vtop(ic1)) call mpl%abort(subr,'non contiguous mask')
+   end do
+   !$omp end parallel do
+end if
 
 ! Inverse conversion
 allocate(nicas_blk%l0_to_l1(geom%nl0))
@@ -1840,7 +1849,8 @@ do il1=1,nicas_blk%nl1
    il0 = nicas_blk%l1_to_l0(il1)
    nicas_blk%mask_c1(:,il1) = geom%mask_c0(nicas_blk%c1_to_c0,il0)
 
-   if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) then
+   if (nicas_blk%vlev(il0).and.((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='vh').or. &
+ & (trim(nicas_blk%subsamp)=='hvh'))) then
       write(mpl%info,'(a13,a,i3,a)') '','Level ',il1,':'
       if (nicas_blk%verbosity) call mpl%flush
 
@@ -2579,7 +2589,6 @@ end if
 ! Compute ball data
 write(mpl%info,'(a13,a)') '','Compute ball data'
 if (nicas_blk%verbosity) call mpl%flush
-call mpl%flush
 !$omp parallel do schedule(static) private(isbb,is,ic1,il1,ic0,il0,jbd,jc1,jl1) firstprivate(Hcoef)
 do isbb=1,nicas_blk%nsbb
    ! Indices
