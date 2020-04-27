@@ -347,9 +347,11 @@ do its=1,nam%nts
          write(mpl%info,'(a16,a,i2)') '','Iteration ',iter
          call mpl%flush
          do il0=1,geom%nl0
-            write(mpl%info,'(a19,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm,' km, rel. diff. = ', &
-          & (m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
-            call mpl%flush
+            if (m2sqasy(il0)>0.0) then
+               write(mpl%info,'(a19,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm,' km, rel. diff. = ', &
+             & (m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
+               call mpl%flush
+            end if
          end do
 
          ! Update support radius

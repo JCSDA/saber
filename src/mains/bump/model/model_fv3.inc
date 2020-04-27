@@ -109,7 +109,7 @@ real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
 integer :: iv,il0,imgt,img,ilon,ilat
-integer :: ncid,fld_id
+integer :: ncid,fld_id,dimids(4),zlen
 real(kind_real) :: fld_mgt(model%nmgt,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
 character(len=1) :: ctile
@@ -129,10 +129,25 @@ do iv=1,nam%nv
       ! Get variable id
       call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
 
+      ! Check field size
+      call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,dimids=dimids))
+      call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimids(3),len=zlen))
+
       ! Read data
-      do il0=1,nam%nl
-          call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/),(/model%nlon,model%nlat,1,1/)))
-      end do
+      if (zlen==1) then
+         ! 2D data
+         fld_tmp = mpl%msv%valr
+         if (trim(nam%lev2d)=='first') then
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,1),(/1,1,1,1/),(/model%nlon,model%nlat,1,1/)))
+         elseif (trim(nam%lev2d)=='last') then
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1,1,1/),(/model%nlon,model%nlat,1,1/)))
+         end if
+      else
+         ! 3D data
+         do il0=1,nam%nl
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/),(/model%nlon,model%nlat,1,1/)))
+         end do
+      end if
 
       ! Pack
       do imgt=1,model%nmgt
