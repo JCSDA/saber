@@ -262,10 +262,10 @@ endforeach()
 
 if(NOT ${METIS_FOUND})
     # Remove METIS tests
-    file(STRINGS testlist/saber_test_metis.txt saber_test_tmp )
+    file(STRINGS testlist/bump_test_metis.txt saber_test_tmp )
     list(REMOVE_ITEM saber_test ${saber_test_tmp})
     if(${SABER_TEST_QUAD})
-        file(STRINGS testlist/saber_test_metis.txt saber_test_quad_tmp )
+        file(STRINGS testlist/bump_test_metis.txt saber_test_quad_tmp )
         list(REMOVE_ITEM saber_test_quad ${saber_test_quad_tmp})
     endif()
 endif()
