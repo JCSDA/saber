@@ -8,7 +8,8 @@
 module tools_samp
 
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
-use tools_func, only: sphere_dist
+use tools_const, only: pi
+use tools_func, only: lonlatmod,sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,inf,sup
@@ -50,17 +51,17 @@ logical,intent(in),optional :: fast          ! Fast sampling flag
 logical,intent(in),optional :: verbosity     ! Verbosity flag
 
 ! Local variables
-integer :: n_glb,n_loc_eff,n_glb_eff,n_loc_val,i_loc,i_loc_val,i_glb,is1_loc,is2_glb,iproc,js,irep,irmax,itry,is1_glb,ir
-integer :: irval,irvalmin,irvalmax,is2_glb_min,nrep_eff,nn_index(2),proc_to_ns1_loc(mpl%nproc),offset,ns1_loc,ns1_glb
-integer :: ns1_glb_val
-integer,allocatable :: glb_to_loc(:),glb_to_proc(:),sam1_loc(:),sam1_glb(:),to_valid(:),sam2_glb_tmp(:),order(:)
-real(kind_real) :: rhsq_loc,rhsq_glb,d,distmax,distmin,nn_dist(2),cdf_norm,rr
-real(kind_real),allocatable :: lon1_glb(:),lat1_glb(:),rh1_glb(:)
-real(kind_real),allocatable :: cdf(:)
+integer :: n_glb,n_glb_eff,i_glb,is2_glb,iproc,js,irep,irmax,itry,is1_glb,ir
+integer :: irval,irvalmin,irvalmax,is2_glb_min,nrep_eff,nn_index(2),ns1_glb,is1_glb_eff,ns1_glb_eff,ns1_glb_val
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:),sam1_glb(:),sam1_glb_tmp(:),to_valid(:),sam2_glb_tmp(:),order(:)
+real(kind_real) :: d,distmax,distmin,nn_dist(2),cdf_norm,rr
+real(kind_real),allocatable :: lon1_glb(:),lat1_glb(:),dist1_glb(:),rh1_glb(:)
+real(kind_real),allocatable :: lon1_glb_tmp(:),lat1_glb_tmp(:),dist1_glb_tmp(:),rh1_glb_tmp(:)
+real(kind_real),allocatable :: list(:),cdf(:)
 real(kind_real),allocatable :: lon_rep(:),lat_rep(:),dist(:)
 logical :: lfast,lverbosity
 logical,allocatable :: mask_glb(:),lmask(:),smask(:),rmask(:)
-character(len=1024),parameter :: subr = 'rng_initialize_sampling'
+character(len=1024),parameter :: subr = 'initialize_sampling'
 type(fckit_mpi_status) :: status
 type(tree_type) :: tree
 
@@ -69,8 +70,7 @@ lverbosity = .true.
 if (present(verbosity)) lverbosity = verbosity
 
 ! Number of effective points
-n_loc_eff = count(mask_loc)
-call mpl%f_comm%allreduce(n_loc_eff,n_glb_eff,fckit_mpi_sum())
+call mpl%f_comm%allreduce(count(mask_loc),n_glb_eff,fckit_mpi_sum())
 
 ! Check mask size
 if (n_glb_eff==0) then
@@ -109,204 +109,164 @@ elseif (n_glb_eff==ns2_glb) then
    deallocate(glb_to_proc)
    deallocate(mask_glb)
 else
-   ! Define number of subsampling points for the first step
-   if (repro) then
-      ! First step is skipped
-      ns1_loc = n_loc_eff
-   else
-      ! First subsampling depends on horizontal radius
-      rhsq_loc = sum(rh_loc**2,mask=mask_loc)
-      call mpl%f_comm%allreduce(rhsq_loc,rhsq_glb,fckit_mpi_sum())
-      ns1_loc = int(5.0*real(ns2_glb,kind_real)*rhsq_loc/rhsq_glb)
-      ns1_loc = min(ns1_loc,n_loc_eff)
-   end if
-
-   ! Communication
-   if (mpl%main) then
-      ! Receive data on rootproc
-      do iproc=1,mpl%nproc
-         if (iproc==mpl%rootproc) then
-            ! Copy data
-            proc_to_ns1_loc(iproc) = ns1_loc
-         else
-            ! Receive data
-            call mpl%f_comm%receive(proc_to_ns1_loc(iproc),iproc-1,mpl%tag,status)
-         end if
-      end do
-   else
-      ! Send data to rootproc
-      call mpl%f_comm%send(ns1_loc,mpl%rootproc-1,mpl%tag)
-   end if
-   call mpl%update_tag(1)
-
-   ! Global size
-   if (mpl%main) ns1_glb = sum(proc_to_ns1_loc)
+   ! Define global size
+   ns1_glb = min(5*ns2_glb,n_glb_eff)
 
    ! Allocation
-   allocate(sam1_loc(ns1_loc))
+   call tree%alloc(mpl,n_loc)
 
-   ! First subsampling
-   if (n_loc_eff==0) then
-      ! No point on this task
-      write(mpl%info,'(a)') ' no point on this task'
-      if (lverbosity) call mpl%flush
-   elseif (ns1_loc==n_loc_eff) then
-      ! All points are used
-      write(mpl%info,'(a)') ' all points are used'
-      if (lverbosity) call mpl%flush(.false.)
+   ! Initialization
+   call tree%init(lon_loc,lat_loc)
 
-      is1_loc = 0
-      do i_loc=1,n_loc
-         if (mask_loc(i_loc)) then
-            is1_loc = is1_loc+1
-            sam1_loc(is1_loc) = i_loc
-         end if
-      end do
-   else
-      ! Define sampling with a cumulative distribution function
+   ! Allocation
+   allocate(lon1_glb(ns1_glb))
+   allocate(lat1_glb(ns1_glb))
+   allocate(dist1_glb(ns1_glb))
+   allocate(rh1_glb(ns1_glb))
+   allocate(sam1_glb(ns1_glb))
 
-      ! Allocation
-      n_loc_val = n_loc_eff
-      allocate(to_valid(n_loc_val))
-      allocate(cdf(n_loc_val))
+   ! Synchronize seeds
+   call rng%sync(mpl)
 
-      ! Initialization
-      sam1_loc = mpl%msv%vali
-      to_valid = mpl%msv%vali
-      i_loc_val = 0
-      do i_loc=1,n_loc
-         if (mask_loc(i_loc)) then
-            i_loc_val = i_loc_val+1
-            to_valid(i_loc_val) = i_loc
-         end if
-      end do
-      cdf(1) = 0.0
-      do i_loc_val=2,n_loc_val
-         i_loc = to_valid(i_loc_val)
-         cdf(i_loc_val) = cdf(i_loc_val-1)+1.0/rh_loc(i_loc)**2
-      end do
-      cdf_norm = 1.0/cdf(n_loc_val)
-      cdf = cdf*cdf_norm
-      if (lverbosity) call mpl%prog_init(ns1_loc)
+   ! Initialization
+   if (lverbosity) call mpl%prog_init(ns1_glb)
 
-      do is1_loc=1,ns1_loc
-         ! Generate random number
-         call rng%rand_real(0.0_kind_real,1.0_kind_real,rr)
+   do is1_glb=1,ns1_glb
+      ! Generate random coordinates
+      call rng%rand_real(0.0_kind_real,1.0_kind_real,rr)
+      lon1_glb(is1_glb) = 2.0*pi*rr
+      call rng%rand_real(-1.0_kind_real,1.0_kind_real,rr)
+      lat1_glb(is1_glb) = asin(rr)
+      call lonlatmod(lon1_glb(is1_glb),lat1_glb(is1_glb))
 
-         ! Dichotomy to find the value
-         irval = 1
-         irvalmin = 1
-         irvalmax = n_loc_val
-         do while (irvalmax-irvalmin>1)
-            irval = (irvalmin+irvalmax)/2
-            if ((cdf(irvalmin)-rr)*(cdf(irval)-rr)>0.0) then
-               irvalmin = irval
-            else
-               irvalmax = irval
-            end if
-         end do
+      ! Find nearest neighbor
+      call tree%find_nearest_neighbors(lon1_glb(is1_glb),lat1_glb(is1_glb),1,nn_index(1:1),dist1_glb(is1_glb:is1_glb))
 
-         ! New sampling point
-         ir = to_valid(irval)
-         sam1_loc(is1_loc) = ir
+      ! Copy rh and global index if the nearest neighbor is valid
+      if (mask_loc(nn_index(1))) then
+         rh1_glb(is1_glb) = rh_loc(nn_index(1))
+         sam1_glb(is1_glb) = loc_to_glb(is1_glb)
+      else
+         rh1_glb(is1_glb) = mpl%msv%valr
+         sam1_glb(is1_glb) = mpl%msv%vali
+      end if
 
-         ! Shift valid points array
-         if (irval<n_loc_val) then
-            cdf(irval:n_loc_val-1) = cdf(irval+1:n_loc_val)
-            to_valid(irval:n_loc_val-1) = to_valid(irval+1:n_loc_val)
-         end if
-         n_loc_val = n_loc_val-1
+      ! Update
+      if (lverbosity) call mpl%prog_print(is1_glb)
+   end do
+   if (lverbosity) call mpl%prog_final(.false.)
 
-         ! Renormalize cdf
-         cdf_norm = 1.0/cdf(n_loc_val)
-         cdf(1:n_loc_val) = cdf(1:n_loc_val)*cdf_norm
+   ! Delete tree
+   call tree%dealloc
 
-         ! Update
-         if (lverbosity) call mpl%prog_print(is1_loc)
-      end do
-      if (lverbosity) call mpl%prog_final(.false.)
+   ! Desynchronize seeds
+   call rng%desync(mpl)
 
-      ! Release memory
-      deallocate(to_valid)
-      deallocate(cdf)
-   end if
-
-   if (n_loc_eff>0) then
+   if (mpl%main) then
       ! Continue printing
       write(mpl%info,'(a)') ' => '
       if (lverbosity) call mpl%flush(.false.)
-   end if
 
-   ! Communication
-   if (mpl%main) then
       ! Allocation
-      allocate(sam1_glb(ns1_glb))
-      allocate(lon1_glb(ns1_glb))
-      allocate(lat1_glb(ns1_glb))
-      allocate(rh1_glb(ns1_glb))
+      allocate(lon1_glb_tmp(ns1_glb))
+      allocate(lat1_glb_tmp(ns1_glb))
+      allocate(dist1_glb_tmp(ns1_glb))
+      allocate(rh1_glb_tmp(ns1_glb))
+      allocate(sam1_glb_tmp(ns1_glb))
 
-      ! Receive data on rootproc
-      offset = 0
+      ! Initialization
+      lon1_glb_tmp = lon1_glb
+      lat1_glb_tmp = lat1_glb
+      dist1_glb_tmp = dist1_glb
+      rh1_glb_tmp = rh1_glb
+      sam1_glb_tmp = sam1_glb
+
+      ! Receive and copy data on rootproc
       do iproc=1,mpl%nproc
-         if (proc_to_ns1_loc(iproc)>0) then
-            if (iproc==mpl%rootproc) then
-               ! Copy data
-               sam1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = loc_to_glb(sam1_loc)
-               lon1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = lon_loc(sam1_loc)
-               lat1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = lat_loc(sam1_loc)
-               rh1_glb(offset+1:offset+proc_to_ns1_loc(iproc)) = rh_loc(sam1_loc)
-            else
-               ! Receive data
-               call mpl%f_comm%receive(sam1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag,status)
-               call mpl%f_comm%receive(lon1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag+1,status)
-               call mpl%f_comm%receive(lat1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag+2,status)
-               call mpl%f_comm%receive(rh1_glb(offset+1:offset+proc_to_ns1_loc(iproc)),iproc-1,mpl%tag+3,status)
-            end if
+         if (iproc/=mpl%rootproc) then
+            ! Receive data
+            call mpl%f_comm%receive(lon1_glb,iproc-1,mpl%tag,status)
+            call mpl%f_comm%receive(lat1_glb,iproc-1,mpl%tag+1,status)
+            call mpl%f_comm%receive(dist1_glb,iproc-1,mpl%tag+2,status)
+            call mpl%f_comm%receive(rh1_glb,iproc-1,mpl%tag+3,status)
+            call mpl%f_comm%receive(sam1_glb,iproc-1,mpl%tag+4,status)
 
-            ! Update
-            offset = offset+proc_to_ns1_loc(iproc)
+            ! Copy data
+            do is1_glb=1,ns1_glb
+               ! Check if the nearest neighbor is vali
+               if (mpl%msv%isnot(rh1_glb(is1_glb)).and.mpl%msv%isnot(sam1_glb(is1_glb))) then
+                  ! Check if the distance is smaller
+                  if (inf(dist1_glb_tmp(is1_glb),dist1_glb(is1_glb))) then
+                     lon1_glb_tmp(is1_glb) = lon1_glb(is1_glb)
+                     lat1_glb_tmp(is1_glb) = lat1_glb(is1_glb)
+                     dist1_glb_tmp(is1_glb) = dist1_glb(is1_glb)
+                     rh1_glb_tmp(is1_glb) = rh1_glb(is1_glb)
+                     sam1_glb_tmp(is1_glb) = sam1_glb(is1_glb)
+                  end if
+               end if
+            end do
          end if
       end do
 
-      if (repro) then
-         ! Reorder data
-         allocate(order(ns1_glb))
-         call qsort(ns1_glb,sam1_glb,order)
-         lon1_glb = lon1_glb(order)
-         lat1_glb = lat1_glb(order)
-         rh1_glb = rh1_glb(order)
-         deallocate(order)
-      end if
-   else
-      if (ns1_loc>0) then
-         ! Send data to rootproc
-         call mpl%f_comm%send(loc_to_glb(sam1_loc),mpl%rootproc-1,mpl%tag)
-         call mpl%f_comm%send(lon_loc(sam1_loc),mpl%rootproc-1,mpl%tag+1)
-         call mpl%f_comm%send(lat_loc(sam1_loc),mpl%rootproc-1,mpl%tag+2)
-         call mpl%f_comm%send(rh_loc(sam1_loc),mpl%rootproc-1,mpl%tag+3)
-      end if
-   end if
-   call mpl%update_tag(4)
+      ! Remove unvalid points
+      lon1_glb = mpl%msv%valr
+      lat1_glb = mpl%msv%valr
+      rh1_glb = mpl%msv%valr
+      sam1_glb = mpl%msv%vali
+      is1_glb_eff = 0
+      do is1_glb=1,ns1_glb
+         if (mpl%msv%isnot(rh1_glb_tmp(is1_glb)).and.mpl%msv%isnot(sam1_glb_tmp(is1_glb))) then
+            is1_glb_eff = is1_glb_eff+1
+            lon1_glb(is1_glb_eff) = lon1_glb_tmp(is1_glb)
+            lat1_glb(is1_glb_eff) = lat1_glb_tmp(is1_glb)
+            rh1_glb(is1_glb_eff) = rh1_glb_tmp(is1_glb)
+            sam1_glb(is1_glb_eff) = sam1_glb_tmp(is1_glb)
+         end if
+      end do
 
-   ! Release memory
-   deallocate(sam1_loc)
-
-   if (mpl%main) then
       ! Allocation
-      nrep_eff = min(nrep,ns1_glb-ns2_glb)
+      ns1_glb_eff = is1_glb_eff
+      allocate(list(ns1_glb_eff))
+      allocate(order(ns1_glb_eff))
+
+      ! Define points order
+      do is1_glb=1,ns1_glb_eff
+         list(is1_glb) = aint(abs(lon1_glb(is1_glb)+pi)*1.0e6)+abs(lat1_glb(is1_glb)+0.5*pi)*1.0e-1
+      end do
+      call qsort(ns1_glb_eff,list,order)
+
+      ! Reorder data
+      lon1_glb(1:ns1_glb_eff) = lon1_glb(order)
+      lat1_glb(1:ns1_glb_eff) = lat1_glb(order)
+      rh1_glb(1:ns1_glb_eff) = rh1_glb(order)
+      sam1_glb(1:ns1_glb_eff) = sam1_glb(order)
+
+      ! Release memory
+      deallocate(dist1_glb)
+      deallocate(lon1_glb_tmp)
+      deallocate(lat1_glb_tmp)
+      deallocate(dist1_glb_tmp)
+      deallocate(rh1_glb_tmp)
+      deallocate(sam1_glb_tmp)
+      deallocate(list)
+      deallocate(order)
+
+      ! Allocation
+      nrep_eff = min(nrep,ns1_glb_eff-ns2_glb)
       allocate(sam2_glb_tmp(ns2_glb+nrep_eff))
-      allocate(lmask(ns1_glb))
-      allocate(smask(ns1_glb))
-      allocate(to_valid(ns1_glb))
+      allocate(lmask(ns1_glb_eff))
+      allocate(smask(ns1_glb_eff))
+      allocate(to_valid(ns1_glb_eff))
 
       ! Initialization
       sam2_glb_tmp = mpl%msv%vali
       lmask = .true.
       smask = .false.
       to_valid = mpl%msv%vali
-      do is1_glb=1,ns1_glb
+      do is1_glb=1,ns1_glb_eff
          to_valid(is1_glb) = is1_glb
       end do
+      ns1_glb_val = ns1_glb_eff
       if (lverbosity) call mpl%prog_init(ns2_glb+nrep_eff)
       lfast = .false.
       if (present(fast)) lfast = fast
@@ -315,15 +275,16 @@ else
          ! Define sampling with a cumulative distribution function
 
          ! Allocation
-         allocate(cdf(ns1_glb))
+         allocate(cdf(ns1_glb_eff))
 
          ! Initialization
-         ns1_glb_val = ns1_glb
          cdf(1) = 0.0
-         do is1_glb=2,ns1_glb
-            cdf(is1_glb) = cdf(is1_glb-1)+1.0/rh1_glb(is1_glb)**2
+         do is1_glb=2,ns1_glb_eff
+            if (lmask(is1_glb)) then
+               cdf(is1_glb) = cdf(is1_glb-1)+1.0/rh1_glb(is1_glb)**2
+            end if
          end do
-         cdf_norm = 1.0/cdf(ns1_glb)
+         cdf_norm = 1.0/cdf(ns1_glb_eff)
          cdf = cdf*cdf_norm
 
          do is2_glb=1,ns2_glb+nrep_eff
@@ -366,14 +327,10 @@ else
          deallocate(cdf)
       else
          ! Define sampling with a KD-tree
-
-         ! Initialization
-         ns1_glb_val = ns1_glb
-
          do is2_glb=1,ns2_glb+nrep_eff
             if (is2_glb>2) then
                ! Allocation
-               call tree%alloc(mpl,ns1_glb,mask=smask)
+               call tree%alloc(mpl,ns1_glb_eff,mask=smask)
 
                ! Initialization
                call tree%init(lon1_glb,lat1_glb)
@@ -438,11 +395,9 @@ else
       end if
 
       if (nrep_eff>0) then
-         if (n_loc_eff>0) then
-            ! Continue printing
-            write(mpl%info,'(a)') ' => '
-            if (lverbosity) call mpl%flush(.false.)
-         end if
+         ! Continue printing
+         write(mpl%info,'(a)') ' => '
+         if (lverbosity) call mpl%flush(.false.)
 
          ! Allocation
          allocate(rmask(ns2_glb+nrep_eff))
@@ -520,11 +475,9 @@ else
          deallocate(lat_rep)
          deallocate(dist)
       else
-         if (n_loc_eff>0) then
-            ! Stop printing
-            write(mpl%info,'(a)') ''
-            if (lverbosity) call mpl%flush
-         end if
+         ! Stop printing
+         write(mpl%info,'(a)') ''
+         if (lverbosity) call mpl%flush
 
          ! Copy sam2_glb
          sam2_glb = sam2_glb_tmp
@@ -534,21 +487,34 @@ else
       sam2_glb = sam1_glb(sam2_glb)
 
       ! Release memory
-      deallocate(sam1_glb)
       deallocate(lon1_glb)
       deallocate(lat1_glb)
       deallocate(rh1_glb)
+      deallocate(sam1_glb)
       deallocate(sam2_glb_tmp)
       deallocate(lmask)
       deallocate(smask)
       deallocate(to_valid)
    else
-      if (n_loc_eff>0) then
-         ! Stop printing
-         write(mpl%info,'(a)') ''
-         if (lverbosity) call mpl%flush
-      end if
+      ! Send data to rootproc
+      call mpl%f_comm%send(lon1_glb,mpl%rootproc-1,mpl%tag)
+      call mpl%f_comm%send(lat1_glb,mpl%rootproc-1,mpl%tag+1)
+      call mpl%f_comm%send(dist1_glb,mpl%rootproc-1,mpl%tag+2)
+      call mpl%f_comm%send(rh1_glb,mpl%rootproc-1,mpl%tag+3)
+      call mpl%f_comm%send(sam1_glb,mpl%rootproc-1,mpl%tag+4)
+
+      ! Release memory
+      deallocate(lon1_glb)
+      deallocate(lat1_glb)
+      deallocate(dist1_glb)
+      deallocate(rh1_glb)
+      deallocate(sam1_glb)
+
+      ! Stop printing
+      write(mpl%info,'(a)') ''
+      if (lverbosity) call mpl%flush
    end if
+   call mpl%update_tag(5)
 end if
 
 ! Broadcast
