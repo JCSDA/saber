@@ -279,7 +279,6 @@ character(len=*),intent(in) :: prefix ! Prefix
 integer :: ie,ie_sub,jc0,ic0c,jc0c,ic0,jl0r,jl0,il0,isub,jc3,ic1,ic1a,ib,jv,iv,jts,its
 real(kind_real),allocatable :: fld_ext(:,:,:,:),fld_1(:,:),fld_2(:,:,:)
 logical,allocatable :: mask_unpack(:,:)
-character(len=1024),parameter :: subr = 'mom_compute'
 
 ! Allocation
 call mom%alloc(geom,bpar,samp,ens%ne,ens%nsub,prefix)
@@ -419,10 +418,6 @@ do ib=1,bpar%nb
             ic1 = samp%c1a_to_c1(ic1a)
             if (samp%c1l0_log(ic1,il0)) then
                mom%blk(ib)%m2_1(ic1a,il0,:) = mom%blk(ib)%m2_1(ic1a,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
-               do isub=1,mom%nsub
-                  if (.not.(abs(mom%blk(ib)%m2_1(ic1a,il0,isub))>0.0)) &
-                & call mpl%abort(subr,'zero variance at non-masked point, check your ensemble or use a mask')
-               end do
             else
                mom%blk(ib)%m2_1(ic1a,il0,:) = mpl%msv%valr
             end if
@@ -432,10 +427,6 @@ do ib=1,bpar%nb
                ic1 = samp%c1a_to_c1(ic1a)
                if (samp%c1c3l0_log(ic1,jc3,il0)) then
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mom%blk(ib)%m2_2(ic1a,jc3,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
-                  do isub=1,mom%nsub
-                     if (.not.(abs(mom%blk(ib)%m2_2(ic1a,jc3,il0,isub))>0.0)) &
-                   & call mpl%abort(subr,'zero variance at non-masked point, check your ensemble or use a mask')
-                  end do
                else
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mpl%msv%valr
                end if

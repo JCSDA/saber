@@ -395,7 +395,7 @@ real(kind_real) :: m2_1,m2_2
 real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
 real(kind_real) :: min_m11_tot,max_m11_tot,min_m11m11_tot,max_m11m11_tot,min_m2m2_tot,max_m2m2_tot,min_m22_tot,max_m22_tot
 real(kind_real) :: min_cor_tot,max_cor_tot
-real(kind_real) :: norm,gen_kurt
+real(kind_real) :: norm,den,gen_kurt
 real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
 real(kind_real),allocatable :: list1(:),list2(:)
 real(kind_real),allocatable :: sbuf(:),rbuf(:)
@@ -423,7 +423,7 @@ do il0=1,geom%nl0
 
       do jc3=1,bpar%nc3(ib)
          ! Fill lists
-         !$omp parallel do schedule(static) private(ic1a,ic1,valid,gen_kurt,m2_1,m2_2,isub,jsub)
+         !$omp parallel do schedule(static) private(ic1a,ic1,valid,den,gen_kurt,m2_1,m2_2,isub,jsub)
          do ic1a=1,samp%nc1a
             ! Index
             ic1 = samp%c1a_to_c1(ic1a)
@@ -434,9 +434,13 @@ do il0=1,geom%nl0
             if (valid) then
                ! Check general kurtosis
                do isub=1,avg_blk%nsub
-                  gen_kurt = 3.0*mom_blk%m22(ic1a,jc3,jl0r,il0,isub)/(2.0*mom_blk%m11(ic1a,jc3,jl0r,il0,isub)**2 &
-                           & +mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jl0,isub))
-                  if (gen_kurt>nam%gen_kurt_th) valid = .false.
+                  den = 2.0*mom_blk%m11(ic1a,jc3,jl0r,il0,isub)**2+mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jl0,isub)
+                  if (den>0.0) then
+                     gen_kurt = 3.0*mom_blk%m22(ic1a,jc3,jl0r,il0,isub)/den
+                     if (gen_kurt>nam%gen_kurt_th) valid = .false.
+                  else
+                     valid = .false.
+                  end if
                end do
             end if
 
