@@ -431,7 +431,7 @@ do ib=1,bpar%nb
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0))) then
             write(mpl%info,'(a13,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
-          & diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+          & diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
       end do

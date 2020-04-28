@@ -83,7 +83,7 @@ integer,intent(in) :: its                                       ! Timeslot index
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
-integer :: iv,il0,timeslot
+integer :: iv,il0,timeslot,ndims
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 character(len=1024),parameter :: subr = 'model_mpas_read'
@@ -101,10 +101,27 @@ do iv=1,nam%nv
       ! Get variable id
       call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
 
+      ! Check field size
+      call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,ndims=ndims))
+
       ! Read data
-      do il0=1,nam%nl
-         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,il0),(/nam%levs(il0),1,timeslot/),(/1,model%nmg,1/)))
-      end do
+      select case (ndims)
+      case (2)
+         ! 2D data
+         fld_mg = mpl%msv%valr
+         if (trim(nam%lev2d)=='first') then
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,1),(/1,timeslot/),(/model%nmg,1/)))
+         elseif (trim(nam%lev2d)=='last') then
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,model%nl0),(/1,timeslot/),(/model%nmg,1/)))
+         end if
+      case (3) 
+         ! 3D data
+         do il0=1,nam%nl
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,il0),(/nam%levs(il0),1,timeslot/),(/1,model%nmg,1/)))
+         end do
+      case default
+         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%varname(iv)))
+      end select
    end if
    call mpl%glb_to_loc(model%nl0,model%nmg,model%mg_to_proc,model%mg_to_mga,fld_mg,model%nmga,fld(:,:,iv))
 end do

@@ -372,10 +372,9 @@ logical,intent(in),optional :: coef            ! Coefficient estimation flag
 ! Local variables
 integer :: ic2,ic0,il0,jl0r,jl0,isc,il0_prev,dl0,il0inf,il0sup,il1inf,il1sup,ivar
 real(kind_real) :: alpha,alpha_opt,fo,fo_opt
-real(kind_real) :: vunit(geom%nl0)
-real(kind_real) :: fit_rh(geom%nl0),fit_rv(geom%nl0)
+real(kind_real) :: vunit(geom%nl0),m2(geom%nl0),fit_rh(geom%nl0),fit_rv(geom%nl0)
 real(kind_real),allocatable :: rawv(:),distv(:),fit(:,:,:),fit_pack(:),obs_pack(:)
-logical :: valid,lcoef,lrh,lrv
+logical :: valid,lcoef,lrh,lrv,var2d
 character(len=1024),parameter :: subr = 'diag_blk_fitting'
 type(minim_type) :: minim
 
@@ -423,6 +422,25 @@ do il0=1,geom%nl0
    distv = diag_blk%distv(bpar%l0rl0b_to_l0(:,il0,ib),il0)
    call fast_fit(mpl,bpar%nl0r(ib),jl0r,distv,rawv,diag_blk%fit_rv(il0))
 end do
+
+! Check for 2D variable
+do il0=1,geom%nl0
+   ! Get zero separation level
+   jl0r = bpar%il0rz(il0,ib)
+
+   ! Get value at zero separation
+   m2(il0) = diag_blk%raw(1,jl0r,il0)
+end do
+var2d = .false.
+if (count(m2>0.0)==1) then
+   if ((trim(nam%lev2d)=='first').and.(m2(1)>0.0)) then
+      var2d = .true.
+      diag_blk%fit_rv(1) = 0.0
+   elseif ((trim(nam%lev2d)=='last').and.(m2(geom%nl0)>0.0)) then
+      var2d = .true.
+      diag_blk%fit_rv(geom%nl0) = 0.0
+   end if
+end if
 
 ! Check that there are some non-missing values to work with
 valid = .true.
