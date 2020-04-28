@@ -374,7 +374,7 @@ m4 = m4*norm_m4
 kurt = mpl%msv%valr
 do its=1,nam%nts
    do iv=1,nam%nv
-      do il0=1,nam%nl0
+      do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
             if (m2(ic0a,il0,iv,its)>0.0) kurt(ic0a,il0,iv,its) = m4(ic0a,il0,iv,its)/m2(ic0a,il0,iv,its)**2
          end do
