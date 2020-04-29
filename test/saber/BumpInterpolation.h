@@ -50,29 +50,6 @@ namespace saber {
 namespace test {
 
 // -----------------------------------------------------------------------------
-/*! Test Fixture for interpolation interface */
-
-class BumpInterpolationFixture : private boost::noncopyable {
- public:
-  static const eckit::LocalConfiguration & test() {return *getInstance().test_;}
-
- private:
-  static BumpInterpolationFixture & getInstance() {
-  static BumpInterpolationFixture theBumpInterpolationFixture;
-    return theBumpInterpolationFixture;
-  }
-
-  BumpInterpolationFixture() {
-    test_.reset(new eckit::LocalConfiguration(::test::TestEnvironment::config(),
-                                              "test_interpolation_interface"));
-  }
-
-  ~BumpInterpolationFixture() {}
-
-  std::unique_ptr<const eckit::LocalConfiguration> test_;
-};
-
-// -----------------------------------------------------------------------------
 /*! smooth function for testing interpolation */
 double testfunc(double lon, double lat, std::size_t jlev = 1,
                                         std::size_t nlev = 1) {
@@ -87,11 +64,11 @@ double testfunc(double lon, double lat, std::size_t jlev = 1,
 */
 
 void testBumpInterpolation() {
-  typedef BumpInterpolationFixture Test_;
+  const eckit::Configuration &topConf = ::test::TestEnvironment::config();
 
   // Skip this test if it's not specified in the yaml
-  if (!Test_::test().has("bump_interpolation"))
-    return;
+  if (!topConf.has("bump_interpolation"))
+      return;
 
   oops::Log::info() << "\nStarting test of oops bump  interpolation interface" << std::endl;
 
@@ -107,7 +84,7 @@ void testBumpInterpolation() {
   atlas::functionspace::NodeColumns fs1(mesh1, levels(nlev) | halo(0));
 
   // Generate random point cloud as output grid
-  eckit::LocalConfiguration config = Test_::test().getSubConfiguration("bump_interpolation");
+  eckit::LocalConfiguration config = topConf.getSubConfiguration("bump_interpolation");
   const std::size_t N = static_cast<size_t>(config.getInt("NRandom"));
   unsigned int seed = static_cast<unsigned int>(config.getInt("Seed"));
 
