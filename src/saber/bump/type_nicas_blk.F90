@@ -1570,7 +1570,7 @@ type(geom_type),intent(in) :: geom               ! Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 
 ! Local variables
-integer :: il0,ic0,ic0a
+integer :: il0,ic0a
 real(kind_real) :: rhs_sum(geom%nl0),rvs_sum(geom%nl0),rvs_avg(geom%nl0),norm(geom%nl0)
 real(kind_real) :: rhs_minavg,rhs_min_norm,rhs_min_norm_tot
 real(kind_real) :: rhs_min(geom%nc0a)
@@ -1661,8 +1661,8 @@ if (nam%check_no_point_nicas) then
 end if
 
 ! Compute subsampling
-call initialize_sampling(mpl,rng,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rhs_min,geom%c0a_to_c0,nam%ntry,nam%nrep, &
- & nicas_blk%nc1,nicas_blk%c1_to_c0,fast=nam%fast_sampling,verbosity=nicas_blk%verbosity)
+call initialize_sampling(mpl,rng,maxval(geom%area),geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rhs_min,geom%c0a_to_c0, &
+ & nam%ntry,nam%nrep,nicas_blk%nc1,nicas_blk%c1_to_c0,light_grid=.false.,fast=nam%fast_sampling,verbosity=nicas_blk%verbosity)
 nicas_blk%c1_to_proc = geom%c0_to_proc(nicas_blk%c1_to_c0)
 
 end subroutine nicas_blk_compute_sampling_c1
@@ -1874,7 +1874,7 @@ do il1=1,nicas_blk%nl1
          ! Initialize sampling
          mask_c1a = nicas_blk%mask_c1(nicas_blk%c1a_to_c1,il1)
          rhs_c1a = cmat_blk%rhs(nicas_blk%c1a_to_c0a,il0)
-         call initialize_sampling(mpl,rng,nicas_blk%nc1a,lon_c1a,lat_c1a,mask_c1a,rhs_c1a,nicas_blk%c1a_to_c1, &
+         call initialize_sampling(mpl,rng,geom%area(il0),nicas_blk%nc1a,lon_c1a,lat_c1a,mask_c1a,rhs_c1a,nicas_blk%c1a_to_c1, &
        & nam%ntry,nam%nrep,nicas_blk%nc2(il1),c2_to_c1,fast=nam%fast_sampling,verbosity=nicas_blk%verbosity)
 
          ! Fill C2 mask

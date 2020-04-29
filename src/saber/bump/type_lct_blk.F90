@@ -252,7 +252,7 @@ do il0=1,geom%nl0
          do jl0r=1,bpar%nl0r(ib)
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             do jc3=1,nam%nc3
-               if (samp%c1c3l0_log(ic1,jc3,jl0)) then
+               if (samp%c1ac3l0_log(ic1a,jc3,jl0)) then
                   do jsub=1,mom_blk%nsub
                      den = mom_blk%m2_1(ic1a,il0,jsub)*mom_blk%m2_2(ic1a,jc3,jl0,jsub)
                      if (den>0.0) then
@@ -277,9 +277,9 @@ do il0=1,geom%nl0
          do jl0r=1,bpar%nl0r(ib)
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             do jc3=1,nam%nc3
-               minim%dmask(jc3,jl0r) = samp%c1c3l0_log(ic1,jc3,jl0)
+               minim%dmask(jc3,jl0r) = samp%c1ac3l0_log(ic1a,jc3,jl0)
                if (minim%dmask(jc3,jl0r)) then
-                  jc0 = samp%c1c3_to_c0(ic1,jc3)
+                  jc0 = samp%c1ac3_to_c0(ic1a,jc3)
                   call geom%compute_deltas(ic0,il0,jc0,jl0,dx,dy,dz)
                   minim%dxsq(jc3,jl0r) = dx**2
                   minim%dysq(jc3,jl0r) = dy**2
@@ -418,7 +418,7 @@ do il0=1,geom%nl0
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                   do jc3=1,nam%nc3
-                     if (samp%c1c3l0_log(ic1,jc3,jl0)) then
+                     if (samp%c1ac3l0_log(ic1a,jc3,jl0)) then
                         if (mpl%msv%isnot(lct_blk%fit(jc3,jl0r,ic1a,il0)).and.lct_blk%raw(jc3,jl0r,ic1a,il0)>nam%lct_qc_th) then
                            lct_blk%qc_c1a(ic1a,il0) = lct_blk%qc_c1a(ic1a,il0)+ &
                                                     & (lct_blk%fit(jc3,jl0r,ic1a,il0)-lct_blk%raw(jc3,jl0r,ic1a,il0))**2
@@ -590,9 +590,9 @@ if (nam%diag_rhflt>0.0) then
                   do jl0r=1,bpar%nl0r(ib)
                      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                      do jc3=1,nam%nc3
-                        dmask(jc3,jl0r) = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+                        dmask(jc3,jl0r) = samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)
                         if (dmask(jc3,jl0r)) then
-                           jc0 = samp%c1c3_to_c0(ic1,jc3)
+                           jc0 = samp%c1ac3_to_c0(ic1a,jc3)
                            call geom%compute_deltas(ic0,il0,jc0,jl0,dx,dy,dz)
                            dxsq(jc3,jl0r) = dx**2
                            dysq(jc3,jl0r) = dy**2
@@ -848,7 +848,7 @@ character(len=*),intent(in) :: filename      ! Filename
 
 ! Local variables
 integer :: info,ncid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,raw_id,fit_id,fit_filt_id
-integer :: ic1a,ic3,ic1,ic0
+integer :: ic1a,ic3,ic0
 real(kind_real) :: lon(nam%nc3,samp%nc1a),lat(nam%nc3,samp%nc1a)
 character(len=1024),parameter :: subr = 'lct_blk_write'
 
@@ -858,8 +858,7 @@ associate(ib=>lct_blk%ib)
 ! Lon/lat initialization
 do ic1a=1,samp%nc1a
    do ic3=1,nam%nc3
-      ic1 = samp%c1a_to_c1(ic1a)
-      ic0 = samp%c1c3_to_c0(ic1,ic3)
+      ic0 = samp%c1ac3_to_c0(ic1a,ic3)
       lon(ic3,ic1a) = geom%lon(ic0)*rad2deg
       lat(ic3,ic1a) = geom%lat(ic0)*rad2deg
    end do

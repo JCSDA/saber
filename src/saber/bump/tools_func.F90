@@ -24,7 +24,7 @@ integer,parameter :: M = 0                            ! Number of implicit itera
 
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: lonlatmod,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product,add,divide, &
+public :: lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product,add,divide, &
         & fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
@@ -58,6 +58,26 @@ elseif (lon<-pi) then
 end if
 
 end subroutine lonlatmod
+
+!----------------------------------------------------------------------
+! Subroutine: lonlathash
+! Purpose: define a unique real from a lon/lat pair
+!----------------------------------------------------------------------
+function lonlathash(lon,lat)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: lon ! Longitude (radians)
+real(kind_real),intent(in) :: lat ! Latitude (radians)
+
+! Returned variable
+real(kind_real) :: lonlathash
+
+! Hash value
+lonlathash = aint(abs(lon+pi)*1.0e6)+abs(lat+0.5*pi)*1.0e-1
+
+end function lonlathash
 
 !----------------------------------------------------------------------
 ! Subroutine: sphere_dist

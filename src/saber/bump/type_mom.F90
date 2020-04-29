@@ -360,9 +360,9 @@ do isub=1,ens%nsub
                            ! Copy field 1
                            if (jc3==1) fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv,its)
 
-                           if (samp%c1c3l0_log(ic1,jc3,il0)) then
+                           if (samp%c1ac3l0_log(ic1a,jc3,il0)) then
                               ! Indices
-                              jc0 = samp%c1c3_to_c0(ic1,jc3)
+                              jc0 = samp%c1ac3_to_c0(ic1a,jc3)
                               jc0c = samp%c0_to_c0c(jc0)
 
                               ! Copy field 2
@@ -425,14 +425,14 @@ do ib=1,bpar%nb
          do jc3=1,bpar%nc3(ib)
             do ic1a=1,samp%nc1a
                ic1 = samp%c1a_to_c1(ic1a)
-               if (samp%c1c3l0_log(ic1,jc3,il0)) then
+               if (samp%c1ac3l0_log(ic1a,jc3,il0)) then
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mom%blk(ib)%m2_2(ic1a,jc3,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
                else
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mpl%msv%valr
                end if
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-                  if (samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)) then
+                  if (samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1,jc3,jl0)) then
                      mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) &
                                                           & /real(mom%ne/mom%nsub-1,kind_real)
                      mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) &

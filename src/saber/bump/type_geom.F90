@@ -16,7 +16,7 @@ use metis_interface, only: metis_setdefaultoptions,metis_partgraphrecursive,meti
 use netcdf
 use tools_atlas, only: field_to_fld
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
+use tools_func, only: lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
@@ -341,7 +341,7 @@ if (mpl%main) then
 
    ! Define points order
    do img=1,geom%nmg
-      list(img) = aint(abs(lon_mg(img)+pi)*1.0e6)+abs(lat_mg(img)+0.5*pi)*1.0e-1
+      list(img) = lonlathash(lon_mg(img),lat_mg(img))
    end do
    call qsort(geom%nmg,list,order)
 
@@ -568,7 +568,7 @@ allocate(list(geom%nc0))
 
 ! Define Sc0 points order
 do ic0=1,geom%nc0
-   list(ic0) = aint(abs(geom%lon(ic0)+pi)*1.0e6)+abs(geom%lat(ic0)+0.5*pi)*1.0e-1
+   list(ic0) = lonlathash(geom%lon(ic0),geom%lat(ic0))
 end do
 call qsort(geom%nc0,list,order)
 do ic0=1,geom%nc0

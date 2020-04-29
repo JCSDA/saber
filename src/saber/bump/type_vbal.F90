@@ -332,47 +332,19 @@ integer :: il0i,i_s,ic0a,ic2b,iv,jv,ie
 real(kind_real) :: fld(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: auto(:,:,:,:),cross(:,:,:,:)
 
-! Compute sampling, subset Sc1
+! Setup sampling, first step
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
+write(mpl%info,'(a)') '--- Setup sampling, first step'
 call mpl%flush
-vbal%samp%name = 'vbal'
-call vbal%samp%compute_sampling_c1(mpl,rng,nam,geom,ens)
+call vbal%samp%setup('vbal',mpl,rng,nam,geom,ens)
 
-! Compute MPI distribution, halo A
+! Setup sampling, second step
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Compute MPI distribution, halos A'
+write(mpl%info,'(a)') '--- Setup sampling, second step'
 call mpl%flush
-call vbal%samp%compute_mpi_a(mpl,nam,geom)
-
-! Compute sampling, subset Sc2
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc2 (nc2 = ',nam%nc2,')'
-call mpl%flush
-call vbal%samp%compute_sampling_c2(mpl,rng,nam,geom)
-
-! Compute MPI distribution, halos A-B
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Compute MPI distribution, halos A-B'
-call mpl%flush
-call vbal%samp%compute_mpi_ab(mpl,rng,nam,geom)
-
-! Compute MPI distribution, halo E
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Compute MPI distribution, halo E'
-call mpl%flush
-call vbal%samp%compute_mpi_e(mpl,nam,geom)
-
-! Write sampling data
-if (nam%sam_write) then
-   if (mpl%main) call vbal%samp%write(mpl,nam,geom)
-   if (nam%sam_write_grids) call vbal%samp%write_grids(mpl,nam,geom)
-end if
+call vbal%samp%setup(mpl,rng,nam,geom)
 
 ! Compute vertical balance operators
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
