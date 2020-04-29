@@ -7,10 +7,10 @@
  */
 
 #include "oops/runs/Run.h"
-#include "test/generic/InterpolationInterface.h"
+#include "../saber/BumpInterpolation.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  test::InterpolationInterface tests;
+  saber::test::BumpInterpolation tests;
   return run.execute(tests);
 }

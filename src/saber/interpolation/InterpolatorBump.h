@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef OOPS_GENERIC_INTERPOLATORBUMP_H_
-#define OOPS_GENERIC_INTERPOLATORBUMP_H_
+#ifndef SABER_INTERPOLATION_INTERPOLATORBUMP_H_
+#define SABER_INTERPOLATION_INTERPOLATORBUMP_H_
 
 #include <ostream>
 #include <string>
@@ -19,18 +19,18 @@
 #include "oops/generic/Interpolator.h"
 #include "oops/parallel/mpi/mpi.h"
 
-namespace oops {
+namespace saber {
 
 // -----------------------------------------------------------------------------
 
 /*! \brief Interface for Bump interpolation
- * 
+ *
  */
 
-class InterpolatorBump : public Interpolator,
+class InterpolatorBump : public oops::Interpolator,
                          private util::ObjectCounter<InterpolatorBump> {
  public:
-  static const std::string classname() {return "oops::InterpolatorBump";}
+  static const std::string classname() {return "saber::InterpolatorBump";}
 
   InterpolatorBump(const eckit::Configuration &,
                    const atlas::FunctionSpace &,
@@ -50,6 +50,6 @@ class InterpolatorBump : public Interpolator,
 
 // -----------------------------------------------------------------------------
 
-}  // namespace oops
+}  // namespace saber
 
-#endif  // OOPS_GENERIC_INTERPOLATORBUMP_H_
+#endif  // SABER_INTERPOLATION_INTERPOLATORBUMP_H_

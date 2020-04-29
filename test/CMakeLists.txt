@@ -654,7 +654,7 @@ if(${SABER_TEST_INTERPOLATION})
     # add tests
     #--------------------------------------------------------------------
 
-    ecbuild_add_test( TARGET test_bump_interpolation
+    ecbuild_add_test( TARGET test_bump_interpolation.x
                       MPI 4
                       OMP 1
                       SOURCES mains/BumpInterpolation.cc

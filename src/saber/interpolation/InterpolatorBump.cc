@@ -16,7 +16,7 @@
 #include "saber/interpolation/InterpolatorBump.h"
 #include "saber/interpolation/interpolatorbump_f.h"
 
-namespace oops {
+namespace saber {
 
 // -----------------------------------------------------------------------------
 InterpolatorBump::InterpolatorBump(const eckit::Configuration & config,

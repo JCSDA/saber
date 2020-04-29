@@ -19,7 +19,7 @@ namespace eckit {
   class Configuration;
 }
 
-namespace oops {
+namespace saber {
 extern "C" {
   void bint_create_f90(int &, const eckit::mpi::Comm *,
                        const atlas::functionspace::FunctionSpaceImpl *,

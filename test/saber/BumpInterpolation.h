@@ -34,39 +34,40 @@
 #include "eckit/testing/Test.h"
 
 #include "oops/generic/Interpolator.h"
-#include "oops/generic/InterpolatorFactory.h"
 #include "oops/parallel/mpi/mpi.h"
 #include "oops/runs/Test.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Random.h"
-#include "test/TestEnvironment.h"
+#include "saber/interpolation/InterpolatorBump.h"
+#include "oops/../test/TestEnvironment.h"
 
 using atlas::array::make_view;
 using atlas::option::halo;
 using atlas::option::levels;
 using atlas::option::name;
 
+namespace saber {
 namespace test {
 
 // -----------------------------------------------------------------------------
 /*! Test Fixture for interpolation interface */
 
-class InterpolationInterfaceFixture : private boost::noncopyable {
+class BumpInterpolationFixture : private boost::noncopyable {
  public:
   static const eckit::LocalConfiguration & test() {return *getInstance().test_;}
 
  private:
-  static InterpolationInterfaceFixture & getInstance() {
-  static InterpolationInterfaceFixture theInterpolationInterfaceFixture;
-    return theInterpolationInterfaceFixture;
+  static BumpInterpolationFixture & getInstance() {
+  static BumpInterpolationFixture theBumpInterpolationFixture;
+    return theBumpInterpolationFixture;
   }
 
-  InterpolationInterfaceFixture() {
-    test_.reset(new eckit::LocalConfiguration(TestEnvironment::config(),
+  BumpInterpolationFixture() {
+    test_.reset(new eckit::LocalConfiguration(::test::TestEnvironment::config(),
                                               "test_interpolation_interface"));
   }
 
-  ~InterpolationInterfaceFixture() {}
+  ~BumpInterpolationFixture() {}
 
   std::unique_ptr<const eckit::LocalConfiguration> test_;
 };
@@ -86,7 +87,7 @@ double testfunc(double lon, double lat, std::size_t jlev = 1,
 */
 
 void testBumpInterpolation() {
-  typedef InterpolationInterfaceFixture Test_;
+  typedef BumpInterpolationFixture Test_;
 
   // Skip this test if it's not specified in the yaml
   if (!Test_::test().has("bump_interpolation"))
@@ -152,8 +153,7 @@ void testBumpInterpolation() {
   config.set("interpolator", "bump");
   config.set("nlevels", nlev);
 
-  std::unique_ptr<oops::Interpolator>
-    interpolator(oops::InterpolatorFactory::Create(config, fs1, fs2));
+  saber::InterpolatorBump interpolator(config, fs1, fs2);
 
   // Next - define the input fields
   atlas::Field field1 = fs1.createField<double>(name("testfield"));
@@ -175,7 +175,7 @@ void testBumpInterpolation() {
   atlas::FieldSet outfields;
 
   // Apply the interpolation
-  interpolator->apply(infields, outfields);
+  interpolator.apply(infields, outfields);
 
   oops::Log::info() << "\n----------------------------------------------------"
                     << "\nTesting bump interpolation"
@@ -223,7 +223,7 @@ void testBumpInterpolation() {
   atlas::FieldSet adcheck_grid1;
 
   // Apply interpolator adjoint
-  interpolator->apply_ad(adcheck_grid2, adcheck_grid1);
+  interpolator.apply_ad(adcheck_grid2, adcheck_grid1);
 
   // Check adjoint
 
@@ -258,13 +258,13 @@ void testBumpInterpolation() {
 
 // -----------------------------------------------------------------------------
 
-class InterpolationInterface : public oops::Test {
+class BumpInterpolation : public oops::Test {
  public:
-  InterpolationInterface() {}
-  virtual ~InterpolationInterface() {}
+  BumpInterpolation() {}
+  virtual ~BumpInterpolation() {}
 
  private:
-  std::string testid() const {return "test::InterpolationInterface";}
+  std::string testid() const {return "saber::test::BumpInterpolation";}
 
   void register_tests() const {
     std::vector<eckit::testing::Test>& ts = eckit::testing::specification();
@@ -276,5 +276,6 @@ class InterpolationInterface : public oops::Test {
 
 // -----------------------------------------------------------------------------
 }  // namespace test
+}  // namespace saber
 
 #endif  // TEST_SABER_BUMPINTERPOLATION_H_
