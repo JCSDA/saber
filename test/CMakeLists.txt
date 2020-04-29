@@ -34,8 +34,10 @@ set(SABER_TEST_MODEL 0)
 set(SABER_TEST_MODEL_DIR "")
 if (${OOPS_FOUND})
    set(SABER_TEST_OOPS 1)
+   set(SABER_TEST_INTERPOLATION 1)
 else()
    set(SABER_TEST_OOPS 0)
+   set(SABER_TEST_INTERPOLATION 0)
 endif()
 
 # Override test selection variables using environment variables
@@ -60,18 +62,22 @@ endif()
 if(DEFINED ENV{SABER_TEST_OOPS})
     set(SABER_TEST_OOPS "$ENV{SABER_TEST_OOPS}")
 endif()
+if(DEFINED ENV{SABER_TEST_INTERPOLATION})
+    set(SABER_TEST_INTERPOLATION "$ENV{SABER_TEST_INTERPOLATION}")
+endif()
 
 # Summary
-message(STATUS "SABER_TEST_TIER:      " ${SABER_TEST_TIER})
-message(STATUS "SABER_TEST_MPI:       " ${SABER_TEST_MPI})
-message(STATUS "SABER_TEST_OMP:       " ${SABER_TEST_OMP})
-message(STATUS "SABER_TEST_QUAD:      " ${SABER_TEST_QUAD})
-message(STATUS "SABER_TEST_VALGRIND:  " ${SABER_TEST_VALGRIND})
-message(STATUS "SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
+message(STATUS "SABER_TEST_TIER:          " ${SABER_TEST_TIER})
+message(STATUS "SABER_TEST_MPI:           " ${SABER_TEST_MPI})
+message(STATUS "SABER_TEST_OMP:           " ${SABER_TEST_OMP})
+message(STATUS "SABER_TEST_QUAD:          " ${SABER_TEST_QUAD})
+message(STATUS "SABER_TEST_VALGRIND:      " ${SABER_TEST_VALGRIND})
+message(STATUS "SABER_TEST_MODEL:         " ${SABER_TEST_MODEL})
 if(${SABER_TEST_MODEL})
     message(STATUS "  SABER_TEST_MODEL_DIR: " ${SABER_TEST_MODEL_DIR})
 endif()
-message(STATUS "SABER_TEST_OOPS:      " ${SABER_TEST_OOPS})
+message(STATUS "SABER_TEST_OOPS:          " ${SABER_TEST_OOPS})
+message(STATUS "SABER_TEST_INTERPOLATION: " ${SABER_TEST_INTERPOLATION})
 
 # TIER 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
@@ -285,7 +291,7 @@ foreach(test ${saber_test})
                      ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                      DEPENDS      bump.x
                      TEST_DEPENDS get_saber_data)
- 
+
     ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
                      TYPE SCRIPT
                      COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
@@ -320,7 +326,7 @@ if(${SABER_TEST_MPI})
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                          DEPENDS      bump.x
                          TEST_DEPENDS get_saber_data)
-   
+
         ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
                          TYPE SCRIPT
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
@@ -346,7 +352,7 @@ if(${SABER_TEST_OMP})
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
                          DEPENDS      bump.x
                          TEST_DEPENDS get_saber_data)
-    
+
         ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
                          TYPE SCRIPT
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
@@ -628,4 +634,31 @@ if(${SABER_TEST_OOPS})
         endforeach()
 
     endif()
+endif()
+
+# bump interpolation tests
+if(${SABER_TEST_INTERPOLATION})
+    #--------------------------------------------------------------------
+    # Link to yaml files
+    #--------------------------------------------------------------------
+    list(APPEND saber_test_interpolation
+        bump_interpolation
+    )
+    foreach(test ${saber_test_interpolation})
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                        ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                        ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml)
+    endforeach()
+
+    #--------------------------------------------------------------------
+    # add tests
+    #--------------------------------------------------------------------
+
+    ecbuild_add_test( TARGET test_bump_interpolation
+                      MPI 4
+                      OMP 1
+                      SOURCES mains/BumpInterpolation.cc
+                      ARGS testinput/bump_interpolation.yaml
+                      LIBS oops saber )
+
 endif()

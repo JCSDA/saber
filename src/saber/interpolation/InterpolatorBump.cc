@@ -13,8 +13,8 @@
 #include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
 
-#include "oops/generic/InterpolatorBump.h"
-#include "oops/generic/interpolatorbump_f.h"
+#include "saber/interpolation/InterpolatorBump.h"
+#include "saber/interpolation/interpolatorbump_f.h"
 
 namespace oops {
 

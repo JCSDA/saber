@@ -10,6 +10,7 @@ add_subdirectory( util )
 
 if (${OOPS_FOUND})
   add_subdirectory( oops )
+  add_subdirectory( interpolation )
 endif()
 
 PREPEND( _p_bump_src_files "bump" ${bump_src_files} )
