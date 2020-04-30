@@ -11,6 +11,7 @@ module type_mesh
 use tools_const, only: pi,req
 use tools_func, only: sphere_dist,lonlat2xyz,xyz2lonlat,vector_product
 use tools_kinds, only: kind_real
+use tools_repro, only: eq
 use tools_stripack, only: addnod,bnodes,inside,trfind,trlist,trmesh
 use type_mpl, only: mpl_type
 use type_rng, only: rng_type

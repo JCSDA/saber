@@ -373,9 +373,9 @@ do ib=1,bpar%nbe
       end do
    
       ! Compute RMSE
-      rmse = 0.0
-      norm = 0.0
-      do ic2a=0,diag%nc2a
+      rmse = sum(abs(diag%blk(0,ib)%fit-diag%blk(0,ib)%raw),mask=mpl%msv%isnot(diag%blk(0,ib)%raw))/real(mpl%nproc,kind_real)
+      norm = real(count(mpl%msv%isnot(diag%blk(0,ib)%raw)),kind_real)/real(mpl%nproc,kind_real)
+      do ic2a=1,diag%nc2a
          rmse = rmse+sum(abs(diag%blk(ic2a,ib)%fit-diag%blk(ic2a,ib)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
          norm = norm+real(count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw)),kind_real)
       end do

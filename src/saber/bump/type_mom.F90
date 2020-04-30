@@ -432,7 +432,7 @@ do ib=1,bpar%nb
                end if
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-                  if (samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1,jc3,jl0)) then
+                  if (samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)) then
                      mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) &
                                                           & /real(mom%ne/mom%nsub-1,kind_real)
                      mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) &

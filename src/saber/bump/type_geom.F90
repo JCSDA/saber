@@ -212,7 +212,7 @@ type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset
 ! Local variables
 integer :: ic0,jc0,kc0,i,j,k,ic0a,jc3,il0,il0i,offset,iproc,img,imga,iend,ibnda,nn_index(1),nc0own,ic0own
 integer,allocatable :: proc_to_nmga(:),mg_to_mga(:),mga_to_mg(:),c0_to_mg(:),redundant(:),mg_to_c0(:),mga_to_c0(:),mg_to_proc(:)
-integer,allocatable :: c0own_to_mga(:),order(:),order_inv(:),bnda_to_c0(:,:)
+integer,allocatable :: c0own_to_mga(:),order(:),bnda_to_c0(:,:)
 real(kind_real) :: lat_arc(2),lon_arc(2),xbnda(2),ybnda(2),zbnda(2)
 real(kind_real),allocatable :: sbuf(:),rbuf(:),lon_mg(:),lat_mg(:),area_mg(:),vunit_mg(:,:),list(:)
 logical :: same_mask,init,imask,jmask,kmask
@@ -561,34 +561,6 @@ deallocate(proc_to_nmga)
 deallocate(mga_to_mg)
 deallocate(mg_to_c0)
 
-! Allocation
-allocate(order(geom%nc0))
-allocate(order_inv(geom%nc0))
-allocate(list(geom%nc0))
-
-! Define Sc0 points order
-do ic0=1,geom%nc0
-   list(ic0) = lonlathash(geom%lon(ic0),geom%lat(ic0))
-end do
-call qsort(geom%nc0,list,order)
-do ic0=1,geom%nc0
-   order_inv(order(ic0)) = ic0
-end do
-
-! Reorder Sc0 points
-geom%c0_to_proc = geom%c0_to_proc(order)
-geom%c0_to_c0a = geom%c0_to_c0a(order)
-geom%c0a_to_c0 = order_inv(geom%c0a_to_c0)
-geom%lon = geom%lon(order)
-geom%lat = geom%lat(order)
-do il0=1,geom%nl0
-   geom%vunit_c0(:,il0) = geom%vunit_c0(order,il0)
-   geom%mask_c0(:,il0) = geom%mask_c0(order,il0)
-end do
-geom%mask_hor_c0 = geom%mask_hor_c0(order)
-mga_to_c0 = order_inv(mga_to_c0)
-c0_to_mg = c0_to_mg(order)
-
 ! Go through Sc0 subset distribution, first pass
 nc0own = 0
 do ic0a=1,geom%nc0a
@@ -619,9 +591,6 @@ call geom%com_mg%setup(mpl,'com_mg',geom%nc0,geom%nc0a,geom%nmga,nc0own,mga_to_c
  & geom%c0_to_c0a)
 
 ! Release memory
-deallocate(order)
-deallocate(order_inv)
-deallocate(list)
 deallocate(c0_to_mg)
 deallocate(mg_to_proc)
 deallocate(mg_to_mga)

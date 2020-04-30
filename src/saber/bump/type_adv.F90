@@ -10,11 +10,11 @@ module type_adv
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 use netcdf
 !$ use omp_lib
-use tools_const, only: req,reqkm,rad2deg,deg2rad
+use tools_const, only: pi,req,reqkm,rad2deg,deg2rad
 use tools_func, only: lonlatmod,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup
+use tools_repro, only: inf,sup,eq
 use type_bpar, only: bpar_type
 use type_com, only: com_type
 use type_ens, only: ens_type
@@ -1095,6 +1095,12 @@ do its=2,nam%nts
             call reduce_arc(geom%lon(ic0),geom%lat(ic0),samp%adv_lon(ic0a,il0,its),samp%adv_lat(ic0a,il0,its), &
           & min(geom%mdist(ic0,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0))),reduced_dist)
          end if
+      end do
+
+      ! Deal with poles issues (back to origin point latitude by 10%)
+      do ic0a=1,geom%nc0a
+         if (eq(abs(samp%adv_lat(ic0a,il0,its)),0.5*pi)) samp%adv_lat(ic0a,il0,its) = geom%lat_c0a(ic0a) &
+                                                       & +0.9*(samp%adv_lat(ic0a,il0,its)-geom%lat_c0a(ic0a))
       end do
    end do
 end do

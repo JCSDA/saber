@@ -751,7 +751,7 @@ type(samp_type),intent(in) :: samp           ! Sampling
 type(mom_blk_type),intent(in) :: mom_blk     ! Moments
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,nc1max,ic1d,i,ic1,ic1a,nc1a,nc1a_cor,ic2
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,nc1max,ic1d,i,ic1,nc1a,nc1a_cor,ic2
 real(kind_real) :: m2_1,m2_2,norm,gen_kurt
 real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
 logical :: valid
@@ -792,10 +792,9 @@ do il0=1,geom%nl0
          do ic1d=1,samp%nc1d
             ! Indices
             ic1 = samp%c1d_to_c1(ic1d)
-            ic1a = samp%c1_to_c1a(ic1)
 
             ! Check mask validity
-            valid = samp%local_mask(ic1,ic2a).and.samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)
+            valid = samp%local_mask(ic1,ic2a).and.samp%c1l0_log(ic1,il0).and.samp%c1dc3l0_log(ic1d,jc3,jl0)
 
             if (valid) then
                ! Check generalized kurtosis
@@ -1308,7 +1307,7 @@ do il0=1,geom%nl0
                i = i+1
 
                ! Check validity
-               valid = samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)
+               valid = samp%c1l0_log(ic1,il0).and.samp%c1dc3l0_log(ic1d,jc3,jl0)
                if (trim(nam%mask_type)=='stddev') then
                   m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_blk%nsub,kind_real)
                   m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jl0,:))/real(avg_blk%nsub,kind_real)

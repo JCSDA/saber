@@ -45,9 +45,13 @@ contains
    procedure :: receive => com_receive
    procedure :: send => com_send
    procedure :: setup => com_setup
-   procedure :: com_ext_1d
-   procedure :: com_ext_2d
-   generic :: ext => com_ext_1d,com_ext_2d
+   procedure :: com_ext_integer_1d
+   procedure :: com_ext_integer_2d
+   procedure :: com_ext_real_1d
+   procedure :: com_ext_real_2d
+   procedure :: com_ext_logical_1d
+   procedure :: com_ext_logical_2d
+   generic :: ext => com_ext_integer_1d,com_ext_integer_2d,com_ext_real_1d,com_ext_real_2d,com_ext_logical_1d,com_ext_logical_2d
    procedure :: com_red_1d
    procedure :: com_red_2d
    generic :: red => com_red_1d,com_red_2d
@@ -656,10 +660,128 @@ com_out%prefix = trim(prefix)
 end subroutine com_setup
 
 !----------------------------------------------------------------------
-! Subroutine: com_ext_1d
+! Subroutine: com_ext_integer_1d
 ! Purpose: communicate field to halo (extension), 1d
 !----------------------------------------------------------------------
-subroutine com_ext_1d(com,mpl,vec_red,vec_ext)
+subroutine com_ext_integer_1d(com,mpl,vec_red,vec_ext)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com        ! Communication data
+type(mpl_type),intent(inout) :: mpl      ! MPI data
+integer,intent(in) :: vec_red(com%nred)  ! Reduced vector
+integer,intent(out) :: vec_ext(com%next) ! Extended vector
+
+! Local variables
+integer :: iexcl,iown,ihalo
+integer,allocatable :: sbuf(:),rbuf(:)
+
+! Allocation
+allocate(sbuf(com%nexcl))
+allocate(rbuf(com%nhalo))
+
+! Prepare buffers to send
+!$omp parallel do schedule(static) private(iexcl)
+do iexcl=1,com%nexcl
+   sbuf(iexcl) = vec_red(com%excl(iexcl))
+end do
+!$omp end parallel do
+
+! Communication
+call mpl%f_comm%alltoall(sbuf,com%jexclcounts,com%jexcldispls,rbuf,com%jhalocounts,com%jhalodispls)
+
+! Copy interior
+vec_ext = 0
+!$omp parallel do schedule(static) private(iown)
+do iown=1,com%nown
+   vec_ext(com%own_to_ext(iown)) = vec_red(com%own_to_red(iown))
+end do
+!$omp end parallel do
+
+! Copy halo
+!$omp parallel do schedule(static) private(ihalo)
+do ihalo=1,com%nhalo
+   vec_ext(com%halo(ihalo)) = rbuf(ihalo)
+end do
+!$omp end parallel do
+
+! Release memory
+deallocate(sbuf)
+deallocate(rbuf)
+
+end subroutine com_ext_integer_1d
+
+!----------------------------------------------------------------------
+! Subroutine: com_ext_integer_2d
+! Purpose: communicate field to halo (extension), 2d
+!----------------------------------------------------------------------
+subroutine com_ext_integer_2d(com,mpl,nl,vec_red,vec_ext)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com           ! Communication data
+type(mpl_type),intent(inout) :: mpl         ! MPI data
+integer,intent(in) :: nl                    ! Number of levels
+integer,intent(in) :: vec_red(com%nred,nl)  ! Reduced vector
+integer,intent(out) :: vec_ext(com%next,nl) ! Extended vector
+
+! Local variables
+integer :: il,iexcl,iown,ihalo
+integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
+integer,allocatable :: sbuf(:),rbuf(:)
+
+! Allocation
+allocate(sbuf(com%nexcl*nl))
+allocate(rbuf(com%nhalo*nl))
+
+! Prepare buffers to send
+!$omp parallel do schedule(static) private(il,iexcl)
+do il=1,nl
+   do iexcl=1,com%nexcl
+      sbuf((iexcl-1)*nl+il) = vec_red(com%excl(iexcl),il)
+   end do
+end do
+!$omp end parallel do
+
+! Communication
+jexclcounts = com%jexclcounts*nl
+jexcldispls = com%jexcldispls*nl
+jhalocounts = com%jhalocounts*nl
+jhalodispls = com%jhalodispls*nl
+call mpl%f_comm%alltoall(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodispls)
+
+! Copy interior
+vec_ext = 0
+!$omp parallel do schedule(static) private(il,iown)
+do il=1,nl
+   do iown=1,com%nown
+      vec_ext(com%own_to_ext(iown),il) = vec_red(com%own_to_red(iown),il)
+   end do
+end do
+!$omp end parallel do
+
+! Copy halo
+!$omp parallel do schedule(static) private(il,ihalo)
+do il=1,nl
+   do ihalo=1,com%nhalo
+      vec_ext(com%halo(ihalo),il) = rbuf((ihalo-1)*nl+il)
+   end do
+end do
+!$omp end parallel do
+
+! Release memory
+deallocate(sbuf)
+deallocate(rbuf)
+
+end subroutine com_ext_integer_2d
+
+!----------------------------------------------------------------------
+! Subroutine: com_ext_real_1d
+! Purpose: communicate field to halo (extension), 1d
+!----------------------------------------------------------------------
+subroutine com_ext_real_1d(com,mpl,vec_red,vec_ext)
 
 implicit none
 
@@ -706,13 +828,13 @@ end do
 deallocate(sbuf)
 deallocate(rbuf)
 
-end subroutine com_ext_1d
+end subroutine com_ext_real_1d
 
 !----------------------------------------------------------------------
-! Subroutine: com_ext_2d
+! Subroutine: com_ext_real_2d
 ! Purpose: communicate field to halo (extension), 2d
 !----------------------------------------------------------------------
-subroutine com_ext_2d(com,mpl,nl,vec_red,vec_ext)
+subroutine com_ext_real_2d(com,mpl,nl,vec_red,vec_ext)
 
 implicit none
 
@@ -771,7 +893,125 @@ end do
 deallocate(sbuf)
 deallocate(rbuf)
 
-end subroutine com_ext_2d
+end subroutine com_ext_real_2d
+
+!----------------------------------------------------------------------
+! Subroutine: com_ext_logical_1d
+! Purpose: communicate field to halo (extension), 1d
+!----------------------------------------------------------------------
+subroutine com_ext_logical_1d(com,mpl,vec_red,vec_ext)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com        ! Communication data
+type(mpl_type),intent(inout) :: mpl      ! MPI data
+logical,intent(in) :: vec_red(com%nred)  ! Reduced vector
+logical,intent(out) :: vec_ext(com%next) ! Extended vector
+
+! Local variables
+integer :: iexcl,iown,ihalo
+logical,allocatable :: sbuf(:),rbuf(:)
+
+! Allocation
+allocate(sbuf(com%nexcl))
+allocate(rbuf(com%nhalo))
+
+! Prepare buffers to send
+!$omp parallel do schedule(static) private(iexcl)
+do iexcl=1,com%nexcl
+   sbuf(iexcl) = vec_red(com%excl(iexcl))
+end do
+!$omp end parallel do
+
+! Communication
+call mpl%f_comm%alltoall(sbuf,com%jexclcounts,com%jexcldispls,rbuf,com%jhalocounts,com%jhalodispls)
+
+! Copy interior
+vec_ext = .false.
+!$omp parallel do schedule(static) private(iown)
+do iown=1,com%nown
+   vec_ext(com%own_to_ext(iown)) = vec_red(com%own_to_red(iown))
+end do
+!$omp end parallel do
+
+! Copy halo
+!$omp parallel do schedule(static) private(ihalo)
+do ihalo=1,com%nhalo
+   vec_ext(com%halo(ihalo)) = rbuf(ihalo)
+end do
+!$omp end parallel do
+
+! Release memory
+deallocate(sbuf)
+deallocate(rbuf)
+
+end subroutine com_ext_logical_1d
+
+!----------------------------------------------------------------------
+! Subroutine: com_ext_logical_2d
+! Purpose: communicate field to halo (extension), 2d
+!----------------------------------------------------------------------
+subroutine com_ext_logical_2d(com,mpl,nl,vec_red,vec_ext)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com           ! Communication data
+type(mpl_type),intent(inout) :: mpl         ! MPI data
+integer,intent(in) :: nl                    ! Number of levels
+logical,intent(in) :: vec_red(com%nred,nl)  ! Reduced vector
+logical,intent(out) :: vec_ext(com%next,nl) ! Extended vector
+
+! Local variables
+integer :: il,iexcl,iown,ihalo
+integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
+logical,allocatable :: sbuf(:),rbuf(:)
+
+! Allocation
+allocate(sbuf(com%nexcl*nl))
+allocate(rbuf(com%nhalo*nl))
+
+! Prepare buffers to send
+!$omp parallel do schedule(static) private(il,iexcl)
+do il=1,nl
+   do iexcl=1,com%nexcl
+      sbuf((iexcl-1)*nl+il) = vec_red(com%excl(iexcl),il)
+   end do
+end do
+!$omp end parallel do
+
+! Communication
+jexclcounts = com%jexclcounts*nl
+jexcldispls = com%jexcldispls*nl
+jhalocounts = com%jhalocounts*nl
+jhalodispls = com%jhalodispls*nl
+call mpl%f_comm%alltoall(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodispls)
+
+! Copy interior
+vec_ext = .false.
+!$omp parallel do schedule(static) private(il,iown)
+do il=1,nl
+   do iown=1,com%nown
+      vec_ext(com%own_to_ext(iown),il) = vec_red(com%own_to_red(iown),il)
+   end do
+end do
+!$omp end parallel do
+
+! Copy halo
+!$omp parallel do schedule(static) private(il,ihalo)
+do il=1,nl
+   do ihalo=1,com%nhalo
+      vec_ext(com%halo(ihalo),il) = rbuf((ihalo-1)*nl+il)
+   end do
+end do
+!$omp end parallel do
+
+! Release memory
+deallocate(sbuf)
+deallocate(rbuf)
+
+end subroutine com_ext_logical_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_red_1d
