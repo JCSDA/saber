@@ -53,4 +53,4 @@ void InterpolatorBump::print(std::ostream & os) const {
 }
 
 // -----------------------------------------------------------------------------
-}  // namespace oops
+}  // namespace saber

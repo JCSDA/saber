@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef OOPS_GENERIC_INTERPOLATORBUMP_F_H_
-#define OOPS_GENERIC_INTERPOLATORBUMP_F_H_
+#ifndef SABER_INTERPOLATION_INTERPOLATORBUMP_F_H_
+#define SABER_INTERPOLATION_INTERPOLATORBUMP_F_H_
 
 #include "atlas/field/FieldSet.h"
 #include "atlas/functionspace/detail/FunctionSpaceImpl.h"
@@ -32,6 +32,6 @@ extern "C" {
   void bint_apply_ad_f90(const int &, const atlas::field::FieldSetImpl *,
                          atlas::field::FieldSetImpl *);
 }
-}  // namespace oops
+}  // namespace saber
 
-#endif  // OOPS_GENERIC_INTERPOLATORBUMP_F_H_
+#endif  // SABER_INTERPOLATION_INTERPOLATORBUMP_F_H_
