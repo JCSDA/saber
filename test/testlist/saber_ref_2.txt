@@ -4,7 +4,6 @@ bump_get_param_hyb/test_1-1_diag.nc
 bump_get_param_lct/test_1-1_lct.nc
 bump_hdiag_diag_rhflt/test_1-1_diag.nc
 bump_hdiag_diag_rhflt/test_1-1_local_diag_cor.nc
-bump_hdiag_diag_rhflt/test_1-1_local_diag_cov.nc
 bump_hdiag_diag_rvflt/test_1-1_diag.nc
 bump_hdiag_draw_type/test_1-1_diag.nc
 bump_hdiag_fit_dl0/test_1-1_diag.nc
@@ -15,7 +14,6 @@ bump_hdiag_ldwv/test_1-1_diag_B.nc
 bump_hdiag_ldwv/test_1-1_diag_C.nc
 bump_hdiag_ldwv/test_1-1_diag.nc
 bump_hdiag_ldwv/test_1-1_local_diag_cor.nc
-bump_hdiag_ldwv/test_1-1_local_diag_cov.nc
 bump_hdiag_loc_gau_approx/test_1-1_diag.nc
 bump_hdiag_loc_histograms/test_1-1_avg.nc
 bump_hdiag_loc_histograms/test_1-1_diag.nc

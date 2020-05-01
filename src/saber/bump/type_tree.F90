@@ -205,7 +205,7 @@ if (nn>0) then
    end do
 
    if (repro) then
-      ! Reorder neighbors based on their hash function
+      ! Reorder neighbors based on their index
       i = 1
       do while (i<nn_tmp)
          ! Count indistinguishable neighbors
@@ -222,10 +222,9 @@ if (nn>0) then
                list(j) = lonlathash(tree%lon(nn_index_tmp(i+j-1)),tree%lat(nn_index_tmp(i+j-1)))
             end do
             call qsort(nid,list,order)
-            do j=1,nid
-               nn_index_tmp(i+j-1) = nn_index_tmp(i+order(j)-1)
-               nn_dist_tmp(i+j-1) = nn_dist_tmp(i+order(j)-1)
-            end do
+            order = i+order-1
+            nn_index_tmp(i:i+nid-1) = nn_index_tmp(order)
+            nn_dist_tmp(i:i+nid-1) = nn_dist_tmp(order)
             deallocate(list)
             deallocate(order)
          end if

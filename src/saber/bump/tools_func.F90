@@ -63,19 +63,29 @@ end subroutine lonlatmod
 ! Subroutine: lonlathash
 ! Purpose: define a unique real from a lon/lat pair
 !----------------------------------------------------------------------
-function lonlathash(lon,lat)
+function lonlathash(lon,lat,il)
 
 implicit none
 
 ! Passed variables
 real(kind_real),intent(in) :: lon ! Longitude (radians)
 real(kind_real),intent(in) :: lat ! Latitude (radians)
+integer,intent(in),optional :: il ! Level
 
 ! Returned variable
 real(kind_real) :: lonlathash
 
+! Local variables
+real(kind_real) :: lontmp,lattmp
+
+! Set correct lon/lat
+lontmp = lon
+lattmp = lat
+call lonlatmod(lontmp,lattmp)
+
 ! Hash value
-lonlathash = aint(abs(lon+pi)*1.0e6)+abs(lat+0.5*pi)*1.0e-1
+lonlathash = aint(abs(lontmp+pi)*1.0e6)+abs(lattmp+0.5*pi)*1.0e-1
+if (present(il)) lonlathash = lonlathash+real(il*1e7,kind_real)
 
 end function lonlathash
 

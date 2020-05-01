@@ -61,16 +61,18 @@ if test "${test%%_*}" = "bump" ; then
                   if test "${exit_code}" != "0" ; then
                      echo "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
                      status=1
-                     exit ${status}
                   fi
                else
                   echo "\e[31mCannot find command: nccmp\e[0m"
                   status=2
-                  exit ${status}
                fi
             fi
          fi
       done
+
+      if test "${status}" != "0" ; then
+         exit ${status}
+      fi
 
       for file in `ls testoutput/${test}/test_${mpi}-${omp}.0000.out` ; do
          # Check for stars
@@ -79,7 +81,6 @@ if test "${test%%_*}" = "bump" ; then
          if test "${exit_code}" = "0" ; then
             echo "\e[31mTest failed (stars in output) checking: "${file#testoutput/}"\e[0m"
             status=3
-            exit ${status}
          fi
 
          # Check for "Close listings" line
@@ -88,7 +89,6 @@ if test "${test%%_*}" = "bump" ; then
          if test "${exit_code}" != "0" ; then
             echo "\e[31mTest failed (no listing closure) checking: "${file#testoutput/}"\e[0m"
             status=3
-            exit ${status}
          fi
       done
    else
@@ -108,12 +108,10 @@ if test "${test%%_*}" = "bump" ; then
          if test "${exit_code}" != "0" ; then
             echo "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
             status=1
-            exit ${status}
          fi
       else
          echo "\e[31mCannot find command: nccmp\e[0m"
          status=2
-         exit ${status}
       fi
    fi
 fi

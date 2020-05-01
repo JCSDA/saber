@@ -1273,7 +1273,8 @@ if (samp%nc0_mask(0)>nam%nc1) then
       end if
    end do
    call initialize_sampling(mpl,rng,maxval(geom%area),geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
- & nam%ntry,nam%nrep,nam%nc1-nam%nldwv,samp%c1_to_c0(nam%nldwv+1:nam%nc1),light_grid=.false.)
+ & nam%ntry,nam%nrep,nam%nc1-nam%nldwv,samp%c1_to_c0(nam%nldwv+1:nam%nc1),n_uni=geom%nc0,uni_to_proc=geom%c0_to_proc, &
+ & uni_to_loc=geom%c0_to_c0a,tree_uni=geom%tree)
 elseif (samp%nc0_mask(0)==nam%nc1) then
    ! Keep all remaining points
    ic1 = 0
@@ -1529,6 +1530,13 @@ elseif (trim(samp%name)=='lct') then
       end do
    end do
 endif
+
+do ic1=1,nam%nc1
+   if (samp%c1_to_proc(ic1)==mpl%myproc) then
+      ic1a = samp%c1_to_c1a(ic1)
+!      print*, ic1,samp%c1ac3_to_c0(ic1a,:)
+   end if
+end do
 
 end subroutine samp_compute_ps
 

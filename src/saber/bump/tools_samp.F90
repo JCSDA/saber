@@ -30,42 +30,45 @@ contains
 ! Purpose: intialize sampling
 !----------------------------------------------------------------------
 subroutine initialize_sampling(mpl,rng,area,n_loc,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ntry,nrep,ns2_glb,sam2_glb, &
- & light_grid,fast,verbosity)
+ & fast,verbosity,n_uni,uni_to_proc,uni_to_loc,tree_uni)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(rng_type),intent(inout) :: rng          ! Random number generator
-real(kind_real),intent(in) :: area           ! Global domain area
-integer,intent(in) :: n_loc                  ! Number of points (local)
-real(kind_real),intent(in) :: lon_loc(n_loc) ! Longitudes (local)
-real(kind_real),intent(in) :: lat_loc(n_loc) ! Latitudes (local)
-logical,intent(in) :: mask_loc(n_loc)        ! Mask (local)
-real(kind_real),intent(in) :: rh_loc(n_loc)  ! Horizontal support radius (local)
-integer,intent(in) :: loc_to_glb(n_loc)      ! Local to global index
-integer,intent(in) :: ntry                   ! Number of tries
-integer,intent(in) :: nrep                   ! Number of replacements
-integer,intent(in) :: ns2_glb                ! Number of samplings points (global)
-integer,intent(out) :: sam2_glb(ns2_glb)     ! Horizontal sampling index (global)
-logical,intent(in),optional :: light_grid    ! Light grid flag (skip first subsampling)
-logical,intent(in),optional :: fast          ! Fast sampling flag
-logical,intent(in),optional :: verbosity     ! Verbosity flag
+type(mpl_type),intent(inout) :: mpl               ! MPI data
+type(rng_type),intent(inout) :: rng               ! Random number generator
+real(kind_real),intent(in) :: area                ! Global domain area
+integer,intent(in) :: n_loc                       ! Number of points (local)
+real(kind_real),intent(in) :: lon_loc(n_loc)      ! Longitudes (local)
+real(kind_real),intent(in) :: lat_loc(n_loc)      ! Latitudes (local)
+logical,intent(in) :: mask_loc(n_loc)             ! Mask (local)
+real(kind_real),intent(in) :: rh_loc(n_loc)       ! Horizontal support radius (local)
+integer,intent(in) :: loc_to_glb(n_loc)           ! Local to global index
+integer,intent(in) :: ntry                        ! Number of tries
+integer,intent(in) :: nrep                        ! Number of replacements
+integer,intent(in) :: ns2_glb                     ! Number of samplings points (global)
+integer,intent(out) :: sam2_glb(ns2_glb)          ! Horizontal sampling index (global)
+logical,intent(in),optional :: fast               ! Fast sampling flag
+logical,intent(in),optional :: verbosity          ! Verbosity flag
+integer,intent(in),optional :: n_uni              ! Universe size
+integer,intent(in),optional :: uni_to_proc(:)     ! Universe to processor
+integer,intent(in),optional :: uni_to_loc(:)      ! Universe to local index
+type(tree_type),intent(in),optional :: tree_uni   ! Universe KD-tree
 
 ! Local variables
-integer :: n_glb,n_glb_eff,i_glb,n,ix,iy,is2_glb,iproc,js,irep,irmax,itry,is1_glb,ir,ns1_loc,is1_loc,ns1_loc_tmp
-integer :: irval,irvalmin,irvalmax,is2_glb_min,nrep_eff,nn_index(2),ns1_glb,is1_glb_eff,ns1_glb_eff,ns1_glb_val
+integer :: n_glb,n_loc_eff,n_glb_eff,i_glb,i_loc,i_loc_eff,n,ix,iy,is2_glb,iproc,js,irep,irmax,itry,is1_glb,ir,ns1_loc,is1_loc,nfac
+integer :: ns1_loc_tmp,irval,irvalmin,irvalmax,is2_glb_min,nrep_eff,nn_index(2),ns1_glb,is1_glb_eff,ns1_glb_eff,ns1_glb_val,offset
 integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
 integer,allocatable :: s1_loc_to_glb(:),s1_loc_to_glb_tmp(:),sam1_loc(:),sam1_loc_tmp(:)
 integer,allocatable :: sam1_glb(:),sam1_glb_eff(:),to_valid(:),sam2_glb_tmp(:),order(:)
-real(kind_real) :: dxmax,lonlat(2),d,distmax,distmin,nn_dist(2),cdf_norm,rr
+real(kind_real) :: lonlat(2),d,distmax,distmin,nn_dist(2),cdf_norm,rr
 real(kind_real),allocatable :: lon1_loc(:),lat1_loc(:),dist1_loc(:),rh1_loc(:)
 real(kind_real),allocatable :: lon1_loc_tmp(:),lat1_loc_tmp(:),dist1_loc_tmp(:),rh1_loc_tmp(:)
 real(kind_real),allocatable :: lon1_glb(:),lat1_glb(:),dist1_glb(:),rh1_glb(:)
 real(kind_real),allocatable :: lon1_glb_eff(:),lat1_glb_eff(:),rh1_glb_eff(:)
 real(kind_real),allocatable :: list(:),cdf(:)
 real(kind_real),allocatable :: lon_rep(:),lat_rep(:),dist(:)
-logical :: llight_grid,lfast,lverbosity,update
+logical :: lfull_grid,lfast,lverbosity,update,retry
 logical,allocatable :: mask_glb(:),lmask(:),smask(:),rmask(:)
 character(len=6) :: gridid
 character(len=1024),parameter :: subr = 'initialize_sampling'
@@ -74,10 +77,9 @@ type(tree_type) :: tree
 type(atlas_structuredgrid) :: agrid
 
 ! Local flags
-llight_grid = .true.
+lfull_grid = present(n_uni).and.present(uni_to_proc).and.present(uni_to_loc).and.present(tree_uni)
 lfast = .false.
 lverbosity = .true.
-if (present(light_grid)) llight_grid = light_grid
 if (present(fast)) lfast = fast
 if (present(verbosity)) lverbosity = verbosity
 
@@ -85,7 +87,8 @@ if (present(verbosity)) lverbosity = verbosity
 call mpl%f_comm%allreduce(n_loc,n_glb,fckit_mpi_sum())
 
 ! Number of effective points
-call mpl%f_comm%allreduce(count(mask_loc),n_glb_eff,fckit_mpi_sum())
+n_loc_eff = count(mask_loc)
+call mpl%f_comm%allreduce(n_loc_eff,n_glb_eff,fckit_mpi_sum())
 
 ! Check mask size
 if (n_glb_eff==0) then
@@ -99,7 +102,11 @@ elseif (n_glb_eff==ns2_glb) then
    ! Allocation
    allocate(glb_to_loc(n_glb))
    allocate(glb_to_proc(n_glb))
-   allocate(mask_glb(n_glb))
+   if (mpl%main) then
+      allocate(mask_glb(n_glb))
+   else
+      allocate(mask_glb(0))
+   end if
 
    ! Communication
    call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
@@ -122,191 +129,260 @@ elseif (n_glb_eff==ns2_glb) then
    deallocate(mask_glb)
 else
    ! First subsampling (local, using ATLAS octahedral grid)
-   if (llight_grid) then
-      ! All point are used
-      ns1_glb = n_glb
-      ns1_loc = n_loc
+   nfac = 1
+   retry = .true.
+   do while (retry)
+      ! Update nfac
+      nfac = 2*nfac
 
-      ! Allocation
-      allocate(s1_loc_to_glb(ns1_loc))
-      allocate(lon1_loc(ns1_loc))
-      allocate(lat1_loc(ns1_loc))
-      allocate(dist1_loc(ns1_loc))
-      allocate(rh1_loc(ns1_loc))
-      allocate(sam1_loc(ns1_loc))
+      if (lfull_grid) then
+         ! Number of required points
+         ns1_glb = nfac*int(real(ns2_glb,kind_real)*4.0*pi/area)
 
-      ! Copy
-      s1_loc_to_glb = loc_to_glb
-      lon1_loc = lon_loc
-      lat1_loc = lat_loc
-      dist1_loc = 0.0
-      rh1_loc = rh_loc
-      sam1_loc = loc_to_glb
-   else
-      ! Number of required points
-      ns1_glb = 5*int(real(ns2_glb,kind_real)*4.0*pi/area)
+         ! Octahedral grid
+         n = int(-4.5+sqrt(20.25+0.25*real(ns1_glb,kind_real)))+1
+         write(gridid,'(a,i5.5)') 'O',n
+         agrid = atlas_structuredgrid(gridid)
+         ns1_glb = 4*n**2+36*n
 
-      ! Octahedral grid
-      n = int(-4.5+sqrt(20.25+0.25*real(ns1_glb,kind_real)))+1
-      write(gridid,'(a,i5.5)') 'O',n
-      agrid = atlas_structuredgrid(gridid)
-      ns1_glb = 4*n**2+36*n
+         ! Allocation
+         allocate(lon1_loc(ns1_glb))
+         allocate(lat1_loc(ns1_glb))
+         allocate(rh1_loc(ns1_glb))
+         allocate(sam1_loc(ns1_glb))
+         allocate(dist1_loc(ns1_glb))
+         allocate(s1_loc_to_glb(ns1_glb))
+         allocate(lmask(n_loc))
 
-      ! Minimum resolution (at the equator)
-      dxmax = 2.0*pi/real(4*n+16,kind_real)
+         ! Initialization
+         lmask = mask_loc
+         if (lverbosity) call mpl%prog_init(ns1_glb)
 
-      ! Allocation
-      call tree%alloc(mpl,n_loc)
+         ! Loop over octahedral grid points
+         is1_loc = 0
+         is1_glb = 0
+         do iy=1,int(agrid%ny(),kind_int)
+            do ix=1,int(agrid%nx(iy),kind_int)
+               ! Global index
+               is1_glb = is1_glb+1
 
-      ! Initialization
-      call tree%init(lon_loc,lat_loc)
+               ! Get longitude/latitude
+               lonlat = agrid%lonlat(ix,iy)*deg2rad
 
-      ! Allocation
-      allocate(s1_loc_to_glb(ns1_glb))
-      allocate(lon1_loc(ns1_glb))
-      allocate(lat1_loc(ns1_glb))
-      allocate(dist1_loc(ns1_glb))
-      allocate(rh1_loc(ns1_glb))
-      allocate(sam1_loc(ns1_glb))
-      allocate(lmask(n_loc))
+               ! Find nearest neighbor in universe
+               call tree_uni%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index(1:1),nn_dist(1:1))
 
-      ! Initialization
-      lmask = mask_loc
-      if (lverbosity) call mpl%prog_init(ns1_glb)
+               if (uni_to_proc(nn_index(1))==mpl%myproc) then
+                  ! Get local index 
+                  i_loc = uni_to_loc(nn_index(1))
 
-      ! Loop over octahedral grid points
-      is1_loc = 0
-      is1_glb = 0
-      do iy=1,int(agrid%ny(),kind_int)
-         do ix=1,int(agrid%nx(iy),kind_int)
-            ! Global index
-            is1_glb = is1_glb+1
+                  ! Keep valid points
+                  if (lmask(i_loc)) then
+                     is1_loc = is1_loc+1
+                     lon1_loc(is1_loc) = lon_loc(i_loc)
+                     lat1_loc(is1_loc) = lat_loc(i_loc)
+                     rh1_loc(is1_loc) = rh_loc(i_loc)
+                     sam1_loc(is1_loc) = loc_to_glb(i_loc)
+                     dist1_loc(is1_loc) = nn_dist(1)
+                     s1_loc_to_glb(is1_loc) = is1_glb
+                     lmask(i_loc) = .false.
+                  end if
+               end if
 
-            ! Get longitude/latitude
-            lonlat = agrid%lonlat(ix,iy)*deg2rad
-
-            ! Find nearest neighbor
-            call tree%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index(1:1),nn_dist(1:1))
-
-            ! Keep valid points
-            if (lmask(nn_index(1)).and.(nn_dist(1)<dxmax)) then
-               is1_loc = is1_loc+1
-               s1_loc_to_glb(is1_loc) = is1_glb
-               lon1_loc(is1_loc) = lon_loc(nn_index(1))
-               lat1_loc(is1_loc) = lat_loc(nn_index(1))
-               dist1_loc(is1_loc) = nn_dist(1)
-               rh1_loc(is1_loc) = rh_loc(nn_index(1))
-               sam1_loc(is1_loc) = loc_to_glb(nn_index(1))
-               lmask(nn_index(1)) = .false.
-            end if
-
-            ! Update
-            if (lverbosity) call mpl%prog_print(is1_glb)
+               ! Update
+               if (lverbosity) call mpl%prog_print(is1_glb)
+            end do
          end do
-      end do
-      if (lverbosity) call mpl%prog_final(.false.)
+         if (lverbosity) call mpl%prog_final(.false.)
 
-      ! Number of local valid points
-      ns1_loc = is1_loc
+         ! Number of local valid points
+         ns1_loc = is1_loc
 
-      ! Release memory
-      deallocate(lmask)
-      call tree%dealloc
-   end if
+         ! Release memory
+         deallocate(lmask)
+      else
+         ! All point are used
+         ns1_glb = n_glb_eff
+         ns1_loc = n_loc_eff
 
-   if (mpl%main) then
-      ! Continue printing
-      write(mpl%info,'(a)') ' => '
-      if (lverbosity) call mpl%flush(.false.)
+         ! Allocation
+         allocate(lon1_loc(ns1_loc))
+         allocate(lat1_loc(ns1_loc))
+         allocate(rh1_loc(ns1_loc))
+         allocate(sam1_loc(ns1_loc))
 
-      ! Allocation
-      allocate(lon1_glb(ns1_glb))
-      allocate(lat1_glb(ns1_glb))
-      allocate(dist1_glb(ns1_glb))
-      allocate(rh1_glb(ns1_glb))
-      allocate(sam1_glb(ns1_glb))
+         ! Copy
+         i_loc_eff = 0
+         do i_loc=1,n_loc
+            if (mask_loc(i_loc)) then
+               i_loc_eff = i_loc_eff+1
+               lon1_loc(i_loc_eff) = lon_loc(i_loc)
+               lat1_loc(i_loc_eff) = lat_loc(i_loc)
+               rh1_loc(i_loc_eff) = rh_loc(i_loc)
+               sam1_loc(i_loc_eff) = loc_to_glb(i_loc)
+            end if
+         end do
+      end if
 
-      ! Initialization
-      lon1_glb = mpl%msv%valr
-      lat1_glb = mpl%msv%valr
-      dist1_glb = mpl%msv%valr
-      rh1_glb = mpl%msv%valr
-      sam1_glb = mpl%msv%vali
-
-      ! Receive and copy data on rootproc
-      do iproc=1,mpl%nproc
-         if (iproc==mpl%rootproc) then
-            ! Copy dimension
-            ns1_loc_tmp = ns1_loc
-         else
-            ! Receive dimension
-            call mpl%f_comm%receive(ns1_loc_tmp,iproc-1,mpl%tag,status)
+      if (mpl%main) then
+         if (lfull_grid) then
+            ! Continue printing
+            write(mpl%info,'(a)') ' => '
+            if (lverbosity) call mpl%flush(.false.)
          end if
 
          ! Allocation
-         allocate(s1_loc_to_glb_tmp(ns1_loc_tmp))
-         allocate(lon1_loc_tmp(ns1_loc_tmp))
-         allocate(lat1_loc_tmp(ns1_loc_tmp))
-         allocate(dist1_loc_tmp(ns1_loc_tmp))
-         allocate(rh1_loc_tmp(ns1_loc_tmp))
-         allocate(sam1_loc_tmp(ns1_loc_tmp))
+         allocate(lon1_glb(ns1_glb))
+         allocate(lat1_glb(ns1_glb))
+         allocate(rh1_glb(ns1_glb))
+         allocate(sam1_glb(ns1_glb))
+         if (lfull_grid) allocate(dist1_glb(ns1_glb))
 
-         if (iproc==mpl%rootproc) then
-            ! Copy data
-            s1_loc_to_glb_tmp = s1_loc_to_glb(1:ns1_loc)
-            lon1_loc_tmp = lon1_loc(1:ns1_loc)
-            lat1_loc_tmp = lat1_loc(1:ns1_loc)
-            dist1_loc_tmp = dist1_loc(1:ns1_loc)
-            rh1_loc_tmp = rh1_loc(1:ns1_loc)
-            sam1_loc_tmp = sam1_loc(1:ns1_loc)
-
-            ! Release memory
-            deallocate(s1_loc_to_glb)
-            deallocate(lon1_loc)
-            deallocate(lat1_loc)
-            deallocate(dist1_loc)
-            deallocate(rh1_loc)
-            deallocate(sam1_loc)
+         ! Initialization
+         lon1_glb = mpl%msv%valr
+         lat1_glb = mpl%msv%valr
+         rh1_glb = mpl%msv%valr
+         sam1_glb = mpl%msv%vali
+         if (lfull_grid) then
+            dist1_glb = mpl%msv%valr
          else
-            ! Receive data
-            call mpl%f_comm%receive(s1_loc_to_glb_tmp,iproc-1,mpl%tag+1,status)
-            call mpl%f_comm%receive(lon1_loc_tmp,iproc-1,mpl%tag+2,status)
-            call mpl%f_comm%receive(lat1_loc_tmp,iproc-1,mpl%tag+3,status)
-            call mpl%f_comm%receive(dist1_loc_tmp,iproc-1,mpl%tag+4,status)
-            call mpl%f_comm%receive(rh1_loc_tmp,iproc-1,mpl%tag+5,status)
-            call mpl%f_comm%receive(sam1_loc_tmp,iproc-1,mpl%tag+6,status)
+            offset = 0
          end if
 
-         ! Update global array
-         do is1_loc=1,ns1_loc_tmp
-            ! Global index
-            is1_glb = s1_loc_to_glb_tmp(is1_loc)
+         ! Receive and copy data on rootproc
+         do iproc=1,mpl%nproc
+            if (iproc==mpl%rootproc) then
+               ! Copy dimension
+               ns1_loc_tmp = ns1_loc
+            else
+               ! Receive dimension
+               call mpl%f_comm%receive(ns1_loc_tmp,iproc-1,mpl%tag,status)
+            end if
 
-            ! Check the global array status
-            update = mpl%msv%is(dist1_glb(is1_glb))
-            if (.not.update) update = (dist1_loc_tmp(is1_loc)<dist1_glb(is1_glb))
-            if (update) then
-               lon1_glb(is1_glb) = lon1_loc_tmp(is1_loc)
-               lat1_glb(is1_glb) = lat1_loc_tmp(is1_loc)
-               dist1_glb(is1_glb) = dist1_loc_tmp(is1_loc)
-               rh1_glb(is1_glb) = rh1_loc_tmp(is1_loc)
-               sam1_glb(is1_glb) = sam1_loc_tmp(is1_loc)
+            ! Allocation
+            allocate(lon1_loc_tmp(ns1_loc_tmp))
+            allocate(lat1_loc_tmp(ns1_loc_tmp))
+            allocate(rh1_loc_tmp(ns1_loc_tmp))
+            allocate(sam1_loc_tmp(ns1_loc_tmp))
+            if (lfull_grid) then
+               allocate(dist1_loc_tmp(ns1_loc_tmp))
+               allocate(s1_loc_to_glb_tmp(ns1_loc_tmp))
+            end if
+
+            if (iproc==mpl%rootproc) then
+               ! Copy data
+               lon1_loc_tmp = lon1_loc(1:ns1_loc)
+               lat1_loc_tmp = lat1_loc(1:ns1_loc)
+               rh1_loc_tmp = rh1_loc(1:ns1_loc)
+               sam1_loc_tmp = sam1_loc(1:ns1_loc)
+               if (lfull_grid) then
+                  dist1_loc_tmp = dist1_loc(1:ns1_loc)
+                  s1_loc_to_glb_tmp = s1_loc_to_glb(1:ns1_loc)
+               end if
+            else
+               ! Receive data
+               call mpl%f_comm%receive(lon1_loc_tmp,iproc-1,mpl%tag+1,status)
+               call mpl%f_comm%receive(lat1_loc_tmp,iproc-1,mpl%tag+2,status)
+               call mpl%f_comm%receive(rh1_loc_tmp,iproc-1,mpl%tag+3,status)
+               call mpl%f_comm%receive(sam1_loc_tmp,iproc-1,mpl%tag+4,status)
+               if (lfull_grid) then
+                  call mpl%f_comm%receive(dist1_loc_tmp,iproc-1,mpl%tag+5,status)
+                  call mpl%f_comm%receive(s1_loc_to_glb_tmp,iproc-1,mpl%tag+6,status)
+               end if
+            end if
+
+            ! Update global array
+            if (lfull_grid) then
+               do is1_loc=1,ns1_loc_tmp
+                  ! Global index
+                  is1_glb = s1_loc_to_glb_tmp(is1_loc)
+
+                  ! Check the global array status
+                  update = mpl%msv%is(dist1_glb(is1_glb))
+                  if (.not.update) update = (dist1_loc_tmp(is1_loc)<dist1_glb(is1_glb))
+                  if (update) then
+                     lon1_glb(is1_glb) = lon1_loc_tmp(is1_loc)
+                     lat1_glb(is1_glb) = lat1_loc_tmp(is1_loc)
+                     rh1_glb(is1_glb) = rh1_loc_tmp(is1_loc)
+                     sam1_glb(is1_glb) = sam1_loc_tmp(is1_loc)
+                     dist1_glb(is1_glb) = dist1_loc_tmp(is1_loc)
+                  end if
+               end do
+            else
+               ! Copy with offset
+               lon1_glb(offset+1:offset+ns1_loc_tmp) = lon1_loc_tmp
+               lat1_glb(offset+1:offset+ns1_loc_tmp) = lat1_loc_tmp
+               rh1_glb(offset+1:offset+ns1_loc_tmp) = rh1_loc_tmp
+               sam1_glb(offset+1:offset+ns1_loc_tmp) = sam1_loc_tmp
+               offset = offset+ns1_loc_tmp
+            end if
+
+            ! Release memory
+            deallocate(lon1_loc_tmp)
+            deallocate(lat1_loc_tmp)
+            deallocate(rh1_loc_tmp)
+            deallocate(sam1_loc_tmp)
+            if (lfull_grid) then
+               deallocate(dist1_loc_tmp)
+               deallocate(s1_loc_to_glb_tmp)
             end if
          end do
 
-         ! Release memory
-         deallocate(s1_loc_to_glb_tmp)
-         deallocate(lon1_loc_tmp)
-         deallocate(lat1_loc_tmp)
-         deallocate(dist1_loc_tmp)
-         deallocate(rh1_loc_tmp)
-         deallocate(sam1_loc_tmp)
-      end do
+         ! Number of global valid points
+         if (lfull_grid) then
+            ns1_glb_eff = count(mpl%msv%isnot(dist1_glb))
+         else
+            ns1_glb_eff = ns1_glb
+         end if
+         retry = (ns1_glb_eff<ns2_glb)
+      else
+         ! Send data to rootproc
+         call mpl%f_comm%send(ns1_loc,mpl%rootproc-1,mpl%tag)
+         call mpl%f_comm%send(lon1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+1)
+         call mpl%f_comm%send(lat1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+2)
+         call mpl%f_comm%send(rh1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+3)
+         call mpl%f_comm%send(sam1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+4)
+         if (lfull_grid) then
+            call mpl%f_comm%send(dist1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+5)
+            call mpl%f_comm%send(s1_loc_to_glb(1:ns1_loc),mpl%rootproc-1,mpl%tag+6)
+         end if
 
-      ! Number of global valid points
-      ns1_glb_eff = count(mpl%msv%isnot(dist1_glb))
-      if (ns1_glb_eff<ns2_glb) call mpl%abort(subr,'number of valid subsampled point in subset 1 is too small')
+         ! Stop printing
+         write(mpl%info,'(a)') ''
+         if (lverbosity) call mpl%flush
+      end if
+      if (lfull_grid) then
+         call mpl%update_tag(7)
+      else
+         call mpl%update_tag(5)
+      end if
 
+      ! Broadcast
+      call mpl%f_comm%broadcast(retry,mpl%rootproc-1)
+
+      ! Check situation
+      if ((.not.lfull_grid).and.retry) call mpl%abort(subr,'retry activated for limited grid')
+      if ((nfac>=8).and.retry) call mpl%abort(subr,'retry activated for nfac>=8')
+
+      ! Release memory
+      deallocate(lon1_loc)
+      deallocate(lat1_loc)
+      deallocate(rh1_loc)
+      deallocate(sam1_loc)
+      if (lfull_grid) then
+         deallocate(dist1_loc)
+         deallocate(s1_loc_to_glb)
+      end if
+      if (mpl%main.and.retry) then
+         deallocate(lon1_glb)
+         deallocate(lat1_glb)
+         deallocate(rh1_glb)
+         deallocate(sam1_glb)
+         if (lfull_grid) deallocate(dist1_glb)
+      end if
+   end do
+
+   if (mpl%main) then
       ! Allocation
       allocate(lon1_glb_eff(ns1_glb_eff))
       allocate(lat1_glb_eff(ns1_glb_eff))
@@ -316,16 +392,23 @@ else
       allocate(order(ns1_glb_eff))
 
       ! Copy valid data
-      is1_glb_eff = 0
-      do is1_glb=1,ns1_glb
-         if (mpl%msv%isnot(dist1_glb(is1_glb))) then
-            is1_glb_eff = is1_glb_eff+1
-            lon1_glb_eff(is1_glb_eff) = lon1_glb(is1_glb)
-            lat1_glb_eff(is1_glb_eff) = lat1_glb(is1_glb)
-            rh1_glb_eff(is1_glb_eff) = rh1_glb(is1_glb)
-            sam1_glb_eff(is1_glb_eff) = sam1_glb(is1_glb)
-         end if
-      end do
+      if (lfull_grid) then
+         is1_glb_eff = 0
+         do is1_glb=1,ns1_glb
+            if (mpl%msv%isnot(dist1_glb(is1_glb))) then
+               is1_glb_eff = is1_glb_eff+1
+               lon1_glb_eff(is1_glb_eff) = lon1_glb(is1_glb)
+               lat1_glb_eff(is1_glb_eff) = lat1_glb(is1_glb)
+               rh1_glb_eff(is1_glb_eff) = rh1_glb(is1_glb)
+               sam1_glb_eff(is1_glb_eff) = sam1_glb(is1_glb)
+            end if
+         end do
+      else
+         lon1_glb_eff = lon1_glb
+         lat1_glb_eff = lat1_glb
+         rh1_glb_eff = rh1_glb
+         sam1_glb_eff = sam1_glb
+      end if
 
       ! Define points order
       do is1_glb=1,ns1_glb_eff
@@ -342,9 +425,9 @@ else
       ! Release memory
       deallocate(lon1_glb)
       deallocate(lat1_glb)
-      deallocate(dist1_glb)
       deallocate(rh1_glb)
       deallocate(sam1_glb)
+      if (lfull_grid) deallocate(dist1_glb)
       deallocate(list)
       deallocate(order)
 
@@ -490,7 +573,7 @@ else
          if (lverbosity) call mpl%prog_final(.false.)
       end if
 
-      if (.false.) then
+      if (nrep_eff>0) then
          ! Continue printing
          write(mpl%info,'(a)') ' => '
          if (lverbosity) call mpl%flush(.false.)
@@ -592,29 +675,7 @@ else
       deallocate(lmask)
       deallocate(smask)
       deallocate(to_valid)
-   else
-      ! Send data to rootproc
-      call mpl%f_comm%send(ns1_loc,mpl%rootproc-1,mpl%tag)
-      call mpl%f_comm%send(s1_loc_to_glb(1:ns1_loc),mpl%rootproc-1,mpl%tag+1)
-      call mpl%f_comm%send(lon1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+2)
-      call mpl%f_comm%send(lat1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+3)
-      call mpl%f_comm%send(dist1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+4)
-      call mpl%f_comm%send(rh1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+5)
-      call mpl%f_comm%send(sam1_loc(1:ns1_loc),mpl%rootproc-1,mpl%tag+6)
-
-      ! Release memory
-      deallocate(s1_loc_to_glb)
-      deallocate(lon1_loc)
-      deallocate(lat1_loc)
-      deallocate(dist1_loc)
-      deallocate(rh1_loc)
-      deallocate(sam1_loc)
-
-      ! Stop printing
-      write(mpl%info,'(a)') ''
-      if (lverbosity) call mpl%flush
    end if
-   call mpl%update_tag(7)
 end if
 
 ! Broadcast

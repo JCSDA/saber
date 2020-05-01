@@ -7,8 +7,6 @@ bump_hdiag_cor_diag_all/test_1-1_diag.nc
 bump_hdiag_grid/test_1-1_diag.nc
 bump_hdiag_grid/test_1-1_local_diag_cor_gridded.nc
 bump_hdiag_grid/test_1-1_local_diag_cor.nc
-bump_hdiag_grid/test_1-1_local_diag_cov_gridded.nc
-bump_hdiag_grid/test_1-1_local_diag_cov.nc
 bump_hdiag_hyb-rnd_common/test_1-1_diag.nc
 bump_hdiag_mask_stddev_upper/test_1-1_diag.nc
 bump_hdiag-nicas_cor_specific_univariate/test_1-1_diag.nc
@@ -20,7 +18,6 @@ bump_hdiag-nicas_cor_specific_univariate/test_1-1_nicas-2-sqrt_0001-0001_02_02_0
 bump_hdiag-nicas_local_diag/test_1-1_diag.nc
 bump_hdiag-nicas_local_diag/test_1-1_dirac.nc
 bump_hdiag-nicas_local_diag/test_1-1_local_diag_cor.nc
-bump_hdiag-nicas_local_diag/test_1-1_local_diag_cov.nc
 bump_hdiag-nicas_local_diag/test_1-1_local_diag_loc.nc
 bump_hdiag-nicas_local_diag/test_1-1_nicas-2-sqrt_0001-0001_common.nc
 bump_hdiag-nicas_loc_common/test_1-1_diag.nc

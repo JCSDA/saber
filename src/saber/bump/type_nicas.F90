@@ -12,6 +12,7 @@ use netcdf
 use tools_const, only: rad2deg,reqkm,pi
 use tools_func, only: sphere_dist,cholesky,fit_diag
 use tools_kinds, only: kind_real,nc_kind_real
+use tools_qsort, only: qsort
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
 use type_com, only: com_type,com_ntag
@@ -559,8 +560,8 @@ type(cv_type),intent(out) :: cv       ! Control vector
 
 ! Local variables
 integer :: ib,jb,ns
-integer,allocatable :: s_to_sa(:),s_to_proc(:)
-real(kind_real),allocatable :: alpha(:)
+integer,allocatable :: s_to_sa(:),s_to_proc(:),order(:)
+real(kind_real),allocatable :: hash(:),alpha(:)
 
 ! Allocation
 call nicas%alloc_cv(mpl,bpar,cv)
@@ -575,20 +576,31 @@ do ib=1,bpar%nbe
       call mpl%f_comm%allreduce(nicas%blk(jb)%nsa,ns,fckit_mpi_sum())
 
       ! Allocation
+      allocate(hash(ns))
+      allocate(order(ns))
       allocate(alpha(ns))
       allocate(s_to_sa(ns))
       allocate(s_to_proc(ns))
 
+      ! Get conversions
+      call mpl%glb_to_loc_index(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_s,ns,s_to_sa,s_to_proc)
+
+      ! Get global hash
+      call mpl%loc_to_glb(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_hash,ns,s_to_proc,s_to_sa,.true.,hash)
+
       ! Random vector
       call rng%rand_gau(alpha)
 
-      ! Get conversions
-      call mpl%glb_to_loc_index(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_s,ns,s_to_sa,s_to_proc)
+      ! Reorder random vector
+      call qsort(ns,hash,order)
+      alpha = alpha(order)
 
       ! Global to local
       call mpl%glb_to_loc(ns,s_to_proc,s_to_sa,alpha,nicas%blk(jb)%nsa,cv%blk(ib)%alpha)
 
       ! Release memory
+      deallocate(hash)
+      deallocate(order)
       deallocate(alpha)
       deallocate(s_to_sa)
       deallocate(s_to_proc)

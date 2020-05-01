@@ -394,7 +394,7 @@ end subroutine diag_build_fit
 ! Subroutine: diag_covariance
 ! Purpose: compute covariance
 !----------------------------------------------------------------------
-subroutine diag_covariance(diag,mpl,nam,geom,bpar,io,samp,avg,prefix)
+subroutine diag_covariance(diag,mpl,nam,geom,bpar,samp,avg,prefix)
 
 implicit none
 
@@ -404,7 +404,6 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
-type(io_type),intent(in) :: io         ! I/O
 type(samp_type),intent(in) :: samp     ! Sampling
 type(avg_type),intent(in) :: avg       ! Averaged statistics
 character(len=*),intent(in) :: prefix  ! Diagnostic prefix
@@ -437,9 +436,6 @@ do ib=1,bpar%nb
       end do
    end if
 end do
-
-! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
 
 end subroutine diag_covariance
 

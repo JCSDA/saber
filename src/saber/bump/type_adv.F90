@@ -279,7 +279,8 @@ integer :: c0_to_c0d(geom%nc0),c0a_to_c0d(geom%nc0a)
 integer,allocatable :: jc0_ra(:,:,:),c0d_to_c0(:)
 real(kind_real) :: search_rad,m2m2,fld_1,fld_2,cov
 real(kind_real) :: dist_sum,cor_avg_max,norm,norm_tot
-real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2),lon_rac(samp%nc2a,geom%nl0),lat_rac(samp%nc2a,geom%nl0)
+real(kind_real) :: lon_rac(samp%nc2a,geom%nl0),lat_rac(samp%nc2a,geom%nl0)
+real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
 real(kind_real),allocatable :: fld_ext_1(:,:),fld_ext_2(:,:)
 real(kind_real),allocatable :: m2_1(:,:,:,:,:),m2_2(:,:,:,:,:)
 real(kind_real),allocatable :: m11(:,:,:,:,:)
@@ -291,6 +292,15 @@ type(mesh_type) :: mesh
 
 write(mpl%info,'(a7,a)') '','Compute raw advection using correlation maximum'
 call mpl%flush
+
+! Allocation
+if (mpl%main) then
+   allocate(lon_c2(nam%nc2))
+   allocate(lat_c2(nam%nc2))
+else
+   allocate(lon_c2(0))
+   allocate(lat_c2(0))
+end if
 
 do its=2,nam%nts
    write(mpl%info,'(a10,a,i2)') '','Timeslot ',its
@@ -646,10 +656,10 @@ integer :: ic0,ic0a,ic0w,ic0own,i_s,ic2a,il0,its,it,nc0w,nc0own
 integer :: c0_to_c0w(geom%nc0)
 integer,allocatable :: c0w_to_c0(:),c0own_to_c0w(:)
 real(kind_real) :: dist_sum,norm,norm_tot
-real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2)
 real(kind_real) :: dtl,t,um(samp%nc2a),vm(samp%nc2a),up(samp%nc2a),vp(samp%nc2a)
 real(kind_real) :: uxm,uym,uzm,uxp,uyp,uzp,ux,uy,uz,x,y,z
 real(kind_real),allocatable :: fld_uv_ext(:,:,:)
+real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
 logical :: lcheck(geom%nc0),valid_c2(nam%nc2)
 type(com_type) :: com_AW
 type(linop_type) :: h
@@ -657,6 +667,15 @@ type(mesh_type) :: mesh
 
 write(mpl%info,'(a7,a)') '','Compute raw advection using wind field'
 call mpl%flush
+
+! Allocation
+if (mpl%main) then
+   allocate(lon_c2(nam%nc2))
+   allocate(lat_c2(nam%nc2))
+else
+   allocate(lon_c2(0))
+   allocate(lat_c2(0))
+end if
 
 ! Initialization
 dtl = nam%dts/nt
@@ -858,13 +877,22 @@ real(kind_real) :: dist_sum,norm,norm_tot,valid_flt,dist_flt,rhflt,drhflt
 real(kind_real) :: lon_c2a(samp%nc2a),lat_c2a(samp%nc2a),dist_c2a(samp%nc2a)
 real(kind_real) :: dx_ini(samp%nc2a),dy_ini(samp%nc2a),dz_ini(samp%nc2a)
 real(kind_real) :: dx(samp%nc2a),dy(samp%nc2a),dz(samp%nc2a),dd(samp%nc2a)
-real(kind_real) :: lon_c2(nam%nc2),lat_c2(nam%nc2)
+real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
 logical :: dichotomy,convergence
 logical :: valid_c2(nam%nc2)
 character(len=1024),parameter :: subr = 'adv_filter'
 type(mesh_type) :: mesh
 
 if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
+   ! Allocation
+   if (mpl%main) then
+      allocate(lon_c2(nam%nc2))
+      allocate(lat_c2(nam%nc2))
+   else
+      allocate(lon_c2(0))
+      allocate(lat_c2(0))
+   end if
+
    ! Convert to cartesian coordinates
    do ic2a=1,samp%nc2a
       if (samp%mask_c2a(ic2a,il0)) then

@@ -245,7 +245,7 @@ call mpl%flush
 ! Compute ensemble 1 covariance
 write(mpl%info,'(a7,a)') '','Ensemble 1:'
 call mpl%flush
-call hdiag%cov_1%covariance(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'cov')
+call hdiag%cov_1%covariance(mpl,nam,geom,bpar,hdiag%samp,hdiag%avg_1,'cov')
 
 select case (trim(nam%method))
 case ('hyb-avg','hyb-rnd','dual-ens')
@@ -254,9 +254,9 @@ case ('hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    select case (trim(nam%method))
    case ('hyb-avg','hyb-rnd')
-      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cov_sta')
+      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,hdiag%samp,hdiag%avg_2,'cov_sta')
    case ('dual-ens')
-      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cov_lr')
+      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,hdiag%samp,hdiag%avg_2,'cov_lr')
    end select
 end select
 
