@@ -7,10 +7,12 @@
  */
 
 #include "oops/runs/Run.h"
-#include "../saber/BumpInterpolation.h"
+#include "saber/interpolation/InterpolatorFactory"
+#include "test/generic/InterpolationInterface"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  saber::test::BumpInterpolation tests;
+  saber::InterpolatorFactory ifactory;
+  test::InterpolationInterface tests(ifactory);
   return run.execute(tests);
 }
