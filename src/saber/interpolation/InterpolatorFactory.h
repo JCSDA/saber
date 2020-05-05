@@ -12,6 +12,7 @@
 #include "atlas/functionspace.h"
 #include "eckit/config/LocalConfiguration.h"
 #include "oops/generic/Interpolator.h"
+#include "oops/generic/InterpolatorFactory.h"
 
 namespace saber {
 
@@ -26,7 +27,7 @@ namespace saber {
  *
  */
 
-class InterpolatorFactory : oops::InterpolatorFactory {
+class InterpolatorFactory : public oops::InterpolatorFactory {
  public:
   InterpolatorFactory() { }
   ~InterpolatorFactory() { }

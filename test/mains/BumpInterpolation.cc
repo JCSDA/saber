@@ -7,8 +7,9 @@
  */
 
 #include "oops/runs/Run.h"
-#include "saber/interpolation/InterpolatorFactory"
-#include "test/generic/InterpolationInterface"
+#include "oops/generic/InterpolatorFactory.h"
+#include "saber/interpolation/InterpolatorFactory.h"
+#include "test/generic/InterpolationInterface.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);

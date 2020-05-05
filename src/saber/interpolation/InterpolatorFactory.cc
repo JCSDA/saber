@@ -14,8 +14,9 @@
 #include "oops/generic/Interpolator.h"
 #include "oops/generic/InterpolatorFactory.h"
 #include "saber/interpolation/InterpolatorBump.h"
+#include "saber/interpolation/InterpolatorFactory.h"
 
-namespace oops {
+namespace saber {
 
 //-------------------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 ---
-bump_interpolation:
+test_interpolation_interface:
     interpolator: "bump"
     missingvalue_int: -999
     missingvalue_real: -999.0
