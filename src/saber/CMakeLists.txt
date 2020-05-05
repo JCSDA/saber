@@ -60,7 +60,7 @@ ecbuild_add_library( TARGET     saber
                      LIBS       ${SABER_LIB_DEPS}
                      INSTALL_HEADERS LISTED
                      HEADER_DESTINATION ${INSTALL_INCLUDE_DIR}/saber
-                     TEMPLATES ${_p_util_header_files}
+                     TEMPLATES ${saber_header_files}
                      LINKER_LANGUAGE ${SABER_LINKER_LANGUAGE}
                    )
 
