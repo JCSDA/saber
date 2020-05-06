@@ -13,6 +13,8 @@ type_avg_blk.F90
 type_avg.F90
 type_bpar.F90
 type_bump.F90
+type_bump.h
+type_bump_interface.F90
 type_cmat_blk.F90
 type_cmat.F90
 type_com.F90

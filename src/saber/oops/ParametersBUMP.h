@@ -25,6 +25,7 @@
 #include "oops/util/DateTime.h"
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
+#include "oops/util/missingValues.h"
 
 #include "saber/oops/OoBump.h"
 
@@ -39,7 +40,7 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
-/// BUMP diagnostics.
+/// BUMP parameters
 
 template<typename MODEL>
 class ParametersBUMP {
@@ -85,24 +86,32 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
   oops::Log::trace() << "ParametersBUMP<MODEL>::ParametersBUMP construction starting" << std::endl;
   util::Timer timer(classname(), "ParametersBUMP");
 
-// Setup BUMP configuration
-  const eckit::LocalConfiguration BUMPConfig(conf_, "bump");
+  // Setup BUMP configuration
+  eckit::LocalConfiguration BUMPConf(conf_, "bump");
 
-// Setup members release
+  // Setup members release
   int release_members = 0;
-  if (BUMPConfig.has("release_members")) release_members = BUMPConfig.getInt("release_members");
+  if (BUMPConf.has("release_members")) release_members = BUMPConf.getInt("release_members");
 
-// Get ensemble size if ensemble is available
+  // Get ensemble size if ensemble is available
   int ens1_ne = 0;
   if (ens) ens1_ne = ens->size();
+  BUMPConf.set("ens1_ne", ens1_ne);
+  BUMPConf.set("ens1_nsub", 1);
 
-// Get pseudo-ensemble size if pseudo-ensemble is available
+  // Get pseudo-ensemble size if pseudo-ensemble is available
   int ens2_ne = 0;
   if (pseudo_ens) ens2_ne = pseudo_ens->size();
+  BUMPConf.set("ens2_ne", ens2_ne);
+  BUMPConf.set("ens2_nsub", 1);
 
-// Create BUMP
+  // Get missing value
+  const double msvalr = util::missingValue(msvalr);
+  BUMPConf.set("msvalr", msvalr);
+
+  // Create BUMP
   oops::Log::info() << "Create BUMP" << std::endl;
-  ooBump_.reset(new OoBump_(resol, vars, timeslots, BUMPConfig, ens1_ne, 1, ens2_ne, 1));
+  ooBump_.reset(new OoBump_(resol, vars, timeslots_, BUMPConf));
 
 // Transfer/copy ensemble members to BUMP
   if (release_members == 1) {
@@ -164,12 +173,12 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
   oops::Log::info() << "Read data from files" << std::endl;
   if (conf_.has("input")) {
   // Set BUMP input parameters
-    std::vector<eckit::LocalConfiguration> inputConfigs;
-    conf_.get("input", inputConfigs);
+    std::vector<eckit::LocalConfiguration> inputConfs;
+    conf_.get("input", inputConfs);
 
-    for (const auto & conf : inputConfigs) {
+    for (const auto & inputConf : inputConfs) {
     // Read parameter for the specified timeslot
-      const util::DateTime date(conf.getString("date"));
+      const util::DateTime date(inputConf.getString("date"));
       bool found = false;
 
     // Setup increment
@@ -179,14 +188,14 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
       for (unsigned jsub = 0; jsub < timeslots_.size(); ++jsub) {
         if (date == timeslots_[jsub]) {
           found = true;
-          dx[dx.first()+jsub].read(conf);
+          dx[dx.first()+jsub].read(inputConf);
         }
       }
       ASSERT(found);
 
     // Set parameter to BUMP
-      std::string param = conf.getString("parameter");
-      ooBump_->setParam(param, dx);
+      std::string param = inputConf.getString("parameter");
+      ooBump_->setParameter(param, dx);
     }
   }
 
@@ -246,25 +255,25 @@ void ParametersBUMP<MODEL>::write() const {
   util::Timer timer(classname(), "write");
 
 // Write parameters
-  std::vector<eckit::LocalConfiguration> outputConfigs;
-  conf_.get("output", outputConfigs);
-  for (const auto & conf : outputConfigs) {
+  std::vector<eckit::LocalConfiguration> outputConfs;
+  conf_.get("output", outputConfs);
+  for (const auto & outputConf : outputConfs) {
   // Setup dummy increment
     Increment4D_ dx(resol_, vars_, timeslots_);
     dx.zero();
 
   // Get parameter from BUMP
-    std::string param = conf.getString("parameter");
-    ooBump_->getParam(param, dx);
+    std::string param = outputConf.getString("parameter");
+    ooBump_->getParameter(param, dx);
 
   // Write parameter for the specified timeslot
-    const util::DateTime date(conf.getString("date"));
+    const util::DateTime date(outputConf.getString("date"));
     bool found = false;
     for (unsigned jsub = 0; jsub < timeslots_.size(); ++jsub) {
       int isub = jsub+dx.first();
       if (date == timeslots_[jsub]) {
         found = true;
-        dx[isub].write(conf);
+        dx[isub].write(outputConf);
         oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
                     << std::setprecision(3) << dx[isub].norm() << std::endl;
       }

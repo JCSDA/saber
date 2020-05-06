@@ -32,7 +32,7 @@
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/oobump_f.h"
+#include "saber/bump/type_bump.h"
 
 namespace eckit {
   class Configuration;
@@ -55,7 +55,7 @@ template<typename MODEL> class OoBump : public boost::noncopyable {
 
  public:
   OoBump(const Geometry_ &, const oops::Variables &, const std::vector<util::DateTime> &,
-         const eckit::LocalConfiguration, const int &, const int &, const int &, const int &);
+         const eckit::LocalConfiguration);
   explicit OoBump(OoBump &);
   ~OoBump();
 
@@ -65,7 +65,6 @@ template<typename MODEL> class OoBump : public boost::noncopyable {
   void clearKey() {keyOoBump_.clear();}
 
   // Fortran interfaces
-  int getCvSize() const;
   void addMember(Increment4D_ &, const int &) const;
   void addPseudoMember(Increment4D_ &, const int &) const;
   void removeMember(Increment4D_ &, const int &) const;
@@ -83,10 +82,10 @@ template<typename MODEL> class OoBump : public boost::noncopyable {
   void multiplyNicas(Increment4D_ &) const;
   void multiplyNicas(const Increment4D_ &, Increment4D_ &) const;
   void inverseMultiplyNicas(const Increment4D_ &, Increment4D_ &) const;
-  void randomizeNicas(Increment_ &) const;
-  void randomizeNicas(Increment4D_ &) const;
-  void getParam(const std::string &, Increment4D_ &) const;
-  void setParam(const std::string &, const Increment4D_ &) const;
+  void randomize(Increment_ &) const;
+  void randomize(Increment4D_ &) const;
+  void getParameter(const std::string &, Increment4D_ &) const;
+  void setParameter(const std::string &, const Increment4D_ &) const;
 
   // Aliases for inversion with GMRESR
   void multiply(const Increment_ & dxi, Increment_ & dxo) const {multiplyNicas(dxi, dxo);}
@@ -104,18 +103,16 @@ template<typename MODEL>
 OoBump<MODEL>::OoBump(const Geometry_ & resol,
                       const oops::Variables & vars,
                       const std::vector<util::DateTime> & timeslots,
-                      const eckit::LocalConfiguration conf,
-                      const int & ens1_ne, const int & ens1_nsub,
-                      const int & ens2_ne, const int & ens2_nsub) : keyOoBump_() {
-  // Get configuration pointer
-  const eckit::Configuration * fconf = &conf;
-
+                      const eckit::LocalConfiguration conf) : keyOoBump_() {
   // Grids
   std::vector<eckit::LocalConfiguration> grids;
 
+  // Get global prefix
+  std::string prefix;
+  conf.get("prefix", prefix);
+
 #if ATLASIFIED
   // Get the grids configuration from input configuration and complete it
-
   if (conf.has("grids")) {
     // Get grids from input configuration
     conf.get("grids", grids);
@@ -128,31 +125,36 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
 
   // Loop over grids
   for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
-    // Add grid index
-    int jgrid_int(jgrid);
-    grids[jgrid].set("grid_index", jgrid_int);
+    // Add prefix
+    if (!grids[jgrid].has("prefix")) {
+      std::ostringstream ss;
+      ss << std::setw(2) << std::setfill('0') << jgrid;
+      grids[jgrid].set("prefix", prefix + "_" + ss.str());
+    }
 
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;
-    if (grids[jgrid].has("variables")) {
-      grids[jgrid].get("variables", vars_str);
+    if (grids[jgrid].has("varname")) {
+      grids[jgrid].get("varname", vars_str);
     } else {
       for (unsigned int jvar = 0; jvar < vars.size(); ++jvar) {
         vars_str.push_back(vars[jvar]);
       }
-      grids[jgrid].set("variables", vars_str);
+      grids[jgrid].set("varname", vars_str);
     }
+    grids[jgrid].set("nv", vars_str.size());
 
     // Add input timeslots to the grid configuration
     std::vector<std::string> timeslots_str;
-    if (grids[jgrid].has("timeslots")) {
-      grids[jgrid].get("timeslots", timeslots_str);
+    if (grids[jgrid].has("timeslot")) {
+      grids[jgrid].get("timeslot", timeslots_str);
     } else {
       for (unsigned int jts = 0; jts < timeslots.size(); ++jts) {
         timeslots_str.push_back(timeslots[jts].toString());
       }
-      grids[jgrid].set("timeslots", timeslots_str);
+      grids[jgrid].set("timeslot", timeslots_str);
     }
+    grids[jgrid].set("nts", timeslots_str.size());
 
     // Get the required number of levels add it to the grid configuration
     Increment_ dx(resol, vars, timeslots[0]);
@@ -182,10 +184,33 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
   dx.ug_coord(*ug_.get());
   ug_->defineGeometry();
   ug_->defineGrids(grids);
+
+  // Modify grids
+  for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
+    int grid_index;
+    grids[jgrid].get("grid_index", grid_index);
+    std::ostringstream ss;
+    ss << std::setw(2) << std::setfill('0') << grid_index;
+    grids[jgrid].set("prefix", prefix + "_" + ss.str());
+    std::vector<std::string> vars_str;
+    grids[jgrid].get("variables", vars_str);
+    grids[jgrid].set("varname", vars_str);
+    grids[jgrid].set("nv", vars_str.size());
+    std::vector<std::string> timeslots_str;
+    grids[jgrid].get("timeslots", timeslots_str);
+    grids[jgrid].set("timeslot", timeslots_str);
+    grids[jgrid].set("nts", timeslots_str.size());
+  }
 #endif
 
-// Check grids number
+  // Check grids number
   ASSERT(grids.size() > 0);
+
+  // Print configuration
+  oops::Log::info() << "Configuration: " << conf << std::endl;
+
+  // Get configuration pointer
+  const eckit::Configuration * fconf = &conf;
 
   for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
     // Print configuration for this grid
@@ -197,17 +222,15 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
     // Create OoBump instance
     int keyOoBump = 0;
 #if ATLASIFIED
-    oobump_create_f90(keyOoBump, &resol.getComm(),
-                      resol.atlasFunctionSpace()->get(),
-                      resol.atlasFieldSet()->get(),
-                      &fconf, &fgrid,
-                      ens1_ne, ens1_nsub, ens2_ne, ens2_nsub);
+    bump_create_f90(keyOoBump, &resol.getComm(),
+                    resol.atlasFunctionSpace()->get(),
+                    resol.atlasFieldSet()->get(),
+                    &fconf, &fgrid);
 #else
-    oobump_create_f90(keyOoBump, &resol.getComm(),
-                      ug_->atlasFunctionSpace()->get(),
-                      ug_->atlasFieldSet()->get(),
-                      &fconf, &fgrid,
-                      ens1_ne, ens1_nsub, ens2_ne, ens2_nsub);
+    bump_create_f90(keyOoBump, &resol.getComm(),
+                    ug_->atlasFunctionSpace()->get(),
+                    ug_->atlasFieldSet()->get(),
+                    &fconf, &fgrid);
 #endif
     keyOoBump_.push_back(keyOoBump);
   }
@@ -227,19 +250,8 @@ OoBump<MODEL>::OoBump(OoBump & other) : keyOoBump_() {
 template<typename MODEL>
 OoBump<MODEL>::~OoBump() {
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    if (keyOoBump_[jgrid] > 0) oobump_delete_f90(keyOoBump_[jgrid]);
+    if (keyOoBump_[jgrid] > 0) bump_dealloc_f90(keyOoBump_[jgrid]);
   }
-}
-// -----------------------------------------------------------------------------
-template<typename MODEL>
-int OoBump<MODEL>::getCvSize() const {
-  int cv_size_tot = 0;
-  for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    int cv_size = 0;
-    oobump_get_cv_size_f90(keyOoBump_[jgrid], cv_size);
-    cv_size_tot += cv_size;
-  }
-  return cv_size_tot;
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
@@ -252,7 +264,7 @@ void OoBump<MODEL>::addMember(Increment4D_ & dx, const int & ie) const {
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_add_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 1);
+    bump_add_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 1);
   }
 }
 // -----------------------------------------------------------------------------
@@ -266,7 +278,7 @@ void OoBump<MODEL>::addPseudoMember(Increment4D_ & dx, const int & ie) const {
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_add_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 2);
+    bump_add_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 2);
   }
 }
 // -----------------------------------------------------------------------------
@@ -279,7 +291,7 @@ void OoBump<MODEL>::removeMember(Increment4D_ & dx, const int & ie) const {
   ug_->setAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_remove_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 1);
+    bump_remove_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 1);
   }
 #if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
@@ -298,7 +310,7 @@ void OoBump<MODEL>::removePseudoMember(Increment4D_ & dx, const int & ie) const 
   ug_->setAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_remove_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 2);
+    bump_remove_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 2);
   }
 #if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
@@ -311,7 +323,7 @@ void OoBump<MODEL>::removePseudoMember(Increment4D_ & dx, const int & ie) const 
 template<typename MODEL>
 void OoBump<MODEL>::runDrivers() const {
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_run_drivers_f90(keyOoBump_[jgrid]);
+    bump_run_drivers_f90(keyOoBump_[jgrid]);
   }
 }
 // -----------------------------------------------------------------------------
@@ -325,7 +337,7 @@ void OoBump<MODEL>::multiplyVbal(const Increment_ & dxi, Increment_ & dxo) const
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_vbal_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_vbal_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
@@ -345,7 +357,7 @@ void OoBump<MODEL>::multiplyVbalInv(const Increment_ & dxi, Increment_ & dxo) co
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_vbal_inv_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_vbal_inv_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
@@ -365,7 +377,7 @@ void OoBump<MODEL>::multiplyVbalAd(const Increment_ & dxi, Increment_ & dxo) con
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_vbal_ad_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_vbal_ad_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
@@ -385,7 +397,7 @@ void OoBump<MODEL>::multiplyVbalInvAd(const Increment_ & dxi, Increment_ & dxo) 
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_vbal_inv_ad_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_vbal_inv_ad_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
@@ -405,7 +417,7 @@ void OoBump<MODEL>::multiplyStdDev(const Increment_ & dxi, Increment_ & dxo) con
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_stddev_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_stddev_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
@@ -425,7 +437,7 @@ void OoBump<MODEL>::multiplyStdDevInv(const Increment_ & dxi, Increment_ & dxo) 
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_stddev_inv_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_stddev_inv_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
@@ -445,7 +457,7 @@ void OoBump<MODEL>::multiplyNicas(Increment_ & dx) const {
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
@@ -465,7 +477,7 @@ void OoBump<MODEL>::multiplyNicas(const Increment_ & dxi, Increment_ & dxo) cons
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
@@ -492,7 +504,7 @@ void OoBump<MODEL>::multiplyNicas(Increment4D_ & dx) const {
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
@@ -512,7 +524,7 @@ void OoBump<MODEL>::multiplyNicas(const Increment4D_ & dxi, Increment4D_ & dxo) 
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_multiply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_apply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
@@ -530,7 +542,7 @@ void OoBump<MODEL>::inverseMultiplyNicas(const Increment4D_ & dxi, Increment4D_ 
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
-void OoBump<MODEL>::randomizeNicas(Increment_ & dx) const {
+void OoBump<MODEL>::randomize(Increment_ & dx) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
 #if ATLASIFIED
   dx.setAtlas(atlasFieldSet.get());
@@ -538,7 +550,7 @@ void OoBump<MODEL>::randomizeNicas(Increment_ & dx) const {
   ug_->setAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_randomize_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_randomize_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
@@ -549,7 +561,7 @@ void OoBump<MODEL>::randomizeNicas(Increment_ & dx) const {
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
-void OoBump<MODEL>::randomizeNicas(Increment4D_ & dx) const {
+void OoBump<MODEL>::randomize(Increment4D_ & dx) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
 #if ATLASIFIED
   dx.setAtlas(atlasFieldSet.get());
@@ -557,7 +569,7 @@ void OoBump<MODEL>::randomizeNicas(Increment4D_ & dx) const {
   ug_->setAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_randomize_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
+    bump_randomize_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
 #if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
@@ -568,7 +580,7 @@ void OoBump<MODEL>::randomizeNicas(Increment4D_ & dx) const {
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
-void OoBump<MODEL>::getParam(const std::string & param, Increment4D_ & dx) const {
+void OoBump<MODEL>::getParameter(const std::string & param, Increment4D_ & dx) const {
   const int nstr = param.size();
   const char *cstr = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
@@ -578,7 +590,7 @@ void OoBump<MODEL>::getParam(const std::string & param, Increment4D_ & dx) const
   ug_->setAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_get_param_f90(keyOoBump_[jgrid], nstr, cstr, atlasFieldSet.get()->get());
+    bump_get_parameter_f90(keyOoBump_[jgrid], nstr, cstr, atlasFieldSet.get()->get());
   }
 #if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
@@ -589,7 +601,7 @@ void OoBump<MODEL>::getParam(const std::string & param, Increment4D_ & dx) const
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
-void OoBump<MODEL>::setParam(const std::string & param, const Increment4D_ & dx) const {
+void OoBump<MODEL>::setParameter(const std::string & param, const Increment4D_ & dx) const {
   const int nstr = param.size();
   const char *cstr = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
@@ -600,7 +612,7 @@ void OoBump<MODEL>::setParam(const std::string & param, const Increment4D_ & dx)
   ug_->toAtlas(atlasFieldSet.get());
 #endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    oobump_set_param_f90(keyOoBump_[jgrid], nstr, cstr, atlasFieldSet->get());
+    bump_set_parameter_f90(keyOoBump_[jgrid], nstr, cstr, atlasFieldSet->get());
   }
 }
 // -----------------------------------------------------------------------------
