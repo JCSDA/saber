@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------------------------------------------------------------
-# Bash script: bump_valgrind
+# Bash script: saber_valgrind
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT

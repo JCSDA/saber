@@ -74,81 +74,81 @@ endif()
 message(STATUS "SABER_TEST_OOPS:      " ${SABER_TEST_OOPS})
 
 # TIER 1
-file(STRINGS testlist/bump_test_1.txt saber_test_tmp )
+file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
 list(APPEND saber_test ${saber_test_tmp})
-file(STRINGS testlist/bump_data.txt saber_data_tmp )
+file(STRINGS testlist/saber_data.txt saber_data_tmp )
 list(APPEND saber_data ${saber_data_tmp})
-list(APPEND saber_data_tar bump_data.tar.gz)
-file(STRINGS testlist/bump_ref_1.txt saber_ref_tmp )
+list(APPEND saber_data_tar saber_data.tar.gz)
+file(STRINGS testlist/saber_ref_1.txt saber_ref_tmp )
 list(APPEND saber_ref ${saber_ref_tmp})
-list(APPEND saber_ref_tar bump_ref_1.tar.gz)
+list(APPEND saber_ref_tar saber_ref_1.tar.gz)
 if(${SABER_TEST_MPI})
-    file(STRINGS testlist/bump_data_mpi.txt saber_data_tmp )
+    file(STRINGS testlist/saber_data_mpi.txt saber_data_tmp )
     list(APPEND saber_data ${saber_data_tmp})
-    list(APPEND saber_data_tar bump_data_mpi.tar.gz)
-    file(STRINGS testlist/bump_ref_mpi_1.txt saber_ref_tmp )
+    list(APPEND saber_data_tar saber_data_mpi.tar.gz)
+    file(STRINGS testlist/saber_ref_mpi_1.txt saber_ref_tmp )
     list(APPEND saber_ref ${saber_ref_tmp})
-    list(APPEND saber_ref_tar bump_ref_mpi_1.tar.gz)
+    list(APPEND saber_ref_tar saber_ref_mpi_1.tar.gz)
 endif()
 if(${SABER_TEST_OMP})
-    file(STRINGS testlist/bump_data_omp.txt saber_data_tmp )
+    file(STRINGS testlist/saber_data_omp.txt saber_data_tmp )
     list(APPEND saber_data ${saber_data_tmp})
-    list(APPEND saber_data_tar bump_data_omp.tar.gz)
+    list(APPEND saber_data_tar saber_data_omp.tar.gz)
 endif()
 
 # TIER > 1
 if(${SABER_TEST_TIER} GREATER 1)
-    file(STRINGS testlist/bump_test_2.txt saber_test_tmp )
+    file(STRINGS testlist/saber_test_2.txt saber_test_tmp )
     list(APPEND saber_test ${saber_test_tmp})
-    file(STRINGS testlist/bump_ref_2.txt saber_ref_tmp )
+    file(STRINGS testlist/saber_ref_2.txt saber_ref_tmp )
     list(APPEND saber_ref ${saber_ref_tmp})
-    list(APPEND saber_ref_tar bump_ref_2.tar.gz)
+    list(APPEND saber_ref_tar saber_ref_2.tar.gz)
     if(${SABER_TEST_MPI})
-        file(STRINGS testlist/bump_ref_mpi_2.txt saber_ref_tmp )
+        file(STRINGS testlist/saber_ref_mpi_2.txt saber_ref_tmp )
         list(APPEND saber_ref ${saber_ref_tmp})
-        list(APPEND saber_ref_tar bump_ref_mpi_2.tar.gz)
+        list(APPEND saber_ref_tar saber_ref_mpi_2.tar.gz)
     endif()
 endif()
 
 # TIER > 2
 if(${SABER_TEST_TIER} GREATER 2)
-    file(STRINGS testlist/bump_test_3.txt saber_test_tmp )
+    file(STRINGS testlist/saber_test_3.txt saber_test_tmp )
     list(APPEND saber_test ${saber_test_tmp})
-    file(STRINGS testlist/bump_ref_3.txt saber_ref_tmp )
+    file(STRINGS testlist/saber_ref_3.txt saber_ref_tmp )
     list(APPEND saber_ref ${saber_ref_tmp})
-    list(APPEND saber_ref_tar bump_ref_3.tar.gz)
+    list(APPEND saber_ref_tar saber_ref_3.tar.gz)
     if(${SABER_TEST_MPI})
-        file(STRINGS testlist/bump_ref_mpi_3.txt saber_ref_tmp )
+        file(STRINGS testlist/saber_ref_mpi_3.txt saber_ref_tmp )
         list(APPEND saber_ref ${saber_ref_tmp})
-        list(APPEND saber_ref_tar bump_ref_mpi_3.tar.gz)
+        list(APPEND saber_ref_tar saber_ref_mpi_3.tar.gz)
     endif()
 endif()
 
 # Quad-core tests
 if(${SABER_TEST_QUAD})
-    file(STRINGS testlist/bump_test_quad.txt saber_test_quad_tmp )
+    file(STRINGS testlist/saber_test_quad.txt saber_test_quad_tmp )
     list(APPEND saber_test_quad ${saber_test_quad_tmp})
-    file(STRINGS testlist/bump_ref_quad.txt saber_ref_tmp )
+    file(STRINGS testlist/saber_ref_quad.txt saber_ref_tmp )
     list(APPEND saber_ref ${saber_ref_tmp})
-    list(APPEND saber_ref_tar bump_ref_quad.tar.gz)
+    list(APPEND saber_ref_tar saber_ref_quad.tar.gz)
 endif()
 
 # Model tests
 if(${SABER_TEST_MODEL})
-    file(STRINGS testlist/bump_test_model.txt saber_test_model_tmp )
+    file(STRINGS testlist/saber_test_model.txt saber_test_model_tmp )
     list(APPEND saber_test_model ${saber_test_model_tmp})
 endif()
 
 # OOPS tests
 if(${SABER_TEST_OOPS})
-    file(STRINGS testlist/oops_test.txt saber_test_oops_tmp )
+    file(STRINGS testlist/saber_test_oops.txt saber_test_oops_tmp )
     list(APPEND saber_test_oops ${saber_test_oops_tmp})
-    file(STRINGS testlist/oops_data.txt saber_data_tmp )
+    file(STRINGS testlist/saber_data_oops.txt saber_data_tmp )
     list(APPEND saber_data ${saber_data_tmp})
-    list(APPEND saber_data_tar oops_data.tar.gz)
-    file(STRINGS testlist/oops_ref.txt saber_ref_tmp )
+    list(APPEND saber_data_tar saber_data_oops.tar.gz)
+    file(STRINGS testlist/saber_ref_oops.txt saber_ref_tmp )
     list(APPEND saber_ref ${saber_ref_tmp})
-    list(APPEND saber_ref_tar oops_ref.tar.gz)
+    list(APPEND saber_ref_tar saber_ref_oops.tar.gz)
 endif()
 
 # Set download URL
@@ -262,16 +262,13 @@ endforeach()
 
 if(NOT ${METIS_FOUND})
     # Remove METIS tests
-    file(STRINGS testlist/bump_test_metis.txt saber_test_tmp )
+    file(STRINGS testlist/saber_test_metis.txt saber_test_tmp )
     list(REMOVE_ITEM saber_test ${saber_test_tmp})
     if(${SABER_TEST_QUAD})
-        file(STRINGS testlist/bump_test_metis.txt saber_test_quad_tmp )
+        file(STRINGS testlist/saber_test_metis.txt saber_test_quad_tmp )
         list(REMOVE_ITEM saber_test_quad ${saber_test_quad_tmp})
     endif()
 endif()
-
-# Function to add tests
-include(bump_add_test)
 
 # Mono-core tests
 set(mpi 1)
@@ -281,15 +278,29 @@ foreach(test ${saber_test})
                     INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                     OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-    bump_add_test(TESTNAME ${test}
-                  MPI      ${mpi}
-                  OMP      ${omp})
+    ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
+                     MPI          ${mpi}
+                     OMP          ${omp}
+                     COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                     ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
+                     DEPENDS      bump.x
+                     TEST_DEPENDS get_saber_data)
+ 
+    ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
+                     TYPE SCRIPT
+                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
+                     ARGS         ${test} ${mpi} ${omp}
+                     TEST_DEPENDS get_saber_ref
+                                  test_${test}_${mpi}-${omp}_run)
 
     if(${SABER_TEST_VALGRIND})
-        bump_add_test(TESTNAME ${test}
-                      MPI      ${mpi}
-                      OMP      ${omp}
-                      VALGRIND)
+        ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_valgrind
+                         MPI    ${mpi}
+                         OMP    ${omp}
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/valgrind.sh
+                         ARGS ${CMAKE_BINARY_DIR}/bin/bump.x testinput/${test}_${mpi}-${omp}.yaml testoutput
+                         DEPENDS bump.x
+                         TEST_DEPENDS get_saber_data)
     endif()
 endforeach()
 
@@ -302,9 +313,20 @@ if(${SABER_TEST_MPI})
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        bump_add_test(TESTNAME ${test}
-                      MPI      ${mpi}
-                      OMP      ${omp})
+        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
+                         MPI          ${mpi}
+                         OMP          ${omp}
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                         ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
+                         DEPENDS      bump.x
+                         TEST_DEPENDS get_saber_data)
+   
+        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
+                         TYPE SCRIPT
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
+                         ARGS         ${test} ${mpi} ${omp}
+                         TEST_DEPENDS get_saber_ref
+                                      test_${test}_${mpi}-${omp}_run)
     endforeach()
 endif()
 
@@ -317,9 +339,20 @@ if(${SABER_TEST_OMP})
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        bump_add_test(TESTNAME ${test}
-                      MPI      ${mpi}
-                      OMP      ${omp})
+        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
+                         MPI          ${mpi}
+                         OMP          ${omp}
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                         ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
+                         DEPENDS      bump.x
+                         TEST_DEPENDS get_saber_data)
+    
+        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
+                         TYPE SCRIPT
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
+                         ARGS         ${test} ${mpi} ${omp}
+                         TEST_DEPENDS get_saber_ref
+                                      test_${test}_${mpi}-${omp}_run)
     endforeach()
 endif()
 
@@ -332,24 +365,35 @@ if(${SABER_TEST_QUAD})
                         INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                         OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        bump_add_test(TESTNAME ${test}
-                      MPI      ${mpi}
-                      OMP      ${omp})
+        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
+                         MPI          ${mpi}
+                         OMP          ${omp}
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                         ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
+                         DEPENDS      bump.x
+                         TEST_DEPENDS get_saber_data)
+
+        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
+                         TYPE SCRIPT
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
+                         ARGS         ${test} ${mpi} ${omp}
+                         TEST_DEPENDS get_saber_ref
+                                      test_${test}_${mpi}-${omp}_run)
     endforeach()
 endif()
 
 # Specific compare (TIER > 1)
 if(${SABER_TEST_TIER} GREATER 1)
-    ecbuild_add_test(TARGET       compare_bump_nicas_mpicom_lsqrt_a-b_dirac
+    ecbuild_add_test(TARGET       test_bump_nicas_mpicom_lsqrt_a-b_dirac_compare
                      TYPE SCRIPT
-                     COMMAND      ${CMAKE_BINARY_DIR}/bin/bump_compare.sh
+                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                      ARGS         bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_b dirac
                      TEST_DEPENDS test_bump_nicas_mpicom_lsqrt_a_1-1_run
                                   test_bump_nicas_mpicom_lsqrt_b_1-1_run)
 
-    ecbuild_add_test(TARGET       compare_bump_nicas_mpicom_lsqrt_a-c_dirac
+    ecbuild_add_test(TARGET       test_bump_nicas_mpicom_lsqrt_a-c_dirac_compare
                      TYPE SCRIPT
-                     COMMAND      ${CMAKE_BINARY_DIR}/bin/bump_compare.sh
+                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
                      ARGS         bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_c dirac
                      TEST_DEPENDS test_bump_nicas_mpicom_lsqrt_a_1-1_run
                                   test_bump_nicas_mpicom_lsqrt_c_1-1_run)
@@ -417,7 +461,7 @@ if(${SABER_TEST_OOPS} AND ${ENABLE_OOPS_TOYMODELS})
     # Links
     ecbuild_add_test(TARGET test_qg_links
                      TYPE SCRIPT
-                     COMMAND ${CMAKE_BINARY_DIR}/bin/qg_links.sh
+                     COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_links.sh
                      TEST_DEPENDS test_qg_parameters_bump_cov
                                   test_qg_parameters_bump_hyb
                                   test_qg_parameters_bump_lct
