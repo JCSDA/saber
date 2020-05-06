@@ -15,6 +15,6 @@
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   saber::instantiateInterpolatorFactory();
-  test::InterpolationInterface tests();
+  test::InterpolationInterface tests;
   return run.execute(tests);
 }

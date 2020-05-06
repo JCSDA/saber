@@ -16,7 +16,7 @@
 #include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
 
-#include "oops/generic/Interpolator.h"
+#include "oops/base/InterpolatorBase.h"
 #include "oops/parallel/mpi/mpi.h"
 #include "oops/util/ObjectCounter.h"
 
@@ -28,7 +28,7 @@ namespace saber {
  *
  */
 
-class InterpolatorBump : public oops::Interpolator,
+class InterpolatorBump : public oops::InterpolatorBase,
                          private util::ObjectCounter<InterpolatorBump> {
  public:
   static const std::string classname() {return "saber::InterpolatorBump";}

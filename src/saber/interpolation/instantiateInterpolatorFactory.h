@@ -10,7 +10,7 @@
 
 #include "oops/generic/instantiateInterpolatorFactory.h"
 #include "oops/base/InterpolatorBase.h"
-#include "saber/oops/InterpolatorBump.h"
+#include "saber/interpolation/InterpolatorBump.h"
 
 namespace saber {
 
