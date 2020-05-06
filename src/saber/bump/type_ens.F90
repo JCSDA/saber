@@ -371,13 +371,22 @@ do ie=1,ens%ne
 end do
 m2 = m2*norm_m2
 m4 = m4*norm_m4
-kurt = m4/m2**2
+kurt = mpl%msv%valr
+do its=1,nam%nts
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (m2(ic0a,il0,iv,its)>0.0) kurt(ic0a,il0,iv,its) = m4(ic0a,il0,iv,its)/m2(ic0a,il0,iv,its)**2
+         end do
+      end do
+   end do
+end do               
 call io%fld_write(mpl,nam,geom,filename,'m2',m2)
 call io%fld_write(mpl,nam,geom,filename,'m4',m4)
 call io%fld_write(mpl,nam,geom,filename,'kurt',kurt)
 
 ! Allocation
-nloc = count(kurt>nam%gen_kurt_th)
+nloc = count(mpl%msv%isnot(kurt).and.(kurt>nam%gen_kurt_th))
 allocate(ic0_loc(nloc))
 allocate(il0_loc(nloc))
 allocate(iv_loc(nloc))
@@ -396,7 +405,7 @@ do its=1,nam%nts
    do iv=1,nam%nv
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (kurt(ic0a,il0,iv,its)>nam%gen_kurt_th) then
+            if (mpl%msv%isnot(kurt(ic0a,il0,iv,its)).and.(kurt(ic0a,il0,iv,its)>nam%gen_kurt_th)) then
                ! Update index
                iloc = iloc+1
 

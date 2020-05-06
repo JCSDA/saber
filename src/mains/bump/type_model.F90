@@ -73,10 +73,6 @@ type model_type
    integer,allocatable :: mgt_to_mg(:)     
 
    ! Ensembles
-   integer :: ens1_ne                             ! Ensemble 1 size
-   integer :: ens1_nsub                           ! Ensemble 1 sub-ensembles number
-   integer :: ens2_ne                             ! Ensemble 2 size
-   integer :: ens2_nsub                           ! Ensemble 2 sub-ensembles number
    type(member_field_type),allocatable :: ens1(:) ! Ensemble 1 members
    type(member_field_type),allocatable :: ens2(:) ! Ensemble 2 members
 
@@ -829,8 +825,6 @@ case ('ens1')
    ! Initialization
    ne = nam%ens1_ne
    nsub = nam%ens1_nsub
-   model%ens1_ne = nam%ens1_ne
-   model%ens1_nsub = nam%ens1_nsub
 
    ! Allocation
    if (ne>0) allocate(model%ens1(ne))
@@ -838,8 +832,6 @@ case ('ens2')
    ! Initialization
    ne = nam%ens2_ne
    nsub = nam%ens2_nsub
-   model%ens2_ne = nam%ens2_ne
-   model%ens2_nsub = nam%ens2_nsub
 
    ! Allocation
    if (ne>0) allocate(model%ens2(ne))
