@@ -1,7 +1,7 @@
 ! (C) Copyright 2019-2020 UCAR
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 !> \brief Bump Interpolation module
 !!
@@ -38,14 +38,14 @@ private
 
 public :: bump_interpolator
 public :: bump_interpolator_registry
-  
+
 integer, parameter :: max_string = 1024
 
 ! ------------------------------------------------------------------------------
 !!
 !! bint = shorthand for bump interpolator
 !!
-type bump_interpolator  
+type bump_interpolator
 private
   type(bump_type), public :: bump
 
@@ -53,14 +53,14 @@ private
   type(geom_type) :: outgeom    !< output grid - unstructured
   type(atlas_functionspace) :: in_funcspace  !< atlas functionspace for input grid
   type(atlas_functionspace) :: out_funcspace !< atlas functionspace for output grid
-    
+
   !> Number of points
   integer :: nc0b                !< Halo B size
   integer, public :: nlev        !< number of levels
 
-  integer, public :: nout         !< global number of output grid points    
+  integer, public :: nout         !< global number of output grid points
   integer, public :: nout_local   !< local number of output grid points
-    
+
   !> Interpolation data (operator)
   type(linop_type) :: h
 
@@ -70,9 +70,9 @@ private
 contains
   private
 
-  procedure, private :: driver => bint_driver    
+  procedure, private :: driver => bint_driver
 
-  procedure, public :: init => bint_init     
+  procedure, public :: init => bint_init
 
   procedure, public :: apply => bint_apply
   procedure, public :: apply_ad => bint_apply_ad
@@ -82,9 +82,9 @@ contains
 
   ! low-level apply methods
   procedure, private :: apply_interp, apply_interp_ad
-  
+
 end type bump_interpolator
-  
+
 ! ------------------------------------------------------------------------------
 !> Registry for bump_interpolator objects
 
@@ -94,8 +94,8 @@ end type bump_interpolator
 #include "oops/util/linkedList_i.f"
 
 !> Global registry
-type(registry_t) :: bump_interpolator_registry  
-  
+type(registry_t) :: bump_interpolator_registry
+
 ! ------------------------------------------------------------------------------
 
 contains
@@ -109,19 +109,19 @@ contains
 !! The input and output fields are atlas_FieldSet objects that are assumed
 !! to be created from atlas functionspaces.  So, they have the grid and
 !! mesh information built in.
-!! 
+!!
 !! \param[in] config = configuration
 !!
 !! \param[in] in_afs = This is the input grid, rendered as an atlas
 !! functionspace, so it includes information about the mesh (parallel
 !! connectivity) as well.
 !!
-!! \param[in] out_afs = This is the output grid, also represented as 
+!! \param[in] out_afs = This is the output grid, also represented as
 !! an altas_functionspace.
 !!
 !! \param[in] masks = This contains metadata needed for the interpolation.
 !!  It is rendered as an atlas FieldSet with the following named fields.
-!!  Each of these named fields is optional; if omitted default values will 
+!!  Each of these named fields is optional; if omitted default values will
 !!  be provided
 !! * area  : cell area
 !! * vunit : vertical unit
@@ -145,7 +145,7 @@ subroutine bint_init(self, config, comm, in_funcspace, out_funcspace, masks)
   integer, allocatable :: levels(:)
   character(kind=c_char,len=:), allocatable :: string_buffer
   character(len=max_string) :: msg
-  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_init " 
+  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_init "
 
   !--------------------------------------------------------------------------------
   ! set bump namelist parameters.
@@ -167,33 +167,33 @@ subroutine bint_init(self, config, comm, in_funcspace, out_funcspace, masks)
   msvali = -999
   msvalr = -999.0
   If (config%has("missingvalue_int")) &
-       call config%get_or_die("missingvalue_int",msvali)  
+       call config%get_or_die("missingvalue_int",msvali)
   If (config%has("missingvalue_real")) &
-       call config%get_or_die("missingvalue_real",msvalr)  
-  
+       call config%get_or_die("missingvalue_real",msvalr)
+
   ! save these for future use
   self%in_funcspace = in_funcspace
   self%out_funcspace = out_funcspace
-  
+
   !--------------------------------------------------------------------------------
   ! determine the number of vertical levels
 
   self%nlev = 1
-  If (config%has("nlevels")) call config%get_or_die("nlevels",self%nlev)  
+  If (config%has("nlevels")) call config%get_or_die("nlevels",self%nlev)
 
   self%bump%nam%nl = self%nlev
-  
+
   allocate(levels(1:self%nlev))
   if (config%has("levels")) then
-     call config%get_or_die("levels",levels)  
+     call config%get_or_die("levels",levels)
   else
      do j = 1, self%nlev
-        levels(j) = j 
+        levels(j) = j
      enddo
   endif
   self%bump%nam%levs(1:self%nlev) = levels
   deallocate(levels)
-  
+
   !--------------------------------------------------------------------------------
   ! Initialize BUMP
   ! ---------------
@@ -218,16 +218,16 @@ subroutine bint_init(self, config, comm, in_funcspace, out_funcspace, masks)
   call fckit_log%info('--- Initialize output grid')
 
   self%outgeom%nl0 = self%nlev
-  
+
   ! unpack output grid from output functionspace
   call self%outgeom%from_atlas(self%bump%mpl, out_funcspace)
   self%nout_local = size(self%outgeom%lon_mga)
-  
+
   !--------------------------------------------------------------------------------
   ! Run basic BUMP drivers
   ! The only thing here that may be needed is to possibly run the nicas driver
   ! after we get things to work, try commenting this out and see if it still works
-  call self%bump%run_drivers  
+  call self%bump%run_drivers
 
   ! Run interpolation driver
   call fckit_log%info('-------------------------------------------------------------------')
@@ -254,14 +254,14 @@ subroutine bint_init(self, config, comm, in_funcspace, out_funcspace, masks)
           "ERROR: Output grid has different number of levels than input grid!"
      call abor1_ftn(msg)
   endif
-          
+
   !--------------------------------------------------------------------------------
 
 end subroutine bint_init
 
 ! ------------------------------------------------------------------------------
 ! ------------------------------------------------------------------------------
-!> Initialize bump to perform interpolation.  
+!> Initialize bump to perform interpolation.
 !!
 !----------------------------------------------------------------------
 subroutine bint_driver(self,mpl,rng,nam,geom)
@@ -389,8 +389,8 @@ end subroutine bint_driver
 
 ! ------------------------------------------------------------------------------
 ! ------------------------------------------------------------------------------
-!> Apply interpolation 
-!! 
+!> Apply interpolation
+!!
 !! \param[in] instate = input fields represented as an atlas fieldset,
 !! created from a functionspace
 !!
@@ -398,7 +398,7 @@ end subroutine bint_driver
 !! If the fields that constitudte the fieldset are not already allocated by
 !! the caller, then they will be created and allocated by this method.
 !! So, the user can optionally pass this routine an empty output fieldset.
-!! 
+!!
 subroutine bint_apply(self, infields, outfields)
   class(bump_interpolator), intent(inout) :: self
   type(atlas_fieldset),intent(in)         :: infields
@@ -410,7 +410,7 @@ subroutine bint_apply(self, infields, outfields)
   real(kind_real), allocatable :: outfld(:,:)
   integer :: ifield
   character(len=max_string) :: msg, fieldname
-  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_apply " 
+  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_apply "
 
   ! allocate bump arrays
   allocate(infld_mga(self%bump%geom%nmga,self%nlev))
@@ -419,16 +419,16 @@ subroutine bint_apply(self, infields, outfields)
   if (self%bump%geom%nc0 /= self%bump%geom%nmg) then
      allocate(infld_c0a(self%bump%geom%nc0a, self%nlev))
   endif
-  
+
   do ifield = 1, infields%size()
 
      infield = infields%field(ifield)
      fieldname = infield%name()
-     
+
      !--------------------------------------------
      ! allocate output field if necessary
-     
-     if (.not. outfields%has_field(trim(fieldname))) then     
+
+     if (.not. outfields%has_field(trim(fieldname))) then
         outfield = self%out_funcspace%create_field(name=trim(fieldname), &
              kind=atlas_real(kind_real),levels=self%nlev)
      else
@@ -440,21 +440,21 @@ subroutine bint_apply(self, infields, outfields)
 
      ! atlas field to bump fld
      call field_to_fld(self%bump%mpl, infield, infld_mga)
-     
+
      if (self%bump%geom%same_grid) then
         call self%apply_interp(infld_mga,outfld)
      else
         ! Model grid to subset Sc0
         infld_c0a = 0.0_kind_real
         call self%bump%geom%copy_mga_to_c0a(self%bump%mpl,infld_mga,infld_c0a)
-     
+
         ! Apply interpolation
         call self%apply_interp(infld_c0a,outfld)
      end if
 
      ! bump fld to atlas field
      call fld_to_field(self%bump%mpl, outfld, outfield)
-     
+
      !--------------------------------------------
      ! Add output field to output fields
      if (.not. outfields%has_field(fieldname)) then
@@ -464,14 +464,14 @@ subroutine bint_apply(self, infields, outfields)
      ! release pointers
      call infield%final()
      call outfield%final()
-     
+
   enddo
 
   ! clean up
   if (allocated(infld_mga)) deallocate(infld_mga)
   if (allocated(infld_c0a)) deallocate(infld_c0a)
-  if (allocated(outfld)) deallocate(outfld)  
-  
+  if (allocated(outfld)) deallocate(outfld)
+
 end subroutine bint_apply
 
 !----------------------------------------------------------------------
@@ -490,10 +490,10 @@ subroutine apply_interp(self,infield,outfield)
   real(kind_real), allocatable :: infield_ext(:,:)
 
   allocate(infield_ext(self%nc0b,self%nlev))
-  
+
   ! Halo extension
-  call self%com%ext(self%bump%mpl, self%nlev, infield ,infield_ext)  
-  
+  call self%com%ext(self%bump%mpl, self%nlev, infield ,infield_ext)
+
   if (self%nout_local > 0) then
      ! Horizontal interpolation
      !$omp parallel do schedule(static) private(ilev)
@@ -504,7 +504,7 @@ subroutine apply_interp(self,infield,outfield)
   end if
 
   deallocate(infield_ext)
-  
+
 end subroutine apply_interp
 
 !----------------------------------------------------------------------
@@ -528,14 +528,14 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
   class(bump_interpolator), intent(inout) :: self
   type(atlas_fieldset), intent(in)    :: fields_outgrid
   type(atlas_fieldset), intent(inout) :: fields_ingrid
-  
+
   ! Local variables
   type(atlas_field) :: field_ingrid, field_outgrid
   real(kind_real), allocatable :: fld_ingrid_mga(:,:), fld_ingrid_c0a(:,:)
   real(kind_real), allocatable :: fld_outgrid(:,:)
   integer :: ifield
   character(len=max_string) :: msg, fieldname
-  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_apply_ad_field " 
+  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_apply_ad_field "
 
   ! allocate bump arrays
   allocate(fld_ingrid_mga(self%bump%geom%nmga,self%nlev))
@@ -552,19 +552,19 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
 
      !--------------------------------------------
      ! allocate output field if necessary
-     
-     if (.not. fields_ingrid%has_field(trim(fieldname))) then     
+
+     if (.not. fields_ingrid%has_field(trim(fieldname))) then
         field_ingrid = self%in_funcspace%create_field(name=trim(fieldname), &
              kind=atlas_real(kind_real),levels=self%nlev)
      else
         field_ingrid = fields_ingrid%field(name=trim(fieldname))
      endif
-     
+
      !--------------------------------------------
      ! compute interpolation adjoint
 
      ! atlas field to bump fld
-     call field_to_fld(self%bump%mpl, field_outgrid, fld_outgrid)  
+     call field_to_fld(self%bump%mpl, field_outgrid, fld_outgrid)
 
      if (self%bump%geom%nc0 == self%bump%geom%nmg) then
         ! Apply observation operator adjoint
@@ -578,7 +578,7 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
      end if
 
      ! bump fld to atlas field
-     call fld_to_field(self%bump%mpl, fld_ingrid_mga, field_ingrid)  
+     call fld_to_field(self%bump%mpl, fld_ingrid_mga, field_ingrid)
 
      !--------------------------------------------
 
@@ -597,9 +597,9 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
   if (allocated(fld_ingrid_mga)) deallocate(fld_ingrid_mga)
   if (allocated(fld_ingrid_c0a)) deallocate(fld_ingrid_c0a)
   if (allocated(fld_outgrid)) deallocate(fld_outgrid)
-  
+
 end subroutine bint_apply_ad
-  
+
 !----------------------------------------------------------------------
 !> Subroutine: apply_interp_ad
 !! Purpose: low-level routine to apply the adjoint of the interpolation operator
@@ -633,7 +633,7 @@ subroutine apply_interp_ad(self,fld_outgrid,fld_ingrid)
 
   ! Halo reduction
   call self%com%red(self%bump%mpl,self%nlev,fld_ingrid_ext,fld_ingrid)
-  
+
 end subroutine apply_interp_ad
 
 !----------------------------------------------------------------------
@@ -663,4 +663,3 @@ subroutine bint_delete(self)
 end subroutine bint_delete
 
 end module bump_interpolation_mod
-

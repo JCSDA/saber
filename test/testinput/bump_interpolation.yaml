@@ -1,6 +1,7 @@
 ---
 test_interpolation_interface:
     interpolator: "bump"
+    nlevels: 2
     missingvalue_int: -999
     missingvalue_real: -999.0
     NRandom: 24
