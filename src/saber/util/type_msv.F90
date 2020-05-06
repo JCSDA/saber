@@ -16,7 +16,6 @@ type msv_type
    integer :: vali         ! Missing value for integers
    real(kind_real) :: valr ! Missing value for reals
 contains
-   procedure :: init => msv_init
    procedure :: msv_isnoti_0d
    procedure :: msv_isnoti_1d
    procedure :: msv_isnoti_2d
@@ -99,25 +98,6 @@ private
 public :: msv_type
 
 contains
-
-!----------------------------------------------------------------------
-! Subroutine: msv_init
-! Purpose: initialize missing values object
-!----------------------------------------------------------------------
-subroutine msv_init(msv,msvali,msvalr)
-
-implicit none
-
-! Passed variables
-class(msv_type),intent(inout) :: msv ! Missing values
-integer,intent(in) :: msvali         ! Missing value for integers
-real(kind_real),intent(in) :: msvalr ! Missing value for reals
-
-! Copy missing values
-msv%vali = msvali
-msv%valr = msvalr
-
-end subroutine msv_init
 
 !----------------------------------------------------------------------
 ! Function: msv_isnoti_0d
