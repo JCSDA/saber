@@ -6,17 +6,15 @@
  *
  */
 
-#include "oops/generic/InterpolatorFactory.h"
 #include "oops/runs/Run.h"
-#include "saber/interpolation/InterpolatorFactory.h"
+#include "saber/interpolation/instantiateInterpolatorFactory.h"
 #include "test/generic/InterpolationInterface.h"
 
 #include<iostream>
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  auto ifactory = oops::interpolation::getFactoryInstance<saber::InterpolatorFactory>().create();
-  std::cout << "MSM factory created " << ifactory.classname() << std::endl;
-  test::InterpolationInterface tests(ifactory);
+  saber::instantiateInterpolatorFactory();
+  test::InterpolationInterface tests();
   return run.execute(tests);
 }

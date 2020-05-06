@@ -18,6 +18,7 @@
 
 #include "oops/generic/Interpolator.h"
 #include "oops/parallel/mpi/mpi.h"
+#include "oops/util/ObjectCounter.h"
 
 namespace saber {
 
@@ -30,7 +31,7 @@ namespace saber {
 class InterpolatorBump : public oops::Interpolator,
                          private util::ObjectCounter<InterpolatorBump> {
  public:
-  std::string classname() const override {return "saber::InterpolatorBump";}
+  static const std::string classname() {return "saber::InterpolatorBump";}
 
   InterpolatorBump(const eckit::Configuration &,
                    const atlas::FunctionSpace &,
