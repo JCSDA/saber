@@ -5,6 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <memory>
 #include <string>
 
 #include "atlas/field.h"
@@ -20,16 +21,14 @@ namespace saber {
 
 //-------------------------------------------------------------------------------------
 
-oops::Interpolator* InterpolatorFactory::Create(
+std::unique_ptr<oops::Interpolator> InterpolatorFactory::create(
                                    eckit::LocalConfiguration & config,
                                    const atlas::FunctionSpace & grid1,
                                    const atlas::FunctionSpace & grid2,
-                                   const atlas::field::FieldSetImpl * masks) {
+                                   const atlas::field::FieldSetImpl * masks)
+                                   const {
 if (config.getString("interpolator") == "bump") {
-    return new InterpolatorBump(config, grid1, grid2, masks);
-} else {
-    return oops::InterpolatorFactory::Create(config,grid1,grid2,masks);
-}
+    return std::unique_ptr<InterpolatorBump>(new InterpolatorBump(config, grid1, grid2, masks));
 }
 
 //-------------------------------------------------------------------------------------

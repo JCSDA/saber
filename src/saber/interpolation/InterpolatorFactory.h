@@ -8,11 +8,13 @@
 #ifndef SABER_INTERPOLATION_INTERPOLATORFACTORY_H_
 #define SABER_INTERPOLATION_INTERPOLATORFACTORY_H_
 
+#include<memory>
+
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 #include "eckit/config/LocalConfiguration.h"
 #include "oops/generic/Interpolator.h"
-#include "oops/generic/InterpolatorFactory.h"
+#include "oops/generic/InterpolatorFactoryBase.h"
 
 namespace saber {
 
@@ -27,15 +29,18 @@ namespace saber {
  *
  */
 
-class InterpolatorFactory : public oops::InterpolatorFactory {
+class InterpolatorFactory : public oops::InterpolatorFactoryBase {
  public:
+  std::string classname() const override {return "saber::InterpolatorFactory";}
+
   InterpolatorFactory() { }
   ~InterpolatorFactory() { }
 
-  static oops::Interpolator* Create(eckit::LocalConfiguration &,
+  std::unique_ptr<oops::Interpolator> create(eckit::LocalConfiguration &,
                               const atlas::FunctionSpace &,
                               const atlas::FunctionSpace &,
-                              const atlas::field::FieldSetImpl * = nullptr);
+                              const atlas::field::FieldSetImpl * = nullptr)
+                              const override;
 };
 
 // -----------------------------------------------------------------------------

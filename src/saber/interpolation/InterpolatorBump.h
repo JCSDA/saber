@@ -30,7 +30,7 @@ namespace saber {
 class InterpolatorBump : public oops::Interpolator,
                          private util::ObjectCounter<InterpolatorBump> {
  public:
-  static const std::string classname() {return "saber::InterpolatorBump";}
+  std::string classname() const override {return "saber::InterpolatorBump";}
 
   InterpolatorBump(const eckit::Configuration &,
                    const atlas::FunctionSpace &,
