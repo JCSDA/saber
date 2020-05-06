@@ -46,9 +46,6 @@ include( saber_extra_macros )
 # Dependencies
 ################################################################################
 
-# Boost
-include_directories( ${Boost_INCLUDE_DIR} )
-
 # OpenMP
 ecbuild_add_option( FEATURE OMP
                     DESCRIPTION "Support for OpenMP threaded parallelism"
