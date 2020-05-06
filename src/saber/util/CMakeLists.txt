@@ -16,3 +16,11 @@ type_timer.F90
 
 PARENT_SCOPE
 )
+
+set ( util_header_files
+
+linkedList_c.f
+linkedList_i.f
+
+PARENT_SCOPE
+)

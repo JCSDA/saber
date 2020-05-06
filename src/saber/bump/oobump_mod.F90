@@ -25,7 +25,6 @@ public :: oobump_create, oobump_delete, oobump_get_cv_size, oobump_add_member, o
         & oobump_randomize_nicas, oobump_get_param, oobump_set_param
 ! ------------------------------------------------------------------------------
 type oobump_type
-   integer :: separate_log !> Separate log files for BUMP
    type(bump_type) :: bump !> Instances of BUMP
 contains
    final :: dummy
@@ -34,7 +33,7 @@ end type oobump_type
 #define LISTED_TYPE oobump_type
 
 !> Linked list interface - defines registry_t type
-#include "oops/util/linkedList_i.f"
+#include "saber/util/linkedList_i.f"
 
 !> Global registry
 type(registry_t) :: oobump_registry
@@ -42,11 +41,10 @@ type(registry_t) :: oobump_registry
 contains
 !-------------------------------------------------------------------------------
 !> Linked list implementation
-#include "oops/util/linkedList_c.f"
+#include "saber/util/linkedList_c.f"
 !-------------------------------------------------------------------------------
 !> Create OOBUMP
-subroutine oobump_create(self, f_comm, afunctionspace, afieldset, fconf, fgrid, &
- & ens1_ne, ens1_nsub, ens2_ne, ens2_nsub)
+subroutine oobump_create(self, f_comm, afunctionspace, afieldset, fconf, fgrid)
 
 implicit none
 
@@ -57,23 +55,9 @@ type(atlas_functionspace), intent(in) :: afunctionspace !< ATLAS function space
 type(atlas_fieldset), intent(in) :: afieldset           !< ATLAS fieldset
 type(fckit_configuration),intent(in) :: fconf           !< FCKIT configuration
 type(fckit_configuration),intent(in) :: fgrid           !< FCKIT grid configuration
-integer, intent(in) :: ens1_ne                          !< First ensemble size
-integer, intent(in) :: ens1_nsub                        !< Number of sub-ensembles in the first ensemble
-integer, intent(in) :: ens2_ne                          !< Second ensemble size
-integer, intent(in) :: ens2_nsub                        !< Number of sub-ensembles in the second ensemble
 
 ! Local variables
-integer :: lunit, grid_index, iproc, ifileunit
 real(kind_real) :: msvalr
-integer(c_size_t),parameter :: csize = 1024
-character(len=1024) :: filename
-character(len=:),allocatable :: str
-character(kind=c_char,len=1024),allocatable :: char_array(:)
-
-! Initialization
-self%separate_log = 0
-lunit = -999
-if (fconf%has("separate_log")) call fconf%get_or_die("separate_log",self%separate_log)
 
 ! Initialize namelist
 call self%bump%nam%init(f_comm%size())
@@ -81,62 +65,14 @@ call self%bump%nam%init(f_comm%size())
 ! Read configuration
 call self%bump%nam%from_conf(fconf)
 
+! Read grid configuration
+call self%bump%nam%from_conf(fgrid)
+
 ! Get missing value
-msvalr = missing_value(1.0_kind_real)
-
-! Get grid index
-call fgrid%get_or_die("grid_index", grid_index)
-
-! Get number of levels
-call fgrid%get_or_die("nl", self%bump%nam%nl)
-
-! Get variables
-call fgrid%get_or_die("variables",csize,char_array)
-self%bump%nam%nv = size(char_array)
-self%bump%nam%varname(1:self%bump%nam%nv) = char_array(1:self%bump%nam%nv)
-
-! Get timeslots
-call fgrid%get_or_die("timeslots",csize,char_array)
-self%bump%nam%nts = size(char_array)
-self%bump%nam%timeslot(1:self%bump%nam%nts) = char_array(1:self%bump%nam%nts)
-
-! Get 2D level
-call fgrid%get_or_die("lev2d",str)
-self%bump%nam%lev2d = str
-
-! Add suffix for multiple grid case
-write(self%bump%nam%prefix,'(a,a,i2.2)') trim(self%bump%nam%prefix),'_',grid_index
-
-! Open separate log files for BUMP
-if (self%separate_log==1) then
-   ! Initialize MPI
-   call self%bump%mpl%init(f_comm)
-
-   do iproc=1,self%bump%mpl%nproc
-      if ((trim(self%bump%nam%verbosity)=='all').or.((trim(self%bump%nam%verbosity)=='main') &
-   & .and.(iproc==self%bump%mpl%rootproc))) then
-         if (iproc==self%bump%mpl%myproc) then
-            ! Find a free unit
-            call self%bump%mpl%newunit(lunit)
-
-            ! Open listing file
-            write(filename,'(a,i4.4,a)') trim(self%bump%nam%prefix)//'.',self%bump%mpl%myproc-1,'.out'
-            inquire(file=filename,number=ifileunit)
-            if (ifileunit<0) then
-               open(unit=lunit,file=trim(filename),action='write',status='replace')
-            else
-               close(ifileunit)
-               open(unit=lunit,file=trim(filename),action='write',status='replace')
-            end if
-         end if
-         call self%bump%mpl%f_comm%barrier
-      end if
-   end do
-end if
+call fconf%get_or_die('msvalr', msvalr)
 
 ! Setup BUMP
-call self%bump%setup(f_comm,afunctionspace,afieldset,ens1_ne=ens1_ne,ens1_nsub=ens1_nsub,ens2_ne=ens2_ne,ens2_nsub=ens2_nsub, &
- & lunit=lunit,msvalr=msvalr)
+call self%bump%setup(f_comm,afunctionspace,afieldset,msvalr=msvalr)
 
 end subroutine oobump_create
 !-------------------------------------------------------------------------------
@@ -147,9 +83,6 @@ implicit none
 
 ! Passed variables
 type(oobump_type), intent(inout) :: self !< OOBUMP
-
-! Close log files
-if ((self%separate_log==1).and.(self%bump%mpl%lunit/=-999)) close(unit=self%bump%mpl%lunit)
 
 ! Release memory      
 call self%bump%dealloc

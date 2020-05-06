@@ -208,7 +208,6 @@ contains
    procedure :: read_yaml => nam_read_yaml
    procedure :: bcast => nam_bcast
    procedure :: from_conf => nam_from_conf
-   procedure :: setup_internal => nam_setup_internal
    procedure :: check => nam_check
    procedure :: write => nam_write
 end type nam_type
@@ -232,12 +231,12 @@ class(nam_type),intent(out) :: nam ! Namelist
 integer,intent(in) :: nproc        ! Number of MPI task
 
 ! Local variable
-integer :: iv,ildwv
+integer :: il,iv,ildwv
 
 ! general_param default
 nam%datadir = '.'
 nam%prefix = ''
-nam%model = ''
+nam%model = 'online'
 nam%verbosity = 'all'
 nam%colorlog = .false.
 nam%default_seed = .true.
@@ -298,7 +297,9 @@ nam%check_apply_obsop = .false.
 
 ! model_param default
 nam%nl = 0
-nam%levs = 0
+do il=1,nlmax
+   nam%levs(il) = il
+end do
 nam%lev2d = 'first'
 nam%logpres = .false.
 nam%nv = 0
@@ -598,7 +599,7 @@ logical :: grid_output
 real(kind_real) :: grid_resol
 
 ! Local variables
-integer :: ildwv,lunit
+integer :: il,ildwv,lunit
 
 ! Namelist blocks
 namelist/general_param/datadir, &
@@ -760,7 +761,7 @@ if (mpl%main) then
    ! general_param default
    datadir = '.'
    prefix = ''
-   model = ''
+   model = 'online'
    verbosity = 'all'
    colorlog = .false.
    default_seed = .true.
@@ -821,7 +822,9 @@ if (mpl%main) then
 
    ! model_param default
    nl = 0
-   levs = 0
+   do il=1,nlmax
+      levs(il) = il
+   end do
    lev2d = 'first'
    logpres = .false.
    nv = 0
@@ -1663,38 +1666,6 @@ if (conf%has("grid_output")) call conf%get_or_die("grid_output",nam%grid_output)
 if (conf%has("grid_resol")) call conf%get_or_die("grid_resol",nam%grid_resol)
 
 end subroutine nam_from_conf
-
-!----------------------------------------------------------------------
-! Subroutine: nam_setup_internal
-! Purpose: setup namelist parameters internally (model 'online')
-!----------------------------------------------------------------------
-subroutine nam_setup_internal(nam,ens1_ne,ens1_nsub,ens2_ne,ens2_nsub)
-
-implicit none
-
-! Passed variable
-class(nam_type),intent(inout) :: nam                   ! Namelist
-integer,intent(in) :: ens1_ne                          ! Ensemble 1 size
-integer,intent(in) :: ens1_nsub                        ! Ensemble 1 number of sub-ensembles
-integer,intent(in) :: ens2_ne                          ! Ensemble 2 size
-integer,intent(in) :: ens2_nsub                        ! Ensemble 2 size of sub-ensembles
-
-! Local variables
-integer :: il
-
-if (trim(nam%model)=='') then
-   ! Set namelist values
-   nam%model = 'online'
-   do il=1,nam%nl
-      nam%levs(il) = il
-   end do
-   nam%ens1_ne = ens1_ne
-   nam%ens1_nsub = ens1_nsub
-   nam%ens2_ne = ens2_ne
-   nam%ens2_nsub = ens2_nsub
-end if
-
-end subroutine nam_setup_internal
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_check
