@@ -859,8 +859,8 @@ associate(ib=>lct_blk%ib)
 do ic1a=1,samp%nc1a
    do ic3=1,nam%nc3
       ic0 = samp%c1ac3_to_c0(ic1a,ic3)
-      lon(ic3,ic1a) = geom%lon(ic0)*rad2deg
-      lat(ic3,ic1a) = geom%lat(ic0)*rad2deg
+      lon(ic3,ic1a) = geom%lon_c0(ic0)*rad2deg
+      lat(ic3,ic1a) = geom%lat_c0(ic0)*rad2deg
    end do
 end do
 

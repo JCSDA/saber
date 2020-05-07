@@ -1850,8 +1850,8 @@ allocate(mask_c1a(nicas_blk%nc1a))
 allocate(rhs_c1a(nicas_blk%nc1a))
 
 ! Initialization
-lon_c1a = geom%lon(nicas_blk%c1_to_c0(nicas_blk%c1a_to_c1))
-lat_c1a = geom%lat(nicas_blk%c1_to_c0(nicas_blk%c1a_to_c1))
+lon_c1a = geom%lon_c0(nicas_blk%c1_to_c0(nicas_blk%c1a_to_c1))
+lat_c1a = geom%lat_c0(nicas_blk%c1_to_c0(nicas_blk%c1a_to_c1))
 
 ! Vertically dependent horizontal subsampling
 if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) then
@@ -2040,8 +2040,8 @@ ifmt = 0
 if (nicas_blk%verbosity) ifmt = 10
 
 ! Compute interpolation
-lon_c1 = geom%lon(nicas_blk%c1_to_c0)
-lat_c1 = geom%lat(nicas_blk%c1_to_c0)
+lon_c1 = geom%lon_c0(nicas_blk%c1_to_c0)
+lat_c1 = geom%lat_c0(nicas_blk%c1_to_c0)
 do il0i=1,geom%nl0i
    mask_c1 = geom%mask_c0(nicas_blk%c1_to_c0,il0i)
    write(nicas_blk%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
@@ -2188,7 +2188,6 @@ do il0i=1,geom%nl0i
    do i_s=1,nicas_blk%h(il0i)%n_s
       nicas_blk%h(il0i)%col(i_s) = nicas_blk%c1_to_c1b(nicas_blk%h(il0i)%col(i_s))
    end do
-   call nicas_blk%h(il0i)%reorder(mpl)
 end do
 do il1=1,nicas_blk%nl1
    nicas_blk%s(il1)%n_src = nicas_blk%nc1b
@@ -2197,7 +2196,6 @@ do il1=1,nicas_blk%nl1
       nicas_blk%s(il1)%row(i_s) = c1b_h_to_c1b(nicas_blk%s(il1)%row(i_s))
       nicas_blk%s(il1)%col(i_s) = nicas_blk%c1_to_c1b(nicas_blk%s(il1)%col(i_s))
    end do
-   call nicas_blk%s(il1)%reorder(mpl)
 end do
 
 ! Conversion from subset Sc1 to subgrid
@@ -2230,7 +2228,7 @@ do isa=1,nicas_blk%nsa
    ic0 = nicas_blk%c1_to_c0(ic1)
    il1 = nicas_blk%s_to_l1(is)
    il0 = nicas_blk%l1_to_l0(il1)
-   nicas_blk%sa_to_hash(isa) = lonlathash(geom%lon(ic0),geom%lat(ic0),il0)
+   nicas_blk%sa_to_hash(isa) = lonlathash(geom%lon_c0(ic0),geom%lat_c0(ic0),il0)
 end do
 
 ! Release memory
@@ -2321,9 +2319,6 @@ end do
 ! Conversion
 nicas_blk%v%col = nicas_blk%l0_to_l1(nicas_blk%v%col)
 
-! Reorder
-call nicas_blk%v%reorder(mpl)
-
 ! Release memory
 deallocate(nicas_blk%slev)
 
@@ -2367,8 +2362,8 @@ nicas_blk%anisotropic = cmat_blk%anisotropic
 call nicas_blk%tree%alloc(mpl,nicas_blk%nc1)
 
 ! Initialization
-lon_c1 = geom%lon(nicas_blk%c1_to_c0)
-lat_c1 = geom%lat(nicas_blk%c1_to_c0)
+lon_c1 = geom%lon_c0(nicas_blk%c1_to_c0)
+lat_c1 = geom%lat_c0(nicas_blk%c1_to_c0)
 call nicas_blk%tree%init(lon_c1,lat_c1)
 
 ! Find largest possible radius
@@ -2395,7 +2390,7 @@ else
       ic0 = nicas_blk%c1_to_c0(ic1)
 
       ! Count nearest neighbors
-      call nicas_blk%tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nicas_blk%rhmax,nn(ic1b))
+      call nicas_blk%tree%count_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nicas_blk%rhmax,nn(ic1b))
    end do
 
    ! Initialization
@@ -2413,7 +2408,7 @@ else
       allocate(nn_index(nn(ic1b)))
 
       ! Find nearest neighbors
-      call nicas_blk%tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn(ic1b),nn_index)
+      call nicas_blk%tree%find_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nn(ic1b),nn_index)
 
       ! Fill mask
       do j=1,nn(ic1b)
@@ -2798,8 +2793,8 @@ allocate(lat_c1(nicas_blk%nc1))
 call mesh%alloc(nicas_blk%nc1)
 
 ! Initialization
-lon_c1 = geom%lon(nicas_blk%c1_to_c0)
-lat_c1 = geom%lat(nicas_blk%c1_to_c0)
+lon_c1 = geom%lon_c0(nicas_blk%c1_to_c0)
+lat_c1 = geom%lat_c0(nicas_blk%c1_to_c0)
 call mesh%init(mpl,rng,lon_c1,lat_c1,.true.)
 
 ! Count neighbors
@@ -2860,7 +2855,7 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
       do il1=1,nicas_blk%nl1
          il0 = nicas_blk%l1_to_l0(il1)
          valid_arc(ic1,il1,net_nnb(ic1)) = .true.
-         if (nam%mask_check) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0), &
+         if (nam%mask_check) call geom%check_arc(mpl,il0,geom%lon_c0(ic0),geom%lat_c0(ic0),geom%lon_c0(jc0),geom%lat_c0(jc0), &
        & valid_arc(ic1,il1,net_nnb(ic1)))
       end do
    end do
@@ -2895,13 +2890,13 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
       if (geom%mask_hor_c0(jc0)) then
          if (nicas_blk%anisotropic) then
             ! Compute longitude/latitude differences
-            dx = geom%lon(jc0)-geom%lon(ic0)
-            dy = geom%lat(jc0)-geom%lat(ic0)
+            dx = geom%lon_c0(jc0)-geom%lon_c0(ic0)
+            dy = geom%lat_c0(jc0)-geom%lat_c0(ic0)
             call lonlatmod(dx,dy)
-            dx = dx*cos(0.5*(geom%lat(ic0)+geom%lat(jc0)))
+            dx = dx*cos(0.5*(geom%lat_c0(ic0)+geom%lat_c0(jc0)))
          else
             ! Compute horizontal distance
-            call sphere_dist(geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),dnb)
+            call sphere_dist(geom%lon_c0(ic0),geom%lat_c0(ic0),geom%lon_c0(jc0),geom%lat_c0(jc0),dnb)
          end if
 
          do il1=1,nicas_blk%nl1
@@ -3092,7 +3087,7 @@ do ic1bb=1,nicas_blk%nc1bb
    rr = sqrt(0.5*(maxval(nicas_blk%rh_c1(ic1,:))**2+nicas_blk%rhmax**2))
 
    ! Count nearest neighbors
-   call nicas_blk%tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),rr,nn(ic1bb))
+   call nicas_blk%tree%count_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),rr,nn(ic1bb))
 
    ! Update
    if (nicas_blk%verbosity) call mpl%prog_print(ic1bb)
@@ -3127,7 +3122,7 @@ do ic1bb=1,nicas_blk%nc1bb
    ic0 = nicas_blk%c1_to_c0(ic1)
 
    ! Find nearest neighbors
-   call nicas_blk%tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn(ic1bb),nn_index(1:nn(ic1bb),ic1bb), &
+   call nicas_blk%tree%find_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nn(ic1bb),nn_index(1:nn(ic1bb),ic1bb), &
  & nn_dist(1:nn(ic1bb),ic1bb))
 
    ! Check arc validity
@@ -3137,8 +3132,8 @@ do ic1bb=1,nicas_blk%nc1bb
       do il1=1,nicas_blk%nl1
          il0 = nicas_blk%l1_to_l0(il1)
          valid_arc(j,ic1bb,il1) = (geom%mask_c0(ic0,il0).and.geom%mask_c0(jc0,il0))
-         if (nam%mask_check.and.valid_arc(j,ic1bb,il1)) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0),geom%lon(jc0), &
-       & geom%lat(jc0),valid_arc(j,ic1bb,il1))
+         if (nam%mask_check.and.valid_arc(j,ic1bb,il1)) call geom%check_arc(mpl,il0,geom%lon_c0(ic0),geom%lat_c0(ic0), &
+       & geom%lon_c0(jc0),geom%lat_c0(jc0),valid_arc(j,ic1bb,il1))
       end do
    end do
 
@@ -3181,10 +3176,10 @@ do isbb=1,nicas_blk%nsbb
             if (valid_arc(j,ic1bb,il1).and.valid_arc(j,ic1bb,jl1)) then
                ! Normalized distance
                if (nicas_blk%anisotropic) then
-                  dx = geom%lon(jc0)-geom%lon(ic0)
-                  dy = geom%lat(jc0)-geom%lat(ic0)
+                  dx = geom%lon_c0(jc0)-geom%lon_c0(ic0)
+                  dy = geom%lat_c0(jc0)-geom%lat_c0(ic0)
                   call lonlatmod(dx,dy)
-                  dx = dx*cos(0.5*(geom%lat(ic0)+geom%lat(jc0)))
+                  dx = dx*cos(0.5*(geom%lat_c0(ic0)+geom%lat_c0(jc0)))
                   dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
                   H11 = 0.5*(nicas_blk%H11_c1(ic1,il1)+nicas_blk%H11_c1(jc1,jl1))
                   H22 = 0.5*(nicas_blk%H22_c1(ic1,il1)+nicas_blk%H22_c1(jc1,jl1))
@@ -3479,10 +3474,6 @@ if (.not.nicas_blk%smoother) then
       nicas_blk%c_nor%col(i_s) = nicas_blk%s_to_sc_nor(nicas_blk%c_nor%col(i_s))
    end do
 end if
-
-! Reorder convolutions
-call nicas_blk%c%reorder(mpl)
-if (.not.nicas_blk%smoother) call nicas_blk%c_nor%reorder(mpl)
 
 ! Setup communications
 s_to_proc = geom%c0_to_proc(nicas_blk%c1_to_c0(nicas_blk%s_to_c1))
@@ -3868,8 +3859,8 @@ if (nicas_blk%nsa>0) then
       il1 = nicas_blk%s_to_l1(is)
       ic0 = nicas_blk%c1_to_c0(ic1)
       il0 = nicas_blk%l1_to_l0(il1)
-      nicas_blk%lon_sa(isa) = geom%lon(ic0)*rad2deg
-      nicas_blk%lat_sa(isa) = geom%lat(ic0)*rad2deg
+      nicas_blk%lon_sa(isa) = geom%lon_c0(ic0)*rad2deg
+      nicas_blk%lat_sa(isa) = geom%lat_c0(ic0)*rad2deg
       nicas_blk%lev_sa(isa) = nam%levs(il0)
    end do
 end if
@@ -3880,8 +3871,8 @@ if (nicas_blk%nsb>0) then
       il1 = nicas_blk%s_to_l1(is)
       ic0 = nicas_blk%c1_to_c0(ic1)
       il0 = nicas_blk%l1_to_l0(il1)
-      nicas_blk%lon_sb(isb) = geom%lon(ic0)*rad2deg
-      nicas_blk%lat_sb(isb) = geom%lat(ic0)*rad2deg
+      nicas_blk%lon_sb(isb) = geom%lon_c0(ic0)*rad2deg
+      nicas_blk%lat_sb(isb) = geom%lat_c0(ic0)*rad2deg
       nicas_blk%lev_sb(isb) = nam%levs(il0)
    end do
 end if
@@ -3892,8 +3883,8 @@ if (nicas_blk%nsc>0) then
       il1 = nicas_blk%s_to_l1(is)
       ic0 = nicas_blk%c1_to_c0(ic1)
       il0 = nicas_blk%l1_to_l0(il1)
-      nicas_blk%lon_sc(isc) = geom%lon(ic0)*rad2deg
-      nicas_blk%lat_sc(isc) = geom%lat(ic0)*rad2deg
+      nicas_blk%lon_sc(isc) = geom%lon_c0(ic0)*rad2deg
+      nicas_blk%lat_sc(isc) = geom%lat_c0(ic0)*rad2deg
       nicas_blk%lev_sc(isc) = nam%levs(il0)
    end do
 end if
@@ -3944,11 +3935,11 @@ do its=2,nam%nts
       ! Direct
       write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
       call nicas_blk%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,adv_lon(:,il0),adv_lat(:,il0),geom%mask_c0(:,il0),geom%nc0a, &
-    & geom%lon(geom%c0a_to_c0),geom%lat(geom%c0a_to_c0),geom%mask_c0a(:,il0),ifmt)
+    & geom%lon_c0(geom%c0a_to_c0),geom%lat_c0(geom%c0a_to_c0),geom%mask_c0a(:,il0),ifmt)
 
       ! Inverse
       write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'dinv_',il0,'_',its
-      call nicas_blk%dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),geom%nc0a, &
+      call nicas_blk%dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon_c0,geom%lat_c0,geom%mask_c0(:,il0),geom%nc0a, &
     & cmat_blk%adv_lon(:,il0,its),cmat_blk%adv_lat(:,il0,its),geom%mask_c0a(:,il0),ifmt)
    end do
 end do
@@ -4015,14 +4006,12 @@ do its=2,nam%nts
       do i_s=1,nicas_blk%d(il0,its)%n_s
          nicas_blk%d(il0,its)%col(i_s) = c0_to_c0d(nicas_blk%d(il0,its)%col(i_s))
       end do
-      call nicas_blk%d(il0,its)%reorder(mpl)
 
       ! Inverse
       nicas_blk%dinv(il0,its)%n_src = nicas_blk%nc0dinv
       do i_s=1,nicas_blk%dinv(il0,its)%n_s
          nicas_blk%dinv(il0,its)%col(i_s) = c0_to_c0dinv(nicas_blk%dinv(il0,its)%col(i_s))
       end do
-      call nicas_blk%dinv(il0,its)%reorder(mpl)
    end do
 end do
 

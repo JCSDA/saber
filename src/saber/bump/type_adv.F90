@@ -242,8 +242,8 @@ integer :: il0,ic2a,ic2,ic0
 do ic2a=1,samp%nc2a
    ic2 = samp%c2a_to_c2(ic2a)
    ic0 = samp%c2_to_c0(ic2)
-   adv%lon_c2a(ic2a) = geom%lon(ic0)
-   adv%lat_c2a(ic2a) = geom%lat(ic0)
+   adv%lon_c2a(ic2a) = geom%lon_c0(ic0)
+   adv%lat_c2a(ic2a) = geom%lat_c0(ic0)
    call lonlat2xyz(mpl,adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%x_c2a(ic2a),adv%y_c2a(ic2a),adv%z_c2a(ic2a))
 end do
 do il0=1,geom%nl0
@@ -570,8 +570,8 @@ do its=2,nam%nts
                   jc0 = jc0_ra(jnmax,ic2a,il0)
 
                   ! Save advection
-                  adv%lon_c2a_raw(ic2a,il0,its) = geom%lon(jc0)
-                  adv%lat_c2a_raw(ic2a,il0,its) = geom%lat(jc0)
+                  adv%lon_c2a_raw(ic2a,il0,its) = geom%lon_c0(jc0)
+                  adv%lat_c2a_raw(ic2a,il0,its) = geom%lat_c0(jc0)
 
                   ! Compute distance
                   call sphere_dist(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%lon_c2a_raw(ic2a,il0,its), &
@@ -707,7 +707,7 @@ do its=2,nam%nts
          t = real(it-1,kind_real)/real(nt,kind_real)
 
          ! Compute interpolation
-         call h%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0), &
+         call h%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon_c0,geom%lat_c0,geom%mask_c0(:,il0), &
        & samp%nc2a,adv%lon_c2a_raw(:,il0,its),adv%lat_c2a_raw(:,il0,its),samp%mask_c2a(:,il0),0)
 
          ! Define halo W
@@ -1070,15 +1070,15 @@ call mpl%flush
 ! Initialization
 do ic0a=1,geom%nc0a
    ic0 = geom%c0a_to_c0(ic0a)
-   call lonlat2xyz(mpl,geom%lon(ic0),geom%lat(ic0),x_ori_c0a(ic0a),y_ori_c0a(ic0a),z_ori_c0a(ic0a))
+   call lonlat2xyz(mpl,geom%lon_c0(ic0),geom%lat_c0(ic0),x_ori_c0a(ic0a),y_ori_c0a(ic0a),z_ori_c0a(ic0a))
 end do
 
 ! Advection for timeslot 1
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
       ic0 = geom%c0a_to_c0(ic0a)
-      samp%adv_lon(ic0a,il0,1) = geom%lon(ic0)
-      samp%adv_lat(ic0a,il0,1) = geom%lat(ic0)
+      samp%adv_lon(ic0a,il0,1) = geom%lon_c0(ic0)
+      samp%adv_lat(ic0a,il0,1) = geom%lat_c0(ic0)
    end do
 end do
 
@@ -1120,7 +1120,7 @@ do its=2,nam%nts
       do ic0a=1,geom%nc0a
          if (geom%mask_c0a(ic0a,il0)) then
             ic0 = geom%c0a_to_c0(ic0a)
-            call reduce_arc(geom%lon(ic0),geom%lat(ic0),samp%adv_lon(ic0a,il0,its),samp%adv_lat(ic0a,il0,its), &
+            call reduce_arc(geom%lon_c0(ic0),geom%lat_c0(ic0),samp%adv_lon(ic0a,il0,its),samp%adv_lat(ic0a,il0,its), &
           & min(geom%mdist(ic0,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0))),reduced_dist)
          end if
       end do
@@ -1172,7 +1172,7 @@ call mpl%flush
 do its=2,nam%nts
    do il0=1,geom%nl0
       write(dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
-      call dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),geom%nc0a, &
+      call dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon_c0,geom%lat_c0,geom%mask_c0(:,il0),geom%nc0a, &
     & samp%adv_lon(:,il0,its),samp%adv_lat(:,il0,its),geom%mask_c0a(:,il0),10)
    end do
 end do
@@ -1221,7 +1221,6 @@ do its=2,nam%nts
       do i_s=1,dinv(il0,its)%n_s
          dinv(il0,its)%col(i_s) = c0_to_c0d(dinv(il0,its)%col(i_s))
       end do
-      call dinv(il0,its)%reorder(mpl)
    end do
 end do
 

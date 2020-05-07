@@ -23,7 +23,7 @@ use type_rng, only: rng_type
 implicit none
 
 logical,parameter :: check_data = .false.             ! Activate data check for all linear operations
-integer,parameter :: reorder_max = 1000000            ! Maximum size of linear operation to allow reordering
+integer,parameter :: linop_ntag = 3                   ! Number of communication steps to send/receive
 real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum interpolation coefficient
 
 ! Interpolation data derived type
@@ -58,7 +58,6 @@ contains
    procedure :: write => linop_write
    procedure :: receive => linop_receive
    procedure :: send => linop_send
-   procedure :: reorder => linop_reorder
    procedure :: apply => linop_apply
    procedure :: apply_ad => linop_apply_ad
    procedure :: apply_sym => linop_apply_sym
@@ -66,8 +65,6 @@ contains
    procedure :: gather => linop_gather
    procedure :: interp => linop_interp
 end type linop_type
-
-integer,parameter :: linop_ntag = 3 ! Number of communication steps to send/receive
 
 private
 public :: linop_type,linop_ntag
@@ -485,64 +482,6 @@ if (linop%n_s>0) then
 end if
 
 end subroutine linop_send
-
-!----------------------------------------------------------------------
-! Subroutine: linop_reorder
-! Purpose: reorder linear operator
-!----------------------------------------------------------------------
-subroutine linop_reorder(linop,mpl)
-
-implicit none
-
-! Passed variables
-class(linop_type),intent(inout) :: linop ! Linear operator
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-
-! Local variables
-integer :: row,i_s_s,i_s_e,n_s,i_s
-integer,allocatable :: order(:)
-
-if ((linop%n_s>0).and.(linop%n_s<reorder_max)) then
-   ! Sort with respect to row
-   allocate(order(linop%n_s))
-   call qsort(linop%n_s,linop%row,order)
-
-   ! Sort col and S
-   linop%col = linop%col(order)
-   if (linop%nvec>0) then
-      ! COMPILER_BUG: the following line requires "linop%Svec(:,:)=" instead of
-      !  "linop%Svec=" due to an intel19/debug compiler bug
-      linop%Svec(:,:) = linop%Svec(order,:)
-   else
-      linop%S = linop%S(order)
-   end if
-   deallocate(order)
-
-   ! Sort with respect to col for each row
-   row = minval(linop%row)
-   i_s_s = 1
-   i_s_e = mpl%msv%vali
-   do i_s=1,linop%n_s
-      if (linop%row(i_s)==row) then
-         i_s_e = i_s
-      else
-         n_s = i_s_e-i_s_s+1
-         allocate(order(n_s))
-         call qsort(n_s,linop%col(i_s_s:i_s_e),order)
-         order = order+i_s_s-1
-         if (linop%nvec>0) then
-            linop%Svec(i_s_s:i_s_e,:) = linop%Svec(order,:)
-         else
-            linop%S(i_s_s:i_s_e) = linop%S(order)
-         end if
-         deallocate(order)
-         i_s_s = i_s+1
-         row = linop%row(i_s)
-      end if
-   end do
-end if
-
-end subroutine linop_reorder
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_apply

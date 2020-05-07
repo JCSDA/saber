@@ -24,8 +24,8 @@ integer,parameter :: M = 0                            ! Number of implicit itera
 
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product,add,divide, &
-        & fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
+public :: lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
+        & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
 
@@ -84,7 +84,7 @@ lattmp = lat
 call lonlatmod(lontmp,lattmp)
 
 ! Hash value
-lonlathash = aint(abs(lontmp+pi)*1.0e6)+abs(lattmp+0.5*pi)*1.0e-1
+lonlathash = aint((lontmp+pi)*1.0e6)+(lattmp+0.5*pi)*1.0e-1
 if (present(il)) lonlathash = lonlathash+real(il*1e7,kind_real)
 
 end function lonlathash

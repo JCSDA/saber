@@ -274,7 +274,7 @@ call mpl%flush
 obsop%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,geom%mask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs, &
+call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon_c0,geom%lat_c0,geom%mask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs, &
  & maskobsa,10)
 
 ! Define halo B
@@ -317,7 +317,6 @@ obsop%h%n_src = obsop%nc0b
 do i_s=1,obsop%h%n_s
    obsop%h%col(i_s) = c0_to_c0b(obsop%h%col(i_s))
 end do
-call obsop%h%reorder(mpl)
 
 ! Setup communications
 call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
@@ -521,8 +520,8 @@ character(len=1024),parameter :: subr = 'obsop_test_accuracy'
 ! Initialization
 do ic0a=1,geom%nc0a
    ic0 = geom%c0a_to_c0(ic0a)
-   lon(ic0a,:) = geom%lon(ic0)
-   lat(ic0a,:) = geom%lat(ic0)
+   lon(ic0a,:) = geom%lon_c0(ic0)
+   lat(ic0a,:) = geom%lat_c0(ic0)
 end do
 
 ! Apply obsop

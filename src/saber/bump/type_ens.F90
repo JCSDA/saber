@@ -571,8 +571,8 @@ do its=1,nam%nts
    call mpl%f_comm%broadcast(il0,iproc(1)-1)
 
    ! Save results
-   londir(its) = geom%lon(ic0)
-   latdir(its) = geom%lat(ic0)
+   londir(its) = geom%lon_c0(ic0)
+   latdir(its) = geom%lat_c0(ic0)
 
    ! Print results
    write(mpl%info,'(a13,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(its))//' ~> lon / lat / lev / val: ', &
@@ -613,8 +613,8 @@ do its=2,nam%nts
    call mpl%f_comm%broadcast(il0,iproc(1)-1)
 
    ! Save results
-   londir_tracker(its) = geom%lon(ic0)
-   latdir_tracker(its) = geom%lat(ic0)
+   londir_tracker(its) = geom%lon_c0(ic0)
+   latdir_tracker(its) = geom%lat_c0(ic0)
 
    ! Print results
    write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(its))//' ~> lon / lat / lev / val: ', &
@@ -660,7 +660,7 @@ if (present(fld_uv)) then
 
       do it=1,nt
          ! Compute interpolation
-         call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,geom%il0dir(1)), &
+         call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0,geom%lon_c0,geom%lat_c0,geom%mask_c0(:,geom%il0dir(1)), &
        & 1,londir_wind(its:its),latdir_wind(its:its),(/.true./),13)
 
          ! Allocation

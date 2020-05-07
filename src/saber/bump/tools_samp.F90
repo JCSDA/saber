@@ -410,7 +410,7 @@ else
          sam1_glb_eff = sam1_glb
       end if
 
-      ! Define points order
+      ! Define points order TODO: pass hash value as argument
       do is1_glb=1,ns1_glb_eff
          list(is1_glb) = lonlathash(lon1_glb_eff(is1_glb),lat1_glb_eff(is1_glb))
       end do

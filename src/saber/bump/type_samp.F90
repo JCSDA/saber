@@ -710,8 +710,8 @@ if (samp%sc3) then
    do ic1a=1,samp%nc1a
       ic1 = samp%c1a_to_c1(ic1a)
       ic0 = samp%c1_to_c0(ic1)
-      lon_ori(ic1a) = geom%lon(ic0)*rad2deg
-      lat_ori(ic1a) = geom%lat(ic0)*rad2deg
+      lon_ori(ic1a) = geom%lon_c0(ic0)*rad2deg
+      lat_ori(ic1a) = geom%lat_c0(ic0)*rad2deg
    end do
 
    ! Distant points
@@ -722,8 +722,8 @@ if (samp%sc3) then
          do ic1a=1,samp%nc1a
             if (samp%c1ac3l0_log(ic1a,jc3,il0)) then
                ic0 = samp%c1ac3_to_c0(ic1a,jc3)
-               lon(ic1a,jc3,il0) = geom%lon(ic0)*rad2deg
-               lat(ic1a,jc3,il0) = geom%lat(ic0)*rad2deg
+               lon(ic1a,jc3,il0) = geom%lon_c0(ic0)*rad2deg
+               lat(ic1a,jc3,il0) = geom%lat_c0(ic0)*rad2deg
             end if
          end do
       end do
@@ -740,8 +740,8 @@ if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
    do ic2a=1,samp%nc2a
       ic2 = samp%c2a_to_c2(ic2a)
       ic0 = samp%c2_to_c0(ic2)
-      lon_local_ori(ic2a) = geom%lon(ic0)*rad2deg
-      lat_local_ori(ic2a) = geom%lat(ic0)*rad2deg
+      lon_local_ori(ic2a) = geom%lon_c0(ic0)*rad2deg
+      lat_local_ori(ic2a) = geom%lat_c0(ic0)*rad2deg
    end do
 
    ! Distant points
@@ -754,8 +754,8 @@ if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
          if (samp%local_mask(jc1,ic2a)) then
             j = j+1
             jc0 = samp%c1_to_c0(jc1)
-            lon_local(j,ic2a) = geom%lon(jc0)*rad2deg
-            lat_local(j,ic2a) = geom%lat(jc0)*rad2deg
+            lon_local(j,ic2a) = geom%lon_c0(jc0)*rad2deg
+            lat_local(j,ic2a) = geom%lat_c0(jc0)*rad2deg
          end if
       end do
    end do
@@ -771,8 +771,8 @@ if (trim(samp%name)=='vbal') then
    do ic2b=1,samp%nc2b
       ic2 = samp%c2b_to_c2(ic2b)
       ic0 = samp%c2_to_c0(ic2)
-      lon_vbal_ori(ic2b) = geom%lon(ic0)*rad2deg
-      lat_vbal_ori(ic2b) = geom%lat(ic0)*rad2deg
+      lon_vbal_ori(ic2b) = geom%lon_c0(ic0)*rad2deg
+      lat_vbal_ori(ic2b) = geom%lat_c0(ic0)*rad2deg
    end do
 
    ! Distant points
@@ -785,8 +785,8 @@ if (trim(samp%name)=='vbal') then
          if (samp%vbal_mask(jc1,ic2b)) then
             j = j+1
             jc0 = samp%c1_to_c0(jc1)
-            lon_vbal(j,ic2b) = geom%lon(jc0)*rad2deg
-            lat_vbal(j,ic2b) = geom%lat(jc0)*rad2deg
+            lon_vbal(j,ic2b) = geom%lon_c0(jc0)*rad2deg
+            lat_vbal(j,ic2b) = geom%lat_c0(jc0)*rad2deg
          end if
       end do
    end do
@@ -891,14 +891,14 @@ if (nam%nldwv>0) then
 
       ! Print results
       write(mpl%info,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
-    & geom%lon(samp%ldwv_to_c0(ildwv))*rad2deg,' / ',geom%lat(samp%ldwv_to_c0(ildwv))*rad2deg
+    & geom%lon_c0(samp%ldwv_to_c0(ildwv))*rad2deg,' / ',geom%lat_c0(samp%ldwv_to_c0(ildwv))*rad2deg
       call mpl%flush
 
       ! Check redundancy
       ic0 = samp%ldwv_to_c0(ildwv)
       do jldwv=1,ildwv-1
          jc0 = samp%ldwv_to_c0(jldwv)
-         if (eq(geom%lon(ic0),geom%lon(jc0)).and.eq(geom%lat(ic0),geom%lat(jc0))) &
+         if (eq(geom%lon_c0(ic0),geom%lon_c0(jc0)).and.eq(geom%lat_c0(ic0),geom%lat_c0(jc0))) &
        & call mpl%abort(subr,'profiles'//trim(nam%name_ldwv(ildwv))//' and '//trim(nam%name_ldwv(jldwv))// &
        & 'are located grid point')
       end do
@@ -1101,7 +1101,7 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
       if (latmin>=latmax) call mpl%abort(subr,'latmin should be lower than latmax')
       do ic0a=1,geom%nc0a
          ic0 = geom%c0a_to_c0(ic0a)
-         valid = (geom%lat(ic0)>=real(latmin,kind_real)*deg2rad).and.(geom%lat(ic0)<=real(latmax,kind_real)*deg2rad)
+         valid = (geom%lat_c0(ic0)>=real(latmin,kind_real)*deg2rad).and.(geom%lat_c0(ic0)<=real(latmax,kind_real)*deg2rad)
          do il0=1,geom%nl0
             samp%mask_c0a(ic0a,il0) = samp%mask_c0a(ic0a,il0).and.valid
          end do
@@ -1114,7 +1114,7 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
          ic0 = geom%c0a_to_c0(ic0a)
          valid = .false.
          do ildwv=1,nam%nldwv
-            call sphere_dist(nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),geom%lon(ic0),geom%lat(ic0),dist)
+            call sphere_dist(nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),geom%lon_c0(ic0),geom%lat_c0(ic0),dist)
             valid = valid.or.(dist<1.1*nam%local_rad)
          end do
          do il0=1,geom%nl0
@@ -1444,7 +1444,7 @@ if (trim(samp%name)=='hdiag') then
                   if (mpl%msv%isnot(samp%c1_to_c0(ic1))) then
                      ! Compute the distance
                      ic0 = samp%c1_to_c0(ic1)
-                     call sphere_dist(geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),d)
+                     call sphere_dist(geom%lon_c0(ic0),geom%lat_c0(ic0),geom%lon_c0(jc0),geom%lat_c0(jc0),d)
 
                      ! Find the class (dichotomy method)
                      if ((d>0.0).and.(d<(real(nam%nc3,kind_real)-0.5)*nam%dc)) then
@@ -1508,7 +1508,7 @@ elseif (trim(samp%name)=='lct') then
       ! Check location validity
       if (mpl%msv%isnot(samp%c1_to_c0(ic1))) then
          ! Find neighbors
-         call geom%tree%find_nearest_neighbors(geom%lon(samp%c1_to_c0(ic1)),geom%lat(samp%c1_to_c0(ic1)), &
+         call geom%tree%find_nearest_neighbors(geom%lon_c0(samp%c1_to_c0(ic1)),geom%lat_c0(samp%c1_to_c0(ic1)), &
        & nam%nc3,nn_index,nn_dist)
 
          ! Copy neighbor index
@@ -1587,7 +1587,8 @@ if (samp%sc3) then
             if (valid) valid = samp%mask_c0(ic0,il0).and.samp%mask_c0(jc0,il0)
 
             ! Check mask boundaries
-            if (valid.and.nam%mask_check) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),valid)
+            if (valid.and.nam%mask_check) call geom%check_arc(mpl,il0,geom%lon_c0(ic0),geom%lat_c0(ic0),geom%lon_c0(jc0), &
+          & geom%lat_c0(jc0),valid)
 
             ! Copy validity
             samp%c1ac3l0_log(ic1a,jc3,il0) = valid
@@ -1634,8 +1635,8 @@ if (samp%new_sampling) then
    ! Define subsampling
    write(mpl%info,'(a7,a)') '','Define subsampling:'
    call mpl%flush(.false.)
-   lon_c1a = geom%lon(samp%c1_to_c0(samp%c1a_to_c1))
-   lat_c1a = geom%lat(samp%c1_to_c0(samp%c1a_to_c1))
+   lon_c1a = geom%lon_c0(samp%c1_to_c0(samp%c1a_to_c1))
+   lat_c1a = geom%lat_c0(samp%c1_to_c0(samp%c1a_to_c1))
    mask_c1a = any(samp%c1l0_log(samp%c1a_to_c1,:),dim=2)
    rh_c1a = 1.0
    do ildwv=1,nam%nldwv
@@ -1671,8 +1672,8 @@ allocate(lon_c2(nam%nc2))
 allocate(lat_c2(nam%nc2))
 
 ! Initialization
-lon_c2 = geom%lon(samp%c2_to_c0)
-lat_c2 = geom%lat(samp%c2_to_c0)
+lon_c2 = geom%lon_c0(samp%c2_to_c0)
+lat_c2 = geom%lat_c0(samp%c2_to_c0)
 
 if (nam%adv_diag) then
    ! Initialization
@@ -1719,8 +1720,8 @@ allocate(samp%lcheck_c2a(nam%nc2))
 allocate(samp%h(geom%nl0i))
 
 ! Compute interpolation
-lon_c2 = geom%lon(samp%c2_to_c0)
-lat_c2 = geom%lat(samp%c2_to_c0)
+lon_c2 = geom%lon_c0(samp%c2_to_c0)
+lat_c2 = geom%lat_c0(samp%c2_to_c0)
 do il0i=1,geom%nl0i
    write(samp%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
    call samp%h(il0i)%interp(mpl,rng,nam,geom,il0i,nam%nc2,lon_c2,lat_c2,samp%mask_c2(:,il0i),geom%nc0a, &
@@ -1780,13 +1781,12 @@ do ic2a=1,samp%nc2a
    c2a_to_c2b(ic2a) = ic2b
 end do
 
-! Local interpolation source
 do il0i=1,geom%nl0i
+   ! Local interpolation source
    samp%h(il0i)%n_src = samp%nc2b
    do i_s=1,samp%h(il0i)%n_s
       samp%h(il0i)%col(i_s) = c2_to_c2b(samp%h(il0i)%col(i_s))
    end do
-   call samp%h(il0i)%reorder(mpl)
 end do
 
 ! MPI splitting on subset Sc2
@@ -1821,7 +1821,7 @@ call tree%init(lon_c2,lat_c2)
 do ic2a=1,samp%nc2a
    ic2 = samp%c2a_to_c2(ic2a)
    ic0 = samp%c2_to_c0(ic2)
-   call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nam%nc2,samp%nn_c2a_index(:,ic2a),samp%nn_c2a_dist(:,ic2a))
+   call tree%find_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nam%nc2,samp%nn_c2a_index(:,ic2a),samp%nn_c2a_dist(:,ic2a))
 end do
 
 ! Release memory
@@ -1891,7 +1891,7 @@ if ((trim(samp%name)=='hdiag').and.nam%adv_diag) then
             mask_c1a(ic1a) = samp%c1l0_log(ic1,il0)
          end do
          write(samp%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
-         call samp%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),samp%nc1a, &
+         call samp%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon_c0,geom%lat_c0,geom%mask_c0(:,il0),samp%nc1a, &
        & lon_c1a,lat_c1a,mask_c1a,10)
       end do
    end do
@@ -1955,7 +1955,6 @@ if ((trim(samp%name)=='hdiag').and.nam%adv_diag) then
          do i_s=1,samp%d(il0,its)%n_s
             samp%d(il0,its)%col(i_s) = samp%c0_to_c0c(samp%d(il0,its)%col(i_s))
          end do
-         call samp%d(il0,its)%reorder(mpl)
       end do
    end do
 end if
@@ -2003,8 +2002,8 @@ allocate(samp%local_mask(nam%nc1,samp%nc2a))
 
 ! Initialization
 mask_c1 = any(samp%c1l0_log,dim=2)
-lon_c1 = geom%lon(samp%c1_to_c0)
-lat_c1 = geom%lat(samp%c1_to_c0)
+lon_c1 = geom%lon_c0(samp%c1_to_c0)
+lat_c1 = geom%lat_c0(samp%c1_to_c0)
 samp%local_mask = .false.
 lcheck_c1d = samp%lcheck_c1a
 
@@ -2022,13 +2021,13 @@ do ic2a=1,samp%nc2a
    ic0 = samp%c2_to_c0(ic2)
 
    ! Count nearest neighbors
-   call tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nam%local_rad,nn)
+   call tree%count_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nam%local_rad,nn)
 
    ! Allocation
    allocate(nn_index(nn))
 
    ! Find nearest neighbors
-   call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn,nn_index)
+   call tree%find_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nn,nn_index)
 
    ! Update masks
    samp%local_mask(ic1,ic2a) = .true.
@@ -2147,8 +2146,8 @@ allocate(samp%vbal_mask(nam%nc1,samp%nc2b))
 
 ! Initialization
 mask_c1 = any(samp%c1l0_log,dim=2)
-lon_c1 = geom%lon(samp%c1_to_c0)
-lat_c1 = geom%lat(samp%c1_to_c0)
+lon_c1 = geom%lon_c0(samp%c1_to_c0)
+lat_c1 = geom%lat_c0(samp%c1_to_c0)
 samp%vbal_mask = .false.
 lcheck_c1e = samp%lcheck_c1a
 
@@ -2171,13 +2170,13 @@ do ic2b=1,samp%nc2b
 
    if (nam%vbal_rad>0.0) then
       ! Count nearest neighbors
-      call tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nam%vbal_rad,nn)
+      call tree%count_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nam%vbal_rad,nn)
 
       ! Allocation
       allocate(nn_index(nn))
 
       ! Find nearest neighbors
-      call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn,nn_index)
+      call tree%find_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nn,nn_index)
 
       ! Update masks
       do i=1,nn
@@ -2192,7 +2191,7 @@ do ic2b=1,samp%nc2b
       ! Update masks
       do jc1=1,nam%nc1
          jc0 = samp%c1_to_c0(jc1)
-         if (abs(geom%lat(ic0)-geom%lat(jc0))<nam%vbal_dlat) then
+         if (abs(geom%lat_c0(ic0)-geom%lat_c0(jc0))<nam%vbal_dlat) then
             samp%vbal_mask(jc1,ic2b) = .true.
             lcheck_c1e(jc1) = .true.
          end if

@@ -49,9 +49,10 @@ type geom_type
    type(atlas_functionspace) :: afunctionspace_mg ! ATLAS function space of model grid
 
    ! Basic geometry data
-   real(kind_real),allocatable :: lon(:)          ! Longitudes on subset Sc0, global
+   real(kind_real),allocatable :: hash_c0(:)      ! Longitudes/latitudes hash on subset Sc0, global
+   real(kind_real),allocatable :: lon_c0(:)       ! Longitudes on subset Sc0, global
    real(kind_real),allocatable :: lon_c0a(:)      ! Longitudes on subset Sc0, halo A
-   real(kind_real),allocatable :: lat(:)          ! Latitudes on subset Sc0, global
+   real(kind_real),allocatable :: lat_c0(:)       ! Latitudes on subset Sc0, global
    real(kind_real),allocatable :: lat_c0a(:)      ! Latitudes on subset Sc0, halo A
    real(kind_real),allocatable :: area(:)         ! Domain area
    real(kind_real),allocatable :: vunit_c0(:,:)   ! Vertical unit on subset Sc0, global
@@ -143,9 +144,10 @@ if (allocated(geom%area_mga)) deallocate(geom%area_mga)
 if (allocated(geom%vunit_mga)) deallocate(geom%vunit_mga)
 if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
 if (allocated(geom%smask_mga)) deallocate(geom%smask_mga)
-if (allocated(geom%lon)) deallocate(geom%lon)
+if (allocated(geom%hash_c0)) deallocate(geom%hash_c0)
+if (allocated(geom%lon_c0)) deallocate(geom%lon_c0)
 if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
-if (allocated(geom%lat)) deallocate(geom%lat)
+if (allocated(geom%lat_c0)) deallocate(geom%lat_c0)
 if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
 if (allocated(geom%area)) deallocate(geom%area)
 if (allocated(geom%vunit_c0)) deallocate(geom%vunit_c0)
@@ -212,7 +214,7 @@ type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset
 ! Local variables
 integer :: ic0,jc0,kc0,i,j,k,ic0a,jc3,il0,il0i,offset,iproc,img,imga,iend,ibnda,nn_index(1),nc0own,ic0own
 integer,allocatable :: proc_to_nmga(:),mg_to_mga(:),mga_to_mg(:),c0_to_mg(:),redundant(:),mg_to_c0(:),mga_to_c0(:),mg_to_proc(:)
-integer,allocatable :: c0own_to_mga(:),order(:),order_inv(:),bnda_to_c0(:,:)
+integer,allocatable :: c0own_to_mga(:),order(:),bnda_to_c0(:,:)
 real(kind_real) :: lat_arc(2),lon_arc(2),xbnda(2),ybnda(2),zbnda(2)
 real(kind_real),allocatable :: sbuf(:),rbuf(:),lon_mg(:),lat_mg(:),area_mg(:),vunit_mg(:,:),list(:)
 logical :: same_mask,init,imask,jmask,kmask
@@ -398,15 +400,15 @@ if (mpl%main) then
    end do
 
    ! Allocation
-   allocate(geom%lon(geom%nc0))
-   allocate(geom%lat(geom%nc0))
+   allocate(geom%lon_c0(geom%nc0))
+   allocate(geom%lat_c0(geom%nc0))
    allocate(geom%area(geom%nl0))
    allocate(geom%vunit_c0(geom%nc0,geom%nl0))
    allocate(geom%mask_c0(geom%nc0,geom%nl0))
 
    ! Remove redundant points
-   geom%lon = lon_mg(c0_to_mg)
-   geom%lat = lat_mg(c0_to_mg)
+   geom%lon_c0 = lon_mg(c0_to_mg)
+   geom%lat_c0 = lat_mg(c0_to_mg)
    do il0=1,geom%nl0
       geom%area(il0) = sum(area_mg(c0_to_mg),gmask_mg(c0_to_mg,il0))/req**2
       geom%vunit_c0(:,il0) = vunit_mg(c0_to_mg,il0)
@@ -432,8 +434,8 @@ if (.not.mpl%main) then
    ! Allocation
    allocate(mg_to_c0(geom%nmg))
    allocate(c0_to_mg(geom%nc0))
-   allocate(geom%lon(geom%nc0))
-   allocate(geom%lat(geom%nc0))
+   allocate(geom%lon_c0(geom%nc0))
+   allocate(geom%lat_c0(geom%nc0))
    allocate(geom%area(geom%nl0))
    allocate(geom%vunit_c0(geom%nc0,geom%nl0))
    allocate(geom%mask_c0(geom%nc0,geom%nl0))
@@ -442,8 +444,8 @@ end if
 ! Broadcast
 call mpl%f_comm%broadcast(mg_to_c0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(c0_to_mg,mpl%rootproc-1)
-call mpl%f_comm%broadcast(geom%lon,mpl%rootproc-1)
-call mpl%f_comm%broadcast(geom%lat,mpl%rootproc-1)
+call mpl%f_comm%broadcast(geom%lon_c0,mpl%rootproc-1)
+call mpl%f_comm%broadcast(geom%lat_c0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(geom%area,mpl%rootproc-1)
 call mpl%f_comm%broadcast(geom%vunit_c0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(geom%mask_c0,mpl%rootproc-1)
@@ -562,32 +564,12 @@ deallocate(mga_to_mg)
 deallocate(mg_to_c0)
 
 ! Allocation
-allocate(order(geom%nc0))
-allocate(order_inv(geom%nc0))
-allocate(list(geom%nc0))
+allocate(geom%hash_c0(geom%nc0))
 
-! Define Sc0 points order
+! Hash function
 do ic0=1,geom%nc0
-   list(ic0) = lonlathash(geom%lon(ic0),geom%lat(ic0))
+   geom%hash_c0(ic0) = lonlathash(geom%lon_c0(ic0),geom%lat_c0(ic0))
 end do
-call qsort(geom%nc0,list,order)
-do ic0=1,geom%nc0
-   order_inv(order(ic0)) = ic0
-end do
-
-! Reorder Sc0 points
-geom%c0_to_proc = geom%c0_to_proc(order)
-geom%c0_to_c0a = geom%c0_to_c0a(order)
-geom%c0a_to_c0 = order_inv(geom%c0a_to_c0)
-geom%lon = geom%lon(order)
-geom%lat = geom%lat(order)
-do il0=1,geom%nl0
-   geom%vunit_c0(:,il0) = geom%vunit_c0(order,il0)
-   geom%mask_c0(:,il0) = geom%mask_c0(order,il0)
-end do
-geom%mask_hor_c0 = geom%mask_hor_c0(order)
-mga_to_c0 = order_inv(mga_to_c0)
-c0_to_mg = c0_to_mg(order)
 
 ! Go through Sc0 subset distribution, first pass
 nc0own = 0
@@ -619,9 +601,6 @@ call geom%com_mg%setup(mpl,'com_mg',geom%nc0,geom%nc0a,geom%nmga,nc0own,mga_to_c
  & geom%c0_to_c0a)
 
 ! Release memory
-deallocate(order)
-deallocate(order_inv)
-deallocate(list)
 deallocate(c0_to_mg)
 deallocate(mg_to_proc)
 deallocate(mg_to_mga)
@@ -637,8 +616,8 @@ allocate(geom%mask_hor_c0a(geom%nc0a))
 allocate(geom%smask_c0a(geom%nc0a,geom%nl0))
 
 ! Define other fields
-geom%lon_c0a = geom%lon(geom%c0a_to_c0)
-geom%lat_c0a = geom%lat(geom%c0a_to_c0)
+geom%lon_c0a = geom%lon_c0(geom%c0a_to_c0)
+geom%lat_c0a = geom%lat_c0(geom%c0a_to_c0)
 geom%vunit_c0a = geom%vunit_c0(geom%c0a_to_c0,:)
 geom%mask_c0a = geom%mask_c0(geom%c0a_to_c0,:)
 geom%mask_hor_c0a = geom%mask_hor_c0(geom%c0a_to_c0)
@@ -650,7 +629,7 @@ call geom%copy_mga_to_c0a(mpl,geom%smask_mga,geom%smask_c0a)
 call geom%mesh%alloc(geom%nc0)
 
 ! Initialization
-call geom%mesh%init(mpl,rng,geom%lon,geom%lat,.true.)
+call geom%mesh%init(mpl,rng,geom%lon_c0,geom%lat_c0,.true.)
 
 ! Compute boundary nodes
 call geom%mesh%bnodes(mpl,nam%adv_diag)
@@ -684,11 +663,11 @@ if ((trim(nam%draw_type)=='random_coast').or.(nam%adv_diag)) then
          call tree%alloc(mpl,geom%nc0,mask=not_mask_c0)
 
          ! Initialization
-         call tree%init(geom%lon,geom%lat)
+         call tree%init(geom%lon_c0,geom%lat_c0)
 
          ! Find nearest neighbors
          do ic0=1,geom%nc0
-            if (geom%mask_c0(ic0,il0i)) call tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),1,nn_index, &
+            if (geom%mask_c0(ic0,il0i)) call tree%find_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),1,nn_index, &
           & geom%mdist(ic0,il0i))
          end do
 
@@ -703,7 +682,7 @@ end if
 call geom%tree%alloc(mpl,geom%nc0)
 
 ! Initialization
-call geom%tree%init(geom%lon,geom%lat)
+call geom%tree%init(geom%lon_c0,geom%lat_c0)
 
 ! Horizontal distance
 allocate(geom%disth(nam%nc3))
@@ -795,8 +774,8 @@ if (nam%mask_check) then
 
       ! Compute boundary arcs coordinates
       do ibnda=1,geom%nbnda(il0)
-         lon_arc = geom%lon(bnda_to_c0(:,ibnda))
-         lat_arc = geom%lat(bnda_to_c0(:,ibnda))
+         lon_arc = geom%lon_c0(bnda_to_c0(:,ibnda))
+         lat_arc = geom%lat_c0(bnda_to_c0(:,ibnda))
          call lonlat2xyz(mpl,lon_arc(1),lat_arc(1),xbnda(1),ybnda(1),zbnda(1))
          call lonlat2xyz(mpl,lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2))
          geom%v1bnda(:,ibnda,il0) = (/xbnda(1),ybnda(1),zbnda(1)/)
@@ -814,9 +793,9 @@ call mpl%flush
 write(mpl%info,'(a7,a,i6,a,f6.2,a)') '','Number of redundant points:    ',(geom%nmg-geom%nc0), &
  & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*100.0,'%)'
 call mpl%flush
-write(mpl%info,'(a7,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',minval(geom%lon)*rad2deg,' / ',maxval(geom%lon)*rad2deg
+write(mpl%info,'(a7,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',minval(geom%lon_c0)*rad2deg,' / ',maxval(geom%lon_c0)*rad2deg
 call mpl%flush
-write(mpl%info,'(a7,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',minval(geom%lat)*rad2deg,' / ',maxval(geom%lat)*rad2deg
+write(mpl%info,'(a7,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',minval(geom%lat_c0)*rad2deg,' / ',maxval(geom%lat_c0)*rad2deg
 call mpl%flush
 write(mpl%info,'(a7,a,f5.1,a)') '','Domain area (% of Earth area):',100.0*maxval(geom%area)/(4.0*pi),'%'
 call mpl%flush
@@ -1045,7 +1024,7 @@ if (mpl%main) then
    allocate(full_to_m(geom%nc0))
 
    ! Initialization
-   call mesh%init(mpl,rng,geom%lon,geom%lat,.false.)
+   call mesh%init(mpl,rng,geom%lon_c0,geom%lat_c0,.false.)
    full_to_m = mpl%msv%vali
 
    ! Get boundary nodes
@@ -1212,8 +1191,8 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_enddef(ncid))
 
    ! Write variables
-   call mpl%ncerr(subr,nf90_put_var(ncid,lon_c0_id,geom%lon*rad2deg))
-   call mpl%ncerr(subr,nf90_put_var(ncid,lat_c0_id,geom%lat*rad2deg))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lon_c0_id,geom%lon_c0*rad2deg))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lat_c0_id,geom%lat_c0*rad2deg))
    call mpl%ncerr(subr,nf90_put_var(ncid,c0_to_proc_init_id,geom%c0_to_proc_init))
    call mpl%ncerr(subr,nf90_put_var(ncid,c0_to_proc_id,geom%c0_to_proc))
 
@@ -1479,10 +1458,10 @@ real(kind_real),intent(out) :: dy   ! Latitude delta
 real(kind_real),intent(out) :: dz   ! Altitude delta
 
 ! Compute deltas
-dx = geom%lon(jc0)-geom%lon(ic0)
-dy = geom%lat(jc0)-geom%lat(ic0)
+dx = geom%lon_c0(jc0)-geom%lon_c0(ic0)
+dy = geom%lat_c0(jc0)-geom%lat_c0(ic0)
 call lonlatmod(dx,dy)
-dx = dx*cos(geom%lat(ic0))
+dx = dx*cos(geom%lat_c0(ic0))
 dz = real(geom%vunit_c0(ic0,jl0)-geom%vunit_c0(ic0,il0),kind_real)
 
 end subroutine geom_compute_deltas

@@ -251,8 +251,8 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
          allocate(lat(geom%nc0))
 
          ! Convert to degrees
-         lon = geom%lon*rad2deg
-         lat = geom%lat*rad2deg
+         lon = geom%lon_c0*rad2deg
+         lat = geom%lat_c0*rad2deg
 
          ! Write data
          call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon))
@@ -458,13 +458,14 @@ type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
-integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,nc0own,ic0own,iproc,jproc
-integer,allocatable :: procio_to_nc0io(:),list(:),order(:),c0own_to_c0io(:)
+integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,nc0own,ic0own,iproc,jproc,jc0
+integer,allocatable :: procio_to_nc0io(:),ilist(:),order(:),c0own_to_c0io(:)
+real(kind_real),allocatable :: rlist(:)
 logical,allocatable :: proc_isio(:)
 
 ! Allocation
 allocate(procio_to_nc0io(nam%nprocio))
-allocate(list(mpl%nproc))
+allocate(ilist(mpl%nproc))
 allocate(order(mpl%nproc))
 allocate(proc_isio(mpl%nproc))
 allocate(io%procio_to_proc(nam%nprocio))
@@ -490,9 +491,9 @@ do iprocio=1,nam%nprocio
 
    ! Order processors given their implication in this chunk
    do iproc=1,mpl%nproc
-      list(iproc) = count(geom%c0_to_proc(ic0_s:ic0_e)==iproc)
+      ilist(iproc) = count(geom%c0_to_proc(ic0_s:ic0_e)==iproc)
    end do
-   call qsort(mpl%nproc,list,order)
+   call qsort(mpl%nproc,ilist,order)
 
    ! Select I/O processor for this chunk
    do iproc=mpl%nproc,1,-1
@@ -509,8 +510,15 @@ do iprocio=1,nam%nprocio
    end do
 end do
 
+! Release memory
+deallocate(ilist)
+deallocate(order)
+deallocate(proc_isio)
+
 ! Allocation
 allocate(io%c0io_to_c0(io%nc0io))
+allocate(rlist(geom%nc0))
+allocate(order(geom%nc0))
 
 ! Initialization
 iprocio = 1
@@ -518,8 +526,13 @@ iproc = io%procio_to_proc(iprocio)
 ic0io = 0
 nc0own = 0
 
+! Use hash order to order points
+rlist = geom%hash_c0
+call qsort(geom%nc0,rlist,order)
+
 ! Go through Sc0 subset distribution, first pass
 do ic0=1,geom%nc0
+   jc0 = order(ic0)
    ic0io = ic0io+1
    if (ic0io>procio_to_nc0io(iprocio)) then
       iprocio = iprocio+1
@@ -527,8 +540,8 @@ do ic0=1,geom%nc0
       ic0io = 1
    end if
    if (mpl%myproc==iproc) then
-      io%c0io_to_c0(ic0io) = ic0
-      if (geom%c0_to_proc(ic0)==iproc) nc0own = nc0own+1
+      io%c0io_to_c0(ic0io) = jc0
+      if (geom%c0_to_proc(jc0)==iproc) nc0own = nc0own+1
    end if
 end do
 
@@ -543,6 +556,7 @@ ic0own = 0
 
 ! Go through Sc0 subset distribution, second pass
 do ic0=1,geom%nc0
+   jc0 = order(ic0)
    ic0io = ic0io+1
    if (ic0io>procio_to_nc0io(iprocio)) then
       iprocio = iprocio+1
@@ -550,7 +564,7 @@ do ic0=1,geom%nc0
       ic0io = 1
    end if
    if (mpl%myproc==iproc) then
-      if (geom%c0_to_proc(ic0)==iproc) then
+      if (geom%c0_to_proc(jc0)==iproc) then
          ic0own = ic0own+1
          c0own_to_c0io(ic0own) = ic0io
       end if
@@ -572,9 +586,8 @@ call io%com_AIO%setup(mpl,'com_AIO',geom%nc0,geom%nc0a,io%nc0io,nc0own,io%c0io_t
 
 ! Release memory
 deallocate(procio_to_nc0io)
-deallocate(list)
+deallocate(rlist)
 deallocate(order)
-deallocate(proc_isio)
 deallocate(c0own_to_c0io)
 
 if (nam%grid_output) call io%init_grid(mpl,rng,nam,geom)
@@ -689,11 +702,11 @@ do ioga=1,io%noga
    call geom%mesh%inside(mpl,io%lon(ilon),io%lat(ilat),mask_oga(ioga))
 
    ! Check poles
-   if (abs(io%lat(ilat))>maxval(abs(geom%lat))) mask_oga(ioga) = .false.
+   if (abs(io%lat(ilat))>maxval(abs(geom%lat_c0))) mask_oga(ioga) = .false.
 end do
 mask_c0 = .true.
 write(io%og%prefix,'(a,i3.3)') 'og'
-call io%og%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,mask_c0,io%noga,lon_oga,lat_oga,mask_oga,10)
+call io%og%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon_c0,geom%lat_c0,mask_c0,io%noga,lon_oga,lat_oga,mask_oga,10)
 
 ! Allocation
 allocate(lcheck_c0b(geom%nc0))
@@ -737,7 +750,6 @@ io%og%n_src = io%nc0b
 do i_s=1,io%og%n_s
    io%og%col(i_s) = io%c0_to_c0b(io%og%col(i_s))
 end do
-call io%og%reorder(mpl)
 
 ! Setup communications
 call io%com_AB%setup(mpl,'com_AB',geom%nc0,geom%nc0a,io%nc0b,geom%nc0a,io%c0b_to_c0,io%c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
