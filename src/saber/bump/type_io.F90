@@ -172,7 +172,7 @@ real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 integer :: ic0a,il0,info,info_coord,color
 integer :: ncid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
-real(kind_real),allocatable :: fld_c0io(:,:),lon(:),lat(:)
+real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)
 character(len=1024) :: cname
 character(len=1024),parameter :: subr = 'io_fld_write'
 type(fckit_mpi_comm) :: f_comm
@@ -190,9 +190,13 @@ end do
 
 ! Allocation
 allocate(fld_c0io(io%nc0io,geom%nl0))
+allocate(lon_c0io(io%nc0io))
+allocate(lat_c0io(io%nc0io))
 
 ! Communication
 call io%com_AIO%ext(mpl,geom%nl0,fld_c0a,fld_c0io)
+call io%com_AIO%ext(mpl,geom%lon_c0a,lon_c0io)
+call io%com_AIO%ext(mpl,geom%lat_c0a,lat_c0io)
 
 ! Create communicator for parallel NetCDF I/O
 if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
@@ -244,24 +248,14 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    call mpl%ncerr(subr,nf90_enddef(ncid))
 
    ! Write coordinates if necessary
-   if (io%procio_to_proc(1)==mpl%myproc) then
-      if (info_coord/=nf90_noerr) then
-         ! Allocation
-         allocate(lon(geom%nc0))
-         allocate(lat(geom%nc0))
+   if (info_coord/=nf90_noerr) then
+      ! Convert to degrees
+      lon_c0io = lon_c0io*rad2deg
+      lat_c0io = lat_c0io*rad2deg
 
-         ! Convert to degrees
-         lon = geom%lon_c0*rad2deg
-         lat = geom%lat_c0*rad2deg
-
-         ! Write data
-         call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon))
-         call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat))
-
-         ! Release memory
-         deallocate(lon)
-         deallocate(lat)
-      end if
+      ! Write data
+      call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon_c0io,(/io%ic0_s/),(/io%nc0io/)))
+      call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
    end if
 
    ! Write variable
@@ -288,6 +282,9 @@ end if
 
 ! Release memory
 deallocate(fld_c0io)
+deallocate(lon_c0io)
+deallocate(lat_c0io)
+
 call f_comm%delete()
 
 ! Gridded field output
@@ -458,22 +455,28 @@ type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
-integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,nc0own,ic0own,iproc,jproc,jc0
-integer,allocatable :: procio_to_nc0io(:),ilist(:),order(:),c0own_to_c0io(:)
-real(kind_real),allocatable :: rlist(:)
+integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,nc0own,ic0own,iproc,jproc
+integer,allocatable :: procio_to_nc0io(:),list_proc(:),order_proc(:),order_c0(:),c0own_to_c0io(:)
+real(kind_real),allocatable :: list_c0(:)
 logical,allocatable :: proc_isio(:)
 
 ! Allocation
 allocate(procio_to_nc0io(nam%nprocio))
-allocate(ilist(mpl%nproc))
-allocate(order(mpl%nproc))
+allocate(list_proc(mpl%nproc))
+allocate(order_proc(mpl%nproc))
 allocate(proc_isio(mpl%nproc))
 allocate(io%procio_to_proc(nam%nprocio))
+allocate(list_c0(geom%nc0))
+allocate(order_c0(geom%nc0))
 
 ! Initialization
 nres = geom%nc0
 proc_isio = .false.
 io%nc0io = 0
+
+! Use hash order to order points
+list_c0 = geom%hash_c0
+call qsort(geom%nc0,list_c0,order_c0)
 
 ! Define Sc0 subset splitting among I/O processors
 do iprocio=1,nam%nprocio
@@ -491,13 +494,13 @@ do iprocio=1,nam%nprocio
 
    ! Order processors given their implication in this chunk
    do iproc=1,mpl%nproc
-      ilist(iproc) = count(geom%c0_to_proc(ic0_s:ic0_e)==iproc)
+      list_proc(iproc) = count(geom%c0_to_proc(order_c0(ic0_s:ic0_e))==iproc)
    end do
-   call qsort(mpl%nproc,ilist,order)
+   call qsort(mpl%nproc,list_proc,order_proc)
 
    ! Select I/O processor for this chunk
    do iproc=mpl%nproc,1,-1
-      jproc = order(iproc)
+      jproc = order_proc(iproc)
       if (.not.proc_isio(jproc)) then
          proc_isio(jproc) = .true.
          io%procio_to_proc(iprocio) = jproc
@@ -510,15 +513,8 @@ do iprocio=1,nam%nprocio
    end do
 end do
 
-! Release memory
-deallocate(ilist)
-deallocate(order)
-deallocate(proc_isio)
-
 ! Allocation
 allocate(io%c0io_to_c0(io%nc0io))
-allocate(rlist(geom%nc0))
-allocate(order(geom%nc0))
 
 ! Initialization
 iprocio = 1
@@ -526,13 +522,8 @@ iproc = io%procio_to_proc(iprocio)
 ic0io = 0
 nc0own = 0
 
-! Use hash order to order points
-rlist = geom%hash_c0
-call qsort(geom%nc0,rlist,order)
-
 ! Go through Sc0 subset distribution, first pass
 do ic0=1,geom%nc0
-   jc0 = order(ic0)
    ic0io = ic0io+1
    if (ic0io>procio_to_nc0io(iprocio)) then
       iprocio = iprocio+1
@@ -540,8 +531,8 @@ do ic0=1,geom%nc0
       ic0io = 1
    end if
    if (mpl%myproc==iproc) then
-      io%c0io_to_c0(ic0io) = jc0
-      if (geom%c0_to_proc(jc0)==iproc) nc0own = nc0own+1
+      io%c0io_to_c0(ic0io) = ic0
+      if (geom%c0_to_proc(order_c0(ic0))==iproc) nc0own = nc0own+1
    end if
 end do
 
@@ -556,7 +547,6 @@ ic0own = 0
 
 ! Go through Sc0 subset distribution, second pass
 do ic0=1,geom%nc0
-   jc0 = order(ic0)
    ic0io = ic0io+1
    if (ic0io>procio_to_nc0io(iprocio)) then
       iprocio = iprocio+1
@@ -564,7 +554,7 @@ do ic0=1,geom%nc0
       ic0io = 1
    end if
    if (mpl%myproc==iproc) then
-      if (geom%c0_to_proc(jc0)==iproc) then
+      if (geom%c0_to_proc(order_c0(ic0))==iproc) then
          ic0own = ic0own+1
          c0own_to_c0io(ic0own) = ic0io
       end if
@@ -581,13 +571,16 @@ do iprocio=1,nam%nprocio
 end do
 
 ! Setup Sc0 subset I/O communication
-call io%com_AIO%setup(mpl,'com_AIO',geom%nc0,geom%nc0a,io%nc0io,nc0own,io%c0io_to_c0,c0own_to_c0io,geom%c0_to_proc, &
- & geom%c0_to_c0a)
+call io%com_AIO%setup(mpl,'com_AIO',geom%nc0,geom%nc0a,io%nc0io,nc0own,io%c0io_to_c0,c0own_to_c0io,geom%c0_to_proc(order_c0), &
+ & geom%c0_to_c0a(order_c0))
 
 ! Release memory
+deallocate(list_proc)
+deallocate(order_proc)
+deallocate(proc_isio)
 deallocate(procio_to_nc0io)
-deallocate(rlist)
-deallocate(order)
+deallocate(list_c0)
+deallocate(order_c0)
 deallocate(c0own_to_c0io)
 
 if (nam%grid_output) call io%init_grid(mpl,rng,nam,geom)

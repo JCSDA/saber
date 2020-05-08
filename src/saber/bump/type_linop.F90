@@ -11,7 +11,6 @@ use fckit_mpi_module, only: fckit_mpi_status
 use netcdf
 !$ use omp_lib
 use tools_kinds, only: kind_real,nc_kind_real
-use tools_qsort, only: qsort
 use tools_repro, only: inf
 use type_geom, only: geom_type
 use type_tree, only: tree_type

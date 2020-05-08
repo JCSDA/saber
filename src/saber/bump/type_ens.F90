@@ -380,7 +380,7 @@ do its=1,nam%nts
          end do
       end do
    end do
-end do               
+end do
 call io%fld_write(mpl,nam,geom,filename,'m2',m2)
 call io%fld_write(mpl,nam,geom,filename,'m4',m4)
 call io%fld_write(mpl,nam,geom,filename,'kurt',kurt)
@@ -521,6 +521,7 @@ real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,u
 real(kind_real) :: londir(nam%nts),latdir(nam%nts),londir_tracker(nam%nts),latdir_tracker(nam%nts)
 real(kind_real) :: londir_wind(nam%nts),latdir_wind(nam%nts)
 real(kind_real),allocatable :: fld_uv_tmp(:,:,:),fld_uv_interp(:,:,:)
+logical :: mask_wind(1)
 character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_cortrack'
 type(linop_type) :: h
@@ -652,6 +653,7 @@ if (present(fld_uv)) then
  & londir_wind(1)*rad2deg,' / ',latdir_wind(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
    call mpl%flush
    dtl = nam%dts/nt
+   mask_wind = .true.
 
    do its=2,nam%nts
       ! Copy results
@@ -661,7 +663,7 @@ if (present(fld_uv)) then
       do it=1,nt
          ! Compute interpolation
          call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0,geom%lon_c0,geom%lat_c0,geom%mask_c0(:,geom%il0dir(1)), &
-       & 1,londir_wind(its:its),latdir_wind(its:its),(/.true./),13)
+       & 1,londir_wind(its:its),latdir_wind(its:its),mask_wind,13)
 
          ! Allocation
          allocate(fld_uv_tmp(h%n_s,2,2))
@@ -689,6 +691,7 @@ if (present(fld_uv)) then
          call h%apply(mpl,fld_uv_interp(:,2,2),vp)
 
          ! Release memory
+         call h%dealloc
          deallocate(fld_uv_tmp)
          deallocate(fld_uv_interp)
 

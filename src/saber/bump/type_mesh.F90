@@ -9,8 +9,9 @@ module type_mesh
 
 !$ use omp_lib
 use tools_const, only: pi,req
-use tools_func, only: sphere_dist,lonlat2xyz,xyz2lonlat,vector_product
+use tools_func, only: lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product
 use tools_kinds, only: kind_real
+use tools_qsort, only: qsort
 use tools_stripack, only: addnod,bnodes,inside,trfind,trlist,trmesh
 use type_mpl, only: mpl_type
 use type_rng, only: rng_type
@@ -115,8 +116,10 @@ logical,intent(in) :: bcast                       ! Broadcast flag
 
 ! Local variables
 integer :: i,k,info
-integer :: jtab(mesh%n),near(mesh%n),next(mesh%n)
+integer :: near(mesh%n),next(mesh%n)
+integer,allocatable :: jtab(:)
 real(kind_real) :: dist(mesh%n)
+real(kind_real),allocatable :: list(:)
 character(len=1024),parameter :: subr = 'mesh_init'
 
 ! Points order
@@ -124,7 +127,19 @@ do i=1,mesh%n
    mesh%order(i) = i
 end do
 
+! Allocation
+allocate(list(mesh%n))
+
+! Reorder points
+do i=1,mesh%n
+   list(i) = lonlathash(lon(i),lat(i))
+end do
+call qsort(mesh%n,list,mesh%order)
+
 if (shuffle) then
+   ! Allocation
+   allocate(jtab(mesh%n))
+
    ! Shuffle order (more efficient to compute the Delaunay triangulation)
    if (bcast) then
       if (mpl%main) call rng%rand_integer(1,mesh%n,jtab)
@@ -137,6 +152,9 @@ if (shuffle) then
       mesh%order(jtab(i)) = mesh%order(i)
       mesh%order(i) = k
    end do
+
+   ! Release memory
+   deallocate(jtab)
 end if
 
 ! Restrictive inverse order
@@ -155,6 +173,9 @@ if (info/=0) call mpl%abort(subr,'trmesh failed')
 
 ! Boundaries not computed yet
 mesh%nb = mpl%msv%vali
+
+! Release memory
+deallocate(list)
 
 end subroutine mesh_init
 
