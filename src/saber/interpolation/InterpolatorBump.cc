@@ -24,9 +24,8 @@ InterpolatorBump::InterpolatorBump(const eckit::Configuration & config,
                    const atlas::FunctionSpace & outfspace,
                    const atlas::field::FieldSetImpl * masks,
                    const eckit::mpi::Comm & comm) {
-  const eckit::Configuration * fconfig = &config;
   bint_create_f90(keyBumpInterpolator_, &comm, infspace.get(), outfspace.get(),
-                  masks, &fconfig);
+                  masks, config);
 }
 
 // -----------------------------------------------------------------------------

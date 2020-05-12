@@ -22,14 +22,14 @@ contains
 subroutine bint_create_c(c_key_bint, c_comm, c_fspace1, c_fspace2, c_masks, &
                          c_config) bind(c, name='bint_create_f90')
 implicit none
-                         
+
 ! Passed variables
 integer(c_int), intent(inout) :: c_key_bint !< bump interpolator
 type(c_ptr), value, intent(in) :: c_comm    !< MPI Communicator
 type(c_ptr), intent(in),value :: c_fspace1  !< source grid (atlas functionspace)
 type(c_ptr), intent(in),value :: c_fspace2  !< target grid (atlas functionspace)
 type(c_ptr), intent(in),value :: c_masks    !< masks and other metadata
-type(c_ptr), intent(in) :: c_config         !< Configuration
+type(c_ptr), value, intent(in) :: c_config  !< Configuration
 
 ! local variables
 type(bump_interpolator), pointer :: bint

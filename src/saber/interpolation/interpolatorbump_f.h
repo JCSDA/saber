@@ -25,7 +25,7 @@ extern "C" {
                        const atlas::functionspace::FunctionSpaceImpl *,
                        const atlas::functionspace::FunctionSpaceImpl *,
                        const atlas::field::FieldSetImpl *,
-                       const eckit::Configuration * const *);
+                       const eckit::Configuration &);
   void bint_delete_f90(const int &);
   void bint_apply_f90(const int &, const atlas::field::FieldSetImpl *,
                       atlas::field::FieldSetImpl *);
