@@ -32,10 +32,11 @@ endif()
 set(SABER_TEST_VALGRIND 0)
 set(SABER_TEST_MODEL 0)
 set(SABER_TEST_MODEL_DIR "")
+set(SABER_TEST_OOPS 0)
 if (${OOPS_FOUND})
-   set(SABER_TEST_OOPS 1)
-else()
-   set(SABER_TEST_OOPS 0)
+   if (${ENABLE_OOPS_TOYMODELS})
+       set(SABER_TEST_OOPS 1)
+   endif()
 endif()
 
 # Override test selection variables using environment variables
@@ -423,7 +424,7 @@ if(${SABER_TEST_MODEL})
 endif()
 
 # OOPS tests
-if(${SABER_TEST_OOPS} AND ${ENABLE_OOPS_TOYMODELS})
+if(${SABER_TEST_OOPS})
     # Function to add tests
     include(../../oops/cmake/oops_add_test)
 
