@@ -39,13 +39,13 @@ namespace saber {
 /// BUMP localization matrix.
 
 template<typename MODEL> class LocalizationBUMP : public oops::LocalizationGeneric<MODEL> {
-  typedef oops::Geometry<MODEL>                             Geometry_;
-  typedef oops::Increment<MODEL>                            Increment_;
-  typedef oops::Increment4D<MODEL>                          Increment4D_;
-  typedef OoBump<MODEL>                                     OoBump_;
-  typedef ParametersBUMP<MODEL>                             Parameters_;
-  typedef oops::IncrementEnsemble<MODEL>                    Ensemble_;
-  typedef boost::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
+  typedef oops::Geometry<MODEL>                           Geometry_;
+  typedef oops::Increment<MODEL>                          Increment_;
+  typedef oops::Increment4D<MODEL>                        Increment4D_;
+  typedef OoBump<MODEL>                                   OoBump_;
+  typedef ParametersBUMP<MODEL>                           Parameters_;
+  typedef oops::IncrementEnsemble<MODEL>                  Ensemble_;
+  typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
 
  public:
   LocalizationBUMP(const Geometry_ &,

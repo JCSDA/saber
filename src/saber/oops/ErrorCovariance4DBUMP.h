@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/noncopyable.hpp>
-
 #include "oops/assimilation/Increment4D.h"
 #include "oops/assimilation/State4D.h"
 #include "oops/base/ModelSpaceCovariance4DBase.h"
@@ -47,8 +45,7 @@ namespace saber {
 template <typename MODEL>
 class ErrorCovariance4DBUMP : public oops::ModelSpaceCovariance4DBase<MODEL>,
                               public util::Printable,
-                              private util::ObjectCounter<ErrorCovariance4DBUMP<MODEL> >,
-                              private boost::noncopyable {
+                              private util::ObjectCounter<ErrorCovariance4DBUMP<MODEL> > {
   typedef oops::Geometry<MODEL>    Geometry_;
   typedef oops::Increment4D<MODEL> Increment4D_;
   typedef OoBump<MODEL>            OoBump_;
@@ -62,6 +59,10 @@ class ErrorCovariance4DBUMP : public oops::ModelSpaceCovariance4DBase<MODEL>,
   ErrorCovariance4DBUMP(const Geometry_ &, const oops::Variables &,
                         const eckit::Configuration &, const State4D_ &, const State4D_ &);
   virtual ~ErrorCovariance4DBUMP();
+
+ private:
+  ErrorCovariance4DBUMP(const ErrorCovariance4DBUMP&);
+  ErrorCovariance4DBUMP& operator=(const ErrorCovariance4DBUMP&);
 
  private:
   void doRandomize(Increment4D_ &) const override;
