@@ -14,8 +14,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-
 #include "eckit/config/Configuration.h"
 
 #include "oops/assimilation/Increment4D.h"
@@ -44,12 +42,12 @@ namespace saber {
 
 template<typename MODEL>
 class ParametersBUMP {
-  typedef oops::Geometry<MODEL>                             Geometry_;
-  typedef oops::Increment<MODEL>                            Increment_;
-  typedef oops::Increment4D<MODEL>                          Increment4D_;
-  typedef OoBump<MODEL>                                     OoBump_;
-  typedef oops::State<MODEL>                                State_;
-  typedef boost::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
+  typedef oops::Geometry<MODEL>                           Geometry_;
+  typedef oops::Increment<MODEL>                          Increment_;
+  typedef oops::Increment4D<MODEL>                        Increment4D_;
+  typedef OoBump<MODEL>                                   OoBump_;
+  typedef oops::State<MODEL>                              State_;
+  typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
 
  public:
   static const std::string classname() {return "oops::ParametersBUMP";}
