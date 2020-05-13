@@ -514,13 +514,13 @@ if(${SABER_TEST_OOPS} AND ${ENABLE_OOPS_TOYMODELS})
     endforeach()
 endif()
 
-# bump interpolation tests
+# Interpolation tests
 if(${SABER_TEST_INTERPOLATION})
     #--------------------------------------------------------------------
     # Link to yaml files
     #--------------------------------------------------------------------
     list(APPEND saber_test_interpolation
-        bump_interpolation
+        interpolation_bump
     )
     foreach(test ${saber_test_interpolation})
         execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
@@ -532,11 +532,10 @@ if(${SABER_TEST_INTERPOLATION})
     # add tests
     #--------------------------------------------------------------------
 
-    ecbuild_add_test( TARGET test_bump_interpolation
+    ecbuild_add_test( TARGET test_interpolation_bump
                       MPI 4
                       OMP 1
-                      SOURCES mains/BumpInterpolation.cc
-                      ARGS testinput/bump_interpolation.yaml
+                      SOURCES mains/InterpolationBump.cc
+                      ARGS testinput/interpolation_bump.yaml
                       LIBS oops saber )
-
 endif()

@@ -55,6 +55,7 @@ list_get=`ctest -N | grep get_saber | awk '{print $(NF)}'`
 list_run=`ctest -N | grep test_bump | grep _run | awk '{print $(NF)}'`
 list_compare=`ctest -N | grep test_bump | grep _compare | awk '{print $(NF)}'`
 list_qg=`ctest -N | grep test_qg | awk '{print $(NF)}'`
+list_interpolation=`ctest -N | grep test_interpolation | awk '{print $(NF)}'`
 
 # Tests variables
 list_run_array=(${list_run})
@@ -69,7 +70,11 @@ list_qg_array=(${list_qg})
 ntest_qg=${#list_qg_array[@]}
 stest_qg=0
 ftest_qg=0
-ntest_tot=$((ntest_run+ntest_compare+ntest_qg))
+list_interpolation_array=(${list_interpolation})
+ntest_interpolation=${#list_interpolation_array[@]}
+stest_interpolation=0
+ftest_interpolation=0
+ntest_tot=$((ntest_run+ntest_compare+ntest_qg+ntest_interpolation))
 itest=0
 if test ${ntest_tot} = 0; then
    echo "No test detected, this script should be run from \${build_directory}/saber/test"
@@ -411,6 +416,31 @@ for qg in ${list_qg}; do
 done
 echo "All QG tests done" >> saber_ctest_log/execution.log
 
+# Interpolation
+for interpolation in ${list_interpolation}; do
+   echo "Handling process ${interpolation}" >> saber_ctest_log/execution.log
+
+   # Get command and arguments
+   ctest -VV -R ${interpolation} > saber_ctest_log/${interpolation}.log 2> saber_ctest_log/${interpolation}.err
+
+   # Check if this process succeed
+   err=`wc -l saber_ctest_log/${interpolation}.err | awk '{print $1}'`
+   itest=$((itest+1))
+   itest_tot=`printf "%03d" ${itest}`
+   if test "${err}" = "0"; then
+      # Interpolation succeed
+      echo "${interpolation} succeed" >> saber_ctest_log/execution.log
+      stest_interpolation=$((stest_interpolation+1))
+      echo -e "${itest_tot} / ${ntest_tot}: \033[32mPassed\033[0m ~> ${interpolation}"
+   else
+      # Interpolation failed
+      echo "${interpolation} failed" >> saber_ctest_log/execution.log
+      ftest_interpolation=$((ftest_interpolation+1))
+      echo -e "${itest_tot} / ${ntest_tot}: \033[31mFailed\033[0m ~> ${interpolation}"
+   fi
+done
+echo "All interpolation tests done" >> saber_ctest_log/execution.log
+
 # Final time
 final_time=`date`
 final_time_sec=`date +%s`
@@ -426,19 +456,25 @@ echo -e ""
 # Run tests
 stest=`printf "%03d" $((stest_run))`
 ftest=`printf "%03d" $((ftest_run))`
-echo "Run:     ${stest} tests succeed and ${ftest} failed" >> saber_ctest_log/execution.log
-echo -e "Run:     \033[32m${stest}\033[0m tests succeed and \033[31m${ftest}\033[0m failed"
+echo "Run ----------- ${stest} tests succeed and ${ftest} failed" >> saber_ctest_log/execution.log
+echo -e "Run ----------- \033[32m${stest}\033[0m tests succeed and \033[31m${ftest}\033[0m failed"
 
 # Compare tests
 stest=`printf "%03d" $((stest_compare))`
 ftest=`printf "%03d" $((ftest_compare))`
-echo "Compare: ${stest} tests succeed and ${ftest} failed" >> saber_ctest_log/execution.log
-echo -e "Compare: \033[32m${stest}\033[0m tests succeed and \033[31m${ftest}\033[0m failed"
+echo "Compare ------- ${stest} tests succeed and ${ftest} failed" >> saber_ctest_log/execution.log
+echo -e "Compare ------- \033[32m${stest}\033[0m tests succeed and \033[31m${ftest}\033[0m failed"
 
 # QG tests
 stest=`printf "%03d" $((stest_qg))`
 ftest=`printf "%03d" $((ftest_qg))`
-echo "QG:      ${stest} tests succeed and ${ftest} failed" >> saber_ctest_log/execution.log
-echo -e "QG:      \033[32m${stest}\033[0m tests succeed and \033[31m${ftest}\033[0m failed"
+echo "QG ------------ ${stest} tests succeed and ${ftest} failed" >> saber_ctest_log/execution.log
+echo -e "QG ------------ \033[32m${stest}\033[0m tests succeed and \033[31m${ftest}\033[0m failed"
+
+# Interpolation tests
+stest=`printf "%03d" $((stest_interpolation))`
+ftest=`printf "%03d" $((ftest_interpolation))`
+echo "Interpolation - ${stest} tests succeed and ${ftest} failed" >> saber_ctest_log/execution.log
+echo -e "Interpolation - \033[32m${stest}\033[0m tests succeed and \033[31m${ftest}\033[0m failed"
 
 exit 0
