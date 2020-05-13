@@ -1,8 +1,9 @@
 # Create Data directory for test input data
 list( APPEND test_files
-    cpplint.py
     saber_compare.sh
+    saber_cpplint.py
     saber_links.ksh
+    saber_parallel.sh
     saber_set_ref.sh
     saber_tar_data.sh
     saber_tar_ref.sh
@@ -11,7 +12,7 @@ list( APPEND test_files
 
 if (${OOPS_FOUND})
    if (${ENABLE_OOPS_TOYMODELS})
-       list( APPEND test_files saber_oops_links.sh )
+       list( APPEND test_files saber_qg_links.sh )
    endif()
 endif()
 

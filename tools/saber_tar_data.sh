@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #----------------------------------------------------------------------
-# Shell script: saber_tar_data
+# Bash script: saber_tar_data
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -12,9 +12,10 @@ listdir=$2
 
 # Data list
 data_list="
-saber_data
-saber_data_mpi
-saber_data_omp"
+bump_data
+bump_data_mpi
+bump_data_omp
+oops_data"
 
 # Get git branch
 branch=`git rev-parse --abbrev-ref HEAD`
@@ -28,11 +29,11 @@ for data in ${data_list}; do
    while IFS= read -r line
    do
       line_tmp="$(echo ${line} | sed 's/read/write/g')"
-      if test "${line}" != "${line_tmp}" ; then
+      if test "${line}" != "${line_tmp}"; then
          rm -f ${datadir}/${line}
          cp -f ${datadir}/${line_tmp} ${datadir}/${line}
       fi
-      files=${files}' '${line}   
+      files=${files}' '${line}
    done < ${listdir}/${data}.txt
 
    # Archive

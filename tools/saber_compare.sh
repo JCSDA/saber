@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #----------------------------------------------------------------------
-# Shell script: saber_compare
+# Bash script: saber_compare
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -55,15 +55,15 @@ if test "${test%%_*}" = "bump" ; then
 
                if [ -x "$(command -v nccmp)" ] ; then
                   # Compare files with NCCMP
-                  echo "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}"
+                  echo -e "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}"
                   nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}
                   exit_code=$?
                   if test "${exit_code}" != "0" ; then
-                     echo "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
+                     echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
                      status=1
                   fi
                else
-                  echo "\e[31mCannot find command: nccmp\e[0m"
+                  echo -e "\e[31mCannot find command: nccmp\e[0m"
                   status=2
                fi
             fi
@@ -79,7 +79,7 @@ if test "${test%%_*}" = "bump" ; then
          grep -q "*" ${file}
          exit_code=$?
          if test "${exit_code}" = "0" ; then
-            echo "\e[31mTest failed (stars in output) checking: "${file#testoutput/}"\e[0m"
+            echo -e "\e[31mTest failed (stars in output) checking: "${file#testoutput/}"\e[0m"
             status=3
          fi
 
@@ -87,7 +87,7 @@ if test "${test%%_*}" = "bump" ; then
          grep -q "\-\-\- Close listings" ${file}
          exit_code=$?
          if test "${exit_code}" != "0" ; then
-            echo "\e[31mTest failed (no listing closure) checking: "${file#testoutput/}"\e[0m"
+            echo -e "\e[31mTest failed (no listing closure) checking: "${file#testoutput/}"\e[0m"
             status=3
          fi
       done
@@ -102,15 +102,15 @@ if test "${test%%_*}" = "bump" ; then
 
       # Compare files with NCCMP
       if [ -x "$(command -v nccmp)" ] ; then
-         echo "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${file2}"
+         echo -e "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${file2}"
          nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${file2}
          exit_code=$?
          if test "${exit_code}" != "0" ; then
-            echo "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
+            echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
             status=1
          fi
       else
-         echo "\e[31mCannot find command: nccmp\e[0m"
+         echo -e "\e[31mCannot find command: nccmp\e[0m"
          status=2
       fi
    fi
