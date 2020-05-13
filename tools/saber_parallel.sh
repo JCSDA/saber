@@ -6,28 +6,47 @@
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 #----------------------------------------------------------------------
 
+# Check bash version
+if test ${BASH_VERSINFO:-0} -lt 4; then
+   echo "Bash version lower than 4 does not support associative arrays"
+   exit 1
+fi
+
+# Check location
+PWD=`pwd`
+if test "${PWD##*/}" != "test"; then
+   echo "This script should be run from \${build_directory}/saber/test"
+   exit 2
+fi
+tmp=${PWD%/test}
+if test "${tmp##*/}" != "saber"; then
+   echo "This script should be run from \${build_directory}/saber/test"
+   exit 2
+fi
+echo "Working directory: ${PWD}"
+
 # Check number of CPUs
+nprocmax=`python -c 'import multiprocessing as mp; print(mp.cpu_count())'`
 nproc=$1
 if test -z ${nproc}; then
-   echo "Specify a number of processors"
-   exit 1
+   nproc=${nprocmax}
 fi
 if test ${nproc} -lt 1; then
    echo "At least one processor is required"
-   exit 2
-fi
-nprocmax=`nproc --all`
-if test ${nproc} -gt ${nprocmax}; then
-   echo "Max number of processors is "${nprocmax}
    exit 3
 fi
+if test ${nproc} -gt ${nprocmax}; then
+   echo "Only ${nprocmax} processor(s) are available"
+   exit 4
+fi
+echo "Tests run on ${nproc} logical core(s) (${nprocmax} available)"
 
 # Make temporary directory
 mkdir -p saber_ctest_log
 rm -fr saber_ctest_log/*
 
 # Initial time
-initial_time=`date --rfc-3339=seconds`
+initial_time=`date`
 initial_time_sec=`date +%s`
 echo "Tests start at ${initial_time}" > saber_ctest_log/execution.log
 
@@ -52,6 +71,10 @@ stest_qg=0
 ftest_qg=0
 ntest_tot=$((ntest_run+ntest_compare+ntest_qg))
 itest=0
+if test ${ntest_tot} = 0; then
+   echo "No test detected, this script should be run from \${build_directory}/saber/test"
+   exit 5
+fi
 
 # Declare pids array
 declare -A pids=()
@@ -110,7 +133,7 @@ for run in ${list_run}; do
    mpixomp=$((mpi*omp))
    if [ ${mpixomp} -gt ${nproc} ]; then
       echo "Too many CPUs are required for process ${run} (${mpixomp} > ${nproc})"
-      exit 1
+      exit 6
    fi
    rm -f saber_ctest_log/${run}_fail.log
 
@@ -389,7 +412,7 @@ done
 echo "All QG tests done" >> saber_ctest_log/execution.log
 
 # Final time
-final_time=`date --rfc-3339=seconds`
+final_time=`date`
 final_time_sec=`date +%s`
 echo "Tests finished at ${final_time}" >> saber_ctest_log/execution.log
 
