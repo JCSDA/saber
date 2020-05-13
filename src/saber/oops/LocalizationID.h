@@ -8,6 +8,7 @@
 #ifndef SABER_OOPS_LOCALIZATIONID_H_
 #define SABER_OOPS_LOCALIZATIONID_H_
 
+#include <memory>
 #include <vector>
 
 #include "eckit/config/Configuration.h"
@@ -26,10 +27,10 @@ namespace saber {
 
 template<typename MODEL>
 class LocalizationID : public oops::LocalizationGeneric<MODEL> {
-  typedef oops::Geometry<MODEL>                             Geometry_;
-  typedef oops::Increment<MODEL>                            Increment_;
-  typedef oops::Increment4D<MODEL>                          Increment4D_;
-  typedef boost::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
+  typedef oops::Geometry<MODEL>                           Geometry_;
+  typedef oops::Increment<MODEL>                          Increment_;
+  typedef oops::Increment4D<MODEL>                        Increment4D_;
+  typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
 
  public:
   LocalizationID(const Geometry_ &,

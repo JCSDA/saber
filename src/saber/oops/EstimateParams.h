@@ -38,14 +38,14 @@ namespace oops {
 namespace saber {
 
 template <typename MODEL> class EstimateParams : public oops::Application {
-  typedef oops::Geometry<MODEL>                             Geometry_;
-  typedef oops::Increment<MODEL>                            Increment_;
-  typedef oops::Increment4D<MODEL>                          Increment4D_;
-  typedef oops::State<MODEL>                                State_;
-  typedef oops::State4D<MODEL>                              State4D_;
-  typedef ParametersBUMP<MODEL>                             Parameters_;
-  typedef oops::IncrementEnsemble<MODEL>                    Ensemble_;
-  typedef boost::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
+  typedef oops::Geometry<MODEL>                           Geometry_;
+  typedef oops::Increment<MODEL>                          Increment_;
+  typedef oops::Increment4D<MODEL>                        Increment4D_;
+  typedef oops::State<MODEL>                              State_;
+  typedef oops::State4D<MODEL>                            State4D_;
+  typedef ParametersBUMP<MODEL>                           Parameters_;
+  typedef oops::IncrementEnsemble<MODEL>                  Ensemble_;
+  typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
 
  public:
 // -----------------------------------------------------------------------------

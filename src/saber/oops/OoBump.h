@@ -48,7 +48,7 @@ namespace saber {
 // -----------------------------------------------------------------------------
 /// OoBump C++ interface
 
-template<typename MODEL> class OoBump : public boost::noncopyable {
+template<typename MODEL> class OoBump {
   typedef oops::Geometry<MODEL>    Geometry_;
   typedef oops::Increment<MODEL>   Increment_;
   typedef oops::Increment4D<MODEL> Increment4D_;
