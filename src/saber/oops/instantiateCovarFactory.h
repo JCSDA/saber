@@ -26,7 +26,7 @@ template <typename MODEL> void instantiateCovarFactory() {
   static oops::CovarMaker<MODEL, ErrorCovarianceGSIRF<MODEL> > makerGSIRF_("GSIRF");
   static oops::Covar4DMaker<MODEL, ErrorCovariance4DBUMP<MODEL> >  makerBUMP4D_("BUMP");
 
-  oops::instantiateLocalizationFactory<MODEL>();
+  saber::instantiateLocalizationFactory<MODEL>();
 }
 
 }  // namespace saber
