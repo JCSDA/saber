@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/noncopyable.hpp>
-
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/Variables.h"
 #include "oops/interface/Geometry.h"
@@ -45,8 +43,7 @@ namespace saber {
 template <typename MODEL>
 class ErrorCovarianceBUMP : public oops::ModelSpaceCovarianceBase<MODEL>,
                             public util::Printable,
-                            private util::ObjectCounter<ErrorCovarianceBUMP<MODEL>>,
-                            private boost::noncopyable {
+                            private util::ObjectCounter<ErrorCovarianceBUMP<MODEL>> {
   typedef oops::Geometry<MODEL>    Geometry_;
   typedef oops::Increment<MODEL>   Increment_;
   typedef OoBump<MODEL>            OoBump_;
@@ -59,6 +56,10 @@ class ErrorCovarianceBUMP : public oops::ModelSpaceCovarianceBase<MODEL>,
   ErrorCovarianceBUMP(const Geometry_ &, const oops::Variables &,
                       const eckit::Configuration &, const State_ &, const State_ &);
   virtual ~ErrorCovarianceBUMP();
+
+ private:
+  ErrorCovarianceBUMP(const ErrorCovarianceBUMP&);
+  ErrorCovarianceBUMP& operator=(const ErrorCovarianceBUMP&);
 
  private:
   void doRandomize(Increment_ &) const override;
