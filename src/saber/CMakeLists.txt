@@ -51,9 +51,8 @@ if(${METIS_FOUND})
 endif()
 
 if (${OOPS_FOUND})
-    list( APPEND SABER_LIB_DEPS oops )
     if (${ENABLE_OOPS_TOYMODELS})
-       list( APPEND SABER_LIB_DEPS qg )
+       list( APPEND SABER_LIB_DEPS oops qg )
     endif()
 endif()
 

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2017 UCAR
+ * (C) Copyright 2017-2020 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -16,8 +16,8 @@
 #include "eckit/config/Configuration.h"
 
 #include "oops/base/IncrementEnsemble.h"
+#include "oops/base/LocalizationBase.h"
 #include "oops/base/Variables.h"
-#include "oops/generic/LocalizationGeneric.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
@@ -38,7 +38,7 @@ namespace saber {
 // -----------------------------------------------------------------------------
 /// BUMP localization matrix.
 
-template<typename MODEL> class LocalizationBUMP : public oops::LocalizationGeneric<MODEL> {
+template<typename MODEL> class LocalizationBUMP : public oops::LocalizationBase<MODEL> {
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
   typedef oops::Increment4D<MODEL>                        Increment4D_;
@@ -53,11 +53,11 @@ template<typename MODEL> class LocalizationBUMP : public oops::LocalizationGener
                    const eckit::Configuration &);
   ~LocalizationBUMP();
 
-  void multiply(Increment_ &) const;
-  void multiply(Increment4D_ &) const;
+  void multiply(Increment_ &) const override;
+  void multiply(Increment4D_ &) const override;
 
  private:
-  void print(std::ostream &) const;
+  void print(std::ostream &) const override;
 
   std::unique_ptr<OoBump_> ooBump_;
   std::vector<util::DateTime> timeslots_;
