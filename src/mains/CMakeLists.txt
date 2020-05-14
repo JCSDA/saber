@@ -5,6 +5,3 @@
 
 add_subdirectory( bump )
 
-if (${OOPS_FOUND})
-  add_subdirectory( oops )
-endif()

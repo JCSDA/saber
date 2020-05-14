@@ -540,3 +540,23 @@ if(${SABER_TEST_INTERPOLATION})
                       ARGS testinput/interpolation_bump.yaml
                       LIBS oops saber )
 endif()
+
+# QG tests
+add_definitions(-DATLASIFIED=1)
+
+if (${ENABLE_OOPS_TOYMODELS})
+    ecbuild_add_executable( TARGET  saber_qg_estimate_parameters.x
+                            SOURCES mains/qgEstimateParams.cc
+                            LIBS    saber
+                          )
+
+    ecbuild_add_executable( TARGET  saber_qg_dirac.x
+                            SOURCES mains/qgDirac.cc
+                            LIBS    saber
+                          )
+
+    ecbuild_add_executable( TARGET  saber_qg_4dvar.x
+                            SOURCES mains/qg4DVar.cc
+                            LIBS    saber
+                          )
+endif()
