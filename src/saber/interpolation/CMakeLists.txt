@@ -5,7 +5,6 @@
 
 set( interpolation_src_files
 
-instantiateInterpolatorFactory.h
 InterpolatorBump.h
 InterpolatorBump.cc
 interpolatorbump_f.h
