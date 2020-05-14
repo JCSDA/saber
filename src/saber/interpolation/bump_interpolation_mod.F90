@@ -91,7 +91,7 @@ end type bump_interpolator
 #define LISTED_TYPE bump_interpolator
 
 !> Linked list interface - defines registry_t type
-#include "oops/util/linkedList_i.f"
+#include "saber/util/linkedList_i.f"
 
 !> Global registry
 type(registry_t) :: bump_interpolator_registry
@@ -101,7 +101,7 @@ type(registry_t) :: bump_interpolator_registry
 contains
 !-------------------------------------------------------------------------------
 !> Linked list implementation
-#include "oops/util/linkedList_c.f"
+#include "saber/util/linkedList_c.f"
 
 ! ------------------------------------------------------------------------------
 !> Initialize interpolation object
@@ -145,7 +145,7 @@ subroutine bint_init(self, config, comm, in_funcspace, out_funcspace, masks)
   integer, allocatable :: levels(:)
   character(kind=c_char,len=:), allocatable :: string_buffer
   character(len=max_string) :: msg
-  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_init "
+  character(len=max_string) :: myname = "saber::interpolation::bump_interpolation_mod::bint_init "
 
   !--------------------------------------------------------------------------------
   ! set bump namelist parameters.
@@ -206,7 +206,6 @@ subroutine bint_init(self, config, comm, in_funcspace, out_funcspace, masks)
      call self%bump%setup(self%bump%mpl%f_comm, in_funcspace, masks, &
           msvali=msvali, msvalr=msvalr)
   else
-     self%bump%nam%nomask = .true.
      call self%bump%setup(self%bump%mpl%f_comm, in_funcspace, &
           msvali=msvali, msvalr=msvalr)
   endif
@@ -410,7 +409,7 @@ subroutine bint_apply(self, infields, outfields)
   real(kind_real), allocatable :: outfld(:,:)
   integer :: ifield
   character(len=max_string) :: msg, fieldname
-  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_apply "
+  character(len=max_string) :: myname = "saber::interpolation::bump_interpolation_mod::bint_apply "
 
   ! allocate bump arrays
   allocate(infld_mga(self%bump%geom%nmga,self%nlev))
@@ -535,7 +534,7 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
   real(kind_real), allocatable :: fld_outgrid(:,:)
   integer :: ifield
   character(len=max_string) :: msg, fieldname
-  character(len=max_string) :: myname = "oops::util::bump_interpolation_mod::bint_apply_ad_field "
+  character(len=max_string) :: myname = "saber::interpolation::bump_interpolation_mod::bint_apply_ad_field "
 
   ! allocate bump arrays
   allocate(fld_ingrid_mga(self%bump%geom%nmga,self%nlev))
