@@ -1410,7 +1410,7 @@ end do
 call ens%remove_mean
 
 ! Compute standard deviation
-!$omp parallel do schedule(static) private(its,iv,il0,ic0a)
+!$omp parallel do schedule(static) private(its,iv,il0,ic0a,ie)
 do its=1,nam%nts
    do iv=1,nam%nv
       do il0=1,geom%nl0
@@ -1694,6 +1694,7 @@ allocate(fld_save(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest))
 write(mpl%info,'(a4,a)') '','Define test vectors'
 call mpl%flush
 call define_test_vectors(mpl,rng,nam,geom,ntest,fld_save)
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
 write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors: '
@@ -1725,6 +1726,7 @@ do ifac=1,nfac_rnd
    write(mpl%info,'(a10,a)') '','Randomization'
    call mpl%flush
    call nicas%randomize(mpl,rng,nam,geom,bpar,nefac(ifac),ens)
+   if (nam%default_seed) call rng%reseed(mpl)
 
    ! Test randomized ensemble
    write(mpl%info,'(a10,a)') '','Apply NICAS to test vectors: '
@@ -1813,6 +1815,7 @@ type(io_type),intent(in) :: io           ! I/O
 integer,parameter :: nrad = 5
 integer :: irad,ib,il0
 real(kind_real) :: rh,rv,rad(nrad),rh_diag(nrad),rv_diag(nrad),rh_norm,rv_norm
+logical :: write_nicas
 character(len=1024) :: prefix
 type(cmat_type) :: cmat
 type(ens_type) :: ens
@@ -1826,6 +1829,7 @@ cmat%allocated = .false.
 prefix = nam%prefix
 rh = nam%rh
 rv = nam%rv
+write_nicas = nam%write_nicas
 
 do irad=1,nrad
    ! Set radius factor
@@ -1842,24 +1846,12 @@ do irad=1,nrad
    call cmat%from_nam(mpl,nam,geom,bpar)
 
    ! Setup C matrix sampling
-   call cmat%setup_sampling(nam,geom,bpar)
+   call cmat%setup_sampling(mpl,nam,geom,bpar)
 
-   ! Allocation
-   call nicas_test%alloc(mpl,nam,bpar,'nicas_test')
-
-   do ib=1,bpar%nbe
-      ! Compute NICAS parameters
-      if (bpar%nicas_block(ib)) call nicas_test%blk(ib)%compute_parameters(mpl,rng,nam,geom,cmat%blk(ib),.true.)
-
-      if (bpar%B_block(ib)) then
-         ! Copy weights
-         nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
-         if (bpar%nicas_block(ib)) then
-            allocate(nicas_test%blk(ib)%coef_ens(geom%nc0a,geom%nl0))
-            nicas_test%blk(ib)%coef_ens = cmat%blk(ib)%coef_ens
-         end if
-      end if
-   end do
+   ! Run NICAS driver
+   nam%write_nicas = .false.
+   call nicas_test%run_nicas(mpl,rng,nam,geom,bpar,cmat)
+   if (nam%default_seed) call rng%reseed(mpl)
 
    ! Randomize ensemble
    call nicas_test%randomize(mpl,rng,nam,geom,bpar,nam%ens1_ne,ens)
@@ -1925,6 +1917,7 @@ end do
 nam%prefix = prefix
 nam%rh = rh
 nam%rv = rv
+nam%write_nicas = write_nicas
 
 end subroutine nicas_test_consistency
 
@@ -1961,6 +1954,7 @@ type(nicas_type) :: nicas_test
 write(mpl%info,'(a4,a)') '','Define test vectors'
 call mpl%flush
 call define_test_vectors(mpl,rng,nam,geom,ntest,fld_save)
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
 write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors'
@@ -2007,7 +2001,7 @@ do ifac=-nfac_opt,nfac_opt
    call cmat%from_hdiag(mpl,nam,geom,bpar,hdiag)
 
    ! Setup C matrix sampling
-   call cmat%setup_sampling(nam,geom,bpar)
+   call cmat%setup_sampling(mpl,nam,geom,bpar)
 
    ! Multiplication factor
    fac(ifac) = 1.0+real(ifac,kind_real)/real(nfac_opt+1,kind_real)
@@ -2141,7 +2135,7 @@ if (mpl%main) then
    do itest=1,ntest
       found = .false.
       do while (.not.found)
-         call rng%rand_integer(1,geom%nc0,ic0dir(itest))
+         call geom%rand_point(mpl,rng,ic0dir(itest))
          call rng%rand_integer(1,geom%nl0,il0dir(itest))
          found = geom%mask_c0(ic0dir(itest),il0dir(itest))
       end do

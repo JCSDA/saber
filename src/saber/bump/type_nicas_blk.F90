@@ -1410,7 +1410,7 @@ call nicas_blk%compute_mpi_ab(mpl,rng,nam,geom)
 ! Compute vertical interpolation data
 write(mpl%info,'(a7,a)') '','Compute vertical interpolation data'
 if (nicas_blk%verbosity) call mpl%flush
-call nicas_blk%compute_interp_v(mpl,geom)
+call nicas_blk%compute_interp_v(geom)
 
 ! Compute convolution data
 write(mpl%info,'(a7,a)') '','Compute convolution data'
@@ -1600,7 +1600,7 @@ allocate(nicas_blk%vlev(geom%nl0))
 ! Reset random numbers seed
 if (trim(nam%strategy)=='specific_multivariate') call rng%reseed(mpl)
 
-! Compute support radii (TODO: use draw_type)
+! Compute support radii
 norm = 1.0/real(geom%nc0_mask(1:geom%nl0),kind_real)
 rhs_sum = sum(cmat_blk%rhs,dim=1,mask=geom%mask_c0a)
 call mpl%f_comm%allreduce(rhs_sum,nicas_blk%rhs_avg,fckit_mpi_sum())
@@ -2242,13 +2242,12 @@ end subroutine nicas_blk_compute_mpi_ab
 ! Subroutine: nicas_blk_compute_interp_v
 ! Purpose: compute vertical interpolation
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_interp_v(nicas_blk,mpl,geom)
+subroutine nicas_blk_compute_interp_v(nicas_blk,geom)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
 type(geom_type),intent(in) :: geom               ! Geometry
 
 ! Local variables

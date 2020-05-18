@@ -214,7 +214,7 @@ if (nn>0) then
             if (indist(nn_dist_tmp(i),nn_dist_tmp(j))) nid = nid+1
          end do
 
-         ! Reorder TODO: pass hash value as argument
+         ! Reorder
          if (nid>1) then
             allocate(list(nid))
             allocate(order(nid))

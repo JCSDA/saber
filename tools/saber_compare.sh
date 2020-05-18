@@ -9,6 +9,9 @@
 # Parameters
 test=$1
 
+# Special suffixes list
+special_list="mom lct_cor nicas normality obs sampling vbal"
+
 # Initialize exit status
 status=0
 
@@ -31,9 +34,6 @@ if test "${test%%_*}" = "bump" ; then
       # Normal tests
       mpi=$2
       omp=$3
-
-      # Special suffixes list
-      special_list="mom lct_cor nicas normality obs sampling_grids vbal"
 
       for file in `ls testdata/${test}/test_${mpi}-${omp}_*.nc` ; do
          if test ! -L ${file}; then

@@ -823,7 +823,7 @@ do il0=1,geom%nl0
 
    do while (itest<=ntest)
       ! Generate random dirac point
-      if (mpl%main) call rng%rand_integer(1,geom%nc0,ic0dir)
+      if (mpl%main) call geom%rand_point(mpl,rng,ic0dir)
       call mpl%f_comm%broadcast(ic0dir,mpl%rootproc-1)
 
       if (geom%mask_c0(ic0dir,il0)) then

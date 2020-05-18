@@ -23,7 +23,7 @@ implicit none
 
 logical,parameter :: check_data = .false.             ! Activate data check for all linear operations
 integer,parameter :: linop_ntag = 3                   ! Number of communication steps to send/receive
-real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum interpolation coefficient
+real(kind_real),parameter :: S_inf = 0.0e-2_kind_real ! Minimum interpolation coefficient
 
 ! Interpolation data derived type
 type interp_type

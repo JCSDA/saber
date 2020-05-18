@@ -13,7 +13,7 @@ use netcdf
 use tools_const, only: reqkm,rad2deg
 use tools_func, only: gau2gc,fit_lct,lct_d2h,check_cond,Dmin
 use tools_kinds, only: kind_real,nc_kind_real
-use tools_repro, only: rth,inf,sup
+use tools_repro, only: rth,inf,sup,eq
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
 use type_io, only: io_type
@@ -210,7 +210,7 @@ do il0=1,geom%nl0
    call mpl%prog_init(samp%nc1a)
 
    do ic1a=1,samp%nc1a
-      ! Global index
+      ! Indices
       ic1 = samp%c1a_to_c1(ic1a)
 
       select case (trim(nam%minim_algo))
@@ -501,61 +501,55 @@ type(samp_type),intent(in) :: samp           ! Sampling
 
 ! Local variables
 integer :: il0,jl0,jl0r,ic1a,ic1,ic0,jc3,jc0,icomp,iscales
-real(kind_real) :: fld_c1a(samp%nc1a),dx,dy,dz
-real(kind_real),allocatable :: fld_filt_c1a(:),dxsq(:,:),dysq(:,:),dxdy(:,:),dzsq(:,:)
-logical :: valid,mask_c1a(samp%nc1a,geom%nl0)
+real(kind_real) :: fld_c2a(samp%nc2a),dx,dy,dz
+real(kind_real),allocatable :: fld_filt_c2a(:),dxsq(:,:),dysq(:,:),dxdy(:,:),dzsq(:,:)
+logical :: valid
 logical,allocatable :: dmask(:,:)
 
 ! Associate
 associate(ib=>lct_blk%ib)
 
-! Define mask
-do il0=1,geom%nl0
-   do ic1a=1,samp%nc1a
-      ic1 = samp%c1a_to_c1(ic1a)
-      mask_c1a(ic1a,il0) = samp%c1l0_log(ic1,il0)
-   end do
-end do
-
 ! Allocation
-if (nam%diag_rhflt>0.0) allocate(fld_filt_c1a(samp%nc1a))
+if (nam%diag_rhflt>0.0) allocate(fld_filt_c2a(samp%nc2a))
 
 do il0=1,geom%nl0
    do iscales=1,lct_blk%nscales
       do icomp=1,4+1
          ! Copy
          if (icomp<=4) then
-            fld_c1a = lct_blk%D(icomp,iscales,:,il0)
+            fld_c2a = lct_blk%D(icomp,iscales,samp%c2a_to_c1a,il0)
          else
-            fld_c1a = lct_blk%coef(iscales,:,il0)
+            fld_c2a = lct_blk%coef(iscales,samp%c2a_to_c1a,il0)
          end if
 
          if (nam%diag_rhflt>0.0) then
             ! Copy
-            fld_filt_c1a = fld_c1a
+            fld_filt_c2a = fld_c2a
 
             ! Filter
-            call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,fld_filt_c1a)
-            call samp%diag_filter(mpl,nam,'gc99',nam%diag_rhflt,fld_filt_c1a)
+            call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,fld_filt_c2a)
+            call samp%diag_filter(mpl,nam,'gc99',nam%diag_rhflt,fld_filt_c2a)
          end if
 
          ! Fill missing values
-         call samp%diag_fill(mpl,nam,fld_c1a)
-         if (nam%diag_rhflt>0.0) call samp%diag_fill(mpl,nam,fld_filt_c1a)
+         call samp%diag_fill(mpl,nam,fld_c2a)
+         if (nam%diag_rhflt>0.0) call samp%diag_fill(mpl,nam,fld_filt_c2a)
 
          ! Copy
          if (icomp<=4) then
-            lct_blk%D(icomp,iscales,:,il0) = fld_c1a
-            if (nam%diag_rhflt>0.0) lct_blk%D_filt(icomp,iscales,:,il0) = fld_filt_c1a
+            lct_blk%D(icomp,iscales,samp%c2a_to_c1a,il0) = fld_c2a
+            if (nam%diag_rhflt>0.0) lct_blk%D_filt(icomp,iscales,:,il0) = fld_filt_c2a
          else
-            lct_blk%coef(iscales,:,il0) = fld_c1a
-            if (nam%diag_rhflt>0.0) lct_blk%coef_filt(iscales,:,il0) = fld_filt_c1a
+            lct_blk%coef(iscales,samp%c2a_to_c1a,il0) = fld_c2a
+            if (nam%diag_rhflt>0.0) lct_blk%coef_filt(iscales,:,il0) = fld_filt_c2a
          end if
       end do
    end do
 
    ! Fill missing values for quality control
-   call samp%diag_fill(mpl,nam,lct_blk%qc_c1a(:,il0))
+   fld_c2a = lct_blk%qc_c1a(samp%c2a_to_c1a,il0)
+   call samp%diag_fill(mpl,nam,fld_c2a)
+   lct_blk%qc_c1a(samp%c2a_to_c1a,il0) = fld_c2a
 end do
 
 if (nam%diag_rhflt>0.0) then
@@ -630,7 +624,7 @@ if (nam%diag_rhflt>0.0) then
 end if
 
 ! Release memory
-if (nam%diag_rhflt>0.0) deallocate(fld_filt_c1a)
+if (nam%diag_rhflt>0.0) deallocate(fld_filt_c2a)
 
 ! End associate
 end associate
@@ -654,23 +648,14 @@ type(bpar_type),intent(in) :: bpar           ! Block parameters
 type(samp_type),intent(in) :: samp           ! Sampling
 
 ! Local variables
-integer :: il0,il0i,ic1a,ic1,icomp,ic0a,iscales
+integer :: il0,il0i,ic1a,ic2a,ic0a,icomp,iscales
 real(kind_real) :: det,Lavg_tot,norm_tot
-real(kind_real) :: fld_c1a(samp%nc1a,geom%nl0,2*4+2),fld_c1b(samp%nc2b,geom%nl0),fld(geom%nc0a,geom%nl0,2*4+3)
+real(kind_real) :: fld_c2a(samp%nc2a,geom%nl0,2*4+2),fld_c2b(samp%nc2b,geom%nl0),fld(geom%nc0a,geom%nl0,2*4+3)
 real(kind_real),allocatable :: D(:,:,:,:),coef(:,:,:)
-logical :: mask_c1a(samp%nc1a,geom%nl0)
 character(len=1024),parameter :: subr = 'lct_interp'
 
 ! Associate
 associate(ib=>lct_blk%ib)
-
-! Define mask
-do il0=1,geom%nl0
-   do ic1a=1,samp%nc1a
-      ic1 = samp%c1a_to_c1(ic1a)
-      mask_c1a(ic1a,il0) = samp%c1l0_log(ic1,il0)
-   end do
-end do
 
 ! Allocation
 allocate(D(4,lct_blk%nscales,samp%nc1a,geom%nl0))
@@ -690,16 +675,18 @@ do iscales=1,lct_blk%nscales
    call mpl%flush
 
    ! Initialization
-   fld_c1a = mpl%msv%valr
+   fld_c2a = mpl%msv%valr
    fld = mpl%msv%valr
 
    ! Copy and inverse diffusion tensor
    write(mpl%info,'(a13,a)') '','Copy and inverse diffusion tensor'
    call mpl%flush
    do il0=1,geom%nl0
-      do ic1a=1,samp%nc1a
-         ic1 = samp%c1a_to_c1(ic1a)
-         if (mask_c1a(ic1a,il0)) then
+      do ic2a=1,samp%nc2a
+         if (samp%mask_c2a(ic2a,il0)) then
+            ! Index
+            ic1a = samp%c2a_to_c1a(ic2a)
+
             ! Ensure positive-definiteness of D
             D(1,iscales,ic1a,il0) = max(Dmin,D(1,iscales,ic1a,il0))
             D(2,iscales,ic1a,il0) = max(Dmin,D(2,iscales,ic1a,il0))
@@ -707,20 +694,20 @@ do iscales=1,lct_blk%nscales
             D(4,iscales,ic1a,il0) = max(-1.0_kind_real+Dmin,min(D(4,iscales,ic1a,il0),1.0_kind_real-Dmin))
 
             ! Copy diffusion tensor
-            fld_c1a(ic1a,il0,1) = D(1,iscales,ic1a,il0)
-            fld_c1a(ic1a,il0,2) = D(2,iscales,ic1a,il0)
-            fld_c1a(ic1a,il0,3) = D(3,iscales,ic1a,il0)
-            fld_c1a(ic1a,il0,4) = sqrt(D(1,iscales,ic1a,il0)*D(2,iscales,ic1a,il0))*D(4,iscales,ic1a,il0)
+            fld_c2a(ic2a,il0,1) = D(1,iscales,ic1a,il0)
+            fld_c2a(ic2a,il0,2) = D(2,iscales,ic1a,il0)
+            fld_c2a(ic2a,il0,3) = D(3,iscales,ic1a,il0)
+            fld_c2a(ic2a,il0,4) = sqrt(D(1,iscales,ic1a,il0)*D(2,iscales,ic1a,il0))*D(4,iscales,ic1a,il0)
 
             ! Inverse diffusion tensor
-            call lct_d2h(mpl,fld_c1a(ic1a,il0,1),fld_c1a(ic1a,il0,2),fld_c1a(ic1a,il0,3),fld_c1a(ic1a,il0,4), &
-          & fld_c1a(ic1a,il0,4+1),fld_c1a(ic1a,il0,4+2),fld_c1a(ic1a,il0,4+3),fld_c1a(ic1a,il0,4+4))
+            call lct_d2h(mpl,fld_c2a(ic2a,il0,1),fld_c2a(ic2a,il0,2),fld_c2a(ic2a,il0,3),fld_c2a(ic2a,il0,4), &
+          & fld_c2a(ic2a,il0,4+1),fld_c2a(ic2a,il0,4+2),fld_c2a(ic2a,il0,4+3),fld_c2a(ic2a,il0,4+4))
 
             ! Copy coefficient
-            fld_c1a(ic1a,il0,2*4+1) = coef(iscales,ic1a,il0)
+            fld_c2a(ic2a,il0,2*4+1) = coef(iscales,ic1a,il0)
 
             ! Copy quality control
-            fld_c1a(ic1a,il0,2*4+2) = lct_blk%qc_c1a(ic1a,il0)
+            fld_c2a(ic2a,il0,2*4+2) = lct_blk%qc_c1a(ic1a,il0)
          end if
       end do
    end do
@@ -729,10 +716,10 @@ do iscales=1,lct_blk%nscales
    write(mpl%info,'(a13,a)') '','Interpolate components'
    call mpl%flush
    do icomp=1,2*4+2
-      call samp%com_AB%ext(mpl,geom%nl0,fld_c1a(:,:,icomp),fld_c1b)
+      call samp%com_AB%ext(mpl,geom%nl0,fld_c2a(:,:,icomp),fld_c2b)
       do il0=1,geom%nl0
          il0i = min(il0,geom%nl0i)
-         call samp%h(il0i)%apply(mpl,fld_c1b(:,il0),fld(:,il0,icomp))
+         call samp%h(il0i)%apply(mpl,fld_c2b(:,il0),fld(:,il0,icomp))
       end do
    end do
 

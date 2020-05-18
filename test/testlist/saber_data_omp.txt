@@ -15,6 +15,6 @@ bump_read_nicas/test_1-2_nicas-2-sqrt_0001-0001_01_01_02_02.nc
 bump_read_nicas/test_1-2_nicas-2-sqrt_0001-0001_02_02_01_01.nc
 bump_read_nicas/test_1-2_nicas-2-sqrt_0001-0001_02_02_02_02.nc
 bump_read_obsop/test_1-2_obs_0001-0001.nc
-bump_read_sampling/test_1-2_sampling.nc
+bump_read_sampling/test_1-2_sampling_0001-0001.nc
 bump_read_var/test_1-2_var.nc
 bump_read_vbal/test_1-2_vbal_0001-0001.nc

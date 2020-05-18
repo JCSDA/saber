@@ -140,7 +140,7 @@ real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
 character(len=2*1024+12) :: filename
 character(len=1024),parameter :: subr = 'diag_write'
 
-write(mpl%info,'(a7,a)') '','Write diagnostic'
+write(mpl%info,'(a7,a)') '','Write diagnostic: '//trim(diag%prefix)
 call mpl%flush
 
 if (mpl%main) then

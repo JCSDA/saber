@@ -4,7 +4,6 @@ bump_get_param_hyb
 bump_get_param_lct
 bump_hdiag_diag_rhflt
 bump_hdiag_diag_rvflt
-bump_hdiag_draw_type
 bump_hdiag_fit_dl0
 bump_hdiag_gen_kurt
 bump_hdiag_hyb-avg_common
@@ -16,6 +15,7 @@ bump_hdiag_mask_stddev_lower
 bump_hdiag_mask_stddev_ncontig
 bump_hdiag_write_grids
 bump_hdiag-nicas_cor_common_univariate
+bump_hdiag-nicas_draw_type
 bump_hdiag-nicas_lev2d_first
 bump_hdiag-nicas_lev2d_first_hvh
 bump_hdiag-nicas_lev2d_last

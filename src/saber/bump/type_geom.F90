@@ -117,6 +117,7 @@ contains
    procedure :: geom_copy_mga_to_c0a_logical
    generic :: copy_mga_to_c0a => geom_copy_mga_to_c0a_real,geom_copy_mga_to_c0a_logical
    procedure :: compute_deltas => geom_compute_deltas
+   procedure :: rand_point => geom_rand_point
 end type geom_type
 
 character(len=1024),parameter :: metis_partgraph = 'kway'
@@ -1465,5 +1466,52 @@ dx = dx*cos(geom%lat_c0(ic0))
 dz = real(geom%vunit_c0(ic0,jl0)-geom%vunit_c0(ic0,il0),kind_real)
 
 end subroutine geom_compute_deltas
+
+!----------------------------------------------------------------------
+! Subroutine: geom_rand_point
+! Purpose: select random point on the grid
+!----------------------------------------------------------------------
+subroutine geom_rand_point(geom,mpl,rng,ic0,nr)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom ! Geometry
+type(mpl_type),intent(inout) :: mpl ! MPI data
+type(rng_type),intent(inout) :: rng ! Random number generator
+integer,intent(out) :: ic0          ! Index
+integer,intent(out),optional :: nr  ! Number of random tries
+
+! Local variables
+integer :: nn_index(1),lnr
+real(kind_real) :: lon,lat
+logical :: valid
+
+! Initialization
+valid = .false.
+lnr = 0
+
+! Loop
+do while (.not.valid)
+   ! Generate random lon/lat
+   call rng%rand_real(-pi,pi,lon)
+   call rng%rand_real(-1.0_kind_real,1.0_kind_real,lat)
+   lat = asin(lat)
+   lnr = lnr+1
+
+   ! Check whether the random location is in the convex hull
+   call geom%mesh%inside(mpl,lon,lat,valid)
+
+   if (valid) then
+      ! Find the nearest neighbor
+      call geom%tree%find_nearest_neighbors(lon,lat,1,nn_index)
+      ic0 = nn_index(1)
+   end if
+end do
+
+! Set number of tries
+if (present(nr)) nr = lnr
+
+end subroutine geom_rand_point
 
 end module type_geom

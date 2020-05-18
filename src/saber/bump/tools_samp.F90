@@ -62,6 +62,7 @@ integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
 integer,allocatable :: s1_loc_to_glb(:),s1_loc_to_glb_tmp(:),sam1_loc(:),sam1_loc_tmp(:)
 integer,allocatable :: sam1_glb(:),sam1_glb_eff(:),to_valid(:),sam2_glb_tmp(:),order(:)
 real(kind_real) :: lonlat(2),d,distmax,distmin,nn_dist(2),cdf_norm,rr
+real(kind_real),allocatable :: hash_glb(:),hash_loc(:)
 real(kind_real),allocatable :: lon1_loc(:),lat1_loc(:),dist1_loc(:),rh1_loc(:)
 real(kind_real),allocatable :: lon1_loc_tmp(:),lat1_loc_tmp(:),dist1_loc_tmp(:),rh1_loc_tmp(:)
 real(kind_real),allocatable :: lon1_glb(:),lat1_glb(:),dist1_glb(:),rh1_glb(:)
@@ -102,14 +103,25 @@ elseif (n_glb_eff==ns2_glb) then
    ! Allocation
    allocate(glb_to_loc(n_glb))
    allocate(glb_to_proc(n_glb))
+   allocate(hash_loc(n_loc))
    if (mpl%main) then
+      allocate(hash_glb(n_glb))
       allocate(mask_glb(n_glb))
+      allocate(list(ns2_glb))
+      allocate(order(ns2_glb))
    else
+      allocate(hash_glb(0))
       allocate(mask_glb(0))
    end if
 
+   ! Compute hash
+   do i_loc=1,n_loc
+      hash_loc(i_loc) = lonlathash(lon_loc(i_loc),lat_loc(i_loc))
+   end do
+
    ! Communication
    call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+   call mpl%loc_to_glb(n_loc,hash_loc,n_glb,glb_to_proc,glb_to_loc,.false.,hash_glb)
    call mpl%loc_to_glb(n_loc,mask_loc,n_glb,glb_to_proc,glb_to_loc,.false.,mask_glb)
 
    if (mpl%main) then
@@ -119,14 +131,27 @@ elseif (n_glb_eff==ns2_glb) then
          if (mask_glb(i_glb)) then
             is2_glb = is2_glb+1
             sam2_glb(is2_glb) = i_glb
+            list(is2_glb) = hash_glb(i_glb)
          end if
       end do
+
+      ! Define points order
+      call qsort(ns2_glb,list,order)
+
+      ! Reorder sampling
+      sam2_glb = sam2_glb(order)
    end if
 
    ! Release memory
    deallocate(glb_to_loc)
    deallocate(glb_to_proc)
+   deallocate(hash_loc)
+   deallocate(hash_glb)
    deallocate(mask_glb)
+   if (mpl%main) then
+      deallocate(list)
+      deallocate(order)
+   end if
 else
    ! First subsampling (local, using ATLAS octahedral grid)
    nfac = 1
@@ -173,7 +198,7 @@ else
                call tree_uni%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index(1:1),nn_dist(1:1))
 
                if (uni_to_proc(nn_index(1))==mpl%myproc) then
-                  ! Get local index 
+                  ! Get local index
                   i_loc = uni_to_loc(nn_index(1))
 
                   ! Keep valid points
@@ -410,7 +435,7 @@ else
          sam1_glb_eff = sam1_glb
       end if
 
-      ! Define points order TODO: pass hash value as argument
+      ! Define points order
       do is1_glb=1,ns1_glb_eff
          list(is1_glb) = lonlathash(lon1_glb_eff(is1_glb),lat1_glb_eff(is1_glb))
       end do
