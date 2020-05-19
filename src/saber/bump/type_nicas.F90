@@ -12,6 +12,7 @@ use netcdf
 use tools_const, only: rad2deg,reqkm,pi
 use tools_func, only: sphere_dist,cholesky,fit_diag
 use tools_kinds, only: kind_real,nc_kind_real
+use tools_qsort, only: qsort
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
 use type_com, only: com_type,com_ntag
@@ -559,8 +560,8 @@ type(cv_type),intent(out) :: cv       ! Control vector
 
 ! Local variables
 integer :: ib,jb,ns
-integer,allocatable :: s_to_sa(:),s_to_proc(:)
-real(kind_real),allocatable :: alpha(:)
+integer,allocatable :: s_to_sa(:),s_to_proc(:),order(:)
+real(kind_real),allocatable :: hash(:),alpha(:)
 
 ! Allocation
 call nicas%alloc_cv(mpl,bpar,cv)
@@ -575,20 +576,31 @@ do ib=1,bpar%nbe
       call mpl%f_comm%allreduce(nicas%blk(jb)%nsa,ns,fckit_mpi_sum())
 
       ! Allocation
+      allocate(hash(ns))
+      allocate(order(ns))
       allocate(alpha(ns))
       allocate(s_to_sa(ns))
       allocate(s_to_proc(ns))
 
+      ! Get conversions
+      call mpl%glb_to_loc_index(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_s,ns,s_to_sa,s_to_proc)
+
+      ! Get global hash
+      call mpl%loc_to_glb(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_hash,ns,s_to_proc,s_to_sa,.true.,hash)
+
       ! Random vector
       call rng%rand_gau(alpha)
 
-      ! Get conversions
-      call mpl%glb_to_loc_index(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_s,ns,s_to_sa,s_to_proc)
+      ! Reorder random vector
+      call qsort(ns,hash,order)
+      alpha = alpha(order)
 
       ! Global to local
       call mpl%glb_to_loc(ns,s_to_proc,s_to_sa,alpha,nicas%blk(jb)%nsa,cv%blk(ib)%alpha)
 
       ! Release memory
+      deallocate(hash)
+      deallocate(order)
       deallocate(alpha)
       deallocate(s_to_sa)
       deallocate(s_to_proc)
@@ -654,7 +666,7 @@ case ('common')
       !$omp parallel do schedule(static) private(il0,ic0a)
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+            if (geom%gmask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
          end do
       end do
       !$omp end parallel do
@@ -668,7 +680,7 @@ case ('common')
       !$omp parallel do schedule(static) private(il0,ic0a)
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+            if (geom%gmask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
          end do
       end do
       !$omp end parallel do
@@ -705,7 +717,7 @@ case ('common_univariate')
          !$omp parallel do schedule(static) private(il0,ic0a)
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
+               if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
                                                                 & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
             end do
          end do
@@ -720,7 +732,7 @@ case ('common_univariate')
          !$omp parallel do schedule(static) private(il0,ic0a)
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
+               if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
                                                                 & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
             end do
          end do
@@ -774,7 +786,7 @@ case ('common_weighted')
          !$omp parallel do schedule(static) private(il0,ic0a)
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
+               if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
                                                                 & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
             end do
          end do
@@ -788,7 +800,7 @@ case ('common_weighted')
          !$omp parallel do schedule(static) private(il0,ic0a)
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
+               if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
                                                                 & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
             end do
          end do
@@ -826,7 +838,7 @@ case ('specific_univariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
                                                                     & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
@@ -841,7 +853,7 @@ case ('specific_univariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
                                                                     & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
@@ -950,7 +962,7 @@ case ('common')
       !$omp parallel do schedule(static) private(il0,ic0a)
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+            if (geom%gmask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
          end do
       end do
      !$omp end parallel do
@@ -982,7 +994,7 @@ case ('common_univariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
                                                                    & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
                end do
             end do
@@ -1043,7 +1055,7 @@ case ('common_weighted')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
                                                                    & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
                end do
             end do
@@ -1086,7 +1098,7 @@ case ('specific_univariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
                                                                        & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
@@ -1109,7 +1121,7 @@ case ('specific_multivariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
                                                                     & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
@@ -1176,7 +1188,7 @@ case ('common')
       !$omp parallel do schedule(static) private(il0,ic0a)
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+            if (geom%gmask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
          end do
       end do
       !$omp end parallel do
@@ -1207,7 +1219,7 @@ case ('common_univariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
                                                                    & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
                end do
             end do
@@ -1277,7 +1289,7 @@ case ('common_weighted')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld_4d_tmp(ic0a,il0,iv) = fld_4d_tmp(ic0a,il0,iv) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld_4d_tmp(ic0a,il0,iv) = fld_4d_tmp(ic0a,il0,iv) &
                                                                        & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
                end do
             end do
@@ -1307,7 +1319,7 @@ case ('specific_univariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld_5d(ic0a,il0,iv,its) = fld_5d(ic0a,il0,iv,its) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld_5d(ic0a,il0,iv,its) = fld_5d(ic0a,il0,iv,its) &
                                                                        & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
@@ -1336,7 +1348,7 @@ case ('specific_multivariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) fld_5d(ic0a,il0,iv,its) = fld_5d(ic0a,il0,iv,its) &
+                  if (geom%gmask_c0a(ic0a,il0)) fld_5d(ic0a,il0,iv,its) = fld_5d(ic0a,il0,iv,its) &
                                                                        & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
@@ -1398,12 +1410,12 @@ end do
 call ens%remove_mean
 
 ! Compute standard deviation
-!$omp parallel do schedule(static) private(its,iv,il0,ic0a)
+!$omp parallel do schedule(static) private(its,iv,il0,ic0a,ie)
 do its=1,nam%nts
    do iv=1,nam%nv
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) then
+            if (geom%gmask_c0a(ic0a,il0)) then
                std(ic0a,il0,iv,its) = 0.0
                do ie=1,ne
                   std(ic0a,il0,iv,its) = std(ic0a,il0,iv,its)+ens%mem(ie)%fld(ic0a,il0,iv,its)**2
@@ -1423,7 +1435,7 @@ do ie=1,ne
       do iv=1,nam%nv
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) ens%mem(ie)%fld(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its) &
+               if (geom%gmask_c0a(ic0a,il0)) ens%mem(ie)%fld(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its) &
                                                                              & /std(ic0a,il0,iv,its)
             end do
          end do
@@ -1682,6 +1694,7 @@ allocate(fld_save(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest))
 write(mpl%info,'(a4,a)') '','Define test vectors'
 call mpl%flush
 call define_test_vectors(mpl,rng,nam,geom,ntest,fld_save)
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
 write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors: '
@@ -1713,6 +1726,7 @@ do ifac=1,nfac_rnd
    write(mpl%info,'(a10,a)') '','Randomization'
    call mpl%flush
    call nicas%randomize(mpl,rng,nam,geom,bpar,nefac(ifac),ens)
+   if (nam%default_seed) call rng%reseed(mpl)
 
    ! Test randomized ensemble
    write(mpl%info,'(a10,a)') '','Apply NICAS to test vectors: '
@@ -1801,6 +1815,7 @@ type(io_type),intent(in) :: io           ! I/O
 integer,parameter :: nrad = 5
 integer :: irad,ib,il0
 real(kind_real) :: rh,rv,rad(nrad),rh_diag(nrad),rv_diag(nrad),rh_norm,rv_norm
+logical :: write_nicas
 character(len=1024) :: prefix
 type(cmat_type) :: cmat
 type(ens_type) :: ens
@@ -1814,6 +1829,7 @@ cmat%allocated = .false.
 prefix = nam%prefix
 rh = nam%rh
 rv = nam%rv
+write_nicas = nam%write_nicas
 
 do irad=1,nrad
    ! Set radius factor
@@ -1830,24 +1846,12 @@ do irad=1,nrad
    call cmat%from_nam(mpl,nam,geom,bpar)
 
    ! Setup C matrix sampling
-   call cmat%setup_sampling(nam,geom,bpar)
+   call cmat%setup_sampling(mpl,nam,geom,bpar)
 
-   ! Allocation
-   call nicas_test%alloc(mpl,nam,bpar,'nicas_test')
-
-   do ib=1,bpar%nbe
-      ! Compute NICAS parameters
-      if (bpar%nicas_block(ib)) call nicas_test%blk(ib)%compute_parameters(mpl,rng,nam,geom,cmat%blk(ib),.true.)
-
-      if (bpar%B_block(ib)) then
-         ! Copy weights
-         nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
-         if (bpar%nicas_block(ib)) then
-            allocate(nicas_test%blk(ib)%coef_ens(geom%nc0a,geom%nl0))
-            nicas_test%blk(ib)%coef_ens = cmat%blk(ib)%coef_ens
-         end if
-      end if
-   end do
+   ! Run NICAS driver
+   nam%write_nicas = .false.
+   call nicas_test%run_nicas(mpl,rng,nam,geom,bpar,cmat)
+   if (nam%default_seed) call rng%reseed(mpl)
 
    ! Randomize ensemble
    call nicas_test%randomize(mpl,rng,nam,geom,bpar,nam%ens1_ne,ens)
@@ -1913,6 +1917,7 @@ end do
 nam%prefix = prefix
 nam%rh = rh
 nam%rv = rv
+nam%write_nicas = write_nicas
 
 end subroutine nicas_test_consistency
 
@@ -1949,6 +1954,7 @@ type(nicas_type) :: nicas_test
 write(mpl%info,'(a4,a)') '','Define test vectors'
 call mpl%flush
 call define_test_vectors(mpl,rng,nam,geom,ntest,fld_save)
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
 write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors'
@@ -1995,7 +2001,7 @@ do ifac=-nfac_opt,nfac_opt
    call cmat%from_hdiag(mpl,nam,geom,bpar,hdiag)
 
    ! Setup C matrix sampling
-   call cmat%setup_sampling(nam,geom,bpar)
+   call cmat%setup_sampling(mpl,nam,geom,bpar)
 
    ! Multiplication factor
    fac(ifac) = 1.0+real(ifac,kind_real)/real(nfac_opt+1,kind_real)
@@ -2129,9 +2135,9 @@ if (mpl%main) then
    do itest=1,ntest
       found = .false.
       do while (.not.found)
-         call rng%rand_integer(1,geom%nc0,ic0dir(itest))
+         call geom%rand_point(mpl,rng,ic0dir(itest))
          call rng%rand_integer(1,geom%nl0,il0dir(itest))
-         found = geom%mask_c0(ic0dir(itest),il0dir(itest))
+         found = geom%gmask_c0(ic0dir(itest),il0dir(itest))
       end do
    end do
 end if

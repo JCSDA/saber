@@ -4,9 +4,7 @@ bump_get_param_hyb/test_1-1_diag.nc
 bump_get_param_lct/test_1-1_lct.nc
 bump_hdiag_diag_rhflt/test_1-1_diag.nc
 bump_hdiag_diag_rhflt/test_1-1_local_diag_cor.nc
-bump_hdiag_diag_rhflt/test_1-1_local_diag_cov.nc
 bump_hdiag_diag_rvflt/test_1-1_diag.nc
-bump_hdiag_draw_type/test_1-1_diag.nc
 bump_hdiag_fit_dl0/test_1-1_diag.nc
 bump_hdiag_gen_kurt/test_1-1_diag.nc
 bump_hdiag_hyb-avg_common/test_1-1_diag.nc
@@ -15,7 +13,6 @@ bump_hdiag_ldwv/test_1-1_diag_B.nc
 bump_hdiag_ldwv/test_1-1_diag_C.nc
 bump_hdiag_ldwv/test_1-1_diag.nc
 bump_hdiag_ldwv/test_1-1_local_diag_cor.nc
-bump_hdiag_ldwv/test_1-1_local_diag_cov.nc
 bump_hdiag_loc_gau_approx/test_1-1_diag.nc
 bump_hdiag_loc_histograms/test_1-1_avg.nc
 bump_hdiag_loc_histograms/test_1-1_diag.nc
@@ -23,11 +20,14 @@ bump_hdiag_mask_lat/test_1-1_diag.nc
 bump_hdiag_mask_stddev_lower/test_1-1_diag.nc
 bump_hdiag_mask_stddev_ncontig/test_1-1_diag.nc
 bump_hdiag_write_grids/test_1-1_diag.nc
+bump_hdiag_write_grids/test_1-1_sampling_0001-0001.nc
 bump_hdiag_write_grids/test_1-1_sampling_grids_0001-0001.nc
-bump_hdiag_write_grids/test_1-1_sampling.nc
 bump_hdiag-nicas_cor_common_univariate/test_1-1_diag.nc
 bump_hdiag-nicas_cor_common_univariate/test_1-1_dirac.nc
 bump_hdiag-nicas_cor_common_univariate/test_1-1_nicas-2-sqrt_0001-0001_common.nc
+bump_hdiag-nicas_draw_type/test_1-1_diag.nc
+bump_hdiag-nicas_draw_type/test_1-1_dirac.nc
+bump_hdiag-nicas_draw_type/test_1-1_nicas-2-sqrt_0001-0001_common.nc
 bump_hdiag-nicas_lev2d_first/test_1-1_diag.nc
 bump_hdiag-nicas_lev2d_first/test_1-1_dirac.nc
 bump_hdiag-nicas_lev2d_first/test_1-1_nicas-2-sqrt_0001-0001_01_01_01_01.nc
@@ -111,8 +111,8 @@ bump_lct_write_cor/test_1-1_lct_cor_0001-0001_02_02_01_01.nc
 bump_lct_write_cor/test_1-1_lct_cor_0001-0001_02_02_02_02.nc
 bump_lct_write_cor/test_1-1_lct.nc
 bump_lct_write_grids/test_1-1_lct.nc
+bump_lct_write_grids/test_1-1_sampling_0001-0001.nc
 bump_lct_write_grids/test_1-1_sampling_grids_0001-0001.nc
-bump_lct_write_grids/test_1-1_sampling.nc
 bump_nicas_mpicom_lsqrt_a/test_1-1_dirac.nc
 bump_nicas_mpicom_lsqrt_a/test_1-1_nicas-2-sqrt_0001-0001_common.nc
 bump_nicas_mpicom_lsqrt_b/test_1-1_dirac.nc
@@ -137,8 +137,8 @@ bump_vbal_diag_auto/test_1-1_dirac.nc
 bump_vbal_diag_auto/test_1-1_vbal_0001-0001.nc
 bump_vbal_diag_reg/test_1-1_dirac.nc
 bump_vbal_diag_reg/test_1-1_vbal_0001-0001.nc
+bump_vbal_write_grids/test_1-1_sampling_0001-0001.nc
 bump_vbal_write_grids/test_1-1_sampling_grids_0001-0001.nc
-bump_vbal_write_grids/test_1-1_sampling.nc
 bump_vbal_write_grids/test_1-1_vbal_0001-0001.nc
 bump_set_param_cor/test_1-1_diag.nc
 bump_set_param_cor/test_1-1_dirac.nc

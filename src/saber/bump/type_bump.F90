@@ -185,8 +185,7 @@ integer,intent(in),optional :: msvali                  ! Missing value for integ
 real(kind_real),intent(in),optional :: msvalr          ! Missing value for reals
 
 ! Local variables
-integer :: lmsvali,iv,its
-real(kind_real) :: lmsvalr
+integer :: iv,its
 real(kind_real),pointer :: real_ptr(:,:)
 character(len=1024) :: fieldname
 character(len=1024),parameter :: subr = 'bump_setup'
@@ -692,7 +691,7 @@ if (bump%cmat%allocated.or.bump%nam%new_nicas) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Setup C matrix sampling'
    call bump%mpl%flush
-   call bump%cmat%setup_sampling(bump%nam,bump%geom,bump%bpar)
+   call bump%cmat%setup_sampling(bump%mpl,bump%nam,bump%geom,bump%bpar)
 
    if (bump%nam%write_cmat) then
       ! Write C matrix
@@ -778,7 +777,7 @@ integer,intent(in) :: ie                        ! Member index
 integer,intent(in) :: iens                      ! Ensemble number
 
 ! Local variables
-integer :: ic0a,il0,its,iv,nnonzero,nzero,nmask,nnonzero_tot,nzero_tot,nmask_tot
+integer :: its,iv,nnonzero,nzero,nmask,nnonzero_tot,nzero_tot,nmask_tot
 real(kind_real) :: norm,norm_tot,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 character(len=1024) :: filename,varname
@@ -816,16 +815,16 @@ do its=1,bump%nam%nts
 
       if (print_member) then
          ! Print norm
-         norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
+         norm = sum(fld_c0a**2,mask=bump%geom%gmask_c0a)
          call bump%mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
          write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
          call bump%mpl%flush
          write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Global norm for variable ',iv,' and timeslot ',its,': ',norm_tot
          call bump%mpl%flush
          if (bump%geom%nc0a>0) then
-            nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
-            nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
-            nmask = count(.not.bump%geom%mask_c0a)
+            nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%gmask_c0a)
+            nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%gmask_c0a)
+            nmask = count(.not.bump%geom%gmask_c0a)
          else
             nnonzero = 0
             nzero = 0
@@ -2183,7 +2182,8 @@ implicit none
 class(bump_type),intent(inout) :: bump ! BUMP
 
 ! Local variables
-integer :: iv,its
+integer :: iv,its,ic0a,ic0
+real(kind_real) :: hash_min,hash_spread_inv
 real(kind_real),allocatable :: fld_c0(:,:),fld_c0a(:,:),fld_mga(:,:,:,:)
 type(atlas_fieldset) :: afieldset,afieldset_req,afieldset_reqsq,afieldset_vert,afieldset_vertsq
 
@@ -2192,12 +2192,15 @@ allocate(fld_c0(bump%geom%nc0,bump%geom%nl0))
 allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0))
 allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
 
-! Random initialization
+! Initialization
+hash_min = minval(bump%geom%hash_c0)
+hash_spread_inv = 1.0/(maxval(bump%geom%hash_c0)-hash_min)
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
-      if (bump%mpl%main) call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0)
-      call bump%mpl%glb_to_loc(bump%geom%nl0,bump%geom%nc0,bump%geom%c0_to_proc,bump%geom%c0_to_c0a, &
-    & fld_c0,bump%geom%nc0a,fld_c0a)
+      do ic0a=1,bump%geom%nc0a
+         ic0 = bump%geom%c0a_to_c0(ic0a)
+         fld_c0a(ic0a,:) = max(min(1.0e-6_kind_real,(bump%geom%hash_c0(ic0)-hash_min)*hash_spread_inv),1.0-1.0e-6_kind_real)
+      end do
       call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
    end do
 end do

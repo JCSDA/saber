@@ -238,7 +238,7 @@ var%m4 = var%m4*norm_m4
 ! Apply mask
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (.not.geom%mask_c0a(ic0a,il0)) then
+      if (.not.geom%gmask_c0a(ic0a,il0)) then
          var%m2(ic0a,il0,:,:) = mpl%msv%valr
          var%m4(ic0a,il0,:,:) = mpl%msv%valr
       end if
@@ -304,8 +304,8 @@ do its=1,nam%nts
 
       ! Global sum
       do il0=1,geom%nl0
-         m2sq(il0) = sum(var%m2(:,il0,iv,its)**2,mask=geom%mask_c0a(:,il0))
-         m4(il0) = sum(var%m4(:,il0,iv,its),mask=geom%mask_c0a(:,il0))
+         m2sq(il0) = sum(var%m2(:,il0,iv,its)**2,mask=geom%gmask_c0a(:,il0))
+         m4(il0) = sum(var%m4(:,il0,iv,its),mask=geom%gmask_c0a(:,il0))
       end do
       call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
       call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
@@ -339,7 +339,7 @@ do its=1,nam%nts
 
          ! Global product
          do il0=1,geom%nl0
-            m2prod(il0) = sum(m2(:,il0)*m2_ini(:,il0),mask=geom%mask_c0a(:,il0))
+            m2prod(il0) = sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
          end do
          call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
 
@@ -416,7 +416,7 @@ integer :: ic0a,il0
 ! Apply variance
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,:,:) = fld(ic0a,il0,:,:)*var%m2sqrt(ic0a,il0,:,:)
+      if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:,:) = fld(ic0a,il0,:,:)*var%m2sqrt(ic0a,il0,:,:)
    end do
 end do
 
@@ -442,7 +442,7 @@ integer :: ic0a,il0
 ! Apply inverse variance
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,:,:) = fld(ic0a,il0,:,:)/var%m2sqrt(ic0a,il0,:,:)
+      if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:,:) = fld(ic0a,il0,:,:)/var%m2sqrt(ic0a,il0,:,:)
    end do
 end do
 

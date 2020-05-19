@@ -28,7 +28,8 @@ bump_read_nicas/test_2-1_nicas-2-sqrt_0002-0002_02_02_01_01.nc
 bump_read_nicas/test_2-1_nicas-2-sqrt_0002-0002_02_02_02_02.nc
 bump_read_obsop/test_2-1_obs_0002-0001.nc
 bump_read_obsop/test_2-1_obs_0002-0002.nc
-bump_read_sampling/test_2-1_sampling.nc
+bump_read_sampling/test_2-1_sampling_0002-0001.nc
+bump_read_sampling/test_2-1_sampling_0002-0002.nc
 bump_read_var/test_2-1_var.nc
 bump_read_vbal/test_2-1_vbal_0002-0001.nc
 bump_read_vbal/test_2-1_vbal_0002-0002.nc

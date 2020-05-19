@@ -429,7 +429,7 @@ do il0=1,geom%nl0
             ic1 = samp%c1a_to_c1(ic1a)
 
             ! Check mask validity
-            valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+            valid = samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)
 
             if (valid) then
                ! Check general kurtosis
@@ -794,11 +794,11 @@ do il0=1,geom%nl0
 
          ! Fill lists
          do ic1d=1,samp%nc1d
-            ! Index
+            ! Indices
             ic1 = samp%c1d_to_c1(ic1d)
 
             ! Check mask validity
-            valid = samp%local_mask(ic1,ic2a).and.samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+            valid = samp%local_mask(ic1,ic2a).and.samp%c1l0_log(ic1,il0).and.samp%c1dc3l0_log(ic1d,jc3,jl0)
 
             if (valid) then
                ! Check generalized kurtosis
@@ -1154,7 +1154,7 @@ do il0=1,geom%nl0
             ic1 = samp%c1a_to_c1(ic1a)
 
             ! Check validity
-            valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+            valid = samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)
             if (trim(nam%mask_type)=='stddev') then
                m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
                m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
@@ -1277,7 +1277,7 @@ type(mom_blk_type),intent(in) :: mom_blk     ! Moments block
 type(mom_blk_type),intent(in) :: mom_lr_blk  ! Low-resolution moments block
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1d,ic1,nc1max,nc1a,i
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1d,ic1,ic1a,nc1max,nc1a,i
 real(kind_real) :: m2_1,m2_2
 real(kind_real),allocatable :: list_m11lrm11sub(:,:,:)
 logical :: valid
@@ -1302,15 +1302,16 @@ do il0=1,geom%nl0
          ! Fill lists
          i = 0
          do ic1d=1,samp%nc1d
-            ! Index
+            ! Indices
             ic1 = samp%c1d_to_c1(ic1d)
+            ic1a = samp%c1_to_c1a(ic1a)
 
             if (samp%local_mask(ic1,ic2a)) then
                ! Update
                i = i+1
 
                ! Check validity
-               valid = samp%c1l0_log(ic1,il0).and.samp%c1c3l0_log(ic1,jc3,jl0)
+               valid = samp%c1l0_log(ic1,il0).and.samp%c1dc3l0_log(ic1d,jc3,jl0)
                if (trim(nam%mask_type)=='stddev') then
                   m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_blk%nsub,kind_real)
                   m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jl0,:))/real(avg_blk%nsub,kind_real)

@@ -11,7 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 use netcdf
 !$ use omp_lib
 use tools_const, only: pi,req,reqkm,deg2rad,rad2deg
-use tools_func, only: gc2gau,lonlatmod,sphere_dist,fit_func
+use tools_func, only: gc2gau,lonlatmod,lonlathash,sphere_dist,fit_func
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf,eq
@@ -153,6 +153,7 @@ type nicas_blk_type
 
    ! Local to global
    integer,allocatable :: sa_to_s(:)               ! Subgrid, halo A to global
+   real(kind_real),allocatable :: sa_to_hash(:)    ! Hash value based on lon/lat/lev
 
    ! Inter-halo conversions
    integer,allocatable :: sa_to_sc(:)              ! Subgrid, halo A to halo C
@@ -420,6 +421,7 @@ integer :: il0,il1,its
 call nicas_blk%partial_dealloc
 if (allocated(nicas_blk%vlev)) deallocate(nicas_blk%vlev)
 if (allocated(nicas_blk%sa_to_s)) deallocate(nicas_blk%sa_to_s)
+if (allocated(nicas_blk%sa_to_hash)) deallocate(nicas_blk%sa_to_hash)
 if (allocated(nicas_blk%sa_to_sc)) deallocate(nicas_blk%sa_to_sc)
 if (allocated(nicas_blk%sb_to_sc)) deallocate(nicas_blk%sb_to_sc)
 call nicas_blk%c%dealloc
@@ -485,7 +487,7 @@ type(bpar_type),intent(in) :: bpar               ! Block parameters
 ! Local variables
 integer :: il0i,il1,its,il0,info
 integer :: ncid,nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nsc_id,nc0d_id,nc0dinv_id
-integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
+integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,sa_to_hash_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
 integer :: vlev_int(geom%nl0)
 character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'nicas_blk_read'
@@ -547,6 +549,7 @@ if (bpar%nicas_block(ib)) then
    allocate(nicas_blk%coef_ens(nicas_blk%nc0a,geom%nl0))
    if (nicas_blk%nsa>0) then
       allocate(nicas_blk%sa_to_s(nicas_blk%nsa))
+      allocate(nicas_blk%sa_to_hash(nicas_blk%nsa))
       allocate(nicas_blk%sa_to_sc(nicas_blk%nsa))
    end if
    if (nicas_blk%nsb>0) then
@@ -574,6 +577,7 @@ if (bpar%nicas_block(ib)) then
    end if
    if (nicas_blk%nsa>0) then
       call mpl%ncerr(subr,nf90_inq_varid(ncid,'sa_to_s',sa_to_s_id))
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,'sa_to_hash',sa_to_hash_id))
       call mpl%ncerr(subr,nf90_inq_varid(ncid,'sa_to_sc',sa_to_sc_id))
    end if
    if (nicas_blk%nsb>0) then
@@ -604,6 +608,7 @@ if (bpar%nicas_block(ib)) then
    end if
    if (nicas_blk%nsa>0) then
       call mpl%ncerr(subr,nf90_get_var(ncid,sa_to_s_id,nicas_blk%sa_to_s))
+      call mpl%ncerr(subr,nf90_get_var(ncid,sa_to_hash_id,nicas_blk%sa_to_hash))
       call mpl%ncerr(subr,nf90_get_var(ncid,sa_to_sc_id,nicas_blk%sa_to_sc))
    end if
    if (nicas_blk%nsb>0) then
@@ -675,7 +680,7 @@ type(bpar_type),intent(in) :: bpar            ! Block parameters
 ! Local variables
 integer :: il0i,il1,its,il0
 integer :: ncid,nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nsc_id,nc0d_id,nc0dinv_id
-integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
+integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,sa_to_hash_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
 integer :: vlev_int(geom%nl0)
 character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'nicas_blk_write'
@@ -720,8 +725,10 @@ if (bpar%nicas_block(ib)) then
    end if
    if (nicas_blk%nsa>0) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_s',nf90_int,(/nsa_id/),sa_to_s_id))
+      call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_hash',nc_kind_real,(/nsa_id/),sa_to_hash_id))
       call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_sc',nf90_int,(/nsa_id/),sa_to_sc_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_s_id,'_FillValue',mpl%msv%vali))
+      call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_hash_id,'_FillValue',mpl%msv%valr))
       call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_sc_id,'_FillValue',mpl%msv%vali))
    end if
    if (nicas_blk%nsb>0) then
@@ -755,6 +762,7 @@ if (bpar%nicas_block(ib)) then
    end if
    if (nicas_blk%nsa>0) then
       call mpl%ncerr(subr,nf90_put_var(ncid,sa_to_s_id,nicas_blk%sa_to_s))
+      call mpl%ncerr(subr,nf90_put_var(ncid,sa_to_hash_id,nicas_blk%sa_to_hash))
       call mpl%ncerr(subr,nf90_put_var(ncid,sa_to_sc_id,nicas_blk%sa_to_sc))
    end if
    if (nicas_blk%nsb>0) then
@@ -951,6 +959,7 @@ if (bpar%nicas_block(ib)) then
    allocate(nicas_blk%coef_ens(nicas_blk%nc0a,geom%nl0))
    if (nicas_blk%nsa>0) then
       allocate(nicas_blk%sa_to_s(nicas_blk%nsa))
+      allocate(nicas_blk%sa_to_hash(nicas_blk%nsa))
       allocate(nicas_blk%sa_to_sc(nicas_blk%nsa))
    end if
    if (nicas_blk%nsb>0) then
@@ -990,7 +999,7 @@ end if
 n_real = n_real+1
 if (bpar%nicas_block(ib)) then
    n_int = n_int+2*nicas_blk%nsa+3*nicas_blk%nsb
-   n_real = n_real+nicas_blk%nc0a*geom%nl0
+   n_real = n_real+nicas_blk%nsa+nicas_blk%nc0a*geom%nl0
    if (.not.nicas_blk%smoother) n_real = n_real+nicas_blk%nc0a*geom%nl0+nicas_blk%nsc
    n_logical = n_logical+geom%nl0
    if (nam%write_grids) then
@@ -1033,6 +1042,8 @@ if (bpar%nicas_block(ib)) then
    if (nicas_blk%nsa>0) then
       nicas_blk%sa_to_s = rbuf_int(offset_int+1:offset_int+nicas_blk%nsa)
       offset_int = offset_int+nicas_blk%nsa
+      nicas_blk%sa_to_hash = rbuf_real(offset_real+1:offset_real+nicas_blk%nsa)
+      offset_real = offset_real+nicas_blk%nsa
       nicas_blk%sa_to_sc = rbuf_int(offset_int+1:offset_int+nicas_blk%nsa)
       offset_int = offset_int+nicas_blk%nsa
    end if
@@ -1205,7 +1216,7 @@ deallocate(sbuf_dim)
 n_real = n_real+1
 if (bpar%nicas_block(ib)) then
    n_int = n_int+2*nicas_blk%nsa+3*nicas_blk%nsb
-   n_real = n_real+nicas_blk%nc0a*geom%nl0
+   n_real = n_real+nicas_blk%nsa+nicas_blk%nc0a*geom%nl0
    if (.not.nicas_blk%smoother) n_real = n_real+nicas_blk%nc0a*geom%nl0+nicas_blk%nsc
    n_logical = n_logical+geom%nl0
    if (nam%write_grids) then
@@ -1240,6 +1251,8 @@ if (bpar%nicas_block(ib)) then
    if (nicas_blk%nsa>0) then
       sbuf_int(offset_int+1:offset_int+nicas_blk%nsa) = nicas_blk%sa_to_s
       offset_int = offset_int+nicas_blk%nsa
+      sbuf_real(offset_real+1:offset_real+nicas_blk%nsa) = nicas_blk%sa_to_hash
+      offset_real = offset_real+nicas_blk%nsa
       sbuf_int(offset_int+1:offset_int+nicas_blk%nsa) = nicas_blk%sa_to_sc
       offset_int = offset_int+nicas_blk%nsa
    end if
@@ -1397,7 +1410,7 @@ call nicas_blk%compute_mpi_ab(mpl,rng,nam,geom)
 ! Compute vertical interpolation data
 write(mpl%info,'(a7,a)') '','Compute vertical interpolation data'
 if (nicas_blk%verbosity) call mpl%flush
-call nicas_blk%compute_interp_v(mpl,geom)
+call nicas_blk%compute_interp_v(geom)
 
 ! Compute convolution data
 write(mpl%info,'(a7,a)') '','Compute convolution data'
@@ -1570,7 +1583,7 @@ type(geom_type),intent(in) :: geom               ! Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 
 ! Local variables
-integer :: il0,ic0,ic0a
+integer :: il0,ic0a
 real(kind_real) :: rhs_sum(geom%nl0),rvs_sum(geom%nl0),rvs_avg(geom%nl0),norm(geom%nl0)
 real(kind_real) :: rhs_minavg,rhs_min_norm,rhs_min_norm_tot
 real(kind_real) :: rhs_min(geom%nc0a)
@@ -1587,12 +1600,12 @@ allocate(nicas_blk%vlev(geom%nl0))
 ! Reset random numbers seed
 if (trim(nam%strategy)=='specific_multivariate') call rng%reseed(mpl)
 
-! Compute support radii (TODO: use draw_type)
+! Compute support radii
 norm = 1.0/real(geom%nc0_mask(1:geom%nl0),kind_real)
-rhs_sum = sum(cmat_blk%rhs,dim=1,mask=geom%mask_c0a)
+rhs_sum = sum(cmat_blk%rhs,dim=1,mask=geom%gmask_c0a)
 call mpl%f_comm%allreduce(rhs_sum,nicas_blk%rhs_avg,fckit_mpi_sum())
 nicas_blk%rhs_avg = nicas_blk%rhs_avg*norm
-rvs_sum = sum(cmat_blk%rvs,dim=1,mask=geom%mask_c0a)
+rvs_sum = sum(cmat_blk%rvs,dim=1,mask=geom%gmask_c0a)
 call mpl%f_comm%allreduce(rvs_sum,rvs_avg,fckit_mpi_sum())
 rvs_avg = rvs_avg*norm
 write(mpl%info,'(a10,a)') '','Average support radii (H/V): '
@@ -1616,8 +1629,8 @@ if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='hv').or.(trim(n
    ! Basic horizontal mesh defined with the minimum support radius
    rhs_min = mpl%msv%valr
    do ic0a=1,geom%nc0a
-      if (any(nicas_blk%vlev.and.geom%mask_c0a(ic0a,:))) rhs_min(ic0a) = minval(cmat_blk%rhs(ic0a,:), &
-                                                       & mask=nicas_blk%vlev.and.geom%mask_c0a(ic0a,:))
+      if (any(nicas_blk%vlev.and.geom%gmask_c0a(ic0a,:))) rhs_min(ic0a) = minval(cmat_blk%rhs(ic0a,:), &
+                                                       & mask=nicas_blk%vlev.and.geom%gmask_c0a(ic0a,:))
    end do
    call mpl%f_comm%allreduce(sum(rhs_min,mask=mpl%msv%isnot(rhs_min)),rhs_minavg,fckit_mpi_sum())
    rhs_min_norm = real(count(mpl%msv%isnot(rhs_min)),kind_real)
@@ -1653,7 +1666,7 @@ write(mpl%info,'(a10,a)') '','Compute horizontal subset C1: '
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 
 ! Mask initialization
-mask_hor_c0a = geom%mask_hor_c0a
+mask_hor_c0a = geom%gmask_hor_c0a
 
 if (nam%check_no_point_nicas) then
    ! Mask points on the last MPI task
@@ -1661,8 +1674,9 @@ if (nam%check_no_point_nicas) then
 end if
 
 ! Compute subsampling
-call initialize_sampling(mpl,rng,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rhs_min,geom%c0a_to_c0,nam%ntry,nam%nrep, &
- & nicas_blk%nc1,nicas_blk%c1_to_c0,fast=nam%fast_sampling,verbosity=nicas_blk%verbosity)
+call initialize_sampling(mpl,rng,maxval(geom%area),geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rhs_min,geom%c0a_to_c0, &
+ & nam%ntry,nam%nrep,nicas_blk%nc1,nicas_blk%c1_to_c0,fast=nam%fast_sampling,verbosity=nicas_blk%verbosity, &
+ & n_uni=geom%nc0,uni_to_proc=geom%c0_to_proc,uni_to_loc=geom%c0_to_c0a,tree_uni=geom%tree)
 nicas_blk%c1_to_proc = geom%c0_to_proc(nicas_blk%c1_to_c0)
 
 end subroutine nicas_blk_compute_sampling_c1
@@ -1718,7 +1732,7 @@ if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(
             ! Compute minimum normalized distance with level il0_prev
             distnorm = huge(1.0)
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) then
+               if (geom%gmask_c0a(ic0a,il0)) then
                   rv = sqrt(0.5*(cmat_blk%rvs(ic0a,il0)**2+cmat_blk%rvs(ic0a,il0_prev)**2))
                   if (rv>0.0) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/rv
                end if
@@ -1775,12 +1789,12 @@ else
       nicas_blk%vtop(ic1) = geom%nl0
       do il1=1,nicas_blk%nl1
          il0 = nicas_blk%l1_to_l0(il1)
-         if (.not.inside.and.geom%mask_c0(ic0,il0)) then
+         if (.not.inside.and.geom%gmask_c0(ic0,il0)) then
             ! Bottom level
             nicas_blk%vbot(ic1) = il0
             inside = .true.
          end if
-         if (inside.and.(.not.geom%mask_c0(ic0,il0))) then
+         if (inside.and.(.not.geom%gmask_c0(ic0,il0))) then
             ! Top level
             nicas_blk%vtop(ic1) = il0
             inside = .false.
@@ -1836,8 +1850,8 @@ allocate(mask_c1a(nicas_blk%nc1a))
 allocate(rhs_c1a(nicas_blk%nc1a))
 
 ! Initialization
-lon_c1a = geom%lon(nicas_blk%c1_to_c0(nicas_blk%c1a_to_c1))
-lat_c1a = geom%lat(nicas_blk%c1_to_c0(nicas_blk%c1a_to_c1))
+lon_c1a = geom%lon_c0(nicas_blk%c1_to_c0(nicas_blk%c1a_to_c1))
+lat_c1a = geom%lat_c0(nicas_blk%c1_to_c0(nicas_blk%c1a_to_c1))
 
 ! Vertically dependent horizontal subsampling
 if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) then
@@ -1847,7 +1861,7 @@ end if
 do il1=1,nicas_blk%nl1
    ! Initialization
    il0 = nicas_blk%l1_to_l0(il1)
-   nicas_blk%mask_c1(:,il1) = geom%mask_c0(nicas_blk%c1_to_c0,il0)
+   nicas_blk%mask_c1(:,il1) = geom%gmask_c0(nicas_blk%c1_to_c0,il0)
 
    if (nicas_blk%vlev(il0).and.((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='vh').or. &
  & (trim(nicas_blk%subsamp)=='hvh'))) then
@@ -1874,7 +1888,7 @@ do il1=1,nicas_blk%nl1
          ! Initialize sampling
          mask_c1a = nicas_blk%mask_c1(nicas_blk%c1a_to_c1,il1)
          rhs_c1a = cmat_blk%rhs(nicas_blk%c1a_to_c0a,il0)
-         call initialize_sampling(mpl,rng,nicas_blk%nc1a,lon_c1a,lat_c1a,mask_c1a,rhs_c1a,nicas_blk%c1a_to_c1, &
+         call initialize_sampling(mpl,rng,geom%area(il0),nicas_blk%nc1a,lon_c1a,lat_c1a,mask_c1a,rhs_c1a,nicas_blk%c1a_to_c1, &
        & nam%ntry,nam%nrep,nicas_blk%nc2(il1),c2_to_c1,fast=nam%fast_sampling,verbosity=nicas_blk%verbosity)
 
          ! Fill C2 mask
@@ -2026,13 +2040,13 @@ ifmt = 0
 if (nicas_blk%verbosity) ifmt = 10
 
 ! Compute interpolation
-lon_c1 = geom%lon(nicas_blk%c1_to_c0)
-lat_c1 = geom%lat(nicas_blk%c1_to_c0)
+lon_c1 = geom%lon_c0(nicas_blk%c1_to_c0)
+lat_c1 = geom%lat_c0(nicas_blk%c1_to_c0)
 do il0i=1,geom%nl0i
-   mask_c1 = geom%mask_c0(nicas_blk%c1_to_c0,il0i)
+   mask_c1 = geom%gmask_c0(nicas_blk%c1_to_c0,il0i)
    write(nicas_blk%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
    call nicas_blk%h(il0i)%interp(mpl,rng,nam,geom,il0i,nicas_blk%nc1,lon_c1,lat_c1,mask_c1,geom%nc0a, &
-    & geom%lon_c0a,geom%lat_c0a,geom%mask_c0a(:,il0i),ifmt)
+    & geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0i),ifmt)
 end do
 
 ! Define halo A
@@ -2113,6 +2127,7 @@ end do
 ! Allocation
 allocate(nicas_blk%sa_to_s(nicas_blk%nsa))
 allocate(nicas_blk%s_to_sa(nicas_blk%ns))
+allocate(nicas_blk%sa_to_hash(nicas_blk%nsa))
 allocate(nicas_blk%c1b_to_c1(nicas_blk%nc1b))
 allocate(nicas_blk%c1_to_c1b(nicas_blk%nc1))
 allocate(nicas_blk%sb_to_s(nicas_blk%nsb))
@@ -2173,7 +2188,6 @@ do il0i=1,geom%nl0i
    do i_s=1,nicas_blk%h(il0i)%n_s
       nicas_blk%h(il0i)%col(i_s) = nicas_blk%c1_to_c1b(nicas_blk%h(il0i)%col(i_s))
    end do
-   call nicas_blk%h(il0i)%reorder(mpl)
 end do
 do il1=1,nicas_blk%nl1
    nicas_blk%s(il1)%n_src = nicas_blk%nc1b
@@ -2182,7 +2196,6 @@ do il1=1,nicas_blk%nl1
       nicas_blk%s(il1)%row(i_s) = c1b_h_to_c1b(nicas_blk%s(il1)%row(i_s))
       nicas_blk%s(il1)%col(i_s) = nicas_blk%c1_to_c1b(nicas_blk%s(il1)%col(i_s))
    end do
-   call nicas_blk%s(il1)%reorder(mpl)
 end do
 
 ! Conversion from subset Sc1 to subgrid
@@ -2208,6 +2221,16 @@ end do
 call nicas_blk%com_AB%setup(mpl,'com_AB',nicas_blk%ns,nicas_blk%nsa,nicas_blk%nsb,nicas_blk%nsa,nicas_blk%sb_to_s,sa_to_sb, &
  & s_to_proc,nicas_blk%s_to_sa)
 
+! Hash value
+do isa=1,nicas_blk%nsa
+   is = nicas_blk%sa_to_s(isa)
+   ic1 = nicas_blk%s_to_c1(is)
+   ic0 = nicas_blk%c1_to_c0(ic1)
+   il1 = nicas_blk%s_to_l1(is)
+   il0 = nicas_blk%l1_to_l0(il1)
+   nicas_blk%sa_to_hash(isa) = lonlathash(geom%lon_c0(ic0),geom%lat_c0(ic0),il0)
+end do
+
 ! Release memory
 deallocate(c1b_h_to_c1)
 deallocate(c1b_h_to_c1b)
@@ -2219,13 +2242,12 @@ end subroutine nicas_blk_compute_mpi_ab
 ! Subroutine: nicas_blk_compute_interp_v
 ! Purpose: compute vertical interpolation
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_interp_v(nicas_blk,mpl,geom)
+subroutine nicas_blk_compute_interp_v(nicas_blk,geom)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
 type(geom_type),intent(in) :: geom               ! Geometry
 
 ! Local variables
@@ -2296,9 +2318,6 @@ end do
 ! Conversion
 nicas_blk%v%col = nicas_blk%l0_to_l1(nicas_blk%v%col)
 
-! Reorder
-call nicas_blk%v%reorder(mpl)
-
 ! Release memory
 deallocate(nicas_blk%slev)
 
@@ -2342,8 +2361,8 @@ nicas_blk%anisotropic = cmat_blk%anisotropic
 call nicas_blk%tree%alloc(mpl,nicas_blk%nc1)
 
 ! Initialization
-lon_c1 = geom%lon(nicas_blk%c1_to_c0)
-lat_c1 = geom%lat(nicas_blk%c1_to_c0)
+lon_c1 = geom%lon_c0(nicas_blk%c1_to_c0)
+lat_c1 = geom%lat_c0(nicas_blk%c1_to_c0)
 call nicas_blk%tree%init(lon_c1,lat_c1)
 
 ! Find largest possible radius
@@ -2370,7 +2389,7 @@ else
       ic0 = nicas_blk%c1_to_c0(ic1)
 
       ! Count nearest neighbors
-      call nicas_blk%tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nicas_blk%rhmax,nn(ic1b))
+      call nicas_blk%tree%count_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nicas_blk%rhmax,nn(ic1b))
    end do
 
    ! Initialization
@@ -2388,7 +2407,7 @@ else
       allocate(nn_index(nn(ic1b)))
 
       ! Find nearest neighbors
-      call nicas_blk%tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn(ic1b),nn_index)
+      call nicas_blk%tree%find_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nn(ic1b),nn_index)
 
       ! Fill mask
       do j=1,nn(ic1b)
@@ -2494,7 +2513,7 @@ do il1=1,nicas_blk%nl1
       ic0a = nicas_blk%c1a_to_c0a(ic1a)
       il0 = nicas_blk%l1_to_l0(il1)
 
-      if (geom%mask_c0a(ic0a,il0)) then
+      if (geom%gmask_c0a(ic0a,il0)) then
          ! Copy
          rh_c1a(ic1a,il1) = cmat_blk%rh(ic0a,il0)
          rv_c1a(ic1a,il1) = cmat_blk%rv(ic0a,il0)
@@ -2773,8 +2792,8 @@ allocate(lat_c1(nicas_blk%nc1))
 call mesh%alloc(nicas_blk%nc1)
 
 ! Initialization
-lon_c1 = geom%lon(nicas_blk%c1_to_c0)
-lat_c1 = geom%lat(nicas_blk%c1_to_c0)
+lon_c1 = geom%lon_c0(nicas_blk%c1_to_c0)
+lat_c1 = geom%lat_c0(nicas_blk%c1_to_c0)
 call mesh%init(mpl,rng,lon_c1,lat_c1,.true.)
 
 ! Count neighbors
@@ -2835,7 +2854,7 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
       do il1=1,nicas_blk%nl1
          il0 = nicas_blk%l1_to_l0(il1)
          valid_arc(ic1,il1,net_nnb(ic1)) = .true.
-         if (nam%mask_check) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0), &
+         if (nam%mask_check) call geom%check_arc(mpl,il0,geom%lon_c0(ic0),geom%lat_c0(ic0),geom%lon_c0(jc0),geom%lat_c0(jc0), &
        & valid_arc(ic1,il1,net_nnb(ic1)))
       end do
    end do
@@ -2867,16 +2886,16 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
       jc1 = net_inb(ic1,j)
       jc0 = nicas_blk%c1_to_c0(jc1)
 
-      if (geom%mask_hor_c0(jc0)) then
+      if (geom%gmask_hor_c0(jc0)) then
          if (nicas_blk%anisotropic) then
             ! Compute longitude/latitude differences
-            dx = geom%lon(jc0)-geom%lon(ic0)
-            dy = geom%lat(jc0)-geom%lat(ic0)
+            dx = geom%lon_c0(jc0)-geom%lon_c0(ic0)
+            dy = geom%lat_c0(jc0)-geom%lat_c0(ic0)
             call lonlatmod(dx,dy)
-            dx = dx*cos(0.5*(geom%lat(ic0)+geom%lat(jc0)))
+            dx = dx*cos(0.5*(geom%lat_c0(ic0)+geom%lat_c0(jc0)))
          else
             ! Compute horizontal distance
-            call sphere_dist(geom%lon(ic0),geom%lat(ic0),geom%lon(jc0),geom%lat(jc0),dnb)
+            call sphere_dist(geom%lon_c0(ic0),geom%lat_c0(ic0),geom%lon_c0(jc0),geom%lat_c0(jc0),dnb)
          end if
 
          do il1=1,nicas_blk%nl1
@@ -2889,7 +2908,7 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
                jl0 = nicas_blk%l1_to_l0(jl1)
 
                ! Check valid arc for both levels
-               if (geom%mask_c0(ic0,il0).and.geom%mask_c0(jc0,jl0).and.valid_arc(ic1,il1,j).and.valid_arc(ic1,jl1,j)) then
+               if (geom%gmask_c0(ic0,il0).and.geom%gmask_c0(jc0,jl0).and.valid_arc(ic1,il1,j).and.valid_arc(ic1,jl1,j)) then
                   ! Squared support radii
                   if (nicas_blk%anisotropic) then
                      dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
@@ -3067,7 +3086,7 @@ do ic1bb=1,nicas_blk%nc1bb
    rr = sqrt(0.5*(maxval(nicas_blk%rh_c1(ic1,:))**2+nicas_blk%rhmax**2))
 
    ! Count nearest neighbors
-   call nicas_blk%tree%count_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),rr,nn(ic1bb))
+   call nicas_blk%tree%count_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),rr,nn(ic1bb))
 
    ! Update
    if (nicas_blk%verbosity) call mpl%prog_print(ic1bb)
@@ -3102,7 +3121,7 @@ do ic1bb=1,nicas_blk%nc1bb
    ic0 = nicas_blk%c1_to_c0(ic1)
 
    ! Find nearest neighbors
-   call nicas_blk%tree%find_nearest_neighbors(geom%lon(ic0),geom%lat(ic0),nn(ic1bb),nn_index(1:nn(ic1bb),ic1bb), &
+   call nicas_blk%tree%find_nearest_neighbors(geom%lon_c0(ic0),geom%lat_c0(ic0),nn(ic1bb),nn_index(1:nn(ic1bb),ic1bb), &
  & nn_dist(1:nn(ic1bb),ic1bb))
 
    ! Check arc validity
@@ -3111,9 +3130,9 @@ do ic1bb=1,nicas_blk%nc1bb
       jc0 = nicas_blk%c1_to_c0(jc1)
       do il1=1,nicas_blk%nl1
          il0 = nicas_blk%l1_to_l0(il1)
-         valid_arc(j,ic1bb,il1) = (geom%mask_c0(ic0,il0).and.geom%mask_c0(jc0,il0))
-         if (nam%mask_check.and.valid_arc(j,ic1bb,il1)) call geom%check_arc(mpl,il0,geom%lon(ic0),geom%lat(ic0),geom%lon(jc0), &
-       & geom%lat(jc0),valid_arc(j,ic1bb,il1))
+         valid_arc(j,ic1bb,il1) = (geom%gmask_c0(ic0,il0).and.geom%gmask_c0(jc0,il0))
+         if (nam%mask_check.and.valid_arc(j,ic1bb,il1)) call geom%check_arc(mpl,il0,geom%lon_c0(ic0),geom%lat_c0(ic0), &
+       & geom%lon_c0(jc0),geom%lat_c0(jc0),valid_arc(j,ic1bb,il1))
       end do
    end do
 
@@ -3156,10 +3175,10 @@ do isbb=1,nicas_blk%nsbb
             if (valid_arc(j,ic1bb,il1).and.valid_arc(j,ic1bb,jl1)) then
                ! Normalized distance
                if (nicas_blk%anisotropic) then
-                  dx = geom%lon(jc0)-geom%lon(ic0)
-                  dy = geom%lat(jc0)-geom%lat(ic0)
+                  dx = geom%lon_c0(jc0)-geom%lon_c0(ic0)
+                  dy = geom%lat_c0(jc0)-geom%lat_c0(ic0)
                   call lonlatmod(dx,dy)
-                  dx = dx*cos(0.5*(geom%lat(ic0)+geom%lat(jc0)))
+                  dx = dx*cos(0.5*(geom%lat_c0(ic0)+geom%lat_c0(jc0)))
                   dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
                   H11 = 0.5*(nicas_blk%H11_c1(ic1,il1)+nicas_blk%H11_c1(jc1,jl1))
                   H22 = 0.5*(nicas_blk%H22_c1(ic1,il1)+nicas_blk%H22_c1(jc1,jl1))
@@ -3455,10 +3474,6 @@ if (.not.nicas_blk%smoother) then
    end do
 end if
 
-! Reorder convolutions
-call nicas_blk%c%reorder(mpl)
-if (.not.nicas_blk%smoother) call nicas_blk%c_nor%reorder(mpl)
-
 ! Setup communications
 s_to_proc = geom%c0_to_proc(nicas_blk%c1_to_c0(nicas_blk%s_to_c1))
 call nicas_blk%com_AC%setup(mpl,'com_AC',nicas_blk%ns,nicas_blk%nsa,nicas_blk%nsc,nicas_blk%nsa,nicas_blk%sc_to_s, &
@@ -3710,7 +3725,7 @@ do il0=1,geom%nl0
          ! Index
          ic0 = geom%c0a_to_c0(ic0a)
 
-         if (geom%mask_c0(ic0,il0)) then
+         if (geom%gmask_c0(ic0,il0)) then
             ! Allocation
             allocate(isc_list(ineh(ic0a,il0i)*inev(il0)*maxval(ines)))
             allocate(S_list(ineh(ic0a,il0i)*inev(il0)*maxval(ines)))
@@ -3843,8 +3858,8 @@ if (nicas_blk%nsa>0) then
       il1 = nicas_blk%s_to_l1(is)
       ic0 = nicas_blk%c1_to_c0(ic1)
       il0 = nicas_blk%l1_to_l0(il1)
-      nicas_blk%lon_sa(isa) = geom%lon(ic0)*rad2deg
-      nicas_blk%lat_sa(isa) = geom%lat(ic0)*rad2deg
+      nicas_blk%lon_sa(isa) = geom%lon_c0(ic0)*rad2deg
+      nicas_blk%lat_sa(isa) = geom%lat_c0(ic0)*rad2deg
       nicas_blk%lev_sa(isa) = nam%levs(il0)
    end do
 end if
@@ -3855,8 +3870,8 @@ if (nicas_blk%nsb>0) then
       il1 = nicas_blk%s_to_l1(is)
       ic0 = nicas_blk%c1_to_c0(ic1)
       il0 = nicas_blk%l1_to_l0(il1)
-      nicas_blk%lon_sb(isb) = geom%lon(ic0)*rad2deg
-      nicas_blk%lat_sb(isb) = geom%lat(ic0)*rad2deg
+      nicas_blk%lon_sb(isb) = geom%lon_c0(ic0)*rad2deg
+      nicas_blk%lat_sb(isb) = geom%lat_c0(ic0)*rad2deg
       nicas_blk%lev_sb(isb) = nam%levs(il0)
    end do
 end if
@@ -3867,8 +3882,8 @@ if (nicas_blk%nsc>0) then
       il1 = nicas_blk%s_to_l1(is)
       ic0 = nicas_blk%c1_to_c0(ic1)
       il0 = nicas_blk%l1_to_l0(il1)
-      nicas_blk%lon_sc(isc) = geom%lon(ic0)*rad2deg
-      nicas_blk%lat_sc(isc) = geom%lat(ic0)*rad2deg
+      nicas_blk%lon_sc(isc) = geom%lon_c0(ic0)*rad2deg
+      nicas_blk%lat_sc(isc) = geom%lat_c0(ic0)*rad2deg
       nicas_blk%lev_sc(isc) = nam%levs(il0)
    end do
 end if
@@ -3918,13 +3933,13 @@ do its=2,nam%nts
    do il0=1,geom%nl0
       ! Direct
       write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
-      call nicas_blk%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,adv_lon(:,il0),adv_lat(:,il0),geom%mask_c0(:,il0),geom%nc0a, &
-    & geom%lon(geom%c0a_to_c0),geom%lat(geom%c0a_to_c0),geom%mask_c0a(:,il0),ifmt)
+      call nicas_blk%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,adv_lon(:,il0),adv_lat(:,il0),geom%gmask_c0(:,il0),geom%nc0a, &
+    & geom%lon_c0(geom%c0a_to_c0),geom%lat_c0(geom%c0a_to_c0),geom%gmask_c0a(:,il0),ifmt)
 
       ! Inverse
       write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'dinv_',il0,'_',its
-      call nicas_blk%dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,il0),geom%nc0a, &
-    & cmat_blk%adv_lon(:,il0,its),cmat_blk%adv_lat(:,il0,its),geom%mask_c0a(:,il0),ifmt)
+      call nicas_blk%dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0,geom%lon_c0,geom%lat_c0,geom%gmask_c0(:,il0),geom%nc0a, &
+    & cmat_blk%adv_lon(:,il0,its),cmat_blk%adv_lat(:,il0,its),geom%gmask_c0a(:,il0),ifmt)
    end do
 end do
 
@@ -3990,14 +4005,12 @@ do its=2,nam%nts
       do i_s=1,nicas_blk%d(il0,its)%n_s
          nicas_blk%d(il0,its)%col(i_s) = c0_to_c0d(nicas_blk%d(il0,its)%col(i_s))
       end do
-      call nicas_blk%d(il0,its)%reorder(mpl)
 
       ! Inverse
       nicas_blk%dinv(il0,its)%n_src = nicas_blk%nc0dinv
       do i_s=1,nicas_blk%dinv(il0,its)%n_s
          nicas_blk%dinv(il0,its)%col(i_s) = c0_to_c0dinv(nicas_blk%dinv(il0,its)%col(i_s))
       end do
-      call nicas_blk%dinv(il0,its)%reorder(mpl)
    end do
 end do
 
@@ -4050,7 +4063,7 @@ real(kind_real) :: alpha_a(nicas_blk%nsa),alpha_b(nicas_blk%nsb),alpha_c(nicas_b
 
 if (nicas_blk%smoother) then
    ! Save global sum for each level
-   call mpl%f_comm%allreduce(sum(fld,dim=1,mask=geom%mask_c0a),sums,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(sum(fld,dim=1,mask=geom%gmask_c0a),sums,fckit_mpi_sum())
 else
    ! Normalization
    fld = fld*nicas_blk%norm
@@ -4097,7 +4110,7 @@ call nicas_blk%apply_interp(mpl,geom,alpha_b,fld)
 
 if (nicas_blk%smoother) then
    ! Reset global sum for each level
-   call mpl%f_comm%allreduce(sum(fld,dim=1,mask=geom%mask_c0a),sume,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(sum(fld,dim=1,mask=geom%gmask_c0a),sume,fckit_mpi_sum())
    do il0=1,geom%nl0
       fld(:,il0) = fld(:,il0)*sums(il0)/sume(il0)
    end do
@@ -4942,8 +4955,8 @@ end do
 write(mpl%info,'(a7,a)') '','Min - max: '
 if (nicas_blk%verbosity) call mpl%flush
 do il0=1,geom%nl0
-   call mpl%f_comm%allreduce(minval(fld(:,il0),mask=geom%mask_c0a(:,il0)),valmin_tot,fckit_mpi_min())
-   call mpl%f_comm%allreduce(maxval(fld(:,il0),mask=geom%mask_c0a(:,il0)),valmax_tot,fckit_mpi_max())
+   call mpl%f_comm%allreduce(minval(fld(:,il0),mask=geom%gmask_c0a(:,il0)),valmin_tot,fckit_mpi_min())
+   call mpl%f_comm%allreduce(maxval(fld(:,il0),mask=geom%gmask_c0a(:,il0)),valmax_tot,fckit_mpi_max())
    if (mpl%msv%isnot(valmin_tot).or.mpl%msv%isnot(valmax_tot)) then
       write(mpl%info,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',nam%levs(il0),': ',valmin_tot,' - ',valmax_tot
       if (nicas_blk%verbosity) call mpl%flush

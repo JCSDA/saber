@@ -10,7 +10,6 @@ subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
 use iso_fortran_env, only : output_unit
-use tools_kinds,only: kind_real
 use type_bump, only: bump_type
 use type_model, only: model_type
 use type_mpl, only: mpl_type

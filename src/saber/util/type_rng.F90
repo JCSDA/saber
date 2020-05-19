@@ -24,6 +24,7 @@ type rng_type
 contains
    procedure :: init => rng_init
    procedure :: reseed => rng_reseed
+   procedure :: sync => rng_sync
    procedure :: lcg => rng_lcg
    procedure :: rng_rand_integer_0d
    procedure :: rng_rand_integer_1d
@@ -112,6 +113,26 @@ seed = seed+mpl%myproc
 rng%seed = int(seed,kind=int64)
 
 end subroutine rng_reseed
+
+!----------------------------------------------------------------------
+! Subroutine: rng_sync
+! Purpose: synchronize the random number generator between tasks
+!----------------------------------------------------------------------
+subroutine rng_sync(rng,mpl)
+
+implicit none
+
+! Passed variable
+class(rng_type),intent(inout) :: rng ! Random number generator
+type(mpl_type),intent(inout) :: mpl  ! MPI data
+
+! Wait
+call mpl%f_comm%barrier()
+
+! Broadcast root seed
+call mpl%f_comm%broadcast(rng%seed,mpl%rootproc-1)
+
+end subroutine rng_sync
 
 !----------------------------------------------------------------------
 ! Subroutine: rng_lcg
@@ -416,3 +437,4 @@ end do
 end subroutine rng_rand_gau_5d
 
 end module type_rng
+

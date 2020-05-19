@@ -140,7 +140,7 @@ real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
 character(len=2*1024+12) :: filename
 character(len=1024),parameter :: subr = 'diag_write'
 
-write(mpl%info,'(a7,a)') '','Write diagnostic'
+write(mpl%info,'(a7,a)') '','Write diagnostic: '//trim(diag%prefix)
 call mpl%flush
 
 if (mpl%main) then
@@ -201,7 +201,7 @@ end if
 
 do ildw=1,nam%nldwv
    ic0 = samp%ldwv_to_c0(ildw)
-   if (geom%mask_hor_c0(ic0)) then
+   if (geom%gmask_hor_c0(ic0)) then
       iproc = geom%c0_to_proc(ic0)
       if (mpl%myproc==iproc) then
          ! Build file name
@@ -373,9 +373,9 @@ do ib=1,bpar%nbe
       end do
    
       ! Compute RMSE
-      rmse = 0.0
-      norm = 0.0
-      do ic2a=0,diag%nc2a
+      rmse = sum(abs(diag%blk(0,ib)%fit-diag%blk(0,ib)%raw),mask=mpl%msv%isnot(diag%blk(0,ib)%raw))/real(mpl%nproc,kind_real)
+      norm = real(count(mpl%msv%isnot(diag%blk(0,ib)%raw)),kind_real)/real(mpl%nproc,kind_real)
+      do ic2a=1,diag%nc2a
          rmse = rmse+sum(abs(diag%blk(ic2a,ib)%fit-diag%blk(ic2a,ib)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
          norm = norm+real(count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw)),kind_real)
       end do
@@ -394,7 +394,7 @@ end subroutine diag_build_fit
 ! Subroutine: diag_covariance
 ! Purpose: compute covariance
 !----------------------------------------------------------------------
-subroutine diag_covariance(diag,mpl,nam,geom,bpar,io,samp,avg,prefix)
+subroutine diag_covariance(diag,mpl,nam,geom,bpar,samp,avg,prefix)
 
 implicit none
 
@@ -404,7 +404,6 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
-type(io_type),intent(in) :: io         ! I/O
 type(samp_type),intent(in) :: samp     ! Sampling
 type(avg_type),intent(in) :: avg       ! Averaged statistics
 character(len=*),intent(in) :: prefix  ! Diagnostic prefix
@@ -437,9 +436,6 @@ do ib=1,bpar%nb
       end do
    end if
 end do
-
-! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
 
 end subroutine diag_covariance
 

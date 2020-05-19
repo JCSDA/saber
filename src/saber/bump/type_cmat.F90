@@ -441,7 +441,7 @@ do ib=1,bpar%nbe
 
             ! Copy to C matrix
             cmat%blk(ib)%coef_ens = fld_c0a(:,:,1)
-            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%coef_sta = fld_c0a(:,:,2)
             if (bpar%fit_block(ib)) then
@@ -499,7 +499,7 @@ do ib=1,bpar%nbe
          ! Set mask
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (.not.geom%mask_c0a(ic0a,il0)) then
+               if (.not.geom%gmask_c0a(ic0a,il0)) then
                   cmat%blk(ib)%coef_ens(ic0a,il0) = mpl%msv%valr
                   cmat%blk(ib)%coef_sta(ic0a,il0) = mpl%msv%valr
                   if (bpar%fit_block(ib)) then
@@ -591,7 +591,7 @@ do ib=1,bpar%nbe
 
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
-            if (geom%mask_c0a(ic0a,il0)) then
+            if (geom%gmask_c0a(ic0a,il0)) then
                ! Copy LCT
                cmat%blk(ib)%H11(ic0a,il0) = lct%blk(ib)%H11(ic0a,il0,iscales)
                cmat%blk(ib)%H22(ic0a,il0) = lct%blk(ib)%H22(ic0a,il0,iscales)
@@ -749,7 +749,7 @@ do ib=1,bpar%nbe
             else
                cmat%blk(ib)%coef_ens = 1.0
             end if
-            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%mask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
@@ -764,7 +764,7 @@ do ib=1,bpar%nbe
             call mpl%flush
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%mask_c0a(ic0a,il0)) then
+                  if (geom%gmask_c0a(ic0a,il0)) then
                      ! Copy LCT
                      call lct_d2h(mpl,cmat%blk(ib)%bump_D11(ic0a,il0),cmat%blk(ib)%bump_D22(ic0a,il0), &
                    & cmat%blk(ib)%bump_D33(ic0a,il0),cmat%blk(ib)%bump_D12(ic0a,il0),cmat%blk(ib)%H11(ic0a,il0), &
@@ -798,19 +798,22 @@ end subroutine cmat_from_bump
 ! Subroutine: cmat_setup_sampling
 ! Purpose: setup C matrix sampling
 !----------------------------------------------------------------------
-subroutine cmat_setup_sampling(cmat,nam,geom,bpar)
+subroutine cmat_setup_sampling(cmat,mpl,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat    ! C matrix
-type(nam_type),intent(in) :: nam          ! Namelist
-type(geom_type),intent(in) :: geom        ! Geometry
-type(bpar_type),intent(in) :: bpar        ! Block parameters
+class(cmat_type),intent(inout) :: cmat ! C matrix
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(nam_type),intent(in) :: nam       ! Namelist
+type(geom_type),intent(in) :: geom     ! Geometry
+type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
-integer :: ib,il0,ic0a
+integer :: ib,il0,ic0a,ic0,il0i
 real(kind_real) :: rhs,rvs
+real(kind_real),allocatable :: rh_c0a(:)
+character(len=1024),parameter :: subr = 'cmat_setup_sampling'
 
 ! Sampling parameters
 if (trim(nam%strategy)=='specific_multivariate') then
@@ -844,6 +847,42 @@ else
       end if
    end do
 end if
+
+select case (trim(nam%draw_type))
+case ('random_coast')
+   ! More points around coasts
+   if (all(geom%gmask_c0)) call mpl%abort(subr,'random_coast is not relevant if there is no coast')
+
+   ! Allocation
+   allocate(rh_c0a(geom%nc0a))
+
+   do il0=1,geom%nl0
+      ! Define modulation factor
+      il0i = min(il0,geom%nl0i)
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) then
+            rh_c0a(ic0a) = exp(-geom%mdist_c0a(ic0a,il0i)/nam%Lcoast)
+         else
+            rh_c0a(ic0a) = 1.0
+         end if
+      end do
+      rh_c0a = nam%rcoast+(1.0-nam%rcoast)*(1.0-rh_c0a)
+
+      ! Apply modulation factor
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) then
+            do ib=1,bpar%nb
+               if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+                  cmat%blk(ib)%rhs(ic0a,il0) = cmat%blk(ib)%rhs(ic0a,il0)*rh_c0a(ic0a)
+               end if
+            end do
+         end if
+      end do
+   end do
+
+   ! Release memory
+   deallocate(rh_c0a)
+end select
 
 end subroutine cmat_setup_sampling
 

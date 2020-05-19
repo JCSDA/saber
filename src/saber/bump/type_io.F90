@@ -172,7 +172,7 @@ real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 integer :: ic0a,il0,info,info_coord,color
 integer :: ncid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
-real(kind_real),allocatable :: fld_c0io(:,:),lon(:),lat(:)
+real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)
 character(len=1024) :: cname
 character(len=1024),parameter :: subr = 'io_fld_write'
 type(fckit_mpi_comm) :: f_comm
@@ -180,7 +180,7 @@ type(fckit_mpi_comm) :: f_comm
 ! Apply mask
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (geom%mask_c0a(ic0a,il0)) then
+      if (geom%gmask_c0a(ic0a,il0)) then
          fld_c0a(ic0a,il0) = fld(ic0a,il0)
       else
          fld_c0a(ic0a,il0) = mpl%msv%valr
@@ -190,9 +190,13 @@ end do
 
 ! Allocation
 allocate(fld_c0io(io%nc0io,geom%nl0))
+allocate(lon_c0io(io%nc0io))
+allocate(lat_c0io(io%nc0io))
 
 ! Communication
 call io%com_AIO%ext(mpl,geom%nl0,fld_c0a,fld_c0io)
+call io%com_AIO%ext(mpl,geom%lon_c0a,lon_c0io)
+call io%com_AIO%ext(mpl,geom%lat_c0a,lat_c0io)
 
 ! Create communicator for parallel NetCDF I/O
 if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
@@ -244,24 +248,14 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    call mpl%ncerr(subr,nf90_enddef(ncid))
 
    ! Write coordinates if necessary
-   if (io%procio_to_proc(1)==mpl%myproc) then
-      if (info_coord/=nf90_noerr) then
-         ! Allocation
-         allocate(lon(geom%nc0))
-         allocate(lat(geom%nc0))
+   if (info_coord/=nf90_noerr) then
+      ! Convert to degrees
+      lon_c0io = lon_c0io*rad2deg
+      lat_c0io = lat_c0io*rad2deg
 
-         ! Convert to degrees
-         lon = geom%lon*rad2deg
-         lat = geom%lat*rad2deg
-
-         ! Write data
-         call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon))
-         call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat))
-
-         ! Release memory
-         deallocate(lon)
-         deallocate(lat)
-      end if
+      ! Write data
+      call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon_c0io,(/io%ic0_s/),(/io%nc0io/)))
+      call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
    end if
 
    ! Write variable
@@ -288,6 +282,9 @@ end if
 
 ! Release memory
 deallocate(fld_c0io)
+deallocate(lon_c0io)
+deallocate(lat_c0io)
+
 call f_comm%delete()
 
 ! Gridded field output
@@ -459,20 +456,27 @@ type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
 integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,nc0own,ic0own,iproc,jproc
-integer,allocatable :: procio_to_nc0io(:),list(:),order(:),c0own_to_c0io(:)
+integer,allocatable :: procio_to_nc0io(:),list_proc(:),order_proc(:),order_c0(:),c0own_to_c0io(:)
+real(kind_real),allocatable :: list_c0(:)
 logical,allocatable :: proc_isio(:)
 
 ! Allocation
 allocate(procio_to_nc0io(nam%nprocio))
-allocate(list(mpl%nproc))
-allocate(order(mpl%nproc))
+allocate(list_proc(mpl%nproc))
+allocate(order_proc(mpl%nproc))
 allocate(proc_isio(mpl%nproc))
 allocate(io%procio_to_proc(nam%nprocio))
+allocate(list_c0(geom%nc0))
+allocate(order_c0(geom%nc0))
 
 ! Initialization
 nres = geom%nc0
 proc_isio = .false.
 io%nc0io = 0
+
+! Use hash order to order points
+list_c0 = geom%hash_c0
+call qsort(geom%nc0,list_c0,order_c0)
 
 ! Define Sc0 subset splitting among I/O processors
 do iprocio=1,nam%nprocio
@@ -490,13 +494,13 @@ do iprocio=1,nam%nprocio
 
    ! Order processors given their implication in this chunk
    do iproc=1,mpl%nproc
-      list(iproc) = count(geom%c0_to_proc(ic0_s:ic0_e)==iproc)
+      list_proc(iproc) = count(geom%c0_to_proc(order_c0(ic0_s:ic0_e))==iproc)
    end do
-   call qsort(mpl%nproc,list,order)
+   call qsort(mpl%nproc,list_proc,order_proc)
 
    ! Select I/O processor for this chunk
    do iproc=mpl%nproc,1,-1
-      jproc = order(iproc)
+      jproc = order_proc(iproc)
       if (.not.proc_isio(jproc)) then
          proc_isio(jproc) = .true.
          io%procio_to_proc(iprocio) = jproc
@@ -528,7 +532,7 @@ do ic0=1,geom%nc0
    end if
    if (mpl%myproc==iproc) then
       io%c0io_to_c0(ic0io) = ic0
-      if (geom%c0_to_proc(ic0)==iproc) nc0own = nc0own+1
+      if (geom%c0_to_proc(order_c0(ic0))==iproc) nc0own = nc0own+1
    end if
 end do
 
@@ -550,7 +554,7 @@ do ic0=1,geom%nc0
       ic0io = 1
    end if
    if (mpl%myproc==iproc) then
-      if (geom%c0_to_proc(ic0)==iproc) then
+      if (geom%c0_to_proc(order_c0(ic0))==iproc) then
          ic0own = ic0own+1
          c0own_to_c0io(ic0own) = ic0io
       end if
@@ -567,14 +571,16 @@ do iprocio=1,nam%nprocio
 end do
 
 ! Setup Sc0 subset I/O communication
-call io%com_AIO%setup(mpl,'com_AIO',geom%nc0,geom%nc0a,io%nc0io,nc0own,io%c0io_to_c0,c0own_to_c0io,geom%c0_to_proc, &
- & geom%c0_to_c0a)
+call io%com_AIO%setup(mpl,'com_AIO',geom%nc0,geom%nc0a,io%nc0io,nc0own,io%c0io_to_c0,c0own_to_c0io,geom%c0_to_proc(order_c0), &
+ & geom%c0_to_c0a(order_c0))
 
 ! Release memory
-deallocate(procio_to_nc0io)
-deallocate(list)
-deallocate(order)
+deallocate(list_proc)
+deallocate(order_proc)
 deallocate(proc_isio)
+deallocate(procio_to_nc0io)
+deallocate(list_c0)
+deallocate(order_c0)
 deallocate(c0own_to_c0io)
 
 if (nam%grid_output) call io%init_grid(mpl,rng,nam,geom)
@@ -689,11 +695,11 @@ do ioga=1,io%noga
    call geom%mesh%inside(mpl,io%lon(ilon),io%lat(ilat),mask_oga(ioga))
 
    ! Check poles
-   if (abs(io%lat(ilat))>maxval(abs(geom%lat))) mask_oga(ioga) = .false.
+   if (abs(io%lat(ilat))>maxval(abs(geom%lat_c0))) mask_oga(ioga) = .false.
 end do
 mask_c0 = .true.
 write(io%og%prefix,'(a,i3.3)') 'og'
-call io%og%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,mask_c0,io%noga,lon_oga,lat_oga,mask_oga,10)
+call io%og%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon_c0,geom%lat_c0,mask_c0,io%noga,lon_oga,lat_oga,mask_oga,10)
 
 ! Allocation
 allocate(lcheck_c0b(geom%nc0))
@@ -737,7 +743,6 @@ io%og%n_src = io%nc0b
 do i_s=1,io%og%n_s
    io%og%col(i_s) = io%c0_to_c0b(io%og%col(i_s))
 end do
-call io%og%reorder(mpl)
 
 ! Setup communications
 call io%com_AB%setup(mpl,'com_AB',geom%nc0,geom%nc0a,io%nc0b,geom%nc0a,io%c0b_to_c0,io%c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
@@ -750,7 +755,7 @@ do i_s=1,io%og%n_s
    ioga = io%og%row(i_s)
    ic0 = io%c0b_to_c0(ic0b)
    do il0=1,geom%nl0
-      if (.not.geom%mask_c0(ic0,il0)) io%mask(ioga,il0) = .false.
+      if (.not.geom%gmask_c0(ic0,il0)) io%mask(ioga,il0) = .false.
    end do
 end do
 

@@ -243,7 +243,7 @@ do ie=1,ens%ne
       do iv=1,nam%nv
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) then
+               if (geom%gmask_c0a(ic0a,il0)) then
                   pert(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its)
                else
                   pert(ic0a,il0,iv,its) = mpl%msv%valr
@@ -263,7 +263,7 @@ do ie=1,ens%ne
       do iv=1,nam%nv
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)+alpha*pert(ic0a,il0,iv,its)*norm
+               if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)+alpha*pert(ic0a,il0,iv,its)*norm
             end do
          end do
       end do
@@ -312,7 +312,7 @@ do ie=1,ens%ne
       do iv=1,nam%nv
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%mask_c0a(ic0a,il0)) then
+               if (geom%gmask_c0a(ic0a,il0)) then
                   fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)+alpha(ie)*ens%mem(ie)%fld(ic0a,il0,iv,its)*norm
                else
                   fld(ic0a,il0,iv,its) = mpl%msv%valr
@@ -380,7 +380,7 @@ do its=1,nam%nts
          end do
       end do
    end do
-end do               
+end do
 call io%fld_write(mpl,nam,geom,filename,'m2',m2)
 call io%fld_write(mpl,nam,geom,filename,'m4',m4)
 call io%fld_write(mpl,nam,geom,filename,'kurt',kurt)
@@ -521,6 +521,7 @@ real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,u
 real(kind_real) :: londir(nam%nts),latdir(nam%nts),londir_tracker(nam%nts),latdir_tracker(nam%nts)
 real(kind_real) :: londir_wind(nam%nts),latdir_wind(nam%nts)
 real(kind_real),allocatable :: fld_uv_tmp(:,:,:),fld_uv_interp(:,:,:)
+logical :: mask_wind(1)
 character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_cortrack'
 type(linop_type) :: h
@@ -571,8 +572,8 @@ do its=1,nam%nts
    call mpl%f_comm%broadcast(il0,iproc(1)-1)
 
    ! Save results
-   londir(its) = geom%lon(ic0)
-   latdir(its) = geom%lat(ic0)
+   londir(its) = geom%lon_c0(ic0)
+   latdir(its) = geom%lat_c0(ic0)
 
    ! Print results
    write(mpl%info,'(a13,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(its))//' ~> lon / lat / lev / val: ', &
@@ -613,8 +614,8 @@ do its=2,nam%nts
    call mpl%f_comm%broadcast(il0,iproc(1)-1)
 
    ! Save results
-   londir_tracker(its) = geom%lon(ic0)
-   latdir_tracker(its) = geom%lat(ic0)
+   londir_tracker(its) = geom%lon_c0(ic0)
+   latdir_tracker(its) = geom%lat_c0(ic0)
 
    ! Print results
    write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(its))//' ~> lon / lat / lev / val: ', &
@@ -652,6 +653,7 @@ if (present(fld_uv)) then
  & londir_wind(1)*rad2deg,' / ',latdir_wind(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
    call mpl%flush
    dtl = nam%dts/nt
+   mask_wind = .true.
 
    do its=2,nam%nts
       ! Copy results
@@ -660,8 +662,8 @@ if (present(fld_uv)) then
 
       do it=1,nt
          ! Compute interpolation
-         call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0,geom%lon,geom%lat,geom%mask_c0(:,geom%il0dir(1)), &
-       & 1,londir_wind(its:its),latdir_wind(its:its),(/.true./),13)
+         call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0,geom%lon_c0,geom%lat_c0,geom%gmask_c0(:,geom%il0dir(1)), &
+       & 1,londir_wind(its:its),latdir_wind(its:its),mask_wind,13)
 
          ! Allocation
          allocate(fld_uv_tmp(h%n_s,2,2))
@@ -689,6 +691,7 @@ if (present(fld_uv)) then
          call h%apply(mpl,fld_uv_interp(:,2,2),vp)
 
          ! Release memory
+         call h%dealloc
          deallocate(fld_uv_tmp)
          deallocate(fld_uv_interp)
 
@@ -820,10 +823,10 @@ do il0=1,geom%nl0
 
    do while (itest<=ntest)
       ! Generate random dirac point
-      if (mpl%main) call rng%rand_integer(1,geom%nc0,ic0dir)
+      if (mpl%main) call geom%rand_point(mpl,rng,ic0dir)
       call mpl%f_comm%broadcast(ic0dir,mpl%rootproc-1)
 
-      if (geom%mask_c0(ic0dir,il0)) then
+      if (geom%gmask_c0(ic0dir,il0)) then
          ! Get processor and local index
          iprocdir = geom%c0_to_proc(ic0dir)
          if (iprocdir==mpl%myproc) ic0adir = geom%c0_to_c0a(ic0dir)
@@ -840,7 +843,7 @@ do il0=1,geom%nl0
             do ie=1,ens%ne
                do its=1,nam%nts
                   do ic0a=1,geom%nc0a
-                     if (geom%mask_c0a(ic0a,il0)) then
+                     if (geom%gmask_c0a(ic0a,il0)) then
                         cor(ic0a,its) = cor(ic0a,its)+alpha(ie)*ens%mem(ie)%fld(ic0a,il0,iv,its)*norm
                      else
                         cor(ic0a,its) = mpl%msv%valr

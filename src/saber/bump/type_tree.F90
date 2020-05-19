@@ -10,7 +10,7 @@ module type_tree
 use iso_c_binding, only: c_ptr
 use fckit_kdtree_module, only: kdtree,kdtree_create,kdtree_destroy,kdtree_k_nearest_neighbors,kdtree_find_in_sphere
 use tools_const, only: pi,rad2deg
-use tools_func, only: lonlat2xyz,sphere_dist
+use tools_func, only: lonlathash,lonlat2xyz,sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,rth,sup,indist
@@ -166,7 +166,7 @@ real(kind_real),intent(out),optional :: nn_dist(nn) ! Nearest neighbors distance
 integer :: nn_tmp,i,j,nid
 integer,allocatable :: order(:),nn_index_tmp(:)
 real(kind_real) :: dist_ref,dist_last
-real(kind_real),allocatable :: nn_dist_tmp(:)
+real(kind_real),allocatable :: list(:),nn_dist_tmp(:)
 logical :: separate
 
 if (nn>0) then
@@ -204,11 +204,8 @@ if (nn>0) then
       call sphere_dist(lon,lat,tree%lon(nn_index_tmp(i)),tree%lat(nn_index_tmp(i)),nn_dist_tmp(i))
    end do
 
-   ! Transform indices
-   nn_index_tmp = tree%from_eff(nn_index_tmp)
-
    if (repro) then
-      ! Reorder neighbors based on their index
+      ! Reorder neighbors based on their hash value
       i = 1
       do while (i<nn_tmp)
          ! Count indistinguishable neighbors
@@ -219,11 +216,16 @@ if (nn>0) then
 
          ! Reorder
          if (nid>1) then
+            allocate(list(nid))
             allocate(order(nid))
-            call qsort(nid,nn_index_tmp(i:i+nid-1),order)
             do j=1,nid
-               nn_dist_tmp(i+j-1) = nn_dist_tmp(i+order(j)-1)
+               list(j) = lonlathash(tree%lon(nn_index_tmp(i+j-1)),tree%lat(nn_index_tmp(i+j-1)))
             end do
+            call qsort(nid,list,order)
+            order = i+order-1
+            nn_index_tmp(i:i+nid-1) = nn_index_tmp(order)
+            nn_dist_tmp(i:i+nid-1) = nn_dist_tmp(order)
+            deallocate(list)
             deallocate(order)
          end if
 
@@ -231,6 +233,9 @@ if (nn>0) then
          i = i+nid
       end do
    end if
+
+   ! Transform indices
+   nn_index_tmp = tree%from_eff(nn_index_tmp)
 
    ! Copy nn_index
    nn_index = nn_index_tmp(1:nn)
