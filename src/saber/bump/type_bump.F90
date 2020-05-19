@@ -2184,11 +2184,10 @@ class(bump_type),intent(inout) :: bump ! BUMP
 ! Local variables
 integer :: iv,its,ic0a,ic0
 real(kind_real) :: hash_min,hash_spread_inv
-real(kind_real),allocatable :: fld_c0(:,:),fld_c0a(:,:),fld_mga(:,:,:,:)
+real(kind_real),allocatable :: fld_c0a(:,:),fld_mga(:,:,:,:)
 type(atlas_fieldset) :: afieldset,afieldset_req,afieldset_reqsq,afieldset_vert,afieldset_vertsq
 
 ! Allocation
-allocate(fld_c0(bump%geom%nc0,bump%geom%nl0))
 allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0))
 allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
 
@@ -2246,7 +2245,6 @@ elseif (bump%nam%check_set_param_lct) then
 end if
 
 ! Release memory
-deallocate(fld_c0)
 deallocate(fld_c0a)
 deallocate(fld_mga)
 call afieldset%final()

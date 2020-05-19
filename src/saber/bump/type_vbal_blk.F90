@@ -158,7 +158,7 @@ do isub=1,ens%nsub
             ! Index
             ic1 = samp%c1a_to_c1(ic1a)
 
-            if (samp%c1l0_log(ic1,il0)) then
+            if (samp%smask_c1(ic1,il0)) then
                ! Index
                ic0 = samp%c1_to_c0(ic1)
                ic0a = geom%c0_to_c0a(ic0)
@@ -183,7 +183,7 @@ do isub=1,ens%nsub
                ic1 = samp%c1e_to_c1(ic1e)
 
                ! Auto and cross-covariances
-               if (samp%c1l0_log(ic1,il0).and.samp%c1l0_log(ic1,jl0)) then
+               if (samp%smask_c1(ic1,il0).and.samp%smask_c1(ic1,jl0)) then
                   auto(ic1e,jl0,il0,isub) = auto(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_2(ic1e,jl0)
                   cross(ic1e,jl0,il0,isub) = cross(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_1(ic1e,jl0)
                end if
@@ -253,7 +253,7 @@ do il0=1,geom%nl0
          ! Index
          ic1 = samp%c1e_to_c1(ic1e)
 
-         if (samp%c1l0_log(ic1,il0).and.samp%c1l0_log(ic1,jl0).and.samp%vbal_mask(ic1,ic2b)) then
+         if (samp%smask_c1(ic1,il0).and.samp%smask_c1(ic1,jl0).and.samp%vbal_mask(ic1,ic2b)) then
             ! Update
             i = i+1
 

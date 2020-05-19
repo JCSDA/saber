@@ -244,7 +244,7 @@ do il0=1,geom%nl0
       allocate(minim%dzsq(nam%nc3,bpar%nl0r(ib)))
       allocate(minim%dmask(nam%nc3,bpar%nl0r(ib)))
 
-      if (samp%c1l0_log(ic1,il0)) then
+      if (samp%smask_c1(ic1,il0)) then
          ! Initialization
          norm_raw = 0.0
 
@@ -252,7 +252,7 @@ do il0=1,geom%nl0
          do jl0r=1,bpar%nl0r(ib)
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             do jc3=1,nam%nc3
-               if (samp%c1ac3l0_log(ic1a,jc3,jl0)) then
+               if (samp%smask_c1ac3(ic1a,jc3,jl0)) then
                   do jsub=1,mom_blk%nsub
                      den = mom_blk%m2_1(ic1a,il0,jsub)*mom_blk%m2_2(ic1a,jc3,jl0,jsub)
                      if (den>0.0) then
@@ -277,10 +277,10 @@ do il0=1,geom%nl0
          do jl0r=1,bpar%nl0r(ib)
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             do jc3=1,nam%nc3
-               minim%dmask(jc3,jl0r) = samp%c1ac3l0_log(ic1a,jc3,jl0)
+               minim%dmask(jc3,jl0r) = samp%smask_c1ac3(ic1a,jc3,jl0)
                if (minim%dmask(jc3,jl0r)) then
                   jc0 = samp%c1ac3_to_c0(ic1a,jc3)
-                  call geom%compute_deltas(ic0,il0,jc0,jl0,dx,dy,dz)
+                  call geom%compute_deltas(ic0u,il0,jc0u,jl0,dx,dy,dz)
                   minim%dxsq(jc3,jl0r) = dx**2
                   minim%dysq(jc3,jl0r) = dy**2
                   minim%dxdy(jc3,jl0r) = dx*dy
@@ -418,7 +418,7 @@ do il0=1,geom%nl0
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                   do jc3=1,nam%nc3
-                     if (samp%c1ac3l0_log(ic1a,jc3,jl0)) then
+                     if (samp%smask_c1ac3(ic1a,jc3,jl0)) then
                         if (mpl%msv%isnot(lct_blk%fit(jc3,jl0r,ic1a,il0)).and.lct_blk%raw(jc3,jl0r,ic1a,il0)>nam%lct_qc_th) then
                            lct_blk%qc_c1a(ic1a,il0) = lct_blk%qc_c1a(ic1a,il0)+ &
                                                     & (lct_blk%fit(jc3,jl0r,ic1a,il0)-lct_blk%raw(jc3,jl0r,ic1a,il0))**2
@@ -565,7 +565,7 @@ if (nam%diag_rhflt>0.0) then
          ! Global index
          ic1 = samp%c1a_to_c1(ic1a)
 
-         if (samp%c1l0_log(ic1,il0)) then
+         if (samp%smask_c1(ic1,il0)) then
             ! Check tensor validity
             valid = .true.
             do iscales=1,lct_blk%nscales
@@ -584,7 +584,7 @@ if (nam%diag_rhflt>0.0) then
                   do jl0r=1,bpar%nl0r(ib)
                      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                      do jc3=1,nam%nc3
-                        dmask(jc3,jl0r) = samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)
+                        dmask(jc3,jl0r) = samp%smask_c1(ic1,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
                         if (dmask(jc3,jl0r)) then
                            jc0 = samp%c1ac3_to_c0(ic1a,jc3)
                            call geom%compute_deltas(ic0,il0,jc0,jl0,dx,dy,dz)
@@ -683,7 +683,7 @@ do iscales=1,lct_blk%nscales
    call mpl%flush
    do il0=1,geom%nl0
       do ic2a=1,samp%nc2a
-         if (samp%mask_c2a(ic2a,il0)) then
+         if (samp%smask_c2a(ic2a,il0)) then
             ! Index
             ic1a = samp%c2a_to_c1a(ic2a)
 

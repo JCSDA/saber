@@ -77,7 +77,7 @@ integer,intent(in) :: ib                       ! Block index
 character(len=*),intent(in) :: prefix          ! Block prefix
 
 ! Local variables
-integer :: ic0,ic2,il0,jl0
+integer :: ic0a,il0,jl0
 real(kind_real) :: vunit(geom%nl0)
 
 ! Set attributes
@@ -116,9 +116,8 @@ if (((ic2a==0).or.nam%local_diag).and.(trim(nam%minim_algo)/='none')) then
    if (ic2a==0) then
       vunit = geom%vunitavg
    else
-      ic2 = samp%c2a_to_c2(ic2a)
-      ic0 = samp%c2_to_c0(ic2)
-      vunit = geom%vunit_c0(ic0,:)
+      ic0a = samp%c2a_to_c0a(ic2a)
+      vunit = geom%vunit_c0a(ic0a,:)
    end if
    do il0=1,geom%nl0
       do jl0=1,geom%nl0

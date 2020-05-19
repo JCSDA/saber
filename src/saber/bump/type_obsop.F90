@@ -236,12 +236,12 @@ type(nam_type),intent(in) :: nam         ! Namelist
 type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: iobsa,iproc,i_s,ic0,jc0,ic0b,ic0a,nobsa_eff
+integer :: iobsa,iproc,i_s,ic0u,jc0u,ic0b,ic0a,nobsa_eff
 integer :: nobs_eff,nn_index(1),proc_to_nobsa(mpl%nproc),proc_to_nobsa_eff(mpl%nproc)
-integer :: c0_to_c0b(geom%nc0),c0a_to_c0b(geom%nc0a)
+integer :: c0u_to_c0b(geom%nc0u),c0a_to_c0b(geom%nc0a)
 integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
-logical :: maskobsa(obsop%nobsa),lcheck_nc0b(geom%nc0)
+logical :: maskobsa(obsop%nobsa),lcheck_nc0b(geom%nc0u)
 
 ! Check whether observations are inside the mesh
 do iobsa=1,obsop%nobsa
@@ -274,19 +274,19 @@ call mpl%flush
 obsop%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon_c0,geom%lat_c0,geom%gmask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs, &
+call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,obsop%nobsa,obsop%lonobs,obsop%latobs, &
  & maskobsa,10)
 
 ! Define halo B
 lcheck_nc0b = .false.
 do ic0a=1,geom%nc0a
-   ic0 = geom%c0a_to_c0(ic0a)
-   if (geom%c0_to_proc(ic0)==mpl%myproc) lcheck_nc0b(ic0) = .true.
+   ic0u = geom%c0a_to_c0u(ic0a)
+   lcheck_nc0b(ic0u) = .true.
 end do
 do iobsa=1,obsop%nobsa
    do i_s=1,obsop%h%n_s
-      jc0 = obsop%h%col(i_s)
-      lcheck_nc0b(jc0) = .true.
+      jc0u = obsop%h%col(i_s)
+      lcheck_nc0b(jc0u) = .true.
    end do
 end do
 obsop%nc0b = count(lcheck_nc0b)
@@ -295,27 +295,28 @@ obsop%nc0b = count(lcheck_nc0b)
 allocate(c0b_to_c0(obsop%nc0b))
 
 ! Global-local conversion for halo B
-c0_to_c0b = mpl%msv%vali
+c0u_to_c0b = mpl%msv%vali
 ic0b = 0
-do ic0=1,geom%nc0
-   if (lcheck_nc0b(ic0)) then
+do ic0u=1,geom%nc0u
+   if (lcheck_nc0b(ic0u)) then
       ic0b = ic0b+1
+      ic0 = geom%c0u_to_c0(ic0u)
       c0b_to_c0(ic0b) = ic0
-      c0_to_c0b(ic0) = ic0b
+      c0u_to_c0b(ic0u) = ic0b
    end if
 end do
 
 ! Halos A-B conversion
 do ic0a=1,geom%nc0a
-   ic0 = geom%c0a_to_c0(ic0a)
-   ic0b = c0_to_c0b(ic0)
+   ic0u = geom%c0a_to_c0u(ic0a)
+   ic0b = c0u_to_c0b(ic0u)
    c0a_to_c0b(ic0a) = ic0b
 end do
 
 ! Local interpolation source
 obsop%h%n_src = obsop%nc0b
 do i_s=1,obsop%h%n_s
-   obsop%h%col(i_s) = c0_to_c0b(obsop%h%col(i_s))
+   obsop%h%col(i_s) = c0u_to_c0b(obsop%h%col(i_s))
 end do
 
 ! Setup communications
@@ -519,9 +520,8 @@ character(len=1024),parameter :: subr = 'obsop_test_accuracy'
 
 ! Initialization
 do ic0a=1,geom%nc0a
-   ic0 = geom%c0a_to_c0(ic0a)
-   lon(ic0a,:) = geom%lon_c0(ic0)
-   lat(ic0a,:) = geom%lat_c0(ic0)
+   lon(ic0a,:) = geom%lon_c0a(ic0a)
+   lat(ic0a,:) = geom%lat_c0a(ic0a)
 end do
 
 ! Apply obsop

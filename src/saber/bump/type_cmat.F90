@@ -299,7 +299,6 @@ do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Set filename
       filename = trim(nam%prefix)//'_'//trim(cmat%blk(ib)%name)
-      call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 
       ! Write vertical unit
       call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
@@ -442,7 +441,7 @@ do ib=1,bpar%nbe
             ! Copy to C matrix
             cmat%blk(ib)%coef_ens = fld_c0a(:,:,1)
             call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
-            cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
+            cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%coef_sta = fld_c0a(:,:,2)
             if (bpar%fit_block(ib)) then
                cmat%blk(ib)%rh = fld_c0a(:,:,3)
@@ -750,7 +749,7 @@ do ib=1,bpar%nbe
                cmat%blk(ib)%coef_ens = 1.0
             end if
             call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
-            cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_mask(1:geom%nl0)),kind_real)
+            cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
          end if

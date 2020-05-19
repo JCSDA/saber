@@ -2059,11 +2059,11 @@ do ifac=-nfac_opt,nfac_opt
             do il0=1,geom%nl0
                rh_sum = sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rh(:,il0)))
                call mpl%f_comm%allreduce(rh_sum,rh_tot,fckit_mpi_sum())
-               loc_opt%blk(0,ib)%fit_rh = rh_tot/real(geom%nc0_mask(il0),kind_real)
+               loc_opt%blk(0,ib)%fit_rh = rh_tot/real(geom%nc0_gmask(il0),kind_real)
                if ((nam%nl>1).and.(nam%rv>0.0)) then
                   rv_sum = sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rv(:,il0)))
                   call mpl%f_comm%allreduce(rv_sum,rv_tot,fckit_mpi_sum())
-                  loc_opt%blk(0,ib)%fit_rv = rv_tot/real(geom%nc0_mask(il0),kind_real)
+                  loc_opt%blk(0,ib)%fit_rv = rv_tot/real(geom%nc0_gmask(il0),kind_real)
                end if
             end do
          end if
@@ -2126,35 +2126,17 @@ integer,intent(in) :: ntest                                                 ! Nu
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest) ! Field
 
 ! Local variables
-integer :: ic0dir(ntest),il0dir(ntest),ivdir(ntest),itsdir(ntest)
-integer :: itest,ic0,iproc,ic0a
-logical :: found
+integer :: itest
+integer :: il0dir,iprocdir,ic0adir
 
-! Define random dirac locations
-if (mpl%main) then
-   do itest=1,ntest
-      found = .false.
-      do while (.not.found)
-         call geom%rand_point(mpl,rng,ic0dir(itest))
-         call rng%rand_integer(1,geom%nl0,il0dir(itest))
-         found = geom%gmask_c0(ic0dir(itest),il0dir(itest))
-      end do
-   end do
-end if
-call mpl%f_comm%broadcast(ic0dir,mpl%rootproc-1)
-call mpl%f_comm%broadcast(il0dir,mpl%rootproc-1)
-ivdir = 1
-itsdir = 1
-
-! Define test vectors
 do itest=1,ntest
+   ! Define random dirac location
+   call rng%rand_integer(1,geom%nl0,il0dir)
+   call geom%rand_point(mpl,rng,il0dir,iprocdir,ic0adir)
+
+   ! Define test vector
    fld(:,:,:,:,itest) = 0.0
-   ic0 = ic0dir(itest)
-   iproc = geom%c0_to_proc(ic0)
-   if (iproc==mpl%myproc) then
-      ic0a = geom%c0_to_c0a(ic0)
-      fld(ic0a,il0dir(itest),ivdir(itest),itsdir(itest),itest) = 1.0
-   end if
+   if (iprocdir==mpl%myproc) fld(ic0adir,il0dir,1,1,itest) = 1.0
 end do
 
 end subroutine define_test_vectors

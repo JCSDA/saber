@@ -429,7 +429,7 @@ do il0=1,geom%nl0
             ic1 = samp%c1a_to_c1(ic1a)
 
             ! Check mask validity
-            valid = samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)
+            valid = samp%smask_c1(ic1,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
 
             if (valid) then
                ! Check general kurtosis
@@ -798,7 +798,7 @@ do il0=1,geom%nl0
             ic1 = samp%c1d_to_c1(ic1d)
 
             ! Check mask validity
-            valid = samp%local_mask(ic1,ic2a).and.samp%c1l0_log(ic1,il0).and.samp%c1dc3l0_log(ic1d,jc3,jl0)
+            valid = samp%local_mask(ic1,ic2a).and.samp%smask_c1(ic1,il0).and.samp%smask_c1dc3(ic1d,jc3,jl0)
 
             if (valid) then
                ! Check generalized kurtosis
@@ -1154,7 +1154,7 @@ do il0=1,geom%nl0
             ic1 = samp%c1a_to_c1(ic1a)
 
             ! Check validity
-            valid = samp%c1l0_log(ic1,il0).and.samp%c1ac3l0_log(ic1a,jc3,jl0)
+            valid = samp%smask_c1(ic1,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
             if (trim(nam%mask_type)=='stddev') then
                m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
                m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
@@ -1311,7 +1311,7 @@ do il0=1,geom%nl0
                i = i+1
 
                ! Check validity
-               valid = samp%c1l0_log(ic1,il0).and.samp%c1dc3l0_log(ic1d,jc3,jl0)
+               valid = samp%smask_c1(ic1,il0).and.samp%smask_c1dc3(ic1d,jc3,jl0)
                if (trim(nam%mask_type)=='stddev') then
                   m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_blk%nsub,kind_real)
                   m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jl0,:))/real(avg_blk%nsub,kind_real)

@@ -80,6 +80,11 @@ type geom_type
    logical,allocatable :: smask_c0a(:,:)          ! Sampling mask
    real(kind_real),allocatable :: mdist_c0a(:,:)  ! Minimum distance to mask
 
+   ! Link between halo A and universe on subset Sc0
+   integer,allocatable :: c0a_to_c0u(:)           ! Halo A to universe on subset Sc0
+   integer,allocatable :: c0u_to_c0a(:)           ! Universe to halo A on subset Sc0
+   type(com_type) :: com_AU                       ! Communication between subset Sc0 and model grid
+
    ! Geometry data on subset Sc0, global
    integer :: nc0                                 ! Number of subset Sc0 points
 
@@ -97,7 +102,7 @@ type geom_type
    integer :: nl0i                                ! Number of independent levels in subset Sl0
 
    ! Other fields
-   integer,allocatable :: nc0_mask(:)             ! Horizontal mask size on subset Sc0
+   integer,allocatable :: nc0_gmask(:)             ! Horizontal mask size on subset Sc0
    real(kind_real),allocatable :: vunitavg(:)     ! Averaged vertical unit
    real(kind_real),allocatable :: disth(:)        ! Horizontal distance
 
@@ -134,6 +139,7 @@ contains
    procedure :: setup_local => geom_setup_local
    procedure :: setup_mask_distance => geom_setup_mask_distance
    procedure :: setup_mask_check => geom_setup_mask_check
+   procedure :: geom_index_from_lonlat => index_from_lonlat
 !   procedure :: remap => geom_remap
    procedure :: define_dirac => geom_define_dirac
    procedure :: check_arc => geom_check_arc
@@ -164,38 +170,7 @@ implicit none
 class(geom_type),intent(inout) :: geom ! Geometry
 
 ! Release memory
-if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
-if (allocated(geom%lat_mga)) deallocate(geom%lat_mga)
-if (allocated(geom%area_mga)) deallocate(geom%area_mga)
-if (allocated(geom%vunit_mga)) deallocate(geom%vunit_mga)
-if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
-if (allocated(geom%smask_mga)) deallocate(geom%smask_mga)
-if (allocated(geom%hash_c0u)) deallocate(geom%hash_c0u)
-if (allocated(geom%lon_c0u)) deallocate(geom%lon_c0u)
-if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
-if (allocated(geom%lat_c0u)) deallocate(geom%lat_c0u)
-if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
-if (allocated(geom%area)) deallocate(geom%area)
-if (allocated(geom%vunit_c0u)) deallocate(geom%vunit_c0u)
-if (allocated(geom%vunit_c0a)) deallocate(geom%vunit_c0a)
-if (allocated(geom%vunitavg)) deallocate(geom%vunitavg)
-if (allocated(geom%disth)) deallocate(geom%disth)
-if (allocated(geom%gmask_c0u)) deallocate(geom%gmask_c0u)
-if (allocated(geom%gmask_hor_c0u)) deallocate(geom%gmask_hor_c0u)
-if (allocated(geom%gmask_hor_c0a)) deallocate(geom%gmask_hor_c0a)
-if (allocated(geom%gmask_ver)) deallocate(geom%gmask_ver)
-if (allocated(geom%nc0_mask)) deallocate(geom%nc0_mask)
-if (allocated(geom%smask_c0a)) deallocate(geom%smask_c0a)
-if (allocated(geom%mdist)) deallocate(geom%mdist)
-call geom%mesh%dealloc
-call geom%tree%dealloc
-if (allocated(geom%nbnda)) deallocate(geom%nbnda)
-if (allocated(geom%v1bnda)) deallocate(geom%v1bnda)
-if (allocated(geom%v2bnda)) deallocate(geom%v2bnda)
-if (allocated(geom%vabnda)) deallocate(geom%vabnda)
-if (allocated(geom%c0_to_proc)) deallocate(geom%c0_to_proc)
-if (allocated(geom%c0_to_c0a)) deallocate(geom%c0_to_c0a)
-if (allocated(geom%c0a_to_c0)) deallocate(geom%c0a_to_c0)
+! TODO
 
 end subroutine geom_partial_dealloc
 
@@ -315,7 +290,7 @@ write(mpl%info,'(a7,a)') '','Valid points (% of total domain):'
 call mpl%flush
 do il0=1,geom%nl0
    write(mpl%info,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
- & 100.0*real(geom%nc0_mask(il0),kind_real)/real(geom%nc0,kind_real),'%'
+ & 100.0*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
 write(mpl%info,'(a7,a)') '','Vertical unit:'
@@ -595,11 +570,11 @@ end do
 call com_AU%setup(mpl,'com_AU',geom%nmg,geom%nmga,nmgu,geom%nmga,mgu_to_mg,geom%mga_to_mgu,mg_to_proc,mg_to_mga)
 
 ! Extend model grid, halo A to universe
-call geom%com_AU%ext(mpl,geom%lon_mga,lon_mgu)
-call geom%com_AU%ext(mpl,geom%lat_mga,lat_mgu)
-call geom%com_AU%ext(mpl,geom%area_mga,area_mgu)
-call geom%com_AU%ext(mpl,geom%nl0,geom%vunit_mga,vunit_mgu)
-call geom%com_AU%ext(mpl,geom%nl0,geom%gmask_mga,gmask_mgu)
+call com_AU%ext(mpl,geom%lon_mga,lon_mgu)
+call com_AU%ext(mpl,geom%lat_mga,lat_mgu)
+call com_AU%ext(mpl,geom%area_mga,area_mgu)
+call com_AU%ext(mpl,geom%nl0,geom%vunit_mga,vunit_mgu)
+call com_AU%ext(mpl,geom%nl0,geom%gmask_mga,gmask_mgu)
 
 ! Deallocate memory
 deallocate(geom%lon_mga)
@@ -749,7 +724,7 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 
 ! Local variables
 integer :: ic0,ic0a,ic0u,iproc,imga,imgu,il0
-integer :: proc_to_nc0a(mpl%nproc),nc0_mask(0:geom%nl0),norm(geom%nl0),norm_tot(geom%nl0)
+integer :: proc_to_nc0a(mpl%nproc),nc0_gmask(0:geom%nl0),norm(geom%nl0),norm_tot(geom%nl0)
 integer,allocatable :: mga_to_c0(:)
 real(kind_real) :: vunitsum(geom%nl0),vunitsum_tot(geom%nl0)
 
@@ -802,6 +777,10 @@ do ic0a=1,geom%nc0a
    geom%c0a_to_mga(ic0a) = imga
 end do
 
+! Setup subset Sc0 communication, local to universe
+call geom%com_AU%setup(mpl,'com_AU',geom%nn0,geom%nc0a,geom%nc0u,geom%nc0a,geom%c0u_to_c0,geom%c0a_to_c0u,geom%c0_to_proc, &
+ & geom%c0_to_c0a)
+
 ! Setup redundant points communication
 call geom%com_mg%setup(mpl,'com_mg',geom%nc0,geom%nc0a,geom%nmga,geom%nc0a,mga_to_c0,geom%c0a_to_mga,geom%c0_to_proc, &
  & geom%c0_to_c0a)
@@ -814,7 +793,7 @@ allocate(geom%vunit_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_hor_c0a(geom%nc0a))
 allocate(geom%smask_c0a(geom%nc0a,geom%nl0))
-allocate(geom%nc0_mask(0:geom%nl0))
+allocate(geom%nc0_gmask(0:geom%nl0))
 allocate(geom%vunitavg(geom%nl0))
 
 ! Define fields on halo A
@@ -825,9 +804,9 @@ geom%vunit_c0a = geom%vunit_c0u(geom%c0a_to_c0u,:)
 geom%gmask_c0a = geom%gmask_c0u(geom%c0a_to_c0u,:)
 geom%gmask_hor_c0a = geom%gmask_hor_c0u(geom%c0a_to_c0u)
 call geom%copy_mga_to_c0a(mpl,geom%smask_mga,geom%smask_c0a)
-nc0_mask(0) = count(geom%gmask_hor_c0a)
-nc0_mask(1:geom%nl0) = count(geom%gmask_c0a,dim=1)
-call mpl%f_comm%allreduce(nc0_mask,geom%nc0_mask,fckit_mpi_sum())
+nc0_gmask(0) = count(geom%gmask_hor_c0a)
+nc0_gmask(1:geom%nl0) = count(geom%gmask_c0a,dim=1)
+call mpl%f_comm%allreduce(nc0_gmask,geom%nc0_gmask,fckit_mpi_sum())
 do il0=1,geom%nl0
    norm(il0) = count(geom%gmask_c0a(:,il0))
    if (norm(il0)>0) then
@@ -1061,6 +1040,72 @@ end do
 end subroutine geom_setup_mask_check
 
 !----------------------------------------------------------------------
+! Subroutine: geom_index_from_lonlat
+! Purpose: get nearest neighbor index from longitude/latitude/level
+!----------------------------------------------------------------------
+subroutine geom_index_from_lonlat(geom,mpl,lon,lat,il0,iproc,ic0a,gmask)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom ! Geometry
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+real(kind_real),intent(in) :: lon      ! Longitude
+real(kind_real),intent(in) :: lat      ! Latitude
+integer,intent(in) :: il0              ! Level index
+integer,intent(out) :: iproc           ! Task index
+integer,intent(out) :: ic0a            ! Local index
+logical,intent(out) :: gmask           ! Local mask
+
+! Local variables
+integer :: nn_index(1),proc_to_nn_proc(mpl%nproc)
+real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
+logical :: valid
+character(len=1024),parameter :: subr = 'geom_index_from_lonlat'
+
+! Find nearest neighbor
+call geom%tree%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
+nn_proc = geom%c0u_to_proc(nn_index(1))
+
+! Communication
+call mpl%f_comm%allgather(nn_dist(1),proc_to_nn_dist)
+call mpl%f_comm%allgather(nn_proc,proc_to_nn_proc)
+
+! The correct task should handle its own nearest neighbor, with the minimum distance
+distmin = minval(proc_to_nn_dist)
+do jproc=1,mpl%nproc
+   if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_dist(jproc),distmin)) iproc = jproc
+end if
+
+if (iproc==mpl%myproc) then
+   ! Check whether the location is in the convex hull      
+   call geom%mesh%inside(mpl,lon,lat,valid)
+
+   ! Local index
+   ic0a = nn_index(1)
+
+   ! Check mask
+   if (il0==0) then
+      gmask = geom%gmask_hor_c0a(ic0a)
+   else
+      gmask = geom%gmask_c0a(ic0a,il0)
+   end if
+end if
+call mpl%f_comm%broadcast(valid,iproc-1)
+if (valid) then
+   ! Broadcast data
+   call mpl%f_comm%broadcast(ic0a,iproc-1))
+   call mpl%f_comm%broadcast(gmask,iproc-1))
+else
+   ! Missing values
+   iproc = mpl%msv%vali
+   ic0a = mpl%msv%vali
+   gmask = .false.
+end if
+
+end subroutine geom_index_from_lonlat
+
+!----------------------------------------------------------------------
 ! Subroutine: geom_define_dirac
 ! Purpose: define dirac indices
 !----------------------------------------------------------------------
@@ -1074,7 +1119,8 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Local variables
-integer :: idir,il0,nn_index(1),ic0dir,il0dir
+integer :: idir,il0,il0dir,iprocdir,ic0adir,ic0dir
+logical :: valid
 character(len=1024),parameter :: subr = 'geom_define_dirac'
 
 ! Allocation
@@ -1096,17 +1142,16 @@ do idir=1,nam%ndir
    end do
    if (mpl%msv%is(il0dir)) call mpl%abort(subr,'impossible to find the Dirac level')
 
-   ! Find nearest neighbor
-   call geom%tree%find_nearest_neighbors(nam%londir(idir),nam%latdir(idir),1,nn_index)
-   ic0dir = nn_index(1)
+   ! Index from lon/lat/level
+   call geom%index_from_lonlat(mpl,nam%londir(idir),nam%latdir(idir),il0dir,iprocdir,ic0adir,valid)
 
-   if (geom%gmask_c0(ic0dir,il0dir)) then
+   if (valid) then
       ! Add valid dirac point
       geom%ndir = geom%ndir+1
       geom%londir(geom%ndir) = nam%londir(idir)
       geom%latdir(geom%ndir) = nam%latdir(idir)
-      geom%iprocdir(geom%ndir) = geom%c0_to_proc(ic0dir)
-      geom%ic0adir(geom%ndir) = geom%c0_to_c0a(ic0dir)
+      geom%iprocdir(geom%ndir) = iprocdir
+      geom%ic0adir(geom%ndir) = ic0adir
       geom%il0dir(geom%ndir) = il0dir
       geom%ivdir(geom%ndir) = nam%ivdir(idir)
       geom%itsdir(geom%ndir) = nam%itsdir(idir)
@@ -1287,26 +1332,26 @@ end subroutine geom_copy_mga_to_c0a_logical
 ! Subroutine: geom_compute_deltas
 ! Purpose: compute deltas for LCT definition
 !----------------------------------------------------------------------
-subroutine geom_compute_deltas(geom,ic0,il0,jc0,jl0,dx,dy,dz)
+subroutine geom_compute_deltas(geom,ic0u,il0,jc0u,jl0,dx,dy,dz)
 
 implicit none
 
 ! Passed variables
 class(geom_type),intent(in) :: geom ! Geometry
-integer,intent(in) :: ic0           ! First horizontal index
+integer,intent(in) :: ic0u          ! First horizontal index, universe
 integer,intent(in) :: il0           ! First vertical index
-integer,intent(in) :: jc0           ! Second horizontal index
+integer,intent(in) :: jc0u          ! Second horizontal index, universe
 integer,intent(in) :: jl0           ! Second vertical index
 real(kind_real),intent(out) :: dx   ! Longitude delta
 real(kind_real),intent(out) :: dy   ! Latitude delta
 real(kind_real),intent(out) :: dz   ! Altitude delta
 
 ! Compute deltas
-dx = geom%lon_c0(jc0)-geom%lon_c0(ic0)
-dy = geom%lat_c0(jc0)-geom%lat_c0(ic0)
+dx = geom%lon_c0u(jc0u)-geom%lon_c0u(ic0u)
+dy = geom%lat_c0u(jc0u)-geom%lat_c0u(ic0u)
 call lonlatmod(dx,dy)
-dx = dx*cos(geom%lat_c0(ic0))
-dz = real(geom%vunit_c0(ic0,jl0)-geom%vunit_c0(ic0,il0),kind_real)
+dx = dx*cos(geom%lat_c0u(ic0u))
+dz = real(geom%vunit_c0u(ic0u,jl0)-geom%vunit_c0u(ic0u,il0),kind_real)
 
 end subroutine geom_compute_deltas
 
@@ -1314,7 +1359,7 @@ end subroutine geom_compute_deltas
 ! Subroutine: geom_rand_point
 ! Purpose: select random point on the grid
 !----------------------------------------------------------------------
-subroutine geom_rand_point(geom,mpl,rng,ic0,nr)
+subroutine geom_rand_point(geom,mpl,rng,il0,iproc,ic0a,nr)
 
 implicit none
 
@@ -1322,11 +1367,13 @@ implicit none
 class(geom_type),intent(in) :: geom ! Geometry
 type(mpl_type),intent(inout) :: mpl ! MPI data
 type(rng_type),intent(inout) :: rng ! Random number generator
-integer,intent(out) :: ic0          ! Index
+integer,intent(in) :: il0           ! Level
+integer,intent(out) :: iproc        ! Task
+integer,intent(out) :: ic0a         ! Local index
 integer,intent(out),optional :: nr  ! Number of random tries
 
 ! Local variables
-integer :: nn_index(1),lnr
+integer :: lnr
 real(kind_real) :: lon,lat
 logical :: valid
 
@@ -1340,16 +1387,12 @@ do while (.not.valid)
    call rng%rand_real(-pi,pi,lon)
    call rng%rand_real(-1.0_kind_real,1.0_kind_real,lat)
    lat = asin(lat)
+
+   ! Get index from lon/lat
+   call geom%index_from_lonlat(mpl,lon,lat,il0,iproc,ic0a,valid)
+
+   ! Update number of tries
    lnr = lnr+1
-
-   ! Check whether the random location is in the convex hull
-   call geom%mesh%inside(mpl,lon,lat,valid)
-
-   if (valid) then
-      ! Find the nearest neighbor
-      call geom%tree%find_nearest_neighbors(lon,lat,1,nn_index)
-      ic0 = nn_index(1)
-   end if
 end do
 
 ! Set number of tries

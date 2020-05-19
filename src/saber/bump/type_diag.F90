@@ -135,7 +135,7 @@ type(io_type),intent(in) :: io         ! I/O
 type(samp_type),intent(in) :: samp     ! Sampling
 
 ! Local variables
-integer :: ib,i,ic2,ic0,il0,il0i,iproc,ic2a,ildw,n
+integer :: ib,i,ic2,il0,il0i,iproc,ic2a,ildw,n
 real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
 character(len=2*1024+12) :: filename
 character(len=1024),parameter :: subr = 'diag_write'
@@ -200,17 +200,15 @@ if (nam%local_diag) then
 end if
 
 do ildw=1,nam%nldwv
-   ic0 = samp%ldwv_to_c0(ildw)
-   if (geom%gmask_hor_c0(ic0)) then
-      iproc = geom%c0_to_proc(ic0)
-      if (mpl%myproc==iproc) then
+   ic0a = samp%ldwv_to_c0a(ildw)
+   if (mpl%msv%isnot(ic0a)) then
+      if (geom%gmask_hor_c0a(ic0a)) then
          ! Build file name
          filename = trim(nam%prefix)//'_diag_'//trim(nam%name_ldwv(ildw))
 
          ! Find diagnostic point
          do ic2a=1,samp%nc2a
-            ic2 = samp%c2a_to_c2(ic2a)
-            if (samp%c2_to_c0(ic2)==ic0) then
+            if (samp%c2a_to_c0a(ic2a)==ic0a) then
                do ib=1,bpar%nbe
                   if (bpar%diag_block(ib)) call diag%blk(ic2a,ib)%write(mpl,nam,geom,bpar,filename)
                end do

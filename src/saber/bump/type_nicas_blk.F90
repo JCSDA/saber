@@ -190,13 +190,13 @@ type nicas_blk_type
    real(kind_real),allocatable :: smoother_norm(:) ! Smoother norm
 
    ! Required data to write grids
-   real(kind_real),allocatable :: lon_sa(:)        ! Subgrid, halo A longitudes to subset Sc0, global
+   real(kind_real),allocatable :: lon_sa(:)        ! Subgrid, halo A longitudes
    real(kind_real),allocatable :: lat_sa(:)        ! Subgrid, halo A latitudes
    integer,allocatable :: lev_sa(:)                ! Subgrid, halo A levels
-   real(kind_real),allocatable :: lon_sb(:)        ! Subgrid, halo A longitudes to subset Sc0, global
+   real(kind_real),allocatable :: lon_sb(:)        ! Subgrid, halo A longitudes
    real(kind_real),allocatable :: lat_sb(:)        ! Subgrid, halo A latitudes
    integer,allocatable :: lev_sb(:)                ! Subgrid, halo A levels
-   real(kind_real),allocatable :: lon_sc(:)        ! Subgrid, halo A longitudes to subset Sc0, global
+   real(kind_real),allocatable :: lon_sc(:)        ! Subgrid, halo A longitudes
    real(kind_real),allocatable :: lat_sc(:)        ! Subgrid, halo A latitudes
    integer,allocatable :: lev_sc(:)                ! Subgrid, halo A levels
 contains
@@ -1601,7 +1601,7 @@ allocate(nicas_blk%vlev(geom%nl0))
 if (trim(nam%strategy)=='specific_multivariate') call rng%reseed(mpl)
 
 ! Compute support radii
-norm = 1.0/real(geom%nc0_mask(1:geom%nl0),kind_real)
+norm = 1.0/real(geom%nc0_gmask(1:geom%nl0),kind_real)
 rhs_sum = sum(cmat_blk%rhs,dim=1,mask=geom%gmask_c0a)
 call mpl%f_comm%allreduce(rhs_sum,nicas_blk%rhs_avg,fckit_mpi_sum())
 nicas_blk%rhs_avg = nicas_blk%rhs_avg*norm
@@ -1639,9 +1639,9 @@ if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='hv').or.(trim(n
    nicas_blk%nc1 = floor(2.0*maxval(geom%area)*nam%resol**2/(sqrt(3.0)*rhs_minavg**2))
    write(mpl%info,'(a10,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_blk%nc1
    if (nicas_blk%verbosity) call mpl%flush
-   if (nicas_blk%nc1>geom%nc0_mask(0)) then
+   if (nicas_blk%nc1>geom%nc0_gmask(0)) then
       if (nicas_blk%verbosity) call mpl%warning(subr,'required nc1 larger than mask size, resetting to mask size')
-      nicas_blk%nc1 = geom%nc0_mask(0)
+      nicas_blk%nc1 = geom%nc0_gmask(0)
    end if
    if (nicas_blk%nc1>nam%nc1max) then
       if (nicas_blk%verbosity) call mpl%warning(subr,'required nc1 larger than nc1max, resetting to nc1max')
@@ -1655,7 +1655,7 @@ if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='hv').or.(trim(n
    if (nicas_blk%verbosity) call mpl%flush
 else
    ! Use the Sc0 subset
-   nicas_blk%nc1 = geom%nc0_mask(0)
+   nicas_blk%nc1 = geom%nc0_gmask(0)
 end if
 
 ! Allocation
