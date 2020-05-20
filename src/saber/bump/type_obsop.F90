@@ -236,7 +236,7 @@ type(nam_type),intent(in) :: nam         ! Namelist
 type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: iobsa,iproc,i_s,ic0u,jc0u,ic0b,ic0a,nobsa_eff
+integer :: iobsa,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nobsa_eff
 integer :: nobs_eff,nn_index(1),proc_to_nobsa(mpl%nproc),proc_to_nobsa_eff(mpl%nproc)
 integer :: c0u_to_c0b(geom%nc0u),c0a_to_c0b(geom%nc0a)
 integer,allocatable :: c0b_to_c0(:)
@@ -274,8 +274,8 @@ call mpl%flush
 obsop%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,obsop%nobsa,obsop%lonobs,obsop%latobs, &
- & maskobsa,10)
+call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,obsop%nobsa,obsop%lonobs, &
+ & obsop%latobs,maskobsa,10)
 
 ! Define halo B
 lcheck_nc0b = .false.
@@ -320,7 +320,7 @@ do i_s=1,obsop%h%n_s
 end do
 
 ! Setup communications
-call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
+call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc(c0b_to_c0),geom%c0_to_c0a) ! TODO: remove c0_to_proc
 
 ! Compute scores, only if there observations present globally
 if ( nobs_eff > 0 ) then

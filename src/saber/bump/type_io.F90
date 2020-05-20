@@ -44,9 +44,7 @@ type io_type
    integer,allocatable :: proc_to_noga(:)        ! Number of points in output grid, halo A, for each processor
    integer,allocatable :: oga_to_og(:)           ! Output grid, halo A to global
    integer,allocatable :: og_to_oga(:)           ! Output grid, global to halo A
-   integer,allocatable :: c0b_to_c0(:)           ! Subset Sc0, halo B to global
-   integer,allocatable :: c0_to_c0b(:)           ! Subset Sc0, global to halo B
-   integer,allocatable :: c0a_to_c0b(:)          ! Subset Sc0, halo A to halo B
+   integer,allocatable :: c0u_to_c0b(:)          ! Subset Sc0, universe to halo B
    logical,allocatable :: mask(:,:)              ! Mask on output grid
    type(linop_type) :: og                        ! Subset Sc0 to grid interpolation
    type(com_type) :: com_AB                      ! Communication between halos A and B
@@ -92,9 +90,7 @@ if (allocated(io%og_to_proc)) deallocate(io%og_to_proc)
 if (allocated(io%proc_to_noga)) deallocate(io%proc_to_noga)
 if (allocated(io%oga_to_og)) deallocate(io%oga_to_og)
 if (allocated(io%og_to_oga)) deallocate(io%og_to_oga)
-if (allocated(io%c0b_to_c0)) deallocate(io%c0b_to_c0)
-if (allocated(io%c0_to_c0b)) deallocate(io%c0_to_c0b)
-if (allocated(io%c0a_to_c0b)) deallocate(io%c0a_to_c0b)
+if (allocated(io%c0u_to_c0b)) deallocate(io%c0u_to_c0b)
 call io%og%dealloc
 call io%com_AB%dealloc
 if (allocated(io%mask)) deallocate(io%mask)
@@ -455,9 +451,9 @@ type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
-integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,nc0own,ic0own,iproc,jproc
-integer,allocatable :: procio_to_nc0io(:),list_proc(:),order_proc(:),order_c0(:),c0own_to_c0io(:)
-real(kind_real),allocatable :: list_c0(:)
+integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,jc0,nc0own,ic0own,iproc,jproc
+integer,allocatable :: procio_to_nc0io(:),list_proc(:),order_proc(:),order_c0(:),c0own_to_c0(:)
+real(kind_real),allocatable :: hash_c0(:)
 logical,allocatable :: proc_isio(:)
 
 ! Allocation
@@ -466,17 +462,23 @@ allocate(list_proc(mpl%nproc))
 allocate(order_proc(mpl%nproc))
 allocate(proc_isio(mpl%nproc))
 allocate(io%procio_to_proc(nam%nprocio))
-allocate(list_c0(geom%nc0))
-allocate(order_c0(geom%nc0))
+if (nam%repro) then
+   allocate(hash_c0(geom%nc0))
+   allocate(order_c0(geom%nc0))
+end if
 
 ! Initialization
 nres = geom%nc0
 proc_isio = .false.
 io%nc0io = 0
 
-! Use hash order to order points
-list_c0 = geom%hash_c0
-call qsort(geom%nc0,list_c0,order_c0)
+if (nam%repro) then
+   ! Communication
+   call mpl%loc_to_glb(geom%nc0a,geom%hash_c0a,geom%nc0,geom%c0_to_proc,geom%c0_to_c0a,.true.,hash_c0)
+
+   ! Use hash order to order points
+   call qsort(geom%nc0,hash_c0,order_c0)
+end if
 
 ! Define Sc0 subset splitting among I/O processors
 do iprocio=1,nam%nprocio
@@ -494,7 +496,11 @@ do iprocio=1,nam%nprocio
 
    ! Order processors given their implication in this chunk
    do iproc=1,mpl%nproc
-      list_proc(iproc) = count(geom%c0_to_proc(order_c0(ic0_s:ic0_e))==iproc)
+      if (nam%repro) then
+         list_proc(iproc) = count(geom%c0_to_proc(order_c0(ic0_s:ic0_e))==iproc)
+      else
+         list_proc(iproc) = count(geom%c0_to_proc(ic0_s:ic0_e)==iproc)
+      end if
    end do
    call qsort(mpl%nproc,list_proc,order_proc)
 
@@ -532,12 +538,17 @@ do ic0=1,geom%nc0
    end if
    if (mpl%myproc==iproc) then
       io%c0io_to_c0(ic0io) = ic0
-      if (geom%c0_to_proc(order_c0(ic0))==iproc) nc0own = nc0own+1
+      if (nam%repro) then
+         jc0 = order_c0(ic0)
+      else
+         jc0 = ic0
+      end if
+      if (geom%c0_to_proc(jc0)==iproc) nc0own = nc0own+1
    end if
 end do
 
 ! Allocation
-allocate(c0own_to_c0io(nc0own))
+allocate(c0own_to_c0(nc0own))
 
 ! Initialization
 iprocio = 1
@@ -554,9 +565,14 @@ do ic0=1,geom%nc0
       ic0io = 1
    end if
    if (mpl%myproc==iproc) then
-      if (geom%c0_to_proc(order_c0(ic0))==iproc) then
+      if (nam%repro) then
+         jc0 = order_c0(ic0)
+      else
+         jc0 = ic0
+      end if
+      if (geom%c0_to_proc(jc0)==iproc) then
          ic0own = ic0own+1
-         c0own_to_c0io(ic0own) = ic0io
+         c0own_to_c0(ic0own) = jc0
       end if
    end if
 end do
@@ -571,17 +587,18 @@ do iprocio=1,nam%nprocio
 end do
 
 ! Setup Sc0 subset I/O communication
-call io%com_AIO%setup(mpl,'com_AIO',geom%nc0,geom%nc0a,io%nc0io,nc0own,io%c0io_to_c0,c0own_to_c0io,geom%c0_to_proc(order_c0), &
- & geom%c0_to_c0a(order_c0))
+call io%com_AIO%setup(mpl,'com_AIO',nc0own,geom%nc0a,io%nc0io,geom%nc0,c0own_to_c0,geom%c0a_to_c0,io%c0io_to_c0)
 
 ! Release memory
 deallocate(list_proc)
 deallocate(order_proc)
 deallocate(proc_isio)
 deallocate(procio_to_nc0io)
-deallocate(list_c0)
-deallocate(order_c0)
-deallocate(c0own_to_c0io)
+if (nam%repro) then
+   deallocate(hash_c0)
+   deallocate(order_c0)
+end if
+deallocate(c0own_to_c0)
 
 if (nam%grid_output) call io%init_grid(mpl,rng,nam,geom)
 
@@ -603,12 +620,12 @@ type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
-integer :: ilon,ilat,i_s,iog,ic0,ic0a,ic0b,ioga,il0,nn_index(1)
+integer :: ilon,ilat,i_s,iog,ic0,ic0u,ic0a,ic0b,ioga,il0,nn_index(1)
 integer :: nres,iprocio,delta,ilonio,ilon_s,ilon_e,nogown,iogown,iproc,jproc,iogio
-integer,allocatable :: procio_to_nlonio(:),list(:),order(:),ogown_to_ogio(:)
+integer,allocatable :: procio_to_nlonio(:),list(:),order(:),c0u_to_c0b(:),c0b_to_c0(:),ogown_to_og(:)
 real(kind_real) :: dlon,dlat
-real(kind_real),allocatable :: lon_og(:),lat_og(:),lon_oga(:),lat_oga(:)
-logical :: mask_c0(geom%nc0)
+real(kind_real),allocatable :: lon_oga(:),lat_oga(:)
+logical :: mask_c0u(geom%nc0u)
 logical,allocatable :: mask_oga(:),lcheck_c0b(:),proc_isio(:)
 character(len=1024),parameter :: subr = 'io_init_grid'
 
@@ -633,8 +650,6 @@ allocate(io%lat(io%nlat))
 io%nog = io%nlon*io%nlat
 allocate(io%og_to_lon(io%nog))
 allocate(io%og_to_lat(io%nog))
-allocate(lon_og(io%nog))
-allocate(lat_og(io%nog))
 allocate(io%og_to_proc(io%nog))
 allocate(io%proc_to_noga(mpl%nproc))
 allocate(io%og_to_oga(io%nog))
@@ -651,15 +666,13 @@ end do
 do ilat=1,io%nlat
    do ilon=1,io%nlon
       iog = (ilat-1)*io%nlon+ilon
-      lon_og(iog) = io%lon(ilon)
-      lat_og(iog) = io%lat(ilat)
       io%og_to_lon(iog) = ilon
       io%og_to_lat(iog) = ilat
-      call geom%tree%find_nearest_neighbors(lon_og(iog),lat_og(iog),1,nn_index)
-      io%og_to_proc(iog) = geom%c0_to_proc(nn_index(1))
+      call geom%tree%find_nearest_neighbors(io%lon(ilon),io%lat(ilon),1,nn_index)
+      io%og_to_proc(iog) = geom%c0u_to_proc(nn_index(1))
    end do
 end do
-if (mpl%msv%isany(io%og_to_proc)) call mpl%abort(subr,'some output grid points do not have a processorw')
+if (mpl%msv%isany(io%og_to_proc)) call mpl%abort(subr,'some output grid points do not have a processor')
 do iproc=1,mpl%nproc
    io%proc_to_noga(iproc) = count(io%og_to_proc==iproc)
 end do
@@ -683,8 +696,8 @@ end do
 call mpl%glb_to_loc_index(io%noga,io%oga_to_og,io%nog,io%og_to_oga)
 
 ! Compute interpolation
-lon_oga = lon_og(io%oga_to_og)
-lat_oga = lat_og(io%oga_to_og)
+lon_oga = io%lon(io%og_to_lon(io%oga_to_og))
+lat_oga = io%lat(io%og_to_lat(io%oga_to_og))
 do ioga=1,io%noga
    ! Indices
    iog = io%oga_to_og(ioga)
@@ -695,57 +708,50 @@ do ioga=1,io%noga
    call geom%mesh%inside(mpl,io%lon(ilon),io%lat(ilat),mask_oga(ioga))
 
    ! Check poles
-   if (abs(io%lat(ilat))>maxval(abs(geom%lat_c0))) mask_oga(ioga) = .false.
+   if (abs(io%lat(ilat))>maxval(abs(geom%lat_c0u))) mask_oga(ioga) = .false.
 end do
-mask_c0 = .true.
+mask_c0u = .true.
 write(io%og%prefix,'(a,i3.3)') 'og'
-call io%og%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon_c0,geom%lat_c0,mask_c0,io%noga,lon_oga,lat_oga,mask_oga,10)
+call io%og%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,mask_c0u,io%noga,lon_oga,lat_oga,mask_oga,10)
 
 ! Allocation
-allocate(lcheck_c0b(geom%nc0))
+allocate(lcheck_c0b(geom%nc0u))
 
 ! Define halo B
 lcheck_c0b = .false.
 do ic0a=1,geom%nc0a
-   ic0 = geom%c0a_to_c0(ic0a)
-   lcheck_c0b(ic0) = .true.
+   ic0u = geom%c0a_to_c0u(ic0a)
+   lcheck_c0b(ic0u) = .true.
 end do
 do i_s=1,io%og%n_s
-   ic0 = io%og%col(i_s)
-   lcheck_c0b(ic0) = .true.
+   ic0u = io%og%col(i_s)
+   lcheck_c0b(ic0u) = .true.
 end do
 io%nc0b = count(lcheck_c0b)
 
 ! Allocation
-allocate(io%c0b_to_c0(io%nc0b))
-allocate(io%c0_to_c0b(geom%nc0))
-allocate(io%c0a_to_c0b(geom%nc0a))
+allocate(c0b_to_c0(io%nc0b))
+allocate(c0u_to_c0b(geom%nc0u))
 
 ! Global-local conversions for halo B
 ic0b = 0
-do ic0=1,geom%nc0
-   if (lcheck_c0b(ic0)) then
+do ic0u=1,geom%nc0u
+   if (lcheck_c0b(ic0u)) then
       ic0b = ic0b+1
-      io%c0b_to_c0(ic0b) = ic0
-      io%c0_to_c0b(ic0) = ic0b
+      ic0 = geom%c0u_to_c0(ic0u)
+      c0b_to_c0(ic0b) = ic0
+      c0u_to_c0b(ic0u) = ic0b
    end if
-end do
-
-! Halos A-B conversion
-do ic0a=1,geom%nc0a
-   ic0 = geom%c0a_to_c0(ic0a)
-   ic0b = io%c0_to_c0b(ic0)
-   io%c0a_to_c0b(ic0a) = ic0b
 end do
 
 ! Local interpolation source
 io%og%n_src = io%nc0b
 do i_s=1,io%og%n_s
-   io%og%col(i_s) = io%c0_to_c0b(io%og%col(i_s))
+   io%og%col(i_s) = c0u_to_c0b(io%og%col(i_s))
 end do
 
 ! Setup communications
-call io%com_AB%setup(mpl,'com_AB',geom%nc0,geom%nc0a,io%nc0b,geom%nc0a,io%c0b_to_c0,io%c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
+call io%com_AB%setup(mpl,'com_AB',geom%nc0a,geom%nc0a,io%nc0b,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,c0b_to_c0)
 
 ! Compute output grid mask
 allocate(io%mask(io%noga,geom%nl0))
@@ -753,9 +759,10 @@ io%mask = .true.
 do i_s=1,io%og%n_s
    ic0b = io%og%col(i_s)
    ioga = io%og%row(i_s)
-   ic0 = io%c0b_to_c0(ic0b)
+   ic0 = c0b_to_c0(ic0b)
+   ic0u = geom%c0_to_c0u(ic0)
    do il0=1,geom%nl0
-      if (.not.geom%gmask_c0(ic0,il0)) io%mask(ioga,il0) = .false.
+      if (.not.geom%gmask_c0u(ic0u,il0)) io%mask(ioga,il0) = .false.
    end do
 end do
 
@@ -841,7 +848,7 @@ do ilon=1,io%nlon
 end do
 
 ! Allocation
-allocate(ogown_to_ogio(nogown))
+allocate(ogown_to_og(nogown))
 
 ! Initialization
 iprocio = 1
@@ -859,11 +866,10 @@ do ilon=1,io%nlon
    end if
    if (mpl%myproc==iproc) then
       do ilat=1,io%nlat
-         iogio = (ilat-1)*io%nlonio+ilonio
          iog = (ilat-1)*io%nlon+ilon
          if (io%og_to_proc(iog)==iproc) then
             iogown = iogown+1
-            ogown_to_ogio(iogown) = iogio
+            ogown_to_og(iogown) = iog
          end if
       end do
    end if
@@ -879,15 +885,7 @@ do iprocio=1,nam%nprocio
 end do
 
 ! Setup Sc0 subset I/O communication
-call io%com_AIO_grid%setup(mpl,'com_AIO_grid',io%nog,io%noga,io%nlonio*io%nlat,nogown,io%ogio_to_og,ogown_to_ogio,io%og_to_proc, &
- & io%og_to_oga)
-
-! Release memory
-deallocate(procio_to_nlonio)
-deallocate(list)
-deallocate(order)
-deallocate(proc_isio)
-deallocate(ogown_to_ogio)
+call io%com_AIO_grid%setup(mpl,'com_AIO_grid',nogown,io%noga,io%nlonio*io%nlat,io%nog,ogown_to_og,io%oga_to_og,io%ogio_to_og)
 
 ! Print results
 write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
@@ -906,12 +904,17 @@ write(mpl%info,'(a10,a,i8)') '','og%n_s = ',io%og%n_s
 call mpl%flush
 
 ! Release memory
-deallocate(lon_og)
-deallocate(lat_og)
+deallocate(procio_to_nlonio)
+deallocate(list)
+deallocate(order)
+deallocate(proc_isio)
+deallocate(ogown_to_og)
 deallocate(lon_oga)
 deallocate(lat_oga)
 deallocate(mask_oga)
 deallocate(lcheck_c0b)
+deallocate(c0b_to_c0)
+deallocate(c0u_to_c0b)
 
 end subroutine io_init_grid
 

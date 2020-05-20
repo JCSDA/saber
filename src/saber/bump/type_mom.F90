@@ -276,7 +276,7 @@ type(ens_type), intent(in) :: ens     ! Ensemble
 character(len=*),intent(in) :: prefix ! Prefix
 
 ! Local variables
-integer :: ie,ie_sub,jc0,ic0c,jc0c,ic0,jl0r,jl0,il0,isub,jc3,ic1,ic1a,ib,jv,iv,jts,its
+integer :: ie,ie_sub,ic0a,ic0c,jc0c,jc0u,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv,jts,its
 real(kind_real),allocatable :: fld_ext(:,:,:,:),fld_1(:,:),fld_2(:,:,:)
 logical,allocatable :: mask_unpack(:,:)
 
@@ -345,16 +345,13 @@ do isub=1,ens%nsub
                !$omp end parallel do
             else
                ! Copy all separations points
-               !$omp parallel do schedule(static) private(il0,jc3,ic1a,ic1,ic0,jc0,ic0c,jc0c)
+               !$omp parallel do schedule(static) private(il0,jc3,ic1a,ic0a,ic0c,jc0u,jc0c)
                do il0=1,geom%nl0
                   do ic1a=1,samp%nc1a
-                     ! Indices
-                     ic1 = samp%c1a_to_c1(ic1a)
-
-                     if (samp%smask_c1(ic1,il0)) then
+                     if (samp%smask_c1a(ic1a,il0)) then
                         ! Indices
-                        ic0 = samp%c1a_to_c0a(ic1)
-                        ic0c = samp%c0a_to_c0c(ic0)
+                        ic0a = samp%c1a_to_c0a(ic1a)
+                        ic0c = samp%c0a_to_c0c(ic0a)
 
                         ! Copy field 1
                         fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv,its)
@@ -362,8 +359,8 @@ do isub=1,ens%nsub
                         do jc3=1,bpar%nc3(ib)
                            if (samp%smask_c1ac3(ic1a,jc3,il0)) then
                               ! Indices
-                              jc0 = samp%c1ac3_to_c0(ic1a,jc3)
-                              jc0c = samp%c0_to_c0c(jc0)
+                              jc0u = samp%c1ac3_to_c0u(ic1a,jc3)
+                              jc0c = samp%c0u_to_c0c(jc0)
 
                               ! Copy field 2
                               fld_2(ic1a,jc3,il0) = fld_ext(jc0c,il0,jv,jts)
@@ -412,11 +409,10 @@ end do
 ! Normalize moments or set missing values
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      !$omp parallel do schedule(static) private(il0,jc3,ic1a,ic1,jl0r,jl0)
+      !$omp parallel do schedule(static) private(il0,jc3,ic1a,jl0r,jl0)
       do il0=1,geom%nl0
          do ic1a=1,samp%nc1a
-            ic1 = samp%c1a_to_c1(ic1a)
-            if (samp%smask_c1(ic1,il0)) then
+            if (samp%smask_c1a(ic1a,il0)) then
                mom%blk(ib)%m2_1(ic1a,il0,:) = mom%blk(ib)%m2_1(ic1a,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
             else
                mom%blk(ib)%m2_1(ic1a,il0,:) = mpl%msv%valr
@@ -424,7 +420,6 @@ do ib=1,bpar%nb
          end do
          do jc3=1,bpar%nc3(ib)
             do ic1a=1,samp%nc1a
-               ic1 = samp%c1a_to_c1(ic1a)
                if (samp%smask_c1ac3(ic1a,jc3,il0)) then
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mom%blk(ib)%m2_2(ic1a,jc3,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
                else
@@ -432,7 +427,7 @@ do ib=1,bpar%nb
                end if
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-                  if (samp%smask_c1(ic1,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)) then
+                  if (samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)) then
                      mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) &
                                                           & /real(mom%ne/mom%nsub-1,kind_real)
                      mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) &

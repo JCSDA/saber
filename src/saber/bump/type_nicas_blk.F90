@@ -2219,7 +2219,7 @@ end do
 
 ! Setup communications
 call nicas_blk%com_AB%setup(mpl,'com_AB',nicas_blk%ns,nicas_blk%nsa,nicas_blk%nsb,nicas_blk%nsa,nicas_blk%sb_to_s,sa_to_sb, &
- & s_to_proc,nicas_blk%s_to_sa)
+ & s_to_proc(nicas_blk%sb_to_s),nicas_blk%s_to_sa) ! TODO: remove s_to_proc
 
 ! Hash value
 do isa=1,nicas_blk%nsa
@@ -3477,9 +3477,9 @@ end if
 ! Setup communications
 s_to_proc = geom%c0_to_proc(nicas_blk%c1_to_c0(nicas_blk%s_to_c1))
 call nicas_blk%com_AC%setup(mpl,'com_AC',nicas_blk%ns,nicas_blk%nsa,nicas_blk%nsc,nicas_blk%nsa,nicas_blk%sc_to_s, &
- & nicas_blk%sa_to_sc,s_to_proc,nicas_blk%s_to_sa)
+ & nicas_blk%sa_to_sc,s_to_proc(nicas_blk%sc_to_s),nicas_blk%s_to_sa) ! TODO: remove s_to_proc
 if (.not.nicas_blk%smoother) call nicas_blk%com_AC_nor%setup(mpl,'com_AC_nor',nicas_blk%ns,nicas_blk%nsa,nicas_blk%nsc_nor, &
- & nicas_blk%nsa,nicas_blk%sc_nor_to_s,nicas_blk%sa_to_sc_nor,s_to_proc,nicas_blk%s_to_sa)
+ & nicas_blk%nsa,nicas_blk%sc_nor_to_s,nicas_blk%sa_to_sc_nor,s_to_proc(nicas_blk%sc_to_s),nicas_blk%s_to_sa) ! TODO: remove s_to_proc
 
 ! Release memory
 if (.not.nicas_blk%smoother) deallocate(lcheck_sc_nor)
@@ -4015,10 +4015,10 @@ do its=2,nam%nts
 end do
 
 ! Setup communications
-call nicas_blk%com_AD%setup(mpl,'com_AD',geom%nc0,geom%nc0a,nicas_blk%nc0d,geom%nc0a,c0d_to_c0,c0a_to_c0d,geom%c0_to_proc, &
- & geom%c0_to_c0a)
+call nicas_blk%com_AD%setup(mpl,'com_AD',geom%nc0,geom%nc0a,nicas_blk%nc0d,geom%nc0a,c0d_to_c0,c0a_to_c0d, &
+ & geom%c0_to_proc(c0d_to_c0),geom%c0_to_c0a) ! TODO: remove c0_to_proc
 call nicas_blk%com_ADinv%setup(mpl,'com_ADinv',geom%nc0,geom%nc0a,nicas_blk%nc0dinv,geom%nc0a,c0dinv_to_c0,c0a_to_c0dinv, &
- & geom%c0_to_proc,geom%c0_to_c0a)
+ & geom%c0_to_proc(c0dinv_to_c0),geom%c0_to_c0a) ! TODO: remove c0_to_proc
 
 ! Print results
 write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc

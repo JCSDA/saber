@@ -369,7 +369,7 @@ type(samp_type),intent(in) :: samp             ! Sampling
 logical,intent(in),optional :: coef            ! Coefficient estimation flag
 
 ! Local variables
-integer :: ic2,ic0,il0,jl0r,jl0,isc,il0_prev,dl0,il0inf,il0sup,il1inf,il1sup,ivar
+integer :: ic2,ic0a,il0,jl0r,jl0,isc,il0_prev,dl0,il0inf,il0sup,il1inf,il1sup,ivar
 real(kind_real) :: alpha,alpha_opt,fo,fo_opt
 real(kind_real) :: vunit(geom%nl0),m2(geom%nl0),fit_rh(geom%nl0),fit_rv(geom%nl0)
 real(kind_real),allocatable :: rawv(:),distv(:),fit(:,:,:),fit_pack(:),obs_pack(:)
@@ -403,9 +403,8 @@ diag_blk%fit = mpl%msv%valr
 if (ic2a==0) then
    vunit = geom%vunitavg
 else
-   ic2 = samp%c2a_to_c2(ic2a)
-   ic0 = samp%c2_to_c0(ic2)
-   vunit = geom%vunit_c0(ic0,:)
+   ic0a = samp%c2a_to_c0a(ic2a)
+   vunit = geom%vunit_c0a(ic0a,:)
 end if
 
 ! Fast fit

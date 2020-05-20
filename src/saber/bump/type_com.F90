@@ -397,7 +397,7 @@ end subroutine com_send
 ! Subroutine: com_setup
 ! Purpose: setup communications
 !----------------------------------------------------------------------
-subroutine com_setup(com_out,mpl,prefix,nglb,nred,next,nown,ext_to_glb,own_to_ext,glb_to_proc,glb_to_red)
+subroutine com_setup(com_out,mpl,prefix,nown,nred,next,nglb,own_to_glb,red_to_glb,ext_to_glb)
 
 implicit none
 
@@ -405,99 +405,131 @@ implicit none
 class(com_type),intent(inout) :: com_out ! Communication data
 type(mpl_type),intent(inout) :: mpl      ! MPI data
 character(len=*),intent(in) :: prefix    ! Prefix
-integer,intent(in) :: nglb               ! Global size
+integer,intent(in) :: nown               ! Own data size
 integer,intent(in) :: nred               ! Reduced halo size
 integer,intent(in) :: next               ! Extended halo size
-integer,intent(in) :: nown               ! Own data size
+integer,intent(in) :: nglb               ! Global size
+integer,intent(in) :: own_to_glb(nown)   ! Own data to global
+integer,intent(in) :: red_to_glb(nred)   ! Reduced halo to global
 integer,intent(in) :: ext_to_glb(next)   ! Extended halo to global
-integer,intent(in) :: own_to_ext(nown)   ! Own data to extended halo
-integer,intent(in) :: glb_to_proc(nglb)  ! Global to processor
-integer,intent(in) :: glb_to_red(nglb)   ! Global to reduced halo
 
 ! Local variables
-integer :: iproc,jproc,iext,iglb,ired,icount,nred_tmp,next_tmp,nown_tmp
-integer,allocatable :: ext_to_glb_tmp(:),own_to_ext_tmp(:),own_to_red(:),own_to_red_tmp(:)
+integer :: iproc,jproc,iown,ired,iext,iglb,icount,nglb_test
+integer,allocatable :: glb_to_red(:),glb_to_proc(:),red_to_ext(:)
+integer,allocatable :: own_to_glb_tmp(:),red_to_glb_tmp(:),ext_to_glb_tmp(:)
 type(com_type) :: com_in(mpl%nproc)
 type(fckit_mpi_status) :: status
-
-! Allocation
-allocate(own_to_red(nown))
-
-! Initialization
-own_to_red = glb_to_red(ext_to_glb(own_to_ext))
+character(len=1024),parameter :: subr = 'com_setup'
 
 if (mpl%main) then
+   ! Get dimensions
+   nglb_test = 0
    do iproc=1,mpl%nproc
-      ! Communicate dimensions
       if (iproc==mpl%rootproc) then
          ! Copy dimensions
-         nred_tmp = nred
-         next_tmp = next
-         nown_tmp = nown
+         com_in(iproc)%nown = nown
+         com_in(iproc)%nred = nred
+         com_in(iproc)%next = next
       else
          ! Receive dimensions on rootproc
-         call mpl%f_comm%receive(nred_tmp,iproc-1,mpl%tag,status)
-         call mpl%f_comm%receive(next_tmp,iproc-1,mpl%tag+1,status)
-         call mpl%f_comm%receive(nown_tmp,iproc-1,mpl%tag+2,status)
+         call mpl%f_comm%receive(com_in(iproc)%nown,iproc-1,mpl%tag,status)
+         call mpl%f_comm%receive(com_in(iproc)%nred,iproc-1,mpl%tag+1,status)
+         call mpl%f_comm%receive(com_in(iproc)%next,iproc-1,mpl%tag+2,status)
       end if
 
-      ! Allocation
-      allocate(ext_to_glb_tmp(next_tmp))
-      allocate(own_to_ext_tmp(nown_tmp))
-      allocate(own_to_red_tmp(nown_tmp))
+      ! Rebuild global size
+      nglb_test = nglb_test+com_in(iproc)%nred
+   end do
 
-      ! Communicate data
+   ! Check global size
+   if (nglb_test/=nglb) call mpl%abort(subr,'sum of reduced halos sizes is not equal to the global size')
+
+   ! Allocation
+   allocate(glb_to_red(nglb))
+   allocate(glb_to_proc(nglb))
+
+   ! Initialization
+   glb_to_red = mpl%msv%vali
+
+   ! Build global to reduced halo conversion
+   do iproc=1,mpl%nproc
+      ! Allocation
+      allocate(red_to_glb_tmp(com_in(iproc)%nred))
+
       if (iproc==mpl%rootproc) then
          ! Copy data
-         ext_to_glb_tmp = ext_to_glb
-         own_to_ext_tmp = own_to_ext
-         own_to_red_tmp = own_to_red
+         red_to_glb_tmp = red_to_glb
       else
          ! Receive data on rootproc
-         call mpl%f_comm%receive(ext_to_glb_tmp,iproc-1,mpl%tag+3,status)
-         call mpl%f_comm%receive(own_to_ext_tmp,iproc-1,mpl%tag+4,status)
-         call mpl%f_comm%receive(own_to_red_tmp,iproc-1,mpl%tag+5,status)
+         call mpl%f_comm%receive(red_to_glb_tmp,iproc-1,mpl%tag+3,status)
       end if
 
-      ! Allocation
-      com_in(iproc)%nred = nred_tmp
-      com_in(iproc)%next = next_tmp
-      com_in(iproc)%nown = nown_tmp
-      allocate(com_in(iproc)%ext_to_proc(com_in(iproc)%next))
-      allocate(com_in(iproc)%ext_to_red(com_in(iproc)%next))
-      allocate(com_in(iproc)%own_to_ext(com_in(iproc)%nown))
-      allocate(com_in(iproc)%own_to_red(com_in(iproc)%nown))
-
-      ! Communication parameters
-      do iext=1,next_tmp
-         iglb = ext_to_glb_tmp(iext)
-         com_in(iproc)%ext_to_proc(iext) = glb_to_proc(iglb)
-         ired = glb_to_red(iglb)
-         com_in(iproc)%ext_to_red(iext) = ired
+      ! Fill glb_to_red and glb_to_proc
+      do ired=1,com_in(iproc)%nred
+         iglb = red_to_glb_tmp(ired)
+         if (mpl%msv%isnot(glb_to_red(iglb))) call mpl%abort(subr,'distinct reduced halo points have the same global index')
+         glb_to_red(iglb) = ired
+         glb_to_proc(iglb) = iproc
       end do
-      com_in(iproc)%own_to_ext = own_to_ext_tmp
-      com_in(iproc)%own_to_red = own_to_red_tmp
 
       ! Release memory
+      deallocate(red_to_glb_tmp)
+   end do
+
+   do iproc=1,mpl%nproc
+      ! Allocation
+      allocate(own_to_glb_tmp(com_in(iproc)%nown))
+      allocate(ext_to_glb_tmp(com_in(iproc)%next))
+      allocate(red_to_ext(com_in(iproc)%nred))
+      allocate(com_in(iproc)%own_to_red(com_in(iproc)%nown))
+      allocate(com_in(iproc)%own_to_ext(com_in(iproc)%nown))
+      allocate(com_in(iproc)%ext_to_red(com_in(iproc)%next))
+      allocate(com_in(iproc)%ext_to_proc(com_in(iproc)%next))
+
+      if (iproc==mpl%rootproc) then
+         ! Copy data
+         own_to_glb_tmp = own_to_glb
+         ext_to_glb_tmp = ext_to_glb
+      else
+         ! Receive data on rootproc
+         call mpl%f_comm%receive(own_to_glb_tmp,iproc-1,mpl%tag+4,status)
+         call mpl%f_comm%receive(ext_to_glb_tmp,iproc-1,mpl%tag+5,status)
+      end if
+
+      ! Communication parameters
+      do iext=1,com_in(iproc)%next
+         iglb = ext_to_glb_tmp(iext)
+         ired = glb_to_red(iglb)
+         jproc = glb_to_proc(iglb)
+         com_in(iproc)%ext_to_red(iext) = ired
+         com_in(iproc)%ext_to_proc(iext) = jproc
+         if (jproc==iproc) red_to_ext(ired) = iext
+      end do
+      do iown=1,com_in(iproc)%nown
+         iglb = own_to_glb_tmp(iown)
+         ired = glb_to_red(iglb)
+         iext = red_to_ext(ired)
+         com_in(iproc)%own_to_red(iown) = ired
+         com_in(iproc)%own_to_ext(iown) = iext
+      end do
+
+      ! Release memory
+      deallocate(own_to_glb_tmp)
       deallocate(ext_to_glb_tmp)
-      deallocate(own_to_ext_tmp)
-      deallocate(own_to_red_tmp)
+      deallocate(red_to_ext)
    end do
 else
    ! Send dimensions to rootproc
-   call mpl%f_comm%send(nred,mpl%rootproc-1,mpl%tag)
-   call mpl%f_comm%send(next,mpl%rootproc-1,mpl%tag+1)
-   call mpl%f_comm%send(nown,mpl%rootproc-1,mpl%tag+2)
+   call mpl%f_comm%send(nown,mpl%rootproc-1,mpl%tag)
+   call mpl%f_comm%send(nred,mpl%rootproc-1,mpl%tag+1)
+   call mpl%f_comm%send(next,mpl%rootproc-1,mpl%tag+2)
 
    ! Send data to rootproc
-   call mpl%f_comm%send(ext_to_glb,mpl%rootproc-1,mpl%tag+3)
-   call mpl%f_comm%send(own_to_ext,mpl%rootproc-1,mpl%tag+4)
-   call mpl%f_comm%send(own_to_red,mpl%rootproc-1,mpl%tag+5)
+   call mpl%f_comm%send(red_to_glb,mpl%rootproc-1,mpl%tag+3)
+   call mpl%f_comm%send(own_to_glb,mpl%rootproc-1,mpl%tag+4)
+   call mpl%f_comm%send(ext_to_glb,mpl%rootproc-1,mpl%tag+5)
 end if
 call mpl%update_tag(6)
-
-! Release memory
-deallocate(own_to_red)
 
 if (mpl%main) then
    ! Allocation

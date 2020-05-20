@@ -423,13 +423,10 @@ do il0=1,geom%nl0
 
       do jc3=1,bpar%nc3(ib)
          ! Fill lists
-         !$omp parallel do schedule(static) private(ic1a,ic1,valid,den,gen_kurt,m2_1,m2_2,isub,jsub)
+         !$omp parallel do schedule(static) private(ic1a,valid,den,gen_kurt,m2_1,m2_2,isub,jsub)
          do ic1a=1,samp%nc1a
-            ! Index
-            ic1 = samp%c1a_to_c1(ic1a)
-
             ! Check mask validity
-            valid = samp%smask_c1(ic1,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
+            valid = samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
 
             if (valid) then
                ! Check general kurtosis
@@ -755,7 +752,7 @@ type(samp_type),intent(in) :: samp           ! Sampling
 type(mom_blk_type),intent(in) :: mom_blk     ! Moments
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,nc1max,ic1d,i,ic1,nc1a,nc1a_cor,ic2
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,nc1max,ic1d,ic1u,i,nc1a,nc1a_cor,ic2
 real(kind_real) :: m2_1,m2_2,norm,gen_kurt
 real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
 logical :: valid
@@ -795,10 +792,10 @@ do il0=1,geom%nl0
          ! Fill lists
          do ic1d=1,samp%nc1d
             ! Indices
-            ic1 = samp%c1d_to_c1(ic1d)
+            ic1u = samp%c1d_to_c1u(ic1d)
 
             ! Check mask validity
-            valid = samp%local_mask(ic1,ic2a).and.samp%smask_c1(ic1,il0).and.samp%smask_c1dc3(ic1d,jc3,jl0)
+            valid = samp%local_mask(ic1u,ic2a).and.samp%smask_c1u(ic1u,il0).and.samp%smask_c1dc3(ic1d,jc3,jl0)
 
             if (valid) then
                ! Check generalized kurtosis
@@ -1120,7 +1117,7 @@ type(mom_blk_type),intent(in) :: mom_blk     ! Moments block
 type(mom_blk_type),intent(in) :: mom_lr_blk  ! Low-resolution moments block
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,npack
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,nc1a,npack
 real(kind_real) :: m2_1,m2_2
 real(kind_real),allocatable :: list_m11lrm11sub(:,:,:),sbuf(:),rbuf(:)
 logical :: valid
@@ -1138,7 +1135,7 @@ jv = bpar%b_to_v2(ib)
 if (avg_blk%nsub/=avg_blk%nsub) call mpl%abort(subr,'different number of sub-ensembles')
 
 ! Average
-!$omp parallel do schedule(static) private(il0,jl0r,jl0,list_m11lrm11sub,jc3,nc1a,ic1a,ic1,valid,m2_1,m2_2,isub,jsub)
+!$omp parallel do schedule(static) private(il0,jl0r,jl0,list_m11lrm11sub,jc3,nc1a,ic1a,valid,m2_1,m2_2,isub,jsub)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
@@ -1150,11 +1147,8 @@ do il0=1,geom%nl0
          ! Fill lists
          nc1a = 0
          do ic1a=1,samp%nc1a
-            ! Index
-            ic1 = samp%c1a_to_c1(ic1a)
-
             ! Check validity
-            valid = samp%smask_c1(ic1,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
+            valid = samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
             if (trim(nam%mask_type)=='stddev') then
                m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
                m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
@@ -1277,7 +1271,7 @@ type(mom_blk_type),intent(in) :: mom_blk     ! Moments block
 type(mom_blk_type),intent(in) :: mom_lr_blk  ! Low-resolution moments block
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1d,ic1,ic1a,nc1max,nc1a,i
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1d,ic1u,nc1max,nc1a,i
 real(kind_real) :: m2_1,m2_2
 real(kind_real),allocatable :: list_m11lrm11sub(:,:,:)
 logical :: valid
@@ -1303,15 +1297,14 @@ do il0=1,geom%nl0
          i = 0
          do ic1d=1,samp%nc1d
             ! Indices
-            ic1 = samp%c1d_to_c1(ic1d)
-            ic1a = samp%c1_to_c1a(ic1a)
+            ic1u = samp%c1d_to_c1u(ic1d)
 
-            if (samp%local_mask(ic1,ic2a)) then
+            if (samp%local_mask(ic1u,ic2a)) then
                ! Update
                i = i+1
 
                ! Check validity
-               valid = samp%smask_c1(ic1,il0).and.samp%smask_c1dc3(ic1d,jc3,jl0)
+               valid = samp%smask_c1u(ic1u,il0).and.samp%smask_c1dc3(ic1d,jc3,jl0)
                if (trim(nam%mask_type)=='stddev') then
                   m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_blk%nsub,kind_real)
                   m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jl0,:))/real(avg_blk%nsub,kind_real)

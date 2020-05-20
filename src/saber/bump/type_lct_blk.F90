@@ -191,7 +191,7 @@ type(samp_type),intent(in) :: samp           ! Sampling
 type(mom_blk_type),intent(in) :: mom_blk     ! Moments block
 
 ! Local variables
-integer :: jsub,il0,jl0r,jl0,jc3,ic1a,ic1,ic0,jc0,iscales,icomp
+integer :: jsub,il0,jl0r,jl0,jc3,ic1a,ic0a,ic0u,jc0u,iscales,icomp
 real(kind_real) :: den,dx,dy,dz,distsq,Dhbar,Dvbar,norm
 real(kind_real),allocatable :: norm_raw(:,:),Dh(:),Dv(:)
 logical :: valid
@@ -210,9 +210,6 @@ do il0=1,geom%nl0
    call mpl%prog_init(samp%nc1a)
 
    do ic1a=1,samp%nc1a
-      ! Indices
-      ic1 = samp%c1a_to_c1(ic1a)
-
       select case (trim(nam%minim_algo))
       case ('hooke')
          ! Hooke parameters
@@ -244,7 +241,7 @@ do il0=1,geom%nl0
       allocate(minim%dzsq(nam%nc3,bpar%nl0r(ib)))
       allocate(minim%dmask(nam%nc3,bpar%nl0r(ib)))
 
-      if (samp%smask_c1(ic1,il0)) then
+      if (samp%smask_c1a(ic1a,il0)) then
          ! Initialization
          norm_raw = 0.0
 
@@ -273,13 +270,14 @@ do il0=1,geom%nl0
          end do
 
          ! Compute deltas
-         ic0 = samp%c1_to_c0(ic1)
+         ic0a = samp%c1a_to_c0a(ic1a)
+         ic0u = geom%c0a_to_c0u(ic0a)
          do jl0r=1,bpar%nl0r(ib)
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             do jc3=1,nam%nc3
                minim%dmask(jc3,jl0r) = samp%smask_c1ac3(ic1a,jc3,jl0)
                if (minim%dmask(jc3,jl0r)) then
-                  jc0 = samp%c1ac3_to_c0(ic1a,jc3)
+                  jc0u = samp%c1ac3_to_c0u(ic1a,jc3)
                   call geom%compute_deltas(ic0u,il0,jc0u,jl0,dx,dy,dz)
                   minim%dxsq(jc3,jl0r) = dx**2
                   minim%dysq(jc3,jl0r) = dy**2
@@ -562,10 +560,7 @@ if (nam%diag_rhflt>0.0) then
 
    do il0=1,geom%nl0
       do ic1a=1,samp%nc1a
-         ! Global index
-         ic1 = samp%c1a_to_c1(ic1a)
-
-         if (samp%smask_c1(ic1,il0)) then
+         if (samp%smask_c1a(ic1a,il0)) then
             ! Check tensor validity
             valid = .true.
             do iscales=1,lct_blk%nscales
@@ -580,14 +575,15 @@ if (nam%diag_rhflt>0.0) then
             if (valid) then
                if (nam%lct_write_cor) then
                   ! Compute deltas
-                  ic0 = samp%c1_to_c0(ic1)
+                  ic0a = samp%c1a_to_c0a(ic1a)
+                  ic0u = samp%c0a_to_c0u(ic0a)
                   do jl0r=1,bpar%nl0r(ib)
                      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                      do jc3=1,nam%nc3
-                        dmask(jc3,jl0r) = samp%smask_c1(ic1,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
+                        dmask(jc3,jl0r) = samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
                         if (dmask(jc3,jl0r)) then
-                           jc0 = samp%c1ac3_to_c0(ic1a,jc3)
-                           call geom%compute_deltas(ic0,il0,jc0,jl0,dx,dy,dz)
+                           jc0u = samp%c1ac3_to_c0u(ic1a,jc3)
+                           call geom%compute_deltas(ic0u,il0,jc0u,jl0,dx,dy,dz)
                            dxsq(jc3,jl0r) = dx**2
                            dysq(jc3,jl0r) = dy**2
                            dxdy(jc3,jl0r) = dx*dy
@@ -835,7 +831,7 @@ character(len=*),intent(in) :: filename      ! Filename
 
 ! Local variables
 integer :: info,ncid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,raw_id,fit_id,fit_filt_id
-integer :: ic1a,ic3,ic0
+integer :: ic1a,ic3,ic0u
 real(kind_real) :: lon(nam%nc3,samp%nc1a),lat(nam%nc3,samp%nc1a)
 character(len=1024),parameter :: subr = 'lct_blk_write'
 
@@ -845,9 +841,9 @@ associate(ib=>lct_blk%ib)
 ! Lon/lat initialization
 do ic1a=1,samp%nc1a
    do ic3=1,nam%nc3
-      ic0 = samp%c1ac3_to_c0(ic1a,ic3)
-      lon(ic3,ic1a) = geom%lon_c0(ic0)*rad2deg
-      lat(ic3,ic1a) = geom%lat_c0(ic0)*rad2deg
+      ic0u = samp%c1ac3_to_c0u(ic1a,ic3)
+      lon(ic3,ic1a) = geom%lon_c0u(ic0u)*rad2deg
+      lat(ic3,ic1a) = geom%lat_c0u(ic0u)*rad2deg
    end do
 end do
 

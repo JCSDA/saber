@@ -571,7 +571,7 @@ do its=1,nam%nts
    end if
    call mpl%f_comm%broadcast(londir(its),iproc(1)-1)
    call mpl%f_comm%broadcast(latdir(its),iproc(1)-1)
-   call mpl%f_comm%broadcast(il0,iproc(1)-1))
+   call mpl%f_comm%broadcast(il0,iproc(1)-1)
 
    ! Print results
    write(mpl%info,'(a13,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(its))//' ~> lon / lat / lev / val: ', &
@@ -786,7 +786,7 @@ type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variable
 integer,parameter :: ntest = 1000
-integer :: ie,il0,itest,ic0dir,iprocdir,ic0adir,its,iv,ic0a
+integer :: ie,il0,itest,iprocdir,ic0adir,its,iv,ic0a
 integer :: ncid,ntest_id,nl0_id,nv_id,nts_id,cor_max_id,cor_max_avg_id,cor_max_std_id
 real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),alpha(ens%ne),m2_loc,cor(geom%nc0a,nam%nts),norm
 real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,2:nam%nts)

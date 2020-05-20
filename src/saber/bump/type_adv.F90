@@ -230,28 +230,19 @@ subroutine adv_init(adv,mpl,geom,samp)
 implicit none
 
 ! Passed variables
-class(adv_type),intent(inout) :: adv  ! Advection
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(geom_type),intent(in) :: geom    ! Geometry
-type(samp_type),intent(inout) :: samp ! Sampling
+class(adv_type),intent(inout) :: adv ! Advection
+type(mpl_type),intent(inout) :: mpl  ! MPI data
+type(geom_type),intent(in) :: geom   ! Geometry
+type(samp_type),intent(in) :: samp   ! Sampling
 
 ! Local variables
 integer :: il0,ic2a,ic2,ic0,ic0a
 
 ! Initialization
+adv%lon_c2a = samp%lon_c2a
+adv%lat_c2a = samp%lat_c2a
 do ic2a=1,samp%nc2a
-   ic2 = samp%c2a_to_c2(ic2a)
-   ic0 = samp%c2_to_c0(ic2)
-   ic0a = geom%c0_to_c0a(ic0)
-   adv%lon_c2a(ic2a) = geom%lon_c0a(ic0a)
-   adv%lat_c2a(ic2a) = geom%lat_c0a(ic0a)
    call lonlat2xyz(mpl,adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%x_c2a(ic2a),adv%y_c2a(ic2a),adv%z_c2a(ic2a))
-end do
-do il0=1,geom%nl0
-   do ic2a=1,samp%nc2a
-      ic2 = samp%c2a_to_c2(ic2a)
-      samp%smask_c2a(ic2a,il0) = samp%smask_c2(ic2,il0)
-   end do
 end do
 
 end subroutine adv_init
@@ -274,9 +265,8 @@ type(ens_type),intent(in) :: ens               ! Ensemble
 type(adv_type),intent(in),optional :: adv_wind ! Wind advection
 
 ! Local variables
-integer :: ic0,ic0u,ic2,ic2a,jn,jc0u,il0,il0i,isub,iv,its,ie,ie_sub,ic0a,nc0d,ic0d,jc0d,jnmax,nnmax
+integer :: ic0u,ic2,ic2a,jn,jc0u,il0,il0i,isub,iv,its,ie,ie_sub,ic0a,nc0d,ic0d,jc0d,jnmax,nnmax
 integer :: nn(samp%nc2a,geom%nl0),ic0u_rac(1)
-integer :: c0u_to_c0d(geom%nc0u),c0a_to_c0d(geom%nc0a)
 integer,allocatable :: jc0u_ra(:,:,:),c0d_to_c0(:)
 real(kind_real) :: search_rad,m2m2,fld_1,fld_2,cov
 real(kind_real) :: dist_sum,cor_avg_max,norm,norm_tot
@@ -410,19 +400,11 @@ do its=2,nam%nts
          ic0d = ic0d+1
          ic0 = geom%c0u_to_c0
          c0d_to_c0(ic0d) = ic0
-         c0u_to_c0d(ic0u) = ic0d
       end if
    end do
 
-   ! Inter-halo conversions
-   do ic0a=1,geom%nc0a
-      ic0u = geom%c0a_to_c0u(ic0a)
-      ic0d = c0u_to_c0d(ic0)
-      c0a_to_c0d(ic0a) = ic0d
-   end do
-
    ! Setup communications
-   call com_AD%setup(mpl,'com_AD',geom%nc0,geom%nc0a,nc0d,geom%nc0a,c0d_to_c0,c0a_to_c0d,geom%c0_to_proc,geom%c0_to_c0a)
+   call com_AD%setup(mpl,'com_AD',geom%nc0a,geom%nc0a,nc0d,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,c0d_to_c0)
 
    ! Mask
    mask_nn = .false.
@@ -475,7 +457,7 @@ do its=2,nam%nts
                         if (mask_nn(jn,ic2a,il0)) then
                            ! Indices
                            ic0a = samp%c2a_to_c0a(ic2a)
-                           ic0u = samp%c0a_to_c0u(ic0a)
+                           ic0u = geom%c0a_to_c0u(ic0a)
                            jc0u = jc0u_ra(jn,ic2a,il0)
 
                            ! Halo D indices
@@ -598,7 +580,7 @@ do its=2,nam%nts
       end do
       !$omp end parallel do
 
-      ! Check raw mesh
+      ! Check raw mesh ! TODO: check in the universe
       call mpl%loc_to_glb(samp%nc2a,adv%lon_c2a_raw(:,il0,its),nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lon_c2)
       call mpl%loc_to_glb(samp%nc2a,adv%lat_c2a_raw(:,il0,its),nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lat_c2)
       if (mpl%main) then
@@ -655,9 +637,9 @@ type(samp_type),intent(inout) :: samp                              ! Sampling
 real(kind_real),intent(in) :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
 
 ! Local variables
-integer :: ic0,ic0u,ic0a,ic0w,ic0own,i_s,ic2a,il0,its,it,nc0w,nc0own
-integer :: c0u_to_c0w(geom%nc0)
-integer,allocatable :: c0w_to_c0(:),c0own_to_c0w(:)
+integer :: ic0u,ic0a,ic0w,ic0own,i_s,ic2a,il0,its,it,nc0w,nc0own
+integer :: c0u_to_c0w(geom%nc0u)
+integer,allocatable :: c0w_to_c0(:),c0own_to_c0(:)
 real(kind_real) :: dist_sum,norm,norm_tot
 real(kind_real) :: dtl,t,um(samp%nc2a),vm(samp%nc2a),up(samp%nc2a),vp(samp%nc2a)
 real(kind_real) :: uxm,uym,uzm,uxp,uyp,uzp,ux,uy,uz,x,y,z
@@ -730,7 +712,7 @@ do its=2,nam%nts
 
          ! Allocation
          allocate(c0w_to_c0(nc0w))
-         allocate(c0own_to_c0w(nc0own))
+         allocate(c0own_to_c0(nc0own))
          allocate(fld_uv_ext(nc0w,2,2))
 
          ! Global-local conversion for halo W
@@ -752,8 +734,8 @@ do its=2,nam%nts
             ic0u = geom%c0a_to_c0u(ic0a)
             if (lcheck_c0w(ic0u)) then
                ic0own = ic0own+1
-               ic0w = c0u_to_c0w(ic0u)
-               c0own_to_c0w(ic0own) = ic0w
+               ic0 = geom%c0u_to_c0(ic0u)
+               c0own_to_c0(ic0own) = ic0
             end if
          end do
 
@@ -764,7 +746,7 @@ do its=2,nam%nts
          end do
 
          ! Setup communication
-         call com_AW%setup(mpl,'com_AW',geom%nc0,geom%nc0a,nc0w,nc0own,c0w_to_c0,c0own_to_c0w,geom%c0_to_proc,geom%c0_to_c0a)
+         call com_AW%setup(mpl,'com_AW',nc0own,geom%nc0a,nc0w,geom%nc0,c0own_to_c0,geom%c0a_to_c0,c0w_to_c0)
 
          ! Communication
          call com_AW%ext(mpl,fld_uv(:,il0,1,its-1),fld_uv_ext(:,1,1))
@@ -781,7 +763,7 @@ do its=2,nam%nts
          ! Release memory
          call h%dealloc
          deallocate(c0w_to_c0)
-         deallocate(c0own_to_c0w)
+         deallocate(c0own_to_c0)
          call com_AW%dealloc
          deallocate(fld_uv_ext)
 
@@ -830,7 +812,7 @@ do its=2,nam%nts
          end if
       end do
 
-      ! Check raw mesh
+      ! Check raw mesh ! TODO: check in the universe
       call mpl%loc_to_glb(samp%nc2a,adv%lon_c2a_raw(:,il0,its),nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lon_c2)
       call mpl%loc_to_glb(samp%nc2a,adv%lat_c2a_raw(:,il0,its),nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lat_c2)
       if (mpl%main) then
@@ -958,7 +940,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
        & min(geom%mdist_c0u(ic0u,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0u))),dist_c2a(ic2a))
       end do
 
-      ! Check mesh
+      ! Check filtered mesh ! TODO: check in the universe
       call mpl%loc_to_glb(samp%nc2a,lon_c2a,nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lon_c2)
       call mpl%loc_to_glb(samp%nc2a,lat_c2a,nam%nc2,samp%c2_to_proc,samp%c2_to_c2a,.false.,lat_c2)
       if (mpl%main) then
@@ -1123,7 +1105,7 @@ do its=2,nam%nts
          if (geom%gmask_c0a(ic0a,il0)) then
             ic0u = geom%c0a_to_c0u(ic0a)
             call reduce_arc(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),samp%adv_lon(ic0a,il0,its),samp%adv_lat(ic0a,il0,its), &
-          & min(geom%mdist_c0u(ic0u,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0u))),reduced_dist)
+          & min(geom%mdist_c0a(ic0a,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0u))),reduced_dist)
          end if
       end do
 
@@ -1156,7 +1138,7 @@ type(ens_type), intent(in) :: ens     ! Ensemble
 
 ! Local variables
 integer :: its,il0,ic0,ic0u,ic0a,i_s,jc0u,nc0d,ie,iv,ic0d
-integer :: c0u_to_c0d(geom%nc0u),c0a_to_c0d(geom%nc0a)
+integer :: c0u_to_c0d(geom%nc0u)
 integer,allocatable :: c0d_to_c0(:)
 real(kind_real) :: score_loc,score_adv,norm_loc,norm_adv,norm_loc_tot,norm_adv_tot
 real(kind_real) :: m2_1(geom%nc0a,geom%nl0),m2_2_loc(geom%nc0a,geom%nl0),m11_loc(geom%nc0a,geom%nl0)
@@ -1210,13 +1192,6 @@ do ic0u=1,geom%nc0u
    end if
 end do
 
-! Halos A-D conversion
-do ic0a=1,geom%nc0a
-   ic0u = geom%c0a_to_c0u(ic0a)
-   ic0d = c0u_to_c0d(ic0u)
-   c0a_to_c0d(ic0a) = ic0d
-end do
-
 ! Local interpolation source
 do its=2,nam%nts
    do il0=1,geom%nl0
@@ -1228,7 +1203,7 @@ do its=2,nam%nts
 end do
 
 ! Setup communications
-call com_ADinv%setup(mpl,'com_ADinv',geom%nc0,geom%nc0a,nc0d,geom%nc0a,c0d_to_c0,c0a_to_c0d,geom%c0_to_proc,geom%c0_to_c0a)
+call com_ADinv%setup(mpl,'com_ADinv',geom%nc0a,geom%nc0a,nc0d,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,c0d_to_c0)
 
 ! Allocation
 allocate(fld_d(nc0d,geom%nl0))
@@ -1321,7 +1296,6 @@ integer :: lon_c2_id,lat_c2_id,lon_c2_raw_id,lat_c2_raw_id,dist_c2_raw_id,valid_
 integer :: lon_c2_flt_id,lat_c2_flt_id,dist_c2_flt_id,valid_flt_id,dist_flt_id,rhflt_id
 integer :: score_loc_id,score_adv_id
 integer :: iproc,its,il0,ic2a,ic2,i,ib,iv,jv,jts,proc_to_nc2a(mpl%nproc)
-integer,allocatable :: c2a_to_c2(:)
 real(kind_real),allocatable :: sbuf(:),rbuf(:),lon_c2(:,:),lat_c2(:,:)
 real(kind_real),allocatable :: lon_c2_raw(:,:,:),lat_c2_raw(:,:,:),dist_c2_raw(:,:,:)
 real(kind_real),allocatable :: lon_c2_flt(:,:,:),lat_c2_flt(:,:,:),dist_c2_flt(:,:,:)
@@ -1371,31 +1345,23 @@ if (mpl%main) then
    allocate(lat_c2_flt(nam%nc2,geom%nl0,nam%nts-1))
    allocate(dist_c2_flt(nam%nc2,geom%nl0,nam%nts-1))
 
-   ! Initialization
-   do iproc=1,mpl%nproc
-      proc_to_nc2a(iproc) = count(samp%c2_to_proc==iproc)
-   end do
-
    do iproc=1,mpl%nproc
       ! Allocation
-      allocate(c2a_to_c2(proc_to_nc2a(iproc)))
-      allocate(rbuf(proc_to_nc2a(iproc)*geom%nl0*(2+(nam%nts-1)*6)))
+      allocate(rbuf(samp%proc_to_nc2a(iproc)*geom%nl0*(2+(nam%nts-1)*6)))
 
       if (iproc==mpl%rootproc) then
          ! Copy buffer
-         c2a_to_c2 = samp%c2a_to_c2
          rbuf = sbuf
       else
          ! Receive data on rootproc
-         call mpl%f_comm%receive(c2a_to_c2,iproc-1,mpl%tag,status)
-         call mpl%f_comm%receive(rbuf,iproc-1,mpl%tag+1,status)
+         call mpl%f_comm%receive(rbuf,iproc-1,mpl%tag,status)
       end if
 
-      ! Write data
+      ! Copy data
       i = 1
       do il0=1,geom%nl0
-         do ic2a=1,proc_to_nc2a(iproc)
-            ic2 = c2a_to_c2(ic2a)
+         do ic2a=1,samp%proc_to_nc2a(iproc)
+            ic2 = samp%proc_to_c2_offset(iproc)+ic2a
             lon_c2(ic2,il0) = rbuf(i)
             i = i+1
             lat_c2(ic2,il0) = rbuf(i)
@@ -1418,18 +1384,19 @@ if (mpl%main) then
       end do
 
       ! Release memory
-      deallocate(c2a_to_c2)
       deallocate(rbuf)
    end do
 else
    ! Send data to rootproc
-   call mpl%f_comm%send(samp%c2a_to_c2,mpl%rootproc-1,mpl%tag)
-   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag+1)
+   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
 end if
-call mpl%update_tag(2)
+call mpl%update_tag(1)
 
 ! Release memory
 deallocate(sbuf)
+
+! Order data
+! TODO
 
 ! Define filename
 filename = trim(nam%prefix)//'_adv_diag'

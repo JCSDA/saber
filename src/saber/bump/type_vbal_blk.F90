@@ -124,7 +124,7 @@ real(kind_real),intent(out) :: auto(samp%nc1e,geom%nl0,geom%nl0,ens%nsub)  ! Aut
 real(kind_real),intent(out) :: cross(samp%nc1e,geom%nl0,geom%nl0,ens%nsub) ! Cross-covariance
 
 ! Local variables
-integer :: isub,ie_sub,ie,il0,ic1a,ic1,ic0,ic0a,jl0,ic1e
+integer :: isub,ie_sub,ie,il0,ic1a,ic0,ic0a,jl0,ic1e,ic1u
 real(kind_real) :: fld_1(samp%nc1a,geom%nl0),fld_2(samp%nc1a,geom%nl0),fld_ext_1(samp%nc1e,geom%nl0),fld_ext_2(samp%nc1e,geom%nl0)
 
 ! Initialization
@@ -152,16 +152,12 @@ do isub=1,ens%nsub
       ! Copy all separations points
       fld_1 = 0.0
       fld_2 = 0.0
-      !$omp parallel do schedule(static) private(il0,ic1a,ic1,ic0,ic0a)
+      !$omp parallel do schedule(static) private(il0,ic1a,ic0,ic0a)
       do il0=1,geom%nl0
          do ic1a=1,samp%nc1a
-            ! Index
-            ic1 = samp%c1a_to_c1(ic1a)
-
-            if (samp%smask_c1(ic1,il0)) then
+            if (samp%smask_c1a(ic1a,il0)) then
                ! Index
-               ic0 = samp%c1_to_c0(ic1)
-               ic0a = geom%c0_to_c0a(ic0)
+               ic0a = samp%c1a_to_c0a(ic1a)
 
                ! Copy points
                fld_1(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%iv,1)
@@ -175,15 +171,15 @@ do isub=1,ens%nsub
       call samp%com_AE%ext(mpl,geom%nl0,fld_1,fld_ext_1)
       call samp%com_AE%ext(mpl,geom%nl0,fld_2,fld_ext_2)
 
-      !$omp parallel do schedule(static) private(il0,jl0,ic1e,ic1)
+      !$omp parallel do schedule(static) private(il0,jl0,ic1e,ic1u)
       do il0=1,geom%nl0
          do jl0=1,geom%nl0
             do ic1e=1,samp%nc1e
                ! Index
-               ic1 = samp%c1e_to_c1(ic1e)
+               ic1u = samp%c1e_to_c1u(ic1e)
 
                ! Auto and cross-covariances
-               if (samp%smask_c1(ic1,il0).and.samp%smask_c1(ic1,jl0)) then
+               if (samp%smask_c1u(ic1u,il0).and.samp%smask_c1u(ic1u,jl0)) then
                   auto(ic1e,jl0,il0,isub) = auto(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_2(ic1e,jl0)
                   cross(ic1e,jl0,il0,isub) = cross(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_1(ic1e,jl0)
                end if
@@ -218,7 +214,7 @@ real(kind_real),intent(in) :: cross(samp%nc1e,geom%nl0,geom%nl0,nsub) ! Cross-co
 integer,intent(in) :: ic2b                                            ! Index
 
 ! Local variables
-integer :: i,jl0_min,jl0_max,jl0,il0,ic1,ic1e,nc1a,nc1max,ierr
+integer :: i,jl0_min,jl0_max,jl0,il0,ic1e,ic1u,nc1a,nc1max,ierr
 real(kind_real),allocatable :: list_auto(:),list_cross(:)
 logical :: valid
 
@@ -251,9 +247,9 @@ do il0=1,geom%nl0
       i = 0
       do ic1e=1,samp%nc1e
          ! Index
-         ic1 = samp%c1e_to_c1(ic1e)
+         ic1u = samp%c1e_to_c1u(ic1e)
 
-         if (samp%smask_c1(ic1,il0).and.samp%smask_c1(ic1,jl0).and.samp%vbal_mask(ic1,ic2b)) then
+         if (samp%smask_c1u(ic1u,il0).and.samp%smask_c1u(ic1u,jl0).and.samp%vbal_mask(ic1u,ic2b)) then
             ! Update
             i = i+1
 
