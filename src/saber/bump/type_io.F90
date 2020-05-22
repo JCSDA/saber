@@ -172,6 +172,7 @@ real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)
 character(len=1024) :: cname
 character(len=1024),parameter :: subr = 'io_fld_write'
 type(fckit_mpi_comm) :: f_comm
+integer :: ic0,ioproc,iproc
 
 ! Apply mask
 do il0=1,geom%nl0
@@ -223,11 +224,14 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.,.true.)
 
    ! Define coordinates if necessary
-   info_coord = nf90_inq_varid(ncid,'lon',lon_id)
-   if (info_coord/=nf90_noerr) then
+   info = nf90_inq_varid(ncid,'lon',lon_id)
+   if (info/=nf90_noerr) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nc0_id/),lon_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'_FillValue',mpl%msv%valr))
       call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'unit','degrees_north'))
+   end if
+   info = nf90_inq_varid(ncid,'lat',lat_id)
+   if (info/=nf90_noerr) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nc0_id/),lat_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'_FillValue',mpl%msv%valr))
       call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'unit','degrees_east'))
@@ -243,16 +247,13 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    ! End definition mode
    call mpl%ncerr(subr,nf90_enddef(ncid))
 
-   ! Write coordinates if necessary
-   if (info_coord/=nf90_noerr) then
-      ! Convert to degrees
-      lon_c0io = lon_c0io*rad2deg
-      lat_c0io = lat_c0io*rad2deg
+   ! Convert to degrees
+   lon_c0io = lon_c0io*rad2deg
+   lat_c0io = lat_c0io*rad2deg
 
-      ! Write data
-      call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon_c0io,(/io%ic0_s/),(/io%nc0io/)))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
-   end if
+   ! Write coordinates
+   call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon_c0io,(/io%ic0_s/),(/io%nc0io/)))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
 
    ! Write variable
    call mpl%ncerr(subr,nf90_put_var(ncid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
@@ -309,7 +310,7 @@ character(len=*),intent(in) :: varname                ! Variable name
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 
 ! Local variables
-integer :: il0,info,info_coord,ilonio,ilat,iogio,ioga,color
+integer :: il0,info,ilonio,ilat,iogio,ioga,color
 integer :: ncid,nlon_id,nlat_id,nlev_id,fld_id,lon_id,lat_id,lev_id
 real(kind_real) :: fld_c0b(io%nc0b,geom%nl0)
 real(kind_real) :: fld_oga(io%noga,geom%nl0)
@@ -376,14 +377,20 @@ if (any(io%procio_to_proc_grid==mpl%myproc).and.(io%nlonio>0)) then
    nlev_id = mpl%ncdimcheck(subr,ncid,'nlev',geom%nl0,.true.,.true.)
 
    ! Define coordinates if necessary
-   info_coord = nf90_inq_varid(ncid,'lon',lon_id)
-   if (info_coord/=nf90_noerr) then
+   info = nf90_inq_varid(ncid,'lon',lon_id)
+   if (info/=nf90_noerr) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nlon_id/),lon_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'_FillValue',mpl%msv%valr))
       call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'unit','degrees_north'))
+   end if
+   info = nf90_inq_varid(ncid,'lat',lat_id)
+   if (info/=nf90_noerr) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nlat_id/),lat_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'_FillValue',mpl%msv%valr))
       call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'unit','degrees_east'))
+   end if
+   info = nf90_inq_varid(ncid,'lev',lev_id)
+   if (info/=nf90_noerr) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'lev',nc_kind_real,(/nlev_id/),lev_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,lev_id,'_FillValue',mpl%msv%valr))
       call mpl%ncerr(subr,nf90_put_att(ncid,lev_id,'unit','layer'))
@@ -399,27 +406,24 @@ if (any(io%procio_to_proc_grid==mpl%myproc).and.(io%nlonio>0)) then
    ! End definition mode
    call mpl%ncerr(subr,nf90_enddef(ncid))
 
-   ! Write coordinates if necessary
-   if (info_coord/=nf90_noerr) then
-      ! Allocation
-      allocate(lon(io%nlon))
-      allocate(lat(io%nlat))
+   ! Allocation
+   allocate(lon(io%nlon))
+   allocate(lat(io%nlat))
 
-      ! Convert to degrees
-      lon = io%lon*rad2deg
-      lat = io%lat*rad2deg
+   ! Convert to degrees
+   lon = io%lon*rad2deg
+   lat = io%lat*rad2deg
 
-      ! Write data
-      call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat))
-      do il0=1,geom%nl0
-         call mpl%ncerr(subr,nf90_put_var(ncid,lev_id,real(il0,kind_real),(/il0/)))
-      end do
+   ! Write coordinates
+   call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat))
+   do il0=1,geom%nl0
+      call mpl%ncerr(subr,nf90_put_var(ncid,lev_id,real(il0,kind_real),(/il0/)))
+   end do
 
-      ! Release memory
-      deallocate(lon)
-      deallocate(lat)
-   end if
+   ! Release memory
+   deallocate(lon)
+   deallocate(lat)
 
    ! Write variable
    call mpl%ncerr(subr,nf90_put_var(ncid,fld_id,fld_loniolat,(/io%ilon_s,1,1/),(/io%nlonio,io%nlat,geom%nl0/)))
@@ -474,7 +478,7 @@ io%nc0io = 0
 
 if (nam%repro) then
    ! Communication
-   call mpl%loc_to_glb(geom%nc0a,geom%hash_c0a,geom%nc0,geom%c0_to_proc,geom%c0_to_c0a,.true.,hash_c0)
+   call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%hash_c0a,hash_c0,.true.)
 
    ! Use hash order to order points
    call qsort(geom%nc0,hash_c0,order_c0)
@@ -495,12 +499,16 @@ do iprocio=1,nam%nprocio
    ic0_e = sum(procio_to_nc0io(1:iprocio))
 
    ! Order processors given their implication in this chunk
+   list_proc = 0
    do iproc=1,mpl%nproc
-      if (nam%repro) then
-         list_proc(iproc) = count(geom%c0_to_proc(order_c0(ic0_s:ic0_e))==iproc)
-      else
-         list_proc(iproc) = count(geom%c0_to_proc(ic0_s:ic0_e)==iproc)
-      end if
+      do ic0=ic0_s,ic0_e
+         if (nam%repro) then
+            jc0 = order_c0(ic0)
+         else
+            jc0 = ic0
+         end if
+         if (geom%c0_to_proc(jc0)==iproc) list_proc(iproc) = list_proc(iproc)+1
+      end do
    end do
    call qsort(mpl%nproc,list_proc,order_proc)
 
@@ -536,13 +544,13 @@ do ic0=1,geom%nc0
       iproc = io%procio_to_proc(iprocio)
       ic0io = 1
    end if
-   if (mpl%myproc==iproc) then
-      io%c0io_to_c0(ic0io) = ic0
-      if (nam%repro) then
-         jc0 = order_c0(ic0)
-      else
-         jc0 = ic0
-      end if
+   if (nam%repro) then
+      jc0 = order_c0(ic0)
+   else
+      jc0 = ic0
+   end if
+   if (iproc==mpl%myproc) then
+      io%c0io_to_c0(ic0io) = jc0
       if (geom%c0_to_proc(jc0)==iproc) nc0own = nc0own+1
    end if
 end do
@@ -564,12 +572,12 @@ do ic0=1,geom%nc0
       iproc = io%procio_to_proc(iprocio)
       ic0io = 1
    end if
-   if (mpl%myproc==iproc) then
-      if (nam%repro) then
-         jc0 = order_c0(ic0)
-      else
-         jc0 = ic0
-      end if
+   if (nam%repro) then
+      jc0 = order_c0(ic0)
+   else
+      jc0 = ic0
+   end if
+   if (iproc==mpl%myproc) then
       if (geom%c0_to_proc(jc0)==iproc) then
          ic0own = ic0own+1
          c0own_to_c0(ic0own) = jc0
@@ -693,7 +701,6 @@ do iog=1,io%nog
       io%oga_to_og(ioga) = iog
    end if
 end do
-call mpl%glb_to_loc_index(io%noga,io%oga_to_og,io%nog,io%og_to_oga)
 
 ! Compute interpolation
 lon_oga = io%lon(io%og_to_lon(io%oga_to_og))

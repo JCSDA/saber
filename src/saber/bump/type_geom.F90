@@ -45,9 +45,6 @@ type geom_type
    ! Universe
    logical,allocatable :: myuniverse(:)           ! MPI tasks in the universe of the local task
 
-   ! Geometry data on model grid, universe
-   integer :: nmgu                                ! Universe size for model grid
-
    ! Link between halo A and universe on model grid
    integer,allocatable :: mga_to_mgu(:)           ! Halo A to universe on model grid
    integer,allocatable :: mgu_to_mga(:)           ! Universe to halo A on model grid
@@ -85,12 +82,12 @@ type geom_type
    ! Link between halo A and universe on subset Sc0
    integer,allocatable :: c0a_to_c0u(:)           ! Halo A to universe on subset Sc0
    integer,allocatable :: c0u_to_c0a(:)           ! Universe to halo A on subset Sc0
-   type(com_type) :: com_AU                       ! Communication between subset Sc0 and model grid
+   type(com_type) :: com_AU                       ! Communication between halo A and universe on subset Sc0
 
    ! Geometry data on subset Sc0, global
    integer :: nc0                                 ! Number of subset Sc0 points
-   integer,allocatable :: c0_to_proc(:)           ! Task
-   integer,allocatable :: proc_to_c0_offset(:)    ! Offset for a given task
+   integer,allocatable :: c0_to_proc(:)           ! Subset Sc0, global, to processor
+   integer,allocatable :: proc_to_c0_offset(:)    ! Processor to offset on subset Sc0
 
    ! Link between halo A and global on subset Sc0
    integer,allocatable :: c0_to_c0a(:)            ! Subset Sc0, global to halo A
@@ -515,7 +512,7 @@ write(mpl%info,'(a7,a)') '','Tasks in my universe: '
 call mpl%flush(.false.)
 do iproc=1,mpl%nproc
    call sphere_dist(lonbar,latbar,proc_to_lonbar(iproc),proc_to_latbar(iproc),dist)
-   geom%myuniverse(iproc) = (dist<0.4*pi) ! TODO: nam parameter
+   geom%myuniverse(iproc) = .true. ! TODO: nam parameter
    if (geom%myuniverse(iproc)) then
       write(mpl%info,'(i5)') iproc
       call mpl%flush(.false.)
@@ -556,7 +553,7 @@ nmgu = sum(proc_to_nmga,mask=geom%myuniverse)
 ! Allocation
 allocate(mga_to_mg(geom%nmga))
 allocate(geom%mga_to_mgu(geom%nmga))
-allocate(geom%mgu_to_mga(geom%nmga))
+allocate(geom%mgu_to_mga(nmgu))
 allocate(mgu_to_mg(nmgu))
 allocate(mgu_to_proc(nmgu))
 allocate(lon_mgu(nmgu))
@@ -642,7 +639,7 @@ mask_hor_mgu = mpl%msv%is(redundant)
 geom%nc0u = count(mask_hor_mgu)
 
 ! Check grid similarity
-if (geom%nc0u==geom%nmgu) then
+if (geom%nc0u==nmgu) then
    diff_grid = 0
 else
    diff_grid = 1
@@ -651,7 +648,7 @@ call mpl%f_comm%allreduce(diff_grid,diff_grid_tot,fckit_mpi_sum())
 geom%same_grid = (diff_grid_tot==0)
 
 ! Allocation
-allocate(geom%mgu_to_c0u(geom%nmgu))
+allocate(geom%mgu_to_c0u(nmgu))
 allocate(geom%c0u_to_mgu(geom%nc0u))
 
 ! Initialization
@@ -752,6 +749,9 @@ geom%nc0a = count(geom%c0u_to_proc==mpl%myproc)
 ! Communication
 call mpl%f_comm%allgather(geom%nc0a,proc_to_nc0a)
 
+! Allocation
+allocate(geom%proc_to_c0_offset(mpl%nproc))
+
 ! Subset Sc0 offset for halo A
 geom%proc_to_c0_offset(1) = 0
 do iproc=2,mpl%nproc
@@ -831,7 +831,7 @@ allocate(geom%vunitavg(geom%nl0))
 geom%lon_c0a = geom%lon_c0u(geom%c0a_to_c0u)
 geom%lat_c0a = geom%lat_c0u(geom%c0a_to_c0u)
 geom%hash_c0a = geom%hash_c0u(geom%c0a_to_c0u)
-geom%area_c0a = geom%area_c0a(geom%c0a_to_c0u)
+geom%area_c0a = geom%area_c0u(geom%c0a_to_c0u)
 geom%vunit_c0a = geom%vunit_c0u(geom%c0a_to_c0u,:)
 geom%gmask_c0a = geom%gmask_c0u(geom%c0a_to_c0u,:)
 geom%smask_c0a = geom%smask_c0u(geom%c0a_to_c0u,:)
@@ -1092,7 +1092,7 @@ integer,intent(out) :: ic0a         ! Local index
 logical,intent(out) :: gmask        ! Local mask
 
 ! Local variables
-integer :: nn_index(1),nn_proc,proc_to_nn_proc(mpl%nproc),jproc
+integer :: nn_index(1),nn_proc,proc_to_nn_proc(mpl%nproc),jproc,ic0u
 real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
 logical :: valid
 
@@ -1115,7 +1115,8 @@ if (iproc==mpl%myproc) then
    call geom%mesh%inside(mpl,lon,lat,valid)
 
    ! Local index
-   ic0a = nn_index(1)
+   ic0u = nn_index(1)
+   ic0a = geom%c0u_to_c0a(ic0u)
 
    ! Check mask
    if (il0==0) then

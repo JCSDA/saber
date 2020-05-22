@@ -123,7 +123,7 @@ do iv=1,nam%nv
          call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%varname(iv)))
       end select
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmg,model%mg_to_proc,model%mg_to_mga,fld_mg,model%nmga,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 ! Close file

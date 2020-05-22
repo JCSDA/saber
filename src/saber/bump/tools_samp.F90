@@ -58,7 +58,6 @@ type(tree_type),intent(in),optional :: tree_uni   ! Universe KD-tree
 ! Local variables
 integer :: n_glb,n_loc_eff,n_glb_eff,i_glb,i_loc,i_loc_eff,n,ix,iy,is2_glb,iproc,js,irep,irmax,itry,is1_glb,ir,ns1_loc,is1_loc,nfac
 integer :: ns1_loc_tmp,irval,irvalmin,irvalmax,is2_glb_min,nrep_eff,nn_index(2),ns1_glb,is1_glb_eff,ns1_glb_eff,ns1_glb_val,offset
-integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
 integer,allocatable :: s1_loc_to_glb(:),s1_loc_to_glb_tmp(:),sam1_loc(:),sam1_loc_tmp(:)
 integer,allocatable :: sam1_glb(:),sam1_glb_eff(:),to_valid(:),sam2_glb_tmp(:),order(:)
 real(kind_real) :: lonlat(2),d,distmax,distmin,nn_dist(2),cdf_norm,rr
@@ -101,8 +100,6 @@ elseif (n_glb_eff==ns2_glb) then
    if (lverbosity) call mpl%flush
 
    ! Allocation
-   allocate(glb_to_loc(n_glb))
-   allocate(glb_to_proc(n_glb))
    allocate(hash_loc(n_loc))
    if (mpl%main) then
       allocate(hash_glb(n_glb))
@@ -120,9 +117,8 @@ elseif (n_glb_eff==ns2_glb) then
    end do
 
    ! Communication
-   call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
-   call mpl%loc_to_glb(n_loc,hash_loc,n_glb,glb_to_proc,glb_to_loc,.false.,hash_glb)
-   call mpl%loc_to_glb(n_loc,mask_loc,n_glb,glb_to_proc,glb_to_loc,.false.,mask_glb)
+   call mpl%loc_to_glb(n_loc,n_glb,loc_to_glb,hash_loc,hash_glb)
+   call mpl%loc_to_glb(n_loc,n_glb,loc_to_glb,mask_loc,mask_glb)
 
    if (mpl%main) then
       ! Use all valid points
@@ -143,8 +139,6 @@ elseif (n_glb_eff==ns2_glb) then
    end if
 
    ! Release memory
-   deallocate(glb_to_loc)
-   deallocate(glb_to_proc)
    deallocate(hash_loc)
    deallocate(hash_glb)
    deallocate(mask_glb)

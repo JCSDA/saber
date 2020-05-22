@@ -9,7 +9,7 @@ module type_bump
 
 use atlas_module
 use fckit_configuration_module, only: fckit_configuration
-use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: create_atlas_fieldset,create_atlas_function_space,atlas_to_fld,fld_to_atlas
 use tools_const, only: req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
@@ -2183,7 +2183,7 @@ class(bump_type),intent(inout) :: bump ! BUMP
 
 ! Local variables
 integer :: iv,its,ic0a,ic0
-real(kind_real) :: hash_min,hash_spread_inv
+real(kind_real) :: hash_min,hash_max,hash_spread_inv
 real(kind_real),allocatable :: fld_c0a(:,:),fld_mga(:,:,:,:)
 type(atlas_fieldset) :: afieldset,afieldset_req,afieldset_reqsq,afieldset_vert,afieldset_vertsq
 
@@ -2192,13 +2192,14 @@ allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0))
 allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
 
 ! Initialization
-hash_min = minval(bump%geom%hash_c0)
-hash_spread_inv = 1.0/(maxval(bump%geom%hash_c0)-hash_min)
+call bump%mpl%f_comm%allreduce(minval(bump%geom%hash_c0a),hash_min,fckit_mpi_min())
+call bump%mpl%f_comm%allreduce(maxval(bump%geom%hash_c0a),hash_max,fckit_mpi_max())
+hash_spread_inv = 1.0/(hash_max-hash_min)
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
       do ic0a=1,bump%geom%nc0a
          ic0 = bump%geom%c0a_to_c0(ic0a)
-         fld_c0a(ic0a,:) = max(min(1.0e-6_kind_real,(bump%geom%hash_c0(ic0)-hash_min)*hash_spread_inv),1.0-1.0e-6_kind_real)
+         fld_c0a(ic0a,:) = max(min(1.0e-6_kind_real,(bump%geom%hash_c0a(ic0a)-hash_min)*hash_spread_inv),1.0-1.0e-6_kind_real)
       end do
       call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
    end do

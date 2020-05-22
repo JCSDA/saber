@@ -106,7 +106,7 @@ do iv=1,nam%nv
          call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,il0),(/1,nam%levs(il0)/),(/model%nmg,1/)))
       end do
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmg,model%mg_to_proc,model%mg_to_mga,fld_mg,model%nmga,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 ! Close file

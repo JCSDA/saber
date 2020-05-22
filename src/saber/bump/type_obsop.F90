@@ -238,7 +238,7 @@ type(geom_type),intent(in) :: geom       ! Geometry
 ! Local variables
 integer :: iobsa,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nobsa_eff
 integer :: nobs_eff,nn_index(1),proc_to_nobsa(mpl%nproc),proc_to_nobsa_eff(mpl%nproc)
-integer :: c0u_to_c0b(geom%nc0u),c0a_to_c0b(geom%nc0a)
+integer :: c0u_to_c0b(geom%nc0u)
 integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
 logical :: maskobsa(obsop%nobsa),lcheck_nc0b(geom%nc0u)
@@ -306,13 +306,6 @@ do ic0u=1,geom%nc0u
    end if
 end do
 
-! Halos A-B conversion
-do ic0a=1,geom%nc0a
-   ic0u = geom%c0a_to_c0u(ic0a)
-   ic0b = c0u_to_c0b(ic0u)
-   c0a_to_c0b(ic0a) = ic0b
-end do
-
 ! Local interpolation source
 obsop%h%n_src = obsop%nc0b
 do i_s=1,obsop%h%n_s
@@ -320,7 +313,7 @@ do i_s=1,obsop%h%n_s
 end do
 
 ! Setup communications
-call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc(c0b_to_c0),geom%c0_to_c0a) ! TODO: remove c0_to_proc
+call obsop%com%setup(mpl,'com',geom%nc0a,geom%nc0a,obsop%nc0b,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,c0b_to_c0)
 
 ! Compute scores, only if there observations present globally
 if ( nobs_eff > 0 ) then

@@ -497,6 +497,7 @@ if (mpl%main) then
       end if
 
       ! Communication parameters
+      red_to_ext = mpl%msv%vali
       do iext=1,com_in(iproc)%next
          iglb = ext_to_glb_tmp(iext)
          ired = glb_to_red(iglb)

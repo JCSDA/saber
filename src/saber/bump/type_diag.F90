@@ -135,7 +135,7 @@ type(io_type),intent(in) :: io         ! I/O
 type(samp_type),intent(in) :: samp     ! Sampling
 
 ! Local variables
-integer :: ib,i,ic2,il0,il0i,iproc,ic2a,ildw,n
+integer :: ib,i,ic2,il0,il0i,iproc,ic2a,ildw,n,ic0a
 real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
 character(len=2*1024+12) :: filename
 character(len=1024),parameter :: subr = 'diag_write'

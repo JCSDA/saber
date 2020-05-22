@@ -606,7 +606,7 @@ do its=2,nam%nts
       ind = maxloc(cor(:,:,1,its))
       ic0a = ind(1)
       londir_tracker(its) = geom%lon_c0a(ic0a)
-      londir_tracker(its) = geom%lat_c0a(ic0a)
+      latdir_tracker(its) = geom%lat_c0a(ic0a)
       il0 = ind(2)
    end if
    call mpl%f_comm%broadcast(londir_tracker(its),iproc(1)-1)

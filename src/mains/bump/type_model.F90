@@ -64,13 +64,12 @@ type model_type
    type(atlas_fieldset) :: afieldset              ! ATLAS fieldset
 
    ! Tiles distribution
-   logical,allocatable :: tilepool(:,:)          ! Pool of task for each task
+   logical,allocatable :: tilepool(:,:)           ! Pool of task for each task
    integer :: mytile                              ! Tile handled by a given task
    integer,allocatable :: ioproc(:)               ! I/O task for each tile
    integer :: nmgt                                ! Number of model grid point on each tile
-   integer,allocatable :: mgt_to_proc(:)          ! Model grid on a tile to local task
-   integer,allocatable :: mgt_to_mga(:)           ! Model grid on a tile to model grid, halo A
-   integer,allocatable :: mgt_to_mg(:)     
+   integer,allocatable :: mga_to_mgt(:)           ! Model grid, halo A, to model grid on a tile
+   integer,allocatable :: mgt_to_mg(:)            ! Model grid on a tile to model grid, global
 
    ! Ensembles
    type(member_field_type),allocatable :: ens1(:) ! Ensemble 1 members
@@ -184,8 +183,7 @@ if (allocated(model%mg_to_mga)) deallocate(model%mg_to_mga)
 if (allocated(model%mga_to_mg)) deallocate(model%mga_to_mg)
 if (allocated(model%tilepool)) deallocate(model%tilepool)
 if (allocated(model%ioproc)) deallocate(model%ioproc)
-if (allocated(model%mgt_to_proc)) deallocate(model%mgt_to_proc)
-if (allocated(model%mgt_to_mga)) deallocate(model%mgt_to_mga)
+if (allocated(model%mga_to_mgt)) deallocate(model%mga_to_mgt)
 if (allocated(model%mgt_to_mg)) deallocate(model%mgt_to_mg)
 if (allocated(model%ens1)) then
    do ie=1,size(model%ens1)
@@ -686,8 +684,7 @@ if (model%ntile>1) then
    model%nmgt = count(model%mg_to_tile==model%mytile)
 
    ! Allocation
-   allocate(model%mgt_to_proc(model%nmgt))
-   allocate(model%mgt_to_mga(model%nmgt))
+   allocate(model%mga_to_mgt(model%nmgt))
    allocate(model%mgt_to_mg(model%nmgt))
 
    ! Conversion
@@ -695,8 +692,8 @@ if (model%ntile>1) then
    do img=1,model%nmg
       if (model%mg_to_tile(img)==model%mytile) then
          imgt = imgt+1
-         model%mgt_to_proc(imgt) = model%mg_to_proc(img)
-         model%mgt_to_mga(imgt) = model%mg_to_mga(img)
+         imga = model%mg_to_mga(img)
+         model%mga_to_mgt(imga) = imgt
          model%mgt_to_mg(imgt) = img
       end if
    end do

@@ -498,7 +498,7 @@ type(bpar_type),intent(in) :: bpar           ! Block parameters
 type(samp_type),intent(in) :: samp           ! Sampling
 
 ! Local variables
-integer :: il0,jl0,jl0r,ic1a,ic1,ic0,jc3,jc0,icomp,iscales
+integer :: il0,jl0,jl0r,ic1a,ic1,ic0a,ic0u,jc3,jc0u,icomp,iscales
 real(kind_real) :: fld_c2a(samp%nc2a),dx,dy,dz
 real(kind_real),allocatable :: fld_filt_c2a(:),dxsq(:,:),dysq(:,:),dxdy(:,:),dzsq(:,:)
 logical :: valid
@@ -576,7 +576,7 @@ if (nam%diag_rhflt>0.0) then
                if (nam%lct_write_cor) then
                   ! Compute deltas
                   ic0a = samp%c1a_to_c0a(ic1a)
-                  ic0u = samp%c0a_to_c0u(ic0a)
+                  ic0u = geom%c0a_to_c0u(ic0a)
                   do jl0r=1,bpar%nl0r(ib)
                      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                      do jc3=1,nam%nc3

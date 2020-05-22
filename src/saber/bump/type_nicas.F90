@@ -560,7 +560,7 @@ type(cv_type),intent(out) :: cv       ! Control vector
 
 ! Local variables
 integer :: ib,jb,ns
-integer,allocatable :: s_to_sa(:),s_to_proc(:),order(:)
+integer,allocatable :: order(:)
 real(kind_real),allocatable :: hash(:),alpha(:)
 
 ! Allocation
@@ -576,34 +576,35 @@ do ib=1,bpar%nbe
       call mpl%f_comm%allreduce(nicas%blk(jb)%nsa,ns,fckit_mpi_sum())
 
       ! Allocation
-      allocate(hash(ns))
-      allocate(order(ns))
-      allocate(alpha(ns))
-      allocate(s_to_sa(ns))
-      allocate(s_to_proc(ns))
-
-      ! Get conversions
-      call mpl%glb_to_loc_index(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_s,ns,s_to_sa,s_to_proc)
+      if (mpl%main) then
+         allocate(hash(ns))
+         allocate(order(ns))
+         allocate(alpha(ns))
+      else
+         allocate(hash(0))
+         allocate(order(0))
+         allocate(alpha(0))
+      end if
 
       ! Get global hash
-      call mpl%loc_to_glb(nicas%blk(jb)%nsa,nicas%blk(jb)%sa_to_hash,ns,s_to_proc,s_to_sa,.true.,hash)
+      call mpl%loc_to_glb(nicas%blk(jb)%nsa,ns,nicas%blk(jb)%sa_to_s,nicas%blk(jb)%sa_to_hash,hash)
 
-      ! Random vector
-      call rng%rand_gau(alpha)
+      if (mpl%main) then
+         ! Random vector
+         call rng%rand_gau(alpha)
 
-      ! Reorder random vector
-      call qsort(ns,hash,order)
-      alpha = alpha(order)
+         ! Reorder random vector
+         call qsort(ns,hash,order)
+         alpha = alpha(order)
+      end if
 
       ! Global to local
-      call mpl%glb_to_loc(ns,s_to_proc,s_to_sa,alpha,nicas%blk(jb)%nsa,cv%blk(ib)%alpha)
+      call mpl%glb_to_loc(nicas%blk(jb)%nsa,ns,nicas%blk(jb)%sa_to_s,alpha,cv%blk(ib)%alpha)
 
       ! Release memory
       deallocate(hash)
       deallocate(order)
       deallocate(alpha)
-      deallocate(s_to_sa)
-      deallocate(s_to_proc)
    end if
 end do
 

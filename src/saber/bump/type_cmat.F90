@@ -850,7 +850,7 @@ end if
 select case (trim(nam%draw_type))
 case ('random_coast')
    ! More points around coasts
-   if (all(geom%gmask_c0)) call mpl%abort(subr,'random_coast is not relevant if there is no coast')
+   if (all(geom%gmask_c0a)) call mpl%abort(subr,'random_coast is not relevant if there is no coast')
 
    ! Allocation
    allocate(rh_c0a(geom%nc0a))

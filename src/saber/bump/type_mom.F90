@@ -276,7 +276,7 @@ type(ens_type), intent(in) :: ens     ! Ensemble
 character(len=*),intent(in) :: prefix ! Prefix
 
 ! Local variables
-integer :: ie,ie_sub,ic0a,ic0c,jc0c,jc0u,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv,jts,its
+integer :: ie,ie_sub,ic0a,ic0c,ic0u,jc0c,jc0u,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv,jts,its
 real(kind_real),allocatable :: fld_ext(:,:,:,:),fld_1(:,:),fld_2(:,:,:)
 logical,allocatable :: mask_unpack(:,:)
 
@@ -345,13 +345,14 @@ do isub=1,ens%nsub
                !$omp end parallel do
             else
                ! Copy all separations points
-               !$omp parallel do schedule(static) private(il0,jc3,ic1a,ic0a,ic0c,jc0u,jc0c)
+               !$omp parallel do schedule(static) private(il0,jc3,ic1a,ic0a,ic0u,ic0c,jc0u,jc0c)
                do il0=1,geom%nl0
                   do ic1a=1,samp%nc1a
                      if (samp%smask_c1a(ic1a,il0)) then
                         ! Indices
                         ic0a = samp%c1a_to_c0a(ic1a)
-                        ic0c = samp%c0a_to_c0c(ic0a)
+                        ic0u = geom%c0a_to_c0u(ic0a)
+                        ic0c = samp%c0u_to_c0c(ic0a)
 
                         ! Copy field 1
                         fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv,its)
@@ -360,7 +361,7 @@ do isub=1,ens%nsub
                            if (samp%smask_c1ac3(ic1a,jc3,il0)) then
                               ! Indices
                               jc0u = samp%c1ac3_to_c0u(ic1a,jc3)
-                              jc0c = samp%c0u_to_c0c(jc0)
+                              jc0c = samp%c0u_to_c0c(jc0u)
 
                               ! Copy field 2
                               fld_2(ic1a,jc3,il0) = fld_ext(jc0c,il0,jv,jts)

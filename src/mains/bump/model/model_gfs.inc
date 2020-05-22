@@ -148,7 +148,7 @@ do iv=1,nam%nv
          end do
       end do
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmg,model%mg_to_proc,model%mg_to_mga,fld_mg,model%nmga,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 if (mpl%main) then

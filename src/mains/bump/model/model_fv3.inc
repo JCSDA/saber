@@ -157,7 +157,7 @@ do iv=1,nam%nv
          fld_mgt(imgt,:) = fld_tmp(ilon,ilat,:)
       end do
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmgt,model%mgt_to_proc,model%mgt_to_mga,fld_mgt,model%nmga,fld(:,:,iv), &
+   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmgt,model%mga_to_mgt,fld_mgt,fld(:,:,iv), &
  & model%ioproc(model%mytile),model%tilepool(:,model%mytile))
 end do
 
