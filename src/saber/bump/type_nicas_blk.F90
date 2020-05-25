@@ -2558,9 +2558,9 @@ call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_
 if (nicas_blk%anisotropic) then
    call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_c1,H11_c1a,nicas_blk%H11_c1,.true.)
    call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_c1,H22_c1a,nicas_blk%H22_c1,.true.)
-   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_c1,H33_c1a,nicas_blk%H22_c1,.true.)
-   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_c1,H12_c1a,nicas_blk%H22_c1,.true.)
-   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_c1,Hcoef_c1a,nicas_blk%H22_c1,.true.)
+   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_c1,H33_c1a,nicas_blk%H33_c1,.true.)
+   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_c1,H12_c1a,nicas_blk%H12_c1,.true.)
+   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,nicas_blk%nc1,nicas_blk%c1a_to_c1,Hcoef_c1a,Hcoef_c1,.true.)
 end if
 
 ! Release memory
@@ -2594,41 +2594,43 @@ if (nicas_blk%anisotropic) then
    deallocate(nicas_blk%H12_c1)
 end if
 
-! Compute ball data
-write(mpl%info,'(a13,a)') '','Compute ball data'
-if (nicas_blk%verbosity) call mpl%flush
-!$omp parallel do schedule(static) private(isbb,is,ic1,il1,ic0,il0,jbd,jc1,jl1) firstprivate(Hcoef)
-do isbb=1,nicas_blk%nsbb
-   ! Indices
-   is = nicas_blk%sbb_to_s(isbb)
-   ic1 = nicas_blk%s_to_c1(is)
-   il1 = nicas_blk%s_to_l1(is)
-   ic0 = nicas_blk%c1_to_c0(ic1)
-   il0 = nicas_blk%l1_to_l0(il1)
-
-   ! Allocation
-   if (nicas_blk%anisotropic) allocate(Hcoef(nicas_blk%nc1,nicas_blk%nl1))
-
-   ! Initialization
-   if (nicas_blk%anisotropic) Hcoef = mpl%msv%valr
-
-   do jbd=1,nicas_blk%distnorm(isbb)%nbd
+if (nicas_blk%anisotropic) then
+   ! Compute ball data
+   write(mpl%info,'(a13,a)') '','Compute ball data'
+   if (nicas_blk%verbosity) call mpl%flush
+   !$omp parallel do schedule(static) private(isbb,is,ic1,il1,ic0,il0,jbd,jc1,jl1) firstprivate(Hcoef)
+   do isbb=1,nicas_blk%nsbb
       ! Indices
-      jc1 = nicas_blk%distnorm(isbb)%bd_to_c1(jbd)
-      jl1 = nicas_blk%distnorm(isbb)%bd_to_l1(jbd)
-      if (nicas_blk%anisotropic) Hcoef(jc1,jl1) = sqrt(Hcoef_c1(ic1,il1)*Hcoef_c1(jc1,jl1))
-   end do
+      is = nicas_blk%sbb_to_s(isbb)
+      ic1 = nicas_blk%s_to_c1(is)
+      il1 = nicas_blk%s_to_l1(is)
+      ic0 = nicas_blk%c1_to_c0(ic1)
+      il0 = nicas_blk%l1_to_l0(il1)
 
-   ! Pack data
-   if (nicas_blk%anisotropic) call nicas_blk%Hcoef(isbb)%pack(mpl,nicas_blk%nc1,nicas_blk%nl1,Hcoef)
+      ! Allocation
+      allocate(Hcoef(nicas_blk%nc1,nicas_blk%nl1))
+
+      ! Initialization
+      Hcoef = mpl%msv%valr
+
+      do jbd=1,nicas_blk%distnorm(isbb)%nbd
+         ! Indices
+         jc1 = nicas_blk%distnorm(isbb)%bd_to_c1(jbd)
+         jl1 = nicas_blk%distnorm(isbb)%bd_to_l1(jbd)
+         Hcoef(jc1,jl1) = sqrt(Hcoef_c1(ic1,il1)*Hcoef_c1(jc1,jl1))
+      end do
+
+      ! Pack data
+      call nicas_blk%Hcoef(isbb)%pack(mpl,nicas_blk%nc1,nicas_blk%nl1,Hcoef)
+
+      ! Release memory
+      deallocate(Hcoef)
+   end do
+   !$omp end parallel do
 
    ! Release memory
-   if (nicas_blk%anisotropic) deallocate(Hcoef)
-end do
-!$omp end parallel do
-
-! Release memory
-if (nicas_blk%anisotropic) deallocate(Hcoef_c1)
+   deallocate(Hcoef_c1)
+end if
 
 ! Allocation
 if (nicas_blk%smoother) allocate(nicas_blk%smoother_norm(nicas_blk%nsbb))

@@ -828,6 +828,7 @@ do il0=1,geom%nl0
                alpha(ie) = ens%mem(ie)%fld(ic0adir,il0,iv,1)
             end do
          end if
+         call mpl%f_comm%broadcast(alpha,iprocdir-1)
          cor = 0.0
          do ie=1,ens%ne
             do its=1,nam%nts

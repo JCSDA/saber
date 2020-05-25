@@ -24,7 +24,8 @@ type rng_type
 contains
    procedure :: init => rng_init
    procedure :: reseed => rng_reseed
-   procedure :: sync => rng_sync
+   procedure :: resync => rng_resync
+   procedure :: desync => rng_desync
    procedure :: lcg => rng_lcg
    procedure :: rng_rand_integer_0d
    procedure :: rng_rand_integer_1d
@@ -71,8 +72,8 @@ else
    call system_clock(count=seed)
 end if
 
-! Different seed for each task
-seed = seed+mpl%myproc
+! Different seed for each processor
+seed = seed+mpl%myproc-1
 
 ! Long integer
 rng%seed = int(seed,kind=int64)
@@ -106,8 +107,8 @@ integer :: seed
 ! Default seed
 seed = default_seed
 
-! Different seed for each task
-seed = seed+mpl%myproc
+! Different seed for each processor
+seed = seed+mpl%myproc-1
 
 ! Long integer
 rng%seed = int(seed,kind=int64)
@@ -115,10 +116,10 @@ rng%seed = int(seed,kind=int64)
 end subroutine rng_reseed
 
 !----------------------------------------------------------------------
-! Subroutine: rng_sync
-! Purpose: synchronize the random number generator between tasks
+! Subroutine: rng_resync
+! Purpose: resynchronize the random number generator between processors
 !----------------------------------------------------------------------
-subroutine rng_sync(rng,mpl)
+subroutine rng_resync(rng,mpl)
 
 implicit none
 
@@ -132,7 +133,27 @@ call mpl%f_comm%barrier()
 ! Broadcast root seed
 call mpl%f_comm%broadcast(rng%seed,mpl%rootproc-1)
 
-end subroutine rng_sync
+end subroutine rng_resync
+
+!----------------------------------------------------------------------
+! Subroutine: rng_desync
+! Purpose: desynchronize the random number generator between processors
+!----------------------------------------------------------------------
+subroutine rng_desync(rng,mpl)
+
+implicit none
+
+! Passed variable
+class(rng_type),intent(inout) :: rng ! Random number generator
+type(mpl_type),intent(inout) :: mpl  ! MPI data
+
+! Wait
+call mpl%f_comm%barrier()
+
+! Different seed for each processor
+rng%seed = rng%seed+int(mpl%myproc-1,kind=int64)
+
+end subroutine rng_desync
 
 !----------------------------------------------------------------------
 ! Subroutine: rng_lcg

@@ -352,7 +352,7 @@ do isub=1,ens%nsub
                         ! Indices
                         ic0a = samp%c1a_to_c0a(ic1a)
                         ic0u = geom%c0a_to_c0u(ic0a)
-                        ic0c = samp%c0u_to_c0c(ic0a)
+                        ic0c = samp%c0u_to_c0c(ic0u)
 
                         ! Copy field 1
                         fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv,its)

@@ -1095,6 +1095,7 @@ logical,intent(out) :: gmask        ! Local mask
 integer :: nn_index(1),nn_proc,proc_to_nn_proc(mpl%nproc),jproc,ic0u
 real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
 logical :: valid
+character(len=1024),parameter :: subr = 'geom_index_from_lonlat'
 
 ! Find nearest neighbor
 call geom%tree%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
@@ -1104,11 +1105,13 @@ nn_proc = geom%c0u_to_proc(nn_index(1))
 call mpl%f_comm%allgather(nn_dist(1),proc_to_nn_dist)
 call mpl%f_comm%allgather(nn_proc,proc_to_nn_proc)
 
-! The correct task should handle its own nearest neighbor, with the minimum distance
+! The correct processor should handle its own nearest neighbor, with the minimum distance
 distmin = minval(proc_to_nn_dist)
+iproc = mpl%msv%vali
 do jproc=1,mpl%nproc
    if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_nn_dist(jproc),distmin)) iproc = jproc
 end do
+if (mpl%msv%is(iproc)) call mpl%abort(subr,'cannot find root processor')
 
 if (iproc==mpl%myproc) then
    ! Check whether the location is in the convex hull      
@@ -1402,7 +1405,7 @@ class(geom_type),intent(in) :: geom ! Geometry
 type(mpl_type),intent(inout) :: mpl ! MPI data
 type(rng_type),intent(inout) :: rng ! Random number generator
 integer,intent(in) :: il0           ! Level
-integer,intent(out) :: iproc        ! Task
+integer,intent(out) :: iproc        ! Processor
 integer,intent(out) :: ic0a         ! Local index
 integer,intent(out),optional :: nr  ! Number of random tries
 
@@ -1414,6 +1417,9 @@ logical :: valid
 ! Initialization
 valid = .false.
 lnr = 0
+
+! Resynchronize random number generator
+call rng%resync(mpl)
 
 ! Loop
 do while (.not.valid)
@@ -1431,6 +1437,9 @@ end do
 
 ! Set number of tries
 if (present(nr)) nr = lnr
+
+! Desynchronize random number generator
+call rng%desync(mpl)
 
 end subroutine geom_rand_point
 

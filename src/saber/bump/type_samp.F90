@@ -1335,7 +1335,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 ! Local variables
 integer :: jc3,ic1a,ic1,ir,irtmp,jc0a,jc0u,jc0,icinf,icsup,ictest,nn_index(nam%nc3),il0,iproc
 real(kind_real) :: d,nn_dist(nam%nc3)
-logical :: valid,found
+logical :: valid,found,proc_to_done(mpl%nproc)
 character(len=1024),parameter :: subr = 'samp_compute_c3'
 
 ! Allocation
@@ -1349,8 +1349,8 @@ if (trim(samp%name)=='hdiag') then
    ! First class
    samp%c1ac3_to_c0u(:,1) = samp%c1u_to_c0u(samp%c1a_to_c1u)
 
-   ! Synchronize random number generator
-   call rng%sync(mpl)
+   ! Resynchronize random number generator
+   call rng%resync(mpl)
 
    if (nam%nc3>1) then
       ! Initialization
@@ -1360,10 +1360,11 @@ if (trim(samp%name)=='hdiag') then
       do ic1a=1,samp%nc1a
          mpl%done((ic1a-1)*nam%nc3+1) = .true.
       end do
+      call mpl%f_comm%allgather(all(mpl%done),proc_to_done)
       ir = 0
 
       ! Sample classes of positive separation
-      do while ((.not.all(mpl%done)).and.(ir<=nam%irmax))
+      do while ((.not.all(proc_to_done)).and.(ir<=nam%irmax))
          ! Define a random geographical point
          call geom%rand_point(mpl,rng,0,iproc,jc0a,irtmp)
          ir = ir+irtmp
@@ -1419,13 +1420,14 @@ if (trim(samp%name)=='hdiag') then
 
             ! Update
             call mpl%prog_print
+            call mpl%f_comm%allgather(all(mpl%done),proc_to_done)
          end if
       end do
       call mpl%prog_final
    end if
 
-   ! Reset seeds
-   call rng%reseed(mpl)
+   ! Desynchronize random number generator
+   call rng%desync(mpl)
 elseif (trim(samp%name)=='lct') then
    ! Initialization
    write(mpl%info,'(a7,a)') '','Compute LCT neighborhood: '
@@ -1559,7 +1561,7 @@ end do
 
 ! Allocation
 allocate(samp%c2u_to_c2(samp%nc2u))
-allocate(samp%c2u_to_c0u(samp%nc2u))
+allocate(samp%c2u_to_c1u(samp%nc2u))
 allocate(samp%c2u_to_c0u(samp%nc2u))
 allocate(samp%lon_c2u(samp%nc2u))
 allocate(samp%lat_c2u(samp%nc2u))
@@ -1605,7 +1607,7 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic0a,ic0u,ic2a,ic2u,ic2,il0,iproc
+integer :: ic0a,ic0u,ic1a,ic1u,ic2a,ic2u,ic2,il0,iproc
 type(tree_type) :: tree
 
 ! Allocation
@@ -1631,10 +1633,10 @@ allocate(samp%c2a_to_c2(samp%nc2a))
 allocate(samp%c2a_to_c2u(samp%nc2a))
 allocate(samp%c2a_to_c1a(samp%nc2a))
 allocate(samp%c2a_to_c0a(samp%nc2a))
-allocate(samp%lon_c1a(samp%nc1a))
-allocate(samp%lat_c1a(samp%nc1a))
-allocate(samp%smask_c1a(samp%nc1a,geom%nl0))
-allocate(samp%smask_hor_c1a(samp%nc1a))
+allocate(samp%lon_c2a(samp%nc2a))
+allocate(samp%lat_c2a(samp%nc2a))
+allocate(samp%smask_c2a(samp%nc2a,geom%nl0))
+allocate(samp%smask_hor_c2a(samp%nc2a))
 
 ! Conversions
 ic2a = 0
@@ -1643,10 +1645,13 @@ do ic2=1,nam%nc2
    if (iproc==mpl%myproc) then
       ic2a = ic2a+1
       ic2u = samp%c2_to_c2u(ic2)
+      ic1u = samp%c2u_to_c1u(ic2u)
       ic0u = samp%c2u_to_c0u(ic2u)
+      ic1a = samp%c1u_to_c1a(ic1u)
       ic0a = geom%c0u_to_c0a(ic0u)
       samp%c2a_to_c2(ic2a) = ic2
       samp%c2a_to_c2u(ic2a) = ic2u
+      samp%c2a_to_c1a(ic2a) = ic1a
       samp%c2a_to_c0a(ic2a) = ic0a
       samp%lon_c2a(ic2a) = geom%lon_c0a(ic0a)
       samp%lat_c2a(ic2a) = geom%lat_c0a(ic0a)
