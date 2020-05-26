@@ -26,6 +26,9 @@ implicit none
 
 ! Geometry derived type
 type geom_type
+   ! Number of processors
+   integer :: nproc                               ! Number of processors
+
    ! ATLAS function space
    type(atlas_functionspace) :: afunctionspace_mg ! ATLAS function space of model grid
 
@@ -48,6 +51,7 @@ type geom_type
    logical,allocatable :: myuniverse(:)           ! MPI tasks in the universe of the local task
 
    ! Geometry data on subset Sc0, halo A
+   integer,allocatable :: proc_to_nc0a(:)         ! Processor to halo A size for subset Sc0
    integer :: nc0a                                ! Halo A size for subset Sc0
    logical :: same_grid                           ! Same grid and distribution flag
    real(kind_real),allocatable :: lon_c0a(:)      ! Longitudes
@@ -71,7 +75,6 @@ type geom_type
 
    ! Geometry data on subset Sc0, global
    integer :: nc0                                 ! Number of subset Sc0 points
-   integer,allocatable :: c0_to_proc(:)           ! Subset Sc0, global, to processor
    integer,allocatable :: proc_to_c0_offset(:)    ! Processor to offset on subset Sc0
 
    ! Link between halo A and universe on subset Sc0
@@ -80,11 +83,9 @@ type geom_type
    type(com_type) :: com_AU                       ! Communication between halo A and universe on subset Sc0
 
    ! Link between halo A and global on subset Sc0
-   integer,allocatable :: c0_to_c0a(:)            ! Subset Sc0, global to halo A
    integer,allocatable :: c0a_to_c0(:)            ! Subset Sc0, halo A to global
 
-   ! Link between universe and global on subset Sc0 TODO: remove that
-   integer,allocatable :: c0_to_c0u(:)            ! Subset Sc0, global to universe
+   ! Link between universe and global on subset Sc0
    integer,allocatable :: c0u_to_c0(:)            ! Subset Sc0, universe to global
 
    ! Number of levels
@@ -138,6 +139,9 @@ contains
    procedure :: compute_deltas => geom_compute_deltas
    procedure :: rand_level => geom_rand_level
    procedure :: rand_point => geom_rand_point
+   procedure :: c0_to_c0a => geom_c0_to_c0a
+   procedure :: c0_to_proc => geom_c0_to_proc
+   procedure :: c0_to_c0u => geom_c0_to_c0u
 end type geom_type
 
 private
@@ -199,6 +203,9 @@ type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset
 ! Local variables
 integer :: jc3,il0,iproc
 real(kind_real) :: lon_min,lon_max,lat_min,lat_max
+
+! Number of processors
+geom%nproc = mpl%nproc
 
 ! Number of levels
 geom%nl0 = nam%nl
@@ -292,7 +299,7 @@ end do
 write(mpl%info,'(a7,a)') '','Distribution summary:'
 call mpl%flush
 do iproc=1,mpl%nproc
-   write(mpl%info,'(a10,a,i4,a,i8)') '','Task ',iproc,': ',count(geom%c0_to_proc==iproc)
+   write(mpl%info,'(a10,a,i4,a,i8)') '','Task ',iproc,': ',geom%proc_to_nc0a(iproc)
    call mpl%flush
 end do
 
@@ -518,7 +525,7 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 
 ! Local variables
 integer :: nmgu,iproc,img,imga,imgu,ic0a,ic0u,ic0,diff_grid,diff_grid_tot,il0,nr,nra,ir,ira
-integer :: proc_to_nmga(mpl%nproc),proc_to_nc0a(mpl%nproc),proc_to_nra(mpl%nproc)
+integer :: proc_to_nmga(mpl%nproc),proc_to_nra(mpl%nproc)
 integer :: mga_to_mg(geom%nmga),mga_to_mgu(geom%nmga),mga_to_c0(geom%nmga),nc0_gmask(0:geom%nl0)
 integer,allocatable :: mgu_to_mg(:),redundant(:),order(:)
 integer,allocatable :: ra_to_r(:),r_to_c0(:),r_to_c0_tot(:)
@@ -526,6 +533,9 @@ real(kind_real) :: hash_mga(geom%nmga)
 real(kind_real) :: areasum(geom%nl0),vunitsum(geom%nl0),vunitsum_tot(geom%nl0),norm(geom%nl0),norm_tot(geom%nl0)
 real(kind_real),allocatable :: hash_mgu(:),r_to_hash(:),r_to_hash_tot(:)
 type(com_type) :: com_AU
+
+! Allocation
+allocate(geom%proc_to_nc0a(mpl%nproc))
 
 ! Communication
 call mpl%f_comm%allgather(geom%nmga,proc_to_nmga)
@@ -607,16 +617,14 @@ call mpl%f_comm%allreduce(diff_grid,diff_grid_tot,fckit_mpi_sum())
 geom%same_grid = (diff_grid_tot==0)
 
 ! Communication
-call mpl%f_comm%allgather(geom%nc0a,proc_to_nc0a)
+call mpl%f_comm%allgather(geom%nc0a,geom%proc_to_nc0a)
 
 ! Subset Sc0 global size
-geom%nc0 = sum(proc_to_nc0a)
+geom%nc0 = sum(geom%proc_to_nc0a)
 
 ! Allocation
 allocate(geom%proc_to_c0_offset(mpl%nproc))
 allocate(geom%c0a_to_c0(geom%nc0a))
-allocate(geom%c0_to_c0a(geom%nc0)) ! TODO should be a function
-allocate(geom%c0_to_proc(geom%nc0))  ! TODO should be a function
 allocate(geom%lon_c0a(geom%nc0a))
 allocate(geom%lat_c0a(geom%nc0a))
 allocate(geom%hash_c0a(geom%nc0a))
@@ -632,10 +640,7 @@ allocate(geom%vunitavg(geom%nl0))
 ! Subset Sc0 offset for halo A
 geom%proc_to_c0_offset(1) = 0
 do iproc=2,mpl%nproc
-   geom%proc_to_c0_offset(iproc) = geom%proc_to_c0_offset(iproc-1)+proc_to_nc0a(iproc-1)
-end do
-do iproc=1,mpl%nproc
-   geom%c0_to_proc(geom%proc_to_c0_offset(iproc)+1:geom%proc_to_c0_offset(iproc)+proc_to_nc0a(iproc)) = iproc
+   geom%proc_to_c0_offset(iproc) = geom%proc_to_c0_offset(iproc-1)+geom%proc_to_nc0a(iproc-1)
 end do
 
 ! Conversions
@@ -649,7 +654,6 @@ do imga=1,geom%nmga
       ic0a = ic0a+1
       ic0 = geom%proc_to_c0_offset(mpl%myproc)+ic0a
       geom%c0a_to_c0(ic0a) = ic0
-      geom%c0_to_c0a(ic0) = ic0a
    else
       ! Redundant point
       nra = nra+1
@@ -730,8 +734,6 @@ do imga=1,geom%nmga
    mga_to_c0(imga) = ic0
 end do
 
-
-
 ! Setup redundant points communication
 call geom%com_mg%setup(mpl,'com_mg',geom%nc0a,geom%nmga,geom%nc0,geom%c0a_to_c0,mga_to_c0)
 
@@ -782,12 +784,11 @@ deallocate(order)
 deallocate(redundant)
 
 ! Subset Sc0 universe size
-geom%nc0u = sum(proc_to_nc0a,mask=geom%myuniverse)
+geom%nc0u = sum(geom%proc_to_nc0a,mask=geom%myuniverse)
 
 ! Allocation
 allocate(geom%c0a_to_c0u(geom%nc0a))
 allocate(geom%c0u_to_c0a(geom%nc0u))
-allocate(geom%c0_to_c0u(geom%nc0))
 allocate(geom%c0u_to_c0(geom%nc0u))
 allocate(geom%lon_c0u(geom%nc0u))
 allocate(geom%lat_c0u(geom%nc0u))
@@ -797,7 +798,6 @@ allocate(geom%gmask_hor_c0u(geom%nc0u))
 
 ! Conversions
 geom%c0u_to_c0a = mpl%msv%vali
-geom%c0_to_c0u = mpl%msv%vali
 ic0u = 0
 do ic0=1,geom%nc0
    iproc = geom%c0_to_proc(ic0)
@@ -808,7 +808,6 @@ do ic0=1,geom%nc0
          geom%c0a_to_c0u(ic0a) = ic0u
          geom%c0u_to_c0a(ic0u) = ic0a
       end if
-      geom%c0_to_c0u(ic0) = ic0u
       geom%c0u_to_c0(ic0u) = ic0
    end if
 end do
@@ -1428,6 +1427,95 @@ if (present(nr)) nr = lnr
 ! Desynchronize random number generator
 call rng%desync(mpl)
 
+
 end subroutine geom_rand_point
+
+!----------------------------------------------------------------------
+! Function: geom_c0_to_c0a
+! Purpose: conversion from global to halo A on subset Sc0
+!----------------------------------------------------------------------
+function geom_c0_to_c0a(geom,ic0)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom ! Geometry
+integer,intent(in) :: ic0           ! Global index
+
+! Returned variable
+integer :: geom_c0_to_c0a
+
+! Local variable
+integer :: iproc
+
+! Find processor
+iproc = geom%c0_to_proc(ic0)
+
+! Get halo A index
+geom_c0_to_c0a = ic0-geom%proc_to_c0_offset(iproc)
+
+end function geom_c0_to_c0a
+
+!----------------------------------------------------------------------
+! Function: geom_c0_to_proc
+! Purpose: conversion from global to processor on subset Sc0
+!----------------------------------------------------------------------
+function geom_c0_to_proc(geom,ic0)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom ! Geometry
+integer,intent(in) :: ic0           ! Global index
+
+! Returned variable
+integer :: geom_c0_to_proc
+
+! Find processor
+do geom_c0_to_proc=1,geom%nproc-1
+   if ((geom%proc_to_c0_offset(geom_c0_to_proc)<ic0).and.(ic0<=geom%proc_to_c0_offset(geom_c0_to_proc+1))) return
+end do
+
+end function geom_c0_to_proc
+
+!----------------------------------------------------------------------
+! Function: geom_c0_to_c0u
+! Purpose: conversion from global to universe on subset Sc0
+!----------------------------------------------------------------------
+function geom_c0_to_c0u(geom,ic0)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom ! Geometry
+integer,intent(in) :: ic0           ! Global index
+
+! Returned variable
+integer :: geom_c0_to_c0u
+
+! Local variable
+integer :: iproc,ic0a,offset,jproc
+
+! Find processor
+iproc = geom%c0_to_proc(ic0)
+
+if (geom%myuniverse(iproc)) then
+   ! Get halo A index
+   ic0a = ic0-geom%proc_to_c0_offset(iproc)
+
+   ! Compute universe offset
+   offset = 0
+   do jproc=1,iproc-1
+      if (geom%myuniverse(jproc)) offset = offset+geom%proc_to_nc0a(jproc)
+   end do
+
+   ! Get universe index
+   geom_c0_to_c0u = offset+ic0a
+else
+   ! Not in my universe
+   geom_c0_to_c0u = 0
+end if
+
+end function geom_c0_to_c0u
 
 end module type_geom

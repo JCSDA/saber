@@ -30,7 +30,7 @@ contains
 ! Purpose: intialize sampling
 !----------------------------------------------------------------------
 subroutine initialize_sampling(mpl,rng,area,n_loc,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ntry,nrep,ns2_glb,sam2_glb, &
- & fast,verbosity,n_uni,uni_to_proc,uni_to_loc,tree_uni)
+ & fast,verbosity,n_uni,uni_to_loc,tree_uni)
 
 implicit none
 
@@ -51,7 +51,6 @@ integer,intent(out) :: sam2_glb(ns2_glb)          ! Horizontal sampling index (g
 logical,intent(in),optional :: fast               ! Fast sampling flag
 logical,intent(in),optional :: verbosity          ! Verbosity flag
 integer,intent(in),optional :: n_uni              ! Universe size
-integer,intent(in),optional :: uni_to_proc(:)     ! Universe to processor
 integer,intent(in),optional :: uni_to_loc(:)      ! Universe to local index
 type(tree_type),intent(in),optional :: tree_uni   ! Universe KD-tree
 
@@ -77,7 +76,7 @@ type(tree_type) :: tree
 type(atlas_structuredgrid) :: agrid
 
 ! Local flags
-lfull_grid = present(n_uni).and.present(uni_to_proc).and.present(uni_to_loc).and.present(tree_uni)
+lfull_grid = present(n_uni).and.present(uni_to_loc).and.present(tree_uni)
 lfast = .false.
 lverbosity = .true.
 if (present(fast)) lfast = fast
@@ -190,11 +189,9 @@ else
 
                ! Find nearest neighbor in universe
                call tree_uni%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index(1:1),nn_dist(1:1))
+               i_loc = uni_to_loc(nn_index(1))
 
-               if (uni_to_proc(nn_index(1))==mpl%myproc) then
-                  ! Get local index
-                  i_loc = uni_to_loc(nn_index(1))
-
+               if (mpl%msv%isnot(i_loc)) then
                   ! Keep valid points
                   if (lmask(i_loc)) then
                      is1_loc = is1_loc+1

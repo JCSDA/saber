@@ -177,6 +177,9 @@ implicit none
 class(samp_type),intent(inout) :: samp ! Sampling
 type(geom_type),intent(in) :: geom     ! Geometry
 
+! Local variable TODO: remove that
+integer :: ic0
+
 ! Allocation
 allocate(samp%smask_c0u(geom%nc0u,geom%nl0))
 allocate(samp%smask_c0a(geom%nc0a,geom%nl0))
@@ -1253,8 +1256,8 @@ end do
 write(mpl%info,'(a7,a)') '','Compute horizontal subset C1: '
 call mpl%flush(.false.)
 call initialize_sampling(mpl,rng,maxval(geom%area),geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
- & nam%ntry,nam%nrep,nam%nc1-nam%nldwv,samp%c1_to_c0(nam%nldwv+1:nam%nc1),n_uni=geom%nc0,uni_to_proc=geom%c0_to_proc, &
- & uni_to_loc=geom%c0_to_c0a,tree_uni=geom%tree)
+ & nam%ntry,nam%nrep,nam%nc1-nam%nldwv,samp%c1_to_c0(nam%nldwv+1:nam%nc1),n_uni=geom%nc0u,uni_to_loc=geom%c0u_to_c0a, &
+ & tree_uni=geom%tree)
 
 ! Count Sc1 point in universe
 samp%nc1u = 0
