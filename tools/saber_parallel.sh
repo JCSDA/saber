@@ -128,8 +128,10 @@ for run in ${list_run}; do
    tmp=`grep "Test command:" saber_ctest_log/${run}_fail.log`
    cmd=`echo ${tmp} | awk '{print $4}'`
    exe=`echo ${tmp} | awk '{print $7,$8,$9}'`
-   mpi=${run: -7:1}
-   omp=${run: -5:1}
+   tmp1=${run%%_run}
+   omp=${tmp1##*-}
+   tmp2=${tmp1%-*}
+   mpi=${tmp2##*_}
    mpixomp=$((mpi*omp))
    if [ ${mpixomp} -gt ${nproc} ]; then
       echo "Too many CPUs are required for process ${run} (${mpixomp} > ${nproc})"

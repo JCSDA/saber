@@ -513,7 +513,7 @@ type(io_type),intent(in) :: io                                              ! I/
 real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
 
 ! Local variable
-integer :: ic0a,ic0u,il0,ie,its,iproc(1),ind(2),it,i_s
+integer :: ic0a,ic0u,ic0,il0,ie,its,iproc(1),ind(2),it,i_s
 integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id
 real(kind_real) :: norm,proc_to_val(mpl%nproc),val,m2_loc
 real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
@@ -669,8 +669,9 @@ if (present(fld_uv)) then
          fld_uv_tmp = 0.0
          do i_s=1,h%n_s
             ic0u = h%col(i_s)
+            ic0 = geom%c0u_to_c0(ic0u)
             h%col(i_s) = i_s
-            if (geom%c0u_to_proc(ic0u)==mpl%myproc) then
+            if (geom%c0_to_proc(ic0)==mpl%myproc) then
                ic0a = geom%c0u_to_c0a(ic0u)
                fld_uv_tmp(i_s,1,1) = fld_uv(ic0a,geom%il0dir(1),1,its-1)
                fld_uv_tmp(i_s,2,1) = fld_uv(ic0a,geom%il0dir(1),2,its-1)

@@ -43,10 +43,6 @@ list( APPEND SABER_LIB_DEPS
   ${NETCDF_LIBRARIES} fckit eckit_mpi eckit
 )
 
-if(${METIS_FOUND})
-    list( APPEND SABER_LIB_DEPS metis metis_interface )
-endif()
-
 if (${OOPS_FOUND})
     if (${ENABLE_OOPS_TOYMODELS})
        list( APPEND SABER_LIB_DEPS oops qg )

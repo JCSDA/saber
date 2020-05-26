@@ -39,9 +39,6 @@ ecbuild_bundle( PROJECT fckit GIT "https://github.com/JCSDA/fckit.git" BRANCH de
 # atlas
 ecbuild_bundle( PROJECT atlas GIT "https://github.com/JCSDA/atlas.git" BRANCH develop UPDATE )
 
-# metis
-ecbuild_bundle( PROJECT metis GIT "https://github.com/JCSDA/metis.git" BRANCH develop UPDATE )
-
 # oops
 ecbuild_bundle( PROJECT oops GIT "https://github.com/JCSDA/oops.git" BRANCH develop UPDATE )
 

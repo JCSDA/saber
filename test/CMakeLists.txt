@@ -15,15 +15,15 @@ endif()
 if(${SABER_TEST_TIER} MATCHES 1)
     set(SABER_TEST_MPI 1)
     set(SABER_TEST_OMP 0)
-    set(SABER_TEST_QUAD 0)
+    set(SABER_TEST_MULTI 0)
 elseif(${SABER_TEST_TIER} MATCHES 2)
     set(SABER_TEST_MPI 1)
     set(SABER_TEST_OMP 1)
-    set(SABER_TEST_QUAD 0)
+    set(SABER_TEST_MULTI 0)
 elseif(${SABER_TEST_TIER} MATCHES 3)
     set(SABER_TEST_MPI 1)
     set(SABER_TEST_OMP 1)
-    set(SABER_TEST_QUAD 1)
+    set(SABER_TEST_MULTI 1)
 else()
     message(FATAL_ERROR "SABER_TEST_TIER should be 1, 2 or 3, not " ${SABER_TEST_TIER})
 endif()
@@ -46,8 +46,8 @@ endif()
 if(DEFINED ENV{SABER_TEST_OMP})
     set(SABER_TEST_OMP "$ENV{SABER_TEST_OMP}")
 endif()
-if(DEFINED ENV{SABER_TEST_QUAD})
-    set(SABER_TEST_QUAD "$ENV{SABER_TEST_QUAD}")
+if(DEFINED ENV{SABER_TEST_MULTI})
+    set(SABER_TEST_MULTI "$ENV{SABER_TEST_MULTI}")
 endif()
 if(DEFINED ENV{SABER_TEST_VALGRIND})
     set(SABER_TEST_VALGRIND "$ENV{SABER_TEST_VALGRIND}")
@@ -66,7 +66,7 @@ endif()
 message(STATUS "SABER_TEST_TIER:      " ${SABER_TEST_TIER})
 message(STATUS "SABER_TEST_MPI:       " ${SABER_TEST_MPI})
 message(STATUS "SABER_TEST_OMP:       " ${SABER_TEST_OMP})
-message(STATUS "SABER_TEST_QUAD:      " ${SABER_TEST_QUAD})
+message(STATUS "SABER_TEST_MULTI:     " ${SABER_TEST_MULTI})
 message(STATUS "SABER_TEST_VALGRIND:  " ${SABER_TEST_VALGRIND})
 message(STATUS "SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
 if(${SABER_TEST_MODEL})
@@ -125,13 +125,13 @@ if(${SABER_TEST_TIER} GREATER 2)
     endif()
 endif()
 
-# Quad-core tests
-if(${SABER_TEST_QUAD})
-    file(STRINGS testlist/saber_test_quad.txt saber_test_quad_tmp )
-    list(APPEND saber_test_quad ${saber_test_quad_tmp})
-    file(STRINGS testlist/saber_ref_quad.txt saber_ref_tmp )
+# Multi-core tests (more than two)
+if(${SABER_TEST_MULTI})
+    file(STRINGS testlist/saber_test_multi.txt saber_test_multi_tmp )
+    list(APPEND saber_test_multi ${saber_test_multi_tmp})
+    file(STRINGS testlist/saber_ref_multi.txt saber_ref_tmp )
     list(APPEND saber_ref ${saber_ref_tmp})
-    list(APPEND saber_ref_tar saber_ref_quad.tar.gz)
+    list(APPEND saber_ref_tar saber_ref_multi.tar.gz)
 endif()
 
 # Model tests
@@ -261,16 +261,6 @@ foreach(file ${saber_ref})
                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
 endforeach()
 
-if(NOT ${METIS_FOUND})
-    # Remove METIS tests
-    file(STRINGS testlist/saber_test_metis.txt saber_test_tmp )
-    list(REMOVE_ITEM saber_test ${saber_test_tmp})
-    if(${SABER_TEST_QUAD})
-        file(STRINGS testlist/saber_test_metis.txt saber_test_quad_tmp )
-        list(REMOVE_ITEM saber_test_quad ${saber_test_quad_tmp})
-    endif()
-endif()
-
 # Mono-core tests
 set(mpi 1)
 set(omp 1)
@@ -357,29 +347,35 @@ if(${SABER_TEST_OMP})
     endforeach()
 endif()
 
-# Quad-core tests (MPI)
-if(${SABER_TEST_QUAD})
-    set(mpi 4)
+# Multi-core tests (MPI)
+if(${SABER_TEST_MULTI})
+    # Get the number of available processors
+    execute_process(COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/get_nprocs.py
+                    OUTPUT_VARIABLE nproc)
     set(omp 1)
-    foreach(test ${saber_test_quad})
-        execute_process(COMMAND     sed "-e s/_MPI_/${mpi}/g;s/_OMP_/${omp}/g"
-                        INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
-                        OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
+    foreach(mpi RANGE 4 12 2)
+        if(${mpi} LESS_EQUAL ${nproc})
+            foreach(test ${saber_test_multi})
+                execute_process(COMMAND     sed "-e s/_MPI_/${mpi}/g;s/_OMP_/${omp}/g"
+                                INPUT_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}_${mpi}-${omp}.yaml)
 
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
-                         MPI          ${mpi}
-                         OMP          ${omp}
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
-                         ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS      bump.x
-                         TEST_DEPENDS get_saber_data)
+                ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
+                                 MPI          ${mpi}
+                                 OMP          ${omp}
+                                 COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                                 ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
+                                 DEPENDS      bump.x
+                                 TEST_DEPENDS get_saber_data)
 
-        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
-                         TYPE SCRIPT
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                         ARGS         ${test} ${mpi} ${omp}
-                         TEST_DEPENDS get_saber_ref
-                                      test_${test}_${mpi}-${omp}_run)
+                ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
+                                 TYPE SCRIPT
+                                 COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
+                                 ARGS         ${test} ${mpi} ${omp}
+                                 TEST_DEPENDS get_saber_ref
+                                              test_${test}_${mpi}-${omp}_run)
+            endforeach()
+        endif()
     endforeach()
 endif()
 

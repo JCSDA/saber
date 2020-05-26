@@ -559,12 +559,15 @@ type(bpar_type),intent(in) :: bpar    ! Block parameters
 type(cv_type),intent(out) :: cv       ! Control vector
 
 ! Local variables
-integer :: ib,jb,ns
+integer :: ib,jb,ns,isa,is
 integer,allocatable :: order(:)
 real(kind_real),allocatable :: hash(:),alpha(:)
 
 ! Allocation
 call nicas%alloc_cv(mpl,bpar,cv)
+
+! Resynchronize random number generator
+call rng%resync(mpl)
 
 ! Random initialization
 do ib=1,bpar%nbe
@@ -576,30 +579,25 @@ do ib=1,bpar%nbe
       call mpl%f_comm%allreduce(nicas%blk(jb)%nsa,ns,fckit_mpi_sum())
 
       ! Allocation
-      if (mpl%main) then
-         allocate(hash(ns))
-         allocate(order(ns))
-         allocate(alpha(ns))
-      else
-         allocate(hash(0))
-         allocate(order(0))
-         allocate(alpha(0))
-      end if
+      allocate(hash(ns))
+      allocate(order(ns))
+      allocate(alpha(ns))
+
+      ! Random vector
+      call rng%rand_gau(alpha)
 
       ! Get global hash
-      call mpl%loc_to_glb(nicas%blk(jb)%nsa,ns,nicas%blk(jb)%sa_to_s,nicas%blk(jb)%sa_to_hash,hash)
+      call mpl%loc_to_glb(nicas%blk(jb)%nsa,ns,nicas%blk(jb)%sa_to_s,nicas%blk(jb)%sa_to_hash,hash,.true.)
 
-      if (mpl%main) then
-         ! Random vector
-         call rng%rand_gau(alpha)
+      ! Reorder random vector
+      call qsort(ns,hash,order)
+      alpha = alpha(order)
 
-         ! Reorder random vector
-         call qsort(ns,hash,order)
-         alpha = alpha(order)
-      end if
-
-      ! Global to local
-      call mpl%glb_to_loc(nicas%blk(jb)%nsa,ns,nicas%blk(jb)%sa_to_s,alpha,cv%blk(ib)%alpha)
+      ! Copy local section     
+      do isa=1,nicas%blk(jb)%nsa
+         is = nicas%blk(jb)%sa_to_s(isa)
+         cv%blk(ib)%alpha(isa) = alpha(is)
+      end do
 
       ! Release memory
       deallocate(hash)
@@ -607,6 +605,9 @@ do ib=1,bpar%nbe
       deallocate(alpha)
    end if
 end do
+
+! Desynchronize random number generator
+call rng%desync(mpl)
 
 end subroutine nicas_random_cv
 
@@ -1389,7 +1390,7 @@ integer,intent(in) :: ne              ! Number of members
 type(ens_type),intent(out) :: ens     ! Ensemble
 
 ! Local variable
-integer :: ie,ic0a,il0,its,iv
+integer :: ie,ic0a,il0,its,iv,ic0u
 real(kind_real) :: std(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 type(cv_type) :: cv_ens(ne)
 
@@ -1679,7 +1680,7 @@ type(geom_type),intent(in) :: geom    ! Geometry
 type(bpar_type),intent(in) :: bpar    ! Block parameters
 
 ! Local variables
-integer :: ifac,itest,nefac(nfac_rnd),ens1_ne
+integer :: ifac,itest,nefac(nfac_rnd),ens1_ne,ic0u
 integer :: ncid,ntest_id,nfac_id,mse_id,mse_th_id
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts),mse(ntest,nfac_rnd),mse_th(ntest,nfac_rnd),mse_avg,mse_th_avg
 real(kind_real),allocatable :: fld_ref(:,:,:,:,:),fld_save(:,:,:,:,:)
@@ -1727,7 +1728,6 @@ do ifac=1,nfac_rnd
    write(mpl%info,'(a10,a)') '','Randomization'
    call mpl%flush
    call nicas%randomize(mpl,rng,nam,geom,bpar,nefac(ifac),ens)
-   if (nam%default_seed) call rng%reseed(mpl)
 
    ! Test randomized ensemble
    write(mpl%info,'(a10,a)') '','Apply NICAS to test vectors: '
@@ -2132,7 +2132,7 @@ integer :: il0dir,iprocdir,ic0adir
 
 do itest=1,ntest
    ! Define random dirac location
-   call rng%rand_integer(1,geom%nl0,il0dir)
+   call geom%rand_level(mpl,rng,il0dir)
    call geom%rand_point(mpl,rng,il0dir,iprocdir,ic0adir)
 
    ! Define test vector

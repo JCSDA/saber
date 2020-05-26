@@ -12,9 +12,9 @@ use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: create_atlas_fieldset,create_atlas_function_space,atlas_to_fld,fld_to_atlas
 use tools_const, only: req,deg2rad
-use tools_func, only: sphere_dist,lct_r2d
+use tools_func, only: sphere_dist,lct_r2d,lonlathash
 use tools_kinds,only: kind_int,kind_real
-use tools_repro,only: repro
+use tools_repro,only: repro,eq
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
 use type_cv, only: cv_type

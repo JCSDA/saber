@@ -50,10 +50,6 @@ phases:
       - cd $CODEBUILD_SRC_DIR
       - ls
 
-      # metis
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
-      - ls
-
       # oops
       - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/oops saber-bundle/oops
       - cd saber-bundle/oops

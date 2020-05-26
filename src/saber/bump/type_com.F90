@@ -52,9 +52,10 @@ contains
    procedure :: com_ext_logical_1d
    procedure :: com_ext_logical_2d
    generic :: ext => com_ext_integer_1d,com_ext_integer_2d,com_ext_real_1d,com_ext_real_2d,com_ext_logical_1d,com_ext_logical_2d
-   procedure :: com_red_1d
-   procedure :: com_red_2d
-   generic :: red => com_red_1d,com_red_2d
+   procedure :: com_red_real_1d
+   procedure :: com_red_real_2d
+   procedure :: com_red_logical_2d
+   generic :: red => com_red_real_1d,com_red_real_2d,com_red_logical_2d
 end type com_type
 
 integer,parameter :: com_ntag = 2 ! Number of communication steps to send/receive
@@ -397,26 +398,25 @@ end subroutine com_send
 ! Subroutine: com_setup
 ! Purpose: setup communications
 !----------------------------------------------------------------------
-subroutine com_setup(com_out,mpl,prefix,nown,nred,next,nglb,own_to_glb,red_to_glb,ext_to_glb)
+subroutine com_setup(com_out,mpl,prefix,nred,next,nglb,red_to_glb,ext_to_glb,own_to_glb)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(inout) :: com_out ! Communication data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-character(len=*),intent(in) :: prefix    ! Prefix
-integer,intent(in) :: nown               ! Own data size
-integer,intent(in) :: nred               ! Reduced halo size
-integer,intent(in) :: next               ! Extended halo size
-integer,intent(in) :: nglb               ! Global size
-integer,intent(in) :: own_to_glb(nown)   ! Own data to global
-integer,intent(in) :: red_to_glb(nred)   ! Reduced halo to global
-integer,intent(in) :: ext_to_glb(next)   ! Extended halo to global
+class(com_type),intent(inout) :: com_out     ! Communication data
+type(mpl_type),intent(inout) :: mpl          ! MPI data
+character(len=*),intent(in) :: prefix        ! Prefix
+integer,intent(in) :: nred                   ! Reduced halo size
+integer,intent(in) :: next                   ! Extended halo size
+integer,intent(in) :: nglb                   ! Global size
+integer,intent(in) :: red_to_glb(nred)       ! Reduced halo to global
+integer,intent(in) :: ext_to_glb(next)       ! Extended halo to global
+integer,intent(in),optional :: own_to_glb(:) ! Own data to global
 
 ! Local variables
 integer :: iproc,jproc,iown,ired,iext,iglb,icount,nglb_test
-integer,allocatable :: glb_to_red(:),glb_to_proc(:),red_to_ext(:)
-integer,allocatable :: own_to_glb_tmp(:),red_to_glb_tmp(:),ext_to_glb_tmp(:)
+integer,allocatable :: glb_to_red(:),glb_to_proc(:)
+integer,allocatable :: red_to_glb_tmp(:),ext_to_glb_tmp(:)
 type(com_type) :: com_in(mpl%nproc)
 type(fckit_mpi_status) :: status
 character(len=1024),parameter :: subr = 'com_setup'
@@ -427,14 +427,12 @@ if (mpl%main) then
    do iproc=1,mpl%nproc
       if (iproc==mpl%rootproc) then
          ! Copy dimensions
-         com_in(iproc)%nown = nown
          com_in(iproc)%nred = nred
          com_in(iproc)%next = next
       else
          ! Receive dimensions on rootproc
-         call mpl%f_comm%receive(com_in(iproc)%nown,iproc-1,mpl%tag,status)
-         call mpl%f_comm%receive(com_in(iproc)%nred,iproc-1,mpl%tag+1,status)
-         call mpl%f_comm%receive(com_in(iproc)%next,iproc-1,mpl%tag+2,status)
+         call mpl%f_comm%receive(com_in(iproc)%nred,iproc-1,mpl%tag,status)
+         call mpl%f_comm%receive(com_in(iproc)%next,iproc-1,mpl%tag+1,status)
       end if
 
       ! Rebuild global size
@@ -461,7 +459,7 @@ if (mpl%main) then
          red_to_glb_tmp = red_to_glb
       else
          ! Receive data on rootproc
-         call mpl%f_comm%receive(red_to_glb_tmp,iproc-1,mpl%tag+3,status)
+         call mpl%f_comm%receive(red_to_glb_tmp,iproc-1,mpl%tag+2,status)
       end if
 
       ! Fill glb_to_red and glb_to_proc
@@ -478,59 +476,40 @@ if (mpl%main) then
 
    do iproc=1,mpl%nproc
       ! Allocation
-      allocate(own_to_glb_tmp(com_in(iproc)%nown))
       allocate(ext_to_glb_tmp(com_in(iproc)%next))
-      allocate(red_to_ext(com_in(iproc)%nred))
-      allocate(com_in(iproc)%own_to_red(com_in(iproc)%nown))
-      allocate(com_in(iproc)%own_to_ext(com_in(iproc)%nown))
       allocate(com_in(iproc)%ext_to_red(com_in(iproc)%next))
       allocate(com_in(iproc)%ext_to_proc(com_in(iproc)%next))
 
       if (iproc==mpl%rootproc) then
          ! Copy data
-         own_to_glb_tmp = own_to_glb
          ext_to_glb_tmp = ext_to_glb
       else
          ! Receive data on rootproc
-         call mpl%f_comm%receive(own_to_glb_tmp,iproc-1,mpl%tag+4,status)
-         call mpl%f_comm%receive(ext_to_glb_tmp,iproc-1,mpl%tag+5,status)
+         call mpl%f_comm%receive(ext_to_glb_tmp,iproc-1,mpl%tag+3,status)
       end if
 
       ! Communication parameters
-      red_to_ext = mpl%msv%vali
       do iext=1,com_in(iproc)%next
          iglb = ext_to_glb_tmp(iext)
          ired = glb_to_red(iglb)
          jproc = glb_to_proc(iglb)
          com_in(iproc)%ext_to_red(iext) = ired
          com_in(iproc)%ext_to_proc(iext) = jproc
-         if (jproc==iproc) red_to_ext(ired) = iext
-      end do
-      do iown=1,com_in(iproc)%nown
-         iglb = own_to_glb_tmp(iown)
-         ired = glb_to_red(iglb)
-         iext = red_to_ext(ired)
-         com_in(iproc)%own_to_red(iown) = ired
-         com_in(iproc)%own_to_ext(iown) = iext
       end do
 
       ! Release memory
-      deallocate(own_to_glb_tmp)
       deallocate(ext_to_glb_tmp)
-      deallocate(red_to_ext)
    end do
 else
    ! Send dimensions to rootproc
-   call mpl%f_comm%send(nown,mpl%rootproc-1,mpl%tag)
-   call mpl%f_comm%send(nred,mpl%rootproc-1,mpl%tag+1)
-   call mpl%f_comm%send(next,mpl%rootproc-1,mpl%tag+2)
+   call mpl%f_comm%send(nred,mpl%rootproc-1,mpl%tag)
+   call mpl%f_comm%send(next,mpl%rootproc-1,mpl%tag+1)
 
    ! Send data to rootproc
-   call mpl%f_comm%send(red_to_glb,mpl%rootproc-1,mpl%tag+3)
-   call mpl%f_comm%send(own_to_glb,mpl%rootproc-1,mpl%tag+4)
-   call mpl%f_comm%send(ext_to_glb,mpl%rootproc-1,mpl%tag+5)
+   call mpl%f_comm%send(red_to_glb,mpl%rootproc-1,mpl%tag+2)
+   call mpl%f_comm%send(ext_to_glb,mpl%rootproc-1,mpl%tag+3)
 end if
-call mpl%update_tag(6)
+call mpl%update_tag(4)
 
 if (mpl%main) then
    ! Allocation
@@ -615,31 +594,29 @@ if (mpl%main) then
    do iproc=1,mpl%nproc
       if (iproc==mpl%rootproc) then
          ! Copy dimensions
-         com_out%nred = com_in(iproc)%nred
-         com_out%next = com_in(iproc)%next
-         com_out%nown = com_in(iproc)%nown
          com_out%nhalo = com_in(iproc)%nhalo
          com_out%nexcl = com_in(iproc)%nexcl
       else
          ! Send dimensions to iproc
-         call mpl%f_comm%send(com_in(iproc)%nred,iproc-1,mpl%tag)
-         call mpl%f_comm%send(com_in(iproc)%next,iproc-1,mpl%tag+1)
-         call mpl%f_comm%send(com_in(iproc)%nown,iproc-1,mpl%tag+2)
-         call mpl%f_comm%send(com_in(iproc)%nhalo,iproc-1,mpl%tag+3)
-         call mpl%f_comm%send(com_in(iproc)%nexcl,iproc-1,mpl%tag+4)
+         call mpl%f_comm%send(com_in(iproc)%nhalo,iproc-1,mpl%tag)
+         call mpl%f_comm%send(com_in(iproc)%nexcl,iproc-1,mpl%tag+1)
       end if
    end do
 else
    ! Receive dimensions from rootproc
-   call mpl%f_comm%receive(com_out%nred,mpl%rootproc-1,mpl%tag,status)
-   call mpl%f_comm%receive(com_out%next,mpl%rootproc-1,mpl%tag+1,status)
-   call mpl%f_comm%receive(com_out%nown,mpl%rootproc-1,mpl%tag+2,status)
-   call mpl%f_comm%receive(com_out%nhalo,mpl%rootproc-1,mpl%tag+3,status)
-   call mpl%f_comm%receive(com_out%nexcl,mpl%rootproc-1,mpl%tag+4,status)
+   call mpl%f_comm%receive(com_out%nhalo,mpl%rootproc-1,mpl%tag,status)
+   call mpl%f_comm%receive(com_out%nexcl,mpl%rootproc-1,mpl%tag+1,status)
 end if
-call mpl%update_tag(4)
+call mpl%update_tag(2)
 
 ! Allocation
+if (present(own_to_glb)) then
+   com_out%nown = size(own_to_glb)
+else
+   com_out%nown = nred
+end if
+com_out%nred = nred
+com_out%next = next
 allocate(com_out%own_to_ext(com_out%nown))
 allocate(com_out%own_to_red(com_out%nown))
 allocate(com_out%jhalocounts(mpl%nproc))
@@ -649,13 +626,37 @@ allocate(com_out%jexcldispls(mpl%nproc))
 allocate(com_out%halo(com_out%nhalo))
 allocate(com_out%excl(com_out%nexcl))
 
+! Local conversions
+if (com_out%nown>0) then
+   ! Initialization
+   com_out%own_to_red = mpl%msv%vali
+   com_out%own_to_ext = mpl%msv%vali
+
+   ! Fill local conversions
+   do iown=1,com_out%nown
+      if (present(own_to_glb)) then
+         iglb = own_to_glb(iown)
+      else
+         iglb = red_to_glb(iown)
+      end if
+      do ired=1,com_out%nred
+         if (red_to_glb(ired)==iglb) com_out%own_to_red(iown) = ired
+      end do
+      do iext=1,com_out%next
+         if (ext_to_glb(iext)==iglb) com_out%own_to_ext(iown) = iext
+      end do
+   end do
+
+   ! Check local conversion
+   if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort(subr,'missing own_to_red value')
+   if (mpl%msv%isany(com_out%own_to_ext)) call mpl%abort(subr,'missing own_to_ext value')
+end if
+
 ! Communicate data
 if (mpl%main) then
    do iproc=1,mpl%nproc
       if (iproc==mpl%rootproc) then
          ! Copy data
-         if (com_out%nown>0)com_out%own_to_ext = com_in(iproc)%own_to_ext
-         if (com_out%nown>0)com_out%own_to_red = com_in(iproc)%own_to_red
          com_out%jhalocounts = com_in(iproc)%jhalocounts
          com_out%jexclcounts = com_in(iproc)%jexclcounts
          com_out%jhalodispls = com_in(iproc)%jhalodispls
@@ -664,28 +665,24 @@ if (mpl%main) then
          com_out%excl = com_in(iproc)%excl
       else
          ! Send dimensions to iproc
-         if (com_in(iproc)%nown>0) call mpl%f_comm%send(com_in(iproc)%own_to_ext,iproc-1,mpl%tag)
-         if (com_in(iproc)%nown>0) call mpl%f_comm%send(com_in(iproc)%own_to_red,iproc-1,mpl%tag+1)
-         call mpl%f_comm%send(com_in(iproc)%jhalocounts,iproc-1,mpl%tag+2)
-         call mpl%f_comm%send(com_in(iproc)%jexclcounts,iproc-1,mpl%tag+3)
-         call mpl%f_comm%send(com_in(iproc)%jhalodispls,iproc-1,mpl%tag+4)
-         call mpl%f_comm%send(com_in(iproc)%jexcldispls,iproc-1,mpl%tag+5)
-         if (com_in(iproc)%nhalo>0) call mpl%f_comm%send(com_in(iproc)%halo,iproc-1,mpl%tag+6)
-         if (com_in(iproc)%nexcl>0) call mpl%f_comm%send(com_in(iproc)%excl,iproc-1,mpl%tag+7)
+         call mpl%f_comm%send(com_in(iproc)%jhalocounts,iproc-1,mpl%tag)
+         call mpl%f_comm%send(com_in(iproc)%jexclcounts,iproc-1,mpl%tag+1)
+         call mpl%f_comm%send(com_in(iproc)%jhalodispls,iproc-1,mpl%tag+2)
+         call mpl%f_comm%send(com_in(iproc)%jexcldispls,iproc-1,mpl%tag+3)
+         if (com_in(iproc)%nhalo>0) call mpl%f_comm%send(com_in(iproc)%halo,iproc-1,mpl%tag+4)
+         if (com_in(iproc)%nexcl>0) call mpl%f_comm%send(com_in(iproc)%excl,iproc-1,mpl%tag+5)
       end if
    end do
 else
    ! Receive dimensions from rootproc
-   if (com_out%nown>0) call mpl%f_comm%receive(com_out%own_to_ext,mpl%rootproc-1,mpl%tag,status)
-   if (com_out%nown>0) call mpl%f_comm%receive(com_out%own_to_red,mpl%rootproc-1,mpl%tag+1,status)
-   call mpl%f_comm%receive(com_out%jhalocounts,mpl%rootproc-1,mpl%tag+2,status)
-   call mpl%f_comm%receive(com_out%jexclcounts,mpl%rootproc-1,mpl%tag+3,status)
-   call mpl%f_comm%receive(com_out%jhalodispls,mpl%rootproc-1,mpl%tag+4,status)
-   call mpl%f_comm%receive(com_out%jexcldispls,mpl%rootproc-1,mpl%tag+5,status)
-   if (com_out%nhalo>0) call mpl%f_comm%receive(com_out%halo,mpl%rootproc-1,mpl%tag+6,status)
-   if (com_out%nexcl>0) call mpl%f_comm%receive(com_out%excl,mpl%rootproc-1,mpl%tag+7,status)
+   call mpl%f_comm%receive(com_out%jhalocounts,mpl%rootproc-1,mpl%tag,status)
+   call mpl%f_comm%receive(com_out%jexclcounts,mpl%rootproc-1,mpl%tag+1,status)
+   call mpl%f_comm%receive(com_out%jhalodispls,mpl%rootproc-1,mpl%tag+2,status)
+   call mpl%f_comm%receive(com_out%jexcldispls,mpl%rootproc-1,mpl%tag+3,status)
+   if (com_out%nhalo>0) call mpl%f_comm%receive(com_out%halo,mpl%rootproc-1,mpl%tag+4,status)
+   if (com_out%nexcl>0) call mpl%f_comm%receive(com_out%excl,mpl%rootproc-1,mpl%tag+5,status)
 end if
-call mpl%update_tag(8)
+call mpl%update_tag(6)
 
 ! Set prefix
 com_out%prefix = trim(prefix)
@@ -1047,10 +1044,10 @@ deallocate(rbuf)
 end subroutine com_ext_logical_2d
 
 !----------------------------------------------------------------------
-! Subroutine: com_red_1d
+! Subroutine: com_red_real_1d
 ! Purpose: communicate vector from halo (reduction)
 !----------------------------------------------------------------------
-subroutine com_red_1d(com,mpl,vec_ext,vec_red,nosum)
+subroutine com_red_real_1d(com,mpl,vec_ext,vec_red,nosum)
 
 implicit none
 
@@ -1066,7 +1063,7 @@ integer :: ihalo,iown,ired,iexcl,ithread
 real(kind_real),allocatable :: sbuf(:),rbuf(:),vec_red_arr(:,:)
 logical :: lnosum
 logical,allocatable :: done(:)
-character(len=1024) :: subr = 'com_red_1d'
+character(len=1024) :: subr = 'com_red_real_1d'
 
 ! Set no-sum flag
 lnosum = .false.
@@ -1147,13 +1144,13 @@ else
    deallocate(vec_red_arr)
 end if
 
-end subroutine com_red_1d
+end subroutine com_red_real_1d
 
 !----------------------------------------------------------------------
-! Subroutine: com_red_2d
+! Subroutine: com_red_real_2d
 ! Purpose: communicate vector from halo (reduction)
 !----------------------------------------------------------------------
-subroutine com_red_2d(com,mpl,nl,vec_ext,vec_red,nosum)
+subroutine com_red_real_2d(com,mpl,nl,vec_ext,vec_red,nosum)
 
 implicit none
 
@@ -1262,6 +1259,80 @@ else
    deallocate(vec_red_arr)
 end if
 
-end subroutine com_red_2d
+end subroutine com_red_real_2d
+
+!----------------------------------------------------------------------
+! Subroutine: com_red_logical_2d
+! Purpose: communicate vector from halo (reduction), no sum
+!----------------------------------------------------------------------
+subroutine com_red_logical_2d(com,mpl,nl,vec_ext,vec_red)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com           ! Communication data
+type(mpl_type),intent(inout) :: mpl         ! MPI data
+integer,intent(in) :: nl                    ! Number of levels
+logical,intent(in) :: vec_ext(com%next,nl)  ! Extended vector
+logical,intent(out) :: vec_red(com%nred,nl) ! Reduced vector
+
+! Local variables
+integer :: il,ihalo,iown,iexcl
+logical,allocatable :: sbuf(:),rbuf(:),done(:)
+character(len=1024) :: subr = 'com_red_logical_2d'
+
+! Allocation
+allocate(sbuf(com%nhalo*nl))
+allocate(rbuf(com%nexcl*nl))
+allocate(done(com%nred))
+
+! Prepare buffers to send
+!$omp parallel do schedule(static) private(il,ihalo)
+do il=1,nl
+   do ihalo=1,com%nhalo
+      sbuf((ihalo-1)*nl+il) = vec_ext(com%halo(ihalo),il)
+   end do
+end do
+!$omp end parallel do
+
+! Communication
+call mpl%f_comm%alltoall(sbuf,com%jhalocounts*nl,com%jhalodispls*nl,rbuf,com%jexclcounts*nl,com%jexcldispls*nl)
+
+! Copy interior
+vec_red = .false.
+!$omp parallel do schedule(static) private(il,iown)
+do il=1,nl
+   do iown=1,com%nown
+      vec_red(com%own_to_red(iown),il) = vec_ext(com%own_to_ext(iown),il)
+   end do
+end do
+!$omp end parallel do
+
+do il=1,nl
+   ! Initialization
+   done = .false.
+   do iown=1,com%nown
+      done(com%own_to_red(iown)) = .true.
+   end do
+
+   do iexcl=1,com%nexcl
+      if (done(com%excl(iexcl))) then
+         ! Check that values are similar
+         if (.not.(vec_red(com%excl(iexcl),il).eqv.rbuf((iexcl-1)*nl+il))) &
+         &  call mpl%abort(subr,'both redundant values are different')
+      else
+         ! Copy value
+         vec_red(com%excl(iexcl),il) = rbuf((iexcl-1)*nl+il)
+      end if
+      done(com%excl(iexcl)) = .true.
+   end do
+end do
+
+! Release memory
+deallocate(sbuf)
+deallocate(rbuf)
+deallocate(done)
+
+end subroutine com_red_logical_2d
 
 end module type_com

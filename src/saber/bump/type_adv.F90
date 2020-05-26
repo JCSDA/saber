@@ -11,7 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 use netcdf
 !$ use omp_lib
 use tools_const, only: pi,req,reqkm,rad2deg,deg2rad
-use tools_func, only: lonlatmod,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product
+use tools_func, only: lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,sup,eq
@@ -396,7 +396,7 @@ do its=2,nam%nts
    nc0d = count(lcheck_c0d)
 
    ! Allocation
-   allocate(c0u_to_c0d(nc0d))
+   allocate(c0u_to_c0d(geom%nc0u))
    allocate(c0d_to_c0(nc0d))
    allocate(fld_ext_1(nc0d,geom%nl0))
    allocate(fld_ext_2(nc0d,geom%nl0))
@@ -414,7 +414,7 @@ do its=2,nam%nts
    end do
 
    ! Setup communications
-   call com_AD%setup(mpl,'com_AD',geom%nc0a,geom%nc0a,nc0d,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,c0d_to_c0)
+   call com_AD%setup(mpl,'com_AD',geom%nc0a,nc0d,geom%nc0,geom%c0a_to_c0,c0d_to_c0)
 
    ! Mask
    mask_nn = .false.
@@ -503,6 +503,9 @@ do its=2,nam%nts
    do il0=1,geom%nl0
       write(mpl%info,'(a16,a,i3)') '','Level ',nam%levs(il0)
       call mpl%flush
+
+      ! Check initialization
+      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
 
       ! Initialization
       adv%lon_c2a_raw(:,il0,its) = adv%lon_c2a
@@ -593,7 +596,6 @@ do its=2,nam%nts
       ! Check raw mesh ! TODO: check in the universe
       call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lon_c2a_raw(:,il0,its),lon_c2)
       call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lat_c2a_raw(:,il0,its),lat_c2)
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
       if (mpl%main) then
          call mesh%copy(samp%mesh)
          call mesh%store(mpl,lon_c2,lat_c2)
@@ -689,6 +691,9 @@ do its=2,nam%nts
       write(mpl%info,'(a13,a,i3)') '','Level ',nam%levs(il0)
       call mpl%flush
 
+      ! Check initialization
+      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
+
       ! Initialization
       if (its==2) then
          adv%lon_c2a_raw(:,il0,its) = adv%lon_c2a
@@ -762,7 +767,7 @@ do its=2,nam%nts
          end do
 
          ! Setup communication
-         call com_AW%setup(mpl,'com_AW',nc0own,geom%nc0a,nc0w,geom%nc0,c0own_to_c0,geom%c0a_to_c0,c0w_to_c0)
+         call com_AW%setup(mpl,'com_AW',geom%nc0a,nc0w,geom%nc0,geom%c0a_to_c0,c0w_to_c0,c0own_to_c0)
 
          ! Communication
          call com_AW%ext(mpl,fld_uv(:,il0,1,its-1),fld_uv_ext(:,1,1))
@@ -831,7 +836,6 @@ do its=2,nam%nts
       ! Check raw mesh ! TODO: check in the universe
       call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lon_c2a_raw(:,il0,its),lon_c2)
       call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lat_c2a_raw(:,il0,its),lat_c2)
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
       if (mpl%main) then
          call mesh%copy(samp%mesh)
          call mesh%store(mpl,lon_c2,lat_c2)
@@ -916,6 +920,9 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
       end if
    end do
 
+   ! Check initialization
+   call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
+
    ! Dichotomy initialization
    convergence = .false.
    dichotomy = .false.
@@ -963,9 +970,8 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
       end do
 
       ! Check filtered mesh ! TODO: check in the universe
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lon_c2a_raw(:,il0,its),lon_c2)
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lat_c2a_raw(:,il0,its),lat_c2)
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
+      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,lon_c2a,lon_c2)
+      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,lat_c2a,lat_c2)
       if (mpl%main) then
          call mesh%copy(samp%mesh)
          call mesh%store(mpl,lon_c2,lat_c2)
@@ -973,7 +979,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
          valid_flt = real(count(valid_c2.and.samp%mesh%valid.and.smask_c2),kind_real) &
                    & /real(count(samp%mesh%valid.and.smask_c2),kind_real)
       end if
-      call mpl%f_comm%broadcast(valid_c2,mpl%rootproc-1)
+      call mpl%f_comm%broadcast(valid_flt,mpl%rootproc-1)
 
 
       ! Print result
@@ -1026,7 +1032,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
    end do
 
    ! Check convergence
-   if (.not.convergence) call mpl%warning(subr,'convergence failed in adv%compute')
+   if (.not.convergence) call mpl%abort(subr,'convergence failed in adv%compute')
 else
    ! Advection filtering not required
    adv%lon_c2a_flt(:,il0,its) = adv%lon_c2a_raw(:,il0,its)
@@ -1067,7 +1073,7 @@ type(geom_type),intent(in) :: geom    ! Geometry
 type(samp_type),intent(inout) :: samp ! Sampling
 
 ! Local variables
-integer :: ic0u,ic2a,il0,il0i,its,ic0a
+integer :: ic0a,ic0u,ic2a,il0,il0i,its
 real(kind_real) :: reduced_dist
 real(kind_real) :: dx(samp%nc2a),dy(samp%nc2a),dz(samp%nc2a)
 real(kind_real) :: dx_c2b(samp%nc2b),dy_c2b(samp%nc2b),dz_c2b(samp%nc2b)
@@ -1079,7 +1085,7 @@ call mpl%flush
 
 ! Initialization
 do ic0a=1,geom%nc0a
-   call lonlat2xyz(mpl,geom%lon_c0a(ic0u),geom%lat_c0a(ic0u),x_ori_c0a(ic0a),y_ori_c0a(ic0a),z_ori_c0a(ic0a))
+   call lonlat2xyz(mpl,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),x_ori_c0a(ic0a),y_ori_c0a(ic0a),z_ori_c0a(ic0a))
 end do
 
 ! Advection for timeslot 1
@@ -1227,7 +1233,7 @@ do its=2,nam%nts
 end do
 
 ! Setup communications
-call com_ADinv%setup(mpl,'com_ADinv',geom%nc0a,geom%nc0a,nc0d,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,c0d_to_c0)
+call com_ADinv%setup(mpl,'com_ADinv',geom%nc0a,nc0d,geom%nc0,geom%c0a_to_c0,c0d_to_c0)
 
 ! Allocation
 allocate(fld_d(nc0d,geom%nl0))
@@ -1320,7 +1326,8 @@ integer :: lon_c2_id,lat_c2_id,lon_c2_raw_id,lat_c2_raw_id,dist_c2_raw_id,valid_
 integer :: lon_c2_flt_id,lat_c2_flt_id,dist_c2_flt_id,valid_flt_id,dist_flt_id,rhflt_id
 integer :: score_loc_id,score_adv_id
 integer :: iproc,its,il0,ic2a,ic2,i,ib,iv,jv,jts,proc_to_nc2a(mpl%nproc)
-real(kind_real),allocatable :: sbuf(:),rbuf(:),lon_c2(:,:),lat_c2(:,:)
+integer,allocatable :: order(:)
+real(kind_real),allocatable :: sbuf(:),rbuf(:),lon_c2(:,:),lat_c2(:,:),hash_c2(:)
 real(kind_real),allocatable :: lon_c2_raw(:,:,:),lat_c2_raw(:,:,:),dist_c2_raw(:,:,:)
 real(kind_real),allocatable :: lon_c2_flt(:,:,:),lat_c2_flt(:,:,:),dist_c2_flt(:,:,:)
 character(len=1024) :: filename
@@ -1337,22 +1344,22 @@ allocate(sbuf(samp%nc2a*geom%nl0*(2+(nam%nts-1)*6)))
 i = 1
 do il0=1,geom%nl0
    do ic2a=1,samp%nc2a
-      sbuf(i) = adv%lon_c2a(ic2a)*rad2deg
+      sbuf(i) = adv%lon_c2a(ic2a)
       i = i+1
-      sbuf(i) = adv%lat_c2a(ic2a)*rad2deg
+      sbuf(i) = adv%lat_c2a(ic2a)
       i = i+1
       do its=2,nam%nts
-         sbuf(i) = adv%lon_c2a_raw(ic2a,il0,its)*rad2deg
+         sbuf(i) = adv%lon_c2a_raw(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%lat_c2a_raw(ic2a,il0,its)*rad2deg
+         sbuf(i) = adv%lat_c2a_raw(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%dist_c2a_raw(ic2a,il0,its)*reqkm
+         sbuf(i) = adv%dist_c2a_raw(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%lon_c2a_flt(ic2a,il0,its)*rad2deg
+         sbuf(i) = adv%lon_c2a_flt(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%lat_c2a_flt(ic2a,il0,its)*rad2deg
+         sbuf(i) = adv%lat_c2a_flt(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%dist_c2a_flt(ic2a,il0,its)*reqkm
+         sbuf(i) = adv%dist_c2a_flt(ic2a,il0,its)
          i = i+1
       end do
    end do
@@ -1368,6 +1375,8 @@ if (mpl%main) then
    allocate(lon_c2_flt(nam%nc2,geom%nl0,nam%nts-1))
    allocate(lat_c2_flt(nam%nc2,geom%nl0,nam%nts-1))
    allocate(dist_c2_flt(nam%nc2,geom%nl0,nam%nts-1))
+   allocate(hash_c2(nam%nc2))
+   allocate(order(nam%nc2))
 
    do iproc=1,mpl%nproc
       ! Allocation
@@ -1410,6 +1419,26 @@ if (mpl%main) then
       ! Release memory
       deallocate(rbuf)
    end do
+
+   ! Get order from hash
+   do ic2=1,nam%nc2
+      hash_c2(ic2) = lonlathash(lon_c2(ic2,1),lat_c2(ic2,1))
+   end do
+   call qsort(nam%nc2,hash_c2,order)
+
+   ! Reorder and rescale data
+   lon_c2 = lon_c2(order,:)*rad2deg
+   lat_c2 = lat_c2(order,:)*rad2deg
+   lon_c2_raw = lon_c2_raw(order,:,:)*rad2deg
+   lat_c2_raw = lat_c2_raw(order,:,:)*rad2deg
+   dist_c2_raw = dist_c2_raw(order,:,:)*reqkm
+   lon_c2_flt = lon_c2_flt(order,:,:)*rad2deg
+   lat_c2_flt = lat_c2_flt(order,:,:)*rad2deg
+   dist_c2_flt = dist_c2_flt(order,:,:)*reqkm
+
+   ! Release memory
+   deallocate(hash_c2)
+   deallocate(order)
 else
    ! Send data to rootproc
    call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
@@ -1418,9 +1447,6 @@ call mpl%update_tag(1)
 
 ! Release memory
 deallocate(sbuf)
-
-! Order data
-! TODO
 
 ! Define filename
 filename = trim(nam%prefix)//'_adv_diag'

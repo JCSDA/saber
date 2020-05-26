@@ -1379,16 +1379,18 @@ logical,intent(in),optional :: sqrt_rescaling    ! Square-root rescaling flag
 integer :: il0i,il1
 
 ! Temporary global arrays TODO: remove that!
-allocate(nicas_blk%lon_c0(geom%nc0))
-allocate(nicas_blk%lat_c0(geom%nc0))
-allocate(nicas_blk%vunit_c0(geom%nc0,geom%nl0))
-allocate(nicas_blk%gmask_c0(geom%nc0,geom%nl0))
-allocate(nicas_blk%gmask_hor_c0(geom%nc0))
-call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%lon_c0a,nicas_blk%lon_c0,.true.)
-call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%lat_c0a,nicas_blk%lat_c0,.true.)
-call mpl%loc_to_glb(geom%nl0,geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%vunit_c0a,nicas_blk%vunit_c0,.true.)
-call mpl%loc_to_glb(geom%nl0,geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%gmask_c0a,nicas_blk%gmask_c0,.true.)
-call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%gmask_hor_c0a,nicas_blk%gmask_hor_c0,.true.)
+if (.not.allocated(nicas_blk%lon_c0)) then
+   allocate(nicas_blk%lon_c0(geom%nc0))
+   allocate(nicas_blk%lat_c0(geom%nc0))
+   allocate(nicas_blk%vunit_c0(geom%nc0,geom%nl0))
+   allocate(nicas_blk%gmask_c0(geom%nc0,geom%nl0))
+   allocate(nicas_blk%gmask_hor_c0(geom%nc0))
+   call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%lon_c0a,nicas_blk%lon_c0,.true.)
+   call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%lat_c0a,nicas_blk%lat_c0,.true.)
+   call mpl%loc_to_glb(geom%nl0,geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%vunit_c0a,nicas_blk%vunit_c0,.true.)
+   call mpl%loc_to_glb(geom%nl0,geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%gmask_c0a,nicas_blk%gmask_c0,.true.)
+   call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%gmask_hor_c0a,nicas_blk%gmask_hor_c0,.true.)
+end if
 
 ! Set square-root rescaling flag
 nicas_blk%sqrt_rescaling = .true.
@@ -2214,8 +2216,7 @@ do isb=1,nicas_blk%nsb
 end do
 
 ! Setup communications
-call nicas_blk%com_AB%setup(mpl,'com_AB',nicas_blk%nsa,nicas_blk%nsa,nicas_blk%nsb,nicas_blk%ns,nicas_blk%sa_to_s, &
- & nicas_blk%sa_to_s,nicas_blk%sb_to_s)
+call nicas_blk%com_AB%setup(mpl,'com_AB',nicas_blk%nsa,nicas_blk%nsb,nicas_blk%ns,nicas_blk%sa_to_s,nicas_blk%sb_to_s)
 
 ! Hash value
 do isa=1,nicas_blk%nsa
@@ -3468,10 +3469,9 @@ end if
 
 ! Setup communications
 s_to_proc = geom%c0_to_proc(nicas_blk%c1_to_c0(nicas_blk%s_to_c1))
-call nicas_blk%com_AC%setup(mpl,'com_AC',nicas_blk%nsa,nicas_blk%nsa,nicas_blk%nsc,nicas_blk%ns,nicas_blk%sa_to_s, &
- & nicas_blk%sa_to_s,nicas_blk%sc_to_s)
-if (.not.nicas_blk%smoother) call nicas_blk%com_AC_nor%setup(mpl,'com_AC_nor',nicas_blk%nsa,nicas_blk%nsa,nicas_blk%nsc_nor, &
- & nicas_blk%ns,nicas_blk%sa_to_s,nicas_blk%sa_to_s,nicas_blk%sc_nor_to_s)
+call nicas_blk%com_AC%setup(mpl,'com_AC',nicas_blk%nsa,nicas_blk%nsc,nicas_blk%ns,nicas_blk%sa_to_s,nicas_blk%sc_to_s)
+if (.not.nicas_blk%smoother) call nicas_blk%com_AC_nor%setup(mpl,'com_AC_nor',nicas_blk%nsa,nicas_blk%nsc_nor, &
+ & nicas_blk%ns,nicas_blk%sa_to_s,nicas_blk%sc_nor_to_s)
 
 ! Release memory
 if (.not.nicas_blk%smoother) deallocate(lcheck_sc_nor)
@@ -4007,9 +4007,8 @@ do its=2,nam%nts
 end do
 
 ! Setup communications
-call nicas_blk%com_AD%setup(mpl,'com_AD',geom%nc0a,geom%nc0a,nicas_blk%nc0d,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,c0d_to_c0)
-call nicas_blk%com_ADinv%setup(mpl,'com_ADinv',geom%nc0a,geom%nc0a,nicas_blk%nc0dinv,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0, &
- & c0dinv_to_c0)
+call nicas_blk%com_AD%setup(mpl,'com_AD',geom%nc0a,nicas_blk%nc0d,geom%nc0,geom%c0a_to_c0,c0d_to_c0)
+call nicas_blk%com_ADinv%setup(mpl,'com_ADinv',geom%nc0a,nicas_blk%nc0dinv,geom%nc0,geom%c0a_to_c0,c0dinv_to_c0)
 
 ! Print results
 write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc

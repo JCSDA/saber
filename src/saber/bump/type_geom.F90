@@ -9,7 +9,6 @@ module type_geom
 
 use atlas_module
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
-use netcdf
 use tools_atlas, only: field_to_fld
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
@@ -39,55 +38,46 @@ type geom_type
    logical,allocatable :: gmask_mga(:,:)          ! Geometry mask
    logical,allocatable :: smask_mga(:,:)          ! Sampling mask
 
+   ! Link between model grid and subset Sc0 on halo A
+   type(com_type) :: com_mg                       ! Communication between subset Sc0 and model grid
+
    ! Geometry data on model grid, global
    integer :: nmg                                 ! Number of model grid points
 
    ! Universe
    logical,allocatable :: myuniverse(:)           ! MPI tasks in the universe of the local task
 
-   ! Link between halo A and universe on model grid
-   integer,allocatable :: mga_to_mgu(:)           ! Halo A to universe on model grid
-   integer,allocatable :: mgu_to_mga(:)           ! Universe to halo A on model grid
-
-   ! Geometry data on subset Sc0, universe
-   integer :: nc0u                                ! Universe size for subset Sc0
-   integer,allocatable :: c0u_to_proc(:)          ! Task
-   real(kind_real),allocatable :: lon_c0u(:)      ! Longitudes
-   real(kind_real),allocatable :: lat_c0u(:)      ! Latitudes
-   real(kind_real),allocatable :: hash_c0u(:)     ! Longitudes/latitudes hash
-   real(kind_real),allocatable :: area_c0u(:)     ! Areas
-   real(kind_real),allocatable :: vunit_c0u(:,:)  ! Vertical unit
-   logical,allocatable :: gmask_c0u(:,:)          ! Geometry mask
-   logical,allocatable :: smask_c0u(:,:)          ! Sampling mask
-   logical,allocatable :: gmask_hor_c0u(:)        ! Union of horizontal geometry masks
-   real(kind_real),allocatable :: mdist_c0u(:,:)  ! Minimum distance to mask
-
-   ! Link between model grid and subset Sc0 on universe
-   integer,allocatable :: mgu_to_c0u(:)           ! Model grid to subset Sc0 on universe
-   integer,allocatable :: c0u_to_mgu(:)           ! Subset Sc0 to model grid on universe
-   logical :: same_grid                           ! Same grid and distribution flag
-
    ! Geometry data on subset Sc0, halo A
    integer :: nc0a                                ! Halo A size for subset Sc0
+   logical :: same_grid                           ! Same grid and distribution flag
    real(kind_real),allocatable :: lon_c0a(:)      ! Longitudes
    real(kind_real),allocatable :: lat_c0a(:)      ! Latitudes
    real(kind_real),allocatable :: hash_c0a(:)     ! Longitudes/latitudes hash
    real(kind_real),allocatable :: area_c0a(:)     ! Areas
    real(kind_real),allocatable :: vunit_c0a(:,:)  ! Vertical unit
    logical,allocatable :: gmask_c0a(:,:)          ! Geometry mask
-   logical,allocatable :: gmask_hor_c0a(:)        ! Union of horizontal geometry masks
    logical,allocatable :: smask_c0a(:,:)          ! Sampling mask
+   logical,allocatable :: gmask_hor_c0a(:)        ! Union of horizontal geometry masks
    real(kind_real),allocatable :: mdist_c0a(:,:)  ! Minimum distance to mask
 
-   ! Link between halo A and universe on subset Sc0
-   integer,allocatable :: c0a_to_c0u(:)           ! Halo A to universe on subset Sc0
-   integer,allocatable :: c0u_to_c0a(:)           ! Universe to halo A on subset Sc0
-   type(com_type) :: com_AU                       ! Communication between halo A and universe on subset Sc0
+   ! Geometry data on subset Sc0, universe
+   integer :: nc0u                                ! Universe size for subset Sc0
+   real(kind_real),allocatable :: lon_c0u(:)      ! Longitudes
+   real(kind_real),allocatable :: lat_c0u(:)      ! Latitudes
+   real(kind_real),allocatable :: vunit_c0u(:,:)  ! Vertical unit
+   logical,allocatable :: gmask_c0u(:,:)          ! Geometry mask
+   logical,allocatable :: gmask_hor_c0u(:)        ! Union of horizontal geometry masks
+   real(kind_real),allocatable :: mdist_c0u(:,:)  ! Minimum distance to mask
 
    ! Geometry data on subset Sc0, global
    integer :: nc0                                 ! Number of subset Sc0 points
    integer,allocatable :: c0_to_proc(:)           ! Subset Sc0, global, to processor
    integer,allocatable :: proc_to_c0_offset(:)    ! Processor to offset on subset Sc0
+
+   ! Link between halo A and universe on subset Sc0
+   integer,allocatable :: c0a_to_c0u(:)           ! Halo A to universe on subset Sc0
+   integer,allocatable :: c0u_to_c0a(:)           ! Universe to halo A on subset Sc0
+   type(com_type) :: com_AU                       ! Communication between halo A and universe on subset Sc0
 
    ! Link between halo A and global on subset Sc0
    integer,allocatable :: c0_to_c0a(:)            ! Subset Sc0, global to halo A
@@ -96,9 +86,6 @@ type geom_type
    ! Link between universe and global on subset Sc0 TODO: remove that
    integer,allocatable :: c0_to_c0u(:)            ! Subset Sc0, global to universe
    integer,allocatable :: c0u_to_c0(:)            ! Subset Sc0, universe to global
-
-   ! Link between model grid and subset Sc0 on halo A
-   type(com_type) :: com_mg                       ! Communication between subset Sc0 and model grid
 
    ! Number of levels
    integer :: nl0                                 ! Number of levels in subset Sl0
@@ -137,13 +124,11 @@ contains
    procedure :: setup => geom_setup
    procedure :: from_atlas => geom_from_atlas
    procedure :: define_universe => geom_define_universe
-   procedure :: setup_universe => geom_setup_universe
-   procedure :: setup_local => geom_setup_local
+   procedure :: setup_c0 => geom_setup_c0
    procedure :: setup_independent_levels => geom_setup_independent_levels
    procedure :: setup_mask_distance => geom_setup_mask_distance
    procedure :: setup_mask_check => geom_setup_mask_check
    procedure :: index_from_lonlat => geom_index_from_lonlat
-!   procedure :: remap => geom_remap
    procedure :: define_dirac => geom_define_dirac
    procedure :: check_arc => geom_check_arc
    procedure :: copy_c0a_to_mga => geom_copy_c0a_to_mga
@@ -151,10 +136,9 @@ contains
    procedure :: geom_copy_mga_to_c0a_logical
    generic :: copy_mga_to_c0a => geom_copy_mga_to_c0a_real,geom_copy_mga_to_c0a_logical
    procedure :: compute_deltas => geom_compute_deltas
+   procedure :: rand_level => geom_rand_level
    procedure :: rand_point => geom_rand_point
 end type geom_type
-
-character(len=1024),parameter :: metis_partgraph = 'kway'
 
 private
 public :: geom_type
@@ -236,11 +220,8 @@ end if
 ! Define universe
 call geom%define_universe(mpl,nam)
 
-! Setup universe
-call geom%setup_universe(mpl)
-
-! Setup local distribution and communications
-call geom%setup_local(mpl)
+! Setup subset Sc0
+call geom%setup_c0(mpl)
 
 ! Allocation
 call geom%mesh%alloc(geom%nc0u)
@@ -308,10 +289,10 @@ do il0=1,geom%nl0
    write(mpl%info,'(a10,a,i3,a,e10.3,a)') '','Level ',nam%levs(il0),' ~> ',geom%vunitavg(il0),' vert. unit'
    call mpl%flush
 end do
-write(mpl%info,'(a10,a)') '','Distribution summary:'
+write(mpl%info,'(a7,a)') '','Distribution summary:'
 call mpl%flush
 do iproc=1,mpl%nproc
-   write(mpl%info,'(a13,a,i4,a,i8)') '','Task ',iproc,': ',count(geom%c0_to_proc==iproc)
+   write(mpl%info,'(a10,a,i4,a,i8)') '','Task ',iproc,': ',count(geom%c0_to_proc==iproc)
    call mpl%flush
 end do
 
@@ -429,7 +410,7 @@ if (present(afieldset)) then
       afield = afieldset%field('area')
       allocate(area_mga(geom%nmga,1))
       call field_to_fld(mpl,afield,area_mga)
-      geom%area_mga = area_mga(:,1)
+      geom%area_mga = area_mga(:,1)/req**2
       deallocate(area_mga)
       call afield%final()
    end if
@@ -524,10 +505,10 @@ call mpl%flush
 end subroutine geom_define_universe
 
 !----------------------------------------------------------------------
-! Subroutine: geom_setup_universe
-! Purpose: setup geometry on universe
+! Subroutine: geom_setup_c0
+! Purpose: setup subset Sc0
 !----------------------------------------------------------------------
-subroutine geom_setup_universe(geom,mpl)
+subroutine geom_setup_c0(geom,mpl)
 
 implicit none
 
@@ -536,11 +517,14 @@ class(geom_type),intent(inout) :: geom ! Geometry
 type(mpl_type),intent(inout) :: mpl    ! MPI data
 
 ! Local variables
-integer :: nmgu,iproc,img,imga,imgu,ic0u,diff_grid,diff_grid_tot,il0
-integer :: proc_to_nmga(mpl%nproc)
-integer,allocatable :: mga_to_mg(:),mgu_to_mg(:),mgu_to_proc(:),redundant(:),order(:)
-real(kind_real),allocatable :: lon_mgu(:),lat_mgu(:),area_mgu(:),vunit_mgu(:,:),list(:)
-logical,allocatable :: gmask_mgu(:,:),smask_mgu(:,:),mask_hor_mgu(:)
+integer :: nmgu,iproc,img,imga,imgu,ic0a,ic0u,ic0,diff_grid,diff_grid_tot,il0,nr,nra,ir,ira
+integer :: proc_to_nmga(mpl%nproc),proc_to_nc0a(mpl%nproc),proc_to_nra(mpl%nproc)
+integer :: mga_to_mg(geom%nmga),mga_to_mgu(geom%nmga),mga_to_c0(geom%nmga),nc0_gmask(0:geom%nl0)
+integer,allocatable :: mgu_to_mg(:),redundant(:),order(:)
+integer,allocatable :: ra_to_r(:),r_to_c0(:),r_to_c0_tot(:)
+real(kind_real) :: hash_mga(geom%nmga)
+real(kind_real) :: areasum(geom%nl0),vunitsum(geom%nl0),vunitsum_tot(geom%nl0),norm(geom%nl0),norm_tot(geom%nl0)
+real(kind_real),allocatable :: hash_mgu(:),r_to_hash(:),r_to_hash_tot(:)
 type(com_type) :: com_AU
 
 ! Communication
@@ -551,17 +535,10 @@ geom%nmg = sum(proc_to_nmga)
 nmgu = sum(proc_to_nmga,mask=geom%myuniverse)
 
 ! Allocation
-allocate(mga_to_mg(geom%nmga))
-allocate(geom%mga_to_mgu(geom%nmga))
-allocate(geom%mgu_to_mga(nmgu))
 allocate(mgu_to_mg(nmgu))
-allocate(mgu_to_proc(nmgu))
-allocate(lon_mgu(nmgu))
-allocate(lat_mgu(nmgu))
-allocate(area_mgu(nmgu))
-allocate(vunit_mgu(nmgu,geom%nl0))
-allocate(gmask_mgu(nmgu,geom%nl0))
-allocate(smask_mgu(nmgu,geom%nl0))
+allocate(hash_mgu(nmgu))
+allocate(order(nmgu))
+allocate(redundant(nmgu))
 
 ! Model grid conversions
 img = 0
@@ -572,55 +549,36 @@ do iproc=1,mpl%nproc
       if (iproc==mpl%myproc) mga_to_mg(imga) = img
       if (geom%myuniverse(iproc)) then
          imgu = imgu+1
-         if (iproc==mpl%myproc) geom%mga_to_mgu(imga) = imgu
-         geom%mgu_to_mga(imgu) = imga
+         if (iproc==mpl%myproc) mga_to_mgu(imga) = imgu
          mgu_to_mg(imgu) = img
-         mgu_to_proc(imgu) = iproc
       end if
    end do
 end do
 
 ! Setup model grid communication, local to universe
-call com_AU%setup(mpl,'com_AU',geom%nmga,geom%nmga,nmgu,geom%nmg,mga_to_mg,mga_to_mg,mgu_to_mg)
+call com_AU%setup(mpl,'com_AU',geom%nmga,nmgu,geom%nmg,mga_to_mg,mgu_to_mg)
 
-! Extend model grid, halo A to universe
-call com_AU%ext(mpl,geom%lon_mga,lon_mgu)
-call com_AU%ext(mpl,geom%lat_mga,lat_mgu)
-call com_AU%ext(mpl,geom%area_mga,area_mgu)
-call com_AU%ext(mpl,geom%nl0,geom%vunit_mga,vunit_mgu)
-call com_AU%ext(mpl,geom%nl0,geom%gmask_mga,gmask_mgu)
-call com_AU%ext(mpl,geom%nl0,geom%smask_mga,smask_mgu)
+! Compute hash
+do imga=1,geom%nmga
+   hash_mga(imga) = lonlathash(geom%lon_mga(imga),geom%lat_mga(imga))
+end do
 
-! Deallocate memory
-deallocate(geom%lon_mga)
-deallocate(geom%lat_mga)
-deallocate(geom%area_mga)
-deallocate(geom%vunit_mga)
-deallocate(geom%gmask_mga)
-deallocate(geom%smask_mga)
-
-! Allocation
-allocate(list(nmgu))
-allocate(order(nmgu))
-allocate(redundant(nmgu))
-allocate(mask_hor_mgu(nmgu))
-
-! Initialization
-redundant = mpl%msv%vali
+! Extend hash on model grid, halo A to universe
+call com_AU%ext(mpl,hash_mga,hash_mgu)
 
 ! Look for redundant points
 write(mpl%info,'(a7,a)') '','Look for redundant points in the model grid'
 call mpl%flush
 
+! Initialization
+redundant = mpl%msv%vali
+
 ! Define points order
-do imgu=1,nmgu
-   list(imgu) = lonlathash(lon_mgu(imgu),lat_mgu(imgu))
-end do
-call qsort(nmgu,list,order)
+call qsort(nmgu,hash_mgu,order)
 
 ! Look for redundant points
 do imgu=2,nmgu
-   if (eq(list(imgu-1),list(imgu))) redundant(order(imgu)) = order(imgu-1)
+   if (eq(hash_mgu(imgu-1),hash_mgu(imgu))) redundant(order(imgu)) = order(imgu-1)
 end do
 
 ! Check for successive redundant points
@@ -632,14 +590,15 @@ do imgu=1,nmgu
    end if
 end do
 
-! Horizontal model grid mask
-mask_hor_mgu = mpl%msv%is(redundant)
-
-! Count subset Sc0 points on universe
-geom%nc0u = count(mask_hor_mgu)
+! Count points for subset Sc0, halo A
+geom%nc0a = 0
+do imga=1,geom%nmga
+   imgu = mga_to_mgu(imga)
+   if (mpl%msv%is(redundant(imgu))) geom%nc0a = geom%nc0a+1
+end do
 
 ! Check grid similarity
-if (geom%nc0u==nmgu) then
+if (geom%nc0a==geom%nmga) then
    diff_grid = 0
 else
    diff_grid = 1
@@ -647,174 +606,17 @@ end if
 call mpl%f_comm%allreduce(diff_grid,diff_grid_tot,fckit_mpi_sum())
 geom%same_grid = (diff_grid_tot==0)
 
-! Allocation
-allocate(geom%mgu_to_c0u(nmgu))
-allocate(geom%c0u_to_mgu(geom%nc0u))
-
-! Initialization
-geom%mgu_to_c0u = mpl%msv%vali
-
-! Conversion
-ic0u = 0
-do imgu=1,nmgu
-   if (mask_hor_mgu(imgu)) then
-      ic0u = ic0u+1
-      geom%mgu_to_c0u(imgu) = ic0u
-      geom%c0u_to_mgu(ic0u) = imgu
-   end if
-end do
-
-! Deal with successive redundant points
-do imgu=1,nmgu
-   if (mpl%msv%isnot(redundant(imgu))) geom%mgu_to_c0u(imgu) = geom%mgu_to_c0u(redundant(imgu))
-end do
-
-! Deal with mask on redundant points
-do il0=1,geom%nl0
-   do imgu=1,nmgu
-      if (mpl%msv%isnot(redundant(imgu))) gmask_mgu(imgu,il0) = gmask_mgu(imgu,il0).or.gmask_mgu(redundant(imgu),il0)
-   end do
-end do
-
-! Allocation
-allocate(geom%lon_c0u(geom%nc0u))
-allocate(geom%lat_c0u(geom%nc0u))
-allocate(geom%hash_c0u(geom%nc0u))
-allocate(geom%area_c0u(geom%nl0))
-allocate(geom%vunit_c0u(geom%nc0u,geom%nl0))
-allocate(geom%gmask_c0u(geom%nc0u,geom%nl0))
-allocate(geom%smask_c0u(geom%nc0u,geom%nl0))
-allocate(geom%gmask_hor_c0u(geom%nc0u))
-allocate(geom%c0u_to_proc(geom%nc0u))
-
-! Remove redundant points
-geom%lon_c0u = lon_mgu(geom%c0u_to_mgu)
-geom%lat_c0u = lat_mgu(geom%c0u_to_mgu)
-geom%area_c0u = area_mgu(geom%c0u_to_mgu)/req**2
-geom%vunit_c0u = vunit_mgu(geom%c0u_to_mgu,:)
-geom%gmask_c0u = gmask_mgu(geom%c0u_to_mgu,:)
-geom%smask_c0u = smask_mgu(geom%c0u_to_mgu,:)
-geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
-
-! Hash function
-do ic0u=1,geom%nc0u
-   geom%hash_c0u(ic0u) = lonlathash(geom%lon_c0u(ic0u),geom%lat_c0u(ic0u))
-end do
-
-! Local distribution
-do ic0u=1,geom%nc0u
-   imgu = geom%c0u_to_mgu(ic0u)
-   iproc = mgu_to_proc(imgu)
-   geom%c0u_to_proc(ic0u) = iproc
-end do
-
-! Release memory
-deallocate(mga_to_mg)
-deallocate(mgu_to_mg)
-deallocate(mgu_to_proc)
-deallocate(lon_mgu)
-deallocate(lat_mgu)
-deallocate(area_mgu)
-deallocate(vunit_mgu)
-deallocate(gmask_mgu)
-deallocate(smask_mgu)
-deallocate(redundant)
-deallocate(mask_hor_mgu)
-deallocate(list)
-deallocate(order)
-
-end subroutine geom_setup_universe
-
-!----------------------------------------------------------------------
-! Subroutine: geom_setup_local
-! Purpose: setup geometry on local task
-!----------------------------------------------------------------------
-subroutine geom_setup_local(geom,mpl)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom ! Geometry
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-
-! Local variables
-integer :: ic0,ic0a,ic0u,iproc,imga,imgu,il0
-integer :: proc_to_nc0a(mpl%nproc),ic0a_arr(mpl%nproc),nc0_gmask(0:geom%nl0),norm(geom%nl0),norm_tot(geom%nl0)
-integer,allocatable :: mga_to_c0(:)
-real(kind_real) :: areasum(geom%nl0),vunitsum(geom%nl0),vunitsum_tot(geom%nl0)
-
-! Number of points on subset Sc0, halo A
-geom%nc0a = count(geom%c0u_to_proc==mpl%myproc)
-
 ! Communication
 call mpl%f_comm%allgather(geom%nc0a,proc_to_nc0a)
-
-! Allocation
-allocate(geom%proc_to_c0_offset(mpl%nproc))
-
-! Subset Sc0 offset for halo A
-geom%proc_to_c0_offset(1) = 0
-do iproc=2,mpl%nproc
-   geom%proc_to_c0_offset(iproc) = geom%proc_to_c0_offset(iproc-1)+proc_to_nc0a(iproc-1)
-end do
 
 ! Subset Sc0 global size
 geom%nc0 = sum(proc_to_nc0a)
 
 ! Allocation
-allocate(geom%c0a_to_c0u(geom%nc0a))
-allocate(geom%c0u_to_c0a(geom%nc0u))
-allocate(geom%c0_to_c0u(geom%nc0))
-allocate(geom%c0u_to_c0(geom%nc0u))
+allocate(geom%proc_to_c0_offset(mpl%nproc))
 allocate(geom%c0a_to_c0(geom%nc0a))
-allocate(geom%c0_to_c0a(geom%nc0))
-allocate(geom%c0_to_proc(geom%nc0))
-allocate(mga_to_c0(geom%nmga))
-
-! Subset Sc0 conversions
-geom%c0u_to_c0a = mpl%msv%vali
-geom%c0_to_c0u = mpl%msv%vali
-ic0a_arr = 0
-do ic0u=1,geom%nc0u
-   ! Get task
-   iproc = geom%c0u_to_proc(ic0u)
-
-   ! Update local index
-   ic0a_arr(iproc) = ic0a_arr(iproc)+1
-
-   ! Global index
-   ic0 = geom%proc_to_c0_offset(iproc)+ic0a_arr(iproc)
-
-   ! Conversions between local and universe
-   if (iproc==mpl%myproc) geom%c0a_to_c0u(ic0a_arr(iproc)) = ic0u
-   geom%c0u_to_c0a(ic0u) = ic0a_arr(iproc)
-
-   ! Conversions between global and universe
-   geom%c0_to_c0u(ic0) = ic0u
-   geom%c0u_to_c0(ic0) = ic0
-
-   ! Conversions between global and local
-   if (iproc==mpl%myproc) geom%c0a_to_c0(ic0a_arr(iproc)) = ic0
-   geom%c0_to_c0a(ic0) = ic0a_arr(iproc)
-   geom%c0_to_proc(ic0) = iproc
-end do
-
-! Other conversions
-do imga=1,geom%nmga
-   imgu = geom%mga_to_mgu(imga)
-   ic0u = geom%mgu_to_c0u(imgu)
-   ic0a = geom%c0u_to_c0a(ic0u)
-   ic0 = geom%c0a_to_c0(ic0a)
-   mga_to_c0(imga) = ic0
-end do
-
-! Setup subset Sc0 communication, local to universe
-call geom%com_AU%setup(mpl,'com_AU',geom%nc0a,geom%nc0a,geom%nc0u,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,geom%c0u_to_c0)
-
-! Setup redundant points communication
-call geom%com_mg%setup(mpl,'com_mg',geom%nc0a,geom%nc0a,geom%nmga,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,mga_to_c0)
-
-! Allocation
+allocate(geom%c0_to_c0a(geom%nc0)) ! TODO should be a function
+allocate(geom%c0_to_proc(geom%nc0))  ! TODO should be a function
 allocate(geom%lon_c0a(geom%nc0a))
 allocate(geom%lat_c0a(geom%nc0a))
 allocate(geom%hash_c0a(geom%nc0a))
@@ -827,15 +629,123 @@ allocate(geom%nc0_gmask(0:geom%nl0))
 allocate(geom%area(geom%nl0))
 allocate(geom%vunitavg(geom%nl0))
 
-! Define fields on halo A
-geom%lon_c0a = geom%lon_c0u(geom%c0a_to_c0u)
-geom%lat_c0a = geom%lat_c0u(geom%c0a_to_c0u)
-geom%hash_c0a = geom%hash_c0u(geom%c0a_to_c0u)
-geom%area_c0a = geom%area_c0u(geom%c0a_to_c0u)
-geom%vunit_c0a = geom%vunit_c0u(geom%c0a_to_c0u,:)
-geom%gmask_c0a = geom%gmask_c0u(geom%c0a_to_c0u,:)
-geom%smask_c0a = geom%smask_c0u(geom%c0a_to_c0u,:)
-geom%gmask_hor_c0a = geom%gmask_hor_c0u(geom%c0a_to_c0u)
+! Subset Sc0 offset for halo A
+geom%proc_to_c0_offset(1) = 0
+do iproc=2,mpl%nproc
+   geom%proc_to_c0_offset(iproc) = geom%proc_to_c0_offset(iproc-1)+proc_to_nc0a(iproc-1)
+end do
+do iproc=1,mpl%nproc
+   geom%c0_to_proc(geom%proc_to_c0_offset(iproc)+1:geom%proc_to_c0_offset(iproc)+proc_to_nc0a(iproc)) = iproc
+end do
+
+! Conversions
+mga_to_c0 = mpl%msv%vali
+ic0a = 0
+nra = 0
+do imga=1,geom%nmga
+   imgu = mga_to_mgu(imga)
+   if (mpl%msv%is(redundant(imgu))) then
+      ! Valid Sc0 point
+      ic0a = ic0a+1
+      ic0 = geom%proc_to_c0_offset(mpl%myproc)+ic0a
+      geom%c0a_to_c0(ic0a) = ic0
+      geom%c0_to_c0a(ic0) = ic0a
+   else
+      ! Redundant point
+      nra = nra+1
+   end if
+end do
+
+! Communication
+call mpl%f_comm%allgather(nra,proc_to_nra)
+
+! Global number of redundant points
+nr = sum(proc_to_nra)
+
+! Allocation
+allocate(ra_to_r(nra))
+allocate(r_to_hash(nr))
+allocate(r_to_hash_tot(nr))
+allocate(r_to_c0(nr))
+allocate(r_to_c0_tot(nr))
+
+! Conversion
+ir = 0
+do iproc=1,mpl%nproc
+   do ira=1,proc_to_nra(iproc)
+      ir = ir+1
+      if (iproc==mpl%myproc) ra_to_r(ira) = ir
+   end do
+end do
+
+! Copy hash of redundant points
+r_to_hash = 0.0
+ira = 0
+do imga=1,geom%nmga
+   imgu = mga_to_mgu(imga)
+   if (mpl%msv%isnot(redundant(imgu))) then
+      ira = ira+1
+      ir = ra_to_r(ira)
+      r_to_hash(ir) = hash_mga(imga)
+   end if
+end do
+
+! Communication
+call mpl%f_comm%allreduce(r_to_hash,r_to_hash_tot,fckit_mpi_sum())
+
+! Find Sc0 point from hash for each redundant point
+r_to_c0 = 0
+ic0a = 0
+do imga=1,geom%nmga
+   imgu = mga_to_mgu(imga)
+   if (mpl%msv%is(redundant(imgu))) then
+      ic0a = ic0a+1
+      do ir=1,nr
+         if (eq(hash_mga(imga),r_to_hash_tot(ir))) then
+            ic0 = geom%c0a_to_c0(ic0a)
+            r_to_c0(ir) = ic0
+         end if
+      end do
+   end if
+end do
+
+! Communication
+call mpl%f_comm%allreduce(r_to_c0,r_to_c0_tot,fckit_mpi_sum())
+
+! Conversion
+ic0a = 0
+ira = 0
+do imga=1,geom%nmga
+   imgu = mga_to_mgu(imga)
+   if (mpl%msv%is(redundant(imgu))) then
+      ! Valid Sc0 point
+      ic0a = ic0a+1
+      ic0 = geom%c0a_to_c0(ic0a)
+   else
+      ! Redundant point
+      ira = ira+1
+      ir = ra_to_r(ira)
+      ic0 = r_to_c0_tot(ir)      
+   end if
+   mga_to_c0(imga) = ic0
+end do
+
+
+
+! Setup redundant points communication
+call geom%com_mg%setup(mpl,'com_mg',geom%nc0a,geom%nmga,geom%nc0,geom%c0a_to_c0,mga_to_c0)
+
+! Reduce fields from model grid to subset Sc0 on halo A
+call geom%com_mg%red(mpl,geom%lon_mga,geom%lon_c0a,.true.)
+call geom%com_mg%red(mpl,geom%lat_mga,geom%lat_c0a,.true.)
+call geom%com_mg%red(mpl,hash_mga,geom%hash_c0a,.true.)
+call geom%com_mg%red(mpl,geom%area_mga,geom%area_c0a,.true.)
+call geom%com_mg%red(mpl,geom%nl0,geom%vunit_mga,geom%vunit_c0a,.true.)
+call geom%com_mg%red(mpl,geom%nl0,geom%gmask_mga,geom%gmask_c0a)
+call geom%com_mg%red(mpl,geom%nl0,geom%smask_mga,geom%smask_c0a)
+
+! Related fields
+geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
 nc0_gmask(0) = count(geom%gmask_hor_c0a)
 nc0_gmask(1:geom%nl0) = count(geom%gmask_c0a,dim=1)
 call mpl%f_comm%allreduce(nc0_gmask,geom%nc0_gmask,fckit_mpi_sum())
@@ -859,10 +769,61 @@ do il0=1,geom%nl0
    end if
 end do
 
-! Release memory
-deallocate(mga_to_c0)
+! Deallocate memory
+deallocate(geom%lon_mga)
+deallocate(geom%lat_mga)
+deallocate(geom%area_mga)
+deallocate(geom%vunit_mga)
+deallocate(geom%gmask_mga)
+deallocate(geom%smask_mga)
+deallocate(mgu_to_mg)
+deallocate(hash_mgu)
+deallocate(order)
+deallocate(redundant)
 
-end subroutine geom_setup_local
+! Subset Sc0 universe size
+geom%nc0u = sum(proc_to_nc0a,mask=geom%myuniverse)
+
+! Allocation
+allocate(geom%c0a_to_c0u(geom%nc0a))
+allocate(geom%c0u_to_c0a(geom%nc0u))
+allocate(geom%c0_to_c0u(geom%nc0))
+allocate(geom%c0u_to_c0(geom%nc0u))
+allocate(geom%lon_c0u(geom%nc0u))
+allocate(geom%lat_c0u(geom%nc0u))
+allocate(geom%vunit_c0u(geom%nc0u,geom%nl0))
+allocate(geom%gmask_c0u(geom%nc0u,geom%nl0))
+allocate(geom%gmask_hor_c0u(geom%nc0u))
+
+! Conversions
+geom%c0u_to_c0a = mpl%msv%vali
+geom%c0_to_c0u = mpl%msv%vali
+ic0u = 0
+do ic0=1,geom%nc0
+   iproc = geom%c0_to_proc(ic0)
+   if (geom%myuniverse(iproc)) then
+      ic0u = ic0u+1
+      if (iproc==mpl%myproc) then
+         ic0a = geom%c0_to_c0a(ic0)
+         geom%c0a_to_c0u(ic0a) = ic0u
+         geom%c0u_to_c0a(ic0u) = ic0a
+      end if
+      geom%c0_to_c0u(ic0) = ic0u
+      geom%c0u_to_c0(ic0u) = ic0
+   end if
+end do
+
+! Setup subset Sc0 communication, local to universe
+call geom%com_AU%setup(mpl,'com_AU',geom%nc0a,geom%nc0u,geom%nc0,geom%c0a_to_c0,geom%c0u_to_c0)
+
+! Extend fields from halo A to universe on subset Sc0
+call geom%com_AU%ext(mpl,geom%lon_c0a,geom%lon_c0u)
+call geom%com_AU%ext(mpl,geom%lat_c0a,geom%lat_c0u)
+call geom%com_AU%ext(mpl,geom%nl0,geom%vunit_c0a,geom%vunit_c0u)
+call geom%com_AU%ext(mpl,geom%nl0,geom%gmask_c0a,geom%gmask_c0u)
+geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
+
+end subroutine geom_setup_c0
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_setup_independent_levels
@@ -1092,14 +1053,15 @@ integer,intent(out) :: ic0a         ! Local index
 logical,intent(out) :: gmask        ! Local mask
 
 ! Local variables
-integer :: nn_index(1),nn_proc,proc_to_nn_proc(mpl%nproc),jproc,ic0u
+integer :: nn_index(1),ic0,nn_proc,proc_to_nn_proc(mpl%nproc),jproc,ic0u
 real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
 logical :: valid
 character(len=1024),parameter :: subr = 'geom_index_from_lonlat'
 
 ! Find nearest neighbor
 call geom%tree%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
-nn_proc = geom%c0u_to_proc(nn_index(1))
+ic0 = geom%c0u_to_c0(nn_index(1))
+nn_proc = geom%c0_to_proc(ic0)
 
 ! Communication
 call mpl%f_comm%allgather(nn_dist(1),proc_to_nn_dist)
@@ -1393,8 +1355,33 @@ dz = real(geom%vunit_c0u(ic0u,jl0)-geom%vunit_c0u(ic0u,il0),kind_real)
 end subroutine geom_compute_deltas
 
 !----------------------------------------------------------------------
+! Subroutine: geom_rand_level
+! Purpose: select random level
+!----------------------------------------------------------------------
+subroutine geom_rand_level(geom,mpl,rng,il0)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom ! Geometry
+type(mpl_type),intent(inout) :: mpl ! MPI data
+type(rng_type),intent(inout) :: rng ! Random number generator
+integer,intent(out) :: il0           ! Level
+
+! Resynchronize random number generator
+call rng%resync(mpl)
+
+! Generate random level
+call rng%rand_integer(1,geom%nl0,il0)
+
+! Desynchronize random number generator
+call rng%desync(mpl)
+
+end subroutine geom_rand_level
+
+!----------------------------------------------------------------------
 ! Subroutine: geom_rand_point
-! Purpose: select random point on the grid
+! Purpose: select random valid point on the horizontal grid
 !----------------------------------------------------------------------
 subroutine geom_rand_point(geom,mpl,rng,il0,iproc,ic0a,nr)
 

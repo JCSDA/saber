@@ -313,7 +313,7 @@ do i_s=1,obsop%h%n_s
 end do
 
 ! Setup communications
-call obsop%com%setup(mpl,'com',geom%nc0a,geom%nc0a,obsop%nc0b,geom%nc0,geom%c0a_to_c0,geom%c0a_to_c0,c0b_to_c0)
+call obsop%com%setup(mpl,'com',geom%nc0a,obsop%nc0b,geom%nc0,geom%c0a_to_c0,c0b_to_c0)
 
 ! Compute scores, only if there observations present globally
 if ( nobs_eff > 0 ) then
