@@ -131,7 +131,7 @@ type samp_type
    type(com_type) :: com_AC                         ! Communication between halos A and C
    type(com_type) :: com_AD                         ! Communication between halos A and D (diagnostic)
    type(com_type) :: com_AE                         ! Communication between halos A and E (vertical balance)
-   type(com_type) :: com_AU                         ! Communication between halo A and universe on subset Sc0
+   type(com_type) :: com_AU                         ! Communication between halo A and universe on subset Sc2
 contains
    procedure :: samp_alloc_mask
    procedure :: samp_alloc_other
@@ -1728,7 +1728,7 @@ end do
 ! Release memory
 call tree%dealloc
 
-! Setup subset Sc0 communication, local to universe
+! Setup subset Sc2 communication, local to universe
 call samp%com_AU%setup(mpl,'com_AU',samp%nc2a,samp%nc2u,nam%nc2,samp%c2a_to_c2,samp%c2u_to_c2)
 
 ! Print results
