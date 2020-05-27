@@ -135,10 +135,11 @@ type nicas_blk_type
    type(balldata_type),allocatable :: distnorm(:)  ! Normalized distance
    type(balldata_type),allocatable :: Hcoef(:)     ! Tensor coefficient on subset Sc1
 
-   ! Extended data for normalization computation
+   ! Normalization
    type(linop_type) :: c_nor                       ! Convolution (extended for normalization)
    real(kind_real),allocatable :: inorm_nor(:)     ! Internal normalization factor (extended for normalization)
    type(com_type) :: com_AC_nor                    ! Communication between halos A and C (extended for normalization)
+   real(kind_real),allocatable :: smoother_norm(:) ! Smoother normalization
 
    ! Tree
    type(tree_type) :: tree                         ! Tree
@@ -197,7 +198,6 @@ type nicas_blk_type
 
    ! Smoother data
    logical :: smoother                             ! Smoother flag
-   real(kind_real),allocatable :: smoother_norm(:) ! Smoother norm
 
    ! Required data to write grids
    real(kind_real),allocatable :: lon_sa(:)        ! Subgrid, halo A longitudes
@@ -352,10 +352,55 @@ class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
 integer :: isbb
 
 ! Release memory
-
-
-
-
+if (allocated(nicas_blk%c1u_to_c1)) deallocate(nicas_blk%c1u_to_c1)
+if (allocated(nicas_blk%c1_to_c1u)) deallocate(nicas_blk%c1_to_c1u)
+if (allocated(nicas_blk%lon_c1u)) deallocate(nicas_blk%lon_c1u)
+if (allocated(nicas_blk%lat_c1u)) deallocate(nicas_blk%lat_c1u)
+if (allocated(nicas_blk%vunit_c1u)) deallocate(nicas_blk%vunit_c1u)
+if (allocated(nicas_blk%gmask_c1u)) deallocate(nicas_blk%gmask_c1u)
+if (allocated(nicas_blk%gmask_hor_c1u)) deallocate(nicas_blk%gmask_hor_c1u)
+if (allocated(nicas_blk%lon_c1a)) deallocate(nicas_blk%lon_c1a)
+if (allocated(nicas_blk%lat_c1a)) deallocate(nicas_blk%lat_c1a)
+if (allocated(nicas_blk%gmask_c1a)) deallocate(nicas_blk%gmask_c1a)
+if (allocated(nicas_blk%gmask_hor_c1a)) deallocate(nicas_blk%gmask_hor_c1a)
+if (allocated(nicas_blk%c1a_to_c1)) deallocate(nicas_blk%c1a_to_c1)
+if (allocated(nicas_blk%c1u_to_c1a)) deallocate(nicas_blk%c1u_to_c1a)
+if (allocated(nicas_blk%c1b_to_c1u)) deallocate(nicas_blk%c1b_to_c1u)
+if (allocated(nicas_blk%c1u_to_c1b)) deallocate(nicas_blk%c1u_to_c1b)
+if (allocated(nicas_blk%c1u_to_c1bb)) deallocate(nicas_blk%c1u_to_c1bb)
+if (allocated(nicas_blk%c1bb_to_c1u)) deallocate(nicas_blk%c1bb_to_c1u)
+call nicas_blk%com_AU%dealloc
+if (allocated(nicas_blk%c1_to_c0)) deallocate(nicas_blk%c1_to_c0)
+if (allocated(nicas_blk%c1a_to_c0a)) deallocate(nicas_blk%c1a_to_c0a)
+if (allocated(nicas_blk%nc2)) deallocate(nicas_blk%nc2)
+if (allocated(nicas_blk%nc2u)) deallocate(nicas_blk%nc2u)
+if (allocated(nicas_blk%gmask_c2u)) deallocate(nicas_blk%gmask_c2u)
+if (allocated(nicas_blk%su_to_s)) deallocate(nicas_blk%su_to_s)
+if (allocated(nicas_blk%su_to_sb)) deallocate(nicas_blk%su_to_sb)
+if (allocated(nicas_blk%sb_to_su)) deallocate(nicas_blk%sb_to_su)
+if (allocated(nicas_blk%lcheck_sa)) deallocate(nicas_blk%lcheck_sa)
+if (allocated(nicas_blk%sa_to_su)) deallocate(nicas_blk%sa_to_su)
+if (allocated(nicas_blk%lcheck_sb)) deallocate(nicas_blk%lcheck_sb)
+if (allocated(nicas_blk%sbb_to_su)) deallocate(nicas_blk%sbb_to_su)
+if (allocated(nicas_blk%sc_to_su)) deallocate(nicas_blk%sc_to_su)
+if (allocated(nicas_blk%sa_to_sc_nor)) deallocate(nicas_blk%sa_to_sc_nor)
+if (allocated(nicas_blk%sb_to_sc_nor)) deallocate(nicas_blk%sb_to_sc_nor)
+if (allocated(nicas_blk%su_to_c1u)) deallocate(nicas_blk%su_to_c1u)
+if (allocated(nicas_blk%su_to_l1)) deallocate(nicas_blk%su_to_l1)
+if (allocated(nicas_blk%c1ul1_to_su)) deallocate(nicas_blk%c1ul1_to_su)
+if (allocated(nicas_blk%c1bl1_to_sb)) deallocate(nicas_blk%c1bl1_to_sb)
+if (allocated(nicas_blk%slev)) deallocate(nicas_blk%slev)
+if (allocated(nicas_blk%vbot)) deallocate(nicas_blk%vbot)
+if (allocated(nicas_blk%vtop)) deallocate(nicas_blk%vtop)
+if (allocated(nicas_blk%l1_to_l0)) deallocate(nicas_blk%l1_to_l0)
+if (allocated(nicas_blk%l0_to_l1)) deallocate(nicas_blk%l0_to_l1)
+if (allocated(nicas_blk%rhs_avg)) deallocate(nicas_blk%rhs_avg)
+if (allocated(nicas_blk%rh_c1u)) deallocate(nicas_blk%rh_c1u)
+if (allocated(nicas_blk%rv_c1u)) deallocate(nicas_blk%rv_c1u)
+if (allocated(nicas_blk%H11_c1u)) deallocate(nicas_blk%H11_c1u)
+if (allocated(nicas_blk%H22_c1u)) deallocate(nicas_blk%H22_c1u)
+if (allocated(nicas_blk%H33_c1u)) deallocate(nicas_blk%H33_c1u)
+if (allocated(nicas_blk%H12_c1u)) deallocate(nicas_blk%H12_c1u)
 if (allocated(nicas_blk%distnorm)) then
    do isbb=1,nicas_blk%nsbb
       call nicas_blk%distnorm(isbb)%dealloc
@@ -368,11 +413,11 @@ if (allocated(nicas_blk%Hcoef)) then
    end do
    deallocate(nicas_blk%Hcoef)
 end if
-if (allocated(nicas_blk%smoother_norm)) deallocate(nicas_blk%smoother_norm)
 call nicas_blk%c_nor%dealloc
+if (allocated(nicas_blk%inorm_nor)) deallocate(nicas_blk%inorm_nor)
 call nicas_blk%com_AC_nor%dealloc
 call nicas_blk%tree%dealloc
-call nicas_blk%com_AU%dealloc
+if (allocated(nicas_blk%smoother_norm)) deallocate(nicas_blk%smoother_norm)
 
 end subroutine nicas_blk_partial_dealloc
 
@@ -1887,7 +1932,7 @@ allocate(nicas_blk%gmask_c2u(nicas_blk%nc1u,nicas_blk%nl1))
 ! Initialization
 do il1=1,nicas_blk%nl1
    il0 = nicas_blk%l1_to_l0(il1)
-   nc1a_gmask(il1) = count(nicas_blk%gmask_c1a(:,il0))
+   nc1a_gmask(il1) = count(nicas_blk%gmask_c1a(:,il1))
 end do
 call mpl%f_comm%allreduce(nc1a_gmask,nc1_gmask,fckit_mpi_sum())
 is = 0
@@ -1933,7 +1978,7 @@ do il1=1,nicas_blk%nl1
 
    ! Initialize sampling
    call initialize_sampling(mpl,rng,geom%area(il0),nicas_blk%nc1a,nicas_blk%lon_c1a,nicas_blk%lat_c1a, &
- & nicas_blk%gmask_c1a(:,il0),rhs_c1a,nicas_blk%c1a_to_c1,nam%ntry,nam%nrep,nicas_blk%nc2(il1),c2_to_c1, &
+ & nicas_blk%gmask_c1a(:,il1),rhs_c1a,nicas_blk%c1a_to_c1,nam%ntry,nam%nrep,nicas_blk%nc2(il1),c2_to_c1, &
  & fast=nam%fast_sampling,verbosity=nicas_blk%verbosity)
 
    ! Fill subset Sc2 mask
