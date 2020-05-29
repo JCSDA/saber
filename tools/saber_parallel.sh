@@ -401,10 +401,10 @@ for qg in ${list_qg}; do
    ctest -VV -R ${qg} > saber_ctest_log/${qg}.log 2> saber_ctest_log/${qg}.err
 
    # Check if this process passed
-   err=`grep passed saber_ctest_log/${qg}.log | awk '{print $2}'`
+   err=`grep PASSED saber_ctest_log/${qg}.log | awk '{print $2}'`
    itest=$((itest+1))
    itest_tot=`printf "%03d" ${itest}`
-   if test "${err}" = "passed"; then
+   if test "${err}" = "PASSED"; then
       # QG passed
       echo "${qg} passed" >> saber_ctest_log/execution.log
       stest_qg=$((stest_qg+1))
