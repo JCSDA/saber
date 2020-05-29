@@ -163,7 +163,54 @@ implicit none
 class(geom_type),intent(inout) :: geom ! Geometry
 
 ! Release memory
-! TODO
+if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
+if (allocated(geom%lat_mga)) deallocate(geom%lat_mga)
+if (allocated(geom%area_mga)) deallocate(geom%area_mga)
+if (allocated(geom%vunit_mga)) deallocate(geom%vunit_mga)
+if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
+if (allocated(geom%smask_mga)) deallocate(geom%smask_mga)
+if (allocated(geom%hash_mga)) deallocate(geom%hash_mga)
+if (allocated(geom%myuniverse)) deallocate(geom%myuniverse)
+if (allocated(geom%proc_to_nc0a)) deallocate(geom%proc_to_nc0a)
+if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
+if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
+if (allocated(geom%hash_c0a)) deallocate(geom%hash_c0a)
+if (allocated(geom%area_c0a)) deallocate(geom%area_c0a)
+if (allocated(geom%vunit_c0a)) deallocate(geom%vunit_c0a)
+if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
+if (allocated(geom%smask_c0a)) deallocate(geom%smask_c0a)
+if (allocated(geom%gmask_hor_c0a)) deallocate(geom%gmask_hor_c0a)
+if (allocated(geom%mdist_c0a)) deallocate(geom%mdist_c0a)
+if (allocated(geom%proc_to_nc0u)) deallocate(geom%proc_to_nc0u)
+if (allocated(geom%lon_c0u)) deallocate(geom%lon_c0u)
+if (allocated(geom%lat_c0u)) deallocate(geom%lat_c0u)
+if (allocated(geom%vunit_c0u)) deallocate(geom%vunit_c0u)
+if (allocated(geom%gmask_c0u)) deallocate(geom%gmask_c0u)
+if (allocated(geom%gmask_hor_c0u)) deallocate(geom%gmask_hor_c0u)
+if (allocated(geom%mdist_c0u)) deallocate(geom%mdist_c0u)
+if (allocated(geom%proc_to_c0_offset)) deallocate(geom%proc_to_c0_offset)
+if (allocated(geom%c0a_to_c0u)) deallocate(geom%c0a_to_c0u)
+if (allocated(geom%c0u_to_c0a)) deallocate(geom%c0u_to_c0a)
+call geom%com_AU%dealloc
+if (allocated(geom%c0a_to_c0)) deallocate(geom%c0a_to_c0)
+if (allocated(geom%c0u_to_c0)) deallocate(geom%c0u_to_c0)
+if (allocated(geom%nc0_gmask)) deallocate(geom%nc0_gmask)
+if (allocated(geom%area)) deallocate(geom%area)
+if (allocated(geom%vunitavg)) deallocate(geom%vunitavg)
+if (allocated(geom%disth)) deallocate(geom%disth)
+call geom%mesh%dealloc
+call geom%tree%dealloc
+if (allocated(geom%nbnda)) deallocate(geom%nbnda)
+if (allocated(geom%v1bnda)) deallocate(geom%v1bnda)
+if (allocated(geom%v2bnda)) deallocate(geom%v2bnda)
+if (allocated(geom%vabnda)) deallocate(geom%vabnda)
+if (allocated(geom%londir)) deallocate(geom%londir)
+if (allocated(geom%latdir)) deallocate(geom%latdir)
+if (allocated(geom%iprocdir)) deallocate(geom%iprocdir)
+if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
+if (allocated(geom%il0dir)) deallocate(geom%il0dir)
+if (allocated(geom%ivdir)) deallocate(geom%ivdir)
+if (allocated(geom%itsdir)) deallocate(geom%itsdir)
 
 end subroutine geom_partial_dealloc
 

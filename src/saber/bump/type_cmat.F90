@@ -427,7 +427,7 @@ do ib=1,bpar%nbe
             do i=1,n
                ! Fill missing values
                do il0=1,geom%nl0
-                  call hdiag%samp%diag_fill(mpl,nam,fld_c2a(:,il0,i))
+                  call hdiag%samp%diag_fill(mpl,fld_c2a(:,il0,i))
                end do
 
                ! Interpolate
@@ -809,7 +809,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
-integer :: ib,il0,ic0a,ic0,il0i
+integer :: ib,il0,ic0a,il0i
 real(kind_real) :: rhs,rvs
 real(kind_real),allocatable :: rh_c0a(:)
 character(len=1024),parameter :: subr = 'cmat_setup_sampling'

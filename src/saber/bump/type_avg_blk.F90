@@ -390,7 +390,7 @@ type(samp_type),intent(in) :: samp           ! Sampling
 type(mom_blk_type),intent(in) :: mom_blk     ! Moments
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,ic1,nc1a,nc1a_cor,n1,n2,npack,offset
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1a,nc1a,nc1a_cor,n1,n2,npack,offset
 real(kind_real) :: m2_1,m2_2
 real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
 real(kind_real) :: min_m11_tot,max_m11_tot,min_m11m11_tot,max_m11m11_tot,min_m2m2_tot,max_m2m2_tot,min_m22_tot,max_m22_tot
@@ -752,7 +752,7 @@ type(samp_type),intent(in) :: samp           ! Sampling
 type(mom_blk_type),intent(in) :: mom_blk     ! Moments
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,nc1max,ic1d,ic1u,i,nc1a,nc1a_cor,ic2
+integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,nc1max,ic1d,ic1u,i,nc1a,nc1a_cor
 real(kind_real) :: m2_1,m2_2,norm,gen_kurt
 real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
 logical :: valid
@@ -763,9 +763,6 @@ associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
 ! Variables indices
 iv = bpar%b_to_v1(ib)
 jv = bpar%b_to_v2(ib)
-
-! Index
-ic2 = samp%c2a_to_c2(ic2a)
 
 ! Allocation
 nc1max = count(samp%local_mask(:,ic2a))

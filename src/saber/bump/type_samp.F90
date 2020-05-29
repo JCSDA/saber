@@ -177,9 +177,6 @@ implicit none
 class(samp_type),intent(inout) :: samp ! Sampling
 type(geom_type),intent(in) :: geom     ! Geometry
 
-! Local variable TODO: remove that
-integer :: ic0
-
 ! Allocation
 allocate(samp%smask_c0u(geom%nc0u,geom%nl0))
 allocate(samp%smask_c0a(geom%nc0a,geom%nl0))
@@ -235,6 +232,42 @@ implicit none
 class(samp_type),intent(inout) :: samp ! Sampling
 
 ! Release memory
+if (allocated(samp%smask_c0u)) deallocate(samp%smask_c0u)
+if (allocated(samp%smask_hor_c0u)) deallocate(samp%smask_hor_c0u)
+if (allocated(samp%smask_c0a)) deallocate(samp%smask_c0a)
+if (allocated(samp%smask_hor_c0a)) deallocate(samp%smask_hor_c0a)
+if (allocated(samp%nc0_smask)) deallocate(samp%nc0_smask)
+if (allocated(samp%c1_to_c0)) deallocate(samp%c1_to_c0)
+if (allocated(samp%c1_to_proc)) deallocate(samp%c1_to_proc)
+if (allocated(samp%c1u_to_c1)) deallocate(samp%c1u_to_c1)
+if (allocated(samp%c1_to_c1u)) deallocate(samp%c1_to_c1u)
+if (allocated(samp%c1u_to_c1a)) deallocate(samp%c1u_to_c1a)
+if (allocated(samp%c1u_to_c0u)) deallocate(samp%c1u_to_c0u)
+if (allocated(samp%lon_c1u)) deallocate(samp%lon_c1u)
+if (allocated(samp%lat_c1u)) deallocate(samp%lat_c1u)
+if (allocated(samp%smask_c1u)) deallocate(samp%smask_c1u)
+if (allocated(samp%smask_hor_c1u)) deallocate(samp%smask_hor_c1u)
+if (allocated(samp%c1a_to_c1)) deallocate(samp%c1a_to_c1)
+if (allocated(samp%c1a_to_c1u)) deallocate(samp%c1a_to_c1u)
+if (allocated(samp%c1al0_check)) deallocate(samp%c1al0_check)
+if (allocated(samp%lon_c1a)) deallocate(samp%lon_c1a)
+if (allocated(samp%lat_c1a)) deallocate(samp%lat_c1a)
+if (allocated(samp%smask_c1a)) deallocate(samp%smask_c1a)
+if (allocated(samp%smask_hor_c1a)) deallocate(samp%smask_hor_c1a)
+if (allocated(samp%c2_to_c1)) deallocate(samp%c2_to_c1)
+if (allocated(samp%c2_to_proc)) deallocate(samp%c2_to_proc)
+if (allocated(samp%c2_to_c2u)) deallocate(samp%c2_to_c2u)
+if (allocated(samp%c2u_to_c1u)) deallocate(samp%c2u_to_c1u)
+if (allocated(samp%c2u_to_c0u)) deallocate(samp%c2u_to_c0u)
+if (allocated(samp%lon_c2u)) deallocate(samp%lon_c2u)
+if (allocated(samp%lat_c2u)) deallocate(samp%lat_c2u)
+if (allocated(samp%smask_c2u)) deallocate(samp%smask_c2u)
+if (allocated(samp%smask_hor_c2u)) deallocate(samp%smask_hor_c2u)
+if (allocated(samp%lon_c2a)) deallocate(samp%lon_c2a)
+if (allocated(samp%lat_c2a)) deallocate(samp%lat_c2a)
+if (allocated(samp%smask_hor_c2a)) deallocate(samp%smask_hor_c2a)
+if (allocated(samp%c2b_to_c2u)) deallocate(samp%c2b_to_c2u)
+if (allocated(samp%ldwv_to_proc)) deallocate(samp%ldwv_to_proc)
 
 end subroutine samp_partial_dealloc
 
@@ -254,67 +287,28 @@ integer :: il0,its
 
 ! Release memory
 call samp%partial_dealloc
-if (allocated(samp%smask_c0u)) deallocate(samp%smask_c0u)
-if (allocated(samp%smask_hor_c0u)) deallocate(samp%smask_hor_c0u)
-if (allocated(samp%smask_c0a)) deallocate(samp%smask_c0a)
-if (allocated(samp%smask_hor_c0a)) deallocate(samp%smask_hor_c0a)
-if (allocated(samp%nc0_smask)) deallocate(samp%nc0_smask)
 if (allocated(samp%c1a_to_c0c)) deallocate(samp%c1a_to_c0c)
 if (allocated(samp%c1ac3_to_c0c)) deallocate(samp%c1ac3_to_c0c)
-if (allocated(samp%c1_to_c0)) deallocate(samp%c1_to_c0)
-if (allocated(samp%c1_to_proc)) deallocate(samp%c1_to_proc)
-if (allocated(samp%c1u_to_c1)) deallocate(samp%c1u_to_c1)
-if (allocated(samp%c1_to_c1u)) deallocate(samp%c1_to_c1u)
-if (allocated(samp%c1u_to_c1a)) deallocate(samp%c1u_to_c1a)
-if (allocated(samp%c1u_to_c0u)) deallocate(samp%c1u_to_c0u)
-if (allocated(samp%lon_c1u)) deallocate(samp%lon_c1u)
-if (allocated(samp%lat_c1u)) deallocate(samp%lat_c1u)
-if (allocated(samp%smask_c1u)) deallocate(samp%smask_c1u)
-if (allocated(samp%smask_hor_c1u)) deallocate(samp%smask_hor_c1u)
-if (allocated(samp%c1a_to_c1)) deallocate(samp%c1a_to_c1)
-if (allocated(samp%c1a_to_c1u)) deallocate(samp%c1a_to_c1u)
 if (allocated(samp%c1a_to_c0a)) deallocate(samp%c1a_to_c0a)
-if (allocated(samp%c1al0_check)) deallocate(samp%c1al0_check)
-if (allocated(samp%lon_c1a)) deallocate(samp%lon_c1a)
-if (allocated(samp%lat_c1a)) deallocate(samp%lat_c1a)
-if (allocated(samp%smask_c1a)) deallocate(samp%smask_c1a)
-if (allocated(samp%smask_hor_c1a)) deallocate(samp%smask_hor_c1a)
 if (allocated(samp%c1ac3_to_c0u)) deallocate(samp%c1ac3_to_c0u)
 if (allocated(samp%smask_c1ac3)) deallocate(samp%smask_c1ac3)
 if (allocated(samp%smask_c1dc3)) deallocate(samp%smask_c1dc3)
 if (allocated(samp%c1d_to_c1u)) deallocate(samp%c1d_to_c1u)
 if (allocated(samp%c1e_to_c1u)) deallocate(samp%c1e_to_c1u)
-if (allocated(samp%c2_to_c1)) deallocate(samp%c2_to_c1)
-if (allocated(samp%c2_to_proc)) deallocate(samp%c2_to_proc)
 if (allocated(samp%c2u_to_c2)) deallocate(samp%c2u_to_c2)
-if (allocated(samp%c2_to_c2u)) deallocate(samp%c2_to_c2u)
-if (allocated(samp%c2u_to_c1u)) deallocate(samp%c2u_to_c1u)
-if (allocated(samp%c2u_to_c0u)) deallocate(samp%c2u_to_c0u)
-if (allocated(samp%lon_c2u)) deallocate(samp%lon_c2u)
-if (allocated(samp%lat_c2u)) deallocate(samp%lat_c2u)
-if (allocated(samp%smask_c2u)) deallocate(samp%smask_c2u)
-if (allocated(samp%smask_hor_c2u)) deallocate(samp%smask_hor_c2u)
 if (allocated(samp%proc_to_nc2a)) deallocate(samp%proc_to_nc2a)
 if (allocated(samp%proc_to_c2_offset)) deallocate(samp%proc_to_c2_offset)
 if (allocated(samp%c2a_to_c2)) deallocate(samp%c2a_to_c2)
 if (allocated(samp%c2a_to_c2u)) deallocate(samp%c2a_to_c2u)
 if (allocated(samp%c2a_to_c1a)) deallocate(samp%c2a_to_c1a)
 if (allocated(samp%c2a_to_c0a)) deallocate(samp%c2a_to_c0a)
-if (allocated(samp%lon_c2a)) deallocate(samp%lon_c2a)
-if (allocated(samp%lat_c2a)) deallocate(samp%lat_c2a)
 if (allocated(samp%smask_c2a)) deallocate(samp%smask_c2a)
-if (allocated(samp%smask_hor_c2a)) deallocate(samp%smask_hor_c2a)
-if (allocated(samp%c2b_to_c2u)) deallocate(samp%c2b_to_c2u)
 if (allocated(samp%vbal_mask)) deallocate(samp%vbal_mask)
 if (allocated(samp%local_mask)) deallocate(samp%local_mask)
-if (allocated(samp%adv_nn)) deallocate(samp%adv_nn)
-if (allocated(samp%adv_nn_index)) deallocate(samp%adv_nn_index)
 if (allocated(samp%nn_c2a_index)) deallocate(samp%nn_c2a_index)
 if (allocated(samp%nn_c2a_dist)) deallocate(samp%nn_c2a_dist)
-if (allocated(samp%ldwv_to_proc)) deallocate(samp%ldwv_to_proc)
 if (allocated(samp%ldwv_to_c0a)) deallocate(samp%ldwv_to_c0a)
 call samp%mesh%dealloc
-if (allocated(samp%adv_lon)) deallocate(samp%adv_lon)
 if (allocated(samp%adv_lon)) deallocate(samp%adv_lon)
 if (allocated(samp%adv_lat)) deallocate(samp%adv_lat)
 if (allocated(samp%h)) then
@@ -354,7 +348,7 @@ type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: il0,ic1,ic1a,ic1u,jc3
+integer :: il0,ic1a,ic1u,jc3
 integer :: info,ncid,nl0_id,nc1a_id,nc1u_id,nc2u_id,nc3_id
 integer :: c1a_to_c0a_id,smask_c1u_id,c1ac3_to_c0u_id,smask_c1ac3_id
 integer :: c2u_to_c1u_id,c2u_to_c0u_id
@@ -483,7 +477,7 @@ type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
-integer :: il0,ic1,ic1a,ic1u,jc3
+integer :: il0,ic1a,ic1u,jc3
 integer :: ncid,nl0_id,nc1a_id,nc1u_id,nc2u_id,nc3_id
 integer :: c1a_to_c0a_id,smask_c1u_id,c1ac3_to_c0u_id,smask_c1ac3_id
 integer :: c2u_to_c1u_id,c2u_to_c0u_id
@@ -590,7 +584,7 @@ type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
-integer :: il0,ic1u,jc3,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,ic0u,jc0u,j,nc1max_local,nc1max_vbal
+integer :: il0,jc3,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,ic0u,jc0u,j,nc1max_local,nc1max_vbal
 integer :: ncid,nl0_id,nc1a_id,nc3_id,nc2a_id,nc2b_id,nc1max_local_id,nc1max_vbal_id
 integer :: lon_id,lat_id,lon_local_id,lat_local_id,lon_vbal_id,lat_vbal_id
 integer :: lon_ori_id,lat_ori_id,lon_local_ori_id,lat_local_ori_id,lon_vbal_ori_id,lat_vbal_ori_id
@@ -1029,7 +1023,7 @@ if (trim(samp%name)=='vbal') then
    ! Compute MPI distribution, halo E
    write(mpl%info,'(a7,a)') '','Compute MPI distribution, halo E'
    call mpl%flush
-   call samp%compute_mpi_e(mpl,nam,geom)
+   call samp%compute_mpi_e(mpl,nam)
 end if
 
 ! Write sampling data
@@ -1380,9 +1374,9 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: jc3,ic1a,ic1,ir,irtmp,jc0a,jc0u,jc0,icinf,icsup,ictest,nn_index(nam%nc3),il0,iproc
+integer :: jc3,ic1a,ir,irtmp,jc0a,jc0u,jc0,icinf,icsup,ictest,nn_index(nam%nc3),il0,iproc
 real(kind_real) :: d,nn_dist(nam%nc3)
-logical :: valid,found,proc_to_done(mpl%nproc)
+logical :: found,proc_to_done(mpl%nproc)
 character(len=1024),parameter :: subr = 'samp_compute_c3'
 
 ! Allocation
@@ -1573,7 +1567,7 @@ type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic0a,ic0u,ic1a,ic1u,ic1,ic2u,ic2,iproc,ildwv
+integer :: ic0u,ic1a,ic1u,ic1,ic2u,ic2,iproc,ildwv
 real(kind_real) :: rh_c1a(samp%nc1a)
 logical :: smask_hor_c1a(samp%nc1a)
 
@@ -1655,7 +1649,7 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic0a,ic0u,ic1a,ic1u,ic2a,ic2u,ic2,il0,iproc
+integer :: ic0a,ic0u,ic1a,ic1u,ic2a,ic2u,ic2,iproc
 type(tree_type) :: tree
 
 ! Allocation
@@ -1757,7 +1751,7 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic2a,ic2b,ic2,ic2u,jc2u,i_s,il0i,iproc
+integer :: ic2b,ic2,ic2u,jc2u,i_s,il0i,iproc
 integer,allocatable :: c2b_to_c2(:),c2u_to_c2b(:)
 logical :: lcheck_c2b(samp%nc2u)
 
@@ -1893,7 +1887,7 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: jc3,ic0,ic0a,ic0c,ic0u,jc0u,jc0c,ic1,ic1a,its,il0,i_s,iproc
+integer :: jc3,ic0,ic0a,ic0c,ic0u,jc0u,jc0c,ic1a,its,il0,i_s,iproc
 integer :: c0u_to_c0c(geom%nc0u)
 integer,allocatable :: c0c_to_c0(:)
 real(kind_real),allocatable :: lon_c1a(:),lat_c1a(:)
@@ -2021,7 +2015,7 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic2a,ic2,ic0,nn,i,ic1d,ic1,ic1a,ic1u,jc1u,npack,ipack,il0,jc3
+integer :: ic2a,nn,i,ic1d,ic1,ic1a,ic1u,jc1u,npack,ipack,il0,jc3
 integer,allocatable :: nn_index(:),c1d_to_c1(:)
 logical :: lcheck_c1d(samp%nc1u)
 logical,allocatable :: sbuf(:,:),rbuf(:,:)
@@ -2053,7 +2047,6 @@ do ic2a=1,samp%nc2a
    call tree%find_nearest_neighbors(samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),nn,nn_index)
 
    ! Update masks
-!   samp%local_mask(ic1u,ic2a) = .true. ! TODO: is it working without this line?
    do i=1,nn
       jc1u = nn_index(i)
       samp%local_mask(jc1u,ic2a) = .true.
@@ -2130,7 +2123,7 @@ end subroutine samp_compute_mpi_d
 ! Subroutine: samp_compute_mpi_e
 ! Purpose: compute sampling MPI distribution, halo E
 !----------------------------------------------------------------------
-subroutine samp_compute_mpi_e(samp,mpl,nam,geom)
+subroutine samp_compute_mpi_e(samp,mpl,nam)
 
 implicit none
 
@@ -2138,14 +2131,13 @@ implicit none
 class(samp_type),intent(inout) :: samp ! Sampling
 type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: ic2,ic2b,ic2u,ic0u,nn,i,ic1,ic1e,ic1u,ic1a,jc1u,jc0u
+integer :: ic2b,ic2u,nn,i,ic1,ic1e,ic1u,ic1a,jc1u
 integer,allocatable :: nn_index(:),c1e_to_c1(:)
 logical :: lcheck_c1e(samp%nc1u)
-type(tree_type) :: tree
 character(len=1024),parameter :: subr = 'samp_compute_mpi_e'
+type(tree_type) :: tree
 
 ! Allocation
 allocate(samp%vbal_mask(samp%nc1u,samp%nc2b))
@@ -2303,8 +2295,8 @@ if (rflt>0.0) then
    call com_AF%ext(mpl,diag_c2a,diag_c2f)
    if (present(val_c2a)) call com_AF%ext(mpl,val_c2a,val_c2f)
 
-!   !$omp parallel do schedule(static) private(ic2a,nc2eff,ic2eff,jc2u,kc2u,kc2f,distnorm,norm,wgt), &
-!   !$omp&                             firstprivate(diag_eff,diag_eff_dist,val_eff,order)
+   !$omp parallel do schedule(static) private(ic2a,nc2eff,ic2eff,jc2u,kc2u,kc2f,distnorm,norm,wgt), &
+   !$omp&                             firstprivate(diag_eff,diag_eff_dist,val_eff,order)
    do ic2a=1,samp%nc2a
       ! Count involved points
       nc2eff = 0
@@ -2387,7 +2379,7 @@ if (rflt>0.0) then
       deallocate(diag_eff_dist)
       if (present(val_c2a)) deallocate(val_eff)
    end do
-!   !$omp end parallel do
+   !$omp end parallel do
 
    ! Release memory
    deallocate(c2f_to_c2)
@@ -2402,20 +2394,18 @@ end subroutine samp_diag_filter
 ! Subroutine: samp_diag_fill
 ! Purpose: fill diagnostics missing values
 !----------------------------------------------------------------------
-subroutine samp_diag_fill(samp,mpl,nam,diag_c2a)
+subroutine samp_diag_fill(samp,mpl,diag_c2a)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(in) :: samp                  ! Sampling
 type(mpl_type),intent(inout) :: mpl                  ! MPI data
-type(nam_type),intent(in) :: nam                     ! Namelist
 real(kind_real),intent(inout) :: diag_c2a(samp%nc2a) ! Filtered diagnostic
 
 ! Local variables
 integer :: nmsr,nmsr_tot,ic2a,jc2u,kc2u
 real(kind_real),allocatable :: diag_c2u(:)
-character(len=1024),parameter :: subr = 'samp_diag_fill'
 
 ! Count missing points
 if (samp%nc2a>0) then
@@ -2429,9 +2419,10 @@ if (nmsr_tot>0) then
    ! Allocation
    allocate(diag_c2u(samp%nc2u))
 
-   ! Local to global
+   ! Communication
    call samp%com_AU%ext(mpl,diag_c2a,diag_c2u)
 
+   ! Fill points
    do ic2a=1,samp%nc2a
       jc2u = 1
       do while (mpl%msv%is(diag_c2a(ic2a)))

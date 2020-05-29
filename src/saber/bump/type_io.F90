@@ -165,14 +165,13 @@ character(len=*),intent(in) :: varname                ! Variable name
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 
 ! Local variables
-integer :: ic0a,il0,info,info_coord,color
+integer :: ic0a,il0,info,color
 integer :: ncid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)
 character(len=1024) :: cname
 character(len=1024),parameter :: subr = 'io_fld_write'
 type(fckit_mpi_comm) :: f_comm
-integer :: ic0,ioproc,iproc
 
 ! Apply mask
 do il0=1,geom%nl0

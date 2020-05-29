@@ -173,7 +173,7 @@ character(len=1024),parameter :: subr = 'adv_compute'
 call adv%alloc(nam,geom,samp)
 
 ! Allocation
-call adv%init(mpl,geom,samp)
+call adv%init(mpl,samp)
 
 select case (trim(nam%adv_type))
 case ('max')
@@ -193,7 +193,7 @@ case ('windmax')
    call adv_wind%alloc(nam,geom,samp)
 
    ! Initialization
-   call adv_wind%init(mpl,geom,samp)
+   call adv_wind%init(mpl,samp)
 
    ! Compute raw advection from wind
    call adv_wind%compute_wind(mpl,rng,nam,geom,samp,fld_uv)
@@ -225,18 +225,17 @@ end subroutine adv_compute
 ! Subroutine: adv_init
 ! Purpose: initialize advection computation
 !----------------------------------------------------------------------
-subroutine adv_init(adv,mpl,geom,samp)
+subroutine adv_init(adv,mpl,samp)
 
 implicit none
 
 ! Passed variables
 class(adv_type),intent(inout) :: adv ! Advection
 type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(geom_type),intent(in) :: geom   ! Geometry
 type(samp_type),intent(in) :: samp   ! Sampling
 
 ! Local variables
-integer :: il0,ic2a,ic2,ic0,ic0a
+integer :: ic2a
 
 ! Initialization
 adv%lon_c2a = samp%lon_c2a
@@ -880,7 +879,7 @@ integer,intent(in) :: il0            ! Level index
 integer,intent(in) :: its            ! Timeslot index
 
 ! Local variables
-integer :: ic0a,ic0u,ic2,ic2a,il0i,iter
+integer :: ic0a,ic0u,ic2a,il0i,iter
 real(kind_real) :: dist_sum,norm,norm_tot,valid_flt,dist_flt,rhflt,drhflt
 real(kind_real) :: lon_c2a(samp%nc2a),lat_c2a(samp%nc2a),dist_c2a(samp%nc2a)
 real(kind_real) :: dx_ini(samp%nc2a),dy_ini(samp%nc2a),dz_ini(samp%nc2a)
@@ -1325,7 +1324,7 @@ integer :: ncid,nc2_id,nl0_id,nts_id,na_id,vunit_id,larc_s_id,larc_e_id
 integer :: lon_c2_id,lat_c2_id,lon_c2_raw_id,lat_c2_raw_id,dist_c2_raw_id,valid_raw_id,dist_raw_id
 integer :: lon_c2_flt_id,lat_c2_flt_id,dist_c2_flt_id,valid_flt_id,dist_flt_id,rhflt_id
 integer :: score_loc_id,score_adv_id
-integer :: iproc,its,il0,ic2a,ic2,i,ib,iv,jv,jts,proc_to_nc2a(mpl%nproc)
+integer :: iproc,its,il0,ic2a,ic2,i,ib,iv,jv,jts
 integer,allocatable :: order(:)
 real(kind_real),allocatable :: sbuf(:),rbuf(:),lon_c2(:,:),lat_c2(:,:),hash_c2(:)
 real(kind_real),allocatable :: lon_c2_raw(:,:,:),lat_c2_raw(:,:,:),dist_c2_raw(:,:,:)

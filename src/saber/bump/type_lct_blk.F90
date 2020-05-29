@@ -498,7 +498,7 @@ type(bpar_type),intent(in) :: bpar           ! Block parameters
 type(samp_type),intent(in) :: samp           ! Sampling
 
 ! Local variables
-integer :: il0,jl0,jl0r,ic1a,ic1,ic0a,ic0u,jc3,jc0u,icomp,iscales
+integer :: il0,jl0,jl0r,ic1a,ic0a,ic0u,jc3,jc0u,icomp,iscales
 real(kind_real) :: fld_c2a(samp%nc2a),dx,dy,dz
 real(kind_real),allocatable :: fld_filt_c2a(:),dxsq(:,:),dysq(:,:),dxdy(:,:),dzsq(:,:)
 logical :: valid
@@ -530,8 +530,8 @@ do il0=1,geom%nl0
          end if
 
          ! Fill missing values
-         call samp%diag_fill(mpl,nam,fld_c2a)
-         if (nam%diag_rhflt>0.0) call samp%diag_fill(mpl,nam,fld_filt_c2a)
+         call samp%diag_fill(mpl,fld_c2a)
+         if (nam%diag_rhflt>0.0) call samp%diag_fill(mpl,fld_filt_c2a)
 
          ! Copy
          if (icomp<=4) then
@@ -546,7 +546,7 @@ do il0=1,geom%nl0
 
    ! Fill missing values for quality control
    fld_c2a = lct_blk%qc_c1a(samp%c2a_to_c1a,il0)
-   call samp%diag_fill(mpl,nam,fld_c2a)
+   call samp%diag_fill(mpl,fld_c2a)
    lct_blk%qc_c1a(samp%c2a_to_c1a,il0) = fld_c2a
 end do
 

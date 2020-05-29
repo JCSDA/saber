@@ -277,12 +277,9 @@ type(ens_type), intent(in) :: ens     ! Ensemble
 character(len=*),intent(in) :: prefix ! Prefix
 
 ! Local variables
-integer :: ie,ie_sub,ic0a,ic0c,ic0u,jc0c,jc0u,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv,jts,its,ic1,ic0
+integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv,jts,its
 real(kind_real),allocatable :: fld_ext(:,:,:,:),fld_1(:,:),fld_2(:,:,:)
 logical,allocatable :: mask_unpack(:,:)
-
-integer :: c1_to_c1a(nam%nc1)
-real(kind_real) :: hash_c0c(samp%nc0c)
 
 ! Allocation
 call mom%alloc(geom,bpar,samp,ens%ne,ens%nsub,prefix)

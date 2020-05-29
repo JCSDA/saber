@@ -1390,7 +1390,7 @@ integer,intent(in) :: ne              ! Number of members
 type(ens_type),intent(out) :: ens     ! Ensemble
 
 ! Local variable
-integer :: ie,ic0a,il0,its,iv,ic0u
+integer :: ie,ic0a,il0,its,iv
 real(kind_real) :: std(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 type(cv_type) :: cv_ens(ne)
 
@@ -1680,7 +1680,7 @@ type(geom_type),intent(in) :: geom    ! Geometry
 type(bpar_type),intent(in) :: bpar    ! Block parameters
 
 ! Local variables
-integer :: ifac,itest,nefac(nfac_rnd),ens1_ne,ic0u
+integer :: ifac,itest,nefac(nfac_rnd),ens1_ne
 integer :: ncid,ntest_id,nfac_id,mse_id,mse_th_id
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts),mse(ntest,nfac_rnd),mse_th(ntest,nfac_rnd),mse_avg,mse_th_avg
 real(kind_real),allocatable :: fld_ref(:,:,:,:,:),fld_save(:,:,:,:,:)

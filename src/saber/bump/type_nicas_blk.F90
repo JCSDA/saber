@@ -1391,7 +1391,7 @@ type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 logical,intent(in),optional :: sqrt_rescaling    ! Square-root rescaling flag
 
 ! Local variables
-integer :: ic0,il0i,il1
+integer :: il0i,il1
 
 ! Set square-root rescaling flag
 nicas_blk%sqrt_rescaling = .true.
@@ -1438,7 +1438,7 @@ call nicas_blk%compute_convol(mpl,rng,nam,geom,cmat_blk)
 ! Compute MPI distribution, halo C
 write(mpl%info,'(a7,a)') '','Compute MPI distribution, halo C'
 if (nicas_blk%verbosity) call mpl%flush
-call nicas_blk%compute_mpi_c(mpl,geom)
+call nicas_blk%compute_mpi_c(mpl)
 
 if (.not.nicas_blk%smoother) then
    ! Compute internal normalization
@@ -1456,7 +1456,7 @@ if (nam%write_grids) then
    ! Compute grids coordinates
    write(mpl%info,'(a7,a)') '','Compute grids coordinates'
    if (nicas_blk%verbosity) call mpl%flush
-   call nicas_blk%compute_grids(nam,geom)
+   call nicas_blk%compute_grids(nam)
 end if
 
 ! Print results
@@ -1750,9 +1750,8 @@ type(geom_type),intent(in) :: geom               ! Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 
 ! Local variables
-integer :: il0,il0_prev,il1,ic1,ic0a
+integer :: il0,il0_prev,il1,ic0a
 real(kind_real) :: distnormmin,distnorm(geom%nc0a),rv
-character(len=1024),parameter :: subr = 'nicas_blk_compute_sampling_v'
 
 ! Allocation
 allocate(nicas_blk%slev(geom%nl0))
@@ -2045,7 +2044,7 @@ type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 
 ! Local variables
-integer :: il0i,ic0,ic0a,ic0u,ic1,ic1a,ic1u,ic1b_h,ic1b,il0,il1,isa,isb,i_s,isu,is,jc1u,jsu,nc1b_h,ifmt,iproc
+integer :: il0i,ic0,ic1,ic1a,ic1u,ic1b_h,ic1b,il0,il1,isa,isb,i_s,isu,is,jc1u,jsu,nc1b_h,ifmt,iproc
 integer,allocatable :: c1b_h_to_c1u(:),c1b_h_to_c1b(:),sa_to_c1a(:),sa_to_l1(:),sb_to_s(:)
 real(kind_real),allocatable :: lon_c1b_h(:),lat_c1b_h(:)
 logical :: lcheck_c1b_h(nicas_blk%nc1u),lcheck_c1b(nicas_blk%nc1u),inside
@@ -2393,7 +2392,7 @@ type(geom_type),intent(in) :: geom               ! Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 
 ! Local variables
-integer :: n_s_max,ithread,isu,ic1u,jc1u,il1,il0,j,jsu,isb,ic1b,ic0,ic0a,ic1a,i_s,jc,kc,ksu,jbd,jl1,ic1bb,isbb
+integer :: n_s_max,ithread,isu,ic1u,jc1u,il1,il0,j,jsu,isb,ic1b,ic0a,ic1a,i_s,jc,kc,ksu,jbd,jl1,ic1bb,isbb
 integer :: c_n_s(mpl%nthread)
 integer,allocatable :: nn(:),nn_index(:),inec(:),c_ind(:,:)
 real(kind_real),allocatable :: rh_c1a(:,:),rv_c1a(:,:)
@@ -2725,7 +2724,7 @@ else
    write(mpl%info,'(a10,a)') '','Second pass:     '
    if (nicas_blk%verbosity) call mpl%flush(.false.)
    if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
-   n_s_max = 100*nint(real(geom%nc0*geom%nl0,kind_real)/real(mpl%nthread*mpl%nproc,kind_real)) ! TODO: reduce that
+   n_s_max = 10*nint(real(geom%nc0u*geom%nl0,kind_real)/real(mpl%nthread*mpl%nproc,kind_real))
    c_n_s = 0
    do ithread=1,mpl%nthread
       c(ithread)%n_s = n_s_max
@@ -3254,14 +3253,14 @@ type(geom_type),intent(in) :: geom               ! Geometry
 type(linop_type),intent(inout) :: ctmp           ! Convolution operator
 
 ! Local variables
-integer :: n_s_max,ithread,isu,ic1u,jc1u,il1,jl1,il0,jbd,jsu,ic1bb,isbb
+integer :: n_s_max,ithread,isu,jc1u,jl1,jbd,jsu,isbb
 integer :: c_n_s(mpl%nthread),c_nor_n_s(mpl%nthread)
 real(kind_real) :: S_test,S_test_tot(nicas_blk%nsbb,mpl%nthread)
 logical :: add_op
 type(linop_type) :: c(mpl%nthread),c_nor(mpl%nthread)
 
-! Allocation TODO: reduce that
-n_s_max = 10*nint(real(geom%nc0*geom%nl0)/real(mpl%nthread*mpl%nproc))
+! Allocation
+n_s_max = 10*nint(real(geom%nc0u*geom%nl0)/real(mpl%nthread*mpl%nproc))
 do ithread=1,mpl%nthread
    c(ithread)%n_s = n_s_max
    call c(ithread)%alloc
@@ -3349,14 +3348,13 @@ end subroutine nicas_blk_compute_convol_weights
 ! Subroutine: nicas_blk_compute_mpi_c
 ! Purpose: compute NICAS MPI distribution, halo C
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_mpi_c(nicas_blk,mpl,geom)
+subroutine nicas_blk_compute_mpi_c(nicas_blk,mpl)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
 type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(geom_type),intent(in) :: geom               ! Geometry
 
 ! Local variables
 integer :: isa,isb,isc,i_s,is,isu,jsu
@@ -3819,17 +3817,16 @@ end subroutine nicas_blk_compute_normalization
 ! Subroutine: nicas_blk_compute_grids
 ! Purpose: compute grids
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_grids(nicas_blk,nam,geom)
+subroutine nicas_blk_compute_grids(nicas_blk,nam)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
 type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
 
 ! Local variables
-integer :: isa,isb,isc,isu,ic1u,il1,ic0,il0
+integer :: isa,isb,isc,isu,ic1u,il1,il0
 
 ! Allocation
 if (nicas_blk%nsa>0) then
