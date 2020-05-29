@@ -501,7 +501,7 @@ type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: ic0a,ic0,iobsa
+integer :: ic0a,iobsa
 integer :: iprocmax(1),iobsamax(1)
 real(kind_real) :: lonmax,latmax,ylonmax,ylatmax
 real(kind_real) :: norm,distmin,distmax,distsum
