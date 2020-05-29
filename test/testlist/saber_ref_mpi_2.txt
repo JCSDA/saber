@@ -82,6 +82,8 @@ bump_hdiag-nicas_nprocio/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_hdiag-nicas_nprocio/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_hdiag-nicas_nrep/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_hdiag-nicas_nrep/test_2-1_nicas-2-sqrt_0002-0002_common.nc
+bump_hdiag-nicas_universe_rad/test_2-1_nicas-2-sqrt_0002-0001_common.nc
+bump_hdiag-nicas_universe_rad/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_interface_nicas/test_2-1_nicas-2-sqrt_0002-0001_common.nc
 bump_interface_nicas/test_2-1_nicas-2-sqrt_0002-0002_common.nc
 bump_interface_obsop/test_2-1_obs_0002-0001.nc

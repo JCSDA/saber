@@ -418,6 +418,10 @@ final_time=`date`
 final_time_sec=`date +%s`
 echo "Tests finished at ${final_time}" >> saber_ctest_log/execution.log
 
+# Grep failed tests
+echo -e ""
+grep failed saber_ctest_log/execution.log
+
 # Elapsed time
 elapsed_time=$((final_time_sec-initial_time_sec))
 echo "Elapsed time: ${elapsed_time} sec." >> saber_ctest_log/execution.log

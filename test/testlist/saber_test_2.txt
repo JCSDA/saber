@@ -26,6 +26,7 @@ bump_hdiag-nicas_loc_specific_univariate
 bump_hdiag-nicas_nonunit_diag
 bump_hdiag-nicas_nprocio
 bump_hdiag-nicas_nrep
+bump_hdiag-nicas_universe_rad
 bump_hdiag_no_smoothness_penalty
 bump_interface_nicas
 bump_interface_obsop

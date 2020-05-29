@@ -2098,7 +2098,7 @@ allocate(gmask_c1b_h(nc1b_h,nicas_blk%nl1))
 
 ! Conversion
 ic1b_h = 0
-do ic1u=1,nicas_blk%nc1
+do ic1u=1,nicas_blk%nc1u
    if (lcheck_c1b_h(ic1u)) then
       ic1b_h = ic1b_h+1
       c1b_h_to_c1u(ic1b_h) = ic1u

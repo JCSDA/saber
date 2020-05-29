@@ -822,7 +822,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 type(ens_type),intent(in) :: ens       ! Ensemble
 
 ! Local variables
-integer :: il0,jc3,ildwv,jldwv,ival,nn_index(geom%nc0),nc1_valid
+integer :: il0,jc3,ildwv,jldwv,ival,nc1_valid
 real(kind_real),allocatable :: ldwv_to_lon(:),ldwv_to_lat(:),x
 logical :: valid
 character(len=8) :: ivalformat
@@ -1467,8 +1467,8 @@ if (trim(samp%name)=='hdiag') then
 
             ! Update
             call mpl%prog_print
-            call mpl%f_comm%allgather(all(mpl%done),proc_to_done)
          end if
+         call mpl%f_comm%allgather(all(mpl%done),proc_to_done)
       end do
       call mpl%prog_final
    end if

@@ -36,6 +36,7 @@ type nam_type
    logical :: repro                                     ! Inter-compilers reproducibility
    integer :: nprocio                                   ! Number of IO processors
    logical :: remap                                     ! Remap points to improve load balance
+   real(kind_real) :: universe_rad                      ! Universe radius [in meters]
 
    ! driver_param
    character(len=1024) :: method                        ! Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
@@ -243,6 +244,7 @@ nam%default_seed = .true.
 nam%repro = .true.
 nam%nprocio = min(nproc,nprociomax)
 nam%remap = .false.
+nam%universe_rad = pi*req
 
 ! driver_param default
 nam%method = ''
@@ -453,6 +455,7 @@ logical :: default_seed
 logical :: repro
 integer :: nprocio
 logical :: remap
+real(kind_real) :: universe_rad
 character(len=1024) :: method
 character(len=1024) :: strategy
 logical :: new_normality
@@ -610,7 +613,8 @@ namelist/general_param/datadir, &
                      & default_seed, &
                      & repro, &
                      & nprocio, &
-                     & remap
+                     & remap, &
+                     & universe_rad
 namelist/driver_param/method, &
                     & strategy, &
                     & new_normality, &
@@ -768,6 +772,7 @@ if (mpl%main) then
    repro = .true.
    nprocio = min(mpl%nproc,nprociomax)
    remap = .false.
+   universe_rad = pi*req
 
    ! driver_param default
    method = ''
@@ -964,6 +969,7 @@ if (mpl%main) then
    nam%repro = repro
    nam%nprocio = nprocio
    nam%remap = remap
+   nam%universe_rad = universe_rad
 
    ! driver_param
    read(lunit,nml=driver_param)
@@ -1203,6 +1209,7 @@ call mpl%f_comm%broadcast(nam%default_seed,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%repro,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%remap,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
 
 ! driver_param
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
@@ -1414,6 +1421,7 @@ if (conf%has("default_seed")) call conf%get_or_die("default_seed",nam%default_se
 if (conf%has("repro")) call conf%get_or_die("repro",nam%repro)
 if (conf%has("nprocio")) call conf%get_or_die("nprocio",nam%nprocio)
 if (conf%has("remap")) call conf%get_or_die("remap",nam%remap)
+if (conf%has("universe_rad")) call conf%get_or_die("universe_rad",nam%universe_rad)
 
 ! driver_param
 if (conf%has("method")) then
@@ -1694,6 +1702,7 @@ if (nam%ndir>ndirmax) call mpl%abort(subr,'ndir is too large')
 if (nam%nldwv>nldwvmax) call mpl%abort(subr,'nldwv is too large')
 
 ! Namelist parameters normalization (meters to radians and degrees to radians)
+nam%universe_rad = nam%universe_rad/req
 nam%Lcoast = nam%Lcoast/req
 nam%dc = nam%dc/req
 nam%vbal_rad = nam%vbal_rad/req
@@ -2082,6 +2091,7 @@ call mpl%write(lncid,'nam','default_seed',nam%default_seed)
 call mpl%write(lncid,'nam','repro',nam%repro)
 call mpl%write(lncid,'nam','nprocio',nam%nprocio)
 call mpl%write(lncid,'nam','remap',nam%remap)
+call mpl%write(lncid,'nam','universe_rad',nam%universe_rad*req)
 
 ! driver_param
 if (mpl%msv%is(lncid)) then
