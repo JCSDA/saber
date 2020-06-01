@@ -1056,88 +1056,36 @@ class(geom_type),intent(inout) :: geom ! Geometry
 type(mpl_type),intent(inout) :: mpl    ! MPI data
 
 ! Local variables
-integer :: il0,i,j,k,ic0u,jc0u,kc0u,iend,ibnda
+integer :: il0,ibnda,nbndamax
 integer,allocatable :: bnda_to_c0u(:,:)
 real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
-logical :: imask,jmask,kmask,init
 
 ! Allocation
 allocate(geom%nbnda(0:geom%nl0))
 
 ! Count boundary arcs
 do il0=0,geom%nl0
-   geom%nbnda(il0) = 0
-   do i=1,geom%mesh%n
-      ic0u = geom%mesh%order(i)
-      if (il0==0) then
-         imask = geom%gmask_hor_c0u(ic0u)
-      else
-         imask = geom%gmask_c0u(ic0u,il0)
-      end if
-      if (.not.imask) then
-         iend = geom%mesh%lend(i)
-         init = .true.
-         do while ((iend/=geom%mesh%lend(i)).or.init)
-            j = abs(geom%mesh%list(iend))
-            k = abs(geom%mesh%list(geom%mesh%lptr(iend)))
-            jc0u = geom%mesh%order(j)
-            kc0u = geom%mesh%order(k)
-            if (il0==0) then
-               jmask = geom%gmask_hor_c0u(jc0u)
-               kmask = geom%gmask_hor_c0u(kc0u)
-            else
-               jmask = geom%gmask_c0u(jc0u,il0)
-               kmask = geom%gmask_c0u(kc0u,il0)
-            end if
-            if (.not.jmask.and.kmask) geom%nbnda(il0) = geom%nbnda(il0)+1
-            iend = geom%mesh%lptr(iend)
-            init = .false.
-         end do
-      end if
-   end do
+   if (il0==0) then
+      call geom%mesh%count_bnda(geom%gmask_hor_c0u,geom%nbnda(il0))
+   else
+      call geom%mesh%count_bnda(geom%gmask_c0u(:,il0),geom%nbnda(il0))
+   end if
 end do
 
 ! Allocation
-allocate(geom%v1bnda(3,maxval(geom%nbnda),0:geom%nl0))
-allocate(geom%v2bnda(3,maxval(geom%nbnda),0:geom%nl0))
-allocate(geom%vabnda(3,maxval(geom%nbnda),0:geom%nl0))
-allocate(bnda_to_c0u(2,maxval(geom%nbnda)))
+nbndamax = maxval(geom%nbnda)
+allocate(bnda_to_c0u(2,nbndamax))
+allocate(geom%v1bnda(3,nbndamax,0:geom%nl0))
+allocate(geom%v2bnda(3,nbndamax,0:geom%nl0))
+allocate(geom%vabnda(3,nbndamax,0:geom%nl0))
 
 do il0=1,geom%nl0
-   ! Define boundary arcs
-   ibnda = 0
-   do i=1,geom%mesh%n
-      ic0u = geom%mesh%order(i)
-      if (il0==0) then
-         imask = geom%gmask_hor_c0u(ic0u)
-      else
-         imask = geom%gmask_c0u(ic0u,il0)
-      end if
-      if (.not.imask) then
-         iend = geom%mesh%lend(i)
-         init = .true.
-         do while ((iend/=geom%mesh%lend(i)).or.init)
-            j = abs(geom%mesh%list(iend))
-            k = abs(geom%mesh%list(geom%mesh%lptr(iend)))
-            jc0u = geom%mesh%order(j)
-            kc0u = geom%mesh%order(k)
-            if (il0==0) then
-                jmask = geom%gmask_hor_c0u(jc0u)
-                kmask = geom%gmask_hor_c0u(kc0u)
-            else
-                jmask = geom%gmask_c0u(jc0u,il0)
-                kmask = geom%gmask_c0u(kc0u,il0)
-            end if
-            if (.not.jmask.and.kmask) then
-               ibnda = ibnda+1
-               bnda_to_c0u(1,ibnda) = ic0u
-               bnda_to_c0u(2,ibnda) = jc0u
-            end if
-            iend = geom%mesh%lptr(iend)
-            init = .false.
-         end do
-      end if
-   end do
+   ! Get boundary arcs
+   if (il0==0) then
+      call geom%mesh%get_bnda(geom%gmask_hor_c0u,geom%nbnda(il0),bnda_to_c0u)
+   else
+      call geom%mesh%get_bnda(geom%gmask_c0u(:,il0),geom%nbnda(il0),bnda_to_c0u)
+   end if
 
    ! Compute boundary arcs coordinates
    do ibnda=1,geom%nbnda(il0)

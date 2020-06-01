@@ -42,6 +42,10 @@ type mesh_type
    real(kind_real),allocatable :: barc_lat(:,:) ! Boundary arcs latitudes
    real(kind_real),allocatable :: barc_dist(:)  ! Boundary arcs distance
    real(kind_real),allocatable :: barc_vp(:,:)  ! Boundary arcs normal vector
+
+   ! Mesh attributes (used publicly)
+   integer,allocatable :: nnb(:)                ! Number of neighbors
+   integer,allocatable :: inb(:,:)              ! Neighbors indices
    real(kind_real),allocatable :: bdist(:)      ! Distance to the closest boundary arc
 
    ! Triangles data
@@ -62,6 +66,8 @@ contains
    procedure :: check => mesh_check
    procedure :: inside => mesh_inside
    procedure :: barycentric => mesh_barycentric
+   procedure :: count_bnda => mesh_count_bnda
+   procedure :: get_bnda => mesh_get_bnda
 end type mesh_type
 
 private
@@ -95,6 +101,7 @@ allocate(mesh%z(mesh%n))
 allocate(mesh%list(6*(mesh%n-2)))
 allocate(mesh%lptr(6*(mesh%n-2)))
 allocate(mesh%lend(mesh%n))
+allocate(mesh%nnb(mesh%n))
 
 end subroutine mesh_alloc
 
@@ -115,12 +122,12 @@ real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
 logical,intent(in),optional :: all_procs          ! All processors flag
 
 ! Local variables
-integer :: i,k,info
+integer :: i,ii,j,k,info,nnbmax
 integer :: near(mesh%n),next(mesh%n)
 integer,allocatable :: jtab(:)
 real(kind_real) :: dist(mesh%n)
 real(kind_real),allocatable :: list(:)
-logical :: lall_procs
+logical :: lall_procs,init
 character(len=1024),parameter :: subr = 'mesh_init'
 
 ! Local all_procs flag
@@ -176,6 +183,35 @@ if (info/=0) call mpl%abort(subr,'trmesh failed')
 ! Boundaries not computed yet
 mesh%nb = mpl%msv%vali
 
+! Count neighbors
+do i=1,mesh%n
+   ii = mesh%order(i)
+   mesh%nnb(ii) = 0
+   j = mesh%lend(i)
+   init = .true.
+   do while ((j/=mesh%lend(i)).or.init)
+      mesh%nnb(ii) = mesh%nnb(ii)+1
+      j = mesh%lptr(j)
+      init = .false.
+   end do
+end do
+
+! Find neighbors indices
+nnbmax = maxval(mesh%nnb)
+allocate(mesh%inb(mesh%n,nnbmax))
+do i=1,mesh%n
+   ii = mesh%order(i)
+   mesh%nnb(ii) = 0
+   j = mesh%lend(i)
+   init = .true.
+   do while ((j/=mesh%lend(i)).or.init)
+      mesh%nnb(ii) = mesh%nnb(ii)+1
+      mesh%inb(ii,mesh%nnb(ii)) = mesh%order(abs(mesh%list(j)))
+      j = mesh%lptr(j)
+      init = .false.
+   end do
+end do
+
 ! Release memory
 deallocate(list)
 
@@ -209,6 +245,8 @@ if (allocated(mesh%barc_lon)) deallocate(mesh%barc_lon)
 if (allocated(mesh%barc_lat)) deallocate(mesh%barc_lat)
 if (allocated(mesh%barc_dist)) deallocate(mesh%barc_dist)
 if (allocated(mesh%barc_vp)) deallocate(mesh%barc_vp)
+if (allocated(mesh%nnb)) deallocate(mesh%nnb)
+if (allocated(mesh%inb)) deallocate(mesh%inb)
 if (allocated(mesh%bdist)) deallocate(mesh%bdist)
 if (allocated(mesh%ltri)) deallocate(mesh%ltri)
 if (allocated(mesh%larc)) deallocate(mesh%larc)
@@ -239,6 +277,7 @@ if (allocated(mesh_in%barc_lon)) allocate(mesh_out%barc_lon(2,mesh_in%nb))
 if (allocated(mesh_in%barc_lat)) allocate(mesh_out%barc_lat(2,mesh_in%nb))
 if (allocated(mesh_in%barc_dist)) allocate(mesh_out%barc_dist(mesh_in%nb))
 if (allocated(mesh_in%barc_vp)) allocate(mesh_out%barc_vp(3,mesh_in%nb))
+if (allocated(mesh_in%inb)) allocate(mesh_out%inb(size(mesh_in%inb,1),size(mesh_in%inb,2)))
 if (allocated(mesh_in%bdist)) allocate(mesh_out%bdist(mesh_in%n))
 if (allocated(mesh_in%ltri)) allocate(mesh_out%ltri(3,mesh_in%nt))
 if (allocated(mesh_in%larc)) allocate(mesh_out%larc(2,mesh_in%na))
@@ -263,9 +302,11 @@ if (allocated(mesh_in%barc_lon)) mesh_out%barc_lon = mesh_in%barc_lon
 if (allocated(mesh_in%barc_lat)) mesh_out%barc_lat = mesh_in%barc_lat
 if (allocated(mesh_in%barc_dist)) mesh_out%barc_dist = mesh_in%barc_dist
 if (allocated(mesh_in%barc_vp)) mesh_out%barc_vp = mesh_in%barc_vp
+mesh_out%nnb = mesh_in%nnb
+mesh_out%inb = mesh_in%inb
+if (allocated(mesh_in%bdist)) mesh_out%bdist = mesh_in%bdist
 mesh_out%nt = mesh_in%nt
 mesh_out%na = mesh_in%na
-if (allocated(mesh_in%bdist)) mesh_out%bdist = mesh_in%bdist
 if (allocated(mesh_in%ltri)) mesh_out%ltri = mesh_in%ltri
 if (allocated(mesh_in%larc)) mesh_out%larc = mesh_in%larc
 if (allocated(mesh_in%valid)) mesh_out%valid = mesh_in%valid
@@ -350,8 +391,8 @@ do ia=1,mesh%na
    if (i1==0) i1 = 3
    i2 = mod(i+2,3)
    if (i2==0) i2 = 3
-   mesh%larc(1,ia) = ltri(i1,it)
-   mesh%larc(2,ia) = ltri(i2,it)
+   mesh%larc(1,ia) = mesh%order(ltri(i1,it))
+   mesh%larc(2,ia) = mesh%order(ltri(i2,it))
 end do
 
 ! Check mesh
@@ -377,7 +418,7 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 logical,intent(in),optional :: bdist   ! Find minimum distance a boundary arc
 
 ! Local variables
-integer :: i,bnd(mesh%n)
+integer :: i,ii,bnd(mesh%n)
 real(kind_real) :: v1(3),v2(3)
 logical :: lbdist
 
@@ -428,7 +469,8 @@ end do
 if (lbdist) then
    ! Find minimal distance to a boundary arc
    do i=1,mesh%n
-      call mesh%find_bdist(mpl,mesh%lon(i),mesh%lat(i),mesh%bdist(i))
+      ii = mesh%order(i)
+      call mesh%find_bdist(mpl,mesh%lon(i),mesh%lat(i),mesh%bdist(ii))
    end do
 else
    ! Missing
@@ -704,6 +746,7 @@ real(kind_real),intent(out) :: b(3) ! Barycentric weights
 integer,intent(out) :: ib(3)        ! Barycentric indices
 
 ! Local variables
+integer :: i
 real(kind_real) :: p(3)
 
 ! Transform to cartesian coordinates
@@ -714,6 +757,101 @@ b = 0.0
 ib = 0
 call trfind(istart,p,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
 
+! Transform indices
+do i=1,3
+   if (ib(i)>0) ib(i) = mesh%order(ib(i))
+end do
+
 end subroutine mesh_barycentric
+
+!----------------------------------------------------------------------
+! Subroutine: mesh_count_bnda
+! Purpose: count boundary arcs
+!----------------------------------------------------------------------
+subroutine mesh_count_bnda(mesh,gmask,nbnda)
+
+implicit none
+
+! Passed variables
+class(mesh_type),intent(in) :: mesh ! Mesh
+logical,intent(in) :: gmask(mesh%n) ! Mask
+integer,intent(out) :: nbnda        ! Number of boundary nodes
+
+! Local variables
+integer :: i,j,k,ii,jj,kk,iend
+logical :: init
+
+! Initialiation
+nbnda = 0
+
+! Loop over points
+do i=1,mesh%n
+   ii = mesh%order(i)
+   if (.not.gmask(ii)) then
+      ! Initialization
+      iend = mesh%lend(i)
+      init = .true.
+
+      ! Loop over neigbors
+      do while ((iend/=mesh%lend(i)).or.init)
+         j = abs(mesh%list(iend))
+         k = abs(mesh%list(mesh%lptr(iend)))
+         jj = mesh%order(j)
+         kk = mesh%order(k)
+         if (.not.gmask(jj).and.gmask(kk)) nbnda = nbnda+1
+         iend = mesh%lptr(iend)
+         init = .false.
+      end do
+   end if
+end do
+
+end subroutine mesh_count_bnda
+
+!----------------------------------------------------------------------
+! Subroutine: mesh_get_bnda
+! Purpose: get boundary arcs
+!----------------------------------------------------------------------
+subroutine mesh_get_bnda(mesh,gmask,nbnda,bnda_index)
+
+implicit none
+
+! Passed variables
+class(mesh_type),intent(in) :: mesh        ! Mesh
+logical,intent(in) :: gmask(mesh%n)        ! Mask
+integer,intent(in) :: nbnda                ! Number of boundary nodes
+integer,intent(out) :: bnda_index(2,nbnda) ! Boundary node index
+! Local variables
+integer :: ibnda,i,j,k,ii,jj,kk,iend
+logical :: init
+
+! Initialiation
+ibnda = 0
+
+! Loop over points
+do i=1,mesh%n
+   ii = mesh%order(i)
+   if (.not.gmask(ii)) then
+      ! Initialization
+      iend = mesh%lend(i)
+      init = .true.
+
+      ! Loop over neigbors
+      do while ((iend/=mesh%lend(i)).or.init)
+         j = abs(mesh%list(iend))
+         k = abs(mesh%list(mesh%lptr(iend)))
+         jj = mesh%order(j)
+         kk = mesh%order(k)
+         if (.not.gmask(jj).and.gmask(kk)) then
+            ibnda = ibnda+1
+            bnda_index(1,ibnda) = ii
+            bnda_index(2,ibnda) = jj
+         end if
+         iend = mesh%lptr(iend)
+         init = .false.
+      end do
+   end if
+end do
+
+end subroutine mesh_get_bnda
 
 end module type_mesh

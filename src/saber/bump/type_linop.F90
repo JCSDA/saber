@@ -909,8 +909,7 @@ do i_dst=1,n_dst
             if (nam%mask_check) then
                ! Check if arc is crossing boundary arcs
                do i=1,3
-                  call geom%check_arc(mpl,il0,lon_src_eff(linop%interp_data%mesh%order(ib(i))), &
-                & lat_src_eff(linop%interp_data%mesh%order(ib(i))),lon_dst(i_dst),lat_dst(i_dst),valid_arc)
+                  call geom%check_arc(mpl,il0,lon_src_eff(ib(i)),lat_src_eff(ib(i)),lon_dst(i_dst),lat_dst(i_dst),valid_arc)
                   if (.not.valid_arc) valid = .false.
                end do
             end if
@@ -926,7 +925,7 @@ do i_dst=1,n_dst
                   if (b(i)>0.0) then
                      n_s = n_s+1
                      row(n_s) = i_dst
-                     col(n_s) = linop%interp_data%mesh%order(ib(i))
+                     col(n_s) = ib(i)
                      S(n_s) = b(i)
                   end if
                end do

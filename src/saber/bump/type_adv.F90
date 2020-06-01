@@ -339,7 +339,7 @@ do its=2,nam%nts
 
             ! Define search radius
             il0i = min(il0,geom%nl0i)
-            search_rad = min(nam%adv_rad,min(geom%mdist_c0u(ic0u_rac(1),il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0u_rac(1)))))
+            search_rad = min(nam%adv_rad,min(geom%mdist_c0u(ic0u_rac(1),il0i),geom%mesh%bdist(ic0u_rac(1))))
 
             ! Count nearest neighbors
             call geom%tree%count_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),search_rad,nn(ic2a,il0))
@@ -965,7 +965,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
          ic0a = samp%c2a_to_c0a(ic2a)
          ic0u = geom%c0a_to_c0u(ic0a)
          call reduce_arc(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),lon_c2a(ic2a),lat_c2a(ic2a), &
-       & min(geom%mdist_c0u(ic0u,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0u))),dist_c2a(ic2a))
+       & min(geom%mdist_c0u(ic0u,il0i),geom%mesh%bdist(ic0u)),dist_c2a(ic2a))
       end do
 
       ! Check filtered mesh ! TODO: check in the universe
@@ -1134,7 +1134,7 @@ do its=2,nam%nts
          if (geom%gmask_c0a(ic0a,il0)) then
             ic0u = geom%c0a_to_c0u(ic0a)
             call reduce_arc(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),samp%adv_lon(ic0a,il0,its),samp%adv_lat(ic0a,il0,its), &
-          & min(geom%mdist_c0a(ic0a,il0i),geom%mesh%bdist(geom%mesh%order_inv(ic0u))),reduced_dist)
+          & min(geom%mdist_c0a(ic0a,il0i),geom%mesh%bdist(ic0u)),reduced_dist)
          end if
       end do
 
@@ -1515,8 +1515,8 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_put_var(ncid,rhflt_id,adv%rhflt*reqkm))
    call mpl%ncerr(subr,nf90_put_var(ncid,score_loc_id,adv%score_loc))
    call mpl%ncerr(subr,nf90_put_var(ncid,score_adv_id,adv%score_adv))
-   call mpl%ncerr(subr,nf90_put_var(ncid,larc_s_id,samp%mesh%order(samp%mesh%larc(1,:))))
-   call mpl%ncerr(subr,nf90_put_var(ncid,larc_e_id,samp%mesh%order(samp%mesh%larc(2,:))))
+   call mpl%ncerr(subr,nf90_put_var(ncid,larc_s_id,samp%mesh%larc(1,:)))
+   call mpl%ncerr(subr,nf90_put_var(ncid,larc_e_id,samp%mesh%larc(2,:)))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))

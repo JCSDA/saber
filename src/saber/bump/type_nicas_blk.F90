@@ -2815,14 +2815,13 @@ type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 
 ! Local variables
-integer :: net_nnbmax,isu,ic1u,il0,jl1,np,np_new,i,j,k,ip,kc1u,jc1u,il1,dkl1,kl1,jp,isbb,djl1,inr,jl0
-integer :: net_nnb(nicas_blk%nc1u)
-integer,allocatable :: net_inb(:,:),plist(:,:),plist_new(:,:)
+integer :: net_nnbmax,isu,ic1u,il0,jl1,np,np_new,j,k,ip,kc1u,jc1u,il1,dkl1,kl1,jp,isbb,djl1,jl0
+integer,allocatable :: plist(:,:),plist_new(:,:)
 real(kind_real) :: distnorm_network,disttest
 real(kind_real) :: dnb,dx,dy,dz,disthsq,distvsq,rhsq,rvsq,H11,H22,H33,H12
 real(kind_real),allocatable :: distnorm(:,:),net_dnb(:,:,:,:)
-logical :: init,add_to_front
-logical,allocatable :: valid_arc(:,:,:)
+logical :: add_to_front
+logical,allocatable :: net_arc(:,:,:)
 type(mesh_type) :: mesh
 
 ! Allocation
@@ -2831,59 +2830,31 @@ call mesh%alloc(nicas_blk%nc1u)
 ! Initialization
 call mesh%init(mpl,rng,nicas_blk%lon_c1u,nicas_blk%lat_c1u,.true.)
 
-! Count neighbors
-write(mpl%info,'(a10,a)') '','Count neighbors'
-if (nicas_blk%verbosity) call mpl%flush
-net_nnb = 0
-do ic1u=1,nicas_blk%nc1u
-   ! Mesh center
-   inr = mesh%order_inv(ic1u)
-   i = mesh%lend(inr)
-   init = .true.
-
-   ! Loop over neighbors
-   do while ((i/=mesh%lend(inr)).or.init)
-      net_nnb(ic1u) = net_nnb(ic1u)+1
-      i = mesh%lptr(i)
-      init = .false.
-   end do
-end do
-
 ! Allocation
-net_nnbmax = maxval(net_nnb)
-allocate(net_inb(nicas_blk%nc1u,net_nnbmax))
-allocate(net_dnb(nicas_blk%nc1u,nicas_blk%nl1,net_nnbmax,3))
-allocate(valid_arc(nicas_blk%nc1u,nicas_blk%nl1,net_nnbmax))
+net_nnbmax = maxval(mesh%nnb)
+allocate(net_arc(nicas_blk%nc1u,nicas_blk%nl1,net_nnbmax))
+allocate(net_dnb(nicas_blk%nc1u,nicas_blk%nl1,net_nnbmax,-1:1))
 
 ! Find mesh neighbors
 write(mpl%info,'(a10,a)') '','Find mesh neighbors: '
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nc1u)
-net_nnb = 0
-net_inb = mpl%msv%vali
-valid_arc = .false.
+net_arc = .false.
 do ic1u=1,nicas_blk%nc1u
-   ! Mesh center
-   inr = mesh%order_inv(ic1u)
-   i = mesh%lend(inr)
-   init = .true.
+   do j=1,mesh%nnb(ic1u)
+      ! Index
+      jc1u = mesh%inb(ic1u,j)
 
-   ! Loop over neighbors
-   do while ((i/=mesh%lend(inr)).or.init)
-      ! Get arc
-      net_nnb(ic1u) = net_nnb(ic1u)+1
-      net_inb(ic1u,net_nnb(ic1u)) = mesh%order(abs(mesh%list(i)))
-      i = mesh%lptr(i)
-      init = .false.
-
-      ! Check arc validity
-      jc1u = net_inb(ic1u,net_nnb(ic1u))
-      do il1=1,nicas_blk%nl1
-         il0 = nicas_blk%l1_to_l0(il1)
-         valid_arc(ic1u,il1,net_nnb(ic1u)) = .true.
-         if (nam%mask_check) call geom%check_arc(mpl,il0,nicas_blk%lon_c1u(ic1u),nicas_blk%lat_c1u(ic1u),nicas_blk%lon_c1u(jc1u), &
-       & nicas_blk%lat_c1u(jc1u),valid_arc(ic1u,il1,net_nnb(ic1u)))
-      end do
+      ! Check arc
+      if (nam%mask_check) then
+         do il1=1,nicas_blk%nl1
+            il0 = nicas_blk%l1_to_l0(il1)
+            call geom%check_arc(mpl,il0,nicas_blk%lon_c1u(ic1u),nicas_blk%lat_c1u(ic1u),nicas_blk%lon_c1u(jc1u), &
+       & nicas_blk%lat_c1u(jc1u),net_arc(ic1u,il1,j))
+         end do
+      else
+         net_arc(ic1u,:,j) = .true.
+      end if
    end do
 
    ! Update
@@ -2899,9 +2870,9 @@ net_dnb = 1.0
 !$omp parallel do schedule(static) private(ic1u,j,jc1u,dnb,dx,dy,dz,il1,il0,djl1,jl1,jl0,H11,H22,H33), &
 !$omp&                             private(H12,disthsq,distvsq,rhsq,rvsq,distnorm_network)
 do ic1u=1,nicas_blk%nc1u
-   do j=1,net_nnb(ic1u)
+   do j=1,mesh%nnb(ic1u)
       ! Indices
-      jc1u = net_inb(ic1u,j)
+      jc1u = mesh%inb(ic1u,j)
 
       if (nicas_blk%gmask_hor_c1u(jc1u)) then
          if (nicas_blk%anisotropic) then
@@ -2925,8 +2896,8 @@ do ic1u=1,nicas_blk%nc1u
                jl0 = nicas_blk%l1_to_l0(jl1)
 
                ! Check valid arc for both levels
-               if (nicas_blk%gmask_c1u(ic1u,il0).and.nicas_blk%gmask_c1u(jc1u,jl0).and.valid_arc(ic1u,il1,j) &
-             & .and.valid_arc(ic1u,jl1,j)) then
+               if (nicas_blk%gmask_c1u(ic1u,il0).and.nicas_blk%gmask_c1u(jc1u,jl0).and.net_arc(ic1u,il1,j) &
+             & .and.net_arc(ic1u,jl1,j)) then
                   ! Squared support radii
                   if (nicas_blk%anisotropic) then
                      dz = nicas_blk%vunit_c1u(ic1u,il0)-nicas_blk%vunit_c1u(jc1u,jl0)
@@ -2934,7 +2905,7 @@ do ic1u=1,nicas_blk%nc1u
                      H22 = 0.5*(nicas_blk%H22_c1u(ic1u,il1)+nicas_blk%H22_c1u(jc1u,jl1))
                      H33 = 0.5*(nicas_blk%H33_c1u(ic1u,il1)+nicas_blk%H33_c1u(jc1u,jl1))
                      H12 = 0.5*(nicas_blk%H12_c1u(ic1u,il1)+nicas_blk%H12_c1u(jc1u,jl1))
-                     net_dnb(ic1u,il1,j,djl1+2) = sqrt(H11*dx**2+H22*dy**2+H33*dz**2+2.0*H12*dx*dy)*gc2gau
+                     net_dnb(ic1u,il1,j,djl1) = sqrt(H11*dx**2+H22*dy**2+H33*dz**2+2.0*H12*dx*dy)*gc2gau
                   else
                      disthsq = dnb**2
                      distvsq = (nicas_blk%vunit_c1u(ic1u,il0)-nicas_blk%vunit_c1u(jc1u,jl0))**2
@@ -2951,7 +2922,7 @@ do ic1u=1,nicas_blk%nc1u
                      elseif (distvsq>0.0) then
                         distnorm_network = distnorm_network+0.5*huge(0.0)
                      end if
-                     net_dnb(ic1u,il1,j,djl1+2) = sqrt(distnorm_network)
+                     net_dnb(ic1u,il1,j,djl1) = sqrt(distnorm_network)
                   end if
                end if
             end do
@@ -2999,12 +2970,12 @@ do isbb=1,nicas_blk%nsbb
          jl1 = plist(ip,2)
 
          ! Loop over neighbors
-         do k=1,net_nnb(jc1u)
-            kc1u = net_inb(jc1u,k)
+         do k=1,mesh%nnb(jc1u)
+            kc1u = mesh%inb(jc1u,k)
             do dkl1=-1,1
                kl1 = max(1,min(jl1+dkl1,nicas_blk%nl1))
                if (nicas_blk%gmask_c2u(kc1u,kl1)) then
-                  disttest = distnorm(jc1u,jl1)+net_dnb(jc1u,jl1,k,dkl1+2)
+                  disttest = distnorm(jc1u,jl1)+net_dnb(jc1u,jl1,k,dkl1)
                   if (inf(disttest,1.0_kind_real)) then
                      ! Point is inside the support
                      if (inf(disttest,distnorm(kc1u,kl1))) then
@@ -3054,12 +3025,12 @@ do isbb=1,nicas_blk%nsbb
    ! Update
    if (nicas_blk%verbosity) call mpl%prog_print(isbb)
 end do
+!$omp end parallel do
 if (nicas_blk%verbosity) call mpl%prog_final
 
 ! Release memory
-deallocate(net_inb)
+deallocate(net_arc)
 deallocate(net_dnb)
-deallocate(valid_arc)
 
 end subroutine nicas_blk_compute_convol_network
 

@@ -30,14 +30,14 @@ ecbuild_add_option( FEATURE BUILD_ECKIT
 
 # eckit
 if(BUILD_ECKIT)
-    ecbuild_bundle( PROJECT eckit GIT "https://github.com/JCSDA/eckit.git" TAG 1.4.0.jcsda1 )
+    ecbuild_bundle( PROJECT eckit GIT "https://github.com/JCSDA/eckit.git" BRANCH release-stable UPDATE )
 endif()
 
 # fckit
-ecbuild_bundle( PROJECT fckit GIT "https://github.com/JCSDA/fckit.git" BRANCH develop UPDATE )
+ecbuild_bundle( PROJECT fckit GIT "https://github.com/JCSDA/fckit.git" BRANCH release-stable UPDATE )
 
 # atlas
-ecbuild_bundle( PROJECT atlas GIT "https://github.com/JCSDA/atlas.git" BRANCH develop UPDATE )
+ecbuild_bundle( PROJECT atlas GIT "https://github.com/JCSDA/atlas.git" BRANCH release-stable UPDATE )
 
 # oops
 ecbuild_bundle( PROJECT oops GIT "https://github.com/JCSDA/oops.git" BRANCH develop UPDATE )

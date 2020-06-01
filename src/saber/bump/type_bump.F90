@@ -186,6 +186,7 @@ real(kind_real),intent(in),optional :: msvalr          ! Missing value for reals
 
 ! Local variables
 integer :: iv,its
+real(kind_real),allocatable :: fld_uv(:,:)
 real(kind_real),pointer :: real_ptr(:,:)
 character(len=1024) :: fieldname
 character(len=1024),parameter :: subr = 'bump_setup'
@@ -323,6 +324,7 @@ if (bump%nam%new_cortrack.or.(trim(bump%nam%adv_type)=='wind').or.(trim(bump%nam
    if (.not.present(afieldset)) call bump%mpl%abort(subr,'afieldset required to initialize wind fields')
 
    ! Allocation
+   allocate(fld_uv(bump%geom%nc0a,bump%geom%nl0))
    allocate(bump%fld_uv(bump%geom%nc0a,bump%geom%nl0,2,bump%nam%nts))
 
    ! Get field from ATLAS fieldset
@@ -336,12 +338,16 @@ if (bump%nam%new_cortrack.or.(trim(bump%nam%adv_type)=='wind').or.(trim(bump%nam
          call afield%data(real_ptr)
 
          ! Copy to BUMP
-         call bump%geom%copy_mga_to_c0a(bump%mpl,transpose(real_ptr),bump%fld_uv(:,:,iv,its))
+         fld_uv = transpose(real_ptr)
+         call bump%geom%copy_mga_to_c0a(bump%mpl,fld_uv,bump%fld_uv(:,:,iv,its))
       end do
    end do
 
    ! Normalization
    bump%fld_uv = bump%fld_uv/req
+
+   ! Release memory
+   deallocate(fld_uv)
 end if
 
 if (present(nobs)) then
