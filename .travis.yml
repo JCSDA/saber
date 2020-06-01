@@ -48,7 +48,7 @@ before_install:
   - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber
 
 #  copy bundle CMakeLists.txt
-  - cp ${REPO_SOURCE_DIR}/saber-bundle/saber/bundle/CMakeLists.txt ${REPO_SOURCE_DIR}/saber-bundle
+  - cp ${REPO_SOURCE_DIR}/saber-bundle/saber/CI/CMakeLists.txt ${REPO_SOURCE_DIR}/saber-bundle
 
 #  do no switch to develop branch by removing
 #  develop UPDATE in CMakeLists.txt in saber-bundle
