@@ -14,8 +14,6 @@ phases:
       - echo $CODEBUILD_WEBHOOK_ACTOR_ACCOUNT_ID
       - echo $CODEBUILD_WEBHOOK_EVENT
       - echo $CODEBUILD_BUILD_SUCCEEDING
-      - echo $CODEBUILD_WEBHOOK_PREV_COMMIT
-      - echo $CODEBUILD_WEBHOOK_HEAD_REF
       - echo $CODEBUILD_RESOLVED_SOURCE_VERSION
 
       - if [ "$CODEBUILD_WEBHOOK_EVENT" = "PULL_REQUEST_MERGED" ];
@@ -43,6 +41,7 @@ phases:
 
       - mkdir /jcsda/.ssh ; echo "StrictHostKeyChecking no" > /jcsda/.ssh/config
       - mkdir -p /jcsda/.openmpi
+      - mkdir -p /jcsda/saber-bundle
       - mkdir -p /home/jcsdauser/.openmpi
 
       - cp default-mca-params.conf /home/jcsdauser/.openmpi/mca-params.conf
@@ -54,73 +53,59 @@ phases:
         && chmod 700 /jcsda/.ssh
         && cp /jcsda/.ssh/id_rsa.pub /jcsda/.ssh/authorized_keys
         && echo MPI setup for Docker done"
+
   pre_build:
     commands:
       - echo Executing pre_build phase
 
       - git lfs install
       - cp ~/.gitconfig /home/jcsdauser/
+      - cp CI/CMakeLists.txt /jcsda/saber-bundle
 
-      # saber-bundle
-      - mkdir -p saber-bundle
+      - cd CI
 
       # fckit
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/fckit saber-bundle/fckit
-      - cd saber-bundle/fckit
-      - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in fckit repo"
-      - cd $CODEBUILD_SRC_DIR
-      - ls
-
+      - ./clone.sh $GIT_USER $GIT_PASS fckit $CODEBUILD_GIT_BRANCH fckit /jcsda/saber-bundle release-stable
       # atlas
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/atlas saber-bundle/atlas
-      - cd saber-bundle/atlas
-      - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in atlas repo"
-      - cd $CODEBUILD_SRC_DIR
-      - ls
-
+      - ./clone.sh $GIT_USER $GIT_PASS atlas $CODEBUILD_GIT_BRANCH atlas /jcsda/saber-bundle release-stable
       # metis
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/metis saber-bundle/metis
-      - ls
-
+      - ./clone.sh $GIT_USER $GIT_PASS metis $CODEBUILD_GIT_BRANCH metis /jcsda/saber-bundle develop
       # oops
-      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/oops saber-bundle/oops
-      - cd saber-bundle/oops
-      - git checkout $CODEBUILD_GIT_BRANCH || echo "No branch named $CODEBUILD_GIT_BRANCH in oops repo"
-      - cd $CODEBUILD_SRC_DIR
-      - ls
-
+      - ./clone.sh $GIT_USER $GIT_PASS oops $CODEBUILD_GIT_BRANCH oops /jcsda/saber-bundle develop
       # saber
-      - git clone -b $CODEBUILD_GIT_BRANCH https://$GIT_USER:$GIT_PASS@github.com/jcsda/saber saber-bundle/saber
-      - ls
+      - ./clone.sh $GIT_USER $GIT_PASS saber $CODEBUILD_GIT_BRANCH saber /jcsda/saber-bundle develop
 
-      # copy bundle CMakeLists.txt
-      - cp saber-bundle/saber/bundle/CMakeLists.txt saber-bundle
-      - ls
-
-      - mv saber-bundle /jcsda/
       - cd /jcsda/saber-bundle
       - ls
-      - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
-      - sed -i '/PROJECT eckit/d' CMakeLists.txt
 
   build:
     commands:
       - echo Executing build phase
       - su - jcsdauser -c "cd /build_container
         && ls
+        && export FC=mpifort
+        && export CC=mpicc
+        && export CXX=mpicxx
         && ecbuild /jcsda/saber-bundle/
-        && cd /build_container/saber
+        && cd saber
         && make -j4"
 
       - export BUILD_STATUS="0"
       - echo $BUILD_STATUS
       - echo $CODEBUILD_BUILD_SUCCEEDING
+
       - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
         then export BUILD_STATUS="1";
         echo "Build passed";
         fi
+      - echo $BUILD_STATUS
 
-      - su - jcsdauser -c "cd /build_container/saber
+      - su - jcsdauser -c "cd /build_container 
+        && ls
+        && export FC=mpifort
+        && export CC=mpicc
+        && export CXX=mpicxx
+        && cd saber
         && ctest"
 
   post_build:
@@ -131,4 +116,5 @@ phases:
         then echo "Build passed, rerun failed tests";
         su - jcsdauser -c "cd /build_container/saber
         && ctest -VV --rerun-failed";
+        else echo "Build failed";
         fi
