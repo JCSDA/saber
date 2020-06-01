@@ -264,37 +264,25 @@ type(ens_type),intent(in) :: ens               ! Ensemble
 type(adv_type),intent(in),optional :: adv_wind ! Wind advection
 
 ! Local variables
-integer :: ic0u,ic0,ic2,ic2a,jn,jc0u,il0,il0i,isub,iv,its,ie,ie_sub,ic0a,nc0d,ic0d,jc0d,jnmax,nnmax
+integer :: ic0u,ic0,ic2,ic2a,ic2u,jn,jc0u,il0,il0i,isub,iv,its,ie,ie_sub,ic0a,nc0d,ic0d,jc0d,jnmax,nnmax,iproc
+integer :: nvalid,nmask,nvalid_tot,nmask_tot
 integer :: nn(samp%nc2a,geom%nl0),ic0u_rac(1)
 integer,allocatable :: jc0u_ra(:,:,:),c0u_to_c0d(:),c0d_to_c0(:)
 real(kind_real) :: search_rad,m2m2,fld_1,fld_2,cov
 real(kind_real) :: dist_sum,cor_avg_max,norm,norm_tot
 real(kind_real) :: lon_rac(samp%nc2a,geom%nl0),lat_rac(samp%nc2a,geom%nl0)
-real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
+real(kind_real) :: lon_c2u(samp%nc2u),lat_c2u(samp%nc2u)
 real(kind_real),allocatable :: fld_ext_1(:,:),fld_ext_2(:,:)
 real(kind_real),allocatable :: m2_1(:,:,:,:,:),m2_2(:,:,:,:,:)
 real(kind_real),allocatable :: m11(:,:,:,:,:)
 real(kind_real),allocatable :: cor(:,:),cor_avg(:)
-logical :: lcheck_c0d(geom%nc0u)
-logical,allocatable :: mask_nn(:,:,:),mask_nn_tmp(:),smask_c2(:),valid_c2(:)
+logical :: lcheck_c0d(geom%nc0u),valid_c2u(samp%nc2u),valid_c2a(samp%nc2a)
+logical,allocatable :: mask_nn(:,:,:),mask_nn_tmp(:)
 type(com_type) :: com_AD
 type(mesh_type) :: mesh
 
 write(mpl%info,'(a7,a)') '','Compute raw advection using correlation maximum'
 call mpl%flush
-
-! Allocation
-if (mpl%main) then
-   allocate(lon_c2(nam%nc2))
-   allocate(lat_c2(nam%nc2))
-   allocate(smask_c2(nam%nc2))
-   allocate(valid_c2(nam%nc2))
-else
-   allocate(lon_c2(0))
-   allocate(lat_c2(0))
-   allocate(smask_c2(0))
-   allocate(valid_c2(0))
-end if
 
 do its=2,nam%nts
    write(mpl%info,'(a10,a,i2)') '','Timeslot ',its
@@ -503,9 +491,6 @@ do its=2,nam%nts
       write(mpl%info,'(a16,a,i3)') '','Level ',nam%levs(il0)
       call mpl%flush
 
-      ! Check initialization
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
-
       ! Initialization
       adv%lon_c2a_raw(:,il0,its) = adv%lon_c2a
       adv%lat_c2a_raw(:,il0,its) = adv%lat_c2a
@@ -592,17 +577,28 @@ do its=2,nam%nts
       end do
       !$omp end parallel do
 
-      ! Check raw mesh ! TODO: check in the universe
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lon_c2a_raw(:,il0,its),lon_c2)
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lat_c2a_raw(:,il0,its),lat_c2)
-      if (mpl%main) then
-         call mesh%copy(samp%mesh)
-         call mesh%store(mpl,lon_c2,lat_c2)
-         call mesh%check(mpl,valid_c2)
-         adv%valid_raw(il0,its) = real(count(valid_c2.and.samp%mesh%valid.and.smask_c2),kind_real) &
-                                & /real(count(samp%mesh%valid.and.smask_c2),kind_real)
-      end if
-      call mpl%f_comm%broadcast(adv%valid_raw(il0,its),mpl%rootproc-1)
+      ! Check raw mesh
+      call samp%com_AU%ext(mpl,adv%lon_c2a_raw(:,il0,its),lon_c2u)
+      call samp%com_AU%ext(mpl,adv%lat_c2a_raw(:,il0,its),lat_c2u)
+      call mesh%copy(samp%mesh)
+      call mesh%store(mpl,lon_c2u,lat_c2u)
+      call mesh%check(mpl,valid_c2u)
+      do ic2u=1,samp%nc2u
+         ic0u = samp%c2u_to_c0u(ic2u)
+         ic0 = geom%c0u_to_c0(ic0u)
+         iproc = geom%c0_to_proc(ic0)
+         if (iproc==mpl%myproc) then
+            valid_c2u(ic2u) = valid_c2u(ic2u).and.samp%mesh%valid(ic2u).and.samp%smask_c2u(ic2u,il0)
+         else
+            valid_c2u(ic2u) = .true.
+         end if
+      end do
+      call samp%com_AU%red(mpl,valid_c2u,valid_c2a,op='and')
+      nvalid = count(valid_c2a)
+      nmask = count(samp%mesh%valid(samp%c2a_to_c2u).and.samp%smask_c2a(:,il0))
+      call mpl%f_comm%allreduce(nvalid,nvalid_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(nmask,nmask_tot,fckit_mpi_sum())
+      adv%valid_raw(il0,its) = real(nvalid_tot,kind_real)/real(nmask_tot,kind_real)
 
       ! Average distance
       dist_sum = sum(adv%dist_c2a_raw(:,il0,its),mask=mpl%msv%isnot(adv%dist_c2a_raw(:,il0,its)))
@@ -649,35 +645,22 @@ type(samp_type),intent(inout) :: samp                              ! Sampling
 real(kind_real),intent(in) :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
 
 ! Local variables
-integer :: ic0u,ic0a,ic0w,ic0own,ic0,i_s,ic2a,il0,its,it,nc0w,nc0own
+integer :: ic0u,ic0a,ic0w,ic0own,ic0,i_s,ic2a,ic2u,il0,its,it,nc0w,nc0own,iproc
+integer :: nvalid,nmask,nvalid_tot,nmask_tot
 integer :: c0u_to_c0w(geom%nc0u)
 integer,allocatable :: c0w_to_c0(:),c0own_to_c0(:)
 real(kind_real) :: dist_sum,norm,norm_tot
 real(kind_real) :: dtl,t,um(samp%nc2a),vm(samp%nc2a),up(samp%nc2a),vp(samp%nc2a)
 real(kind_real) :: uxm,uym,uzm,uxp,uyp,uzp,ux,uy,uz,x,y,z
+real(kind_real) :: lon_c2u(samp%nc2u),lat_c2u(samp%nc2u)
 real(kind_real),allocatable :: fld_uv_ext(:,:,:)
-real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
-logical :: lcheck_c0w(geom%nc0u)
-logical,allocatable :: smask_c2(:),valid_c2(:)
+logical :: lcheck_c0w(geom%nc0u),valid_c2u(samp%nc2u),valid_c2a(samp%nc2a)
 type(com_type) :: com_AW
 type(linop_type) :: h
 type(mesh_type) :: mesh
 
 write(mpl%info,'(a7,a)') '','Compute raw advection using wind field'
 call mpl%flush
-
-! Allocation
-if (mpl%main) then
-   allocate(lon_c2(nam%nc2))
-   allocate(lat_c2(nam%nc2))
-   allocate(smask_c2(nam%nc2))
-   allocate(valid_c2(nam%nc2))
-else
-   allocate(lon_c2(0))
-   allocate(lat_c2(0))
-   allocate(smask_c2(0))
-   allocate(valid_c2(0))
-end if
 
 ! Initialization
 dtl = nam%dts/nt
@@ -689,9 +672,6 @@ do its=2,nam%nts
    do il0=1,geom%nl0
       write(mpl%info,'(a13,a,i3)') '','Level ',nam%levs(il0)
       call mpl%flush
-
-      ! Check initialization
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
 
       ! Initialization
       if (its==2) then
@@ -832,18 +812,28 @@ do its=2,nam%nts
          end if
       end do
 
-      ! Check raw mesh ! TODO: check in the universe
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lon_c2a_raw(:,il0,its),lon_c2)
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,adv%lat_c2a_raw(:,il0,its),lat_c2)
-      if (mpl%main) then
-         call mesh%copy(samp%mesh)
-         call mesh%store(mpl,lon_c2,lat_c2)
-         call mesh%check(mpl,valid_c2)
-         adv%valid_raw(il0,its) = real(count(valid_c2.and.samp%mesh%valid.and.smask_c2),kind_real) &
-                                & /real(count(samp%mesh%valid.and.smask_c2),kind_real)
-      end if
-      call mpl%f_comm%broadcast(adv%valid_raw(il0,its),mpl%rootproc-1)
-
+      ! Check raw mesh
+      call samp%com_AU%ext(mpl,adv%lon_c2a_raw(:,il0,its),lon_c2u)
+      call samp%com_AU%ext(mpl,adv%lat_c2a_raw(:,il0,its),lat_c2u)
+      call mesh%copy(samp%mesh)
+      call mesh%store(mpl,lon_c2u,lat_c2u)
+      call mesh%check(mpl,valid_c2u)
+      do ic2u=1,samp%nc2u
+         ic0u = samp%c2u_to_c0u(ic2u)
+         ic0 = geom%c0u_to_c0(ic0u)
+         iproc = geom%c0_to_proc(ic0)
+         if (iproc==mpl%myproc) then
+            valid_c2u(ic2u) = valid_c2u(ic2u).and.samp%mesh%valid(ic2u).and.samp%smask_c2u(ic2u,il0)
+         else
+            valid_c2u(ic2u) = .true.
+         end if
+      end do
+      call samp%com_AU%red(mpl,valid_c2u,valid_c2a,op='and')
+      nvalid = count(valid_c2a)
+      nmask = count(samp%mesh%valid(samp%c2a_to_c2u).and.samp%smask_c2a(:,il0))
+      call mpl%f_comm%allreduce(nvalid,nvalid_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(nmask,nmask_tot,fckit_mpi_sum())
+      adv%valid_raw(il0,its) = real(nvalid_tot,kind_real)/real(nmask_tot,kind_real)
 
       ! Average distance
       dist_sum = sum(adv%dist_c2a_raw(:,il0,its),mask=mpl%msv%isnot(adv%dist_c2a_raw(:,il0,its)))
@@ -879,31 +869,18 @@ integer,intent(in) :: il0            ! Level index
 integer,intent(in) :: its            ! Timeslot index
 
 ! Local variables
-integer :: ic0a,ic0u,ic2a,il0i,iter
+integer :: ic0,ic0a,ic0u,ic2a,ic2u,il0i,iter,iproc
+integer :: nvalid,nmask,nvalid_tot,nmask_tot
 real(kind_real) :: dist_sum,norm,norm_tot,valid_flt,dist_flt,rhflt,drhflt
 real(kind_real) :: lon_c2a(samp%nc2a),lat_c2a(samp%nc2a),dist_c2a(samp%nc2a)
 real(kind_real) :: dx_ini(samp%nc2a),dy_ini(samp%nc2a),dz_ini(samp%nc2a)
 real(kind_real) :: dx(samp%nc2a),dy(samp%nc2a),dz(samp%nc2a),dd(samp%nc2a)
-real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
-logical :: dichotomy,convergence
-logical,allocatable :: smask_c2(:),valid_c2(:)
+real(kind_real) :: lon_c2u(samp%nc2u),lat_c2u(samp%nc2u)
+logical :: dichotomy,convergence,valid_c2u(samp%nc2u),valid_c2a(samp%nc2a)
 character(len=1024),parameter :: subr = 'adv_filter'
 type(mesh_type) :: mesh
 
 if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
-   ! Allocation
-   if (mpl%main) then
-      allocate(lon_c2(nam%nc2))
-      allocate(lat_c2(nam%nc2))
-      allocate(smask_c2(nam%nc2))
-      allocate(valid_c2(nam%nc2))
-   else
-      allocate(lon_c2(0))
-      allocate(lat_c2(0))
-      allocate(smask_c2(0))
-      allocate(valid_c2(0))
-   end if
-
    ! Convert to cartesian coordinates
    do ic2a=1,samp%nc2a
       if (samp%smask_c2a(ic2a,il0)) then
@@ -918,9 +895,6 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
          dz_ini(ic2a) = mpl%msv%valr
       end if
    end do
-
-   ! Check initialization
-   call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%smask_c2a(:,il0),smask_c2)
 
    ! Dichotomy initialization
    convergence = .false.
@@ -968,18 +942,28 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
        & min(geom%mdist_c0u(ic0u,il0i),geom%mesh%bdist(ic0u)),dist_c2a(ic2a))
       end do
 
-      ! Check filtered mesh ! TODO: check in the universe
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,lon_c2a,lon_c2)
-      call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,lat_c2a,lat_c2)
-      if (mpl%main) then
-         call mesh%copy(samp%mesh)
-         call mesh%store(mpl,lon_c2,lat_c2)
-         call mesh%check(mpl,valid_c2)
-         valid_flt = real(count(valid_c2.and.samp%mesh%valid.and.smask_c2),kind_real) &
-                   & /real(count(samp%mesh%valid.and.smask_c2),kind_real)
-      end if
-      call mpl%f_comm%broadcast(valid_flt,mpl%rootproc-1)
-
+      ! Check filtered mesh
+      call samp%com_AU%ext(mpl,lon_c2a,lon_c2u)
+      call samp%com_AU%ext(mpl,lat_c2a,lat_c2u)
+      call mesh%copy(samp%mesh)
+      call mesh%store(mpl,lon_c2u,lat_c2u)
+      call mesh%check(mpl,valid_c2u)
+      do ic2u=1,samp%nc2u
+         ic0u = samp%c2u_to_c0u(ic2u)
+         ic0 = geom%c0u_to_c0(ic0u)
+         iproc = geom%c0_to_proc(ic0)
+         if (iproc==mpl%myproc) then
+            valid_c2u(ic2u) = valid_c2u(ic2u).and.samp%mesh%valid(ic2u).and.samp%smask_c2u(ic2u,il0)
+         else
+            valid_c2u(ic2u) = .true.
+         end if
+      end do
+      call samp%com_AU%red(mpl,valid_c2u,valid_c2a,op='and')
+      nvalid = count(valid_c2a)
+      nmask = count(samp%mesh%valid(samp%c2a_to_c2u).and.samp%smask_c2a(:,il0))
+      call mpl%f_comm%allreduce(nvalid,nvalid_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(nmask,nmask_tot,fckit_mpi_sum())
+      valid_flt = real(nvalid_tot,kind_real)/real(nmask_tot,kind_real)
 
       ! Print result
       write(mpl%info,'(a19,a,i2,a,f10.2,a,f7.3,a)') '','Iteration ',iter,': rhflt = ', &

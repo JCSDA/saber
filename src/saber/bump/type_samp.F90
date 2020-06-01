@@ -1835,39 +1835,21 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(in) :: nam       ! Namelist
 
-! Local variables
-real(kind_real),allocatable :: lon_c2(:),lat_c2(:) 
+! Alocation
+call samp%mesh%alloc(samp%nc2u)
 
-! Allocation
-if (mpl%main) then
-   allocate(lon_c2(nam%nc2))
-   allocate(lat_c2(nam%nc2))
-else
-   allocate(lon_c2(0))
-   allocate(lat_c2(0))
-end if
+! Initialization
+call samp%mesh%init(mpl,rng,samp%lon_c2u,samp%lat_c2u,.true.)
 
-! Communication
-call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%lon_c2a,lon_c2)
-call mpl%loc_to_glb(samp%nc2a,nam%nc2,samp%c2a_to_c2,samp%lat_c2a,lat_c2)
+! Compute triangles list
+write(mpl%info,'(a7,a)') '','Compute triangles list '
+call mpl%flush
+call samp%mesh%trlist(mpl)
 
-if (mpl%main) then
-   ! Alocation
-   call samp%mesh%alloc(nam%nc2)
-
-   ! Initialization
-   call samp%mesh%init(mpl,rng,lon_c2,lat_c2)
-
-   ! Compute triangles list
-   write(mpl%info,'(a7,a)') '','Compute triangles list '
-   call mpl%flush
-   call samp%mesh%trlist(mpl)
-
-   ! Find boundary nodes
-   write(mpl%info,'(a7,a)') '','Find boundary nodes'
-   call mpl%flush
-   call samp%mesh%bnodes(mpl)
-end if
+! Find boundary nodes
+write(mpl%info,'(a7,a)') '','Find boundary nodes'
+call mpl%flush
+call samp%mesh%bnodes(mpl)
 
 end subroutine samp_compute_mesh_c2
 

@@ -559,9 +559,9 @@ type(bpar_type),intent(in) :: bpar    ! Block parameters
 type(cv_type),intent(out) :: cv       ! Control vector
 
 ! Local variables
-integer :: ib,jb,ns,isa,is
+integer :: ib,jb,isa,is
 integer,allocatable :: order(:)
-real(kind_real),allocatable :: hash(:),alpha(:)
+real(kind_real),allocatable :: hash_s(:),alpha(:)
 
 ! Allocation
 call nicas%alloc_cv(mpl,bpar,cv)
@@ -575,22 +575,19 @@ do ib=1,bpar%nbe
    jb = bpar%cv_block(ib)
 
    if (mpl%msv%isnot(jb)) then
-      ! Get total size
-      call mpl%f_comm%allreduce(nicas%blk(jb)%nsa,ns,fckit_mpi_sum())
-
       ! Allocation
-      allocate(hash(ns))
-      allocate(order(ns))
-      allocate(alpha(ns))
+      allocate(hash_s(nicas%blk(jb)%ns))
+      allocate(order(nicas%blk(jb)%ns))
+      allocate(alpha(nicas%blk(jb)%ns))
 
       ! Random vector
       call rng%rand_gau(alpha)
 
       ! Get global hash
-      call mpl%loc_to_glb(nicas%blk(jb)%nsa,ns,nicas%blk(jb)%sa_to_s,nicas%blk(jb)%sa_to_hash,hash,.true.)
+      call mpl%loc_to_glb(nicas%blk(jb)%nsa,nicas%blk(jb)%ns,nicas%blk(jb)%sa_to_s,nicas%blk(jb)%hash_sa,hash_s,.true.)
 
       ! Reorder random vector
-      call qsort(ns,hash,order)
+      call qsort(nicas%blk(jb)%ns,hash_s,order)
       alpha = alpha(order)
 
       ! Copy local section     
@@ -600,7 +597,7 @@ do ib=1,bpar%nbe
       end do
 
       ! Release memory
-      deallocate(hash)
+      deallocate(hash_s)
       deallocate(order)
       deallocate(alpha)
    end if

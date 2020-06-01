@@ -540,7 +540,7 @@ end subroutine mesh_find_bdist
 ! Subroutine: mesh_check
 ! Purpose: check whether the mesh is made of counter-clockwise triangles
 !----------------------------------------------------------------------
-subroutine mesh_check(mesh,mpl,valid,fix)
+subroutine mesh_check(mesh,mpl,valid)
 
 implicit none
 
@@ -548,12 +548,11 @@ implicit none
 class(mesh_type),intent(inout) :: mesh ! Mesh
 type(mpl_type),intent(inout) :: mpl    ! MPI data
 logical,intent(out) :: valid(mesh%n)   ! Validity flag
-logical,intent(in),optional :: fix     ! Fix mesh flag
 
 ! Local variables
-integer :: it,i,iend,navg,j,ind_avg(40),ii
+integer :: it
 real(kind_real),allocatable :: a(:),b(:),c(:),cd(:),cp(:),v1(:),v2(:)
-logical :: validt(mesh%nt),lfix,init
+logical :: validt(mesh%nt)
 character(len=1024),parameter :: subr = 'mesh_check'
 
 !$omp parallel do schedule(static) private(it) firstprivate(a,b,c,cd,cp,v1,v2)
@@ -586,7 +585,7 @@ do it=1,mesh%nt
       ! Compare the directions
       validt(it) = sum(cp*cd)>0.0
    else
-      ! At least one vertex ic1 is missing
+      ! At least one vertex is missing
       validt(it) = .false.
    end if
 
@@ -606,93 +605,6 @@ valid = .true.
 do it=1,mesh%nt
    if (.not.validt(it)) valid(mesh%ltri(:,it)) = .false.
 end do
-
-! Set fix parameter
-lfix = .false.
-if (present(fix)) lfix = fix
-lfix = (lfix.and.any(.not.validt))
-
-! Fix mesh
-if (lfix) then
-   do it=1,mesh%nt
-      if (.not.validt(it)) then
-         do ii=1,3
-            i = mesh%ltri(ii,it)
-            iend = mesh%lend(i)
-            init = .true.
-            navg = 0
-            do while ((iend/=mesh%lend(i)).or.init)
-               j = abs(mesh%list(iend))
-               if (valid(j)) then
-                  navg = navg+1
-                  if (navg>40) call mpl%abort(subr,'max. number of neighbors should be increased')
-                  ind_avg(navg) = j
-               end if
-               iend = mesh%lptr(iend)
-               init = .false.
-            end do
-
-            if (navg>0) then
-               ! Average in cartesian coordinates
-               mesh%x(i) = sum(mesh%x(ind_avg(1:navg)))/real(navg,kind_real)
-               mesh%y(i) = sum(mesh%y(ind_avg(1:navg)))/real(navg,kind_real)
-               mesh%z(i) = sum(mesh%z(ind_avg(1:navg)))/real(navg,kind_real)
-
-               ! Back to spherical coordinates
-               call xyz2lonlat(mpl,mesh%x(i),mesh%y(i),mesh%z(i),mesh%lon(i),mesh%lat(i))
-            end if
-         end do
-
-         ! Allocation
-         allocate(a(3))
-         allocate(b(3))
-         allocate(c(3))
-         allocate(cd(3))
-         allocate(cp(3))
-
-         ! Check vertices status
-         if (mpl%msv%isallnot(mesh%x(mesh%ltri(:,it))).and.mpl%msv%isallnot(mesh%y(mesh%ltri(:,it))) &
-       & .and.mpl%msv%isallnot(mesh%z(mesh%ltri(:,it)))) then
-            ! Vertices
-            a = (/mesh%x(mesh%ltri(1,it)),mesh%y(mesh%ltri(1,it)),mesh%z(mesh%ltri(1,it))/)
-            b = (/mesh%x(mesh%ltri(2,it)),mesh%y(mesh%ltri(2,it)),mesh%z(mesh%ltri(2,it))/)
-            c = (/mesh%x(mesh%ltri(3,it)),mesh%y(mesh%ltri(3,it)),mesh%z(mesh%ltri(3,it))/)
-
-            ! Cross-product (c-b)x(a-b)
-            call vector_product(c-b,a-b,cp)
-
-            ! Centroid
-            cd = (a+b+c)/3.0
-
-            ! Compare the directions
-            validt(it) = sum(cp*cd)>0.0
-         else
-            ! At least one vertex ic1 ismissing
-            validt(it) = .false.
-         end if
-
-         if (validt(it)) then
-            write(mpl%info,'(a19,a,i6,a)') '','Triangle ',it,' of the mesh has been fixed sucessfully'
-         else
-            write(mpl%info,'(a19,a,i6,a)') '','Triangle ',it,' of the mesh failed to be fixed'
-            call mpl%abort(subr,'mesh%fix failed')
-         end if
-
-         ! Release memory
-         deallocate(a)
-         deallocate(b)
-         deallocate(c)
-         deallocate(cd)
-         deallocate(cp)
-      end if
-   end do
-
-   ! Check vertices
-   valid = .true.
-   do it=1,mesh%nt
-      if (.not.validt(it)) valid(mesh%ltri(:,it)) = .false.
-   end do
-end if
 
 end subroutine mesh_check
 

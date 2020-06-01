@@ -850,8 +850,8 @@ call geom%com_mg%red(mpl,geom%lat_mga,geom%lat_c0a,.true.)
 call geom%com_mg%red(mpl,geom%hash_mga,geom%hash_c0a,.true.)
 call geom%com_mg%red(mpl,geom%area_mga,geom%area_c0a,.true.)
 call geom%com_mg%red(mpl,geom%nl0,geom%vunit_mga,geom%vunit_c0a,.true.)
-call geom%com_mg%red(mpl,geom%nl0,geom%gmask_mga,geom%gmask_c0a)
-call geom%com_mg%red(mpl,geom%nl0,geom%smask_mga,geom%smask_c0a)
+call geom%com_mg%red(mpl,geom%nl0,geom%gmask_mga,geom%gmask_c0a,.true.)
+call geom%com_mg%red(mpl,geom%nl0,geom%smask_mga,geom%smask_c0a,.true.)
 
 ! Related fields
 geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)

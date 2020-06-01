@@ -91,7 +91,6 @@ type nicas_blk_type
    logical,allocatable :: gmask_c2u(:,:)           ! Mask from subset Sc2 to subgrid
 
    ! Subgrid geometry
-   integer :: ns                                   ! Number of subgrid nodes
    integer :: nsu                                  ! Number of subgrid nodes, universe
    integer,allocatable :: su_to_s(:)               ! Subgrid, universe to global
    integer,allocatable :: su_to_sb(:)              ! Subgrid, universe to halo B
@@ -150,6 +149,7 @@ type nicas_blk_type
    integer :: nc0a                                 ! Number of points in subset Sc0 on halo A (required for I/O)
    integer :: nc1b                                 ! Number of points in subset Sc1 on halo B
    integer :: nl1                                  ! Number of levels in subset Sl1
+   integer :: ns                                   ! Number of subgrid nodes
    integer :: nsa                                  ! Number of subgrid nodes on halo A
    integer :: nsb                                  ! Number of subgrid nodes on halo B
    integer :: nsc                                  ! Number of subgrid nodes on halo C
@@ -164,7 +164,7 @@ type nicas_blk_type
 
    ! Local to global
    integer,allocatable :: sa_to_s(:)               ! Subgrid, halo A to global
-   real(kind_real),allocatable :: sa_to_hash(:)    ! Hash value based on lon/lat/lev
+   real(kind_real),allocatable :: hash_sa(:)       ! Hash value based on lon/lat/lev
 
    ! Inter-halo conversions
    integer,allocatable :: sa_to_sc(:)              ! Subgrid, halo A to halo C
@@ -439,7 +439,7 @@ integer :: il0,il1,its
 call nicas_blk%partial_dealloc
 if (allocated(nicas_blk%vlev)) deallocate(nicas_blk%vlev)
 if (allocated(nicas_blk%sa_to_s)) deallocate(nicas_blk%sa_to_s)
-if (allocated(nicas_blk%sa_to_hash)) deallocate(nicas_blk%sa_to_hash)
+if (allocated(nicas_blk%hash_sa)) deallocate(nicas_blk%hash_sa)
 if (allocated(nicas_blk%sa_to_sc)) deallocate(nicas_blk%sa_to_sc)
 if (allocated(nicas_blk%sb_to_sc)) deallocate(nicas_blk%sb_to_sc)
 call nicas_blk%c%dealloc
@@ -505,7 +505,7 @@ type(bpar_type),intent(in) :: bpar               ! Block parameters
 ! Local variables
 integer :: il0i,il1,its,il0,info
 integer :: ncid,nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nsc_id,nc0d_id,nc0dinv_id
-integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,sa_to_hash_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
+integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,hash_sa_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
 integer :: vlev_int(geom%nl0)
 character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'nicas_blk_read'
@@ -534,6 +534,7 @@ if (bpar%nicas_block(ib)) then
    end if
    call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nl1',nl1_id))
    call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nl1_id,len=nicas_blk%nl1))
+   call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'ns',nicas_blk%ns))
    info = nf90_inq_dimid(ncid,'nsa',nsa_id)
    if (info==nf90_noerr) then
       call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nsa_id,len=nicas_blk%nsa))
@@ -567,7 +568,7 @@ if (bpar%nicas_block(ib)) then
    allocate(nicas_blk%coef_ens(nicas_blk%nc0a,geom%nl0))
    if (nicas_blk%nsa>0) then
       allocate(nicas_blk%sa_to_s(nicas_blk%nsa))
-      allocate(nicas_blk%sa_to_hash(nicas_blk%nsa))
+      allocate(nicas_blk%hash_sa(nicas_blk%nsa))
       allocate(nicas_blk%sa_to_sc(nicas_blk%nsa))
    end if
    if (nicas_blk%nsb>0) then
@@ -595,7 +596,7 @@ if (bpar%nicas_block(ib)) then
    end if
    if (nicas_blk%nsa>0) then
       call mpl%ncerr(subr,nf90_inq_varid(ncid,'sa_to_s',sa_to_s_id))
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,'sa_to_hash',sa_to_hash_id))
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,'hash_sa',hash_sa_id))
       call mpl%ncerr(subr,nf90_inq_varid(ncid,'sa_to_sc',sa_to_sc_id))
    end if
    if (nicas_blk%nsb>0) then
@@ -626,7 +627,7 @@ if (bpar%nicas_block(ib)) then
    end if
    if (nicas_blk%nsa>0) then
       call mpl%ncerr(subr,nf90_get_var(ncid,sa_to_s_id,nicas_blk%sa_to_s))
-      call mpl%ncerr(subr,nf90_get_var(ncid,sa_to_hash_id,nicas_blk%sa_to_hash))
+      call mpl%ncerr(subr,nf90_get_var(ncid,hash_sa_id,nicas_blk%hash_sa))
       call mpl%ncerr(subr,nf90_get_var(ncid,sa_to_sc_id,nicas_blk%sa_to_sc))
    end if
    if (nicas_blk%nsb>0) then
@@ -698,7 +699,7 @@ type(bpar_type),intent(in) :: bpar            ! Block parameters
 ! Local variables
 integer :: il0i,il1,its,il0
 integer :: ncid,nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nsc_id,nc0d_id,nc0dinv_id
-integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,sa_to_hash_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
+integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,hash_sa_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
 integer :: vlev_int(geom%nl0)
 character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'nicas_blk_write'
@@ -723,6 +724,7 @@ if (bpar%nicas_block(ib)) then
    if (nicas_blk%nsa>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsa',nicas_blk%nsa,nsa_id))
    if (nicas_blk%nsb>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsb',nicas_blk%nsb,nsb_id))
    if (nicas_blk%nsc>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsc',nicas_blk%nsc,nsc_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'ns',nicas_blk%ns))
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0d',nicas_blk%nc0d,nc0d_id))
@@ -743,10 +745,10 @@ if (bpar%nicas_block(ib)) then
    end if
    if (nicas_blk%nsa>0) then
       call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_s',nf90_int,(/nsa_id/),sa_to_s_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_hash',nc_kind_real,(/nsa_id/),sa_to_hash_id))
+      call mpl%ncerr(subr,nf90_def_var(ncid,'hash_sa',nc_kind_real,(/nsa_id/),hash_sa_id))
       call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_sc',nf90_int,(/nsa_id/),sa_to_sc_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_s_id,'_FillValue',mpl%msv%vali))
-      call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_hash_id,'_FillValue',mpl%msv%valr))
+      call mpl%ncerr(subr,nf90_put_att(ncid,hash_sa_id,'_FillValue',mpl%msv%valr))
       call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_sc_id,'_FillValue',mpl%msv%vali))
    end if
    if (nicas_blk%nsb>0) then
@@ -780,7 +782,7 @@ if (bpar%nicas_block(ib)) then
    end if
    if (nicas_blk%nsa>0) then
       call mpl%ncerr(subr,nf90_put_var(ncid,sa_to_s_id,nicas_blk%sa_to_s))
-      call mpl%ncerr(subr,nf90_put_var(ncid,sa_to_hash_id,nicas_blk%sa_to_hash))
+      call mpl%ncerr(subr,nf90_put_var(ncid,hash_sa_id,nicas_blk%hash_sa))
       call mpl%ncerr(subr,nf90_put_var(ncid,sa_to_sc_id,nicas_blk%sa_to_sc))
    end if
    if (nicas_blk%nsb>0) then
@@ -977,7 +979,7 @@ if (bpar%nicas_block(ib)) then
    allocate(nicas_blk%coef_ens(nicas_blk%nc0a,geom%nl0))
    if (nicas_blk%nsa>0) then
       allocate(nicas_blk%sa_to_s(nicas_blk%nsa))
-      allocate(nicas_blk%sa_to_hash(nicas_blk%nsa))
+      allocate(nicas_blk%hash_sa(nicas_blk%nsa))
       allocate(nicas_blk%sa_to_sc(nicas_blk%nsa))
    end if
    if (nicas_blk%nsb>0) then
@@ -1060,7 +1062,7 @@ if (bpar%nicas_block(ib)) then
    if (nicas_blk%nsa>0) then
       nicas_blk%sa_to_s = rbuf_int(offset_int+1:offset_int+nicas_blk%nsa)
       offset_int = offset_int+nicas_blk%nsa
-      nicas_blk%sa_to_hash = rbuf_real(offset_real+1:offset_real+nicas_blk%nsa)
+      nicas_blk%hash_sa = rbuf_real(offset_real+1:offset_real+nicas_blk%nsa)
       offset_real = offset_real+nicas_blk%nsa
       nicas_blk%sa_to_sc = rbuf_int(offset_int+1:offset_int+nicas_blk%nsa)
       offset_int = offset_int+nicas_blk%nsa
@@ -1269,7 +1271,7 @@ if (bpar%nicas_block(ib)) then
    if (nicas_blk%nsa>0) then
       sbuf_int(offset_int+1:offset_int+nicas_blk%nsa) = nicas_blk%sa_to_s
       offset_int = offset_int+nicas_blk%nsa
-      sbuf_real(offset_real+1:offset_real+nicas_blk%nsa) = nicas_blk%sa_to_hash
+      sbuf_real(offset_real+1:offset_real+nicas_blk%nsa) = nicas_blk%hash_sa
       offset_real = offset_real+nicas_blk%nsa
       sbuf_int(offset_int+1:offset_int+nicas_blk%nsa) = nicas_blk%sa_to_sc
       offset_int = offset_int+nicas_blk%nsa
@@ -2149,7 +2151,7 @@ allocate(sa_to_c1a(nicas_blk%nsa))
 allocate(sa_to_l1(nicas_blk%nsa))
 allocate(nicas_blk%sa_to_su(nicas_blk%nsa))
 allocate(nicas_blk%sa_to_s(nicas_blk%nsa))
-allocate(nicas_blk%sa_to_hash(nicas_blk%nsa))
+allocate(nicas_blk%hash_sa(nicas_blk%nsa))
 allocate(nicas_blk%c1b_to_c1u(nicas_blk%nc1b))
 allocate(nicas_blk%c1u_to_c1b(nicas_blk%nc1u))
 allocate(sb_to_s(nicas_blk%nsb))
@@ -2238,7 +2240,7 @@ end do
 do isa=1,nicas_blk%nsa
    ic1a = sa_to_c1a(isa)
    il1 = sa_to_l1(isa)
-   nicas_blk%sa_to_hash(isa) = lonlathash(nicas_blk%lon_c1a(ic1a),nicas_blk%lat_c1a(ic1a),il1)
+   nicas_blk%hash_sa(isa) = lonlathash(nicas_blk%lon_c1a(ic1a),nicas_blk%lat_c1a(ic1a),il1)
 end do
 
 ! Find bottom and top for each point of subset Sc1, halo B
