@@ -1,4 +1,4 @@
-#======================================================================
+
 # Project settings
 #======================================================================
 branches:
@@ -75,6 +75,7 @@ before_install:
 #======================================================================
   - cd ${REPO_SOURCE_DIR}/saber-bundle/saber
   - date
+  - cd CI
   - docker build -t jcsda/dockerl2 --build-arg=Dockerfile .  #Dockerfile handles ssh for mpi
   - date
   - docker images
