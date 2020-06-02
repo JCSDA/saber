@@ -1,3 +1,4 @@
+  
 # (C) Copyright 2017 UCAR
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
@@ -7,7 +8,7 @@
 # SABER bundle
 #
 
-project( saber-bundle C CXX Fortran )
+project( saber-bundle CXX Fortran )
 
 cmake_minimum_required( VERSION 3.3.2 FATAL_ERROR )
 
@@ -26,7 +27,6 @@ ecbuild_add_option( FEATURE OMP
 
 ecbuild_bundle( PROJECT fckit GIT "https://github.com/JCSDA/fckit.git" )
 ecbuild_bundle( PROJECT atlas GIT "https://github.com/JCSDA/atlas.git" )
-ecbuild_bundle( PROJECT metis GIT "https://github.com/JCSDA/metis.git" )
 ecbuild_bundle( PROJECT oops GIT "https://github.com/JCSDA/oops.git" )
 ecbuild_bundle( PROJECT saber GIT "https://github.com/JCSDA/saber.git" )
 
