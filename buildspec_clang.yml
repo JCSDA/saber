@@ -76,6 +76,7 @@ phases:
       - cd /src_repo/saber-bundle
       - ls
       - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
+      - sed -i 's/BRANCH release-stable UPDATE//' CMakeLists.txt
       - sed -i '/PROJECT eckit/d' CMakeLists.txt
 
   build:
