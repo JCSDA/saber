@@ -13,4 +13,4 @@ The bump.x executable can be used as standalone code, with NetCDF inputs, for th
   - RES
   - [WRF](https://www.mmm.ucar.edu/weather-research-and-forecasting-model)
 
-It can also be used "online" within an other code, using a dedicated interface: [type_bump.F90](../../src/bump/type_bump.F90)
+It can also be used "online" within an other code, using a dedicated interface: [type_bump.F90](../../src/saber/bump/type_bump.F90)

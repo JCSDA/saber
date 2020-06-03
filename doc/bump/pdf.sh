@@ -1,6 +1,6 @@
-#!/bin/ksh
+#!/bin/bash
 #----------------------------------------------------------------------
-# Korn shell script: cloc_report
+# Bash script: pdf
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -15,7 +15,7 @@ if type "pdflatex" > /dev/null ; then
    cd ${latex}
 
    for filename in "covariance_filtering" "diffusion_matern_function" "multivariate_localization" "nicas" ; do
-      echo "       File: "${filename}
+      echo "File: "${filename}
       mkdir -p tmp
       pdflatex -output-directory=tmp ${filename}.tex > /dev/null
       bibtex tmp/${filename} > /dev/null

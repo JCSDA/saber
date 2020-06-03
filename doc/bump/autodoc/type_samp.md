@@ -2,23 +2,26 @@
 
 | Type | Name | Purpose |
 | :--: | :--: | :---------- |
-| subroutine | [samp%] [alloc_mask](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L129) | allocation for mask |
-| subroutine | [samp%] [alloc_other](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L151) | allocation for other variables |
-| subroutine | [samp%] [partial_dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L186) | release memory (partial) |
-| subroutine | [samp%] [dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L211) | release memory |
-| subroutine | [samp%] [read](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L276) | read |
-| subroutine | [samp%] [write](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L388) | write |
-| subroutine | [samp%] [compute_sampling_c1](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L506) | compute sampling, subset Sc1 |
-| subroutine | [samp%] [compute_sampling_c2](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L649) | compute sampling, subset Sc2 |
-| subroutine | [samp%] [compute_mask](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L738) | compute mask |
-| subroutine | [samp%] [compute_sampling_zs](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L897) | compute zero-separation sampling |
-| subroutine | [samp%] [compute_sampling_ps](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L988) | compute positive separation sampling |
-| subroutine | [samp%] [compute_sampling_lct](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1124) | compute LCT sampling |
-| subroutine | [samp%] [check_mask](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1190) | check sampling mask |
-| subroutine | [samp%] [compute_mpi_a](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1275) | compute sampling MPI distribution, halo A |
-| subroutine | [samp%] [compute_mpi_ab](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1340) | compute sampling MPI distribution, halos A-B |
-| subroutine | [samp%] [compute_mpi_c](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1546) | compute sampling MPI distribution, halo C |
-| subroutine | [samp%] [compute_mpi_d](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1676) | compute sampling MPI distribution, halo D |
-| subroutine | [samp%] [compute_mpi_f](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1790) | compute sampling MPI distribution, halo F |
-| subroutine | [samp%] [diag_filter](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1857) | filter diagnostics |
-| subroutine | [samp%] [diag_fill](https://github.com/JCSDA/saber/src/saber/bump/type_samp.F90#L1990) | fill diagnostics missing values |
+| subroutine | [samp_alloc_mask](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L168) | allocation for mask |
+| subroutine | [samp_alloc_other](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L189) | allocation for other variables |
+| subroutine | [samp_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L223) | release memory (partial) |
+| subroutine | [samp_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L272) | release memory |
+| subroutine | [samp_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L336) | read |
+| subroutine | [samp_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L465) | write |
+| subroutine | [samp_write_grids](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L572) | write |
+| subroutine | [samp_setup_1](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L801) | setup sampling, first step |
+| subroutine | [samp_setup_2](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L993) | setup sampling, second step |
+| subroutine | [samp_compute_mask](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1042) | compute mask |
+| subroutine | [samp_compute_c1](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1189) | compute sampling, subset Sc1 |
+| subroutine | [samp_compute_mpi_c1a](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1294) | compute MPI distribution, halo A, subset Sc1 |
+| subroutine | [samp_compute_c3](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1361) | compute sampling, subset Sc3 |
+| subroutine | [samp_check_mask](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1502) | check sampling mask |
+| subroutine | [samp_compute_c2](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1554) | compute sampling, subset Sc2 |
+| subroutine | [samp_compute_mpi_c2a](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1637) | compute sampling MPI distribution, halo A, subset Sc2 |
+| subroutine | [samp_compute_mpi_c2b](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1738) | compute sampling MPI distribution, halo B |
+| subroutine | [samp_compute_mesh_c2](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1824) | compute sampling mesh, subset Sc2 |
+| subroutine | [samp_compute_mpi_c](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1856) | compute sampling MPI distribution, halo C |
+| subroutine | [samp_compute_mpi_d](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L1985) | compute sampling MPI distribution, halo D |
+| subroutine | [samp_compute_mpi_e](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L2104) | compute sampling MPI distribution, halo E |
+| subroutine | [samp_diag_filter](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L2210) | filter diagnostics |
+| subroutine | [samp_diag_fill](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L2375) | fill diagnostics missing values |

@@ -2,25 +2,24 @@
 
 | Type | Name | Purpose |
 | :--: | :--: | :---------- |
-| subroutine | [nicas%] [alloc](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L71) | allocation |
-| subroutine | [nicas%] [partial_dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L115) | release memory (partial) |
-| subroutine | [nicas%] [dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L136) | release memory (full) |
-| subroutine | [nicas%] [read](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L161) | read |
-| subroutine | [nicas%] [write](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L239) | write |
-| subroutine | [nicas%] [write_mpi_summary](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L313) | write MPI related data summary |
-| subroutine | [nicas%] [run_nicas](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L396) | NICAS driver |
-| subroutine | [nicas%] [run_nicas_tests](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L470) | NICAS tests driver |
-| subroutine | [nicas%] [alloc_cv](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L570) | allocation |
-| subroutine | [nicas%] [random_cv](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L623) | generate a random control vector |
-| subroutine | [nicas%] [apply](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L682) | apply NICAS |
-| subroutine | [nicas%] [apply_from_sqrt](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L953) | apply NICAS from square-root |
-| subroutine | [nicas%] [apply_sqrt](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L999) | apply NICAS square-root |
-| subroutine | [nicas%] [apply_sqrt_ad](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L1207) | apply NICAS square-root, adjoint |
-| subroutine | [nicas%] [randomize](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L1438) | randomize NICAS from square-root |
-| subroutine | [nicas%] [apply_bens](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L1507) | apply localized ensemble covariance |
-| subroutine | [nicas%] [test_adjoint](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L1566) | test NICAS adjoint |
-| subroutine | [nicas%] [test_dirac](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L1659) | apply NICAS to diracs |
-| subroutine | [nicas%] [test_randomization](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L1723) | test NICAS randomization method with respect to theoretical error statistics |
-| subroutine | [nicas%] [test_consistency](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L1854) | test HDIAG-NICAS consistency with a randomization method |
-| subroutine | [nicas%] [test_optimality](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L1921) | test HDIAG localization optimality with a randomization method |
-| subroutine | [define_test_vectors](https://github.com/JCSDA/saber/src/saber/bump/type_nicas.F90#L2110) | define test vectors |
+| subroutine | [nicas_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L71) | allocation |
+| subroutine | [nicas_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L124) | release memory (partial) |
+| subroutine | [nicas_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L145) | release memory (full) |
+| subroutine | [nicas_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L170) | read |
+| subroutine | [nicas_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L248) | write |
+| subroutine | [nicas_run_nicas](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L328) | NICAS driver |
+| subroutine | [nicas_run_nicas_tests](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L393) | NICAS tests driver |
+| subroutine | [nicas_alloc_cv](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L493) | allocation |
+| subroutine | [nicas_random_cv](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L546) | generate a random control vector |
+| subroutine | [nicas_apply](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L611) | apply NICAS |
+| subroutine | [nicas_apply_from_sqrt](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L882) | apply NICAS from square-root |
+| subroutine | [nicas_apply_sqrt](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L928) | apply NICAS square-root |
+| subroutine | [nicas_apply_sqrt_ad](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1138) | apply NICAS square-root, adjoint |
+| subroutine | [nicas_randomize](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1371) | randomize NICAS from square-root |
+| subroutine | [nicas_apply_bens](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1448) | apply localized ensemble covariance |
+| subroutine | [nicas_test_adjoint](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1507) | test NICAS adjoint |
+| subroutine | [nicas_test_dirac](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1600) | apply NICAS to diracs |
+| subroutine | [nicas_test_randomization](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1663) | test NICAS randomization method with respect to theoretical error statistics |
+| subroutine | [nicas_test_consistency](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1795) | test HDIAG-NICAS consistency with a randomization method |
+| subroutine | [nicas_test_optimality](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1922) | test HDIAG localization optimality with a randomization method |
+| subroutine | [define_test_vectors](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L2112) | define test vectors |

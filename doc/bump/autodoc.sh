@@ -1,48 +1,45 @@
-#!/bin/ksh
+#!/bin/bash
 #----------------------------------------------------------------------
-# Korn shell script: autodoc
+# Bash shell script: autodoc
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 #----------------------------------------------------------------------
 
 # Directories
-src=$1/../../src/saber/bump
+src=$1/../../src
 doc=$1
 mkdir -p ${doc}
 autodoc=$1/autodoc
 mkdir -p ${autodoc}
+dir=(mains/bump saber/bump saber/external saber/gaugrid saber/util)
 
 # Introduction
 cat<<EOFINTRO > ${doc}/code_autodoc.md
-# Code auto-documentation
+# Code auto-documentation of Fortran sources
 
-The source code is organized in three categories:
-
-1. Useful tools for the whole code: tools_[...].F90
-2. Derived types and associated methods: type_[...].F90
-3. External tools: external/[...].F90
-
-| Category | Name | Purpose |
-| :------: | :--: | :---------- |
+The source code is organized as follows:
+\`\`\`
+src
+├── mains
+│   ├── bump
+│   └── oops (C++ only, no auto-documentation)
+└── saber
+    ├── bump
+    ├── external
+    ├── gaugrid
+    ├── oops (C++ only, no auto-documentation)
+    └── util
+\`\`\`
 EOFINTRO
 
+for index in ${!dir[*]}; do
+   echo "Directory: "${dir[$index]}
+   list=`ls ${src}/${dir[$index]}/*.F90`
 
-for category in "tools" "derived_type" "external_tools" ; do
-   echo "       Category: "${category}
-   if test "${category}" = "main" ; then
-      list=${mains}/bump.F90
-
-   fi
-   if test "${category}" = "tools" ; then
-      list=`ls ${src}/tools_*.F90`
-   fi
-   if test "${category}" = "derived_type" ; then
-      list=`ls ${src}/type_*.F90`
-   fi
-   if test "${category}" = "external_tools" ; then
-      list=`ls ${src}/external/*.F90`
-   fi
+   echo -e "## ${dir[$index]}\n" >> ${doc}/code_autodoc.md
+   echo -e "| Name | Purpose |" >> ${doc}/code_autodoc.md
+   echo -e "| :--: | :---------- |" >> ${doc}/code_autodoc.md
 
    for filename in ${list} ; do
       # Initialization
@@ -62,7 +59,7 @@ for category in "tools" "derived_type" "external_tools" ; do
                class=${module#*type_}
             fi
             new_module=true
-            echo "          Module: "${module}
+            echo "   Module: "${module}
          fi
          if test "${word}" = "! Purpose:" ; then
             purpose=`echo ${line} | cut -c 12-`
@@ -95,7 +92,7 @@ for category in "tools" "derived_type" "external_tools" ; do
          if test "${new_purpose}" = "true" ; then
             # New module
             if test "${new_module}" = "true" ; then
-               printf "| ${category} | [${module}](autodoc/${module}.md) | ${purpose} |\n" >> ${doc}/code_autodoc.md
+               echo -e "| [${module}](autodoc/${module}.md) | ${purpose} |" >> ${doc}/code_autodoc.md
 
                type_bound=false
                cat<<EOFMOD > ${autodoc}/${module}.md
@@ -110,9 +107,9 @@ EOFMOD
             # New subroutine/function
             if test "${new_subfunc}" = "true" ; then
                if test "${type_bound}" = "true" ; then
-                  printf "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/src/saber/bump/${module}.F90#L${i}) | ${purpose} |\n" >> ${autodoc}/${module}.md
+                  echo -e "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/tree/develop/src/${dir[$index]}/${module}.F90#L${i}) | ${purpose} |" >> ${autodoc}/${module}.md
                else
-                  printf "| ${subfunc_type} | [${subfunc}](https://github.com/JCSDA/saber/src/saber/bump/${module}.F90#L${i}) | ${purpose} |\n" >> ${autodoc}/${module}.md
+                  echo -e "| ${subfunc_type} | [${subfunc}](https://github.com/JCSDA/saber/tree/develop/src/${dir[$index]}/${module}.F90#L${i}) | ${purpose} |" >> ${autodoc}/${module}.md
                fi
                new_subfunc=false
                type_bound=false
@@ -123,4 +120,5 @@ EOFMOD
          new_purpose=false
       done < ${filename}
    done
+   echo -e "\n" >> ${doc}/code_autodoc.md
 done

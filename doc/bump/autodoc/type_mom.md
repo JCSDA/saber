@@ -2,9 +2,9 @@
 
 | Type | Name | Purpose |
 | :--: | :--: | :---------- |
-| subroutine | [mom%] [alloc](https://github.com/JCSDA/saber/src/saber/bump/type_mom.F90#L45) | allocation |
-| subroutine | [mom%] [init](https://github.com/JCSDA/saber/src/saber/bump/type_mom.F90#L80) | initialization |
-| subroutine | [mom%] [dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_mom.F90#L108) | release memory |
-| subroutine | [mom%] [read](https://github.com/JCSDA/saber/src/saber/bump/type_mom.F90#L132) | read |
-| subroutine | [mom%] [write](https://github.com/JCSDA/saber/src/saber/bump/type_mom.F90#L196) | write |
-| subroutine | [mom%] [compute](https://github.com/JCSDA/saber/src/saber/bump/type_mom.F90#L265) | compute centered moments (iterative formulae) |
+| subroutine | [mom_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L46) | allocation |
+| subroutine | [mom_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L80) | initialization |
+| subroutine | [mom_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L107) | release memory |
+| subroutine | [mom_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L131) | read |
+| subroutine | [mom_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L195) | write |
+| subroutine | [mom_compute](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L261) | compute centered moments (iterative formulae) |

@@ -729,8 +729,10 @@ end if
 
 if (mpl%main) then
    ! Open file
-   filename = trim(nam%prefix)//'_cortrack_coord'
-   call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
+
+   ! Enter definition mode
+   call mpl%ncerr(subr,nf90_redef(ncid))
 
    ! Define dimension
    nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)

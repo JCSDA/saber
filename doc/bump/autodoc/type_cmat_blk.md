@@ -2,8 +2,8 @@
 
 | Type | Name | Purpose |
 | :--: | :--: | :---------- |
-| subroutine | [cmat_blk%] [alloc](https://github.com/JCSDA/saber/src/saber/bump/type_cmat_blk.F90#L69) | allocation |
-| subroutine | [cmat_blk%] [init](https://github.com/JCSDA/saber/src/saber/bump/type_cmat_blk.F90#L118) | initialization |
-| subroutine | [cmat_blk%] [partial_bump_dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_cmat_blk.F90#L167) | release memory (partial) |
-| subroutine | [cmat_blk%] [partial_dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_cmat_blk.F90#L193) | release memory (partial) |
-| subroutine | [cmat_blk%] [dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_cmat_blk.F90#L217) | release memory |
+| subroutine | [cmat_blk_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat_blk.F90#L64) | allocation |
+| subroutine | [cmat_blk_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat_blk.F90#L109) | initialization |
+| subroutine | [cmat_blk_partial_bump_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat_blk.F90#L154) | release memory (partial) |
+| subroutine | [cmat_blk_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat_blk.F90#L178) | release memory (partial) |
+| subroutine | [cmat_blk_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat_blk.F90#L202) | release memory |
