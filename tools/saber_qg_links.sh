@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #----------------------------------------------------------------------
 # Bash script: saber_qg_links
 # Author: Benjamin Menetrier

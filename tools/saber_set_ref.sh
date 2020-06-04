@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #----------------------------------------------------------------------
 # Bash script: saber_set_ref
 # Author: Benjamin Menetrier

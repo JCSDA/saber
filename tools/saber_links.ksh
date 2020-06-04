@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/usr/bin/env ksh
 # ----------------------------------------------------------------------
 # Korn shell script: saber_links
 # Author: Benjamin Menetrier

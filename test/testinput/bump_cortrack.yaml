@@ -35,8 +35,8 @@ adv_rad: 1000.0e3
 
 # dirac_param
 ndir: 1
-londir: [-85.0]
-latdir: [65.0]
+londir: [-135.0]
+latdir: [45.0]
 levdir: [1]
 ivdir: [1]
 itsdir: [1]

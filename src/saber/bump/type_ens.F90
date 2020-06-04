@@ -440,7 +440,7 @@ write(mpl%info,'(a7,a)') '','Write ensemble'
 call mpl%flush
 
 ! Create file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_normality_',mpl%nproc,'_',mpl%myproc
+write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_normality_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
 ! Define dimensions if necessary
@@ -514,7 +514,7 @@ real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wi
 
 ! Local variable
 integer :: ic0a,ic0u,ic0,il0,ie,its,iproc(1),ind(2),it,i_s
-integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id
+integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id,info
 real(kind_real) :: norm,proc_to_val(mpl%nproc),val,m2_loc
 real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,uz,x,y,z
@@ -589,8 +589,8 @@ end do
 ! Correlation tracker
 write(mpl%info,'(a7,a)') '','Correlation tracker'
 call mpl%flush
-londir_tracker(1) = geom%londir(1)
-latdir_tracker(1) = geom%latdir(1)
+londir_tracker(1) = londir(1)
+latdir_tracker(1) = latdir(1)
 write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(1))//' ~> lon / lat / lev / val: ', &
  & londir_tracker(1)*rad2deg,' / ',latdir_tracker(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
 call mpl%flush
@@ -643,8 +643,8 @@ if (present(fld_uv)) then
    call mpl%flush
 
    ! Initialization
-   londir_wind(1) = geom%londir(1)
-   latdir_wind(1) = geom%latdir(1)
+   londir_wind(1) = londir(1)
+   latdir_wind(1) = latdir(1)
    write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslot(1))//' ~> lon / lat / lev / val: ', &
  & londir_wind(1)*rad2deg,' / ',latdir_wind(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
    call mpl%flush
@@ -738,19 +738,37 @@ if (mpl%main) then
    nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
 
    ! Define variables
-   call mpl%ncerr(subr,nf90_def_var(ncid,'londir',nc_kind_real,(/nts_id/),londir_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,londir_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'latdir',nc_kind_real,(/nts_id/),latdir_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,latdir_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'londir_tracker',nc_kind_real,(/nts_id/),londir_tracker_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,londir_tracker_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_tracker',nc_kind_real,(/nts_id/),latdir_tracker_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,latdir_tracker_id,'_FillValue',mpl%msv%valr))
+   info = nf90_inq_varid(ncid,'londir',londir_id)
+   if (info/=nf90_noerr) then
+      call mpl%ncerr(subr,nf90_def_var(ncid,'londir',nc_kind_real,(/nts_id/),londir_id))
+      call mpl%ncerr(subr,nf90_put_att(ncid,londir_id,'_FillValue',mpl%msv%valr))
+   end if
+   info = nf90_inq_varid(ncid,'latdir',latdir_id)
+   if (info/=nf90_noerr) then
+      call mpl%ncerr(subr,nf90_def_var(ncid,'latdir',nc_kind_real,(/nts_id/),latdir_id))
+      call mpl%ncerr(subr,nf90_put_att(ncid,latdir_id,'_FillValue',mpl%msv%valr))
+   end if
+   info = nf90_inq_varid(ncid,'londir_tracker',londir_tracker_id)
+   if (info/=nf90_noerr) then
+      call mpl%ncerr(subr,nf90_def_var(ncid,'londir_tracker',nc_kind_real,(/nts_id/),londir_tracker_id))
+      call mpl%ncerr(subr,nf90_put_att(ncid,londir_tracker_id,'_FillValue',mpl%msv%valr))
+   end if
+   info = nf90_inq_varid(ncid,'latdir_tracker',latdir_tracker_id)
+   if (info/=nf90_noerr) then
+      call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_tracker',nc_kind_real,(/nts_id/),latdir_tracker_id))
+      call mpl%ncerr(subr,nf90_put_att(ncid,latdir_tracker_id,'_FillValue',mpl%msv%valr))
+   end if
    if (present(fld_uv)) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'londir_wind',nc_kind_real,(/nts_id/),londir_wind_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,londir_wind_id,'_FillValue',mpl%msv%valr))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_wind',nc_kind_real,(/nts_id/),latdir_wind_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,latdir_wind_id,'_FillValue',mpl%msv%valr))
+      info = nf90_inq_varid(ncid,'londir_wind',londir_wind_id)
+      if (info/=nf90_noerr) then
+         call mpl%ncerr(subr,nf90_def_var(ncid,'londir_wind',nc_kind_real,(/nts_id/),londir_wind_id))
+         call mpl%ncerr(subr,nf90_put_att(ncid,londir_wind_id,'_FillValue',mpl%msv%valr))
+      end if
+      info = nf90_inq_varid(ncid,'latdir_wind',latdir_wind_id)
+      if (info/=nf90_noerr) then
+         call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_wind',nc_kind_real,(/nts_id/),latdir_wind_id))
+         call mpl%ncerr(subr,nf90_put_att(ncid,latdir_wind_id,'_FillValue',mpl%msv%valr))
+      end if
    end if
 
    ! End definition mode
@@ -793,12 +811,14 @@ integer :: ie,il0,itest,iprocdir,ic0adir,its,iv,ic0a
 integer :: ncid,ntest_id,nl0_id,nv_id,nts_id,cor_max_id,cor_max_avg_id,cor_max_std_id
 real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),alpha(ens%ne),m2_loc,cor(geom%nc0a,nam%nts),norm
 real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,2:nam%nts)
-real(kind_real) :: cor_max_avg(geom%nl0,nam%nv,2:nam%nts),cor_max_std(geom%nl0,nam%nv,2:nam%nts)
+real(kind_real) :: cor_max_avg(geom%nl0,nam%nv,nam%nts),cor_max_std(geom%nl0,nam%nv,nam%nts)
 character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_corstats'
 
 ! Initialization
 norm = 1.0/real(ens%ne-1,kind_real)
+cor_max_avg(:,:,1) = 1.0
+cor_max_std(:,:,1) = 0.0
 
 ! Compute variance
 write(mpl%info,'(a7,a)') '','Compute variance'
@@ -883,7 +903,7 @@ if (mpl%main) then
    ntest_id = mpl%ncdimcheck(subr,ncid,'ntest',ntest,.true.)
    nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.)
    nv_id = mpl%ncdimcheck(subr,ncid,'nv',nam%nv,.true.)
-   nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts-1,.true.)
+   nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
 
    ! Define variables
    call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max',nc_kind_real,(/ntest_id,nl0_id,nv_id,nts_id/),cor_max_id))
