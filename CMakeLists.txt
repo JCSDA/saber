@@ -7,144 +7,49 @@
 # SABER
 ################################################################################
 
-cmake_minimum_required( VERSION 3.3.2 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.12 )
 
-project( saber C CXX Fortran )
+project( saber LANGUAGES CXX Fortran )
 
-set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH})
-
-set( CMAKE_DIRECTORY_LABELS "saber" )
-
-set( ECBUILD_DEFAULT_BUILD_TYPE Release )
-set( ENABLE_OS_TESTS           OFF CACHE BOOL "Disable OS tests" FORCE )
-set( ENABLE_LARGE_FILE_SUPPORT OFF CACHE BOOL "Disable testing of large file support" FORCE )
-set( BUILD_BUMP_DOC OFF )
-
+## Ecbuild integration
+find_package( ecbuild QUIET )
 include( ecbuild_system NO_POLICY_SCOPE )
-
-ecbuild_requires_macro_version( 2.5 )
-
-################################################################################
-# Project
-################################################################################
-
 ecbuild_declare_project()
+list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
+set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
 
-ecbuild_enable_fortran( REQUIRED )
-ecbuild_add_cxx11_flags()
+## Configuration options
+set( ENABLE_SABER_DOC "Build SABER/BUMP Documentation" OFF )
 
-set( SABER_LINKER_LANGUAGE CXX )
+include( ${PROJECT_NAME}_compiler_flags )
 
-################################################################################
-# Standard compiler flags
-################################################################################
-
-include( saber_compiler_flags )
-include( saber_extra_macros )
-
-################################################################################
-# Dependencies
-################################################################################
-
-# OpenMP
-ecbuild_add_option( FEATURE OMP
-                    DESCRIPTION "Support for OpenMP threaded parallelism"
-                    REQUIRED_PACKAGES "OMP COMPONENTS CXX Fortran" )
-if( HAVE_OMP )
-  ecbuild_enable_omp()
-else()
-  ecbuild_enable_ompstubs()
-endif()
-
-# NetCDF
+## Dependencies
+#Required
+find_package( OpenMP REQUIRED COMPONENTS Fortran )
+find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS Fortran )
-include_directories( ${NETCDF_INCLUDE_DIRS} )
+find_package( eckit REQUIRED COMPONENTS MPI )
+find_package( fckit REQUIRED )
+find_package( atlas REQUIRED COMPONENTS OMP_Fortran )
+#Optionals
+find_package( metis QUIET )
+find_package( oops QUIET OPTIONAL_COMPONENTS toymodels )
 
-# eckit and MPI
-ecbuild_use_package( PROJECT eckit VERSION 1.1.0 REQUIRED )
-include_directories( ${ECKIT_INCLUDE_DIRS} )
-if ( NOT ECKIT_HAVE_MPI )
-  ecbuild_error("SABER requested to build with MPI but eckit wasn't built with MPI: ECKIT_HAVE_MPI = ${ECKIT_HAVE_MPI}")
-endif()
-
-# fckit
-ecbuild_use_package( PROJECT fckit VERSION 0.6.3 REQUIRED )
-include_directories( ${FCKIT_INCLUDE_DIRS} )
-
-# atlas
-ecbuild_use_package( PROJECT atlas VERSION 0.18.1 REQUIRED )
-include_directories( ${ATLAS_INCLUDE_DIRS} )
-
-# git
-find_package( Git )
-
-# metis
-ecbuild_use_package( PROJECT metis VERSION 0.0.0 )
-if (${METIS_FOUND})
-    include_directories( ${METIS_INCLUDE_DIRS} )
-    add_definitions( -DSABER_USE_METIS=1 )
-else()
-    add_definitions( -DSABER_USE_METIS=0 )
-endif()
-
-# oops
-ecbuild_use_package( PROJECT oops VERSION 0.2.1 )
-if (${OOPS_FOUND})
-    include_directories( ${OOPS_INCLUDE_DIRS} )
-endif()
-
-################################################################################
-# Export package info
-################################################################################
-
-list( APPEND SABER_TPLS eckit eckit_mpi fckit atlas atlas_f )
-
-if(${METIS_FOUND})
-    list( APPEND SABER_TPLS metis metis_interface )
-endif()
-
-if (${OOPS_FOUND})
-    list( APPEND SABER_TPLS oops )
-endif()
-
-set( SABER_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
-                        ${CMAKE_CURRENT_BINARY_DIR}/src
-                        ${CMAKE_Fortran_MODULE_DIRECTORY} )
-
-set( SABER_LIBRARIES saber )
-
-get_directory_property( SABER_DEFINITIONS COMPILE_DEFINITIONS )
-
-foreach( _tpl ${SABER_TPLS} )
-  string( TOUPPER ${_tpl} TPL )
-  list( APPEND SABER_EXTRA_DEFINITIONS   ${${TPL}_DEFINITIONS}  ${${TPL}_TPL_DEFINITIONS}  )
-  list( APPEND SABER_EXTRA_INCLUDE_DIRS  ${${TPL}_INCLUDE_DIRS} ${${TPL}_TPL_INCLUDE_DIRS} )
-  list( APPEND SABER_EXTRA_LIBRARIES     ${${TPL}_LIBRARIES}    ${${TPL}_TPL_LIBRARIES}    )
-endforeach()
-
-################################################################################
-# Sources
-################################################################################
-
-include_directories( ${SABER_INCLUDE_DIRS}
-                     ${SABER_EXTRA_INCLUDE_DIRS}
-                     ${CMAKE_CURRENT_SOURCE_DIR}/src )
-
-add_subdirectory( doc )
-add_subdirectory( src )
+## Sources
+add_subdirectory( src/saber )
+add_subdirectory( src/mains/bump )
+add_subdirectory( src/mains/oops )
 add_subdirectory( test )
 add_subdirectory( tools )
+add_subdirectory( doc )
 
-if(ECBUILD_INSTALL_FORTRAN_MODULES)
-  install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/${CMAKE_CFG_INTDIR} DESTINATION ${INSTALL_INCLUDE_DIR} )
-endif()
+## Global tests
+ecbuild_add_test( TARGET saber_coding_norms
+                  TYPE SCRIPT
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
+                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/src )
 
-################################################################################
-# Finalise configuration
-################################################################################
+## Package Config
+ecbuild_install_project( NAME ${PROJECT_NAME} )
 
-# prepares a tar.gz of the sources and/or binaries
-ecbuild_install_project( NAME saber )
-
-# print the summary of the configuration
 ecbuild_print_summary()

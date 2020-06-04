@@ -10,14 +10,12 @@ list( APPEND test_files
     saber_valgrind.sh
 )
 
-if (${OOPS_FOUND})
-   if (${ENABLE_OOPS_TOYMODELS})
-       list( APPEND test_files saber_qg_links.sh )
-   endif()
+if(oops_toymodels_FOUND)
+    list( APPEND test_files saber_qg_links.sh )
 endif()
 
 foreach(FILENAME ${test_files})
     execute_process( COMMAND ${CMAKE_COMMAND} -E copy
                              ${PROJECT_SOURCE_DIR}/tools/${FILENAME}
                              ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
-endforeach(FILENAME)
+endforeach()

@@ -33,46 +33,42 @@ set(SABER_TEST_VALGRIND 0)
 set(SABER_TEST_MODEL 0)
 set(SABER_TEST_MODEL_DIR "")
 set(SABER_TEST_OOPS 0)
-if (${OOPS_FOUND})
-   if (${ENABLE_OOPS_TOYMODELS})
-       set(SABER_TEST_OOPS 1)
-   endif()
-endif()
+set(SABER_TEST_OOPS 1)
 
 # Override test selection variables using environment variables
-if(DEFINED ENV{SABER_TEST_MPI})
+if($ENV{SABER_TEST_MPI})
     set(SABER_TEST_MPI "$ENV{SABER_TEST_MPI}")
 endif()
-if(DEFINED ENV{SABER_TEST_OMP})
+if($ENV{SABER_TEST_OMP})
     set(SABER_TEST_OMP "$ENV{SABER_TEST_OMP}")
 endif()
-if(DEFINED ENV{SABER_TEST_QUAD})
+if($ENV{SABER_TEST_QUAD})
     set(SABER_TEST_QUAD "$ENV{SABER_TEST_QUAD}")
 endif()
-if(DEFINED ENV{SABER_TEST_VALGRIND})
+if($ENV{SABER_TEST_VALGRIND})
     set(SABER_TEST_VALGRIND "$ENV{SABER_TEST_VALGRIND}")
 endif()
-if(DEFINED ENV{SABER_TEST_MODEL})
+if($ENV{SABER_TEST_MODEL})
     set(SABER_TEST_MODEL "$ENV{SABER_TEST_MODEL}")
 endif()
-if(DEFINED ENV{SABER_TEST_MODEL_DIR})
+if($ENV{SABER_TEST_MODEL_DIR})
     set(SABER_TEST_MODEL_DIR "$ENV{SABER_TEST_MODEL_DIR}")
 endif()
-if(DEFINED ENV{SABER_TEST_OOPS})
+if($ENV{SABER_TEST_OOPS})
     set(SABER_TEST_OOPS "$ENV{SABER_TEST_OOPS}")
 endif()
 
 # Summary
-message(STATUS "SABER_TEST_TIER:      " ${SABER_TEST_TIER})
-message(STATUS "SABER_TEST_MPI:       " ${SABER_TEST_MPI})
-message(STATUS "SABER_TEST_OMP:       " ${SABER_TEST_OMP})
-message(STATUS "SABER_TEST_QUAD:      " ${SABER_TEST_QUAD})
-message(STATUS "SABER_TEST_VALGRIND:  " ${SABER_TEST_VALGRIND})
-message(STATUS "SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
+message(STATUS "SABER_TEST_TIER:       ${SABER_TEST_TIER}")
+message(STATUS "SABER_TEST_MPI:        ${SABER_TEST_MPI}")
+message(STATUS "SABER_TEST_OMP:        ${SABER_TEST_OMP}")
+message(STATUS "SABER_TEST_QUAD:       ${SABER_TEST_QUAD}")
+message(STATUS "SABER_TEST_VALGRIND:   ${SABER_TEST_VALGRIND}")
+message(STATUS "SABER_TEST_MODEL:      ${SABER_TEST_MODEL}")
 if(${SABER_TEST_MODEL})
-    message(STATUS "  SABER_TEST_MODEL_DIR: " ${SABER_TEST_MODEL_DIR})
+    message(STATUS "  SABER_TEST_MODEL_DIR:  ${SABER_TEST_MODEL_DIR}")
 endif()
-message(STATUS "SABER_TEST_OOPS:      " ${SABER_TEST_OOPS})
+message(STATUS "SABER_TEST_OOPS:       ${SABER_TEST_OOPS}")
 
 # TIER 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
@@ -424,9 +420,7 @@ if(${SABER_TEST_MODEL})
 endif()
 
 # OOPS tests
-if(${SABER_TEST_OOPS})
-    # Function to add tests
-    include(../../oops/cmake/oops_add_test)
+if(SABER_TEST_OOPS AND oops_toymodels_FOUND)
 
     foreach(test ${saber_test_oops})
         # Link to yaml files
@@ -443,19 +437,33 @@ if(${SABER_TEST_OOPS})
     # Parameters tests
     foreach(test ${saber_test_oops})
         string(FIND ${test} "qg_parameters" qg_parameters)
-        if (${qg_parameters} MATCHES 0)
+        if(qg_parameters MATCHES 0)
             string(SUBSTRING ${test} 3 -1 testname)
-            oops_add_test(TESTNAME ${testname}
-                          MODELNAME qg
-                          MPI 1
-                          OMP 2
-                          YAMLNAME testinput/${test}.yaml
-                          EXENAME  saber_qg_estimate_parameters.x
-                          RUN_FILE ${test}/test.log.out
-                          REF_FILE ${test}/test.ref
-                          DEPENDS saber_qg_estimate_parameters.x
-                          TEST_DEPENDS get_saber_data
-                          COMPARE)
+            ecbuild_add_test( TARGET test_qg_${testname}
+                              TYPE SCRIPT
+                              COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
+                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                                   testinput/${test}.yaml
+                                   ${oops_BINDIR}/oops_compare.py
+                                   ${test}/test.log.out
+                                   ${test}/test.ref
+                                   0.0
+                                   0
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1"
+                              OMP 2
+                              DEPENDS saber_qg_estimate_parameters.x
+                              TEST_DEPENDS get_saber_data )
+#             oops_add_test(TESTNAME ${testname}
+#                           MODELNAME qg
+#                           MPI 1
+#                           OMP 2
+#                           YAMLNAME testinput/${test}.yaml
+#                           EXENAME  saber_qg_estimate_parameters.x
+#                           RUN_FILE ${test}/test.log.out
+#                           REF_FILE ${test}/test.ref
+#                           DEPENDS saber_qg_estimate_parameters.x
+#                           TEST_DEPENDS get_saber_data
+#                           COMPARE)
         endif()
     endforeach()
 
@@ -472,19 +480,33 @@ if(${SABER_TEST_OOPS})
     # Dirac tests
     foreach(test ${saber_test_oops})
         string(FIND ${test} "qg_dirac" qg_dirac)
-        if (${qg_dirac} MATCHES 0)
+        if (qg_dirac MATCHES 0)
             string(SUBSTRING ${test} 3 -1 testname)
-            oops_add_test(TESTNAME ${testname}
-                          MODELNAME qg
-                          MPI 1
-                          OMP 2
-                          YAMLNAME testinput/${test}.yaml
-                          EXENAME  saber_qg_dirac.x
-                          RUN_FILE ${test}/test.log.out
-                          REF_FILE ${test}/test.ref
-                          DEPENDS saber_qg_dirac.x
-                          TEST_DEPENDS test_qg_links
-                          COMPARE)
+            ecbuild_add_test( TARGET test_qg_${testname}
+                              TYPE SCRIPT
+                              COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
+                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
+                                   testinput/${test}.yaml
+                                   ${oops_BINDIR}/oops_compare.py
+                                   ${test}/test.log.out
+                                   ${test}/test.ref
+                                   0.0
+                                   0
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1"
+                              OMP 2
+                              DEPENDS saber_qg_dirac.x
+                              TEST_DEPENDS test_qg_links )
+#             oops_add_test(TESTNAME ${testname}
+#                           MODELNAME qg
+#                           MPI 1
+#                           OMP 2
+#                           YAMLNAME testinput/${test}.yaml
+#                           EXENAME  saber_qg_dirac.x
+#                           RUN_FILE ${test}/test.log.out
+#                           REF_FILE ${test}/test.ref
+#                           DEPENDS saber_qg_dirac.x
+#                           TEST_DEPENDS test_qg_links
+#                           COMPARE)
         endif()
     endforeach()
 
@@ -492,19 +514,34 @@ if(${SABER_TEST_OOPS})
     foreach(test ${saber_test_oops})
         string(FIND ${test} "qg_3d" qg_3d)
         string(FIND ${test} "qg_4d" qg_4d)
-        if ((${qg_3d} MATCHES 0) OR (${qg_4d} MATCHES 0))
+        if ((qg_3d MATCHES 0) OR (qg_4d MATCHES 0))
             string(SUBSTRING ${test} 3 -1 testname)
-            oops_add_test(TESTNAME ${testname}
-                          MODELNAME qg
-                          MPI 1
-                          OMP 2
-                          YAMLNAME testinput/${test}.yaml
-                          EXENAME  saber_qg_4dvar.x
-                          RUN_FILE ${test}/test.log.out
-                          REF_FILE ${test}/test.ref
-                          DEPENDS saber_qg_4dvar.x
-                          TEST_DEPENDS test_qg_links
-                          COMPARE)
+            ecbuild_add_test( TARGET test_qg_${testname}
+                              TYPE SCRIPT
+                              COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
+                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
+                                   testinput/${test}.yaml
+                                   ${oops_BINDIR}/oops_compare.py
+                                   ${test}/test.log.out
+                                   ${test}/test.ref
+                                   0.0
+                                   0
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1"
+                              OMP 2
+                              DEPENDS saber_qg_4dvar.x
+                              TEST_DEPENDS test_qg_links )
+
+#             oops_add_test(TESTNAME ${testname}
+#                           MODELNAME qg
+#                           MPI 1
+#                           OMP 2
+#                           YAMLNAME testinput/${test}.yaml
+#                           EXENAME  saber_qg_4dvar.x
+#                           RUN_FILE ${test}/test.log.out
+#                           REF_FILE ${test}/test.ref
+#                           DEPENDS saber_qg_4dvar.x
+#                           TEST_DEPENDS test_qg_links
+#                           COMPARE)
         endif()
     endforeach()
 endif()

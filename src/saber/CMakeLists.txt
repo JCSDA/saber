@@ -1,66 +1,41 @@
-# (C) Copyright 2017-2019 UCAR.
+# (C) Copyright 2017-2020 UCAR.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-add_subdirectory( bump )
-add_subdirectory( external )
-add_subdirectory( gaugrid )
-add_subdirectory( util )
+set(_subdirs bump external gaugrid util)
 
-if (${OOPS_FOUND})
-  add_subdirectory( oops )
-endif()
+foreach( _subdir IN LISTS _subdirs )
+    add_subdirectory( ${_subdir} )
+    list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
+    list( APPEND ${PROJECT_NAME}_src_files ${${_subdir}_src_files} )
+endforeach()
 
-PREPEND( _p_bump_src_files "bump" ${bump_src_files} )
-PREPEND( _p_external_src_files "external" ${external_src_files} )
-PREPEND( _p_gaugrid_src_files "gaugrid" ${gaugrid_src_files} )
-PREPEND( _p_util_src_files "util" ${util_src_files} )
-PREPEND( _p_util_header_files "util" ${util_header_files} )
-
-if (${OOPS_FOUND})
-  PREPEND( _p_oops_src_files "oops" ${oops_src_files} )
-endif()
-
-list( APPEND saber_src_files
-  ${_p_bump_src_files}
-  ${_p_external_src_files}
-  ${_p_gaugrid_src_files}
-  ${_p_util_src_files}
-)
-
-list( APPEND saber_header_files
-  ${_p_util_header_files}
-)
-
-if (${OOPS_FOUND})
-  list( APPEND saber_src_files
-    ${_p_oops_src_files}
-  )
-endif()
-
-list( APPEND SABER_LIB_DEPS
-  ${NETCDF_LIBRARIES} fckit eckit_mpi eckit
-)
-
-if(${METIS_FOUND})
-    list( APPEND SABER_LIB_DEPS metis metis_interface )
-endif()
-
-if (${OOPS_FOUND})
-    if (${ENABLE_OOPS_TOYMODELS})
-       list( APPEND SABER_LIB_DEPS oops qg )
-    endif()
-endif()
-
-ecbuild_add_library( TARGET     saber
-                     SOURCES    ${FORTRAN_BINDINGS}
-                                ${saber_src_files}
-                     LIBS       ${SABER_LIB_DEPS}
+include(GNUInstallDirs)
+ecbuild_add_library( TARGET ${PROJECT_NAME}
+                     SOURCES ${${PROJECT_NAME}_src_files}
                      INSTALL_HEADERS LISTED
-                     HEADER_DESTINATION ${INSTALL_INCLUDE_DIR}/saber
-                     TEMPLATES ${saber_header_files}
-                     LINKER_LANGUAGE ${SABER_LINKER_LANGUAGE}
-                   )
+                     HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
+                     LINKER_LANGUAGE CXX )
 
-target_link_libraries(saber PUBLIC atlas atlas_f)
+target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran )
+target_link_libraries( ${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran )
+target_link_libraries( ${PROJECT_NAME} PUBLIC MPI::MPI_Fortran )
+target_link_libraries( ${PROJECT_NAME} PUBLIC eckit )
+target_link_libraries( ${PROJECT_NAME} PUBLIC fckit )
+if( atlas_FOUND )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC atlas_f )
+    target_compile_definitions( ${PROJECT_NAME} PRIVATE ATLASIFIED=1)
+endif()
+if( metis_FOUND )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC metis metis_interface )
+    target_compile_definitions( ${PROJECT_NAME} PRIVATE SABER_USE_METIS=1 )
+endif()
+
+#Fortran module output directory for build and install interfaces
+set(MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION})
+set_target_properties(${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR})
+install(DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR}/ DESTINATION ${MODULE_DIR})
+target_include_directories(${PROJECT_NAME} INTERFACE
+                                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${MODULE_DIR}>
+                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${MODULE_DIR}>)
