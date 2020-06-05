@@ -12,10 +12,12 @@ find_package(atlas REQUIRED COMPONENTS OMP_Fortran)
 
 if(@metis_FOUND@)
     find_dependency(metis)
+    set(saber_metis_FOUND True) #COMPONENT 'metis'
 endif()
 
 if(@oops_FOUND@)
     find_dependency(oops)
+    set(saber_oops_FOUND True) #COMPONENT 'oops'
 endif()
 
 #Export Fortran compiler version for checking module compatibility
