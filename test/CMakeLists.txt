@@ -420,7 +420,7 @@ if(${SABER_TEST_MODEL})
 endif()
 
 # OOPS tests
-if(SABER_TEST_OOPS AND oops_toymodels_FOUND)
+if(SABER_TEST_OOPS AND oops_qg_FOUND)
 
     foreach(test ${saber_test_oops})
         # Link to yaml files
@@ -453,17 +453,6 @@ if(SABER_TEST_OOPS AND oops_toymodels_FOUND)
                               OMP 2
                               DEPENDS saber_qg_estimate_parameters.x
                               TEST_DEPENDS get_saber_data )
-#             oops_add_test(TESTNAME ${testname}
-#                           MODELNAME qg
-#                           MPI 1
-#                           OMP 2
-#                           YAMLNAME testinput/${test}.yaml
-#                           EXENAME  saber_qg_estimate_parameters.x
-#                           RUN_FILE ${test}/test.log.out
-#                           REF_FILE ${test}/test.ref
-#                           DEPENDS saber_qg_estimate_parameters.x
-#                           TEST_DEPENDS get_saber_data
-#                           COMPARE)
         endif()
     endforeach()
 
@@ -496,17 +485,6 @@ if(SABER_TEST_OOPS AND oops_toymodels_FOUND)
                               OMP 2
                               DEPENDS saber_qg_dirac.x
                               TEST_DEPENDS test_qg_links )
-#             oops_add_test(TESTNAME ${testname}
-#                           MODELNAME qg
-#                           MPI 1
-#                           OMP 2
-#                           YAMLNAME testinput/${test}.yaml
-#                           EXENAME  saber_qg_dirac.x
-#                           RUN_FILE ${test}/test.log.out
-#                           REF_FILE ${test}/test.ref
-#                           DEPENDS saber_qg_dirac.x
-#                           TEST_DEPENDS test_qg_links
-#                           COMPARE)
         endif()
     endforeach()
 
@@ -531,17 +509,6 @@ if(SABER_TEST_OOPS AND oops_toymodels_FOUND)
                               DEPENDS saber_qg_4dvar.x
                               TEST_DEPENDS test_qg_links )
 
-#             oops_add_test(TESTNAME ${testname}
-#                           MODELNAME qg
-#                           MPI 1
-#                           OMP 2
-#                           YAMLNAME testinput/${test}.yaml
-#                           EXENAME  saber_qg_4dvar.x
-#                           RUN_FILE ${test}/test.log.out
-#                           REF_FILE ${test}/test.ref
-#                           DEPENDS saber_qg_4dvar.x
-#                           TEST_DEPENDS test_qg_links
-#                           COMPARE)
         endif()
     endforeach()
 endif()

@@ -8,9 +8,9 @@
  * does it submit to any jurisdiction.
  */
 
-#include "model/instantiateQgChangeVarFactory.h"
-#include "model/instantiateQgLocalizationFactory.h"
-#include "model/QgTraits.h"
+#include "oops/qg/model/instantiateQgChangeVarFactory.h"
+#include "oops/qg/model/instantiateQgLocalizationFactory.h"
+#include "oops/qg/model/QgTraits.h"
 #include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
 #include "saber/oops/instantiateCovarFactory.h"

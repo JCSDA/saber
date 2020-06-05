@@ -8,8 +8,8 @@
  * does it submit to any jurisdiction.
  */
 
-#include "model/instantiateQgChangeVarFactory.h"
-#include "model/QgTraits.h"
+#include "oops/qg/model/instantiateQgChangeVarFactory.h"
+#include "oops/qg/model/QgTraits.h"
 #include "oops/runs/Run.h"
 #include "saber/oops/EstimateParams.h"
 

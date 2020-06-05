@@ -33,7 +33,7 @@ find_package( fckit REQUIRED )
 find_package( atlas REQUIRED COMPONENTS OMP_Fortran )
 #Optionals
 find_package( metis QUIET )
-find_package( oops QUIET OPTIONAL_COMPONENTS toymodels )
+find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 
 ## Sources
 add_subdirectory( src/saber )

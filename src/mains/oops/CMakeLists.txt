@@ -3,19 +3,18 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-if(oops_toymodels_FOUND)
-    ecbuild_add_executable( TARGET  saber_qg_estimate_parameters.x
+if(oops_qg_FOUND)
+    set(QG_LIBS saber ${oops_qg_LIBRARIES})
+
+    ecbuild_add_executable( TARGET saber_qg_estimate_parameters.x
                             SOURCES qgEstimateParams.cc
-                            LIBS    saber
-                          )
+                            LIBS ${QG_LIBS} )
 
-    ecbuild_add_executable( TARGET  saber_qg_dirac.x
+    ecbuild_add_executable( TARGET saber_qg_dirac.x
                             SOURCES qgDirac.cc
-                            LIBS    saber
-                          )
+                            LIBS ${QG_LIBS} )
 
-    ecbuild_add_executable( TARGET  saber_qg_4dvar.x
+    ecbuild_add_executable( TARGET saber_qg_4dvar.x
                             SOURCES qg4DVar.cc
-                            LIBS    saber
-                          )
+                            LIBS ${QG_LIBS} )
 endif()

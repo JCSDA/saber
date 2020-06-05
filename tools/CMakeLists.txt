@@ -10,7 +10,7 @@ list( APPEND test_files
     saber_valgrind.sh
 )
 
-if(oops_toymodels_FOUND)
+if(oops_qg_FOUND)
     list( APPEND test_files saber_qg_links.sh )
 endif()
 

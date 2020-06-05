@@ -3,8 +3,11 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
+#Build list of subdirs with files to add
 set(_subdirs bump external gaugrid util)
-
+if(oops_FOUND)
+    list(APPEND _subdirs oops)
+endif()
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
@@ -31,6 +34,13 @@ if( metis_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC metis metis_interface )
     target_compile_definitions( ${PROJECT_NAME} PRIVATE SABER_USE_METIS=1 )
 endif()
+if( oops_FOUND )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
+endif()
+
+#Enable including of local header Fortran file templates
+target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> )
+
 
 #Fortran module output directory for build and install interfaces
 set(MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION})
