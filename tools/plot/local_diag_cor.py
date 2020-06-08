@@ -3,9 +3,10 @@
 import argparse
 import Ngl, Nio
 import numpy as np
+import numpy.ma as ma
 import os
 
-def umf(testdata, test, mpi, omp, suffix):
+def local_diag_cor(testdata, test, mpi, omp, suffix):
    # Open file
    f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
 
@@ -14,7 +15,10 @@ def umf(testdata, test, mpi, omp, suffix):
    lat = f.variables["lat"][:]
 
    # Variables
-   var_list = ["m2","m4","kurt"]
+   var_list = []
+   for var in f.variables:
+      if var.find("coef_ens")>0 or var.find("fit_rh")>0 or var.find("fit_rv")>0:
+         var_list.append(var)
 
    # Get number of levels
    nl0 = f.variables[var_list[0]][:,:].shape[0]
@@ -26,6 +30,7 @@ def umf(testdata, test, mpi, omp, suffix):
    cres.nglMaximize = True
    cres.cnFillOn = True
    cres.cnFillMode = "AreaFill"
+   cres.cnConstFEnableFill = True
    cres.trGridType = "TriangularMesh"
    cres.cnMonoFillPattern = True
    cres.cnMonoFillColor = False

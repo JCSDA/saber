@@ -238,7 +238,7 @@ type(bpar_type),intent(in) :: bpar           ! Block parameters
 character(len=*),intent(in) :: filename      ! File name
 
 ! Local variables
-integer :: info,info_coord,ncid,nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vunit_id
+integer :: info,info_coord,ncid,nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vunit_id,l0rl0_to_l0_id
 integer :: m11_bins_id,m11_hist_id,m11m11_bins_id,m11m11_hist_id,m2m2_bins_id,m2m2_hist_id,m22_bins_id,m22_hist_id
 integer :: cor_bins_id,cor_hist_id
 character(len=1024),parameter :: subr = 'avg_blk_write'
@@ -272,6 +272,12 @@ if (info_coord/=nf90_noerr) then
 end if
 
 ! Define variables if necessary
+info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_l0rl0_to_l0',l0rl0_to_l0_id)
+if (info/=nf90_noerr) then
+   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_l0rl0_to_l0',nf90_int, &
+ & (/nl0r_id,nl0_id/),l0rl0_to_l0_id))
+   call mpl%ncerr(subr,nf90_put_att(ncid,l0rl0_to_l0_id,'_FillValue',mpl%msv%vali))
+end if
 info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m11_bins',m11_bins_id)
 if (info/=nf90_noerr) then
    call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m11_bins',nc_kind_real, &
@@ -343,6 +349,8 @@ if (info_coord/=nf90_noerr) then
 end if
 
 ! Write variables
+call mpl%ncerr(subr,nf90_put_var(ncid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib),(/1,1,1/), &
+ & (/bpar%nl0r(ib),geom%nl0/)))
 call mpl%ncerr(subr,nf90_put_var(ncid,m11_bins_id,avg_blk%m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
 call mpl%ncerr(subr,nf90_put_var(ncid,m11_hist_id,avg_blk%m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &

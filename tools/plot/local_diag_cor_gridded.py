@@ -3,9 +3,10 @@
 import argparse
 import Ngl, Nio
 import numpy as np
+import numpy.ma as ma
 import os
 
-def umf(testdata, test, mpi, omp, suffix):
+def local_diag_cor_gridded(testdata, test, mpi, omp, suffix):
    # Open file
    f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
 
@@ -14,10 +15,13 @@ def umf(testdata, test, mpi, omp, suffix):
    lat = f.variables["lat"][:]
 
    # Variables
-   var_list = ["m2","m4","kurt"]
+   var_list = []
+   for var in f.variables:
+      if var.find("coef_ens")>0 or var.find("fit_rh")>0 or var.find("fit_rv")>0:
+         var_list.append(var)
 
    # Get number of levels
-   nl0 = f.variables[var_list[0]][:,:].shape[0]
+   nl0 = f.variables[var_list[0]][:,:,:].shape[0]
 
    # Contour resources
    cres = Ngl.Resources()
@@ -25,8 +29,7 @@ def umf(testdata, test, mpi, omp, suffix):
    cres.nglFrame = False
    cres.nglMaximize = True
    cres.cnFillOn = True
-   cres.cnFillMode = "AreaFill"
-   cres.trGridType = "TriangularMesh"
+   cres.cnConstFEnableFill = True
    cres.cnMonoFillPattern = True
    cres.cnMonoFillColor = False
    cres.cnFillPalette = "WhiteBlueGreenYellowRed"
@@ -69,7 +72,7 @@ def umf(testdata, test, mpi, omp, suffix):
       # Plots
       plot = []
       for il0 in range(0, nl0):
-         plot.append(Ngl.contour_map(wks, field[il0,:], cres))
+         plot.append(Ngl.contour_map(wks, field[il0,:,:], cres))
 
       # Panel
       Ngl.panel(wks, plot, [nl0,1], pnlres)

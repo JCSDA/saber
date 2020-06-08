@@ -61,10 +61,12 @@ type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Number of blocks
 bpar%nb = nam%nv**2*nam%nts**2
-if (bpar%nb==1) then
-    bpar%nbe = bpar%nb
-else
-   bpar%nbe = bpar%nb+1
+bpar%nbe = bpar%nb
+if (bpar%nb>1) then
+   select case (nam%strategy)
+   case ('common','common_univariate','common_weighted')
+      bpar%nbe = bpar%nb+1
+   end select
 end if
 
 ! Allocation
@@ -142,7 +144,7 @@ do iv=1,nam%nv
             select case (nam%strategy)
             case ('diag_all')
                bpar%diag_block(ib) = .true.
-               bpar%avg_block(ib) = .true.
+               bpar%avg_block(ib) = .false.
                bpar%B_block(ib) = .false.
                bpar%nicas_block(ib) = .false.
             case ('common')
@@ -171,7 +173,7 @@ do iv=1,nam%nv
                if ((iv==jv).and.(its==jts)) bpar%cv_block(ib) = ib
             case ('specific_multivariate')
                bpar%diag_block(ib) = (iv==jv).and.(its==jts)
-               bpar%avg_block(ib) = (bpar%nbe==bpar%nb)
+               bpar%avg_block(ib) = .false.
                bpar%B_block(ib) = (iv==jv).and.(its==jts)
                bpar%nicas_block(ib) = (iv==jv).and.(its==jts)
                if (ib==1) bpar%cv_block(ib) = 1

@@ -45,10 +45,8 @@ def cortrack(testdata, test, mpi, omp, suffix):
    cres.cnNoDataLabelOn = False
    cres.cnMissingValPerimOn = True
    cres.cnMissingValPerimColor = "black"
-   cres.cnLevelSelectionMode = "ManualLevels"
-   cres.cnMaxLevelValF = 1.0
-   cres.cnMinLevelValF = -1.0
-   cres.cnLevelSpacingF = 0.1
+   cres.cnLevelSelectionMode = "ExplicitLevels"
+   cres.cnLevels = Ngl.fspan(-1.0,1.0,21)
    cres.mpOutlineOn = False
    cres.mpLandFillColor = -1
    cres.mpProjection = "CylindricalEquidistant"
@@ -96,6 +94,9 @@ def cortrack(testdata, test, mpi, omp, suffix):
 
       # Advance frame
       Ngl.frame(wks)
+
+      # Delete frame
+      Ngl.delete_wks(wks)
 
    # Delete unnecessary resources
    del(cres.sfXArray)
@@ -149,3 +150,6 @@ def cortrack(testdata, test, mpi, omp, suffix):
 
    # Advance frame
    Ngl.frame(wks)
+
+   # Delete frame
+   Ngl.delete_wks(wks)

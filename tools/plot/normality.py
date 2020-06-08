@@ -80,3 +80,6 @@ def normality(testdata, test, mpi, omp, suffix):
 
    # Advance frame
    Ngl.frame(wks)
+
+   # Delete frame
+   Ngl.delete_wks(wks)

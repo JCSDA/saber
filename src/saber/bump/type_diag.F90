@@ -173,14 +173,14 @@ if (nam%local_diag) then
                   fld_c2a(ic2a,:) = diag%blk(ic2a,ib)%fit_rv
                end if
             end do
-   
+
             ! Interpolation
             call samp%com_AB%ext(mpl,geom%nl0,fld_c2a,fld_c2b)
             do il0=1,geom%nl0
                il0i = min(il0,geom%nl0i)
                call samp%h(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0))
             end do
-   
+
             ! Write fields
             if (i==1) then
                call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_coef_ens',fld_c0a)
@@ -243,7 +243,7 @@ integer :: ib,il0,ic2a
 real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
 real(kind_real),allocatable :: rh_c2a(:,:),rv_c2a(:,:)
 
-if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
+if (nam%local_diag) then
    ! Horizontal filtering
    write(mpl%info,'(a7,a)') '','Horizontal filtering'
    call mpl%flush
@@ -255,7 +255,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
             allocate(rh_c2a(samp%nc2a,geom%nl0))
             allocate(rv_c2a(samp%nc2a,geom%nl0))
          end if
-      
+
          do il0=1,geom%nl0
             do ic2a=1,samp%nc2a
                ! Copy data
@@ -264,7 +264,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
                   rh_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rh(il0)
                   rv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rv(il0)
                end if
-      
+
                ! Apply bounds relatively to the global value
                if (mpl%msv%isnot(coef_ens_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
                   if ((coef_ens_c2a(ic2a,il0)<diag%blk(0,ib)%coef_ens(il0)/bound) &
@@ -281,28 +281,30 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
                   end if
                end if
             end do
-      
-            ! Median filter to remove extreme values
-            call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,coef_ens_c2a(:,il0))
-            if (bpar%fit_block(ib)) then
-               call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rh_c2a(:,il0))
-               call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rv_c2a(:,il0))
+
+            if (nam%diag_rhflt>0.0) then
+               ! Median filter to remove extreme values
+               call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,coef_ens_c2a(:,il0))
+               if (bpar%fit_block(ib)) then
+                  call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rh_c2a(:,il0))
+                  call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rv_c2a(:,il0))
+               end if
+
+               ! Average filter to smooth data
+               call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,coef_ens_c2a(:,il0))
+               if (bpar%fit_block(ib)) then
+                  call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rh_c2a(:,il0))
+                  call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rv_c2a(:,il0))
+               end if
             end if
-      
-            ! Average filter to smooth data
-            call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,coef_ens_c2a(:,il0))
-            if (bpar%fit_block(ib)) then
-               call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rh_c2a(:,il0))
-               call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rv_c2a(:,il0))
-            end if
-      
+
             ! Fill missing values
             call samp%diag_fill(mpl,coef_ens_c2a(:,il0))
             if (bpar%fit_block(ib)) then
                call samp%diag_fill(mpl,rh_c2a(:,il0))
                call samp%diag_fill(mpl,rv_c2a(:,il0))
             end if
-      
+
             ! Copy data
             do ic2a=1,samp%nc2a
                diag%blk(ic2a,ib)%coef_ens(il0) = coef_ens_c2a(ic2a,il0)
@@ -312,7 +314,7 @@ if (nam%local_diag.and.(nam%diag_rhflt>0.0)) then
                end if
             end do
          end do
-      
+
          ! Release memory
          if (bpar%fit_block(ib)) then
             deallocate(rh_c2a)
@@ -369,7 +371,7 @@ do ib=1,bpar%nbe
          call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag%blk(ic2a,ib)%distv, &
        & diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit)
       end do
-   
+
       ! Compute RMSE
       rmse = sum(abs(diag%blk(0,ib)%fit-diag%blk(0,ib)%raw),mask=mpl%msv%isnot(diag%blk(0,ib)%raw))/real(mpl%nproc,kind_real)
       norm = real(count(mpl%msv%isnot(diag%blk(0,ib)%raw)),kind_real)/real(mpl%nproc,kind_real)
@@ -472,12 +474,13 @@ do ib=1,bpar%nbe
 
       do ic2a=0,diag%nc2a
          ! Copy correlation
-         diag%blk(ic2a,ib)%coef_ens = 1.0
          diag%blk(ic2a,ib)%raw = avg%blk(ic2a,ib)%cor
          diag%blk(ic2a,ib)%valid = avg%blk(ic2a,ib)%nc1a_cor
 
-         ! Set variance to 1
-         diag%blk(ic2a,ib)%coef_ens = 1.0
+         ! Set diagonal coefficient
+         do il0=1,geom%nl0
+            diag%blk(ic2a,ib)%coef_ens(il0) = diag%blk(ic2a,ib)%raw(1,bpar%il0rz(il0,ib),il0)
+         end do
 
          ! Fitting
          if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,rng,nam,geom,bpar,samp,.false.)
@@ -490,8 +493,10 @@ do ib=1,bpar%nbe
       ! Print results
       do il0=1,geom%nl0
          if (bpar%fit_block(ib)) then
+            write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero: ', &
+          & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
             if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-               write(mpl%info,'(a13,a,i3,a,a,f10.2,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. support radii: ', &
+               write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','cor. support radii: ', &
              & trim(mpl%aqua),diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua), &
              & diag%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vert. unit'
                call mpl%flush
