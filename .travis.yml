@@ -81,7 +81,7 @@ before_install:
   - docker images
 # request codecov to detect CI environment to pass through to docker
   - ci_env=`bash <(curl -s https://codecov.io/env)`
-
+  - echo $ci_env
   - docker run -d -t $ci_env --name jcsda_container -v ${REPO_SOURCE_DIR}/saber-bundle:/jcsda/src_repo jcsda/dockerl2
   - docker ps -a
   - date
@@ -109,10 +109,6 @@ script:
   - date
   - docker exec jcsda_container bash -c 'cd /build_container/saber && ctest'
   - date
-#disable code coverage until container is updated
-##  run lcov inside container
-#  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --capture --directory . --output-file coverage.info'
-#  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --remove coverage.info "/usr/*" --output-file coverage.info'  #  filter system-files
-#  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --list coverage.info'  #  debug info
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && bash <(curl -s https://codecov.io/bash) -t b8d1ec3a-1248-4948-afe1-5afc97fc24c7 -X gcov -R /jcsda/src_repo/saber/'
+#  upload to CodeCov
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && bash <(curl -s https://codecov.io/bash) -t b8d1ec3a-1248-4948-afe1-5afc97fc24c7'
 
