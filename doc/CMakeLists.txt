@@ -8,5 +8,5 @@ ecbuild_add_option( FEATURE DOCS
                     DESCRIPTION "Generate documentation" )
 
 if(HAVE_DOCS)
-    add_subdirectory( bump )
+#    add_subdirectory( bump )
 endif (HAVE_DOCS)

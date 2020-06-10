@@ -606,8 +606,8 @@ call nam%write(mpl,ncid)
 
 ! Define dimensions
 call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0a',geom%nc0a,nc0a_id))
-if (samp%sc3) then
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0',geom%nl0,nl0_id))
+call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0',geom%nl0,nl0_id))
+if (samp%sc3) then   
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nc3',nam%nc3,nc3_id))
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1a',samp%nc1a,nc1a_id))
 end if
@@ -690,8 +690,8 @@ if (samp%sc3) then
 end if
 if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
    ! Allocation
-   allocate(lon_local(nc1max_local_tot,samp%nc2a,nl0_id))
-   allocate(lat_local(nc1max_local_tot,samp%nc2a,nl0_id))
+   allocate(lon_local(nc1max_local_tot,samp%nc2a,geom%nl0))
+   allocate(lat_local(nc1max_local_tot,samp%nc2a,geom%nl0))
 
    ! Initialization
    lon_local = mpl%msv%valr
@@ -733,8 +733,8 @@ if (trim(samp%name)=='vbal') then
          ic2u = samp%c2b_to_c2u(ic2b)
          if (samp%smask_c2u(ic2u,il0)) then
             j = 1
-            lon_vbal(j,ic2a,il0) = samp%lon_c2u(ic2u)*rad2deg
-            lat_vbal(j,ic2a,il0) = samp%lat_c2u(ic2u)*rad2deg
+            lon_vbal(j,ic2b,il0) = samp%lon_c2u(ic2u)*rad2deg
+            lat_vbal(j,ic2b,il0) = samp%lat_c2u(ic2u)*rad2deg
             j = j+1
             do jc1e=1,samp%nc1e
                jc1u = samp%c1e_to_c1u(jc1e)

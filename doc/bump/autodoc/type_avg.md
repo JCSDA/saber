@@ -11,5 +11,5 @@
 | subroutine | [avg_compute_deh](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L295) | compute dual-ensemble hybrid averaged statistics |
 | subroutine | [avg_copy_wgt](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L366) | averaged statistics data copy for weight definition |
 | subroutine | [avg_compute_bwavg](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L400) | compute block-averaged statistics |
-| subroutine | [avg_compute_bwavg_hyb](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L500) | compute hybrid block-averaged statistics |
-| subroutine | [avg_compute_bwavg_deh](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L581) | compute dual-ensemble hybrid block-averaged statistics |
+| subroutine | [avg_compute_bwavg_hyb](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L509) | compute hybrid block-averaged statistics |
+| subroutine | [avg_compute_bwavg_deh](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L596) | compute dual-ensemble hybrid block-averaged statistics |

@@ -11,4 +11,4 @@
 | subroutine | [ens_apply_bens_dirac](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L276) | apply raw ensemble covariance to a Dirac (faster formulation) |
 | subroutine | [ens_normality](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L329) | perform some normality diagnostics |
 | subroutine | [ens_cortrack](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L498) | correlation tracker |
-| subroutine | [ens_corstats](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L773) | correlation statistics |
+| subroutine | [ens_corstats](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L793) | correlation statistics |

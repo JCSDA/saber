@@ -1678,7 +1678,7 @@ type(bpar_type),intent(in) :: bpar    ! Block parameters
 
 ! Local variables
 integer :: ifac,itest,nefac(nfac_rnd),ens1_ne
-integer :: ncid,ntest_id,nfac_id,mse_id,mse_th_id
+integer :: ncid,ntest_id,nfac_id,nefac_id,mse_id,mse_th_id
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts),mse(ntest,nfac_rnd),mse_th(ntest,nfac_rnd),mse_avg,mse_th_avg
 real(kind_real),allocatable :: fld_ref(:,:,:,:,:),fld_save(:,:,:,:,:)
 character(len=1024) :: filename
@@ -1772,6 +1772,7 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nfac',nfac_rnd,nfac_id))
 
    ! Define variables
+   call mpl%ncerr(subr,nf90_def_var(ncid,'nefac',nc_kind_real,(/nfac_id/),nefac_id))
    call mpl%ncerr(subr,nf90_def_var(ncid,'mse',nc_kind_real,(/ntest_id,nfac_id/),mse_id))
    call mpl%ncerr(subr,nf90_def_var(ncid,'mse_th',nc_kind_real,(/ntest_id,nfac_id/),mse_th_id))
 
@@ -1779,6 +1780,7 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_enddef(ncid))
 
    ! Write variables
+   call mpl%ncerr(subr,nf90_put_var(ncid,nefac_id,nefac))
    call mpl%ncerr(subr,nf90_put_var(ncid,mse_id,mse))
    call mpl%ncerr(subr,nf90_put_var(ncid,mse_th_id,mse_th))
 

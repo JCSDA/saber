@@ -6,7 +6,7 @@ import numpy as np
 import numpy.ma as ma
 import os
 
-def dirac(testdata, test, mpi, omp, suffix):
+def var(testdata, test, mpi, omp, suffix):
    # Open file
    f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
 
@@ -17,7 +17,7 @@ def dirac(testdata, test, mpi, omp, suffix):
    # Variables
    var_list = []
    for var in f.variables:
-      if var.find("nicas_")==0 or var.find("vbal_")==0:
+      if var.find("m2")==0 or var.find("m4")==0:
          var_list.append(var)
 
    # Get number of levels
@@ -34,7 +34,9 @@ def dirac(testdata, test, mpi, omp, suffix):
    cres.trGridType = "TriangularMesh"
    cres.cnMonoFillPattern = True
    cres.cnMonoFillColor = False
-   cres.lbLabelBarOn = False
+   cres.lbLabelBarOn = True
+   cres.lbOrientation = "horizontal"
+   cres.lbLabelFontHeightF  = 0.008
    cres.cnInfoLabelOn = False
    cres.cnLineLabelsOn = False
    cres.cnLinesOn = False
@@ -42,7 +44,6 @@ def dirac(testdata, test, mpi, omp, suffix):
    cres.cnMissingValPerimOn = True
    cres.cnMissingValPerimColor = "black"
    cres.mpOutlineOn = False
-   cres.cnLevelSelectionMode = "ExplicitLevels"
    cres.mpLandFillColor = -1
    cres.mpProjection = "CylindricalEquidistant"
    cres.mpLimitMode = "LatLon"
@@ -55,7 +56,6 @@ def dirac(testdata, test, mpi, omp, suffix):
    # Panel resources
    pnlres = Ngl.Resources()
    pnlres.nglFrame = False
-   pnlres.nglPanelLabelBar = True
 
    # Make output directory
    testfig = testdata + "/" + test + "/fig"
@@ -69,13 +69,7 @@ def dirac(testdata, test, mpi, omp, suffix):
       # Open workstation
       wks_type = "png"
       wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + var)
-      Ngl.define_colormap(wks, "BlWhRe")
-
-      # Resources
-      if (np.max(np.abs(field))>0.0):
-         cres.cnLevels = Ngl.fspan(-np.max(np.abs(field)),np.max(np.abs(field)),21)
-      else:
-         cres.cnLevels = [-1.0,0.0,1.0]
+      Ngl.define_colormap(wks, "WhiteBlueGreenYellowRed")
 
       # Plots
       plot = []

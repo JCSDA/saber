@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-from os import listdir
-from os.path import isfile, islink, join
+import os
 import sys
 
 # Parser
 parser = argparse.ArgumentParser()
+parser.add_argument("bindir", help="Binary directory")
 parser.add_argument("testdata", help="Test data directory")
 parser.add_argument("test", help="Test name")
 parser.add_argument("mpi", help="Number of MPI tasks")
@@ -14,10 +14,10 @@ parser.add_argument("omp", help="Number of OpenMP threads")
 args = parser.parse_args()
 
 # Insert path
-sys.path.insert(1, 'plot')
+sys.path.insert(1, os.path.join(args.bindir, "saber_plot"))
 
 # Available plots list
-plot_list=["adv","avg","corstats","cortrack","diag","dirac","lct","local_diag_cor_gridded","local_diag_cor","local_diag_loc_gridded","local_diag_loc","normality","sampling_grids","umf"]
+plot_list=["adv","avg","corstats","cortrack","diag","dirac","lct","local_diag_cor_gridded","local_diag_cor","local_diag_loc_gridded","local_diag_loc","normality","randomization","sampling_grids","umf","var"]
 done_list=["adv","normality","sampling_grids"]
 done = {}
 for plot in plot_list:
@@ -25,8 +25,9 @@ for plot in plot_list:
 
 # BUMP tests
 if args.test.find("bump_")==0:
-   for f in listdir(join(args.testdata, args.test)):
-      if isfile(join(args.testdata, args.test, f)) and f.find("test_" + args.mpi + "-" + args.omp)==0:
+   # Create png figures
+   for f in sorted(os.listdir(os.path.join(args.testdata, args.test))):
+      if os.path.isfile(os.path.join(args.testdata, args.test, f)) and f.find("test_" + args.mpi + "-" + args.omp)==0:
          suffix = f.split("test_" + args.mpi + "-" + args.omp + "_")[1][:-(len(f.rsplit(".")[-1])+1)]
          for plot in plot_list:
             if suffix.find(plot)==0 and not done[plot]:
@@ -38,3 +39,22 @@ if args.test.find("bump_")==0:
                   done[plot] = True
                else:
                   func(args.testdata, args.test, args.mpi, args.omp, suffix)
+
+   # Create HTML page
+   message = "<html><head></head><body><h1>" + args.test + "</h1><ul>"
+   for f in sorted(os.listdir(os.path.join(args.testdata, args.test, "fig"))):
+      if f.find("test_" + args.mpi + "-" + args.omp)==0:
+         short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".png", "")
+         message = message + "<li><a href=\"#" + short_name + "\">" + short_name + "</a></li>"
+   message = message + "</ul>"
+   for f in sorted(os.listdir(os.path.join(args.testdata, args.test, "fig"))):
+      if f.find("test_" + args.mpi + "-" + args.omp)==0:
+         short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".png", "")
+         cmd = "mogrify -trim " + os.path.join(args.testdata, args.test, "fig", f)
+         os.system(cmd)
+         message = message + "<h2 id=\"" + short_name + "\">" + short_name + "</h2><img src=\"" + os.path.join(args.testdata, args.test, "fig", f) + "\" width=800px><br><a href=\"#top\">Back to top</a>"
+
+   message = message + "</body></html>"
+   f = open(os.path.join(args.testdata, args.test, "fig", "index_" + args.mpi + "-" + args.omp + ".html"), "w")
+   f.write(message)
+   f.close()   

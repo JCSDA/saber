@@ -29,6 +29,7 @@ else()
 endif()
 
 # Default test selection variables (TIER-independent)
+set(SABER_TEST_PLOT 0)
 set(SABER_TEST_VALGRIND 0)
 set(SABER_TEST_MODEL 0)
 set(SABER_TEST_MODEL_DIR "")
@@ -49,6 +50,9 @@ endif()
 if(DEFINED ENV{SABER_TEST_MULTI})
     set(SABER_TEST_MULTI "$ENV{SABER_TEST_MULTI}")
 endif()
+if(DEFINED ENV{SABER_TEST_PLOT})
+    set(SABER_TEST_PLOT "$ENV{SABER_TEST_PLOT}")
+endif()
 if(DEFINED ENV{SABER_TEST_VALGRIND})
     set(SABER_TEST_VALGRIND "$ENV{SABER_TEST_VALGRIND}")
 endif()
@@ -67,6 +71,7 @@ message(STATUS "SABER_TEST_TIER:      " ${SABER_TEST_TIER})
 message(STATUS "SABER_TEST_MPI:       " ${SABER_TEST_MPI})
 message(STATUS "SABER_TEST_OMP:       " ${SABER_TEST_OMP})
 message(STATUS "SABER_TEST_MULTI:     " ${SABER_TEST_MULTI})
+message(STATUS "SABER_TEST_PLOT:      " ${SABER_TEST_PLOT})
 message(STATUS "SABER_TEST_VALGRIND:  " ${SABER_TEST_VALGRIND})
 message(STATUS "SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
 if(${SABER_TEST_MODEL})
@@ -284,6 +289,14 @@ foreach(test ${saber_test})
                      TEST_DEPENDS get_saber_ref
                                   test_${test}_${mpi}-${omp}_run)
 
+    if(${SABER_TEST_PLOT})
+        ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_plot
+                         TYPE SCRIPT
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                         ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                         TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+    endif()
+
     if(${SABER_TEST_VALGRIND})
         ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_valgrind
                          MPI    ${mpi}
@@ -318,6 +331,14 @@ if(${SABER_TEST_MPI})
                          ARGS         ${test} ${mpi} ${omp}
                          TEST_DEPENDS get_saber_ref
                                       test_${test}_${mpi}-${omp}_run)
+
+        if(${SABER_TEST_PLOT})
+            ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_plot
+                             TYPE SCRIPT
+                             COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                             ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                             TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+        endif()
     endforeach()
 endif()
 
@@ -344,6 +365,14 @@ if(${SABER_TEST_OMP})
                          ARGS         ${test} ${mpi} ${omp}
                          TEST_DEPENDS get_saber_ref
                                       test_${test}_${mpi}-${omp}_run)
+
+        if(${SABER_TEST_PLOT})
+            ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_plot
+                             TYPE SCRIPT
+                             COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                             ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                             TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+        endif()
     endforeach()
 endif()
 
@@ -374,6 +403,14 @@ if(${SABER_TEST_MULTI})
                                  ARGS         ${test} ${mpi} ${omp}
                                  TEST_DEPENDS get_saber_ref
                                               test_${test}_${mpi}-${omp}_run)
+
+                if(${SABER_TEST_PLOT})
+                    ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_plot
+                                     TYPE SCRIPT
+                                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                                     ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                                     TEST_DEPENDS test_${test}_${mpi}-${omp}_run)
+                endif()
             endforeach()
         endif()
     endforeach()

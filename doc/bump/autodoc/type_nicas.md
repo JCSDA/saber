@@ -20,6 +20,6 @@
 | subroutine | [nicas_test_adjoint](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1507) | test NICAS adjoint |
 | subroutine | [nicas_test_dirac](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1600) | apply NICAS to diracs |
 | subroutine | [nicas_test_randomization](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1663) | test NICAS randomization method with respect to theoretical error statistics |
-| subroutine | [nicas_test_consistency](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1795) | test HDIAG-NICAS consistency with a randomization method |
-| subroutine | [nicas_test_optimality](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1922) | test HDIAG localization optimality with a randomization method |
-| subroutine | [define_test_vectors](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L2112) | define test vectors |
+| subroutine | [nicas_test_consistency](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1797) | test HDIAG-NICAS consistency with a randomization method |
+| subroutine | [nicas_test_optimality](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L1924) | test HDIAG localization optimality with a randomization method |
+| subroutine | [define_test_vectors](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L2114) | define test vectors |
