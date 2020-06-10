@@ -40,10 +40,11 @@ ensemble:
     filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H
   - date: 2010-01-01T12:00:00Z
     filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H
-  variables:
-  - x
-logging:
-  categories: Info, Test, Warning, Error
+geometry:
+  nx: 40
+  ny: 20
+  depths: [4500.0, 5500.0]
+input variables: [x]
 output:
 - datadir: testdata/qg_parameters_bump_loc_3d
   date: 2010-01-01T12:00:00Z
@@ -60,11 +61,3 @@ output:
   exp: loc_rv
   parameter: loc_rv
   type: an
-resolution:
-  nx: 40
-  ny: 20
-  depths:
-  - 4500.0
-  - 5500.0
-variables:
-- x
