@@ -584,13 +584,14 @@ type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 
 ! Local variables
-integer :: il0,jc3,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,ic0u,jc0u,j,nc1max_local,nc1max_vbal
-integer :: ncid,nl0_id,nc1a_id,nc3_id,nc2a_id,nc2b_id,nc1max_local_id,nc1max_vbal_id
+integer :: il0,jc3,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,ic0u,jc0u,j,nc1max_local,nc1max_vbal,nc1max_local_tot,nc1max_vbal_tot
+integer :: ncid,nc0a_id,nl0_id,nc1a_id,nc3_id,nc2a_id,nc2b_id,nc1max_local_id,nc1max_vbal_id
+integer :: lon_c0a_id,lat_c0a_id,gmask_c0a_id
 integer :: lon_id,lat_id,lon_local_id,lat_local_id,lon_vbal_id,lat_vbal_id
-integer :: lon_ori_id,lat_ori_id,lon_local_ori_id,lat_local_ori_id,lon_vbal_ori_id,lat_vbal_ori_id
-real(kind_real),allocatable :: lon_ori(:),lat_ori(:),lon(:,:,:),lat(:,:,:)
-real(kind_real),allocatable :: lon_local_ori(:),lat_local_ori(:),lon_local(:,:),lat_local(:,:)
-real(kind_real),allocatable :: lon_vbal_ori(:),lat_vbal_ori(:),lon_vbal(:,:),lat_vbal(:,:)
+integer :: igmask_c0a(geom%nc0a,geom%nl0)
+real(kind_real),allocatable :: lon(:,:,:),lat(:,:,:)
+real(kind_real),allocatable :: lon_local(:,:,:),lat_local(:,:,:)
+real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'samp_write_grids'
 
@@ -604,6 +605,7 @@ call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or
 call nam%write(mpl,ncid)
 
 ! Define dimensions
+call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0a',geom%nc0a,nc0a_id))
 if (samp%sc3) then
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0',geom%nl0,nl0_id))
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nc3',nam%nc3,nc3_id))
@@ -614,7 +616,9 @@ if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
    do ic2a=1,samp%nc2a
       nc1max_local = max(count(samp%local_mask(:,ic2a)),nc1max_local)
    end do
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1max_local',nc1max_local,nc1max_local_id))
+   call mpl%f_comm%allreduce(nc1max_local,nc1max_local_tot,fckit_mpi_sum())
+   nc1max_local_tot = nc1max_local_tot+1
+   call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1max_local',nc1max_local_tot,nc1max_local_id))
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nc2a',samp%nc2a,nc2a_id))
 end if
 if (trim(samp%name)=='vbal') then
@@ -622,39 +626,32 @@ if (trim(samp%name)=='vbal') then
    do ic2b=1,samp%nc2b
       nc1max_vbal = max(count(samp%vbal_mask(:,ic2b)),nc1max_vbal)
    end do
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1max_vbal',nc1max_vbal,nc1max_vbal_id))
+   call mpl%f_comm%allreduce(nc1max_vbal,nc1max_vbal_tot,fckit_mpi_sum())
+   nc1max_vbal_tot = nc1max_vbal_tot+1
+   call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1max_vbal',nc1max_vbal_tot,nc1max_vbal_id))
    call mpl%ncerr(subr,nf90_def_dim(ncid,'nc2b',samp%nc2b,nc2b_id))
 end if
 
 ! Define variables
+call mpl%ncerr(subr,nf90_def_var(ncid,'lon_c0a',nc_kind_real,(/nc0a_id/),lon_c0a_id))
+call mpl%ncerr(subr,nf90_def_var(ncid,'lat_c0a',nc_kind_real,(/nc0a_id/),lat_c0a_id))
+call mpl%ncerr(subr,nf90_def_var(ncid,'gmask_c0a',nf90_int,(/nc0a_id,nl0_id/),gmask_c0a_id))
 if (samp%sc3) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_ori',nc_kind_real,(/nc1a_id/),lon_ori_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lon_ori_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_ori',nc_kind_real,(/nc1a_id/),lat_ori_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lat_ori_id,'_FillValue',mpl%msv%valr))
    call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nc1a_id,nc3_id,nl0_id/),lon_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'_FillValue',mpl%msv%valr))
    call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nc1a_id,nc3_id,nl0_id/),lat_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'_FillValue',mpl%msv%valr))
 end if
 if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_local_ori',nc_kind_real,(/nc2a_id/),lon_local_ori_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lon_local_ori_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_local_ori',nc_kind_real,(/nc2a_id/),lat_local_ori_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lat_local_ori_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_local',nc_kind_real,(/nc1max_local_id,nc2a_id/),lon_local_id))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_local',nc_kind_real,(/nc1max_local_id,nc2a_id,nl0_id/),lon_local_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,lon_local_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_local',nc_kind_real,(/nc1max_local_id,nc2a_id/),lat_local_id))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_local',nc_kind_real,(/nc1max_local_id,nc2a_id,nl0_id/),lat_local_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,lat_local_id,'_FillValue',mpl%msv%valr))
 end if
 if (trim(samp%name)=='vbal') then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_vbal_ori',nc_kind_real,(/nc2b_id/),lon_vbal_ori_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lon_vbal_ori_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_vbal_ori',nc_kind_real,(/nc2b_id/),lat_vbal_ori_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lat_vbal_ori_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_vbal',nc_kind_real,(/nc1max_vbal_id,nc2b_id/),lon_vbal_id))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_vbal',nc_kind_real,(/nc1max_vbal_id,nc2b_id,nl0_id/),lon_vbal_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,lon_vbal_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_vbal',nc_kind_real,(/nc1max_vbal_id,nc2b_id/),lat_vbal_id))
+   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_vbal',nc_kind_real,(/nc1max_vbal_id,nc2b_id,nl0_id/),lat_vbal_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,lat_vbal_id,'_FillValue',mpl%msv%valr))
 end if
 
@@ -662,19 +659,19 @@ end if
 call mpl%ncerr(subr,nf90_enddef(ncid))
 
 ! Convert data
+do il0=1,geom%nl0
+   do ic0a=1,geom%nc0a
+      if (geom%gmask_c0a(ic0a,il0)) then
+         igmask_c0a(ic0a,il0) = 1
+      else
+         igmask_c0a(ic0a,il0) = 0
+      end if
+   end do
+end do
 if (samp%sc3) then
    ! Allocation
-   allocate(lon_ori(samp%nc1a))
-   allocate(lat_ori(samp%nc1a))
    allocate(lon(samp%nc1a,nam%nc3,geom%nl0))
    allocate(lat(samp%nc1a,nam%nc3,geom%nl0))
-
-   ! Origin points
-   do ic1a=1,samp%nc1a
-      ic0a = samp%c1a_to_c0a(ic1a)
-      lon_ori(ic1a) = geom%lon_c0a(ic0a)*rad2deg
-      lat_ori(ic1a) = geom%lat_c0a(ic0a)*rad2deg
-   end do
 
    ! Distant points
    lon = mpl%msv%valr
@@ -693,82 +690,79 @@ if (samp%sc3) then
 end if
 if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
    ! Allocation
-   allocate(lon_local_ori(samp%nc2a))
-   allocate(lat_local_ori(samp%nc2a))
-   allocate(lon_local(nc1max_local,samp%nc2a))
-   allocate(lat_local(nc1max_local,samp%nc2a))
+   allocate(lon_local(nc1max_local_tot,samp%nc2a,nl0_id))
+   allocate(lat_local(nc1max_local_tot,samp%nc2a,nl0_id))
 
-   ! Origin points
-   do ic2a=1,samp%nc2a
-      ic0a = samp%c2a_to_c0a(ic2a)
-      lon_local_ori(ic2a) = geom%lon_c0a(ic0a)*rad2deg
-      lat_local_ori(ic2a) = geom%lat_c0a(ic0a)*rad2deg
-   end do
-
-   ! Distant points
+   ! Initialization
    lon_local = mpl%msv%valr
    lat_local = mpl%msv%valr
-   do ic2a=1,samp%nc2a
-      j = 0
-      do jc1d=1,samp%nc1d
-         jc1u = samp%c1d_to_c1u(jc1d)
-         if (samp%local_mask(jc1u,ic2a)) then
+
+   ! Fill valid points
+   do il0=1,geom%nl0
+      do ic2a=1,samp%nc2a
+         if (samp%smask_c2a(ic2a,il0)) then
+            j = 1
+            lon_local(j,ic2a,il0) = samp%lon_c2a(ic2a)*rad2deg
+            lat_local(j,ic2a,il0) = samp%lat_c2a(ic2a)*rad2deg
             j = j+1
-            jc0u = samp%c1u_to_c0u(jc1u)
-            lon_local(j,ic2a) = geom%lon_c0u(jc0u)*rad2deg
-            lat_local(j,ic2a) = geom%lat_c0u(jc0u)*rad2deg
+            do jc1d=1,samp%nc1d
+               jc1u = samp%c1d_to_c1u(jc1d)
+               if (samp%local_mask(jc1u,ic2a).and.samp%smask_c1u(jc1u,il0)) then
+                  j = j+1
+                  jc0u = samp%c1u_to_c0u(jc1u)
+                  lon_local(j,ic2a,il0) = geom%lon_c0u(jc0u)*rad2deg
+                  lat_local(j,ic2a,il0) = geom%lat_c0u(jc0u)*rad2deg
+               end if
+            end do
          end if
       end do
    end do
 end if
 if (trim(samp%name)=='vbal') then
    ! Allocation
-   allocate(lon_vbal_ori(samp%nc2b))
-   allocate(lat_vbal_ori(samp%nc2b))
-   allocate(lon_vbal(nc1max_vbal,samp%nc2b))
-   allocate(lat_vbal(nc1max_vbal,samp%nc2b))
+   allocate(lon_vbal(nc1max_vbal_tot,samp%nc2b,geom%nl0))
+   allocate(lat_vbal(nc1max_vbal_tot,samp%nc2b,geom%nl0))
 
-   ! Origin points
-   do ic2b=1,samp%nc2b
-      ic2u = samp%c2b_to_c2u(ic2b)
-      ic0u = samp%c2u_to_c0u(ic2u)
-      lon_vbal_ori(ic2b) = geom%lon_c0u(ic0u)*rad2deg
-      lat_vbal_ori(ic2b) = geom%lat_c0u(ic0u)*rad2deg
-   end do
-
-   ! Distant points
+   ! Initialization
    lon_vbal = mpl%msv%valr
    lat_vbal = mpl%msv%valr
-   do ic2b=1,samp%nc2b
-      j = 0
-      do jc1e=1,samp%nc1e
-         jc1u = samp%c1e_to_c1u(jc1e)
-         if (samp%vbal_mask(jc1u,ic2b)) then
+
+   ! Fill valid points
+   do il0=1,geom%nl0
+      do ic2b=1,samp%nc2b
+         ic2u = samp%c2b_to_c2u(ic2b)
+         if (samp%smask_c2u(ic2u,il0)) then
+            j = 1
+            lon_vbal(j,ic2a,il0) = samp%lon_c2u(ic2u)*rad2deg
+            lat_vbal(j,ic2a,il0) = samp%lat_c2u(ic2u)*rad2deg
             j = j+1
-            jc0u = samp%c1u_to_c0u(jc1u)
-            lon_vbal(j,ic2b) = geom%lon_c0u(jc0u)*rad2deg
-            lat_vbal(j,ic2b) = geom%lat_c0u(jc0u)*rad2deg
+            do jc1e=1,samp%nc1e
+               jc1u = samp%c1e_to_c1u(jc1e)
+               if (samp%vbal_mask(jc1u,ic2b).and.samp%smask_c1u(jc1u,il0)) then
+                  j = j+1
+                  jc0u = samp%c1u_to_c0u(jc1u)
+                  lon_vbal(j,ic2b,il0) = geom%lon_c0u(jc0u)*rad2deg
+                  lat_vbal(j,ic2b,il0) = geom%lat_c0u(jc0u)*rad2deg
+               end if
+            end do
          end if
       end do
    end do
 end if
 
 ! Write variables
+call mpl%ncerr(subr,nf90_put_var(ncid,lon_c0a_id,geom%lon_c0a*rad2deg))
+call mpl%ncerr(subr,nf90_put_var(ncid,lat_c0a_id,geom%lat_c0a*rad2deg))
+call mpl%ncerr(subr,nf90_put_var(ncid,gmask_c0a_id,igmask_c0a))
 if (samp%sc3) then
-   call mpl%ncerr(subr,nf90_put_var(ncid,lon_ori_id,lon_ori))
-   call mpl%ncerr(subr,nf90_put_var(ncid,lat_ori_id,lat_ori))
    call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon))
    call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat))
 end if
 if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
-   call mpl%ncerr(subr,nf90_put_var(ncid,lon_local_ori_id,lon_local_ori))
-   call mpl%ncerr(subr,nf90_put_var(ncid,lat_local_ori_id,lat_local_ori))
    call mpl%ncerr(subr,nf90_put_var(ncid,lon_local_id,lon_local))
    call mpl%ncerr(subr,nf90_put_var(ncid,lat_local_id,lat_local))
 end if
 if (trim(samp%name)=='vbal') then
-   call mpl%ncerr(subr,nf90_put_var(ncid,lon_vbal_ori_id,lon_vbal_ori))
-   call mpl%ncerr(subr,nf90_put_var(ncid,lat_vbal_ori_id,lat_vbal_ori))
    call mpl%ncerr(subr,nf90_put_var(ncid,lon_vbal_id,lon_vbal))
    call mpl%ncerr(subr,nf90_put_var(ncid,lat_vbal_id,lat_vbal))
 end if
@@ -778,20 +772,14 @@ call mpl%ncerr(subr,nf90_close(ncid))
 
 ! Release memory
 if (samp%sc3) then
-   deallocate(lon_ori)
-   deallocate(lat_ori)
    deallocate(lon)
    deallocate(lat)
 end if
 if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
-   deallocate(lon_local_ori)
-   deallocate(lat_local_ori)
    deallocate(lon_local)
    deallocate(lat_local)
 end if
 if (trim(samp%name)=='vbal') then
-   deallocate(lon_vbal_ori)
-   deallocate(lat_vbal_ori)
    deallocate(lon_vbal)
    deallocate(lat_vbal)
 end if
@@ -817,12 +805,12 @@ type(ens_type),intent(in) :: ens       ! Ensemble
 
 ! Local variables
 integer :: il0,jc3,ildwv,jldwv,ival,nc1_valid
-real(kind_real),allocatable :: ldwv_to_lon(:),ldwv_to_lat(:),x
+real(kind_real),allocatable :: ldwv_to_lon(:),ldwv_to_lat(:)
 logical :: valid
 character(len=8) :: ivalformat
 character(len=1024) :: color
 character(len=1024),parameter :: subr = 'samp_compute_c1'
-x = 1.0
+
 ! Set sampling name
 samp%name = trim(sname)
 

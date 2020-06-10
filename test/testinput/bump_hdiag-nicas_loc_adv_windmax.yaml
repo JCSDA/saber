@@ -19,7 +19,6 @@ nv: 1
 varname: ["q"]
 nts: 2
 timeslot: ["00","06"]
-nomask: 1
 wind_filename: "wind"
 wind_varname: ["u","v"]
 
@@ -48,6 +47,7 @@ adv_rhflt: 1000.0e3
 
 # nicas_param
 resol: 8.0
+subsamp: "h"
 mpicom: 2
 adv_mode: 1
 

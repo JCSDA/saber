@@ -17,8 +17,8 @@ args = parser.parse_args()
 sys.path.insert(1, 'plot')
 
 # Available plots list
-plot_list=["avg","corstats","cortrack","diag","dirac","lct","local_diag_cor_gridded","local_diag_cor","local_diag_loc_gridded","local_diag_loc","normality","umf"]
-done_list=["normality"]
+plot_list=["adv","avg","corstats","cortrack","diag","dirac","lct","local_diag_cor_gridded","local_diag_cor","local_diag_loc_gridded","local_diag_loc","normality","sampling_grids","umf"]
+done_list=["adv","normality","sampling_grids"]
 done = {}
 for plot in plot_list:
    done[plot] = False

@@ -34,10 +34,10 @@ def cortrack(testdata, test, mpi, omp, suffix):
    cres.nglMaximize = True
    cres.cnFillOn = True
    cres.cnFillMode = "AreaFill"
+   cres.cnConstFEnableFill = True
    cres.trGridType = "TriangularMesh"
    cres.cnMonoFillPattern = True
    cres.cnMonoFillColor = False
-   cres.cnFillPalette = "BlWhRe"
    cres.lbLabelBarOn = False
    cres.cnInfoLabelOn = False
    cres.cnLineLabelsOn = False
@@ -83,6 +83,7 @@ def cortrack(testdata, test, mpi, omp, suffix):
       # Open workstation
       wks_type = "png"
       wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + var)
+      Ngl.define_colormap(wks, "BlWhRe")
 
       # Plots
       plot = []

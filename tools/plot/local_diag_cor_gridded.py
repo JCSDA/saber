@@ -32,7 +32,6 @@ def local_diag_cor_gridded(testdata, test, mpi, omp, suffix):
    cres.cnConstFEnableFill = True
    cres.cnMonoFillPattern = True
    cres.cnMonoFillColor = False
-   cres.cnFillPalette = "WhiteBlueGreenYellowRed"
    cres.lbLabelBarOn = True
    cres.lbOrientation = "horizontal"
    cres.lbLabelFontHeightF  = 0.008
@@ -68,6 +67,7 @@ def local_diag_cor_gridded(testdata, test, mpi, omp, suffix):
       # Open workstation
       wks_type = "png"
       wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + var)
+      Ngl.define_colormap(wks, "WhiteBlueGreenYellowRed")
 
       # Plots
       plot = []

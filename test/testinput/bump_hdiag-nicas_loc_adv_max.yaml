@@ -46,6 +46,7 @@ adv_rhflt: 1000.0e3
 
 # nicas_param
 resol: 8.0
+subsamp: "h"
 mpicom: 2
 adv_mode: 1
 

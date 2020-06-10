@@ -7,8 +7,6 @@ import os
 
 def normality(testdata, test, mpi, omp, suffix):
    # Loop over files
-   ens_norm = []
-   ens_step = []
    first = True
    for impi in range(0, int(mpi)):
       # Open file

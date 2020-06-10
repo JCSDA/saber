@@ -84,7 +84,7 @@ def corstats(testdata, test, mpi, omp, suffix):
          xyres.tiMainString = "Variable " + varname[iv] + " at level " + levs[il0]
 
          # Plot
-         p = Ngl.xy(wks, x, cor_max_avg[:, iv, il0], xyres)
+         p = Ngl.xy(wks, x, cor_max_avg[:,iv,il0], xyres)
 
          # Add lines
          for its in range(0, nts):

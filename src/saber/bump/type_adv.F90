@@ -1304,7 +1304,7 @@ type(io_type),intent(in) :: io      ! I/O
 type(samp_type),intent(in) :: samp  ! Sampling
 
 ! Local variables
-integer :: ncid,nc2_id,nl0_id,nts_id,na_id,vunit_id,larc_s_id,larc_e_id
+integer :: ncid,nc2_id,nl0_id,nts_id,na_id
 integer :: lon_c2_id,lat_c2_id,lon_c2_raw_id,lat_c2_raw_id,dist_c2_raw_id,valid_raw_id,dist_raw_id
 integer :: lon_c2_flt_id,lat_c2_flt_id,dist_c2_flt_id,valid_flt_id,dist_flt_id,rhflt_id
 integer :: score_loc_id,score_adv_id
@@ -1323,26 +1323,30 @@ call mpl%flush
 ! Allocation
 allocate(sbuf(samp%nc2a*geom%nl0*(2+(nam%nts-1)*6)))
 
+! Initialization
+sbuf = mpl%msv%valr
+
 ! Prepare buffer
 i = 1
 do il0=1,geom%nl0
    do ic2a=1,samp%nc2a
-      sbuf(i) = adv%lon_c2a(ic2a)
+      ! Apply mask
+      if (samp%smask_c2a(ic2a,il0)) sbuf(i) = adv%lon_c2a(ic2a)
       i = i+1
-      sbuf(i) = adv%lat_c2a(ic2a)
+      if (samp%smask_c2a(ic2a,il0)) sbuf(i) = adv%lat_c2a(ic2a)
       i = i+1
       do its=2,nam%nts
-         sbuf(i) = adv%lon_c2a_raw(ic2a,il0,its)
+         if (samp%smask_c2a(ic2a,il0)) sbuf(i) = adv%lon_c2a_raw(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%lat_c2a_raw(ic2a,il0,its)
+         if (samp%smask_c2a(ic2a,il0)) sbuf(i) = adv%lat_c2a_raw(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%dist_c2a_raw(ic2a,il0,its)
+         if (samp%smask_c2a(ic2a,il0)) sbuf(i) = adv%dist_c2a_raw(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%lon_c2a_flt(ic2a,il0,its)
+         if (samp%smask_c2a(ic2a,il0)) sbuf(i) = adv%lon_c2a_flt(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%lat_c2a_flt(ic2a,il0,its)
+         if (samp%smask_c2a(ic2a,il0)) sbuf(i) = adv%lat_c2a_flt(ic2a,il0,its)
          i = i+1
-         sbuf(i) = adv%dist_c2a_flt(ic2a,il0,its)
+         if (samp%smask_c2a(ic2a,il0)) sbuf(i) = adv%dist_c2a_flt(ic2a,il0,its)
          i = i+1
       end do
    end do
@@ -1409,15 +1413,31 @@ if (mpl%main) then
    end do
    call qsort(nam%nc2,hash_c2,order)
 
-   ! Reorder and rescale data
-   lon_c2 = lon_c2(order,:)*rad2deg
-   lat_c2 = lat_c2(order,:)*rad2deg
-   lon_c2_raw = lon_c2_raw(order,:,:)*rad2deg
-   lat_c2_raw = lat_c2_raw(order,:,:)*rad2deg
-   dist_c2_raw = dist_c2_raw(order,:,:)*reqkm
-   lon_c2_flt = lon_c2_flt(order,:,:)*rad2deg
-   lat_c2_flt = lat_c2_flt(order,:,:)*rad2deg
-   dist_c2_flt = dist_c2_flt(order,:,:)*reqkm
+   ! Reorder data
+   lon_c2 = lon_c2(order,:)
+   lat_c2 = lat_c2(order,:)
+   lon_c2_raw = lon_c2_raw(order,:,:)
+   lat_c2_raw = lat_c2_raw(order,:,:)
+   dist_c2_raw = dist_c2_raw(order,:,:)
+   lon_c2_flt = lon_c2_flt(order,:,:)
+   lat_c2_flt = lat_c2_flt(order,:,:)
+   dist_c2_flt = dist_c2_flt(order,:,:)
+
+   ! Rescale data
+   lon_c2 = lon_c2*rad2deg
+   lat_c2 = lat_c2*rad2deg
+   do its=1,nam%nts-1
+      do il0=1,geom%nl0
+         do ic2=1,nam%nc2
+            if (mpl%msv%isnot(lon_c2_raw(ic2,il0,its))) lon_c2_raw(ic2,il0,its) = lon_c2_raw(ic2,il0,its)*rad2deg
+            if (mpl%msv%isnot(lat_c2_raw(ic2,il0,its))) lat_c2_raw(ic2,il0,its) = lat_c2_raw(ic2,il0,its)*rad2deg
+            if (mpl%msv%isnot(dist_c2_raw(ic2,il0,its))) dist_c2_raw(ic2,il0,its) = dist_c2_raw(ic2,il0,its)*req
+            if (mpl%msv%isnot(lon_c2_flt(ic2,il0,its))) lon_c2_flt(ic2,il0,its) = lon_c2_flt(ic2,il0,its)*rad2deg
+            if (mpl%msv%isnot(lat_c2_flt(ic2,il0,its))) lat_c2_flt(ic2,il0,its) = lat_c2_flt(ic2,il0,its)*rad2deg
+            if (mpl%msv%isnot(dist_c2_flt(ic2,il0,its))) dist_c2_flt(ic2,il0,its) = dist_c2_flt(ic2,il0,its)*req
+         end do
+      end do
+   end do
 
    ! Release memory
    deallocate(hash_c2)
@@ -1448,7 +1468,6 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_def_dim(ncid,'na',samp%mesh%na,na_id))
 
    ! Define variables
-   call mpl%ncerr(subr,nf90_def_var(ncid,'vunit',nc_kind_real,(/nc2_id,nl0_id/),vunit_id))
    call mpl%ncerr(subr,nf90_def_var(ncid,'lon_c2',nc_kind_real,(/nc2_id,nl0_id/),lon_c2_id))
    call mpl%ncerr(subr,nf90_put_att(ncid,lon_c2_id,'_FillValue',mpl%msv%valr))
    call mpl%ncerr(subr,nf90_def_var(ncid,'lat_c2',nc_kind_real,(/nc2_id,nl0_id/),lat_c2_id))
@@ -1477,8 +1496,6 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_put_att(ncid,rhflt_id,'_FillValue',mpl%msv%valr))
    call mpl%ncerr(subr,nf90_def_var(ncid,'score_loc',nc_kind_real,(/nts_id/),score_loc_id))
    call mpl%ncerr(subr,nf90_def_var(ncid,'score_adv',nc_kind_real,(/nts_id/),score_adv_id))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'larc_s',nf90_int,(/na_id/),larc_s_id))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'larc_e',nf90_int,(/na_id/),larc_e_id))
 
    ! End definition mode
    call mpl%ncerr(subr,nf90_enddef(ncid))
@@ -1490,17 +1507,15 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_put_var(ncid,lat_c2_raw_id,lat_c2_raw))
    call mpl%ncerr(subr,nf90_put_var(ncid,dist_c2_raw_id,dist_c2_raw))
    call mpl%ncerr(subr,nf90_put_var(ncid,valid_raw_id,adv%valid_raw))
-   call mpl%ncerr(subr,nf90_put_var(ncid,dist_raw_id,adv%dist_raw*reqkm))
+   call mpl%ncerr(subr,nf90_put_var(ncid,dist_raw_id,adv%dist_raw*req))
    call mpl%ncerr(subr,nf90_put_var(ncid,lon_c2_flt_id,lon_c2_flt))
    call mpl%ncerr(subr,nf90_put_var(ncid,lat_c2_flt_id,lat_c2_flt))
    call mpl%ncerr(subr,nf90_put_var(ncid,dist_c2_flt_id,dist_c2_flt))
    call mpl%ncerr(subr,nf90_put_var(ncid,valid_flt_id,adv%valid_flt))
-   call mpl%ncerr(subr,nf90_put_var(ncid,dist_flt_id,adv%dist_flt*reqkm))
-   call mpl%ncerr(subr,nf90_put_var(ncid,rhflt_id,adv%rhflt*reqkm))
+   call mpl%ncerr(subr,nf90_put_var(ncid,dist_flt_id,adv%dist_flt*req))
+   call mpl%ncerr(subr,nf90_put_var(ncid,rhflt_id,adv%rhflt*req))
    call mpl%ncerr(subr,nf90_put_var(ncid,score_loc_id,adv%score_loc))
    call mpl%ncerr(subr,nf90_put_var(ncid,score_adv_id,adv%score_adv))
-   call mpl%ncerr(subr,nf90_put_var(ncid,larc_s_id,samp%mesh%larc(1,:)))
-   call mpl%ncerr(subr,nf90_put_var(ncid,larc_e_id,samp%mesh%larc(2,:)))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))
