@@ -56,7 +56,7 @@ avoid losing your work.
 It is recommended that you create a .gitconfig file in your home directory (inside the container
 if working from a container) with the following content:
 
-    cat .gitconfig 
+    cat .gitconfig
     [user]
         name = Your Name
         email = yourname@somewhere.something

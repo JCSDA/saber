@@ -2,7 +2,7 @@ FROM  jcsda/docker-gnu-openmpi-dev
 
 RUN touch /env.txt
 RUN printenv > /env.txt
-  
+
 RUN mkdir -p /var/run/sshd \
     && ssh-keygen -A \
     && sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config \
