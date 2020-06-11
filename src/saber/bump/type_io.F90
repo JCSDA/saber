@@ -588,7 +588,7 @@ end do
 write(mpl%info,'(a7,a)') '','I/O splitting:'
 call mpl%flush
 do iprocio=1,nam%nprocio
-   write(mpl%info,'(a10,a,i4,a,i8,a,i4)') '','Chunk ',iprocio,' ~> ',procio_to_nc0io(iprocio),' grid-points handled by task ', &
+   write(mpl%info,'(a10,a,i6,a,i8,a,i6)') '','Chunk ',iprocio,' ~> ',procio_to_nc0io(iprocio),' grid-points handled by task ', &
  & io%procio_to_proc(iprocio)
    call mpl%flush
 end do
@@ -648,7 +648,7 @@ call mpl%flush
 write(mpl%info,'(a10,a,f7.2,a,f5.2,a)') '','Effective resolution: ',0.5*(dlon+dlat)*reqkm,' km (', &
  & 0.5*(dlon+dlat)*rad2deg,' deg.)'
 call mpl%flush
-write(mpl%info,'(a10,a,i4,a,i4)') '',      'Size (nlon x nlat):   ',io%nlon,' x ',io%nlat
+write(mpl%info,'(a10,a,i6,a,i6)') '',      'Size (nlon x nlat):   ',io%nlon,' x ',io%nlat
 call mpl%flush
 
 ! Allocation
@@ -886,7 +886,7 @@ end do
 write(mpl%info,'(a7,a)') '','I/O splitting:'
 call mpl%flush
 do iprocio=1,nam%nprocio
-   write(mpl%info,'(a10,a,i4,a,i8,a,i4)') '','Chunk ',iprocio,' ~> ',procio_to_nlonio(iprocio),' longitudes handled by task ', &
+   write(mpl%info,'(a10,a,i6,a,i8,a,i6)') '','Chunk ',iprocio,' ~> ',procio_to_nlonio(iprocio),' longitudes handled by task ', &
  & io%procio_to_proc_grid(iprocio)
    call mpl%flush
 end do
@@ -895,7 +895,7 @@ end do
 call io%com_AIO_grid%setup(mpl,'com_AIO_grid',io%noga,io%nlonio*io%nlat,io%nog,io%oga_to_og,io%ogio_to_og,ogown_to_og)
 
 ! Print results
-write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
+write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
 call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc0 =    ',geom%nc0
 call mpl%flush

@@ -368,7 +368,7 @@ character(len=1024) :: filename
 
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      write(filename,'(a,i4.4,a,i4.4,a,a)') trim(nam%prefix)//'_lct_cor_',mpl%nproc,'-',mpl%myproc,'_', &
+      write(filename,'(a,i6.6,a,i6.6,a,a)') trim(nam%prefix)//'_lct_cor_',mpl%nproc,'-',mpl%myproc,'_', &
     & trim(bpar%blockname(ib))
       call lct%blk(ib)%write_cor(mpl,nam,geom,bpar,lct%samp,filename)
    end if

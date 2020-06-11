@@ -440,7 +440,7 @@ write(mpl%info,'(a7,a)') '','Write ensemble'
 call mpl%flush
 
 ! Create file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_normality_',mpl%nproc,'-',mpl%myproc
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_normality_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
 ! Define dimensions if necessary

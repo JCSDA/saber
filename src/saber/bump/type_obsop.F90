@@ -117,7 +117,7 @@ character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'obsop_read'
 
 ! Create file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
 ! Get attributes
@@ -156,7 +156,7 @@ character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'obsop_write'
 
 ! Create file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
 ! Write namelist parameters

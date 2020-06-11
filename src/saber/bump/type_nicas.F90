@@ -108,10 +108,10 @@ do ib=1,bpar%nbe
 
    ! Set name
    if (nam%lsqrt) then
-      write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'-sqrt_',mpl%nproc,'-', &
+      write(nicas%blk(ib)%name,'(a,i1,a,i6.6,a,i6.6,a,a)') trim(prefix)//'-',nam%mpicom,'-sqrt_',mpl%nproc,'-', &
     & mpl%myproc,'_',trim(bpar%blockname(ib))
    else
-      write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'_',mpl%nproc,'-',mpl%myproc, &
+      write(nicas%blk(ib)%name,'(a,i1,a,i6.6,a,i6.6,a,a)') trim(prefix)//'-',nam%mpicom,'_',mpl%nproc,'-',mpl%myproc, &
     & '_',trim(bpar%blockname(ib))
    end if
 end do
@@ -199,13 +199,13 @@ do ib=1,bpar%nbe
 
          if (mpl%myproc==iprocio) then
             if (iproc==iprocio) then
-               write(mpl%info,'(a7,a,i4,a)') '','NICAS data of task ',iproc,' read by its own task'
+               write(mpl%info,'(a7,a,i6,a)') '','NICAS data of task ',iproc,' read by its own task'
                call mpl%flush
 
                ! Read data
                call nicas%blk(ib)%read(mpl,nam,geom,bpar)
             else
-               write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' send from task ',iprocio,' after reading'
+               write(mpl%info,'(a7,a,i6,a,i6,a)') '','NICAS data of task ',iproc,' send from task ',iprocio,' after reading'
                call mpl%flush
 
                ! Allocation
@@ -213,10 +213,10 @@ do ib=1,bpar%nbe
 
                ! Set name
                if (nam%lsqrt) then
-                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'-sqrt_', &
+                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i6.6,a,i6.6,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'-sqrt_', &
                 & mpl%nproc,'-',iproc,'_',trim(bpar%blockname(ib))
                else
-                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'_', &
+                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i6.6,a,i6.6,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'_', &
                 & mpl%nproc,'-',iproc,'_',trim(bpar%blockname(ib))
                end if
 
@@ -230,7 +230,7 @@ do ib=1,bpar%nbe
                call nicas_tmp%dealloc
             end if
          elseif (mpl%myproc==iproc) then
-            write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' received from task ',iprocio,' after reading'
+            write(mpl%info,'(a7,a,i6,a,i6,a)') '','NICAS data of task ',iproc,' received from task ',iprocio,' after reading'
             call mpl%flush
 
             ! Receive data from iprocio
@@ -273,7 +273,7 @@ do ib=1,bpar%nbe
          if (iprocio==0) iprocio = nam%nprocio
          if (mpl%myproc==iprocio) then
             if (iproc==iprocio) then
-               write(mpl%info,'(a7,a,i4,a)') '','NICAS data of task ',iproc,' written by its own task'
+               write(mpl%info,'(a7,a,i6,a)') '','NICAS data of task ',iproc,' written by its own task'
                call mpl%flush
 
                ! Write data
@@ -282,7 +282,7 @@ do ib=1,bpar%nbe
                ! Write grids
                if (nam%write_grids) call nicas%blk(ib)%write_grids(mpl,nam,bpar)
             else
-               write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' received from task ',iprocio,' to be written'
+               write(mpl%info,'(a7,a,i6,a,i6,a)') '','NICAS data of task ',iproc,' received from task ',iprocio,' to be written'
                call mpl%flush
 
                ! Allocation
@@ -290,10 +290,10 @@ do ib=1,bpar%nbe
 
                ! Set name
                if (nam%lsqrt) then
-                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'-sqrt_', &
+                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i6.6,a,i6.6,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'-sqrt_', &
                 & mpl%nproc,'-',iproc,'_',trim(bpar%blockname(ib))
                else
-                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'_', &
+                  write(nicas_tmp%blk(ib)%name,'(a,i1,a,i6.6,a,i6.6,a,a)') trim(nicas_tmp%prefix)//'-',nam%mpicom,'_', &
                 & mpl%nproc,'-',iproc,'_',trim(bpar%blockname(ib))
                end if
 
@@ -310,7 +310,7 @@ do ib=1,bpar%nbe
                call nicas_tmp%dealloc
             end if
          elseif (mpl%myproc==iproc) then
-            write(mpl%info,'(a7,a,i4,a,i4,a)') '','NICAS data of task ',iproc,' send to task ',iprocio,' for writing'
+            write(mpl%info,'(a7,a,i6,a,i6,a)') '','NICAS data of task ',iproc,' send to task ',iprocio,' for writing'
             call mpl%flush
 
             ! Send data to iprocio
@@ -1718,7 +1718,7 @@ do ifac=1,nfac_rnd
    ! Ensemble size
    nefac(ifac) = max(int(real(ifac,kind_real)/real(nfac_rnd,kind_real)*real(ens1_ne,kind_real)),3)
    nam%ens1_ne = nefac(ifac)
-   write(mpl%info,'(a7,a,i4,a)') '','Ensemble sizes: ',nefac(ifac),' members'
+   write(mpl%info,'(a7,a,i6,a)') '','Ensemble sizes: ',nefac(ifac),' members'
    call mpl%flush
 
    ! Randomize ensemble

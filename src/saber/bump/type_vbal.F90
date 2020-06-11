@@ -170,7 +170,7 @@ character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'vbal_read'
 
 ! Open file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
 ! Get dimensions
@@ -250,7 +250,7 @@ character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'vbal_write'
 
 ! Create file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
 ! Write namelist parameters
@@ -408,7 +408,7 @@ do iv=1,nam%nv
       write(mpl%info,'(a10,a)') '','Unbalance ensemble members: '
       call mpl%flush(.false.)
       do ie=1,ensu%ne
-         write(mpl%info,'(i4)') ie
+         write(mpl%info,'(i6)') ie
          call mpl%flush(.false.)
          do jv=1,iv-1
             if (bpar%vbal_block(iv,jv)) then

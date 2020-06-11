@@ -347,7 +347,7 @@ end do
 write(mpl%info,'(a7,a)') '','Distribution summary (local / universe):'
 call mpl%flush
 do iproc=1,mpl%nproc
-   write(mpl%info,'(a10,a,i4,a,i8,a,i8)') '','Task ',iproc,': ',geom%proc_to_nc0a(iproc),' / ',geom%proc_to_nc0u(iproc)
+   write(mpl%info,'(a10,a,i6,a,i8,a,i8)') '','Task ',iproc,': ',geom%proc_to_nc0a(iproc),' / ',geom%proc_to_nc0u(iproc)
    call mpl%flush
 end do
 
@@ -614,7 +614,7 @@ do iproc=1,mpl%nproc
 end do      
 
 ! Print results
-write(mpl%info,'(a7,a,i4,a,i4)') '','Tasks in my universe: ',count(geom%myuniverse),' / ',mpl%nproc
+write(mpl%info,'(a7,a,i6,a,i6)') '','Tasks in my universe: ',count(geom%myuniverse),' / ',mpl%nproc
 call mpl%flush
 
 ! Release memory

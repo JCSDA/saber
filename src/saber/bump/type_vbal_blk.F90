@@ -137,13 +137,13 @@ do isub=1,ens%nsub
       write(mpl%info,'(a10,a)') '','Full ensemble, member:'
       call mpl%flush(.false.)
    else
-      write(mpl%info,'(a10,a,i4,a)') '','Sub-ensemble ',isub,', member:'
+      write(mpl%info,'(a10,a,i6,a)') '','Sub-ensemble ',isub,', member:'
       call mpl%flush(.false.)
    end if
 
    ! Compute centered moments iteratively
    do ie_sub=1,ens%ne/ens%nsub
-      write(mpl%info,'(i4)') ie_sub
+      write(mpl%info,'(i6)') ie_sub
       call mpl%flush(.false.)
 
       ! Full ensemble index

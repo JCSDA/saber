@@ -162,7 +162,7 @@ do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       do isub=1,mom%blk(ib)%nsub
          ! Create file
-         write(filename,'(a,a,i4.4,a,i4.4,a,i4.4,a,a)') trim(nam%prefix),'_mom-',isub,'_',mpl%nproc,'-',mpl%myproc,'_', &
+         write(filename,'(a,a,i6.6,a,i6.6,a,i6.6,a,a)') trim(nam%prefix),'_mom-',isub,'_',mpl%nproc,'-',mpl%myproc,'_', &
        & trim(bpar%blockname(ib))
          call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
@@ -218,7 +218,7 @@ do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       do isub=1,mom%blk(ib)%nsub
          ! Create file
-         write(filename,'(a,a,i4.4,a,i4.4,a,i4.4,a,a)') trim(nam%prefix),'_mom-',isub,'_',mpl%nproc,'-',mpl%myproc,'_', &
+         write(filename,'(a,a,i6.6,a,i6.6,a,i6.6,a,a)') trim(nam%prefix),'_mom-',isub,'_',mpl%nproc,'-',mpl%myproc,'_', &
        & trim(bpar%blockname(ib))
          call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
@@ -293,13 +293,13 @@ do isub=1,ens%nsub
       write(mpl%info,'(a10,a)') '','Full ensemble, member:'
       call mpl%flush(.false.)
    else
-      write(mpl%info,'(a10,a,i4,a)') '','Sub-ensemble ',isub,', member:'
+      write(mpl%info,'(a10,a,i6,a)') '','Sub-ensemble ',isub,', member:'
       call mpl%flush(.false.)
    end if
 
    ! Compute centered moments
    do ie_sub=1,ens%ne/ens%nsub
-      write(mpl%info,'(i4)') ie_sub
+      write(mpl%info,'(i6)') ie_sub
       call mpl%flush(.false.)
 
       ! Full ensemble index

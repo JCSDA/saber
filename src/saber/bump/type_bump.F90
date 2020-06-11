@@ -849,7 +849,7 @@ do its=1,bump%nam%nts
 
       if (write_member) then
          ! Write member
-         write(filename,'(a,a,i4.4,a,i4.4)') trim(bump%nam%prefix),'_member_',iens,'-',ie
+         write(filename,'(a,a,i6.6,a,i6.6)') trim(bump%nam%prefix),'_member_',iens,'-',ie
          varname = trim(bump%nam%varname(iv))//'_'//trim(bump%nam%timeslot(its))
          call bump%io%fld_write(bump%mpl,bump%nam,bump%geom,filename,varname,fld_c0a)
       end if
@@ -1888,7 +1888,7 @@ end select
 
 ! Select parameter from ens1u
 if (param(1:min(6,len(param)))=='ens1u_') then
-   read(param(7:10),'(i4.4)') ie
+   read(param(7:12),'(i6.6)') ie
    if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
    iv = bump%bpar%b_to_v1(ib)
    its = bump%bpar%b_to_ts1(ib)

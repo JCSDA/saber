@@ -365,7 +365,7 @@ allocate(smask_c1uint(samp%nc1u,geom%nl0))
 if (samp%sc3) allocate(smask_c1ac3int(samp%nc1a,nam%nc3,geom%nl0))
 
 ! Open file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_sampling_',mpl%nproc,'-',mpl%myproc
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_sampling_',mpl%nproc,'-',mpl%myproc
 info = nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid)
 if (info/=nf90_noerr) then
    call mpl%warning(subr,'cannot find sampling to read, recomputing sampling')
@@ -492,7 +492,7 @@ if (samp%sc3) allocate(smask_c1ac3int(samp%nc1a,nam%nc3,geom%nl0))
 ! Create file
 write(mpl%info,'(a7,a)') '','Write sampling'
 call mpl%flush
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_sampling_',mpl%nproc,'-',mpl%myproc
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_sampling_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
 ! Write namelist parameters
@@ -598,7 +598,7 @@ character(len=1024),parameter :: subr = 'samp_write_grids'
 ! Create files
 write(mpl%info,'(a7,a)') '','Write sampling grids'
 call mpl%flush
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_sampling_grids_',mpl%nproc,'-',mpl%myproc
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_sampling_grids_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
 ! Write namelist parameters
@@ -1962,7 +1962,7 @@ call samp%com_AC%setup(mpl,'com_AC',geom%nc0a,samp%nc0c,geom%nc0,geom%c0a_to_c0,
 deallocate(c0c_to_c0)
 
 ! Print results
-write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
+write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
 call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc0c =      ',samp%nc0c
 call mpl%flush
@@ -2081,7 +2081,7 @@ deallocate(sbuf)
 deallocate(rbuf)
 
 ! Print results
-write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
+write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
 call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc1d =      ',samp%nc1d
 call mpl%flush
@@ -2187,7 +2187,7 @@ call samp%com_AE%setup(mpl,'com_AE',samp%nc1a,samp%nc1e,nam%nc1,samp%c1a_to_c1,c
 deallocate(c1e_to_c1)
 
 ! Print results
-write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
+write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
 call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc1e =      ',samp%nc1e
 call mpl%flush

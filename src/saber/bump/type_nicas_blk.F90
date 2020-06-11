@@ -1462,7 +1462,7 @@ if (nam%write_grids) then
 end if
 
 ! Print results
-write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
+write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
 if (nicas_blk%verbosity) call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc0 =        ',geom%nc0
 if (nicas_blk%verbosity) call mpl%flush
@@ -3977,7 +3977,7 @@ call nicas_blk%com_AD%setup(mpl,'com_AD',geom%nc0a,nicas_blk%nc0d,geom%nc0,geom%
 call nicas_blk%com_ADinv%setup(mpl,'com_ADinv',geom%nc0a,nicas_blk%nc0dinv,geom%nc0,geom%c0a_to_c0,c0dinv_to_c0)
 
 ! Print results
-write(mpl%info,'(a7,a,i4)') '','Parameters for processor #',mpl%myproc
+write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
 if (nicas_blk%verbosity) call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc0d =       ',nicas_blk%nc0d
 if (nicas_blk%verbosity) call mpl%flush
