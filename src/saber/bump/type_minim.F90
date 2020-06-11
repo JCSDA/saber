@@ -1151,8 +1151,12 @@ do k=n,1,-1
 
       ! Shift from bottom 2*2 minor
       x = q(l)
-      y = q(k-1)
-      g = e(k-1)
+      if (k>1) then
+         y = q(k-1)
+         g = e(k-1)
+      else
+         call mpl%abort(subr,'index below the lower bound')
+      end if
       h = e(k)
       f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y)
       g = hypot(f,1.0_kind_real)

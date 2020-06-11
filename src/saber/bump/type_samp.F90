@@ -936,7 +936,7 @@ if (samp%sc2) then
       ! Compute mesh sampling, subset Sc2
       write(mpl%info,'(a7,a)') '','Compute sampling mesh, subset Sc2'
       call mpl%flush
-      call samp%compute_mesh_c2(mpl,rng,nam)
+      call samp%compute_mesh_c2(mpl,rng)
    end if
 else
    ! Compute MPI distribution, halo A, subset Sc2
@@ -1813,7 +1813,7 @@ end subroutine samp_compute_mpi_c2b
 ! Subroutine: samp_compute_mesh_c2
 ! Purpose: compute sampling mesh, subset Sc2
 !----------------------------------------------------------------------
-subroutine samp_compute_mesh_c2(samp,mpl,rng,nam)
+subroutine samp_compute_mesh_c2(samp,mpl,rng)
 
 implicit none
 
@@ -1821,7 +1821,6 @@ implicit none
 class(samp_type),intent(inout) :: samp ! Sampling
 type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Alocation
 call samp%mesh%alloc(samp%nc2u)

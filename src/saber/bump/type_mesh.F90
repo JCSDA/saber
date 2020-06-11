@@ -553,7 +553,6 @@ logical,intent(out) :: valid(mesh%n)   ! Validity flag
 integer :: it
 real(kind_real),allocatable :: a(:),b(:),c(:),cd(:),cp(:),v1(:),v2(:)
 logical :: validt(mesh%nt)
-character(len=1024),parameter :: subr = 'mesh_check'
 
 !$omp parallel do schedule(static) private(it) firstprivate(a,b,c,cd,cp,v1,v2)
 do it=1,mesh%nt
