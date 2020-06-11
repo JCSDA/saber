@@ -26,15 +26,16 @@ while [ ${i} -lt ${ne} ] ; do
    typeset -RZ3 i3
    i4=$i
    typeset -RZ4 i4
+   i6=$i
+   typeset -RZ4 i6
 
    # AROME
    if test ${test} = "bump_aro" ; then
       ne=10
       xp=7G0N
-#      xp=7H8H
       date=20131221H00P
       for timeslot in "02" "03" "04" ; do
-         ln -sf ${modeldata}/${test}/${xp}/${date}/member_${i3}/forecast/ICMSHAROM+00${timeslot}.nc ${testdata}/ens1_${timeslot}_${i4}.nc
+         ln -sf ${modeldata}/${test}/${xp}/${date}/member_${i3}/forecast/ICMSHAROM+00${timeslot}.nc ${testdata}/ens1_${timeslot}_${i6}.nc
       done
    fi
 
@@ -42,11 +43,9 @@ while [ ${i} -lt ${ne} ] ; do
    if test ${test} = "bump_arp" ; then
       ne=10
       xp=877D
-#      xp=86SV
       date=20170114H00A
-#      date=20131220H12A
       for timeslot in "00" "06" ; do
-         ln -sf ${modeldata}/${test}/${xp}/${date}/ensemble4D/${i3}/ICMSHARPE+00${timeslot}.nc ${testdata}/ens1_${timeslot}_${i4}.nc
+         ln -sf ${modeldata}/${test}/${xp}/${date}/ensemble4D/${i3}/ICMSHARPE+00${timeslot}.nc ${testdata}/ens1_${timeslot}_${i6}.nc
       done
    fi
 
@@ -57,7 +56,7 @@ while [ ${i} -lt ${ne} ] ; do
       hh=12
       resol=c0384
       for itile in $(seq 1 1 6); do
-         ln -sf ${modeldata}/${test}/${date}_${hh}/mem${i3}/${date}.${hh}0000.bmat.fv_core.res.tile${itile}.nc ${testdata}/ens1_01_${i4}_tile${itile}.nc
+         ln -sf ${modeldata}/${test}/${date}_${hh}/mem${i3}/${date}.${hh}0000.bmat.fv_core.res.tile${itile}.nc ${testdata}/ens1_01_${i6}_tile${itile}.nc
       done
    fi
 
@@ -65,7 +64,7 @@ while [ ${i} -lt ${ne} ] ; do
    if test ${test} = "bump_gem" ; then
       ne=10
       date=2014101706
-      ln -sf ${modeldata}/${test}/${date}_006_${i4}.nc ${testdata}/ens1_00_${i4}.nc
+      ln -sf ${modeldata}/${test}/${date}_006_${i4}.nc ${testdata}/ens1_00_${i6}.nc
 
       if test ${i} = 1 ; then
          j4=1
@@ -90,7 +89,7 @@ while [ ${i} -lt ${ne} ] ; do
       ts=0
       typeset -RZ2 ts
       while [ ${ts} -lt 13 ] ; do
-         ln -sf ${modeldata}/${test}/mem${i3}/e200_C180.prog.eta.20180415_${ts}z.nc4 ${testdata}/ens1_${ts}_${i4}.nc
+         ln -sf ${modeldata}/${test}/mem${i3}/e200_C180.prog.eta.20180415_${ts}z.nc4 ${testdata}/ens1_${ts}_${i6}.nc
          let ts=ts+1
       done
    fi
@@ -99,25 +98,25 @@ while [ ${i} -lt ${ne} ] ; do
    if test ${test} = "bump_gfs" ; then
       ne=10
       date=2014040100
-      ln -sf ${modeldata}/${test}/sfg_${date}_fhr06s_mem${i3}.nc4 ${testdata}/ens1_00_${i4}.nc
+      ln -sf ${modeldata}/${test}/sfg_${date}_fhr06s_mem${i3}.nc4 ${testdata}/ens1_00_${i6}.nc
    fi
 
    # IFS
    if test ${test} = "bump_ifs" ; then
       ne=10
-      ln -sf ${modeldata}/${test}/member_${i}.nc ${testdata}/ens1_01_${i4}.nc
+      ln -sf ${modeldata}/${test}/member_${i}.nc ${testdata}/ens1_01_${i6}.nc
    fi
 
    # MPAS
    if test ${test} = "bump_mpas" ; then
       ne=10
-      ln -sf ${modeldata}/${test}/x1.40962.output.2012-06-25_21.00.00.e${i}.nc ${testdata}/ens1_01_${i4}.nc
+      ln -sf ${modeldata}/${test}/x1.40962.output.2012-06-25_21.00.00.e${i}.nc ${testdata}/ens1_01_${i6}.nc
    fi
 
    # NEMO
    if test ${test} = "bump_nemovar" ; then
       ne=19
-      ln -sf ${modeldata}/${test}/ENSEMBLES/ECMWF/goqu/opa${i}/goqu_20110605_000000_restart.nc ${testdata}/ens1_01_${i4}.nc
+      ln -sf ${modeldata}/${test}/ENSEMBLES/ECMWF/goqu/opa${i}/goqu_20110605_000000_restart.nc ${testdata}/ens1_01_${i6}.nc
    fi
    if test ${test} = "bump_cera-20c" ; then
       ne=9
@@ -132,14 +131,14 @@ while [ ${i} -lt ${ne} ] ; do
    # RES
    if test ${test} = "bump_res" ; then
       ne=101
-      ln -sf ${modeldata}/${test}/Ens_${i}.nc ${testdata}/ens1_01_${i4}.nc
+      ln -sf ${modeldata}/${test}/Ens_${i}.nc ${testdata}/ens1_01_${i6}.nc
    fi
 
    # WRF
    if test ${test} = "bump_wrf" ; then
       ne=8
       date=2017-07-28_06:00:00
-      ln -sf ${modeldata}/${test}/wrfout_d01_${date}.${i3} ${testdata}/ens1_01_${i4}.nc
+      ln -sf ${modeldata}/${test}/wrfout_d01_${date}.${i3} ${testdata}/ens1_01_${i6}.nc
    fi
 
    # Exit

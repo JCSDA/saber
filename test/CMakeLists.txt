@@ -165,20 +165,19 @@ if(DEFINED ENV{LOCAL_PATH_TESTFILES_SABER})
     set(LOCAL_PATH_TESTFILES_SABER "$ENV{LOCAL_PATH_TESTFILES_SABER}")
 endif()
 
+# Get the current git branch
+execute_process(
+    COMMAND git rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # If local path to testfiles is defined don't download
 if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     # Set TESTFILE_DIR_SABER
     set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber CACHE PATH "data dir for test data")
-
-    # Get the current git branch
-    execute_process(
-        COMMAND git rev-parse --abbrev-ref HEAD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_BRANCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
     message(STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER} "/" ${GIT_BRANCH})
-    message(STATUS "Download sources:")
 
     # Make specific data directory
     file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH})
@@ -196,7 +195,10 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
         # Download and extract develop test files (distant directory = develop)
         set(DIRNAME "develop")
     endif()
-    message(STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL} "/" ${DIRNAME})
+    message(STATUS "Test data downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} "/" ${DIRNAME})
+    foreach(file ${saber_data_tar})
+        message(STATUS "  " ${file})
+    endforeach()
 
     # Download and extract data files
     ecbuild_get_test_multidata(TARGET   get_saber_data
@@ -218,7 +220,10 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
         # Download and extract develop test files (distant directory = develop)
         set(DIRNAME "develop")
     endif()
-    message(STATUS "  Reference: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME})
+    message(STATUS "Reference data downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} "/" ${DIRNAME})
+    foreach(file ${saber_ref_tar})
+        message(STATUS "  " ${file})
+    endforeach()
 
     # Download and extract reference files
     ecbuild_get_test_multidata(TARGET   get_saber_ref
@@ -226,14 +231,22 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
                                DIRNAME  ${DIRNAME}
                                DIRLOCAL ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref
                                EXTRACT)
+
+    # Make directories
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata)
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref)
 else()
     set(TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER})
-    message(STATUS "Files loaded from: " ${TESTFILE_DIR_SABER})
+    if(NOT EXISTS ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata)
+        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata is missing")
+    endif()
+    if(NOT EXISTS ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref)
+        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref is missing")
+    endif()
+    message(STATUS "Files loaded from: " ${TESTFILE_DIR_SABER}/${GIT_BRANCH})
 endif()
 
 # Make directories
-file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata)
-file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput)

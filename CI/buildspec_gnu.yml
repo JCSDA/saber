@@ -43,7 +43,7 @@ phases:
       - mkdir -p /jcsda/.openmpi
       - mkdir -p /jcsda/saber-bundle
       - mkdir -p /home/jcsdauser/.openmpi
- 
+  
       - cp CI/default-mca-params.conf /home/jcsdauser/.openmpi/mca-params.conf
       - cat /home/jcsdauser/.openmpi/mca-params.conf
       - chown -R jcsdauser:jcsda /jcsda/

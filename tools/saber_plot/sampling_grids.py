@@ -17,7 +17,7 @@ def sampling_grids(testdata, test, mpi, omp, suffix):
    first = True
    for impi in range(0, int(mpi)):
       # Open file
-      f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + mpi.zfill(4) + "-" + format(impi+1, '04d') + ".nc")
+      f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc")
 
       # Check what is in the file
       if first:

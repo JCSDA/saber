@@ -229,7 +229,6 @@ real(kind_real),allocatable :: lon_inf(:),lon_sup(:),lat_inf(:),lat_sup(:)
 real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:),real_ptr(:,:)
 logical :: maskval
 logical :: found
-character(len=4) :: nprocchar
 character(len=1024) :: varname,filename
 character(len=1024),dimension(nvmax) :: varname_save
 character(len=1024),parameter :: subr = 'model_define_distribution'
@@ -272,8 +271,7 @@ if (mpl%nproc==1) then
 elseif (mpl%nproc>1) then
    if (mpl%main) then
       ! Open file
-      write(nprocchar,'(i4.4)') mpl%nproc
-      filename = trim(nam%prefix)//'_distribution_'//nprocchar//'.nc'
+      write(filename,'(a,a,i6.6,a)') trim(nam%prefix),'_distribution_',mpl%nproc,'.nc'
       info = nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid)
    end if
    call mpl%f_comm%broadcast(info,mpl%rootproc-1)
@@ -286,7 +284,7 @@ elseif (mpl%nproc>1) then
 
    if (info==nf90_noerr) then
       ! Read local distribution
-      write(mpl%info,'(a7,a,i4,a)') '','Read local distribution for: ',mpl%nproc,' MPI tasks'
+      write(mpl%info,'(a7,a,i6,a)') '','Read local distribution for: ',mpl%nproc,' MPI tasks'
       call mpl%flush
 
       if (mpl%main) then
@@ -787,7 +785,7 @@ afieldset = atlas_fieldset()
 
 do its=1,nam%nts
    ! Define filename
-   write(fullname,'(a,i4.4)') trim(filename)//'_'//trim(nam%timeslot(its))//'_',ie
+   write(fullname,'(a,i6.6)') trim(filename)//'_'//trim(nam%timeslot(its))//'_',ie
 
    ! Read file
    call model%read(mpl,nam,fullname,its,afieldset)
@@ -843,7 +841,7 @@ do isub=1,nsub
 
    ! Loop over members for a given sub-ensemble
    do ie_sub=1,ne/nsub
-      write(mpl%info,'(i4)') ie_sub
+      write(mpl%info,'(i6)') ie_sub
       call mpl%flush(.false.)
 
       ! Read member

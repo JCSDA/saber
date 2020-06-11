@@ -1407,21 +1407,23 @@ if (mpl%main) then
       deallocate(rbuf)
    end do
 
-   ! Get order from hash
-   do ic2=1,nam%nc2
-      hash_c2(ic2) = lonlathash(lon_c2(ic2,1),lat_c2(ic2,1))
-   end do
-   call qsort(nam%nc2,hash_c2,order)
+   do il0=1,geom%nl0
+      ! Get order from hash
+      do ic2=1,nam%nc2
+         hash_c2(ic2) = lonlathash(lon_c2(ic2,il0),lat_c2(ic2,il0))
+      end do
+      call qsort(nam%nc2,hash_c2,order)
 
-   ! Reorder data
-   lon_c2 = lon_c2(order,:)
-   lat_c2 = lat_c2(order,:)
-   lon_c2_raw = lon_c2_raw(order,:,:)
-   lat_c2_raw = lat_c2_raw(order,:,:)
-   dist_c2_raw = dist_c2_raw(order,:,:)
-   lon_c2_flt = lon_c2_flt(order,:,:)
-   lat_c2_flt = lat_c2_flt(order,:,:)
-   dist_c2_flt = dist_c2_flt(order,:,:)
+      ! Reorder data
+      lon_c2(:,il0) = lon_c2(order,il0)
+      lat_c2(:,il0) = lat_c2(order,il0)
+      lon_c2_raw(:,il0,:) = lon_c2_raw(order,il0,:)
+      lat_c2_raw(:,il0,:) = lat_c2_raw(order,il0,:)
+      dist_c2_raw(:,il0,:) = dist_c2_raw(order,il0,:)
+      lon_c2_flt(:,il0,:) = lon_c2_flt(order,il0,:)
+      lat_c2_flt(:,il0,:) = lat_c2_flt(order,il0,:)
+      dist_c2_flt(:,il0,:) = dist_c2_flt(order,il0,:)
+   end do
 
    ! Rescale data
    lon_c2 = lon_c2*rad2deg
