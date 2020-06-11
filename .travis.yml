@@ -48,7 +48,7 @@ before_install:
   - git clone https://github.com/jcsda/oops.git ${REPO_SOURCE_DIR}/saber-bundle/oops
   - cd ${REPO_SOURCE_DIR}/saber-bundle/oops
   - git checkout $BRANCH || echo "No branch named $BRANCH in oops repo"
-  - cd $REPO_SOURCE_DIR  
+  - cd $REPO_SOURCE_DIR
 
 #  clone the testing branch of saber
   - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber
@@ -61,6 +61,7 @@ before_install:
   - ls
   - ls ${REPO_SOURCE_DIR}
   - cd ${REPO_SOURCE_DIR}/saber-bundle
+  - sed -i 's/BRANCH release-stable UPDATE//' CMakeLists.txt
   - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
   - sed -i '/PROJECT eckit/d' CMakeLists.txt
   - cat CMakeLists.txt

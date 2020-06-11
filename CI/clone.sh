@@ -1,8 +1,8 @@
-#!/bin/bash 
+#!/bin/bash
 
 # clones specific branch of a given repo
 # if branch does not exist clones develop
- 
+
 git_user=$1
 git_token=$2
 repo_name=$3
@@ -28,5 +28,3 @@ else
 fi
 
 git clone -b $branch_name_clone https://$git_user:$git_token@github.com/jcsda/$repo_name $save_dir/$save_name
-
-
