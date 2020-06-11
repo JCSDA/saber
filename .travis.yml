@@ -1,4 +1,4 @@
-#======================================================================
+
 # Project settings
 #======================================================================
 branches:
@@ -25,14 +25,20 @@ before_install:
 #======================================================================
 # Clone all repos
 #======================================================================
+#  create saber-bundle directory
   - pwd
   - mkdir -p ${REPO_SOURCE_DIR}/saber-bundle
+
+#  checkout for the same branch name in fckit
   - git clone https://github.com/jcsda/fckit.git ${REPO_SOURCE_DIR}/saber-bundle/fckit
+  - cd ${REPO_SOURCE_DIR}/saber-bundle/fckit
+  - git checkout $BRANCH || echo "No branch named $BRANCH in atlas repo"; git checkout release-stable
+  - cd $REPO_SOURCE_DIR
 
 #  checkout for the same branch name in atlas
   - git clone https://github.com/jcsda/atlas.git ${REPO_SOURCE_DIR}/saber-bundle/atlas
   - cd ${REPO_SOURCE_DIR}/saber-bundle/atlas
-  - git checkout $BRANCH || echo "No branch named $BRANCH in atlas repo"
+  - git checkout $BRANCH || echo "No branch named $BRANCH in atlas repo"; git checkout release-stable
   - cd $REPO_SOURCE_DIR
 
 #  clone metis
@@ -42,19 +48,20 @@ before_install:
   - git clone https://github.com/jcsda/oops.git ${REPO_SOURCE_DIR}/saber-bundle/oops
   - cd ${REPO_SOURCE_DIR}/saber-bundle/oops
   - git checkout $BRANCH || echo "No branch named $BRANCH in oops repo"
-  - cd $REPO_SOURCE_DIR  
+  - cd $REPO_SOURCE_DIR
 
 #  clone the testing branch of saber
   - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber
 
-#  copy bundle CMakeLists.txt
-  - cp ${REPO_SOURCE_DIR}/saber-bundle/saber/bundle/CMakeLists.txt ${REPO_SOURCE_DIR}/saber-bundle
+#  copy CI CMakeLists.txt
+  - cp ${REPO_SOURCE_DIR}/saber-bundle/saber/CI/CMakeLists.txt ${REPO_SOURCE_DIR}/saber-bundle
 
 #  do no switch to develop branch by removing
 #  develop UPDATE in CMakeLists.txt in saber-bundle
   - ls
   - ls ${REPO_SOURCE_DIR}
   - cd ${REPO_SOURCE_DIR}/saber-bundle
+  - sed -i 's/BRANCH release-stable UPDATE//' CMakeLists.txt
   - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
   - sed -i '/PROJECT eckit/d' CMakeLists.txt
   - cat CMakeLists.txt
@@ -69,12 +76,13 @@ before_install:
 #======================================================================
   - cd ${REPO_SOURCE_DIR}/saber-bundle/saber
   - date
+  - cd CI
   - docker build -t jcsda/dockerl2 --build-arg=Dockerfile .  #Dockerfile handles ssh for mpi
   - date
   - docker images
 # request codecov to detect CI environment to pass through to docker
   - ci_env=`bash <(curl -s https://codecov.io/env)`
-
+  - echo $ci_env
   - docker run -d -t $ci_env --name jcsda_container -v ${REPO_SOURCE_DIR}/saber-bundle:/jcsda/src_repo jcsda/dockerl2
   - docker ps -a
   - date
@@ -102,9 +110,6 @@ script:
   - date
   - docker exec jcsda_container bash -c 'cd /build_container/saber && ctest'
   - date
-##  run lcov inside container
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --capture --directory . --output-file coverage.info'
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --remove coverage.info "/usr/*" --output-file coverage.info'  #  filter system-files
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && lcov --list coverage.info'  #  debug info
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && bash <(curl -s https://codecov.io/bash) -t b8d1ec3a-1248-4948-afe1-5afc97fc24c7 -X gcov -f coverage.info -R /jcsda/src_repo/saber/'
+#  upload to CodeCov
+  - docker exec jcsda_container bash -c 'cd /build_container/saber && bash <(curl -s https://codecov.io/bash) -t b8d1ec3a-1248-4948-afe1-5afc97fc24c7'
 
