@@ -160,23 +160,23 @@ if(DEFINED ENV{LOCAL_PATH_TESTFILES_SABER})
     set(LOCAL_PATH_TESTFILES_SABER "$ENV{LOCAL_PATH_TESTFILES_SABER}")
 endif()
 
-# Get the current git branch
-execute_process(
-    COMMAND git rev-parse --abbrev-ref HEAD
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_BRANCH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
 # If local path to testfiles is defined don't download
 if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
+    # Get the current git branch
+    execute_process(
+        COMMAND git rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
     # Set TESTFILE_DIR_SABER
-    set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber CACHE PATH "data dir for test data")
-    message(STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER} "/" ${GIT_BRANCH})
+    set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH} CACHE PATH "data dir for test data")
+    message(STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER})
     message(STATUS "Download sources:")
 
     # Make specific data directory
-    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH})
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER})
 
     # Check whether the URL exists or not
     ecbuild_check_multiurl(NAMES   ${saber_data_tar}
@@ -197,7 +197,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     ecbuild_get_test_multidata(TARGET   get_saber_data
                                NAMES    ${saber_data_tar}
                                DIRNAME  ${DIRNAME}
-                               DIRLOCAL ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata
+                               DIRLOCAL ${TESTFILE_DIR_SABER}/testdata
                                EXTRACT)
 
     # Check whether the URL exists or not
@@ -219,21 +219,21 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     ecbuild_get_test_multidata(TARGET   get_saber_ref
                                NAMES    ${saber_ref_tar}
                                DIRNAME  ${DIRNAME}
-                               DIRLOCAL ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref
+                               DIRLOCAL ${TESTFILE_DIR_SABER}/testref
                                EXTRACT)
 
     # Make directories
-    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata)
-    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref)
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testdata)
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testref)
 else()
     set(TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER})
-    if(NOT EXISTS ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata)
-        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata is missing")
+    if(NOT EXISTS ${TESTFILE_DIR_SABER}/testdata)
+        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testdata is missing")
     endif()
-    if(NOT EXISTS ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref)
-        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref is missing")
+    if(NOT EXISTS ${TESTFILE_DIR_SABER}/testref)
+        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testref is missing")
     endif()
-    message(STATUS "Files loaded from: " ${TESTFILE_DIR_SABER}/${GIT_BRANCH})
+    message(STATUS "Files loaded from: " ${TESTFILE_DIR_SABER})
 endif()
 
 # Make directories
@@ -260,12 +260,12 @@ endforeach()
 # Link data/reference files
 foreach(file ${saber_data})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata/${file}
+                    ${TESTFILE_DIR_SABER}/testdata/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 foreach(file ${saber_ref})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref/${file}
+                    ${TESTFILE_DIR_SABER}/testref/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
 endforeach()
 
