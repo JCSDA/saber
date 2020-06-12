@@ -105,10 +105,6 @@ write(mpl%info,'(a)') '---------------------------------------------------------
 call mpl%flush
 write(mpl%info,'(a)') '--- You are running the BUMP main program -------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Author: Benjamin Menetrier ------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT -----'
-call mpl%flush
 
 ! Model setup
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
