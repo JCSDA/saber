@@ -28,12 +28,12 @@ subroutine bump_create_c(key_bump,c_comm,c_afunctionspace,c_afieldset,c_conf,c_g
 implicit none
 
 ! Passed variables
-integer(c_int),intent(inout) :: key_bump           ! BUMP
-type(c_ptr),value,intent(in) :: c_comm         ! FCKIT MPI communicator wrapper
+integer(c_int),intent(inout) :: key_bump         ! BUMP
+type(c_ptr),intent(in),value :: c_comm           ! FCKIT MPI communicator wrapper
 type(c_ptr),intent(in),value :: c_afunctionspace ! ATLAS function space
 type(c_ptr),intent(in),value :: c_afieldset      ! ATLAS fieldset  (containing geometry features: area, vunit, gmask, smask, wind)
-type(c_ptr),intent(in) :: c_conf                ! FCKIT configuration
-type(c_ptr),intent(in) :: c_grid                ! FCKIT grid configuration
+type(c_ptr),intent(in),value :: c_conf           ! FCKIT configuration
+type(c_ptr),intent(in),value :: c_grid           ! FCKIT grid configuration
 
 ! Local variables
 type(bump_type),pointer :: bump
