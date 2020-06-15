@@ -61,7 +61,7 @@ integer,intent(in) :: jv                       ! Second variable index
 ! Set attributes
 vbal_blk%iv = iv
 vbal_blk%jv = jv
-vbal_blk%name = trim(nam%varname(jv))//'-'//trim(nam%varname(iv))
+vbal_blk%name = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
 
 ! Allocation
 allocate(vbal_blk%auto(geom%nl0,geom%nl0,nc2b))

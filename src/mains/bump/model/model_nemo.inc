@@ -134,13 +134,13 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
    ! Timeslot index
-   read(nam%timeslot(its),'(i2)') timeslot
+   read(nam%timeslots(its),'(i2)') timeslot
 end if
 
 do iv=1,nam%nv
    if (mpl%main) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%variables(iv)),fld_id))
 
       ! Check field size
       call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,ndims=ndims))
@@ -162,7 +162,7 @@ do iv=1,nam%nv
          do il0=1,nam%nl
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),timeslot/), &
           & (/model%nlon,model%nlat,1,1/)))
-            select case (trim(nam%varname(iv)))
+            select case (trim(nam%variables(iv)))
             case ('un')
                do ilat=1,model%nlat
                   do ilon=1,model%nlon
@@ -188,7 +188,7 @@ do iv=1,nam%nv
             end select
          end do
       case default
-         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%varname(iv)))
+         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%variables(iv)))
       end select
 
       ! Pack

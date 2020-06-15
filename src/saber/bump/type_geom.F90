@@ -89,7 +89,7 @@ type geom_type
    integer,allocatable :: ic0adir(:)              ! Dirac gridpoint
    integer,allocatable :: il0dir(:)               ! Dirac level
    integer,allocatable :: ivdir(:)                ! Dirac variable
-   integer,allocatable :: itsdir(:)               ! Dirac timeslot
+   integer,allocatable :: itsdir(:)               ! Dirac timeslots
 
    ! MPI distribution
    integer :: nmga                                ! Halo A size for model grid

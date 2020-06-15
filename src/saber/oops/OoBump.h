@@ -134,25 +134,25 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
 
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;
-    if (grids[jgrid].has("varname")) {
-      grids[jgrid].get("varname", vars_str);
+    if (grids[jgrid].has("variables")) {
+      grids[jgrid].get("variables", vars_str);
     } else {
       for (unsigned int jvar = 0; jvar < vars.size(); ++jvar) {
         vars_str.push_back(vars[jvar]);
       }
-      grids[jgrid].set("varname", vars_str);
+      grids[jgrid].set("variables", vars_str);
     }
     grids[jgrid].set("nv", vars_str.size());
 
     // Add input timeslots to the grid configuration
     std::vector<std::string> timeslots_str;
-    if (grids[jgrid].has("timeslot")) {
-      grids[jgrid].get("timeslot", timeslots_str);
+    if (grids[jgrid].has("timeslots")) {
+      grids[jgrid].get("timeslots", timeslots_str);
     } else {
       for (unsigned int jts = 0; jts < timeslots.size(); ++jts) {
         timeslots_str.push_back(timeslots[jts].toString());
       }
-      grids[jgrid].set("timeslot", timeslots_str);
+      grids[jgrid].set("timeslots", timeslots_str);
     }
     grids[jgrid].set("nts", timeslots_str.size());
 
@@ -194,11 +194,11 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
     grids[jgrid].set("prefix", prefix + "_" + ss.str());
     std::vector<std::string> vars_str;
     grids[jgrid].get("variables", vars_str);
-    grids[jgrid].set("varname", vars_str);
+    grids[jgrid].set("variables", vars_str);
     grids[jgrid].set("nv", vars_str.size());
     std::vector<std::string> timeslots_str;
     grids[jgrid].get("timeslots", timeslots_str);
-    grids[jgrid].set("timeslot", timeslots_str);
+    grids[jgrid].set("timeslots", timeslots_str);
     grids[jgrid].set("nts", timeslots_str.size());
   }
 #endif

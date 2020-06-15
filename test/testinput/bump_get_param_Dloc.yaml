@@ -14,9 +14,9 @@ check_get_param_Dloc: 1
 nl: 2
 levs: [1,2]
 nv: 2
-varname: ["u","q"]
+variables: ["u","q"]
 nts: 2
-timeslot: ["00","06"]
+timeslots: ["00","06"]
 
 # ens1_param
 ens1_ne: 50

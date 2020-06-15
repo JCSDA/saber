@@ -346,15 +346,15 @@ end subroutine create_atlas_function_space
 ! Subroutine: create_atlas_fieldset
 ! Purpose: create ATLAS fieldset with empty fields
 !----------------------------------------------------------------------
-subroutine create_atlas_fieldset(afunctionspace,nl,varname,timeslot,afieldset)
+subroutine create_atlas_fieldset(afunctionspace,nl,variables,timeslots,afieldset)
 
 implicit none
 
 ! Passed variables
 type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
 integer,intent(in) :: nl                               ! Number of levels
-character(len=*),intent(in) :: varname(:)              ! Variables names
-character(len=*),intent(in) :: timeslot(:)             ! Timeslots
+character(len=*),intent(in) :: variables(:)            ! Variables names
+character(len=*),intent(in) :: timeslots(:)            ! Timeslots
 type(atlas_fieldset),intent(out) :: afieldset          ! ATLAS fieldset
 
 ! Local variables
@@ -366,10 +366,10 @@ type(atlas_field) :: afield
 afieldset = atlas_fieldset()
 
 ! Create fields
-do its=1,size(timeslot)
-   do iv=1,size(varname)
+do its=1,size(timeslots)
+   do iv=1,size(variables)
       ! Create field
-      fieldname = trim(varname(iv))//'_'//trim(timeslot(its))
+      fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
       afield = afunctionspace%create_field(name=trim(fieldname),kind=atlas_real(kind_real),levels=nl)
 
       ! Add field
@@ -386,14 +386,14 @@ end subroutine create_atlas_fieldset
 ! Subroutine: atlas_to_fld
 ! Purpose: convert ATLAS fieldset to field
 !----------------------------------------------------------------------
-subroutine atlas_to_fld(mpl,varname,timeslot,afieldset,fld,lev2d)
+subroutine atlas_to_fld(mpl,variables,timeslots,afieldset,fld,lev2d)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl             ! MPI data
-character(len=*),intent(in) :: varname(:)       ! Variables names
-character(len=*),intent(in) :: timeslot(:)      ! Timeslots
+character(len=*),intent(in) :: variables(:)     ! Variables names
+character(len=*),intent(in) :: timeslots(:)     ! Timeslots
 type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
 real(kind_real),intent(out) :: fld(:,:,:,:)     ! Field
 character(len=*),intent(in),optional :: lev2d   ! Level for 2D variables
@@ -404,14 +404,14 @@ character(len=1024),parameter :: subr = 'atlas_to_fld'
 type(atlas_field) :: afield
 
 ! Check number of variables and number of timeslots
-if (size(varname)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
-if (size(timeslot)/=size(fld,4)) call mpl%abort(subr,'inconsistency in number of timeslots')
+if (size(variables)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
+if (size(timeslots)/=size(fld,4)) call mpl%abort(subr,'inconsistency in number of timeslots')
 
 ! Loop over fields
-do its=1,size(timeslot)
-   do iv=1,size(varname)
+do its=1,size(timeslots)
+   do iv=1,size(variables)
       ! Get field
-      fieldname = trim(varname(iv))//'_'//trim(timeslot(its))
+      fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
       afield = afieldset%field(trim(fieldname))
 
       ! Get field data
@@ -429,14 +429,14 @@ end subroutine atlas_to_fld
 ! Subroutine: fld_to_atlas
 ! Purpose: convert field to ATLAS fieldset
 !----------------------------------------------------------------------
-subroutine fld_to_atlas(mpl,varname,timeslot,fld,afieldset,lev2d)
+subroutine fld_to_atlas(mpl,variables,timeslots,fld,afieldset,lev2d)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl             ! MPI data
-character(len=*),intent(in) :: varname(:)       ! Variables names
-character(len=*),intent(in) :: timeslot(:)      ! Timeslots
+character(len=*),intent(in) :: variables(:)     ! Variables names
+character(len=*),intent(in) :: timeslots(:)     ! Timeslots
 real(kind_real),intent(in) :: fld(:,:,:,:)      ! Field
 type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
 character(len=*),intent(in),optional :: lev2d   ! Level for 2D variables
@@ -448,14 +448,14 @@ character(len=1024),parameter :: subr = 'fld_to_atlas'
 type(atlas_field) :: afield
 
 ! Check number of variables and number of timeslots
-if (size(varname)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
-if (size(timeslot)/=size(fld,4)) call mpl%abort(subr,'inconsistency in number of timeslots')
+if (size(variables)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
+if (size(timeslots)/=size(fld,4)) call mpl%abort(subr,'inconsistency in number of timeslots')
 
 ! Loop over fields
-do its=1,size(timeslot)
-   do iv=1,size(varname)
+do its=1,size(timeslots)
+   do iv=1,size(variables)
       ! Get or create field
-      fieldname = trim(varname(iv))//'_'//trim(timeslot(its))
+      fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
       afield = afieldset%field(trim(fieldname))
 
       ! Get field data
