@@ -12,10 +12,10 @@ listdir=$2
 
 # Data list
 data_list="
-bump_data
-bump_data_mpi
-bump_data_omp
-oops_data"
+saber_data
+saber_data_mpi
+saber_data_omp
+saber_data_oops"
 
 # Get git branch
 branch=`git rev-parse --abbrev-ref HEAD`

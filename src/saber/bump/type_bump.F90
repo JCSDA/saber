@@ -232,10 +232,6 @@ write(bump%mpl%info,'(a)') '----------------------------------------------------
 call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- You are running the BUMP library ------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Author: Benjamin Menetrier ------------------------------------'
-call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT -----'
-call bump%mpl%flush
 
 ! Check namelist parameters
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
