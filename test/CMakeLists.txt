@@ -302,7 +302,7 @@ foreach(test ${saber_test})
         ecbuild_add_test(TARGET test_${test}_${mpi}-${omp}_valgrind
                          MPI    ${mpi}
                          OMP    ${omp}
-                         COMMAND ${CMAKE_BINARY_DIR}/bin/valgrind.sh
+                         COMMAND ${CMAKE_BINARY_DIR}/bin/saber_valgrind.sh
                          ARGS ${CMAKE_BINARY_DIR}/bin/bump.x testinput/${test}_${mpi}-${omp}.yaml testoutput
                          DEPENDS bump.x
                          TEST_DEPENDS get_saber_data)
