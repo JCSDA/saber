@@ -12,14 +12,14 @@ listdir=$2
 
 # References list
 ref_list="
-bump_ref_1
-bump_ref_2
-bump_ref_3
-bump_ref_mpi_1
-bump_ref_mpi_2
-bump_ref_mpi_3
-bump_ref_quad
-oops_ref"
+saber_ref_1
+saber_ref_2
+saber_ref_3
+saber_ref_mpi_1
+saber_ref_mpi_2
+saber_ref_mpi_3
+saber_ref_quad
+saber_ref_oops"
 
 # Get git branch
 branch=`git rev-parse --abbrev-ref HEAD`
@@ -38,7 +38,7 @@ for ref in ${ref_list}; do
       files=${files}' '${line}
 
       # Special case for OOPS references
-      if test ${ref} == "oops_ref"; then
+      if test ${ref} == "saber_ref_oops"; then
          grep -si 'Test     : ' ../testoutput/${line} > ${line}
       fi
    done < ${ipwd}/${listdir}/${ref}.txt
