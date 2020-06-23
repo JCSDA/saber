@@ -10,7 +10,7 @@ module type_tree
 use atlas_module, only: atlas_geometry,atlas_indexkdtree
 use iso_c_binding, only: c_ptr
 use tools_const, only: pi,rad2deg
-use tools_func, only: lonlat2xyz,sphere_dist
+use tools_func, only: lonlathash,lonlat2xyz,sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,rth,sup,indist
