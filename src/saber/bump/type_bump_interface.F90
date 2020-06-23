@@ -8,7 +8,7 @@
 
 module type_bump_interface
 
-use atlas_module
+use atlas_module, only: atlas_fieldset, atlas_functionspace 
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
