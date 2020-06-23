@@ -178,10 +178,12 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     # Make specific data directory
     file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH})
 
-    # Check whether the URL exists or not
-    ecbuild_check_multiurl(NAMES   ${saber_data_tar}
-                           DIRHOST ${GIT_BRANCH}
-                           RESULT  SPECIFIC_TEST_FILES)
+    # Check whether the URLs exist or not
+    foreach (saber_data_tar_name ${saber_data_tar})
+        list(APPEND url_names_data ${GIT_BRANCH}/${saber_data_tar_name})
+    endforeach()
+    ecbuild_check_urls(NAMES  ${url_names_data}
+                       RESULT SPECIFIC_TEST_FILES)
 
     # Set distant directory
     if(${SPECIFIC_TEST_FILES} MATCHES 0)
@@ -200,10 +202,12 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
                                DIRLOCAL ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata
                                EXTRACT)
 
-    # Check whether the URL exists or not
-    ecbuild_check_multiurl(NAMES   ${saber_ref_tar}
-                           DIRHOST ${GIT_BRANCH}
-                           RESULT  SPECIFIC_TEST_FILES)
+    # Check whether the URLs exist or not
+    foreach(saber_ref_tar_name ${saber_ref_tar})
+        list(APPEND url_names_ref ${GIT_BRANCH}/${saber_ref_tar_name})
+    endforeach()
+    ecbuild_check_urls(NAMES  ${url_names_ref}
+                       RESULT SPECIFIC_TEST_FILES)
 
     # Set distant directory
     if(${SPECIFIC_TEST_FILES} MATCHES 0)
