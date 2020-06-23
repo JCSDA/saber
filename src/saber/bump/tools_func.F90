@@ -7,7 +7,7 @@
 !----------------------------------------------------------------------
 module tools_func
 
-use fckit_geometry_module, only: sphere_distance,sphere_lonlat2xyz,sphere_xyz2lonlat
+use atlas_module, only: atlas_geometry
 use tools_asa007, only: asa007_cholesky,asa007_syminv
 use tools_const, only: pi,deg2rad,rad2deg
 use tools_kinds, only: kind_real
@@ -104,8 +104,14 @@ real(kind_real),intent(in) :: lon_f ! Final point longitude (radians)
 real(kind_real),intent(in) :: lat_f ! Final point longilatitudetude (radians)
 real(kind_real),intent(out) :: dist ! Great-circle distance
 
-! Call fckit
-dist = sphere_distance(lon_i*rad2deg,lat_i*rad2deg,lon_f*rad2deg,lat_f*rad2deg)
+! Local variables
+type(atlas_geometry) :: ageometry
+
+! Create ATLAS geometry
+ageometry = atlas_geometry("UnitSphere")
+
+! Compute distance
+dist = ageometry%distance(lon_i*rad2deg,lat_i*rad2deg,lon_f*rad2deg,lat_f*rad2deg)
 
 end subroutine sphere_dist
 
@@ -163,6 +169,7 @@ real(kind_real),intent(out) :: y    ! Y coordinate
 real(kind_real),intent(out) :: z    ! Z coordinate
 
 ! Local variables
+type(atlas_geometry) :: ageometry
 character(len=1024),parameter :: subr = 'lonlat2xyz'
 
 if (mpl%msv%isnot(lat).and.mpl%msv%isnot(lon)) then
@@ -170,8 +177,11 @@ if (mpl%msv%isnot(lat).and.mpl%msv%isnot(lon)) then
    if (inf(lon,-pi).and.sup(lon,pi)) call mpl%abort(subr,'wrong longitude')
    if (inf(lat,-0.5*pi).and.sup(lat,-0.5*pi)) call mpl%abort(subr,'wrong latitude')
 
-   ! Call fckit
-   call sphere_lonlat2xyz(lon*rad2deg,lat*rad2deg,x,y,z)
+   ! Create ATLAS geometry
+   ageometry = atlas_geometry("UnitSphere")
+
+   ! Convert to x/y/z
+   call ageometry%lonlat2xyz(lon*rad2deg,lat*rad2deg,x,y,z)
 else
    ! Missing values
    x = mpl%msv%valr
@@ -197,9 +207,17 @@ real(kind_real),intent(in) :: z    ! Z coordinate
 real(kind_real),intent(out) :: lon ! Longitude (radians)
 real(kind_real),intent(out) :: lat ! Latitude (radians)
 
+! Local variables
+type(atlas_geometry) :: ageometry
+
 if (mpl%msv%isnot(x).and.mpl%msv%isnot(y).and.mpl%msv%isnot(z)) then
-   ! Call fckit
-   call sphere_xyz2lonlat(x,y,z,lon,lat)
+   ! Create ATLAS geometry
+   ageometry = atlas_geometry("UnitSphere")
+
+   ! Convert to lon/lat
+   call ageometry%xyz2lonlat(x,y,z,lon,lat)
+
+   ! Copy coordinates
    lon = lon*deg2rad
    lat = lat*deg2rad
 else

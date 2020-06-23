@@ -1500,8 +1500,10 @@ do il1=1,nicas_blk%nl1
 end do
 write(mpl%info,'(a10,a,i9)') '','c%n_s =     ',nicas_blk%c%n_s
 if (nicas_blk%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i9)') '','c_nor%n_s = ',nicas_blk%c_nor%n_s
-if (nicas_blk%verbosity) call mpl%flush
+if (.not.nicas_blk%smoother) then
+   write(mpl%info,'(a10,a,i9)') '','c_nor%n_s = ',nicas_blk%c_nor%n_s
+   if (nicas_blk%verbosity) call mpl%flush
+end if
 
 ! Release memory (partial)
 call nicas_blk%partial_dealloc

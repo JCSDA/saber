@@ -7,10 +7,10 @@
 !----------------------------------------------------------------------
 module type_tree
 
+use atlas_module, only: atlas_geometry,atlas_indexkdtree
 use iso_c_binding, only: c_ptr
-use fckit_kdtree_module, only: kdtree,kdtree_create,kdtree_destroy,kdtree_k_nearest_neighbors,kdtree_find_in_sphere
 use tools_const, only: pi,rad2deg
-use tools_func, only: lonlathash,lonlat2xyz,sphere_dist
+use tools_func, only: lonlat2xyz,sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,rth,sup,indist
@@ -26,7 +26,7 @@ type tree_type
     integer,allocatable :: from_eff(:)    ! Effective index conversion
     real(kind_real),allocatable :: lon(:) ! Longitudes
     real(kind_real),allocatable :: lat(:) ! Latitudes
-    type(kdtree) :: kd                    ! KDTree from fckit
+    type(atlas_indexkdtree) :: kd         ! KDTree from ATLAS
 contains
     procedure :: alloc => tree_alloc
     procedure :: init => tree_init
@@ -99,6 +99,7 @@ real(kind_real),intent(in) :: lat(tree%n) ! Points latitudes (in radians)
 ! Local variable
 integer :: i,ieff
 real(kind_real) :: lon_deg(tree%neff),lat_deg(tree%neff)
+type(atlas_geometry) :: ageometry
 
 ! Loop over points
 ieff = 0
@@ -115,10 +116,14 @@ do i=1,tree%n
    end if
 end do
 
+! Create geometry
+ageometry = atlas_geometry("UnitSphere")
+
 ! Create KDTree
 lon_deg = tree%lon*rad2deg
 lat_deg = tree%lat*rad2deg
-tree%kd = kdtree_create(tree%neff,lon_deg,lat_deg)
+tree%kd = atlas_indexkdtree(ageometry)
+call tree%kd%build(tree%neff,lon_deg,lat_deg)
 
 end subroutine tree_init
 
@@ -141,7 +146,7 @@ if (allocated(tree%from_eff)) then
    deallocate(tree%lat)
 
    ! Destroy KDTree
-   call kdtree_destroy(tree%kd)
+   call tree%kd%final()
 end if
 
 end subroutine tree_dealloc
@@ -179,7 +184,7 @@ if (nn>0) then
       allocate(nn_index_tmp(nn_tmp))
 
       ! Find neighbors
-      call kdtree_k_nearest_neighbors(tree%kd,lon*rad2deg,lat*rad2deg,nn_tmp,nn_index_tmp)
+      call tree%kd%closestPoints(lon*rad2deg,lat*rad2deg,nn_tmp,nn_index_tmp)
 
       ! Check distance between reference and last nearest neighbors
       call sphere_dist(lon,lat,tree%lon(nn_index_tmp(nn)),tree%lat(nn_index_tmp(nn)),dist_ref)
@@ -265,8 +270,8 @@ real(kind_real),intent(in) :: lat   ! Point latitude (in radians)
 real(kind_real),intent(in) :: sr    ! Spherical radius (in radians)
 integer,intent(out) :: nn           ! Number of nearest neighbors found
 
-! Count nearest neighbors
-call kdtree_find_in_sphere(tree%kd,lon*rad2deg,lat*rad2deg,sr,nn)
+! Count nearest neighbors TODO: remove chord formula for backward compatibility
+call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,2.0*sin(0.5*sr),nn)
 
 end subroutine tree_count_nearest_neighbors
 

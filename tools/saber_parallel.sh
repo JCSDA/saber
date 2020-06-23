@@ -55,6 +55,7 @@ list_get=`ctest -N | grep get_saber | awk '{print $(NF)}'`
 list_run=`ctest -N | grep test_bump | grep _run | awk '{print $(NF)}'`
 list_compare=`ctest -N | grep test_bump | grep _compare | awk '{print $(NF)}'`
 list_plot=`ctest -N | grep test_bump | grep _plot | awk '{print $(NF)}'`
+list_valgrind=`ctest -N | grep test_bump | grep _valgrind | awk '{print $(NF)}'`
 list_qg=`ctest -N | grep test_qg | awk '{print $(NF)}'`
 
 # Tests variables
@@ -74,11 +75,15 @@ list_plot_array=(${list_plot})
 ntest_plot=${#list_plot_array[@]}
 stest_plot=0
 ftest_plot=0
+list_valgrind_array=(${list_valgrind})
+ntest_valgrind=${#list_valgrind_array[@]}
+stest_valgrind=0
+ftest_valgrind=0
 list_qg_array=(${list_qg})
 ntest_qg=${#list_qg_array[@]}
 stest_qg=0
 ftest_qg=0
-ntest_tot=$((ntest_run+ntest_compare+ntest_plot+ntest_qg))
+ntest_tot=$((ntest_run+ntest_compare+ntest_plot+ntest_valgrind+ntest_qg))
 itest=0
 if test ${ntest_tot} = 0; then
    echo "No test detected, this script should be run from \${build_directory}/saber/test"
@@ -392,7 +397,6 @@ while [ ${#pids[@]} -gt 0 ]; do
    done
 done
 
-
 # Re-initialize cpus array
 for i in $(seq 1 ${nproc}); do
    cpus[$i]=""
@@ -529,6 +533,137 @@ for i in $(seq 1 ${nproc}); do
 done
 navail=${nproc}
 
+# Valgrind
+for valgrind in ${list_valgrind}; do
+   echo "Handling process ${valgrind}" >> saber_ctest_log/execution.log
+
+   # Get command and arguments
+   ctest --timeout 0.00001 -VV -R ${valgrind} > saber_ctest_log/${valgrind}_fail.log 2>/dev/null
+   tmp=`grep "Test command:" saber_ctest_log/${valgrind}_fail.log`
+   cmd=`echo ${tmp} | awk '{print $4}'`
+   exe=`echo ${tmp} | awk '{print $7,$8,$9,$10}'`
+   omp=1
+   mpi=1
+   mpixomp=$((mpi*omp))
+   rm -f saber_ctest_log/${valgrind}_fail.log
+
+   # Print info
+   echo "   At this time, ${navail} CPUs are available and ${mpixomp} are required" >> saber_ctest_log/execution.log
+
+   # Wait for available CPUs
+   while [ ${navail} -lt ${mpixomp} ]; do
+      # Sleep
+      sleep 0.01
+
+      # Loop over running processes
+      for cvalgrind in "${!pids[@]}"; do
+         # Check if the process is not running
+         if ! kill -0 ${pids[${cvalgrind}]} 2>/dev/null; then
+            # Unset process from the list
+            unset pids[${cvalgrind}]
+
+            # CPUs for this process are now available
+            navail=0
+            for i in "${!cpus[@]}"; do
+               if test "${cpus[${i}]}" = ""; then
+                  navail=$((navail+1))
+               fi
+               if test "${cpus[${i}]}" = "${cvalgrind}"; then
+                  # This CPU is now available
+                  cpus[${i}]=""
+                  navail=$((navail+1))
+               fi
+            done
+            echo "   Process ${cvalgrind} is done, ${navail} are now are available" >> saber_ctest_log/execution.log
+
+            # Check if this process passed
+            err=`wc -l saber_ctest_log/${cvalgrind}.err | awk '{print $1}'`
+            itest=$((itest+1))
+            itest_tot=`printf "%03d" ${itest}`
+            if test "${err}" = "0"; then
+               # Run passed
+               echo "${cvalgrind} passed" >> saber_ctest_log/execution.log
+               stest_valgrind=$((stest_valgrind+1))
+               echo -e "${itest_tot} / ${ntest_tot}: \033[32mpassed\033[0m ~> ${cvalgrind}"
+            else
+               # Run failed
+               echo "${cvalgrind} failed" >> saber_ctest_log/execution.log
+               ftest_valgrind=$((ftest_valgrind+1))
+               echo -e "${itest_tot} / ${ntest_tot}: \033[31mfailed\033[0m ~> ${cvalgrind}"
+            fi
+         fi
+      done
+   done
+
+   # Find available cpus
+   cpu_list=""
+   ncpus=0
+   for i in $(seq 1 ${nproc}); do
+      if test "${cpus[${i}]}" = ""; then
+         # This CPU is available
+         if test ${ncpus} -lt ${mpixomp}; then
+            # Use this CPU
+            im1=$((i-1))
+            cpu_list=${cpu_list}${im1}
+            ncpus=$((ncpus+1))
+            navail=$((navail-1))
+
+            # Add comma
+            if test ${ncpus} -lt ${mpixomp}; then
+               cpu_list=${cpu_list}","
+            fi
+
+            # Set a task for this CPU
+            cpus[${i}]="${valgrind}"
+         fi
+      fi
+   done
+
+   # Fire!
+   echo "   Process ${valgrind} is launched on CPUs ${cpu_list}" >> saber_ctest_log/execution.log
+   export OMP_NUM_THREADS=${omp}
+   full_cmd="${cmd} \"-n\" \"${mpi}\" \"-cpu-list\" \"${cpu_list}\" ${exe} > saber_ctest_log/${valgrind}.log 2> saber_ctest_log/${valgrind}.err &"
+   eval ${full_cmd}
+   pids[${valgrind}]=$!
+done
+
+# Wait for all processes to finish
+while [ ${#pids[@]} -gt 0 ]; do
+   # Sleep
+   sleep 0.01
+
+   # Loop over running processes
+   for cvalgrind in "${!pids[@]}"; do
+      # Check if the process is not running
+      if ! kill -0 ${pids[${cvalgrind}]} 2>/dev/null; then
+         # Unset process from the list
+         unset pids[${cvalgrind}]
+
+         # Check if this process passed
+         err=`wc -l saber_ctest_log/${cvalgrind}.err | awk '{print $1}'`
+         itest=$((itest+1))
+         itest_tot=`printf "%03d" ${itest}`
+         if test "${err}" = "0"; then
+            # Run passed
+            echo "${cvalgrind} passed" >> saber_ctest_log/execution.log
+            stest_valgrind=$((stest_valgrind+1))
+            echo -e "${itest_tot} / ${ntest_tot}: \033[32mpassed\033[0m ~> ${cvalgrind}"
+         else
+            # Run failed
+            echo "${cvalgrind} failed" >> saber_ctest_log/execution.log
+            ftest_valgrind=$((ftest_valgrind+1))
+            echo -e "${itest_tot} / ${ntest_tot}: \033[31mfailed\033[0m ~> ${cvalgrind}"
+         fi
+      fi
+   done
+done
+
+# Re-initialize cpus array
+for i in $(seq 1 ${nproc}); do
+   cpus[$i]=""
+done
+navail=${nproc}
+
 # QG
 for qg in ${list_qg}; do
    echo "Handling process ${qg}" >> saber_ctest_log/execution.log
@@ -566,7 +701,7 @@ echo -e "Elapsed time: \033[36m${elapsed_time}\033[0m sec."
 
 # Grep failed tests
 failed_tests=`grep failed saber_ctest_log/execution.log | awk '{print $1}'`
-ftest=$((ftest_get+ftest_run+ftest_compare+ftest_plot+ftest_qg))
+ftest=$((ftest_get+ftest_run+ftest_compare+ftest_plot+ftest_valgrind+ftest_qg))
 if test "${ftest}" -gt "0"; then
    echo -e ""
    echo -e "Failed tests:"
@@ -578,29 +713,47 @@ fi
 # Print summary
 echo -e ""
 echo -e "Summary:"
-# Download tests
-stest=`printf "%03d" $((stest_get))`
-ftest=`printf "%03d" $((ftest_get))`
-echo -e "  Download: \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 
-# Run tests
-stest=`printf "%03d" $((stest_run))`
-ftest=`printf "%03d" $((ftest_run))`
-echo -e "  Run:      \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+if test "${ntest_get}" -gt "0"; then
+   # Download tests
+   stest=`printf "%03d" $((stest_get))`
+   ftest=`printf "%03d" $((ftest_get))`
+   echo -e "  Download: \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
 
-# Compare tests
-stest=`printf "%03d" $((stest_compare))`
-ftest=`printf "%03d" $((ftest_compare))`
-echo -e "  Compare:  \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+if test "${ntest_run}" -gt "0"; then
+   # Run tests
+   stest=`printf "%03d" $((stest_run))`
+   ftest=`printf "%03d" $((ftest_run))`
+   echo -e "  Run:      \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
 
-# Plot tests
-stest=`printf "%03d" $((stest_plot))`
-ftest=`printf "%03d" $((ftest_plot))`
-echo -e "  Plot:     \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+if test "${ntest_compare}" -gt "0"; then
+   # Compare tests
+   stest=`printf "%03d" $((stest_compare))`
+   ftest=`printf "%03d" $((ftest_compare))`
+   echo -e "  Compare:  \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
 
-# QG tests
-stest=`printf "%03d" $((stest_qg))`
-ftest=`printf "%03d" $((ftest_qg))`
-echo -e "  QG:       \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+if test "${ntest_plot}" -gt "0"; then
+   # Plot tests
+   stest=`printf "%03d" $((stest_plot))`
+   ftest=`printf "%03d" $((ftest_plot))`
+   echo -e "  Plot:     \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
+
+if test "${ntest_valgrind}" -gt "0"; then
+   # Valgrind tests
+   stest=`printf "%03d" $((stest_valgrind))`
+   ftest=`printf "%03d" $((ftest_valgrind))`
+   echo -e "  Plot:     \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
+
+if test "${ntest_qg}" -gt "0"; then
+   # QG tests
+   stest=`printf "%03d" $((stest_qg))`
+   ftest=`printf "%03d" $((ftest_qg))`
+   echo -e "  QG:       \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
 
 exit 0

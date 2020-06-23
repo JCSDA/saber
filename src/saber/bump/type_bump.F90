@@ -7,7 +7,7 @@
 !----------------------------------------------------------------------
 module type_bump
 
-use atlas_module
+use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: create_atlas_fieldset,create_atlas_function_space,atlas_to_fld,fld_to_atlas
@@ -230,10 +230,6 @@ end if
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- You are running the BUMP library ------------------------------'
-call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Author: Benjamin Menetrier ------------------------------------'
-call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT -----'
 call bump%mpl%flush
 
 ! Check namelist parameters
