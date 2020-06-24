@@ -95,6 +95,7 @@ template<typename MODEL>
 void ErrorCovarianceID<MODEL>::doRandomize(Increment_ & dx) const {
   oops::Log::trace() << "ErrorCovarianceID<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
+  dx.random();
   oops::Log::trace() << "ErrorCovarianceID<MODEL>::doRandomize done" << std::endl;
 }
 
