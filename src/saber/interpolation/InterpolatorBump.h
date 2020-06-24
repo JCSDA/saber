@@ -51,6 +51,10 @@ class InterpolatorBump : public oops::InterpolatorBase,
 
 // -----------------------------------------------------------------------------
 
+
+// gnu compilers want the Bump interpolator factory to be defined here.
+static oops::InterpolatorMaker<InterpolatorBump> makerBumpInterpolator_("bump");
+
 }  // namespace saber
 
 #endif  // SABER_INTERPOLATION_INTERPOLATORBUMP_H_

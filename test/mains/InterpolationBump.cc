@@ -8,6 +8,7 @@
 
 #include "oops/runs/Run.h"
 #include "test/generic/InterpolationInterface.h"
+#include "saber/interpolation/InterpolatorBump.h"
 
 #include<iostream>
 
