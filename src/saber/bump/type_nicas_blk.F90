@@ -1467,8 +1467,10 @@ do il1=1,nicas_blk%nl1
 end do
 write(mpl%info,'(a10,a,i9)') '','c%n_s =     ',nicas_blk%c%n_s
 if (nicas_blk%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i9)') '','c_nor%n_s = ',nicas_blk%c_nor%n_s
-if (nicas_blk%verbosity) call mpl%flush
+if (.not.nicas_blk%smoother) then
+   write(mpl%info,'(a10,a,i9)') '','c_nor%n_s = ',nicas_blk%c_nor%n_s
+   if (nicas_blk%verbosity) call mpl%flush
+end if
 
 ! Release memory (partial)
 call nicas_blk%partial_dealloc
@@ -1570,7 +1572,7 @@ type(geom_type),intent(in) :: geom               ! Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 
 ! Local variables
-integer :: il0,ic0,ic0a
+integer :: il0,ic0a
 real(kind_real) :: rhs_sum(geom%nl0),rvs_sum(geom%nl0),rvs_avg(geom%nl0),norm(geom%nl0)
 real(kind_real) :: rhs_minavg,rhs_min_norm,rhs_min_norm_tot
 real(kind_real) :: rhs_min(geom%nc0a)
@@ -2517,7 +2519,7 @@ do il1=1,nicas_blk%nl1
                H12_c1a(ic1a,il1) = H12_c1a(ic1a,il1)/sqrt_h**2
             else
                rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
-               rv_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
+               rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_r
             end if
          end if
       else

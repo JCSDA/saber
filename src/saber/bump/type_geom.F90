@@ -7,7 +7,8 @@
 !----------------------------------------------------------------------
 module type_geom
 
-use atlas_module
+use atlas_module, only: atlas_field,atlas_fieldset,atlas_functionspace,atlas_functionspace_nodecolumns, &
+ & atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 #if SABER_USE_METIS
 use metis_interface, only: metis_setdefaultoptions,metis_partgraphrecursive,metis_partgraphkway, &

@@ -7,7 +7,7 @@
 !----------------------------------------------------------------------
 module type_bump
 
-use atlas_module
+use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum
 use tools_atlas, only: create_atlas_fieldset,create_atlas_function_space,atlas_to_fld,fld_to_atlas
@@ -321,7 +321,7 @@ if (bump%nam%new_cortrack.or.(trim(bump%nam%adv_type)=='wind').or.(trim(bump%nam
    if (.not.present(afieldset)) call bump%mpl%abort(subr,'afieldset required to initialize wind fields')
 
    ! Allocation
-   allocate(fld_uv(bump%geom%nc0a,bump%geom%nl0))
+   allocate(fld_uv(bump%geom%nmga,bump%geom%nl0))
    allocate(bump%fld_uv(bump%geom%nc0a,bump%geom%nl0,2,bump%nam%nts))
 
    ! Get field from ATLAS fieldset
