@@ -320,7 +320,7 @@ if (bump%nam%new_cortrack.or.(trim(bump%nam%adv_type)=='wind').or.(trim(bump%nam
    if (.not.present(afieldset)) call bump%mpl%abort(subr,'afieldset required to initialize wind fields')
 
    ! Allocation
-   allocate(fld_uv(bump%geom%nc0a,bump%geom%nl0))
+   allocate(fld_uv(bump%geom%nmga,bump%geom%nl0))
    allocate(bump%fld_uv(bump%geom%nc0a,bump%geom%nl0,2,bump%nam%nts))
 
    ! Get field from ATLAS fieldset
