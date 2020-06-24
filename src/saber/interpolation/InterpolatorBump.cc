@@ -22,7 +22,7 @@ namespace saber {
 // This is the preferred place to define the static bump interpolator factory.
 // However, strangely, it did not work with gcc (7 and 9.3) on ubuntu 18.04
 // So, this has been moved to the header file.
-//static oops::InterpolatorMaker<InterpolatorBump> makerBumpInterpolator_("bump");
+// static oops::InterpolatorMaker<InterpolatorBump> makerBumpInterpolator_("bump");
 
 // -----------------------------------------------------------------------------
 InterpolatorBump::InterpolatorBump(const eckit::Configuration & config,
