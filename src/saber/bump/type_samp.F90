@@ -704,7 +704,6 @@ if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
             j = 1
             lon_local(j,ic2a,il0) = samp%lon_c2a(ic2a)*rad2deg
             lat_local(j,ic2a,il0) = samp%lat_c2a(ic2a)*rad2deg
-            j = j+1
             do jc1d=1,samp%nc1d
                jc1u = samp%c1d_to_c1u(jc1d)
                if (samp%local_mask(jc1u,ic2a).and.samp%smask_c1u(jc1u,il0)) then
@@ -735,7 +734,6 @@ if (trim(samp%name)=='vbal') then
             j = 1
             lon_vbal(j,ic2b,il0) = samp%lon_c2u(ic2u)*rad2deg
             lat_vbal(j,ic2b,il0) = samp%lat_c2u(ic2u)*rad2deg
-            j = j+1
             do jc1e=1,samp%nc1e
                jc1u = samp%c1e_to_c1u(jc1e)
                if (samp%vbal_mask(jc1u,ic2b).and.samp%smask_c1u(jc1u,il0)) then

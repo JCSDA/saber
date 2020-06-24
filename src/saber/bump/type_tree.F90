@@ -270,8 +270,14 @@ real(kind_real),intent(in) :: lat   ! Point latitude (in radians)
 real(kind_real),intent(in) :: sr    ! Spherical radius (in radians)
 integer,intent(out) :: nn           ! Number of nearest neighbors found
 
-! Count nearest neighbors TODO: remove chord formula for backward compatibility
-call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,2.0*sin(0.5*sr),nn)
+! Local variable
+real(kind_real) :: ch
+
+! Spherical radius to chord
+ch = 2.0*sin(0.5*sr)
+
+! Count nearest neighbors
+call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,ch,nn)
 
 end subroutine tree_count_nearest_neighbors
 
