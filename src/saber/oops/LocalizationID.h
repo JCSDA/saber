@@ -5,9 +5,10 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_LocalizationID_H_
-#define SABER_OOPS_LocalizationID_H_
+#ifndef SABER_OOPS_LOCALIZATIONID_H_
+#define SABER_OOPS_LOCALIZATIONID_H_
 
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -113,4 +114,4 @@ void LocalizationID<MODEL>::print(std::ostream & os) const {
 
 }  // namespace saber
 
-#endif  // SABER_OOPS_LocalizationID_H_
+#endif  // SABER_OOPS_LOCALIZATIONID_H_
