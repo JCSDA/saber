@@ -14,6 +14,7 @@ instantiateCovarFactory.h
 instantiateLocalizationFactory.h
 instantiateVariableChangeFactory.h
 LocalizationBUMP.h
+LocalizationID.h
 OoBump.h
 ParametersBUMP.h
 StatsVariableChange.h
