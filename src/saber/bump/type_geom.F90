@@ -572,57 +572,62 @@ call mesh%bnodes(mpl)
 
 ! Communication
 call mpl%f_comm%allgather(mesh%nb,proc_to_nb)
-
-! Allocation
 nb_tot = sum(proc_to_nb)
-allocate(lon_b(nb_tot))
-allocate(lat_b(nb_tot))
 
-! Communication
-displs(1) = 0
-do iproc=2,mpl%nproc
-   displs(iproc) = displs(iproc-1)+proc_to_nb(iproc-1)
-end do
-call mpl%f_comm%allgather(mesh%lon(mesh%bnd),lon_b,mesh%nb,proc_to_nb,displs)
-call mpl%f_comm%allgather(mesh%lat(mesh%bnd),lat_b,mesh%nb,proc_to_nb,displs)
+if (nb_tot>0) then
+   ! Allocation
+   allocate(lon_b(nb_tot))
+   allocate(lat_b(nb_tot))
 
-! Check distances
-do iproc=1,mpl%nproc
-   ! Check nearest neighbor
-   do ib=1,proc_to_nb(iproc)
-      if (.not.geom%myuniverse(iproc)) then
-         call tree%find_nearest_neighbors(lon_b(displs(iproc)+ib),lat_b(displs(iproc)+ib),1,nn_index,nn_dist)
-         if (inf(nn_dist(1),nam%universe_rad)) geom%myuniverse(iproc) = .true.
-      end if
+   ! Communication
+   displs(1) = 0
+   do iproc=2,mpl%nproc
+      displs(iproc) = displs(iproc-1)+proc_to_nb(iproc-1)
    end do
-end do
+   call mpl%f_comm%allgather(mesh%lon(mesh%bnd),lon_b,mesh%nb,proc_to_nb,displs)
+   call mpl%f_comm%allgather(mesh%lat(mesh%bnd),lat_b,mesh%nb,proc_to_nb,displs)
 
-! Comunication
-do iproc=1,mpl%nproc
-   if (iproc==mpl%myproc) then
-      do jproc=1,mpl%nproc
-         ! Receive data
-         if (jproc/=iproc) then
-            call mpl%f_comm%receive(myuniverse,jproc-1,mpl%tag)
-            geom%myuniverse(jproc) = geom%myuniverse(jproc).or.myuniverse
+   ! Check distances
+   do iproc=1,mpl%nproc
+      ! Check nearest neighbor
+      do ib=1,proc_to_nb(iproc)
+         if (.not.geom%myuniverse(iproc)) then
+            call tree%find_nearest_neighbors(lon_b(displs(iproc)+ib),lat_b(displs(iproc)+ib),1,nn_index,nn_dist)
+            if (inf(nn_dist(1),nam%universe_rad)) geom%myuniverse(iproc) = .true.
          end if
       end do
-   else
-      ! Send data
-      call mpl%f_comm%send(geom%myuniverse(iproc),iproc-1,mpl%tag)
-   end if
-   call mpl%update_tag(1)
-end do      
+   end do
+
+   ! Comunication
+   do iproc=1,mpl%nproc
+      if (iproc==mpl%myproc) then
+         do jproc=1,mpl%nproc
+            ! Receive data
+            if (jproc/=iproc) then
+               call mpl%f_comm%receive(myuniverse,jproc-1,mpl%tag)
+               geom%myuniverse(jproc) = geom%myuniverse(jproc).or.myuniverse
+            end if
+         end do
+      else
+         ! Send data
+         call mpl%f_comm%send(geom%myuniverse(iproc),iproc-1,mpl%tag)
+      end if
+      call mpl%update_tag(1)
+   end do
+
+   ! Release memory
+   call mesh%dealloc
+   call tree%dealloc
+   deallocate(lon_b)
+   deallocate(lat_b) 
+else
+   ! Impossible to disentangle the local domains
+   geom%myuniverse = .true.
+endif
 
 ! Print results
 write(mpl%info,'(a7,a,i6,a,i6)') '','Tasks in my universe: ',count(geom%myuniverse),' / ',mpl%nproc
 call mpl%flush
-
-! Release memory
-call mesh%dealloc
-call tree%dealloc
-deallocate(lon_b)
-deallocate(lat_b)
 
 end subroutine geom_define_universe
 
