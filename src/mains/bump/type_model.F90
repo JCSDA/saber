@@ -7,7 +7,7 @@
 !----------------------------------------------------------------------
 module type_model
 
-use atlas_module
+use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use netcdf
 use tools_atlas, only: create_atlas_function_space
 use tools_const, only: deg2rad,rad2deg,req,ps,pi

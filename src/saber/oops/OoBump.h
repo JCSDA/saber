@@ -194,11 +194,9 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
     grids[jgrid].set("prefix", prefix + "_" + ss.str());
     std::vector<std::string> vars_str;
     grids[jgrid].get("variables", vars_str);
-    grids[jgrid].set("variables", vars_str);
     grids[jgrid].set("nv", vars_str.size());
     std::vector<std::string> timeslots_str;
     grids[jgrid].get("timeslots", timeslots_str);
-    grids[jgrid].set("timeslots", timeslots_str);
     grids[jgrid].set("nts", timeslots_str.size());
   }
 #endif
@@ -209,15 +207,9 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
   // Print configuration
   oops::Log::info() << "Configuration: " << conf << std::endl;
 
-  // Get configuration pointer
-  const eckit::Configuration * fconf = &conf;
-
   for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
     // Print configuration for this grid
     oops::Log::info() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
-
-    // Get grid configuration pointer
-    const eckit::Configuration * fgrid = &grids[jgrid];
 
     // Create OoBump instance
     int keyOoBump = 0;
@@ -225,12 +217,12 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
     bump_create_f90(keyOoBump, &resol.getComm(),
                     resol.atlasFunctionSpace()->get(),
                     resol.atlasFieldSet()->get(),
-                    &fconf, &fgrid);
+                    conf, grids[jgrid]);
 #else
     bump_create_f90(keyOoBump, &resol.getComm(),
                     ug_->atlasFunctionSpace()->get(),
                     ug_->atlasFieldSet()->get(),
-                    &fconf, &fgrid);
+                    conf, grids[jgrid]);
 #endif
     keyOoBump_.push_back(keyOoBump);
   }

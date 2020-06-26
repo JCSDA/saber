@@ -410,7 +410,8 @@ do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Initialization
-         write(mpl%info,'(a7,a)') '','Unbalancing: '//trim(nam%variables(iv))//' with respect to unbalanced '//trim(nam%variables(jv))
+         write(mpl%info,'(a7,a)') '','Unbalancing: '//trim(nam%variables(iv))//' with respect to unbalanced ' & 
+          & //trim(nam%variables(jv))
          call mpl%flush
 
          ! Compute auto- and cross-covariances

@@ -183,6 +183,7 @@ type(bpar_type),intent(in) :: bpar       ! Block parameters
 
 ! Local variables
 integer :: ib,iproc,iprocio
+character(len=1024),parameter :: subr = 'nicas_read'
 type(nicas_type) :: nicas_tmp
 
 ! Allocation
@@ -239,6 +240,9 @@ do ib=1,bpar%nbe
          ! Update tag
          call mpl%update_tag(nicas_blk_ntag+4*com_ntag+(2+geom%nl0i+geom%nl0+(nam%nts-1)*geom%nl0)*linop_ntag)
       end do
+
+      ! Check geometry
+      if (nicas%blk(ib)%nc0a/=geom%nc0a) call mpl%abort(subr,'different grids between current execution and NICAS file')
    end if
 end do
 

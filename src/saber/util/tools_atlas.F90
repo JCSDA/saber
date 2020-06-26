@@ -8,7 +8,8 @@
 
 module tools_atlas
 
-use atlas_module
+use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace,atlas_functionspace_nodecolumns, &
+ & atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns
 use tools_const, only: rad2deg
 use tools_kinds, only: kind_int,kind_real
 use type_mpl, only: mpl_type

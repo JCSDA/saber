@@ -23,8 +23,8 @@ namespace saber {
 extern "C" {
   void bump_create_f90(int &, const eckit::mpi::Comm *,
                          atlas::functionspace::FunctionSpaceImpl *, atlas::field::FieldSetImpl *,
-                         const eckit::Configuration * const *,
-                         const eckit::Configuration * const *);
+                         const eckit::Configuration &,
+                         const eckit::Configuration &);
   void bump_add_member_f90(const int &, atlas::field::FieldSetImpl *, const int &, const int &);
   void bump_remove_member_f90(const int &, atlas::field::FieldSetImpl *, const int &,
                                 const int &);

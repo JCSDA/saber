@@ -1389,8 +1389,7 @@ integer,allocatable :: integer_array(:)
 real(kind_real),allocatable :: real_array(:)
 logical,allocatable :: logical_array(:)
 character(len=:),allocatable :: str
-character(kind=c_char,len=1024),allocatable :: char_array(:)
-integer(c_size_t),parameter :: csize = 1024
+character(len=:),allocatable :: str_array(:)
 
 ! general_param
 if (conf%has("datadir")) then
@@ -1485,13 +1484,13 @@ end if
 if (conf%has("logpres")) call conf%get_or_die("logpres",nam%logpres)
 if (conf%has("nv")) call conf%get_or_die("nv",nam%nv)
 if (conf%has("variables")) then
-   call conf%get_or_die("variables",csize,char_array)
-   nam%variables(1:nam%nv) = char_array(1:nam%nv)
+   call conf%get_or_die("variables",str_array)
+   nam%variables(1:nam%nv) = str_array(1:nam%nv)
 end if
 if (conf%has("nts")) call conf%get_or_die("nts",nam%nts)
 if (conf%has("timeslots")) then
-   call conf%get_or_die("timeslots",csize,char_array)
-   nam%timeslots(1:nam%nts) = char_array(1:nam%nts)
+   call conf%get_or_die("timeslots",str_array)
+   nam%timeslots(1:nam%nts) = str_array(1:nam%nts)
 end if
 if (conf%has("dts")) call conf%get_or_die("dts",nam%dts)
 if (conf%has("nomask")) call conf%get_or_die("nomask",nam%nomask)
@@ -1500,8 +1499,8 @@ if (conf%has("wind_filename")) then
    nam%wind_filename = str
 end if
 if (conf%has("wind_variables")) then
-   call conf%get_or_die("wind_variables",csize,char_array)
-   nam%wind_variables(1:2) = char_array(1:2)
+   call conf%get_or_die("wind_variables",str_array)
+   nam%wind_variables(1:2) = str_array(1:2)
 end if
 
 ! ens1_param
@@ -1521,8 +1520,8 @@ if (conf%has("mask_type")) then
    nam%mask_type = str
 end if
 if (conf%has("mask_lu")) then
-   call conf%get_or_die("mask_lu",csize,char_array)
-   nam%mask_lu(1:nam%nv) = char_array(1:nam%nv)
+   call conf%get_or_die("mask_lu",str_array)
+   nam%mask_lu(1:nam%nv) = str_array(1:nam%nv)
 end if
 if (conf%has("mask_th")) then
    call conf%get_or_die("mask_th",real_array)
@@ -1659,8 +1658,8 @@ if (conf%has("lat_ldwv")) then
    nam%lat_ldwv(1:nam%nldwv) = real_array(1:nam%nldwv)
 end if
 if (conf%has("name_ldwv")) then
-   call conf%get_or_die("name_ldwv",csize,char_array)
-   nam%name_ldwv(1:nam%nldwv) = char_array(1:nam%nldwv)
+   call conf%get_or_die("name_ldwv",str_array)
+   nam%name_ldwv(1:nam%nldwv) = str_array(1:nam%nldwv)
 end if
 if (conf%has("grid_output")) call conf%get_or_die("grid_output",nam%grid_output)
 if (conf%has("grid_resol")) call conf%get_or_die("grid_resol",nam%grid_resol)
