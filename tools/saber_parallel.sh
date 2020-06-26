@@ -677,10 +677,10 @@ for qg in ${list_qg}; do
    ctest -VV -R ${qg} > saber_ctest_log/${qg}.log 2> saber_ctest_log/${qg}.err
 
    # Check if this process passed
-   err=`grep PASSED saber_ctest_log/${qg}.log | awk '{print $2}'`
+   err=`wc -l saber_ctest_log/${crun}.err | awk '{print $1}'`
    itest=$((itest+1))
    itest_tot=`printf "%03d" ${itest}`
-   if test "${err}" = "PASSED"; then
+   if test "${err}" = "0"; then
       # QG passed
       echo "${qg} passed" >> saber_ctest_log/execution.log
       stest_qg=$((stest_qg+1))
@@ -701,10 +701,10 @@ for interpolation in ${list_interpolation}; do
    ctest -VV -R ${interpolation} > saber_ctest_log/${interpolation}.log 2> saber_ctest_log/${interpolation}.err
 
    # Check if this process passed
-   err=`grep PASSED saber_ctest_log/${interpolation}.log | awk '{print $2}'`
+   err=`wc -l saber_ctest_log/${interpolation}.err | awk '{print $1}'`
    itest=$((itest+1))
    itest_tot=`printf "%03d" ${itest}`
-   if test "${err}" = "PASSED"; then
+   if test "${err}" = "0"; then
       # Interpolation passed
       echo "${interpolation} passed" >> saber_ctest_log/execution.log
       stest_interpolation=$((stest_interpolation+1))

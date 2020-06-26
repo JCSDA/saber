@@ -11,4 +11,3 @@ test_interpolation_interface:
         prefix: Data/bump/interpolation_interface
         datadir: testdata
         verbosity: main
-        strategy: specific_univariate
