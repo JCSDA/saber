@@ -13,13 +13,13 @@
 #define SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_
 
 #include "oops/base/LocalizationBase.h"
-#include "oops/generic/instantiateLocalizationFactory.h"
 #include "saber/oops/LocalizationBUMP.h"
+#include "saber/oops/LocalizationID.h"
 
 namespace saber {
 
 template <typename MODEL> void instantiateLocalizationFactory() {
-  oops::instantiateLocalizationFactory<MODEL>();
+  static oops::LocalizationMaker<MODEL, LocalizationID<MODEL> >  makerID_("ID");
   static oops::LocalizationMaker<MODEL, LocalizationBUMP<MODEL> >
     makerBUMP_("BUMP");
 }

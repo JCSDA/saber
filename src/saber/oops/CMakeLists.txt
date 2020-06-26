@@ -8,11 +8,13 @@ set( oops_src_files
 ErrorCovariance4DBUMP.h
 ErrorCovarianceBUMP.h
 ErrorCovarianceGSIRF.h
+ErrorCovarianceID.h
 EstimateParams.h
 instantiateCovarFactory.h
 instantiateLocalizationFactory.h
 instantiateVariableChangeFactory.h
 LocalizationBUMP.h
+LocalizationID.h
 OoBump.h
 ParametersBUMP.h
 StatsVariableChange.h
