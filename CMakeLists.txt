@@ -139,7 +139,7 @@ add_subdirectory( doc )
 ecbuild_add_test( TARGET saber_coding_norms
                   TYPE SCRIPT
                   COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
-                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR} )
+                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME} )
 
 if(ECBUILD_INSTALL_FORTRAN_MODULES)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/${CMAKE_CFG_INTDIR} DESTINATION ${INSTALL_INCLUDE_DIR} )

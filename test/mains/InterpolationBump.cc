@@ -7,10 +7,8 @@
  */
 
 #include "oops/runs/Run.h"
-#include "test/generic/InterpolationInterface.h"
 #include "saber/interpolation/InterpolatorBump.h"
-
-#include<iostream>
+#include "test/generic/InterpolationInterface.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
