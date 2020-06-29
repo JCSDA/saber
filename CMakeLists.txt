@@ -117,10 +117,16 @@ include_directories( ${SABER_INCLUDE_DIRS}
                      ${SABER_EXTRA_INCLUDE_DIRS}
                      ${CMAKE_CURRENT_SOURCE_DIR}/src )
 
-add_subdirectory( doc )
-add_subdirectory( src )
+add_subdirectory( src/saber )
 add_subdirectory( test )
 add_subdirectory( tools )
+add_subdirectory( doc )
+
+## Global tests
+ecbuild_add_test( TARGET saber_coding_norms
+                  TYPE SCRIPT
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
+                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME} )
 
 if(ECBUILD_INSTALL_FORTRAN_MODULES)
   install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/${CMAKE_CFG_INTDIR} DESTINATION ${INSTALL_INCLUDE_DIR} )

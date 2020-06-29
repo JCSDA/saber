@@ -23,6 +23,9 @@ ln -sf ../qg_parameters_bump_loc_3d/test_00_nicas-2-sqrt_000001-000001_01_01_01_
 # dirac_bump_loc_4d
 ln -sf ../qg_parameters_bump_loc_4d/test_00_nicas-2-sqrt_000001-000001_common.nc testdata/qg_dirac_bump_loc_4d/test_00_nicas-2-sqrt_000001-000001_common.nc
 
+# dirac_id_cov
+ln -sf ../qg_parameters_bump_cov/test_00_var.nc testdata/qg_dirac_id_cov/test_00_var.nc
+
 # 3densvar_bump
 ln -sf ../qg_parameters_bump_loc_3d/test_00_nicas-2-sqrt_000001-000001_01_01_01_01.nc testdata/qg_3densvar_bump/test_00_nicas-2-sqrt_000001-000001_01_01_01_01.nc
 

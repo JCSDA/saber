@@ -9,6 +9,7 @@ add_subdirectory( gaugrid )
 add_subdirectory( util )
 
 if (${OOPS_FOUND})
+  add_subdirectory( interpolation )
   add_subdirectory( oops )
 endif()
 
@@ -19,6 +20,7 @@ PREPEND( _p_util_src_files "util" ${util_src_files} )
 PREPEND( _p_util_header_files "util" ${util_header_files} )
 
 if (${OOPS_FOUND})
+  PREPEND( _p_interpolation_src_files "interpolation" ${interpolation_src_files} )
   PREPEND( _p_oops_src_files "oops" ${oops_src_files} )
 endif()
 
@@ -35,6 +37,7 @@ list( APPEND saber_header_files
 
 if (${OOPS_FOUND})
   list( APPEND saber_src_files
+    ${_p_interpolation_src_files}
     ${_p_oops_src_files}
   )
 endif()
