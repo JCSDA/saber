@@ -3,10 +3,10 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-#Build list of subdirs with files to add
+# Build list of subdirs with files to add
 set(_subdirs bump external gaugrid util)
-if(oops_FOUND)
-    list(APPEND _subdirs oops)
+if( oops_FOUND )
+    list(APPEND _subdirs oops interpolation)
 endif()
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
@@ -28,7 +28,7 @@ target_link_libraries( ${PROJECT_NAME} PUBLIC eckit )
 target_link_libraries( ${PROJECT_NAME} PUBLIC fckit )
 if( atlas_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC atlas_f )
-    target_compile_definitions( ${PROJECT_NAME} PRIVATE ATLASIFIED=1)
+    target_compile_definitions( ${PROJECT_NAME} PRIVATE ATLASIFIED=1 )
 endif()
 if( metis_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC metis metis_interface )
@@ -38,14 +38,13 @@ if( oops_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
 endif()
 
-#Enable including of local header Fortran file templates
+# Enable including of local header Fortran file templates
 target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> )
 
-
-#Fortran module output directory for build and install interfaces
-set(MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION})
-set_target_properties(${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR})
-install(DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR}/ DESTINATION ${MODULE_DIR})
-target_include_directories(${PROJECT_NAME} INTERFACE
-                                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${MODULE_DIR}>
-                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${MODULE_DIR}>)
+# Fortran module output directory for build and install interfaces
+set( MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION} )
+set_target_properties( ${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR} )
+install( DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR}/ DESTINATION ${MODULE_DIR} )
+target_include_directories( ${PROJECT_NAME} INTERFACE
+                            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${MODULE_DIR}>
+                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${MODULE_DIR}> )

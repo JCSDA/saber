@@ -3,8 +3,13 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-option(BUILD_BUMP_DOC "Build BUMP documentation" OFF)
+set( interpolation_src_files
 
-if ( BUILD_BUMP_DOC )
-    add_subdirectory( bump )
-endif()
+InterpolatorBump.h
+InterpolatorBump.cc
+interpolatorbump_f.h
+interpolatorbump_interface.F90
+bump_interpolation_mod.F90
+
+PARENT_SCOPE
+)

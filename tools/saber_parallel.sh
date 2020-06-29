@@ -57,6 +57,7 @@ list_compare=`ctest -N | grep test_bump | grep _compare | awk '{print $(NF)}'`
 list_plot=`ctest -N | grep test_bump | grep _plot | awk '{print $(NF)}'`
 list_valgrind=`ctest -N | grep test_bump | grep _valgrind | awk '{print $(NF)}'`
 list_qg=`ctest -N | grep test_qg | awk '{print $(NF)}'`
+list_interpolation=`ctest -N | grep test_interpolation | awk '{print $(NF)}'`
 
 # Tests variables
 list_get_array=(${list_get})
@@ -83,7 +84,11 @@ list_qg_array=(${list_qg})
 ntest_qg=${#list_qg_array[@]}
 stest_qg=0
 ftest_qg=0
-ntest_tot=$((ntest_run+ntest_compare+ntest_plot+ntest_valgrind+ntest_qg))
+list_interpolation_array=(${list_interpolation})
+ntest_interpolation=${#list_interpolation_array[@]}
+stest_interpolation=0
+ftest_interpolation=0
+ntest_tot=$((ntest_run+ntest_compare+ntest_plot+ntest_valgrind+ntest_qg+ntest_interpolation))
 itest=0
 if test ${ntest_tot} = 0; then
    echo "No test detected, this script should be run from \${build_directory}/saber/test"
@@ -664,7 +669,7 @@ for i in $(seq 1 ${nproc}); do
 done
 navail=${nproc}
 
-# QG
+# QG tests
 for qg in ${list_qg}; do
    echo "Handling process ${qg}" >> saber_ctest_log/execution.log
 
@@ -672,10 +677,10 @@ for qg in ${list_qg}; do
    ctest -VV -R ${qg} > saber_ctest_log/${qg}.log 2> saber_ctest_log/${qg}.err
 
    # Check if this process passed
-   err=`grep PASSED saber_ctest_log/${qg}.log | awk '{print $2}'`
+   err=`wc -l saber_ctest_log/${crun}.err | awk '{print $1}'`
    itest=$((itest+1))
    itest_tot=`printf "%03d" ${itest}`
-   if test "${err}" = "PASSED"; then
+   if test "${err}" = "0"; then
       # QG passed
       echo "${qg} passed" >> saber_ctest_log/execution.log
       stest_qg=$((stest_qg+1))
@@ -685,6 +690,30 @@ for qg in ${list_qg}; do
       echo "${qg} failed" >> saber_ctest_log/execution.log
       ftest_qg=$((ftest_qg+1))
       echo -e "${itest_tot} / ${ntest_tot}: \033[31mfailed\033[0m ~> ${qg}"
+   fi
+done
+
+# Interpolation tests
+for interpolation in ${list_interpolation}; do
+   echo "Handling process ${interpolation}" >> saber_ctest_log/execution.log
+
+   # Get command and arguments
+   ctest -VV -R ${interpolation} > saber_ctest_log/${interpolation}.log 2> saber_ctest_log/${interpolation}.err
+
+   # Check if this process passed
+   err=`wc -l saber_ctest_log/${interpolation}.err | awk '{print $1}'`
+   itest=$((itest+1))
+   itest_tot=`printf "%03d" ${itest}`
+   if test "${err}" = "0"; then
+      # Interpolation passed
+      echo "${interpolation} passed" >> saber_ctest_log/execution.log
+      stest_interpolation=$((stest_interpolation+1))
+      echo -e "${itest_tot} / ${ntest_tot}: \033[32mpassed\033[0m ~> ${interpolation}"
+   else
+      # Interpolation failed
+      echo "${interpolation} failed" >> saber_ctest_log/execution.log
+      ftest_interpolation=$((ftest_interpolation+1))
+      echo -e "${itest_tot} / ${ntest_tot}: \033[31mfailed\033[0m ~> ${interpolation}"
    fi
 done
 
@@ -718,42 +747,49 @@ if test "${ntest_get}" -gt "0"; then
    # Download tests
    stest=`printf "%03d" $((stest_get))`
    ftest=`printf "%03d" $((ftest_get))`
-   echo -e "  Download: \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+   echo -e "  Download:      \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 if test "${ntest_run}" -gt "0"; then
    # Run tests
    stest=`printf "%03d" $((stest_run))`
    ftest=`printf "%03d" $((ftest_run))`
-   echo -e "  Run:      \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+   echo -e "  Run:           \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 if test "${ntest_compare}" -gt "0"; then
    # Compare tests
    stest=`printf "%03d" $((stest_compare))`
    ftest=`printf "%03d" $((ftest_compare))`
-   echo -e "  Compare:  \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+   echo -e "  Compare:       \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 if test "${ntest_plot}" -gt "0"; then
    # Plot tests
    stest=`printf "%03d" $((stest_plot))`
    ftest=`printf "%03d" $((ftest_plot))`
-   echo -e "  Plot:     \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+   echo -e "  Plot:          \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 if test "${ntest_valgrind}" -gt "0"; then
    # Valgrind tests
    stest=`printf "%03d" $((stest_valgrind))`
    ftest=`printf "%03d" $((ftest_valgrind))`
-   echo -e "  Plot:     \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+   echo -e "  Valgrind:      \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 if test "${ntest_qg}" -gt "0"; then
    # QG tests
    stest=`printf "%03d" $((stest_qg))`
    ftest=`printf "%03d" $((ftest_qg))`
-   echo -e "  QG:       \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+   echo -e "  QG:            \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
+
+if test "${ntest_interpolation}" -gt "0"; then
+   # Interpolation tests
+   stest=`printf "%03d" $((stest_interpolation))`
+   ftest=`printf "%03d" $((ftest_interpolation))`
+   echo -e "  Interpolation: \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 exit 0

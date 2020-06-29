@@ -9,6 +9,10 @@ qg_dirac_bump_hyb
 qg_dirac_bump_lct
 qg_dirac_bump_loc_3d
 qg_dirac_bump_loc_4d
+qg_dirac_id_cov
+qg_dirac_id_loc_3d
+qg_dirac_id_loc_4d
+qg_dirac_id_cross_loc_4d
 qg_parameters_bump_cov
 qg_parameters_bump_hyb
 qg_parameters_bump_lct

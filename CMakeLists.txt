@@ -20,25 +20,22 @@ set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
 
 ## Configuration options
 set( ENABLE_SABER_DOC "Build SABER/BUMP Documentation" OFF )
-
 include( ${PROJECT_NAME}_compiler_flags )
 
 ## Dependencies
-#Required
+# Required
 find_package( OpenMP REQUIRED COMPONENTS Fortran )
 find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS Fortran )
 find_package( eckit REQUIRED COMPONENTS MPI )
 find_package( fckit REQUIRED )
 find_package( atlas REQUIRED COMPONENTS OMP_Fortran )
-#Optionals
+# Optionals
 find_package( metis QUIET )
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 
 ## Sources
 add_subdirectory( src/saber )
-add_subdirectory( src/mains/bump )
-add_subdirectory( src/mains/oops )
 add_subdirectory( test )
 add_subdirectory( tools )
 add_subdirectory( doc )
