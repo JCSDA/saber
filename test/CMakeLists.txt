@@ -33,10 +33,12 @@ set(SABER_TEST_VALGRIND 0)
 set(SABER_TEST_MODEL 0)
 set(SABER_TEST_MODEL_DIR "")
 set(SABER_TEST_OOPS 0)
+set(SABER_TEST_INTERPOLATION 0)
 if (${OOPS_FOUND})
    if (${ENABLE_OOPS_TOYMODELS})
        set(SABER_TEST_OOPS 1)
    endif()
+   set(SABER_TEST_INTERPOLATION 1)
 endif()
 
 # Override test selection variables using environment variables
@@ -61,18 +63,36 @@ endif()
 if(DEFINED ENV{SABER_TEST_OOPS})
     set(SABER_TEST_OOPS "$ENV{SABER_TEST_OOPS}")
 endif()
+if(DEFINED ENV{SABER_TEST_INTERPOLATION})
+    set(SABER_TEST_INTERPOLATION "$ENV{SABER_TEST_INTERPOLATION}")
+endif()
+
+# Check override consistency
+if (SABER_TEST_OOPS)
+    if (NOT ${OOPS_FOUND})
+        message(FATAL_ERROR "SABER_TEST_OOPS override requires OOPS_FOUND")
+    else()
+        if (NOT ${ENABLE_OOPS_TOYMODELS})
+            message(FATAL_ERROR "SABER_TEST_OOPS override requires ENABLE_OOPS_TOYMODELS")
+        endif()
+    endif()
+endif()
+if (SABER_TEST_INTERPOLATION AND NOT ${OOPS_FOUND})
+    message(FATAL_ERROR "SABER_TEST_OOPS override requires OOPS_FOUND")
+endif()
 
 # Summary
-message(STATUS "SABER_TEST_TIER:      " ${SABER_TEST_TIER})
-message(STATUS "SABER_TEST_MPI:       " ${SABER_TEST_MPI})
-message(STATUS "SABER_TEST_OMP:       " ${SABER_TEST_OMP})
-message(STATUS "SABER_TEST_QUAD:      " ${SABER_TEST_QUAD})
-message(STATUS "SABER_TEST_VALGRIND:  " ${SABER_TEST_VALGRIND})
-message(STATUS "SABER_TEST_MODEL:     " ${SABER_TEST_MODEL})
+message(STATUS "SABER_TEST_TIER:          " ${SABER_TEST_TIER})
+message(STATUS "SABER_TEST_MPI:           " ${SABER_TEST_MPI})
+message(STATUS "SABER_TEST_OMP:           " ${SABER_TEST_OMP})
+message(STATUS "SABER_TEST_QUAD:          " ${SABER_TEST_QUAD})
+message(STATUS "SABER_TEST_VALGRIND:      " ${SABER_TEST_VALGRIND})
+message(STATUS "SABER_TEST_MODEL:         " ${SABER_TEST_MODEL})
 if(${SABER_TEST_MODEL})
     message(STATUS "  SABER_TEST_MODEL_DIR: " ${SABER_TEST_MODEL_DIR})
 endif()
-message(STATUS "SABER_TEST_OOPS:      " ${SABER_TEST_OOPS})
+message(STATUS "SABER_TEST_OOPS:          " ${SABER_TEST_OOPS})
+message(STATUS "SABER_TEST_INTERPOLATION: " ${SABER_TEST_INTERPOLATION})
 
 # TIER 1
 file(STRINGS testlist/saber_test_1.txt saber_test_tmp )
@@ -160,23 +180,23 @@ if(DEFINED ENV{LOCAL_PATH_TESTFILES_SABER})
     set(LOCAL_PATH_TESTFILES_SABER "$ENV{LOCAL_PATH_TESTFILES_SABER}")
 endif()
 
-# Get the current git branch
-execute_process(
-    COMMAND git rev-parse --abbrev-ref HEAD
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_BRANCH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
 # If local path to testfiles is defined don't download
 if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
+    # Get the current git branch
+    execute_process(
+        COMMAND git rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
     # Set TESTFILE_DIR_SABER
-    set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber CACHE PATH "data dir for test data")
-    message(STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER} "/" ${GIT_BRANCH})
+    set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH} CACHE PATH "data dir for test data")
+    message(STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER})
     message(STATUS "Download sources:")
 
     # Make specific data directory
-    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH})
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER})
 
     # Check whether the URLs exist or not
     foreach (saber_data_tar_name ${saber_data_tar})
@@ -199,7 +219,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     ecbuild_get_test_multidata(TARGET   get_saber_data
                                NAMES    ${saber_data_tar}
                                DIRNAME  ${DIRNAME}
-                               DIRLOCAL ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata
+                               DIRLOCAL ${TESTFILE_DIR_SABER}/testdata
                                EXTRACT)
 
     # Check whether the URLs exist or not
@@ -223,21 +243,21 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     ecbuild_get_test_multidata(TARGET   get_saber_ref
                                NAMES    ${saber_ref_tar}
                                DIRNAME  ${DIRNAME}
-                               DIRLOCAL ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref
+                               DIRLOCAL ${TESTFILE_DIR_SABER}/testref
                                EXTRACT)
 
     # Make directories
-    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata)
-    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref)
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testdata)
+    file(MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testref)
 else()
     set(TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER})
-    if(NOT EXISTS ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata)
-        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata is missing")
+    if(NOT EXISTS ${TESTFILE_DIR_SABER}/testdata)
+        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testdata is missing")
     endif()
-    if(NOT EXISTS ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref)
-        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref is missing")
+    if(NOT EXISTS ${TESTFILE_DIR_SABER}/testref)
+        message(FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testref is missing")
     endif()
-    message(STATUS "Files loaded from: " ${TESTFILE_DIR_SABER}/${GIT_BRANCH})
+    message(STATUS "Files loaded from: " ${TESTFILE_DIR_SABER})
 endif()
 
 # Make directories
@@ -264,12 +284,12 @@ endforeach()
 # Link data/reference files
 foreach(file ${saber_data})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testdata/${file}
+                    ${TESTFILE_DIR_SABER}/testdata/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file})
 endforeach()
 foreach(file ${saber_ref})
     execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-                    ${TESTFILE_DIR_SABER}/${GIT_BRANCH}/testref/${file}
+                    ${TESTFILE_DIR_SABER}/testref/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file})
 endforeach()
 
@@ -283,6 +303,35 @@ if(NOT ${METIS_FOUND})
     endif()
 endif()
 
+# Executables
+ecbuild_add_executable(TARGET  saber_bump.x
+                       SOURCES mains/bump_main.cc
+                               mains/bump_main.F90
+                               mains/type_model.F90
+                       LIBS    saber)
+
+if (${SABER_TEST_OOPS})
+    add_definitions(-DATLASIFIED=1)
+
+    ecbuild_add_executable(TARGET  saber_qg_estimate_parameters.x
+                           SOURCES mains/qgEstimateParams.cc
+                           LIBS    saber)
+
+    ecbuild_add_executable(TARGET  saber_qg_dirac.x
+                           SOURCES mains/qgDirac.cc
+                           LIBS    saber)
+
+    ecbuild_add_executable(TARGET  saber_qg_4dvar.x
+                           SOURCES mains/qg4DVar.cc
+                           LIBS    saber)
+
+endif()
+if (${SABER_TEST_INTERPOLATION})
+    ecbuild_add_executable(TARGET  saber_interpolation_bump.x
+                           SOURCES mains/InterpolationBump.cc
+                           LIBS    oops saber)
+endif()
+
 # Mono-core tests
 set(mpi 1)
 set(omp 1)
@@ -294,11 +343,11 @@ foreach(test ${saber_test})
     ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
                      MPI          ${mpi}
                      OMP          ${omp}
-                     COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_bump.x
                      ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                     DEPENDS      bump.x
+                     DEPENDS      saber_bump.x
                      TEST_DEPENDS get_saber_data)
- 
+
     ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
                      TYPE SCRIPT
                      COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
@@ -311,8 +360,8 @@ foreach(test ${saber_test})
                          MPI    ${mpi}
                          OMP    ${omp}
                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_valgrind.sh
-                         ARGS ${CMAKE_BINARY_DIR}/bin/bump.x testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS bump.x
+                         ARGS ${CMAKE_BINARY_DIR}/bin/saber_bump.x testinput/${test}_${mpi}-${omp}.yaml testoutput
+                         DEPENDS saber_bump.x
                          TEST_DEPENDS get_saber_data)
     endif()
 endforeach()
@@ -329,11 +378,11 @@ if(${SABER_TEST_MPI})
         ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
                          MPI          ${mpi}
                          OMP          ${omp}
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_bump.x
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS      bump.x
+                         DEPENDS      saber_bump.x
                          TEST_DEPENDS get_saber_data)
-   
+
         ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
                          TYPE SCRIPT
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
@@ -355,11 +404,11 @@ if(${SABER_TEST_OMP})
         ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
                          MPI          ${mpi}
                          OMP          ${omp}
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_bump.x
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS      bump.x
+                         DEPENDS      saber_bump.x
                          TEST_DEPENDS get_saber_data)
-    
+
         ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
                          TYPE SCRIPT
                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
@@ -381,9 +430,9 @@ if(${SABER_TEST_QUAD})
         ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_run
                          MPI          ${mpi}
                          OMP          ${omp}
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_bump.x
                          ARGS         testinput/${test}_${mpi}-${omp}.yaml testoutput
-                         DEPENDS      bump.x
+                         DEPENDS      saber_bump.x
                          TEST_DEPENDS get_saber_data)
 
         ecbuild_add_test(TARGET       test_${test}_${mpi}-${omp}_compare
@@ -428,9 +477,9 @@ if(${SABER_TEST_MODEL})
         ecbuild_add_test(TARGET       test_${test}_run
                          MPI          ${mpi}
                          OMP          ${omp}
-                         COMMAND      ${CMAKE_BINARY_DIR}/bin/bump.x
+                         COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_bump.x
                          ARGS         testinput/${test}.yaml testoutput
-                         DEPENDS      bump.x
+                         DEPENDS      saber_bump.x
                          TEST_DEPENDS test_${test}_link)
     endforeach()
 endif()
@@ -457,24 +506,24 @@ if(${SABER_TEST_OOPS})
         string(FIND ${test} "qg_parameters" qg_parameters)
         if (${qg_parameters} MATCHES 0)
             string(SUBSTRING ${test} 3 -1 testname)
-            oops_add_test(TESTNAME ${testname}
-                          MODELNAME qg
-                          MPI 1
-                          OMP 2
-                          YAMLNAME testinput/${test}.yaml
-                          EXENAME  saber_qg_estimate_parameters.x
-                          RUN_FILE ${test}/test.log.out
-                          REF_FILE ${test}/test.ref
-                          DEPENDS saber_qg_estimate_parameters.x
+            oops_add_test(TESTNAME     ${testname}
+                          MODELNAME    qg
+                          MPI          1
+                          OMP          2
+                          YAMLNAME     testinput/${test}.yaml
+                          EXENAME      saber_qg_estimate_parameters.x
+                          RUN_FILE     ${test}/test.log.out
+                          REF_FILE     ${test}/test.ref
+                          DEPENDS      saber_qg_estimate_parameters.x
                           TEST_DEPENDS get_saber_data
                           COMPARE)
         endif()
     endforeach()
 
     # Links
-    ecbuild_add_test(TARGET test_qg_links
+    ecbuild_add_test(TARGET       test_qg_links
                      TYPE SCRIPT
-                     COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_links.sh
+                     COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_qg_links.sh
                      TEST_DEPENDS test_qg_parameters_bump_cov
                                   test_qg_parameters_bump_hyb
                                   test_qg_parameters_bump_lct
@@ -486,15 +535,15 @@ if(${SABER_TEST_OOPS})
         string(FIND ${test} "qg_dirac" qg_dirac)
         if (${qg_dirac} MATCHES 0)
             string(SUBSTRING ${test} 3 -1 testname)
-            oops_add_test(TESTNAME ${testname}
-                          MODELNAME qg
-                          MPI 1
-                          OMP 2
-                          YAMLNAME testinput/${test}.yaml
-                          EXENAME  saber_qg_dirac.x
-                          RUN_FILE ${test}/test.log.out
-                          REF_FILE ${test}/test.ref
-                          DEPENDS saber_qg_dirac.x
+            oops_add_test(TESTNAME     ${testname}
+                          MODELNAME    qg
+                          MPI          1
+                          OMP          2
+                          YAMLNAME     testinput/${test}.yaml
+                          EXENAME      saber_qg_dirac.x
+                          RUN_FILE     ${test}/test.log.out
+                          REF_FILE     ${test}/test.ref
+                          DEPENDS      saber_qg_dirac.x
                           TEST_DEPENDS test_qg_links
                           COMPARE)
         endif()
@@ -506,17 +555,43 @@ if(${SABER_TEST_OOPS})
         string(FIND ${test} "qg_4d" qg_4d)
         if ((${qg_3d} MATCHES 0) OR (${qg_4d} MATCHES 0))
             string(SUBSTRING ${test} 3 -1 testname)
-            oops_add_test(TESTNAME ${testname}
-                          MODELNAME qg
-                          MPI 1
-                          OMP 2
-                          YAMLNAME testinput/${test}.yaml
-                          EXENAME  saber_qg_4dvar.x
-                          RUN_FILE ${test}/test.log.out
-                          REF_FILE ${test}/test.ref
-                          DEPENDS saber_qg_4dvar.x
+            oops_add_test(TESTNAME     ${testname}
+                          MODELNAME    qg
+                          MPI          1
+                          OMP          2
+                          YAMLNAME     testinput/${test}.yaml
+                          EXENAME      saber_qg_4dvar.x
+                          RUN_FILE     ${test}/test.log.out
+                          REF_FILE     ${test}/test.ref
+                          DEPENDS      saber_qg_4dvar.x
                           TEST_DEPENDS test_qg_links
                           COMPARE)
         endif()
     endforeach()
+endif()
+
+# Interpolation tests
+if(${SABER_TEST_INTERPOLATION})
+    #--------------------------------------------------------------------
+    # Link to yaml files
+    #--------------------------------------------------------------------
+    list(APPEND saber_test_interpolation
+        interpolation_bump
+    )
+    foreach(test ${saber_test_interpolation})
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                        ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                        ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml)
+    endforeach()
+
+    #--------------------------------------------------------------------
+    # add tests
+    #--------------------------------------------------------------------
+
+    ecbuild_add_test(TARGET test_interpolation_bump
+                     MPI 4
+                     OMP 1
+                     COMMAND ${CMAKE_BINARY_DIR}/bin/saber_interpolation_bump.x
+                     ARGS    testinput/interpolation_bump.yaml
+                     DEPENDS saber_interpolation_bump.x)
 endif()

@@ -121,7 +121,7 @@ void LocalizationBUMP<MODEL>::multiply(Increment4D_ & dx) const {
 
 template<typename MODEL>
 void LocalizationBUMP<MODEL>::print(std::ostream & os) const {
-  os << "LocalizationBUMP<MODEL>::print not implemeted yet";
+  os << "LocalizationBUMP:print not implemeted yet";
 }
 
 // -----------------------------------------------------------------------------
