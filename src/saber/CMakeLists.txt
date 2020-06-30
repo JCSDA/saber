@@ -47,4 +47,4 @@ set_target_properties( ${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMA
 install( DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR}/ DESTINATION ${MODULE_DIR} )
 target_include_directories( ${PROJECT_NAME} INTERFACE
                             $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${MODULE_DIR}>
-                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${MODULE_DIR}> )
+                            $<INSTALL_INTERFACE:${MODULE_DIR}> )
