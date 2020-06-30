@@ -16,12 +16,12 @@ check_dirac: 1
 nl: 2
 levs: [1,2]
 nv: 1
-varname: ["q"]
+variables: ["q"]
 nts: 2
-timeslot: ["00","06"]
+timeslots: ["00","06"]
 nomask: 1
 wind_filename: "wind"
-wind_varname: ["u","v"]
+wind_variables: ["u","v"]
 
 # ens1_param
 ens1_ne: 50

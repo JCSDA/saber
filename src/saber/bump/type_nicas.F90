@@ -1642,9 +1642,9 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 do its=1,nam%nts
    write(itschar,'(i2.2)') its
    do iv=1,nam%nv
-      call io%fld_write(mpl,nam,geom,filename,'nicas_'//trim(nam%varname(iv))//'_'//itschar,fld(:,:,iv,its))
+      call io%fld_write(mpl,nam,geom,filename,'nicas_'//trim(nam%variables(iv))//'_'//itschar,fld(:,:,iv,its))
       if (ens%allocated.and.(trim(nam%method)/='cor')) call io%fld_write(mpl,nam,geom,filename, &
-       & 'Bens_'//trim(nam%varname(iv))//'_'//itschar,fld_bens(:,:,iv,its))
+       & 'Bens_'//trim(nam%variables(iv))//'_'//itschar,fld_bens(:,:,iv,its))
    end do
 end do
 

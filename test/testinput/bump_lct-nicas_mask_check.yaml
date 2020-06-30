@@ -16,9 +16,9 @@ check_dirac: 1
 nl: 2
 levs: [1,2]
 nv: 1
-varname: ["u"]
+variables: ["u"]
 nts: 1
-timeslot: ["00"]
+timeslots: ["00"]
 
 # ens1_param
 ens1_ne: 50

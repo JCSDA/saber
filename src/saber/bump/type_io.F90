@@ -108,7 +108,7 @@ end subroutine io_dealloc
 ! Subroutine: io_fld_read
 ! Purpose: write field
 !----------------------------------------------------------------------
-subroutine io_fld_read(io,mpl,nam,geom,filename,varname,fld)
+subroutine io_fld_read(io,mpl,nam,geom,filename,variables,fld)
 
 implicit none
 
@@ -118,7 +118,7 @@ type(mpl_type),intent(inout) :: mpl                    ! MPI data
 type(nam_type),intent(in) :: nam                       ! Namelist
 type(geom_type),intent(in) :: geom                     ! Geometry
 character(len=*),intent(in) :: filename                ! File name
-character(len=*),intent(in) :: varname                 ! Variable name
+character(len=*),intent(in) :: variables                 ! Variable name
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) ! Field
 
 ! Local variables
@@ -134,7 +134,7 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
    ! Get variable id
-   call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(varname),fld_id))
+   call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(variables),fld_id))
 
    ! Get data
    call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
@@ -155,7 +155,7 @@ end subroutine io_fld_read
 ! Subroutine: io_fld_write
 ! Purpose: write field
 !----------------------------------------------------------------------
-subroutine io_fld_write(io,mpl,nam,geom,filename,varname,fld)
+subroutine io_fld_write(io,mpl,nam,geom,filename,variables,fld)
 
 implicit none
 
@@ -165,7 +165,7 @@ type(mpl_type),intent(inout) :: mpl                   ! MPI data
 type(nam_type),intent(in) :: nam                      ! Namelist
 type(geom_type),intent(in) :: geom                    ! Geometry
 character(len=*),intent(in) :: filename               ! File name
-character(len=*),intent(in) :: varname                ! Variable name
+character(len=*),intent(in) :: variables                ! Variable name
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 
 ! Local variables
@@ -234,9 +234,9 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    end if
 
    ! Define variable if necessary
-   info = nf90_inq_varid(ncid,trim(varname),fld_id)
+   info = nf90_inq_varid(ncid,trim(variables),fld_id)
    if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,trim(varname),nc_kind_real,(/nc0_id,nl0_id/),fld_id))
+      call mpl%ncerr(subr,nf90_def_var(ncid,trim(variables),nc_kind_real,(/nc0_id,nl0_id/),fld_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,fld_id,'_FillValue',mpl%msv%valr))
    end if
 
@@ -291,7 +291,7 @@ deallocate(fld_c0io)
 call f_comm%delete()
 
 ! Gridded field output
-if (nam%grid_output) call io%fld_write_grid(mpl,nam,geom,trim(filename)//'_gridded',varname,fld_c0a)
+if (nam%grid_output) call io%fld_write_grid(mpl,nam,geom,trim(filename)//'_gridded',variables,fld_c0a)
 
 ! Wait for everybody
 call mpl%f_comm%barrier()
@@ -302,7 +302,7 @@ end subroutine io_fld_write
 ! Subroutine: io_fld_write_grid
 ! Purpose: interpolate and write gridded field
 !----------------------------------------------------------------------
-subroutine io_fld_write_grid(io,mpl,nam,geom,filename,varname,fld)
+subroutine io_fld_write_grid(io,mpl,nam,geom,filename,variables,fld)
 
 implicit none
 
@@ -312,7 +312,7 @@ type(mpl_type),intent(inout) :: mpl                   ! MPI data
 type(nam_type),intent(in) :: nam                      ! Namelist
 type(geom_type),intent(in) :: geom                    ! Geometry
 character(len=*),intent(in) :: filename               ! File name
-character(len=*),intent(in) :: varname                ! Variable name
+character(len=*),intent(in) :: variables                ! Variable name
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 
 ! Local variables
@@ -397,9 +397,9 @@ if (any(io%procio_to_proc_grid==mpl%myproc).and.(io%nlonio>0)) then
    end if
 
    ! Define variable if necessary
-   info = nf90_inq_varid(ncid,trim(varname),fld_id)
+   info = nf90_inq_varid(ncid,trim(variables),fld_id)
    if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,trim(varname),nc_kind_real,(/nlon_id,nlat_id,nlev_id/),fld_id))
+      call mpl%ncerr(subr,nf90_def_var(ncid,trim(variables),nc_kind_real,(/nlon_id,nlat_id,nlev_id/),fld_id))
       call mpl%ncerr(subr,nf90_put_att(ncid,fld_id,'_FillValue',mpl%msv%valr))
    end if
 

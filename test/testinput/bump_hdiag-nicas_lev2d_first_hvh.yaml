@@ -17,9 +17,9 @@ nl: 4
 levs: [1,2,3,4]
 lev2d: "first"
 nv: 2
-varname: ["u","qs"]
+variables: ["u","qs"]
 nts: 1
-timeslot: ["00"]
+timeslots: ["00"]
 nomask: 1
 
 # ens1_param
