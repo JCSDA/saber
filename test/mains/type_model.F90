@@ -232,8 +232,8 @@ real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:),real_ptr(:,:)
 logical :: maskval
 logical :: found
 character(len=4) :: nprocchar
-character(len=1024) :: varname,filename
-character(len=1024),dimension(nvmax) :: varname_save
+character(len=1024) :: variables,filename
+character(len=1024),dimension(nvmax) :: variables_save
 character(len=1024),parameter :: subr = 'model_define_distribution'
 type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask,afield_smask
 type(atlas_fieldset) :: afieldset
@@ -598,26 +598,26 @@ case default
       i = index(trim(nam%mask_type),'@')
       if (i>1) then
          ! Get variable and filename
-         varname = nam%mask_type(1:i-1)
+         variables = nam%mask_type(1:i-1)
          filename = trim(nam%mask_type(i+1:))
-         write(mpl%info,'(a7,a)') '','Read sampling mask from variable '//trim(varname)//' in file '//trim(filename)
+         write(mpl%info,'(a7,a)') '','Read sampling mask from variable '//trim(variables)//' in file '//trim(filename)
          call mpl%flush
          write(mpl%info,'(a7,a,e10.3,a)') '','Threshold ',nam%mask_th(1),' used as a '//trim(nam%mask_lu(1))//' bound'
          call mpl%flush
 
          ! Save namelist parameters
          nv_save = nam%nv
-         varname_save = nam%varname
+         variables_save = nam%variables
 
          ! Set namelist parameters
          nam%nv = 1
-         nam%varname(1) = varname
+         nam%variables(1) = variables
 
          ! Read file
          call model%read(mpl,nam,filename,1,afieldset)
 
          ! Get data
-         afield = afieldset%field(trim(varname))
+         afield = afieldset%field(trim(variables))
          call afield%data(real_ptr)
 
          ! Compute mask
@@ -640,7 +640,7 @@ case default
 
          ! Reset namelist parameters
          nam%nv = nv_save
-         nam%varname = varname_save
+         nam%variables = variables_save
 
          ! Release pointers
          call afield%final()
@@ -752,7 +752,7 @@ if (trim(nam%model)=='wrf') call model%wrf_read(mpl,nam,filename,its,fld_mga)
 ! Add data into ATLAS fieldset
 do iv=1,nam%nv
    ! Create field
-   fieldname = trim(nam%varname(iv))//'_'//trim(nam%timeslot(its))
+   fieldname = trim(nam%variables(iv))//'_'//trim(nam%timeslots(its))
    afield = model%afunctionspace%create_field(name=trim(fieldname),kind=atlas_real(kind_real),levels=model%nl0)
 
    ! Add field
@@ -790,7 +790,7 @@ afieldset = atlas_fieldset()
 
 do its=1,nam%nts
    ! Define filename
-   write(fullname,'(a,i4.4)') trim(filename)//'_'//trim(nam%timeslot(its))//'_',ie
+   write(fullname,'(a,i4.4)') trim(filename)//'_'//trim(nam%timeslots(its))//'_',ie
 
    ! Read file
    call model%read(mpl,nam,fullname,its,afieldset)
@@ -879,20 +879,20 @@ type(nam_type),intent(inout) :: nam       ! Namelist
 
 ! Local variables
 integer :: nv_save,its
-character(len=1024) :: varname_save(nam%nv),fullname
+character(len=1024) :: variables_save(nam%nv),fullname
 
 if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='windmax')) then
    ! Save namelist parameters
    nv_save = nam%nv
-   varname_save(1:nam%nv) = nam%varname(1:nam%nv)
+   variables_save(1:nam%nv) = nam%variables(1:nam%nv)
 
    ! Update namelist parameters
    nam%nv = 2
-   nam%varname(1:2) = nam%wind_varname
+   nam%variables(1:2) = nam%wind_variables
 
    do its=1,nam%nts
       ! Define filename
-      fullname = trim(nam%wind_filename)//'_'//trim(nam%timeslot(its))
+      fullname = trim(nam%wind_filename)//'_'//trim(nam%timeslots(its))
 
       ! Read file
       call model%read(mpl,nam,fullname,its,model%afieldset)
@@ -900,7 +900,7 @@ if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='wi
 
    ! Reset namelist
    nam%nv = nv_save
-   nam%varname(1:nam%nv) = varname_save(1:nam%nv)
+   nam%variables(1:nam%nv) = variables_save(1:nam%nv)
 end if
 
 end subroutine model_read_wind

@@ -328,7 +328,7 @@ if (bump%nam%new_cortrack.or.(trim(bump%nam%adv_type)=='wind').or.(trim(bump%nam
    do its=1,bump%nam%nts
       do iv=1,2
          ! Get field
-         fieldname = trim(bump%nam%wind_varname(iv))//'_'//trim(bump%nam%timeslot(its))
+         fieldname = trim(bump%nam%wind_variables(iv))//'_'//trim(bump%nam%timeslots(its))
          afield = afieldset%field(trim(fieldname))
 
          ! Get data
@@ -429,11 +429,11 @@ if (present(lunit)) llunit = lunit
 bump%nam%nl = nl0
 bump%nam%nv = nv
 do iv=1,bump%nam%nv
-   write(bump%nam%varname(iv),'(a,i2.2)') 'var_',iv
+   write(bump%nam%variables(iv),'(a,i2.2)') 'var_',iv
 end do
 bump%nam%nts = nts
 do its=1,bump%nam%nts
-   write(bump%nam%timeslot(its),'(a,i2.2)') 'ts_',its
+   write(bump%nam%timeslots(its),'(a,i2.2)') 'ts_',its
 end do
 bump%nam%lev2d = 'first'
 if (present(ens1_ne)) bump%nam%ens1_ne = ens1_ne
@@ -445,7 +445,8 @@ if (present(ens2_nsub)) bump%nam%ens2_nsub = ens2_nsub
 call create_atlas_function_space(nmga,lon*deg2rad,lat*deg2rad,afunctionspace)
 
 ! Create ATLAS fieldset with empty fields
-call create_atlas_fieldset(afunctionspace,bump%nam%nl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset)
+call create_atlas_fieldset(afunctionspace,bump%nam%nl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts), &
+ & afieldset)
 
 ! Set geometry
 
@@ -783,11 +784,11 @@ integer,intent(in) :: iens                      ! Ensemble number
 integer :: ic0a,il0,its,iv,nnonzero,nzero,nmask,nnonzero_tot,nzero_tot,nmask_tot
 real(kind_real) :: norm,norm_tot,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
-character(len=1024) :: filename,varname
+character(len=1024) :: filename,variables
 character(len=1024),parameter :: subr = 'bump_add_member'
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 ! Check ensemble number
 if ((iens/=1).and.(iens/=2)) call bump%mpl%abort(subr,'wrong ensemble number')
@@ -847,8 +848,8 @@ do its=1,bump%nam%nts
       if (write_member) then
          ! Write member
          write(filename,'(a,a,i4.4,a,i4.4)') trim(bump%nam%prefix),'_member_',iens,'-',ie
-         varname = trim(bump%nam%varname(iv))//'_'//trim(bump%nam%timeslot(its))
-         call bump%io%fld_write(bump%mpl,bump%nam,bump%geom,filename,varname,fld_c0a)
+         variables = trim(bump%nam%variables(iv))//'_'//trim(bump%nam%timeslots(its))
+         call bump%io%fld_write(bump%mpl,bump%nam,bump%geom,filename,variables,fld_c0a)
       end if
    end do
 end do
@@ -905,7 +906,7 @@ elseif (iens==2) then
 end if
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_remove_member
 
@@ -927,7 +928,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 do its=1,bump%nam%nts
    if (bump%geom%same_grid) then
@@ -950,7 +951,7 @@ do its=1,bump%nam%nts
 end do
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_vbal
 
@@ -972,7 +973,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 do its=1,bump%nam%nts
    if (bump%geom%same_grid) then
@@ -995,7 +996,7 @@ do its=1,bump%nam%nts
 end do
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_vbal_inv
 
@@ -1017,7 +1018,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 do its=1,bump%nam%nts
    if (bump%geom%same_grid) then
@@ -1040,7 +1041,7 @@ do its=1,bump%nam%nts
 end do
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_vbal_ad
 
@@ -1062,7 +1063,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 do its=1,bump%nam%nts
    if (bump%geom%same_grid) then
@@ -1085,7 +1086,7 @@ do its=1,bump%nam%nts
 end do
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_vbal_inv_ad
 
@@ -1107,7 +1108,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
  if (bump%geom%same_grid) then
    ! Apply standard-deviation
@@ -1132,7 +1133,7 @@ else
 end if
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_stddev
 
@@ -1154,7 +1155,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
  if (bump%geom%same_grid) then
    ! Apply standard-deviation inverse
@@ -1179,7 +1180,7 @@ else
 end if
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_stddev_inv
 
@@ -1201,7 +1202,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 if (bump%geom%same_grid) then
    ! Apply NICAS
@@ -1234,7 +1235,7 @@ else
 end if
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_nicas
 
@@ -1360,7 +1361,7 @@ else
 end if
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_nicas_sqrt
 
@@ -1435,7 +1436,7 @@ character(len=1024),parameter :: subr = 'bump_apply_nicas_sqrt_ad'
 type(cv_type) :: cv
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 if (bump%geom%same_grid) then
    ! Apply NICAS square-root adjoint
@@ -1499,7 +1500,7 @@ else
 end if
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_randomize
 
@@ -1526,7 +1527,7 @@ if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_appl
 if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop')
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 if (bump%geom%same_grid) then
    ! Apply observation operator
@@ -1612,7 +1613,7 @@ else
 end if
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_obsop_ad
 
@@ -1713,7 +1714,7 @@ case default
 end select
 
 ! Field to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_get_parameter
 
@@ -1909,8 +1910,8 @@ class(bump_type),intent(inout) :: bump ! BUMP
 type(atlas_fieldset) :: afieldset
 
 ! Create ATLAS fieldset with empty fields
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset)
 
 ! Get parameter
 if (bump%nam%check_get_param_stddev) then
@@ -1968,7 +1969,7 @@ integer :: ib,iv,jv,its,jts
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 
 ! ATLAS fieldset to field
-call atlas_to_fld(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
+call atlas_to_fld(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),afieldset,fld_mga,bump%nam%lev2d)
 
 write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush
@@ -2205,26 +2206,26 @@ do its=1,bump%nam%nts
 end do
 
 ! Create ATLAS fieldset with empty fields
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset)
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset_req)
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset_reqsq)
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset_vert)
-call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset_vertsq)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset_req)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset_reqsq)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset_vert)
+call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset_vertsq)
 
 ! Convert to ATLAS fieldset
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga*req, &
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga*req, &
  & afieldset_req,bump%nam%lev2d)
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga*req**2, &
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga*req**2, &
  & afieldset_reqsq,bump%nam%lev2d)
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts), &
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts), &
  & (1.0+fld_mga)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)),afieldset_vert,bump%nam%lev2d)
-call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts), &
+call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts), &
  & ((1.0+fld_mga)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg))),afieldset_vertsq,bump%nam%lev2d)
 
 ! Set parameter
@@ -2282,11 +2283,11 @@ if (bump%nam%check_apply_vbal) then
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
 
    ! Create ATLAS fieldset with empty fields
-   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset)
+   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset)
 
    ! Convert to ATLAS fieldset
-   call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+   call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
    ! Calls
    call bump%apply_vbal(afieldset)
@@ -2311,10 +2312,10 @@ if (bump%nam%check_apply_stddev) then
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
 
    ! Create ATLAS fieldset with empty fields
-   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname,bump%nam%timeslot,afieldset)
+   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables,bump%nam%timeslots,afieldset)
 
    ! Convert to ATLAS fieldset
-   call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+   call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
    ! Calls
    call bump%apply_stddev(afieldset)
@@ -2341,11 +2342,11 @@ if (bump%nam%check_apply_nicas) then
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
 
    ! Create ATLAS fieldset with empty fields
-   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset)
+   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset)
 
    ! Convert to ATLAS fieldset
-   call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+   call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
    ! Calls
    call bump%apply_nicas(afieldset)
@@ -2380,11 +2381,11 @@ if (bump%nam%check_apply_obsop) then
    call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_mga)
 
    ! Create ATLAS fieldset with empty fields
-   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%varname(1:bump%nam%nv), &
- & bump%nam%timeslot(1:bump%nam%nts),afieldset)
+   call create_atlas_fieldset(bump%geom%afunctionspace_mg,bump%geom%nl0,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%timeslots(1:bump%nam%nts),afieldset)
 
    ! Convert to ATLAS fieldset
-   call fld_to_atlas(bump%mpl,bump%nam%varname(1:bump%nam%nv),bump%nam%timeslot(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
+   call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
    ! Calls
    call bump%apply_obsop(afieldset,obs)

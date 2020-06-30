@@ -175,7 +175,7 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
     conf_.get("input", inputConfs);
 
     for (const auto & inputConf : inputConfs) {
-    // Read parameter for the specified timeslot
+    // Read parameter for the specified timeslots
       const util::DateTime date(inputConf.getString("date"));
       bool found = false;
 
@@ -264,7 +264,7 @@ void ParametersBUMP<MODEL>::write() const {
     std::string param = outputConf.getString("parameter");
     ooBump_->getParameter(param, dx);
 
-  // Write parameter for the specified timeslot
+  // Write parameter for the specified timeslots
     const util::DateTime date(outputConf.getString("date"));
     bool found = false;
     for (unsigned jsub = 0; jsub < timeslots_.size(); ++jsub) {

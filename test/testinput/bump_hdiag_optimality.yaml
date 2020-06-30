@@ -15,9 +15,9 @@ check_optimality: 1
 nl: 1
 levs: [1]
 nv: 1
-varname: ["q"]
+variables: ["q"]
 nts: 1
-timeslot: ["00"]
+timeslots: ["00"]
 
 # ens1_param
 ens1_ne: 50
