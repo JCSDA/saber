@@ -40,7 +40,7 @@ def adv(testdata, test, mpi, omp, suffix):
    levs = f.attributes["nam_levs"].split(":")
 
    # Get timeslots
-   timeslot = f.attributes["nam_timeslot"].split(":")
+   timeslots = f.attributes["nam_timeslots"].split(":")
    x = Ngl.fspan(1, nts, nts)
 
    # Open file
@@ -109,7 +109,7 @@ def adv(testdata, test, mpi, omp, suffix):
    xyres.trXMaxF = nts
    xyres.tmXBMode = "Explicit"
    xyres.tmXBValues = x
-   xyres.tmXBLabels = timeslot
+   xyres.tmXBLabels = timeslots
    xyres.tiXAxisString = "Timeslot"
 
    # Panel resources
@@ -127,7 +127,7 @@ def adv(testdata, test, mpi, omp, suffix):
    for its in range(0, nts):
       # Open workstation
       wks_type = "png"
-      wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_raw_" + timeslot[its])
+      wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_raw_" + timeslots[its])
       Ngl.define_colormap(wks, "MPL_brg")
 
       # Plots
@@ -168,7 +168,7 @@ def adv(testdata, test, mpi, omp, suffix):
    for its in range(0, nts):
       # Open workstation
       wks_type = "png"
-      wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_flt_" + timeslot[its])
+      wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_flt_" + timeslots[its])
       Ngl.define_colormap(wks, "MPL_brg")
 
       # Plots

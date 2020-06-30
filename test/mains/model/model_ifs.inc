@@ -108,13 +108,13 @@ if (mpl%main) then
    call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
    ! Timeslot index
-   read(nam%timeslot(its),'(i2)') timeslot
+   read(nam%timeslots(its),'(i2)') timeslot
 end if
 
 do iv=1,nam%nv
    if (mpl%main) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%variables(iv)),fld_id))
 
       ! Read data
       do il0=1,nam%nl

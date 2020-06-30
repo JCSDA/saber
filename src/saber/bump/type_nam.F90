@@ -95,13 +95,13 @@ type nam_type
    character(len=1024) :: lev2d                         ! Level for 2D variables ('first' or 'last')
    logical :: logpres                                   ! Use pressure logarithm as vertical coordinate (model level if .false.)
    integer :: nv                                        ! Number of variables
-   character(len=1024),dimension(nvmax) :: varname      ! Variables names
+   character(len=1024),dimension(nvmax) :: variables    ! Variables names
    integer :: nts                                       ! Number of time slots
-   character(len=1024),dimension(ntsmax) :: timeslot    ! Timeslots
+   character(len=1024),dimension(ntsmax) :: timeslots   ! Timeslots
    real(kind_real) :: dts                               ! Timeslots width [in s]
    logical :: nomask                                    ! Do not use geometry mask
    character(len=1024) :: wind_filename                 ! Wind field file name
-   character(len=1024) :: wind_varname(2)               ! Wind field variables names (u and v)
+   character(len=1024) :: wind_variables(2)               ! Wind field variables names (u and v)
 
    ! ens1_param
    integer :: ens1_ne                                   ! Ensemble 1 size
@@ -190,7 +190,7 @@ type nam_type
    real(kind_real) :: latdir(ndirmax)                   ! Diracs latitudes [in degrees]
    integer :: levdir(ndirmax)                           ! Diracs level
    integer :: ivdir(ndirmax)                            ! Diracs variable indices
-   integer :: itsdir(ndirmax)                           ! Diracs timeslot indices
+   integer :: itsdir(ndirmax)                           ! Diracs timeslots indices
 
    ! obsop_param
    integer :: nobs                                      ! Number of observations
@@ -306,14 +306,14 @@ nam%lev2d = 'first'
 nam%logpres = .false.
 nam%nv = 0
 do iv=1,nvmax
-   nam%varname(iv) = ''
+   nam%variables(iv) = ''
 end do
 nam%nts = 0
-nam%timeslot = ''
+nam%timeslots = ''
 nam%dts = 3600.0
 nam%nomask = .false.
 nam%wind_filename = ''
-nam%wind_varname = (/'',''/)
+nam%wind_variables = (/'',''/)
 
 ! ens1_param default
 nam%ens1_ne = 0
@@ -510,13 +510,13 @@ integer :: levs(nlmax)
 character(len=1024) :: lev2d
 logical :: logpres
 integer :: nv
-character(len=1024),dimension(nvmax) :: varname
+character(len=1024),dimension(nvmax) :: variables
 integer :: nts
-character(len=1024),dimension(ntsmax) :: timeslot
+character(len=1024),dimension(ntsmax) :: timeslots
 real(kind_real) :: dts
 logical :: nomask
 character(len=1024) :: wind_filename
-character(len=1024) :: wind_varname(2)
+character(len=1024) :: wind_variables(2)
 integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
@@ -669,13 +669,13 @@ namelist/model_param/nl, &
                    & lev2d, &
                    & logpres, &
                    & nv, &
-                   & varname, &
+                   & variables, &
                    & nts, &
-                   & timeslot, &
+                   & timeslots, &
                    & dts, &
                    & nomask, &
                    & wind_filename, &
-                   & wind_varname
+                   & wind_variables
 namelist/ens1_param/ens1_ne, &
                   & ens1_nsub
 namelist/ens2_param/ens2_ne, &
@@ -834,14 +834,14 @@ if (mpl%main) then
    logpres = .false.
    nv = 0
    do iv=1,nvmax
-      varname(iv) = ''
+      variables(iv) = ''
    end do
    nts = 0
-   timeslot = ''
+   timeslots = ''
    dts = 3600.0
    nomask = .false.
    wind_filename = ''
-   wind_varname = (/'',''/)
+   wind_variables = (/'',''/)
 
    ! ens1_param default
    ens1_ne = 0
@@ -1033,13 +1033,13 @@ if (mpl%main) then
    nam%lev2d = lev2d
    nam%logpres = logpres
    nam%nv = nv
-   if (nv>0) nam%varname(1:nv) = varname(1:nv)
+   if (nv>0) nam%variables(1:nv) = variables(1:nv)
    nam%nts = nts
-   if (nts>0) nam%timeslot(1:nts) = timeslot(1:nts)
+   if (nts>0) nam%timeslots(1:nts) = timeslots(1:nts)
    nam%dts = dts
    nam%nomask = nomask
    nam%wind_filename = wind_filename
-   nam%wind_varname = wind_varname
+   nam%wind_variables = wind_variables
 
    ! ens1_param
    read(lunit,nml=ens1_param)
@@ -1268,13 +1268,13 @@ call mpl%f_comm%broadcast(nam%levs,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lev2d,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%logpres,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nv,mpl%rootproc-1)
-call mpl%broadcast(nam%varname,mpl%rootproc-1)
+call mpl%broadcast(nam%variables,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nts,mpl%rootproc-1)
-call mpl%broadcast(nam%timeslot,mpl%rootproc-1)
+call mpl%broadcast(nam%timeslots,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%dts,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nomask,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%wind_filename,mpl%rootproc-1)
-call mpl%broadcast(nam%wind_varname,mpl%rootproc-1)
+call mpl%broadcast(nam%wind_variables,mpl%rootproc-1)
 
 ! ens1_param
 call mpl%f_comm%broadcast(nam%ens1_ne,mpl%rootproc-1)
@@ -1491,14 +1491,14 @@ if (conf%has("lev2d")) then
 end if
 if (conf%has("logpres")) call conf%get_or_die("logpres",nam%logpres)
 if (conf%has("nv")) call conf%get_or_die("nv",nam%nv)
-if (conf%has("varname")) then
-   call conf%get_or_die("varname",str_array)
-   nam%varname(1:nam%nv) = str_array(1:nam%nv)
+if (conf%has("variables")) then
+   call conf%get_or_die("variables",str_array)
+   nam%variables(1:nam%nv) = str_array(1:nam%nv)
 end if
 if (conf%has("nts")) call conf%get_or_die("nts",nam%nts)
-if (conf%has("timeslot")) then
-   call conf%get_or_die("timeslot",str_array)
-   nam%timeslot(1:nam%nts) = str_array(1:nam%nts)
+if (conf%has("timeslots")) then
+   call conf%get_or_die("timeslots",str_array)
+   nam%timeslots(1:nam%nts) = str_array(1:nam%nts)
 end if
 if (conf%has("dts")) call conf%get_or_die("dts",nam%dts)
 if (conf%has("nomask")) call conf%get_or_die("nomask",nam%nomask)
@@ -1506,9 +1506,9 @@ if (conf%has("wind_filename")) then
    call conf%get_or_die("wind_filename",str)
    nam%wind_filename = str
 end if
-if (conf%has("wind_varname")) then
-   call conf%get_or_die("wind_varname",str_array)
-   nam%wind_varname(1:2) = str_array(1:2)
+if (conf%has("wind_variables")) then
+   call conf%get_or_die("wind_variables",str_array)
+   nam%wind_variables(1:2) = str_array(1:2)
 end if
 
 ! ens1_param
@@ -1827,12 +1827,12 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%load_var.or.nam%new_hdia
    if (nam%nv<=0) call mpl%abort(subr,'nv should be positive')
    do iv=1,nam%nv
       write(ivchar,'(i2.2)') iv
-      if (trim(nam%varname(iv))=='') call mpl%abort(subr,'varname not specified for variable '//ivchar)
+      if (trim(nam%variables(iv))=='') call mpl%abort(subr,'variables not specified for variable '//ivchar)
    end do
    if (nam%nts<=0) call mpl%abort(subr,'nts should be positive')
    do its=1,nam%nts
       write(itschar,'(i2.2)') its
-      if (trim(nam%timeslot(its))=='') call mpl%abort(subr,'timeslot not specified for '//itschar)
+      if (trim(nam%timeslots(its))=='') call mpl%abort(subr,'timeslots not specified for '//itschar)
    end do
    if (.not.(nam%dts>0.0)) call mpl%abort(subr,'dts should be positive')
 end if
@@ -2026,7 +2026,7 @@ if (nam%new_cortrack.or.nam%check_dirac) then
       if ((nam%latdir(idir)<-0.5*pi).or.(nam%latdir(idir)>0.5*pi)) call mpl%abort(subr,'latdir should lie between -90 and 90')
       if (.not.any(nam%levs(1:nam%nl)==nam%levdir(idir))) call mpl%abort(subr,'wrong level for a Dirac')
       if ((nam%ivdir(idir)<1).or.(nam%ivdir(idir)>nam%nv)) call mpl%abort(subr,'wrong variable for a Dirac')
-      if ((nam%itsdir(idir)<1).or.(nam%itsdir(idir)>nam%nts)) call mpl%abort(subr,'wrong timeslot for a Dirac')
+      if ((nam%itsdir(idir)<1).or.(nam%itsdir(idir)>nam%nts)) call mpl%abort(subr,'wrong timeslots for a Dirac')
    end do
 end if
 
@@ -2157,13 +2157,13 @@ call mpl%write(lncid,'nam','levs',nam%nl,nam%levs(1:nam%nl))
 call mpl%write(lncid,'nam','lev2d',nam%lev2d)
 call mpl%write(lncid,'nam','logpres',nam%logpres)
 call mpl%write(lncid,'nam','nv',nam%nv)
-call mpl%write(lncid,'nam','varname',nam%nv,nam%varname(1:nam%nv))
+call mpl%write(lncid,'nam','variables',nam%nv,nam%variables(1:nam%nv))
 call mpl%write(lncid,'nam','nts',nam%nts)
-call mpl%write(lncid,'nam','timeslot',nam%nts,nam%timeslot(1:nam%nts))
+call mpl%write(lncid,'nam','timeslots',nam%nts,nam%timeslots(1:nam%nts))
 call mpl%write(lncid,'nam','dts',nam%dts)
 call mpl%write(lncid,'nam','nomask',nam%nomask)
 call mpl%write(lncid,'nam','wind_filename',nam%wind_filename)
-call mpl%write(lncid,'nam','wind_varname',2,nam%wind_varname(1:2))
+call mpl%write(lncid,'nam','wind_variables',2,nam%wind_variables(1:2))
 
 ! ens1_param
 if (mpl%msv%is(lncid)) then

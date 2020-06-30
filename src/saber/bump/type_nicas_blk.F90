@@ -145,6 +145,9 @@ type nicas_blk_type
 
    ! Required data to apply NICAS
 
+   ! Grid hash
+   integer :: grid_hash                            ! Grid hash
+
    ! Number of points
    integer :: nc0a                                 ! Number of points in subset Sc0 on halo A (required for I/O)
    integer :: nc1b                                 ! Number of points in subset Sc1 on halo B
@@ -517,6 +520,9 @@ associate(ib=>nicas_blk%ib)
 filename = trim(nam%prefix)//'_'//trim(nicas_blk%name)
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
+! Check grid hash
+call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',nicas_blk%grid_hash))
+
 ! Get dimensions
 nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.false.)
 if (bpar%nicas_block(ib)) then
@@ -710,6 +716,9 @@ associate(ib=>nicas_blk%ib)
 ! Create file
 filename = trim(nam%prefix)//'_'//trim(nicas_blk%name)
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+
+! Write grid hash
+call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',nicas_blk%grid_hash))
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
@@ -945,7 +954,7 @@ offset_real = 0
 offset_logical = 0
 
 ! Define buffer size
-if (bpar%nicas_block(ib)) n_dim = n_dim+6
+if (bpar%nicas_block(ib)) n_dim = n_dim+7
 if ((ib==bpar%nbe).and.nam%adv_diag) n_dim = n_dim+2
 
 ! Allocation
@@ -957,16 +966,17 @@ tag = tag+1
 
 ! Copy data
 if (bpar%nicas_block(ib)) then
-   nicas_blk%nc0a = rbuf_dim(1)
-   nicas_blk%nc1b = rbuf_dim(2)
-   nicas_blk%nl1 = rbuf_dim(3)
-   nicas_blk%nsa = rbuf_dim(4)
-   nicas_blk%nsb = rbuf_dim(5)
-   nicas_blk%nsc = rbuf_dim(6)
+   nicas_blk%grid_hash = rbuf_dim(1)
+   nicas_blk%nc0a = rbuf_dim(2)
+   nicas_blk%nc1b = rbuf_dim(3)
+   nicas_blk%nl1 = rbuf_dim(4)
+   nicas_blk%nsa = rbuf_dim(5)
+   nicas_blk%nsb = rbuf_dim(6)
+   nicas_blk%nsc = rbuf_dim(7)
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
-   nicas_blk%nc0d = rbuf_dim(7)
-   nicas_blk%nc0dinv = rbuf_dim(8)
+   nicas_blk%nc0d = rbuf_dim(8)
+   nicas_blk%nc0dinv = rbuf_dim(9)
 end if
 
 ! Release memory
@@ -1205,7 +1215,7 @@ offset_real = 0
 offset_logical = 0
 
 ! Define buffer size
-if (bpar%nicas_block(ib)) n_dim = n_dim+6
+if (bpar%nicas_block(ib)) n_dim = n_dim+7
 if ((ib==bpar%nbe).and.nam%adv_diag) n_dim = n_dim+2
 
 ! Allocation
@@ -1213,16 +1223,17 @@ allocate(sbuf_dim(n_dim))
 
 ! Copy data
 if (bpar%nicas_block(ib)) then
-   sbuf_dim(1) = nicas_blk%nc0a
-   sbuf_dim(2) = nicas_blk%nc1b
-   sbuf_dim(3) = nicas_blk%nl1
-   sbuf_dim(4) = nicas_blk%nsa
-   sbuf_dim(5) = nicas_blk%nsb
-   sbuf_dim(6) = nicas_blk%nsc
+   sbuf_dim(1) = nicas_blk%grid_hash
+   sbuf_dim(2) = nicas_blk%nc0a
+   sbuf_dim(3) = nicas_blk%nc1b
+   sbuf_dim(4) = nicas_blk%nl1
+   sbuf_dim(5) = nicas_blk%nsa
+   sbuf_dim(6) = nicas_blk%nsb
+   sbuf_dim(7) = nicas_blk%nsc
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
-   sbuf_dim(7) = nicas_blk%nc0d
-   sbuf_dim(8) = nicas_blk%nc0dinv
+   sbuf_dim(8) = nicas_blk%nc0d
+   sbuf_dim(9) = nicas_blk%nc0dinv
 end if
 
 ! Send buffer
@@ -1399,7 +1410,8 @@ integer :: il0i,il1
 nicas_blk%sqrt_rescaling = .true.
 if (present(sqrt_rescaling)) nicas_blk%sqrt_rescaling = sqrt_rescaling
 
-! Copy subset Sc0 on halo size A
+! Copy grid hash and size of subset Sc0 on halo A 
+nicas_blk%grid_hash = geom%grid_hash
 nicas_blk%nc0a = geom%nc0a
 
 ! Compute adaptive sampling, subset Sc1

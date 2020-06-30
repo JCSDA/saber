@@ -7,15 +7,18 @@
 !----------------------------------------------------------------------
 module tools_func
 
+use iso_c_binding
 use atlas_module, only: atlas_geometry
 use tools_asa007, only: asa007_cholesky,asa007_syminv
 use tools_const, only: pi,deg2rad,rad2deg
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_short,kind_real
 use tools_repro, only: inf,sup,infeq,small
 use type_mpl, only: mpl_type
 
 implicit none
 
+integer,parameter :: mod_adler = 65521                ! Adler32 algorithm modulo
+integer,parameter :: ior_adler = 65536                ! Adler32 algorithm ior factor
 real(kind_real),parameter :: gc2gau = 0.28            ! GC99 support radius to Gaussian Daley length-scale (empirical)
 real(kind_real),parameter :: gau2gc = 3.57            ! Gaussian Daley length-scale to GC99 support radius (empirical)
 real(kind_real),parameter :: Dmin = 1.0e-12_kind_real ! Minimum tensor diagonal value
@@ -24,10 +27,46 @@ integer,parameter :: M = 0                            ! Number of implicit itera
 
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
+public :: adler32,lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
         & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
+
+!----------------------------------------------------------------------
+! Subroutine: adler32
+! Purpose: Adler32 checksum algorithm
+!----------------------------------------------------------------------
+subroutine adler32(n,var,hash)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: n              ! Array size
+real(kind_real),intent(in) :: var(n) ! Array
+integer,intent(out) :: hash          ! Hash value
+
+! Local variables
+integer(kind_short) :: a,b
+integer(kind_short),allocatable :: tmp(:)
+integer :: i,j
+
+! Initialization
+a = 1
+b = 0
+
+! Update a and b
+do i=1,n
+   tmp = transfer(var(i),[0])
+   do j=1,size(tmp)
+      a = mod(a+tmp(j),mod_adler)
+      b = mod(a+b,mod_adler)
+   end do
+end do
+
+! Compute hash
+hash = ior(b*ior_adler,a)
+
+end subroutine adler32
 
 !----------------------------------------------------------------------
 ! Subroutine: lonlatmod
@@ -60,7 +99,7 @@ end if
 end subroutine lonlatmod
 
 !----------------------------------------------------------------------
-! Subroutine: lonlathash
+! Function: lonlathash
 ! Purpose: define a unique real from a lon/lat pair
 !----------------------------------------------------------------------
 function lonlathash(lon,lat,il)

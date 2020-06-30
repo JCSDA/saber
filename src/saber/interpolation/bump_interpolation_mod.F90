@@ -82,6 +82,7 @@ contains
 
   ! low-level apply methods
   procedure, private :: apply_interp, apply_interp_ad
+  final :: dummy
 
 end type bump_interpolator
 
@@ -271,9 +272,9 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
   type(geom_type),intent(in) :: geom       !< Geometry
 
   ! Local variables
-  integer :: iouta,iproc,i_s,ic0,jc0,ic0b,ic0a,nouta_eff
+  integer :: iouta,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nouta_eff
   integer :: nout_eff,nn_index(1),proc_to_nouta(mpl%nproc),proc_to_nouta_eff(mpl%nproc)
-  integer :: c0_to_c0b(geom%nc0),c0a_to_c0b(geom%nc0a)
+  integer :: c0u_to_c0b(geom%nc0u)
   integer,allocatable :: c0b_to_c0(:)
   real(kind_real) :: nn_dist(1),N_max,C_max
   logical :: maskouta(self%nout_local),lcheck_nc0b(geom%nc0)
@@ -315,20 +316,20 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
   self%h%prefix = 'o'
   write(mpl%info,'(a7,a)') '','Single level:'
   call mpl%flush
-  call self%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,&
-                     geom%mask_hor_c0,self%nout_local,self%outgeom%lon_mga,&
+  call self%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,&
+                     geom%gmask_hor_c0u,self%nout_local,self%outgeom%lon_mga,&
                      self%outgeom%lat_mga,maskouta,10)
 
   ! Define halo B
   lcheck_nc0b = .false.
   do ic0a=1,geom%nc0a
-     ic0 = geom%c0a_to_c0(ic0a)
-     if (geom%c0_to_proc(ic0)==mpl%myproc) lcheck_nc0b(ic0) = .true.
+     ic0u = geom%c0a_to_c0u(ic0a)
+     lcheck_nc0b(ic0u) = .true.
   end do
   do iouta=1,self%nout_local
      do i_s=1,self%h%n_s
-        jc0 = self%h%col(i_s)
-        lcheck_nc0b(jc0) = .true.
+        jc0u = self%h%col(i_s)
+        lcheck_nc0b(jc0u) = .true.
      end do
   end do
   self%nc0b = count(lcheck_nc0b)
@@ -337,32 +338,25 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
   allocate(c0b_to_c0(self%nc0b))
 
   ! Global-local conversion for halo B
-  c0_to_c0b = mpl%msv%vali
+  c0u_to_c0b = mpl%msv%vali
   ic0b = 0
-  do ic0=1,geom%nc0
-     if (lcheck_nc0b(ic0)) then
+  do ic0u=1,geom%nc0u
+     if (lcheck_nc0b(ic0u)) then
         ic0b = ic0b+1
+        ic0 = geom%c0u_to_c0(ic0u)
         c0b_to_c0(ic0b) = ic0
-        c0_to_c0b(ic0) = ic0b
+        c0u_to_c0b(ic0u) = ic0b
      end if
-  end do
-
-  ! Halos A-B conversion
-  do ic0a=1,geom%nc0a
-     ic0 = geom%c0a_to_c0(ic0a)
-     ic0b = c0_to_c0b(ic0)
-     c0a_to_c0b(ic0a) = ic0b
   end do
 
   ! Local interpolation source
   self%h%n_src = self%nc0b
   do i_s=1,self%h%n_s
-     self%h%col(i_s) = c0_to_c0b(self%h%col(i_s))
+     self%h%col(i_s) = c0u_to_c0b(self%h%col(i_s))
   end do
-  call self%h%reorder(mpl)
 
   ! Setup communications
-  call self%com%setup(mpl,'com',geom%nc0,geom%nc0a,self%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
+  call self%com%setup(mpl,'com',geom%nc0a,self%nc0b,geom%nc0,geom%c0a_to_c0,c0b_to_c0)
 
   ! Compute scores
   if (nout_eff > 0) then
@@ -415,7 +409,7 @@ subroutine bint_apply(self, infields, outfields)
   allocate(infld_mga(self%bump%geom%nmga,self%nlev))
   allocate(outfld(self%nout_local,self%nlev))
 
-  if (self%bump%geom%nc0 /= self%bump%geom%nmg) then
+  if (.not.self%bump%geom%same_grid) then
      allocate(infld_c0a(self%bump%geom%nc0a, self%nlev))
   endif
 
@@ -540,7 +534,7 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
   allocate(fld_ingrid_mga(self%bump%geom%nmga,self%nlev))
   allocate(fld_outgrid(self%nout_local,self%nlev))
 
-  if (self%bump%geom%nc0 /= self%bump%geom%nmg) then
+  if (.not.self%bump%geom%same_grid) then
      allocate(fld_ingrid_c0a(self%bump%geom%nc0a, self%nlev))
   endif
 
@@ -565,7 +559,7 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
      ! atlas field to bump fld
      call field_to_fld(self%bump%mpl, field_outgrid, fld_outgrid)
 
-     if (self%bump%geom%nc0 == self%bump%geom%nmg) then
+     if (self%bump%geom%same_grid) then
         ! Apply observation operator adjoint
         call self%apply_interp_ad(fld_outgrid,fld_ingrid_mga)
      else
@@ -660,5 +654,18 @@ subroutine bint_delete(self)
   call self%com%dealloc()
 
 end subroutine bint_delete
+
+!----------------------------------------------------------------------
+! Subroutine: dummy
+! Purpose: dummy finalization
+!----------------------------------------------------------------------
+subroutine dummy(bump)
+
+implicit none
+
+! Passed variables
+type(bump_interpolator),intent(inout) :: bump ! BUMP
+
+end subroutine dummy
 
 end module bump_interpolation_mod

@@ -119,7 +119,7 @@ end if
 do iv=1,nam%nv
    if (mpl%main) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%variables(iv)),fld_id))
 
       ! Check variable type and read data
       call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,ndims=ndims))
@@ -142,7 +142,7 @@ do iv=1,nam%nv
             fld_tmp(:,:,il0) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
          end do
       case default
-         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%varname(iv)))
+         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%variables(iv)))
       end select
 
       ! Pack

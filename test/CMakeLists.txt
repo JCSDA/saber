@@ -196,7 +196,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     )
 
     # Set TESTFILE_DIR_SABER
-    set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH} CACHE PATH "data dir for test data")
+    set(TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH})
     message(STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER})
     message(STATUS "Download sources:")
 

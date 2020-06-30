@@ -794,18 +794,18 @@ iv = bpar%b_to_v2(ib)
 do iscales=1,lct_blk%nscales
    ! Write fields
    write(iscaleschar,'(i1)') iscales
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_D11_'//iscaleschar,lct_blk%D11(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_D22_'//iscaleschar,lct_blk%D22(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_D33_'//iscaleschar,lct_blk%D33(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_D12_'//iscaleschar,lct_blk%D12(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_H11_'//iscaleschar,lct_blk%H11(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_H22_'//iscaleschar,lct_blk%H22(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_H33_'//iscaleschar,lct_blk%H33(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_H12_'//iscaleschar,lct_blk%H12(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_coef_'//iscaleschar,lct_blk%Dcoef(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_Lh_'//iscaleschar,lct_blk%DLh(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_D11_'//iscaleschar,lct_blk%D11(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_D22_'//iscaleschar,lct_blk%D22(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_D33_'//iscaleschar,lct_blk%D33(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_D12_'//iscaleschar,lct_blk%D12(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_H11_'//iscaleschar,lct_blk%H11(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_H22_'//iscaleschar,lct_blk%H22(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_H33_'//iscaleschar,lct_blk%H33(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_H12_'//iscaleschar,lct_blk%H12(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_coef_'//iscaleschar,lct_blk%Dcoef(:,:,iscales))
+   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_Lh_'//iscaleschar,lct_blk%DLh(:,:,iscales))
 end do
-call io%fld_write(mpl,nam,geom,filename,trim(nam%varname(iv))//'_qc',lct_blk%qc_c0a)
+call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_qc',lct_blk%qc_c0a)
 
 ! End associate
 end associate

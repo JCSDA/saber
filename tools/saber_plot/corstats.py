@@ -26,10 +26,10 @@ def corstats(testdata, test, mpi, omp, suffix):
    levs = f.attributes["nam_levs"].split(":")
 
    # Get variables
-   varname = f.attributes["nam_varname"].split(":")
+   variables = f.attributes["nam_variables"].split(":")
 
    # Get timeslots
-   timeslot = f.attributes["nam_timeslot"].split(":")
+   timeslots = f.attributes["nam_timeslots"].split(":")
    x = Ngl.fspan(1, nts, nts)
 
    # XY resources
@@ -47,7 +47,7 @@ def corstats(testdata, test, mpi, omp, suffix):
    xyres.trXMaxF = float(nts)+0.5
    xyres.tmXBMode = "Explicit"
    xyres.tmXBValues = x
-   xyres.tmXBLabels = timeslot
+   xyres.tmXBLabels = timeslots
    xyres.trYMinF = -0.1
    xyres.trYMaxF = 1.1
    xyres.tmYLMode = "Explicit"
@@ -81,7 +81,7 @@ def corstats(testdata, test, mpi, omp, suffix):
    for il0 in range(0, nl0):
       for iv in range(0, nv):
          # Title
-         xyres.tiMainString = "Variable " + varname[iv] + " at level " + levs[il0]
+         xyres.tiMainString = "Variable " + variables[iv] + " at level " + levs[il0]
 
          # Plot
          p = Ngl.xy(wks, x, cor_max_avg[:,iv,il0], xyres)
