@@ -410,7 +410,8 @@ do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Initialization
-         write(mpl%info,'(a7,a)') '','Unbalancing: '//trim(nam%varname(iv))//' with respect to unbalanced '//trim(nam%varname(jv))
+         write(mpl%info,'(a7,a)') '','Unbalancing: '//trim(nam%variables(iv))//' with respect to unbalanced ' & 
+          & //trim(nam%variables(jv))
          call mpl%flush
 
          ! Compute auto- and cross-covariances
@@ -815,7 +816,7 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 do its=1,nam%nts
    write(itschar,'(i2.2)') its
    do iv=1,nam%nv
-      call io%fld_write(mpl,nam,geom,filename,'vbal_'//trim(nam%varname(iv))//'_'//itschar,fld(:,:,iv,its))
+      call io%fld_write(mpl,nam,geom,filename,'vbal_'//trim(nam%variables(iv))//'_'//itschar,fld(:,:,iv,its))
    end do
 end do
 
