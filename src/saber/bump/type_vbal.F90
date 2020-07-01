@@ -163,7 +163,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
-integer :: iv,jv
+integer :: iv,jv,grid_hash
 integer :: ncid,nc0a_id,nc2b_id,nl0i_id,nl0_1_id,nl0_2_id,h_n_s_id,h_c2b_id,h_S_id,reg_id(nam%nv,nam%nv)
 integer :: nc0a_test,nl0i_test,nl0_1_test,nl0_2_test
 character(len=1024) :: filename
@@ -172,6 +172,10 @@ character(len=1024),parameter :: subr = 'vbal_read'
 ! Open file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+
+! Check grid hash
+call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
+if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
 
 ! Get dimensions
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nc0a',nc0a_id))
@@ -252,6 +256,9 @@ character(len=1024),parameter :: subr = 'vbal_write'
 ! Create file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+
+! Write grid hash
+call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)

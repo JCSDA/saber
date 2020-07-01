@@ -102,7 +102,7 @@ end subroutine obsop_dealloc
 ! Subroutine: obsop_read
 ! Purpose: read observations locations
 !----------------------------------------------------------------------
-subroutine obsop_read(obsop,mpl,nam)
+subroutine obsop_read(obsop,mpl,nam,geom)
 
 implicit none
 
@@ -110,15 +110,20 @@ implicit none
 class(obsop_type),intent(inout) :: obsop ! Observation operator data
 type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(in) :: nam         ! Namelist
+type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: ncid
+integer :: ncid,grid_hash
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'obsop_read'
 
 ! Create file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+
+! Check grid hash
+call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
+if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
 
 ! Get attributes
 call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'nc0b',obsop%nc0b))
@@ -141,7 +146,7 @@ end subroutine obsop_read
 ! Subroutine: obsop_write
 ! Purpose: write observations locations
 !----------------------------------------------------------------------
-subroutine obsop_write(obsop,mpl,nam)
+subroutine obsop_write(obsop,mpl,nam,geom)
 
 implicit none
 
@@ -149,6 +154,7 @@ implicit none
 class(obsop_type),intent(inout) :: obsop ! Observation operator data
 type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(in) :: nam         ! Namelist
+type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
 integer :: ncid
@@ -158,6 +164,9 @@ character(len=1024),parameter :: subr = 'obsop_write'
 ! Create file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+
+! Write grid hash
+call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
@@ -333,7 +342,7 @@ if ( nobs_eff > 0 ) then
 end if
 
 ! Write observation operator
-if (nam%write_obsop) call obsop%write(mpl,nam)
+if (nam%write_obsop) call obsop%write(mpl,nam,geom)
 
 ! Release memory
 deallocate(c0b_to_c0)

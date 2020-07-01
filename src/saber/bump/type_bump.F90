@@ -750,7 +750,7 @@ elseif (bump%nam%load_obsop) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Read observation operator'
    call bump%mpl%flush
-   call bump%obsop%read(bump%mpl,bump%nam)
+   call bump%obsop%read(bump%mpl,bump%nam,bump%geom)
 end if
 
 if (bump%nam%new_obsop.or.bump%nam%load_obsop) then

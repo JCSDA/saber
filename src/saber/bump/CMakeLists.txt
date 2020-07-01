@@ -6,6 +6,7 @@
 set( bump_src_files
 
 tools_fit.F90
+tools_func.c
 tools_func.F90
 tools_samp.F90
 type_adv.F90

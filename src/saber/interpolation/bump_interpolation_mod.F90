@@ -140,11 +140,10 @@ subroutine bint_init(self, config, comm, in_funcspace, out_funcspace, masks)
   type(atlas_fieldset)      , intent(in), optional :: masks
 
   ! local variables
-  type(fckit_configuration) :: bump_config, bint_config
+  type(fckit_configuration) :: bump_config
   integer :: msvali, j
   real(kind_real) :: msvalr
   integer, allocatable :: levels(:)
-  character(kind=c_char,len=:), allocatable :: string_buffer
   character(len=max_string) :: msg
   character(len=max_string) :: myname = "saber::interpolation::bump_interpolation_mod::bint_init "
 
@@ -402,8 +401,7 @@ subroutine bint_apply(self, infields, outfields)
   real(kind_real), allocatable :: infld_mga(:,:), infld_c0a(:,:)
   real(kind_real), allocatable :: outfld(:,:)
   integer :: ifield
-  character(len=max_string) :: msg, fieldname
-  character(len=max_string) :: myname = "saber::interpolation::bump_interpolation_mod::bint_apply "
+  character(len=max_string) :: fieldname
 
   ! allocate bump arrays
   allocate(infld_mga(self%bump%geom%nmga,self%nlev))
@@ -527,8 +525,7 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
   real(kind_real), allocatable :: fld_ingrid_mga(:,:), fld_ingrid_c0a(:,:)
   real(kind_real), allocatable :: fld_outgrid(:,:)
   integer :: ifield
-  character(len=max_string) :: msg, fieldname
-  character(len=max_string) :: myname = "saber::interpolation::bump_interpolation_mod::bint_apply_ad_field "
+  character(len=max_string) :: fieldname
 
   ! allocate bump arrays
   allocate(fld_ingrid_mga(self%bump%geom%nmga,self%nlev))

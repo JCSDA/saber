@@ -12,7 +12,7 @@ use atlas_module, only: atlas_field,atlas_fieldset,atlas_functionspace,atlas_fun
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_fld
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: adler32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
+use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
@@ -944,7 +944,7 @@ end do
 ! Grid hash
 lonlat_c0a(1:geom%nc0a) = geom%lon_c0a
 lonlat_c0a(geom%nc0a+1:2*geom%nc0a) = geom%lat_c0a
-call adler32(2*geom%nc0a,lonlat_c0a,geom%grid_hash)
+geom%grid_hash = fletcher32(lonlat_c0a)
 
 ! Deallocate memory
 deallocate(geom%lon_mga)

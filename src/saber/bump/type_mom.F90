@@ -147,7 +147,7 @@ type(ens_type), intent(in) :: ens     ! Ensemble
 character(len=*),intent(in) :: prefix ! Prefix
 
 ! Local variables
-integer :: ib,isub
+integer :: ib,isub,grid_hash
 integer :: ncid,nc1a_id,nc3_id,nl0r_id,nl0_id,m2_1_id,m2_2_id,m11_id,m22_id
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'mom_read'
@@ -165,6 +165,10 @@ do ib=1,bpar%nb
          write(filename,'(a,a,i6.6,a,i6.6,a,i6.6,a,a)') trim(nam%prefix),'_mom-',isub,'_',mpl%nproc,'-',mpl%myproc,'_', &
        & trim(bpar%blockname(ib))
          call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+
+         ! Check grid hash
+         call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
+         if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
 
          ! Get dimensions
          nc1a_id = mpl%ncdimcheck(subr,ncid,'nc1a',samp%nc1a,.false.)
@@ -221,6 +225,9 @@ do ib=1,bpar%nb
          write(filename,'(a,a,i6.6,a,i6.6,a,i6.6,a,a)') trim(nam%prefix),'_mom-',isub,'_',mpl%nproc,'-',mpl%myproc,'_', &
        & trim(bpar%blockname(ib))
          call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+
+         ! Write grid hash
+         call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 
          ! Write namelist parameters
          call nam%write(mpl,ncid)

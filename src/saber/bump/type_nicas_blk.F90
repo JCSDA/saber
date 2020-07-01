@@ -520,7 +520,7 @@ associate(ib=>nicas_blk%ib)
 filename = trim(nam%prefix)//'_'//trim(nicas_blk%name)
 call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
-! Check grid hash
+! Get grid hash
 call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',nicas_blk%grid_hash))
 
 ! Get dimensions

@@ -348,7 +348,7 @@ type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: il0,ic1a,ic1u,jc3
+integer :: il0,ic1a,ic1u,jc3,grid_hash
 integer :: info,ncid,nl0_id,nc1a_id,nc1u_id,nc2u_id,nc3_id
 integer :: c1a_to_c0a_id,smask_c1u_id,c1ac3_to_c0u_id,smask_c1ac3_id
 integer :: c2u_to_c1u_id,c2u_to_c0u_id
@@ -374,6 +374,10 @@ end if
 call mpl%f_comm%allreduce(new_sampling,new_sampling_tot,fckit_mpi_sum())
 samp%new_sampling = (new_sampling_tot>0)
 if (samp%new_sampling) return
+
+! Check grid hash
+call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
+if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
 
 ! Check dimensions
 nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.false.)
@@ -494,6 +498,9 @@ write(mpl%info,'(a7,a)') '','Write sampling'
 call mpl%flush
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_sampling_',mpl%nproc,'-',mpl%myproc
 call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+
+! Write grid hash
+call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
