@@ -91,6 +91,7 @@ endif()
 ecbuild_use_package( PROJECT oops VERSION 0.2.1 )
 if (${OOPS_FOUND})
     include_directories( ${OOPS_INCLUDE_DIRS} )
+    link_libraries( ${OOPS_LIBRARIES} )
 endif()
 
 ################################################################################
