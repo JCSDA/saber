@@ -958,6 +958,12 @@ deallocate(hash_mgu)
 deallocate(order)
 deallocate(redundant)
 deallocate(lonlat_c0a)
+deallocate(c0a_to_mg)
+deallocate(ra_to_r)
+deallocate(r_to_mg)
+deallocate(r_to_mg_tot)
+deallocate(r_to_c0)
+deallocate(r_to_c0_tot)
 
 ! Subset Sc0 universe size
 geom%nc0u = sum(geom%proc_to_nc0a,mask=geom%myuniverse)
@@ -1021,7 +1027,8 @@ do ic0u=2,geom%nc0u
 end do
 
 ! Release memory
-! TODO
+deallocate(order)
+deallocate(hash_c0u)
 
 end subroutine geom_setup_c0
 
