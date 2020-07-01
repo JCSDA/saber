@@ -82,6 +82,7 @@ contains
 
   ! low-level apply methods
   procedure, private :: apply_interp, apply_interp_ad
+  final :: dummy
 
 end type bump_interpolator
 
@@ -660,5 +661,18 @@ subroutine bint_delete(self)
   call self%com%dealloc()
 
 end subroutine bint_delete
+
+!----------------------------------------------------------------------
+! Subroutine: dummy
+! Purpose: dummy finalization
+!----------------------------------------------------------------------
+subroutine dummy(bump)
+
+implicit none
+
+! Passed variables
+type(bump_interpolator),intent(inout) :: bump ! BUMP
+
+end subroutine dummy
 
 end module bump_interpolation_mod

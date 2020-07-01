@@ -124,7 +124,7 @@ do iv=1,nam%nv
       do il0=1,nam%nl
          ! Get id
          write(ilchar,'(i3.3)') nam%levs(il0)
-         info = nf90_inq_varid(ncid,'S'//ilchar//trim(nam%varname(iv)),fld_id)
+         info = nf90_inq_varid(ncid,'S'//ilchar//trim(nam%variables(iv)),fld_id)
 
          ! Read data
          if (info==nf90_noerr) then
@@ -132,7 +132,7 @@ do iv=1,nam%nv
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
          else
             ! Check if the variable exists as 2D data
-            call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%varname(iv)),fld_id))
+            call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%variables(iv)),fld_id))
 
             ! 2D data
             if (((trim(nam%lev2d)=='first').and.(il0==1)).or.((trim(nam%lev2d)=='last').and.(il0==model%nl0))) then
