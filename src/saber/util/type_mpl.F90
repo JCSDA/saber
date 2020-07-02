@@ -994,25 +994,39 @@ end subroutine mpl_share_logical_4d
 ! Subroutine: mpl_glb_to_loc_index
 ! Purpose: communicate global index to local index
 !----------------------------------------------------------------------
-subroutine mpl_glb_to_loc_index(mpl,n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+subroutine mpl_glb_to_loc_index(mpl,n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc,rootproc,pool)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl    ! MPI data
-integer,intent(in) :: n_loc             ! Local dimension
-integer,intent(in) :: loc_to_glb(n_loc) ! Local to global index
-integer,intent(in) :: n_glb             ! Global dimension
-integer,intent(out) :: glb_to_loc(:)    ! Global to local index
-integer,intent(out) :: glb_to_proc(:)   ! Global to processor
+class(mpl_type),intent(inout) :: mpl           ! MPI data
+integer,intent(in) :: n_loc                    ! Local dimension
+integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global index
+integer,intent(in) :: n_glb                    ! Global dimension
+integer,intent(out) :: glb_to_loc(:)           ! Global to local index
+integer,intent(out) :: glb_to_proc(:)          ! Global to processor
+integer,intent(in),optional :: rootproc        ! Root task
+logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
 
 ! Local variables
-integer :: iproc,i_loc,n_loc_tmp
+integer :: iproc,i_loc,n_loc_tmp,lrootproc
 integer,allocatable :: loc_to_glb_tmp(:)
+logical :: lpool(mpl%nproc)
 character(len=1024),parameter :: subr = 'mpl_glb_to_loc_index'
 type(fckit_mpi_status) :: status
 
-if (mpl%main) then
+! Get local rootproc and pool
+lrootproc = mpl%rootproc
+if (present(rootproc)) lrootproc = rootproc
+lpool = .true.
+if (present(pool)) lpool = pool
+
+! Check global array size
+if (mpl%myproc==lrootproc) then
+   if (.not.lpool(lrootproc)) call mpl%abort(subr,'root task should be in the tasks pool')
+end if
+
+if (mpl%myproc==lrootproc) then
    ! Check global array size
    if (size(glb_to_loc)/=n_glb) call mpl%abort(subr,'wrong dimension for the glb_to_loc')
    if (size(glb_to_proc)/=n_glb) call mpl%abort(subr,'wrong dimension for the glb_to_proc')
@@ -1022,40 +1036,44 @@ if (mpl%main) then
    glb_to_proc = mpl%msv%vali
 
    do iproc=1,mpl%nproc
-      if (iproc==mpl%rootproc) then
-         ! Copy dimension
-         n_loc_tmp = n_loc
-      else
-         ! Receive dimension on rootproc
-         call mpl%f_comm%receive(n_loc_tmp,iproc-1,mpl%tag,status)
+      if (lpool(iproc)) then
+         if (iproc==lrootproc) then
+            ! Copy dimension
+            n_loc_tmp = n_loc
+         else
+            ! Receive dimension on rootproc
+            call mpl%f_comm%receive(n_loc_tmp,iproc-1,mpl%tag,status)
+         end if
+
+         ! Allocation
+         allocate(loc_to_glb_tmp(n_loc_tmp))
+
+         if (iproc==lrootproc) then
+            ! Copy data
+            loc_to_glb_tmp = loc_to_glb
+         else
+            ! Receive data on rootproc
+            call mpl%f_comm%receive(loc_to_glb_tmp,iproc-1,mpl%tag+1,status)
+         end if
+
+         ! Fill glb_to_loc and glb_to_proc if required
+         do i_loc=1,n_loc_tmp
+            glb_to_loc(loc_to_glb_tmp(i_loc)) = i_loc
+            glb_to_proc(loc_to_glb_tmp(i_loc)) = iproc
+         end do
+
+         ! Release memory
+         deallocate(loc_to_glb_tmp)
       end if
-
-      ! Allocation
-      allocate(loc_to_glb_tmp(n_loc_tmp))
-
-      if (iproc==mpl%rootproc) then
-         ! Copy data
-         loc_to_glb_tmp = loc_to_glb
-      else
-         ! Receive data on rootproc
-         call mpl%f_comm%receive(loc_to_glb_tmp,iproc-1,mpl%tag+1,status)
-      end if
-
-      ! Fill glb_to_loc and glb_to_proc if required
-      do i_loc=1,n_loc_tmp
-         glb_to_loc(loc_to_glb_tmp(i_loc)) = i_loc
-         glb_to_proc(loc_to_glb_tmp(i_loc)) = iproc
-      end do
-
-      ! Release memory
-      deallocate(loc_to_glb_tmp)
    end do
 else
-   ! Send dimensions to rootproc
-   call mpl%f_comm%send(n_loc,mpl%rootproc-1,mpl%tag)
+   if (lpool(mpl%myproc)) then
+      ! Send dimensions to rootproc
+      call mpl%f_comm%send(n_loc,lrootproc-1,mpl%tag)
 
-   ! Send data to rootproc
-   call mpl%f_comm%send(loc_to_glb,mpl%rootproc-1,mpl%tag+1)
+      ! Send data to rootproc
+      call mpl%f_comm%send(loc_to_glb,lrootproc-1,mpl%tag+1)
+   end if
 end if
 call mpl%update_tag(2)
 
@@ -1367,7 +1385,7 @@ if (mpl%myproc==lrootproc) then
 end if
 
 ! Allocation
-if (mpl%main) then
+if (mpl%myproc==lrootproc) then
    allocate(glb_to_loc(n_glb))
    allocate(glb_to_proc(n_glb))
 else
@@ -1376,7 +1394,7 @@ else
 end if
 
 ! Get global index and processor
-call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc,rootproc,pool)
 
 if (lpool(mpl%myproc)) then
    ! Allocation
@@ -1389,7 +1407,6 @@ if (mpl%myproc==lrootproc) then
          ! Allocation 
          n_loc_tmp = count(glb_to_proc==iproc)
          allocate(sbuf(n_loc_tmp*nl))
-
          ! Prepare buffers
          do i_glb=1,n_glb
             jproc = glb_to_proc(i_glb)

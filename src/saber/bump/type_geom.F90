@@ -522,8 +522,8 @@ type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Local variables
-integer :: imga,nnr,inr,iproc,jproc,nb_min,nb_tot,ib
-integer :: order(geom%nmga),redundant(geom%nmga),proc_to_nb(mpl%nproc),displs(mpl%nproc),nn_index(1)
+integer :: imga,nnr,inr,iproc,jproc,nb_min,nb_tot,ib,nn_index(1)
+integer :: order(geom%nmga),redundant(geom%nmga),proc_to_nb(mpl%nproc),displs(mpl%nproc),proc_to_universe_size(mpl%nproc)
 real(kind_real) :: list(geom%nmga),nn_dist(1)
 real(kind_real),allocatable :: lon_nr(:),lat_nr(:),lon_b(:),lat_b(:)
 logical :: myuniverse
@@ -628,9 +628,17 @@ else
    endif
 end if
 
+! Share universe size
+call mpl%f_comm%allgather(count(geom%myuniverse),proc_to_universe_size)
+
 ! Print results
-write(mpl%info,'(a7,a,i6,a,i6)') '','Tasks in my universe: ',count(geom%myuniverse),' / ',mpl%nproc
+write(mpl%info,'(a7,a)') '','Size of universes:'
 call mpl%flush
+do iproc=1,mpl%nproc
+   write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Task ',iproc,': ',100.0*real(proc_to_universe_size(iproc),kind_real) &
+    & /real(mpl%nproc,kind_real),'%'
+   call mpl%flush
+end do
 
 end subroutine geom_define_universe
 

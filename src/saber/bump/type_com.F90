@@ -11,6 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_status
 use netcdf
 !$ use omp_lib
 use tools_kinds, only: kind_real,nc_kind_real
+use tools_qsort, only: qsort
 use tools_repro, only: eq
 use type_mpl, only: mpl_type
 use fckit_mpi_module, only: fckit_mpi_status
@@ -419,7 +420,8 @@ integer,intent(in),optional :: own_to_glb(:) ! Own data to global
 ! Local variables
 integer :: iproc,jproc,iown,ired,iext,iglb,icount,nglb_test
 integer,allocatable :: glb_to_red(:),glb_to_proc(:)
-integer,allocatable :: red_to_glb_tmp(:),ext_to_glb_tmp(:)
+integer,allocatable :: own_to_glb_tmp(:),red_to_glb_tmp(:),ext_to_glb_tmp(:)
+integer,allocatable :: own_to_glb_order(:),red_to_glb_order(:),ext_to_glb_order(:)
 type(com_type) :: com_in(mpl%nproc)
 type(fckit_mpi_status) :: status
 character(len=1024),parameter :: subr = 'com_setup'
@@ -635,20 +637,49 @@ if (com_out%nown>0) then
    com_out%own_to_red = mpl%msv%vali
    com_out%own_to_ext = mpl%msv%vali
 
+   ! Allocation
+   allocate(own_to_glb_tmp(com_out%nown))
+   allocate(red_to_glb_tmp(com_out%nred))
+   allocate(ext_to_glb_tmp(com_out%next))
+   allocate(own_to_glb_order(com_out%nown))
+   allocate(red_to_glb_order(com_out%nred))
+   allocate(ext_to_glb_order(com_out%next))
+
+   ! Copy arrays
+   if (present(own_to_glb)) then
+      own_to_glb_tmp = own_to_glb
+   else
+      own_to_glb_tmp = red_to_glb
+   end if
+   red_to_glb_tmp = red_to_glb
+   ext_to_glb_tmp = ext_to_glb
+
+   ! Sort arrays
+   call qsort(com_out%nown,own_to_glb_tmp,own_to_glb_order)
+   call qsort(com_out%nred,red_to_glb_tmp,red_to_glb_order)
+   call qsort(com_out%next,ext_to_glb_tmp,ext_to_glb_order)
+
    ! Fill local conversions
+   ired = 1
+   iext = 1
    do iown=1,com_out%nown
-      if (present(own_to_glb)) then
-         iglb = own_to_glb(iown)
-      else
-         iglb = red_to_glb(iown)
-      end if
-      do ired=1,com_out%nred
-         if (red_to_glb(ired)==iglb) com_out%own_to_red(iown) = ired
+      do while (red_to_glb_tmp(ired)/=own_to_glb_tmp(iown))
+         ired = ired+1
       end do
-      do iext=1,com_out%next
-         if (ext_to_glb(iext)==iglb) com_out%own_to_ext(iown) = iext
+      com_out%own_to_red(own_to_glb_order(iown)) = red_to_glb_order(ired)
+      do while (ext_to_glb_tmp(iext)/=own_to_glb_tmp(iown))
+         iext = iext+1
       end do
+      com_out%own_to_ext(own_to_glb_order(iown)) = ext_to_glb_order(iext)
    end do
+
+   ! Release memory
+   deallocate(own_to_glb_tmp)
+   deallocate(red_to_glb_tmp)
+   deallocate(ext_to_glb_tmp)
+   deallocate(own_to_glb_order)
+   deallocate(red_to_glb_order)
+   deallocate(ext_to_glb_order)
 
    ! Check local conversion
    if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort(subr,'missing own_to_red value')
