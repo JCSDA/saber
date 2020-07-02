@@ -27,7 +27,7 @@ while [ ${i} -lt ${ne} ] ; do
    i4=$i
    typeset -RZ4 i4
    i6=$i
-   typeset -RZ4 i6
+   typeset -RZ6 i6
 
    # AROME
    if test ${test} = "bump_aro" ; then
@@ -51,7 +51,7 @@ while [ ${i} -lt ${ne} ] ; do
 
    # FV3
    if test ${test} = "bump_fv3" ; then
-      ne=80
+      ne=50
       date=20190612
       hh=12
       resol=c0384
@@ -67,17 +67,17 @@ while [ ${i} -lt ${ne} ] ; do
       ln -sf ${modeldata}/${test}/${date}_006_${i4}.nc ${testdata}/ens1_00_${i6}.nc
 
       if test ${i} = 1 ; then
-         j4=1
-         typeset -RZ4 j4
+         j6=1
+         typeset -RZ6 j6
          for string in 'kfc' 'kuo' ; do
             for string2 in 'BLAC62' 'BOUJO' ; do
-               k4=1
-               typeset -RZ4 k4
-               while [ ${k4} -le 64 ] ; do
-                  ln -sf  ${modeldata}/${test}/member_${string}_${string2}_${k4}.nc ${testdata}/ens1_00_${j4}_${k4}.nc
-                  let k4=k4+1
+               k6=1
+               typeset -RZ6 k6
+               while [ ${k6} -le 64 ] ; do
+                  ln -sf  ${modeldata}/${test}/member_${string}_${string2}_${k6}.nc ${testdata}/ens1_00_${j6}_${k6}.nc
+                  let k6=k6+1
                done
-               let j4=j4+1
+               let j6=j6+1
             done
          done
       fi

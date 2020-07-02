@@ -86,7 +86,7 @@ do iproc=1,mpl%nproc
          call mpl%newunit(mpl%lunit)
 
          ! Open listing file
-         write(filename,'(a,i4.4,a)') trim(bump%nam%prefix)//'.',mpl%myproc-1,'.out'
+         write(filename,'(a,i6.6,a)') trim(bump%nam%prefix)//'.',mpl%myproc-1,'.out'
          inquire(file=filename,number=ifileunit)
          if (ifileunit<0) then
             open(unit=mpl%lunit,file=trim(logdir)//'/'//trim(filename),action='write',status='replace')

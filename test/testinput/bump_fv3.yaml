@@ -33,10 +33,10 @@ nl0r: 10
 
 # diag_param
 ne: 10
-vbal_block: [0]
-vbal_rad: 500.0e3
-vbal_diag_auto: [1]
-vbal_var_th: 0.8
+#vbal_block: [0]
+#vbal_rad: 500.0e3
+#vbal_diag_auto: [1]
+#vbal_var_th: 0.8
 var_filter: 0
 var_niter: 0
 var_rhflt: 0.0
