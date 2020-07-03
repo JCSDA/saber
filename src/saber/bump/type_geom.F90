@@ -280,9 +280,14 @@ end if
 
 ! Define universe
 call geom%define_universe(mpl,rng,nam)
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Setup subset Sc0
 call geom%setup_c0(mpl)
+
+! Create geometry mesh
+write(mpl%info,'(a7,a)') '','Create geometry mesh'
+call mpl%flush
 
 ! Allocation
 call geom%mesh%alloc(geom%nc0u)
@@ -299,13 +304,19 @@ call geom%setup_independent_levels(mpl)
 ! Define minimum distance to mask
 if ((trim(nam%draw_type)=='random_coast').or.(nam%adv_diag)) call geom%setup_mask_distance(mpl)
 
+! Create geometry KD-tree
+write(mpl%info,'(a7,a)') '','Create geometry KD-tree'
+call mpl%flush
+
 ! Allocation
 call geom%tree%alloc(mpl,geom%nc0u)
 
 ! Initialization
 call geom%tree%init(geom%lon_c0u,geom%lat_c0u)
 
-! Horizontal distance
+! Setup horizontal distance
+write(mpl%info,'(a7,a)') '','Setup horizontal distance'
+call mpl%flush
 allocate(geom%disth(nam%nc3))
 do jc3=1,nam%nc3
    geom%disth(jc3) = real(jc3-1,kind_real)*nam%dc
@@ -324,36 +335,38 @@ call mpl%f_comm%allreduce(minval(geom%lat_c0a),lat_min,fckit_mpi_min())
 call mpl%f_comm%allreduce(maxval(geom%lat_c0a),lat_max,fckit_mpi_max())
 
 ! Print summary
-write(mpl%info,'(a7,a,i8)') '','Model grid size:         ',geom%nmg
+write(mpl%info,'(a7,a)') '','Geometry summary:'
 call mpl%flush
-write(mpl%info,'(a7,a,i8)') '','Subset Sc0 size:         ',geom%nc0
+write(mpl%info,'(a10,a,i8)') '','Model grid size:         ',geom%nmg
 call mpl%flush
-write(mpl%info,'(a7,a,i6,a,f6.2,a)') '','Number of redundant points:    ',(geom%nmg-geom%nc0), &
+write(mpl%info,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
+call mpl%flush
+write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Number of redundant points:    ',(geom%nmg-geom%nc0), &
  & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*100.0,'%)'
 call mpl%flush
-write(mpl%info,'(a7,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',lon_min*rad2deg,' / ',lon_max*rad2deg
+write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',lon_min*rad2deg,' / ',lon_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a7,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',lat_min*rad2deg,' / ',lat_max*rad2deg
+write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',lat_min*rad2deg,' / ',lat_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a7,a,f5.1,a)') '','Domain area (% of Earth area):',100.0*maxval(geom%area)/(4.0*pi),'%'
+write(mpl%info,'(a10,a,f5.1,a)') '','Domain area (% of Earth area):',100.0*maxval(geom%area)/(4.0*pi),'%'
 call mpl%flush
-write(mpl%info,'(a7,a)') '','Valid points (% of total domain):'
+write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
+   write(mpl%info,'(a13,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
  & 100.0*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
-write(mpl%info,'(a7,a)') '','Vertical unit:'
+write(mpl%info,'(a10,a)') '','Vertical unit:'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a10,a,i3,a,e10.3,a)') '','Level ',nam%levs(il0),' ~> ',geom%vunitavg(il0),' vert. unit'
+   write(mpl%info,'(a13,a,i3,a,e10.3,a)') '','Level ',nam%levs(il0),' ~> ',geom%vunitavg(il0),' vert. unit'
    call mpl%flush
 end do
-write(mpl%info,'(a7,a)') '','Distribution summary (local / universe):'
+write(mpl%info,'(a10,a)') '','Distribution (local / universe):'
 call mpl%flush
 do iproc=1,mpl%nproc
-   write(mpl%info,'(a10,a,i6,a,i8,a,i8)') '','Task ',iproc,': ',geom%proc_to_nc0a(iproc),' / ',geom%proc_to_nc0u(iproc)
+   write(mpl%info,'(a13,a,i6,a,i8,a,i8)') '','Task ',iproc,': ',geom%proc_to_nc0a(iproc),' / ',geom%proc_to_nc0u(iproc)
    call mpl%flush
 end do
 
@@ -530,6 +543,9 @@ logical :: myuniverse
 type(mesh_type) :: mesh
 type(tree_type) :: tree
 
+write(mpl%info,'(a7,a)') '','Define universe'
+call mpl%flush
+
 ! Allocation
 allocate(geom%myuniverse(mpl%nproc))
 
@@ -666,6 +682,9 @@ logical :: diff,chain
 character(len=1024),parameter :: subr = 'geom_setup_c0'
 type(com_type) :: com_AU
 
+write(mpl%info,'(a7,a)') '','Setup subset Sc0'
+call mpl%flush
+
 ! Allocation
 allocate(geom%proc_to_nc0a(mpl%nproc))
 
@@ -711,7 +730,7 @@ call com_AU%setup(mpl,'com_AU',geom%nmga,nmgu,geom%nmg,mga_to_mg,mgu_to_mg)
 call com_AU%ext(mpl,geom%hash_mga,hash_mgu)
 
 ! Look for redundant points
-write(mpl%info,'(a7,a)') '','Look for redundant points in the model grid'
+write(mpl%info,'(a10,a)') '','Look for redundant points in the model grid'
 call mpl%flush
 
 ! Define points order
@@ -768,6 +787,10 @@ do imgu_e=2,nmgu+1
    endif
 end do
 
+! Define subset Sc0
+write(mpl%info,'(a10,a)') '','Define subset Sc0'
+call mpl%flush
+
 ! Count points for subset Sc0, halo A
 geom%nc0a = 0
 do imga=1,geom%nmga
@@ -812,6 +835,10 @@ geom%proc_to_c0_offset(1) = 0
 do iproc=2,mpl%nproc
    geom%proc_to_c0_offset(iproc) = geom%proc_to_c0_offset(iproc-1)+geom%proc_to_nc0a(iproc-1)
 end do
+
+! Communicate data from model grid to subset Sc0
+write(mpl%info,'(a10,a)') '','Communicate data from model grid to subset Sc0'
+call mpl%flush
 
 ! Conversions
 ic0a = 0
@@ -973,6 +1000,10 @@ deallocate(r_to_mg_tot)
 deallocate(r_to_c0)
 deallocate(r_to_c0_tot)
 
+! Communicate data from halo A to universe on subset Sc0
+write(mpl%info,'(a10,a)') '','Communicate data from halo A to universe on subset Sc0'
+call mpl%flush
+
 ! Subset Sc0 universe size
 geom%nc0u = sum(geom%proc_to_nc0a,mask=geom%myuniverse)
 
@@ -1028,7 +1059,10 @@ call geom%com_AU%ext(mpl,geom%nl0,geom%vunit_c0a,geom%vunit_c0u)
 call geom%com_AU%ext(mpl,geom%nl0,geom%gmask_c0a,geom%gmask_c0u)
 geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
 
+
 ! Check that Sc0 points in universe are not redundant
+write(mpl%info,'(a7,a)') '','Check that Sc0 points in universe are not redundant'
+call mpl%flush
 call qsort(geom%nc0u,hash_c0u,order)
 do ic0u=2,geom%nc0u
    if (eq(hash_c0u(ic0u),hash_c0u(ic0u-1))) call mpl%abort(subr,'redundant points in Sc0 point on universe, check the universe')
@@ -1056,6 +1090,9 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 integer :: il0
 integer :: diff_mask,diff_mask_tot
 logical :: same_mask
+
+write(mpl%info,'(a7,a)') '','Define number of independent levels'
+call mpl%flush
 
 ! Check local mask similarity
 same_mask = .true.
@@ -1102,6 +1139,9 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 integer :: il0i,ic0u,ic0a,nn_index(1)
 logical :: not_mask_c0u(geom%nc0u)
 type(tree_type) :: tree
+
+write(mpl%info,'(a7,a)') '','Define minimum distance to mask'
+call mpl%flush
 
 ! Allocation
 allocate(geom%mdist_c0u(geom%nc0u,geom%nl0i))
@@ -1155,6 +1195,9 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 integer :: il0,ibnda,nbndamax
 integer,allocatable :: bnda_to_c0u(:,:)
 real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
+
+write(mpl%info,'(a7,a)') '','Setup mask check'
+call mpl%flush
 
 ! Allocation
 allocate(geom%nbnda(0:geom%nl0))
@@ -1221,8 +1264,19 @@ real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
 logical :: valid
 character(len=1024),parameter :: subr = 'geom_index_from_lonlat'
 
+integer :: istart,iend,proc_to_time(mpl%nproc),iloc(1)
+
 ! Find nearest neighbor
+
+! TODO: finaud! créer un mesh sur la halo A, extraire les point de bordure, créer un petit arbre avec cette bordure, et vérifier que la distance mini entre cette bordure et le point lon/lat est inférieure à la distance max entre deux points de la bordure.
+call mpl%f_comm%barrier()
+call system_clock(count=istart)
 call geom%tree%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
+call system_clock(count=iend)
+call mpl%f_comm%allgather(iend-istart,proc_to_time)
+iloc = maxloc(proc_to_time)
+if ((mpl%myproc==iloc(1)).and.(maxval(proc_to_time)>8)) print*, 'bad',iend-istart,nn_dist*reqkm
+
 ic0 = geom%c0u_to_c0(nn_index(1))
 nn_proc = geom%c0_to_proc(ic0)
 
@@ -1254,6 +1308,7 @@ if (iproc==mpl%myproc) then
    end if
 end if
 call mpl%f_comm%broadcast(valid,iproc-1)
+
 if (valid) then
    ! Broadcast data
    call mpl%f_comm%broadcast(ic0a,iproc-1)
@@ -1284,6 +1339,9 @@ type(nam_type),intent(in) :: nam       ! Namelist
 integer :: idir,il0,il0dir,iprocdir,ic0adir
 logical :: valid
 character(len=1024),parameter :: subr = 'geom_define_dirac'
+
+write(mpl%info,'(a7,a)') '','Define Dirac parameters'
+call mpl%flush
 
 ! Allocation
 allocate(geom%londir(nam%ndir))
@@ -1568,9 +1626,6 @@ logical :: valid
 valid = .false.
 lnr = 0
 
-! Resynchronize random number generator
-call rng%resync(mpl)
-
 ! Loop
 do while (.not.valid)
    ! Generate random lon/lat
@@ -1587,10 +1642,6 @@ end do
 
 ! Set number of tries
 if (present(nr)) nr = lnr
-
-! Desynchronize random number generator
-call rng%desync(mpl)
-
 
 end subroutine geom_rand_point
 

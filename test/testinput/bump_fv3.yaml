@@ -2,13 +2,14 @@
 datadir: "testdata"
 prefix: "bump_fv3/test"
 model: "fv3"
-#universe_rad: 5000.0e3
+universe_rad: 5000.0e3
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
 new_vbal: 0
 new_hdiag: 1
+write_cmat: 0
 new_nicas: 0
 
 # model_param

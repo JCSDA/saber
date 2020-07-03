@@ -690,9 +690,11 @@ if (model%ntile>1) then
    do img=1,model%nmg
       if (model%mg_to_tile(img)==model%mytile) then
          imgt = imgt+1
-         imga = model%mg_to_mga(img)
-         model%mga_to_mgt(imga) = imgt
          model%mgt_to_mg(imgt) = img
+         if (model%mg_to_proc(img)==mpl%myproc) then
+            imga = model%mg_to_mga(img)
+            model%mga_to_mgt(imga) = imgt
+         end if
       end if
    end do
 end if

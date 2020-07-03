@@ -1922,11 +1922,16 @@ if ((trim(samp%name)=='hdiag').and.nam%adv_diag) then
 end if
 samp%nc0c = count(lcheck_c0c)
 
-! Conversions
+! Allocation
 allocate(c0c_to_c0(samp%nc0c))
 allocate(samp%c1a_to_c0c(samp%nc1a))
 allocate(samp%c1ac3_to_c0c(samp%nc1a,nam%nc3))
+
+! Initialization
 c0u_to_c0c = mpl%msv%vali
+samp%c1ac3_to_c0c = mpl%msv%vali
+
+! Conversions
 ic0c = 0
 do ic0u=1,geom%nc0u
    if (lcheck_c0c(ic0u)) then
@@ -1942,9 +1947,11 @@ do ic1a=1,samp%nc1a
    ic0c = c0u_to_c0c(ic0u)
    samp%c1a_to_c0c(ic1a) = ic0c
    do jc3=1,nam%nc3
-      jc0u = samp%c1ac3_to_c0u(ic1a,jc3)
-      jc0c = c0u_to_c0c(jc0u)
-      samp%c1ac3_to_c0c(ic1a,jc3) = jc0c
+      if (any(samp%smask_c1ac3(ic1a,jc3,:))) then
+         jc0u = samp%c1ac3_to_c0u(ic1a,jc3)
+         jc0c = c0u_to_c0c(jc0u)
+         samp%c1ac3_to_c0c(ic1a,jc3) = jc0c
+      end if
    end do
 end do
 
