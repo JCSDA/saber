@@ -276,7 +276,7 @@ write(bump%mpl%info,'(a)') '----------------------------------------------------
 call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- Initialize fields output'
 call bump%mpl%flush
-call bump%io%init(bump%mpl,bump%rng,bump%nam,bump%geom)
+call bump%io%init(bump%mpl,bump%nam,bump%geom)
 if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
 ! Initialize block parameters

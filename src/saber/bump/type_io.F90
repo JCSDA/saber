@@ -17,7 +17,6 @@ use type_geom, only: geom_type
 use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_rng, only: rng_type
 
 implicit none
 
@@ -291,14 +290,13 @@ end subroutine io_fld_write
 ! Subroutine: io_init
 ! Purpose: initialize fields output
 !----------------------------------------------------------------------
-subroutine io_init(io,mpl,rng,nam,geom)
+subroutine io_init(io,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(io_type),intent(inout) :: io  ! I/O
 type(mpl_type),intent(inout) :: mpl ! MPI data
-type(rng_type),intent(inout) :: rng ! Random number generator
 type(nam_type),intent(in) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom  ! Geometry
 
