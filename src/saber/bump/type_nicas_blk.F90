@@ -1710,7 +1710,7 @@ end if
 ! Compute subsampling
 call initialize_sampling(mpl,rng,maxval(geom%area),geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rhs_min,geom%c0a_to_c0, &
  & nam%ntry,nam%nrep,nicas_blk%nc1,nicas_blk%c1_to_c0,fast=nam%fast_sampling,verbosity=nicas_blk%verbosity, &
- & n_uni=geom%nc0u,uni_to_loc=geom%c0u_to_c0a,tree_uni=geom%tree)
+ & n_uni=geom%nc0u,uni_to_loc=geom%c0u_to_c0a,tree_uni=geom%tree_c0u)
 
 ! Count Sc1 point in universe
 nicas_blk%nc1u = 0
@@ -2844,7 +2844,7 @@ type(mesh_type) :: mesh
 call mesh%alloc(nicas_blk%nc1u)
 
 ! Initialization
-call mesh%init(mpl,rng,nicas_blk%lon_c1u,nicas_blk%lat_c1u,.true.)
+call mesh%init(mpl,rng,nicas_blk%lon_c1u,nicas_blk%lat_c1u)
 
 ! Allocation
 net_nnbmax = maxval(mesh%nnb)

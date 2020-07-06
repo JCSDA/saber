@@ -74,7 +74,7 @@ if test "${test%%_*}" = "bump" ; then
          exit ${status}
       fi
 
-      for file in `ls testoutput/${test}/test_${mpi}-${omp}.0000.out` ; do
+      for file in `ls testoutput/${test}/test_${mpi}-${omp}.000000.out` ; do
          # Check for stars
          grep -q "*" ${file}
          exit_code=$?

@@ -829,6 +829,9 @@ do ie=1,ens%ne
 end do
 m2 = m2*norm
 
+! Resynchronize random number generator
+call rng%resync(mpl)
+
 ! Compute correlation maximum statistics
 write(mpl%info,'(a7,a)') '','Compute correlation maximum statistics'
 call mpl%flush
@@ -890,6 +893,9 @@ do il0=1,geom%nl0
       end do
    end do
 end do
+
+! Desynchronize random number generator
+call rng%desync(mpl)
 
 if (mpl%main) then
    ! Create file

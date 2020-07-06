@@ -277,14 +277,18 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
   integer,allocatable :: c0b_to_c0(:)
   real(kind_real) :: nn_dist(1),N_max,C_max
   logical :: maskouta(self%nout_local),lcheck_nc0b(geom%nc0)
+  character(len=1024),parameter :: subr = 'bint_driver'
+
+  ! Check that universe is global
+  if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for obsop')
 
   ! Check whether output grid points are inside the mesh
   if (self%nout_local > 0) then
      do iouta=1,self%nout_local
-        call geom%mesh%inside(mpl,self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta),maskouta(iouta))
+        call geom%mesh_c0u%inside(mpl,self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta),maskouta(iouta))
         if (.not.maskouta(iouta)) then
            ! Check for very close points
-           call geom%tree%find_nearest_neighbors(self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta), &
+           call geom%tree_c0u%find_nearest_neighbors(self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta), &
                                                & 1,nn_index,nn_dist)
            if (nn_dist(1)<rth) maskouta(iouta) = .true.
         end if

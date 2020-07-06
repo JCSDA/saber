@@ -104,11 +104,12 @@ type geom_type
    real(kind_real),allocatable :: vunitavg(:)     ! Averaged vertical unit
    real(kind_real),allocatable :: disth(:)        ! Horizontal distance
 
-   ! Mesh
-   type(mesh_type) :: mesh                        ! Mesh
-
    ! Tree
-   type(tree_type) :: tree                        ! Tree
+   type(tree_type) :: tree_c0u                    ! Tree on subset Sc0, universe
+
+   ! Mesh
+   type(mesh_type) :: mesh_c0aplus                ! Mesh on subset Sc0, halo A+
+   type(mesh_type) :: mesh_c0u                    ! Mesh on subset Sc0, universe
 
    ! Boundary fields
    integer,allocatable :: nbnda(:)                ! Number of boundary arcs
@@ -130,20 +131,21 @@ contains
    procedure :: dealloc => geom_dealloc
    procedure :: setup => geom_setup
    procedure :: from_atlas => geom_from_atlas
-   procedure :: define_universe => geom_define_universe
+   procedure :: setup_universe => geom_setup_universe
    procedure :: setup_c0 => geom_setup_c0
+   procedure :: setup_tree => geom_setup_tree
+   procedure :: setup_meshes => geom_setup_meshes
    procedure :: setup_independent_levels => geom_setup_independent_levels
    procedure :: setup_mask_distance => geom_setup_mask_distance
    procedure :: setup_mask_check => geom_setup_mask_check
    procedure :: index_from_lonlat => geom_index_from_lonlat
-   procedure :: define_dirac => geom_define_dirac
+   procedure :: setup_dirac => geom_setup_dirac
    procedure :: check_arc => geom_check_arc
    procedure :: copy_c0a_to_mga => geom_copy_c0a_to_mga
    procedure :: geom_copy_mga_to_c0a_real
    procedure :: geom_copy_mga_to_c0a_logical
    generic :: copy_mga_to_c0a => geom_copy_mga_to_c0a_real,geom_copy_mga_to_c0a_logical
    procedure :: compute_deltas => geom_compute_deltas
-   procedure :: rand_level => geom_rand_level
    procedure :: rand_point => geom_rand_point
    procedure :: mg_to_proc => geom_mg_to_proc
    procedure :: c0_to_c0a => geom_c0_to_c0a
@@ -203,8 +205,9 @@ if (allocated(geom%nc0_gmask)) deallocate(geom%nc0_gmask)
 if (allocated(geom%area)) deallocate(geom%area)
 if (allocated(geom%vunitavg)) deallocate(geom%vunitavg)
 if (allocated(geom%disth)) deallocate(geom%disth)
-call geom%mesh%dealloc
-call geom%tree%dealloc
+call geom%tree_c0u%dealloc
+call geom%mesh_c0aplus%dealloc
+call geom%mesh_c0u%dealloc
 if (allocated(geom%nbnda)) deallocate(geom%nbnda)
 if (allocated(geom%v1bnda)) deallocate(geom%v1bnda)
 if (allocated(geom%v2bnda)) deallocate(geom%v2bnda)
@@ -278,41 +281,23 @@ if (nam%nomask) then
    geom%smask_mga = .true.
 end if
 
-! Define universe
-call geom%define_universe(mpl,rng,nam)
-if (nam%default_seed) call rng%reseed(mpl)
+! Setup universe
+call geom%setup_universe(mpl,rng,nam)
 
 ! Setup subset Sc0
 call geom%setup_c0(mpl)
 
-! Create geometry mesh
-write(mpl%info,'(a7,a)') '','Create geometry mesh'
-call mpl%flush
+! Setup tree
+call geom%setup_tree(mpl)
 
-! Allocation
-call geom%mesh%alloc(geom%nc0u)
+! Setup meshes
+call geom%setup_meshes(mpl,rng,nam)
 
-! Initialization
-call geom%mesh%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,.true.)
-
-! Compute boundary nodes
-call geom%mesh%bnodes(mpl,nam%adv_diag)
-
-! Define number of independent levels
+! Setup number of independent levels
 call geom%setup_independent_levels(mpl)
 
-! Define minimum distance to mask
-if ((trim(nam%draw_type)=='random_coast').or.(nam%adv_diag)) call geom%setup_mask_distance(mpl)
-
-! Create geometry KD-tree
-write(mpl%info,'(a7,a)') '','Create geometry KD-tree'
-call mpl%flush
-
-! Allocation
-call geom%tree%alloc(mpl,geom%nc0u)
-
-! Initialization
-call geom%tree%init(geom%lon_c0u,geom%lat_c0u)
+! Setup minimum distance to mask
+call geom%setup_mask_distance(mpl,nam)
 
 ! Setup horizontal distance
 write(mpl%info,'(a7,a)') '','Setup horizontal distance'
@@ -322,11 +307,11 @@ do jc3=1,nam%nc3
    geom%disth(jc3) = real(jc3-1,kind_real)*nam%dc
 end do
 
-! Define dirac points
-if (nam%new_cortrack.or.nam%new_corstats.or.nam%check_dirac.and.(nam%ndir>0)) call geom%define_dirac(mpl,nam)
+! Setup dirac points
+call geom%setup_dirac(mpl,nam)
 
 ! Setup mask check
-if (nam%mask_check) call geom%setup_mask_check(mpl)
+call geom%setup_mask_check(mpl,nam)
 
 ! Summary data
 call mpl%f_comm%allreduce(minval(geom%lon_c0a),lon_min,fckit_mpi_min())
@@ -357,6 +342,8 @@ do il0=1,geom%nl0
  & 100.0*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
+write(mpl%info,'(a10,a,i3)') '','Number of independent levels: ',geom%nl0i
+call mpl%flush
 write(mpl%info,'(a10,a)') '','Vertical unit:'
 call mpl%flush
 do il0=1,geom%nl0
@@ -521,10 +508,10 @@ end if
 end subroutine geom_from_atlas
 
 !----------------------------------------------------------------------
-! Subroutine: geom_define_universe
-! Purpose: define universe
+! Subroutine: geom_setup_universe
+! Purpose: setup universe
 !----------------------------------------------------------------------
-subroutine geom_define_universe(geom,mpl,rng,nam)
+subroutine geom_setup_universe(geom,mpl,rng,nam)
 
 implicit none
 
@@ -543,7 +530,7 @@ logical :: myuniverse
 type(mesh_type) :: mesh
 type(tree_type) :: tree
 
-write(mpl%info,'(a7,a)') '','Define universe'
+write(mpl%info,'(a7,a)') '','Setup universe'
 call mpl%flush
 
 ! Allocation
@@ -637,7 +624,7 @@ else
       call mesh%dealloc
       call tree%dealloc
       deallocate(lon_b)
-      deallocate(lat_b) 
+      deallocate(lat_b)
    else
       ! Impossible to disentangle the local domains
       geom%myuniverse = .true.
@@ -648,7 +635,6 @@ end if
 call mpl%f_comm%allgather(count(geom%myuniverse),proc_to_universe_size)
 
 ! Print results
-write(mpl%info,'(a7,a)') '','Size of universes:'
 call mpl%flush
 do iproc=1,mpl%nproc
    write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Task ',iproc,': ',100.0*real(proc_to_universe_size(iproc),kind_real) &
@@ -656,7 +642,10 @@ do iproc=1,mpl%nproc
    call mpl%flush
 end do
 
-end subroutine geom_define_universe
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
+end subroutine geom_setup_universe
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_setup_c0
@@ -1075,6 +1064,130 @@ deallocate(hash_c0u)
 end subroutine geom_setup_c0
 
 !----------------------------------------------------------------------
+! Subroutine: geom_setup_tree
+! Purpose: setup tree
+!----------------------------------------------------------------------
+subroutine geom_setup_tree(geom,mpl)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom ! Geometry
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+
+write(mpl%info,'(a7,a)') '','Setup tree'
+call mpl%flush
+
+! Allocation
+call geom%tree_c0u%alloc(mpl,geom%nc0u)
+
+! Initialization
+call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
+
+end subroutine geom_setup_tree
+
+!----------------------------------------------------------------------
+! Subroutine: geom_setup_meshes
+! Purpose: setup meshes
+!----------------------------------------------------------------------
+subroutine geom_setup_meshes(geom,mpl,rng,nam)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom ! Geometry
+type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(rng_type),intent(inout) :: rng    ! Random number generator
+type(nam_type),intent(in) :: nam       ! Namelist
+
+! Local variables
+integer :: ic0a,ic0u,nnb,jnb,jc0u,jc0,jproc,nc0aplus,ic0aplus
+integer,allocatable :: nn_index(:)
+real(kind_real),allocatable :: nn_dist(:),lon_c0aplus(:),lat_c0aplus(:)
+logical :: lcheck_c0aplus(geom%nc0u)
+
+write(mpl%info,'(a7,a)') '','Setup geometry meshes'
+call mpl%flush
+
+! Setup mesh on subset Sc0, universe
+
+! Allocation
+call geom%mesh_c0u%alloc(geom%nc0u)
+
+! Initialization
+call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u)
+
+! Compute boundary nodes
+call geom%mesh_c0u%bnodes(mpl,nam%adv_diag)
+
+! Define halo A+
+lcheck_c0aplus = .false.
+do ic0a=1,geom%nc0a
+   ic0u = geom%c0a_to_c0u(ic0a)
+   lcheck_c0aplus(ic0u) = .true.
+end do
+do ic0a=1,geom%nc0a
+   ! Allocation
+   allocate(nn_index(2))
+   allocate(nn_dist(2))
+
+   ! Get number of close neighbors (three times the nearest neighbor distance)
+   call geom%tree_c0u%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),2,nn_index,nn_dist)
+   call geom%tree_c0u%count_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),4.0*nn_dist(2),nnb)
+
+   ! Reallocation
+   deallocate(nn_index)
+   deallocate(nn_dist)
+   allocate(nn_index(nnb))
+   allocate(nn_dist(nnb))
+
+   ! Get close neighbors
+   call geom%tree_c0u%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),nnb,nn_index,nn_dist)
+   do jnb=1,nnb
+      jc0u = nn_index(jnb)
+      jc0 = geom%c0u_to_c0(jc0u)
+      jproc = geom%c0_to_proc(jc0)
+      if (jproc/=mpl%myproc) lcheck_c0aplus(jc0u) = .true.
+   end do
+
+   ! Release memory
+   deallocate(nn_index)
+   deallocate(nn_dist)
+end do
+nc0aplus = count(lcheck_c0aplus)
+
+! Allocation
+allocate(lon_c0aplus(nc0aplus))
+allocate(lat_c0aplus(nc0aplus))
+
+! Initialization
+ic0aplus = 0
+do ic0u=1,geom%nc0u
+   if (lcheck_c0aplus(ic0u)) then
+      ic0aplus = ic0aplus+1
+      lon_c0aplus(ic0aplus) = geom%lon_c0u(ic0u)
+      lat_c0aplus(ic0aplus) = geom%lat_c0u(ic0u)
+   end if
+end do
+
+! Setup mesh on subset Sc0, halo A+
+
+! Allocation
+call geom%mesh_c0aplus%alloc(nc0aplus)
+
+! Initialization
+call geom%mesh_c0aplus%init(mpl,rng,lon_c0aplus,lat_c0aplus)
+
+! Compute boundary nodes
+call geom%mesh_c0aplus%bnodes(mpl,.false.)
+
+! Release memory
+deallocate(lon_c0aplus)
+deallocate(lat_c0aplus)
+
+end subroutine geom_setup_meshes
+
+!----------------------------------------------------------------------
 ! Subroutine: geom_setup_independent_levels
 ! Purpose: setup independent levels
 !----------------------------------------------------------------------
@@ -1113,13 +1226,11 @@ call mpl%f_comm%allreduce(diff_mask,diff_mask_tot,fckit_mpi_sum())
 same_mask = (diff_mask_tot==0)
 
 ! Define number of independent levels
-if (same_mask) then
+ if (same_mask) then
    geom%nl0i = 1
 else
    geom%nl0i = geom%nl0
 end if
-write(mpl%info,'(a7,a,i3)') '','Number of independent levels: ',geom%nl0i
-call mpl%flush
 
 end subroutine geom_setup_independent_levels
 
@@ -1127,55 +1238,58 @@ end subroutine geom_setup_independent_levels
 ! Subroutine: geom_setup_mask_distance
 ! Purpose: setup minimum distance to mask
 !----------------------------------------------------------------------
-subroutine geom_setup_mask_distance(geom,mpl)
+subroutine geom_setup_mask_distance(geom,mpl,nam)
 
 implicit none
 
 ! Passed variables
 class(geom_type),intent(inout) :: geom ! Geometry
 type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Local variables
 integer :: il0i,ic0u,ic0a,nn_index(1)
 logical :: not_mask_c0u(geom%nc0u)
 type(tree_type) :: tree
 
-write(mpl%info,'(a7,a)') '','Define minimum distance to mask'
-call mpl%flush
+if ((trim(nam%draw_type)=='random_coast').or.(nam%adv_diag)) then
+   write(mpl%info,'(a7,a)') '','Define minimum distance to mask'
+   call mpl%flush
 
-! Allocation
-allocate(geom%mdist_c0u(geom%nc0u,geom%nl0i))
-allocate(geom%mdist_c0a(geom%nc0a,geom%nl0i))
+   ! Allocation
+   allocate(geom%mdist_c0u(geom%nc0u,geom%nl0i))
+   allocate(geom%mdist_c0a(geom%nc0a,geom%nl0i))
 
-! Initialization
-geom%mdist_c0u = pi
+   ! Initialization
+   geom%mdist_c0u = pi
 
-do il0i=1,geom%nl0i
-   ! Check mask
-   if (any(.not.geom%gmask_c0u(:,il0i))) then
-      ! Allocation
-      not_mask_c0u = .not.geom%gmask_c0u(:,il0i)
-      call tree%alloc(mpl,geom%nc0u,mask=not_mask_c0u)
+   do il0i=1,geom%nl0i
+      ! Check mask
+      if (any(.not.geom%gmask_c0u(:,il0i))) then
+         ! Allocation
+         not_mask_c0u = .not.geom%gmask_c0u(:,il0i)
+         call tree%alloc(mpl,geom%nc0u,mask=not_mask_c0u)
 
-      ! Initialization
-      call tree%init(geom%lon_c0u,geom%lat_c0u)
+         ! Initialization
+         call tree%init(geom%lon_c0u,geom%lat_c0u)
 
-      ! Find nearest neighbors
-      do ic0u=1,geom%nc0u
-         if (geom%gmask_c0u(ic0u,il0i)) call tree%find_nearest_neighbors(geom%lon_c0u(ic0u),geom%lat_c0u(ic0u),1,nn_index, &
-       & geom%mdist_c0u(ic0u,il0i))
-      end do
+         ! Find nearest neighbors
+         do ic0u=1,geom%nc0u
+            if (geom%gmask_c0u(ic0u,il0i)) call tree%find_nearest_neighbors(geom%lon_c0u(ic0u),geom%lat_c0u(ic0u),1,nn_index, &
+          & geom%mdist_c0u(ic0u,il0i))
+         end do
 
-      ! Release memory
-      call tree%dealloc
-   end if
-end do
+         ! Release memory
+         call tree%dealloc
+      end if
+   end do
 
-! Local field
-do ic0a=1,geom%nc0a
-   ic0u = geom%c0a_to_c0u(ic0a)
-   geom%mdist_c0a(ic0a,:) = geom%mdist_c0u(ic0u,:)
-end do
+   ! Local field
+   do ic0a=1,geom%nc0a
+      ic0u = geom%c0a_to_c0u(ic0a)
+   geom%mdist_c0a(ic0a,:) = geom%mdist_c0u(ic0u,:)   
+   end do
+end if
 
 end subroutine geom_setup_mask_distance
 
@@ -1183,60 +1297,63 @@ end subroutine geom_setup_mask_distance
 ! Subroutine: geom_setup_mask_check
 ! Purpose: setup mask checking tool
 !----------------------------------------------------------------------
-subroutine geom_setup_mask_check(geom,mpl)
+subroutine geom_setup_mask_check(geom,mpl,nam)
 
 implicit none
 
 ! Passed variables
 class(geom_type),intent(inout) :: geom ! Geometry
 type(mpl_type),intent(inout) :: mpl    ! MPI data
+type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Local variables
 integer :: il0,ibnda,nbndamax
 integer,allocatable :: bnda_to_c0u(:,:)
 real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
 
-write(mpl%info,'(a7,a)') '','Setup mask check'
-call mpl%flush
+if (nam%mask_check) then
+   write(mpl%info,'(a7,a)') '','Setup mask check'
+   call mpl%flush
 
-! Allocation
-allocate(geom%nbnda(0:geom%nl0))
+   ! Allocation
+   allocate(geom%nbnda(0:geom%nl0))
 
-! Count boundary arcs
-do il0=0,geom%nl0
-   if (il0==0) then
-      call geom%mesh%count_bnda(geom%gmask_hor_c0u,geom%nbnda(il0))
-   else
-      call geom%mesh%count_bnda(geom%gmask_c0u(:,il0),geom%nbnda(il0))
-   end if
-end do
-
-! Allocation
-nbndamax = maxval(geom%nbnda)
-allocate(bnda_to_c0u(2,nbndamax))
-allocate(geom%v1bnda(3,nbndamax,0:geom%nl0))
-allocate(geom%v2bnda(3,nbndamax,0:geom%nl0))
-allocate(geom%vabnda(3,nbndamax,0:geom%nl0))
-
-do il0=1,geom%nl0
-   ! Get boundary arcs
-   if (il0==0) then
-      call geom%mesh%get_bnda(geom%gmask_hor_c0u,geom%nbnda(il0),bnda_to_c0u)
-   else
-      call geom%mesh%get_bnda(geom%gmask_c0u(:,il0),geom%nbnda(il0),bnda_to_c0u)
-   end if
-
-   ! Compute boundary arcs coordinates
-   do ibnda=1,geom%nbnda(il0)
-      lon_arc = geom%lon_c0u(bnda_to_c0u(:,ibnda))
-      lat_arc = geom%lat_c0u(bnda_to_c0u(:,ibnda))
-      call lonlat2xyz(mpl,lon_arc(1),lat_arc(1),xbnda(1),ybnda(1),zbnda(1))
-      call lonlat2xyz(mpl,lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2))
-      geom%v1bnda(:,ibnda,il0) = (/xbnda(1),ybnda(1),zbnda(1)/)
-      geom%v2bnda(:,ibnda,il0) = (/xbnda(2),ybnda(2),zbnda(2)/)
-      call vector_product(geom%v1bnda(:,ibnda,il0),geom%v2bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0))
+   ! Count boundary arcs
+   do il0=0,geom%nl0
+      if (il0==0) then
+         call geom%mesh_c0u%count_bnda(geom%gmask_hor_c0u,geom%nbnda(il0))
+      else
+         call geom%mesh_c0u%count_bnda(geom%gmask_c0u(:,il0),geom%nbnda(il0))
+      end if
    end do
-end do
+
+   ! Allocation
+   nbndamax = maxval(geom%nbnda)
+   allocate(bnda_to_c0u(2,nbndamax))
+   allocate(geom%v1bnda(3,nbndamax,0:geom%nl0))
+   allocate(geom%v2bnda(3,nbndamax,0:geom%nl0))
+   allocate(geom%vabnda(3,nbndamax,0:geom%nl0))
+
+   do il0=1,geom%nl0
+      ! Get boundary arcs
+      if (il0==0) then
+         call geom%mesh_c0u%get_bnda(geom%gmask_hor_c0u,geom%nbnda(il0),bnda_to_c0u)
+      else
+         call geom%mesh_c0u%get_bnda(geom%gmask_c0u(:,il0),geom%nbnda(il0),bnda_to_c0u)
+      end if
+
+      ! Compute boundary arcs coordinates
+      do ibnda=1,geom%nbnda(il0)
+         lon_arc = geom%lon_c0u(bnda_to_c0u(:,ibnda))
+         lat_arc = geom%lat_c0u(bnda_to_c0u(:,ibnda))
+         call lonlat2xyz(mpl,lon_arc(1),lat_arc(1),xbnda(1),ybnda(1),zbnda(1))
+         call lonlat2xyz(mpl,lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2))
+         geom%v1bnda(:,ibnda,il0) = (/xbnda(1),ybnda(1),zbnda(1)/)
+         geom%v2bnda(:,ibnda,il0) = (/xbnda(2),ybnda(2),zbnda(2)/)
+         call vector_product(geom%v1bnda(:,ibnda,il0),geom%v2bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0))
+      end do
+   end do
+end if
 
 end subroutine geom_setup_mask_check
 
@@ -1264,52 +1381,48 @@ real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
 logical :: valid
 character(len=1024),parameter :: subr = 'geom_index_from_lonlat'
 
-integer :: istart,iend,proc_to_time(mpl%nproc),iloc(1)
+! Check whether the location is in convex hull of halo A+
+call geom%mesh_c0aplus%inside(mpl,lon,lat,valid)
 
-! Find nearest neighbor
-
-! TODO: finaud! créer un mesh sur la halo A, extraire les point de bordure, créer un petit arbre avec cette bordure, et vérifier que la distance mini entre cette bordure et le point lon/lat est inférieure à la distance max entre deux points de la bordure.
-call mpl%f_comm%barrier()
-call system_clock(count=istart)
-call geom%tree%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
-call system_clock(count=iend)
-call mpl%f_comm%allgather(iend-istart,proc_to_time)
-iloc = maxloc(proc_to_time)
-if ((mpl%myproc==iloc(1)).and.(maxval(proc_to_time)>8)) print*, 'bad',iend-istart,nn_dist*reqkm
-
-ic0 = geom%c0u_to_c0(nn_index(1))
-nn_proc = geom%c0_to_proc(ic0)
+if (valid) then
+   ! Find nearest neighbor
+   call geom%tree_c0u%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
+   ic0 = geom%c0u_to_c0(nn_index(1))
+   nn_proc = geom%c0_to_proc(ic0)
+else
+   nn_dist = huge(1.0)
+   nn_proc = mpl%msv%vali
+end if
 
 ! Communication
 call mpl%f_comm%allgather(nn_dist(1),proc_to_nn_dist)
 call mpl%f_comm%allgather(nn_proc,proc_to_nn_proc)
 
-! The correct processor should handle its own nearest neighbor, with the minimum distance
-distmin = minval(proc_to_nn_dist)
-iproc = mpl%msv%vali
-do jproc=1,mpl%nproc
-   if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_nn_dist(jproc),distmin)) iproc = jproc
-end do
-if (mpl%msv%is(iproc)) call mpl%abort(subr,'cannot find root processor')
+if (mpl%msv%isanynot(proc_to_nn_proc)) then
+   ! The correct processor should handle its own nearest neighbor, with the minimum distance
+   distmin = minval(proc_to_nn_dist)
+   iproc = mpl%msv%vali
+   do jproc=1,mpl%nproc
+      if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_nn_dist(jproc),distmin)) iproc = jproc
+   end do
+   if (mpl%msv%is(iproc)) call mpl%abort(subr,'cannot find root processor')
 
-if (iproc==mpl%myproc) then
-   ! Check whether the location is in the convex hull      
-   call geom%mesh%inside(mpl,lon,lat,valid)
+   if (iproc==mpl%myproc) then
+      ! Check whether the location is in the convex hull
+      if (.not.valid) call mpl%abort(subr,'wrong processor')
 
-   ! Local index
-   ic0u = nn_index(1)
-   ic0a = geom%c0u_to_c0a(ic0u)
+      ! Local index
+      ic0u = nn_index(1)
+      ic0a = geom%c0u_to_c0a(ic0u)
 
-   ! Check mask
-   if (il0==0) then
-      gmask = geom%gmask_hor_c0a(ic0a)
-   else
-      gmask = geom%gmask_c0a(ic0a,il0)
+      ! Check mask
+      if (il0==0) then
+         gmask = geom%gmask_hor_c0a(ic0a)
+      else
+         gmask = geom%gmask_c0a(ic0a,il0)
+      end if
    end if
-end if
-call mpl%f_comm%broadcast(valid,iproc-1)
 
-if (valid) then
    ! Broadcast data
    call mpl%f_comm%broadcast(ic0a,iproc-1)
    call mpl%f_comm%broadcast(gmask,iproc-1)
@@ -1323,10 +1436,10 @@ end if
 end subroutine geom_index_from_lonlat
 
 !----------------------------------------------------------------------
-! Subroutine: geom_define_dirac
-! Purpose: define dirac indices
+! Subroutine: geom_setup_dirac
+! Purpose: setup dirac indices
 !----------------------------------------------------------------------
-subroutine geom_define_dirac(geom,mpl,nam)
+subroutine geom_setup_dirac(geom,mpl,nam)
 
 implicit none
 
@@ -1338,47 +1451,49 @@ type(nam_type),intent(in) :: nam       ! Namelist
 ! Local variables
 integer :: idir,il0,il0dir,iprocdir,ic0adir
 logical :: valid
-character(len=1024),parameter :: subr = 'geom_define_dirac'
+character(len=1024),parameter :: subr = 'geom_setup_dirac'
 
-write(mpl%info,'(a7,a)') '','Define Dirac parameters'
-call mpl%flush
+if (nam%new_cortrack.or.nam%new_corstats.or.nam%check_dirac.and.(nam%ndir>0)) then
+   write(mpl%info,'(a7,a)') '','Setup Dirac parameters'
+   call mpl%flush
 
-! Allocation
-allocate(geom%londir(nam%ndir))
-allocate(geom%latdir(nam%ndir))
-allocate(geom%iprocdir(nam%ndir))
-allocate(geom%ic0adir(nam%ndir))
-allocate(geom%il0dir(nam%ndir))
-allocate(geom%ivdir(nam%ndir))
-allocate(geom%itsdir(nam%ndir))
+   ! Allocation
+   allocate(geom%londir(nam%ndir))
+   allocate(geom%latdir(nam%ndir))
+   allocate(geom%iprocdir(nam%ndir))
+   allocate(geom%ic0adir(nam%ndir))
+   allocate(geom%il0dir(nam%ndir))
+   allocate(geom%ivdir(nam%ndir))
+   allocate(geom%itsdir(nam%ndir))
 
-! Initialization
-geom%ndir = 0
-do idir=1,nam%ndir
-   ! Find level
-   il0dir = mpl%msv%vali
-   do il0=1,geom%nl0
-      if (nam%levs(il0)==nam%levdir(idir)) il0dir = il0
+   ! Initialization
+   geom%ndir = 0
+   do idir=1,nam%ndir
+      ! Find level
+      il0dir = mpl%msv%vali
+      do il0=1,geom%nl0
+         if (nam%levs(il0)==nam%levdir(idir)) il0dir = il0
+      end do
+      if (mpl%msv%is(il0dir)) call mpl%abort(subr,'impossible to find the Dirac level')
+
+      ! Index from lon/lat/level
+      call geom%index_from_lonlat(mpl,nam%londir(idir),nam%latdir(idir),il0dir,iprocdir,ic0adir,valid)
+
+      if (valid) then
+         ! Add valid dirac point
+         geom%ndir = geom%ndir+1
+         geom%londir(geom%ndir) = nam%londir(idir)
+         geom%latdir(geom%ndir) = nam%latdir(idir)
+         geom%iprocdir(geom%ndir) = iprocdir
+         geom%ic0adir(geom%ndir) = ic0adir
+         geom%il0dir(geom%ndir) = il0dir
+         geom%ivdir(geom%ndir) = nam%ivdir(idir)
+         geom%itsdir(geom%ndir) = nam%itsdir(idir)
+      end if
    end do
-   if (mpl%msv%is(il0dir)) call mpl%abort(subr,'impossible to find the Dirac level')
+end if
 
-   ! Index from lon/lat/level
-   call geom%index_from_lonlat(mpl,nam%londir(idir),nam%latdir(idir),il0dir,iprocdir,ic0adir,valid)
-
-   if (valid) then
-      ! Add valid dirac point
-      geom%ndir = geom%ndir+1
-      geom%londir(geom%ndir) = nam%londir(idir)
-      geom%latdir(geom%ndir) = nam%latdir(idir)
-      geom%iprocdir(geom%ndir) = iprocdir
-      geom%ic0adir(geom%ndir) = ic0adir
-      geom%il0dir(geom%ndir) = il0dir
-      geom%ivdir(geom%ndir) = nam%ivdir(idir)
-      geom%itsdir(geom%ndir) = nam%itsdir(idir)
-   end if
-end do
-
-end subroutine geom_define_dirac
+end subroutine geom_setup_dirac
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_check_arc
@@ -1574,31 +1689,6 @@ dx = dx*cos(geom%lat_c0u(ic0u))
 dz = real(geom%vunit_c0u(ic0u,jl0)-geom%vunit_c0u(ic0u,il0),kind_real)
 
 end subroutine geom_compute_deltas
-
-!----------------------------------------------------------------------
-! Subroutine: geom_rand_level
-! Purpose: select random level
-!----------------------------------------------------------------------
-subroutine geom_rand_level(geom,mpl,rng,il0)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(in) :: geom ! Geometry
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(rng_type),intent(inout) :: rng ! Random number generator
-integer,intent(out) :: il0           ! Level
-
-! Resynchronize random number generator
-call rng%resync(mpl)
-
-! Generate random level
-call rng%rand_integer(1,geom%nl0,il0)
-
-! Desynchronize random number generator
-call rng%desync(mpl)
-
-end subroutine geom_rand_level
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_rand_point

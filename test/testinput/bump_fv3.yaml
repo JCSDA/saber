@@ -2,7 +2,7 @@
 datadir: "testdata"
 prefix: "bump_fv3/test"
 model: "fv3"
-universe_rad: 5000.0e3
+universe_rad: 2500.0e3
 
 # driver_param
 method: "cor"
@@ -63,5 +63,4 @@ itsdir: [1]
 # obsop_param
 
 # output_param
-grid_output: 0
-grid_resol: 100.0e3
+

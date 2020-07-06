@@ -251,17 +251,25 @@ integer :: c0u_to_c0b(geom%nc0u)
 integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
 logical :: maskobsa(obsop%nobsa),lcheck_nc0b(geom%nc0u)
+character(len=1024),parameter :: subr = 'obsop_run_obsop'
+
+! Check that universe is global
+if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for obsop')
 
 ! Check whether observations are inside the mesh
-do iobsa=1,obsop%nobsa
-   call geom%mesh%inside(mpl,obsop%lonobs(iobsa),obsop%latobs(iobsa),maskobsa(iobsa))
-   if (.not.maskobsa(iobsa)) then
-      ! Check for very close points
-      call geom%tree%find_nearest_neighbors(obsop%lonobs(iobsa),obsop%latobs(iobsa),1,nn_index,nn_dist)
-      if (nn_dist(1)<rth) maskobsa(iobsa) = .true.
-   end if
-end do
-nobsa_eff = count(maskobsa)
+if (obsop%nobsa>0) then
+   do iobsa=1,obsop%nobsa
+      call geom%mesh_c0u%inside(mpl,obsop%lonobs(iobsa),obsop%latobs(iobsa),maskobsa(iobsa))
+      if (.not.maskobsa(iobsa)) then
+         ! Check for very close points
+         call geom%tree_c0u%find_nearest_neighbors(obsop%lonobs(iobsa),obsop%latobs(iobsa),1,nn_index,nn_dist)
+         if (nn_dist(1)<rth) maskobsa(iobsa) = .true.
+      end if
+   end do
+   nobsa_eff = count(maskobsa)
+else
+   nobsa_eff = 0
+end if
 
 ! Get global number of observations
 call mpl%f_comm%allgather(obsop%nobsa,proc_to_nobsa)

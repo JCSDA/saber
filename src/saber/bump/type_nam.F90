@@ -201,8 +201,6 @@ type nam_type
    real(kind_real) :: lon_ldwv(nldwvmax)                ! Longitudes of the local diagnostics profiles to write [in degrees]
    real(kind_real) :: lat_ldwv(nldwvmax)                ! Latitudes of the local diagnostics profiles to write [in degrees]
    character(len=1024),dimension(nldwvmax) :: name_ldwv ! Name of the local diagnostics profiles to write
-   logical :: grid_output                               ! Write regridded fields
-   real(kind_real) :: grid_resol                        ! Regridded fields resolution [in meters]
 contains
    procedure :: init => nam_init
    procedure :: read => nam_read
@@ -423,8 +421,6 @@ nam%lat_ldwv = 0.0
 do ildwv=1,nldwvmax
    nam%name_ldwv(ildwv) = ''
 end do
-nam%grid_output = .false.
-nam%grid_resol = 0.0
 
 end subroutine nam_init
 
@@ -598,8 +594,6 @@ integer :: img_ldwv(nldwvmax)
 real(kind_real) :: lon_ldwv(nldwvmax)
 real(kind_real) :: lat_ldwv(nldwvmax)
 character(len=1024),dimension(nldwvmax) :: name_ldwv
-logical :: grid_output
-real(kind_real) :: grid_resol
 
 ! Local variables
 integer :: il,ildwv,lunit
@@ -757,9 +751,7 @@ namelist/output_param/nldwv, &
                     & lon_ldwv, &
                     & lat_ldwv, &
                     & name_ldwv, &
-                    & diag_rhflt, &
-                    & grid_output, &
-                    & grid_resol
+                    & diag_rhflt
 
 if (mpl%main) then
    ! general_param default
@@ -951,8 +943,6 @@ if (mpl%main) then
    do ildwv=1,nldwvmax
       name_ldwv(ildwv) = ''
    end do
-   grid_output = .false.
-   grid_resol = 0.0
 
    ! Open namelist
    call mpl%newunit(lunit)
@@ -1152,8 +1142,6 @@ if (mpl%main) then
       nam%lat_ldwv(1:nldwv) = lat_ldwv(1:nldwv)
       nam%name_ldwv(1:nldwv) = name_ldwv(1:nldwv)
    end if
-   nam%grid_output = grid_output
-   nam%grid_resol = grid_resol
 
    ! Close namelist
    close(unit=lunit)
@@ -1374,8 +1362,6 @@ call mpl%f_comm%broadcast(nam%img_ldwv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lon_ldwv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lat_ldwv,mpl%rootproc-1)
 call mpl%broadcast(nam%name_ldwv,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%grid_output,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%grid_resol,mpl%rootproc-1)
 
 end subroutine nam_bcast
 
@@ -1669,8 +1655,6 @@ if (conf%has("name_ldwv")) then
    call conf%get_or_die("name_ldwv",str_array)
    nam%name_ldwv(1:nam%nldwv) = str_array(1:nam%nldwv)
 end if
-if (conf%has("grid_output")) call conf%get_or_die("grid_output",nam%grid_output)
-if (conf%has("grid_resol")) call conf%get_or_die("grid_resol",nam%grid_resol)
 
 end subroutine nam_from_conf
 
@@ -1716,7 +1700,6 @@ if (nam%ndir>0) nam%londir(1:nam%ndir) = nam%londir(1:nam%ndir)*deg2rad
 if (nam%ndir>0) nam%latdir(1:nam%ndir) = nam%latdir(1:nam%ndir)*deg2rad
 if (nam%nldwv>0) nam%lon_ldwv(1:nam%nldwv) = nam%lon_ldwv(1:nam%nldwv)*deg2rad
 if (nam%nldwv>0) nam%lat_ldwv(1:nam%nldwv) = nam%lat_ldwv(1:nam%nldwv)*deg2rad
-nam%grid_resol = nam%grid_resol/req
 
 ! Check general_param
 if (trim(nam%datadir)=='') call mpl%abort(subr,'datadir not specified')
@@ -2047,11 +2030,6 @@ if (nam%new_hdiag) then
       end if
    end if
 end if
-if (nam%new_hdiag.or.nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomization.or.nam%new_lct) then
-   if (nam%grid_output) then
-      if (.not.(nam%grid_resol>0.0)) call mpl%abort(subr,'grid_resol should be positive')
-   end if
-end if
 
 end subroutine nam_check
 
@@ -2307,8 +2285,6 @@ end if
 call mpl%write(lncid,'nam','lon_ldwv',nam%nldwv,lon_ldwv)
 call mpl%write(lncid,'nam','lat_ldwv',nam%nldwv,lat_ldwv)
 call mpl%write(lncid,'nam','name_ldwv',nam%nldwv,nam%name_ldwv(1:nam%nldwv))
-call mpl%write(lncid,'nam','grid_output',nam%grid_output)
-call mpl%write(lncid,'nam','grid_resol',nam%grid_resol*req)
 
 ! Release memory
 deallocate(londir)

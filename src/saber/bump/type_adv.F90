@@ -323,14 +323,14 @@ do its=2,nam%nts
       do ic2a=1,samp%nc2a
          if (samp%smask_c2a(ic2a,il0)) then
             ! Index
-            call geom%tree%find_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),1,ic0u_rac)
+            call geom%tree_c0u%find_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),1,ic0u_rac)
 
             ! Define search radius
             il0i = min(il0,geom%nl0i)
-            search_rad = min(nam%adv_rad,min(geom%mdist_c0u(ic0u_rac(1),il0i),geom%mesh%bdist(ic0u_rac(1))))
+            search_rad = min(nam%adv_rad,min(geom%mdist_c0u(ic0u_rac(1),il0i),geom%mesh_c0u%bdist(ic0u_rac(1))))
 
             ! Count nearest neighbors
-            call geom%tree%count_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),search_rad,nn(ic2a,il0))
+            call geom%tree_c0u%count_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),search_rad,nn(ic2a,il0))
 
             ! Update
             call mpl%prog_print((il0-1)*samp%nc2a+ic2a)
@@ -363,7 +363,7 @@ do its=2,nam%nts
       do ic2a=1,samp%nc2a
          if (samp%smask_c2a(ic2a,il0)) then
             ! Find nearest neighbors
-            call geom%tree%find_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),nn(ic2a,il0), &
+            call geom%tree_c0u%find_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),nn(ic2a,il0), &
           & jc0u_ra(1:nn(ic2a,il0),ic2a,il0))
 
             ! Check points
@@ -939,7 +939,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
          ic0a = samp%c2a_to_c0a(ic2a)
          ic0u = geom%c0a_to_c0u(ic0a)
          call reduce_arc(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),lon_c2a(ic2a),lat_c2a(ic2a), &
-       & min(geom%mdist_c0u(ic0u,il0i),geom%mesh%bdist(ic0u)),dist_c2a(ic2a))
+       & min(geom%mdist_c0u(ic0u,il0i),geom%mesh_c0u%bdist(ic0u)),dist_c2a(ic2a))
       end do
 
       ! Check filtered mesh
@@ -1118,7 +1118,7 @@ do its=2,nam%nts
          if (geom%gmask_c0a(ic0a,il0)) then
             ic0u = geom%c0a_to_c0u(ic0a)
             call reduce_arc(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),samp%adv_lon(ic0a,il0,its),samp%adv_lat(ic0a,il0,its), &
-          & min(geom%mdist_c0a(ic0a,il0i),geom%mesh%bdist(ic0u)),reduced_dist)
+          & min(geom%mdist_c0a(ic0a,il0i),geom%mesh_c0u%bdist(ic0u)),reduced_dist)
          end if
       end do
 

@@ -2133,15 +2133,21 @@ real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts,ntest) ! Fi
 integer :: itest
 integer :: il0dir,iprocdir,ic0adir
 
+! Resynchronize random number generator
+call rng%resync(mpl)
+
 do itest=1,ntest
    ! Define random dirac location
-   call geom%rand_level(mpl,rng,il0dir)
+   call rng%rand_integer(1,geom%nl0,il0dir)
    call geom%rand_point(mpl,rng,il0dir,iprocdir,ic0adir)
 
    ! Define test vector
    fld(:,:,:,:,itest) = 0.0
    if (iprocdir==mpl%myproc) fld(ic0adir,il0dir,1,1,itest) = 1.0
 end do
+
+! Desynchronize random number generator
+call rng%desync(mpl)
 
 end subroutine define_test_vectors
 

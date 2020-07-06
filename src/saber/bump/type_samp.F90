@@ -1244,7 +1244,7 @@ write(mpl%info,'(a7,a)') '','Compute horizontal subset C1: '
 call mpl%flush(.false.)
 call initialize_sampling(mpl,rng,maxval(geom%area),geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
  & nam%ntry,nam%nrep,nam%nc1-nam%nldwv,samp%c1_to_c0(nam%nldwv+1:nam%nc1),n_uni=geom%nc0u,uni_to_loc=geom%c0u_to_c0a, &
- & tree_uni=geom%tree)
+ & tree_uni=geom%tree_c0u)
 
 ! Count Sc1 point in universe
 samp%nc1u = 0
@@ -1470,7 +1470,7 @@ elseif (trim(samp%name)=='lct') then
 
    do ic1a=1,samp%nc1a
       ! Find neighbors
-      call geom%tree%find_nearest_neighbors(samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),nam%nc3,nn_index,nn_dist)
+      call geom%tree_c0u%find_nearest_neighbors(samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),nam%nc3,nn_index,nn_dist)
 
       ! Copy neighbor index
       do jc3=1,nam%nc3
@@ -1831,7 +1831,7 @@ type(rng_type),intent(inout) :: rng    ! Random number generator
 call samp%mesh%alloc(samp%nc2u)
 
 ! Initialization
-call samp%mesh%init(mpl,rng,samp%lon_c2u,samp%lat_c2u,.true.)
+call samp%mesh%init(mpl,rng,samp%lon_c2u,samp%lat_c2u)
 
 ! Compute triangles list
 write(mpl%info,'(a7,a)') '','Compute triangles list '

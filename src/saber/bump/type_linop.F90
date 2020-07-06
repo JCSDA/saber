@@ -878,7 +878,7 @@ else
    call linop%interp_data%tree%alloc(mpl,n_src_eff)
 
    ! Initialization
-   call linop%interp_data%mesh%init(mpl,rng,lon_src_eff,lat_src_eff,.true.)
+   call linop%interp_data%mesh%init(mpl,rng,lon_src_eff,lat_src_eff)
    call linop%interp_data%tree%init(lon_src_eff,lat_src_eff)
 end if
 

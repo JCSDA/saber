@@ -58,5 +58,4 @@ itsdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 # obsop_param
 
 # output_param
-grid_output: 1
-grid_resol: 100.0e3
+

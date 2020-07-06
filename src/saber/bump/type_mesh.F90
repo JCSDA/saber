@@ -109,7 +109,7 @@ end subroutine mesh_alloc
 ! Subroutine: mesh_init
 ! Purpose: intialization
 !----------------------------------------------------------------------
-subroutine mesh_init(mesh,mpl,rng,lon,lat,all_procs)
+subroutine mesh_init(mesh,mpl,rng,lon,lat)
 
 implicit none
 
@@ -119,7 +119,6 @@ type(mpl_type),intent(inout) :: mpl               ! MPI data
 type(rng_type),intent(inout) :: rng               ! Random number generator
 real(kind_real),intent(in) :: lon(mesh%n)         ! Longitudes
 real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
-logical,intent(in),optional :: all_procs          ! All processors flag
 
 ! Local variables
 integer :: i,ii,j,k,info,nnbmax
@@ -127,12 +126,8 @@ integer :: near(mesh%n),next(mesh%n)
 integer,allocatable :: jtab(:)
 real(kind_real) :: dist(mesh%n)
 real(kind_real),allocatable :: list(:)
-logical :: lall_procs,init
+logical :: init
 character(len=1024),parameter :: subr = 'mesh_init'
-
-! Local all_procs flag
-lall_procs = .false.
-if (present(all_procs)) lall_procs = all_procs
 
 ! Points order
 do i=1,mesh%n
@@ -153,9 +148,9 @@ if (shuffle) then
    allocate(jtab(mesh%n))
 
    ! Shuffle order (more efficient to compute the Delaunay triangulation)
-   if (lall_procs) call rng%resync(mpl)
+   call rng%resync(mpl)
    call rng%rand_integer(1,mesh%n,jtab)
-   if (lall_procs) call rng%desync(mpl)
+   call rng%desync(mpl)
    do i=mesh%n,2,-1
       k = mesh%order(jtab(i))
       mesh%order(jtab(i)) = mesh%order(i)
