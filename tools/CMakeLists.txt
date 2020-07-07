@@ -1,4 +1,4 @@
-# Create Data directory for test input data
+# Link scripts
 list( APPEND test_files
     saber_compare.sh
     saber_cpplint.py
@@ -27,15 +27,13 @@ list( APPEND test_files
     saber_valgrind.sh
 )
 
-if (${OOPS_FOUND})
-   if (${ENABLE_OOPS_TOYMODELS})
-       list( APPEND test_files saber_qg_links.sh )
-   endif()
+if( oops_qg_FOUND )
+    list( APPEND test_files saber_qg_links.sh )
 endif()
 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/saber_plot)
-foreach(FILENAME ${test_files})
+file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/saber_plot )
+foreach( FILENAME ${test_files} )
     execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
                              ${PROJECT_SOURCE_DIR}/tools/${FILENAME}
                              ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
-endforeach(FILENAME)
+endforeach()

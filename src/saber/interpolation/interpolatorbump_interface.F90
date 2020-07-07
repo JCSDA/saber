@@ -9,7 +9,6 @@ use atlas_module
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
-use kinds
 use missing_values_mod
 use bump_interpolation_mod
 

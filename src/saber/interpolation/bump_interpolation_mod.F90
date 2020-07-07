@@ -17,11 +17,11 @@ use fckit_configuration_module, only : fckit_configuration
 use fckit_log_module, only: fckit_log
 use fckit_mpi_module, only: fckit_mpi_comm, fckit_mpi_sum,fckit_mpi_min,&
                             fckit_mpi_max,fckit_mpi_status
-use kinds
 use netcdf
 use tools_atlas
 use tools_const, only: pi,deg2rad,rad2deg
 use tools_func, only: lonlatmod, sphere_dist
+use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth
 use type_bump, only : bump_type

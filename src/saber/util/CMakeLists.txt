@@ -17,7 +17,7 @@ type_timer.F90
 PARENT_SCOPE
 )
 
-set ( util_header_files
+set ( util_tmpl_files
 
 linkedList_c.f
 linkedList_i.f
