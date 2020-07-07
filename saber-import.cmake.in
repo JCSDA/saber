@@ -1,0 +1,31 @@
+# saber-import.cmake
+# find_dependency calls for OOPS target dependencies
+
+include(CMakeFindDependencyMacro)
+
+find_package(OpenMP REQUIRED COMPONENTS Fortran)
+find_package(MPI REQUIRED COMPONENTS Fortran)
+find_package(NetCDF REQUIRED COMPONENTS Fortran)
+find_dependency(eckit)
+find_dependency(fckit)
+find_package(atlas REQUIRED COMPONENTS OMP_Fortran)
+
+if(@metis_FOUND@) # metis_FOUND
+    find_dependency(metis)
+    set(saber_metis_FOUND True) #COMPONENT 'metis'
+endif()
+
+if(@oops_FOUND@) # oops_FOUND
+    find_dependency(oops)
+    set(saber_oops_FOUND True) #COMPONENT 'oops'
+endif()
+
+#Export Fortran compiler version for checking module compatibility
+set(@PROJECT_NAME@_MODULES_Fortran_COMPILER_ID @CMAKE_Fortran_COMPILER_ID@)
+set(@PROJECT_NAME@_MODULES_Fortran_COMPILER_VERSION @CMAKE_Fortran_COMPILER_VERSION@)
+if(NOT @PROJECT_NAME@_MODULES_Fortran_COMPILER_ID STREQUAL CMAKE_Fortran_COMPILER_ID
+   OR NOT @PROJECT_NAME@_MODULES_Fortran_COMPILER_VERSION VERSION_EQUAL CMAKE_Fortran_COMPILER_VERSION)
+    message(SEND_ERROR "Package @PROJECT_NAME@ provides Fortran modules built with "
+            "${@PROJECT_NAME@_MODULES_Fortran_COMPILER_ID}-${@PROJECT_NAME@_MODULES_Fortran_COMPILER_VERSION} "
+            "but this build for ${PROJECT_NAME} uses incompatible compiler ${CMAKE_Fortran_COMPILER_ID}-${CMAKE_Fortran_COMPILER_VERSION}")
+endif()
