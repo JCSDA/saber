@@ -46,7 +46,7 @@
 \DeclareMathOperator{\Cor}{Cor}
 \newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
 \def\independenT#1#2{\mathrel{\setbox0\hbox{$#1#2$}%
-\copy0\kern-\wd0\mkern4mu\box0}}
+\copy0\kern-\wd0\mkern4mu\box0}} 
 
 % Appropriate font for \mathcal{}
 \DeclareSymbolFont{cmmathcal}{OMS}{cmsy}{m}{n}
@@ -123,7 +123,7 @@ Centered moments \eqref{eq:cov} et \eqref{eq:mom_4} can be estimated from these 
 \label{eq:cov_estim}
 \widetilde{B}_{ij} & = \frac{1}{N-1} \sum_{p=1}^N \delta \widetilde{x}^b_{i,p} \delta \widetilde{x}^b_{j,p}  \\
 \label{eq:mom_4_estim}
-\widetilde{\Xi}_{ijkl} & = \frac{1}{N} \sum_{p=1}^N \delta \widetilde{x}^b_{i,p} \delta \widetilde{x}^b_{j,p} \delta \widetilde{x}^b_{k,p} \delta \widetilde{x}^b_{l,p}
+\widetilde{\Xi}_{ijkl} & = \frac{1}{N} \sum_{p=1}^N \delta \widetilde{x}^b_{i,p} \delta \widetilde{x}^b_{j,p} \delta \widetilde{x}^b_{k,p} \delta \widetilde{x}^b_{l,p} 
 \end{align}
 \end{subequations}
 $  $\\
@@ -232,7 +232,7 @@ Using properties \eqref{eq:prop_pert_2} and \eqref{eq:prop_pert_4}:
 Since the cardinality of the set $\left\{1 \le p < q \le N\right\}$ is $N(N-1)/2$, we get:
 \begin{align}
 \label{eq:exp_cov}
-\mathbb{E} \left[\widetilde{B}_{ij}\right] = B_{ij}
+\mathbb{E} \left[\widetilde{B}_{ij}\right] = B_{ij} 
 \end{align}
 Thus, covariance estimators \eqref{eq:cov_estim} and \eqref{eq:cov_estim_2} are unbiased.
 
@@ -409,7 +409,7 @@ $  $\\
 Thus, the expectation of $\widetilde{\Xi}_{ijkl}$ is given by:
 \begin{align}
 \label{eq:exp_mom_4}
-\mathbb{E} \left[\widetilde{\Xi}_{ijkl}\right] = P_5(N) \ \Xi_{ijkl} + P_6(N) \left(B_{ij}B_{kl} + B_{ik}B_{jl} + B_{il}B_{jk} \right)
+\mathbb{E} \left[\widetilde{\Xi}_{ijkl}\right] = P_5(N) \ \Xi_{ijkl} + P_6(N) \left(B_{ij}B_{kl} + B_{ik}B_{jl} + B_{il}B_{jk} \right) 
 \end{align}
 with:
 \begin{subequations}
@@ -436,7 +436,7 @@ For each sub-ensembles, centered moments can be estimated from these perturbatio
 \begin{subequations}
 \begin{align}
 \widetilde{B}_{ij,r} & = \frac{1}{N_r-1} \sum_{p=1}^{N_r} \delta \widetilde{x}^b_{i,r,p} \delta \widetilde{x}^b_{j,r,p}  \\
-\widetilde{\Xi}_{ijkl,r} & = \frac{1}{N_r} \sum_{p=1}^{N_r} \delta \widetilde{x}^b_{i,r,p} \delta \widetilde{x}^b_{j,r,p} \delta \widetilde{x}^b_{k,r,p} \delta \widetilde{x}^b_{l,r,p}
+\widetilde{\Xi}_{ijkl,r} & = \frac{1}{N_r} \sum_{p=1}^{N_r} \delta \widetilde{x}^b_{i,r,p} \delta \widetilde{x}^b_{j,r,p} \delta \widetilde{x}^b_{k,r,p} \delta \widetilde{x}^b_{l,r,p} 
 \end{align}
 \end{subequations}
 $  $\\
@@ -540,7 +540,7 @@ Similarly, for the sample fourth-order centered moment, we define the sum of per
 \end{align}
 Since the sample fourth-order centered moment estimator is biased, the previous method cannot be applied to find an appropriate normalization. Thus, we choose an arbitrary (but consistent) one for the corrected sample fourth-order centered moment:
 \begin{align}
-\widetilde{\Xi}^c_{ijkl} = \frac{1}{N} \widetilde{\Psi}^c_{ijkl}
+\widetilde{\Xi}^c_{ijkl} = \frac{1}{N} \widetilde{\Psi}^c_{ijkl} 
 \end{align}
 
 \subsection{Asymptotic behavior}
@@ -640,7 +640,7 @@ where $\mathbf{m} \in \mathbb{N}^n$. Rearranging the sums to extract $p$-depende
 The second term of \eqref{eq:sep} is simply modified in:
 \begin{align}
 \prod_{i=1}^n \left(\widetilde{x}^b_{i,N} - \left\langle \widetilde{x}^b_i \right\rangle_N\right)^{k_i} & = \prod_{i=1}^n \left(\frac{N-1}{N} \left(\widetilde{x}^b_{i,N} - \left\langle \widetilde{x}^b_i \right\rangle_{N-1}\right)\right)^{k_i} \nonumber \\
-& = \left(\frac{N-1}{N}\right)^{\sum_{i=1}^n k_i} \prod_{i=1}^n \left(\widetilde{x}^b_{i,N} - \left\langle \widetilde{x}^b_i \right\rangle_{N-1}\right)^{k_i}
+& = \left(\frac{N-1}{N}\right)^{\sum_{i=1}^n k_i} \prod_{i=1}^n \left(\widetilde{x}^b_{i,N} - \left\langle \widetilde{x}^b_i \right\rangle_{N-1}\right)^{k_i} 
 \end{align}
 Thus, bringing the two terms together:
 \begin{align}
@@ -699,7 +699,7 @@ s_{(1,1,0,0),p} = s_{(1,1,0,0),p-1} + \frac{p-1}{p} \left(\widetilde{x}^b_{1,p} 
 \item Fourth-order centered moments:
 \begin{align}
 \widetilde{\Xi}_{1234} = \frac{1}{N} s_{(1,1,1,1),N}
-\end{align}
+\end{align} 
 \end{itemize}
 \end{enumerate}
 
@@ -735,7 +735,7 @@ It is possible to take both processes into account in the sample centered moment
 and
 \begin{align}
 \label{eq:exp_mom_4_exp}
-\mathbb{E} \left[\widetilde{\Xi}_{ijkl}\right] = P_5(N) \ \mathbb{E} \left[\Xi_{ijkl}\right]+ P_6(N) \left(\mathbb{E} \left[B_{ij}B_{kl}\right] + \mathbb{E} \left[B_{ik}B_{jl}\right] + \mathbb{E} \left[B_{il}B_{jk}\right] \right)
+\mathbb{E} \left[\widetilde{\Xi}_{ijkl}\right] = P_5(N) \ \mathbb{E} \left[\Xi_{ijkl}\right]+ P_6(N) \left(\mathbb{E} \left[B_{ij}B_{kl}\right] + \mathbb{E} \left[B_{ik}B_{jl}\right] + \mathbb{E} \left[B_{il}B_{jk}\right] \right) 
 \end{align}
 $  $\\
 In the case of a Gaussian distributed ensemble, equation \eqref{eq:exp_prod_gau} becomes:
@@ -759,7 +759,7 @@ P_2(N) & P_3(N) & P_3(N) & P_1(N) \\
 P_3(N) & P_2(N) & P_3(N) & P_1(N) \\
 P_3(N) & P_3(N) & P_2(N) & P_1(N) \\
 P_6(N) & P_6(N) & P_6(N) & P_5(N)
-\end{array} \right) , \
+\end{array} \right) , \ 
 \mathbf{x} = \left( \begin{array}{c}
 \mathbb{E} \left[B_{ij} B_{kl}\right] \\
 \mathbb{E} \left[B_{ik} B_{jl}\right] \\
@@ -815,7 +815,7 @@ In the case of a Gaussian distributed ensemble, the expected product of covarian
 1 & P_4(N) & P_4(N) \\
 P_4(N) & 1 & P_4(N) \\
 P_4(N) & P_4(N) & 1 \\
-\end{array} \right) , \
+\end{array} \right) , \ 
 \mathbf{x} & = \left( \begin{array}{c}
 \mathbb{E} \left[B_{ij} B_{kl}\right] \\
 \mathbb{E} \left[B_{ik} B_{jl}\right] \\
@@ -858,7 +858,7 @@ Denoting $\widetilde{\boldsymbol{\xi}} \in \mathbb{R}^{n \times n}$ the matrix s
 \label{eq:exp_prod_exp_2}
 \mathbb{E} \left[\widetilde{B}_{ij}^2\right] & = P_1(N) \mathbb{E} \left[\xi_{ij}\right] + P_{14}(N) \mathbb{E} \left[B^2_{ij}\right] + P_3(N) \mathbb{E} \left[B_{ii} B_{jj}\right] \\
 \label{eq:exp_prod_exp_3}
-\mathbb{E} \left[\widetilde{B}_{ii} \widetilde{B}_{jj}\right] & = P_1(N) \mathbb{E} \left[\xi_{ij}\right] + P_2(N) \mathbb{E} \left[B^2_{ij}\right] + 2 P_3(N) \mathbb{E} \left[B_{ii} B_{jj}\right] \\
+\mathbb{E} \left[\widetilde{B}_{ii} \widetilde{B}_{jj}\right] & = P_1(N) \mathbb{E} \left[\xi_{ij}\right] + 2 P_3(N) \mathbb{E} \left[B^2_{ij}\right] + P_2(N) \mathbb{E} \left[B_{ii} B_{jj}\right] \\
 \label{eq:exp_mom_4_exp_2}
 \mathbb{E} \left[\widetilde{\xi}_{ij}\right] & = P_5(N) \mathbb{E} \left[\xi_{ij} \right] + P_6(N) \left(2 \mathbb{E} \left[B^2_{ij}\right] + \mathbb{E} \left[B_{ii} B_{jj}\right] \right)
 \end{align}
@@ -917,28 +917,28 @@ $  $\\
 \begin{center}
 \begin{tikzpicture}[auto,>=latex]
     \node[box] (exp) {\begin{tabular}{@{\hspace{0.07cm}}c@{\hspace{0.07cm}}}
-                                     Expected ensemble quantities  \\
+                                     Expected ensemble quantities  \\ 
                                      from a given ensemble (size $N$): \\
                                      $\mathbb{E} \left[\widetilde{B}_{ij}\right]$, $\mathbb{E} \left[\widetilde{B}_{ij}^2\right]$, $\mathbb{E} \left[\widetilde{B}_{ii} \widetilde{B}_{jj}\right]$, $\mathbb{E} \left[\widetilde{\xi}_{ij}\right]$
                                       \end{tabular}};
-
+                                      
     \node[box, below of=exp, node distance=2.0cm, xshift=8.0cm] (asy) {\begin{tabular}{@{\hspace{0.07cm}}c@{\hspace{0.07cm}}}
                                      Expected asymptotic quantities: \\
                                      from this distribution: \\
                                      $\mathbb{E} \left[B_{ij}\right]$, $\mathbb{E} \left[B^2_{ij}\right]$, $\mathbb{E} \left[B_{ii} B_{jj}\right]$, $\mathbb{E} \left[\xi_{ij}\right]$
                                       \end{tabular}};
-
+                                      
     \node[box, below of=exp, node distance=4.0cm] (exp2) {\begin{tabular}{@{\hspace{0.07cm}}c@{\hspace{0.07cm}}}
-                                     Expected ensemble quantities  \\
+                                     Expected ensemble quantities  \\ 
                                      from this distribution (size $N'$): \\
                                      $\mathbb{E} \left[\widetilde{B}_{ij}\right]$, $\mathbb{E} \left[\widetilde{B}_{ij}^2\right]$, $\mathbb{E} \left[\widetilde{B}_{ii} \widetilde{B}_{jj}\right]$, $\mathbb{E} \left[\widetilde{\xi}_{ij}\right]$
                                       \end{tabular}};
-
+                                      
     \path[->,thick] (exp.east) edge node {\begin{tabular}{@{\hspace{0.07cm}}c@{\hspace{0.07cm}}}
                                      Equations \eqref{eq:exp_cov_exp} and [\eqref{eq:prod_asy_cov_exp_2}, \eqref{eq:prod_asy_cov_exp_3}, \eqref{eq:asy_mom_4_exp_2}] \\
                                      or [\eqref{eq:prod_asy_cov_gau_exp_2}, \eqref{eq:prod_asy_cov_gau_exp_3}] with ensemble size $N$
                                      \end{tabular}} (asy.north);
-
+                                                                          
     \path[->,thick] (asy.south) edge node {\begin{tabular}{@{\hspace{0.07cm}}c@{\hspace{0.07cm}}}
                                      Equations \eqref{eq:exp_cov_exp} and [\eqref{eq:exp_prod_exp_2}, \eqref{eq:exp_prod_exp_3}, \eqref{eq:exp_mom_4_exp_2}] \\
                                      or [\eqref{eq:exp_prod_gau_exp_2}, \eqref{eq:exp_prod_gau_exp_3}] with ensemble size $N'$
@@ -997,7 +997,7 @@ As a consequence, we get the second and third equations:
 \end{subequations}
 where $\mathbb{E} \left[B^2_{ij,r}\right]$ and $\mathbb{E} \left[B_{ii,r} B_{jj,r}\right]$ are computed using equations [\eqref{eq:prod_asy_cov_exp_2}, \eqref{eq:prod_asy_cov_exp_3}] or [\eqref{eq:prod_asy_cov_gau_exp_2}, \eqref{eq:prod_asy_cov_gau_exp_3}] for each sub-ensemble. The last equation is simply:
 \begin{align}
-\mathbb{E} \left[\xi^c_{ij}\right] & = \frac{1}{R} \sum_{r=1}^R \mathbb{E} \left[\xi_{ij,r}\right]
+\mathbb{E} \left[\xi^c_{ij}\right] & = \frac{1}{R} \sum_{r=1}^R \mathbb{E} \left[\xi_{ij,r}\right] 
 \end{align}
 where $\mathbb{E} \left[\xi_{ij,r}\right]$ is computed using equation \eqref{eq:asy_mom_4_exp_2} for each sub-ensemble.
 \end{enumerate}
@@ -1012,7 +1012,7 @@ $  $\\
 To optimize $\boldsymbol{\lambda}$, we need to define a norm that should be minimized. A general choice is to use the expected squared Frobenius norm of the filtering error, projected into a subspace defined by the projection matrix $\mathbf{Q} \in \mathbb{R}^{n \times n'}$:
 \begin{align}
 \label{eq:norm_proj}
-e\left(\boldsymbol{\lambda}\right) & = \mathbb{E}\left[ \left\Vert \mathbf{Q}^\mathrm{T} \left(\widehat{\mathbf{B}}\left(\boldsymbol{\lambda}\right) - \mathbf{B} \right) \mathbf{Q} \right\Vert_\mathrm{F}^2 \right]
+e\left(\boldsymbol{\lambda}\right) & = \mathbb{E}\left[ \left\Vert \mathbf{Q}^\mathrm{T} \left(\widehat{\mathbf{B}}\left(\boldsymbol{\lambda}\right) - \mathbf{B} \right) \mathbf{Q} \right\Vert_\mathrm{F}^2 \right] 
 \end{align}
 The asymptotic sample covariance $\mathbf{B}$ can be considered as the target of the filtering. The definition of the projection matrix $\mathbf{Q}$ depends on the considered system.\\
 $  $\\
@@ -1073,7 +1073,7 @@ where:
 \end{align}
 The difference $e\left(\boldsymbol{\lambda}^0\right) - e\left(\boldsymbol{\lambda}^\mathrm{opt}\right)$ is the norm reduction due to the filtering. If we can show that the last term of equation \eqref{eq:de} vanishes, then $\Delta e$ can be computed once $\widehat{B}_{ij}\left(\boldsymbol{\lambda}^\mathrm{opt}\right)$ is known to estimate this norm reduction. Actually, an even more general condition given by $\displaystyle \mathbb{E}\left[\left(\widehat{B}_{ij}\left(\boldsymbol{\lambda}^\mathrm{opt}\right) - B_{ij}\right) \widetilde{B}_{ij}  \right] = 0$ will be verified in the following filtering methods.\\
 $  $\\
-Also:
+Also: 
 \begin{align}
 e\left(\boldsymbol{\lambda}^0\right) & = \sum_{1 \le i,j \le n} W_{ij}^2 \mathbb{E}\left[ \left(\widetilde{B}_{ij} - B_{ij} \right)^2 \right] \nonumber \\
 & = \sum_{1 \le i,j \le n} W_{ij}^2 \left(\mathbb{E}\left[ \widetilde{B}_{ij}^2 \right] + \mathbb{E}\left[ B^2_{ij} \right] - 2 \mathbb{E}\left[ \widetilde{B}_{ij} B_{ij} \right] \right) \nonumber \\
@@ -1099,18 +1099,18 @@ To filter the sample variances $\widetilde{\mathbf{v}}$, we apply a linear filte
 \label{eq:var_filter}
 \widehat{\mathbf{v}} = \mathbf{F} \widetilde{\mathbf{v}} + \mathbf{f}
 \end{align}
-where $\mathbf{F} \in \mathbb{R}^{n \times n}$ is the filtering gain and $\mathbf{f} \in \mathbb{R}^n$ the filter offset.
+where $\mathbf{F} \in \mathbb{R}^{n \times n}$ is the filtering gain and $\mathbf{f} \in \mathbb{R}^n$ the filter offset. 
 
 \subsection{Expected squared norm}
 We use the identity matrix as a weight: $\mathbf{W} = \mathbf{I}_n$. The expected squared norm of equation \eqref{eq:norm_proj_2} adapted for the variance filtering becomes:
 \begin{align}
 e(\mathbf{F},\mathbf{f}) & = \sum_{1 \le i \le n} \mathbb{E}\left[ \left(\sum_{1 \le j \le n} F_{ij} \widetilde{v}_j + f_i - v_i \right)^2 \right] \nonumber \\
-& = \sum_{1 \le i \le n} \left( \sum_{1 \le j,k \le n} F_{ij} F_{ik} \mathbb{E}\left[\widetilde{v}_j \widetilde{v}_k\right] + f_i^2 + v^2_i \right.\nonumber \\
+& = \sum_{1 \le i \le n} \left( \sum_{1 \le j,k \le n} F_{ij} F_{ik} \mathbb{E}\left[\widetilde{v}_j \widetilde{v}_k\right] + f_i^2 + \mathbb{E}\left[v^2_i\right] \right.\nonumber \\
 & \left. \quad + 2 f_i \sum_{1 \le j \le n} F_{ij} \mathbb{E}\left[\widetilde{v}_j\right] - 2 \sum_{1 \le j \le n} F_{ij} \mathbb{E}\left[v_i\widetilde{v}_j\right] - 2 f_i \mathbb{E}\left[v_i\right]\right)
 \end{align}
 Using the independence of random processes in \eqref{eq:truth_noise_inde}, it can be simplified:
 \begin{align}
-e(\mathbf{F},\mathbf{f}) & = \sum_{1 \le i \le n} \Bigg( \sum_{1 \le j,k \le n} F_{ij} F_{ik} \mathbb{E}\left[\widetilde{v}_j \widetilde{v}_k\right] + f_i^2 + v^2_i \nonumber \\
+e(\mathbf{F},\mathbf{f}) & = \sum_{1 \le i \le n} \Bigg( \sum_{1 \le j,k \le n} F_{ij} F_{ik} \mathbb{E}\left[\widetilde{v}_j \widetilde{v}_k\right] + f_i^2 + \mathbb{E}\left[v^2_i\right] \nonumber \\
 & + 2 f_i \left(\sum_{1 \le j \le n} F_{ij} \mathbb{E}\left[\widetilde{v}_j\right] - \mathbb{E}\left[\widetilde{v}_i\right]\right)- 2 \sum_{1 \le j \le n} F_{ij} \mathbb{E}\left[v_i v_j\right]\Bigg)
 \end{align}
 Its gradient is given by:
@@ -1170,7 +1170,7 @@ Using the independence of random processes in \eqref{eq:truth_noise_inde} and th
 \end{align}
 so that:
 \begin{align}
-e\left(\mathbf{I}_n,\boldsymbol{0}\right) - e\left(\mathbf{F}^\mathrm{opt},\mathbf{f}^\mathrm{opt}\right) = \sum_{1 \le i \le n} \mathbb{E}\left[ \left(\widehat{v}_i^\mathrm{opt} - \widetilde{v}_i\right)^2\right]
+e\left(\mathbf{I}_n,\boldsymbol{0}\right) - e\left(\mathbf{F}^\mathrm{opt},\mathbf{f}^\mathrm{opt}\right) = \sum_{1 \le i \le n} \mathbb{E}\left[ \left(\widehat{v}_i^\mathrm{opt} - \widetilde{v}_i\right)^2\right] 
 \end{align}
 
 \clearpage
@@ -1222,7 +1222,7 @@ which shows three important properties:
 \subsection{Norm reduction}
 Using the independence of random processes in \eqref{eq:truth_noise_inde} and the optimality condition of equation \eqref{eq:loc_th}, we verify that:
 \begin{align}
-\mathbb{E}\left[\left(\widehat{B}_{ij}^\mathrm{opt} - B_{ij}\right) \widetilde{B}_{ij} \right] = L_{ij}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij}^2\right] - \mathbb{E}\left[B^2_{ij} \right] = 0
+\mathbb{E}\left[\left(\widehat{B}_{ij}^\mathrm{opt} - B_{ij}\right) \widetilde{B}_{ij} \right] = L_{ij}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij}^2\right] - \mathbb{E}\left[B^2_{ij} \right] = 0 
 \end{align}
 so that:
 \begin{align}
@@ -1460,7 +1460,7 @@ For the case without hybridization, no localization is applied for an infinite e
 \subsection{Norm reduction}
 Using the independence of random processes in \eqref{eq:truth_noise_inde} and the optimality condition of equation \eqref{eq:hyb_th}, we verify that:
 \begin{align}
-\mathbb{E}\left[\left(\widehat{B}_{ij}^\mathrm{opt} - B_{ij}\right) \widetilde{B}_{ij} \right] = L_{ij}^{h,\mathrm{opt}} \mathbb{E}\left[\widetilde{B}_{ij}^2\right] + \gamma^\mathrm{opt} \overbar{B}_{ij} \mathbb{E}\left[\widetilde{B}_{ij}\right] - \mathbb{E}\left[B^2_{ij} \right] = 0
+\mathbb{E}\left[\left(\widehat{B}_{ij}^\mathrm{opt} - B_{ij}\right) \widetilde{B}_{ij} \right] = L_{ij}^{h,\mathrm{opt}} \mathbb{E}\left[\widetilde{B}_{ij}^2\right] + \gamma^\mathrm{opt} \overbar{B}_{ij} \mathbb{E}\left[\widetilde{B}_{ij}\right] - \mathbb{E}\left[B^2_{ij} \right] = 0 
 \end{align}
 so that:
 \begin{align}
@@ -1502,7 +1502,7 @@ Thus, we finally get:
 \label{eq:hyb_better}
 e(\mathbf{L}^{h,\mathrm{opt}},\gamma^\mathrm{opt}) - e(\mathbf{L}^\mathrm{opt}) = - \sum_{1 \le i,j \le n} W_{ij}^2 \left(1 - \frac{\mathbb{E} \left[\widetilde{B}_{ij}\right]^2}{\mathbb{E}\left[ \widetilde{B}_{ij}^2 \right]}\right) \gamma^{\mathrm{opt}2} \overbar{B}_{ij}^2 \le 0
 \end{align}
-since $\mathbb{E}\left[ \widetilde{B}_{ij}^2 \right] \ge \mathbb{E} \left[\widetilde{B}_{ij}\right]^2$. This result is very important since it shows the superiority of the hybrid formalism. Indeed, the optimally localized-hybridized covariance matrix is \textit{always} more accurate than its optimally localized-only counterpart, \textit{whatever the static covariance matrix} $\overbar{\mathbf{B}}$ \textit{specified for the hybridization}.
+since $\mathbb{E}\left[ \widetilde{B}_{ij}^2 \right] \ge \mathbb{E} \left[\widetilde{B}_{ij}\right]^2$. This result is very important since it shows the superiority of the hybrid formalism. Indeed, the optimally localized-hybridized covariance matrix is \textit{always} more accurate than its optimally localized-only counterpart, \textit{whatever the static covariance matrix} $\overbar{\mathbf{B}}$ \textit{specified for the hybridization}. 
 
 \subsection{Optimization of the full static covariance matrix: a failed attempt}
 Instead of considering the static covariance matrix as an input data and optimizing the hybridization coefficient $\gamma$, we can try to optimize the full static covariance matrix $\overbar{\mathbf{B}}^\mathrm{full} = \gamma \overbar{\mathbf{B}}$.\\
@@ -1518,7 +1518,7 @@ Its gradient with respect to $\overbar{B}^\mathrm{full}_{ij}$ is given by:
 \end{align}
 Setting this gradient to zero leads to:
 \begin{align}
-2 W_{ij}^2 \left(\overbar{B}^\mathrm{full}_{ij} + \left(L^h_{ij} - 1\right) \mathbb{E} \left[\widetilde{B}_{ij}\right] \right) = 0 \ \Leftrightarrow \ \overbar{B}^\mathrm{full}_{ij} = \left(1 - L^h_{ij}\right) \mathbb{E}\left[ \widetilde{B}_{ij}\right]
+2 W_{ij}^2 \left(\overbar{B}^\mathrm{full}_{ij} + \left(L^h_{ij} - 1\right) \mathbb{E} \left[\widetilde{B}_{ij}\right] \right) = 0 \ \Leftrightarrow \ \overbar{B}^\mathrm{full}_{ij} = \left(1 - L^h_{ij}\right) \mathbb{E}\left[ \widetilde{B}_{ij}\right] 
 \end{align}
 In this equation, it is very unlikely that $1 - L^h_{ij}$ will be the element of a positive semi-definite matrix, so that $\overbar{\mathbf{B}}^\mathrm{full}$ will not have any square-root. Thus, this attempt is useless in practice.
 
@@ -1562,7 +1562,7 @@ L^{h,\mathrm{opt}}_{ij} & = L^\star L^{h,\mathrm{old}}_{ij} \\
 \gamma^\mathrm{opt} & = \gamma^\star + L^\star \gamma^\mathrm{old}
 \end{align}
 \end{subequations}
-
+ 
 \clearpage
 
 \section{Dual-ensemble hybridization}
@@ -1606,7 +1606,7 @@ and:
 \begin{align}
 \label{eq:de_th_2}
 & 2 W_{ij}^2 \left(L_{ij,2}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij,2}^2\right] + L_{ij,1}^\mathrm{opt} \mathbb{E} \left[\widetilde{B}_{ij,1} \widetilde{B}_{ij,2}\right] - \mathbb{E} \left[\widetilde{B}_{ij,2} B_{ij,1}\right] \right) = 0 \nonumber \\
-\Leftrightarrow \ & L_{ij,2}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij,2}^2\right] + L_{ij,1}^\mathrm{opt} \mathbb{E} \left[\widetilde{B}_{ij,1} \widetilde{B}_{ij,2}\right] = \mathbb{E} \left[\widetilde{B}_{ij,2} B_{ij,1}\right]
+\Leftrightarrow \ & L_{ij,2}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij,2}^2\right] + L_{ij,1}^\mathrm{opt} \mathbb{E} \left[\widetilde{B}_{ij,1} \widetilde{B}_{ij,2}\right] = \mathbb{E} \left[\widetilde{B}_{ij,2} B_{ij,1}\right] 
 \end{align}
 Combining these equations, we get:
 \begin{subequations}
@@ -1620,7 +1620,7 @@ L_{ij,2}^\mathrm{opt} & = \frac{\mathbb{E} \left[\widetilde{B}_{ij,2} B_{ij,1}\r
 \subsection{Norm reduction}
 Using the independence of random processes in \eqref{eq:truth_noise_inde} and the optimality condition of equation \eqref{eq:de_th_1}, we verify that:
 \begin{align}
-\mathbb{E}\left[\left(\widehat{B}_{ij}^\mathrm{opt} - B_{ij,1}\right) \widetilde{B}_{ij,1} \right] = L_{ij,1}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij,1}^2\right] + L_{ij,2}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij,2} \widetilde{B}_{ij,1}\right] - \mathbb{E}\left[B^2_{ij,1}\right] = 0
+\mathbb{E}\left[\left(\widehat{B}_{ij}^\mathrm{opt} - B_{ij,1}\right) \widetilde{B}_{ij,1} \right] = L_{ij,1}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij,1}^2\right] + L_{ij,2}^\mathrm{opt} \mathbb{E}\left[\widetilde{B}_{ij,2} \widetilde{B}_{ij,1}\right] - \mathbb{E}\left[B^2_{ij,1}\right] = 0 
 \end{align}
 so that:
 \begin{align}
@@ -1798,7 +1798,7 @@ D_{ij} & = \underbrace{\overbrace{\mathbb{E} \left[\widetilde{B}_{ij,pq,1}^2\rig
 \subsection{Principle}
 The previous filtering equations are fully general, since no assumption has been made on the practical way of computing the expectations $\mathbb{E}\left[\cdot\right]$. However, it is then necessary to make an assumption about the estimation of these expectations from available data (often a single realization), in order to get usable formulations. Various ergodicity assumptions could be made, based on the location, the scale, or the coordinate of any base that can decompose the covariances.\\
 $  $\\
-Importantly, the filtering parameters must be consistent with the ergodicity assumption.
+Importantly, the filtering parameters must be consistent with the ergodicity assumption. 
 
 \subsection{Averaging operator}
 To estimate the statistical expectations $\mathbb{E} [\cdot]$ in previous formulae, we choose the simplest method: a spatial and angular ergodicity assumption, leading to a homogeneous and isotropic filtering. The spatial and angular averages are combined into a single discrete operator $\left\lceil \cdot\right\rfloor$ that can be applied either to a vector or to a matrix:
@@ -1900,7 +1900,7 @@ where $\rho_k$ are real coefficients of the spectral filter, lying between 0 and
 \end{align}
 where $K$ is the maximum wavenumber index and $^*$ denotes the conjugate complex number. Thus, its derivative with respect to $\rho_k$ is non-negative:
 \begin{align}
-\frac{\partial}{\partial \rho_k} \left(\left\lceil\widehat{\mathbf{v}} \circ \widetilde{\mathbf{v}}\right\rfloor\right) = \left\vert \widetilde{s}_k \right\vert^2 \ge 0
+\frac{\partial}{\partial \rho_k} \left(\left\lceil\widehat{\mathbf{v}} \circ \widetilde{\mathbf{v}}\right\rfloor\right) = \left\vert \widetilde{s}_k \right\vert^2 \ge 0 
 \end{align}
 $  $\\
 With usual filtering kernels, we can check that for $k > 0$:
@@ -1966,7 +1966,7 @@ We have shown that $\left\lceil\widehat{\mathbf{v}} \circ \widetilde{\mathbf{v}}
 \item Filter the sample variances $\widehat{\mathbf{v}}$ with $\mathbf{F}\left(\mathcal{L}^f\right)$ to get $\widehat{\mathbf{v}}$.
 \item Compute $\left\lceil\widehat{\mathbf{v}} \circ \widetilde{\mathbf{v}}\right\rfloor$.
 \item If $\left\lceil\widehat{\mathbf{v}} \circ \widetilde{\mathbf{v}}\right\rfloor$ is larger (resp. small) than the right-hand side of equation \eqref{eq:var_filt}, then increase (resp. decrease) the length-scale $\mathcal{L}^f$ by the step $\mathrm{d}\mathcal{L}^f$.
-\item Update the step: $\mathrm{d}\mathcal{L}^f = \mathrm{d}\mathcal{L}^f/2$
+\item Update the step: $\mathrm{d}\mathcal{L}^f = \mathrm{d}\mathcal{L}^f/2$ 
 \end{itemize}
 \end{enumerate}
 In practice, about 10 iterations are enough to get a satisfactory precision on $\mathcal{L}^f$. For instance, with this basic dichotomy algorithm, if the maximum filtering length-scale is estimated at 500 km, then the starting length-scale is set to 250 km, and after 10 iterations the obtained accuracy is $\mathrm{d}\mathcal{L}^f = 250/2^{10} \simeq 0.24$ km. This is likely to be satisfactory in practice, even if more iterations could be done until the machine precision is reached.
@@ -1984,7 +1984,7 @@ where $\left\{\boldsymbol{\eta}_1,\dots,\boldsymbol{\eta}_{\overbar{N}}\right\}$
 \begin{align}
 \boldsymbol{\eta}_p \sim \mathcal{N}\left(0,\mathbf{I}\right)
 \end{align}
-\item Estimate $\left\lceil \overbar{\mathbf{B}} \right\rfloor$ from the pseudo-ensemble $\left\{\overbar{\mathbf{x}}^b_1,\dots,\overbar{\mathbf{x}}^b_{\overbar{N}}\right\}$.
+\item Estimate $\left\lceil \overbar{\mathbf{B}} \right\rfloor$ from the pseudo-ensemble $\left\{\overbar{\mathbf{x}}^b_1,\dots,\overbar{\mathbf{x}}^b_{\overbar{N}}\right\}$. 
 \end{enumerate}
 Computing the spatial and angular average by using the same random sampling as for the ``real'' ensemble $\left\{\widetilde{\mathbf{x}}^b_1,\dots,\widetilde{\mathbf{x}}^b_N\right\}$ ensures a better consistency of both estimations, at the lowest cost.
 
