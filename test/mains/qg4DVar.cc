@@ -24,6 +24,6 @@ int main(int argc,  char ** argv) {
   saber::instantiateCovarFactory<qg::QgTraits>();
   saber::instantiateLocalizationFactory<qg::QgTraits>();
   saber::instantiateVariableChangeFactory<qg::QgTraits>();
-  oops::Variational<qg::QgTraits> var;
+  oops::Variational<qg::QgTraits, qg::QgObsTraits> var;
   return run.execute(var);
 }
