@@ -5,6 +5,6 @@
 
 option(BUILD_BUMP_DOC "Build BUMP documentation" OFF)
 
-if (BUILD_BUMP_DOC)
+if ( BUILD_BUMP_DOC )
     add_subdirectory( bump )
-endif (BUILD_BUMP_DOC)
+endif()

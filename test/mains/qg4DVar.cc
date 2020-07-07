@@ -8,9 +8,9 @@
  * does it submit to any jurisdiction.
  */
 
-#include "model/instantiateQgChangeVarFactory.h"
-#include "model/instantiateQgLocalizationFactory.h"
-#include "model/QgTraits.h"
+#include "oops/qg/instantiateQgChangeVarFactory.h"
+#include "oops/qg/instantiateQgLocalizationFactory.h"
+#include "oops/qg/QgTraits.h"
 #include "oops/runs/Run.h"
 #include "oops/runs/Variational.h"
 #include "saber/oops/instantiateCovarFactory.h"
@@ -24,6 +24,6 @@ int main(int argc,  char ** argv) {
   saber::instantiateCovarFactory<qg::QgTraits>();
   saber::instantiateLocalizationFactory<qg::QgTraits>();
   saber::instantiateVariableChangeFactory<qg::QgTraits>();
-  oops::Variational<qg::QgTraits> var;
+  oops::Variational<qg::QgTraits, qg::QgObsTraits> var;
   return run.execute(var);
 }
