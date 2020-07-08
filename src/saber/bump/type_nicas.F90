@@ -105,6 +105,9 @@ do ib=1,bpar%nbe
    ! Smoother flag
    nicas%blk(ib)%smoother = .false.
 
+   ! Horizontal flag
+   nicas%blk(ib)%horizontal = .false.
+
    ! Set name
    if (nam%lsqrt) then
       write(nicas%blk(ib)%name,'(a,i1,a,i4.4,a,i4.4,a,a)') trim(prefix)//'-',nam%mpicom,'-sqrt_',mpl%nproc,'-', &

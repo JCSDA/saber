@@ -186,6 +186,7 @@ type nicas_blk_type
 
    ! Smoother data
    logical :: smoother                             ! Smoother flag
+   logical :: horizontal                           ! Horizontal application flag
    real(kind_real),allocatable :: smoother_norm(:) ! Smoother norm
 
    ! Required data to write grids
@@ -207,8 +208,8 @@ contains
    procedure :: receive => nicas_blk_receive
    procedure :: send => nicas_blk_send
    procedure :: nicas_blk_compute_parameters
-   procedure :: nicas_blk_compute_parameters_smoother
-   generic :: compute_parameters => nicas_blk_compute_parameters,nicas_blk_compute_parameters_smoother
+   procedure :: nicas_blk_compute_parameters_horizontal_smoother
+   generic :: compute_parameters => nicas_blk_compute_parameters,nicas_blk_compute_parameters_horizontal_smoother
    procedure :: compute_sampling_c1 => nicas_blk_compute_sampling_c1
    procedure :: compute_sampling_v => nicas_blk_compute_sampling_v
    procedure :: compute_sampling_c2 => nicas_blk_compute_sampling_c2
@@ -1478,10 +1479,10 @@ call nicas_blk%partial_dealloc
 end subroutine nicas_blk_compute_parameters
 
 !----------------------------------------------------------------------
-! Subroutine: nicas_blk_compute_parameters_smoother
-! Purpose: compute NICAS parameters for a smoother
+! Subroutine: nicas_blk_compute_parameters_horizontal_smoother
+! Purpose: compute NICAS parameters for a horizontal smoother
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_parameters_smoother(nicas_blk,mpl,rng,nam,geom,rhflt)
+subroutine nicas_blk_compute_parameters_horizontal_smoother(nicas_blk,mpl,rng,nam,geom,rhflt)
 
 implicit none
 
@@ -1544,6 +1545,7 @@ cmat_blk%wgt = 1.0
 ! NICAS block initialization
 nicas_blk%verbosity = .false.
 nicas_blk%smoother = .true.
+nicas_blk%horizontal = .true.
 nicas_blk%mpicom = 1
 nicas_blk%subsamp = 'h'
 
@@ -1553,7 +1555,7 @@ call nicas_blk%compute_parameters(mpl,rng,nam_smoother,geom,cmat_blk)
 ! Release memory
 call cmat_blk%dealloc
 
-end subroutine nicas_blk_compute_parameters_smoother
+end subroutine nicas_blk_compute_parameters_horizontal_smoother
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_sampling_c1
@@ -1705,7 +1707,8 @@ end do
 il0_prev = nicas_blk%il0_first
 nicas_blk%slev = .false.
 
-if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) then
+if ((.not.nicas_blk%horizontal).and.((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh') &
+ & .or.(trim(nicas_blk%subsamp)=='hvh'))) then
    ! Vertical sampling
    write(mpl%info,'(a10,a)') '','Compute vertical subset L1'
    if (nicas_blk%verbosity) call mpl%flush
@@ -2761,7 +2764,7 @@ type(geom_type),intent(in) :: geom               ! Geometry
 integer :: net_nnbmax,is,ic0,ic1,il0,jl1,np,np_new,i,j,k,ip,kc1,jc1,il1,dkl1,kl1,jp,isbb,djl1,inr,jc0,jl0
 integer :: net_nnb(nicas_blk%nc1),ic1_loc,nc1_loc(0:mpl%nproc)
 integer,allocatable :: net_inb(:,:),plist(:,:),plist_new(:,:)
-real(kind_real) :: distnorm_network,disttest
+real(kind_real) :: disttest
 real(kind_real) :: dnb,dx,dy,dz,disthsq,distvsq,rhsq,rvsq,H11,H22,H33,H12
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:)
 real(kind_real),allocatable :: distnorm(:,:),net_dnb(:,:,:,:)
@@ -2858,7 +2861,7 @@ if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nc1_loc(mpl%myproc))
 net_dnb = 1.0
 !$omp parallel do schedule(static) private(ic1_loc,ic1,j,ic0,jc1,jc0,dnb,dx,dy,dz,il1,il0,djl1,jl1,jl0,H11,H22,H33), &
-!$omp&                             private(H12,disthsq,distvsq,rhsq,rvsq,distnorm_network)
+!$omp&                             private(H12,disthsq,distvsq,rhsq,rvsq)
 do ic1_loc=1,nc1_loc(mpl%myproc)
    ! Indices
    ic1 = sum(nc1_loc(0:mpl%myproc-1))+ic1_loc
@@ -2894,29 +2897,36 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
                if (geom%mask_c0(ic0,il0).and.geom%mask_c0(jc0,jl0).and.valid_arc(ic1,il1,j).and.valid_arc(ic1,jl1,j)) then
                   ! Squared support radii
                   if (nicas_blk%anisotropic) then
-                     dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
                      H11 = 0.5*(nicas_blk%H11_c1(ic1,il1)+nicas_blk%H11_c1(jc1,jl1))
                      H22 = 0.5*(nicas_blk%H22_c1(ic1,il1)+nicas_blk%H22_c1(jc1,jl1))
-                     H33 = 0.5*(nicas_blk%H33_c1(ic1,il1)+nicas_blk%H33_c1(jc1,jl1))
                      H12 = 0.5*(nicas_blk%H12_c1(ic1,il1)+nicas_blk%H12_c1(jc1,jl1))
-                     net_dnb(ic1,il1,j,djl1+2) = sqrt(H11*dx**2+H22*dy**2+H33*dz**2+2.0*H12*dx*dy)*gc2gau
+                     net_dnb(ic1,il1,j,djl1+2) = H11*dx**2+H22*dy**2+2.0*H12*dx*dy
+                     if (.not.nicas_blk%horizontal) then
+                        dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
+                        H33 = 0.5*(nicas_blk%H33_c1(ic1,il1)+nicas_blk%H33_c1(jc1,jl1))
+                        net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+H33*dz**2
+                     end if
+                     net_dnb(ic1,il1,j,djl1+2) = sqrt(net_dnb(ic1,il1,j,djl1+2))*gc2gau
                   else
                      disthsq = dnb**2
-                     distvsq = (geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0))**2
                      rhsq = 0.5*(nicas_blk%rh_c1(ic1,il1)**2+nicas_blk%rh_c1(jc1,jl1)**2)
-                     rvsq = 0.5*(nicas_blk%rv_c1(ic1,il1)**2+nicas_blk%rv_c1(jc1,jl1)**2)
-                     distnorm_network = 0.0
                      if (rhsq>0.0) then
-                        distnorm_network = distnorm_network+disthsq/rhsq
+                        net_dnb(ic1,il1,j,djl1+2) = disthsq/rhsq
                      elseif (disthsq>0.0) then
-                        distnorm_network = distnorm_network+0.5*huge(0.0)
+                        net_dnb(ic1,il1,j,djl1+2) = 0.5*huge(0.0)
+                     else
+                        net_dnb(ic1,il1,j,djl1+2) = 0.0
                      end if
-                     if (rvsq>0.0) then
-                        distnorm_network = distnorm_network+distvsq/rvsq
-                     elseif (distvsq>0.0) then
-                        distnorm_network = distnorm_network+0.5*huge(0.0)
+                     if (.not.nicas_blk%horizontal) then
+                        distvsq = (geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0))**2
+                        rvsq = 0.5*(nicas_blk%rv_c1(ic1,il1)**2+nicas_blk%rv_c1(jc1,jl1)**2)
+                        if (rvsq>0.0) then
+                           net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+distvsq/rvsq
+                        elseif (distvsq>0.0) then
+                           net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+0.5*huge(0.0)
+                        end if
                      end if
-                     net_dnb(ic1,il1,j,djl1+2) = sqrt(distnorm_network)
+                     net_dnb(ic1,il1,j,djl1+2) = sqrt(net_dnb(ic1,il1,j,djl1+2))
                   end if
                end if
             end do
@@ -3162,28 +3172,36 @@ do isbb=1,nicas_blk%nsbb
                   dy = geom%lat(jc0)-geom%lat(ic0)
                   call lonlatmod(dx,dy)
                   dx = dx*cos(0.5*(geom%lat(ic0)+geom%lat(jc0)))
-                  dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
                   H11 = 0.5*(nicas_blk%H11_c1(ic1,il1)+nicas_blk%H11_c1(jc1,jl1))
                   H22 = 0.5*(nicas_blk%H22_c1(ic1,il1)+nicas_blk%H22_c1(jc1,jl1))
-                  H33 = 0.5*(nicas_blk%H33_c1(ic1,il1)+nicas_blk%H33_c1(jc1,jl1))
                   H12 = 0.5*(nicas_blk%H12_c1(ic1,il1)+nicas_blk%H12_c1(jc1,jl1))
-                  distnorm(jc1,jl1) = sqrt(H11*dx**2+H22*dy**2+H33*dz**2+2.0*H12*dx*dy)*gc2gau
+                  distnorm(jc1,jl1) = H11*dx**2+H22*dy**2+2.0*H12*dx*dy
+                  if (.not.nicas_blk%horizontal) then
+                     dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
+                     H33 = 0.5*(nicas_blk%H33_c1(ic1,il1)+nicas_blk%H33_c1(jc1,jl1))
+                     distnorm(jc1,jl1) = distnorm(jc1,jl1)+H33*dz**2
+                  end if
+                  distnorm(jc1,jl1) = sqrt(distnorm(jc1,jl1))*gc2gau
                else
                   disthsq = nn_dist(j,ic1bb)**2
-                  distvsq = (geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0))**2
                   rhsq = 0.5*(nicas_blk%rh_c1(ic1,il1)**2+nicas_blk%rh_c1(jc1,jl1)**2)
-                  rvsq = 0.5*(nicas_blk%rv_c1(ic1,il1)**2+nicas_blk%rv_c1(jc1,jl1)**2)
                   if (rhsq>0.0) then
-                     disthsq = disthsq/rhsq
+                     distnorm(jc1,jl1) = disthsq/rhsq
                   elseif (disthsq>0.0) then
-                     disthsq = 0.5*huge(0.0)
+                     distnorm(jc1,jl1) = 0.5*huge(0.0)
+                  else
+                     distnorm(jc1,jl1) = 0.0
                   end if
-                  if (rvsq>0.0) then
-                     distvsq = distvsq/rvsq
-                  elseif (distvsq>0.0) then
-                     distvsq = 0.5*huge(0.0)
+                  if (.not.nicas_blk%horizontal) then
+                     distvsq = (geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0))**2
+                     rvsq = 0.5*(nicas_blk%rv_c1(ic1,il1)**2+nicas_blk%rv_c1(jc1,jl1)**2)
+                     if (rvsq>0.0) then
+                        distnorm(jc1,jl1) = distnorm(jc1,jl1)+distvsq/rvsq
+                     elseif (distvsq>0.0) then
+                        distnorm(jc1,jl1) = distnorm(jc1,jl1)+0.5*huge(0.0)
+                     end if
                   end if
-                  distnorm(jc1,jl1) = sqrt(disthsq+distvsq)
+                  distnorm(jc1,jl1) = sqrt(distnorm(jc1,jl1))
                end if
             end if
          end if
