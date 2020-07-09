@@ -2901,7 +2901,9 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
                      H22 = 0.5*(nicas_blk%H22_c1(ic1,il1)+nicas_blk%H22_c1(jc1,jl1))
                      H12 = 0.5*(nicas_blk%H12_c1(ic1,il1)+nicas_blk%H12_c1(jc1,jl1))
                      net_dnb(ic1,il1,j,djl1+2) = H11*dx**2+H22*dy**2+2.0*H12*dx*dy
-                     if (.not.nicas_blk%horizontal) then
+                     if (nicas_blk%horizontal) then
+                        if (il0/=jl0) net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+0.5*huge(1.0)
+                     else
                         dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
                         H33 = 0.5*(nicas_blk%H33_c1(ic1,il1)+nicas_blk%H33_c1(jc1,jl1))
                         net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+H33*dz**2
@@ -2913,17 +2915,19 @@ do ic1_loc=1,nc1_loc(mpl%myproc)
                      if (rhsq>0.0) then
                         net_dnb(ic1,il1,j,djl1+2) = disthsq/rhsq
                      elseif (disthsq>0.0) then
-                        net_dnb(ic1,il1,j,djl1+2) = 0.5*huge(0.0)
+                        net_dnb(ic1,il1,j,djl1+2) = 0.5*huge(1.0)
                      else
                         net_dnb(ic1,il1,j,djl1+2) = 0.0
                      end if
-                     if (.not.nicas_blk%horizontal) then
+                     if (nicas_blk%horizontal) then
+                        if (il0/=jl0) net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+0.5*huge(1.0)
+                     else
                         distvsq = (geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0))**2
                         rvsq = 0.5*(nicas_blk%rv_c1(ic1,il1)**2+nicas_blk%rv_c1(jc1,jl1)**2)
                         if (rvsq>0.0) then
                            net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+distvsq/rvsq
                         elseif (distvsq>0.0) then
-                           net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+0.5*huge(0.0)
+                           net_dnb(ic1,il1,j,djl1+2) = net_dnb(ic1,il1,j,djl1+2)+0.5*huge(1.0)
                         end if
                      end if
                      net_dnb(ic1,il1,j,djl1+2) = sqrt(net_dnb(ic1,il1,j,djl1+2))
@@ -3176,7 +3180,9 @@ do isbb=1,nicas_blk%nsbb
                   H22 = 0.5*(nicas_blk%H22_c1(ic1,il1)+nicas_blk%H22_c1(jc1,jl1))
                   H12 = 0.5*(nicas_blk%H12_c1(ic1,il1)+nicas_blk%H12_c1(jc1,jl1))
                   distnorm(jc1,jl1) = H11*dx**2+H22*dy**2+2.0*H12*dx*dy
-                  if (.not.nicas_blk%horizontal) then
+                  if (nicas_blk%horizontal) then
+                     if (il0/=jl0) distnorm(jc1,jl1) = distnorm(jc1,jl1)+0.5*huge(1.0)
+                  else
                      dz = geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0)
                      H33 = 0.5*(nicas_blk%H33_c1(ic1,il1)+nicas_blk%H33_c1(jc1,jl1))
                      distnorm(jc1,jl1) = distnorm(jc1,jl1)+H33*dz**2
@@ -3188,17 +3194,19 @@ do isbb=1,nicas_blk%nsbb
                   if (rhsq>0.0) then
                      distnorm(jc1,jl1) = disthsq/rhsq
                   elseif (disthsq>0.0) then
-                     distnorm(jc1,jl1) = 0.5*huge(0.0)
+                     distnorm(jc1,jl1) = 0.5*huge(1.0)
                   else
                      distnorm(jc1,jl1) = 0.0
                   end if
-                  if (.not.nicas_blk%horizontal) then
+                  if (nicas_blk%horizontal) then
+                     if (il0/=jl0) distnorm(jc1,jl1) = distnorm(jc1,jl1)+0.5*huge(1.0)
+                  else
                      distvsq = (geom%vunit_c0(ic0,il0)-geom%vunit_c0(jc0,jl0))**2
                      rvsq = 0.5*(nicas_blk%rv_c1(ic1,il1)**2+nicas_blk%rv_c1(jc1,jl1)**2)
                      if (rvsq>0.0) then
                         distnorm(jc1,jl1) = distnorm(jc1,jl1)+distvsq/rvsq
                      elseif (distvsq>0.0) then
-                        distnorm(jc1,jl1) = distnorm(jc1,jl1)+0.5*huge(0.0)
+                        distnorm(jc1,jl1) = distnorm(jc1,jl1)+0.5*huge(1.0)
                      end if
                   end if
                   distnorm(jc1,jl1) = sqrt(distnorm(jc1,jl1))
