@@ -1362,6 +1362,7 @@ logical,intent(in),optional :: sqrt_rescaling    ! Square-root rescaling flag
 
 ! Local variables
 integer :: il0i,il1
+character(len=1024),parameter :: subr = 'nicas_blk_compute_parameters'
 
 ! Set square-root rescaling flag
 nicas_blk%sqrt_rescaling = .true.
@@ -1369,6 +1370,12 @@ if (present(sqrt_rescaling)) nicas_blk%sqrt_rescaling = sqrt_rescaling
 
 ! Copy subset Sc0 on halo size A
 nicas_blk%nc0a = geom%nc0a
+
+! Check horizontal flag
+if (nicas_blk%horizontal) then
+   if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) &
+ & call mpl%abort(subr,'horizontal flag requires h subsamp')
+end if
 
 ! Compute adaptive sampling, subset Sc1
 write(mpl%info,'(a7,a)') '','Compute adaptive sampling, subset Sc1'
@@ -1526,9 +1533,7 @@ end if
 allocate(cmat_blk%coef_ens(geom%nc0a,geom%nl0))
 allocate(cmat_blk%coef_sta(geom%nc0a,geom%nl0))
 allocate(cmat_blk%rh(geom%nc0a,geom%nl0))
-allocate(cmat_blk%rv(geom%nc0a,geom%nl0))
 allocate(cmat_blk%rhs(geom%nc0a,geom%nl0))
-allocate(cmat_blk%rvs(geom%nc0a,geom%nl0))
 
 ! Local cmat_blk initialization
 cmat_blk%anisotropic = .false.
@@ -1537,9 +1542,7 @@ cmat_blk%coef_sta = 0.0
 do il0=1,geom%nl0
    cmat_blk%rh(:,il0) = rhflt(il0)
 end do
-cmat_blk%rv = 0.0
 cmat_blk%rhs = cmat_blk%rh
-cmat_blk%rvs = 0.0
 cmat_blk%wgt = 1.0
 
 ! NICAS block initialization
@@ -1596,9 +1599,13 @@ norm = 1.0/real(geom%nc0_mask(1:geom%nl0),kind_real)
 rhs_sum = sum(cmat_blk%rhs,dim=1,mask=geom%mask_c0a)
 call mpl%f_comm%allreduce(rhs_sum,nicas_blk%rhs_avg,fckit_mpi_sum())
 nicas_blk%rhs_avg = nicas_blk%rhs_avg*norm
-rvs_sum = sum(cmat_blk%rvs,dim=1,mask=geom%mask_c0a)
-call mpl%f_comm%allreduce(rvs_sum,rvs_avg,fckit_mpi_sum())
-rvs_avg = rvs_avg*norm
+if (nicas_blk%horizontal) then
+   rvs_avg = 0.0
+else
+   rvs_sum = sum(cmat_blk%rvs,dim=1,mask=geom%mask_c0a)
+   call mpl%f_comm%allreduce(rvs_sum,rvs_avg,fckit_mpi_sum())
+   rvs_avg = rvs_avg*norm
+end if
 write(mpl%info,'(a10,a)') '','Average support radii (H/V): '
 if (nicas_blk%verbosity) call mpl%flush
 do il0=1,geom%nl0
@@ -1707,8 +1714,7 @@ end do
 il0_prev = nicas_blk%il0_first
 nicas_blk%slev = .false.
 
-if ((.not.nicas_blk%horizontal).and.((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh') &
- & .or.(trim(nicas_blk%subsamp)=='hvh'))) then
+if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(nicas_blk%subsamp)=='hvh')) then
    ! Vertical sampling
    write(mpl%info,'(a10,a)') '','Compute vertical subset L1'
    if (nicas_blk%verbosity) call mpl%flush
@@ -2473,18 +2479,18 @@ if (nicas_blk%verbosity) call mpl%flush
 
 ! Allocation
 allocate(rh_c1a(nicas_blk%nc1a,nicas_blk%nl1))
-allocate(rv_c1a(nicas_blk%nc1a,nicas_blk%nl1))
+if (.not.nicas_blk%horizontal) allocate(rv_c1a(nicas_blk%nc1a,nicas_blk%nl1))
 allocate(nicas_blk%rh_c1(nicas_blk%nc1,nicas_blk%nl1))
-allocate(nicas_blk%rv_c1(nicas_blk%nc1,nicas_blk%nl1))
+if (.not.nicas_blk%horizontal) allocate(nicas_blk%rv_c1(nicas_blk%nc1,nicas_blk%nl1))
 if (nicas_blk%anisotropic) then
    allocate(H11_c1a(nicas_blk%nc1a,nicas_blk%nl1))
    allocate(H22_c1a(nicas_blk%nc1a,nicas_blk%nl1))
-   allocate(H33_c1a(nicas_blk%nc1a,nicas_blk%nl1))
+   if (.not.nicas_blk%horizontal) allocate(H33_c1a(nicas_blk%nc1a,nicas_blk%nl1))
    allocate(H12_c1a(nicas_blk%nc1a,nicas_blk%nl1))
    allocate(Hcoef_c1a(nicas_blk%nc1a,nicas_blk%nl1))
    allocate(nicas_blk%H11_c1(nicas_blk%nc1,nicas_blk%nl1))
    allocate(nicas_blk%H22_c1(nicas_blk%nc1,nicas_blk%nl1))
-   allocate(nicas_blk%H33_c1(nicas_blk%nc1,nicas_blk%nl1))
+   if (.not.nicas_blk%horizontal) allocate(nicas_blk%H33_c1(nicas_blk%nc1,nicas_blk%nl1))
    allocate(nicas_blk%H12_c1(nicas_blk%nc1,nicas_blk%nl1))
    allocate(Hcoef_c1(nicas_blk%nc1,nicas_blk%nl1))
    allocate(nicas_blk%Hcoef(nicas_blk%nsbb))
@@ -2502,11 +2508,11 @@ do il1=1,nicas_blk%nl1
       if (geom%mask_c0a(ic0a,il0)) then
          ! Copy
          rh_c1a(ic1a,il1) = cmat_blk%rh(ic0a,il0)
-         rv_c1a(ic1a,il1) = cmat_blk%rv(ic0a,il0)
+         if (.not.nicas_blk%horizontal) rv_c1a(ic1a,il1) = cmat_blk%rv(ic0a,il0)
          if (nicas_blk%anisotropic) then
             H11_c1a(ic1a,il1) = cmat_blk%H11(ic0a,il0)
             H22_c1a(ic1a,il1) = cmat_blk%H22(ic0a,il0)
-            H33_c1a(ic1a,il1) = cmat_blk%H33(ic0a,il0)
+            if (.not.nicas_blk%horizontal) H33_c1a(ic1a,il1) = cmat_blk%H33(ic0a,il0)
             H12_c1a(ic1a,il1) = cmat_blk%H12(ic0a,il0)
             Hcoef_c1a(ic1a,il1) = cmat_blk%Hcoef(ic0a,il0)
          end if
@@ -2515,24 +2521,24 @@ do il1=1,nicas_blk%nl1
             ! Square-root rescaling
             if (nicas_blk%anisotropic) then
                rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_h
-               rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_h
+               if (.not.nicas_blk%horizontal) rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_h
                H11_c1a(ic1a,il1) = H11_c1a(ic1a,il1)/sqrt_h**2
                H22_c1a(ic1a,il1) = H22_c1a(ic1a,il1)/sqrt_h**2
-               H33_c1a(ic1a,il1) = H33_c1a(ic1a,il1)/sqrt_h**2
+               if (.not.nicas_blk%horizontal) H33_c1a(ic1a,il1) = H33_c1a(ic1a,il1)/sqrt_h**2
                H12_c1a(ic1a,il1) = H12_c1a(ic1a,il1)/sqrt_h**2
             else
                rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
-               rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_r
+               if (.not.nicas_blk%horizontal) rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_r
             end if
          end if
       else
          ! Missing values
          rh_c1a(ic1a,il1) = mpl%msv%valr
-         rv_c1a(ic1a,il1) = mpl%msv%valr
+         if (.not.nicas_blk%horizontal) rv_c1a(ic1a,il1) = mpl%msv%valr
          if (nicas_blk%anisotropic) then
             H11_c1a(ic1a,il1) = mpl%msv%valr
             H22_c1a(ic1a,il1) = mpl%msv%valr
-            H33_c1a(ic1a,il1) = mpl%msv%valr
+            if (.not.nicas_blk%horizontal) H33_c1a(ic1a,il1) = mpl%msv%valr
             H12_c1a(ic1a,il1) = mpl%msv%valr
             Hcoef_c1a(ic1a,il1) = mpl%msv%valr
          end if
@@ -2545,15 +2551,15 @@ write(mpl%info,'(a13,a)') '','Communication'
 if (nicas_blk%verbosity) call mpl%flush
 call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,rh_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
  & nicas_blk%rh_c1)
-call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,rv_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
- & nicas_blk%rv_c1)
+if (.not.nicas_blk%horizontal) call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,rv_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc, &
+ & nicas_blk%c1_to_c1a,.true.,nicas_blk%rv_c1)
 if (nicas_blk%anisotropic) then
    call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,H11_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
  & nicas_blk%H11_c1)
    call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,H22_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
  & nicas_blk%H22_c1)
-   call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,H33_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
- & nicas_blk%H33_c1)
+   if (.not.nicas_blk%horizontal) call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,H33_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc, &
+ & nicas_blk%c1_to_c1a,.true.,nicas_blk%H33_c1)
    call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,H12_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
  & nicas_blk%H12_c1)
    call mpl%loc_to_glb(nicas_blk%nl1,nicas_blk%nc1a,Hcoef_c1a,nicas_blk%nc1,nicas_blk%c1_to_proc,nicas_blk%c1_to_c1a,.true., &
@@ -2562,11 +2568,11 @@ end if
 
 ! Release memory
 deallocate(rh_c1a)
-deallocate(rv_c1a)
+if (.not.nicas_blk%horizontal) deallocate(rv_c1a)
 if (nicas_blk%anisotropic) then
    deallocate(H11_c1a)
    deallocate(H22_c1a)
-   deallocate(H33_c1a)
+   if (.not.nicas_blk%horizontal) deallocate(H33_c1a)
    deallocate(H12_c1a)
    deallocate(Hcoef_c1a)
 end if
@@ -2583,11 +2589,11 @@ end if
 
 ! Release memory
 deallocate(nicas_blk%rh_c1)
-deallocate(nicas_blk%rv_c1)
+if (.not.nicas_blk%horizontal) deallocate(nicas_blk%rv_c1)
 if (nicas_blk%anisotropic) then
    deallocate(nicas_blk%H11_c1)
    deallocate(nicas_blk%H22_c1)
-   deallocate(nicas_blk%H33_c1)
+   if (.not.nicas_blk%horizontal) deallocate(nicas_blk%H33_c1)
    deallocate(nicas_blk%H12_c1)
 end if
 
