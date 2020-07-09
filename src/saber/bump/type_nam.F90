@@ -11,7 +11,7 @@ use fckit_configuration_module, only: fckit_configuration,fckit_yamlconfiguratio
 use fckit_pathname_module, only : fckit_pathname
 use iso_c_binding
 use tools_const, only: pi,req,deg2rad,rad2deg
-use tools_kinds,only: kind_real
+use tools_kinds,only: kind_real,huge_real
 use type_mpl, only: mpl_type
 
 implicit none
@@ -346,7 +346,7 @@ nam%irmax = 10000
 
 ! diag_param default
 nam%ne = 0
-nam%gen_kurt_th = huge(1.0)
+nam%gen_kurt_th = huge_real
 nam%gau_approx = .false.
 nam%avg_nbins = 0
 do iv=1,nvmax*(nvmax-1)/2
@@ -868,7 +868,7 @@ if (mpl%main) then
 
    ! diag_param default
    ne = 0
-   gen_kurt_th = huge(1.0)
+   gen_kurt_th = huge_real
    gau_approx = .false.
    avg_nbins = 0
    do iv=1,nvmax*(nvmax-1)/2

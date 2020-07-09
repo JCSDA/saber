@@ -11,7 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min
 use netcdf
 use tools_const, only: rad2deg,reqkm,pi
 use tools_func, only: sphere_dist,cholesky,fit_diag
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
@@ -1998,7 +1998,7 @@ if (nam%default_seed) call rng%reseed(mpl)
 call loc_opt%alloc(mpl,nam,geom,bpar,hdiag%samp,'loc_opt')
 
 ! Initialization
-mse_max = huge(1.0)
+mse_max = huge_real
 
 do ifac=-nfac_opt,nfac_opt
    ! Copy HDIAG into C matrix

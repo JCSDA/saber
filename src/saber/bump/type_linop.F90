@@ -10,7 +10,7 @@ module type_linop
 use fckit_mpi_module, only: fckit_mpi_status
 use netcdf
 !$ use omp_lib
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_repro, only: inf
 use type_geom, only: geom_type
 use type_tree, only: tree_type
@@ -518,7 +518,7 @@ if (check_data) then
    end if
 
    ! Check input
-   if (any(fld_src>huge(1.0))) call mpl%abort(subr,'Overflowing number in fld_src for linear operation '//trim(linop%prefix))
+   if (any(fld_src>huge_real)) call mpl%abort(subr,'Overflowing number in fld_src for linear operation '//trim(linop%prefix))
    if (any(isnan(fld_src))) call mpl%abort(subr,'NaN in fld_src for linear operation '//trim(linop%prefix))
 end if
 
@@ -621,7 +621,7 @@ if (check_data) then
    end if
 
    ! Check input
-   if (any(fld_dst>huge(1.0))) &
+   if (any(fld_dst>huge_real)) &
  & call mpl%abort(subr,'Overflowing number in fld_dst for adjoint linear operation '//trim(linop%prefix))
    if (any(isnan(fld_dst))) call mpl%abort(subr,'NaN in fld_dst for adjoint linear operation '//trim(linop%prefix))
 end if
@@ -677,7 +677,7 @@ if (check_data) then
    end if
 
    ! Check input
-   if (any(fld>huge(1.0))) call mpl%abort(subr,'Overflowing number in fld for symmetric linear operation '//trim(linop%prefix))
+   if (any(fld>huge_real)) call mpl%abort(subr,'Overflowing number in fld for symmetric linear operation '//trim(linop%prefix))
    if (any(isnan(fld))) call mpl%abort(subr,'NaN in fld for symmetric linear operation '//trim(linop%prefix))
 end if
 

@@ -12,7 +12,7 @@ use netcdf
 !$ use omp_lib
 use tools_const, only: pi,req,reqkm,rad2deg,deg2rad
 use tools_func, only: lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,sup,eq
 use type_bpar, only: bpar_type
@@ -901,7 +901,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
    dichotomy = .false.
    rhflt = nam%adv_rhflt
    drhflt = rhflt
-   adv%rhflt(il0,its) = huge(1.0)
+   adv%rhflt(il0,its) = huge_real
 
    do iter=1,nam%adv_niter
       ! Copy advection

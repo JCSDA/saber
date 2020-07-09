@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_fld
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
 use type_com, only: com_type
@@ -1390,7 +1390,7 @@ if (valid) then
    ic0 = geom%c0u_to_c0(nn_index(1))
    nn_proc = geom%c0_to_proc(ic0)
 else
-   nn_dist = huge(1.0)
+   nn_dist = huge_real
    nn_proc = mpl%msv%vali
 end if
 

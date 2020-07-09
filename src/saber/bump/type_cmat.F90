@@ -11,7 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_sum
 use netcdf
 use tools_const, only: rad2deg,reqkm,req
 use tools_func, only: lct_d2h,lct_h2r
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_real,huge_real
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_diag, only: diag_type
@@ -819,8 +819,8 @@ if (trim(nam%strategy)=='specific_multivariate') then
    do il0=1,geom%nl0
       do ic0a=1,geom%nc0a
          ! Get minimum
-         rhs = huge(1.0)
-         rvs = huge(1.0)
+         rhs = huge_real
+         rvs = huge_real
          do ib=1,bpar%nb
             if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
                rhs = min(rhs,cmat%blk(ib)%rh(ic0a,il0))

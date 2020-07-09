@@ -8,7 +8,7 @@
 module tools_fit
 
 use tools_func, only: fit_func
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
 
@@ -152,7 +152,7 @@ if (raw(iz)>0.0) then
 
       ! Set minimum distance
       if (mpl%msv%isnot(fit_r)) then
-         distmin = huge(1.0)
+         distmin = huge_real
          if (iz>1) distmin = min(distmin,1.0e-6*abs(dist(iz-1)-dist(iz)))
          if (iz<n) distmin = min(distmin,1.0e-6*abs(dist(iz+1)-dist(iz)))
          fit_r = max(fit_r,distmin)

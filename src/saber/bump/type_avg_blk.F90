@@ -10,7 +10,7 @@ module type_avg_blk
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 use netcdf
 use tools_func, only: histogram
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_repro, only: sup,inf
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
@@ -536,21 +536,21 @@ do il0=1,geom%nl0
                min_m22 = minval(list_m22,mask=mpl%msv%isnot(list_m22))
                max_m22 = maxval(list_m22,mask=mpl%msv%isnot(list_m22))
              else
-               min_m11 = huge(1.0)
-               max_m11 = -huge(1.0)
-               min_m11m11 = huge(1.0)
-               max_m11m11 = -huge(1.0)
-               min_m2m2 = huge(1.0)
-               max_m2m2 = -huge(1.0)
-               min_m22 = huge(1.0)
-               max_m22 = -huge(1.0)
+               min_m11 = huge_real
+               max_m11 = -huge_real
+               min_m11m11 = huge_real
+               max_m11m11 = -huge_real
+               min_m2m2 = huge_real
+               max_m2m2 = -huge_real
+               min_m22 = huge_real
+               max_m22 = -huge_real
             end if
             if (nc1a>0) then
                min_cor = minval(list_cor,mask=mpl%msv%isnot(list_cor))
                max_cor = maxval(list_cor,mask=mpl%msv%isnot(list_cor))
             else
-               min_m11 = huge(1.0)
-               max_cor = -huge(1.0)
+               min_m11 = huge_real
+               max_cor = -huge_real
             end if
 
             ! Gather min/max values
@@ -1019,6 +1019,9 @@ if ((ic2a==0).or.nam%local_diag) then
             if (.not.(avg_blk%m2m2asy(jc3,jl0r,il0)>0.0)) avg_blk%m2m2asy(jc3,jl0r,il0) = mpl%msv%valr
             if (.not.(avg_blk%m22asy(jc3,jl0r,il0)>0.0)) avg_blk%m22asy(jc3,jl0r,il0) = mpl%msv%valr
 
+            ! Check Cauchy-Schwarz inequality
+            if (inf(avg_blk%m2m2asy(jc3,jl0r,il0),avg_blk%m11asysq(jc3,jl0r,il0))) avg_blk%m11asysq(jc3,jl0r,il0) = mpl%msv%valr
+
             ! Squared covariance average
             if (nam%gau_approx) then
                ! Gaussian approximation
@@ -1039,8 +1042,11 @@ if ((ic2a==0).or.nam%local_diag) then
             end if
 
             ! Check value
-            if (mpl%msv%is(avg_blk%m11sq(jc3,jl0r,il0))) then
+            if (mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0))) then
+               ! Positive sampling noise variance
                if (inf(avg_blk%m11sq(jc3,jl0r,il0),avg_blk%m11asysq(jc3,jl0r,il0))) avg_blk%m11sq(jc3,jl0r,il0) = mpl%msv%valr
+
+               ! Holder's inequality
                if (inf(avg_blk%m11sq(jc3,jl0r,il0),avg_blk%m11(jc3,jl0r,il0)**2)) avg_blk%m11sq(jc3,jl0r,il0) = mpl%msv%valr
             end if
 

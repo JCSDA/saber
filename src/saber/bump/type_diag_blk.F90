@@ -11,7 +11,7 @@ use netcdf
 !$ use omp_lib
 use tools_fit, only: fast_fit,ver_fill
 use tools_func, only: fit_diag
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_avg_blk, only: avg_blk_type
 use type_bpar, only: bpar_type
@@ -454,7 +454,7 @@ if (valid) then
    if (mpl%msv%isany(diag_blk%fit_rv)) call ver_fill(mpl,geom%nl0,vunit,diag_blk%fit_rv)
 
    ! Scaling optimization (brute-force)
-   fo_opt = huge(1.0)
+   fo_opt = huge_real
    alpha_opt = 1.0
    do isc=1,nsc
       ! Scaling factor

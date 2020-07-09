@@ -10,7 +10,7 @@ module type_var
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use tools_const, only: reqkm
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_real,huge_real
 use type_cmat_blk, only: cmat_blk_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
@@ -325,7 +325,7 @@ do its=1,nam%nts
       dichotomy = .false.
       rhflt = nam%var_rhflt
       drhflt = rhflt
-      diff_abs_min = huge(1.0)
+      diff_abs_min = huge_real
 
       do iter=1,nam%var_niter
          ! Copy initial value

@@ -11,7 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 use netcdf
 use tools_const, only: pi,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,sphere_dist
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_repro, only: rth
 use type_com, only: com_type
 use type_geom, only: geom_type
@@ -555,14 +555,14 @@ if (obsop%nobsa>0) then
       distmax = maxval(dist,mask=mpl%msv%isnot(dist))
       distsum = sum(dist,mask=mpl%msv%isnot(dist))
    else
-      distmin = huge(1.0)
+      distmin = huge_real
       distmax = 0.0
       distsum = 0.0
    end if
 else
    ! No observation on this task
    norm = 0
-   distmin = huge(1.0)
+   distmin = huge_real
    distmax = 0.0
    distsum = 0.0
 end if

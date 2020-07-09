@@ -11,7 +11,7 @@ use atlas_module
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 use tools_const, only: pi,deg2rad
 use tools_func, only: lonlathash,lonlatmod,sphere_dist
-use tools_kinds, only: kind_real,kind_int
+use tools_kinds, only: kind_real,kind_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,inf,sup,eq
 use type_mpl, only: mpl_type
@@ -639,7 +639,7 @@ else
             call tree%dealloc
 
             ! Remove worst point
-            distmin = huge(1.0)
+            distmin = huge_real
             is2_glb_min = mpl%msv%vali
             do is2_glb=1,ns2_glb+nrep_eff
                if (rmask(is2_glb)) then

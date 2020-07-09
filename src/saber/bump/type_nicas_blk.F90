@@ -12,7 +12,7 @@ use netcdf
 !$ use omp_lib
 use tools_const, only: pi,req,reqkm,deg2rad,rad2deg
 use tools_func, only: gc2gau,lonlatmod,lonlathash,sphere_dist,fit_func
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf,eq
 use tools_samp, only: initialize_sampling
@@ -1797,7 +1797,7 @@ if ((trim(nicas_blk%subsamp)=='hv').or.(trim(nicas_blk%subsamp)=='vh').or.(trim(
             nicas_blk%slev(il0) = .true.
          else
             ! Compute minimum normalized distance with level il0_prev
-            distnorm = huge(1.0)
+            distnorm = huge_real
             do ic0a=1,geom%nc0a
                if (geom%gmask_c0a(ic0a,il0)) then
                   rv = sqrt(0.5*(cmat_blk%rvs(ic0a,il0)**2+cmat_blk%rvs(ic0a,il0_prev)**2))
@@ -2931,12 +2931,12 @@ do ic1u=1,nicas_blk%nc1u
                      if (rhsq>0.0) then
                         distnorm_network = distnorm_network+disthsq/rhsq
                      elseif (disthsq>0.0) then
-                        distnorm_network = distnorm_network+0.5*huge(0.0)
+                        distnorm_network = distnorm_network+0.5*huge_real
                      end if
                      if (rvsq>0.0) then
                         distnorm_network = distnorm_network+distvsq/rvsq
                      elseif (distvsq>0.0) then
-                        distnorm_network = distnorm_network+0.5*huge(0.0)
+                        distnorm_network = distnorm_network+0.5*huge_real
                      end if
                      net_dnb(ic1u,il1,j,djl1) = sqrt(distnorm_network)
                   end if
@@ -3186,12 +3186,12 @@ do isbb=1,nicas_blk%nsbb
                   if (rhsq>0.0) then
                      disthsq = disthsq/rhsq
                   elseif (disthsq>0.0) then
-                     disthsq = 0.5*huge(0.0)
+                     disthsq = 0.5*huge_real
                   end if
                   if (rvsq>0.0) then
                      distvsq = distvsq/rvsq
                   elseif (distvsq>0.0) then
-                     distvsq = 0.5*huge(0.0)
+                     distvsq = 0.5*huge_real
                   end if
                   distnorm(jc1u,jl1) = sqrt(disthsq+distvsq)
                end if
