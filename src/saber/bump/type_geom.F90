@@ -16,6 +16,7 @@ use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz
 use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
+use tools_samp, only: initialize_sampling_global
 use type_com, only: com_type
 use type_tree, only: tree_type
 use type_mesh, only: mesh_type
@@ -35,6 +36,7 @@ type geom_type
 
    ! Geometry data on model grid, halo A
    integer :: nmga                                ! Halo A size for model grid
+   integer,allocatable :: proc_to_nmga(:)         ! Processory to halo A size for model grid
    real(kind_real),allocatable :: lon_mga(:)      ! Longitudes
    real(kind_real),allocatable :: lat_mga(:)      ! Latitudes
    real(kind_real),allocatable :: area_mga(:)     ! Areas
@@ -170,6 +172,7 @@ implicit none
 class(geom_type),intent(inout) :: geom ! Geometry
 
 ! Release memory
+if (allocated(geom%proc_to_nmga)) deallocate(geom%proc_to_nmga)
 if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
 if (allocated(geom%lat_mga)) deallocate(geom%lat_mga)
 if (allocated(geom%area_mga)) deallocate(geom%area_mga)
@@ -522,113 +525,99 @@ type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Local variables
-integer :: imga,nnr,inr,iproc,jproc,nb_min,nb_tot,ib,nn_index(1)
-integer :: order(geom%nmga),redundant(geom%nmga),proc_to_nb(mpl%nproc),displs(mpl%nproc),proc_to_universe_size(mpl%nproc)
-real(kind_real) :: list(geom%nmga),nn_dist(1)
-real(kind_real),allocatable :: lon_nr(:),lat_nr(:),lon_b(:),lat_b(:)
-logical :: myuniverse
-type(mesh_type) :: mesh
-type(tree_type) :: tree
+integer :: iproc,nsa,ns,imga,isa,jsa
+integer :: proc_to_nsa(mpl%nproc),displs(mpl%nproc),proc_to_universe_size(mpl%nproc)
+integer,parameter :: subsize = 1e3
+integer,allocatable :: sa_to_mga(:),sam_mga(:)
+real(kind_real) :: dist
+real(kind_real),allocatable :: rh_mga(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 
 write(mpl%info,'(a7,a)') '','Setup universe'
 call mpl%flush
 
 ! Allocation
 allocate(geom%myuniverse(mpl%nproc))
+allocate(geom%proc_to_nmga(mpl%nproc))
+
+! Communication
+call mpl%f_comm%allgather(geom%nmga,geom%proc_to_nmga)
+geom%nmg = sum(geom%proc_to_nmga)
 
 if (mpl%nproc<=2) then
    ! Single- or dual-processors case
    geom%myuniverse = .true.
 else
-   ! Define points order
-   list = geom%hash_mga
-   call qsort(geom%nmga,list,order)
-
-   ! Look for redundant points
-   redundant = mpl%msv%vali
-   do imga=2,geom%nmga
-      if (eq(list(imga-1),list(imga))) redundant(order(imga)) = order(imga-1)
+   ! Subsample size for each processor
+   do iproc=1,mpl%nproc
+      proc_to_nsa(iproc) = int(real(geom%proc_to_nmga(iproc),kind_real)/real(geom%nmg,kind_real)*real(subsize,kind_real))
+      proc_to_nsa(iproc) = max(min(1,geom%proc_to_nmga(iproc)),min(proc_to_nsa(iproc),geom%proc_to_nmga(iproc)))
    end do
+   nsa = proc_to_nsa(mpl%myproc)
+   ns = sum(proc_to_nsa)
 
    ! Allocation
-   nnr = count(mpl%msv%is(redundant))
-   allocate(lon_nr(nnr))
-   allocate(lat_nr(nnr))
-   call mesh%alloc(nnr)
-   call tree%alloc(mpl,nnr)
+   allocate(rh_mga(geom%nmga))
+   allocate(sam_mga(geom%nmga))
+   allocate(sa_to_mga(nsa))
+   allocate(lon_sa(nsa))
+   allocate(lat_sa(nsa))
+   allocate(lon_s(ns))
+   allocate(lat_s(ns))
 
    ! Initialization
-   inr = 0
    do imga=1,geom%nmga
-      if (mpl%msv%is(redundant(imga))) then
-         inr = inr+1
-         lon_nr(inr) = geom%lon_mga(imga)
-         lat_nr(inr) = geom%lat_mga(imga)
-      end if
+      rh_mga(imga) = 1.0
+      sam_mga(imga) = imga
    end do
-   call mesh%init(mpl,rng,lon_nr,lat_nr)
-   call tree%init(lon_nr,lat_nr)
-   geom%myuniverse = .false.
-   geom%myuniverse(mpl%myproc) = .true.
 
-   ! Compute boundary nodes
-   call mesh%bnodes(mpl)
+   ! Compute subsampling
+   write(mpl%info,'(a10,a)') '','Subsample local domains:'
+   call mpl%flush(.false.)
+   call initialize_sampling_global(mpl,rng,geom%nmga,geom%lon_mga,geom%lat_mga,rh_mga,sam_mga,3,0,nsa,sa_to_mga)
+
+   ! Subsampling coordinates
+   do isa=1,nsa
+      imga = sa_to_mga(isa)
+      lon_sa(isa) = geom%lon_mga(imga)
+      lat_sa(isa) = geom%lat_mga(imga)
+   end do
 
    ! Communication
-   call mpl%f_comm%allgather(mesh%nb,proc_to_nb)
-   nb_min = minval(proc_to_nb)
+   displs(1) = 0
+   do iproc=2,mpl%nproc
+      displs(iproc) = displs(iproc-1)+proc_to_nsa(iproc-1)
+   end do
+   call mpl%f_comm%allgather(lon_sa,lon_s,nsa,proc_to_nsa,displs)
+   call mpl%f_comm%allgather(lat_sa,lat_s,nsa,proc_to_nsa,displs)
 
-   if (nb_min>0) then
-      ! Allocation
-      nb_tot = sum(proc_to_nb)
-      allocate(lon_b(nb_tot))
-      allocate(lat_b(nb_tot))
+   ! Compute distances from my processor
+   geom%myuniverse = .false.
+   do iproc=1,mpl%nproc
+      if (iproc==mpl%myproc) then
+         geom%myuniverse(iproc) = .true.
+      else
+         do isa=1,proc_to_nsa(iproc)
+            do jsa=1,nsa
+               if (.not.geom%myuniverse(iproc)) then
+                  ! Compute distance
+                  call sphere_dist(lon_s(displs(iproc)+isa),lat_s(displs(iproc)+isa),lon_sa(jsa),lat_sa(jsa),dist)
 
-      ! Communication
-      displs(1) = 0
-      do iproc=2,mpl%nproc
-         displs(iproc) = displs(iproc-1)+proc_to_nb(iproc-1)
-      end do
-      call mpl%f_comm%allgather(mesh%lon(mesh%bnd),lon_b,mesh%nb,proc_to_nb,displs)
-      call mpl%f_comm%allgather(mesh%lat(mesh%bnd),lat_b,mesh%nb,proc_to_nb,displs)
-
-      ! Check distances
-      do iproc=1,mpl%nproc
-         ! Check nearest neighbor
-         do ib=1,proc_to_nb(iproc)
-            if (.not.geom%myuniverse(iproc)) then
-               call tree%find_nearest_neighbors(lon_b(displs(iproc)+ib),lat_b(displs(iproc)+ib),1,nn_index,nn_dist)
-               if (inf(nn_dist(1),nam%universe_rad)) geom%myuniverse(iproc) = .true.
-            end if
-         end do
-      end do
-
-      ! Comunication
-      do iproc=1,mpl%nproc
-         if (iproc==mpl%myproc) then
-            do jproc=1,mpl%nproc
-               ! Receive data
-               if (jproc/=iproc) then
-                  call mpl%f_comm%receive(myuniverse,jproc-1,mpl%tag)
-                  geom%myuniverse(jproc) = geom%myuniverse(jproc).or.myuniverse
+                  ! Check distance
+                  if (dist<nam%universe_rad) geom%myuniverse(iproc) = .true.
                end if
             end do
-         else
-            ! Send data
-            call mpl%f_comm%send(geom%myuniverse(iproc),iproc-1,mpl%tag)
-         end if
-         call mpl%update_tag(1)
-      end do
+         end do
+      end if
+   end do
 
-      ! Release memory
-      call mesh%dealloc
-      call tree%dealloc
-      deallocate(lon_b)
-      deallocate(lat_b)
-   else
-      ! Impossible to disentangle the local domains
-      geom%myuniverse = .true.
-   endif
+   ! Release memory
+   deallocate(rh_mga)
+   deallocate(sam_mga)
+   deallocate(sa_to_mga)
+   deallocate(lon_sa)
+   deallocate(lat_sa)
+   deallocate(lon_s)
+   deallocate(lat_s)
 end if
 
 ! Share universe size
@@ -661,7 +650,7 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 
 ! Local variables
 integer :: nmgu,iproc,img,jmg,imga,imgu,imgu_s,imgu_e,imgu_min,ic0a,jc0a,ic0u,ic0,diff_grid,diff_grid_tot,il0,nr,nra,ir,ira
-integer :: proc_to_nmga(mpl%nproc),proc_to_nra(mpl%nproc)
+integer :: proc_to_nra(mpl%nproc)
 integer :: mga_to_mg(geom%nmga),mga_to_mgu(geom%nmga),mga_to_c0(geom%nmga),nc0_gmask(0:geom%nl0)
 integer,allocatable :: mgu_to_mg(:),mgu_to_proc(:),redundant(:),order(:)
 integer,allocatable :: c0a_to_mg(:),ra_to_r(:),r_to_mg(:),r_to_mg_tot(:),r_to_c0(:),r_to_c0_tot(:)
@@ -677,12 +666,8 @@ call mpl%flush
 ! Allocation
 allocate(geom%proc_to_nc0a(mpl%nproc))
 
-! Communication
-call mpl%f_comm%allgather(geom%nmga,proc_to_nmga)
-
-! Model grid sizes
-geom%nmg = sum(proc_to_nmga)
-nmgu = sum(proc_to_nmga,mask=geom%myuniverse)
+! Universe size on model grid
+nmgu = sum(geom%proc_to_nmga,mask=geom%myuniverse)
 
 ! Allocation
 allocate(geom%proc_to_mg_offset(mpl%nproc))
@@ -694,14 +679,14 @@ allocate(redundant(nmgu))
 ! Model grid offset for halo A
 geom%proc_to_mg_offset(1) = 0
 do iproc=2,mpl%nproc
-   geom%proc_to_mg_offset(iproc) = geom%proc_to_mg_offset(iproc-1)+proc_to_nmga(iproc-1)
+   geom%proc_to_mg_offset(iproc) = geom%proc_to_mg_offset(iproc-1)+geom%proc_to_nmga(iproc-1)
 end do
 
 ! Model grid conversions
 img = 0
 imgu = 0
 do iproc=1,mpl%nproc
-   do imga=1,proc_to_nmga(iproc)
+   do imga=1,geom%proc_to_nmga(iproc)
       img = img+1
       if (iproc==mpl%myproc) mga_to_mg(imga) = img
       if (geom%myuniverse(iproc)) then

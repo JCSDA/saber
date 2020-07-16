@@ -2,7 +2,7 @@
 datadir: "testdata"
 prefix: "bump_hdiag-nicas_universe_rad/test__MPI_-_OMP_"
 model: "qg"
-universe_rad: 3000.0e3
+universe_rad: 1000.0e3
 
 # driver_param
 method: "cor"
