@@ -4,7 +4,6 @@ bump_normality/test_1-1_normality_000001-000001.nc
 bump_normality/test_1-1_umf.nc
 bump_hdiag_cor_diag_all/test_1-1_diag.nc
 bump_hdiag_grid/test_1-1_diag.nc
-bump_hdiag_grid/test_1-1_local_diag_cor_gridded.nc
 bump_hdiag_grid/test_1-1_local_diag_cor.nc
 bump_hdiag_hyb-rnd_common/test_1-1_diag.nc
 bump_hdiag_mask_stddev_upper/test_1-1_diag.nc

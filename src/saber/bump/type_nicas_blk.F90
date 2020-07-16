@@ -2599,7 +2599,7 @@ do il1=1,nicas_blk%nl1
                H12_c1a(ic1a,il1) = H12_c1a(ic1a,il1)/sqrt_h**2
             else
                rh_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
-               rv_c1a(ic1a,il1) = rh_c1a(ic1a,il1)*sqrt_r
+               rv_c1a(ic1a,il1) = rv_c1a(ic1a,il1)*sqrt_r
             end if
          end if
       else
