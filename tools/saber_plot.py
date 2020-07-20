@@ -17,8 +17,8 @@ args = parser.parse_args()
 sys.path.insert(1, os.path.join(args.bindir, "saber_plot"))
 
 # Available plots list
-plot_list=["adv","avg","corstats","cortrack","diag","dirac","lct","local_diag_cor_gridded","local_diag_cor","local_diag_loc_gridded","local_diag_loc","normality","randomization","sampling_grids","umf","var"]
-done_list=["adv","normality","sampling_grids"]
+plot_list=["adv","avg","corstats","cortrack","diag","dirac","lct_cor","lct","local_diag_cor","local_diag_loc","normality","randomization","sampling_grids","umf","var"]
+done_list=["adv","normality","sampling_grids","lct_cor"]
 done = {}
 for plot in plot_list:
    done[plot] = False
@@ -40,21 +40,22 @@ if args.test.find("bump_")==0:
                else:
                   func(args.testdata, args.test, args.mpi, args.omp, suffix)
 
-   # Create HTML page
-   message = "<html><head></head><body><h1>" + args.test + "</h1><ul>"
-   for f in sorted(os.listdir(os.path.join(args.testdata, args.test, "fig"))):
-      if f.find("test_" + args.mpi + "-" + args.omp)==0:
-         short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".png", "")
-         message = message + "<li><a href=\"#" + short_name + "\">" + short_name + "</a></li>"
-   message = message + "</ul>"
-   for f in sorted(os.listdir(os.path.join(args.testdata, args.test, "fig"))):
-      if f.find("test_" + args.mpi + "-" + args.omp)==0:
-         short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".png", "")
-         cmd = "mogrify -trim " + os.path.join(args.testdata, args.test, "fig", f)
-         os.system(cmd)
-         message = message + "<h2 id=\"" + short_name + "\">" + short_name + "</h2><img src=\"" + os.path.join(args.testdata, args.test, "fig", f) + "\" width=800px><br><a href=\"#top\">Back to top</a>"
+   if (os.path.isdir(os.path.join(args.testdata, args.test, "fig"))):
+      # Create HTML page
+      message = "<html><head></head><body><h1>" + args.test + "</h1><ul>"
+      for f in sorted(os.listdir(os.path.join(args.testdata, args.test, "fig"))):
+         if f.find("test_" + args.mpi + "-" + args.omp)==0:
+            short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".png", "")
+            message = message + "<li><a href=\"#" + short_name + "\">" + short_name + "</a></li>"
+      message = message + "</ul>"
+      for f in sorted(os.listdir(os.path.join(args.testdata, args.test, "fig"))):
+         if f.find("test_" + args.mpi + "-" + args.omp)==0:
+            short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".png", "")
+            cmd = "mogrify -trim " + os.path.join(args.testdata, args.test, "fig", f)
+            os.system(cmd)
+            message = message + "<h2 id=\"" + short_name + "\">" + short_name + "</h2><img src=\"" + os.path.join(args.testdata, args.test, "fig", f) + "\" width=800px><br><a href=\"#top\">Back to top</a>"
 
-   message = message + "</body></html>"
-   f = open(os.path.join(args.testdata, args.test, "fig", "index_" + args.mpi + "-" + args.omp + ".html"), "w")
-   f.write(message)
-   f.close()   
+      message = message + "</body></html>"
+      f = open(os.path.join(args.testdata, args.test, "fig", "index_" + args.mpi + "-" + args.omp + ".html"), "w")
+      f.write(message)
+      f.close()   

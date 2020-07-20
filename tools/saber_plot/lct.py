@@ -21,6 +21,7 @@ def lct(testdata, test, mpi, omp, suffix):
          var_list.append(var)
 
    # Get number of levels
+   print(var_list)
    nl0 = f.variables[var_list[0]][:,:].shape[0]
 
    # Contour resources
@@ -73,8 +74,10 @@ def lct(testdata, test, mpi, omp, suffix):
 
       # Plots
       plot = []
+      _FillValue = f.variables[var].attributes["_FillValue"]
       for il0 in range(0, nl0):
-         plot.append(Ngl.contour_map(wks, field[il0,:], cres))
+         if (np.any(field[il0,:] != _FillValue)):
+            plot.append(Ngl.contour_map(wks, field[il0,:], cres))
 
       # Panel
       Ngl.panel(wks, plot, [nl0,1], pnlres)

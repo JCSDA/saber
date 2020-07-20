@@ -1453,54 +1453,36 @@ call mpl%update_tag(1)
 ! Release memory
 deallocate(sbuf)
 
-! Define filename
-filename = trim(nam%prefix)//'_adv_diag'
-
 if (mpl%main) then
-   ! Create file
-   call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+   ! Define file
+   filename = trim(nam%prefix)//'_adv_diag'
+   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
    ! Write namelist parameters
    call nam%write(mpl,ncid)
 
    ! Define dimensions
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nc2',nam%nc2,nc2_id))
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0',geom%nl0,nl0_id))
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nts',nam%nts-1,nts_id))
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'na',samp%mesh%na,na_id))
+   nc2_id = mpl%nc_dim_define_or_get(subr,ncid,'nc2',nam%nc2)
+   nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
+   nts_id = mpl%nc_dim_define_or_get(subr,ncid,'nts',nam%nts-1)
+   na_id = mpl%nc_dim_define_or_get(subr,ncid,'na',samp%mesh%na)
 
    ! Define variables
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_c2',nc_kind_real,(/nc2_id,nl0_id/),lon_c2_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lon_c2_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_c2',nc_kind_real,(/nc2_id,nl0_id/),lat_c2_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lat_c2_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_c2_raw',nc_kind_real,(/nc2_id,nl0_id,nts_id/),lon_c2_raw_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lon_c2_raw_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_c2_raw',nc_kind_real,(/nc2_id,nl0_id,nts_id/),lat_c2_raw_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lat_c2_raw_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'dist_c2_raw',nc_kind_real,(/nc2_id,nl0_id,nts_id/),dist_c2_raw_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,dist_c2_raw_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'valid_raw',nc_kind_real,(/nl0_id,nts_id/),valid_raw_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,valid_raw_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'dist_raw',nc_kind_real,(/nl0_id,nts_id/),dist_raw_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,dist_raw_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon_c2_flt',nc_kind_real,(/nc2_id,nl0_id,nts_id/),lon_c2_flt_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lon_c2_flt_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat_c2_flt',nc_kind_real,(/nc2_id,nl0_id,nts_id/),lat_c2_flt_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lat_c2_flt_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'dist_c2_flt',nc_kind_real,(/nc2_id,nl0_id,nts_id/),dist_c2_flt_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,dist_c2_flt_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'valid_flt',nc_kind_real,(/nl0_id,nts_id/),valid_flt_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,valid_flt_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'dist_flt',nc_kind_real,(/nl0_id,nts_id/),dist_flt_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,dist_flt_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'rhflt',nc_kind_real,(/nl0_id,nts_id/),rhflt_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,rhflt_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'score_loc',nc_kind_real,(/nts_id/),score_loc_id))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'score_adv',nc_kind_real,(/nts_id/),score_adv_id))
-
-   ! End definition mode
-   call mpl%ncerr(subr,nf90_enddef(ncid))
+   lon_c2_id = mpl%nc_var_define_or_get(subr,ncid,'lon_c2',nc_kind_real,(/nc2_id,nl0_id/))
+   lat_c2_id = mpl%nc_var_define_or_get(subr,ncid,'lat_c2',nc_kind_real,(/nc2_id,nl0_id/))
+   lon_c2_raw_id = mpl%nc_var_define_or_get(subr,ncid,'lon_c2_raw',nc_kind_real,(/nc2_id,nl0_id,nts_id/))
+   lat_c2_raw_id = mpl%nc_var_define_or_get(subr,ncid,'lat_c2_raw',nc_kind_real,(/nc2_id,nl0_id,nts_id/))
+   dist_c2_raw_id = mpl%nc_var_define_or_get(subr,ncid,'dist_c2_raw',nc_kind_real,(/nc2_id,nl0_id,nts_id/))
+   valid_raw_id = mpl%nc_var_define_or_get(subr,ncid,'valid_raw',nc_kind_real,(/nl0_id,nts_id/))
+   dist_raw_id = mpl%nc_var_define_or_get(subr,ncid,'dist_raw',nc_kind_real,(/nl0_id,nts_id/))
+   lon_c2_flt_id = mpl%nc_var_define_or_get(subr,ncid,'lon_c2_flt',nc_kind_real,(/nc2_id,nl0_id,nts_id/))
+   lat_c2_flt_id = mpl%nc_var_define_or_get(subr,ncid,'lat_c2_flt',nc_kind_real,(/nc2_id,nl0_id,nts_id/))
+   dist_c2_flt_id = mpl%nc_var_define_or_get(subr,ncid,'dist_c2_flt',nc_kind_real,(/nc2_id,nl0_id,nts_id/))
+   valid_flt_id = mpl%nc_var_define_or_get(subr,ncid,'valid_flt',nc_kind_real,(/nl0_id,nts_id/))
+   dist_flt_id = mpl%nc_var_define_or_get(subr,ncid,'dist_flt',nc_kind_real,(/nl0_id,nts_id/))
+   rhflt_id = mpl%nc_var_define_or_get(subr,ncid,'rhflt',nc_kind_real,(/nl0_id,nts_id/))
+   score_loc_id = mpl%nc_var_define_or_get(subr,ncid,'score_loc',nc_kind_real,(/nts_id/))
+   score_adv_id = mpl%nc_var_define_or_get(subr,ncid,'score_adv',nc_kind_real,(/nts_id/))
 
    ! Write data
    call mpl%ncerr(subr,nf90_put_var(ncid,lon_c2_id,lon_c2))
@@ -1533,7 +1515,7 @@ if (mpl%main) then
    deallocate(dist_c2_flt)
 end if
 
-! Define filename
+! Set file name
 filename = trim(nam%prefix)//'_adv_test'
 
 ! Write test
@@ -1543,8 +1525,8 @@ do ib=1,bpar%nb
    its = bpar%b_to_ts1(ib)
    jts = bpar%b_to_ts2(ib)
    if ((iv==jv).and.(its>=2).and.(its==jts)) then
-      call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_cor_loc',adv%cor_loc(:,:,iv,its))
-      call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_cor_adv',adv%cor_adv(:,:,iv,its))
+      call io%fld_write(mpl,nam,geom,filename,'cor_loc',adv%cor_loc(:,:,iv,its),trim(bpar%blockname(ib)))
+      call io%fld_write(mpl,nam,geom,filename,'cor_adv',adv%cor_adv(:,:,iv,its),trim(bpar%blockname(ib)))
    end if
 end do
 

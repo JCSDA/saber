@@ -70,6 +70,7 @@ type geom_type
    logical,allocatable :: gmask_hor_c0a(:)        ! Union of horizontal geometry masks
    real(kind_real),allocatable :: mdist_c0a(:,:)  ! Minimum distance to mask
    integer :: grid_hash                           ! Local grid hash
+   integer,allocatable :: proc_to_grid_hash(:)    ! Processor to local grid hash
 
    ! Geometry data on subset Sc0, universe
    integer,allocatable :: proc_to_nc0u(:)         ! Processor to universe size for subset Sc0
@@ -191,6 +192,7 @@ if (allocated(geom%vunit_c0a)) deallocate(geom%vunit_c0a)
 if (allocated(geom%smask_c0a)) deallocate(geom%smask_c0a)
 if (allocated(geom%gmask_hor_c0a)) deallocate(geom%gmask_hor_c0a)
 if (allocated(geom%mdist_c0a)) deallocate(geom%mdist_c0a)
+if (allocated(geom%proc_to_grid_hash)) deallocate(geom%proc_to_grid_hash)
 if (allocated(geom%proc_to_nc0u)) deallocate(geom%proc_to_nc0u)
 if (allocated(geom%lon_c0u)) deallocate(geom%lon_c0u)
 if (allocated(geom%lat_c0u)) deallocate(geom%lat_c0u)
@@ -803,6 +805,7 @@ allocate(geom%nc0_gmask(0:geom%nl0))
 allocate(geom%area(geom%nl0))
 allocate(geom%vunitavg(geom%nl0))
 allocate(lonlat_c0a(2*geom%nc0a))
+allocate(geom%proc_to_grid_hash(mpl%nproc))
 
 ! Subset Sc0 offset for halo A
 geom%proc_to_c0_offset(1) = 0
@@ -954,6 +957,7 @@ end do
 lonlat_c0a(1:geom%nc0a) = geom%lon_c0a
 lonlat_c0a(geom%nc0a+1:2*geom%nc0a) = geom%lat_c0a
 geom%grid_hash = fletcher32(lonlat_c0a)
+call mpl%f_comm%allgather(geom%grid_hash,geom%proc_to_grid_hash)
 
 ! Deallocate memory
 deallocate(geom%lon_mga)

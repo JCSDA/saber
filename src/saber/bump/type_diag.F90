@@ -156,10 +156,14 @@ if (nam%local_diag) then
    allocate(fld_c2b(samp%nc2b,geom%nl0))
    allocate(fld_c0a(geom%nc0a,geom%nl0))
 
+   ! Set file name
+   filename = trim(nam%prefix)//'_local_diag_'//trim(diag%prefix)
+
+   ! Write vertical unit
+   call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+
    do ib=1,bpar%nbe
-      if (bpar%diag_block(ib)) then
-         filename = trim(nam%prefix)//'_local_diag_'//trim(diag%prefix)
-         call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+      if (bpar%diag_block(ib)) then       
          n = 1
          if (bpar%fit_block(ib).and.(trim(diag%prefix)/='cov')) n = n+2
          do i=1,n
@@ -183,11 +187,11 @@ if (nam%local_diag) then
 
             ! Write fields
             if (i==1) then
-               call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_coef_ens',fld_c0a)
+               call io%fld_write(mpl,nam,geom,filename,'coef_ens',fld_c0a,trim(bpar%blockname(ib)))
             elseif (i==2) then
-               call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_fit_rh',fld_c0a)
+               call io%fld_write(mpl,nam,geom,filename,'fit_rh',fld_c0a,trim(bpar%blockname(ib)))
             elseif (i==3) then
-               call io%fld_write(mpl,nam,geom,filename,trim(bpar%blockname(ib))//'_fit_rv',fld_c0a)
+               call io%fld_write(mpl,nam,geom,filename,'fit_rv',fld_c0a,trim(bpar%blockname(ib)))
             end if
          end do
       end if

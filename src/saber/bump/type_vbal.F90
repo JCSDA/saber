@@ -164,8 +164,7 @@ type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
 integer :: iv,jv,grid_hash
-integer :: ncid,nc0a_id,nc2b_id,nl0i_id,nl0_1_id,nl0_2_id,h_n_s_id,h_c2b_id,h_S_id,reg_id(nam%nv,nam%nv)
-integer :: nc0a_test,nl0i_test,nl0_1_test,nl0_2_test
+integer :: ncid,grpid(nam%nv,nam%nv),h_n_s_id,h_c2b_id,h_S_id,reg_id(nam%nv,nam%nv)
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'vbal_read'
 
@@ -177,42 +176,29 @@ call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90
 call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
 if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
 
-! Get dimensions
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nc0a',nc0a_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc0a_id,len=nc0a_test))
-if (nc0a_test/=geom%nc0a) call mpl%abort(subr,'wrong dimension when reading vbal')
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nc2b',nc2b_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc2b_id,len=vbal%samp%nc2b))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nl0i',nl0i_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nl0i_id,len=nl0i_test))
-if (nl0i_test/=geom%nl0i) call mpl%abort(subr,'wrong dimension when reading vbal')
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nl0_1',nl0_1_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nl0_1_id,len=nl0_1_test))
-if (nl0_1_test/=geom%nl0) call mpl%abort(subr,'wrong dimension when reading vbal')
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nl0_2',nl0_2_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nl0_2_id,len=nl0_2_test))
-if (nl0_2_test/=geom%nl0) call mpl%abort(subr,'wrong dimension when reading vbal')
+! Get or check dimensions
+call mpl%nc_dim_check(subr,ncid,'nc0a',geom%nc0a)
+vbal%samp%nc2b = mpl%nc_dim_inquire(subr,ncid,'nc2b')
+call mpl%nc_dim_check(subr,ncid,'nl0i',geom%nl0i)
+call mpl%nc_dim_check(subr,ncid,'nl0_1',geom%nl0)
+call mpl%nc_dim_check(subr,ncid,'nl0_2',geom%nl0)
 
 ! Allocation
-allocate(vbal%h_n_s(geom%nc0a,geom%nl0i))
-allocate(vbal%h_c2b(3,geom%nc0a,geom%nl0i))
-allocate(vbal%h_S(3,geom%nc0a,geom%nl0i))
-allocate(vbal%blk(nam%nv,nam%nv))
-do iv=1,nam%nv
-   do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) then
-         call vbal%blk(iv,jv)%alloc(nam,geom,vbal%samp%nc2b,iv,jv)
-      end if
-   end do
-end do
+call vbal%alloc(nam,geom,bpar)
 
-! Get variable id
+! Get variables
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'h_n_s',h_n_s_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'h_c2b',h_c2b_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'h_S',h_S_id))
 do iv=1,nam%nv
    do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(vbal%blk(iv,jv)%name)//'_reg',reg_id(iv,jv)))
+      if (bpar%vbal_block(iv,jv)) then
+         ! Get group
+         call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(vbal%blk(iv,jv)%name),grpid(iv,jv)))
+
+         ! Get variable
+         call mpl%ncerr(subr,nf90_inq_varid(grpid(iv,jv),'reg',reg_id(iv,jv)))
+      end if
    end do
 end do
 
@@ -222,7 +208,7 @@ call mpl%ncerr(subr,nf90_get_var(ncid,h_c2b_id,vbal%h_c2b))
 call mpl%ncerr(subr,nf90_get_var(ncid,h_S_id,vbal%h_S))
 do iv=1,nam%nv
    do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) call mpl%ncerr(subr,nf90_get_var(ncid,reg_id(iv,jv),vbal%blk(iv,jv)%reg))
+      if (bpar%vbal_block(iv,jv)) call mpl%ncerr(subr,nf90_get_var(grpid(iv,jv),reg_id(iv,jv),vbal%blk(iv,jv)%reg))
    end do
 end do
 
@@ -248,14 +234,14 @@ type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
 integer :: iv,jv
-integer :: ncid,np_id,nc0a_id,nc2b_id,nl0i_id,nl0_1_id,nl0_2_id,h_n_s_id,h_c2b_id,h_S_id
+integer :: ncid,grpid(nam%nv,nam%nv),np_id,nc0a_id,nc2b_id,nl0i_id,nl0_1_id,nl0_2_id,h_n_s_id,h_c2b_id,h_S_id
 integer :: reg_id(nam%nv,nam%nv),auto_id(nam%nv,nam%nv),cross_id(nam%nv,nam%nv),auto_inv_id(nam%nv,nam%nv)
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'vbal_write'
 
-! Create file
+! Define file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Write grid hash
 call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
@@ -264,37 +250,31 @@ call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 call nam%write(mpl,ncid)
 
 ! Define dimensions
-call mpl%ncerr(subr,nf90_def_dim(ncid,'np',3,np_id))
-call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0a',geom%nc0a,nc0a_id))
-call mpl%ncerr(subr,nf90_def_dim(ncid,'nc2b',vbal%samp%nc2b,nc2b_id))
-call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0i',geom%nl0i,nl0i_id))
-call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0_1',geom%nl0,nl0_1_id))
-call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0_2',geom%nl0,nl0_2_id))
+np_id = mpl%nc_dim_define_or_get(subr,ncid,'np',3)
+nc0a_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0a',geom%nc0a)
+nl0i_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0i',geom%nl0i)
+nl0_1_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0_1',geom%nl0)
+nl0_2_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0_2',geom%nl0)
+nc2b_id = mpl%nc_dim_define_or_get(subr,ncid,'nc2b',vbal%samp%nc2b)
 
 ! Define variables
-call mpl%ncerr(subr,nf90_def_var(ncid,'h_n_s',nf90_int,(/nc0a_id,nl0i_id/),h_n_s_id))
-call mpl%ncerr(subr,nf90_put_att(ncid,h_n_s_id,'_FillValue',mpl%msv%vali))
-call mpl%ncerr(subr,nf90_def_var(ncid,'h_c2b',nf90_int,(/np_id,nc0a_id,nl0i_id/),h_c2b_id))
-call mpl%ncerr(subr,nf90_put_att(ncid,h_c2b_id,'_FillValue',mpl%msv%vali))
-call mpl%ncerr(subr,nf90_def_var(ncid,'h_S',nc_kind_real,(/np_id,nc0a_id,nl0i_id/),h_S_id))
-call mpl%ncerr(subr,nf90_put_att(ncid,h_S_id,'_FillValue',mpl%msv%valr))
+h_n_s_id = mpl%nc_var_define_or_get(subr,ncid,'h_n_s',nf90_int,(/nc0a_id,nl0i_id/))
+h_c2b_id = mpl%nc_var_define_or_get(subr,ncid,'h_c2b',nf90_int,(/np_id,nc0a_id,nl0i_id/))
+h_S_id = mpl%nc_var_define_or_get(subr,ncid,'h_S',nc_kind_real,(/np_id,nc0a_id,nl0i_id/))
 do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
-         call mpl%ncerr(subr,nf90_def_var(ncid,trim(vbal%blk(iv,jv)%name)//'_auto',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/), &
-       & auto_id(iv,jv)))
-         call mpl%ncerr(subr,nf90_def_var(ncid,trim(vbal%blk(iv,jv)%name)//'_cross',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/), &
-       & cross_id(iv,jv)))
-         call mpl%ncerr(subr,nf90_def_var(ncid,trim(vbal%blk(iv,jv)%name)//'_auto_inv',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/), &
-       & auto_inv_id(iv,jv)))
-         call mpl%ncerr(subr,nf90_def_var(ncid,trim(vbal%blk(iv,jv)%name)//'_reg',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/), &
-       & reg_id(iv,jv)))
+         ! Define group
+         grpid(iv,jv) = mpl%nc_group_define_or_get(subr,ncid,trim(vbal%blk(iv,jv)%name))
+
+         ! Define variables
+         auto_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'auto',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
+         cross_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'cross',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
+         auto_inv_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'auto_inv',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
+         reg_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'reg',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
       end if
    end do
 end do
-
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
 
 ! Write variables
 call mpl%ncerr(subr,nf90_put_var(ncid,h_n_s_id,vbal%h_n_s))
@@ -303,10 +283,10 @@ call mpl%ncerr(subr,nf90_put_var(ncid,h_S_id,vbal%h_S))
 do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
-         call mpl%ncerr(subr,nf90_put_var(ncid,reg_id(iv,jv),vbal%blk(iv,jv)%reg))
-         call mpl%ncerr(subr,nf90_put_var(ncid,auto_id(iv,jv),vbal%blk(iv,jv)%auto))
-         call mpl%ncerr(subr,nf90_put_var(ncid,cross_id(iv,jv),vbal%blk(iv,jv)%cross))
-         call mpl%ncerr(subr,nf90_put_var(ncid,auto_inv_id(iv,jv),vbal%blk(iv,jv)%auto_inv))
+         call mpl%ncerr(subr,nf90_put_var(grpid(iv,jv),reg_id(iv,jv),vbal%blk(iv,jv)%reg))
+         call mpl%ncerr(subr,nf90_put_var(grpid(iv,jv),auto_id(iv,jv),vbal%blk(iv,jv)%auto))
+         call mpl%ncerr(subr,nf90_put_var(grpid(iv,jv),cross_id(iv,jv),vbal%blk(iv,jv)%cross))
+         call mpl%ncerr(subr,nf90_put_var(grpid(iv,jv),auto_inv_id(iv,jv),vbal%blk(iv,jv)%auto_inv))
       end if
    end do
 end do

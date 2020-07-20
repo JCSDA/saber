@@ -128,10 +128,10 @@ call mpl%flush
 ! Allocation
 call var%alloc(nam,geom)
 
-! Create file and write vertical unit
+! Set filename
 filename = trim(nam%prefix)//'_var'
 
-! Write raw variance, fourth-order moment, filtered variance and standard-deviation
+! Read raw variance, fourth-order moment, filtered variance and standard-deviation
 do its=1,nam%nts
    do iv=1,nam%nv
       write(variables,'(a,i2.2,a,i2.2)') 'm2_',iv,'_',its
@@ -172,8 +172,10 @@ character(len=1024) :: filename,variables
 write(mpl%info,'(a7,a)') '','Write variance'
 call mpl%flush
 
-! Create file and write vertical unit
+! Set filename
 filename = trim(nam%prefix)//'_var'
+
+! Write vertical unit
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 
 ! Write raw variance, fourth-order moment, filtered variance and standard-deviation

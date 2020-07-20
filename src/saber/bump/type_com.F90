@@ -105,45 +105,21 @@ implicit none
 ! Passed variables
 class(com_type),intent(inout) :: com  ! Communication data
 type(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid            ! NetCDF file id
+integer,intent(in) :: ncid            ! NetCDF file
 
 ! Local variables
-integer :: info
-integer :: nred_id,next_id,nown_id,own_to_ext_id,own_to_red_id,nhalo_id,nexcl_id
-integer :: jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
+integer :: grpid,own_to_ext_id,own_to_red_id,jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
 character(len=1024),parameter :: subr = 'com_read'
 
+! Get group
+call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(com%prefix),grpid))
+
 ! Get dimensions
-info = nf90_inq_dimid(ncid,trim(com%prefix)//'_nred',nred_id)
-if (info==nf90_noerr) then
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nred_id,len=com%nred))
-else
-   com%nred = 0
-end if
-info = nf90_inq_dimid(ncid,trim(com%prefix)//'_next',next_id)
-if (info==nf90_noerr) then
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,next_id,len=com%next))
-else
-   com%next = 0
-end if
-info = nf90_inq_dimid(ncid,trim(com%prefix)//'_nown',nown_id)
-if (info==nf90_noerr) then
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nown_id,len=com%nown))
-else
-   com%nown = 0
-end if
-info = nf90_inq_dimid(ncid,trim(com%prefix)//'_nhalo',nhalo_id)
-if (info==nf90_noerr) then
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nhalo_id,len=com%nhalo))
-else
-   com%nhalo = 0
-end if
-info = nf90_inq_dimid(ncid,trim(com%prefix)//'_nexcl',nexcl_id)
-if (info==nf90_noerr) then
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nexcl_id,len=com%nexcl))
-else
-   com%nexcl = 0
-end if
+com%nred = mpl%nc_dim_inquire(subr,grpid,'nred')
+com%next = mpl%nc_dim_inquire(subr,grpid,'next')
+com%nown = mpl%nc_dim_inquire(subr,grpid,'nown')
+com%nhalo = mpl%nc_dim_inquire(subr,grpid,'nhalo')
+com%nexcl = mpl%nc_dim_inquire(subr,grpid,'nexcl')
 
 ! Allocation
 if (com%nown>0) allocate(com%own_to_ext(com%nown))
@@ -155,25 +131,25 @@ allocate(com%jexcldispls(mpl%nproc))
 if (com%nhalo>0) allocate(com%halo(com%nhalo))
 if (com%nexcl>0) allocate(com%excl(com%nexcl))
 
-! Get variables id
-if (com%nown>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(com%prefix)//'_own_to_ext',own_to_ext_id))
-if (com%nown>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(com%prefix)//'_own_to_red',own_to_red_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(com%prefix)//'_jhalocounts',jhalocounts_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(com%prefix)//'_jexclcounts',jexclcounts_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(com%prefix)//'_jhalodispls',jhalodispls_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(com%prefix)//'_jexcldispls',jexcldispls_id))
-if (com%nhalo>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(com%prefix)//'_halo',halo_id))
-if (com%nexcl>0) call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(com%prefix)//'_excl',excl_id))
+! Get variables
+if (com%nown>0) call mpl%ncerr(subr,nf90_inq_varid(grpid,'own_to_ext',own_to_ext_id))
+if (com%nown>0) call mpl%ncerr(subr,nf90_inq_varid(grpid,'own_to_red',own_to_red_id))
+call mpl%ncerr(subr,nf90_inq_varid(grpid,'jhalocounts',jhalocounts_id))
+call mpl%ncerr(subr,nf90_inq_varid(grpid,'jexclcounts',jexclcounts_id))
+call mpl%ncerr(subr,nf90_inq_varid(grpid,'jhalodispls',jhalodispls_id))
+call mpl%ncerr(subr,nf90_inq_varid(grpid,'jexcldispls',jexcldispls_id))
+if (com%nhalo>0) call mpl%ncerr(subr,nf90_inq_varid(grpid,'halo',halo_id))
+if (com%nexcl>0) call mpl%ncerr(subr,nf90_inq_varid(grpid,'excl',excl_id))
 
-! Get variable
-if (com%nown>0) call mpl%ncerr(subr,nf90_get_var(ncid,own_to_ext_id,com%own_to_ext))
-if (com%nown>0) call mpl%ncerr(subr,nf90_get_var(ncid,own_to_red_id,com%own_to_red))
-call mpl%ncerr(subr,nf90_get_var(ncid,jhalocounts_id,com%jhalocounts))
-call mpl%ncerr(subr,nf90_get_var(ncid,jexclcounts_id,com%jexclcounts))
-call mpl%ncerr(subr,nf90_get_var(ncid,jhalodispls_id,com%jhalodispls))
-call mpl%ncerr(subr,nf90_get_var(ncid,jexcldispls_id,com%jexcldispls))
-if (com%nhalo>0) call mpl%ncerr(subr,nf90_get_var(ncid,halo_id,com%halo))
-if (com%nexcl>0) call mpl%ncerr(subr,nf90_get_var(ncid,excl_id,com%excl))
+! Read variables
+if (com%nown>0) call mpl%ncerr(subr,nf90_get_var(grpid,own_to_ext_id,com%own_to_ext))
+if (com%nown>0) call mpl%ncerr(subr,nf90_get_var(grpid,own_to_red_id,com%own_to_red))
+call mpl%ncerr(subr,nf90_get_var(grpid,jhalocounts_id,com%jhalocounts))
+call mpl%ncerr(subr,nf90_get_var(grpid,jexclcounts_id,com%jexclcounts))
+call mpl%ncerr(subr,nf90_get_var(grpid,jhalodispls_id,com%jhalodispls))
+call mpl%ncerr(subr,nf90_get_var(grpid,jexcldispls_id,com%jexcldispls))
+if (com%nhalo>0) call mpl%ncerr(subr,nf90_get_var(grpid,halo_id,com%halo))
+if (com%nexcl>0) call mpl%ncerr(subr,nf90_get_var(grpid,excl_id,com%excl))
 
 end subroutine com_read
 
@@ -188,48 +164,43 @@ implicit none
 ! Passed variables
 class(com_type),intent(in) :: com   ! Communication data
 type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: ncid          ! NetCDF file id
+integer,intent(in) :: ncid          ! NetCDF file
 
 ! Local variables
-integer :: info
-integer :: nproc_id,nred_id,next_id,nown_id,own_to_ext_id,own_to_red_id,nhalo_id,nexcl_id
+integer :: grpid,nproc_id,nred_id,next_id,nown_id,own_to_ext_id,own_to_red_id,nhalo_id,nexcl_id
 integer :: jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
 character(len=1024),parameter :: subr = 'com_write'
 
-! Start definition mode
-call mpl%ncerr(subr,nf90_redef(ncid))
+! Define group
+grpid = mpl%nc_group_define_or_get(subr,ncid,trim(com%prefix))
 
 ! Define dimensions
-info = nf90_inq_dimid(ncid,'nproc',nproc_id)
-if (info/=nf90_noerr) call mpl%ncerr(subr,nf90_def_dim(ncid,'nproc',mpl%nproc,nproc_id))
-if (com%nred>0) call mpl%ncerr(subr,nf90_def_dim(ncid,trim(com%prefix)//'_nred',com%nred,nred_id))
-if (com%next>0) call mpl%ncerr(subr,nf90_def_dim(ncid,trim(com%prefix)//'_next',com%next,next_id))
-if (com%nown>0) call mpl%ncerr(subr,nf90_def_dim(ncid,trim(com%prefix)//'_nown',com%nown,nown_id))
-if (com%nhalo>0) call mpl%ncerr(subr,nf90_def_dim(ncid,trim(com%prefix)//'_nhalo',com%nhalo,nhalo_id))
-if (com%nexcl>0) call mpl%ncerr(subr,nf90_def_dim(ncid,trim(com%prefix)//'_nexcl',com%nexcl,nexcl_id))
+nproc_id = mpl%nc_dim_define_or_get(subr,ncid,'nproc',mpl%nproc)
+if (com%nred>0) nred_id = mpl%nc_dim_define_or_get(subr,grpid,'nred',com%nred)
+if (com%next>0) next_id = mpl%nc_dim_define_or_get(subr,grpid,'next',com%next)
+if (com%nown>0) nown_id = mpl%nc_dim_define_or_get(subr,grpid,'nown',com%nown)
+if (com%nhalo>0) nhalo_id = mpl%nc_dim_define_or_get(subr,grpid,'nhalo',com%nhalo)
+if (com%nexcl>0) nexcl_id = mpl%nc_dim_define_or_get(subr,grpid,'nexcl',com%nexcl) 
 
 ! Define variables
-if (com%nown>0) call mpl%ncerr(subr,nf90_def_var(ncid,trim(com%prefix)//'_own_to_ext',nf90_int,(/nown_id/),own_to_ext_id))
-if (com%nown>0) call mpl%ncerr(subr,nf90_def_var(ncid,trim(com%prefix)//'_own_to_red',nf90_int,(/nown_id/),own_to_red_id))
-call mpl%ncerr(subr,nf90_def_var(ncid,trim(com%prefix)//'_jhalocounts',nf90_int,(/nproc_id/),jhalocounts_id))
-call mpl%ncerr(subr,nf90_def_var(ncid,trim(com%prefix)//'_jexclcounts',nf90_int,(/nproc_id/),jexclcounts_id))
-call mpl%ncerr(subr,nf90_def_var(ncid,trim(com%prefix)//'_jhalodispls',nf90_int,(/nproc_id/),jhalodispls_id))
-call mpl%ncerr(subr,nf90_def_var(ncid,trim(com%prefix)//'_jexcldispls',nf90_int,(/nproc_id/),jexcldispls_id))
-if (com%nhalo>0) call mpl%ncerr(subr,nf90_def_var(ncid,trim(com%prefix)//'_halo',nf90_int,(/nhalo_id/),halo_id))
-if (com%nexcl>0) call mpl%ncerr(subr,nf90_def_var(ncid,trim(com%prefix)//'_excl',nf90_int,(/nexcl_id/),excl_id))
+if (com%nown>0) own_to_ext_id = mpl%nc_var_define_or_get(subr,grpid,'own_to_ext',nf90_int,(/nown_id/))
+if (com%nown>0) own_to_red_id = mpl%nc_var_define_or_get(subr,grpid,'own_to_red',nf90_int,(/nown_id/))
+jhalocounts_id = mpl%nc_var_define_or_get(subr,grpid,'jhalocounts',nf90_int,(/nproc_id/))
+jexclcounts_id = mpl%nc_var_define_or_get(subr,grpid,'jexclcounts',nf90_int,(/nproc_id/))
+jhalodispls_id = mpl%nc_var_define_or_get(subr,grpid,'jhalodispls',nf90_int,(/nproc_id/))
+jexcldispls_id = mpl%nc_var_define_or_get(subr,grpid,'jexcldispls',nf90_int,(/nproc_id/))
+if (com%nhalo>0) halo_id = mpl%nc_var_define_or_get(subr,grpid,'halo',nf90_int,(/nhalo_id/))
+if (com%nexcl>0) excl_id = mpl%nc_var_define_or_get(subr,grpid,'excl',nf90_int,(/nexcl_id/))
 
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
-
-! Put variables
-if (com%nown>0) call mpl%ncerr(subr,nf90_put_var(ncid,own_to_ext_id,com%own_to_ext))
-if (com%nown>0) call mpl%ncerr(subr,nf90_put_var(ncid,own_to_red_id,com%own_to_red))
-call mpl%ncerr(subr,nf90_put_var(ncid,jhalocounts_id,com%jhalocounts))
-call mpl%ncerr(subr,nf90_put_var(ncid,jexclcounts_id,com%jexclcounts))
-call mpl%ncerr(subr,nf90_put_var(ncid,jhalodispls_id,com%jhalodispls))
-call mpl%ncerr(subr,nf90_put_var(ncid,jexcldispls_id,com%jexcldispls))
-if (com%nhalo>0) call mpl%ncerr(subr,nf90_put_var(ncid,halo_id,com%halo))
-if (com%nexcl>0) call mpl%ncerr(subr,nf90_put_var(ncid,excl_id,com%excl))
+! Write variables
+if (com%nown>0) call mpl%ncerr(subr,nf90_put_var(grpid,own_to_ext_id,com%own_to_ext))
+if (com%nown>0) call mpl%ncerr(subr,nf90_put_var(grpid,own_to_red_id,com%own_to_red))
+call mpl%ncerr(subr,nf90_put_var(grpid,jhalocounts_id,com%jhalocounts))
+call mpl%ncerr(subr,nf90_put_var(grpid,jexclcounts_id,com%jexclcounts))
+call mpl%ncerr(subr,nf90_put_var(grpid,jhalodispls_id,com%jhalodispls))
+call mpl%ncerr(subr,nf90_put_var(grpid,jexcldispls_id,com%jexcldispls))
+if (com%nhalo>0) call mpl%ncerr(subr,nf90_put_var(grpid,halo_id,com%halo))
+if (com%nexcl>0) call mpl%ncerr(subr,nf90_put_var(grpid,excl_id,com%excl))
 
 end subroutine com_write
 

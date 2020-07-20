@@ -25,7 +25,6 @@ implicit none
 type avg_blk_type
    integer :: ic2a                                       ! Local index
    integer :: ib                                         ! Block index
-   character(len=1024) :: name                           ! Name
    integer :: ne                                         ! Ensemble size
    integer :: nsub                                       ! Sub-ensembles number
    real(kind_real),allocatable :: nc1a(:,:,:)            ! Number of points in subset Sc1 on halo A
@@ -77,7 +76,7 @@ contains
 ! Subroutine: avg_blk_alloc
 ! Purpose: allocation
 !----------------------------------------------------------------------
-subroutine avg_blk_alloc(avg_blk,nam,geom,bpar,ic2a,ib,ne,nsub,prefix)
+subroutine avg_blk_alloc(avg_blk,nam,geom,bpar,ic2a,ib,ne,nsub)
 
 implicit none
 
@@ -91,14 +90,12 @@ integer,intent(in) :: ic2a                   ! Local index
 integer,intent(in) :: ib                     ! Block index
 integer,intent(in) :: ne                     ! Ensemble size
 integer,intent(in) :: nsub                   ! Sub-ensembles number
-character(len=*),intent(in) :: prefix        ! Prefix
 
 ! Set attributes
 avg_blk%ic2a = ic2a
 avg_blk%ib = ib
 avg_blk%ne = ne
 avg_blk%nsub = nsub
-avg_blk%name = trim(prefix)//'_'//trim(bpar%blockname(ib))
 
 ! Allocation
 if (bpar%diag_block(ib).and.(.not.allocated(avg_blk%nc1a))) then
@@ -238,7 +235,7 @@ type(bpar_type),intent(in) :: bpar           ! Block parameters
 character(len=*),intent(in) :: filename      ! File name
 
 ! Local variables
-integer :: info,info_coord,ncid,nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vunit_id,l0rl0_to_l0_id
+integer :: ncid,grpid,nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vunit_id,l0rl0_to_l0_id
 integer :: m11_bins_id,m11_hist_id,m11m11_bins_id,m11m11_hist_id,m2m2_bins_id,m2m2_hist_id,m22_bins_id,m22_hist_id
 integer :: cor_bins_id,cor_hist_id
 character(len=1024),parameter :: subr = 'avg_blk_write'
@@ -246,130 +243,65 @@ character(len=1024),parameter :: subr = 'avg_blk_write'
 ! Associate
 associate(ib=>avg_blk%ib)
 
-! Check if the file exists
-info = nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_noclobber,nf90_64bit_offset),ncid)
-if (info==nf90_noerr) then
-   ! Write namelist parameters
-   call nam%write(mpl,ncid)
-else
-   ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
+! Define file
+ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
-   ! Redef mode
-   call mpl%ncerr(subr,nf90_redef(ncid))
-end if
+! Write namelist parameters
+call nam%write(mpl,ncid)
 
-! Define dimensions and coordinates if necessary
-nc3_id = mpl%ncdimcheck(subr,ncid,'nc3',nam%nc3,.true.)
-nl0r_id = mpl%ncdimcheck(subr,ncid,'nl0r',bpar%nl0rmax,.true.,.true.)
-nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.,.true.)
-nbinsp1_id = mpl%ncdimcheck(subr,ncid,'nbinsp1',nam%avg_nbins+1,.true.)
-nbins_id = mpl%ncdimcheck(subr,ncid,'nbins',nam%avg_nbins,.true.)
-info_coord = nf90_inq_varid(ncid,'disth',disth_id)
-if (info_coord/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'disth',nc_kind_real,(/nc3_id/),disth_id))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'vunit',nc_kind_real,(/nl0_id/),vunit_id))
-end if
+! Define group
+grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
 
-! Define variables if necessary
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_l0rl0_to_l0',l0rl0_to_l0_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_l0rl0_to_l0',nf90_int, &
- & (/nl0r_id,nl0_id/),l0rl0_to_l0_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,l0rl0_to_l0_id,'_FillValue',mpl%msv%vali))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m11_bins',m11_bins_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m11_bins',nc_kind_real, &
- & (/nbinsp1_id,nc3_id,nl0r_id,nl0_id/),m11_bins_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,m11_bins_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m11_hist',m11_hist_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m11_hist',nc_kind_real, &
- & (/nbins_id,nc3_id,nl0r_id,nl0_id/),m11_hist_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,m11_hist_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m11m11_bins',m11m11_bins_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m11m11_bins',nc_kind_real, &
- & (/nbinsp1_id,nc3_id,nl0r_id,nl0_id/),m11m11_bins_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,m11m11_bins_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m11m11_hist',m11m11_hist_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m11m11_hist',nc_kind_real, &
- & (/nbins_id,nc3_id,nl0r_id,nl0_id/),m11m11_hist_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,m11m11_hist_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m2m2_bins',m2m2_bins_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m2m2_bins',nc_kind_real, &
- & (/nbinsp1_id,nc3_id,nl0r_id,nl0_id/),m2m2_bins_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,m2m2_bins_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m2m2_hist',m2m2_hist_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m2m2_hist',nc_kind_real, &
- & (/nbins_id,nc3_id,nl0r_id,nl0_id/),m2m2_hist_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,m2m2_hist_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m22_bins',m22_bins_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m22_bins',nc_kind_real, &
- & (/nbinsp1_id,nc3_id,nl0r_id,nl0_id/),m22_bins_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,m22_bins_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_m22_hist',m22_hist_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_m22_hist',nc_kind_real, &
- & (/nbins_id,nc3_id,nl0r_id,nl0_id/),m22_hist_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,m22_hist_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_cor_bins',cor_bins_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_cor_bins',nc_kind_real, &
- & (/nbinsp1_id,nc3_id,nl0r_id,nl0_id/),cor_bins_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,cor_bins_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,trim(avg_blk%name)//'_cor_hist',cor_hist_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(avg_blk%name)//'_cor_hist',nc_kind_real, &
- & (/nbins_id,nc3_id,nl0r_id,nl0_id/),cor_hist_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,cor_hist_id,'_FillValue',mpl%msv%valr))
-end if
+! Define dimensions
+nc3_id = mpl%nc_dim_define_or_get(subr,grpid,'nc3',bpar%nc3(ib))
+nl0r_id = mpl%nc_dim_define_or_get(subr,grpid,'nl0r',bpar%nl0r(ib))
+nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
+nbinsp1_id = mpl%nc_dim_define_or_get(subr,ncid,'nbinsp1',nam%avg_nbins+1)
+nbins_id = mpl%nc_dim_define_or_get(subr,ncid,'nbins',nam%avg_nbins)
 
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
+! Define coordinates
+disth_id = mpl%nc_var_define_or_get(subr,grpid,'disth',nc_kind_real,(/nc3_id/))
+vunit_id = mpl%nc_var_define_or_get(subr,ncid,'vunit',nc_kind_real,(/nl0_id/))
 
-! Write coordinates if necessary
-if (info_coord/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_put_var(ncid,disth_id,geom%disth(1:bpar%nc3(ib)),(/1/),(/bpar%nc3(ib)/)))
-   call mpl%ncerr(subr,nf90_put_var(ncid,vunit_id,geom%vunitavg))
-end if
+! Define variables
+l0rl0_to_l0_id = mpl%nc_var_define_or_get(subr,grpid,'l0rl0_to_l0',nf90_int,(/nl0r_id,nl0_id/))
+m11_bins_id = mpl%nc_var_define_or_get(subr,grpid,'m11_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m11_hist_id = mpl%nc_var_define_or_get(subr,grpid,'m11_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m11m11_bins_id = mpl%nc_var_define_or_get(subr,grpid,'m11m11_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m11m11_hist_id = mpl%nc_var_define_or_get(subr,grpid,'m11m11_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m2m2_bins_id = mpl%nc_var_define_or_get(subr,grpid,'m2m2_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m2m2_hist_id = mpl%nc_var_define_or_get(subr,grpid,'m2m2_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m22_bins_id = mpl%nc_var_define_or_get(subr,grpid,'m22_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m22_hist_id = mpl%nc_var_define_or_get(subr,grpid,'m22_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+cor_bins_id = mpl%nc_var_define_or_get(subr,grpid,'cor_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+cor_hist_id = mpl%nc_var_define_or_get(subr,grpid,'cor_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+
+! Write coordinates
+call mpl%ncerr(subr,nf90_put_var(grpid,disth_id,geom%disth(1:bpar%nc3(ib)),(/1/),(/bpar%nc3(ib)/)))
+call mpl%ncerr(subr,nf90_put_var(grpid,vunit_id,geom%vunitavg))
 
 ! Write variables
-call mpl%ncerr(subr,nf90_put_var(ncid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib),(/1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib),(/1,1,1/), &
  & (/bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,m11_bins_id,avg_blk%m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,m11_bins_id,avg_blk%m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,m11_hist_id,avg_blk%m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,m11_hist_id,avg_blk%m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,m11m11_bins_id,avg_blk%m11m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,m11m11_bins_id,avg_blk%m11m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,m11m11_hist_id,avg_blk%m11m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,m11m11_hist_id,avg_blk%m11m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,m2m2_bins_id,avg_blk%m2m2_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,m2m2_bins_id,avg_blk%m2m2_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,m2m2_hist_id,avg_blk%m2m2_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,m2m2_hist_id,avg_blk%m2m2_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,m22_bins_id,avg_blk%m22_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,m22_bins_id,avg_blk%m22_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,m22_hist_id,avg_blk%m22_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,m22_hist_id,avg_blk%m22_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,cor_bins_id,avg_blk%cor_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,cor_bins_id,avg_blk%cor_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,cor_hist_id,avg_blk%cor_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
+call mpl%ncerr(subr,nf90_put_var(grpid,cor_hist_id,avg_blk%cor_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
 
 ! Close file

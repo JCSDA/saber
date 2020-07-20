@@ -58,6 +58,7 @@ def adv(testdata, test, mpi, omp, suffix):
 
    # Blank field
    blank = f.variables[root_list[0] + "_cor_loc"][:,:]
+   _FillValue = f.variables[root_list[0] + "_cor_loc"].attributes["_FillValue"]
 
    # Contour resources
    cres = Ngl.Resources()
@@ -133,25 +134,26 @@ def adv(testdata, test, mpi, omp, suffix):
       # Plots
       plot = []
       for il0 in range(0, nl0):
-         # Blank plot
-         p = Ngl.contour_map(wks, blank[il0,:], cres)
+         if (np.any(blank[il0,:] != _FillValue)):
+            # Blank plot
+            p = Ngl.contour_map(wks, blank[il0,:], cres)
 
-         # Add polylines/polymarkers
-         if its==0:
-            for ic2 in range(0, nc2):
-               pmres.gsMarkerColor = 2
-               Ngl.add_polymarker(wks, p, lon_c2[il0,ic2], lat_c2[il0,ic2], pmres)
-         else:
-            for ic2 in range(0, nc2):
-               if not dist_c2_raw.mask[its-1,il0,ic2]:
-                  dist_color = np.min([2+int(dist_c2_raw[its-1,il0,ic2]/dist_max*(61.0-2.0)), 61])
-                  plres.gsLineColor = dist_color
-                  pmres.gsMarkerColor = dist_color
-                  Ngl.add_polyline(wks, p, [lon_c2[il0,ic2], lon_c2_raw[its-1,il0,ic2]],[lat_c2[il0,ic2],lat_c2_raw[its-1,il0,ic2]], plres)
+            # Add polylines/polymarkers
+            if its==0:
+               for ic2 in range(0, nc2):
+                  pmres.gsMarkerColor = 2
                   Ngl.add_polymarker(wks, p, lon_c2[il0,ic2], lat_c2[il0,ic2], pmres)
+            else:
+               for ic2 in range(0, nc2):
+                  if not dist_c2_raw.mask[its-1,il0,ic2]:
+                     dist_color = np.min([2+int(dist_c2_raw[its-1,il0,ic2]/dist_max*(61.0-2.0)), 61])
+                     plres.gsLineColor = dist_color
+                     pmres.gsMarkerColor = dist_color   
+                     Ngl.add_polyline(wks, p, [lon_c2[il0,ic2], lon_c2_raw[its-1,il0,ic2]],[lat_c2[il0,ic2],lat_c2_raw[its-1,il0,ic2]], plres)
+                     Ngl.add_polymarker(wks, p, lon_c2[il0,ic2], lat_c2[il0,ic2], pmres)
 
-         # Append plot
-         plot.append(p)
+            # Append plot
+            plot.append(p)
 
       # Panel
       Ngl.panel(wks, plot, [nl0,1], pnlres)
@@ -174,25 +176,26 @@ def adv(testdata, test, mpi, omp, suffix):
       # Plots
       plot = []
       for il0 in range(0, nl0):
-         # Blank plot
-         p = Ngl.contour_map(wks, blank[il0,:], cres)
+         if (np.any(blank[il0,:] != _FillValue)):
+            # Blank plot
+            p = Ngl.contour_map(wks, blank[il0,:], cres)
 
-         # Add polylines/polymarkers
-         if its==0:
-            for ic2 in range(0, nc2):
-               pmres.gsMarkerColor = 2
-               Ngl.add_polymarker(wks, p, lon_c2[il0,ic2], lat_c2[il0,ic2], pmres)
-         else:
-            for ic2 in range(0, nc2):
-               if not dist_c2_flt.mask[its-1,il0,ic2]:
-                  dist_color = np.min([2+int(dist_c2_flt[its-1,il0,ic2]/dist_max*(61.0-2.0)), 61])
-                  plres.gsLineColor = dist_color
-                  pmres.gsMarkerColor = dist_color
-                  Ngl.add_polyline(wks, p, [lon_c2[il0,ic2],lon_c2_flt[its-1,il0,ic2]], [lat_c2[il0,ic2],lat_c2_flt[its-1,il0,ic2]], plres)
+            # Add polylines/polymarkers
+            if its==0:
+               for ic2 in range(0, nc2):
+                  pmres.gsMarkerColor = 2
                   Ngl.add_polymarker(wks, p, lon_c2[il0,ic2], lat_c2[il0,ic2], pmres)
+            else:
+               for ic2 in range(0, nc2):
+                  if not dist_c2_flt.mask[its-1,il0,ic2]:
+                     dist_color = np.min([2+int(dist_c2_flt[its-1,il0,ic2]/dist_max*(61.0-2.0)), 61])
+                     plres.gsLineColor = dist_color
+                     pmres.gsMarkerColor = dist_color
+                     Ngl.add_polyline(wks, p, [lon_c2[il0,ic2],lon_c2_flt[its-1,il0,ic2]], [lat_c2[il0,ic2],lat_c2_flt[its-1,il0,ic2]], plres)
+                     Ngl.add_polymarker(wks, p, lon_c2[il0,ic2], lat_c2[il0,ic2], pmres)
 
-         # Append plot
-         plot.append(p)
+            # Append plot
+            plot.append(p)
 
       # Panel
       Ngl.panel(wks, plot, [nl0,1], pnlres)
@@ -217,8 +220,10 @@ def adv(testdata, test, mpi, omp, suffix):
 
       # Plots
       plot = []
+      _FillValue = f.variables[root_list[0] + "_cor_loc"].attributes["_FillValue"]
       for il0 in range(0, nl0):
-         plot.append(Ngl.contour_map(wks, f.variables[root_list[0] + "_cor_loc"][il0,:], cres))
+         if (np.any(f.variables[root_list[0] + "_cor_loc"][il0,:] != _FillValue)):
+            plot.append(Ngl.contour_map(wks, f.variables[root_list[0] + "_cor_loc"][il0,:], cres))
 
       # Panel
       Ngl.panel(wks, plot, [nl0,1], pnlres)
@@ -236,8 +241,10 @@ def adv(testdata, test, mpi, omp, suffix):
 
       # Plots
       plot = []
+      _FillValue = f.variables[root_list[0] + "_cor_adv"].attributes["_FillValue"]
       for il0 in range(0, nl0):
-         plot.append(Ngl.contour_map(wks, f.variables[root_list[0] + "_cor_adv"][il0,:], cres))
+         if (np.any(f.variables[root_list[0] + "_cor_adv"][il0,:] != _FillValue)):
+            plot.append(Ngl.contour_map(wks, f.variables[root_list[0] + "_cor_adv"][il0,:], cres))
 
       # Panel
       Ngl.panel(wks, plot, [nl0,1], pnlres)

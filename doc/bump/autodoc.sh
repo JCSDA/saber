@@ -18,18 +18,24 @@ dir=(mains/bump saber/bump saber/external saber/gaugrid saber/util)
 cat<<EOFINTRO > ${doc}/code_autodoc.md
 # Code auto-documentation of Fortran sources
 
-The source code is organized as follows:
+The source directory is organized as follows:
 \`\`\`
-src
-├── mains
-│   ├── bump
-│   └── oops (C++ only, no auto-documentation)
+.
 └── saber
-    ├── bump
-    ├── external
-    ├── gaugrid
-    ├── oops (C++ only, no auto-documentation)
-    └── util
+    ├── bump:          BUMP core and interfaces
+    ├── external:      External tools
+    ├── gaugrid:       Gaussian grid tools
+    ├── interpolation: Interpolation interface
+    ├── oops:          OOPS interface
+    └── util:          Shared tools
+\`\`\`
+and the test directory as follows:
+\`\`\`
+.
+├── mains:     Executables sources
+│   └── model: Model-specific interfaces for standalone BUMP
+├── testinput: Input YAML files
+└── testlist:  List of tests and files used in the CMakeLists.txt
 \`\`\`
 EOFINTRO
 

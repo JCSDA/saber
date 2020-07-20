@@ -20,7 +20,7 @@ def diag(testdata, test, mpi, omp, suffix):
    for var in f.variables:
       if var.find("cor_")==0 or var.find("loc_")==0:
          # Correlation of localization
-         var_root = var.replace("_coef_ens", "").replace("_fit_rh", "").replace("_fit_rv", "").replace("_l0rl0_to_l0", "").replace("_raw", "").replace("_fit", "").replace("_valid", "")
+         var_root = var.replace("_coef_ens", "").replace("_coef_sta", "").replace("_fit_rh", "").replace("_fit_rv", "").replace("_l0rl0_to_l0", "").replace("_raw", "").replace("_fit", "").replace("_valid", "").replace("_zs", "")
 
          if not var_root in root:
             root.append(var_root)
@@ -32,7 +32,10 @@ def diag(testdata, test, mpi, omp, suffix):
    nl0 = vunit.shape[0]
 
    # Initialize arrays
-   colors = Ngl.fspan(2, 189, len(root)).astype(int)
+   if (len(root)>1):
+      colors = Ngl.fspan(2, 189, len(root)).astype(int)
+   else:
+      colors = np.full(len(root), 2)
    coef_ens = np.zeros((0, nl0))
    fit_rh = np.zeros((0, nl0))
    fit_rv = np.zeros((0, nl0))
@@ -98,7 +101,10 @@ def diag(testdata, test, mpi, omp, suffix):
    # Legend
    dx = 0.04
    xleg = np.full(len(root), 0.78)
-   yleg = Ngl.fspan(0.62, 0.42, len(root))
+   if (len(root)>1):
+     yleg = Ngl.fspan(0.62, 0.42, len(root))
+   else:
+     yleg = np.full(len(root), 0.62)
    xtxt = xleg+dx+0.015
    ytxt = yleg
    i = 0

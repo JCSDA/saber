@@ -12,7 +12,7 @@ use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
 use fckit_log_module, only: fckit_log
 use netcdf
 !$ use omp_lib
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_real,nc_kind_real
 use type_msv, only: msv_type
 
 implicit none
@@ -91,7 +91,12 @@ contains
    procedure :: prog_init => mpl_prog_init
    procedure :: prog_print => mpl_prog_print
    procedure :: prog_final => mpl_prog_final
-   procedure :: ncdimcheck => mpl_ncdimcheck
+   procedure :: nc_file_create_or_open => mpl_nc_file_create_or_open
+   procedure :: nc_group_define_or_get => mpl_nc_group_define_or_get
+   procedure :: nc_dim_define_or_get => mpl_nc_dim_define_or_get
+   procedure :: nc_dim_inquire => mpl_nc_dim_inquire
+   procedure :: nc_dim_check => mpl_nc_dim_check
+   procedure :: nc_var_define_or_get => mpl_nc_var_define_or_get
    procedure :: ncerr => mpl_ncerr
    procedure :: mpl_write_integer
    procedure :: mpl_write_integer_array
@@ -1871,10 +1876,78 @@ deallocate(mpl%done)
 end subroutine mpl_prog_final
 
 !----------------------------------------------------------------------
-! Subroutine: mpl_ncdimcheck
-! Purpose: check if NetCDF file dimension exists and has the right size
+! Function: mpl_nc_file_create_or_open
+! Purpose: create or open NetCDF file
 !----------------------------------------------------------------------
-function mpl_ncdimcheck(mpl,subr,ncid,dimname,dimsize,mode,inftol) result (dimid)
+function mpl_nc_file_create_or_open(mpl,subr,filename,f_comm) result (ncid)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl               ! MPI data
+character(len=*),intent(in) :: subr                ! Calling subroutine
+character(len=*),intent(in) :: filename            ! File name
+type(fckit_mpi_comm),intent(in),optional :: f_comm ! Communicator
+
+! Returned variable
+integer :: ncid                                    ! NetCDF file ID
+
+! Local variables
+integer :: info
+
+! Create file
+if (present(f_comm)) then
+   info = nf90_create(trim(filename),ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
+ & comm=f_comm%communicator(),info=f_comm%info_null())
+else
+   info = nf90_create(trim(filename),ior(nf90_noclobber,nf90_netcdf4),ncid)
+end if
+
+if (info/=nf90_noerr) then
+   ! Open file
+   if (present(f_comm)) then
+      call mpl%ncerr(subr,nf90_open(trim(filename),nf90_write,ncid, &
+ & comm=f_comm%communicator(),info=f_comm%info_null()))
+   else
+      call mpl%ncerr(subr,nf90_open(trim(filename),nf90_write,ncid))
+   end if
+end if
+
+end function mpl_nc_file_create_or_open
+
+!----------------------------------------------------------------------
+! Function: mpl_nc_group_define_or_get
+! Purpose: define or get group
+!----------------------------------------------------------------------
+function mpl_nc_group_define_or_get(mpl,subr,ncid,grpname) result (grpid)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl   ! MPI data
+character(len=*),intent(in) :: subr    ! Calling subroutine
+integer,intent(in) :: ncid             ! NetCDF file ID
+character(len=*),intent(in) :: grpname ! Group name
+
+! Returned variable
+integer :: grpid                       ! NetCDF group ID
+
+! Local variables
+integer :: info
+
+! Define group
+info = nf90_def_grp(ncid,trim(grpname),grpid)
+
+! Get group
+if (info/=nf90_noerr) call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(grpname),grpid))
+
+end function mpl_nc_group_define_or_get
+
+!----------------------------------------------------------------------
+! Function: mpl_nc_dim_define_or_get
+! Purpose: define or get (and check) NetCDF dimension
+!----------------------------------------------------------------------
+function mpl_nc_dim_define_or_get(mpl,subr,ncid,dimname,dimsize) result (dimid)
 
 implicit none
 
@@ -1884,59 +1957,132 @@ character(len=*),intent(in) :: subr    ! Calling subroutine
 integer,intent(in) :: ncid             ! NetCDF file ID
 character(len=*),intent(in) :: dimname ! Dimension name
 integer,intent(in) :: dimsize          ! Dimension size
-logical,intent(in) :: mode             ! Mode (.true.: create and return id if missing, abort if present but wrong size / .false.: return id if present and has right size, else return missing value)
-logical,intent(in),optional :: inftol  ! Tolerate if dimsize is lower than what is found in the file
 
 ! Returned variable
 integer :: dimid                       ! NetCDF dimension ID
 
 ! Local variables
 integer :: info,dimsize_test
-logical :: linftol,test
 
-! End definition mode
-if (mode) call mpl%ncerr(subr,nf90_enddef(ncid))
+! Define dimension
+info = nf90_def_dim(ncid,trim(dimname),dimsize,dimid)
 
-! Get dimension ID
-info = nf90_inq_dimid(ncid,trim(dimname),dimid)
+if (info/=nf90_noerr) then
+   ! Get dimension
+   call mpl%ncerr(subr,nf90_inq_dimid(ncid,trim(dimname),dimid))
 
-if (info==nf90_noerr) then
    ! Get dimension size
    call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
 
-   ! Test
-   linftol = .false.
-   if (present(inftol)) linftol = inftol
-   test = (dimsize==dimsize_test)
-   if (linftol) test = test.or.((dimsize==1).and.(dimsize<=dimsize_test))
-
-   if (test) then
-      ! Definition mode
-      if (mode) call mpl%ncerr(subr,nf90_redef(ncid))
-   else
-      ! Wrong dimension
-      if (mode) then
-         ! Abort
-         call mpl%abort(subr,'dimension '//trim(dimname)//' has a different size in file')
-      else
-         ! Return missing value
-         dimid = mpl%msv%vali
-      end if
-   end if
-else
-   if (mode) then
-      ! Definition mode
-      call mpl%ncerr(subr,nf90_redef(ncid))
-
-      ! Create dimension
-      call mpl%ncerr(subr,nf90_def_dim(ncid,trim(dimname),dimsize,dimid))
-   else
-      ! Return missing value
-      dimid = mpl%msv%vali
-   end if
+   ! Check dimension size
+   if (dimsize_test/=dimsize) call mpl%abort(subr,'dimension '//trim(dimname)//' has a different size in file')
 end if
 
-end function mpl_ncdimcheck
+end function mpl_nc_dim_define_or_get
+
+!----------------------------------------------------------------------
+! Function: mpl_nc_dim_inquire
+! Purpose: inquire NetCDF file dimension size
+!----------------------------------------------------------------------
+function mpl_nc_dim_inquire(mpl,subr,ncid,dimname) result (dimsize)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl   ! MPI data
+character(len=*),intent(in) :: subr    ! Calling subroutine
+integer,intent(in) :: ncid             ! NetCDF file ID
+character(len=*),intent(in) :: dimname ! Dimension name
+
+! Returned variable
+integer :: dimsize                     ! NetCDF dimension size
+
+! Local variables
+integer :: info,dimid
+
+! Get dimension ID
+info = nf90_inq_dimid(ncid,trim(dimname),dimid)
+if (info==nf90_noerr) then
+   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize))
+else
+   dimsize = 0
+end if
+
+end function mpl_nc_dim_inquire
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_nc_dim_check
+! Purpose: check if NetCDF file dimension exists and has the right size
+!----------------------------------------------------------------------
+subroutine mpl_nc_dim_check(mpl,subr,ncid,dimname,dimsize)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl   ! MPI data
+character(len=*),intent(in) :: subr    ! Calling subroutine
+integer,intent(in) :: ncid             ! NetCDF file ID
+character(len=*),intent(in) :: dimname ! Dimension name
+integer,intent(in) :: dimsize          ! Expected dimension size
+
+! Local variables
+integer :: dimid,dimsize_test
+
+! Get dimension
+call mpl%ncerr(subr,nf90_inq_dimid(ncid,trim(dimname),dimid))
+
+! Get dimension size
+call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
+
+! Check dimension size
+if (dimsize_test/=dimsize) call mpl%abort(subr,'dimension '//trim(dimname)//' has a different size in file')
+
+end subroutine mpl_nc_dim_check
+
+!----------------------------------------------------------------------
+! Function: mpl_nc_var_define_or_get
+! Purpose: define or get NetCDF variable
+!----------------------------------------------------------------------
+function mpl_nc_var_define_or_get(mpl,subr,ncid,varname,varkind,varshape,unitname) result (varid)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl             ! MPI data
+character(len=*),intent(in) :: subr              ! Calling subroutine
+integer,intent(in) :: ncid                       ! NetCDF file ID
+character(len=*),intent(in) :: varname           ! Variable name
+integer,intent(in) :: varkind                    ! Variable kind
+integer,intent(in) :: varshape(:)                ! Variable shape
+character(len=*),intent(in),optional :: unitname ! Unit name
+
+! Returned variable
+integer :: varid                       ! NetCDF variable ID
+
+! Local variables
+integer :: info
+
+! Define variable
+info = nf90_def_var(ncid,trim(varname),varkind,varshape,varid)
+
+if (info==nf90_noerr) then
+   ! Set missing value attribute
+   if (varkind==nf90_int) then
+      call mpl%ncerr(subr,nf90_put_att(ncid,varid,'_FillValue',mpl%msv%vali))
+   elseif (varkind==nc_kind_real) then
+      call mpl%ncerr(subr,nf90_put_att(ncid,varid,'_FillValue',mpl%msv%valr))
+   else
+      call mpl%abort(subr,'wrong variable kind')
+   end if
+
+   ! Set unit
+   if (present(unitname)) call mpl%ncerr(subr,nf90_put_att(ncid,varid,'unit',trim(unitname)))
+else
+   ! Get variable
+   call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(varname),varid))
+end if
+
+end function mpl_nc_var_define_or_get
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_ncerr

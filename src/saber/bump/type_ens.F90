@@ -352,8 +352,10 @@ real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'ens_normality'
 
-! File name (univariate moment field)
+! Set file name
 filename = trim(nam%prefix)//'_umf'
+
+! Write vertical unit
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 
 ! Initialization
@@ -439,35 +441,25 @@ end do
 write(mpl%info,'(a7,a)') '','Write ensemble'
 call mpl%flush
 
-! Create file
+! Define file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_normality_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
-! Define dimensions if necessary
-nloc_id = mpl%ncdimcheck(subr,ncid,'nloc',nloc,.true.)
-ne_id = mpl%ncdimcheck(subr,ncid,'ne',ens%ne,.true.)
-nem1_id = mpl%ncdimcheck(subr,ncid,'nem1',ens%ne-1,.true.)
+! Define dimensions
+nloc_id = mpl%nc_dim_define_or_get(subr,ncid,'nloc',nloc)
+ne_id = mpl%nc_dim_define_or_get(subr,ncid,'ne',ens%ne)
+nem1_id = mpl%nc_dim_define_or_get(subr,ncid,'nem1',ens%ne-1)
 
 if (nloc>0) then
    ! Define variables
-   call mpl%ncerr(subr,nf90_def_var(ncid,'ic0a',nf90_int,(/nloc_id/),ic0a_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,ic0a_id,'_FillValue',mpl%msv%vali))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'il0',nf90_int,(/nloc_id/),il0_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,il0_id,'_FillValue',mpl%msv%vali))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'iv',nf90_int,(/nloc_id/),iv_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,iv_id,'_FillValue',mpl%msv%vali))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'its',nf90_int,(/nloc_id/),its_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,its_id,'_FillValue',mpl%msv%vali))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'order',nf90_int,(/ne_id,nloc_id/),order_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,order_id,'_FillValue',mpl%msv%vali))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'ens_norm',nc_kind_real,(/ne_id,nloc_id/),ens_norm_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,ens_norm_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'ens_step',nc_kind_real,(/nem1_id,nloc_id/),ens_step_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,ens_step_id,'_FillValue',mpl%msv%valr))
+   ic0a_id = mpl%nc_var_define_or_get(subr,ncid,'ic0a',nf90_int,(/nloc_id/))
+   il0_id = mpl%nc_var_define_or_get(subr,ncid,'il0',nf90_int,(/nloc_id/))
+   iv_id = mpl%nc_var_define_or_get(subr,ncid,'iv',nf90_int,(/nloc_id/))
+   its_id = mpl%nc_var_define_or_get(subr,ncid,'its',nf90_int,(/nloc_id/))
+   order_id = mpl%nc_var_define_or_get(subr,ncid,'order',nf90_int,(/ne_id,nloc_id/))
+   ens_norm_id = mpl%nc_var_define_or_get(subr,ncid,'ens_norm',nc_kind_real,(/ne_id,nloc_id/))
+   ens_step_id = mpl%nc_var_define_or_get(subr,ncid,'ens_step',nc_kind_real,(/nem1_id,nloc_id/))
 end if
-
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
 
 if (nloc>0) then
    ! Write variables
@@ -514,7 +506,7 @@ real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wi
 
 ! Local variable
 integer :: ic0a,ic0u,ic0,il0,ie,its,iproc(1),ind(2),it,i_s
-integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id,info
+integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id
 real(kind_real) :: norm,proc_to_val(mpl%nproc),val,m2_loc
 real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
 real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,uz,x,y,z
@@ -526,8 +518,10 @@ character(len=1024) :: filename
 character(len=1024) :: subr = 'ens_cortrack'
 type(linop_type) :: h
 
-! File name
+! Set file name
 filename = trim(nam%prefix)//'_cortrack'
+
+! Write vertical unit
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 
 ! Initialization
@@ -729,50 +723,20 @@ end if
 
 if (mpl%main) then
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
-
-   ! Enter definition mode
-   call mpl%ncerr(subr,nf90_redef(ncid))
+   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
    ! Define dimension
-   nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
+   nts_id = mpl%nc_dim_define_or_get(subr,ncid,'nts',nam%nts)
 
    ! Define variables
-   info = nf90_inq_varid(ncid,'londir',londir_id)
-   if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'londir',nc_kind_real,(/nts_id/),londir_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,londir_id,'_FillValue',mpl%msv%valr))
-   end if
-   info = nf90_inq_varid(ncid,'latdir',latdir_id)
-   if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'latdir',nc_kind_real,(/nts_id/),latdir_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,latdir_id,'_FillValue',mpl%msv%valr))
-   end if
-   info = nf90_inq_varid(ncid,'londir_tracker',londir_tracker_id)
-   if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'londir_tracker',nc_kind_real,(/nts_id/),londir_tracker_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,londir_tracker_id,'_FillValue',mpl%msv%valr))
-   end if
-   info = nf90_inq_varid(ncid,'latdir_tracker',latdir_tracker_id)
-   if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_tracker',nc_kind_real,(/nts_id/),latdir_tracker_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,latdir_tracker_id,'_FillValue',mpl%msv%valr))
-   end if
+   londir_id = mpl%nc_var_define_or_get(subr,ncid,'londir',nc_kind_real,(/nts_id/))
+   latdir_id = mpl%nc_var_define_or_get(subr,ncid,'latdir',nc_kind_real,(/nts_id/))
+   londir_tracker_id = mpl%nc_var_define_or_get(subr,ncid,'londir_tracker',nc_kind_real,(/nts_id/))
+   latdir_tracker_id = mpl%nc_var_define_or_get(subr,ncid,'latdir_tracker',nc_kind_real,(/nts_id/))
    if (present(fld_uv)) then
-      info = nf90_inq_varid(ncid,'londir_wind',londir_wind_id)
-      if (info/=nf90_noerr) then
-         call mpl%ncerr(subr,nf90_def_var(ncid,'londir_wind',nc_kind_real,(/nts_id/),londir_wind_id))
-         call mpl%ncerr(subr,nf90_put_att(ncid,londir_wind_id,'_FillValue',mpl%msv%valr))
-      end if
-      info = nf90_inq_varid(ncid,'latdir_wind',latdir_wind_id)
-      if (info/=nf90_noerr) then
-         call mpl%ncerr(subr,nf90_def_var(ncid,'latdir_wind',nc_kind_real,(/nts_id/),latdir_wind_id))
-         call mpl%ncerr(subr,nf90_put_att(ncid,latdir_wind_id,'_FillValue',mpl%msv%valr))
-      end if
+      londir_wind_id = mpl%nc_var_define_or_get(subr,ncid,'londir_wind',nc_kind_real,(/nts_id/))
+      latdir_wind_id = mpl%nc_var_define_or_get(subr,ncid,'latdir_wind',nc_kind_real,(/nts_id/))
    end if
-
-   ! End definition mode
-   call mpl%ncerr(subr,nf90_enddef(ncid))
 
    ! Write variables
    call mpl%ncerr(subr,nf90_put_var(ncid,londir_id,londir*rad2deg))
@@ -898,30 +862,23 @@ end do
 call rng%desync(mpl)
 
 if (mpl%main) then
-   ! Create file
+   ! Define file
    filename = trim(nam%prefix)//'_corstats'
-   call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
    ! Write namelist parameters
    call nam%write(mpl,ncid)
 
    ! Define dimensions
-   ntest_id = mpl%ncdimcheck(subr,ncid,'ntest',ntest,.true.)
-   nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.)
-   nv_id = mpl%ncdimcheck(subr,ncid,'nv',nam%nv,.true.)
-   nts_id = mpl%ncdimcheck(subr,ncid,'nts',nam%nts,.true.)
+   ntest_id = mpl%nc_dim_define_or_get(subr,ncid,'ntest',ntest)
+   nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
+   nv_id = mpl%nc_dim_define_or_get(subr,ncid,'nv',nam%nv)
+   nts_id = mpl%nc_dim_define_or_get(subr,ncid,'nts',nam%nts)
 
    ! Define variables
-   call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max',nc_kind_real,(/ntest_id,nl0_id,nv_id,nts_id/),cor_max_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,cor_max_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max_avg',nc_kind_real,(/nl0_id,nv_id,nts_id/),cor_max_avg_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,cor_max_avg_id,'_FillValue',mpl%msv%valr))
-   call mpl%ncerr(subr,nf90_def_var(ncid,'cor_max_std',nc_kind_real,(/nl0_id,nv_id,nts_id/),cor_max_std_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,cor_max_std_id,'_FillValue',mpl%msv%valr))
-
-
-   ! End definition mode
-   call mpl%ncerr(subr,nf90_enddef(ncid))
+   cor_max_id = mpl%nc_var_define_or_get(subr,ncid,'cor_max',nc_kind_real,(/ntest_id,nl0_id,nv_id,nts_id/))
+   cor_max_avg_id = mpl%nc_var_define_or_get(subr,ncid,'cor_max_avg',nc_kind_real,(/nl0_id,nv_id,nts_id/))
+   cor_max_std_id = mpl%nc_var_define_or_get(subr,ncid,'cor_max_std',nc_kind_real,(/nl0_id,nv_id,nts_id/))
 
    ! Write variables
    call mpl%ncerr(subr,nf90_put_var(ncid,cor_max_id,cor_max))

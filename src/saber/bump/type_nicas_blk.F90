@@ -50,7 +50,6 @@ end type balldata_type
 type nicas_blk_type
    ! General parameters
    integer :: ib                                   ! Block index
-   character(len=1024) :: name                     ! Name
    character(len=1024) :: subsamp                  ! Subsampling structure
    logical :: sqrt_rescaling                       ! Square-root rescaling flag
    logical :: anisotropic                          ! Anisotropic tensor flag
@@ -145,7 +144,9 @@ type nicas_blk_type
 
    ! Required data to apply NICAS
 
-   ! Grid hash
+   ! Parameters
+   integer :: mpicom                               ! Number of communication steps
+   integer :: lsqrt                                ! Square-root flag
    integer :: grid_hash                            ! Grid hash
 
    ! Number of points
@@ -158,9 +159,6 @@ type nicas_blk_type
    integer :: nsc                                  ! Number of subgrid nodes on halo C
    integer :: nc0d                                 ! Number of points in subset Sc1 on halo D
    integer :: nc0dinv                              ! Number of points in subset Sc1 on halo Dinv
-
-   ! Number of communications steps
-   integer :: mpicom                               ! Number of communication steps
 
    ! Valid levels
    logical,allocatable :: vlev(:)                  ! Valid levels
@@ -495,7 +493,7 @@ end subroutine nicas_blk_dealloc
 ! Subroutine: nicas_blk_read
 ! Purpose: read
 !----------------------------------------------------------------------
-subroutine nicas_blk_read(nicas_blk,mpl,nam,geom,bpar)
+subroutine nicas_blk_read(nicas_blk,mpl,nam,geom,bpar,ncid)
 
 implicit none
 
@@ -505,67 +503,31 @@ type(mpl_type),intent(inout) :: mpl              ! MPI data
 type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 type(bpar_type),intent(in) :: bpar               ! Block parameters
+integer,intent(in) :: ncid                       ! NetCDF file
 
 ! Local variables
-integer :: il0i,il1,its,il0,info
-integer :: ncid,nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nsc_id,nc0d_id,nc0dinv_id
+integer :: il0i,il1,its,il0
 integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,hash_sa_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
 integer :: vlev_int(geom%nl0)
-character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'nicas_blk_read'
 
 ! Associate
 associate(ib=>nicas_blk%ib)
 
-! Open file and get dimensions
-filename = trim(nam%prefix)//'_'//trim(nicas_blk%name)
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
-
-! Get grid hash
-call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',nicas_blk%grid_hash))
-
-! Get dimensions
-nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.false.)
+! Get or check dimensions
+call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
 if (bpar%nicas_block(ib)) then
-   info = nf90_inq_dimid(ncid,'nc0a',nc0a_id)
-   if (info==nf90_noerr) then
-      call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc0a_id,len=nicas_blk%nc0a))
-   else
-      nicas_blk%nc0a = 0
-   end if
-   info = nf90_inq_dimid(ncid,'nc1b',nc1b_id)
-   if (info==nf90_noerr) then
-      call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc1b_id,len=nicas_blk%nc1b))
-   else
-      nicas_blk%nc1b = 0
-   end if
-   call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nl1',nl1_id))
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nl1_id,len=nicas_blk%nl1))
+   nicas_blk%nc0a = mpl%nc_dim_inquire(subr,ncid,'nc0a')
+   nicas_blk%nc1b = mpl%nc_dim_inquire(subr,ncid,'nc1b')
+   nicas_blk%nl1 = mpl%nc_dim_inquire(subr,ncid,'nl1')
+   nicas_blk%nsa = mpl%nc_dim_inquire(subr,ncid,'nsa')
+   nicas_blk%nsb = mpl%nc_dim_inquire(subr,ncid,'nsb')
+   nicas_blk%nsc = mpl%nc_dim_inquire(subr,ncid,'nsc')
    call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'ns',nicas_blk%ns))
-   info = nf90_inq_dimid(ncid,'nsa',nsa_id)
-   if (info==nf90_noerr) then
-      call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nsa_id,len=nicas_blk%nsa))
-   else
-      nicas_blk%nsa = 0
-   end if
-   info = nf90_inq_dimid(ncid,'nsb',nsb_id)
-   if (info==nf90_noerr) then
-      call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nsb_id,len=nicas_blk%nsb))
-   else
-      nicas_blk%nsb = 0
-   end if
-   info = nf90_inq_dimid(ncid,'nsc',nsc_id)
-   if (info==nf90_noerr) then
-      call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nsc_id,len=nicas_blk%nsc))
-   else
-      nicas_blk%nsc = 0
-   end if
 end if
 if ((ib==bpar%nbe).and.(abs(nam%adv_mode)==1)) then
-   call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nc0d',nc0d_id))
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc0d_id,len=nicas_blk%nc0d))
-   call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nc0dinv',nc0dinv_id))
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nc0dinv_id,len=nicas_blk%nc0dinv))
+   nicas_blk%nc0d = mpl%nc_dim_inquire(subr,ncid,'nc0d')
+   nicas_blk%nc0dinv = mpl%nc_dim_inquire(subr,ncid,'nc0dinv')
 end if
 
 ! Allocation
@@ -594,7 +556,7 @@ if ((ib==bpar%nbe).and.(abs(nam%adv_mode)==1)) then
    allocate(nicas_blk%dinv(geom%nl0,2:nam%nts))
 end if
 
-! Get variable id
+! Get variable
 if (bpar%nicas_block(ib)) then
    call mpl%ncerr(subr,nf90_inq_varid(ncid,'vlev',vlev_id))
    if (nicas_blk%nc0a>0) then
@@ -669,9 +631,9 @@ if ((ib==bpar%nbe).and.(abs(nam%adv_mode)==1)) then
    call nicas_blk%com_ADinv%read(mpl,ncid)
    do its=2,nam%nts
       do il0=1,geom%nl0
-         write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
+         write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,a)') 'd_',il0,'_',trim(nam%timeslots(its))
          call nicas_blk%d(il0,its)%read(mpl,ncid)
-         write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'dinv_',il0,'_',its
+         write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,a)') 'dinv_',il0,'_',trim(nam%timeslots(its))
          call nicas_blk%dinv(il0,its)%read(mpl,ncid)
       end do
    end do
@@ -679,9 +641,6 @@ end if
 
 ! Read main weight
 call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'wgt',nicas_blk%wgt))
-
-! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
 
 ! End associate
 end associate
@@ -692,7 +651,7 @@ end subroutine nicas_blk_read
 ! Subroutine: nicas_blk_write
 ! Purpose: write
 !----------------------------------------------------------------------
-subroutine nicas_blk_write(nicas_blk,mpl,nam,geom,bpar)
+subroutine nicas_blk_write(nicas_blk,mpl,nam,geom,bpar,ncid)
 
 implicit none
 
@@ -702,79 +661,59 @@ type(mpl_type),intent(inout) :: mpl           ! MPI data
 type(nam_type),intent(in) :: nam              ! Namelist
 type(geom_type),intent(in) :: geom            ! Geometry
 type(bpar_type),intent(in) :: bpar            ! Block parameters
+integer,intent(in) :: ncid                    ! NetCDF file
 
 ! Local variables
 integer :: il0i,il1,its,il0
-integer :: ncid,nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nsc_id,nc0d_id,nc0dinv_id
+integer :: nl0_id,nc0a_id,nc1b_id,nl1_id,nsa_id,nsb_id,nsc_id,nc0d_id,nc0dinv_id
 integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,hash_sa_id,sa_to_sc_id,sb_to_sc_id,inorm_id,norm_id,coef_ens_id
 integer :: vlev_int(geom%nl0)
-character(len=2*1024+1) :: filename
 character(len=1024),parameter :: subr = 'nicas_blk_write'
 
 ! Associate
 associate(ib=>nicas_blk%ib)
 
-! Create file
-filename = trim(nam%prefix)//'_'//trim(nicas_blk%name)
-call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
-
-! Write grid hash
-call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',nicas_blk%grid_hash))
-
-! Write namelist parameters
-call nam%write(mpl,ncid)
-
 ! Define dimensions
-call mpl%ncerr(subr,nf90_def_dim(ncid,'nl0',geom%nl0,nl0_id))
+nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
 if (bpar%nicas_block(ib)) then
-   if (nicas_blk%nc0a>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0a',nicas_blk%nc0a,nc0a_id))
+   if (nicas_blk%nc0a>0) nc0a_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0a',nicas_blk%nc0a)
    call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'nl0i',geom%nl0i))
-   if (nicas_blk%nc1b>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nc1b',nicas_blk%nc1b,nc1b_id))
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nl1',nicas_blk%nl1,nl1_id))
-   if (nicas_blk%nsa>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsa',nicas_blk%nsa,nsa_id))
-   if (nicas_blk%nsb>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsb',nicas_blk%nsb,nsb_id))
-   if (nicas_blk%nsc>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsc',nicas_blk%nsc,nsc_id))
+   if (nicas_blk%nc1b>0) nc1b_id = mpl%nc_dim_define_or_get(subr,ncid,'nc1b',nicas_blk%nc1b)
+   nl1_id = mpl%nc_dim_define_or_get(subr,ncid,'nl1',nicas_blk%nl1)
+   if (nicas_blk%nsa>0) nsa_id = mpl%nc_dim_define_or_get(subr,ncid,'nsa',nicas_blk%nsa)
+   if (nicas_blk%nsb>0) nsb_id = mpl%nc_dim_define_or_get(subr,ncid,'nsb',nicas_blk%nsb)
+   if (nicas_blk%nsc>0) nsc_id = mpl%nc_dim_define_or_get(subr,ncid,'nsc',nicas_blk%nsc)
    call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'ns',nicas_blk%ns))
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0d',nicas_blk%nc0d,nc0d_id))
-   call mpl%ncerr(subr,nf90_def_dim(ncid,'nc0dinv',nicas_blk%nc0dinv,nc0dinv_id))
+   nc0d_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0d',nicas_blk%nc0d)
+   nc0dinv_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0dinv',nicas_blk%nc0dinv)
+end if
+
+! Define variables
+if (bpar%nicas_block(ib)) then
+   vlev_id = mpl%nc_var_define_or_get(subr,ncid,'vlev',nf90_int,(/nl0_id/))
+   if (nicas_blk%nc0a>0) then
+      if (.not.nicas_blk%smoother) norm_id = mpl%nc_var_define_or_get(subr,ncid,'norm',nc_kind_real,(/nc0a_id,nl0_id/))
+      coef_ens_id = mpl%nc_var_define_or_get(subr,ncid,'coef_ens',nc_kind_real,(/nc0a_id,nl0_id/))
+   end if
+   if (nicas_blk%nsa>0) then
+      sa_to_s_id = mpl%nc_var_define_or_get(subr,ncid,'sa_to_s',nf90_int,(/nsa_id/))
+      hash_sa_id = mpl%nc_var_define_or_get(subr,ncid,'hash_sa',nc_kind_real,(/nsa_id/))
+      sa_to_sc_id = mpl%nc_var_define_or_get(subr,ncid,'sa_to_sc',nf90_int,(/nsa_id/))
+   end if
+   if (nicas_blk%nsb>0) then
+      sb_to_c1b_id = mpl%nc_var_define_or_get(subr,ncid,'sb_to_c1b',nf90_int,(/nsb_id/))
+      sb_to_l1_id = mpl%nc_var_define_or_get(subr,ncid,'sb_to_l1',nf90_int,(/nsb_id/))
+      sb_to_sc_id = mpl%nc_var_define_or_get(subr,ncid,'sb_to_sc',nf90_int,(/nsb_id/))
+   end if
+   if (nicas_blk%nsc>0) then
+      if (.not.nicas_blk%smoother) inorm_id = mpl%nc_var_define_or_get(subr,ncid,'inorm',nc_kind_real,(/nsc_id/))
+   end if
 end if
 
 ! Write main weight
 call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'wgt',nicas_blk%wgt))
-
-! Define variables
-if (bpar%nicas_block(ib)) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'vlev',nf90_int,(/nl0_id/),vlev_id))
-   if (nicas_blk%nc0a>0) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'norm',nc_kind_real,(/nc0a_id,nl0_id/),norm_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'coef_ens',nc_kind_real,(/nc0a_id,nl0_id/),coef_ens_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,norm_id,'_FillValue',mpl%msv%valr))
-      call mpl%ncerr(subr,nf90_put_att(ncid,coef_ens_id,'_FillValue',mpl%msv%valr))
-   end if
-   if (nicas_blk%nsa>0) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_s',nf90_int,(/nsa_id/),sa_to_s_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'hash_sa',nc_kind_real,(/nsa_id/),hash_sa_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'sa_to_sc',nf90_int,(/nsa_id/),sa_to_sc_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_s_id,'_FillValue',mpl%msv%vali))
-      call mpl%ncerr(subr,nf90_put_att(ncid,hash_sa_id,'_FillValue',mpl%msv%valr))
-      call mpl%ncerr(subr,nf90_put_att(ncid,sa_to_sc_id,'_FillValue',mpl%msv%vali))
-   end if
-   if (nicas_blk%nsb>0) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'sb_to_c1b',nf90_int,(/nsb_id/),sb_to_c1b_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'sb_to_l1',nf90_int,(/nsb_id/),sb_to_l1_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'sb_to_sc',nf90_int,(/nsb_id/),sb_to_sc_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,sb_to_sc_id,'_FillValue',mpl%msv%vali))
-   end if
-   if (nicas_blk%nsc>0) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'inorm',nc_kind_real,(/nsc_id/),inorm_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,inorm_id,'_FillValue',mpl%msv%valr))
-   end if
-end if
-
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
 
 ! Write variables
 if (bpar%nicas_block(ib)) then
@@ -825,9 +764,6 @@ if ((ib==bpar%nbe).and.nam%adv_diag) then
    end do
 end if
 
-! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
-
 ! End associate
 end associate
 
@@ -837,83 +773,57 @@ end subroutine nicas_blk_write
 ! Subroutine: nicas_blk_write_grids
 ! Purpose: write NICAS grids
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_grids(nicas_blk,mpl,nam,bpar)
+subroutine nicas_blk_write_grids(nicas_blk,mpl,ncid)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
 type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(nam_type),intent(in) :: nam              ! Namelist
-type(bpar_type),intent(in) :: bpar            ! Block parameters
+integer,intent(in) :: ncid                    ! NetCDF file
 
 ! Local variables
-integer :: ncid,nsa_id,nsb_id,nsc_id,lon_sa_id,lat_sa_id,lev_sa_id,lon_sb_id,lat_sb_id,lev_sb_id,lon_sc_id,lat_sc_id,lev_sc_id
-character(len=1024) :: filename
+integer :: nsa_id,nsb_id,nsc_id,lon_sa_id,lat_sa_id,lev_sa_id,lon_sb_id,lat_sb_id,lev_sb_id,lon_sc_id,lat_sc_id,lev_sc_id
 character(len=1024),parameter :: subr = 'nicas_blk_write_grids'
 
-! Associate
-associate(ib=>nicas_blk%ib)
-
-! Create file
-filename = trim(nam%prefix)//'_'//trim(nicas_blk%name)//'_grids'
-call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
-
-! Write namelist parameters
-call nam%write(mpl,ncid)
-
 ! Define dimensions
-if (bpar%nicas_block(ib)) then
-   if (nicas_blk%nsa>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsa',nicas_blk%nsa,nsa_id))
-   if (nicas_blk%nsb>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsb',nicas_blk%nsb,nsb_id))
-   if (nicas_blk%nsc>0) call mpl%ncerr(subr,nf90_def_dim(ncid,'nsc',nicas_blk%nsc,nsc_id))
-end if
+if (nicas_blk%nsa>0) nsa_id = mpl%nc_dim_define_or_get(subr,ncid,'nsa',nicas_blk%nsa)
+if (nicas_blk%nsb>0) nsb_id = mpl%nc_dim_define_or_get(subr,ncid,'nsb',nicas_blk%nsb)
+if (nicas_blk%nsc>0) nsc_id = mpl%nc_dim_define_or_get(subr,ncid,'nsc',nicas_blk%nsc)
 
 ! Define variables
-if (bpar%nicas_block(ib)) then
-   if (nicas_blk%nsa>0) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lon_sa',nc_kind_real,(/nsa_id/),lon_sa_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lat_sa',nc_kind_real,(/nsa_id/),lat_sa_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lev_sa',nf90_int,(/nsa_id/),lev_sa_id))
-   end if
-   if (nicas_blk%nsb>0) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lon_sb',nc_kind_real,(/nsb_id/),lon_sb_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lat_sb',nc_kind_real,(/nsb_id/),lat_sb_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lev_sb',nf90_int,(/nsb_id/),lev_sb_id))
-   end if
-   if (nicas_blk%nsc>0) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lon_sc',nc_kind_real,(/nsc_id/),lon_sc_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lat_sc',nc_kind_real,(/nsc_id/),lat_sc_id))
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lev_sc',nf90_int,(/nsc_id/),lev_sc_id))
-   end if
+if (nicas_blk%nsa>0) then
+   lon_sa_id = mpl%nc_var_define_or_get(subr,ncid,'lon_sa',nc_kind_real,(/nsa_id/))
+   lat_sa_id = mpl%nc_var_define_or_get(subr,ncid,'lat_sa',nc_kind_real,(/nsa_id/))
+   lev_sa_id = mpl%nc_var_define_or_get(subr,ncid,'lev_sa',nf90_int,(/nsa_id/))
 end if
-
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
+if (nicas_blk%nsb>0) then
+   lon_sb_id = mpl%nc_var_define_or_get(subr,ncid,'lon_sb',nc_kind_real,(/nsb_id/))
+   lat_sb_id = mpl%nc_var_define_or_get(subr,ncid,'lat_sb',nc_kind_real,(/nsb_id/))
+   lev_sb_id = mpl%nc_var_define_or_get(subr,ncid,'lev_sb',nf90_int,(/nsb_id/))
+end if
+if (nicas_blk%nsc>0) then
+   lon_sc_id = mpl%nc_var_define_or_get(subr,ncid,'lon_sc',nc_kind_real,(/nsc_id/))
+   lat_sc_id = mpl%nc_var_define_or_get(subr,ncid,'lat_sc',nc_kind_real,(/nsc_id/))
+   lev_sc_id = mpl%nc_var_define_or_get(subr,ncid,'lev_sc',nf90_int,(/nsc_id/))
+end if
 
 ! Write variables
-if (bpar%nicas_block(ib)) then
-   if (nicas_blk%nsa>0) then
-      call mpl%ncerr(subr,nf90_put_var(ncid,lon_sa_id,nicas_blk%lon_sa))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lat_sa_id,nicas_blk%lat_sa))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lev_sa_id,nicas_blk%lev_sa))
-   end if
-   if (nicas_blk%nsb>0) then
-      call mpl%ncerr(subr,nf90_put_var(ncid,lon_sb_id,nicas_blk%lon_sb))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lat_sb_id,nicas_blk%lat_sb))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lev_sb_id,nicas_blk%lev_sb))
-   end if
-   if (nicas_blk%nsc>0) then
-      call mpl%ncerr(subr,nf90_put_var(ncid,lon_sc_id,nicas_blk%lon_sc))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lat_sc_id,nicas_blk%lat_sc))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lev_sc_id,nicas_blk%lev_sc))
-   end if
+if (nicas_blk%nsa>0) then
+   call mpl%ncerr(subr,nf90_put_var(ncid,lon_sa_id,nicas_blk%lon_sa))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lat_sa_id,nicas_blk%lat_sa))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lev_sa_id,nicas_blk%lev_sa))
 end if
-
-! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
-! End associate
-end associate
+if (nicas_blk%nsb>0) then
+   call mpl%ncerr(subr,nf90_put_var(ncid,lon_sb_id,nicas_blk%lon_sb))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lat_sb_id,nicas_blk%lat_sb))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lev_sb_id,nicas_blk%lev_sb))
+end if
+if (nicas_blk%nsc>0) then
+   call mpl%ncerr(subr,nf90_put_var(ncid,lon_sc_id,nicas_blk%lon_sc))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lat_sc_id,nicas_blk%lat_sc))
+   call mpl%ncerr(subr,nf90_put_var(ncid,lev_sc_id,nicas_blk%lev_sc))
+end if
 
 end subroutine nicas_blk_write_grids
 
@@ -955,7 +865,7 @@ offset_real = 0
 offset_logical = 0
 
 ! Define buffer size
-if (bpar%nicas_block(ib)) n_dim = n_dim+7
+if (bpar%nicas_block(ib)) n_dim = n_dim+6
 if ((ib==bpar%nbe).and.nam%adv_diag) n_dim = n_dim+2
 
 ! Allocation
@@ -967,17 +877,16 @@ tag = tag+1
 
 ! Copy data
 if (bpar%nicas_block(ib)) then
-   nicas_blk%grid_hash = rbuf_dim(1)
-   nicas_blk%nc0a = rbuf_dim(2)
-   nicas_blk%nc1b = rbuf_dim(3)
-   nicas_blk%nl1 = rbuf_dim(4)
-   nicas_blk%nsa = rbuf_dim(5)
-   nicas_blk%nsb = rbuf_dim(6)
-   nicas_blk%nsc = rbuf_dim(7)
+   nicas_blk%nc0a = rbuf_dim(1)
+   nicas_blk%nc1b = rbuf_dim(2)
+   nicas_blk%nl1 = rbuf_dim(3)
+   nicas_blk%nsa = rbuf_dim(4)
+   nicas_blk%nsb = rbuf_dim(5)
+   nicas_blk%nsc = rbuf_dim(6)
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
-   nicas_blk%nc0d = rbuf_dim(8)
-   nicas_blk%nc0dinv = rbuf_dim(9)
+   nicas_blk%nc0d = rbuf_dim(7)
+   nicas_blk%nc0dinv = rbuf_dim(8)
 end if
 
 ! Release memory
@@ -1158,10 +1067,10 @@ if ((ib==bpar%nbe).and.nam%adv_diag) then
    tag = tag+com_ntag
    do its=2,nam%nts
       do il0=1,geom%nl0
-         write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
+         write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,a)') 'd_',il0,'_',trim(nam%timeslots(its))
          call nicas_blk%d(il0,its)%receive(mpl,iproc,tag)
          tag = tag+linop_ntag
-         write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'dinv_',il0,'_',its
+         write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,a)') 'dinv_',il0,'_',trim(nam%timeslots(its))
          call nicas_blk%dinv(il0,its)%receive(mpl,iproc,tag)
          tag = tag+linop_ntag
       end do
@@ -1216,7 +1125,7 @@ offset_real = 0
 offset_logical = 0
 
 ! Define buffer size
-if (bpar%nicas_block(ib)) n_dim = n_dim+7
+if (bpar%nicas_block(ib)) n_dim = n_dim+6
 if ((ib==bpar%nbe).and.nam%adv_diag) n_dim = n_dim+2
 
 ! Allocation
@@ -1224,17 +1133,16 @@ allocate(sbuf_dim(n_dim))
 
 ! Copy data
 if (bpar%nicas_block(ib)) then
-   sbuf_dim(1) = nicas_blk%grid_hash
-   sbuf_dim(2) = nicas_blk%nc0a
-   sbuf_dim(3) = nicas_blk%nc1b
-   sbuf_dim(4) = nicas_blk%nl1
-   sbuf_dim(5) = nicas_blk%nsa
-   sbuf_dim(6) = nicas_blk%nsb
-   sbuf_dim(7) = nicas_blk%nsc
+   sbuf_dim(1) = nicas_blk%nc0a
+   sbuf_dim(2) = nicas_blk%nc1b
+   sbuf_dim(3) = nicas_blk%nl1
+   sbuf_dim(4) = nicas_blk%nsa
+   sbuf_dim(5) = nicas_blk%nsb
+   sbuf_dim(6) = nicas_blk%nsc
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
-   sbuf_dim(8) = nicas_blk%nc0d
-   sbuf_dim(9) = nicas_blk%nc0dinv
+   sbuf_dim(7) = nicas_blk%nc0d
+   sbuf_dim(8) = nicas_blk%nc0dinv
 end if
 
 ! Send buffer
@@ -1561,7 +1469,6 @@ if (nam%ntry==nam_smoother%ntry) then
 else
    nam_smoother%ntry = nam%ntry
 end if
-nam_smoother%lsqrt = .false.
 if (eq(nam%resol,nam_smoother%resol)) then
    nam_smoother%resol = 8.0
 else
@@ -1595,6 +1502,7 @@ nicas_blk%verbosity = .false.
 nicas_blk%smoother = .true.
 nicas_blk%horizontal = .true.
 nicas_blk%mpicom = 1
+nicas_blk%lsqrt = 0
 nicas_blk%subsamp = 'h'
 
 ! Compute parameters
@@ -2450,7 +2358,7 @@ if ((.not.nicas_blk%smoother).and.nicas_blk%sqrt_rescaling) then
    end if
 end if
 
-if (nam%lsqrt.or.nicas_blk%smoother) then
+if ((nicas_blk%lsqrt==1).or.nicas_blk%smoother) then
    ! Copy
    nicas_blk%nc1bb = nicas_blk%nc1b
 else
@@ -2508,7 +2416,7 @@ end if
 allocate(nicas_blk%c1bb_to_c1u(nicas_blk%nc1bb))
 allocate(nicas_blk%c1u_to_c1bb(nicas_blk%nc1u))
 
-if (nam%lsqrt.or.nicas_blk%smoother) then
+if ((nicas_blk%lsqrt==1).or.nicas_blk%smoother) then
    ! Copy
    nicas_blk%c1bb_to_c1u = nicas_blk%c1b_to_c1u
    nicas_blk%c1u_to_c1bb = nicas_blk%c1u_to_c1b
@@ -2538,7 +2446,7 @@ end if
 ! Allocation
 allocate(nicas_blk%sbb_to_su(nicas_blk%nsbb))
 
-if (nam%lsqrt.or.nicas_blk%smoother) then
+if ((nicas_blk%lsqrt==1).or.nicas_blk%smoother) then
    ! Copy
    nicas_blk%sbb_to_su = nicas_blk%sb_to_su
 else
@@ -2710,7 +2618,7 @@ end if
 if (nicas_blk%smoother) allocate(nicas_blk%smoother_norm(nicas_blk%nsbb))
 
 ! Compute weights
-call nicas_blk%compute_convol_weights(mpl,nam,geom,ctmp)
+call nicas_blk%compute_convol_weights(mpl,geom,ctmp)
 
 ! Release memory
 do isbb=1,nicas_blk%nsbb
@@ -2720,7 +2628,7 @@ end do
 deallocate(nicas_blk%distnorm)
 if (nicas_blk%anisotropic) deallocate(nicas_blk%Hcoef)
 
-if (nam%lsqrt.or.nicas_blk%smoother) then
+if ((nicas_blk%lsqrt==1).or.nicas_blk%smoother) then
    ! Copy
    call nicas_blk%c%copy(ctmp)
 else
@@ -3260,14 +3168,13 @@ end subroutine nicas_blk_compute_convol_distance
 ! Subroutine: nicas_blk_compute_convol_weights
 ! Purpose: compute convolution weights
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_convol_weights(nicas_blk,mpl,nam,geom,ctmp)
+subroutine nicas_blk_compute_convol_weights(nicas_blk,mpl,geom,ctmp)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
 type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 type(linop_type),intent(inout) :: ctmp           ! Convolution operator
 
@@ -3319,7 +3226,7 @@ do isbb=1,nicas_blk%nsbb
 
       if (sup(S_test,S_inf)) then
          ! Store coefficient for convolution
-         if (nam%lsqrt) then
+         if (nicas_blk%lsqrt==1) then
             add_op = .false.
             if (nicas_blk%mpicom==1) then
                add_op = (nicas_blk%lcheck_sb(jsu).and.(isu<=jsu)).or.(.not.nicas_blk%lcheck_sb(jsu))
@@ -3943,12 +3850,12 @@ do its=2,nam%nts
 
    do il0=1,geom%nl0
       ! Direct
-      write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
+      write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,a)') 'd_',il0,'_',trim(nam%timeslots(its))
       call nicas_blk%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0u,adv_lon(:,il0),adv_lat(:,il0),geom%gmask_c0u(:,il0), &
     & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),ifmt)
 
       ! Inverse
-      write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'dinv_',il0,'_',its
+      write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,a)') 'dinv_',il0,'_',trim(nam%timeslots(its))
       call nicas_blk%dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0u,geom%lon_c0u,geom%lat_c0u, &
     & geom%gmask_c0u(:,il0),geom%nc0a,cmat_blk%adv_lon(:,il0,its),cmat_blk%adv_lat(:,il0,its),geom%gmask_c0a(:,il0),ifmt)
    end do
@@ -4664,7 +4571,7 @@ end subroutine nicas_blk_apply_adv_inv
 ! Subroutine: nicas_blk_test_adjoint
 ! Purpose: test NICAS adjoint accuracy
 !----------------------------------------------------------------------
-subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,nam,geom)
+subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,geom)
 
 implicit none
 
@@ -4672,7 +4579,6 @@ implicit none
 class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
 type(mpl_type),intent(inout) :: mpl           ! MPI data
 type(rng_type),intent(inout) :: rng           ! Random number generator
-type(nam_type),intent(in) :: nam              ! Namelist
 type(geom_type),intent(in) :: geom            ! Geometry
 
 ! Local variables
@@ -4874,7 +4780,7 @@ fld1 = fld1_save
 fld2 = fld2_save
 
 ! Adjoint test
-if (nam%lsqrt) then
+if (nicas_blk%lsqrt==1) then
    call nicas_blk%apply_from_sqrt(mpl,geom,fld1)
    call nicas_blk%apply_from_sqrt(mpl,geom,fld2)
 else
@@ -4929,7 +4835,7 @@ do idir=1,geom%ndir
 end do
 
 ! Apply NICAS method
-if (nam%lsqrt) then
+if (nicas_blk%lsqrt==1) then
    call nicas_blk%apply_from_sqrt(mpl,geom,fld)
 else
    call nicas_blk%apply(mpl,geom,fld)
@@ -4938,7 +4844,7 @@ end if
 ! Write field
 filename = trim(nam%prefix)//'_dirac'
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
-call io%fld_write(mpl,nam,geom,filename,'nicas_blk_'//trim(bpar%blockname(ib)),fld)
+call io%fld_write(mpl,nam,geom,filename,'nicas_blk',fld,trim(bpar%blockname(ib)))
 
 ! Print results
 write(mpl%info,'(a7,a)') '','Values at dirac points:'

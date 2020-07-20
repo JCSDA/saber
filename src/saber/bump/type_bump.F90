@@ -1479,10 +1479,10 @@ integer :: its,iv
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 type(cv_type) :: cv
-
+print*, bump%mpl%myproc,'ik',bump%mpl%tag
 ! Generate random control vector
 call bump%nicas%random_cv(bump%mpl,bump%rng,bump%bpar,cv)
-
+print*, bump%mpl%myproc,'ik'
 if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)

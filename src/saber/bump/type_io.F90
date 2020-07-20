@@ -101,7 +101,7 @@ end subroutine io_dealloc
 ! Subroutine: io_fld_read
 ! Purpose: write field
 !----------------------------------------------------------------------
-subroutine io_fld_read(io,mpl,nam,geom,filename,variables,fld)
+subroutine io_fld_read(io,mpl,nam,geom,filename,variable,fld,groupname)
 
 implicit none
 
@@ -111,11 +111,12 @@ type(mpl_type),intent(inout) :: mpl                    ! MPI data
 type(nam_type),intent(in) :: nam                       ! Namelist
 type(geom_type),intent(in) :: geom                     ! Geometry
 character(len=*),intent(in) :: filename                ! File name
-character(len=*),intent(in) :: variables                 ! Variable name
+character(len=*),intent(in) :: variable                ! Variable name
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) ! Field
+character(len=*),intent(in),optional :: groupname      ! Group name
 
 ! Local variables
-integer :: ncid,fld_id
+integer :: ncid,grpid,fld_id
 real(kind_real),allocatable :: fld_c0io(:,:)
 character(len=1024),parameter :: subr = 'io_fld_read'
 
@@ -126,11 +127,22 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    ! Open file
    call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
-   ! Get variable id
-   call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(variables),fld_id))
+   ! Get group
+   if (present(groupname)) then
+      call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(groupname),grpid))
+   else
+      grpid = ncid
+   end if
+
+   ! Check dimension
+   call mpl%nc_dim_check(subr,ncid,'nc0',geom%nc0)
+   call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
+
+   ! Get variable
+   call mpl%ncerr(subr,nf90_inq_varid(grpid,trim(variable),fld_id))
 
    ! Get data
-   call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
+   call mpl%ncerr(subr,nf90_get_var(grpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))
@@ -148,7 +160,7 @@ end subroutine io_fld_read
 ! Subroutine: io_fld_write
 ! Purpose: write field
 !----------------------------------------------------------------------
-subroutine io_fld_write(io,mpl,nam,geom,filename,variables,fld)
+subroutine io_fld_write(io,mpl,nam,geom,filename,variable,fld,groupname)
 
 implicit none
 
@@ -158,12 +170,13 @@ type(mpl_type),intent(inout) :: mpl                   ! MPI data
 type(nam_type),intent(in) :: nam                      ! Namelist
 type(geom_type),intent(in) :: geom                    ! Geometry
 character(len=*),intent(in) :: filename               ! File name
-character(len=*),intent(in) :: variables                ! Variable name
+character(len=*),intent(in) :: variable               ! Variable name
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
+character(len=*),intent(in),optional :: groupname     ! Group name
 
 ! Local variables
 integer :: ic0a,il0,info,color
-integer :: ncid,nc0_id,nl0_id,fld_id,lon_id,lat_id
+integer :: ncid,grpid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)
 character(len=1024) :: cname
@@ -203,45 +216,26 @@ f_comm = mpl%f_comm%split(color,cname)
 
 ! Parallel I/O
 if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
-   ! Check if the file exists
-   info = nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
-        & comm=f_comm%communicator(),info=f_comm%info_null())
-   if (info/=nf90_noerr) then
-      ! Open file
-      call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc', &
-    & ior(nf90_write,ior(nf90_netcdf4,nf90_mpiio)),ncid,comm=f_comm%communicator(),info=f_comm%info_null()))
+   ! Define file
+   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc',f_comm)
 
-      ! Enter definition mode
-      call mpl%ncerr(subr,nf90_redef(ncid))
+   ! Define group
+   if (present(groupname)) then
+      grpid = mpl%nc_group_define_or_get(subr,ncid,trim(groupname))
+   else
+      grpid = ncid
    end if
 
-   ! Create dimension
-   nc0_id = mpl%ncdimcheck(subr,ncid,'nc0',geom%nc0,.true.)
-   nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.,.true.)
+   ! Define dimensions
+   nc0_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0',geom%nc0)
+   nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
 
-   ! Define coordinates if necessary
-   info = nf90_inq_varid(ncid,'lon',lon_id)
-   if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nc0_id/),lon_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'_FillValue',mpl%msv%valr))
-      call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'unit','degrees_north'))
-   end if
-   info = nf90_inq_varid(ncid,'lat',lat_id)
-   if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nc0_id/),lat_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'_FillValue',mpl%msv%valr))
-      call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'unit','degrees_east'))
-   end if
+   ! Define coordinates
+   lon_id = mpl%nc_var_define_or_get(subr,ncid,'lon',nc_kind_real,(/nc0_id/),'degrees_north')
+   lat_id = mpl%nc_var_define_or_get(subr,ncid,'lat',nc_kind_real,(/nc0_id/),'degrees_east')
 
-   ! Define variable if necessary
-   info = nf90_inq_varid(ncid,trim(variables),fld_id)
-   if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,trim(variables),nc_kind_real,(/nc0_id,nl0_id/),fld_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,fld_id,'_FillValue',mpl%msv%valr))
-   end if
-
-   ! End definition mode
-   call mpl%ncerr(subr,nf90_enddef(ncid))
+   ! Define variable
+   fld_id = mpl%nc_var_define_or_get(subr,grpid,trim(variable),nc_kind_real,(/nc0_id,nl0_id/))
 
    ! Convert to degrees
    lon_c0io = lon_c0io*rad2deg
@@ -252,7 +246,7 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
 
    ! Write variable
-   call mpl%ncerr(subr,nf90_put_var(ncid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
+   call mpl%ncerr(subr,nf90_put_var(grpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))

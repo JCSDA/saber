@@ -65,11 +65,11 @@ contains
    procedure :: alloc => lct_blk_alloc
    procedure :: partial_dealloc => lct_blk_partial_dealloc
    procedure :: dealloc => lct_blk_dealloc
+   procedure :: write => lct_blk_write
+   procedure :: write_cor => lct_blk_write_cor
    procedure :: compute => lct_blk_compute
    procedure :: filter => lct_blk_filter
    procedure :: interp => lct_blk_interp
-   procedure :: write => lct_blk_write
-   procedure :: write_cor => lct_blk_write_cor
 end type lct_blk_type
 
 private
@@ -171,6 +171,128 @@ if (allocated(lct_blk%Dcoef)) deallocate(lct_blk%Dcoef)
 if (allocated(lct_blk%DLh)) deallocate(lct_blk%DLh)
 
 end subroutine lct_blk_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: lct_blk_write
+! Purpose: write LCT
+!----------------------------------------------------------------------
+subroutine lct_blk_write(lct_blk,mpl,nam,geom,bpar,io,filename)
+
+implicit none
+
+! Passed variables
+class(lct_blk_type),intent(inout) :: lct_blk ! Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          ! MPI data
+type(nam_type),intent(in) :: nam             ! Namelist
+type(geom_type),intent(in) :: geom           ! Geometry
+type(bpar_type),intent(in) :: bpar           ! Block parameters
+type(io_type),intent(in) :: io               ! I/O
+character(len=*),intent(in) :: filename      ! Filename
+
+! Local variables
+integer :: iv,iscales
+character(len=1) :: iscaleschar
+
+! Associate
+associate(ib=>lct_blk%ib)
+
+iv = bpar%b_to_v2(ib)
+do iscales=1,lct_blk%nscales
+   ! Write fields
+   write(iscaleschar,'(i1)') iscales
+   call io%fld_write(mpl,nam,geom,filename,'D11_'//iscaleschar,lct_blk%D11(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'D22_'//iscaleschar,lct_blk%D22(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'D33_'//iscaleschar,lct_blk%D33(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'D12_'//iscaleschar,lct_blk%D12(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'H11_'//iscaleschar,lct_blk%H11(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'H22_'//iscaleschar,lct_blk%H22(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'H33_'//iscaleschar,lct_blk%H33(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'H12_'//iscaleschar,lct_blk%H12(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'coef_'//iscaleschar,lct_blk%Dcoef(:,:,iscales),trim(nam%variables(iv)))
+   call io%fld_write(mpl,nam,geom,filename,'Lh_'//iscaleschar,lct_blk%DLh(:,:,iscales),trim(nam%variables(iv)))
+end do
+call io%fld_write(mpl,nam,geom,filename,'qc',lct_blk%qc_c0a,trim(nam%variables(iv)))
+
+! End associate
+end associate
+
+end subroutine lct_blk_write
+
+!----------------------------------------------------------------------
+! Subroutine: lct_blk_write_cor
+! Purpose: write full correlations
+!----------------------------------------------------------------------
+subroutine lct_blk_write_cor(lct_blk,mpl,nam,geom,bpar,samp)
+
+implicit none
+
+! Passed variables
+class(lct_blk_type),intent(inout) :: lct_blk ! Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          ! MPI data
+type(nam_type),intent(in) :: nam             ! Namelist
+type(geom_type),intent(in) :: geom           ! Geometry
+type(bpar_type),intent(in) :: bpar           ! Block parameters
+type(samp_type),intent(in) :: samp           ! Sampling
+
+! Local variables
+integer :: ncid,grpid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,raw_id,fit_id,fit_filt_id
+integer :: ic1a,ic3,ic0u
+real(kind_real) :: lon(nam%nc3,samp%nc1a),lat(nam%nc3,samp%nc1a)
+character(len=1024) :: filename
+character(len=1024),parameter :: subr = 'lct_blk_write'
+
+! Associate
+associate(ib=>lct_blk%ib)
+
+! Lon/lat initialization
+do ic1a=1,samp%nc1a
+   do ic3=1,nam%nc3
+      ic0u = samp%c1ac3_to_c0u(ic1a,ic3)
+      lon(ic3,ic1a) = geom%lon_c0u(ic0u)*rad2deg
+      lat(ic3,ic1a) = geom%lat_c0u(ic0u)*rad2deg
+   end do
+end do
+
+! Define file
+write(filename,'(a,i6.6,a,i6.6)') trim(nam%prefix)//'_lct_cor_',mpl%nproc,'-',mpl%myproc
+ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+
+! Write namelist parameters
+call nam%write(mpl,ncid)
+
+! Define group
+grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+
+! Define dimensions
+nc3_id = mpl%nc_dim_define_or_get(subr,grpid,'nc3',bpar%nc3(ib))
+nl0r_id = mpl%nc_dim_define_or_get(subr,grpid,'nl0r',bpar%nl0r(ib))
+nc1a_id = mpl%nc_dim_define_or_get(subr,ncid,'nc1a',samp%nc1a)
+nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
+
+! Define variables
+lon_id = mpl%nc_var_define_or_get(subr,grpid,'lon',nc_kind_real,(/nc3_id,nc1a_id/))
+lat_id = mpl%nc_var_define_or_get(subr,grpid,'lat',nc_kind_real,(/nc3_id,nc1a_id/))
+raw_id = mpl%nc_var_define_or_get(subr,grpid,'raw',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+fit_id = mpl%nc_var_define_or_get(subr,grpid,'fit',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+if (nam%diag_rhflt>0.0) fit_filt_id = mpl%nc_var_define_or_get(subr,grpid,'fit_filt',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+
+! Write variables
+call mpl%ncerr(subr,nf90_put_var(grpid,lon_id,lon))
+call mpl%ncerr(subr,nf90_put_var(grpid,lat_id,lat))
+call mpl%ncerr(subr,nf90_put_var(grpid,raw_id,lct_blk%raw(1:bpar%nc3(ib),1:bpar%nl0r(ib),:,:),(/1,1,1,1/), &
+ & (/bpar%nc3(ib),bpar%nl0r(ib),samp%nc1a,geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(grpid,fit_id,lct_blk%fit(1:bpar%nc3(ib),1:bpar%nl0r(ib),:,:),(/1,1,1,1/), &
+ & (/bpar%nc3(ib),bpar%nl0r(ib),samp%nc1a,geom%nl0/)))
+if (nam%diag_rhflt>0.0) call mpl%ncerr(subr,nf90_put_var(grpid,fit_filt_id,lct_blk%fit_filt(1:bpar%nc3(ib),1:bpar%nl0r(ib),:,:), &
+ & (/1,1,1,1/),(/bpar%nc3(ib),bpar%nl0r(ib),samp%nc1a,geom%nl0/)))
+
+! Close file
+call mpl%ncerr(subr,nf90_close(ncid))
+
+! End associate
+end associate
+
+end subroutine lct_blk_write_cor
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_compute
@@ -765,155 +887,5 @@ deallocate(coef)
 end associate
 
 end subroutine lct_blk_interp
-
-!----------------------------------------------------------------------
-! Subroutine: lct_blk_write
-! Purpose: write LCT
-!----------------------------------------------------------------------
-subroutine lct_blk_write(lct_blk,mpl,nam,geom,bpar,io,filename)
-
-implicit none
-
-! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! Averaged statistics block
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-type(io_type),intent(in) :: io               ! I/O
-character(len=*),intent(in) :: filename      ! Filename
-
-! Local variables
-integer :: iv,iscales
-character(len=1) :: iscaleschar
-
-! Associate
-associate(ib=>lct_blk%ib)
-
-iv = bpar%b_to_v2(ib)
-do iscales=1,lct_blk%nscales
-   ! Write fields
-   write(iscaleschar,'(i1)') iscales
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_D11_'//iscaleschar,lct_blk%D11(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_D22_'//iscaleschar,lct_blk%D22(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_D33_'//iscaleschar,lct_blk%D33(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_D12_'//iscaleschar,lct_blk%D12(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_H11_'//iscaleschar,lct_blk%H11(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_H22_'//iscaleschar,lct_blk%H22(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_H33_'//iscaleschar,lct_blk%H33(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_H12_'//iscaleschar,lct_blk%H12(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_coef_'//iscaleschar,lct_blk%Dcoef(:,:,iscales))
-   call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_Lh_'//iscaleschar,lct_blk%DLh(:,:,iscales))
-end do
-call io%fld_write(mpl,nam,geom,filename,trim(nam%variables(iv))//'_qc',lct_blk%qc_c0a)
-
-! End associate
-end associate
-
-end subroutine lct_blk_write
-
-!----------------------------------------------------------------------
-! Subroutine: lct_blk_write_cor
-! Purpose: write full correlations
-!----------------------------------------------------------------------
-subroutine lct_blk_write_cor(lct_blk,mpl,nam,geom,bpar,samp,filename)
-
-implicit none
-
-! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! Averaged statistics block
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-type(samp_type),intent(in) :: samp           ! Sampling
-character(len=*),intent(in) :: filename      ! Filename
-
-! Local variables
-integer :: info,ncid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,raw_id,fit_id,fit_filt_id
-integer :: ic1a,ic3,ic0u
-real(kind_real) :: lon(nam%nc3,samp%nc1a),lat(nam%nc3,samp%nc1a)
-character(len=1024),parameter :: subr = 'lct_blk_write'
-
-! Associate
-associate(ib=>lct_blk%ib)
-
-! Lon/lat initialization
-do ic1a=1,samp%nc1a
-   do ic3=1,nam%nc3
-      ic0u = samp%c1ac3_to_c0u(ic1a,ic3)
-      lon(ic3,ic1a) = geom%lon_c0u(ic0u)*rad2deg
-      lat(ic3,ic1a) = geom%lat_c0u(ic0u)*rad2deg
-   end do
-end do
-
-! Check if the file exists
-info = nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_noclobber,nf90_64bit_offset),ncid)
-if (info==nf90_noerr) then
-   ! Write namelist parameters
-   call nam%write(mpl,ncid)
-else
-   ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
-
-   ! Redef mode
-   call mpl%ncerr(subr,nf90_redef(ncid))
-end if
-
-! Define dimensions and coordinates if necessary
-nc3_id = mpl%ncdimcheck(subr,ncid,'nc3',nam%nc3,.true.)
-nl0r_id = mpl%ncdimcheck(subr,ncid,'nl0r',bpar%nl0rmax,.true.,.true.)
-nc1a_id = mpl%ncdimcheck(subr,ncid,'nc1a',samp%nc1a,.true.)
-nl0_id = mpl%ncdimcheck(subr,ncid,'nl0',geom%nl0,.true.,.true.)
-
-! Define variables if necessary
-info = nf90_inq_varid(ncid,'lon',lon_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nc3_id,nc1a_id/),lon_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lon_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,'lat',lat_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nc3_id,nc1a_id/),lat_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,lat_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,'raw',raw_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'raw',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/),raw_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,raw_id,'_FillValue',mpl%msv%valr))
-end if
-info = nf90_inq_varid(ncid,'fit',fit_id)
-if (info/=nf90_noerr) then
-   call mpl%ncerr(subr,nf90_def_var(ncid,'fit',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/),fit_id))
-   call mpl%ncerr(subr,nf90_put_att(ncid,fit_id,'_FillValue',mpl%msv%valr))
-end if
-if (nam%diag_rhflt>0.0) then
-   info = nf90_inq_varid(ncid,'fit_filt',fit_filt_id)
-   if (info/=nf90_noerr) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,'fit_filt',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/),fit_filt_id))
-      call mpl%ncerr(subr,nf90_put_att(ncid,fit_filt_id,'_FillValue',mpl%msv%valr))
-   end if
-end if
-
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
-
-! Write variables
-call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon))
-call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat))
-call mpl%ncerr(subr,nf90_put_var(ncid,raw_id,lct_blk%raw(1:bpar%nc3(ib),1:bpar%nl0r(ib),:,:),(/1,1,1,1/), &
- & (/bpar%nc3(ib),bpar%nl0r(ib),samp%nc1a,geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(ncid,fit_id,lct_blk%fit(1:bpar%nc3(ib),1:bpar%nl0r(ib),:,:),(/1,1,1,1/), &
- & (/bpar%nc3(ib),bpar%nl0r(ib),samp%nc1a,geom%nl0/)))
-if (nam%diag_rhflt>0.0) call mpl%ncerr(subr,nf90_put_var(ncid,fit_filt_id,lct_blk%fit_filt(1:bpar%nc3(ib),1:bpar%nl0r(ib),:,:), &
- & (/1,1,1,1/),(/bpar%nc3(ib),bpar%nl0r(ib),samp%nc1a,geom%nl0/)))
-
-! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
-
-! End associate
-end associate
-
-end subroutine lct_blk_write_cor
 
 end module type_lct_blk

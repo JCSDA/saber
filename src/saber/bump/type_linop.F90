@@ -193,46 +193,42 @@ implicit none
 ! Passed variables
 class(linop_type),intent(inout) :: linop ! Linear operator
 type(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: ncid               ! NetCDF file ID
+integer,intent(in) :: ncid               ! NetCDF file
 
 ! Local variables
-integer :: info,nvec
-integer :: n_s_id,row_id,col_id,S_id,Svec_id
+integer :: nvec
+integer :: grpid,row_id,col_id,S_id,Svec_id
 character(len=1024),parameter :: subr = 'linop_read'
 
-! Get operator size
-info = nf90_inq_dimid(ncid,trim(linop%prefix)//'_n_s',n_s_id)
-if (info==nf90_noerr) then
-   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,n_s_id,len=linop%n_s))
-else
-   linop%n_s = 0
-end if
+! Get group
+call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(linop%prefix),grpid))
 
-! Get source/destination dimensions
-call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,trim(linop%prefix)//'_n_src',linop%n_src))
-call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,trim(linop%prefix)//'_n_dst',linop%n_dst))
-call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,trim(linop%prefix)//'_nvec',nvec))
+! Get dimensions
+linop%n_s = mpl%nc_dim_inquire(subr,grpid,'n_s')
+call mpl%ncerr(subr,nf90_get_att(grpid,nf90_global,'n_src',linop%n_src))
+call mpl%ncerr(subr,nf90_get_att(grpid,nf90_global,'n_dst',linop%n_dst))
+call mpl%ncerr(subr,nf90_get_att(grpid,nf90_global,'nvec',nvec))
 
 ! Allocation
 call linop%alloc(nvec)
 
 if (linop%n_s>0) then
-   ! Get variables id
-   call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(linop%prefix)//'_row',row_id))
-   call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(linop%prefix)//'_col',col_id))
+   ! Get variables
+   call mpl%ncerr(subr,nf90_inq_varid(grpid,'row',row_id))
+   call mpl%ncerr(subr,nf90_inq_varid(grpid,'col',col_id))
    if (linop%nvec>0) then
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(linop%prefix)//'_Svec',Svec_id))
+      call mpl%ncerr(subr,nf90_inq_varid(grpid,'Svec',Svec_id))
    else
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(linop%prefix)//'_S',S_id))
+      call mpl%ncerr(subr,nf90_inq_varid(grpid,'S',S_id))
    end if
 
-   ! Get variables
-   call mpl%ncerr(subr,nf90_get_var(ncid,row_id,linop%row))
-   call mpl%ncerr(subr,nf90_get_var(ncid,col_id,linop%col))
+   ! Read variables
+   call mpl%ncerr(subr,nf90_get_var(grpid,row_id,linop%row))
+   call mpl%ncerr(subr,nf90_get_var(grpid,col_id,linop%col))
    if (linop%nvec>0) then
-      call mpl%ncerr(subr,nf90_get_var(ncid,Svec_id,linop%Svec))
+      call mpl%ncerr(subr,nf90_get_var(grpid,Svec_id,linop%Svec))
    else
-      call mpl%ncerr(subr,nf90_get_var(ncid,S_id,linop%S))
+      call mpl%ncerr(subr,nf90_get_var(grpid,S_id,linop%S))
    end if
 end if
 
@@ -249,49 +245,42 @@ implicit none
 ! Passed variables
 class(linop_type),intent(in) :: linop ! Linear operator
 type(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid            ! NetCDF file ID
+integer,intent(in) :: ncid            ! NetCDF file
 
 ! Local variables
-integer :: n_s_id,nvec_id,row_id,col_id,S_id,Svec_id
+integer :: grpid,n_s_id,nvec_id,row_id,col_id,S_id,Svec_id
 character(len=1024),parameter :: subr = 'linop_write'
 
-! Start definition mode
-call mpl%ncerr(subr,nf90_redef(ncid))
+! Define group
+grpid = mpl%nc_group_define_or_get(subr,ncid,trim(linop%prefix))
 
-! Write source/destination dimensions
-call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(linop%prefix)//'_n_src',linop%n_src))
-call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(linop%prefix)//'_n_dst',linop%n_dst))
-call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(linop%prefix)//'_nvec',linop%nvec))
+! Define dimensions
+call mpl%ncerr(subr,nf90_put_att(grpid,nf90_global,'n_src',linop%n_src))
+call mpl%ncerr(subr,nf90_put_att(grpid,nf90_global,'n_dst',linop%n_dst))
+call mpl%ncerr(subr,nf90_put_att(grpid,nf90_global,'nvec',linop%nvec))
 
 if (linop%n_s>0) then
    ! Define dimensions
-   call mpl%ncerr(subr,nf90_def_dim(ncid,trim(linop%prefix)//'_n_s',linop%n_s,n_s_id))
-   if (linop%nvec>0) call mpl%ncerr(subr,nf90_def_dim(ncid,trim(linop%prefix)//'_nvec', &
- & linop%nvec,nvec_id))
+   n_s_id = mpl%nc_dim_define_or_get(subr,grpid,'n_s',linop%n_s)
+   if (linop%nvec>0) nvec_id = mpl%nc_dim_define_or_get(subr,grpid,'nvec',linop%nvec)
 
    ! Define variables
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(linop%prefix)//'_row',nf90_int,(/n_s_id/),row_id))
-   call mpl%ncerr(subr,nf90_def_var(ncid,trim(linop%prefix)//'_col',nf90_int,(/n_s_id/),col_id))
+   row_id = mpl%nc_var_define_or_get(subr,grpid,'row',nf90_int,(/n_s_id/))
+   col_id = mpl%nc_var_define_or_get(subr,grpid,'col',nf90_int,(/n_s_id/))
    if (linop%nvec>0) then
-      call mpl%ncerr(subr,nf90_def_var(ncid,trim(linop%prefix)//'_Svec',nc_kind_real,(/n_s_id,nvec_id/),Svec_id))
+      Svec_id = mpl%nc_var_define_or_get(subr,grpid,'Svec',nc_kind_real,(/n_s_id,nvec_id/))
    else
-      call mpl%ncerr(subr,nf90_def_var(ncid,trim(linop%prefix)//'_S',nc_kind_real,(/n_s_id/),S_id))
+      S_id = mpl%nc_var_define_or_get(subr,grpid,'S',nc_kind_real,(/n_s_id/))
    end if
 
-   ! End definition mode
-   call mpl%ncerr(subr,nf90_enddef(ncid))
-
-   ! Put variables
-   call mpl%ncerr(subr,nf90_put_var(ncid,row_id,linop%row(1:linop%n_s)))
-   call mpl%ncerr(subr,nf90_put_var(ncid,col_id,linop%col(1:linop%n_s)))
+   ! Write variables
+   call mpl%ncerr(subr,nf90_put_var(grpid,row_id,linop%row(1:linop%n_s)))
+   call mpl%ncerr(subr,nf90_put_var(grpid,col_id,linop%col(1:linop%n_s)))
    if (linop%nvec>0) then
-      call mpl%ncerr(subr,nf90_put_var(ncid,Svec_id,linop%Svec(1:linop%n_s,:)))
+      call mpl%ncerr(subr,nf90_put_var(grpid,Svec_id,linop%Svec(1:linop%n_s,:)))
    else
-      call mpl%ncerr(subr,nf90_put_var(ncid,S_id,linop%S(1:linop%n_s)))
+      call mpl%ncerr(subr,nf90_put_var(grpid,S_id,linop%S(1:linop%n_s)))
    end if
-else
-   ! End definition mode
-   call mpl%ncerr(subr,nf90_enddef(ncid))
 end if
 
 end subroutine linop_write

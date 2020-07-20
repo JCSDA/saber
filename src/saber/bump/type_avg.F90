@@ -78,7 +78,7 @@ avg%nsub = nsub
 allocate(avg%blk(0:samp%nc2a,bpar%nbe))
 do ib=1,bpar%nbe
    do ic2a=0,samp%nc2a
-      call avg%blk(ic2a,ib)%alloc(nam,geom,bpar,ic2a,ib,ne,nsub,prefix)
+      call avg%blk(ic2a,ib)%alloc(nam,geom,bpar,ic2a,ib,ne,nsub)
    end do
 end do
 
@@ -154,7 +154,7 @@ integer :: ib
 character(len=1024) :: filename
 
 if (mpl%main) then
-   filename = trim(nam%prefix)//'_avg'
+   filename = trim(nam%prefix)//'_'//trim(avg%prefix)
    do ib=1,bpar%nb
       if (bpar%diag_block(ib)) call avg%blk(0,ib)%write(mpl,nam,geom,bpar,filename)
    end do

@@ -117,9 +117,9 @@ integer :: ncid,grid_hash
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'obsop_read'
 
-! Create file
+! Define file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Check grid hash
 call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
@@ -161,9 +161,9 @@ integer :: ncid
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'obsop_write'
 
-! Create file
+! Define file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Write grid hash
 call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
@@ -174,9 +174,6 @@ call nam%write(mpl,ncid)
 ! Write attributes
 call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'nc0b',obsop%nc0b))
 call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'nobsa',obsop%nobsa))
-
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
 
 ! Write interpolation
 call obsop%h%write(mpl,ncid)

@@ -28,6 +28,13 @@ def dirac(testdata, test, mpi, omp, suffix):
    cres.nglDraw = False
    cres.nglFrame = False
    cres.nglMaximize = True
+   cres.mpOutlineOn = False
+   cres.mpLandFillColor = -1
+   cres.mpProjection = "CylindricalEquidistant"
+   cres.mpLimitMode = "LatLon"
+   cres.mpMinLatF = 0.0
+   cres.mpMaxLatF = 90.0
+   cres.mpGridSpacingF = 45.0
    cres.cnFillOn = True
    cres.cnFillMode = "AreaFill"
    cres.cnConstFEnableFill = True
@@ -41,14 +48,7 @@ def dirac(testdata, test, mpi, omp, suffix):
    cres.cnNoDataLabelOn = False
    cres.cnMissingValPerimOn = True
    cres.cnMissingValPerimColor = "black"
-   cres.mpOutlineOn = False
    cres.cnLevelSelectionMode = "ExplicitLevels"
-   cres.mpLandFillColor = -1
-   cres.mpProjection = "CylindricalEquidistant"
-   cres.mpLimitMode = "LatLon"
-   cres.mpMinLatF = 0.0
-   cres.mpMaxLatF = 90.0
-   cres.mpGridSpacingF = 45.0
    cres.sfXArray = lon
    cres.sfYArray = lat
 
@@ -79,8 +79,10 @@ def dirac(testdata, test, mpi, omp, suffix):
 
       # Plots
       plot = []
+      _FillValue = f.variables[var].attributes["_FillValue"]
       for il0 in range(0, nl0):
-         plot.append(Ngl.contour_map(wks, field[il0,:], cres))
+         if (np.any(field[il0,:] != _FillValue)):
+            plot.append(Ngl.contour_map(wks, field[il0,:], cres))
 
       # Panel
       Ngl.panel(wks, plot, [nl0,1], pnlres)

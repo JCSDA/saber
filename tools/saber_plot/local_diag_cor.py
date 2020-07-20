@@ -73,8 +73,10 @@ def local_diag_cor(testdata, test, mpi, omp, suffix):
 
       # Plots
       plot = []
+      _FillValue = f.variables[var].attributes["_FillValue"]
       for il0 in range(0, nl0):
-         plot.append(Ngl.contour_map(wks, field[il0,:], cres))
+         if (np.any(field[il0,:] != _FillValue)):
+            plot.append(Ngl.contour_map(wks, field[il0,:], cres))
 
       # Panel
       Ngl.panel(wks, plot, [nl0,1], pnlres)

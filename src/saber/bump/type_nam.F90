@@ -2044,7 +2044,7 @@ implicit none
 ! Passed variable
 class(nam_type),intent(in) :: nam   ! Namelist
 type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in),optional :: ncid ! NetCDF file ID
+integer,intent(in),optional :: ncid ! NetCDF file
 
 ! Local variables
 integer :: lncid
