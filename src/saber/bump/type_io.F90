@@ -101,7 +101,7 @@ end subroutine io_dealloc
 ! Subroutine: io_fld_read
 ! Purpose: write field
 !----------------------------------------------------------------------
-subroutine io_fld_read(io,mpl,nam,geom,filename,variable,fld,groupname)
+subroutine io_fld_read(io,mpl,nam,geom,filename,variable,fld,groupname,subgroupname)
 
 implicit none
 
@@ -114,9 +114,10 @@ character(len=*),intent(in) :: filename                ! File name
 character(len=*),intent(in) :: variable                ! Variable name
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) ! Field
 character(len=*),intent(in),optional :: groupname      ! Group name
+character(len=*),intent(in),optional :: subgroupname  ! Subgroup name
 
 ! Local variables
-integer :: ncid,grpid,fld_id
+integer :: ncid,grpid,subgrpid,fld_id
 real(kind_real),allocatable :: fld_c0io(:,:)
 character(len=1024),parameter :: subr = 'io_fld_read'
 
@@ -130,6 +131,13 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    ! Get group
    if (present(groupname)) then
       call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(groupname),grpid))
+
+      ! Get sub-group
+      if (present(subgroupname)) then
+         call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,trim(subgroupname),subgrpid))
+      else
+         subgrpid = grpid
+      end if
    else
       grpid = ncid
    end if

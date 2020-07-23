@@ -233,6 +233,9 @@ do iproc=1,mpl%nproc
 
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
+               ! Get group
+               call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(bpar%blockname(ib)),grpid))
+
                ! Read data
                call nicas_tmp%blk(ib)%read(mpl,nam,geom,bpar,grpid)
 
@@ -253,9 +256,6 @@ do iproc=1,mpl%nproc
 
       do ib=1,bpar%nbe
          if (bpar%B_block(ib)) then
-            ! Get group
-            call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(bpar%blockname(ib)),grpid))
-
             ! Receive data from iprocio
             call nicas%blk(ib)%receive(mpl,nam,geom,bpar,iprocio,mpl%tag+(ib-1)*nicas_tag)
          end if
