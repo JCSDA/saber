@@ -599,6 +599,7 @@ if (bump%nam%new_var) then
    write(bump%mpl%info,'(a)') '--- Run variance driver'
    call bump%mpl%flush
    call bump%var%run_var(bump%mpl,bump%rng,bump%nam,bump%geom,bump%ens1,bump%io)
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 elseif (bump%nam%load_var) then
    ! Read variance
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
