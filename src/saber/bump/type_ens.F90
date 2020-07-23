@@ -160,9 +160,7 @@ integer :: ie,isub
 if (allocated(ens_in%mem)) then
    do ie=1,ens_in%ne
       if (.not.allocated(ens_out%mem(ie)%fld)) allocate(ens_out%mem(ie)%fld(size(ens_in%mem(ie)%fld,1), &
-                                                                          & size(ens_in%mem(ie)%fld,2), &
-                                                                          & size(ens_in%mem(ie)%fld,3), &
-                                                                          & size(ens_in%mem(ie)%fld,4)))
+ & size(ens_in%mem(ie)%fld,2),size(ens_in%mem(ie)%fld,3),size(ens_in%mem(ie)%fld,4)))
       ens_out%mem(ie)%fld = ens_in%mem(ie)%fld
    end do
 end if
@@ -653,7 +651,7 @@ if (present(fld_uv)) then
       do it=1,nt
          ! Compute interpolation
          call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,geom%il0dir(1)), &
-       & 1,londir_wind(its:its),latdir_wind(its:its),mask_wind,13)
+ & 1,londir_wind(its:its),latdir_wind(its:its),mask_wind,13)
 
          ! Allocation
          allocate(fld_uv_tmp(h%n_s,2,2))
@@ -716,7 +714,7 @@ if (present(fld_uv)) then
 
       ! Print results
       write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3)') '','Timeslot '//trim(nam%timeslots(its))//' ~> lon / lat / lev: ', &
-    & londir_wind(its)*rad2deg,' / ',latdir_wind(its)*rad2deg,' / ',nam%levs(geom%il0dir(1))
+ & londir_wind(its)*rad2deg,' / ',latdir_wind(its)*rad2deg,' / ',nam%levs(geom%il0dir(1))
       call mpl%flush
    end do
 end if

@@ -364,7 +364,7 @@ do its=2,nam%nts
          if (samp%smask_c2a(ic2a,il0)) then
             ! Find nearest neighbors
             call geom%tree_c0u%find_nearest_neighbors(lon_rac(ic2a,il0),lat_rac(ic2a,il0),nn(ic2a,il0), &
-          & jc0u_ra(1:nn(ic2a,il0),ic2a,il0))
+ & jc0u_ra(1:nn(ic2a,il0),ic2a,il0))
 
             ! Check points
             do jn=1,nn(ic2a,il0)
@@ -557,7 +557,7 @@ do its=2,nam%nts
 
                   ! Compute distance
                   call sphere_dist(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%lon_c2a_raw(ic2a,il0,its), &
-                & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
+ & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
                end if
 
                ! Release memory
@@ -571,7 +571,7 @@ do its=2,nam%nts
 
                ! Compute distance
                call sphere_dist(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%lon_c2a_raw(ic2a,il0,its), &
-             & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
+ & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
             end if
          end if
       end do
@@ -693,7 +693,7 @@ do its=2,nam%nts
 
          ! Compute interpolation
          call h%interp(mpl,rng,nam,geom,il0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0), &
-       & samp%nc2a,adv%lon_c2a_raw(:,il0,its),adv%lat_c2a_raw(:,il0,its),samp%smask_c2a(:,il0),0)
+ & samp%nc2a,adv%lon_c2a_raw(:,il0,its),adv%lat_c2a_raw(:,il0,its),samp%smask_c2a(:,il0),0)
 
          ! Define halo W
          lcheck_c0w = .false.
@@ -771,14 +771,14 @@ do its=2,nam%nts
             if (samp%smask_c2a(ic2a,il0)) then
                ! Transform wind to cartesian coordinates
                uxm = -sin(adv%lon_c2a_raw(ic2a,il0,its))*um(ic2a)- &
-                   & cos(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vm(ic2a)
+ & cos(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vm(ic2a)
                uym = cos(adv%lon_c2a_raw(ic2a,il0,its))*um(ic2a)- &
-                   & sin(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vm(ic2a)
+ & sin(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vm(ic2a)
                uzm = cos(adv%lat_c2a_raw(ic2a,il0,its))*vm(ic2a)
                uxp = -sin(adv%lon_c2a_raw(ic2a,il0,its))*up(ic2a)- &
-                   & cos(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
+ & cos(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
                uyp = cos(adv%lon_c2a_raw(ic2a,il0,its))*up(ic2a)- &
-                   & sin(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
+ & sin(adv%lon_c2a_raw(ic2a,il0,its))*sin(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
                uzp = cos(adv%lat_c2a_raw(ic2a,il0,its))*vp(ic2a)
 
                ! Define wind in cartesian coordinates
@@ -808,7 +808,7 @@ do its=2,nam%nts
          if (samp%smask_c2a(ic2a,il0)) then
             ! Compute distance
             call sphere_dist(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),adv%lon_c2a_raw(ic2a,il0,its), &
-          & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
+ & adv%lat_c2a_raw(ic2a,il0,its),adv%dist_c2a_raw(ic2a,il0,its))
          end if
       end do
 
@@ -885,7 +885,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
    do ic2a=1,samp%nc2a
       if (samp%smask_c2a(ic2a,il0)) then
          call lonlat2xyz(mpl,adv%lon_c2a_raw(ic2a,il0,its),adv%lat_c2a_raw(ic2a,il0,its),dx_ini(ic2a),dy_ini(ic2a), &
-       & dz_ini(ic2a))
+ & dz_ini(ic2a))
          if (mpl%msv%isnot(dx_ini(ic2a))) dx_ini(ic2a) = dx_ini(ic2a)-adv%x_c2a(ic2a)
          if (mpl%msv%isnot(dy_ini(ic2a))) dy_ini(ic2a) = dy_ini(ic2a)-adv%y_c2a(ic2a)
          if (mpl%msv%isnot(dz_ini(ic2a))) dz_ini(ic2a) = dz_ini(ic2a)-adv%z_c2a(ic2a)
@@ -939,7 +939,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
          ic0a = samp%c2a_to_c0a(ic2a)
          ic0u = geom%c0a_to_c0u(ic0a)
          call reduce_arc(adv%lon_c2a(ic2a),adv%lat_c2a(ic2a),lon_c2a(ic2a),lat_c2a(ic2a), &
-       & min(geom%mdist_c0u(ic0u,il0i),geom%mesh_c0u%bdist(ic0u)),dist_c2a(ic2a))
+ & min(geom%mdist_c0u(ic0u,il0i),geom%mesh_c0u%bdist(ic0u)),dist_c2a(ic2a))
       end do
 
       ! Check filtered mesh
@@ -967,7 +967,7 @@ if ((nam%adv_niter>0).and.(adv%valid_raw(il0,its)<nam%adv_valid)) then
 
       ! Print result
       write(mpl%info,'(a19,a,i2,a,f10.2,a,f7.3,a)') '','Iteration ',iter,': rhflt = ', &
-    & rhflt*reqkm,' km, validity = ',100.0*valid_flt,'%'
+ & rhflt*reqkm,' km, validity = ',100.0*valid_flt,'%'
       call mpl%flush
 
       ! Update support radius
@@ -1118,14 +1118,14 @@ do its=2,nam%nts
          if (geom%gmask_c0a(ic0a,il0)) then
             ic0u = geom%c0a_to_c0u(ic0a)
             call reduce_arc(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),samp%adv_lon(ic0a,il0,its),samp%adv_lat(ic0a,il0,its), &
-          & min(geom%mdist_c0a(ic0a,il0i),geom%mesh_c0u%bdist(ic0u)),reduced_dist)
+ & min(geom%mdist_c0a(ic0a,il0i),geom%mesh_c0u%bdist(ic0u)),reduced_dist)
          end if
       end do
 
       ! Deal with poles issues (back to origin point latitude by 10%)
       do ic0a=1,geom%nc0a
          if (eq(abs(samp%adv_lat(ic0a,il0,its)),0.5*pi)) samp%adv_lat(ic0a,il0,its) = geom%lat_c0a(ic0a) &
-                                                       & +0.9*(samp%adv_lat(ic0a,il0,its)-geom%lat_c0a(ic0a))
+ & +0.9*(samp%adv_lat(ic0a,il0,its)-geom%lat_c0a(ic0a))
       end do
    end do
 end do
@@ -1170,7 +1170,7 @@ do its=2,nam%nts
    do il0=1,geom%nl0
       write(dinv(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
       call dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0),geom%nc0a, &
-    & samp%adv_lon(:,il0,its),samp%adv_lat(:,il0,its),geom%gmask_c0a(:,il0),10)
+ & samp%adv_lon(:,il0,its),samp%adv_lat(:,il0,its),geom%gmask_c0a(:,il0),10)
    end do
 end do
 

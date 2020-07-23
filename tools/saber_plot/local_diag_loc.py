@@ -1,27 +1,28 @@
 #!/usr/bin/env python3
 
 import argparse
-import Ngl, Nio
+from netCDF4 import Dataset
+import Ngl
 import numpy as np
 import numpy.ma as ma
 import os
 
-def local_diag_loc(testdata, test, mpi, omp, suffix):
+def local_diag_loc(testdata, test, mpi, omp, suffix, testfig):
    # Open file
-   f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
+   f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
+
+   # Get _FillValue
+   _FillValue = f.__dict__["_FillValue"]
 
    # Get lon/lat
-   lon = f.variables["lon"][:]
-   lat = f.variables["lat"][:]
+   lon = f["lon"][:]
+   lat = f["lat"][:]
 
-   # Variables
-   var_list = []
-   for var in f.variables:
-      if var.find("coef_ens")>0 or var.find("coef_sta")>0 or var.find("fit_rh")>0 or var.find("fit_rv")>0:
-         var_list.append(var)
+   # Get vertical unit
+   vunit = f["vunit"][:,:]
 
    # Get number of levels
-   nl0 = f.variables[var_list[0]][:,:].shape[0]
+   nl0 = vunit.shape[0]
 
    # Contour resources
    cres = Ngl.Resources()
@@ -57,32 +58,27 @@ def local_diag_loc(testdata, test, mpi, omp, suffix):
    pnlres = Ngl.Resources()
    pnlres.nglFrame = False
 
-   # Make output directory
-   testfig = testdata + "/" + test + "/fig"
-   if not os.path.exists(testfig):
-      os.mkdir(testfig)
+   for group in f.groups:
+      for var in f.groups[group].variables:
+         # Read variable
+         field = f.groups[group][var][:,:]
 
-   for var in var_list:
-      # Read variable
-      field = f.variables[var][:,:]
+         # Open workstation
+         wks_type = "png"
+         wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + group + "_" + var)
+         Ngl.define_colormap(wks, "WhiteBlueGreenYellowRed")
 
-      # Open workstation
-      wks_type = "png"
-      wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + var)
-      Ngl.define_colormap(wks, "WhiteBlueGreenYellowRed")
+         # Plots
+         plot = []
+         for il0 in range(0, nl0):
+            if np.any(field[il0,:] != _FillValue):
+               plot.append(Ngl.contour_map(wks, field[il0,:], cres))
 
-      # Plots
-      plot = []
-      _FillValue = f.variables[var].attributes["_FillValue"]
-      for il0 in range(0, nl0):
-         if (np.any(field[il0,:] != _FillValue)):
-            plot.append(Ngl.contour_map(wks, field[il0,:], cres))
+         # Panel
+         Ngl.panel(wks, plot, [nl0,1], pnlres)
 
-      # Panel
-      Ngl.panel(wks, plot, [nl0,1], pnlres)
+         # Advance frame
+         Ngl.frame(wks)
 
-      # Advance frame
-      Ngl.frame(wks)
-
-      # Delete frame
-      Ngl.delete_wks(wks)
+         # Delete frame
+         Ngl.delete_wks(wks)

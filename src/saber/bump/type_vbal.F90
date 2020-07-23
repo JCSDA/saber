@@ -370,7 +370,7 @@ do iv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Initialization
          write(mpl%info,'(a7,a)') '','Unbalancing: '//trim(nam%variables(iv))//' with respect to unbalanced ' & 
-          & //trim(nam%variables(jv))
+ & //trim(nam%variables(jv))
          call mpl%flush
 
          ! Compute auto- and cross-covariances
@@ -706,7 +706,7 @@ do iv=1,nam%nv
          call mpl%dot_prod(fld1_blk(:,:,iv),fld2_save(:,:,iv),sum1)
          call mpl%dot_prod(fld2_blk(:,:,iv),fld1_save(:,:,iv),sum2)
          write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block adjoint test:  ', &
-         & sum1,' / ',sum2,' / ',2.0*abs(sum1-sum2)/abs(sum1+sum2)
+ & sum1,' / ',sum2,' / ',2.0*abs(sum1-sum2)/abs(sum1+sum2)
          call mpl%flush
       end if
    end do
@@ -775,7 +775,7 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 do its=1,nam%nts
    write(itschar,'(i2.2)') its
    do iv=1,nam%nv
-      call io%fld_write(mpl,nam,geom,filename,'vbal_'//trim(nam%variables(iv))//'_'//itschar,fld(:,:,iv,its))
+      call io%fld_write(mpl,nam,geom,filename,'vbal',fld(:,:,iv,its),trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)))
    end do
 end do
 

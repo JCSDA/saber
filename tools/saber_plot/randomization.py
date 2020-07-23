@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
 import argparse
-import Ngl, Nio
+from netCDF4 import Dataset
+import Ngl
 import numpy as np
 import os
 
-def randomization(testdata, test, mpi, omp, suffix):
+def randomization(testdata, test, mpi, omp, suffix, testfig):
    # Open file
-   f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
+   f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
    # Get factors
-   nefac = f.variables["nefac"][:]
+   nefac = f["nefac"][:]
 
    # Get number of tests
    nfac = nefac.shape[0]
@@ -21,11 +22,11 @@ def randomization(testdata, test, mpi, omp, suffix):
 
    # Get data, compute mean and standard deviation
    mse_mean = np.zeros((0, nfac))
-   mse_mean = np.append(mse_mean, [np.mean(f.variables["mse"][:,:], axis=1)], axis=0)
-   mse_mean = np.append(mse_mean, [np.mean(f.variables["mse_th"][:,:], axis=1)], axis=0)
+   mse_mean = np.append(mse_mean, [np.mean(f["mse"][:,:], axis=1)], axis=0)
+   mse_mean = np.append(mse_mean, [np.mean(f["mse_th"][:,:], axis=1)], axis=0)
    mse_std = np.zeros((0, nfac))
-   mse_std = np.append(mse_std, [np.std(f.variables["mse"][:,:], axis=1)], axis=0)
-   mse_std = np.append(mse_std, [np.std(f.variables["mse_th"][:,:], axis=1)], axis=0)
+   mse_std = np.append(mse_std, [np.std(f["mse"][:,:], axis=1)], axis=0)
+   mse_std = np.append(mse_std, [np.std(f["mse_th"][:,:], axis=1)], axis=0)
 
    # XY resources
    xyres = Ngl.Resources()
@@ -53,11 +54,6 @@ def randomization(testdata, test, mpi, omp, suffix):
    pnlres.nglFrame = False
    pnlres.nglPanelXWhiteSpacePercent = 5.0
    pnlres.nglPanelYWhiteSpacePercent = 5.0
-
-   # Make output directory
-   testfig = testdata + "/" + test + "/fig"
-   if not os.path.exists(testfig):
-      os.mkdir(testfig)
 
    # Open workstation
    wks_type = "png"

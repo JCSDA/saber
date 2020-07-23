@@ -283,7 +283,7 @@ end do
 
 if (valid) then
    if (nam%vbal_diag_auto((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv) &
-    & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
+ & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
       ! Diagonal inversion
       vbal_blk%auto_inv(:,:,ic2b) = 0.0
       do il0=1,geom%nl0

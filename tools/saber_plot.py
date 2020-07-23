@@ -18,13 +18,18 @@ sys.path.insert(1, os.path.join(args.bindir, "saber_plot"))
 
 # Available plots list
 plot_list=["adv","avg","corstats","cortrack","diag","dirac","lct_cor","lct","local_diag_cor","local_diag_loc","normality","randomization","sampling_grids","umf","var"]
-done_list=["adv","normality","sampling_grids","lct_cor"]
+done_list=["adv","normality","sampling_grids","lct","lct_cor"]
 done = {}
 for plot in plot_list:
    done[plot] = False
 
 # BUMP tests
 if args.test.find("bump_")==0:
+   # Make output directory
+   testfig = args.testdata + "/" + args.test + "/fig"
+   if not os.path.exists(testfig):
+      os.mkdir(testfig)
+
    # Create png figures
    for f in sorted(os.listdir(os.path.join(args.testdata, args.test))):
       if os.path.isfile(os.path.join(args.testdata, args.test, f)) and f.find("test_" + args.mpi + "-" + args.omp)==0:
@@ -35,10 +40,10 @@ if args.test.find("bump_")==0:
                module = __import__(plot)
                func = getattr(module, plot)
                if plot in done_list:
-                  func(args.testdata, args.test, args.mpi, args.omp, plot)
+                  func(args.testdata, args.test, args.mpi, args.omp, plot, testfig)
                   done[plot] = True
                else:
-                  func(args.testdata, args.test, args.mpi, args.omp, suffix)
+                  func(args.testdata, args.test, args.mpi, args.omp, suffix, testfig)
 
    if (os.path.isdir(os.path.join(args.testdata, args.test, "fig"))):
       # Create HTML page

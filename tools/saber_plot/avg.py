@@ -1,86 +1,78 @@
 #!/usr/bin/env python3
 
 import argparse
-import Ngl, Nio
+from netCDF4 import Dataset
+import Ngl
 import numpy as np
 import os
 
-def avg(testdata, test, mpi, omp, suffix):
+def avg(testdata, test, mpi, omp, suffix, testfig):
    # Open file
-   f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
+   f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
-   # Get horizontal distance and vertical unit
-   disth = f.variables["disth"][:]
-   vunit = f.variables["vunit"][:]
-
-   # Variables
-   root_list = []
-   for var in f.variables:
-      if var.find("avg_")==0 and var.find("_cor_hist")>0:
-         root_list.append(var.replace("avg_1_", "").replace("_cor_hist", ""))
-
-   # Get number of horizontal classes
-   nc3 = disth.shape[0]
+   # Get vertical unit
+   vunit = f["vunit"][:]
 
    # Get number of levels
    nl0 = vunit.shape[0]
 
-   # Get number of reduced levels
-   nl0r = f.variables["avg_1_" + root_list[0] + "_cor_hist"][:,:,:,:].shape[1]
+   for group in f.groups:
+      # Get horizontal distance
+      disth = f.groups[group]["disth"][:]
 
-   # Get number of bins
-   nbins = f.variables["avg_1_" + root_list[0] + "_cor_hist"][:,:,:,:].shape[3]
+      # Get number of horizontal classes
+      nc3 = disth.shape[0]
 
-   # XY resources
-   xyres = Ngl.Resources()
-   xyres.nglFrame = False
-   xyres.nglDraw = False
-   xyres.xyMarkLineMode = "Markers"
-   xyres.xyMarkerColors = 0
-   xyres.tiYAxisString = "Distribution"
+      # Get number of reduced levels
+      nl0r = f.groups[group]["cor_hist"][:,:,:,:].shape[1]
 
-   # Bar resources
-   gsres = Ngl.Resources()
-   gsres.gsFillColor = "red"
+      # Get number of bins
+      nbins = f.groups[group]["cor_hist"][:,:,:,:].shape[3]
 
-   # Title resources
-   txres = Ngl.Resources()
-   txres.txFontHeightF = 0.01
-   txres.txJust = "CenterCenter"
+      # XY resources
+      xyres = Ngl.Resources()
+      xyres.nglFrame = False
+      xyres.nglDraw = False
+      xyres.xyMarkLineMode = "Markers"
+      xyres.xyMarkerColors = 0
+      xyres.tiYAxisString = "Distribution"
 
-   # Panel resources
-   pnlres = Ngl.Resources()
-   pnlres.nglFrame = False
-   pnlres.nglPanelXWhiteSpacePercent = 5.0
-   pnlres.nglPanelYWhiteSpacePercent = 5.0
+      # Bar resources
+      gsres = Ngl.Resources()
+      gsres.gsFillColor = "red"
 
-   # Make output directory
-   testfig = testdata + "/" + test + "/fig"
-   if not os.path.exists(testfig):
-      os.mkdir(testfig)
+      # Title resources
+      txres = Ngl.Resources()
+      txres.txFontHeightF = 0.01
+      txres.txJust = "CenterCenter"
 
-   for root in root_list:
+      # Panel resources
+      pnlres = Ngl.Resources()
+      pnlres.nglFrame = False
+      pnlres.nglPanelXWhiteSpacePercent = 5.0
+      pnlres.nglPanelYWhiteSpacePercent = 5.0
+
       # Read variable and bins
-      l0rl0_to_l0 = f.variables["avg_1_" + root + "_l0rl0_to_l0"][:,:]
-      m11_hist = f.variables["avg_1_" + root + "_m11_hist"][:,:,:,:]
-      m11_bins = f.variables["avg_1_" + root + "_m11_bins"][:,:,:,:]
-      m11m11_hist = f.variables["avg_1_" + root + "_m11m11_hist"][:,:,:,:]
-      m11m11_bins = f.variables["avg_1_" + root + "_m11m11_bins"][:,:,:,:]
-      m2m2_hist = f.variables["avg_1_" + root + "_m2m2_hist"][:,:,:,:]
-      m2m2_bins = f.variables["avg_1_" + root + "_m2m2_bins"][:,:,:,:]
-      m22_hist = f.variables["avg_1_" + root + "_m22_hist"][:,:,:,:]
-      m22_bins = f.variables["avg_1_" + root + "_m22_bins"][:,:,:,:]
-      cor_hist = f.variables["avg_1_" + root + "_cor_hist"][:,:,:,:]
-      cor_bins = f.variables["avg_1_" + root + "_cor_bins"][:,:,:,:]
+      l0rl0_to_l0 = f.groups[group]["l0rl0_to_l0"][:,:]
+      m11_hist = f.groups[group]["m11_hist"][:,:,:,:]
+      m11_bins = f.groups[group]["m11_bins"][:,:,:,:]
+      m11m11_hist = f.groups[group]["m11m11_hist"][:,:,:,:]
+      m11m11_bins = f.groups[group]["m11m11_bins"][:,:,:,:]
+      m2m2_hist = f.groups[group]["m2m2_hist"][:,:,:,:]
+      m2m2_bins = f.groups[group]["m2m2_bins"][:,:,:,:]
+      m22_hist = f.groups[group]["m22_hist"][:,:,:,:]
+      m22_bins = f.groups[group]["m22_bins"][:,:,:,:]
+      cor_hist = f.groups[group]["cor_hist"][:,:,:,:]
+      cor_bins = f.groups[group]["cor_bins"][:,:,:,:]
 
       # Plots
       for il0 in range(0, nl0):
          for jl0r in range(0, nl0r):
             for jc3 in range(0, nc3):
-               if (np.any(cor_hist[il0,jl0r,jc3,:]>0.0)):
+               if np.any(cor_hist[il0,jl0r,jc3,:] > 0.0):
                   # Open workstation
                   wks_type = "png"
-                  wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + root + "_" + str(il0+1) + "-" + str(l0rl0_to_l0[il0,jl0r]) + "-" + str(jc3+1))
+                  wks = Ngl.open_wks(wks_type, testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + group + "_" + str(il0+1) + "-" + str(l0rl0_to_l0[il0,jl0r]) + "-" + str(jc3+1))
 
                   # Plots
                   plot = []

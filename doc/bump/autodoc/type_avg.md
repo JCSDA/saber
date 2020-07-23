@@ -2,14 +2,15 @@
 
 | Type | Name | Purpose |
 | :--: | :--: | :---------- |
-| subroutine | [avg_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L51) | allocation |
-| subroutine | [avg_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L87) | release memory |
-| subroutine | [avg_copy](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L113) | copy |
-| subroutine | [avg_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L137) | write |
-| subroutine | [avg_compute](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L165) | compute averaged statistics |
-| subroutine | [avg_compute_hyb](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L248) | compute hybrid averaged statistics |
-| subroutine | [avg_compute_deh](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L295) | compute dual-ensemble hybrid averaged statistics |
-| subroutine | [avg_copy_wgt](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L366) | averaged statistics data copy for weight definition |
-| subroutine | [avg_compute_bwavg](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L400) | compute block-averaged statistics |
-| subroutine | [avg_compute_bwavg_hyb](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L509) | compute hybrid block-averaged statistics |
-| subroutine | [avg_compute_bwavg_deh](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L596) | compute dual-ensemble hybrid block-averaged statistics |
+| subroutine | [avg%] [alloc](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L53) | allocation |
+| subroutine | [avg%] [dealloc](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L89) | release memory |
+| subroutine | [avg%] [copy](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L115) | copy |
+| subroutine | [avg%] [write](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L139) | write |
+| subroutine | [avg%] [var_filter](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L167) | filter variance |
+| subroutine | [avg%] [compute](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L297) | compute averaged statistics |
+| subroutine | [avg%] [compute_hyb](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L387) | compute hybrid averaged statistics |
+| subroutine | [avg%] [compute_deh](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L434) | compute dual-ensemble hybrid averaged statistics |
+| subroutine | [avg%] [copy_wgt](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L505) | averaged statistics data copy for weight definition |
+| subroutine | [avg%] [compute_bwavg](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L539) | compute block-averaged statistics |
+| subroutine | [avg%] [compute_bwavg_hyb](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L644) | compute hybrid block-averaged statistics |
+| subroutine | [avg%] [compute_bwavg_deh](https://github.com/JCSDA/saber/src/saber/bump/type_avg.F90#L725) | compute dual-ensemble hybrid block-averaged statistics |

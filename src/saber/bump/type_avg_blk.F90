@@ -277,32 +277,21 @@ cor_bins_id = mpl%nc_var_define_or_get(subr,grpid,'cor_bins',nc_kind_real,(/nbin
 cor_hist_id = mpl%nc_var_define_or_get(subr,grpid,'cor_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
 
 ! Write coordinates
-call mpl%ncerr(subr,nf90_put_var(grpid,disth_id,geom%disth(1:bpar%nc3(ib)),(/1/),(/bpar%nc3(ib)/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,vunit_id,geom%vunitavg))
+call mpl%ncerr(subr,nf90_put_var(grpid,disth_id,geom%disth(1:bpar%nc3(ib))))
+call mpl%ncerr(subr,nf90_put_var(ncid,vunit_id,geom%vunitavg))
 
 ! Write variables
-call mpl%ncerr(subr,nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib),(/1,1,1/), &
- & (/bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m11_bins_id,avg_blk%m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m11_hist_id,avg_blk%m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m11m11_bins_id,avg_blk%m11m11_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m11m11_hist_id,avg_blk%m11m11_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m2m2_bins_id,avg_blk%m2m2_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m2m2_hist_id,avg_blk%m2m2_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m22_bins_id,avg_blk%m22_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m22_hist_id,avg_blk%m22_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,cor_bins_id,avg_blk%cor_bins(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins+1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-call mpl%ncerr(subr,nf90_put_var(grpid,cor_hist_id,avg_blk%cor_hist(:,1:bpar%nc3(ib),1:bpar%nl0r(ib),:),(/1,1,1,1/), &
- & (/nam%avg_nbins,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib)))
+call mpl%ncerr(subr,nf90_put_var(grpid,m11_bins_id,avg_blk%m11_bins))
+call mpl%ncerr(subr,nf90_put_var(grpid,m11_hist_id,avg_blk%m11_hist))
+call mpl%ncerr(subr,nf90_put_var(grpid,m11m11_bins_id,avg_blk%m11m11_bins))
+call mpl%ncerr(subr,nf90_put_var(grpid,m11m11_hist_id,avg_blk%m11m11_hist))
+call mpl%ncerr(subr,nf90_put_var(grpid,m2m2_bins_id,avg_blk%m2m2_bins))
+call mpl%ncerr(subr,nf90_put_var(grpid,m2m2_hist_id,avg_blk%m2m2_hist))
+call mpl%ncerr(subr,nf90_put_var(grpid,m22_bins_id,avg_blk%m22_bins))
+call mpl%ncerr(subr,nf90_put_var(grpid,m22_hist_id,avg_blk%m22_hist))
+call mpl%ncerr(subr,nf90_put_var(grpid,cor_bins_id,avg_blk%cor_bins))
+call mpl%ncerr(subr,nf90_put_var(grpid,cor_hist_id,avg_blk%cor_hist))
 
 ! Close file
 call mpl%ncerr(subr,nf90_close(ncid))
@@ -428,9 +417,9 @@ do il0=1,geom%nl0
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
                   avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = sum(list_m11m11(:,jsub,isub), &
-                                                         & mask=mpl%msv%isnot(list_m11m11(:,jsub,isub)))
+ & mask=mpl%msv%isnot(list_m11m11(:,jsub,isub)))
                   avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = sum(list_m2m2(:,jsub,isub), &
-                                                       & mask=mpl%msv%isnot(list_m2m2(:,jsub,isub)))
+ & mask=mpl%msv%isnot(list_m2m2(:,jsub,isub)))
                end do
                avg_blk%m22(jc3,jl0r,il0,isub) = sum(list_m22(:,isub),mask=mpl%msv%isnot(list_m22(:,isub)))
             end do
@@ -499,18 +488,18 @@ do il0=1,geom%nl0
 
             ! Compute histograms on each task
             call histogram(mpl,samp%nc1a,list_m11,nam%avg_nbins,min_m11_tot,max_m11_tot,avg_blk%m11_bins(:,jc3,jl0r,il0), &
-          & avg_blk%m11_hist(:,jc3,jl0r,il0))
+ & avg_blk%m11_hist(:,jc3,jl0r,il0))
             list2 = pack(list_m11m11,mask=.true.)
             call histogram(mpl,n2,list2,nam%avg_nbins,min_m11m11_tot,max_m11m11_tot,avg_blk%m11m11_bins(:,jc3,jl0r,il0), &
-          & avg_blk%m11m11_hist(:,jc3,jl0r,il0))
+ & avg_blk%m11m11_hist(:,jc3,jl0r,il0))
             list2 = pack(list_m2m2,mask=.true.)
             call histogram(mpl,n2,list2,nam%avg_nbins,min_m2m2_tot,max_m2m2_tot,avg_blk%m2m2_bins(:,jc3,jl0r,il0), &
-          & avg_blk%m2m2_hist(:,jc3,jl0r,il0))
+ & avg_blk%m2m2_hist(:,jc3,jl0r,il0))
             list1 = pack(list_m22,mask=.true.)
             call histogram(mpl,n1,list1,nam%avg_nbins,min_m22_tot,max_m22_tot,avg_blk%m22_bins(:,jc3,jl0r,il0), &
-          & avg_blk%m22_hist(:,jc3,jl0r,il0))
+ & avg_blk%m22_hist(:,jc3,jl0r,il0))
             call histogram(mpl,samp%nc1a,list_cor,nam%avg_nbins,min_cor_tot,max_cor_tot,avg_blk%cor_bins(:,jc3,jl0r,il0), &
-          & avg_blk%cor_hist(:,jc3,jl0r,il0))
+ & avg_blk%cor_hist(:,jc3,jl0r,il0))
 
             ! Release memory
             deallocate(list1)
@@ -585,17 +574,13 @@ if (mpl%nproc>1) then
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
    avg_blk%m11 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_0,avg_blk%m11)
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-   avg_blk%m11m11 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2), &
-             & mask_2,avg_blk%m11m11)
+   avg_blk%m11m11 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2),mask_2,avg_blk%m11m11)
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
-   avg_blk%m2m2 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2), &
-             & mask_2,avg_blk%m2m2)
+   avg_blk%m2m2 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2),mask_2,avg_blk%m2m2)
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
-   avg_blk%m22 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub), &
-               & mask_1,avg_blk%m22)
+   avg_blk%m22 = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub),mask_1,avg_blk%m22)
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub
-   avg_blk%nc1a_cor = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0), &
-                            & mask_0,avg_blk%nc1a_cor)
+   avg_blk%nc1a_cor = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_0,avg_blk%nc1a_cor)
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
    avg_blk%cor = unpack(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_0,avg_blk%cor)
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
@@ -603,7 +588,7 @@ if (mpl%nproc>1) then
       avg_blk%m11_hist = unpack(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_3,avg_blk%m11_hist)
       offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
       avg_blk%m11m11_hist = unpack(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_3, &
-                          & avg_blk%m11m11_hist)
+ & avg_blk%m11m11_hist)
       offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
       avg_blk%m2m2_hist = unpack(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),mask_3,avg_blk%m2m2_hist)
       offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
@@ -654,15 +639,15 @@ do il0=1,geom%nl0
          end if
          if (nam%avg_nbins>0) then
             if (sum(avg_blk%m11_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m11_hist(:,jc3,jl0r,il0) = &
-          & avg_blk%m11_hist(:,jc3,jl0r,il0)/sum(avg_blk%m11_hist(:,jc3,jl0r,il0))
+ & avg_blk%m11_hist(:,jc3,jl0r,il0)/sum(avg_blk%m11_hist(:,jc3,jl0r,il0))
             if (sum(avg_blk%m11m11_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m11m11_hist(:,jc3,jl0r,il0) = &
-          & avg_blk%m11m11_hist(:,jc3,jl0r,il0)/sum(avg_blk%m11m11_hist(:,jc3,jl0r,il0))
+ & avg_blk%m11m11_hist(:,jc3,jl0r,il0)/sum(avg_blk%m11m11_hist(:,jc3,jl0r,il0))
             if (sum(avg_blk%m2m2_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m2m2_hist(:,jc3,jl0r,il0) = &
-          & avg_blk%m2m2_hist(:,jc3,jl0r,il0)/sum(avg_blk%m2m2_hist(:,jc3,jl0r,il0))
+ & avg_blk%m2m2_hist(:,jc3,jl0r,il0)/sum(avg_blk%m2m2_hist(:,jc3,jl0r,il0))
             if (sum(avg_blk%m22_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m22_hist(:,jc3,jl0r,il0) = &
-          & avg_blk%m22_hist(:,jc3,jl0r,il0)/sum(avg_blk%m22_hist(:,jc3,jl0r,il0))
+ & avg_blk%m22_hist(:,jc3,jl0r,il0)/sum(avg_blk%m22_hist(:,jc3,jl0r,il0))
             if (sum(avg_blk%cor_hist(:,jc3,jl0r,il0))>0.0) avg_blk%cor_hist(:,jc3,jl0r,il0) = &
-          & avg_blk%cor_hist(:,jc3,jl0r,il0)/sum(avg_blk%cor_hist(:,jc3,jl0r,il0))
+ & avg_blk%cor_hist(:,jc3,jl0r,il0)/sum(avg_blk%cor_hist(:,jc3,jl0r,il0))
          end if
       end do
    end do
@@ -738,7 +723,7 @@ do il0=1,geom%nl0
                ! Check generalized kurtosis
                do isub=1,avg_blk%nsub
                   gen_kurt = 3.0*mom_blk%m22(ic1d,jc3,jl0r,il0,isub)/(2.0*mom_blk%m11(ic1d,jc3,jl0r,il0,isub)**2 &
-                           & +mom_blk%m2_1(ic1d,il0,isub)*mom_blk%m2_2(ic1d,jc3,jl0,isub))
+ & +mom_blk%m2_1(ic1d,il0,isub)*mom_blk%m2_2(ic1d,jc3,jl0,isub))
                   if (gen_kurt>nam%gen_kurt_th) valid = .false.
                end do
             end if
@@ -915,17 +900,17 @@ if ((ic2a==0).or.nam%local_diag) then
 
                      ! Gaussian approximation
                      m11asysq_gau(jsub,isub) = P17*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
-                                             & +P13*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)
+ & +P13*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)
                      m2m2asy_gau(jsub,isub) = 2.0*P13*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
-                                            & +P12*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)
+ & +P12*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)
 
                      ! General case
                      m11asysq(jsub,isub) = P15*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
-                                         & +P8*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)+P9*avg_blk%m22(jc3,jl0r,il0,jsub)
+ & +P8*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)+P9*avg_blk%m22(jc3,jl0r,il0,jsub)
                      m2m2asy(jsub,isub) = 2.0*P8*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
-                                        & +P7*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)+P9*avg_blk%m22(jc3,jl0r,il0,jsub)
+ & +P7*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)+P9*avg_blk%m22(jc3,jl0r,il0,jsub)
                      m22asy(jsub) = P10*(2.0*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub)+avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)) &
-                                  & +P11*avg_blk%m22(jc3,jl0r,il0,jsub)
+ & +P11*avg_blk%m22(jc3,jl0r,il0,jsub)
                   else
                      ! Off-diagonal terms
                      m11asysq(jsub,isub) = avg_blk%m11m11(jc3,jl0r,il0,jsub,isub)
@@ -965,9 +950,9 @@ if ((ic2a==0).or.nam%local_diag) then
             else
                ! General case
                if (mpl%msv%isnot(avg_blk%m22asy(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)) &
-             & .and.mpl%msv%isnot(avg_blk%m2m2asy(jc3,jl0r,il0))) then
+ & .and.mpl%msv%isnot(avg_blk%m2m2asy(jc3,jl0r,il0))) then
                   avg_blk%m11sq(jc3,jl0r,il0) = P1*avg_blk%m22asy(jc3,jl0r,il0)+P14*avg_blk%m11asysq(jc3,jl0r,il0) &
-                                              & +P3*avg_blk%m2m2asy(jc3,jl0r,il0)
+ & +P3*avg_blk%m2m2asy(jc3,jl0r,il0)
                else
                   avg_blk%m11sq(jc3,jl0r,il0) = mpl%msv%valr
                end if
@@ -1175,7 +1160,7 @@ do il0=1,geom%nl0
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
                   avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) &
-                                                              & /avg_blk%nc1a(jc3,jl0r,il0)
+ & /avg_blk%nc1a(jc3,jl0r,il0)
                 end do
             end do
          else
@@ -1315,7 +1300,7 @@ do il0=1,geom%nl0
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
                   avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) &
-                                                                & /avg_blk%nc1a(jc3,jl0r,il0)
+ & /avg_blk%nc1a(jc3,jl0r,il0)
                 end do
             end do
          else
@@ -1365,8 +1350,8 @@ if ((ic2a==0).or.nam%local_diag) then
          do jc3=1,bpar%nc3(ib)
             if (mpl%msv%isanynot(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))) then
                avg_blk%m11lrm11(jc3,jl0r,il0) = sum(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:), &
-                                              & mask=mpl%msv%isnot(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))) &
-                                              & /real(count(mpl%msv%isnot(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))),kind_real)
+ & mask=mpl%msv%isnot(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))) &
+ & /real(count(mpl%msv%isnot(avg_blk%m11lrm11sub(jc3,jl0r,il0,:,:))),kind_real)
             else
                avg_blk%m11lrm11(jc3,jl0r,il0) = mpl%msv%valr
             end if

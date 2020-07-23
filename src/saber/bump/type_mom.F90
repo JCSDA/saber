@@ -443,10 +443,8 @@ do ib=1,bpar%nb
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                   if (samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)) then
-                     mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) &
-                                                          & /real(mom%ne/mom%nsub-1,kind_real)
-                     mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) &
-                                                          & /real(mom%ne/mom%nsub,kind_real)
+                     mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
+                     mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:)/real(mom%ne/mom%nsub,kind_real)
                   else
                      mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mpl%msv%valr
                      mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mpl%msv%valr

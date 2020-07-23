@@ -1,28 +1,29 @@
 #!/usr/bin/env python3
 
 import argparse
-import Ngl, Nio
+from netCDF4 import Dataset
+import Ngl
 import numpy as np
 import os
 
-def normality(testdata, test, mpi, omp, suffix):
+def normality(testdata, test, mpi, omp, suffix, testfig):
    # Loop over files
    first = True
    for impi in range(0, int(mpi)):
       # Open file
-      f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc")
+      f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc", "r", format="NETCDF4")
 
       # Get data
       if "ens_norm" in f.variables:
-         nloc = f.variables["ens_norm"][:].shape[0]
+         nloc = f["ens_norm"][:].shape[0]
          if first:
-            ne = f.variables["ens_norm"][:].shape[1]
+            ne = f["ens_norm"][:].shape[1]
             ens_norm = np.zeros((0, ne))
             ens_step = np.zeros((0, ne-1))
             first = False
          for iloc in range(0, nloc):
-            ens_norm = np.append(ens_norm, [f.variables["ens_norm"][iloc,:].data], axis=0)
-            ens_step = np.append(ens_step, [f.variables["ens_step"][iloc,:].data], axis=0)
+            ens_norm = np.append(ens_norm, [f["ens_norm"][iloc,:].data], axis=0)
+            ens_step = np.append(ens_step, [f["ens_step"][iloc,:].data], axis=0)
 
    # X axis
    x = Ngl.fspan(1, ne, ne)
@@ -48,11 +49,6 @@ def normality(testdata, test, mpi, omp, suffix):
    pnlres = Ngl.Resources()
    pnlres.nglFrame = False
    pnlres.nglPanelYWhiteSpacePercent = 5.0
-
-   # Make output directory
-   testfig = testdata + "/" + test + "/fig"
-   if not os.path.exists(testfig):
-      os.mkdir(testfig)
 
    # Open workstation
    wks_type = "png"

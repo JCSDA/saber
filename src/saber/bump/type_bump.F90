@@ -167,8 +167,7 @@ end subroutine bump_create
 ! Subroutine: bump_setup
 ! Purpose: setup
 !----------------------------------------------------------------------
-subroutine bump_setup(bump,f_comm,afunctionspace,afieldset, &
-                    & nobs,lonobs,latobs,lunit,msvali,msvalr)
+subroutine bump_setup(bump,f_comm,afunctionspace,afieldset,nobs,lonobs,latobs,lunit,msvali,msvalr)
 
 implicit none
 
@@ -369,7 +368,7 @@ end subroutine bump_setup
 ! Purpose: online setup (deprecated)
 !----------------------------------------------------------------------
 subroutine bump_setup_online_deprecated(bump,f_comm,nmga,nl0,nv,nts,lon,lat,area,vunit,gmask,smask,ens1_ne,ens1_nsub, &
-                                      & ens2_ne,ens2_nsub,nobs,lonobs,latobs,lunit,msvali,msvalr)
+ & ens2_ne,ens2_nsub,nobs,lonobs,latobs,lunit,msvali,msvalr)
 
 implicit none
 
@@ -496,9 +495,8 @@ if (present(smask)) then
 end if
 
 ! BUMP setup
-call bump%setup(f_comm,afunctionspace,afieldset=afieldset, &
-              & nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
-              & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
+call bump%setup(f_comm,afunctionspace,afieldset=afieldset,nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
+ & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
 
 ! Deprecation warning
 call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
@@ -619,7 +617,7 @@ if (bump%nam%new_hdiag) then
    if ((trim(bump%nam%method)=='hyb-rnd').or.(trim(bump%nam%method)=='dual-ens')) then
       if (allocated(bump%fld_uv)) then
          call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,ens2=bump%ens2, &
-       & fld_uv=bump%fld_uv)
+ & fld_uv=bump%fld_uv)
       else
          call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,ens2=bump%ens2)
       end if
@@ -837,10 +835,10 @@ do its=1,bump%nam%nts
          call bump%mpl%f_comm%allreduce(nzero,nzero_tot,fckit_mpi_sum())
          call bump%mpl%f_comm%allreduce(nmask,nmask_tot,fckit_mpi_sum())
          write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Local total / non-zero / zero / masked points: ', &
-       & bump%geom%nc0a*bump%geom%nl0,' / ',nnonzero,' / ',nzero,' / ',nmask
+ & bump%geom%nc0a*bump%geom%nl0,' / ',nnonzero,' / ',nzero,' / ',nmask
          call bump%mpl%flush
          write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Global total / non-zero / zero / masked points: ', &
-       & bump%geom%nc0*bump%geom%nl0,' / ',nnonzero_tot,' / ',nzero_tot,' / ',nmask_tot
+ & bump%geom%nc0*bump%geom%nl0,' / ',nnonzero_tot,' / ',nzero_tot,' / ',nmask_tot
          call bump%mpl%flush
       end if
 
@@ -1479,10 +1477,10 @@ integer :: its,iv
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 type(cv_type) :: cv
-print*, bump%mpl%myproc,'ik',bump%mpl%tag
+
 ! Generate random control vector
 call bump%nicas%random_cv(bump%mpl,bump%rng,bump%bpar,cv)
-print*, bump%mpl%myproc,'ik'
+
 if (bump%geom%same_grid) then
    ! Apply NICAS square-root
    call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
@@ -2110,7 +2108,7 @@ case ('cor_rh')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_rh(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
+ & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
       end do
    end do
 case ('cor_rv')
@@ -2125,7 +2123,7 @@ case ('loc_rh')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_rh(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
+ & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
       end do
    end do
 case ('loc_rv')
@@ -2140,7 +2138,7 @@ case ('D11')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D11(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_D11(ic0a,il0) = bump%cmat%blk(ib)%bump_D11(ic0a,il0)/req**2
+ & bump%cmat%blk(ib)%bump_D11(ic0a,il0) = bump%cmat%blk(ib)%bump_D11(ic0a,il0)/req**2
       end do
    end do
 case ('D22')
@@ -2149,7 +2147,7 @@ case ('D22')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D22(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_D22(ic0a,il0) = bump%cmat%blk(ib)%bump_D22(ic0a,il0)/req**2
+ & bump%cmat%blk(ib)%bump_D22(ic0a,il0) = bump%cmat%blk(ib)%bump_D22(ic0a,il0)/req**2
       end do
    end do
 case ('D33')
@@ -2161,7 +2159,7 @@ case ('D12')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D12(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_D12(ic0a,il0) = bump%cmat%blk(ib)%bump_D12(ic0a,il0)/req**2
+ & bump%cmat%blk(ib)%bump_D12(ic0a,il0) = bump%cmat%blk(ib)%bump_D12(ic0a,il0)/req**2
       end do
    end do
 case ('Dcoef')

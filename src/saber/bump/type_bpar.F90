@@ -188,7 +188,7 @@ do iv=1,nam%nv
 
             ! Blocks information
             write(bpar%blockname(ib),'(a,a,a,a,a,a,a)') trim(nam%variables(iv)),'_',trim(nam%timeslots(its)),'-', &
-          & trim(nam%variables(jv)),'_',trim(nam%timeslots(jts))
+ & trim(nam%variables(jv)),'_',trim(nam%timeslots(jts))
             bpar%b_to_v1(ib) = iv
             bpar%b_to_v2(ib) = jv
             bpar%b_to_ts1(ib) = its
@@ -274,7 +274,7 @@ do ib=1,bpar%nbe
    iv = bpar%b_to_v1(ib)
    jv = bpar%b_to_v2(ib)
    if (bpar%vbal_block(iv,jv).or.bpar%diag_block(ib).or.bpar%avg_block(ib).or.bpar%fit_block(ib).or.bpar%B_block(ib) &
-     & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib))) then
+ & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib))) then
       write(mpl%info,'(a7,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
       write(mpl%info,'(a10,a,i3)') '','Effective number of levels:    ',bpar%nl0r(ib)

@@ -461,13 +461,13 @@ do ic2a=0,samp%nc2a
                      do jc3=1,nam%nc3
                         call add(mpl,avg%blk(ic2a,ib)%cor(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%cor(jc3,jl0r,il0),cor(jc3,jl0r,il0))
                         call add(mpl,avg%blk(ic2a,ib)%nc1a_cor(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%nc1a_cor(jc3,jl0r,il0), &
-                      & nc1a_cor(jc3,jl0r,il0))
+ & nc1a_cor(jc3,jl0r,il0))
                         call add(mpl,avg%blk(ic2a,ib)%m11asysq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11asysq(jc3,jl0r,il0), &
-                      & m11asysq(jc3,jl0r,il0),bwgtsq)
+ & m11asysq(jc3,jl0r,il0),bwgtsq)
                         call add(mpl,avg%blk(ic2a,ib)%m11sq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11sq(jc3,jl0r,il0), &
-                      & m11sq(jc3,jl0r,il0),bwgtsq)
+ & m11sq(jc3,jl0r,il0),bwgtsq)
                         call add(mpl,avg%blk(ic2a,ib)%nc1a(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%nc1a(jc3,jl0r,il0), &
-                      & nc1a(jc3,jl0r,il0),bwgtsq)
+ & nc1a(jc3,jl0r,il0),bwgtsq)
                      end do
                   end do
                end do
@@ -558,9 +558,9 @@ do ic2a=0,samp%nc2a
                      ! Compute sum
                      do jc3=1,nam%nc3
                         call add(mpl,avg%blk(ic2a,ib)%m11sta(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11sta(jc3,jl0r,il0), &
-                      & m11sta(jc3,jl0r,il0),bwgtsq)
+ & m11sta(jc3,jl0r,il0),bwgtsq)
                         call add(mpl,avg%blk(ic2a,ib)%stasq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%stasq(jc3,jl0r,il0), &
-                      & stasq(jc3,jl0r,il0),bwgtsq)
+ & stasq(jc3,jl0r,il0),bwgtsq)
                      end do
                   end do
                end do
@@ -645,9 +645,9 @@ do ic2a=0,samp%nc2a
                      ! Compute sum
                      do jc3=1,nam%nc3
                         call add(mpl,avg%blk(ic2a,ib)%m11lrm11(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11lrm11(jc3,jl0r,il0), &
-                      & m11lrm11(jc3,jl0r,il0),bwgtsq)
+ & m11lrm11(jc3,jl0r,il0),bwgtsq)
                         call add(mpl,avg%blk(ic2a,ib)%m11lrm11asy(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11lrm11asy(jc3,jl0r,il0), &
-                      & m11lrm11asy(jc3,jl0r,il0),bwgtsq)
+ & m11lrm11asy(jc3,jl0r,il0),bwgtsq)
                      end do
                   end do
                end do

@@ -599,159 +599,170 @@ character(len=1024),dimension(nldwvmax) :: name_ldwv
 integer :: il,ildwv,lunit
 
 ! Namelist blocks
-namelist/general_param/datadir, &
-                     & prefix, &
-                     & model, &
-                     & verbosity, &
-                     & colorlog, &
-                     & default_seed, &
-                     & repro, &
-                     & nprocio, &
-                     & remap, &
-                     & universe_rad
-namelist/driver_param/method, &
-                    & strategy, &
-                    & new_normality, &
-                    & new_cortrack, &
-                    & new_corstats, &
-                    & new_vbal, &
-                    & load_vbal, &
-                    & write_vbal, &
-                    & new_var, &
-                    & load_var, &
-                    & write_var, &
-                    & new_mom, &
-                    & load_mom, &
-                    & write_mom, &
-                    & new_hdiag, &
-                    & write_hdiag, &
-                    & new_lct, &
-                    & write_lct, &
-                    & load_cmat, &
-                    & write_cmat, &
-                    & new_nicas, &
-                    & load_nicas, &
-                    & write_nicas, &
-                    & new_obsop, &
-                    & load_obsop, &
-                    & write_obsop, &
-                    & check_vbal, &
-                    & check_adjoints, &
-                    & check_dirac, &
-                    & check_randomization, &
-                    & check_consistency, &
-                    & check_optimality, &
-                    & check_obsop, &
-                    & check_no_obs, &
-                    & check_no_point, &
-                    & check_no_point_mask, &
-                    & check_no_point_nicas, &
-                    & check_set_param_cor, &
-                    & check_set_param_hyb, &
-                    & check_set_param_lct, &
-                    & check_get_param_stddev, &
-                    & check_get_param_cor, &
-                    & check_get_param_hyb, &
-                    & check_get_param_Dloc, &
-                    & check_get_param_lct, &
-                    & check_apply_vbal, &
-                    & check_apply_stddev, &
-                    & check_apply_nicas, &
-                    & check_apply_obsop
-namelist/model_param/nl, &
-                   & levs, &
-                   & lev2d, &
-                   & logpres, &
-                   & nv, &
-                   & variables, &
-                   & nts, &
-                   & timeslots, &
-                   & dts, &
-                   & nomask, &
-                   & wind_filename, &
-                   & wind_variables
-namelist/ens1_param/ens1_ne, &
-                  & ens1_nsub
-namelist/ens2_param/ens2_ne, &
-                  & ens2_nsub
-namelist/sampling_param/sam_write, &
-                      & sam_write_grids, &
-                      & sam_read, &
-                      & mask_type, &
-                      & mask_lu, &
-                      & mask_th, &
-                      & ncontig_th, &
-                      & mask_check, &
-                      & draw_type, &
-                      & Lcoast, &
-                      & rcoast, &
-                      & nc1, &
-                      & nc2, &
-                      & ntry, &
-                      & nrep, &
-                      & nc3, &
-                      & dc, &
-                      & nl0r, &
-                      & irmax
-namelist/diag_param/ne, &
-                  & gen_kurt_th, &
-                  & gau_approx, &
-                  & avg_nbins, &
-                  & vbal_block, &
-                  & vbal_rad, &
-                  & vbal_dlat, &
-                  & vbal_diag_auto, &
-                  & vbal_diag_reg, &
-                  & var_filter, &
-                  & var_niter, &
-                  & var_rhflt, &
-                  & local_diag, &
-                  & local_rad, &
-                  & adv_diag, &
-                  & adv_type, &
-                  & adv_rad, &
-                  & adv_niter, &
-                  & adv_rhflt, &
-                  & adv_valid
-namelist/fit_param/minim_algo, &
-                 & diag_rhflt, &
-                 & diag_rvflt, &
-                 & smoothness_penalty, &
-                 & fit_dl0, &
-                 & lct_nscales, &
-                 & lct_scale_ratio, &
-                 & lct_cor_min, &
-                 & lct_diag, &
-                 & lct_qc_th, &
-                 & lct_qc_max, &
-                 & lct_write_cor
-namelist/nicas_param/nonunit_diag, &
-                   & lsqrt, &
-                   & resol, &
-                   & nc1max, &
-                   & fast_sampling, &
-                   & subsamp, &
-                   & network, &
-                   & mpicom, &
-                   & adv_mode, &
-                   & forced_radii, &
-                   & rh, &
-                   & rv, &
-                   & pos_def_test, &
-                   & write_grids, &
-                   & ndir, &
-                   & londir, &
-                   & latdir, &
-                   & levdir, &
-                   & ivdir, &
-                   & itsdir
-namelist/obsop_param/nobs
-namelist/output_param/nldwv, &
-                    & img_ldwv, &
-                    & lon_ldwv, &
-                    & lat_ldwv, &
-                    & name_ldwv, &
-                    & diag_rhflt
+namelist/general_param/ &
+ & datadir, &
+ & prefix, &
+ & model, &
+ & verbosity, &
+ & colorlog, &
+ & default_seed, &
+ & repro, &
+ & nprocio, &
+ & remap, &
+ & universe_rad
+namelist/driver_param/ &
+ & method, &
+ & strategy, &
+ & new_normality, &
+ & new_cortrack, &
+ & new_corstats, &
+ & new_vbal, &
+ & load_vbal, &
+ & write_vbal, &
+ & new_var, &
+ & load_var, &
+ & write_var, &
+ & new_mom, &
+ & load_mom, &
+ & write_mom, &
+ & new_hdiag, &
+ & write_hdiag, &
+ & new_lct, &
+ & write_lct, &
+ & load_cmat, &
+ & write_cmat, &
+ & new_nicas, &
+ & load_nicas, &
+ & write_nicas, &
+ & new_obsop, &
+ & load_obsop, &
+ & write_obsop, &
+ & check_vbal, &
+ & check_adjoints, &
+ & check_dirac, &
+ & check_randomization, &
+ & check_consistency, &
+ & check_optimality, &
+ & check_obsop, &
+ & check_no_obs, &
+ & check_no_point, &
+ & check_no_point_mask, &
+ & check_no_point_nicas, &
+ & check_set_param_cor, &
+ & check_set_param_hyb, &
+ & check_set_param_lct, &
+ & check_get_param_stddev, &
+ & check_get_param_cor, &
+ & check_get_param_hyb, &
+ & check_get_param_Dloc, &
+ & check_get_param_lct, &
+ & check_apply_vbal, &
+ & check_apply_stddev, &
+ & check_apply_nicas, &
+ & check_apply_obsop
+namelist/model_param/ &
+ & nl, &
+ & levs, &
+ & lev2d, &
+ & logpres, &
+ & nv, &
+ & variables, &
+ & nts, &
+ & timeslots, &
+ & dts, &
+ & nomask, &
+ & wind_filename, &
+ & wind_variables
+namelist/ens1_param/ &
+ & ens1_ne, &
+ & ens1_nsub
+namelist/ens2_param/ &
+ & ens2_ne, &
+ & ens2_nsub
+namelist/sampling_param/ &
+ & sam_write, &
+ & sam_write_grids, &
+ & sam_read, &
+ & mask_type, &
+ & mask_lu, &
+ & mask_th, &
+ & ncontig_th, &
+ & mask_check, &
+ & draw_type, &
+ & Lcoast, &
+ & rcoast, &
+ & nc1, &
+ & nc2, &
+ & ntry, &
+ & nrep, &
+ & nc3, &
+ & dc, &
+ & nl0r, &
+ & irmax
+namelist/diag_param/ &
+ & ne, &
+ & gen_kurt_th, &
+ & gau_approx, &
+ & avg_nbins, &
+ & vbal_block, &
+ & vbal_rad, &
+ & vbal_dlat, &
+ & vbal_diag_auto, &
+ & vbal_diag_reg, &
+ & var_filter, &
+ & var_niter, &
+ & var_rhflt, &
+ & local_diag, &
+ & local_rad, &
+ & adv_diag, &
+ & adv_type, &
+ & adv_rad, &
+ & adv_niter, &
+ & adv_rhflt, &
+ & adv_valid
+namelist/fit_param/ &
+ & minim_algo, &
+ & diag_rhflt, &
+ & diag_rvflt, &
+ & smoothness_penalty, &
+ & fit_dl0, &
+ & lct_nscales, &
+ & lct_scale_ratio, &
+ & lct_cor_min, &
+ & lct_diag, &
+ & lct_qc_th, &
+ & lct_qc_max, &
+ & lct_write_cor
+namelist/nicas_param/ &
+ & nonunit_diag, &
+ & lsqrt, &
+ & resol, &
+ & nc1max, &
+ & fast_sampling, &
+ & subsamp, &
+ & network, &
+ & mpicom, &
+ & adv_mode, &
+ & forced_radii, &
+ & rh, &
+ & rv, &
+ & pos_def_test, &
+ & write_grids, &
+ & ndir, &
+ & londir, &
+ & latdir, &
+ & levdir, &
+ & ivdir, &
+ & itsdir
+namelist/obsop_param/ &
+ & nobs
+namelist/output_param/ &
+ & nldwv, &
+ & img_ldwv, &
+ & lon_ldwv, &
+ & lat_ldwv, &
+ & name_ldwv, &
+ & diag_rhflt
 
 if (mpl%main) then
    ! general_param default
@@ -1988,7 +1999,7 @@ if (nam%new_nicas.or.nam%load_nicas) then
    end if
    if (nam%forced_radii) then
       if (nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat) &
-    & call mpl%abort(subr,'new_hdiag, new_lct and load_cmat forbidden for forced_radii')
+ & call mpl%abort(subr,'new_hdiag, new_lct and load_cmat forbidden for forced_radii')
       if (nam%rh<0.0) call mpl%abort(subr,'rh should be non-negative')
       if (nam%rv<0.0) call mpl%abort(subr,'rv should be non-negative')
    end if
@@ -2020,9 +2031,9 @@ if (nam%new_hdiag) then
       if (.not.nam%local_diag) call mpl%abort(subr,'local_diag required for nldwv>0')
          if (.not.all(nam%img_ldwv(1:nam%nldwv)>0)) then
          if (any(nam%lon_ldwv(1:nam%nldwv)<-pi).or.any(nam%lon_ldwv(1:nam%nldwv)>pi)) &
-       & call mpl%abort(subr,'lon_ldwv should lie between -180 and 180')
+ & call mpl%abort(subr,'lon_ldwv should lie between -180 and 180')
          if (any(nam%lat_ldwv(1:nam%nldwv)<-0.5*pi).or.any(nam%lat_ldwv(1:nam%nldwv)>0.5*pi)) &
-       & call mpl%abort(subr,'lat_ldwv should lie between -90 and 90')
+ & call mpl%abort(subr,'lat_ldwv should lie between -90 and 90')
          do ildwv=1,nam%nldwv
             write(ildwvchar,'(i2.2)') ildwv
             if (trim(nam%name_ldwv(ildwv))=='') call mpl%abort(subr,'name_ldwv not specified for profile '//ildwvchar)

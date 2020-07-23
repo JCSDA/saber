@@ -219,21 +219,21 @@ else
       ivar = 0
       if (minim%lcoef) then
          coef(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
-                   & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
+ & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
          ivar = ivar+1
       else
          coef(il0) = 1.0
       end if
       if (minim%lrh) then
          fit_rh(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
-                     & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
+ & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
          ivar = ivar+1
       else
          fit_rh(il0) = 0.0
       end if
       if (minim%lrv) then
          fit_rv(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
-                     & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
+ & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
          ivar = ivar+1
       else
          fit_rv(il0) = 0.0

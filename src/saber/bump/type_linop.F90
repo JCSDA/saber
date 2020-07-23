@@ -679,11 +679,11 @@ do i_s=1,linop%n_s
    if (present(ivec)) then
       fld_arr(linop%row(i_s),ithread) = fld_arr(linop%row(i_s),ithread)+linop%Svec(i_s,ivec)*fld(linop%col(i_s))
       if (linop%col(i_s)/=linop%row(i_s)) fld_arr(linop%col(i_s),ithread) = fld_arr(linop%col(i_s),ithread) &
-                                                                          & +linop%Svec(i_s,ivec)*fld(linop%row(i_s))
+ & +linop%Svec(i_s,ivec)*fld(linop%row(i_s))
    else
       fld_arr(linop%row(i_s),ithread) = fld_arr(linop%row(i_s),ithread)+linop%S(i_s)*fld(linop%col(i_s))
       if (linop%col(i_s)/=linop%row(i_s)) fld_arr(linop%col(i_s),ithread) = fld_arr(linop%col(i_s),ithread) &
-                                                                          & +linop%S(i_s)*fld(linop%row(i_s))
+ & +linop%S(i_s)*fld(linop%row(i_s))
    end if
 end do
 !$omp end parallel do

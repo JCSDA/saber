@@ -119,7 +119,7 @@ type(io_type),intent(in) :: io       ! I/O
 
 ! Local variables
 integer :: iv,its
-character(len=1024) :: filename,variables
+character(len=1024) :: filename,grpname
 
 ! Read variance
 write(mpl%info,'(a7,a)') '','Read variance'
@@ -134,16 +134,11 @@ filename = trim(nam%prefix)//'_var'
 ! Read raw variance, fourth-order moment, filtered variance and standard-deviation
 do its=1,nam%nts
    do iv=1,nam%nv
-      write(variables,'(a,i2.2,a,i2.2)') 'm2_',iv,'_',its
-      call io%fld_read(mpl,nam,geom,filename,variables,var%m2(:,:,iv,its))
-      write(variables,'(a,i2.2,a,i2.2)') 'm4_',iv,'_',its
-      call io%fld_read(mpl,nam,geom,filename,variables,var%m4(:,:,iv,its))
-      if (nam%var_filter) then
-         write(variables,'(a,i2.2,a,i2.2)') 'm2flt_',iv,'_',its
-         call io%fld_read(mpl,nam,geom,filename,variables,var%m2flt(:,:,iv,its))
-      end if
-      write(variables,'(a,i2.2,a,i2.2)') 'm2sqrt_',iv,'_',its
-      call io%fld_read(mpl,nam,geom,filename,variables,var%m2sqrt(:,:,iv,its))
+      grpname = trim(nam%variables(iv))//'_'//trim(nam%timeslots(its))
+      call io%fld_read(mpl,nam,geom,filename,'m2',var%m2(:,:,iv,its),trim(grpname))
+      call io%fld_read(mpl,nam,geom,filename,'m4',var%m4(:,:,iv,its),trim(grpname))
+      if (nam%var_filter) call io%fld_read(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv,its),trim(grpname))
+      call io%fld_read(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv,its),trim(grpname))
    end do
 end do
 
@@ -166,7 +161,7 @@ type(io_type),intent(in) :: io       ! I/O
 
 ! Local variables
 integer :: iv,its
-character(len=1024) :: filename,variables
+character(len=1024) :: filename,grpname
 
 ! Write variance
 write(mpl%info,'(a7,a)') '','Write variance'
@@ -181,16 +176,11 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 ! Write raw variance, fourth-order moment, filtered variance and standard-deviation
 do its=1,nam%nts
    do iv=1,nam%nv
-      write(variables,'(a,i2.2,a,i2.2)') 'm2_',iv,'_',its
-      call io%fld_write(mpl,nam,geom,filename,variables,var%m2(:,:,iv,its))
-      write(variables,'(a,i2.2,a,i2.2)') 'm4_',iv,'_',its
-      call io%fld_write(mpl,nam,geom,filename,variables,var%m4(:,:,iv,its))
-      if (nam%var_filter) then
-         write(variables,'(a,i2.2,a,i2.2)') 'm2flt_',iv,'_',its
-         call io%fld_write(mpl,nam,geom,filename,variables,var%m2flt(:,:,iv,its))
-      end if
-      write(variables,'(a,i2.2,a,i2.2)') 'm2sqrt_',iv,'_',its
-      call io%fld_write(mpl,nam,geom,filename,variables,var%m2sqrt(:,:,iv,its))
+      grpname = trim(nam%variables(iv))//'_'//trim(nam%timeslots(its))
+      call io%fld_write(mpl,nam,geom,filename,'m2',var%m2(:,:,iv,its),trim(grpname))
+      call io%fld_write(mpl,nam,geom,filename,'m4',var%m4(:,:,iv,its),trim(grpname))
+      if (nam%var_filter) call io%fld_write(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv,its),trim(grpname))
+      call io%fld_write(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv,its),trim(grpname))
    end do
 end do
 
@@ -351,7 +341,7 @@ do its=1,nam%nts
          do il0=1,geom%nl0
             if (m2sqasy(il0)>0.0) then
                write(mpl%info,'(a19,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm,' km, rel. diff. = ', &
-             & (m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
+ & (m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
                call mpl%flush
             end if
          end do

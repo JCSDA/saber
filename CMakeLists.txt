@@ -43,7 +43,7 @@ add_subdirectory( doc )
 ecbuild_add_test( TARGET saber_coding_norms
                   TYPE SCRIPT
                   COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
-                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/src )
+                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR} )
 
 ## Package Config
 ecbuild_install_project( NAME ${PROJECT_NAME} )

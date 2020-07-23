@@ -200,7 +200,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Initialization
 samp%sc2 = (trim(samp%name)=='vbal').or.(trim(samp%name)=='lct') &
-         & .or.((trim(samp%name)=='hdiag').and.(nam%local_diag.or.nam%adv_diag))
+ & .or.((trim(samp%name)=='hdiag').and.(nam%local_diag.or.nam%adv_diag))
 samp%sc3 = (trim(samp%name)=='hdiag').or.(trim(samp%name)=='lct')
 
 ! Allocation
@@ -628,9 +628,9 @@ if (trim(samp%name)=='vbal') then
 end if
 
 ! Define variables
-lon_c0a_id = mpl%nc_var_define_or_get(subr,grpid,'lon_c0a',nc_kind_real,(/nc0a_id/))
-lat_c0a_id = mpl%nc_var_define_or_get(subr,grpid,'lat_c0a',nc_kind_real,(/nc0a_id/))
-gmask_c0a_id = mpl%nc_var_define_or_get(subr,grpid,'gmask_c0a',nf90_int,(/nc0a_id,nl0_id/))
+lon_c0a_id = mpl%nc_var_define_or_get(subr,ncid,'lon_c0a',nc_kind_real,(/nc0a_id/))
+lat_c0a_id = mpl%nc_var_define_or_get(subr,ncid,'lat_c0a',nc_kind_real,(/nc0a_id/))
+gmask_c0a_id = mpl%nc_var_define_or_get(subr,ncid,'gmask_c0a',nf90_int,(/nc0a_id,nl0_id/))
 if (samp%sc3) then
    lon_id = mpl%nc_var_define_or_get(subr,grpid,'lon',nc_kind_real,(/nc1a_id,nc3_id,nl0_id/))
    lat_id = mpl%nc_var_define_or_get(subr,grpid,'lat',nc_kind_real,(/nc1a_id,nc3_id,nl0_id/))
@@ -735,9 +735,9 @@ if (trim(samp%name)=='vbal') then
 end if
 
 ! Write variables
-call mpl%ncerr(subr,nf90_put_var(grpid,lon_c0a_id,geom%lon_c0a*rad2deg))
-call mpl%ncerr(subr,nf90_put_var(grpid,lat_c0a_id,geom%lat_c0a*rad2deg))
-call mpl%ncerr(subr,nf90_put_var(grpid,gmask_c0a_id,igmask_c0a))
+call mpl%ncerr(subr,nf90_put_var(ncid,lon_c0a_id,geom%lon_c0a*rad2deg))
+call mpl%ncerr(subr,nf90_put_var(ncid,lat_c0a_id,geom%lat_c0a*rad2deg))
+call mpl%ncerr(subr,nf90_put_var(ncid,gmask_c0a_id,igmask_c0a))
 if (samp%sc3) then
    call mpl%ncerr(subr,nf90_put_var(grpid,lon_id,lon))
    call mpl%ncerr(subr,nf90_put_var(grpid,lat_id,lat))
@@ -822,7 +822,7 @@ if (nam%nldwv>0) then
    do ildwv=1,nam%nldwv
       ! Get index from lon/lat
       call geom%index_from_lonlat(mpl,nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),0,samp%ldwv_to_proc(ildwv),samp%ldwv_to_c0a(ildwv), &
-    & valid)
+ & valid)
       if (valid) then
          if (samp%ldwv_to_proc(ildwv)==mpl%myproc) then
             ldwv_to_lon(ildwv) = geom%lon_c0a(samp%ldwv_to_c0a(ildwv))
@@ -839,13 +839,13 @@ if (nam%nldwv>0) then
       ! Check redundancy
       do jldwv=1,ildwv-1
          if (eq(ldwv_to_lon(ildwv),ldwv_to_lon(jldwv)).and.eq(ldwv_to_lat(ildwv),ldwv_to_lat(jldwv))) &
-       & call mpl%abort(subr,'profiles'//trim(nam%name_ldwv(ildwv))//' and '//trim(nam%name_ldwv(jldwv))// &
-       & 'are located grid point')
+ & call mpl%abort(subr,'profiles'//trim(nam%name_ldwv(ildwv))//' and '//trim(nam%name_ldwv(jldwv))// &
+ & 'are located grid point')
       end do
 
       ! Print results
       write(mpl%info,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
-    & ldwv_to_lon(ildwv)*rad2deg,' / ',ldwv_to_lat(ildwv)*rad2deg
+ & ldwv_to_lon(ildwv)*rad2deg,' / ',ldwv_to_lat(ildwv)*rad2deg
       call mpl%flush
    end do
 
@@ -1089,7 +1089,7 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
       ! Check standard-deviation value
       do iv=1,nam%nv
          write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
-       & //' bound for standard-deviation'
+ & //' bound for standard-deviation'
          call mpl%flush
          do its=1,nam%nts
             if (trim(nam%mask_lu(iv))=='lower') then
@@ -1109,7 +1109,7 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
    ! Check vertically contiguous points
    if (nam%ncontig_th>0) then
       write(mpl%info,'(a10,a,i3,a)') '','Mask restricted with at least ',min(nam%ncontig_th,geom%nl0), &
-   &  ' vertically contiguous points'
+ &  ' vertically contiguous points'
       call mpl%flush
       do ic0a=1,geom%nc0a
          ncontig = 0
@@ -1507,7 +1507,7 @@ do ic1a=1,samp%nc1a
 
          ! Check mask boundaries
          if (valid.and.nam%mask_check) call geom%check_arc(mpl,il0,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),geom%lon_c0u(jc0u), &
-       & geom%lat_c0u(jc0u),valid)
+ & geom%lat_c0u(jc0u),valid)
 
          ! Copy validity
          samp%smask_c1ac3(ic1a,jc3,il0) = valid
@@ -1863,7 +1863,7 @@ if ((trim(samp%name)=='hdiag').and.nam%adv_diag) then
          end do
          write(samp%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
          call samp%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0),samp%nc1a, &
-       & lon_c1a,lat_c1a,samp%smask_c1a(:,il0),10)
+ & lon_c1a,lat_c1a,samp%smask_c1a(:,il0),10)
       end do
    end do
 

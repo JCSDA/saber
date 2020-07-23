@@ -160,7 +160,7 @@ end subroutine io_fld_read
 ! Subroutine: io_fld_write
 ! Purpose: write field
 !----------------------------------------------------------------------
-subroutine io_fld_write(io,mpl,nam,geom,filename,variable,fld,groupname)
+subroutine io_fld_write(io,mpl,nam,geom,filename,variable,fld,groupname,subgroupname)
 
 implicit none
 
@@ -173,10 +173,11 @@ character(len=*),intent(in) :: filename               ! File name
 character(len=*),intent(in) :: variable               ! Variable name
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
 character(len=*),intent(in),optional :: groupname     ! Group name
+character(len=*),intent(in),optional :: subgroupname  ! Subgroup name
 
 ! Local variables
 integer :: ic0a,il0,info,color
-integer :: ncid,grpid,nc0_id,nl0_id,fld_id,lon_id,lat_id
+integer :: ncid,grpid,subgrpid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)
 character(len=1024) :: cname
@@ -222,8 +223,15 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    ! Define group
    if (present(groupname)) then
       grpid = mpl%nc_group_define_or_get(subr,ncid,trim(groupname))
+
+      ! Define sub-group
+      if (present(subgroupname)) then
+         subgrpid = mpl%nc_group_define_or_get(subr,grpid,trim(subgroupname))
+      else
+         subgrpid = grpid
+      end if
    else
-      grpid = ncid
+      subgrpid = ncid
    end if
 
    ! Define dimensions
@@ -235,7 +243,7 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    lat_id = mpl%nc_var_define_or_get(subr,ncid,'lat',nc_kind_real,(/nc0_id/),'degrees_east')
 
    ! Define variable
-   fld_id = mpl%nc_var_define_or_get(subr,grpid,trim(variable),nc_kind_real,(/nc0_id,nl0_id/))
+   fld_id = mpl%nc_var_define_or_get(subr,subgrpid,trim(variable),nc_kind_real,(/nc0_id,nl0_id/))
 
    ! Convert to degrees
    lon_c0io = lon_c0io*rad2deg
@@ -246,7 +254,7 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
 
    ! Write variable
-   call mpl%ncerr(subr,nf90_put_var(grpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
+   call mpl%ncerr(subr,nf90_put_var(subgrpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))
@@ -259,9 +267,6 @@ if (io%procio_to_proc(1)==mpl%myproc) then
 
    ! Write namelist parameters
    call nam%write(mpl,ncid)
-
-   ! Define attribute
-   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'_FillValue',mpl%msv%valr))
 
    ! Close file
    call mpl%ncerr(subr,nf90_close(ncid))

@@ -211,17 +211,17 @@ do iproc=1,mpl%nproc
 
       ! Check parameters
       if (mpicom/=nam%mpicom) &
-    & call mpl%abort(subr,'different numbers of communication steps between current execution and NICAS file')
+ & call mpl%abort(subr,'different numbers of communication steps between current execution and NICAS file')
       if (((lsqrt==0).and.nam%lsqrt).or.((lsqrt==1).and.(.not.nam%lsqrt))) &
-    & call mpl%abort(subr,'different square-root flags between current execution and NICAS file')
+ & call mpl%abort(subr,'different square-root flags between current execution and NICAS file')
       if (grid_hash/=geom%proc_to_grid_hash(iproc)) &
-    & call mpl%abort(subr,'different grids between current execution and NICAS file')
+ & call mpl%abort(subr,'different grids between current execution and NICAS file')
 
       if (iproc==iprocio) then
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
-               ! Define group
-               grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+               ! Get group
+               call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(bpar%blockname(ib)),grpid))
 
                ! Read data
                call nicas%blk(ib)%read(mpl,nam,geom,bpar,grpid)
@@ -253,8 +253,8 @@ do iproc=1,mpl%nproc
 
       do ib=1,bpar%nbe
          if (bpar%B_block(ib)) then
-            ! Define group
-            grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+            ! Get group
+            call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(bpar%blockname(ib)),grpid))
 
             ! Receive data from iprocio
             call nicas%blk(ib)%receive(mpl,nam,geom,bpar,iprocio,mpl%tag+(ib-1)*nicas_tag)
@@ -783,8 +783,7 @@ case ('common_univariate')
          !$omp parallel do schedule(static) private(il0,ic0a)
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
-                                                                & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+               if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
             end do
          end do
          !$omp end parallel do
@@ -799,7 +798,7 @@ case ('common_univariate')
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
                if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
-                                                                & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
             end do
          end do
          !$omp end parallel do
@@ -852,8 +851,7 @@ case ('common_weighted')
          !$omp parallel do schedule(static) private(il0,ic0a)
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
-               if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
-                                                                & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+               if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
             end do
          end do
          !$omp end parallel do
@@ -867,7 +865,7 @@ case ('common_weighted')
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
                if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
-                                                                & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
             end do
          end do
          !$omp end parallel do
@@ -904,8 +902,7 @@ case ('specific_univariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
-                                                                    & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
+                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)*sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -920,7 +917,7 @@ case ('specific_univariate')
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
                   if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
-                                                                    & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1061,7 +1058,7 @@ case ('common_univariate')
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
                   if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
-                                                                   & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1122,7 +1119,7 @@ case ('common_weighted')
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
                   if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
-                                                                   & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1164,8 +1161,7 @@ case ('specific_univariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
-                                                                       & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
+                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)*sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1187,8 +1183,7 @@ case ('specific_multivariate')
             !$omp parallel do schedule(static) private(il0,ic0a)
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its) &
-                                                                    & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
+                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)*sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1286,7 +1281,7 @@ case ('common_univariate')
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
                   if (geom%gmask_c0a(ic0a,il0)) fld_4d(ic0a,il0,iv) = fld_4d(ic0a,il0,iv) &
-                                                                   & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1356,7 +1351,7 @@ case ('common_weighted')
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
                   if (geom%gmask_c0a(ic0a,il0)) fld_4d_tmp(ic0a,il0,iv) = fld_4d_tmp(ic0a,il0,iv) &
-                                                                       & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1386,7 +1381,7 @@ case ('specific_univariate')
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
                   if (geom%gmask_c0a(ic0a,il0)) fld_5d(ic0a,il0,iv,its) = fld_5d(ic0a,il0,iv,its) &
-                                                                       & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1415,7 +1410,7 @@ case ('specific_multivariate')
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
                   if (geom%gmask_c0a(ic0a,il0)) fld_5d(ic0a,il0,iv,its) = fld_5d(ic0a,il0,iv,its) &
-                                                                       & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
+ & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
                end do
             end do
             !$omp end parallel do
@@ -1502,7 +1497,7 @@ do ie=1,ne
          do il0=1,geom%nl0
             do ic0a=1,geom%nc0a
                if (geom%gmask_c0a(ic0a,il0)) ens%mem(ie)%fld(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its) &
-                                                                             & /std(ic0a,il0,iv,its)
+ & /std(ic0a,il0,iv,its)
             end do
          end do
       end do
@@ -1716,7 +1711,7 @@ do its=1,nam%nts
    do iv=1,nam%nv
       call io%fld_write(mpl,nam,geom,filename,'nicas',fld(:,:,iv,its),trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)))
       if (ens%allocated.and.(trim(nam%method)/='cor')) call io%fld_write(mpl,nam,geom,filename, &
-       & 'Bens',fld_bens(:,:,iv,its),trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)))
+ & 'Bens',fld_bens(:,:,iv,its),trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)))
    end do
 end do
 
@@ -1965,12 +1960,12 @@ do irad=1,nrad
    call mpl%flush
    if (rh_diag(irad)>0.0) then
       write(mpl%info,'(a10,a,f10.2,a,f10.2,a,f5.3,a)') '','Diagnostic for rh: ',rh*rad(irad)*reqkm,' ~> ',rh_diag(irad)*reqkm, &
-    & ' (',rh*rad(irad)/rh_diag(irad),')'
+ & ' (',rh*rad(irad)/rh_diag(irad),')'
       call mpl%flush
    end if
    if (rv_diag(irad)>0.0) then
       write(mpl%info,'(a10,a,f10.2,a,f10.2,a,f5.3,a)') '','Diagnostic for rv: ',rv*rad(irad),' ~> ',rv_diag(irad), &
-    & ' (',rv*rad(irad)/rv_diag(irad),')'
+ & ' (',rv*rad(irad)/rv_diag(irad),')'
       call mpl%flush
    end if
 end do
@@ -2153,17 +2148,6 @@ do ifac=-nfac_opt,nfac_opt
    write(mpl%info,'(a7,a,f4.2,a,e15.8)') '','Factor ',fac(ifac),', MSE: ',sum(mse(:,ifac))/real(ntest,kind_real)
    call mpl%flush
 end do
-
-if (mpl%main) then
-   ! Best fit
-   do ib=1,bpar%nbe
-      if (bpar%diag_block(ib)) then
-         call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,loc_opt%blk(0,ib)%distv, &
-       & loc_opt%blk(0,ib)%coef_ens,loc_opt%blk(0,ib)%fit_rh,loc_opt%blk(0,ib)%fit_rv,loc_opt%blk(0,ib)%fit)
-         call loc_opt%blk(0,ib)%write(mpl,nam,geom,bpar,trim(nam%prefix)//'_loc_opt')
-      end if
-   end do
-end if
 
 ! Reset namelist variables
 nam%method = method

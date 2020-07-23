@@ -35,7 +35,7 @@ end interface
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
-        & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
+ & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
 
@@ -1033,7 +1033,7 @@ if (histmax>histmin) then
       end if
    end do
    if (abs(sum(hist)-real(count(mpl%msv%isnot(list)),kind_real))>0.5) &
-    & call mpl%abort(subr,'histogram sum is not equal to the number of valid elements')
+ & call mpl%abort(subr,'histogram sum is not equal to the number of valid elements')
 else
    bins = mpl%msv%valr
    hist = 0.0

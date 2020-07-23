@@ -629,7 +629,7 @@ call mpl%f_comm%allgather(count(geom%myuniverse),proc_to_universe_size)
 call mpl%flush
 do iproc=1,mpl%nproc
    write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Task ',iproc,': ',100.0*real(proc_to_universe_size(iproc),kind_real) &
-    & /real(mpl%nproc,kind_real),'%'
+ & /real(mpl%nproc,kind_real),'%'
    call mpl%flush
 end do
 
@@ -1200,7 +1200,7 @@ call mpl%flush
 same_mask = .true.
 do il0=2,geom%nl0
    same_mask = same_mask.and.(all((geom%gmask_c0a(:,il0).and.geom%gmask_c0a(:,1)) &
-             & .or.(.not.geom%gmask_c0a(:,il0).and..not.geom%gmask_c0a(:,1))))
+ & .or.(.not.geom%gmask_c0a(:,il0).and..not.geom%gmask_c0a(:,1))))
 end do
 if (same_mask) then
    diff_mask = 0
@@ -1265,7 +1265,7 @@ if ((trim(nam%draw_type)=='random_coast').or.(nam%adv_diag)) then
          ! Find nearest neighbors
          do ic0u=1,geom%nc0u
             if (geom%gmask_c0u(ic0u,il0i)) call tree%find_nearest_neighbors(geom%lon_c0u(ic0u),geom%lat_c0u(ic0u),1,nn_index, &
-          & geom%mdist_c0u(ic0u,il0i))
+ & geom%mdist_c0u(ic0u,il0i))
          end do
 
          ! Release memory

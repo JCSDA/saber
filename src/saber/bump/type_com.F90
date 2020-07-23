@@ -561,7 +561,7 @@ if (mpl%main) then
          do icount=1,com_in(iproc)%jhalocounts(jproc)
             ! Local index of points received on JPROC from IPROC
             com_in(jproc)%excl(com_in(jproc)%jexcldispls(iproc)+icount) = &
-          & com_in(iproc)%ext_to_red(com_in(iproc)%halo(com_in(iproc)%jhalodispls(jproc)+icount))
+ & com_in(iproc)%ext_to_red(com_in(iproc)%halo(com_in(iproc)%jhalodispls(jproc)+icount))
          end do
       end do
    end do
@@ -1241,7 +1241,7 @@ if (lnosum) then
             if (mpl%msv%isnot(rbuf((iexcl-1)*nl+il))) then
                ! Check that values are similar
                if (vec_red(com%excl(iexcl),il)/=rbuf((iexcl-1)*nl+il)) &
-            &  call mpl%abort(subr,'both redundant values are different')
+ &  call mpl%abort(subr,'both redundant values are different')
             end if
          else
             ! Copy value
@@ -1467,7 +1467,7 @@ if (lnosum) then
             if (mpl%msv%isnot(rbuf((iexcl-1)*nl+il))) then
                ! Check that values are similar
                if (.not.eq(vec_red(com%excl(iexcl),il),rbuf((iexcl-1)*nl+il))) &
-            &  call mpl%abort(subr,'both redundant values are different')
+ &  call mpl%abort(subr,'both redundant values are different')
             end if
          else
             ! Copy value
@@ -1744,9 +1744,9 @@ else
          ithread = 1
       !$ ithread = omp_get_thread_num()+1
          if (trim(lop)=='and') vec_red_arr(com%excl(iexcl),il,ithread) = vec_red_arr(com%excl(iexcl),il,ithread) &
-                                                                       & .and.rbuf((iexcl-1)*nl+il)
+ & .and.rbuf((iexcl-1)*nl+il)
          if (trim(lop)=='or') vec_red_arr(com%excl(iexcl),il,ithread) = vec_red_arr(com%excl(iexcl),il,ithread) &
-                                                                      & .or.rbuf((iexcl-1)*nl+il)
+ & .or.rbuf((iexcl-1)*nl+il)
       end do
    end do
    !$omp end parallel do

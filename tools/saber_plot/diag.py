@@ -1,58 +1,57 @@
 #!/usr/bin/env python3
 
 import argparse
-import Ngl, Nio
+from netCDF4 import Dataset
+import Ngl
 import numpy as np
 import numpy.ma as ma
 import os
 
-def diag(testdata, test, mpi, omp, suffix):
+def diag(testdata, test, mpi, omp, suffix, testfig):
    # Open file
-   f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
+   f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
-   # Make output directory
-   testfig = testdata + "/" + test + "/fig"
-   if not os.path.exists(testfig):
-      os.mkdir(testfig)
-
-   # Loop over variables to get roots
-   root = []
-   for var in f.variables:
-      if var.find("cor_")==0 or var.find("loc_")==0:
-         # Correlation of localization
-         var_root = var.replace("_coef_ens", "").replace("_coef_sta", "").replace("_fit_rh", "").replace("_fit_rv", "").replace("_l0rl0_to_l0", "").replace("_raw", "").replace("_fit", "").replace("_valid", "").replace("_zs", "")
-
-         if not var_root in root:
-            root.append(var_root)
+   # Get _FillValue
+   _FillValue = f.__dict__["_FillValue"]
 
    # Get vertical unit
-   vunit = f.variables["vunit"][:]
+   vunit = f["vunit"][:]
 
    # Get number of levels
    nl0 = vunit.shape[0]
 
+   # Profiles only
+   if nl0 == 1:
+      return
+
+   # Number of subgroups
+   ngr = 0
+   for group in f.groups:
+      for subgroup in f.groups[group].groups:
+         ngr += 1
+
    # Initialize arrays
-   if (len(root)>1):
-      colors = Ngl.fspan(2, 189, len(root)).astype(int)
+   if ngr > 1:
+      colors = Ngl.fspan(2, 189, ngr).astype(int)
    else:
-      colors = np.full(len(root), 2)
+      colors = np.full(ngr, 2)
    coef_ens = np.zeros((0, nl0))
    fit_rh = np.zeros((0, nl0))
    fit_rv = np.zeros((0, nl0))
-   _FillValue = f.variables[root[0] + "_coef_ens"].attributes["_FillValue"]
    empty_vector = np.full((1, nl0), _FillValue)
 
    # Get data
-   for var_root in root:
-      coef_ens = np.append(coef_ens, [f.variables[var_root + "_coef_ens"][:]], axis=0)
-      if var_root + "_fit_rh" in f.variables:
-         fit_rh = np.append(fit_rh, [f.variables[var_root + "_fit_rh"][:]], axis=0)
-      else:
-         fit_rh = np.append(fit_rh, empty_vector, axis=0)
-      if var_root + "_fit_rv" in f.variables:
-         fit_rv = np.append(fit_rv, [f.variables[var_root + "_fit_rv"][:]], axis=0)
-      else:
-         fit_rv = np.append(fit_rv, empty_vector, axis=0)
+   for group in f.groups:
+      for subgroup in f.groups[group].groups:
+         coef_ens = np.append(coef_ens, [f.groups[group].groups[subgroup]["coef_ens"][:]], axis=0)
+         if "fit_rh" in f.groups[group].groups[subgroup].variables:
+            fit_rh = np.append(fit_rh, [f.groups[group].groups[subgroup]["fit_rh"][:]], axis=0)
+         else:
+           fit_rh = np.append(fit_rh, empty_vector, axis=0)
+         if "fit_rv" in f.groups[group].groups[subgroup].variables:
+            fit_rv = np.append(fit_rv, [f.groups[group].groups[subgroup]["fit_rv"][:]], axis=0)
+         else:
+            fit_rv = np.append(fit_rv, empty_vector, axis=0)
 
    # XY resources
    xyres = Ngl.Resources()
@@ -100,19 +99,20 @@ def diag(testdata, test, mpi, omp, suffix):
 
    # Legend
    dx = 0.04
-   xleg = np.full(len(root), 0.78)
-   if (len(root)>1):
-     yleg = Ngl.fspan(0.62, 0.42, len(root))
+   xleg = np.full(ngr, 0.78)
+   if ngr > 1:
+     yleg = Ngl.fspan(0.62, 0.42, ngr)
    else:
-     yleg = np.full(len(root), 0.62)
+     yleg = np.full(ngr, 0.62)
    xtxt = xleg+dx+0.015
    ytxt = yleg
    i = 0
-   for var_root in root:
-      lnres.gsLineColor = colors[i]
-      Ngl.polyline_ndc(wks, [xleg[i], xleg[i]+dx], [yleg[i],yleg[i]], lnres)
-      Ngl.text_ndc(wks, var_root, xtxt[i], ytxt[i], txres)
-      i = i+1
+   for group in f.groups:
+      for subgroup in f.groups[group].groups:
+         lnres.gsLineColor = colors[i]
+         Ngl.polyline_ndc(wks, [xleg[i], xleg[i]+dx], [yleg[i],yleg[i]], lnres)
+         Ngl.text_ndc(wks, group + " / " + subgroup, xtxt[i], ytxt[i], txres)
+         i = i+1
 
    # Panel
    Ngl.panel(wks, plot, [1, 3], pnlres)

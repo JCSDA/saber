@@ -217,14 +217,12 @@ end if
 
 ! Write coordinates
 call mpl%ncerr(subr,nf90_put_var(grpid,disth_id,geom%disth(1:bpar%nc3(ib))))
-call mpl%ncerr(subr,nf90_put_var(ncid,vunit_id,geom%vunitavg,(/1/),(/geom%nl0/)))
+call mpl%ncerr(subr,nf90_put_var(ncid,vunit_id,geom%vunitavg))
 
 ! Write variables
 if (mpl%msv%isanynot(diag_blk%raw)) then
-   call mpl%ncerr(subr,nf90_put_var(subgrpid,raw_id,diag_blk%raw(1:bpar%nc3(ib),1:bpar%nl0r(ib),:), &
- & (/1,1,1/),(/bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
-   call mpl%ncerr(subr,nf90_put_var(subgrpid,valid_id,diag_blk%valid(1:bpar%nc3(ib),1:bpar%nl0r(ib),:), &
- & (/1,1,1/),(/bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+   call mpl%ncerr(subr,nf90_put_var(subgrpid,raw_id,diag_blk%raw))
+   call mpl%ncerr(subr,nf90_put_var(subgrpid,valid_id,diag_blk%valid))
    if (bpar%nl0rmax/=geom%nl0) then
       do il0=1,geom%nl0
          do jl0r=1,bpar%nl0rmax
@@ -233,15 +231,12 @@ if (mpl%msv%isanynot(diag_blk%raw)) then
          end do
       end do
    end if
-   call mpl%ncerr(subr,nf90_put_var(subgrpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib),(/1,1/), &
- & (/bpar%nl0r(ib),geom%nl0/)))
+   call mpl%ncerr(subr,nf90_put_var(subgrpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib)))
 end if
-if (mpl%msv%isanynot(diag_blk%coef_ens)) call mpl%ncerr(subr,nf90_put_var(subgrpid,coef_ens_id,diag_blk%coef_ens,(/1/), &
- & (/geom%nl0/)))
+if (mpl%msv%isanynot(diag_blk%coef_ens)) call mpl%ncerr(subr,nf90_put_var(subgrpid,coef_ens_id,diag_blk%coef_ens))
 if (mpl%msv%isnot(diag_blk%coef_sta)) call mpl%ncerr(subr,nf90_put_var(subgrpid,coef_sta_id,diag_blk%coef_sta))
 if ((trim(nam%minim_algo)/='none').and.(mpl%msv%isanynot(diag_blk%fit))) then
-   call mpl%ncerr(subr,nf90_put_var(subgrpid,fit_id,diag_blk%fit(1:bpar%nc3(ib),1:bpar%nl0r(ib),:), &
- & (/1,1,1/),(/bpar%nc3(ib),bpar%nl0r(ib),geom%nl0/)))
+   call mpl%ncerr(subr,nf90_put_var(subgrpid,fit_id,diag_blk%fit))
    if (bpar%nl0rmax/=geom%nl0) then
       do il0=1,geom%nl0
          do jl0r=1,bpar%nl0rmax
@@ -250,8 +245,8 @@ if ((trim(nam%minim_algo)/='none').and.(mpl%msv%isanynot(diag_blk%fit))) then
           end do
         end do
     end if
-    call mpl%ncerr(subr,nf90_put_var(subgrpid,fit_rh_id,diag_blk%fit_rh,(/1/),(/geom%nl0/)))
-    call mpl%ncerr(subr,nf90_put_var(subgrpid,fit_rv_id,diag_blk%fit_rv,(/1/),(/geom%nl0/)))
+    call mpl%ncerr(subr,nf90_put_var(subgrpid,fit_rh_id,diag_blk%fit_rh))
+    call mpl%ncerr(subr,nf90_put_var(subgrpid,fit_rv_id,diag_blk%fit_rv))
 end if
 
 ! Close file
@@ -407,7 +402,7 @@ if (valid) then
 
       ! Compute fit
       call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
-    & diag_blk%coef_ens,fit_rh,fit_rv,fit)
+ & diag_blk%coef_ens,fit_rh,fit_rv,fit)
 
       ! Pack
       fit_pack = pack(fit,mask=.true.)
@@ -547,17 +542,17 @@ if (valid) then
          ivar = 0
          if (lcoef) then
             diag_blk%coef_ens(il0) = minim%rinf(il0)*minim%x(ivar*minim%nl1+minim%il1inf(il0)) &
-                                   & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
+ & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
             ivar = ivar+1
          end if
          if (lrh) then
             diag_blk%fit_rh(il0) = minim%rinf(il0)*minim%x(ivar*minim%nl1+minim%il1inf(il0)) &
-                                 & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
+ & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
             ivar = ivar+1
          end if
          if (lrv) then
             diag_blk%fit_rv(il0) = minim%rinf(il0)*minim%x(ivar*minim%nl1+minim%il1inf(il0)) &
-                                 & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
+ & +minim%rsup(il0)*minim%x(ivar*minim%nl1+minim%il1sup(il0))
             ivar = ivar+1
          end if
       end do
@@ -677,7 +672,7 @@ do il0=1,geom%nl0
       jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
       do jc3=1,bpar%nc3(ib)
          if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0)) &
-       & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jl0r,il0))) then
+ & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jl0r,il0))) then
             wgt = geom%disth(jc3)*diag_blk%distv(jl0,il0)/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real)
             num = num+wgt*(1.0-avg_blk%m11asysq(jc3,jl0r,il0)/avg_blk%m11sq(jc3,jl0r,il0))*avg_blk%m11sta(jc3,jl0r,il0)
             den = den+wgt*(avg_blk%stasq(jc3,jl0r,il0)-avg_blk%m11sta(jc3,jl0r,il0)**2/avg_blk%m11sq(jc3,jl0r,il0))
@@ -694,10 +689,10 @@ if ((num>0.0).and.(den>0.0)) then
       do jl0r=1,bpar%nl0r(ib)
          do jc3=1,bpar%nc3(ib)
             if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(diag_blk%coef_sta) &
-          & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0))) then
+ & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0))) then
                ! Compute localization
                diag_blk%raw(jc3,jl0r,il0) = (avg_blk%m11asysq(jc3,jl0r,il0)-diag_blk%coef_sta &
-                                          & *avg_blk%m11sta(jc3,jl0r,il0))/avg_blk%m11sq(jc3,jl0r,il0)
+ & *avg_blk%m11sta(jc3,jl0r,il0))/avg_blk%m11sq(jc3,jl0r,il0)
                diag_blk%valid(jc3,jl0r,il0) = avg_blk%nc1a(jc3,jl0r,il0)
 
                ! Lower bound
@@ -759,12 +754,12 @@ do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
          if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0)) &
-       & .and.mpl%msv%isnot(avg_blk%m11lrm11asy(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11lrm11(jc3,jl0r,il0)) &
-       & .and.mpl%msv%isnot(avg_lr_blk%m11sq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11lrm11asy(jc3,jl0r,il0))) then
+ & .and.mpl%msv%isnot(avg_blk%m11lrm11asy(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11lrm11(jc3,jl0r,il0)) &
+ & .and.mpl%msv%isnot(avg_lr_blk%m11sq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11lrm11asy(jc3,jl0r,il0))) then
             num(jc3) = avg_blk%m11asysq(jc3,jl0r,il0)*avg_lr_blk%m11sq(jc3,jl0r,il0) &
-                    & -avg_blk%m11lrm11asy(jc3,jl0r,il0)*avg_blk%m11lrm11(jc3,jl0r,il0)
+ & -avg_blk%m11lrm11asy(jc3,jl0r,il0)*avg_blk%m11lrm11(jc3,jl0r,il0)
             num_lr(jc3) = avg_blk%m11lrm11asy(jc3,jl0r,il0)*avg_blk%m11sq(jc3,jl0r,il0) &
-                       & -avg_blk%m11asysq(jc3,jl0r,il0)*avg_blk%m11lrm11(jc3,jl0r,il0)
+ & -avg_blk%m11asysq(jc3,jl0r,il0)*avg_blk%m11lrm11(jc3,jl0r,il0)
             den(jc3) = avg_blk%m11sq(jc3,jl0r,il0)*avg_lr_blk%m11sq(jc3,jl0r,il0)-avg_blk%m11lrm11(jc3,jl0r,il0)**2
             if ((num(jc3)>0.0).and.(den(jc3)>0.0)) then
                ! Compute localization

@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
 import argparse
-import Ngl, Nio
+from netCDF4 import Dataset
+import Ngl
 import numpy as np
 import os
 
-def corstats(testdata, test, mpi, omp, suffix):
+def corstats(testdata, test, mpi, omp, suffix, testfig):
    # Open file
-   f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
+   f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
    # Get correlation maximum statistics
-   cor_max_avg = f.variables["cor_max_avg"][:,:,:]
-   cor_max_std = f.variables["cor_max_std"][:,:,:]
+   cor_max_avg = f["cor_max_avg"][:,:,:]
+   cor_max_std = f["cor_max_std"][:,:,:]
 
    # Get number of levels
    nl0 = cor_max_avg.shape[2]
@@ -23,13 +24,13 @@ def corstats(testdata, test, mpi, omp, suffix):
    nts = cor_max_avg.shape[0]
 
    # Get levels
-   levs = f.attributes["nam_levs"].split(":")
+   levs = f.__dict__["nam_levs"].split(":")
 
    # Get variables
-   variables = f.attributes["nam_variables"].split(":")
+   variables = f.__dict__["nam_variables"].split(":")
 
    # Get timeslots
-   timeslots = f.attributes["nam_timeslots"].split(":")
+   timeslots = f.__dict__["nam_timeslots"].split(":")
    x = Ngl.fspan(1, nts, nts)
 
    # XY resources
@@ -65,11 +66,6 @@ def corstats(testdata, test, mpi, omp, suffix):
    pnlres.nglFrame = False
    pnlres.nglPanelXWhiteSpacePercent = 5.0
    pnlres.nglPanelYWhiteSpacePercent = 5.0
-
-   # Make output directory
-   testfig = testdata + "/" + test + "/fig"
-   if not os.path.exists(testfig):
-      os.mkdir(testfig)
 
    # Open workstation
    wks_type = "png"

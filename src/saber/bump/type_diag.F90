@@ -272,16 +272,16 @@ if (nam%local_diag) then
                ! Apply bounds relatively to the global value
                if (mpl%msv%isnot(coef_ens_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
                   if ((coef_ens_c2a(ic2a,il0)<diag%blk(0,ib)%coef_ens(il0)/bound) &
-                & .or.(coef_ens_c2a(ic2a,il0)>diag%blk(0,ib)%coef_ens(il0)*bound)) coef_ens_c2a(ic2a,il0) = mpl%msv%valr
+ & .or.(coef_ens_c2a(ic2a,il0)>diag%blk(0,ib)%coef_ens(il0)*bound)) coef_ens_c2a(ic2a,il0) = mpl%msv%valr
                end if
                if (bpar%fit_block(ib)) then
                   if (mpl%msv%isnot(rh_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
                      if ((rh_c2a(ic2a,il0)<diag%blk(0,ib)%fit_rh(il0)/bound) &
-                   & .or.(rh_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rh(il0)*bound)) rh_c2a(ic2a,il0) = mpl%msv%valr
+ & .or.(rh_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rh(il0)*bound)) rh_c2a(ic2a,il0) = mpl%msv%valr
                   end if
                   if (mpl%msv%isnot(rv_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_rv(il0))) then
                      if ((rv_c2a(ic2a,il0)<diag%blk(0,ib)%fit_rv(il0)/bound) &
-                   & .or.(rv_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rv(il0)*bound)) rv_c2a(ic2a,il0) = mpl%msv%valr
+ & .or.(rv_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rv(il0)*bound)) rv_c2a(ic2a,il0) = mpl%msv%valr
                   end if
                end if
             end do
@@ -373,7 +373,7 @@ do ib=1,bpar%nbe
       ! Build fit
       do ic2a=0,diag%nc2a
          call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag%blk(ic2a,ib)%distv, &
-       & diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit)
+ & diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit)
       end do
 
       ! Compute RMSE
@@ -387,7 +387,7 @@ do ib=1,bpar%nbe
       call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
       if (norm_tot>0.0) rmse_tot = sqrt(rmse_tot/norm_tot)
       write(mpl%info,'(a10,a,a,a,e15.8,a,i8,a)') '','Fit RMSE for block ',trim(bpar%blockname(ib)),': ',rmse_tot, &
-    & ' for ',int(norm_tot),' diagnostic points'
+ & ' for ',int(norm_tot),' diagnostic points'
       call mpl%flush
    end if
 end do
@@ -434,7 +434,7 @@ do ib=1,bpar%nb
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0))) then
             write(mpl%info,'(a13,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
-          & diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
+ & diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
       end do
@@ -498,12 +498,12 @@ do ib=1,bpar%nbe
       do il0=1,geom%nl0
          if (bpar%fit_block(ib)) then
             write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero: ', &
-          & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
             call mpl%flush
             if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-               write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','cor. support radii: ', &
-             & trim(mpl%aqua),diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua), &
-             & diag%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vert. unit'
+               write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','cor. support radii: ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
+ & trim(mpl%black)//' vert. unit'
                call mpl%flush
             end if
          end if
@@ -576,15 +576,15 @@ do ib=1,bpar%nbe
          case ('loc','hyb-avg','hyb-rnd','dual-ens')
             if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
                write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
-             & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
                call mpl%flush
             end if
          end select
          if (bpar%fit_block(ib)) then
             if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
                write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii: ',trim(mpl%aqua), &
-             & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
-             & trim(mpl%black)//' vert. unit'
+ & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
+ & trim(mpl%black)//' vert. unit'
                call mpl%flush
             end if
          end if
@@ -655,20 +655,20 @@ do ib=1,bpar%nbe
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
             write(mpl%info,'(a13,a,i3,a4,a20,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> ','loc. at class zero: ', &
-          & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
             call mpl%flush
          end if
          if (bpar%fit_block(ib)) then
             if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
                write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii: ',trim(mpl%aqua), &
-             & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
-             & trim(mpl%black)//' vert. unit'
+ & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
+ & trim(mpl%black)//' vert. unit'
                call mpl%flush
             end if
          end if
       end do
       if (mpl%msv%isnot(diag%blk(0,ib)%coef_sta)) write(mpl%info,'(a13,a,a,f4.2,a)') '', &
-    & 'Static coeff.:                          ',trim(mpl%purple),diag%blk(0,ib)%coef_sta,trim(mpl%black)
+ & 'Static coeff.:                          ',trim(mpl%purple),diag%blk(0,ib)%coef_sta,trim(mpl%black)
       call mpl%flush
    end if
 end do
@@ -744,25 +744,25 @@ do ib=1,bpar%nbe
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
             write(mpl%info,'(a13,a,i3,a4,a21,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> ','loc. at class zero (HR): ', &
-          & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
             call mpl%flush
          end if
          if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
             write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. at class zero (LR): ',trim(mpl%peach), &
-          & diag_lr%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+ & diag_lr%blk(0,ib)%coef_ens(il0),trim(mpl%black)
             call mpl%flush
          end if
          if (bpar%fit_block(ib)) then
             if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
                write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii (HR): ',trim(mpl%aqua), &
-             & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
-             & trim(mpl%black)//' vert. unit'
+ & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
+ & trim(mpl%black)//' vert. unit'
                call mpl%flush
             end if
             if (mpl%msv%isnot(diag_lr%blk(0,ib)%fit_rh(il0))) then
                write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii (LR): ',trim(mpl%aqua), &
-             & diag_lr%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag_lr%blk(0,ib)%fit_rv(il0), &
-             & trim(mpl%black)//' vert. unit'
+ & diag_lr%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag_lr%blk(0,ib)%fit_rv(il0), &
+ & trim(mpl%black)//' vert. unit'
                call mpl%flush
             end if
          end if

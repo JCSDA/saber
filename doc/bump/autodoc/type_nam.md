@@ -2,10 +2,11 @@
 
 | Type | Name | Purpose |
 | :--: | :--: | :---------- |
-| subroutine | [nam_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L222) | intialize |
-| subroutine | [nam_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L431) | read |
-| subroutine | [nam_read_yaml](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L1164) | read YAML file |
-| subroutine | [nam_bcast](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L1190) | broadcast |
-| subroutine | [nam_from_conf](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L1382) | intialize from configuration |
-| subroutine | [nam_check](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L1678) | check namelist parameters |
-| subroutine | [nam_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L2059) | write namelist parameters into a log file or into a NetCDF file |
+| subroutine | [nam%] [init](https://github.com/JCSDA/saber/src/saber/bump/type_nam.F90#L197) | intialize |
+| subroutine | [nam%] [read](https://github.com/JCSDA/saber/src/saber/bump/type_nam.F90#L377) | read |
+| subroutine | [nam%] [read_yaml](https://github.com/JCSDA/saber/src/saber/bump/type_nam.F90#L780) | read YAML file |
+| subroutine | [nam%] [bcast](https://github.com/JCSDA/saber/src/saber/bump/type_nam.F90#L806) | broadcast |
+| subroutine | [nam%] [from_conf](https://github.com/JCSDA/saber/src/saber/bump/type_nam.F90#L972) | intialize from configuration |
+| subroutine | [nam%] [setup_internal](https://github.com/JCSDA/saber/src/saber/bump/type_nam.F90#L1236) | setup namelist parameters internally (model 'online') |
+| subroutine | [nam%] [check](https://github.com/JCSDA/saber/src/saber/bump/type_nam.F90#L1280) | check namelist parameters |
+| subroutine | [nam%] [write](https://github.com/JCSDA/saber/src/saber/bump/type_nam.F90#L1645) | write namelist parameters into a log file or into a NetCDF file |

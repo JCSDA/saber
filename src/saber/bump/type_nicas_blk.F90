@@ -1565,7 +1565,7 @@ do il0=1,geom%nl0
    nicas_blk%vlev(il0) = (nicas_blk%rhs_avg(il0)>0.0).or.(rvs_avg(il0)>0.0)
    if (nicas_blk%vlev(il0)) then
       write(mpl%info,'(a13,a,i3,a,f10.2,a,f10.2,a)') '','Level ',nam%levs(il0),': '//trim(mpl%aqua), &
-    & nicas_blk%rhs_avg(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),rvs_avg(il0),trim(mpl%black)//' vert. unit'
+ & nicas_blk%rhs_avg(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),rvs_avg(il0),trim(mpl%black)//' vert. unit'
       if (nicas_blk%verbosity) call mpl%flush
    end if
 end do
@@ -1581,7 +1581,7 @@ if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='hv').or.(trim(n
    rhs_min = mpl%msv%valr
    do ic0a=1,geom%nc0a
       if (any(nicas_blk%vlev.and.geom%gmask_c0a(ic0a,:))) rhs_min(ic0a) = minval(cmat_blk%rhs(ic0a,:), &
-                                                       & mask=nicas_blk%vlev.and.geom%gmask_c0a(ic0a,:))
+ & mask=nicas_blk%vlev.and.geom%gmask_c0a(ic0a,:))
    end do
    call mpl%f_comm%allreduce(sum(rhs_min,mask=mpl%msv%isnot(rhs_min)),rhs_minavg,fckit_mpi_sum())
    rhs_min_norm = real(count(mpl%msv%isnot(rhs_min)),kind_real)
@@ -1998,7 +1998,7 @@ if (nicas_blk%verbosity) ifmt = 10
 do il0i=1,geom%nl0i
    write(nicas_blk%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
    call nicas_blk%h(il0i)%interp(mpl,rng,nam,geom,il0i,nicas_blk%nc1u,nicas_blk%lon_c1u,nicas_blk%lat_c1u, &
-    & nicas_blk%gmask_c1u(:,il0i),geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0i),ifmt)
+ & nicas_blk%gmask_c1u(:,il0i),geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0i),ifmt)
 end do
 
 ! Define halo A
@@ -2285,7 +2285,7 @@ do jl0=1,geom%nl0
          do ic1b=1,nicas_blk%nc1b
             ic1u = nicas_blk%c1b_to_c1u(ic1b)
             nicas_blk%v%Svec(nicas_blk%v%n_s,ic1b) = abs(nicas_blk%vunit_c1u(ic1u,il0sup)-nicas_blk%vunit_c1u(ic1u,il0)) &
-                                                   & /abs(nicas_blk%vunit_c1u(ic1u,il0sup)-nicas_blk%vunit_c1u(ic1u,il0inf))
+ & /abs(nicas_blk%vunit_c1u(ic1u,il0sup)-nicas_blk%vunit_c1u(ic1u,il0inf))
          end do
          nicas_blk%v%n_s = nicas_blk%v%n_s+1
          nicas_blk%v%row(nicas_blk%v%n_s) = il0
@@ -2293,7 +2293,7 @@ do jl0=1,geom%nl0
          do ic1b=1,nicas_blk%nc1b
             ic1u = nicas_blk%c1b_to_c1u(ic1b)
             nicas_blk%v%Svec(nicas_blk%v%n_s,ic1b) = abs(nicas_blk%vunit_c1u(ic1u,il0)-nicas_blk%vunit_c1u(ic1u,il0inf)) &
-                                                   & /abs(nicas_blk%vunit_c1u(ic1u,il0sup)-nicas_blk%vunit_c1u(ic1u,il0inf))
+ & /abs(nicas_blk%vunit_c1u(ic1u,il0sup)-nicas_blk%vunit_c1u(ic1u,il0inf))
          end do
       end do
       il0inf = jl0
@@ -2697,7 +2697,7 @@ else
             add_op = (nicas_blk%lcheck_sb(jsu).and.(isu<=jsu)).or.(.not.nicas_blk%lcheck_sb(jsu))
          elseif (nicas_blk%mpicom==2) then
             add_op = nicas_blk%lcheck_sa(isu).and.((nicas_blk%lcheck_sa(jsu).and.(isu<=jsu)) &
-                   & .or.(.not.nicas_blk%lcheck_sa(jsu)))
+ & .or.(.not.nicas_blk%lcheck_sa(jsu)))
          end if
          if (add_op) call c(ithread)%add_op(c_n_s(ithread),isu,jsu,c_S_conv(jsu))
       end do
@@ -2783,7 +2783,7 @@ do ic1u=1,nicas_blk%nc1u
          do il1=1,nicas_blk%nl1
             il0 = nicas_blk%l1_to_l0(il1)
             call geom%check_arc(mpl,il0,nicas_blk%lon_c1u(ic1u),nicas_blk%lat_c1u(ic1u),nicas_blk%lon_c1u(jc1u), &
-       & nicas_blk%lat_c1u(jc1u),net_arc(ic1u,il1,j))
+ & nicas_blk%lat_c1u(jc1u),net_arc(ic1u,il1,j))
          end do
       else
          net_arc(ic1u,:,j) = .true.
@@ -2830,7 +2830,7 @@ do ic1u=1,nicas_blk%nc1u
 
                ! Check valid arc for both levels
                if (nicas_blk%gmask_c1u(ic1u,il0).and.nicas_blk%gmask_c1u(jc1u,jl0).and.net_arc(ic1u,il1,j) &
-             & .and.net_arc(ic1u,jl1,j)) then
+ & .and.net_arc(ic1u,jl1,j)) then
                   ! Squared support radii
                   if (nicas_blk%anisotropic) then
                      H11 = 0.5*(nicas_blk%H11_c1u(ic1u,il1)+nicas_blk%H11_c1u(jc1u,jl1))
@@ -3057,7 +3057,7 @@ do ic1bb=1,nicas_blk%nc1bb
          il0 = nicas_blk%l1_to_l0(il1)
          valid_arc(j,ic1bb,il1) = (nicas_blk%gmask_c1u(ic1u,il0).and.nicas_blk%gmask_c1u(jc1u,il0))
          if (nam%mask_check.and.valid_arc(j,ic1bb,il1)) call geom%check_arc(mpl,il0,nicas_blk%lon_c1u(ic1u), &
-       & nicas_blk%lat_c1u(ic1u),nicas_blk%lon_c1u(jc1u),nicas_blk%lat_c1u(jc1u),valid_arc(j,ic1bb,il1))
+ & nicas_blk%lat_c1u(ic1u),nicas_blk%lon_c1u(jc1u),nicas_blk%lat_c1u(jc1u),valid_arc(j,ic1bb,il1))
       end do
    end do
 
@@ -3232,7 +3232,7 @@ do isbb=1,nicas_blk%nsbb
                add_op = (nicas_blk%lcheck_sb(jsu).and.(isu<=jsu)).or.(.not.nicas_blk%lcheck_sb(jsu))
             elseif (nicas_blk%mpicom==2) then
                add_op = nicas_blk%lcheck_sa(isu).and.((nicas_blk%lcheck_sa(jsu).and.(isu<=jsu)) &
-                     & .or.(.not.nicas_blk%lcheck_sa(jsu)))
+ & .or.(.not.nicas_blk%lcheck_sa(jsu)))
             end if
          else
             add_op = .true.
@@ -3852,12 +3852,12 @@ do its=2,nam%nts
       ! Direct
       write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,a)') 'd_',il0,'_',trim(nam%timeslots(its))
       call nicas_blk%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0u,adv_lon(:,il0),adv_lat(:,il0),geom%gmask_c0u(:,il0), &
-    & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),ifmt)
+ & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),ifmt)
 
       ! Inverse
       write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,a)') 'dinv_',il0,'_',trim(nam%timeslots(its))
       call nicas_blk%dinv(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0u,geom%lon_c0u,geom%lat_c0u, &
-    & geom%gmask_c0u(:,il0),geom%nc0a,cmat_blk%adv_lon(:,il0,its),cmat_blk%adv_lat(:,il0,its),geom%gmask_c0a(:,il0),ifmt)
+ & geom%gmask_c0u(:,il0),geom%nc0a,cmat_blk%adv_lon(:,il0,its),cmat_blk%adv_lat(:,il0,its),geom%gmask_c0a(:,il0),ifmt)
    end do
 end do
 

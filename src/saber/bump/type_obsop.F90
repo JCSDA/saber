@@ -337,10 +337,10 @@ if ( nobs_eff > 0 ) then
 
   ! Print results
   write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa_eff) &
-  & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+ & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
   call mpl%flush
   write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
-  & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo
+ & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo
   call mpl%flush
   write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
   call mpl%flush

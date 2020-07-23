@@ -1903,7 +1903,10 @@ else
    info = nf90_create(trim(filename),ior(nf90_noclobber,nf90_netcdf4),ncid)
 end if
 
-if (info/=nf90_noerr) then
+if (info==nf90_noerr) then
+   ! Set real missing value
+   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'_FillValue',mpl%msv%valr))
+else
    ! Open file
    if (present(f_comm)) then
       call mpl%ncerr(subr,nf90_open(trim(filename),nf90_write,ncid, &

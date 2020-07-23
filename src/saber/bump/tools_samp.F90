@@ -137,16 +137,16 @@ else
    ! First subsampling, local
    if (present(n_uni).and.present(uni_to_loc).and.present(tree_uni)) then
       call initialize_sampling_local(mpl,area,n_loc,n_loc_eff,n_glb_eff,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ns2_glb, &
-    & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,lverbosity,n_uni,uni_to_loc,tree_uni)
+ & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,lverbosity,n_uni,uni_to_loc,tree_uni)
    else
       call initialize_sampling_local(mpl,area,n_loc,n_loc_eff,n_glb_eff,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ns2_glb, &
-    & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,lverbosity)
+ & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,lverbosity)
    end if
 
    if (mpl%main) then
       ! Second subsampling, global
       call initialize_sampling_global(mpl,rng,ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff, &
-    & ntry,nrep,ns2_glb,sam2_glb,lfast,lverbosity)
+ & ntry,nrep,ns2_glb,sam2_glb,lfast,lverbosity)
 
       ! Release memory
       deallocate(lon1_glb_eff)
@@ -663,7 +663,7 @@ else
                ! Compute distance
                nn_index(1) = sam2_glb_tmp(1)
                call sphere_dist(lon1_glb_tmp(ir),lat1_glb_tmp(ir),lon1_glb_tmp(nn_index(1)),lat1_glb_tmp(nn_index(1)), &
-             & nn_dist(1))
+ & nn_dist(1))
             else
                ! Find nearest neighbor distance
                call tree%find_nearest_neighbors(lon1_glb_tmp(ir),lat1_glb_tmp(ir),1,nn_index(1:1),nn_dist(1:1))
@@ -733,7 +733,7 @@ if (nrep_eff>0) then
          if (rmask(is2_glb)) then
             ! Find nearest neighbor distance
             call tree%find_nearest_neighbors(lon1_glb_tmp(sam2_glb_tmp(is2_glb)),lat1_glb_tmp(sam2_glb_tmp(is2_glb)), &
-          & 2,nn_index,nn_dist)
+ & 2,nn_index,nn_dist)
             if (nn_index(1)==is2_glb) then
                dist(is2_glb) = nn_dist(2)
             elseif (nn_index(2)==is2_glb) then
@@ -742,7 +742,7 @@ if (nrep_eff>0) then
                call mpl%abort(subr,'wrong index in replacement')
             end if
             dist(is2_glb) = dist(is2_glb)**2/(rh1_glb_tmp(sam2_glb_tmp(nn_index(1)))**2 &
-                          & +rh1_glb_tmp(sam2_glb_tmp(nn_index(2)))**2)
+ & +rh1_glb_tmp(sam2_glb_tmp(nn_index(2)))**2)
          end if
       end do
 

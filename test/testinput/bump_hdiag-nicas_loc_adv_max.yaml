@@ -19,7 +19,6 @@ nv: 1
 variables: ["q"]
 nts: 2
 timeslots: ["00","06"]
-nomask: 1
 
 # ens1_param
 ens1_ne: 50

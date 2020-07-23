@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
 
 import argparse
-import Ngl, Nio
+from netCDF4 import Dataset
+import Ngl
 import numpy as np
 import os
 
-def umf(testdata, test, mpi, omp, suffix):
+def umf(testdata, test, mpi, omp, suffix, testfig):
    # Open file
-   f = Nio.open_file(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc")
+   f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
+
+   # Get _FillValue
+   _FillValue = f.__dict__["_FillValue"]
 
    # Get lon/lat
-   lon = f.variables["lon"][:]
-   lat = f.variables["lat"][:]
+   lon = f["lon"][:]
+   lat = f["lat"][:]
 
    # Variables
    var_list = ["m2","m4","kurt"]
 
    # Get number of levels
-   nl0 = f.variables[var_list[0]][:,:].shape[0]
+   nl0 = f[var_list[0]][:,:].shape[0]
 
    # Contour resources
    cres = Ngl.Resources()
@@ -53,14 +57,9 @@ def umf(testdata, test, mpi, omp, suffix):
    pnlres = Ngl.Resources()
    pnlres.nglFrame = False
 
-   # Make output directory
-   testfig = testdata + "/" + test + "/fig"
-   if not os.path.exists(testfig):
-      os.mkdir(testfig)
-
    for var in var_list:
       # Read variable
-      field = f.variables[var][:,:]
+      field = f[var][:,:]
 
       # Open workstation
       wks_type = "png"
@@ -69,9 +68,8 @@ def umf(testdata, test, mpi, omp, suffix):
 
       # Plots
       plot = []
-      _FillValue = f.variables[var].attributes["_FillValue"]
       for il0 in range(0, nl0):
-         if (np.any(field[il0,:] != _FillValue)):
+         if np.any(field[il0,:] != _FillValue):
             plot.append(Ngl.contour_map(wks, field[il0,:], cres))
 
       # Panel
