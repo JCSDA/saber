@@ -13,6 +13,10 @@ cost_function:
         mpicom: 2
         prefix: qg_4dvar_drplanczos_bump/test
         strategy: common
+        strings:
+        - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
+        aliases:
+        - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
       covariance: BUMP
       timeslots:
       - 2010-01-01T00:00:00Z
@@ -26,6 +30,10 @@ cost_function:
           datadir: testdata
           load_var: 1
           prefix: qg_4dvar_drplanczos_bump/test
+          strings:
+          - x_2010-01-01T00:00:00Z
+          aliases:
+          - x_2010-01-01T12:00:00Z
   Jc:
   - jcdfi:
       alpha: 1.0e-13

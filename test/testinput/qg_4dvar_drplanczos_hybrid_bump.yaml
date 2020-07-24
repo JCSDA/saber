@@ -17,6 +17,10 @@ cost_function:
             mpicom: 2
             prefix: qg_4dvar_drplanczos_hybrid_bump/test
             strategy: common
+            strings:
+            - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
+            aliases:
+            - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
           localization: BUMP
           timeslots:
           - 2010-01-01T00:00:00Z

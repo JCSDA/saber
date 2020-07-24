@@ -165,7 +165,7 @@ type(bpar_type),intent(in) :: bpar     ! Block parameters
 ! Local variables
 integer :: iv,jv,grid_hash
 integer :: ncid,grpid(nam%nv,nam%nv),h_n_s_id,h_c2b_id,h_S_id,reg_id(nam%nv,nam%nv)
-character(len=1024) :: filename
+character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'vbal_read'
 
 ! Open file
@@ -194,7 +194,8 @@ do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Get group
-         call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(vbal%blk(iv,jv)%name),grpid(iv,jv)))
+         call nam%get_alias(vbal%blk(iv,jv)%name,grpname)
+         call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid(iv,jv)))
 
          ! Get variable
          call mpl%ncerr(subr,nf90_inq_varid(grpid(iv,jv),'reg',reg_id(iv,jv)))
@@ -236,7 +237,7 @@ type(bpar_type),intent(in) :: bpar     ! Block parameters
 integer :: iv,jv
 integer :: ncid,grpid(nam%nv,nam%nv),np_id,nc0a_id,nc2b_id,nl0i_id,nl0_1_id,nl0_2_id,h_n_s_id,h_c2b_id,h_S_id
 integer :: reg_id(nam%nv,nam%nv),auto_id(nam%nv,nam%nv),cross_id(nam%nv,nam%nv),auto_inv_id(nam%nv,nam%nv)
-character(len=1024) :: filename
+character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'vbal_write'
 
 ! Define file
@@ -265,7 +266,8 @@ do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Define group
-         grpid(iv,jv) = mpl%nc_group_define_or_get(subr,ncid,trim(vbal%blk(iv,jv)%name))
+         call nam%get_alias(vbal%blk(iv,jv)%name,grpname)
+         grpid(iv,jv) = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
          ! Define variables
          auto_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'auto',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))

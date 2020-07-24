@@ -181,7 +181,7 @@ type(bpar_type),intent(in) :: bpar       ! Block parameters
 ! Local variables
 integer :: nicas_tag,ib,iproc,iprocio,ncid,grpid
 integer :: mpicom,lsqrt,grid_hash
-character(len=1024) :: filename
+character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'nicas_read'
 type(nicas_type) :: nicas_tmp
 
@@ -221,7 +221,8 @@ do iproc=1,mpl%nproc
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
                ! Get group
-               call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(bpar%blockname(ib)),grpid))
+               call nam%get_alias(bpar%blockname(ib),grpname)
+               call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
                ! Read data
                call nicas%blk(ib)%read(mpl,nam,geom,bpar,grpid)
@@ -234,7 +235,8 @@ do iproc=1,mpl%nproc
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
                ! Get group
-               call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(bpar%blockname(ib)),grpid))
+               call nam%get_alias(bpar%blockname(ib),grpname)
+               call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
                ! Read data
                call nicas_tmp%blk(ib)%read(mpl,nam,geom,bpar,grpid)
@@ -285,7 +287,7 @@ type(bpar_type),intent(in) :: bpar    ! Block parameters
 
 ! Local variables
 integer :: nicas_tag,ib,iproc,iprocio,ncid,grpid,ncid_grids,grpid_grids
-character(len=1024) :: filename
+character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'nicas_write'
 type(nicas_type) :: nicas_tmp
 
@@ -327,14 +329,16 @@ do iproc=1,mpl%nproc
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
                ! Define group
-               grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+               call nam%get_alias(bpar%blockname(ib),grpname)
+               grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
                ! Write data
                call nicas%blk(ib)%write(mpl,nam,geom,bpar,grpid)
 
                if (nam%write_grids.and.bpar%nicas_block(ib)) then
                   ! Define group
-                  grpid_grids = mpl%nc_group_define_or_get(subr,ncid_grids,trim(bpar%blockname(ib)))
+                  call nam%get_alias(bpar%blockname(ib),grpname)
+                  grpid_grids = mpl%nc_group_define_or_get(subr,ncid_grids,grpname)
 
                   ! Write grids
                   call nicas%blk(ib)%write_grids(mpl,grpid_grids)
@@ -351,14 +355,16 @@ do iproc=1,mpl%nproc
                call nicas_tmp%blk(ib)%receive(mpl,nam,geom,bpar,iproc,mpl%tag+(ib-1)*nicas_tag)
 
                ! Define group
-               grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+               call nam%get_alias(bpar%blockname(ib),grpname)
+               grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
                ! Write data
                call nicas_tmp%blk(ib)%write(mpl,nam,geom,bpar,grpid)
 
                if (nam%write_grids.and.bpar%nicas_block(ib)) then
                   ! Define group
-                  grpid_grids = mpl%nc_group_define_or_get(subr,ncid_grids,trim(bpar%blockname(ib)))
+                  call nam%get_alias(bpar%blockname(ib),grpname)
+                  grpid_grids = mpl%nc_group_define_or_get(subr,ncid_grids,grpname)
 
                   ! Write grids
                   call nicas_tmp%blk(ib)%write_grids(mpl,grpid_grids)

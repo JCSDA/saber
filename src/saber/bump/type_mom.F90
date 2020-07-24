@@ -149,7 +149,7 @@ character(len=*),intent(in) :: prefix ! Prefix
 ! Local variables
 integer :: ib,isub,grid_hash
 integer :: ncid,subgrpid,grpid,m2_1_id,m2_2_id,m11_id,m22_id
-character(len=1024) :: filename,subname
+character(len=1024) :: filename,grpname,subname
 character(len=1024),parameter :: subr = 'mom_read'
 
 ! Allocation
@@ -173,7 +173,8 @@ call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       ! Get group
-      call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(bpar%blockname(ib)),grpid))
+      call nam%get_alias(bpar%blockname(ib),grpname)
+      call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
       ! Check dimensions
       call mpl%nc_dim_check(subr,grpid,'nc3',bpar%nc3(ib))
@@ -223,7 +224,7 @@ type(samp_type),intent(in) :: samp  ! Sampling
 ! Local variables
 integer :: ib,isub
 integer :: ncid,grpid,subgrpid,nc1a_id,nc3_id,nl0r_id,nl0_id,m2_1_id,m2_2_id,m11_id,m22_id
-character(len=1024) :: filename,subname
+character(len=1024) :: filename,grpname,subname
 character(len=1024),parameter :: subr = 'mom_write'
 
 ! Define file
@@ -243,7 +244,8 @@ nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       ! Define group
-      grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+      call nam%get_alias(bpar%blockname(ib),grpname)
+      grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
       ! Define dimensions
       nc3_id = mpl%nc_dim_define_or_get(subr,grpid,'nc3',bpar%nc3(ib))

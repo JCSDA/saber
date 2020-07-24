@@ -184,7 +184,7 @@ character(len=*),intent(in),optional :: groupname     ! Group name
 character(len=*),intent(in),optional :: subgroupname  ! Subgroup name
 
 ! Local variables
-integer :: ic0a,il0,info,color
+integer :: ic0a,il0,color
 integer :: ncid,grpid,subgrpid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)

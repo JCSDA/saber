@@ -197,7 +197,7 @@ type(io_type),intent(in) :: io         ! I/O
 ! Local variables
 integer :: ib,ncid,anisotropic,its
 character(len=3) :: itschar
-character(len=2*1024+1) :: filename
+character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'cmat_read'
 
 ! Allocation
@@ -235,19 +235,20 @@ call cmat%alloc(nam,geom,bpar)
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Read fields
+      call nam%get_alias(bpar%blockname(ib),grpname)
       if (bpar%nicas_block(ib)) then
-         call io%fld_read(mpl,nam,geom,filename,'coef_ens',cmat%blk(ib)%coef_ens,trim(bpar%blockname(ib)))
-         call io%fld_read(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta,trim(bpar%blockname(ib)))
-         call io%fld_read(mpl,nam,geom,filename,'rh',cmat%blk(ib)%rh,trim(bpar%blockname(ib)))
-         call io%fld_read(mpl,nam,geom,filename,'rv',cmat%blk(ib)%rv,trim(bpar%blockname(ib)))
-         call io%fld_read(mpl,nam,geom,filename,'rhs',cmat%blk(ib)%rhs,trim(bpar%blockname(ib)))
-         call io%fld_read(mpl,nam,geom,filename,'rvs',cmat%blk(ib)%rvs,trim(bpar%blockname(ib)))
+         call io%fld_read(mpl,nam,geom,filename,'coef_ens',cmat%blk(ib)%coef_ens,grpname)
+         call io%fld_read(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta,grpname)
+         call io%fld_read(mpl,nam,geom,filename,'rh',cmat%blk(ib)%rh,grpname)
+         call io%fld_read(mpl,nam,geom,filename,'rv',cmat%blk(ib)%rv,grpname)
+         call io%fld_read(mpl,nam,geom,filename,'rhs',cmat%blk(ib)%rhs,grpname)
+         call io%fld_read(mpl,nam,geom,filename,'rvs',cmat%blk(ib)%rvs,grpname)
          if (cmat%blk(ib)%anisotropic) then
-            call io%fld_read(mpl,nam,geom,filename,'H11',cmat%blk(ib)%H11,trim(bpar%blockname(ib)))
-            call io%fld_read(mpl,nam,geom,filename,'H22',cmat%blk(ib)%H22,trim(bpar%blockname(ib)))
-            call io%fld_read(mpl,nam,geom,filename,'H33',cmat%blk(ib)%H33,trim(bpar%blockname(ib)))
-            call io%fld_read(mpl,nam,geom,filename,'H12',cmat%blk(ib)%H12,trim(bpar%blockname(ib)))
-            call io%fld_read(mpl,nam,geom,filename,'Hcoef',cmat%blk(ib)%Hcoef,trim(bpar%blockname(ib)))
+            call io%fld_read(mpl,nam,geom,filename,'H11',cmat%blk(ib)%H11,grpname)
+            call io%fld_read(mpl,nam,geom,filename,'H22',cmat%blk(ib)%H22,grpname)
+            call io%fld_read(mpl,nam,geom,filename,'H33',cmat%blk(ib)%H33,grpname)
+            call io%fld_read(mpl,nam,geom,filename,'H12',cmat%blk(ib)%H12,grpname)
+            call io%fld_read(mpl,nam,geom,filename,'Hcoef',cmat%blk(ib)%Hcoef,grpname)
          end if
       end if
       if ((ib==bpar%nbe).and.nam%adv_diag) then
@@ -281,7 +282,7 @@ type(io_type),intent(in) :: io      ! I/O
 ! Local variables
 integer :: ib,ncid,its
 character(len=3) :: itschar
-character(len=2*1024+1) :: filename
+character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'cmat_write'
 
 ! Set filename
@@ -293,19 +294,20 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Write fields
+      call nam%get_alias(bpar%blockname(ib),grpname)
       if (bpar%nicas_block(ib)) then
-         call io%fld_write(mpl,nam,geom,filename,'coef_ens',cmat%blk(ib)%coef_ens,trim(bpar%blockname(ib)))
-         call io%fld_write(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta,trim(bpar%blockname(ib)))
-         call io%fld_write(mpl,nam,geom,filename,'rh',cmat%blk(ib)%rh,trim(bpar%blockname(ib)))
-         call io%fld_write(mpl,nam,geom,filename,'rv',cmat%blk(ib)%rv,trim(bpar%blockname(ib)))
-         call io%fld_write(mpl,nam,geom,filename,'rhs',cmat%blk(ib)%rhs,trim(bpar%blockname(ib)))
-         call io%fld_write(mpl,nam,geom,filename,'rvs',cmat%blk(ib)%rvs,trim(bpar%blockname(ib)))
+         call io%fld_write(mpl,nam,geom,filename,'coef_ens',cmat%blk(ib)%coef_ens,grpname)
+         call io%fld_write(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta,grpname)
+         call io%fld_write(mpl,nam,geom,filename,'rh',cmat%blk(ib)%rh,grpname)
+         call io%fld_write(mpl,nam,geom,filename,'rv',cmat%blk(ib)%rv,grpname)
+         call io%fld_write(mpl,nam,geom,filename,'rhs',cmat%blk(ib)%rhs,grpname)
+         call io%fld_write(mpl,nam,geom,filename,'rvs',cmat%blk(ib)%rvs,grpname)
          if (cmat%blk(ib)%anisotropic) then
-            call io%fld_write(mpl,nam,geom,filename,'H11',cmat%blk(ib)%H11,trim(bpar%blockname(ib)))
-            call io%fld_write(mpl,nam,geom,filename,'H22',cmat%blk(ib)%H22,trim(bpar%blockname(ib)))
-            call io%fld_write(mpl,nam,geom,filename,'H33',cmat%blk(ib)%H33,trim(bpar%blockname(ib)))
-            call io%fld_write(mpl,nam,geom,filename,'H12',cmat%blk(ib)%H12,trim(bpar%blockname(ib)))
-            call io%fld_write(mpl,nam,geom,filename,'Hcoef',cmat%blk(ib)%Hcoef,trim(bpar%blockname(ib)))
+            call io%fld_write(mpl,nam,geom,filename,'H11',cmat%blk(ib)%H11,grpname)
+            call io%fld_write(mpl,nam,geom,filename,'H22',cmat%blk(ib)%H22,grpname)
+            call io%fld_write(mpl,nam,geom,filename,'H33',cmat%blk(ib)%H33,grpname)
+            call io%fld_write(mpl,nam,geom,filename,'H12',cmat%blk(ib)%H12,grpname)
+            call io%fld_write(mpl,nam,geom,filename,'Hcoef',cmat%blk(ib)%Hcoef,grpname)
          end if
       end if
       if ((ib==bpar%nbe).and.nam%adv_diag) then

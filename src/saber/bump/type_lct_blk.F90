@@ -190,7 +190,7 @@ type(io_type),intent(in) :: io               ! I/O
 character(len=*),intent(in) :: filename      ! Filename
 
 ! Local variables
-integer :: iv,its,iscales,grpid
+integer :: iv,its,iscales
 character(len=1024) :: varname,scalename
 
 ! Associate

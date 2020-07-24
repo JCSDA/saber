@@ -16,14 +16,16 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: nvmax = 20      ! Maximum number of variables
-integer,parameter :: ntsmax = 99     ! Maximum number of time slots
-integer,parameter :: nlmax = 200     ! Maximum number of levels
-integer,parameter :: nc3max = 1000   ! Maximum number of classes
-integer,parameter :: nscalesmax = 5  ! Maximum number of variables
-integer,parameter :: ndirmax = 300   ! Maximum number of diracs
-integer,parameter :: nldwvmax = 99   ! Maximum number of local diagnostic profiles
-integer,parameter :: nprociomax = 20 ! Maximum number of I/O tasks
+integer,parameter :: nvmax = 20                    ! Maximum number of variables
+integer,parameter :: ntsmax = 99                   ! Maximum number of time slots
+integer,parameter :: nlmax = 200                   ! Maximum number of levels
+integer,parameter :: nc3max = 1000                 ! Maximum number of classes
+integer,parameter :: nscalesmax = 5                ! Maximum number of variables
+integer,parameter :: ndirmax = 300                 ! Maximum number of diracs
+integer,parameter :: nldwvmax = 99                 ! Maximum number of local diagnostic profiles
+integer,parameter :: nprociomax = 20               ! Maximum number of I/O tasks
+integer,parameter :: naliasmax = 1000              ! Maximum number of aliases
+integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2  ! Maximum number of vertical balance blocks
 
 type nam_type
    ! general_param
@@ -101,7 +103,9 @@ type nam_type
    real(kind_real) :: dts                               ! Timeslots width [in s]
    logical :: nomask                                    ! Do not use geometry mask
    character(len=1024) :: wind_filename                 ! Wind field file name
-   character(len=1024) :: wind_variables(2)               ! Wind field variables names (u and v)
+   character(len=1024) :: wind_variables(2)             ! Wind field variables names (u and v)
+   character(len=1024),dimension(naliasmax) :: strings  ! Strings
+   character(len=1024),dimension(naliasmax) :: aliases  ! Aliases
 
    ! ens1_param
    integer :: ens1_ne                                   ! Ensemble 1 size
@@ -137,11 +141,11 @@ type nam_type
    real(kind_real) :: gen_kurt_th                       ! Threshold on generalized kurtosis (3.0 = Gaussian distribution)
    logical :: gau_approx                                ! Gaussian approximation for asymptotic quantities
    integer :: avg_nbins                                 ! Number of bins for averaged statistics histograms
-   logical :: vbal_block(nvmax*(nvmax-1)/2)             ! Activation of vertical balance (ordered line by line in the lower triangular formulation)
+   logical :: vbal_block(nvbalmax)                      ! Activation of vertical balance (ordered line by line in the lower triangular formulation)
    real(kind_real) :: vbal_rad                          ! Vertical balance diagnostic radius [in meters]
    real(kind_real) :: vbal_dlat                         ! Vertical balance diagnostic latitude band half-width [in degrees]
-   logical :: vbal_diag_auto(nvmax*(nvmax-1)/2)         ! Diagonal auto-covariance for the inversion
-   logical :: vbal_diag_reg(nvmax*(nvmax-1)/2)          ! Diagonal regression
+   logical :: vbal_diag_auto(nvbalmax)                  ! Diagonal auto-covariance for the inversion
+   logical :: vbal_diag_reg(nvbalmax)                   ! Diagonal regression
    logical :: var_filter                                ! Filter variances
    integer :: var_niter                                 ! Number of iteration for the variances filtering
    real(kind_real) :: var_rhflt                         ! Variances initial filtering support radius [in meters]
@@ -209,10 +213,11 @@ contains
    procedure :: from_conf => nam_from_conf
    procedure :: check => nam_check
    procedure :: write => nam_write
+   procedure :: get_alias => nam_get_alias
 end type nam_type
 
 private
-public :: nvmax,ntsmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax
+public :: nvmax,ntsmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,naliasmax,nvbalmax
 public :: nam_type
 
 contains
@@ -230,7 +235,7 @@ class(nam_type),intent(out) :: nam ! Namelist
 integer,intent(in) :: nproc        ! Number of MPI task
 
 ! Local variable
-integer :: il,iv,ildwv
+integer :: il,iv,its,i,ildwv
 
 ! general_param default
 nam%datadir = '.'
@@ -307,11 +312,17 @@ do iv=1,nvmax
    nam%variables(iv) = ''
 end do
 nam%nts = 0
-nam%timeslots = ''
+do its=1,ntsmax
+   nam%timeslots(its) = ''
+end do
 nam%dts = 3600.0
 nam%nomask = .false.
 nam%wind_filename = ''
 nam%wind_variables = (/'',''/)
+do i=1,naliasmax
+   nam%strings(i) = ''
+   nam%aliases(i) = ''
+end do
 
 ! ens1_param default
 nam%ens1_ne = 0
@@ -349,15 +360,15 @@ nam%ne = 0
 nam%gen_kurt_th = huge_real
 nam%gau_approx = .false.
 nam%avg_nbins = 0
-do iv=1,nvmax*(nvmax-1)/2
+do iv=1,nvbalmax
    nam%vbal_block(iv) = .false.
 end do
 nam%vbal_rad = 0.0
 nam%vbal_dlat = 0.0
-do iv=1,nvmax*(nvmax-1)/2
+do iv=1,nvbalmax
    nam%vbal_diag_auto(iv) = .false.
 end do
-do iv=1,nvmax*(nvmax-1)/2
+do iv=1,nvbalmax
    nam%vbal_diag_reg(iv) = .false.
 end do
 nam%var_filter = .false.
@@ -438,7 +449,7 @@ type(mpl_type),intent(inout) :: mpl      ! MPI data
 character(len=*),intent(in) :: namelname ! Namelist name
 
 ! Local variables
-integer :: iv
+integer :: il,iv,its,i,ildwv,lunit
 character(len=1024),parameter :: subr = 'nam_read'
 
 ! Namelist variables
@@ -513,6 +524,8 @@ real(kind_real) :: dts
 logical :: nomask
 character(len=1024) :: wind_filename
 character(len=1024) :: wind_variables(2)
+character(len=1024),dimension(naliasmax) :: strings
+character(len=1024),dimension(naliasmax) :: aliases
 integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
@@ -540,11 +553,11 @@ integer :: ne
 real(kind_real) :: gen_kurt_th
 logical :: gau_approx
 integer :: avg_nbins
-logical :: vbal_block(nvmax*(nvmax-1)/2)
+logical :: vbal_block(nvbalmax)
 real(kind_real) :: vbal_rad
 real(kind_real) :: vbal_dlat
-logical :: vbal_diag_auto(nvmax*(nvmax-1)/2)
-logical :: vbal_diag_reg(nvmax*(nvmax-1)/2)
+logical :: vbal_diag_auto(nvbalmax)
+logical :: vbal_diag_reg(nvbalmax)
 logical :: var_filter
 integer :: var_niter
 real(kind_real) :: var_rhflt
@@ -594,9 +607,6 @@ integer :: img_ldwv(nldwvmax)
 real(kind_real) :: lon_ldwv(nldwvmax)
 real(kind_real) :: lat_ldwv(nldwvmax)
 character(len=1024),dimension(nldwvmax) :: name_ldwv
-
-! Local variables
-integer :: il,ildwv,lunit
 
 ! Namelist blocks
 namelist/general_param/ &
@@ -672,7 +682,9 @@ namelist/model_param/ &
  & dts, &
  & nomask, &
  & wind_filename, &
- & wind_variables
+ & wind_variables, &
+ & strings, &
+ & aliases
 namelist/ens1_param/ &
  & ens1_ne, &
  & ens1_nsub
@@ -840,11 +852,17 @@ if (mpl%main) then
       variables(iv) = ''
    end do
    nts = 0
-   timeslots = ''
+   do its=1,ntsmax
+      timeslots(its) = ''
+   end do
    dts = 3600.0
    nomask = .false.
    wind_filename = ''
    wind_variables = (/'',''/)
+   do i=1,naliasmax
+      strings(i) = ''
+      aliases(i) = ''
+   end do
 
    ! ens1_param default
    ens1_ne = 0
@@ -882,15 +900,15 @@ if (mpl%main) then
    gen_kurt_th = huge_real
    gau_approx = .false.
    avg_nbins = 0
-   do iv=1,nvmax*(nvmax-1)/2
+   do iv=1,nvbalmax
       vbal_block(iv) = .false.
    end do
    vbal_rad = 0.0
    vbal_dlat = 0.0
-   do iv=1,nvmax*(nvmax-1)/2
+   do iv=1,nvbalmax
       vbal_diag_auto(iv) = .true.
    end do
-   do iv=1,nvmax*(nvmax-1)/2
+   do iv=1,nvbalmax
       vbal_diag_reg(iv) = .true.
    end do
    var_filter = .false.
@@ -1041,6 +1059,8 @@ if (mpl%main) then
    nam%nomask = nomask
    nam%wind_filename = wind_filename
    nam%wind_variables = wind_variables
+   nam%strings = strings
+   nam%aliases = aliases
 
    ! ens1_param
    read(lunit,nml=ens1_param)
@@ -1274,6 +1294,8 @@ call mpl%f_comm%broadcast(nam%dts,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nomask,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%wind_filename,mpl%rootproc-1)
 call mpl%broadcast(nam%wind_variables,mpl%rootproc-1)
+call mpl%broadcast(nam%strings,mpl%rootproc-1)
+call mpl%broadcast(nam%aliases,mpl%rootproc-1)
 
 ! ens1_param
 call mpl%f_comm%broadcast(nam%ens1_ne,mpl%rootproc-1)
@@ -1507,6 +1529,14 @@ if (conf%has("wind_variables")) then
    call conf%get_or_die("wind_variables",str_array)
    nam%wind_variables(1:2) = str_array(1:2)
 end if
+if (conf%has("strings")) then
+   call conf%get_or_die("strings",str_array)
+   nam%strings(1:size(str_array)) = str_array
+end if
+if (conf%has("aliases")) then
+   call conf%get_or_die("aliases",str_array)
+   nam%aliases(1:size(str_array)) = str_array
+end if
 
 ! ens1_param
 if (conf%has("ens1_ne")) call conf%get_or_die("ens1_ne",nam%ens1_ne)
@@ -1682,7 +1712,7 @@ class(nam_type),intent(inout) :: nam ! Namelist
 type(mpl_type),intent(inout) :: mpl  ! MPI data
 
 ! Local variables
-integer :: iv,its,il,idir,ildwv
+integer :: iv,its,i,il,idir,ildwv
 character(len=2) :: ivchar,itschar,ildwvchar
 character(len=1024),parameter :: subr = 'nam_check'
 
@@ -1829,6 +1859,11 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%load_var.or.nam%new_hdia
       if (trim(nam%timeslots(its))=='') call mpl%abort(subr,'timeslots not specified for '//itschar)
    end do
    if (.not.(nam%dts>0.0)) call mpl%abort(subr,'dts should be positive')
+   do i=1,naliasmax
+      if (((trim(nam%strings(i))/='').and.(trim(nam%aliases(i))=='')).or. &
+ & ((trim(nam%strings(i))=='').and.(trim(nam%aliases(i))/=''))) &
+ & call mpl%abort(subr,'strings and aliases are not consistent')
+   end do
 end if
 
 ! Check ens1_param
@@ -2153,6 +2188,8 @@ call mpl%write(lncid,'nam','dts',nam%dts)
 call mpl%write(lncid,'nam','nomask',nam%nomask)
 call mpl%write(lncid,'nam','wind_filename',nam%wind_filename)
 call mpl%write(lncid,'nam','wind_variables',2,nam%wind_variables(1:2))
+call mpl%write(lncid,'nam','strings',count(nam%strings/=''),nam%strings(1:naliasmax))
+call mpl%write(lncid,'nam','aliases',count(nam%aliases/=''),nam%aliases(1:naliasmax))
 
 ! ens1_param
 if (mpl%msv%is(lncid)) then
@@ -2304,5 +2341,32 @@ deallocate(lon_ldwv)
 deallocate(lat_ldwv)
 
 end subroutine nam_write
+
+!----------------------------------------------------------------------
+! Subroutine: nam_get_alias
+! Purpose: get aliases
+!----------------------------------------------------------------------
+subroutine nam_get_alias(nam,string,aliases)
+
+implicit none
+
+! Passed variable
+class(nam_type),intent(in) :: nam        ! Namelist
+character(len=*),intent(in) :: string    ! String
+character(len=1024),intent(out) :: aliases ! aliases
+
+! Local variables
+integer :: i
+
+! Loop over string/aliases couples
+aliases = string
+do i=1,naliasmax
+   if (trim(nam%strings(i))==trim(string)) then
+      aliases = nam%aliases(i)
+      exit
+   end if
+end do
+
+end subroutine nam_get_alias
 
 end module type_nam
