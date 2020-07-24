@@ -77,7 +77,7 @@ else
 end if
 
 ! Prefix
-diag%prefix = trim(prefix)
+diag%prefix = prefix
 
 ! Allocation
 allocate(diag%blk(0:diag%nc2a,bpar%nbe))
@@ -187,11 +187,11 @@ if (nam%local_diag) then
 
             ! Write fields
             if (i==1) then
-               call io%fld_write(mpl,nam,geom,filename,'coef_ens',fld_c0a,trim(bpar%blockname(ib)))
+               call io%fld_write(mpl,nam,geom,filename,'coef_ens',fld_c0a,bpar%blockname(ib))
             elseif (i==2) then
-               call io%fld_write(mpl,nam,geom,filename,'fit_rh',fld_c0a,trim(bpar%blockname(ib)))
+               call io%fld_write(mpl,nam,geom,filename,'fit_rh',fld_c0a,bpar%blockname(ib))
             elseif (i==3) then
-               call io%fld_write(mpl,nam,geom,filename,'fit_rv',fld_c0a,trim(bpar%blockname(ib)))
+               call io%fld_write(mpl,nam,geom,filename,'fit_rv',fld_c0a,bpar%blockname(ib))
             end if
          end do
       end if

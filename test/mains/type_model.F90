@@ -271,8 +271,8 @@ if (mpl%nproc==1) then
 elseif (mpl%nproc>1) then
    if (mpl%main) then
       ! Open file
-      write(filename,'(a,a,i6.6,a)') trim(nam%prefix),'_distribution_',mpl%nproc,'.nc'
-      info = nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid)
+      write(filename,'(a,a,i6.6)') trim(nam%prefix),'_distribution_',mpl%nproc
+      info = nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid)
    end if
    call mpl%f_comm%broadcast(info,mpl%rootproc-1)
 
@@ -473,7 +473,7 @@ elseif (mpl%nproc>1) then
       ! Write distribution
       if (mpl%main) then
          ! Create file
-         call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename),or(nf90_clobber,nf90_64bit_offset),ncid))
+         call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
          ! Write namelist parameters
          call nam%write(mpl,ncid)
@@ -595,7 +595,7 @@ case default
       if (i>1) then
          ! Get variable and filename
          variables = nam%mask_type(1:i-1)
-         filename = trim(nam%mask_type(i+1:))
+         filename = nam%mask_type(i+1:)
          write(mpl%info,'(a7,a)') '','Read sampling mask from variable '//trim(variables)//' in file '//trim(filename)
          call mpl%flush
          write(mpl%info,'(a7,a,e10.3,a)') '','Threshold ',nam%mask_th(1),' used as a '//trim(nam%mask_lu(1))//' bound'
@@ -613,7 +613,7 @@ case default
          call model%read(mpl,nam,filename,1,afieldset)
 
          ! Get data
-         afield = afieldset%field(trim(variables))
+         afield = afieldset%field(variables)
          call afield%data(real_ptr)
 
          ! Compute mask
@@ -750,7 +750,7 @@ if (trim(nam%model)=='wrf') call model%wrf_read(mpl,nam,filename,its,fld_mga)
 do iv=1,nam%nv
    ! Create field
    fieldname = trim(nam%variables(iv))//'_'//trim(nam%timeslots(its))
-   afield = model%afunctionspace%create_field(name=trim(fieldname),kind=atlas_real(kind_real),levels=model%nl0)
+   afield = model%afunctionspace%create_field(name=fieldname,kind=atlas_real(kind_real),levels=model%nl0)
 
    ! Add field
    call afieldset%add(afield)

@@ -250,7 +250,7 @@ ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'
 call nam%write(mpl,ncid)
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+grpid = mpl%nc_group_define_or_get(subr,ncid,bpar%blockname(ib))
 
 ! Define dimensions
 nc3_id = mpl%nc_dim_define_or_get(subr,grpid,'nc3',bpar%nc3(ib))

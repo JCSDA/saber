@@ -127,7 +127,7 @@ end if
 do iv=1,nam%nv
    if (model%ioproc(model%mytile)==mpl%myproc) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%variables(iv)),fld_id))
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,nam%variables(iv),fld_id))
 
       ! Check field size
       call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,dimids=dimids))

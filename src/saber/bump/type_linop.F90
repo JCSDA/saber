@@ -201,7 +201,7 @@ integer :: grpid,row_id,col_id,S_id,Svec_id
 character(len=1024),parameter :: subr = 'linop_read'
 
 ! Get group
-call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(linop%prefix),grpid))
+call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,linop%prefix,grpid))
 
 ! Get dimensions
 linop%n_s = mpl%nc_dim_inquire(subr,grpid,'n_s')
@@ -252,7 +252,7 @@ integer :: grpid,n_s_id,nvec_id,row_id,col_id,S_id,Svec_id
 character(len=1024),parameter :: subr = 'linop_write'
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,trim(linop%prefix))
+grpid = mpl%nc_group_define_or_get(subr,ncid,linop%prefix)
 
 ! Define dimensions
 call mpl%ncerr(subr,nf90_put_att(grpid,nf90_global,'n_src',linop%n_src))

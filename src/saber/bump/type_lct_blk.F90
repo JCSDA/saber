@@ -199,23 +199,23 @@ associate(ib=>lct_blk%ib)
 ! Indices
 iv = bpar%b_to_v1(ib)
 its = bpar%b_to_ts1(ib)
-varname = trim(nam%variables(iv))//"_"//trim(nam%timeslots(its))
+varname = trim(nam%variables(iv))//'_'//trim(nam%timeslots(its))
 
 do iscales=1,lct_blk%nscales
    ! Write fields
    write(scalename,'(a,i1)') 'scale_',iscales
-   call io%fld_write(mpl,nam,geom,filename,'D11',lct_blk%D11(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'D22',lct_blk%D22(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'D33',lct_blk%D33(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'D12',lct_blk%D12(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'H11',lct_blk%H11(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'H22',lct_blk%H22(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'H33',lct_blk%H33(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'H12',lct_blk%H12(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'coef',lct_blk%Dcoef(:,:,iscales),trim(varname),trim(scalename))
-   call io%fld_write(mpl,nam,geom,filename,'Lh',lct_blk%DLh(:,:,iscales),trim(varname),trim(scalename))
+   call io%fld_write(mpl,nam,geom,filename,'D11',lct_blk%D11(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'D22',lct_blk%D22(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'D33',lct_blk%D33(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'D12',lct_blk%D12(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'H11',lct_blk%H11(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'H22',lct_blk%H22(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'H33',lct_blk%H33(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'H12',lct_blk%H12(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'coef',lct_blk%Dcoef(:,:,iscales),varname,scalename)
+   call io%fld_write(mpl,nam,geom,filename,'Lh',lct_blk%DLh(:,:,iscales),varname,scalename)
 end do
-call io%fld_write(mpl,nam,geom,filename,'qc',lct_blk%qc_c0a,trim(varname))
+call io%fld_write(mpl,nam,geom,filename,'qc',lct_blk%qc_c0a,varname)
 
 ! End associate
 end associate
@@ -269,7 +269,7 @@ ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'
 call nam%write(mpl,ncid)
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+grpid = mpl%nc_group_define_or_get(subr,ncid,bpar%blockname(ib))
 
 ! Define dimensions
 nc3_id = mpl%nc_dim_define_or_get(subr,grpid,'nc3',bpar%nc3(ib))
@@ -501,7 +501,7 @@ do il0=1,geom%nl0
             ! Fill minim
             minim%obs = pack(lct_blk%raw(:,:,ic1a,il0),.true.)
             minim%cost_function = 'fit_lct'
-            minim%algo = trim(nam%minim_algo)
+            minim%algo = nam%minim_algo
             minim%nc3 = nam%nc3
             minim%nl0 = bpar%nl0r(ib)
             minim%nscales = lct_blk%nscales

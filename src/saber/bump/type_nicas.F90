@@ -100,7 +100,7 @@ do ib=1,bpar%nbe
    end if
 
    ! Set subsampling structure
-   nicas%blk(ib)%subsamp = trim(nam%subsamp)
+   nicas%blk(ib)%subsamp = nam%subsamp
 
    ! Verbosity flag
    nicas%blk(ib)%verbosity = .true.

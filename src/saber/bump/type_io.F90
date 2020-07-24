@@ -130,11 +130,11 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
 
    ! Get group
    if (present(groupname)) then
-      call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(groupname),grpid))
+      call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,groupname,grpid))
 
       ! Get sub-group
       if (present(subgroupname)) then
-         call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,trim(subgroupname),subgrpid))
+         call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,subgroupname,subgrpid))
       else
          subgrpid = grpid
       end if
@@ -147,7 +147,7 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
 
    ! Get variable
-   call mpl%ncerr(subr,nf90_inq_varid(grpid,trim(variable),fld_id))
+   call mpl%ncerr(subr,nf90_inq_varid(grpid,variable,fld_id))
 
    ! Get data
    call mpl%ncerr(subr,nf90_get_var(grpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
@@ -230,11 +230,11 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
 
    ! Define group
    if (present(groupname)) then
-      grpid = mpl%nc_group_define_or_get(subr,ncid,trim(groupname))
+      grpid = mpl%nc_group_define_or_get(subr,ncid,groupname)
 
       ! Define sub-group
       if (present(subgroupname)) then
-         subgrpid = mpl%nc_group_define_or_get(subr,grpid,trim(subgroupname))
+         subgrpid = mpl%nc_group_define_or_get(subr,grpid,subgroupname)
       else
          subgrpid = grpid
       end if
@@ -251,7 +251,7 @@ if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
    lat_id = mpl%nc_var_define_or_get(subr,ncid,'lat',nc_kind_real,(/nc0_id/),'degrees_east')
 
    ! Define variable
-   fld_id = mpl%nc_var_define_or_get(subr,subgrpid,trim(variable),nc_kind_real,(/nc0_id,nl0_id/))
+   fld_id = mpl%nc_var_define_or_get(subr,subgrpid,variable,nc_kind_real,(/nc0_id,nl0_id/))
 
    ! Convert to degrees
    lon_c0io = lon_c0io*rad2deg

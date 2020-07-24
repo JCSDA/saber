@@ -423,11 +423,11 @@ subroutine bint_apply(self, infields, outfields)
      !--------------------------------------------
      ! allocate output field if necessary
 
-     if (.not. outfields%has_field(trim(fieldname))) then
-        outfield = self%out_funcspace%create_field(name=trim(fieldname), &
+     if (.not. outfields%has_field(fieldname)) then
+        outfield = self%out_funcspace%create_field(name=fieldname, &
              kind=atlas_real(kind_real),levels=self%nlev)
      else
-        outfield = outfields%field(name=trim(fieldname))
+        outfield = outfields%field(name=fieldname)
      endif
 
      !--------------------------------------------
@@ -547,11 +547,11 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
      !--------------------------------------------
      ! allocate output field if necessary
 
-     if (.not. fields_ingrid%has_field(trim(fieldname))) then
-        field_ingrid = self%in_funcspace%create_field(name=trim(fieldname), &
+     if (.not. fields_ingrid%has_field(fieldname)) then
+        field_ingrid = self%in_funcspace%create_field(name=fieldname, &
              kind=atlas_real(kind_real),levels=self%nlev)
      else
-        field_ingrid = fields_ingrid%field(name=trim(fieldname))
+        field_ingrid = fields_ingrid%field(name=fieldname)
      endif
 
      !--------------------------------------------

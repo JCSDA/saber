@@ -1525,8 +1525,8 @@ do ib=1,bpar%nb
    its = bpar%b_to_ts1(ib)
    jts = bpar%b_to_ts2(ib)
    if ((iv==jv).and.(its>=2).and.(its==jts)) then
-      call io%fld_write(mpl,nam,geom,filename,'cor_loc',adv%cor_loc(:,:,iv,its),trim(bpar%blockname(ib)))
-      call io%fld_write(mpl,nam,geom,filename,'cor_adv',adv%cor_adv(:,:,iv,its),trim(bpar%blockname(ib)))
+      call io%fld_write(mpl,nam,geom,filename,'cor_loc',adv%cor_loc(:,:,iv,its),bpar%blockname(ib))
+      call io%fld_write(mpl,nam,geom,filename,'cor_adv',adv%cor_adv(:,:,iv,its),bpar%blockname(ib))
    end if
 end do
 

@@ -70,7 +70,7 @@ character(len=*),intent(in) :: prefix ! Prefix
 integer :: ib,ic2a
 
 ! Set attributes
-avg%prefix = trim(prefix)
+avg%prefix = prefix
 avg%ne = ne
 avg%nsub = nsub
 

@@ -66,7 +66,7 @@ integer :: ib
 ! Set attributes
 mom%ne = ne
 mom%nsub = nsub
-mom%prefix = trim(prefix)
+mom%prefix = prefix
 
 ! Allocation
 allocate(mom%blk(bpar%nb))
@@ -183,7 +183,7 @@ do ib=1,bpar%nb
       do isub=1,mom%blk(ib)%nsub
          ! Get subgroup
          write(subname,'(a,i6.6)') 'sub_',isub
-         call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,trim(subname),subgrpid))
+         call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,subname,subgrpid))
 
          ! Get variables
          call mpl%ncerr(subr,nf90_inq_varid(subgrpid,'m2_1',m2_1_id))
@@ -254,7 +254,7 @@ do ib=1,bpar%nb
       do isub=1,mom%blk(ib)%nsub
          ! Define subgroup
          write(subname,'(a,i6.6)') 'sub_',isub
-         subgrpid = mpl%nc_group_define_or_get(subr,grpid,trim(subname))
+         subgrpid = mpl%nc_group_define_or_get(subr,grpid,subname)
 
          ! Define variables
          m2_1_id = mpl%nc_var_define_or_get(subr,subgrpid,'m2_1',nc_kind_real,(/nc1a_id,nl0_id/))

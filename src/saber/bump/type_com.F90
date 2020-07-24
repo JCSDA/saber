@@ -112,7 +112,7 @@ integer :: grpid,own_to_ext_id,own_to_red_id,jhalocounts_id,jexclcounts_id,jhalo
 character(len=1024),parameter :: subr = 'com_read'
 
 ! Get group
-call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(com%prefix),grpid))
+call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,com%prefix,grpid))
 
 ! Get dimensions
 com%nred = mpl%nc_dim_inquire(subr,grpid,'nred')
@@ -172,7 +172,7 @@ integer :: jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,e
 character(len=1024),parameter :: subr = 'com_write'
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,trim(com%prefix))
+grpid = mpl%nc_group_define_or_get(subr,ncid,com%prefix)
 
 ! Define dimensions
 nproc_id = mpl%nc_dim_define_or_get(subr,ncid,'nproc',mpl%nproc)
@@ -690,7 +690,7 @@ end if
 call mpl%update_tag(6)
 
 ! Set prefix
-com_out%prefix = trim(prefix)
+com_out%prefix = prefix
 
 end subroutine com_setup
 

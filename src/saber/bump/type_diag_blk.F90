@@ -83,7 +83,7 @@ real(kind_real) :: vunit(geom%nl0)
 ! Set attributes
 diag_blk%ic2a = ic2a
 diag_blk%ib = ib
-diag_blk%prefix = trim(prefix)
+diag_blk%prefix = prefix
 
 ! Allocation
 if ((ic2a==0).or.nam%local_diag) then
@@ -183,7 +183,7 @@ ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'
 call nam%write(mpl,ncid)
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,trim(bpar%blockname(ib)))
+grpid = mpl%nc_group_define_or_get(subr,ncid,bpar%blockname(ib))
 
 ! Define dimensions
 one_id = mpl%nc_dim_define_or_get(subr,ncid,'one',1)
@@ -197,7 +197,7 @@ disth_id = mpl%nc_var_define_or_get(subr,grpid,'disth',nc_kind_real,(/nc3_id/))
 vunit_id = mpl%nc_var_define_or_get(subr,ncid,'vunit',nc_kind_real,(/nl0_1_id/))
 
 ! Define subgroup
-subgrpid = mpl%nc_group_define_or_get(subr,grpid,trim(diag_blk%prefix))
+subgrpid = mpl%nc_group_define_or_get(subr,grpid,diag_blk%prefix)
 
 ! Define variables
 if (mpl%msv%isanynot(diag_blk%raw)) then

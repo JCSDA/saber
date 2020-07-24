@@ -243,14 +243,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%info(trim(mpl%info))
+            call fckit_log%info(mpl%info)
          else
             write(mpl%lunit,'(a)') trim(mpl%info)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%info(trim(mpl%info),newl=.false.)
+            call fckit_log%info(mpl%info,newl=.false.)
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%info)
             call flush(mpl%lunit)
@@ -1897,10 +1897,10 @@ integer :: info
 
 ! Create file
 if (present(f_comm)) then
-   info = nf90_create(trim(filename),ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
+   info = nf90_create(filename,ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
  & comm=f_comm%communicator(),info=f_comm%info_null())
 else
-   info = nf90_create(trim(filename),ior(nf90_noclobber,nf90_netcdf4),ncid)
+   info = nf90_create(filename,ior(nf90_noclobber,nf90_netcdf4),ncid)
 end if
 
 if (info==nf90_noerr) then
@@ -1909,10 +1909,10 @@ if (info==nf90_noerr) then
 else
    ! Open file
    if (present(f_comm)) then
-      call mpl%ncerr(subr,nf90_open(trim(filename),nf90_write,ncid, &
+      call mpl%ncerr(subr,nf90_open(filename,nf90_write,ncid, &
  & comm=f_comm%communicator(),info=f_comm%info_null()))
    else
-      call mpl%ncerr(subr,nf90_open(trim(filename),nf90_write,ncid))
+      call mpl%ncerr(subr,nf90_open(filename,nf90_write,ncid))
    end if
 end if
 
@@ -1939,10 +1939,10 @@ integer :: grpid                       ! NetCDF group ID
 integer :: info
 
 ! Define group
-info = nf90_def_grp(ncid,trim(grpname),grpid)
+info = nf90_def_grp(ncid,grpname,grpid)
 
 ! Get group
-if (info/=nf90_noerr) call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(grpname),grpid))
+if (info/=nf90_noerr) call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
 end function mpl_nc_group_define_or_get
 
@@ -1968,11 +1968,11 @@ integer :: dimid                       ! NetCDF dimension ID
 integer :: info,dimsize_test
 
 ! Define dimension
-info = nf90_def_dim(ncid,trim(dimname),dimsize,dimid)
+info = nf90_def_dim(ncid,dimname,dimsize,dimid)
 
 if (info/=nf90_noerr) then
    ! Get dimension
-   call mpl%ncerr(subr,nf90_inq_dimid(ncid,trim(dimname),dimid))
+   call mpl%ncerr(subr,nf90_inq_dimid(ncid,dimname,dimid))
 
    ! Get dimension size
    call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
@@ -2004,7 +2004,7 @@ integer :: dimsize                     ! NetCDF dimension size
 integer :: info,dimid
 
 ! Get dimension ID
-info = nf90_inq_dimid(ncid,trim(dimname),dimid)
+info = nf90_inq_dimid(ncid,dimname,dimid)
 if (info==nf90_noerr) then
    call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize))
 else
@@ -2032,7 +2032,7 @@ integer,intent(in) :: dimsize          ! Expected dimension size
 integer :: dimid,dimsize_test
 
 ! Get dimension
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,trim(dimname),dimid))
+call mpl%ncerr(subr,nf90_inq_dimid(ncid,dimname,dimid))
 
 ! Get dimension size
 call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
@@ -2066,7 +2066,7 @@ integer :: varid                       ! NetCDF variable ID
 integer :: info
 
 ! Define variable
-info = nf90_def_var(ncid,trim(varname),varkind,varshape,varid)
+info = nf90_def_var(ncid,varname,varkind,varshape,varid)
 
 if (info==nf90_noerr) then
    ! Set missing value attribute
@@ -2079,10 +2079,10 @@ if (info==nf90_noerr) then
    end if
 
    ! Set unit
-   if (present(unitname)) call mpl%ncerr(subr,nf90_put_att(ncid,varid,'unit',trim(unitname)))
+   if (present(unitname)) call mpl%ncerr(subr,nf90_put_att(ncid,varid,'unit',unitname))
 else
    ! Get variable
-   call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(varname),varid))
+   call mpl%ncerr(subr,nf90_inq_varid(ncid,varname,varid))
 end if
 
 end function mpl_nc_var_define_or_get
@@ -2101,7 +2101,7 @@ character(len=*),intent(in) :: subr  ! Calling subroutine
 integer,intent(in) :: info           ! Info index
 
 ! Check status
-if (info/=nf90_noerr) call mpl%abort(subr,trim(nf90_strerror(info)))
+if (info/=nf90_noerr) call mpl%abort(subr,nf90_strerror(info))
 
 end subroutine mpl_ncerr
 
@@ -2190,7 +2190,7 @@ else
       do i=2,n
          write(fullstr,'(a,i3.3)') trim(fullstr(1:1024-4))//':',var(i)
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),fullstr))
    end if
 end if
 
@@ -2272,7 +2272,7 @@ else
       do i=2,n
          write(fullstr,'(a,e10.3)') trim(fullstr(1:1024-11))//':',var(i)
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),fullstr))
    end if
 end if
 
@@ -2361,7 +2361,7 @@ else
             fullstr = trim(fullstr(1:1024-8))//':'//'.false.'
          end if
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),fullstr))
    end if
 end if
 
@@ -2398,7 +2398,7 @@ if (mpl%msv%is(ncid)) then
    call mpl%flush
 else
    ! Write string into a NetCDF file
-   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(var)))
+   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),var))
 end if
 
 end subroutine mpl_write_string
@@ -2447,7 +2447,7 @@ else
       do i=2,n
          fullstr = trim(fullstr)//':'//trim(var(i))
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),fullstr))
    end if
 end if
 

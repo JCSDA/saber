@@ -362,7 +362,7 @@ call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
 if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
 
 ! Get group
-call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,trim(samp%name),grpid))
+call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,samp%name,grpid))
 
 ! Get or check dimensions
 call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
@@ -496,7 +496,7 @@ call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 call nam%write(mpl,ncid)
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,trim(samp%name))
+grpid = mpl%nc_group_define_or_get(subr,ncid,samp%name)
 
 ! Define dimensions
 nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
@@ -597,7 +597,7 @@ ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'
 call nam%write(mpl,ncid)
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,trim(samp%name))
+grpid = mpl%nc_group_define_or_get(subr,ncid,samp%name)
 
 ! Define dimensions
 nc0a_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0a',geom%nc0a)
@@ -796,7 +796,7 @@ character(len=1024) :: color
 character(len=1024),parameter :: subr = 'samp_compute_c1'
 
 ! Set sampling name
-samp%name = trim(sname)
+samp%name = sname
 
 ! Allocation
 call samp%alloc(geom)

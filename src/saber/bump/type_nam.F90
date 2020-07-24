@@ -975,7 +975,7 @@ if (mpl%main) then
 
    ! Open namelist
    call mpl%newunit(lunit)
-   open(unit=lunit,file=trim(namelname),status='old',action='read')
+   open(unit=lunit,file=namelname,status='old',action='read')
 
    ! general_param
    read(lunit,nml=general_param)
@@ -1198,7 +1198,7 @@ type(fckit_configuration) :: conf
 
 if (mpl%main) then
    ! Set fckit configuration from yamlname
-   conf = fckit_yamlconfiguration(fckit_pathname(trim(yamlname)))
+   conf = fckit_yamlconfiguration(fckit_pathname(yamlname))
 
    ! Convert fckit configuration to namelist
    call nam%from_conf(conf)

@@ -59,8 +59,8 @@ call timer%start(mpl)
 call bump%nam%init(mpl%nproc)
 
 ! Find whether input file is a namelist (xxx.nam) or a yaml (xxxx.yaml) and read it
-ppos = scan(trim(inputfile),".",back=.true.)
-ext = trim(inputfile(ppos+1:))
+ppos = scan(inputfile,".",back=.true.)
+ext = inputfile(ppos+1:)
 select case (trim(ext))
 case ('nam')
    ! Namelist
