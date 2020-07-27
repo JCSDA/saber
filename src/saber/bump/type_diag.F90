@@ -497,14 +497,16 @@ do ib=1,bpar%nbe
       ! Print results
       do il0=1,geom%nl0
          if (bpar%fit_block(ib)) then
-            write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero: ', &
+            if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
+               write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero: ', &
  & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
-            call mpl%flush
-            if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-               write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','cor. support radii: ',trim(mpl%aqua), &
+               call mpl%flush
+               if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
+                  write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','cor. support radii: ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
  & trim(mpl%black)//' vert. unit'
-               call mpl%flush
+                  call mpl%flush
+               end if
             end if
          end if
       end do

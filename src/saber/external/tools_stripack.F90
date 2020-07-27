@@ -2219,7 +2219,7 @@ subroutine trfind ( nst, p, n, x, y, z, list, lptr, lend, b1, b2, b3, i1, &
     next = -list(lp)
 
     call det ( x(next), y(next), z(next), x(n1), y(n1), z(n1), xp, yp, zp, output )
-    if ( sup(output,0.0_kind_real)  ) then
+    if ( supeq(output,0.0_kind_real)  ) then
 !
 !  N1 is the leftmost visible node if P or NEXT is
 !  forward of N1->N2.  Compute Q = N1 X (N2 X N1).
