@@ -24,7 +24,7 @@ integer,parameter :: nscalesmax = 5                ! Maximum number of variables
 integer,parameter :: ndirmax = 300                 ! Maximum number of diracs
 integer,parameter :: nldwvmax = 99                 ! Maximum number of local diagnostic profiles
 integer,parameter :: nprociomax = 20               ! Maximum number of I/O tasks
-integer,parameter :: naliasmax = 1000              ! Maximum number of aliases
+integer,parameter :: naliasmax = 30                ! Maximum number of aliases
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2  ! Maximum number of vertical balance blocks
 
 type nam_type
