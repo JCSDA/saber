@@ -24,7 +24,7 @@ integer,parameter :: nscalesmax = 5                ! Maximum number of variables
 integer,parameter :: ndirmax = 300                 ! Maximum number of diracs
 integer,parameter :: nldwvmax = 99                 ! Maximum number of local diagnostic profiles
 integer,parameter :: nprociomax = 20               ! Maximum number of I/O tasks
-integer,parameter :: naliasmax = 30                ! Maximum number of aliases
+integer,parameter :: niokvmax = 30                 ! Maximum number of I/O key-values
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2  ! Maximum number of vertical balance blocks
 
 type nam_type
@@ -104,8 +104,8 @@ type nam_type
    logical :: nomask                                    ! Do not use geometry mask
    character(len=1024) :: wind_filename                 ! Wind field file name
    character(len=1024) :: wind_variables(2)             ! Wind field variables names (u and v)
-   character(len=1024),dimension(naliasmax) :: strings  ! Strings
-   character(len=1024),dimension(naliasmax) :: aliases  ! Aliases
+   character(len=1024),dimension(niokvmax) :: io_keys   ! I/O keys
+   character(len=1024),dimension(niokvmax) :: io_values ! I/O values
 
    ! ens1_param
    integer :: ens1_ne                                   ! Ensemble 1 size
@@ -213,11 +213,11 @@ contains
    procedure :: from_conf => nam_from_conf
    procedure :: check => nam_check
    procedure :: write => nam_write
-   procedure :: get_alias => nam_get_alias
+   procedure :: io_key_value => nam_io_key_value
 end type nam_type
 
 private
-public :: nvmax,ntsmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,naliasmax,nvbalmax
+public :: nvmax,ntsmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
 public :: nam_type
 
 contains
@@ -319,9 +319,9 @@ nam%dts = 3600.0
 nam%nomask = .false.
 nam%wind_filename = ''
 nam%wind_variables = (/'',''/)
-do i=1,naliasmax
-   nam%strings(i) = ''
-   nam%aliases(i) = ''
+do i=1,niokvmax
+   nam%io_keys(i) = ''
+   nam%io_values(i) = ''
 end do
 
 ! ens1_param default
@@ -524,8 +524,8 @@ real(kind_real) :: dts
 logical :: nomask
 character(len=1024) :: wind_filename
 character(len=1024) :: wind_variables(2)
-character(len=1024),dimension(naliasmax) :: strings
-character(len=1024),dimension(naliasmax) :: aliases
+character(len=1024),dimension(niokvmax) :: io_keys
+character(len=1024),dimension(niokvmax) :: io_values
 integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
@@ -683,8 +683,8 @@ namelist/model_param/ &
  & nomask, &
  & wind_filename, &
  & wind_variables, &
- & strings, &
- & aliases
+ & io_keys, &
+ & io_values
 namelist/ens1_param/ &
  & ens1_ne, &
  & ens1_nsub
@@ -859,9 +859,9 @@ if (mpl%main) then
    nomask = .false.
    wind_filename = ''
    wind_variables = (/'',''/)
-   do i=1,naliasmax
-      strings(i) = ''
-      aliases(i) = ''
+   do i=1,niokvmax
+      io_keys(i) = ''
+      io_values(i) = ''
    end do
 
    ! ens1_param default
@@ -1059,8 +1059,8 @@ if (mpl%main) then
    nam%nomask = nomask
    nam%wind_filename = wind_filename
    nam%wind_variables = wind_variables
-   nam%strings = strings
-   nam%aliases = aliases
+   nam%io_keys = io_keys
+   nam%io_values = io_values
 
    ! ens1_param
    read(lunit,nml=ens1_param)
@@ -1294,8 +1294,8 @@ call mpl%f_comm%broadcast(nam%dts,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nomask,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%wind_filename,mpl%rootproc-1)
 call mpl%broadcast(nam%wind_variables,mpl%rootproc-1)
-call mpl%broadcast(nam%strings,mpl%rootproc-1)
-call mpl%broadcast(nam%aliases,mpl%rootproc-1)
+call mpl%broadcast(nam%io_keys,mpl%rootproc-1)
+call mpl%broadcast(nam%io_values,mpl%rootproc-1)
 
 ! ens1_param
 call mpl%f_comm%broadcast(nam%ens1_ne,mpl%rootproc-1)
@@ -1529,13 +1529,13 @@ if (conf%has("wind_variables")) then
    call conf%get_or_die("wind_variables",str_array)
    nam%wind_variables(1:2) = str_array(1:2)
 end if
-if (conf%has("strings")) then
-   call conf%get_or_die("strings",str_array)
-   nam%strings(1:size(str_array)) = str_array
+if (conf%has("io_keys")) then
+   call conf%get_or_die("io_keys",str_array)
+   nam%io_keys(1:size(str_array)) = str_array
 end if
-if (conf%has("aliases")) then
-   call conf%get_or_die("aliases",str_array)
-   nam%aliases(1:size(str_array)) = str_array
+if (conf%has("io_values")) then
+   call conf%get_or_die("io_values",str_array)
+   nam%io_values(1:size(str_array)) = str_array
 end if
 
 ! ens1_param
@@ -1859,10 +1859,10 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%load_var.or.nam%new_hdia
       if (trim(nam%timeslots(its))=='') call mpl%abort(subr,'timeslots not specified for '//itschar)
    end do
    if (.not.(nam%dts>0.0)) call mpl%abort(subr,'dts should be positive')
-   do i=1,naliasmax
-      if (((trim(nam%strings(i))/='').and.(trim(nam%aliases(i))=='')).or. &
- & ((trim(nam%strings(i))=='').and.(trim(nam%aliases(i))/=''))) &
- & call mpl%abort(subr,'strings and aliases are not consistent')
+   do i=1,niokvmax
+      if (((trim(nam%io_keys(i))/='').and.(trim(nam%io_values(i))=='')).or. &
+ & ((trim(nam%io_keys(i))=='').and.(trim(nam%io_values(i))/=''))) &
+ & call mpl%abort(subr,'io_keys and io_values are not consistent')
    end do
 end if
 
@@ -2188,8 +2188,8 @@ call mpl%write(lncid,'nam','dts',nam%dts)
 call mpl%write(lncid,'nam','nomask',nam%nomask)
 call mpl%write(lncid,'nam','wind_filename',nam%wind_filename)
 call mpl%write(lncid,'nam','wind_variables',2,nam%wind_variables(1:2))
-call mpl%write(lncid,'nam','strings',count(nam%strings/=''),nam%strings(1:naliasmax))
-call mpl%write(lncid,'nam','aliases',count(nam%aliases/=''),nam%aliases(1:naliasmax))
+call mpl%write(lncid,'nam','io_keys',count(nam%io_keys/=''),nam%io_keys(1:niokvmax))
+call mpl%write(lncid,'nam','io_values',count(nam%io_values/=''),nam%io_values(1:niokvmax))
 
 ! ens1_param
 if (mpl%msv%is(lncid)) then
@@ -2343,30 +2343,30 @@ deallocate(lat_ldwv)
 end subroutine nam_write
 
 !----------------------------------------------------------------------
-! Subroutine: nam_get_alias
-! Purpose: get aliases
+! Subroutine: nam_io_key_value
+! Purpose: get I/O value from key
 !----------------------------------------------------------------------
-subroutine nam_get_alias(nam,string,aliases)
+subroutine nam_io_key_value(nam,io_key,io_value)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(in) :: nam        ! Namelist
-character(len=*),intent(in) :: string    ! String
-character(len=1024),intent(out) :: aliases ! aliases
+class(nam_type),intent(in) :: nam           ! Namelist
+character(len=*),intent(in) :: io_key       ! I/O key
+character(len=1024),intent(out) :: io_value ! I/O value
 
 ! Local variables
 integer :: i
 
-! Loop over string/aliases couples
-aliases = string
-do i=1,naliasmax
-   if (trim(nam%strings(i))==trim(string)) then
-      aliases = nam%aliases(i)
+! Loop over I/O key-value couples
+io_value = io_key
+do i=1,niokvmax
+   if (trim(nam%io_keys(i))==trim(io_key)) then
+      io_value = nam%io_values(i)
       exit
    end if
 end do
 
-end subroutine nam_get_alias
+end subroutine nam_io_key_value
 
 end module type_nam

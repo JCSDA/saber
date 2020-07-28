@@ -221,7 +221,7 @@ do iproc=1,mpl%nproc
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
                ! Get group
-               call nam%get_alias(bpar%blockname(ib),grpname)
+               call nam%io_key_value(bpar%blockname(ib),grpname)
                call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
                ! Read data
@@ -235,7 +235,7 @@ do iproc=1,mpl%nproc
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
                ! Get group
-               call nam%get_alias(bpar%blockname(ib),grpname)
+               call nam%io_key_value(bpar%blockname(ib),grpname)
                call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
                ! Read data
@@ -329,7 +329,7 @@ do iproc=1,mpl%nproc
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
                ! Define group
-               call nam%get_alias(bpar%blockname(ib),grpname)
+               call nam%io_key_value(bpar%blockname(ib),grpname)
                grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
                ! Write data
@@ -337,7 +337,7 @@ do iproc=1,mpl%nproc
 
                if (nam%write_grids.and.bpar%nicas_block(ib)) then
                   ! Define group
-                  call nam%get_alias(bpar%blockname(ib),grpname)
+                  call nam%io_key_value(bpar%blockname(ib),grpname)
                   grpid_grids = mpl%nc_group_define_or_get(subr,ncid_grids,grpname)
 
                   ! Write grids
@@ -355,7 +355,7 @@ do iproc=1,mpl%nproc
                call nicas_tmp%blk(ib)%receive(mpl,nam,geom,bpar,iproc,mpl%tag+(ib-1)*nicas_tag)
 
                ! Define group
-               call nam%get_alias(bpar%blockname(ib),grpname)
+               call nam%io_key_value(bpar%blockname(ib),grpname)
                grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
                ! Write data
@@ -363,7 +363,7 @@ do iproc=1,mpl%nproc
 
                if (nam%write_grids.and.bpar%nicas_block(ib)) then
                   ! Define group
-                  call nam%get_alias(bpar%blockname(ib),grpname)
+                  call nam%io_key_value(bpar%blockname(ib),grpname)
                   grpid_grids = mpl%nc_group_define_or_get(subr,ncid_grids,grpname)
 
                   ! Write grids

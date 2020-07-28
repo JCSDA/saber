@@ -173,7 +173,7 @@ call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       ! Get group
-      call nam%get_alias(bpar%blockname(ib),grpname)
+      call nam%io_key_value(bpar%blockname(ib),grpname)
       call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
       ! Check dimensions
@@ -244,7 +244,7 @@ nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       ! Define group
-      call nam%get_alias(bpar%blockname(ib),grpname)
+      call nam%io_key_value(bpar%blockname(ib),grpname)
       grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
       ! Define dimensions

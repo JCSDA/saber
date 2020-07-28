@@ -235,7 +235,7 @@ call cmat%alloc(nam,geom,bpar)
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Read fields
-      call nam%get_alias(bpar%blockname(ib),grpname)
+      call nam%io_key_value(bpar%blockname(ib),grpname)
       if (bpar%nicas_block(ib)) then
          call io%fld_read(mpl,nam,geom,filename,'coef_ens',cmat%blk(ib)%coef_ens,grpname)
          call io%fld_read(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta,grpname)
@@ -294,7 +294,7 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Write fields
-      call nam%get_alias(bpar%blockname(ib),grpname)
+      call nam%io_key_value(bpar%blockname(ib),grpname)
       if (bpar%nicas_block(ib)) then
          call io%fld_write(mpl,nam,geom,filename,'coef_ens',cmat%blk(ib)%coef_ens,grpname)
          call io%fld_write(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta,grpname)

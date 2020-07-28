@@ -134,7 +134,7 @@ filename = trim(nam%prefix)//'_var'
 ! Read raw variance, fourth-order moment, filtered variance and standard-deviation
 do its=1,nam%nts
    do iv=1,nam%nv
-      call nam%get_alias(trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)),grpname)
+      call nam%io_key_value(trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)),grpname)
       call io%fld_read(mpl,nam,geom,filename,'m2',var%m2(:,:,iv,its),grpname)
       call io%fld_read(mpl,nam,geom,filename,'m4',var%m4(:,:,iv,its),grpname)
       if (nam%var_filter) call io%fld_read(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv,its),grpname)
@@ -176,7 +176,7 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 ! Write raw variance, fourth-order moment, filtered variance and standard-deviation
 do its=1,nam%nts
    do iv=1,nam%nv
-      call nam%get_alias(trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)),grpname)
+      call nam%io_key_value(trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)),grpname)
       call io%fld_write(mpl,nam,geom,filename,'m2',var%m2(:,:,iv,its),grpname)
       call io%fld_write(mpl,nam,geom,filename,'m4',var%m4(:,:,iv,its),grpname)
       if (nam%var_filter) call io%fld_write(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv,its),grpname)

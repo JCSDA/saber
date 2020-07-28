@@ -194,7 +194,7 @@ do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Get group
-         call nam%get_alias(vbal%blk(iv,jv)%name,grpname)
+         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
          call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid(iv,jv)))
 
          ! Get variable
@@ -266,7 +266,7 @@ do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Define group
-         call nam%get_alias(vbal%blk(iv,jv)%name,grpname)
+         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
          grpid(iv,jv) = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
          ! Define variables
