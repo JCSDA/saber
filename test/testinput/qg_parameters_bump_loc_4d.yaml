@@ -1,5 +1,5 @@
 background:
-  state:
+  states:
   - date: 2010-01-01T00:00:00Z
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D
   - date: 2010-01-01T01:00:00Z
@@ -46,7 +46,7 @@ bump:
   strategy: common
 ensemble:
   members:
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -73,7 +73,7 @@ ensemble:
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -100,7 +100,7 @@ ensemble:
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -127,7 +127,7 @@ ensemble:
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -154,7 +154,7 @@ ensemble:
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -181,7 +181,7 @@ ensemble:
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -208,7 +208,7 @@ ensemble:
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -235,7 +235,7 @@ ensemble:
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -262,7 +262,7 @@ ensemble:
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -289,7 +289,7 @@ ensemble:
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -316,10 +316,11 @@ ensemble:
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H
-  variables:
-  - x
-logging:
-  categories: Info, Test, Warning, Error
+geometry:
+  nx: 40
+  ny: 20
+  depths: [4500.0, 5500.0]
+input variables: [x]
 output:
 - datadir: testdata/qg_parameters_bump_loc_4d
   date: 2010-01-01T00:00:00Z
@@ -336,11 +337,3 @@ output:
   exp: loc_rh
   parameter: loc_rv
   type: an
-resolution:
-  nx: 40
-  ny: 20
-  depths:
-  - 4500.0
-  - 5500.0
-variables:
-- x

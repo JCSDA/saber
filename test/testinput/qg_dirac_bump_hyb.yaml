@@ -1,5 +1,5 @@
-Covariance:
-  covariance: hybrid
+background error:
+  covariance model: hybrid
   ensemble:
     localization:
       bump:
@@ -9,14 +9,10 @@ Covariance:
         load_nicas: 1
         prefix: qg_dirac_bump_hyb/test
         strategy: common
-      localization: BUMP
-      resolution:
-        nx: 40
-        ny: 20
+      localization method: BUMP
       timeslots:
       - 2010-01-01T12:00:00Z
-      variables:
-      - x
+      localization variables: [x]
     members:
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H
@@ -38,45 +34,34 @@ Covariance:
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H
-    variables:
-    - x
-  ensemble_weight: 0.707
+  ensemble weight: 0.707
   static:
-    covariance: QgError
+    covariance model: QgError
     horizontal_length_scale: 2.2e6
     maximum_condition_number: 1.0e6
     standard_deviation: 1.8e7
     vertical_length_scale: 15000.0
-  static_weight: 0.707
+  static weight: 0.707
 dirac:
-  ixdir: 
-  - 20
-  iydir:
-  - 10
-  izdir:
-  - 1
-initial:
+  ixdir: [20]
+  iydir: [10]
+  izdir: [1]
+geometry:
+  nx: 40
+  ny: 20
+  depths: [4500.0, 5500.0]
+initial condition:
   date: 2010-01-01T12:00:00Z
   filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H
-logging:
-  categories: Info, Test, Warning, Error
 model:
   tstep: PT1H
-output_B:
+output B:
   datadir: testdata/qg_dirac_bump_hyb
   date: 2010-01-01T12:00:00Z
   exp: B
   type: an
-output_localization:
+output localization:
   datadir: testdata/qg_dirac_bump_hyb
   date: 2010-01-01T12:00:00Z
   exp: localization
   type: an
-resolution:
-  nx: 40
-  ny: 20
-  depths:
-  - 4500.0
-  - 5500.0
-variables:
-- x

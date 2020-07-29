@@ -84,8 +84,7 @@ StdDevVariableChange<MODEL>::StdDevVariableChange(const State_ & xb, const State
   oops::Log::trace() << "StdDevVariableChange<MODEL>::StdDevVariableChange starting" << std::endl;
 
 // Setup variables
-  const eckit::LocalConfiguration varConfig(conf, "inputVariables");
-  const oops::Variables vars(varConfig);
+  const oops::Variables vars(conf, "input variables");
 
 // Setup timeslots
   std::vector<util::DateTime> timeslots;

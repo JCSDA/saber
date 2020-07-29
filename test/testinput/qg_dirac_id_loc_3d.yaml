@@ -1,7 +1,7 @@
-Covariance:
-  covariance: ensemble
+background error:
+  covariance model: ensemble
   localization:
-    localization: ID
+    localization method: ID
   members:
   - date: 2010-01-01T12:00:00Z
     filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H
@@ -23,37 +23,26 @@ Covariance:
     filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H
   - date: 2010-01-01T12:00:00Z
     filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H
-  variables:
-  - x
 dirac:
-  ixdir: 
-  - 20
-  iydir:
-  - 10
-  izdir:
-  - 1
-initial:
+  ixdir: [20]
+  iydir: [10]
+  izdir: [1]
+geometry:
+  nx: 40
+  ny: 20
+  depths: [4500.0, 5500.0]
+initial condition:
   date: 2010-01-01T12:00:00Z
   filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H
-logging:
-  categories: Info, Test, Warning, Error
 model:
   tstep: PT1H
-output_B:
-  datadir: testdata/qg_dirac_id_loc_3d
+output B:
+  datadir: testdata/qg_dirac_bump_loc_3d
   date: 2010-01-01T12:00:00Z
   exp: B
   type: an
-output_localization:
-  datadir: testdata/qg_dirac_id_loc_3d
+output localization:
+  datadir: testdata/qg_dirac_bump_loc_3d
   date: 2010-01-01T00:00:00Z
   exp: localization
   type: an
-resolution:
-  nx: 40
-  ny: 20
-  depths:
-  - 4500.0
-  - 5500.0
-variables:
-- x
