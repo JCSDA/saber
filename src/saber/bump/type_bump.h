@@ -26,8 +26,7 @@ extern "C" {
                          const eckit::Configuration &,
                          const eckit::Configuration &);
   void bump_add_member_f90(const int &, atlas::field::FieldSetImpl *, const int &, const int &);
-  void bump_remove_member_f90(const int &, atlas::field::FieldSetImpl *, const int &,
-                                const int &);
+  void bump_remove_member_f90(const int &, atlas::field::FieldSetImpl *, const int &, const int &);
   void bump_run_drivers_f90(const int &);
   void bump_apply_vbal_f90(const int &, atlas::field::FieldSetImpl *);
   void bump_apply_vbal_inv_f90(const int &, atlas::field::FieldSetImpl *);
