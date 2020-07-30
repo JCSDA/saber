@@ -652,8 +652,8 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 
 ! Local variables
 integer :: nmgu,iproc,img,jmg,imga,imgu,imgu_s,imgu_e,imgu_min,ic0a,jc0a,ic0u,ic0,diff_grid,diff_grid_tot,il0,nr,nra,ir,ira
-integer :: proc_to_nra(mpl%nproc)
-integer :: mga_to_mg(geom%nmga),mga_to_mgu(geom%nmga),mga_to_c0(geom%nmga),nc0_gmask(0:geom%nl0)
+integer :: notempty
+integer :: proc_to_nra(mpl%nproc),mga_to_mg(geom%nmga),mga_to_mgu(geom%nmga),mga_to_c0(geom%nmga),nc0_gmask(0:geom%nl0)
 integer,allocatable :: mgu_to_mg(:),mgu_to_proc(:),redundant(:),order(:)
 integer,allocatable :: c0a_to_mg(:),ra_to_r(:),r_to_mg(:),r_to_mg_tot(:),r_to_c0(:),r_to_c0_tot(:)
 real(kind_real) :: areasum(geom%nl0),vunitsum(geom%nl0),vunitsum_tot(geom%nl0),norm(geom%nl0),norm_tot(geom%nl0)
@@ -935,6 +935,7 @@ do il0=1,geom%nl0
       if (geom%area_provided) areasum(il0) = sum(geom%area_c0a,mask=geom%gmask_c0a(:,il0))
       vunitsum(il0) = sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
    else
+      areasum(il0) = 0.0
       vunitsum(il0) = 0.0
    end if
 end do
@@ -992,7 +993,11 @@ allocate(geom%proc_to_nc0u(mpl%nproc))
 call mpl%f_comm%allgather(geom%nc0u,geom%proc_to_nc0u)
 
 ! Check universe size
-if (mpl%nproc>1) then
+notempty = 0
+do iproc=1,mpl%nproc
+   if (geom%proc_to_nc0a(iproc)>0) notempty = notempty+1
+end do
+if (notempty>1) then
    do iproc=1,mpl%nproc
       if (geom%proc_to_nc0u(iproc)==geom%proc_to_nc0a(iproc)) call mpl%abort(subr,'universe is not larger than halo A')
    end do

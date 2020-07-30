@@ -7,7 +7,6 @@
 !----------------------------------------------------------------------
 module type_linop
 
-use fckit_mpi_module, only: fckit_mpi_status
 use netcdf
 !$ use omp_lib
 use tools_kinds, only: kind_real,nc_kind_real,huge_real
@@ -22,7 +21,6 @@ use type_rng, only: rng_type
 implicit none
 
 logical,parameter :: check_data = .false.             ! Activate data check for all linear operations
-integer,parameter :: linop_ntag = 3                   ! Number of communication steps to send/receive
 real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum interpolation coefficient
 
 ! Interpolation data derived type
@@ -39,14 +37,17 @@ end type
 
 ! Linear operator derived type
 type linop_type
+   ! Prefix and dimensions
    character(len=1024) :: prefix            ! Operator prefix (for I/O)
    integer :: n_src                         ! Source vector size
    integer :: n_dst                         ! Destination vector size
    integer :: n_s                           ! Operator size
+   integer :: nvec                          ! Size of the vector of linear operators with similar row and col
+
+   ! Data
    integer,allocatable :: row(:)            ! Output indices
    integer,allocatable :: col(:)            ! Input indices
    real(kind_real),allocatable :: S(:)      ! Coefficients
-   integer :: nvec                          ! Size of the vector of linear operators with similar row and col
    real(kind_real),allocatable :: Svec(:,:) ! Coefficients of the vector of linear operators with similar row and col
    type(interp_type) :: interp_data         ! Interpolation data
 contains
@@ -55,8 +56,9 @@ contains
    procedure :: copy => linop_copy
    procedure :: read => linop_read
    procedure :: write => linop_write
-   procedure :: receive => linop_receive
-   procedure :: send => linop_send
+   procedure :: buffer_size => linop_buffer_size
+   procedure :: serialize => linop_serialize
+   procedure :: deserialize => linop_deserialize
    procedure :: apply => linop_apply
    procedure :: apply_ad => linop_apply_ad
    procedure :: apply_sym => linop_apply_sym
@@ -66,7 +68,7 @@ contains
 end type linop_type
 
 private
-public :: linop_type,linop_ntag
+public :: linop_type
 
 contains
 
@@ -286,190 +288,177 @@ end if
 end subroutine linop_write
 
 !----------------------------------------------------------------------
-! Subroutine: linop_receive
-! Purpose: linop_receive
+! Subroutine: linop_buffer_size
+! Purpose: buffer size
 !----------------------------------------------------------------------
-subroutine linop_receive(linop,mpl,iproc,tag_start)
-
-implicit none
-
-! Passed variables
-class(linop_type),intent(inout) :: linop ! Linear operator
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: iproc              ! Source task index
-integer,intent(in) :: tag_start          ! MPI tag
-
-! Local variables
-integer :: tag,n_dim,n_int,n_real,offset_int,offset_real
-integer,allocatable :: rbuf_dim(:),rbuf_int(:)
-real(kind_real),allocatable :: rbuf_real(:)
-logical,allocatable :: mask_Svec(:,:)
-type(fckit_mpi_status) :: status
-
-! Initialization
-tag = tag_start
-n_dim = 0
-n_int = 0
-n_real = 0
-offset_int = 0
-offset_real = 0
-
-! Define buffer size
-n_dim = n_dim+4
-
-! Allocation
-allocate(rbuf_dim(n_dim))
-
-! Receive buffer
-call mpl%f_comm%receive(rbuf_dim,iproc-1,tag,status)
-tag = tag+1
-
-! Copy data
-linop%n_s = rbuf_dim(1)
-linop%n_src = rbuf_dim(2)
-linop%n_dst = rbuf_dim(3)
-linop%nvec = rbuf_dim(4)
-
-! Release memory
-deallocate(rbuf_dim)
-
-! Allocation
-call linop%alloc(linop%nvec)
-
-if (linop%n_s>0) then
-   ! Define buffer sizes
-   n_int = n_int+2*linop%n_s
-   if (linop%nvec>0) then
-      n_real = n_real+linop%n_s*linop%nvec
-   else
-      n_real = n_real+linop%n_s
-   end if
-
-   ! Allocation
-   allocate(rbuf_int(n_int))
-   allocate(rbuf_real(n_real))
-   allocate(mask_Svec(linop%n_s,linop%nvec))
-
-   ! Initialization
-   mask_Svec = .true.
-
-   ! Receive buffers
-   if (n_int>0) call mpl%f_comm%receive(rbuf_int,iproc-1,tag,status)
-   tag = tag+1
-   if (n_real>0) call mpl%f_comm%receive(rbuf_real,iproc-1,tag,status)
-   tag = tag+1
-
-   ! Copy data
-   linop%row = rbuf_int(offset_int+1:offset_int+linop%n_s)
-   offset_int = offset_int+linop%n_s
-   linop%col = rbuf_int(offset_int+1:offset_int+linop%n_s)
-   offset_int = offset_int+linop%n_s
-   if (linop%nvec>0) then
-      linop%Svec = unpack(rbuf_real(offset_real+1:offset_real+linop%n_s*linop%nvec),mask_Svec,linop%Svec)
-      offset_real = offset_real+linop%n_s*linop%nvec
-   else
-      linop%S = rbuf_real(offset_real+1:offset_real+linop%n_s)
-      offset_real = offset_real+linop%n_s
-   end if
-
-   ! Release memory
-   deallocate(rbuf_int)
-   deallocate(rbuf_real)
-   deallocate(mask_Svec)
-end if
-
-end subroutine linop_receive
-
-!----------------------------------------------------------------------
-! Subroutine: linop_send
-! Purpose: linop_send
-!----------------------------------------------------------------------
-subroutine linop_send(linop,mpl,iproc,tag_start)
+subroutine linop_buffer_size(linop,nbufi,nbufr)
 
 implicit none
 
 ! Passed variables
 class(linop_type),intent(in) :: linop ! Linear operator
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: iproc           ! Destination task index
-integer,intent(in) :: tag_start       ! MPI tag
-
-! Local variables
-integer :: tag,n_dim,n_int,n_real,offset_int,offset_real
-integer,allocatable :: sbuf_dim(:),sbuf_int(:)
-real(kind_real),allocatable :: sbuf_real(:)
-logical,allocatable :: mask_Svec(:,:)
-
-! Initialization
-tag = tag_start
-n_dim = 0
-n_int = 0
-n_real = 0
-offset_int = 0
-offset_real = 0
+integer,intent(out) :: nbufi          ! Buffer size (integer)
+integer,intent(out) :: nbufr          ! Buffer size (real)
 
 ! Define buffer size
-n_dim = n_dim+4
-
-! Allocation
-allocate(sbuf_dim(n_dim))
-
-! Copy data
-sbuf_dim(1) = linop%n_s
-sbuf_dim(2) = linop%n_src
-sbuf_dim(3) = linop%n_dst
-sbuf_dim(4) = linop%nvec
-
-! Send buffer
-call mpl%f_comm%send(sbuf_dim,iproc-1,tag)
-tag = tag+1
-
-! Release memory
-deallocate(sbuf_dim)
-
-if (linop%n_s>0) then
-   ! Define buffer sizes
-   n_int = n_int+2*linop%n_s
-   if (linop%nvec>0) then
-      n_real = n_real+linop%n_s*linop%nvec
-   else
-      n_real = n_real+linop%n_s
-   end if
-
-   ! Allocation
-   allocate(sbuf_int(n_int))
-   allocate(sbuf_real(n_real))
-   allocate(mask_Svec(linop%n_s,linop%nvec))
-
-   ! Initialization
-   mask_Svec = .true.
-
-   ! Copy data
-   sbuf_int(offset_int+1:offset_int+linop%n_s) = linop%row
-   offset_int = offset_int+linop%n_s
-   sbuf_int(offset_int+1:offset_int+linop%n_s) = linop%col
-   offset_int = offset_int+linop%n_s
-   if (linop%nvec>0) then
-      sbuf_real(offset_real+1:offset_real+linop%n_s*linop%nvec) = pack(linop%Svec,mask_Svec)
-      offset_real = offset_real+linop%n_s*linop%nvec
-   else
-      sbuf_real(offset_real+1:offset_real+linop%n_s) = linop%S
-      offset_real = offset_real+linop%n_s
-   end if
-
-   ! Send buffers
-   if (n_int>0) call mpl%f_comm%send(sbuf_int,iproc-1,tag)
-   tag = tag+1
-   if (n_real>0) call mpl%f_comm%send(sbuf_real,iproc-1,tag)
-   tag = tag+1
-
-   ! Release memory
-   deallocate(sbuf_int)
-   deallocate(sbuf_real)
-   deallocate(mask_Svec)
+nbufi = 6+2*linop%n_s
+if (linop%nvec>0) then
+   nbufr = linop%n_s*linop%nvec
+else
+   nbufr = linop%n_s
 end if
 
-end subroutine linop_send
+end subroutine linop_buffer_size
+
+!----------------------------------------------------------------------
+! Subroutine: linop_serialize
+! Purpose: serialize
+!----------------------------------------------------------------------
+subroutine linop_serialize(linop,mpl,nbufi,nbufr,bufi,bufr)
+
+implicit none
+
+! Passed variables
+class(linop_type),intent(in) :: linop      ! Linear operator
+type(mpl_type),intent(inout) :: mpl        ! MPI data
+integer,intent(in) :: nbufi                ! Buffer size (integer)
+integer,intent(in) :: nbufr                ! Buffer size (real)
+integer,intent(out) :: bufi(nbufi)         ! Buffer (integer)
+real(kind_real),intent(out) :: bufr(nbufr) ! Buffer (real)
+
+! Local variables
+integer :: ibufi,ibufr
+logical,allocatable :: mask_Svec(:,:)
+character(len=1024),parameter :: subr = 'linop_serialize'
+
+! Initialization
+ibufi = 0
+ibufr = 0
+
+! Dimensions
+bufi(ibufi+1) = nbufi
+ibufi = ibufi+1
+bufi(ibufi+1) = nbufr
+ibufi = ibufi+1
+bufi(ibufi+1) = linop%n_s
+ibufi = ibufi+1
+bufi(ibufi+1) = linop%n_src
+ibufi = ibufi+1
+bufi(ibufi+1) = linop%n_dst
+ibufi = ibufi+1
+bufi(ibufi+1) = linop%nvec
+ibufi = ibufi+1
+
+! Data
+if (linop%n_s>0) then
+   if (linop%nvec>0) then
+      ! Allocation
+      allocate(mask_Svec(linop%n_s,linop%nvec))
+
+      ! Initialization
+      mask_Svec = .true.
+   end if
+
+   ! Copy data
+   bufi(ibufi+1:ibufi+linop%n_s) = linop%row
+   ibufi = ibufi+linop%n_s
+   bufi(ibufi+1:ibufi+linop%n_s) = linop%col
+   ibufi = ibufi+linop%n_s
+   if (linop%nvec>0) then
+      bufr(ibufr+1:ibufr+linop%n_s*linop%nvec) = pack(linop%Svec,mask_Svec)
+      ibufr = ibufr+linop%n_s*linop%nvec
+   else
+      bufr(ibufr+1:ibufr+linop%n_s) = linop%S
+      ibufr = ibufr+linop%n_s
+   end if
+
+   ! Release memory
+   if (linop%nvec>0) deallocate(mask_Svec)
+end if
+
+! Check
+if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
+if (ibufr/=nbufr) call mpl%abort(subr,'inconsistent final offset/buffer size (real)')
+
+end subroutine linop_serialize
+
+!----------------------------------------------------------------------
+! Subroutine: linop_deserialize
+! Purpose: deserialize
+!----------------------------------------------------------------------
+subroutine linop_deserialize(linop,mpl,nbufi,nbufr,bufi,bufr)
+
+implicit none
+
+! Passed variables
+class(linop_type),intent(inout) :: linop  ! Linear operator
+type(mpl_type),intent(inout) :: mpl       ! MPI data
+integer,intent(in) :: nbufi               ! Buffer size (integer)
+integer,intent(in) :: nbufr               ! Buffer size (real)
+integer,intent(in) :: bufi(nbufi)         ! Buffer (integer)
+real(kind_real),intent(in) :: bufr(nbufr) ! Buffer (real)
+
+! Local variables
+integer :: ibufi,ibufr,nvec
+logical,allocatable :: mask_Svec(:,:)
+character(len=1024),parameter :: subr = 'linop_serialize'
+
+! Initialization
+ibufi = 0
+ibufr = 0
+
+! Check
+if (bufi(ibufi+1)/=nbufi) call mpl%abort(subr,'inconsistent initial value/buffer size (integer)')
+ibufi = ibufi+1
+if (bufi(ibufi+1)/=nbufr) call mpl%abort(subr,'inconsistent initial value/buffer size (real)')
+ibufi = ibufi+1
+
+! Copy data
+linop%n_s = bufi(ibufi+1)
+ibufi = ibufi+1
+linop%n_src = bufi(ibufi+1)
+ibufi = ibufi+1
+linop%n_dst = bufi(ibufi+1)
+ibufi = ibufi+1
+nvec = bufi(ibufi+1)
+ibufi = ibufi+1
+
+! Allocation
+call linop%alloc(nvec)
+
+! Data
+if (linop%n_s>0) then
+   if (linop%nvec>0) then
+      ! Allocation
+      allocate(mask_Svec(linop%n_s,linop%nvec))
+
+      ! Initialization
+      mask_Svec = .true.
+   end if
+   
+   ! Copy data
+   linop%row = bufi(ibufi+1:ibufi+linop%n_s)
+   ibufi = ibufi+linop%n_s
+   linop%col = bufi(ibufi+1:ibufi+linop%n_s)
+   ibufi = ibufi+linop%n_s
+   if (linop%nvec>0) then
+      linop%Svec = mpl%msv%valr
+      linop%Svec = unpack(bufr(ibufr+1:ibufr+linop%n_s*linop%nvec),mask_Svec,linop%Svec)
+      ibufr = ibufr+linop%n_s*linop%nvec
+   else
+      linop%S = bufr(ibufr+1:ibufr+linop%n_s)
+      ibufr = ibufr+linop%n_s
+   end if
+
+   ! Release memory
+   if (linop%nvec>0) deallocate(mask_Svec)
+end if
+
+! Check
+if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
+if (ibufr/=nbufr) call mpl%abort(subr,'inconsistent final offset/buffer size (real)')
+
+end subroutine linop_deserialize
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_apply

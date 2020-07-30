@@ -35,7 +35,14 @@ if test "${test%%_*}" = "bump" ; then
       mpi=$2
       omp=$3
 
-      for file in `ls testdata/${test}/test_${mpi}-${omp}_*.nc` ; do
+      # Check number of files
+      nfiles=`ls testdata/${test}/test_${mpi}-${omp}_*.nc 2>/dev/null | wc -l`
+      if test "${nfiles}" = "0"; then
+         echo -e "\e[31mNo NetCDF file to check\e[0m"
+         status=1
+      fi
+
+      for file in `ls testdata/${test}/test_${mpi}-${omp}_*.nc 2>/dev/null` ; do
          if test ! -L ${file}; then
             # Get suffix
             tmp=${file#testdata/${test}/test_${mpi}-${omp}_}
@@ -60,27 +67,30 @@ if test "${test%%_*}" = "bump" ; then
                   exit_code=$?
                   if test "${exit_code}" != "0" ; then
                      echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
-                     status=1
+                     status=2
                   fi
                else
                   echo -e "\e[31mCannot find command: nccmp\e[0m"
-                  status=2
+                  status=3
                fi
             fi
          fi
       done
 
-      if test "${status}" != "0" ; then
-         exit ${status}
+      # Check number of files
+      nfiles=`ls testoutput/${test}/test_${mpi}-${omp}.000000.out 2>/dev/null | wc -l`
+      if test "${nfiles}" = "0"; then
+         echo -e "\e[31mNo log file to check\e[0m"
+         status=4
       fi
 
-      for file in `ls testoutput/${test}/test_${mpi}-${omp}.000000.out` ; do
+      for file in `ls testoutput/${test}/test_${mpi}-${omp}.000000.out 2>/dev/null` ; do
          # Check for stars
          grep -q "*" ${file}
          exit_code=$?
          if test "${exit_code}" = "0" ; then
             echo -e "\e[31mTest failed (stars in output) checking: "${file#testoutput/}"\e[0m"
-            status=3
+            status=5
          fi
 
          # Check for "Close listings" line
@@ -88,7 +98,7 @@ if test "${test%%_*}" = "bump" ; then
          exit_code=$?
          if test "${exit_code}" != "0" ; then
             echo -e "\e[31mTest failed (no listing closure) checking: "${file#testoutput/}"\e[0m"
-            status=3
+            status=6
          fi
       done
    else
@@ -107,11 +117,11 @@ if test "${test%%_*}" = "bump" ; then
          exit_code=$?
          if test "${exit_code}" != "0" ; then
             echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
-            status=1
+            status=7
          fi
       else
          echo -e "\e[31mCannot find command: nccmp\e[0m"
-         status=2
+         status=8
       fi
    fi
 fi

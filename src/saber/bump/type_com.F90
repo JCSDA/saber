@@ -14,7 +14,6 @@ use tools_kinds, only: kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: eq
 use type_mpl, only: mpl_type
-use fckit_mpi_module, only: fckit_mpi_status
 
 implicit none
 
@@ -43,8 +42,9 @@ contains
    procedure :: dealloc => com_dealloc
    procedure :: read => com_read
    procedure :: write => com_write
-   procedure :: receive => com_receive
-   procedure :: send => com_send
+   procedure :: buffer_size => com_buffer_size
+   procedure :: serialize => com_serialize
+   procedure :: deserialize => com_deserialize
    procedure :: setup => com_setup
    procedure :: com_ext_integer_1d
    procedure :: com_ext_integer_2d
@@ -62,10 +62,8 @@ contains
    generic :: red => com_red_integer_1d,com_red_integer_2d,com_red_real_1d,com_red_real_2d,com_red_logical_1d,com_red_logical_2d
 end type com_type
 
-integer,parameter :: com_ntag = 2 ! Number of communication steps to send/receive
-
 private
-public :: com_type,com_ntag
+public :: com_type
 
 contains
 
@@ -205,49 +203,117 @@ if (com%nexcl>0) call mpl%ncerr(subr,nf90_put_var(grpid,excl_id,com%excl))
 end subroutine com_write
 
 !----------------------------------------------------------------------
-! Subroutine: com_receive
+! Subroutine: com_buffer_size
+! Purpose: buffer size
+!----------------------------------------------------------------------
+subroutine com_buffer_size(com,mpl,nbufi)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com   ! Communication data
+type(mpl_type),intent(inout) :: mpl ! MPI data
+integer,intent(out) :: nbufi        ! Buffer size (integer)
+
+! Define buffer size
+nbufi = 6+2*com%nown+4*mpl%nproc+com%nhalo+com%nexcl
+
+end subroutine com_buffer_size
+
+!----------------------------------------------------------------------
+! Subroutine: com_serialize
+! Purpose: serialize
+!----------------------------------------------------------------------
+subroutine com_serialize(com,mpl,nbufi,bufi)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com   ! Communication data
+type(mpl_type),intent(inout) :: mpl ! MPI data
+integer,intent(in) :: nbufi         ! Buffer size (integer)
+integer,intent(out) :: bufi(nbufi)  ! Buffer (integer)
+
+! Local variables
+integer :: ibufi
+character(len=1024),parameter :: subr = 'com_serialize'
+
+! Initialization
+ibufi = 0
+
+! Dimensions
+bufi(ibufi+1) = nbufi
+ibufi = ibufi+1
+bufi(ibufi+1) = com%nred
+ibufi = ibufi+1
+bufi(ibufi+1) = com%next
+ibufi = ibufi+1
+bufi(ibufi+1) = com%nown
+ibufi = ibufi+1
+bufi(ibufi+1) = com%nhalo
+ibufi = ibufi+1
+bufi(ibufi+1) = com%nexcl
+ibufi = ibufi+1
+
+! Data
+if (com%nown>0) bufi(ibufi+1:ibufi+com%nown) = com%own_to_ext
+ibufi = ibufi+com%nown
+if (com%nown>0) bufi(ibufi+1:ibufi+com%nown) = com%own_to_red
+ibufi = ibufi+com%nown
+bufi(ibufi+1:ibufi+mpl%nproc) = com%jhalocounts
+ibufi = ibufi+mpl%nproc
+bufi(ibufi+1:ibufi+mpl%nproc) = com%jexclcounts
+ibufi = ibufi+mpl%nproc
+bufi(ibufi+1:ibufi+mpl%nproc) = com%jhalodispls
+ibufi = ibufi+mpl%nproc
+bufi(ibufi+1:ibufi+mpl%nproc) = com%jexcldispls
+ibufi = ibufi+mpl%nproc
+if (com%nhalo>0) bufi(ibufi+1:ibufi+com%nhalo) = com%halo
+ibufi = ibufi+com%nhalo
+if (com%nexcl>0) bufi(ibufi+1:ibufi+com%nexcl) = com%excl
+ibufi = ibufi+com%nexcl
+
+! Check
+if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
+
+end subroutine com_serialize
+
+!----------------------------------------------------------------------
+! Subroutine: com_deserialize
 ! Purpose: receive
 !----------------------------------------------------------------------
-subroutine com_receive(com,mpl,iproc,tag_start)
+subroutine com_deserialize(com,mpl,nbufi,bufi)
 
 implicit none
 
 ! Passed variables
 class(com_type),intent(inout) :: com ! Communication data
 type(mpl_type),intent(inout) :: mpl  ! MPI data
-integer,intent(in) :: iproc          ! Source task index
-integer,intent(in) :: tag_start      ! MPI tag
+integer,intent(in) :: nbufi          ! Buffer size (integer)
+integer,intent(in) :: bufi(nbufi)    ! Buffer (integer)
 
 ! Local variables
-integer :: tag,n_dim,n_int,offset_int
-integer,allocatable :: rbuf_dim(:),rbuf_int(:)
-type(fckit_mpi_status) :: status
+integer :: ibufi
+character(len=1024),parameter :: subr = 'com_deserialize'
 
 ! Initialization
-tag = tag_start
-n_dim = 0
-n_int = 0
-offset_int = 0
+ibufi = 0
 
-! Define buffer size
-n_dim = n_dim+5
+! Check
+if (bufi(ibufi+1)/=nbufi) call mpl%abort(subr,'inconsistent initial value/buffer size (integer)')
+ibufi = ibufi+1
 
-! Allocation
-allocate(rbuf_dim(n_dim))
-
-! Receive buffer
-call mpl%f_comm%receive(rbuf_dim,iproc-1,tag,status)
-tag = tag+1
-
-! Copy data
-com%nred = rbuf_dim(1)
-com%next = rbuf_dim(2)
-com%nown = rbuf_dim(3)
-com%nhalo = rbuf_dim(4)
-com%nexcl = rbuf_dim(5)
-
-! Release memory
-deallocate(rbuf_dim)
+! Dimensions
+com%nred = bufi(ibufi+1)
+ibufi = ibufi+1
+com%next = bufi(ibufi+1)
+ibufi = ibufi+1
+com%nown = bufi(ibufi+1)
+ibufi = ibufi+1
+com%nhalo = bufi(ibufi+1)
+ibufi = ibufi+1
+com%nexcl = bufi(ibufi+1)
+ibufi = ibufi+1
 
 ! Allocation
 if (com%nown>0) allocate(com%own_to_ext(com%nown))
@@ -259,115 +325,28 @@ allocate(com%jexcldispls(mpl%nproc))
 if (com%nhalo>0) allocate(com%halo(com%nhalo))
 if (com%nexcl>0) allocate(com%excl(com%nexcl))
 
-! Define buffer sizes
-n_int = n_int+2*com%nown+4*mpl%nproc+com%nhalo+com%nexcl
+! Data
+if (com%nown>0) com%own_to_ext = bufi(ibufi+1:ibufi+com%nown)
+ibufi = ibufi+com%nown
+if (com%nown>0) com%own_to_red = bufi(ibufi+1:ibufi+com%nown)
+ibufi = ibufi+com%nown
+com%jhalocounts = bufi(ibufi+1:ibufi+mpl%nproc)
+ibufi = ibufi+mpl%nproc
+com%jexclcounts = bufi(ibufi+1:ibufi+mpl%nproc)
+ibufi = ibufi+mpl%nproc
+com%jhalodispls = bufi(ibufi+1:ibufi+mpl%nproc)
+ibufi = ibufi+mpl%nproc
+com%jexcldispls = bufi(ibufi+1:ibufi+mpl%nproc)
+ibufi = ibufi+mpl%nproc
+if (com%nhalo>0) com%halo = bufi(ibufi+1:ibufi+com%nhalo)
+ibufi = ibufi+com%nhalo
+if (com%nexcl>0) com%excl = bufi(ibufi+1:ibufi+com%nexcl)
+ibufi = ibufi+com%nexcl
 
-! Allocation
-allocate(rbuf_int(n_int))
+! Check
+if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
 
-! Receive buffers
-call mpl%f_comm%receive(rbuf_int,iproc-1,tag,status)
-tag = tag+1
-
-! Copy data
-if (com%nown>0) com%own_to_ext = rbuf_int(offset_int+1:offset_int+com%nown)
-offset_int = offset_int+com%nown
-if (com%nown>0) com%own_to_red = rbuf_int(offset_int+1:offset_int+com%nown)
-offset_int = offset_int+com%nown
-com%jhalocounts = rbuf_int(offset_int+1:offset_int+mpl%nproc)
-offset_int = offset_int+mpl%nproc
-com%jexclcounts = rbuf_int(offset_int+1:offset_int+mpl%nproc)
-offset_int = offset_int+mpl%nproc
-com%jhalodispls = rbuf_int(offset_int+1:offset_int+mpl%nproc)
-offset_int = offset_int+mpl%nproc
-com%jexcldispls = rbuf_int(offset_int+1:offset_int+mpl%nproc)
-offset_int = offset_int+mpl%nproc
-if (com%nhalo>0) com%halo = rbuf_int(offset_int+1:offset_int+com%nhalo)
-offset_int = offset_int+com%nhalo
-if (com%nexcl>0) com%excl = rbuf_int(offset_int+1:offset_int+com%nexcl)
-offset_int = offset_int+com%nexcl
-
-! Release memory
-deallocate(rbuf_int)
-
-end subroutine com_receive
-
-!----------------------------------------------------------------------
-! Subroutine: com_send
-! Purpose: send
-!----------------------------------------------------------------------
-subroutine com_send(com,mpl,iproc,tag_start)
-
-implicit none
-
-! Passed variables
-class(com_type),intent(in) :: com   ! Communication data
-type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: iproc         ! Destination task index
-integer,intent(in) :: tag_start     ! MPI tag
-
-! Local variables
-integer :: tag,n_dim,n_int,offset_int
-integer,allocatable :: sbuf_dim(:),sbuf_int(:)
-
-! Initialization
-tag = tag_start
-n_dim = 0
-n_int = 0
-offset_int = 0
-
-! Define buffer size
-n_dim = n_dim+5
-
-! Allocation
-allocate(sbuf_dim(n_dim))
-
-! Copy data
-sbuf_dim(1) = com%nred
-sbuf_dim(2) = com%next
-sbuf_dim(3) = com%nown
-sbuf_dim(4) = com%nhalo
-sbuf_dim(5) = com%nexcl
-
-! Send buffer
-call mpl%f_comm%send(sbuf_dim,iproc-1,tag)
-tag = tag+1
-
-! Release memory
-deallocate(sbuf_dim)
-
-! Define buffer sizes
-n_int = n_int+2*com%nown+4*mpl%nproc+com%nhalo+com%nexcl
-
-! Allocation
-allocate(sbuf_int(n_int))
-
-! Copy data
-if (com%nown>0) sbuf_int(offset_int+1:offset_int+com%nown) = com%own_to_ext
-offset_int = offset_int+com%nown
-if (com%nown>0) sbuf_int(offset_int+1:offset_int+com%nown) = com%own_to_red
-offset_int = offset_int+com%nown
-sbuf_int(offset_int+1:offset_int+mpl%nproc) = com%jhalocounts
-offset_int = offset_int+mpl%nproc
-sbuf_int(offset_int+1:offset_int+mpl%nproc) = com%jexclcounts
-offset_int = offset_int+mpl%nproc
-sbuf_int(offset_int+1:offset_int+mpl%nproc) = com%jhalodispls
-offset_int = offset_int+mpl%nproc
-sbuf_int(offset_int+1:offset_int+mpl%nproc) = com%jexcldispls
-offset_int = offset_int+mpl%nproc
-if (com%nhalo>0) sbuf_int(offset_int+1:offset_int+com%nhalo) = com%halo
-offset_int = offset_int+com%nhalo
-if (com%nexcl>0) sbuf_int(offset_int+1:offset_int+com%nexcl) = com%excl
-offset_int = offset_int+com%nexcl
-
-! Send buffers
-call mpl%f_comm%send(sbuf_int,iproc-1,tag)
-tag = tag+1
-
-! Release memory
-deallocate(sbuf_int)
-
-end subroutine com_send
+end subroutine com_deserialize
 
 !----------------------------------------------------------------------
 ! Subroutine: com_setup

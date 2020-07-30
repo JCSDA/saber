@@ -172,8 +172,12 @@ call mesh%store(mpl,lon,lat)
 
 ! Create mesh
 mesh%list = 0
-call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist,info)
-if (info/=0) call mpl%abort(subr,'trmesh failed')
+mesh%lend = 0
+mesh%lnew = 0
+if (mesh%n>2) then
+   call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist,info)
+   if (info/=0) call mpl%abort(subr,'trmesh failed')
+end if
 
 ! Boundaries not computed yet
 mesh%nb = mpl%msv%vali
@@ -358,17 +362,24 @@ integer :: ltri(9,2*(mesh%n-2))
 character(len=6) :: notvalidchar
 character(len=1024),parameter :: subr = 'mesh_trlist'
 
-! Create triangles list
-call trlist(mesh%n,mesh%list,mesh%lptr,mesh%lend,9,mesh%nt,ltri,info)
+if (mesh%n>2) then
+   ! Create triangles list
+   call trlist(mesh%n,mesh%list,mesh%lptr,mesh%lend,9,mesh%nt,ltri,info)
+   if (info/=0) call mpl%abort(subr,'trlist failed')
 
-! Allocation
-mesh%na = maxval(ltri(7:9,1:mesh%nt))
-allocate(mesh%ltri(3,mesh%nt))
-allocate(mesh%larc(2,mesh%na))
-allocate(mesh%valid(mesh%n))
+   ! Allocation
+   mesh%na = maxval(ltri(7:9,1:mesh%nt))
+   allocate(mesh%ltri(3,mesh%nt))
+   allocate(mesh%larc(2,mesh%na))
+   allocate(mesh%valid(mesh%n))
 
-! Copy triangle list
-mesh%ltri = ltri(1:3,1:mesh%nt)
+   ! Copy triangle list
+   mesh%ltri = ltri(1:3,1:mesh%nt)
+else
+   ! No mesh
+   mesh%nt = 0
+   mesh%na = 0
+end if
 
 ! Copy arcs list
 do ia=1,mesh%na
@@ -421,15 +432,23 @@ logical :: lbdist
 lbdist = .false.
 if (present(bdist)) lbdist = bdist
 
-! Find boundary nodes
-bnd = mpl%msv%vali
-call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,mesh%nb,mesh%na,mesh%nt)
+if (mesh%n>2) then
+   ! Find boundary nodes
+   bnd = mpl%msv%vali
+   call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,mesh%nb,mesh%na,mesh%nt)
 
-! Allocation
-allocate(mesh%bnd(mesh%nb))
+   ! Allocation
+   allocate(mesh%bnd(mesh%nb))
 
-! Copy
-mesh%bnd = bnd(1:mesh%nb)
+   ! Copy
+   mesh%bnd = bnd(1:mesh%nb)
+else
+   ! No mesh
+   mesh%nb = 0
+   mesh%na = 0
+   mesh%nt = 0
+end if
+
 
 ! Allocation
 if (mesh%nb>0) then
@@ -661,7 +680,7 @@ call lonlat2xyz(mpl,lon,lat,p(1),p(2),p(3))
 ! Compute barycentric coordinates
 b = 0.0
 ib = 0
-call trfind(istart,p,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
+if (mesh%n>2) call trfind(istart,p,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
 
 ! Transform indices
 do i=1,3
@@ -726,12 +745,14 @@ class(mesh_type),intent(in) :: mesh        ! Mesh
 logical,intent(in) :: gmask(mesh%n)        ! Mask
 integer,intent(in) :: nbnda                ! Number of boundary nodes
 integer,intent(out) :: bnda_index(2,nbnda) ! Boundary node index
+
 ! Local variables
 integer :: ibnda,i,j,k,ii,jj,kk,iend
 logical :: init
 
 ! Initialiation
 ibnda = 0
+bnda_index = 0
 
 ! Loop over points
 do i=1,mesh%n

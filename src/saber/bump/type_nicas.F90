@@ -7,7 +7,7 @@
 !----------------------------------------------------------------------
 module type_nicas
 
-use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_status
 use netcdf
 use tools_const, only: rad2deg,reqkm,pi
 use tools_func, only: sphere_dist,cholesky,fit_diag
@@ -15,15 +15,15 @@ use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
-use type_com, only: com_type,com_ntag
+use type_com, only: com_type
 use type_cv, only: cv_type
 use type_diag, only: diag_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_hdiag, only: hdiag_type
 use type_io, only: io_type
-use type_linop, only: linop_type,linop_ntag
-use type_nicas_blk, only: nicas_blk_type,nicas_blk_ntag
+use type_linop, only: linop_type
+use type_nicas_blk, only: nicas_blk_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_rng, only: rng_type
@@ -46,6 +46,8 @@ contains
    procedure :: dealloc => nicas_dealloc
    procedure :: read => nicas_read
    procedure :: write => nicas_write
+   procedure :: send => nicas_send
+   procedure :: receive => nicas_receive
    procedure :: run_nicas => nicas_run_nicas
    procedure :: run_nicas_tests => nicas_run_nicas_tests
    procedure :: alloc_cv => nicas_alloc_cv
@@ -179,7 +181,7 @@ type(geom_type),intent(in) :: geom       ! Geometry
 type(bpar_type),intent(in) :: bpar       ! Block parameters
 
 ! Local variables
-integer :: nicas_tag,ib,iproc,iprocio,ncid,grpid
+integer :: ib,iproc,iprocio,ncid,grpid
 integer :: mpicom,lsqrt,grid_hash
 character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'nicas_read'
@@ -188,14 +190,12 @@ type(nicas_type) :: nicas_tmp
 ! Allocation
 call nicas%alloc(nam,bpar)
 
-! Tag increment
-nicas_tag = nicas_blk_ntag+4*com_ntag+(2+geom%nl0i+geom%nl0+(nam%nts-1)*geom%nl0)*linop_ntag
-
 ! Read NICAS blocks
 do iproc=1,mpl%nproc
    ! Reading task
    iprocio = mod(iproc,nam%nprocio)
    if (iprocio==0) iprocio = nam%nprocio
+
    if (mpl%myproc==iprocio) then
       write(mpl%info,'(a7,a,i6)') '','Read NICAS data of task ',iproc
       call mpl%flush
@@ -240,33 +240,25 @@ do iproc=1,mpl%nproc
 
                ! Read data
                call nicas_tmp%blk(ib)%read(mpl,nam,geom,bpar,grpid)
-
-               ! Send data to iproc
-               call nicas_tmp%blk(ib)%send(mpl,nam,geom,bpar,iproc,mpl%tag+(ib-1)*nicas_tag)
-
-               ! Release memory
-               call nicas_tmp%dealloc
             end if
          end do
+
+         ! Send data to task iproc
+         call nicas_tmp%send(mpl,nam,geom,bpar,iproc)
+
+         ! Release memory
+         call nicas_tmp%dealloc
       end if
 
       ! Close files
       call mpl%ncerr(subr,nf90_close(ncid))
    elseif (mpl%myproc==iproc) then
+      ! Receive data from task iprocio
       write(mpl%info,'(a7,a,i6)') '','Receive NICAS data from task ',iprocio
       call mpl%flush
-
-      do ib=1,bpar%nbe
-         if (bpar%B_block(ib)) then
-            ! Receive data from iprocio
-            call nicas%blk(ib)%receive(mpl,nam,geom,bpar,iprocio,mpl%tag+(ib-1)*nicas_tag)
-         end if
-      end do
+      call nicas%receive(mpl,nam,geom,bpar,iprocio)
    end if
 end do
-
-! Update tag
-call mpl%update_tag(bpar%nbe*nicas_tag)
 
 end subroutine nicas_read
 
@@ -286,19 +278,17 @@ type(geom_type),intent(in) :: geom    ! Geometry
 type(bpar_type),intent(in) :: bpar    ! Block parameters
 
 ! Local variables
-integer :: nicas_tag,ib,iproc,iprocio,ncid,grpid,ncid_grids,grpid_grids
+integer :: ib,iproc,iprocio,ncid,grpid,ncid_grids,grpid_grids
 character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'nicas_write'
 type(nicas_type) :: nicas_tmp
-
-! Tag increment
-nicas_tag = nicas_blk_ntag+4*com_ntag+(2+geom%nl0i+geom%nl0+(nam%nts-1)*geom%nl0)*linop_ntag
 
 ! Write NICAS blocks
 do iproc=1,mpl%nproc
    ! Writing task
    iprocio = mod(iproc,nam%nprocio)
    if (iprocio==0) iprocio = nam%nprocio
+
    if (mpl%myproc==iprocio) then
       write(mpl%info,'(a7,a,i6)') '','Write NICAS data of task ',iproc
       call mpl%flush
@@ -349,11 +339,11 @@ do iproc=1,mpl%nproc
          ! Allocation
          call nicas_tmp%alloc(nam,bpar)
 
+         ! Receive data from task iproc
+         call nicas_tmp%receive(mpl,nam,geom,bpar,iproc)
+
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
-               ! Receive data from iproc
-               call nicas_tmp%blk(ib)%receive(mpl,nam,geom,bpar,iproc,mpl%tag+(ib-1)*nicas_tag)
-
                ! Define group
                call nam%io_key_value(bpar%blockname(ib),grpname)
                grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
@@ -369,34 +359,159 @@ do iproc=1,mpl%nproc
                   ! Write grids
                   call nicas_tmp%blk(ib)%write_grids(mpl,grpid_grids)
                end if
-
-               ! Release memory
-               call nicas_tmp%dealloc
             end if
          end do
+
+         ! Release memory
+         call nicas_tmp%dealloc
       end if
 
       ! Close files
       call mpl%ncerr(subr,nf90_close(ncid))
       if (nam%write_grids) call mpl%ncerr(subr,nf90_close(ncid_grids))
    elseif (mpl%myproc==iproc) then
+      ! Send data to task iprocio
       write(mpl%info,'(a7,a,i6)') '','Send NICAS data to task ',iprocio
       call mpl%flush
-
-      do ib=1,bpar%nbe
-         if (bpar%B_block(ib)) then
-            ! Send data to iprocio
-            call nicas%blk(ib)%send(mpl,nam,geom,bpar,iprocio,mpl%tag+(ib-1)*nicas_tag)
-         end if
-      end do
+      call nicas%send(mpl,nam,geom,bpar,iprocio)
    end if
 end do
 
+end subroutine nicas_write
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_send
+! Purpose: send
+!----------------------------------------------------------------------
+subroutine nicas_send(nicas,mpl,nam,geom,bpar,iproc)
+
+implicit none
+
+! Passed variables
+class(nicas_type),intent(in) :: nicas ! NICAS data
+type(mpl_type),intent(inout) :: mpl   ! MPI data
+type(nam_type),intent(in) :: nam      ! Namelist
+type(geom_type),intent(in) :: geom    ! Geometry
+type(bpar_type),intent(in) :: bpar    ! Block parameters
+integer,intent(in) :: iproc           ! Destination task
+
+! Local variables
+integer :: ib,nbufi,nbufr,nbufl,nnbufi,nnbufr,nnbufl,ibufi,ibufr,ibufl,bufs(3)
+integer,allocatable :: bufi(:)
+real(kind_real),allocatable :: bufr(:)
+logical,allocatable :: bufl(:)
+
+! Buffer size
+nbufi = 0
+nbufr = 0
+nbufl = 0
+do ib=1,bpar%nbe
+   if (bpar%B_block(ib)) then
+      call nicas%blk(ib)%buffer_size(mpl,nam,geom,bpar,nnbufi,nnbufr,nnbufl)
+      nbufi = nbufi+nnbufi
+      nbufr = nbufr+nnbufr
+      nbufl = nbufl+nnbufl
+   end if
+end do
+
+! Allocation
+allocate(bufi(nbufi))
+allocate(bufr(nbufr))
+allocate(bufl(nbufl))
+
+! Initialization
+ibufi = 0
+ibufr = 0
+ibufl = 0
+
+! Serialize
+do ib=1,bpar%nbe
+   if (bpar%B_block(ib)) then
+      call nicas%blk(ib)%buffer_size(mpl,nam,geom,bpar,nnbufi,nnbufr,nnbufl)
+      call nicas%blk(ib)%serialize(mpl,nam,geom,bpar,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
+ & bufl(ibufl+1:ibufl+nnbufl))
+      ibufi = ibufi+nnbufi
+      ibufr = ibufr+nnbufr
+      ibufl = ibufl+nnbufl
+   end if
+end do
+
+! Send buffer size
+bufs = (/nbufi,nbufr,nbufl/)
+call mpl%f_comm%send(bufs,iproc-1,mpl%tag)
+
+! Send data
+call mpl%f_comm%send(bufi,iproc-1,mpl%tag+1)
+call mpl%f_comm%send(bufr,iproc-1,mpl%tag+2)
+call mpl%f_comm%send(bufl,iproc-1,mpl%tag+3)
 
 ! Update tag
-call mpl%update_tag(bpar%nbe*nicas_tag)
+call mpl%update_tag(4)
 
-end subroutine nicas_write
+end subroutine nicas_send
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_receive
+! Purpose: receive
+!----------------------------------------------------------------------
+subroutine nicas_receive(nicas,mpl,nam,geom,bpar,iproc)
+
+implicit none
+
+! Passed variables
+class(nicas_type),intent(inout) :: nicas ! NICAS data
+type(mpl_type),intent(inout) :: mpl      ! MPI data
+type(nam_type),intent(in) :: nam         ! Namelist
+type(geom_type),intent(in) :: geom       ! Geometry
+type(bpar_type),intent(in) :: bpar       ! Block parameters
+integer,intent(in) :: iproc              ! Source task
+
+! Local variables
+integer :: ib,nbufi,nbufr,nbufl,nnbufi,nnbufr,nnbufl,ibufi,ibufr,ibufl,bufs(3)
+integer,allocatable :: bufi(:)
+real(kind_real),allocatable :: bufr(:)
+logical,allocatable :: bufl(:)
+type(fckit_mpi_status) :: status
+
+! Receive buffer size
+call mpl%f_comm%receive(bufs,iproc-1,mpl%tag,status)
+nbufi = bufs(1)
+nbufr = bufs(2)
+nbufl = bufs(3)
+
+! Allocation
+allocate(bufi(nbufi))
+allocate(bufr(nbufr))
+allocate(bufl(nbufl))
+
+! Receive data
+call mpl%f_comm%receive(bufi,iproc-1,mpl%tag+1,status)
+call mpl%f_comm%receive(bufr,iproc-1,mpl%tag+2,status)
+call mpl%f_comm%receive(bufl,iproc-1,mpl%tag+3,status)
+
+! Update tag
+call mpl%update_tag(4)
+
+! Initialization
+ibufi = 0
+ibufr = 0
+ibufl = 0
+
+! Deserialize
+do ib=1,bpar%nbe
+   if (bpar%B_block(ib)) then
+      nnbufi = bufi(ibufi+1)
+      nnbufr = bufi(ibufi+2)
+      nnbufl = bufi(ibufi+3)
+      call nicas%blk(ib)%deserialize(mpl,nam,geom,bpar,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
+ & bufl(ibufl+1:ibufl+nnbufl))
+      ibufi = ibufi+nnbufi
+      ibufr = ibufr+nnbufr
+      ibufl = ibufl+nnbufl
+   end if
+end do
+
+end subroutine nicas_receive
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_run_nicas

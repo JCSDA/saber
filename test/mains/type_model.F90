@@ -231,7 +231,7 @@ logical :: maskval
 logical :: found
 character(len=1024) :: variables,filename
 character(len=1024),dimension(nvmax) :: variables_save
-character(len=1024),parameter :: subr = 'model_define_distribution'
+character(len=1024),parameter :: subr = 'model_define'
 type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask,afield_smask
 type(atlas_fieldset) :: afieldset
 
@@ -269,17 +269,18 @@ if (mpl%nproc==1) then
       model%mg_to_mga(img) = img
    end do
 elseif (mpl%nproc>1) then
-   if (mpl%main) then
-      ! Open file
-      write(filename,'(a,a,i6.6)') trim(nam%prefix),'_distribution_',mpl%nproc
-      info = nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid)
-   end if
-   call mpl%f_comm%broadcast(info,mpl%rootproc-1)
+   ! Set file name
+   write(filename,'(a,a,i6.6)') trim(nam%prefix),'_distribution_',mpl%nproc
 
-   ! No points on the last task
    if (nam%check_no_point) then
+      ! No points on the last task
       info = nf90_noerr+1
-      if (mpl%main) call mpl%ncerr(subr,nf90_close(ncid))
+   else
+      if (mpl%main) then
+         ! Open file
+         info = nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid)
+      end if
+      call mpl%f_comm%broadcast(info,mpl%rootproc-1)
    end if
 
    if (info==nf90_noerr) then

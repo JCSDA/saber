@@ -7,7 +7,7 @@
 !----------------------------------------------------------------------
 module type_nicas_blk
 
-use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use netcdf
 !$ use omp_lib
 use tools_const, only: pi,req,reqkm,deg2rad,rad2deg
@@ -18,11 +18,11 @@ use tools_repro, only: supeq,sup,inf,eq
 use tools_samp, only: initialize_sampling
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
-use type_com, only: com_type,com_ntag
+use type_com, only: com_type
 use type_geom, only: geom_type
 use type_io, only: io_type
 use type_tree, only: tree_type
-use type_linop, only: linop_type,linop_ntag
+use type_linop, only: linop_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -217,8 +217,9 @@ contains
    procedure :: read => nicas_blk_read
    procedure :: write => nicas_blk_write
    procedure :: write_grids => nicas_blk_write_grids
-   procedure :: receive => nicas_blk_receive
-   procedure :: send => nicas_blk_send
+   procedure :: buffer_size => nicas_blk_buffer_size
+   procedure :: serialize => nicas_blk_serialize
+   procedure :: deserialize => nicas_blk_deserialize
    procedure :: nicas_blk_compute_parameters
    procedure :: nicas_blk_compute_parameters_horizontal_smoother
    generic :: compute_parameters => nicas_blk_compute_parameters,nicas_blk_compute_parameters_horizontal_smoother
@@ -257,10 +258,8 @@ contains
    procedure :: test_dirac => nicas_blk_test_dirac
 end type nicas_blk_type
 
-integer,parameter :: nicas_blk_ntag = 4 ! Number of communication steps to send/receive
-
 private
-public :: nicas_blk_type,nicas_blk_ntag
+public :: nicas_blk_type
 
 contains
 
@@ -828,10 +827,302 @@ end if
 end subroutine nicas_blk_write_grids
 
 !----------------------------------------------------------------------
-! Subroutine: nicas_blk_receive
-! Purpose: receive
+! Subroutine: nicas_blk_buffer_size
+! Purpose: buffer size
 !----------------------------------------------------------------------
-subroutine nicas_blk_receive(nicas_blk,mpl,nam,geom,bpar,iproc,tag_start)
+subroutine nicas_blk_buffer_size(nicas_blk,mpl,nam,geom,bpar,nbufi,nbufr,nbufl)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
+type(mpl_type),intent(inout) :: mpl           ! MPI data
+type(nam_type),intent(in) :: nam              ! Namelist
+type(geom_type),intent(in) :: geom            ! Geometry
+type(bpar_type),intent(in) :: bpar            ! Block parameters
+integer,intent(out) :: nbufi                  ! Buffer size (integer)
+integer,intent(out) :: nbufr                  ! Buffer size (real)
+integer,intent(out) :: nbufl                  ! Buffer size (logical)
+
+! Local variables
+integer :: nnbufi,nnbufr
+integer :: il0i,il1,its,il0
+
+! Associate
+associate(ib=>nicas_blk%ib)
+
+! Initialization
+nbufi = 3
+nbufr = 0
+nbufl = 0
+
+! Define buffer size
+if (bpar%nicas_block(ib)) nbufi = nbufi+6
+if ((ib==bpar%nbe).and.nam%adv_diag) nbufi = nbufi+2
+nbufr = nbufr+1
+if (bpar%nicas_block(ib)) then
+   nbufi = nbufi+2*nicas_blk%nsa+3*nicas_blk%nsb
+   nbufr = nbufr+nicas_blk%nsa+nicas_blk%nc0a*geom%nl0
+   if (.not.nicas_blk%smoother) nbufr = nbufr+nicas_blk%nc0a*geom%nl0+nicas_blk%nsc
+   nbufl = nbufl+geom%nl0
+   if (nam%write_grids) then
+      nbufi = nbufi+nicas_blk%nsa+nicas_blk%nsb+nicas_blk%nsc
+      nbufr = nbufr+2*(nicas_blk%nsa+nicas_blk%nsb+nicas_blk%nsc)
+   end if
+end if
+
+! Add communications and linear operators
+if (bpar%nicas_block(ib)) then
+   call nicas_blk%com_AB%buffer_size(mpl,nnbufi)
+   nbufi = nbufi+nnbufi
+   call nicas_blk%com_AC%buffer_size(mpl,nnbufi)
+   nbufi = nbufi+nnbufi
+   call nicas_blk%c%buffer_size(nnbufi,nnbufr)
+   nbufi = nbufi+nnbufi
+   nbufr = nbufr+nnbufr
+   do il0i=1,geom%nl0i
+      call nicas_blk%h(il0i)%buffer_size(nnbufi,nnbufr)
+      nbufi = nbufi+nnbufi
+      nbufr = nbufr+nnbufr
+   end do
+   call nicas_blk%v%buffer_size(nnbufi,nnbufr)
+   nbufi = nbufi+nnbufi
+   nbufr = nbufr+nnbufr
+   do il1=1,nicas_blk%nl1
+      call nicas_blk%s(il1)%buffer_size(nnbufi,nnbufr)
+      nbufi = nbufi+nnbufi
+      nbufr = nbufr+nnbufr
+   end do
+end if
+if ((ib==bpar%nbe).and.nam%adv_diag) then
+   call nicas_blk%com_AD%buffer_size(mpl,nnbufi)
+   nbufi = nbufi+nnbufi
+   call nicas_blk%com_ADinv%buffer_size(mpl,nnbufi)
+   nbufi = nbufi+nnbufi
+   do its=2,nam%nts
+      do il0=1,geom%nl0
+         call nicas_blk%d(il0,its)%buffer_size(nnbufi,nnbufr)
+         nbufi = nbufi+nnbufi
+         nbufr = nbufr+nnbufr
+         call nicas_blk%dinv(il0,its)%buffer_size(nnbufi,nnbufr)
+         nbufi = nbufi+nnbufi
+         nbufr = nbufr+nnbufr
+      end do
+   end do
+end if
+
+! End associate
+end associate
+
+end subroutine nicas_blk_buffer_size
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_serialize
+! Purpose: serialize
+!----------------------------------------------------------------------
+subroutine nicas_blk_serialize(nicas_blk,mpl,nam,geom,bpar,nbufi,nbufr,nbufl,bufi,bufr,bufl)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
+type(mpl_type),intent(inout) :: mpl           ! MPI data
+type(nam_type),intent(in) :: nam              ! Namelist
+type(geom_type),intent(in) :: geom            ! Geometry
+type(bpar_type),intent(in) :: bpar            ! Block parameters
+integer,intent(in) :: nbufi                   ! Buffer size (integer)
+integer,intent(in) :: nbufr                   ! Buffer size (real)
+integer,intent(in) :: nbufl                   ! Buffer size (logical)
+integer,intent(out) :: bufi(nbufi)            ! Buffer (integer)
+real(kind_real),intent(out) :: bufr(nbufr)    ! Buffer (real)
+logical,intent(out) :: bufl(nbufl)            ! Buffer (logical)
+
+! Local variables
+integer :: ibufi,ibufr,ibufl,nnbufi,nnbufr
+integer :: il0i,il1,its,il0
+logical,allocatable :: mask_c0a(:,:)
+character(len=1024),parameter :: subr = 'nicas_blk_serialize'
+
+! Associate
+associate(ib=>nicas_blk%ib)
+
+! Initialization
+ibufi = 0
+ibufr = 0
+ibufl = 0
+
+! Dimensions
+bufi(ibufi+1) = nbufi
+ibufi = ibufi+1
+bufi(ibufi+1) = nbufr
+ibufi = ibufi+1
+bufi(ibufi+1) = nbufl
+ibufi = ibufi+1
+if (bpar%nicas_block(ib)) then
+   bufi(ibufi+1) = nicas_blk%nc0a
+   ibufi = ibufi+1
+   bufi(ibufi+1) = nicas_blk%nc1b
+   ibufi = ibufi+1
+   bufi(ibufi+1) = nicas_blk%nl1
+   ibufi = ibufi+1
+   bufi(ibufi+1) = nicas_blk%nsa
+   ibufi = ibufi+1
+   bufi(ibufi+1) = nicas_blk%nsb
+   ibufi = ibufi+1
+   bufi(ibufi+1) = nicas_blk%nsc
+   ibufi = ibufi+1
+end if
+if ((ib==bpar%nbe).and.nam%adv_diag) then
+   bufi(ibufi+1) = nicas_blk%nc0d
+   ibufi = ibufi+1
+   bufi(ibufi+1) = nicas_blk%nc0dinv
+   ibufi = ibufi+1
+end if
+
+if (bpar%nicas_block(ib)) then
+   if (nicas_blk%nc0a>0) then
+      ! Allocation
+      allocate(mask_c0a(nicas_blk%nc0a,geom%nl0))
+
+      ! Initialization
+      mask_c0a = .true.
+   end if
+end if
+
+! Data
+bufr(ibufr+1) = nicas_blk%wgt
+ibufr = ibufr+1
+if (bpar%nicas_block(ib)) then
+   bufl(ibufl+1:ibufl+geom%nl0) = nicas_blk%vlev
+   ibufl = ibufl+geom%nl0
+   if (nicas_blk%nc0a>0) then
+      if (.not.nicas_blk%smoother) then
+         bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0) = pack(nicas_blk%norm,mask_c0a)
+         ibufr = ibufr+nicas_blk%nc0a*geom%nl0
+      end if
+      bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0) = pack(nicas_blk%coef_ens,mask_c0a)
+      ibufr = ibufr+nicas_blk%nc0a*geom%nl0
+   end if
+   if (nicas_blk%nsa>0) then
+      bufi(ibufi+1:ibufi+nicas_blk%nsa) = nicas_blk%sa_to_s
+      ibufi = ibufi+nicas_blk%nsa
+      bufr(ibufr+1:ibufr+nicas_blk%nsa) = nicas_blk%hash_sa
+      ibufr = ibufr+nicas_blk%nsa
+      bufi(ibufi+1:ibufi+nicas_blk%nsa) = nicas_blk%sa_to_sc
+      ibufi = ibufi+nicas_blk%nsa
+   end if
+   if (nicas_blk%nsb>0) then
+      bufi(ibufi+1:ibufi+nicas_blk%nsb) = nicas_blk%sb_to_c1b
+      ibufi = ibufi+nicas_blk%nsb
+      bufi(ibufi+1:ibufi+nicas_blk%nsb) = nicas_blk%sb_to_l1
+      ibufi = ibufi+nicas_blk%nsb
+      bufi(ibufi+1:ibufi+nicas_blk%nsb) = nicas_blk%sb_to_sc
+      ibufi = ibufi+nicas_blk%nsb
+   end if
+   if (nicas_blk%nsc>0) then
+      if (.not.nicas_blk%smoother) then
+         bufr(ibufr+1:ibufr+nicas_blk%nsc) = nicas_blk%inorm
+         ibufr = ibufr+nicas_blk%nsc
+      end if
+   end if
+   if (nam%write_grids) then
+      if (nicas_blk%nsa>0) then
+         bufr(ibufr+1:ibufr+nicas_blk%nsa) = nicas_blk%lon_sa
+         ibufr = ibufr+nicas_blk%nsa
+         bufr(ibufr+1:ibufr+nicas_blk%nsa) = nicas_blk%lat_sa
+         ibufr = ibufr+nicas_blk%nsa
+         bufi(ibufi+1:ibufi+nicas_blk%nsa) = nicas_blk%lev_sa
+         ibufi = ibufi+nicas_blk%nsa
+      end if
+      if (nicas_blk%nsb>0) then
+         bufr(ibufr+1:ibufr+nicas_blk%nsb) = nicas_blk%lon_sb
+         ibufr = ibufr+nicas_blk%nsb
+         bufr(ibufr+1:ibufr+nicas_blk%nsb) = nicas_blk%lat_sb
+         ibufr = ibufr+nicas_blk%nsb
+         bufi(ibufi+1:ibufi+nicas_blk%nsb) = nicas_blk%lev_sb
+         ibufi = ibufi+nicas_blk%nsb
+      end if
+      if (nicas_blk%nsc>0) then
+         bufr(ibufr+1:ibufr+nicas_blk%nsc) = nicas_blk%lon_sc
+         ibufr = ibufr+nicas_blk%nsc
+         bufr(ibufr+1:ibufr+nicas_blk%nsc) = nicas_blk%lat_sc
+         ibufr = ibufr+nicas_blk%nsc
+         bufi(ibufi+1:ibufi+nicas_blk%nsc) = nicas_blk%lev_sc
+         ibufi = ibufi+nicas_blk%nsc
+      end if
+   end if
+end if
+
+! Release memory
+if (bpar%nicas_block(ib)) then
+   if (nicas_blk%nc0a>0) deallocate(mask_c0a)
+end if
+      
+! Communications and linear operators
+if (bpar%nicas_block(ib)) then
+   call nicas_blk%com_AB%buffer_size(mpl,nnbufi)
+   call nicas_blk%com_AB%serialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+   ibufi = ibufi+nnbufi
+   call nicas_blk%com_AC%buffer_size(mpl,nnbufi)
+   call nicas_blk%com_AC%serialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+   ibufi = ibufi+nnbufi
+   call nicas_blk%c%buffer_size(nnbufi,nnbufr)
+   call nicas_blk%c%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+   ibufi = ibufi+nnbufi
+   ibufr = ibufr+nnbufr
+   do il0i=1,geom%nl0i
+      call nicas_blk%h(il0i)%buffer_size(nnbufi,nnbufr)
+      call nicas_blk%h(il0i)%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+      ibufi = ibufi+nnbufi
+      ibufr = ibufr+nnbufr
+   end do
+   call nicas_blk%v%buffer_size(nnbufi,nnbufr)
+   call nicas_blk%v%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+   ibufi = ibufi+nnbufi
+   ibufr = ibufr+nnbufr
+   do il1=1,nicas_blk%nl1
+      call nicas_blk%s(il1)%buffer_size(nnbufi,nnbufr)
+      call nicas_blk%s(il1)%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+      ibufi = ibufi+nnbufi
+      ibufr = ibufr+nnbufr
+   end do
+end if
+if ((ib==bpar%nbe).and.nam%adv_diag) then
+   call nicas_blk%com_AD%buffer_size(mpl,nnbufi)
+   call nicas_blk%com_AD%serialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+   ibufi = ibufi+nnbufi
+   call nicas_blk%com_ADinv%buffer_size(mpl,nnbufi)
+   call nicas_blk%com_ADinv%serialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+   ibufi = ibufi+nnbufi
+   do its=2,nam%nts
+      do il0=1,geom%nl0
+         call nicas_blk%d(il0,its)%buffer_size(nnbufi,nnbufr)
+         call nicas_blk%d(il0,its)%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+         ibufi = ibufi+nnbufi
+         ibufr = ibufr+nnbufr
+         call nicas_blk%dinv(il0,its)%buffer_size(nnbufi,nnbufr)
+         call nicas_blk%dinv(il0,its)%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+         ibufi = ibufi+nnbufi
+         ibufr = ibufr+nnbufr
+      end do
+   end do
+end if
+
+! Check
+if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
+if (ibufr/=nbufr) call mpl%abort(subr,'inconsistent final offset/buffer size (real)')
+if (ibufl/=nbufl) call mpl%abort(subr,'inconsistent final offset/buffer size (logical)')
+
+! End associate
+end associate
+
+end subroutine nicas_blk_serialize
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_deserialize
+! Purpose: deserialize
+!----------------------------------------------------------------------
+subroutine nicas_blk_deserialize(nicas_blk,mpl,nam,geom,bpar,nbufi,nbufr,nbufl,bufi,bufr,bufl)
 
 implicit none
 
@@ -841,56 +1132,56 @@ type(mpl_type),intent(inout) :: mpl              ! MPI data
 type(nam_type),intent(in) :: nam                 ! Namelist
 type(geom_type),intent(in) :: geom               ! Geometry
 type(bpar_type),intent(in) :: bpar               ! Block parameters
-integer,intent(in) :: iproc                      ! Source task index
-integer,intent(in) :: tag_start                  ! MPI tag
+integer,intent(in) :: nbufi                      ! Buffer size (integer)
+integer,intent(in) :: nbufr                      ! Buffer size (real)
+integer,intent(in) :: nbufl                      ! Buffer size (logical)
+integer,intent(in) :: bufi(nbufi)                ! Buffer (integer)
+real(kind_real),intent(in) :: bufr(nbufr)        ! Buffer (real)
+logical,intent(in) :: bufl(nbufl)                ! Buffer (logical)
 
 ! Local variables
-integer :: tag,n_dim,n_int,n_real,n_logical,offset_int,offset_real,offset_logical,il0i,il1,its,il0
-integer,allocatable :: rbuf_dim(:),rbuf_int(:)
-real(kind_real),allocatable :: rbuf_real(:)
-logical,allocatable :: rbuf_logical(:),mask_c0a(:,:)
-type(fckit_mpi_status) :: status
+integer :: ibufi,ibufr,ibufl,nnbufi,nnbufr
+integer :: il0i,il1,its,il0
+logical,allocatable :: mask_c0a(:,:)
+character(len=1024),parameter :: subr = 'nicas_blk_deserialize'
 
 ! Associate
 associate(ib=>nicas_blk%ib)
 
 ! Initialization
-tag = tag_start
-n_dim = 0
-n_int = 0
-n_real = 0
-n_logical = 0
-offset_int = 0
-offset_real = 0
-offset_logical = 0
+ibufi = 0
+ibufr = 0
+ibufl = 0
 
-! Define buffer size
-if (bpar%nicas_block(ib)) n_dim = n_dim+6
-if ((ib==bpar%nbe).and.nam%adv_diag) n_dim = n_dim+2
+! Check
+if (bufi(ibufi+1)/=nbufi) call mpl%abort(subr,'inconsistent initial value/buffer size (integer)')
+ibufi = ibufi+1
+if (bufi(ibufi+1)/=nbufr) call mpl%abort(subr,'inconsistent initial value/buffer size (real)')
+ibufi = ibufi+1
+if (bufi(ibufi+1)/=nbufl) call mpl%abort(subr,'inconsistent initial value/buffer size (logical)')
+ibufi = ibufi+1
 
-! Allocation
-allocate(rbuf_dim(n_dim))
-
-! Receive buffer
-call mpl%f_comm%receive(rbuf_dim,iproc-1,tag,status)
-tag = tag+1
-
-! Copy data
+! Dimensions
 if (bpar%nicas_block(ib)) then
-   nicas_blk%nc0a = rbuf_dim(1)
-   nicas_blk%nc1b = rbuf_dim(2)
-   nicas_blk%nl1 = rbuf_dim(3)
-   nicas_blk%nsa = rbuf_dim(4)
-   nicas_blk%nsb = rbuf_dim(5)
-   nicas_blk%nsc = rbuf_dim(6)
+   nicas_blk%nc0a = bufi(ibufi+1)
+   ibufi = ibufi+1
+   nicas_blk%nc1b = bufi(ibufi+1)
+   ibufi = ibufi+1
+   nicas_blk%nl1 = bufi(ibufi+1)
+   ibufi = ibufi+1
+   nicas_blk%nsa = bufi(ibufi+1)
+   ibufi = ibufi+1
+   nicas_blk%nsb = bufi(ibufi+1)
+   ibufi = ibufi+1
+   nicas_blk%nsc = bufi(ibufi+1)
+   ibufi = ibufi+1
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
-   nicas_blk%nc0d = rbuf_dim(7)
-   nicas_blk%nc0dinv = rbuf_dim(8)
+   nicas_blk%nc0d = bufi(ibufi+1)
+   ibufi = ibufi+1
+   nicas_blk%nc0dinv = bufi(ibufi+1)
+   ibufi = ibufi+1
 end if
-
-! Release memory
-deallocate(rbuf_dim)
 
 ! Allocation
 if (bpar%nicas_block(ib)) then
@@ -935,357 +1226,147 @@ if ((ib==bpar%nbe).and.(abs(nam%adv_mode)==1)) then
    allocate(nicas_blk%dinv(geom%nl0,2:nam%nts))
 end if
 
-! Define buffer sizes
-n_real = n_real+1
 if (bpar%nicas_block(ib)) then
-   n_int = n_int+2*nicas_blk%nsa+3*nicas_blk%nsb
-   n_real = n_real+nicas_blk%nsa+nicas_blk%nc0a*geom%nl0
-   if (.not.nicas_blk%smoother) n_real = n_real+nicas_blk%nc0a*geom%nl0+nicas_blk%nsc
-   n_logical = n_logical+geom%nl0
-   if (nam%write_grids) then
-      n_int = n_int+nicas_blk%nsa+nicas_blk%nsb+nicas_blk%nsc
-      n_real = n_real+2*(nicas_blk%nsa+nicas_blk%nsb+nicas_blk%nsc)
+   if (nicas_blk%nc0a>0) then
+      ! Allocation
+      allocate(mask_c0a(nicas_blk%nc0a,geom%nl0))
+
+      ! Initialization
+      if (bpar%nicas_block(ib)) mask_c0a = .true.
    end if
 end if
 
-! Allocation
-allocate(rbuf_int(n_int))
-allocate(rbuf_real(n_real))
-allocate(rbuf_logical(n_logical))
-if (bpar%nicas_block(ib)) allocate(mask_c0a(nicas_blk%nc0a,geom%nl0))
-
-! Initialization
-if (bpar%nicas_block(ib)) mask_c0a = .true.
-
-! Receive buffers
-if (n_int>0) call mpl%f_comm%receive(rbuf_int,iproc-1,tag,status)
-tag = tag+1
-if (n_real>0) call mpl%f_comm%receive(rbuf_real,iproc-1,tag,status)
-tag = tag+1
-if (n_logical>0) call mpl%f_comm%receive(rbuf_logical,iproc-1,tag,status)
-tag = tag+1
-
-! Copy data
-nicas_blk%wgt = rbuf_real(1)
-offset_real = offset_real+1
+! Data
+nicas_blk%wgt = bufr(ibufr+1)
+ibufr = ibufr+1
 if (bpar%nicas_block(ib)) then
-   nicas_blk%vlev = rbuf_logical(offset_logical+1:offset_logical+geom%nl0)
-   offset_logical = offset_logical+geom%nl0
+   nicas_blk%vlev = bufl(ibufl+1:ibufl+geom%nl0)
+   ibufl = ibufl+geom%nl0
    if (nicas_blk%nc0a>0) then
       if (.not.nicas_blk%smoother) then
-         nicas_blk%norm = unpack(rbuf_real(offset_real+1:offset_real+nicas_blk%nc0a*geom%nl0),mask_c0a,nicas_blk%norm)
-         offset_real = offset_real+nicas_blk%nc0a*geom%nl0
+         nicas_blk%norm = unpack(bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0),mask_c0a,nicas_blk%norm)
+         ibufr = ibufr+nicas_blk%nc0a*geom%nl0
       end if
-      nicas_blk%coef_ens = unpack(rbuf_real(offset_real+1:offset_real+nicas_blk%nc0a*geom%nl0),mask_c0a,nicas_blk%coef_ens)
-      offset_real = offset_real+nicas_blk%nc0a*geom%nl0
+      nicas_blk%coef_ens = unpack(bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0),mask_c0a,nicas_blk%coef_ens)
+      ibufr = ibufr+nicas_blk%nc0a*geom%nl0
    end if
    if (nicas_blk%nsa>0) then
-      nicas_blk%sa_to_s = rbuf_int(offset_int+1:offset_int+nicas_blk%nsa)
-      offset_int = offset_int+nicas_blk%nsa
-      nicas_blk%hash_sa = rbuf_real(offset_real+1:offset_real+nicas_blk%nsa)
-      offset_real = offset_real+nicas_blk%nsa
-      nicas_blk%sa_to_sc = rbuf_int(offset_int+1:offset_int+nicas_blk%nsa)
-      offset_int = offset_int+nicas_blk%nsa
+      nicas_blk%sa_to_s = bufi(ibufi+1:ibufi+nicas_blk%nsa)
+      ibufi = ibufi+nicas_blk%nsa
+      nicas_blk%hash_sa = bufr(ibufr+1:ibufr+nicas_blk%nsa)
+      ibufr = ibufr+nicas_blk%nsa
+      nicas_blk%sa_to_sc = bufi(ibufi+1:ibufi+nicas_blk%nsa)
+      ibufi = ibufi+nicas_blk%nsa
    end if
    if (nicas_blk%nsb>0) then
-      nicas_blk%sb_to_c1b = rbuf_int(offset_int+1:offset_int+nicas_blk%nsb)
-      offset_int = offset_int+nicas_blk%nsb
-      nicas_blk%sb_to_l1 = rbuf_int(offset_int+1:offset_int+nicas_blk%nsb)
-      offset_int = offset_int+nicas_blk%nsb
-      nicas_blk%sb_to_sc = rbuf_int(offset_int+1:offset_int+nicas_blk%nsb)
-      offset_int = offset_int+nicas_blk%nsb
+      nicas_blk%sb_to_c1b = bufi(ibufi+1:ibufi+nicas_blk%nsb)
+      ibufi = ibufi+nicas_blk%nsb
+      nicas_blk%sb_to_l1 = bufi(ibufi+1:ibufi+nicas_blk%nsb)
+      ibufi = ibufi+nicas_blk%nsb
+      nicas_blk%sb_to_sc = bufi(ibufi+1:ibufi+nicas_blk%nsb)
+      ibufi = ibufi+nicas_blk%nsb
    end if
    if (nicas_blk%nsc>0) then
       if (.not.nicas_blk%smoother) then
-         nicas_blk%inorm = rbuf_real(offset_real+1:offset_real+nicas_blk%nsc)
-         offset_real = offset_real+nicas_blk%nsc
+         nicas_blk%inorm = bufr(ibufr+1:ibufr+nicas_blk%nsc)
+         ibufr = ibufr+nicas_blk%nsc
       end if
    end if
    if (nam%write_grids) then
       if (nicas_blk%nsa>0) then
-         nicas_blk%lon_sa = rbuf_real(offset_real+1:offset_real+nicas_blk%nsa)
-         offset_real = offset_real+nicas_blk%nsa
-         nicas_blk%lat_sa = rbuf_real(offset_real+1:offset_real+nicas_blk%nsa)
-         offset_real = offset_real+nicas_blk%nsa
-         nicas_blk%lev_sa = rbuf_int(offset_int+1:offset_int+nicas_blk%nsa)
-         offset_int = offset_int+nicas_blk%nsa
+         nicas_blk%lon_sa = bufr(ibufr+1:ibufr+nicas_blk%nsa)
+         ibufr = ibufr+nicas_blk%nsa
+         nicas_blk%lat_sa = bufr(ibufr+1:ibufr+nicas_blk%nsa)
+         ibufr = ibufr+nicas_blk%nsa
+         nicas_blk%lev_sa = bufi(ibufi+1:ibufi+nicas_blk%nsa)
+         ibufi = ibufi+nicas_blk%nsa
       end if
       if (nicas_blk%nsb>0) then
-         nicas_blk%lon_sb = rbuf_real(offset_real+1:offset_real+nicas_blk%nsb)
-         offset_real = offset_real+nicas_blk%nsb
-         nicas_blk%lat_sb = rbuf_real(offset_real+1:offset_real+nicas_blk%nsb)
-         offset_real = offset_real+nicas_blk%nsb
-         nicas_blk%lev_sb = rbuf_int(offset_int+1:offset_int+nicas_blk%nsb)
-         offset_int = offset_int+nicas_blk%nsb
+         nicas_blk%lon_sb = bufr(ibufr+1:ibufr+nicas_blk%nsb)
+         ibufr = ibufr+nicas_blk%nsb
+         nicas_blk%lat_sb = bufr(ibufr+1:ibufr+nicas_blk%nsb)
+         ibufr = ibufr+nicas_blk%nsb
+         nicas_blk%lev_sb = bufi(ibufi+1:ibufi+nicas_blk%nsb)
+         ibufi = ibufi+nicas_blk%nsb
       end if
       if (nicas_blk%nsc>0) then
-         nicas_blk%lon_sc = rbuf_real(offset_real+1:offset_real+nicas_blk%nsc)
-         offset_real = offset_real+nicas_blk%nsc
-         nicas_blk%lat_sc = rbuf_real(offset_real+1:offset_real+nicas_blk%nsc)
-         offset_real = offset_real+nicas_blk%nsc
-         nicas_blk%lev_sc = rbuf_int(offset_int+1:offset_int+nicas_blk%nsc)
-         offset_int = offset_int+nicas_blk%nsc
+         nicas_blk%lon_sc = bufr(ibufr+1:ibufr+nicas_blk%nsc)
+         ibufr = ibufr+nicas_blk%nsc
+         nicas_blk%lat_sc = bufr(ibufr+1:ibufr+nicas_blk%nsc)
+         ibufr = ibufr+nicas_blk%nsc
+         nicas_blk%lev_sc = bufi(ibufi+1:ibufi+nicas_blk%nsc)
+         ibufi = ibufi+nicas_blk%nsc
       end if
    end if
 end if
 
-! Receive communications
+! Release memory
+if (bpar%nicas_block(ib)) then
+   if (nicas_blk%nc0a>0) deallocate(mask_c0a)
+end if
+      
+! Communications and linear operators
 if (bpar%nicas_block(ib)) then
    nicas_blk%com_AB%prefix = 'com_AB'
-   call nicas_blk%com_AB%receive(mpl,iproc,tag)
-   tag = tag+com_ntag
+   nnbufi = bufi(ibufi+1)
+   call nicas_blk%com_AB%deserialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+   ibufi = ibufi+nnbufi
    nicas_blk%com_AC%prefix = 'com_AC'
-   call nicas_blk%com_AC%receive(mpl,iproc,tag)
-   tag = tag+com_ntag
-end if
-
-! Receive linear operators
-if (bpar%nicas_block(ib)) then
+   nnbufi = bufi(ibufi+1)
+   call nicas_blk%com_AC%deserialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+   ibufi = ibufi+nnbufi
    nicas_blk%c%prefix = 'c'
-   call nicas_blk%c%receive(mpl,iproc,tag)
-   tag = tag+linop_ntag
+   nnbufi = bufi(ibufi+1)
+   nnbufr = bufi(ibufi+2)
+   call nicas_blk%c%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+   ibufi = ibufi+nnbufi
+   ibufr = ibufr+nnbufr
    do il0i=1,geom%nl0i
       write(nicas_blk%h(il0i)%prefix,'(a,i3.3)') 'h_',il0i
-      call nicas_blk%h(il0i)%receive(mpl,iproc,tag)
-      tag = tag+linop_ntag
+      nnbufi = bufi(ibufi+1)
+      nnbufr = bufi(ibufi+2)
+      call nicas_blk%h(il0i)%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+      ibufi = ibufi+nnbufi
+      ibufr = ibufr+nnbufr
    end do
    nicas_blk%v%prefix = 'v'
-   call nicas_blk%v%receive(mpl,iproc,tag)
-   tag = tag+linop_ntag
+   nnbufi = bufi(ibufi+1)
+   nnbufr = bufi(ibufi+2)
+   call nicas_blk%v%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+   ibufi = ibufi+nnbufi
+   ibufr = ibufr+nnbufr
    do il1=1,nicas_blk%nl1
       write(nicas_blk%s(il1)%prefix,'(a,i3.3)') 's_',il1
-      call nicas_blk%s(il1)%receive(mpl,iproc,tag)
-      tag = tag+linop_ntag
+      nnbufi = bufi(ibufi+1)
+      nnbufr = bufi(ibufi+2)
+      call nicas_blk%s(il1)%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+      ibufi = ibufi+nnbufi
+      ibufr = ibufr+nnbufr
    end do
 end if
 if ((ib==bpar%nbe).and.nam%adv_diag) then
    nicas_blk%com_AD%prefix = 'com_AD'
-   call nicas_blk%com_AD%receive(mpl,iproc,tag)
-   tag = tag+com_ntag
+   nnbufi = bufi(ibufi+1)
+   call nicas_blk%com_AD%deserialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+   ibufi = ibufi+nnbufi
    nicas_blk%com_ADinv%prefix = 'com_ADinv'
-   call nicas_blk%com_ADinv%receive(mpl,iproc,tag)
-   tag = tag+com_ntag
+   nnbufi = bufi(ibufi+1)
+   call nicas_blk%com_ADinv%deserialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+   ibufi = ibufi+nnbufi
    do its=2,nam%nts
       do il0=1,geom%nl0
          write(nicas_blk%d(il0,its)%prefix,'(a,i3.3,a,a)') 'd_',il0,'_',trim(nam%timeslots(its))
-         call nicas_blk%d(il0,its)%receive(mpl,iproc,tag)
-         tag = tag+linop_ntag
+         nnbufi = bufi(ibufi+1)
+         nnbufr = bufi(ibufi+2)
+         call nicas_blk%d(il0,its)%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+         ibufi = ibufi+nnbufi
+         ibufr = ibufr+nnbufr
          write(nicas_blk%dinv(il0,its)%prefix,'(a,i3.3,a,a)') 'dinv_',il0,'_',trim(nam%timeslots(its))
-         call nicas_blk%dinv(il0,its)%receive(mpl,iproc,tag)
-         tag = tag+linop_ntag
-      end do
-   end do
-end if
-
-! Release memory
-deallocate(rbuf_int)
-deallocate(rbuf_real)
-deallocate(rbuf_logical)
-if (bpar%nicas_block(ib)) deallocate(mask_c0a)
-
-! End associate
-end associate
-
-end subroutine nicas_blk_receive
-
-!----------------------------------------------------------------------
-! Subroutine: nicas_blk_send
-! Purpose: send
-!----------------------------------------------------------------------
-subroutine nicas_blk_send(nicas_blk,mpl,nam,geom,bpar,iproc,tag_start)
-
-implicit none
-
-! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(nam_type),intent(in) :: nam              ! Namelist
-type(geom_type),intent(in) :: geom            ! Geometry
-type(bpar_type),intent(in) :: bpar            ! Block parameters
-integer,intent(in) :: iproc                   ! Destination task index
-integer,intent(in) :: tag_start               ! MPI tag
-
-! Local variables
-integer :: tag,n_dim,n_int,n_real,n_logical,offset_int,offset_real,offset_logical,il0i,il1,its,il0
-integer,allocatable :: sbuf_dim(:),sbuf_int(:)
-real(kind_real),allocatable :: sbuf_real(:)
-logical,allocatable :: sbuf_logical(:),mask_c0a(:,:)
-
-! Associate
-associate(ib=>nicas_blk%ib)
-
-! Initialization
-tag = tag_start
-n_dim = 0
-n_int = 0
-n_real = 0
-n_logical = 0
-offset_int = 0
-offset_real = 0
-offset_logical = 0
-
-! Define buffer size
-if (bpar%nicas_block(ib)) n_dim = n_dim+6
-if ((ib==bpar%nbe).and.nam%adv_diag) n_dim = n_dim+2
-
-! Allocation
-allocate(sbuf_dim(n_dim))
-
-! Copy data
-if (bpar%nicas_block(ib)) then
-   sbuf_dim(1) = nicas_blk%nc0a
-   sbuf_dim(2) = nicas_blk%nc1b
-   sbuf_dim(3) = nicas_blk%nl1
-   sbuf_dim(4) = nicas_blk%nsa
-   sbuf_dim(5) = nicas_blk%nsb
-   sbuf_dim(6) = nicas_blk%nsc
-end if
-if ((ib==bpar%nbe).and.nam%adv_diag) then
-   sbuf_dim(7) = nicas_blk%nc0d
-   sbuf_dim(8) = nicas_blk%nc0dinv
-end if
-
-! Send buffer
-call mpl%f_comm%send(sbuf_dim,iproc-1,tag)
-tag = tag+1
-
-! Release memory
-deallocate(sbuf_dim)
-
-! Define buffer sizes
-n_real = n_real+1
-if (bpar%nicas_block(ib)) then
-   n_int = n_int+2*nicas_blk%nsa+3*nicas_blk%nsb
-   n_real = n_real+nicas_blk%nsa+nicas_blk%nc0a*geom%nl0
-   if (.not.nicas_blk%smoother) n_real = n_real+nicas_blk%nc0a*geom%nl0+nicas_blk%nsc
-   n_logical = n_logical+geom%nl0
-   if (nam%write_grids) then
-      n_int = n_int+nicas_blk%nsa+nicas_blk%nsb+nicas_blk%nsc
-      n_real = n_real+2*(nicas_blk%nsa+nicas_blk%nsb+nicas_blk%nsc)
-   end if
-end if
-
-! Allocation
-allocate(sbuf_int(n_int))
-allocate(sbuf_real(n_real))
-allocate(sbuf_logical(n_logical))
-if (bpar%nicas_block(ib)) allocate(mask_c0a(nicas_blk%nc0a,geom%nl0))
-
-! Initialization
-if (bpar%nicas_block(ib)) mask_c0a = .true.
-
-! Copy data
-sbuf_real(1) = nicas_blk%wgt
-offset_real = offset_real+1
-if (bpar%nicas_block(ib)) then
-   sbuf_logical(offset_logical+1:offset_logical+geom%nl0) = nicas_blk%vlev
-   offset_logical = offset_logical+geom%nl0
-   if (nicas_blk%nc0a>0) then
-      if (.not.nicas_blk%smoother) then
-         sbuf_real(offset_real+1:offset_real+nicas_blk%nc0a*geom%nl0) = pack(nicas_blk%norm,mask_c0a)
-         offset_real = offset_real+nicas_blk%nc0a*geom%nl0
-      end if
-      sbuf_real(offset_real+1:offset_real+nicas_blk%nc0a*geom%nl0) = pack(nicas_blk%coef_ens,mask_c0a)
-      offset_real = offset_real+nicas_blk%nc0a*geom%nl0
-   end if
-   if (nicas_blk%nsa>0) then
-      sbuf_int(offset_int+1:offset_int+nicas_blk%nsa) = nicas_blk%sa_to_s
-      offset_int = offset_int+nicas_blk%nsa
-      sbuf_real(offset_real+1:offset_real+nicas_blk%nsa) = nicas_blk%hash_sa
-      offset_real = offset_real+nicas_blk%nsa
-      sbuf_int(offset_int+1:offset_int+nicas_blk%nsa) = nicas_blk%sa_to_sc
-      offset_int = offset_int+nicas_blk%nsa
-   end if
-   if (nicas_blk%nsb>0) then
-      sbuf_int(offset_int+1:offset_int+nicas_blk%nsb) = nicas_blk%sb_to_c1b
-      offset_int = offset_int+nicas_blk%nsb
-      sbuf_int(offset_int+1:offset_int+nicas_blk%nsb) = nicas_blk%sb_to_l1
-      offset_int = offset_int+nicas_blk%nsb
-      sbuf_int(offset_int+1:offset_int+nicas_blk%nsb) = nicas_blk%sb_to_sc
-      offset_int = offset_int+nicas_blk%nsb
-   end if
-   if (nicas_blk%nsc>0) then
-      if (.not.nicas_blk%smoother) then
-         sbuf_real(offset_real+1:offset_real+nicas_blk%nsc) = nicas_blk%inorm
-         offset_real = offset_real+nicas_blk%nsc
-      end if
-   end if
-   if (nam%write_grids) then
-      if (nicas_blk%nsa>0) then
-         sbuf_real(offset_real+1:offset_real+nicas_blk%nsa) = nicas_blk%lon_sa
-         offset_real = offset_real+nicas_blk%nsa
-         sbuf_real(offset_real+1:offset_real+nicas_blk%nsa) = nicas_blk%lat_sa
-         offset_real = offset_real+nicas_blk%nsa
-         sbuf_int(offset_int+1:offset_int+nicas_blk%nsa) = nicas_blk%lev_sa
-         offset_int = offset_int+nicas_blk%nsa
-      end if
-      if (nicas_blk%nsb>0) then
-         sbuf_real(offset_real+1:offset_real+nicas_blk%nsb) = nicas_blk%lon_sb
-         offset_real = offset_real+nicas_blk%nsb
-         sbuf_real(offset_real+1:offset_real+nicas_blk%nsb) = nicas_blk%lat_sb
-         offset_real = offset_real+nicas_blk%nsb
-         sbuf_int(offset_int+1:offset_int+nicas_blk%nsb) = nicas_blk%lev_sb
-         offset_int = offset_int+nicas_blk%nsb
-      end if
-      if (nicas_blk%nsc>0) then
-         sbuf_real(offset_real+1:offset_real+nicas_blk%nsc) = nicas_blk%lon_sc
-         offset_real = offset_real+nicas_blk%nsc
-         sbuf_real(offset_real+1:offset_real+nicas_blk%nsc) = nicas_blk%lat_sc
-         offset_real = offset_real+nicas_blk%nsc
-         sbuf_int(offset_int+1:offset_int+nicas_blk%nsc) = nicas_blk%lev_sc
-         offset_int = offset_int+nicas_blk%nsc
-      end if
-   end if
-end if
-
-! Send buffers
-if (n_int>0) call mpl%f_comm%send(sbuf_int,iproc-1,tag)
-tag = tag+1
-if (n_real>0) call mpl%f_comm%send(sbuf_real,iproc-1,tag)
-tag = tag+1
-if (n_logical>0) call mpl%f_comm%send(sbuf_logical,iproc-1,tag)
-tag = tag+1
-
-! Release memory
-deallocate(sbuf_int)
-deallocate(sbuf_real)
-deallocate(sbuf_logical)
-if (bpar%nicas_block(ib)) deallocate(mask_c0a)
-
-! Send communications
-if (bpar%nicas_block(ib)) then
-   call nicas_blk%com_AB%send(mpl,iproc,tag)
-   tag = tag+com_ntag
-   call nicas_blk%com_AC%send(mpl,iproc,tag)
-   tag = tag+com_ntag
-end if
-
-! Send linear operators
-if (bpar%nicas_block(ib)) then
-   call nicas_blk%c%send(mpl,iproc,tag)
-   tag = tag+linop_ntag
-   do il0i=1,geom%nl0i
-      call nicas_blk%h(il0i)%send(mpl,iproc,tag)
-      tag = tag+linop_ntag
-   end do
-   call nicas_blk%v%send(mpl,iproc,tag)
-   tag = tag+linop_ntag
-   do il1=1,nicas_blk%nl1
-      call nicas_blk%s(il1)%send(mpl,iproc,tag)
-      tag = tag+linop_ntag
-   end do
-end if
-if ((ib==bpar%nbe).and.nam%adv_diag) then
-   call nicas_blk%com_AD%send(mpl,iproc,tag)
-   tag = tag+com_ntag
-   call nicas_blk%com_ADinv%send(mpl,iproc,tag)
-   tag = tag+com_ntag
-   do its=2,nam%nts
-      do il0=1,geom%nl0
-         call nicas_blk%d(il0,its)%send(mpl,iproc,tag)
-         tag = tag+linop_ntag
-         call nicas_blk%dinv(il0,its)%send(mpl,iproc,tag)
-         tag = tag+linop_ntag
+         nnbufi = bufi(ibufi+1)
+         nnbufr = bufi(ibufi+2)
+         call nicas_blk%dinv(il0,its)%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+         ibufi = ibufi+nnbufi
+         ibufr = ibufr+nnbufr
       end do
    end do
 end if
@@ -1293,7 +1374,7 @@ end if
 ! End associate
 end associate
 
-end subroutine nicas_blk_send
+end subroutine nicas_blk_deserialize
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_parameters

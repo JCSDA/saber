@@ -925,38 +925,40 @@ else
    samp%nc2a = 0
 end if
 
-! Print results
-write(mpl%info,'(a7,a)') '','Sampling efficiency (%):'
-call mpl%flush
-do il0=1,geom%nl0
-   write(mpl%info,'(a10,a,i3,a3)') '','Level ',nam%levs(il0),' ~>'
-   call mpl%flush(.false.)
-   do jc3=1,nam%nc3
-      call mpl%f_comm%allreduce(count(samp%smask_c1ac3(:,jc3,il0)),nc1_valid,fckit_mpi_sum())
-      ival = int(100.0*real(nc1_valid,kind_real)/real(nam%nc1,kind_real))
-      if (ival==100) then
-         ivalformat = '(a,i3,a)'
-      else
-         ivalformat = '(a,i2,a)'
-      end if
-      if (nc1_valid>=nam%nc1/2) then
-         ! Sucessful sampling
-         color = mpl%green
-      else
-         ! Insufficient sampling
-         color = mpl%peach
-      end if
-      if (jc3==1) color = ' '//trim(color)
-      write(mpl%info,ivalformat) trim(color),ival,trim(mpl%black)
-      call mpl%flush(.false.)
-      if (jc3<nam%nc3) then
-         write(mpl%info,'(a)') '-'
-         call mpl%flush(.false.)
-      end if
-   end do
-   write(mpl%info,'(a)') ''
+if (samp%sc3) then
+   ! Print results
+   write(mpl%info,'(a7,a)') '','Sampling efficiency (%):'
    call mpl%flush
-end do
+   do il0=1,geom%nl0
+      write(mpl%info,'(a10,a,i3,a3)') '','Level ',nam%levs(il0),' ~>'
+      call mpl%flush(.false.)
+      do jc3=1,nam%nc3
+         call mpl%f_comm%allreduce(count(samp%smask_c1ac3(:,jc3,il0)),nc1_valid,fckit_mpi_sum())
+         ival = int(100.0*real(nc1_valid,kind_real)/real(nam%nc1,kind_real))
+         if (ival==100) then
+            ivalformat = '(a,i3,a)'
+         else
+            ivalformat = '(a,i2,a)'
+         end if
+         if (nc1_valid>=nam%nc1/2) then
+            ! Sucessful sampling
+            color = mpl%green
+         else
+            ! Insufficient sampling
+            color = mpl%peach
+         end if
+         if (jc3==1) color = ' '//trim(color)
+         write(mpl%info,ivalformat) trim(color),ival,trim(mpl%black)
+         call mpl%flush(.false.)
+         if (jc3<nam%nc3) then
+            write(mpl%info,'(a)') '-'
+            call mpl%flush(.false.)
+         end if
+      end do
+      write(mpl%info,'(a)') ''
+      call mpl%flush
+   end do
+end if
 
 end subroutine samp_setup_1
 
