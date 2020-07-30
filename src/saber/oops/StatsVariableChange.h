@@ -84,8 +84,7 @@ StatsVariableChange<MODEL>::StatsVariableChange(const State_ & xb, const State_ 
   oops::Log::trace() << "StatsVariableChange<MODEL>::StatsVariableChange starting" << std::endl;
 
 // Setup variables
-  const eckit::LocalConfiguration varConfig(conf, "inputVariables");
-  const oops::Variables vars(varConfig);
+  const oops::Variables vars(conf, "input variables");
 
 // Setup timeslots
   std::vector<util::DateTime> timeslots;

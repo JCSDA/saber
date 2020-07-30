@@ -1,5 +1,5 @@
-Covariance:
-  covariance: ensemble
+background error:
+  covariance model: ensemble
   localization:
     bump:
       datadir: testdata
@@ -8,7 +8,7 @@ Covariance:
       load_nicas: 1
       prefix: qg_dirac_bump_loc_4d/test
       strategy: common
-    localization: BUMP
+    localization method: BUMP
     timeslots:
     - 2010-01-01T00:00:00Z
     - 2010-01-01T01:00:00Z
@@ -23,10 +23,9 @@ Covariance:
     - 2010-01-01T10:00:00Z
     - 2010-01-01T11:00:00Z
     - 2010-01-01T12:00:00Z
-    variables:
-    - x
+    localization variables: [x]
   members:
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -53,7 +52,7 @@ Covariance:
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -80,7 +79,7 @@ Covariance:
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -107,7 +106,7 @@ Covariance:
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -134,7 +133,7 @@ Covariance:
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -161,7 +160,7 @@ Covariance:
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -188,7 +187,7 @@ Covariance:
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -215,7 +214,7 @@ Covariance:
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -242,7 +241,7 @@ Covariance:
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -269,7 +268,7 @@ Covariance:
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H
-  - state:
+  - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D
     - date: 2010-01-01T01:00:00Z
@@ -296,18 +295,17 @@ Covariance:
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT11H
     - date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H
-  variables:
-  - x
 dirac:
 - date: 2010-01-01T06:00:00Z
-  ixdir: 
-  - 20
-  iydir:
-  - 10
-  izdir:
-  - 1
-initial:
-  state:
+  ixdir: [20]
+  iydir: [10]
+  izdir: [1]
+geometry:
+  nx: 40
+  ny: 20
+  depths: [4500.0, 5500.0]
+initial condition:
+  states:
   - date: 2010-01-01T00:00:00Z
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D
   - date: 2010-01-01T01:00:00Z
@@ -334,25 +332,15 @@ initial:
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT11H
   - date: 2010-01-01T12:00:00Z
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H
-logging:
-  categories: Info, Test, Warning, Error
 model:
   tstep: PT1H
-output_B:
+output B:
   datadir: testdata/qg_dirac_bump_loc_4d
   date: 2010-01-01T00:00:00Z
   exp: B
   type: an
-output_localization:
+output localization:
   datadir: testdata/qg_dirac_bump_loc_4d
   date: 2010-01-01T00:00:00Z
   exp: localization
   type: an
-resolution:
-  nx: 40
-  ny: 20
-  depths:
-  - 4500.0
-  - 5500.0
-variables:
-- x

@@ -72,7 +72,7 @@ LocalizationBUMP<MODEL>::LocalizationBUMP(const Geometry_ & resol,
   : ooBump_()
 {
 // Setup variables
-  const oops::Variables vars(conf);
+  const oops::Variables vars(conf, "localization variables");
 
 //  Setup timeslots
   const std::vector<std::string> timeslots_str(conf.getStringVector("timeslots"));

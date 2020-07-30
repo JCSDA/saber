@@ -60,15 +60,15 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     util::Timer timer(classname(), "write");
 
     //  Setup resolution
-    const eckit::LocalConfiguration resolConfig(fullConfig, "resolution");
+    const eckit::LocalConfiguration resolConfig(fullConfig, "geometry");
     const Geometry_ resol(resolConfig, this->getComm());
 
     // Setup variables
-    const oops::Variables vars(fullConfig);
+    const oops::Variables vars(fullConfig, "input variables");
 
     // Setup background state
     const eckit::LocalConfiguration backgroundConfig(fullConfig, "background");
-    State4D_ xx(resol, vars, backgroundConfig);
+    State4D_ xx(resol, backgroundConfig);
 
     //  Setup timeslots
     std::vector<util::DateTime> timeslots = xx.validTimes();
@@ -78,7 +78,7 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     EnsemblePtr_ ens = NULL;
     if (fullConfig.has("ensemble")) {
       const eckit::LocalConfiguration ensembleConfig(fullConfig, "ensemble");
-      ens.reset(new Ensemble_(ensembleConfig, xx, xx, resol));
+      ens.reset(new Ensemble_(ensembleConfig, xx, xx, resol, vars));
     }
 
     // Setup pseudo ensemble
