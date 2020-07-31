@@ -260,6 +260,9 @@ do iproc=1,mpl%nproc
    end if
 end do
 
+! Update tag
+call mpl%update_tag(4)
+
 end subroutine nicas_read
 
 !----------------------------------------------------------------------
@@ -377,6 +380,9 @@ do iproc=1,mpl%nproc
    end if
 end do
 
+! Update tag
+call mpl%update_tag(4)
+
 end subroutine nicas_write
 
 !----------------------------------------------------------------------
@@ -445,9 +451,6 @@ call mpl%f_comm%send(bufi,iproc-1,mpl%tag+1)
 call mpl%f_comm%send(bufr,iproc-1,mpl%tag+2)
 call mpl%f_comm%send(bufl,iproc-1,mpl%tag+3)
 
-! Update tag
-call mpl%update_tag(4)
-
 end subroutine nicas_send
 
 !----------------------------------------------------------------------
@@ -488,9 +491,6 @@ allocate(bufl(nbufl))
 call mpl%f_comm%receive(bufi,iproc-1,mpl%tag+1,status)
 call mpl%f_comm%receive(bufr,iproc-1,mpl%tag+2,status)
 call mpl%f_comm%receive(bufl,iproc-1,mpl%tag+3,status)
-
-! Update tag
-call mpl%update_tag(4)
 
 ! Initialization
 ibufi = 0
