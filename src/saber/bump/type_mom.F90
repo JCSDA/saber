@@ -459,7 +459,7 @@ do ib=1,bpar%nb
    end if
 end do
 
-! Write sample sample moments
+! Write sample moments
 if (nam%write_mom) then
    write(mpl%info,'(a10,a)') '','Write sample moments'
    call mpl%flush
