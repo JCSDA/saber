@@ -123,6 +123,7 @@ ageometry = atlas_geometry("UnitSphere")
 lon_deg = tree%lon*rad2deg
 lat_deg = tree%lat*rad2deg
 tree%kd = atlas_indexkdtree(ageometry)
+call tree%kd%reserve(tree%neff)
 call tree%kd%build(tree%neff,lon_deg,lat_deg)
 
 end subroutine tree_init
