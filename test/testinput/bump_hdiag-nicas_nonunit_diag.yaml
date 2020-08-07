@@ -5,7 +5,7 @@ model: "qg"
 
 # driver_param
 method: "loc"
-strategy: "specific_univariate"
+strategy: "common"
 new_hdiag: 1
 write_cmat: 0
 new_nicas: 1

@@ -5,7 +5,7 @@ model: "qg"
 
 # driver_param
 method: "hyb-avg"
-strategy: "specific_univariate"
+strategy: "common"
 new_hdiag: 1
 write_cmat: 0
 new_nicas: 1
@@ -37,7 +37,6 @@ nl0r: 2
 ne: 50
 
 # fit_param
-double_fit: [1,0]
 
 # nicas_param
 resol: 8.0
