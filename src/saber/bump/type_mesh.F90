@@ -7,12 +7,13 @@
 !----------------------------------------------------------------------
 module type_mesh
 
+use atlas_module!, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,atlas_mesh_nodes,atlas_connectivity
 !$ use omp_lib
-use tools_const, only: pi,req
+use tools_const, only: pi,req,rad2deg
 use tools_func, only: lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
-use tools_stripack, only: addnod,bnodes,inside,trfind,trlist,trmesh
+use tools_stripack, only: bnodes,inside,trfind,trlist,trmesh
 use type_mpl, only: mpl_type
 use type_rng, only: rng_type
 
@@ -54,6 +55,8 @@ type mesh_type
    integer,allocatable :: ltri(:,:)             ! Triangles indices
    integer,allocatable :: larc(:,:)             ! Arcs indices
    logical,allocatable :: valid(:)              ! Valid mesh nodes
+
+   type(atlas_mesh) :: amesh
 contains
    procedure :: alloc => mesh_alloc
    procedure :: init => mesh_init
@@ -121,13 +124,18 @@ real(kind_real),intent(in) :: lon(mesh%n)         ! Longitudes
 real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
 
 ! Local variables
-integer :: i,ii,j,k,info,nnbmax
+integer :: i,ii,j,k,info,nnbmax,cols
 integer :: near(mesh%n),next(mesh%n)
 integer,allocatable :: jtab(:)
-real(kind_real) :: dist(mesh%n)
+integer,pointer :: row(:)
+real(kind_real) :: dist(mesh%n),xy(2,mesh%n)
 real(kind_real),allocatable :: list(:)
 logical :: init
 character(len=1024),parameter :: subr = 'mesh_init'
+type(atlas_unstructuredgrid) :: agrid
+type(atlas_meshgenerator) :: ameshgenerator
+type(atlas_mesh_nodes) :: anodes
+type(atlas_connectivity) :: aconnectivity
 
 ! Points order
 do i=1,mesh%n
@@ -170,14 +178,41 @@ end do
 ! Store coordinates
 call mesh%store(mpl,lon,lat)
 
+! Create unstructured grid
+do i=1,mesh%n
+   xy(1,i) = mesh%lon(i)*rad2deg
+   xy(2,i) = mesh%lat(i)*rad2deg
+end do
+agrid = atlas_unstructuredgrid(xy)
+
 ! Create mesh
 mesh%list = 0
 mesh%lend = 0
 mesh%lnew = 0
 if (mesh%n>2) then
+   ameshgenerator = atlas_meshgenerator('delaunay')
+   mesh%amesh = ameshgenerator%generate(agrid)
+   anodes = mesh%amesh%nodes()
+   print*, mesh%n,anodes%size()
+   call atlas_build_edges(mesh%amesh)
+!   call atlas_build_pole_edges(mesh%amesh)
+   call atlas_build_node_to_edge_connectivity(mesh%amesh)
+   aconnectivity = anodes%edge_connectivity()
+   print*, aconnectivity%rows()
+   do i=1,aconnectivity%rows()
+      call aconnectivity%row(i,row,cols)   
+      if (any(row(1:cols)==100)) print*, i
+   end do
    call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist,info)
    if (info/=0) call mpl%abort(subr,'trmesh failed')
+   call mpl%abort('ok','ok')
 end if
+
+! A FAIRE:
+! - une routine qui trouve les indices des nodes voisins : boucle sur la table de connectivité et remplissage d'un tableau temporaire (taille = nombre d'edges) qui indique si ce edge a déjà été passé et par qui. Résultat dans une structure de données propre avec un type dérivé (et pas un tableau avec maxcol colonnes).
+! - une routine qui trouve les boundary nodes : si deux voisins sucessifs d'un même node ne sont pas voisins, alors ils sont boundary nodes et le node central aussi. En fait, il suffit d'un trouver un seul puis de suivre le tableau... (cf. stripack)
+! - une routine trouve dans quel triangle on est (où si on est en dehors du convex hull), et qui calcule les coordonnées barycentriques
+! - une routine qui liste les triangles (pour deux voisins, quels sont les deux voisins commun).
 
 ! Boundaries not computed yet
 mesh%nb = mpl%msv%vali
