@@ -23,7 +23,7 @@ call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nx',nx_id))
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'ny',ny_id))
 call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nx_id,len=model%nlon))
-model%nlon = model%nlon+1
+if (qg_red) model%nlon = model%nlon+1
 call mpl%ncerr(subr,nf90_inquire_dimension(ncid,ny_id,len=model%nlat))
 model%nmg = model%nlon*model%nlat
 call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nz',nz_id))
@@ -43,22 +43,37 @@ call mpl%ncerr(subr,nf90_inq_varid(ncid,'lat',lat_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'z',z_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'area',area_id))
 call mpl%ncerr(subr,nf90_inq_varid(ncid,'lmask',lmask_id))
-call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon(1:model%nlon-1,:)))
-call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat(1:model%nlon-1,:)))
+if (qg_red) then
+   call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon(1:model%nlon-1,:)))
+   call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat(1:model%nlon-1,:)))
+   call mpl%ncerr(subr,nf90_get_var(ncid,area_id,area(1:model%nlon-1,:)))
+   call mpl%ncerr(subr,nf90_get_var(ncid,lmask_id,lmask(1:model%nlon-1,:,:)))
+else
+   call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon))
+   call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat))
+   call mpl%ncerr(subr,nf90_get_var(ncid,area_id,area))
+   call mpl%ncerr(subr,nf90_get_var(ncid,lmask_id,lmask))
+end if
 call mpl%ncerr(subr,nf90_get_var(ncid,z_id,z))
-call mpl%ncerr(subr,nf90_get_var(ncid,area_id,area(1:model%nlon-1,:)))
-call mpl%ncerr(subr,nf90_get_var(ncid,lmask_id,lmask(1:model%nlon-1,:,:)))
 call mpl%ncerr(subr,nf90_close(ncid))
 
-! Add redundant longitude for tests
-lon(model%nlon,:) = lon(1,:)
-lat(model%nlon,:) = lat(1,:)
-area(model%nlon,:) = area(1,:)
-lmask(model%nlon,:,:) = lmask(1,:,:)
+if (qg_red) then
+  ! Add redundant longitude for tests
+  lon(model%nlon,:) = lon(1,:)
+  lat(model%nlon,:) = lat(1,:)
+  area(model%nlon,:) = area(1,:)
+  lmask(model%nlon,:,:) = lmask(1,:,:)
+end if
 
 ! Convert to radian
 lon = lon*deg2rad
 lat = lat*deg2rad
+
+if (qg_lam) then
+   ! LAM (lon/lat divided by 2)
+   lon = 0.5*lon
+   lat = 0.5*lat
+end if
 
 ! Model grid
 img = 0

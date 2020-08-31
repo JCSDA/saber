@@ -9,7 +9,7 @@ module type_mesh
 
 use atlas_module!, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,atlas_mesh_nodes,atlas_connectivity
 !$ use omp_lib
-use tools_const, only: pi,req,rad2deg
+use tools_const, only: pi,req,rad2deg,reqkm
 use tools_func, only: lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
@@ -20,6 +20,14 @@ use type_rng, only: rng_type
 implicit none
 
 logical,parameter :: shuffle = .true. ! Shuffle mesh order (more efficient to compute the Delaunay triangulation)
+
+! Connectivity table row derived type
+type row_type
+   integer :: cols                         ! Nomber of columns
+   integer,allocatable :: edges(:)         ! Edges indices
+   integer,allocatable :: nodes(:)         ! Nodes indices
+   real(kind_real),allocatable :: dists(:) ! Nodes indices
+end type row_type
 
 ! Mesh derived type
 type mesh_type
@@ -56,7 +64,8 @@ type mesh_type
    integer,allocatable :: larc(:,:)             ! Arcs indices
    logical,allocatable :: valid(:)              ! Valid mesh nodes
 
-   type(atlas_mesh) :: amesh
+   type(atlas_mesh) :: amesh                    ! ATLAS mesh
+   type(row_type),allocatable :: rows(:)        ! Connectivity table rows
 contains
    procedure :: alloc => mesh_alloc
    procedure :: init => mesh_init
@@ -124,18 +133,17 @@ real(kind_real),intent(in) :: lon(mesh%n)         ! Longitudes
 real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
 
 ! Local variables
-integer :: i,ii,j,k,info,nnbmax,cols
-integer :: near(mesh%n),next(mesh%n)
-integer,allocatable :: jtab(:)
+integer :: i,j,k,cols,maxedge
+integer,allocatable :: jtab(:),nodes(:,:)
 integer,pointer :: row(:)
-real(kind_real) :: dist(mesh%n),xy(2,mesh%n)
+real(kind_real) :: xy(2,mesh%n),distmin,distmax
 real(kind_real),allocatable :: list(:)
-logical :: init
 character(len=1024),parameter :: subr = 'mesh_init'
 type(atlas_unstructuredgrid) :: agrid
 type(atlas_meshgenerator) :: ameshgenerator
 type(atlas_mesh_nodes) :: anodes
 type(atlas_connectivity) :: aconnectivity
+type(atlas_Output) :: gmsh
 
 ! Points order
 do i=1,mesh%n
@@ -185,69 +193,141 @@ do i=1,mesh%n
 end do
 agrid = atlas_unstructuredgrid(xy)
 
-! Create mesh
-mesh%list = 0
-mesh%lend = 0
-mesh%lnew = 0
-if (mesh%n>2) then
-   ameshgenerator = atlas_meshgenerator('delaunay')
-   mesh%amesh = ameshgenerator%generate(agrid)
-   anodes = mesh%amesh%nodes()
-   print*, mesh%n,anodes%size()
-   call atlas_build_edges(mesh%amesh)
-!   call atlas_build_pole_edges(mesh%amesh)
-   call atlas_build_node_to_edge_connectivity(mesh%amesh)
-   aconnectivity = anodes%edge_connectivity()
-   print*, aconnectivity%rows()
-   do i=1,aconnectivity%rows()
-      call aconnectivity%row(i,row,cols)   
-      if (any(row(1:cols)==100)) print*, i
-   end do
-   call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist,info)
-   if (info/=0) call mpl%abort(subr,'trmesh failed')
-   call mpl%abort('ok','ok')
-end if
+! Mesh generator
+ameshgenerator = atlas_meshgenerator('delaunay')
 
+! Create mesh from grid
+mesh%amesh = ameshgenerator%generate(agrid)
+
+! Build connectivity
+call atlas_build_edges(mesh%amesh)
+call atlas_build_node_to_edge_connectivity(mesh%amesh)
+
+! Get connectivity
+anodes = mesh%amesh%nodes()
+aconnectivity = anodes%edge_connectivity()
+
+! Allocation
+maxedge = 0
+allocate(mesh%rows(mesh%n))
+do i=1,mesh%n
+   call aconnectivity%row(i,row,cols)
+   mesh%rows(i)%cols = cols
+   maxedge = max(maxedge,maxval(row(1:cols)))
+   allocate(mesh%rows(i)%edges(mesh%rows(i)%cols))
+   allocate(mesh%rows(i)%nodes(mesh%rows(i)%cols))
+   allocate(mesh%rows(i)%dists(mesh%rows(i)%cols))
+   mesh%rows(i)%edges = row(1:cols)
+end do
+allocate(nodes(maxedge,2))
+
+! Fill nodes for each edge
+nodes = mpl%msv%vali
+do i=1,mesh%n
+   do j=1,mesh%rows(i)%cols
+      k = mesh%rows(i)%edges(j)
+      if (mpl%msv%is(nodes(k,1))) then
+         ! First point
+         nodes(k,1) = i
+      elseif (mpl%msv%is(nodes(k,2))) then
+         ! Second point
+         nodes(k,2) = i
+      else
+         ! Error
+         call mpl%abort(subr,'third node for the same edge')
+      end if
+   end do
+end do
+
+! Fill nodes index in connectivity list
+do i=1,mesh%n
+   do j=1,mesh%rows(i)%cols
+      k = mesh%rows(i)%edges(j)
+      if (i==nodes(k,1)) then
+         ! Node is first point
+         mesh%rows(i)%nodes(j) = nodes(k,2)
+      elseif (i==nodes(k,2)) then
+         ! Node is second point
+         mesh%rows(i)%nodes(j) = nodes(k,1)
+      else
+         ! Error
+         call mpl%abort(subr,'no node for the this edge')
+      end if
+   end do
+end do
+
+! Compute edge distances
+distmin = huge(1.0)
+distmax = 0.0
+do i=1,mesh%n
+   do j=1,mesh%rows(i)%cols
+      ! Neighbor node index
+      k = mesh%rows(i)%nodes(j)
+
+      ! Compute distance
+      call sphere_dist(mesh%lon(i),mesh%lat(i),mesh%lon(k),mesh%lat(k),mesh%rows(i)%dists(j))
+      print*, i,j,mesh%rows(i)%dists(j)*reqkm
+      ! Min/max
+      distmin = min(distmin,mesh%rows(i)%dists(j))
+      distmax = max(distmax,mesh%rows(i)%dists(j))
+   end do
+end do
+
+do i=1,mesh%n
+   call aconnectivity%row(i,row,cols)
+   do j=1,mesh%rows(i)%cols
+      if (mesh%rows(i)%dists(j)>2.0*distmin) then
+         row(j) = aconnectivity%missing_value()
+         print*, i,j,aconnectivity%missing_value()
+      end if
+   end do
+end do
+
+! Write mesh
+gmsh = atlas_output_gmsh('mesh.msh',coordinates='xyz')
+call gmsh%write(mesh%amesh)
+
+
+call mpl%abort('ok','ok')
 ! A FAIRE:
-! - une routine qui trouve les indices des nodes voisins : boucle sur la table de connectivité et remplissage d'un tableau temporaire (taille = nombre d'edges) qui indique si ce edge a déjà été passé et par qui. Résultat dans une structure de données propre avec un type dérivé (et pas un tableau avec maxcol colonnes).
 ! - une routine qui trouve les boundary nodes : si deux voisins sucessifs d'un même node ne sont pas voisins, alors ils sont boundary nodes et le node central aussi. En fait, il suffit d'un trouver un seul puis de suivre le tableau... (cf. stripack)
 ! - une routine trouve dans quel triangle on est (où si on est en dehors du convex hull), et qui calcule les coordonnées barycentriques
 ! - une routine qui liste les triangles (pour deux voisins, quels sont les deux voisins commun).
 
 ! Boundaries not computed yet
-mesh%nb = mpl%msv%vali
+!mesh%nb = mpl%msv%vali
 
 ! Count neighbors
-do i=1,mesh%n
-   ii = mesh%order(i)
-   mesh%nnb(ii) = 0
-   j = mesh%lend(i)
-   init = .true.
-   do while ((j/=mesh%lend(i)).or.init)
-      mesh%nnb(ii) = mesh%nnb(ii)+1
-      j = mesh%lptr(j)
-      init = .false.
-   end do
-end do
+!do i=1,mesh%n
+!   ii = mesh%order(i)
+!   mesh%nnb(ii) = 0
+!   j = mesh%lend(i)
+!   init = .true.
+!   do while ((j/=mesh%lend(i)).or.init)
+!      mesh%nnb(ii) = mesh%nnb(ii)+1
+!      j = mesh%lptr(j)
+!      init = .false.
+!   end do
+!end do
 
 ! Find neighbors indices
-nnbmax = maxval(mesh%nnb)
-allocate(mesh%inb(mesh%n,nnbmax))
-do i=1,mesh%n
-   ii = mesh%order(i)
-   mesh%nnb(ii) = 0
-   j = mesh%lend(i)
-   init = .true.
-   do while ((j/=mesh%lend(i)).or.init)
-      mesh%nnb(ii) = mesh%nnb(ii)+1
-      mesh%inb(ii,mesh%nnb(ii)) = mesh%order(abs(mesh%list(j)))
-      j = mesh%lptr(j)
-      init = .false.
-   end do
-end do
+!nnbmax = maxval(mesh%nnb)
+!allocate(mesh%inb(mesh%n,nnbmax))
+!do i=1,mesh%n
+!   ii = mesh%order(i)
+!   mesh%nnb(ii) = 0
+!   j = mesh%lend(i)
+!   init = .true.
+!   do while ((j/=mesh%lend(i)).or.init)
+!      mesh%nnb(ii) = mesh%nnb(ii)+1
+!      mesh%inb(ii,mesh%nnb(ii)) = mesh%order(abs(mesh%list(j)))
+!      j = mesh%lptr(j)
+!      init = .false.
+!   end do
+!end do
 
 ! Release memory
-deallocate(list)
+!deallocate(list)
 
 end subroutine mesh_init
 
