@@ -12,7 +12,7 @@ cost function:
     tstep: PT1H
   background:
     date: 2010-01-01T12:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H
+    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
   background error:
     bump:
       datadir: testdata
@@ -39,9 +39,9 @@ cost function:
       obs type: Stream
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d
+        obsfile: testdata/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3dvar_bump.obs3d
+        obsfile: testdata/3dvar_bump.obs3d.nc
       obs type: Stream
   - obs error:
       covariance model: diagonal
@@ -49,9 +49,9 @@ cost function:
       obs type: Wind
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d
+        obsfile: testdata/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3dvar_bump.obs3d
+        obsfile: testdata/3dvar_bump.obs3d.nc
       obs type: Wind
   - obs error:
       covariance model: diagonal
@@ -59,9 +59,9 @@ cost function:
       obs type: WSpeed
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d
+        obsfile: testdata/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3dvar_bump.obs3d
+        obsfile: testdata/3dvar_bump.obs3d.nc
       obs type: WSpeed
 variational:
   minimizer:
