@@ -9,6 +9,7 @@ bump_hdiag_fit_dl0
 bump_hdiag_gen_kurt
 bump_hdiag_hyb-avg_common
 bump_hdiag_hyb-rnd_common_forced_radii
+bump_hdiag_hyb-rnd_common_nsub
 bump_hdiag_ldwv
 bump_hdiag_loc_gau_approx
 bump_hdiag_loc_histograms

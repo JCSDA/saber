@@ -10,6 +10,7 @@ bump_hdiag_draw_type/test_1-1_diag.nc
 bump_hdiag_fit_dl0/test_1-1_diag.nc
 bump_hdiag_gen_kurt/test_1-1_diag.nc
 bump_hdiag_hyb-avg_common/test_1-1_diag.nc
+bump_hdiag_hyb-rnd_common_nsub/test_1-1_diag.nc
 bump_hdiag_ldwv/test_1-1_diag_A.nc
 bump_hdiag_ldwv/test_1-1_diag_B.nc
 bump_hdiag_ldwv/test_1-1_diag_C.nc

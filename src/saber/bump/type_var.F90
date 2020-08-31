@@ -212,28 +212,52 @@ type(ens_type), intent(in) :: ens    ! Ensemble
 type(io_type),intent(in) :: io       ! I/O
 
 ! Local variables
-integer :: ie,ic0a,il0
-real(kind_real) :: norm_m2,norm_m4
+integer :: isub,ie_sub,ie,ic0a,il0
+real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts,ens%nsub)
 
 ! Allocation
 call var%alloc(nam,geom)
 
 ! Initialization
-norm_m2 = 1.0/real(ens%ne-1,kind_real)
-norm_m4 = 1.0/real(ens%ne,kind_real)
 var%ne = ens%ne
-var%m2 = 0.0
+m2 = 0.0
 var%m4 = 0.0
 
 ! Compute variance
 write(mpl%info,'(a7,a)') '','Compute variance'
 call mpl%flush
-do ie=1,ens%ne
-   var%m2 = var%m2+ens%mem(ie)%fld**2
-   var%m4 = var%m4+ens%mem(ie)%fld**4
+
+! Loop on sub-ensembles
+do isub=1,ens%nsub
+   if (ens%nsub==1) then
+      write(mpl%info,'(a10,a)') '','Full ensemble, member:'
+      call mpl%flush(.false.)
+   else
+      write(mpl%info,'(a10,a,i4,a)') '','Sub-ensemble ',isub,', member:'
+      call mpl%flush(.false.)
+   end if
+
+   ! Compute centered moments
+   do ie_sub=1,ens%ne/ens%nsub
+      write(mpl%info,'(i4)') ie_sub
+      call mpl%flush(.false.)
+
+      ! Full ensemble index
+      ie = ie_sub+(isub-1)*ens%ne/ens%nsub
+
+      ! Variance
+      m2(:,:,:,:,isub) = m2(:,:,:,:,isub)+ens%mem(ie)%fld**2
+
+      ! Fourth-order moment
+      var%m4 = var%m4+ens%mem(ie)%fld**4
+   end do
+   write(mpl%info,'(a)') ''
+   call mpl%flush
 end do
-var%m2 = var%m2*norm_m2
-var%m4 = var%m4*norm_m4
+
+! Normalization
+var%m2 = sum(m2,dim=5)/real(ens%ne-ens%nsub,kind_real)
+var%m4 = var%m4/real(ens%ne,kind_real)
 
 ! Apply mask
 do il0=1,geom%nl0
