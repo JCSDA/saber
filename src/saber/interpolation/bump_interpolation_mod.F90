@@ -280,7 +280,7 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
   character(len=1024),parameter :: subr = 'bint_driver'
 
   ! Check that universe is global
-  if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for obsop')
+  if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for interpolation')
 
   ! Check whether output grid points are inside the mesh
   if (self%nout_local > 0) then
