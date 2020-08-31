@@ -141,7 +141,7 @@ do isub=1,ens%nsub
       call mpl%flush(.false.)
    end if
 
-   ! Compute centered moments iteratively
+   ! Compute centered moments
    do ie_sub=1,ens%ne/ens%nsub
       write(mpl%info,'(i4)') ie_sub
       call mpl%flush(.false.)
