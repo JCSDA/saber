@@ -1502,7 +1502,7 @@ if (conf%has("check_apply_obsop")) call conf%get_or_die("check_apply_obsop",nam%
 if (conf%has("nl")) call conf%get_or_die("nl",nam%nl)
 if (conf%has("levs")) then
    call conf%get_or_die("levs",integer_array)
-   nam%levs(1:nam%nl) = integer_array(1:nam%nl)
+   nam%levs(1:size(integer_array)) = integer_array
 end if
 if (conf%has("lev2d")) then
    call conf%get_or_die("lev2d",str)
@@ -1512,12 +1512,12 @@ if (conf%has("logpres")) call conf%get_or_die("logpres",nam%logpres)
 if (conf%has("nv")) call conf%get_or_die("nv",nam%nv)
 if (conf%has("variables")) then
    call conf%get_or_die("variables",str_array)
-   nam%variables(1:nam%nv) = str_array(1:nam%nv)
+   nam%variables(1:size(str_array)) = str_array
 end if
 if (conf%has("nts")) call conf%get_or_die("nts",nam%nts)
 if (conf%has("timeslots")) then
    call conf%get_or_die("timeslots",str_array)
-   nam%timeslots(1:nam%nts) = str_array(1:nam%nts)
+   nam%timeslots(1:size(str_array)) = str_array
 end if
 if (conf%has("dts")) call conf%get_or_die("dts",nam%dts)
 if (conf%has("nomask")) call conf%get_or_die("nomask",nam%nomask)
@@ -1556,11 +1556,11 @@ if (conf%has("mask_type")) then
 end if
 if (conf%has("mask_lu")) then
    call conf%get_or_die("mask_lu",str_array)
-   nam%mask_lu(1:nam%nv) = str_array(1:nam%nv)
+   nam%mask_lu(1:size(str_array)) = str_array
 end if
 if (conf%has("mask_th")) then
    call conf%get_or_die("mask_th",real_array)
-   nam%mask_th(1:nam%nv) = real_array(1:nam%nv)
+   nam%mask_th(1:size(real_array)) = real_array
 end if
 if (conf%has("ncontig_th")) call conf%get_or_die("ncontig_th",nam%ncontig_th)
 if (conf%has("mask_check")) call conf%get_or_die("mask_check",nam%mask_check)
@@ -1586,17 +1586,17 @@ if (conf%has("gau_approx")) call conf%get_or_die("gau_approx",nam%gau_approx)
 if (conf%has("avg_nbins")) call conf%get_or_die("avg_nbins",nam%avg_nbins)
 if (conf%has("vbal_block")) then
    call conf%get_or_die("vbal_block",logical_array)
-   nam%vbal_block(1:nam%nv*(nam%nv-1)/2) = logical_array(1:nam%nv*(nam%nv-1)/2)
+   nam%vbal_block(1:size(logical_array)) = logical_array
 end if
 if (conf%has("vbal_rad")) call conf%get_or_die("vbal_rad",nam%vbal_rad)
 if (conf%has("vbal_dlat")) call conf%get_or_die("vbal_dlat",nam%vbal_dlat)
 if (conf%has("vbal_diag_auto")) then
    call conf%get_or_die("vbal_diag_auto",logical_array)
-   nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2) = logical_array(1:nam%nv*(nam%nv-1)/2)
+   nam%vbal_diag_auto(1:size(logical_array)) = logical_array
 end if
 if (conf%has("vbal_diag_reg")) then
    call conf%get_or_die("vbal_diag_reg",logical_array)
-   nam%vbal_diag_reg(1:nam%nv*(nam%nv-1)/2) = logical_array(1:nam%nv*(nam%nv-1)/2)
+   nam%vbal_diag_reg(1:size(logical_array)) = logical_array
 end if
 if (conf%has("var_filter")) call conf%get_or_die("var_filter",nam%var_filter)
 if (conf%has("var_niter")) call conf%get_or_die("var_niter",nam%var_niter)
@@ -1627,7 +1627,7 @@ if (conf%has("lct_scale_ratio")) call conf%get_or_die("lct_scale_ratio",nam%lct_
 if (conf%has("lct_cor_min")) call conf%get_or_die("lct_cor_min",nam%lct_cor_min)
 if (conf%has("lct_diag")) then
    call conf%get_or_die("lct_diag",logical_array)
-   nam%lct_diag(1:nam%lct_nscales) = logical_array(1:nam%lct_nscales)
+   nam%lct_diag(1:size(logical_array)) = logical_array
 end if
 if (conf%has("lct_qc_th")) call conf%get_or_die("lct_qc_th",nam%lct_qc_th)
 if (conf%has("lct_qc_max")) call conf%get_or_die("lct_qc_max",nam%lct_qc_max)
@@ -1656,23 +1656,23 @@ if (conf%has("write_grids")) call conf%get_or_die("write_grids",nam%write_grids)
 if (conf%has("ndir")) call conf%get_or_die("ndir",nam%ndir)
 if (conf%has("londir")) then
    call conf%get_or_die("londir",real_array)
-   nam%londir(1:nam%ndir) = real_array(1:nam%ndir)
+   nam%londir(1:size(real_array)) = real_array
 end if
 if (conf%has("latdir")) then
    call conf%get_or_die("latdir",real_array)
-   nam%latdir(1:nam%ndir) = real_array(1:nam%ndir)
+   nam%latdir(1:size(real_array)) = real_array
 end if
 if (conf%has("levdir")) then
    call conf%get_or_die("levdir",integer_array)
-   nam%levdir(1:nam%ndir) = integer_array(1:nam%ndir)
+   nam%levdir(1:size(integer_array)) = integer_array
 end if
 if (conf%has("ivdir")) then
    call conf%get_or_die("ivdir",integer_array)
-   nam%ivdir(1:nam%ndir) = integer_array(1:nam%ndir)
+   nam%ivdir(1:size(integer_array)) = integer_array
 end if
 if (conf%has("itsdir")) then
    call conf%get_or_die("itsdir",integer_array)
-   nam%itsdir(1:nam%ndir) = integer_array(1:nam%ndir)
+   nam%itsdir(1:size(integer_array)) = integer_array
 end if
 
 ! obsop_param
@@ -1682,19 +1682,19 @@ if (conf%has("nobs")) call conf%get_or_die("nobs",nam%nobs)
 if (conf%has("nldwv")) call conf%get_or_die("nldwv",nam%nldwv)
 if (conf%has("img_ldwv")) then
    call conf%get_or_die("img_ldwv",integer_array)
-   nam%img_ldwv(1:nam%nldwv) = integer_array(1:nam%nldwv)
+   nam%img_ldwv(1:size(integer_array)) = integer_array
 end if
 if (conf%has("lon_ldwv")) then
    call conf%get_or_die("lon_ldwv",real_array)
-   nam%lon_ldwv(1:nam%nldwv) = real_array(1:nam%nldwv)
+   nam%lon_ldwv(1:size(real_array)) = real_array
 end if
 if (conf%has("lat_ldwv")) then
    call conf%get_or_die("lat_ldwv",real_array)
-   nam%lat_ldwv(1:nam%nldwv) = real_array(1:nam%nldwv)
+   nam%lat_ldwv(1:size(real_array)) = real_array
 end if
 if (conf%has("name_ldwv")) then
    call conf%get_or_die("name_ldwv",str_array)
-   nam%name_ldwv(1:nam%nldwv) = str_array(1:nam%nldwv)
+   nam%name_ldwv(1:size(str_array)) = str_array
 end if
 
 end subroutine nam_from_conf
