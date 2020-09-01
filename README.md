@@ -16,17 +16,18 @@ Details about the repository can be found in the [overview of the SABER code](do
 
 The BUMP (B matrix on an Unstructured Mesh Package) library estimates and applies background error covariance-related operators, defined on an unstructured mesh.
 
+### Licensing
 Most of the BUMP code is distributed under the [CeCILL-C license](http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html) (Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT).
 
 The fact that you are downloading this code means that you have had knowledge of the [CeCILL-C license](http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html) and that you accept its terms.
 
-Theoretical documentation:
+### Theoretical documentation
  - about covariance filtering: [covariance_filtering.pdf](https://github.com/benjaminmenetrier/covariance_filtering/blob/master/covariance_filtering.pdf)
  - about the NICAS method: TO BE DONE
  - about multivariate localization: [multivariate_localization.pdf](https://github.com/benjaminmenetrier/multivariate_localization/blob/master/multivariate_localization.pdf)
  - about diffusion and the Matern function: TO BE DONE
 
-Code documentation:
+### Code documentation
  - [Standalone or online usage](doc/bump/standalone_or_online_usage.md)
  - [Input data](doc/bump/input_data.md)
  - [Running the code](doc/bump/running_the_code.md)
