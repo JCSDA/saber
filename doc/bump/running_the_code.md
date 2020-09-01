@@ -1,6 +1,6 @@
 # Running the code
 
-To run the code, go the saber-bundle build directory and type:
+To run the BUMP executable, go the SABER build directory and type:
 
     cd bin
     export OMP_NUM_THREADS=$NTHREAD
