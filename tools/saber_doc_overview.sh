@@ -1,14 +1,14 @@
 #!/bin/bash
 #----------------------------------------------------------------------
-# Bash shell script: overview
+# Bash shell script: saber_doc_overview
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
 # Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 #----------------------------------------------------------------------
 
 # Directories
-doc=$1
-rootdir=${doc}/..
+rootdir=$1/..
+doc=${rootdir}/doc
 autodoc=${doc}/autodoc
 
 # Languages
