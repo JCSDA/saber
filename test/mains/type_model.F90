@@ -787,7 +787,7 @@ character(len=1024) :: fullname
 afieldset = atlas_fieldset()
 
 do its=1,nam%nts
-   ! Define filename
+   ! Set file name
    write(fullname,'(a,i6.6)') trim(filename)//'_'//trim(nam%timeslots(its))//'_',ie
 
    ! Read file

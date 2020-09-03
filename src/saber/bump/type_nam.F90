@@ -98,6 +98,7 @@ type nam_type
    logical :: logpres                                   ! Use pressure logarithm as vertical coordinate (model level if .false.)
    integer :: nv                                        ! Number of variables
    character(len=1024),dimension(nvmax) :: variables    ! Variables names
+   character(len=1024) :: variable_change               ! Variable change
    integer :: nts                                       ! Number of time slots
    character(len=1024),dimension(ntsmax) :: timeslots   ! Timeslots
    real(kind_real) :: dts                               ! Timeslots width [in s]
@@ -311,6 +312,7 @@ nam%nv = 0
 do iv=1,nvmax
    nam%variables(iv) = ''
 end do
+nam%variable_change = ''
 nam%nts = 0
 do its=1,ntsmax
    nam%timeslots(its) = ''
@@ -518,6 +520,7 @@ character(len=1024) :: lev2d
 logical :: logpres
 integer :: nv
 character(len=1024),dimension(nvmax) :: variables
+character(len=1024) :: variable_change
 integer :: nts
 character(len=1024),dimension(ntsmax) :: timeslots
 real(kind_real) :: dts
@@ -677,6 +680,7 @@ namelist/model_param/ &
  & logpres, &
  & nv, &
  & variables, &
+ & variable_change, &
  & nts, &
  & timeslots, &
  & dts, &
@@ -851,6 +855,7 @@ if (mpl%main) then
    do iv=1,nvmax
       variables(iv) = ''
    end do
+   variable_change = ''
    nts = 0
    do its=1,ntsmax
       timeslots(its) = ''
@@ -1053,6 +1058,7 @@ if (mpl%main) then
    nam%logpres = logpres
    nam%nv = nv
    if (nv>0) nam%variables(1:nv) = variables(1:nv)
+   nam%variable_change = variable_change
    nam%nts = nts
    if (nts>0) nam%timeslots(1:nts) = timeslots(1:nts)
    nam%dts = dts
@@ -1288,6 +1294,7 @@ call mpl%f_comm%broadcast(nam%lev2d,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%logpres,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nv,mpl%rootproc-1)
 call mpl%broadcast(nam%variables,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%variable_change,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nts,mpl%rootproc-1)
 call mpl%broadcast(nam%timeslots,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%dts,mpl%rootproc-1)
@@ -1514,6 +1521,7 @@ if (conf%has("variables")) then
    call conf%get_or_die("variables",str_array)
    nam%variables(1:size(str_array)) = str_array
 end if
+if (conf%has("variable_change")) call conf%get_or_die("variable_change",nam%variable_change )
 if (conf%has("nts")) call conf%get_or_die("nts",nam%nts)
 if (conf%has("timeslots")) then
    call conf%get_or_die("timeslots",str_array)
@@ -2182,6 +2190,7 @@ call mpl%write(lncid,'nam','lev2d',nam%lev2d)
 call mpl%write(lncid,'nam','logpres',nam%logpres)
 call mpl%write(lncid,'nam','nv',nam%nv)
 call mpl%write(lncid,'nam','variables',nam%nv,nam%variables(1:nam%nv))
+call mpl%write(lncid,'nam','variable_change',nam%variable_change)
 call mpl%write(lncid,'nam','nts',nam%nts)
 call mpl%write(lncid,'nam','timeslots',nam%nts,nam%timeslots(1:nam%nts))
 call mpl%write(lncid,'nam','dts',nam%dts)
