@@ -10,6 +10,7 @@ The BUMP executable can be used as standalone code, [with NetCDF inputs](input_d
   - [IFS](http://www.ecmwf.int/en/research/modelling-and-prediction)
   - [MPAS](https://mpas-dev.github.io)
   - [NEMO](http://www.nemo-ocean.eu)
+  - [NORCPM](https://wiki.uib.no/norcpm)
   - RES
   - [WRF](https://www.mmm.ucar.edu/weather-research-and-forecasting-model)
 
