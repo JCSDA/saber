@@ -128,6 +128,12 @@ while [ ${i} -lt ${ne} ] ; do
       done
    fi
 
+   # NorCPM
+   if test ${test} = "bump_norcpm" ; then
+      ne=30
+      ln -sf ${modeldata}/${test}/N1850AERCN_staticEnsemble.micom.r.0001-01-15-00000.nc ${testdata}/ens1_00_${i4}.nc
+   fi
+
    # RES
    if test ${test} = "bump_res" ; then
       ne=101
@@ -352,6 +358,14 @@ if test ${test} = "bump_cera-20c" ; then
    grid=${testdata}/grid.nc
    rm -f ${grid}
    ncks -O -v nav_lat,nav_lon,tmask,e1t,e2t,e3t ${origin} ${grid}
+fi
+
+# NorCPM
+if test ${test} = "bump_norcpm" ; then
+   origin1=${modeldata}/${test}/grid.nc
+   origin2=${modeldata}/${test}/N1850AERCN_staticEnsemble.micom.r.0001-01-15-00000.nc
+   ncks -O -v plon,plat,parea,pmask ${origin1} ${grid}
+   ncks -A -v dp ${origin2} ${grid}
 fi
 
 # RES

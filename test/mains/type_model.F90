@@ -99,6 +99,8 @@ contains
    procedure :: mpas_read => model_mpas_read
    procedure :: nemo_coord => model_nemo_coord
    procedure :: nemo_read => model_nemo_read
+   procedure :: norcpm_coord => model_norcpm_coord
+   procedure :: norcpm_read => model_norcpm_read
    procedure :: qg_coord => model_qg_coord
    procedure :: qg_read => model_qg_read
    procedure :: res_coord => model_res_coord
@@ -132,6 +134,7 @@ include 'model/model_gfs.inc'
 include 'model/model_ifs.inc'
 include 'model/model_mpas.inc'
 include 'model/model_nemo.inc'
+include 'model/model_norcpm.inc'
 include 'model/model_qg.inc'
 include 'model/model_res.inc'
 include 'model/model_wrf.inc'
@@ -248,6 +251,7 @@ if (trim(nam%model)=='gfs') call model%gfs_coord(mpl,nam)
 if (trim(nam%model)=='ifs') call model%ifs_coord(mpl,nam)
 if (trim(nam%model)=='mpas') call model%mpas_coord(mpl,nam)
 if (trim(nam%model)=='nemo') call model%nemo_coord(mpl,nam)
+if (trim(nam%model)=='norcpm') call model%norcpm_coord(mpl,nam)
 if (trim(nam%model)=='qg') call model%qg_coord(mpl,nam)
 if (trim(nam%model)=='res') call model%res_coord(mpl,nam)
 if (trim(nam%model)=='wrf') call model%wrf_coord(mpl,nam)
@@ -743,6 +747,7 @@ if (trim(nam%model)=='gfs') call model%gfs_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='ifs') call model%ifs_read(mpl,nam,filename,its,fld_mga)
 if (trim(nam%model)=='mpas') call model%mpas_read(mpl,nam,filename,its,fld_mga)
 if (trim(nam%model)=='nemo') call model%nemo_read(mpl,nam,filename,its,fld_mga)
+if (trim(nam%model)=='norcpm') call model%norcpm_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='qg') call model%qg_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='res') call model%res_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='wrf') call model%wrf_read(mpl,nam,filename,its,fld_mga)

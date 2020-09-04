@@ -31,7 +31,7 @@ type nam_type
    ! general_param
    character(len=1024) :: datadir                       ! Data directory
    character(len=1024) :: prefix                        ! Files prefix
-   character(len=1024) :: model                         ! Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'qg, 'res' or 'wrf')
+   character(len=1024) :: model                         ! Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
    character(len=1024) :: verbosity                     ! Verbosity level ('all', 'main' or 'none')
    logical :: colorlog                                  ! Add colors to the log (for display on terminal)
    logical :: default_seed                              ! Default seed for random numbers
@@ -1754,7 +1754,7 @@ if (nam%nldwv>0) nam%lat_ldwv(1:nam%nldwv) = nam%lat_ldwv(1:nam%nldwv)*deg2rad
 if (trim(nam%datadir)=='') call mpl%abort(subr,'datadir not specified')
 if (trim(nam%prefix)=='') call mpl%abort(subr,'prefix not specified')
 select case (trim(nam%model))
-case ('aro','arp','fv3','gem','geos','gfs','ifs','mpas','nemo','online','qg','res','wrf')
+case ('aro','arp','fv3','gem','geos','gfs','ifs','mpas','nemo','norcpm','online','qg','res','wrf')
 case default
    call mpl%abort(subr,'wrong model')
 end select
