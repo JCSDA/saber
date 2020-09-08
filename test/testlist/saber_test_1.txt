@@ -10,7 +10,6 @@ bump_hdiag-nicas_local_diag
 bump_hdiag-nicas_loc_common
 bump_hdiag-nicas_mask_check
 bump_hdiag-nicas_network
-bump_hdiag-nicas_remap_metis
 bump_lct-nicas_one_scale
 bump_nicas_fast_sampling
 bump_nicas_subsamp_hvh

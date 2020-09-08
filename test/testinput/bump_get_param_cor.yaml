@@ -34,7 +34,6 @@ nl0r: 2
 ne: 50
 
 # fit_param
-double_fit: [1,1]
 
 # nicas_param
 

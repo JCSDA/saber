@@ -99,14 +99,14 @@ if (mpl%main) call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filenam
 do iv=1,nam%nv
    if (mpl%main) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%variables(iv)),fld_id))
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,nam%variables(iv),fld_id))
 
       ! Read data
       do il0=1,nam%nl
          call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,il0),(/1,nam%levs(il0)/),(/model%nmg,1/)))
       end do
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmg,model%mg_to_proc,model%mg_to_mga,fld_mg,model%nmga,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 ! Close file

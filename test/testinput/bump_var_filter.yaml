@@ -26,7 +26,7 @@ ens1_ne: 50
 # diag_param
 ne: 50
 var_filter: 1
-var_niter: 10
+var_niter: 3
 var_rhflt: 1000.0e3
 
 # fit_param

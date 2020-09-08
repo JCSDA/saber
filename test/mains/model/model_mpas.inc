@@ -99,7 +99,7 @@ end if
 do iv=1,nam%nv
    if (mpl%main) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%variables(iv)),fld_id))
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,nam%variables(iv),fld_id))
 
       ! Check field size
       call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,ndims=ndims))
@@ -123,7 +123,7 @@ do iv=1,nam%nv
          call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%variables(iv)))
       end select
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmg,model%mg_to_proc,model%mg_to_mga,fld_mg,model%nmga,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 ! Close file

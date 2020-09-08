@@ -26,14 +26,9 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-nc1: 500
 ntry: 30
-nc3: 15
-dc: [400.0e3]
-nl0r: 2
 
 # diag_param
-ne: 50
 
 # fit_param
 

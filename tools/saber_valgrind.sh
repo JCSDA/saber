@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #----------------------------------------------------------------------
 # Bash script: saber_valgrind
 # Author: Benjamin Menetrier
@@ -22,7 +22,7 @@ if test -x "$(command -v valgrind)"; then
    valgrind_log=`grep "prefix:" ${input} | awk '{print $2}' | sed -e 's/^"//' -e 's/"$//'`".valgrind.out"
 
    # Run valgrind
-   valgrind --log-file="${output}/${valgrind_log}" -q ${exe} ${input} ${output}
+   valgrind --max-stackframe=10485760 --log-file="${output}/${valgrind_log}" -q ${exe} ${input} ${output}
 
    # Loop over file prefixes
    for prefix in ${prefix_list}; do

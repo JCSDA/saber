@@ -415,7 +415,7 @@ for plot in ${list_plot}; do
    # Get command and arguments
    ctest --timeout 0.00001 -VV -R ${plot} > saber_ctest_log/${plot}_fail.log 2>/dev/null
    tmp=`grep "Test command:" saber_ctest_log/${plot}_fail.log`
-   exe=`echo ${tmp} | awk '{print $4,$5,$6,$7}'`
+   exe=`echo ${tmp} | awk '{print $4,$5,$6,$7,$8,$9}'`
    mpi=1
    omp=1
    mpixomp=$((mpi*omp))
@@ -677,7 +677,8 @@ for qg in ${list_qg}; do
    ctest -VV -R ${qg} > saber_ctest_log/${qg}.log 2> saber_ctest_log/${qg}.err
 
    # Check if this process passed
-   err=`wc -l saber_ctest_log/${crun}.err | awk '{print $1}'`
+   err=`wc -l saber_ctest_log/${qg}.err | awk '{print $1}'`
+#   echo -e "BENJ : " $err
    itest=$((itest+1))
    itest_tot=`printf "%03d" ${itest}`
    if test "${err}" = "0"; then

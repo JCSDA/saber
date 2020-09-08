@@ -10,7 +10,6 @@ subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
 use iso_fortran_env, only : output_unit
-use tools_kinds,only: kind_real
 use type_bump, only: bump_type
 use type_model, only: model_type
 use type_mpl, only: mpl_type
@@ -60,8 +59,8 @@ call timer%start(mpl)
 call bump%nam%init(mpl%nproc)
 
 ! Find whether input file is a namelist (xxx.nam) or a yaml (xxxx.yaml) and read it
-ppos = scan(trim(inputfile),".",back=.true.)
-ext = trim(inputfile(ppos+1:))
+ppos = scan(inputfile,".",back=.true.)
+ext = inputfile(ppos+1:)
 select case (trim(ext))
 case ('nam')
    ! Namelist
@@ -87,7 +86,7 @@ do iproc=1,mpl%nproc
          call mpl%newunit(mpl%lunit)
 
          ! Open listing file
-         write(filename,'(a,i4.4,a)') trim(bump%nam%prefix)//'.',mpl%myproc-1,'.out'
+         write(filename,'(a,i6.6,a)') trim(bump%nam%prefix)//'.',mpl%myproc-1,'.out'
          inquire(file=filename,number=ifileunit)
          if (ifileunit<0) then
             open(unit=mpl%lunit,file=trim(logdir)//'/'//trim(filename),action='write',status='replace')

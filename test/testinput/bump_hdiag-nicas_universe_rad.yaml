@@ -1,8 +1,8 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_hdiag-nicas_remap_metis/test__MPI_-_OMP_"
+prefix: "bump_hdiag-nicas_universe_rad/test__MPI_-_OMP_"
 model: "qg"
-remap: 1
+universe_rad: 1500.0e3
 
 # driver_param
 method: "cor"
@@ -29,7 +29,7 @@ ens1_ne: 50
 # sampling_param
 nc1: 500
 ntry: 30
-nc3: 15
+nc3: 6
 dc: [400.0e3]
 nl0r: 2
 
@@ -42,6 +42,8 @@ ne: 50
 resol: 8.0
 subsamp: "h"
 mpicom: 2
+
+# dirac_param
 ndir: 1
 londir: [-85.0]
 latdir: [65.0]

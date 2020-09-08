@@ -16,25 +16,25 @@ implicit none
 
 type bpar_type
    ! Block parameters
-   integer :: nb                                 ! Number of blocks
-   integer :: nbe                                ! Extended number of blocks
-   integer :: nl0rmax                            ! Maximum effective number of levels
-   integer,allocatable :: nl0r(:)                ! Effective number of levels
-   integer,allocatable :: l0rl0b_to_l0(:,:,:)    ! Effective level to level
-   integer,allocatable :: il0rz(:,:)             ! Effective zero separation level
-   integer,allocatable :: nc3(:)                 ! Maximum class
-   logical,allocatable :: vbal_block(:,:)        ! Vertical balance block
-   logical,allocatable :: diag_block(:)          ! HDIAG block
-   logical,allocatable :: avg_block(:)           ! Averaging block
-   logical,allocatable :: fit_block(:)           ! Fit block
-   logical,allocatable :: B_block(:)             ! B-involved block
-   logical,allocatable :: nicas_block(:)         ! NICAS block
-   integer,allocatable :: cv_block(:)            ! Control variable block index
-   character(len=11),allocatable :: blockname(:) ! Block name
-   integer,allocatable :: b_to_v1(:)             ! Block to first variable
-   integer,allocatable :: b_to_v2(:)             ! Block to second variable
-   integer,allocatable :: b_to_ts1(:)            ! Block to first timeslot
-   integer,allocatable :: b_to_ts2(:)            ! Block to second timeslot
+   integer :: nb                                   ! Number of blocks
+   integer :: nbe                                  ! Extended number of blocks
+   integer :: nl0rmax                              ! Maximum effective number of levels
+   integer,allocatable :: nl0r(:)                  ! Effective number of levels
+   integer,allocatable :: l0rl0b_to_l0(:,:,:)      ! Effective level to level
+   integer,allocatable :: il0rz(:,:)               ! Effective zero separation level
+   integer,allocatable :: nc3(:)                   ! Maximum class
+   logical,allocatable :: vbal_block(:,:)          ! Vertical balance block
+   logical,allocatable :: diag_block(:)            ! HDIAG block
+   logical,allocatable :: avg_block(:)             ! Averaging block
+   logical,allocatable :: fit_block(:)             ! Fit block
+   logical,allocatable :: B_block(:)               ! B-involved block
+   logical,allocatable :: nicas_block(:)           ! NICAS block
+   integer,allocatable :: cv_block(:)              ! Control variable block index
+   character(len=1024),allocatable :: blockname(:) ! Block name
+   integer,allocatable :: b_to_v1(:)               ! Block to first variable
+   integer,allocatable :: b_to_v2(:)               ! Block to second variable
+   integer,allocatable :: b_to_ts1(:)              ! Block to first timeslot
+   integer,allocatable :: b_to_ts2(:)              ! Block to second timeslot
 contains
    procedure :: alloc => bpar_alloc
    procedure :: init => bpar_init
@@ -61,10 +61,12 @@ type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Number of blocks
 bpar%nb = nam%nv**2*nam%nts**2
-if (bpar%nb==1) then
-    bpar%nbe = bpar%nb
-else
-   bpar%nbe = bpar%nb+1
+bpar%nbe = bpar%nb
+if (bpar%nb>1) then
+   select case (nam%strategy)
+   case ('common','common_univariate','common_weighted')
+      bpar%nbe = bpar%nb+1
+   end select
 end if
 
 ! Allocation
@@ -142,7 +144,7 @@ do iv=1,nam%nv
             select case (nam%strategy)
             case ('diag_all')
                bpar%diag_block(ib) = .true.
-               bpar%avg_block(ib) = .true.
+               bpar%avg_block(ib) = .false.
                bpar%B_block(ib) = .false.
                bpar%nicas_block(ib) = .false.
             case ('common')
@@ -171,7 +173,7 @@ do iv=1,nam%nv
                if ((iv==jv).and.(its==jts)) bpar%cv_block(ib) = ib
             case ('specific_multivariate')
                bpar%diag_block(ib) = (iv==jv).and.(its==jts)
-               bpar%avg_block(ib) = (bpar%nbe==bpar%nb)
+               bpar%avg_block(ib) = .false.
                bpar%B_block(ib) = (iv==jv).and.(its==jts)
                bpar%nicas_block(ib) = (iv==jv).and.(its==jts)
                if (ib==1) bpar%cv_block(ib) = 1
@@ -185,7 +187,8 @@ do iv=1,nam%nv
             if (nam%local_diag) bpar%fit_block(ib) = bpar%fit_block(ib).and.bpar%nicas_block(ib)
 
             ! Blocks information
-            write(bpar%blockname(ib),'(i2.2,a,i2.2,a,i2.2,a,i2.2)') iv,'_',jv,'_',its,'_',jts
+            write(bpar%blockname(ib),'(a,a,a,a,a,a,a)') trim(nam%variables(iv)),'_',trim(nam%timeslots(its)),'-', &
+ & trim(nam%variables(jv)),'_',trim(nam%timeslots(jts))
             bpar%b_to_v1(ib) = iv
             bpar%b_to_v2(ib) = jv
             bpar%b_to_ts1(ib) = its
@@ -271,7 +274,7 @@ do ib=1,bpar%nbe
    iv = bpar%b_to_v1(ib)
    jv = bpar%b_to_v2(ib)
    if (bpar%vbal_block(iv,jv).or.bpar%diag_block(ib).or.bpar%avg_block(ib).or.bpar%fit_block(ib).or.bpar%B_block(ib) &
-     & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib))) then
+ & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib))) then
       write(mpl%info,'(a7,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
       write(mpl%info,'(a10,a,i3)') '','Effective number of levels:    ',bpar%nl0r(ib)

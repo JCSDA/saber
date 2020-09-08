@@ -11,19 +11,21 @@ use fckit_configuration_module, only: fckit_configuration,fckit_yamlconfiguratio
 use fckit_pathname_module, only : fckit_pathname
 use iso_c_binding
 use tools_const, only: pi,req,deg2rad,rad2deg
-use tools_kinds,only: kind_real
+use tools_kinds,only: kind_real,huge_real
 use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: nvmax = 20      ! Maximum number of variables
-integer,parameter :: ntsmax = 99     ! Maximum number of time slots
-integer,parameter :: nlmax = 200     ! Maximum number of levels
-integer,parameter :: nc3max = 1000   ! Maximum number of classes
-integer,parameter :: nscalesmax = 5  ! Maximum number of variables
-integer,parameter :: ndirmax = 300   ! Maximum number of diracs
-integer,parameter :: nldwvmax = 99   ! Maximum number of local diagnostic profiles
-integer,parameter :: nprociomax = 20 ! Maximum number of I/O tasks
+integer,parameter :: nvmax = 20                    ! Maximum number of variables
+integer,parameter :: ntsmax = 99                   ! Maximum number of time slots
+integer,parameter :: nlmax = 200                   ! Maximum number of levels
+integer,parameter :: nc3max = 1000                 ! Maximum number of classes
+integer,parameter :: nscalesmax = 5                ! Maximum number of variables
+integer,parameter :: ndirmax = 300                 ! Maximum number of diracs
+integer,parameter :: nldwvmax = 99                 ! Maximum number of local diagnostic profiles
+integer,parameter :: nprociomax = 20               ! Maximum number of I/O tasks
+integer,parameter :: niokvmax = 30                 ! Maximum number of I/O key-values
+integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2  ! Maximum number of vertical balance blocks
 
 type nam_type
    ! general_param
@@ -36,6 +38,7 @@ type nam_type
    logical :: repro                                     ! Inter-compilers reproducibility
    integer :: nprocio                                   ! Number of IO processors
    logical :: remap                                     ! Remap points to improve load balance
+   real(kind_real) :: universe_rad                      ! Universe radius [in meters]
 
    ! driver_param
    character(len=1024) :: method                        ! Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
@@ -100,7 +103,9 @@ type nam_type
    real(kind_real) :: dts                               ! Timeslots width [in s]
    logical :: nomask                                    ! Do not use geometry mask
    character(len=1024) :: wind_filename                 ! Wind field file name
-   character(len=1024) :: wind_variables(2)               ! Wind field variables names (u and v)
+   character(len=1024) :: wind_variables(2)             ! Wind field variables names (u and v)
+   character(len=1024),dimension(niokvmax) :: io_keys   ! I/O keys
+   character(len=1024),dimension(niokvmax) :: io_values ! I/O values
 
    ! ens1_param
    integer :: ens1_ne                                   ! Ensemble 1 size
@@ -136,11 +141,11 @@ type nam_type
    real(kind_real) :: gen_kurt_th                       ! Threshold on generalized kurtosis (3.0 = Gaussian distribution)
    logical :: gau_approx                                ! Gaussian approximation for asymptotic quantities
    integer :: avg_nbins                                 ! Number of bins for averaged statistics histograms
-   logical :: vbal_block(nvmax*(nvmax-1)/2)             ! Activation of vertical balance (ordered line by line in the lower triangular formulation)
+   logical :: vbal_block(nvbalmax)                      ! Activation of vertical balance (ordered line by line in the lower triangular formulation)
    real(kind_real) :: vbal_rad                          ! Vertical balance diagnostic radius [in meters]
    real(kind_real) :: vbal_dlat                         ! Vertical balance diagnostic latitude band half-width [in degrees]
-   logical :: vbal_diag_auto(nvmax*(nvmax-1)/2)         ! Diagonal auto-covariance for the inversion
-   logical :: vbal_diag_reg(nvmax*(nvmax-1)/2)          ! Diagonal regression
+   logical :: vbal_diag_auto(nvbalmax)                  ! Diagonal auto-covariance for the inversion
+   logical :: vbal_diag_reg(nvbalmax)                   ! Diagonal regression
    logical :: var_filter                                ! Filter variances
    integer :: var_niter                                 ! Number of iteration for the variances filtering
    real(kind_real) :: var_rhflt                         ! Variances initial filtering support radius [in meters]
@@ -200,8 +205,6 @@ type nam_type
    real(kind_real) :: lon_ldwv(nldwvmax)                ! Longitudes of the local diagnostics profiles to write [in degrees]
    real(kind_real) :: lat_ldwv(nldwvmax)                ! Latitudes of the local diagnostics profiles to write [in degrees]
    character(len=1024),dimension(nldwvmax) :: name_ldwv ! Name of the local diagnostics profiles to write
-   logical :: grid_output                               ! Write regridded fields
-   real(kind_real) :: grid_resol                        ! Regridded fields resolution [in meters]
 contains
    procedure :: init => nam_init
    procedure :: read => nam_read
@@ -210,10 +213,11 @@ contains
    procedure :: from_conf => nam_from_conf
    procedure :: check => nam_check
    procedure :: write => nam_write
+   procedure :: io_key_value => nam_io_key_value
 end type nam_type
 
 private
-public :: nvmax,ntsmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax
+public :: nvmax,ntsmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
 public :: nam_type
 
 contains
@@ -231,7 +235,7 @@ class(nam_type),intent(out) :: nam ! Namelist
 integer,intent(in) :: nproc        ! Number of MPI task
 
 ! Local variable
-integer :: il,iv,ildwv
+integer :: il,iv,its,i,ildwv
 
 ! general_param default
 nam%datadir = '.'
@@ -243,6 +247,7 @@ nam%default_seed = .true.
 nam%repro = .true.
 nam%nprocio = min(nproc,nprociomax)
 nam%remap = .false.
+nam%universe_rad = pi*req
 
 ! driver_param default
 nam%method = ''
@@ -307,11 +312,17 @@ do iv=1,nvmax
    nam%variables(iv) = ''
 end do
 nam%nts = 0
-nam%timeslots = ''
+do its=1,ntsmax
+   nam%timeslots(its) = ''
+end do
 nam%dts = 3600.0
 nam%nomask = .false.
 nam%wind_filename = ''
 nam%wind_variables = (/'',''/)
+do i=1,niokvmax
+   nam%io_keys(i) = ''
+   nam%io_values(i) = ''
+end do
 
 ! ens1_param default
 nam%ens1_ne = 0
@@ -346,18 +357,18 @@ nam%irmax = 10000
 
 ! diag_param default
 nam%ne = 0
-nam%gen_kurt_th = huge(1.0)
+nam%gen_kurt_th = huge_real
 nam%gau_approx = .false.
 nam%avg_nbins = 0
-do iv=1,nvmax*(nvmax-1)/2
+do iv=1,nvbalmax
    nam%vbal_block(iv) = .false.
 end do
 nam%vbal_rad = 0.0
 nam%vbal_dlat = 0.0
-do iv=1,nvmax*(nvmax-1)/2
+do iv=1,nvbalmax
    nam%vbal_diag_auto(iv) = .false.
 end do
-do iv=1,nvmax*(nvmax-1)/2
+do iv=1,nvbalmax
    nam%vbal_diag_reg(iv) = .false.
 end do
 nam%var_filter = .false.
@@ -421,8 +432,6 @@ nam%lat_ldwv = 0.0
 do ildwv=1,nldwvmax
    nam%name_ldwv(ildwv) = ''
 end do
-nam%grid_output = .false.
-nam%grid_resol = 0.0
 
 end subroutine nam_init
 
@@ -440,7 +449,7 @@ type(mpl_type),intent(inout) :: mpl      ! MPI data
 character(len=*),intent(in) :: namelname ! Namelist name
 
 ! Local variables
-integer :: iv
+integer :: il,iv,its,i,ildwv,lunit
 character(len=1024),parameter :: subr = 'nam_read'
 
 ! Namelist variables
@@ -453,6 +462,7 @@ logical :: default_seed
 logical :: repro
 integer :: nprocio
 logical :: remap
+real(kind_real) :: universe_rad
 character(len=1024) :: method
 character(len=1024) :: strategy
 logical :: new_normality
@@ -514,6 +524,8 @@ real(kind_real) :: dts
 logical :: nomask
 character(len=1024) :: wind_filename
 character(len=1024) :: wind_variables(2)
+character(len=1024),dimension(niokvmax) :: io_keys
+character(len=1024),dimension(niokvmax) :: io_values
 integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
@@ -541,11 +553,11 @@ integer :: ne
 real(kind_real) :: gen_kurt_th
 logical :: gau_approx
 integer :: avg_nbins
-logical :: vbal_block(nvmax*(nvmax-1)/2)
+logical :: vbal_block(nvbalmax)
 real(kind_real) :: vbal_rad
 real(kind_real) :: vbal_dlat
-logical :: vbal_diag_auto(nvmax*(nvmax-1)/2)
-logical :: vbal_diag_reg(nvmax*(nvmax-1)/2)
+logical :: vbal_diag_auto(nvbalmax)
+logical :: vbal_diag_reg(nvbalmax)
 logical :: var_filter
 integer :: var_niter
 real(kind_real) :: var_rhflt
@@ -595,167 +607,174 @@ integer :: img_ldwv(nldwvmax)
 real(kind_real) :: lon_ldwv(nldwvmax)
 real(kind_real) :: lat_ldwv(nldwvmax)
 character(len=1024),dimension(nldwvmax) :: name_ldwv
-logical :: grid_output
-real(kind_real) :: grid_resol
-
-! Local variables
-integer :: il,ildwv,lunit
 
 ! Namelist blocks
-namelist/general_param/datadir, &
-                     & prefix, &
-                     & model, &
-                     & verbosity, &
-                     & colorlog, &
-                     & default_seed, &
-                     & repro, &
-                     & nprocio, &
-                     & remap
-namelist/driver_param/method, &
-                    & strategy, &
-                    & new_normality, &
-                    & new_cortrack, &
-                    & new_corstats, &
-                    & new_vbal, &
-                    & load_vbal, &
-                    & write_vbal, &
-                    & new_var, &
-                    & load_var, &
-                    & write_var, &
-                    & new_mom, &
-                    & load_mom, &
-                    & write_mom, &
-                    & new_hdiag, &
-                    & write_hdiag, &
-                    & new_lct, &
-                    & write_lct, &
-                    & load_cmat, &
-                    & write_cmat, &
-                    & new_nicas, &
-                    & load_nicas, &
-                    & write_nicas, &
-                    & new_obsop, &
-                    & load_obsop, &
-                    & write_obsop, &
-                    & check_vbal, &
-                    & check_adjoints, &
-                    & check_dirac, &
-                    & check_randomization, &
-                    & check_consistency, &
-                    & check_optimality, &
-                    & check_obsop, &
-                    & check_no_obs, &
-                    & check_no_point, &
-                    & check_no_point_mask, &
-                    & check_no_point_nicas, &
-                    & check_set_param_cor, &
-                    & check_set_param_hyb, &
-                    & check_set_param_lct, &
-                    & check_get_param_stddev, &
-                    & check_get_param_cor, &
-                    & check_get_param_hyb, &
-                    & check_get_param_Dloc, &
-                    & check_get_param_lct, &
-                    & check_apply_vbal, &
-                    & check_apply_stddev, &
-                    & check_apply_nicas, &
-                    & check_apply_obsop
-namelist/model_param/nl, &
-                   & levs, &
-                   & lev2d, &
-                   & logpres, &
-                   & nv, &
-                   & variables, &
-                   & nts, &
-                   & timeslots, &
-                   & dts, &
-                   & nomask, &
-                   & wind_filename, &
-                   & wind_variables
-namelist/ens1_param/ens1_ne, &
-                  & ens1_nsub
-namelist/ens2_param/ens2_ne, &
-                  & ens2_nsub
-namelist/sampling_param/sam_write, &
-                      & sam_write_grids, &
-                      & sam_read, &
-                      & mask_type, &
-                      & mask_lu, &
-                      & mask_th, &
-                      & ncontig_th, &
-                      & mask_check, &
-                      & draw_type, &
-                      & Lcoast, &
-                      & rcoast, &
-                      & nc1, &
-                      & nc2, &
-                      & ntry, &
-                      & nrep, &
-                      & nc3, &
-                      & dc, &
-                      & nl0r, &
-                      & irmax
-namelist/diag_param/ne, &
-                  & gen_kurt_th, &
-                  & gau_approx, &
-                  & avg_nbins, &
-                  & vbal_block, &
-                  & vbal_rad, &
-                  & vbal_dlat, &
-                  & vbal_diag_auto, &
-                  & vbal_diag_reg, &
-                  & var_filter, &
-                  & var_niter, &
-                  & var_rhflt, &
-                  & local_diag, &
-                  & local_rad, &
-                  & adv_diag, &
-                  & adv_type, &
-                  & adv_rad, &
-                  & adv_niter, &
-                  & adv_rhflt, &
-                  & adv_valid
-namelist/fit_param/minim_algo, &
-                 & diag_rhflt, &
-                 & diag_rvflt, &
-                 & smoothness_penalty, &
-                 & fit_dl0, &
-                 & lct_nscales, &
-                 & lct_scale_ratio, &
-                 & lct_cor_min, &
-                 & lct_diag, &
-                 & lct_qc_th, &
-                 & lct_qc_max, &
-                 & lct_write_cor
-namelist/nicas_param/nonunit_diag, &
-                   & lsqrt, &
-                   & resol, &
-                   & nc1max, &
-                   & fast_sampling, &
-                   & subsamp, &
-                   & network, &
-                   & mpicom, &
-                   & adv_mode, &
-                   & forced_radii, &
-                   & rh, &
-                   & rv, &
-                   & pos_def_test, &
-                   & write_grids, &
-                   & ndir, &
-                   & londir, &
-                   & latdir, &
-                   & levdir, &
-                   & ivdir, &
-                   & itsdir
-namelist/obsop_param/nobs
-namelist/output_param/nldwv, &
-                    & img_ldwv, &
-                    & lon_ldwv, &
-                    & lat_ldwv, &
-                    & name_ldwv, &
-                    & diag_rhflt, &
-                    & grid_output, &
-                    & grid_resol
+namelist/general_param/ &
+ & datadir, &
+ & prefix, &
+ & model, &
+ & verbosity, &
+ & colorlog, &
+ & default_seed, &
+ & repro, &
+ & nprocio, &
+ & remap, &
+ & universe_rad
+namelist/driver_param/ &
+ & method, &
+ & strategy, &
+ & new_normality, &
+ & new_cortrack, &
+ & new_corstats, &
+ & new_vbal, &
+ & load_vbal, &
+ & write_vbal, &
+ & new_var, &
+ & load_var, &
+ & write_var, &
+ & new_mom, &
+ & load_mom, &
+ & write_mom, &
+ & new_hdiag, &
+ & write_hdiag, &
+ & new_lct, &
+ & write_lct, &
+ & load_cmat, &
+ & write_cmat, &
+ & new_nicas, &
+ & load_nicas, &
+ & write_nicas, &
+ & new_obsop, &
+ & load_obsop, &
+ & write_obsop, &
+ & check_vbal, &
+ & check_adjoints, &
+ & check_dirac, &
+ & check_randomization, &
+ & check_consistency, &
+ & check_optimality, &
+ & check_obsop, &
+ & check_no_obs, &
+ & check_no_point, &
+ & check_no_point_mask, &
+ & check_no_point_nicas, &
+ & check_set_param_cor, &
+ & check_set_param_hyb, &
+ & check_set_param_lct, &
+ & check_get_param_stddev, &
+ & check_get_param_cor, &
+ & check_get_param_hyb, &
+ & check_get_param_Dloc, &
+ & check_get_param_lct, &
+ & check_apply_vbal, &
+ & check_apply_stddev, &
+ & check_apply_nicas, &
+ & check_apply_obsop
+namelist/model_param/ &
+ & nl, &
+ & levs, &
+ & lev2d, &
+ & logpres, &
+ & nv, &
+ & variables, &
+ & nts, &
+ & timeslots, &
+ & dts, &
+ & nomask, &
+ & wind_filename, &
+ & wind_variables, &
+ & io_keys, &
+ & io_values
+namelist/ens1_param/ &
+ & ens1_ne, &
+ & ens1_nsub
+namelist/ens2_param/ &
+ & ens2_ne, &
+ & ens2_nsub
+namelist/sampling_param/ &
+ & sam_write, &
+ & sam_write_grids, &
+ & sam_read, &
+ & mask_type, &
+ & mask_lu, &
+ & mask_th, &
+ & ncontig_th, &
+ & mask_check, &
+ & draw_type, &
+ & Lcoast, &
+ & rcoast, &
+ & nc1, &
+ & nc2, &
+ & ntry, &
+ & nrep, &
+ & nc3, &
+ & dc, &
+ & nl0r, &
+ & irmax
+namelist/diag_param/ &
+ & ne, &
+ & gen_kurt_th, &
+ & gau_approx, &
+ & avg_nbins, &
+ & vbal_block, &
+ & vbal_rad, &
+ & vbal_dlat, &
+ & vbal_diag_auto, &
+ & vbal_diag_reg, &
+ & var_filter, &
+ & var_niter, &
+ & var_rhflt, &
+ & local_diag, &
+ & local_rad, &
+ & adv_diag, &
+ & adv_type, &
+ & adv_rad, &
+ & adv_niter, &
+ & adv_rhflt, &
+ & adv_valid
+namelist/fit_param/ &
+ & minim_algo, &
+ & diag_rhflt, &
+ & diag_rvflt, &
+ & smoothness_penalty, &
+ & fit_dl0, &
+ & lct_nscales, &
+ & lct_scale_ratio, &
+ & lct_cor_min, &
+ & lct_diag, &
+ & lct_qc_th, &
+ & lct_qc_max, &
+ & lct_write_cor
+namelist/nicas_param/ &
+ & nonunit_diag, &
+ & lsqrt, &
+ & resol, &
+ & nc1max, &
+ & fast_sampling, &
+ & subsamp, &
+ & network, &
+ & mpicom, &
+ & adv_mode, &
+ & forced_radii, &
+ & rh, &
+ & rv, &
+ & pos_def_test, &
+ & write_grids, &
+ & ndir, &
+ & londir, &
+ & latdir, &
+ & levdir, &
+ & ivdir, &
+ & itsdir
+namelist/obsop_param/ &
+ & nobs
+namelist/output_param/ &
+ & nldwv, &
+ & img_ldwv, &
+ & lon_ldwv, &
+ & lat_ldwv, &
+ & name_ldwv, &
+ & diag_rhflt
 
 if (mpl%main) then
    ! general_param default
@@ -768,6 +787,7 @@ if (mpl%main) then
    repro = .true.
    nprocio = min(mpl%nproc,nprociomax)
    remap = .false.
+   universe_rad = pi*req
 
    ! driver_param default
    method = ''
@@ -832,11 +852,17 @@ if (mpl%main) then
       variables(iv) = ''
    end do
    nts = 0
-   timeslots = ''
+   do its=1,ntsmax
+      timeslots(its) = ''
+   end do
    dts = 3600.0
    nomask = .false.
    wind_filename = ''
    wind_variables = (/'',''/)
+   do i=1,niokvmax
+      io_keys(i) = ''
+      io_values(i) = ''
+   end do
 
    ! ens1_param default
    ens1_ne = 0
@@ -871,18 +897,18 @@ if (mpl%main) then
 
    ! diag_param default
    ne = 0
-   gen_kurt_th = huge(1.0)
+   gen_kurt_th = huge_real
    gau_approx = .false.
    avg_nbins = 0
-   do iv=1,nvmax*(nvmax-1)/2
+   do iv=1,nvbalmax
       vbal_block(iv) = .false.
    end do
    vbal_rad = 0.0
    vbal_dlat = 0.0
-   do iv=1,nvmax*(nvmax-1)/2
+   do iv=1,nvbalmax
       vbal_diag_auto(iv) = .true.
    end do
-   do iv=1,nvmax*(nvmax-1)/2
+   do iv=1,nvbalmax
       vbal_diag_reg(iv) = .true.
    end do
    var_filter = .false.
@@ -946,12 +972,10 @@ if (mpl%main) then
    do ildwv=1,nldwvmax
       name_ldwv(ildwv) = ''
    end do
-   grid_output = .false.
-   grid_resol = 0.0
 
    ! Open namelist
    call mpl%newunit(lunit)
-   open(unit=lunit,file=trim(namelname),status='old',action='read')
+   open(unit=lunit,file=namelname,status='old',action='read')
 
    ! general_param
    read(lunit,nml=general_param)
@@ -964,6 +988,7 @@ if (mpl%main) then
    nam%repro = repro
    nam%nprocio = nprocio
    nam%remap = remap
+   nam%universe_rad = universe_rad
 
    ! driver_param
    read(lunit,nml=driver_param)
@@ -1034,6 +1059,8 @@ if (mpl%main) then
    nam%nomask = nomask
    nam%wind_filename = wind_filename
    nam%wind_variables = wind_variables
+   nam%io_keys = io_keys
+   nam%io_values = io_values
 
    ! ens1_param
    read(lunit,nml=ens1_param)
@@ -1146,8 +1173,6 @@ if (mpl%main) then
       nam%lat_ldwv(1:nldwv) = lat_ldwv(1:nldwv)
       nam%name_ldwv(1:nldwv) = name_ldwv(1:nldwv)
    end if
-   nam%grid_output = grid_output
-   nam%grid_resol = grid_resol
 
    ! Close namelist
    close(unit=lunit)
@@ -1173,7 +1198,7 @@ type(fckit_configuration) :: conf
 
 if (mpl%main) then
    ! Set fckit configuration from yamlname
-   conf = fckit_yamlconfiguration(fckit_pathname(trim(yamlname)))
+   conf = fckit_yamlconfiguration(fckit_pathname(yamlname))
 
    ! Convert fckit configuration to namelist
    call nam%from_conf(conf)
@@ -1203,6 +1228,7 @@ call mpl%f_comm%broadcast(nam%default_seed,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%repro,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%remap,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
 
 ! driver_param
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
@@ -1268,6 +1294,8 @@ call mpl%f_comm%broadcast(nam%dts,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nomask,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%wind_filename,mpl%rootproc-1)
 call mpl%broadcast(nam%wind_variables,mpl%rootproc-1)
+call mpl%broadcast(nam%io_keys,mpl%rootproc-1)
+call mpl%broadcast(nam%io_values,mpl%rootproc-1)
 
 ! ens1_param
 call mpl%f_comm%broadcast(nam%ens1_ne,mpl%rootproc-1)
@@ -1367,8 +1395,6 @@ call mpl%f_comm%broadcast(nam%img_ldwv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lon_ldwv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lat_ldwv,mpl%rootproc-1)
 call mpl%broadcast(nam%name_ldwv,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%grid_output,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%grid_resol,mpl%rootproc-1)
 
 end subroutine nam_bcast
 
@@ -1413,6 +1439,7 @@ if (conf%has("default_seed")) call conf%get_or_die("default_seed",nam%default_se
 if (conf%has("repro")) call conf%get_or_die("repro",nam%repro)
 if (conf%has("nprocio")) call conf%get_or_die("nprocio",nam%nprocio)
 if (conf%has("remap")) call conf%get_or_die("remap",nam%remap)
+if (conf%has("universe_rad")) call conf%get_or_die("universe_rad",nam%universe_rad)
 
 ! driver_param
 if (conf%has("method")) then
@@ -1501,6 +1528,14 @@ end if
 if (conf%has("wind_variables")) then
    call conf%get_or_die("wind_variables",str_array)
    nam%wind_variables(1:2) = str_array(1:2)
+end if
+if (conf%has("io_keys")) then
+   call conf%get_or_die("io_keys",str_array)
+   nam%io_keys(1:size(str_array)) = str_array
+end if
+if (conf%has("io_values")) then
+   call conf%get_or_die("io_values",str_array)
+   nam%io_values(1:size(str_array)) = str_array
 end if
 
 ! ens1_param
@@ -1661,8 +1696,6 @@ if (conf%has("name_ldwv")) then
    call conf%get_or_die("name_ldwv",str_array)
    nam%name_ldwv(1:size(str_array)) = str_array
 end if
-if (conf%has("grid_output")) call conf%get_or_die("grid_output",nam%grid_output)
-if (conf%has("grid_resol")) call conf%get_or_die("grid_resol",nam%grid_resol)
 
 end subroutine nam_from_conf
 
@@ -1679,7 +1712,7 @@ class(nam_type),intent(inout) :: nam ! Namelist
 type(mpl_type),intent(inout) :: mpl  ! MPI data
 
 ! Local variables
-integer :: iv,its,il,idir,ildwv
+integer :: iv,its,i,il,idir,ildwv
 character(len=2) :: ivchar,itschar,ildwvchar
 character(len=1024),parameter :: subr = 'nam_check'
 
@@ -1693,6 +1726,7 @@ if (nam%ndir>ndirmax) call mpl%abort(subr,'ndir is too large')
 if (nam%nldwv>nldwvmax) call mpl%abort(subr,'nldwv is too large')
 
 ! Namelist parameters normalization (meters to radians and degrees to radians)
+nam%universe_rad = nam%universe_rad/req
 nam%Lcoast = nam%Lcoast/req
 nam%dc = nam%dc/req
 nam%vbal_rad = nam%vbal_rad/req
@@ -1707,7 +1741,6 @@ if (nam%ndir>0) nam%londir(1:nam%ndir) = nam%londir(1:nam%ndir)*deg2rad
 if (nam%ndir>0) nam%latdir(1:nam%ndir) = nam%latdir(1:nam%ndir)*deg2rad
 if (nam%nldwv>0) nam%lon_ldwv(1:nam%nldwv) = nam%lon_ldwv(1:nam%nldwv)*deg2rad
 if (nam%nldwv>0) nam%lat_ldwv(1:nam%nldwv) = nam%lat_ldwv(1:nam%nldwv)*deg2rad
-nam%grid_resol = nam%grid_resol/req
 
 ! Check general_param
 if (trim(nam%datadir)=='') call mpl%abort(subr,'datadir not specified')
@@ -1826,6 +1859,11 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%load_var.or.nam%new_hdia
       if (trim(nam%timeslots(its))=='') call mpl%abort(subr,'timeslots not specified for '//itschar)
    end do
    if (.not.(nam%dts>0.0)) call mpl%abort(subr,'dts should be positive')
+   do i=1,niokvmax
+      if (((trim(nam%io_keys(i))/='').and.(trim(nam%io_values(i))=='')).or. &
+ & ((trim(nam%io_keys(i))=='').and.(trim(nam%io_values(i))/=''))) &
+ & call mpl%abort(subr,'io_keys and io_values are not consistent')
+   end do
 end if
 
 ! Check ens1_param
@@ -2034,19 +2072,14 @@ if (nam%new_hdiag) then
       if (.not.nam%local_diag) call mpl%abort(subr,'local_diag required for nldwv>0')
          if (.not.all(nam%img_ldwv(1:nam%nldwv)>0)) then
          if (any(nam%lon_ldwv(1:nam%nldwv)<-pi).or.any(nam%lon_ldwv(1:nam%nldwv)>pi)) &
-       & call mpl%abort(subr,'lon_ldwv should lie between -180 and 180')
+ & call mpl%abort(subr,'lon_ldwv should lie between -180 and 180')
          if (any(nam%lat_ldwv(1:nam%nldwv)<-0.5*pi).or.any(nam%lat_ldwv(1:nam%nldwv)>0.5*pi)) &
-       & call mpl%abort(subr,'lat_ldwv should lie between -90 and 90')
+ & call mpl%abort(subr,'lat_ldwv should lie between -90 and 90')
          do ildwv=1,nam%nldwv
             write(ildwvchar,'(i2.2)') ildwv
             if (trim(nam%name_ldwv(ildwv))=='') call mpl%abort(subr,'name_ldwv not specified for profile '//ildwvchar)
          end do
       end if
-   end if
-end if
-if (nam%new_hdiag.or.nam%new_nicas.or.nam%check_adjoints.or.nam%check_dirac.or.nam%check_randomization.or.nam%new_lct) then
-   if (nam%grid_output) then
-      if (.not.(nam%grid_resol>0.0)) call mpl%abort(subr,'grid_resol should be positive')
    end if
 end if
 
@@ -2063,7 +2096,7 @@ implicit none
 ! Passed variable
 class(nam_type),intent(in) :: nam   ! Namelist
 type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in),optional :: ncid ! NetCDF file ID
+integer,intent(in),optional :: ncid ! NetCDF file
 
 ! Local variables
 integer :: lncid
@@ -2087,6 +2120,7 @@ call mpl%write(lncid,'nam','default_seed',nam%default_seed)
 call mpl%write(lncid,'nam','repro',nam%repro)
 call mpl%write(lncid,'nam','nprocio',nam%nprocio)
 call mpl%write(lncid,'nam','remap',nam%remap)
+call mpl%write(lncid,'nam','universe_rad',nam%universe_rad*req)
 
 ! driver_param
 if (mpl%msv%is(lncid)) then
@@ -2160,6 +2194,8 @@ call mpl%write(lncid,'nam','dts',nam%dts)
 call mpl%write(lncid,'nam','nomask',nam%nomask)
 call mpl%write(lncid,'nam','wind_filename',nam%wind_filename)
 call mpl%write(lncid,'nam','wind_variables',2,nam%wind_variables(1:2))
+call mpl%write(lncid,'nam','io_keys',count(nam%io_keys/=''),nam%io_keys(1:niokvmax))
+call mpl%write(lncid,'nam','io_values',count(nam%io_values/=''),nam%io_values(1:niokvmax))
 
 ! ens1_param
 if (mpl%msv%is(lncid)) then
@@ -2303,8 +2339,6 @@ end if
 call mpl%write(lncid,'nam','lon_ldwv',nam%nldwv,lon_ldwv)
 call mpl%write(lncid,'nam','lat_ldwv',nam%nldwv,lat_ldwv)
 call mpl%write(lncid,'nam','name_ldwv',nam%nldwv,nam%name_ldwv(1:nam%nldwv))
-call mpl%write(lncid,'nam','grid_output',nam%grid_output)
-call mpl%write(lncid,'nam','grid_resol',nam%grid_resol*req)
 
 ! Release memory
 deallocate(londir)
@@ -2313,5 +2347,32 @@ deallocate(lon_ldwv)
 deallocate(lat_ldwv)
 
 end subroutine nam_write
+
+!----------------------------------------------------------------------
+! Subroutine: nam_io_key_value
+! Purpose: get I/O value from key
+!----------------------------------------------------------------------
+subroutine nam_io_key_value(nam,io_key,io_value)
+
+implicit none
+
+! Passed variable
+class(nam_type),intent(in) :: nam           ! Namelist
+character(len=*),intent(in) :: io_key       ! I/O key
+character(len=1024),intent(out) :: io_value ! I/O value
+
+! Local variables
+integer :: i
+
+! Loop over I/O key-value couples
+io_value = io_key
+do i=1,niokvmax
+   if (trim(nam%io_keys(i))==trim(io_key)) then
+      io_value = nam%io_values(i)
+      exit
+   end if
+end do
+
+end subroutine nam_io_key_value
 
 end module type_nam

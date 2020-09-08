@@ -29,7 +29,6 @@ Theoretical documentation:
 Code documentation:
  - [Code size and characteristics](doc/bump/CLOC_REPORT.md)
  - [Standalone or online usage](doc/bump/standalone_or_online_usage.md)
- - [Code architecture](doc/bump/code_architecture.md)
  - [Code auto-documentation](doc/bump/code_autodoc.md)
  - [Input data](doc/bump/input_data.md)
  - [Running the code](doc/bump/running_the_code.md)

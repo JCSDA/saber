@@ -10,7 +10,7 @@ module type_tree
 use atlas_module, only: atlas_geometry,atlas_indexkdtree
 use iso_c_binding, only: c_ptr
 use tools_const, only: pi,rad2deg
-use tools_func, only: lonlatmod,lonlat2xyz,sphere_dist
+use tools_func, only: lonlathash,lonlat2xyz,sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,rth,sup,indist
@@ -123,6 +123,7 @@ ageometry = atlas_geometry("UnitSphere")
 lon_deg = tree%lon*rad2deg
 lat_deg = tree%lat*rad2deg
 tree%kd = atlas_indexkdtree(ageometry)
+call tree%kd%reserve(tree%neff)
 call tree%kd%build(tree%neff,lon_deg,lat_deg)
 
 end subroutine tree_init
@@ -171,7 +172,7 @@ real(kind_real),intent(out),optional :: nn_dist(nn) ! Nearest neighbors distance
 integer :: nn_tmp,i,j,nid
 integer,allocatable :: order(:),nn_index_tmp(:)
 real(kind_real) :: dist_ref,dist_last
-real(kind_real),allocatable :: nn_dist_tmp(:)
+real(kind_real),allocatable :: list(:),nn_dist_tmp(:)
 logical :: separate
 
 if (nn>0) then
@@ -209,11 +210,8 @@ if (nn>0) then
       call sphere_dist(lon,lat,tree%lon(nn_index_tmp(i)),tree%lat(nn_index_tmp(i)),nn_dist_tmp(i))
    end do
 
-   ! Transform indices
-   nn_index_tmp = tree%from_eff(nn_index_tmp)
-
    if (repro) then
-      ! Reorder neighbors based on their index
+      ! Reorder neighbors based on their hash value
       i = 1
       do while (i<nn_tmp)
          ! Count indistinguishable neighbors
@@ -224,11 +222,16 @@ if (nn>0) then
 
          ! Reorder
          if (nid>1) then
+            allocate(list(nid))
             allocate(order(nid))
-            call qsort(nid,nn_index_tmp(i:i+nid-1),order)
             do j=1,nid
-               nn_dist_tmp(i+j-1) = nn_dist_tmp(i+order(j)-1)
+               list(j) = lonlathash(tree%lon(nn_index_tmp(i+j-1)),tree%lat(nn_index_tmp(i+j-1)))
             end do
+            call qsort(nid,list,order)
+            order = i+order-1
+            nn_index_tmp(i:i+nid-1) = nn_index_tmp(order)
+            nn_dist_tmp(i:i+nid-1) = nn_dist_tmp(order)
+            deallocate(list)
             deallocate(order)
          end if
 
@@ -236,6 +239,9 @@ if (nn>0) then
          i = i+nid
       end do
    end if
+
+   ! Transform indices
+   nn_index_tmp = tree%from_eff(nn_index_tmp)
 
    ! Copy nn_index
    nn_index = nn_index_tmp(1:nn)
@@ -265,8 +271,14 @@ real(kind_real),intent(in) :: lat   ! Point latitude (in radians)
 real(kind_real),intent(in) :: sr    ! Spherical radius (in radians)
 integer,intent(out) :: nn           ! Number of nearest neighbors found
 
-! Count nearest neighbors TODO: remove chord formula for backward compatibility
-call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,2.0*sin(0.5*sr),nn)
+! Local variable
+real(kind_real) :: ch
+
+! Spherical radius to chord
+ch = 2.0*sin(0.5*sr)
+
+! Count nearest neighbors
+call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,ch,nn)
 
 end subroutine tree_count_nearest_neighbors
 

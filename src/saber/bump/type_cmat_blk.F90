@@ -17,10 +17,9 @@ implicit none
 
 ! C matrix block data derived type
 type cmat_blk_type
-   ! Block index and name
+   ! Block index and anisotropic flag
    integer :: ib                                     ! Block index
-   character(len=1024) :: name                       ! Name
-   logical :: anisotropic                            ! Anisoptropic tensor
+   logical :: anisotropic                            ! Anisoptropic tensor flag
 
    ! Read data
    real(kind_real),allocatable :: bump_coef_ens(:,:) ! BUMP ensemble coefficient

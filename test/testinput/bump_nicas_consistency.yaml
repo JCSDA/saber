@@ -42,6 +42,7 @@ subsamp: "h"
 mpicom: 2
 forced_radii: 1
 rh: 4000.0e3
+rv: 0.0
 
 # dirac_param
 

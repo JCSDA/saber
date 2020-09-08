@@ -371,7 +371,7 @@ do its=1,size(timeslots)
    do iv=1,size(variables)
       ! Create field
       fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
-      afield = afunctionspace%create_field(name=trim(fieldname),kind=atlas_real(kind_real),levels=nl)
+      afield = afunctionspace%create_field(name=fieldname,kind=atlas_real(kind_real),levels=nl)
 
       ! Add field
       call afieldset%add(afield)
@@ -413,7 +413,7 @@ do its=1,size(timeslots)
    do iv=1,size(variables)
       ! Get field
       fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
-      afield = afieldset%field(trim(fieldname))
+      afield = afieldset%field(fieldname)
 
       ! Get field data
       if (present(lev2d)) then
@@ -457,7 +457,7 @@ do its=1,size(timeslots)
    do iv=1,size(variables)
       ! Get or create field
       fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
-      afield = afieldset%field(trim(fieldname))
+      afield = afieldset%field(fieldname)
 
       ! Get field data
       if (present(lev2d)) then

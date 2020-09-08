@@ -124,7 +124,7 @@ real(kind_real),intent(out) :: auto(samp%nc1e,geom%nl0,geom%nl0,ens%nsub)  ! Aut
 real(kind_real),intent(out) :: cross(samp%nc1e,geom%nl0,geom%nl0,ens%nsub) ! Cross-covariance
 
 ! Local variables
-integer :: isub,ie_sub,ie,il0,ic1a,ic1,ic0,ic0a,jl0,ic1e
+integer :: isub,ie_sub,ie,il0,ic1a,ic0,ic0a,jl0,ic1e,ic1u
 real(kind_real) :: fld_1(samp%nc1a,geom%nl0),fld_2(samp%nc1a,geom%nl0),fld_ext_1(samp%nc1e,geom%nl0),fld_ext_2(samp%nc1e,geom%nl0)
 
 ! Initialization
@@ -137,13 +137,13 @@ do isub=1,ens%nsub
       write(mpl%info,'(a10,a)') '','Full ensemble, member:'
       call mpl%flush(.false.)
    else
-      write(mpl%info,'(a10,a,i4,a)') '','Sub-ensemble ',isub,', member:'
+      write(mpl%info,'(a10,a,i6,a)') '','Sub-ensemble ',isub,', member:'
       call mpl%flush(.false.)
    end if
 
    ! Compute centered moments
    do ie_sub=1,ens%ne/ens%nsub
-      write(mpl%info,'(i4)') ie_sub
+      write(mpl%info,'(i6)') ie_sub
       call mpl%flush(.false.)
 
       ! Full ensemble index
@@ -152,16 +152,12 @@ do isub=1,ens%nsub
       ! Copy all separations points
       fld_1 = 0.0
       fld_2 = 0.0
-      !$omp parallel do schedule(static) private(il0,ic1a,ic1,ic0,ic0a)
+      !$omp parallel do schedule(static) private(il0,ic1a,ic0,ic0a)
       do il0=1,geom%nl0
          do ic1a=1,samp%nc1a
-            ! Index
-            ic1 = samp%c1a_to_c1(ic1a)
-
-            if (samp%c1l0_log(ic1,il0)) then
+            if (samp%smask_c1a(ic1a,il0)) then
                ! Index
-               ic0 = samp%c1_to_c0(ic1)
-               ic0a = geom%c0_to_c0a(ic0)
+               ic0a = samp%c1a_to_c0a(ic1a)
 
                ! Copy points
                fld_1(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%iv,1)
@@ -175,15 +171,15 @@ do isub=1,ens%nsub
       call samp%com_AE%ext(mpl,geom%nl0,fld_1,fld_ext_1)
       call samp%com_AE%ext(mpl,geom%nl0,fld_2,fld_ext_2)
 
-      !$omp parallel do schedule(static) private(il0,jl0,ic1e,ic1)
+      !$omp parallel do schedule(static) private(il0,jl0,ic1e,ic1u)
       do il0=1,geom%nl0
          do jl0=1,geom%nl0
             do ic1e=1,samp%nc1e
                ! Index
-               ic1 = samp%c1e_to_c1(ic1e)
+               ic1u = samp%c1e_to_c1u(ic1e)
 
                ! Auto and cross-covariances
-               if (samp%c1l0_log(ic1,il0).and.samp%c1l0_log(ic1,jl0)) then
+               if (samp%smask_c1u(ic1u,il0).and.samp%smask_c1u(ic1u,jl0)) then
                   auto(ic1e,jl0,il0,isub) = auto(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_2(ic1e,jl0)
                   cross(ic1e,jl0,il0,isub) = cross(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_1(ic1e,jl0)
                end if
@@ -218,7 +214,7 @@ real(kind_real),intent(in) :: cross(samp%nc1e,geom%nl0,geom%nl0,nsub) ! Cross-co
 integer,intent(in) :: ic2b                                            ! Index
 
 ! Local variables
-integer :: i,jl0_min,jl0_max,jl0,il0,ic1,ic1e,nc1a,nc1max,ierr
+integer :: i,jl0_min,jl0_max,jl0,il0,ic1e,ic1u,nc1a,nc1max,ierr
 real(kind_real),allocatable :: list_auto(:),list_cross(:)
 logical :: valid
 
@@ -251,9 +247,9 @@ do il0=1,geom%nl0
       i = 0
       do ic1e=1,samp%nc1e
          ! Index
-         ic1 = samp%c1e_to_c1(ic1e)
+         ic1u = samp%c1e_to_c1u(ic1e)
 
-         if (samp%c1l0_log(ic1,il0).and.samp%c1l0_log(ic1,jl0).and.samp%vbal_mask(ic1,ic2b)) then
+         if (samp%smask_c1u(ic1u,il0).and.samp%smask_c1u(ic1u,jl0).and.samp%vbal_mask(ic1u,ic2b)) then
             ! Update
             i = i+1
 
@@ -287,7 +283,7 @@ end do
 
 if (valid) then
    if (nam%vbal_diag_auto((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv) &
-    & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
+ & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
       ! Diagonal inversion
       vbal_blk%auto_inv(:,:,ic2b) = 0.0
       do il0=1,geom%nl0

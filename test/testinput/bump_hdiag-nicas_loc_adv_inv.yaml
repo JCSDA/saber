@@ -19,7 +19,6 @@ nv: 1
 variables: ["q"]
 nts: 2
 timeslots: ["00","06"]
-nomask: 1
 
 # ens1_param
 ens1_ne: 50
@@ -46,6 +45,7 @@ adv_rhflt: 1000.0e3
 
 # nicas_param
 resol: 8.0
+subsamp: "h"
 mpicom: 2
 adv_mode: -1
 

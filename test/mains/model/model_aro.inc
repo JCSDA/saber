@@ -145,7 +145,7 @@ do iv=1,nam%nv
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
          else
             ! Check if the variable exists as 2D data
-            call mpl%ncerr(subr,nf90_inq_varid(ncid,trim(nam%variables(iv)),fld_id))
+            call mpl%ncerr(subr,nf90_inq_varid(ncid,nam%variables(iv),fld_id))
 
             ! 2D data
             if (((trim(nam%lev2d)=='first').and.(il0==1)).or.((trim(nam%lev2d)=='last').and.(il0==model%nl0))) then
@@ -164,7 +164,7 @@ do iv=1,nam%nv
          end do
       end do
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmg,model%mg_to_proc,model%mg_to_mga,fld_mg,model%nmga,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 if (mpl%main) then

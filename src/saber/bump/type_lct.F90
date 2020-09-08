@@ -143,59 +143,19 @@ type(ens_type),intent(in) :: ens     ! Ensemble
 ! Set artificially small local radius
 nam%local_rad = 1.0e-12
 
-! Compute sampling, subset Sc1
+! Setup sampling, first step
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
+write(mpl%info,'(a)') '--- Setup sampling, first step'
 call mpl%flush
-lct%samp%name = 'lct'
-call lct%samp%compute_sampling_c1(mpl,rng,nam,geom,ens)
+call lct%samp%setup('lct',mpl,rng,nam,geom,ens)
 
-! Compute MPI distribution, halo A
+! Setup sampling, second step
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Compute MPI distribution, halos A'
+write(mpl%info,'(a)') '--- Setup sampling, second step'
 call mpl%flush
-call lct%samp%compute_mpi_a(mpl,nam,geom)
-
-! Compute sampling, subset Sc2
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc2 (nc2 = ',nam%nc2,')'
-call mpl%flush
-call lct%samp%compute_sampling_c2(mpl,rng,nam,geom)
-
-! Compute MPI distribution, halos A-B
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Compute MPI distribution, halos A-B'
-call mpl%flush
-call lct%samp%compute_mpi_ab(mpl,rng,nam,geom)
-
-! Compute MPI distribution, halo C
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Compute MPI distribution, halo C'
-call mpl%flush
-call lct%samp%compute_mpi_c(mpl,rng,nam,geom)
-
-if (nam%diag_rhflt>0.0) then
-   ! Compute MPI distribution, halo F
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Compute MPI distribution, halo F'
-   call mpl%flush
-   call lct%samp%compute_mpi_f(mpl,nam)
-end if
-
-! Write sampling data
-if (nam%sam_write) then
-   if (mpl%main) call lct%samp%write(mpl,nam,geom)
-   if (nam%sam_write_grids) call lct%samp%write_grids(mpl,nam,geom)
-end if
-
-! Release memory (partial)
-call lct%samp%partial_dealloc
+call lct%samp%setup(mpl,rng,nam,geom)
 
 if (nam%new_mom) then
    ! Compute sample moments
@@ -404,13 +364,10 @@ type(bpar_type),intent(in) :: bpar      ! Block parameters
 
 ! Local variables
 integer :: ib
-character(len=1024) :: filename
 
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      write(filename,'(a,i4.4,a,i4.4,a,a)') trim(nam%prefix)//'_lct_cor_',mpl%nproc,'-',mpl%myproc,'_', &
-    & trim(bpar%blockname(ib))
-      call lct%blk(ib)%write_cor(mpl,nam,geom,bpar,lct%samp,filename)
+      call lct%blk(ib)%write_cor(mpl,nam,geom,bpar,lct%samp)
    end if
 end do
 

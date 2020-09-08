@@ -1,2 +1,0 @@
-bump_hdiag-nicas_nprocio
-bump_hdiag-nicas_remap_metis

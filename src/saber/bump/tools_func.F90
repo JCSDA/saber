@@ -7,10 +7,11 @@
 !----------------------------------------------------------------------
 module tools_func
 
+use iso_c_binding
 use atlas_module, only: atlas_geometry
 use tools_asa007, only: asa007_cholesky,asa007_syminv
 use tools_const, only: pi,deg2rad,rad2deg
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_short,kind_real
 use tools_repro, only: inf,sup,infeq,small
 use type_mpl, only: mpl_type
 
@@ -22,12 +23,40 @@ real(kind_real),parameter :: Dmin = 1.0e-12_kind_real ! Minimum tensor diagonal 
 real(kind_real),parameter :: condmax = 1.0e3          ! Maximum tensor conditioning number
 integer,parameter :: M = 0                            ! Number of implicit iteration for the Matern function (0: Gaussian)
 
+interface
+   function c_fletcher32(n,var) bind(c,name='fletcher32') result(hash)
+   use iso_c_binding
+   integer(kind=c_int32_t) :: n
+   integer(kind=c_int16_t) :: var(*)
+   integer(kind=c_int32_t) :: hash
+   end function c_fletcher32
+end interface
+
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: lonlatmod,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product,add,divide, &
-        & fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
+public :: fletcher32,lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
+ & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
+
+!----------------------------------------------------------------------
+! Function: fletcher32
+! Purpose: Fletcher-32 checksum algorithm
+!----------------------------------------------------------------------
+function fletcher32(var)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: var(:) ! Variable
+
+! Returned variable
+integer :: fletcher32
+
+! Call C function
+fletcher32 = c_fletcher32(size(transfer(var,(/0_kind_short/))),transfer(var,(/0_kind_short/)))
+
+end function fletcher32
 
 !----------------------------------------------------------------------
 ! Subroutine: lonlatmod
@@ -58,6 +87,36 @@ elseif (lon<-pi) then
 end if
 
 end subroutine lonlatmod
+
+!----------------------------------------------------------------------
+! Function: lonlathash
+! Purpose: define a unique real from a lon/lat pair
+!----------------------------------------------------------------------
+function lonlathash(lon,lat,il)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: lon ! Longitude (radians)
+real(kind_real),intent(in) :: lat ! Latitude (radians)
+integer,intent(in),optional :: il ! Level
+
+! Returned variable
+real(kind_real) :: lonlathash
+
+! Local variables
+real(kind_real) :: lontmp,lattmp
+
+! Set correct lon/lat
+lontmp = lon
+lattmp = lat
+call lonlatmod(lontmp,lattmp)
+
+! Hash value
+lonlathash = aint((lontmp+pi)*1.0e6)+(lattmp+0.5*pi)*1.0e-1
+if (present(il)) lonlathash = lonlathash+real(il*1e7,kind_real)
+
+end function lonlathash
 
 !----------------------------------------------------------------------
 ! Subroutine: sphere_dist
@@ -974,7 +1033,7 @@ if (histmax>histmin) then
       end if
    end do
    if (abs(sum(hist)-real(count(mpl%msv%isnot(list)),kind_real))>0.5) &
-    & call mpl%abort(subr,'histogram sum is not equal to the number of valid elements')
+ & call mpl%abort(subr,'histogram sum is not equal to the number of valid elements')
 else
    bins = mpl%msv%valr
    hist = 0.0

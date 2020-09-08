@@ -2,12 +2,14 @@
 datadir: "testdata"
 prefix: "bump_fv3/test"
 model: "fv3"
+universe_rad: 2500.0e3
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
 new_vbal: 0
 new_hdiag: 1
+write_cmat: 0
 new_nicas: 0
 
 # model_param
@@ -33,10 +35,10 @@ nl0r: 10
 
 # diag_param
 ne: 10
-vbal_block: [0]
-vbal_rad: 500.0e3
-vbal_diag_auto: [1]
-vbal_var_th: 0.8
+#vbal_block: [0]
+#vbal_rad: 500.0e3
+#vbal_diag_auto: [1]
+#vbal_var_th: 0.8
 var_filter: 0
 var_niter: 0
 var_rhflt: 0.0
@@ -61,5 +63,4 @@ itsdir: [1]
 # obsop_param
 
 # output_param
-grid_output: 1
-grid_resol: 100.0e3
+
