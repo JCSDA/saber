@@ -2033,8 +2033,14 @@ if (nam%new_nicas.or.nam%load_nicas) then
       if ((nam%mpicom/=1).and.(nam%mpicom/=2)) call mpl%abort(subr,'mpicom should be 1 or 2')
    end if
    if (nam%forced_radii) then
-      if (nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat) &
- & call mpl%abort(subr,'new_hdiag, new_lct and load_cmat forbidden for forced_radii')
+      if (nam%new_hdiag) then
+         select case (trim(nam%method))
+         case ('hyb-avg','hyb-rnd')
+         case default
+           call mpl%abort(subr,'new_diag forbidden for forced_radii (except for static hybridization)')
+         end select
+      end if
+      if (nam%new_lct.or.nam%load_cmat) call mpl%abort(subr,'new_lct and load_cmat forbidden for forced_radii')
       if (nam%rh<0.0) call mpl%abort(subr,'rh should be non-negative')
       if (nam%rv<0.0) call mpl%abort(subr,'rv should be non-negative')
    end if

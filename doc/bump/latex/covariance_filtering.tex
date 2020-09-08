@@ -858,7 +858,7 @@ Denoting $\widetilde{\boldsymbol{\xi}} \in \mathbb{R}^{n \times n}$ the matrix s
 \label{eq:exp_prod_exp_2}
 \mathbb{E} \left[\widetilde{B}_{ij}^2\right] & = P_1(N) \mathbb{E} \left[\xi_{ij}\right] + P_{14}(N) \mathbb{E} \left[B^2_{ij}\right] + P_3(N) \mathbb{E} \left[B_{ii} B_{jj}\right] \\
 \label{eq:exp_prod_exp_3}
-\mathbb{E} \left[\widetilde{B}_{ii} \widetilde{B}_{jj}\right] & = P_1(N) \mathbb{E} \left[\xi_{ij}\right] + P_2(N) \mathbb{E} \left[B^2_{ij}\right] + 2 P_3(N) \mathbb{E} \left[B_{ii} B_{jj}\right] \\
+\mathbb{E} \left[\widetilde{B}_{ii} \widetilde{B}_{jj}\right] & = P_1(N) \mathbb{E} \left[\xi_{ij}\right] + 2 P_3(N) \mathbb{E} \left[B^2_{ij}\right] + P_2(N) \mathbb{E} \left[B_{ii} B_{jj}\right] \\
 \label{eq:exp_mom_4_exp_2}
 \mathbb{E} \left[\widetilde{\xi}_{ij}\right] & = P_5(N) \mathbb{E} \left[\xi_{ij} \right] + P_6(N) \left(2 \mathbb{E} \left[B^2_{ij}\right] + \mathbb{E} \left[B_{ii} B_{jj}\right] \right)
 \end{align}
@@ -1105,12 +1105,12 @@ where $\mathbf{F} \in \mathbb{R}^{n \times n}$ is the filtering gain and $\mathb
 We use the identity matrix as a weight: $\mathbf{W} = \mathbf{I}_n$. The expected squared norm of equation \eqref{eq:norm_proj_2} adapted for the variance filtering becomes:
 \begin{align}
 e(\mathbf{F},\mathbf{f}) & = \sum_{1 \le i \le n} \mathbb{E}\left[ \left(\sum_{1 \le j \le n} F_{ij} \widetilde{v}_j + f_i - v_i \right)^2 \right] \nonumber \\
-& = \sum_{1 \le i \le n} \left( \sum_{1 \le j,k \le n} F_{ij} F_{ik} \mathbb{E}\left[\widetilde{v}_j \widetilde{v}_k\right] + f_i^2 + v^2_i \right.\nonumber \\
+& = \sum_{1 \le i \le n} \left( \sum_{1 \le j,k \le n} F_{ij} F_{ik} \mathbb{E}\left[\widetilde{v}_j \widetilde{v}_k\right] + f_i^2 + \mathbb{E}\left[v^2_i\right] \right.\nonumber \\
 & \left. \quad + 2 f_i \sum_{1 \le j \le n} F_{ij} \mathbb{E}\left[\widetilde{v}_j\right] - 2 \sum_{1 \le j \le n} F_{ij} \mathbb{E}\left[v_i\widetilde{v}_j\right] - 2 f_i \mathbb{E}\left[v_i\right]\right)
 \end{align}
 Using the independence of random processes in \eqref{eq:truth_noise_inde}, it can be simplified:
 \begin{align}
-e(\mathbf{F},\mathbf{f}) & = \sum_{1 \le i \le n} \Bigg( \sum_{1 \le j,k \le n} F_{ij} F_{ik} \mathbb{E}\left[\widetilde{v}_j \widetilde{v}_k\right] + f_i^2 + v^2_i \nonumber \\
+e(\mathbf{F},\mathbf{f}) & = \sum_{1 \le i \le n} \Bigg( \sum_{1 \le j,k \le n} F_{ij} F_{ik} \mathbb{E}\left[\widetilde{v}_j \widetilde{v}_k\right] + f_i^2 + \mathbb{E}\left[v^2_i\right] \nonumber \\
 & + 2 f_i \left(\sum_{1 \le j \le n} F_{ij} \mathbb{E}\left[\widetilde{v}_j\right] - \mathbb{E}\left[\widetilde{v}_i\right]\right)- 2 \sum_{1 \le j \le n} F_{ij} \mathbb{E}\left[v_i v_j\right]\Bigg)
 \end{align}
 Its gradient is given by:
@@ -1410,14 +1410,72 @@ The use of previous formulae linking the local localization tensor to local corr
 \subsection{Filtering method}
 Static hybridization is the linear combination of the localized sample covariance matrix with a static covariance matrix. Thus, $\widehat{\mathbf{B}}$ is defined as:
 \begin{align}
-\widehat{\mathbf{B}} = \beta^{e2} \mathbf{L}^h \circ \widetilde{\mathbf{B}} + \beta^{c2} \overbar{\mathbf{B}}
+\widehat{\mathbf{B}} = \beta^{e2} \mathbf{L} \circ \widetilde{\mathbf{B}} + \beta^{c2} \overbar{\mathbf{B}}
 \end{align}
-where $\beta^e$ and $\beta^c$ are the hybridization coefficients, repectively relative to the localized sample covariance matrix $\mathbf{L}^h \circ \widetilde{\mathbf{B}}$ and to the static covariance matrix $\overbar{\mathbf{B}} \in \mathbb{R}^{n \times n}$. The coefficient $\beta^{e2}$ can be included in the localization matrix: $\mathbf{L}^h \leftarrow \beta^{e2} \mathbf{L}^h$, and the coefficient $\beta^{c2}$ is denoted $\gamma$. Thus:
+where $\beta^e$ and $\beta^c$ are the hybridization coefficients, repectively relative to the localized sample covariance matrix $\mathbf{L} \circ \widetilde{\mathbf{B}}$ and to the static covariance matrix $\overbar{\mathbf{B}} \in \mathbb{R}^{n \times n}$.
+
+\subsection{Fixed localization}
+In this section, the localization matrix $\mathbf{L} = \mathbf{L}^f$ is considered as a fixed parameter. For sake of clarity, the coefficient $\beta^{e2}$ is denoted $\beta$ and the coefficient $\beta^{c2}$ is denoted $\gamma$. Thus:
+\begin{align}
+\widehat{\mathbf{B}} = \beta \mathbf{L}^f \circ \widetilde{\mathbf{B}} + \gamma \overbar{\mathbf{B}}
+\end{align}
+
+\subsubsection{Expected squared norm}
+The expected squared norm of equation \eqref{eq:norm_proj_2} adapted for the hybridization becomes:
+\begin{align}
+e(\beta,\gamma) & = \sum_{1 \le i,j \le n} W_{ij}^2 \mathbb{E}\left[ \left(\beta L^f_{ij} \widetilde{B}_{ij} + \gamma \overbar{B}_{ij} - B_{ij} \right)^2 \right] \nonumber \\
+& = \sum_{1 \le i,j \le n} W_{ij}^2 \left(\beta^2 L^{f2}_{ij} \mathbb{E} \left[\widetilde{B}_{ij}^2\right] + \gamma^2 \overbar{B}_{ij}^2 + \mathbb{E} \left[B^2_{ij}\right] \right. \nonumber \\
+& \left. \quad + 2 \beta L^f_{ij} \gamma \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} - 2 \beta L^f_{ij} \mathbb{E} \left[\widetilde{B}_{ij} B_{ij}\right] - 2 \gamma \overbar{B}_{ij} \mathbb{E} \left[B_{ij}\right] \right)
+\end{align}
+Using the independence of random processes in \eqref{eq:truth_noise_inde}, it can be simplified:
+\begin{align}
+e(\beta,\gamma) & = \sum_{1 \le i,j \le n} W_{ij}^2 \left(\beta^2 L^{f2}_{ij} \mathbb{E} \left[\widetilde{B}_{ij}^2\right] + \gamma^2 \overbar{B}_{ij}^2 + \left(1 - 2 \beta L^f_{ij}\right) \mathbb{E} \left[B^2_{ij}\right] \right. \nonumber \\
+& \left. \quad + 2 \left(\beta L^f_{ij} - 1\right) \gamma \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} \right)
+\end{align}
+Its gradient is given by:
+\begin{subequations}
+\begin{align}
+\frac{\partial e}{\partial \beta} & = 2 \sum_{1 \le i,j \le n} W_{ij}^2 \left(\beta L^{f2}_{ij} \mathbb{E} \left[\widetilde{B}_{ij}^2\right] - L^f_{ij} \mathbb{E} \left[B^2_{ij}\right] + L^f_{ij} \gamma \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} \right) \\
+\frac{\partial e}{\partial \gamma} & = 2 \sum_{1 \le i,j \le n} W_{ij}^2 \left(\gamma \overbar{B}_{ij}^2 + \left(\beta L^f_{ij} - 1\right) \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} \right)
+\end{align}
+\end{subequations}
+
+\subsubsection{Explicit optimality}
+Setting the gradient of $e(\beta,\gamma)$ to zero, we get:
+\begin{subequations}
+\begin{align}
+\beta \sum_{1 \le i,j \le n} W_{ij}^2 L^{f2}_{ij} \mathbb{E} \left[\widetilde{B}_{ij}^2\right] + \gamma \sum_{1 \le i,j \le n} W_{ij}^2 L^f_{ij} \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} & = \sum_{1 \le i,j \le n} W_{ij}^2  L^f_{ij} \mathbb{E} \left[B^2_{ij}\right] \\
+\beta \sum_{1 \le i,j \le n} W_{ij}^2  L^f_{ij} \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} + \gamma \sum_{1 \le i,j \le n} W_{ij}^2 \overbar{B}_{ij}^2  & = \sum_{1 \le i,j \le n} W_{ij}^2  \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij}
+\end{align}
+\end{subequations}
+The determinant of this system is:
+\begin{align}
+d & = \sum_{1 \le i,j \le n} W_{ij}^2 L^{f2}_{ij} \mathbb{E} \left[\widetilde{B}_{ij}^2\right] \sum_{1 \le i,j \le n} W_{ij}^2 \overbar{B}_{ij}^2 - \left(\sum_{1 \le i,j \le n} W_{ij}^2 L^f_{ij} \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij}\right)^2
+\end{align}
+We denote:
+\begin{subequations}
+\begin{align}
+n_\beta & = \sum_{1 \le i,j \le n} W_{ij}^2  L^f_{ij} \mathbb{E} \left[B^2_{ij}\right] \sum_{1 \le i,j \le n} W_{ij}^2 \overbar{B}_{ij}^2 \nonumber \\
+& \quad - \sum_{1 \le i,j \le n} W_{ij}^2 L^f_{ij} \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} \sum_{1 \le i,j \le n} W_{ij}^2  \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} \\
+n_\gamma & = \sum_{1 \le i,j \le n} W_{ij}^2 L^{f2}_{ij} \mathbb{E} \left[\widetilde{B}_{ij}^2\right] \sum_{1 \le i,j \le n} W_{ij}^2  \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij} \nonumber \\
+& \quad - \sum_{1 \le i,j \le n} W_{ij}^2  L^f_{ij} \mathbb{E} \left[B^2_{ij}\right] \sum_{1 \le i,j \le n} W_{ij}^2  L^f_{ij} \mathbb{E} \left[\widetilde{B}_{ij}\right] \overbar{B}_{ij}
+\end{align}
+\end{subequations}
+to write the solution of the system:
+\begin{subequations}
+\begin{align}
+\beta & = \frac{n_\beta}{d} \\
+\gamma & = \frac{n_\gamma}{d}
+\end{align}
+\end{subequations}
+
+\subsection{Optimized localization}
+In this section, the localization matrix $\mathbf{L}$ is optimized simultaneously with the hybridization weights. The coefficient $\beta^{e2}$ can be included in the localization matrix: $\mathbf{L}^h = \beta^{e2} \mathbf{L}$, and the coefficient $\beta^{c2}$ is denoted $\gamma$. Thus:
 \begin{align}
 \widehat{\mathbf{B}} = \mathbf{L}^h \circ \widetilde{\mathbf{B}} + \gamma \overbar{\mathbf{B}}
 \end{align}
 
-\subsection{Expected squared norm}
+\subsubsection{Expected squared norm}
 The expected squared norm of equation \eqref{eq:norm_proj_2} adapted for the hybridization becomes:
 \begin{align}
 e(\mathbf{L}^h,\gamma) & = \sum_{1 \le i,j \le n} W_{ij}^2 \mathbb{E}\left[ \left(L^h_{ij} \widetilde{B}_{ij} + \gamma \overbar{B}_{ij} - B_{ij} \right)^2 \right] \nonumber \\
@@ -1437,7 +1495,7 @@ Its gradient is given by:
 \end{align}
 \end{subequations}
 
-\subsection{Explicit optimality}
+\subsubsection{Explicit optimality}
 Setting the gradient of $e(\mathbf{L}^h,\gamma)$ to zero, we get:
 \begin{align}
 \label{eq:hyb_th}
