@@ -131,16 +131,16 @@ do iv=1,nam%nv
          fld_tmp = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,1),(/1,1,timeslot/), &
-          & (/model%nlon,model%nlat,1/)))
+ & (/model%nlon,model%nlat,1/)))
          elseif (trim(nam%lev2d)=='last') then
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1,timeslot/), &
-          & (/model%nlon,model%nlat,1/)))
+ & (/model%nlon,model%nlat,1/)))
          end if
       case (4) 
          ! 3D data
          do il0=1,nam%nl
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),timeslot/), &
-          & (/model%nlon,model%nlat,1,1/)))
+ & (/model%nlon,model%nlat,1,1/)))
             select case (trim(nam%variables(iv)))
             case ('U')
                do ilat=1,model%nlat
@@ -166,7 +166,7 @@ do iv=1,nam%nv
       ! Read data
       do il0=1,nam%nl
          call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),timeslot/), &
-       & (/model%nlon,model%nlat,1,1/)))
+ & (/model%nlon,model%nlat,1,1/)))
          select case (trim(nam%variables(iv)))
          case ('U')
             do ilat=1,model%nlat

@@ -29,6 +29,7 @@ type mpl_type
    integer :: rootproc              ! Main task index
    logical :: main                  ! Main task logical
    integer :: tag                   ! MPI tag
+   logical :: parallel_io           ! Parallel I/O
 
    ! Number of OpenMP threads
    integer :: nthread               ! Number of OpenMP threads
@@ -79,7 +80,7 @@ contains
    procedure :: mpl_glb_to_loc_logical_1d
    procedure :: mpl_glb_to_loc_logical_2d
    generic :: glb_to_loc => mpl_glb_to_loc_integer_1d,mpl_glb_to_loc_integer_2d,mpl_glb_to_loc_real_1d,mpl_glb_to_loc_real_2d, &
-                          & mpl_glb_to_loc_logical_1d,mpl_glb_to_loc_logical_2d
+ & mpl_glb_to_loc_logical_1d,mpl_glb_to_loc_logical_2d
    procedure :: mpl_loc_to_glb_integer_1d
    procedure :: mpl_loc_to_glb_integer_2d
    procedure :: mpl_loc_to_glb_real_1d
@@ -87,7 +88,7 @@ contains
    procedure :: mpl_loc_to_glb_logical_1d
    procedure :: mpl_loc_to_glb_logical_2d
    generic :: loc_to_glb => mpl_loc_to_glb_integer_1d,mpl_loc_to_glb_integer_2d,mpl_loc_to_glb_real_1d,mpl_loc_to_glb_real_2d, &
-                          & mpl_loc_to_glb_logical_1d,mpl_loc_to_glb_logical_2d
+ & mpl_loc_to_glb_logical_1d,mpl_loc_to_glb_logical_2d
    procedure :: prog_init => mpl_prog_init
    procedure :: prog_print => mpl_prog_print
    procedure :: prog_final => mpl_prog_final
@@ -107,7 +108,7 @@ contains
    procedure :: mpl_write_string
    procedure :: mpl_write_string_array
    generic :: write => mpl_write_integer,mpl_write_integer_array,mpl_write_real,mpl_write_real_array, &
-            & mpl_write_logical,mpl_write_logical_array,mpl_write_string,mpl_write_string_array
+ & mpl_write_logical,mpl_write_logical_array,mpl_write_string,mpl_write_string_array
 end type mpl_type
 
 private
@@ -170,6 +171,9 @@ mpl%myproc = mpl%f_comm%rank()+1
 ! Define main task
 mpl%rootproc = 1
 mpl%main = (mpl%myproc==mpl%rootproc)
+
+! Parallel I/O enabled
+mpl%parallel_io = .true.
 
 ! Time-based tag
 if (mpl%main) then
@@ -373,7 +377,6 @@ write(mpl%info,'(a)') trim(mpl%wng)//'!!! Warning in '//trim(subr)//': '//trim(m
 call mpl%flush
 
 end subroutine mpl_warning
-
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_update_tag
@@ -1896,10 +1899,12 @@ integer :: ncid                                    ! NetCDF file ID
 integer :: info
 
 ! Create file
-if (present(f_comm)) then
+if (present(f_comm).and.mpl%parallel_io) then
+   ! Parallel I/O
    info = nf90_create(filename,ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
  & comm=f_comm%communicator(),info=f_comm%info_null())
 else
+   ! Serial I/O
    info = nf90_create(filename,ior(nf90_noclobber,nf90_netcdf4),ncid)
 end if
 
@@ -1908,10 +1913,12 @@ if (info==nf90_noerr) then
    call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'_FillValue',mpl%msv%valr))
 else
    ! Open file
-   if (present(f_comm)) then
+   if (present(f_comm).and.mpl%parallel_io) then
+      ! Parallel I/O
       call mpl%ncerr(subr,nf90_open(filename,nf90_write,ncid, &
  & comm=f_comm%communicator(),info=f_comm%info_null()))
    else
+      ! Serial I/O
       call mpl%ncerr(subr,nf90_open(filename,nf90_write,ncid))
    end if
 end if
@@ -2131,7 +2138,7 @@ if (mpl%msv%is(ncid)) then
    if (var<0) delta = delta+1
    if (abs(var)>0) then
       write(for,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,i', &
-       & floor(log(abs(real(var,kind_real)))/log(10.0))+delta,',a)'
+ & floor(log(abs(real(var,kind_real)))/log(10.0))+delta,',a)'
    else
       write(for,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,i',delta,',a)'
    end if

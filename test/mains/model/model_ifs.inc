@@ -119,7 +119,7 @@ do iv=1,nam%nv
       ! Read data
       do il0=1,nam%nl
          call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),timeslot/), &
-       & (/model%nlon,model%nlat,1,1/)))
+ & (/model%nlon,model%nlat,1,1/)))
       end do
 
       ! Pack

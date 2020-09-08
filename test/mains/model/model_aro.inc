@@ -12,7 +12,7 @@ type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(in) :: nam         ! Namelist
 
 ! Local variables
-integer :: img,ilon,ilat,il0_bot,il0_top,ie
+integer :: img,ilon,ilat,il0,il0_bot,il0_top,ie,its
 integer :: ncid,nlon_id,nlat_id,nlev_id,pp_id,lon_id,lat_id,cmask_id,a_id,b_id,fld_id
 integer,allocatable :: mask_counter(:)
 real(kind_real) :: dx,dy
@@ -112,16 +112,16 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
       write(filename,'(a,i6.6)') 'ens1_'//trim(nam%timeslots(its))//'_',ie
 
       ! Open file
-      call ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+      call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
       ! Read LWC
       do il0=1,nam%nl
          ! Get id
          write(ilchar,'(i3.3)') nam%levs(il0)
-         call ncerr(subr,nf90_inq_varid(ncid,'S'//ilchar//'CLOUD_WATER',fld_id))
+         call mpl%ncerr(subr,nf90_inq_varid(ncid,'S'//ilchar//'CLOUD_WATER',fld_id))
 
          ! Read data
-         call ncerr(subr,nf90_get_var(ncid,fld_id,fld_loc))
+         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_loc))
 
          ! Pack data
          img = 0
@@ -134,7 +134,7 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
       end do
 
       ! Close file
-      call ncerr(subr,nf90_close(ncid))
+      call mpl%ncerr(subr,nf90_close(ncid))
 
       ! Update mask
       select case (trim(nam%mask_type))
@@ -163,7 +163,7 @@ end select
 do img=1,model%nmg
    if (nam%logpres) then
       model%vunit(img,1:nam%nl) = log(0.5*(a(nam%levs(1:nam%nl))+a(nam%levs(1:nam%nl)+1)) &
-                                & +0.5*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
+ & +0.5*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
       if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(ps)
    else
       model%vunit(img,:) = real(nam%levs(1:model%nl0),kind_real)

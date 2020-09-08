@@ -194,6 +194,9 @@ type(atlas_field) :: afield
 ! Initialize MPL
 call bump%mpl%init(f_comm)
 
+! Set parallel I/O
+bump%mpl%parallel_io = bump%nam%parallel_io
+
 ! Set missing values
 bump%mpl%msv%vali = dmsvali
 bump%mpl%msv%valr = dmsvalr

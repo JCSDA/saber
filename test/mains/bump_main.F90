@@ -150,8 +150,8 @@ end if
 
 ! BUMP setup
 call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
-              & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs, &
-              & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+ & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs, &
+ & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
 ! Transfer members
 if (bump%nam%ens1_ne>0) then

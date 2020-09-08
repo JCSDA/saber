@@ -1,7 +1,8 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_write_cmat/test__MPI_-_OMP_"
+prefix: "bump_write_cmat_serial/test__MPI_-_OMP_"
 model: "qg"
+parallel_io: 0
 
 # driver_param
 method: "cor"
@@ -21,6 +22,8 @@ timeslots: ["00","06"]
 
 # ens1_param
 ens1_ne: 50
+local_diag: 1
+local_rad: 2000.0e3
 
 # ens2_param
 
@@ -34,8 +37,6 @@ nl0r: 2
 
 # diag_param
 ne: 50
-local_diag: 1
-local_rad: 2000.0e3
 
 # fit_param
 

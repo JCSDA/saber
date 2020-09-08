@@ -22,15 +22,13 @@ timeslots: ["00","06"]
 
 # ens1_param
 ens1_ne: 50
+local_diag: 1
+local_rad: 2000.0e3
 
 # ens2_param
 
 # sampling_param
-nc1: 500
 ntry: 30
-nc3: 15
-dc: [400.0e3]
-nl0r: 2
 
 # diag_param
 ne: 50

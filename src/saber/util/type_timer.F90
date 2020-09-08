@@ -73,10 +73,10 @@ if (mpl%main) then
    timer%cpu = timer%cpu_time_end-timer%cpu_time_start
    if (timer%system_clock_end<timer%system_clock_start) then
       timer%elapsed = real(timer%system_clock_end-timer%system_clock_start+timer%count_max,kind_real) &
-                    & /real(timer%count_rate,kind_real)
+ & /real(timer%count_rate,kind_real)
    else
       timer%elapsed = real(timer%system_clock_end-timer%system_clock_start,kind_real) &
-                    & /real(timer%count_rate,kind_real)
+ & /real(timer%count_rate,kind_real)
    end if
 end if
 

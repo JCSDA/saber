@@ -29,7 +29,7 @@ contains
    procedure :: msv_isnotr_4d
    procedure :: msv_isnotr_5d
    generic :: isnot => msv_isnoti_0d,msv_isnoti_1d,msv_isnoti_2d,msv_isnoti_3d,msv_isnoti_4d,msv_isnoti_5d, &
-                     & msv_isnotr_0d,msv_isnotr_1d,msv_isnotr_2d,msv_isnotr_3d,msv_isnotr_4d,msv_isnotr_5d
+ & msv_isnotr_0d,msv_isnotr_1d,msv_isnotr_2d,msv_isnotr_3d,msv_isnotr_4d,msv_isnotr_5d
    procedure :: msv_isi_0d
    procedure :: msv_isi_1d
    procedure :: msv_isi_2d
@@ -43,7 +43,7 @@ contains
    procedure :: msv_isr_4d
    procedure :: msv_isr_5d
    generic :: is => msv_isi_0d,msv_isi_1d,msv_isi_2d,msv_isi_3d,msv_isi_4d,msv_isi_5d, &
-                  & msv_isr_0d,msv_isr_1d,msv_isr_2d,msv_isr_3d,msv_isr_4d,msv_isr_5d
+ & msv_isr_0d,msv_isr_1d,msv_isr_2d,msv_isr_3d,msv_isr_4d,msv_isr_5d
    procedure :: msv_isanynoti_1d
    procedure :: msv_isanynoti_2d
    procedure :: msv_isanynoti_3d
@@ -55,7 +55,7 @@ contains
    procedure :: msv_isanynotr_4d
    procedure :: msv_isanynotr_5d
    generic :: isanynot => msv_isanynoti_1d,msv_isanynoti_2d,msv_isanynoti_3d,msv_isanynoti_4d,msv_isanynoti_5d, &
-                        & msv_isanynotr_1d,msv_isanynotr_2d,msv_isanynotr_3d,msv_isanynotr_4d,msv_isanynotr_5d
+ & msv_isanynotr_1d,msv_isanynotr_2d,msv_isanynotr_3d,msv_isanynotr_4d,msv_isanynotr_5d
    procedure :: msv_isanyi_1d
    procedure :: msv_isanyi_2d
    procedure :: msv_isanyi_3d
@@ -67,7 +67,7 @@ contains
    procedure :: msv_isanyr_4d
    procedure :: msv_isanyr_5d
    generic :: isany => msv_isanyi_1d,msv_isanyi_2d,msv_isanyi_3d,msv_isanyi_4d,msv_isanyi_5d, &
-                     & msv_isanyr_1d,msv_isanyr_2d,msv_isanyr_3d,msv_isanyr_4d,msv_isanyr_5d
+ & msv_isanyr_1d,msv_isanyr_2d,msv_isanyr_3d,msv_isanyr_4d,msv_isanyr_5d
    procedure :: msv_isallnoti_1d
    procedure :: msv_isallnoti_2d
    procedure :: msv_isallnoti_3d
@@ -79,7 +79,7 @@ contains
    procedure :: msv_isallnotr_4d
    procedure :: msv_isallnotr_5d
    generic :: isallnot => msv_isallnoti_1d,msv_isallnoti_2d,msv_isallnoti_3d,msv_isallnoti_4d,msv_isallnoti_5d, &
-                        & msv_isallnotr_1d,msv_isallnotr_2d,msv_isallnotr_3d,msv_isallnotr_4d,msv_isallnotr_5d
+ & msv_isallnotr_1d,msv_isallnotr_2d,msv_isallnotr_3d,msv_isallnotr_4d,msv_isallnotr_5d
    procedure :: msv_isalli_1d
    procedure :: msv_isalli_2d
    procedure :: msv_isalli_3d
@@ -91,7 +91,7 @@ contains
    procedure :: msv_isallr_4d
    procedure :: msv_isallr_5d
    generic :: isall => msv_isalli_1d,msv_isalli_2d,msv_isalli_3d,msv_isalli_4d,msv_isalli_5d, &
-                     & msv_isallr_1d,msv_isallr_2d,msv_isallr_3d,msv_isallr_4d,msv_isallr_5d
+ & msv_isallr_1d,msv_isallr_2d,msv_isallr_3d,msv_isallr_4d,msv_isallr_5d
 end type msv_type
 
 private

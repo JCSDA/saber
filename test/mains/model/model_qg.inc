@@ -136,18 +136,18 @@ do iv=1,nam%nv
          fld_tmp = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,1),(/1,1/), &
-          & (/model%nlon-1,model%nlat/)))
+ & (/model%nlon-1,model%nlat/)))
             fld_tmp(model%nlon,:,1) = fld_tmp(1,:,1)
          elseif (trim(nam%lev2d)=='last') then
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,model%nl0),(/1,1/), &
-          & (/model%nlon-1,model%nlat/)))
+ & (/model%nlon-1,model%nlat/)))
             fld_tmp(model%nlon,:,model%nl0) = fld_tmp(1,:,model%nl0)
          end if
       case (3) 
          ! 3D data
          do il0=1,nam%nl
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,il0),(/1,1,nam%levs(il0)/), &
-          & (/model%nlon-1,model%nlat,1/)))
+ & (/model%nlon-1,model%nlat,1/)))
             fld_tmp(model%nlon,:,il0) = fld_tmp(1,:,il0)
          end do
       case default

@@ -22,6 +22,7 @@ use type_rng, only: rng_type
 
 implicit none
 
+real(kind_real),parameter :: qmin = 1.0e-6        ! Minimum specific humidity value in the log variable change
 character(len=1024) :: zone = 'C+I'               ! Computation zone for AROME ('C', 'C+I' or 'C+I+E')
 
 ! Member field derived type
@@ -316,7 +317,7 @@ elseif (mpl%nproc>1) then
       if (mpl%msv%isnot(model%ntile)) then
          ! Special case for model with tiles
          if (mod(mpl%nproc,model%ntile)/=0) call mpl%abort(subr, &
-      & 'the number of MPI tasks should be a multiple of the number of tiles')
+ & 'the number of MPI tasks should be a multiple of the number of tiles')
          nprocpertile = mpl%nproc/model%ntile
       else
          ! General case
@@ -397,7 +398,7 @@ elseif (mpl%nproc>1) then
       else
          ! Unstructured grid
          if ((model%ntile>1).and.inf(sum(model%area),4.0*pi)) call mpl%abort(subr, &
-       & 'unstructured grid requires a single tile and a global domain')
+ & 'unstructured grid requires a single tile and a global domain')
 
          ! Allocation
          allocate(lon_inf(nprocpertile))
@@ -427,7 +428,7 @@ elseif (mpl%nproc>1) then
             do while (.not.found)
                if (iproc<=nprocpertile) then
                   if (((model%lon(img)>=lon_inf(iproc)).and.(model%lon(img)<=lon_sup(iproc)) &
-                & .and.(model%lat(img)>=lat_inf(iproc)).and.(model%lat(img)<=lat_sup(iproc)))) then
+ & .and.(model%lat(img)>=lat_inf(iproc)).and.(model%lat(img)<=lat_sup(iproc)))) then
                      model%mg_to_proc(img) = iproc
                      found = .true.
                   end if
@@ -588,7 +589,7 @@ case ('ldwv')
          end if
       end if
       write(mpl%info,'(a7,a,e15.8,a,e15.8)') '','Profile '//trim(nam%name_ldwv(ildw))//' required at lon/lat: ', &
-    & nam%lon_ldwv(ildw),' / ',nam%lat_ldwv(ildw)
+ & nam%lon_ldwv(ildw),' / ',nam%lat_ldwv(ildw)
       call mpl%flush
       if (.not.any(model%mask(nam%img_ldwv(ildw),:))) call mpl%warning(subr,'profile '//trim(nam%name_ldwv(ildw))//' is not valid')
    end do

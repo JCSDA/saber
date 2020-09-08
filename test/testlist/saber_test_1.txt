@@ -14,6 +14,7 @@ bump_lct-nicas_one_scale
 bump_nicas_fast_sampling
 bump_nicas_subsamp_hvh
 bump_read_cmat
+bump_read_cmat_serial
 bump_read_mom
 bump_read_nicas
 bump_read_obsop
@@ -23,6 +24,7 @@ bump_read_vbal
 bump_var_filter
 bump_vbal
 bump_write_cmat
+bump_write_cmat_serial
 bump_write_mom
 bump_write_nicas
 bump_write_obsop

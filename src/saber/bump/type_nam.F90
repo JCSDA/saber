@@ -36,7 +36,8 @@ type nam_type
    logical :: colorlog                                  ! Add colors to the log (for display on terminal)
    logical :: default_seed                              ! Default seed for random numbers
    logical :: repro                                     ! Inter-compilers reproducibility
-   integer :: nprocio                                   ! Number of IO processors
+   logical :: parallel_io                               ! Parallel NetCDF I/O
+   integer :: nprocio                                   ! Number of I/O processors
    logical :: remap                                     ! Remap points to improve load balance
    real(kind_real) :: universe_rad                      ! Universe radius [in meters]
 
@@ -246,6 +247,7 @@ nam%verbosity = 'all'
 nam%colorlog = .false.
 nam%default_seed = .true.
 nam%repro = .true.
+nam%parallel_io = .true.
 nam%nprocio = min(nproc,nprociomax)
 nam%remap = .false.
 nam%universe_rad = pi*req
@@ -462,6 +464,7 @@ character(len=1024) :: verbosity
 logical :: colorlog
 logical :: default_seed
 logical :: repro
+logical :: parallel_io
 integer :: nprocio
 logical :: remap
 real(kind_real) :: universe_rad
@@ -620,6 +623,7 @@ namelist/general_param/ &
  & colorlog, &
  & default_seed, &
  & repro, &
+ & parallel_io, &
  & nprocio, &
  & remap, &
  & universe_rad
@@ -789,6 +793,7 @@ if (mpl%main) then
    colorlog = .false.
    default_seed = .true.
    repro = .true.
+   parallel_io = .true.
    nprocio = min(mpl%nproc,nprociomax)
    remap = .false.
    universe_rad = pi*req
@@ -991,6 +996,7 @@ if (mpl%main) then
    nam%colorlog = colorlog
    nam%default_seed = default_seed
    nam%repro = repro
+   nam%parallel_io = parallel_io
    nam%nprocio = nprocio
    nam%remap = remap
    nam%universe_rad = universe_rad
@@ -1232,6 +1238,7 @@ call mpl%f_comm%broadcast(nam%verbosity,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%colorlog,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%default_seed,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%repro,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%parallel_io,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%remap,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
@@ -1444,6 +1451,7 @@ end if
 if (conf%has("colorlog")) call conf%get_or_die("colorlog",nam%colorlog)
 if (conf%has("default_seed")) call conf%get_or_die("default_seed",nam%default_seed)
 if (conf%has("repro")) call conf%get_or_die("repro",nam%repro)
+if (conf%has("parallel_io")) call conf%get_or_die("parallel_io",nam%parallel_io)
 if (conf%has("nprocio")) call conf%get_or_die("nprocio",nam%nprocio)
 if (conf%has("remap")) call conf%get_or_die("remap",nam%remap)
 if (conf%has("universe_rad")) call conf%get_or_die("universe_rad",nam%universe_rad)
@@ -1521,7 +1529,10 @@ if (conf%has("variables")) then
    call conf%get_or_die("variables",str_array)
    nam%variables(1:size(str_array)) = str_array
 end if
-if (conf%has("variable_change")) call conf%get_or_die("variable_change",nam%variable_change )
+if (conf%has("variable_change")) then
+   call conf%get_or_die("variable_change",str)
+   nam%variable_change = str
+end if
 if (conf%has("nts")) call conf%get_or_die("nts",nam%nts)
 if (conf%has("timeslots")) then
    call conf%get_or_die("timeslots",str_array)
@@ -2120,6 +2131,7 @@ call mpl%write(lncid,'nam','verbosity',nam%verbosity)
 call mpl%write(lncid,'nam','colorlog',nam%colorlog)
 call mpl%write(lncid,'nam','default_seed',nam%default_seed)
 call mpl%write(lncid,'nam','repro',nam%repro)
+call mpl%write(lncid,'nam','parallel_io',nam%parallel_io)
 call mpl%write(lncid,'nam','nprocio',nam%nprocio)
 call mpl%write(lncid,'nam','remap',nam%remap)
 call mpl%write(lncid,'nam','universe_rad',nam%universe_rad*req)

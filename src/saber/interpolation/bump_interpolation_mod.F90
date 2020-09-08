@@ -289,7 +289,7 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
         if (.not.maskouta(iouta)) then
            ! Check for very close points
            call geom%tree_c0u%find_nearest_neighbors(self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta), &
-                                               & 1,nn_index,nn_dist)
+ & 1,nn_index,nn_dist)
            if (nn_dist(1)<rth) maskouta(iouta) = .true.
         end if
      end do
@@ -369,10 +369,10 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
 
      ! Print results
      write(mpl%info,'(a7,a,f5.1,a)') '','Output grid repartition imbalance: ',100.0*real(maxval(proc_to_nouta_eff) &
-          & -minval(proc_to_nouta_eff),kind_real)/(real(sum(proc_to_nouta_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+ & -minval(proc_to_nouta_eff),kind_real)/(real(sum(proc_to_nouta_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
      call mpl%flush
      write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
-          & self%com%nred,' / ',self%com%next,' / ',self%com%nhalo
+ & self%com%nred,' / ',self%com%next,' / ',self%com%nhalo
      call mpl%flush
      write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
      call mpl%flush
