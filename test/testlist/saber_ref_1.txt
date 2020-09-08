@@ -6,7 +6,6 @@ bump_hdiag_cor_diag_all/test_1-1_diag.nc
 bump_hdiag_grid/test_1-1_diag.nc
 bump_hdiag_grid/test_1-1_local_diag_cor.nc
 bump_hdiag_hyb-rnd_common/test_1-1_diag.nc
-bump_hdiag_hyb-rnd_common_forced_radii/test_1-1_diag.nc
 bump_hdiag_mask_stddev_upper/test_1-1_diag.nc
 bump_hdiag-nicas_cor_specific_univariate/test_1-1_diag.nc
 bump_hdiag-nicas_cor_specific_univariate/test_1-1_dirac.nc
