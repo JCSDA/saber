@@ -646,73 +646,132 @@ end subroutine diag_blk_localization
 ! Subroutine: diag_blk_hybridization
 ! Purpose: diag_blk hybridization
 !----------------------------------------------------------------------
-subroutine diag_blk_hybridization(diag_blk,mpl,geom,bpar,avg_blk)
+subroutine diag_blk_hybridization(diag_blk,mpl,nam,geom,bpar,avg_blk)
 
 implicit none
 
 ! Passed variables
 class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block (localization)
 type(mpl_type),intent(inout) :: mpl            ! MPI data
+type(nam_type),intent(in) :: nam               ! Namelist
 type(geom_type),intent(in) :: geom             ! Geometry
 type(bpar_type),intent(in) :: bpar             ! Block parameters
 type(avg_blk_type),intent(in) :: avg_blk       ! Averaged statistics block
 
 ! Local variables
 integer :: il0,jl0r,jl0,jc3
-real(kind_real) :: wgt,num,den
+real(kind_real) :: wgt,a,bc,d,e,f,num_ens,num_sta,num,den
+real(kind_real),allocatable :: coef_ens(:),rh(:),rv(:)
 
 ! Associate
 associate(ib=>diag_blk%ib)
 
-! Compute raw hybridization
-num = 0.0
-den = 0.0
-do il0=1,geom%nl0
-   do jl0r=1,bpar%nl0r(ib)
-      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-      do jc3=1,bpar%nc3(ib)
-         if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0)) &
- & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jl0r,il0))) then
-            wgt = geom%disth(jc3)*diag_blk%distv(jl0,il0)/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real)
-            num = num+wgt*(1.0-avg_blk%m11asysq(jc3,jl0r,il0)/avg_blk%m11sq(jc3,jl0r,il0))*avg_blk%m11sta(jc3,jl0r,il0)
-            den = den+wgt*(avg_blk%stasq(jc3,jl0r,il0)-avg_blk%m11sta(jc3,jl0r,il0)**2/avg_blk%m11sq(jc3,jl0r,il0))
-         end if
-      end do
-   end do
-end do
-if ((num>0.0).and.(den>0.0)) then
-   ! Valid numerator and denominator
-   diag_blk%coef_sta = num/den
+if (nam%forced_radii) then
+   ! Allocation
+   allocate(coef_ens(geom%nl0))
+   allocate(rh(geom%nl0))
+   allocate(rv(geom%nl0))
 
-   !$omp parallel do schedule(static) private(il0,jl0r,jc3) shared(geom,bpar,diag_blk)
+   ! Initialization
+   coef_ens = 1.0
+   rh = nam%rh
+   rv = nam%rv
+
+   ! Compute forced localization function
+   call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
+ & coef_ens,rh,rv,diag_blk%raw)
+   diag_blk%valid = mpl%msv%valr
+
+   ! Compute hybrid weights
+   a = 0.0
+   bc = 0.0
+   d = 0.0
+   e = 0.0
+   f = 0.0
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
+         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
          do jc3=1,bpar%nc3(ib)
-            if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(diag_blk%coef_sta) &
- & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0))) then
-               ! Compute localization
-               diag_blk%raw(jc3,jl0r,il0) = (avg_blk%m11asysq(jc3,jl0r,il0)-diag_blk%coef_sta &
- & *avg_blk%m11sta(jc3,jl0r,il0))/avg_blk%m11sq(jc3,jl0r,il0)
-               diag_blk%valid(jc3,jl0r,il0) = avg_blk%nc1a(jc3,jl0r,il0)
-
-               ! Lower bound
-               if (diag_blk%raw(jc3,jl0r,il0)<0.0) then
-                  diag_blk%raw(jc3,jl0r,il0) = mpl%msv%valr
-                  diag_blk%valid(jc3,jl0r,il0) = mpl%msv%valr
-               end if
-            else
-               ! Missing value
-               diag_blk%raw(jc3,jl0r,il0) = mpl%msv%valr
-               diag_blk%valid(jc3,jl0r,il0) = mpl%msv%valr
+            if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0)) &
+ & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jl0r,il0))) then
+               wgt = geom%disth(jc3)*diag_blk%distv(jl0,il0)/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real)
+               a = a+wgt*diag_blk%raw(jc3,jl0r,il0)**2*avg_blk%m11sq(jc3,jl0r,il0)
+               bc = bc+wgt*diag_blk%raw(jc3,jl0r,il0)*avg_blk%m11sta(jc3,jl0r,il0)
+               d = d+wgt*avg_blk%stasq(jc3,jl0r,il0)
+               e = e+wgt*diag_blk%raw(jc3,jl0r,il0)*avg_blk%m11asysq(jc3,jl0r,il0)
+               f = f+wgt*avg_blk%m11sta(jc3,jl0r,il0)
             end if
          end do
       end do
    end do
-   !$omp end parallel do
+   num_ens = e*d-bc*f
+   num_sta = a*f-e*bc
+   den = a*d-bc**2
+   if ((num_ens>0.0).and.(num_sta>0.0).and.(den>0.0)) then
+      ! Valid numerators and denominator
+      diag_blk%coef_ens = num_ens/den
+      diag_blk%coef_sta = num_sta/den
+   else
+      ! Missing values
+      diag_blk%coef_ens = mpl%msv%valr
+      diag_blk%coef_sta = mpl%msv%valr
+   end if
+
+   ! Release memory
+   deallocate(coef_ens)
+   deallocate(rh)
+   deallocate(rv)
 else
-   ! Missing values
-   diag_blk%coef_sta = mpl%msv%valr
-   diag_blk%raw = mpl%msv%valr
+   ! Compute raw hybridization
+   num = 0.0
+   den = 0.0
+   do il0=1,geom%nl0
+      do jl0r=1,bpar%nl0r(ib)
+         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+         do jc3=1,bpar%nc3(ib)
+            if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0)) &
+ & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jl0r,il0))) then
+               wgt = geom%disth(jc3)*diag_blk%distv(jl0,il0)/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real)
+               num = num+wgt*(1.0-avg_blk%m11asysq(jc3,jl0r,il0)/avg_blk%m11sq(jc3,jl0r,il0))*avg_blk%m11sta(jc3,jl0r,il0)
+               den = den+wgt*(avg_blk%stasq(jc3,jl0r,il0)-avg_blk%m11sta(jc3,jl0r,il0)**2/avg_blk%m11sq(jc3,jl0r,il0))
+            end if
+         end do
+      end do
+   end do
+   if ((num>0.0).and.(den>0.0)) then
+      ! Valid numerator and denominator
+      diag_blk%coef_sta = num/den
+
+      !$omp parallel do schedule(static) private(il0,jl0r,jc3) shared(geom,bpar,diag_blk)
+      do il0=1,geom%nl0
+         do jl0r=1,bpar%nl0r(ib)
+            do jc3=1,bpar%nc3(ib)
+               if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(diag_blk%coef_sta) &
+ & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0))) then
+                  ! Compute localization
+                  diag_blk%raw(jc3,jl0r,il0) = (avg_blk%m11asysq(jc3,jl0r,il0)-diag_blk%coef_sta &
+ & *avg_blk%m11sta(jc3,jl0r,il0))/avg_blk%m11sq(jc3,jl0r,il0)
+                  diag_blk%valid(jc3,jl0r,il0) = avg_blk%nc1a(jc3,jl0r,il0)
+
+                  ! Lower bound
+                  if (diag_blk%raw(jc3,jl0r,il0)<0.0) then
+                     diag_blk%raw(jc3,jl0r,il0) = mpl%msv%valr
+                     diag_blk%valid(jc3,jl0r,il0) = mpl%msv%valr
+                  end if
+               else
+                  ! Missing value
+                  diag_blk%raw(jc3,jl0r,il0) = mpl%msv%valr
+                  diag_blk%valid(jc3,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+      !$omp end parallel do
+   else
+      ! Missing values
+      diag_blk%coef_sta = mpl%msv%valr
+      diag_blk%raw = mpl%msv%valr
+   end if
 end if
 
 ! End associate

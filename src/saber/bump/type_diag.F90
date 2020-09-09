@@ -640,13 +640,19 @@ do ib=1,bpar%nbe
 
       do ic2a=0,diag%nc2a
          ! Compute hybridization
-         call diag%blk(ic2a,ib)%hybridization(mpl,geom,bpar,avg%blk(ic2a,ib))
+         call diag%blk(ic2a,ib)%hybridization(mpl,nam,geom,bpar,avg%blk(ic2a,ib))
 
-         ! Normalization
-         call diag%blk(ic2a,ib)%normalization(geom,bpar)
+         if (nam%forced_radii) then
+            ! No normalization/fitting, use forced radii
+            diag%blk(ic2a,ib)%fit_rh = nam%rh
+            diag%blk(ic2a,ib)%fit_rv = nam%rv
+         else
+            ! Normalization
+            call diag%blk(ic2a,ib)%normalization(geom,bpar)
 
-         ! Fitting
-         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,rng,nam,geom,bpar,samp)
+            ! Fitting
+            if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,rng,nam,geom,bpar,samp)
+         end if
 
          ! Update
          call mpl%prog_print(ic2a+1)
