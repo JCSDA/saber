@@ -14,7 +14,7 @@ cost function:
     tstep: PT1H
   background:
     date: 2010-01-01T00:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D
+    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
   background error:
     covariance model: hybrid
     ensemble:
@@ -36,25 +36,25 @@ cost function:
         localization variables: [x]
       members:
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D
+        filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D.nc
     ensemble weight: 0.707
     static:
       covariance model: QgError
@@ -70,9 +70,9 @@ cost function:
       obs type: Stream  
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h
+        obsfile: testdata/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h
+        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: Stream
   - obs error:
       covariance model: diagonal
@@ -80,9 +80,9 @@ cost function:
       obs type: Wind  
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h
+        obsfile: testdata/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h
+        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: Wind
   - obs error:
       covariance model: diagonal
@@ -90,9 +90,9 @@ cost function:
       obs type: WSpeed
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h
+        obsfile: testdata/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h
+        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: WSpeed  
   constraints:
   - jcdfi:

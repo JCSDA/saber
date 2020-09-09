@@ -5,7 +5,7 @@ cost function:
   analysis variables: [x]
   background:
     date: 2010-01-01T00:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D
+    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
   background error:
     bump:
       datadir: testdata
@@ -38,9 +38,9 @@ cost function:
       obs type: Stream
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h
+        obsfile: testdata/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h
+        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: Stream
     obs error:
       covariance model: diagonal
@@ -48,9 +48,9 @@ cost function:
       obs type: Wind
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h
+        obsfile: testdata/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h
+        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: Wind
     obs error:
       covariance model: diagonal
@@ -58,9 +58,9 @@ cost function:
       obs type: WSpeed
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h
+        obsfile: testdata/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h
+        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: WSpeed
     obs error:
       covariance model: diagonal

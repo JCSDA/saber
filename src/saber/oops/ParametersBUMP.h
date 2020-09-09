@@ -95,13 +95,13 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
   int ens1_ne = 0;
   if (ens) ens1_ne = ens->size();
   BUMPConf.set("ens1_ne", ens1_ne);
-  BUMPConf.set("ens1_nsub", 1);
+  if (!BUMPConf.has("ens1_nsub")) BUMPConf.set("ens1_nsub", 1);
 
   // Get pseudo-ensemble size if pseudo-ensemble is available
   int ens2_ne = 0;
   if (pseudo_ens) ens2_ne = pseudo_ens->size();
   BUMPConf.set("ens2_ne", ens2_ne);
-  BUMPConf.set("ens2_nsub", 1);
+  if (!BUMPConf.has("ens2_nsub")) BUMPConf.set("ens2_nsub", 1);
 
   // Get missing value
   const double msvalr = util::missingValue(msvalr);

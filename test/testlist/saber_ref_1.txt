@@ -43,6 +43,7 @@ bump_vbal/test_1-1_vbal_000001-000001.nc
 bump_write_cmat/test_1-1_cmat.nc
 bump_write_cmat/test_1-1_diag.nc
 bump_write_cmat/test_1-1_dirac.nc
+bump_write_cmat/test_1-1_local_diag_cor.nc
 bump_write_cmat/test_1-1_nicas_000001-000001.nc
 bump_write_mom/test_1-1_diag.nc
 bump_write_mom/test_1-1_mom_000001-000001.nc
