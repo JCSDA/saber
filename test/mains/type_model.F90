@@ -64,13 +64,12 @@ type model_type
    type(atlas_fieldset) :: afieldset              ! ATLAS fieldset
 
    ! Tiles distribution
-   logical,allocatable :: tilepool(:,:)          ! Pool of task for each task
+   logical,allocatable :: tilepool(:,:)           ! Pool of task for each task
    integer :: mytile                              ! Tile handled by a given task
    integer,allocatable :: ioproc(:)               ! I/O task for each tile
    integer :: nmgt                                ! Number of model grid point on each tile
-   integer,allocatable :: mgt_to_proc(:)          ! Model grid on a tile to local task
-   integer,allocatable :: mgt_to_mga(:)           ! Model grid on a tile to model grid, halo A
-   integer,allocatable :: mgt_to_mg(:)     
+   integer,allocatable :: mga_to_mgt(:)           ! Model grid, halo A, to model grid on a tile
+   integer,allocatable :: mgt_to_mg(:)            ! Model grid on a tile to model grid, global
 
    ! Ensembles
    type(member_field_type),allocatable :: ens1(:) ! Ensemble 1 members
@@ -184,8 +183,7 @@ if (allocated(model%mg_to_mga)) deallocate(model%mg_to_mga)
 if (allocated(model%mga_to_mg)) deallocate(model%mga_to_mg)
 if (allocated(model%tilepool)) deallocate(model%tilepool)
 if (allocated(model%ioproc)) deallocate(model%ioproc)
-if (allocated(model%mgt_to_proc)) deallocate(model%mgt_to_proc)
-if (allocated(model%mgt_to_mga)) deallocate(model%mgt_to_mga)
+if (allocated(model%mga_to_mgt)) deallocate(model%mga_to_mgt)
 if (allocated(model%mgt_to_mg)) deallocate(model%mgt_to_mg)
 if (allocated(model%ens1)) then
    do ie=1,size(model%ens1)
@@ -231,10 +229,9 @@ real(kind_real),allocatable :: lon_inf(:),lon_sup(:),lat_inf(:),lat_sup(:)
 real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:),real_ptr(:,:)
 logical :: maskval
 logical :: found
-character(len=4) :: nprocchar
 character(len=1024) :: variables,filename
 character(len=1024),dimension(nvmax) :: variables_save
-character(len=1024),parameter :: subr = 'model_define_distribution'
+character(len=1024),parameter :: subr = 'model_define'
 type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask,afield_smask
 type(atlas_fieldset) :: afieldset
 
@@ -272,23 +269,23 @@ if (mpl%nproc==1) then
       model%mg_to_mga(img) = img
    end do
 elseif (mpl%nproc>1) then
-   if (mpl%main) then
-      ! Open file
-      write(nprocchar,'(i4.4)') mpl%nproc
-      filename = trim(nam%prefix)//'_distribution_'//nprocchar//'.nc'
-      info = nf90_open(trim(nam%datadir)//'/'//trim(filename),nf90_nowrite,ncid)
-   end if
-   call mpl%f_comm%broadcast(info,mpl%rootproc-1)
+   ! Set file name
+   write(filename,'(a,a,i6.6)') trim(nam%prefix),'_distribution_',mpl%nproc
 
-   ! No points on the last task
    if (nam%check_no_point) then
+      ! No points on the last task
       info = nf90_noerr+1
-      if (mpl%main) call mpl%ncerr(subr,nf90_close(ncid))
+   else
+      if (mpl%main) then
+         ! Open file
+         info = nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid)
+      end if
+      call mpl%f_comm%broadcast(info,mpl%rootproc-1)
    end if
 
    if (info==nf90_noerr) then
       ! Read local distribution
-      write(mpl%info,'(a7,a,i4,a)') '','Read local distribution for: ',mpl%nproc,' MPI tasks'
+      write(mpl%info,'(a7,a,i6,a)') '','Read local distribution for: ',mpl%nproc,' MPI tasks'
       call mpl%flush
 
       if (mpl%main) then
@@ -477,7 +474,7 @@ elseif (mpl%nproc>1) then
       ! Write distribution
       if (mpl%main) then
          ! Create file
-         call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename),or(nf90_clobber,nf90_64bit_offset),ncid))
+         call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
 
          ! Write namelist parameters
          call nam%write(mpl,ncid)
@@ -599,7 +596,7 @@ case default
       if (i>1) then
          ! Get variable and filename
          variables = nam%mask_type(1:i-1)
-         filename = trim(nam%mask_type(i+1:))
+         filename = nam%mask_type(i+1:)
          write(mpl%info,'(a7,a)') '','Read sampling mask from variable '//trim(variables)//' in file '//trim(filename)
          call mpl%flush
          write(mpl%info,'(a7,a,e10.3,a)') '','Threshold ',nam%mask_th(1),' used as a '//trim(nam%mask_lu(1))//' bound'
@@ -617,7 +614,7 @@ case default
          call model%read(mpl,nam,filename,1,afieldset)
 
          ! Get data
-         afield = afieldset%field(trim(variables))
+         afield = afieldset%field(variables)
          call afield%data(real_ptr)
 
          ! Compute mask
@@ -686,8 +683,7 @@ if (model%ntile>1) then
    model%nmgt = count(model%mg_to_tile==model%mytile)
 
    ! Allocation
-   allocate(model%mgt_to_proc(model%nmgt))
-   allocate(model%mgt_to_mga(model%nmgt))
+   allocate(model%mga_to_mgt(model%nmgt))
    allocate(model%mgt_to_mg(model%nmgt))
 
    ! Conversion
@@ -695,9 +691,11 @@ if (model%ntile>1) then
    do img=1,model%nmg
       if (model%mg_to_tile(img)==model%mytile) then
          imgt = imgt+1
-         model%mgt_to_proc(imgt) = model%mg_to_proc(img)
-         model%mgt_to_mga(imgt) = model%mg_to_mga(img)
          model%mgt_to_mg(imgt) = img
+         if (model%mg_to_proc(img)==mpl%myproc) then
+            imga = model%mg_to_mga(img)
+            model%mga_to_mgt(imga) = imgt
+         end if
       end if
    end do
 end if
@@ -753,7 +751,7 @@ if (trim(nam%model)=='wrf') call model%wrf_read(mpl,nam,filename,its,fld_mga)
 do iv=1,nam%nv
    ! Create field
    fieldname = trim(nam%variables(iv))//'_'//trim(nam%timeslots(its))
-   afield = model%afunctionspace%create_field(name=trim(fieldname),kind=atlas_real(kind_real),levels=model%nl0)
+   afield = model%afunctionspace%create_field(name=fieldname,kind=atlas_real(kind_real),levels=model%nl0)
 
    ! Add field
    call afieldset%add(afield)
@@ -790,7 +788,7 @@ afieldset = atlas_fieldset()
 
 do its=1,nam%nts
    ! Define filename
-   write(fullname,'(a,i4.4)') trim(filename)//'_'//trim(nam%timeslots(its))//'_',ie
+   write(fullname,'(a,i6.6)') trim(filename)//'_'//trim(nam%timeslots(its))//'_',ie
 
    ! Read file
    call model%read(mpl,nam,fullname,its,afieldset)
@@ -846,7 +844,7 @@ do isub=1,nsub
 
    ! Loop over members for a given sub-ensemble
    do ie_sub=1,ne/nsub
-      write(mpl%info,'(i4)') ie_sub
+      write(mpl%info,'(i6)') ie_sub
       call mpl%flush(.false.)
 
       ! Read member

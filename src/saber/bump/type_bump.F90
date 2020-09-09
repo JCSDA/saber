@@ -9,7 +9,7 @@ module type_bump
 
 use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
-use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: create_atlas_fieldset,create_atlas_function_space,atlas_to_fld,fld_to_atlas
 use tools_const, only: req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
@@ -167,8 +167,7 @@ end subroutine bump_create
 ! Subroutine: bump_setup
 ! Purpose: setup
 !----------------------------------------------------------------------
-subroutine bump_setup(bump,f_comm,afunctionspace,afieldset, &
-                    & nobs,lonobs,latobs,lunit,msvali,msvalr)
+subroutine bump_setup(bump,f_comm,afunctionspace,afieldset,nobs,lonobs,latobs,lunit,msvali,msvalr)
 
 implicit none
 
@@ -185,8 +184,7 @@ integer,intent(in),optional :: msvali                  ! Missing value for integ
 real(kind_real),intent(in),optional :: msvalr          ! Missing value for reals
 
 ! Local variables
-integer :: lmsvali,iv,its
-real(kind_real) :: lmsvalr
+integer :: iv,its
 real(kind_real),allocatable :: fld_uv(:,:)
 real(kind_real),pointer :: real_ptr(:,:)
 character(len=1024) :: fieldname
@@ -277,7 +275,7 @@ write(bump%mpl%info,'(a)') '----------------------------------------------------
 call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- Initialize fields output'
 call bump%mpl%flush
-call bump%io%init(bump%mpl,bump%rng,bump%nam,bump%geom)
+call bump%io%init(bump%mpl,bump%nam,bump%geom)
 if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
 ! Initialize block parameters
@@ -370,7 +368,7 @@ end subroutine bump_setup
 ! Purpose: online setup (deprecated)
 !----------------------------------------------------------------------
 subroutine bump_setup_online_deprecated(bump,f_comm,nmga,nl0,nv,nts,lon,lat,area,vunit,gmask,smask,ens1_ne,ens1_nsub, &
-                                      & ens2_ne,ens2_nsub,nobs,lonobs,latobs,lunit,msvali,msvalr)
+ & ens2_ne,ens2_nsub,nobs,lonobs,latobs,lunit,msvali,msvalr)
 
 implicit none
 
@@ -497,9 +495,8 @@ if (present(smask)) then
 end if
 
 ! BUMP setup
-call bump%setup(f_comm,afunctionspace,afieldset=afieldset, &
-              & nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
-              & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
+call bump%setup(f_comm,afunctionspace,afieldset=afieldset,nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
+ & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
 
 ! Deprecation warning
 call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
@@ -602,6 +599,7 @@ if (bump%nam%new_var) then
    write(bump%mpl%info,'(a)') '--- Run variance driver'
    call bump%mpl%flush
    call bump%var%run_var(bump%mpl,bump%rng,bump%nam,bump%geom,bump%ens1,bump%io)
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 elseif (bump%nam%load_var) then
    ! Read variance
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -620,7 +618,7 @@ if (bump%nam%new_hdiag) then
    if ((trim(bump%nam%method)=='hyb-rnd').or.(trim(bump%nam%method)=='dual-ens')) then
       if (allocated(bump%fld_uv)) then
          call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,ens2=bump%ens2, &
-       & fld_uv=bump%fld_uv)
+ & fld_uv=bump%fld_uv)
       else
          call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,ens2=bump%ens2)
       end if
@@ -695,7 +693,7 @@ if (bump%cmat%allocated.or.bump%nam%new_nicas) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Setup C matrix sampling'
    call bump%mpl%flush
-   call bump%cmat%setup_sampling(bump%nam,bump%geom,bump%bpar)
+   call bump%cmat%setup_sampling(bump%mpl,bump%nam,bump%geom,bump%bpar)
 
    if (bump%nam%write_cmat) then
       ! Write C matrix
@@ -751,7 +749,7 @@ elseif (bump%nam%load_obsop) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Read observation operator'
    call bump%mpl%flush
-   call bump%obsop%read(bump%mpl,bump%nam)
+   call bump%obsop%read(bump%mpl,bump%nam,bump%geom)
 end if
 
 if (bump%nam%new_obsop.or.bump%nam%load_obsop) then
@@ -781,7 +779,7 @@ integer,intent(in) :: ie                        ! Member index
 integer,intent(in) :: iens                      ! Ensemble number
 
 ! Local variables
-integer :: ic0a,il0,its,iv,nnonzero,nzero,nmask,nnonzero_tot,nzero_tot,nmask_tot
+integer :: its,iv,nnonzero,nzero,nmask,nnonzero_tot,nzero_tot,nmask_tot
 real(kind_real) :: norm,norm_tot,fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
 character(len=1024) :: filename,variables
@@ -819,16 +817,16 @@ do its=1,bump%nam%nts
 
       if (print_member) then
          ! Print norm
-         norm = sum(fld_c0a**2,mask=bump%geom%mask_c0a)
+         norm = sum(fld_c0a**2,mask=bump%geom%gmask_c0a)
          call bump%mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
          write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Local norm for variable ',iv,' and timeslot ',its,': ',norm
          call bump%mpl%flush
          write(bump%mpl%info,'(a10,a,i2,a,i2,a,e9.2)') '','Global norm for variable ',iv,' and timeslot ',its,': ',norm_tot
          call bump%mpl%flush
          if (bump%geom%nc0a>0) then
-            nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%mask_c0a)
-            nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%mask_c0a)
-            nmask = count(.not.bump%geom%mask_c0a)
+            nnonzero = count((abs(fld_c0a)>0.0).and.bump%geom%gmask_c0a)
+            nzero = count((.not.(abs(fld_c0a)>0.0)).and.bump%geom%gmask_c0a)
+            nmask = count(.not.bump%geom%gmask_c0a)
          else
             nnonzero = 0
             nzero = 0
@@ -838,16 +836,16 @@ do its=1,bump%nam%nts
          call bump%mpl%f_comm%allreduce(nzero,nzero_tot,fckit_mpi_sum())
          call bump%mpl%f_comm%allreduce(nmask,nmask_tot,fckit_mpi_sum())
          write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Local total / non-zero / zero / masked points: ', &
-       & bump%geom%nc0a*bump%geom%nl0,' / ',nnonzero,' / ',nzero,' / ',nmask
+ & bump%geom%nc0a*bump%geom%nl0,' / ',nnonzero,' / ',nzero,' / ',nmask
          call bump%mpl%flush
          write(bump%mpl%info,'(a10,a,i8,a,i8,a,i8,a,i8)') '','Global total / non-zero / zero / masked points: ', &
-       & bump%geom%nc0*bump%geom%nl0,' / ',nnonzero_tot,' / ',nzero_tot,' / ',nmask_tot
+ & bump%geom%nc0*bump%geom%nl0,' / ',nnonzero_tot,' / ',nzero_tot,' / ',nmask_tot
          call bump%mpl%flush
       end if
 
       if (write_member) then
          ! Write member
-         write(filename,'(a,a,i4.4,a,i4.4)') trim(bump%nam%prefix),'_member_',iens,'-',ie
+         write(filename,'(a,a,i6.6,a,i6.6)') trim(bump%nam%prefix),'_member_',iens,'-',ie
          variables = trim(bump%nam%variables(iv))//'_'//trim(bump%nam%timeslots(its))
          call bump%io%fld_write(bump%mpl,bump%nam,bump%geom,filename,variables,fld_c0a)
       end if
@@ -1886,7 +1884,7 @@ end select
 
 ! Select parameter from ens1u
 if (param(1:min(6,len(param)))=='ens1u_') then
-   read(param(7:10),'(i4.4)') ie
+   read(param(7:12),'(i6.6)') ie
    if (ie>size(bump%ens1u%mem)) call bump%mpl%abort(subr,trim(param)//' has fewer members in bump%copy_to_field')
    iv = bump%bpar%b_to_v1(ib)
    its = bump%bpar%b_to_ts1(ib)
@@ -2111,7 +2109,7 @@ case ('cor_rh')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_rh(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
+ & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
       end do
    end do
 case ('cor_rv')
@@ -2126,7 +2124,7 @@ case ('loc_rh')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_rh(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
+ & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
       end do
    end do
 case ('loc_rv')
@@ -2141,7 +2139,7 @@ case ('D11')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D11(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_D11(ic0a,il0) = bump%cmat%blk(ib)%bump_D11(ic0a,il0)/req**2
+ & bump%cmat%blk(ib)%bump_D11(ic0a,il0) = bump%cmat%blk(ib)%bump_D11(ic0a,il0)/req**2
       end do
    end do
 case ('D22')
@@ -2150,7 +2148,7 @@ case ('D22')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D22(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_D22(ic0a,il0) = bump%cmat%blk(ib)%bump_D22(ic0a,il0)/req**2
+ & bump%cmat%blk(ib)%bump_D22(ic0a,il0) = bump%cmat%blk(ib)%bump_D22(ic0a,il0)/req**2
       end do
    end do
 case ('D33')
@@ -2162,7 +2160,7 @@ case ('D12')
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
          if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D12(ic0a,il0))) &
-       & bump%cmat%blk(ib)%bump_D12(ic0a,il0) = bump%cmat%blk(ib)%bump_D12(ic0a,il0)/req**2
+ & bump%cmat%blk(ib)%bump_D12(ic0a,il0) = bump%cmat%blk(ib)%bump_D12(ic0a,il0)/req**2
       end do
    end do
 case ('Dcoef')
@@ -2186,21 +2184,25 @@ implicit none
 class(bump_type),intent(inout) :: bump ! BUMP
 
 ! Local variables
-integer :: iv,its
-real(kind_real),allocatable :: fld_c0(:,:),fld_c0a(:,:),fld_mga(:,:,:,:)
+integer :: iv,its,ic0a,ic0
+real(kind_real) :: hash_min,hash_max,hash_spread_inv
+real(kind_real),allocatable :: fld_c0a(:,:),fld_mga(:,:,:,:)
 type(atlas_fieldset) :: afieldset,afieldset_req,afieldset_reqsq,afieldset_vert,afieldset_vertsq
 
 ! Allocation
-allocate(fld_c0(bump%geom%nc0,bump%geom%nl0))
 allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0))
 allocate(fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts))
 
-! Random initialization
+! Initialization
+call bump%mpl%f_comm%allreduce(minval(bump%geom%hash_c0a),hash_min,fckit_mpi_min())
+call bump%mpl%f_comm%allreduce(maxval(bump%geom%hash_c0a),hash_max,fckit_mpi_max())
+hash_spread_inv = 1.0/(hash_max-hash_min)
 do its=1,bump%nam%nts
    do iv=1,bump%nam%nv
-      if (bump%mpl%main) call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0)
-      call bump%mpl%glb_to_loc(bump%geom%nl0,bump%geom%nc0,bump%geom%c0_to_proc,bump%geom%c0_to_c0a, &
-    & fld_c0,bump%geom%nc0a,fld_c0a)
+      do ic0a=1,bump%geom%nc0a
+         ic0 = bump%geom%c0a_to_c0(ic0a)
+         fld_c0a(ic0a,:) = max(min(1.0e-6_kind_real,(bump%geom%hash_c0a(ic0a)-hash_min)*hash_spread_inv),1.0-1.0e-6_kind_real)
+      end do
       call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga(:,:,iv,its))
    end do
 end do
@@ -2246,7 +2248,6 @@ elseif (bump%nam%check_set_param_lct) then
 end if
 
 ! Release memory
-deallocate(fld_c0)
 deallocate(fld_c0a)
 deallocate(fld_mga)
 call afieldset%final()

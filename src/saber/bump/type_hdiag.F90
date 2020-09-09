@@ -98,38 +98,12 @@ type(ens_type),intent(in) :: ens1                                           ! En
 type(ens_type),intent(in),optional :: ens2                                  ! Ensemble 2
 real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
 
-! Compute sampling, subset Sc1
+! Setup sampling, first step
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
+write(mpl%info,'(a)') '--- Setup sampling, first step'
 call mpl%flush
-hdiag%samp%name = 'hdiag'
-call hdiag%samp%compute_sampling_c1(mpl,rng,nam,geom,ens1)
-
-! Compute MPI distribution, halo A
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Compute MPI distribution, halos A'
-call mpl%flush
-call hdiag%samp%compute_mpi_a(mpl,nam,geom)
-
-if (hdiag%samp%sc2) then
-   ! Compute sampling, subset Sc2
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a,i5,a)') '--- Compute sampling, subset Sc2 (nc2 = ',nam%nc2,')'
-   call mpl%flush
-   call hdiag%samp%compute_sampling_c2(mpl,rng,nam,geom)
-
-   ! Compute MPI distribution, halos A-B
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Compute MPI distribution, halos A-B'
-   call mpl%flush
-   call hdiag%samp%compute_mpi_ab(mpl,rng,nam,geom)
-else
-   hdiag%samp%nc2a = 0
-end if
+call hdiag%samp%setup('hdiag',mpl,rng,nam,geom,ens1)
 
 if (nam%adv_diag) then
    ! Compute advection diagnostic
@@ -144,43 +118,12 @@ if (nam%adv_diag) then
    end if
 end if
 
-! Compute MPI distribution, halo C
+! Setup sampling, second step
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Compute MPI distribution, halo C'
+write(mpl%info,'(a)') '--- Setup sampling, second step'
 call mpl%flush
-call hdiag%samp%compute_mpi_c(mpl,rng,nam,geom)
-
-if (nam%local_diag) then
-   ! Compute MPI distribution, halos D
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Compute MPI distribution, halo D'
-   call mpl%flush
-   call hdiag%samp%compute_mpi_d(mpl,nam,geom)
-end if
-
-if ((nam%local_diag.or.nam%adv_diag).and.(nam%diag_rhflt>0.0)) then
-   ! Compute MPI distribution, halo F
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Compute MPI distribution, halo F'
-   call mpl%flush
-   call hdiag%samp%compute_mpi_f(mpl,nam)
-end if
-
-! Write sampling data
-if (nam%sam_write) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Write sampling data'
-   call mpl%flush
-   if (mpl%main) call hdiag%samp%write(mpl,nam,geom)
-   if (nam%sam_write_grids) call hdiag%samp%write_grids(mpl,nam,geom)
-end if
-
-! Release memory (partial)
-call hdiag%samp%partial_dealloc
+call hdiag%samp%setup(mpl,rng,nam,geom)
 
 if (nam%new_mom) then
    ! Compute sample moments
@@ -302,7 +245,7 @@ call mpl%flush
 ! Compute ensemble 1 covariance
 write(mpl%info,'(a7,a)') '','Ensemble 1:'
 call mpl%flush
-call hdiag%cov_1%covariance(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'cov')
+call hdiag%cov_1%covariance(mpl,nam,geom,bpar,hdiag%samp,hdiag%avg_1,'cov')
 
 select case (trim(nam%method))
 case ('hyb-avg','hyb-rnd','dual-ens')
@@ -311,9 +254,9 @@ case ('hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    select case (trim(nam%method))
    case ('hyb-avg','hyb-rnd')
-      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cov_sta')
+      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,hdiag%samp,hdiag%avg_2,'cov_sta')
    case ('dual-ens')
-      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cov_lr')
+      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,hdiag%samp,hdiag%avg_2,'cov_lr')
    end select
 end select
 

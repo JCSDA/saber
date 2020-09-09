@@ -12,7 +12,7 @@ use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
 use fckit_log_module, only: fckit_log
 use netcdf
 !$ use omp_lib
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_real,nc_kind_real
 use type_msv, only: msv_type
 
 implicit none
@@ -71,29 +71,32 @@ contains
    procedure :: mpl_dot_prod_3d
    procedure :: mpl_dot_prod_4d
    generic :: dot_prod => mpl_dot_prod_1d,mpl_dot_prod_2d,mpl_dot_prod_3d,mpl_dot_prod_4d
-   procedure :: split_loop => mpl_split_loop
-   procedure :: mpl_share_integer_1d
-   procedure :: mpl_share_integer_2d
-   procedure :: mpl_share_real_1d
-   procedure :: mpl_share_real_4d
-   procedure :: mpl_share_logical_1d
-   procedure :: mpl_share_logical_3d
-   procedure :: mpl_share_logical_4d
-   generic :: share => mpl_share_integer_1d,mpl_share_integer_2d,mpl_share_real_1d,mpl_share_real_4d, &
-                     & mpl_share_logical_1d,mpl_share_logical_3d,mpl_share_logical_4d
    procedure :: glb_to_loc_index => mpl_glb_to_loc_index
+   procedure :: mpl_glb_to_loc_integer_1d
+   procedure :: mpl_glb_to_loc_integer_2d
    procedure :: mpl_glb_to_loc_real_1d
    procedure :: mpl_glb_to_loc_real_2d
-   generic :: glb_to_loc => mpl_glb_to_loc_real_1d,mpl_glb_to_loc_real_2d
+   procedure :: mpl_glb_to_loc_logical_1d
+   procedure :: mpl_glb_to_loc_logical_2d
+   generic :: glb_to_loc => mpl_glb_to_loc_integer_1d,mpl_glb_to_loc_integer_2d,mpl_glb_to_loc_real_1d,mpl_glb_to_loc_real_2d, &
+                          & mpl_glb_to_loc_logical_1d,mpl_glb_to_loc_logical_2d
+   procedure :: mpl_loc_to_glb_integer_1d
+   procedure :: mpl_loc_to_glb_integer_2d
    procedure :: mpl_loc_to_glb_real_1d
    procedure :: mpl_loc_to_glb_real_2d
    procedure :: mpl_loc_to_glb_logical_1d
    procedure :: mpl_loc_to_glb_logical_2d
-   generic :: loc_to_glb => mpl_loc_to_glb_real_1d,mpl_loc_to_glb_real_2d,mpl_loc_to_glb_logical_1d,mpl_loc_to_glb_logical_2d
+   generic :: loc_to_glb => mpl_loc_to_glb_integer_1d,mpl_loc_to_glb_integer_2d,mpl_loc_to_glb_real_1d,mpl_loc_to_glb_real_2d, &
+                          & mpl_loc_to_glb_logical_1d,mpl_loc_to_glb_logical_2d
    procedure :: prog_init => mpl_prog_init
    procedure :: prog_print => mpl_prog_print
    procedure :: prog_final => mpl_prog_final
-   procedure :: ncdimcheck => mpl_ncdimcheck
+   procedure :: nc_file_create_or_open => mpl_nc_file_create_or_open
+   procedure :: nc_group_define_or_get => mpl_nc_group_define_or_get
+   procedure :: nc_dim_define_or_get => mpl_nc_dim_define_or_get
+   procedure :: nc_dim_inquire => mpl_nc_dim_inquire
+   procedure :: nc_dim_check => mpl_nc_dim_check
+   procedure :: nc_var_define_or_get => mpl_nc_var_define_or_get
    procedure :: ncerr => mpl_ncerr
    procedure :: mpl_write_integer
    procedure :: mpl_write_integer_array
@@ -240,14 +243,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%info(trim(mpl%info))
+            call fckit_log%info(mpl%info)
          else
             write(mpl%lunit,'(a)') trim(mpl%info)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%info(trim(mpl%info),newl=.false.)
+            call fckit_log%info(mpl%info,newl=.false.)
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%info)
             call flush(mpl%lunit)
@@ -541,544 +544,132 @@ call mpl%f_comm%broadcast(dp,mpl%rootproc-1)
 end subroutine mpl_dot_prod_4d
 
 !----------------------------------------------------------------------
-! Subroutine: mpl_split_loop
-! Purpose: split loop over different MPI tasks
-!----------------------------------------------------------------------
-subroutine mpl_split_loop(mpl,n,n_loc)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(in) :: mpl         ! MPI data
-integer,intent(in) :: n                   ! Total array size
-integer,intent(out) :: n_loc(0:mpl%nproc) ! Local array size
-
-! Local variable
-integer :: iproc,nres,delta
-integer :: i_s,i_e
-
-! MPI splitting
-n_loc(0) = 0
-nres = n
-i_e = 0
-do iproc=1,mpl%nproc
-   i_s = i_e+1
-   delta = n/mpl%nproc
-   if (nres>(mpl%nproc-iproc+1)*delta) delta = delta+1
-   i_e = i_s+delta-1
-   n_loc(iproc) = delta
-   nres = nres-delta
-end do
-
-end subroutine mpl_split_loop
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_share_integer_1d
-! Purpose: share integer array over different MPI tasks, 1d
-!----------------------------------------------------------------------
-subroutine mpl_share_integer_1d(mpl,n1,n1_loc,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: n1                  ! Global array size
-integer,intent(in) :: n1_loc(0:mpl%nproc) ! Local array size
-integer,intent(inout) :: var(n1)          ! Integer array, 1d
-
-! Local variable
-integer :: iproc
-integer :: sendcount,recvcounts(mpl%nproc),displs(mpl%nproc)
-integer,allocatable :: sbuf(:)
-
-! Dimensions
-sendcount = n1_loc(mpl%myproc)
-recvcounts = n1_loc(1:mpl%nproc)
-do iproc=1,mpl%nproc
-   displs(iproc) = sum(n1_loc(0:iproc-1))
-end do
-
-! Allocation
-allocate(sbuf(sendcount))
-
-! Prepare buffer
-sbuf = var(sum(n1_loc(0:mpl%myproc-1))+1:sum(n1_loc(0:mpl%myproc)))
-
-! Gather data
-call mpl%f_comm%allgather(sbuf,var,sendcount,recvcounts,displs)
-
-end subroutine mpl_share_integer_1d
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_share_integer_2d
-! Purpose: share integer array over different MPI tasks, 2d
-!----------------------------------------------------------------------
-subroutine mpl_share_integer_2d(mpl,n1,n2,n1_loc,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: n1                  ! Global array size 1
-integer,intent(in) :: n2                  ! Global array size 2
-integer,intent(in) :: n1_loc(0:mpl%nproc) ! Local array size 1
-integer,intent(inout) :: var(n1,n2)       ! Integer array, 2d
-
-! Local variable
-integer :: iproc,i1,i2,i1_loc,i
-integer :: sendcount,recvcounts(mpl%nproc),displs(mpl%nproc)
-integer,allocatable :: rbuf(:),sbuf(:)
-
-! Dimensions
-sendcount = n1_loc(mpl%myproc)*n2
-recvcounts = n1_loc(1:mpl%nproc)*n2
-do iproc=1,mpl%nproc
-   displs(iproc) = sum(n1_loc(0:iproc-1))*n2
-end do
-
-! Allocation
-allocate(sbuf(sendcount))
-allocate(rbuf(n1*n2))
-
-! Prepare buffer
-i = 0
-do i2=1,n2
-   do i1_loc=1,n1_loc(mpl%myproc)
-      i1 = sum(n1_loc(0:mpl%myproc-1))+i1_loc
-      i = i+1
-      sbuf(i) = var(i1,i2)
-   end do
-end do
-
-! Gather data
-call mpl%f_comm%allgather(sbuf,rbuf,sendcount,recvcounts,displs)
-
-! Format data
-i = 0
-do iproc=1,mpl%nproc
-   do i2=1,n2
-      do i1_loc=1,n1_loc(iproc)
-         i1 = sum(n1_loc(0:iproc-1))+i1_loc
-         i = i+1
-         var(i1,i2) = rbuf(i)
-      end do
-   end do
-end do
-
-end subroutine mpl_share_integer_2d
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_share_real_1d
-! Purpose: share real array over different MPI tasks, 1d
-!----------------------------------------------------------------------
-subroutine mpl_share_real_1d(mpl,n1,n1_loc,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: n1                  ! Global array size
-integer,intent(in) :: n1_loc(0:mpl%nproc) ! Local array size
-real(kind_real),intent(inout) :: var(n1)  ! Real array, 1d
-
-! Local variable
-integer :: iproc
-integer :: sendcount,recvcounts(mpl%nproc),displs(mpl%nproc)
-real(kind_real),allocatable :: sbuf(:)
-
-! Dimensions
-sendcount = n1_loc(mpl%myproc)
-recvcounts = n1_loc(1:mpl%nproc)
-do iproc=1,mpl%nproc
-   displs(iproc) = sum(n1_loc(0:iproc-1))
-end do
-
-! Allocation
-allocate(sbuf(sendcount))
-
-! Prepare buffer
-sbuf = var(sum(n1_loc(0:mpl%myproc-1))+1:sum(n1_loc(0:mpl%myproc)))
-
-! Gather data
-call mpl%f_comm%allgather(sbuf,var,sendcount,recvcounts,displs)
-
-end subroutine mpl_share_real_1d
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_share_real_4d
-! Purpose: share real array over different MPI tasks, 4d
-!----------------------------------------------------------------------
-subroutine mpl_share_real_4d(mpl,n1,n2,n3,n4,n1_loc,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl              ! MPI data
-integer,intent(in) :: n1                          ! Array size 1
-integer,intent(in) :: n2                          ! Array size 2
-integer,intent(in) :: n3                          ! Array size 3
-integer,intent(in) :: n4                          ! Array size 4
-integer,intent(in) :: n1_loc(0:mpl%nproc)         ! Local array size 1
-real(kind_real),intent(inout) :: var(n1,n2,n3,n4) ! Real array, 4d
-
-! Local variable
-integer :: iproc,i1,i2,i3,i4,i1_loc,i
-integer :: sendcount,recvcounts(mpl%nproc),displs(mpl%nproc)
-real(kind_real),allocatable :: rbuf(:),sbuf(:)
-
-! Dimensions
-sendcount = n1_loc(mpl%myproc)*n2*n3*n4
-recvcounts = n1_loc(1:mpl%nproc)*n2*n3*n4
-do iproc=1,mpl%nproc
-   displs(iproc) = sum(n1_loc(0:iproc-1))*n2*n3*n4
-end do
-
-! Allocation
-allocate(sbuf(sendcount))
-allocate(rbuf(n1*n2*n3*n4))
-
-! Prepare buffer
-i = 0
-do i4=1,n4
-   do i3=1,n3
-      do i2=1,n2
-         do i1_loc=1,n1_loc(mpl%myproc)
-            i1 = sum(n1_loc(0:mpl%myproc-1))+i1_loc
-            i = i+1
-            sbuf(i) = var(i1,i2,i3,i4)
-         end do
-      end do
-   end do
-end do
-
-! Gather data
-call mpl%f_comm%allgather(sbuf,rbuf,sendcount,recvcounts,displs)
-
-! Format data
-i = 0
-do iproc=1,mpl%nproc
-   do i4=1,n4
-      do i3=1,n3
-         do i2=1,n2
-            do i1_loc=1,n1_loc(iproc)
-               i1 = sum(n1_loc(0:iproc-1))+i1_loc
-               i = i+1
-               var(i1,i2,i3,i4) = rbuf(i)
-            end do
-         end do
-      end do
-   end do
-end do
-
-end subroutine mpl_share_real_4d
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_share_logical_1d
-! Purpose: share logical array over different MPI tasks, 1d
-!----------------------------------------------------------------------
-subroutine mpl_share_logical_1d(mpl,n1,n1_loc,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: n1                  ! Global array size
-integer,intent(in) :: n1_loc(0:mpl%nproc) ! Local array size
-logical,intent(inout) :: var(n1)          ! Logical array, 1d
-
-! Local variable
-integer :: iproc,i1_loc,i1
-integer :: sendcount,recvcounts(mpl%nproc),displs(mpl%nproc)
-integer,allocatable :: sbuf(:),rbuf(:)
-character(len=1024),parameter :: subr = 'mpl_share_logical_1d'
-
-! Dimensions
-sendcount = n1_loc(mpl%myproc)
-recvcounts = n1_loc(1:mpl%nproc)
-do iproc=1,mpl%nproc
-   displs(iproc) = sum(n1_loc(0:iproc-1))
-end do
-
-! Allocation
-allocate(sbuf(sendcount))
-allocate(rbuf(n1))
-
-! Prepare buffer
-do i1_loc=1,n1_loc(mpl%myproc)
-   i1 = sum(n1_loc(0:mpl%myproc-1))+i1_loc
-   if (var(i1)) then
-      sbuf(i1_loc) = 1
-   else
-      sbuf(i1_loc) = 0
-   end if
-end do
-
-! Gather data
-call mpl%f_comm%allgather(sbuf,rbuf,sendcount,recvcounts,displs)
-
-! Format data
-do i1=1,n1
-   if (rbuf(i1)==0) then
-      var(i1) = .false.
-   elseif (rbuf(i1)==1) then
-      var(i1) = .true.
-   else
-      call mpl%abort(subr,'wrong value for received buffer in mpl_share_logical_1d')
-   end if
-end do
-
-end subroutine mpl_share_logical_1d
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_share_logical_3d
-! Purpose: share logical array over different MPI tasks, 3d
-!----------------------------------------------------------------------
-subroutine mpl_share_logical_3d(mpl,n1,n2,n3,n1_loc,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: n1                  ! Array size 1
-integer,intent(in) :: n2                  ! Array size 2
-integer,intent(in) :: n3                  ! Array size 3
-integer,intent(in) :: n1_loc(0:mpl%nproc) ! Local array size 1
-logical,intent(inout) :: var(n1,n2,n3)    ! Logical array, 3d
-
-! Local variable
-integer :: iproc,i1,i2,i3,i1_loc,i
-integer :: sendcount,recvcounts(mpl%nproc),displs(mpl%nproc)
-integer,allocatable :: rbuf(:),sbuf(:)
-character(len=1024),parameter :: subr = 'mpl_share_logical_3d'
-
-! Dimensions
-sendcount = n1_loc(mpl%myproc)*n2*n3
-recvcounts = n1_loc(1:mpl%nproc)*n2*n3
-do iproc=1,mpl%nproc
-   displs(iproc) = sum(n1_loc(0:iproc-1))*n2*n3
-end do
-
-! Allocation
-allocate(sbuf(sendcount))
-allocate(rbuf(n1*n2*n3))
-
-! Prepare buffer
-i = 0
-do i3=1,n3
-   do i2=1,n2
-      do i1_loc=1,n1_loc(mpl%myproc)
-         i1 = sum(n1_loc(0:mpl%myproc-1))+i1_loc
-         i = i+1
-         if (var(i1,i2,i3)) then
-            sbuf(i) = 1
-         else
-            sbuf(i) = 0
-         end if
-      end do
-   end do
-end do
-
-! Gather data
-call mpl%f_comm%allgather(sbuf,rbuf,sendcount,recvcounts,displs)
-
-! Format data
-i = 0
-do iproc=1,mpl%nproc
-   do i3=1,n3
-      do i2=1,n2
-         do i1_loc=1,n1_loc(iproc)
-            i1 = sum(n1_loc(0:iproc-1))+i1_loc
-            i = i+1
-            if (rbuf(i)==0) then
-               var(i1,i2,i3) = .false.
-            elseif (rbuf(i)==1) then
-               var(i1,i2,i3) = .true.
-            else
-               call mpl%abort(subr,'wrong value for received buffer in mpl_share_logical_3d')
-            end if
-         end do
-      end do
-   end do
-end do
-
-end subroutine mpl_share_logical_3d
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_share_logical_4d
-! Purpose: share logical array over different MPI tasks, 4d
-!----------------------------------------------------------------------
-subroutine mpl_share_logical_4d(mpl,n1,n2,n3,n4,n1_loc,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: n1                  ! Array size 1
-integer,intent(in) :: n2                  ! Array size 2
-integer,intent(in) :: n3                  ! Array size 3
-integer,intent(in) :: n4                  ! Array size 4
-integer,intent(in) :: n1_loc(0:mpl%nproc) ! Local array size 1
-logical,intent(inout) :: var(n1,n2,n3,n4) ! Logical array, 4d
-
-! Local variable
-integer :: iproc,i1,i2,i3,i4,i1_loc,i
-integer :: sendcount,recvcounts(mpl%nproc),displs(mpl%nproc)
-integer,allocatable :: rbuf(:),sbuf(:)
-character(len=1024),parameter :: subr = 'mpl_share_logical_4d'
-
-! Dimensions
-sendcount = n1_loc(mpl%myproc)*n2*n3*n4
-recvcounts = n1_loc(1:mpl%nproc)*n2*n3*n4
-do iproc=1,mpl%nproc
-   displs(iproc) = sum(n1_loc(0:iproc-1))*n2*n3*n4
-end do
-
-! Allocation
-allocate(sbuf(sendcount))
-allocate(rbuf(n1*n2*n3*n4))
-
-! Prepare buffer
-i = 0
-do i4=1,n4
-   do i3=1,n3
-      do i2=1,n2
-         do i1_loc=1,n1_loc(mpl%myproc)
-            i1 = sum(n1_loc(0:mpl%myproc-1))+i1_loc
-            i = i+1
-            if (var(i1,i2,i3,i4)) then
-               sbuf(i) = 1
-            else
-               sbuf(i) = 0
-            end if
-         end do
-      end do
-   end do
-end do
-
-! Gather data
-call mpl%f_comm%allgather(sbuf,rbuf,sendcount,recvcounts,displs)
-
-! Format data
-i = 0
-do iproc=1,mpl%nproc
-   do i4=1,n4
-      do i3=1,n3
-         do i2=1,n2
-            do i1_loc=1,n1_loc(iproc)
-               i1 = sum(n1_loc(0:iproc-1))+i1_loc
-               i = i+1
-               if (rbuf(i)==0) then
-                  var(i1,i2,i3,i4) = .false.
-               elseif (rbuf(i)==1) then
-                  var(i1,i2,i3,i4) = .true.
-               else
-                  call mpl%abort(subr,'wrong value for received buffer in mpl_share_logical_4d')
-               end if
-            end do
-         end do
-      end do
-   end do
-end do
-
-end subroutine mpl_share_logical_4d
-
-!----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_index
 ! Purpose: communicate global index to local index
 !----------------------------------------------------------------------
-subroutine mpl_glb_to_loc_index(mpl,n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+subroutine mpl_glb_to_loc_index(mpl,n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc,rootproc,pool)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl               ! MPI data
-integer,intent(in) :: n_loc                        ! Local dimension
-integer,intent(in) :: loc_to_glb(n_loc)            ! Local to global index
-integer,intent(in) :: n_glb                        ! Global dimension
-integer,intent(out) :: glb_to_loc(n_glb)           ! Global to local index
-integer,intent(out),optional :: glb_to_proc(n_glb) ! Global to processor
+class(mpl_type),intent(inout) :: mpl           ! MPI data
+integer,intent(in) :: n_loc                    ! Local dimension
+integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global index
+integer,intent(in) :: n_glb                    ! Global dimension
+integer,intent(out) :: glb_to_loc(:)           ! Global to local index
+integer,intent(out) :: glb_to_proc(:)          ! Global to processor
+integer,intent(in),optional :: rootproc        ! Root task
+logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
 
 ! Local variables
-integer :: iproc,i_loc,n_loc_tmp
+integer :: iproc,i_loc,n_loc_tmp,lrootproc
 integer,allocatable :: loc_to_glb_tmp(:)
+logical :: lpool(mpl%nproc)
+character(len=1024),parameter :: subr = 'mpl_glb_to_loc_index'
 type(fckit_mpi_status) :: status
 
-if (mpl%main) then
+! Get local rootproc and pool
+lrootproc = mpl%rootproc
+if (present(rootproc)) lrootproc = rootproc
+lpool = .true.
+if (present(pool)) lpool = pool
+
+! Check global array size
+if (mpl%myproc==lrootproc) then
+   if (.not.lpool(lrootproc)) call mpl%abort(subr,'root task should be in the tasks pool')
+end if
+
+if (mpl%myproc==lrootproc) then
+   ! Check global array size
+   if (size(glb_to_loc)/=n_glb) call mpl%abort(subr,'wrong dimension for the glb_to_loc')
+   if (size(glb_to_proc)/=n_glb) call mpl%abort(subr,'wrong dimension for the glb_to_proc')
+
    ! Initialization
    glb_to_loc = mpl%msv%vali
-   if (present(glb_to_proc)) glb_to_proc = mpl%msv%vali
+   glb_to_proc = mpl%msv%vali
 
    do iproc=1,mpl%nproc
-      if (iproc==mpl%rootproc) then
-         ! Copy dimension
-         n_loc_tmp = n_loc
-      else
-         ! Receive dimension on rootproc
-         call mpl%f_comm%receive(n_loc_tmp,iproc-1,mpl%tag,status)
+      if (lpool(iproc)) then
+         if (iproc==lrootproc) then
+            ! Copy dimension
+            n_loc_tmp = n_loc
+         else
+            ! Receive dimension on rootproc
+            call mpl%f_comm%receive(n_loc_tmp,iproc-1,mpl%tag,status)
+         end if
+
+         ! Allocation
+         allocate(loc_to_glb_tmp(n_loc_tmp))
+
+         if (iproc==lrootproc) then
+            ! Copy data
+            loc_to_glb_tmp = loc_to_glb
+         else
+            ! Receive data on rootproc
+            call mpl%f_comm%receive(loc_to_glb_tmp,iproc-1,mpl%tag+1,status)
+         end if
+
+         ! Fill glb_to_loc and glb_to_proc if required
+         do i_loc=1,n_loc_tmp
+            glb_to_loc(loc_to_glb_tmp(i_loc)) = i_loc
+            glb_to_proc(loc_to_glb_tmp(i_loc)) = iproc
+         end do
+
+         ! Release memory
+         deallocate(loc_to_glb_tmp)
       end if
-
-      ! Allocation
-      allocate(loc_to_glb_tmp(n_loc_tmp))
-
-      if (iproc==mpl%rootproc) then
-         ! Copy data
-         loc_to_glb_tmp = loc_to_glb
-      else
-         ! Receive data on rootproc
-         call mpl%f_comm%receive(loc_to_glb_tmp,iproc-1,mpl%tag+1,status)
-      end if
-
-      ! Fill glb_to_loc and glb_to_proc if required
-      do i_loc=1,n_loc_tmp
-         glb_to_loc(loc_to_glb_tmp(i_loc)) = i_loc
-         if (present(glb_to_proc)) glb_to_proc(loc_to_glb_tmp(i_loc)) = iproc
-      end do
-
-      ! Release memory
-      deallocate(loc_to_glb_tmp)
    end do
 else
-   ! Send dimensions to rootproc
-   call mpl%f_comm%send(n_loc,mpl%rootproc-1,mpl%tag)
+   if (lpool(mpl%myproc)) then
+      ! Send dimensions to rootproc
+      call mpl%f_comm%send(n_loc,lrootproc-1,mpl%tag)
 
-   ! Send data to rootproc
-   call mpl%f_comm%send(loc_to_glb,mpl%rootproc-1,mpl%tag+1)
+      ! Send data to rootproc
+      call mpl%f_comm%send(loc_to_glb,lrootproc-1,mpl%tag+1)
+   end if
 end if
 call mpl%update_tag(2)
-
-! Broadcast
-call mpl%f_comm%broadcast(glb_to_loc,mpl%rootproc-1)
-if (present(glb_to_proc)) call mpl%f_comm%broadcast(glb_to_proc,mpl%rootproc-1)
 
 end subroutine mpl_glb_to_loc_index
 
 !----------------------------------------------------------------------
-! Subroutine: mpl_glb_to_loc_real_1d
+! Subroutine: mpl_glb_to_loc_integer_1d
 ! Purpose: global to local, 1d array
 !----------------------------------------------------------------------
-subroutine mpl_glb_to_loc_real_1d(mpl,n_glb,glb_to_proc,glb_to_loc,glb,n_loc,loc)
+subroutine mpl_glb_to_loc_integer_1d(mpl,n_loc,n_glb,loc_to_glb,glb,loc)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: n_glb               ! Global array size
-integer,intent(in) :: glb_to_proc(n_glb)  ! Global index to task index
-integer,intent(in) :: glb_to_loc(n_glb)   ! Global index to local index
-real(kind_real),intent(in) :: glb(:)      ! Global array
-integer,intent(in) :: n_loc               ! Local array size
-real(kind_real),intent(out) :: loc(n_loc) ! Local array
+class(mpl_type),intent(inout) :: mpl    ! MPI data
+integer,intent(in) :: n_loc             ! Local array size
+integer,intent(in) :: n_glb             ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
+integer,intent(in) :: glb(:)            ! Global array
+integer,intent(out) :: loc(n_loc)       ! Local array
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
-real(kind_real),allocatable :: sbuf(:)
-character(len=1024),parameter :: subr = 'mpl_glb_to_loc_real_1d'
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:),sbuf(:)
+character(len=1024),parameter :: subr = 'mpl_glb_to_loc_integer_1d'
 type(fckit_mpi_status) :: status
 
 ! Check global array size
 if (mpl%main) then
-   if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_glb_to_loc_real_1d')
+   if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_glb_to_loc_integer_1d')
 end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
 
 if (mpl%main) then
    do iproc=1,mpl%nproc
@@ -1112,33 +703,36 @@ else
 end if
 call mpl%update_tag(1)
 
-end subroutine mpl_glb_to_loc_real_1d
+! Release memory
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+end subroutine mpl_glb_to_loc_integer_1d
 
 !----------------------------------------------------------------------
-! Subroutine: mpl_glb_to_loc_real_2d
+! Subroutine: mpl_glb_to_loc_integer_2d
 ! Purpose: global to local, 2d array
 !----------------------------------------------------------------------
-subroutine mpl_glb_to_loc_real_2d(mpl,nl,n_glb,glb_to_proc,glb_to_loc,glb,n_loc,loc,rootproc,pool)
+subroutine mpl_glb_to_loc_integer_2d(mpl,nl,n_loc,n_glb,loc_to_glb,glb,loc,rootproc,pool)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl           ! MPI data
 integer,intent(in) :: nl                       ! Number of levels
-integer,intent(in) :: n_glb                    ! Global array size
-integer,intent(in) :: glb_to_proc(n_glb)       ! Global index to task index
-integer,intent(in) :: glb_to_loc(n_glb)        ! Global index to local index
-real(kind_real),intent(in) :: glb(:,:)         ! Global array
 integer,intent(in) :: n_loc                    ! Local array size
-real(kind_real),intent(out) :: loc(n_loc,nl)   ! Local array
+integer,intent(in) :: n_glb                    ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global
+integer,intent(in) :: glb(:,:)                 ! Global array
+integer,intent(out) :: loc(n_loc,nl)           ! Local array
 integer,intent(in),optional :: rootproc        ! Root task
 logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il,lrootproc
-real(kind_real),allocatable :: sbuf(:),rbuf(:)
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:),sbuf(:),rbuf(:)
 logical :: lpool(mpl%nproc)
-character(len=1024),parameter :: subr = 'mpl_glb_to_loc_real_2d'
+character(len=1024),parameter :: subr = 'mpl_glb_to_loc_integer_2d'
 type(fckit_mpi_status) :: status
 
 ! Get local rootproc and pool
@@ -1150,9 +744,21 @@ if (present(pool)) lpool = pool
 ! Check global array size
 if (mpl%myproc==lrootproc) then
    if (.not.lpool(lrootproc)) call mpl%abort(subr,'root task should be in the tasks pool')
-   if (size(glb,1)/=n_glb) call mpl%abort(subr,'wrong first dimension for the global array in mpl_glb_to_loc_real_2d')
-   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_glb_to_loc_real_2d')
+   if (size(glb,1)/=n_glb) call mpl%abort(subr,'wrong first dimension for the global array in mpl_glb_to_loc_integer_2d')
+   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_glb_to_loc_integer_2d')
 end if
+
+! Allocation
+if (mpl%myproc==lrootproc) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
 
 if (lpool(mpl%myproc)) then
    ! Allocation
@@ -1208,37 +814,433 @@ end if
 
 ! Release memory
 deallocate(rbuf)
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+end subroutine mpl_glb_to_loc_integer_2d
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_glb_to_loc_real_1d
+! Purpose: global to local, 1d array
+!----------------------------------------------------------------------
+subroutine mpl_glb_to_loc_real_1d(mpl,n_loc,n_glb,loc_to_glb,glb,loc)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl      ! MPI data
+integer,intent(in) :: n_loc               ! Local array size
+integer,intent(in) :: n_glb               ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc)   ! Local to global
+real(kind_real),intent(in) :: glb(:)      ! Global array
+real(kind_real),intent(out) :: loc(n_loc) ! Local array
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+real(kind_real),allocatable :: sbuf(:)
+character(len=1024),parameter :: subr = 'mpl_glb_to_loc_real_1d'
+type(fckit_mpi_status) :: status
+
+! Check global array size
+if (mpl%main) then
+   if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_glb_to_loc_real_1d')
+end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+
+if (mpl%main) then
+   do iproc=1,mpl%nproc
+      ! Allocation
+      n_loc_tmp = count(glb_to_proc==iproc)
+      allocate(sbuf(n_loc_tmp))
+
+      ! Prepare buffers
+      do i_glb=1,n_glb
+         jproc = glb_to_proc(i_glb)
+         if (iproc==jproc) then
+            i_loc = glb_to_loc(i_glb)
+            sbuf(i_loc) = glb(i_glb)
+         end if
+      end do
+
+      if (iproc==mpl%rootproc) then
+         ! Copy data
+         loc = sbuf
+      else
+         ! Send data to iproc
+         call mpl%f_comm%send(sbuf,iproc-1,mpl%tag)
+      end if
+
+      ! Release memory
+      deallocate(sbuf)
+   end do
+else
+   ! Receive data from rootproc
+   call mpl%f_comm%receive(loc,mpl%rootproc-1,mpl%tag,status)
+end if
+call mpl%update_tag(1)
+
+! Release memory
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+end subroutine mpl_glb_to_loc_real_1d
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_glb_to_loc_real_2d
+! Purpose: global to local, 2d array
+!----------------------------------------------------------------------
+subroutine mpl_glb_to_loc_real_2d(mpl,nl,n_loc,n_glb,loc_to_glb,glb,loc,rootproc,pool)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl           ! MPI data
+integer,intent(in) :: nl                       ! Number of levels
+integer,intent(in) :: n_loc                    ! Local array size
+integer,intent(in) :: n_glb                    ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global
+real(kind_real),intent(in) :: glb(:,:)         ! Global array
+real(kind_real),intent(out) :: loc(n_loc,nl)   ! Local array
+integer,intent(in),optional :: rootproc        ! Root task
+logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il,lrootproc
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+real(kind_real),allocatable :: sbuf(:),rbuf(:)
+logical :: lpool(mpl%nproc)
+character(len=1024),parameter :: subr = 'mpl_glb_to_loc_real_2d'
+type(fckit_mpi_status) :: status
+
+! Get local rootproc and pool
+lrootproc = mpl%rootproc
+if (present(rootproc)) lrootproc = rootproc
+lpool = .true.
+if (present(pool)) lpool = pool
+
+! Check global array size
+if (mpl%myproc==lrootproc) then
+   if (.not.lpool(lrootproc)) call mpl%abort(subr,'root task should be in the tasks pool')
+   if (size(glb,1)/=n_glb) call mpl%abort(subr,'wrong first dimension for the global array in mpl_glb_to_loc_real_2d')
+   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_glb_to_loc_real_2d')
+end if
+
+! Allocation
+if (mpl%myproc==lrootproc) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc,rootproc,pool)
+
+if (lpool(mpl%myproc)) then
+   ! Allocation
+   allocate(rbuf(n_loc*nl))
+end if
+
+if (mpl%myproc==lrootproc) then
+   do iproc=1,mpl%nproc
+      if (lpool(iproc)) then
+         ! Allocation 
+         n_loc_tmp = count(glb_to_proc==iproc)
+         allocate(sbuf(n_loc_tmp*nl))
+
+         ! Prepare buffers
+         do i_glb=1,n_glb
+            jproc = glb_to_proc(i_glb)
+            if (iproc==jproc) then
+               i_loc = glb_to_loc(i_glb)
+               do il=1,nl
+                  sbuf((il-1)*n_loc_tmp+i_loc) = glb(i_glb,il)
+               end do
+            end if
+         end do
+
+         if (iproc==lrootproc) then
+            ! Copy data
+            rbuf = sbuf
+         else
+            ! Send data to iproc
+            call mpl%f_comm%send(sbuf,iproc-1,mpl%tag)
+         end if
+
+         ! Release memory
+         deallocate(sbuf)
+      end if
+   end do
+else
+   if (lpool(mpl%myproc)) then
+      ! Receive data from rootproc
+      call mpl%f_comm%receive(rbuf,lrootproc-1,mpl%tag,status)
+   end if
+end if
+call mpl%update_tag(1)
+
+if (lpool(mpl%myproc)) then
+   ! Unpack buffer
+   do il=1,nl
+      do i_loc=1,n_loc
+         loc(i_loc,il) = rbuf((il-1)*n_loc+i_loc)
+      end do
+   end do
+end if
+
+! Release memory
+deallocate(rbuf)
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
 
 end subroutine mpl_glb_to_loc_real_2d
 
 !----------------------------------------------------------------------
-! Subroutine: mpl_loc_to_glb_real_1d
-! Purpose: local to global, 1d array
+! Subroutine: mpl_glb_to_loc_logical_1d
+! Purpose: global to local, 1d array
 !----------------------------------------------------------------------
-subroutine mpl_loc_to_glb_real_1d(mpl,n_loc,loc,n_glb,glb_to_proc,glb_to_loc,bcast,glb)
+subroutine mpl_glb_to_loc_logical_1d(mpl,n_loc,n_glb,loc_to_glb,glb,loc)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl     ! MPI data
-integer,intent(in) :: n_loc              ! Local array size
-real(kind_real),intent(in) :: loc(n_loc) ! Local array
-integer,intent(in) :: n_glb              ! Global array size
-integer,intent(in) :: glb_to_proc(n_glb) ! Global index to task index
-integer,intent(in) :: glb_to_loc(n_glb)  ! Global index to local index
-logical,intent(in) :: bcast              ! Broadcast option
-real(kind_real),intent(out) :: glb(:)    ! Global array
+integer,intent(in) :: n_loc             ! Local array size
+integer,intent(in) :: n_glb             ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
+logical,intent(in) :: glb(:)            ! Global array
+logical,intent(out) :: loc(n_loc)       ! Local array
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
-real(kind_real),allocatable :: rbuf(:)
-character(len=1024),parameter :: subr = 'mpl_loc_to_glb_real_1d'
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+logical,allocatable :: sbuf(:)
+character(len=1024),parameter :: subr = 'mpl_glb_to_loc_logical_1d'
 type(fckit_mpi_status) :: status
 
 ! Check global array size
-if (mpl%main.or.bcast) then
-   if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_loc_to_glb_real_1d')
+if (mpl%main) then
+   if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_glb_to_loc_logical_1d')
 end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+
+if (mpl%main) then
+   do iproc=1,mpl%nproc
+      ! Allocation
+      n_loc_tmp = count(glb_to_proc==iproc)
+      allocate(sbuf(n_loc_tmp))
+
+      ! Prepare buffers
+      do i_glb=1,n_glb
+         jproc = glb_to_proc(i_glb)
+         if (iproc==jproc) then
+            i_loc = glb_to_loc(i_glb)
+            sbuf(i_loc) = glb(i_glb)
+         end if
+      end do
+
+      if (iproc==mpl%rootproc) then
+         ! Copy data
+         loc = sbuf
+      else
+         ! Send data to iproc
+         call mpl%f_comm%send(sbuf,iproc-1,mpl%tag)
+      end if
+
+      ! Release memory
+      deallocate(sbuf)
+   end do
+else
+   ! Receive data from rootproc
+   call mpl%f_comm%receive(loc,mpl%rootproc-1,mpl%tag,status)
+end if
+call mpl%update_tag(1)
+
+! Release memory
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+end subroutine mpl_glb_to_loc_logical_1d
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_glb_to_loc_logical_2d
+! Purpose: global to local, 2d array
+!----------------------------------------------------------------------
+subroutine mpl_glb_to_loc_logical_2d(mpl,nl,n_loc,n_glb,loc_to_glb,glb,loc,rootproc,pool)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl           ! MPI data
+integer,intent(in) :: nl                       ! Number of levels
+integer,intent(in) :: n_loc                    ! Local array size
+integer,intent(in) :: n_glb                    ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global
+logical,intent(in) :: glb(:,:)                 ! Global array
+logical,intent(out) :: loc(n_loc,nl)           ! Local array
+integer,intent(in),optional :: rootproc        ! Root task
+logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il,lrootproc
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+logical,allocatable :: sbuf(:),rbuf(:)
+logical :: lpool(mpl%nproc)
+character(len=1024),parameter :: subr = 'mpl_glb_to_loc_logical_2d'
+type(fckit_mpi_status) :: status
+
+! Get local rootproc and pool
+lrootproc = mpl%rootproc
+if (present(rootproc)) lrootproc = rootproc
+lpool = .true.
+if (present(pool)) lpool = pool
+
+! Check global array size
+if (mpl%myproc==lrootproc) then
+   if (.not.lpool(lrootproc)) call mpl%abort(subr,'root task should be in the tasks pool')
+   if (size(glb,1)/=n_glb) call mpl%abort(subr,'wrong first dimension for the global array in mpl_glb_to_loc_logical_2d')
+   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_glb_to_loc_logical_2d')
+end if
+
+! Allocation
+if (mpl%myproc==lrootproc) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+
+if (lpool(mpl%myproc)) then
+   ! Allocation
+   allocate(rbuf(n_loc*nl))
+end if
+
+if (mpl%myproc==lrootproc) then
+   do iproc=1,mpl%nproc
+      if (lpool(iproc)) then
+         ! Allocation 
+         n_loc_tmp = count(glb_to_proc==iproc)
+         allocate(sbuf(n_loc_tmp*nl))
+
+         ! Prepare buffers
+         do i_glb=1,n_glb
+            jproc = glb_to_proc(i_glb)
+            if (iproc==jproc) then
+               i_loc = glb_to_loc(i_glb)
+               do il=1,nl
+                  sbuf((il-1)*n_loc_tmp+i_loc) = glb(i_glb,il)
+               end do
+            end if
+         end do
+
+         if (iproc==lrootproc) then
+            ! Copy data
+            rbuf = sbuf
+         else
+            ! Send data to iproc
+            call mpl%f_comm%send(sbuf,iproc-1,mpl%tag)
+         end if
+
+         ! Release memory
+         deallocate(sbuf)
+      end if
+   end do
+else
+   if (lpool(mpl%myproc)) then
+      ! Receive data from rootproc
+      call mpl%f_comm%receive(rbuf,lrootproc-1,mpl%tag,status)
+   end if
+end if
+call mpl%update_tag(1)
+
+if (lpool(mpl%myproc)) then
+   ! Unpack buffer
+   do il=1,nl
+      do i_loc=1,n_loc
+         loc(i_loc,il) = rbuf((il-1)*n_loc+i_loc)
+      end do
+   end do
+end if
+
+! Release memory
+deallocate(rbuf)
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+end subroutine mpl_glb_to_loc_logical_2d
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_loc_to_glb_integer_1d
+! Purpose: local to global, 1d array
+!----------------------------------------------------------------------
+subroutine mpl_loc_to_glb_integer_1d(mpl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl    ! MPI data
+integer,intent(in) :: n_loc             ! Local array size
+integer,intent(in) :: n_glb             ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
+integer,intent(in) :: loc(n_loc)        ! Local array
+integer,intent(out) :: glb(:)           ! Global array
+logical,intent(in),optional :: bcast    ! Broadcast option
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:),rbuf(:)
+logical :: lbcast
+character(len=1024),parameter :: subr = 'mpl_loc_to_glb_integer_1d'
+type(fckit_mpi_status) :: status
+
+! Get local bcast
+lbcast = .false.
+if (present(bcast)) lbcast = bcast
+
+! Check global array size
+if (mpl%main.or.lbcast) then
+   if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_loc_to_glb_integer_1d')
+end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
 
 if (mpl%main) then
    do iproc=1,mpl%nproc
@@ -1273,7 +1275,199 @@ end if
 call mpl%update_tag(1)
 
 ! Broadcast
-if (bcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+if (lbcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+
+! Release memory
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+end subroutine mpl_loc_to_glb_integer_1d
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_loc_to_glb_integer_2d
+! Purpose: local to global, 2d array
+!----------------------------------------------------------------------
+subroutine mpl_loc_to_glb_integer_2d(mpl,nl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl    ! MPI data
+integer,intent(in) :: nl                ! Number of levels
+integer,intent(in) :: n_loc             ! Local array size
+integer,intent(in) :: n_glb             ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
+integer,intent(in) :: loc(n_loc,nl)     ! Local array
+integer,intent(out) :: glb(:,:)         ! Global array
+logical,intent(in),optional :: bcast    ! Broadcast option
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:),rbuf(:),sbuf(:)
+logical :: lbcast
+character(len=1024),parameter :: subr = 'mpl_loc_to_glb_integer_2d'
+type(fckit_mpi_status) :: status
+
+! Get local bcast
+lbcast = .false.
+if (present(bcast)) lbcast = bcast
+
+! Check global array size
+if (mpl%main.or.lbcast) then
+   if (size(glb,1)/=n_glb) call mpl%abort(subr,'wrong first dimension for the global array in mpl_loc_to_glb_integer_2d')
+   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_loc_to_glb_integer_1d')
+end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+
+! Allocation
+allocate(sbuf(n_loc*nl))
+
+! Prepare buffer
+do il=1,nl
+   do i_loc=1,n_loc
+      sbuf((il-1)*n_loc+i_loc) = loc(i_loc,il)
+   end do
+end do
+
+if (mpl%main) then
+   do iproc=1,mpl%nproc
+      ! Allocation
+      n_loc_tmp = count(glb_to_proc==iproc)
+      allocate(rbuf(n_loc_tmp*nl))
+
+      if (iproc==mpl%rootproc) then
+          ! Copy data
+          rbuf = sbuf
+      else
+          ! Receive data from iproc
+          call mpl%f_comm%receive(rbuf,iproc-1,mpl%tag,status)
+      end if
+
+      ! Add data to glb
+      do i_glb=1,n_glb
+         jproc = glb_to_proc(i_glb)
+         if (iproc==jproc) then
+            i_loc = glb_to_loc(i_glb)
+            do il=1,nl
+               glb(i_glb,il) = rbuf((il-1)*n_loc_tmp+i_loc)
+            end do
+         end if
+      end do
+
+      ! Release memory
+      deallocate(rbuf)
+   end do
+else
+   ! Send data to rootproc
+   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
+end if
+call mpl%update_tag(1)
+
+! Broadcast
+if (lbcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+
+! Release memory
+deallocate(sbuf)
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+end subroutine mpl_loc_to_glb_integer_2d
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_loc_to_glb_real_1d
+! Purpose: local to global, 1d array
+!----------------------------------------------------------------------
+subroutine mpl_loc_to_glb_real_1d(mpl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl     ! MPI data
+integer,intent(in) :: n_loc              ! Local array size
+integer,intent(in) :: n_glb              ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc)  ! Local to global
+real(kind_real),intent(in) :: loc(n_loc) ! Local array
+real(kind_real),intent(out) :: glb(:)    ! Global array
+logical,intent(in),optional :: bcast     ! Broadcast option
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+real(kind_real),allocatable :: rbuf(:)
+logical :: lbcast
+character(len=1024),parameter :: subr = 'mpl_loc_to_glb_real_1d'
+type(fckit_mpi_status) :: status
+
+! Get local bcast
+lbcast = .false.
+if (present(bcast)) lbcast = bcast
+
+! Check global array size
+if (mpl%main.or.lbcast) then
+   if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_loc_to_glb_real_1d')
+end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+
+if (mpl%main) then
+   do iproc=1,mpl%nproc
+      ! Allocation
+      n_loc_tmp = count(glb_to_proc==iproc)
+      allocate(rbuf(n_loc_tmp))
+
+      if (iproc==mpl%rootproc) then
+          ! Copy data
+          rbuf = loc
+      else
+          ! Receive data from iproc
+          call mpl%f_comm%receive(rbuf,iproc-1,mpl%tag,status)
+      end if
+
+      ! Add data to glb
+      do i_glb=1,n_glb
+         jproc = glb_to_proc(i_glb)
+         if (iproc==jproc) then
+            i_loc = glb_to_loc(i_glb)
+            glb(i_glb) = rbuf(i_loc)
+         end if
+      end do
+
+      ! Release memory
+      deallocate(rbuf)
+   end do
+else
+   ! Send data to rootproc
+   call mpl%f_comm%send(loc,mpl%rootproc-1,mpl%tag)
+end if
+call mpl%update_tag(1)
+
+! Broadcast
+if (lbcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+
+! Release memory
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
 
 end subroutine mpl_loc_to_glb_real_1d
 
@@ -1281,7 +1475,7 @@ end subroutine mpl_loc_to_glb_real_1d
 ! Subroutine: mpl_loc_to_glb_real_2d
 ! Purpose: local to global, 2d array
 !----------------------------------------------------------------------
-subroutine mpl_loc_to_glb_real_2d(mpl,nl,n_loc,loc,n_glb,glb_to_proc,glb_to_loc,bcast,glb)
+subroutine mpl_loc_to_glb_real_2d(mpl,nl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
@@ -1289,24 +1483,41 @@ implicit none
 class(mpl_type),intent(inout) :: mpl        ! MPI data
 integer,intent(in) :: nl                    ! Number of levels
 integer,intent(in) :: n_loc                 ! Local array size
-real(kind_real),intent(in) :: loc(n_loc,nl) ! Local array
 integer,intent(in) :: n_glb                 ! Global array size
-integer,intent(in) :: glb_to_proc(n_glb)    ! Global index to task index
-integer,intent(in) :: glb_to_loc(n_glb)     ! Global index to local index
-logical,intent(in) :: bcast                 ! Broadcast option
+integer,intent(in) :: loc_to_glb(n_loc)     ! Local to global
+real(kind_real),intent(in) :: loc(n_loc,nl) ! Local array
 real(kind_real),intent(out) :: glb(:,:)     ! Global array
+logical,intent(in),optional :: bcast        ! Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
 real(kind_real),allocatable :: rbuf(:),sbuf(:)
+logical :: lbcast
 character(len=1024),parameter :: subr = 'mpl_loc_to_glb_real_2d'
 type(fckit_mpi_status) :: status
 
+! Get local bcast
+lbcast = .false.
+if (present(bcast)) lbcast = bcast
+
 ! Check global array size
-if (mpl%main.or.bcast) then
+if (mpl%main.or.lbcast) then
    if (size(glb,1)/=n_glb) call mpl%abort(subr,'wrong first dimension for the global array in mpl_loc_to_glb_real_2d')
-   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_loc_to_glb_real_1d')
+   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_loc_to_glb_real_2d')
 end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
 
 ! Allocation
 allocate(sbuf(n_loc*nl))
@@ -1353,10 +1564,12 @@ end if
 call mpl%update_tag(1)
 
 ! Broadcast
-if (bcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+if (lbcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
 
 ! Release memory
 deallocate(sbuf)
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
 
 end subroutine mpl_loc_to_glb_real_2d
 
@@ -1364,30 +1577,47 @@ end subroutine mpl_loc_to_glb_real_2d
 ! Subroutine: mpl_loc_to_glb_logical_1d
 ! Purpose: local to global, 1d array
 !----------------------------------------------------------------------
-subroutine mpl_loc_to_glb_logical_1d(mpl,n_loc,loc,n_glb,glb_to_proc,glb_to_loc,bcast,glb)
+subroutine mpl_loc_to_glb_logical_1d(mpl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl     ! MPI data
-integer,intent(in) :: n_loc              ! Local array size
-logical,intent(in) :: loc(n_loc)         ! Local array
-integer,intent(in) :: n_glb              ! Global array size
-integer,intent(in) :: glb_to_proc(n_glb) ! Global index to task index
-integer,intent(in) :: glb_to_loc(n_glb)  ! Global index to local index
-logical,intent(in) :: bcast              ! Broadcast option
-logical,intent(out) :: glb(:)            ! Global array
+integer,intent(in) :: n_loc             ! Local array size
+integer,intent(in) :: n_glb             ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
+logical,intent(in) :: loc(n_loc)        ! Local array
+logical,intent(out) :: glb(:)           ! Global array
+logical,intent(in),optional :: bcast    ! Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+logical :: lbcast
 logical,allocatable :: rbuf(:)
 character(len=1024),parameter :: subr = 'mpl_loc_to_glb_logical_1d'
 type(fckit_mpi_status) :: status
 
+! Get local bcast
+lbcast = .false.
+if (present(bcast)) lbcast = bcast
+
 ! Check global array size
-if (mpl%main.or.bcast) then
+if (mpl%main.or.lbcast) then
    if (size(glb)/=n_glb) call mpl%abort(subr,'wrong dimension for the global array in mpl_loc_to_glb_logical_1d')
 end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
 
 if (mpl%main) then
    do iproc=1,mpl%nproc
@@ -1422,7 +1652,11 @@ end if
 call mpl%update_tag(1)
 
 ! Broadcast
-if (bcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+if (lbcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+
+! Release memory
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
 
 end subroutine mpl_loc_to_glb_logical_1d
 
@@ -1430,32 +1664,49 @@ end subroutine mpl_loc_to_glb_logical_1d
 ! Subroutine: mpl_loc_to_glb_logical_2d
 ! Purpose: local to global for a logical, 2d array
 !----------------------------------------------------------------------
-subroutine mpl_loc_to_glb_logical_2d(mpl,nl,n_loc,loc,n_glb,glb_to_proc,glb_to_loc,bcast,glb)
+subroutine mpl_loc_to_glb_logical_2d(mpl,nl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl     ! MPI data
-integer,intent(in) :: nl                 ! Number of levels
-integer,intent(in) :: n_loc              ! Local array size
-logical,intent(in) :: loc(n_loc,nl)      ! Local array
-integer,intent(in) :: n_glb              ! Global array size
-integer,intent(in) :: glb_to_proc(n_glb) ! Global index to task index
-integer,intent(in) :: glb_to_loc(n_glb)  ! Global index to local index
-logical,intent(in) :: bcast              ! Broadcast option
-logical,intent(out) :: glb(:,:)          ! Global array
+integer,intent(in) :: nl                ! Number of levels
+integer,intent(in) :: n_loc             ! Local array size
+integer,intent(in) :: n_glb             ! Global array size
+integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
+logical,intent(in) :: loc(n_loc,nl)     ! Local array
+logical,intent(out) :: glb(:,:)         ! Global array
+logical,intent(in),optional :: bcast    ! Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+logical :: lbcast
 logical,allocatable :: rbuf(:),sbuf(:)
 character(len=1024),parameter :: subr = 'mpl_loc_to_glb_logical_2d'
 type(fckit_mpi_status) :: status
 
+! Get local bcast
+lbcast = .false.
+if (present(bcast)) lbcast = bcast
+
 ! Check global array size
-if (mpl%main.or.bcast) then
-   if (size(glb,1)/=n_glb) call mpl%abort(subr,'wrong first dimension for the global array in mpl_loc_to_glb_real_2d')
-   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_loc_to_glb_real_1d')
+if (mpl%main.or.lbcast) then
+   if (size(glb,1)/=n_glb) call mpl%abort(subr,'wrong first dimension for the global array in mpl_loc_to_glb_logical_2d')
+   if (size(glb,2)/=nl) call mpl%abort(subr,'wrong second dimension for the global array in mpl_loc_to_glb_logical_2d')
 end if
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
 
 ! Allocation
 allocate(sbuf(n_loc*nl))
@@ -1502,10 +1753,12 @@ end if
 call mpl%update_tag(1)
 
 ! Broadcast
-if (bcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+if (lbcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
 
 ! Release memory
 deallocate(sbuf)
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
 
 end subroutine mpl_loc_to_glb_logical_2d
 
@@ -1623,10 +1876,81 @@ deallocate(mpl%done)
 end subroutine mpl_prog_final
 
 !----------------------------------------------------------------------
-! Subroutine: mpl_ncdimcheck
-! Purpose: check if NetCDF file dimension exists and has the right size
+! Function: mpl_nc_file_create_or_open
+! Purpose: create or open NetCDF file
 !----------------------------------------------------------------------
-function mpl_ncdimcheck(mpl,subr,ncid,dimname,dimsize,mode,inftol) result (dimid)
+function mpl_nc_file_create_or_open(mpl,subr,filename,f_comm) result (ncid)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl               ! MPI data
+character(len=*),intent(in) :: subr                ! Calling subroutine
+character(len=*),intent(in) :: filename            ! File name
+type(fckit_mpi_comm),intent(in),optional :: f_comm ! Communicator
+
+! Returned variable
+integer :: ncid                                    ! NetCDF file ID
+
+! Local variables
+integer :: info
+
+! Create file
+if (present(f_comm)) then
+   info = nf90_create(filename,ior(nf90_noclobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
+ & comm=f_comm%communicator(),info=f_comm%info_null())
+else
+   info = nf90_create(filename,ior(nf90_noclobber,nf90_netcdf4),ncid)
+end if
+
+if (info==nf90_noerr) then
+   ! Set real missing value
+   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'_FillValue',mpl%msv%valr))
+else
+   ! Open file
+   if (present(f_comm)) then
+      call mpl%ncerr(subr,nf90_open(filename,nf90_write,ncid, &
+ & comm=f_comm%communicator(),info=f_comm%info_null()))
+   else
+      call mpl%ncerr(subr,nf90_open(filename,nf90_write,ncid))
+   end if
+end if
+
+end function mpl_nc_file_create_or_open
+
+!----------------------------------------------------------------------
+! Function: mpl_nc_group_define_or_get
+! Purpose: define or get group
+!----------------------------------------------------------------------
+function mpl_nc_group_define_or_get(mpl,subr,ncid,grpname) result (grpid)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl   ! MPI data
+character(len=*),intent(in) :: subr    ! Calling subroutine
+integer,intent(in) :: ncid             ! NetCDF file ID
+character(len=*),intent(in) :: grpname ! Group name
+
+! Returned variable
+integer :: grpid                       ! NetCDF group ID
+
+! Local variables
+integer :: info
+
+! Define group
+info = nf90_def_grp(ncid,grpname,grpid)
+
+! Get group
+if (info/=nf90_noerr) call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
+
+end function mpl_nc_group_define_or_get
+
+!----------------------------------------------------------------------
+! Function: mpl_nc_dim_define_or_get
+! Purpose: define or get (and check) NetCDF dimension
+!----------------------------------------------------------------------
+function mpl_nc_dim_define_or_get(mpl,subr,ncid,dimname,dimsize) result (dimid)
 
 implicit none
 
@@ -1636,59 +1960,132 @@ character(len=*),intent(in) :: subr    ! Calling subroutine
 integer,intent(in) :: ncid             ! NetCDF file ID
 character(len=*),intent(in) :: dimname ! Dimension name
 integer,intent(in) :: dimsize          ! Dimension size
-logical,intent(in) :: mode             ! Mode (.true.: create and return id if missing, abort if present but wrong size / .false.: return id if present and has right size, else return missing value)
-logical,intent(in),optional :: inftol  ! Tolerate if dimsize is lower than what is found in the file
 
 ! Returned variable
 integer :: dimid                       ! NetCDF dimension ID
 
 ! Local variables
 integer :: info,dimsize_test
-logical :: linftol,test
 
-! End definition mode
-if (mode) call mpl%ncerr(subr,nf90_enddef(ncid))
+! Define dimension
+info = nf90_def_dim(ncid,dimname,dimsize,dimid)
 
-! Get dimension ID
-info = nf90_inq_dimid(ncid,trim(dimname),dimid)
+if (info/=nf90_noerr) then
+   ! Get dimension
+   call mpl%ncerr(subr,nf90_inq_dimid(ncid,dimname,dimid))
 
-if (info==nf90_noerr) then
    ! Get dimension size
    call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
 
-   ! Test
-   linftol = .false.
-   if (present(inftol)) linftol = inftol
-   test = (dimsize==dimsize_test)
-   if (linftol) test = test.or.((dimsize==1).and.(dimsize<=dimsize_test))
-
-   if (test) then
-      ! Definition mode
-      if (mode) call mpl%ncerr(subr,nf90_redef(ncid))
-   else
-      ! Wrong dimension
-      if (mode) then
-         ! Abort
-         call mpl%abort(subr,'dimension '//trim(dimname)//' has a different size in file')
-      else
-         ! Return missing value
-         dimid = mpl%msv%vali
-      end if
-   end if
-else
-   if (mode) then
-      ! Definition mode
-      call mpl%ncerr(subr,nf90_redef(ncid))
-
-      ! Create dimension
-      call mpl%ncerr(subr,nf90_def_dim(ncid,trim(dimname),dimsize,dimid))
-   else
-      ! Return missing value
-      dimid = mpl%msv%vali
-   end if
+   ! Check dimension size
+   if (dimsize_test/=dimsize) call mpl%abort(subr,'dimension '//trim(dimname)//' has a different size in file')
 end if
 
-end function mpl_ncdimcheck
+end function mpl_nc_dim_define_or_get
+
+!----------------------------------------------------------------------
+! Function: mpl_nc_dim_inquire
+! Purpose: inquire NetCDF file dimension size
+!----------------------------------------------------------------------
+function mpl_nc_dim_inquire(mpl,subr,ncid,dimname) result (dimsize)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl   ! MPI data
+character(len=*),intent(in) :: subr    ! Calling subroutine
+integer,intent(in) :: ncid             ! NetCDF file ID
+character(len=*),intent(in) :: dimname ! Dimension name
+
+! Returned variable
+integer :: dimsize                     ! NetCDF dimension size
+
+! Local variables
+integer :: info,dimid
+
+! Get dimension ID
+info = nf90_inq_dimid(ncid,dimname,dimid)
+if (info==nf90_noerr) then
+   call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize))
+else
+   dimsize = 0
+end if
+
+end function mpl_nc_dim_inquire
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_nc_dim_check
+! Purpose: check if NetCDF file dimension exists and has the right size
+!----------------------------------------------------------------------
+subroutine mpl_nc_dim_check(mpl,subr,ncid,dimname,dimsize)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl   ! MPI data
+character(len=*),intent(in) :: subr    ! Calling subroutine
+integer,intent(in) :: ncid             ! NetCDF file ID
+character(len=*),intent(in) :: dimname ! Dimension name
+integer,intent(in) :: dimsize          ! Expected dimension size
+
+! Local variables
+integer :: dimid,dimsize_test
+
+! Get dimension
+call mpl%ncerr(subr,nf90_inq_dimid(ncid,dimname,dimid))
+
+! Get dimension size
+call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimid,len=dimsize_test))
+
+! Check dimension size
+if (dimsize_test/=dimsize) call mpl%abort(subr,'dimension '//trim(dimname)//' has a different size in file')
+
+end subroutine mpl_nc_dim_check
+
+!----------------------------------------------------------------------
+! Function: mpl_nc_var_define_or_get
+! Purpose: define or get NetCDF variable
+!----------------------------------------------------------------------
+function mpl_nc_var_define_or_get(mpl,subr,ncid,varname,varkind,varshape,unitname) result (varid)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl             ! MPI data
+character(len=*),intent(in) :: subr              ! Calling subroutine
+integer,intent(in) :: ncid                       ! NetCDF file ID
+character(len=*),intent(in) :: varname           ! Variable name
+integer,intent(in) :: varkind                    ! Variable kind
+integer,intent(in) :: varshape(:)                ! Variable shape
+character(len=*),intent(in),optional :: unitname ! Unit name
+
+! Returned variable
+integer :: varid                       ! NetCDF variable ID
+
+! Local variables
+integer :: info
+
+! Define variable
+info = nf90_def_var(ncid,varname,varkind,varshape,varid)
+
+if (info==nf90_noerr) then
+   ! Set missing value attribute
+   if (varkind==nf90_int) then
+      call mpl%ncerr(subr,nf90_put_att(ncid,varid,'_FillValue',mpl%msv%vali))
+   elseif (varkind==nc_kind_real) then
+      call mpl%ncerr(subr,nf90_put_att(ncid,varid,'_FillValue',mpl%msv%valr))
+   else
+      call mpl%abort(subr,'wrong variable kind')
+   end if
+
+   ! Set unit
+   if (present(unitname)) call mpl%ncerr(subr,nf90_put_att(ncid,varid,'unit',unitname))
+else
+   ! Get variable
+   call mpl%ncerr(subr,nf90_inq_varid(ncid,varname,varid))
+end if
+
+end function mpl_nc_var_define_or_get
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_ncerr
@@ -1704,7 +2101,7 @@ character(len=*),intent(in) :: subr  ! Calling subroutine
 integer,intent(in) :: info           ! Info index
 
 ! Check status
-if (info/=nf90_noerr) call mpl%abort(subr,trim(nf90_strerror(info)))
+if (info/=nf90_noerr) call mpl%abort(subr,nf90_strerror(info))
 
 end subroutine mpl_ncerr
 
@@ -1793,7 +2190,7 @@ else
       do i=2,n
          write(fullstr,'(a,i3.3)') trim(fullstr(1:1024-4))//':',var(i)
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),fullstr))
    end if
 end if
 
@@ -1875,7 +2272,7 @@ else
       do i=2,n
          write(fullstr,'(a,e10.3)') trim(fullstr(1:1024-11))//':',var(i)
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),fullstr))
    end if
 end if
 
@@ -1964,7 +2361,7 @@ else
             fullstr = trim(fullstr(1:1024-8))//':'//'.false.'
          end if
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),fullstr))
    end if
 end if
 
@@ -2001,7 +2398,7 @@ if (mpl%msv%is(ncid)) then
    call mpl%flush
 else
    ! Write string into a NetCDF file
-   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(var)))
+   call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),var))
 end if
 
 end subroutine mpl_write_string
@@ -2050,7 +2447,7 @@ else
       do i=2,n
          fullstr = trim(fullstr)//':'//trim(var(i))
       end do
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),trim(fullstr)))
+      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,trim(prefix)//'_'//trim(variables),fullstr))
    end if
 end if
 

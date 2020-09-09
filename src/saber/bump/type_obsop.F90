@@ -11,7 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 use netcdf
 use tools_const, only: pi,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,sphere_dist
-use tools_kinds, only: kind_real,nc_kind_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_repro, only: rth
 use type_com, only: com_type
 use type_geom, only: geom_type
@@ -102,7 +102,7 @@ end subroutine obsop_dealloc
 ! Subroutine: obsop_read
 ! Purpose: read observations locations
 !----------------------------------------------------------------------
-subroutine obsop_read(obsop,mpl,nam)
+subroutine obsop_read(obsop,mpl,nam,geom)
 
 implicit none
 
@@ -110,15 +110,20 @@ implicit none
 class(obsop_type),intent(inout) :: obsop ! Observation operator data
 type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(in) :: nam         ! Namelist
+type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: ncid
+integer :: ncid,grid_hash
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'obsop_read'
 
-! Create file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+! Define file
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
+ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+
+! Check grid hash
+call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
+if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
 
 ! Get attributes
 call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'nc0b',obsop%nc0b))
@@ -141,7 +146,7 @@ end subroutine obsop_read
 ! Subroutine: obsop_write
 ! Purpose: write observations locations
 !----------------------------------------------------------------------
-subroutine obsop_write(obsop,mpl,nam)
+subroutine obsop_write(obsop,mpl,nam,geom)
 
 implicit none
 
@@ -149,15 +154,19 @@ implicit none
 class(obsop_type),intent(inout) :: obsop ! Observation operator data
 type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(nam_type),intent(in) :: nam         ! Namelist
+type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
 integer :: ncid
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'obsop_write'
 
-! Create file
-write(filename,'(a,a,i4.4,a,i4.4)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',or(nf90_clobber,nf90_64bit_offset),ncid))
+! Define file
+write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
+   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+
+! Write grid hash
+call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
@@ -165,9 +174,6 @@ call nam%write(mpl,ncid)
 ! Write attributes
 call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'nc0b',obsop%nc0b))
 call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'nobsa',obsop%nobsa))
-
-! End definition mode
-call mpl%ncerr(subr,nf90_enddef(ncid))
 
 ! Write interpolation
 call obsop%h%write(mpl,ncid)
@@ -236,23 +242,31 @@ type(nam_type),intent(in) :: nam         ! Namelist
 type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: iobsa,iproc,i_s,ic0,jc0,ic0b,ic0a,nobsa_eff
+integer :: iobsa,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nobsa_eff
 integer :: nobs_eff,nn_index(1),proc_to_nobsa(mpl%nproc),proc_to_nobsa_eff(mpl%nproc)
-integer :: c0_to_c0b(geom%nc0),c0a_to_c0b(geom%nc0a)
+integer :: c0u_to_c0b(geom%nc0u)
 integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
-logical :: maskobsa(obsop%nobsa),lcheck_nc0b(geom%nc0)
+logical :: maskobsa(obsop%nobsa),lcheck_nc0b(geom%nc0u)
+character(len=1024),parameter :: subr = 'obsop_run_obsop'
+
+! Check that universe is global
+if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for obsop')
 
 ! Check whether observations are inside the mesh
-do iobsa=1,obsop%nobsa
-   call geom%mesh%inside(mpl,obsop%lonobs(iobsa),obsop%latobs(iobsa),maskobsa(iobsa))
-   if (.not.maskobsa(iobsa)) then
-      ! Check for very close points
-      call geom%tree%find_nearest_neighbors(obsop%lonobs(iobsa),obsop%latobs(iobsa),1,nn_index,nn_dist)
-      if (nn_dist(1)<rth) maskobsa(iobsa) = .true.
-   end if
-end do
-nobsa_eff = count(maskobsa)
+if (obsop%nobsa>0) then
+   do iobsa=1,obsop%nobsa
+      call geom%mesh_c0u%inside(mpl,obsop%lonobs(iobsa),obsop%latobs(iobsa),maskobsa(iobsa))
+      if (.not.maskobsa(iobsa)) then
+         ! Check for very close points
+         call geom%tree_c0u%find_nearest_neighbors(obsop%lonobs(iobsa),obsop%latobs(iobsa),1,nn_index,nn_dist)
+         if (nn_dist(1)<rth) maskobsa(iobsa) = .true.
+      end if
+   end do
+   nobsa_eff = count(maskobsa)
+else
+   nobsa_eff = 0
+end if
 
 ! Get global number of observations
 call mpl%f_comm%allgather(obsop%nobsa,proc_to_nobsa)
@@ -274,19 +288,19 @@ call mpl%flush
 obsop%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0,geom%lon,geom%lat,geom%mask_hor_c0,obsop%nobsa,obsop%lonobs,obsop%latobs, &
- & maskobsa,10)
+call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,obsop%nobsa,obsop%lonobs, &
+ & obsop%latobs,maskobsa,10)
 
 ! Define halo B
 lcheck_nc0b = .false.
 do ic0a=1,geom%nc0a
-   ic0 = geom%c0a_to_c0(ic0a)
-   if (geom%c0_to_proc(ic0)==mpl%myproc) lcheck_nc0b(ic0) = .true.
+   ic0u = geom%c0a_to_c0u(ic0a)
+   lcheck_nc0b(ic0u) = .true.
 end do
 do iobsa=1,obsop%nobsa
    do i_s=1,obsop%h%n_s
-      jc0 = obsop%h%col(i_s)
-      lcheck_nc0b(jc0) = .true.
+      jc0u = obsop%h%col(i_s)
+      lcheck_nc0b(jc0u) = .true.
    end do
 end do
 obsop%nc0b = count(lcheck_nc0b)
@@ -295,32 +309,25 @@ obsop%nc0b = count(lcheck_nc0b)
 allocate(c0b_to_c0(obsop%nc0b))
 
 ! Global-local conversion for halo B
-c0_to_c0b = mpl%msv%vali
+c0u_to_c0b = mpl%msv%vali
 ic0b = 0
-do ic0=1,geom%nc0
-   if (lcheck_nc0b(ic0)) then
+do ic0u=1,geom%nc0u
+   if (lcheck_nc0b(ic0u)) then
       ic0b = ic0b+1
+      ic0 = geom%c0u_to_c0(ic0u)
       c0b_to_c0(ic0b) = ic0
-      c0_to_c0b(ic0) = ic0b
+      c0u_to_c0b(ic0u) = ic0b
    end if
-end do
-
-! Halos A-B conversion
-do ic0a=1,geom%nc0a
-   ic0 = geom%c0a_to_c0(ic0a)
-   ic0b = c0_to_c0b(ic0)
-   c0a_to_c0b(ic0a) = ic0b
 end do
 
 ! Local interpolation source
 obsop%h%n_src = obsop%nc0b
 do i_s=1,obsop%h%n_s
-   obsop%h%col(i_s) = c0_to_c0b(obsop%h%col(i_s))
+   obsop%h%col(i_s) = c0u_to_c0b(obsop%h%col(i_s))
 end do
-call obsop%h%reorder(mpl)
 
 ! Setup communications
-call obsop%com%setup(mpl,'com',geom%nc0,geom%nc0a,obsop%nc0b,geom%nc0a,c0b_to_c0,c0a_to_c0b,geom%c0_to_proc,geom%c0_to_c0a)
+call obsop%com%setup(mpl,'com',geom%nc0a,obsop%nc0b,geom%nc0,geom%c0a_to_c0,c0b_to_c0)
 
 ! Compute scores, only if there observations present globally
 if ( nobs_eff > 0 ) then
@@ -330,17 +337,17 @@ if ( nobs_eff > 0 ) then
 
   ! Print results
   write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa_eff) &
-  & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+ & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
   call mpl%flush
   write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
-  & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo
+ & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo
   call mpl%flush
   write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
   call mpl%flush
 end if
 
 ! Write observation operator
-if (nam%write_obsop) call obsop%write(mpl,nam)
+if (nam%write_obsop) call obsop%write(mpl,nam,geom)
 
 ! Release memory
 deallocate(c0b_to_c0)
@@ -508,7 +515,7 @@ type(mpl_type),intent(inout) :: mpl      ! MPI data
 type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: ic0a,ic0,iobsa
+integer :: ic0a,iobsa
 integer :: iprocmax(1),iobsamax(1)
 real(kind_real) :: lonmax,latmax,ylonmax,ylatmax
 real(kind_real) :: norm,distmin,distmax,distsum
@@ -520,9 +527,8 @@ character(len=1024),parameter :: subr = 'obsop_test_accuracy'
 
 ! Initialization
 do ic0a=1,geom%nc0a
-   ic0 = geom%c0a_to_c0(ic0a)
-   lon(ic0a,:) = geom%lon(ic0)
-   lat(ic0a,:) = geom%lat(ic0)
+   lon(ic0a,:) = geom%lon_c0a(ic0a)
+   lat(ic0a,:) = geom%lat_c0a(ic0a)
 end do
 
 ! Apply obsop
@@ -546,14 +552,14 @@ if (obsop%nobsa>0) then
       distmax = maxval(dist,mask=mpl%msv%isnot(dist))
       distsum = sum(dist,mask=mpl%msv%isnot(dist))
    else
-      distmin = huge(1.0)
+      distmin = huge_real
       distmax = 0.0
       distsum = 0.0
    end if
 else
    ! No observation on this task
    norm = 0
-   distmin = huge(1.0)
+   distmin = huge_real
    distmax = 0.0
    distsum = 0.0
 end if

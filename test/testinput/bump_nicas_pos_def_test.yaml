@@ -6,6 +6,7 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "common_univariate"
+write_cmat: 0
 new_nicas: 1
 
 # model_param

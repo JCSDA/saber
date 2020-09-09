@@ -34,6 +34,8 @@ nl0r: 2
 
 # diag_param
 ne: 50
+local_diag: 1
+local_rad: 2000.0e3
 
 # fit_param
 

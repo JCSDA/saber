@@ -45,7 +45,7 @@ local_rad: 1000.0e3
 
 # output_param
 nldwv: 3
-lon_ldwv: [0.0,43.0,-127.0]
+lon_ldwv: [0.0,22.0,-127.0]
 lat_ldwv: [7.0,55.0,63.0]
 name_ldwv: ["A","B","C"]
 

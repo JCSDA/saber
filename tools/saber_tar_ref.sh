@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #----------------------------------------------------------------------
 # Bash script: saber_tar_ref
 # Author: Benjamin Menetrier
@@ -18,7 +18,7 @@ saber_ref_3
 saber_ref_mpi_1
 saber_ref_mpi_2
 saber_ref_mpi_3
-saber_ref_quad
+saber_ref_multi
 saber_ref_oops"
 
 # Get git branch

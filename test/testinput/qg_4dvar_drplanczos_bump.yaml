@@ -9,6 +9,10 @@ cost function:
   background error:
     bump:
       datadir: testdata
+      io_keys:
+      - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
+      io_values:
+      - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
       load_nicas: 1
       method: cor
       mpicom: 2
@@ -23,6 +27,10 @@ cost function:
       output variables: [x]
       bump:
         datadir: testdata
+        io_keys:
+        - x_2010-01-01T00:00:00Z
+        io_values:
+        - x_2010-01-01T12:00:00Z
         load_var: 1
         prefix: qg_4dvar_drplanczos_bump/test
   observations:

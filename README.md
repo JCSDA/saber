@@ -10,27 +10,29 @@ CLANG: [![AWS-Clang](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlb
 This software is licensed under the terms of the Apache Licence Version 2.0
 which can be obtained at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
-Details about the repository can be found in the [overview of the SABER code](doc/overview.md).
+The compilation of SABER is made easier by using the [saber-bundle](bundle/README.md).
 
 ## BUMP
 
 The BUMP (B matrix on an Unstructured Mesh Package) library estimates and applies background error covariance-related operators, defined on an unstructured mesh.
 
-### Licensing
 Most of the BUMP code is distributed under the [CeCILL-C license](http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html) (Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT).
 
 The fact that you are downloading this code means that you have had knowledge of the [CeCILL-C license](http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html) and that you accept its terms.
 
-### Theoretical documentation
- - about covariance filtering: [covariance_filtering.pdf](https://github.com/benjaminmenetrier/covariance_filtering/blob/master/covariance_filtering.pdf)
- - about the NICAS method: TO BE DONE
- - about multivariate localization: [multivariate_localization.pdf](https://github.com/benjaminmenetrier/multivariate_localization/blob/master/multivariate_localization.pdf)
- - about diffusion and the Matern function: TO BE DONE
+Theoretical documentation:
+ - about covariance filtering: [covariance_filtering.pdf](doc/bump/pdf/covariance_filtering.pdf)
+ - about the NICAS method: [nicas.pdf](doc/bump/pdf/nicas.pdf)
+ - about multivariate localization: [multivariate_localization.pdf](doc/bump/pdf/multivariate_localization.pdf)
+ - about diffusion and the Matern function: [diffusion_matern_function.pdf](doc/bump/pdf/diffusion_matern_function.pdf)
 
-### Code documentation
+Code documentation:
+ - [Code size and characteristics](doc/bump/CLOC_REPORT.md)
  - [Standalone or online usage](doc/bump/standalone_or_online_usage.md)
+ - [Code auto-documentation](doc/bump/code_autodoc.md)
  - [Input data](doc/bump/input_data.md)
  - [Running the code](doc/bump/running_the_code.md)
+ - [NCL plots](doc/bump/ncl_plots.md)
  - [Test](doc/bump/test.md)
  - [Adding a new model](doc/bump/adding_a_new_model.md)
 

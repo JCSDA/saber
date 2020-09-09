@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #----------------------------------------------------------------------
 # Bash script: saber_tar_data
 # Author: Benjamin Menetrier
@@ -30,7 +30,7 @@ for data in ${data_list}; do
    do
       line_tmp="$(echo ${line} | sed 's/read/write/g')"
       if test "${line}" != "${line_tmp}"; then
-         rm -f ${datadir}/${line}
+         mv -f ${datadir}/${line} ${datadir}/${line}_old
          cp -f ${datadir}/${line_tmp} ${datadir}/${line}
       fi
       files=${files}' '${line}
@@ -52,4 +52,15 @@ for data in ${data_list}; do
 
    # Back to initial directory
    cd ${ipwd}
+
+   # Loop over files
+   files=''
+   while IFS= read -r line
+   do
+      line_tmp="$(echo ${line} | sed 's/read/write/g')"
+      if test "${line}" != "${line_tmp}"; then
+         rm -f ${datadir}/${line}
+         mv -f ${datadir}/${line}_old ${datadir}/${line}
+      fi
+   done < ${listdir}/${data}.txt
 done

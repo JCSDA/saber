@@ -70,7 +70,7 @@ character(len=*),intent(in) :: prefix ! Prefix
 integer :: ib,ic2a
 
 ! Set attributes
-avg%prefix = trim(prefix)
+avg%prefix = prefix
 avg%ne = ne
 avg%nsub = nsub
 
@@ -78,7 +78,7 @@ avg%nsub = nsub
 allocate(avg%blk(0:samp%nc2a,bpar%nbe))
 do ib=1,bpar%nbe
    do ic2a=0,samp%nc2a
-      call avg%blk(ic2a,ib)%alloc(nam,geom,bpar,ic2a,ib,ne,nsub,prefix)
+      call avg%blk(ic2a,ib)%alloc(nam,geom,bpar,ic2a,ib,ne,nsub)
    end do
 end do
 
@@ -154,7 +154,7 @@ integer :: ib
 character(len=1024) :: filename
 
 if (mpl%main) then
-   filename = trim(nam%prefix)//'_avg'
+   filename = trim(nam%prefix)//'_'//trim(avg%prefix)
    do ib=1,bpar%nb
       if (bpar%diag_block(ib)) call avg%blk(0,ib)%write(mpl,nam,geom,bpar,filename)
    end do
@@ -432,62 +432,71 @@ do ic2a=0,samp%nc2a
 
    if ((ic2a==0).or.nam%local_diag) then
       ! Initialization
-      avg%blk(ic2a,bpar%nbe)%cor = 0.0
-      cor = 0.0
-      avg%blk(ic2a,bpar%nbe)%nc1a_cor = 0.0
-      nc1a_cor = 0.0
-      avg%blk(ic2a,bpar%nbe)%m11asysq = 0.0
-      m11asysq = 0.0
-      avg%blk(ic2a,bpar%nbe)%m11sq = 0.0
-      m11sq = 0.0
-      avg%blk(ic2a,bpar%nbe)%nc1a = 0.0
-      nc1a = 0.0
+      if (any(bpar%avg_block)) then
+         avg%blk(ic2a,bpar%nbe)%cor = 0.0
+         cor = 0.0
+         avg%blk(ic2a,bpar%nbe)%nc1a_cor = 0.0
+         nc1a_cor = 0.0
+         avg%blk(ic2a,bpar%nbe)%m11asysq = 0.0
+         m11asysq = 0.0
+         avg%blk(ic2a,bpar%nbe)%m11sq = 0.0
+         m11sq = 0.0
+         avg%blk(ic2a,bpar%nbe)%nc1a = 0.0
+         nc1a = 0.0
 
-      ! Block averages
-      do ib=1,bpar%nb
-         if (bpar%avg_block(ib)) then
-            !$omp parallel do schedule(static) private(il0,jl0r,bwgtsq,jc3)
-            do il0=1,geom%nl0
-               do jl0r=1,bpar%nl0r(ib)
-                  ! Weight
-                  if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
-                     bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
-                  else
-                     bwgtsq = 0.0
-                  end if
+         ! Block averages
+         do ib=1,bpar%nb
+            if (bpar%avg_block(ib)) then
+               !$omp parallel do schedule(static) private(il0,jl0r,bwgtsq,jc3)
+               do il0=1,geom%nl0   
+                  do jl0r=1,bpar%nl0r(ib)
+                     ! Weight
+                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
+                        bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
+                     else
+                        bwgtsq = 0.0
+                     end if
 
-                  ! Compute sum
-                  do jc3=1,nam%nc3
-                     call add(mpl,avg%blk(ic2a,ib)%cor(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%cor(jc3,jl0r,il0),cor(jc3,jl0r,il0))
-                     call add(mpl,avg%blk(ic2a,ib)%nc1a_cor(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%nc1a_cor(jc3,jl0r,il0), &
-                   & nc1a_cor(jc3,jl0r,il0))
-                     call add(mpl,avg%blk(ic2a,ib)%m11asysq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11asysq(jc3,jl0r,il0), &
-                   & m11asysq(jc3,jl0r,il0),bwgtsq)
-                     call add(mpl,avg%blk(ic2a,ib)%m11sq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11sq(jc3,jl0r,il0), &
-                   & m11sq(jc3,jl0r,il0),bwgtsq)
-                     call add(mpl,avg%blk(ic2a,ib)%nc1a(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%nc1a(jc3,jl0r,il0), &
-                   & nc1a(jc3,jl0r,il0),bwgtsq)
+                     ! Compute sum
+                     do jc3=1,nam%nc3
+                        call add(mpl,avg%blk(ic2a,ib)%cor(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%cor(jc3,jl0r,il0),cor(jc3,jl0r,il0))
+                        call add(mpl,avg%blk(ic2a,ib)%nc1a_cor(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%nc1a_cor(jc3,jl0r,il0), &
+ & nc1a_cor(jc3,jl0r,il0))
+                        call add(mpl,avg%blk(ic2a,ib)%m11asysq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11asysq(jc3,jl0r,il0), &
+ & m11asysq(jc3,jl0r,il0),bwgtsq)
+                        call add(mpl,avg%blk(ic2a,ib)%m11sq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11sq(jc3,jl0r,il0), &
+ & m11sq(jc3,jl0r,il0),bwgtsq)
+                        call add(mpl,avg%blk(ic2a,ib)%nc1a(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%nc1a(jc3,jl0r,il0), &
+ & nc1a(jc3,jl0r,il0),bwgtsq)
+                     end do
                   end do
                end do
-            end do
-            !$omp end parallel do
-         end if
-      end do
+               !$omp end parallel do
+            end if
+         end do
 
-      ! Normalization
-      !$omp parallel do schedule(static) private(il0,jl0r,jc3)
-      do il0=1,geom%nl0
-         do jl0r=1,bpar%nl0r(ib)
-            do jc3=1,nam%nc3
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%cor(jc3,jl0r,il0),cor(jc3,jl0r,il0))
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%nc1a_cor(jc3,jl0r,il0),nc1a_cor(jc3,jl0r,il0))
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11asysq(jc3,jl0r,il0),m11asysq(jc3,jl0r,il0))
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11sq(jc3,jl0r,il0),m11sq(jc3,jl0r,il0))
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%nc1a(jc3,jl0r,il0),nc1a(jc3,jl0r,il0))
+         ! Normalization
+         !$omp parallel do schedule(static) private(il0,jl0r,jc3)
+         do il0=1,geom%nl0
+            do jl0r=1,bpar%nl0r(ib)
+               do jc3=1,nam%nc3
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%cor(jc3,jl0r,il0),cor(jc3,jl0r,il0))
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%nc1a_cor(jc3,jl0r,il0),nc1a_cor(jc3,jl0r,il0))
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11asysq(jc3,jl0r,il0),m11asysq(jc3,jl0r,il0))
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11sq(jc3,jl0r,il0),m11sq(jc3,jl0r,il0))
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%nc1a(jc3,jl0r,il0),nc1a(jc3,jl0r,il0))
+               end do
             end do
          end do
-      end do
-      !$omp end parallel do
+         !$omp end parallel do
+      else
+         ! Missing value
+         avg%blk(ic2a,bpar%nbe)%cor = mpl%msv%valr
+         avg%blk(ic2a,bpar%nbe)%nc1a_cor = mpl%msv%valr
+         avg%blk(ic2a,bpar%nbe)%m11asysq = mpl%msv%valr
+         avg%blk(ic2a,bpar%nbe)%m11sq = mpl%msv%valr
+         avg%blk(ic2a,bpar%nbe)%nc1a = mpl%msv%valr
+      end if
    end if
 
    ! Update
@@ -526,49 +535,55 @@ call mpl%prog_init(samp%nc2a+1)
 
 do ic2a=0,samp%nc2a
    if ((ic2a==0).or.nam%local_diag) then
-      ! Initialization
-      avg%blk(ic2a,bpar%nbe)%m11sta = 0.0
-      m11sta = 0.0
-      avg%blk(ic2a,bpar%nbe)%stasq = 0.0
-      stasq = 0.0
+      if (any(bpar%avg_block)) then
+         ! Initialization
+         avg%blk(ic2a,bpar%nbe)%m11sta = 0.0
+         m11sta = 0.0
+         avg%blk(ic2a,bpar%nbe)%stasq = 0.0
+         stasq = 0.0
 
-      ! Block averages
-      do ib=1,bpar%nb
-         if (bpar%avg_block(ib)) then
-            !$omp parallel do schedule(static) private(il0,jl0r,bwgtsq,jc3)
-            do il0=1,geom%nl0
-               do jl0r=1,bpar%nl0r(ib)
-                  ! Weight
-                  if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
-                     bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
-                  else
-                     bwgtsq = 0.0
-                  end if
+         ! Block averages
+         do ib=1,bpar%nb
+            if (bpar%avg_block(ib)) then
+               !$omp parallel do schedule(static) private(il0,jl0r,bwgtsq,jc3)
+               do il0=1,geom%nl0
+                  do jl0r=1,bpar%nl0r(ib)
+                     ! Weight
+                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
+                        bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
+                     else
+                        bwgtsq = 0.0
+                     end if
 
-                  ! Compute sum
-                  do jc3=1,nam%nc3
-                     call add(mpl,avg%blk(ic2a,ib)%m11sta(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11sta(jc3,jl0r,il0), &
-                   & m11sta(jc3,jl0r,il0),bwgtsq)
-                     call add(mpl,avg%blk(ic2a,ib)%stasq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%stasq(jc3,jl0r,il0), &
-                   & stasq(jc3,jl0r,il0),bwgtsq)
+                     ! Compute sum
+                     do jc3=1,nam%nc3
+                        call add(mpl,avg%blk(ic2a,ib)%m11sta(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11sta(jc3,jl0r,il0), &
+ & m11sta(jc3,jl0r,il0),bwgtsq)
+                        call add(mpl,avg%blk(ic2a,ib)%stasq(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%stasq(jc3,jl0r,il0), &
+ & stasq(jc3,jl0r,il0),bwgtsq)
+                     end do
                   end do
                end do
-            end do
-            !$omp end parallel do
-         end if
-      end do
+               !$omp end parallel do
+            end if
+         end do
 
-      ! Normalization
-      !$omp parallel do schedule(static) private(il0,jl0r,jc3)
-      do il0=1,geom%nl0
-         do jl0r=1,bpar%nl0r(ib)
-            do jc3=1,nam%nc3
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11sta(jc3,jl0r,il0),m11sta(jc3,jl0r,il0))
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%stasq(jc3,jl0r,il0),stasq(jc3,jl0r,il0))
+         ! Normalization
+         !$omp parallel do schedule(static) private(il0,jl0r,jc3)
+         do il0=1,geom%nl0
+            do jl0r=1,bpar%nl0r(ib)
+               do jc3=1,nam%nc3
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11sta(jc3,jl0r,il0),m11sta(jc3,jl0r,il0))
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%stasq(jc3,jl0r,il0),stasq(jc3,jl0r,il0))
+               end do
             end do
          end do
-      end do
-      !$omp end parallel do
+         !$omp end parallel do
+      else
+         ! Missing value
+         avg%blk(ic2a,bpar%nbe)%m11sta = mpl%msv%valr
+         avg%blk(ic2a,bpar%nbe)%stasq = mpl%msv%valr
+      end if
    end if
 
    ! Update
@@ -607,49 +622,55 @@ call mpl%prog_init(samp%nc2a+1)
 
 do ic2a=0,samp%nc2a
    if ((ic2a==0).or.nam%local_diag) then
-      ! Initialization
-      avg%blk(ic2a,bpar%nbe)%m11lrm11 = 0.0
-      m11lrm11 = 0.0
-      avg%blk(ic2a,bpar%nbe)%m11lrm11asy = 0.0
-      m11lrm11asy = 0.0
+      if (any(bpar%avg_block)) then
+         ! Initialization
+         avg%blk(ic2a,bpar%nbe)%m11lrm11 = 0.0
+         m11lrm11 = 0.0
+         avg%blk(ic2a,bpar%nbe)%m11lrm11asy = 0.0
+         m11lrm11asy = 0.0
 
-      ! Block averages
-      do ib=1,bpar%nb
-         if (bpar%avg_block(ib)) then
-            !$omp parallel do schedule(static) private(il0,jl0r,bwgtsq,jc3)
-            do il0=1,geom%nl0
-               do jl0r=1,bpar%nl0r(ib)
-                  ! Weight
-                  if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
-                     bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
-                  else
-                     bwgtsq = 0.0
-                  end if
+         ! Block averages
+         do ib=1,bpar%nb
+            if (bpar%avg_block(ib)) then
+               !$omp parallel do schedule(static) private(il0,jl0r,bwgtsq,jc3)
+               do il0=1,geom%nl0
+                  do jl0r=1,bpar%nl0r(ib)
+                     ! Weight
+                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
+                        bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
+                     else
+                        bwgtsq = 0.0
+                     end if
 
-                  ! Compute sum
-                  do jc3=1,nam%nc3
-                     call add(mpl,avg%blk(ic2a,ib)%m11lrm11(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11lrm11(jc3,jl0r,il0), &
-                   & m11lrm11(jc3,jl0r,il0),bwgtsq)
-                     call add(mpl,avg%blk(ic2a,ib)%m11lrm11asy(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11lrm11asy(jc3,jl0r,il0), &
-                   & m11lrm11asy(jc3,jl0r,il0),bwgtsq)
+                     ! Compute sum
+                     do jc3=1,nam%nc3
+                        call add(mpl,avg%blk(ic2a,ib)%m11lrm11(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11lrm11(jc3,jl0r,il0), &
+ & m11lrm11(jc3,jl0r,il0),bwgtsq)
+                        call add(mpl,avg%blk(ic2a,ib)%m11lrm11asy(jc3,jl0r,il0),avg%blk(ic2a,bpar%nbe)%m11lrm11asy(jc3,jl0r,il0), &
+ & m11lrm11asy(jc3,jl0r,il0),bwgtsq)
+                     end do
                   end do
                end do
-            end do
-            !$omp end parallel do
-         end if
-      end do
+               !$omp end parallel do
+            end if
+         end do
 
-      ! Normalization
-      !$omp parallel do schedule(static) private(il0,jl0r,jc3)
-      do il0=1,geom%nl0
-         do jl0r=1,bpar%nl0r(ib)
-            do jc3=1,nam%nc3
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11lrm11(jc3,jl0r,il0),m11lrm11(jc3,jl0r,il0))
-               call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11lrm11asy(jc3,jl0r,il0),m11lrm11asy(jc3,jl0r,il0))
+         ! Normalization
+         !$omp parallel do schedule(static) private(il0,jl0r,jc3)
+         do il0=1,geom%nl0
+            do jl0r=1,bpar%nl0r(ib)
+               do jc3=1,nam%nc3
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11lrm11(jc3,jl0r,il0),m11lrm11(jc3,jl0r,il0))
+                  call divide(mpl,avg%blk(ic2a,bpar%nbe)%m11lrm11asy(jc3,jl0r,il0),m11lrm11asy(jc3,jl0r,il0))
+               end do
             end do
          end do
-      end do
-      !$omp end parallel do
+         !$omp end parallel do
+      else
+         ! Missing value
+         avg%blk(ic2a,bpar%nbe)%m11lrm11 = mpl%msv%valr
+         avg%blk(ic2a,bpar%nbe)%m11lrm11asy = mpl%msv%valr
+      end if
    end if
 
    ! Update

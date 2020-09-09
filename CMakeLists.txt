@@ -31,7 +31,6 @@ find_package( eckit REQUIRED COMPONENTS MPI )
 find_package( fckit REQUIRED )
 find_package( atlas REQUIRED COMPONENTS OMP_Fortran )
 # Optionals
-find_package( metis QUIET )
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 
 ## Sources
