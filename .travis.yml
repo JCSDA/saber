@@ -1,120 +1,41 @@
-
+#======================================================================
 # Project settings
 #======================================================================
+env:
+  global:
+  - secure: RHwzxA4rRtHo2xyj6t5euy/tIqeHzOyTNnjCewEVHHaoE2ZebY0mwUdozqumBLs5Vsa+1fzzcMSOdg8uostMyAwp97okmcDc3I5VFhnEZIb51BdvTfnWSQQDp3oM8/urNX45o/rcyo4W/+TE8BOGFEt9E0wSN3tWn6k1bwc9DGBaL1YMjMdoX+i0ErVhve/vyc3a1/SxrUjfTk/rNJQU7MHiuCT2Atrak/y+WVTj24aBeu3ud++tc9IgPHpPRjTV2wSO1xCFHBjArUYIYk12vAuTz5VX7q9iL7Cu764sk7C8OsWw6XiIukRbEWPijFTYcmjaIG5MRJ9BUddtgeiqPUP/L2yvPKjTroff17b95ouDQ2abtmNtVP1gzmH3G94F9v7xMpFpt/WhuuvFVHAoP1x4PvgfDrsT2s0AXXvHreQV5VjcKK9hAuLUmshEQrFPKP8j7PCDHnvOoEwEbsW1rkwUTzHau3K+IsRtD75VgySuRFSEAxXdmF7JMu6c0Ep31W2o07Ux3H/ApYhrAF/0n8xJVU04l6EnUWs6hP0zB/+2YkvXSc4vFrY/Nb6HVyAU0Darx6JN2rzFNLueycSrIPIJH3zUavHa2dWIwpK2Q+xA/T0Nvk6yqhf8pyANjA7RrjvIxxDZe2CPK9lixp4Yig85gMqnc/ZY+9LQta6KvLA=
+  - secure: Vp34k7oaVeYtY2k4F0hWXCFnAvP2a3PTpAcHxfL6gtAmUkVub1IZIoZTdQZRnZGwGHYEtkL96e5MSuPtKXMYECvloPNaSPnzZsAO+MH8weSY60gRLQbkzaTr32oLoNAqCcvYCKbEeIGRvxy4jS8fDFPgTh4aWWKAp8LF5JNVg47mJCr2qXpAGx6lMdpyw67RRK9Y+7+ScTpMXW/ARk1ZH6LD9zF/5IDruVseKDpqSiZvwk+m8pyH3iBJ7j7Y7XFbDLdRFMfwBLYfo0piQ0kfNBCl+VTCDxLXm5o8EpvQuCQ52Wqjx1/HOQ+bN6vBD73y1cgMCDSTMizwD5HnZXTC1SKexysbso57g1vm1uYvb0v2Tk09q5J+cSxQsEBbeqrVQLBHoA3uPLeZ6sPkT4EUTY6kzLTB2XZKEu8HHd7U/EpMX76zojKrhgCmCRhwKW0X15LW4uNFj/pNoduDajocyGhlPy/JwvaJB9Syn6ZagK1RoP/UysuezDOCkHIHqzs0UtJfR5pRixF3+Dh09RPzc5PVo+GViL2hFDHJdnlu2qkYd2DuH1zw0Ys6MW+APOL2U2t5eIf7T04KbUcyTRe4oPZ69J1qva3IafH5tiRVKz11VHegJc4w1BULbgvPP04Bd53GgcEaSNPDmuvysd7pANHr5/ZG5vZ4SxJM+4wJntc=
+  - secure: B9Tw4DAA9GSK0ghghwFpA63t/aULd2YfKNNsY2MZD4jDatFxbrV2cjOi8YUcOAYi3SPYpr4KXFdeUeB2CQNst7BdR1l8u2b3DHa6hPrjMXXR0wgsfZ12wkVjShwsvk/Xm+vcWYTJnPz5ria+zp2IS5zm1xiHZl80+blC82Ocon3r2rQmq5uLDP9Gl29lxkBPgnYGX4jCS5bx6SeERWA0vB1o/4ljazI8iJjAuXWWhKUuoUARCdVqTzghp22+H2WVnoD2CPMdZcoH7gfSYfQV3xlpE5vcV14FmDWgOXeXqN6cezGFQtsoLGwwd4YlCh9rT5/mdNQ7amYcnpKWvleVr2eXE+BMQYRul0qVwRaiDoQyPLGape0lTaR7YHUUm6E4lonKaeJMbtSJv8gO2CDmH2zl9FBxmFPCh9c2Mz/SOdPY1e1Wt5WMmcbbOhu1Hx/QfnYffDUMF0N0XZwFVZylm1ivx2XUhR25MOFUHNqt3ryijiLbI0Q8FLzIn0hZciYAtCqXekdnMaHCWv1ugMJTQxnInl79IONP1TXwomO4gPn7RBMSQ8PtYLH03zcYpGCPXPAj8ZY0rim0G1qpXfbNmIhXKwFNAdV5d+9gb2zl2oGI/SLEAxfYPvkMpi3Mg1550pta1m3oMGVtcqGABWNf175YNgHXuYL1/tevE5EDDyk=
+
 branches:
   only:
-    - develop
-
+  - develop
 language: cpp
-
 services:
   - docker
-
 before_install:
-  - date
-  - REPO_SOURCE_DIR=${TRAVIS_BUILD_DIR}/jcsda/src_repo
-
-#  create the same file structure on Travis VM and Docker container
-  - mkdir -p ${TRAVIS_BUILD_DIR}/jcsda/src_repo
-# echo branch info
   - echo $TRAVIS_PULL_REQUEST
   - echo $TRAVIS_PULL_REQUEST_BRANCH
   - echo $TRAVIS_BRANCH
   - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
   - echo "TRAVIS_BRANCH=$TRAVIS_BRANCH, PR=$PR, BRANCH=$BRANCH"
-#======================================================================
-# Clone all repos
-#======================================================================
-#  create saber-bundle directory
   - pwd
-  - mkdir -p ${REPO_SOURCE_DIR}/saber-bundle
-
-  - if [ "$BRANCH" = "develop" ];
-    then export BRANCH_FORK="release-stable";
-    else export BRANCH_FORK=$BRANCH;
-    fi
-
-#  checkout for the same branch name in fckit
-  - git clone https://github.com/jcsda/fckit.git ${REPO_SOURCE_DIR}/saber-bundle/fckit
-  - cd ${REPO_SOURCE_DIR}/saber-bundle/fckit
-  - git checkout $BRANCH_FORK || echo "No branch named $BRANCH in atlas repo"; git checkout release-stable
-  - cd $REPO_SOURCE_DIR
-
-#  checkout for the same branch name in atlas
-  - git clone https://github.com/jcsda/atlas.git ${REPO_SOURCE_DIR}/saber-bundle/atlas
-  - cd ${REPO_SOURCE_DIR}/saber-bundle/atlas
-  - git checkout $BRANCH_FORK || echo "No branch named $BRANCH in atlas repo"; git checkout release-stable
-  - cd $REPO_SOURCE_DIR
-
-#  clone metis
-  - git clone https://github.com/jcsda/metis.git ${REPO_SOURCE_DIR}/saber-bundle/metis
-
-#  checkout for the same branch name in oops
-  - git clone https://github.com/jcsda/oops.git ${REPO_SOURCE_DIR}/saber-bundle/oops
-  - cd ${REPO_SOURCE_DIR}/saber-bundle/oops
-  - git checkout $BRANCH || echo "No branch named $BRANCH in oops repo"
-  - cd $REPO_SOURCE_DIR
-
-#  clone the testing branch of saber
-  - git clone -b $BRANCH https://github.com/jcsda/saber.git ${REPO_SOURCE_DIR}/saber-bundle/saber
-
-#  copy CI CMakeLists.txt
-  - cp ${REPO_SOURCE_DIR}/saber-bundle/saber/CI/CMakeLists.txt ${REPO_SOURCE_DIR}/saber-bundle
-
-#  do no switch to develop branch by removing
-#  develop UPDATE in CMakeLists.txt in saber-bundle
   - ls
-  - ls ${REPO_SOURCE_DIR}
-  - cd ${REPO_SOURCE_DIR}/saber-bundle
-  - sed -i 's/BRANCH release-stable UPDATE//' CMakeLists.txt
-  - sed -i 's/BRANCH develop UPDATE//' CMakeLists.txt
-  - sed -i '/PROJECT eckit/d' CMakeLists.txt
-  - cat CMakeLists.txt
-  - cd ${REPO_SOURCE_DIR}
-  - ls ${REPO_SOURCE_DIR}
-  - ls ${REPO_SOURCE_DIR}/saber-bundle
-  - find . -name \* -exec chmod 777 {} \;
-
-#======================================================================
-# get docker image
-# FROM  jcsda/docker:latest
-#======================================================================
-  - cd ${REPO_SOURCE_DIR}/saber-bundle/saber
-  - date
   - cd CI
-  - docker build -t jcsda/dockerl2 --build-arg=Dockerfile .  #Dockerfile handles ssh for mpi
-  - date
-  - docker images
-# request codecov to detect CI environment to pass through to docker
-  - ci_env=`bash <(curl -s https://codecov.io/env)`
-  - echo $ci_env
-  - docker run -d -t $ci_env --name jcsda_container -v ${REPO_SOURCE_DIR}/saber-bundle:/jcsda/src_repo jcsda/dockerl2
-  - docker ps -a
-  - date
+  - REPO_SOURCE_DIR=${TRAVIS_BUILD_DIR}/jcsda/src_repo
+  - git clone https://${GH_TOKEN}@github.com/jcsda/jedi-build-package.git ${REPO_SOURCE_DIR}/jedi_build_package
 
-#======================================================================
-# Here are the run steps
-#======================================================================
+  - docker pull jcsda/docker-clang-mpich-dev
+  - docker images
+
 script:
-  - docker exec jcsda_container ls
-  - docker exec jcsda_container bash -c 'cp -r /jcsda/.openmpi/ ~/'
-##  use cmake with flags to generate test coverage reports
-  - date
-# set different test tiers for cron vs pr jobs
-  - if [ "$TRAVIS_EVENT_TYPE" != "cron" ]; then
-      docker exec jcsda_container bash -c 'cd /build_container &&
-        export SABER_TEST_TIER=1 &&
-        cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON /jcsda/src_repo';
-    else
-      docker exec jcsda_container bash -c 'cd /build_container &&
-        export SABER_TEST_TIER=3 &&
-        cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON /jcsda/src_repo';
-    fi
-  - date
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && make -j4'
-  - date
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && ctest'
-  - date
-#  upload to CodeCov
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && ls'
-  - docker exec jcsda_container bash -c 'cd /build_container/saber && bash <(curl -s https://codecov.io/bash) -t b8d1ec3a-1248-4948-afe1-5afc97fc24c7 -R /jcsda/src_repo/saber/'
+  - docker run -d -t --env GH_TOKEN=$GH_TOKEN --env AWS_ACCESS_KEY_ID=$aws_access_key_id --env GH_BRANCH=$BRANCH --env AWS_SECRET_ACCESS_KEY=$aws_secret_access_key --name clang_container -v ${REPO_SOURCE_DIR}/jedi_build_package:/jcsda/src_repo jcsda/docker-clang-mpich-dev
+
+  - docker exec clang_container bash -c 'mkdir ~/.aws'
+  - docker exec clang_container bash -c 'echo [default] >> ~/.aws/credentials '
+  - docker exec clang_container bash -c 'echo aws_access_key_id = $aws_access_key_id >> ~/.aws/credentials'
+  - docker exec clang_container bash -c 'echo aws_secret_access_key = $aws_secret_access_key >> ~/.aws/credentials'
+  - docker exec clang_container bash -c 'ls /jcsda/src_repo'
+  - docker exec clang_container bash -c 'cd /jcsda/src_repo && pip install --user -e .'
+
+  - docker exec clang_container bash -c 'cd /jcsda/src_repo && ~/.local/bin/jedi-build --gh-token=$GH_TOKEN -j 4 --env-id=travis-clang --branch-map atlas:release-stable fckit:release-stable -br $GH_BRANCH -p saber -vvv -3 -u --submit-dashboard --site TravisCI --abort-on-build-errors --abort-on-test-errors'
