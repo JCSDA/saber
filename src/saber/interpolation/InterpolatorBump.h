@@ -17,7 +17,7 @@
 #include "eckit/mpi/Comm.h"
 
 #include "oops/base/InterpolatorBase.h"
-#include "oops/parallel/mpi/mpi.h"
+#include "oops/mpi/mpi.h"
 #include "oops/util/ObjectCounter.h"
 
 namespace saber {
@@ -37,7 +37,7 @@ class InterpolatorBump : public oops::InterpolatorBase,
                    const atlas::FunctionSpace &,
                    const atlas::FunctionSpace &,
                    const atlas::field::FieldSetImpl * = nullptr,
-                   const eckit::mpi::Comm & = oops::mpi::comm());
+                   const eckit::mpi::Comm & = oops::mpi::world());
 
   ~InterpolatorBump();
 
