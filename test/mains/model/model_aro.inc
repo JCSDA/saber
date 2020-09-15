@@ -13,7 +13,7 @@ type(nam_type),intent(in) :: nam         ! Namelist
 
 ! Local variables
 integer :: img,ilon,ilat,il0,il0_bot,il0_top,ie,its
-integer :: ncid,nlon_id,nlat_id,nlev_id,pp_id,lon_id,lat_id,cmask_id,a_id,b_id,fld_id
+integer :: ncid,nlon_id,nlat_id,nlev_id,pp_id,lon_id,lat_id,cmask_id,a_id,b_id,fld_id,mask_id
 integer,allocatable :: mask_counter(:)
 real(kind_real) :: dx,dy
 real(kind_real),allocatable :: lon(:,:),lat(:,:),cmask(:,:),a(:),b(:),fld_loc(:,:),fld(:,:)
@@ -84,9 +84,44 @@ do ilon=1,model%nlon
 end do
 model%area = dx*dy/req**2
 
-! Specific mask based on the mean LWC
+! Specific mask
 select case (trim(nam%mask_type))
+case ("hyd")
+   ! Based on an external file
+
+   ! Allocation
+   allocate(fld_loc(model%nlon,model%nlat))
+
+   ! Open file
+   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(nam%prefix)//'_hyd.nc',nf90_nowrite,ncid))
+
+   ! Read mask
+   do il0=1,nam%nl
+      ! Get id
+      write(ilchar,'(i3.3)') nam%levs(il0)
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,'S'//ilchar//'MASK',mask_id))
+
+      ! Read data
+      call mpl%ncerr(subr,nf90_get_var(ncid,mask_id,fld_loc))
+
+      ! Pack data
+      img = 0
+      do ilon=1,model%nlon
+         do ilat=1,model%nlat
+            img = img+1
+            model%mask(img,il0) = (fld_loc(ilon,ilat)>nam%mask_th(1))
+         end do
+      end do
+   end do
+
+   ! Close file
+   call mpl%ncerr(subr,nf90_close(ncid))
+
+   ! Release memory
+   deallocate(fld_loc)
 case ("lwc_fog","lwc_clear","lwc_stratus")
+   ! Based on the ensemble-mean LWC
+
    ! Allocation
    allocate(fld_loc(model%nlon,model%nlat))
    allocate(fld(model%nmg,model%nl0))
