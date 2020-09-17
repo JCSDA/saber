@@ -40,10 +40,14 @@ add_subdirectory( tools )
 add_subdirectory( doc )
 
 ## Global tests
-ecbuild_add_test( TARGET saber_coding_norms
+ecbuild_add_test( TARGET saber_coding_norms_src
                   TYPE SCRIPT
                   COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
-                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/src )
+                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/src )
+ecbuild_add_test( TARGET saber_coding_norms_test
+                  TYPE SCRIPT
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
+                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/test )
 
 ## Package Config
 ecbuild_install_project( NAME ${PROJECT_NAME} )
