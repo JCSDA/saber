@@ -84,7 +84,7 @@ phases:
         && export FC=mpifort
         && export CC=mpicc
         && export CXX=mpicxx
-        && ecbuild /jcsda/saber-bundle/
+        &&  cmake -DCMAKE_MODULE_PATH=/usr/local/share/ecbuild/cmake/ -DCMAKE_BUILD_TYPE=Debug -DENABLE_GPROF=ON -DCMAKE_CXX_COMPILER=$(which g++) -DCMAKE_C_COMPILER=$(which gcc) -DCMAKE_Fortran_COMPILER=$(which gfortran) /jcsda/saber-bundle/
         && cd saber
         && make -j4"
 
@@ -116,3 +116,8 @@ phases:
         && ctest -VV --rerun-failed";
         else echo "Build failed";
         fi
+      - echo 'Connect to CodeCov'
+      - cd /build_container/saber
+      - pwd
+      - ls
+      - bash /jcsda/saber-bundle/saber/CI/codecov_script.sh
