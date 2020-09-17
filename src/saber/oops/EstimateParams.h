@@ -20,7 +20,7 @@
 #include "oops/assimilation/Increment4D.h"
 #include "oops/assimilation/State4D.h"
 #include "oops/base/IncrementEnsemble.h"
-#include "oops/parallel/mpi/mpi.h"
+#include "oops/mpi/mpi.h"
 #include "oops/runs/Application.h"
 #include "oops/util/Logger.h"
 
@@ -50,7 +50,7 @@ template <typename MODEL> class EstimateParams : public oops::Application {
  public:
 // -----------------------------------------------------------------------------
   static const std::string classname() {return "saber::EstimateParams";}
-  explicit EstimateParams(const eckit::mpi::Comm & comm = oops::mpi::comm()) : Application(comm) {
+  explicit EstimateParams(const eckit::mpi::Comm & comm = oops::mpi::world()) : Application(comm) {
     instantiateCovarFactory<MODEL>();
   }
 // -----------------------------------------------------------------------------
