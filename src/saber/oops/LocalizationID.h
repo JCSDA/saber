@@ -15,7 +15,6 @@
 
 #include "eckit/config/Configuration.h"
 
-#include "oops/base/IncrementEnsemble.h"
 #include "oops/base/LocalizationBase.h"
 #include "oops/util/Logger.h"
 
@@ -36,12 +35,9 @@ template<typename MODEL> class LocalizationID : public oops::LocalizationBase<MO
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
   typedef oops::Increment4D<MODEL>                        Increment4D_;
-  typedef oops::IncrementEnsemble<MODEL>                  Ensemble_;
-  typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
 
  public:
   LocalizationID(const Geometry_ &,
-                 const EnsemblePtr_,
                  const eckit::Configuration &);
   ~LocalizationID();
 
@@ -57,7 +53,6 @@ template<typename MODEL> class LocalizationID : public oops::LocalizationBase<MO
 
 template<typename MODEL>
 LocalizationID<MODEL>::LocalizationID(const Geometry_ & resol,
-                                      const EnsemblePtr_ ens,
                                       const eckit::Configuration & conf)
   : cross_timeslot_(0)
 {
