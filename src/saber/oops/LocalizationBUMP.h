@@ -15,7 +15,6 @@
 
 #include "eckit/config/Configuration.h"
 
-#include "oops/base/IncrementEnsemble.h"
 #include "oops/base/LocalizationBase.h"
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
@@ -44,12 +43,8 @@ template<typename MODEL> class LocalizationBUMP : public oops::LocalizationBase<
   typedef oops::Increment4D<MODEL>                        Increment4D_;
   typedef OoBump<MODEL>                                   OoBump_;
   typedef ParametersBUMP<MODEL>                           Parameters_;
-  typedef oops::IncrementEnsemble<MODEL>                  Ensemble_;
-  typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
-
  public:
   LocalizationBUMP(const Geometry_ &,
-                   const EnsemblePtr_,
                    const eckit::Configuration &);
   ~LocalizationBUMP();
 
@@ -67,7 +62,6 @@ template<typename MODEL> class LocalizationBUMP : public oops::LocalizationBase<
 
 template<typename MODEL>
 LocalizationBUMP<MODEL>::LocalizationBUMP(const Geometry_ & resol,
-                                          const EnsemblePtr_ ens,
                                           const eckit::Configuration & conf)
   : ooBump_()
 {
@@ -84,7 +78,7 @@ LocalizationBUMP<MODEL>::LocalizationBUMP(const Geometry_ & resol,
   oops::Log::info() << "Number of ensemble time-slots:" << timeslots.size() << std::endl;
 
 // Setup parameters
-  Parameters_ param(resol, vars, timeslots, conf, ens);
+  Parameters_ param(resol, vars, timeslots, conf);
 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));
