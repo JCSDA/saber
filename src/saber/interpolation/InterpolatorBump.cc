@@ -41,6 +41,15 @@ InterpolatorBump::InterpolatorBump(const eckit::Configuration & config,
 }
 
 // -----------------------------------------------------------------------------
+  void InterpolatorBump::apply(atlas::Field const & infield,
+                               atlas::Field & outfield) {
+  atlas::FieldSet infields, outfields;
+  infields.add(infield);
+  outfields.add(outfield);
+  bint_apply_f90(keyBumpInterpolator_, infields.get(), outfields.get());
+}
+
+// -----------------------------------------------------------------------------
   void InterpolatorBump::apply_ad(atlas::FieldSet const & fields_grid2,
                                   atlas::FieldSet & fields_grid1) {
   bint_apply_ad_f90(keyBumpInterpolator_, fields_grid2.get(),

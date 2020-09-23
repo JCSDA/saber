@@ -42,6 +42,7 @@ class InterpolatorBump : public oops::InterpolatorBase,
   ~InterpolatorBump();
 
   void apply(atlas::FieldSet const &, atlas::FieldSet &) override;
+  void apply(atlas::Field const &, atlas::Field &) override;
   void apply_ad(atlas::FieldSet const &, atlas::FieldSet &) override;
 
  private:
