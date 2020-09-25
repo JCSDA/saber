@@ -51,7 +51,7 @@ class ErrorCovariance4DBUMP : public oops::ModelSpaceCovariance4DBase<MODEL>,
   typedef OoBump<MODEL>            OoBump_;
   typedef oops::State<MODEL>       State_;
   typedef oops::State4D<MODEL>     State4D_;
-  typedef ParametersBUMP<MODEL>    Parameters_;
+  typedef ParametersBUMP<MODEL>    ParametersBUMP_;
 
  public:
   static const std::string classname() {return "saber::ErrorCovariance4DBUMP";}
@@ -88,7 +88,7 @@ ErrorCovariance4DBUMP<MODEL>::ErrorCovariance4DBUMP(const Geometry_ & resol,
   oops::Log::trace() << "ErrorCovariance4DBUMP::ErrorCovariance4DBUMP starting" << std::endl;
 
 // Setup parameters
-  Parameters_ param(resol, vars, timeslots_, conf);
+  ParametersBUMP_ param(resol, vars, timeslots_, conf);
 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));

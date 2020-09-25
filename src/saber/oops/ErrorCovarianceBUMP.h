@@ -48,7 +48,7 @@ class ErrorCovarianceBUMP : public oops::ModelSpaceCovarianceBase<MODEL>,
   typedef oops::Increment<MODEL>   Increment_;
   typedef OoBump<MODEL>            OoBump_;
   typedef oops::State<MODEL>       State_;
-  typedef ParametersBUMP<MODEL>    Parameters_;
+  typedef ParametersBUMP<MODEL>    ParametersBUMP_;
 
  public:
   static const std::string classname() {return "saber::ErrorCovarianceBUMP";}
@@ -87,7 +87,7 @@ ErrorCovarianceBUMP<MODEL>::ErrorCovarianceBUMP(const Geometry_ & resol,
   timeslots.push_back(xb.validTime());
 
 // Setup parameters
-  Parameters_ param(resol, vars, timeslots, conf);
+  ParametersBUMP_ param(resol, vars, timeslots, conf);
 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));

@@ -55,7 +55,6 @@ type bump_type
 contains
    procedure :: create => bump_create
    procedure :: setup => bump_setup
-   procedure :: setup_online => bump_setup_online_deprecated
    procedure :: run_drivers => bump_run_drivers
    procedure :: add_member => bump_add_member
    procedure :: remove_member => bump_remove_member
@@ -65,27 +64,17 @@ contains
    procedure :: apply_vbal_inv_ad => bump_apply_vbal_inv_ad
    procedure :: apply_stddev => bump_apply_stddev
    procedure :: apply_stddev_inv => bump_apply_stddev_inv
-   procedure :: bump_apply_nicas
-   procedure :: bump_apply_nicas_deprecated
-   generic :: apply_nicas => bump_apply_nicas,bump_apply_nicas_deprecated
+   procedure :: apply_nicas => bump_apply_nicas
    procedure :: get_cv_size => bump_get_cv_size
-   procedure :: bump_apply_nicas_sqrt
-   procedure :: bump_apply_nicas_sqrt_deprecated
-   generic :: apply_nicas_sqrt => bump_apply_nicas_sqrt,bump_apply_nicas_sqrt_deprecated
+   procedure :: apply_nicas_sqrt => bump_apply_nicas_sqrt
    procedure :: apply_nicas_sqrt_ad => bump_apply_nicas_sqrt_ad
    procedure :: randomize => bump_randomize
-   procedure :: bump_apply_obsop
-   procedure :: bump_apply_obsop_deprecated
-   generic :: apply_obsop => bump_apply_obsop,bump_apply_obsop_deprecated
-   procedure :: bump_apply_obsop_ad
-   procedure :: bump_apply_obsop_ad_deprecated
-   generic :: apply_obsop_ad => bump_apply_obsop_ad,bump_apply_obsop_ad_deprecated
+   procedure :: apply_obsop => bump_apply_obsop
+   procedure :: apply_obsop_ad => bump_apply_obsop_ad
    procedure :: get_parameter => bump_get_parameter
    procedure :: copy_to_field => bump_copy_to_field
    procedure :: test_get_parameter => bump_test_get_parameter
-   procedure :: bump_set_parameter
-   procedure :: bump_set_parameter_deprecated
-   generic :: set_parameter => bump_set_parameter,bump_set_parameter_deprecated
+   procedure :: set_parameter => bump_set_parameter
    procedure :: copy_from_field => bump_copy_from_field
    procedure :: test_set_parameter => bump_test_set_parameter
    procedure :: test_apply_interfaces => bump_test_apply_interfaces
@@ -365,146 +354,6 @@ if (present(nobs)) then
 end if
 
 end subroutine bump_setup
-
-!----------------------------------------------------------------------
-! Subroutine: bump_setup_online_deprecated
-! Purpose: online setup (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_setup_online_deprecated(bump,f_comm,nmga,nl0,nv,nts,lon,lat,area,vunit,gmask,smask,ens1_ne,ens1_nsub, &
- & ens2_ne,ens2_nsub,nobs,lonobs,latobs,lunit,msvali,msvalr)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump            ! BUMP
-type(fckit_mpi_comm),intent(in) :: f_comm         ! FCKIT MPI communicator wrapper
-integer,intent(in) :: nmga                        ! Halo A size
-integer,intent(in) :: nl0                         ! Number of levels in subset Sl0
-integer,intent(in) :: nv                          ! Number of variables
-integer,intent(in) :: nts                         ! Number of time slots
-real(kind_real),intent(in) :: lon(nmga)           ! Longitude (in degrees: -180 to 180)
-real(kind_real),intent(in) :: lat(nmga)           ! Latitude (in degrees: -90 to 90)
-real(kind_real),intent(in) :: area(nmga)          ! Area (in m^2)
-real(kind_real),intent(in) :: vunit(nmga,nl0)     ! Vertical unit
-logical,intent(in) :: gmask(nmga,nl0)             ! Geometry mask
-logical,intent(in),optional :: smask(nmga,nl0)    ! Sampling mask
-integer,intent(in),optional :: ens1_ne            ! Ensemble 1 size
-integer,intent(in),optional :: ens1_nsub          ! Ensemble 1 number of sub-ensembles
-integer,intent(in),optional :: ens2_ne            ! Ensemble 2 size
-integer,intent(in),optional :: ens2_nsub          ! Ensemble 2 size of sub-ensembles
-integer,intent(in),optional :: nobs               ! Number of observations
-real(kind_real),intent(in),optional :: lonobs(:)  ! Observations longitude (in degrees: -180 to 180)
-real(kind_real),intent(in),optional :: latobs(:)  ! Observations latitude (in degrees: -90 to 90)
-integer,intent(in),optional :: lunit              ! Listing unit
-integer,intent(in),optional :: msvali             ! Missing value for integers
-real(kind_real),intent(in),optional :: msvalr     ! Missing value for reals
-
-! Local variables
-integer :: lnobs,lmsvali,llunit,imga,il0,iv,its
-integer(kind_int),pointer :: int_ptr_2(:,:)
-real(kind_real) :: lmsvalr
-real(kind_real),allocatable :: llonobs(:),llatobs(:)
-real(kind_real),pointer :: real_ptr_1(:),real_ptr_2(:,:)
-character(len=1024),parameter :: subr = 'bump_setup_online_deprecated'
-type(atlas_field) :: afield
-type(atlas_fieldset) :: afieldset
-type(atlas_functionspace) :: afunctionspace
-
-! Force optional parameters
-lnobs = 0
-lmsvali = dmsvali
-lmsvalr = dmsvalr
-if (present(nobs)) lnobs = nobs
-allocate(llonobs(lnobs))
-allocate(llatobs(lnobs))
-if (present(lonobs).and.present(latobs)) then
-  llonobs = lonobs
-  llatobs = latobs
-end if
-if (present(msvali)) lmsvali = msvali
-if (present(msvalr)) lmsvalr = msvalr
-llunit = lmsvali
-if (present(lunit)) llunit = lunit
-
-! Set namelist parameters
-bump%nam%nl = nl0
-bump%nam%nv = nv
-do iv=1,bump%nam%nv
-   write(bump%nam%variables(iv),'(a,i2.2)') 'var_',iv
-end do
-bump%nam%nts = nts
-do its=1,bump%nam%nts
-   write(bump%nam%timeslots(its),'(a,i2.2)') 'ts_',its
-end do
-bump%nam%lev2d = 'first'
-if (present(ens1_ne)) bump%nam%ens1_ne = ens1_ne
-if (present(ens1_nsub)) bump%nam%ens1_nsub = ens1_nsub
-if (present(ens2_ne)) bump%nam%ens2_ne = ens2_ne
-if (present(ens2_nsub)) bump%nam%ens2_nsub = ens2_nsub
-
-! Create ATLAS function space
-call create_atlas_function_space(nmga,lon*deg2rad,lat*deg2rad,afunctionspace)
-
-! Create ATLAS fieldset with empty fields
-call create_atlas_fieldset(afunctionspace,bump%nam%nl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts), &
- & afieldset)
-
-! Set geometry
-
-! Set area
-afield = afunctionspace%create_field(name='area',kind=atlas_real(kind_real),levels=0)
-call afield%data(real_ptr_1)
-real_ptr_1 = area
-call afieldset%add(afield)
-call afield%final()
-
-! Set vertical unit
-afield = afunctionspace%create_field(name='vunit',kind=atlas_real(kind_real),levels=bump%nam%nl)
-call afield%data(real_ptr_2)
-real_ptr_2 = transpose(vunit)
-call afieldset%add(afield)
-call afield%final()
-
-! Set geometry mask
-afield = afunctionspace%create_field(name='gmask',kind=atlas_integer(kind_int),levels=bump%nam%nl)
-call afield%data(int_ptr_2)
-do il0=1,bump%nam%nl
-   do imga=1,nmga
-      if (gmask(imga,il0)) then
-         int_ptr_2(il0,imga) = 1
-      else
-         int_ptr_2(il0,imga) = 0
-      end if
-   end do
-end do
-call afieldset%add(afield)
-call afield%final()
-
-if (present(smask)) then
-   ! Set sampling mask
-   afield = afunctionspace%create_field(name='smask',kind=atlas_integer(kind_int),levels=bump%nam%nl)
-   call afield%data(int_ptr_2)
-   do il0=1,bump%nam%nl
-      do imga=1,nmga
-         if (smask(imga,il0)) then
-            int_ptr_2(il0,imga) = 1
-         else
-            int_ptr_2(il0,imga) = 0
-         end if
-      end do
-   end do
-   call afieldset%add(afield)
-   call afield%final()
-end if
-
-! BUMP setup
-call bump%setup(f_comm,afunctionspace,afieldset=afieldset,nobs=lnobs,lonobs=llonobs,latobs=llatobs, &
- & lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
-
-! Deprecation warning
-call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
-
-end subroutine bump_setup_online_deprecated
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_run_drivers
@@ -1241,58 +1090,6 @@ call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(
 end subroutine bump_apply_nicas
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_nicas_deprecated
-! Purpose: NICAS application (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_apply_nicas_deprecated(bump,fld_mga)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                                                          ! BUMP
-real(kind_real),intent(inout) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
-
-! Local variable
-integer :: its,iv
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
-character(len=1024),parameter :: subr = 'bump_apply_nicas_deprecated'
-
-! Deprecation warning
-call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
-
-if (bump%geom%same_grid) then
-   ! Apply NICAS
-   if (bump%nam%lsqrt) then
-      call bump%nicas%apply_from_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga)
-   else
-      call bump%nicas%apply(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_mga)
-   end if
-else
-   ! Model grid to subset Sc0
-   do its=1,bump%nam%nts
-      do iv=1,bump%nam%nv
-         call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga(:,:,iv,its),fld_c0a(:,:,iv,its))
-      end do
-   end do
-
-   ! Apply NICAS
-   if (bump%nam%lsqrt) then
-      call bump%nicas%apply_from_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_c0a)
-   else
-      call bump%nicas%apply(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_c0a)
-   end if
-
-   ! Subset Sc0 to model grid
-   do its=1,bump%nam%nts
-      do iv=1,bump%nam%nv
-         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv,its),fld_mga(:,:,iv,its))
-      end do
-   end do
-end if
-
-end subroutine bump_apply_nicas_deprecated
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_get_cv_size
 ! Purpose: get control variable size
 !----------------------------------------------------------------------
@@ -1365,56 +1162,6 @@ end if
 call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_nicas_sqrt
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_nicas_sqrt_deprecated
-! Purpose: NICAS square-root application (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_apply_nicas_sqrt_deprecated(bump,pcv,fld_mga)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                                                          ! BUMP
-real(kind_real),intent(in) :: pcv(:)                                                            ! Packed control variable
-real(kind_real),intent(inout) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
-
-! Local variable
-integer :: its,iv
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv,bump%nam%nts)
-character(len=1024),parameter :: subr = 'bump_apply_nicas_sqrt_deprecated'
-type(cv_type) :: cv
-
-! Deprecation warning
-call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
-
-! Allocation
-call bump%nicas%alloc_cv(bump%mpl,bump%bpar,cv)
-
-! Check dimension
-if (size(pcv)==cv%n) then
-   ! Unpack control variable
-   call cv%unpack(pcv)
-else
-   call bump%mpl%abort(subr,'wrong control variable size in bump_apply_nicas_sqrt')
-end if
-
-if (bump%geom%same_grid) then
-   ! Apply NICAS square-root
-   call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_mga)
-else
-   ! Apply NICAS square-root
-   call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,bump%bpar,cv,fld_c0a)
-
-   ! Subset Sc0 to model grid
-   do its=1,bump%nam%nts
-      do iv=1,bump%nam%nv
-         call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a(:,:,iv,its),fld_mga(:,:,iv,its))
-      end do
-   end do
-end if
-
-end subroutine bump_apply_nicas_sqrt_deprecated
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_sqrt_ad
@@ -1544,43 +1291,6 @@ end if
 end subroutine bump_apply_obsop
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_obsop_deprecated
-! Purpose: observation operator application (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_apply_obsop_deprecated(bump,fld_mga,obs)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                              ! BUMP
-real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0) ! Field
-real(kind_real),intent(out) :: obs(bump%obsop%nobsa,bump%geom%nl0)  ! Observations columns
-
-! Local variables
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
-character(len=1024),parameter :: subr = 'bump_apply_obsop_deprecated'
-
-! Deprecation warning
-call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
-
-! Test dimensions
-if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop')
-if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop')
-
-if (bump%geom%same_grid) then
-   ! Apply observation operator
-   call bump%obsop%apply(bump%mpl,bump%geom,fld_mga,obs)
-else
-   ! Model grid to subset Sc0
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,fld_c0a)
-
-   ! Apply observation operator
-   call bump%obsop%apply(bump%mpl,bump%geom,fld_c0a,obs)
-end if
-
-end subroutine bump_apply_obsop_deprecated
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_apply_obsop_ad
 ! Purpose: observation operator adjoint application
 !----------------------------------------------------------------------
@@ -1617,43 +1327,6 @@ end if
 call fld_to_atlas(bump%mpl,bump%nam%variables(1:bump%nam%nv),bump%nam%timeslots(1:bump%nam%nts),fld_mga,afieldset,bump%nam%lev2d)
 
 end subroutine bump_apply_obsop_ad
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_obsop_ad_deprecated
-! Purpose: observation operator adjoint application (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_apply_obsop_ad_deprecated(bump,obs,fld_mga)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                               ! BUMP
-real(kind_real),intent(in) :: obs(bump%obsop%nobsa,bump%geom%nl0)    ! Observations columns
-real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0) ! Field
-
-! Local variables
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
-character(len=1024),parameter :: subr = 'bump_apply_obsop_ad_deprecated'
-
-! Deprecation warning
-call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
-
-! Test dimensions
-if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop_ad')
-if (bump%nam%nts>1) call bump%mpl%abort(subr,'only one timeslot to call bump_apply_obsop_ad')
-
-if (bump%geom%same_grid) then
-   ! Apply observation operator adjoint
-   call bump%obsop%apply_ad(bump%mpl,bump%geom,obs,fld_mga)
-else
-   ! Apply observation operator adjoint
-   call bump%obsop%apply_ad(bump%mpl,bump%geom,obs,fld_c0a)
-
-   ! Subset Sc0 to model grid
-   call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga)
-end if
-
-end subroutine bump_apply_obsop_ad_deprecated
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_parameter
@@ -2014,69 +1687,6 @@ case default
 end select
 
 end subroutine bump_set_parameter
-
-!----------------------------------------------------------------------
-! Subroutine: bump_set_parameter_deprecated
-! Purpose: set a parameter (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_set_parameter_deprecated(bump,param,fld_mga)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                                                       ! BUMP
-character(len=*),intent(in) :: param                                                         ! Parameter
-real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv,bump%nam%nts) ! Field
-
-! Local variables
-integer :: ib,iv,jv,its,jts
-character(len=1024),parameter :: subr = 'bump_set_parameter_deprecated'
-
-! Deprecation warning
-call bump%mpl%warning(subr,'this interface is deprecated, consider using the ATLAS-based interface')
-
-write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
-call bump%mpl%flush
-
-select case (trim(param))
-case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef')
-   select case (trim(bump%nam%strategy))
-   case ('specific_univariate','specific_multivariate')
-      do ib=1,bump%bpar%nb
-         ! Get indices
-         iv = bump%bpar%b_to_v1(ib)
-         jv = bump%bpar%b_to_v2(ib)
-         its = bump%bpar%b_to_ts1(ib)
-         jts = bump%bpar%b_to_ts2(ib)
-
-         ! Copy to field
-         if ((iv==jv).and.(its==jts)) call bump%copy_from_field(param,ib,fld_mga(:,:,iv,its))
-      end do
-   case ('common','common_univariate','common_weighted')
-      ! Set common index
-      ib = bump%bpar%nbe
-
-      do its=1,bump%nam%nts
-         do iv=1,bump%nam%nv
-            ! Copy to field
-            call bump%copy_from_field(param,ib,fld_mga(:,:,iv,its))
-         end do
-      end do
-   end select
-case default
-   do ib=1,bump%bpar%nb
-      ! Get indices
-      iv = bump%bpar%b_to_v1(ib)
-      jv = bump%bpar%b_to_v2(ib)
-      its = bump%bpar%b_to_ts1(ib)
-      jts = bump%bpar%b_to_ts2(ib)
-
-      ! Copy to field
-      if ((iv==jv).and.(its==jts)) call bump%copy_from_field(param,ib,fld_mga(:,:,iv,its))
-   end do
-end select
-
-end subroutine bump_set_parameter_deprecated
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_copy_from_field
