@@ -44,7 +44,7 @@ class StdDevVariableChange : public oops::LinearVariableChangeBase<MODEL> {
   typedef OoBump<MODEL>          OoBump_;
   typedef oops::State<MODEL>     State_;
   typedef oops::State4D<MODEL>   State4D_;
-  typedef ParametersBUMP<MODEL>  Parameters_;
+  typedef ParametersBUMP<MODEL>  ParametersBUMP_;
 
  public:
   static const std::string classname() {return "saber::StdDevVariableChange";}
@@ -91,7 +91,7 @@ StdDevVariableChange<MODEL>::StdDevVariableChange(const State_ & xb, const State
   timeslots.push_back(xb.validTime());
 
 // Setup parameters
-  Parameters_ param(resol, vars, timeslots, conf);
+  ParametersBUMP_ param(resol, vars, timeslots, conf);
 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));

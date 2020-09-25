@@ -42,7 +42,7 @@ template<typename MODEL> class LocalizationBUMP : public oops::LocalizationBase<
   typedef oops::Increment<MODEL>                          Increment_;
   typedef oops::Increment4D<MODEL>                        Increment4D_;
   typedef OoBump<MODEL>                                   OoBump_;
-  typedef ParametersBUMP<MODEL>                           Parameters_;
+  typedef ParametersBUMP<MODEL>                           ParametersBUMP_;
  public:
   LocalizationBUMP(const Geometry_ &,
                    const eckit::Configuration &);
@@ -78,7 +78,7 @@ LocalizationBUMP<MODEL>::LocalizationBUMP(const Geometry_ & resol,
   oops::Log::info() << "Number of ensemble time-slots:" << timeslots.size() << std::endl;
 
 // Setup parameters
-  Parameters_ param(resol, vars, timeslots, conf);
+  ParametersBUMP_ param(resol, vars, timeslots, conf);
 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));

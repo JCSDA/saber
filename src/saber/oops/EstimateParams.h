@@ -43,7 +43,7 @@ template <typename MODEL> class EstimateParams : public oops::Application {
   typedef oops::Increment4D<MODEL>                        Increment4D_;
   typedef oops::State<MODEL>                              State_;
   typedef oops::State4D<MODEL>                            State4D_;
-  typedef ParametersBUMP<MODEL>                           Parameters_;
+  typedef ParametersBUMP<MODEL>                           ParametersBUMP_;
   typedef oops::IncrementEnsemble<MODEL>                  Ensemble_;
   typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
 
@@ -117,7 +117,7 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     }
 
     // Setup parameters
-    Parameters_ param(resol, vars, timeslots, fullConfig, ens, pseudo_ens);
+    ParametersBUMP_ param(resol, vars, timeslots, fullConfig, ens, pseudo_ens);
 
     // Write parameters
     param.write();
