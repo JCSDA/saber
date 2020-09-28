@@ -51,6 +51,7 @@ initial_time_sec=`date +%s`
 echo "Tests start at ${initial_time}" > saber_ctest_log/execution.log
 
 # List tests
+list_setup=`ctest -N | grep setup_saber | awk '{print $(NF)}'`
 list_get=`ctest -N | grep get_saber | awk '{print $(NF)}'`
 list_run=`ctest -N | grep test_bump | grep _run | awk '{print $(NF)}'`
 list_compare=`ctest -N | grep test_bump | grep _compare | awk '{print $(NF)}'`
@@ -60,6 +61,10 @@ list_qg=`ctest -N | grep test_qg | awk '{print $(NF)}'`
 list_interpolation=`ctest -N | grep test_interpolation | awk '{print $(NF)}'`
 
 # Tests variables
+list_setup_array=(${list_setup})
+ntest_setup=${#list_setup_array[@]}
+stest_setup=0
+ftest_setup=0
 list_get_array=(${list_get})
 ntest_get=${#list_get_array[@]}
 stest_get=0
@@ -88,7 +93,7 @@ list_interpolation_array=(${list_interpolation})
 ntest_interpolation=${#list_interpolation_array[@]}
 stest_interpolation=0
 ftest_interpolation=0
-ntest_tot=$((ntest_run+ntest_compare+ntest_plot+ntest_valgrind+ntest_qg+ntest_interpolation))
+ntest_tot=`printf "%03d" $((ntest_run+ntest_compare+ntest_plot+ntest_valgrind+ntest_qg+ntest_interpolation))`
 itest=0
 if test ${ntest_tot} = 0; then
    echo "No test detected, this script should be run from \${build_directory}/saber/test"
@@ -97,6 +102,42 @@ fi
 
 # Declare pids array
 declare -A pids=()
+
+# Setup tests
+for setup in ${list_setup}; do
+   echo "Handling process ${setup}" >> saber_ctest_log/execution.log
+   ctest -R ${setup} > saber_ctest_log/${setup}.log 2> saber_ctest_log/${setup}.err &
+   pids[${setup}]=$!
+done
+
+# Wait for all processes to finish
+while [ ${#pids[@]} -gt 0 ]; do
+   # Sleep
+   sleep 0.01
+
+   # Loop over running processes
+   for csetup in "${!pids[@]}"; do
+      # Check if the process is not running
+      if ! kill -0 ${pids[${csetup}]} 2>/dev/null; then
+         # Unset process from the list
+         unset pids[${csetup}]
+
+         # Check if this process passed
+         tmp1=`grep -i "tests passed," saber_ctest_log/${csetup}.log`
+         tmp2=${tmp1##*tests passed,}
+         nerr=${tmp2%% tests failed*}
+         if test ${nerr} -eq 0; then
+            echo "${csetup} passed" >> saber_ctest_log/execution.log
+            stest_setup=$((stest_setup+1))
+            echo -e "Setup :    \033[32mpassed\033[0m ~> ${csetup}"
+         else
+            echo "${csetup} failed" >> saber_ctest_log/execution.log
+            ftest_setup=$((ftest_setup+1))
+            echo -e "Setup :    \033[31mfailed\033[0m ~> ${csetup}"
+         fi
+      fi
+   done
+done
 
 # Download tests
 for get in ${list_get}; do
@@ -157,7 +198,6 @@ for run in ${list_run}; do
    mpixomp=$((mpi*omp))
    if [ ${mpixomp} -gt ${nproc} ]; then
       echo "Too many CPUs are required for process ${run} (${mpixomp} > ${nproc})"
-      exit 6
    fi
    rm -f saber_ctest_log/${run}_fail.log
 
@@ -743,6 +783,13 @@ fi
 # Print summary
 echo -e ""
 echo -e "Summary:"
+
+if test "${ntest_setup}" -gt "0"; then
+   # Download tests
+   stest=`printf "%03d" $((stest_setup))`
+   ftest=`printf "%03d" $((ftest_setup))`
+   echo -e "  Setup:         \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
 
 if test "${ntest_get}" -gt "0"; then
    # Download tests

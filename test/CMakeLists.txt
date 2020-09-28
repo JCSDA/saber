@@ -184,10 +184,39 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     # Set TESTFILE_DIR_SABER
     set( TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH} )
     message( STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER} )
-    message( STATUS "Download sources:" )
+else()
+    set( TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER} )
+    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testdata )
+        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testdata is missing" )
+    endif()
+    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testref )
+        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testref is missing" )
+    endif()
+    message( STATUS "Files loaded from: " ${TESTFILE_DIR_SABER} )
+endif()
 
-    # Make specific data directory
-    file( MAKE_DIRECTORY ${TESTFILE_DIR_SABER} )
+# Setup SABER directories and links
+message( STATUS "Setup SABER directories and links" )
+file(WRITE ${CMAKE_BINARY_DIR}/bin/saber_testdir)
+foreach( test ${saber_test} ${saber_test_model} ${saber_test_oops})
+    file(APPEND ${CMAKE_BINARY_DIR}/bin/saber_testdir ${test}\n)
+endforeach()
+file(WRITE ${CMAKE_BINARY_DIR}/bin/saber_testdata)
+foreach( file ${saber_data} )
+    file(APPEND ${CMAKE_BINARY_DIR}/bin/saber_testdata ${file}\n)
+endforeach()
+file(WRITE ${CMAKE_BINARY_DIR}/bin/saber_testref)
+foreach( file ${saber_ref} )
+    file(APPEND ${CMAKE_BINARY_DIR}/bin/saber_testref ${file}\n)
+endforeach()
+execute_process( COMMAND bash ${CMAKE_BINARY_DIR}/bin/saber_setup.sh
+                         ${TESTFILE_DIR_SABER}
+                         ${CMAKE_CURRENT_BINARY_DIR}
+                         ${CMAKE_BINARY_DIR} )
+
+# Download SABER data
+if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
+    message( STATUS "Download sources:" )
 
     # Check whether the URLs exist or not
     foreach ( saber_data_tar_name ${saber_data_tar} )
@@ -236,53 +265,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
                                 DIRNAME  ${DIRNAME}
                                 DIRLOCAL ${TESTFILE_DIR_SABER}/testref
                                 EXTRACT )
-
-    # Make directories
-    file( MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testdata )
-    file( MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testref )
-else()
-    set( TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER} )
-    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testdata )
-        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testdata is missing" )
-    endif()
-    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testref )
-        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testref is missing" )
-    endif()
-    message( STATUS "Files loaded from: " ${TESTFILE_DIR_SABER} )
 endif()
-
-# Make directories
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata )
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput )
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput )
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref )
-foreach( test ${saber_test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test} )
-endforeach()
-foreach( test ${saber_test_model} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test} )
-endforeach()
-foreach( test ${saber_test_oops} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test} )
-endforeach()
-
-# Link data/reference files
-foreach( file ${saber_data} )
-    execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                     ${TESTFILE_DIR_SABER}/testdata/${file}
-                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file} )
-endforeach()
-foreach( file ${saber_ref} )
-    execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                     ${TESTFILE_DIR_SABER}/testref/${file}
-                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file} )
-endforeach()
 
 # Executables
 ecbuild_add_executable( TARGET  saber_bump.x
@@ -490,9 +473,9 @@ if( SABER_TEST_MODEL )
                          ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
 
-        ecbuild_add_test( TARGET       test_${test}_link
-                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_links.ksh
-                          ARGS         ${SABER_TEST_MODEL_DIR} ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} )
+        ecbuild_add_test( TARGET  test_${test}_link
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_links.ksh
+                          ARGS    ${SABER_TEST_MODEL_DIR} ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} )
 
         ecbuild_add_test( TARGET       test_${test}_run
                           MPI          ${mpi}
