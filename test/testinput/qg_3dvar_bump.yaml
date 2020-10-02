@@ -22,8 +22,6 @@ cost function:
       prefix: qg_3dvar_bump/test
       strategy: specific_univariate
     covariance model: BUMP
-    timeslots:
-    - 2010-01-01T12:00:00Z
     variable changes:
     - variable change: StdDev
       input variables: [x]

@@ -43,7 +43,6 @@ class StdDevVariableChange : public oops::LinearVariableChangeBase<MODEL> {
   typedef oops::Increment<MODEL> Increment_;
   typedef OoBump<MODEL>          OoBump_;
   typedef oops::State<MODEL>     State_;
-  typedef oops::State4D<MODEL>   State4D_;
   typedef ParametersBUMP<MODEL>  ParametersBUMP_;
 
  public:
@@ -86,12 +85,8 @@ StdDevVariableChange<MODEL>::StdDevVariableChange(const State_ & xb, const State
 // Setup variables
   const oops::Variables vars(conf, "input variables");
 
-// Setup timeslots
-  std::vector<util::DateTime> timeslots;
-  timeslots.push_back(xb.validTime());
-
 // Setup parameters
-  ParametersBUMP_ param(resol, vars, timeslots, conf);
+  ParametersBUMP_ param(resol, vars, xb.validTime(), conf);
 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));

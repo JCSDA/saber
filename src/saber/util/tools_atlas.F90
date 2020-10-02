@@ -105,11 +105,13 @@ fld = 0.0
 ! - at the last level of fld if (lev2d=='last')
 ! NB: an ATLAS field with 1 level only (afield%levels()==1) is considered as a 3D field, so lev2d does not apply
 if (nl0==0) then
-   call afield%data(ptr_1)
-   if (trim(llev2d)=='first') then
-      fld(1:nmga,1) = ptr_1(1:nmga)
-   elseif (trim(llev2d)=='last') then
-      fld(1:nmga,size(fld,2)) = ptr_1(1:nmga)
+   if (size(fld,2)>0) then
+      call afield%data(ptr_1)
+      if (trim(llev2d)=='first') then
+         fld(1:nmga,1) = ptr_1(1:nmga)
+      elseif (trim(llev2d)=='last') then
+         fld(1:nmga,size(fld,2)) = ptr_1(1:nmga)
+      end if
    end if
 else
    call afield%data(ptr_2)
@@ -197,11 +199,13 @@ fld_int = 0
 ! - at the last level of fld if (lev2d=='last')
 ! NB: an ATLAS field with 1 level only (afield%levels()==1) is considered as a 3D field, so lev2d does not apply
 if (nl0==0) then
-   call afield%data(ptr_1)
-   if (trim(llev2d)=='first') then
-      fld_int(1:nmga,1) = ptr_1(1:nmga)
-   elseif (trim(llev2d)=='last') then
-      fld_int(1:nmga,size(fld,2)) = ptr_1(1:nmga)
+   if (size(fld,2)>0) then
+      call afield%data(ptr_1)
+      if (trim(llev2d)=='first') then
+         fld_int(1:nmga,1) = ptr_1(1:nmga)
+      elseif (trim(llev2d)=='last') then
+         fld_int(1:nmga,size(fld,2)) = ptr_1(1:nmga)
+      end if
    end if
 else
    call afield%data(ptr_2)
@@ -298,11 +302,13 @@ if (nmga/=size(fld,1)) call mpl%abort(subr,'wrong number of nodes for field '//a
 ! - at the last level of fld if (lev2d=='last')
 ! NB: an ATLAS field with 1 level only (afield%levels()==1) is considered as a 3D field, so lev2d does not apply
 if (nl0==0) then
-   call afield%data(ptr_1)
-   if (trim(llev2d)=='first') then
-      ptr_1(1:nmga) = fld(1:nmga,1)
-   elseif (trim(llev2d)=='last') then
-      ptr_1(1:nmga) = fld(1:nmga,size(fld,2))
+   if (size(fld,2)>0) then
+      call afield%data(ptr_1)
+      if (trim(llev2d)=='first') then
+         ptr_1(1:nmga) = fld(1:nmga,1)
+      elseif (trim(llev2d)=='last') then
+         ptr_1(1:nmga) = fld(1:nmga,size(fld,2))
+      end if
    end if
 else
    call afield%data(ptr_2)
@@ -347,7 +353,7 @@ end subroutine create_atlas_function_space
 ! Subroutine: create_atlas_fieldset
 ! Purpose: create ATLAS fieldset with empty fields
 !----------------------------------------------------------------------
-subroutine create_atlas_fieldset(afunctionspace,nl,variables,timeslots,afieldset)
+subroutine create_atlas_fieldset(afunctionspace,nl,variables,afieldset)
 
 implicit none
 
@@ -355,30 +361,25 @@ implicit none
 type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
 integer,intent(in) :: nl                               ! Number of levels
 character(len=*),intent(in) :: variables(:)            ! Variables names
-character(len=*),intent(in) :: timeslots(:)            ! Timeslots
 type(atlas_fieldset),intent(out) :: afieldset          ! ATLAS fieldset
 
 ! Local variables
-integer :: iv,its
-character(len=1024) :: fieldname
+integer :: iv
 type(atlas_field) :: afield
 
 ! Set ATLAS fieldset
 afieldset = atlas_fieldset()
 
 ! Create fields
-do its=1,size(timeslots)
-   do iv=1,size(variables)
-      ! Create field
-      fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
-      afield = afunctionspace%create_field(name=fieldname,kind=atlas_real(kind_real),levels=nl)
+do iv=1,size(variables)
+   ! Create field
+   afield = afunctionspace%create_field(name=variables(iv),kind=atlas_real(kind_real),levels=nl)
 
-      ! Add field
-      call afieldset%add(afield)
+   ! Add field
+   call afieldset%add(afield)
 
-      ! Release pointer
-      call afield%final()
-   end do
+   ! Release pointer
+   call afield%final()
 end do
 
 end subroutine create_atlas_fieldset
@@ -387,41 +388,37 @@ end subroutine create_atlas_fieldset
 ! Subroutine: atlas_to_fld
 ! Purpose: convert ATLAS fieldset to field
 !----------------------------------------------------------------------
-subroutine atlas_to_fld(mpl,variables,timeslots,afieldset,fld,lev2d)
+subroutine atlas_to_fld(mpl,variables,afieldset,fld,lev2d)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl             ! MPI data
 character(len=*),intent(in) :: variables(:)     ! Variables names
-character(len=*),intent(in) :: timeslots(:)     ! Timeslots
 type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
-real(kind_real),intent(out) :: fld(:,:,:,:)     ! Field
+real(kind_real),intent(out) :: fld(:,:,:)       ! Field
 character(len=*),intent(in),optional :: lev2d   ! Level for 2D variables
+
 ! Local variables
-integer :: iv,its
+integer :: iv
 character(len=1024) :: fieldname
 character(len=1024),parameter :: subr = 'atlas_to_fld'
 type(atlas_field) :: afield
 
-! Check number of variables and number of timeslots
+! Check number of variables
 if (size(variables)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
-if (size(timeslots)/=size(fld,4)) call mpl%abort(subr,'inconsistency in number of timeslots')
 
 ! Loop over fields
-do its=1,size(timeslots)
-   do iv=1,size(variables)
-      ! Get field
-      fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
-      afield = afieldset%field(fieldname)
+do iv=1,size(variables)
+   ! Get field
+   afield = afieldset%field(variables(iv))
 
-      ! Get field data
-      if (present(lev2d)) then
-         call field_to_fld(mpl,afield,fld(:,:,iv,its),lev2d)
-      else
-         call field_to_fld(mpl,afield,fld(:,:,iv,its))
-      end if
-   end do
+   ! Get field data
+   if (present(lev2d)) then
+      call field_to_fld(mpl,afield,fld(:,:,iv),lev2d)
+   else
+      call field_to_fld(mpl,afield,fld(:,:,iv))
+   end if
 end do
 
 end subroutine atlas_to_fld
@@ -430,15 +427,14 @@ end subroutine atlas_to_fld
 ! Subroutine: fld_to_atlas
 ! Purpose: convert field to ATLAS fieldset
 !----------------------------------------------------------------------
-subroutine fld_to_atlas(mpl,variables,timeslots,fld,afieldset,lev2d)
+subroutine fld_to_atlas(mpl,variables,fld,afieldset,lev2d)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl             ! MPI data
 character(len=*),intent(in) :: variables(:)     ! Variables names
-character(len=*),intent(in) :: timeslots(:)     ! Timeslots
-real(kind_real),intent(in) :: fld(:,:,:,:)      ! Field
+real(kind_real),intent(in) :: fld(:,:,:)        ! Field
 type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
 character(len=*),intent(in),optional :: lev2d   ! Level for 2D variables
 
@@ -448,24 +444,20 @@ character(len=1024) :: fieldname
 character(len=1024),parameter :: subr = 'fld_to_atlas'
 type(atlas_field) :: afield
 
-! Check number of variables and number of timeslots
+! Check number of variables
 if (size(variables)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
-if (size(timeslots)/=size(fld,4)) call mpl%abort(subr,'inconsistency in number of timeslots')
 
 ! Loop over fields
-do its=1,size(timeslots)
-   do iv=1,size(variables)
-      ! Get or create field
-      fieldname = trim(variables(iv))//'_'//trim(timeslots(its))
-      afield = afieldset%field(fieldname)
+do iv=1,size(variables)
+   ! Get or create field
+   afield = afieldset%field(variables(iv))
 
-      ! Get field data
-      if (present(lev2d)) then
-         call fld_to_field(mpl,fld(:,:,iv,its),afield,lev2d)
-      else
-         call fld_to_field(mpl,fld(:,:,iv,its),afield)
-      end if
-   end do
+   ! Get field data
+   if (present(lev2d)) then
+      call fld_to_field(mpl,fld(:,:,iv),afield,lev2d)
+   else
+      call fld_to_field(mpl,fld(:,:,iv),afield)
+   end if
 end do
 
 end subroutine fld_to_atlas

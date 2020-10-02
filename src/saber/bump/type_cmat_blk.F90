@@ -45,8 +45,6 @@ type cmat_blk_type
    real(kind_real),allocatable :: H33(:,:)           ! LCT component 33
    real(kind_real),allocatable :: H12(:,:)           ! LCT component 12
    real(kind_real),allocatable :: Hcoef(:,:)         ! LCT scales coefficients
-   real(kind_real),allocatable :: adv_lon(:,:,:)     ! Advected longitude
-   real(kind_real),allocatable :: adv_lat(:,:,:)     ! Advected latitude
 contains
    procedure :: alloc => cmat_blk_alloc
    procedure :: init => cmat_blk_init
@@ -94,12 +92,6 @@ if (bpar%diag_block(ib)) then
    end if
 end if
 
-if ((ib==bpar%nbe).and.nam%adv_diag) then
-   ! Allocation
-   allocate(cmat_blk%adv_lon(geom%nc0a,geom%nl0,nam%nts))
-   allocate(cmat_blk%adv_lat(geom%nc0a,geom%nl0,nam%nts))
-end if
-
 ! End associate
 end associate
 
@@ -137,12 +129,6 @@ if (bpar%diag_block(ib)) then
       cmat_blk%H12 = mpl%msv%valr
       cmat_blk%Hcoef = mpl%msv%valr
    end if
-end if
-
-if ((ib==bpar%nbe).and.nam%adv_diag) then
-   ! Initialization
-   cmat_blk%adv_lon = mpl%msv%valr
-   cmat_blk%adv_lat = mpl%msv%valr
 end if
 
 ! End associate
@@ -193,8 +179,6 @@ if (allocated(cmat_blk%H22)) deallocate(cmat_blk%H22)
 if (allocated(cmat_blk%H33)) deallocate(cmat_blk%H33)
 if (allocated(cmat_blk%H12)) deallocate(cmat_blk%H12)
 if (allocated(cmat_blk%Hcoef)) deallocate(cmat_blk%Hcoef)
-if (allocated(cmat_blk%adv_lon)) deallocate(cmat_blk%adv_lon)
-if (allocated(cmat_blk%adv_lat)) deallocate(cmat_blk%adv_lat)
 
 end subroutine cmat_blk_partial_dealloc
 

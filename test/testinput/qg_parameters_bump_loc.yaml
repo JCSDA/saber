@@ -15,7 +15,7 @@ bump:
   new_nicas: 1
   nl0r: 2
   ntry: 10
-  prefix: qg_parameters_bump_loc_3d/test
+  prefix: qg_parameters_bump_loc/test
   resol: 8.0
   strategy: specific_univariate
 ensemble:
@@ -46,17 +46,17 @@ geometry:
   depths: [4500.0, 5500.0]
 input variables: [x]
 output:
-- datadir: testdata/qg_parameters_bump_loc_3d
+- datadir: testdata/qg_parameters_bump_loc
   date: 2010-01-01T12:00:00Z
   exp: loc_coef
   parameter: loc_coef
   type: an
-- datadir: testdata/qg_parameters_bump_loc_3d
+- datadir: testdata/qg_parameters_bump_loc
   date: 2010-01-01T12:00:00Z
   exp: loc_rh
   parameter: loc_rh
   type: an
-- datadir: testdata/qg_parameters_bump_loc_3d
+- datadir: testdata/qg_parameters_bump_loc
   date: 2010-01-01T12:00:00Z
   exp: loc_rv
   parameter: loc_rv

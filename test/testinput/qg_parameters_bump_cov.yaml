@@ -10,7 +10,7 @@ bump:
   nc1: 500
   nc2: 100
   nc3: 20
-  ne: 50
+  ne: 10
   network: 1
   new_hdiag: 1
   new_nicas: 1

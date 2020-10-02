@@ -13,7 +13,6 @@
 
 #include "oops/base/instantiateCovarFactory.h"
 
-#include "saber/oops/ErrorCovariance4DBUMP.h"
 #include "saber/oops/ErrorCovarianceBUMP.h"
 #include "saber/oops/ErrorCovarianceGSIRF.h"
 #include "saber/oops/ErrorCovarianceID.h"
@@ -26,7 +25,6 @@ template <typename MODEL> void instantiateCovarFactory() {
   static oops::CovarMaker<MODEL, ErrorCovarianceBUMP<MODEL> > makerBUMP_("BUMP");
   static oops::CovarMaker<MODEL, ErrorCovarianceGSIRF<MODEL> > makerGSIRF_("GSIRF");
   static oops::CovarMaker<MODEL, ErrorCovarianceID<MODEL> > makerID_("ID");
-  static oops::Covar4DMaker<MODEL, ErrorCovariance4DBUMP<MODEL> >  makerBUMP4D_("BUMP");
 
   saber::instantiateLocalizationFactory<MODEL>();
 }

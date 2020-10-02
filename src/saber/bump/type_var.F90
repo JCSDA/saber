@@ -24,11 +24,11 @@ implicit none
 
 ! Variance derived type
 type var_type
-   integer :: ne                                  ! Ensemble size
-   real(kind_real),allocatable :: m2(:,:,:,:)     ! Variance
-   real(kind_real),allocatable :: m4(:,:,:,:)     ! Fourth-order centered moment
-   real(kind_real),allocatable :: m2flt(:,:,:,:)  ! Filtered variance
-   real(kind_real),allocatable :: m2sqrt(:,:,:,:) ! Variance square-root
+   integer :: ne                                ! Ensemble size
+   real(kind_real),allocatable :: m2(:,:,:)     ! Variance
+   real(kind_real),allocatable :: m4(:,:,:)     ! Fourth-order centered moment
+   real(kind_real),allocatable :: m2flt(:,:,:)  ! Filtered variance
+   real(kind_real),allocatable :: m2sqrt(:,:,:) ! Variance square-root
 contains
    procedure :: alloc => var_alloc
    procedure :: partial_dealloc => var_partial_dealloc
@@ -60,10 +60,10 @@ type(nam_type),intent(in) :: nam     ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
 
 ! Allocation
-allocate(var%m2(geom%nc0a,geom%nl0,nam%nv,nam%nts))
-allocate(var%m4(geom%nc0a,geom%nl0,nam%nv,nam%nts))
-if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv,nam%nts))
-allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
+allocate(var%m4(geom%nc0a,geom%nl0,nam%nv))
+if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv))
+allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv))
 
 end subroutine var_alloc
 
@@ -118,7 +118,7 @@ type(geom_type),intent(in) :: geom   ! Geometry
 type(io_type),intent(in) :: io       ! I/O
 
 ! Local variables
-integer :: iv,its
+integer :: iv
 character(len=1024) :: filename,grpname
 
 ! Read variance
@@ -132,14 +132,12 @@ call var%alloc(nam,geom)
 filename = trim(nam%prefix)//'_var'
 
 ! Read raw variance, fourth-order moment, filtered variance and standard-deviation
-do its=1,nam%nts
-   do iv=1,nam%nv
-      call nam%io_key_value(trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)),grpname)
-      call io%fld_read(mpl,nam,geom,filename,'m2',var%m2(:,:,iv,its),grpname)
-      call io%fld_read(mpl,nam,geom,filename,'m4',var%m4(:,:,iv,its),grpname)
-      if (nam%var_filter) call io%fld_read(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv,its),grpname)
-      call io%fld_read(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv,its),grpname)
-   end do
+do iv=1,nam%nv
+   call nam%io_key_value(trim(nam%variables(iv)),grpname)
+   call io%fld_read(mpl,nam,geom,filename,'m2',var%m2(:,:,iv),grpname)
+   call io%fld_read(mpl,nam,geom,filename,'m4',var%m4(:,:,iv),grpname)
+   if (nam%var_filter) call io%fld_read(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv),grpname)
+   call io%fld_read(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
 end do
 
 end subroutine var_read
@@ -160,7 +158,7 @@ type(geom_type),intent(in) :: geom   ! Geometry
 type(io_type),intent(in) :: io       ! I/O
 
 ! Local variables
-integer :: iv,its
+integer :: iv
 character(len=1024) :: filename,grpname
 
 ! Write variance
@@ -174,14 +172,12 @@ filename = trim(nam%prefix)//'_var'
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 
 ! Write raw variance, fourth-order moment, filtered variance and standard-deviation
-do its=1,nam%nts
-   do iv=1,nam%nv
-      call nam%io_key_value(trim(nam%variables(iv))//'_'//trim(nam%timeslots(its)),grpname)
-      call io%fld_write(mpl,nam,geom,filename,'m2',var%m2(:,:,iv,its),grpname)
-      call io%fld_write(mpl,nam,geom,filename,'m4',var%m4(:,:,iv,its),grpname)
-      if (nam%var_filter) call io%fld_write(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv,its),grpname)
-      call io%fld_write(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv,its),grpname)
-   end do
+do iv=1,nam%nv
+   call nam%io_key_value(trim(nam%variables(iv)),grpname)
+   call io%fld_write(mpl,nam,geom,filename,'m2',var%m2(:,:,iv),grpname)
+   call io%fld_write(mpl,nam,geom,filename,'m4',var%m4(:,:,iv),grpname)
+   if (nam%var_filter) call io%fld_write(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv),grpname)
+   call io%fld_write(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
 end do
 
 end subroutine var_write
@@ -205,7 +201,7 @@ type(io_type),intent(in) :: io       ! I/O
 
 ! Local variables
 integer :: isub,ie_sub,ie,ic0a,il0
-real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts,ens%nsub)
+real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,ens%nsub)
 
 ! Allocation
 call var%alloc(nam,geom)
@@ -238,7 +234,7 @@ do isub=1,ens%nsub
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
 
       ! Variance
-      m2(:,:,:,:,isub) = m2(:,:,:,:,isub)+ens%mem(ie)%fld**2
+      m2(:,:,:,isub) = m2(:,:,:,isub)+ens%mem(ie)%fld**2
 
       ! Fourth-order moment
       var%m4 = var%m4+ens%mem(ie)%fld**4
@@ -248,15 +244,15 @@ do isub=1,ens%nsub
 end do
 
 ! Normalization
-var%m2 = sum(m2,dim=5)/real(ens%ne-ens%nsub,kind_real)
+var%m2 = sum(m2,dim=4)/real(ens%ne-ens%nsub,kind_real)
 var%m4 = var%m4/real(ens%ne,kind_real)
 
 ! Apply mask
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
       if (.not.geom%gmask_c0a(ic0a,il0)) then
-         var%m2(ic0a,il0,:,:) = mpl%msv%valr
-         var%m4(ic0a,il0,:,:) = mpl%msv%valr
+         var%m2(ic0a,il0,:) = mpl%msv%valr
+         var%m4(ic0a,il0,:) = mpl%msv%valr
       end if
    end do
 end do
@@ -293,7 +289,7 @@ type(nam_type),intent(in) :: nam     ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
 
 ! Local variables
-integer :: n,its,iv,il0,iter
+integer :: n,iv,il0,iter
 real(kind_real) :: P9,P20,P21,diff,diff_abs_min
 real(kind_real) :: m2sq(geom%nl0),m2sq_tot(geom%nl0),m4(geom%nl0),m4_tot(geom%nl0),m2sqasy(geom%nl0)
 real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2prod_tot(geom%nl0)
@@ -310,103 +306,98 @@ P9 = -real(n,kind_real)/real((n-2)*(n-3),kind_real)
 P20 = real((n-1)*(n**2-3*n+3),kind_real)/real(n*(n-2)*(n-3),kind_real)
 P21 = real(n-1,kind_real)/real(n+1,kind_real)
 
-do its=1,nam%nts
-   write(mpl%info,'(a10,a,a)') '','Timeslot ',trim(nam%timeslots(its))
+do iv=1,nam%nv
+   write(mpl%info,'(a13,a,a)') '','Variable ',trim(nam%variables(iv))
    call mpl%flush
 
-   do iv=1,nam%nv
-      write(mpl%info,'(a13,a,a)') '','Variable ',trim(nam%variables(iv))
-      call mpl%flush
+   ! Global sum
+   do il0=1,geom%nl0
+      m2sq(il0) = sum(var%m2(:,il0,iv)**2,mask=geom%gmask_c0a(:,il0))
+      m4(il0) = sum(var%m4(:,il0,iv),mask=geom%gmask_c0a(:,il0))
+   end do
+   call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
 
-      ! Global sum
+   ! Asymptotic statistics
+   if (nam%gau_approx) then
+      ! Gaussian approximation
+      m2sqasy = P21*m2sq_tot
+   else
+      ! General case
+      m2sqasy = P20*m2sq_tot+P9*m4_tot
+   end if
+
+   ! Dichotomy initialization
+   m2_ini = var%m2(:,:,iv)
+   convergence = .true.
+   dichotomy = .false.
+   rhflt = nam%var_rhflt
+   drhflt = rhflt
+   diff_abs_min = huge_real
+
+   do iter=1,nam%var_niter
+      ! Copy initial value
+      m2 = m2_ini
+
+      ! Set smoother parameters
+      call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
+
+      ! Apply smoother
+      call nicas_blk%apply(mpl,geom,m2)
+
+      ! Global product
       do il0=1,geom%nl0
-         m2sq(il0) = sum(var%m2(:,il0,iv,its)**2,mask=geom%gmask_c0a(:,il0))
-         m4(il0) = sum(var%m4(:,il0,iv,its),mask=geom%gmask_c0a(:,il0))
+         m2prod(il0) = sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
       end do
-      call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
 
-      ! Asymptotic statistics
-      if (nam%gau_approx) then
-         ! Gaussian approximation
-         m2sqasy = P21*m2sq_tot
-      else
-         ! General case
-         m2sqasy = P20*m2sq_tot+P9*m4_tot
-      end if
-
-      ! Dichotomy initialization
-      m2_ini = var%m2(:,:,iv,its)
-      convergence = .true.
-      dichotomy = .false.
-      rhflt = nam%var_rhflt
-      drhflt = rhflt
-      diff_abs_min = huge_real
-
-      do iter=1,nam%var_niter
-         ! Copy initial value
-         m2 = m2_ini
-
-         ! Set smoother parameters
-         call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
-
-         ! Apply smoother
-         call nicas_blk%apply(mpl,geom,m2)
-
-         ! Global product
-         do il0=1,geom%nl0
-            m2prod(il0) = sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
-         end do
-         call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
-
-         ! Print results
-         write(mpl%info,'(a16,a,i2)') '','Iteration ',iter
-         call mpl%flush
-         do il0=1,geom%nl0
-            if (m2sqasy(il0)>0.0) then
-               write(mpl%info,'(a19,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm,' km, rel. diff. = ', &
+      ! Print results
+      write(mpl%info,'(a16,a,i2)') '','Iteration ',iter
+      call mpl%flush
+      do il0=1,geom%nl0
+         if (m2sqasy(il0)>0.0) then
+            write(mpl%info,'(a19,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm,' km, rel. diff. = ', &
  & (m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
-               call mpl%flush
-            end if
-         end do
-
-         ! Update support radius
-         do il0=1,geom%nl0
-            diff = m2prod_tot(il0)-m2sqasy(il0)
-            if (diff>0.0) then
-               ! Increase filtering support radius
-               if (dichotomy(il0)) then
-                  drhflt(il0) = 0.5*drhflt(il0)
-                  rhflt(il0) = rhflt(il0)+drhflt(il0)
-               else
-                  convergence(il0) = .false.
-                  rhflt(il0) = rhflt(il0)+drhflt(il0)
-                  drhflt(il0) = 2.0*drhflt(il0)
-               end if
-            else
-               ! Convergence
-               convergence(il0) = .true.
-
-               ! Change dichotomy status
-               if (.not.dichotomy(il0)) then
-                  dichotomy(il0) = .true.
-                  drhflt(il0) = 0.5*drhflt(il0)
-               end if
-
-               ! Decrease filtering support radius
-               drhflt(il0) = 0.5*drhflt(il0)
-               rhflt(il0) = rhflt(il0)-drhflt(il0)
-            end if
-            if ((abs(diff)<diff_abs_min).or.(nam%var_niter==1)) then
-               ! Copy best result
-               diff_abs_min = abs(diff)
-               var%m2flt(:,:,iv,its) = m2
-            end if
-         end do
-
-         ! Release memory
-         call nicas_blk%dealloc
+            call mpl%flush
+         end if
       end do
+
+      ! Update support radius
+      do il0=1,geom%nl0
+         diff = m2prod_tot(il0)-m2sqasy(il0)
+         if (diff>0.0) then
+            ! Increase filtering support radius
+            if (dichotomy(il0)) then
+               drhflt(il0) = 0.5*drhflt(il0)
+               rhflt(il0) = rhflt(il0)+drhflt(il0)
+            else
+               convergence(il0) = .false.
+               rhflt(il0) = rhflt(il0)+drhflt(il0)
+               drhflt(il0) = 2.0*drhflt(il0)
+            end if
+         else
+            ! Convergence
+            convergence(il0) = .true.
+
+            ! Change dichotomy status
+            if (.not.dichotomy(il0)) then
+               dichotomy(il0) = .true.
+               drhflt(il0) = 0.5*drhflt(il0)
+            end if
+
+            ! Decrease filtering support radius
+            drhflt(il0) = 0.5*drhflt(il0)
+            rhflt(il0) = rhflt(il0)-drhflt(il0)
+         end if
+         if ((abs(diff)<diff_abs_min).or.(nam%var_niter==1)) then
+            ! Copy best result
+            diff_abs_min = abs(diff)
+            var%m2flt(:,:,iv) = m2
+         end if
+      end do
+
+      ! Release memory
+      call nicas_blk%dealloc
    end do
 end do
 
@@ -421,10 +412,10 @@ subroutine var_apply_sqrt(var,nam,geom,fld)
 implicit none
 
 ! Passed variables
-class(var_type),intent(in) :: var                                       ! Variance
-type(nam_type),intent(in) :: nam                                        ! Namelist
-type(geom_type),intent(in) :: geom                                      ! Geometry
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Source/destination vector
+class(var_type),intent(in) :: var                               ! Variance
+type(nam_type),intent(in) :: nam                                ! Namelist
+type(geom_type),intent(in) :: geom                              ! Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Source/destination vector
 
 ! Local variables
 integer :: ic0a,il0
@@ -432,7 +423,7 @@ integer :: ic0a,il0
 ! Apply variance
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:,:) = fld(ic0a,il0,:,:)*var%m2sqrt(ic0a,il0,:,:)
+      if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:) = fld(ic0a,il0,:)*var%m2sqrt(ic0a,il0,:)
    end do
 end do
 
@@ -447,10 +438,10 @@ subroutine var_apply_sqrt_inv(var,nam,geom,fld)
 implicit none
 
 ! Passed variables
-class(var_type),intent(in) :: var                                       ! Variance
-type(nam_type),intent(in) :: nam                                        ! Namelist
-type(geom_type),intent(in) :: geom                                      ! Geometry
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Source/destination vector
+class(var_type),intent(in) :: var                               ! Variance
+type(nam_type),intent(in) :: nam                                ! Namelist
+type(geom_type),intent(in) :: geom                              ! Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Source/destination vector
 
 ! Local variables
 integer :: ic0a,il0
@@ -458,7 +449,7 @@ integer :: ic0a,il0
 ! Apply inverse variance
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:,:) = fld(ic0a,il0,:,:)/var%m2sqrt(ic0a,il0,:,:)
+      if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:) = fld(ic0a,il0,:)/var%m2sqrt(ic0a,il0,:)
    end do
 end do
 

@@ -160,8 +160,8 @@ do isub=1,ens%nsub
                ic0a = samp%c1a_to_c0a(ic1a)
 
                ! Copy points
-               fld_1(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%iv,1)
-               fld_2(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%jv,1)
+               fld_1(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%iv)
+               fld_2(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%jv)
             end if
          end do
       end do

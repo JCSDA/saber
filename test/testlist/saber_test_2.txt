@@ -16,12 +16,10 @@ bump_hdiag_mask_lat
 bump_hdiag_mask_stddev_lower
 bump_hdiag_mask_stddev_ncontig
 bump_hdiag_write_grids
-bump_hdiag-nicas_cor_common_univariate
 bump_hdiag-nicas_draw_type
 bump_hdiag-nicas_lev2d_first
 bump_hdiag-nicas_lev2d_first_hvh
 bump_hdiag-nicas_lev2d_last
-bump_hdiag-nicas_loc_common_univariate
 bump_hdiag-nicas_loc_common_weighted
 bump_hdiag-nicas_loc_specific_multivariate
 bump_hdiag-nicas_loc_specific_univariate

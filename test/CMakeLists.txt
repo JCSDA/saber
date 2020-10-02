@@ -129,11 +129,11 @@ if( SABER_TEST_TIER GREATER 2 )
     file( STRINGS testlist/saber_ref_3.txt saber_ref_tmp )
     list( APPEND saber_ref ${saber_ref_tmp} )
     list( APPEND saber_ref_tar saber_ref_3.tar.gz )
-    if( SABER_TEST_MPI )
-        file( STRINGS testlist/saber_ref_mpi_3.txt saber_ref_tmp )
-        list( APPEND saber_ref ${saber_ref_tmp} )
-        list( APPEND saber_ref_tar saber_ref_mpi_3.tar.gz )
-    endif()
+#    if( SABER_TEST_MPI )
+#        file( STRINGS testlist/saber_ref_mpi_3.txt saber_ref_tmp )
+#        list( APPEND saber_ref ${saber_ref_tmp} )
+#        list( APPEND saber_ref_tar saber_ref_mpi_3.tar.gz )
+#    endif()
 endif()
 
 # Multi-core tests (more than two)
@@ -533,12 +533,22 @@ if( SABER_TEST_OOPS )
                                    test_qg_parameters_bump_loc_3d
                                    test_qg_parameters_bump_loc_4d )
 
-    # Dirac tests
+
     foreach( test ${saber_test_oops} )
+        # Number of tasks
+        string( FIND ${test} "4d" 4dpos REVERSE )
+        string( LENGTH ${test} length )
+        math( EXPR 4d ${length}-${4dpos}-2 )
+        if ( (4d MATCHES 0) OR (test MATCHES qg_4densvar_bump) )
+            set( NTASKS 13 )
+        else()
+            set( NTASKS 1 )
+        endif()
+
+        # Dirac tests
         string( FIND ${test} "qg_dirac" qg_dirac )
         if ( qg_dirac MATCHES 0 )
-            string( SUBSTRING ${test} 3 -1 testname )
-            ecbuild_add_test( TARGET test_qg_${testname}
+            ecbuild_add_test( TARGET test_${test}
                               TYPE SCRIPT
                               COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
                               ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
@@ -548,22 +558,17 @@ if( SABER_TEST_OOPS )
                                    ${test}/test.ref
                                    0.0
                                    0
-                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1"
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NTASKS}"
                               OMP 2
                               DEPENDS saber_qg_dirac.x
                               TEST_DEPENDS test_qg_links )
         endif()
-    endforeach()
 
-    # Variational tests
-    foreach( test ${saber_test_oops} )
+        # Variational tests
         string( FIND ${test} "qg_3d" qg_3d )
         string( FIND ${test} "qg_4d" qg_4d )
         if ( (qg_3d MATCHES 0) OR (qg_4d MATCHES 0) )
-            string(SUBSTRING ${test} 3 -1 testname)
-
-
-            ecbuild_add_test( TARGET test_qg_${testname}
+            ecbuild_add_test( TARGET test_${test}
                               TYPE SCRIPT
                               COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
                               ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
@@ -573,7 +578,7 @@ if( SABER_TEST_OOPS )
                                    ${test}/test.ref
                                    0.0
                                    0
-                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1"
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NTASKS}"
                               OMP 2
                               DEPENDS saber_qg_4dvar.x
                               TEST_DEPENDS test_qg_links )

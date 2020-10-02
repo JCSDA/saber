@@ -9,7 +9,6 @@ tools_fit.F90
 tools_func.c
 tools_func.F90
 tools_samp.F90
-type_adv.F90
 type_avg_blk.F90
 type_avg.F90
 type_bpar.F90

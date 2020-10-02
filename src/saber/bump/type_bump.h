@@ -43,11 +43,6 @@ extern "C" {
   void bump_set_parameter_f90(const int &, const int &, const char *, atlas::field::FieldSetImpl *);
   void bump_dealloc_f90(const int &);
 }
-
-namespace bump {
-  int readEnsMember(1);
-  int readPseudoEnsMember(2);
-}
 }  // namespace saber
 
 #endif  // SABER_BUMP_TYPE_BUMP_H_
