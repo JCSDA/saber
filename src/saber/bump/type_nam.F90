@@ -17,7 +17,6 @@ use type_mpl, only: mpl_type
 implicit none
 
 integer,parameter :: nvmax = 20                    ! Maximum number of variables
-integer,parameter :: ntsmax = 99                   ! Maximum number of time slots
 integer,parameter :: nlmax = 200                   ! Maximum number of levels
 integer,parameter :: nc3max = 1000                 ! Maximum number of classes
 integer,parameter :: nscalesmax = 5                ! Maximum number of variables
@@ -43,10 +42,8 @@ type nam_type
 
    ! driver_param
    character(len=1024) :: method                        ! Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
-   character(len=1024) :: strategy                      ! Localization strategy ('diag_all', 'common', 'common_univariate', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
+   character(len=1024) :: strategy                      ! Localization strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
    logical :: new_normality                             ! New normality test
-   logical :: new_cortrack                              ! New correlation tracker
-   logical :: new_corstats                              ! New correlation statistics
    logical :: new_vbal                                  ! Compute new vertical balance operator
    logical :: load_vbal                                 ! Load existing vertical balance operator
    logical :: write_vbal                                ! Write vertical balance operator
@@ -100,12 +97,7 @@ type nam_type
    integer :: nv                                        ! Number of variables
    character(len=1024),dimension(nvmax) :: variables    ! Variables names
    character(len=1024) :: variable_change               ! Variable change
-   integer :: nts                                       ! Number of time slots
-   character(len=1024),dimension(ntsmax) :: timeslots   ! Timeslots
-   real(kind_real) :: dts                               ! Timeslots width [in s]
    logical :: nomask                                    ! Do not use geometry mask
-   character(len=1024) :: wind_filename                 ! Wind field file name
-   character(len=1024) :: wind_variables(2)             ! Wind field variables names (u and v)
    character(len=1024),dimension(niokvmax) :: io_keys   ! I/O keys
    character(len=1024),dimension(niokvmax) :: io_values ! I/O values
 
@@ -153,12 +145,6 @@ type nam_type
    real(kind_real) :: var_rhflt                         ! Variances initial filtering support radius [in meters]
    logical :: local_diag                                ! Activate local diagnostics
    real(kind_real) :: local_rad                         ! Local diagnostics calculation radius [in meters]
-   logical :: adv_diag                                  ! Activate advection diagnostic
-   character(len=1024) :: adv_type                      ! Advection diagnostic type ('max', 'wind' or 'windmax')
-   real(kind_real) :: adv_rad                           ! Advection diagnostic calculation radius [in meters]
-   integer :: adv_niter                                 ! Number of iteration for the advection filtering
-   real(kind_real) :: adv_rhflt                         ! Advection initial filtering support radius [in meters]
-   real(kind_real) :: adv_valid                         ! Required proportion of valid points for filtering convergence
 
    ! fit_param
    character(len=1024) :: minim_algo                    ! Minimization algorithm ('none', 'fast' or 'hooke')
@@ -183,7 +169,6 @@ type nam_type
    character(len=1024) :: subsamp                       ! Subsampling structure ('h', 'hv', 'vh' or 'hvh')
    logical :: network                                   ! Network-base convolution calculation (distance-based if false)
    integer :: mpicom                                    ! Number of communication steps
-   integer :: adv_mode                                  ! Advection mode (1: direct, -1: direct and inverse)
    logical :: forced_radii                              ! Force specific support radii
    real(kind_real) :: rh                                ! Forced horizontal support radius [in meters]
    real(kind_real) :: rv                                ! Forced vertical support radius
@@ -196,7 +181,6 @@ type nam_type
    real(kind_real) :: latdir(ndirmax)                   ! Diracs latitudes [in degrees]
    integer :: levdir(ndirmax)                           ! Diracs level
    integer :: ivdir(ndirmax)                            ! Diracs variable indices
-   integer :: itsdir(ndirmax)                           ! Diracs timeslots indices
 
    ! obsop_param
    integer :: nobs                                      ! Number of observations
@@ -219,7 +203,7 @@ contains
 end type nam_type
 
 private
-public :: nvmax,ntsmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
+public :: nvmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
 public :: nam_type
 
 contains
@@ -256,8 +240,6 @@ nam%universe_rad = pi*req
 nam%method = ''
 nam%strategy = ''
 nam%new_normality = .false.
-nam%new_cortrack = .false.
-nam%new_corstats = .false.
 nam%new_vbal = .false.
 nam%load_vbal = .false.
 nam%write_vbal = .true.
@@ -315,14 +297,7 @@ do iv=1,nvmax
    nam%variables(iv) = ''
 end do
 nam%variable_change = ''
-nam%nts = 0
-do its=1,ntsmax
-   nam%timeslots(its) = ''
-end do
-nam%dts = 3600.0
 nam%nomask = .false.
-nam%wind_filename = ''
-nam%wind_variables = (/'',''/)
 do i=1,niokvmax
    nam%io_keys(i) = ''
    nam%io_values(i) = ''
@@ -380,12 +355,6 @@ nam%var_niter = 0
 nam%var_rhflt = 0.0
 nam%local_diag = .false.
 nam%local_rad = 0.0
-nam%adv_diag = .false.
-nam%adv_type = ''
-nam%adv_rad = 0.0
-nam%adv_niter = 0
-nam%adv_rhflt = 0.0
-nam%adv_valid = 0.99
 
 ! fit_param default
 nam%minim_algo = 'hooke'
@@ -410,7 +379,6 @@ nam%fast_sampling = .false.
 nam%subsamp = 'hv'
 nam%network = .false.
 nam%mpicom = 0
-nam%adv_mode = 0
 nam%forced_radii = .false.
 nam%rh = 0.0
 nam%rv = 0.0
@@ -423,7 +391,6 @@ nam%londir = 0.0
 nam%latdir = 0.0
 nam%levdir = 0
 nam%ivdir = 0
-nam%itsdir = 0
 
 ! obsop_param default
 nam%nobs = 0
@@ -453,7 +420,7 @@ type(mpl_type),intent(inout) :: mpl      ! MPI data
 character(len=*),intent(in) :: namelname ! Namelist name
 
 ! Local variables
-integer :: il,iv,its,i,ildwv,lunit
+integer :: il,iv,i,ildwv,lunit
 character(len=1024),parameter :: subr = 'nam_read'
 
 ! Namelist variables
@@ -471,8 +438,6 @@ real(kind_real) :: universe_rad
 character(len=1024) :: method
 character(len=1024) :: strategy
 logical :: new_normality
-logical :: new_cortrack
-logical :: new_corstats
 logical :: new_vbal
 logical :: load_vbal
 logical :: write_vbal
@@ -524,12 +489,7 @@ logical :: logpres
 integer :: nv
 character(len=1024),dimension(nvmax) :: variables
 character(len=1024) :: variable_change
-integer :: nts
-character(len=1024),dimension(ntsmax) :: timeslots
-real(kind_real) :: dts
 logical :: nomask
-character(len=1024) :: wind_filename
-character(len=1024) :: wind_variables(2)
 character(len=1024),dimension(niokvmax) :: io_keys
 character(len=1024),dimension(niokvmax) :: io_values
 integer :: ens1_ne
@@ -569,12 +529,6 @@ integer :: var_niter
 real(kind_real) :: var_rhflt
 logical :: local_diag
 real(kind_real) :: local_rad
-logical :: adv_diag
-character(len=1024) :: adv_type
-real(kind_real) :: adv_rad
-integer :: adv_niter
-real(kind_real) :: adv_rhflt
-real(kind_real) :: adv_valid
 character(len=1024) :: minim_algo
 real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
@@ -595,7 +549,6 @@ logical :: fast_sampling
 character(len=1024) :: subsamp
 logical :: network
 integer :: mpicom
-integer :: adv_mode
 logical :: forced_radii
 real(kind_real) :: rh
 real(kind_real) :: rv
@@ -606,7 +559,6 @@ real(kind_real) :: londir(ndirmax)
 real(kind_real) :: latdir(ndirmax)
 integer :: levdir(ndirmax)
 integer :: ivdir(ndirmax)
-integer :: itsdir(ndirmax)
 integer :: nobs
 integer :: nldwv
 integer :: img_ldwv(nldwvmax)
@@ -631,8 +583,6 @@ namelist/driver_param/ &
  & method, &
  & strategy, &
  & new_normality, &
- & new_cortrack, &
- & new_corstats, &
  & new_vbal, &
  & load_vbal, &
  & write_vbal, &
@@ -685,12 +635,7 @@ namelist/model_param/ &
  & nv, &
  & variables, &
  & variable_change, &
- & nts, &
- & timeslots, &
- & dts, &
  & nomask, &
- & wind_filename, &
- & wind_variables, &
  & io_keys, &
  & io_values
 namelist/ens1_param/ &
@@ -733,13 +678,7 @@ namelist/diag_param/ &
  & var_niter, &
  & var_rhflt, &
  & local_diag, &
- & local_rad, &
- & adv_diag, &
- & adv_type, &
- & adv_rad, &
- & adv_niter, &
- & adv_rhflt, &
- & adv_valid
+ & local_rad
 namelist/fit_param/ &
  & minim_algo, &
  & diag_rhflt, &
@@ -762,7 +701,6 @@ namelist/nicas_param/ &
  & subsamp, &
  & network, &
  & mpicom, &
- & adv_mode, &
  & forced_radii, &
  & rh, &
  & rv, &
@@ -772,8 +710,7 @@ namelist/nicas_param/ &
  & londir, &
  & latdir, &
  & levdir, &
- & ivdir, &
- & itsdir
+ & ivdir
 namelist/obsop_param/ &
  & nobs
 namelist/output_param/ &
@@ -802,8 +739,6 @@ if (mpl%main) then
    method = ''
    strategy = ''
    new_normality = .false.
-   new_cortrack = .false.
-   new_corstats = .false.
    new_vbal = .false.
    load_vbal = .false.
    write_vbal = .true.
@@ -861,14 +796,7 @@ if (mpl%main) then
       variables(iv) = ''
    end do
    variable_change = ''
-   nts = 0
-   do its=1,ntsmax
-      timeslots(its) = ''
-   end do
-   dts = 3600.0
    nomask = .false.
-   wind_filename = ''
-   wind_variables = (/'',''/)
    do i=1,niokvmax
       io_keys(i) = ''
       io_values(i) = ''
@@ -926,12 +854,6 @@ if (mpl%main) then
    var_rhflt = 0.0
    local_diag = .false.
    local_rad = 0.0
-   adv_diag = .false.
-   adv_type = ''
-   adv_rad = 0.0
-   adv_niter = 0
-   adv_rhflt = 0.0
-   adv_valid = 0.99
 
    ! fit_param default
    minim_algo = 'hooke'
@@ -956,7 +878,6 @@ if (mpl%main) then
    subsamp = 'hv'
    network = .false.
    mpicom = 0
-   adv_mode = 0
    forced_radii = .false.
    rh = 0.0
    rv = 0.0
@@ -969,7 +890,6 @@ if (mpl%main) then
    latdir = 0.0
    levdir = 0
    ivdir = 0
-   itsdir = 0
 
    ! obsop_param default
    nobs = 0
@@ -1006,8 +926,6 @@ if (mpl%main) then
    nam%method = method
    nam%strategy = strategy
    nam%new_normality = new_normality
-   nam%new_cortrack = new_cortrack
-   nam%new_corstats = new_corstats
    nam%new_vbal = new_vbal
    nam%load_vbal = load_vbal
    nam%write_vbal = write_vbal
@@ -1057,7 +975,6 @@ if (mpl%main) then
    read(lunit,nml=model_param)
    if (nl>nlmax) call mpl%abort(subr,'nl is too large')
    if (nv>nvmax) call mpl%abort(subr,'nv is too large')
-   if (nts>ntsmax) call mpl%abort(subr,'nts is too large')
    nam%nl = nl
    if (nl>0) nam%levs(1:nl) = levs(1:nl)
    nam%lev2d = lev2d
@@ -1065,12 +982,7 @@ if (mpl%main) then
    nam%nv = nv
    if (nv>0) nam%variables(1:nv) = variables(1:nv)
    nam%variable_change = variable_change
-   nam%nts = nts
-   if (nts>0) nam%timeslots(1:nts) = timeslots(1:nts)
-   nam%dts = dts
    nam%nomask = nomask
-   nam%wind_filename = wind_filename
-   nam%wind_variables = wind_variables
    nam%io_keys = io_keys
    nam%io_values = io_values
 
@@ -1123,12 +1035,6 @@ if (mpl%main) then
    nam%var_rhflt = var_rhflt
    nam%local_diag = local_diag
    nam%local_rad = local_rad
-   nam%adv_diag = adv_diag
-   nam%adv_type = adv_type
-   nam%adv_rad = adv_rad
-   nam%adv_niter = adv_niter
-   nam%adv_rhflt = adv_rhflt
-   nam%adv_valid = adv_valid
 
    ! fit_param
    read(lunit,nml=fit_param)
@@ -1156,7 +1062,6 @@ if (mpl%main) then
    nam%subsamp = subsamp
    nam%network = network
    nam%mpicom = mpicom
-   nam%adv_mode = adv_mode
    nam%forced_radii = forced_radii
    nam%rh = rh
    nam%rv = rv
@@ -1170,7 +1075,6 @@ if (mpl%main) then
    if (ndir>0) nam%latdir(1:ndir) = latdir(1:ndir)
    if (ndir>0) nam%levdir(1:ndir) = levdir(1:ndir)
    if (ndir>0) nam%ivdir(1:ndir) = ivdir(1:ndir)
-   if (ndir>0) nam%itsdir(1:ndir) = itsdir(1:ndir)
 
    ! obsop_param
    read(lunit,nml=obsop_param)
@@ -1247,8 +1151,6 @@ call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%strategy,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_normality,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%new_cortrack,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%new_corstats,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_vbal,mpl%rootproc-1)
@@ -1302,12 +1204,7 @@ call mpl%f_comm%broadcast(nam%logpres,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nv,mpl%rootproc-1)
 call mpl%broadcast(nam%variables,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%variable_change,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%nts,mpl%rootproc-1)
-call mpl%broadcast(nam%timeslots,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%dts,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nomask,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%wind_filename,mpl%rootproc-1)
-call mpl%broadcast(nam%wind_variables,mpl%rootproc-1)
 call mpl%broadcast(nam%io_keys,mpl%rootproc-1)
 call mpl%broadcast(nam%io_values,mpl%rootproc-1)
 
@@ -1355,12 +1252,6 @@ call mpl%f_comm%broadcast(nam%var_niter,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%local_diag,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%local_rad,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_diag,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_type,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_rad,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_niter,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_rhflt,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_valid,mpl%rootproc-1)
 
 ! fit_param
 call mpl%f_comm%broadcast(nam%minim_algo,mpl%rootproc-1)
@@ -1385,7 +1276,6 @@ call mpl%f_comm%broadcast(nam%fast_sampling,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%subsamp,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%network,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%mpicom,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%adv_mode,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
@@ -1398,7 +1288,6 @@ call mpl%f_comm%broadcast(nam%londir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%latdir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%levdir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%ivdir,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%itsdir,mpl%rootproc-1)
 
 ! obsop_param
 call mpl%f_comm%broadcast(nam%nobs,mpl%rootproc-1)
@@ -1466,8 +1355,6 @@ if (conf%has("strategy")) then
    nam%strategy = str
 end if
 if (conf%has("new_normality")) call conf%get_or_die("new_normality",nam%new_normality)
-if (conf%has("new_cortrack")) call conf%get_or_die("new_cortrack",nam%new_cortrack)
-if (conf%has("new_corstats")) call conf%get_or_die("new_corstats",nam%new_corstats)
 if (conf%has("new_vbal")) call conf%get_or_die("new_vbal",nam%new_vbal)
 if (conf%has("load_vbal")) call conf%get_or_die("load_vbal",nam%load_vbal)
 if (conf%has("write_vbal")) call conf%get_or_die("write_vbal",nam%write_vbal)
@@ -1533,21 +1420,7 @@ if (conf%has("variable_change")) then
    call conf%get_or_die("variable_change",str)
    nam%variable_change = str
 end if
-if (conf%has("nts")) call conf%get_or_die("nts",nam%nts)
-if (conf%has("timeslots")) then
-   call conf%get_or_die("timeslots",str_array)
-   nam%timeslots(1:size(str_array)) = str_array
-end if
-if (conf%has("dts")) call conf%get_or_die("dts",nam%dts)
 if (conf%has("nomask")) call conf%get_or_die("nomask",nam%nomask)
-if (conf%has("wind_filename")) then
-   call conf%get_or_die("wind_filename",str)
-   nam%wind_filename = str
-end if
-if (conf%has("wind_variables")) then
-   call conf%get_or_die("wind_variables",str_array)
-   nam%wind_variables(1:2) = str_array(1:2)
-end if
 if (conf%has("io_keys")) then
    call conf%get_or_die("io_keys",str_array)
    nam%io_keys(1:size(str_array)) = str_array
@@ -1622,15 +1495,6 @@ if (conf%has("var_niter")) call conf%get_or_die("var_niter",nam%var_niter)
 if (conf%has("var_rhflt")) call conf%get_or_die("var_rhflt",nam%var_rhflt)
 if (conf%has("local_diag")) call conf%get_or_die("local_diag",nam%local_diag)
 if (conf%has("local_rad")) call conf%get_or_die("local_rad",nam%local_rad)
-if (conf%has("adv_diag")) call conf%get_or_die("adv_diag",nam%adv_diag)
-if (conf%has("adv_type")) then
-   call conf%get_or_die("adv_type",str)
-   nam%adv_type = str
-end if
-if (conf%has("adv_rad")) call conf%get_or_die("adv_rad",nam%adv_rad)
-if (conf%has("adv_niter")) call conf%get_or_die("adv_niter",nam%adv_niter)
-if (conf%has("adv_rhflt")) call conf%get_or_die("adv_rhflt",nam%adv_rhflt)
-if (conf%has("adv_valid")) call conf%get_or_die("adv_valid",nam%adv_valid)
 
 ! fit_param
 if (conf%has("minim_algo")) then
@@ -1664,7 +1528,6 @@ if (conf%has("subsamp")) then
 end if
 if (conf%has("network")) call conf%get_or_die("network",nam%network)
 if (conf%has("mpicom")) call conf%get_or_die("mpicom",nam%mpicom)
-if (conf%has("adv_mode")) call conf%get_or_die("adv_mode",nam%adv_mode)
 if (conf%has("forced_radii")) call conf%get_or_die("forced_radii",nam%forced_radii)
 if (conf%has("rh")) call conf%get_or_die("rh",nam%rh)
 if (conf%has("rv")) call conf%get_or_die("rv",nam%rv)
@@ -1688,10 +1551,6 @@ end if
 if (conf%has("ivdir")) then
    call conf%get_or_die("ivdir",integer_array)
    nam%ivdir(1:size(integer_array)) = integer_array
-end if
-if (conf%has("itsdir")) then
-   call conf%get_or_die("itsdir",integer_array)
-   nam%itsdir(1:size(integer_array)) = integer_array
 end if
 
 ! obsop_param
@@ -1738,7 +1597,6 @@ character(len=1024),parameter :: subr = 'nam_check'
 ! Check maximum sizes
 if (nam%nl>nlmax) call mpl%abort(subr,'nl is too large')
 if (nam%nv>nvmax) call mpl%abort(subr,'nv is too large')
-if (nam%nts>ntsmax) call mpl%abort(subr,'nts is too large')
 if (nam%nc3>nc3max) call mpl%abort(subr,'nc3 is too large')
 if (nam%lct_nscales>nscalesmax) call mpl%abort(subr,'lct_nscales is too large')
 if (nam%ndir>ndirmax) call mpl%abort(subr,'ndir is too large')
@@ -1752,8 +1610,6 @@ nam%vbal_rad = nam%vbal_rad/req
 nam%vbal_dlat = nam%vbal_dlat*deg2rad
 nam%var_rhflt = nam%var_rhflt/req
 nam%local_rad = nam%local_rad/req
-nam%adv_rad = nam%adv_rad/req
-nam%adv_rhflt = nam%adv_rhflt/req
 nam%diag_rhflt = nam%diag_rhflt/req
 nam%rh = nam%rh/req
 if (nam%ndir>0) nam%londir(1:nam%ndir) = nam%londir(1:nam%ndir)*deg2rad
@@ -1793,7 +1649,7 @@ if (nam%new_lct) then
 end if
 if (nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat.or.nam%new_nicas.or.nam%load_nicas) then
    select case (trim(nam%strategy))
-   case ('diag_all','common','common_univariate','common_weighted','specific_univariate','specific_multivariate')
+   case ('diag_all','common','common_weighted','specific_univariate','specific_multivariate')
    case default
       call mpl%abort(subr,'wrong strategy')
    end select
@@ -1825,8 +1681,8 @@ if (nam%check_optimality) then
    if (.not.nam%new_nicas) call mpl%abort(subr,'new_nicas required for check_optimality')
    if (.not.nam%write_hdiag) call mpl%abort(subr,'write_hdiag required for check_optimality')
 end if
-if (nam%check_obsop.and..not.(nam%new_obsop.or.nam%load_obsop)) &
- & call mpl%abort(subr,'new or load obsop required for check_obsop')
+if (nam%check_obsop.and..not.nam%new_obsop) &
+ & call mpl%abort(subr,'new obsop required for check_obsop')
 if (nam%check_no_obs.and..not.(nam%new_obsop.or.nam%load_obsop)) &
  & call mpl%abort(subr,'new or load_obsop required for check_no_obs')
 if (nam%check_no_obs.and.(mpl%nproc<2)) call mpl%abort(subr,'at least 2 MPI tasks required for check_no_obs')
@@ -1872,12 +1728,6 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%load_var.or.nam%new_hdia
       write(ivchar,'(i2.2)') iv
       if (trim(nam%variables(iv))=='') call mpl%abort(subr,'variables not specified for variable '//ivchar)
    end do
-   if (nam%nts<=0) call mpl%abort(subr,'nts should be positive')
-   do its=1,nam%nts
-      write(itschar,'(i2.2)') its
-      if (trim(nam%timeslots(its))=='') call mpl%abort(subr,'timeslots not specified for '//itschar)
-   end do
-   if (.not.(nam%dts>0.0)) call mpl%abort(subr,'dts should be positive')
    do i=1,niokvmax
       if (((trim(nam%io_keys(i))/='').and.(trim(nam%io_values(i))=='')).or. &
  & ((trim(nam%io_keys(i))=='').and.(trim(nam%io_values(i))/=''))) &
@@ -1886,7 +1736,7 @@ if (nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%load_var.or.nam%new_hdia
 end if
 
 ! Check ens1_param
-if (nam%new_normality.or.nam%new_cortrack.or.nam%new_corstats.or.nam%new_vbal.or.nam%new_var.or.nam%new_hdiag.or.nam%new_lct &
+if (nam%new_normality.or.nam%new_vbal.or.nam%new_var.or.nam%new_hdiag.or.nam%new_lct &
  & .or.nam%check_randomization.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%ens1_nsub<1) call mpl%abort(subr,'ens1_nsub should be positive')
    if (mod(nam%ens1_ne,nam%ens1_nsub)/=0) call mpl%abort(subr,'ens1_nsub should be a divider of ens1_ne')
@@ -1925,7 +1775,7 @@ if (nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam
       end do
    end select
    if (nam%nc1<3) call mpl%abort(subr,'nc1 should be larger than 2')
-   if (nam%new_vbal.or.(nam%new_hdiag.and.(nam%local_diag.or.nam%adv_diag))) then
+   if (nam%new_vbal.or.(nam%new_hdiag.and.nam%local_diag)) then
       if (nam%nc2<3) call mpl%abort(subr,'nc2 should be larger than 2')
    else
       if (nam%nc2<0) then
@@ -1978,13 +1828,6 @@ if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    if (.not.(nam%gen_kurt_th>0.0)) call mpl%abort(subr,'gen_kurt_th should be positive')
    if (nam%local_diag) then
       if (.not.(nam%local_rad>0.0)) call mpl%abort(subr,'local_rad should be positive')
-   end if
-   if (nam%adv_diag) then
-      if (.not.(nam%adv_rad>0.0)) call mpl%abort(subr,'adv_rad should be positive')
-      if (nam%adv_niter<=0) call mpl%abort(subr,'adv_niter should be positive')
-      if (.not.(nam%adv_rhflt>0.0)) call mpl%abort(subr,'adv_rhflt should be positive')
-      if (nam%adv_valid<0.0) call mpl%abort(subr,'adv_valid should be non-negative')
-      if (nam%adv_valid>1.0) call mpl%abort(subr,'adv_valid should be not be higher than 1.0')
    end if
 end if
 
@@ -2063,7 +1906,6 @@ if (nam%new_nicas.or.nam%load_nicas) then
       if (nam%rh<0.0) call mpl%abort(subr,'rh should be non-negative')
       if (nam%rv<0.0) call mpl%abort(subr,'rv should be non-negative')
    end if
-   if (abs(nam%adv_mode)>1) call mpl%abort(subr,'nam%adv_mode should be -1, 0 or 1')
    select case (trim(nam%subsamp))
    case ('h','hv','vh','hvh')
    case default
@@ -2073,14 +1915,13 @@ end if
 if (nam%write_grids.and.(.not.nam%new_nicas)) call mpl%abort(subr,'new_nicas required for write_grids')
 
 ! Check dirac_param
-if (nam%new_cortrack.or.nam%check_dirac) then
+if (nam%check_dirac) then
    if (nam%ndir<1) call mpl%abort(subr,'ndir should be positive')
    do idir=1,nam%ndir
       if ((nam%londir(idir)<-pi).or.(nam%londir(idir)>pi)) call mpl%abort(subr,'londir should lie between -180 and 180')
       if ((nam%latdir(idir)<-0.5*pi).or.(nam%latdir(idir)>0.5*pi)) call mpl%abort(subr,'latdir should lie between -90 and 90')
       if (.not.any(nam%levs(1:nam%nl)==nam%levdir(idir))) call mpl%abort(subr,'wrong level for a Dirac')
       if ((nam%ivdir(idir)<1).or.(nam%ivdir(idir)>nam%nv)) call mpl%abort(subr,'wrong variable for a Dirac')
-      if ((nam%itsdir(idir)<1).or.(nam%itsdir(idir)>nam%nts)) call mpl%abort(subr,'wrong timeslots for a Dirac')
    end do
 end if
 
@@ -2150,8 +1991,6 @@ end if
 call mpl%write(lncid,'nam','method',nam%method)
 call mpl%write(lncid,'nam','strategy',nam%strategy)
 call mpl%write(lncid,'nam','new_normality',nam%new_normality)
-call mpl%write(lncid,'nam','new_cortrack',nam%new_cortrack)
-call mpl%write(lncid,'nam','new_corstats',nam%new_corstats)
 call mpl%write(lncid,'nam','new_vbal',nam%new_vbal)
 call mpl%write(lncid,'nam','load_vbal',nam%load_vbal)
 call mpl%write(lncid,'nam','write_vbal',nam%write_vbal)
@@ -2209,12 +2048,7 @@ call mpl%write(lncid,'nam','logpres',nam%logpres)
 call mpl%write(lncid,'nam','nv',nam%nv)
 call mpl%write(lncid,'nam','variables',nam%nv,nam%variables(1:nam%nv))
 call mpl%write(lncid,'nam','variable_change',nam%variable_change)
-call mpl%write(lncid,'nam','nts',nam%nts)
-call mpl%write(lncid,'nam','timeslots',nam%nts,nam%timeslots(1:nam%nts))
-call mpl%write(lncid,'nam','dts',nam%dts)
 call mpl%write(lncid,'nam','nomask',nam%nomask)
-call mpl%write(lncid,'nam','wind_filename',nam%wind_filename)
-call mpl%write(lncid,'nam','wind_variables',2,nam%wind_variables(1:2))
 call mpl%write(lncid,'nam','io_keys',count(nam%io_keys/=''),nam%io_keys(1:niokvmax))
 call mpl%write(lncid,'nam','io_values',count(nam%io_values/=''),nam%io_values(1:niokvmax))
 
@@ -2278,12 +2112,6 @@ call mpl%write(lncid,'nam','var_niter',nam%var_niter)
 call mpl%write(lncid,'nam','var_rhflt',nam%var_rhflt*req)
 call mpl%write(lncid,'nam','local_diag',nam%local_diag)
 call mpl%write(lncid,'nam','local_rad',nam%local_rad*req)
-call mpl%write(lncid,'nam','adv_diag',nam%adv_diag)
-call mpl%write(lncid,'nam','adv_type',nam%adv_type)
-call mpl%write(lncid,'nam','adv_rad',nam%adv_rad*req)
-call mpl%write(lncid,'nam','adv_niter',nam%adv_niter)
-call mpl%write(lncid,'nam','adv_rhflt',nam%adv_rhflt*req)
-call mpl%write(lncid,'nam','adv_valid',nam%adv_valid)
 
 ! fit_param
 if (mpl%msv%is(lncid)) then
@@ -2316,7 +2144,6 @@ call mpl%write(lncid,'nam','fast_sampling',nam%fast_sampling)
 call mpl%write(lncid,'nam','subsamp',nam%subsamp)
 call mpl%write(lncid,'nam','network',nam%network)
 call mpl%write(lncid,'nam','mpicom',nam%mpicom)
-call mpl%write(lncid,'nam','adv_mode',nam%adv_mode)
 call mpl%write(lncid,'nam','forced_radii',nam%forced_radii)
 call mpl%write(lncid,'nam','rh',nam%rh)
 call mpl%write(lncid,'nam','rv',nam%rv)
@@ -2335,7 +2162,6 @@ call mpl%write(lncid,'nam','londir',nam%ndir,londir)
 call mpl%write(lncid,'nam','latdir',nam%ndir,latdir)
 call mpl%write(lncid,'nam','levdir',nam%ndir,nam%levdir(1:nam%ndir))
 call mpl%write(lncid,'nam','ivdir',nam%ndir,nam%ivdir(1:nam%ndir))
-call mpl%write(lncid,'nam','itsdir',nam%ndir,nam%itsdir(1:nam%ndir))
 
 ! obsop_param
 if (mpl%msv%is(lncid)) then

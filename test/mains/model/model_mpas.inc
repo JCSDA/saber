@@ -70,7 +70,7 @@ end subroutine model_mpas_coord
 ! Subroutine: model_mpas_read
 ! Purpose: read MPAS field
 !----------------------------------------------------------------------
-subroutine model_mpas_read(model,mpl,nam,filename,its,fld)
+subroutine model_mpas_read(model,mpl,nam,filename,fld)
 
 implicit none
 
@@ -79,22 +79,16 @@ class(model_type),intent(inout) :: model                        ! Model
 type(mpl_type),intent(inout) :: mpl                             ! MPI data
 type(nam_type),intent(in) :: nam                                ! Namelist
 character(len=*),intent(in) :: filename                         ! File name
-integer,intent(in) :: its                                       ! Timeslot index
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
-integer :: iv,il0,timeslot,ndims
+integer :: iv,il0,ndims
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 character(len=1024),parameter :: subr = 'model_mpas_read'
 
-if (mpl%main) then
-   ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
-
-   ! Timeslot index
-   read(nam%timeslots(its),'(i2)') timeslot
-end if
+! Open file
+if (mpl%main) call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
 do iv=1,nam%nv
    if (mpl%main) then
@@ -110,14 +104,14 @@ do iv=1,nam%nv
          ! 2D data
          fld_mg = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,1),(/1,timeslot/),(/model%nmg,1/)))
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,1),(/1,1/),(/model%nmg,1/)))
          elseif (trim(nam%lev2d)=='last') then
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,model%nl0),(/1,timeslot/),(/model%nmg,1/)))
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,model%nl0),(/1,1/),(/model%nmg,1/)))
          end if
       case (3) 
          ! 3D data
          do il0=1,nam%nl
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,il0),(/nam%levs(il0),1,timeslot/),(/1,model%nmg,1/)))
+            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_mg(:,il0),(/nam%levs(il0),1,1/),(/1,model%nmg,1/)))
          end do
       case default
          call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%variables(iv)))

@@ -81,7 +81,7 @@ end subroutine model_ifs_coord
 ! Subroutine: model_ifs_read
 ! Purpose: read IFS field
 !----------------------------------------------------------------------
-subroutine model_ifs_read(model,mpl,nam,filename,its,fld)
+subroutine model_ifs_read(model,mpl,nam,filename,fld)
 
 implicit none
 
@@ -90,11 +90,10 @@ class(model_type),intent(inout) :: model                        ! Model
 type(mpl_type),intent(inout) :: mpl                             ! MPI data
 type(nam_type),intent(in) :: nam                                ! Namelist
 character(len=*),intent(in) :: filename                         ! File name
-integer,intent(in) :: its                                       ! Timeslot index
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
 
 ! Local variables
-integer :: iv,il0,img,ilon,ilat,timeslot
+integer :: iv,il0,img,ilon,ilat
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
@@ -106,9 +105,6 @@ if (mpl%main) then
 
    ! Open file
    call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
-
-   ! Timeslot index
-   read(nam%timeslots(its),'(i2)') timeslot
 end if
 
 do iv=1,nam%nv
@@ -118,8 +114,7 @@ do iv=1,nam%nv
 
       ! Read data
       do il0=1,nam%nl
-         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),timeslot/), &
- & (/model%nlon,model%nlat,1,1/)))
+         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/),(/model%nlon,model%nlat,1,1/)))
       end do
 
       ! Pack

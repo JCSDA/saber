@@ -116,7 +116,6 @@ contains
    procedure :: read => model_read
    procedure :: read_member => model_read_member
    procedure :: load_ens => model_load_ens
-   procedure :: read_wind => model_read_wind
    procedure :: generate_obs => model_generate_obs
 end type model_type
 
@@ -616,7 +615,7 @@ case default
          nam%variables(1) = variables
 
          ! Read file
-         call model%read(mpl,nam,filename,1,afieldset)
+         call model%read(mpl,nam,filename,afieldset)
 
          ! Get data
          afield = afieldset%field(variables)
@@ -719,7 +718,7 @@ end subroutine model_setup
 ! Subroutine: model_read
 ! Purpose: read member field
 !----------------------------------------------------------------------
-subroutine model_read(model,mpl,nam,filename,its,afieldset)
+subroutine model_read(model,mpl,nam,filename,afieldset)
 
 implicit none
 
@@ -728,14 +727,12 @@ class(model_type),intent(inout) :: model        ! Model
 type(mpl_type),intent(inout) :: mpl             ! MPI data
 type(nam_type),intent(in) :: nam                ! Namelist
 character(len=*),intent(in) :: filename         ! File name
-integer,intent(in) :: its                       ! Timeslot index
 type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
 
 ! Local variables
 integer :: iv
 real(kind_real) :: fld_mga(model%nmga,model%nl0,nam%nv)
 real(kind_real),pointer :: real_ptr(:,:)
-character(len=1024) :: fieldname
 type(atlas_field) :: afield
 
 ! Select model
@@ -745,19 +742,18 @@ if (trim(nam%model)=='fv3') call model%fv3_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='gem') call model%gem_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='geos') call model%geos_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='gfs') call model%gfs_read(mpl,nam,filename,fld_mga)
-if (trim(nam%model)=='ifs') call model%ifs_read(mpl,nam,filename,its,fld_mga)
-if (trim(nam%model)=='mpas') call model%mpas_read(mpl,nam,filename,its,fld_mga)
-if (trim(nam%model)=='nemo') call model%nemo_read(mpl,nam,filename,its,fld_mga)
+if (trim(nam%model)=='ifs') call model%ifs_read(mpl,nam,filename,fld_mga)
+if (trim(nam%model)=='mpas') call model%mpas_read(mpl,nam,filename,fld_mga)
+if (trim(nam%model)=='nemo') call model%nemo_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='norcpm') call model%norcpm_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='qg') call model%qg_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='res') call model%res_read(mpl,nam,filename,fld_mga)
-if (trim(nam%model)=='wrf') call model%wrf_read(mpl,nam,filename,its,fld_mga)
+if (trim(nam%model)=='wrf') call model%wrf_read(mpl,nam,filename,fld_mga)
 
 ! Add data into ATLAS fieldset
 do iv=1,nam%nv
    ! Create field
-   fieldname = trim(nam%variables(iv))//'_'//trim(nam%timeslots(its))
-   afield = model%afunctionspace%create_field(name=fieldname,kind=atlas_real(kind_real),levels=model%nl0)
+   afield = model%afunctionspace%create_field(name=nam%variables(iv),kind=atlas_real(kind_real),levels=model%nl0)
 
    ! Add field
    call afieldset%add(afield)
@@ -786,19 +782,16 @@ integer,intent(in) :: ie                       ! Ensemble member index
 type(atlas_fieldset),intent(out) :: afieldset  ! ATLAS fieldset
 
 ! Local variables
-integer :: its
 character(len=1024) :: fullname
 
 ! Create ATLAS fieldset
 afieldset = atlas_fieldset()
 
-do its=1,nam%nts
-   ! Set file name
-   write(fullname,'(a,i6.6)') trim(filename)//'_'//trim(nam%timeslots(its))//'_',ie
+! Define filename
+write(fullname,'(a,i6.6)') trim(filename)//'_',ie
 
-   ! Read file
-   call model%read(mpl,nam,fullname,its,afieldset)
-end do
+! Read file
+call model%read(mpl,nam,fullname,afieldset)
 
 end subroutine model_read_member
 
@@ -869,47 +862,6 @@ end do
 end subroutine model_load_ens
 
 !----------------------------------------------------------------------
-! Subroutine: model_read_wind
-! Purpose: read wind field
-!----------------------------------------------------------------------
-subroutine model_read_wind(model,mpl,nam)
-
-implicit none
-
-! Passed variables
-class(model_type),intent(inout) :: model  ! Model
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-type(nam_type),intent(inout) :: nam       ! Namelist
-
-! Local variables
-integer :: nv_save,its
-character(len=1024) :: variables_save(nam%nv),fullname
-
-if (nam%new_cortrack.or.(trim(nam%adv_type)=='wind').or.(trim(nam%adv_type)=='windmax')) then
-   ! Save namelist parameters
-   nv_save = nam%nv
-   variables_save(1:nam%nv) = nam%variables(1:nam%nv)
-
-   ! Update namelist parameters
-   nam%nv = 2
-   nam%variables(1:2) = nam%wind_variables
-
-   do its=1,nam%nts
-      ! Define filename
-      fullname = trim(nam%wind_filename)//'_'//trim(nam%timeslots(its))
-
-      ! Read file
-      call model%read(mpl,nam,fullname,its,model%afieldset)
-   end do
-
-   ! Reset namelist
-   nam%nv = nv_save
-   nam%variables(1:nam%nv) = variables_save(1:nam%nv)
-end if
-
-end subroutine model_read_wind
-
-!----------------------------------------------------------------------
 ! Subroutine: model_generate_obs
 ! Purpose: generate observations locations
 !----------------------------------------------------------------------
@@ -928,9 +880,6 @@ real(kind_real) :: nn_dist(10),dist_obs
 character(len=1024),parameter :: subr = 'model_generate_obs'
 type(rng_type) :: rng
 type(tree_type) :: tree
-
-! Check observation number
-if (nam%nobs<1) call mpl%abort(subr,'nobs should be positive for offline observation operator')
 
 ! Initialize random number generator
 call rng%init(mpl,nam)

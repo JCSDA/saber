@@ -386,3 +386,6 @@ if test ${test} = "bump_wrf" ; then
    ncks -A -v PB pressure.nc ${grid}
    rm -f pressure.nc
 fi
+
+# Test passed!
+echo -e "PASSED"

@@ -24,7 +24,7 @@ implicit none
 
 ! Member field derived type
 type member_field_type
-   real(kind_real),allocatable :: fld(:,:,:,:)    ! Ensemble perturbation
+   real(kind_real),allocatable :: fld(:,:,:)      ! Ensemble perturbation
 end type member_field_type
 
 ! Ensemble derived type
@@ -46,11 +46,7 @@ contains
    procedure :: apply_bens => ens_apply_bens
    procedure :: apply_bens_dirac => ens_apply_bens_dirac
    procedure :: normality => ens_normality
-   procedure :: cortrack => ens_cortrack
-   procedure :: corstats => ens_corstats
 end type ens_type
-
-integer,parameter :: nt = 6 ! Number of substeps for wind advection
 
 private
 public :: ens_type
@@ -103,7 +99,7 @@ if (ne>0) then
    allocate(ens%mem(ne))
    allocate(ens%mean(nsub))
    do isub=1,nsub
-      allocate(ens%mean(isub)%fld(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+      allocate(ens%mean(isub)%fld(geom%nc0a,geom%nl0,nam%nv))
    end do
    ens%allocated = .true.
 end if
@@ -160,7 +156,7 @@ integer :: ie,isub
 if (allocated(ens_in%mem)) then
    do ie=1,ens_in%ne
       if (.not.allocated(ens_out%mem(ie)%fld)) allocate(ens_out%mem(ie)%fld(size(ens_in%mem(ie)%fld,1), &
- & size(ens_in%mem(ie)%fld,2),size(ens_in%mem(ie)%fld,3),size(ens_in%mem(ie)%fld,4)))
+ & size(ens_in%mem(ie)%fld,2),size(ens_in%mem(ie)%fld,3)))
       ens_out%mem(ie)%fld = ens_in%mem(ie)%fld
    end do
 end if
@@ -216,17 +212,17 @@ subroutine ens_apply_bens(ens,mpl,nam,geom,fld)
 implicit none
 
 ! Passed variables
-class(ens_type),intent(in) :: ens                                       ! Ensemble
-type(mpl_type),intent(inout) :: mpl                                     ! MPI data
-type(nam_type),intent(in) :: nam                                        ! Namelist
-type(geom_type),intent(in) :: geom                                      ! Geometry
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Field
+class(ens_type),intent(in) :: ens                               ! Ensemble
+type(mpl_type),intent(inout) :: mpl                             ! MPI data
+type(nam_type),intent(in) :: nam                                ! Namelist
+type(geom_type),intent(in) :: geom                              ! Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
 
 ! Local variable
-integer :: ie,ic0a,il0,iv,its
+integer :: ie,ic0a,il0,iv
 real(kind_real) :: alpha,norm
-real(kind_real) :: fld_copy(geom%nc0a,geom%nl0,nam%nv,nam%nts)
-real(kind_real) :: pert(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: fld_copy(geom%nc0a,geom%nl0,nam%nv)
+real(kind_real) :: pert(geom%nc0a,geom%nl0,nam%nv)
 
 ! Initialization
 fld_copy = fld
@@ -236,18 +232,16 @@ fld = 0.0
 norm = 1.0/real(ens%ne-1,kind_real)
 do ie=1,ens%ne
    ! Set perturbation
-   !$omp parallel do schedule(static) private(its,iv,il0,ic0a)
-   do its=1,nam%nts
-      do iv=1,nam%nv
-         do il0=1,geom%nl0
-            do ic0a=1,geom%nc0a
-               if (geom%gmask_c0a(ic0a,il0)) then
-                  pert(ic0a,il0,iv,its) = ens%mem(ie)%fld(ic0a,il0,iv,its)
-               else
-                  pert(ic0a,il0,iv,its) = mpl%msv%valr
-               end if
-            end do
-         end do
+   !$omp parallel do schedule(static) private(iv,il0,ic0a)
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) then
+               pert(ic0a,il0,iv) = ens%mem(ie)%fld(ic0a,il0,iv)
+            else
+               pert(ic0a,il0,iv) = mpl%msv%valr
+            end if
+          end do
       end do
    end do
    !$omp end parallel do
@@ -256,13 +250,11 @@ do ie=1,ens%ne
    call mpl%dot_prod(pert,fld_copy,alpha)
 
    ! Schur product
-   !$omp parallel do schedule(static) private(its,iv,il0,ic0a)
-   do its=1,nam%nts
-      do iv=1,nam%nv
-         do il0=1,geom%nl0
-            do ic0a=1,geom%nc0a
-               if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)+alpha*pert(ic0a,il0,iv,its)*norm
-            end do
+   !$omp parallel do schedule(static) private(iv,il0,ic0a)
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv) = fld(ic0a,il0,iv)+alpha*pert(ic0a,il0,iv)*norm
          end do
       end do
    end do
@@ -275,47 +267,44 @@ end subroutine ens_apply_bens
 ! Subroutine: ens_apply_bens_dirac
 ! Purpose: apply raw ensemble covariance to a Dirac (faster formulation)
 !----------------------------------------------------------------------
-subroutine ens_apply_bens_dirac(ens,mpl,nam,geom,iprocdir,ic0adir,il0dir,ivdir,itsdir,fld)
+subroutine ens_apply_bens_dirac(ens,mpl,nam,geom,iprocdir,ic0adir,il0dir,ivdir,fld)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(in) :: ens                                     ! Ensemble
-type(mpl_type),intent(inout) :: mpl                                   ! MPI data
-type(nam_type),intent(in) :: nam                                      ! Namelist
-type(geom_type),intent(in) :: geom                                    ! Geometry
-integer,intent(in) :: iprocdir                                        ! Processor index for dirac function
-integer,intent(in) :: ic0adir                                         ! Subset Sc0, halo A index for dirac function
-integer,intent(in) :: il0dir                                          ! Subset Sl0 index for dirac function
-integer,intent(in) :: ivdir                                           ! Variable index for dirac function
-integer,intent(in) :: itsdir                                          ! Timeslot index for dirac function
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,nam%nts) ! Field
+class(ens_type),intent(in) :: ens                             ! Ensemble
+type(mpl_type),intent(inout) :: mpl                           ! MPI data
+type(nam_type),intent(in) :: nam                              ! Namelist
+type(geom_type),intent(in) :: geom                            ! Geometry
+integer,intent(in) :: iprocdir                                ! Processor index for dirac function
+integer,intent(in) :: ic0adir                                 ! Subset Sc0, halo A index for dirac function
+integer,intent(in) :: il0dir                                  ! Subset Sl0 index for dirac function
+integer,intent(in) :: ivdir                                   ! Variable index for dirac function
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
 
 ! Local variable
-integer :: ie,ic0a,il0,iv,its
+integer :: ie,ic0a,il0,iv
 real(kind_real) :: alpha(ens%ne),norm
 
 ! Apply ensemble covariance formula for a Dirac function
 norm = 1.0/real(ens%ne-1,kind_real)
 if (mpl%myproc==iprocdir) then
    do ie=1,ens%ne
-      alpha(ie) = ens%mem(ie)%fld(ic0adir,il0dir,ivdir,itsdir)
+      alpha(ie) = ens%mem(ie)%fld(ic0adir,il0dir,ivdir)
    end do
 end if
 call mpl%f_comm%broadcast(alpha,iprocdir-1)
 fld = 0.0
 do ie=1,ens%ne
-   !$omp parallel do schedule(static) private(its,iv,il0,ic0a)
-   do its=1,nam%nts
-      do iv=1,nam%nv
-         do il0=1,geom%nl0
-            do ic0a=1,geom%nc0a
-               if (geom%gmask_c0a(ic0a,il0)) then
-                  fld(ic0a,il0,iv,its) = fld(ic0a,il0,iv,its)+alpha(ie)*ens%mem(ie)%fld(ic0a,il0,iv,its)*norm
-               else
-                  fld(ic0a,il0,iv,its) = mpl%msv%valr
-               end if
-            end do
+   !$omp parallel do schedule(static) private(iv,il0,ic0a)
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) then
+               fld(ic0a,il0,iv) = fld(ic0a,il0,iv)+alpha(ie)*ens%mem(ie)%fld(ic0a,il0,iv)*norm
+            else
+               fld(ic0a,il0,iv) = mpl%msv%valr
+            end if
          end do
       end do
    end do
@@ -340,12 +329,11 @@ type(geom_type),intent(in) :: geom  ! Geometry
 type(io_type),intent(in) :: io      ! I/O
 
 ! Local variables
-integer :: ncid,nloc_id,ne_id,nem1_id,ic0a_id,il0_id,iv_id,its_id,order_id,ens_norm_id,ens_step_id
-integer :: iv,its,il0,ic0a,ie,nloc,iloc,nglb
-integer,allocatable :: ic0a_loc(:),il0_loc(:),iv_loc(:),its_loc(:),order(:,:)
+integer :: ncid,nloc_id,ne_id,nem1_id,ic0a_id,il0_id,iv_id,order_id,ens_norm_id,ens_step_id
+integer :: iv,il0,ic0a,ie,nloc,iloc,nglb
+integer,allocatable :: ic0a_loc(:),il0_loc(:),iv_loc(:),order(:,:)
 real(kind_real) :: norm_m2,norm_m4,norm
-real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),m4(geom%nc0a,geom%nl0,nam%nv,nam%nts)
-real(kind_real) :: kurt(geom%nc0a,geom%nl0,nam%nv,nam%nts)
+real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv),m4(geom%nc0a,geom%nl0,nam%nv),kurt(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
 character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'ens_normality'
@@ -372,12 +360,10 @@ end do
 m2 = m2*norm_m2
 m4 = m4*norm_m4
 kurt = mpl%msv%valr
-do its=1,nam%nts
-   do iv=1,nam%nv
-      do il0=1,geom%nl0
-         do ic0a=1,geom%nc0a
-            if (m2(ic0a,il0,iv,its)>0.0) kurt(ic0a,il0,iv,its) = m4(ic0a,il0,iv,its)/m2(ic0a,il0,iv,its)**2
-         end do
+do iv=1,nam%nv
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if (m2(ic0a,il0,iv)>0.0) kurt(ic0a,il0,iv) = m4(ic0a,il0,iv)/m2(ic0a,il0,iv)**2
       end do
    end do
 end do
@@ -390,7 +376,6 @@ nloc = count(mpl%msv%isnot(kurt).and.(kurt>nam%gen_kurt_th))
 allocate(ic0a_loc(nloc))
 allocate(il0_loc(nloc))
 allocate(iv_loc(nloc))
-allocate(its_loc(nloc))
 allocate(order(ens%ne,nloc))
 allocate(ens_loc(ens%ne))
 allocate(ens_norm(ens%ne,nloc))
@@ -401,36 +386,33 @@ call mpl%f_comm%allreduce(nloc,nglb,fckit_mpi_sum())
 write(mpl%info,'(a7,a,i6,a,i6,a)') '','Save ensemble for ',nloc,' points (',nglb,' total)'
 call mpl%flush
 iloc = 0
-do its=1,nam%nts
-   do iv=1,nam%nv
-      do il0=1,geom%nl0
-         do ic0a=1,geom%nc0a
-            if (mpl%msv%isnot(kurt(ic0a,il0,iv,its)).and.(kurt(ic0a,il0,iv,its)>nam%gen_kurt_th)) then
-               ! Update index
-               iloc = iloc+1
+do iv=1,nam%nv
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if (mpl%msv%isnot(kurt(ic0a,il0,iv)).and.(kurt(ic0a,il0,iv)>nam%gen_kurt_th)) then
+            ! Update index
+            iloc = iloc+1
 
-               ! Copy data
-               ic0a_loc(iloc) = ic0a
-               il0_loc(iloc) = il0
-               iv_loc(iloc) = iv
-               its_loc(iloc) = its
-               do ie=1,ens%ne
-                  ens_loc(ie) = ens%mem(ie)%fld(ic0a,il0,iv,its)
-               end do
+            ! Copy data
+            ic0a_loc(iloc) = ic0a
+            il0_loc(iloc) = il0
+            iv_loc(iloc) = iv
+            do ie=1,ens%ne
+               ens_loc(ie) = ens%mem(ie)%fld(ic0a,il0,iv)
+            end do
 
-               ! Sort ensemble
-               call qsort(ens%ne,ens_loc,order(:,iloc))
+            ! Sort ensemble
+            call qsort(ens%ne,ens_loc,order(:,iloc))
 
-               ! Normalize ensemble
-               norm = 1.0/(maxval(ens_loc)-minval(ens_loc))
-               ens_norm(:,iloc) = (ens_loc-minval(ens_loc))*norm
+            ! Normalize ensemble
+            norm = 1.0/(maxval(ens_loc)-minval(ens_loc))
+            ens_norm(:,iloc) = (ens_loc-minval(ens_loc))*norm
 
-               ! Compute ensemble steps
-               do ie=1,ens%ne-1
-                  ens_step(ie,iloc) = ens_norm(ie+1,iloc)-ens_norm(ie,iloc)
-               end do
-            end if
-         end do
+            ! Compute ensemble steps
+            do ie=1,ens%ne-1
+               ens_step(ie,iloc) = ens_norm(ie+1,iloc)-ens_norm(ie,iloc)
+            end do
+         end if
       end do
    end do
 end do
@@ -453,7 +435,6 @@ if (nloc>0) then
    ic0a_id = mpl%nc_var_define_or_get(subr,ncid,'ic0a',nf90_int,(/nloc_id/))
    il0_id = mpl%nc_var_define_or_get(subr,ncid,'il0',nf90_int,(/nloc_id/))
    iv_id = mpl%nc_var_define_or_get(subr,ncid,'iv',nf90_int,(/nloc_id/))
-   its_id = mpl%nc_var_define_or_get(subr,ncid,'its',nf90_int,(/nloc_id/))
    order_id = mpl%nc_var_define_or_get(subr,ncid,'order',nf90_int,(/ne_id,nloc_id/))
    ens_norm_id = mpl%nc_var_define_or_get(subr,ncid,'ens_norm',nc_kind_real,(/ne_id,nloc_id/))
    ens_step_id = mpl%nc_var_define_or_get(subr,ncid,'ens_step',nc_kind_real,(/nem1_id,nloc_id/))
@@ -464,7 +445,6 @@ if (nloc>0) then
    call mpl%ncerr(subr,nf90_put_var(ncid,ic0a_id,ic0a_loc))
    call mpl%ncerr(subr,nf90_put_var(ncid,il0_id,il0_loc))
    call mpl%ncerr(subr,nf90_put_var(ncid,iv_id,iv_loc))
-   call mpl%ncerr(subr,nf90_put_var(ncid,its_id,its_loc))
    call mpl%ncerr(subr,nf90_put_var(ncid,order_id,order))
    call mpl%ncerr(subr,nf90_put_var(ncid,ens_norm_id,ens_norm))
    call mpl%ncerr(subr,nf90_put_var(ncid,ens_step_id,ens_step))
@@ -477,416 +457,11 @@ call mpl%ncerr(subr,nf90_close(ncid))
 deallocate(ic0a_loc)
 deallocate(il0_loc)
 deallocate(iv_loc)
-deallocate(its_loc)
 deallocate(order)
 deallocate(ens_loc)
 deallocate(ens_norm)
 deallocate(ens_step)
 
 end subroutine ens_normality
-
-!----------------------------------------------------------------------
-! Subroutine: ens_cortrack
-! Purpose: correlation tracker
-!----------------------------------------------------------------------
-subroutine ens_cortrack(ens,mpl,rng,nam,geom,io,fld_uv)
-
-implicit none
-
-! Passed variables
-class(ens_type),intent(in) :: ens                                           ! Ensemble
-type(mpl_type),intent(inout) :: mpl                                         ! MPI data
-type(rng_type),intent(inout) :: rng                                         ! Random number generator
-type(nam_type),intent(in) :: nam                                            ! Namelist
-type(geom_type),intent(in) :: geom                                          ! Geometry
-type(io_type),intent(in) :: io                                              ! I/O
-real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
-
-! Local variable
-integer :: ic0a,ic0u,ic0,il0,ie,its,iproc(1),ind(2),it,i_s
-integer :: ncid,nts_id,londir_id,latdir_id,londir_tracker_id,latdir_tracker_id,londir_wind_id,latdir_wind_id
-real(kind_real) :: norm,proc_to_val(mpl%nproc),val,m2_loc
-real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),cor(geom%nc0a,geom%nl0,nam%nv,nam%nts)
-real(kind_real) :: dtl,um(1),vm(1),up(1),vp(1),uxm,uym,uzm,uxp,uyp,uzp,t,ux,uy,uz,x,y,z
-real(kind_real) :: londir(nam%nts),latdir(nam%nts),londir_tracker(nam%nts),latdir_tracker(nam%nts)
-real(kind_real) :: londir_wind(nam%nts),latdir_wind(nam%nts)
-real(kind_real),allocatable :: fld_uv_tmp(:,:,:),fld_uv_interp(:,:,:)
-logical :: mask_wind(1)
-character(len=1024) :: filename
-character(len=1024) :: subr = 'ens_cortrack'
-type(linop_type) :: h
-
-! Set file name
-filename = trim(nam%prefix)//'_cortrack'
-
-! Write vertical unit
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
-
-! Initialization
-norm = 1.0/real(ens%ne-1,kind_real)
-
-! Compute variance
-write(mpl%info,'(a7,a)') '','Compute variance'
-call mpl%flush
-m2 = 0.0
-do ie=1,ens%ne
-   m2 = m2+ens%mem(ie)%fld**2
-end do
-m2 = m2*norm
-
-! Apply ensemble covariance to a Dirac function
-write(mpl%info,'(a10,a)') '','Apply ensemble covariance to a Dirac function'
-call mpl%flush
-call ens%apply_bens_dirac(mpl,nam,geom,geom%iprocdir(1),geom%ic0adir(1),geom%il0dir(1),1,geom%itsdir(1),cor)
-
-! Normalize correlation
-write(mpl%info,'(a10,a)') '','Normalize correlation'
-call mpl%flush
-if (geom%iprocdir(1)==mpl%myproc) m2_loc = m2(geom%ic0adir(1),geom%il0dir(1),1,geom%itsdir(1))
-call mpl%f_comm%broadcast(m2_loc,geom%iprocdir(1)-1)
-cor = cor/sqrt(m2*m2_loc)
-
-! Correlation maximum displacement
-write(mpl%info,'(a10,a)') '','Correlation maximum displacement'
-call mpl%flush
-do its=1,nam%nts
-   ! Find maximum
-   val = maxval(cor(:,:,1,its))
-   call mpl%f_comm%allgather(val,proc_to_val)
-   iproc = maxloc(proc_to_val)
-   if (mpl%myproc==iproc(1)) then
-      ind = maxloc(cor(:,:,1,its))
-      ic0a = ind(1)
-      londir(its) = geom%lon_c0a(ic0a)
-      latdir(its) = geom%lat_c0a(ic0a)
-      il0 = ind(2)
-   end if
-   call mpl%f_comm%broadcast(londir(its),iproc(1)-1)
-   call mpl%f_comm%broadcast(latdir(its),iproc(1)-1)
-   call mpl%f_comm%broadcast(il0,iproc(1)-1)
-
-   ! Print results
-   write(mpl%info,'(a13,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslots(its))//' ~> lon / lat / lev / val: ', &
- & londir(its)*rad2deg,' / ',latdir(its)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
-   call mpl%flush
-end do
-
-! Write correlation
-write(mpl%info,'(a10,a)') '','Write correlation'
-call mpl%flush
-do its=1,nam%nts
-   call io%fld_write(mpl,nam,geom,filename,'cor_'//trim(nam%timeslots(its)),cor(:,:,:,its))
-end do
-
-! Correlation tracker
-write(mpl%info,'(a7,a)') '','Correlation tracker'
-call mpl%flush
-londir_tracker(1) = londir(1)
-latdir_tracker(1) = latdir(1)
-write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslots(1))//' ~> lon / lat / lev / val: ', &
- & londir_tracker(1)*rad2deg,' / ',latdir_tracker(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
-call mpl%flush
-call io%fld_write(mpl,nam,geom,filename,'tracker_'//trim(nam%timeslots(1))//'_0',cor(:,:,:,1))
-call io%fld_write(mpl,nam,geom,filename,'tracker_'//trim(nam%timeslots(1))//'_1',cor(:,:,:,2))
-do its=2,nam%nts
-   ! Correlation maximum displacement
-   ic0a = mpl%msv%vali
-   val = maxval(cor(:,:,1,its))
-   call mpl%f_comm%allgather(val,proc_to_val)
-   iproc = maxloc(proc_to_val)
-   if (mpl%myproc==iproc(1)) then
-      ind = maxloc(cor(:,:,1,its))
-      ic0a = ind(1)
-      londir_tracker(its) = geom%lon_c0a(ic0a)
-      latdir_tracker(its) = geom%lat_c0a(ic0a)
-      il0 = ind(2)
-   end if
-   call mpl%f_comm%broadcast(londir_tracker(its),iproc(1)-1)
-   call mpl%f_comm%broadcast(latdir_tracker(its),iproc(1)-1)
-   call mpl%f_comm%broadcast(il0,iproc(1)-1)
-
-   ! Print results
-   write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslots(its))//' ~> lon / lat / lev / val: ', &
- & londir_tracker(its)*rad2deg,' / ',latdir_tracker(its)*rad2deg,' / ',nam%levs(il0),' / ',proc_to_val(iproc(1))
-   call mpl%flush
-
-   ! Apply ensemble covariance to a Dirac function
-   write(mpl%info,'(a13,a)') '','Apply ensemble covariance to a Dirac function'
-   call mpl%flush
-   call ens%apply_bens_dirac(mpl,nam,geom,iproc(1),ic0a,il0,1,its,cor)
-
-   ! Normalize correlation tracker
-   write(mpl%info,'(a13,a)') '','Normalize correlation tracker'
-   call mpl%flush
-   if (iproc(1)==mpl%myproc) m2_loc = m2(ic0a,il0,1,its)
-   call mpl%f_comm%broadcast(m2_loc,iproc(1)-1)
-   cor = cor/sqrt(m2*m2_loc)
-
-   ! Write correlation tracker
-   write(mpl%info,'(a13,a)') '','Write correlation tracker'
-   call mpl%flush
-   call io%fld_write(mpl,nam,geom,filename,'tracker_'//trim(nam%timeslots(its))//'_0',cor(:,:,:,its))
-   if (its<nam%nts) call io%fld_write(mpl,nam,geom,filename,'tracker_'//trim(nam%timeslots(its))//'_1',cor(:,:,:,its+1))
-end do
-
-if (present(fld_uv)) then
-   ! Wind tracker
-   write(mpl%info,'(a7,a)') '','Wind tracker'
-   call mpl%flush
-
-   ! Initialization
-   londir_wind(1) = londir(1)
-   latdir_wind(1) = latdir(1)
-   write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3,a,f6.2)') '','Timeslot '//trim(nam%timeslots(1))//' ~> lon / lat / lev / val: ', &
- & londir_wind(1)*rad2deg,' / ',latdir_wind(1)*rad2deg,' / ',nam%levs(geom%il0dir(1)),' / ',1.0
-   call mpl%flush
-   dtl = nam%dts/nt
-   mask_wind = .true.
-
-   do its=2,nam%nts
-      ! Copy results
-      londir_wind(its) = londir_wind(its-1)
-      latdir_wind(its) = latdir_wind(its-1)
-
-      do it=1,nt
-         ! Compute interpolation
-         call h%interp(mpl,rng,nam,geom,geom%il0dir(1),geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,geom%il0dir(1)), &
- & 1,londir_wind(its:its),latdir_wind(its:its),mask_wind,13)
-
-         ! Allocation
-         allocate(fld_uv_tmp(h%n_s,2,2))
-         allocate(fld_uv_interp(h%n_s,2,2))
-
-         ! Gather interpolation value
-         fld_uv_tmp = 0.0
-         do i_s=1,h%n_s
-            ic0u = h%col(i_s)
-            ic0 = geom%c0u_to_c0(ic0u)
-            h%col(i_s) = i_s
-            if (geom%c0_to_proc(ic0)==mpl%myproc) then
-               ic0a = geom%c0u_to_c0a(ic0u)
-               fld_uv_tmp(i_s,1,1) = fld_uv(ic0a,geom%il0dir(1),1,its-1)
-               fld_uv_tmp(i_s,2,1) = fld_uv(ic0a,geom%il0dir(1),2,its-1)
-               fld_uv_tmp(i_s,1,2) = fld_uv(ic0a,geom%il0dir(1),1,its)
-               fld_uv_tmp(i_s,2,2) = fld_uv(ic0a,geom%il0dir(1),2,its)
-            end if
-         end do
-         call mpl%f_comm%allreduce(fld_uv_tmp,fld_uv_interp,fckit_mpi_sum())
-
-         ! Interpolate wind value at dirac point
-         call h%apply(mpl,fld_uv_interp(:,1,1),um)
-         call h%apply(mpl,fld_uv_interp(:,2,1),vm)
-         call h%apply(mpl,fld_uv_interp(:,1,2),up)
-         call h%apply(mpl,fld_uv_interp(:,2,2),vp)
-
-         ! Release memory
-         call h%dealloc
-         deallocate(fld_uv_tmp)
-         deallocate(fld_uv_interp)
-
-         ! Transform wind to cartesian coordinates
-         uxm = -sin(londir_wind(its))*um(1)-cos(londir_wind(its))*sin(latdir_wind(its))*vm(1)
-         uym = cos(londir_wind(its))*um(1)-sin(londir_wind(its))*sin(latdir_wind(its))*vm(1)
-         uzm = cos(latdir_wind(its))*vm(1)
-         uxp = -sin(londir_wind(its))*up(1)-cos(londir_wind(its))*sin(latdir_wind(its))*vp(1)
-         uyp = cos(londir_wind(its))*up(1)-sin(londir_wind(its))*sin(latdir_wind(its))*vp(1)
-         uzp = cos(latdir_wind(its))*vp(1)
-
-         ! Define internal time
-         t = real(it-1,kind_real)/real(nt,kind_real)
-
-         ! Define wind in cartesian coordinates
-         ux = (1.0-t)*uxm+t*uxp
-         uy = (1.0-t)*uym+t*uyp
-         uz = (1.0-t)*uzm+t*uzp
-
-         ! Transform location to cartesian coordinates
-         call lonlat2xyz(mpl,londir_wind(its),latdir_wind(its),x,y,z)
-
-         ! Propagate location
-         x = x+ux*dtl
-         y = y+uy*dtl
-         z = z+uz*dtl
-
-         ! Back to spherical coordinates
-         call xyz2lonlat(mpl,x,y,z,londir_wind(its),latdir_wind(its))
-      end do
-
-      ! Print results
-      write(mpl%info,'(a10,a,f6.1,a,f6.1,a,i3)') '','Timeslot '//trim(nam%timeslots(its))//' ~> lon / lat / lev: ', &
- & londir_wind(its)*rad2deg,' / ',latdir_wind(its)*rad2deg,' / ',nam%levs(geom%il0dir(1))
-      call mpl%flush
-   end do
-end if
-
-if (mpl%main) then
-   ! Open file
-   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
-
-   ! Define dimension
-   nts_id = mpl%nc_dim_define_or_get(subr,ncid,'nts',nam%nts)
-
-   ! Define variables
-   londir_id = mpl%nc_var_define_or_get(subr,ncid,'londir',nc_kind_real,(/nts_id/))
-   latdir_id = mpl%nc_var_define_or_get(subr,ncid,'latdir',nc_kind_real,(/nts_id/))
-   londir_tracker_id = mpl%nc_var_define_or_get(subr,ncid,'londir_tracker',nc_kind_real,(/nts_id/))
-   latdir_tracker_id = mpl%nc_var_define_or_get(subr,ncid,'latdir_tracker',nc_kind_real,(/nts_id/))
-   if (present(fld_uv)) then
-      londir_wind_id = mpl%nc_var_define_or_get(subr,ncid,'londir_wind',nc_kind_real,(/nts_id/))
-      latdir_wind_id = mpl%nc_var_define_or_get(subr,ncid,'latdir_wind',nc_kind_real,(/nts_id/))
-   end if
-
-   ! Write variables
-   call mpl%ncerr(subr,nf90_put_var(ncid,londir_id,londir*rad2deg))
-   call mpl%ncerr(subr,nf90_put_var(ncid,latdir_id,latdir*rad2deg))
-   call mpl%ncerr(subr,nf90_put_var(ncid,londir_tracker_id,londir_tracker*rad2deg))
-   call mpl%ncerr(subr,nf90_put_var(ncid,latdir_tracker_id,latdir_tracker*rad2deg))
-   if (present(fld_uv)) then
-      call mpl%ncerr(subr,nf90_put_var(ncid,londir_wind_id,londir_wind*rad2deg))
-      call mpl%ncerr(subr,nf90_put_var(ncid,latdir_wind_id,latdir_wind*rad2deg))
-   end if
-
-   ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
-end if
-
-end subroutine ens_cortrack
-
-!----------------------------------------------------------------------
-! Subroutine: ens_corstats
-! Purpose: correlation statistics
-!----------------------------------------------------------------------
-subroutine ens_corstats(ens,mpl,rng,nam,geom)
-
-implicit none
-
-! Passed variables
-class(ens_type),intent(in) :: ens   ! Ensemble
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(rng_type),intent(inout) :: rng ! Random number generator
-type(nam_type),intent(in) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom  ! Geometry
-
-! Local variable
-integer,parameter :: ntest = 1000
-integer :: ie,il0,itest,iprocdir,ic0adir,its,iv,ic0a
-integer :: ncid,ntest_id,nl0_id,nv_id,nts_id,cor_max_id,cor_max_avg_id,cor_max_std_id
-real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,nam%nts),alpha(ens%ne),m2_loc,cor(geom%nc0a,nam%nts),norm
-real(kind_real) :: cor_max(ntest,geom%nl0,nam%nv,2:nam%nts)
-real(kind_real) :: cor_max_avg(geom%nl0,nam%nv,nam%nts),cor_max_std(geom%nl0,nam%nv,nam%nts)
-character(len=1024) :: filename
-character(len=1024) :: subr = 'ens_corstats'
-
-! Initialization
-norm = 1.0/real(ens%ne-1,kind_real)
-cor_max_avg(:,:,1) = 1.0
-cor_max_std(:,:,1) = 0.0
-
-! Compute variance
-write(mpl%info,'(a7,a)') '','Compute variance'
-call mpl%flush
-m2 = 0.0
-do ie=1,ens%ne
-   m2 = m2+ens%mem(ie)%fld**2
-end do
-m2 = m2*norm
-
-! Resynchronize random number generator
-call rng%resync(mpl)
-
-! Compute correlation maximum statistics
-write(mpl%info,'(a7,a)') '','Compute correlation maximum statistics'
-call mpl%flush
-do il0=1,geom%nl0
-   write(mpl%info,'(a10,a,i3,a)') '','Level ',il0,': '
-   call mpl%flush(.false.)
-
-   ! Initialization
-   itest = 1
-   call mpl%prog_init(ntest)
-
-   do while (itest<=ntest)
-      ! Generate random dirac point
-      call geom%rand_point(mpl,rng,il0,iprocdir,ic0adir)
-
-      do iv=1,nam%nv
-         ! Apply ensemble covariance formula for a Dirac function
-         if (iprocdir==mpl%myproc) then
-            do ie=1,ens%ne
-               alpha(ie) = ens%mem(ie)%fld(ic0adir,il0,iv,1)
-            end do
-         end if
-         call mpl%f_comm%broadcast(alpha,iprocdir-1)
-         cor = 0.0
-         do ie=1,ens%ne
-            do its=1,nam%nts
-               do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) then
-                     cor(ic0a,its) = cor(ic0a,its)+alpha(ie)*ens%mem(ie)%fld(ic0a,il0,iv,its)*norm
-                  else
-                     cor(ic0a,its) = mpl%msv%valr
-                  end if
-               end do
-            end do
-         end do
-
-         ! Normalize correlation
-         if (iprocdir==mpl%myproc) m2_loc = m2(ic0adir,il0,iv,1)
-         call mpl%f_comm%broadcast(m2_loc,iprocdir-1)
-         cor = cor/sqrt(m2(:,il0,iv,:)*m2_loc)
-
-         ! Save correlation maximum
-         do its=2,nam%nts
-            call mpl%f_comm%allreduce(maxval(cor(:,its)),cor_max(itest,il0,iv,its),fckit_mpi_max())
-         end do
-      end do
-
-      ! Update
-      call mpl%prog_print(itest)
-      itest = itest+1
-   end do
-   call mpl%prog_final
-
-   ! Compute average and standard-deviation
-   do its=2,nam%nts
-      do iv=1,nam%nv
-         cor_max_avg(il0,iv,its) = sum(cor_max(:,il0,iv,its))/real(ntest,kind_real)
-         cor_max_std(il0,iv,its) = sqrt(sum((cor_max(:,il0,iv,its)-cor_max_avg(il0,iv,its))**2)/real(ntest-1,kind_real))
-      end do
-   end do
-end do
-
-! Desynchronize random number generator
-call rng%desync(mpl)
-
-if (mpl%main) then
-   ! Define file
-   filename = trim(nam%prefix)//'_corstats'
-   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
-
-   ! Write namelist parameters
-   call nam%write(mpl,ncid)
-
-   ! Define dimensions
-   ntest_id = mpl%nc_dim_define_or_get(subr,ncid,'ntest',ntest)
-   nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
-   nv_id = mpl%nc_dim_define_or_get(subr,ncid,'nv',nam%nv)
-   nts_id = mpl%nc_dim_define_or_get(subr,ncid,'nts',nam%nts)
-
-   ! Define variables
-   cor_max_id = mpl%nc_var_define_or_get(subr,ncid,'cor_max',nc_kind_real,(/ntest_id,nl0_id,nv_id,nts_id/))
-   cor_max_avg_id = mpl%nc_var_define_or_get(subr,ncid,'cor_max_avg',nc_kind_real,(/nl0_id,nv_id,nts_id/))
-   cor_max_std_id = mpl%nc_var_define_or_get(subr,ncid,'cor_max_std',nc_kind_real,(/nl0_id,nv_id,nts_id/))
-
-   ! Write variables
-   call mpl%ncerr(subr,nf90_put_var(ncid,cor_max_id,cor_max))
-   call mpl%ncerr(subr,nf90_put_var(ncid,cor_max_avg_id,cor_max_avg))
-   call mpl%ncerr(subr,nf90_put_var(ncid,cor_max_std_id,cor_max_std))
-
-   ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
-end if
-
-end subroutine ens_corstats
 
 end module type_ens

@@ -195,8 +195,7 @@ type(bpar_type),intent(in) :: bpar     ! Block parameters
 type(io_type),intent(in) :: io         ! I/O
 
 ! Local variables
-integer :: ib,ncid,anisotropic,its
-character(len=3) :: itschar
+integer :: ib,ncid,anisotropic
 character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'cmat_read'
 
@@ -251,13 +250,6 @@ do ib=1,bpar%nbe
             call io%fld_read(mpl,nam,geom,filename,'Hcoef',cmat%blk(ib)%Hcoef,grpname)
          end if
       end if
-      if ((ib==bpar%nbe).and.nam%adv_diag) then
-         do its=1,nam%nts
-            write(itschar,'(i2.2)') its
-            call io%fld_read(mpl,nam,geom,filename,'adv_lon_'//itschar,cmat%blk(ib)%adv_lon(:,:,its))
-            call io%fld_read(mpl,nam,geom,filename,'adv_lat_'//itschar,cmat%blk(ib)%adv_lat(:,:,its))
-         end do
-      end if
    end if
 end do
 
@@ -280,8 +272,8 @@ type(bpar_type),intent(in) :: bpar  ! Block parameters
 type(io_type),intent(in) :: io      ! I/O
 
 ! Local variables
-integer :: ib,ncid,its
-character(len=3) :: itschar
+integer :: ib
+integer :: ncid
 character(len=1024) :: filename,grpname
 character(len=1024),parameter :: subr = 'cmat_write'
 
@@ -309,13 +301,6 @@ do ib=1,bpar%nbe
             call io%fld_write(mpl,nam,geom,filename,'H12',cmat%blk(ib)%H12,grpname)
             call io%fld_write(mpl,nam,geom,filename,'Hcoef',cmat%blk(ib)%Hcoef,grpname)
          end if
-      end if
-      if ((ib==bpar%nbe).and.nam%adv_diag) then
-         do its=1,nam%nts
-            write(itschar,'(i2.2)') its
-            call io%fld_write(mpl,nam,geom,filename,'adv_lon_'//itschar,cmat%blk(ib)%adv_lon(:,:,its))
-            call io%fld_write(mpl,nam,geom,filename,'adv_lat_'//itschar,cmat%blk(ib)%adv_lat(:,:,its))
-         end do
       end if
 
       if (mpl%main) then
@@ -516,12 +501,6 @@ do ib=1,bpar%nbe
    end if
 end do
 
-! Advection
-if (nam%adv_diag) then
-   cmat%blk(bpar%nbe)%adv_lon = hdiag%samp%adv_lon
-   cmat%blk(bpar%nbe)%adv_lat = hdiag%samp%adv_lat
-end if
-
 ! Release memory
 if (nam%local_diag) then
    deallocate(fld_c2a)
@@ -548,7 +527,7 @@ type(bpar_type),intent(in) :: bpar     ! Block parameters
 type(lct_type),intent(in) :: lct       ! LCT
 
 ! Local variables
-integer :: ib,iv,jv,its,jts,iscales,il0,ic0a
+integer :: ib,iv,jv,iscales,il0,ic0a
 character(len=1024),parameter :: subr = 'cmat_from_lct'
 
 ! Allocation
@@ -571,9 +550,7 @@ do ib=1,bpar%nbe
       ! Indices
       iv = bpar%b_to_v1(ib)
       jv = bpar%b_to_v2(ib)
-      its = bpar%b_to_ts1(ib)
-      jts = bpar%b_to_ts2(ib)
-      if ((iv/=jv).or.(its/=jts)) call mpl%abort(subr,'only diagonal blocks for cmat_from_lct')
+      if (iv/=jv) call mpl%abort(subr,'only diagonal blocks for cmat_from_lct')
 
       if (lct%blk(ib)%nscales>1) call mpl%warning(subr,'only the first scale is used to define cmat from LCT')
       iscales = 1
@@ -622,7 +599,7 @@ type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
-integer :: ib,iv,jv,its,jts
+integer :: ib,iv,jv
 character(len=1024),parameter :: subr = 'cmat_from_nam'
 
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -652,9 +629,7 @@ do ib=1,bpar%nbe
       ! Indices
       iv = bpar%b_to_v1(ib)
       jv = bpar%b_to_v2(ib)
-      its = bpar%b_to_ts1(ib)
-      jts = bpar%b_to_ts2(ib)
-      if ((iv/=jv).or.(its/=jts)) call mpl%abort(subr,'only diagonal blocks for cmat_from_nam')
+      if (iv/=jv) call mpl%abort(subr,'only diagonal blocks for cmat_from_nam')
 
       ! Copy support radii
       cmat%blk(ib)%rh = nam%rh

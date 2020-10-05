@@ -128,13 +128,6 @@ if (bump%nam%ens2_ne>0) then
    call model%load_ens(mpl,bump%nam,'ens2')
 end if
 
-! Read wind fields
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Read wind fields'
-call mpl%flush
-call model%read_wind(mpl,bump%nam)
-
 if (bump%nam%new_obsop) then
    ! Generate observations locations
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -142,16 +135,17 @@ if (bump%nam%new_obsop) then
    write(mpl%info,'(a)') '--- Generate observations locations'
    call mpl%flush
    call model%generate_obs(mpl,bump%nam)
-else
-   model%nobsa = 0
-   allocate(model%lonobs(model%nobsa))
-   allocate(model%latobs(model%nobsa))
 end if
 
 ! BUMP setup
-call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
+if (bump%nam%new_obsop) then
+   call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
  & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs, &
  & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+else
+   call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
+ & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+end if
 
 ! Transfer members
 if (bump%nam%ens1_ne>0) then

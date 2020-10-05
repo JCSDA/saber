@@ -16,6 +16,7 @@ background error:
       load_var: 1
       prefix: qg_dirac_bump_lct/test
 dirac:
+  date: 2010-01-01T12:00:00Z
   ixdir: [20]
   iydir: [10]
   izdir: [1]

@@ -144,7 +144,7 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
    ! Setup mask
    do ie=1,nam%ens1_ne
       ! Set file name
-      write(filename,'(a,i6.6)') 'ens1_'//trim(nam%timeslots(its))//'_',ie
+      write(filename,'(a,i6.6)') 'ens1_',ie
 
       ! Open file
       call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))

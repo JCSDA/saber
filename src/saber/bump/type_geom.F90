@@ -128,7 +128,6 @@ type geom_type
    integer,allocatable :: ic0adir(:)              ! Dirac gridpoint
    integer,allocatable :: il0dir(:)               ! Dirac level
    integer,allocatable :: ivdir(:)                ! Dirac variable
-   integer,allocatable :: itsdir(:)               ! Dirac timeslots
 contains
    procedure :: partial_dealloc => geom_partial_dealloc
    procedure :: dealloc => geom_dealloc
@@ -223,7 +222,6 @@ if (allocated(geom%iprocdir)) deallocate(geom%iprocdir)
 if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
 if (allocated(geom%il0dir)) deallocate(geom%il0dir)
 if (allocated(geom%ivdir)) deallocate(geom%ivdir)
-if (allocated(geom%itsdir)) deallocate(geom%itsdir)
 
 end subroutine geom_partial_dealloc
 
@@ -1112,7 +1110,7 @@ call geom%mesh_c0u%alloc(geom%nc0u)
 call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u)
 
 ! Compute boundary nodes
-call geom%mesh_c0u%bnodes(mpl,nam%adv_diag)
+call geom%mesh_c0u%bnodes(mpl)
 
 ! Define halo A+
 lcheck_c0aplus = .false.
@@ -1246,7 +1244,7 @@ integer :: il0i,ic0u,ic0a,nn_index(1)
 logical :: not_mask_c0u(geom%nc0u)
 type(tree_type) :: tree
 
-if ((trim(nam%draw_type)=='random_coast').or.(nam%adv_diag)) then
+if (trim(nam%draw_type)=='random_coast') then
    write(mpl%info,'(a7,a)') '','Define minimum distance to mask'
    call mpl%flush
 
@@ -1447,7 +1445,7 @@ integer :: idir,il0,il0dir,iprocdir,ic0adir
 logical :: valid
 character(len=1024),parameter :: subr = 'geom_setup_dirac'
 
-if (nam%new_cortrack.or.nam%new_corstats.or.nam%check_dirac.and.(nam%ndir>0)) then
+if (nam%check_dirac.and.(nam%ndir>0)) then
    write(mpl%info,'(a7,a)') '','Setup Dirac parameters'
    call mpl%flush
 
@@ -1458,7 +1456,6 @@ if (nam%new_cortrack.or.nam%new_corstats.or.nam%check_dirac.and.(nam%ndir>0)) th
    allocate(geom%ic0adir(nam%ndir))
    allocate(geom%il0dir(nam%ndir))
    allocate(geom%ivdir(nam%ndir))
-   allocate(geom%itsdir(nam%ndir))
 
    ! Initialization
    geom%ndir = 0
@@ -1482,7 +1479,6 @@ if (nam%new_cortrack.or.nam%new_corstats.or.nam%check_dirac.and.(nam%ndir>0)) th
          geom%ic0adir(geom%ndir) = ic0adir
          geom%il0dir(geom%ndir) = il0dir
          geom%ivdir(geom%ndir) = nam%ivdir(idir)
-         geom%itsdir(geom%ndir) = nam%itsdir(idir)
       end if
    end do
 end if

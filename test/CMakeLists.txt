@@ -129,11 +129,11 @@ if( SABER_TEST_TIER GREATER 2 )
     file( STRINGS testlist/saber_ref_3.txt saber_ref_tmp )
     list( APPEND saber_ref ${saber_ref_tmp} )
     list( APPEND saber_ref_tar saber_ref_3.tar.gz )
-    if( SABER_TEST_MPI )
-        file( STRINGS testlist/saber_ref_mpi_3.txt saber_ref_tmp )
-        list( APPEND saber_ref ${saber_ref_tmp} )
-        list( APPEND saber_ref_tar saber_ref_mpi_3.tar.gz )
-    endif()
+#    if( SABER_TEST_MPI )
+#        file( STRINGS testlist/saber_ref_mpi_3.txt saber_ref_tmp )
+#        list( APPEND saber_ref ${saber_ref_tmp} )
+#        list( APPEND saber_ref_tar saber_ref_mpi_3.tar.gz )
+#    endif()
 endif()
 
 # Multi-core tests (more than two)
@@ -184,10 +184,39 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     # Set TESTFILE_DIR_SABER
     set( TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH} )
     message( STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER} )
-    message( STATUS "Download sources:" )
+else()
+    set( TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER} )
+    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testdata )
+        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testdata is missing" )
+    endif()
+    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testref )
+        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testref is missing" )
+    endif()
+    message( STATUS "Files loaded from: " ${TESTFILE_DIR_SABER} )
+endif()
 
-    # Make specific data directory
-    file( MAKE_DIRECTORY ${TESTFILE_DIR_SABER} )
+# Setup SABER directories and links
+message( STATUS "Setup SABER directories and links" )
+file(WRITE ${CMAKE_BINARY_DIR}/bin/saber_testdir)
+foreach( test ${saber_test} ${saber_test_model} ${saber_test_oops})
+    file(APPEND ${CMAKE_BINARY_DIR}/bin/saber_testdir ${test}\n)
+endforeach()
+file(WRITE ${CMAKE_BINARY_DIR}/bin/saber_testdata)
+foreach( file ${saber_data} )
+    file(APPEND ${CMAKE_BINARY_DIR}/bin/saber_testdata ${file}\n)
+endforeach()
+file(WRITE ${CMAKE_BINARY_DIR}/bin/saber_testref)
+foreach( file ${saber_ref} )
+    file(APPEND ${CMAKE_BINARY_DIR}/bin/saber_testref ${file}\n)
+endforeach()
+execute_process( COMMAND bash ${CMAKE_BINARY_DIR}/bin/saber_setup.sh
+                         ${TESTFILE_DIR_SABER}
+                         ${CMAKE_CURRENT_BINARY_DIR}
+                         ${CMAKE_BINARY_DIR} )
+
+# Download SABER data
+if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
+    message( STATUS "Download sources:" )
 
     # Check whether the URLs exist or not
     foreach ( saber_data_tar_name ${saber_data_tar} )
@@ -236,53 +265,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
                                 DIRNAME  ${DIRNAME}
                                 DIRLOCAL ${TESTFILE_DIR_SABER}/testref
                                 EXTRACT )
-
-    # Make directories
-    file( MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testdata )
-    file( MAKE_DIRECTORY ${TESTFILE_DIR_SABER}/testref )
-else()
-    set( TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER} )
-    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testdata )
-        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testdata is missing" )
-    endif()
-    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testref )
-        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testref is missing" )
-    endif()
-    message( STATUS "Files loaded from: " ${TESTFILE_DIR_SABER} )
 endif()
-
-# Make directories
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata )
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput )
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput )
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref )
-foreach( test ${saber_test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test} )
-endforeach()
-foreach( test ${saber_test_model} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test} )
-endforeach()
-foreach( test ${saber_test_oops} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test} )
-    file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref/${test} )
-endforeach()
-
-# Link data/reference files
-foreach( file ${saber_data} )
-    execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                     ${TESTFILE_DIR_SABER}/testdata/${file}
-                     ${CMAKE_CURRENT_BINARY_DIR}/testdata/${file} )
-endforeach()
-foreach( file ${saber_ref} )
-    execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                     ${TESTFILE_DIR_SABER}/testref/${file}
-                     ${CMAKE_CURRENT_BINARY_DIR}/testref/${file} )
-endforeach()
 
 # Executables
 ecbuild_add_executable( TARGET  saber_bump.x
@@ -504,9 +487,9 @@ if( SABER_TEST_MODEL )
                          ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
 
-        ecbuild_add_test( TARGET       test_${test}_link
-                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_links.ksh
-                          ARGS         ${SABER_TEST_MODEL_DIR} ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} )
+        ecbuild_add_test( TARGET  test_${test}_link
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_links.ksh
+                          ARGS    ${SABER_TEST_MODEL_DIR} ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} )
 
         ecbuild_add_test( TARGET       test_${test}_run
                           MPI          ${mpi}
@@ -564,12 +547,22 @@ if( SABER_TEST_OOPS )
                                    test_qg_parameters_bump_loc_3d
                                    test_qg_parameters_bump_loc_4d )
 
-    # Dirac tests
+
     foreach( test ${saber_test_oops} )
+        # Number of tasks
+        string( FIND ${test} "4d" 4dpos REVERSE )
+        string( LENGTH ${test} length )
+        math( EXPR 4d ${length}-${4dpos}-2 )
+        if ( (4d MATCHES 0) OR (test MATCHES qg_4densvar_bump) )
+            set( NTASKS 13 )
+        else()
+            set( NTASKS 1 )
+        endif()
+
+        # Dirac tests
         string( FIND ${test} "qg_dirac" qg_dirac )
         if ( qg_dirac MATCHES 0 )
-            string( SUBSTRING ${test} 3 -1 testname )
-            ecbuild_add_test( TARGET test_qg_${testname}
+            ecbuild_add_test( TARGET test_${test}
                               TYPE SCRIPT
                               COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
                               ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
@@ -579,22 +572,17 @@ if( SABER_TEST_OOPS )
                                    ${test}/test.ref
                                    0.0
                                    0
-                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1"
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NTASKS}"
                               OMP 2
                               DEPENDS saber_qg_dirac.x
                               TEST_DEPENDS test_qg_links )
         endif()
-    endforeach()
 
-    # Variational tests
-    foreach( test ${saber_test_oops} )
+        # Variational tests
         string( FIND ${test} "qg_3d" qg_3d )
         string( FIND ${test} "qg_4d" qg_4d )
         if ( (qg_3d MATCHES 0) OR (qg_4d MATCHES 0) )
-            string(SUBSTRING ${test} 3 -1 testname)
-
-
-            ecbuild_add_test( TARGET test_qg_${testname}
+            ecbuild_add_test( TARGET test_${test}
                               TYPE SCRIPT
                               COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
                               ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
@@ -604,7 +592,7 @@ if( SABER_TEST_OOPS )
                                    ${test}/test.ref
                                    0.0
                                    0
-                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1"
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NTASKS}"
                               OMP 2
                               DEPENDS saber_qg_4dvar.x
                               TEST_DEPENDS test_qg_links )

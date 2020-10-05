@@ -16,7 +16,6 @@
 
 #include "eckit/config/Configuration.h"
 
-#include "oops/assimilation/Increment4D.h"
 #include "oops/base/IncrementEnsemble.h"
 #include "oops/base/Variables.h"
 #include "oops/interface/State.h"
@@ -44,7 +43,6 @@ template<typename MODEL>
 class ParametersBUMP {
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
-  typedef oops::Increment4D<MODEL>                        Increment4D_;
   typedef OoBump<MODEL>                                   OoBump_;
   typedef oops::State<MODEL>                              State_;
   typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
@@ -53,7 +51,7 @@ class ParametersBUMP {
   static const std::string classname() {return "oops::ParametersBUMP";}
   ParametersBUMP(const Geometry_ &,
                  const oops::Variables &,
-                 const std::vector<util::DateTime> &,
+                 const util::DateTime &,
                  const eckit::Configuration &,
                  const EnsemblePtr_ ens = NULL,
                  const EnsemblePtr_ pseudo_ens = NULL);
@@ -65,7 +63,7 @@ class ParametersBUMP {
  private:
   const Geometry_ resol_;
   const oops::Variables vars_;
-  std::vector<util::DateTime> timeslots_;
+  util::DateTime time_;
   const eckit::LocalConfiguration conf_;
   std::unique_ptr<OoBump_> ooBump_;
 };
@@ -75,11 +73,11 @@ class ParametersBUMP {
 template<typename MODEL>
 ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
                                       const oops::Variables & vars,
-                                      const std::vector<util::DateTime> & timeslots,
+                                      const util::DateTime & time,
                                       const eckit::Configuration & conf,
                                       const EnsemblePtr_ ens,
                                       const EnsemblePtr_ pseudo_ens)
-  : resol_(resol), vars_(vars), timeslots_(timeslots), conf_(conf), ooBump_()
+  : resol_(resol), vars_(vars), time_(time), conf_(conf), ooBump_()
 {
   oops::Log::trace() << "ParametersBUMP<MODEL>::ParametersBUMP construction starting" << std::endl;
   util::Timer timer(classname(), "ParametersBUMP");
@@ -109,7 +107,7 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
 
   // Create BUMP
   oops::Log::info() << "Create BUMP" << std::endl;
-  ooBump_.reset(new OoBump_(resol, vars, timeslots_, BUMPConf));
+  ooBump_.reset(new OoBump_(resol, vars, time_, BUMPConf));
 
 // Transfer/copy ensemble members to BUMP
   if (release_members == 1) {
@@ -121,7 +119,7 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
     oops::Log::info() << "   Member " << ie+1 << " / " << ens1_ne << std::endl;;
 
   // Setup increment
-    Increment4D_ dx(resol_, vars_, timeslots_);
+    Increment_ dx(resol_, vars_, time_);
 
   // Copy member
     if (release_members == 1) {
@@ -149,7 +147,7 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
     oops::Log::info() << "   Member " << ie+1 << " / " << ens2_ne << std::endl;
 
   // Setup increment
-    Increment4D_ dx(resol_, vars_, timeslots_);
+    Increment_ dx(resol_, vars_, time_);
 
   // Copy member
     if (release_members == 1) {
@@ -177,19 +175,10 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
     for (const auto & inputConf : inputConfs) {
     // Read parameter for the specified timeslots
       const util::DateTime date(inputConf.getString("date"));
-      bool found = false;
 
     // Setup increment
-      Increment4D_ dx(resol_, vars_, timeslots_);
-      dx.zero();
-
-      for (unsigned jsub = 0; jsub < timeslots_.size(); ++jsub) {
-        if (date == timeslots_[jsub]) {
-          found = true;
-          dx[dx.first()+jsub].read(inputConf);
-        }
-      }
-      ASSERT(found);
+      Increment_ dx(resol_, vars_, time_);
+      dx.read(inputConf);
 
     // Set parameter to BUMP
       std::string param = inputConf.getString("parameter");
@@ -208,13 +197,13 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
 
 
     // Setup dummy increment
-      Increment4D_ dx(resol_, vars_, timeslots_);
+      Increment_ dx(resol_, vars_, time_);
 
     // Copy data from BUMP
       ooBump_->removeMember(dx, ie);
 
     // Reset ensemble member
-      ens->resetMember(dx);
+      ens->appendMember(dx);
     }
 
   // Transfer pseudo-ensemble members from BUMP
@@ -223,13 +212,13 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
       oops::Log::info() << "   Member " << ie+1 << " / " << ens2_ne << std::endl;
 
     // Setup dummy increment
-      Increment4D_ dx(resol_, vars_, timeslots_);
+      Increment_ dx(resol_, vars_, time_);
 
     // Copy data from BUMP
       ooBump_->removePseudoMember(dx, ie);
 
     // Reset pseudo-ensemble member
-      pseudo_ens->resetMember(dx);
+      pseudo_ens->appendMember(dx);
     }
   }
 
@@ -257,7 +246,7 @@ void ParametersBUMP<MODEL>::write() const {
   conf_.get("output", outputConfs);
   for (const auto & outputConf : outputConfs) {
   // Setup dummy increment
-    Increment4D_ dx(resol_, vars_, timeslots_);
+    Increment_ dx(resol_, vars_, time_);
     dx.zero();
 
   // Get parameter from BUMP
@@ -266,17 +255,9 @@ void ParametersBUMP<MODEL>::write() const {
 
   // Write parameter for the specified timeslots
     const util::DateTime date(outputConf.getString("date"));
-    bool found = false;
-    for (unsigned jsub = 0; jsub < timeslots_.size(); ++jsub) {
-      int isub = jsub+dx.first();
-      if (date == timeslots_[jsub]) {
-        found = true;
-        dx[isub].write(outputConf);
-        oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
-                    << std::setprecision(3) << dx[isub].norm() << std::endl;
-      }
-    }
-    ASSERT(found);
+    dx.write(outputConf);
+    oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
+                      << std::setprecision(3) << dx.norm() << std::endl;
   }
   oops::Log::trace() << "ParametersBUMP::write done" << std::endl;
 }

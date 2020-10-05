@@ -5,7 +5,7 @@ model: "qg"
 
 # driver_param
 method: "cor"
-strategy: "common_univariate"
+strategy: "specific_univariate"
 write_cmat: 0
 new_nicas: 1
 write_nicas: 0
@@ -16,8 +16,6 @@ nl: 1
 levs: [1]
 nv: 1
 variables: ["q"]
-nts: 1
-timeslots: ["00"]
 
 # ens1_param
 ens1_ne: 50
