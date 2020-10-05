@@ -5,7 +5,6 @@
 
 set( oops_src_files
 
-ErrorCovariance4DBUMP.h
 ErrorCovarianceBUMP.h
 ErrorCovarianceGSIRF.h
 ErrorCovarianceID.h

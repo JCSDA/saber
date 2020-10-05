@@ -31,8 +31,6 @@ cost function:
           prefix: qg_4dvar_drplanczos_hybrid_bump/test
           strategy: common
         localization method: BUMP
-        timeslots:
-        - 2010-01-01T00:00:00Z
         localization variables: [x]
       members:
       - date: 2010-01-01T00:00:00Z

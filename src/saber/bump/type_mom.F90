@@ -295,8 +295,8 @@ type(ens_type), intent(in) :: ens     ! Ensemble
 character(len=*),intent(in) :: prefix ! Prefix
 
 ! Local variables
-integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv,jts,its
-real(kind_real),allocatable :: fld_ext(:,:,:,:),fld_1(:,:),fld_2(:,:,:)
+integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv
+real(kind_real),allocatable :: fld_ext(:,:,:),fld_1(:,:),fld_2(:,:,:)
 logical,allocatable :: mask_unpack(:,:)
 
 ! Allocation
@@ -324,7 +324,7 @@ do isub=1,ens%nsub
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
 
       ! Allocation
-      allocate(fld_ext(samp%nc0c,geom%nl0,nam%nv,nam%nts))
+      allocate(fld_ext(samp%nc0c,geom%nl0,nam%nv))
       allocate(mask_unpack(samp%nc0c,geom%nl0))
       mask_unpack = .true.
 
@@ -332,11 +332,9 @@ do isub=1,ens%nsub
          ! Indices
          iv = bpar%b_to_v1(ib)
          jv = bpar%b_to_v2(ib)
-         its = bpar%b_to_ts1(ib)
-         jts = bpar%b_to_ts2(ib)
 
          ! Halo extension
-         if ((iv==jv).and.(its==jts)) call samp%com_AC%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv,its),fld_ext(:,:,iv,its))
+         if (iv==jv) call samp%com_AC%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv),fld_ext(:,:,iv))
       end do
 
       do ib=1,bpar%nb
@@ -348,46 +346,33 @@ do isub=1,ens%nsub
             ! Initialization
             iv = bpar%b_to_v1(ib)
             jv = bpar%b_to_v2(ib)
-            its = bpar%b_to_ts1(ib)
-            jts = bpar%b_to_ts2(ib)
 
             ! Copy valid field points
             fld_1 = mpl%msv%valr
             fld_2 = mpl%msv%valr
-            if ((iv/=jv).and.(its/=jts).and.nam%adv_diag) then
-               ! Interpolate zero separation points
-               !$omp parallel do schedule(static) private(il0)
-               do il0=1,geom%nl0
-                  call samp%d(il0,its)%apply(mpl,fld_ext(:,il0,iv,its),fld_1(:,il0))
-                  call samp%d(il0,jts)%apply(mpl,fld_ext(:,il0,jv,jts),fld_2(:,1,il0))
+            !$omp parallel do schedule(static) private(il0,ic1a,jc3,ic0c,jc0c)
+            do il0=1,geom%nl0
+               do ic1a=1,samp%nc1a
+                  if (samp%smask_c1a(ic1a,il0)) then
+                     ! Indices
+                     ic0c = samp%c1a_to_c0c(ic1a)
+
+                     ! Copy field 1
+                     fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv)
+
+                     do jc3=1,bpar%nc3(ib)
+                        if (samp%smask_c1ac3(ic1a,jc3,il0)) then
+                           ! Indices
+                           jc0c = samp%c1ac3_to_c0c(ic1a,jc3)
+
+                           ! Copy field 2
+                           fld_2(ic1a,jc3,il0) = fld_ext(jc0c,il0,jv)
+                        end if
+                     end do
+                  end if
                end do
-               !$omp end parallel do
-            else
-               ! Copy all separations points
-               !$omp parallel do schedule(static) private(il0,ic1a,jc3,ic0c,jc0c)
-               do il0=1,geom%nl0
-                  do ic1a=1,samp%nc1a
-                     if (samp%smask_c1a(ic1a,il0)) then
-                        ! Indices
-                        ic0c = samp%c1a_to_c0c(ic1a)
-
-                        ! Copy field 1
-                        fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv,its)
-
-                        do jc3=1,bpar%nc3(ib)
-                           if (samp%smask_c1ac3(ic1a,jc3,il0)) then
-                              ! Indices
-                              jc0c = samp%c1ac3_to_c0c(ic1a,jc3)
-
-                              ! Copy field 2
-                              fld_2(ic1a,jc3,il0) = fld_ext(jc0c,il0,jv,jts)
-                           end if
-                        end do
-                     end if
-                  end do
-               end do
-               !$omp end parallel do
-            end if
+            end do
+            !$omp end parallel do
 
             !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3)
             do il0=1,geom%nl0

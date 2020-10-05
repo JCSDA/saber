@@ -114,16 +114,8 @@ type samp_type
    ! Sampling mesh
    type(mesh_type) :: mesh                          ! Sampling mesh
 
-   ! Advection
-   integer,allocatable :: adv_nn(:)                 ! Number of nearest neighbors inside search radius
-   integer :: adv_nnmax                             ! Maximum number of nearest neighbors inside search radius
-   integer,allocatable :: adv_nn_index(:,:)         ! Index of nearest neighbors inside search radius
-   real(kind_real),allocatable :: adv_lon(:,:,:)    ! Interpolated advected longitude
-   real(kind_real),allocatable :: adv_lat(:,:,:)    ! Interpolated advected latitude
-
    ! Interpolations
    type(linop_type),allocatable :: h(:)             ! Horizontal interpolation from Sc2 to Sc0 (local)
-   type(linop_type),allocatable :: d(:,:)           ! Advection interpolation
 
    ! Communications
    type(com_type) :: com_AB                         ! Communication between halos A and B
@@ -140,9 +132,7 @@ contains
    procedure :: read => samp_read
    procedure :: write => samp_write
    procedure :: write_grids => samp_write_grids
-   procedure :: samp_setup_1
-   procedure :: samp_setup_2
-   generic :: setup => samp_setup_1,samp_setup_2
+   procedure :: setup => samp_setup
    procedure :: compute_mask => samp_compute_mask
    procedure :: compute_c1 => samp_compute_c1
    procedure :: compute_mpi_c1a => samp_compute_mpi_c1a
@@ -199,8 +189,7 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Initialization
-samp%sc2 = (trim(samp%name)=='vbal').or.(trim(samp%name)=='lct') &
- & .or.((trim(samp%name)=='hdiag').and.(nam%local_diag.or.nam%adv_diag))
+samp%sc2 = (trim(samp%name)=='vbal').or.(trim(samp%name)=='lct').or.((trim(samp%name)=='hdiag').and.nam%local_diag)
 samp%sc3 = (trim(samp%name)=='hdiag').or.(trim(samp%name)=='lct')
 
 ! Allocation
@@ -211,10 +200,6 @@ if (samp%sc2) then
    allocate(samp%c2_to_c1(nam%nc2))
    allocate(samp%c2_to_proc(nam%nc2))
    allocate(samp%c2_to_c2u(nam%nc2))
-end if
-if (nam%adv_diag) then
-   allocate(samp%adv_lon(geom%nc0a,geom%nl0,nam%nts))
-   allocate(samp%adv_lat(geom%nc0a,geom%nl0,nam%nts))
 end if
 
 end subroutine samp_alloc_other
@@ -280,7 +265,7 @@ implicit none
 class(samp_type),intent(inout) :: samp ! Sampling
 
 ! Local variables
-integer :: il0,its
+integer :: il0
 
 ! Release memory
 call samp%partial_dealloc
@@ -308,21 +293,11 @@ if (allocated(samp%nn_c2a_index)) deallocate(samp%nn_c2a_index)
 if (allocated(samp%nn_c2a_dist)) deallocate(samp%nn_c2a_dist)
 if (allocated(samp%ldwv_to_c0a)) deallocate(samp%ldwv_to_c0a)
 call samp%mesh%dealloc
-if (allocated(samp%adv_lon)) deallocate(samp%adv_lon)
-if (allocated(samp%adv_lat)) deallocate(samp%adv_lat)
 if (allocated(samp%h)) then
    do il0=1,size(samp%h)
       call samp%h(il0)%dealloc
    end do
    deallocate(samp%h)
-end if
-if (allocated(samp%d)) then
-   do its=1,size(samp%d,2)
-      do il0=1,size(samp%d,1)
-         call samp%d(il0,its)%dealloc
-      end do
-   end do
-   deallocate(samp%d)
 end if
 call samp%com_AB%dealloc
 call samp%com_AC%dealloc
@@ -771,10 +746,10 @@ end if
 end subroutine samp_write_grids
 
 !----------------------------------------------------------------------
-! Subroutine: samp_setup_1
-! Purpose: setup sampling, first step
+! Subroutine: samp_setup
+! Purpose: setup sampling
 !----------------------------------------------------------------------
-subroutine samp_setup_1(samp,sname,mpl,rng,nam,geom,ens)
+subroutine samp_setup(samp,sname,mpl,rng,nam,geom,ens)
 
 implicit none
 
@@ -913,13 +888,6 @@ if (samp%sc2) then
    write(mpl%info,'(a7,a)') '','Compute MPI distribution, halo B, subset Sc2'
    call mpl%flush
    call samp%compute_mpi_c2b(mpl,rng,nam,geom)
-
-   if (nam%adv_diag) then
-      ! Compute mesh sampling, subset Sc2
-      write(mpl%info,'(a7,a)') '','Compute sampling mesh, subset Sc2'
-      call mpl%flush
-      call samp%compute_mesh_c2(mpl,rng)
-   end if
 else
    ! Compute MPI distribution, halo A, subset Sc2
    samp%nc2a = 0
@@ -960,23 +928,6 @@ if (samp%sc3) then
    end do
 end if
 
-end subroutine samp_setup_1
-
-!----------------------------------------------------------------------
-! Subroutine: samp_setup_2
-! Purpose: setup sampling, second step
-!----------------------------------------------------------------------
-subroutine samp_setup_2(samp,mpl,rng,nam,geom)
-
-implicit none
-
-! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(inout) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-
 if ((trim(samp%name)=='hdiag').or.(trim(samp%name)=='lct')) then
    ! Compute MPI distribution, halo C
    write(mpl%info,'(a7,a)') '','Compute MPI distribution, halo C'
@@ -1009,7 +960,7 @@ end if
 ! Release memory (partial)
 call samp%partial_dealloc
 
-end subroutine samp_setup_2
+end subroutine samp_setup
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mask
@@ -1027,10 +978,10 @@ type(geom_type),intent(in) :: geom     ! Geometry
 type(ens_type),intent(in) :: ens       ! Ensemble
 
 ! Local variables
-integer :: nsmask,nsmask_tot,ic0a,il0,ildwv,iv,its,ie,ncontig,ncontigmax,latmin,latmax
+integer :: nsmask,nsmask_tot,ic0a,il0,ildwv,iv,ie,ncontig,ncontigmax,latmin,latmax
 integer :: nc0_smask(0:geom%nl0)
 real(kind_real) :: dist
-real(kind_real),allocatable :: m2(:,:,:,:)
+real(kind_real),allocatable :: m2(:,:,:)
 logical :: valid
 character(len=1024),parameter :: subr = 'samp_compute_mask'
 
@@ -1079,7 +1030,7 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
       ! Standard-deviation threshold
 
       ! Allocation
-      allocate(m2(geom%nc0a,geom%nl0,nam%nv,nam%nts))
+      allocate(m2(geom%nc0a,geom%nl0,nam%nv))
 
       ! Compute variance and fourth-order moment
       m2 = 0.0
@@ -1093,13 +1044,11 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
          write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
  & //' bound for standard-deviation'
          call mpl%flush
-         do its=1,nam%nts
-            if (trim(nam%mask_lu(iv))=='lower') then
-               samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv,its)>nam%mask_th(iv)**2)
-            elseif (trim(nam%mask_lu(iv))=='upper') then
-               samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv,its)<nam%mask_th(iv)**2)
-            end if
-         end do
+         if (trim(nam%mask_lu(iv))=='lower') then
+            samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv)>nam%mask_th(iv)**2)
+         elseif (trim(nam%mask_lu(iv))=='upper') then
+            samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv)<nam%mask_th(iv)**2)
+         end if
       end do
 
       ! Release memory
@@ -1840,39 +1789,11 @@ type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: jc3,ic0,ic0a,ic0c,ic0u,jc0u,jc0c,ic1a,its,il0,i_s,iproc
+integer :: jc3,ic0,ic0a,ic0c,ic0u,jc0u,jc0c,ic1a,il0,i_s,iproc
 integer :: c0u_to_c0c(geom%nc0u)
 integer,allocatable :: c0c_to_c0(:)
 real(kind_real),allocatable :: lon_c1a(:),lat_c1a(:)
 logical :: lcheck_c0c(geom%nc0u)
-
-if ((trim(samp%name)=='hdiag').and.nam%adv_diag) then
-   write(mpl%info,'(a7,a)') '','Compute advection interpolation'
-   call mpl%flush
-
-   ! Allocation
-   allocate(lon_c1a(samp%nc1a))
-   allocate(lat_c1a(samp%nc1a))
-   allocate(samp%d(geom%nl0,nam%nts))
-
-   ! Compute interpolation
-   do its=1,nam%nts
-      do il0=1,geom%nl0
-         do ic1a=1,samp%nc1a
-            ic0a = samp%c1a_to_c0a(ic1a)
-            lon_c1a(ic1a) = samp%adv_lon(ic0a,il0,its)
-            lat_c1a(ic1a) = samp%adv_lat(ic0a,il0,its)
-         end do
-         write(samp%d(il0,its)%prefix,'(a,i3.3,a,i2.2)') 'd_',il0,'_',its
-         call samp%d(il0,its)%interp(mpl,rng,nam,geom,il0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0),samp%nc1a, &
- & lon_c1a,lat_c1a,samp%smask_c1a(:,il0),10)
-      end do
-   end do
-
-   ! Release memory
-   deallocate(lon_c1a)
-   deallocate(lat_c1a)
-end if
 
 ! Define halo C
 lcheck_c0c = .false.
@@ -1889,16 +1810,6 @@ do jc3=1,nam%nc3
       end if
    end do
 end do
-if ((trim(samp%name)=='hdiag').and.nam%adv_diag) then
-   do its=1,nam%nts
-      do il0=1,geom%nl0
-         do i_s=1,samp%d(il0,its)%n_s
-            jc0u = samp%d(il0,its)%col(i_s)
-            lcheck_c0c(jc0u) = .true.
-         end do
-      end do
-   end do
-end if
 samp%nc0c = count(lcheck_c0c)
 
 ! Allocation
@@ -1933,18 +1844,6 @@ do ic1a=1,samp%nc1a
       end if
    end do
 end do
-
-if ((trim(samp%name)=='hdiag').and.nam%adv_diag) then
-   ! Local interpolation source
-   do its=1,nam%nts
-      do il0=1,geom%nl0
-         samp%d(il0,its)%n_src = samp%nc0c
-         do i_s=1,samp%d(il0,its)%n_s
-            samp%d(il0,its)%col(i_s) = c0u_to_c0c(samp%d(il0,its)%col(i_s))
-         end do
-      end do
-   end do
-end if
 
 ! Setup communications
 call samp%com_AC%setup(mpl,'com_AC',geom%nc0a,samp%nc0c,geom%nc0,geom%c0a_to_c0,c0c_to_c0)

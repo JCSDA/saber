@@ -72,11 +72,6 @@ ErrorCovarianceID<MODEL>::ErrorCovarianceID(const Geometry_ & resol, const oops:
   : oops::ModelSpaceCovarianceBase<MODEL>(xb, fg, resol, conf)
 {
   oops::Log::trace() << "ErrorCovarianceID::ErrorCovarianceID starting" << std::endl;
-
-// Setup timeslots
-  std::vector<util::DateTime> timeslots;
-  timeslots.push_back(xb.validTime());
-
   oops::Log::trace() << "ErrorCovarianceID::ErrorCovarianceID done" << std::endl;
 }
 

@@ -26,7 +26,6 @@ type gaussian_grid
   integer :: nlon                                      !> Number of latitudes
   integer :: nlev                                      !> Number of levels
   integer :: nvar                                      !> Number of variables
-!  integer :: nts                                       !> Number of timeslots
   character(len=32),allocatable :: vname(:)            !> Name of variables
   real(kind=kind_real),allocatable :: rlats(:)         !> Gaussian latitudes
   real(kind=kind_real),allocatable :: wlats(:)         !> Gaussian weights

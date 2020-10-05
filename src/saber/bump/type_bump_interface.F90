@@ -31,7 +31,7 @@ implicit none
 integer(c_int),intent(inout) :: key_bump         ! BUMP
 type(c_ptr),intent(in),value :: c_comm           ! FCKIT MPI communicator wrapper
 type(c_ptr),intent(in),value :: c_afunctionspace ! ATLAS function space
-type(c_ptr),intent(in),value :: c_afieldset      ! ATLAS fieldset  (containing geometry features: area, vunit, gmask, smask, wind)
+type(c_ptr),intent(in),value :: c_afieldset      ! ATLAS fieldset  (containing geometry features: area, vunit, gmask, smask)
 type(c_ptr),intent(in),value :: c_conf           ! FCKIT configuration
 type(c_ptr),intent(in),value :: c_grid           ! FCKIT grid configuration
 

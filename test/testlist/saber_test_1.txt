@@ -1,5 +1,3 @@
-bump_cortrack
-bump_corstats
 bump_normality
 bump_hdiag_cor_diag_all
 bump_hdiag_grid

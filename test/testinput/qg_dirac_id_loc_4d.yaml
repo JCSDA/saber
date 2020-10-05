@@ -328,7 +328,6 @@ output localization:
 Covariance:
   covariance: ensemble
   localization:
-    cross_timeslot: 1
     localization: ID
   members:
   - state:
@@ -604,7 +603,7 @@ Covariance:
   variables:
   - x
 dirac:
-- date: 2010-01-01T06:00:00Z
+  date: 2010-01-01T06:00:00Z
   ixdir: 
   - 20
   iydir:

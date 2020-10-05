@@ -143,19 +143,12 @@ type(ens_type),intent(in) :: ens     ! Ensemble
 ! Set artificially small local radius
 nam%local_rad = 1.0e-12
 
-! Setup sampling, first step
+! Setup sampling
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Setup sampling, first step'
+write(mpl%info,'(a)') '--- Setup sampling'
 call mpl%flush
 call lct%samp%setup('lct',mpl,rng,nam,geom,ens)
-
-! Setup sampling, second step
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Setup sampling, second step'
-call mpl%flush
-call lct%samp%setup(mpl,rng,nam,geom)
 
 if (nam%new_mom) then
    ! Compute sample moments

@@ -14,8 +14,6 @@ nl: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
-nts: 1
-timeslots: ["00"]
 
 # ens1_param
 ens1_ne: 50

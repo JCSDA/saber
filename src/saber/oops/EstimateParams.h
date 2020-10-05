@@ -17,9 +17,9 @@
 #include <vector>
 
 #include "eckit/config/Configuration.h"
-#include "oops/assimilation/Increment4D.h"
-#include "oops/assimilation/State4D.h"
 #include "oops/base/IncrementEnsemble.h"
+#include "oops/interface/Increment.h"
+#include "oops/interface/State.h"
 #include "oops/mpi/mpi.h"
 #include "oops/runs/Application.h"
 #include "oops/util/Logger.h"
@@ -40,10 +40,8 @@ namespace saber {
 template <typename MODEL> class EstimateParams : public oops::Application {
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
-  typedef oops::Increment4D<MODEL>                        Increment4D_;
   typedef oops::State<MODEL>                              State_;
-  typedef oops::State4D<MODEL>                            State4D_;
-  typedef ParametersBUMP<MODEL>                           Parameters_;
+  typedef ParametersBUMP<MODEL>                           ParametersBUMP_;
   typedef oops::IncrementEnsemble<MODEL>                  Ensemble_;
   typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
 
@@ -68,11 +66,10 @@ template <typename MODEL> class EstimateParams : public oops::Application {
 
     // Setup background state
     const eckit::LocalConfiguration backgroundConfig(fullConfig, "background");
-    State4D_ xx(resol, backgroundConfig);
+    State_ xx(resol, backgroundConfig);
 
     //  Setup timeslots
-    std::vector<util::DateTime> timeslots = xx.validTimes();
-    oops::Log::info() << "Number of ensemble time-slots:" << timeslots.size() << std::endl;
+    const util::DateTime time = xx.validTime();
 
     // Setup ensemble
     EnsemblePtr_ ens = NULL;
@@ -86,38 +83,23 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     if (fullConfig.has("covariance")) {
       const eckit::LocalConfiguration covarConfig(fullConfig, "covariance");
       int ens2_ne = covarConfig.getInt("pseudoens_size");
-      pseudo_ens.reset(new Ensemble_(resol, vars, timeslots, ens2_ne));
-      if (timeslots.size() == 1) {
+      pseudo_ens.reset(new Ensemble_(resol, vars, time, ens2_ne));
       // One time-slot only
-        std::unique_ptr<oops::ModelSpaceCovarianceBase<MODEL>>
-          cov(oops::CovarianceFactory<MODEL>::create(covarConfig, resol, vars, xx[0], xx[0]));
-        for (int ie = 0; ie < ens2_ne; ++ie) {
-          oops::Log::info() << "Generate pseudo ensemble member " << ie+1 << " / "
-                      << ens2_ne << std::endl;
+      std::unique_ptr<oops::ModelSpaceCovarianceBase<MODEL>>
+        cov(oops::CovarianceFactory<MODEL>::create(covarConfig, resol, vars, xx, xx));
+      for (int ie = 0; ie < ens2_ne; ++ie) {
+        oops::Log::info() << "Generate pseudo ensemble member " << ie+1 << " / "
+                          << ens2_ne << std::endl;
 
-          // Compute a pseudo ensemble using randomization
-          Increment4D_ incr(resol, vars, timeslots);
-          cov->randomize(incr[incr.first()]);
-          (*pseudo_ens)[ie] = incr;
-        }
-      } else {
-        // Multiple time-slots
-        std::unique_ptr<oops::ModelSpaceCovariance4DBase<MODEL>>
-          cov(oops::Covariance4DFactory<MODEL>::create(covarConfig, resol, vars, xx, xx));
-        for (int ie = 0; ie < ens2_ne; ++ie) {
-          oops::Log::info() << "Generate pseudo ensemble member " << ie+1 << " / "
-                      << ens2_ne << std::endl;
-
-          // Compute a pseudo ensemble using randomization
-          Increment4D_ incr(resol, vars, timeslots);
-          cov->randomize(incr);
-          (*pseudo_ens)[ie] = incr;
-        }
+        // Compute a pseudo ensemble using randomization
+        Increment_ incr(resol, vars, time);
+        cov->randomize(incr);
+        (*pseudo_ens)[ie] = incr;
       }
     }
 
     // Setup parameters
-    Parameters_ param(resol, vars, timeslots, fullConfig, ens, pseudo_ens);
+    ParametersBUMP_ param(resol, vars, time, fullConfig, ens, pseudo_ens);
 
     // Write parameters
     param.write();

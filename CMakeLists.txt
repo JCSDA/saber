@@ -35,8 +35,8 @@ find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 
 ## Sources
 add_subdirectory( src/saber )
+add_subdirectory( tools ) # tools is needed for test
 add_subdirectory( test )
-add_subdirectory( tools )
 add_subdirectory( doc )
 
 ## Global tests
