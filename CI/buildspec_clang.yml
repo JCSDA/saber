@@ -40,12 +40,12 @@ phases:
       - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} > artifacts/commit_sha.txt
 
       # get jedi-build-package
-      - git clone -b feature/parallel-testing https://$GIT_USER:$GIT_PASS@github.com/jcsda/jedi-build-package
+      - git clone https://$GIT_USER:$GIT_PASS@github.com/jcsda/jedi-build-package
 
       - cd jedi-build-package
       - pip install --user -e .
 
-      - ~/.local/bin/jedi-build --gh-token=$GIT_PASS -j 4 --env-id=docker-clang --branch-map atlas:release-stable fckit:release-stable -br ${CODEBUILD_GIT_BRANCH} -p saber -vvv -u -3 --submit-dashboard --abort-on-build-errors --abort-on-test-errors
+      - ~/.local/bin/jedi-build --gh-token=$GIT_PASS -j 4 --env-id=docker-clang --branch-map atlas:release-stable fckit:release-stable -br ${CODEBUILD_GIT_BRANCH} -p saber -vvv -u -3 --submit-dashboard --site AWS --abort-on-build-errors --abort-on-test-errors
 
       
 artifacts:
