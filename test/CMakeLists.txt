@@ -320,13 +320,13 @@ foreach( test ${saber_test} )
                       TEST_DEPENDS get_saber_ref
                                    test_${test}_${mpi}-${omp}_run )
 
-#    if( SABER_TEST_PLOT )
-#        ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
-#                          TYPE SCRIPT
-#                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-#                          ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-#                          TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
-#    endif()
+    if( SABER_TEST_PLOT )
+        ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
+                          TYPE SCRIPT
+                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                          ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                          TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
+    endif()
 
     if( SABER_TEST_VALGRIND )
         ecbuild_add_test( TARGET test_${test}_${mpi}-${omp}_valgrind
@@ -363,13 +363,13 @@ if( SABER_TEST_MPI )
                           TEST_DEPENDS get_saber_ref
                                        test_${test}_${mpi}-${omp}_run )
 
-#        if( SABER_TEST_PLOT )
-#            ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
-#                              TYPE SCRIPT
-#                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-#                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-#                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
-#        endif()
+        if( SABER_TEST_PLOT )
+            ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
+                              TYPE SCRIPT
+                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
+        endif()
     endforeach()
 endif()
 
@@ -397,13 +397,13 @@ if( SABER_TEST_OMP )
                           TEST_DEPENDS get_saber_ref
                                        test_${test}_${mpi}-${omp}_run )
 
-#        if( SABER_TEST_PLOT )
-#            ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
-#                              TYPE SCRIPT
-#                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-#                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-#                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
-#        endif()
+        if( SABER_TEST_PLOT )
+            ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
+                              TYPE SCRIPT
+                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
+        endif()
     endforeach()
 endif()
 
@@ -435,13 +435,13 @@ if( SABER_TEST_MULTI )
                                   TEST_DEPENDS get_saber_ref
                                                test_${test}_${mpi}-${omp}_run )
 
-#                if( SABER_TEST_PLOT )
-#                    ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
-#                                      TYPE SCRIPT
-#                                      COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-#                                      ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-#                                      TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
-#                endif()
+                if( SABER_TEST_PLOT )
+                    ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
+                                      TYPE SCRIPT
+                                      COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                                      ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                                      TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
+                endif()
             endforeach()
         endif()
     endforeach()

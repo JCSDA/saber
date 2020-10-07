@@ -22,6 +22,8 @@ use type_rng, only: rng_type
 
 implicit none
 
+logical :: qg_red = .true.                        ! QG model with redundant points
+logical :: qg_lam = .false.                       ! QG model as a Limited Area Model
 character(len=1024) :: zone = 'C+I'               ! Computation zone for AROME ('C', 'C+I' or 'C+I+E')
 
 ! Member field derived type
