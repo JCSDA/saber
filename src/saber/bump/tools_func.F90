@@ -34,7 +34,7 @@ end interface
 
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: fletcher32,lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
+public :: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
  & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
@@ -130,7 +130,7 @@ implicit none
 real(kind_real),intent(in) :: lon_i ! Initial point longitude (radians)
 real(kind_real),intent(in) :: lat_i ! Initial point latitude (radians)
 real(kind_real),intent(in) :: lon_f ! Final point longitude (radians)
-real(kind_real),intent(in) :: lat_f ! Final point longilatitudetude (radians)
+real(kind_real),intent(in) :: lat_f ! Final point latitude (radians)
 real(kind_real),intent(out) :: dist ! Great-circle distance
 
 ! Local variables
@@ -143,43 +143,6 @@ ageometry = atlas_geometry("UnitSphere")
 dist = ageometry%distance(lon_i*rad2deg,lat_i*rad2deg,lon_f*rad2deg,lat_f*rad2deg)
 
 end subroutine sphere_dist
-
-!----------------------------------------------------------------------
-! Subroutine: reduce_arc
-! Purpose: reduce arc to a given distance
-!----------------------------------------------------------------------
-subroutine reduce_arc(lon_i,lat_i,lon_f,lat_f,maxdist,dist)
-
-implicit none
-
-! Passed variables
-real(kind_real),intent(in) :: lon_i    ! Initial point longitude (radians)
-real(kind_real),intent(in) :: lat_i    ! Initial point latitude (radians)
-real(kind_real),intent(inout) :: lon_f ! Final point longitude (radians)
-real(kind_real),intent(inout) :: lat_f ! Final point latitude (radians)
-real(kind_real),intent(in) :: maxdist  ! Maximum distance
-real(kind_real),intent(out) :: dist    ! Effective distance
-
-! Local variable
-real(kind_real) :: theta
-
-! Compute distance
-call sphere_dist(lon_i,lat_i,lon_f,lat_f,dist)
-
-! Check with the maximum distance
-if (sup(dist,maxdist)) then
-   ! Compute bearing
-   theta = atan2(sin(lon_f-lon_i)*cos(lat_f),cos(lat_i)*sin(lat_f)-sin(lat_i)*cos(lat_f)*cos(lon_f-lon_i))
-
-   ! Reduce distance
-   dist = maxdist
-
-   ! Compute new point
-   lat_f = asin(sin(lat_i)*cos(dist)+cos(lat_i)*sin(dist)*cos(theta))
-   lon_f = lon_i+atan2(sin(theta)*sin(dist)*cos(lat_i),cos(dist)-sin(lat_i)*sin(lat_f))
-end if
-
-end subroutine reduce_arc
 
 !----------------------------------------------------------------------
 ! Subroutine: lonlat2xyz

@@ -271,57 +271,39 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
   type(geom_type),intent(in) :: geom       !< Geometry
 
   ! Local variables
-  integer :: iouta,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nouta_eff
-  integer :: nout_eff,nn_index(1),proc_to_nouta(mpl%nproc),proc_to_nouta_eff(mpl%nproc)
+  integer :: iouta,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a
+  integer :: nn_index(1),proc_to_nout_local(mpl%nproc)
   integer :: c0u_to_c0b(geom%nc0u)
   integer,allocatable :: c0b_to_c0(:)
   real(kind_real) :: nn_dist(1),N_max,C_max
-  logical :: maskouta(self%nout_local),lcheck_nc0b(geom%nc0)
+  logical :: maskout_local(self%nout_local),lcheck_nc0b(geom%nc0)
   character(len=1024),parameter :: subr = 'bint_driver'
 
   ! Check that universe is global
   if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for interpolation')
 
-  ! Check whether output grid points are inside the mesh
-  if (self%nout_local > 0) then
-     do iouta=1,self%nout_local
-        call geom%mesh_c0u%inside(mpl,self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta),maskouta(iouta))
-        if (.not.maskouta(iouta)) then
-           ! Check for very close points
-           call geom%tree_c0u%find_nearest_neighbors(self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta), &
-                                               & 1,nn_index,nn_dist)
-           if (nn_dist(1)<rth) maskouta(iouta) = .true.
-        end if
-     end do
-     nouta_eff = count(maskouta)
-  else
-     nouta_eff = 0
-  endif
-
   ! Get global number of output grid points
-  call mpl%f_comm%allgather(self%nout_local,proc_to_nouta)
-  call mpl%f_comm%allgather(nouta_eff,proc_to_nouta_eff)
-  self%nout = sum(proc_to_nouta)
-  nout_eff = sum(proc_to_nouta_eff)
+  call mpl%f_comm%allgather(self%nout_local,proc_to_nout_local)
+  self%nout = sum(proc_to_nout_local)
 
   ! Print input
-  write(mpl%info,'(a7,a)') '','Number of points in output grid / valid points per MPI task:'
+  write(mpl%info,'(a7,a)') '','Number of points in output grid:'
   call mpl%flush
   do iproc=1,mpl%nproc
-     write(mpl%info,'(a10,a,i3,a,i8,a,i8)') '','Task ',iproc,': ', &
-           proc_to_nouta(iproc),' / ',proc_to_nouta_eff(iproc)
+     write(mpl%info,'(a10,a,i3,a,i8)') '','Task ',iproc,': ',proc_to_nout_local(iproc)
      call mpl%flush
   end do
-  write(mpl%info,'(a10,a,i8,a,i8)') '','Total   : ',self%nout,' / ',nout_eff
+  write(mpl%info,'(a10,a,i8)') '','Total   : ',self%nout
   call mpl%flush
 
   ! Compute interpolation
   self%h%prefix = 'o'
+  maskout_local = .true.
   write(mpl%info,'(a7,a)') '','Single level:'
   call mpl%flush
   call self%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,&
                      geom%gmask_hor_c0u,self%nout_local,self%outgeom%lon_mga,&
-                     self%outgeom%lat_mga,maskouta,10)
+                     self%outgeom%lat_mga,maskout_local,10)
 
   ! Define halo B
   lcheck_nc0b = .false.
@@ -362,14 +344,14 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
   call self%com%setup(mpl,'com',geom%nc0a,self%nc0b,geom%nc0,geom%c0a_to_c0,c0b_to_c0)
 
   ! Compute scores
-  if (nout_eff > 0) then
+  if (self%nout > 0) then
      call mpl%f_comm%allreduce(real(self%com%nhalo,kind_real),C_max,fckit_mpi_max())
-     C_max = C_max/(3.0*real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
-     N_max = real(maxval(proc_to_nouta_eff),kind_real)/(real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
+     C_max = C_max/(3.0*real(self%nout,kind_real)/real(mpl%nproc,kind_real))
+     N_max = real(maxval(proc_to_nout_local),kind_real)/(real(self%nout,kind_real)/real(mpl%nproc,kind_real))
 
      ! Print results
-     write(mpl%info,'(a7,a,f5.1,a)') '','Output grid repartition imbalance: ',100.0*real(maxval(proc_to_nouta_eff) &
-          & -minval(proc_to_nouta_eff),kind_real)/(real(sum(proc_to_nouta_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+     write(mpl%info,'(a7,a,f5.1,a)') '','Output grid repartition imbalance: ',100.0*real(maxval(proc_to_nout_local) &
+          & -minval(proc_to_nout_local),kind_real)/(real(sum(proc_to_nout_local),kind_real)/real(mpl%nproc,kind_real)),' %'
      call mpl%flush
      write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
           & self%com%nred,' / ',self%com%next,' / ',self%com%nhalo

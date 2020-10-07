@@ -111,7 +111,6 @@ type geom_type
    type(tree_type) :: tree_c0u                    ! Tree on subset Sc0, universe
 
    ! Mesh
-   type(mesh_type) :: mesh_c0aplus                ! Mesh on subset Sc0, halo A+
    type(mesh_type) :: mesh_c0u                    ! Mesh on subset Sc0, universe
 
    ! Boundary fields
@@ -136,7 +135,7 @@ contains
    procedure :: setup_universe => geom_setup_universe
    procedure :: setup_c0 => geom_setup_c0
    procedure :: setup_tree => geom_setup_tree
-   procedure :: setup_meshes => geom_setup_meshes
+   procedure :: setup_mesh => geom_setup_mesh
    procedure :: setup_independent_levels => geom_setup_independent_levels
    procedure :: setup_mask_distance => geom_setup_mask_distance
    procedure :: setup_mask_check => geom_setup_mask_check
@@ -210,7 +209,6 @@ if (allocated(geom%area)) deallocate(geom%area)
 if (allocated(geom%vunitavg)) deallocate(geom%vunitavg)
 if (allocated(geom%disth)) deallocate(geom%disth)
 call geom%tree_c0u%dealloc
-call geom%mesh_c0aplus%dealloc
 call geom%mesh_c0u%dealloc
 if (allocated(geom%nbnda)) deallocate(geom%nbnda)
 if (allocated(geom%v1bnda)) deallocate(geom%v1bnda)
@@ -294,7 +292,7 @@ call geom%setup_c0(mpl)
 call geom%setup_tree(mpl)
 
 ! Setup meshes
-call geom%setup_meshes(mpl,rng,nam)
+call geom%setup_mesh(mpl,rng,nam)
 
 ! Setup number of independent levels
 call geom%setup_independent_levels(mpl)
@@ -1079,10 +1077,10 @@ call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
 end subroutine geom_setup_tree
 
 !----------------------------------------------------------------------
-! Subroutine: geom_setup_meshes
+! Subroutine: geom_setup_mesh
 ! Purpose: setup meshes
 !----------------------------------------------------------------------
-subroutine geom_setup_meshes(geom,mpl,rng,nam)
+subroutine geom_setup_mesh(geom,mpl,rng,nam)
 
 implicit none
 
@@ -1093,15 +1091,12 @@ type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(in) :: nam       ! Namelist
 
 ! Local variables
-integer :: ic0a,ic0u,nnb,jnb,jc0u,jc0,jproc,nc0aplus,ic0aplus
+integer :: ic0a,ic0u,nnb,jnb,jc0u,jc0,jproc
 integer,allocatable :: nn_index(:)
-real(kind_real),allocatable :: nn_dist(:),lon_c0aplus(:),lat_c0aplus(:)
-logical :: lcheck_c0aplus(geom%nc0u)
+real(kind_real),allocatable :: nn_dist(:)
 
-write(mpl%info,'(a7,a)') '','Setup geometry meshes'
+write(mpl%info,'(a7,a)') '','Setup geometry mesh'
 call mpl%flush
-
-! Setup mesh on subset Sc0, universe
 
 ! Allocation
 call geom%mesh_c0u%alloc(geom%nc0u)
@@ -1109,75 +1104,7 @@ call geom%mesh_c0u%alloc(geom%nc0u)
 ! Initialization
 call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u)
 
-! Compute boundary nodes
-call geom%mesh_c0u%bnodes(mpl)
-
-! Define halo A+
-lcheck_c0aplus = .false.
-do ic0a=1,geom%nc0a
-   ic0u = geom%c0a_to_c0u(ic0a)
-   lcheck_c0aplus(ic0u) = .true.
-end do
-do ic0a=1,geom%nc0a
-   ! Allocation
-   allocate(nn_index(2))
-   allocate(nn_dist(2))
-
-   ! Get number of close neighbors (three times the nearest neighbor distance)
-   call geom%tree_c0u%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),2,nn_index,nn_dist)
-   call geom%tree_c0u%count_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),4.0*nn_dist(2),nnb)
-
-   ! Reallocation
-   deallocate(nn_index)
-   deallocate(nn_dist)
-   allocate(nn_index(nnb))
-   allocate(nn_dist(nnb))
-
-   ! Get close neighbors
-   call geom%tree_c0u%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),nnb,nn_index,nn_dist)
-   do jnb=1,nnb
-      jc0u = nn_index(jnb)
-      jc0 = geom%c0u_to_c0(jc0u)
-      jproc = geom%c0_to_proc(jc0)
-      if (jproc/=mpl%myproc) lcheck_c0aplus(jc0u) = .true.
-   end do
-
-   ! Release memory
-   deallocate(nn_index)
-   deallocate(nn_dist)
-end do
-nc0aplus = count(lcheck_c0aplus)
-
-! Allocation
-allocate(lon_c0aplus(nc0aplus))
-allocate(lat_c0aplus(nc0aplus))
-
-! Initialization
-ic0aplus = 0
-do ic0u=1,geom%nc0u
-   if (lcheck_c0aplus(ic0u)) then
-      ic0aplus = ic0aplus+1
-      lon_c0aplus(ic0aplus) = geom%lon_c0u(ic0u)
-      lat_c0aplus(ic0aplus) = geom%lat_c0u(ic0u)
-   end if
-end do
-
-! Setup mesh on subset Sc0, halo A+
-
-! Allocation
-call geom%mesh_c0aplus%alloc(nc0aplus)
-
-! Initialization
-call geom%mesh_c0aplus%init(mpl,rng,lon_c0aplus,lat_c0aplus)
-
-! Compute boundary nodes
-call geom%mesh_c0aplus%bnodes(mpl,.false.)
-
-! Release memory
-deallocate(lon_c0aplus)
-deallocate(lat_c0aplus)
-
-end subroutine geom_setup_meshes
+end subroutine geom_setup_mesh
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_setup_independent_levels
@@ -1370,21 +1297,12 @@ logical,intent(out) :: gmask        ! Local mask
 ! Local variables
 integer :: nn_index(1),ic0,nn_proc,proc_to_nn_proc(mpl%nproc),jproc,ic0u
 real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
-logical :: valid
 character(len=1024),parameter :: subr = 'geom_index_from_lonlat'
 
-! Check whether the location is in convex hull of halo A+
-call geom%mesh_c0aplus%inside(mpl,lon,lat,valid)
-
-if (valid) then
-   ! Find nearest neighbor
-   call geom%tree_c0u%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
-   ic0 = geom%c0u_to_c0(nn_index(1))
-   nn_proc = geom%c0_to_proc(ic0)
-else
-   nn_dist = huge_real
-   nn_proc = mpl%msv%vali
-end if
+! Find nearest neighbor
+call geom%tree_c0u%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
+ic0 = geom%c0u_to_c0(nn_index(1))
+nn_proc = geom%c0_to_proc(ic0)
 
 ! Communication
 call mpl%f_comm%allgather(nn_dist(1),proc_to_nn_dist)
@@ -1400,9 +1318,6 @@ if (mpl%msv%isanynot(proc_to_nn_proc)) then
    if (mpl%msv%is(iproc)) call mpl%abort(subr,'cannot find root processor')
 
    if (iproc==mpl%myproc) then
-      ! Check whether the location is in the convex hull
-      if (.not.valid) call mpl%abort(subr,'wrong processor')
-
       ! Local index
       ic0u = nn_index(1)
       ic0a = geom%c0u_to_c0a(ic0u)

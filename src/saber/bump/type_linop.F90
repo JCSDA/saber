@@ -880,9 +880,9 @@ do i_dst=1,n_dst
 
       if (abs(nn_dist(1))>0.0) then
          ! Compute barycentric coordinates
-         call linop%interp_data%mesh%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),nn_index(1),b,ib)
+         call linop%interp_data%mesh%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),linop%interp_data%tree,b,ib)
 
-         valid = all(ib>0)
+         valid = mpl%msv%isallnot(ib)
          if (valid) then
             if (nam%mask_check) then
                ! Check if arc is crossing boundary arcs
@@ -899,6 +899,7 @@ do i_dst=1,n_dst
                   if (inf(b(i),S_inf)) b(i) = 0.0
                end do
                if (sum(b)>0.0) b = b/sum(b)
+if (i_dst==10) print*, ib,b
                do i=1,3
                   if (b(i)>0.0) then
                      n_s = n_s+1
@@ -925,6 +926,7 @@ do i_dst=1,n_dst
          col(n_s) = nn_index(1)
          S(n_s) = 1.0
       end if
+      if (.not.any(row==i_dst)) print*, i_dst,valid,nn_dist(1)
    end if
 
    ! Update

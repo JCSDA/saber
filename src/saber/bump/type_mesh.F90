@@ -10,73 +10,41 @@ module type_mesh
 use atlas_module!, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,atlas_mesh_nodes,atlas_connectivity
 !$ use omp_lib
 use tools_const, only: pi,req,rad2deg,reqkm
-use tools_func, only: lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product
+use tools_func, only: lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
-use tools_stripack, only: bnodes,inside,trfind,trlist,trmesh
 use type_mpl, only: mpl_type
 use type_rng, only: rng_type
+use type_tree, only: tree_type
 
 implicit none
 
 logical,parameter :: shuffle = .true. ! Shuffle mesh order (more efficient to compute the Delaunay triangulation)
+integer,parameter :: nnmax = 20       ! Maximum number of nearest neighbors in the triangle search
 
 ! Connectivity table row derived type
 type row_type
    integer :: cols                         ! Nomber of columns
-   integer,allocatable :: edges(:)         ! Edges indices
    integer,allocatable :: nodes(:)         ! Nodes indices
    real(kind_real),allocatable :: dists(:) ! Nodes indices
 end type row_type
 
 ! Mesh derived type
 type mesh_type
-   ! Mesh structure
-   integer :: n                                 ! Number of points
-   integer,allocatable :: order(:)              ! Order of shuffled points
-   integer,allocatable :: order_inv(:)          ! Inverse order of shuffled points
-   real(kind_real),allocatable :: lon(:)        ! Points longitudes
-   real(kind_real),allocatable :: lat(:)        ! Points latitudes
-   real(kind_real),allocatable :: x(:)          ! x-coordinate
-   real(kind_real),allocatable :: y(:)          ! y-coordinate
-   real(kind_real),allocatable :: z(:)          ! z-coordinate
-   integer,allocatable :: list(:)               ! Stripack list
-   integer,allocatable :: lptr(:)               ! Stripack list pointer
-   integer,allocatable :: lend(:)               ! Stripack list end
-   integer :: lnew                              ! Stripack pointer to the first empty location in list
-   integer :: nb                                ! Number of boundary nodes
-   integer,allocatable :: bnd(:)                ! Boundary nodes
-   integer,allocatable :: barc(:,:)             ! Boundary arcs
-   real(kind_real),allocatable :: barc_lon(:,:) ! Boundary arcs longitudes
-   real(kind_real),allocatable :: barc_lat(:,:) ! Boundary arcs latitudes
-   real(kind_real),allocatable :: barc_dist(:)  ! Boundary arcs distance
-   real(kind_real),allocatable :: barc_vp(:,:)  ! Boundary arcs normal vector
-
-   ! Mesh attributes (used publicly)
-   integer,allocatable :: nnb(:)                ! Number of neighbors
-   integer,allocatable :: inb(:,:)              ! Neighbors indices
-   real(kind_real),allocatable :: bdist(:)      ! Distance to the closest boundary arc
-
-   ! Triangles data
-   integer :: nt                                ! Number of triangles
-   integer :: na                                ! Number of arcs
-   integer,allocatable :: ltri(:,:)             ! Triangles indices
-   integer,allocatable :: larc(:,:)             ! Arcs indices
-   logical,allocatable :: valid(:)              ! Valid mesh nodes
-
-   type(atlas_mesh) :: amesh                    ! ATLAS mesh
-   type(row_type),allocatable :: rows(:)        ! Connectivity table rows
+   integer :: n                            ! Number of points
+   integer,allocatable :: order(:)         ! Order of shuffled points
+   integer,allocatable :: order_inv(:)     ! Inverse order of shuffled points
+   real(kind_real),allocatable :: lon(:)   ! Points longitudes
+   real(kind_real),allocatable :: lat(:)   ! Points latitudes
+   real(kind_real),allocatable :: xyz(:,:) ! Cartesian coordinates
+   type(atlas_mesh) :: amesh               ! ATLAS mesh
+   type(row_type),allocatable :: rows(:)   ! Connectivity table rows
+   integer :: maxcols                      ! Maximum number of columns
 contains
    procedure :: alloc => mesh_alloc
    procedure :: init => mesh_init
    procedure :: dealloc => mesh_dealloc
    procedure :: copy => mesh_copy
-   procedure :: store => mesh_store
-   procedure :: trlist => mesh_trlist
-   procedure :: bnodes => mesh_bnodes
-   procedure :: find_bdist => mesh_find_bdist
-   procedure :: check => mesh_check
-   procedure :: inside => mesh_inside
    procedure :: barycentric => mesh_barycentric
    procedure :: count_bnda => mesh_count_bnda
    procedure :: get_bnda => mesh_get_bnda
@@ -107,13 +75,8 @@ allocate(mesh%order(mesh%n))
 allocate(mesh%order_inv(mesh%n))
 allocate(mesh%lon(mesh%n))
 allocate(mesh%lat(mesh%n))
-allocate(mesh%x(mesh%n))
-allocate(mesh%y(mesh%n))
-allocate(mesh%z(mesh%n))
-allocate(mesh%list(6*(mesh%n-2)))
-allocate(mesh%lptr(6*(mesh%n-2)))
-allocate(mesh%lend(mesh%n))
-allocate(mesh%nnb(mesh%n))
+allocate(mesh%xyz(3,mesh%n))
+allocate(mesh%rows(mesh%n))
 
 end subroutine mesh_alloc
 
@@ -133,17 +96,16 @@ real(kind_real),intent(in) :: lon(mesh%n)         ! Longitudes
 real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
 
 ! Local variables
-integer :: i,j,k,cols,maxedge
+integer :: i,j,k,cols,maxedge,jj,kk,tmp
 integer,allocatable :: jtab(:),nodes(:,:)
 integer,pointer :: row(:)
-real(kind_real) :: xy(2,mesh%n),distmin,distmax
+real(kind_real) :: xy(2,mesh%n),v1(3),v2(3),cp(3),cd(3)
 real(kind_real),allocatable :: list(:)
 character(len=1024),parameter :: subr = 'mesh_init'
 type(atlas_unstructuredgrid) :: agrid
 type(atlas_meshgenerator) :: ameshgenerator
 type(atlas_mesh_nodes) :: anodes
 type(atlas_connectivity) :: aconnectivity
-type(atlas_Output) :: gmsh
 
 ! Points order
 do i=1,mesh%n
@@ -184,7 +146,13 @@ do i=1,mesh%n
 end do
 
 ! Store coordinates
-call mesh%store(mpl,lon,lat)
+mesh%lon = lon(mesh%order)
+mesh%lat = lat(mesh%order)
+
+! Transform to cartesian coordinates
+do i=1,mesh%n
+   call lonlat2xyz(mpl,mesh%lon(i),mesh%lat(i),mesh%xyz(1,i),mesh%xyz(2,i),mesh%xyz(3,i))
+end do
 
 ! Create unstructured grid
 do i=1,mesh%n
@@ -207,25 +175,27 @@ call atlas_build_node_to_edge_connectivity(mesh%amesh)
 anodes = mesh%amesh%nodes()
 aconnectivity = anodes%edge_connectivity()
 
+! Check number of rows
+if (aconnectivity%rows()/=mesh%n) call mpl%abort(subr,'number of rows should be equal to the number of points')
+
 ! Allocation
+mesh%maxcols = aconnectivity%maxcols()
 maxedge = 0
-allocate(mesh%rows(mesh%n))
 do i=1,mesh%n
    call aconnectivity%row(i,row,cols)
    mesh%rows(i)%cols = cols
    maxedge = max(maxedge,maxval(row(1:cols)))
-   allocate(mesh%rows(i)%edges(mesh%rows(i)%cols))
    allocate(mesh%rows(i)%nodes(mesh%rows(i)%cols))
    allocate(mesh%rows(i)%dists(mesh%rows(i)%cols))
-   mesh%rows(i)%edges = row(1:cols)
 end do
 allocate(nodes(maxedge,2))
 
 ! Fill nodes for each edge
 nodes = mpl%msv%vali
 do i=1,mesh%n
+   call aconnectivity%row(i,row,cols)
    do j=1,mesh%rows(i)%cols
-      k = mesh%rows(i)%edges(j)
+      k = row(j)
       if (mpl%msv%is(nodes(k,1))) then
          ! First point
          nodes(k,1) = i
@@ -241,8 +211,9 @@ end do
 
 ! Fill nodes index in connectivity list
 do i=1,mesh%n
+   call aconnectivity%row(i,row,cols)
    do j=1,mesh%rows(i)%cols
-      k = mesh%rows(i)%edges(j)
+      k = row(j)
       if (i==nodes(k,1)) then
          ! Node is first point
          mesh%rows(i)%nodes(j) = nodes(k,2)
@@ -256,9 +227,43 @@ do i=1,mesh%n
    end do
 end do
 
+! Sort nodes in clockwise order
+do i=1,mesh%n 
+   ! Initialization
+   j = 1
+
+   ! Loop over neigbors
+   do while (j<mesh%rows(i)%cols)
+      ! First node
+      jj = mesh%rows(i)%nodes(j)
+
+      ! Seconde node
+      do k=1,mesh%rows(i)%cols
+         kk = mesh%rows(i)%nodes(k)
+         if (any(mesh%rows(kk)%nodes==i).and.any(mesh%rows(kk)%nodes==jj)) then
+            ! Cross-product (c-b)x(a-b)
+            v1 = mesh%xyz(:,kk)-mesh%xyz(:,jj)
+            v2 = mesh%xyz(:,i)-mesh%xyz(:,jj)
+            call vector_product(v1,v2,cp)
+
+            ! Centroid
+            cd = (mesh%xyz(:,i)+mesh%xyz(:,jj)+mesh%xyz(:,kk))/3.0
+
+            ! Compare the directions
+            if (sum(cp*cd)>0.0) then
+               ! Found it, swap nodes
+               tmp = mesh%rows(i)%nodes(k)
+               mesh%rows(i)%nodes(k) = mesh%rows(i)%nodes(j+1)
+               mesh%rows(i)%nodes(j+1) = tmp
+!               exit
+            end if
+         end if
+      end do
+               j = j+1
+   end do
+end do
+
 ! Compute edge distances
-distmin = huge(1.0)
-distmax = 0.0
 do i=1,mesh%n
    do j=1,mesh%rows(i)%cols
       ! Neighbor node index
@@ -266,68 +271,12 @@ do i=1,mesh%n
 
       ! Compute distance
       call sphere_dist(mesh%lon(i),mesh%lat(i),mesh%lon(k),mesh%lat(k),mesh%rows(i)%dists(j))
-      print*, i,j,mesh%rows(i)%dists(j)*reqkm
-      ! Min/max
-      distmin = min(distmin,mesh%rows(i)%dists(j))
-      distmax = max(distmax,mesh%rows(i)%dists(j))
    end do
 end do
-
-do i=1,mesh%n
-   call aconnectivity%row(i,row,cols)
-   do j=1,mesh%rows(i)%cols
-      if (mesh%rows(i)%dists(j)>2.0*distmin) then
-         row(j) = aconnectivity%missing_value()
-         print*, i,j,aconnectivity%missing_value()
-      end if
-   end do
-end do
-
-! Write mesh
-gmsh = atlas_output_gmsh('mesh.msh',coordinates='xyz')
-call gmsh%write(mesh%amesh)
-
-
-call mpl%abort('ok','ok')
-! A FAIRE:
-! - une routine qui trouve les boundary nodes : si deux voisins sucessifs d'un même node ne sont pas voisins, alors ils sont boundary nodes et le node central aussi. En fait, il suffit d'un trouver un seul puis de suivre le tableau... (cf. stripack)
-! - une routine trouve dans quel triangle on est (où si on est en dehors du convex hull), et qui calcule les coordonnées barycentriques
-! - une routine qui liste les triangles (pour deux voisins, quels sont les deux voisins commun).
-
-! Boundaries not computed yet
-!mesh%nb = mpl%msv%vali
-
-! Count neighbors
-!do i=1,mesh%n
-!   ii = mesh%order(i)
-!   mesh%nnb(ii) = 0
-!   j = mesh%lend(i)
-!   init = .true.
-!   do while ((j/=mesh%lend(i)).or.init)
-!      mesh%nnb(ii) = mesh%nnb(ii)+1
-!      j = mesh%lptr(j)
-!      init = .false.
-!   end do
-!end do
-
-! Find neighbors indices
-!nnbmax = maxval(mesh%nnb)
-!allocate(mesh%inb(mesh%n,nnbmax))
-!do i=1,mesh%n
-!   ii = mesh%order(i)
-!   mesh%nnb(ii) = 0
-!   j = mesh%lend(i)
-!   init = .true.
-!   do while ((j/=mesh%lend(i)).or.init)
-!      mesh%nnb(ii) = mesh%nnb(ii)+1
-!      mesh%inb(ii,mesh%nnb(ii)) = mesh%order(abs(mesh%list(j)))
-!      j = mesh%lptr(j)
-!      init = .false.
-!   end do
-!end do
 
 ! Release memory
-!deallocate(list)
+deallocate(list)
+deallocate(nodes)
 
 end subroutine mesh_init
 
@@ -342,29 +291,22 @@ implicit none
 ! Passed variables
 class(mesh_type),intent(inout) :: mesh ! Mesh
 
+! Local variables
+integer :: i
+
 ! Release memory
 if (allocated(mesh%order)) deallocate(mesh%order)
 if (allocated(mesh%order_inv)) deallocate(mesh%order_inv)
 if (allocated(mesh%lon)) deallocate(mesh%lon)
 if (allocated(mesh%lat)) deallocate(mesh%lat)
-if (allocated(mesh%x)) deallocate(mesh%x)
-if (allocated(mesh%y)) deallocate(mesh%y)
-if (allocated(mesh%z)) deallocate(mesh%z)
-if (allocated(mesh%list)) deallocate(mesh%list)
-if (allocated(mesh%lptr)) deallocate(mesh%lptr)
-if (allocated(mesh%lend)) deallocate(mesh%lend)
-if (allocated(mesh%bnd)) deallocate(mesh%bnd)
-if (allocated(mesh%barc)) deallocate(mesh%barc)
-if (allocated(mesh%barc_lon)) deallocate(mesh%barc_lon)
-if (allocated(mesh%barc_lat)) deallocate(mesh%barc_lat)
-if (allocated(mesh%barc_dist)) deallocate(mesh%barc_dist)
-if (allocated(mesh%barc_vp)) deallocate(mesh%barc_vp)
-if (allocated(mesh%nnb)) deallocate(mesh%nnb)
-if (allocated(mesh%inb)) deallocate(mesh%inb)
-if (allocated(mesh%bdist)) deallocate(mesh%bdist)
-if (allocated(mesh%ltri)) deallocate(mesh%ltri)
-if (allocated(mesh%larc)) deallocate(mesh%larc)
-if (allocated(mesh%valid)) deallocate(mesh%valid)
+if (allocated(mesh%xyz)) deallocate(mesh%xyz)
+if (allocated(mesh%rows)) then
+   do i=1,mesh%n
+      if (allocated(mesh%rows(i)%nodes)) deallocate(mesh%rows(i)%nodes)
+      if (allocated(mesh%rows(i)%dists)) deallocate(mesh%rows(i)%dists)
+   end do
+   deallocate(mesh%rows)
+end if
 
 end subroutine mesh_dealloc
 
@@ -380,399 +322,38 @@ implicit none
 class(mesh_type),intent(inout) :: mesh_out ! Output mesh
 type(mesh_type),intent(in) :: mesh_in      ! Input mesh
 
+! Local variables
+integer :: i
+
 ! Release memory
 call mesh_out%dealloc
 
 ! Allocation
 call mesh_out%alloc(mesh_in%n)
-if (allocated(mesh_in%bnd)) allocate(mesh_out%bnd(mesh_in%nb))
-if (allocated(mesh_in%barc)) allocate(mesh_out%barc(2,mesh_in%nb))
-if (allocated(mesh_in%barc_lon)) allocate(mesh_out%barc_lon(2,mesh_in%nb))
-if (allocated(mesh_in%barc_lat)) allocate(mesh_out%barc_lat(2,mesh_in%nb))
-if (allocated(mesh_in%barc_dist)) allocate(mesh_out%barc_dist(mesh_in%nb))
-if (allocated(mesh_in%barc_vp)) allocate(mesh_out%barc_vp(3,mesh_in%nb))
-if (allocated(mesh_in%inb)) allocate(mesh_out%inb(size(mesh_in%inb,1),size(mesh_in%inb,2)))
-if (allocated(mesh_in%bdist)) allocate(mesh_out%bdist(mesh_in%n))
-if (allocated(mesh_in%ltri)) allocate(mesh_out%ltri(3,mesh_in%nt))
-if (allocated(mesh_in%larc)) allocate(mesh_out%larc(2,mesh_in%na))
-if (allocated(mesh_in%valid)) allocate(mesh_out%valid(mesh_in%n))
+do i=1,mesh_out%n
+   if (allocated(mesh_in%rows(i)%nodes)) allocate(mesh_out%rows(i)%nodes(mesh_in%rows(i)%cols))
+   if (allocated(mesh_in%rows(i)%dists)) allocate(mesh_out%rows(i)%dists(mesh_in%rows(i)%cols))
+end do
 
 ! Copy data
 mesh_out%order = mesh_in%order
 mesh_out%order_inv = mesh_in%order_inv
 mesh_out%lon = mesh_in%lon
 mesh_out%lat = mesh_in%lat
-mesh_out%x = mesh_in%x
-mesh_out%y = mesh_in%y
-mesh_out%z = mesh_in%z
-mesh_out%list = mesh_in%list
-mesh_out%lptr = mesh_in%lptr
-mesh_out%lend = mesh_in%lend
-mesh_out%lnew = mesh_in%lnew
-mesh_out%nb = mesh_in%nb
-if (allocated(mesh_in%bnd)) mesh_out%bnd = mesh_in%bnd
-if (allocated(mesh_in%barc)) mesh_out%barc = mesh_in%barc
-if (allocated(mesh_in%barc_lon)) mesh_out%barc_lon = mesh_in%barc_lon
-if (allocated(mesh_in%barc_lat)) mesh_out%barc_lat = mesh_in%barc_lat
-if (allocated(mesh_in%barc_dist)) mesh_out%barc_dist = mesh_in%barc_dist
-if (allocated(mesh_in%barc_vp)) mesh_out%barc_vp = mesh_in%barc_vp
-mesh_out%nnb = mesh_in%nnb
-mesh_out%inb = mesh_in%inb
-if (allocated(mesh_in%bdist)) mesh_out%bdist = mesh_in%bdist
-mesh_out%nt = mesh_in%nt
-mesh_out%na = mesh_in%na
-if (allocated(mesh_in%ltri)) mesh_out%ltri = mesh_in%ltri
-if (allocated(mesh_in%larc)) mesh_out%larc = mesh_in%larc
-if (allocated(mesh_in%valid)) mesh_out%valid = mesh_in%valid
+mesh_out%xyz = mesh_in%xyz
+do i=1,mesh_out%n
+   mesh_out%rows(i)%cols = mesh_in%rows(i)%cols
+   if (allocated(mesh_out%rows(i)%nodes)) mesh_out%rows(i)%nodes = mesh_in%rows(i)%nodes
+   if (allocated(mesh_out%rows(i)%dists)) mesh_out%rows(i)%dists = mesh_in%rows(i)%dists
+end do
 
 end subroutine mesh_copy
 
 !----------------------------------------------------------------------
-! Subroutine: mesh_store
-! Purpose: store mesh cartesian coordinates
-!----------------------------------------------------------------------
-subroutine mesh_store(mesh,mpl,lon,lat)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(inout) :: mesh    ! Mesh
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-real(kind_real),intent(in) :: lon(mesh%n) ! Longitude
-real(kind_real),intent(in) :: lat(mesh%n) ! Latitude
-
-! Local variables
-integer :: i
-
-! Initialize
-mesh%lon = mpl%msv%valr
-mesh%lat = mpl%msv%valr
-
-! Copy lon/lat
-mesh%lon = lon(mesh%order)
-mesh%lat = lat(mesh%order)
-
-! Transform to cartesian coordinates
-do i=1,mesh%n
-   call lonlat2xyz(mpl,mesh%lon(i),mesh%lat(i),mesh%x(i),mesh%y(i),mesh%z(i))
-end do
-
-end subroutine mesh_store
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_trlist
-! Purpose: compute triangle list, arc list
-!----------------------------------------------------------------------
-subroutine mesh_trlist(mesh,mpl)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-
-! Local variables
-integer :: info,ia,it,i,i1,i2
-integer :: ltri(9,2*(mesh%n-2))
-character(len=6) :: notvalidchar
-character(len=1024),parameter :: subr = 'mesh_trlist'
-
-if (mesh%n>2) then
-   ! Create triangles list
-   call trlist(mesh%n,mesh%list,mesh%lptr,mesh%lend,9,mesh%nt,ltri,info)
-   if (info/=0) call mpl%abort(subr,'trlist failed')
-
-   ! Allocation
-   mesh%na = maxval(ltri(7:9,1:mesh%nt))
-   allocate(mesh%ltri(3,mesh%nt))
-   allocate(mesh%larc(2,mesh%na))
-   allocate(mesh%valid(mesh%n))
-
-   ! Copy triangle list
-   mesh%ltri = ltri(1:3,1:mesh%nt)
-else
-   ! No mesh
-   mesh%nt = 0
-   mesh%na = 0
-end if
-
-! Copy arcs list
-do ia=1,mesh%na
-   it = 1
-   do while (it<=mesh%nt)
-      if (any(ltri(7:9,it)==ia)) exit
-      it = it+1
-   end do
-   i = 1
-   do while (i<=3)
-      if (ltri(6+i,it)==ia) exit
-      i = i+1
-   end do
-   i1 = mod(i+1,3)
-   if (i1==0) i1 = 3
-   i2 = mod(i+2,3)
-   if (i2==0) i2 = 3
-   mesh%larc(1,ia) = mesh%order(ltri(i1,it))
-   mesh%larc(2,ia) = mesh%order(ltri(i2,it))
-end do
-
-! Check mesh
-call mesh%check(mpl,mesh%valid)
-if (.not.all(mesh%valid)) then
-   write(notvalidchar,'(i6)') count(.not.mesh%valid)
-   call mpl%warning(subr,'unvalid mesh at creation ('//notvalidchar//' points)')
-end if
-
-end subroutine mesh_trlist
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_bnodes
-! Purpose: find boundary nodes
-!----------------------------------------------------------------------
-subroutine mesh_bnodes(mesh,mpl,bdist)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-logical,intent(in),optional :: bdist   ! Find minimum distance a boundary arc
-
-! Local variables
-integer :: i,ii,bnd(mesh%n)
-real(kind_real) :: v1(3),v2(3)
-logical :: lbdist
-
-! Initialization
-lbdist = .false.
-if (present(bdist)) lbdist = bdist
-
-if (mesh%n>2) then
-   ! Find boundary nodes
-   bnd = mpl%msv%vali
-   call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,mesh%nb,mesh%na,mesh%nt)
-
-   ! Allocation
-   allocate(mesh%bnd(mesh%nb))
-
-   ! Copy
-   mesh%bnd = bnd(1:mesh%nb)
-else
-   ! No mesh
-   mesh%nb = 0
-   mesh%na = 0
-   mesh%nt = 0
-end if
-
-
-! Allocation
-if (mesh%nb>0) then
-   allocate(mesh%barc(2,mesh%nb))
-   allocate(mesh%barc_lon(2,mesh%nb))
-   allocate(mesh%barc_lat(2,mesh%nb))
-   allocate(mesh%barc_dist(mesh%nb))
-   allocate(mesh%barc_vp(3,mesh%nb))
-end if
-allocate(mesh%bdist(mesh%n))
-
-! Define boundary arcs
-if (mesh%nb>0) then
-   do i=1,mesh%nb-1
-      mesh%barc(1,i) = mesh%bnd(i)
-      mesh%barc(2,i) = mesh%bnd(i+1)
-   end do
-   mesh%barc(1,mesh%nb) = mesh%bnd(mesh%nb)
-   mesh%barc(2,mesh%nb) = mesh%bnd(1)
-end if
-
-! Compute boundary arcs properties
-do i=1,mesh%nb
-   mesh%barc_lon(:,i) = (/mesh%lon(mesh%barc(1,i)),mesh%lon(mesh%barc(2,i))/)
-   mesh%barc_lat(:,i) = (/mesh%lat(mesh%barc(1,i)),mesh%lat(mesh%barc(2,i))/)
-   call sphere_dist(mesh%barc_lon(1,i),mesh%barc_lat(1,i),mesh%barc_lon(2,i),mesh%barc_lat(2,i),mesh%barc_dist(i))
-   v1 = (/mesh%x(mesh%barc(1,i)),mesh%y(mesh%barc(1,i)),mesh%z(mesh%barc(1,i))/)
-   v2 = (/mesh%x(mesh%barc(2,i)),mesh%y(mesh%barc(2,i)),mesh%z(mesh%barc(2,i))/)
-   call vector_product(v1,v2,mesh%barc_vp(:,i))
-end do
-
-if (lbdist) then
-   ! Find minimal distance to a boundary arc
-   do i=1,mesh%n
-      ii = mesh%order(i)
-      call mesh%find_bdist(mpl,mesh%lon(i),mesh%lat(i),mesh%bdist(ii))
-   end do
-else
-   ! Missing
-   mesh%bdist = mpl%msv%valr
-end if
-
-end subroutine mesh_bnodes
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_find_bdist
-! Purpose: find shortest distance to boundary arcs
-!----------------------------------------------------------------------
-subroutine mesh_find_bdist(mesh,mpl,lon,lat,bdist)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(in) :: mesh  ! Mesh
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-real(kind_real),intent(in) :: lon    ! Longitude
-real(kind_real),intent(in) :: lat    ! Latitude
-real(kind_real),intent(out) :: bdist ! Distance to boundary
-
-! Local variables
-integer :: i
-real(kind_real) :: v(3),vf(3),vt(3),tlat,tlon,dist_t1,dist_t2
-character(len=1024),parameter :: subr = 'mesh_find_bdist'
-
-! Check
-if (mpl%msv%is(mesh%nb)) call mpl%abort(subr,'boundary arcs have not been computed')
-
-! Initialization
-bdist = pi
-
-if (mesh%nb>0) then
-   ! Transform to cartesian coordinates
-   call lonlat2xyz(mpl,lon,lat,v(1),v(2),v(3))
-end if
-
-! Compute the shortest distance from each boundary arc great-circle
-do i=1,mesh%nb
-   ! Vector products
-   call vector_product(v,mesh%barc_vp(:,i),vf)
-   call vector_product(mesh%barc_vp(:,i),vf,vt)
-
-   ! Back to spherical coordinates
-   call xyz2lonlat(mpl,vt(1),vt(2),vt(3),tlon,tlat)
-
-   ! Check whether T is on the arc
-   call sphere_dist(tlon,tlat,mesh%barc_lon(1,i),mesh%barc_lat(1,i),dist_t1)
-   call sphere_dist(tlon,tlat,mesh%barc_lon(2,i),mesh%barc_lat(2,i),dist_t2)
-   if ((dist_t1<mesh%barc_dist(i)).and.(dist_t2<mesh%barc_dist(i))) then
-      ! T is on the arc
-      call sphere_dist(lon,lat,tlon,tlat,dist_t1)
-      bdist = min(bdist,dist_t1)
-   else
-      ! T is not on the arc
-      call sphere_dist(lon,lat,mesh%barc_lon(1,i),mesh%barc_lat(1,i),dist_t1)
-      call sphere_dist(lon,lat,mesh%barc_lon(2,i),mesh%barc_lat(2,i),dist_t2)
-      bdist = min(bdist,min(dist_t1,dist_t2))
-   end if
-end do
-
-end subroutine mesh_find_bdist
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_check
-! Purpose: check whether the mesh is made of counter-clockwise triangles
-!----------------------------------------------------------------------
-subroutine mesh_check(mesh,mpl,valid)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-logical,intent(out) :: valid(mesh%n)   ! Validity flag
-
-! Local variables
-integer :: it
-real(kind_real),allocatable :: a(:),b(:),c(:),cd(:),cp(:),v1(:),v2(:)
-logical :: validt(mesh%nt)
-
-!$omp parallel do schedule(static) private(it) firstprivate(a,b,c,cd,cp,v1,v2)
-do it=1,mesh%nt
-   ! Allocation
-   allocate(a(3))
-   allocate(b(3))
-   allocate(c(3))
-   allocate(cd(3))
-   allocate(cp(3))
-   allocate(v1(3))
-   allocate(v2(3))
-
-   ! Check vertices status
-   if (mpl%msv%isallnot(mesh%x(mesh%ltri(:,it))).and.mpl%msv%isallnot(mesh%y(mesh%ltri(:,it))) &
- & .and.mpl%msv%isallnot(mesh%z(mesh%ltri(:,it)))) then
-      ! Vertices
-      a = (/mesh%x(mesh%ltri(1,it)),mesh%y(mesh%ltri(1,it)),mesh%z(mesh%ltri(1,it))/)
-      b = (/mesh%x(mesh%ltri(2,it)),mesh%y(mesh%ltri(2,it)),mesh%z(mesh%ltri(2,it))/)
-      c = (/mesh%x(mesh%ltri(3,it)),mesh%y(mesh%ltri(3,it)),mesh%z(mesh%ltri(3,it))/)
-
-      ! Cross-product (c-b)x(a-b)
-      v1 = c-b
-      v2 = a-b
-      call vector_product(v1,v2,cp)
-
-      ! Centroid
-      cd = (a+b+c)/3.0
-
-      ! Compare the directions
-      validt(it) = sum(cp*cd)>0.0
-   else
-      ! At least one vertex is missing
-      validt(it) = .false.
-   end if
-
-   ! Release memory
-   deallocate(a)
-   deallocate(b)
-   deallocate(c)
-   deallocate(cd)
-   deallocate(cp)
-   deallocate(v1)
-   deallocate(v2)
-end do
-!$omp end parallel do
-
-! Check vertices
-valid = .true.
-do it=1,mesh%nt
-   if (.not.validt(it)) valid(mesh%ltri(:,it)) = .false.
-end do
-
-end subroutine mesh_check
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_inside
-! Purpose: find whether a point is inside the mesh
-!----------------------------------------------------------------------
-subroutine mesh_inside(mesh,mpl,lon,lat,inside_mesh)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(in) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl ! MPI data
-real(kind_real),intent(in) :: lon   ! Longitude
-real(kind_real),intent(in) :: lat   ! Latitude
-logical,intent(out) :: inside_mesh  ! True if the point is inside the mesh
-
-! Local variables
-integer :: info
-real(kind_real) :: p(3)
-
-if (mesh%nb>0) then
-   ! Transform to cartesian coordinates
-   call lonlat2xyz(mpl,lon,lat,p(1),p(2),p(3))
-
-   ! Find whether the point is inside the convex hull
-   inside_mesh = inside(p,mesh%n,mesh%x,mesh%y,mesh%z,mesh%nb,mesh%bnd,info)
-else
-   ! No boundary
-   inside_mesh = .true.
-end if
-
-end subroutine mesh_inside
-
-!----------------------------------------------------------------------
 ! Subroutine: mesh_barycentric
-! Purpose: compute barycentric coordinates
+! Purpose: compute barycentric coordinates (not optimal but sure to converge)
 !----------------------------------------------------------------------
-subroutine mesh_barycentric(mesh,mpl,lon,lat,istart,b,ib)
+subroutine mesh_barycentric(mesh,mpl,lon,lat,tree,b,ib)
 
 implicit none
 
@@ -781,26 +362,107 @@ class(mesh_type),intent(in) :: mesh ! Mesh
 type(mpl_type),intent(inout) :: mpl ! MPI data
 real(kind_real),intent(in) :: lon   ! Longitude
 real(kind_real),intent(in) :: lat   ! Latitude
-integer,intent(in) :: istart        ! Starting index
+type(tree_type),intent(in) :: tree  ! Tree
 real(kind_real),intent(out) :: b(3) ! Barycentric weights
 integer,intent(out) :: ib(3)        ! Barycentric indices
 
 ! Local variables
-integer :: i
-real(kind_real) :: p(3)
+integer :: i,j,jj,kk,nn,l
+integer,allocatable :: nn_index(:)
+real(kind_real) :: xyz(3)
+real(kind_real),allocatable :: nn_dist(:)
+logical :: found,cflag(3),valid
+character(len=1024),parameter :: subr = 'mesh_barycentric'
+
+! Initialization
+found = .false.
+nn = 1
+ib = mpl%msv%vali
 
 ! Transform to cartesian coordinates
-call lonlat2xyz(mpl,lon,lat,p(1),p(2),p(3))
+call lonlat2xyz(mpl,lon,lat,xyz(1),xyz(2),xyz(3))
 
-! Compute barycentric coordinates
-b = 0.0
-ib = 0
-if (mesh%n>2) call trfind(istart,p,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
+do while ((.not.found).and.(nn<=nnmax))
+   ! Allocation
+   if (nn>mesh%n) call mpl%abort(subr,'cannot find a triangle containing this point')
+   allocate(nn_index(nn))
+   allocate(nn_dist(nn))
+
+   ! Find the next nearest neighbor
+   call tree%find_nearest_neighbors(lon,lat,nn,nn_index,nn_dist)
+   i = mesh%order_inv(nn_index(nn))
+
+   ! Check distance
+   if (nn_dist(nn)>0.0) then
+      ! Loop over neigbors
+      do j=1,mesh%rows(i)%cols
+         ! Find the two other vertices of the triangle
+         jj = mesh%rows(i)%nodes(j)
+         if (j<mesh%rows(i)%cols) then
+            kk = mesh%rows(i)%nodes(j+1)
+         else
+            kk = mesh%rows(i)%nodes(1)
+         end if
+
+         ! Compute weights
+         call vector_triple_product(mesh%xyz(:,jj),mesh%xyz(:,kk),xyz,b(1),cflag(1))
+         call vector_triple_product(mesh%xyz(:,kk),mesh%xyz(:,i),xyz,b(2),cflag(2))
+         call vector_triple_product(mesh%xyz(:,i),mesh%xyz(:,jj),xyz,b(3),cflag(3))
+
+         ! Check if the points are colinear
+         if (count(cflag)>=2) then
+            ! At least one non-flat triangle, check if weights are positive
+            valid = .true.
+            do l=1,3
+               if (cflag(l)) valid = valid.and.(b(l)>0.0)
+            end do
+            if (valid) then
+               ib(1) = i
+               ib(2) = jj
+               ib(3) = kk
+               b = max(b,0.0)
+               b = b/sum(b)
+               found = .true.
+               exit
+            end if
+         elseif (count(cflag)==0) then
+            ! Only flat triangles, pick the two closest nodes
+            nn = 3
+            deallocate(nn_index)
+            deallocate(nn_dist)
+            allocate(nn_index(nn))
+            allocate(nn_dist(nn))
+            call tree%find_nearest_neighbors(lon,lat,nn,nn_index,nn_dist)
+            ib(1) = mesh%order_inv(nn_index(1))
+            ib(2) = mesh%order_inv(nn_index(2))
+            ib(3) = mesh%order_inv(nn_index(3))
+            b(1) = nn_dist(2)
+            b(2) = nn_dist(1)
+            b(3) = 0.0
+            b = b/sum(b)
+            found = .true.
+            exit
+         end if
+      end do
+   else
+      ib(1) = i
+      ib(2) = i
+      ib(3) = i
+      b(1) = 1.0
+      b(2) = 0.0
+      b(3) = 0.0
+   end if
+
+   ! Release memory
+   deallocate(nn_index)
+   deallocate(nn_dist)
+
+   ! Update number of neighbors
+   nn = nn+1
+end do
 
 ! Transform indices
-do i=1,3
-   if (ib(i)>0) ib(i) = mesh%order(ib(i))
-end do
+if (mpl%msv%isallnot(ib)) ib = mesh%order(ib)
 
 end subroutine mesh_barycentric
 
@@ -818,29 +480,23 @@ logical,intent(in) :: gmask(mesh%n) ! Mask
 integer,intent(out) :: nbnda        ! Number of boundary nodes
 
 ! Local variables
-integer :: i,j,k,ii,jj,kk,iend
-logical :: init
+integer :: i,j,k,kk
 
 ! Initialiation
 nbnda = 0
 
 ! Loop over points
 do i=1,mesh%n
-   ii = mesh%order(i)
-   if (.not.gmask(ii)) then
-      ! Initialization
-      iend = mesh%lend(i)
-      init = .true.
-
+   if (.not.gmask(mesh%order(i))) then
       ! Loop over neigbors
-      do while ((iend/=mesh%lend(i)).or.init)
-         j = abs(mesh%list(iend))
-         k = abs(mesh%list(mesh%lptr(iend)))
-         jj = mesh%order(j)
-         kk = mesh%order(k)
-         if (.not.gmask(jj).and.gmask(kk)) nbnda = nbnda+1
-         iend = mesh%lptr(iend)
-         init = .false.
+      do j=1,mesh%rows(i)%cols
+         k = mesh%rows(i)%nodes(j)
+         if (j<mesh%rows(i)%cols) then
+            kk = mesh%rows(i)%nodes(j+1)
+         else
+            kk = mesh%rows(i)%nodes(1)
+         end if
+         if (.not.gmask(mesh%order(k)).and.gmask(mesh%order(kk))) nbnda = nbnda+1
       end do
    end if
 end do
@@ -862,8 +518,7 @@ integer,intent(in) :: nbnda                ! Number of boundary nodes
 integer,intent(out) :: bnda_index(2,nbnda) ! Boundary node index
 
 ! Local variables
-integer :: ibnda,i,j,k,ii,jj,kk,iend
-logical :: init
+integer :: i,j,k,kk,ibnda
 
 ! Initialiation
 ibnda = 0
@@ -871,25 +526,20 @@ bnda_index = 0
 
 ! Loop over points
 do i=1,mesh%n
-   ii = mesh%order(i)
-   if (.not.gmask(ii)) then
-      ! Initialization
-      iend = mesh%lend(i)
-      init = .true.
-
+   if (.not.gmask(mesh%order(i))) then
       ! Loop over neigbors
-      do while ((iend/=mesh%lend(i)).or.init)
-         j = abs(mesh%list(iend))
-         k = abs(mesh%list(mesh%lptr(iend)))
-         jj = mesh%order(j)
-         kk = mesh%order(k)
-         if (.not.gmask(jj).and.gmask(kk)) then
-            ibnda = ibnda+1
-            bnda_index(1,ibnda) = ii
-            bnda_index(2,ibnda) = jj
+      do j=1,mesh%rows(i)%cols
+         k = mesh%rows(i)%nodes(j)
+         if (j<mesh%rows(i)%cols) then
+            kk = mesh%rows(i)%nodes(j+1)
+         else
+            kk = mesh%rows(i)%nodes(1)
          end if
-         iend = mesh%lptr(iend)
-         init = .false.
+         if (.not.gmask(mesh%order(k)).and.gmask(mesh%order(kk))) then
+            ibnda = ibnda+1
+            bnda_index(1,ibnda) = mesh%order(i)
+            bnda_index(2,ibnda) = mesh%order(k)
+         end if
       end do
    end if
 end do

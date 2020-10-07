@@ -240,8 +240,8 @@ type(nam_type),intent(in) :: nam         ! Namelist
 type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
-integer :: iobsa,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nobsa_eff
-integer :: nobs_eff,nn_index(1),proc_to_nobsa(mpl%nproc),proc_to_nobsa_eff(mpl%nproc)
+integer :: iobsa,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a
+integer :: nn_index(1),proc_to_nobsa(mpl%nproc)
 integer :: c0u_to_c0b(geom%nc0u)
 integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
@@ -251,39 +251,23 @@ character(len=1024),parameter :: subr = 'obsop_run_obsop'
 ! Check that universe is global
 if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for obsop')
 
-! Check whether observations are inside the mesh
-if (obsop%nobsa>0) then
-   do iobsa=1,obsop%nobsa
-      call geom%mesh_c0u%inside(mpl,obsop%lonobs(iobsa),obsop%latobs(iobsa),maskobsa(iobsa))
-      if (.not.maskobsa(iobsa)) then
-         ! Check for very close points
-         call geom%tree_c0u%find_nearest_neighbors(obsop%lonobs(iobsa),obsop%latobs(iobsa),1,nn_index,nn_dist)
-         if (nn_dist(1)<rth) maskobsa(iobsa) = .true.
-      end if
-   end do
-   nobsa_eff = count(maskobsa)
-else
-   nobsa_eff = 0
-end if
-
 ! Get global number of observations
 call mpl%f_comm%allgather(obsop%nobsa,proc_to_nobsa)
-call mpl%f_comm%allgather(nobsa_eff,proc_to_nobsa_eff)
 obsop%nobs = sum(proc_to_nobsa)
-nobs_eff = sum(proc_to_nobsa_eff)
 
 ! Print input
-write(mpl%info,'(a7,a)') '','Number of observations / valid observations per MPI task:'
+write(mpl%info,'(a7,a)') '','Number of observations per MPI task:'
 call mpl%flush
 do iproc=1,mpl%nproc
-   write(mpl%info,'(a10,a,i3,a,i8,a,i8)') '','Task ',iproc,': ',proc_to_nobsa(iproc),' / ',proc_to_nobsa_eff(iproc)
+   write(mpl%info,'(a10,a,i3,a,i8)') '','Task ',iproc,': ',proc_to_nobsa(iproc)
    call mpl%flush
 end do
-write(mpl%info,'(a10,a,i8,a,i8)') '','Total   : ',obsop%nobs,' / ',nobs_eff
+write(mpl%info,'(a10,a,i8)') '','Total   : ',obsop%nobs
 call mpl%flush
 
 ! Compute interpolation
 obsop%h%prefix = 'o'
+maskobsa = .true.
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
 call obsop%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,obsop%nobsa,obsop%lonobs, &
@@ -328,14 +312,14 @@ end do
 call obsop%com%setup(mpl,'com',geom%nc0a,obsop%nc0b,geom%nc0,geom%c0a_to_c0,c0b_to_c0)
 
 ! Compute scores, only if there observations present globally
-if ( nobs_eff > 0 ) then
+if (obsop%nobs>0) then
   call mpl%f_comm%allreduce(real(obsop%com%nhalo,kind_real),C_max,fckit_mpi_max())
-  C_max = C_max/(3.0*real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
-  N_max = real(maxval(proc_to_nobsa_eff),kind_real)/(real(nobs_eff,kind_real)/real(mpl%nproc,kind_real))
+  C_max = C_max/(3.0*real(obsop%nobs,kind_real)/real(mpl%nproc,kind_real))
+  N_max = real(maxval(proc_to_nobsa),kind_real)/(real(obsop%nobs,kind_real)/real(mpl%nproc,kind_real))
 
   ! Print results
-  write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa_eff) &
- & -minval(proc_to_nobsa_eff),kind_real)/(real(sum(proc_to_nobsa_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+  write(mpl%info,'(a7,a,f5.1,a)') '','Observation repartition imbalance: ',100.0*real(maxval(proc_to_nobsa) &
+ & -minval(proc_to_nobsa),kind_real)/(real(sum(proc_to_nobsa),kind_real)/real(mpl%nproc,kind_real)),' %'
   call mpl%flush
   write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
  & obsop%com%nred,' / ',obsop%com%next,' / ',obsop%com%nhalo

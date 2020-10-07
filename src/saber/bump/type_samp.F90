@@ -1761,16 +1761,6 @@ call samp%mesh%alloc(samp%nc2u)
 ! Initialization
 call samp%mesh%init(mpl,rng,samp%lon_c2u,samp%lat_c2u)
 
-! Compute triangles list
-write(mpl%info,'(a7,a)') '','Compute triangles list '
-call mpl%flush
-call samp%mesh%trlist(mpl)
-
-! Find boundary nodes
-write(mpl%info,'(a7,a)') '','Find boundary nodes'
-call mpl%flush
-call samp%mesh%bnodes(mpl)
-
 end subroutine samp_compute_mesh_c2
 
 !----------------------------------------------------------------------
