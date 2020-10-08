@@ -28,7 +28,6 @@ type obsop_type
    integer :: nobs                          ! Number of observations
    real(kind_real),allocatable :: lonobs(:) ! Observations longitudes
    real(kind_real),allocatable :: latobs(:) ! Observations latitudes
-   integer,allocatable :: obsa_to_obs(:)    ! Local to global observation
 
    ! Required data to apply an observation operator
 
@@ -92,7 +91,6 @@ class(obsop_type),intent(inout) :: obsop ! Observation operator data
 
 ! Release memory
 call obsop%partial_dealloc
-if (allocated(obsop%obsa_to_obs)) deallocate(obsop%obsa_to_obs)
 call obsop%h%dealloc
 call obsop%com%dealloc
 
@@ -378,7 +376,7 @@ if (nam%check_adjoints) then
    call obsop%test_adjoint(mpl,rng,geom)
 end if
 
-if (nam%check_obsop.and.allocated(obsop%obsa_to_obs)) then
+if (nam%check_obsop) then
    ! Test precision
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush

@@ -12,10 +12,8 @@ qg_dirac_bump_loc_4d/test.log.out
 qg_dirac_id_cov/test.log.out
 qg_dirac_id_loc_3d/test.log.out
 qg_dirac_id_loc_4d/test.log.out
-qg_dirac_id_cross_loc_4d/test.log.out
 qg_parameters_bump_cov/test.log.out
 qg_parameters_bump_cov_nsub/test.log.out
 qg_parameters_bump_hyb/test.log.out
 qg_parameters_bump_lct/test.log.out
-qg_parameters_bump_loc_3d/test.log.out
-qg_parameters_bump_loc_4d/test.log.out
+qg_parameters_bump_loc/test.log.out

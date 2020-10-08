@@ -1,8 +1,0 @@
-bump_hdiag-nicas_loc_adv_inv/test_2-1_nicas_000002-000001.nc
-bump_hdiag-nicas_loc_adv_inv/test_2-1_nicas_000002-000002.nc
-bump_hdiag-nicas_loc_adv_max/test_2-1_nicas_000002-000001.nc
-bump_hdiag-nicas_loc_adv_max/test_2-1_nicas_000002-000002.nc
-bump_hdiag-nicas_loc_adv_wind/test_2-1_nicas_000002-000001.nc
-bump_hdiag-nicas_loc_adv_wind/test_2-1_nicas_000002-000002.nc
-bump_hdiag-nicas_loc_adv_windmax/test_2-1_nicas_000002-000001.nc
-bump_hdiag-nicas_loc_adv_windmax/test_2-1_nicas_000002-000002.nc

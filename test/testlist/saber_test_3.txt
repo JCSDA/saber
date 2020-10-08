@@ -1,7 +1,3 @@
-bump_hdiag-nicas_loc_adv_inv
-bump_hdiag-nicas_loc_adv_max
-bump_hdiag-nicas_loc_adv_wind
-bump_hdiag-nicas_loc_adv_windmax
 bump_hdiag_optimality
 bump_nicas_consistency
 bump_nicas_randomization

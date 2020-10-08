@@ -190,7 +190,7 @@ type(io_type),intent(in) :: io               ! I/O
 character(len=*),intent(in) :: filename      ! Filename
 
 ! Local variables
-integer :: iv,its,iscales
+integer :: iv,iscales
 character(len=1024) :: varname,scalename
 
 ! Associate
@@ -198,8 +198,7 @@ associate(ib=>lct_blk%ib)
 
 ! Indices
 iv = bpar%b_to_v1(ib)
-its = bpar%b_to_ts1(ib)
-varname = trim(nam%variables(iv))//'_'//trim(nam%timeslots(its))
+varname = trim(nam%variables(iv))
 
 do iscales=1,lct_blk%nscales
    ! Write fields

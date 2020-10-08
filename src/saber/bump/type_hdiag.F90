@@ -8,7 +8,6 @@
 module type_hdiag
 
 use tools_kinds, only: kind_real
-use type_adv, only: adv_type
 use type_avg, only: avg_type
 use type_bpar, only: bpar_type
 use type_diag, only: diag_type
@@ -29,7 +28,6 @@ type hdiag_type
    type(avg_type) :: avg_2   ! Averaged statistics, second ensemble
    type(avg_type) :: avg_wgt ! Averaged statistics weights
    type(samp_type) :: samp   ! Sampling
-   type(adv_type) :: adv     ! Advection
    type(mom_type) :: mom_1   ! Moments, first ensemble
    type(mom_type) :: mom_2   ! Moments, second ensemble
    type(diag_type) :: cov_1  ! Covariance, first ensemble
@@ -65,7 +63,6 @@ call hdiag%avg_1%dealloc
 call hdiag%avg_2%dealloc
 call hdiag%avg_wgt%dealloc
 call hdiag%samp%dealloc
-call hdiag%adv%dealloc
 call hdiag%mom_1%dealloc
 call hdiag%mom_2%dealloc
 call hdiag%cov_1%dealloc
@@ -82,48 +79,27 @@ end subroutine hdiag_dealloc
 ! Subroutine: hdiag_run_hdiag
 ! Purpose: HDIAG driver
 !----------------------------------------------------------------------
-subroutine hdiag_run_hdiag(hdiag,mpl,rng,nam,geom,bpar,io,ens1,ens2,fld_uv)
+subroutine hdiag_run_hdiag(hdiag,mpl,rng,nam,geom,bpar,io,ens1,ens2)
 
 implicit none
 
 ! Passed variables
-class(hdiag_type),intent(inout) :: hdiag                                    ! Hybrid diagnostics
-type(mpl_type),intent(inout) :: mpl                                         ! MPI data
-type(rng_type),intent(inout) :: rng                                         ! Random number generator
-type(nam_type),intent(inout) :: nam                                         ! Namelist
-type(geom_type),intent(in) :: geom                                          ! Geometry
-type(bpar_type),intent(in) :: bpar                                          ! Block parameters
-type(io_type),intent(in) :: io                                              ! I/O
-type(ens_type),intent(in) :: ens1                                           ! Ensemble 1
-type(ens_type),intent(in),optional :: ens2                                  ! Ensemble 2
-real(kind_real),intent(in),optional :: fld_uv(geom%nc0a,geom%nl0,2,nam%nts) ! Wind field
+class(hdiag_type),intent(inout) :: hdiag   ! Hybrid diagnostics
+type(mpl_type),intent(inout) :: mpl        ! MPI data
+type(rng_type),intent(inout) :: rng        ! Random number generator
+type(nam_type),intent(inout) :: nam        ! Namelist
+type(geom_type),intent(in) :: geom         ! Geometry
+type(bpar_type),intent(in) :: bpar         ! Block parameters
+type(io_type),intent(in) :: io             ! I/O
+type(ens_type),intent(in) :: ens1          ! Ensemble 1
+type(ens_type),intent(in),optional :: ens2 ! Ensemble 2
 
-! Setup sampling, first step
+! Setup sampling
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Setup sampling, first step'
+write(mpl%info,'(a)') '--- Setup sampling'
 call mpl%flush
 call hdiag%samp%setup('hdiag',mpl,rng,nam,geom,ens1)
-
-if (nam%adv_diag) then
-   ! Compute advection diagnostic
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Compute advection diagnostic'
-   call mpl%flush
-   if (present(fld_uv)) then
-      call hdiag%adv%compute(mpl,rng,nam,geom,bpar,hdiag%samp,io,ens1,fld_uv)
-   else
-      call hdiag%adv%compute(mpl,rng,nam,geom,bpar,hdiag%samp,io,ens1)
-   end if
-end if
-
-! Setup sampling, second step
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Setup sampling, second step'
-call mpl%flush
-call hdiag%samp%setup(mpl,rng,nam,geom)
 
 if (nam%new_mom) then
    ! Compute sample moments

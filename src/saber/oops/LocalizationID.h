@@ -34,32 +34,25 @@ namespace saber {
 template<typename MODEL> class LocalizationID : public oops::LocalizationBase<MODEL> {
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
-  typedef oops::Increment4D<MODEL>                        Increment4D_;
 
  public:
   LocalizationID(const Geometry_ &,
+                 const util::DateTime & time,
                  const eckit::Configuration &);
   ~LocalizationID();
 
   void multiply(Increment_ &) const override;
-  void multiply(Increment4D_ &) const override;
 
  private:
   void print(std::ostream &) const override;
-  int cross_timeslot_;
 };
 
 // =============================================================================
 
 template<typename MODEL>
 LocalizationID<MODEL>::LocalizationID(const Geometry_ & resol,
-                                      const eckit::Configuration & conf)
-  : cross_timeslot_(0)
-{
-  if (conf.has("cross_timeslot")) {
-    cross_timeslot_ = conf.getInt("cross_timeslot");
-  }
-  ASSERT(cross_timeslot_ == 0 || cross_timeslot_ == 1);
+                                      const util::DateTime & time,
+                                      const eckit::Configuration & conf) {
   oops::Log::trace() << "LocalizationID:LocalizationID constructed" << std::endl;
 }
 
@@ -74,27 +67,6 @@ LocalizationID<MODEL>::~LocalizationID() {
 
 template<typename MODEL>
 void LocalizationID<MODEL>::multiply(Increment_ & dx) const {
-  oops::Log::trace() << "LocalizationID:multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void LocalizationID<MODEL>::multiply(Increment4D_ & dx) const {
-  oops::Log::trace() << "LocalizationID:multiply starting" << std::endl;
-  if (cross_timeslot_ == 1) {
-    // Sum over timeslots
-    Increment_ dxtmp(dx[dx.first()]);
-    for (int isub = dx.first()+1; isub <= dx.last(); ++isub) {
-       dxtmp.axpy(1.0, dx[isub], false);
-    }
-
-    // Copy result to all timeslots
-    for (int isub = dx.first(); isub <= dx.last(); ++isub) {
-       dx[isub].zero();
-       dx[isub].axpy(1.0, dxtmp, false);
-    }
-  }
   oops::Log::trace() << "LocalizationID:multiply done" << std::endl;
 }
 

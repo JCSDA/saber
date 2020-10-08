@@ -17,7 +17,6 @@ saber_ref_2
 saber_ref_3
 saber_ref_mpi_1
 saber_ref_mpi_2
-saber_ref_mpi_3
 saber_ref_multi
 saber_ref_oops"
 

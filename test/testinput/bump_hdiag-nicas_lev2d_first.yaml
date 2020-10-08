@@ -18,8 +18,6 @@ levs: [1,2,3,4]
 lev2d: "first"
 nv: 2
 variables: ["u","qs"]
-nts: 1
-timeslots: ["00"]
 
 # ens1_param
 ens1_ne: 50
