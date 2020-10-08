@@ -25,7 +25,6 @@ cost function:
     localization:
       bump:
         datadir: testdata
-        method: loc
         mpicom: 2
         load_nicas: 1
         prefix: qg_4densvar_bump/test
@@ -190,7 +189,9 @@ cost function:
       obs type: Stream
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d.nc
+        obsfile: testdata/truth.obs4d_12h.nc
+      obsdataout:
+        obsfile: testdata/qg_4densvar_bump.obs4d_12h.nc
       obs type: Stream
   - obs error:
       covariance model: diagonal
@@ -198,7 +199,9 @@ cost function:
       obs type: Wind
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d.nc
+        obsfile: testdata/truth.obs4d_12h.nc
+      obsdataout:
+        obsfile: testdata/qg_4densvar_bump.obs4d_12h.nc
       obs type: Wind
   - obs error:
       covariance model: diagonal
@@ -206,7 +209,9 @@ cost function:
       obs type: WSpeed
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d.nc
+        obsfile: testdata/truth.obs4d_12h.nc
+      obsdataout:
+        obsfile: testdata/qg_4densvar_bump.obs4d_12h.nc
       obs type: WSpeed
 #  constraints:
 #  - jcdfi:

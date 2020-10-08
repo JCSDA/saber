@@ -26,7 +26,6 @@ cost function:
           io_values:
           - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
           load_nicas: 1
-          method: loc
           mpicom: 2
           prefix: qg_4dvar_drplanczos_hybrid_bump/test
           strategy: common
