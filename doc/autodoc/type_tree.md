@@ -1,7 +1,7 @@
 # Module type_tree
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [tree_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_tree.F90#L56) | allocation | **tree**<br>**mpl**<br>**n**<br>**mask(n)** |  Tree<br> MPI data<br> Number of points<br> Mask | class(tree_type)<br>type(mpl_type)<br>integer<br>logical | inout<br>inout<br>in<br>in |
 | subroutine | [tree_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_tree.F90#L96) | initialization | **tree**<br>**lon(tree%n)**<br>**lat(tree%n)** |  Tree<br> Points longitudes (in radians)<br> Points latitudes (in radians) | class(tree_type)<br>real(kind_real)<br>real(kind_real) | inout<br>in<br>in |
 | subroutine | [tree_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_tree.F90#L139) | release memory | **tree** |  Tree | class(tree_type) | inout |

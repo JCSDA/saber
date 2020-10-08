@@ -1,7 +1,7 @@
 # Module type_mom
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [mom_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L60) | allocation | **mom**<br>**geom**<br>**bpar**<br>**samp**<br>**ne**<br>**nsub**<br>**prefix** |  Moments<br> Geometry<br> Block parameters<br> Sampling<br> Ensemble size<br> Number of sub-ensembles<br> Prefix | class(mom_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type)<br>integer<br>integer<br>character(len=*) | inout<br>in<br>in<br>in<br>in<br>in<br>in |
 | subroutine | [mom_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L89) | initialization | **mom**<br>**bpar** |  Moments<br> Block parameters | class(mom_type)<br>type(bpar_type) | inout<br>in |
 | subroutine | [mom_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L115) | release memory | **mom** |  Moments | class(mom_type) | inout |

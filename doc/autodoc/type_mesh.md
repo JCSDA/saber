@@ -1,7 +1,7 @@
 # Module type_mesh
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [mesh_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mesh.F90#L87) | allocation | **mesh**<br>**n** |  Mesh<br> Mesh size | class(mesh_type)<br>integer | inout<br>in |
 | subroutine | [mesh_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mesh.F90#L120) | intialization | **mesh**<br>**mpl**<br>**rng**<br>**lon(mesh%n)**<br>**lat(mesh%n)** |  Mesh<br> MPI data<br> Random number generator<br> Longitudes<br> Latitudes | class(mesh_type)<br>type(mpl_type)<br>type(rng_type)<br>real(kind_real)<br>real(kind_real) | inout<br>inout<br>inout<br>in<br>in |
 | subroutine | [mesh_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mesh.F90#L227) | release memory | **mesh** |  Mesh | class(mesh_type) | inout |

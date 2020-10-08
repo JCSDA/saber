@@ -1,7 +1,7 @@
 # Module type_avg_blk
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [avg_blk_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg_blk.F90#L83) | allocation | **avg_blk** |  Averaged statistics block | class(avg_blk_type) | inout |
 | subroutine | [avg_blk_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg_blk.F90#L148) | release memory | **avg_blk** |  Averaged statistics block | class(avg_blk_type) | inout |
 | subroutine | [avg_blk_copy](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg_blk.F90#L188) | copy | **avg_blk_out**<br>**avg_blk_in** |  Output averaged statistics block<br> Input averaged statistics block | class(avg_blk_type)<br>type(avg_blk_type) | inout<br>in |

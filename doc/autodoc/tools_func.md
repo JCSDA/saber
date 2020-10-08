@@ -1,7 +1,7 @@
 # Module tools_func
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | function | [fletcher32](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/tools_func.F90#L50) | Fletcher-32 checksum algorithm | **var(:)** |  Variable | real(kind_real) | in |
 | subroutine | [lonlatmod](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/tools_func.F90#L70) | set latitude between -pi/2 and pi/2 and longitude between -pi and pi | **lon**<br>**lat** |  Longitude (radians)<br> Latitude (radians) | real(kind_real)<br>real(kind_real) | inout<br>inout |
 | function | [lonlathash](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/tools_func.F90#L101) | define a unique real from a lon/lat pair | **lon**<br>**lat**<br>**il** |  Longitude (radians)<br> Latitude (radians)<br> Level | real(kind_real)<br>real(kind_real)<br>integer | in<br>in<br>in |

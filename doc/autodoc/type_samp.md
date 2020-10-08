@@ -1,7 +1,7 @@
 # Module type_samp
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [samp_alloc_mask](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L166) | allocation for mask | **samp**<br>**geom** |  Sampling<br> Geometry | class(samp_type)<br>type(geom_type) | inout<br>in |
 | subroutine | [samp_alloc_other](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L188) | allocation for other variables | **samp**<br>**nam**<br>**geom** |  Sampling<br> Namelist<br> Geometry | class(samp_type)<br>type(nam_type)<br>type(geom_type) | inout<br>in<br>in |
 | subroutine | [samp_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_samp.F90#L215) | release memory (partial) | **samp** |  Sampling | class(samp_type) | inout |

@@ -228,7 +228,7 @@ for index in ${!dir[*]}; do
 # Module ${module}
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 EOFMOD
                new_module=false
                new_purpose=false

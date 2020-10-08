@@ -1,7 +1,7 @@
 # Module type_obsop
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [obsop_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_obsop.F90#L72) | release memory (partial) | **obsop** |  Observation operator data | class(obsop_type) | inout |
 | subroutine | [obsop_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_obsop.F90#L89) | release memory (full) | **obsop** |  Observation operator data | class(obsop_type) | inout |
 | subroutine | [obsop_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_obsop.F90#L110) | read observations locations | **obsop**<br>**mpl**<br>**nam**<br>**geom** |  Observation operator data<br> MPI data<br> Namelist<br> Geometry | class(obsop_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type) | inout<br>inout<br>in<br>in |

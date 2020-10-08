@@ -1,7 +1,7 @@
 # Module type_ens
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [ens_set_att](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L66) | set attributes | **ens**<br>**ne**<br>**nsub** |  Ensemble<br> Ensemble size<br> Number of sub-ensembles | class(ens_type)<br>integer<br>integer | inout<br>in<br>in |
 | subroutine | [ens_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L88) | allocation | **ens**<br>**nam**<br>**geom**<br>**ne**<br>**nsub** |  Ensemble<br> Namelist<br> Geometry<br> Ensemble size<br> Number of sub-ensembles | class(ens_type)<br>type(nam_type)<br>type(geom_type)<br>integer<br>integer | inout<br>in<br>in<br>in<br>in |
 | subroutine | [ens_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L117) | release memory | **ens** |  Ensemble | class(ens_type) | inout |

@@ -1,7 +1,7 @@
 # Module type_nicas_blk
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [balldata_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas_blk.F90#L264) | allocation | **balldata** |  Ball data | class(balldata_type) | inout |
 | subroutine | [balldata_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas_blk.F90#L282) | release memory | **balldata** |  Ball data | class(balldata_type) | inout |
 | subroutine | [balldata_pack](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas_blk.F90#L304) | pack data into balldata object | **balldata**<br>**mpl**<br>**nc1u**<br>**nl1**<br>**val(nc1u,nl1)** |  Ball data<br> MPI data<br> Horizontal box size<br> Vertical box size<br> Box value | class(balldata_type)<br>type(mpl_type)<br>integer<br>integer<br>real(kind_real) | inout<br>inout<br>in<br>in<br>in |

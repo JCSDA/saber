@@ -1,7 +1,7 @@
 # Module tools_repro
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | function | [eq](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_repro.F90#L34) | equal test for reals | **x**<br>**y** |  First real<br> Second real | real(kind_real)<br>real(kind_real) | in<br>in |
 | function | [inf](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_repro.F90#L57) | inferior test for reals | **x**<br>**y** |  First real<br> Second real | real(kind_real)<br>real(kind_real) | in<br>in |
 | function | [infeq](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_repro.F90#L77) | inferior or equal test for reals | **x**<br>**y** |  First real<br> Second real | real(kind_real)<br>real(kind_real) | in<br>in |

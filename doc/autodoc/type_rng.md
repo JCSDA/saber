@@ -1,7 +1,7 @@
 # Module type_rng
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [rng_init](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_rng.F90#L60) | initialize the random number generator | **rng**<br>**mpl**<br>**nam** |  Random number generator<br> MPI data<br> Namelist variables | class(rng_type)<br>type(mpl_type)<br>type(nam_type) | inout<br>inout<br>in |
 | subroutine | [rng_reseed](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_rng.F90#L101) | re-seed the random number generator | **rng**<br>**mpl** |  Random number generator<br> MPI data | class(rng_type)<br>type(mpl_type) | inout<br>inout |
 | subroutine | [rng_resync](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_rng.F90#L127) | resynchronize the random number generator between processors | **rng**<br>**mpl** |  Random number generator<br> MPI data | class(rng_type)<br>type(mpl_type) | inout<br>inout |

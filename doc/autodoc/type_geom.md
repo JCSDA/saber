@@ -1,7 +1,7 @@
 # Module type_geom
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [geom_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_geom.F90#L171) | release memory (partial) | **geom** |  Geometry | class(geom_type) | inout |
 | subroutine | [geom_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_geom.F90#L236) | release memory | **geom** |  Geometry | class(geom_type) | inout |
 | subroutine | [geom_setup](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_geom.F90#L260) | setup geometry | **geom**<br>**mpl**<br>**rng**<br>**nam**<br>**afunctionspace**<br>**afieldset** |  Geometry<br> MPI data<br> Random number generator<br> Namelists<br> ATLAS function space<br> ATLAS fieldset | class(geom_type)<br>type(mpl_type)<br>type(rng_type)<br>type(nam_type)<br>type(atlas_functionspace)<br>type(atlas_fieldset) | inout<br>inout<br>inout<br>in<br>in<br>in |

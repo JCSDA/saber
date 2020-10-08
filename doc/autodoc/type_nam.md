@@ -1,7 +1,7 @@
 # Module type_nam
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [nam_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L218) | intialize | **nam**<br>**nproc** |  Namelist<br> Number of MPI task | class(nam_type)<br>integer | out<br>in |
 | subroutine | [nam_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L415) | read | **nam**<br>**mpl**<br>**namelname** |  Namelist<br> MPI data<br> Namelist name | class(nam_type)<br>type(mpl_type)<br>character(len=*) | inout<br>inout<br>in |
 | subroutine | [nam_read_yaml](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nam.F90#L1097) | read YAML file | **nam**<br>**mpl**<br>**yamlname** |  Namelist<br> MPI data<br> YAML name | class(nam_type)<br>type(mpl_type)<br>character(len=*) | inout<br>inout<br>inout |

@@ -5,7 +5,6 @@ The SABER repository is organized as follows:
 * **cmake**: SABER-specific compiler flags
 * **doc**: documentation
   * **autodoc**: code auto-documentation
-  * **bump**: BUMP documentation
 * **src**: source code
   * **saber**: SABER source code
     * **bump**: BUMP core and interfaces

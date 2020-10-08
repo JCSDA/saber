@@ -1,7 +1,7 @@
 # Module type_diag
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [diag_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_diag.F90#L66) | allocation | **diag**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**samp**<br>**prefix** |  Diagnostic<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> Sampling<br> Block prefix | class(diag_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type)<br>character(len=*) | inout<br>inout<br>in<br>in<br>in<br>in<br>in |
 | subroutine | [diag_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_diag.F90#L102) | release memory | **diag** |  Diagnostic | class(diag_type) | inout |
 | subroutine | [diag_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_diag.F90#L134) | write | **diag**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**io**<br>**samp** |  Diagnostic<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> I/O<br> Sampling | class(diag_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(io_type)<br>type(samp_type) | inout<br>inout<br>in<br>in<br>in<br>in<br>in |

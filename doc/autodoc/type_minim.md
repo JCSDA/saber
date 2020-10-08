@@ -1,7 +1,7 @@
 # Module type_minim
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [minim_cost](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_minim.F90#L154) | compute cost function | **minim**<br>**mpl**<br>**x(minim%nx)**<br>**f** |  Minimization data<br> MPI data<br> Control vector<br> Cost function value | class(minim_type)<br>type(mpl_type)<br>real(kind_real)<br>real(kind_real) | in<br>inout<br>in<br>out |
 | subroutine | [minim_cost_fit_diag](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_minim.F90#L182) | diagnosic fit function cost | **minim**<br>**mpl**<br>**x(minim%nx)**<br>**f** |  Minimization data<br> MPI data<br> Control vector<br> Cost function value | class(minim_type)<br>type(mpl_type)<br>real(kind_real)<br>real(kind_real) | in<br>inout<br>in<br>out |
 | function | [minim_cost_fit_lct](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_minim.F90#L299) | LCT fit function cost | **minim**<br>**mpl**<br>**x(minim%nx)**<br>**f** |  Minimization data<br> MPI data<br> Control vector<br> Cost function value | class(minim_type)<br>type(mpl_type)<br>real(kind_real)<br>real(kind_real) | in<br>inout<br>in<br>out |

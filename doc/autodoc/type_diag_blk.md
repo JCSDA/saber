@@ -1,7 +1,7 @@
 # Module type_diag_blk
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [diag_blk_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_diag_blk.F90#L76) | allocation | **diag_blk**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**samp**<br>**ic2a**<br>**ib**<br>**prefix** |  Diagnostic block<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> Sampling<br> Local index<br> Block index<br> Block prefix | class(diag_blk_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type)<br>integer<br>integer<br>character(len=*) | inout<br>inout<br>in<br>in<br>in<br>in<br>in<br>in<br>in |
 | subroutine | [diag_blk_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_diag_blk.F90#L139) | release memory | **diag_blk** |  Diagnostic block | class(diag_blk_type) | inout |
 | subroutine | [diag_blk_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_diag_blk.F90#L166) | write | **diag_blk**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**filename** |  Diagnostic block<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> File name | class(diag_blk_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>character(len=*) | inout<br>inout<br>in<br>in<br>in<br>in |

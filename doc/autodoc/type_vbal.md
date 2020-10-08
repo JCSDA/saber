@@ -1,7 +1,7 @@
 # Module type_vbal
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [vbal_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_vbal.F90#L69) | allocation | **vbal**<br>**nam**<br>**geom**<br>**bpar** |  Vertical balance<br> Namelist<br> Geometry<br> Block parameters | class(vbal_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>in<br>in<br>in |
 | subroutine | [vbal_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_vbal.F90#L101) | release memory (partial) | **vbal** |  Vertical balance | class(vbal_type) | inout |
 | subroutine | [vbal_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_vbal.F90#L126) | release memory (full) | **vbal** |  Vertical balance | class(vbal_type) | inout |

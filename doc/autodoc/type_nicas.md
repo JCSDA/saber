@@ -1,7 +1,7 @@
 # Module type_nicas
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [nicas_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L81) | allocation | **nicas**<br>**nam**<br>**bpar** |  NICAS data<br> Namelist<br> Block parameters | class(nicas_type)<br>type(nam_type)<br>type(bpar_type) | inout<br>in<br>in |
 | subroutine | [nicas_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L128) | release memory (partial) | **nicas** |  NICAS data | class(nicas_type) | inout |
 | subroutine | [nicas_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_nicas.F90#L149) | release memory (full) | **nicas** |  NICAS data | class(nicas_type) | inout |

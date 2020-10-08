@@ -1,7 +1,7 @@
 # Module type_cmat
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [cmat_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L65) | C matrix allocation | **cmat**<br>**bpar** |  C matrix<br> Block parameters | class(cmat_type)<br>type(bpar_type) | inout<br>in |
 | subroutine | [cmat_alloc_blk](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L84) | allocation | **cmat**<br>**nam**<br>**geom**<br>**bpar** |  C matrix<br> Namelist<br> Geometry<br> Block parameters | class(cmat_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>in<br>in<br>in |
 | subroutine | [cmat_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L114) | C matrix initialization | **cmat**<br>**mpl**<br>**nam**<br>**bpar** |  C matrix<br> MPI data<br> Namelist<br> Block parameters | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(bpar_type) | inout<br>inout<br>in<br>in |

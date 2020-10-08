@@ -1,7 +1,7 @@
 # Module type_msv
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | function | [msv_isnoti_0d](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_msv.F90#L111) | check if an integer is not set to missing value | **msv**<br>**i** |  Missing values<br> Integer | class(msv_type)<br>integer | in<br>in |
 | function | [msv_isnoti_1d](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_msv.F90#L130) | check if an integer is not set to missing value | **msv**<br>**i(:)** |  Missing values<br> Integer | class(msv_type)<br>integer | in<br>in |
 | function | [msv_isnoti_2d](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_msv.F90#L153) | check if an integer is not set to missing value | **msv**<br>**i(:,:)** |  Missing values<br> Integer | class(msv_type)<br>integer | in<br>in |

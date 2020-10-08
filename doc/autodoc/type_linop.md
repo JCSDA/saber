@@ -1,7 +1,7 @@
 # Module type_linop
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [interp_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_linop.F90#L83) | release memory | **interp_data** |  Interpolation data | class(interp_type) | inout |
 | subroutine | [linop_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_linop.F90#L104) | allocation | **linop**<br>**nvec** |  Linear operator<br> Size of the vector of linear operators with similar row and col | class(linop_type)<br>integer | inout<br>in |
 | subroutine | [linop_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_linop.F90#L133) | release memory | **linop** |  Linear operator | class(linop_type) | inout |

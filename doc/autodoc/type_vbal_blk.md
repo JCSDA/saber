@@ -1,7 +1,7 @@
 # Module type_vbal_blk
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [vbal_blk_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_vbal_blk.F90#L58) | allocation | **vbal_blk**<br>**nam**<br>**geom**<br>**nc2b**<br>**iv**<br>**jv** |  Vertical balance block<br> Namelist<br> Geometry<br> Subset Sc2 size, halo B<br> First variable index<br> Second variable index | class(vbal_blk_type)<br>type(nam_type)<br>type(geom_type)<br>integer<br>integer<br>integer | inout<br>in<br>in<br>in<br>in<br>in |
 | subroutine | [vbal_blk_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_vbal_blk.F90#L82) | release memory (partial) | **vbal_blk** |  Vertical balance block | class(vbal_blk_type) | inout |
 | subroutine | [vbal_blk_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_vbal_blk.F90#L100) | release memory (full) | **vbal_blk** |  Vertical balance block | class(vbal_blk_type) | inout |

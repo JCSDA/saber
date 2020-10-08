@@ -1,7 +1,7 @@
 # Module type_avg
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [avg_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L66) | allocation | **avg**<br>**nam**<br>**geom**<br>**bpar**<br>**samp**<br>**ne**<br>**nsub**<br>**prefix** |  Averaged statistics<br> Namelist<br> Geometry<br> Block parameters<br> Sampling<br> Ensemble size<br> Number of sub-ensembles<br> Prefix | class(avg_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type)<br>integer<br>integer<br>character(len=*) | inout<br>in<br>in<br>in<br>in<br>in<br>in<br>in |
 | subroutine | [avg_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L95) | release memory | **avg** |  Averaged statistics | class(avg_type) | inout |
 | subroutine | [avg_copy](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_avg.F90#L122) | copy | **avg_out**<br>**avg_in** |  Output averaged statistics<br> Input averaged statistics | class(avg_type)<br>class(avg_type) | inout<br>in |

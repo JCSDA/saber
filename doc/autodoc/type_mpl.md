@@ -1,7 +1,7 @@
 # Module type_mpl
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [mpl_newunit](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_mpl.F90#L127) | find a free unit | **mpl**<br>**lunit** |  MPI data<br> New unit | class(mpl_type)<br>integer | inout<br>out |
 | subroutine | [mpl_init](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_mpl.F90#L158) | initialize MPL object | **mpl**<br>**f_comm** |  MPI data<br> FCKIT MPI communicator wrapper | class(mpl_type)<br>type(fckit_mpi_comm) | inout<br>in |
 | subroutine | [mpl_final](https://github.com/JCSDA/saber/tree/develop/src/saber/util/type_mpl.F90#L213) | finalize MPI | **mpl** |  MPI data | class(mpl_type) | inout |

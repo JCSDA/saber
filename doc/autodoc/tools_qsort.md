@@ -1,7 +1,7 @@
 # Module tools_qsort
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [qsort_integer](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L49) | sort an integer subvector | **n**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Vector to sort<br> Positions of the elements in the original order | integer<br>integer<br>integer | in<br>inout<br>inout |
 | subroutine | [qsort_real](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L73) | sort a real subvector | **n**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Vector to sort<br> Positions of the elements in the original order | integer<br>real(kind_real)<br>integer | in<br>inout<br>inout |
 | subroutine | [quick_sort_integer](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L99) | sort an integer subvector | **n**<br>**left_end**<br>**right_end**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Left end of the vector<br> Right end of the vector<br> Vector to sort<br> Positions of the elements in the original order | integer<br>integer<br>integer<br>integer<br>integer | in<br>in<br>in<br>inout<br>inout |

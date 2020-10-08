@@ -1,7 +1,7 @@
 # Module type_lct
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [lct_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L58) | allocation | **lct**<br>**nam**<br>**geom**<br>**bpar** |  LCT<br> Namelist<br> Geometry<br> Block parameters | class(lct_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>in<br>in<br>in |
 | subroutine | [lct_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L83) | release memory (partial) | **lct** |  LCT | class(lct_type) | inout |
 | subroutine | [lct_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L106) | release memory | **lct** |  LCT | class(lct_type) | inout |

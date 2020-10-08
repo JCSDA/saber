@@ -1,7 +1,7 @@
 # Module type_gaugrid
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [create_gaugrid](https://github.com/JCSDA/saber/tree/develop/src/saber/gaugrid/type_gaugrid.F90#L57) | Create Gaussian grid | **self** |   class(gaussian_grid),intent(inout) :: self |   class(gaussian_grid) | inout |
 | subroutine | [delete_gaugrid](https://github.com/JCSDA/saber/tree/develop/src/saber/gaugrid/type_gaugrid.F90#L72) | Delete Gaussian grid | **self** |   class(gaussian_grid),intent(inout) :: self |   class(gaussian_grid) | inout |
 | subroutine | [gaugrid_alloc_coord](https://github.com/JCSDA/saber/tree/develop/src/saber/gaugrid/type_gaugrid.F90#L86) | allocate Gaussian grid coordinate | **self** |   class(gaussian_grid),intent(inout) :: self |   class(gaussian_grid) | inout |

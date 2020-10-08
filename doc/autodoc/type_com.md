@@ -1,7 +1,7 @@
 # Module type_com
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [com_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_com.F90#L78) | release memory | **com** |  Communication data | class(com_type) | inout |
 | subroutine | [com_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_com.F90#L105) | read communications from a NetCDF file | **com**<br>**mpl**<br>**ncid** |  Communication data<br> MPI data<br> NetCDF file | class(com_type)<br>type(mpl_type)<br>integer | inout<br>inout<br>in |
 | subroutine | [com_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_com.F90#L164) | write communications to a NetCDF file | **com**<br>**mpl**<br>**ncid** |  Communication data<br> MPI data<br> NetCDF file | class(com_type)<br>type(mpl_type)<br>integer | in<br>inout<br>in |

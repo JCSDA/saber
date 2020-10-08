@@ -1,7 +1,7 @@
 # Module type_lct_blk
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [lct_blk_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct_blk.F90#L93) | allocation | **lct_blk**<br>**nam**<br>**geom**<br>**bpar**<br>**samp**<br>**ib** |  LCT block<br> Namelist<br> Geometry<br> Block parameters<br> Sampling<br> Block index | class(lct_blk_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type)<br>integer | inout<br>in<br>in<br>in<br>in<br>in |
 | subroutine | [lct_blk_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct_blk.F90#L133) | release memory (partial) | **lct_blk** |  LCT block | class(lct_blk_type) | inout |
 | subroutine | [lct_blk_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct_blk.F90#L161) | release memory | **lct_blk** |  LCT block | class(lct_blk_type) | inout |

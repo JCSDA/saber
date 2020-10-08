@@ -1,7 +1,7 @@
 # Module tools_fit
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [fast_fit](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/tools_fit.F90#L37) | fast fit length-scale estimation based on the value at mid-height | **mpl**<br>**n**<br>**iz**<br>**dist(n)**<br>**raw(n)**<br>**fit_r** |  MPI data<br> Vector size<br> Zero separation index<br> Distance<br> Raw data<br> Fast fit result | type(mpl_type)<br>integer<br>integer<br>real(kind_real)<br>real(kind_real)<br>real(kind_real) | inout<br>in<br>in<br>in<br>in<br>out |
 | subroutine | [ver_smooth](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/tools_fit.F90#L183) | homogeneous smoothing of a vertical profile | **mpl**<br>**n**<br>**x(n)**<br>**rv**<br>**profile(n)** |  MPI data<br> Vector size<br> Coordinate<br> Filtering support radius<br> Vertical profile | type(mpl_type)<br>integer<br>real(kind_real)<br>real(kind_real)<br>real(kind_real) | inout<br>in<br>in<br>in<br>inout |
 | subroutine | [ver_fill](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/tools_fit.F90#L236) | missing values filling of a vertical profile | **mpl**<br>**n**<br>**x(n)**<br>**profile(n)** |  MPI data<br> Vector size<br> Coordinate<br> Vertical profile | type(mpl_type)<br>integer<br>real(kind_real)<br>real(kind_real) | inout<br>in<br>in<br>inout |

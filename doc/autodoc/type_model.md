@@ -1,7 +1,7 @@
 # Module type_model
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [model_alloc](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L146) | allocation | **model** |  Model | class(model_type) | inout |
 | subroutine | [model_dealloc](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L169) | release memory | **model** |  Model | class(model_type) | inout |
 | subroutine | [model_setup](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L216) | setup model | **model**<br>**mpl**<br>**nam** |  Model<br> MPI data<br> Namelist variables | class(model_type)<br>type(mpl_type)<br>type(nam_type) | inout<br>inout<br>inout |

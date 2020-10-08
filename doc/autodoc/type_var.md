@@ -1,7 +1,7 @@
 # Module type_var
 
 | Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
 | subroutine | [var_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L59) | allocation | **var**<br>**nam**<br>**geom** |  Variance<br> Namelist<br> Geometry | class(var_type)<br>type(nam_type)<br>type(geom_type) | inout<br>in<br>in |
 | subroutine | [var_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L78) | release memory (partial) | **var** |  Variance | class(var_type) | inout |
 | subroutine | [var_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L96) | release memory (full) | **var** |  Variance | class(var_type) | inout |
