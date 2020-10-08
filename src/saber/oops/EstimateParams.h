@@ -14,6 +14,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "eckit/config/Configuration.h"
@@ -71,19 +72,22 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     //  Setup timeslots
     const util::DateTime time = xx.validTime();
 
-    // Setup ensemble
-    EnsemblePtr_ ens = NULL;
+    // Setup ensemble 1
+    EnsemblePtr_ ens1 = NULL;
     if (fullConfig.has("ensemble")) {
       const eckit::LocalConfiguration ensembleConfig(fullConfig, "ensemble");
-      ens.reset(new Ensemble_(ensembleConfig, xx, xx, resol, vars));
+      ens1.reset(new Ensemble_(ensembleConfig, xx, xx, resol, vars));
+      for (size_t ie = 0; ie < ens1->size(); ++ie) {
+        (*ens1)[ie].toAtlas();
+      }
     }
 
-    // Setup pseudo ensemble
-    EnsemblePtr_ pseudo_ens = NULL;
+    // Setup ensemble 2
+    EnsemblePtr_ ens2 = NULL;
     if (fullConfig.has("covariance")) {
       const eckit::LocalConfiguration covarConfig(fullConfig, "covariance");
       int ens2_ne = covarConfig.getInt("pseudoens_size");
-      pseudo_ens.reset(new Ensemble_(resol, vars, time, ens2_ne));
+      ens2.reset(new Ensemble_(resol, vars, time, ens2_ne));
       // One time-slot only
       std::unique_ptr<oops::ModelSpaceCovarianceBase<MODEL>>
         cov(oops::CovarianceFactory<MODEL>::create(covarConfig, resol, vars, xx, xx));
@@ -94,12 +98,13 @@ template <typename MODEL> class EstimateParams : public oops::Application {
         // Compute a pseudo ensemble using randomization
         Increment_ incr(resol, vars, time);
         cov->randomize(incr);
-        (*pseudo_ens)[ie] = incr;
+        (*ens2)[ie] = incr;
+        (*ens2)[ie].toAtlas();
       }
     }
 
     // Setup parameters
-    ParametersBUMP_ param(resol, vars, time, fullConfig, ens, pseudo_ens);
+    ParametersBUMP_ param(resol, vars, time, fullConfig, ens1, ens2);
 
     // Write parameters
     param.write();

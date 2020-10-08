@@ -295,7 +295,8 @@ type(ens_type), intent(in) :: ens     ! Ensemble
 character(len=*),intent(in) :: prefix ! Prefix
 
 ! Local variables
-integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv
+integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv,jts,its
+real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: fld_ext(:,:,:),fld_1(:,:),fld_2(:,:,:)
 logical,allocatable :: mask_unpack(:,:)
 
@@ -328,13 +329,16 @@ do isub=1,ens%nsub
       allocate(mask_unpack(samp%nc0c,geom%nl0))
       mask_unpack = .true.
 
+      ! Get perturbation on subset Sc0
+      call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
+
       do ib=1,bpar%nb
          ! Indices
          iv = bpar%b_to_v1(ib)
          jv = bpar%b_to_v2(ib)
 
          ! Halo extension
-         if (iv==jv) call samp%com_AC%ext(mpl,geom%nl0,ens%mem(ie)%fld(:,:,iv),fld_ext(:,:,iv))
+         if (iv==jv) call samp%com_AC%ext(mpl,geom%nl0,fld_c0a(:,:,iv),fld_ext(:,:,iv))
       end do
 
       do ib=1,bpar%nb

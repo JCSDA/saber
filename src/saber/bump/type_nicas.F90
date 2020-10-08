@@ -7,6 +7,7 @@
 !----------------------------------------------------------------------
 module type_nicas
 
+use atlas_module, only: atlas_fieldset
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_status
 use netcdf
 use tools_const, only: rad2deg,reqkm,pi
@@ -1411,60 +1412,32 @@ type(nam_type),intent(in) :: nam      ! Namelist
 type(geom_type),intent(in) :: geom    ! Geometry
 type(bpar_type),intent(in) :: bpar    ! Blocal parameters
 integer,intent(in) :: ne              ! Number of members
-type(ens_type),intent(out) :: ens     ! Ensemble
+type(ens_type),intent(inout) :: ens   ! Ensemble
 
 ! Local variable
-integer :: ie,ic0a,il0,iv
-real(kind_real) :: std(geom%nc0a,geom%nl0,nam%nv)
+integer :: ie
+real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 type(cv_type) :: cv_ens(ne)
 
 ! Allocation
-call ens%alloc(nam,geom,ne,1)
+call ens%alloc(ne,1)
 
 do ie=1,ne
    ! Generate random control vector
    call nicas%random_cv(mpl,rng,bpar,cv_ens(ie))
 
-   ! Allocate member
-   if (.not.allocated(ens%mem(ie)%fld)) allocate(ens%mem(ie)%fld(geom%nc0a,geom%nl0,nam%nv))
-
    ! Apply square-root
-   call nicas%apply_sqrt(mpl,nam,geom,bpar,cv_ens(ie),ens%mem(ie)%fld)
+   call nicas%apply_sqrt(mpl,nam,geom,bpar,cv_ens(ie),fld_c0a)
+
+   ! Create member
+   call ens%mem(ie)%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
+
+   ! Set member from subset Sc0
+   call ens%set_c0(mpl,nam,geom,'member',ie,fld_c0a)
 end do
 
-! Remove mean
-call ens%remove_mean
-
-! Compute standard deviation
-!$omp parallel do schedule(static) private(iv,il0,ic0a,ie)
-do iv=1,nam%nv
-   do il0=1,geom%nl0
-      do ic0a=1,geom%nc0a
-         if (geom%gmask_c0a(ic0a,il0)) then
-            std(ic0a,il0,iv) = 0.0
-            do ie=1,ne
-               std(ic0a,il0,iv) = std(ic0a,il0,iv)+ens%mem(ie)%fld(ic0a,il0,iv)**2
-            end do
-            std(ic0a,il0,iv) = sqrt(std(ic0a,il0,iv)/real(ne-1,kind_real))
-         end if
-      end do
-   end do
-end do
-!$omp end parallel do
-
-! Normalize perturbations
-!$omp parallel do schedule(static) private(ie,iv,il0,ic0a)
-do ie=1,ne
-   do iv=1,nam%nv
-      do il0=1,geom%nl0
-         do ic0a=1,geom%nc0a
-            if (geom%gmask_c0a(ic0a,il0)) ens%mem(ie)%fld(ic0a,il0,iv) = ens%mem(ie)%fld(ic0a,il0,iv) &
- & /std(ic0a,il0,iv)
-         end do
-      end do
-   end do
-end do
-!$omp end parallel do
+! Normalize ensemble members (unit variance)
+call ens%normalize(mpl,nam,geom)
 
 end subroutine nicas_randomize
 
@@ -1496,8 +1469,8 @@ fld_copy = fld
 ! Apply localized ensemble covariance formula
 fld = 0.0
 do ie=1,ens%ne
-   ! Compute perturbation
-   pert = ens%mem(ie)%fld
+   ! Get member on subset Sc0
+   call ens%get_c0(mpl,nam,geom,'pert',ie,pert)
 
    ! Schur product
    fld_tmp = pert*fld_copy
@@ -1542,7 +1515,7 @@ real(kind_real) :: fld2_loc(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%
 real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
 
 ! Allocation
-if (ens%allocated) then
+if (allocated(ens%mem)) then
    allocate(fld1_bens(geom%nc0a,geom%nl0,nam%nv))
    allocate(fld2_bens(geom%nc0a,geom%nl0,nam%nv))
 end if
@@ -1561,7 +1534,7 @@ else
    call nicas%apply(mpl,nam,geom,bpar,fld1_loc)
    call nicas%apply(mpl,nam,geom,bpar,fld2_loc)
 end if
-if (ens%allocated) then
+if (allocated(ens%mem)) then
    fld1_bens = fld1_save
    fld2_bens = fld2_save
    call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld1_bens)
@@ -1574,7 +1547,7 @@ call mpl%dot_prod(fld2_loc,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','NICAS adjoint test:                       ', &
  & sum1,' / ',sum2,' / ',2.0*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
-if (ens%allocated) then
+if (allocated(ens%mem)) then
    call mpl%dot_prod(fld1_bens,fld2_save,sum1)
    call mpl%dot_prod(fld2_bens,fld1_save,sum2)
    write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Ensemble B adjoint test:                  ', &
@@ -1583,7 +1556,7 @@ if (ens%allocated) then
 end if
 
 ! Release memory
-if (ens%allocated) then
+if (allocated(ens%mem)) then
    deallocate(fld1_bens)
    deallocate(fld2_bens)
 end if
@@ -1620,7 +1593,7 @@ do idir=1,geom%ndir
 end do
 
 ! Allocation and initialization
-if (ens%allocated.and.(trim(nam%method)/='cor')) then
+if (allocated(ens%mem).and.(trim(nam%method)/='cor')) then
    allocate(fld_bens(geom%nc0a,geom%nl0,nam%nv))
    fld_bens = fld
 end if
@@ -1633,19 +1606,19 @@ else
 end if
 
 ! Apply localized ensemble covariance
-if (ens%allocated.and.(trim(nam%method)/='cor')) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
+if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
 
 ! Write field
 filename = trim(nam%prefix)//'_dirac'
 call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 do iv=1,nam%nv
    call io%fld_write(mpl,nam,geom,filename,'nicas',fld(:,:,iv),trim(nam%variables(iv)))
-   if (ens%allocated.and.(trim(nam%method)/='cor')) call io%fld_write(mpl,nam,geom,filename, &
+   if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call io%fld_write(mpl,nam,geom,filename, &
  & 'Bens',fld_bens(:,:,iv),trim(nam%variables(iv)))
 end do
 
 ! Release memory
-if (ens%allocated.and.(trim(nam%method)/='cor')) deallocate(fld_bens)
+if (allocated(ens%mem).and.(trim(nam%method)/='cor')) deallocate(fld_bens)
 
 end subroutine nicas_test_dirac
 
