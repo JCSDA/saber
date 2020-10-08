@@ -53,8 +53,8 @@ class ParametersBUMP {
                  const oops::Variables &,
                  const util::DateTime &,
                  const eckit::Configuration &,
-                 const EnsemblePtr_ ens = NULL,
-                 const EnsemblePtr_ pseudo_ens = NULL);
+                 const EnsemblePtr_ ens1 = NULL,
+                 const EnsemblePtr_ ens2 = NULL);
   ~ParametersBUMP();
 
   OoBump_ & getOoBump() {return *ooBump_;}
@@ -75,8 +75,8 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
                                       const oops::Variables & vars,
                                       const util::DateTime & time,
                                       const eckit::Configuration & conf,
-                                      const EnsemblePtr_ ens,
-                                      const EnsemblePtr_ pseudo_ens)
+                                      const EnsemblePtr_ ens1,
+                                      const EnsemblePtr_ ens2)
   : resol_(resol), vars_(vars), time_(time), conf_(conf), ooBump_()
 {
   oops::Log::trace() << "ParametersBUMP<MODEL>::ParametersBUMP construction starting" << std::endl;
@@ -85,19 +85,15 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
   // Setup BUMP configuration
   eckit::LocalConfiguration BUMPConf(conf_, "bump");
 
-  // Setup members release
-  int release_members = 0;
-  if (BUMPConf.has("release_members")) release_members = BUMPConf.getInt("release_members");
-
-  // Get ensemble size if ensemble is available
+  // Get ensemble 1 size if ensemble 1 is available
   int ens1_ne = 0;
-  if (ens) ens1_ne = ens->size();
+  if (ens1) ens1_ne = ens1->size();
   BUMPConf.set("ens1_ne", ens1_ne);
   if (!BUMPConf.has("ens1_nsub")) BUMPConf.set("ens1_nsub", 1);
 
-  // Get pseudo-ensemble size if pseudo-ensemble is available
+  // Get ensemble 2 size if ensemble 2 is available
   int ens2_ne = 0;
-  if (pseudo_ens) ens2_ne = pseudo_ens->size();
+  if (ens2) ens2_ne = ens2->size();
   BUMPConf.set("ens2_ne", ens2_ne);
   if (!BUMPConf.has("ens2_nsub")) BUMPConf.set("ens2_nsub", 1);
 
@@ -109,118 +105,47 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
   oops::Log::info() << "Create BUMP" << std::endl;
   ooBump_.reset(new OoBump_(resol, vars, time_, BUMPConf));
 
-// Transfer/copy ensemble members to BUMP
-  if (release_members == 1) {
-    oops::Log::info() << "Transfer ensemble members to BUMP" << std::endl;
-  } else {
-    oops::Log::info() << "Copy ensemble members to BUMP" << std::endl;
-  }
-  for (int ie = 0; ie < ens1_ne; ++ie) {
-    oops::Log::info() << "   Member " << ie+1 << " / " << ens1_ne << std::endl;;
-
-  // Setup increment
-    Increment_ dx(resol_, vars_, time_);
-
-  // Copy member
-    if (release_members == 1) {
-      dx = (*ens)[0];
-    } else {
-      dx = (*ens)[ie];
-    }
-
-  // Copy data to BUMP
-    ooBump_->addMember(dx, ie);
-
-    if (release_members == 1) {
-    // Release ensemble member
-      ens->releaseMember();
+  // Add members of ensemble 1
+  if (ens1) {
+    oops::Log::info() << "--- Add members of ensemble 1" << std::endl;
+    for (int ie = 0; ie < ens1_ne; ++ie) {
+      oops::Log::info() << "      Member " << ie+1 << " / " << ens1_ne << std::endl;
+      ooBump_->addMember((*ens1)[ie].atlas(), ie, 1);
     }
   }
 
-// Transfer/copy pseudo-ensemble members to BUMP
-  if (release_members == 1) {
-    oops::Log::info() << "Transfer pseudo-ensemble members to BUMP" << std::endl;
-  } else {
-    oops::Log::info() << "Copy pseudo-ensemble members to BUMP" << std::endl;
-  }
-  for (int ie = 0; ie < ens2_ne; ++ie) {
-    oops::Log::info() << "   Member " << ie+1 << " / " << ens2_ne << std::endl;
-
-  // Setup increment
-    Increment_ dx(resol_, vars_, time_);
-
-  // Copy member
-    if (release_members == 1) {
-      dx = (*pseudo_ens)[0];
-    } else {
-      dx = (*pseudo_ens)[ie];
-    }
-
-  // Copy data to BUMP
-    ooBump_->addPseudoMember(dx, ie);
-
-    if (release_members == 1) {
-    // Release ensemble member
-      pseudo_ens->releaseMember();
+  // Add members of ensemble 2
+  if (ens2) {
+    oops::Log::info() << "--- Add members of ensemble 2" << std::endl;
+    for (int ie = 0; ie < ens2_ne; ++ie) {
+      oops::Log::info() << "      Member " << ie+1 << " / " << ens2_ne << std::endl;
+      ooBump_->addMember((*ens2)[ie].atlas(), ie, 2);
     }
   }
 
-// Read data from files
-  oops::Log::info() << "Read data from files" << std::endl;
+  // Read data from files
+  oops::Log::info() << "    Read data from files" << std::endl;
   if (conf_.has("input")) {
-  // Set BUMP input parameters
+    // Set BUMP input parameters
     std::vector<eckit::LocalConfiguration> inputConfs;
     conf_.get("input", inputConfs);
 
     for (const auto & inputConf : inputConfs) {
-    // Read parameter for the specified timeslots
+      // Read parameter for the specified timeslot
       const util::DateTime date(inputConf.getString("date"));
 
-    // Setup increment
+      // Setup increment
       Increment_ dx(resol_, vars_, time_);
       dx.read(inputConf);
 
-    // Set parameter to BUMP
+      // Set parameter to BUMP
       std::string param = inputConf.getString("parameter");
       ooBump_->setParameter(param, dx);
     }
   }
 
-// Estimate parameters
+  // Estimate parameters
   ooBump_->runDrivers();
-
-  if (release_members == 1) {
-  // Transfer ensemble members from BUMP
-    oops::Log::info() << "Transfer ensemble members from BUMP" << std::endl;
-    for (int ie = 0; ie < ens1_ne; ++ie) {
-      oops::Log::info() << "   Member " << ie+1 << " / " << ens1_ne << std::endl;
-
-
-    // Setup dummy increment
-      Increment_ dx(resol_, vars_, time_);
-
-    // Copy data from BUMP
-      ooBump_->removeMember(dx, ie);
-
-    // Reset ensemble member
-      ens->appendMember(dx);
-    }
-
-  // Transfer pseudo-ensemble members from BUMP
-    oops::Log::info() << "Transfer pseudo-ensemble members from BUMP" << std::endl;
-    for (int ie = 0; ie < ens2_ne; ++ie) {
-      oops::Log::info() << "   Member " << ie+1 << " / " << ens2_ne << std::endl;
-
-    // Setup dummy increment
-      Increment_ dx(resol_, vars_, time_);
-
-    // Copy data from BUMP
-      ooBump_->removePseudoMember(dx, ie);
-
-    // Reset pseudo-ensemble member
-      pseudo_ens->appendMember(dx);
-    }
-  }
 
   oops::Log::trace() << "ParametersBUMP:ParametersBUMP constructed" << std::endl;
 }
@@ -242,6 +167,10 @@ void ParametersBUMP<MODEL>::write() const {
   util::Timer timer(classname(), "write");
 
 // Write parameters
+  oops::Log::info() <<
+  "-------------------------------------------------------------------" << std::endl;
+  oops::Log::info() << "--- Write parameters" << std::endl;
+
   std::vector<eckit::LocalConfiguration> outputConfs;
   conf_.get("output", outputConfs);
   for (const auto & outputConf : outputConfs) {
@@ -253,12 +182,14 @@ void ParametersBUMP<MODEL>::write() const {
     std::string param = outputConf.getString("parameter");
     ooBump_->getParameter(param, dx);
 
-  // Write parameter for the specified timeslots
+  // Write parameter for the specified timeslot
     const util::DateTime date(outputConf.getString("date"));
     dx.write(outputConf);
     oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
                       << std::setprecision(3) << dx.norm() << std::endl;
   }
+  oops::Log::info() <<
+  "-------------------------------------------------------------------" << std::endl;
   oops::Log::trace() << "ParametersBUMP::write done" << std::endl;
 }
 
