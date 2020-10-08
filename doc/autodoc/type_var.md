@@ -1,13 +1,13 @@
 # Module type_var
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [var_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L49) | allocation |
-| subroutine | [var_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L70) | release memory (partial) |
-| subroutine | [var_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L88) | release memory (full) |
-| subroutine | [var_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L105) | read |
-| subroutine | [var_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L152) | write |
-| subroutine | [var_run_var](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L197) | compute variance |
-| subroutine | [var_filter](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L288) | filter variance |
-| subroutine | [var_apply_sqrt](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L423) | apply square-root variance |
-| subroutine | [var_apply_sqrt_inv](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L449) | apply square-root variance inverse |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [var_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L59) | allocation | **var**<br>**nam**<br>**geom** |  Variance<br> Namelist<br> Geometry | class(var_type)<br>type(nam_type)<br>type(geom_type) | inout<br>in<br>in |
+| subroutine | [var_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L78) | release memory (partial) | **var** |  Variance | class(var_type) | inout |
+| subroutine | [var_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L96) | release memory (full) | **var** |  Variance | class(var_type) | inout |
+| subroutine | [var_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L117) | read | **var**<br>**mpl**<br>**nam**<br>**geom**<br>**io** |  Variance<br> MPI data<br> Namelist<br> Geometry<br> I/O | class(var_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(io_type) | inout<br>inout<br>in<br>in<br>in |
+| subroutine | [var_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L157) | write | **var**<br>**mpl**<br>**nam**<br>**geom**<br>**io** |  Variance<br> MPI data<br> Namelist<br> Geometry<br> I/O | class(var_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(io_type) | inout<br>inout<br>in<br>in<br>in |
+| subroutine | [var_run_var](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L199) | compute variance | **var**<br>**mpl**<br>**rng**<br>**nam**<br>**geom**<br>**ens**<br>**io** |  Variance<br> MPI data<br> Random number generator<br> Namelist<br> Geometry<br> Ensemble<br> I/O | class(var_type)<br>type(mpl_type)<br>type(rng_type)<br>type(nam_type)<br>type(geom_type)<br>type(ens_type)<br>type(io_type) | inout<br>inout<br>inout<br>inout<br>in<br>in<br>in |
+| subroutine | [var_filter](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L288) | filter variance | **var**<br>**mpl**<br>**rng**<br>**nam**<br>**geom** |  Variance<br> MPI data<br> Random number generator<br> Namelist<br> Geometry | class(var_type)<br>type(mpl_type)<br>type(rng_type)<br>type(nam_type)<br>type(geom_type) | inout<br>inout<br>inout<br>in<br>in |
+| subroutine | [var_apply_sqrt](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L417) | apply square-root variance | **var**<br>**nam**<br>**geom**<br>**fld(geom%nc0a,geom%nl0,nam%nv)** |  Variance<br> Namelist<br> Geometry<br> Source/destination vector | class(var_type)<br>type(nam_type)<br>type(geom_type)<br>real(kind_real) | in<br>in<br>in<br>inout |
+| subroutine | [var_apply_sqrt_inv](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_var.F90#L443) | apply square-root variance inverse | **var**<br>**nam**<br>**geom**<br>**fld(geom%nc0a,geom%nl0,nam%nv)** |  Variance<br> Namelist<br> Geometry<br> Source/destination vector | class(var_type)<br>type(nam_type)<br>type(geom_type)<br>real(kind_real) | in<br>in<br>in<br>inout |

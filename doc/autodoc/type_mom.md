@@ -1,10 +1,10 @@
 # Module type_mom
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [mom_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L45) | allocation |
-| subroutine | [mom_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L79) | initialization |
-| subroutine | [mom_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L106) | release memory |
-| subroutine | [mom_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L130) | read |
-| subroutine | [mom_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L194) | write |
-| subroutine | [mom_compute](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L260) | compute centered moments (iterative formulae) |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [mom_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L60) | allocation | **mom**<br>**geom**<br>**bpar**<br>**samp**<br>**ne**<br>**nsub**<br>**prefix** |  Moments<br> Geometry<br> Block parameters<br> Sampling<br> Ensemble size<br> Number of sub-ensembles<br> Prefix | class(mom_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type)<br>integer<br>integer<br>character(len=*) | inout<br>in<br>in<br>in<br>in<br>in<br>in |
+| subroutine | [mom_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L89) | initialization | **mom**<br>**bpar** |  Moments<br> Block parameters | class(mom_type)<br>type(bpar_type) | inout<br>in |
+| subroutine | [mom_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L115) | release memory | **mom** |  Moments | class(mom_type) | inout |
+| subroutine | [mom_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L146) | read | **mom**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**samp**<br>**ens**<br>**prefix** |  Moments<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> Sampling<br> Ensemble<br> Prefix | class(mom_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type)<br>type(ens_type)<br>character(len=*) | inout<br>inout<br>in<br>in<br>in<br>in<br>in<br>in |
+| subroutine | [mom_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L221) | write | **mom**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**samp** |  Moments<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> Sampling | class(mom_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type) | in<br>inout<br>in<br>in<br>in<br>in |
+| subroutine | [mom_compute](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_mom.F90#L294) | compute centered moments (iterative formulae) | **mom**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**samp**<br>**ens**<br>**prefix** |  Moments<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> Sampling<br> Ensemble<br> Prefix | class(mom_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(samp_type)<br>type(ens_type)<br>character(len=*) | inout<br>inout<br>in<br>in<br>in<br>in<br>in<br>in |

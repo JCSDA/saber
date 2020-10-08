@@ -1,14 +1,12 @@
 # Module type_ens
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [ens_set_att](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L60) | set attributes |
-| subroutine | [ens_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L80) | allocation |
-| subroutine | [ens_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L113) | release memory |
-| subroutine | [ens_copy](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L144) | copy |
-| subroutine | [ens_remove_mean](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L177) | remove ensemble mean |
-| subroutine | [ens_apply_bens](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L212) | apply raw ensemble covariance |
-| subroutine | [ens_apply_bens_dirac](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L276) | apply raw ensemble covariance to a Dirac (faster formulation) |
-| subroutine | [ens_normality](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L329) | perform some normality diagnostics |
-| subroutine | [ens_cortrack](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L498) | correlation tracker |
-| subroutine | [ens_corstats](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L773) | correlation statistics |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [ens_set_att](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L66) | set attributes | **ens**<br>**ne**<br>**nsub** |  Ensemble<br> Ensemble size<br> Number of sub-ensembles | class(ens_type)<br>integer<br>integer | inout<br>in<br>in |
+| subroutine | [ens_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L88) | allocation | **ens**<br>**nam**<br>**geom**<br>**ne**<br>**nsub** |  Ensemble<br> Namelist<br> Geometry<br> Ensemble size<br> Number of sub-ensembles | class(ens_type)<br>type(nam_type)<br>type(geom_type)<br>integer<br>integer | inout<br>in<br>in<br>in<br>in |
+| subroutine | [ens_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L117) | release memory | **ens** |  Ensemble | class(ens_type) | inout |
+| subroutine | [ens_copy](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L149) | copy | **ens_out**<br>**ens_in** |  Output ensemble<br> Input ensemble | class(ens_type)<br>type(ens_type) | inout<br>in |
+| subroutine | [ens_remove_mean](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L179) | remove ensemble mean | **ens** |  Ensemble | class(ens_type) | inout |
+| subroutine | [ens_apply_bens](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L218) | apply raw ensemble covariance | **ens**<br>**mpl**<br>**nam**<br>**geom**<br>**fld(geom%nc0a,geom%nl0,nam%nv)** |  Ensemble<br> MPI data<br> Namelist<br> Geometry<br> Field | class(ens_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>real(kind_real) | in<br>inout<br>in<br>in<br>inout |
+| subroutine | [ens_apply_bens_dirac](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L282) | apply raw ensemble covariance to a Dirac (faster formulation) | **ens**<br>**mpl**<br>**nam**<br>**geom**<br>**iprocdir**<br>**ic0adir**<br>**il0dir**<br>**ivdir**<br>**fld(geom%nc0a,geom%nl0,nam%nv)** |  Ensemble<br> MPI data<br> Namelist<br> Geometry<br> Processor index for dirac function<br> Subset Sc0, halo A index for dirac function<br> Subset Sl0 index for dirac function<br> Variable index for dirac function<br> Field | class(ens_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>integer<br>integer<br>integer<br>integer<br>real(kind_real) | in<br>inout<br>in<br>in<br>in<br>in<br>in<br>in<br>out |
+| subroutine | [ens_normality](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_ens.F90#L328) | perform some normality diagnostics | **ens**<br>**mpl**<br>**nam**<br>**geom**<br>**io** |  Ensemble<br> MPI data<br> Namelist<br> Geometry<br> I/O | class(ens_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(io_type) | in<br>inout<br>in<br>in<br>in |

@@ -1,13 +1,13 @@
 # Module type_lct
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [lct_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L47) | allocation |
-| subroutine | [lct_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L75) | release memory (partial) |
-| subroutine | [lct_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L98) | release memory |
-| subroutine | [lct_run_lct](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L125) | LCT driver |
-| subroutine | [lct_compute](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L257) | compute LCT |
-| subroutine | [lct_filter](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L296) | filter LCT |
-| subroutine | [lct_interp](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L326) | interpolate LCT |
-| subroutine | [lct_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L356) | write LCT |
-| subroutine | [lct_write_cor](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L390) | write full correlation |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [lct_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L58) | allocation | **lct**<br>**nam**<br>**geom**<br>**bpar** |  LCT<br> Namelist<br> Geometry<br> Block parameters | class(lct_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>in<br>in<br>in |
+| subroutine | [lct_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L83) | release memory (partial) | **lct** |  LCT | class(lct_type) | inout |
+| subroutine | [lct_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L106) | release memory | **lct** |  LCT | class(lct_type) | inout |
+| subroutine | [lct_run_lct](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L140) | LCT driver | **lct**<br>**mpl**<br>**rng**<br>**nam**<br>**geom**<br>**bpar**<br>**io**<br>**ens** |  LCT<br> MPI data<br> Random number generator<br> Namelist<br> Geometry<br> Block parameters<br> I/O<br> Ensemble | class(lct_type)<br>type(mpl_type)<br>type(rng_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(io_type)<br>type(ens_type) | inout<br>inout<br>inout<br>inout<br>in<br>in<br>in<br>in |
+| subroutine | [lct_compute](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L223) | compute LCT | **lct**<br>**rng**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar** |  LCT<br> Random number generator<br> MPI data<br> Namelist<br> Geometry<br> Block parameters | class(lct_type)<br>type(rng_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>inout<br>inout<br>in<br>in<br>in |
+| subroutine | [lct_filter](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L261) | filter LCT | **lct**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar** |  LCT<br> MPI data<br> Namelist<br> Geometry<br> Block parameters | class(lct_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>inout<br>in<br>in<br>in |
+| subroutine | [lct_interp](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L291) | interpolate LCT | **lct**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar** |  LCT<br> MPI data<br> Namelist<br> Geometry<br> Block parameters | class(lct_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>inout<br>in<br>in<br>in |
+| subroutine | [lct_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L322) | write LCT | **lct**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**io** |  LCT<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> I/O | class(lct_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(io_type) | inout<br>inout<br>in<br>in<br>in<br>in |
+| subroutine | [lct_write_cor](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_lct.F90#L355) | write full correlation | **lct**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar** |  LCT<br> MPI data<br> Namelist<br> Geometry<br> Block parameters | class(lct_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>inout<br>in<br>in<br>in |

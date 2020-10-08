@@ -1,4 +1,4 @@
 # Module type_cv_blk
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |

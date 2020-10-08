@@ -1,11 +1,11 @@
 # Module tools_atlas
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [field_to_fld_real](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L33) | convert ATLAS field to field, real |
-| subroutine | [field_to_fld_logical](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L121) | convert ATLAS field to field, logical |
-| subroutine | [fld_to_field_real](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L229) | convert field to ATLAS field, real |
-| subroutine | [create_atlas_function_space](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L314) | create ATLAS function space |
-| subroutine | [create_atlas_fieldset](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L346) | create ATLAS fieldset with empty fields |
-| subroutine | [atlas_to_fld](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L386) | convert ATLAS fieldset to field |
-| subroutine | [fld_to_atlas](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L429) | convert field to ATLAS fieldset |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [field_to_fld_real](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L44) | convert ATLAS field to field, real | **mpl**<br>**afield**<br>**fld(:,:)**<br>**lev2d** |  MPI data<br> ATLAS field<br> Field<br> Level for 2D variables | type(mpl_type)<br>type(atlas_field)<br>real(kind_real)<br>character(len=*) | inout<br>in<br>out<br>in |
+| subroutine | [field_to_fld_logical](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L134) | convert ATLAS field to field, logical | **mpl**<br>**afield**<br>**fld(:,:)**<br>**lev2d** |  MPI data<br> ATLAS field<br> Field<br> Level for 2D variables | type(mpl_type)<br>type(atlas_field)<br>logical<br>character(len=*) | inout<br>in<br>out<br>in |
+| subroutine | [fld_to_field_real](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L244) | convert field to ATLAS field, real | **mpl**<br>**fld(:,:)**<br>**afield**<br>**lev2d** |  MPI data<br> Field<br> ATLAS field<br> Level for 2D variables | type(mpl_type)<br>real(kind_real)<br>type(atlas_field)<br>character(len=*) | inout<br>in<br>inout<br>in |
+| subroutine | [create_atlas_function_space](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L331) | create ATLAS function space | **nmga**<br>**lon_mga(nmga)**<br>**lat_mga(nmga)**<br>**afunctionspace** |  Number of nodes<br> Longitudes<br> Latitudes<br> ATLAS function space | integer<br>real(kind_real)<br>real(kind_real)<br>type(atlas_functionspace) | in<br>in<br>in<br>out |
+| subroutine | [create_atlas_fieldset](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L363) | create ATLAS fieldset with empty fields | **afunctionspace**<br>**nl**<br>**variables(:)**<br>**afieldset** |  ATLAS function space<br> Number of levels<br> Variables names<br> ATLAS fieldset | type(atlas_functionspace)<br>integer<br>character(len=*)<br>type(atlas_fieldset) | in<br>in<br>in<br>out |
+| subroutine | [atlas_to_fld](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L399) | convert ATLAS fieldset to field | **mpl**<br>**variables(:)**<br>**afieldset**<br>**fld(:,:,:)**<br>**lev2d** |  MPI data<br> Variables names<br> ATLAS fieldset<br> Field<br> Level for 2D variables | type(mpl_type)<br>character(len=*)<br>type(atlas_fieldset)<br>real(kind_real)<br>character(len=*) | inout<br>in<br>inout<br>out<br>in |
+| subroutine | [fld_to_atlas](https://github.com/JCSDA/saber/tree/develop/src/saber/util/tools_atlas.F90#L438) | convert field to ATLAS fieldset | **mpl**<br>**variables(:)**<br>**fld(:,:,:)**<br>**afieldset**<br>**lev2d** |  MPI data<br> Variables names<br> Field<br> ATLAS fieldset<br> Level for 2D variables | type(mpl_type)<br>character(len=*)<br>real(kind_real)<br>type(atlas_fieldset)<br>character(len=*) | inout<br>in<br>in<br>inout<br>in |

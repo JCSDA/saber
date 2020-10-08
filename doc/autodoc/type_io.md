@@ -1,10 +1,8 @@
 # Module type_io
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [io_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L72) | release memory |
-| subroutine | [io_fld_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L107) | write field |
-| subroutine | [io_fld_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L154) | write field |
-| subroutine | [io_fld_write_grid](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L301) | interpolate and write gridded field |
-| subroutine | [io_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L445) | initialize fields output |
-| subroutine | [io_init_grid](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L584) | initialize fields gridding |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [io_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L75) | release memory | **io** |  I/O | class(io_type) | inout |
+| subroutine | [io_fld_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L116) | write field | **io**<br>**mpl**<br>**nam**<br>**geom**<br>**filename**<br>**variable**<br>**fld(geom%nc0a,geom%nl0)**<br>**groupname**<br>**subgroupname** |  I/O<br> MPI data<br> Namelist<br> Geometry<br> File name<br> Variable name<br> Field<br> Group name<br> Subgroup name | class(io_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>character(len=*)<br>character(len=*)<br>real(kind_real)<br>character(len=*)<br>character(len=*) | in<br>inout<br>in<br>in<br>in<br>in<br>out<br>in<br>in |
+| subroutine | [io_fld_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L183) | write field | **io**<br>**mpl**<br>**nam**<br>**geom**<br>**filename**<br>**variable**<br>**fld(geom%nc0a,geom%nl0)**<br>**groupname**<br>**subgroupname** |  I/O<br> MPI data<br> Namelist<br> Geometry<br> File name<br> Variable name<br> Field<br> Group name<br> Subgroup name | class(io_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>character(len=*)<br>character(len=*)<br>real(kind_real)<br>character(len=*)<br>character(len=*) | in<br>inout<br>in<br>in<br>in<br>in<br>in<br>in<br>in |
+| subroutine | [io_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L307) | initialize fields output | **io**<br>**mpl**<br>**nam**<br>**geom** |  I/O<br> MPI data<br> Namelist<br> Geometry | class(io_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type) | inout<br>inout<br>in<br>in |

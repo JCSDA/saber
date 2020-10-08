@@ -1,16 +1,16 @@
 # Module type_cmat
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [cmat_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L56) | C matrix allocation |
-| subroutine | [cmat_alloc_blk](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L85) | allocation |
-| subroutine | [cmat_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L115) | C matrix initialization |
-| subroutine | [cmat_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L139) | release memory (partial) |
-| subroutine | [cmat_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L166) | release memory |
-| subroutine | [cmat_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L193) | read |
-| subroutine | [cmat_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L276) | write |
-| subroutine | [cmat_from_hdiag](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L347) | import HDIAG into C matrix |
-| subroutine | [cmat_from_lct](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L545) | import LCT into C matrix |
-| subroutine | [cmat_from_nam](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L620) | import radii into C matrix |
-| subroutine | [cmat_from_bump](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L683) | import C matrix from BUMP |
-| subroutine | [cmat_setup_sampling](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L797) | setup C matrix sampling |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [cmat_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L65) | C matrix allocation | **cmat**<br>**bpar** |  C matrix<br> Block parameters | class(cmat_type)<br>type(bpar_type) | inout<br>in |
+| subroutine | [cmat_alloc_blk](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L84) | allocation | **cmat**<br>**nam**<br>**geom**<br>**bpar** |  C matrix<br> Namelist<br> Geometry<br> Block parameters | class(cmat_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>in<br>in<br>in |
+| subroutine | [cmat_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L114) | C matrix initialization | **cmat**<br>**mpl**<br>**nam**<br>**bpar** |  C matrix<br> MPI data<br> Namelist<br> Block parameters | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(bpar_type) | inout<br>inout<br>in<br>in |
+| subroutine | [cmat_partial_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L135) | release memory (partial) | **cmat** |  C matrix | class(cmat_type) | inout |
+| subroutine | [cmat_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L162) | release memory | **cmat** |  C matrix | class(cmat_type) | inout |
+| subroutine | [cmat_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L194) | read | **cmat**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**io** |  C matrix<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> I/O | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(io_type) | inout<br>inout<br>in<br>in<br>in<br>in |
+| subroutine | [cmat_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L271) | write | **cmat**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**io** |  C matrix<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> I/O | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(io_type) | in<br>inout<br>in<br>in<br>in<br>in |
+| subroutine | [cmat_from_hdiag](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L334) | import HDIAG into C matrix | **cmat**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**hdiag** |  C matrix<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> Hybrid diagnostics | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(hdiag_type) | inout<br>inout<br>in<br>in<br>in<br>in |
+| subroutine | [cmat_from_lct](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L526) | import LCT into C matrix | **cmat**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar**<br>**lct** |  C matrix<br> MPI data<br> Namelist<br> Geometry<br> Block parameters<br> LCT | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type)<br>type(lct_type) | inout<br>inout<br>in<br>in<br>in<br>in |
+| subroutine | [cmat_from_nam](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L598) | import radii into C matrix | **cmat**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar** |  C matrix<br> MPI data<br> Namelist<br> Geometry<br> Block parameters | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>inout<br>in<br>in<br>in |
+| subroutine | [cmat_from_bump](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L659) | import C matrix from BUMP | **cmat**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar** |  C matrix<br> MPI data<br> Namelist<br> Geometry<br> Block parameters | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>inout<br>in<br>in<br>in |
+| subroutine | [cmat_setup_sampling](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_cmat.F90#L772) | setup C matrix sampling | **cmat**<br>**mpl**<br>**nam**<br>**geom**<br>**bpar** |  C matrix<br> MPI data<br> Namelist<br> Geometry<br> Block parameters | class(cmat_type)<br>type(mpl_type)<br>type(nam_type)<br>type(geom_type)<br>type(bpar_type) | inout<br>inout<br>in<br>in<br>in |

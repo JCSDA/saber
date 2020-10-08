@@ -29,8 +29,9 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 36 | 5219 | 8140 | 22381 | 36 % |
-| C/C++ Header | 1 | 7 | 7 | 39 | 17 % |
+| Fortran 90 | 35 | 5034 | 7861 | 20395 | 38 % |
+| C/C++ Header | 1 | 6 | 7 | 35 | 20 % |
+| C | 1 | 2 | 6 | 21 | 28 % |
 
 
 ### src/saber/external
@@ -44,30 +45,30 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 1 | 41 | 64 | 120 | 53 % |
+| Fortran 90 | 1 | 41 | 68 | 120 | 56 % |
 
 
 ### src/saber/interpolation
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 2 | 165 | 231 | 411 | 56 % |
-| C/C++ Header | 2 | 23 | 19 | 55 | 34 % |
-| C++ | 1 | 11 | 16 | 34 | 47 % |
+| Fortran 90 | 2 | 165 | 231 | 405 | 57 % |
+| C/C++ Header | 2 | 23 | 19 | 56 | 33 % |
+| C++ | 1 | 12 | 17 | 41 | 41 % |
 
 
 ### src/saber/oops
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| C/C++ Header | 14 | 408 | 288 | 1697 | 16 % |
+| C/C++ Header | 13 | 360 | 255 | 1421 | 17 % |
 
 
 ### src/saber/util
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 8 | 969 | 1356 | 2197 | 61 % |
+| Fortran 90 | 8 | 1060 | 1491 | 2410 | 61 % |
 | Fortran 77 | 2 | 28 | 37 | 102 | 36 % |
 
 
@@ -75,7 +76,7 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 2 | 181 | 299 | 758 | 39 % |
+| Fortran 90 | 2 | 169 | 280 | 729 | 38 % |
 | C++ | 5 | 12 | 41 | 67 | 61 % |
 
 
@@ -87,7 +88,6 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 | [tools_fit](autodoc/tools_fit.md) | fit-related tools |
 | [tools_func](autodoc/tools_func.md) | usual functions |
 | [tools_samp](autodoc/tools_samp.md) | sampling functions |
-| [type_adv](autodoc/type_adv.md) | advection derived type |
 | [type_avg_blk](autodoc/type_avg_blk.md) | averaged statistics block derived type |
 | [type_avg](autodoc/type_avg.md) | average routines |
 | [type_bpar](autodoc/type_bpar.md) | block parameters derived type |
@@ -135,6 +135,7 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | Name | Purpose |
 | :--: | :---------- |
+| [type_gaugrid](autodoc/type_gaugrid.md) | Gaussian grid type |
 
 
 ### src/saber/interpolation: interpolation interface

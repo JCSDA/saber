@@ -1,12 +1,11 @@
 # Module type_model
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [model_alloc](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L140) | allocation |
-| subroutine | [model_dealloc](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L163) | release memory |
-| subroutine | [model_setup](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L209) | setup model |
-| subroutine | [model_read](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L715) | read member field |
-| subroutine | [model_read_member](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L768) | read member field |
-| subroutine | [model_load_ens](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L801) | load ensemble data |
-| subroutine | [model_read_wind](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L867) | read wind field |
-| subroutine | [model_generate_obs](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L908) | generate observations locations |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [model_alloc](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L146) | allocation | **model** |  Model | class(model_type) | inout |
+| subroutine | [model_dealloc](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L169) | release memory | **model** |  Model | class(model_type) | inout |
+| subroutine | [model_setup](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L216) | setup model | **model**<br>**mpl**<br>**nam** |  Model<br> MPI data<br> Namelist variables | class(model_type)<br>type(mpl_type)<br>type(nam_type) | inout<br>inout<br>inout |
+| subroutine | [model_read](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L724) | read member field | **model**<br>**mpl**<br>**nam**<br>**filename**<br>**afieldset** |  Model<br> MPI data<br> Namelist<br> File name<br> ATLAS fieldset | class(model_type)<br>type(mpl_type)<br>type(nam_type)<br>character(len=*)<br>type(atlas_fieldset) | inout<br>inout<br>in<br>in<br>inout |
+| subroutine | [model_read_member](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L775) | read member field | **model**<br>**mpl**<br>**nam**<br>**filename**<br>**ie**<br>**afieldset** |  Model<br> MPI data<br> Namelist<br> File name<br> Ensemble member index<br> ATLAS fieldset | class(model_type)<br>type(mpl_type)<br>type(nam_type)<br>character(len=*)<br>integer<br>type(atlas_fieldset) | inout<br>inout<br>in<br>in<br>in<br>out |
+| subroutine | [model_load_ens](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L803) | load ensemble data | **model**<br>**mpl**<br>**nam**<br>**filename** |  Model<br> MPI data<br> Namelist<br> Filename ('ens1' or 'ens2') | class(model_type)<br>type(mpl_type)<br>type(nam_type)<br>character(len=*) | inout<br>inout<br>in<br>in |
+| subroutine | [model_generate_obs](https://github.com/JCSDA/saber/tree/develop/test/mains/type_model.F90#L868) | generate observations locations | **model**<br>**mpl**<br>**nam** |  Model<br> MPI data<br> Namelist | class(model_type)<br>type(mpl_type)<br>type(nam_type) | inout<br>inout<br>in |

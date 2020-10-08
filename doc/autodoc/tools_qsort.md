@@ -1,10 +1,10 @@
 # Module tools_qsort
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
-| subroutine | [qsort_integer](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L39) | sort an integer subvector |
-| subroutine | [qsort_real](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L63) | sort a real subvector |
-| subroutine | [quick_sort_integer](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L87) | sort an integer subvector |
-| subroutine | [quick_sort_real](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L149) | sort a real subvector |
-| subroutine | [interchange_sort_integer](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L211) | interchange integers |
-| subroutine | [interchange_sort_real](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L245) | interchange reals |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
+| subroutine | [qsort_integer](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L49) | sort an integer subvector | **n**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Vector to sort<br> Positions of the elements in the original order | integer<br>integer<br>integer | in<br>inout<br>inout |
+| subroutine | [qsort_real](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L73) | sort a real subvector | **n**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Vector to sort<br> Positions of the elements in the original order | integer<br>real(kind_real)<br>integer | in<br>inout<br>inout |
+| subroutine | [quick_sort_integer](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L99) | sort an integer subvector | **n**<br>**left_end**<br>**right_end**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Left end of the vector<br> Right end of the vector<br> Vector to sort<br> Positions of the elements in the original order | integer<br>integer<br>integer<br>integer<br>integer | in<br>in<br>in<br>inout<br>inout |
+| subroutine | [quick_sort_real](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L161) | sort a real subvector | **n**<br>**left_end**<br>**right_end**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Left end of the vector<br> Right end of the vector<br> Vector to sort<br> Positions of the elements in the original order | integer<br>integer<br>integer<br>real(kind_real)<br>integer | in<br>in<br>in<br>inout<br>inout |
+| subroutine | [interchange_sort_integer](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L223) | interchange integers | **n**<br>**left_end**<br>**right_end**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Left end of the vector<br> Right end of the vector<br> Vector to sort<br> Positions of the elements in the original order | integer<br>integer<br>integer<br>integer<br>integer | in<br>in<br>in<br>inout<br>inout |
+| subroutine | [interchange_sort_real](https://github.com/JCSDA/saber/tree/develop/src/saber/external/tools_qsort.F90#L257) | interchange reals | **n**<br>**left_end**<br>**right_end**<br>**list(n)**<br>**order(n)** |  Input vector size<br> Left end of the vector<br> Right end of the vector<br> Vector to sort<br> Positions of the elements in the original order | integer<br>integer<br>integer<br>real(kind_real)<br>integer | in<br>in<br>in<br>inout<br>inout |

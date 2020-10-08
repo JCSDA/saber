@@ -138,9 +138,10 @@ for index in ${!dir[*]}; do
    for filename in ${list} ; do
       # Initialization
       new_module=false
-      new_purpose=false
       new_subfunc=false
+      new_purpose=false
       type_bound=false
+      write_to_md=false
       i=-2
 
       # While loop over lines
@@ -157,6 +158,14 @@ for index in ${!dir[*]}; do
          if test "${word}" = "! Purpose:" ; then
             purpose=`echo ${line} | cut -c 12-`
             new_purpose=true
+            if test "${new_module}" = "true" ; then
+               write_to_md=true
+            else
+               arguments=""
+               comments=""
+               types=""
+               intents=""
+            fi
          fi
          if test "${word}" = "! Subrouti" ; then
             subfunc=`echo ${line} | cut -c 15-`
@@ -179,10 +188,37 @@ for index in ${!dir[*]}; do
             new_subfunc=true
          fi
 
+         if test "${new_subfunc}" = "true" &&  "${new_purpose}" = "true" ; then
+            if [[ ${line} == *"intent("* ]] ; then
+               type=${line%%,*}
+               intent_tmp=${line#*intent(}
+               intent=${intent_tmp%%)*}
+               variable_tmp=${line##*::}
+               variable_tmp2=${variable_tmp%%!*}
+               argument="**"`echo ${variable_tmp2} | sed 's/ *$//g'`"**"
+               comment=${line##*!}
+               if test "${arguments}" = "" ; then
+                  arguments=${argument}
+                  comments=${comment}
+                  types=${type}
+                  intents=${intent}
+               else
+                  arguments=${arguments}"<br>"${argument}
+                  comments=${comments}"<br>"${comment}
+                  types=${types}"<br>"${type}
+                  intents=${intents}"<br>"${intent}
+               fi
+            else
+               if test ! "${arguments}" = "" ; then
+                  write_to_md=true
+               fi
+            fi
+         fi
+
          # Increment line index
          let i=i+1
 
-         if test "${new_purpose}" = "true" ; then
+         if test "${write_to_md}" = "true" ; then
             # New module
             if test "${new_module}" = "true" ; then
                echo -e "| [${module}](autodoc/${module}.md) | ${purpose} |" >> ${doc}/overview.md
@@ -191,26 +227,28 @@ for index in ${!dir[*]}; do
                cat<<EOFMOD > ${autodoc}/${module}.md
 # Module ${module}
 
-| Type | Name | Purpose |
-| :--: | :--: | :---------- |
+| Type | Name | Purpose | Arguments |     | Type | Intent |
+| :--: | :--: | :------ | --------: | :-- | :--: | :----: |
 EOFMOD
                new_module=false
+               new_purpose=false
             fi
 
             # New subroutine/function
             if test "${new_subfunc}" = "true" ; then
                if test "${type_bound}" = "true" ; then
-                  echo -e "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} |" >> ${autodoc}/${module}.md
+                  echo -e "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} | ${arguments} | ${comments} | ${types} | ${intents} |" >> ${autodoc}/${module}.md
                else
-                  echo -e "| ${subfunc_type} | [${subfunc}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} |" >> ${autodoc}/${module}.md
+                  echo -e "| ${subfunc_type} | [${subfunc}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} | ${arguments} | ${comments} | ${types} | ${intents} |" >> ${autodoc}/${module}.md
                fi
                new_subfunc=false
+               new_purpose=false
                type_bound=false
             fi
          fi
 
          # Reset
-         new_purpose=false
+         write_to_md=false
       done < ${filename}
    done
    echo -e "\n" >> ${doc}/overview.md
