@@ -1,4 +1,4 @@
 # Module tools_const
 
-| Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
+| Type | Name | Purpose | Arguments          |
+| :--: | :--: | :------ | :----------------- |

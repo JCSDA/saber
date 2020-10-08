@@ -162,9 +162,6 @@ for index in ${!dir[*]}; do
                write_to_md=true
             else
                arguments=""
-               comments=""
-               types=""
-               intents=""
             fi
          fi
          if test "${word}" = "! Subrouti" ; then
@@ -196,18 +193,12 @@ for index in ${!dir[*]}; do
                argument_tmp=${line##*::}
                argument_tmp2=${argument_tmp%%!*}
                argument_tmp3=`echo ${argument_tmp2} | sed 's/ *$//g'`
-               argument="**"`echo ${argument_tmp3%%(*} | sed 's/ *$//g'`"**"
+               argument=`echo ${argument_tmp3%%(*} | sed 's/ *$//g'`
                comment=${line##*!}
                if test "${arguments}" = "" ; then
-                  arguments=${argument}
-                  comments=${comment}
-                  types=${type}
-                  intents=${intent}
+                  arguments="**${argument}** : ${comment} - ${type} - ${intent}"
                else
-                  arguments=${arguments}"<br>"${argument}
-                  comments=${comments}"<br>"${comment}
-                  types=${types}"<br>"${type}
-                  intents=${intents}"<br>"${intent}
+                  arguments=${arguments}"<br>**${argument}** : ${comment} - ${type} - ${intent}"
                fi
             else
                if test ! "${arguments}" = "" ; then
@@ -228,8 +219,8 @@ for index in ${!dir[*]}; do
                cat<<EOFMOD > ${autodoc}/${module}.md
 # Module ${module}
 
-| Type | Name | Purpose | Arguments |     | Type | Intent |
-| :--: | :--: | :------ | ----: | :-------- | :--: | :----: |
+| Type | Name | Purpose | Arguments          |
+| :--: | :--: | :------ | :----------------- |
 EOFMOD
                new_module=false
                new_purpose=false
@@ -238,9 +229,9 @@ EOFMOD
             # New subroutine/function
             if test "${new_subfunc}" = "true" ; then
                if test "${type_bound}" = "true" ; then
-                  echo -e "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} | ${arguments} | ${comments} | ${types} | ${intents} |" >> ${autodoc}/${module}.md
+                  echo -e "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} | ${arguments} |" >> ${autodoc}/${module}.md
                else
-                  echo -e "| ${subfunc_type} | [${subfunc}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} | ${arguments} | ${comments} | ${types} | ${intents} |" >> ${autodoc}/${module}.md
+                  echo -e "| ${subfunc_type} | [${subfunc}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} | ${arguments} |" >> ${autodoc}/${module}.md
                fi
                new_subfunc=false
                new_purpose=false
