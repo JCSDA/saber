@@ -91,7 +91,7 @@ type(nam_type),intent(inout) :: nam        ! Namelist
 type(geom_type),intent(in) :: geom         ! Geometry
 type(bpar_type),intent(in) :: bpar         ! Block parameters
 type(io_type),intent(in) :: io             ! I/O
-type(ens_type),intent(in) :: ens1          ! Ensemble 1
+type(ens_type),intent(inout) :: ens1       ! Ensemble 1
 type(ens_type),intent(in),optional :: ens2 ! Ensemble 2
 
 ! Setup sampling

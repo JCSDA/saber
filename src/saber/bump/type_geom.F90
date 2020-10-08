@@ -7,10 +7,10 @@
 !----------------------------------------------------------------------
 module type_geom
 
-use atlas_module, only: atlas_field,atlas_fieldset,atlas_functionspace,atlas_functionspace_nodecolumns, &
+use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_nodecolumns, &
  & atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
-use tools_atlas, only: field_to_fld
+use tools_atlas, only: field_to_array
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
 use tools_kinds, only: kind_real,nc_kind_real,huge_real
@@ -18,6 +18,7 @@ use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
 use tools_samp, only: initialize_sampling_global
 use type_com, only: com_type
+use type_fieldset, only: fieldset_type
 use type_tree, only: tree_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
@@ -31,9 +32,6 @@ type geom_type
    ! Number of processors
    integer :: nproc                               ! Number of processors
 
-   ! ATLAS function space
-   type(atlas_functionspace) :: afunctionspace_mg ! ATLAS function space of model grid
-
    ! Geometry data on model grid, halo A
    integer :: nmga                                ! Halo A size for model grid
    integer,allocatable :: proc_to_nmga(:)         ! Processory to halo A size for model grid
@@ -45,6 +43,7 @@ type geom_type
    logical,allocatable :: smask_mga(:,:)          ! Sampling mask
    real(kind_real),allocatable :: hash_mga(:)     ! Longitudes/latitudes hash
    logical :: area_provided                       ! Activated if areas are provided
+   type(atlas_functionspace) :: afunctionspace_mg ! ATLAS function space of model grid
 
    ! Link between model grid and subset Sc0 on halo A
    type(com_type) :: com_mg                       ! Communication between subset Sc0 and model grid
@@ -143,10 +142,17 @@ contains
    procedure :: index_from_lonlat => geom_index_from_lonlat
    procedure :: setup_dirac => geom_setup_dirac
    procedure :: check_arc => geom_check_arc
-   procedure :: copy_c0a_to_mga => geom_copy_c0a_to_mga
-   procedure :: geom_copy_mga_to_c0a_real
-   procedure :: geom_copy_mga_to_c0a_logical
-   generic :: copy_mga_to_c0a => geom_copy_mga_to_c0a_real,geom_copy_mga_to_c0a_logical
+   procedure :: geom_copy_c0a_to_mga_single
+   procedure :: geom_copy_c0a_to_mga_all
+   generic :: copy_c0a_to_mga => geom_copy_c0a_to_mga_single,geom_copy_c0a_to_mga_all
+   procedure :: geom_copy_mga_to_c0a_real_single
+   procedure :: geom_copy_mga_to_c0a_real_all
+   procedure :: geom_copy_mga_to_c0a_logical_single
+   procedure :: geom_copy_mga_to_c0a_logical_all
+   generic :: copy_mga_to_c0a => geom_copy_mga_to_c0a_real_single,geom_copy_mga_to_c0a_real_all, &
+ & geom_copy_mga_to_c0a_logical_single,geom_copy_mga_to_c0a_logical_all
+   procedure :: fieldset_to_c0 => geom_fieldset_to_c0
+   procedure :: c0_to_fieldset => geom_c0_to_fieldset
    procedure :: compute_deltas => geom_compute_deltas
    procedure :: rand_point => geom_rand_point
    procedure :: mg_to_proc => geom_mg_to_proc
@@ -177,7 +183,6 @@ if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
 if (allocated(geom%lat_mga)) deallocate(geom%lat_mga)
 if (allocated(geom%area_mga)) deallocate(geom%area_mga)
 if (allocated(geom%vunit_mga)) deallocate(geom%vunit_mga)
-if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
 if (allocated(geom%smask_mga)) deallocate(geom%smask_mga)
 if (allocated(geom%hash_mga)) deallocate(geom%hash_mga)
 if (allocated(geom%proc_to_mg_offset)) deallocate(geom%proc_to_mg_offset)
@@ -239,6 +244,7 @@ class(geom_type),intent(inout) :: geom ! Geometry
 ! Release memory
 call geom%partial_dealloc
 call geom%afunctionspace_mg%final()
+if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
 call geom%com_mg%dealloc
 
@@ -248,7 +254,7 @@ end subroutine geom_dealloc
 ! Subroutine: geom_setup
 ! Purpose: setup geometry
 !----------------------------------------------------------------------
-subroutine geom_setup(geom,mpl,rng,nam,afunctionspace,afieldset)
+subroutine geom_setup(geom,mpl,rng,nam,afunctionspace,fieldset)
 
 implicit none
 
@@ -256,9 +262,9 @@ implicit none
 class(geom_type),intent(inout) :: geom                 ! Geometry
 type(mpl_type),intent(inout) :: mpl                    ! MPI data
 type(rng_type),intent(inout) :: rng                    ! Random number generator
-type(nam_type),intent(in) :: nam                       ! Namelists
+type(nam_type),intent(in) :: nam                       ! Namelist
 type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
-type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset
+type(fieldset_type),intent(in),optional :: fieldset    ! Fieldset containing geometry elements
 
 ! Local variables
 integer :: jc3,il0,iproc
@@ -272,8 +278,8 @@ geom%nl0 = nam%nl
 
 ! Copy function space pointer
 geom%afunctionspace_mg = atlas_functionspace(afunctionspace%c_ptr())
-if (present(afieldset)) then
-   call geom%from_atlas(mpl,afunctionspace,afieldset)
+if (present(fieldset)) then
+   call geom%from_atlas(mpl,afunctionspace,fieldset)
 else
    call geom%from_atlas(mpl,afunctionspace)
 end if
@@ -364,9 +370,9 @@ end subroutine geom_setup
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_from_atlas
-! Purpose: set geometry from ATLAS fieldset
+! Purpose: set geometry from fieldset
 !----------------------------------------------------------------------
-subroutine geom_from_atlas(geom,mpl,afunctionspace,afieldset)
+subroutine geom_from_atlas(geom,mpl,afunctionspace,fieldset)
 
 implicit none
 
@@ -374,7 +380,7 @@ implicit none
 class(geom_type),intent(inout) :: geom                 ! Geometry
 type(mpl_type),intent(inout) :: mpl                    ! MPI data
 type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
-type(atlas_fieldset),intent(in),optional :: afieldset  ! ATLAS fieldset
+type(fieldset_type),intent(in),optional :: fieldset    ! Fieldset
 
 ! Local variables
 integer :: il0,i,j,imga
@@ -474,12 +480,12 @@ end do
 geom%gmask_mga = .true.
 geom%smask_mga = .true.
 
-if (present(afieldset)) then
+if (present(fieldset)) then
    ! Get area
-   if (afieldset%has_field('area')) then
-      afield = afieldset%field('area')
+   if (fieldset%has_field('area')) then
+      afield = fieldset%field('area')
       allocate(area_mga(geom%nmga,1))
-      call field_to_fld(mpl,afield,area_mga)
+      call field_to_array(mpl,afield,area_mga)
       geom%area_mga = area_mga(:,1)/req**2
       deallocate(area_mga)
       call afield%final()
@@ -487,23 +493,23 @@ if (present(afieldset)) then
    end if
 
    ! Get vertical unit
-   if (afieldset%has_field('vunit')) then
-      afield = afieldset%field('vunit')
-      call field_to_fld(mpl,afield,geom%vunit_mga)
+   if (fieldset%has_field('vunit')) then
+      afield = fieldset%field('vunit')
+      call field_to_array(mpl,afield,geom%vunit_mga)
       call afield%final()
    end if
 
    ! Get geometry mask
-   if (afieldset%has_field('gmask')) then
-      afield = afieldset%field('gmask')
-      call field_to_fld(mpl,afield,geom%gmask_mga)
+   if (fieldset%has_field('gmask')) then
+      afield = fieldset%field('gmask')
+      call field_to_array(mpl,afield,geom%gmask_mga)
       call afield%final()
    end if
 
    ! Get sampling mask
-   if (afieldset%has_field('smask')) then
-      afield = afieldset%field('smask')
-      call field_to_fld(mpl,afield,geom%smask_mga)
+   if (fieldset%has_field('smask')) then
+      afield = fieldset%field('smask')
+      call field_to_array(mpl,afield,geom%smask_mga)
       call afield%final()
    end if
 end if
@@ -963,7 +969,6 @@ deallocate(geom%lon_mga)
 deallocate(geom%lat_mga)
 deallocate(geom%area_mga)
 deallocate(geom%vunit_mga)
-deallocate(geom%gmask_mga)
 deallocate(geom%smask_mga)
 deallocate(mgu_to_mg)
 deallocate(hash_mgu)
@@ -1540,10 +1545,10 @@ end do
 end subroutine geom_check_arc
 
 !----------------------------------------------------------------------
-! Subroutine: geom_copy_c0a_to_mga
-! Purpose: copy from subset Sc0 to model grid, halo A
+! Subroutine: geom_copy_c0a_to_mga_single
+! Purpose: copy from subset Sc0 to model grid, halo A, single field
 !----------------------------------------------------------------------
-subroutine geom_copy_c0a_to_mga(geom,mpl,fld_c0a,fld_mga)
+subroutine geom_copy_c0a_to_mga_single(geom,mpl,fld_c0a,fld_mga)
 
 implicit none
 
@@ -1570,19 +1575,43 @@ end do
 
 if (geom%same_grid) then
    ! Same grid
-   fld_mga = fld_c0a
+   fld_mga = fld_c0a_masked
 else
    ! Extend subset Sc0 to model grid
    call geom%com_mg%ext(mpl,geom%nl0,fld_c0a_masked,fld_mga)
 end if
 
-end subroutine geom_copy_c0a_to_mga
+end subroutine geom_copy_c0a_to_mga_single
 
 !----------------------------------------------------------------------
-! Subroutine: geom_copy_mga_to_c0a_real
-! Purpose: copy from model grid to subset Sc0, halo A, real
+! Subroutine: geom_copy_c0a_to_mga_all
+! Purpose: copy from subset Sc0 to model grid, halo A, all fields
 !----------------------------------------------------------------------
-subroutine geom_copy_mga_to_c0a_real(geom,mpl,fld_mga,fld_c0a)
+subroutine geom_copy_c0a_to_mga_all(geom,mpl,nam,fld_c0a,fld_mga)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                               ! Geometry
+type(mpl_type),intent(inout) :: mpl                               ! MPI data
+type(nam_type),intent(in) :: nam                                  ! Namelist
+real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)  ! Field on subset Sc0, halo A
+real(kind_real),intent(out) :: fld_mga(geom%nmga,geom%nl0,nam%nv) ! Field on model grid, halo A
+
+! Local variables
+integer :: iv
+
+do iv=1,nam%nv
+   call geom%copy_c0a_to_mga(mpl,fld_c0a(:,:,iv),fld_mga(:,:,iv))
+end do
+
+end subroutine geom_copy_c0a_to_mga_all
+
+!----------------------------------------------------------------------
+! Subroutine: geom_copy_mga_to_c0a_real_single
+! Purpose: copy from model grid to subset Sc0, halo A, real, single field
+!----------------------------------------------------------------------
+subroutine geom_copy_mga_to_c0a_real_single(geom,mpl,fld_mga,fld_c0a)
 
 implicit none
 
@@ -1610,13 +1639,37 @@ do il0=1,geom%nl0
    end do
 end do
 
-end subroutine geom_copy_mga_to_c0a_real
+end subroutine geom_copy_mga_to_c0a_real_single
 
 !----------------------------------------------------------------------
-! Subroutine: geom_copy_mga_to_c0a_logical
-! Purpose: copy from model grid to subset Sc0, halo A, logical
+! Subroutine: geom_copy_mga_to_c0a_real_all
+! Purpose: copy from model grid to subset Sc0, halo A, real, all fields
 !----------------------------------------------------------------------
-subroutine geom_copy_mga_to_c0a_logical(geom,mpl,fld_mga,fld_c0a)
+subroutine geom_copy_mga_to_c0a_real_all(geom,mpl,nam,fld_c0a,fld_mga)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                               ! Geometry
+type(mpl_type),intent(inout) :: mpl                               ! MPI data
+type(nam_type),intent(in) :: nam                                  ! Namelist
+real(kind_real),intent(in) :: fld_mga(geom%nmga,geom%nl0,nam%nv)  ! Field on model grid, halo A
+real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) ! Field on subset Sc0, halo A
+
+! Local variables
+integer :: iv
+
+do iv=1,nam%nv
+   call geom%copy_mga_to_c0a(mpl,fld_mga(:,:,iv),fld_c0a(:,:,iv))
+end do
+
+end subroutine geom_copy_mga_to_c0a_real_all
+
+!----------------------------------------------------------------------
+! Subroutine: geom_copy_mga_to_c0a_logical_single
+! Purpose: copy from model grid to subset Sc0, halo A, logical, single field
+!----------------------------------------------------------------------
+subroutine geom_copy_mga_to_c0a_logical_single(geom,mpl,fld_mga,fld_c0a)
 
 implicit none
 
@@ -1651,7 +1704,105 @@ do il0=1,geom%nl0
    end do
 end do
 
-end subroutine geom_copy_mga_to_c0a_logical
+end subroutine geom_copy_mga_to_c0a_logical_single
+
+!----------------------------------------------------------------------
+! Subroutine: geom_copy_mga_to_c0a_logical_all
+! Purpose: copy from model grid to subset Sc0, halo A, logical, all fields
+!----------------------------------------------------------------------
+subroutine geom_copy_mga_to_c0a_logical_all(geom,mpl,nam,fld_c0a,fld_mga)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                       ! Geometry
+type(mpl_type),intent(inout) :: mpl                       ! MPI data
+type(nam_type),intent(in) :: nam                          ! Namelist
+logical,intent(in) :: fld_mga(geom%nmga,geom%nl0,nam%nv)  ! Field on model grid, halo A
+logical,intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) ! Field on subset Sc0, halo A
+
+! Local variables
+integer :: iv
+
+do iv=1,nam%nv
+   call geom%copy_mga_to_c0a(mpl,fld_mga(:,:,iv),fld_c0a(:,:,iv))
+end do
+
+end subroutine geom_copy_mga_to_c0a_logical_all
+
+!----------------------------------------------------------------------
+! Subroutine: geom_fieldset_to_c0
+! Purpose: fieldset to Fortran array on subset Sc0
+!----------------------------------------------------------------------
+subroutine geom_fieldset_to_c0(geom,mpl,nam,fieldset,fld_c0a)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                               ! Geometry
+type(mpl_type),intent(inout) :: mpl                               ! MPI data
+type(nam_type),intent(in) :: nam                                  ! Namelist
+type(fieldset_type),intent(in) :: fieldset                        ! Fieldset
+real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) ! Field on subset Sc0, halo A
+
+! Local variables
+real(kind_real),allocatable :: fld_mga(:,:,:)
+
+if (geom%same_grid) then
+   ! Fieldset to Fortran array on subset Sc0
+   call fieldset%to_array(mpl,fld_c0a)
+else
+   ! Allocation
+   allocate(fld_mga(geom%nmga,geom%nl0,nam%nv))
+
+   ! Fieldset to Fortran array on model grid
+   call fieldset%to_array(mpl,fld_mga)
+
+   ! Model grid to subset Sc0
+   call geom%copy_mga_to_c0a(mpl,nam,fld_mga,fld_c0a)
+
+   ! Release memory
+   deallocate(fld_mga)
+end if
+
+end subroutine geom_fieldset_to_c0
+
+!----------------------------------------------------------------------
+! Subroutine: geom_c0_to_fieldset
+! Purpose: Fortran array on subset Sc0 to fieldset
+!----------------------------------------------------------------------
+subroutine geom_c0_to_fieldset(geom,mpl,nam,fld_c0a,fieldset)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                              ! Geometry
+type(mpl_type),intent(inout) :: mpl                              ! MPI data
+type(nam_type),intent(in) :: nam                                 ! Namelist
+real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) ! Field on subset Sc0, halo A
+type(fieldset_type),intent(inout) :: fieldset                    ! Fieldset
+
+! Local variables
+real(kind_real),allocatable :: fld_mga(:,:,:)
+
+if (geom%same_grid) then
+   ! Fortran array on subset Sc0 to fieldset
+   call fieldset%from_array(mpl,fld_c0a)
+else
+   ! Allocation
+   allocate(fld_mga(geom%nmga,geom%nl0,nam%nv))
+
+   ! Subset Sc0 to model grid
+   call geom%copy_c0a_to_mga(mpl,nam,fld_c0a,fld_mga)
+
+   ! Fortran array on model grid to fieldset
+   call fieldset%from_array(mpl,fld_mga)
+
+   ! Release memory
+   deallocate(fld_mga)
+end if
+
+end subroutine geom_c0_to_fieldset
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_compute_deltas
