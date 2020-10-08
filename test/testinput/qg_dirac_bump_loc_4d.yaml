@@ -26,18 +26,6 @@ background error:
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D.nc
@@ -53,18 +41,6 @@ background error:
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D.nc
@@ -80,18 +56,6 @@ background error:
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D.nc
@@ -107,18 +71,6 @@ background error:
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D.nc
@@ -134,18 +86,6 @@ background error:
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D.nc
@@ -161,18 +101,6 @@ background error:
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D.nc
@@ -188,18 +116,6 @@ background error:
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D.nc
@@ -215,18 +131,6 @@ background error:
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D.nc
@@ -242,18 +146,6 @@ background error:
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H.nc
   - states:
     - date: 2010-01-01T00:00:00Z
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D.nc
@@ -269,18 +161,6 @@ background error:
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT5H.nc
     - date: 2010-01-01T06:00:00Z
       filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT6H.nc
-    - date: 2010-01-01T07:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT7H.nc
-    - date: 2010-01-01T08:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT8H.nc
-    - date: 2010-01-01T09:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT9H.nc
-    - date: 2010-01-01T10:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT10H.nc
-    - date: 2010-01-01T11:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT11H.nc
-    - date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H.nc
 dirac:
   date: 2010-01-01T06:00:00Z
   ixdir: [20]
@@ -306,18 +186,6 @@ initial condition:
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT5H.nc
   - date: 2010-01-01T06:00:00Z
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT6H.nc
-  - date: 2010-01-01T07:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT7H.nc
-  - date: 2010-01-01T08:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT8H.nc
-  - date: 2010-01-01T09:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT9H.nc
-  - date: 2010-01-01T10:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT10H.nc
-  - date: 2010-01-01T11:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT11H.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 model:
   tstep: PT1H
 output B:
