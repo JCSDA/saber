@@ -28,8 +28,8 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 35 | 5034 | 7861 | 20395 | 38 % |
-| C/C++ Header | 1 | 6 | 7 | 35 | 20 % |
+| Fortran 90 | 35 | 5153 | 8066 | 20475 | 39 % |
+| C/C++ Header | 1 | 6 | 7 | 39 | 17 % |
 | C | 1 | 2 | 6 | 21 | 28 % |
 
 
@@ -51,7 +51,7 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 2 | 165 | 231 | 405 | 57 % |
+| Fortran 90 | 2 | 165 | 231 | 407 | 56 % |
 | C/C++ Header | 2 | 23 | 19 | 56 | 33 % |
 | C++ | 1 | 12 | 17 | 41 | 41 % |
 
@@ -60,14 +60,14 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| C/C++ Header | 13 | 360 | 255 | 1421 | 17 % |
+| C/C++ Header | 13 | 343 | 235 | 1220 | 19 % |
 
 
 ### src/saber/util
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 8 | 1060 | 1491 | 2410 | 61 % |
+| Fortran 90 | 9 | 1170 | 1641 | 2692 | 60 % |
 | Fortran 77 | 2 | 28 | 37 | 102 | 36 % |
 
 
@@ -75,7 +75,7 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 2 | 169 | 280 | 729 | 38 % |
+| Fortran 90 | 2 | 168 | 279 | 725 | 38 % |
 | C++ | 5 | 12 | 41 | 67 | 61 % |
 
 
@@ -157,6 +157,7 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 | [tools_const](autodoc/tools_const.md) | define usual constants and missing values |
 | [tools_kinds](autodoc/tools_kinds.md) | kinds definition |
 | [tools_repro](autodoc/tools_repro.md) | reproducibility functions |
+| [tools_atlas](autodoc/tools_atlas.md) | random numbers generator derived type |
 | [type_mpl](autodoc/type_mpl.md) | MPI parameters derived type |
 | [type_msv](autodoc/type_msv.md) | deal with missing values |
 | [type_rng](autodoc/type_rng.md) | random numbers generator derived type |
