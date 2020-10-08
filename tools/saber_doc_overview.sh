@@ -193,9 +193,10 @@ for index in ${!dir[*]}; do
                type=${line%%,*}
                intent_tmp=${line#*intent(}
                intent=${intent_tmp%%)*}
-               variable_tmp=${line##*::}
-               variable_tmp2=${variable_tmp%%!*}
-               argument="**"`echo ${variable_tmp2} | sed 's/ *$//g'`"**"
+               argument_tmp=${line##*::}
+               argument_tmp2=${argument_tmp%%!*}
+               argument_tmp3=`echo ${argument_tmp2} | sed 's/ *$//g'`
+               argument="**"`echo ${argument_tmp3%%(*} | sed 's/ *$//g'`"**"
                comment=${line##*!}
                if test "${arguments}" = "" ; then
                   arguments=${argument}
