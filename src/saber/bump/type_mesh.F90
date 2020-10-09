@@ -13,7 +13,7 @@ use atlas_module, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,at
 use iso_fortran_env, only: int64
 !$ use omp_lib
 use tools_const, only: pi,req,rad2deg,reqkm
-use tools_func, only: lonlathash,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
+use tools_func, only: lonlathash,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro
@@ -438,9 +438,9 @@ do while ((.not.found).and.(nn<=nnmax))
          end if
 
          ! Compute weights
-         call vector_triple_product(mesh%xyz(:,jj),mesh%xyz(:,kk),xyz,b(1),cflag(1))
-         call vector_triple_product(mesh%xyz(:,kk),mesh%xyz(:,i),xyz,b(2),cflag(2))
-         call vector_triple_product(mesh%xyz(:,i),mesh%xyz(:,jj),xyz,b(3),cflag(3))
+         call det(mesh%xyz(:,jj),mesh%xyz(:,kk),xyz,b(1),cflag(1))
+         call det(mesh%xyz(:,kk),mesh%xyz(:,i),xyz,b(2),cflag(2))
+         call det(mesh%xyz(:,i),mesh%xyz(:,jj),xyz,b(3),cflag(3))
 
          ! Check if the points are colinear
          write(mpl%info,*) nn,i,j,jj,kk,cflag;call mpl%flush

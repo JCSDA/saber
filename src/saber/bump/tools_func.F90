@@ -34,7 +34,7 @@ end interface
 
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
+public :: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
  & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
 
 contains
@@ -248,10 +248,10 @@ if (r>0.0) vp = vp/r
 end subroutine vector_product
 
 !----------------------------------------------------------------------
-! Subroutine: vector_triple_product
-! Purpose: compute vector triple product
+! Subroutine: det
+! Purpose: compute determinant (vector triple product)
 !----------------------------------------------------------------------
-subroutine vector_triple_product(v1,v2,v3,p,cflag)
+subroutine det(v1,v2,v3,p,cflag)
 
 implicit none
 
@@ -283,7 +283,7 @@ do i=1,6
    if ((abs(terms(i))>0.0).and.small(p,terms(i))) cflag = .false.
 end do
 
-end subroutine vector_triple_product
+end subroutine det
 
 !----------------------------------------------------------------------
 ! Subroutine: add

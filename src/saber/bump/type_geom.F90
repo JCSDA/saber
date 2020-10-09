@@ -12,7 +12,7 @@ use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_node
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_array
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
+use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det
 use tools_kinds, only: kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
@@ -1444,11 +1444,11 @@ call vector_product(v1,v2,va)
 do ibnda=1,geom%nbnda(il0)
    call vector_product(va,geom%vabnda(:,ibnda,il0),vp)
    v1 = (/x(1),y(1),z(1)/)
-   call vector_triple_product(v1,va,vp,t(1),cflag(1))
+   call det(v1,va,vp,t(1),cflag(1))
    v1 = (/x(2),y(2),z(2)/)
-   call vector_triple_product(v1,va,vp,t(2),cflag(2))
-   call vector_triple_product(geom%v1bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(3),cflag(3))
-   call vector_triple_product(geom%v2bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(4),cflag(4))
+   call det(v1,va,vp,t(2),cflag(2))
+   call det(geom%v1bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(3),cflag(3))
+   call det(geom%v2bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(4),cflag(4))
    t(1) = -t(1)
    t(3) = -t(3)
    if ((all(t>0.0).or.all(t<0.0)).and.all(cflag)) then
