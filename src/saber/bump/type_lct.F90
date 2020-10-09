@@ -138,7 +138,7 @@ type(nam_type),intent(inout) :: nam  ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
 type(bpar_type),intent(in) :: bpar   ! Block parameters
 type(io_type),intent(in) :: io       ! I/O
-type(ens_type),intent(in) :: ens     ! Ensemble
+type(ens_type),intent(inout) :: ens  ! Ensemble
 
 ! Set artificially small local radius
 nam%local_rad = 1.0e-12

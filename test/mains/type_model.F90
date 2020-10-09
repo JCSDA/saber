@@ -15,6 +15,7 @@ use tools_func, only: lonlatmod
 use tools_kinds,only: kind_int,kind_real,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf
+use type_fieldset, only: fieldset_type
 use type_tree, only: tree_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type,nvmax
@@ -26,61 +27,56 @@ logical :: qg_red = .true.                        ! QG model with redundant poin
 logical :: qg_lam = .false.                       ! QG model as a Limited Area Model
 character(len=1024) :: zone = 'C+I'               ! Computation zone for AROME ('C', 'C+I' or 'C+I+E')
 
-! Member field derived type
-type member_field_type
-   type(atlas_fieldset) :: afieldset              ! ATLAS fieldset
-end type member_field_type
-
 ! Model derived type
 type model_type
    ! Global dimensions
-   integer :: nlon                                ! Longitude size
-   integer :: nlat                                ! Latitude size
-   integer :: ntile                               ! Number of tiles
-   integer :: nmg                                 ! Number of model grid points
-   integer :: nlev                                ! Number of levels
-   integer :: nl0                                 ! Number of levels in subset Sl0
+   integer :: nlon                             ! Longitude size
+   integer :: nlat                             ! Latitude size
+   integer :: ntile                            ! Number of tiles
+   integer :: nmg                              ! Number of model grid points
+   integer :: nlev                             ! Number of levels
+   integer :: nl0                              ! Number of levels in subset Sl0
 
    ! Packing arrays
-   integer,allocatable :: mg_to_lon(:)            ! Model grid to longitude index
-   integer,allocatable :: mg_to_lat(:)            ! Model grid to latgitude index
-   integer,allocatable :: mg_to_tile(:)           ! Model grid to tile index
+   integer,allocatable :: mg_to_lon(:)         ! Model grid to longitude index
+   integer,allocatable :: mg_to_lat(:)         ! Model grid to latgitude index
+   integer,allocatable :: mg_to_tile(:)        ! Model grid to tile index
 
    ! Coordinates
-   real(kind_real),allocatable :: lon(:)          ! Longitude
-   real(kind_real),allocatable :: lat(:)          ! Latitude
-   real(kind_real),allocatable :: area(:)         ! Area
-   real(kind_real),allocatable :: vunit(:,:)      ! Vertical unit
-   logical,allocatable :: mask(:,:)               ! Mask
+   real(kind_real),allocatable :: lon(:)       ! Longitude
+   real(kind_real),allocatable :: lat(:)       ! Latitude
+   real(kind_real),allocatable :: area(:)      ! Area
+   real(kind_real),allocatable :: vunit(:,:)   ! Vertical unit
+   logical,allocatable :: mask(:,:)            ! Mask
 
    ! Local distribution
-   integer :: nmga                                ! Halo A size for model grid
-   integer,allocatable :: mg_to_proc(:)           ! Model grid to local task
-   integer,allocatable :: mg_to_mga(:)            ! Model grid, global to halo A
-   integer,allocatable :: mga_to_mg(:)            ! Model grid, halo A to global
+   integer :: nmga                             ! Halo A size for model grid
+   integer,allocatable :: mg_to_proc(:)        ! Model grid to local task
+   integer,allocatable :: mg_to_mga(:)         ! Model grid, global to halo A
+   integer,allocatable :: mga_to_mg(:)         ! Model grid, halo A to global
 
    ! ATLAS node columns
-   type(atlas_functionspace) :: afunctionspace    ! ATLAS node columns
+   type(atlas_functionspace) :: afunctionspace ! ATLAS function space
 
-   ! ATLAS fieldset
-   type(atlas_fieldset) :: afieldset              ! ATLAS fieldset
+   ! Fieldset
+   type(fieldset_type) :: fieldset             ! Fieldset
 
    ! Tiles distribution
-   logical,allocatable :: tilepool(:,:)           ! Pool of task for each task
-   integer :: mytile                              ! Tile handled by a given task
-   integer,allocatable :: ioproc(:)               ! I/O task for each tile
-   integer :: nmgt                                ! Number of model grid point on each tile
-   integer,allocatable :: mga_to_mgt(:)           ! Model grid, halo A, to model grid on a tile
-   integer,allocatable :: mgt_to_mg(:)            ! Model grid on a tile to model grid, global
+   logical,allocatable :: tilepool(:,:)        ! Pool of task for each task
+   integer :: mytile                           ! Tile handled by a given task
+   integer,allocatable :: ioproc(:)            ! I/O task for each tile
+   integer :: nmgt                             ! Number of model grid point on each tile
+   integer,allocatable :: mga_to_mgt(:)        ! Model grid, halo A, to model grid on a tile
+   integer,allocatable :: mgt_to_mg(:)         ! Model grid on a tile to model grid, global
 
    ! Ensembles
-   type(member_field_type),allocatable :: ens1(:) ! Ensemble 1 members
-   type(member_field_type),allocatable :: ens2(:) ! Ensemble 2 members
+   type(fieldset_type),allocatable :: ens1(:)  ! Ensemble 1 members
+   type(fieldset_type),allocatable :: ens2(:)  ! Ensemble 2 members
 
    ! Observations locations
-   integer :: nobsa                               ! Number of observations, halo A
-   real(kind_real),allocatable :: lonobs(:)       ! Observations longitudes, halo A
-   real(kind_real),allocatable :: latobs(:)       ! Observations latitudes, halo A
+   integer :: nobsa                            ! Number of observations, halo A
+   real(kind_real),allocatable :: lonobs(:)    ! Observations longitudes, halo A
+   real(kind_real),allocatable :: latobs(:)    ! Observations latitudes, halo A
 contains
    ! Model specific procedures
    procedure :: aro_coord => model_aro_coord
@@ -188,20 +184,20 @@ if (allocated(model%mga_to_mgt)) deallocate(model%mga_to_mgt)
 if (allocated(model%mgt_to_mg)) deallocate(model%mgt_to_mg)
 if (allocated(model%ens1)) then
    do ie=1,size(model%ens1)
-      call model%ens1(ie)%afieldset%final()
+      call model%ens1(ie)%final()
    end do
    deallocate(model%ens1)
 end if
 if (allocated(model%ens2)) then
    do ie=1,size(model%ens2)
-      call model%ens2(ie)%afieldset%final()
+      call model%ens2(ie)%final()
    end do
    deallocate(model%ens2)
 end if
 if (allocated(model%lonobs)) deallocate(model%lonobs)
 if (allocated(model%latobs)) deallocate(model%latobs)
 call model%afunctionspace%final()
-call model%afieldset%final()
+call model%fieldset%final()
 
 end subroutine model_dealloc
 
@@ -234,7 +230,7 @@ character(len=1024) :: variables,filename
 character(len=1024),dimension(nvmax) :: variables_save
 character(len=1024),parameter :: subr = 'model_define'
 type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask,afield_smask
-type(atlas_fieldset) :: afieldset
+type(fieldset_type) :: fieldset
 
 ! Number of levels
 model%nl0 = nam%nl
@@ -526,28 +522,28 @@ end do
 ! Create ATLAS function space
 call create_atlas_function_space(model%nmga,lon_mga,lat_mga,model%afunctionspace)
 
-! Create ATLAS fieldset
-model%afieldset = atlas_fieldset()
+! Create fieldset
+model%fieldset = atlas_fieldset()
 
 ! Add area
 afield_area = model%afunctionspace%create_field(name='area',kind=atlas_real(kind_real),levels=0)
 call afield_area%data(area_ptr)
-call model%afieldset%add(afield_area)
+call model%fieldset%add(afield_area)
 
 ! Add vertical unit
 afield_vunit = model%afunctionspace%create_field(name='vunit',kind=atlas_real(kind_real),levels=model%nl0)
 call afield_vunit%data(vunit_ptr)
-call model%afieldset%add(afield_vunit)
+call model%fieldset%add(afield_vunit)
 
 ! Add geometry mask
 afield_gmask = model%afunctionspace%create_field(name='gmask',kind=atlas_integer(kind_int),levels=model%nl0)
 call afield_gmask%data(gmask_ptr)
-call model%afieldset%add(afield_gmask)
+call model%fieldset%add(afield_gmask)
 
 ! Add sampling mask
 afield_smask = model%afunctionspace%create_field(name='smask',kind=atlas_integer(kind_int),levels=model%nl0)
 call afield_smask%data(smask_ptr)
-call model%afieldset%add(afield_smask)
+call model%fieldset%add(afield_smask)
 
 ! Conversion
 imga = 0
@@ -612,10 +608,10 @@ case default
          nam%variables(1) = variables
 
          ! Read file
-         call model%read(mpl,nam,filename,afieldset)
+         call model%read(mpl,nam,filename,fieldset)
 
          ! Get data
-         afield = afieldset%field(variables)
+         afield = fieldset%field(variables)
          call afield%data(real_ptr)
 
          ! Compute mask
@@ -642,7 +638,7 @@ case default
 
          ! Release pointers
          call afield%final()
-         call afieldset%final()
+         call fieldset%final()
       else
          call mpl%abort(subr,'mask_type should be formatted as VARIABLE@FILE to read a mask from file')
       end if
@@ -715,16 +711,16 @@ end subroutine model_setup
 ! Subroutine: model_read
 ! Purpose: read member field
 !----------------------------------------------------------------------
-subroutine model_read(model,mpl,nam,filename,afieldset)
+subroutine model_read(model,mpl,nam,filename,fieldset)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model        ! Model
-type(mpl_type),intent(inout) :: mpl             ! MPI data
-type(nam_type),intent(in) :: nam                ! Namelist
-character(len=*),intent(in) :: filename         ! File name
-type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
+class(model_type),intent(inout) :: model      ! Model
+type(mpl_type),intent(inout) :: mpl           ! MPI data
+type(nam_type),intent(in) :: nam              ! Namelist
+character(len=*),intent(in) :: filename       ! File name
+type(fieldset_type),intent(inout) :: fieldset ! Fieldset
 
 ! Local variables
 integer :: iv
@@ -746,13 +742,13 @@ if (trim(nam%model)=='qg') call model%qg_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='res') call model%res_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='wrf') call model%wrf_read(mpl,nam,filename,fld_mga)
 
-! Add data into ATLAS fieldset
+! Add data into fieldset
 do iv=1,nam%nv
    ! Create field
    afield = model%afunctionspace%create_field(name=nam%variables(iv),kind=atlas_real(kind_real),levels=model%nl0)
 
    ! Add field
-   call afieldset%add(afield)
+   call fieldset%add(afield)
 
    ! Copy data
    call afield%data(real_ptr)
@@ -765,29 +761,29 @@ end subroutine model_read
 ! Subroutine: model_read_member
 ! Purpose: read member field
 !----------------------------------------------------------------------
-subroutine model_read_member(model,mpl,nam,filename,ie,afieldset)
+subroutine model_read_member(model,mpl,nam,filename,ie,fieldset)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model       ! Model
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-type(nam_type),intent(in) :: nam               ! Namelist
-character(len=*),intent(in) :: filename        ! File name
-integer,intent(in) :: ie                       ! Ensemble member index
-type(atlas_fieldset),intent(out) :: afieldset  ! ATLAS fieldset
+class(model_type),intent(inout) :: model     ! Model
+type(mpl_type),intent(inout) :: mpl          ! MPI data
+type(nam_type),intent(in) :: nam             ! Namelist
+character(len=*),intent(in) :: filename      ! File name
+integer,intent(in) :: ie                     ! Ensemble member index
+type(fieldset_type),intent(out) :: fieldset  ! Fieldset
 
 ! Local variables
 character(len=1024) :: fullname
 
-! Create ATLAS fieldset
-afieldset = atlas_fieldset()
+! Create fieldset
+fieldset = atlas_fieldset()
 
 ! Define filename
 write(fullname,'(a,i6.6)') trim(filename)//'_',ie
 
 ! Read file
-call model%read(mpl,nam,fullname,afieldset)
+call model%read(mpl,nam,fullname,fieldset)
 
 end subroutine model_read_member
 
@@ -846,9 +842,9 @@ do isub=1,nsub
       ie = ie_sub+(isub-1)*ne/nsub
       select case (trim(filename))
       case ('ens1')
-         call model%read_member(mpl,nam,filename,ie_sub,model%ens1(ie)%afieldset)
+         call model%read_member(mpl,nam,filename,ie_sub,model%ens1(ie))
       case ('ens2')
-         call model%read_member(mpl,nam,filename,ie_sub,model%ens2(ie)%afieldset)
+         call model%read_member(mpl,nam,filename,ie_sub,model%ens2(ie))
       end select
    end do
    write(mpl%info,'(a)') ''

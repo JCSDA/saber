@@ -530,8 +530,7 @@ if( SABER_TEST_OOPS )
                       TEST_DEPENDS test_qg_parameters_bump_cov
                                    test_qg_parameters_bump_hyb
                                    test_qg_parameters_bump_lct
-                                   test_qg_parameters_bump_loc_3d
-                                   test_qg_parameters_bump_loc_4d )
+                                   test_qg_parameters_bump_loc )
 
 
     foreach( test ${saber_test_oops} )

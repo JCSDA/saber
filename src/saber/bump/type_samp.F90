@@ -760,7 +760,7 @@ type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
-type(ens_type),intent(in) :: ens       ! Ensemble
+type(ens_type),intent(inout) :: ens    ! Ensemble
 
 ! Local variables
 integer :: il0,jc3,ildwv,jldwv,ival,nc1_valid
@@ -975,10 +975,10 @@ class(samp_type),intent(inout) :: samp ! Sampling
 type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
-type(ens_type),intent(in) :: ens       ! Ensemble
+type(ens_type),intent(inout) :: ens    ! Ensemble
 
 ! Local variables
-integer :: nsmask,nsmask_tot,ic0a,il0,ildwv,iv,ie,ncontig,ncontigmax,latmin,latmax
+integer :: nsmask,nsmask_tot,ic0a,il0,ildwv,iv,ncontig,ncontigmax,latmin,latmax
 integer :: nc0_smask(0:geom%nl0)
 real(kind_real) :: dist
 real(kind_real),allocatable :: m2(:,:,:)
@@ -1033,11 +1033,10 @@ if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
       allocate(m2(geom%nc0a,geom%nl0,nam%nv))
 
       ! Compute variance and fourth-order moment
-      m2 = 0.0
-      do ie=1,ens%ne
-         m2 = m2+ens%mem(ie)%fld**2
-      end do
-      m2 = m2/real(ens%ne-ens%nsub,kind_real)
+      call ens%compute_moments(mpl,nam,geom)
+
+      ! Get variance on subset Sc0
+      call ens%get_c0(mpl,nam,geom,'m2',0,m2)
 
       ! Check standard-deviation value
       do iv=1,nam%nv

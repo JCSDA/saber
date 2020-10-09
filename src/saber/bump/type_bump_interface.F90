@@ -8,11 +8,12 @@
 
 module type_bump_interface
 
-use atlas_module, only: atlas_fieldset, atlas_functionspace 
+use atlas_module, only: atlas_functionspace,atlas_fieldset
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
 use type_bump, only: bump_type,bump_registry
+use type_fieldset, only: fieldset_type
 
 implicit none
 
@@ -31,7 +32,7 @@ implicit none
 integer(c_int),intent(inout) :: key_bump         ! BUMP
 type(c_ptr),intent(in),value :: c_comm           ! FCKIT MPI communicator wrapper
 type(c_ptr),intent(in),value :: c_afunctionspace ! ATLAS function space
-type(c_ptr),intent(in),value :: c_afieldset      ! ATLAS fieldset  (containing geometry features: area, vunit, gmask, smask)
+type(c_ptr),intent(in),value :: c_afieldset      ! ATLAS fieldset containing geometry elements
 type(c_ptr),intent(in),value :: c_conf           ! FCKIT configuration
 type(c_ptr),intent(in),value :: c_grid           ! FCKIT grid configuration
 
@@ -39,7 +40,7 @@ type(c_ptr),intent(in),value :: c_grid           ! FCKIT grid configuration
 type(bump_type),pointer :: bump
 type(fckit_mpi_comm) :: f_comm
 type(atlas_functionspace) :: f_afunctionspace
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 type(fckit_configuration) :: f_conf
 type(fckit_configuration) :: f_grid
 
@@ -49,12 +50,12 @@ call bump_registry%add(key_bump)
 call bump_registry%get(key_bump,bump)
 f_comm = fckit_mpi_comm(c_comm)
 f_afunctionspace = atlas_functionspace(c_afunctionspace)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 f_conf = fckit_configuration(c_conf)
 f_grid = fckit_configuration(c_grid)
 
 ! Call Fortran
-call bump%create(f_comm,f_afunctionspace,f_afieldset,f_conf,f_grid)
+call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf,f_grid)
 
 end subroutine bump_create_c
 
@@ -96,43 +97,16 @@ integer(c_int),intent(in) :: iens           ! Ensemble index
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%add_member(f_afieldset,ie,iens)
+call bump%add_member(f_fieldset,ie,iens)
 
 end subroutine bump_add_member_c
-
-!----------------------------------------------------------------------
-! Subroutine: bump_remove_member_c
-! Purpose: remove member into bump%ens[1,2]
-!----------------------------------------------------------------------
-subroutine bump_remove_member_c(key_bump,c_afieldset,ie,iens) bind(c,name='bump_remove_member_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump       ! BUMP
-type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
-integer(c_int),intent(in) :: ie             ! Ensemble member index
-integer(c_int),intent(in) :: iens           ! Ensemble index
-
-! Local variables
-type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%remove_member(f_afieldset,ie,iens)
-
-end subroutine bump_remove_member_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal_c
@@ -148,14 +122,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_vbal(f_afieldset)
+call bump%apply_vbal(f_fieldset)
 
 end subroutine bump_apply_vbal_c
 
@@ -173,14 +147,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_vbal_inv(f_afieldset)
+call bump%apply_vbal_inv(f_fieldset)
 
 end subroutine bump_apply_vbal_inv_c
 
@@ -198,14 +172,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_vbal_ad(f_afieldset)
+call bump%apply_vbal_ad(f_fieldset)
 
 end subroutine bump_apply_vbal_ad_c
 
@@ -223,14 +197,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_vbal_inv_ad(f_afieldset)
+call bump%apply_vbal_inv_ad(f_fieldset)
 
 end subroutine bump_apply_vbal_inv_ad_c
 
@@ -248,14 +222,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_stddev(f_afieldset)
+call bump%apply_stddev(f_fieldset)
 
 end subroutine bump_apply_stddev_c
 
@@ -273,14 +247,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_stddev_inv(f_afieldset)
+call bump%apply_stddev_inv(f_fieldset)
 
 end subroutine bump_apply_stddev_inv_c
 
@@ -298,14 +272,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_nicas(f_afieldset)
+call bump%apply_nicas(f_fieldset)
 
 end subroutine bump_apply_nicas_c
 
@@ -347,14 +321,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_nicas_sqrt(cv,f_afieldset)
+call bump%apply_nicas_sqrt(cv,f_fieldset)
 
 end subroutine bump_apply_nicas_sqrt_c
 
@@ -373,14 +347,14 @@ real(c_double),intent(inout) :: cv(:)       ! Control variable
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%apply_nicas_sqrt_ad(f_afieldset,cv)
+call bump%apply_nicas_sqrt_ad(f_fieldset,cv)
 
 end subroutine bump_apply_nicas_sqrt_ad_c
 
@@ -398,14 +372,14 @@ type(c_ptr),intent(in),value :: c_afieldset ! ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%randomize(f_afieldset)
+call bump%randomize(f_fieldset)
 
 end subroutine bump_randomize_c
 
@@ -427,7 +401,7 @@ type(c_ptr),intent(in),value :: c_afieldset     ! ATLAS fieldset pointer
 type(bump_type),pointer :: bump
 integer :: istr
 character(len=nstr) :: param
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
@@ -435,10 +409,10 @@ param = ''
 do istr=1,nstr
   param = trim(param)//cstr(istr)
 end do
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%get_parameter(param,f_afieldset)
+call bump%get_parameter(param,f_fieldset)
 
 end subroutine bump_get_parameter_c
 
@@ -460,7 +434,7 @@ type(c_ptr),intent(in),value :: c_afieldset     ! ATLAS fieldset pointer
 type(bump_type),pointer :: bump
 integer :: istr
 character(len=nstr) :: param
-type(atlas_fieldset) :: f_afieldset
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
@@ -468,10 +442,10 @@ param = ''
 do istr=1,nstr
   param = trim(param)//cstr(istr)
 end do
-f_afieldset = atlas_fieldset(c_afieldset)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%set_parameter(param,f_afieldset)
+call bump%set_parameter(param,f_fieldset)
 
 end subroutine bump_set_parameter_c
 
