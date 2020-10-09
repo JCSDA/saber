@@ -14,13 +14,13 @@ use type_nam, only: nam_type
 
 implicit none
 
-integer,parameter :: default_seed = 140587            ! Default seed
-integer(kind=int64),parameter :: a = 1103515245_int64 ! Linear congruential multiplier
-integer(kind=int64),parameter :: c = 12345_int64      ! Linear congruential offset
-integer(kind=int64),parameter :: m = 2147483648_int64 ! Linear congruential modulo
+integer,parameter :: default_seed = 140587       ! Default seed
+integer(int64),parameter :: a = 1103515245_int64 ! Linear congruential multiplier
+integer(int64),parameter :: c = 12345_int64      ! Linear congruential offset
+integer(int64),parameter :: m = 2147483648_int64 ! Linear congruential modulo
 
 type rng_type
-   integer(kind=int64) :: seed
+   integer(int64) :: seed
 contains
    procedure :: init => rng_init
    procedure :: reseed => rng_reseed
@@ -159,19 +159,35 @@ end subroutine rng_desync
 ! Subroutine: rng_lcg
 ! Purpose: linear congruential generator
 !----------------------------------------------------------------------
-subroutine rng_lcg(rng,x)
+subroutine rng_lcg(rng,x,seed)
 
 implicit none
 
-! Passed variable
-class(rng_type),intent(inout) :: rng ! Random number generator
-real(kind_real),intent(out) :: x             ! Random number between 0 and 1
+! Passed variables
+class(rng_type),intent(inout) :: rng          ! Random number generator
+real(kind_real),intent(out) :: x              ! Random number between 0 and 1
+integer(int64),intent(inout),optional :: seed ! Seed
+
+! Local variables
+integer(int64) :: lseed
+
+! Local seed
+if (present(seed)) then
+   lseed = seed
+else
+   lseed = rng%seed
+end if
 
 ! Update seed
-rng%seed = mod(a*rng%seed+c,m)
+lseed = mod(a*lseed+c,m)
+if (present(seed)) then
+   seed = lseed
+else
+   rng%seed = lseed
+end if
 
 ! Random number
-x = real(rng%seed,kind_real)/real(m-1,kind_real)
+x = real(lseed,kind_real)/real(m-1,kind_real)
 
 end subroutine rng_lcg
 

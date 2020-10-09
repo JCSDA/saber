@@ -11,6 +11,7 @@ use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding
 use missing_values_mod
 use bump_interpolation_mod
+use type_fieldset
 
 private
 ! ------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ type(bump_interpolator), pointer :: bint
 type(fckit_mpi_comm) :: f_comm
 type(fckit_configuration) :: f_config
 type(atlas_functionspace) :: fspace1, fspace2
-type(atlas_fieldset) :: masks
+type(fieldset_type) :: masks
 
 f_comm = fckit_mpi_comm(c_comm)
 f_config = fckit_configuration(c_config)
@@ -70,7 +71,7 @@ type(c_ptr), intent(in), value :: c_outfields !< output fields
 
 ! Local variables
 type(bump_interpolator), pointer :: bint
-type(atlas_fieldset) :: infields, outfields
+type(fieldset_type) :: infields, outfields
 
 call bump_interpolator_registry%get(c_key_bint, bint)
 infields = atlas_fieldset(c_infields)
@@ -94,7 +95,7 @@ type(c_ptr), intent(in), value :: c_fields1 !< output fields
 
 ! Local variables
 type(bump_interpolator), pointer :: bint
-type(atlas_fieldset) :: fields_grid2, fields_grid1
+type(fieldset_type) :: fields_grid2, fields_grid1
 
 call bump_interpolator_registry%get(c_key_bint, bint)
 fields_grid2 = atlas_fieldset(c_fields2)

@@ -26,6 +26,7 @@ use tools_qsort, only: qsort
 use tools_repro, only: rth
 use type_bump, only : bump_type
 use type_com, only: com_type
+use type_fieldset, only: fieldset_type
 use type_geom, only: geom_type
 use type_linop, only: linop_type
 use type_mesh, only: mesh_type
@@ -137,7 +138,7 @@ subroutine bint_init(self, config, comm, in_funcspace, out_funcspace, masks)
   type(fckit_mpi_comm)      , intent(in)  :: comm
   class(atlas_functionspace), intent(in)  :: in_funcspace
   class(atlas_functionspace), intent(in)  :: out_funcspace
-  type(atlas_fieldset)      , intent(in), optional :: masks
+  type(fieldset_type)       , intent(in), optional :: masks
 
   ! local variables
   type(fckit_configuration) :: bump_config
@@ -379,8 +380,8 @@ end subroutine bint_driver
 !!
 subroutine bint_apply(self, infields, outfields)
   class(bump_interpolator), intent(inout) :: self
-  type(atlas_fieldset),intent(in)         :: infields
-  type(atlas_fieldset),intent(inout)      :: outfields
+  type(fieldset_type)     , intent(in)    :: infields
+  type(fieldset_type)     , intent(inout) :: outfields
 
   ! local variables
   type(atlas_field) :: infield, outfield
@@ -415,8 +416,8 @@ subroutine bint_apply(self, infields, outfields)
      !--------------------------------------------
      ! compute interpolation
 
-     ! atlas field to bump fld
-     call field_to_fld(self%bump%mpl, infield, infld_mga)
+     ! atlas field to fortran array
+     call field_to_array(self%bump%mpl, infield, infld_mga)
 
      if (self%bump%geom%same_grid) then
         call self%apply_interp(infld_mga,outfld)
@@ -429,8 +430,8 @@ subroutine bint_apply(self, infields, outfields)
         call self%apply_interp(infld_c0a,outfld)
      end if
 
-     ! bump fld to atlas field
-     call fld_to_field(self%bump%mpl, outfld, outfield)
+     ! fortran array to atlas field
+     call field_from_array(self%bump%mpl, outfld, outfield)
 
      !--------------------------------------------
      ! Add output field to output fields
@@ -460,8 +461,8 @@ end subroutine bint_apply
 !!
 subroutine apply_interp(self,infield,outfield)
   class(bump_interpolator), intent(inout) :: self
-  real(kind_real),intent(in)   :: infield(self%bump%geom%nc0a,self%nlev)
-  real(kind_real),intent(out)  :: outfield(self%nout_local,self%nlev)
+  real(kind_real)         , intent(in)    :: infield(self%bump%geom%nc0a,self%nlev)
+  real(kind_real)         , intent(out)   :: outfield(self%nout_local,self%nlev)
 
   integer :: ilev
   real(kind_real), allocatable :: infield_ext(:,:)
@@ -503,8 +504,8 @@ end subroutine apply_interp
 !----------------------------------------------------------------------
 subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
   class(bump_interpolator), intent(inout) :: self
-  type(atlas_fieldset), intent(in)    :: fields_outgrid
-  type(atlas_fieldset), intent(inout) :: fields_ingrid
+  type(fieldset_type)     , intent(in)    :: fields_outgrid
+  type(fieldset_type)     , intent(inout) :: fields_ingrid
 
   ! Local variables
   type(atlas_field) :: field_ingrid, field_outgrid
@@ -540,7 +541,7 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
      ! compute interpolation adjoint
 
      ! atlas field to bump fld
-     call field_to_fld(self%bump%mpl, field_outgrid, fld_outgrid)
+     call field_to_array(self%bump%mpl, field_outgrid, fld_outgrid)
 
      if (self%bump%geom%same_grid) then
         ! Apply observation operator adjoint
@@ -554,7 +555,7 @@ subroutine bint_apply_ad(self, fields_outgrid, fields_ingrid)
      end if
 
      ! bump fld to atlas field
-     call fld_to_field(self%bump%mpl, fld_ingrid_mga, field_ingrid)
+     call field_from_array(self%bump%mpl, fld_ingrid_mga, field_ingrid)
 
      !--------------------------------------------
 

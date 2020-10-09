@@ -7,12 +7,16 @@
 !----------------------------------------------------------------------
 module type_mesh
 
-use atlas_module!, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,atlas_mesh_nodes,atlas_connectivity
+
+use atlas_module, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,atlas_build_edges, &
+ & atlas_build_node_to_edge_connectivity,atlas_mesh_nodes,atlas_connectivity
+use iso_fortran_env, only: int64
 !$ use omp_lib
 use tools_const, only: pi,req,rad2deg,reqkm
-use tools_func, only: lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
+use tools_func, only: lonlathash,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
+use tools_repro, only: repro
 use type_mpl, only: mpl_type
 use type_rng, only: rng_type
 use type_tree, only: tree_type
@@ -97,10 +101,12 @@ real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
 
 ! Local variables
 integer :: i,j,k,cols,maxedge,jj,kk,tmp
-integer,allocatable :: jtab(:),nodes(:,:)
+integer,allocatable :: jtab(:),nodes(:,:),order(:)
 integer,pointer :: row(:)
-real(kind_real) :: xy(2,mesh%n),v1(3),v2(3),cp(3),cd(3)
-real(kind_real),allocatable :: list(:)
+integer(int64) :: hash_int64
+real(kind_real) :: lonlat(2,mesh%n),hash,pert(2),rvec(3),costheta,sintheta,rvecxv(3)
+real(kind_real),allocatable :: list(:),v(:,:)
+logical :: cflag
 character(len=1024),parameter :: subr = 'mesh_init'
 type(atlas_unstructuredgrid) :: agrid
 type(atlas_meshgenerator) :: ameshgenerator
@@ -120,6 +126,9 @@ do i=1,mesh%n
    list(i) = lonlathash(lon(i),lat(i))
 end do
 call qsort(mesh%n,list,mesh%order)
+
+! Release memory
+deallocate(list)
 
 if (shuffle) then
    ! Allocation
@@ -154,12 +163,35 @@ do i=1,mesh%n
    call lonlat2xyz(mpl,mesh%lon(i),mesh%lat(i),mesh%xyz(1,i),mesh%xyz(2,i),mesh%xyz(3,i))
 end do
 
-! Create unstructured grid
+! Unstructured grid coordinates
 do i=1,mesh%n
-   xy(1,i) = mesh%lon(i)*rad2deg
-   xy(2,i) = mesh%lat(i)*rad2deg
+   ! Copy coordinates
+   lonlat(1,i) = mesh%lon(i)
+   lonlat(2,i) = mesh%lat(i)
+
+   if (repro) then
+      ! Compute hash
+      hash = lonlathash(mesh%lon(i),mesh%lat(i))
+
+      ! Generate pseudo-random numbers between -1e-12 and 1e-12 from the hash
+      hash_int64 = int(hash*1.0e6,int64)
+      call rng%lcg(pert(1),hash_int64)
+      call rng%lcg(pert(2),hash_int64)
+      pert = 1.0e-12*(2.0*pert-1.0)
+
+      ! Apply perturbation for reproducibility with square cells
+      lonlat(:,i) = lonlat(:,i)*(1.0+pert)
+
+      ! Apply bounds
+      call lonlatmod(lonlat(1,i),lonlat(2,i))
+   end if
+
+   ! Convert to degrees
+   lonlat(:,i) = lonlat(:,i)*rad2deg
 end do
-agrid = atlas_unstructuredgrid(xy)
+
+! Create unstructured grid
+agrid = atlas_unstructuredgrid(lonlat)
 
 ! Mesh generator
 ameshgenerator = atlas_meshgenerator('delaunay')
@@ -227,40 +259,45 @@ do i=1,mesh%n
    end do
 end do
 
-! Sort nodes in clockwise order
-do i=1,mesh%n 
-   ! Initialization
-   j = 1
+! Release memory
+deallocate(nodes)
 
-   ! Loop over neigbors
-   do while (j<mesh%rows(i)%cols)
-      ! First node
+! Sort nodes in counter-clockwise order
+do i=1,mesh%n
+   ! Allocation
+   allocate(v(3,mesh%rows(i)%cols))
+   allocate(list(mesh%rows(i)%cols))
+   allocate(order(mesh%rows(i)%cols))
+
+   ! Rotation vector in cartesian coordinates
+   call lonlat2xyz(mpl,mesh%lon(i)-0.5*pi,0.0_kind_real,rvec(1),rvec(2),rvec(3))
+
+   ! Rotation angle
+   costheta = cos(0.5*pi-mesh%lat(i))
+   sintheta = sin(0.5*pi-mesh%lat(i))
+
+
+   ! Compute angle
+   do j=1,mesh%rows(i)%cols
       jj = mesh%rows(i)%nodes(j)
 
-      ! Seconde node
-      do k=1,mesh%rows(i)%cols
-         kk = mesh%rows(i)%nodes(k)
-         if (any(mesh%rows(kk)%nodes==i).and.any(mesh%rows(kk)%nodes==jj)) then
-            ! Cross-product (c-b)x(a-b)
-            v1 = mesh%xyz(:,kk)-mesh%xyz(:,jj)
-            v2 = mesh%xyz(:,i)-mesh%xyz(:,jj)
-            call vector_product(v1,v2,cp)
+      ! Rodrigues' rotation
+      call vector_product(rvec,mesh%xyz(:,jj),rvecxv)
+      v(:,j) = mesh%xyz(:,jj)*costheta+rvecxv*sintheta+rvec*sum(rvec*mesh%xyz(:,jj))*(1.0-costheta)
 
-            ! Centroid
-            cd = (mesh%xyz(:,i)+mesh%xyz(:,jj)+mesh%xyz(:,kk))/3.0
-
-            ! Compare the directions
-            if (sum(cp*cd)>0.0) then
-               ! Found it, swap nodes
-               tmp = mesh%rows(i)%nodes(k)
-               mesh%rows(i)%nodes(k) = mesh%rows(i)%nodes(j+1)
-               mesh%rows(i)%nodes(j+1) = tmp
-!               exit
-            end if
-         end if
-      end do
-               j = j+1
+      ! Angle
+      list(j) = atan2(v(2,j),v(1,j))
    end do
+
+   ! Sort angles in counter-clockwise order
+   call qsort(mesh%rows(i)%cols,list,order)
+   mesh%rows(i)%nodes = mesh%rows(i)%nodes(order)
+
+   write(13,*) 'mesh',i,mesh%rows(i)%nodes;call mpl%flush
+   ! Release memory
+   deallocate(v)
+   deallocate(list)
+   deallocate(order)
 end do
 
 ! Compute edge distances
@@ -273,10 +310,6 @@ do i=1,mesh%n
       call sphere_dist(mesh%lon(i),mesh%lat(i),mesh%lon(k),mesh%lat(k),mesh%rows(i)%dists(j))
    end do
 end do
-
-! Release memory
-deallocate(list)
-deallocate(nodes)
 
 end subroutine mesh_init
 
@@ -410,8 +443,9 @@ do while ((.not.found).and.(nn<=nnmax))
          call vector_triple_product(mesh%xyz(:,i),mesh%xyz(:,jj),xyz,b(3),cflag(3))
 
          ! Check if the points are colinear
+         write(mpl%info,*) nn,i,j,jj,kk,cflag;call mpl%flush
          if (count(cflag)>=2) then
-            ! At least one non-flat triangle, check if weights are positive
+            ! At least two non-flat triangles, check if weights are positive
             valid = .true.
             do l=1,3
                if (cflag(l)) valid = valid.and.(b(l)>0.0)

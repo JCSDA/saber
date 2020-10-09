@@ -313,12 +313,12 @@ type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(inout) :: nam    ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
-type(ens_type), intent(in) :: ens      ! Ensemble
+type(ens_type), intent(inout) :: ens   ! Ensemble
 type(ens_type),intent(inout) :: ensu   ! Unbalanced ensemble
 
 ! Local variables
 integer :: il0i,i_s,ic0a,ic2b,iv,jv,ie
-real(kind_real) :: fld(geom%nc0a,geom%nl0)
+real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: auto(:,:,:,:),cross(:,:,:,:)
 
 ! Setup sampling
@@ -335,10 +335,10 @@ write(mpl%info,'(a)') '--- Compute vertical balance operators'
 call mpl%flush
 
 ! Allocation
-call ensu%alloc(nam,geom,ens%ne,ens%nsub)
+call ensu%alloc(ens%ne,ens%nsub)
 
 ! Copy ensemble
-call ensu%copy(ens)
+call ensu%copy(mpl,nam,geom,ens)
 
 ! Allocation
 allocate(auto(vbal%samp%nc1e,geom%nl0,geom%nl0,ensu%nsub))
@@ -393,16 +393,31 @@ do iv=1,nam%nv
       do ie=1,ensu%ne
          write(mpl%info,'(i6)') ie
          call mpl%flush(.false.)
+
+         ! Get member on subset Sc0
+         call ensu%get_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
+
          do jv=1,iv-1
             if (bpar%vbal_block(iv,jv)) then
-               fld = ensu%mem(ie)%fld(:,:,jv)
-               call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld)
-               ensu%mem(ie)%fld(:,:,iv) = ensu%mem(ie)%fld(:,:,iv)-fld
+               ! Get member on subset Sc0
+               call ensu%get_c0(mpl,jv,geom,'member',ie,fld_c0a_2)
+
+               ! Apply balance operator block
+               call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_c0a_2)
+
+               ! Subtract balanced part
+               fld_c0a_1 = fld_c0a_1-fld_c0a_2
             end if
          end do
+
+         ! Set member from subset Sc0
+         call ensu%set_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
       end do
       write(mpl%info,'(a)') ''
       call mpl%flush
+
+      ! Recompute ensemble mean
+      call ensu%compute_mean(mpl,nam,geom)
    end if
 end do
 

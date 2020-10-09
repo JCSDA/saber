@@ -21,7 +21,7 @@ use type_rng, only: rng_type
 implicit none
 
 logical,parameter :: check_data = .false.             ! Activate data check for all linear operations
-real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum interpolation coefficient
+real(kind_real),parameter :: S_inf = 0.0_kind_real ! Minimum interpolation coefficient
 
 ! Interpolation data derived type
 type interp_type
@@ -899,7 +899,6 @@ do i_dst=1,n_dst
                   if (inf(b(i),S_inf)) b(i) = 0.0
                end do
                if (sum(b)>0.0) b = b/sum(b)
-if (i_dst==10) print*, ib,b
                do i=1,3
                   if (b(i)>0.0) then
                      n_s = n_s+1
@@ -926,7 +925,6 @@ if (i_dst==10) print*, ib,b
          col(n_s) = nn_index(1)
          S(n_s) = 1.0
       end if
-      if (.not.any(row==i_dst)) print*, i_dst,valid,nn_dist(1)
    end if
 
    ! Update
