@@ -44,7 +44,7 @@ if args.test.find("bump_")==0:
    if not os.path.exists(testfig):
       os.mkdir(testfig)
 
-   # Create png figures
+   # Create jpg figures
    for f in sorted(os.listdir(os.path.join(args.testdata, args.test))):
       if os.path.isfile(os.path.join(args.testdata, args.test, f)) and f.find("test_" + args.mpi + "-" + args.omp)==0:
          suffix = f.split("test_" + args.mpi + "-" + args.omp + "_")[1][:-(len(f.rsplit(".")[-1])+1)]
@@ -65,15 +65,15 @@ if args.test.find("bump_")==0:
       message = "<html><head></head><body><h1>" + args.test + "</h1><ul>"
       for f in sorted(os.listdir(os.path.join(args.testdata, args.test, "fig"))):
          if f.find("test_" + args.mpi + "-" + args.omp)==0:
-            short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".png", "")
+            short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".jpg", "")
             message = message + "<li><a href=\"#" + short_name + "\">" + short_name + "</a></li>"
       message = message + "</ul>"
       for f in sorted(os.listdir(os.path.join(args.testdata, args.test, "fig"))):
          if f.find("test_" + args.mpi + "-" + args.omp)==0:
-            short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".png", "")
+            short_name = f.replace("test_" + args.mpi + "-" + args.omp + "_", "").replace(".jpg", "")
             cmd = "mogrify -trim " + os.path.join(args.testdata, args.test, "fig", f)
             os.system(cmd)
-            message = message + "<h2 id=\"" + short_name + "\">" + short_name + "</h2><img src=\"" + os.path.join(args.testdata, args.test, "fig", f) + "\" width=800px><br><a href=\"#top\">Back to top</a>"
+            message = message + "<h2 id=\"" + short_name + "\">" + short_name + "</h2><img src=\"" + f + "\" width=800px><br><a href=\"#top\">Back to top</a>"
 
       message = message + "</body></html>"
       f = open(os.path.join(args.testdata, args.test, "fig", "index_" + args.mpi + "-" + args.omp + ".html"), "w")
