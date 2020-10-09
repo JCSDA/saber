@@ -37,14 +37,14 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 4 | 355 | 1671 | 1767 | 94 % |
+| Fortran 90 | 4 | 366 | 1672 | 1766 | 94 % |
 
 
 ### src/saber/gaugrid
 
 | language | files | blank | comment | code | comment/code ratio |
 |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
-| Fortran 90 | 1 | 41 | 68 | 120 | 56 % |
+| Fortran 90 | 1 | 59 | 87 | 102 | 85 % |
 
 
 ### src/saber/interpolation
@@ -127,6 +127,7 @@ Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
 | :--: | :---------- |
 | [tools_asa007](autodoc/tools_asa007.md) | inverse of symmetric positive definite matrix routines |
 | [tools_qsort](autodoc/tools_qsort.md) | qsort routines |
+| [tools_sp](autodoc/tools_sp.md) | spectral transforms |
 | [tools_stripack](autodoc/tools_stripack.md) | STRIPACK routines |
 
 
