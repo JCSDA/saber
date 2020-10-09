@@ -30,10 +30,8 @@ bump_nicas_fast_sampling/test_1-1_nicas_000001-000001.nc
 bump_nicas_subsamp_hvh/test_1-1_dirac.nc
 bump_nicas_subsamp_hvh/test_1-1_nicas_000001-000001.nc
 bump_read_cmat/test_1-1_dirac.nc
-bump_read_cmat/test_1-1_local_diag_cor.nc
 bump_read_cmat/test_1-1_nicas_000001-000001.nc
 bump_read_cmat_serial/test_1-1_dirac.nc
-bump_read_cmat_serial/test_1-1_local_diag_cor.nc
 bump_read_cmat_serial/test_1-1_nicas_000001-000001.nc
 bump_read_mom/test_1-1_diag.nc
 bump_read_nicas/test_1-1_dirac.nc

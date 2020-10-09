@@ -18,13 +18,9 @@ nl: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
-nts: 2
-timeslots: ["00","06"]
 
 # ens1_param
 ens1_ne: 50
-local_diag: 1
-local_rad: 2000.0e3
 
 # ens2_param
 
@@ -32,7 +28,6 @@ local_rad: 2000.0e3
 ntry: 30
 
 # diag_param
-ne: 50
 
 # fit_param
 

@@ -125,8 +125,10 @@ real(kind_real),intent(out) :: cross(samp%nc1e,geom%nl0,geom%nl0,ens%nsub) ! Cro
 
 ! Local variables
 integer :: isub,ie_sub,ie,il0,ic1a,ic0,ic0a,jl0,ic1e,ic1u
-real(kind_real) :: fld_1(samp%nc1a,geom%nl0),fld_2(samp%nc1a,geom%nl0),fld_ext_1(samp%nc1e,geom%nl0),fld_ext_2(samp%nc1e,geom%nl0)
-
+real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
+real(kind_real) :: fld_1(samp%nc1a,geom%nl0),fld_2(samp%nc1a,geom%nl0)
+real(kind_real) :: fld_ext_1(samp%nc1e,geom%nl0),fld_ext_2(samp%nc1e,geom%nl0)
+ 
 ! Initialization
 auto = 0.0
 cross = 0.0
@@ -149,6 +151,10 @@ do isub=1,ens%nsub
       ! Full ensemble index
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
 
+      ! Get perturbation on subset Sc0
+      call ens%get_c0(mpl,vbal_blk%iv,geom,'pert',ie,fld_c0a_1)
+      call ens%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
+
       ! Copy all separations points
       fld_1 = 0.0
       fld_2 = 0.0
@@ -160,8 +166,8 @@ do isub=1,ens%nsub
                ic0a = samp%c1a_to_c0a(ic1a)
 
                ! Copy points
-               fld_1(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%iv)
-               fld_2(ic1a,il0) = ens%mem(ie)%fld(ic0a,il0,vbal_blk%jv)
+               fld_1(ic1a,il0) = fld_c0a_1(ic0a,il0)
+               fld_2(ic1a,il0) = fld_c0a_2(ic0a,il0)
             end if
          end do
       end do

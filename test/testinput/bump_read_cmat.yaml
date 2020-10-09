@@ -20,8 +20,6 @@ variables: ["u","q"]
 
 # ens1_param
 ens1_ne: 50
-local_diag: 1
-local_rad: 2000.0e3
 
 # ens2_param
 
