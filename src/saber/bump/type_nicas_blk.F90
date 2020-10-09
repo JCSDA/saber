@@ -12,7 +12,7 @@ use netcdf
 !$ use omp_lib
 use tools_const, only: pi,req,reqkm,deg2rad,rad2deg
 use tools_func, only: gc2gau,lonlatmod,lonlathash,sphere_dist,fit_func
-use tools_kinds, only: kind_real,nc_kind_real,huge_real
+use tools_kinds, only: kind_real,nc_kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf,eq
 use tools_samp, only: initialize_sampling
@@ -1474,7 +1474,7 @@ type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 
 ! Local variables
 integer :: il0,ic0a,ic0,ic1,ic0u,ic1u,iproc
-real(kind_real) :: rhs_sum(geom%nl0),rvs_sum(geom%nl0),rvs_avg(geom%nl0),norm(geom%nl0)
+real(kind_real) :: nc1_real,rhs_sum(geom%nl0),rvs_sum(geom%nl0),rvs_avg(geom%nl0),norm(geom%nl0)
 real(kind_real) :: rhs_minavg,rhs_min_norm,rhs_min_norm_tot
 real(kind_real) :: rhs_min(geom%nc0a)
 logical :: mask_hor_c0a(geom%nc0a)
@@ -1530,7 +1530,9 @@ if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='hv').or.(trim(n
    rhs_min_norm = real(count(mpl%msv%isnot(rhs_min)),kind_real)
    call mpl%f_comm%allreduce(rhs_min_norm,rhs_min_norm_tot,fckit_mpi_sum())
    rhs_minavg = rhs_minavg/rhs_min_norm_tot
-   nicas_blk%nc1 = floor(2.0*maxval(geom%area)*nam%resol**2/(sqrt(3.0)*rhs_minavg**2))
+   nc1_real = 2.0*maxval(geom%area)*nam%resol**2/(sqrt(3.0)*rhs_minavg**2)
+   if (nc1_real>real(huge_int,kind_real)) call mpl%abort(subr,'estimated nc1 is too large for an integer')
+   nicas_blk%nc1 = floor(nc1_real)
    write(mpl%info,'(a10,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_blk%nc1
    if (nicas_blk%verbosity) call mpl%flush
    if (nicas_blk%nc1>geom%nc0_gmask(0)) then
@@ -1796,7 +1798,7 @@ type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
 integer :: ic1a,ic0a,il0,il1,ic1,ic1u,ic2,is,isu,ic0,iproc
 integer :: nc1a_gmask(nicas_blk%nl1),nc1_gmask(nicas_blk%nl1),c1ul1_to_s(nicas_blk%nc1u,nicas_blk%nl1)
 integer,allocatable :: c2_to_c1(:)
-real(kind_real) :: rhs_c1a(nicas_blk%nc1a)
+real(kind_real) :: nc2_real,rhs_c1a(nicas_blk%nc1a)
 character(len=1024),parameter :: subr = 'nicas_blk_compute_sampling_c2'
 
 ! Allocation
@@ -1826,7 +1828,9 @@ do il1=1,nicas_blk%nl1
       if (nicas_blk%verbosity) call mpl%flush
 
       ! Compute nc2
-      nicas_blk%nc2(il1) = floor(2.0*geom%area(il0)*nam%resol**2/(sqrt(3.0)*nicas_blk%rhs_avg(il0)**2))
+      nc2_real = 2.0*geom%area(il0)*nam%resol**2/(sqrt(3.0)*nicas_blk%rhs_avg(il0)**2)
+      if (nc2_real>real(huge_int,kind_real)) call mpl%abort(subr,'estimated nc2 is too large for an integer')
+      nicas_blk%nc2(il1) = floor(nc2_real)
       write(mpl%info,'(a16,a,i8)') '','Estimated nc2 from horizontal support radius: ',nicas_blk%nc2(il1)
       if (nicas_blk%verbosity) call mpl%flush
       if (nicas_blk%nc2(il1)<3) call mpl%abort(subr,'nicas_blk%nc2 lower than 3')
