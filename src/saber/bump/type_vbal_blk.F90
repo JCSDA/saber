@@ -8,7 +8,7 @@
 module type_vbal_blk
 
 use tools_kinds, only: kind_real
-use tools_func, only: syminv
+use tools_func, only: syminv, pseudoinv
 use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
@@ -297,7 +297,11 @@ if (valid) then
       end do
    else
       ! Inverse the vertical auto-covariance
-      call syminv(mpl,geom%nl0,vbal_blk%auto(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b),ierr)
+      if ( nam%vbal_pseudo_inverse ) then
+         call pseudoinv(mpl,geom%nl0,vbal_blk%auto(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b),ierr)
+      else
+         call syminv(mpl,geom%nl0,vbal_blk%auto(:,:,ic2b),vbal_blk%auto_inv(:,:,ic2b),ierr)
+      end if
       if (ierr/=0) then
          ! Diagonal inversion
          vbal_blk%auto_inv(:,:,ic2b) = 0.0
