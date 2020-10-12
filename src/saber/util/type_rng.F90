@@ -173,13 +173,14 @@ integer(int64) :: lseed
 
 ! Local seed
 if (present(seed)) then
-   lseed = seed
+   lseed = mod(seed,m)
 else
    lseed = rng%seed
 end if
 
 ! Update seed
 lseed = mod(a*lseed+c,m)
+
 if (present(seed)) then
    seed = lseed
 else

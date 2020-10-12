@@ -179,14 +179,13 @@ end subroutine samp_alloc_mask
 ! Subroutine: samp_alloc_other
 ! Purpose: allocation for other variables
 !----------------------------------------------------------------------
-subroutine samp_alloc_other(samp,nam,geom)
+subroutine samp_alloc_other(samp,nam)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(inout) :: samp ! Sampling
 type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Initialization
 samp%sc2 = (trim(samp%name)=='vbal').or.(trim(samp%name)=='lct').or.((trim(samp%name)=='hdiag').and.nam%local_diag)
@@ -841,7 +840,7 @@ if (nam%nc2>nam%nc1) then
 end if
 
 ! Allocation
-call samp%alloc(nam,geom)
+call samp%alloc(nam)
 
 if (nam%sam_read) then
    ! Read sampling
@@ -931,7 +930,7 @@ if ((trim(samp%name)=='hdiag').or.(trim(samp%name)=='lct')) then
    ! Compute MPI distribution, halo C
    write(mpl%info,'(a7,a)') '','Compute MPI distribution, halo C'
    call mpl%flush
-   call samp%compute_mpi_c(mpl,rng,nam,geom)
+   call samp%compute_mpi_c(mpl,nam,geom)
 end if
 
 if ((trim(samp%name)=='hdiag').and.nam%local_diag) then
@@ -1765,22 +1764,20 @@ end subroutine samp_compute_mesh_c2
 ! Subroutine: samp_compute_mpi_c
 ! Purpose: compute sampling MPI distribution, halo C
 !----------------------------------------------------------------------
-subroutine samp_compute_mpi_c(samp,mpl,rng,nam,geom)
+subroutine samp_compute_mpi_c(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(inout) :: samp ! Sampling
 type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
 type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 
 ! Local variables
-integer :: jc3,ic0,ic0a,ic0c,ic0u,jc0u,jc0c,ic1a,il0,i_s,iproc
+integer :: jc3,ic0,ic0a,ic0c,ic0u,jc0u,jc0c,ic1a,iproc
 integer :: c0u_to_c0c(geom%nc0u)
 integer,allocatable :: c0c_to_c0(:)
-real(kind_real),allocatable :: lon_c1a(:),lat_c1a(:)
 logical :: lcheck_c0c(geom%nc0u)
 
 ! Define halo C

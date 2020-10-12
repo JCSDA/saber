@@ -74,13 +74,12 @@ end subroutine cmat_alloc
 ! Subroutine: cmat_alloc_blk
 ! Purpose: allocation
 !----------------------------------------------------------------------
-subroutine cmat_alloc_blk(cmat,nam,geom,bpar)
+subroutine cmat_alloc_blk(cmat,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(cmat_type),intent(inout) :: cmat ! C matrix
-type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 
@@ -91,7 +90,7 @@ integer :: ib
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       cmat%blk(ib)%ib = ib
-      call cmat%blk(ib)%alloc(nam,geom,bpar)
+      call cmat%blk(ib)%alloc(geom,bpar)
    end if
 end do
 
@@ -104,14 +103,13 @@ end subroutine cmat_alloc_blk
 ! Subroutine: cmat_init
 ! Purpose: C matrix initialization
 !----------------------------------------------------------------------
-subroutine cmat_init(cmat,mpl,nam,bpar)
+subroutine cmat_init(cmat,mpl,bpar)
 
 implicit none
 
 ! Passed variables
 class(cmat_type),intent(inout) :: cmat ! C matrix
 type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 
 ! Local variables
@@ -119,7 +117,7 @@ integer :: ib
 
 ! Initialize blocks
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) call cmat%blk(ib)%init(mpl,nam,bpar)
+   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) call cmat%blk(ib)%init(mpl,bpar)
 end do
 
 end subroutine cmat_init
@@ -229,7 +227,7 @@ do ib=1,bpar%nbe
 end do
 
 ! Allocation
-call cmat%alloc(nam,geom,bpar)
+call cmat%alloc(geom,bpar)
 
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
@@ -348,7 +346,7 @@ do ib=1,bpar%nbe
 end do
 
 ! Allocation
-call cmat%alloc(nam,geom,bpar)
+call cmat%alloc(geom,bpar)
 if (nam%local_diag) then
    allocate(fld_c2a(hdiag%samp%nc2a,geom%nl0,4))
    allocate(fld_c2b(hdiag%samp%nc2b,geom%nl0))
@@ -356,7 +354,7 @@ if (nam%local_diag) then
 end if
 
 ! Initialization
-call cmat%init(mpl,nam,bpar)
+call cmat%init(mpl,bpar)
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -514,14 +512,13 @@ end subroutine cmat_from_hdiag
 ! Subroutine: cmat_from_lct
 ! Purpose: import LCT into C matrix
 !----------------------------------------------------------------------
-subroutine cmat_from_lct(cmat,mpl,nam,geom,bpar,lct)
+subroutine cmat_from_lct(cmat,mpl,geom,bpar,lct)
 
 implicit none
 
 ! Passed variables
 class(cmat_type),intent(inout) :: cmat ! C matrix
 type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 type(lct_type),intent(in) :: lct       ! LCT
@@ -539,10 +536,10 @@ do ib=1,bpar%nbe
 end do
 
 ! Allocation
-call cmat%alloc(nam,geom,bpar)
+call cmat%alloc(geom,bpar)
 
 ! Initialization
-call cmat%init(mpl,nam,bpar)
+call cmat%init(mpl,bpar)
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -617,10 +614,10 @@ if (.not.cmat%allocated) then
    end do
 
    ! Allocation
-   call cmat%alloc(nam,geom,bpar)
+   call cmat%alloc(geom,bpar)
 
    ! Initialization
-   call cmat%init(mpl,nam,bpar)
+   call cmat%init(mpl,bpar)
 end if
 
 ! Convolution parameters
@@ -648,14 +645,13 @@ end subroutine cmat_from_nam
 ! Subroutine: cmat_from_bump
 ! Purpose: import C matrix from BUMP
 !----------------------------------------------------------------------
-subroutine cmat_from_bump(cmat,mpl,nam,geom,bpar)
+subroutine cmat_from_bump(cmat,mpl,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(cmat_type),intent(inout) :: cmat ! C matrix
 type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
 type(geom_type),intent(in) :: geom     ! Geometry
 type(bpar_type),intent(in) :: bpar     ! Block parameters
 
@@ -673,10 +669,10 @@ if (.not.cmat%allocated) then
    end do
 
    ! Allocation
-   call cmat%alloc(nam,geom,bpar)
+   call cmat%alloc(geom,bpar)
 
    ! Initialization
-   call cmat%init(mpl,nam,bpar)
+   call cmat%init(mpl,bpar)
 end if
 
 do ib=1,bpar%nbe

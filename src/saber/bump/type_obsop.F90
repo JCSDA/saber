@@ -241,10 +241,10 @@ type(geom_type),intent(in) :: geom       ! Geometry
 
 ! Local variables
 integer :: iobsa,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a
-integer :: nn_index(1),proc_to_nobsa(mpl%nproc)
+integer :: proc_to_nobsa(mpl%nproc)
 integer :: c0u_to_c0b(geom%nc0u)
 integer,allocatable :: c0b_to_c0(:)
-real(kind_real) :: nn_dist(1),N_max,C_max
+real(kind_real) :: N_max,C_max
 logical :: maskobsa(obsop%nobsa),lcheck_nc0b(geom%nc0u)
 character(len=1024),parameter :: subr = 'obsop_run_obsop'
 

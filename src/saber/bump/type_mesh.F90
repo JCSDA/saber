@@ -100,13 +100,12 @@ real(kind_real),intent(in) :: lon(mesh%n)         ! Longitudes
 real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
 
 ! Local variables
-integer :: i,j,k,cols,maxedge,jj,kk,tmp
+integer :: i,j,k,cols,maxedge,jj
 integer,allocatable :: jtab(:),nodes(:,:),order(:)
 integer,pointer :: row(:)
 integer(int64) :: hash_int64
 real(kind_real) :: lonlat(2,mesh%n),hash,pert(2),rvec(3),costheta,sintheta,rvecxv(3)
 real(kind_real),allocatable :: list(:),v(:,:)
-logical :: cflag
 character(len=1024),parameter :: subr = 'mesh_init'
 type(atlas_unstructuredgrid) :: agrid
 type(atlas_meshgenerator) :: ameshgenerator
@@ -448,13 +447,13 @@ do while ((.not.found).and.(nn<=nnmax))
             ! At least two non-flat triangles, check if weights are positive
             valid = .true.
             do l=1,3
-               if (cflag(l)) valid = valid.and.(b(l)>0.0)
+               if (cflag(l)) valid = valid.and.(b(l)>0.0_kind_real)
             end do
             if (valid) then
                ib(1) = i
                ib(2) = jj
                ib(3) = kk
-               b = max(b,0.0)
+               b = max(b,0.0_kind_real)
                b = b/sum(b)
                found = .true.
                exit

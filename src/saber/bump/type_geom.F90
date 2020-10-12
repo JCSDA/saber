@@ -298,7 +298,7 @@ call geom%setup_c0(mpl)
 call geom%setup_tree(mpl)
 
 ! Setup meshes
-call geom%setup_mesh(mpl,rng,nam)
+call geom%setup_mesh(mpl,rng)
 
 ! Setup number of independent levels
 call geom%setup_independent_levels(mpl)
@@ -1085,7 +1085,7 @@ end subroutine geom_setup_tree
 ! Subroutine: geom_setup_mesh
 ! Purpose: setup meshes
 !----------------------------------------------------------------------
-subroutine geom_setup_mesh(geom,mpl,rng,nam)
+subroutine geom_setup_mesh(geom,mpl,rng)
 
 implicit none
 
@@ -1093,12 +1093,6 @@ implicit none
 class(geom_type),intent(inout) :: geom ! Geometry
 type(mpl_type),intent(inout) :: mpl    ! MPI data
 type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(in) :: nam       ! Namelist
-
-! Local variables
-integer :: ic0a,ic0u,nnb,jnb,jc0u,jc0,jproc
-integer,allocatable :: nn_index(:)
-real(kind_real),allocatable :: nn_dist(:)
 
 write(mpl%info,'(a7,a)') '','Setup geometry mesh'
 call mpl%flush
