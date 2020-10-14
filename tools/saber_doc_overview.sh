@@ -8,7 +8,7 @@
 
 # Directories
 rootdir=$1/..
-doc=${rootdir}/doc
+doc=${rootdir}/Documents
 autodoc=${doc}/autodoc
 
 # Languages
@@ -142,6 +142,7 @@ for index in ${!dir[*]}; do
       new_purpose=false
       type_bound=false
       write_to_md=false
+      first_subfunc=true
       i=-2
 
       # While loop over lines
@@ -173,6 +174,7 @@ for index in ${!dir[*]}; do
             fi
             subfunc_type=subroutine
             new_subfunc=true
+            at_least_one_subfunc=true
          fi
          if test "${word}" = "! Function" ; then
             subfunc=`echo ${line} | cut -c 13-`
@@ -183,6 +185,7 @@ for index in ${!dir[*]}; do
             fi
             subfunc_type=function
             new_subfunc=true
+            at_least_one_subfunc=true
          fi
 
          if test "${new_subfunc}" = "true" &&  "${new_purpose}" = "true" ; then
@@ -196,9 +199,9 @@ for index in ${!dir[*]}; do
                argument=`echo ${argument_tmp3%%(*} | sed 's/ *$//g'`
                comment=${line##*!}
                if test "${arguments}" = "" ; then
-                  arguments="**${argument}** : ${comment} - ${type} - ${intent}"
+                  arguments="<b>${argument}</b> : ${comment} - ${type} - ${intent}"
                else
-                  arguments=${arguments}"<br>**${argument}** : ${comment} - ${type} - ${intent}"
+                  arguments=${arguments}"<br><b>${argument}</b> : ${comment} - ${type} - ${intent}"
                fi
             else
                if test ! "${arguments}" = "" ; then
@@ -216,18 +219,22 @@ for index in ${!dir[*]}; do
                echo -e "| [${module}](autodoc/${module}.md) | ${purpose} |" >> ${doc}/overview.md
 
                type_bound=false
-               cat<<EOFMOD > ${autodoc}/${module}.md
-# Module ${module}
-
-| Type | Name | Purpose | Arguments          |
-| :--: | :--: | :------ | :----------------- |
-EOFMOD
+               echo -e "# Module ${module}" > ${autodoc}/${module}.md
+               echo -e "" >> ${autodoc}/${module}.md
                new_module=false
                new_purpose=false
             fi
 
             # New subroutine/function
             if test "${new_subfunc}" = "true" ; then
+               # At least one subroutine/function
+               if test "${first_subfunc}" = "true" ; then
+                  echo -e "| Type | Name | Purpose | Arguments          |" >> ${autodoc}/${module}.md
+                  echo -e "| :--: | :--: | :------ | :----------------- |" >> ${autodoc}/${module}.md
+                  first_subfunc=false
+               fi
+
+               # Type-bound or not
                if test "${type_bound}" = "true" ; then
                   echo -e "| ${subfunc_type} | [${class}\%] [${subfunc#${class}_}](https://github.com/JCSDA/saber/tree/develop/${dir[$index]}/${module}.F90#L${i}) | ${purpose} | ${arguments} |" >> ${autodoc}/${module}.md
                else

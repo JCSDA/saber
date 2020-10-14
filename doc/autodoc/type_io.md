@@ -1,8 +1,0 @@
-# Module type_io
-
-| Type | Name | Purpose | Arguments          |
-| :--: | :--: | :------ | :----------------- |
-| subroutine | [io_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L75) | release memory | **io** :  I/O - class(io_type) - inout |
-| subroutine | [io_fld_read](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L116) | write field | **io** :  I/O - class(io_type) - in<br>**mpl** :  MPI data - type(mpl_type) - inout<br>**nam** :  Namelist - type(nam_type) - in<br>**geom** :  Geometry - type(geom_type) - in<br>**filename** :  File name - character(len=*) - in<br>**variable** :  Variable name - character(len=*) - in<br>**fld** :  Field - real(kind_real) - out<br>**groupname** :  Group name - character(len=*) - in<br>**subgroupname** :  Subgroup name - character(len=*) - in |
-| subroutine | [io_fld_write](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L183) | write field | **io** :  I/O - class(io_type) - in<br>**mpl** :  MPI data - type(mpl_type) - inout<br>**nam** :  Namelist - type(nam_type) - in<br>**geom** :  Geometry - type(geom_type) - in<br>**filename** :  File name - character(len=*) - in<br>**variable** :  Variable name - character(len=*) - in<br>**fld** :  Field - real(kind_real) - in<br>**groupname** :  Group name - character(len=*) - in<br>**subgroupname** :  Subgroup name - character(len=*) - in |
-| subroutine | [io_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_io.F90#L307) | initialize fields output | **io** :  I/O - class(io_type) - inout<br>**mpl** :  MPI data - type(mpl_type) - inout<br>**nam** :  Namelist - type(nam_type) - in<br>**geom** :  Geometry - type(geom_type) - in |
