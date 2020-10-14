@@ -24,9 +24,6 @@
 #include "oops/assimilation/GMRESR.h"
 #include "oops/base/IdentityMatrix.h"
 #include "oops/base/Variables.h"
-#if !ATLASIFIED
-#include "oops/generic/UnstructuredGrid.h"
-#endif
 #include "oops/interface/Increment.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
@@ -98,7 +95,6 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
   std::string prefix;
   conf.get("prefix", prefix);
 
-#if ATLASIFIED
   // Get the grids configuration from input configuration and complete it
   if (conf.has("grids")) {
     // Get grids from input configuration
@@ -147,26 +143,6 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
       grids[jgrid].set("lev2d", "first");
     }
   }
-#else
-  // Get the grids configuration from the unstructured grid configuration
-  Increment_ dx(resol, vars, time);
-  oops::UnstructuredGrid ug(1, 1);
-  dx.ug_coord(ug);
-  ug.defineGeometry();
-  ug.defineGrids(grids);
-
-  // Modify grids
-  for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
-    int grid_index;
-    grids[jgrid].get("grid_index", grid_index);
-    std::ostringstream ss;
-    ss << std::setw(2) << std::setfill('0') << grid_index;
-    grids[jgrid].set("prefix", prefix + "_" + ss.str());
-    std::vector<std::string> vars_str;
-    grids[jgrid].get("variables", vars_str);
-    grids[jgrid].set("nv", vars_str.size());
-  }
-#endif
 
   // Check grids number
   ASSERT(grids.size() > 0);
@@ -180,17 +156,10 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
 
     // Create OoBump instance
     int keyOoBump = 0;
-#if ATLASIFIED
     bump_create_f90(keyOoBump, &resol.getComm(),
                     resol.atlasFunctionSpace()->get(),
                     resol.atlasFieldSet()->get(),
                     conf, grids[jgrid]);
-#else
-    bump_create_f90(keyOoBump, &resol.getComm(),
-                    ug.atlasFunctionSpace()->get(),
-                    ug.atlasFieldSet()->get(),
-                    conf, grids[jgrid]);
-#endif
     keyOoBump_.push_back(keyOoBump);
   }
 }
