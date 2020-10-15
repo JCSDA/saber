@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_nam
-! Purpose: namelist derived type
+!> Namelist derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -28,167 +28,167 @@ integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2  ! Maximum number of vertical 
 
 type nam_type
    ! general_param
-   character(len=1024) :: datadir                       ! Data directory
-   character(len=1024) :: prefix                        ! Files prefix
-   character(len=1024) :: model                         ! Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'qg, 'res' or 'wrf')
-   character(len=1024) :: verbosity                     ! Verbosity level ('all', 'main' or 'none')
-   logical :: colorlog                                  ! Add colors to the log (for display on terminal)
-   logical :: default_seed                              ! Default seed for random numbers
-   logical :: repro                                     ! Inter-compilers reproducibility
-   integer :: nprocio                                   ! Number of IO processors
-   logical :: remap                                     ! Remap points to improve load balance
-   real(kind_real) :: universe_rad                      ! Universe radius [in meters]
+   character(len=1024) :: datadir                       !< Data directory
+   character(len=1024) :: prefix                        !< Files prefix
+   character(len=1024) :: model                         !< Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'qg, 'res' or 'wrf')
+   character(len=1024) :: verbosity                     !< Verbosity level ('all', 'main' or 'none')
+   logical :: colorlog                                  !< Add colors to the log (for display on terminal)
+   logical :: default_seed                              !< Default seed for random numbers
+   logical :: repro                                     !< Inter-compilers reproducibility
+   integer :: nprocio                                   !< Number of IO processors
+   logical :: remap                                     !< Remap points to improve load balance
+   real(kind_real) :: universe_rad                      !< Universe radius [in meters]
 
    ! driver_param
-   character(len=1024) :: method                        ! Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
-   character(len=1024) :: strategy                      ! Localization strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
-   logical :: new_normality                             ! New normality test
-   logical :: new_vbal                                  ! Compute new vertical balance operator
-   logical :: load_vbal                                 ! Load existing vertical balance operator
-   logical :: write_vbal                                ! Write vertical balance operator
-   logical :: new_var                                   ! Compute new variance
-   logical :: load_var                                  ! Load existing variance
-   logical :: write_var                                 ! Write variance
-   logical :: new_mom                                   ! Compute new sample moments
-   logical :: load_mom                                  ! Load sample moments
-   logical :: write_mom                                 ! Write sample moments
-   logical :: new_hdiag                                 ! Compute new HDIAG diagnostics
-   logical :: write_hdiag                               ! Write HDIAG diagnostics
-   logical :: new_lct                                   ! Compute new LCT
-   logical :: write_lct                                 ! Write LCT
-   logical :: load_cmat                                 ! Load existing C matrix
-   logical :: write_cmat                                ! Write existing C matrix
-   logical :: new_nicas                                 ! Compute new NICAS parameters
-   logical :: load_nicas                                ! Load existing NICAS parameters
-   logical :: write_nicas                               ! Write NICAS parameters
-   logical :: new_obsop                                 ! Compute new observation operator
-   logical :: load_obsop                                ! Load existing observation operator
-   logical :: write_obsop                               ! Write observation operator
-   logical :: check_vbal                                ! Test vertical balance inverse and adjoint
-   logical :: check_adjoints                            ! Test NICAS adjoints
-   logical :: check_dirac                               ! Test NICAS application on diracs
-   logical :: check_randomization                       ! Test NICAS randomization
-   logical :: check_consistency                         ! Test HDIAG-NICAS consistency
-   logical :: check_optimality                          ! Test HDIAG optimality
-   logical :: check_obsop                               ! Test observation operator
-   logical :: check_no_obs                              ! Test observation operator with no observation on the last MPI task
-   logical :: check_no_point                            ! Test BUMP with no grid point on the last MPI task
-   logical :: check_no_point_mask                       ! Test BUMP with all grid points masked on the last MPI task
-   logical :: check_no_point_nicas                      ! Test NICAS with no subgrid point on the last MPI task
-   logical :: check_set_param_cor                       ! Test set_parameter interface for correlation
-   logical :: check_set_param_hyb                       ! Test set_parameter interface for hybrid case
-   logical :: check_set_param_lct                       ! Test set_parameter interface for LCT
-   logical :: check_get_param_stddev                    ! Test get_parameter interface for standard-deviation
-   logical :: check_get_param_cor                       ! Test get_parameter interface for correlation
-   logical :: check_get_param_hyb                       ! Test get_parameter interface for hybrid case
-   logical :: check_get_param_Dloc                      ! Test get_parameter interface for anisotropic localization
-   logical :: check_get_param_lct                       ! Test get_parameter interface for LCT
-   logical :: check_apply_vbal                          ! Test apply_vbal interfaces
-   logical :: check_apply_stddev                        ! Test apply_stddev interfaces
-   logical :: check_apply_nicas                         ! Test apply_nicas interfaces
-   logical :: check_apply_obsop                         ! Test apply_obsop interfaces
+   character(len=1024) :: method                        !< Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
+   character(len=1024) :: strategy                      !< Localization strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
+   logical :: new_normality                             !< New normality test
+   logical :: new_vbal                                  !< Compute new vertical balance operator
+   logical :: load_vbal                                 !< Load existing vertical balance operator
+   logical :: write_vbal                                !< Write vertical balance operator
+   logical :: new_var                                   !< Compute new variance
+   logical :: load_var                                  !< Load existing variance
+   logical :: write_var                                 !< Write variance
+   logical :: new_mom                                   !< Compute new sample moments
+   logical :: load_mom                                  !< Load sample moments
+   logical :: write_mom                                 !< Write sample moments
+   logical :: new_hdiag                                 !< Compute new HDIAG diagnostics
+   logical :: write_hdiag                               !< Write HDIAG diagnostics
+   logical :: new_lct                                   !< Compute new LCT
+   logical :: write_lct                                 !< Write LCT
+   logical :: load_cmat                                 !< Load existing C matrix
+   logical :: write_cmat                                !< Write existing C matrix
+   logical :: new_nicas                                 !< Compute new NICAS parameters
+   logical :: load_nicas                                !< Load existing NICAS parameters
+   logical :: write_nicas                               !< Write NICAS parameters
+   logical :: new_obsop                                 !< Compute new observation operator
+   logical :: load_obsop                                !< Load existing observation operator
+   logical :: write_obsop                               !< Write observation operator
+   logical :: check_vbal                                !< Test vertical balance inverse and adjoint
+   logical :: check_adjoints                            !< Test NICAS adjoints
+   logical :: check_dirac                               !< Test NICAS application on diracs
+   logical :: check_randomization                       !< Test NICAS randomization
+   logical :: check_consistency                         !< Test HDIAG-NICAS consistency
+   logical :: check_optimality                          !< Test HDIAG optimality
+   logical :: check_obsop                               !< Test observation operator
+   logical :: check_no_obs                              !< Test observation operator with no observation on the last MPI task
+   logical :: check_no_point                            !< Test BUMP with no grid point on the last MPI task
+   logical :: check_no_point_mask                       !< Test BUMP with all grid points masked on the last MPI task
+   logical :: check_no_point_nicas                      !< Test NICAS with no subgrid point on the last MPI task
+   logical :: check_set_param_cor                       !< Test set_parameter interface for correlation
+   logical :: check_set_param_hyb                       !< Test set_parameter interface for hybrid case
+   logical :: check_set_param_lct                       !< Test set_parameter interface for LCT
+   logical :: check_get_param_stddev                    !< Test get_parameter interface for standard-deviation
+   logical :: check_get_param_cor                       !< Test get_parameter interface for correlation
+   logical :: check_get_param_hyb                       !< Test get_parameter interface for hybrid case
+   logical :: check_get_param_Dloc                      !< Test get_parameter interface for anisotropic localization
+   logical :: check_get_param_lct                       !< Test get_parameter interface for LCT
+   logical :: check_apply_vbal                          !< Test apply_vbal interfaces
+   logical :: check_apply_stddev                        !< Test apply_stddev interfaces
+   logical :: check_apply_nicas                         !< Test apply_nicas interfaces
+   logical :: check_apply_obsop                         !< Test apply_obsop interfaces
 
    ! model_param
-   integer :: nl                                        ! Number of levels
-   integer :: levs(nlmax)                               ! Levels
-   character(len=1024) :: lev2d                         ! Level for 2D variables ('first' or 'last')
-   logical :: logpres                                   ! Use pressure logarithm as vertical coordinate (model level if .false.)
-   integer :: nv                                        ! Number of variables
-   character(len=1024),dimension(nvmax) :: variables    ! Variables names
-   logical :: nomask                                    ! Do not use geometry mask
-   character(len=1024),dimension(niokvmax) :: io_keys   ! I/O keys
-   character(len=1024),dimension(niokvmax) :: io_values ! I/O values
+   integer :: nl                                        !< Number of levels
+   integer :: levs(nlmax)                               !< Levels
+   character(len=1024) :: lev2d                         !< Level for 2D variables ('first' or 'last')
+   logical :: logpres                                   !< Use pressure logarithm as vertical coordinate (model level if .false.)
+   integer :: nv                                        !< Number of variables
+   character(len=1024),dimension(nvmax) :: variables    !< Variables names
+   logical :: nomask                                    !< Do not use geometry mask
+   character(len=1024),dimension(niokvmax) :: io_keys   !< I/O keys
+   character(len=1024),dimension(niokvmax) :: io_values !< I/O values
 
    ! ens1_param
-   integer :: ens1_ne                                   ! Ensemble 1 size
-   integer :: ens1_nsub                                 ! Ensemble 1 sub-ensembles number
+   integer :: ens1_ne                                   !< Ensemble 1 size
+   integer :: ens1_nsub                                 !< Ensemble 1 sub-ensembles number
 
    ! ens2_param
-   integer :: ens2_ne                                   ! Ensemble 2 size
-   integer :: ens2_nsub                                 ! Ensemble 2 sub-ensembles number
+   integer :: ens2_ne                                   !< Ensemble 2 size
+   integer :: ens2_nsub                                 !< Ensemble 2 sub-ensembles number
 
    ! sampling_param
-   logical :: sam_write                                 ! Write sampling
-   logical :: sam_write_grids                           ! Write sampling grids
-   logical :: sam_read                                  ! Read sampling
-   character(len=1024) :: mask_type                     ! Mask restriction type
-   character(len=1024),dimension(nvmax) :: mask_lu      ! Mask threshold side ("lower" if mask_th is the lower bound, "upper" if mask_th is the upper bound)
-   real(kind_real),dimension(nvmax) :: mask_th          ! Mask threshold
-   integer :: ncontig_th                                ! Threshold on vertically contiguous points for sampling mask (0 to skip the test)
-   logical :: mask_check                                ! Check that sampling couples and interpolations do not cross mask boundaries
-   character(len=1024) :: draw_type                     ! Sampling draw type ('random_uniform','random_coast' or 'icosahedron')
-   real(kind_real) :: Lcoast                            ! Length-scale to increase sampling density along coasts [in meters]
-   real(kind_real) :: rcoast                            ! Minimum value to increase sampling density along coasts
-   integer :: nc1                                       ! Number of sampling points
-   integer :: nc2                                       ! Number of diagnostic points
-   integer :: ntry                                      ! Number of tries to get the most separated point for the zero-separation sampling
-   integer :: nrep                                      ! Number of replacement to improve homogeneity of the zero-separation sampling
-   integer :: nc3                                       ! Number of classes
-   real(kind_real) :: dc                                ! Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
-   integer :: nl0r                                      ! Reduced number of levels for diagnostics
-   integer :: irmax                                     ! Maximum number of random number draws
+   logical :: sam_write                                 !< Write sampling
+   logical :: sam_write_grids                           !< Write sampling grids
+   logical :: sam_read                                  !< Read sampling
+   character(len=1024) :: mask_type                     !< Mask restriction type
+   character(len=1024),dimension(nvmax) :: mask_lu      !< Mask threshold side ("lower" if mask_th is the lower bound, "upper" if mask_th is the upper bound)
+   real(kind_real),dimension(nvmax) :: mask_th          !< Mask threshold
+   integer :: ncontig_th                                !< Threshold on vertically contiguous points for sampling mask (0 to skip the test)
+   logical :: mask_check                                !< Check that sampling couples and interpolations do not cross mask boundaries
+   character(len=1024) :: draw_type                     !< Sampling draw type ('random_uniform','random_coast' or 'icosahedron')
+   real(kind_real) :: Lcoast                            !< Length-scale to increase sampling density along coasts [in meters]
+   real(kind_real) :: rcoast                            !< Minimum value to increase sampling density along coasts
+   integer :: nc1                                       !< Number of sampling points
+   integer :: nc2                                       !< Number of diagnostic points
+   integer :: ntry                                      !< Number of tries to get the most separated point for the zero-separation sampling
+   integer :: nrep                                      !< Number of replacement to improve homogeneity of the zero-separation sampling
+   integer :: nc3                                       !< Number of classes
+   real(kind_real) :: dc                                !< Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
+   integer :: nl0r                                      !< Reduced number of levels for diagnostics
+   integer :: irmax                                     !< Maximum number of random number draws
 
    ! diag_param
-   integer :: ne                                        ! Ensemble size
-   real(kind_real) :: gen_kurt_th                       ! Threshold on generalized kurtosis (3.0 = Gaussian distribution)
-   logical :: gau_approx                                ! Gaussian approximation for asymptotic quantities
-   integer :: avg_nbins                                 ! Number of bins for averaged statistics histograms
-   logical :: vbal_block(nvbalmax)                      ! Activation of vertical balance (ordered line by line in the lower triangular formulation)
-   real(kind_real) :: vbal_rad                          ! Vertical balance diagnostic radius [in meters]
-   real(kind_real) :: vbal_dlat                         ! Vertical balance diagnostic latitude band half-width [in degrees]
-   logical :: vbal_diag_auto(nvbalmax)                  ! Diagonal auto-covariance for the inversion
-   logical :: vbal_diag_reg(nvbalmax)                   ! Diagonal regression
-   logical :: var_filter                                ! Filter variances
-   integer :: var_niter                                 ! Number of iteration for the variances filtering
-   real(kind_real) :: var_rhflt                         ! Variances initial filtering support radius [in meters]
-   logical :: local_diag                                ! Activate local diagnostics
-   real(kind_real) :: local_rad                         ! Local diagnostics calculation radius [in meters]
+   integer :: ne                                        !< Ensemble size
+   real(kind_real) :: gen_kurt_th                       !< Threshold on generalized kurtosis (3.0 = Gaussian distribution)
+   logical :: gau_approx                                !< Gaussian approximation for asymptotic quantities
+   integer :: avg_nbins                                 !< Number of bins for averaged statistics histograms
+   logical :: vbal_block(nvbalmax)                      !< Activation of vertical balance (ordered line by line in the lower triangular formulation)
+   real(kind_real) :: vbal_rad                          !< Vertical balance diagnostic radius [in meters]
+   real(kind_real) :: vbal_dlat                         !< Vertical balance diagnostic latitude band half-width [in degrees]
+   logical :: vbal_diag_auto(nvbalmax)                  !< Diagonal auto-covariance for the inversion
+   logical :: vbal_diag_reg(nvbalmax)                   !< Diagonal regression
+   logical :: var_filter                                !< Filter variances
+   integer :: var_niter                                 !< Number of iteration for the variances filtering
+   real(kind_real) :: var_rhflt                         !< Variances initial filtering support radius [in meters]
+   logical :: local_diag                                !< Activate local diagnostics
+   real(kind_real) :: local_rad                         !< Local diagnostics calculation radius [in meters]
 
    ! fit_param
-   character(len=1024) :: minim_algo                    ! Minimization algorithm ('none', 'fast' or 'hooke')
-   real(kind_real) :: diag_rhflt                        ! Horizontal filtering suport radius [in meters]
-   real(kind_real) :: diag_rvflt                        ! Vertical filtering support radius
-   real(kind_real) :: smoothness_penalty                ! Smoothness penalty weight (default 0.01)
-   integer :: fit_dl0                                   ! Number of levels between interpolation levels
-   integer :: lct_nscales                               ! Number of LCT scales
-   real(kind_real) :: lct_scale_ratio                   ! Factor between diffusion scales
-   real(kind_real) :: lct_cor_min                       ! Minimum relevant correlation for LCT first guess
-   logical :: lct_diag(nscalesmax)                      ! Diagnostic of diagonal LCT components only
-   real(kind_real) :: lct_qc_th                         ! LCT quality control threshold
-   real(kind_real) :: lct_qc_max                        ! LCT quality control maximum
-   logical :: lct_write_cor                             ! Write full correlations
+   character(len=1024) :: minim_algo                    !< Minimization algorithm ('none', 'fast' or 'hooke')
+   real(kind_real) :: diag_rhflt                        !< Horizontal filtering suport radius [in meters]
+   real(kind_real) :: diag_rvflt                        !< Vertical filtering support radius
+   real(kind_real) :: smoothness_penalty                !< Smoothness penalty weight (default 0.01)
+   integer :: fit_dl0                                   !< Number of levels between interpolation levels
+   integer :: lct_nscales                               !< Number of LCT scales
+   real(kind_real) :: lct_scale_ratio                   !< Factor between diffusion scales
+   real(kind_real) :: lct_cor_min                       !< Minimum relevant correlation for LCT first guess
+   logical :: lct_diag(nscalesmax)                      !< Diagnostic of diagonal LCT components only
+   real(kind_real) :: lct_qc_th                         !< LCT quality control threshold
+   real(kind_real) :: lct_qc_max                        !< LCT quality control maximum
+   logical :: lct_write_cor                             !< Write full correlations
 
    ! nicas_param
-   logical :: nonunit_diag                              ! Non-unit diagonal for the NICAS application
-   logical :: lsqrt                                     ! Square-root formulation
-   real(kind_real) :: resol                             ! Resolution
-   integer :: nc1max                                    ! Maximum size of the Sc1 subset
-   logical :: fast_sampling                             ! Fast sampling flag
-   character(len=1024) :: subsamp                       ! Subsampling structure ('h', 'hv', 'vh' or 'hvh')
-   logical :: network                                   ! Network-base convolution calculation (distance-based if false)
-   integer :: mpicom                                    ! Number of communication steps
-   logical :: forced_radii                              ! Force specific support radii
-   real(kind_real) :: rh                                ! Forced horizontal support radius [in meters]
-   real(kind_real) :: rv                                ! Forced vertical support radius
-   logical :: pos_def_test                              ! Positive-definiteness test
-   logical :: write_grids                               ! Write NICAS grids
+   logical :: nonunit_diag                              !< Non-unit diagonal for the NICAS application
+   logical :: lsqrt                                     !< Square-root formulation
+   real(kind_real) :: resol                             !< Resolution
+   integer :: nc1max                                    !< Maximum size of the Sc1 subset
+   logical :: fast_sampling                             !< Fast sampling flag
+   character(len=1024) :: subsamp                       !< Subsampling structure ('h', 'hv', 'vh' or 'hvh')
+   logical :: network                                   !< Network-base convolution calculation (distance-based if false)
+   integer :: mpicom                                    !< Number of communication steps
+   logical :: forced_radii                              !< Force specific support radii
+   real(kind_real) :: rh                                !< Forced horizontal support radius [in meters]
+   real(kind_real) :: rv                                !< Forced vertical support radius
+   logical :: pos_def_test                              !< Positive-definiteness test
+   logical :: write_grids                               !< Write NICAS grids
 
    ! dirac_param
-   integer :: ndir                                      ! Number of Diracs
-   real(kind_real) :: londir(ndirmax)                   ! Diracs longitudes [in degrees]
-   real(kind_real) :: latdir(ndirmax)                   ! Diracs latitudes [in degrees]
-   integer :: levdir(ndirmax)                           ! Diracs level
-   integer :: ivdir(ndirmax)                            ! Diracs variable indices
+   integer :: ndir                                      !< Number of Diracs
+   real(kind_real) :: londir(ndirmax)                   !< Diracs longitudes [in degrees]
+   real(kind_real) :: latdir(ndirmax)                   !< Diracs latitudes [in degrees]
+   integer :: levdir(ndirmax)                           !< Diracs level
+   integer :: ivdir(ndirmax)                            !< Diracs variable indices
 
    ! obsop_param
-   integer :: nobs                                      ! Number of observations
+   integer :: nobs                                      !< Number of observations
 
    ! output_param
-   integer :: nldwv                                     ! Number of local diagnostics profiles to write (for local_diag = .true.)
-   integer :: img_ldwv(nldwvmax)                        ! Index on model grid of the local diagnostics profiles to write
-   real(kind_real) :: lon_ldwv(nldwvmax)                ! Longitudes of the local diagnostics profiles to write [in degrees]
-   real(kind_real) :: lat_ldwv(nldwvmax)                ! Latitudes of the local diagnostics profiles to write [in degrees]
-   character(len=1024),dimension(nldwvmax) :: name_ldwv ! Name of the local diagnostics profiles to write
+   integer :: nldwv                                     !< Number of local diagnostics profiles to write (for local_diag = .true.)
+   integer :: img_ldwv(nldwvmax)                        !< Index on model grid of the local diagnostics profiles to write
+   real(kind_real) :: lon_ldwv(nldwvmax)                !< Longitudes of the local diagnostics profiles to write [in degrees]
+   real(kind_real) :: lat_ldwv(nldwvmax)                !< Latitudes of the local diagnostics profiles to write [in degrees]
+   character(len=1024),dimension(nldwvmax) :: name_ldwv !< Name of the local diagnostics profiles to write
 contains
    procedure :: init => nam_init
    procedure :: read => nam_read
@@ -208,15 +208,15 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_init
-! Purpose: intialize
+!> Intialize
 !----------------------------------------------------------------------
 subroutine nam_init(nam,nproc)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(out) :: nam ! Namelist
-integer,intent(in) :: nproc        ! Number of MPI task
+class(nam_type),intent(out) :: nam !< Namelist
+integer,intent(in) :: nproc        !< Number of MPI task
 
 ! Local variable
 integer :: il,iv,its,i,ildwv
@@ -404,16 +404,16 @@ end subroutine nam_init
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_read
-! Purpose: read
+!> Read
 !----------------------------------------------------------------------
 subroutine nam_read(nam,mpl,namelname)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(inout) :: nam     ! Namelist
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-character(len=*),intent(in) :: namelname ! Namelist name
+class(nam_type),intent(inout) :: nam     !< Namelist
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+character(len=*),intent(in) :: namelname !< Namelist name
 
 ! Local variables
 integer :: il,iv,i,ildwv,lunit
@@ -1086,16 +1086,16 @@ end subroutine nam_read
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_read_yaml
-! Purpose: read YAML file
+!> Read YAML file
 !----------------------------------------------------------------------
 subroutine nam_read_yaml(nam,mpl,yamlname)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(inout) :: nam       ! Namelist
-type(mpl_type),intent(inout) :: mpl        ! MPI data
-character(len=*),intent(inout) :: yamlname ! YAML name
+class(nam_type),intent(inout) :: nam       !< Namelist
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+character(len=*),intent(inout) :: yamlname !< YAML name
 
 ! Local variables
 type(fckit_configuration) :: conf
@@ -1112,15 +1112,15 @@ end subroutine nam_read_yaml
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_bcast
-! Purpose: broadcast
+!> Broadcast
 !----------------------------------------------------------------------
 subroutine nam_bcast(nam,mpl)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(inout) :: nam ! Namelist
-type(mpl_type),intent(inout) :: mpl  ! MPI data
+class(nam_type),intent(inout) :: nam !< Namelist
+type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! general_param
 call mpl%f_comm%broadcast(nam%datadir,mpl%rootproc-1)
@@ -1289,15 +1289,15 @@ end subroutine nam_bcast
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_from_conf
-! Purpose: intialize from configuration
+!> Intialize from configuration
 !----------------------------------------------------------------------
 subroutine nam_from_conf(nam,conf)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(inout) :: nam         ! Namelist
-type(fckit_configuration),intent(in) :: conf ! Configuration
+class(nam_type),intent(inout) :: nam         !< Namelist
+type(fckit_configuration),intent(in) :: conf !< Configuration
 
 ! Local variables
 integer,allocatable :: integer_array(:)
@@ -1560,15 +1560,15 @@ end subroutine nam_from_conf
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_check
-! Purpose: check namelist parameters
+!> Check namelist parameters
 !----------------------------------------------------------------------
 subroutine nam_check(nam,mpl)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(inout) :: nam ! Namelist
-type(mpl_type),intent(inout) :: mpl  ! MPI data
+class(nam_type),intent(inout) :: nam !< Namelist
+type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
 integer :: iv,its,i,il,idir,ildwv
@@ -1928,16 +1928,16 @@ end subroutine nam_check
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_write
-! Purpose: write namelist parameters into a log file or into a NetCDF file
+!> Write namelist parameters into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine nam_write(nam,mpl,ncid)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(in) :: nam   ! Namelist
-type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in),optional :: ncid ! NetCDF file
+class(nam_type),intent(in) :: nam   !< Namelist
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in),optional :: ncid !< NetCDF file
 
 ! Local variables
 integer :: lncid
@@ -2176,16 +2176,16 @@ end subroutine nam_write
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_io_key_value
-! Purpose: get I/O value from key
+!> Get I/O value from key
 !----------------------------------------------------------------------
 subroutine nam_io_key_value(nam,io_key,io_value)
 
 implicit none
 
 ! Passed variable
-class(nam_type),intent(in) :: nam           ! Namelist
-character(len=*),intent(in) :: io_key       ! I/O key
-character(len=1024),intent(out) :: io_value ! I/O value
+class(nam_type),intent(in) :: nam           !< Namelist
+character(len=*),intent(in) :: io_key       !< I/O key
+character(len=1024),intent(out) :: io_value !< I/O value
 
 ! Local variables
 integer :: i

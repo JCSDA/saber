@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_mpl
-! Purpose: MPI parameters derived type
+!> MPI parameters derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -23,40 +23,40 @@ integer,parameter :: ddis = 5       ! Progression display step
 
 type mpl_type
    ! MPI communicator
-   type(fckit_mpi_comm) :: f_comm   ! MPI data
-   integer :: nproc                 ! Number of MPI tasks
-   integer :: myproc                ! MPI task index
-   integer :: rootproc              ! Main task index
-   logical :: main                  ! Main task logical
-   integer :: tag                   ! MPI tag
+   type(fckit_mpi_comm) :: f_comm   !< MPI data
+   integer :: nproc                 !< Number of MPI tasks
+   integer :: myproc                !< MPI task index
+   integer :: rootproc              !< Main task index
+   logical :: main                  !< Main task logical
+   integer :: tag                   !< MPI tag
 
    ! Number of OpenMP threads
-   integer :: nthread               ! Number of OpenMP threads
+   integer :: nthread               !< Number of OpenMP threads
 
    ! Missing values
-   type(msv_type) :: msv            ! Missing values
+   type(msv_type) :: msv            !< Missing values
 
    ! Display parameters
-   character(len=1024) :: verbosity ! Verbosity level
-   character(len=1024) :: info      ! Info buffer
-   character(len=1024) :: trace     ! Trace buffer
-   character(len=1024) :: stats     ! Stats buffer
-   character(len=1024) :: test      ! Test buffer
-   integer :: lunit                 ! Listing unit
+   character(len=1024) :: verbosity !< Verbosity level
+   character(len=1024) :: info      !< Info buffer
+   character(len=1024) :: trace     !< Trace buffer
+   character(len=1024) :: stats     !< Stats buffer
+   character(len=1024) :: test      !< Test buffer
+   integer :: lunit                 !< Listing unit
 
    ! Display colors
-   character(len=1024) :: black     ! Black color code
-   character(len=1024) :: green     ! Green color code
-   character(len=1024) :: peach     ! Peach color code
-   character(len=1024) :: aqua      ! Aqua color code
-   character(len=1024) :: purple    ! Purple color code
-   character(len=1024) :: err       ! Error color code
-   character(len=1024) :: wng       ! Warning color code
+   character(len=1024) :: black     !< Black color code
+   character(len=1024) :: green     !< Green color code
+   character(len=1024) :: peach     !< Peach color code
+   character(len=1024) :: aqua      !< Aqua color code
+   character(len=1024) :: purple    !< Purple color code
+   character(len=1024) :: err       !< Error color code
+   character(len=1024) :: wng       !< Warning color code
 
    ! Progression print
-   integer :: nprog                 ! Progression array size
-   integer :: progint               ! Progression integer
-   logical,allocatable :: done(:)   ! Progression array
+   integer :: nprog                 !< Progression array size
+   integer :: progint               !< Progression integer
+   logical,allocatable :: done(:)   !< Progression array
 contains
    procedure :: newunit => mpl_newunit
    procedure :: init => mpl_init
@@ -117,15 +117,15 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_newunit
-! Purpose: find a free unit
+!> Find a free unit
 !----------------------------------------------------------------------
 subroutine mpl_newunit(mpl,lunit)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(out) :: lunit         ! New unit
+class(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(out) :: lunit         !< New unit
 
 ! Local variables
 integer :: lun
@@ -148,15 +148,15 @@ end subroutine mpl_newunit
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_init
-! Purpose: initialize MPL object
+!> Initialize MPL object
 !----------------------------------------------------------------------
 subroutine mpl_init(mpl,f_comm)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl             ! MPI data
-type(fckit_mpi_comm),intent(in),target :: f_comm ! FCKIT MPI communicator wrapper
+class(mpl_type),intent(inout) :: mpl             !< MPI data
+type(fckit_mpi_comm),intent(in),target :: f_comm !< FCKIT MPI communicator wrapper
 
 ! Get BUMP own FCKIT MPI communicator wrapper
 mpl%f_comm = f_comm
@@ -204,14 +204,14 @@ end subroutine mpl_init
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_final
-! Purpose: finalize MPI
+!> Finalize MPI
 !----------------------------------------------------------------------
 subroutine mpl_final(mpl)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
+class(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Release memory
 if (allocated(mpl%done)) deallocate(mpl%done)
@@ -220,15 +220,15 @@ end subroutine mpl_final
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_flush
-! Purpose: flush listings
+!> Flush listings
 !----------------------------------------------------------------------
 subroutine mpl_flush(mpl,advance_flag)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl        ! MPI data
-logical,intent(in),optional :: advance_flag ! Advance flag
+class(mpl_type),intent(inout) :: mpl        !< MPI data
+logical,intent(in),optional :: advance_flag !< Advance flag
 
 ! Local variables
 logical :: ladvance_flag
@@ -335,16 +335,16 @@ end subroutine mpl_flush
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_abort
-! Purpose: clean MPI abort
+!> Clean MPI abort
 !----------------------------------------------------------------------
 subroutine mpl_abort(mpl,subr,message)
 
 implicit none
 
 ! Passed variable
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-character(len=*),intent(in) :: subr    ! Calling subroutine
-character(len=*),intent(in) :: message ! Message
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: subr    !< Calling subroutine
+character(len=*),intent(in) :: message !< Message
 
 ! Write standard output message
 write(output_unit,'(a,i4.4,a)') '!!! ABORT in '//trim(subr)//' on task #',mpl%myproc,': '//trim(message)
@@ -357,16 +357,16 @@ end subroutine mpl_abort
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_warning
-! Purpose: print warning message
+!> Print warning message
 !----------------------------------------------------------------------
 subroutine mpl_warning(mpl,subr,message)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-character(len=*),intent(in) :: subr    ! Calling subroutine
-character(len=*),intent(in) :: message ! Message
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: subr    !< Calling subroutine
+character(len=*),intent(in) :: message !< Message
 
 ! Print warning message
 write(mpl%info,'(a)') trim(mpl%wng)//'!!! Warning in '//trim(subr)//': '//trim(message)//trim(mpl%black)
@@ -377,15 +377,15 @@ end subroutine mpl_warning
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_update_tag
-! Purpose: update MPI tag
+!> Update MPI tag
 !----------------------------------------------------------------------
 subroutine mpl_update_tag(mpl,add)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: add              ! Tag update incrememnt
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: add              !< Tag update incrememnt
 
 ! Update tag
 mpl%tag = mpl%tag+add
@@ -398,16 +398,16 @@ end subroutine mpl_update_tag
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_broadcast_string_1d
-! Purpose: broadcast 1d string array
+!> Broadcast 1d string array
 !----------------------------------------------------------------------
 subroutine mpl_broadcast_string_1d(mpl,var,root)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(in) :: mpl                  ! MPI data
-character(len=*),dimension(:),intent(inout) :: var ! Logical array, 1d
-integer,intent(in) :: root                         ! Root task
+class(mpl_type),intent(in) :: mpl                  !< MPI data
+character(len=*),dimension(:),intent(inout) :: var !< Logical array, 1d
+integer,intent(in) :: root                         !< Root task
 
 ! Local variable
 integer :: i
@@ -421,17 +421,17 @@ end subroutine mpl_broadcast_string_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_dot_prod_1d
-! Purpose: global dot product over local fields, 1d
+!> Global dot product over local fields, 1d
 !----------------------------------------------------------------------
 subroutine mpl_dot_prod_1d(mpl,fld1,fld2,dp)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(in) :: mpl     ! MPI data
-real(kind_real),intent(in) :: fld1(:) ! Field 1
-real(kind_real),intent(in) :: fld2(:) ! Field 2
-real(kind_real),intent(out) :: dp     ! Global dot product
+class(mpl_type),intent(in) :: mpl     !< MPI data
+real(kind_real),intent(in) :: fld1(:) !< Field 1
+real(kind_real),intent(in) :: fld2(:) !< Field 2
+real(kind_real),intent(out) :: dp     !< Global dot product
 
 ! Local variable
 real(kind_real) :: dp_loc(1),dp_out(1)
@@ -452,17 +452,17 @@ end subroutine mpl_dot_prod_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_dot_prod_2d
-! Purpose: global dot product over local fields, 2d
+!> Global dot product over local fields, 2d
 !----------------------------------------------------------------------
 subroutine mpl_dot_prod_2d(mpl,fld1,fld2,dp)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(in) :: mpl       ! MPI data
-real(kind_real),intent(in) :: fld1(:,:) ! Field 1
-real(kind_real),intent(in) :: fld2(:,:) ! Field 2
-real(kind_real),intent(out) :: dp       ! Global dot product
+class(mpl_type),intent(in) :: mpl       !< MPI data
+real(kind_real),intent(in) :: fld1(:,:) !< Field 1
+real(kind_real),intent(in) :: fld2(:,:) !< Field 2
+real(kind_real),intent(out) :: dp       !< Global dot product
 
 ! Local variable
 real(kind_real) :: dp_loc(1),dp_out(1)
@@ -483,17 +483,17 @@ end subroutine mpl_dot_prod_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_dot_prod_3d
-! Purpose: global dot product over local fields, 3d
+!> Global dot product over local fields, 3d
 !----------------------------------------------------------------------
 subroutine mpl_dot_prod_3d(mpl,fld1,fld2,dp)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(in) :: mpl         ! MPI data
-real(kind_real),intent(in) :: fld1(:,:,:) ! Field 1
-real(kind_real),intent(in) :: fld2(:,:,:) ! Field 2
-real(kind_real),intent(out) :: dp         ! Global dot product
+class(mpl_type),intent(in) :: mpl         !< MPI data
+real(kind_real),intent(in) :: fld1(:,:,:) !< Field 1
+real(kind_real),intent(in) :: fld2(:,:,:) !< Field 2
+real(kind_real),intent(out) :: dp         !< Global dot product
 
 ! Local variable
 real(kind_real) :: dp_loc(1),dp_out(1)
@@ -514,17 +514,17 @@ end subroutine mpl_dot_prod_3d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_dot_prod_4d
-! Purpose: global dot product over local fields, 4d
+!> Global dot product over local fields, 4d
 !----------------------------------------------------------------------
 subroutine mpl_dot_prod_4d(mpl,fld1,fld2,dp)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(in) :: mpl           ! MPI data
-real(kind_real),intent(in) :: fld1(:,:,:,:) ! Field 1
-real(kind_real),intent(in) :: fld2(:,:,:,:) ! Field 2
-real(kind_real),intent(out) :: dp           ! Global dot product
+class(mpl_type),intent(in) :: mpl           !< MPI data
+real(kind_real),intent(in) :: fld1(:,:,:,:) !< Field 1
+real(kind_real),intent(in) :: fld2(:,:,:,:) !< Field 2
+real(kind_real),intent(out) :: dp           !< Global dot product
 
 ! Local variable
 real(kind_real) :: dp_loc(1),dp_out(1)
@@ -545,21 +545,21 @@ end subroutine mpl_dot_prod_4d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_index
-! Purpose: communicate global index to local index
+!> Communicate global index to local index
 !----------------------------------------------------------------------
 subroutine mpl_glb_to_loc_index(mpl,n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc,rootproc,pool)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl           ! MPI data
-integer,intent(in) :: n_loc                    ! Local dimension
-integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global index
-integer,intent(in) :: n_glb                    ! Global dimension
-integer,intent(out) :: glb_to_loc(:)           ! Global to local index
-integer,intent(out) :: glb_to_proc(:)          ! Global to processor
-integer,intent(in),optional :: rootproc        ! Root task
-logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
+class(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: n_loc                    !< Local dimension
+integer,intent(in) :: loc_to_glb(n_loc)        !< Local to global index
+integer,intent(in) :: n_glb                    !< Global dimension
+integer,intent(out) :: glb_to_loc(:)           !< Global to local index
+integer,intent(out) :: glb_to_proc(:)          !< Global to processor
+integer,intent(in),optional :: rootproc        !< Root task
+logical,intent(in),optional :: pool(mpl%nproc) !< Tasks pool
 
 ! Local variables
 integer :: iproc,i_loc,n_loc_tmp,lrootproc
@@ -634,19 +634,19 @@ end subroutine mpl_glb_to_loc_index
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_integer_1d
-! Purpose: global to local, 1d array
+!> Global to local, 1d array
 !----------------------------------------------------------------------
 subroutine mpl_glb_to_loc_integer_1d(mpl,n_loc,n_glb,loc_to_glb,glb,loc)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl    ! MPI data
-integer,intent(in) :: n_loc             ! Local array size
-integer,intent(in) :: n_glb             ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
-integer,intent(in) :: glb(:)            ! Global array
-integer,intent(out) :: loc(n_loc)       ! Local array
+class(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: n_loc             !< Local array size
+integer,intent(in) :: n_glb             !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc) !< Local to global
+integer,intent(in) :: glb(:)            !< Global array
+integer,intent(out) :: loc(n_loc)       !< Local array
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
@@ -711,22 +711,22 @@ end subroutine mpl_glb_to_loc_integer_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_integer_2d
-! Purpose: global to local, 2d array
+!> Global to local, 2d array
 !----------------------------------------------------------------------
 subroutine mpl_glb_to_loc_integer_2d(mpl,nl,n_loc,n_glb,loc_to_glb,glb,loc,rootproc,pool)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl           ! MPI data
-integer,intent(in) :: nl                       ! Number of levels
-integer,intent(in) :: n_loc                    ! Local array size
-integer,intent(in) :: n_glb                    ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global
-integer,intent(in) :: glb(:,:)                 ! Global array
-integer,intent(out) :: loc(n_loc,nl)           ! Local array
-integer,intent(in),optional :: rootproc        ! Root task
-logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
+class(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: nl                       !< Number of levels
+integer,intent(in) :: n_loc                    !< Local array size
+integer,intent(in) :: n_glb                    !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)        !< Local to global
+integer,intent(in) :: glb(:,:)                 !< Global array
+integer,intent(out) :: loc(n_loc,nl)           !< Local array
+integer,intent(in),optional :: rootproc        !< Root task
+logical,intent(in),optional :: pool(mpl%nproc) !< Tasks pool
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il,lrootproc
@@ -821,19 +821,19 @@ end subroutine mpl_glb_to_loc_integer_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_real_1d
-! Purpose: global to local, 1d array
+!> Global to local, 1d array
 !----------------------------------------------------------------------
 subroutine mpl_glb_to_loc_real_1d(mpl,n_loc,n_glb,loc_to_glb,glb,loc)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: n_loc               ! Local array size
-integer,intent(in) :: n_glb               ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc)   ! Local to global
-real(kind_real),intent(in) :: glb(:)      ! Global array
-real(kind_real),intent(out) :: loc(n_loc) ! Local array
+class(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: n_loc               !< Local array size
+integer,intent(in) :: n_glb               !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)   !< Local to global
+real(kind_real),intent(in) :: glb(:)      !< Global array
+real(kind_real),intent(out) :: loc(n_loc) !< Local array
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
@@ -899,22 +899,22 @@ end subroutine mpl_glb_to_loc_real_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_real_2d
-! Purpose: global to local, 2d array
+!> Global to local, 2d array
 !----------------------------------------------------------------------
 subroutine mpl_glb_to_loc_real_2d(mpl,nl,n_loc,n_glb,loc_to_glb,glb,loc,rootproc,pool)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl           ! MPI data
-integer,intent(in) :: nl                       ! Number of levels
-integer,intent(in) :: n_loc                    ! Local array size
-integer,intent(in) :: n_glb                    ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global
-real(kind_real),intent(in) :: glb(:,:)         ! Global array
-real(kind_real),intent(out) :: loc(n_loc,nl)   ! Local array
-integer,intent(in),optional :: rootproc        ! Root task
-logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
+class(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: nl                       !< Number of levels
+integer,intent(in) :: n_loc                    !< Local array size
+integer,intent(in) :: n_glb                    !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)        !< Local to global
+real(kind_real),intent(in) :: glb(:,:)         !< Global array
+real(kind_real),intent(out) :: loc(n_loc,nl)   !< Local array
+integer,intent(in),optional :: rootproc        !< Root task
+logical,intent(in),optional :: pool(mpl%nproc) !< Tasks pool
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il,lrootproc
@@ -1010,19 +1010,19 @@ end subroutine mpl_glb_to_loc_real_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_logical_1d
-! Purpose: global to local, 1d array
+!> Global to local, 1d array
 !----------------------------------------------------------------------
 subroutine mpl_glb_to_loc_logical_1d(mpl,n_loc,n_glb,loc_to_glb,glb,loc)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl     ! MPI data
-integer,intent(in) :: n_loc             ! Local array size
-integer,intent(in) :: n_glb             ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
-logical,intent(in) :: glb(:)            ! Global array
-logical,intent(out) :: loc(n_loc)       ! Local array
+class(mpl_type),intent(inout) :: mpl     !< MPI data
+integer,intent(in) :: n_loc             !< Local array size
+integer,intent(in) :: n_glb             !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc) !< Local to global
+logical,intent(in) :: glb(:)            !< Global array
+logical,intent(out) :: loc(n_loc)       !< Local array
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
@@ -1088,22 +1088,22 @@ end subroutine mpl_glb_to_loc_logical_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_logical_2d
-! Purpose: global to local, 2d array
+!> Global to local, 2d array
 !----------------------------------------------------------------------
 subroutine mpl_glb_to_loc_logical_2d(mpl,nl,n_loc,n_glb,loc_to_glb,glb,loc,rootproc,pool)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl           ! MPI data
-integer,intent(in) :: nl                       ! Number of levels
-integer,intent(in) :: n_loc                    ! Local array size
-integer,intent(in) :: n_glb                    ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc)        ! Local to global
-logical,intent(in) :: glb(:,:)                 ! Global array
-logical,intent(out) :: loc(n_loc,nl)           ! Local array
-integer,intent(in),optional :: rootproc        ! Root task
-logical,intent(in),optional :: pool(mpl%nproc) ! Tasks pool
+class(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: nl                       !< Number of levels
+integer,intent(in) :: n_loc                    !< Local array size
+integer,intent(in) :: n_glb                    !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)        !< Local to global
+logical,intent(in) :: glb(:,:)                 !< Global array
+logical,intent(out) :: loc(n_loc,nl)           !< Local array
+integer,intent(in),optional :: rootproc        !< Root task
+logical,intent(in),optional :: pool(mpl%nproc) !< Tasks pool
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il,lrootproc
@@ -1199,20 +1199,20 @@ end subroutine mpl_glb_to_loc_logical_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_loc_to_glb_integer_1d
-! Purpose: local to global, 1d array
+!> Local to global, 1d array
 !----------------------------------------------------------------------
 subroutine mpl_loc_to_glb_integer_1d(mpl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl    ! MPI data
-integer,intent(in) :: n_loc             ! Local array size
-integer,intent(in) :: n_glb             ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
-integer,intent(in) :: loc(n_loc)        ! Local array
-integer,intent(out) :: glb(:)           ! Global array
-logical,intent(in),optional :: bcast    ! Broadcast option
+class(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: n_loc             !< Local array size
+integer,intent(in) :: n_glb             !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc) !< Local to global
+integer,intent(in) :: loc(n_loc)        !< Local array
+integer,intent(out) :: glb(:)           !< Global array
+logical,intent(in),optional :: bcast    !< Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
@@ -1285,21 +1285,21 @@ end subroutine mpl_loc_to_glb_integer_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_loc_to_glb_integer_2d
-! Purpose: local to global, 2d array
+!> Local to global, 2d array
 !----------------------------------------------------------------------
 subroutine mpl_loc_to_glb_integer_2d(mpl,nl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl    ! MPI data
-integer,intent(in) :: nl                ! Number of levels
-integer,intent(in) :: n_loc             ! Local array size
-integer,intent(in) :: n_glb             ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
-integer,intent(in) :: loc(n_loc,nl)     ! Local array
-integer,intent(out) :: glb(:,:)         ! Global array
-logical,intent(in),optional :: bcast    ! Broadcast option
+class(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: nl                !< Number of levels
+integer,intent(in) :: n_loc             !< Local array size
+integer,intent(in) :: n_glb             !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc) !< Local to global
+integer,intent(in) :: loc(n_loc,nl)     !< Local array
+integer,intent(out) :: glb(:,:)         !< Global array
+logical,intent(in),optional :: bcast    !< Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il
@@ -1386,20 +1386,20 @@ end subroutine mpl_loc_to_glb_integer_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_loc_to_glb_real_1d
-! Purpose: local to global, 1d array
+!> Local to global, 1d array
 !----------------------------------------------------------------------
 subroutine mpl_loc_to_glb_real_1d(mpl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl     ! MPI data
-integer,intent(in) :: n_loc              ! Local array size
-integer,intent(in) :: n_glb              ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc)  ! Local to global
-real(kind_real),intent(in) :: loc(n_loc) ! Local array
-real(kind_real),intent(out) :: glb(:)    ! Global array
-logical,intent(in),optional :: bcast     ! Broadcast option
+class(mpl_type),intent(inout) :: mpl     !< MPI data
+integer,intent(in) :: n_loc              !< Local array size
+integer,intent(in) :: n_glb              !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)  !< Local to global
+real(kind_real),intent(in) :: loc(n_loc) !< Local array
+real(kind_real),intent(out) :: glb(:)    !< Global array
+logical,intent(in),optional :: bcast     !< Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
@@ -1473,21 +1473,21 @@ end subroutine mpl_loc_to_glb_real_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_loc_to_glb_real_2d
-! Purpose: local to global, 2d array
+!> Local to global, 2d array
 !----------------------------------------------------------------------
 subroutine mpl_loc_to_glb_real_2d(mpl,nl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl        ! MPI data
-integer,intent(in) :: nl                    ! Number of levels
-integer,intent(in) :: n_loc                 ! Local array size
-integer,intent(in) :: n_glb                 ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc)     ! Local to global
-real(kind_real),intent(in) :: loc(n_loc,nl) ! Local array
-real(kind_real),intent(out) :: glb(:,:)     ! Global array
-logical,intent(in),optional :: bcast        ! Broadcast option
+class(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: nl                    !< Number of levels
+integer,intent(in) :: n_loc                 !< Local array size
+integer,intent(in) :: n_glb                 !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)     !< Local to global
+real(kind_real),intent(in) :: loc(n_loc,nl) !< Local array
+real(kind_real),intent(out) :: glb(:,:)     !< Global array
+logical,intent(in),optional :: bcast        !< Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il
@@ -1575,20 +1575,20 @@ end subroutine mpl_loc_to_glb_real_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_loc_to_glb_logical_1d
-! Purpose: local to global, 1d array
+!> Local to global, 1d array
 !----------------------------------------------------------------------
 subroutine mpl_loc_to_glb_logical_1d(mpl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl     ! MPI data
-integer,intent(in) :: n_loc             ! Local array size
-integer,intent(in) :: n_glb             ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
-logical,intent(in) :: loc(n_loc)        ! Local array
-logical,intent(out) :: glb(:)           ! Global array
-logical,intent(in),optional :: bcast    ! Broadcast option
+class(mpl_type),intent(inout) :: mpl     !< MPI data
+integer,intent(in) :: n_loc             !< Local array size
+integer,intent(in) :: n_glb             !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc) !< Local to global
+logical,intent(in) :: loc(n_loc)        !< Local array
+logical,intent(out) :: glb(:)           !< Global array
+logical,intent(in),optional :: bcast    !< Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
@@ -1662,21 +1662,21 @@ end subroutine mpl_loc_to_glb_logical_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_loc_to_glb_logical_2d
-! Purpose: local to global for a logical, 2d array
+!> Local to global for a logical, 2d array
 !----------------------------------------------------------------------
 subroutine mpl_loc_to_glb_logical_2d(mpl,nl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl     ! MPI data
-integer,intent(in) :: nl                ! Number of levels
-integer,intent(in) :: n_loc             ! Local array size
-integer,intent(in) :: n_glb             ! Global array size
-integer,intent(in) :: loc_to_glb(n_loc) ! Local to global
-logical,intent(in) :: loc(n_loc,nl)     ! Local array
-logical,intent(out) :: glb(:,:)         ! Global array
-logical,intent(in),optional :: bcast    ! Broadcast option
+class(mpl_type),intent(inout) :: mpl     !< MPI data
+integer,intent(in) :: nl                !< Number of levels
+integer,intent(in) :: n_loc             !< Local array size
+integer,intent(in) :: n_glb             !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc) !< Local to global
+logical,intent(in) :: loc(n_loc,nl)     !< Local array
+logical,intent(out) :: glb(:,:)         !< Global array
+logical,intent(in),optional :: bcast    !< Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il
@@ -1764,15 +1764,15 @@ end subroutine mpl_loc_to_glb_logical_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_prog_init
-! Purpose: initialize progression display
+!> Initialize progression display
 !----------------------------------------------------------------------
 subroutine mpl_prog_init(mpl,nprog)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: nprog          ! Array size
+class(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: nprog          !< Array size
 
 ! Local variables
 integer :: ithread
@@ -1797,15 +1797,15 @@ end subroutine mpl_prog_init
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_prog_print
-! Purpose: print progression display
+!> Print progression display
 !----------------------------------------------------------------------
 subroutine mpl_prog_print(mpl,i)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in),optional :: i     ! Index
+class(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in),optional :: i     !< Index
 
 ! Local variables
 integer :: ithread
@@ -1834,15 +1834,15 @@ end subroutine mpl_prog_print
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_prog_final
-! Purpose: finalize progression display
+!> Finalize progression display
 !----------------------------------------------------------------------
 subroutine mpl_prog_final(mpl,advance_flag)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl        ! MPI data
-logical,intent(in),optional :: advance_flag ! Advance flag
+class(mpl_type),intent(inout) :: mpl        !< MPI data
+logical,intent(in),optional :: advance_flag !< Advance flag
 
 ! Local variables
 integer :: ithread
@@ -1877,17 +1877,17 @@ end subroutine mpl_prog_final
 
 !----------------------------------------------------------------------
 ! Function: mpl_nc_file_create_or_open
-! Purpose: create or open NetCDF file
+!> Create or open NetCDF file
 !----------------------------------------------------------------------
 function mpl_nc_file_create_or_open(mpl,subr,filename,f_comm) result (ncid)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl               ! MPI data
-character(len=*),intent(in) :: subr                ! Calling subroutine
-character(len=*),intent(in) :: filename            ! File name
-type(fckit_mpi_comm),intent(in),optional :: f_comm ! Communicator
+class(mpl_type),intent(inout) :: mpl               !< MPI data
+character(len=*),intent(in) :: subr                !< Calling subroutine
+character(len=*),intent(in) :: filename            !< File name
+type(fckit_mpi_comm),intent(in),optional :: f_comm !< Communicator
 
 ! Returned variable
 integer :: ncid                                    ! NetCDF file ID
@@ -1920,17 +1920,17 @@ end function mpl_nc_file_create_or_open
 
 !----------------------------------------------------------------------
 ! Function: mpl_nc_group_define_or_get
-! Purpose: define or get group
+!> Define or get group
 !----------------------------------------------------------------------
 function mpl_nc_group_define_or_get(mpl,subr,ncid,grpname) result (grpid)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-character(len=*),intent(in) :: subr    ! Calling subroutine
-integer,intent(in) :: ncid             ! NetCDF file ID
-character(len=*),intent(in) :: grpname ! Group name
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: subr    !< Calling subroutine
+integer,intent(in) :: ncid             !< NetCDF file ID
+character(len=*),intent(in) :: grpname !< Group name
 
 ! Returned variable
 integer :: grpid                       ! NetCDF group ID
@@ -1948,18 +1948,18 @@ end function mpl_nc_group_define_or_get
 
 !----------------------------------------------------------------------
 ! Function: mpl_nc_dim_define_or_get
-! Purpose: define or get (and check) NetCDF dimension
+!> Define or get (and check) NetCDF dimension
 !----------------------------------------------------------------------
 function mpl_nc_dim_define_or_get(mpl,subr,ncid,dimname,dimsize) result (dimid)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-character(len=*),intent(in) :: subr    ! Calling subroutine
-integer,intent(in) :: ncid             ! NetCDF file ID
-character(len=*),intent(in) :: dimname ! Dimension name
-integer,intent(in) :: dimsize          ! Dimension size
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: subr    !< Calling subroutine
+integer,intent(in) :: ncid             !< NetCDF file ID
+character(len=*),intent(in) :: dimname !< Dimension name
+integer,intent(in) :: dimsize          !< Dimension size
 
 ! Returned variable
 integer :: dimid                       ! NetCDF dimension ID
@@ -1985,17 +1985,17 @@ end function mpl_nc_dim_define_or_get
 
 !----------------------------------------------------------------------
 ! Function: mpl_nc_dim_inquire
-! Purpose: inquire NetCDF file dimension size
+!> Inquire NetCDF file dimension size
 !----------------------------------------------------------------------
 function mpl_nc_dim_inquire(mpl,subr,ncid,dimname) result (dimsize)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-character(len=*),intent(in) :: subr    ! Calling subroutine
-integer,intent(in) :: ncid             ! NetCDF file ID
-character(len=*),intent(in) :: dimname ! Dimension name
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: subr    !< Calling subroutine
+integer,intent(in) :: ncid             !< NetCDF file ID
+character(len=*),intent(in) :: dimname !< Dimension name
 
 ! Returned variable
 integer :: dimsize                     ! NetCDF dimension size
@@ -2015,18 +2015,18 @@ end function mpl_nc_dim_inquire
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_nc_dim_check
-! Purpose: check if NetCDF file dimension exists and has the right size
+!> Check if NetCDF file dimension exists and has the right size
 !----------------------------------------------------------------------
 subroutine mpl_nc_dim_check(mpl,subr,ncid,dimname,dimsize)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-character(len=*),intent(in) :: subr    ! Calling subroutine
-integer,intent(in) :: ncid             ! NetCDF file ID
-character(len=*),intent(in) :: dimname ! Dimension name
-integer,intent(in) :: dimsize          ! Expected dimension size
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: subr    !< Calling subroutine
+integer,intent(in) :: ncid             !< NetCDF file ID
+character(len=*),intent(in) :: dimname !< Dimension name
+integer,intent(in) :: dimsize          !< Expected dimension size
 
 ! Local variables
 integer :: dimid,dimsize_test
@@ -2044,20 +2044,20 @@ end subroutine mpl_nc_dim_check
 
 !----------------------------------------------------------------------
 ! Function: mpl_nc_var_define_or_get
-! Purpose: define or get NetCDF variable
+!> Define or get NetCDF variable
 !----------------------------------------------------------------------
 function mpl_nc_var_define_or_get(mpl,subr,ncid,varname,varkind,varshape,unitname) result (varid)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl             ! MPI data
-character(len=*),intent(in) :: subr              ! Calling subroutine
-integer,intent(in) :: ncid                       ! NetCDF file ID
-character(len=*),intent(in) :: varname           ! Variable name
-integer,intent(in) :: varkind                    ! Variable kind
-integer,intent(in) :: varshape(:)                ! Variable shape
-character(len=*),intent(in),optional :: unitname ! Unit name
+class(mpl_type),intent(inout) :: mpl             !< MPI data
+character(len=*),intent(in) :: subr              !< Calling subroutine
+integer,intent(in) :: ncid                       !< NetCDF file ID
+character(len=*),intent(in) :: varname           !< Variable name
+integer,intent(in) :: varkind                    !< Variable kind
+integer,intent(in) :: varshape(:)                !< Variable shape
+character(len=*),intent(in),optional :: unitname !< Unit name
 
 ! Returned variable
 integer :: varid                       ! NetCDF variable ID
@@ -2089,16 +2089,16 @@ end function mpl_nc_var_define_or_get
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_ncerr
-! Purpose: handle NetCDF error
+!> Handle NetCDF error
 !----------------------------------------------------------------------
 subroutine mpl_ncerr(mpl,subr,info)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl ! MPI data
-character(len=*),intent(in) :: subr  ! Calling subroutine
-integer,intent(in) :: info           ! Info index
+class(mpl_type),intent(inout) :: mpl !< MPI data
+character(len=*),intent(in) :: subr  !< Calling subroutine
+integer,intent(in) :: info           !< Info index
 
 ! Check status
 if (info/=nf90_noerr) call mpl%abort(subr,nf90_strerror(info))
@@ -2107,18 +2107,18 @@ end subroutine mpl_ncerr
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_integer
-! Purpose: write integer into a log file or into a NetCDF file
+!> Write integer into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine mpl_write_integer(mpl,ncid,prefix,variables,var)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid             ! NetCDF file id
-character(len=*),intent(in) :: prefix  ! Prefix
-character(len=*),intent(in) :: variables ! Variable name
-integer,intent(in) :: var              ! Integer
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid             !< NetCDF file id
+character(len=*),intent(in) :: prefix  !< Prefix
+character(len=*),intent(in) :: variables !< Variable name
+integer,intent(in) :: var              !< Integer
 
 ! Local variables
 integer :: delta
@@ -2146,19 +2146,19 @@ end subroutine mpl_write_integer
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_integer_array
-! Purpose: write integer array into a log file or into a NetCDF file
+!> Write integer array into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine mpl_write_integer_array(mpl,ncid,prefix,variables,n,var)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid             ! NetCDF file id
-character(len=*),intent(in) :: prefix  ! Prefix
-character(len=*),intent(in) :: variables ! Variable name
-integer,intent(in) :: n                ! Integer array size
-integer,intent(in) :: var(n)           ! Integer array
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid             !< NetCDF file id
+character(len=*),intent(in) :: prefix  !< Prefix
+character(len=*),intent(in) :: variables !< Variable name
+integer,intent(in) :: n                !< Integer array size
+integer,intent(in) :: var(n)           !< Integer array
 
 ! Local variables
 integer :: i,delta
@@ -2198,18 +2198,18 @@ end subroutine mpl_write_integer_array
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_real
-! Purpose: write real into a log file or into a NetCDF file
+!> Write real into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine mpl_write_real(mpl,ncid,prefix,variables,var)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid             ! NetCDF file id
-character(len=*),intent(in) :: prefix  ! Prefix
-character(len=*),intent(in) :: variables ! Variable name
-real(kind_real),intent(in) :: var      ! Real
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid             !< NetCDF file id
+character(len=*),intent(in) :: prefix  !< Prefix
+character(len=*),intent(in) :: variables !< Variable name
+real(kind_real),intent(in) :: var      !< Real
 
 ! Local variables
 integer :: delta
@@ -2232,19 +2232,19 @@ end subroutine mpl_write_real
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_real_array
-! Purpose: write real array into a log file or into a NetCDF file
+!> Write real array into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine mpl_write_real_array(mpl,ncid,prefix,variables,n,var)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid             ! NetCDF file id
-character(len=*),intent(in) :: prefix  ! Prefix
-character(len=*),intent(in) :: variables ! Variable name
-integer,intent(in) :: n                ! Real array size
-real(kind_real),intent(in) :: var(n)   ! Real array
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid             !< NetCDF file id
+character(len=*),intent(in) :: prefix  !< Prefix
+character(len=*),intent(in) :: variables !< Variable name
+integer,intent(in) :: n                !< Real array size
+real(kind_real),intent(in) :: var(n)   !< Real array
 
 ! Local variables
 integer :: i,delta
@@ -2280,18 +2280,18 @@ end subroutine mpl_write_real_array
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_logical
-! Purpose: write logical into a log file or into a NetCDF file
+!> Write logical into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine mpl_write_logical(mpl,ncid,prefix,variables,var)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid             ! NetCDF file id
-character(len=*),intent(in) :: prefix  ! Prefix
-character(len=*),intent(in) :: variables ! Variable name
-logical,intent(in) :: var              ! Logical
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid             !< NetCDF file id
+character(len=*),intent(in) :: prefix  !< Prefix
+character(len=*),intent(in) :: variables !< Variable name
+logical,intent(in) :: var              !< Logical
 
 ! Local variables
 character(len=1024) :: for
@@ -2315,19 +2315,19 @@ end subroutine mpl_write_logical
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_logical_array
-! Purpose: write logical array into a log file or into a NetCDF file
+!> Write logical array into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine mpl_write_logical_array(mpl,ncid,prefix,variables,n,var)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid             ! NetCDF file id
-character(len=*),intent(in) :: prefix  ! Prefix
-character(len=*),intent(in) :: variables ! Variable name
-integer,intent(in) :: n                ! Real array size
-logical,intent(in) :: var(n)           ! Logical array
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid             !< NetCDF file id
+character(len=*),intent(in) :: prefix  !< Prefix
+character(len=*),intent(in) :: variables !< Variable name
+integer,intent(in) :: n                !< Real array size
+logical,intent(in) :: var(n)           !< Logical array
 
 ! Local variables
 integer :: i
@@ -2369,18 +2369,18 @@ end subroutine mpl_write_logical_array
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_string
-! Purpose: write string into a log file or into a NetCDF file
+!> Write string into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine mpl_write_string(mpl,ncid,prefix,variables,var)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid             ! NetCDF file id
-character(len=*),intent(in) :: prefix  ! Prefix
-character(len=*),intent(in) :: variables ! Variable name
-character(len=*),intent(in) :: var     ! String
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid             !< NetCDF file id
+character(len=*),intent(in) :: prefix  !< Prefix
+character(len=*),intent(in) :: variables !< Variable name
+character(len=*),intent(in) :: var     !< String
 
 ! Local variables
 character(len=1024) :: str
@@ -2405,19 +2405,19 @@ end subroutine mpl_write_string
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_string_array
-! Purpose: write string array into a log file or into a NetCDF file
+!> Write string array into a log file or into a NetCDF file
 !----------------------------------------------------------------------
 subroutine mpl_write_string_array(mpl,ncid,prefix,variables,n,var)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid             ! NetCDF file id
-character(len=*),intent(in) :: prefix  ! Prefix
-character(len=*),intent(in) :: variables ! Variable name
-integer,intent(in) :: n                ! String array size
-character(len=*),intent(in) :: var(n)  ! String array
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid             !< NetCDF file id
+character(len=*),intent(in) :: prefix  !< Prefix
+character(len=*),intent(in) :: variables !< Variable name
+integer,intent(in) :: n                !< String array size
+character(len=*),intent(in) :: var(n)  !< String array
 
 ! Local variables
 integer :: i

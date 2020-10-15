@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: tools_const
-! Purpose: define usual constants and missing values
+!> Define usual constants and missing values
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT

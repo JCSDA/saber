@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: tools_func
-! Purpose: usual functions
+!> Usual functions
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -41,14 +41,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Function: fletcher32
-! Purpose: Fletcher-32 checksum algorithm
+!> Fletcher-32 checksum algorithm
 !----------------------------------------------------------------------
 function fletcher32(var)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: var(:) ! Variable
+real(kind_real),intent(in) :: var(:) !< Variable
 
 ! Returned variable
 integer :: fletcher32
@@ -60,15 +60,15 @@ end function fletcher32
 
 !----------------------------------------------------------------------
 ! Subroutine: lonlatmod
-! Purpose: set latitude between -pi/2 and pi/2 and longitude between -pi and pi
+!> Set latitude between -pi/2 and pi/2 and longitude between -pi and pi
 !----------------------------------------------------------------------
 subroutine lonlatmod(lon,lat)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(inout) :: lon ! Longitude (radians)
-real(kind_real),intent(inout) :: lat ! Latitude (radians)
+real(kind_real),intent(inout) :: lon !< Longitude (radians)
+real(kind_real),intent(inout) :: lat !< Latitude (radians)
 
 ! Check latitude bounds
 if (lat>0.5*pi) then
@@ -90,16 +90,16 @@ end subroutine lonlatmod
 
 !----------------------------------------------------------------------
 ! Function: lonlathash
-! Purpose: define a unique real from a lon/lat pair
+!> Define a unique real from a lon/lat pair
 !----------------------------------------------------------------------
 function lonlathash(lon,lat,il)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: lon ! Longitude (radians)
-real(kind_real),intent(in) :: lat ! Latitude (radians)
-integer,intent(in),optional :: il ! Level
+real(kind_real),intent(in) :: lon !< Longitude (radians)
+real(kind_real),intent(in) :: lat !< Latitude (radians)
+integer,intent(in),optional :: il !< Level
 
 ! Returned variable
 real(kind_real) :: lonlathash
@@ -120,18 +120,18 @@ end function lonlathash
 
 !----------------------------------------------------------------------
 ! Subroutine: sphere_dist
-! Purpose: compute the great-circle distance between two points
+!> Compute the great-circle distance between two points
 !----------------------------------------------------------------------
 subroutine sphere_dist(lon_i,lat_i,lon_f,lat_f,dist)
 
 implicit none
 
 ! Passed variable
-real(kind_real),intent(in) :: lon_i ! Initial point longitude (radians)
-real(kind_real),intent(in) :: lat_i ! Initial point latitude (radians)
-real(kind_real),intent(in) :: lon_f ! Final point longitude (radians)
-real(kind_real),intent(in) :: lat_f ! Final point longilatitudetude (radians)
-real(kind_real),intent(out) :: dist ! Great-circle distance
+real(kind_real),intent(in) :: lon_i !< Initial point longitude (radians)
+real(kind_real),intent(in) :: lat_i !< Initial point latitude (radians)
+real(kind_real),intent(in) :: lon_f !< Final point longitude (radians)
+real(kind_real),intent(in) :: lat_f !< Final point longilatitudetude (radians)
+real(kind_real),intent(out) :: dist !< Great-circle distance
 
 ! Local variables
 type(atlas_geometry) :: ageometry
@@ -146,19 +146,19 @@ end subroutine sphere_dist
 
 !----------------------------------------------------------------------
 ! Subroutine: reduce_arc
-! Purpose: reduce arc to a given distance
+!> Reduce arc to a given distance
 !----------------------------------------------------------------------
 subroutine reduce_arc(lon_i,lat_i,lon_f,lat_f,maxdist,dist)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: lon_i    ! Initial point longitude (radians)
-real(kind_real),intent(in) :: lat_i    ! Initial point latitude (radians)
-real(kind_real),intent(inout) :: lon_f ! Final point longitude (radians)
-real(kind_real),intent(inout) :: lat_f ! Final point latitude (radians)
-real(kind_real),intent(in) :: maxdist  ! Maximum distance
-real(kind_real),intent(out) :: dist    ! Effective distance
+real(kind_real),intent(in) :: lon_i    !< Initial point longitude (radians)
+real(kind_real),intent(in) :: lat_i    !< Initial point latitude (radians)
+real(kind_real),intent(inout) :: lon_f !< Final point longitude (radians)
+real(kind_real),intent(inout) :: lat_f !< Final point latitude (radians)
+real(kind_real),intent(in) :: maxdist  !< Maximum distance
+real(kind_real),intent(out) :: dist    !< Effective distance
 
 ! Local variable
 real(kind_real) :: theta
@@ -183,19 +183,19 @@ end subroutine reduce_arc
 
 !----------------------------------------------------------------------
 ! Subroutine: lonlat2xyz
-! Purpose: convert longitude/latitude to cartesian coordinates
+!> Convert longitude/latitude to cartesian coordinates
 !----------------------------------------------------------------------
 subroutine lonlat2xyz(mpl,lon,lat,x,y,z)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl ! MPI data
-real(kind_real),intent(in) :: lon   ! Longitude (radians)
-real(kind_real),intent(in) :: lat   ! Latitude (radians)
-real(kind_real),intent(out) :: x    ! X coordinate
-real(kind_real),intent(out) :: y    ! Y coordinate
-real(kind_real),intent(out) :: z    ! Z coordinate
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: lon   !< Longitude (radians)
+real(kind_real),intent(in) :: lat   !< Latitude (radians)
+real(kind_real),intent(out) :: x    !< X coordinate
+real(kind_real),intent(out) :: y    !< Y coordinate
+real(kind_real),intent(out) :: z    !< Z coordinate
 
 ! Local variables
 type(atlas_geometry) :: ageometry
@@ -222,19 +222,19 @@ end subroutine lonlat2xyz
 
 !----------------------------------------------------------------------
 ! Subroutine: xyz2lonlat
-! Purpose: convert longitude/latitude to cartesian coordinates
+!> Convert longitude/latitude to cartesian coordinates
 !----------------------------------------------------------------------
 subroutine xyz2lonlat(mpl,x,y,z,lon,lat)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(in) :: mpl   ! MPI data
-real(kind_real),intent(in) :: x    ! X coordinate
-real(kind_real),intent(in) :: y    ! Y coordinate
-real(kind_real),intent(in) :: z    ! Z coordinate
-real(kind_real),intent(out) :: lon ! Longitude (radians)
-real(kind_real),intent(out) :: lat ! Latitude (radians)
+type(mpl_type),intent(in) :: mpl   !< MPI data
+real(kind_real),intent(in) :: x    !< X coordinate
+real(kind_real),intent(in) :: y    !< Y coordinate
+real(kind_real),intent(in) :: z    !< Z coordinate
+real(kind_real),intent(out) :: lon !< Longitude (radians)
+real(kind_real),intent(out) :: lat !< Latitude (radians)
 
 ! Local variables
 type(atlas_geometry) :: ageometry
@@ -259,16 +259,16 @@ end subroutine xyz2lonlat
 
 !----------------------------------------------------------------------
 ! Subroutine: vector_product
-! Purpose: compute normalized vector product
+!> Compute normalized vector product
 !----------------------------------------------------------------------
 subroutine vector_product(v1,v2,vp)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: v1(3)  ! First vector
-real(kind_real),intent(in) :: v2(3)  ! Second vector
-real(kind_real),intent(out) :: vp(3) ! Vector product
+real(kind_real),intent(in) :: v1(3)  !< First vector
+real(kind_real),intent(in) :: v2(3)  !< Second vector
+real(kind_real),intent(out) :: vp(3) !< Vector product
 
 ! Local variable
 real(kind_real) :: r
@@ -286,18 +286,18 @@ end subroutine vector_product
 
 !----------------------------------------------------------------------
 ! Subroutine: vector_triple_product
-! Purpose: compute vector triple product
+!> Compute vector triple product
 !----------------------------------------------------------------------
 subroutine vector_triple_product(v1,v2,v3,p,cflag)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: v1(3) ! First vector
-real(kind_real),intent(in) :: v2(3) ! Second vector
-real(kind_real),intent(in) :: v3(3) ! Third vector
-real(kind_real),intent(out) :: p    ! Triple product
-logical,intent(out) :: cflag        ! Confidence flag
+real(kind_real),intent(in) :: v1(3) !< First vector
+real(kind_real),intent(in) :: v2(3) !< Second vector
+real(kind_real),intent(in) :: v3(3) !< Third vector
+real(kind_real),intent(out) :: p    !< Triple product
+logical,intent(out) :: cflag        !< Confidence flag
 
 ! Local variable
 integer :: i
@@ -324,18 +324,18 @@ end subroutine vector_triple_product
 
 !----------------------------------------------------------------------
 ! Subroutine: add
-! Purpose: check if value missing and add if not missing
+!> Check if value missing and add if not missing
 !----------------------------------------------------------------------
 subroutine add(mpl,val,cumul,num,wgt)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(in) :: mpl           ! MPI data
-real(kind_real),intent(in) :: val          ! Value to add
-real(kind_real),intent(inout) :: cumul     ! Cumul
-real(kind_real),intent(inout) :: num       ! Number of values
-real(kind_real),intent(in),optional :: wgt ! Weight
+type(mpl_type),intent(in) :: mpl           !< MPI data
+real(kind_real),intent(in) :: val          !< Value to add
+real(kind_real),intent(inout) :: cumul     !< Cumul
+real(kind_real),intent(inout) :: num       !< Number of values
+real(kind_real),intent(in),optional :: wgt !< Weight
 
 ! Local variables
 real(kind_real) :: lwgt
@@ -354,16 +354,16 @@ end subroutine add
 
 !----------------------------------------------------------------------
 ! Subroutine: divide
-! Purpose: check if value missing and divide if not missing
+!> Check if value missing and divide if not missing
 !----------------------------------------------------------------------
 subroutine divide(mpl,val,num)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(in) :: mpl     ! MPI data
-real(kind_real),intent(inout) :: val ! Value to divide
-real(kind_real),intent(in) :: num    ! Divider
+type(mpl_type),intent(in) :: mpl     !< MPI data
+real(kind_real),intent(inout) :: val !< Value to divide
+real(kind_real),intent(in) :: num    !< Divider
 
 ! Divide cumul by num
 if (abs(num)>0.0) then
@@ -376,24 +376,24 @@ end subroutine divide
 
 !----------------------------------------------------------------------
 ! Subroutine: fit_diag
-! Purpose: compute diagnostic fit function
+!> Compute diagnostic fit function
 !----------------------------------------------------------------------
 subroutine fit_diag(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,coef,rh,rv,fit)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-integer,intent(in) :: nc3                        ! Number of classes
-integer,intent(in) :: nl0r                       ! Effective number of levels
-integer,intent(in) :: nl0                        ! Number of levels
-integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      ! Effective level to level
-real(kind_real),intent(in) :: disth(nc3)         ! Horizontal distance
-real(kind_real),intent(in) :: distv(nl0,nl0)     ! Vertical distance
-real(kind_real),intent(in) :: coef(nl0)          ! Diagonal coefficient
-real(kind_real),intent(in) :: rh(nl0)            ! Horizontal support radius
-real(kind_real),intent(in) :: rv(nl0)            ! Vertical support radius
-real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) ! Fit
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+integer,intent(in) :: nc3                        !< Number of classes
+integer,intent(in) :: nl0r                       !< Effective number of levels
+integer,intent(in) :: nl0                        !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      !< Effective level to level
+real(kind_real),intent(in) :: disth(nc3)         !< Horizontal distance
+real(kind_real),intent(in) :: distv(nl0,nl0)     !< Vertical distance
+real(kind_real),intent(in) :: coef(nl0)          !< Diagonal coefficient
+real(kind_real),intent(in) :: rh(nl0)            !< Horizontal support radius
+real(kind_real),intent(in) :: rv(nl0)            !< Vertical support radius
+real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
 
 ! Local variables
 integer :: jl0r,jl0,djl0,il0,kl0r,kl0,ic3,jc3,djc3,kc3,ip,jp,np,np_new,nc3max
@@ -555,12 +555,12 @@ end subroutine fit_diag
 
 !----------------------------------------------------------------------
 ! Function: gc99
-! Purpose: Gaspari and Cohn (1999) function, with the support radius as a parameter
+!> Gaspari and Cohn (1999) function, with the support radius as a parameter
 !----------------------------------------------------------------------
 function gc99(distnorm)
 
 ! Passed variables
-real(kind_real),intent(in) :: distnorm ! Normalized distance
+real(kind_real),intent(in) :: distnorm !< Normalized distance
 
 ! Returned variable
 real(kind_real) :: gc99
@@ -578,13 +578,13 @@ end function gc99
 
 !----------------------------------------------------------------------
 ! Function: fit_func
-! Purpose: fit_function
+!> Fit_function
 !----------------------------------------------------------------------
 function fit_func(mpl,distnorm)
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-real(kind_real),intent(in) :: distnorm ! Normalized distance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+real(kind_real),intent(in) :: distnorm !< Normalized distance
 
 ! Returned variable
 real(kind_real) :: fit_func
@@ -605,25 +605,25 @@ end function fit_func
 
 !----------------------------------------------------------------------
 ! Subroutine: fit_lct
-! Purpose: LCT fit
+!> LCT fit
 !----------------------------------------------------------------------
 subroutine fit_lct(mpl,nc,nl0,dxsq,dysq,dxdy,dzsq,dmask,nscales,D,coef,fit)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl         ! MPI data
-integer,intent(in) :: nc                    ! Number of classes
-integer,intent(in) :: nl0                   ! Number of levels
-real(kind_real),intent(in) :: dxsq(nc,nl0)  ! Zonal separation squared
-real(kind_real),intent(in) :: dysq(nc,nl0)  ! Meridian separation squared
-real(kind_real),intent(in) :: dxdy(nc,nl0)  ! Zonal x meridian separations product
-real(kind_real),intent(in) :: dzsq(nc,nl0)  ! Vertical separation squared
-logical,intent(in) :: dmask(nc,nl0)         ! Mask
-integer,intent(in) :: nscales               ! Number of LCT scales
-real(kind_real),intent(in) :: D(4,nscales)  ! LCT components
-real(kind_real),intent(in) :: coef(nscales) ! LCT coefficients
-real(kind_real),intent(out) :: fit(nc,nl0)  ! Fit
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nc                    !< Number of classes
+integer,intent(in) :: nl0                   !< Number of levels
+real(kind_real),intent(in) :: dxsq(nc,nl0)  !< Zonal separation squared
+real(kind_real),intent(in) :: dysq(nc,nl0)  !< Meridian separation squared
+real(kind_real),intent(in) :: dxdy(nc,nl0)  !< Zonal x meridian separations product
+real(kind_real),intent(in) :: dzsq(nc,nl0)  !< Vertical separation squared
+logical,intent(in) :: dmask(nc,nl0)         !< Mask
+integer,intent(in) :: nscales               !< Number of LCT scales
+real(kind_real),intent(in) :: D(4,nscales)  !< LCT components
+real(kind_real),intent(in) :: coef(nscales) !< LCT coefficients
+real(kind_real),intent(out) :: fit(nc,nl0)  !< Fit
 
 ! Local variables
 integer :: jl0,jc3,iscales
@@ -676,22 +676,22 @@ end subroutine fit_lct
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_d2h
-! Purpose: from D (Daley tensor) to H (local correlation tensor)
+!> From D (Daley tensor) to H (local correlation tensor)
 !----------------------------------------------------------------------
 subroutine lct_d2h(mpl,D11,D22,D33,D12,H11,H22,H33,H12)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl! MPI data
-real(kind_real),intent(in) :: D11  ! Daley tensor component 11
-real(kind_real),intent(in) :: D22  ! Daley tensor component 22
-real(kind_real),intent(in) :: D33  ! Daley tensor component 33
-real(kind_real),intent(in) :: D12  ! Daley tensor component 12
-real(kind_real),intent(out) :: H11 ! Local correlation tensor component 11
-real(kind_real),intent(out) :: H22 ! Local correlation tensor component 22
-real(kind_real),intent(out) :: H33 ! Local correlation tensor component 33
-real(kind_real),intent(out) :: H12 ! Local correlation tensor component 12
+type(mpl_type),intent(inout) :: mpl!< MPI data
+real(kind_real),intent(in) :: D11  !< Daley tensor component 11
+real(kind_real),intent(in) :: D22  !< Daley tensor component 22
+real(kind_real),intent(in) :: D33  !< Daley tensor component 33
+real(kind_real),intent(in) :: D12  !< Daley tensor component 12
+real(kind_real),intent(out) :: H11 !< Local correlation tensor component 11
+real(kind_real),intent(out) :: H22 !< Local correlation tensor component 22
+real(kind_real),intent(out) :: H33 !< Local correlation tensor component 33
+real(kind_real),intent(out) :: H12 !< Local correlation tensor component 12
 
 ! Local variables
 real(kind_real) :: det
@@ -718,20 +718,20 @@ end subroutine lct_d2h
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_h2r
-! Purpose: from H (local correlation tensor) to support radii
+!> From H (local correlation tensor) to support radii
 !----------------------------------------------------------------------
 subroutine lct_h2r(mpl,H11,H22,H33,H12,rh,rv)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl ! MPI data
-real(kind_real),intent(in) :: H11   ! Local correlation tensor component 11
-real(kind_real),intent(in) :: H22   ! Local correlation tensor component 22
-real(kind_real),intent(in) :: H33   ! Local correlation tensor component 33
-real(kind_real),intent(in) :: H12   ! Local correlation tensor component 12
-real(kind_real),intent(out) :: rh   ! Horizontal support radius
-real(kind_real),intent(out) :: rv   ! Vertical support radius
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: H11   !< Local correlation tensor component 11
+real(kind_real),intent(in) :: H22   !< Local correlation tensor component 22
+real(kind_real),intent(in) :: H33   !< Local correlation tensor component 33
+real(kind_real),intent(in) :: H12   !< Local correlation tensor component 12
+real(kind_real),intent(out) :: rh   !< Horizontal support radius
+real(kind_real),intent(out) :: rv   !< Vertical support radius
 
 ! Local variables
 real(kind_real) :: tr,det,diff
@@ -769,15 +769,15 @@ end subroutine lct_h2r
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_r2d
-! Purpose: from support radius to Daley tensor diagonal element
+!> From support radius to Daley tensor diagonal element
 !----------------------------------------------------------------------
 subroutine lct_r2d(r,D)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: r  ! Support radius
-real(kind_real),intent(out) :: D ! Daley tensor diagonal element
+real(kind_real),intent(in) :: r  !< Support radius
+real(kind_real),intent(out) :: D !< Daley tensor diagonal element
 
 ! Convert from support radius to Daley length-scale and square
 D = (gc2gau*r)**2
@@ -786,17 +786,17 @@ end subroutine lct_r2d
 
 !----------------------------------------------------------------------
 ! Subroutine: check_cond
-! Purpose: check tensor conditioning
+!> Check tensor conditioning
 !----------------------------------------------------------------------
 subroutine check_cond(d1,d2,nod,valid)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: d1  ! First diagonal coefficient
-real(kind_real),intent(in) :: d2  ! Second diagonal coefficient
-real(kind_real),intent(in) :: nod ! Normalized off-diagonal coefficient
-logical,intent(out) :: valid      ! Conditioning validity
+real(kind_real),intent(in) :: d1  !< First diagonal coefficient
+real(kind_real),intent(in) :: d2  !< Second diagonal coefficient
+real(kind_real),intent(in) :: nod !< Normalized off-diagonal coefficient
+logical,intent(out) :: valid      !< Conditioning validity
 
 ! Local variables
 real(kind_real) :: det,tr,diff,ev1,ev2
@@ -827,16 +827,16 @@ end subroutine check_cond
 
 !----------------------------------------------------------------------
 ! Function: matern
-! Purpose: compute the normalized diffusion function from eq. (55) of Mirouze and Weaver (2013), for the 3d case (d = 3)
+!> Compute the normalized diffusion function from eq. (55) of Mirouze and Weaver (2013), for the 3d case (d = 3)
 !----------------------------------------------------------------------
 real(kind_real) function matern(mpl,M,x)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: M             ! Matern function order
-real(kind_real),intent(in) :: x     ! Argument
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: M             !< Matern function order
+real(kind_real),intent(in) :: x     !< Argument
 
 ! Local variables
 integer :: j
@@ -870,7 +870,7 @@ end function matern
 
 !----------------------------------------------------------------------
 ! Subroutine: cholesky
-! Purpose: compute cholesky decomposition
+!> Compute cholesky decomposition
 ! Author: Original FORTRAN77 version by Michael Healy, modifications by AJ Miller, FORTRAN90 version by John Burkardt.
 !----------------------------------------------------------------------
 subroutine cholesky(mpl,n,a,u,ierr)
@@ -878,11 +878,11 @@ subroutine cholesky(mpl,n,a,u,ierr)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: n               ! Matrix rank
-real(kind_real),intent(in) :: a(n,n)  ! Matrix
-real(kind_real),intent(out) :: u(n,n) ! Matrix square-root
-integer,intent(out) :: ierr           ! Error status
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Matrix rank
+real(kind_real),intent(in) :: a(n,n)  !< Matrix
+real(kind_real),intent(out) :: u(n,n) !< Matrix square-root
+integer,intent(out) :: ierr           !< Error status
 
 ! Local variables
 integer :: nn,i,j,ij
@@ -923,7 +923,7 @@ end subroutine cholesky
 
 !----------------------------------------------------------------------
 ! Subroutine: syminv
-! Purpose: compute inverse of a symmetric matrix
+!> Compute inverse of a symmetric matrix
 ! Author: Original FORTRAN77 version by Michael Healy, modifications by AJ Miller, FORTRAN90 version by John Burkardt.
 !----------------------------------------------------------------------
 subroutine syminv(mpl,n,a,c,ierr)
@@ -931,11 +931,11 @@ subroutine syminv(mpl,n,a,c,ierr)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: n               ! Matrix rank
-real(kind_real),intent(in) :: a(n,n)  ! Matrix
-real(kind_real),intent(out) :: c(n,n) ! Matrix inverse
-integer,intent(out) :: ierr           ! Error status
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Matrix rank
+real(kind_real),intent(in) :: a(n,n)  !< Matrix
+real(kind_real),intent(out) :: c(n,n) !< Matrix inverse
+integer,intent(out) :: ierr           !< Error status
 
 ! Local variables
 integer :: nn,i,j,ij
@@ -976,21 +976,21 @@ end subroutine syminv
 
 !----------------------------------------------------------------------
 ! Subroutine: histogram
-! Purpose: compute bins and histogram from a list of values
+!> Compute bins and histogram from a list of values
 !----------------------------------------------------------------------
 subroutine histogram(mpl,nlist,list,nbins,histmin,histmax,bins,hist)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-integer,intent(in) :: nlist                  ! List size
-real(kind_real),intent(in) :: list(nlist)    ! List
-integer,intent(in) :: nbins                  ! Number of bins
-real(kind_real),intent(in) :: histmin        ! Histogram minimum
-real(kind_real),intent(in) :: histmax        ! Histogram maximum
-real(kind_real),intent(out) :: bins(nbins+1) ! Bins
-real(kind_real),intent(out) :: hist(nbins)   ! Histogram
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+integer,intent(in) :: nlist                  !< List size
+real(kind_real),intent(in) :: list(nlist)    !< List
+integer,intent(in) :: nbins                  !< Number of bins
+real(kind_real),intent(in) :: histmin        !< Histogram minimum
+real(kind_real),intent(in) :: histmax        !< Histogram maximum
+real(kind_real),intent(out) :: bins(nbins+1) !< Bins
+real(kind_real),intent(out) :: hist(nbins)   !< Histogram
 
 ! Local variables
 integer :: ibins,ilist

@@ -1,13 +1,3 @@
-/*
- * (C) Copyright 2009-2016 ECMWF.
- * 
- * This software is licensed under the terms of the Apache Licence Version 2.0
- * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
- * In applying this licence, ECMWF does not waive the privileges and immunities 
- * granted to it by virtue of its status as an intergovernmental organisation nor
- * does it submit to any jurisdiction.
- */
-
 #ifndef DOCUMENTS_MAINPAGE_H_
 #define DOCUMENTS_MAINPAGE_H_
 
@@ -22,5 +12,70 @@
  * Welcome to the documentation for the System Agnostic Background Error 
  * Representation (SABER)
  *
- */
+ * \section DirStructure Directory structure
+ * The SABER repository is organized as follows:
+ * - **CI**: continuous integration setup files and scripts
+ * - **cmake**: SABER-specific compiler flags
+ * - **Documents**: documentation
+ * - **src**: source code
+ *   - **saber**: SABER source code
+ *     - **bump**: BUMP core and interfaces
+ *     - **external**: external tools
+ *     - **gaugrid**: Gaussian grid tools
+ *     - **interpolation**: interpolation interface
+ *     - **oops**: OOPS interface
+ *     - **util**: shared tools
+ * - **test**: testing tools and source code
+ *   - **mains**: executables sources
+ *     - **model**: model-specific interfaces for the BUMP executable
+ *   - **testinput**: input YAML files
+ *   - **testlist**: lists of tests, data and reference files
+ * - **tools**: useful bash and python scripts
+ *
+ * \section CLOC Code size and characteristics
+ * Code report obtained with [CLOC](https://github.com/AlDanial/cloc).
+
+ * \subsection dir_0 src/saber/bump
+ * | language | files | blank | comment | code | comment/code ratio |
+ * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
+ * | Fortran 90 | 35 | 5153 | 8066 | 20475 | 39 % |
+ * | C/C++ Header | 1 | 6 | 7 | 39 | 17 % |
+ * | C | 1 | 2 | 6 | 21 | 28 % |
+ *
+ * \subsection dir_1 src/saber/external
+ * | language | files | blank | comment | code | comment/code ratio |
+ * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
+ * | Fortran 90 | 4 | 366 | 1672 | 1766 | 94 % |
+ *
+ * \subsection dir_2 src/saber/gaugrid
+ * | language | files | blank | comment | code | comment/code ratio |
+ * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
+ * | Fortran 90 | 1 | 59 | 87 | 102 | 85 % |
+ *
+ * \subsection dir_3 src/saber/interpolation
+ * | language | files | blank | comment | code | comment/code ratio |
+ * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
+ * | Fortran 90 | 2 | 165 | 231 | 407 | 56 % |
+ * | C/C++ Header | 2 | 23 | 19 | 56 | 33 % |
+ * | C++ | 1 | 12 | 17 | 41 | 41 % |
+ *
+ * \subsection dir_4 src/saber/oops
+ * | language | files | blank | comment | code | comment/code ratio |
+ * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
+ * | C/C++ Header | 13 | 343 | 235 | 1220 | 19 % |
+ *
+ * \subsection dir_5 src/saber/util
+ * | language | files | blank | comment | code | comment/code ratio |
+ * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
+ * | Fortran 90 | 9 | 1170 | 1641 | 2692 | 60 % |
+ * | Fortran 77 | 2 | 28 | 37 | 102 | 36 % |
+ *
+ * \subsection dir_6 test/mains
+ * | language | files | blank | comment | code | comment/code ratio |
+ * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|
+ * | Fortran 90 | 2 | 168 | 279 | 725 | 38 % |
+ * | C++ | 5 | 12 | 41 | 67 | 61 % |
+ *
+*/
+
 #endif  // DOCUMENTS_MAINPAGE_H_

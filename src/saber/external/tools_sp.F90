@@ -4,7 +4,7 @@
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !----------------------------------------------------------------------
 ! Module: tools_sp
-! Purpose: spectral transforms
+!> Spectral transforms
 !----------------------------------------------------------------------
 module tools_sp
 
@@ -27,17 +27,17 @@ contains
 
 !-----------------------------------------------------------------
 ! Subroutine: splat
-! Purpose: compute latitude functions
+!> Compute latitude functions
 !-----------------------------------------------------------------
 subroutine splat(IDRT,JMAX,SLAT,WLAT)
 
 implicit none
 
 ! Passed variables
-integer,intent(in ) :: IDRT                    ! Grid identifier
-integer,intent(in ) :: JMAX                    ! Number of latitudes
-real(kind=kind_real),intent(out) :: SLAT(JMAX) ! Sines of latitude 
-real(kind=kind_real),intent(out) :: WLAT(JMAX) ! Gaussian weights-
+integer,intent(in ) :: IDRT                    !< Grid identifier
+integer,intent(in ) :: JMAX                    !< Number of latitudes
+real(kind=kind_real),intent(out) :: SLAT(JMAX) !< Sines of latitude 
+real(kind=kind_real),intent(out) :: WLAT(JMAX) !< Gaussian weights-
 
 ! Local variables
 real(kind=kind_real):: PK(JMAX/2),PKM1(JMAX/2),PKM2(JMAX/2)
@@ -197,18 +197,18 @@ end subroutine splat
 
 !-----------------------------------------------------------------
 ! Subroutine: lubksb
-! Purpose: solves a system of linear equations, follows call to LUDCMP
+!> Solves a system of linear equations, follows call to LUDCMP
 !-----------------------------------------------------------------
 subroutine lubksb(A,N,NP,INDX,B)
 
 implicit none
 
 ! Passed varaibles
-integer,intent(in):: NP                    ! ?
-integer,intent(in):: N                     ! ?
-real(kind=kind_real),intent(in):: A(NP,NP) ! ?
-real(kind=kind_real),intent(inout):: B(N)  ! ?
-integer,intent(in):: INDX(N)               ! ?
+integer,intent(in):: NP                    !< ?
+integer,intent(in):: N                     !< ?
+real(kind=kind_real),intent(in):: A(NP,NP) !< ?
+real(kind=kind_real),intent(inout):: B(N)  !< ?
+integer,intent(in):: INDX(N)               !< ?
 
 ! Local variables
 real(kind=kind_real):: SUM
@@ -242,18 +242,18 @@ end subroutine lubksb
 
 !-----------------------------------------------------------------
 ! Subroutine: ludcmp
-! Purpose: replaces an NxN matrix A with the LU decomposition
+!> Replaces an NxN matrix A with the LU decomposition
 !-----------------------------------------------------------------
 subroutine ludcmp(A,N,NP,INDX,D)
 
 implicit none
 
 ! Passed variables
-integer,intent(in):: N                        ! ?
-integer,intent(in):: NP                       ! ?
-real(kind=kind_real),intent(inout):: A(NP,NP) ! ?
-integer,intent(out):: INDX(N)                 ! ? 
-real(kind=kind_real),intent(out),optional:: D ! ?
+integer,intent(in):: N                        !< ?
+integer,intent(in):: NP                       !< ?
+real(kind=kind_real),intent(inout):: A(NP,NP) !< ?
+integer,intent(out):: INDX(N)                 !< ? 
+real(kind=kind_real),intent(out),optional:: D !< ?
 
 ! Local variables
 real(kind=kind_real),parameter:: TINY=1.0E-20

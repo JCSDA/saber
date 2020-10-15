@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_timer
-! Purpose: timer data derived type
+!> Timer data derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -14,14 +14,14 @@ implicit none
 
 ! Timer data derived type
 type timer_type
-   real(kind_real) :: cpu_time_start  ! CPU time start
-   real(kind_real) :: cpu_time_end    ! CPU time end
-   integer :: count_rate              ! Count rate
-   integer :: count_max               ! Count maximum
-   integer :: system_clock_start      ! System clock start
-   integer :: system_clock_end        ! System clock end
-   real(kind_real) :: cpu             ! CPU time
-   real(kind_real) :: elapsed         ! Elapsed time
+   real(kind_real) :: cpu_time_start  !< CPU time start
+   real(kind_real) :: cpu_time_end    !< CPU time end
+   integer :: count_rate              !< Count rate
+   integer :: count_max               !< Count maximum
+   integer :: system_clock_start      !< System clock start
+   integer :: system_clock_end        !< System clock end
+   real(kind_real) :: cpu             !< CPU time
+   real(kind_real) :: elapsed         !< Elapsed time
 contains
    procedure :: start => timer_start
    procedure :: end => timer_end
@@ -35,15 +35,15 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: timer_start
-! Purpose: initialize timer
+!> Initialize timer
 !----------------------------------------------------------------------
 subroutine timer_start(timer,mpl)
 
 implicit none
 
 ! Passed variables
-class(timer_type),intent(inout) :: timer ! Timer data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
+class(timer_type),intent(inout) :: timer !< Timer data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
 
 ! Execution times  initialization
 if (mpl%main) then
@@ -56,15 +56,15 @@ end subroutine timer_start
 
 !----------------------------------------------------------------------
 ! Subroutine: timer_end
-! Purpose: finalize timer
+!> Finalize timer
 !----------------------------------------------------------------------
 subroutine timer_end(timer,mpl)
 
 implicit none
 
 ! Passed variables
-class(timer_type),intent(inout) :: timer ! Timer data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
+class(timer_type),intent(inout) :: timer !< Timer data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
 
 if (mpl%main) then
    ! Execution times calculation
@@ -88,15 +88,15 @@ end subroutine timer_end
 
 !----------------------------------------------------------------------
 ! Subroutine: timer_display
-! Purpose: display timer
+!> Display timer
 !----------------------------------------------------------------------
 subroutine timer_display(timer,mpl)
 
 implicit none
 
 ! Passed variables
-class(timer_type),intent(inout) :: timer ! Timer data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
+class(timer_type),intent(inout) :: timer !< Timer data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
 
 ! Execution times calculation
 call timer%end(mpl)

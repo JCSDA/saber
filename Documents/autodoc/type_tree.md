@@ -1,9 +1,0 @@
-# Module type_tree
-
-| Type | Name | Purpose | Arguments          |
-| :--: | :--: | :------ | :----------------- |
-| subroutine | [tree_alloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_tree.F90#L56) | allocation | <b>tree</b> :  Tree - class(tree_type) - inout<br><b>mpl</b> :  MPI data - type(mpl_type) - inout<br><b>n</b> :  Number of points - integer - in<br><b>mask</b> :  Mask - logical - in |
-| subroutine | [tree_init](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_tree.F90#L96) | initialization | <b>tree</b> :  Tree - class(tree_type) - inout<br><b>lon</b> :  Points longitudes (in radians) - real(kind_real) - in<br><b>lat</b> :  Points latitudes (in radians) - real(kind_real) - in |
-| subroutine | [tree_dealloc](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_tree.F90#L139) | release memory | <b>tree</b> :  Tree - class(tree_type) - inout |
-| subroutine | [tree_find_nearest_neighbors](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_tree.F90#L168) | find nearest neighbors using a KDTree | <b>tree</b> :  Tree - class(tree_type) - in<br><b>lon</b> :  Point longitude (in radians) - real(kind_real) - in<br><b>lat</b> :  Point latitude (in radians) - real(kind_real) - in<br><b>nn</b> :  Number of nearest neighbors to find - integer - in<br><b>nn_index</b> :  Nearest neighbors index - integer - out<br><b>nn_dist</b> :  Nearest neighbors distance - real(kind_real) - out |
-| subroutine | [tree_count_nearest_neighbors](https://github.com/JCSDA/saber/tree/develop/src/saber/bump/type_tree.F90#L271) | count nearest neighbors using a tree | <b>tree</b> :  Tree - class(tree_type) - in<br><b>lon</b> :  Point longitude (in radians) - real(kind_real) - in<br><b>lat</b> :  Point latitude (in radians) - real(kind_real) - in<br><b>sr</b> :  Spherical radius (in radians) - real(kind_real) - in<br><b>nn</b> :  Number of nearest neighbors found - integer - out |

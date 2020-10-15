@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: tools_asa007
-! Purpose: inverse of symmetric positive definite matrix routines
+!> Inverse of symmetric positive definite matrix routines
 ! Source: https://people.sc.fsu.edu/~jburkardt/f_src/asa007/asa007.html
 ! Author: Michael Healy
 ! Original licensing: none
@@ -27,19 +27,19 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: asa007_cholesky
-! Purpose: compute cholesky decomposition
+!> Compute cholesky decomposition
 !----------------------------------------------------------------------
 subroutine asa007_cholesky(mpl,n,nn,a,u,ierr)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-integer,intent(in) :: n              ! Matrix rank
-integer,intent(in) :: nn             ! Half-matrix size (n*(n-1)/2)
-real(kind_real),intent(in) :: a(nn)  ! Matrix
-real(kind_real),intent(out) :: u(nn) ! Matrix square-root
-integer,intent(out) :: ierr          ! Error status
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+integer,intent(in) :: n              !< Matrix rank
+integer,intent(in) :: nn             !< Half-matrix size (n*(n-1)/2)
+real(kind_real),intent(in) :: a(nn)  !< Matrix
+real(kind_real),intent(out) :: u(nn) !< Matrix square-root
+integer,intent(out) :: ierr          !< Error status
 
 ! Local variables
 integer :: i,icol,ii,irow,j,k,kk,l,m
@@ -106,19 +106,19 @@ end subroutine asa007_cholesky
 
 !----------------------------------------------------------------------
 ! Subroutine: asa007_syminv
-! Purpose: compute inverse of a symmetric matrix
+!> Compute inverse of a symmetric matrix
 !----------------------------------------------------------------------
 subroutine asa007_syminv(mpl,n,nn,a,c,ierr)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-integer,intent(in) :: n              ! Matrix rank
-integer,intent(in) :: nn             ! Half-matrix size (n*(n-1)/2)
-real(kind_real),intent(in) :: a(nn)  ! Matrix
-real(kind_real),intent(out) :: c(nn) ! Matrix inverse
-integer,intent(out) :: ierr          ! Error status
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+integer,intent(in) :: n              !< Matrix rank
+integer,intent(in) :: nn             !< Half-matrix size (n*(n-1)/2)
+real(kind_real),intent(in) :: a(nn)  !< Matrix
+real(kind_real),intent(out) :: c(nn) !< Matrix inverse
+integer,intent(out) :: ierr          !< Error status
 
 ! Local variables
 integer :: i,icol,irow,j,jcol,k,l,mdiag,ndiag,nrow

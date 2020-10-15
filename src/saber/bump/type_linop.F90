@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_linop
-! Purpose: linear operator derived type
+!> Linear operator derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -38,18 +38,18 @@ end type
 ! Linear operator derived type
 type linop_type
    ! Prefix and dimensions
-   character(len=1024) :: prefix            ! Operator prefix (for I/O)
-   integer :: n_src                         ! Source vector size
-   integer :: n_dst                         ! Destination vector size
-   integer :: n_s                           ! Operator size
-   integer :: nvec                          ! Size of the vector of linear operators with similar row and col
+   character(len=1024) :: prefix            !< Operator prefix (for I/O)
+   integer :: n_src                         !< Source vector size
+   integer :: n_dst                         !< Destination vector size
+   integer :: n_s                           !< Operator size
+   integer :: nvec                          !< Size of the vector of linear operators with similar row and col
 
    ! Data
-   integer,allocatable :: row(:)            ! Output indices
-   integer,allocatable :: col(:)            ! Input indices
-   real(kind_real),allocatable :: S(:)      ! Coefficients
-   real(kind_real),allocatable :: Svec(:,:) ! Coefficients of the vector of linear operators with similar row and col
-   type(interp_type) :: interp_data         ! Interpolation data
+   integer,allocatable :: row(:)            !< Output indices
+   integer,allocatable :: col(:)            !< Input indices
+   real(kind_real),allocatable :: S(:)      !< Coefficients
+   real(kind_real),allocatable :: Svec(:,:) !< Coefficients of the vector of linear operators with similar row and col
+   type(interp_type) :: interp_data         !< Interpolation data
 contains
    procedure :: alloc => linop_alloc
    procedure :: dealloc => linop_dealloc
@@ -74,14 +74,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: interp_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine interp_dealloc(interp_data)
 
 implicit none
 
 ! Passed variables
-class(interp_type),intent(inout) :: interp_data ! Interpolation data
+class(interp_type),intent(inout) :: interp_data !< Interpolation data
 
 ! Release memory
 if (allocated(interp_data%src_eff_to_src)) deallocate(interp_data%src_eff_to_src)
@@ -94,15 +94,15 @@ end subroutine interp_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine linop_alloc(linop,nvec)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop ! Linear operator
-integer,intent(in),optional :: nvec      ! Size of the vector of linear operators with similar row and col
+class(linop_type),intent(inout) :: linop !< Linear operator
+integer,intent(in),optional :: nvec      !< Size of the vector of linear operators with similar row and col
 
 ! Vector size
 if (present(nvec)) then
@@ -124,14 +124,14 @@ end subroutine linop_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine linop_dealloc(linop)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop ! Linear operator
+class(linop_type),intent(inout) :: linop !< Linear operator
 
 ! Release memory
 if (allocated(linop%row)) deallocate(linop%row)
@@ -144,16 +144,16 @@ end subroutine linop_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_copy
-! Purpose: copy
+!> Copy
 !----------------------------------------------------------------------
 subroutine linop_copy(linop_out,linop_in,n_s)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop_out ! Output linear operator
-type(linop_type),intent(in) :: linop_in      ! Input linear operator
-integer,intent(in),optional :: n_s           ! Number of operations to copy
+class(linop_type),intent(inout) :: linop_out !< Output linear operator
+type(linop_type),intent(in) :: linop_in      !< Input linear operator
+integer,intent(in),optional :: n_s           !< Number of operations to copy
 
 ! Release memory
 call linop_out%dealloc
@@ -186,16 +186,16 @@ end subroutine linop_copy
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_read
-! Purpose: read
+!> Read
 !----------------------------------------------------------------------
 subroutine linop_read(linop,mpl,ncid)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop ! Linear operator
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: ncid               ! NetCDF file
+class(linop_type),intent(inout) :: linop !< Linear operator
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: ncid               !< NetCDF file
 
 ! Local variables
 integer :: nvec
@@ -238,16 +238,16 @@ end subroutine linop_read
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_write
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine linop_write(linop,mpl,ncid)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(in) :: linop ! Linear operator
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid            ! NetCDF file
+class(linop_type),intent(in) :: linop !< Linear operator
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid            !< NetCDF file
 
 ! Local variables
 integer :: grpid,n_s_id,nvec_id,row_id,col_id,S_id,Svec_id
@@ -289,16 +289,16 @@ end subroutine linop_write
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_buffer_size
-! Purpose: buffer size
+!> Buffer size
 !----------------------------------------------------------------------
 subroutine linop_buffer_size(linop,nbufi,nbufr)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(in) :: linop ! Linear operator
-integer,intent(out) :: nbufi          ! Buffer size (integer)
-integer,intent(out) :: nbufr          ! Buffer size (real)
+class(linop_type),intent(in) :: linop !< Linear operator
+integer,intent(out) :: nbufi          !< Buffer size (integer)
+integer,intent(out) :: nbufr          !< Buffer size (real)
 
 ! Define buffer size
 nbufi = 6+2*linop%n_s
@@ -312,19 +312,19 @@ end subroutine linop_buffer_size
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_serialize
-! Purpose: serialize
+!> Serialize
 !----------------------------------------------------------------------
 subroutine linop_serialize(linop,mpl,nbufi,nbufr,bufi,bufr)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(in) :: linop      ! Linear operator
-type(mpl_type),intent(inout) :: mpl        ! MPI data
-integer,intent(in) :: nbufi                ! Buffer size (integer)
-integer,intent(in) :: nbufr                ! Buffer size (real)
-integer,intent(out) :: bufi(nbufi)         ! Buffer (integer)
-real(kind_real),intent(out) :: bufr(nbufr) ! Buffer (real)
+class(linop_type),intent(in) :: linop      !< Linear operator
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: nbufi                !< Buffer size (integer)
+integer,intent(in) :: nbufr                !< Buffer size (real)
+integer,intent(out) :: bufi(nbufi)         !< Buffer (integer)
+real(kind_real),intent(out) :: bufr(nbufr) !< Buffer (real)
 
 ! Local variables
 integer :: ibufi,ibufr
@@ -384,19 +384,19 @@ end subroutine linop_serialize
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_deserialize
-! Purpose: deserialize
+!> Deserialize
 !----------------------------------------------------------------------
 subroutine linop_deserialize(linop,mpl,nbufi,nbufr,bufi,bufr)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop  ! Linear operator
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-integer,intent(in) :: nbufi               ! Buffer size (integer)
-integer,intent(in) :: nbufr               ! Buffer size (real)
-integer,intent(in) :: bufi(nbufi)         ! Buffer (integer)
-real(kind_real),intent(in) :: bufr(nbufr) ! Buffer (real)
+class(linop_type),intent(inout) :: linop  !< Linear operator
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+integer,intent(in) :: nbufi               !< Buffer size (integer)
+integer,intent(in) :: nbufr               !< Buffer size (real)
+integer,intent(in) :: bufi(nbufi)         !< Buffer (integer)
+real(kind_real),intent(in) :: bufr(nbufr) !< Buffer (real)
 
 ! Local variables
 integer :: ibufi,ibufr,nvec
@@ -462,20 +462,20 @@ end subroutine linop_deserialize
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_apply
-! Purpose: apply linear operator
+!> Apply linear operator
 !----------------------------------------------------------------------
 subroutine linop_apply(linop,mpl,fld_src,fld_dst,ivec,mssrc,msdst)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(in) :: linop               ! Linear operator
-type(mpl_type),intent(inout) :: mpl                 ! MPI data
-real(kind_real),intent(in) :: fld_src(linop%n_src)  ! Source vector
-real(kind_real),intent(out) :: fld_dst(linop%n_dst) ! Destination vector
-integer,intent(in),optional :: ivec                 ! Index of the vector of linear operators with similar row and col
-logical,intent(in),optional :: mssrc                ! Check for missing source
-logical,intent(in),optional :: msdst                ! Check for missing destination
+class(linop_type),intent(in) :: linop               !< Linear operator
+type(mpl_type),intent(inout) :: mpl                 !< MPI data
+real(kind_real),intent(in) :: fld_src(linop%n_src)  !< Source vector
+real(kind_real),intent(out) :: fld_dst(linop%n_dst) !< Destination vector
+integer,intent(in),optional :: ivec                 !< Index of the vector of linear operators with similar row and col
+logical,intent(in),optional :: mssrc                !< Check for missing source
+logical,intent(in),optional :: msdst                !< Check for missing destination
 
 ! Local variables
 integer :: i_s,i_dst
@@ -569,18 +569,18 @@ end subroutine linop_apply
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_apply_ad
-! Purpose: apply linear operator, adjoint
+!> Apply linear operator, adjoint
 !----------------------------------------------------------------------
 subroutine linop_apply_ad(linop,mpl,fld_dst,fld_src,ivec)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(in) :: linop               ! Linear operator
-type(mpl_type),intent(inout) :: mpl                 ! MPI data
-real(kind_real),intent(in) :: fld_dst(linop%n_dst)  ! Destination vector
-real(kind_real),intent(out) :: fld_src(linop%n_src) ! Source vector
-integer,intent(in),optional :: ivec                 ! Index of the vector of linear operators with similar row and col
+class(linop_type),intent(in) :: linop               !< Linear operator
+type(mpl_type),intent(inout) :: mpl                 !< MPI data
+real(kind_real),intent(in) :: fld_dst(linop%n_dst)  !< Destination vector
+real(kind_real),intent(out) :: fld_src(linop%n_src) !< Source vector
+integer,intent(in),optional :: ivec                 !< Index of the vector of linear operators with similar row and col
 
 ! Local variables
 integer :: i_s
@@ -625,17 +625,17 @@ end subroutine linop_apply_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_apply_sym
-! Purpose: apply linear operator, symmetric
+!> Apply linear operator, symmetric
 !----------------------------------------------------------------------
 subroutine linop_apply_sym(linop,mpl,fld,ivec)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(in) :: linop             ! Linear operator
-type(mpl_type),intent(inout) :: mpl               ! MPI data
-real(kind_real),intent(inout) :: fld(linop%n_src) ! Source/destination vector
-integer,intent(in),optional :: ivec               ! Index of the vector of linear operators with similar row and col
+class(linop_type),intent(in) :: linop             !< Linear operator
+type(mpl_type),intent(inout) :: mpl               !< MPI data
+real(kind_real),intent(inout) :: fld(linop%n_src) !< Source/destination vector
+integer,intent(in),optional :: ivec               !< Index of the vector of linear operators with similar row and col
 
 ! Local variables
 integer :: i_s,ithread
@@ -692,18 +692,18 @@ end subroutine linop_apply_sym
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_add_op
-! Purpose: add operation
+!> Add operation
 !----------------------------------------------------------------------
 subroutine linop_add_op(linop,n_s,row,col,S)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop ! Linear operators
-integer,intent(inout) :: n_s             ! Number of operations
-integer,intent(in) :: row                ! Row index
-integer,intent(in) :: col                ! Column index
-real(kind_real),intent(in) :: S          ! Value
+class(linop_type),intent(inout) :: linop !< Linear operators
+integer,intent(inout) :: n_s             !< Number of operations
+integer,intent(in) :: row                !< Row index
+integer,intent(in) :: col                !< Column index
+real(kind_real),intent(in) :: S          !< Value
 
 ! Local variables
 type(linop_type) :: linop_tmp
@@ -737,17 +737,17 @@ end subroutine linop_add_op
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_gather
-! Purpose: gather data from OpenMP threads
+!> Gather data from OpenMP threads
 !----------------------------------------------------------------------
 subroutine linop_gather(linop,mpl,n_s_arr,linop_arr)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop              ! Linear operator
-type(mpl_type),intent(inout) :: mpl                   ! MPI data
-integer,intent(in) :: n_s_arr(mpl%nthread)            ! Number of operations
-type(linop_type),intent(in) :: linop_arr(mpl%nthread) ! Linear operator array
+class(linop_type),intent(inout) :: linop              !< Linear operator
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+integer,intent(in) :: n_s_arr(mpl%nthread)            !< Number of operations
+type(linop_type),intent(in) :: linop_arr(mpl%nthread) !< Linear operator array
 
 ! Local variables
 integer :: ithread,offset
@@ -776,28 +776,28 @@ end subroutine linop_gather
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_interp
-! Purpose: compute horizontal interpolation
+!> Compute horizontal interpolation
 !----------------------------------------------------------------------
 subroutine linop_interp(linop,mpl,rng,nam,geom,il0,n_src,lon_src,lat_src,mask_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop     ! Linear operator
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(rng_type),intent(inout) :: rng          ! Random number generator
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-integer,intent(in) :: il0                    ! Level
-integer,intent(in) :: n_src                  ! Source size
-real(kind_real),intent(in) :: lon_src(n_src) ! Source longitudes
-real(kind_real),intent(in) :: lat_src(n_src) ! Source latitudes
-logical,intent(in) :: mask_src(n_src)        ! Source mask
-integer,intent(in) :: n_dst                  ! Destination size
-real(kind_real),intent(in) :: lon_dst(n_dst) ! Destination longitudes
-real(kind_real),intent(in) :: lat_dst(n_dst) ! Destination latitudes
-logical,intent(in) :: mask_dst(n_dst)        ! Destination mask
-integer,intent(in) :: ifmt                   ! Format indentation
+class(linop_type),intent(inout) :: linop     !< Linear operator
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(rng_type),intent(inout) :: rng          !< Random number generator
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+integer,intent(in) :: il0                    !< Level
+integer,intent(in) :: n_src                  !< Source size
+real(kind_real),intent(in) :: lon_src(n_src) !< Source longitudes
+real(kind_real),intent(in) :: lat_src(n_src) !< Source latitudes
+logical,intent(in) :: mask_src(n_src)        !< Source mask
+integer,intent(in) :: n_dst                  !< Destination size
+real(kind_real),intent(in) :: lon_dst(n_dst) !< Destination longitudes
+real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
+logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
+integer,intent(in) :: ifmt                   !< Format indentation
 
 ! Local variables
 integer :: n_src_eff,i_src,i_src_eff,i,i_dst,nn_index(1),n_s,ib(3),i_s

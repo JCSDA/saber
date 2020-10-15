@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_com
-! Purpose: communications derived type
+!> Communications derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -20,24 +20,24 @@ implicit none
 ! Communication derived type
 type com_type
    ! Setup data
-   integer,allocatable :: ext_to_proc(:) ! Extended index to processor
-   integer,allocatable :: ext_to_red(:)  ! Extended index to reduced index
+   integer,allocatable :: ext_to_proc(:) !< Extended index to processor
+   integer,allocatable :: ext_to_red(:)  !< Extended index to reduced index
 
    ! Communication data
-   character(len=1024) :: prefix         ! Communication prefix
-   integer :: nred                       ! Reduction size
-   integer :: next                       ! Extension size
-   integer :: nown                       ! Own data size
-   integer,allocatable :: own_to_ext(:)  ! Own data to extension conversion
-   integer,allocatable :: own_to_red(:)  ! Own data to reduction conversion
-   integer :: nhalo                      ! Halo buffer size
-   integer :: nexcl                      ! Exclusive interior buffer size
-   integer,allocatable :: jhalocounts(:) ! Halo counts
-   integer,allocatable :: jexclcounts(:) ! Exclusive interior counts
-   integer,allocatable :: jhalodispls(:) ! Halo displacement
-   integer,allocatable :: jexcldispls(:) ! Exclusive interior displacement
-   integer,allocatable :: halo(:)        ! Halo buffer
-   integer,allocatable :: excl(:)        ! Exclusive interior buffer
+   character(len=1024) :: prefix         !< Communication prefix
+   integer :: nred                       !< Reduction size
+   integer :: next                       !< Extension size
+   integer :: nown                       !< Own data size
+   integer,allocatable :: own_to_ext(:)  !< Own data to extension conversion
+   integer,allocatable :: own_to_red(:)  !< Own data to reduction conversion
+   integer :: nhalo                      !< Halo buffer size
+   integer :: nexcl                      !< Exclusive interior buffer size
+   integer,allocatable :: jhalocounts(:) !< Halo counts
+   integer,allocatable :: jexclcounts(:) !< Exclusive interior counts
+   integer,allocatable :: jhalodispls(:) !< Halo displacement
+   integer,allocatable :: jexcldispls(:) !< Exclusive interior displacement
+   integer,allocatable :: halo(:)        !< Halo buffer
+   integer,allocatable :: excl(:)        !< Exclusive interior buffer
 contains
    procedure :: dealloc => com_dealloc
    procedure :: read => com_read
@@ -69,14 +69,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: com_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine com_dealloc(com)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(inout) :: com ! Communication data
+class(com_type),intent(inout) :: com !< Communication data
 
 ! Release memory
 if (allocated(com%ext_to_proc)) deallocate(com%ext_to_proc)
@@ -94,16 +94,16 @@ end subroutine com_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: com_read
-! Purpose: read communications from a NetCDF file
+!> Read communications from a NetCDF file
 !----------------------------------------------------------------------
 subroutine com_read(com,mpl,ncid)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(inout) :: com  ! Communication data
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-integer,intent(in) :: ncid            ! NetCDF file
+class(com_type),intent(inout) :: com  !< Communication data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid            !< NetCDF file
 
 ! Local variables
 integer :: grpid,own_to_ext_id,own_to_red_id,jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
@@ -153,16 +153,16 @@ end subroutine com_read
 
 !----------------------------------------------------------------------
 ! Subroutine: com_write
-! Purpose: write communications to a NetCDF file
+!> Write communications to a NetCDF file
 !----------------------------------------------------------------------
 subroutine com_write(com,mpl,ncid)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com   ! Communication data
-type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: ncid          ! NetCDF file
+class(com_type),intent(in) :: com   !< Communication data
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: ncid          !< NetCDF file
 
 ! Local variables
 integer :: grpid,nproc_id,nred_id,next_id,nown_id,own_to_ext_id,own_to_red_id,nhalo_id,nexcl_id
@@ -204,16 +204,16 @@ end subroutine com_write
 
 !----------------------------------------------------------------------
 ! Subroutine: com_buffer_size
-! Purpose: buffer size
+!> Buffer size
 !----------------------------------------------------------------------
 subroutine com_buffer_size(com,mpl,nbufi)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com   ! Communication data
-type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(out) :: nbufi        ! Buffer size (integer)
+class(com_type),intent(in) :: com   !< Communication data
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(out) :: nbufi        !< Buffer size (integer)
 
 ! Define buffer size
 nbufi = 6+2*com%nown+4*mpl%nproc+com%nhalo+com%nexcl
@@ -222,17 +222,17 @@ end subroutine com_buffer_size
 
 !----------------------------------------------------------------------
 ! Subroutine: com_serialize
-! Purpose: serialize
+!> Serialize
 !----------------------------------------------------------------------
 subroutine com_serialize(com,mpl,nbufi,bufi)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com   ! Communication data
-type(mpl_type),intent(inout) :: mpl ! MPI data
-integer,intent(in) :: nbufi         ! Buffer size (integer)
-integer,intent(out) :: bufi(nbufi)  ! Buffer (integer)
+class(com_type),intent(in) :: com   !< Communication data
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: nbufi         !< Buffer size (integer)
+integer,intent(out) :: bufi(nbufi)  !< Buffer (integer)
 
 ! Local variables
 integer :: ibufi
@@ -280,17 +280,17 @@ end subroutine com_serialize
 
 !----------------------------------------------------------------------
 ! Subroutine: com_deserialize
-! Purpose: receive
+!> Receive
 !----------------------------------------------------------------------
 subroutine com_deserialize(com,mpl,nbufi,bufi)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(inout) :: com ! Communication data
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-integer,intent(in) :: nbufi          ! Buffer size (integer)
-integer,intent(in) :: bufi(nbufi)    ! Buffer (integer)
+class(com_type),intent(inout) :: com !< Communication data
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+integer,intent(in) :: nbufi          !< Buffer size (integer)
+integer,intent(in) :: bufi(nbufi)    !< Buffer (integer)
 
 ! Local variables
 integer :: ibufi
@@ -350,22 +350,22 @@ end subroutine com_deserialize
 
 !----------------------------------------------------------------------
 ! Subroutine: com_setup
-! Purpose: setup communications
+!> Setup communications
 !----------------------------------------------------------------------
 subroutine com_setup(com_out,mpl,prefix,nred,next,nglb,red_to_glb,ext_to_glb,own_to_glb)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(inout) :: com_out     ! Communication data
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-character(len=*),intent(in) :: prefix        ! Prefix
-integer,intent(in) :: nred                   ! Reduced halo size
-integer,intent(in) :: next                   ! Extended halo size
-integer,intent(in) :: nglb                   ! Global size
-integer,intent(in) :: red_to_glb(nred)       ! Reduced halo to global
-integer,intent(in) :: ext_to_glb(next)       ! Extended halo to global
-integer,intent(in),optional :: own_to_glb(:) ! Own data to global
+class(com_type),intent(inout) :: com_out     !< Communication data
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+character(len=*),intent(in) :: prefix        !< Prefix
+integer,intent(in) :: nred                   !< Reduced halo size
+integer,intent(in) :: next                   !< Extended halo size
+integer,intent(in) :: nglb                   !< Global size
+integer,intent(in) :: red_to_glb(nred)       !< Reduced halo to global
+integer,intent(in) :: ext_to_glb(next)       !< Extended halo to global
+integer,intent(in),optional :: own_to_glb(:) !< Own data to global
 
 ! Local variables
 integer :: iproc,jproc,iown,ired,iext,iglb,icount,nglb_test
@@ -675,17 +675,17 @@ end subroutine com_setup
 
 !----------------------------------------------------------------------
 ! Subroutine: com_ext_integer_1d
-! Purpose: communicate field to halo (extension), 1d
+!> Communicate field to halo (extension), 1d
 !----------------------------------------------------------------------
 subroutine com_ext_integer_1d(com,mpl,vec_red,vec_ext)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com        ! Communication data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: vec_red(com%nred)  ! Reduced vector
-integer,intent(out) :: vec_ext(com%next) ! Extended vector
+class(com_type),intent(in) :: com        !< Communication data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: vec_red(com%nred)  !< Reduced vector
+integer,intent(out) :: vec_ext(com%next) !< Extended vector
 
 ! Local variables
 integer :: iexcl,iown,ihalo
@@ -730,18 +730,18 @@ end subroutine com_ext_integer_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_ext_integer_2d
-! Purpose: communicate field to halo (extension), 2d
+!> Communicate field to halo (extension), 2d
 !----------------------------------------------------------------------
 subroutine com_ext_integer_2d(com,mpl,nl,vec_red,vec_ext)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com           ! Communication data
-type(mpl_type),intent(inout) :: mpl         ! MPI data
-integer,intent(in) :: nl                    ! Number of levels
-integer,intent(in) :: vec_red(com%nred,nl)  ! Reduced vector
-integer,intent(out) :: vec_ext(com%next,nl) ! Extended vector
+class(com_type),intent(in) :: com           !< Communication data
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nl                    !< Number of levels
+integer,intent(in) :: vec_red(com%nred,nl)  !< Reduced vector
+integer,intent(out) :: vec_ext(com%next,nl) !< Extended vector
 
 ! Local variables
 integer :: il,iexcl,iown,ihalo
@@ -797,17 +797,17 @@ end subroutine com_ext_integer_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_ext_real_1d
-! Purpose: communicate field to halo (extension), 1d
+!> Communicate field to halo (extension), 1d
 !----------------------------------------------------------------------
 subroutine com_ext_real_1d(com,mpl,vec_red,vec_ext)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com                ! Communication data
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-real(kind_real),intent(in) :: vec_red(com%nred)  ! Reduced vector
-real(kind_real),intent(out) :: vec_ext(com%next) ! Extended vector
+class(com_type),intent(in) :: com                !< Communication data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+real(kind_real),intent(in) :: vec_red(com%nred)  !< Reduced vector
+real(kind_real),intent(out) :: vec_ext(com%next) !< Extended vector
 
 ! Local variables
 integer :: iexcl,iown,ihalo
@@ -852,18 +852,18 @@ end subroutine com_ext_real_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_ext_real_2d
-! Purpose: communicate field to halo (extension), 2d
+!> Communicate field to halo (extension), 2d
 !----------------------------------------------------------------------
 subroutine com_ext_real_2d(com,mpl,nl,vec_red,vec_ext)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com                   ! Communication data
-type(mpl_type),intent(inout) :: mpl                 ! MPI data
-integer,intent(in) :: nl                            ! Number of levels
-real(kind_real),intent(in) :: vec_red(com%nred,nl)  ! Reduced vector
-real(kind_real),intent(out) :: vec_ext(com%next,nl) ! Extended vector
+class(com_type),intent(in) :: com                   !< Communication data
+type(mpl_type),intent(inout) :: mpl                 !< MPI data
+integer,intent(in) :: nl                            !< Number of levels
+real(kind_real),intent(in) :: vec_red(com%nred,nl)  !< Reduced vector
+real(kind_real),intent(out) :: vec_ext(com%next,nl) !< Extended vector
 
 ! Local variables
 integer :: il,iexcl,iown,ihalo
@@ -919,17 +919,17 @@ end subroutine com_ext_real_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_ext_logical_1d
-! Purpose: communicate field to halo (extension), 1d
+!> Communicate field to halo (extension), 1d
 !----------------------------------------------------------------------
 subroutine com_ext_logical_1d(com,mpl,vec_red,vec_ext)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com        ! Communication data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-logical,intent(in) :: vec_red(com%nred)  ! Reduced vector
-logical,intent(out) :: vec_ext(com%next) ! Extended vector
+class(com_type),intent(in) :: com        !< Communication data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+logical,intent(in) :: vec_red(com%nred)  !< Reduced vector
+logical,intent(out) :: vec_ext(com%next) !< Extended vector
 
 ! Local variables
 integer :: iexcl,iown,ihalo
@@ -974,18 +974,18 @@ end subroutine com_ext_logical_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_ext_logical_2d
-! Purpose: communicate field to halo (extension), 2d
+!> Communicate field to halo (extension), 2d
 !----------------------------------------------------------------------
 subroutine com_ext_logical_2d(com,mpl,nl,vec_red,vec_ext)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com           ! Communication data
-type(mpl_type),intent(inout) :: mpl         ! MPI data
-integer,intent(in) :: nl                    ! Number of levels
-logical,intent(in) :: vec_red(com%nred,nl)  ! Reduced vector
-logical,intent(out) :: vec_ext(com%next,nl) ! Extended vector
+class(com_type),intent(in) :: com           !< Communication data
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nl                    !< Number of levels
+logical,intent(in) :: vec_red(com%nred,nl)  !< Reduced vector
+logical,intent(out) :: vec_ext(com%next,nl) !< Extended vector
 
 ! Local variables
 integer :: il,iexcl,iown,ihalo
@@ -1041,18 +1041,18 @@ end subroutine com_ext_logical_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_red_integer_1d
-! Purpose: communicate vector from halo (reduction)
+!> Communicate vector from halo (reduction)
 !----------------------------------------------------------------------
 subroutine com_red_integer_1d(com,mpl,vec_ext,vec_red,nosum)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com        ! Communication data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-integer,intent(in) :: vec_ext(com%next)  ! Extended vector
-integer,intent(out) :: vec_red(com%nred) ! Reduced vector
-logical,intent(in),optional :: nosum     ! No-sum flag
+class(com_type),intent(in) :: com        !< Communication data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: vec_ext(com%next)  !< Extended vector
+integer,intent(out) :: vec_red(com%nred) !< Reduced vector
+logical,intent(in),optional :: nosum     !< No-sum flag
 
 ! Local variables
 integer :: ihalo,iown,ired,iexcl,ithread
@@ -1148,19 +1148,19 @@ end subroutine com_red_integer_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_red_integer_2d
-! Purpose: communicate vector from halo (reduction)
+!> Communicate vector from halo (reduction)
 !----------------------------------------------------------------------
 subroutine com_red_integer_2d(com,mpl,nl,vec_ext,vec_red,nosum)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com           ! Communication data
-type(mpl_type),intent(inout) :: mpl         ! MPI data
-integer,intent(in) :: nl                    ! Number of levels
-integer,intent(in) :: vec_ext(com%next,nl)  ! Extended vector
-integer,intent(out) :: vec_red(com%nred,nl) ! Reduced vector
-logical,intent(in),optional :: nosum        ! No-sum flag
+class(com_type),intent(in) :: com           !< Communication data
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nl                    !< Number of levels
+integer,intent(in) :: vec_ext(com%next,nl)  !< Extended vector
+integer,intent(out) :: vec_red(com%nred,nl) !< Reduced vector
+logical,intent(in),optional :: nosum        !< No-sum flag
 
 ! Local variables
 integer :: il,ihalo,iown,ired,iexcl,ithread
@@ -1267,18 +1267,18 @@ end subroutine com_red_integer_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_red_real_1d
-! Purpose: communicate vector from halo (reduction)
+!> Communicate vector from halo (reduction)
 !----------------------------------------------------------------------
 subroutine com_red_real_1d(com,mpl,vec_ext,vec_red,nosum)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com                ! Communication data
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-real(kind_real),intent(in) :: vec_ext(com%next)  ! Extended vector
-real(kind_real),intent(out) :: vec_red(com%nred) ! Reduced vector
-logical,intent(in),optional :: nosum             ! No-sum flag
+class(com_type),intent(in) :: com                !< Communication data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+real(kind_real),intent(in) :: vec_ext(com%next)  !< Extended vector
+real(kind_real),intent(out) :: vec_red(com%nred) !< Reduced vector
+logical,intent(in),optional :: nosum             !< No-sum flag
 
 ! Local variables
 integer :: ihalo,iown,ired,iexcl,ithread
@@ -1374,19 +1374,19 @@ end subroutine com_red_real_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_red_real_2d
-! Purpose: communicate vector from halo (reduction)
+!> Communicate vector from halo (reduction)
 !----------------------------------------------------------------------
 subroutine com_red_real_2d(com,mpl,nl,vec_ext,vec_red,nosum)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com                   ! Communication data
-type(mpl_type),intent(inout) :: mpl                 ! MPI data
-integer,intent(in) :: nl                            ! Number of levels
-real(kind_real),intent(in) :: vec_ext(com%next,nl)  ! Extended vector
-real(kind_real),intent(out) :: vec_red(com%nred,nl) ! Reduced vector
-logical,intent(in),optional :: nosum                ! No-sum flag
+class(com_type),intent(in) :: com                   !< Communication data
+type(mpl_type),intent(inout) :: mpl                 !< MPI data
+integer,intent(in) :: nl                            !< Number of levels
+real(kind_real),intent(in) :: vec_ext(com%next,nl)  !< Extended vector
+real(kind_real),intent(out) :: vec_red(com%nred,nl) !< Reduced vector
+logical,intent(in),optional :: nosum                !< No-sum flag
 
 ! Local variables
 integer :: il,ihalo,iown,ired,iexcl,ithread
@@ -1493,19 +1493,19 @@ end subroutine com_red_real_2d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_red_logical_1d
-! Purpose: communicate vector from halo (reduction)
+!> Communicate vector from halo (reduction)
 !----------------------------------------------------------------------
 subroutine com_red_logical_1d(com,mpl,vec_ext,vec_red,nosum,op)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com          ! Communication data
-type(mpl_type),intent(inout) :: mpl        ! MPI data
-logical,intent(in) :: vec_ext(com%next)    ! Extended vector
-logical,intent(out) :: vec_red(com%nred)   ! Reduced vector
-logical,intent(in),optional :: nosum       ! No-sum flag
-character(len=*),intent(in),optional :: op ! Logical operation for the sum
+class(com_type),intent(in) :: com          !< Communication data
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+logical,intent(in) :: vec_ext(com%next)    !< Extended vector
+logical,intent(out) :: vec_red(com%nred)   !< Reduced vector
+logical,intent(in),optional :: nosum       !< No-sum flag
+character(len=*),intent(in),optional :: op !< Logical operation for the sum
 
 ! Local variables
 integer :: ihalo,iown,ired,iexcl,ithread
@@ -1617,20 +1617,20 @@ end subroutine com_red_logical_1d
 
 !----------------------------------------------------------------------
 ! Subroutine: com_red_logical_2d
-! Purpose: communicate vector from halo (reduction)
+!> Communicate vector from halo (reduction)
 !----------------------------------------------------------------------
 subroutine com_red_logical_2d(com,mpl,nl,vec_ext,vec_red,nosum,op)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com           ! Communication data
-type(mpl_type),intent(inout) :: mpl         ! MPI data
-integer,intent(in) :: nl                    ! Number of levels
-logical,intent(in) :: vec_ext(com%next,nl)  ! Extended vector
-logical,intent(out) :: vec_red(com%nred,nl) ! Reduced vector
-logical,intent(in),optional :: nosum        ! No-sum flag
-character(len=*),intent(in),optional :: op  ! Logical operation for the sum
+class(com_type),intent(in) :: com           !< Communication data
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nl                    !< Number of levels
+logical,intent(in) :: vec_ext(com%next,nl)  !< Extended vector
+logical,intent(out) :: vec_red(com%nred,nl) !< Reduced vector
+logical,intent(in),optional :: nosum        !< No-sum flag
+character(len=*),intent(in),optional :: op  !< Logical operation for the sum
 
 ! Local variables
 integer :: il,ihalo,iown,ired,iexcl,ithread
