@@ -63,10 +63,7 @@ template<typename MODEL> class OoBump {
   void clearKey() {keyOoBump_.clear();}
 
   // Fortran interfaces
-  void addMember(Increment_ &, const int &) const;
-  void addPseudoMember(Increment_ &, const int &) const;
-  void removeMember(Increment_ &, const int &) const;
-  void removePseudoMember(Increment_ &, const int &) const;
+  void addMember(const atlas::FieldSet & atlasFieldSet, const int &, const int &) const;
   void runDrivers() const;
   void multiplyVbal(const Increment_ &, Increment_ &) const;
   void multiplyVbalInv(const Increment_ &, Increment_ &) const;
@@ -86,9 +83,6 @@ template<typename MODEL> class OoBump {
 
  private:
   std::vector<int> keyOoBump_;
-#if !ATLASIFIED
-  std::unique_ptr<oops::UnstructuredGrid> ug_;
-#endif
 };
 
 // -----------------------------------------------------------------------------
@@ -156,14 +150,10 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
 #else
   // Get the grids configuration from the unstructured grid configuration
   Increment_ dx(resol, vars, time);
-  int colocated = 1;
-  if (conf.has("colocated")) {
-    colocated = conf.getInt("colocated");
-  }
-  ug_.reset(new oops::UnstructuredGrid(colocated, 1));
-  dx.ug_coord(*ug_.get());
-  ug_->defineGeometry();
-  ug_->defineGrids(grids);
+  oops::UnstructuredGrid ug(1, 1);
+  dx.increment().ug_coord(ug);
+  ug.defineGeometry();
+  ug.defineGrids(grids);
 
   // Modify grids
   for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
@@ -197,8 +187,8 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
                     conf, grids[jgrid]);
 #else
     bump_create_f90(keyOoBump, &resol.getComm(),
-                    ug_->atlasFunctionSpace()->get(),
-                    ug_->atlasFieldSet()->get(),
+                    ug.atlasFunctionSpace()->get(),
+                    ug.atlasFieldSet()->get(),
                     conf, grids[jgrid]);
 #endif
     keyOoBump_.push_back(keyOoBump);
@@ -211,9 +201,6 @@ OoBump<MODEL>::OoBump(OoBump & other) : keyOoBump_() {
     keyOoBump_.push_back(other.getKey(jgrid));
   }
   other.clearKey();
-#if !ATLASIFIED
-  ug_ = std::move(other.ug_);
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
@@ -224,69 +211,11 @@ OoBump<MODEL>::~OoBump() {
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
-void OoBump<MODEL>::addMember(Increment_ & dx, const int & ie) const {
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
-  dx.toAtlas(atlasFieldSet.get());
-#else
-  dx.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
+void OoBump<MODEL>::addMember(const atlas::FieldSet & atlasFieldSet, const int & ie,
+                               const int & iens) const {
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    bump_add_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 1);
+    bump_add_member_f90(keyOoBump_[jgrid], atlasFieldSet.get(), ie+1, iens);
   }
-}
-// -----------------------------------------------------------------------------
-template<typename MODEL>
-void OoBump<MODEL>::addPseudoMember(Increment_ & dx, const int & ie) const {
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
-  dx.toAtlas(atlasFieldSet.get());
-#else
-  dx.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
-  for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    bump_add_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 2);
-  }
-}
-// -----------------------------------------------------------------------------
-template<typename MODEL>
-void OoBump<MODEL>::removeMember(Increment_ & dx, const int & ie) const {
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
-  dx.setAtlas(atlasFieldSet.get());
-#else
-  ug_->setAtlas(atlasFieldSet.get());
-#endif
-  for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    bump_remove_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 1);
-  }
-#if ATLASIFIED
-  dx.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dx.field_from_ug(*ug_.get());
-#endif
-}
-// -----------------------------------------------------------------------------
-template<typename MODEL>
-void OoBump<MODEL>::removePseudoMember(Increment_ & dx, const int & ie) const {
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
-  dx.setAtlas(atlasFieldSet.get());
-#else
-  ug_->setAtlas(atlasFieldSet.get());
-#endif
-  for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    bump_remove_member_f90(keyOoBump_[jgrid], atlasFieldSet->get(), ie+1, 2);
-  }
-#if ATLASIFIED
-  dx.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dx.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
@@ -299,161 +228,81 @@ void OoBump<MODEL>::runDrivers() const {
 template<typename MODEL>
 void OoBump<MODEL>::multiplyVbal(const Increment_ & dxi, Increment_ & dxo) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dxi.toAtlas(atlasFieldSet.get());
-#else
-  dxi.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_apply_vbal_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dxo.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
 void OoBump<MODEL>::multiplyVbalInv(const Increment_ & dxi, Increment_ & dxo) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dxi.toAtlas(atlasFieldSet.get());
-#else
-  dxi.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_apply_vbal_inv_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dxo.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
 void OoBump<MODEL>::multiplyVbalAd(const Increment_ & dxi, Increment_ & dxo) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dxi.toAtlas(atlasFieldSet.get());
-#else
-  dxi.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_apply_vbal_ad_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dxo.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
 void OoBump<MODEL>::multiplyVbalInvAd(const Increment_ & dxi, Increment_ & dxo) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dxi.toAtlas(atlasFieldSet.get());
-#else
-  dxi.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_apply_vbal_inv_ad_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dxo.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
 void OoBump<MODEL>::multiplyStdDev(const Increment_ & dxi, Increment_ & dxo) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dxi.toAtlas(atlasFieldSet.get());
-#else
-  dxi.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_apply_stddev_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dxo.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
 void OoBump<MODEL>::multiplyStdDevInv(const Increment_ & dxi, Increment_ & dxo) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dxi.toAtlas(atlasFieldSet.get());
-#else
-  dxi.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_apply_stddev_inv_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dxo.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
 void OoBump<MODEL>::multiplyNicas(Increment_ & dx) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dx.toAtlas(atlasFieldSet.get());
-#else
-  dx.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_apply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dx.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
 void OoBump<MODEL>::multiplyNicas(const Increment_ & dxi, Increment_ & dxo) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dxi.toAtlas(atlasFieldSet.get());
-#else
-  dxi.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_apply_nicas_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dxo.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dxo.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
@@ -466,20 +315,11 @@ void OoBump<MODEL>::inverseMultiplyNicas(const Increment_ & dxi, Increment_ & dx
 template<typename MODEL>
 void OoBump<MODEL>::randomize(Increment_ & dx) const {
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dx.setAtlas(atlasFieldSet.get());
-#else
-  ug_->setAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_randomize_f90(keyOoBump_[jgrid], atlasFieldSet->get());
   }
-#if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dx.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
@@ -487,20 +327,11 @@ void OoBump<MODEL>::getParameter(const std::string & param, Increment_ & dx) con
   const int nstr = param.size();
   const char *cstr = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dx.setAtlas(atlasFieldSet.get());
-#else
-  ug_->setAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
-    bump_get_parameter_f90(keyOoBump_[jgrid], nstr, cstr, atlasFieldSet.get()->get());
+    bump_get_parameter_f90(keyOoBump_[jgrid], nstr, cstr, atlasFieldSet->get());
   }
-#if ATLASIFIED
   dx.fromAtlas(atlasFieldSet.get());
-#else
-  ug_->fromAtlas(atlasFieldSet.get());
-  dx.field_from_ug(*ug_.get());
-#endif
 }
 // -----------------------------------------------------------------------------
 template<typename MODEL>
@@ -508,12 +339,7 @@ void OoBump<MODEL>::setParameter(const std::string & param, const Increment_ & d
   const int nstr = param.size();
   const char *cstr = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-#if ATLASIFIED
   dx.toAtlas(atlasFieldSet.get());
-#else
-  dx.field_to_ug(*ug_.get());
-  ug_->toAtlas(atlasFieldSet.get());
-#endif
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_set_parameter_f90(keyOoBump_[jgrid], nstr, cstr, atlasFieldSet->get());
   }

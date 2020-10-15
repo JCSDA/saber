@@ -139,37 +139,35 @@ end if
 
 ! BUMP setup
 if (bump%nam%new_obsop) then
-   call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
- & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs, &
- & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+   call bump%setup(f_comm,model%afunctionspace,model%fieldset, &
+  & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs, &
+  & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 else
-   call bump%setup(f_comm,model%afunctionspace,model%afieldset, &
- & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+   call bump%setup(f_comm,model%afunctionspace,model%fieldset, &
+  & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 end if
 
-! Transfer members
+! Add members
 if (bump%nam%ens1_ne>0) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Transfer members of ensemble 1'
+   write(mpl%info,'(a)') '--- Add members of ensemble 1'
    call mpl%flush
    do ie=1,bump%nam%ens1_ne
-      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',bump%nam%ens1_ne
+      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens1_ne
       call mpl%flush
-      call bump%add_member(model%ens1(ie)%afieldset,ie,1)
-      call model%ens1(ie)%afieldset%final()
+      call bump%add_member(model%ens1(ie),ie,1)
    end do
 end if
 if (bump%nam%ens2_ne>0) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Transfer members of ensemble 2'
+   write(mpl%info,'(a)') '--- Add members of ensemble 2'
    call mpl%flush
    do ie=1,bump%nam%ens2_ne
-      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' of ',bump%nam%ens2_ne
+      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens2_ne
       call mpl%flush
-      call bump%add_member(model%ens2(ie)%afieldset,ie,2)
-      call model%ens2(ie)%afieldset%final()
+      call bump%add_member(model%ens2(ie),ie,2)
    end do
 end if
 

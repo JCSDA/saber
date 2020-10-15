@@ -196,56 +196,24 @@ type(mpl_type),intent(inout) :: mpl  ! MPI data
 type(rng_type),intent(inout) :: rng  ! Random number generator
 type(nam_type),intent(inout) :: nam  ! Namelist
 type(geom_type),intent(in) :: geom   ! Geometry
-type(ens_type), intent(in) :: ens    ! Ensemble
+type(ens_type), intent(inout) :: ens ! Ensemble
 type(io_type),intent(in) :: io       ! I/O
 
 ! Local variables
-integer :: isub,ie_sub,ie,ic0a,il0
-real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv,ens%nsub)
+integer :: ic0a,il0
 
 ! Allocation
 call var%alloc(nam,geom)
 
 ! Initialization
 var%ne = ens%ne
-m2 = 0.0
-var%m4 = 0.0
 
 ! Compute variance
 write(mpl%info,'(a7,a)') '','Compute variance'
 call mpl%flush
-
-! Loop on sub-ensembles
-do isub=1,ens%nsub
-   if (ens%nsub==1) then
-      write(mpl%info,'(a10,a)') '','Full ensemble, member:'
-      call mpl%flush(.false.)
-   else
-      write(mpl%info,'(a10,a,i4,a)') '','Sub-ensemble ',isub,', member:'
-      call mpl%flush(.false.)
-   end if
-
-   ! Compute centered moments
-   do ie_sub=1,ens%ne/ens%nsub
-      write(mpl%info,'(i4)') ie_sub
-      call mpl%flush(.false.)
-
-      ! Full ensemble index
-      ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-
-      ! Variance
-      m2(:,:,:,isub) = m2(:,:,:,isub)+ens%mem(ie)%fld**2
-
-      ! Fourth-order moment
-      var%m4 = var%m4+ens%mem(ie)%fld**4
-   end do
-   write(mpl%info,'(a)') ''
-   call mpl%flush
-end do
-
-! Normalization
-var%m2 = sum(m2,dim=4)/real(ens%ne-ens%nsub,kind_real)
-var%m4 = var%m4/real(ens%ne,kind_real)
+call ens%compute_moments(mpl,nam,geom)
+call ens%get_c0(mpl,nam,geom,'m2',0,var%m2)
+call ens%get_c0(mpl,nam,geom,'m4',0,var%m4)
 
 ! Apply mask
 do il0=1,geom%nl0
@@ -398,7 +366,7 @@ do iv=1,nam%nv
 
       ! Release memory
       call nicas_blk%dealloc
-   end do
+    end do
 end do
 
 end subroutine var_filter

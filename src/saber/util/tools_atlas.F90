@@ -16,25 +16,25 @@ use type_mpl, only: mpl_type
 
 implicit none
 
+interface field_to_array
+  module procedure field_to_array_real
+  module procedure field_to_array_logical
+end interface
+
+interface field_from_array
+  module procedure field_from_array_real
+end interface
+
 private
-public :: field_to_fld,fld_to_field,create_atlas_function_space,create_atlas_fieldset,atlas_to_fld,fld_to_atlas
-
-interface field_to_fld
-  module procedure field_to_fld_real
-  module procedure field_to_fld_logical
-end interface
-
-interface fld_to_field
-  module procedure fld_to_field_real
-end interface
+public :: field_to_array,field_from_array,create_atlas_function_space
 
 contains
 
 !----------------------------------------------------------------------
-! Subroutine: field_to_fld_real
+! Subroutine: field_to_array_real
 ! Purpose: convert ATLAS field to field, real
 !----------------------------------------------------------------------
-subroutine field_to_fld_real(mpl,afield,fld,lev2d)
+subroutine field_to_array_real(mpl,afield,fld,lev2d)
 
 implicit none
 
@@ -48,7 +48,7 @@ character(len=*),intent(in),optional :: lev2d ! Level for 2D variables
 integer :: nmga,nl0
 real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
-character(len=1024),parameter :: subr = 'field_to_fld_real'
+character(len=1024),parameter :: subr = 'field_to_array_real'
 type(atlas_functionspace) :: afunctionspace
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
@@ -61,7 +61,7 @@ if (present(lev2d)) llev2d = lev2d
 ! Check kind
 if (afield%kind()/=atlas_real(kind_real)) call mpl%abort(subr,'wrong kind for field '//afield%name())
 
-! Get generic FunctionSpace
+! Get generic functionspace
 afunctionspace = afield%functionspace()
 
 select case (afunctionspace%name())
@@ -118,13 +118,13 @@ else
    fld(1:nmga,1:nl0) = transpose(ptr_2(1:nl0,1:nmga))
 end if
 
-end subroutine field_to_fld_real
+end subroutine field_to_array_real
 
 !----------------------------------------------------------------------
-! Subroutine: field_to_fld_logical
+! Subroutine: field_to_array_logical
 ! Purpose: convert ATLAS field to field, logical
 !----------------------------------------------------------------------
-subroutine field_to_fld_logical(mpl,afield,fld,lev2d)
+subroutine field_to_array_logical(mpl,afield,fld,lev2d)
 
 implicit none
 
@@ -139,7 +139,7 @@ integer :: nmga,nl0,imga,il0
 integer,allocatable :: fld_int(:,:)
 integer,pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
-character(len=1024),parameter :: subr = 'field_to_fld_logical'
+character(len=1024),parameter :: subr = 'field_to_array_logical'
 type(atlas_functionspace) :: afunctionspace
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
@@ -228,13 +228,13 @@ end do
 ! Release memory
 deallocate(fld_int)
 
-end subroutine field_to_fld_logical
+end subroutine field_to_array_logical
 
 !----------------------------------------------------------------------
-! Subroutine: fld_to_field_real
+! Subroutine: field_from_array_real
 ! Purpose: convert field to ATLAS field, real
 !----------------------------------------------------------------------
-subroutine fld_to_field_real(mpl,fld,afield,lev2d)
+subroutine field_from_array_real(mpl,fld,afield,lev2d)
 
 implicit none
 
@@ -248,7 +248,7 @@ character(len=*),intent(in),optional :: lev2d ! Level for 2D variables
 integer :: nmga,nl0
 real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
-character(len=1024),parameter :: subr = 'fld_to_field_real'
+character(len=1024),parameter :: subr = 'field_from_array_real'
 type(atlas_functionspace) :: afunctionspace
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
@@ -315,7 +315,7 @@ else
    ptr_2(1:nl0,1:nmga) = transpose(fld(1:nmga,1:nl0))
 end if
 
-end subroutine fld_to_field_real
+end subroutine field_from_array_real
 
 !----------------------------------------------------------------------
 ! Subroutine: create_atlas_function_space
@@ -348,118 +348,5 @@ end do
 afunctionspace = atlas_functionspace_pointcloud(afield)
 
 end subroutine create_atlas_function_space
-
-!----------------------------------------------------------------------
-! Subroutine: create_atlas_fieldset
-! Purpose: create ATLAS fieldset with empty fields
-!----------------------------------------------------------------------
-subroutine create_atlas_fieldset(afunctionspace,nl,variables,afieldset)
-
-implicit none
-
-! Passed variables
-type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
-integer,intent(in) :: nl                               ! Number of levels
-character(len=*),intent(in) :: variables(:)            ! Variables names
-type(atlas_fieldset),intent(out) :: afieldset          ! ATLAS fieldset
-
-! Local variables
-integer :: iv
-type(atlas_field) :: afield
-
-! Set ATLAS fieldset
-afieldset = atlas_fieldset()
-
-! Create fields
-do iv=1,size(variables)
-   ! Create field
-   afield = afunctionspace%create_field(name=variables(iv),kind=atlas_real(kind_real),levels=nl)
-
-   ! Add field
-   call afieldset%add(afield)
-
-   ! Release pointer
-   call afield%final()
-end do
-
-end subroutine create_atlas_fieldset
-
-!----------------------------------------------------------------------
-! Subroutine: atlas_to_fld
-! Purpose: convert ATLAS fieldset to field
-!----------------------------------------------------------------------
-subroutine atlas_to_fld(mpl,variables,afieldset,fld,lev2d)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl             ! MPI data
-character(len=*),intent(in) :: variables(:)     ! Variables names
-type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
-real(kind_real),intent(out) :: fld(:,:,:)       ! Field
-character(len=*),intent(in),optional :: lev2d   ! Level for 2D variables
-
-! Local variables
-integer :: iv
-character(len=1024) :: fieldname
-character(len=1024),parameter :: subr = 'atlas_to_fld'
-type(atlas_field) :: afield
-
-! Check number of variables
-if (size(variables)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
-
-! Loop over fields
-do iv=1,size(variables)
-   ! Get field
-   afield = afieldset%field(variables(iv))
-
-   ! Get field data
-   if (present(lev2d)) then
-      call field_to_fld(mpl,afield,fld(:,:,iv),lev2d)
-   else
-      call field_to_fld(mpl,afield,fld(:,:,iv))
-   end if
-end do
-
-end subroutine atlas_to_fld
-
-!----------------------------------------------------------------------
-! Subroutine: fld_to_atlas
-! Purpose: convert field to ATLAS fieldset
-!----------------------------------------------------------------------
-subroutine fld_to_atlas(mpl,variables,fld,afieldset,lev2d)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl             ! MPI data
-character(len=*),intent(in) :: variables(:)     ! Variables names
-real(kind_real),intent(in) :: fld(:,:,:)        ! Field
-type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
-character(len=*),intent(in),optional :: lev2d   ! Level for 2D variables
-
-! Local variables
-integer :: iv,its
-character(len=1024) :: fieldname
-character(len=1024),parameter :: subr = 'fld_to_atlas'
-type(atlas_field) :: afield
-
-! Check number of variables
-if (size(variables)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
-
-! Loop over fields
-do iv=1,size(variables)
-   ! Get or create field
-   afield = afieldset%field(variables(iv))
-
-   ! Get field data
-   if (present(lev2d)) then
-      call fld_to_field(mpl,fld(:,:,iv),afield,lev2d)
-   else
-      call fld_to_field(mpl,fld(:,:,iv),afield)
-   end if
-end do
-
-end subroutine fld_to_atlas
 
 end module tools_atlas
