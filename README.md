@@ -12,7 +12,7 @@ which can be obtained at [http://www.apache.org/licenses/LICENSE-2.0](http://www
 
 The compilation of SABER is made easier by using the [saber-bundle](bundle/README.md).
 
-Documentation can be found on the `JEDI Documentation website <https://jointcenterforsatellitedataassimilation-jedi-docs.readthedocs-hosted.com/en/latest/index.html>`
+Documentation can be found on the [JEDI Documentation website](https://jointcenterforsatellitedataassimilation-jedi-docs.readthedocs-hosted.com/en/latest/index.html).
 
 ## BUMP
 
