@@ -292,7 +292,6 @@ do i=1,mesh%n
    call qsort(mesh%rows(i)%cols,list,order)
    mesh%rows(i)%nodes = mesh%rows(i)%nodes(order)
 
-   write(13,*) 'mesh',i,mesh%rows(i)%nodes;call mpl%flush
    ! Release memory
    deallocate(v)
    deallocate(list)
@@ -442,7 +441,6 @@ do while ((.not.found).and.(nn<=nnmax))
          call det(mesh%xyz(:,i),mesh%xyz(:,jj),xyz,b(3),cflag(3))
 
          ! Check if the points are colinear
-         write(mpl%info,*) nn,i,j,jj,kk,cflag;call mpl%flush
          if (count(cflag)>=2) then
             ! At least two non-flat triangles, check if weights are positive
             valid = .true.
