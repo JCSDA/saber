@@ -13,17 +13,18 @@ use netcdf, only: nf90_double
 implicit none
 
 ! Kinds
-integer,parameter :: kind_int = c_int           ! Integer kind
-integer,parameter :: kind_short = c_short       ! Short integer kind
-integer,parameter :: kind_real = c_double       ! Real kind
+integer,parameter :: kind_int = c_int                        ! Integer kind
+integer,parameter :: kind_short = c_short                    ! Short integer kind
+integer,parameter :: kind_real = c_double                    ! Real kind
 
 ! NetCDF kinds
-integer,parameter :: nc_kind_real = nf90_double ! NetCDF real kind
+integer,parameter :: nc_kind_real = nf90_double              ! NetCDF real kind
 
 ! Huge
-real(kind_real),parameter :: huge_real = huge(0.0_kind_real)
+integer,parameter :: huge_int = huge(0_kind_int)             ! Integer huge
+real(kind_real),parameter :: huge_real = huge(0.0_kind_real) ! Real huge
 
 private
-public kind_int,kind_short,kind_real,nc_kind_real,huge_real
+public kind_int,kind_short,kind_real,nc_kind_real,huge_int,huge_real
 
 end module tools_kinds
