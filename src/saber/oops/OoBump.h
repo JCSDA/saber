@@ -151,7 +151,7 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
   // Get the grids configuration from the unstructured grid configuration
   Increment_ dx(resol, vars, time);
   oops::UnstructuredGrid ug(1, 1);
-  dx.ug_coord(ug);
+  dx.increment().ug_coord(ug);
   ug.defineGeometry();
   ug.defineGrids(grids);
 
