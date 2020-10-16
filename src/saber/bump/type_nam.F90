@@ -138,7 +138,9 @@ type nam_type
    real(kind_real) :: vbal_dlat                         ! Vertical balance diagnostic latitude band half-width [in degrees]
    logical :: vbal_diag_auto(nvbalmax)                  ! Diagonal auto-covariance for the inversion
    logical :: vbal_diag_reg(nvbalmax)                   ! Diagonal regression
-   logical :: vbal_pseudo_inverse                       ! Pseudo inverse for auto-covariance
+   logical :: vbal_pseudo_inv                           ! Pseudo-inverse for auto-covariance
+   integer :: vbal_pseudo_inv_mmax                      ! Dominant mode for pseudo-inverse
+   real(kind_real) :: vbal_pseudo_inv_var_th            ! Variance threshold to compute the dominant mode for pseudo-inverse
    logical :: var_filter                                ! Filter variances
    integer :: var_niter                                 ! Number of iteration for the variances filtering
    real(kind_real) :: var_rhflt                         ! Variances initial filtering support radius [in meters]
@@ -347,7 +349,9 @@ end do
 do iv=1,nvbalmax
    nam%vbal_diag_reg(iv) = .false.
 end do
-nam%vbal_pseudo_inverse = .false.
+nam%vbal_pseudo_inv = .false.
+nam%vbal_pseudo_inv_mmax = 0
+nam%vbal_pseudo_inv_var_th = 0.0
 nam%var_filter = .false.
 nam%var_niter = 0
 nam%var_rhflt = 0.0
@@ -520,7 +524,9 @@ real(kind_real) :: vbal_rad
 real(kind_real) :: vbal_dlat
 logical :: vbal_diag_auto(nvbalmax)
 logical :: vbal_diag_reg(nvbalmax)
-logical :: vbal_pseudo_inverse
+logical :: vbal_pseudo_inv
+integer :: vbal_pseudo_inv_mmax
+real(kind_real) :: vbal_pseudo_inv_var_th
 logical :: var_filter
 integer :: var_niter
 real(kind_real) :: var_rhflt
@@ -669,7 +675,9 @@ namelist/diag_param/ &
  & vbal_dlat, &
  & vbal_diag_auto, &
  & vbal_diag_reg, &
- & vbal_pseudo_inverse, &
+ & vbal_pseudo_inv, &
+ & vbal_pseudo_inv_mmax, &
+ & vbal_pseudo_inv_var_th, &
  & var_filter, &
  & var_niter, &
  & var_rhflt, &
@@ -843,7 +851,9 @@ if (mpl%main) then
    do iv=1,nvbalmax
       vbal_diag_reg(iv) = .true.
    end do
-   vbal_pseudo_inverse = .false.
+   vbal_pseudo_inv = .false.
+   vbal_pseudo_inv_mmax = 0
+   vbal_pseudo_inv_var_th = 0.0
    var_filter = .false.
    var_niter = 0
    var_rhflt = 0.0
@@ -1023,7 +1033,9 @@ if (mpl%main) then
    nam%vbal_dlat = vbal_dlat
    if (nv>1) nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2) = vbal_diag_auto(1:nam%nv*(nam%nv-1)/2)
    if (nv>1) nam%vbal_diag_reg(1:nam%nv*(nam%nv-1)/2) = vbal_diag_reg(1:nam%nv*(nam%nv-1)/2)
-   nam%vbal_pseudo_inverse = vbal_pseudo_inverse
+   nam%vbal_pseudo_inv = vbal_pseudo_inv
+   nam%vbal_pseudo_inv_mmax = vbal_pseudo_inv_mmax
+   nam%vbal_pseudo_inv_var_th = vbal_pseudo_inv_var_th
    nam%var_filter = var_filter
    nam%var_niter = var_niter
    nam%var_rhflt = var_rhflt
@@ -1239,7 +1251,9 @@ call mpl%f_comm%broadcast(nam%vbal_rad,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_dlat,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_diag_auto,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_diag_reg,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%vbal_pseudo_inverse,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_pseudo_inv,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_pseudo_inv_mmax,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_pseudo_inv_var_th,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_filter,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_niter,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_rhflt,mpl%rootproc-1)
@@ -1478,7 +1492,9 @@ if (conf%has("vbal_diag_reg")) then
    call conf%get_or_die("vbal_diag_reg",logical_array)
    nam%vbal_diag_reg(1:size(logical_array)) = logical_array
 end if
-if (conf%has("vbal_pseudo_inverse")) call conf%get_or_die("vbal_pseudo_inverse",nam%vbal_pseudo_inverse)
+if (conf%has("vbal_pseudo_inv")) call conf%get_or_die("vbal_pseudo_inv",nam%vbal_pseudo_inv)
+if (conf%has("vbal_pseudo_inv_mmax")) call conf%get_or_die("vbal_pseudo_inv_mmax",nam%vbal_pseudo_inv_mmax)
+if (conf%has("vbal_pseudo_inv_var_th")) call conf%get_or_die("vbal_pseudo_inv_var_th",nam%vbal_pseudo_inv_var_th)
 if (conf%has("var_filter")) call conf%get_or_die("var_filter",nam%var_filter)
 if (conf%has("var_niter")) call conf%get_or_die("var_niter",nam%var_niter)
 if (conf%has("var_rhflt")) call conf%get_or_die("var_rhflt",nam%var_rhflt)
@@ -1802,6 +1818,10 @@ if (nam%new_vbal) then
    if (.not.(any(nam%vbal_block(1:nam%nv*(nam%nv-1)/2)))) &
  & call mpl%abort(subr,'no block selected for the vertical balance diagnostics')
    if ((.not.(nam%vbal_rad>0.0)).and.(.not.(nam%vbal_dlat>0.0))) call mpl%abort(subr,'vbal_rad or vbal_dlat should be positive')
+   if (nam%vbal_pseudo_inv) then
+      if ((nam%vbal_pseudo_inv_mmax<=0).and.(.not.nam%vbal_pseudo_inv_var_th>0.0)) call mpl%abort(subr, &
+ & 'dominant mode or variance threshold should be positive for pseudo-inverse')
+   end if
 end if
 if (nam%new_var) then
    if (nam%var_filter) then
@@ -2094,7 +2114,9 @@ call mpl%write(lncid,'nam','vbal_rad',nam%vbal_rad)
 call mpl%write(lncid,'nam','vbal_dlat',nam%vbal_dlat*rad2deg)
 call mpl%write(lncid,'nam','vbal_diag_auto',nam%nv*(nam%nv-1)/2,nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2))
 call mpl%write(lncid,'nam','vbal_diag_reg',nam%nv*(nam%nv-1)/2,nam%vbal_diag_reg(1:nam%nv*(nam%nv-1)/2))
-call mpl%write(lncid,'nam','vbal_pseudo_inverse',nam%vbal_pseudo_inverse)
+call mpl%write(lncid,'nam','vbal_pseudo_inv',nam%vbal_pseudo_inv)
+call mpl%write(lncid,'nam','vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
+call mpl%write(lncid,'nam','vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
 call mpl%write(lncid,'nam','var_filter',nam%var_filter)
 call mpl%write(lncid,'nam','var_niter',nam%var_niter)
 call mpl%write(lncid,'nam','var_rhflt',nam%var_rhflt*req)
