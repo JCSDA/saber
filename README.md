@@ -10,7 +10,7 @@ CLANG: [![AWS-Clang](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlb
 This software is licensed under the terms of the Apache Licence Version 2.0
 which can be obtained at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
-The compilation of SABER is made easier by using the [saber-bundle](bundle/README.md).
+The compilation of SABER is made easier by using the [saber-bundle](CI/README.md).
 
 Documentation can be found on the [JEDI Documentation website](https://jointcenterforsatellitedataassimilation-jedi-docs.readthedocs-hosted.com/en/latest/index.html).
 
