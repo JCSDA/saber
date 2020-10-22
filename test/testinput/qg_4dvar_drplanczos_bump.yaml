@@ -10,7 +10,6 @@ cost function:
     bump:
       datadir: testdata
       load_nicas: 1
-      method: cor
       mpicom: 2
       prefix: qg_4dvar_drplanczos_bump/test
       strategy: common
