@@ -4,15 +4,12 @@ background:
 bump:
   datadir: testdata
   dc: 500.0e3
-  default_seed: 1
   lct_nscales: 1
   lct_diag: [0]
   method: cor
   mpicom: 2
   nc1: 500
-  nc2: 500
   nc3: 50
-  network: 1
   new_lct: 1
   new_nicas: 1
   new_var: 1
@@ -22,7 +19,7 @@ bump:
   resol: 8.0
   strategy: specific_univariate
   var_filter: 1
-  var_niter: 10
+  var_niter: 5
   var_rhflt: 3000.0e3
 ensemble:
   members:
