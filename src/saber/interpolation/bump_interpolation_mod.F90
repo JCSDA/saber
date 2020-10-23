@@ -51,16 +51,16 @@ private
   type(bump_type), public :: bump
 
   !> Grid information
-  type(geom_type) :: outgeom    !< output grid - unstructured
-  type(atlas_functionspace) :: in_funcspace  !< atlas functionspace for input grid
-  type(atlas_functionspace) :: out_funcspace !< atlas functionspace for output grid
+  type(geom_type) :: outgeom    !<< output grid - unstructured
+  type(atlas_functionspace) :: in_funcspace  !<< atlas functionspace for input grid
+  type(atlas_functionspace) :: out_funcspace !<< atlas functionspace for output grid
 
   !> Number of points
-  integer :: nc0b                !< Halo B size
-  integer, public :: nlev        !< number of levels
+  integer :: nc0b                !<< Halo B size
+  integer, public :: nlev        !<< number of levels
 
-  integer, public :: nout         !< global number of output grid points
-  integer, public :: nout_local   !< local number of output grid points
+  integer, public :: nout         !<< global number of output grid points
+  integer, public :: nout_local   !<< local number of output grid points
 
   !> Interpolation data (operator)
   type(linop_type) :: h
@@ -266,10 +266,10 @@ end subroutine bint_init
 !----------------------------------------------------------------------
 subroutine bint_driver(self,mpl,rng,nam,geom)
   class(bump_interpolator), intent(inout) :: self
-  type(mpl_type),intent(inout) :: mpl      !< MPI data
-  type(rng_type),intent(inout) :: rng      !< Random number generator
-  type(nam_type),intent(in) :: nam         !< Namelist
-  type(geom_type),intent(in) :: geom       !< Geometry
+  type(mpl_type),intent(inout) :: mpl      !<< MPI data
+  type(rng_type),intent(inout) :: rng      !<< Random number generator
+  type(nam_type),intent(in) :: nam         !<< Namelist
+  type(geom_type),intent(in) :: geom       !<< Geometry
 
   ! Local variables
   integer :: iouta,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nouta_eff
@@ -659,14 +659,14 @@ end subroutine bint_delete
 
 !----------------------------------------------------------------------
 ! Subroutine: dummy
-! Purpose: dummy finalization
+!> Dummy finalization
 !----------------------------------------------------------------------
 subroutine dummy(bump)
 
 implicit none
 
 ! Passed variables
-type(bump_interpolator),intent(inout) :: bump ! BUMP
+type(bump_interpolator),intent(inout) :: bump !< BUMP
 
 end subroutine dummy
 

@@ -1,15 +1,15 @@
 !----------------------------------------------------------------------
 ! Subroutine: model_geos_coord
-! Purpose: get GEOS coordinates
+!> Get GEOS coordinates
 !----------------------------------------------------------------------
 subroutine model_geos_coord(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,il0,ilon,ilat
@@ -87,18 +87,18 @@ end subroutine model_geos_coord
 
 !----------------------------------------------------------------------
 ! Subroutine: model_geos_read
-! Purpose: read GEOS field
+!> Read GEOS field
 !----------------------------------------------------------------------
 subroutine model_geos_read(model,mpl,nam,filename,fld)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model                        ! Model
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-character(len=*),intent(in) :: filename                         ! File name
-real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
+class(model_type),intent(inout) :: model                        !< Model
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+character(len=*),intent(in) :: filename                         !< File name
+real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
 integer :: iv,il0,img,ilon,ilat,ndims

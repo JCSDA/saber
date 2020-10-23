@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_cmat_blk
-! Purpose: correlation matrix derived type
+!> Correlation matrix derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -18,33 +18,33 @@ implicit none
 ! C matrix block data derived type
 type cmat_blk_type
    ! Block index and anisotropic flag
-   integer :: ib                                     ! Block index
-   logical :: anisotropic                            ! Anisoptropic tensor flag
+   integer :: ib                                     !< Block index
+   logical :: anisotropic                            !< Anisoptropic tensor flag
 
    ! Read data
-   real(kind_real),allocatable :: bump_coef_ens(:,:) ! BUMP ensemble coefficient
-   real(kind_real),allocatable :: bump_coef_sta(:,:) ! BUMP static coefficient
-   real(kind_real),allocatable :: bump_rh(:,:)       ! BUMP horizontal fit support radius
-   real(kind_real),allocatable :: bump_rv(:,:)       ! BUMP vertical fit support radius
-   real(kind_real),allocatable :: bump_D11(:,:)      ! BUMP Daley tensor component 11
-   real(kind_real),allocatable :: bump_D22(:,:)      ! BUMP Daley tensor component 22
-   real(kind_real),allocatable :: bump_D33(:,:)      ! BUMP Daley tensor component 33
-   real(kind_real),allocatable :: bump_D12(:,:)      ! BUMP Daley tensor component 12
-   real(kind_real),allocatable :: bump_Dcoef(:,:)    ! BUMP Daley tensor scales coefficients
+   real(kind_real),allocatable :: bump_coef_ens(:,:) !< BUMP ensemble coefficient
+   real(kind_real),allocatable :: bump_coef_sta(:,:) !< BUMP static coefficient
+   real(kind_real),allocatable :: bump_rh(:,:)       !< BUMP horizontal fit support radius
+   real(kind_real),allocatable :: bump_rv(:,:)       !< BUMP vertical fit support radius
+   real(kind_real),allocatable :: bump_D11(:,:)      !< BUMP Daley tensor component 11
+   real(kind_real),allocatable :: bump_D22(:,:)      !< BUMP Daley tensor component 22
+   real(kind_real),allocatable :: bump_D33(:,:)      !< BUMP Daley tensor component 33
+   real(kind_real),allocatable :: bump_D12(:,:)      !< BUMP Daley tensor component 12
+   real(kind_real),allocatable :: bump_Dcoef(:,:)    !< BUMP Daley tensor scales coefficients
 
    ! Data
-   real(kind_real),allocatable :: coef_ens(:,:)      ! Ensemble coefficient
-   real(kind_real),allocatable :: coef_sta(:,:)      ! Static coefficient
-   real(kind_real),allocatable :: rh(:,:)            ! Horizontal fit support radius
-   real(kind_real),allocatable :: rv(:,:)            ! Vertical fit support radius
-   real(kind_real),allocatable :: rhs(:,:)           ! Fit support radius  for sampling
-   real(kind_real),allocatable :: rvs(:,:)           ! Fit support radius, for sampling
-   real(kind_real) :: wgt                            ! Block weight
-   real(kind_real),allocatable :: H11(:,:)           ! LCT component 11
-   real(kind_real),allocatable :: H22(:,:)           ! LCT component 22
-   real(kind_real),allocatable :: H33(:,:)           ! LCT component 33
-   real(kind_real),allocatable :: H12(:,:)           ! LCT component 12
-   real(kind_real),allocatable :: Hcoef(:,:)         ! LCT scales coefficients
+   real(kind_real),allocatable :: coef_ens(:,:)      !< Ensemble coefficient
+   real(kind_real),allocatable :: coef_sta(:,:)      !< Static coefficient
+   real(kind_real),allocatable :: rh(:,:)            !< Horizontal fit support radius
+   real(kind_real),allocatable :: rv(:,:)            !< Vertical fit support radius
+   real(kind_real),allocatable :: rhs(:,:)           !< Fit support radius  for sampling
+   real(kind_real),allocatable :: rvs(:,:)           !< Fit support radius, for sampling
+   real(kind_real) :: wgt                            !< Block weight
+   real(kind_real),allocatable :: H11(:,:)           !< LCT component 11
+   real(kind_real),allocatable :: H22(:,:)           !< LCT component 22
+   real(kind_real),allocatable :: H33(:,:)           !< LCT component 33
+   real(kind_real),allocatable :: H12(:,:)           !< LCT component 12
+   real(kind_real),allocatable :: Hcoef(:,:)         !< LCT scales coefficients
 contains
    procedure :: alloc => cmat_blk_alloc
    procedure :: init => cmat_blk_init
@@ -60,17 +60,17 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_blk_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine cmat_blk_alloc(cmat_blk,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_blk_type),intent(inout) :: cmat_blk ! C matrix data block
-type(nam_type),intent(in) :: nam               ! Namelist
-type(geom_type),intent(in) :: geom             ! Geometry
-type(bpar_type),intent(in) :: bpar             ! Block parameters
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Associate
 associate(ib=>cmat_blk%ib)
@@ -99,17 +99,17 @@ end subroutine cmat_blk_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_blk_init
-! Purpose: initialization
+!> Initialization
 !----------------------------------------------------------------------
 subroutine cmat_blk_init(cmat_blk,mpl,nam,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_blk_type),intent(inout) :: cmat_blk ! C matrix data block
-type(mpl_type),intent(in) :: mpl               ! MPI data
-type(nam_type),intent(in) :: nam               ! Namelist
-type(bpar_type),intent(in) :: bpar             ! Block parameters
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
+type(mpl_type),intent(in) :: mpl               !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Associate
 associate(ib=>cmat_blk%ib)
@@ -138,14 +138,14 @@ end subroutine cmat_blk_init
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_blk_partial_bump_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine cmat_blk_partial_bump_dealloc(cmat_blk)
 
 implicit none
 
 ! Passed variables
-class(cmat_blk_type),intent(inout) :: cmat_blk ! C matrix data block
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
 ! Release memory
 if (allocated(cmat_blk%bump_coef_ens)) deallocate(cmat_blk%bump_coef_ens)
@@ -162,14 +162,14 @@ end subroutine cmat_blk_partial_bump_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_blk_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine cmat_blk_partial_dealloc(cmat_blk)
 
 implicit none
 
 ! Passed variables
-class(cmat_blk_type),intent(inout) :: cmat_blk ! C matrix data block
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
 ! Release memory
 if (allocated(cmat_blk%rhs)) deallocate(cmat_blk%rhs)
@@ -184,14 +184,14 @@ end subroutine cmat_blk_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_blk_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine cmat_blk_dealloc(cmat_blk)
 
 implicit none
 
 ! Passed variables
-class(cmat_blk_type),intent(inout) :: cmat_blk ! C matrix data block
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
 ! Release memory
 call cmat_blk%partial_bump_dealloc

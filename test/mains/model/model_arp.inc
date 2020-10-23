@@ -1,15 +1,15 @@
 !----------------------------------------------------------------------
 ! Subroutine: model_arp_coord
-! Purpose: get ARPEGE coordinates
+!> Get ARPEGE coordinates
 !----------------------------------------------------------------------
 subroutine model_arp_coord(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,ilon,ilat
@@ -90,18 +90,18 @@ end subroutine model_arp_coord
 
 !----------------------------------------------------------------------
 ! Subroutine: model_arp_read
-! Purpose: read ARPEGE field
+!> Read ARPEGE field
 !----------------------------------------------------------------------
 subroutine model_arp_read(model,mpl,nam,filename,fld)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model                        ! Model
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-character(len=*),intent(in) :: filename                         ! File name
-real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
+class(model_type),intent(inout) :: model                        !< Model
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+character(len=*),intent(in) :: filename                         !< File name
+real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
 integer :: iv,il0,img,ilon,ilat,info

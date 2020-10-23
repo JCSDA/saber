@@ -26,6 +26,7 @@ Documents/html/
 Documents/latex/
 Documents/*.aux
 Documents/*.pdf
+Documents/*.h
 Data/
 ifs/
 build/

@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_bump
-! Purpose: BUMP derived type
+!> BUMP derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -120,19 +120,19 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create
-! Purpose: create
+!> Create
 !----------------------------------------------------------------------
 subroutine bump_create(bump,comm,afunctionspace,fieldset,conf,grid)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                 ! BUMP
-type(fckit_mpi_comm),intent(in) :: comm                ! FCKIT MPI communicator wrapper
-type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
-type(fieldset_type),intent(in) :: fieldset             ! Fieldset containing geometry elements
-type(fckit_configuration),intent(in) :: conf           ! FCKIT configuration
-type(fckit_configuration),intent(in) :: grid           ! FCKIT grid configuration
+class(bump_type),intent(inout) :: bump                 !< BUMP
+type(fckit_mpi_comm),intent(in) :: comm                !< FCKIT MPI communicator wrapper
+type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
+type(fieldset_type),intent(in) :: fieldset             !< Fieldset containing geometry elements
+type(fckit_configuration),intent(in) :: conf           !< FCKIT configuration
+type(fckit_configuration),intent(in) :: grid           !< FCKIT grid configuration
 
 ! Local variables
 integer :: lmsvali, llunit
@@ -164,19 +164,19 @@ end subroutine bump_create
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create_deprecated_atlas
-! Purpose: create (deprecated)
+!> Create (deprecated)
 !----------------------------------------------------------------------
 subroutine bump_create_deprecated_atlas(bump,comm,afunctionspace,afieldset,conf,grid)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                 ! BUMP
-type(fckit_mpi_comm),intent(in) :: comm                ! FCKIT MPI communicator wrapper
-type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS function space
-type(atlas_fieldset),intent(in) :: afieldset           ! ATLAS fieldset containing geometry elements
-type(fckit_configuration),intent(in) :: conf           ! FCKIT configuration
-type(fckit_configuration),intent(in) :: grid           ! FCKIT grid configuration
+class(bump_type),intent(inout) :: bump                 !< BUMP
+type(fckit_mpi_comm),intent(in) :: comm                !< FCKIT MPI communicator wrapper
+type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
+type(atlas_fieldset),intent(in) :: afieldset           !< ATLAS fieldset containing geometry elements
+type(fckit_configuration),intent(in) :: conf           !< FCKIT configuration
+type(fckit_configuration),intent(in) :: grid           !< FCKIT grid configuration
 
 ! Local variables
 type(fieldset_type) :: fieldset
@@ -191,23 +191,23 @@ end subroutine bump_create_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_setup
-! Purpose: setup
+!> Setup
 !----------------------------------------------------------------------
 subroutine bump_setup(bump,f_comm,afunctionspace,fieldset,nobs,lonobs,latobs,lunit,msvali,msvalr)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                 ! BUMP
-type(fckit_mpi_comm),intent(in) :: f_comm              ! FCKIT MPI communicator wrapper
-type(atlas_functionspace),intent(in) :: afunctionspace ! ATLAS functionspace
-type(fieldset_type),intent(in),optional :: fieldset    ! Fieldset containing geometry elements
-integer,intent(in),optional :: nobs                    ! Number of observations
-real(kind_real),intent(in),optional :: lonobs(:)       ! Observations longitude (in degrees)
-real(kind_real),intent(in),optional :: latobs(:)       ! Observations latitude (in degrees)
-integer,intent(in),optional :: lunit                   ! Listing unit
-integer,intent(in),optional :: msvali                  ! Missing value for integers
-real(kind_real),intent(in),optional :: msvalr          ! Missing value for reals
+class(bump_type),intent(inout) :: bump                 !< BUMP
+type(fckit_mpi_comm),intent(in) :: f_comm              !< FCKIT MPI communicator wrapper
+type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS functionspace
+type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing geometry elements
+integer,intent(in),optional :: nobs                    !< Number of observations
+real(kind_real),intent(in),optional :: lonobs(:)       !< Observations longitude (in degrees)
+real(kind_real),intent(in),optional :: latobs(:)       !< Observations latitude (in degrees)
+integer,intent(in),optional :: lunit                   !< Listing unit
+integer,intent(in),optional :: msvali                  !< Missing value for integers
+real(kind_real),intent(in),optional :: msvalr          !< Missing value for reals
 
 ! Local variables
 character(len=1024),parameter :: subr = 'bump_setup'
@@ -352,14 +352,14 @@ end subroutine bump_setup
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_run_drivers
-! Purpose: run drivers
+!> Run drivers
 !----------------------------------------------------------------------
 subroutine bump_run_drivers(bump)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump ! BUMP
+class(bump_type),intent(inout) :: bump !< BUMP
 
 if (bump%nam%ens1_ne>0) then
    ! Compute mean for ensemble 1
@@ -580,17 +580,17 @@ end subroutine bump_run_drivers
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_add_member
-! Purpose: add member into bump%ens[1,2]
+!> Add member into bump%ens[1,2]
 !----------------------------------------------------------------------
 subroutine bump_add_member(bump,fieldset,ie,iens)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump     ! BUMP
-type(fieldset_type),intent(in) :: fieldset ! Fieldset
-integer,intent(in) :: ie                   ! Member index
-integer,intent(in) :: iens                 ! Ensemble number
+class(bump_type),intent(inout) :: bump     !< BUMP
+type(fieldset_type),intent(in) :: fieldset !< Fieldset
+integer,intent(in) :: ie                   !< Member index
+integer,intent(in) :: iens                 !< Ensemble number
 
 ! Local variables
 character(len=1024),parameter :: subr = 'bump_add_member'
@@ -636,15 +636,15 @@ end subroutine bump_add_member
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal
-! Purpose: vertical balance application
+!> Vertical balance application
 !----------------------------------------------------------------------
 subroutine bump_apply_vbal(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -666,15 +666,15 @@ end subroutine bump_apply_vbal
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal_inv
-! Purpose: vertical balance application, inverse
+!> Vertical balance application, inverse
 !----------------------------------------------------------------------
 subroutine bump_apply_vbal_inv(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -696,15 +696,15 @@ end subroutine bump_apply_vbal_inv
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal_ad
-! Purpose: vertical balance application, adjoint
+!> Vertical balance application, adjoint
 !----------------------------------------------------------------------
 subroutine bump_apply_vbal_ad(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -726,15 +726,15 @@ end subroutine bump_apply_vbal_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal_inv_ad
-! Purpose: vertical balance application, inverse adjoint
+!> Vertical balance application, inverse adjoint
 !----------------------------------------------------------------------
 subroutine bump_apply_vbal_inv_ad(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -756,15 +756,15 @@ end subroutine bump_apply_vbal_inv_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_stddev
-! Purpose: standard-deviation application
+!> Standard-deviation application
 !----------------------------------------------------------------------
 subroutine bump_apply_stddev(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -786,15 +786,15 @@ end subroutine bump_apply_stddev
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_stddev_inv
-! Purpose: standard-deviation application, inverse
+!> Standard-deviation application, inverse
 !----------------------------------------------------------------------
 subroutine bump_apply_stddev_inv(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -816,15 +816,15 @@ end subroutine bump_apply_stddev_inv
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas
-! Purpose: NICAS application
+!> NICAS application
 !----------------------------------------------------------------------
 subroutine bump_apply_nicas(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -850,15 +850,15 @@ end subroutine bump_apply_nicas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_deprecated_atlas
-! Purpose: NICAS application (deprecated
+!> NICAS application (deprecated
 !----------------------------------------------------------------------
 subroutine bump_apply_nicas_deprecated_atlas(bump,afieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump          ! BUMP
-type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
+class(bump_type),intent(inout) :: bump          !< BUMP
+type(atlas_fieldset),intent(inout) :: afieldset !< ATLAS fieldset
 
 ! Local variables
 type(fieldset_type) :: fieldset
@@ -873,15 +873,15 @@ end subroutine bump_apply_nicas_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_cv_size
-! Purpose: get control variable size
+!> Get control variable size
 !----------------------------------------------------------------------
 subroutine bump_get_cv_size(bump,n)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump ! BUMP
-integer,intent(out) :: n               ! Control variable size
+class(bump_type),intent(inout) :: bump !< BUMP
+integer,intent(out) :: n               !< Control variable size
 
 ! Local variables
 type(cv_type) :: cv
@@ -896,16 +896,16 @@ end subroutine bump_get_cv_size
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_sqrt
-! Purpose: NICAS square-root application
+!> NICAS square-root application
 !----------------------------------------------------------------------
 subroutine bump_apply_nicas_sqrt(bump,pcv,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-real(kind_real),intent(in) :: pcv(:)          ! Packed control variable
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+real(kind_real),intent(in) :: pcv(:)          !< Packed control variable
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -937,16 +937,16 @@ end subroutine bump_apply_nicas_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_sqrt_deprecated_atlas
-! Purpose: NICAS square-root application (deprecated)
+!> NICAS square-root application (deprecated)
 !----------------------------------------------------------------------
 subroutine bump_apply_nicas_sqrt_deprecated_atlas(bump,pcv,afieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump          ! BUMP
-real(kind_real),intent(in) :: pcv(:)            ! Packed control variable
-type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS Fieldset
+class(bump_type),intent(inout) :: bump          !< BUMP
+real(kind_real),intent(in) :: pcv(:)            !< Packed control variable
+type(atlas_fieldset),intent(inout) :: afieldset !< ATLAS Fieldset
 
 ! Local variables
 type(fieldset_type) :: fieldset
@@ -961,16 +961,16 @@ end subroutine bump_apply_nicas_sqrt_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_sqrt_ad
-! Purpose: NICAS square-root adjoint application
+!> NICAS square-root adjoint application
 !----------------------------------------------------------------------
 subroutine bump_apply_nicas_sqrt_ad(bump,fieldset,pcv)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
-real(kind_real),intent(inout) :: pcv(:)       ! Packed control variable
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
+real(kind_real),intent(inout) :: pcv(:)       !< Packed control variable
 
 ! Local variables
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -999,15 +999,15 @@ end subroutine bump_apply_nicas_sqrt_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_randomize
-! Purpose: NICAS randomization
+!> NICAS randomization
 !----------------------------------------------------------------------
 subroutine bump_randomize(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
@@ -1030,16 +1030,16 @@ end subroutine bump_randomize
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_obsop
-! Purpose: observation operator application
+!> Observation operator application
 !----------------------------------------------------------------------
 subroutine bump_apply_obsop(bump,fieldset,obs)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                             ! BUMP
-type(fieldset_type),intent(inout) :: fieldset                      ! Fieldset
-real(kind_real),intent(out) :: obs(bump%obsop%nobsa,bump%geom%nl0) ! Observations columns
+class(bump_type),intent(inout) :: bump                             !< BUMP
+type(fieldset_type),intent(inout) :: fieldset                      !< Fieldset
+real(kind_real),intent(out) :: obs(bump%obsop%nobsa,bump%geom%nl0) !< Observations columns
 
 ! Local variables
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
@@ -1062,16 +1062,16 @@ end subroutine bump_apply_obsop
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_obsop_deprecated_atlas
-! Purpose: observation operator application (deprecated)
+!> Observation operator application (deprecated)
 !----------------------------------------------------------------------
 subroutine bump_apply_obsop_deprecated_atlas(bump,afieldset,obs)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                             ! BUMP
-type(atlas_fieldset),intent(inout) :: afieldset                    ! ATLAS fieldset
-real(kind_real),intent(out) :: obs(bump%obsop%nobsa,bump%geom%nl0) ! Observations columns
+class(bump_type),intent(inout) :: bump                             !< BUMP
+type(atlas_fieldset),intent(inout) :: afieldset                    !< ATLAS fieldset
+real(kind_real),intent(out) :: obs(bump%obsop%nobsa,bump%geom%nl0) !< Observations columns
 
 ! Local variables
 type(fieldset_type) :: fieldset
@@ -1086,16 +1086,16 @@ end subroutine bump_apply_obsop_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_obsop_ad
-! Purpose: observation operator adjoint application
+!> Observation operator adjoint application
 !----------------------------------------------------------------------
 subroutine bump_apply_obsop_ad(bump,obs,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                            ! BUMP
-real(kind_real),intent(in) :: obs(bump%obsop%nobsa,bump%geom%nl0) ! Observations columns
-type(fieldset_type),intent(inout) :: fieldset                     ! Fieldset
+class(bump_type),intent(inout) :: bump                            !< BUMP
+real(kind_real),intent(in) :: obs(bump%obsop%nobsa,bump%geom%nl0) !< Observations columns
+type(fieldset_type),intent(inout) :: fieldset                     !< Fieldset
 
 ! Local variables
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
@@ -1118,16 +1118,16 @@ end subroutine bump_apply_obsop_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_obsop_ad_deprecated_atlas
-! Purpose: observation operator adjoint application (deprecated)
+!> Observation operator adjoint application (deprecated)
 !----------------------------------------------------------------------
 subroutine bump_apply_obsop_ad_deprecated_atlas(bump,obs,afieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                            ! BUMP
-real(kind_real),intent(in) :: obs(bump%obsop%nobsa,bump%geom%nl0) ! Observations columns
-type(atlas_fieldset),intent(inout) :: afieldset                   ! ATLAS fieldset
+class(bump_type),intent(inout) :: bump                            !< BUMP
+real(kind_real),intent(in) :: obs(bump%obsop%nobsa,bump%geom%nl0) !< Observations columns
+type(atlas_fieldset),intent(inout) :: afieldset                   !< ATLAS fieldset
 
 ! Local variables
 type(fieldset_type) :: fieldset
@@ -1142,16 +1142,16 @@ end subroutine bump_apply_obsop_ad_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_parameter
-! Purpose: get a parameter
+!> Get a parameter
 !----------------------------------------------------------------------
 subroutine bump_get_parameter(bump,param,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-character(len=*),intent(in) :: param          ! Parameter
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+character(len=*),intent(in) :: param          !< Parameter
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
 integer :: ib,iv,jv
@@ -1204,17 +1204,17 @@ end subroutine bump_get_parameter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_copy_to_field
-! Purpose: copy to field
+!> Copy to field
 !----------------------------------------------------------------------
 subroutine bump_copy_to_field(bump,param,ib,fld_mga)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                               ! BUMP
-character(len=*),intent(in) :: param                                 ! Parameter
-integer,intent(in) :: ib                                             ! Block index
-real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0) ! Field
+class(bump_type),intent(inout) :: bump                               !< BUMP
+character(len=*),intent(in) :: param                                 !< Parameter
+integer,intent(in) :: ib                                             !< Block index
+real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0) !< Field
 
 ! Local variables
 integer :: iscales,ie,imga,il0,iv
@@ -1381,14 +1381,14 @@ end subroutine bump_copy_to_field
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_test_get_parameter
-! Purpose: test get_parameter
+!> Test get_parameter
 !----------------------------------------------------------------------
 subroutine bump_test_get_parameter(bump)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump ! BUMP
+class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Local variables
 type(fieldset_type) :: fieldset
@@ -1437,16 +1437,16 @@ end subroutine bump_test_get_parameter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_set_parameter
-! Purpose: set a parameter
+!> Set a parameter
 !----------------------------------------------------------------------
 subroutine bump_set_parameter(bump,param,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump        ! BUMP
-character(len=*),intent(in) :: param          ! Parameter
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(bump_type),intent(inout) :: bump        !< BUMP
+character(len=*),intent(in) :: param          !< Parameter
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
 integer :: ib,iv,jv
@@ -1498,16 +1498,16 @@ end subroutine bump_set_parameter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_set_parameter_deprecated_atlas
-! Purpose: set a parameter (deprecated)
+!> Set a parameter (deprecated)
 !----------------------------------------------------------------------
 subroutine bump_set_parameter_deprecated_atlas(bump,param,afieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump         ! BUMP
-character(len=*),intent(in) :: param            ! Parameter
-type(atlas_fieldset),intent(inout) :: afieldset ! ATLAS fieldset
+class(bump_type),intent(inout) :: bump         !< BUMP
+character(len=*),intent(in) :: param            !< Parameter
+type(atlas_fieldset),intent(inout) :: afieldset !< ATLAS fieldset
 
 ! Local variables
 type(fieldset_type) :: fieldset
@@ -1522,17 +1522,17 @@ end subroutine bump_set_parameter_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_copy_from_field
-! Purpose: copy from field
+!> Copy from field
 !----------------------------------------------------------------------
 subroutine bump_copy_from_field(bump,param,ib,fld_mga)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                              ! BUMP
-character(len=*),intent(in) :: param                                ! Parameter
-integer,intent(in) :: ib                                            ! Block index
-real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0) ! Field
+class(bump_type),intent(inout) :: bump                              !< BUMP
+character(len=*),intent(in) :: param                                !< Parameter
+integer,intent(in) :: ib                                            !< Block index
+real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0) !< Field
 
 ! Local variables
 integer :: ic0a,il0
@@ -1619,14 +1619,14 @@ end subroutine bump_copy_from_field
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_test_set_parameter
-! Purpose: test set_parameter
+!> Test set_parameter
 !----------------------------------------------------------------------
 subroutine bump_test_set_parameter(bump)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump ! BUMP
+class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Local variables
 integer :: iv,ic0a,ic0
@@ -1696,14 +1696,14 @@ end subroutine bump_test_set_parameter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_test_apply_interfaces
-! Purpose: test BUMP apply interfaces
+!> Test BUMP apply interfaces
 !----------------------------------------------------------------------
 subroutine bump_test_apply_interfaces(bump)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump ! BUMP
+class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Local variables
 integer :: n,nv_save
@@ -1842,14 +1842,14 @@ end subroutine bump_test_apply_interfaces
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine bump_partial_dealloc(bump)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump ! BUMP
+class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Release memory
 call bump%cmat%partial_dealloc
@@ -1869,14 +1869,14 @@ end subroutine bump_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_dealloc
-! Purpose: release memory (full)
+!> Release memory (full)
 !----------------------------------------------------------------------
 subroutine bump_dealloc(bump)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump ! BUMP
+class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Release memory
 call bump%bpar%dealloc
@@ -1897,14 +1897,14 @@ end subroutine bump_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: dummy
-! Purpose: dummy finalization
+!> Dummy finalization
 !----------------------------------------------------------------------
 subroutine dummy(bump)
 
 implicit none
 
 ! Passed variables
-type(bump_type),intent(inout) :: bump ! BUMP
+type(bump_type),intent(inout) :: bump !< BUMP
 
 end subroutine dummy
 

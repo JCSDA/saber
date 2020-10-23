@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_io
-! Purpose: I/O derived type
+!> I/O derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS and METEO-FRANCE
@@ -23,35 +23,35 @@ implicit none
 ! I/O derived type
 type io_type
    ! Field output
-   integer :: nc0io                              ! I/O chunk size on subset Sc0
-   integer :: ic0_s                              ! Starting index for the I/O chunk on subset Sc0
-   integer,allocatable :: c0io_to_c0(:)          ! Subset Sc0, I/O chunk to global
-   integer,allocatable :: procio_to_proc(:)      ! I/O task to main communicator task
-   type(com_type) :: com_AIO                     ! Communication between halo A and I/O chunk
+   integer :: nc0io                              !< I/O chunk size on subset Sc0
+   integer :: ic0_s                              !< Starting index for the I/O chunk on subset Sc0
+   integer,allocatable :: c0io_to_c0(:)          !< Subset Sc0, I/O chunk to global
+   integer,allocatable :: procio_to_proc(:)      !< I/O task to main communicator task
+   type(com_type) :: com_AIO                     !< Communication between halo A and I/O chunk
 
    ! Field regridding and output
-   integer :: nlon                               ! Number of output grid longitudes
-   integer :: nlat                               ! Number of output grid latitudes
-   real(kind_real),allocatable :: lon(:)         ! Output grid longitudes
-   real(kind_real),allocatable :: lat(:)         ! Output grid latitudes
-   integer,allocatable :: og_to_lon(:)           ! Output grid to longitude index
-   integer,allocatable :: og_to_lat(:)           ! Output grid to latitude index
-   integer :: nog                                ! Output grid size
-   integer :: noga                               ! Output grid size, halo A
-   integer :: nc0b                               ! Subset Sc0 size, halo B
-   integer,allocatable :: og_to_proc(:)          ! Output grid to processor
-   integer,allocatable :: proc_to_noga(:)        ! Number of points in output grid, halo A, for each processor
-   integer,allocatable :: oga_to_og(:)           ! Output grid, halo A to global
-   integer,allocatable :: og_to_oga(:)           ! Output grid, global to halo A
-   integer,allocatable :: c0u_to_c0b(:)          ! Subset Sc0, universe to halo B
-   logical,allocatable :: mask(:,:)              ! Mask on output grid
-   type(linop_type) :: og                        ! Subset Sc0 to grid interpolation
-   type(com_type) :: com_AB                      ! Communication between halos A and B
-   integer :: nlonio                             ! I/O chunk size on output grid
-   integer :: ilon_s                             ! Starting index for the I/O chunk on output grid
-   integer,allocatable :: ogio_to_og(:)          ! Output grid, I/O chunk to global
-   integer,allocatable :: procio_to_proc_grid(:) ! I/O task to main communicator task
-   type(com_type) :: com_AIO_grid                ! Communication between halo A and I/O chunk
+   integer :: nlon                               !< Number of output grid longitudes
+   integer :: nlat                               !< Number of output grid latitudes
+   real(kind_real),allocatable :: lon(:)         !< Output grid longitudes
+   real(kind_real),allocatable :: lat(:)         !< Output grid latitudes
+   integer,allocatable :: og_to_lon(:)           !< Output grid to longitude index
+   integer,allocatable :: og_to_lat(:)           !< Output grid to latitude index
+   integer :: nog                                !< Output grid size
+   integer :: noga                               !< Output grid size, halo A
+   integer :: nc0b                               !< Subset Sc0 size, halo B
+   integer,allocatable :: og_to_proc(:)          !< Output grid to processor
+   integer,allocatable :: proc_to_noga(:)        !< Number of points in output grid, halo A, for each processor
+   integer,allocatable :: oga_to_og(:)           !< Output grid, halo A to global
+   integer,allocatable :: og_to_oga(:)           !< Output grid, global to halo A
+   integer,allocatable :: c0u_to_c0b(:)          !< Subset Sc0, universe to halo B
+   logical,allocatable :: mask(:,:)              !< Mask on output grid
+   type(linop_type) :: og                        !< Subset Sc0 to grid interpolation
+   type(com_type) :: com_AB                      !< Communication between halos A and B
+   integer :: nlonio                             !< I/O chunk size on output grid
+   integer :: ilon_s                             !< Starting index for the I/O chunk on output grid
+   integer,allocatable :: ogio_to_og(:)          !< Output grid, I/O chunk to global
+   integer,allocatable :: procio_to_proc_grid(:) !< I/O task to main communicator task
+   type(com_type) :: com_AIO_grid                !< Communication between halo A and I/O chunk
 contains
    procedure :: dealloc => io_dealloc
    procedure :: fld_read => io_fld_read
@@ -66,14 +66,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: io_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine io_dealloc(io)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(inout) :: io ! I/O
+class(io_type),intent(inout) :: io !< I/O
 
 ! Release memory
 if (allocated(io%c0io_to_c0)) deallocate(io%c0io_to_c0)
@@ -99,22 +99,22 @@ end subroutine io_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: io_fld_read
-! Purpose: write field
+!> Write field
 !----------------------------------------------------------------------
 subroutine io_fld_read(io,mpl,nam,geom,filename,variable,fld,groupname,subgroupname)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(in) :: io                        ! I/O
-type(mpl_type),intent(inout) :: mpl                    ! MPI data
-type(nam_type),intent(in) :: nam                       ! Namelist
-type(geom_type),intent(in) :: geom                     ! Geometry
-character(len=*),intent(in) :: filename                ! File name
-character(len=*),intent(in) :: variable                ! Variable name
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) ! Field
-character(len=*),intent(in),optional :: groupname      ! Group name
-character(len=*),intent(in),optional :: subgroupname  ! Subgroup name
+class(io_type),intent(in) :: io                        !< I/O
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(nam_type),intent(in) :: nam                       !< Namelist
+type(geom_type),intent(in) :: geom                     !< Geometry
+character(len=*),intent(in) :: filename                !< File name
+character(len=*),intent(in) :: variable                !< Variable name
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
+character(len=*),intent(in),optional :: groupname      !< Group name
+character(len=*),intent(in),optional :: subgroupname  !< Subgroup name
 
 ! Local variables
 integer :: color,iproc,iprocio
@@ -198,22 +198,22 @@ end subroutine io_fld_read
 
 !----------------------------------------------------------------------
 ! Subroutine: io_fld_write
-! Purpose: write field
+!> Write field
 !----------------------------------------------------------------------
 subroutine io_fld_write(io,mpl,nam,geom,filename,variable,fld,groupname,subgroupname)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(in) :: io                       ! I/O
-type(mpl_type),intent(inout) :: mpl                   ! MPI data
-type(nam_type),intent(in) :: nam                      ! Namelist
-type(geom_type),intent(in) :: geom                    ! Geometry
-character(len=*),intent(in) :: filename               ! File name
-character(len=*),intent(in) :: variable               ! Variable name
-real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
-character(len=*),intent(in),optional :: groupname     ! Group name
-character(len=*),intent(in),optional :: subgroupname  ! Subgroup name
+class(io_type),intent(in) :: io                       !< I/O
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+type(nam_type),intent(in) :: nam                      !< Namelist
+type(geom_type),intent(in) :: geom                    !< Geometry
+character(len=*),intent(in) :: filename               !< File name
+character(len=*),intent(in) :: variable               !< Variable name
+real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
+character(len=*),intent(in),optional :: groupname     !< Group name
+character(len=*),intent(in),optional :: subgroupname  !< Subgroup name
 
 ! Local variables
 integer :: ic0a,il0,color,iproc,iprocio
@@ -334,17 +334,17 @@ end subroutine io_fld_write
 
 !----------------------------------------------------------------------
 ! Subroutine: io_init
-! Purpose: initialize fields output
+!> Initialize fields output
 !----------------------------------------------------------------------
 subroutine io_init(io,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(inout) :: io  ! I/O
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(nam_type),intent(in) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom  ! Geometry
+class(io_type),intent(inout) :: io  !< I/O
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
 
 ! Local variables
 integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,jc0,nc0own,ic0own,iproc,jproc

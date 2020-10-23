@@ -18,8 +18,9 @@ ecbuild_declare_project()
 list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
 set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
 
+
 ## Configuration options
-set( ENABLE_SABER_DOC "Build SABER/BUMP Documentation" OFF )
+option( ENABLE_SABER_DOC "Build SABER documentation" OFF )
 include( ${PROJECT_NAME}_compiler_flags )
 
 ## Dependencies
@@ -37,7 +38,9 @@ find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 add_subdirectory( src/saber )
 add_subdirectory( tools ) # tools is needed for test
 add_subdirectory( test )
-add_subdirectory( doc )
+if( ENABLE_SABER_DOC )
+    add_subdirectory( Documents )
+endif()
 
 ## Global tests
 ecbuild_add_test( TARGET saber_coding_norms_src

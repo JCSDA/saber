@@ -2,6 +2,7 @@
 list( APPEND test_files
     saber_compare.sh
     saber_cpplint.py
+    saber_doc_overview.sh
     saber_links.ksh
     saber_parallel.sh
     saber_plot.py

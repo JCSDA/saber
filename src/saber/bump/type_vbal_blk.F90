@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_vbal_blk
-! Purpose: vertical balance block derived type
+!> Vertical balance block derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -20,13 +20,13 @@ implicit none
 
 ! Vertical balance block derived type
 type vbal_blk_type
-   integer :: iv                                  ! First variable index
-   integer :: jv                                  ! Second variable index
-   character(len=1024) :: name                    ! Name
-   real(kind_real),allocatable :: auto(:,:,:)     ! Auto-covariance
-   real(kind_real),allocatable :: cross(:,:,:)    ! Cross-covariance
-   real(kind_real),allocatable :: auto_inv(:,:,:) ! Inverse auto-covariance
-   real(kind_real),allocatable :: reg(:,:,:)      ! Regression
+   integer :: iv                                  !< First variable index
+   integer :: jv                                  !< Second variable index
+   character(len=1024) :: name                    !< Name
+   real(kind_real),allocatable :: auto(:,:,:)     !< Auto-covariance
+   real(kind_real),allocatable :: cross(:,:,:)    !< Cross-covariance
+   real(kind_real),allocatable :: auto_inv(:,:,:) !< Inverse auto-covariance
+   real(kind_real),allocatable :: reg(:,:,:)      !< Regression
 contains
    procedure :: alloc => vbal_blk_alloc
    procedure :: partial_dealloc => vbal_blk_partial_dealloc
@@ -44,19 +44,19 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_blk_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine vbal_blk_alloc(vbal_blk,nam,geom,nc2b,iv,jv)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(inout) :: vbal_blk ! Vertical balance block
-type(nam_type),intent(in) :: nam               ! Namelist
-type(geom_type),intent(in) :: geom             ! Geometry
-integer,intent(in) :: nc2b                     ! Subset Sc2 size, halo B
-integer,intent(in) :: iv                       ! First variable index
-integer,intent(in) :: jv                       ! Second variable index
+class(vbal_blk_type),intent(inout) :: vbal_blk !< Vertical balance block
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+integer,intent(in) :: nc2b                     !< Subset Sc2 size, halo B
+integer,intent(in) :: iv                       !< First variable index
+integer,intent(in) :: jv                       !< Second variable index
 
 ! Set attributes
 vbal_blk%iv = iv
@@ -73,14 +73,14 @@ end subroutine vbal_blk_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_blk_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine vbal_blk_partial_dealloc(vbal_blk)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(inout) :: vbal_blk ! Vertical balance block
+class(vbal_blk_type),intent(inout) :: vbal_blk !< Vertical balance block
 
 ! Release memory
 if (allocated(vbal_blk%auto)) deallocate(vbal_blk%auto)
@@ -91,14 +91,14 @@ end subroutine vbal_blk_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_blk_dealloc
-! Purpose: release memory (full)
+!> Release memory (full)
 !----------------------------------------------------------------------
 subroutine vbal_blk_dealloc(vbal_blk)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(inout) :: vbal_blk ! Vertical balance block
+class(vbal_blk_type),intent(inout) :: vbal_blk !< Vertical balance block
 
 ! Release memory
 call vbal_blk%partial_dealloc
@@ -108,20 +108,20 @@ end subroutine vbal_blk_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_blk_compute_covariances
-! Purpose: compute auto- and cross-covariances
+!> Compute auto- and cross-covariances
 !----------------------------------------------------------------------
 subroutine vbal_blk_compute_covariances(vbal_blk,mpl,geom,samp,ens,auto,cross)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(in) :: vbal_blk                                ! Vertical balance block
-type(mpl_type),intent(inout) :: mpl                                        ! MPI data
-type(geom_type),intent(in) :: geom                                         ! Geometry
-type(samp_type), intent(in) :: samp                                        ! Sampling
-type(ens_type), intent(in) :: ens                                          ! Ensemble
-real(kind_real),intent(out) :: auto(samp%nc1e,geom%nl0,geom%nl0,ens%nsub)  ! Auto-covariance
-real(kind_real),intent(out) :: cross(samp%nc1e,geom%nl0,geom%nl0,ens%nsub) ! Cross-covariance
+class(vbal_blk_type),intent(in) :: vbal_blk                                !< Vertical balance block
+type(mpl_type),intent(inout) :: mpl                                        !< MPI data
+type(geom_type),intent(in) :: geom                                         !< Geometry
+type(samp_type), intent(in) :: samp                                        !< Sampling
+type(ens_type), intent(in) :: ens                                          !< Ensemble
+real(kind_real),intent(out) :: auto(samp%nc1e,geom%nl0,geom%nl0,ens%nsub)  !< Auto-covariance
+real(kind_real),intent(out) :: cross(samp%nc1e,geom%nl0,geom%nl0,ens%nsub) !< Cross-covariance
 
 ! Local variables
 integer :: isub,ie_sub,ie,il0,ic1a,ic0,ic0a,jl0,ic1e,ic1u
@@ -202,22 +202,22 @@ end subroutine vbal_blk_compute_covariances
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_blk_compute_regression
-! Purpose: compute regression
+!> Compute regression
 !----------------------------------------------------------------------
 subroutine vbal_blk_compute_regression(vbal_blk,mpl,nam,geom,samp,nsub,auto,cross,ic2b)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(inout) :: vbal_blk                        ! Vertical balance block
-type(mpl_type),intent(inout) :: mpl                                   ! MPI data
-type(nam_type), intent(in) :: nam                                     ! Namelist
-type(geom_type),intent(in) :: geom                                    ! Geometry
-type(samp_type), intent(in) :: samp                                   ! Sampling
-integer,intent(in) :: nsub                                            ! Number of sub-ensembles
-real(kind_real),intent(in) :: auto(samp%nc1e,geom%nl0,geom%nl0,nsub)  ! Auto-covariance
-real(kind_real),intent(in) :: cross(samp%nc1e,geom%nl0,geom%nl0,nsub) ! Cross-covariance
-integer,intent(in) :: ic2b                                            ! Index
+class(vbal_blk_type),intent(inout) :: vbal_blk                        !< Vertical balance block
+type(mpl_type),intent(inout) :: mpl                                   !< MPI data
+type(nam_type), intent(in) :: nam                                     !< Namelist
+type(geom_type),intent(in) :: geom                                    !< Geometry
+type(samp_type), intent(in) :: samp                                   !< Sampling
+integer,intent(in) :: nsub                                            !< Number of sub-ensembles
+real(kind_real),intent(in) :: auto(samp%nc1e,geom%nl0,geom%nl0,nsub)  !< Auto-covariance
+real(kind_real),intent(in) :: cross(samp%nc1e,geom%nl0,geom%nl0,nsub) !< Cross-covariance
+integer,intent(in) :: ic2b                                            !< Index
 
 ! Local variables
 integer :: i,jl0_min,jl0_max,jl0,il0,ic1e,ic1u,nc1a,nc1max,ierr
@@ -326,19 +326,19 @@ end subroutine vbal_blk_compute_regression
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_blk_apply
-! Purpose: apply vertical balance block
+!> Apply vertical balance block
 !----------------------------------------------------------------------
 subroutine vbal_blk_apply(vbal_blk,geom,h_n_s,h_c2b,h_S,fld)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(in) :: vbal_blk              ! Vertical balance block
-type(geom_type),intent(in) :: geom                       ! Geometry
-integer,intent(in) :: h_n_s(geom%nc0a,geom%nl0i)         ! Number of neighbors for the horizontal interpolation
-integer,intent(in) :: h_c2b(3,geom%nc0a,geom%nl0i)       ! Index of neighbors for the horizontal interpolation
-real(kind_real),intent(in) :: h_S(3,geom%nc0a,geom%nl0i) ! Weight of neighbors for the horizontal interpolation
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) ! Source/destination vector
+class(vbal_blk_type),intent(in) :: vbal_blk              !< Vertical balance block
+type(geom_type),intent(in) :: geom                       !< Geometry
+integer,intent(in) :: h_n_s(geom%nc0a,geom%nl0i)         !< Number of neighbors for the horizontal interpolation
+integer,intent(in) :: h_c2b(3,geom%nc0a,geom%nl0i)       !< Index of neighbors for the horizontal interpolation
+real(kind_real),intent(in) :: h_S(3,geom%nc0a,geom%nl0i) !< Weight of neighbors for the horizontal interpolation
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Source/destination vector
 
 ! Local variables
 integer :: ic0a,il0,jl0,i_s,ic2b
@@ -370,19 +370,19 @@ end subroutine vbal_blk_apply
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_blk_apply_ad
-! Purpose: apply adjoint vertical balance block
+!> Apply adjoint vertical balance block
 !----------------------------------------------------------------------
 subroutine vbal_blk_apply_ad(vbal_blk,geom,h_n_s,h_c2b,h_S,fld)
 
 implicit none
 
 ! Passed variables
-class(vbal_blk_type),intent(in) :: vbal_blk              ! Vertical balance block
-type(geom_type),intent(in) :: geom                       ! Geometry
-integer,intent(in) :: h_n_s(geom%nc0a,geom%nl0i)         ! Number of neighbors for the horizontal interpolation
-integer,intent(in) :: h_c2b(3,geom%nc0a,geom%nl0i)       ! Index of neighbors for the horizontal interpolation
-real(kind_real),intent(in) :: h_S(3,geom%nc0a,geom%nl0i) ! Weight of neighbors for the horizontal interpolation
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) ! Source/destination vector
+class(vbal_blk_type),intent(in) :: vbal_blk              !< Vertical balance block
+type(geom_type),intent(in) :: geom                       !< Geometry
+integer,intent(in) :: h_n_s(geom%nc0a,geom%nl0i)         !< Number of neighbors for the horizontal interpolation
+integer,intent(in) :: h_c2b(3,geom%nc0a,geom%nl0i)       !< Index of neighbors for the horizontal interpolation
+real(kind_real),intent(in) :: h_S(3,geom%nc0a,geom%nl0i) !< Weight of neighbors for the horizontal interpolation
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Source/destination vector
 
 ! Local variables
 integer :: ic0a,il0,jl0,i_s,ic2b

@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: tools_stripack
-! Purpose: STRIPACK routines
+!> STRIPACK routines
 ! Source: https://people.sc.fsu.edu/~jburkardt/f_src/stripack/stripack.html
 ! Author: Robert Renka
 ! Original licensing: none
@@ -26,7 +26,7 @@ subroutine addnod ( mpl, nst, k, x, y, z, list, lptr, lend, lnew, ier )
 !*****************************************************************************80
 !
 ! Subroutine: addnod
-! Purpose: add a node to a triangulation
+!> Add a node to a triangulation
 !
 !  Discussion:
 !
@@ -105,7 +105,7 @@ subroutine addnod ( mpl, nst, k, x, y, z, list, lptr, lend, lnew, ier )
 !
   implicit none
 
-  type(mpl_type),intent(inout) :: mpl ! MPI data
+  type(mpl_type),intent(inout) :: mpl !< MPI data
 
   integer k
 
@@ -280,7 +280,7 @@ subroutine bdyadd ( kk, i1, i2, list, lptr, lend, lnew )
 !*****************************************************************************80
 !
 ! Subroutine: bdyadd
-! Purpose: add a boundary node to a triangulation
+!> Add a boundary node to a triangulation
 !
 !  Discussion:
 !
@@ -422,7 +422,7 @@ subroutine bnodes ( n, list, lptr, lend, nodes, nb, na, nt )
 !*****************************************************************************80
 !
 ! Subroutine: bnodes
-! Purpose: return the boundary nodes of a triangulation
+!> Return the boundary nodes of a triangulation
 !
 !  Discussion:
 !
@@ -558,7 +558,7 @@ subroutine covsph ( kk, n0, list, lptr, lend, lnew )
 !*****************************************************************************80
 !
 ! Subroutine: covsph
-! Purpose: connect an exterior node to boundary nodes, covering the sphere
+!> Connect an exterior node to boundary nodes, covering the sphere
 !
 !  Discussion:
 !
@@ -670,7 +670,7 @@ subroutine det ( x1, y1, z1, x2, y2, z2, x0, y0, z0, output )
 !*****************************************************************************80
 !
 ! Subroutine: det
-! Purpose: compute 3D determinant
+!> Compute 3D determinant
 !
 !  DET(X1,...,Z0) >= 0 if and only if (X0,Y0,Z0) is in the
 !  (closed) left hemisphere defined by the plane containing (0,0,0),
@@ -706,7 +706,7 @@ subroutine insert ( k, lp, list, lptr, lnew )
 !*****************************************************************************80
 !
 ! Subroutine: insert
-! Purpose: insert K as a neighbor of N1
+!> Insert K as a neighbor of N1
 !
 !  Discussion:
 !
@@ -765,7 +765,7 @@ function inside ( p, lv, xv, yv, zv, nv, listv, ier )
 !*****************************************************************************80
 !
 ! Function: inside
-! Purpose: determine if a point is inside a polygonal region
+!> Determine if a point is inside a polygonal region
 !
 !  Discussion:
 !
@@ -1128,7 +1128,7 @@ subroutine intadd ( kk, i1, i2, i3, list, lptr, lend, lnew )
 !*****************************************************************************80
 !
 ! Subroutine: intadd
-! Purpose: add an interior node to a triangulation
+!> Add an interior node to a triangulation
 !
 !  Discussion:
 !
@@ -1230,7 +1230,7 @@ subroutine intrsc ( p1, p2, cn, p, ier )
 !*****************************************************************************80
 !
 ! Subroutine: intrsc
-! Purpose: find the intersection of two great circles
+!> Find the intersection of two great circles
 !
 !  Discussion:
 !
@@ -1338,7 +1338,7 @@ subroutine jrand ( n, ix, iy, iz, output )
 !*****************************************************************************80
 !
 ! Subroutine: jrand
-! Purpose: return a random integer between 1 and N
+!> Return a random integer between 1 and N
 !
 !  Discussion:
 !
@@ -1404,7 +1404,7 @@ subroutine left ( x1, y1, z1, x2, y2, z2, x0, y0, z0, output )
 !*****************************************************************************80
 !
 ! Subroutine: left
-! Purpose: determin whether a node is to the left of a plane through the origin
+!> Determin whether a node is to the left of a plane through the origin
 !
 !  Discussion:
 !
@@ -1467,7 +1467,7 @@ subroutine lstptr ( lpl, nb, list, lptr, output )
 !*****************************************************************************80
 !
 ! Subroutine: lstptr
-! Purpose: return the index of NB in the adjacency list
+!> Return the index of NB in the adjacency list
 !
 !  Discussion:
 !
@@ -1548,7 +1548,7 @@ subroutine swap ( in1, in2, io1, io2, list, lptr, lend, lp21 )
 !*****************************************************************************80
 !
 ! Subroutine: swap
-! Purpose: replace the diagonal arc of a quadrilateral with the other diagonal
+!> Replace the diagonal arc of a quadrilateral with the other diagonal
 !
 !  Discussion:
 !
@@ -1665,7 +1665,7 @@ subroutine swptst ( n1, n2, n3, n4, x, y, z, output )
 !*****************************************************************************80
 !
 ! Subroutine: swptst
-! Purpose: decide whether to replace a diagonal arc by the other
+!> Decide whether to replace a diagonal arc by the other
 !
 !  Discussion:
 !
@@ -1766,7 +1766,7 @@ subroutine trfind ( nst, p, n, x, y, z, list, lptr, lend, b1, b2, b3, i1, &
 !*****************************************************************************80
 !
 ! Subroutine: trfind
-! Purpose: locate a point relative to a triangulation
+!> Locate a point relative to a triangulation
 !
 !  Discussion:
 !
@@ -2280,7 +2280,7 @@ subroutine trlist ( n, list, lptr, lend, nrow, nt, ltri, ier )
 !*****************************************************************************80
 !
 ! Subroutine: trlist
-! Purpose: convert a triangulation data structure to a triangle list
+!> Convert a triangulation data structure to a triangle list
 !
 !  Discussion:
 !
@@ -2580,7 +2580,7 @@ subroutine trmesh ( mpl, n, x, y, z, list, lptr, lend, lnew, near, next, dist, i
 !*****************************************************************************80
 !
 ! Subroutine: trmesh
-! Purpose: create a Delaunay triangulation on the unit sphere
+!> Create a Delaunay triangulation on the unit sphere
 !
 !  Discussion:
 !
@@ -2735,7 +2735,7 @@ subroutine trmesh ( mpl, n, x, y, z, list, lptr, lend, lnew, near, next, dist, i
 !
   implicit none
 
-  type(mpl_type),intent(inout) :: mpl ! MPI data
+  type(mpl_type),intent(inout) :: mpl !< MPI data
 
   integer n
 

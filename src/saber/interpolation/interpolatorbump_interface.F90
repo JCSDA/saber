@@ -24,12 +24,12 @@ subroutine bint_create_c(c_key_bint, c_comm, c_fspace1, c_fspace2, c_masks, &
 implicit none
 
 ! Passed variables
-integer(c_int), intent(inout) :: c_key_bint !< bump interpolator
-type(c_ptr), value, intent(in) :: c_comm    !< MPI Communicator
-type(c_ptr), intent(in),value :: c_fspace1  !< source grid (atlas functionspace)
-type(c_ptr), intent(in),value :: c_fspace2  !< target grid (atlas functionspace)
-type(c_ptr), intent(in),value :: c_masks    !< masks and other metadata
-type(c_ptr), value, intent(in) :: c_config  !< Configuration
+integer(c_int), intent(inout) :: c_key_bint !<< bump interpolator
+type(c_ptr), value, intent(in) :: c_comm    !<< MPI Communicator
+type(c_ptr), intent(in),value :: c_fspace1  !<< source grid (atlas functionspace)
+type(c_ptr), intent(in),value :: c_fspace2  !<< target grid (atlas functionspace)
+type(c_ptr), intent(in),value :: c_masks    !<< masks and other metadata
+type(c_ptr), value, intent(in) :: c_config  !<< Configuration
 
 ! local variables
 type(bump_interpolator), pointer :: bint
@@ -65,9 +65,9 @@ subroutine bint_apply_c(c_key_bint, c_infields, c_outfields) bind(c, name='bint_
 implicit none
 
 ! Passed variables
-integer(c_int), intent(in) :: c_key_bint  !< key to bump interpolator
-type(c_ptr), intent(in), value :: c_infields  !< input fields
-type(c_ptr), intent(in), value :: c_outfields !< output fields
+integer(c_int), intent(in) :: c_key_bint  !<< key to bump interpolator
+type(c_ptr), intent(in), value :: c_infields  !<< input fields
+type(c_ptr), intent(in), value :: c_outfields !<< output fields
 
 ! Local variables
 type(bump_interpolator), pointer :: bint
@@ -89,9 +89,9 @@ subroutine bint_apply_ad_c(c_key_bint, c_fields2, c_fields1) bind(c, name='bint_
 implicit none
 
 ! Passed variables
-integer(c_int), intent(in) :: c_key_bint    !< key to bump interpolator
-type(c_ptr), intent(in), value :: c_fields2 !< input fields
-type(c_ptr), intent(in), value :: c_fields1 !< output fields
+integer(c_int), intent(in) :: c_key_bint    !<< key to bump interpolator
+type(c_ptr), intent(in), value :: c_fields2 !<< input fields
+type(c_ptr), intent(in), value :: c_fields1 !<< output fields
 
 ! Local variables
 type(bump_interpolator), pointer :: bint

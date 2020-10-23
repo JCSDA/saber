@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_bpar
-! Purpose: block parameters derived type
+!> Block parameters derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -16,23 +16,23 @@ implicit none
 
 type bpar_type
    ! Block parameters
-   integer :: nb                                   ! Number of blocks
-   integer :: nbe                                  ! Extended number of blocks
-   integer :: nl0rmax                              ! Maximum effective number of levels
-   integer,allocatable :: nl0r(:)                  ! Effective number of levels
-   integer,allocatable :: l0rl0b_to_l0(:,:,:)      ! Effective level to level
-   integer,allocatable :: il0rz(:,:)               ! Effective zero separation level
-   integer,allocatable :: nc3(:)                   ! Maximum class
-   logical,allocatable :: vbal_block(:,:)          ! Vertical balance block
-   logical,allocatable :: diag_block(:)            ! HDIAG block
-   logical,allocatable :: avg_block(:)             ! Averaging block
-   logical,allocatable :: fit_block(:)             ! Fit block
-   logical,allocatable :: B_block(:)               ! B-involved block
-   logical,allocatable :: nicas_block(:)           ! NICAS block
-   integer,allocatable :: cv_block(:)              ! Control variable block index
-   character(len=1024),allocatable :: blockname(:) ! Block name
-   integer,allocatable :: b_to_v1(:)               ! Block to first variable
-   integer,allocatable :: b_to_v2(:)               ! Block to second variable
+   integer :: nb                                   !< Number of blocks
+   integer :: nbe                                  !< Extended number of blocks
+   integer :: nl0rmax                              !< Maximum effective number of levels
+   integer,allocatable :: nl0r(:)                  !< Effective number of levels
+   integer,allocatable :: l0rl0b_to_l0(:,:,:)      !< Effective level to level
+   integer,allocatable :: il0rz(:,:)               !< Effective zero separation level
+   integer,allocatable :: nc3(:)                   !< Maximum class
+   logical,allocatable :: vbal_block(:,:)          !< Vertical balance block
+   logical,allocatable :: diag_block(:)            !< HDIAG block
+   logical,allocatable :: avg_block(:)             !< Averaging block
+   logical,allocatable :: fit_block(:)             !< Fit block
+   logical,allocatable :: B_block(:)               !< B-involved block
+   logical,allocatable :: nicas_block(:)           !< NICAS block
+   integer,allocatable :: cv_block(:)              !< Control variable block index
+   character(len=1024),allocatable :: blockname(:) !< Block name
+   integer,allocatable :: b_to_v1(:)               !< Block to first variable
+   integer,allocatable :: b_to_v2(:)               !< Block to second variable
 contains
    procedure :: alloc => bpar_alloc
    procedure :: init => bpar_init
@@ -46,16 +46,16 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: bpar_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine bpar_alloc(bpar,nam,geom)
 
 implicit none
 
 ! Passed variable
-class(bpar_type),intent(inout) :: bpar ! Block parameters
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(bpar_type),intent(inout) :: bpar !< Block parameters
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Number of blocks
 bpar%nb = nam%nv**2
@@ -88,17 +88,17 @@ end subroutine bpar_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: bpar_init
-! Purpose: initialization
+!> Initialization
 !----------------------------------------------------------------------
 subroutine bpar_init(bpar,mpl,nam,geom)
 
 implicit none
 
 ! Passed variable
-class(bpar_type),intent(inout) :: bpar ! Block parameters
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(bpar_type),intent(inout) :: bpar !< Block parameters
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ib,iv,jv,il0,jl0r,jl0off
@@ -282,14 +282,14 @@ end subroutine bpar_init
 
 !----------------------------------------------------------------------
 ! Subroutine: bpar_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine bpar_dealloc(bpar)
 
 implicit none
 
 ! Passed variable
-class(bpar_type),intent(inout) :: bpar ! Block parameters
+class(bpar_type),intent(inout) :: bpar !< Block parameters
 
 ! Release memory
 if (allocated(bpar%nl0r)) deallocate(bpar%nl0r)
