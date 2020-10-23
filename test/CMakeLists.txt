@@ -182,9 +182,9 @@ if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
     endif()
     message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
 else()
-    if ( DEFINED SABER_TESTFILES_BRANCH)
-        message(STATUS "Branch name provided by user")
-        set(GIT_BRANCH_SABER ${SABER_TESTFILES_BRANCH})
+    if ( DEFINED ENV{SABER_TESTFILES_BRANCH} )
+        set( GIT_BRANCH_SABER "$ENV{SABER_TESTFILES_BRANCH}" )
+        message( STATUS "Branch name provided by user: ${GIT_BRANCH_SABER}" )
     else()
         # Get the current git branch of ufo repo
         execute_process(
