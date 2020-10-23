@@ -51,6 +51,8 @@ bump_obsop
 bump_vbal_dlat
 bump_vbal_diag_auto
 bump_vbal_diag_reg
+bump_vbal_pseudo_inv_mmax
+bump_vbal_pseudo_inv_var_th
 bump_vbal_write_grids
 bump_set_param_cor
 bump_set_param_hyb

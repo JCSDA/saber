@@ -35,7 +35,7 @@ end interface
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
- & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
+ & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,pseudoinv,histogram
 
 contains
 
@@ -973,6 +973,140 @@ deallocate(apack)
 deallocate(cpack)
 
 end subroutine syminv
+
+!----------------------------------------------------------------------
+! Subroutine: pseudoinv
+! Purpose: Compute pseudo inverse of a symmetric matrix.
+! Author: This routine is from WRFDA.
+!----------------------------------------------------------------------
+subroutine pseudoinv(mpl,n,a,c,ierr,mmax,var_th)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl           ! MPI data
+integer,intent(in) :: n                       ! Matrix rank
+real(kind_real),intent(in) :: a(n,n)          ! Matrix
+real(kind_real),intent(out) :: c(n,n)         ! Matrix inverse
+integer,intent(out) :: ierr                   ! Error status
+integer,intent(in),optional :: mmax           ! Dominant mode
+real(kind_real),intent(in),optional :: var_th ! Variance threshold
+
+! Local variables
+integer :: k,k2,m,lmmax
+real(kind_real),allocatable :: work(:,:),evec(:,:),eval(:),laminvet(:,:)
+real(kind_real),allocatable :: summ,total_variance,cumul_variance
+character(len=1024),parameter :: subr = 'pseudoinv'
+
+! Allocation
+allocate(work(n,n))
+allocate(evec(n,n))
+allocate(eval(n))
+allocate(laminvet(n,n))
+
+! Initialization
+work = a
+laminvet = 0.0
+
+! EOF decomposition
+call da_eof_decomposition(n,work,evec,eval,ierr)
+
+! Select dominant mode
+if (present(mmax)) then
+   ! Input argument
+   lmmax = mmax
+else
+   if (present(var_th)) then
+      ! Based on variance threshold 
+      summ = 0.0
+      do m=1,n
+         summ = summ+eval(m)
+      end do
+      total_variance = summ
+      cumul_variance = 0.0
+      lmmax = n
+      do m=1,n
+         cumul_variance = cumul_variance+eval(m)/total_variance
+         if (cumul_variance>1.0-var_th ) then
+            lmmax = m-1
+            exit
+         end if
+      end do
+   else
+      call mpl%abort(subr,'either dominant mode or variance threshold should be specified')
+   end if
+end if
+if (lmmax>n) call mpl%abort(subr,'dominant mode should smaller than the matrix rank')
+
+! Lam{-1} . E^T:
+do k=1,n
+   do m=1,lmmax
+      laminvet(m,k) = evec(k,m)/eval(m)
+   end do
+end do
+
+! <a,a>^{-1} = E . Lam{-1} . E^T:
+do k=1,n
+   do k2=1,k
+      summ = 0.0
+      do m=1,n
+         summ = summ+evec(k,m)*laminvet(m,k2)
+      end do
+      c(k,k2) = summ
+   end do
+end do
+
+! Symmetry
+do k=1,n
+   do k2=k+1,n
+      c(k,k2) = c(k2,k)
+   end do
+end do
+
+! Release memory
+deallocate(work)
+deallocate(evec)
+deallocate(eval)
+deallocate(laminvet)
+
+end subroutine pseudoinv
+
+!----------------------------------------------------------------------
+! Subroutine: da_eof_decomposition
+! Purpose: Compute eigenvectors E and eigenvalues L of covariance matrix.
+!!         B_{x} defined by equation:  E^{T} B_{x} E = L, given input kz x kz matrix.
+! Author: This routine is from WRFDA.
+!----------------------------------------------------------------------
+subroutine da_eof_decomposition(kz,bx,e,l,ierr)
+
+implicit none
+
+! Passed variables
+integer, intent(in)  :: kz                  ! Dimension of error matrix
+real(kind_real),intent(in) :: bx(1:kz,1:kz) ! Vert. background error
+real(kind_real),intent(out) :: e(1:kz,1:kz) ! Eigenvectors of Bx
+real(kind_real),intent(out) :: l(1:kz)      ! Eigenvalues of Bx
+integer,intent(out) :: ierr                 ! Error status
+
+! Local variables
+integer :: work,m,info
+real(kind_real) :: work_array(1:3*kz-1),ecopy(1:kz,1:kz),lcopy(1:kz)
+
+! Initialization
+work = 3*kz-1
+ecopy = bx
+lcopy = 0.0
+
+! Perform global eigenvalue decomposition using LAPACK software
+call dsyev('V','U',kz,ecopy,kz,lcopy,work_array,work,ierr)
+
+! Swap order of eigenvalues, vectors so 1st is one with most variance
+do m=1,kz
+   l(m) = lcopy(kz+1-m)
+   e(1:kz,m) = ecopy(1:kz,kz+1-m)
+end do
+
+end subroutine da_eof_decomposition
 
 !----------------------------------------------------------------------
 ! Subroutine: histogram
