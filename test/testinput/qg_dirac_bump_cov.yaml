@@ -3,7 +3,6 @@ background error:
   bump:
     datadir: testdata
     load_nicas: 1
-    method: cor
     mpicom: 2
     prefix: qg_dirac_bump_cov/test
     strategy: specific_univariate

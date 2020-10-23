@@ -26,7 +26,6 @@ ntry: 30
 
 # diag_param
 vbal_block: [1]
-vbal_rad: 2000.0e3
 
 # fit_param
 
