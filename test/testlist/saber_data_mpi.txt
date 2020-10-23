@@ -1,4 +1,5 @@
 bump_read_cmat/test_2-1_cmat.nc
+bump_read_cmat_serial/test_2-1_cmat.nc
 bump_read_mom/test_2-1_mom_000002-000001.nc
 bump_read_mom/test_2-1_mom_000002-000002.nc
 bump_read_nicas/test_2-1_nicas_000002-000001.nc

@@ -68,6 +68,10 @@ bump_vbal_diag_auto/test_2-1_vbal_000002-000001.nc
 bump_vbal_diag_auto/test_2-1_vbal_000002-000002.nc
 bump_vbal_diag_reg/test_2-1_vbal_000002-000001.nc
 bump_vbal_diag_reg/test_2-1_vbal_000002-000002.nc
+bump_vbal_pseudo_inv_mmax/test_2-1_vbal_000002-000001.nc
+bump_vbal_pseudo_inv_mmax/test_2-1_vbal_000002-000002.nc
+bump_vbal_pseudo_inv_var_th/test_2-1_vbal_000002-000001.nc
+bump_vbal_pseudo_inv_var_th/test_2-1_vbal_000002-000002.nc
 bump_vbal_write_grids/test_2-1_sampling_000002-000001.nc
 bump_vbal_write_grids/test_2-1_sampling_000002-000002.nc
 bump_vbal_write_grids/test_2-1_sampling_grids_000002-000001.nc

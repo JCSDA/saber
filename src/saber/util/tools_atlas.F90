@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: tools_atlas
-! Purpose: random numbers generator derived type
+!> Random numbers generator derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -32,17 +32,17 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: field_to_array_real
-! Purpose: convert ATLAS field to field, real
+!> Convert ATLAS field to field, real
 !----------------------------------------------------------------------
 subroutine field_to_array_real(mpl,afield,fld,lev2d)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(atlas_field),intent(in) :: afield        ! ATLAS field
-real(kind_real),intent(out) :: fld(:,:)       ! Field
-character(len=*),intent(in),optional :: lev2d ! Level for 2D variables
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(atlas_field),intent(in) :: afield        !< ATLAS field
+real(kind_real),intent(out) :: fld(:,:)       !< Field
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
 
 ! Local variables
 integer :: nmga,nl0
@@ -122,17 +122,17 @@ end subroutine field_to_array_real
 
 !----------------------------------------------------------------------
 ! Subroutine: field_to_array_logical
-! Purpose: convert ATLAS field to field, logical
+!> Convert ATLAS field to field, logical
 !----------------------------------------------------------------------
 subroutine field_to_array_logical(mpl,afield,fld,lev2d)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(atlas_field),intent(in) :: afield        ! ATLAS field
-logical,intent(out) :: fld(:,:)               ! Field
-character(len=*),intent(in),optional :: lev2d ! Level for 2D variables
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(atlas_field),intent(in) :: afield        !< ATLAS field
+logical,intent(out) :: fld(:,:)               !< Field
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
 
 ! Local variables
 integer :: nmga,nl0,imga,il0
@@ -232,17 +232,17 @@ end subroutine field_to_array_logical
 
 !----------------------------------------------------------------------
 ! Subroutine: field_from_array_real
-! Purpose: convert field to ATLAS field, real
+!> Convert field to ATLAS field, real
 !----------------------------------------------------------------------
 subroutine field_from_array_real(mpl,fld,afield,lev2d)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-real(kind_real),intent(in) :: fld(:,:)        ! Field
-type(atlas_field),intent(inout) :: afield     ! ATLAS field
-character(len=*),intent(in),optional :: lev2d ! Level for 2D variables
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+real(kind_real),intent(in) :: fld(:,:)        !< Field
+type(atlas_field),intent(inout) :: afield     !< ATLAS field
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
 
 ! Local variables
 integer :: nmga,nl0
@@ -319,17 +319,17 @@ end subroutine field_from_array_real
 
 !----------------------------------------------------------------------
 ! Subroutine: create_atlas_function_space
-! Purpose: create ATLAS function space
+!> Create ATLAS function space
 !----------------------------------------------------------------------
 subroutine create_atlas_function_space(nmga,lon_mga,lat_mga,afunctionspace)
 
 implicit none
 
 ! Passed variables
-integer,intent(in) :: nmga                              ! Number of nodes
-real(kind_real),intent(in) :: lon_mga(nmga)             ! Longitudes
-real(kind_real),intent(in) :: lat_mga(nmga)             ! Latitudes
-type(atlas_functionspace),intent(out) :: afunctionspace ! ATLAS function space
+integer,intent(in) :: nmga                              !< Number of nodes
+real(kind_real),intent(in) :: lon_mga(nmga)             !< Longitudes
+real(kind_real),intent(in) :: lat_mga(nmga)             !< Latitudes
+type(atlas_functionspace),intent(out) :: afunctionspace !< ATLAS function space
 
 ! Local variables
 integer :: imga

@@ -69,7 +69,7 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     const eckit::LocalConfiguration backgroundConfig(fullConfig, "background");
     State_ xx(resol, backgroundConfig);
 
-    //  Setup timeslots
+    //  Setup time
     const util::DateTime time = xx.validTime();
 
     // Setup ensemble 1

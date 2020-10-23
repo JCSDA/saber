@@ -34,9 +34,7 @@ while [ ${i} -lt ${ne} ] ; do
       ne=10
       xp=7G0N
       date=20131221H00P
-      for timeslot in "02" "03" "04" ; do
-         ln -sf ${modeldata}/${test}/${xp}/${date}/member_${i3}/forecast/ICMSHAROM+00${timeslot}.nc ${testdata}/ens1_${timeslot}_${i6}.nc
-      done
+      ln -sf ${modeldata}/${test}/${xp}/${date}/member_${i3}/forecast/ICMSHAROM+00.nc ${testdata}/ens1_${i6}.nc
    fi
 
    # ARPEGE
@@ -44,9 +42,7 @@ while [ ${i} -lt ${ne} ] ; do
       ne=10
       xp=877D
       date=20170114H00A
-      for timeslot in "00" "06" ; do
-         ln -sf ${modeldata}/${test}/${xp}/${date}/ensemble4D/${i3}/ICMSHARPE+00${timeslot}.nc ${testdata}/ens1_${timeslot}_${i6}.nc
-      done
+      ln -sf ${modeldata}/${test}/${xp}/${date}/ensemble4D/${i3}/ICMSHARPE+00.nc ${testdata}/ens1_${i6}.nc
    fi
 
    # FV3
@@ -56,7 +52,7 @@ while [ ${i} -lt ${ne} ] ; do
       hh=12
       resol=c0384
       for itile in $(seq 1 1 6); do
-         ln -sf ${modeldata}/${test}/${date}_${hh}/mem${i3}/${date}.${hh}0000.bmat.fv_core.res.tile${itile}.nc ${testdata}/ens1_01_${i6}_tile${itile}.nc
+         ln -sf ${modeldata}/${test}/${date}_${hh}/mem${i3}/${date}.${hh}0000.bmat.fv_core.res.tile${itile}.nc ${testdata}/ens1_${i6}_tile${itile}.nc
       done
    fi
 
@@ -64,7 +60,7 @@ while [ ${i} -lt ${ne} ] ; do
    if test ${test} = "bump_gem" ; then
       ne=10
       date=2014101706
-      ln -sf ${modeldata}/${test}/${date}_006_${i4}.nc ${testdata}/ens1_00_${i6}.nc
+      ln -sf ${modeldata}/${test}/${date}_006_${i4}.nc ${testdata}/ens1_${i6}.nc
 
       if test ${i} = 1 ; then
          j6=1
@@ -74,7 +70,7 @@ while [ ${i} -lt ${ne} ] ; do
                k6=1
                typeset -RZ6 k6
                while [ ${k6} -le 64 ] ; do
-                  ln -sf  ${modeldata}/${test}/member_${string}_${string2}_${k6}.nc ${testdata}/ens1_00_${j6}_${k6}.nc
+                  ln -sf  ${modeldata}/${test}/member_${string}_${string2}_${k6}.nc ${testdata}/ens1_${j6}_${k6}.nc
                   let k6=k6+1
                done
                let j6=j6+1
@@ -86,59 +82,60 @@ while [ ${i} -lt ${ne} ] ; do
    # GEOS
    if test ${test} = "bump_geos" ; then
       ne=224
-      ts=0
-      typeset -RZ2 ts
-      while [ ${ts} -lt 13 ] ; do
-         ln -sf ${modeldata}/${test}/mem${i3}/e200_C180.prog.eta.20180415_${ts}z.nc4 ${testdata}/ens1_${ts}_${i6}.nc
-         let ts=ts+1
-      done
+      ln -sf ${modeldata}/${test}/mem${i3}/e200_C180.prog.eta.20180415_00z.nc4 ${testdata}/ens1_${i6}.nc
    fi
 
    # GFS
    if test ${test} = "bump_gfs" ; then
       ne=10
       date=2014040100
-      ln -sf ${modeldata}/${test}/sfg_${date}_fhr06s_mem${i3}.nc4 ${testdata}/ens1_00_${i6}.nc
+      ln -sf ${modeldata}/${test}/sfg_${date}_fhr06s_mem${i3}.nc4 ${testdata}/ens1_${i6}.nc
    fi
 
    # IFS
    if test ${test} = "bump_ifs" ; then
       ne=10
-      ln -sf ${modeldata}/${test}/member_${i}.nc ${testdata}/ens1_01_${i6}.nc
+      ln -sf ${modeldata}/${test}/member_${i}.nc ${testdata}/ens1_${i6}.nc
    fi
 
    # MPAS
    if test ${test} = "bump_mpas" ; then
       ne=10
-      ln -sf ${modeldata}/${test}/x1.40962.output.2012-06-25_21.00.00.e${i}.nc ${testdata}/ens1_01_${i6}.nc
+      ln -sf ${modeldata}/${test}/x1.40962.output.2012-06-25_21.00.00.e${i}.nc ${testdata}/ens1_${i6}.nc
    fi
 
    # NEMO
    if test ${test} = "bump_nemovar" ; then
       ne=19
-      ln -sf ${modeldata}/${test}/ENSEMBLES/ECMWF/goqu/opa${i}/goqu_20110605_000000_restart.nc ${testdata}/ens1_01_${i6}.nc
+      ln -sf ${modeldata}/${test}/ENSEMBLES/ECMWF/goqu/opa${i}/goqu_20110605_000000_restart.nc ${testdata}/ens1_${i6}.nc
    fi
    if test ${test} = "bump_cera-20c" ; then
       ne=9
-      j4=$i
-      typeset -RZ4 j4
+      j6=$i
+      typeset -RZ4 j6
       for date in "20090215" "20090216" "20090217" "20090218" "20090219" "20090221" "20090222" "20090223" "20090224" ; do
-         ln -sf ${modeldata}/${test}/CERA-20C/member_${date}+00_${i}.nc ${testdata}/ens1_01_${j4}.nc
-         let j4=j4+9
+         ln -sf ${modeldata}/${test}/CERA-20C/member_${date}+00_${i}.nc ${testdata}/ens1_${j6}.nc
+         let j6=j6+9
       done
+   fi
+
+   # NorCPM
+   if test ${test} = "bump_norcpm" ; then
+      ne=30
+      ln -sf ${modeldata}/${test}/N1850AERCN_staticEnsemble.micom.r.0001-01-15-00000.nc ${testdata}/ens1_${i6}.nc
    fi
 
    # RES
    if test ${test} = "bump_res" ; then
       ne=101
-      ln -sf ${modeldata}/${test}/Ens_${i}.nc ${testdata}/ens1_01_${i6}.nc
+      ln -sf ${modeldata}/${test}/Ens_${i}.nc ${testdata}/ens1_${i6}.nc
    fi
 
    # WRF
    if test ${test} = "bump_wrf" ; then
       ne=8
       date=2017-07-28_06:00:00
-      ln -sf ${modeldata}/${test}/wrfout_d01_${date}.${i3} ${testdata}/ens1_01_${i6}.nc
+      ln -sf ${modeldata}/${test}/wrfout_d01_${date}.${i3} ${testdata}/ens1_${i6}.nc
    fi
 
    # Exit
@@ -146,22 +143,6 @@ while [ ${i} -lt ${ne} ] ; do
       break
    fi
 done
-
-# Link wind fields
-
-# Create grid
-echo "Link wind fields"
-
-# GEOS
-if test ${test} = "bump_geos" ; then
-   ts=0
-   typeset -RZ2 ts
-   while [ ${ts} -lt 12 ] ; do
-      ln -sf ${modeldata}/${test}/avg/e200_C180.prog.eta.20180415_${ts}z.nc4 ${testdata}/wind_${ts}.nc
-      let ts=ts+1
-   done
-   ln -sf ${modeldata}/${test}/avg/e200_C180.prog.eta.20180416_00z.nc4 ${testdata}/wind_${ts}.nc
-fi
 
 # Create grid
 echo "Link grid"
@@ -259,7 +240,7 @@ fi
 # GEM
 if test ${test} = "bump_gem" ; then
    # Generate grid with ncks
-   origin=${testdata}/ens1_00_0001.nc
+   origin=${testdata}/ens1_000001.nc
    grid=${testdata}/grid.nc
    rm -f ${grid}
    ncks -O -v lat,lon,lev,ap,b ${origin} ${grid}
@@ -277,7 +258,7 @@ fi
 # GFS
 if test ${test} = "bump_gfs" ; then
    # Generate grid with ncks
-   origin=${testdata}/ens1_00_0001.nc
+   origin=${testdata}/ens1_000001.nc
    grid=${testdata}/grid.nc
    rm -f ${grid}
    ncks -O -v latitude,longitude,level,ak,bk ${origin} ${grid}
@@ -286,7 +267,7 @@ fi
 # IFS
 if test ${test} = "bump_ifs" ; then
    # Generate grid.nc with ncks
-   origin=${testdata}/ens1_01_0001.nc
+   origin=${testdata}/ens1_000001.nc
    grid=${testdata}/grid.nc
    rm -f ${grid}
    ncks -O -v latitude,longitude,level ${origin} ${grid}
@@ -354,6 +335,14 @@ if test ${test} = "bump_cera-20c" ; then
    ncks -O -v nav_lat,nav_lon,tmask,e1t,e2t,e3t ${origin} ${grid}
 fi
 
+# NorCPM
+if test ${test} = "bump_norcpm" ; then
+   origin1=${modeldata}/${test}/grid.nc
+   origin2=${modeldata}/${test}/N1850AERCN_staticEnsemble.micom.r.0001-01-15-00000.nc
+   ncks -O -v plon,plat,parea,pmask ${origin1} ${grid}
+   ncks -A -v dp ${origin2} ${grid}
+fi
+
 # RES
 if test ${test} = "bump_res" ; then
    origin=${modeldata}/${test}/MyGrid.nc
@@ -364,7 +353,7 @@ fi
 
 # WRF
 if test ${test} = "bump_wrf" ; then
-   origin=${testdata}/ens1_01_0001.nc
+   origin=${testdata}/ens1_000001.nc
    grid=${testdata}/grid.nc
    rm -f ${grid}
    ncks -O -v XLONG,XLAT ${origin} ${grid}
