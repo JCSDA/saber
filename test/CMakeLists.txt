@@ -325,13 +325,13 @@ foreach( test ${saber_test} )
                       TEST_DEPENDS get_saber_ref
                                    test_${test}_${mpi}-${omp}_run )
 
-#    if( SABER_TEST_PLOT )
-#        ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
-#                          TYPE SCRIPT
-#                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-#                          ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-#                          TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
-#    endif()
+    if( SABER_TEST_PLOT )
+        ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
+                          TYPE SCRIPT
+                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                          ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                          TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
+    endif()
 
     if( SABER_TEST_VALGRIND )
         ecbuild_add_test( TARGET test_${test}_${mpi}-${omp}_valgrind
@@ -368,13 +368,13 @@ if( SABER_TEST_MPI )
                           TEST_DEPENDS get_saber_ref
                                        test_${test}_${mpi}-${omp}_run )
 
-#        if( SABER_TEST_PLOT )
-#            ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
-#                              TYPE SCRIPT
-#                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-#                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-#                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
-#        endif()
+        if( SABER_TEST_PLOT )
+            ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
+                              TYPE SCRIPT
+                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
+        endif()
     endforeach()
 endif()
 
@@ -402,13 +402,13 @@ if( SABER_TEST_OMP )
                           TEST_DEPENDS get_saber_ref
                                        test_${test}_${mpi}-${omp}_run )
 
-#        if( SABER_TEST_PLOT )
-#            ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
-#                              TYPE SCRIPT
-#                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-#                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-#                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
-#        endif()
+        if( SABER_TEST_PLOT )
+            ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
+                              TYPE SCRIPT
+                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                              TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
+        endif()
     endforeach()
 endif()
 
@@ -440,31 +440,45 @@ if( SABER_TEST_MULTI )
                                   TEST_DEPENDS get_saber_ref
                                                test_${test}_${mpi}-${omp}_run )
 
-#                if( SABER_TEST_PLOT )
-#                    ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
-#                                      TYPE SCRIPT
-#                                      COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-#                                      ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-#                                      TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
-#                endif()
+                if( SABER_TEST_PLOT )
+                    ecbuild_add_test( TARGET       test_${test}_${mpi}-${omp}_plot
+                                      TYPE SCRIPT
+                                      COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
+                                      ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
+                                      TEST_DEPENDS test_${test}_${mpi}-${omp}_run )
+                endif()
             endforeach()
         endif()
     endforeach()
 endif()
 
-# Specific compare (TIER > 1)
+# Specific comparisons
+ecbuild_add_test( TARGET       test_bump_read_cmat_parallel-serial_compare
+                  TYPE SCRIPT
+                  COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
+                  ARGS         bump_read_cmat bump_read_cmat_serial 2-1 dirac
+                  TEST_DEPENDS test_bump_read_cmat_2-1_run
+                               test_bump_read_cmat_serial_2-1_run )
+
+ecbuild_add_test( TARGET       test_bump_write_cmat_parallel-serial_compare
+                  TYPE SCRIPT
+                  COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
+                  ARGS         bump_write_cmat bump_write_cmat_serial 2-1 cmat
+                  TEST_DEPENDS test_bump_write_cmat_2-1_run
+                               test_bump_write_cmat_serial_2-1_run )
+
 if( SABER_TEST_TIER GREATER 1 )
     ecbuild_add_test( TARGET       test_bump_nicas_mpicom_lsqrt_a-b_dirac_compare
                       TYPE SCRIPT
                       COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                      ARGS         bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_b dirac
+                      ARGS         bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_b 1-1 dirac
                       TEST_DEPENDS test_bump_nicas_mpicom_lsqrt_a_1-1_run
                                    test_bump_nicas_mpicom_lsqrt_b_1-1_run )
 
     ecbuild_add_test( TARGET       test_bump_nicas_mpicom_lsqrt_a-c_dirac_compare
                       TYPE SCRIPT
                       COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                      ARGS         bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_c dirac
+                      ARGS         bump_nicas_mpicom_lsqrt_a bump_nicas_mpicom_lsqrt_c 1-1 dirac
                       TEST_DEPENDS test_bump_nicas_mpicom_lsqrt_a_1-1_run
                                    test_bump_nicas_mpicom_lsqrt_c_1-1_run )
 endif()

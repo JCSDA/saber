@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: tools_samp
-! Purpose: sampling functions
+!> Sampling functions
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -27,7 +27,7 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: initialize_sampling
-! Purpose: intialize sampling
+!> Intialize sampling
 !----------------------------------------------------------------------
 subroutine initialize_sampling(mpl,rng,area,n_loc,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ntry,nrep,ns2_glb,sam2_glb, &
  & fast,verbosity,n_uni,uni_to_loc,tree_uni)
@@ -35,24 +35,24 @@ subroutine initialize_sampling(mpl,rng,area,n_loc,lon_loc,lat_loc,mask_loc,rh_lo
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl               ! MPI data
-type(rng_type),intent(inout) :: rng               ! Random number generator
-real(kind_real),intent(in) :: area                ! Global domain area
-integer,intent(in) :: n_loc                       ! Number of points (local)
-real(kind_real),intent(in) :: lon_loc(n_loc)      ! Longitudes (local)
-real(kind_real),intent(in) :: lat_loc(n_loc)      ! Latitudes (local)
-logical,intent(in) :: mask_loc(n_loc)             ! Mask (local)
-real(kind_real),intent(in) :: rh_loc(n_loc)       ! Horizontal support radius (local)
-integer,intent(in) :: loc_to_glb(n_loc)           ! Local to global index
-integer,intent(in) :: ntry                        ! Number of tries
-integer,intent(in) :: nrep                        ! Number of replacements
-integer,intent(in) :: ns2_glb                     ! Number of samplings points (global)
-integer,intent(out) :: sam2_glb(ns2_glb)          ! Horizontal sampling index (global)
-logical,intent(in),optional :: fast               ! Fast sampling flag
-logical,intent(in),optional :: verbosity          ! Verbosity flag
-integer,intent(in),optional :: n_uni              ! Universe size
-integer,intent(in),optional :: uni_to_loc(:)      ! Universe to local index
-type(tree_type),intent(in),optional :: tree_uni   ! Universe KD-tree
+type(mpl_type),intent(inout) :: mpl               !< MPI data
+type(rng_type),intent(inout) :: rng               !< Random number generator
+real(kind_real),intent(in) :: area                !< Global domain area
+integer,intent(in) :: n_loc                       !< Number of points (local)
+real(kind_real),intent(in) :: lon_loc(n_loc)      !< Longitudes (local)
+real(kind_real),intent(in) :: lat_loc(n_loc)      !< Latitudes (local)
+logical,intent(in) :: mask_loc(n_loc)             !< Mask (local)
+real(kind_real),intent(in) :: rh_loc(n_loc)       !< Horizontal support radius (local)
+integer,intent(in) :: loc_to_glb(n_loc)           !< Local to global index
+integer,intent(in) :: ntry                        !< Number of tries
+integer,intent(in) :: nrep                        !< Number of replacements
+integer,intent(in) :: ns2_glb                     !< Number of samplings points (global)
+integer,intent(out) :: sam2_glb(ns2_glb)          !< Horizontal sampling index (global)
+logical,intent(in),optional :: fast               !< Fast sampling flag
+logical,intent(in),optional :: verbosity          !< Verbosity flag
+integer,intent(in),optional :: n_uni              !< Universe size
+integer,intent(in),optional :: uni_to_loc(:)      !< Universe to local index
+type(tree_type),intent(in),optional :: tree_uni   !< Universe KD-tree
 
 ! Local variables
 integer :: n_glb,n_loc_eff,n_glb_eff,i_glb,i_loc,is2_glb,ns1_glb_eff
@@ -163,7 +163,7 @@ end subroutine initialize_sampling
 
 !----------------------------------------------------------------------
 ! Subroutine: initialize_sampling_local
-! Purpose: intialize sampling, local, based on ATLAS octahedral grid 
+!> Intialize sampling, local, based on ATLAS octahedral grid 
 !----------------------------------------------------------------------
 subroutine initialize_sampling_local(mpl,area,n_loc,n_loc_eff,n_glb_eff,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ns2_glb, &
  & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,verbosity,n_uni,uni_to_loc,tree_uni)
@@ -171,26 +171,26 @@ subroutine initialize_sampling_local(mpl,area,n_loc,n_loc_eff,n_glb_eff,lon_loc,
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl               ! MPI data
-real(kind_real),intent(in) :: area                ! Global domain area
-integer,intent(in) :: n_loc                       ! Number of points (local)
-integer,intent(in) :: n_loc_eff                   ! Number of points (local, effective)
-integer,intent(in) :: n_glb_eff                   ! Number of points (global, effective)
-real(kind_real),intent(in) :: lon_loc(n_loc)      ! Longitudes (local)
-real(kind_real),intent(in) :: lat_loc(n_loc)      ! Latitudes (local)
-logical,intent(in) :: mask_loc(n_loc)             ! Mask (local)
-real(kind_real),intent(in) :: rh_loc(n_loc)       ! Horizontal support radius (local)
-integer,intent(in) :: loc_to_glb(n_loc)           ! Local to global index
-integer,intent(in) :: ns2_glb                     ! Number of samplings points (global)
+type(mpl_type),intent(inout) :: mpl               !< MPI data
+real(kind_real),intent(in) :: area                !< Global domain area
+integer,intent(in) :: n_loc                       !< Number of points (local)
+integer,intent(in) :: n_loc_eff                   !< Number of points (local, effective)
+integer,intent(in) :: n_glb_eff                   !< Number of points (global, effective)
+real(kind_real),intent(in) :: lon_loc(n_loc)      !< Longitudes (local)
+real(kind_real),intent(in) :: lat_loc(n_loc)      !< Latitudes (local)
+logical,intent(in) :: mask_loc(n_loc)             !< Mask (local)
+real(kind_real),intent(in) :: rh_loc(n_loc)       !< Horizontal support radius (local)
+integer,intent(in) :: loc_to_glb(n_loc)           !< Local to global index
+integer,intent(in) :: ns2_glb                     !< Number of samplings points (global)
 integer,intent(out) :: ns1_glb_eff
 real(kind_real),allocatable,intent(out) :: lon1_glb_eff(:)
 real(kind_real),allocatable,intent(out) :: lat1_glb_eff(:)
 real(kind_real),allocatable,intent(out) :: rh1_glb_eff(:)
 integer,allocatable,intent(out) :: sam1_glb_eff(:)
-logical,intent(in),optional :: verbosity          ! Verbosity flag
-integer,intent(in),optional :: n_uni              ! Universe size
-integer,intent(in),optional :: uni_to_loc(:)      ! Universe to local index
-type(tree_type),intent(in),optional :: tree_uni   ! Universe KD-tree
+logical,intent(in),optional :: verbosity          !< Verbosity flag
+integer,intent(in),optional :: n_uni              !< Universe size
+integer,intent(in),optional :: uni_to_loc(:)      !< Universe to local index
+type(tree_type),intent(in),optional :: tree_uni   !< Universe KD-tree
 
 ! Local variables
 integer :: i_loc,i_loc_eff,n,ix,iy,iproc,is1_glb,ns1_loc,is1_loc,nfac,ns1_loc_tmp,nn_index(1),ns1_glb,is1_glb_eff,offset
@@ -506,7 +506,7 @@ end subroutine initialize_sampling_local
 
 !----------------------------------------------------------------------
 ! Subroutine: initialize_sampling_global
-! Purpose: intialize sampling, global
+!> Intialize sampling, global
 !----------------------------------------------------------------------
 subroutine initialize_sampling_global(mpl,rng,ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,ntry,nrep, &
  & ns2_glb,sam2_glb,fast,verbosity)
@@ -514,19 +514,19 @@ subroutine initialize_sampling_global(mpl,rng,ns1_glb_eff,lon1_glb_eff,lat1_glb_
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl               ! MPI data
-type(rng_type),intent(inout) :: rng               ! Random number generator
+type(mpl_type),intent(inout) :: mpl               !< MPI data
+type(rng_type),intent(inout) :: rng               !< Random number generator
 integer,intent(in) :: ns1_glb_eff
 real(kind_real),intent(in) :: lon1_glb_eff(ns1_glb_eff)
 real(kind_real),intent(in) :: lat1_glb_eff(ns1_glb_eff)
 real(kind_real),intent(in) :: rh1_glb_eff(ns1_glb_eff)
 integer,intent(in) :: sam1_glb_eff(ns1_glb_eff)
-integer,intent(in) :: ntry                        ! Number of tries
-integer,intent(in) :: nrep                        ! Number of replacements
-integer,intent(in) :: ns2_glb                     ! Number of samplings points (global)
-integer,intent(out) :: sam2_glb(ns2_glb)          ! Horizontal sampling index (global)
-logical,intent(in),optional :: fast               ! Fast sampling flag
-logical,intent(in),optional :: verbosity          ! Verbosity flag
+integer,intent(in) :: ntry                        !< Number of tries
+integer,intent(in) :: nrep                        !< Number of replacements
+integer,intent(in) :: ns2_glb                     !< Number of samplings points (global)
+integer,intent(out) :: sam2_glb(ns2_glb)          !< Horizontal sampling index (global)
+logical,intent(in),optional :: fast               !< Fast sampling flag
+logical,intent(in),optional :: verbosity          !< Verbosity flag
 
 ! Local variables
 integer :: is2_glb,js,irep,irmax,itry,ir,irval,irvalmin,irvalmax,is2_glb_min,nrep_eff,nn_index(2),is1_glb_eff,ns1_glb_val

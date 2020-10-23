@@ -1,21 +1,24 @@
 !----------------------------------------------------------------------
 ! Subroutine: model_aro_coord
-! Purpose: load AROME coordinates
+!> Load AROME coordinates
 !----------------------------------------------------------------------
 subroutine model_aro_coord(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
-integer :: img,ilon,ilat
-integer :: ncid,nlon_id,nlat_id,nlev_id,pp_id,lon_id,lat_id,cmask_id,a_id,b_id
+integer :: img,ilon,ilat,il0,il0_bot,il0_top,ie,its
+integer :: ncid,nlon_id,nlat_id,nlev_id,pp_id,lon_id,lat_id,cmask_id,a_id,b_id,fld_id,mask_id
+integer,allocatable :: mask_counter(:)
 real(kind_real) :: dx,dy
-real(kind_real),allocatable :: lon(:,:),lat(:,:),cmask(:,:),a(:),b(:)
+real(kind_real),allocatable :: lon(:,:),lat(:,:),cmask(:,:),a(:),b(:),fld_loc(:,:),fld(:,:)
+character(len=3) :: ilchar
+character(len=1024) :: filename
 character(len=1024),parameter :: subr = 'model_aro_coord'
 
 ! Open file and get dimensions
@@ -81,11 +84,121 @@ do ilon=1,model%nlon
 end do
 model%area = dx*dy/req**2
 
+! Specific mask
+select case (trim(nam%mask_type))
+case ("hyd")
+   ! Based on an external file
+
+   ! Allocation
+   allocate(fld_loc(model%nlon,model%nlat))
+
+   ! Open file
+   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(nam%prefix)//'_hyd.nc',nf90_nowrite,ncid))
+
+   ! Read mask
+   do il0=1,nam%nl
+      ! Get id
+      write(ilchar,'(i3.3)') nam%levs(il0)
+      call mpl%ncerr(subr,nf90_inq_varid(ncid,'S'//ilchar//'MASK',mask_id))
+
+      ! Read data
+      call mpl%ncerr(subr,nf90_get_var(ncid,mask_id,fld_loc))
+
+      ! Pack data
+      img = 0
+      do ilon=1,model%nlon
+         do ilat=1,model%nlat
+            img = img+1
+            model%mask(img,il0) = (fld_loc(ilon,ilat)>nam%mask_th(1))
+         end do
+      end do
+   end do
+
+   ! Close file
+   call mpl%ncerr(subr,nf90_close(ncid))
+
+   ! Release memory
+   deallocate(fld_loc)
+case ("lwc_fog","lwc_clear","lwc_stratus")
+   ! Based on the ensemble-mean LWC
+
+   ! Allocation
+   allocate(fld_loc(model%nlon,model%nlat))
+   allocate(fld(model%nmg,model%nl0))
+   allocate(mask_counter(model%nmga))
+
+   ! Initialization
+   mask_counter = 0
+   select case (trim(nam%mask_type))
+   case("lwc_fog")
+      il0_bot = nam%nl
+      il0_top = nam%nl-2
+   case("lwc_clear")
+      il0_bot = nam%nl
+      il0_top = 1
+   case("lwc_stratus")
+      il0_bot = nam%nl-30
+      il0_top = nam%nl-66
+   end select
+
+   ! Setup mask
+   do ie=1,nam%ens1_ne
+      ! Set file name
+      write(filename,'(a,i6.6)') 'ens1_',ie
+
+      ! Open file
+      call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+
+      ! Read LWC
+      do il0=1,nam%nl
+         ! Get id
+         write(ilchar,'(i3.3)') nam%levs(il0)
+         call mpl%ncerr(subr,nf90_inq_varid(ncid,'S'//ilchar//'CLOUD_WATER',fld_id))
+
+         ! Read data
+         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_loc))
+
+         ! Pack data
+         img = 0
+         do ilon=1,model%nlon
+            do ilat=1,model%nlat
+               img = img+1
+               fld(img,il0) = real(fld_loc(ilon,ilat),kind_real)
+            end do
+         end do
+      end do
+
+      ! Close file
+      call mpl%ncerr(subr,nf90_close(ncid))
+
+      ! Update mask
+      select case (trim(nam%mask_type))
+      case("lwc_fog")
+         do img=1,model%nmg
+            if (all(fld(img,il0_top:il0_bot)>nam%mask_th)) mask_counter(img) = mask_counter(img)+1
+         end do
+      case("lwc_clear")
+         do img=1,model%nmg
+            if (all(fld(img,il0_top:il0_bot)<nam%mask_th)) mask_counter(img) = mask_counter(img)+1
+         end do
+      case("lwc_stratus")
+         do img=1,model%nmg
+            if (count(fld(img,il0_top:il0_bot)>nam%mask_th)>3) mask_counter(img) = mask_counter(img)+1
+         end do
+      end select
+   end do
+
+   ! Update mask
+   do img=1,model%nmg
+      if (real(mask_counter(img),kind_real)<0.9*real(nam%ens1_ne,kind_real)) model%mask(img,:) = .false.
+   end do
+end select
+
 ! Vertical unit
 do img=1,model%nmg
    if (nam%logpres) then
       model%vunit(img,1:nam%nl) = log(0.5*(a(nam%levs(1:nam%nl))+a(nam%levs(1:nam%nl)+1)) &
-                                & +0.5*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
+ & +0.5*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
       if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(ps)
    else
       model%vunit(img,:) = real(nam%levs(1:model%nl0),kind_real)
@@ -103,21 +216,21 @@ end subroutine model_aro_coord
 
 !----------------------------------------------------------------------
 ! Subroutine: model_aro_read
-! Purpose: read AROME field
+!> Read AROME field
 !----------------------------------------------------------------------
 subroutine model_aro_read(model,mpl,nam,filename,fld)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model                        ! Model
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-character(len=*),intent(in) :: filename                         ! File name
-real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
+class(model_type),intent(inout) :: model                        !< Model
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+character(len=*),intent(in) :: filename                         !< File name
+real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
-integer :: iv,il0,img,ilon,ilat,info
+integer :: iv,il0,img,ilon,ilat,info,iv_q,iv_lwc
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
@@ -174,5 +287,28 @@ if (mpl%main) then
    ! Release memory
    deallocate(fld_tmp)
 end if
+
+! Post-processing
+iv_q = mpl%msv%vali
+iv_lwc = mpl%msv%vali
+do iv=1,nam%nv
+   if (trim(nam%variables(iv))=='HUMI_SPECIFI') iv_q = iv
+   if (trim(nam%variables(iv))=='CLOUD_WATER') iv_lwc = iv
+end do
+select case (trim(nam%variable_change))
+case ('logq')
+   if (mpl%msv%isnot(iv_q)) then
+       fld(:,:,iv_q) = log(max(fld(:,:,iv_q),qmin))
+   else
+      call mpl%abort(subr,'specific humidity not found')
+   end if
+case ('logqtot')
+   if ((mpl%msv%isnot(iv_q)).and.(mpl%msv%isnot(iv_lwc))) then
+      fld(:,:,iv_q) = log(max(fld(:,:,iv_q)+fld(:,:,iv_lwc),qmin))
+      fld(:,:,iv_lwc) = mpl%msv%valr
+   else
+      call mpl%abort(subr,'specific humidity, or LWC not found')
+   end if
+end select
 
 end subroutine model_aro_read

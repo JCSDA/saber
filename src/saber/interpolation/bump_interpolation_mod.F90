@@ -51,16 +51,16 @@ private
   type(bump_type), public :: bump
 
   !> Grid information
-  type(geom_type) :: outgeom    !< output grid - unstructured
-  type(atlas_functionspace) :: in_funcspace  !< atlas functionspace for input grid
-  type(atlas_functionspace) :: out_funcspace !< atlas functionspace for output grid
+  type(geom_type) :: outgeom    !<< output grid - unstructured
+  type(atlas_functionspace) :: in_funcspace  !<< atlas functionspace for input grid
+  type(atlas_functionspace) :: out_funcspace !<< atlas functionspace for output grid
 
   !> Number of points
-  integer :: nc0b                !< Halo B size
-  integer, public :: nlev        !< number of levels
+  integer :: nc0b                !<< Halo B size
+  integer, public :: nlev        !<< number of levels
 
-  integer, public :: nout         !< global number of output grid points
-  integer, public :: nout_local   !< local number of output grid points
+  integer, public :: nout         !<< global number of output grid points
+  integer, public :: nout_local   !<< local number of output grid points
 
   !> Interpolation data (operator)
   type(linop_type) :: h
@@ -266,10 +266,10 @@ end subroutine bint_init
 !----------------------------------------------------------------------
 subroutine bint_driver(self,mpl,rng,nam,geom)
   class(bump_interpolator), intent(inout) :: self
-  type(mpl_type),intent(inout) :: mpl      !< MPI data
-  type(rng_type),intent(inout) :: rng      !< Random number generator
-  type(nam_type),intent(in) :: nam         !< Namelist
-  type(geom_type),intent(in) :: geom       !< Geometry
+  type(mpl_type),intent(inout) :: mpl      !<< MPI data
+  type(rng_type),intent(inout) :: rng      !<< Random number generator
+  type(nam_type),intent(in) :: nam         !<< Namelist
+  type(geom_type),intent(in) :: geom       !<< Geometry
 
   ! Local variables
   integer :: iouta,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nouta_eff
@@ -290,7 +290,7 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
         if (.not.maskouta(iouta)) then
            ! Check for very close points
            call geom%tree_c0u%find_nearest_neighbors(self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta), &
-                                               & 1,nn_index,nn_dist)
+ & 1,nn_index,nn_dist)
            if (nn_dist(1)<rth) maskouta(iouta) = .true.
         end if
      end do
@@ -370,10 +370,10 @@ subroutine bint_driver(self,mpl,rng,nam,geom)
 
      ! Print results
      write(mpl%info,'(a7,a,f5.1,a)') '','Output grid repartition imbalance: ',100.0*real(maxval(proc_to_nouta_eff) &
-          & -minval(proc_to_nouta_eff),kind_real)/(real(sum(proc_to_nouta_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+ & -minval(proc_to_nouta_eff),kind_real)/(real(sum(proc_to_nouta_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
      call mpl%flush
      write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
-          & self%com%nred,' / ',self%com%next,' / ',self%com%nhalo
+ & self%com%nred,' / ',self%com%next,' / ',self%com%nhalo
      call mpl%flush
      write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
      call mpl%flush
@@ -659,14 +659,14 @@ end subroutine bint_delete
 
 !----------------------------------------------------------------------
 ! Subroutine: dummy
-! Purpose: dummy finalization
+!> Dummy finalization
 !----------------------------------------------------------------------
 subroutine dummy(bump)
 
 implicit none
 
 ! Passed variables
-type(bump_interpolator),intent(inout) :: bump ! BUMP
+type(bump_interpolator),intent(inout) :: bump !< BUMP
 
 end subroutine dummy
 

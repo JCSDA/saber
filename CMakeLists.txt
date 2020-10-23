@@ -19,7 +19,8 @@ list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
 set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
 
 ## Configuration options
-set( ENABLE_SABER_DOC "Build SABER/BUMP Documentation" OFF )
+option( ENABLE_SABER_DOC "Build SABER documentation" OFF )
+option( ENABLE_MKL "Use MKL for LAPACK implementation (if available)" ON )
 include( ${PROJECT_NAME}_compiler_flags )
 
 ## Dependencies
@@ -30,6 +31,14 @@ find_package( NetCDF REQUIRED COMPONENTS Fortran )
 find_package( eckit REQUIRED COMPONENTS MPI )
 find_package( fckit REQUIRED )
 find_package( atlas REQUIRED COMPONENTS OMP_Fortran )
+if( ENABLE_MKL )
+    find_package( MKL )
+endif()
+if( MKL_FOUND )
+    set( LAPACK_LIBRARIES ${MKL_LIBRARIES} )
+else()
+    find_package( LAPACK REQUIRED )
+endif()
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 
@@ -37,7 +46,9 @@ find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 add_subdirectory( src/saber )
 add_subdirectory( tools ) # tools is needed for test
 add_subdirectory( test )
-add_subdirectory( doc )
+if( ENABLE_SABER_DOC )
+    add_subdirectory( Documents )
+endif()
 
 ## Global tests
 ecbuild_add_test( TARGET saber_coding_norms_src

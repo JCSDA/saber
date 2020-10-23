@@ -60,6 +60,7 @@ ens2_000009.nc
 ens2_000010.nc
 grid.nc
 bump_read_cmat/test_1-1_cmat.nc
+bump_read_cmat_serial/test_1-1_cmat.nc
 bump_read_mom/test_1-1_mom_000001-000001.nc
 bump_read_nicas/test_1-1_nicas_000001-000001.nc
 bump_read_obsop/test_1-1_obs_000001-000001.nc

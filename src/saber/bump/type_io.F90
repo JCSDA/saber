@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_io
-! Purpose: I/O derived type
+!> I/O derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS and METEO-FRANCE
@@ -23,35 +23,35 @@ implicit none
 ! I/O derived type
 type io_type
    ! Field output
-   integer :: nc0io                              ! I/O chunk size on subset Sc0
-   integer :: ic0_s                              ! Starting index for the I/O chunk on subset Sc0
-   integer,allocatable :: c0io_to_c0(:)          ! Subset Sc0, I/O chunk to global
-   integer,allocatable :: procio_to_proc(:)      ! I/O task to main communicator task
-   type(com_type) :: com_AIO                     ! Communication between halo A and I/O chunk
+   integer :: nc0io                              !< I/O chunk size on subset Sc0
+   integer :: ic0_s                              !< Starting index for the I/O chunk on subset Sc0
+   integer,allocatable :: c0io_to_c0(:)          !< Subset Sc0, I/O chunk to global
+   integer,allocatable :: procio_to_proc(:)      !< I/O task to main communicator task
+   type(com_type) :: com_AIO                     !< Communication between halo A and I/O chunk
 
    ! Field regridding and output
-   integer :: nlon                               ! Number of output grid longitudes
-   integer :: nlat                               ! Number of output grid latitudes
-   real(kind_real),allocatable :: lon(:)         ! Output grid longitudes
-   real(kind_real),allocatable :: lat(:)         ! Output grid latitudes
-   integer,allocatable :: og_to_lon(:)           ! Output grid to longitude index
-   integer,allocatable :: og_to_lat(:)           ! Output grid to latitude index
-   integer :: nog                                ! Output grid size
-   integer :: noga                               ! Output grid size, halo A
-   integer :: nc0b                               ! Subset Sc0 size, halo B
-   integer,allocatable :: og_to_proc(:)          ! Output grid to processor
-   integer,allocatable :: proc_to_noga(:)        ! Number of points in output grid, halo A, for each processor
-   integer,allocatable :: oga_to_og(:)           ! Output grid, halo A to global
-   integer,allocatable :: og_to_oga(:)           ! Output grid, global to halo A
-   integer,allocatable :: c0u_to_c0b(:)          ! Subset Sc0, universe to halo B
-   logical,allocatable :: mask(:,:)              ! Mask on output grid
-   type(linop_type) :: og                        ! Subset Sc0 to grid interpolation
-   type(com_type) :: com_AB                      ! Communication between halos A and B
-   integer :: nlonio                             ! I/O chunk size on output grid
-   integer :: ilon_s                             ! Starting index for the I/O chunk on output grid
-   integer,allocatable :: ogio_to_og(:)          ! Output grid, I/O chunk to global
-   integer,allocatable :: procio_to_proc_grid(:) ! I/O task to main communicator task
-   type(com_type) :: com_AIO_grid                ! Communication between halo A and I/O chunk
+   integer :: nlon                               !< Number of output grid longitudes
+   integer :: nlat                               !< Number of output grid latitudes
+   real(kind_real),allocatable :: lon(:)         !< Output grid longitudes
+   real(kind_real),allocatable :: lat(:)         !< Output grid latitudes
+   integer,allocatable :: og_to_lon(:)           !< Output grid to longitude index
+   integer,allocatable :: og_to_lat(:)           !< Output grid to latitude index
+   integer :: nog                                !< Output grid size
+   integer :: noga                               !< Output grid size, halo A
+   integer :: nc0b                               !< Subset Sc0 size, halo B
+   integer,allocatable :: og_to_proc(:)          !< Output grid to processor
+   integer,allocatable :: proc_to_noga(:)        !< Number of points in output grid, halo A, for each processor
+   integer,allocatable :: oga_to_og(:)           !< Output grid, halo A to global
+   integer,allocatable :: og_to_oga(:)           !< Output grid, global to halo A
+   integer,allocatable :: c0u_to_c0b(:)          !< Subset Sc0, universe to halo B
+   logical,allocatable :: mask(:,:)              !< Mask on output grid
+   type(linop_type) :: og                        !< Subset Sc0 to grid interpolation
+   type(com_type) :: com_AB                      !< Communication between halos A and B
+   integer :: nlonio                             !< I/O chunk size on output grid
+   integer :: ilon_s                             !< Starting index for the I/O chunk on output grid
+   integer,allocatable :: ogio_to_og(:)          !< Output grid, I/O chunk to global
+   integer,allocatable :: procio_to_proc_grid(:) !< I/O task to main communicator task
+   type(com_type) :: com_AIO_grid                !< Communication between halo A and I/O chunk
 contains
    procedure :: dealloc => io_dealloc
    procedure :: fld_read => io_fld_read
@@ -66,14 +66,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: io_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine io_dealloc(io)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(inout) :: io ! I/O
+class(io_type),intent(inout) :: io !< I/O
 
 ! Release memory
 if (allocated(io%c0io_to_c0)) deallocate(io%c0io_to_c0)
@@ -99,62 +99,94 @@ end subroutine io_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: io_fld_read
-! Purpose: write field
+!> Write field
 !----------------------------------------------------------------------
 subroutine io_fld_read(io,mpl,nam,geom,filename,variable,fld,groupname,subgroupname)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(in) :: io                        ! I/O
-type(mpl_type),intent(inout) :: mpl                    ! MPI data
-type(nam_type),intent(in) :: nam                       ! Namelist
-type(geom_type),intent(in) :: geom                     ! Geometry
-character(len=*),intent(in) :: filename                ! File name
-character(len=*),intent(in) :: variable                ! Variable name
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) ! Field
-character(len=*),intent(in),optional :: groupname      ! Group name
-character(len=*),intent(in),optional :: subgroupname  ! Subgroup name
+class(io_type),intent(in) :: io                        !< I/O
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(nam_type),intent(in) :: nam                       !< Namelist
+type(geom_type),intent(in) :: geom                     !< Geometry
+character(len=*),intent(in) :: filename                !< File name
+character(len=*),intent(in) :: variable                !< Variable name
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
+character(len=*),intent(in),optional :: groupname      !< Group name
+character(len=*),intent(in),optional :: subgroupname  !< Subgroup name
 
 ! Local variables
+integer :: color,iproc,iprocio
 integer :: ncid,grpid,subgrpid,fld_id
 real(kind_real),allocatable :: fld_c0io(:,:)
+character(len=1024) :: cname
 character(len=1024),parameter :: subr = 'io_fld_read'
+type(fckit_mpi_comm) :: f_comm
 
 ! Allocation
 allocate(fld_c0io(io%nc0io,geom%nl0))
 
+! Create communicator for parallel NetCDF I/O
 if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
-   ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   color = 1
+   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_io'
+else
+   color = 0
+   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_no_io'
+endif
+f_comm = mpl%f_comm%split(color,cname)
 
-   ! Get group
-   if (present(groupname)) then
-      call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,groupname,grpid))
+do iprocio=1,nam%nprocio
+   ! Processor index
+   iproc = io%procio_to_proc(iprocio)
 
-      ! Get sub-group
-      if (present(subgroupname)) then
-         call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,subgroupname,subgrpid))
+   if ((iproc==mpl%myproc).and.(io%nc0io>0)) then
+      ! Open file
+      if (mpl%parallel_io) then
+         call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid, &
+ & comm=f_comm%communicator(),info=f_comm%info_null()))
       else
-         subgrpid = grpid
+         call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
       end if
-   else
-      grpid = ncid
+
+      ! Get group
+      if (present(groupname)) then
+         call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,groupname,grpid))
+
+         ! Get sub-group
+         if (present(subgroupname)) then
+            call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,subgroupname,subgrpid))
+         else
+            subgrpid = grpid
+         end if
+      else
+         grpid = ncid
+      end if
+
+      ! Check dimension
+      call mpl%nc_dim_check(subr,ncid,'nc0',geom%nc0)
+      call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
+
+      ! Get variable
+      call mpl%ncerr(subr,nf90_inq_varid(grpid,variable,fld_id))
+
+      ! Get data
+      call mpl%ncerr(subr,nf90_get_var(grpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
+
+      ! Close file
+      call mpl%ncerr(subr,nf90_close(ncid))
    end if
 
-   ! Check dimension
-   call mpl%nc_dim_check(subr,ncid,'nc0',geom%nc0)
-   call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
+   ! Synchronization needed for serial I/O
+   if (.not.mpl%parallel_io) call mpl%f_comm%barrier()
+end do
 
-   ! Get variable
-   call mpl%ncerr(subr,nf90_inq_varid(grpid,variable,fld_id))
+! Delete communicator
+call f_comm%delete()
 
-   ! Get data
-   call mpl%ncerr(subr,nf90_get_var(grpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
-
-   ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
-end if
+! Wait for everybody
+call mpl%f_comm%barrier()
 
 ! Communication
 call io%com_AIO%red(mpl,geom%nl0,fld_c0io,fld)
@@ -166,25 +198,25 @@ end subroutine io_fld_read
 
 !----------------------------------------------------------------------
 ! Subroutine: io_fld_write
-! Purpose: write field
+!> Write field
 !----------------------------------------------------------------------
 subroutine io_fld_write(io,mpl,nam,geom,filename,variable,fld,groupname,subgroupname)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(in) :: io                       ! I/O
-type(mpl_type),intent(inout) :: mpl                   ! MPI data
-type(nam_type),intent(in) :: nam                      ! Namelist
-type(geom_type),intent(in) :: geom                    ! Geometry
-character(len=*),intent(in) :: filename               ! File name
-character(len=*),intent(in) :: variable               ! Variable name
-real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
-character(len=*),intent(in),optional :: groupname     ! Group name
-character(len=*),intent(in),optional :: subgroupname  ! Subgroup name
+class(io_type),intent(in) :: io                       !< I/O
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+type(nam_type),intent(in) :: nam                      !< Namelist
+type(geom_type),intent(in) :: geom                    !< Geometry
+character(len=*),intent(in) :: filename               !< File name
+character(len=*),intent(in) :: variable               !< Variable name
+real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
+character(len=*),intent(in),optional :: groupname     !< Group name
+character(len=*),intent(in),optional :: subgroupname  !< Subgroup name
 
 ! Local variables
-integer :: ic0a,il0,color
+integer :: ic0a,il0,color,iproc,iprocio
 integer :: ncid,grpid,subgrpid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)
@@ -223,50 +255,57 @@ else
 endif
 f_comm = mpl%f_comm%split(color,cname)
 
-! Parallel I/O
-if (any(io%procio_to_proc==mpl%myproc).and.(io%nc0io>0)) then
-   ! Define file
-   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc',f_comm)
+do iprocio=1,nam%nprocio
+   ! Processor index
+   iproc = io%procio_to_proc(iprocio)
 
-   ! Define group
-   if (present(groupname)) then
-      grpid = mpl%nc_group_define_or_get(subr,ncid,groupname)
+   if ((iproc==mpl%myproc).and.(io%nc0io>0)) then
+      ! Define file
+      ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc',f_comm)
 
-      ! Define sub-group
-      if (present(subgroupname)) then
-         subgrpid = mpl%nc_group_define_or_get(subr,grpid,subgroupname)
+      ! Define group
+      if (present(groupname)) then
+         grpid = mpl%nc_group_define_or_get(subr,ncid,groupname)
+
+         ! Define sub-group
+         if (present(subgroupname)) then
+            subgrpid = mpl%nc_group_define_or_get(subr,grpid,subgroupname)
+         else
+            subgrpid = grpid
+         end if
       else
-         subgrpid = grpid
+         subgrpid = ncid
       end if
-   else
-      subgrpid = ncid
+
+      ! Define dimensions
+      nc0_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0',geom%nc0)
+      nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
+
+      ! Define coordinates
+      lon_id = mpl%nc_var_define_or_get(subr,ncid,'lon',nc_kind_real,(/nc0_id/),'degrees_north')
+      lat_id = mpl%nc_var_define_or_get(subr,ncid,'lat',nc_kind_real,(/nc0_id/),'degrees_east')
+
+      ! Define variable
+      fld_id = mpl%nc_var_define_or_get(subr,subgrpid,variable,nc_kind_real,(/nc0_id,nl0_id/))
+
+      ! Convert to degrees
+      lon_c0io = lon_c0io*rad2deg
+      lat_c0io = lat_c0io*rad2deg
+
+      ! Write coordinates
+      call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon_c0io,(/io%ic0_s/),(/io%nc0io/)))
+      call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
+
+      ! Write variable
+      call mpl%ncerr(subr,nf90_put_var(subgrpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
+
+      ! Close file
+      call mpl%ncerr(subr,nf90_close(ncid))
    end if
 
-   ! Define dimensions
-   nc0_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0',geom%nc0)
-   nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
-
-   ! Define coordinates
-   lon_id = mpl%nc_var_define_or_get(subr,ncid,'lon',nc_kind_real,(/nc0_id/),'degrees_north')
-   lat_id = mpl%nc_var_define_or_get(subr,ncid,'lat',nc_kind_real,(/nc0_id/),'degrees_east')
-
-   ! Define variable
-   fld_id = mpl%nc_var_define_or_get(subr,subgrpid,variable,nc_kind_real,(/nc0_id,nl0_id/))
-
-   ! Convert to degrees
-   lon_c0io = lon_c0io*rad2deg
-   lat_c0io = lat_c0io*rad2deg
-
-   ! Write coordinates
-   call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon_c0io,(/io%ic0_s/),(/io%nc0io/)))
-   call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
-
-   ! Write variable
-   call mpl%ncerr(subr,nf90_put_var(subgrpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
-
-   ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
-end if
+   ! Synchronization needed for serial I/O
+   if (.not.mpl%parallel_io) call mpl%f_comm%barrier()
+end do
 
 ! Write global attributes
 if (io%procio_to_proc(1)==mpl%myproc) then
@@ -295,17 +334,17 @@ end subroutine io_fld_write
 
 !----------------------------------------------------------------------
 ! Subroutine: io_init
-! Purpose: initialize fields output
+!> Initialize fields output
 !----------------------------------------------------------------------
 subroutine io_init(io,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(inout) :: io  ! I/O
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(nam_type),intent(in) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom  ! Geometry
+class(io_type),intent(inout) :: io  !< I/O
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
 
 ! Local variables
 integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,jc0,nc0own,ic0own,iproc,jproc

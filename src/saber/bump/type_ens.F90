@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_ens
-! Purpose: ensemble derived type
+!> Ensemble derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -27,14 +27,14 @@ implicit none
 ! Ensemble derived type
 type ens_type
    ! Attributes
-   integer :: ne                              ! Ensemble size
-   integer :: nsub                            ! Number of sub-ensembles
+   integer :: ne                              !< Ensemble size
+   integer :: nsub                            !< Number of sub-ensembles
 
    ! Data
-   type(fieldset_type),allocatable :: mem(:)  ! Members
-   type(fieldset_type),allocatable :: mean(:) ! Ensemble mean
-   type(fieldset_type) :: m2                  ! Variance
-   type(fieldset_type) :: m4                  ! Fourth-order centered moment
+   type(fieldset_type),allocatable :: mem(:)  !< Members
+   type(fieldset_type),allocatable :: mean(:) !< Ensemble mean
+   type(fieldset_type) :: m2                  !< Variance
+   type(fieldset_type) :: m4                  !< Fourth-order centered moment
 contains
    procedure :: set_att => ens_set_att
    procedure :: alloc => ens_alloc
@@ -61,16 +61,16 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_set_att
-! Purpose: set attributes
+!> Set attributes
 !----------------------------------------------------------------------
 subroutine ens_set_att(ens,ne,nsub)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens ! Ensemble
-integer,intent(in) :: ne             ! Ensemble size
-integer,intent(in) :: nsub           ! Number of sub-ensembles
+class(ens_type),intent(inout) :: ens !< Ensemble
+integer,intent(in) :: ne             !< Ensemble size
+integer,intent(in) :: nsub           !< Number of sub-ensembles
 
 ! Copy attributes
 ens%ne = ne
@@ -80,16 +80,16 @@ end subroutine ens_set_att
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine ens_alloc(ens,ne,nsub)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens ! Ensemble
-integer,intent(in) :: ne             ! Ensemble size
-integer,intent(in) :: nsub           ! Number of sub-ensembles
+class(ens_type),intent(inout) :: ens !< Ensemble
+integer,intent(in) :: ne             !< Ensemble size
+integer,intent(in) :: nsub           !< Number of sub-ensembles
 
 ! Copy attributes
 call ens%set_att(ne,nsub)
@@ -104,14 +104,14 @@ end subroutine ens_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine ens_dealloc(ens)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens ! Ensemble
+class(ens_type),intent(inout) :: ens !< Ensemble
 
 ! Local variables
 integer :: ie,isub
@@ -136,18 +136,18 @@ end subroutine ens_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_copy
-! Purpose: copy
+!> Copy
 !----------------------------------------------------------------------
 subroutine ens_copy(ens_out,mpl,nam,geom,ens_in)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens_out ! Output ensemble
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
-type(geom_type),intent(in) :: geom       ! Geometry
-type(ens_type),intent(in) :: ens_in      ! Input ensemble
+class(ens_type),intent(inout) :: ens_out !< Output ensemble
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
+type(ens_type),intent(in) :: ens_in      !< Input ensemble
 
 ! Local variables
 integer :: ie,isub
@@ -184,17 +184,17 @@ end subroutine ens_copy
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_compute_mean
-! Purpose: compute ensemble mean(s)
+!> Compute ensemble mean(s)
 !----------------------------------------------------------------------
 subroutine ens_compute_mean(ens,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens ! Ensemble
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
+class(ens_type),intent(inout) :: ens !< Ensemble
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Local variables
 integer :: isub,ie_sub,ie
@@ -218,17 +218,17 @@ end subroutine ens_compute_mean
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_compute_moments
-! Purpose: compute 2nd- and 4th-order centered moments
+!> Compute 2nd- and 4th-order centered moments
 !----------------------------------------------------------------------
 subroutine ens_compute_moments(ens,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens ! Ensemble
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
+class(ens_type),intent(inout) :: ens !< Ensemble
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Local variables
 integer :: isub,ie_sub,ie
@@ -268,17 +268,17 @@ end subroutine ens_compute_moments
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_normalize
-! Purpose: normalize ensemble members as perturbations (zero mean) with unit variance
+!> Normalize ensemble members as perturbations (zero mean) with unit variance
 !----------------------------------------------------------------------
 subroutine ens_normalize(ens,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens ! Ensemble
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
+class(ens_type),intent(inout) :: ens !< Ensemble
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Local variables
 integer :: isub,ie_sub,ie
@@ -319,20 +319,20 @@ end subroutine ens_normalize
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_get_c0_single
-! Purpose: get ensemble field on subset Sc0, single field
+!> Get ensemble field on subset Sc0, single field
 !----------------------------------------------------------------------
 subroutine ens_get_c0_single(ens,mpl,iv,geom,fieldtype,i,fld_c0a)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(in) :: ens                          ! Ensemble
-type(mpl_type),intent(inout) :: mpl                        ! MPI data
-integer,intent(in) :: iv                                   ! Variable index
-type(geom_type),intent(in) :: geom                         ! Geometry
-character(len=*),intent(in) :: fieldtype                   ! Field type ('member', 'pert', 'mean', 'm2' or 'm4')
-integer,intent(in) :: i                                    ! Index (member or subset)
-real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0) ! Field on Sc0 subset, halo A
+class(ens_type),intent(in) :: ens                          !< Ensemble
+type(mpl_type),intent(inout) :: mpl                        !< MPI data
+integer,intent(in) :: iv                                   !< Variable index
+type(geom_type),intent(in) :: geom                         !< Geometry
+character(len=*),intent(in) :: fieldtype                   !< Field type ('member', 'pert', 'mean', 'm2' or 'm4')
+integer,intent(in) :: i                                    !< Index (member or subset)
+real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on Sc0 subset, halo A
 
 ! Local variables
 integer :: isub
@@ -411,20 +411,20 @@ end subroutine ens_get_c0_single
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_get_c0_all
-! Purpose: get ensemble field on subset Sc0, all field
+!> Get ensemble field on subset Sc0, all field
 !----------------------------------------------------------------------
 subroutine ens_get_c0_all(ens,mpl,nam,geom,fieldtype,i,fld_c0a)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(in) :: ens                                 ! Ensemble
-type(mpl_type),intent(inout) :: mpl                               ! MPI data
-type(nam_type),intent(in) :: nam                                  ! Namelist
-type(geom_type),intent(in) :: geom                                ! Geometry
-character(len=*),intent(in) :: fieldtype                          ! Field type ('member', 'pert', 'mean', 'm2' or 'm4')
-integer,intent(in) :: i                                           ! Index (member or subset)
-real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) ! Field on Sc0 subset, halo A
+class(ens_type),intent(in) :: ens                                 !< Ensemble
+type(mpl_type),intent(inout) :: mpl                               !< MPI data
+type(nam_type),intent(in) :: nam                                  !< Namelist
+type(geom_type),intent(in) :: geom                                !< Geometry
+character(len=*),intent(in) :: fieldtype                          !< Field type ('member', 'pert', 'mean', 'm2' or 'm4')
+integer,intent(in) :: i                                           !< Index (member or subset)
+real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on Sc0 subset, halo A
 
 ! Local variables
 integer :: iv
@@ -438,20 +438,20 @@ end subroutine ens_get_c0_all
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_set_c0_single
-! Purpose: set ensemble member on subset Sc0, single field
+!> Set ensemble member on subset Sc0, single field
 !----------------------------------------------------------------------
 subroutine ens_set_c0_single(ens,mpl,iv,geom,fieldtype,i,fld_c0a)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens                      ! Ensemble
-type(mpl_type),intent(inout) :: mpl                       ! MPI data
-integer,intent(in) :: iv                                  ! Variable index
-type(geom_type),intent(in) :: geom                        ! Geometry
-character(len=*),intent(in) :: fieldtype                  ! Field type ('member', 'pert', 'mean', 'm2' or 'm4')
-integer,intent(in) :: i                                   ! Index (member or subset)
-real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0) ! Field on Sc0 subset, halo A
+class(ens_type),intent(inout) :: ens                      !< Ensemble
+type(mpl_type),intent(inout) :: mpl                       !< MPI data
+integer,intent(in) :: iv                                  !< Variable index
+type(geom_type),intent(in) :: geom                        !< Geometry
+character(len=*),intent(in) :: fieldtype                  !< Field type ('member', 'pert', 'mean', 'm2' or 'm4')
+integer,intent(in) :: i                                   !< Index (member or subset)
+real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on Sc0 subset, halo A
 
 ! Local variables
 integer :: isub
@@ -531,20 +531,20 @@ end subroutine ens_set_c0_single
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_set_c0_all
-! Purpose: get ensemble member or perturbation on subset Sc0, all field
+!> Get ensemble member or perturbation on subset Sc0, all field
 !----------------------------------------------------------------------
 subroutine ens_set_c0_all(ens,mpl,nam,geom,fieldtype,i,fld_c0a)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens                             ! Ensemble
-type(mpl_type),intent(inout) :: mpl                              ! MPI data
-type(nam_type),intent(in) :: nam                                 ! Namelist
-type(geom_type),intent(in) :: geom                               ! Geometry
-character(len=*),intent(in) :: fieldtype                         ! Field type ('member', 'pert', 'mean', 'm2' or 'm4')
-integer,intent(in) :: i                                          ! Index (member or subset)
-real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) ! Field on Sc0 subset, halo A
+class(ens_type),intent(inout) :: ens                             !< Ensemble
+type(mpl_type),intent(inout) :: mpl                              !< MPI data
+type(nam_type),intent(in) :: nam                                 !< Namelist
+type(geom_type),intent(in) :: geom                               !< Geometry
+character(len=*),intent(in) :: fieldtype                         !< Field type ('member', 'pert', 'mean', 'm2' or 'm4')
+integer,intent(in) :: i                                          !< Index (member or subset)
+real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on Sc0 subset, halo A
 
 ! Local variables
 integer :: iv
@@ -558,18 +558,18 @@ end subroutine ens_set_c0_all
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_apply_bens
-! Purpose: apply raw ensemble covariance
+!> Apply raw ensemble covariance
 !----------------------------------------------------------------------
 subroutine ens_apply_bens(ens,mpl,nam,geom,fld)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(in) :: ens                               ! Ensemble
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-type(geom_type),intent(in) :: geom                              ! Geometry
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
+class(ens_type),intent(in) :: ens                               !< Ensemble
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+type(geom_type),intent(in) :: geom                              !< Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 
 ! Local variable
 integer :: ie,ic0a,il0,iv
@@ -613,22 +613,22 @@ end subroutine ens_apply_bens
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_apply_bens_dirac
-! Purpose: apply raw ensemble covariance to a Dirac (faster formulation)
+!> Apply raw ensemble covariance to a Dirac (faster formulation)
 !----------------------------------------------------------------------
 subroutine ens_apply_bens_dirac(ens,mpl,nam,geom,iprocdir,ic0adir,il0dir,ivdir,fld)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(in) :: ens                             ! Ensemble
-type(mpl_type),intent(inout) :: mpl                           ! MPI data
-type(nam_type),intent(in) :: nam                              ! Namelist
-type(geom_type),intent(in) :: geom                            ! Geometry
-integer,intent(in) :: iprocdir                                ! Processor index for dirac function
-integer,intent(in) :: ic0adir                                 ! Subset Sc0, halo A index for dirac function
-integer,intent(in) :: il0dir                                  ! Subset Sl0 index for dirac function
-integer,intent(in) :: ivdir                                   ! Variable index for dirac function
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
+class(ens_type),intent(in) :: ens                             !< Ensemble
+type(mpl_type),intent(inout) :: mpl                           !< MPI data
+type(nam_type),intent(in) :: nam                              !< Namelist
+type(geom_type),intent(in) :: geom                            !< Geometry
+integer,intent(in) :: iprocdir                                !< Processor index for dirac function
+integer,intent(in) :: ic0adir                                 !< Subset Sc0, halo A index for dirac function
+integer,intent(in) :: il0dir                                  !< Subset Sl0 index for dirac function
+integer,intent(in) :: ivdir                                   !< Variable index for dirac function
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 
 ! Local variable
 integer :: ie,ic0a,il0,iv
@@ -668,18 +668,18 @@ end subroutine ens_apply_bens_dirac
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_normality
-! Purpose: perform some normality diagnostics
+!> Perform some normality diagnostics
 !----------------------------------------------------------------------
 subroutine ens_normality(ens,mpl,nam,geom,io)
 
 implicit none
 
 ! Passed variables
-class(ens_type),intent(inout) :: ens ! Ensemble
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
-type(io_type),intent(in) :: io       ! I/O
+class(ens_type),intent(inout) :: ens !< Ensemble
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: ncid,nloc_id,ne_id,nem1_id,ic0a_id,il0_id,iv_id,order_id,ens_norm_id,ens_step_id

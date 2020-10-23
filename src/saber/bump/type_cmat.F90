@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_cmat
-! Purpose: C matrix derived type
+!> C matrix derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -29,9 +29,9 @@ implicit none
 
 ! C matrix derived type
 type cmat_type
-   character(len=1024) :: prefix             ! Prefix
-   type(cmat_blk_type),allocatable :: blk(:) ! C matrix blocks
-   logical :: allocated                      ! Allocation flag
+   character(len=1024) :: prefix             !< Prefix
+   type(cmat_blk_type),allocatable :: blk(:) !< C matrix blocks
+   logical :: allocated                      !< Allocation flag
 contains
    procedure :: cmat_alloc
    procedure :: cmat_alloc_blk
@@ -55,15 +55,15 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_alloc
-! Purpose: C matrix allocation
+!> C matrix allocation
 !----------------------------------------------------------------------
 subroutine cmat_alloc(cmat,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(bpar_type),intent(in) :: bpar     ! Block parameters
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Allocation
 if (.not.allocated(cmat%blk)) allocate(cmat%blk(bpar%nbe))
@@ -72,17 +72,17 @@ end subroutine cmat_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_alloc_blk
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine cmat_alloc_blk(cmat,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar     ! Block parameters
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ib
@@ -102,17 +102,17 @@ end subroutine cmat_alloc_blk
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_init
-! Purpose: C matrix initialization
+!> C matrix initialization
 !----------------------------------------------------------------------
 subroutine cmat_init(cmat,mpl,nam,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(bpar_type),intent(in) :: bpar     ! Block parameters
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ib
@@ -126,14 +126,14 @@ end subroutine cmat_init
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine cmat_partial_dealloc(cmat)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
+class(cmat_type),intent(inout) :: cmat !< C matrix
 
 ! Local variables
 integer :: ib
@@ -153,14 +153,14 @@ end subroutine cmat_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine cmat_dealloc(cmat)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
+class(cmat_type),intent(inout) :: cmat !< C matrix
 
 ! Local variables
 integer :: ib
@@ -180,19 +180,19 @@ end subroutine cmat_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_read
-! Purpose: read
+!> Read
 !----------------------------------------------------------------------
 subroutine cmat_read(cmat,mpl,nam,geom,bpar,io)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar     ! Block parameters
-type(io_type),intent(in) :: io         ! I/O
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(io_type),intent(in) :: io         !< I/O
 
 ! Local variables
 integer :: ib,ncid,anisotropic
@@ -257,19 +257,19 @@ end subroutine cmat_read
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_write
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine cmat_write(cmat,mpl,nam,geom,bpar,io)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(in) :: cmat ! C matrix
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(nam_type),intent(in) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom  ! Geometry
-type(bpar_type),intent(in) :: bpar  ! Block parameters
-type(io_type),intent(in) :: io      ! I/O
+class(cmat_type),intent(in) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
+type(bpar_type),intent(in) :: bpar  !< Block parameters
+type(io_type),intent(in) :: io      !< I/O
 
 ! Local variables
 integer :: ib
@@ -320,19 +320,19 @@ end subroutine cmat_write
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_from_hdiag
-! Purpose: import HDIAG into C matrix
+!> Import HDIAG into C matrix
 !----------------------------------------------------------------------
 subroutine cmat_from_hdiag(cmat,mpl,nam,geom,bpar,hdiag)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar     ! Block parameters
-type(hdiag_type),intent(in) :: hdiag   ! Hybrid diagnostics
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(hdiag_type),intent(in) :: hdiag   !< Hybrid diagnostics
 
 ! Local variables
 integer :: ib,n,i,il0,il0i,ic2a,ic0a
@@ -512,19 +512,19 @@ end subroutine cmat_from_hdiag
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_from_lct
-! Purpose: import LCT into C matrix
+!> Import LCT into C matrix
 !----------------------------------------------------------------------
 subroutine cmat_from_lct(cmat,mpl,nam,geom,bpar,lct)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar     ! Block parameters
-type(lct_type),intent(in) :: lct       ! LCT
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(lct_type),intent(in) :: lct       !< LCT
 
 ! Local variables
 integer :: ib,iv,jv,iscales,il0,ic0a
@@ -585,18 +585,18 @@ end subroutine cmat_from_lct
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_from_nam
-! Purpose: import radii into C matrix
+!> Import radii into C matrix
 !----------------------------------------------------------------------
 subroutine cmat_from_nam(cmat,mpl,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar     ! Block parameters
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ib,iv,jv
@@ -646,18 +646,18 @@ end subroutine cmat_from_nam
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_from_bump
-! Purpose: import C matrix from BUMP
+!> Import C matrix from BUMP
 !----------------------------------------------------------------------
 subroutine cmat_from_bump(cmat,mpl,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar     ! Block parameters
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ib,il0,ic0a
@@ -759,18 +759,18 @@ end subroutine cmat_from_bump
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_setup_sampling
-! Purpose: setup C matrix sampling
+!> Setup C matrix sampling
 !----------------------------------------------------------------------
 subroutine cmat_setup_sampling(cmat,mpl,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(cmat_type),intent(inout) :: cmat ! C matrix
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar     ! Block parameters
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ib,il0,ic0a,il0i
