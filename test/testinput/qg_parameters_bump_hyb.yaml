@@ -4,11 +4,9 @@ background:
 bump:
   datadir: testdata
   dc: 500.0e3
-  default_seed: 1
   method: hyb-rnd
   mpicom: 2
   nc1: 500
-  nc2: 100
   nc3: 20
   ne: 10
   new_hdiag: 1
@@ -17,7 +15,7 @@ bump:
   ntry: 10
   prefix: qg_parameters_bump_hyb/test
   resol: 8.0
-  strategy: specific_univariate
+  strategy: common
 covariance:
   covariance model: QgError
   horizontal_length_scale: 2.2e6

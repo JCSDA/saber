@@ -16,11 +16,9 @@ cost function:
       vertical_length_scale: 15000.0
     static weight: 0.707
     ensemble:
-      date: 2010-01-01T12:00:00Z
       localization:
         bump:
           datadir: testdata
-          method: hyb-rnd
           mpicom: 2
           load_nicas: 1
           prefix: qg_3dvar_hybrid_bump/test

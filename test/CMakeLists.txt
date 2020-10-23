@@ -502,6 +502,8 @@ if( SABER_TEST_OOPS )
     endforeach()
 
     # Parameters tests
+    set( mpi 1 )
+    set( omp 2 )
     foreach( test ${saber_test_oops} )
         string( FIND ${test} "qg_parameters" qg_parameters )
         if( qg_parameters MATCHES 0 )
@@ -516,8 +518,8 @@ if( SABER_TEST_OOPS )
                                    ${test}/test.ref
                                    0.0
                                    0
-                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1"
-                              OMP 2
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${mpi}"
+                              OMP ${omp}
                               DEPENDS saber_qg_estimate_parameters.x
                               TEST_DEPENDS get_saber_data )
         endif()
@@ -539,9 +541,11 @@ if( SABER_TEST_OOPS )
         string( LENGTH ${test} length )
         math( EXPR 4d ${length}-${4dpos}-2 )
         if ( (4d MATCHES 0) OR (test MATCHES qg_4densvar_bump) )
-            set( NTASKS 13 )
+            set( mpi 7 )
+            set( omp 1 )
         else()
-            set( NTASKS 1 )
+            set( mpi 1 )
+            set( omp 2 )
         endif()
 
         # Dirac tests
@@ -557,8 +561,8 @@ if( SABER_TEST_OOPS )
                                    ${test}/test.ref
                                    0.0
                                    0
-                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NTASKS}"
-                              OMP 2
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${mpi}"
+                              OMP ${omp}
                               DEPENDS saber_qg_dirac.x
                               TEST_DEPENDS test_qg_links )
         endif()
@@ -577,8 +581,8 @@ if( SABER_TEST_OOPS )
                                    ${test}/test.ref
                                    0.0
                                    0
-                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NTASKS}"
-                              OMP 2
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${mpi}"
+                              OMP ${omp}
                               DEPENDS saber_qg_4dvar.x
                               TEST_DEPENDS test_qg_links )
 
@@ -597,9 +601,11 @@ if( SABER_TEST_INTERPOLATION )
     endforeach()
 
     # Add tests
+    set( mpi 4 )
+    set( omp 1 )
     ecbuild_add_test( TARGET test_interpolation_bump
-                      MPI 4
-                      OMP 1
+                      MPI ${mpi}
+                      OMP ${omp}
                       COMMAND ${CMAKE_BINARY_DIR}/bin/saber_interpolation_bump.x
                       ARGS    testinput/interpolation_bump.yaml
                       DEPENDS saber_interpolation_bump.x )
