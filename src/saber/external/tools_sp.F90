@@ -54,9 +54,9 @@ integer:: J,JS,N
 
 data BZ / 2.4048255577_kind_real,  5.5200781103_kind_real, &
  &        8.6537279129_kind_real, 11.7915344391_kind_real, &
- &        4.9309177086_kind_real, 18.0710639679_kind_real, &
- &        1.2116366299_kind_real, 24.3524715308_kind_real, &
- &        7.4934791320_kind_real, 30.6346064684_kind_real, &
+ &       14.9309177086_kind_real, 18.0710639679_kind_real, &
+ &       21.2116366299_kind_real, 24.3524715308_kind_real, &
+ &       27.4934791320_kind_real, 30.6346064684_kind_real, &
  &       33.7758202136_kind_real, 36.9170983537_kind_real, &
  &       40.0584257646_kind_real, 43.1997917132_kind_real, &
  &       46.3411883717_kind_real, 49.4826098974_kind_real, &
