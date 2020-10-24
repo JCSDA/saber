@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_lct_blk
-! Purpose: LCT data derived type
+!> LCT data derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -29,38 +29,38 @@ implicit none
 ! LCT block data derived type
 type lct_blk_type
    ! Attributes
-   integer :: ib                                    ! Block index
-   integer :: nscales                               ! Number of LCT scales
-   character(len=1024) :: name                      ! Name
+   integer :: ib                                    !< Block index
+   integer :: nscales                               !< Number of LCT scales
+   character(len=1024) :: name                      !< Name
 
    ! Correlation/variances
-   real(kind_real),allocatable :: raw(:,:,:,:)      ! Raw correlations
+   real(kind_real),allocatable :: raw(:,:,:,:)      !< Raw correlations
 
    ! Diffusion data
-   real(kind_real),allocatable :: fit(:,:,:,:)      ! Fitted correlations
-   real(kind_real),allocatable :: D(:,:,:,:)        ! Diffusion components
-   real(kind_real),allocatable :: coef(:,:,:)       ! Multi-scale coefficients
-   real(kind_real),allocatable :: qc_c1a(:,:)       ! Quality control on subset Sc1, halo A
-   real(kind_real),allocatable :: qc_c0a(:,:)       ! Quality control on subset Sc0, halo A
+   real(kind_real),allocatable :: fit(:,:,:,:)      !< Fitted correlations
+   real(kind_real),allocatable :: D(:,:,:,:)        !< Diffusion components
+   real(kind_real),allocatable :: coef(:,:,:)       !< Multi-scale coefficients
+   real(kind_real),allocatable :: qc_c1a(:,:)       !< Quality control on subset Sc1, halo A
+   real(kind_real),allocatable :: qc_c0a(:,:)       !< Quality control on subset Sc0, halo A
 
    ! Filtered diffusion data
-   real(kind_real),allocatable :: fit_filt(:,:,:,:) ! Fitted correlations after filtering
-   real(kind_real),allocatable :: D_filt(:,:,:,:)   ! Diffusion components after filtering
-   real(kind_real),allocatable :: coef_filt(:,:,:)  ! Multi-scale coefficients after filtering
+   real(kind_real),allocatable :: fit_filt(:,:,:,:) !< Fitted correlations after filtering
+   real(kind_real),allocatable :: D_filt(:,:,:,:)   !< Diffusion components after filtering
+   real(kind_real),allocatable :: coef_filt(:,:,:)  !< Multi-scale coefficients after filtering
 
    ! NICAS-related data
-   real(kind_real),allocatable :: H11(:,:,:)        ! Local correlation tensor, component 11
-   real(kind_real),allocatable :: H22(:,:,:)        ! Local correlation tensor, component 22
-   real(kind_real),allocatable :: H33(:,:,:)        ! Local correlation tensor, component 33
-   real(kind_real),allocatable :: H12(:,:,:)        ! Local correlation tensor, component 12
+   real(kind_real),allocatable :: H11(:,:,:)        !< Local correlation tensor, component 11
+   real(kind_real),allocatable :: H22(:,:,:)        !< Local correlation tensor, component 22
+   real(kind_real),allocatable :: H33(:,:,:)        !< Local correlation tensor, component 33
+   real(kind_real),allocatable :: H12(:,:,:)        !< Local correlation tensor, component 12
 
    ! BUMP-output data
-   real(kind_real),allocatable :: D11(:,:,:)        ! Daley tensor, component 11
-   real(kind_real),allocatable :: D22(:,:,:)        ! Daley tensor, component 22
-   real(kind_real),allocatable :: D33(:,:,:)        ! Daley tensor, component 33
-   real(kind_real),allocatable :: D12(:,:,:)        ! Daley tensor, component 12
-   real(kind_real),allocatable :: Dcoef(:,:,:)      ! Tensor coefficient
-   real(kind_real),allocatable :: DLh(:,:,:)        ! Tensor length-scale
+   real(kind_real),allocatable :: D11(:,:,:)        !< Daley tensor, component 11
+   real(kind_real),allocatable :: D22(:,:,:)        !< Daley tensor, component 22
+   real(kind_real),allocatable :: D33(:,:,:)        !< Daley tensor, component 33
+   real(kind_real),allocatable :: D12(:,:,:)        !< Daley tensor, component 12
+   real(kind_real),allocatable :: Dcoef(:,:,:)      !< Tensor coefficient
+   real(kind_real),allocatable :: DLh(:,:,:)        !< Tensor length-scale
 contains
    procedure :: alloc => lct_blk_alloc
    procedure :: partial_dealloc => lct_blk_partial_dealloc
@@ -79,19 +79,19 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine lct_blk_alloc(lct_blk,nam,geom,bpar,samp,ib)
 
 implicit none
 
 ! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! LCT block
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-type(samp_type),intent(in) :: samp           ! Sampling
-integer,intent(in) :: ib                     ! Block index
+class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+type(samp_type),intent(in) :: samp           !< Sampling
+integer,intent(in) :: ib                     !< Block index
 
 ! Attributes
 lct_blk%ib = ib
@@ -124,14 +124,14 @@ end subroutine lct_blk_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine lct_blk_partial_dealloc(lct_blk)
 
 implicit none
 
 ! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! LCT block
+class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
 
 ! Release memory
 if (allocated(lct_blk%raw)) deallocate(lct_blk%raw)
@@ -152,14 +152,14 @@ end subroutine lct_blk_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine lct_blk_dealloc(lct_blk)
 
 implicit none
 
 ! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! LCT block
+class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
 
 ! Release memory
 call lct_blk%partial_dealloc
@@ -174,20 +174,20 @@ end subroutine lct_blk_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_write
-! Purpose: write LCT
+!> Write LCT
 !----------------------------------------------------------------------
 subroutine lct_blk_write(lct_blk,mpl,nam,geom,bpar,io,filename)
 
 implicit none
 
 ! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! Averaged statistics block
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-type(io_type),intent(in) :: io               ! I/O
-character(len=*),intent(in) :: filename      ! Filename
+class(lct_blk_type),intent(inout) :: lct_blk !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+type(io_type),intent(in) :: io               !< I/O
+character(len=*),intent(in) :: filename      !< Filename
 
 ! Local variables
 integer :: iv,iscales
@@ -223,19 +223,19 @@ end subroutine lct_blk_write
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_write_cor
-! Purpose: write full correlations
+!> Write full correlations
 !----------------------------------------------------------------------
 subroutine lct_blk_write_cor(lct_blk,mpl,nam,geom,bpar,samp)
 
 implicit none
 
 ! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! Averaged statistics block
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-type(samp_type),intent(in) :: samp           ! Sampling
+class(lct_blk_type),intent(inout) :: lct_blk !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+type(samp_type),intent(in) :: samp           !< Sampling
 
 ! Local variables
 integer :: ncid,grpid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,vunit_id,l0rl0_to_l0_id,raw_id,fit_id,fit_filt_id
@@ -308,21 +308,21 @@ end subroutine lct_blk_write_cor
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_compute
-! Purpose: compute raw correlation and fit to get LCT components
+!> Compute raw correlation and fit to get LCT components
 !----------------------------------------------------------------------
 subroutine lct_blk_compute(lct_blk,mpl,rng,nam,geom,bpar,samp,mom_blk)
 
 implicit none
 
 ! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! LCT block
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(rng_type),intent(inout) :: rng          ! Random number generator
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-type(samp_type),intent(in) :: samp           ! Sampling
-type(mom_blk_type),intent(in) :: mom_blk     ! Moments block
+class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(rng_type),intent(inout) :: rng          !< Random number generator
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+type(samp_type),intent(in) :: samp           !< Sampling
+type(mom_blk_type),intent(in) :: mom_blk     !< Moments block
 
 ! Local variables
 integer :: jsub,il0,jl0r,jl0,jc3,ic1a,ic0a,ic0u,jc0u,iscales,icomp
@@ -616,19 +616,19 @@ end subroutine lct_blk_compute
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_filter
-! Purpose: filter LCT
+!> Filter LCT
 !----------------------------------------------------------------------
 subroutine lct_blk_filter(lct_blk,mpl,nam,geom,bpar,samp)
 
 implicit none
 
 ! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! Averaged statistics block
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-type(samp_type),intent(in) :: samp           ! Sampling
+class(lct_blk_type),intent(inout) :: lct_blk !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+type(samp_type),intent(in) :: samp           !< Sampling
 
 ! Local variables
 integer :: il0,jl0,jl0r,ic1a,ic0a,ic0u,jc3,jc0u,icomp,iscales
@@ -762,19 +762,19 @@ end subroutine lct_blk_filter
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_interp
-! Purpose: interpolate LCT
+!> Interpolate LCT
 !----------------------------------------------------------------------
 subroutine lct_blk_interp(lct_blk,mpl,nam,geom,bpar,samp)
 
 implicit none
 
 ! Passed variables
-class(lct_blk_type),intent(inout) :: lct_blk ! Averaged statistics block
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(nam_type),intent(in) :: nam             ! Namelist
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-type(samp_type),intent(in) :: samp           ! Sampling
+class(lct_blk_type),intent(inout) :: lct_blk !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+type(samp_type),intent(in) :: samp           !< Sampling
 
 ! Local variables
 integer :: il0,il0i,ic1a,ic2a,ic0a,icomp,iscales

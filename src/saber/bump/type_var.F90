@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_var
-! Purpose: variance derived type
+!> Variance derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -24,11 +24,11 @@ implicit none
 
 ! Variance derived type
 type var_type
-   integer :: ne                                ! Ensemble size
-   real(kind_real),allocatable :: m2(:,:,:)     ! Variance
-   real(kind_real),allocatable :: m4(:,:,:)     ! Fourth-order centered moment
-   real(kind_real),allocatable :: m2flt(:,:,:)  ! Filtered variance
-   real(kind_real),allocatable :: m2sqrt(:,:,:) ! Variance square-root
+   integer :: ne                                !< Ensemble size
+   real(kind_real),allocatable :: m2(:,:,:)     !< Variance
+   real(kind_real),allocatable :: m4(:,:,:)     !< Fourth-order centered moment
+   real(kind_real),allocatable :: m2flt(:,:,:)  !< Filtered variance
+   real(kind_real),allocatable :: m2sqrt(:,:,:) !< Variance square-root
 contains
    procedure :: alloc => var_alloc
    procedure :: partial_dealloc => var_partial_dealloc
@@ -48,16 +48,16 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: var_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine var_alloc(var,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var ! Variance
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
+class(var_type),intent(inout) :: var !< Variance
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Allocation
 allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
@@ -69,14 +69,14 @@ end subroutine var_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: var_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine var_partial_dealloc(var)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var ! Variance
+class(var_type),intent(inout) :: var !< Variance
 
 ! Release memory
 if (allocated(var%m2)) deallocate(var%m2)
@@ -87,14 +87,14 @@ end subroutine var_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: var_dealloc
-! Purpose: release memory (full)
+!> Release memory (full)
 !----------------------------------------------------------------------
 subroutine var_dealloc(var)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var ! Variance
+class(var_type),intent(inout) :: var !< Variance
 
 ! Release memory
 call var%partial_dealloc
@@ -104,18 +104,18 @@ end subroutine var_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: var_read
-! Purpose: read
+!> Read
 !----------------------------------------------------------------------
 subroutine var_read(var,mpl,nam,geom,io)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var ! Variance
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
-type(io_type),intent(in) :: io       ! I/O
+class(var_type),intent(inout) :: var !< Variance
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: iv
@@ -144,18 +144,18 @@ end subroutine var_read
 
 !----------------------------------------------------------------------
 ! Subroutine: var_write
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine var_write(var,mpl,nam,geom,io)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var ! Variance
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
-type(io_type),intent(in) :: io       ! I/O
+class(var_type),intent(inout) :: var !< Variance
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: iv
@@ -184,20 +184,20 @@ end subroutine var_write
 
 !----------------------------------------------------------------------
 ! Subroutine: var_run_var
-! Purpose: compute variance
+!> Compute variance
 !----------------------------------------------------------------------
 subroutine var_run_var(var,mpl,rng,nam,geom,ens,io)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var ! Variance
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(rng_type),intent(inout) :: rng  ! Random number generator
-type(nam_type),intent(inout) :: nam  ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
-type(ens_type), intent(inout) :: ens ! Ensemble
-type(io_type),intent(in) :: io       ! I/O
+class(var_type),intent(inout) :: var !< Variance
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(rng_type),intent(inout) :: rng  !< Random number generator
+type(nam_type),intent(inout) :: nam  !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(ens_type), intent(inout) :: ens !< Ensemble
+type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: ic0a,il0
@@ -243,18 +243,18 @@ end subroutine var_run_var
 
 !----------------------------------------------------------------------
 ! Subroutine: var_filter
-! Purpose: filter variance
+!> Filter variance
 !----------------------------------------------------------------------
 subroutine var_filter(var,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var ! Variance
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-type(rng_type),intent(inout) :: rng  ! Random number generator
-type(nam_type),intent(in) :: nam     ! Namelist
-type(geom_type),intent(in) :: geom   ! Geometry
+class(var_type),intent(inout) :: var !< Variance
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(rng_type),intent(inout) :: rng  !< Random number generator
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Local variables
 integer :: n,iv,il0,iter
@@ -373,17 +373,17 @@ end subroutine var_filter
 
 !----------------------------------------------------------------------
 ! Subroutine: var_apply_sqrt
-! Purpose: apply square-root variance
+!> Apply square-root variance
 !----------------------------------------------------------------------
 subroutine var_apply_sqrt(var,nam,geom,fld)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(in) :: var                               ! Variance
-type(nam_type),intent(in) :: nam                                ! Namelist
-type(geom_type),intent(in) :: geom                              ! Geometry
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Source/destination vector
+class(var_type),intent(in) :: var                               !< Variance
+type(nam_type),intent(in) :: nam                                !< Namelist
+type(geom_type),intent(in) :: geom                              !< Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destination vector
 
 ! Local variables
 integer :: ic0a,il0
@@ -399,17 +399,17 @@ end subroutine var_apply_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: var_apply_sqrt_inv
-! Purpose: apply square-root variance inverse
+!> Apply square-root variance inverse
 !----------------------------------------------------------------------
 subroutine var_apply_sqrt_inv(var,nam,geom,fld)
 
 implicit none
 
 ! Passed variables
-class(var_type),intent(in) :: var                               ! Variance
-type(nam_type),intent(in) :: nam                                ! Namelist
-type(geom_type),intent(in) :: geom                              ! Geometry
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Source/destination vector
+class(var_type),intent(in) :: var                               !< Variance
+type(nam_type),intent(in) :: nam                                !< Namelist
+type(geom_type),intent(in) :: geom                              !< Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destination vector
 
 ! Local variables
 integer :: ic0a,il0
