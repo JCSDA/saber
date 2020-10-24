@@ -14,20 +14,19 @@ branch_name_default=$7
 repo_name="$(cut -d'/' -f2 <<<$org_repo_name)"
 org_name="$(cut -d'/' -f1 <<<$org_repo_name)"
 
-
+# when merging into develop or master clone org_repo_name and default_branch
 if [ "${branch_name}" = "develop" ] || [ "${branch_name}" = "master" ]; then
 
-  echo "merging into develop or master"
-  branch_name_clone=${branch_name}
+  branch_name_clone=${branch_name_default}
   org_repo_name_clone=${org_name}
   echo "==============================================================================="
   echo "  Merge into develop or master"
-  echo "  Clone " $org_repo_name_clone "/" $repo_name
+  echo "  Clone " $org_repo_name_clone"/"$repo_name " branch " ${branch_name_clone}
   echo "==============================================================================="
   git clone -b $branch_name_clone https://$git_user:$git_token@github.com/$org_repo_name_clone/$repo_name $save_dir/$save_name
 
 else
-
+  # when updating a PR:
   # check jcsda-internal for branch
   git ls-remote --heads --exit-code https://$git_user:$git_token@github.com/jcsda-internal/$repo_name $branch_name
   exit_code_internal=$?
