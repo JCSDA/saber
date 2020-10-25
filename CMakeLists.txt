@@ -47,7 +47,7 @@ add_subdirectory( src/saber )
 add_subdirectory( tools ) # tools is needed for test
 add_subdirectory( test )
 if( ENABLE_SABER_DOC )
-    add_subdirectory( Documents )
+    add_subdirectory( docs )
 endif()
 
 ## Global tests

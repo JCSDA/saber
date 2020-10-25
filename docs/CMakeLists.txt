@@ -10,7 +10,7 @@ if(DOXYGEN_FOUND)
     # Generate the mainpage.h file
     message(STATUS "Build SABER documentation with saber_doc_overview.sh")
     add_custom_target( saber_doc_overview ALL
-        COMMAND ${CMAKE_BINARY_DIR}/bin/saber_doc_overview.sh ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+        COMMAND ${CMAKE_BINARY_DIR}/bin/saber_doc_overview.sh ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Build SABER documentation with saber_doc_overview.sh"
         VERBATIM )
 
