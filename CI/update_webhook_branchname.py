@@ -28,26 +28,27 @@ repoList = ["atlas", "oops", "ioda", "ufo", "soca", "fv3-jedi", "mpas-jedi"]
 
 token = os.getenv('GIT_PASS', '...')
 g = Github(token)
-owner = "JCSDA"
+ownerList = ["JCSDA", "jcsda-internal"]
 
 saberRepo = g.get_repo("jcsda/saber")
 
-for repoName in repoList:
-  branchExists = True
-  repo = g.get_repo(f"{owner}/{repoName}")
-  branchList = list(repo.get_branches())
-  try:
-    repo.get_branch(branchName)
-  except Exception:
-    pass
-    branchExists = False
+for owner in ownerList:
+  for repoName in repoList:
+    branchExists = True
+    repo = g.get_repo(f"{owner}/{repoName}")
+    branchList = list(repo.get_branches())
+    try:
+      repo.get_branch(branchName)
+    except Exception:
+      pass
+      branchExists = False
 
-  if (branchExists):
-    print(branchName + ' exists in '+repoName)
-    stageDescription= branchName+" exists in "+ repoName
-    commitStatus = saberRepo.get_commit(sha=commitId).create_status(
-      state="pending",
-      description=stageDescription,
-      context="Branch Check-"+repoName)
-  else:
-    print(branchName + ' does not exist in '+repoName)
+    if (branchExists):
+      print(branchName + ' exists in '+owner+'/'+repoName)
+      stageDescription= branchName+" exists in "+owner+'/'+ repoName
+      commitStatus = saberRepo.get_commit(sha=commitId).create_status(
+        state="pending",
+        description=stageDescription,
+        context="Branch Check-"+owner+'/'+repoName)
+    else:
+      print(branchName + ' does not exist in '+owner+'/'+repoName)
