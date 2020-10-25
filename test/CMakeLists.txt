@@ -8,7 +8,7 @@ set( SABER_TEST_TIER 1 )
 
 # Override SABER_TEST_TIER using environment variable
 if( DEFINED ENV{SABER_TEST_TIER} )
-    set( SABER_TEST_TIER "$ENV{SABER_TEST_TIER}" )
+    set( SABER_TEST_TIER $ENV{SABER_TEST_TIER} )
 endif()
 
 # Default test selection variables (TIER-dependent)
@@ -42,32 +42,32 @@ endif()
 
 # Override test selection variables using environment variables
 if( DEFINED ENV{SABER_TEST_MPI} )
-    set( SABER_TEST_MPI "$ENV{SABER_TEST_MPI}" )
+    set( SABER_TEST_MPI $ENV{SABER_TEST_MPI} )
 endif()
 if( DEFINED ENV{SABER_TEST_OMP} )
-    set( SABER_TEST_OMP "$ENV{SABER_TEST_OMP}" )
+    set( SABER_TEST_OMP $ENV{SABER_TEST_OMP} )
 endif()
 if( DEFINED ENV{SABER_TEST_MULTI} )
-    set( SABER_TEST_MULTI "$ENV{SABER_TEST_MULTI}" )
+    set( SABER_TEST_MULTI $ENV{SABER_TEST_MULTI} )
 endif()
 if( DEFINED ENV{SABER_TEST_PLOT} )
-    set( SABER_TEST_PLOT "$ENV{SABER_TEST_PLOT}" )
+    set( SABER_TEST_PLOT $ENV{SABER_TEST_PLOT} )
 endif()
 if( DEFINED ENV{SABER_TEST_VALGRIND} )
-    set( SABER_TEST_VALGRIND "$ENV{SABER_TEST_VALGRIND}" )
+    set( SABER_TEST_VALGRIND $ENV{SABER_TEST_VALGRIND} )
 endif()
 if( DEFINED ENV{SABER_TEST_MODEL} )
-    set( SABER_TEST_MODEL "$ENV{SABER_TEST_MODEL}" )
+    set( SABER_TEST_MODEL $ENV{SABER_TEST_MODEL} )
 endif()
 if( DEFINED ENV{SABER_TEST_MODEL_DIR} )
-    set( SABER_TEST_MODEL_DIR "$ENV{SABER_TEST_MODEL_DIR}" )
+    set( SABER_TEST_MODEL_DIR $ENV{SABER_TEST_MODEL_DIR} )
 endif()
 if ( oops_qg_FOUND )
     if( DEFINED ENV{SABER_TEST_OOPS} )
-        set( SABER_TEST_OOPS "$ENV{SABER_TEST_OOPS}" )
+        set( SABER_TEST_OOPS $ENV{SABER_TEST_OOPS} )
     endif()
     if( DEFINED ENV{SABER_TEST_INTERPOLATION} )
-        set( SABER_TEST_INTERPOLATION "$ENV{SABER_TEST_INTERPOLATION}" )
+        set( SABER_TEST_INTERPOLATION $ENV{SABER_TEST_INTERPOLATION} )
     endif()
 endif()
 
@@ -166,33 +166,34 @@ endif()
 # Set download URL
 set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber )
 
-# Define local path for test files
-if( DEFINED ENV{LOCAL_PATH_TESTFILES_SABER} )
-    set( LOCAL_PATH_TESTFILES_SABER "$ENV{LOCAL_PATH_TESTFILES_SABER}" )
+# Define branch name
+if ( DEFINED ENV{SABER_TESTFILES_BRANCH} )
+    set( GIT_BRANCH_SABER $ENV{SABER_TESTFILES_BRANCH} )
+    message( STATUS "Branch name provided by user: ${GIT_BRANCH_SABER}" )
+else()
+    # Get the current git branch of ufo repo
+    execute_process(
+        COMMAND bash "-c" "git symbolic-ref -q --short HEAD || git describe --tags --exact-match"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_BRANCH_SABER
+        OUTPUT_STRIP_TRAILING_WHITESPACE )
+    message( STATUS "SABER is in branch: ${GIT_BRANCH_SABER}" )
 endif()
 
 # If local path to testfiles is defined don't download
-if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
-    # Get the current git branch
-    execute_process(
-        COMMAND git rev-parse --abbrev-ref HEAD
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_BRANCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    # Set TESTFILE_DIR_SABER
-    set( TESTFILE_DIR_SABER ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH} )
-    message( STATUS "Files downloaded into: " ${TESTFILE_DIR_SABER} )
+if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
+    set( SABER_TESTFILES_PATH $ENV{LOCAL_PATH_JEDI_TESTFILES}/saber/${GIT_BRANCH_SABER} )
+    if( NOT EXISTS ${SABER_TESTFILES_PATH}/testdata )
+        message( FATAL_ERROR "Directory ${SABER_TESTFILES_PATH}/testdata is missing" )
+    endif()
+    if( NOT EXISTS ${SABER_TESTFILES_PATH}/testref )
+        message( FATAL_ERROR "Directory ${SABER_TESTFILES_PATH}/testref is missing" )
+    endif()
+    message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
 else()
-    set( TESTFILE_DIR_SABER ${LOCAL_PATH_TESTFILES_SABER} )
-    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testdata )
-        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testdata is missing" )
-    endif()
-    if( NOT EXISTS ${TESTFILE_DIR_SABER}/testref )
-        message( FATAL_ERROR "Directory ${TESTFILE_DIR_SABER}/testref is missing" )
-    endif()
-    message( STATUS "Files loaded from: " ${TESTFILE_DIR_SABER} )
+    # Set SABER_TESTFILES_PATH
+    set( SABER_TESTFILES_PATH ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH_SABER} )
+    message( STATUS "Files downloaded into: " ${SABER_TESTFILES_PATH} )
 endif()
 
 # Setup SABER directories and links
@@ -210,7 +211,7 @@ foreach( file ${saber_ref} )
     file(APPEND ${CMAKE_BINARY_DIR}/bin/saber_testref ${file}\n)
 endforeach()
 execute_process( COMMAND bash ${CMAKE_BINARY_DIR}/bin/saber_setup.sh
-                         ${TESTFILE_DIR_SABER}
+                         ${SABER_TESTFILES_PATH}
                          ${CMAKE_CURRENT_BINARY_DIR}
                          ${CMAKE_BINARY_DIR} )
 
@@ -239,7 +240,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     ecbuild_get_test_multidata( TARGET   get_saber_data
                                 NAMES    ${saber_data_tar}
                                 DIRNAME  ${DIRNAME}
-                                DIRLOCAL ${TESTFILE_DIR_SABER}/testdata
+                                DIRLOCAL ${SABER_TESTFILES_PATH}/testdata
                                 EXTRACT )
 
     # Check whether the URLs exist or not
@@ -263,7 +264,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     ecbuild_get_test_multidata( TARGET   get_saber_ref
                                 NAMES    ${saber_ref_tar}
                                 DIRNAME  ${DIRNAME}
-                                DIRLOCAL ${TESTFILE_DIR_SABER}/testref
+                                DIRLOCAL ${SABER_TESTFILES_PATH}/testref
                                 EXTRACT )
 endif()
 
