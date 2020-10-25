@@ -8,8 +8,7 @@
 
 # Directories
 rootdir=$1/..
-doc=${rootdir}/Documents
-autodoc=${doc}/autodoc
+doc=${rootdir}/docs
 
 # Languages
 languages="*.cc *.f *.F90 *.h *.inc"
