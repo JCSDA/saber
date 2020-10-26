@@ -57,7 +57,7 @@ type bump_interpolator
    integer :: nc0b                            !< Halo B size
    integer,public :: nlev                     !< Number of levels
    integer,public :: nout                     !< Global number of output grid points
-   integer,public :: nout_local               !< Local number of output grid points
+   integer,public :: nouta                    !< Local number of output grid points
 
    ! Interpolation data (operator)
    type(linop_type) :: h                      !< Interpolation operator
@@ -179,7 +179,7 @@ self%outgeom%nl0 = self%nlev
 
 ! Unpack output grid from output functionspace
 call self%outgeom%from_atlas(self%bump%mpl,out_funcspace)
-self%nout_local = size(self%outgeom%lon_mga)
+self%nouta = size(self%outgeom%lon_mga)
 
 ! Run basic BUMP drivers
 call self%bump%run_drivers
@@ -227,15 +227,15 @@ integer :: nout_eff,nn_index(1),proc_to_nouta(mpl%nproc),proc_to_nouta_eff(mpl%n
 integer :: c0u_to_c0b(geom%nc0u)
 integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
-logical :: maskouta(self%nout_local),lcheck_nc0b(geom%nc0)
+logical :: maskouta(self%nouta),lcheck_nc0b(geom%nc0)
 character(len=1024),parameter :: subr = 'bint_driver'
 
 ! Check that universe is global
 if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for interpolation')
 
 ! Check whether output grid points are inside the mesh
-if (self%nout_local > 0) then
-   do iouta=1,self%nout_local
+if (self%nouta > 0) then
+   do iouta=1,self%nouta
       call geom%mesh_c0u%inside(mpl,self%outgeom%lon_mga(iouta),self%outgeom%lat_mga(iouta),maskouta(iouta))
       if (.not.maskouta(iouta)) then
          ! Check for very close points
@@ -250,7 +250,7 @@ else
 end if
 
 ! Get global number of output grid points
-call mpl%f_comm%allgather(self%nout_local,proc_to_nouta)
+call mpl%f_comm%allgather(self%nouta,proc_to_nouta)
 call mpl%f_comm%allgather(nouta_eff,proc_to_nouta_eff)
 self%nout = sum(proc_to_nouta)
 nout_eff = sum(proc_to_nouta_eff)
@@ -269,7 +269,7 @@ call mpl%flush
 self%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call self%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,self%nout_local,self%outgeom%lon_mga,&
+call self%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,self%nouta,self%outgeom%lon_mga,&
  & self%outgeom%lat_mga,maskouta,10)
 
 ! Define halo B
@@ -278,7 +278,7 @@ do ic0a=1,geom%nc0a
    ic0u = geom%c0a_to_c0u(ic0a)
    lcheck_nc0b(ic0u) = .true.
 end do
-do iouta=1,self%nout_local
+do iouta=1,self%nouta
    do i_s=1,self%h%n_s
       jc0u = self%h%col(i_s)
       lcheck_nc0b(jc0u) = .true.
@@ -357,7 +357,7 @@ character(len=max_string) :: fieldname
 
 ! Allocation
 allocate(infld_mga(self%bump%geom%nmga,self%nlev))
-allocate(outfld(self%nout_local,self%nlev))
+allocate(outfld(self%nouta,self%nlev))
 if (.not.self%bump%geom%same_grid) then
    allocate(infld_c0a(self%bump%geom%nc0a,self%nlev))
 end if
@@ -420,7 +420,7 @@ implicit none
 ! Passed variables
 class(bump_interpolator),intent(inout) :: self                       !< BUMP interpolator
 real(kind_real),intent(in) :: infield(self%bump%geom%nc0a,self%nlev) !< Input field
-real(kind_real),intent(out) :: outfield(self%nout_local,self%nlev)   !< Output field
+real(kind_real),intent(out) :: outfield(self%nouta,self%nlev)        !< Output field
 
 ! Local variables
 integer :: ilev
@@ -432,7 +432,7 @@ allocate(infield_ext(self%nc0b,self%nlev))
 ! Halo extension
 call self%com%ext(self%bump%mpl,self%nlev,infield,infield_ext)
 
-if (self%nout_local > 0) then
+if (self%nouta > 0) then
    ! Horizontal interpolation
    !$omp parallel do schedule(static) private(ilev)
    do ilev=1,self%nlev
@@ -472,7 +472,7 @@ character(len=max_string) :: fieldname
 
 ! Allocation
 allocate(fld_ingrid_mga(self%bump%geom%nmga,self%nlev))
-allocate(fld_outgrid(self%nout_local,self%nlev))
+allocate(fld_outgrid(self%nouta,self%nlev))
 if (.not.self%bump%geom%same_grid) then
    allocate(fld_ingrid_c0a(self%bump%geom%nc0a,self%nlev))
 end if
@@ -533,14 +533,14 @@ implicit none
 
 ! Passed variables
 class(bump_interpolator),intent(inout) :: self                           !< BUMP interpolator
-real(kind_real),intent(in) :: fld_outgrid(self%nout_local,self%nlev)     !< Field on input grid
+real(kind_real),intent(in) :: fld_outgrid(self%nouta,self%nlev)          !< Field on input grid
 real(kind_real),intent(out) :: fld_ingrid(self%bump%geom%nc0a,self%nlev) !< Field on output grid
 
 ! Local variables
 integer :: ilev
 real(kind_real) :: fld_ingrid_ext(self%nc0b,self%nlev)
 
-if (self%nout_local > 0) then
+if (self%nouta > 0) then
    ! Horizontal interpolation
    !$omp parallel do schedule(static) private(ilev)
    do ilev=1,self%nlev
