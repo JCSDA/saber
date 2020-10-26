@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: tools_kinds
-! Purpose: kinds definition
+!> Kinds definition
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -13,16 +13,16 @@ use netcdf, only: nf90_double
 implicit none
 
 ! Kinds
-integer,parameter :: kind_int = c_int                        ! Integer kind
-integer,parameter :: kind_short = c_short                    ! Short integer kind
-integer,parameter :: kind_real = c_double                    ! Real kind
+integer,parameter :: kind_int = c_int                        !< Integer kind
+integer,parameter :: kind_short = c_short                    !< Short integer kind
+integer,parameter :: kind_real = c_double                    !< Real kind
 
 ! NetCDF kinds
-integer,parameter :: nc_kind_real = nf90_double              ! NetCDF real kind
+integer,parameter :: nc_kind_real = nf90_double              !< NetCDF real kind
 
 ! Huge
-integer,parameter :: huge_int = huge(0_kind_int)             ! Integer huge
-real(kind_real),parameter :: huge_real = huge(0.0_kind_real) ! Real huge
+integer,parameter :: huge_int = huge(0_kind_int)             !< Integer huge
+real(kind_real),parameter :: huge_real = huge(0.0_kind_real) !< Real huge
 
 private
 public kind_int,kind_short,kind_real,nc_kind_real,huge_int,huge_real

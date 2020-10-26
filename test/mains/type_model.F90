@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_model
-! Purpose: model routines
+!> Model routines
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -23,60 +23,61 @@ use type_rng, only: rng_type
 
 implicit none
 
-logical :: qg_red = .true.                     ! QG model with redundant points
-logical :: qg_lam = .false.                    ! QG model as a Limited Area Model
-character(len=1024) :: zone = 'C+I'            ! Computation zone for AROME ('C', 'C+I' or 'C+I+E')
+logical :: qg_red = .true.                 !< QG model with redundant points
+logical :: qg_lam = .false.                !< QG model as a Limited Area Model
+real(kind_real),parameter :: qmin = 1.0e-6 !< Minimum specific humidity value in the log variable change
+character(len=1024) :: zone = 'C+I'        !< Computation zone for AROME ('C', 'C+I' or 'C+I+E')
 
 ! Model derived type
 type model_type
    ! Global dimensions
-   integer :: nlon                             ! Longitude size
-   integer :: nlat                             ! Latitude size
-   integer :: ntile                            ! Number of tiles
-   integer :: nmg                              ! Number of model grid points
-   integer :: nlev                             ! Number of levels
-   integer :: nl0                              ! Number of levels in subset Sl0
+   integer :: nlon                             !< Longitude size
+   integer :: nlat                             !< Latitude size
+   integer :: ntile                            !< Number of tiles
+   integer :: nmg                              !< Number of model grid points
+   integer :: nlev                             !< Number of levels
+   integer :: nl0                              !< Number of levels in subset Sl0
 
    ! Packing arrays
-   integer,allocatable :: mg_to_lon(:)         ! Model grid to longitude index
-   integer,allocatable :: mg_to_lat(:)         ! Model grid to latgitude index
-   integer,allocatable :: mg_to_tile(:)        ! Model grid to tile index
+   integer,allocatable :: mg_to_lon(:)         !< Model grid to longitude index
+   integer,allocatable :: mg_to_lat(:)         !< Model grid to latgitude index
+   integer,allocatable :: mg_to_tile(:)        !< Model grid to tile index
 
    ! Coordinates
-   real(kind_real),allocatable :: lon(:)       ! Longitude
-   real(kind_real),allocatable :: lat(:)       ! Latitude
-   real(kind_real),allocatable :: area(:)      ! Area
-   real(kind_real),allocatable :: vunit(:,:)   ! Vertical unit
-   logical,allocatable :: mask(:,:)            ! Mask
+   real(kind_real),allocatable :: lon(:)       !< Longitude
+   real(kind_real),allocatable :: lat(:)       !< Latitude
+   real(kind_real),allocatable :: area(:)      !< Area
+   real(kind_real),allocatable :: vunit(:,:)   !< Vertical unit
+   logical,allocatable :: mask(:,:)            !< Mask
 
    ! Local distribution
-   integer :: nmga                             ! Halo A size for model grid
-   integer,allocatable :: mg_to_proc(:)        ! Model grid to local task
-   integer,allocatable :: mg_to_mga(:)         ! Model grid, global to halo A
-   integer,allocatable :: mga_to_mg(:)         ! Model grid, halo A to global
+   integer :: nmga                             !< Halo A size for model grid
+   integer,allocatable :: mg_to_proc(:)        !< Model grid to local task
+   integer,allocatable :: mg_to_mga(:)         !< Model grid, global to halo A
+   integer,allocatable :: mga_to_mg(:)         !< Model grid, halo A to global
 
    ! ATLAS node columns
-   type(atlas_functionspace) :: afunctionspace ! ATLAS function space
+   type(atlas_functionspace) :: afunctionspace !< ATLAS function space
 
    ! Fieldset
-   type(fieldset_type) :: fieldset             ! Fieldset
+   type(fieldset_type) :: fieldset             !< Fieldset
 
    ! Tiles distribution
-   logical,allocatable :: tilepool(:,:)        ! Pool of task for each task
-   integer :: mytile                           ! Tile handled by a given task
-   integer,allocatable :: ioproc(:)            ! I/O task for each tile
-   integer :: nmgt                             ! Number of model grid point on each tile
-   integer,allocatable :: mga_to_mgt(:)        ! Model grid, halo A, to model grid on a tile
-   integer,allocatable :: mgt_to_mg(:)         ! Model grid on a tile to model grid, global
+   logical,allocatable :: tilepool(:,:)        !< Pool of task for each task
+   integer :: mytile                           !< Tile handled by a given task
+   integer,allocatable :: ioproc(:)            !< I/O task for each tile
+   integer :: nmgt                             !< Number of model grid point on each tile
+   integer,allocatable :: mga_to_mgt(:)        !< Model grid, halo A, to model grid on a tile
+   integer,allocatable :: mgt_to_mg(:)         !< Model grid on a tile to model grid, global
 
    ! Ensembles
-   type(fieldset_type),allocatable :: ens1(:)  ! Ensemble 1 members
-   type(fieldset_type),allocatable :: ens2(:)  ! Ensemble 2 members
+   type(fieldset_type),allocatable :: ens1(:)  !< Ensemble 1 members
+   type(fieldset_type),allocatable :: ens2(:)  !< Ensemble 2 members
 
    ! Observations locations
-   integer :: nobsa                            ! Number of observations, halo A
-   real(kind_real),allocatable :: lonobs(:)    ! Observations longitudes, halo A
-   real(kind_real),allocatable :: latobs(:)    ! Observations latitudes, halo A
+   integer :: nobsa                            !< Number of observations, halo A
+   real(kind_real),allocatable :: lonobs(:)    !< Observations longitudes, halo A
+   real(kind_real),allocatable :: latobs(:)    !< Observations latitudes, halo A
 contains
    ! Model specific procedures
    procedure :: aro_coord => model_aro_coord
@@ -97,6 +98,8 @@ contains
    procedure :: mpas_read => model_mpas_read
    procedure :: nemo_coord => model_nemo_coord
    procedure :: nemo_read => model_nemo_read
+   procedure :: norcpm_coord => model_norcpm_coord
+   procedure :: norcpm_read => model_norcpm_read
    procedure :: qg_coord => model_qg_coord
    procedure :: qg_read => model_qg_read
    procedure :: res_coord => model_res_coord
@@ -129,20 +132,21 @@ include 'model/model_gfs.inc'
 include 'model/model_ifs.inc'
 include 'model/model_mpas.inc'
 include 'model/model_nemo.inc'
+include 'model/model_norcpm.inc'
 include 'model/model_qg.inc'
 include 'model/model_res.inc'
 include 'model/model_wrf.inc'
 
 !----------------------------------------------------------------------
 ! Subroutine: model_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine model_alloc(model)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
+class(model_type),intent(inout) :: model !< Model
 
 ! Allocation
 allocate(model%mg_to_lon(model%nmg))
@@ -158,14 +162,14 @@ end subroutine model_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: model_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine model_dealloc(model)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
+class(model_type),intent(inout) :: model !< Model
 
 ! Local variables
 integer :: ie
@@ -203,16 +207,16 @@ end subroutine model_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: model_setup
-! Purpose: setup model
+!> Setup model
 !----------------------------------------------------------------------
 subroutine model_setup(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(inout) :: nam      ! Namelist variables
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(inout) :: nam      !< Namelist variables
 
 ! Local variables
 integer :: img,info,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,itile,ilon,ilat,ilonsub,ilatsub,imgt
@@ -245,6 +249,7 @@ if (trim(nam%model)=='gfs') call model%gfs_coord(mpl,nam)
 if (trim(nam%model)=='ifs') call model%ifs_coord(mpl,nam)
 if (trim(nam%model)=='mpas') call model%mpas_coord(mpl,nam)
 if (trim(nam%model)=='nemo') call model%nemo_coord(mpl,nam)
+if (trim(nam%model)=='norcpm') call model%norcpm_coord(mpl,nam)
 if (trim(nam%model)=='qg') call model%qg_coord(mpl,nam)
 if (trim(nam%model)=='res') call model%res_coord(mpl,nam)
 if (trim(nam%model)=='wrf') call model%wrf_coord(mpl,nam)
@@ -309,7 +314,7 @@ elseif (mpl%nproc>1) then
       if (mpl%msv%isnot(model%ntile)) then
          ! Special case for model with tiles
          if (mod(mpl%nproc,model%ntile)/=0) call mpl%abort(subr, &
-      & 'the number of MPI tasks should be a multiple of the number of tiles')
+ & 'the number of MPI tasks should be a multiple of the number of tiles')
          nprocpertile = mpl%nproc/model%ntile
       else
          ! General case
@@ -390,7 +395,7 @@ elseif (mpl%nproc>1) then
       else
          ! Unstructured grid
          if ((model%ntile>1).and.inf(sum(model%area),4.0*pi)) call mpl%abort(subr, &
-       & 'unstructured grid requires a single tile and a global domain')
+ & 'unstructured grid requires a single tile and a global domain')
 
          ! Allocation
          allocate(lon_inf(nprocpertile))
@@ -420,7 +425,7 @@ elseif (mpl%nproc>1) then
             do while (.not.found)
                if (iproc<=nprocpertile) then
                   if (((model%lon(img)>=lon_inf(iproc)).and.(model%lon(img)<=lon_sup(iproc)) &
-                & .and.(model%lat(img)>=lat_inf(iproc)).and.(model%lat(img)<=lat_sup(iproc)))) then
+ & .and.(model%lat(img)>=lat_inf(iproc)).and.(model%lat(img)<=lat_sup(iproc)))) then
                      model%mg_to_proc(img) = iproc
                      found = .true.
                   end if
@@ -581,7 +586,7 @@ case ('ldwv')
          end if
       end if
       write(mpl%info,'(a7,a,e15.8,a,e15.8)') '','Profile '//trim(nam%name_ldwv(ildw))//' required at lon/lat: ', &
-    & nam%lon_ldwv(ildw),' / ',nam%lat_ldwv(ildw)
+ & nam%lon_ldwv(ildw),' / ',nam%lat_ldwv(ildw)
       call mpl%flush
       if (.not.any(model%mask(nam%img_ldwv(ildw),:))) call mpl%warning(subr,'profile '//trim(nam%name_ldwv(ildw))//' is not valid')
    end do
@@ -709,18 +714,18 @@ end subroutine model_setup
 
 !----------------------------------------------------------------------
 ! Subroutine: model_read
-! Purpose: read member field
+!> Read member field
 !----------------------------------------------------------------------
 subroutine model_read(model,mpl,nam,filename,fieldset)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model      ! Model
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(nam_type),intent(in) :: nam              ! Namelist
-character(len=*),intent(in) :: filename       ! File name
-type(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(model_type),intent(inout) :: model      !< Model
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(nam_type),intent(in) :: nam              !< Namelist
+character(len=*),intent(in) :: filename       !< File name
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
 integer :: iv
@@ -738,6 +743,7 @@ if (trim(nam%model)=='gfs') call model%gfs_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='ifs') call model%ifs_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='mpas') call model%mpas_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='nemo') call model%nemo_read(mpl,nam,filename,fld_mga)
+if (trim(nam%model)=='norcpm') call model%norcpm_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='qg') call model%qg_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='res') call model%res_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='wrf') call model%wrf_read(mpl,nam,filename,fld_mga)
@@ -759,19 +765,19 @@ end subroutine model_read
 
 !----------------------------------------------------------------------
 ! Subroutine: model_read_member
-! Purpose: read member field
+!> Read member field
 !----------------------------------------------------------------------
 subroutine model_read_member(model,mpl,nam,filename,ie,fieldset)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model     ! Model
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-type(nam_type),intent(in) :: nam             ! Namelist
-character(len=*),intent(in) :: filename      ! File name
-integer,intent(in) :: ie                     ! Ensemble member index
-type(fieldset_type),intent(out) :: fieldset  ! Fieldset
+class(model_type),intent(inout) :: model     !< Model
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+character(len=*),intent(in) :: filename      !< File name
+integer,intent(in) :: ie                     !< Ensemble member index
+type(fieldset_type),intent(out) :: fieldset  !< Fieldset
 
 ! Local variables
 character(len=1024) :: fullname
@@ -789,17 +795,17 @@ end subroutine model_read_member
 
 !----------------------------------------------------------------------
 ! Subroutine: model_load_ens
-! Purpose: load ensemble data
+!> Load ensemble data
 !----------------------------------------------------------------------
 subroutine model_load_ens(model,mpl,nam,filename)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
-character(len=*),intent(in) :: filename  ! Filename ('ens1' or 'ens2')
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
+character(len=*),intent(in) :: filename  !< Filename ('ens1' or 'ens2')
 
 ! Local variables
 integer :: ne,ie,nsub,isub,ie_sub
@@ -855,16 +861,16 @@ end subroutine model_load_ens
 
 !----------------------------------------------------------------------
 ! Subroutine: model_generate_obs
-! Purpose: generate observations locations
+!> Generate observations locations
 !----------------------------------------------------------------------
 subroutine model_generate_obs(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: nres,delta,iproc,iobs,proc_to_nobsa(mpl%nproc),nn_index(10),img,inb

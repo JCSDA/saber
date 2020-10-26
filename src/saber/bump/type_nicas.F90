@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_nicas
-! Purpose: NICAS data derived type
+!> NICAS data derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -31,16 +31,16 @@ use type_rng, only: rng_type
 
 implicit none
 
-integer,parameter :: nfac_rnd = 9 ! Number of ensemble size factors for randomization
-integer,parameter :: nfac_opt = 4 ! Number of length-scale factors for optimization
-integer,parameter :: ntest = 50   ! Number of tests
+integer,parameter :: nfac_rnd = 9 !< Number of ensemble size factors for randomization
+integer,parameter :: nfac_opt = 4 !< Number of length-scale factors for optimization
+integer,parameter :: ntest = 50   !< Number of tests
 
 
 ! NICAS derived type
 type nicas_type
-   character(len=1024) :: prefix              ! Prefix
-   type(nicas_blk_type),allocatable :: blk(:) ! NICAS data blocks
-   logical :: allocated                       ! Allocation flag
+   character(len=1024) :: prefix              !< Prefix
+   type(nicas_blk_type),allocatable :: blk(:) !< NICAS data blocks
+   logical :: allocated                       !< Allocation flag
 contains
    procedure :: alloc => nicas_alloc
    procedure :: partial_dealloc => nicas_partial_dealloc
@@ -73,14 +73,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine nicas_alloc(nicas,nam,bpar)
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas ! NICAS data
-type(nam_type),intent(in) :: nam         ! Namelist
-type(bpar_type),intent(in) :: bpar       ! Block parameters
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(nam_type),intent(in) :: nam         !< Namelist
+type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variable
 integer :: ib
@@ -122,12 +122,12 @@ end subroutine nicas_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine nicas_partial_dealloc(nicas)
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas ! NICAS data
+class(nicas_type),intent(inout) :: nicas !< NICAS data
 
 ! Local variable
 integer :: ib
@@ -143,12 +143,12 @@ end subroutine nicas_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_dealloc
-! Purpose: release memory (full)
+!> Release memory (full)
 !----------------------------------------------------------------------
 subroutine nicas_dealloc(nicas)
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas ! NICAS data
+class(nicas_type),intent(inout) :: nicas !< NICAS data
 
 ! Local variable
 integer :: ib
@@ -168,18 +168,18 @@ end subroutine nicas_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_read
-! Purpose: read
+!> Read
 !----------------------------------------------------------------------
 subroutine nicas_read(nicas,mpl,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
-type(geom_type),intent(in) :: geom       ! Geometry
-type(bpar_type),intent(in) :: bpar       ! Block parameters
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
+type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
 integer :: ib,iproc,iprocio,ncid,grpid
@@ -268,18 +268,18 @@ end subroutine nicas_read
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_write
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine nicas_write(nicas,mpl,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
+class(nicas_type),intent(in) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(nam_type),intent(in) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
 
 ! Local variables
 integer :: ib,iproc,iprocio,ncid,grpid,ncid_grids,grpid_grids
@@ -388,19 +388,19 @@ end subroutine nicas_write
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_send
-! Purpose: send
+!> Send
 !----------------------------------------------------------------------
 subroutine nicas_send(nicas,mpl,nam,geom,bpar,iproc)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-integer,intent(in) :: iproc           ! Destination task
+class(nicas_type),intent(in) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(nam_type),intent(in) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+integer,intent(in) :: iproc           !< Destination task
 
 ! Local variables
 integer :: ib,nbufi,nbufr,nbufl,nnbufi,nnbufr,nnbufl,ibufi,ibufr,ibufl,bufs(3)
@@ -456,19 +456,19 @@ end subroutine nicas_send
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_receive
-! Purpose: receive
+!> Receive
 !----------------------------------------------------------------------
 subroutine nicas_receive(nicas,mpl,nam,geom,bpar,iproc)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
-type(geom_type),intent(in) :: geom       ! Geometry
-type(bpar_type),intent(in) :: bpar       ! Block parameters
-integer,intent(in) :: iproc              ! Source task
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
+type(bpar_type),intent(in) :: bpar       !< Block parameters
+integer,intent(in) :: iproc              !< Source task
 
 ! Local variables
 integer :: ib,nbufi,nbufr,nbufl,nnbufi,nnbufr,nnbufl,ibufi,ibufr,ibufl,bufs(3)
@@ -516,20 +516,20 @@ end subroutine nicas_receive
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_run_nicas
-! Purpose: NICAS driver
+!> NICAS driver
 !----------------------------------------------------------------------
 subroutine nicas_run_nicas(nicas,mpl,rng,nam,geom,bpar,cmat)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas  ! NICAS data
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-type(rng_type),intent(inout) :: rng       ! Random number generator
-type(nam_type),intent(inout) :: nam       ! Namelist
-type(geom_type),intent(inout) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar        ! Block parameters
-type(cmat_type),intent(in) :: cmat        ! C matrix data
+class(nicas_type),intent(inout) :: nicas  !< NICAS data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+type(rng_type),intent(inout) :: rng       !< Random number generator
+type(nam_type),intent(inout) :: nam       !< Namelist
+type(geom_type),intent(inout) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar        !< Block parameters
+type(cmat_type),intent(in) :: cmat        !< C matrix data
 
 ! Local variables
 integer :: ib
@@ -578,21 +578,21 @@ end subroutine nicas_run_nicas
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_run_nicas_tests
-! Purpose: NICAS tests driver
+!> NICAS tests driver
 !----------------------------------------------------------------------
 subroutine nicas_run_nicas_tests(nicas,mpl,rng,nam,geom,bpar,io,ens)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas  ! NICAS data
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-type(rng_type),intent(inout) :: rng       ! Random number generator
-type(nam_type),intent(inout) :: nam       ! Namelist
-type(geom_type),intent(inout) :: geom     ! Geometry
-type(bpar_type),intent(in) :: bpar        ! Block parameters
-type(io_type),intent(in) :: io            ! I/O
-type(ens_type),intent(in) :: ens          ! Ensemble
+class(nicas_type),intent(inout) :: nicas  !< NICAS data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+type(rng_type),intent(inout) :: rng       !< Random number generator
+type(nam_type),intent(inout) :: nam       !< Namelist
+type(geom_type),intent(inout) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar        !< Block parameters
+type(io_type),intent(in) :: io            !< I/O
+type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
 integer :: ib
@@ -678,18 +678,18 @@ end subroutine nicas_run_nicas_tests
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_alloc_cv
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine nicas_alloc_cv(nicas,mpl,bpar,cv,getsizeonly)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas      ! NICAS data
-type(mpl_type),intent(inout) :: mpl        ! MPI data
-type(bpar_type),intent(in) :: bpar         ! Block parameters
-type(cv_type),intent(inout) :: cv          ! Control vector
-logical,intent(in),optional :: getsizeonly ! Flag to get the control variable size only (no allocation)
+class(nicas_type),intent(in) :: nicas      !< NICAS data
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+type(bpar_type),intent(in) :: bpar         !< Block parameters
+type(cv_type),intent(inout) :: cv          !< Control vector
+logical,intent(in),optional :: getsizeonly !< Flag to get the control variable size only (no allocation)
 
 ! Local variables
 integer :: ib
@@ -731,18 +731,18 @@ end subroutine nicas_alloc_cv
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_random_cv
-! Purpose: generate a random control vector
+!> Generate a random control vector
 !----------------------------------------------------------------------
 subroutine nicas_random_cv(nicas,mpl,rng,bpar,cv)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(rng_type),intent(inout) :: rng   ! Random number generator
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-type(cv_type),intent(out) :: cv       ! Control vector
+class(nicas_type),intent(in) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(rng_type),intent(inout) :: rng   !< Random number generator
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+type(cv_type),intent(out) :: cv       !< Control vector
 
 ! Local variables
 integer :: ib,jb,isa,is
@@ -796,19 +796,19 @@ end subroutine nicas_random_cv
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_apply
-! Purpose: apply NICAS
+!> Apply NICAS
 !----------------------------------------------------------------------
 subroutine nicas_apply(nicas,mpl,nam,geom,bpar,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                           ! NICAS data
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-type(geom_type),intent(in) :: geom                              ! Geometry
-type(bpar_type),intent(in) :: bpar                              ! Block parameters
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
+class(nicas_type),intent(in) :: nicas                           !< NICAS data
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+type(geom_type),intent(in) :: geom                              !< Geometry
+type(bpar_type),intent(in) :: bpar                              !< Block parameters
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 
 ! Local variable
 integer :: ib,iv,jv,il0,ic0a
@@ -999,19 +999,19 @@ end subroutine nicas_apply
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_apply_from_sqrt
-! Purpose: apply NICAS from square-root
+!> Apply NICAS from square-root
 !----------------------------------------------------------------------
 subroutine nicas_apply_from_sqrt(nicas,mpl,nam,geom,bpar,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                           ! NICAS data
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-type(geom_type),intent(in) :: geom                              ! Geometry
-type(bpar_type),intent(in) :: bpar                              ! Block parameters
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
+class(nicas_type),intent(in) :: nicas                           !< NICAS data
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+type(geom_type),intent(in) :: geom                              !< Geometry
+type(bpar_type),intent(in) :: bpar                              !< Block parameters
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 
 ! Local variable
 real(kind_real) :: prod,prod_tot
@@ -1045,20 +1045,20 @@ end subroutine nicas_apply_from_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_apply_sqrt
-! Purpose: apply NICAS square-root
+!> Apply NICAS square-root
 !----------------------------------------------------------------------
 subroutine nicas_apply_sqrt(nicas,mpl,nam,geom,bpar,cv,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                         ! NICAS data
-type(mpl_type),intent(inout) :: mpl                           ! MPI data
-type(nam_type),intent(in) :: nam                              ! Namelist
-type(geom_type),intent(in) :: geom                            ! Geometry
-type(bpar_type),intent(in) :: bpar                            ! Block parameters
-type(cv_type),intent(in) :: cv                                ! Control variable
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
+class(nicas_type),intent(in) :: nicas                         !< NICAS data
+type(mpl_type),intent(inout) :: mpl                           !< MPI data
+type(nam_type),intent(in) :: nam                              !< Namelist
+type(geom_type),intent(in) :: geom                            !< Geometry
+type(bpar_type),intent(in) :: bpar                            !< Block parameters
+type(cv_type),intent(in) :: cv                                !< Control variable
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 
 ! Local variable
 integer :: ib,iv,jv,ic0a,il0,ierr
@@ -1206,20 +1206,20 @@ end subroutine nicas_apply_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_apply_sqrt_ad
-! Purpose: apply NICAS square-root, adjoint
+!> Apply NICAS square-root, adjoint
 !----------------------------------------------------------------------
 subroutine nicas_apply_sqrt_ad(nicas,mpl,nam,geom,bpar,fld,cv)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                        ! NICAS data
-type(mpl_type),intent(inout) :: mpl                          ! MPI data
-type(nam_type),intent(in) :: nam                             ! Namelist
-type(geom_type),intent(in) :: geom                           ! Geometry
-type(bpar_type),intent(in) :: bpar                           ! Block parameters
-real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
-type(cv_type),intent(out) :: cv                              ! Control variable
+class(nicas_type),intent(in) :: nicas                        !< NICAS data
+type(mpl_type),intent(inout) :: mpl                          !< MPI data
+type(nam_type),intent(in) :: nam                             !< Namelist
+type(geom_type),intent(in) :: geom                           !< Geometry
+type(bpar_type),intent(in) :: bpar                           !< Block parameters
+real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
+type(cv_type),intent(out) :: cv                              !< Control variable
 
 ! Local variable
 integer :: ib,iv,jv,ic0a,il0,ierr
@@ -1398,21 +1398,21 @@ end subroutine nicas_apply_sqrt_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_randomize
-! Purpose: randomize NICAS from square-root
+!> Randomize NICAS from square-root
 !----------------------------------------------------------------------
 subroutine nicas_randomize(nicas,mpl,rng,nam,geom,bpar,ne,ens)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(rng_type),intent(inout) :: rng   ! Random number generator
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Blocal parameters
-integer,intent(in) :: ne              ! Number of members
-type(ens_type),intent(inout) :: ens   ! Ensemble
+class(nicas_type),intent(in) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(rng_type),intent(inout) :: rng   !< Random number generator
+type(nam_type),intent(in) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Blocal parameters
+integer,intent(in) :: ne              !< Number of members
+type(ens_type),intent(inout) :: ens   !< Ensemble
 
 ! Local variable
 integer :: ie
@@ -1443,20 +1443,20 @@ end subroutine nicas_randomize
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_apply_bens
-! Purpose: apply localized ensemble covariance
+!> Apply localized ensemble covariance
 !----------------------------------------------------------------------
 subroutine nicas_apply_bens(nicas,mpl,nam,geom,bpar,ens,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                           ! NICAS data
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-type(geom_type),intent(in) :: geom                              ! Geometry
-type(bpar_type),intent(in) :: bpar                              ! Blocal parameters
-type(ens_type),intent(in) :: ens                                ! Ensemble
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) ! Field
+class(nicas_type),intent(in) :: nicas                           !< NICAS data
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+type(geom_type),intent(in) :: geom                              !< Geometry
+type(bpar_type),intent(in) :: bpar                              !< Blocal parameters
+type(ens_type),intent(in) :: ens                                !< Ensemble
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 
 ! Local variable
 integer :: ie
@@ -1493,20 +1493,20 @@ end subroutine nicas_apply_bens
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_test_adjoint
-! Purpose: test NICAS adjoint
+!> Test NICAS adjoint
 !----------------------------------------------------------------------
 subroutine nicas_test_adjoint(nicas,mpl,rng,nam,geom,bpar,ens)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas     ! NICAS data
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-type(rng_type),intent(inout) :: rng       ! Random number generator
-type(nam_type),intent(in) :: nam          ! Namelist
-type(geom_type),intent(in) :: geom        ! Geometry
-type(bpar_type),intent(in) :: bpar        ! Block parameters
-type(ens_type),intent(in) :: ens          ! Ensemble
+class(nicas_type),intent(in) :: nicas     !< NICAS data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+type(rng_type),intent(inout) :: rng       !< Random number generator
+type(nam_type),intent(in) :: nam          !< Namelist
+type(geom_type),intent(in) :: geom        !< Geometry
+type(bpar_type),intent(in) :: bpar        !< Block parameters
+type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
 real(kind_real) :: sum1,sum2
@@ -1565,20 +1565,20 @@ end subroutine nicas_test_adjoint
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_test_dirac
-! Purpose: apply NICAS to diracs
+!> Apply NICAS to diracs
 !----------------------------------------------------------------------
 subroutine nicas_test_dirac(nicas,mpl,nam,geom,bpar,io,ens)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas     ! NICAS data
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-type(nam_type),intent(in) :: nam          ! Namelist
-type(geom_type),intent(in) :: geom        ! Geometry
-type(bpar_type),intent(in) :: bpar        ! Block parameters
-type(io_type),intent(in) :: io            ! I/O
-type(ens_type),intent(in) :: ens          ! Ensemble
+class(nicas_type),intent(in) :: nicas     !< NICAS data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+type(nam_type),intent(in) :: nam          !< Namelist
+type(geom_type),intent(in) :: geom        !< Geometry
+type(bpar_type),intent(in) :: bpar        !< Block parameters
+type(io_type),intent(in) :: io            !< I/O
+type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
 integer :: idir,iv
@@ -1624,19 +1624,19 @@ end subroutine nicas_test_dirac
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_test_randomization
-! Purpose: test NICAS randomization method with respect to theoretical error statistics
+!> Test NICAS randomization method with respect to theoretical error statistics
 !----------------------------------------------------------------------
 subroutine nicas_test_randomization(nicas,mpl,rng,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(rng_type),intent(inout) :: rng   ! Random number generator
-type(nam_type),intent(inout) :: nam   ! Namelist variables
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
+class(nicas_type),intent(in) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(rng_type),intent(inout) :: rng   !< Random number generator
+type(nam_type),intent(inout) :: nam   !< Namelist variables
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
 
 ! Local variables
 integer :: ifac,itest,nefac(nfac_rnd),ens1_ne
@@ -1755,20 +1755,20 @@ end subroutine nicas_test_randomization
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_test_consistency
-! Purpose: test HDIAG-NICAS consistency with a randomization method
+!> Test HDIAG-NICAS consistency with a randomization method
 !----------------------------------------------------------------------
 subroutine nicas_test_consistency(nicas,mpl,rng,nam,geom,bpar,io)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(rng_type),intent(inout) :: rng      ! Random number generator
-type(nam_type),intent(inout) :: nam      ! Namelist variables
-type(geom_type),intent(inout) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar       ! Block parameters
-type(io_type),intent(in) :: io           ! I/O
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(rng_type),intent(inout) :: rng      !< Random number generator
+type(nam_type),intent(inout) :: nam      !< Namelist variables
+type(geom_type),intent(inout) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar       !< Block parameters
+type(io_type),intent(in) :: io           !< I/O
 
 ! Local variables
 integer,parameter :: nrad = 5
@@ -1882,20 +1882,20 @@ end subroutine nicas_test_consistency
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_test_optimality
-! Purpose: test HDIAG localization optimality with a randomization method
+!> Test HDIAG localization optimality with a randomization method
 !----------------------------------------------------------------------
 subroutine nicas_test_optimality(nicas,mpl,rng,nam,geom,bpar,io)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas ! NICAS data
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(rng_type),intent(inout) :: rng   ! Random number generator
-type(nam_type),intent(inout) :: nam   ! Namelist variables
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-type(io_type),intent(in) :: io        ! I/O
+class(nicas_type),intent(in) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(rng_type),intent(inout) :: rng   !< Random number generator
+type(nam_type),intent(inout) :: nam   !< Namelist variables
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+type(io_type),intent(in) :: io        !< I/O
 
 ! Local variables
 integer :: ib,ifac,itest,il0
@@ -2063,17 +2063,17 @@ end subroutine nicas_test_optimality
 
 !----------------------------------------------------------------------
 ! Subroutine: define_test_vectors
-! Purpose: define test vectors
+!> Define test vectors
 !----------------------------------------------------------------------
 subroutine define_test_vectors(mpl,rng,nam,geom,ntest,fld)
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl                                 ! MPI data
-type(rng_type),intent(inout) :: rng                                 ! Random number generator
-type(nam_type),intent(in) :: nam                                    ! Namelist
-type(geom_type),intent(in) :: geom                                  ! Geometry
-integer,intent(in) :: ntest                                         ! Number of vectors
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,ntest) ! Field
+type(mpl_type),intent(inout) :: mpl                                 !< MPI data
+type(rng_type),intent(inout) :: rng                                 !< Random number generator
+type(nam_type),intent(in) :: nam                                    !< Namelist
+type(geom_type),intent(in) :: geom                                  !< Geometry
+integer,intent(in) :: ntest                                         !< Number of vectors
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,ntest) !< Field
 
 ! Local variables
 integer :: itest

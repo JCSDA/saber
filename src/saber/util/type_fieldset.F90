@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: tools_atlas
-! Purpose: random numbers generator derived type
+!> Random numbers generator derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -49,21 +49,21 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_init
-! Purpose: initialized fieldset
+!> Initialized fieldset
 !----------------------------------------------------------------------
 subroutine fieldset_init(fieldset,mpl,nmga,nl,gmask,variables,lev2d,afunctionspace)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset                  ! Fieldset
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-integer,intent(in) :: nmga                                      ! Number of gridpoints
-integer,intent(in) :: nl                                        ! Number of levels
-logical,intent(in) :: gmask(nmga,nl)                            ! Geographical mask
-character(len=*),intent(in) :: variables(:)                     ! Variables names
-character(len=*),intent(in) :: lev2d                            ! Level for 2D variables
-type(atlas_functionspace),intent(in),optional :: afunctionspace ! ATLAS function space
+class(fieldset_type),intent(inout) :: fieldset                  !< Fieldset
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+integer,intent(in) :: nmga                                      !< Number of gridpoints
+integer,intent(in) :: nl                                        !< Number of levels
+logical,intent(in) :: gmask(nmga,nl)                            !< Geographical mask
+character(len=*),intent(in) :: variables(:)                     !< Variables names
+character(len=*),intent(in) :: lev2d                            !< Level for 2D variables
+type(atlas_functionspace),intent(in),optional :: afunctionspace !< ATLAS function space
 
 ! Local variables
 integer :: iv
@@ -113,15 +113,15 @@ end subroutine fieldset_init
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_copy_fields
-! Purpose: copy fieldset
+!> Copy fieldset
 !----------------------------------------------------------------------
 subroutine fieldset_copy_fields(fieldset_out,fieldset_in)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out ! Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      ! Input fieldset
+class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
 integer :: iv,rank_in
@@ -160,15 +160,15 @@ end subroutine fieldset_copy_fields
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_pass_fields
-! Purpose: pass ATLAS fields from a fieldset to another
+!> Pass ATLAS fields from a fieldset to another
 !----------------------------------------------------------------------
 subroutine fieldset_pass_fields(fieldset_out,fieldset_in)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out ! Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      ! Input fieldset
+class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
 integer :: iv
@@ -186,14 +186,14 @@ end subroutine fieldset_pass_fields
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_zero_fields
-! Purpose: set fieldset to zero
+!> Set fieldset to zero
 !----------------------------------------------------------------------
 subroutine fieldset_zero_fields(fieldset)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
 integer :: iv,i,il
@@ -225,15 +225,15 @@ end subroutine fieldset_zero_fields
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_add_fields
-! Purpose: add fieldset
+!> Add fieldset
 !----------------------------------------------------------------------
 subroutine fieldset_add_fields(fieldset_out,fieldset_in)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out ! Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      ! Input fieldset
+class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
 integer :: iv,rank_in,i,il
@@ -276,15 +276,15 @@ end subroutine fieldset_add_fields
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_sub_fields
-! Purpose: subtract fieldset
+!> Subtract fieldset
 !----------------------------------------------------------------------
 subroutine fieldset_sub_fields(fieldset_out,fieldset_in)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out ! Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      ! Input fieldset
+class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
 integer :: iv,rank_in,i,il
@@ -327,15 +327,15 @@ end subroutine fieldset_sub_fields
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_mult_fields_scalar
-! Purpose: multiply fieldset with a scalar
+!> Multiply fieldset with a scalar
 !----------------------------------------------------------------------
 subroutine fieldset_mult_fields_scalar(fieldset,factor)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset ! Fieldset
-real(kind_real),intent(in) :: factor           ! Scalar factor
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+real(kind_real),intent(in) :: factor           !< Scalar factor
 
 ! Local variables
 integer :: iv,i,il
@@ -363,15 +363,15 @@ end subroutine fieldset_mult_fields_scalar
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_mult_fields_fieldset
-! Purpose: multiply fieldset with another fieldset
+!> Multiply fieldset with another fieldset
 !----------------------------------------------------------------------
 subroutine fieldset_mult_fields_fieldset(fieldset_out,fieldset_in)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out ! Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      ! Input fieldset
+class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
 integer :: iv,rank_in,i,il
@@ -414,15 +414,15 @@ end subroutine fieldset_mult_fields_fieldset
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_div_fields
-! Purpose: divide fieldset
+!> Divide fieldset
 !----------------------------------------------------------------------
 subroutine fieldset_div_fields(fieldset_out,fieldset_in)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out ! Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      ! Input fieldset
+class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
 integer :: iv,rank_in,i,il
@@ -465,14 +465,14 @@ end subroutine fieldset_div_fields
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_square_fields
-! Purpose: square fieldset
+!> Square fieldset
 !----------------------------------------------------------------------
 subroutine fieldset_square_fields(fieldset)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
 integer :: iv,i,il
@@ -500,14 +500,14 @@ end subroutine fieldset_square_fields
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_sqrt_fields
-! Purpose: take square-root of the fieldset
+!> Take square-root of the fieldset
 !----------------------------------------------------------------------
 subroutine fieldset_sqrt_fields(fieldset)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset ! Fieldset
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
 integer :: iv,i,il
@@ -535,17 +535,17 @@ end subroutine fieldset_sqrt_fields
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_to_array_single
-! Purpose: convert fieldset to Fortran array, single field
+!> Convert fieldset to Fortran array, single field
 !----------------------------------------------------------------------
 subroutine fieldset_to_array_single(fieldset,mpl,iv,fld)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(in) :: fieldset ! Fieldset
-type(mpl_type),intent(inout) :: mpl         ! MPI data
-integer,intent(in) :: iv                    ! Variable index
-real(kind_real),intent(out) :: fld(:,:)     ! Fortran array
+class(fieldset_type),intent(in) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: iv                    !< Variable index
+real(kind_real),intent(out) :: fld(:,:)     !< Fortran array
 
 ! Local variables
 character(len=1024),parameter :: subr = 'fieldset_to_array_single'
@@ -567,16 +567,16 @@ end subroutine fieldset_to_array_single
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_to_array_all
-! Purpose: convert fieldset to Fortran array, all fields
+!> Convert fieldset to Fortran array, all fields
 !----------------------------------------------------------------------
 subroutine fieldset_to_array_all(fieldset,mpl,fld)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(in) :: fieldset ! Fieldset
-type(mpl_type),intent(inout) :: mpl         ! MPI data
-real(kind_real),intent(out) :: fld(:,:,:)   ! Fortran array
+class(fieldset_type),intent(in) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+real(kind_real),intent(out) :: fld(:,:,:)   !< Fortran array
 
 ! Local variables
 integer :: iv
@@ -594,17 +594,17 @@ end subroutine fieldset_to_array_all
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_from_array_single
-! Purpose: convert Fortran array to fieldset, single field
+!> Convert Fortran array to fieldset, single field
 !----------------------------------------------------------------------
 subroutine fieldset_from_array_single(fieldset,mpl,iv,fld)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset ! Fieldset
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-integer,intent(in) :: iv                       ! Variable index
-real(kind_real),intent(in) :: fld(:,:)         ! Fortran array
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: iv                       !< Variable index
+real(kind_real),intent(in) :: fld(:,:)         !< Fortran array
 
 ! Local variables
 character(len=1024),parameter :: subr = 'fieldset_from_array_single'
@@ -626,16 +626,16 @@ end subroutine fieldset_from_array_single
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_from_array_all
-! Purpose: convert Fortran array to fieldset, all fields
+!> Convert Fortran array to fieldset, all fields
 !----------------------------------------------------------------------
 subroutine fieldset_from_array_all(fieldset,mpl,fld)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset ! Fieldset
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-real(kind_real),intent(in) :: fld(:,:,:)       ! Fortran array
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+real(kind_real),intent(in) :: fld(:,:,:)       !< Fortran array
 
 ! Local variables
 integer :: iv

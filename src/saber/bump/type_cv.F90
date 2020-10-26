@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_cv
-! Purpose: control vector derived type
+!> Control vector derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -14,9 +14,9 @@ implicit none
 
 ! Control vector derived type
 type cv_type
-   integer :: n                            ! Total control variable size
-   integer :: nbe                          ! Number of control variable blocks
-   type(cv_blk_type),allocatable :: blk(:) ! Control variable blocks
+   integer :: n                            !< Total control variable size
+   integer :: nbe                          !< Number of control variable blocks
+   type(cv_blk_type),allocatable :: blk(:) !< Control variable blocks
 contains
    procedure :: pack => cv_pack
    procedure :: unpack => cv_unpack
@@ -29,13 +29,13 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: cv_pack
-! Purpose: pack
+!> Pack
 !----------------------------------------------------------------------
 subroutine cv_pack(cv,pcv)
 
 ! Passed variables
-class(cv_type),intent(in) :: cv          ! Control variable
-real(kind_real),intent(out) :: pcv(cv%n) ! Packed control variable
+class(cv_type),intent(in) :: cv          !< Control variable
+real(kind_real),intent(out) :: pcv(cv%n) !< Packed control variable
 
 ! Local variable
 integer :: ib,offset
@@ -57,13 +57,13 @@ end subroutine cv_pack
 
 !----------------------------------------------------------------------
 ! Subroutine: cv_unpack
-! Purpose: unpack
+!> Unpack
 !----------------------------------------------------------------------
 subroutine cv_unpack(cv,pcv)
 
 ! Passed variables
-class(cv_type),intent(inout) :: cv      ! Control variable
-real(kind_real),intent(in) :: pcv(cv%n) ! Packed control variable
+class(cv_type),intent(inout) :: cv      !< Control variable
+real(kind_real),intent(in) :: pcv(cv%n) !< Packed control variable
 
 ! Local variable
 integer :: ib,offset

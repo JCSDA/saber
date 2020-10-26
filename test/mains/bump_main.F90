@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! subroutine: bump_main
-! Purpose: call to the BUMP library
+!> Call to the BUMP library
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -18,10 +18,10 @@ use type_timer, only: timer_type
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: n1
-character(c_char),intent(in) :: arg1(n1)
-integer(c_int),intent(in) :: n2
-character(c_char),intent(in) :: arg2(n2)
+integer(c_int),intent(in) :: n1          !< First argument size
+character(c_char),intent(in) :: arg1(n1) !< First argument
+integer(c_int),intent(in) :: n2          !< Second argument size
+character(c_char),intent(in) :: arg2(n2) !< Second argument
 
 ! Local variables
 integer :: i,ppos,iproc,ie,ifileunit

@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_nicas_blk
-! Purpose: NICAS data block derived type
+!> NICAS data block derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -30,16 +30,16 @@ use type_rng, only: rng_type
 
 implicit none
 
-real(kind_real),parameter :: sqrt_r = 0.725_kind_real ! Square-root factor on support radius (empirical)
-real(kind_real),parameter :: sqrt_h = 0.725_kind_real ! Square-root factor on LCT (empirical)
-real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum value for the convolution coefficients
+real(kind_real),parameter :: sqrt_r = 0.725_kind_real !< Square-root factor on support radius (empirical)
+real(kind_real),parameter :: sqrt_h = 0.725_kind_real !< Square-root factor on LCT (empirical)
+real(kind_real),parameter :: S_inf = 1.0e-2_kind_real !< Minimum value for the convolution coefficients
 
 ! Ball data derived type
 type balldata_type
-   integer :: nbd                        ! Number of values
-   integer,allocatable :: bd_to_c1u(:)   ! Ball data index to subset Sc1 in universe
-   integer,allocatable :: bd_to_l1(:)    ! Ball data index to subset Sl1
-   real(kind_real),allocatable :: val(:) ! Values
+   integer :: nbd                        !< Number of values
+   integer,allocatable :: bd_to_c1u(:)   !< Ball data index to subset Sc1 in universe
+   integer,allocatable :: bd_to_l1(:)    !< Ball data index to subset Sl1
+   real(kind_real),allocatable :: val(:) !< Values
 contains
    procedure :: alloc => balldata_alloc
    procedure :: dealloc => balldata_dealloc
@@ -49,162 +49,162 @@ end type balldata_type
 ! NICAS block derived type
 type nicas_blk_type
    ! General parameters
-   integer :: ib                                   ! Block index
-   character(len=1024) :: subsamp                  ! Subsampling structure
-   logical :: sqrt_rescaling                       ! Square-root rescaling flag
-   logical :: anisotropic                          ! Anisotropic tensor flag
-   logical :: verbosity                            ! Verbosity flag
-   logical :: var2d                                ! Flag for 2D variables in 3D fields
+   integer :: ib                                   !< Block index
+   character(len=1024) :: subsamp                  !< Subsampling structure
+   logical :: sqrt_rescaling                       !< Square-root rescaling flag
+   logical :: anisotropic                          !< Anisotropic tensor flag
+   logical :: verbosity                            !< Verbosity flag
+   logical :: var2d                                !< Flag for 2D variables in 3D fields
 
    ! Subset Sc1
-   integer :: nc1                                  ! Number of points in subset Sc1
-   integer :: nc1u                                 ! Number of points in subset Sc1, universe
-   integer,allocatable :: c1u_to_c1(:)             ! Subset Sc1, universe to global
-   integer,allocatable :: c1_to_c1u(:)             ! Subset Sc1, global to universe
-   real(kind_real),allocatable :: lon_c1u(:)       ! Longitudes on subset Sc1, universe
-   real(kind_real),allocatable :: lat_c1u(:)       ! Latitudes on subset Sc1, universe
-   real(kind_real),allocatable :: vunit_c1u(:,:)   ! Latitudes on subset Sc1, universe
-   logical,allocatable :: gmask_c1u(:,:)           ! Mask on subset Sc1, universe
-   logical,allocatable :: gmask_hor_c1u(:)         ! Union of horizontal masks on subset Sc1, universe
-   real(kind_real),allocatable :: lon_c1a(:)       ! Longitudes on subset Sc1, halo A
-   real(kind_real),allocatable :: lat_c1a(:)       ! Latitudes on subset Sc1, halo A
-   logical,allocatable :: gmask_c1a(:,:)           ! Mask on subset Sc1, halo A
-   logical,allocatable :: gmask_hor_c1a(:)         ! Union of horizontal masks on subset Sc1, halo A
-   integer :: nc1a                                 ! Number of points in subset Sc1 on halo A
-   integer,allocatable :: c1a_to_c1(:)             ! Subset Sc1, halo A to global
-   integer,allocatable :: c1u_to_c1a(:)            ! Subset Sc1, universe to halo A
-   integer,allocatable :: c1b_to_c1u(:)            ! Subset Sc1, halo B to global
-   integer,allocatable :: c1u_to_c1b(:)            ! Subset Sc1, global to halo B
-   integer :: nc1bb                                ! Number of points in subset Sc1 on halo B (extended)
-   integer,allocatable :: c1u_to_c1bb(:)           ! Subset Sc1, universe to halo B (extended)
-   integer,allocatable :: c1bb_to_c1u(:)           ! Subset Sc1, halo B (extended) to universe
-   type(com_type) :: com_AU                        ! Communication between halo A and universe on subset Sc1
+   integer :: nc1                                  !< Number of points in subset Sc1
+   integer :: nc1u                                 !< Number of points in subset Sc1, universe
+   integer,allocatable :: c1u_to_c1(:)             !< Subset Sc1, universe to global
+   integer,allocatable :: c1_to_c1u(:)             !< Subset Sc1, global to universe
+   real(kind_real),allocatable :: lon_c1u(:)       !< Longitudes on subset Sc1, universe
+   real(kind_real),allocatable :: lat_c1u(:)       !< Latitudes on subset Sc1, universe
+   real(kind_real),allocatable :: vunit_c1u(:,:)   !< Latitudes on subset Sc1, universe
+   logical,allocatable :: gmask_c1u(:,:)           !< Mask on subset Sc1, universe
+   logical,allocatable :: gmask_hor_c1u(:)         !< Union of horizontal masks on subset Sc1, universe
+   real(kind_real),allocatable :: lon_c1a(:)       !< Longitudes on subset Sc1, halo A
+   real(kind_real),allocatable :: lat_c1a(:)       !< Latitudes on subset Sc1, halo A
+   logical,allocatable :: gmask_c1a(:,:)           !< Mask on subset Sc1, halo A
+   logical,allocatable :: gmask_hor_c1a(:)         !< Union of horizontal masks on subset Sc1, halo A
+   integer :: nc1a                                 !< Number of points in subset Sc1 on halo A
+   integer,allocatable :: c1a_to_c1(:)             !< Subset Sc1, halo A to global
+   integer,allocatable :: c1u_to_c1a(:)            !< Subset Sc1, universe to halo A
+   integer,allocatable :: c1b_to_c1u(:)            !< Subset Sc1, halo B to global
+   integer,allocatable :: c1u_to_c1b(:)            !< Subset Sc1, global to halo B
+   integer :: nc1bb                                !< Number of points in subset Sc1 on halo B (extended)
+   integer,allocatable :: c1u_to_c1bb(:)           !< Subset Sc1, universe to halo B (extended)
+   integer,allocatable :: c1bb_to_c1u(:)           !< Subset Sc1, halo B (extended) to universe
+   type(com_type) :: com_AU                        !< Communication between halo A and universe on subset Sc1
 
    ! Link between subset Sc1 and subset Sc0
-   integer,allocatable :: c1_to_c0(:)              ! Subset Sc1 to subset Sc0
-   integer,allocatable :: c1a_to_c0a(:)            ! Halo A, subset Sc1 to subset Sc0
+   integer,allocatable :: c1_to_c0(:)              !< Subset Sc1 to subset Sc0
+   integer,allocatable :: c1a_to_c0a(:)            !< Halo A, subset Sc1 to subset Sc0
 
    ! Subset Sc2 geometry
-   integer,allocatable :: nc2(:)                   ! Number of points in subset Sc2
-   integer,allocatable :: nc2u(:)                  ! Number of points in subset Sc2, universe
-   logical,allocatable :: gmask_c2u(:,:)           ! Mask from subset Sc2 to subgrid
+   integer,allocatable :: nc2(:)                   !< Number of points in subset Sc2
+   integer,allocatable :: nc2u(:)                  !< Number of points in subset Sc2, universe
+   logical,allocatable :: gmask_c2u(:,:)           !< Mask from subset Sc2 to subgrid
 
    ! Subgrid geometry
-   integer :: nsu                                  ! Number of subgrid nodes, universe
-   integer,allocatable :: su_to_s(:)               ! Subgrid, universe to global
-   integer,allocatable :: su_to_sb(:)              ! Subgrid, universe to halo B
-   integer,allocatable :: sb_to_su(:)              ! Subgrid, halo B to universe
-   logical,allocatable :: lcheck_sa(:)             ! Detection of halo A on subgrid
-   integer,allocatable :: sa_to_su(:)              ! Subgrid, halo A to universe
-   logical,allocatable :: lcheck_sb(:)             ! Detection of halo B on subgrid
-   integer :: nsbb                                 ! Number of points in subgrid on halo B (extended)
-   integer,allocatable :: sbb_to_su(:)             ! Subgrid, halo B (extended) to universe
-   integer,allocatable :: sc_to_su(:)              ! Subgrid, halo C to universe
-   integer :: nsc_nor                              ! Number of subgrid nodes on halo C (extended for normalization)
-   integer,allocatable :: sa_to_sc_nor(:)          ! Subgrid, halo A to halo C (extended for normalization)
-   integer,allocatable :: sb_to_sc_nor(:)          ! Subgrid, halo B to halo C (extended for normalization)
+   integer :: nsu                                  !< Number of subgrid nodes, universe
+   integer,allocatable :: su_to_s(:)               !< Subgrid, universe to global
+   integer,allocatable :: su_to_sb(:)              !< Subgrid, universe to halo B
+   integer,allocatable :: sb_to_su(:)              !< Subgrid, halo B to universe
+   logical,allocatable :: lcheck_sa(:)             !< Detection of halo A on subgrid
+   integer,allocatable :: sa_to_su(:)              !< Subgrid, halo A to universe
+   logical,allocatable :: lcheck_sb(:)             !< Detection of halo B on subgrid
+   integer :: nsbb                                 !< Number of points in subgrid on halo B (extended)
+   integer,allocatable :: sbb_to_su(:)             !< Subgrid, halo B (extended) to universe
+   integer,allocatable :: sc_to_su(:)              !< Subgrid, halo C to universe
+   integer :: nsc_nor                              !< Number of subgrid nodes on halo C (extended for normalization)
+   integer,allocatable :: sa_to_sc_nor(:)          !< Subgrid, halo A to halo C (extended for normalization)
+   integer,allocatable :: sb_to_sc_nor(:)          !< Subgrid, halo B to halo C (extended for normalization)
 
    ! Link between subgrid and subset Sc1
-   integer,allocatable :: su_to_c1u(:)             ! Subgrid, universe, to subset Sc1, universe
-   integer,allocatable :: su_to_l1(:)              ! Subgrid, universe, to subset Sl1
-   integer,allocatable :: c1ul1_to_su(:,:)         ! Grid Gv to subgrid, universe
-   integer,allocatable :: c1bl1_to_sb(:,:)         ! Halo B, subset Sc1 to subgrid
+   integer,allocatable :: su_to_c1u(:)             !< Subgrid, universe, to subset Sc1, universe
+   integer,allocatable :: su_to_l1(:)              !< Subgrid, universe, to subset Sl1
+   integer,allocatable :: c1ul1_to_su(:,:)         !< Grid Gv to subgrid, universe
+   integer,allocatable :: c1bl1_to_sb(:,:)         !< Halo B, subset Sc1 to subgrid
 
    ! Vertical geometry
-   integer :: il0_first                            ! First valid level
-   integer :: il0_last                             ! Last valid level
-   logical,allocatable :: slev(:)                  ! Selected levels
-   integer,allocatable :: vbot(:)                  ! Bottom level in grid Gh
-   integer,allocatable :: vtop(:)                  ! Top level in grid Gh
-   integer,allocatable :: l1_to_l0(:)              ! Subset Sl1 to subset Sl0
-   integer,allocatable :: l0_to_l1(:)              ! Subset Sl0 to subset Sl1
+   integer :: il0_first                            !< First valid level
+   integer :: il0_last                             !< Last valid level
+   logical,allocatable :: slev(:)                  !< Selected levels
+   integer,allocatable :: vbot(:)                  !< Bottom level in grid Gh
+   integer,allocatable :: vtop(:)                  !< Top level in grid Gh
+   integer,allocatable :: l1_to_l0(:)              !< Subset Sl1 to subset Sl0
+   integer,allocatable :: l0_to_l1(:)              !< Subset Sl0 to subset Sl1
 
    ! Support radius
-   real(kind_real),allocatable :: rhs_avg(:)       ! Average sampling horizontal support radius at each level
+   real(kind_real),allocatable :: rhs_avg(:)       !< Average sampling horizontal support radius at each level
 
    ! Convolution parameters
-   real(kind_real) :: rhmax                        ! Maximum horizontal support radius
-   real(kind_real),allocatable :: rh_c1u(:,:)      ! Horizontal support radius on subset Sc1
-   real(kind_real),allocatable :: rv_c1u(:,:)      ! Vertical support radius on subset Sc1
-   real(kind_real),allocatable :: H11_c1u(:,:)     ! Local correlation tensor, component 11, on subset Sc1
-   real(kind_real),allocatable :: H22_c1u(:,:)     ! Local correlation tensor, component 22, on subset Sc1
-   real(kind_real),allocatable :: H33_c1u(:,:)     ! Local correlation tensor, component 33, on subset Sc1
-   real(kind_real),allocatable :: H12_c1u(:,:)     ! Local correlation tensor, component 12, on subset Sc1
-   type(balldata_type),allocatable :: distnorm(:)  ! Normalized distance
-   type(balldata_type),allocatable :: Hcoef(:)     ! Tensor coefficient on subset Sc1
+   real(kind_real) :: rhmax                        !< Maximum horizontal support radius
+   real(kind_real),allocatable :: rh_c1u(:,:)      !< Horizontal support radius on subset Sc1
+   real(kind_real),allocatable :: rv_c1u(:,:)      !< Vertical support radius on subset Sc1
+   real(kind_real),allocatable :: H11_c1u(:,:)     !< Local correlation tensor, component 11, on subset Sc1
+   real(kind_real),allocatable :: H22_c1u(:,:)     !< Local correlation tensor, component 22, on subset Sc1
+   real(kind_real),allocatable :: H33_c1u(:,:)     !< Local correlation tensor, component 33, on subset Sc1
+   real(kind_real),allocatable :: H12_c1u(:,:)     !< Local correlation tensor, component 12, on subset Sc1
+   type(balldata_type),allocatable :: distnorm(:)  !< Normalized distance
+   type(balldata_type),allocatable :: Hcoef(:)     !< Tensor coefficient on subset Sc1
 
    ! Normalization
-   type(linop_type) :: c_nor                       ! Convolution (extended for normalization)
-   real(kind_real),allocatable :: inorm_nor(:)     ! Internal normalization factor (extended for normalization)
-   type(com_type) :: com_AC_nor                    ! Communication between halos A and C (extended for normalization)
-   real(kind_real),allocatable :: smoother_norm(:) ! Smoother normalization
+   type(linop_type) :: c_nor                       !< Convolution (extended for normalization)
+   real(kind_real),allocatable :: inorm_nor(:)     !< Internal normalization factor (extended for normalization)
+   type(com_type) :: com_AC_nor                    !< Communication between halos A and C (extended for normalization)
+   real(kind_real),allocatable :: smoother_norm(:) !< Smoother normalization
 
    ! Tree
-   type(tree_type) :: tree                         ! Tree
+   type(tree_type) :: tree                         !< Tree
 
    ! Required data to apply NICAS
 
    ! Parameters
-   integer :: mpicom                               ! Number of communication steps
-   integer :: lsqrt                                ! Square-root flag
-   integer :: grid_hash                            ! Grid hash
+   integer :: mpicom                               !< Number of communication steps
+   integer :: lsqrt                                !< Square-root flag
+   integer :: grid_hash                            !< Grid hash
 
    ! Number of points
-   integer :: nc0a                                 ! Number of points in subset Sc0 on halo A (required for I/O)
-   integer :: nc1b                                 ! Number of points in subset Sc1 on halo B
-   integer :: nl1                                  ! Number of levels in subset Sl1
-   integer :: ns                                   ! Number of subgrid nodes
-   integer :: nsa                                  ! Number of subgrid nodes on halo A
-   integer :: nsb                                  ! Number of subgrid nodes on halo B
-   integer :: nsc                                  ! Number of subgrid nodes on halo C
+   integer :: nc0a                                 !< Number of points in subset Sc0 on halo A (required for I/O)
+   integer :: nc1b                                 !< Number of points in subset Sc1 on halo B
+   integer :: nl1                                  !< Number of levels in subset Sl1
+   integer :: ns                                   !< Number of subgrid nodes
+   integer :: nsa                                  !< Number of subgrid nodes on halo A
+   integer :: nsb                                  !< Number of subgrid nodes on halo B
+   integer :: nsc                                  !< Number of subgrid nodes on halo C
 
    ! Valid levels
-   logical,allocatable :: vlev(:)                  ! Valid levels
+   logical,allocatable :: vlev(:)                  !< Valid levels
 
    ! Local to global
-   integer,allocatable :: sa_to_s(:)               ! Subgrid, halo A to global
-   real(kind_real),allocatable :: hash_sa(:)       ! Hash value based on lon/lat/lev
+   integer,allocatable :: sa_to_s(:)               !< Subgrid, halo A to global
+   real(kind_real),allocatable :: hash_sa(:)       !< Hash value based on lon/lat/lev
 
    ! Inter-halo conversions
-   integer,allocatable :: sa_to_sc(:)              ! Subgrid, halo A to halo C
-   integer,allocatable :: sb_to_sc(:)              ! Subgrid, halo B to halo C
+   integer,allocatable :: sa_to_sc(:)              !< Subgrid, halo A to halo C
+   integer,allocatable :: sb_to_sc(:)              !< Subgrid, halo B to halo C
 
    ! Linear operators
-   type(linop_type) :: c                           ! Convolution
-   type(linop_type),allocatable :: h(:)            ! Horizontal interpolation
-   type(linop_type) :: v                           ! Vertical interpolation
-   type(linop_type),allocatable :: s(:)            ! Subsample interpolation
+   type(linop_type) :: c                           !< Convolution
+   type(linop_type),allocatable :: h(:)            !< Horizontal interpolation
+   type(linop_type) :: v                           !< Vertical interpolation
+   type(linop_type),allocatable :: s(:)            !< Subsample interpolation
 
    ! Copy conversions
-   integer,allocatable :: sb_to_c1b(:)             ! Subgrid to subset Sc1 on halo B
-   integer,allocatable :: sb_to_l1(:)              ! Subgrid to subset Sl1 on halo B
+   integer,allocatable :: sb_to_c1b(:)             !< Subgrid to subset Sc1 on halo B
+   integer,allocatable :: sb_to_l1(:)              !< Subgrid to subset Sl1 on halo B
 
    ! Normalization
-   real(kind_real),allocatable :: inorm(:)         ! Internal normalization factor
-   real(kind_real),allocatable :: norm(:,:)        ! Normalization factor
+   real(kind_real),allocatable :: inorm(:)         !< Internal normalization factor
+   real(kind_real),allocatable :: norm(:,:)        !< Normalization factor
 
    ! Localization weights
-   real(kind_real),allocatable :: coef_ens(:,:)    ! Ensemble coefficient square-root
-   real(kind_real) :: wgt                          ! Main weight
+   real(kind_real),allocatable :: coef_ens(:,:)    !< Ensemble coefficient square-root
+   real(kind_real) :: wgt                          !< Main weight
 
    ! Communications
-   type(com_type) :: com_AB                        ! Communication between halos A and B
-   type(com_type) :: com_AC                        ! Communication between halos A and C
+   type(com_type) :: com_AB                        !< Communication between halos A and B
+   type(com_type) :: com_AC                        !< Communication between halos A and C
 
    ! Smoother data
-   logical :: smoother                             ! Smoother flag
-   logical :: horizontal                           ! Horizontal application flag
+   logical :: smoother                             !< Smoother flag
+   logical :: horizontal                           !< Horizontal application flag
 
    ! Required data to write grids
-   real(kind_real),allocatable :: lon_sa(:)        ! Subgrid, halo A longitudes
-   real(kind_real),allocatable :: lat_sa(:)        ! Subgrid, halo A latitudes
-   integer,allocatable :: lev_sa(:)                ! Subgrid, halo A levels
-   real(kind_real),allocatable :: lon_sb(:)        ! Subgrid, halo A longitudes
-   real(kind_real),allocatable :: lat_sb(:)        ! Subgrid, halo A latitudes
-   integer,allocatable :: lev_sb(:)                ! Subgrid, halo A levels
-   real(kind_real),allocatable :: lon_sc(:)        ! Subgrid, halo A longitudes
-   real(kind_real),allocatable :: lat_sc(:)        ! Subgrid, halo A latitudes
-   integer,allocatable :: lev_sc(:)                ! Subgrid, halo A levels
+   real(kind_real),allocatable :: lon_sa(:)        !< Subgrid, halo A longitudes
+   real(kind_real),allocatable :: lat_sa(:)        !< Subgrid, halo A latitudes
+   integer,allocatable :: lev_sa(:)                !< Subgrid, halo A levels
+   real(kind_real),allocatable :: lon_sb(:)        !< Subgrid, halo A longitudes
+   real(kind_real),allocatable :: lat_sb(:)        !< Subgrid, halo A latitudes
+   integer,allocatable :: lev_sb(:)                !< Subgrid, halo A levels
+   real(kind_real),allocatable :: lon_sc(:)        !< Subgrid, halo A longitudes
+   real(kind_real),allocatable :: lat_sc(:)        !< Subgrid, halo A latitudes
+   integer,allocatable :: lev_sc(:)                !< Subgrid, halo A levels
 contains
    procedure :: partial_dealloc => nicas_blk_partial_dealloc
    procedure :: dealloc => nicas_blk_dealloc
@@ -255,14 +255,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: balldata_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine balldata_alloc(balldata)
 
 implicit none
 
 ! Passed variables
-class(balldata_type),intent(inout) :: balldata ! Ball data
+class(balldata_type),intent(inout) :: balldata !< Ball data
 
 ! Allocation
 allocate(balldata%bd_to_c1u(balldata%nbd))
@@ -273,14 +273,14 @@ end subroutine balldata_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: balldata_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine balldata_dealloc(balldata)
 
 implicit none
 
 ! Passed variables
-class(balldata_type),intent(inout) :: balldata ! Ball data
+class(balldata_type),intent(inout) :: balldata !< Ball data
 
 ! Release memory
 if (allocated(balldata%bd_to_c1u)) deallocate(balldata%bd_to_c1u)
@@ -291,18 +291,18 @@ end subroutine balldata_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: balldata_pack
-! Purpose: pack data into balldata object
+!> Pack data into balldata object
 !----------------------------------------------------------------------
 subroutine balldata_pack(balldata,mpl,nc1u,nl1,val)
 
 implicit none
 
 ! Passed variables
-class(balldata_type),intent(inout) :: balldata ! Ball data
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-integer,intent(in) :: nc1u                     ! Horizontal box size
-integer,intent(in) :: nl1                      ! Vertical box size
-real(kind_real),intent(in) :: val(nc1u,nl1)    ! Box value
+class(balldata_type),intent(inout) :: balldata !< Ball data
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: nc1u                     !< Horizontal box size
+integer,intent(in) :: nl1                      !< Vertical box size
+real(kind_real),intent(in) :: val(nc1u,nl1)    !< Box value
 
 ! Local variables
 integer :: ibd,ic1u,il1
@@ -330,14 +330,14 @@ end subroutine balldata_pack
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine nicas_blk_partial_dealloc(nicas_blk)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
 
 ! Local variables
 integer :: isbb
@@ -414,14 +414,14 @@ end subroutine nicas_blk_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_dealloc
-! Purpose: release memory (full)
+!> Release memory (full)
 !----------------------------------------------------------------------
 subroutine nicas_blk_dealloc(nicas_blk)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
 
 ! Local variables
 integer :: il0,il1
@@ -468,18 +468,18 @@ end subroutine nicas_blk_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_read
-! Purpose: read
+!> Read
 !----------------------------------------------------------------------
 subroutine nicas_blk_read(nicas_blk,mpl,geom,bpar,ncid)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(geom_type),intent(in) :: geom               ! Geometry
-type(bpar_type),intent(in) :: bpar               ! Block parameters
-integer,intent(in) :: ncid                       ! NetCDF file
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(geom_type),intent(in) :: geom               !< Geometry
+type(bpar_type),intent(in) :: bpar               !< Block parameters
+integer,intent(in) :: ncid                       !< NetCDF file
 
 ! Local variables
 integer :: il0i,il1,il0
@@ -603,18 +603,18 @@ end subroutine nicas_blk_read
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_write
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine nicas_blk_write(nicas_blk,mpl,geom,bpar,ncid)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(geom_type),intent(in) :: geom            ! Geometry
-type(bpar_type),intent(in) :: bpar            ! Block parameters
-integer,intent(in) :: ncid                    ! NetCDF file
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(geom_type),intent(in) :: geom            !< Geometry
+type(bpar_type),intent(in) :: bpar            !< Block parameters
+integer,intent(in) :: ncid                    !< NetCDF file
 
 ! Local variables
 integer :: il0i,il1,il0
@@ -710,16 +710,16 @@ end subroutine nicas_blk_write
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_write_grids
-! Purpose: write NICAS grids
+!> Write NICAS grids
 !----------------------------------------------------------------------
 subroutine nicas_blk_write_grids(nicas_blk,mpl,ncid)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-integer,intent(in) :: ncid                    ! NetCDF file
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: ncid                    !< NetCDF file
 
 ! Local variables
 integer :: nsa_id,nsb_id,nsc_id,lon_sa_id,lat_sa_id,lev_sa_id,lon_sb_id,lat_sb_id,lev_sb_id,lon_sc_id,lat_sc_id,lev_sc_id
@@ -768,21 +768,21 @@ end subroutine nicas_blk_write_grids
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_buffer_size
-! Purpose: buffer size
+!> Buffer size
 !----------------------------------------------------------------------
 subroutine nicas_blk_buffer_size(nicas_blk,mpl,nam,geom,bpar,nbufi,nbufr,nbufl)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(nam_type),intent(in) :: nam              ! Namelist
-type(geom_type),intent(in) :: geom            ! Geometry
-type(bpar_type),intent(in) :: bpar            ! Block parameters
-integer,intent(out) :: nbufi                  ! Buffer size (integer)
-integer,intent(out) :: nbufr                  ! Buffer size (real)
-integer,intent(out) :: nbufl                  ! Buffer size (logical)
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(nam_type),intent(in) :: nam              !< Namelist
+type(geom_type),intent(in) :: geom            !< Geometry
+type(bpar_type),intent(in) :: bpar            !< Block parameters
+integer,intent(out) :: nbufi                  !< Buffer size (integer)
+integer,intent(out) :: nbufr                  !< Buffer size (real)
+integer,intent(out) :: nbufl                  !< Buffer size (logical)
 
 ! Local variables
 integer :: nnbufi,nnbufr
@@ -841,24 +841,24 @@ end subroutine nicas_blk_buffer_size
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_serialize
-! Purpose: serialize
+!> Serialize
 !----------------------------------------------------------------------
 subroutine nicas_blk_serialize(nicas_blk,mpl,nam,geom,bpar,nbufi,nbufr,nbufl,bufi,bufr,bufl)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(nam_type),intent(in) :: nam              ! Namelist
-type(geom_type),intent(in) :: geom            ! Geometry
-type(bpar_type),intent(in) :: bpar            ! Block parameters
-integer,intent(in) :: nbufi                   ! Buffer size (integer)
-integer,intent(in) :: nbufr                   ! Buffer size (real)
-integer,intent(in) :: nbufl                   ! Buffer size (logical)
-integer,intent(out) :: bufi(nbufi)            ! Buffer (integer)
-real(kind_real),intent(out) :: bufr(nbufr)    ! Buffer (real)
-logical,intent(out) :: bufl(nbufl)            ! Buffer (logical)
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(nam_type),intent(in) :: nam              !< Namelist
+type(geom_type),intent(in) :: geom            !< Geometry
+type(bpar_type),intent(in) :: bpar            !< Block parameters
+integer,intent(in) :: nbufi                   !< Buffer size (integer)
+integer,intent(in) :: nbufr                   !< Buffer size (real)
+integer,intent(in) :: nbufl                   !< Buffer size (logical)
+integer,intent(out) :: bufi(nbufi)            !< Buffer (integer)
+real(kind_real),intent(out) :: bufr(nbufr)    !< Buffer (real)
+logical,intent(out) :: bufl(nbufl)            !< Buffer (logical)
 
 ! Local variables
 integer :: ibufi,ibufr,ibufl,nnbufi,nnbufr
@@ -1017,24 +1017,24 @@ end subroutine nicas_blk_serialize
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_deserialize
-! Purpose: deserialize
+!> Deserialize
 !----------------------------------------------------------------------
 subroutine nicas_blk_deserialize(nicas_blk,mpl,nam,geom,bpar,nbufi,nbufr,nbufl,bufi,bufr,bufl)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
-type(bpar_type),intent(in) :: bpar               ! Block parameters
-integer,intent(in) :: nbufi                      ! Buffer size (integer)
-integer,intent(in) :: nbufr                      ! Buffer size (real)
-integer,intent(in) :: nbufl                      ! Buffer size (logical)
-integer,intent(in) :: bufi(nbufi)                ! Buffer (integer)
-real(kind_real),intent(in) :: bufr(nbufr)        ! Buffer (real)
-logical,intent(in) :: bufl(nbufl)                ! Buffer (logical)
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+type(bpar_type),intent(in) :: bpar               !< Block parameters
+integer,intent(in) :: nbufi                      !< Buffer size (integer)
+integer,intent(in) :: nbufr                      !< Buffer size (real)
+integer,intent(in) :: nbufl                      !< Buffer size (logical)
+integer,intent(in) :: bufi(nbufi)                !< Buffer (integer)
+real(kind_real),intent(in) :: bufr(nbufr)        !< Buffer (real)
+logical,intent(in) :: bufl(nbufl)                !< Buffer (logical)
 
 ! Local variables
 integer :: ibufi,ibufr,ibufl,nnbufi,nnbufr
@@ -1239,20 +1239,20 @@ end subroutine nicas_blk_deserialize
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_parameters
-! Purpose: compute NICAS parameters
+!> Compute NICAS parameters
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom,cmat_blk,sqrt_rescaling)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(rng_type),intent(inout) :: rng              ! Random number generator
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
-type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
-logical,intent(in),optional :: sqrt_rescaling    ! Square-root rescaling flag
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
+logical,intent(in),optional :: sqrt_rescaling    !< Square-root rescaling flag
 
 ! Local variables
 integer :: il0i,il1
@@ -1382,19 +1382,19 @@ end subroutine nicas_blk_compute_parameters
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_parameters_horizontal_smoother
-! Purpose: compute NICAS parameters for a horizontal smoother
+!> Compute NICAS parameters for a horizontal smoother
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_parameters_horizontal_smoother(nicas_blk,mpl,rng,nam,geom,rhflt)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(rng_type),intent(inout) :: rng              ! Random number generator
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
-real(kind_real),intent(in) :: rhflt(geom%nl0)    ! Horizontal support radius profile
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+real(kind_real),intent(in) :: rhflt(geom%nl0)    !< Horizontal support radius profile
 
 ! Local variables
 integer :: il0
@@ -1456,19 +1456,19 @@ end subroutine nicas_blk_compute_parameters_horizontal_smoother
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_sampling_c1
-! Purpose: compute NICAS sampling, subset Sc1
+!> Compute NICAS sampling, subset Sc1
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_sampling_c1(nicas_blk,mpl,rng,nam,geom,cmat_blk)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(rng_type),intent(inout) :: rng              ! Random number generator
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
-type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
 integer :: il0,ic0a,ic0,ic1,ic0u,ic1u,iproc
@@ -1612,18 +1612,18 @@ end subroutine nicas_blk_compute_sampling_c1
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_sampling_v
-! Purpose: compute NICAS sampling, vertical dimension
+!> Compute NICAS sampling, vertical dimension
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_sampling_v(nicas_blk,mpl,nam,geom,cmat_blk)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
-type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
 integer :: il0,il0_prev,il1,ic0a
@@ -1708,16 +1708,16 @@ end subroutine nicas_blk_compute_sampling_v
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_mpi_a
-! Purpose: compute NICAS MPI distribution, halos A
+!> Compute NICAS MPI distribution, halos A
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_mpi_a(nicas_blk,mpl,geom)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(geom_type),intent(in) :: geom               ! Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: ic0,ic0a,ic1,ic1a,ic1u,il0,il1,iproc
@@ -1778,19 +1778,19 @@ end subroutine nicas_blk_compute_mpi_a
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_sampling_c2
-! Purpose: compute NICAS sampling, subset Sc2
+!> Compute NICAS sampling, subset Sc2
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_sampling_c2(nicas_blk,mpl,rng,nam,geom,cmat_blk)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(rng_type),intent(inout) :: rng              ! Random number generator
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
-type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
 integer :: ic1a,ic0a,il0,il1,ic1,ic1u,ic2,is,isu,ic0,iproc
@@ -1908,18 +1908,18 @@ end subroutine nicas_blk_compute_sampling_c2
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_mpi_ab
-! Purpose: compute NICAS MPI distribution, halos A-B
+!> Compute NICAS MPI distribution, halos A-B
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_mpi_ab(nicas_blk,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(rng_type),intent(inout) :: rng              ! Random number generator
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il0i,ic0,ic1,ic1a,ic1u,ic1b_h,ic1b,il0,il1,isa,isb,i_s,isu,is,jc1u,jsu,nc1b_h,ifmt,iproc
@@ -2172,15 +2172,15 @@ end subroutine nicas_blk_compute_mpi_ab
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_interp_v
-! Purpose: compute vertical interpolation
+!> Compute vertical interpolation
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_interp_v(nicas_blk,geom)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(geom_type),intent(in) :: geom               ! Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: ic1b,ic1u,jl0,il0,jl1,il0inf,il0sup
@@ -2255,19 +2255,19 @@ end subroutine nicas_blk_compute_interp_v
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_convol
-! Purpose: compute convolution
+!> Compute convolution
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_convol(nicas_blk,mpl,rng,nam,geom,cmat_blk)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(rng_type),intent(inout) :: rng              ! Random number generator
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
-type(cmat_blk_type),intent(in) :: cmat_blk       ! C matrix data block
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
 integer :: n_s_max,ithread,isu,ic1u,jc1u,il1,il0,j,jsu,isb,ic1b,ic0a,ic1a,i_s,jc,kc,ksu,jbd,jl1,ic1bb,isbb
@@ -2679,18 +2679,18 @@ end subroutine nicas_blk_compute_convol
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_convol_network
-! Purpose: compute convolution with a network approach
+!> Compute convolution with a network approach
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_convol_network(nicas_blk,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(rng_type),intent(inout) :: rng              ! Random number generator
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: isu,ic1u,il0,jl1,np,np_new,j,k,ip,kc1u,jc1u,il1,dkl1,kl1,jp,isbb,djl1,jl0
@@ -2924,17 +2924,17 @@ end subroutine nicas_blk_compute_convol_network
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_convol_distance
-! Purpose: compute convolution with a distance approach
+!> Compute convolution with a distance approach
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_convol_distance(nicas_blk,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: nnmax,isu,ic1u,jc1u,il1,il0,j,jsu,jl0,jl1,ic1bb,isbb
@@ -3110,17 +3110,17 @@ end subroutine nicas_blk_compute_convol_distance
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_convol_weights
-! Purpose: compute convolution weights
+!> Compute convolution weights
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_convol_weights(nicas_blk,mpl,geom,ctmp)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(geom_type),intent(in) :: geom               ! Geometry
-type(linop_type),intent(inout) :: ctmp           ! Convolution operator
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(geom_type),intent(in) :: geom               !< Geometry
+type(linop_type),intent(inout) :: ctmp           !< Convolution operator
 
 ! Local variables
 integer :: n_s_max,ithread,isu,jc1u,jl1,jbd,jsu,isbb
@@ -3216,15 +3216,15 @@ end subroutine nicas_blk_compute_convol_weights
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_mpi_c
-! Purpose: compute NICAS MPI distribution, halo C
+!> Compute NICAS MPI distribution, halo C
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_mpi_c(nicas_blk,mpl)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
 
 ! Local variables
 integer :: isa,isb,isc,i_s,is,isu,jsu
@@ -3366,15 +3366,15 @@ end subroutine nicas_blk_compute_mpi_c
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_internal_normalization
-! Purpose: compute internal normalization
+!> Compute internal normalization
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_internal_normalization(nicas_blk,mpl)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
 
 ! Local variables
 integer :: i_s,isa,isc,jsc
@@ -3436,17 +3436,17 @@ end subroutine nicas_blk_compute_internal_normalization
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_normalization
-! Purpose: compute normalization
+!> Compute normalization
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_normalization(nicas_blk,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(nam_type),intent(in) :: nam                 ! Namelist
-type(geom_type),intent(in) :: geom               ! Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il0i,i_s,ic1b,jc1b,isc,jsb,jsc,is,ic0a,il0,il1,ih,jv,nlr,ilr,ic,isc_add
@@ -3685,15 +3685,15 @@ end subroutine nicas_blk_compute_normalization
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_grids
-! Purpose: compute grids
+!> Compute grids
 !----------------------------------------------------------------------
 subroutine nicas_blk_compute_grids(nicas_blk,nam)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(inout) :: nicas_blk ! NICAS data block
-type(nam_type),intent(in) :: nam                 ! Namelist
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(nam_type),intent(in) :: nam                 !< Namelist
 
 ! Local variables
 integer :: isa,isb,isc,isu,ic1u,il1,il0
@@ -3754,17 +3754,17 @@ end subroutine nicas_blk_compute_grids
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply
-! Purpose: apply NICAS method
+!> Apply NICAS method
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply(nicas_blk,mpl,geom,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk            ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                      ! MPI data
-type(geom_type),intent(in) :: geom                       ! Geometry
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) ! Field
+class(nicas_blk_type),intent(in) :: nicas_blk            !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                      !< MPI data
+type(geom_type),intent(in) :: geom                       !< Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
 
 ! Local variables
 integer :: il0
@@ -3833,17 +3833,17 @@ end subroutine nicas_blk_apply
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_from_sqrt
-! Purpose: apply NICAS method from its square-root formulation
+!> Apply NICAS method from its square-root formulation
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_from_sqrt(nicas_blk,mpl,geom,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk            ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                      ! MPI data
-type(geom_type),intent(in) :: geom                       ! Geometry
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) ! Field
+class(nicas_blk_type),intent(in) :: nicas_blk            !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                      !< MPI data
+type(geom_type),intent(in) :: geom                       !< Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
 
 ! Local variables
 real(kind_real) :: alpha(nicas_blk%nsa)
@@ -3858,18 +3858,18 @@ end subroutine nicas_blk_apply_from_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_sqrt
-! Purpose: apply NICAS method square-root
+!> Apply NICAS method square-root
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_sqrt(nicas_blk,mpl,geom,alpha,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk          ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                    ! MPI data
-type(geom_type),intent(in) :: geom                     ! Geometry
-real(kind_real),intent(in) :: alpha(nicas_blk%nsa)     ! Subgrid field
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) ! Field
+class(nicas_blk_type),intent(in) :: nicas_blk          !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(geom_type),intent(in) :: geom                     !< Geometry
+real(kind_real),intent(in) :: alpha(nicas_blk%nsa)     !< Subgrid field
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
 
 ! Local variable
 real(kind_real) :: alpha_a(nicas_blk%nsa),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
@@ -3902,18 +3902,18 @@ end subroutine nicas_blk_apply_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_sqrt_ad
-! Purpose: apply NICAS method square-root adjoint
+!> Apply NICAS method square-root adjoint
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_sqrt_ad(nicas_blk,mpl,geom,fld,alpha)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk         ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                   ! MPI data
-type(geom_type),intent(in) :: geom                    ! Geometry
-real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
-real(kind_real),intent(out) :: alpha(nicas_blk%nsa)   ! Subgrid field
+class(nicas_blk_type),intent(in) :: nicas_blk         !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+type(geom_type),intent(in) :: geom                    !< Geometry
+real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
+real(kind_real),intent(out) :: alpha(nicas_blk%nsa)   !< Subgrid field
 
 ! Local variable
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
@@ -3949,18 +3949,18 @@ end subroutine nicas_blk_apply_sqrt_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_interp
-! Purpose: apply interpolation
+!> Apply interpolation
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_interp(nicas_blk,mpl,geom,alpha,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk          ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                    ! MPI data
-type(geom_type),intent(in) :: geom                     ! Geometry
-real(kind_real),intent(in) :: alpha(nicas_blk%nsb)     ! Subgrid field
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) ! Field
+class(nicas_blk_type),intent(in) :: nicas_blk          !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(geom_type),intent(in) :: geom                     !< Geometry
+real(kind_real),intent(in) :: alpha(nicas_blk%nsb)     !< Subgrid field
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
 
 ! Local variables
 real(kind_real) :: gamma(nicas_blk%nc1b,nicas_blk%nl1),delta(nicas_blk%nc1b,geom%nl0)
@@ -3978,18 +3978,18 @@ end subroutine nicas_blk_apply_interp
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_interp_ad
-! Purpose: apply interpolation adjoint
+!> Apply interpolation adjoint
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_interp_ad(nicas_blk,mpl,geom,fld,alpha)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk         ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                   ! MPI data
-type(geom_type),intent(in) :: geom                    ! Geometry
-real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) ! Field
-real(kind_real),intent(out) :: alpha(nicas_blk%nsb)   ! Subgrid field
+class(nicas_blk_type),intent(in) :: nicas_blk         !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+type(geom_type),intent(in) :: geom                    !< Geometry
+real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
+real(kind_real),intent(out) :: alpha(nicas_blk%nsb)   !< Subgrid field
 
 ! Local variables
 real(kind_real) :: gamma(nicas_blk%nc1b,nicas_blk%nl1),delta(nicas_blk%nc1b,geom%nl0)
@@ -4007,18 +4007,18 @@ end subroutine nicas_blk_apply_interp_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_interp_h
-! Purpose: apply horizontal interpolation
+!> Apply horizontal interpolation
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_interp_h(nicas_blk,mpl,geom,delta,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk                ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                          ! MPI data
-type(geom_type),intent(in) :: geom                           ! Geometry
-real(kind_real),intent(in) :: delta(nicas_blk%nc1b,geom%nl0) ! Subset Sc1 field, full levels
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0)       ! Field
+class(nicas_blk_type),intent(in) :: nicas_blk                !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                          !< MPI data
+type(geom_type),intent(in) :: geom                           !< Geometry
+real(kind_real),intent(in) :: delta(nicas_blk%nc1b,geom%nl0) !< Subset Sc1 field, full levels
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0)       !< Field
 
 ! Local variables
 integer :: il0
@@ -4038,18 +4038,18 @@ end subroutine nicas_blk_apply_interp_h
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_interp_h_ad
-! Purpose: apply horizontal interpolation adjoint
+!> Apply horizontal interpolation adjoint
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_interp_h_ad(nicas_blk,mpl,geom,fld,delta)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk                 ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                           ! MPI data
-type(geom_type),intent(in) :: geom                            ! Geometry
-real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0)         ! Field
-real(kind_real),intent(out) :: delta(nicas_blk%nc1b,geom%nl0) ! Subset Sc1 field, full levels
+class(nicas_blk_type),intent(in) :: nicas_blk                 !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                           !< MPI data
+type(geom_type),intent(in) :: geom                            !< Geometry
+real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0)         !< Field
+real(kind_real),intent(out) :: delta(nicas_blk%nc1b,geom%nl0) !< Subset Sc1 field, full levels
 
 ! Local variables
 integer :: il0
@@ -4068,18 +4068,18 @@ end subroutine nicas_blk_apply_interp_h_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_interp_v
-! Purpose: apply vertical interpolation
+!> Apply vertical interpolation
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_interp_v(nicas_blk,mpl,geom,gamma,delta)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk                     ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                               ! MPI data
-type(geom_type),intent(in) :: geom                                ! Geometry
-real(kind_real),intent(in) :: gamma(nicas_blk%nc1b,nicas_blk%nl1) ! Subset Sc1 field, limited levels
-real(kind_real),intent(out) :: delta(nicas_blk%nc1b,geom%nl0)     ! Subset Sc1 field, full levels
+class(nicas_blk_type),intent(in) :: nicas_blk                     !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                               !< MPI data
+type(geom_type),intent(in) :: geom                                !< Geometry
+real(kind_real),intent(in) :: gamma(nicas_blk%nc1b,nicas_blk%nl1) !< Subset Sc1 field, limited levels
+real(kind_real),intent(out) :: delta(nicas_blk%nc1b,geom%nl0)     !< Subset Sc1 field, full levels
 
 ! Local variables
 integer :: ic1b,il0
@@ -4117,18 +4117,18 @@ end subroutine nicas_blk_apply_interp_v
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_interp_v_ad
-! Purpose: apply vertical interpolation adjoint
+!> Apply vertical interpolation adjoint
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_interp_v_ad(nicas_blk,mpl,geom,delta,gamma)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk                      ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                                ! MPI data
-type(geom_type),intent(in) :: geom                                 ! Geometry
-real(kind_real),intent(in) :: delta(nicas_blk%nc1b,geom%nl0)       ! Subset Sc1 field, full levels
-real(kind_real),intent(out) :: gamma(nicas_blk%nc1b,nicas_blk%nl1) ! Subset Sc1 field, limited levels
+class(nicas_blk_type),intent(in) :: nicas_blk                      !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                                !< MPI data
+type(geom_type),intent(in) :: geom                                 !< Geometry
+real(kind_real),intent(in) :: delta(nicas_blk%nc1b,geom%nl0)       !< Subset Sc1 field, full levels
+real(kind_real),intent(out) :: gamma(nicas_blk%nc1b,nicas_blk%nl1) !< Subset Sc1 field, limited levels
 
 ! Local variables
 integer :: ic1b
@@ -4160,17 +4160,17 @@ end subroutine nicas_blk_apply_interp_v_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_interp_s
-! Purpose: apply subsampling interpolation
+!> Apply subsampling interpolation
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_interp_s(nicas_blk,mpl,alpha,gamma)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk                      ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                                ! MPI data
-real(kind_real),intent(in) :: alpha(nicas_blk%nsb)                 ! Subgrid field
-real(kind_real),intent(out) :: gamma(nicas_blk%nc1b,nicas_blk%nl1) ! Subset Sc1 field, limited levels
+class(nicas_blk_type),intent(in) :: nicas_blk                      !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                                !< MPI data
+real(kind_real),intent(in) :: alpha(nicas_blk%nsb)                 !< Subgrid field
+real(kind_real),intent(out) :: gamma(nicas_blk%nc1b,nicas_blk%nl1) !< Subset Sc1 field, limited levels
 
 ! Local variables
 integer :: isb,il1
@@ -4197,17 +4197,17 @@ end subroutine nicas_blk_apply_interp_s
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_interp_s_ad
-! Purpose: apply subsampling interpolation adjoint
+!> Apply subsampling interpolation adjoint
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_interp_s_ad(nicas_blk,mpl,gamma,alpha)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk                     ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                               ! MPI data
-real(kind_real),intent(in) :: gamma(nicas_blk%nc1b,nicas_blk%nl1) ! Subset Sc1 field, limited levels
-real(kind_real),intent(out) :: alpha(nicas_blk%nsb)               ! Subgrid field
+class(nicas_blk_type),intent(in) :: nicas_blk                     !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                               !< MPI data
+real(kind_real),intent(in) :: gamma(nicas_blk%nc1b,nicas_blk%nl1) !< Subset Sc1 field, limited levels
+real(kind_real),intent(out) :: alpha(nicas_blk%nsb)               !< Subgrid field
 
 ! Local variables
 integer :: il1,isb
@@ -4231,16 +4231,16 @@ end subroutine nicas_blk_apply_interp_s_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_apply_convol
-! Purpose: apply convolution
+!> Apply convolution
 !----------------------------------------------------------------------
 subroutine nicas_blk_apply_convol(nicas_blk,mpl,alpha)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk         ! NICAS data block
-type(mpl_type),intent(inout) :: mpl                   ! MPI data
-real(kind_real),intent(inout) :: alpha(nicas_blk%nsc) ! Subgrid field
+class(nicas_blk_type),intent(in) :: nicas_blk         !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+real(kind_real),intent(inout) :: alpha(nicas_blk%nsc) !< Subgrid field
 
 ! Local variables
 real(kind_real),allocatable :: alpha_tmp(:)
@@ -4265,17 +4265,17 @@ end subroutine nicas_blk_apply_convol
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_test_adjoint
-! Purpose: test NICAS adjoint accuracy
+!> Test NICAS adjoint accuracy
 !----------------------------------------------------------------------
 subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,geom)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(rng_type),intent(inout) :: rng           ! Random number generator
-type(geom_type),intent(in) :: geom            ! Geometry
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(rng_type),intent(inout) :: rng           !< Random number generator
+type(geom_type),intent(in) :: geom            !< Geometry
 
 ! Local variables
 integer :: isb
@@ -4501,19 +4501,19 @@ end subroutine nicas_blk_test_adjoint
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_test_dirac
-! Purpose: apply NICAS to diracs
+!> Apply NICAS to diracs
 !----------------------------------------------------------------------
 subroutine nicas_blk_test_dirac(nicas_blk,mpl,nam,geom,bpar,io)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk ! NICAS data block
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(nam_type),intent(in) :: nam              ! Namelist
-type(geom_type),intent(in) :: geom            ! Geometry
-type(bpar_type),intent(in) :: bpar            ! Block parameters
-type(io_type),intent(in) :: io                ! I/O
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(nam_type),intent(in) :: nam              !< Namelist
+type(geom_type),intent(in) :: geom            !< Geometry
+type(bpar_type),intent(in) :: bpar            !< Block parameters
+type(io_type),intent(in) :: io                !< I/O
 
 ! Local variables
 integer :: il0,idir

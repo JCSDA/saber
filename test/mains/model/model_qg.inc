@@ -1,15 +1,15 @@
 !----------------------------------------------------------------------
 ! Subroutine: model_qg_coord
-! Purpose: get QG coordinates
+!> Get QG coordinates
 !----------------------------------------------------------------------
 subroutine model_qg_coord(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,ilon,ilat,il0
@@ -108,18 +108,18 @@ end subroutine model_qg_coord
 
 !----------------------------------------------------------------------
 ! Subroutine: model_qg_read
-! Purpose: read QG field
+!> Read QG field
 !----------------------------------------------------------------------
 subroutine model_qg_read(model,mpl,nam,filename,fld)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model                        ! Model
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-character(len=*),intent(in) :: filename                         ! File name
-real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
+class(model_type),intent(inout) :: model                        !< Model
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+character(len=*),intent(in) :: filename                         !< File name
+real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
 integer :: iv,il0,img,ilon,ilat,ndims
@@ -151,18 +151,18 @@ do iv=1,nam%nv
          fld_tmp = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,1),(/1,1/), &
-          & (/model%nlon-1,model%nlat/)))
+ & (/model%nlon-1,model%nlat/)))
             fld_tmp(model%nlon,:,1) = fld_tmp(1,:,1)
          elseif (trim(nam%lev2d)=='last') then
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,model%nl0),(/1,1/), &
-          & (/model%nlon-1,model%nlat/)))
+ & (/model%nlon-1,model%nlat/)))
             fld_tmp(model%nlon,:,model%nl0) = fld_tmp(1,:,model%nl0)
          end if
       case (3) 
          ! 3D data
          do il0=1,nam%nl
             call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,il0),(/1,1,nam%levs(il0)/), &
-          & (/model%nlon-1,model%nlat,1/)))
+ & (/model%nlon-1,model%nlat,1/)))
             fld_tmp(model%nlon,:,il0) = fld_tmp(1,:,il0)
          end do
       case default

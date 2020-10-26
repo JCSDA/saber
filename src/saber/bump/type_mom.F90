@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_mom
-! Purpose: moments derived type
+!> Moments derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -25,10 +25,10 @@ implicit none
 
 ! Moments derived type
 type mom_type
-   integer :: ne                            ! Ensemble size
-   integer :: nsub                          ! Number of sub-ensembles
-   character(len=1024) :: prefix            ! Prefix
-   type(mom_blk_type),allocatable :: blk(:) ! Moments blocks
+   integer :: ne                            !< Ensemble size
+   integer :: nsub                          !< Number of sub-ensembles
+   character(len=1024) :: prefix            !< Prefix
+   type(mom_blk_type),allocatable :: blk(:) !< Moments blocks
 contains
    procedure :: alloc => mom_alloc
    procedure :: init => mom_init
@@ -45,20 +45,20 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine mom_alloc(mom,geom,bpar,samp,ne,nsub,prefix)
 
 implicit none
 
 ! Passed variables
-class(mom_type),intent(inout) :: mom  ! Moments
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-type(samp_type),intent(in) :: samp    ! Sampling
-integer,intent(in) :: ne              ! Ensemble size
-integer,intent(in) :: nsub            ! Number of sub-ensembles
-character(len=*),intent(in) :: prefix ! Prefix
+class(mom_type),intent(inout) :: mom  !< Moments
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+type(samp_type),intent(in) :: samp    !< Sampling
+integer,intent(in) :: ne              !< Ensemble size
+integer,intent(in) :: nsub            !< Number of sub-ensembles
+character(len=*),intent(in) :: prefix !< Prefix
 
 ! Local variables
 integer :: ib
@@ -79,15 +79,15 @@ end subroutine mom_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_init
-! Purpose: initialization
+!> Initialization
 !----------------------------------------------------------------------
 subroutine mom_init(mom,bpar)
 
 implicit none
 
 ! Passed variables
-class(mom_type),intent(inout) :: mom ! Moments
-type(bpar_type),intent(in) :: bpar   ! Block parameters
+class(mom_type),intent(inout) :: mom !< Moments
+type(bpar_type),intent(in) :: bpar   !< Block parameters
 
 ! Local variables
 integer :: ib
@@ -106,14 +106,14 @@ end subroutine mom_init
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine mom_dealloc(mom)
 
 implicit none
 
 ! Passed variables
-class(mom_type),intent(inout) :: mom ! Moments
+class(mom_type),intent(inout) :: mom !< Moments
 
 ! Local variables
 integer :: ib
@@ -130,21 +130,21 @@ end subroutine mom_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_read
-! Purpose: read
+!> Read
 !----------------------------------------------------------------------
 subroutine mom_read(mom,mpl,nam,geom,bpar,samp,ens,prefix)
 
 implicit none
 
 ! Passed variables
-class(mom_type),intent(inout) :: mom  ! Moments
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-type(samp_type),intent(in) :: samp    ! Sampling
-type(ens_type), intent(in) :: ens     ! Ensemble
-character(len=*),intent(in) :: prefix ! Prefix
+class(mom_type),intent(inout) :: mom  !< Moments
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(nam_type),intent(in) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+type(samp_type),intent(in) :: samp    !< Sampling
+type(ens_type), intent(in) :: ens     !< Ensemble
+character(len=*),intent(in) :: prefix !< Prefix
 
 ! Local variables
 integer :: ib,isub,grid_hash
@@ -207,19 +207,19 @@ end subroutine mom_read
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_write
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine mom_write(mom,mpl,nam,geom,bpar,samp)
 
 implicit none
 
 ! Passed variables
-class(mom_type),intent(in) :: mom   ! Moments
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(nam_type),intent(in) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom  ! Geometry
-type(bpar_type),intent(in) :: bpar  ! Block parameters
-type(samp_type),intent(in) :: samp  ! Sampling
+class(mom_type),intent(in) :: mom   !< Moments
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
+type(bpar_type),intent(in) :: bpar  !< Block parameters
+type(samp_type),intent(in) :: samp  !< Sampling
 
 ! Local variables
 integer :: ib,isub
@@ -278,21 +278,21 @@ end subroutine mom_write
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_compute
-! Purpose: compute centered moments (iterative formulae)
+!> Compute centered moments (iterative formulae)
 !----------------------------------------------------------------------
 subroutine mom_compute(mom,mpl,nam,geom,bpar,samp,ens,prefix)
 
 implicit none
 
 ! Passed variables
-class(mom_type),intent(inout) :: mom  ! Moments
-type(mpl_type),intent(inout) :: mpl   ! MPI data
-type(nam_type),intent(in) :: nam      ! Namelist
-type(geom_type),intent(in) :: geom    ! Geometry
-type(bpar_type),intent(in) :: bpar    ! Block parameters
-type(samp_type),intent(in) :: samp    ! Sampling
-type(ens_type), intent(in) :: ens     ! Ensemble
-character(len=*),intent(in) :: prefix ! Prefix
+class(mom_type),intent(inout) :: mom  !< Moments
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(nam_type),intent(in) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+type(samp_type),intent(in) :: samp    !< Sampling
+type(ens_type), intent(in) :: ens     !< Ensemble
+character(len=*),intent(in) :: prefix !< Prefix
 
 ! Local variables
 integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv
