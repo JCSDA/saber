@@ -470,7 +470,7 @@ if (bump%nam%new_lct) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Copy LCT into C matrix'
    call bump%mpl%flush
-   call bump%cmat%from_lct(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%lct)
+   call bump%cmat%from_lct(bump%mpl,bump%geom,bump%bpar,bump%lct)
 
    ! Release memory (partial)
    call bump%lct%partial_dealloc
@@ -500,7 +500,7 @@ if (bump%cmat%allocated.or.bump%nam%new_nicas) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Get C matrix from BUMP interface'
    call bump%mpl%flush
-   call bump%cmat%from_bump(bump%mpl,bump%nam,bump%geom,bump%bpar)
+   call bump%cmat%from_bump(bump%mpl,bump%geom,bump%bpar)
 
    ! Setup C matrix sampling
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'

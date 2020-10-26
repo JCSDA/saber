@@ -62,13 +62,12 @@ contains
 ! Subroutine: cmat_blk_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine cmat_blk_alloc(cmat_blk,nam,geom,bpar)
+subroutine cmat_blk_alloc(cmat_blk,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
-type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
@@ -101,14 +100,13 @@ end subroutine cmat_blk_alloc
 ! Subroutine: cmat_blk_init
 !> Initialization
 !----------------------------------------------------------------------
-subroutine cmat_blk_init(cmat_blk,mpl,nam,bpar)
+subroutine cmat_blk_init(cmat_blk,mpl,bpar)
 
 implicit none
 
 ! Passed variables
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 type(mpl_type),intent(in) :: mpl               !< MPI data
-type(nam_type),intent(in) :: nam               !< Namelist
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Associate

@@ -1089,7 +1089,7 @@ real(kind_real),intent(out) :: l(1:kz)      ! Eigenvalues of Bx
 integer,intent(out) :: ierr                 ! Error status
 
 ! Local variables
-integer :: work,m,info
+integer :: work,m
 real(kind_real) :: work_array(1:3*kz-1),ecopy(1:kz,1:kz),lcopy(1:kz)
 
 ! Initialization

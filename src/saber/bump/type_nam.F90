@@ -224,7 +224,7 @@ class(nam_type),intent(out) :: nam !< Namelist
 integer,intent(in) :: nproc        !< Number of MPI task
 
 ! Local variable
-integer :: il,iv,its,i,ildwv
+integer :: il,iv,i,ildwv
 
 ! general_param default
 nam%datadir = '.'
@@ -1614,8 +1614,8 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: iv,its,i,il,idir,ildwv
-character(len=2) :: ivchar,itschar,ildwvchar
+integer :: iv,i,il,idir,ildwv
+character(len=2) :: ivchar,ildwvchar
 character(len=1024),parameter :: subr = 'nam_check'
 
 ! Check maximum sizes
