@@ -221,7 +221,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
 
     # Check whether the URLs exist or not
     foreach ( saber_data_tar_name ${saber_data_tar} )
-        list( APPEND url_names_data ${GIT_BRANCH}/${saber_data_tar_name} )
+        list( APPEND url_names_data ${GIT_BRANCH_SABER}/${saber_data_tar_name} )
     endforeach()
     ecbuild_check_urls( NAMES  ${url_names_data}
                         RESULT SPECIFIC_TEST_FILES )
@@ -229,7 +229,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     # Set distant directory
     if( SPECIFIC_TEST_FILES MATCHES 0 )
         # Download and extract new test files (distant directory = git branch)
-        set( DIRNAME ${GIT_BRANCH} )
+        set( DIRNAME ${GIT_BRANCH_SABER} )
     else()
         # Download and extract develop test files (distant directory = develop)
         set( DIRNAME "develop" )
@@ -245,7 +245,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
 
     # Check whether the URLs exist or not
     foreach( saber_ref_tar_name ${saber_ref_tar} )
-        list( APPEND url_names_ref ${GIT_BRANCH}/${saber_ref_tar_name} )
+        list( APPEND url_names_ref ${GIT_BRANCH_SABER}/${saber_ref_tar_name} )
     endforeach()
     ecbuild_check_urls( NAMES  ${url_names_ref}
                         RESULT SPECIFIC_TEST_FILES )
@@ -253,7 +253,7 @@ if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
     # Set distant directory
     if( SPECIFIC_TEST_FILES MATCHES 0 )
         # Download and extract new test files (distant directory = git branch)
-        set( DIRNAME ${GIT_BRANCH} )
+        set( DIRNAME ${GIT_BRANCH_SABER} )
     else()
         # Download and extract develop test files (distant directory = develop)
         set( DIRNAME "develop" )
