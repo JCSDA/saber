@@ -10,6 +10,13 @@ find_dependency(eckit)
 find_dependency(fckit)
 find_package(atlas REQUIRED COMPONENTS OMP_Fortran)
 
+if( @MKL_FOUND@ )
+    find_dependency( MKL REQUIRED )
+    set( LAPACK_LIBRARIES ${MKL_LIBRARIES} )
+else()
+    find_dependency( LAPACK REQUIRED )
+endif()
+
 if(@oops_FOUND@) # oops_FOUND
     find_dependency(oops)
     set(saber_oops_FOUND True) #COMPONENT 'oops'

@@ -104,11 +104,12 @@ if test "${test%%_*}" = "bump" ; then
    else
       # Specific tests
       test2=$2
-      suffix=$3
-
+      mpiomp=$3
+      suffix=$4
+      
       # Build file names
-      file=testdata/${test}/test_1-1_${suffix}.nc
-      file2=testdata/${test2}/test_1-1_${suffix}.nc
+      file=testdata/${test}/test_${mpiomp}_${suffix}.nc
+      file2=testdata/${test2}/test_${mpiomp}_${suffix}.nc
 
       # Compare files with NCCMP
       if [ -x "$(command -v nccmp)" ] ; then

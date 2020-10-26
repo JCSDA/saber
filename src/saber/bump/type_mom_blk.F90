@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_mom_blk
-! Purpose: moments block derived type
+!> Moments block derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -18,13 +18,13 @@ implicit none
 
 ! Moments block derived type
 type mom_blk_type
-   integer :: ib                                  ! Block index
-   integer :: ne                                  ! Ensemble size
-   integer :: nsub                                ! Number of sub-ensembles
-   real(kind_real),allocatable :: m2_1(:,:,:)     ! Variance for variable 1
-   real(kind_real),allocatable :: m2_2(:,:,:,:)   ! Variance for variable 2
-   real(kind_real),allocatable :: m11(:,:,:,:,:)  ! Covariance
-   real(kind_real),allocatable :: m22(:,:,:,:,:)  ! Fourth-order centered moment
+   integer :: ib                                  !< Block index
+   integer :: ne                                  !< Ensemble size
+   integer :: nsub                                !< Number of sub-ensembles
+   real(kind_real),allocatable :: m2_1(:,:,:)     !< Variance for variable 1
+   real(kind_real),allocatable :: m2_2(:,:,:,:)   !< Variance for variable 2
+   real(kind_real),allocatable :: m11(:,:,:,:,:)  !< Covariance
+   real(kind_real),allocatable :: m22(:,:,:,:,:)  !< Fourth-order centered moment
 contains
    procedure :: alloc => mom_blk_alloc
    procedure :: dealloc => mom_blk_dealloc
@@ -38,19 +38,19 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_blk_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine mom_blk_alloc(mom_blk,nc1,geom,bpar,ne,nsub)
 
 implicit none
 
 ! Passed variables
-class(mom_blk_type),intent(inout) :: mom_blk ! Moments block
-integer,intent(in) :: nc1                    ! Subsampling size
-type(geom_type),intent(in) :: geom           ! Geometry
-type(bpar_type),intent(in) :: bpar           ! Block parameters
-integer,intent(in) :: ne                     ! Ensemble size
-integer,intent(in) :: nsub                   ! Number of sub-ensembles
+class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
+integer,intent(in) :: nc1                    !< Subsampling size
+type(geom_type),intent(in) :: geom           !< Geometry
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+integer,intent(in) :: ne                     !< Ensemble size
+integer,intent(in) :: nsub                   !< Number of sub-ensembles
 
 ! Associate
 associate(ib=>mom_blk%ib)
@@ -72,14 +72,14 @@ end subroutine mom_blk_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_blk_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine mom_blk_dealloc(mom_blk)
 
 implicit none
 
 ! Passed variables
-class(mom_blk_type),intent(inout) :: mom_blk ! Moments block
+class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
 
 ! Release memory
 if (allocated(mom_blk%m2_1)) deallocate(mom_blk%m2_1)
@@ -91,19 +91,19 @@ end subroutine mom_blk_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_blk_ext
-! Purpose: halo extension
+!> Halo extension
 !----------------------------------------------------------------------
 subroutine mom_blk_ext(mom_blk_out,mpl,geom,bpar,samp,mom_blk_in)
 
 implicit none
 
 ! Passed variables
-class(mom_blk_type),intent(inout) :: mom_blk_out ! Extended moments block
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(geom_type),intent(in) :: geom               ! Geometry
-type(bpar_type),intent(in) :: bpar               ! Block parameters
-type(samp_type),intent(in) :: samp               ! Sampling
-type(mom_blk_type),intent(in) :: mom_blk_in      ! Reduced moments block
+class(mom_blk_type),intent(inout) :: mom_blk_out !< Extended moments block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(geom_type),intent(in) :: geom               !< Geometry
+type(bpar_type),intent(in) :: bpar               !< Block parameters
+type(samp_type),intent(in) :: samp               !< Sampling
+type(mom_blk_type),intent(in) :: mom_blk_in      !< Reduced moments block
 
 ! Local variables
 integer :: npack,ipack,isub,il0,jc3,jl0r

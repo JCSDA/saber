@@ -1,15 +1,15 @@
 !----------------------------------------------------------------------
 ! Subroutine: model_ifs_coord
-! Purpose: get IFS coordinates
+!> Get IFS coordinates
 !----------------------------------------------------------------------
 subroutine model_ifs_coord(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,ilon,ilat
@@ -79,18 +79,18 @@ end subroutine model_ifs_coord
 
 !----------------------------------------------------------------------
 ! Subroutine: model_ifs_read
-! Purpose: read IFS field
+!> Read IFS field
 !----------------------------------------------------------------------
 subroutine model_ifs_read(model,mpl,nam,filename,fld)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model                        ! Model
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-character(len=*),intent(in) :: filename                         ! File name
-real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
+class(model_type),intent(inout) :: model                        !< Model
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+character(len=*),intent(in) :: filename                         !< File name
+real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
 integer :: iv,il0,img,ilon,ilat

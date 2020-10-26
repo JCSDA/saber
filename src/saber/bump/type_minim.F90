@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_minim
-! Purpose: minimization data derived type
+!> Minimization data derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -19,52 +19,52 @@ implicit none
 ! Minimization data derived type
 type minim_type
    ! Minimizer data
-   real(kind_real) :: hooke_rho               ! Convergence parameter for the Hooke algorithm
-   real(kind_real) :: hooke_tol               ! Tolerance for the Hooke algorithm
-   integer :: hooke_itermax                   ! Maximum number of iteration for the Hooke algorithm
-   real(kind_real) :: praxis_tol              ! Tolerance for the praxis algorithm
-   integer :: praxis_itermax                  ! Maximum number of iteration for the praxis algorithm
+   real(kind_real) :: hooke_rho               !< Convergence parameter for the Hooke algorithm
+   real(kind_real) :: hooke_tol               !< Tolerance for the Hooke algorithm
+   integer :: hooke_itermax                   !< Maximum number of iteration for the Hooke algorithm
+   real(kind_real) :: praxis_tol              !< Tolerance for the praxis algorithm
+   integer :: praxis_itermax                  !< Maximum number of iteration for the praxis algorithm
 
    ! Generic data
-   integer :: nx                              ! Control vector size
-   integer :: ny                              ! Function output size
-   real(kind_real),allocatable :: x(:)        ! Control vector
-   real(kind_real),allocatable :: guess(:)    ! Control vector guess
-   real(kind_real),allocatable :: binf(:)     ! Control vector lower bound
-   real(kind_real),allocatable :: bsup(:)     ! Control vector upper bound
-   real(kind_real),allocatable :: obs(:)      ! Observation
-   character(len=1024) :: cost_function       ! Cost function
-   real(kind_real) :: f_guess                 ! Guess cost
-   real(kind_real) :: f_min                   ! Minimum cost
-   character(len=1024) :: algo                ! Minimization algorithm
+   integer :: nx                              !< Control vector size
+   integer :: ny                              !< Function output size
+   real(kind_real),allocatable :: x(:)        !< Control vector
+   real(kind_real),allocatable :: guess(:)    !< Control vector guess
+   real(kind_real),allocatable :: binf(:)     !< Control vector lower bound
+   real(kind_real),allocatable :: bsup(:)     !< Control vector upper bound
+   real(kind_real),allocatable :: obs(:)      !< Observation
+   character(len=1024) :: cost_function       !< Cost function
+   real(kind_real) :: f_guess                 !< Guess cost
+   real(kind_real) :: f_min                   !< Minimum cost
+   character(len=1024) :: algo                !< Minimization algorithm
 
    ! Common data
-   integer :: nl0                             ! Number of levels
-   integer :: nc3                             ! Number of classes
+   integer :: nl0                             !< Number of levels
+   integer :: nc3                             !< Number of classes
 
    ! Specific data (fit)
-   real(kind_real) :: smoothness_penalty      ! Smoothness penalty weight
-   integer :: dl0                             ! Number of levels between interpolation levels
-   integer :: nl1                             ! Number of interpolation levels
-   integer,allocatable :: il1inf(:)           ! Inferior interpolation level
-   real(kind_real),allocatable :: rinf(:)     ! Inferior interpolation coefficient
-   integer,allocatable :: il1sup(:)           ! Superior interpolation level
-   real(kind_real),allocatable :: rsup(:)     ! Superior interpolation coefficient
-   integer :: nl0r                            ! Effective number of levels
-   integer,allocatable :: l0rl0_to_l0(:,:)    ! Effective level to level
-   real(kind_real),allocatable :: disth(:)    ! Horizontal distance
-   real(kind_real),allocatable :: distv(:,:)  ! Vertical distance
-   logical :: lcoef                           ! Diagonal coefficient flag
-   logical :: lrh                             ! Horizontal support radius flag
-   logical :: lrv                             ! Vertical support radius flag
+   real(kind_real) :: smoothness_penalty      !< Smoothness penalty weight
+   integer :: dl0                             !< Number of levels between interpolation levels
+   integer :: nl1                             !< Number of interpolation levels
+   integer,allocatable :: il1inf(:)           !< Inferior interpolation level
+   real(kind_real),allocatable :: rinf(:)     !< Inferior interpolation coefficient
+   integer,allocatable :: il1sup(:)           !< Superior interpolation level
+   real(kind_real),allocatable :: rsup(:)     !< Superior interpolation coefficient
+   integer :: nl0r                            !< Effective number of levels
+   integer,allocatable :: l0rl0_to_l0(:,:)    !< Effective level to level
+   real(kind_real),allocatable :: disth(:)    !< Horizontal distance
+   real(kind_real),allocatable :: distv(:,:)  !< Vertical distance
+   logical :: lcoef                           !< Diagonal coefficient flag
+   logical :: lrh                             !< Horizontal support radius flag
+   logical :: lrv                             !< Vertical support radius flag
 
    ! Specific data (LCT)
-   integer :: nscales                         ! Number of LCT scales
-   real(kind_real),allocatable :: dxsq(:,:)   ! Zonal separation squared
-   real(kind_real),allocatable :: dysq(:,:)   ! Meridian separation squared
-   real(kind_real),allocatable :: dxdy(:,:)   ! Zonal x meridional separation product
-   real(kind_real),allocatable :: dzsq(:,:)   ! Vertical separation squared
-   logical,allocatable :: dmask(:,:)          ! Mask
+   integer :: nscales                         !< Number of LCT scales
+   real(kind_real),allocatable :: dxsq(:,:)   !< Zonal separation squared
+   real(kind_real),allocatable :: dysq(:,:)   !< Meridian separation squared
+   real(kind_real),allocatable :: dxdy(:,:)   !< Zonal x meridional separation product
+   real(kind_real),allocatable :: dzsq(:,:)   !< Vertical separation squared
+   logical,allocatable :: dmask(:,:)          !< Mask
 contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
@@ -96,16 +96,16 @@ contains
 
 !----------------------------------------------------------------------
 ! subroutine: minim_compute
-! Purpose: minimize ensuring bounds constraints
+!> Minimize ensuring bounds constraints
 !----------------------------------------------------------------------
 subroutine minim_compute(minim,mpl,rng)
 
 implicit none
 
 ! Passed variables
-class(minim_type),intent(inout) :: minim ! Minimization data
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(rng_type),intent(inout) :: rng      ! Random number generator
+class(minim_type),intent(inout) :: minim !< Minimization data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(rng_type),intent(inout) :: rng      !< Random number generator
 
 ! Local variables
 character(len=1024),parameter :: subr = 'minim_compute'
@@ -142,17 +142,17 @@ end subroutine minim_compute
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_cost
-! Purpose: compute cost function
+!> Compute cost function
 !----------------------------------------------------------------------
 subroutine minim_cost(minim,mpl,x,f)
 
 implicit none
 
 ! Passed variables
-class(minim_type),intent(in) :: minim     ! Minimization data
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-real(kind_real),intent(in) :: x(minim%nx) ! Control vector
-real(kind_real),intent(out) :: f          ! Cost function value
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 character(len=1024) :: subr = 'minim_cost'
@@ -170,17 +170,17 @@ end subroutine minim_cost
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_cost_fit_diag
-! Purpose: diagnosic fit function cost
+!> Diagnosic fit function cost
 !----------------------------------------------------------------------
 subroutine minim_cost_fit_diag(minim,mpl,x,f)
 
 implicit none
 
 ! Passed variables
-class(minim_type),intent(in) :: minim     ! Minimization data
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-real(kind_real),intent(in) :: x(minim%nx) ! Control vector
-real(kind_real),intent(out) :: f          ! Cost function value
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 integer :: ivar,il0
@@ -287,17 +287,17 @@ end subroutine minim_cost_fit_diag
 
 !----------------------------------------------------------------------
 ! Function: minim_cost_fit_lct
-! Purpose: LCT fit function cost
+!> LCT fit function cost
 !----------------------------------------------------------------------
 subroutine minim_cost_fit_lct(minim,mpl,x,f)
 
 implicit none
 
 ! Passed variables
-class(minim_type),intent(in) :: minim     ! Minimization data
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-real(kind_real),intent(in) :: x(minim%nx) ! Control vector
-real(kind_real),intent(out) :: f          ! Cost function value
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 integer :: iscales,icomp
@@ -336,7 +336,7 @@ end subroutine minim_cost_fit_lct
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_hooke
-! Purpose: seeks a minimizer of a scalar function of several variables
+!> Seeks a minimizer of a scalar function of several variables
 ! Author: ALGOL original by Arthur Kaupe, C version by Mark Johnson, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine minim_hooke(minim,mpl,guess)
@@ -344,9 +344,9 @@ subroutine minim_hooke(minim,mpl,guess)
 implicit none
 
 ! Passed variables
-class(minim_type),intent(inout) :: minim      ! Minimization data
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-real(kind_real),intent(in) :: guess(minim%nx) ! Guess
+class(minim_type),intent(inout) :: minim      !< Minimization data
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+real(kind_real),intent(in) :: guess(minim%nx) !< Guess
 
 ! Local variables
 integer :: funevals,i,iters,keep
@@ -433,7 +433,7 @@ end subroutine minim_hooke
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_best_nearby
-! Purpose: looks for a better nearby point, one coordinate at a time
+!> Looks for a better nearby point, one coordinate at a time
 ! Author: ALGOL original by Arthur Kaupe, C version by Mark Johnson, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine minim_best_nearby(minim,mpl,delta,point,prevbest,funevals,minf)
@@ -441,13 +441,13 @@ subroutine minim_best_nearby(minim,mpl,delta,point,prevbest,funevals,minf)
 implicit none
 
 ! Passed variables
-class(minim_type),intent(inout) :: minim         ! Minimization data
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-real(kind_real),intent(inout) :: delta(minim%nx) ! Step
-real(kind_real),intent(inout) :: point(minim%nx) ! Point
-real(kind_real),intent(in) :: prevbest           ! Best existing cost
-integer,intent(inout) :: funevals                ! Number of evaluations
-real(kind_real),intent(out) :: minf              ! Minimum cost
+class(minim_type),intent(inout) :: minim         !< Minimization data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+real(kind_real),intent(inout) :: delta(minim%nx) !< Step
+real(kind_real),intent(inout) :: point(minim%nx) !< Point
+real(kind_real),intent(in) :: prevbest           !< Best existing cost
+integer,intent(inout) :: funevals                !< Number of evaluations
+real(kind_real),intent(out) :: minf              !< Minimum cost
 
 ! Local variables
 integer :: i
@@ -486,7 +486,7 @@ end subroutine minim_best_nearby
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_praxis
-! Purpose: seeks a minimizer of a scalar function of several variables
+!> Seeks a minimizer of a scalar function of several variables
 ! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine minim_praxis(minim,mpl,rng,guess)
@@ -494,10 +494,10 @@ subroutine minim_praxis(minim,mpl,rng,guess)
 implicit none
 
 ! Passed variables
-class(minim_type),intent(inout) :: minim      ! Minimization data
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-type(rng_type),intent(inout) :: rng           ! Random number generator
-real(kind_real),intent(in) :: guess(minim%nx) ! Guess
+class(minim_type),intent(inout) :: minim      !< Minimization data
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(rng_type),intent(inout) :: rng           !< Random number generator
+real(kind_real),intent(in) :: guess(minim%nx) !< Guess
 
 ! Local variables
 integer :: i,j,jsearch,k,k2,kl,kt,ktm,nits,nl,nf,iter
@@ -736,7 +736,7 @@ end subroutine minim_praxis
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_flin
-! Purpose: seeks a minimizer of a scalar function of one variable
+!> Seeks a minimizer of a scalar function of one variable
 ! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine minim_flin(minim,mpl,jsearch,l,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,flin)
@@ -744,21 +744,21 @@ subroutine minim_flin(minim,mpl,jsearch,l,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,flin)
 implicit none
 
 ! Passed variables
-class(minim_type),intent(inout) :: minim           ! Minimization data
-type(mpl_type),intent(inout) :: mpl                ! MPI data
-integer,intent(in) :: jsearch                      ! Kind of search
-real(kind_real),intent(in) :: l                    ! Particular point at which the function is to be evaluated
-real(kind_real),intent(in) :: x(minim%nx)          ! State
-integer,intent(inout) :: nf                        ! Number of function evaluations
-real(kind_real),intent(in) :: v(minim%nx,minim%nx) ! Search directions
-real(kind_real),intent(in) :: q0(minim%nx)         ! First auxiliary point
-real(kind_real),intent(in) :: q1(minim%nx)         ! Second auxiliary point
-real(kind_real),intent(in) :: qd0                  ! First auxiliary value
-real(kind_real),intent(in) :: qd1                  ! Second auxiliary value
-real(kind_real),intent(out) :: qa                  ! First combination coefficient
-real(kind_real),intent(out) :: qb                  ! Second combination coefficient
-real(kind_real),intent(out) :: qc                  ! Third combination coefficient
-real(kind_real),intent(out) :: flin                ! Value of the function at the minimizing point
+class(minim_type),intent(inout) :: minim           !< Minimization data
+type(mpl_type),intent(inout) :: mpl                !< MPI data
+integer,intent(in) :: jsearch                      !< Kind of search
+real(kind_real),intent(in) :: l                    !< Particular point at which the function is to be evaluated
+real(kind_real),intent(in) :: x(minim%nx)          !< State
+integer,intent(inout) :: nf                        !< Number of function evaluations
+real(kind_real),intent(in) :: v(minim%nx,minim%nx) !< Search directions
+real(kind_real),intent(in) :: q0(minim%nx)         !< First auxiliary point
+real(kind_real),intent(in) :: q1(minim%nx)         !< Second auxiliary point
+real(kind_real),intent(in) :: qd0                  !< First auxiliary value
+real(kind_real),intent(in) :: qd1                  !< Second auxiliary value
+real(kind_real),intent(out) :: qa                  !< First combination coefficient
+real(kind_real),intent(out) :: qb                  !< Second combination coefficient
+real(kind_real),intent(out) :: qc                  !< Third combination coefficient
+real(kind_real),intent(out) :: flin                !< Value of the function at the minimizing point
 
 ! Local variables
 real(kind_real) :: t(minim%nx)
@@ -784,7 +784,7 @@ end subroutine minim_flin
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_quad
-! Purpose: minimize the scalar function F along a particular curve
+!> Minimize the scalar function F along a particular curve
 ! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine minim_quad(minim,mpl,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qf1,qa,qb,qc,qd0,qd1)
@@ -792,24 +792,24 @@ subroutine minim_quad(minim,mpl,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qf1,qa,qb,qc,qd0,q
 implicit none
 
 ! Passed variables
-class(minim_type),intent(inout) :: minim           ! Minimization data
-type(mpl_type),intent(inout) :: mpl                ! MPI data
-real(kind_real),intent(in) :: t                    ! ?
-real(kind_real),intent(in) :: h                    ! ?
-real(kind_real),intent(in) :: v(minim%nx,minim%nx) ! Search directions
-real(kind_real),intent(inout) :: q0(minim%nx)      ! First auxiliary point
-real(kind_real),intent(inout) :: q1(minim%nx)      ! Second auxiliary point
-integer,intent(inout) :: nl                        ! Number of linear searches
-integer,intent(inout) :: nf                        ! Number of function evaluations
-real(kind_real),intent(in) :: dmin                 ! Smallest eigenvalue estimate
-real(kind_real),intent(in) :: ldt                  ! Step length
-real(kind_real),intent(inout) :: fx                ! Function value
-real(kind_real),intent(inout) :: qf1               ! ?
-real(kind_real),intent(inout) :: qa                ! First combination coefficient
-real(kind_real),intent(inout) :: qb                ! Second combination coefficient
-real(kind_real),intent(inout) :: qc                ! Third combination coefficient
-real(kind_real),intent(inout) :: qd0               ! First auxiliary value
-real(kind_real),intent(inout) :: qd1               ! Second auxiliary value
+class(minim_type),intent(inout) :: minim           !< Minimization data
+type(mpl_type),intent(inout) :: mpl                !< MPI data
+real(kind_real),intent(in) :: t                    !< ?
+real(kind_real),intent(in) :: h                    !< ?
+real(kind_real),intent(in) :: v(minim%nx,minim%nx) !< Search directions
+real(kind_real),intent(inout) :: q0(minim%nx)      !< First auxiliary point
+real(kind_real),intent(inout) :: q1(minim%nx)      !< Second auxiliary point
+integer,intent(inout) :: nl                        !< Number of linear searches
+integer,intent(inout) :: nf                        !< Number of function evaluations
+real(kind_real),intent(in) :: dmin                 !< Smallest eigenvalue estimate
+real(kind_real),intent(in) :: ldt                  !< Step length
+real(kind_real),intent(inout) :: fx                !< Function value
+real(kind_real),intent(inout) :: qf1               !< ?
+real(kind_real),intent(inout) :: qa                !< First combination coefficient
+real(kind_real),intent(inout) :: qb                !< Second combination coefficient
+real(kind_real),intent(inout) :: qc                !< Third combination coefficient
+real(kind_real),intent(inout) :: qd0               !< First auxiliary value
+real(kind_real),intent(inout) :: qd1               !< Second auxiliary value
 
 ! Local variables
 integer :: i,jsearch,nits
@@ -851,7 +851,7 @@ end subroutine minim_quad
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_minny
-! Purpose: minimization of a scalar function of N variables along a line
+!> Minimization of a scalar function of N variables along a line
 ! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine minim_minny(minim,mpl,jsearch,nits,d2,x1,f1,fk,x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
@@ -859,30 +859,30 @@ subroutine minim_minny(minim,mpl,jsearch,nits,d2,x1,f1,fk,x,t,h,v,q0,q1,nl,nf,dm
 implicit none
 
 ! Passed variables
-class(minim_type),intent(inout) :: minim           ! Minimization data
-type(mpl_type),intent(inout) :: mpl                ! MPI data
-integer,intent(in) :: jsearch                      ! Kind of search
-integer,intent(in) :: nits                         ! Maximum number of times the interval may be halved to retry the calculation
-real(kind_real),intent(inout) :: d2                ! Approximation to the second derivative of the function halved
-real(kind_real),intent(inout) :: x1                ! Estimate of the distance from x to the minimum along v(*,j)
-real(kind_real),intent(inout) :: f1                ! ?
-logical,intent(in) :: fk                           ! If fk is .true., then on input f1 contains the value fline(x1)
-real(kind_real),intent(inout) :: x(minim%nx)       ! State
-real(kind_real),intent(in) :: t                    ! ?
-real(kind_real),intent(in) :: h                    ! ?
-real(kind_real),intent(in) :: v(minim%nx,minim%nx) ! Search directions
-real(kind_real),intent(in) :: q0(minim%nx)         ! First auxiliary point
-real(kind_real),intent(in) :: q1(minim%nx)         ! Second auxiliary point
-integer,intent(inout) :: nl                        ! Number of linear searches
-integer,intent(inout) :: nf                        ! Number of function evaluations
-real(kind_real),intent(in) :: dmin                 ! Smallest eigenvalue estimate
-real(kind_real),intent(in) :: ldt                  ! Step length
-real(kind_real),intent(inout) :: fx                ! Function value
-real(kind_real),intent(inout) :: qa                ! First combination coefficient
-real(kind_real),intent(inout) :: qb                ! Second combination coefficient
-real(kind_real),intent(inout) :: qc                ! Third combination coefficient
-real(kind_real),intent(in) :: qd0                  ! First auxiliary value
-real(kind_real),intent(in) :: qd1                  ! Second auxiliary value
+class(minim_type),intent(inout) :: minim           !< Minimization data
+type(mpl_type),intent(inout) :: mpl                !< MPI data
+integer,intent(in) :: jsearch                      !< Kind of search
+integer,intent(in) :: nits                         !< Maximum number of times the interval may be halved to retry the calculation
+real(kind_real),intent(inout) :: d2                !< Approximation to the second derivative of the function halved
+real(kind_real),intent(inout) :: x1                !< Estimate of the distance from x to the minimum along v(*,j)
+real(kind_real),intent(inout) :: f1                !< ?
+logical,intent(in) :: fk                           !< If fk is .true., then on input f1 contains the value fline(x1)
+real(kind_real),intent(inout) :: x(minim%nx)       !< State
+real(kind_real),intent(in) :: t                    !< ?
+real(kind_real),intent(in) :: h                    !< ?
+real(kind_real),intent(in) :: v(minim%nx,minim%nx) !< Search directions
+real(kind_real),intent(in) :: q0(minim%nx)         !< First auxiliary point
+real(kind_real),intent(in) :: q1(minim%nx)         !< Second auxiliary point
+integer,intent(inout) :: nl                        !< Number of linear searches
+integer,intent(inout) :: nf                        !< Number of function evaluations
+real(kind_real),intent(in) :: dmin                 !< Smallest eigenvalue estimate
+real(kind_real),intent(in) :: ldt                  !< Step length
+real(kind_real),intent(inout) :: fx                !< Function value
+real(kind_real),intent(inout) :: qa                !< First combination coefficient
+real(kind_real),intent(inout) :: qb                !< Second combination coefficient
+real(kind_real),intent(inout) :: qc                !< Third combination coefficient
+real(kind_real),intent(in) :: qd0                  !< First auxiliary value
+real(kind_real),intent(in) :: qd1                  !< Second auxiliary value
 
 ! Local variables
 integer :: k
@@ -1010,7 +1010,7 @@ end subroutine minim_minny
 
 !----------------------------------------------------------------------
 ! Subroutine: minfit
-! Purpose: singular value decomposition of an N by N array
+!> Singular value decomposition of an N by N array
 ! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine minfit(mpl,n,tol,a,q)
@@ -1018,11 +1018,11 @@ subroutine minfit(mpl,n,tol,a,q)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl     ! MPI data
-integer,intent(in) :: n                 ! Order of the matrix
-real(kind_real),intent(in) :: tol       ! Tolerance
-real(kind_real),intent(inout) :: a(n,n) ! Matrix
-real(kind_real),intent(inout) :: q(n)   ! Singular values                
+type(mpl_type),intent(inout) :: mpl     !< MPI data
+integer,intent(in) :: n                 !< Order of the matrix
+real(kind_real),intent(in) :: tol       !< Tolerance
+real(kind_real),intent(inout) :: a(n,n) !< Matrix
+real(kind_real),intent(inout) :: q(n)   !< Singular values                
 
 ! Local variables
 integer :: i,j,k,kt,l,l2
@@ -1215,7 +1215,7 @@ end subroutine minfit
 
 !----------------------------------------------------------------------
 ! Subroutine: swap
-! Purpose: swaps the entries of two vectors	
+!> Swaps the entries of two vectors	
 ! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine swap(n,a1,a2)
@@ -1223,9 +1223,9 @@ subroutine swap(n,a1,a2)
 implicit none
 
 ! Passed variables
-integer,intent(in) :: n                ! Vectors size
-real(kind_real),intent(inout) :: a1(n) ! First vector
-real(kind_real),intent(inout) :: a2(n) ! Second vector
+integer,intent(in) :: n                !< Vectors size
+real(kind_real),intent(inout) :: a1(n) !< First vector
+real(kind_real),intent(inout) :: a2(n) !< Second vector
 
 ! Local variable
 real(kind_real) :: a3(n)
@@ -1238,7 +1238,7 @@ end subroutine swap
 
 !----------------------------------------------------------------------
 ! Subroutine: svsort
-! Purpose: descending sorts singular values D and adjusts V
+!> Descending sorts singular values D and adjusts V
 ! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine svsort(n,d,v)
@@ -1246,9 +1246,9 @@ subroutine svsort(n,d,v)
 implicit none
 
 ! Passed variables
-integer,intent(in) :: n                 ! Vector and array size
-real(kind_real),intent(inout) :: d(n)   ! Vector to be sorted
-real(kind_real),intent(inout) :: v(n,n) ! Array to adjust as d is sorted
+integer,intent(in) :: n                 !< Vector and array size
+real(kind_real),intent(inout) :: d(n)   !< Vector to be sorted
+real(kind_real),intent(inout) :: v(n,n) !< Array to adjust as d is sorted
 
 ! Local variables
 integer :: i,j,j2,j3
@@ -1273,15 +1273,15 @@ end subroutine svsort
 
 !----------------------------------------------------------------------
 ! Subroutine: vt_dir
-! Purpose: direct variable transform
+!> Direct variable transform
 !----------------------------------------------------------------------
 subroutine minim_vt_dir(minim,x)
 
 implicit none
 
 ! Passed variables
-class(minim_type),intent(in) :: minim        ! Minimization data
-real(kind_real),intent(inout) :: x(minim%nx) ! Vector
+class(minim_type),intent(in) :: minim        !< Minimization data
+real(kind_real),intent(inout) :: x(minim%nx) !< Vector
 
 ! Linear expansion of the hyperbolic tangent of the variable
 x = minim%binf+0.5*(1.0+tanh(x))*(minim%bsup-minim%binf)
@@ -1290,16 +1290,16 @@ end subroutine minim_vt_dir
 
 !----------------------------------------------------------------------
 ! Subroutine: vt_inv
-! Purpose: inverse variable transform
+!> Inverse variable transform
 !----------------------------------------------------------------------
 subroutine minim_vt_inv(minim,mpl,x)
 
 implicit none
 
 ! Passed variables
-class(minim_type),intent(in) :: minim        ! Minimization data
-type(mpl_type),intent(inout) :: mpl          ! MPI data
-real(kind_real),intent(inout) :: x(minim%nx) ! Vector
+class(minim_type),intent(in) :: minim        !< Minimization data
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+real(kind_real),intent(inout) :: x(minim%nx) !< Vector
 
 ! Local variables
 integer :: ix

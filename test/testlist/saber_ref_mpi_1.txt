@@ -18,10 +18,14 @@ bump_nicas_subsamp_hvh/test_2-1_nicas_000002-000001.nc
 bump_nicas_subsamp_hvh/test_2-1_nicas_000002-000002.nc
 bump_read_cmat/test_2-1_nicas_000002-000001.nc
 bump_read_cmat/test_2-1_nicas_000002-000002.nc
+bump_read_cmat_serial/test_2-1_nicas_000002-000001.nc
+bump_read_cmat_serial/test_2-1_nicas_000002-000002.nc
 bump_vbal/test_2-1_vbal_000002-000001.nc
 bump_vbal/test_2-1_vbal_000002-000002.nc
 bump_write_cmat/test_2-1_nicas_000002-000001.nc
 bump_write_cmat/test_2-1_nicas_000002-000002.nc
+bump_write_cmat_serial/test_2-1_nicas_000002-000001.nc
+bump_write_cmat_serial/test_2-1_nicas_000002-000002.nc
 bump_write_mom/test_2-1_mom_000002-000001.nc
 bump_write_mom/test_2-1_mom_000002-000002.nc
 bump_write_nicas/test_2-1_nicas_000002-000001.nc
