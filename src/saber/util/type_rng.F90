@@ -14,10 +14,10 @@ use type_nam, only: nam_type
 
 implicit none
 
-integer,parameter :: default_seed = 140587            ! Default seed
-integer(kind=int64),parameter :: a = 1103515245_int64 ! Linear congruential multiplier
-integer(kind=int64),parameter :: c = 12345_int64      ! Linear congruential offset
-integer(kind=int64),parameter :: m = 2147483648_int64 ! Linear congruential modulo
+integer,parameter :: default_seed = 140587            !< Default seed
+integer(kind=int64),parameter :: a = 1103515245_int64 !< Linear congruential multiplier
+integer(kind=int64),parameter :: c = 12345_int64      !< Linear congruential offset
+integer(kind=int64),parameter :: m = 2147483648_int64 !< Linear congruential modulo
 
 type rng_type
    integer(kind=int64) :: seed

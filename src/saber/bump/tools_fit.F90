@@ -14,7 +14,7 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: itermax = 10 ! Maximum number of iteration for the threshold definition
+integer,parameter :: itermax = 10 !< Maximum number of iteration for the threshold definition
 
 private
 public :: fast_fit,ver_smooth,ver_fill

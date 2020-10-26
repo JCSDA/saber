@@ -11,6 +11,8 @@ import numpy.ma as ma
 import os
 
 def contour_centered(testdata, test, mpi, omp, suffix, testfig):
+   """! Plot script for the "centered countour" files produced by BUMP"""
+
    # Open file
    f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 

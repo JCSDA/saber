@@ -24,7 +24,7 @@ use type_samp, only: samp_type
 
 implicit none
 
-real(kind_real),parameter :: bound = 5.0_kind_real ! Restriction bound applied on local diagnostics with respect to the global diagnostic
+real(kind_real),parameter :: bound = 5.0_kind_real !< Restriction bound applied on local diagnostics with respect to the global diagnostic
 
 ! Diagnostic derived type
 type diag_type

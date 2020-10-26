@@ -5,7 +5,6 @@
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR,CERFACS,METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
-
 module type_bump_interface
 
 use atlas_module, only: atlas_functionspace,atlas_fieldset
@@ -20,6 +19,7 @@ implicit none
 private
 
 contains
+
 !----------------------------------------------------------------------
 ! Subroutine: bump_create_c
 !> Create

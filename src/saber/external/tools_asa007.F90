@@ -18,7 +18,7 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-real(kind_real),parameter :: eta = 1.0e-9_kind_real   ! Small parameter for the Cholesky decomposition
+real(kind_real),parameter :: eta = 1.0e-9_kind_real !< Small parameter for the Cholesky decomposition
 
 private
 public :: asa007_cholesky,asa007_syminv

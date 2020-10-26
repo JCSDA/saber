@@ -18,6 +18,8 @@ use type_mpl, only: mpl_type
 
 implicit none
 
+real(kind_real),parameter :: nn_inc = 1.5 !< Increase factor for the nearest neighbors numbers search
+
 ! Tree derived type
 type tree_type
     integer :: n                          !< Data size
@@ -34,8 +36,6 @@ contains
     procedure :: find_nearest_neighbors => tree_find_nearest_neighbors
     procedure :: count_nearest_neighbors => tree_count_nearest_neighbors
 end type tree_type
-
-real(kind_real),parameter :: nn_inc = 1.5 ! Increase factor for the nearest neighbors numbers search
 
 private
 public :: tree_type

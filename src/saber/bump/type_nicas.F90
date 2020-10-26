@@ -31,9 +31,9 @@ use type_rng, only: rng_type
 
 implicit none
 
-integer,parameter :: nfac_rnd = 9 ! Number of ensemble size factors for randomization
-integer,parameter :: nfac_opt = 4 ! Number of length-scale factors for optimization
-integer,parameter :: ntest = 50   ! Number of tests
+integer,parameter :: nfac_rnd = 9 !< Number of ensemble size factors for randomization
+integer,parameter :: nfac_opt = 4 !< Number of length-scale factors for optimization
+integer,parameter :: ntest = 50   !< Number of tests
 
 
 ! NICAS derived type

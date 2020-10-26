@@ -34,6 +34,10 @@ use type_vbal, only: vbal_type
 
 implicit none
 
+integer,parameter :: dmsvali = -999           !< Default missing value for integers
+real(kind_real),parameter :: dmsvalr = -999.0 !< Default missing value for reals
+logical :: copy_ensemble = .false.            !< Deep copy of ensemble members
+
 ! BUMP derived type
 type bump_type
    type(bpar_type) :: bpar
@@ -93,10 +97,6 @@ contains
    procedure :: dealloc => bump_dealloc
    final :: dummy
 end type bump_type
-
-integer,parameter :: dmsvali = -999           ! Default missing value for integers
-real(kind_real),parameter :: dmsvalr = -999.0 ! Default missing value for reals
-logical :: copy_ensemble = .false.            ! Deep copy of ensemble members
 
 private
 public :: bump_type

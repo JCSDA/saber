@@ -23,8 +23,8 @@ use type_rng, only: rng_type
 
 implicit none
 
-real(kind_real),parameter :: qmin = 1.0e-6        ! Minimum specific humidity value in the log variable change
-character(len=1024) :: zone = 'C+I'               ! Computation zone for AROME ('C', 'C+I' or 'C+I+E')
+real(kind_real),parameter :: qmin = 1.0e-6 !< Minimum specific humidity value in the log variable change
+character(len=1024) :: zone = 'C+I'        !< Computation zone for AROME ('C', 'C+I' or 'C+I+E')
 
 ! Model derived type
 type model_type

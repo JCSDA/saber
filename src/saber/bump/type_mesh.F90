@@ -18,7 +18,7 @@ use type_rng, only: rng_type
 
 implicit none
 
-logical,parameter :: shuffle = .true. ! Shuffle mesh order (more efficient to compute the Delaunay triangulation)
+logical,parameter :: shuffle = .true. !< Shuffle mesh order (more efficient to compute the Delaunay triangulation)
 
 ! Mesh derived type
 type mesh_type

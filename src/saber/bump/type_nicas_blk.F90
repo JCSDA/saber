@@ -30,9 +30,9 @@ use type_rng, only: rng_type
 
 implicit none
 
-real(kind_real),parameter :: sqrt_r = 0.725_kind_real ! Square-root factor on support radius (empirical)
-real(kind_real),parameter :: sqrt_h = 0.725_kind_real ! Square-root factor on LCT (empirical)
-real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum value for the convolution coefficients
+real(kind_real),parameter :: sqrt_r = 0.725_kind_real !< Square-root factor on support radius (empirical)
+real(kind_real),parameter :: sqrt_h = 0.725_kind_real !< Square-root factor on LCT (empirical)
+real(kind_real),parameter :: S_inf = 1.0e-2_kind_real !< Minimum value for the convolution coefficients
 
 ! Ball data derived type
 type balldata_type

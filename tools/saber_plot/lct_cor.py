@@ -11,6 +11,8 @@ import numpy.ma as ma
 import os
 
 def lct_cor(testdata, test, mpi, omp, suffix, testfig):
+   """! Plot script for the "LCT correlation" files produced by BUMP"""
+
    # Processor, index and level to plot
    iproc_plot = 1
    ic1a_plot = 1
