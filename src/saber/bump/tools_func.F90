@@ -130,7 +130,7 @@ implicit none
 real(kind_real),intent(in) :: lon_i !< Initial point longitude (radians)
 real(kind_real),intent(in) :: lat_i !< Initial point latitude (radians)
 real(kind_real),intent(in) :: lon_f !< Final point longitude (radians)
-real(kind_real),intent(in) :: lat_f !< Final point longilatitudetude (radians)
+real(kind_real),intent(in) :: lat_f !< Final point latitude (radians)
 real(kind_real),intent(out) :: dist !< Great-circle distance
 
 ! Local variables
