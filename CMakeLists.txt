@@ -1,4 +1,4 @@
-# (C) Copyright 2017-2019 UCAR.
+# (C) Copyright 2017-2020 UCAR.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,7 +9,7 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber LANGUAGES CXX Fortran )
+project( saber VERSION 1.0.0 LANGUAGES CXX Fortran )
 
 ## Ecbuild integration
 find_package( ecbuild QUIET )
@@ -28,9 +28,9 @@ include( ${PROJECT_NAME}_compiler_flags )
 find_package( OpenMP REQUIRED COMPONENTS Fortran )
 find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS Fortran )
-find_package( eckit REQUIRED COMPONENTS MPI )
-find_package( fckit REQUIRED )
-find_package( atlas REQUIRED COMPONENTS OMP_Fortran )
+find_package( eckit 1.11.6 REQUIRED COMPONENTS MPI )
+find_package( fckit 0.7.0  REQUIRED )
+find_package( atlas 0.20.2 REQUIRED COMPONENTS OMP_Fortran )
 if( ENABLE_MKL )
     find_package( MKL )
 endif()
