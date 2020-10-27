@@ -35,7 +35,7 @@ end interface
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
- & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
+ & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,pseudoinv,histogram
 
 contains
 
@@ -259,7 +259,7 @@ implicit none
 real(kind_real),intent(in) :: v1(3) !< First vector
 real(kind_real),intent(in) :: v2(3) !< Second vector
 real(kind_real),intent(in) :: v3(3) !< Third vector
-real(kind_real),intent(out) :: p    !< Triple product
+real(kind_real),intent(out) :: p    !< Determinant
 logical,intent(out) :: cflag        !< Confidence flag
 
 ! Local variable
@@ -283,7 +283,7 @@ do i=1,6
    if ((abs(terms(i))>0.0).and.small(p,terms(i))) cflag = .false.
 end do
 
-end subroutine vector_triple_product
+end subroutine det
 
 !----------------------------------------------------------------------
 ! Subroutine: add
