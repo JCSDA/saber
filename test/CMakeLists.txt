@@ -216,7 +216,7 @@ execute_process( COMMAND bash ${CMAKE_BINARY_DIR}/bin/saber_setup.sh
                          ${CMAKE_BINARY_DIR} )
 
 # Download SABER data
-if( NOT DEFINED LOCAL_PATH_TESTFILES_SABER )
+if( NOT DEFINED LOCAL_PATH_JEDI_TESTFILES )
     message( STATUS "Download sources:" )
 
     # Check whether the URLs exist or not
