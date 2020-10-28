@@ -182,7 +182,11 @@ endif()
 
 # If local path to testfiles is defined don't download
 if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
-    set( SABER_TESTFILES_PATH $ENV{LOCAL_PATH_JEDI_TESTFILES}/saber/${GIT_BRANCH_SABER} )
+    if( EXISTS ${LOCAL_PATH_JEDI_TESTFILES}/saber/${GIT_BRANCH_SABER} )
+        set( SABER_TESTFILES_PATH $ENV{LOCAL_PATH_JEDI_TESTFILES}/saber/${GIT_BRANCH_SABER} )
+    else()
+        set( SABER_TESTFILES_PATH $ENV{LOCAL_PATH_JEDI_TESTFILES}/saber/develop )
+    endif()
     if( NOT EXISTS ${SABER_TESTFILES_PATH}/testdata )
         message( FATAL_ERROR "Directory ${SABER_TESTFILES_PATH}/testdata is missing" )
     endif()
