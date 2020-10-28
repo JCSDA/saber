@@ -117,7 +117,7 @@ character(len=1024),parameter :: subr = 'obsop_read'
 
 ! Define file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
-ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
 ! Check grid hash
 call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
@@ -161,7 +161,7 @@ character(len=1024),parameter :: subr = 'obsop_write'
 
 ! Define file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_obs_',mpl%nproc,'-',mpl%myproc
-   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Write grid hash
 call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
