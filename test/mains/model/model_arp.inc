@@ -1,15 +1,15 @@
 !----------------------------------------------------------------------
 ! Subroutine: model_arp_coord
-! Purpose: get ARPEGE coordinates
+!> Get ARPEGE coordinates
 !----------------------------------------------------------------------
 subroutine model_arp_coord(model,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model ! Model
-type(mpl_type),intent(inout) :: mpl      ! MPI data
-type(nam_type),intent(in) :: nam         ! Namelist
+class(model_type),intent(inout) :: model !< Model
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,ilon,ilat
@@ -73,7 +73,7 @@ model%mask = .true.
 do img=1,model%nmg
    if (nam%logpres) then
       model%vunit(img,1:nam%nl) = log(0.5*(a(nam%levs(1:nam%nl))+a(nam%levs(1:nam%nl)+1)) &
-                                & +0.5*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
+ & +0.5*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
       if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(ps)
    else
       model%vunit(img,:) = real(nam%levs(1:model%nl0))
@@ -90,18 +90,18 @@ end subroutine model_arp_coord
 
 !----------------------------------------------------------------------
 ! Subroutine: model_arp_read
-! Purpose: read ARPEGE field
+!> Read ARPEGE field
 !----------------------------------------------------------------------
 subroutine model_arp_read(model,mpl,nam,filename,fld)
 
 implicit none
 
 ! Passed variables
-class(model_type),intent(inout) :: model                        ! Model
-type(mpl_type),intent(inout) :: mpl                             ! MPI data
-type(nam_type),intent(in) :: nam                                ! Namelist
-character(len=*),intent(in) :: filename                         ! File name
-real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) ! Field
+class(model_type),intent(inout) :: model                        !< Model
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+character(len=*),intent(in) :: filename                         !< File name
+real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
 integer :: iv,il0,img,ilon,ilat,info

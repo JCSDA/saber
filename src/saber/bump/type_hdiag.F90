@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_hdiag
-! Purpose: hybrid diagnostics derived type
+!> Hybrid diagnostics derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -24,19 +24,19 @@ implicit none
 
 ! Hybrid diagnostics derived type
 type hdiag_type
-   type(avg_type) :: avg_1   ! Averaged statistics, first ensemble
-   type(avg_type) :: avg_2   ! Averaged statistics, second ensemble
-   type(avg_type) :: avg_wgt ! Averaged statistics weights
-   type(samp_type) :: samp   ! Sampling
-   type(mom_type) :: mom_1   ! Moments, first ensemble
-   type(mom_type) :: mom_2   ! Moments, second ensemble
-   type(diag_type) :: cov_1  ! Covariance, first ensemble
-   type(diag_type) :: cov_2  ! Covariance, second ensemble
-   type(diag_type) :: cor_1  ! Correlation, first ensemble
-   type(diag_type) :: cor_2  ! Correlation, second ensemble
-   type(diag_type) :: loc_1  ! Localization, first ensemble
-   type(diag_type) :: loc_2  ! Localization, second ensemble
-   type(diag_type) :: loc_3  ! Localization, low-resolution ensemble
+   type(avg_type) :: avg_1   !< Averaged statistics, first ensemble
+   type(avg_type) :: avg_2   !< Averaged statistics, second ensemble
+   type(avg_type) :: avg_wgt !< Averaged statistics weights
+   type(samp_type) :: samp   !< Sampling
+   type(mom_type) :: mom_1   !< Moments, first ensemble
+   type(mom_type) :: mom_2   !< Moments, second ensemble
+   type(diag_type) :: cov_1  !< Covariance, first ensemble
+   type(diag_type) :: cov_2  !< Covariance, second ensemble
+   type(diag_type) :: cor_1  !< Correlation, first ensemble
+   type(diag_type) :: cor_2  !< Correlation, second ensemble
+   type(diag_type) :: loc_1  !< Localization, first ensemble
+   type(diag_type) :: loc_2  !< Localization, second ensemble
+   type(diag_type) :: loc_3  !< Localization, low-resolution ensemble
 contains
    procedure :: dealloc => hdiag_dealloc
    procedure :: run_hdiag => hdiag_run_hdiag
@@ -49,14 +49,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: hdiag_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine hdiag_dealloc(hdiag)
 
 implicit none
 
 ! Passed variables
-class(hdiag_type),intent(inout) :: hdiag ! Hybrid diagnostics
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
 
 ! Release memory
 call hdiag%avg_1%dealloc
@@ -77,22 +77,22 @@ end subroutine hdiag_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: hdiag_run_hdiag
-! Purpose: HDIAG driver
+!> HDIAG driver
 !----------------------------------------------------------------------
 subroutine hdiag_run_hdiag(hdiag,mpl,rng,nam,geom,bpar,io,ens1,ens2)
 
 implicit none
 
 ! Passed variables
-class(hdiag_type),intent(inout) :: hdiag   ! Hybrid diagnostics
-type(mpl_type),intent(inout) :: mpl        ! MPI data
-type(rng_type),intent(inout) :: rng        ! Random number generator
-type(nam_type),intent(inout) :: nam        ! Namelist
-type(geom_type),intent(in) :: geom         ! Geometry
-type(bpar_type),intent(in) :: bpar         ! Block parameters
-type(io_type),intent(in) :: io             ! I/O
-type(ens_type),intent(inout) :: ens1       ! Ensemble 1
-type(ens_type),intent(in),optional :: ens2 ! Ensemble 2
+class(hdiag_type),intent(inout) :: hdiag   !< Hybrid diagnostics
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+type(rng_type),intent(inout) :: rng        !< Random number generator
+type(nam_type),intent(inout) :: nam        !< Namelist
+type(geom_type),intent(in) :: geom         !< Geometry
+type(bpar_type),intent(in) :: bpar         !< Block parameters
+type(io_type),intent(in) :: io             !< I/O
+type(ens_type),intent(inout) :: ens1       !< Ensemble 1
+type(ens_type),intent(in),optional :: ens2 !< Ensemble 2
 
 ! Setup sampling
 write(mpl%info,'(a)') '-------------------------------------------------------------------'

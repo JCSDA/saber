@@ -131,7 +131,7 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
     conf_.get("input", inputConfs);
 
     for (const auto & inputConf : inputConfs) {
-      // Read parameter for the specified timeslot
+      // Read parameter for the specified time
       const util::DateTime date(inputConf.getString("date"));
 
       // Setup increment
@@ -182,7 +182,7 @@ void ParametersBUMP<MODEL>::write() const {
     std::string param = outputConf.getString("parameter");
     ooBump_->getParameter(param, dx);
 
-  // Write parameter for the specified timeslot
+  // Write parameter for the specified time
     const util::DateTime date(outputConf.getString("date"));
     dx.write(outputConf);
     oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific

@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_mesh
-! Purpose: mesh derived type
+!> Mesh derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -23,37 +23,37 @@ logical,parameter :: shuffle = .true. ! Shuffle mesh order (more efficient to co
 ! Mesh derived type
 type mesh_type
    ! Mesh structure
-   integer :: n                                 ! Number of points
-   integer,allocatable :: order(:)              ! Order of shuffled points
-   integer,allocatable :: order_inv(:)          ! Inverse order of shuffled points
-   real(kind_real),allocatable :: lon(:)        ! Points longitudes
-   real(kind_real),allocatable :: lat(:)        ! Points latitudes
-   real(kind_real),allocatable :: x(:)          ! x-coordinate
-   real(kind_real),allocatable :: y(:)          ! y-coordinate
-   real(kind_real),allocatable :: z(:)          ! z-coordinate
-   integer,allocatable :: list(:)               ! Stripack list
-   integer,allocatable :: lptr(:)               ! Stripack list pointer
-   integer,allocatable :: lend(:)               ! Stripack list end
-   integer :: lnew                              ! Stripack pointer to the first empty location in list
-   integer :: nb                                ! Number of boundary nodes
-   integer,allocatable :: bnd(:)                ! Boundary nodes
-   integer,allocatable :: barc(:,:)             ! Boundary arcs
-   real(kind_real),allocatable :: barc_lon(:,:) ! Boundary arcs longitudes
-   real(kind_real),allocatable :: barc_lat(:,:) ! Boundary arcs latitudes
-   real(kind_real),allocatable :: barc_dist(:)  ! Boundary arcs distance
-   real(kind_real),allocatable :: barc_vp(:,:)  ! Boundary arcs normal vector
+   integer :: n                                 !< Number of points
+   integer,allocatable :: order(:)              !< Order of shuffled points
+   integer,allocatable :: order_inv(:)          !< Inverse order of shuffled points
+   real(kind_real),allocatable :: lon(:)        !< Points longitudes
+   real(kind_real),allocatable :: lat(:)        !< Points latitudes
+   real(kind_real),allocatable :: x(:)          !< x-coordinate
+   real(kind_real),allocatable :: y(:)          !< y-coordinate
+   real(kind_real),allocatable :: z(:)          !< z-coordinate
+   integer,allocatable :: list(:)               !< Stripack list
+   integer,allocatable :: lptr(:)               !< Stripack list pointer
+   integer,allocatable :: lend(:)               !< Stripack list end
+   integer :: lnew                              !< Stripack pointer to the first empty location in list
+   integer :: nb                                !< Number of boundary nodes
+   integer,allocatable :: bnd(:)                !< Boundary nodes
+   integer,allocatable :: barc(:,:)             !< Boundary arcs
+   real(kind_real),allocatable :: barc_lon(:,:) !< Boundary arcs longitudes
+   real(kind_real),allocatable :: barc_lat(:,:) !< Boundary arcs latitudes
+   real(kind_real),allocatable :: barc_dist(:)  !< Boundary arcs distance
+   real(kind_real),allocatable :: barc_vp(:,:)  !< Boundary arcs normal vector
 
    ! Mesh attributes (used publicly)
-   integer,allocatable :: nnb(:)                ! Number of neighbors
-   integer,allocatable :: inb(:,:)              ! Neighbors indices
-   real(kind_real),allocatable :: bdist(:)      ! Distance to the closest boundary arc
+   integer,allocatable :: nnb(:)                !< Number of neighbors
+   integer,allocatable :: inb(:,:)              !< Neighbors indices
+   real(kind_real),allocatable :: bdist(:)      !< Distance to the closest boundary arc
 
    ! Triangles data
-   integer :: nt                                ! Number of triangles
-   integer :: na                                ! Number of arcs
-   integer,allocatable :: ltri(:,:)             ! Triangles indices
-   integer,allocatable :: larc(:,:)             ! Arcs indices
-   logical,allocatable :: valid(:)              ! Valid mesh nodes
+   integer :: nt                                !< Number of triangles
+   integer :: na                                !< Number of arcs
+   integer,allocatable :: ltri(:,:)             !< Triangles indices
+   integer,allocatable :: larc(:,:)             !< Arcs indices
+   logical,allocatable :: valid(:)              !< Valid mesh nodes
 contains
    procedure :: alloc => mesh_alloc
    procedure :: init => mesh_init
@@ -77,15 +77,15 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine mesh_alloc(mesh,n)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
-integer,intent(in) :: n                ! Mesh size
+class(mesh_type),intent(inout) :: mesh !< Mesh
+integer,intent(in) :: n                !< Mesh size
 
 ! Allocation
 mesh%n = n
@@ -107,18 +107,18 @@ end subroutine mesh_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_init
-! Purpose: intialization
+!> Intialization
 !----------------------------------------------------------------------
 subroutine mesh_init(mesh,mpl,rng,lon,lat)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh            ! Mesh
-type(mpl_type),intent(inout) :: mpl               ! MPI data
-type(rng_type),intent(inout) :: rng               ! Random number generator
-real(kind_real),intent(in) :: lon(mesh%n)         ! Longitudes
-real(kind_real),intent(in) :: lat(mesh%n)         ! Latitudes
+class(mesh_type),intent(inout) :: mesh            !< Mesh
+type(mpl_type),intent(inout) :: mpl               !< MPI data
+type(rng_type),intent(inout) :: rng               !< Random number generator
+real(kind_real),intent(in) :: lon(mesh%n)         !< Longitudes
+real(kind_real),intent(in) :: lat(mesh%n)         !< Latitudes
 
 ! Local variables
 integer :: i,ii,j,k,info,nnbmax
@@ -218,14 +218,14 @@ end subroutine mesh_init
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine mesh_dealloc(mesh)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
+class(mesh_type),intent(inout) :: mesh !< Mesh
 
 ! Release memory
 if (allocated(mesh%order)) deallocate(mesh%order)
@@ -255,15 +255,15 @@ end subroutine mesh_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_copy
-! Purpose: copy
+!> Copy
 !----------------------------------------------------------------------
 subroutine mesh_copy(mesh_out,mesh_in)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh_out ! Output mesh
-type(mesh_type),intent(in) :: mesh_in      ! Input mesh
+class(mesh_type),intent(inout) :: mesh_out !< Output mesh
+type(mesh_type),intent(in) :: mesh_in      !< Input mesh
 
 ! Release memory
 call mesh_out%dealloc
@@ -314,17 +314,17 @@ end subroutine mesh_copy
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_store
-! Purpose: store mesh cartesian coordinates
+!> Store mesh cartesian coordinates
 !----------------------------------------------------------------------
 subroutine mesh_store(mesh,mpl,lon,lat)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh    ! Mesh
-type(mpl_type),intent(inout) :: mpl       ! MPI data
-real(kind_real),intent(in) :: lon(mesh%n) ! Longitude
-real(kind_real),intent(in) :: lat(mesh%n) ! Latitude
+class(mesh_type),intent(inout) :: mesh    !< Mesh
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: lon(mesh%n) !< Longitude
+real(kind_real),intent(in) :: lat(mesh%n) !< Latitude
 
 ! Local variables
 integer :: i
@@ -346,15 +346,15 @@ end subroutine mesh_store
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_trlist
-! Purpose: compute triangle list, arc list
+!> Compute triangle list, arc list
 !----------------------------------------------------------------------
 subroutine mesh_trlist(mesh,mpl)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl    ! MPI data
+class(mesh_type),intent(inout) :: mesh !< Mesh
+type(mpl_type),intent(inout) :: mpl    !< MPI data
 
 ! Local variables
 integer :: info,ia,it,i,i1,i2
@@ -412,16 +412,16 @@ end subroutine mesh_trlist
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_bnodes
-! Purpose: find boundary nodes
+!> Find boundary nodes
 !----------------------------------------------------------------------
 subroutine mesh_bnodes(mesh,mpl,bdist)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-logical,intent(in),optional :: bdist   ! Find minimum distance a boundary arc
+class(mesh_type),intent(inout) :: mesh !< Mesh
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+logical,intent(in),optional :: bdist   !< Find minimum distance a boundary arc
 
 ! Local variables
 integer :: i,ii,bnd(mesh%n)
@@ -495,18 +495,18 @@ end subroutine mesh_bnodes
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_find_bdist
-! Purpose: find shortest distance to boundary arcs
+!> Find shortest distance to boundary arcs
 !----------------------------------------------------------------------
 subroutine mesh_find_bdist(mesh,mpl,lon,lat,bdist)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(in) :: mesh  ! Mesh
-type(mpl_type),intent(inout) :: mpl  ! MPI data
-real(kind_real),intent(in) :: lon    ! Longitude
-real(kind_real),intent(in) :: lat    ! Latitude
-real(kind_real),intent(out) :: bdist ! Distance to boundary
+class(mesh_type),intent(in) :: mesh  !< Mesh
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+real(kind_real),intent(in) :: lon    !< Longitude
+real(kind_real),intent(in) :: lat    !< Latitude
+real(kind_real),intent(out) :: bdist !< Distance to boundary
 
 ! Local variables
 integer :: i
@@ -552,16 +552,16 @@ end subroutine mesh_find_bdist
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_check
-! Purpose: check whether the mesh is made of counter-clockwise triangles
+!> Check whether the mesh is made of counter-clockwise triangles
 !----------------------------------------------------------------------
 subroutine mesh_check(mesh,mpl,valid)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(inout) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-logical,intent(out) :: valid(mesh%n)   ! Validity flag
+class(mesh_type),intent(inout) :: mesh !< Mesh
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+logical,intent(out) :: valid(mesh%n)   !< Validity flag
 
 ! Local variables
 integer :: it
@@ -623,18 +623,18 @@ end subroutine mesh_check
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_inside
-! Purpose: find whether a point is inside the mesh
+!> Find whether a point is inside the mesh
 !----------------------------------------------------------------------
 subroutine mesh_inside(mesh,mpl,lon,lat,inside_mesh)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(in) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl ! MPI data
-real(kind_real),intent(in) :: lon   ! Longitude
-real(kind_real),intent(in) :: lat   ! Latitude
-logical,intent(out) :: inside_mesh  ! True if the point is inside the mesh
+class(mesh_type),intent(in) :: mesh !< Mesh
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: lon   !< Longitude
+real(kind_real),intent(in) :: lat   !< Latitude
+logical,intent(out) :: inside_mesh  !< True if the point is inside the mesh
 
 ! Local variables
 integer :: info
@@ -655,20 +655,20 @@ end subroutine mesh_inside
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_barycentric
-! Purpose: compute barycentric coordinates
+!> Compute barycentric coordinates
 !----------------------------------------------------------------------
 subroutine mesh_barycentric(mesh,mpl,lon,lat,istart,b,ib)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(in) :: mesh ! Mesh
-type(mpl_type),intent(inout) :: mpl ! MPI data
-real(kind_real),intent(in) :: lon   ! Longitude
-real(kind_real),intent(in) :: lat   ! Latitude
-integer,intent(in) :: istart        ! Starting index
-real(kind_real),intent(out) :: b(3) ! Barycentric weights
-integer,intent(out) :: ib(3)        ! Barycentric indices
+class(mesh_type),intent(in) :: mesh !< Mesh
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: lon   !< Longitude
+real(kind_real),intent(in) :: lat   !< Latitude
+integer,intent(in) :: istart        !< Starting index
+real(kind_real),intent(out) :: b(3) !< Barycentric weights
+integer,intent(out) :: ib(3)        !< Barycentric indices
 
 ! Local variables
 integer :: i
@@ -691,16 +691,16 @@ end subroutine mesh_barycentric
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_count_bnda
-! Purpose: count boundary arcs
+!> Count boundary arcs
 !----------------------------------------------------------------------
 subroutine mesh_count_bnda(mesh,gmask,nbnda)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(in) :: mesh ! Mesh
-logical,intent(in) :: gmask(mesh%n) ! Mask
-integer,intent(out) :: nbnda        ! Number of boundary nodes
+class(mesh_type),intent(in) :: mesh !< Mesh
+logical,intent(in) :: gmask(mesh%n) !< Mask
+integer,intent(out) :: nbnda        !< Number of boundary nodes
 
 ! Local variables
 integer :: i,j,k,ii,jj,kk,iend
@@ -734,17 +734,17 @@ end subroutine mesh_count_bnda
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_get_bnda
-! Purpose: get boundary arcs
+!> Get boundary arcs
 !----------------------------------------------------------------------
 subroutine mesh_get_bnda(mesh,gmask,nbnda,bnda_index)
 
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(in) :: mesh        ! Mesh
-logical,intent(in) :: gmask(mesh%n)        ! Mask
-integer,intent(in) :: nbnda                ! Number of boundary nodes
-integer,intent(out) :: bnda_index(2,nbnda) ! Boundary node index
+class(mesh_type),intent(in) :: mesh        !< Mesh
+logical,intent(in) :: gmask(mesh%n)        !< Mask
+integer,intent(in) :: nbnda                !< Number of boundary nodes
+integer,intent(out) :: bnda_index(2,nbnda) !< Boundary node index
 
 ! Local variables
 integer :: ibnda,i,j,k,ii,jj,kk,iend

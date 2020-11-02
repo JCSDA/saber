@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_diag_blk
-! Purpose: diagnostic block derived type
+!> Diagnostic block derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -29,18 +29,18 @@ real(kind_real),parameter :: maxfactor = 2.0_kind_real ! Maximum factor for diag
 
 ! Diagnostic block derived type
 type diag_blk_type
-   integer :: ic2a                                ! Local index
-   integer :: ib                                  ! Block index
-   character(len=1024) :: prefix                  ! Prefix
+   integer :: ic2a                                !< Local index
+   integer :: ib                                  !< Block index
+   character(len=1024) :: prefix                  !< Prefix
 
-   real(kind_real),allocatable :: raw(:,:,:)      ! Raw diagnostic
-   real(kind_real),allocatable :: valid(:,:,:)    ! Number of valid couples
-   real(kind_real),allocatable :: coef_ens(:)     ! Ensemble coefficient
-   real(kind_real) :: coef_sta                    ! Static coefficient
-   real(kind_real),allocatable :: fit(:,:,:)      ! Fit
-   real(kind_real),allocatable :: fit_rh(:)       ! Horizontal fit support radius
-   real(kind_real),allocatable :: fit_rv(:)       ! Vertical fit support radius
-   real(kind_real),allocatable :: distv(:,:)      ! Reduced vertical distance
+   real(kind_real),allocatable :: raw(:,:,:)      !< Raw diagnostic
+   real(kind_real),allocatable :: valid(:,:,:)    !< Number of valid couples
+   real(kind_real),allocatable :: coef_ens(:)     !< Ensemble coefficient
+   real(kind_real) :: coef_sta                    !< Static coefficient
+   real(kind_real),allocatable :: fit(:,:,:)      !< Fit
+   real(kind_real),allocatable :: fit_rh(:)       !< Horizontal fit support radius
+   real(kind_real),allocatable :: fit_rv(:)       !< Vertical fit support radius
+   real(kind_real),allocatable :: distv(:,:)      !< Reduced vertical distance
 contains
    procedure :: alloc => diag_blk_alloc
    procedure :: dealloc => diag_blk_dealloc
@@ -59,22 +59,22 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine diag_blk_alloc(diag_blk,mpl,nam,geom,bpar,samp,ic2a,ib,prefix)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-type(nam_type),intent(in) :: nam               ! Namelist
-type(geom_type),intent(in) :: geom             ! Geometry
-type(bpar_type),intent(in) :: bpar             ! Block parameters
-type(samp_type),intent(in) :: samp             ! Sampling
-integer,intent(in) :: ic2a                     ! Local index
-integer,intent(in) :: ib                       ! Block index
-character(len=*),intent(in) :: prefix          ! Block prefix
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
+type(samp_type),intent(in) :: samp             !< Sampling
+integer,intent(in) :: ic2a                     !< Local index
+integer,intent(in) :: ib                       !< Block index
+character(len=*),intent(in) :: prefix          !< Block prefix
 
 ! Local variables
 integer :: ic0a,il0,jl0
@@ -130,14 +130,14 @@ end subroutine diag_blk_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine diag_blk_dealloc(diag_blk)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 
 ! Release memory
 if (allocated(diag_blk%raw)) deallocate(diag_blk%raw)
@@ -152,19 +152,19 @@ end subroutine diag_blk_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_write
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine diag_blk_write(diag_blk,mpl,nam,geom,bpar,filename)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-type(nam_type),intent(in) :: nam               ! Namelist
-type(geom_type),intent(in) :: geom             ! Geometry
-type(bpar_type),intent(in) :: bpar             ! Block parameters
-character(len=*),intent(in) :: filename        ! File name
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
+character(len=*),intent(in) :: filename        !< File name
 
 ! Local variables
 integer :: ncid,grpid,subgrpid,one_id,nc3_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,vunit_id
@@ -259,16 +259,16 @@ end subroutine diag_blk_write
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_normalization
-! Purpose: compute diagnostic block normalization
+!> Compute diagnostic block normalization
 !----------------------------------------------------------------------
 subroutine diag_blk_normalization(diag_blk,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
-type(geom_type),intent(in) :: geom             ! Geometry
-type(bpar_type),intent(in) :: bpar             ! Block parameters
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Local variables
 integer :: il0,jl0r
@@ -289,21 +289,21 @@ end subroutine diag_blk_normalization
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_fitting
-! Purpose: compute a fit of a raw function
+!> Compute a fit of a raw function
 !----------------------------------------------------------------------
 subroutine diag_blk_fitting(diag_blk,mpl,rng,nam,geom,bpar,samp,coef)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-type(rng_type),intent(inout) :: rng            ! Random number generator
-type(nam_type),intent(in) :: nam               ! Namelist
-type(geom_type),intent(in) :: geom             ! Geometry
-type(bpar_type),intent(in) :: bpar             ! Block parameters
-type(samp_type),intent(in) :: samp             ! Sampling
-logical,intent(in),optional :: coef            ! Coefficient estimation flag
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(rng_type),intent(inout) :: rng            !< Random number generator
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
+type(samp_type),intent(in) :: samp             !< Sampling
+logical,intent(in),optional :: coef            !< Coefficient estimation flag
 
 ! Local variables
 integer :: ic0a,il0,jl0r,jl0,isc,il0_prev,dl0,il0inf,il0sup,il1inf,il1sup,ivar
@@ -597,18 +597,18 @@ end subroutine diag_blk_fitting
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_localization
-! Purpose: diag_blk localization
+!> Diag_blk localization
 !----------------------------------------------------------------------
 subroutine diag_blk_localization(diag_blk,mpl,geom,bpar,avg_blk)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block (localization)
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-type(geom_type),intent(in) :: geom             ! Geometry
-type(bpar_type),intent(in) :: bpar             ! Block parameters
-type(avg_blk_type),intent(in) :: avg_blk       ! Averaged statistics block
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (localization)
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
+type(avg_blk_type),intent(in) :: avg_blk       !< Averaged statistics block
 
 ! Local variables
 integer :: il0,jl0r,jc3
@@ -644,19 +644,19 @@ end subroutine diag_blk_localization
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_hybridization
-! Purpose: diag_blk hybridization
+!> Diag_blk hybridization
 !----------------------------------------------------------------------
 subroutine diag_blk_hybridization(diag_blk,mpl,nam,geom,bpar,avg_blk)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk ! Diagnostic block (localization)
-type(mpl_type),intent(inout) :: mpl            ! MPI data
-type(nam_type),intent(in) :: nam               ! Namelist
-type(geom_type),intent(in) :: geom             ! Geometry
-type(bpar_type),intent(in) :: bpar             ! Block parameters
-type(avg_blk_type),intent(in) :: avg_blk       ! Averaged statistics block
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (localization)
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
+type(avg_blk_type),intent(in) :: avg_blk       !< Averaged statistics block
 
 ! Local variables
 integer :: il0,jl0r,jl0,jc3
@@ -781,20 +781,20 @@ end subroutine diag_blk_hybridization
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_dualens
-! Purpose: diag_blk dualens
+!> Diag_blk dualens
 !----------------------------------------------------------------------
 subroutine diag_blk_dualens(diag_blk,mpl,geom,bpar,avg_blk,avg_lr_blk,diag_lr_blk)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk   ! Diagnostic block (localization)
-type(mpl_type),intent(inout) :: mpl              ! MPI data
-type(geom_type),intent(in) :: geom               ! Geometry
-type(bpar_type),intent(in) :: bpar               ! Block parameters
-type(avg_blk_type),intent(in) :: avg_blk         ! Averaged statistics block
-type(avg_blk_type),intent(in) :: avg_lr_blk      ! LR averaged statistics block
-type(diag_blk_type),intent(inout) :: diag_lr_blk ! Diagnostic block (LR localization)
+class(diag_blk_type),intent(inout) :: diag_blk   !< Diagnostic block (localization)
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(geom_type),intent(in) :: geom               !< Geometry
+type(bpar_type),intent(in) :: bpar               !< Block parameters
+type(avg_blk_type),intent(in) :: avg_blk         !< Averaged statistics block
+type(avg_blk_type),intent(in) :: avg_lr_blk      !< LR averaged statistics block
+type(diag_blk_type),intent(inout) :: diag_lr_blk !< Diagnostic block (LR localization)
 
 ! Local variables
 integer :: il0,jl0r,jc3

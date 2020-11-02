@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_samp
-! Purpose: sampling derived type
+!> Sampling derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -32,97 +32,97 @@ implicit none
 ! Sampling derived type
 type samp_type
    ! Parameters
-   character(len=1024) :: name                      ! Sampling name
-   logical :: sc2                                   ! Subset Sc2 flag
-   logical :: sc3                                   ! Subset Sc3 flag
+   character(len=1024) :: name                      !< Sampling name
+   logical :: sc2                                   !< Subset Sc2 flag
+   logical :: sc3                                   !< Subset Sc3 flag
 
    ! Subset Sc0
-   logical,allocatable :: smask_c0u(:,:)            ! Mask on subset Sc0, universe
-   logical,allocatable :: smask_hor_c0u(:)          ! Union of horizontal masks on subset Sc0, universe
-   logical,allocatable :: smask_c0a(:,:)            ! Mask on subset Sc0, halo A
-   logical,allocatable :: smask_hor_c0a(:)          ! Union of horizontal masks on subset Sc0, halo A
-   integer,allocatable :: nc0_smask(:)              ! Horizontal mask size on subset Sc0
-   integer :: nc0c                                  ! Number of points in subset Sc0, halo C
+   logical,allocatable :: smask_c0u(:,:)            !< Mask on subset Sc0, universe
+   logical,allocatable :: smask_hor_c0u(:)          !< Union of horizontal masks on subset Sc0, universe
+   logical,allocatable :: smask_c0a(:,:)            !< Mask on subset Sc0, halo A
+   logical,allocatable :: smask_hor_c0a(:)          !< Union of horizontal masks on subset Sc0, halo A
+   integer,allocatable :: nc0_smask(:)              !< Horizontal mask size on subset Sc0
+   integer :: nc0c                                  !< Number of points in subset Sc0, halo C
 
    ! Subset Sc1
-   integer,allocatable :: c1_to_c0(:)               ! Subset Sc1, global, to subset Sc0, global
-   integer,allocatable :: c1_to_proc(:)             ! Subset Sc1, global to processor
-   integer :: nc1u                                  ! Number of points in subset Sc1, universe
-   integer,allocatable :: c1u_to_c1(:)              ! Subset Sc1, universe, to subset Sc1, global
-   integer,allocatable :: c1_to_c1u(:)              ! Subset Sc1, global, to subset Sc1, universe
-   integer,allocatable :: c1u_to_c1a(:)             ! Subset Sc1, universe, to subset Sc1, halo A
-   integer,allocatable :: c1u_to_c0u(:)             ! Subset Sc1, universe, to subset Sc0, universe
-   real(kind_real),allocatable :: lon_c1u(:)        ! Longitudes on subset Sc1, universe
-   real(kind_real),allocatable :: lat_c1u(:)        ! Latitudes on subset Sc1, universe
-   logical,allocatable :: smask_c1u(:,:)            ! Mask on subset Sc1, universe
-   logical,allocatable :: smask_hor_c1u(:)          ! Union of horizontal masks on subset Sc1, universe
-   integer :: nc1a                                  ! Number of points in subset Sc1, halo A
-   integer,allocatable :: c1a_to_c1(:)              ! Subset Sc1, halo A, to subset Sc1, global
-   integer,allocatable :: c1a_to_c1u(:)             ! Subset Sc1, halo A, to subset Sc1, universe
-   integer,allocatable :: c1a_to_c0a(:)             ! Subset Sc1, halo A, to subset Sc0, halo A
-   logical,allocatable :: c1al0_check(:,:)          ! Mask boundaries checking activation
-   real(kind_real),allocatable :: lon_c1a(:)        ! Longitudes on subset Sc1, halo A
-   real(kind_real),allocatable :: lat_c1a(:)        ! Latitudes on subset Sc1, halo A
-   logical,allocatable :: smask_c1a(:,:)            ! Mask on subset Sc1, halo A
-   logical,allocatable :: smask_hor_c1a(:)          ! Union of horizontal masks on subset Sc1, halo A
-   integer,allocatable :: c1ac3_to_c0u(:,:)         ! Subsets Sc1 and Sc3, halo A, to subset Sc0, universe
-   logical,allocatable :: smask_c1ac3(:,:,:)        ! Mask on subset Sc1 and Sc3, halo A
-   logical,allocatable :: smask_c1dc3(:,:,:)        ! Mask on subset Sc1 and Sc3, halo D
-   integer,allocatable :: c1a_to_c0c(:)             ! Subset Sc1, halo A, to subset Sc0, halo C
-   integer,allocatable :: c1ac3_to_c0c(:,:)         ! Subsets Sc1 and Sc3, halo A, to subset Sc0, halo C
-   integer :: nc1d                                  ! Number of points in subset Sc1, halo D
-   integer,allocatable :: c1d_to_c1u(:)             ! Subset Sc1, halo D to universe
-   integer :: nc1e                                  ! Number of points in subset Sc1, halo E
-   integer,allocatable :: c1e_to_c1u(:)             ! Subset Sc1, halo E to universe
+   integer,allocatable :: c1_to_c0(:)               !< Subset Sc1, global, to subset Sc0, global
+   integer,allocatable :: c1_to_proc(:)             !< Subset Sc1, global to processor
+   integer :: nc1u                                  !< Number of points in subset Sc1, universe
+   integer,allocatable :: c1u_to_c1(:)              !< Subset Sc1, universe, to subset Sc1, global
+   integer,allocatable :: c1_to_c1u(:)              !< Subset Sc1, global, to subset Sc1, universe
+   integer,allocatable :: c1u_to_c1a(:)             !< Subset Sc1, universe, to subset Sc1, halo A
+   integer,allocatable :: c1u_to_c0u(:)             !< Subset Sc1, universe, to subset Sc0, universe
+   real(kind_real),allocatable :: lon_c1u(:)        !< Longitudes on subset Sc1, universe
+   real(kind_real),allocatable :: lat_c1u(:)        !< Latitudes on subset Sc1, universe
+   logical,allocatable :: smask_c1u(:,:)            !< Mask on subset Sc1, universe
+   logical,allocatable :: smask_hor_c1u(:)          !< Union of horizontal masks on subset Sc1, universe
+   integer :: nc1a                                  !< Number of points in subset Sc1, halo A
+   integer,allocatable :: c1a_to_c1(:)              !< Subset Sc1, halo A, to subset Sc1, global
+   integer,allocatable :: c1a_to_c1u(:)             !< Subset Sc1, halo A, to subset Sc1, universe
+   integer,allocatable :: c1a_to_c0a(:)             !< Subset Sc1, halo A, to subset Sc0, halo A
+   logical,allocatable :: c1al0_check(:,:)          !< Mask boundaries checking activation
+   real(kind_real),allocatable :: lon_c1a(:)        !< Longitudes on subset Sc1, halo A
+   real(kind_real),allocatable :: lat_c1a(:)        !< Latitudes on subset Sc1, halo A
+   logical,allocatable :: smask_c1a(:,:)            !< Mask on subset Sc1, halo A
+   logical,allocatable :: smask_hor_c1a(:)          !< Union of horizontal masks on subset Sc1, halo A
+   integer,allocatable :: c1ac3_to_c0u(:,:)         !< Subsets Sc1 and Sc3, halo A, to subset Sc0, universe
+   logical,allocatable :: smask_c1ac3(:,:,:)        !< Mask on subset Sc1 and Sc3, halo A
+   logical,allocatable :: smask_c1dc3(:,:,:)        !< Mask on subset Sc1 and Sc3, halo D
+   integer,allocatable :: c1a_to_c0c(:)             !< Subset Sc1, halo A, to subset Sc0, halo C
+   integer,allocatable :: c1ac3_to_c0c(:,:)         !< Subsets Sc1 and Sc3, halo A, to subset Sc0, halo C
+   integer :: nc1d                                  !< Number of points in subset Sc1, halo D
+   integer,allocatable :: c1d_to_c1u(:)             !< Subset Sc1, halo D to universe
+   integer :: nc1e                                  !< Number of points in subset Sc1, halo E
+   integer,allocatable :: c1e_to_c1u(:)             !< Subset Sc1, halo E to universe
 
    ! Subset Sc2
-   integer,allocatable :: c2_to_c1(:)               ! Subset Sc2, global, to subset Sc1, global
-   integer,allocatable :: c2_to_proc(:)             ! Subset Sc2, global to processor
-   integer :: nc2u                                  ! Number of points in subset Sc2, universe
-   integer,allocatable :: c2u_to_c2(:)              ! Subset Sc2, universe, to subset Sc2, global
-   integer,allocatable :: c2_to_c2u(:)              ! Subset Sc2, global, to subset Sc2, universe
-   integer,allocatable :: c2u_to_c1u(:)             ! Subset Sc2, universe to subset Sc1, universe
-   integer,allocatable :: c2u_to_c0u(:)             ! Subset Sc2, universe to subset Sc0, universe
-   real(kind_real),allocatable :: lon_c2u(:)        ! Longitudes on subset Sc2, universe
-   real(kind_real),allocatable :: lat_c2u(:)        ! Latitudes on subset Sc2, universe
-   logical,allocatable :: smask_c2u(:,:)            ! Mask on subset Sc2, universe
-   logical,allocatable :: smask_hor_c2u(:)          ! Union of horizontal masks on subset Sc2, universe
-   integer,allocatable :: proc_to_nc2a(:)           ! Processor to subset Sc2 size, halo A
-   integer,allocatable :: proc_to_c2_offset(:)      ! Processor to offset on subset Sc2
-   integer :: nc2a                                  ! Number of points in subset Sc2, halo A
-   integer,allocatable :: c2a_to_c2(:)              ! Subset Sc2, halo A, to subset Sc2, global
-   integer,allocatable :: c2a_to_c2u(:)             ! Subset Sc2, halo A, to subset Sc2, universe
-   integer,allocatable :: c2a_to_c1a(:)             ! Subset Sc2, halo A, to subset Sc1, halo A
-   integer,allocatable :: c2a_to_c0a(:)             ! Subset Sc2, halo A, to subset Sc0, halo A
-   real(kind_real),allocatable :: lon_c2a(:)        ! Longitudes on subset Sc2, halo A
-   real(kind_real),allocatable :: lat_c2a(:)        ! Latitudes on subset Sc2, halo A
-   logical,allocatable :: smask_c2a(:,:)            ! Mask on subset Sc2, halo A
-   logical,allocatable :: smask_hor_c2a(:)          ! Union of horizontal masks on subset Sc2, halo A
-   integer :: nc2b                                  ! Number of points in subset Sc2, halo B
-   integer,allocatable :: c2b_to_c2u(:)             ! Subset Sc2, halo B to universe
+   integer,allocatable :: c2_to_c1(:)               !< Subset Sc2, global, to subset Sc1, global
+   integer,allocatable :: c2_to_proc(:)             !< Subset Sc2, global to processor
+   integer :: nc2u                                  !< Number of points in subset Sc2, universe
+   integer,allocatable :: c2u_to_c2(:)              !< Subset Sc2, universe, to subset Sc2, global
+   integer,allocatable :: c2_to_c2u(:)              !< Subset Sc2, global, to subset Sc2, universe
+   integer,allocatable :: c2u_to_c1u(:)             !< Subset Sc2, universe to subset Sc1, universe
+   integer,allocatable :: c2u_to_c0u(:)             !< Subset Sc2, universe to subset Sc0, universe
+   real(kind_real),allocatable :: lon_c2u(:)        !< Longitudes on subset Sc2, universe
+   real(kind_real),allocatable :: lat_c2u(:)        !< Latitudes on subset Sc2, universe
+   logical,allocatable :: smask_c2u(:,:)            !< Mask on subset Sc2, universe
+   logical,allocatable :: smask_hor_c2u(:)          !< Union of horizontal masks on subset Sc2, universe
+   integer,allocatable :: proc_to_nc2a(:)           !< Processor to subset Sc2 size, halo A
+   integer,allocatable :: proc_to_c2_offset(:)      !< Processor to offset on subset Sc2
+   integer :: nc2a                                  !< Number of points in subset Sc2, halo A
+   integer,allocatable :: c2a_to_c2(:)              !< Subset Sc2, halo A, to subset Sc2, global
+   integer,allocatable :: c2a_to_c2u(:)             !< Subset Sc2, halo A, to subset Sc2, universe
+   integer,allocatable :: c2a_to_c1a(:)             !< Subset Sc2, halo A, to subset Sc1, halo A
+   integer,allocatable :: c2a_to_c0a(:)             !< Subset Sc2, halo A, to subset Sc0, halo A
+   real(kind_real),allocatable :: lon_c2a(:)        !< Longitudes on subset Sc2, halo A
+   real(kind_real),allocatable :: lat_c2a(:)        !< Latitudes on subset Sc2, halo A
+   logical,allocatable :: smask_c2a(:,:)            !< Mask on subset Sc2, halo A
+   logical,allocatable :: smask_hor_c2a(:)          !< Union of horizontal masks on subset Sc2, halo A
+   integer :: nc2b                                  !< Number of points in subset Sc2, halo B
+   integer,allocatable :: c2b_to_c2u(:)             !< Subset Sc2, halo B to universe
 
    ! Local data
-   logical,allocatable :: vbal_mask(:,:)            ! Vertical balance mask
-   logical,allocatable :: local_mask(:,:)           ! Local mask
-   integer,allocatable :: nn_c2a_index(:,:)         ! Nearest diagnostic neighbors from diagnostic points
-   real(kind_real),allocatable :: nn_c2a_dist(:,:)  ! Nearest diagnostic neighbors distance from diagnostic points
+   logical,allocatable :: vbal_mask(:,:)            !< Vertical balance mask
+   logical,allocatable :: local_mask(:,:)           !< Local mask
+   integer,allocatable :: nn_c2a_index(:,:)         !< Nearest diagnostic neighbors from diagnostic points
+   real(kind_real),allocatable :: nn_c2a_dist(:,:)  !< Nearest diagnostic neighbors distance from diagnostic points
 
    ! Forced points
-   integer,allocatable :: ldwv_to_proc(:)           ! Local diagnostics profiles to task
-   integer,allocatable :: ldwv_to_c0a(:)            ! Local diagnostics profiles to subset Sc0, halo A
+   integer,allocatable :: ldwv_to_proc(:)           !< Local diagnostics profiles to task
+   integer,allocatable :: ldwv_to_c0a(:)            !< Local diagnostics profiles to subset Sc0, halo A
 
    ! Sampling mesh
-   type(mesh_type) :: mesh                          ! Sampling mesh
+   type(mesh_type) :: mesh                          !< Sampling mesh
 
    ! Interpolations
-   type(linop_type),allocatable :: h(:)             ! Horizontal interpolation from Sc2 to Sc0 (local)
+   type(linop_type),allocatable :: h(:)             !< Horizontal interpolation from Sc2 to Sc0 (local)
 
    ! Communications
-   type(com_type) :: com_AB                         ! Communication between halos A and B
-   type(com_type) :: com_AC                         ! Communication between halos A and C
-   type(com_type) :: com_AD                         ! Communication between halos A and D (diagnostic)
-   type(com_type) :: com_AE                         ! Communication between halos A and E (vertical balance)
-   type(com_type) :: com_AU                         ! Communication between halo A and universe on subset Sc2
+   type(com_type) :: com_AB                         !< Communication between halos A and B
+   type(com_type) :: com_AC                         !< Communication between halos A and C
+   type(com_type) :: com_AD                         !< Communication between halos A and D (diagnostic)
+   type(com_type) :: com_AE                         !< Communication between halos A and E (vertical balance)
+   type(com_type) :: com_AU                         !< Communication between halo A and universe on subset Sc2
 contains
    procedure :: samp_alloc_mask
    procedure :: samp_alloc_other
@@ -156,15 +156,15 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_alloc_mask
-! Purpose: allocation for mask
+!> Allocation for mask
 !----------------------------------------------------------------------
 subroutine samp_alloc_mask(samp,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Allocation
 allocate(samp%smask_c0u(geom%nc0u,geom%nl0))
@@ -177,16 +177,16 @@ end subroutine samp_alloc_mask
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_alloc_other
-! Purpose: allocation for other variables
+!> Allocation for other variables
 !----------------------------------------------------------------------
 subroutine samp_alloc_other(samp,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Initialization
 samp%sc2 = (trim(samp%name)=='vbal').or.(trim(samp%name)=='lct').or.((trim(samp%name)=='hdiag').and.nam%local_diag)
@@ -206,14 +206,14 @@ end subroutine samp_alloc_other
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_partial_dealloc
-! Purpose: release memory (partial)
+!> Release memory (partial)
 !----------------------------------------------------------------------
 subroutine samp_partial_dealloc(samp)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
+class(samp_type),intent(inout) :: samp !< Sampling
 
 ! Release memory
 if (allocated(samp%smask_c0u)) deallocate(samp%smask_c0u)
@@ -255,14 +255,14 @@ end subroutine samp_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine samp_dealloc(samp)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
+class(samp_type),intent(inout) :: samp !< Sampling
 
 ! Local variables
 integer :: il0
@@ -309,17 +309,17 @@ end subroutine samp_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_read
-! Purpose: read
+!> Read
 !----------------------------------------------------------------------
 subroutine samp_read(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(inout) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: il0,ic1a,ic1u,jc3,grid_hash
@@ -432,17 +432,17 @@ end subroutine samp_read
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_write
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine samp_write(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(in) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(nam_type),intent(in) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom  ! Geometry
+class(samp_type),intent(in) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
 
 ! Local variables
 integer :: il0,ic1a,ic1u,jc3
@@ -537,17 +537,17 @@ end subroutine samp_write
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_write_grids
-! Purpose: write
+!> Write
 !----------------------------------------------------------------------
 subroutine samp_write_grids(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(in) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl ! MPI data
-type(nam_type),intent(in) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom  ! Geometry
+class(samp_type),intent(in) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
 
 ! Local variables
 integer :: il0,jc3,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,ic0u,jc0u,j,nc1max,nc1max_tot
@@ -747,20 +747,20 @@ end subroutine samp_write_grids
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_setup
-! Purpose: setup sampling
+!> Setup sampling
 !----------------------------------------------------------------------
 subroutine samp_setup(samp,sname,mpl,rng,nam,geom,ens)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-character(len=*),intent(in) :: sname   ! Sampling name
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(inout) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(ens_type),intent(inout) :: ens    ! Ensemble
+class(samp_type),intent(inout) :: samp !< Sampling
+character(len=*),intent(in) :: sname   !< Sampling name
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(ens_type),intent(inout) :: ens    !< Ensemble
 
 ! Local variables
 integer :: il0,jc3,ildwv,jldwv,ival,nc1_valid
@@ -964,18 +964,18 @@ end subroutine samp_setup
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mask
-! Purpose: compute mask
+!> Compute mask
 !----------------------------------------------------------------------
 subroutine samp_compute_mask(samp,mpl,nam,geom,ens)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
-type(ens_type),intent(inout) :: ens    ! Ensemble
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(ens_type),intent(inout) :: ens    !< Ensemble
 
 ! Local variables
 integer :: nsmask,nsmask_tot,ic0a,il0,ildwv,iv,ncontig,ncontigmax,latmin,latmax
@@ -1108,18 +1108,18 @@ end subroutine samp_compute_mask
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_c1
-! Purpose: compute sampling, subset Sc1
+!> Compute sampling, subset Sc1
 !----------------------------------------------------------------------
 subroutine samp_compute_c1(samp,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(inout) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ic0,ic0a,ic0u,ic1,il0i,ildwv,ic1u,iproc
@@ -1213,17 +1213,17 @@ end subroutine samp_compute_c1
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_c1a
-! Purpose: compute MPI distribution, halo A, subset Sc1
+!> Compute MPI distribution, halo A, subset Sc1
 !----------------------------------------------------------------------
 subroutine samp_compute_mpi_c1a(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ic0a,ic0u,ic1a,ic1u,ic1,iproc
@@ -1280,18 +1280,18 @@ end subroutine samp_compute_mpi_c1a
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_c3
-! Purpose: compute sampling, subset Sc3
+!> Compute sampling, subset Sc3
 !----------------------------------------------------------------------
 subroutine samp_compute_c3(samp,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: jc3,ic1a,ir,irtmp,jc0a,jc0u,jc0,icinf,icsup,ictest,nn_index(nam%nc3),il0,iproc
@@ -1421,17 +1421,17 @@ end subroutine samp_compute_c3
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_check_mask
-! Purpose: check sampling mask
+!> Check sampling mask
 !----------------------------------------------------------------------
 subroutine samp_check_mask(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: il0,jc3,ic1a,jc0u
@@ -1473,18 +1473,18 @@ end subroutine samp_check_mask
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_c2
-! Purpose: compute sampling, subset Sc2
+!> Compute sampling, subset Sc2
 !----------------------------------------------------------------------
 subroutine samp_compute_c2(samp,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(inout) :: nam    ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ic0u,ic1a,ic1u,ic1,ic2u,ic2,iproc,ildwv
@@ -1556,17 +1556,17 @@ end subroutine samp_compute_c2
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_c2a
-! Purpose: compute sampling MPI distribution, halo A, subset Sc2
+!> Compute sampling MPI distribution, halo A, subset Sc2
 !----------------------------------------------------------------------
 subroutine samp_compute_mpi_c2a(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ic0a,ic0u,ic1a,ic1u,ic2a,ic2u,ic2,iproc
@@ -1657,18 +1657,18 @@ end subroutine samp_compute_mpi_c2a
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_c2b
-! Purpose: compute sampling MPI distribution, halo B
+!> Compute sampling MPI distribution, halo B
 !----------------------------------------------------------------------
 subroutine samp_compute_mpi_c2b(samp,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ic2b,ic2,ic2u,jc2u,i_s,il0i,iproc
@@ -1743,16 +1743,16 @@ end subroutine samp_compute_mpi_c2b
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mesh_c2
-! Purpose: compute sampling mesh, subset Sc2
+!> Compute sampling mesh, subset Sc2
 !----------------------------------------------------------------------
 subroutine samp_compute_mesh_c2(samp,mpl,rng)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
 
 ! Alocation
 call samp%mesh%alloc(samp%nc2u)
@@ -1774,18 +1774,18 @@ end subroutine samp_compute_mesh_c2
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_c
-! Purpose: compute sampling MPI distribution, halo C
+!> Compute sampling MPI distribution, halo C
 !----------------------------------------------------------------------
 subroutine samp_compute_mpi_c(samp,mpl,rng,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(rng_type),intent(inout) :: rng    ! Random number generator
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: jc3,ic0,ic0a,ic0c,ic0u,jc0u,jc0c,ic1a,il0,i_s,iproc
@@ -1860,17 +1860,17 @@ end subroutine samp_compute_mpi_c
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_d
-! Purpose: compute sampling MPI distribution, halo D
+!> Compute sampling MPI distribution, halo D
 !----------------------------------------------------------------------
 subroutine samp_compute_mpi_d(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
-type(geom_type),intent(in) :: geom     ! Geometry
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ic2a,nn,i,ic1d,ic1,ic1a,ic1u,jc1u,npack,ipack,il0,jc3
@@ -1979,16 +1979,16 @@ end subroutine samp_compute_mpi_d
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_e
-! Purpose: compute sampling MPI distribution, halo E
+!> Compute sampling MPI distribution, halo E
 !----------------------------------------------------------------------
 subroutine samp_compute_mpi_e(samp,mpl,nam)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(inout) :: samp ! Sampling
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-type(nam_type),intent(in) :: nam       ! Namelist
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
 integer :: ic2b,ic2u,nn,i,ic1,ic1e,ic1u,ic1a,jc1u
@@ -2085,20 +2085,20 @@ end subroutine samp_compute_mpi_e
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_diag_filter
-! Purpose: filter diagnostics
+!> Filter diagnostics
 !----------------------------------------------------------------------
 subroutine samp_diag_filter(samp,mpl,nam,filter_type,rflt,diag_c2a,val_c2a)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(in) :: samp                       ! Sampling
-type(mpl_type),intent(inout) :: mpl                       ! MPI data
-type(nam_type),intent(in) :: nam                          ! Namelist
-character(len=*),intent(in) :: filter_type                ! Filter type
-real(kind_real),intent(in) :: rflt                        ! Filter support radius
-real(kind_real),intent(inout) :: diag_c2a(samp%nc2a)      ! Filtered diagnostic
-real(kind_real),intent(in),optional :: val_c2a(samp%nc2a) ! Useful value for filtering
+class(samp_type),intent(in) :: samp                       !< Sampling
+type(mpl_type),intent(inout) :: mpl                       !< MPI data
+type(nam_type),intent(in) :: nam                          !< Namelist
+character(len=*),intent(in) :: filter_type                !< Filter type
+real(kind_real),intent(in) :: rflt                        !< Filter support radius
+real(kind_real),intent(inout) :: diag_c2a(samp%nc2a)      !< Filtered diagnostic
+real(kind_real),intent(in),optional :: val_c2a(samp%nc2a) !< Useful value for filtering
 
 ! Local variables
 integer :: ic2,ic2a,nc2f,ic2f,ic2u,jc2u,nc2eff,ic2eff,kc2u,kc2f
@@ -2250,16 +2250,16 @@ end subroutine samp_diag_filter
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_diag_fill
-! Purpose: fill diagnostics missing values
+!> Fill diagnostics missing values
 !----------------------------------------------------------------------
 subroutine samp_diag_fill(samp,mpl,diag_c2a)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(in) :: samp                  ! Sampling
-type(mpl_type),intent(inout) :: mpl                  ! MPI data
-real(kind_real),intent(inout) :: diag_c2a(samp%nc2a) ! Filtered diagnostic
+class(samp_type),intent(in) :: samp                  !< Sampling
+type(mpl_type),intent(inout) :: mpl                  !< MPI data
+real(kind_real),intent(inout) :: diag_c2a(samp%nc2a) !< Filtered diagnostic
 
 ! Local variables
 integer :: nmsr,nmsr_tot,ic2a,jc2u,kc2u

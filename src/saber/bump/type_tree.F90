@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------
 ! Module: type_tree
-! Purpose: tree derived type
+!> Tree derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -20,13 +20,13 @@ implicit none
 
 ! Tree derived type
 type tree_type
-    integer :: n                          ! Data size
-    integer :: neff                       ! Effective tree size
-    logical,allocatable :: mask(:)        ! Mask
-    integer,allocatable :: from_eff(:)    ! Effective index conversion
-    real(kind_real),allocatable :: lon(:) ! Longitudes
-    real(kind_real),allocatable :: lat(:) ! Latitudes
-    type(atlas_indexkdtree) :: kd         ! KDTree from ATLAS
+    integer :: n                          !< Data size
+    integer :: neff                       !< Effective tree size
+    logical,allocatable :: mask(:)        !< Mask
+    integer,allocatable :: from_eff(:)    !< Effective index conversion
+    real(kind_real),allocatable :: lon(:) !< Longitudes
+    real(kind_real),allocatable :: lat(:) !< Latitudes
+    type(atlas_indexkdtree) :: kd         !< KDTree from ATLAS
 contains
     procedure :: alloc => tree_alloc
     procedure :: init => tree_init
@@ -44,17 +44,17 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: tree_alloc
-! Purpose: allocation
+!> Allocation
 !----------------------------------------------------------------------
 subroutine tree_alloc(tree,mpl,n,mask)
 
 implicit none
 
 ! Passed variables
-class(tree_type),intent(inout) :: tree ! Tree
-type(mpl_type),intent(inout) :: mpl    ! MPI data
-integer,intent(in) :: n                ! Number of points
-logical,intent(in),optional :: mask(n) ! Mask
+class(tree_type),intent(inout) :: tree !< Tree
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: n                !< Number of points
+logical,intent(in),optional :: mask(n) !< Mask
 
 ! Local variables
 character(len=1024),parameter :: subr = 'tree_alloc'
@@ -85,16 +85,16 @@ end subroutine tree_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: tree_init
-! Purpose: initialization
+!> Initialization
 !----------------------------------------------------------------------
 subroutine tree_init(tree,lon,lat)
 
 implicit none
 
 ! Passed variables
-class(tree_type),intent(inout) :: tree    ! Tree
-real(kind_real),intent(in) :: lon(tree%n) ! Points longitudes (in radians)
-real(kind_real),intent(in) :: lat(tree%n) ! Points latitudes (in radians)
+class(tree_type),intent(inout) :: tree    !< Tree
+real(kind_real),intent(in) :: lon(tree%n) !< Points longitudes (in radians)
+real(kind_real),intent(in) :: lat(tree%n) !< Points latitudes (in radians)
 
 ! Local variable
 integer :: i,ieff
@@ -130,14 +130,14 @@ end subroutine tree_init
 
 !----------------------------------------------------------------------
 ! Subroutine: tree_dealloc
-! Purpose: release memory
+!> Release memory
 !----------------------------------------------------------------------
 subroutine tree_dealloc(tree)
 
 implicit none
 
 ! Passed variables
-class(tree_type),intent(inout) :: tree ! Tree
+class(tree_type),intent(inout) :: tree !< Tree
 
 if (allocated(tree%from_eff)) then
    ! Release memory
@@ -154,19 +154,19 @@ end subroutine tree_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: tree_find_nearest_neighbors
-! Purpose: find nearest neighbors using a KDTree
+!> Find nearest neighbors using a KDTree
 !----------------------------------------------------------------------
 subroutine tree_find_nearest_neighbors(tree,lon,lat,nn,nn_index,nn_dist)
 
 implicit none
 
 ! Passed variables
-class(tree_type),intent(in) :: tree                 ! Tree
-real(kind_real),intent(in) :: lon                   ! Point longitude (in radians)
-real(kind_real),intent(in) :: lat                   ! Point latitude (in radians)
-integer,intent(in) :: nn                            ! Number of nearest neighbors to find
-integer,intent(out) :: nn_index(nn)                 ! Nearest neighbors index
-real(kind_real),intent(out),optional :: nn_dist(nn) ! Nearest neighbors distance
+class(tree_type),intent(in) :: tree                 !< Tree
+real(kind_real),intent(in) :: lon                   !< Point longitude (in radians)
+real(kind_real),intent(in) :: lat                   !< Point latitude (in radians)
+integer,intent(in) :: nn                            !< Number of nearest neighbors to find
+integer,intent(out) :: nn_index(nn)                 !< Nearest neighbors index
+real(kind_real),intent(out),optional :: nn_dist(nn) !< Nearest neighbors distance
 
 ! Local variables
 integer :: nn_tmp,i,j,nid
@@ -258,18 +258,18 @@ end subroutine tree_find_nearest_neighbors
 
 !----------------------------------------------------------------------
 ! Subroutine: tree_count_nearest_neighbors
-! Purpose: count nearest neighbors using a tree
+!> Count nearest neighbors using a tree
 !----------------------------------------------------------------------
 subroutine tree_count_nearest_neighbors(tree,lon,lat,sr,nn)
 
 implicit none
 
 ! Passed variables
-class(tree_type),intent(in) :: tree ! Tree
-real(kind_real),intent(in) :: lon   ! Point longitude (in radians)
-real(kind_real),intent(in) :: lat   ! Point latitude (in radians)
-real(kind_real),intent(in) :: sr    ! Spherical radius (in radians)
-integer,intent(out) :: nn           ! Number of nearest neighbors found
+class(tree_type),intent(in) :: tree !< Tree
+real(kind_real),intent(in) :: lon   !< Point longitude (in radians)
+real(kind_real),intent(in) :: lat   !< Point latitude (in radians)
+real(kind_real),intent(in) :: sr    !< Spherical radius (in radians)
+integer,intent(out) :: nn           !< Number of nearest neighbors found
 
 ! Local variable
 real(kind_real) :: ch

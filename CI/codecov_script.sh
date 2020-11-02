@@ -1,2 +1,2 @@
 #/bin/bash
-bash <(curl -s https://codecov.io/bash) -t b8d1ec3a-1248-4948-afe1-5afc97fc24c7 -R /jcsda/saber-bundle/saber
+bash <(curl -s https://codecov.io/bash) -t a66d5bf3-6990-4614-9212-74a7b8961103 -R /jcsda/saber-bundle/saber
