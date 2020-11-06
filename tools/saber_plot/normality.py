@@ -9,6 +9,8 @@ import numpy.ma as ma
 import os
 
 def normality(testdata, test, mpi, omp, suffix, testfig):
+   """! Plot script for the "normality" files produced by BUMP"""
+
    # Loop over files
    first = True
    for impi in range(0, int(mpi)):

@@ -30,9 +30,9 @@ use type_rng, only: rng_type
 
 implicit none
 
-real(kind_real),parameter :: sqrt_r = 0.725_kind_real ! Square-root factor on support radius (empirical)
-real(kind_real),parameter :: sqrt_h = 0.725_kind_real ! Square-root factor on LCT (empirical)
-real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum value for the convolution coefficients
+real(kind_real),parameter :: sqrt_r = 0.725_kind_real !< Square-root factor on support radius (empirical)
+real(kind_real),parameter :: sqrt_h = 0.725_kind_real !< Square-root factor on LCT (empirical)
+real(kind_real),parameter :: S_inf = 1.0e-2_kind_real !< Minimum value for the convolution coefficients
 
 ! Ball data derived type
 type balldata_type
@@ -470,14 +470,13 @@ end subroutine nicas_blk_dealloc
 ! Subroutine: nicas_blk_read
 !> Read
 !----------------------------------------------------------------------
-subroutine nicas_blk_read(nicas_blk,mpl,nam,geom,bpar,ncid)
+subroutine nicas_blk_read(nicas_blk,mpl,geom,bpar,ncid)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 integer,intent(in) :: ncid                       !< NetCDF file
@@ -606,14 +605,13 @@ end subroutine nicas_blk_read
 ! Subroutine: nicas_blk_write
 !> Write
 !----------------------------------------------------------------------
-subroutine nicas_blk_write(nicas_blk,mpl,nam,geom,bpar,ncid)
+subroutine nicas_blk_write(nicas_blk,mpl,geom,bpar,ncid)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(nam_type),intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom            !< Geometry
 type(bpar_type),intent(in) :: bpar            !< Block parameters
 integer,intent(in) :: ncid                    !< NetCDF file
@@ -788,7 +786,7 @@ integer,intent(out) :: nbufl                  !< Buffer size (logical)
 
 ! Local variables
 integer :: nnbufi,nnbufr
-integer :: il0i,il1,il0
+integer :: il0i,il1
 
 ! Associate
 associate(ib=>nicas_blk%ib)
@@ -864,7 +862,7 @@ logical,intent(out) :: bufl(nbufl)            !< Buffer (logical)
 
 ! Local variables
 integer :: ibufi,ibufr,ibufl,nnbufi,nnbufr
-integer :: il0i,il1,il0
+integer :: il0i,il1
 logical,allocatable :: mask_c0a(:,:)
 character(len=1024),parameter :: subr = 'nicas_blk_serialize'
 
@@ -1040,7 +1038,7 @@ logical,intent(in) :: bufl(nbufl)                !< Buffer (logical)
 
 ! Local variables
 integer :: ibufi,ibufr,ibufl,nnbufi,nnbufr
-integer :: il0i,il1,il0
+integer :: il0i,il1
 logical,allocatable :: mask_c0a(:,:)
 character(len=1024),parameter :: subr = 'nicas_blk_deserialize'
 

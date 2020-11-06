@@ -1,10 +1,9 @@
-/*!----------------------------------------------------------------------
- main: bump_main
- Purpose: command line arguments parsing and call to the BUMP library
- Author: Benjamin Menetrier
- Licensing: this code is distributed under the CeCILL-C license
- Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
-----------------------------------------------------------------------*/
+/*!
+ @brief Command line arguments parsing and call to the BUMP library
+ @author Benjamin Menetrier
+ @copyright This code is distributed under the CeCILL-C license
+ @copyright Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT.
+*/
 
 #include <string.h>
 

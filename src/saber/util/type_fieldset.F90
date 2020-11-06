@@ -67,7 +67,6 @@ type(atlas_functionspace),intent(in),optional :: afunctionspace !< ATLAS functio
 
 ! Local variables
 integer :: iv
-character(len=1024) :: fieldname
 character(len=1024),parameter :: subr = 'fieldset_init'
 type(atlas_field) :: afield
 

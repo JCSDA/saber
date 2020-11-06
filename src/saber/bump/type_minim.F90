@@ -16,6 +16,15 @@ use type_rng, only: rng_type
 
 implicit none
 
+! Praxis precision parameters
+real(kind_real),parameter :: machep = epsilon(1.0_kind_real) !< Machine precision
+real(kind_real),parameter :: small = machep**2               !< Small value
+real(kind_real),parameter :: vsmall = small**2               !< Very small value
+real(kind_real),parameter :: large = 1.0/small               !< Large value
+real(kind_real),parameter :: vlarge = 1.0/vsmall             !< Very large value
+real(kind_real),parameter :: m2 = sqrt(machep)               !< Machine precision square-root
+real(kind_real),parameter :: m4 = sqrt(m2)                   !< Square-root of the machine precision square-root
+
 ! Minimization data derived type
 type minim_type
    ! Minimizer data
@@ -79,15 +88,6 @@ contains
    procedure :: vt_dir => minim_vt_dir
    procedure :: vt_inv => minim_vt_inv
 end type minim_type
-
-! Praxis precision parameters
-real(kind_real),parameter :: machep = epsilon(1.0_kind_real)
-real(kind_real),parameter :: small = machep**2
-real(kind_real),parameter :: vsmall = small**2
-real(kind_real),parameter :: large = 1.0/small
-real(kind_real),parameter :: vlarge = 1.0/vsmall
-real(kind_real),parameter :: m2 = sqrt(machep)
-real(kind_real),parameter :: m4 = sqrt(m2)
 
 private
 public :: minim_type

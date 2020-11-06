@@ -17,11 +17,11 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-real(kind_real),parameter :: gc2gau = 0.28            ! GC99 support radius to Gaussian Daley length-scale (empirical)
-real(kind_real),parameter :: gau2gc = 3.57            ! Gaussian Daley length-scale to GC99 support radius (empirical)
-real(kind_real),parameter :: Dmin = 1.0e-12_kind_real ! Minimum tensor diagonal value
-real(kind_real),parameter :: condmax = 1.0e3          ! Maximum tensor conditioning number
-integer,parameter :: M = 0                            ! Number of implicit iteration for the Matern function (0: Gaussian)
+real(kind_real),parameter :: gc2gau = 0.28            !< GC99 support radius to Gaussian Daley length-scale (empirical)
+real(kind_real),parameter :: gau2gc = 3.57            !< Gaussian Daley length-scale to GC99 support radius (empirical)
+real(kind_real),parameter :: Dmin = 1.0e-12_kind_real !< Minimum tensor diagonal value
+real(kind_real),parameter :: condmax = 1.0e3          !< Maximum tensor conditioning number
+integer,parameter :: M = 0                            !< Number of implicit iteration for the Matern function (0: Gaussian)
 
 interface
    function c_fletcher32(n,var) bind(c,name='fletcher32') result(hash)
@@ -130,7 +130,7 @@ implicit none
 real(kind_real),intent(in) :: lon_i !< Initial point longitude (radians)
 real(kind_real),intent(in) :: lat_i !< Initial point latitude (radians)
 real(kind_real),intent(in) :: lon_f !< Final point longitude (radians)
-real(kind_real),intent(in) :: lat_f !< Final point longilatitudetude (radians)
+real(kind_real),intent(in) :: lat_f !< Final point latitude (radians)
 real(kind_real),intent(out) :: dist !< Great-circle distance
 
 ! Local variables
@@ -976,7 +976,7 @@ end subroutine syminv
 
 !----------------------------------------------------------------------
 ! Subroutine: pseudoinv
-! Purpose: Compute pseudo inverse of a symmetric matrix.
+!> Compute pseudo inverse of a symmetric matrix.
 ! Author: This routine is from WRFDA.
 !----------------------------------------------------------------------
 subroutine pseudoinv(mpl,n,a,c,ierr,mmax,var_th)
@@ -1073,8 +1073,8 @@ end subroutine pseudoinv
 
 !----------------------------------------------------------------------
 ! Subroutine: da_eof_decomposition
-! Purpose: Compute eigenvectors E and eigenvalues L of covariance matrix.
-!!         B_{x} defined by equation:  E^{T} B_{x} E = L, given input kz x kz matrix.
+!> Compute eigenvectors E and eigenvalues L of covariance matrix.
+!! B_{x} defined by equation:  E^{T} B_{x} E = L, given input kz x kz matrix.
 ! Author: This routine is from WRFDA.
 !----------------------------------------------------------------------
 subroutine da_eof_decomposition(kz,bx,e,l,ierr)
@@ -1089,7 +1089,7 @@ real(kind_real),intent(out) :: l(1:kz)      ! Eigenvalues of Bx
 integer,intent(out) :: ierr                 ! Error status
 
 ! Local variables
-integer :: work,m,info
+integer :: work,m
 real(kind_real) :: work_array(1:3*kz-1),ecopy(1:kz,1:kz),lcopy(1:kz)
 
 ! Initialization

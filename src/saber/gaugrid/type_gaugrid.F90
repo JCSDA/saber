@@ -16,9 +16,9 @@ use tools_sp,    only: splat
 implicit none
 
 private
-real(kind=kind_real):: zero = 0.0_kind_real
-real(kind=kind_real):: two  = 2.0_kind_real
-real(kind=kind_real):: half = 0.5_kind_real
+real(kind=kind_real):: zero = 0.0_kind_real            !< Zero
+real(kind=kind_real):: two  = 2.0_kind_real            !< Two
+real(kind=kind_real):: half = 0.5_kind_real            !< Half
 
 ! Gaussian grid derived type
 type gaussian_grid

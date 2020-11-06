@@ -20,8 +20,8 @@ use type_rng, only: rng_type
 
 implicit none
 
-logical,parameter :: check_data = .false.             ! Activate data check for all linear operations
-real(kind_real),parameter :: S_inf = 1.0e-2_kind_real ! Minimum interpolation coefficient
+logical,parameter :: check_data = .false.             !< Activate data check for all linear operations
+real(kind_real),parameter :: S_inf = 1.0e-2_kind_real !< Minimum interpolation coefficient
 
 ! Interpolation data derived type
 type interp_type

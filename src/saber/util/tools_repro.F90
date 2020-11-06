@@ -13,8 +13,8 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-logical :: repro = .true.                  ! Reproducibility flag
-real(kind_real),parameter :: rth = 1.0e-12 ! Reproducibility threshold
+logical :: repro = .true.                  !< Reproducibility flag
+real(kind_real),parameter :: rth = 1.0e-12 !< Reproducibility threshold
 
 private
 public :: repro,rth

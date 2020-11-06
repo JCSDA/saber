@@ -9,6 +9,8 @@ import numpy.ma as ma
 import os
 
 def avg(testdata, test, mpi, omp, suffix, testfig):
+   """! Plot script for the "average" files produced by BUMP"""
+
    # Open file
    f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 

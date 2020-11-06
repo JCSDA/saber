@@ -11,6 +11,8 @@ import numpy.ma as ma
 import os
 
 def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
+   """! Plot script for the "sampling grids" files produced by BUMP"""
+
    # c3 plot
    ic3_plot = [0,2,4,8]
 

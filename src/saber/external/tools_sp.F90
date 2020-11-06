@@ -14,12 +14,12 @@ use tools_const, only: pi
 implicit none
 
 private
-real(kind=kind_real),parameter:: ZERO    = 0.0_kind_real
-real(kind=kind_real),parameter:: ONE     = 1.0_kind_real
-real(kind=kind_real),parameter:: TWO     = 2.0_kind_real
-real(kind=kind_real),parameter:: TEN     = 10.0_kind_real
-real(kind=kind_real),parameter:: HALF    = 0.5_kind_real
-real(kind=kind_real),parameter:: QUARTER = 0.25_kind_real
+real(kind=kind_real),parameter:: ZERO    = 0.0_kind_real  !< Zero
+real(kind=kind_real),parameter:: ONE     = 1.0_kind_real  !< One
+real(kind=kind_real),parameter:: TWO     = 2.0_kind_real  !< Two
+real(kind=kind_real),parameter:: TEN     = 10.0_kind_real !< Ten
+real(kind=kind_real),parameter:: HALF    = 0.5_kind_real  !< Half
+real(kind=kind_real),parameter:: QUARTER = 0.25_kind_real !< Quarter
 
 public :: splat
 

@@ -31,9 +31,9 @@ use type_rng, only: rng_type
 
 implicit none
 
-integer,parameter :: nfac_rnd = 9 ! Number of ensemble size factors for randomization
-integer,parameter :: nfac_opt = 4 ! Number of length-scale factors for optimization
-integer,parameter :: ntest = 50   ! Number of tests
+integer,parameter :: nfac_rnd = 9 !< Number of ensemble size factors for randomization
+integer,parameter :: nfac_opt = 4 !< Number of length-scale factors for optimization
+integer,parameter :: ntest = 50   !< Number of tests
 
 
 ! NICAS derived type
@@ -226,7 +226,7 @@ do iproc=1,mpl%nproc
                call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
                ! Read data
-               call nicas%blk(ib)%read(mpl,nam,geom,bpar,grpid)
+               call nicas%blk(ib)%read(mpl,geom,bpar,grpid)
             end if
          end do
       else
@@ -240,7 +240,7 @@ do iproc=1,mpl%nproc
                call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
 
                ! Read data
-               call nicas_tmp%blk(ib)%read(mpl,nam,geom,bpar,grpid)
+               call nicas_tmp%blk(ib)%read(mpl,geom,bpar,grpid)
             end if
          end do
 
@@ -327,7 +327,7 @@ do iproc=1,mpl%nproc
                grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
                ! Write data
-               call nicas%blk(ib)%write(mpl,nam,geom,bpar,grpid)
+               call nicas%blk(ib)%write(mpl,geom,bpar,grpid)
 
                if (nam%write_grids.and.bpar%nicas_block(ib)) then
                   ! Define group
@@ -353,7 +353,7 @@ do iproc=1,mpl%nproc
                grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
 
                ! Write data
-               call nicas_tmp%blk(ib)%write(mpl,nam,geom,bpar,grpid)
+               call nicas_tmp%blk(ib)%write(mpl,geom,bpar,grpid)
 
                if (nam%write_grids.and.bpar%nicas_block(ib)) then
                   ! Define group

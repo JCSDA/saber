@@ -16,15 +16,15 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: nvmax = 20                    ! Maximum number of variables
-integer,parameter :: nlmax = 200                   ! Maximum number of levels
-integer,parameter :: nc3max = 1000                 ! Maximum number of classes
-integer,parameter :: nscalesmax = 5                ! Maximum number of variables
-integer,parameter :: ndirmax = 300                 ! Maximum number of diracs
-integer,parameter :: nldwvmax = 99                 ! Maximum number of local diagnostic profiles
-integer,parameter :: nprociomax = 20               ! Maximum number of I/O tasks
-integer,parameter :: niokvmax = 30                 ! Maximum number of I/O key-values
-integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2  ! Maximum number of vertical balance blocks
+integer,parameter :: nvmax = 20                    !< Maximum number of variables
+integer,parameter :: nlmax = 200                   !< Maximum number of levels
+integer,parameter :: nc3max = 1000                 !< Maximum number of classes
+integer,parameter :: nscalesmax = 5                !< Maximum number of variables
+integer,parameter :: ndirmax = 300                 !< Maximum number of diracs
+integer,parameter :: nldwvmax = 99                 !< Maximum number of local diagnostic profiles
+integer,parameter :: nprociomax = 20               !< Maximum number of I/O tasks
+integer,parameter :: niokvmax = 30                 !< Maximum number of I/O key-values
+integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2  !< Maximum number of vertical balance blocks
 
 type nam_type
    ! general_param
@@ -224,7 +224,7 @@ class(nam_type),intent(out) :: nam !< Namelist
 integer,intent(in) :: nproc        !< Number of MPI task
 
 ! Local variable
-integer :: il,iv,its,i,ildwv
+integer :: il,iv,i,ildwv
 
 ! general_param default
 nam%datadir = '.'
@@ -1614,8 +1614,8 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: iv,its,i,il,idir,ildwv
-character(len=2) :: ivchar,itschar,ildwvchar
+integer :: iv,i,il,idir,ildwv
+character(len=2) :: ivchar,ildwvchar
 character(len=1024),parameter :: subr = 'nam_check'
 
 ! Check maximum sizes

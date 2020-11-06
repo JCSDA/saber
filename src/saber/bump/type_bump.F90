@@ -34,6 +34,10 @@ use type_vbal, only: vbal_type
 
 implicit none
 
+integer,parameter :: dmsvali = -999           !< Default missing value for integers
+real(kind_real),parameter :: dmsvalr = -999.0 !< Default missing value for reals
+logical :: copy_ensemble = .false.            !< Deep copy of ensemble members
+
 ! BUMP derived type
 type bump_type
    type(bpar_type) :: bpar
@@ -93,10 +97,6 @@ contains
    procedure :: dealloc => bump_dealloc
    final :: dummy
 end type bump_type
-
-integer,parameter :: dmsvali = -999           ! Default missing value for integers
-real(kind_real),parameter :: dmsvalr = -999.0 ! Default missing value for reals
-logical :: copy_ensemble = .false.            ! Deep copy of ensemble members
 
 private
 public :: bump_type
@@ -470,7 +470,7 @@ if (bump%nam%new_lct) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Copy LCT into C matrix'
    call bump%mpl%flush
-   call bump%cmat%from_lct(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%lct)
+   call bump%cmat%from_lct(bump%mpl,bump%geom,bump%bpar,bump%lct)
 
    ! Release memory (partial)
    call bump%lct%partial_dealloc
@@ -500,7 +500,7 @@ if (bump%cmat%allocated.or.bump%nam%new_nicas) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Get C matrix from BUMP interface'
    call bump%mpl%flush
-   call bump%cmat%from_bump(bump%mpl,bump%nam,bump%geom,bump%bpar)
+   call bump%cmat%from_bump(bump%mpl,bump%geom,bump%bpar)
 
    ! Setup C matrix sampling
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
