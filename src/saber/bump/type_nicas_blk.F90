@@ -2693,7 +2693,7 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: net_nnbmax,isu,ic1u,il0,jl1,np,np_new,j,k,ip,kc1u,jc1u,il1,dkl1,kl1,jp,isbb,djl1,jl0
+integer :: isu,ic1u,il0,jl1,np,np_new,j,k,ip,kc1u,jc1u,il1,dkl1,kl1,jp,isbb,djl1,jl0
 integer,allocatable :: plist(:,:),plist_new(:,:)
 real(kind_real) :: disttest
 real(kind_real) :: dnb,dx,dy,dz,disthsq,distvsq,rhsq,rvsq,H11,H22,H33,H12
@@ -2703,15 +2703,14 @@ logical,allocatable :: net_arc(:,:,:)
 type(mesh_type) :: mesh
 
 ! Allocation
-call mesh%alloc(nicas_blk%nc1u)
+call mesh%alloc(nicas_blk%nc1u,nam)
 
 ! Initialization
 call mesh%init(mpl,rng,nicas_blk%lon_c1u,nicas_blk%lat_c1u)
 
 ! Allocation
-net_nnbmax = maxval(mesh%nnb)
-allocate(net_arc(nicas_blk%nc1u,nicas_blk%nl1,net_nnbmax))
-allocate(net_dnb(nicas_blk%nc1u,nicas_blk%nl1,net_nnbmax,-1:1))
+allocate(net_arc(nicas_blk%nc1u,nicas_blk%nl1,mesh%maxcols))
+allocate(net_dnb(nicas_blk%nc1u,nicas_blk%nl1,mesh%maxcols,-1:1))
 
 ! Find mesh neighbors
 write(mpl%info,'(a10,a)') '','Find mesh neighbors: '
@@ -2719,9 +2718,9 @@ if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nc1u)
 net_arc = .false.
 do ic1u=1,nicas_blk%nc1u
-   do j=1,mesh%nnb(ic1u)
+   do j=1,mesh%rows(mesh%order_inv(ic1u))%cols
       ! Index
-      jc1u = mesh%inb(ic1u,j)
+      jc1u = mesh%order(mesh%rows(mesh%order_inv(ic1u))%nodes(j))
 
       ! Check arc
       if (nam%mask_check) then
@@ -2748,9 +2747,9 @@ net_dnb = 1.0
 !$omp parallel do schedule(static) private(ic1u,j,jc1u,dnb,dx,dy,dz,il1,il0,djl1,jl1,jl0,H11,H22,H33), &
 !$omp&                             private(H12,disthsq,distvsq,rhsq,rvsq)
 do ic1u=1,nicas_blk%nc1u
-   do j=1,mesh%nnb(ic1u)
-      ! Indices
-      jc1u = mesh%inb(ic1u,j)
+   do j=1,mesh%rows(mesh%order_inv(ic1u))%cols
+      ! Index
+      jc1u = mesh%order(mesh%rows(mesh%order_inv(ic1u))%nodes(j))
 
       if (nicas_blk%gmask_hor_c1u(jc1u)) then
          if (nicas_blk%anisotropic) then
@@ -2859,8 +2858,9 @@ do isbb=1,nicas_blk%nsbb
          jl1 = plist(ip,2)
 
          ! Loop over neighbors
-         do k=1,mesh%nnb(jc1u)
-            kc1u = mesh%inb(jc1u,k)
+         do k=1,mesh%rows(mesh%order_inv(jc1u))%cols
+            ! Index
+            kc1u = mesh%order(mesh%rows(mesh%order_inv(jc1u))%nodes(k))
             do dkl1=-1,1
                kl1 = max(1,min(jl1+dkl1,nicas_blk%nl1))
                if (nicas_blk%gmask_c2u(kc1u,kl1)) then

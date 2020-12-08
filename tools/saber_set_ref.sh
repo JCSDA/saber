@@ -45,6 +45,34 @@ for tier in $(seq 1 3); do
    done < ${listdir}/saber_test_${tier}.txt
 done
 
+# CGAL-specific tests for BUMP
+
+# Remove lists
+rm -f ${listdir}/saber_ref_cgal.txt
+rm -f ${listdir}/saber_ref_mpi_cgal.txt
+
+# Loop over tests
+while IFS= read -r bump_test
+do
+   # Copy 1-1 files
+   for file in `ls ${testdata}/${bump_test}/test_1-1_*.nc`; do
+      if test ! -L ${file}; then
+         echo ${bump_test}/"$(basename -- ${file})" >> ${listdir}/saber_ref_cgal.txt
+      fi
+   done
+
+   # Copy 2-1 special files
+   for special in ${special_list}; do
+      if ls ${testdata}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
+         for file in `ls ${testdata}/${bump_test}/test_2-1_${special}*.nc`; do
+            if test ! -L ${file}; then
+               echo ${bump_test}/"$(basename -- $file)" >> ${listdir}/saber_ref_mpi_cgal.txt
+            fi
+         done
+      fi
+   done
+done < ${listdir}/saber_test_cgal.txt
+
 # Multi-core tests for BUMP
 
 # Remove list

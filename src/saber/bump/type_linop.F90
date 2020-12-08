@@ -852,7 +852,7 @@ else
    linop%interp_data%lat_src_eff = lat_src_eff
 
    ! Allocation
-   call linop%interp_data%mesh%alloc(n_src_eff)
+   call linop%interp_data%mesh%alloc(n_src_eff,nam)
    call linop%interp_data%tree%alloc(mpl,n_src_eff)
 
    ! Initialization
@@ -880,9 +880,9 @@ do i_dst=1,n_dst
 
       if (abs(nn_dist(1))>0.0) then
          ! Compute barycentric coordinates
-         call linop%interp_data%mesh%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),nn_index(1),b,ib)
+         call linop%interp_data%mesh%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),linop%interp_data%tree,b,ib)
+         valid = mpl%msv%isallnot(ib)
 
-         valid = all(ib>0)
          if (valid) then
             if (nam%mask_check) then
                ! Check if arc is crossing boundary arcs

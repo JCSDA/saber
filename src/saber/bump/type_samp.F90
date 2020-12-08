@@ -22,7 +22,6 @@ use type_geom, only: geom_type
 use type_io, only: io_type
 use type_tree, only: tree_type
 use type_linop, only: linop_type
-use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_rng, only: rng_type
@@ -111,9 +110,6 @@ type samp_type
    integer,allocatable :: ldwv_to_proc(:)           !< Local diagnostics profiles to task
    integer,allocatable :: ldwv_to_c0a(:)            !< Local diagnostics profiles to subset Sc0, halo A
 
-   ! Sampling mesh
-   type(mesh_type) :: mesh                          !< Sampling mesh
-
    ! Interpolations
    type(linop_type),allocatable :: h(:)             !< Horizontal interpolation from Sc2 to Sc0 (local)
 
@@ -141,7 +137,6 @@ contains
    procedure :: compute_c2 => samp_compute_c2
    procedure :: compute_mpi_c2a => samp_compute_mpi_c2a
    procedure :: compute_mpi_c2b => samp_compute_mpi_c2b
-   procedure :: compute_mesh_c2 => samp_compute_mesh_c2
    procedure :: compute_mpi_c => samp_compute_mpi_c
    procedure :: compute_mpi_d => samp_compute_mpi_d
    procedure :: compute_mpi_e => samp_compute_mpi_e
@@ -291,7 +286,6 @@ if (allocated(samp%local_mask)) deallocate(samp%local_mask)
 if (allocated(samp%nn_c2a_index)) deallocate(samp%nn_c2a_index)
 if (allocated(samp%nn_c2a_dist)) deallocate(samp%nn_c2a_dist)
 if (allocated(samp%ldwv_to_c0a)) deallocate(samp%ldwv_to_c0a)
-call samp%mesh%dealloc
 if (allocated(samp%h)) then
    do il0=1,size(samp%h)
       call samp%h(il0)%dealloc
@@ -1739,37 +1733,6 @@ do il0i=1,geom%nl0i
 end do
 
 end subroutine samp_compute_mpi_c2b
-
-!----------------------------------------------------------------------
-! Subroutine: samp_compute_mesh_c2
-!> Compute sampling mesh, subset Sc2
-!----------------------------------------------------------------------
-subroutine samp_compute_mesh_c2(samp,mpl,rng)
-
-implicit none
-
-! Passed variables
-class(samp_type),intent(inout) :: samp !< Sampling
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(rng_type),intent(inout) :: rng    !< Random number generator
-
-! Alocation
-call samp%mesh%alloc(samp%nc2u)
-
-! Initialization
-call samp%mesh%init(mpl,rng,samp%lon_c2u,samp%lat_c2u)
-
-! Compute triangles list
-write(mpl%info,'(a7,a)') '','Compute triangles list '
-call mpl%flush
-call samp%mesh%trlist(mpl)
-
-! Find boundary nodes
-write(mpl%info,'(a7,a)') '','Find boundary nodes'
-call mpl%flush
-call samp%mesh%bnodes(mpl)
-
-end subroutine samp_compute_mesh_c2
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_compute_mpi_c

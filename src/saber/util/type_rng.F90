@@ -159,19 +159,36 @@ end subroutine rng_desync
 ! Subroutine: rng_lcg
 !> Linear congruential generator
 !----------------------------------------------------------------------
-subroutine rng_lcg(rng,x)
+subroutine rng_lcg(rng,x,seed)
 
 implicit none
 
-! Passed variable
-class(rng_type),intent(inout) :: rng !< Random number generator
-real(kind_real),intent(out) :: x             !< Random number between 0 and 1
+! Passed variables
+class(rng_type),intent(inout) :: rng          !< Random number generator
+real(kind_real),intent(out) :: x              !< Random number between 0 and 1
+integer(int64),intent(inout),optional :: seed !< Seed
+
+! Local variables
+integer(int64) :: lseed
+
+! Local seed
+if (present(seed)) then
+   lseed = mod(seed,m)
+else
+   lseed = rng%seed
+end if
 
 ! Update seed
-rng%seed = mod(a*rng%seed+c,m)
+lseed = mod(a*lseed+c,m)
+
+if (present(seed)) then
+   seed = lseed
+else
+   rng%seed = lseed
+end if
 
 ! Random number
-x = real(rng%seed,kind_real)/real(m-1,kind_real)
+x = real(lseed,kind_real)/real(m-1,kind_real)
 
 end subroutine rng_lcg
 

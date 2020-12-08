@@ -12,6 +12,7 @@ use atlas_module, only: atlas_geometry
 use tools_asa007, only: asa007_cholesky,asa007_syminv
 use tools_const, only: pi,deg2rad,rad2deg
 use tools_kinds, only: kind_short,kind_real
+use tools_qsort, only: qsort
 use tools_repro, only: inf,sup,infeq,small
 use type_mpl, only: mpl_type
 
@@ -34,7 +35,7 @@ end interface
 
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: fletcher32,lonlatmod,lonlathash,sphere_dist,reduce_arc,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product, &
+public :: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det,order_cc, &
  & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,pseudoinv,histogram
 
 contains
@@ -43,7 +44,7 @@ contains
 ! Function: fletcher32
 !> Fletcher-32 checksum algorithm
 !----------------------------------------------------------------------
-function fletcher32(var)
+function fletcher32(var) result(value)
 
 implicit none
 
@@ -51,10 +52,10 @@ implicit none
 real(kind_real),intent(in) :: var(:) !< Variable
 
 ! Returned variable
-integer :: fletcher32
+integer :: value
 
 ! Call C function
-fletcher32 = c_fletcher32(size(transfer(var,(/0_kind_short/))),transfer(var,(/0_kind_short/)))
+value = c_fletcher32(size(transfer(var,(/0_kind_short/))),transfer(var,(/0_kind_short/)))
 
 end function fletcher32
 
@@ -86,13 +87,16 @@ elseif (lon<-pi) then
    lon = lon+2.0*pi
 end if
 
+! Same zero longitude for poles
+if (abs(lat)>(0.5-1.0e-6)*pi) lon = 0.0
+
 end subroutine lonlatmod
 
 !----------------------------------------------------------------------
 ! Function: lonlathash
 !> Define a unique real from a lon/lat pair
 !----------------------------------------------------------------------
-function lonlathash(lon,lat,il)
+function lonlathash(lon,lat,il) result(value)
 
 implicit none
 
@@ -102,7 +106,7 @@ real(kind_real),intent(in) :: lat !< Latitude (radians)
 integer,intent(in),optional :: il !< Level
 
 ! Returned variable
-real(kind_real) :: lonlathash
+real(kind_real) :: value
 
 ! Local variables
 real(kind_real) :: lontmp,lattmp
@@ -113,8 +117,8 @@ lattmp = lat
 call lonlatmod(lontmp,lattmp)
 
 ! Hash value
-lonlathash = aint((lontmp+pi)*1.0e6)+(lattmp+0.5*pi)*1.0e-1
-if (present(il)) lonlathash = lonlathash+real(il*1e7,kind_real)
+value = aint((lontmp+pi)*1.0e6)+(lattmp+0.5*pi)*1.0e-1
+if (present(il)) value = value+real(il*1e7,kind_real)
 
 end function lonlathash
 
@@ -143,43 +147,6 @@ ageometry = atlas_geometry("UnitSphere")
 dist = ageometry%distance(lon_i*rad2deg,lat_i*rad2deg,lon_f*rad2deg,lat_f*rad2deg)
 
 end subroutine sphere_dist
-
-!----------------------------------------------------------------------
-! Subroutine: reduce_arc
-!> Reduce arc to a given distance
-!----------------------------------------------------------------------
-subroutine reduce_arc(lon_i,lat_i,lon_f,lat_f,maxdist,dist)
-
-implicit none
-
-! Passed variables
-real(kind_real),intent(in) :: lon_i    !< Initial point longitude (radians)
-real(kind_real),intent(in) :: lat_i    !< Initial point latitude (radians)
-real(kind_real),intent(inout) :: lon_f !< Final point longitude (radians)
-real(kind_real),intent(inout) :: lat_f !< Final point latitude (radians)
-real(kind_real),intent(in) :: maxdist  !< Maximum distance
-real(kind_real),intent(out) :: dist    !< Effective distance
-
-! Local variable
-real(kind_real) :: theta
-
-! Compute distance
-call sphere_dist(lon_i,lat_i,lon_f,lat_f,dist)
-
-! Check with the maximum distance
-if (sup(dist,maxdist)) then
-   ! Compute bearing
-   theta = atan2(sin(lon_f-lon_i)*cos(lat_f),cos(lat_i)*sin(lat_f)-sin(lat_i)*cos(lat_f)*cos(lon_f-lon_i))
-
-   ! Reduce distance
-   dist = maxdist
-
-   ! Compute new point
-   lat_f = asin(sin(lat_i)*cos(dist)+cos(lat_i)*sin(dist)*cos(theta))
-   lon_f = lon_i+atan2(sin(theta)*sin(dist)*cos(lat_i),cos(dist)-sin(lat_i)*sin(lat_f))
-end if
-
-end subroutine reduce_arc
 
 !----------------------------------------------------------------------
 ! Subroutine: lonlat2xyz
@@ -285,10 +252,10 @@ if (r>0.0) vp = vp/r
 end subroutine vector_product
 
 !----------------------------------------------------------------------
-! Subroutine: vector_triple_product
-!> Compute vector triple product
+! Subroutine: det
+!> Compute determinant (vector triple product)
 !----------------------------------------------------------------------
-subroutine vector_triple_product(v1,v2,v3,p,cflag)
+subroutine det(v1,v2,v3,p,cflag)
 
 implicit none
 
@@ -296,7 +263,7 @@ implicit none
 real(kind_real),intent(in) :: v1(3) !< First vector
 real(kind_real),intent(in) :: v2(3) !< Second vector
 real(kind_real),intent(in) :: v3(3) !< Third vector
-real(kind_real),intent(out) :: p    !< Triple product
+real(kind_real),intent(out) :: p    !< Determinant
 logical,intent(out) :: cflag        !< Confidence flag
 
 ! Local variable
@@ -320,7 +287,73 @@ do i=1,6
    if ((abs(terms(i))>0.0).and.small(p,terms(i))) cflag = .false.
 end do
 
-end subroutine vector_triple_product
+end subroutine det
+
+!----------------------------------------------------------------------
+! Subroutine: order_cc
+!> Order points in counter-clockwise order with respect to a central point
+!----------------------------------------------------------------------
+subroutine order_cc(mpl,lon,lat,n,x,y,z,order,diff)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl             !< MPI data
+real(kind_real),intent(in) :: lon               !< Longitude of the central point
+real(kind_real),intent(in) :: lat               !< Latitude of the central point
+integer :: n                                    !< Number of points
+real(kind_real),intent(in) :: x(n)              !< List of X-coordinates
+real(kind_real),intent(in) :: y(n)              !< List of Y-coordinates
+real(kind_real),intent(in) :: z(n)              !< List of Z-coordinates
+integer,intent(out) :: order(n)                 !< Counter-clockwise order
+real(kind_real),intent(out),optional :: diff(n) !< Angles differences
+
+! Local variable
+integer :: i
+real(kind_real) :: rvec(3),costheta,sintheta,p(3),rvecxv(3),v(3),list(n)
+real(kind_real),allocatable :: list_save(:)
+
+! Rotation vector in cartesian coordinates
+call lonlat2xyz(mpl,lon-0.5*pi,0.0_kind_real,rvec(1),rvec(2),rvec(3))
+
+! Rotation angle
+costheta = cos(0.5*pi-lat)
+sintheta = sin(0.5*pi-lat)
+
+! Compute angle
+do i=1,n
+   ! Rodrigues' rotation
+   p = (/x(i),y(i),z(i)/)
+   call vector_product(rvec,p,rvecxv)
+   v = p*costheta+rvecxv*sintheta+rvec*sum(rvec*p)*(1.0-costheta)
+
+   ! Angle
+   list(i) = atan2(v(2),v(1))
+end do
+
+if (present(diff)) then
+   ! Allocation
+   allocate(list_save(n))
+
+   ! Copy
+   list_save = list
+end if
+
+! Sort angles in counter-clockwise order
+call qsort(n,list,order)
+
+if (present(diff)) then
+   ! Get angles differences
+   diff(order(1)) = list_save(order(1))-list_save(order(n))+2.0*pi
+   do i=2,n
+      diff(order(i)) = list_save(order(i))-list_save(order(i-1))
+   end do
+
+   ! Release memory
+   deallocate(list_save)
+end if
+
+end subroutine order_cc
 
 !----------------------------------------------------------------------
 ! Subroutine: add
@@ -557,21 +590,21 @@ end subroutine fit_diag
 ! Function: gc99
 !> Gaspari and Cohn (1999) function, with the support radius as a parameter
 !----------------------------------------------------------------------
-function gc99(distnorm)
+function gc99(distnorm) result(value)
 
 ! Passed variables
 real(kind_real),intent(in) :: distnorm !< Normalized distance
 
 ! Returned variable
-real(kind_real) :: gc99
+real(kind_real) :: value
 
 ! Gaspari and Cohn (1999) function
 if (distnorm<0.5) then
-   gc99 = -8.0*distnorm**5+8.0*distnorm**4+5.0*distnorm**3-20.0/3.0*distnorm**2+1.0
+   value = -8.0*distnorm**5+8.0*distnorm**4+5.0*distnorm**3-20.0/3.0*distnorm**2+1.0
 else if (distnorm<1.0) then
-   gc99 = 8.0/3.0*distnorm**5-8.0*distnorm**4+5.0*distnorm**3+20.0/3.0*distnorm**2-10.0*distnorm+4.0-1.0/(3.0*distnorm)
+   value = 8.0/3.0*distnorm**5-8.0*distnorm**4+5.0*distnorm**3+20.0/3.0*distnorm**2-10.0*distnorm+4.0-1.0/(3.0*distnorm)
 else
-   gc99 = 0.0
+   value = 0.0
 end if
 
 end function gc99
@@ -580,14 +613,14 @@ end function gc99
 ! Function: fit_func
 !> Fit_function
 !----------------------------------------------------------------------
-function fit_func(mpl,distnorm)
+function fit_func(mpl,distnorm) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 real(kind_real),intent(in) :: distnorm !< Normalized distance
 
 ! Returned variable
-real(kind_real) :: fit_func
+real(kind_real) :: value
 
 ! Local variables
 character(len=1024),parameter :: subr = 'fit_func'
@@ -596,10 +629,10 @@ character(len=1024),parameter :: subr = 'fit_func'
 if (distnorm<0.0) call mpl%abort(subr,'negative normalized distance')
 
 ! Gaspari and Cohn (1999) function
-fit_func = gc99(distnorm)
+value = gc99(distnorm)
 
 ! Enforce positivity
-fit_func = max(fit_func,0.0_kind_real)
+value = max(value,0.0_kind_real)
 
 end function fit_func
 
@@ -829,7 +862,7 @@ end subroutine check_cond
 ! Function: matern
 !> Compute the normalized diffusion function from eq. (55) of Mirouze and Weaver (2013), for the 3d case (d = 3)
 !----------------------------------------------------------------------
-real(kind_real) function matern(mpl,M,x)
+function matern(mpl,M,x) result(value)
 
 implicit none
 
@@ -837,6 +870,9 @@ implicit none
 type(mpl_type),intent(inout) :: mpl !< MPI data
 integer,intent(in) :: M             !< Matern function order
 real(kind_real),intent(in) :: x     !< Argument
+
+! Returned variable
+real(kind_real) :: value
 
 ! Local variables
 integer :: j
@@ -848,23 +884,23 @@ if (M<2) call mpl%abort(subr,'M should be larger than 2')
 if (mod(M,2)>0) call mpl%abort(subr,'M should be even')
 
 ! Initialization
-matern = 0.0
+value = 0.0
 beta = 1.0
 xtmp = x*sqrt(real(2*M-5,kind_real))
 
 do j=0,M-3
    ! Update sum
-   matern = matern+beta*(xtmp)**(M-2-j)
+   value = value+beta*(xtmp)**(M-2-j)
 
    ! Update beta
    beta = beta*real((j+1+M-2)*(-j+M-2),kind_real)/real(2*(j+1),kind_real)
 end do
 
 ! Last term and normalization
-matern = matern/beta+1.0
+value = value/beta+1.0
 
 ! Exponential factor
-matern = matern*exp(-xtmp)
+value = value*exp(-xtmp)
 
 end function matern
 

@@ -37,8 +37,8 @@ type nam_type
    logical :: repro                                     !< Inter-compilers reproducibility
    logical :: parallel_io                               !< Parallel NetCDF I/O
    integer :: nprocio                                   !< Number of I/O processors
-   logical :: remap                                     !< Remap points to improve load balance
    real(kind_real) :: universe_rad                      !< Universe radius [in meters]
+   logical:: use_cgal                                   !< Use CGAL for mesh generation (or STRIPACK instead)
 
    ! driver_param
    character(len=1024) :: method                        !< Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
@@ -227,8 +227,8 @@ nam%default_seed = .true.
 nam%repro = .true.
 nam%parallel_io = .true.
 nam%nprocio = min(nproc,nprociomax)
-nam%remap = .false.
 nam%universe_rad = pi*req
+nam%use_cgal = .false.
 
 ! driver_param default
 nam%method = ''
@@ -421,8 +421,8 @@ logical :: default_seed
 logical :: repro
 logical :: parallel_io
 integer :: nprocio
-logical :: remap
 real(kind_real) :: universe_rad
+logical :: use_cgal
 character(len=1024) :: method
 character(len=1024) :: strategy
 logical :: new_normality
@@ -561,8 +561,8 @@ namelist/general_param/ &
  & repro, &
  & parallel_io, &
  & nprocio, &
- & remap, &
- & universe_rad
+ & universe_rad, &
+ & use_cgal
 namelist/driver_param/ &
  & method, &
  & strategy, &
@@ -711,8 +711,8 @@ if (mpl%main) then
    repro = .true.
    parallel_io = .true.
    nprocio = min(mpl%nproc,nprociomax)
-   remap = .false.
    universe_rad = pi*req
+   use_cgal = .false.
 
    ! driver_param default
    method = ''
@@ -891,8 +891,8 @@ if (mpl%main) then
    nam%repro = repro
    nam%parallel_io = parallel_io
    nam%nprocio = nprocio
-   nam%remap = remap
    nam%universe_rad = universe_rad
+   nam%use_cgal = use_cgal
 
    ! driver_param
    read(lunit,nml=driver_param)
@@ -1110,8 +1110,8 @@ call mpl%f_comm%broadcast(nam%default_seed,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%repro,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%parallel_io,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%remap,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%use_cgal,mpl%rootproc-1)
 
 ! driver_param
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
@@ -1302,8 +1302,8 @@ if (conf%has("default_seed")) call conf%get_or_die("default_seed",nam%default_se
 if (conf%has("repro")) call conf%get_or_die("repro",nam%repro)
 if (conf%has("parallel_io")) call conf%get_or_die("parallel_io",nam%parallel_io)
 if (conf%has("nprocio")) call conf%get_or_die("nprocio",nam%nprocio)
-if (conf%has("remap")) call conf%get_or_die("remap",nam%remap)
 if (conf%has("universe_rad")) call conf%get_or_die("universe_rad",nam%universe_rad)
+if (conf%has("use_cgal")) call conf%get_or_die("use_cgal",nam%use_cgal)
 
 ! driver_param
 if (conf%has("method")) then
@@ -1928,8 +1928,8 @@ call mpl%write(lncid,'nam','default_seed',nam%default_seed)
 call mpl%write(lncid,'nam','repro',nam%repro)
 call mpl%write(lncid,'nam','parallel_io',nam%parallel_io)
 call mpl%write(lncid,'nam','nprocio',nam%nprocio)
-call mpl%write(lncid,'nam','remap',nam%remap)
 call mpl%write(lncid,'nam','universe_rad',nam%universe_rad*req)
+call mpl%write(lncid,'nam','use_cgal',nam%use_cgal)
 
 ! driver_param
 if (mpl%msv%is(lncid)) then

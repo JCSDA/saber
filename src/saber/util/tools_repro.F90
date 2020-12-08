@@ -26,7 +26,7 @@ contains
 ! Function: eq
 !> Equal test for reals
 !----------------------------------------------------------------------
-function eq(x,y)
+function eq(x,y) result(test)
 
 implicit none
 
@@ -35,12 +35,12 @@ real(kind_real),intent(in) :: x !< First real
 real(kind_real),intent(in) :: y !< Second real
 
 ! Returned variable
-logical :: eq
+logical :: test
 
 if (repro) then
-   eq = indist(x,y)
+   test = indist(x,y)
 else
-   eq = .not.(abs(x-y)>0.0)
+   test = .not.(abs(x-y)>0.0)
 end if
 
 end function eq
@@ -49,7 +49,7 @@ end function eq
 ! Function: inf
 !> Inferior test for reals
 !----------------------------------------------------------------------
-function inf(x,y)
+function inf(x,y) result(test)
 
 implicit none
 
@@ -58,10 +58,10 @@ real(kind_real),intent(in) :: x !< First real
 real(kind_real),intent(in) :: y !< Second real
 
 ! Returned variable
-logical :: inf
+logical :: test
 
-inf = (x<y)
-if (repro) inf = inf.and.(.not.indist(x,y))
+test = (x<y)
+if (repro) test = test.and.(.not.indist(x,y))
 
 end function inf
 
@@ -69,7 +69,7 @@ end function inf
 ! Function: infeq
 !> Inferior or equal test for reals
 !----------------------------------------------------------------------
-function infeq(x,y)
+function infeq(x,y) result(test)
 
 implicit none
 
@@ -78,9 +78,9 @@ real(kind_real),intent(in) :: x !< First real
 real(kind_real),intent(in) :: y !< Second real
 
 ! Returned variable
-logical :: infeq
+logical :: test
 
-infeq = inf(x,y).or.eq(x,y)
+test = inf(x,y).or.eq(x,y)
 
 end function infeq
 
@@ -88,7 +88,7 @@ end function infeq
 ! Function: sup
 !> Superior test for reals
 !----------------------------------------------------------------------
-function sup(x,y)
+function sup(x,y) result(test)
 
 implicit none
 
@@ -97,10 +97,10 @@ real(kind_real),intent(in) :: x !< First real
 real(kind_real),intent(in) :: y !< Second real
 
 ! Returned variable
-logical :: sup
+logical :: test
 
-sup = (x>y)
-if (repro) sup = sup.and.(.not.indist(x,y))
+test = (x>y)
+if (repro) test = test.and.(.not.indist(x,y))
 
 end function sup
 
@@ -108,7 +108,7 @@ end function sup
 ! Function: supeq
 !> Superior or equal test for reals
 !----------------------------------------------------------------------
-function supeq(x,y)
+function supeq(x,y) result(test)
 
 implicit none
 
@@ -117,9 +117,9 @@ real(kind_real),intent(in) :: x !< First real
 real(kind_real),intent(in) :: y !< Second real
 
 ! Returned variable
-logical :: supeq
+logical :: test
 
-supeq = sup(x,y).or.eq(x,y)
+test = sup(x,y).or.eq(x,y)
 
 end function supeq
 
@@ -127,7 +127,7 @@ end function supeq
 ! Function: indist
 !> Indistiguishability test
 !----------------------------------------------------------------------
-function indist(x,y)
+function indist(x,y) result(test)
 
 implicit none
 
@@ -136,14 +136,14 @@ real(kind_real),intent(in) :: x !< First real
 real(kind_real),intent(in) :: y !< Second real
 
 ! Returned variable
-logical :: indist
+logical :: test
 
-indist = .false.
+test = .false.
 if (repro) then
    if ((abs(x)>0.0).or.(abs(y)>0.0)) then
-      indist = abs(x-y)<rth*(abs(x+y))
+      test = abs(x-y)<rth*(abs(x+y))
    else
-      indist = .true.
+      test = .true.
    end if
 end if
 
@@ -153,7 +153,7 @@ end function indist
 ! Function: small
 !> Small value test
 !----------------------------------------------------------------------
-function small(x,y)
+function small(x,y) result(test)
 
 implicit none
 
@@ -162,10 +162,10 @@ real(kind_real),intent(in) :: x !< First real
 real(kind_real),intent(in) :: y !< Second real
 
 ! Returned variable
-logical :: small
+logical :: test
 
-small = .false.
-if (repro) small = abs(x)<rth*abs(y)
+test = .false.
+if (repro) test = abs(x)<rth*abs(y)
 
 end function small
 

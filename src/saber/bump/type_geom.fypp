@@ -14,7 +14,7 @@ use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_node
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_array
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
+use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det
 use tools_kinds, only: kind_int,kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
@@ -312,7 +312,7 @@ call geom%setup_c0(mpl)
 call geom%setup_tree(mpl)
 
 ! Setup meshes
-call geom%setup_meshes(mpl,rng)
+call geom%setup_meshes(mpl,rng,nam)
 
 ! Setup number of independent levels
 call geom%setup_independent_levels(mpl)
@@ -1099,7 +1099,7 @@ end subroutine geom_setup_tree
 ! Subroutine: geom_setup_meshes
 !> Setup meshes
 !----------------------------------------------------------------------
-subroutine geom_setup_meshes(geom,mpl,rng)
+subroutine geom_setup_meshes(geom,mpl,rng,nam)
 
 implicit none
 
@@ -1107,6 +1107,7 @@ implicit none
 class(geom_type),intent(inout) :: geom !< Geometry
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
 integer :: ic0a,ic0u,nnb,jnb,jc0u,jc0,jproc,nc0aplus,ic0aplus
@@ -1120,13 +1121,10 @@ call mpl%flush
 ! Setup mesh on subset Sc0, universe
 
 ! Allocation
-call geom%mesh_c0u%alloc(geom%nc0u)
+call geom%mesh_c0u%alloc(geom%nc0u,nam)
 
 ! Initialization
 call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u)
-
-! Compute boundary nodes
-call geom%mesh_c0u%bnodes(mpl)
 
 ! Define halo A+
 lcheck_c0aplus = .false.
@@ -1181,13 +1179,10 @@ end do
 ! Setup mesh on subset Sc0, halo A+
 
 ! Allocation
-call geom%mesh_c0aplus%alloc(nc0aplus)
+call geom%mesh_c0aplus%alloc(nc0aplus,nam)
 
 ! Initialization
 call geom%mesh_c0aplus%init(mpl,rng,lon_c0aplus,lat_c0aplus)
-
-! Compute boundary nodes
-call geom%mesh_c0aplus%bnodes(mpl,.false.)
 
 ! Release memory
 deallocate(lon_c0aplus)
@@ -1540,11 +1535,11 @@ call vector_product(v1,v2,va)
 do ibnda=1,geom%nbnda(il0)
    call vector_product(va,geom%vabnda(:,ibnda,il0),vp)
    v1 = (/x(1),y(1),z(1)/)
-   call vector_triple_product(v1,va,vp,t(1),cflag(1))
+   call det(v1,va,vp,t(1),cflag(1))
    v1 = (/x(2),y(2),z(2)/)
-   call vector_triple_product(v1,va,vp,t(2),cflag(2))
-   call vector_triple_product(geom%v1bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(3),cflag(3))
-   call vector_triple_product(geom%v2bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(4),cflag(4))
+   call det(v1,va,vp,t(2),cflag(2))
+   call det(geom%v1bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(3),cflag(3))
+   call det(geom%v2bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(4),cflag(4))
    t(1) = -t(1)
    t(3) = -t(3)
    if ((all(t>0.0).or.all(t<0.0)).and.all(cflag)) then
@@ -1845,7 +1840,7 @@ end subroutine geom_rand_point
 ! Function: geom_mg_to_proc
 !> Conversion from global to processor on model grid
 !----------------------------------------------------------------------
-function geom_mg_to_proc(geom,img)
+function geom_mg_to_proc(geom,img) result(iproc)
 
 implicit none
 
@@ -1854,11 +1849,11 @@ class(geom_type),intent(in) :: geom !< Geometry
 integer,intent(in) :: img           !< Global index
 
 ! Returned variable
-integer :: geom_mg_to_proc
+integer :: iproc
 
 ! Find processor
-do geom_mg_to_proc=1,geom%nproc-1
-   if ((geom%proc_to_mg_offset(geom_mg_to_proc)<img).and.(img<=geom%proc_to_mg_offset(geom_mg_to_proc+1))) return
+do iproc=1,geom%nproc-1
+   if ((geom%proc_to_mg_offset(iproc)<img).and.(img<=geom%proc_to_mg_offset(iproc+1))) return
 end do
 
 end function geom_mg_to_proc
@@ -1867,7 +1862,7 @@ end function geom_mg_to_proc
 ! Function: geom_c0_to_c0a
 !> Conversion from global to halo A on subset Sc0
 !----------------------------------------------------------------------
-function geom_c0_to_c0a(geom,ic0)
+function geom_c0_to_c0a(geom,ic0) result(ic0a)
 
 implicit none
 
@@ -1876,7 +1871,7 @@ class(geom_type),intent(in) :: geom !< Geometry
 integer,intent(in) :: ic0           !< Global index
 
 ! Returned variable
-integer :: geom_c0_to_c0a
+integer :: ic0a
 
 ! Local variable
 integer :: iproc
@@ -1885,7 +1880,7 @@ integer :: iproc
 iproc = geom%c0_to_proc(ic0)
 
 ! Get halo A index
-geom_c0_to_c0a = ic0-geom%proc_to_c0_offset(iproc)
+ic0a = ic0-geom%proc_to_c0_offset(iproc)
 
 end function geom_c0_to_c0a
 
@@ -1893,7 +1888,7 @@ end function geom_c0_to_c0a
 ! Function: geom_c0_to_proc
 !> Conversion from global to processor on subset Sc0
 !----------------------------------------------------------------------
-function geom_c0_to_proc(geom,ic0)
+function geom_c0_to_proc(geom,ic0) result(iproc)
 
 implicit none
 
@@ -1902,11 +1897,11 @@ class(geom_type),intent(in) :: geom !< Geometry
 integer,intent(in) :: ic0           !< Global index
 
 ! Returned variable
-integer :: geom_c0_to_proc
+integer :: iproc
 
 ! Find processor
-do geom_c0_to_proc=1,geom%nproc-1
-   if ((geom%proc_to_c0_offset(geom_c0_to_proc)<ic0).and.(ic0<=geom%proc_to_c0_offset(geom_c0_to_proc+1))) return
+do iproc=1,geom%nproc-1
+   if ((geom%proc_to_c0_offset(iproc)<ic0).and.(ic0<=geom%proc_to_c0_offset(iproc+1))) return
 end do
 
 end function geom_c0_to_proc
@@ -1915,7 +1910,7 @@ end function geom_c0_to_proc
 ! Function: geom_c0_to_c0u
 !> Conversion from global to universe on subset Sc0
 !----------------------------------------------------------------------
-function geom_c0_to_c0u(geom,ic0)
+function geom_c0_to_c0u(geom,ic0) result(ic0u)
 
 implicit none
 
@@ -1924,7 +1919,7 @@ class(geom_type),intent(in) :: geom !< Geometry
 integer,intent(in) :: ic0           !< Global index
 
 ! Returned variable
-integer :: geom_c0_to_c0u
+integer :: ic0u
 
 ! Local variable
 integer :: iproc,ic0a,offset,jproc
@@ -1943,10 +1938,10 @@ if (geom%myuniverse(iproc)) then
    end do
 
    ! Get universe index
-   geom_c0_to_c0u = offset+ic0a
+   ic0u = offset+ic0a
 else
    ! Not in my universe
-   geom_c0_to_c0u = 0
+   ic0u = 0
 end if
 
 end function geom_c0_to_c0u
