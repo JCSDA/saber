@@ -1,0 +1,23 @@
+!----------------------------------------------------------------------
+! Module: tools_generics
+!> Generic ranks, dimensions and types
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+
+#:mute
+
+#:set ranks_123 = [1,2,3]
+#:set ranks_23 = [2,3]
+#:set dim = ['',':',':,:',':,:,:',':,:,:,:',':,:,:,:,:']
+
+#:set ftypes_irl = ['integer(kind_int)','real(kind_real)','logical']
+#:set dtypes_irl = ['int','real','logical']
+#:set types_irl = list(zip(dtypes_irl,ftypes_irl))
+
+#:set ftypes_ir = ['integer(kind_int)','real(kind_real)']
+#:set dtypes_ir = ['int','real']
+#:set types_ir = list(zip(dtypes_ir,ftypes_ir))
+
+#:endmute

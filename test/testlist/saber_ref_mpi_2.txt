@@ -26,8 +26,6 @@ bump_hdiag-nicas_universe_rad/test_2-1_nicas_000002-000001.nc
 bump_hdiag-nicas_universe_rad/test_2-1_nicas_000002-000002.nc
 bump_interface_nicas/test_2-1_nicas_000002-000001.nc
 bump_interface_nicas/test_2-1_nicas_000002-000002.nc
-bump_interface_obsop/test_2-1_obs_000002-000001.nc
-bump_interface_obsop/test_2-1_obs_000002-000002.nc
 bump_interface_vbal/test_2-1_vbal_000002-000001.nc
 bump_interface_vbal/test_2-1_vbal_000002-000002.nc
 bump_lct-nicas_diagonal/test_2-1_nicas_000002-000001.nc
@@ -60,8 +58,6 @@ bump_nicas_write_grids/test_2-1_nicas_000002-000001.nc
 bump_nicas_write_grids/test_2-1_nicas_000002-000002.nc
 bump_nicas_write_grids/test_2-1_nicas_grids_000002-000001.nc
 bump_nicas_write_grids/test_2-1_nicas_grids_000002-000002.nc
-bump_obsop/test_2-1_obs_000002-000001.nc
-bump_obsop/test_2-1_obs_000002-000002.nc
 bump_vbal_dlat/test_2-1_vbal_000002-000001.nc
 bump_vbal_dlat/test_2-1_vbal_000002-000002.nc
 bump_vbal_diag_auto/test_2-1_vbal_000002-000001.nc

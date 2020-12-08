@@ -1,0 +1,438 @@
+!----------------------------------------------------------------------
+! Module: tools_atlas
+!> ATLAS tools
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+
+#:include "tools_generics.fypp"
+
+module tools_atlas
+
+use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace,atlas_functionspace_nodecolumns, &
+ & atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns
+use tools_const, only: rad2deg
+use tools_kinds, only: kind_int,kind_real
+use type_mpl, only: mpl_type
+
+implicit none
+
+interface field_to_array
+#:for rank in ranks_23
+#:for dtype,ftype in types_irl
+  module procedure field_to_array_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+end interface
+
+interface field_from_array
+#:for rank in ranks_23
+#:for dtype,ftype in types_irl
+  module procedure field_from_array_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+end interface
+
+private
+public :: field_to_array,field_from_array,create_atlas_function_space
+
+contains
+
+#:for rank in ranks_23
+#:for dtype,ftype in types_ir
+!----------------------------------------------------------------------
+! Subroutine: field_to_array_${dtype}$_r${rank}$
+!> Convert ATLAS field to field
+!----------------------------------------------------------------------
+subroutine field_to_array_${dtype}$_r${rank}$(afield,mpl,array,lev2d)
+
+implicit none
+
+! Passed variables
+type(atlas_field),intent(in) :: afield        !< ATLAS field
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+${ftype}$,intent(out) :: array(${dim[rank]}$) !< Array, the rightmost dimension being the vertical
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
+
+! Local variables
+integer :: nmga,nnodes,nl,nl0,nl2d,il0
+integer :: shp(${rank}$)
+${ftype}$,pointer :: ptr_1(:),ptr_2(:,:)
+#{if rank == 3}# logical,allocatable :: umask(:,:) #{endif}#
+character(len=1024) :: llev2d
+character(len=1024),parameter :: subr = 'field_to_array_${dtype}$_r${rank}$'
+type(atlas_functionspace) :: afunctionspace
+type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_pointcloud) :: afunctionspace_pc
+type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
+
+! Local lev2d
+llev2d = 'first'
+if (present(lev2d)) llev2d = lev2d
+if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort(subr,'wrong lev2d')
+
+! Check kind
+#:if dtype == "int"
+   if (afield%kind()/=atlas_integer(kind_int)) call mpl%abort(subr,'wrong kind for field '//afield%name())
+#:endif
+#:if dtype == "real"
+   if (afield%kind()/=atlas_real(kind_real)) call mpl%abort(subr,'wrong kind for field '//afield%name())
+#:endif
+
+! Get generic functionspace
+afunctionspace = afield%functionspace()
+
+select case (afunctionspace%name())
+case ('NodeColumns')
+   ! Get NodeColumns function space
+   afunctionspace_nc = afield%functionspace()
+
+   ! Get number of nodes
+   nmga = afunctionspace_nc%nb_nodes()
+case ('PointCloud')
+   ! Get PointCloud function space
+   afunctionspace_pc = afield%functionspace()
+
+   ! Get number of points
+   nmga = afunctionspace_pc%size()
+case ('StructuredColumns')
+   ! Get StructuredColumns function space
+   afunctionspace_sc = afield%functionspace()
+
+   ! Get number of nodes
+   nmga = afunctionspace_sc%size_owned()
+case default
+   call mpl%abort(subr,'wrong function space for field '//afield%name()//': '//afunctionspace%name())
+end select
+
+! Get number of nodes and number of levels
+! - afield%levels() is 0 for 2D ATLAS fields, positive for 3D fields
+! - the size of the rightmost dimension of arr2d/arr3d is always positive
+! - to ensure that sizes are compatible for copying data, we use the minimum between the two
+shp = shape(array)
+nnodes = product(shp(1:${rank}$-1))
+nl = shp(${rank}$)
+nl0 = min(afield%levels(),nl)
+
+! Check number of nodes
+if (nmga/=nnodes) call mpl%abort(subr,'wrong number of nodes for field '//afield%name())
+
+! Unpacking mask
+#:if rank == 3
+   allocate(umask(shp(1),shp(2)))
+   umask = .true.
+#:endif
+
+! Initialization
+#{if dtype == "int"}# array = 0 #{endif}#
+#{if dtype == "real"}# array = 0.0 #{endif}#
+
+! Copy data
+! For the 2D case (afield%levels()==0), the field is copied:
+! - at the first level of array if (lev2d=='first')
+! - at the last level of array if (lev2d=='last')
+! NB: an ATLAS field with 1 level only (afield%levels()==1) is considered as a 3D field, so lev2d does not apply
+if (nl0==0) then
+   if (nl>0) then
+      if (trim(llev2d)=='first') then
+         nl2d = 1
+      elseif (trim(llev2d)=='last') then
+         nl2d = nl
+      end if
+      call afield%data(ptr_1)
+      #{if rank == 2}# array(:,nl2d) = ptr_1 #{endif}#
+      #{if rank == 3}# array(:,:,nl2d) = unpack(ptr_1,umask,array(:,:,nl2d)) #{endif}#
+   end if
+else
+   call afield%data(ptr_2)
+   do il0=1,nl0
+      #{if rank == 2}# array(:,il0) = ptr_2(il0,:) #{endif}#
+      #{if rank == 3}# array(:,:,il0) = unpack(ptr_2(il0,:),umask,array(:,:,il0)) #{endif}#
+   end do
+end if
+
+! Release memory
+#{if rank == 3}# deallocate(umask) #{endif}#
+
+end subroutine field_to_array_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+
+#:for rank in ranks_23
+!----------------------------------------------------------------------
+! Subroutine: field_to_array_logical_r${rank}$
+!> Convert ATLAS field to field
+!----------------------------------------------------------------------
+subroutine field_to_array_logical_r${rank}$(afield,mpl,array,lev2d)
+
+implicit none
+
+! Passed variables
+type(atlas_field),intent(in) :: afield        !< ATLAS field
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+logical,intent(out) :: array(${dim[rank]}$)   !< Array, the rightmost dimension being the vertical
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
+
+! Local variables
+integer :: il0
+#{if rank == 2}# integer :: imga #{endif}#
+#{if rank == 3}# integer :: ixa,iya #{endif}#
+integer,allocatable :: array_int(${dim[rank]}$)
+character(len=1024) :: llev2d
+character(len=1024),parameter :: subr = 'field_to_array_logical_r${rank}$'
+
+! Local lev2d
+llev2d = 'first'
+if (present(lev2d)) llev2d = lev2d
+if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort(subr,'wrong lev2d')
+
+! Allocation
+#{if rank == 2}# allocate(array_int(size(array,1),size(array,2))) #{endif}#
+#{if rank == 3}# allocate(array_int(size(array,1),size(array,2),size(array,3))) #{endif}#
+
+! Get integer array
+call field_to_array(afield,mpl,array_int,lev2d)
+
+! Convert integer to logical
+#:if rank == 2
+   do il0=1,size(array,2)
+      do imga=1,size(array,1)
+         if (array_int(imga,il0)==0) then
+            array(imga,il0) = .false.
+         elseif (array_int(imga,il0)==1) then
+            array(imga,il0) = .true.
+         else
+            call mpl%abort(subr,'wrong value in 0-1 integer field for field '//afield%name())
+         end if
+      end do
+   end do
+#:endif
+#:if rank == 3
+   do il0=1,size(array,3)
+      do iya=1,size(array,2)
+         do ixa=1,size(array,1)
+            if (array_int(ixa,iya,il0)==0) then
+               array(ixa,iya,il0) = .false.
+            elseif (array_int(ixa,iya,il0)==1) then
+               array(ixa,iya,il0) = .true.
+            else
+               call mpl%abort(subr,'wrong value in 0-1 integer field for field '//afield%name())
+            end if
+         end do
+      end do
+   end do
+#:endif
+
+! Release memory
+deallocate(array_int)
+
+end subroutine field_to_array_logical_r${rank}$
+#:endfor
+
+#:for rank in ranks_23
+#:for dtype,ftype in types_ir
+!----------------------------------------------------------------------
+! Subroutine: field_from_array_${dtype}$_r${rank}$
+!> Convert field to ATLAS field, real
+!----------------------------------------------------------------------
+subroutine field_from_array_${dtype}$_r${rank}$(afield,mpl,array,lev2d)
+
+implicit none
+
+! Passed variables
+type(atlas_field),intent(inout) :: afield     !< ATLAS field
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+${ftype}$,intent(in) :: array(${dim[rank]}$)  !< Array, the rightmost dimension being the vertical
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
+
+! Local variables
+integer :: nmga,nnodes,nl,nl0,nl2d,il0
+integer :: shp(${rank}$)
+${ftype}$,pointer :: ptr_1(:),ptr_2(:,:)
+character(len=1024) :: llev2d
+character(len=1024),parameter :: subr = 'field_from_array_${dtype}$_r${rank}$'
+type(atlas_functionspace) :: afunctionspace
+type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_pointcloud) :: afunctionspace_pc
+type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
+
+! Local lev2d
+llev2d = 'first'
+if (present(lev2d)) llev2d = lev2d
+if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort(subr,'wrong lev2d')
+
+! Check kind
+#:if dtype == "int"
+   if (afield%kind()/=atlas_integer(kind_int)) call mpl%abort(subr,'wrong kind for field '//afield%name())
+#:endif
+#:if dtype == "real"
+   if (afield%kind()/=atlas_real(kind_real)) call mpl%abort(subr,'wrong kind for field '//afield%name())
+#:endif
+
+! Get generic functionspace
+afunctionspace = afield%functionspace()
+
+select case (afunctionspace%name())
+case ('NodeColumns')
+   ! Get NodeColumns function space
+   afunctionspace_nc = afield%functionspace()
+
+   ! Get number of nodes
+   nmga = afunctionspace_nc%nb_nodes()
+case ('PointCloud')
+   ! Get PointCloud function space
+   afunctionspace_pc = afield%functionspace()
+
+   ! Get number of points
+   nmga = afunctionspace_pc%size()
+case ('StructuredColumns')
+   ! Get StructuredColumns function space
+   afunctionspace_sc = afield%functionspace()
+
+   ! Get number of nodes
+   nmga = afunctionspace_sc%size_owned()
+case default
+   call mpl%abort(subr,'wrong function space for field '//afield%name()//': '//afunctionspace%name())
+end select
+
+! Get number of nodes and number of levels
+! - afield%levels() is 0 for 2D ATLAS fields, positive for 3D fields
+! - the size of the rightmost dimension of arr2d/arr3d is always positive
+! - to ensure that sizes are compatible for copying data, we use the minimum between the two
+shp = shape(array)
+nnodes = product(shp(1:${rank}$-1))
+nl = shp(${rank}$)
+nl0 = min(afield%levels(),nl)
+
+! Check number of nodes
+if (nmga/=nnodes) call mpl%abort(subr,'wrong number of nodes for field '//afield%name())
+
+! Copy data
+! For the 2D case (afield%levels()==0), the field is copied:
+! - at the first level of array if (lev2d=='first')
+! - at the last level of array if (lev2d=='last')
+! NB: an ATLAS field with 1 level only (afield%levels()==1) is considered as a 3D field, so lev2d does not apply
+if (nl0==0) then
+   if (nl>0) then
+      if (trim(llev2d)=='first') then
+         nl2d = 1
+      elseif (trim(llev2d)=='last') then
+         nl2d = nl
+      end if
+      call afield%data(ptr_1)
+      #{if rank == 2}# ptr_1 = array(:,nl2d) #{endif}#
+      #{if rank == 3}# ptr_1 = pack(array(:,:,nl2d),.true.) #{endif}#
+   end if
+else
+   call afield%data(ptr_2)
+   do il0=1,nl0
+      #{if rank == 2}# ptr_2(il0,:) = array(:,il0) #{endif}#
+      #{if rank == 3}# ptr_2(il0,:) = pack(array(:,:,il0),.true.) #{endif}#
+   end do
+end if
+
+end subroutine field_from_array_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+
+#:for rank in ranks_23
+!----------------------------------------------------------------------
+! Subroutine: field_from_array_logical_r${rank}$
+!> Convert ATLAS field from field
+!----------------------------------------------------------------------
+subroutine field_from_array_logical_r${rank}$(afield,mpl,array,lev2d)
+
+implicit none
+
+! Passed variables
+type(atlas_field),intent(inout) :: afield     !< ATLAS field
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+logical,intent(in) :: array(${dim[rank]}$)    !< Array, the rightmost dimension being the vertical
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
+
+! Local variables
+integer :: il0
+#{if rank == 2}# integer :: imga #{endif}#
+#{if rank == 3}# integer :: ixa,iya #{endif}#
+integer,allocatable :: array_int(${dim[rank]}$)
+character(len=1024) :: llev2d
+character(len=1024),parameter :: subr = 'field_to_array_logical_r${rank}$'
+
+! Local lev2d
+llev2d = 'first'
+if (present(lev2d)) llev2d = lev2d
+if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort(subr,'wrong lev2d')
+
+! Allocation
+#{if rank == 2}# allocate(array_int(size(array,1),size(array,2))) #{endif}#
+#{if rank == 3}# allocate(array_int(size(array,1),size(array,2),size(array,3))) #{endif}#
+
+! Convert logical to integer
+#:if rank == 2
+   do il0=1,size(array,2)
+      do imga=1,size(array,1)
+         if (array(imga,il0)) then
+            array_int(imga,il0) = 1
+         else
+            array_int(imga,il0) = 0
+         end if
+      end do
+   end do
+#:endif
+#:if rank == 3
+   do il0=1,size(array,3)
+      do iya=1,size(array,2)
+         do ixa=1,size(array,1)
+            if (array(ixa,iya,il0)) then
+               array_int(ixa,iya,il0) = 1
+            else
+               array_int(ixa,iya,il0) = 0
+            end if
+         end do
+      end do
+   end do
+#:endif
+
+! Set integer array
+call field_from_array(afield,mpl,array_int,lev2d)
+
+! Release memory
+deallocate(array_int)
+
+end subroutine field_from_array_logical_r${rank}$
+#:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: create_atlas_function_space
+!> Create ATLAS function space from lon/lat
+!----------------------------------------------------------------------
+subroutine create_atlas_function_space(nmga,lon_mga,lat_mga,afunctionspace)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: nmga                              !< Number of nodes
+real(kind_real),intent(in) :: lon_mga(nmga)             !< Longitudes [in degrees]
+real(kind_real),intent(in) :: lat_mga(nmga)             !< Latitudes [in degrees]
+type(atlas_functionspace),intent(out) :: afunctionspace !< ATLAS function space
+
+! Local variables
+integer :: imga
+real(kind_real),pointer :: real_ptr(:,:)
+type(atlas_field) :: afield
+
+! Create lon/lat field
+afield = atlas_field(name='lonlat',kind=atlas_real(kind_real),shape=(/2,nmga/))
+call afield%data(real_ptr)
+do imga=1,nmga
+   real_ptr(1,imga) = lon_mga(imga)
+   real_ptr(2,imga) = lat_mga(imga)
+end do
+
+! Create function space PointCloud
+afunctionspace = atlas_functionspace_pointcloud(afield)
+
+end subroutine create_atlas_function_space
+
+end module tools_atlas

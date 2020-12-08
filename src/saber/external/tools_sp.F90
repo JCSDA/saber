@@ -34,8 +34,8 @@ subroutine splat(IDRT,JMAX,SLAT,WLAT)
 implicit none
 
 ! Passed variables
-integer,intent(in ) :: IDRT                    !< Grid identifier
-integer,intent(in ) :: JMAX                    !< Number of latitudes
+integer,intent(in) :: IDRT                     !< Grid identifier
+integer,intent(in) :: JMAX                     !< Number of latitudes
 real(kind=kind_real),intent(out) :: SLAT(JMAX) !< Sines of latitude 
 real(kind=kind_real),intent(out) :: WLAT(JMAX) !< Gaussian weights-
 

@@ -55,7 +55,6 @@ bump_write_mom/test_1-1_mom_000001-000001.nc
 bump_write_nicas/test_1-1_diag.nc
 bump_write_nicas/test_1-1_dirac.nc
 bump_write_nicas/test_1-1_nicas_000001-000001.nc
-bump_write_obsop/test_1-1_obs_000001-000001.nc
 bump_write_sampling/test_1-1_diag.nc
 bump_write_sampling/test_1-1_sampling_000001-000001.nc
 bump_write_var/test_1-1_var.nc

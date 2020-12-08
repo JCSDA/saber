@@ -23,7 +23,7 @@ type_cv.F90
 type_diag_blk.F90
 type_diag.F90
 type_ens.F90
-type_geom.F90
+type_geom.fypp
 type_hdiag.F90
 type_io.F90
 type_lct_blk.F90
@@ -36,7 +36,6 @@ type_mom.F90
 type_nam.F90
 type_nicas_blk.F90
 type_nicas.F90
-type_obsop.F90
 type_samp.F90
 type_tree.F90
 type_var.F90

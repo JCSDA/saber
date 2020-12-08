@@ -128,24 +128,8 @@ if (bump%nam%ens2_ne>0) then
    call model%load_ens(mpl,bump%nam,'ens2')
 end if
 
-if (bump%nam%new_obsop) then
-   ! Generate observations locations
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Generate observations locations'
-   call mpl%flush
-   call model%generate_obs(mpl,bump%nam)
-end if
-
 ! BUMP setup
-if (bump%nam%new_obsop) then
-   call bump%setup(f_comm,model%afunctionspace,model%fieldset, &
-  & nobs=model%nobsa,lonobs=model%lonobs,latobs=model%latobs, &
-  & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
-else
-   call bump%setup(f_comm,model%afunctionspace,model%fieldset, &
-  & lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
-end if
+call bump%setup(f_comm,model%afunctionspace,model%fieldset,lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
 ! Add members
 if (bump%nam%ens1_ne>0) then

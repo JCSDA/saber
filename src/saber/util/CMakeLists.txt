@@ -5,7 +5,7 @@
 
 set( util_src_files
 
-tools_atlas.F90
+tools_atlas.fypp
 tools_const.F90
 tools_kinds.F90
 tools_repro.F90

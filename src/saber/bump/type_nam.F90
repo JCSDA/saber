@@ -62,17 +62,12 @@ type nam_type
    logical :: new_nicas                                 !< Compute new NICAS parameters
    logical :: load_nicas                                !< Load existing NICAS parameters
    logical :: write_nicas                               !< Write NICAS parameters
-   logical :: new_obsop                                 !< Compute new observation operator
-   logical :: load_obsop                                !< Load existing observation operator
-   logical :: write_obsop                               !< Write observation operator
    logical :: check_vbal                                !< Test vertical balance inverse and adjoint
    logical :: check_adjoints                            !< Test NICAS adjoints
    logical :: check_dirac                               !< Test NICAS application on diracs
    logical :: check_randomization                       !< Test NICAS randomization
    logical :: check_consistency                         !< Test HDIAG-NICAS consistency
    logical :: check_optimality                          !< Test HDIAG optimality
-   logical :: check_obsop                               !< Test observation operator
-   logical :: check_no_obs                              !< Test observation operator with no observation on the last MPI task
    logical :: check_no_point                            !< Test BUMP with no grid point on the last MPI task
    logical :: check_no_point_mask                       !< Test BUMP with all grid points masked on the last MPI task
    logical :: check_no_point_nicas                      !< Test NICAS with no subgrid point on the last MPI task
@@ -87,7 +82,6 @@ type nam_type
    logical :: check_apply_vbal                          !< Test apply_vbal interfaces
    logical :: check_apply_stddev                        !< Test apply_stddev interfaces
    logical :: check_apply_nicas                         !< Test apply_nicas interfaces
-   logical :: check_apply_obsop                         !< Test apply_obsop interfaces
 
    ! model_param
    integer :: nl                                        !< Number of levels
@@ -185,9 +179,6 @@ type nam_type
    integer :: levdir(ndirmax)                           !< Diracs level
    integer :: ivdir(ndirmax)                            !< Diracs variable indices
 
-   ! obsop_param
-   integer :: nobs                                      !< Number of observations
-
    ! output_param
    integer :: nldwv                                     !< Number of local diagnostics profiles to write (for local_diag = .true.)
    integer :: img_ldwv(nldwvmax)                        !< Index on model grid of the local diagnostics profiles to write
@@ -261,17 +252,12 @@ nam%write_cmat = .true.
 nam%new_nicas = .false.
 nam%load_nicas = .false.
 nam%write_nicas = .true.
-nam%new_obsop = .false.
-nam%load_obsop = .false.
-nam%write_obsop = .true.
 nam%check_vbal = .false.
 nam%check_adjoints = .false.
 nam%check_dirac = .false.
 nam%check_randomization = .false.
 nam%check_consistency = .false.
 nam%check_optimality = .false.
-nam%check_obsop = .false.
-nam%check_no_obs = .false.
 nam%check_no_point = .false.
 nam%check_no_point_mask = .false.
 nam%check_no_point_nicas = .false.
@@ -286,7 +272,6 @@ nam%check_get_param_lct = .false.
 nam%check_apply_vbal = .false.
 nam%check_apply_stddev = .false.
 nam%check_apply_nicas = .false.
-nam%check_apply_obsop = .false.
 
 ! model_param default
 nam%nl = 0
@@ -398,9 +383,6 @@ nam%latdir = 0.0
 nam%levdir = 0
 nam%ivdir = 0
 
-! obsop_param default
-nam%nobs = 0
-
 ! output_param default
 nam%nldwv = 0
 nam%img_ldwv = 0
@@ -462,17 +444,12 @@ logical :: write_cmat
 logical :: new_nicas
 logical :: load_nicas
 logical :: write_nicas
-logical :: new_obsop
-logical :: load_obsop
-logical :: write_obsop
 logical :: check_vbal
 logical :: check_adjoints
 logical :: check_dirac
 logical :: check_randomization
 logical :: check_consistency
 logical :: check_optimality
-logical :: check_obsop
-logical :: check_no_obs
 logical :: check_no_point
 logical :: check_no_point_mask
 logical :: check_no_point_nicas
@@ -487,7 +464,6 @@ logical :: check_get_param_lct
 logical :: check_apply_vbal
 logical :: check_apply_stddev
 logical :: check_apply_nicas
-logical :: check_apply_obsop
 integer :: nl
 integer :: levs(nlmax)
 character(len=1024) :: lev2d
@@ -568,7 +544,6 @@ real(kind_real) :: londir(ndirmax)
 real(kind_real) :: latdir(ndirmax)
 integer :: levdir(ndirmax)
 integer :: ivdir(ndirmax)
-integer :: nobs
 integer :: nldwv
 integer :: img_ldwv(nldwvmax)
 real(kind_real) :: lon_ldwv(nldwvmax)
@@ -610,17 +585,12 @@ namelist/driver_param/ &
  & new_nicas, &
  & load_nicas, &
  & write_nicas, &
- & new_obsop, &
- & load_obsop, &
- & write_obsop, &
  & check_vbal, &
  & check_adjoints, &
  & check_dirac, &
  & check_randomization, &
  & check_consistency, &
  & check_optimality, &
- & check_obsop, &
- & check_no_obs, &
  & check_no_point, &
  & check_no_point_mask, &
  & check_no_point_nicas, &
@@ -634,8 +604,7 @@ namelist/driver_param/ &
  & check_get_param_lct, &
  & check_apply_vbal, &
  & check_apply_stddev, &
- & check_apply_nicas, &
- & check_apply_obsop
+ & check_apply_nicas
 namelist/model_param/ &
  & nl, &
  & levs, &
@@ -723,8 +692,6 @@ namelist/nicas_param/ &
  & latdir, &
  & levdir, &
  & ivdir
-namelist/obsop_param/ &
- & nobs
 namelist/output_param/ &
  & nldwv, &
  & img_ldwv, &
@@ -769,17 +736,12 @@ if (mpl%main) then
    new_nicas = .false.
    load_nicas = .false.
    write_nicas = .true.
-   new_obsop = .false.
-   load_obsop = .false.
-   write_obsop = .true.
    check_vbal = .false.
    check_adjoints = .false.
    check_dirac = .false.
    check_randomization = .false.
    check_consistency = .false.
    check_optimality = .false.
-   check_obsop = .false.
-   check_no_obs = .false.
    check_no_point = .false.
    check_no_point_mask = .false.
    check_no_point_nicas = .false.
@@ -794,7 +756,6 @@ if (mpl%main) then
    check_apply_vbal = .false.
    check_apply_stddev = .false.
    check_apply_nicas = .false.
-   check_apply_obsop = .false.
 
    ! model_param default
    nl = 0
@@ -906,9 +867,6 @@ if (mpl%main) then
    levdir = 0
    ivdir = 0
 
-   ! obsop_param default
-   nobs = 0
-
    ! output_param default
    nldwv = 0
    img_ldwv = 0
@@ -959,17 +917,12 @@ if (mpl%main) then
    nam%new_nicas = new_nicas
    nam%load_nicas = load_nicas
    nam%write_nicas = write_nicas
-   nam%new_obsop = new_obsop
-   nam%load_obsop = load_obsop
-   nam%write_obsop = write_obsop
    nam%check_vbal = check_vbal
    nam%check_adjoints = check_adjoints
    nam%check_dirac = check_dirac
    nam%check_randomization = check_randomization
    nam%check_consistency = check_consistency
    nam%check_optimality = check_optimality
-   nam%check_obsop = check_obsop
-   nam%check_no_obs = check_no_obs
    nam%check_no_point = check_no_point
    nam%check_no_point_mask = check_no_point_mask
    nam%check_no_point_nicas = check_no_point_nicas
@@ -984,7 +937,6 @@ if (mpl%main) then
    nam%check_apply_vbal = check_apply_vbal
    nam%check_apply_stddev = check_apply_stddev
    nam%check_apply_nicas = check_apply_nicas
-   nam%check_apply_obsop = check_apply_obsop
 
    ! model_param
    read(lunit,nml=model_param)
@@ -1094,10 +1046,6 @@ if (mpl%main) then
    if (ndir>0) nam%levdir(1:ndir) = levdir(1:ndir)
    if (ndir>0) nam%ivdir(1:ndir) = ivdir(1:ndir)
 
-   ! obsop_param
-   read(lunit,nml=obsop_param)
-   nam%nobs = nobs
-
    ! output_param
    read(lunit,nml=output_param)
    nam%nldwv = nldwv
@@ -1187,17 +1135,12 @@ call mpl%f_comm%broadcast(nam%write_cmat,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_nicas,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%new_obsop,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%load_obsop,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%write_obsop,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_adjoints,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_dirac,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_randomization,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_consistency,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_optimality,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_obsop,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_no_obs,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_no_point,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_no_point_mask,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_no_point_nicas,mpl%rootproc-1)
@@ -1212,7 +1155,6 @@ call mpl%f_comm%broadcast(nam%check_get_param_lct,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_stddev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_nicas,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_apply_obsop,mpl%rootproc-1)
 
 ! model_param
 call mpl%f_comm%broadcast(nam%nl,mpl%rootproc-1)
@@ -1310,9 +1252,6 @@ call mpl%f_comm%broadcast(nam%latdir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%levdir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%ivdir,mpl%rootproc-1)
 
-! obsop_param
-call mpl%f_comm%broadcast(nam%nobs,mpl%rootproc-1)
-
 ! output_param
 call mpl%f_comm%broadcast(nam%nldwv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%img_ldwv,mpl%rootproc-1)
@@ -1394,17 +1333,12 @@ if (conf%has("write_cmat")) call conf%get_or_die("write_cmat",nam%write_cmat)
 if (conf%has("new_nicas")) call conf%get_or_die("new_nicas",nam%new_nicas)
 if (conf%has("load_nicas")) call conf%get_or_die("load_nicas",nam%load_nicas)
 if (conf%has("write_nicas")) call conf%get_or_die("write_nicas",nam%write_nicas)
-if (conf%has("new_obsop")) call conf%get_or_die("new_obsop",nam%new_obsop)
-if (conf%has("load_obsop")) call conf%get_or_die("load_obsop",nam%load_obsop)
-if (conf%has("write_obsop")) call conf%get_or_die("write_obsop",nam%write_obsop)
 if (conf%has("check_vbal")) call conf%get_or_die("check_vbal",nam%check_vbal)
 if (conf%has("check_adjoints")) call conf%get_or_die("check_adjoints",nam%check_adjoints)
 if (conf%has("check_dirac")) call conf%get_or_die("check_dirac",nam%check_dirac)
 if (conf%has("check_randomization")) call conf%get_or_die("check_randomization",nam%check_randomization)
 if (conf%has("check_consistency")) call conf%get_or_die("check_consistency",nam%check_consistency)
 if (conf%has("check_optimality")) call conf%get_or_die("check_optimality",nam%check_optimality)
-if (conf%has("check_obsop")) call conf%get_or_die("check_obsop",nam%check_obsop)
-if (conf%has("check_no_obs")) call conf%get_or_die("check_no_obs",nam%check_no_obs)
 if (conf%has("check_no_point")) call conf%get_or_die("check_no_point",nam%check_no_point)
 if (conf%has("check_no_point_mask")) call conf%get_or_die("check_no_point_mask",nam%check_no_point_mask)
 if (conf%has("check_no_point_nicas")) call conf%get_or_die("check_no_point_nicas",nam%check_no_point_nicas)
@@ -1419,7 +1353,6 @@ if (conf%has("check_get_param_lct")) call conf%get_or_die("check_get_param_lct",
 if (conf%has("check_apply_vbal")) call conf%get_or_die("check_apply_vbal",nam%check_apply_vbal)
 if (conf%has("check_apply_stddev")) call conf%get_or_die("check_apply_stddev",nam%check_apply_stddev)
 if (conf%has("check_apply_nicas")) call conf%get_or_die("check_apply_nicas",nam%check_apply_nicas)
-if (conf%has("check_apply_obsop")) call conf%get_or_die("check_apply_obsop",nam%check_apply_obsop)
 
 ! model_param
 if (conf%has("nl")) call conf%get_or_die("nl",nam%nl)
@@ -1577,9 +1510,6 @@ if (conf%has("ivdir")) then
    nam%ivdir(1:size(integer_array)) = integer_array
 end if
 
-! obsop_param
-if (conf%has("nobs")) call conf%get_or_die("nobs",nam%nobs)
-
 ! output_param
 if (conf%has("nldwv")) call conf%get_or_die("nldwv",nam%nldwv)
 if (conf%has("img_ldwv")) then
@@ -1684,12 +1614,9 @@ if (nam%new_mom.and.nam%load_mom) call mpl%abort(subr,'new_mom and load_mom are 
 if (nam%new_hdiag.and.nam%new_lct) call mpl%abort(subr,'new_hdiag and new_lct are exclusive')
 if ((nam%new_hdiag.or.nam%new_lct).and.nam%load_cmat) call mpl%abort(subr,'new_hdiag or new_lct and load_cmat are exclusive')
 if (nam%new_nicas.and.nam%load_nicas) call mpl%abort(subr,'new_nicas and load_nicas are exclusive')
-if (nam%new_obsop.and.nam%load_obsop) call mpl%abort(subr,'new_obsop and load_obsop are exclusive')
 if (nam%check_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) call mpl%abort(subr,'new_vbal or load_vbal required for check_vbal')
 if ((nam%new_hdiag.or.nam%new_lct).and.(.not.(nam%new_mom.or.nam%load_mom))) &
  & call mpl%abort(subr,'new_mom or load_mom required for new_hdiag and new_lct')
-if (nam%check_adjoints.and..not.(nam%new_vbal.or.nam%load_vbal.or.nam%new_nicas.or.nam%load_nicas.or.nam%new_obsop &
- & .or.nam%load_obsop)) call mpl%abort(subr,'new or load for vbal, nicas or obsop required for check_adjoints')
 if (nam%check_dirac.and..not.(nam%new_vbal.or.nam%load_vbal.or.nam%new_nicas.or.nam%load_nicas)) &
  & call mpl%abort(subr,'new or load for vbal or nicas required for check_dirac')
 if (nam%check_randomization) then
@@ -1705,11 +1632,6 @@ if (nam%check_optimality) then
    if (.not.nam%new_nicas) call mpl%abort(subr,'new_nicas required for check_optimality')
    if (.not.nam%write_hdiag) call mpl%abort(subr,'write_hdiag required for check_optimality')
 end if
-if (nam%check_obsop.and..not.nam%new_obsop) &
- & call mpl%abort(subr,'new obsop required for check_obsop')
-if (nam%check_no_obs.and..not.(nam%new_obsop.or.nam%load_obsop)) &
- & call mpl%abort(subr,'new or load_obsop required for check_no_obs')
-if (nam%check_no_obs.and.(mpl%nproc<2)) call mpl%abort(subr,'at least 2 MPI tasks required for check_no_obs')
 if (nam%check_no_point.and.nam%check_no_point_mask) &
  & call mpl%abort(subr,'check_no_point and check_no_point_mask are exclusive')
 if (nam%check_no_point.and.(mpl%nproc<2)) call mpl%abort(subr,'at least 2 MPI tasks required for check_no_point')
@@ -1735,8 +1657,6 @@ if (nam%check_apply_stddev.and..not.(nam%new_var.or.nam%load_var)) &
  & call mpl%abort(subr,'new_var or load_var required for check_apply_stddev')
 if (nam%check_apply_nicas.and..not.(nam%new_nicas.or.nam%load_nicas)) &
  & call mpl%abort(subr,'new_nicas or load_nicas required for check_apply_nicas')
-if (nam%check_apply_obsop.and..not.(nam%new_obsop.or.nam%load_obsop)) &
- & call mpl%abort(subr,'new_obsop or load_obsop required for check_apply_obsop')
 
 ! Check model_param
 if (nam%nl<=0) call mpl%abort(subr,'nl should be positive')
@@ -2037,17 +1957,12 @@ call mpl%write(lncid,'nam','write_cmat',nam%write_cmat)
 call mpl%write(lncid,'nam','new_nicas',nam%new_nicas)
 call mpl%write(lncid,'nam','load_nicas',nam%load_nicas)
 call mpl%write(lncid,'nam','write_nicas',nam%write_nicas)
-call mpl%write(lncid,'nam','new_obsop',nam%new_obsop)
-call mpl%write(lncid,'nam','load_obsop',nam%load_obsop)
-call mpl%write(lncid,'nam','write_obsop',nam%write_obsop)
 call mpl%write(lncid,'nam','check_vbal',nam%check_vbal)
 call mpl%write(lncid,'nam','check_adjoints',nam%check_adjoints)
 call mpl%write(lncid,'nam','check_dirac',nam%check_dirac)
 call mpl%write(lncid,'nam','check_randomization',nam%check_randomization)
 call mpl%write(lncid,'nam','check_consistency',nam%check_consistency)
 call mpl%write(lncid,'nam','check_optimality',nam%check_optimality)
-call mpl%write(lncid,'nam','check_obsop',nam%check_obsop)
-call mpl%write(lncid,'nam','check_no_obs',nam%check_no_obs)
 call mpl%write(lncid,'nam','check_no_point',nam%check_no_point)
 call mpl%write(lncid,'nam','check_no_point_mask',nam%check_no_point_mask)
 call mpl%write(lncid,'nam','check_no_point_nicas',nam%check_no_point_nicas)
@@ -2062,7 +1977,6 @@ call mpl%write(lncid,'nam','check_get_param_lct',nam%check_get_param_lct)
 call mpl%write(lncid,'nam','check_apply_vbal',nam%check_apply_vbal)
 call mpl%write(lncid,'nam','check_apply_stddev',nam%check_apply_stddev)
 call mpl%write(lncid,'nam','check_apply_nicas',nam%check_apply_nicas)
-call mpl%write(lncid,'nam','check_apply_obsop',nam%check_apply_obsop)
 
 ! model_param
 if (mpl%msv%is(lncid)) then
@@ -2193,13 +2107,6 @@ call mpl%write(lncid,'nam','londir',nam%ndir,londir)
 call mpl%write(lncid,'nam','latdir',nam%ndir,latdir)
 call mpl%write(lncid,'nam','levdir',nam%ndir,nam%levdir(1:nam%ndir))
 call mpl%write(lncid,'nam','ivdir',nam%ndir,nam%ivdir(1:nam%ndir))
-
-! obsop_param
-if (mpl%msv%is(lncid)) then
-   write(mpl%info,'(a7,a)') '','Observation operator parameters'
-   call mpl%flush
-end if
-call mpl%write(lncid,'nam','nobs',nam%nobs)
 
 ! output_param
 if (mpl%msv%is(lncid)) then

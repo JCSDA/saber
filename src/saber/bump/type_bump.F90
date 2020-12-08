@@ -10,7 +10,6 @@ module type_bump
 use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
-use tools_atlas, only: create_atlas_function_space
 use tools_const, only: req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
 use tools_kinds,only: kind_int,kind_real
@@ -27,7 +26,6 @@ use type_lct, only: lct_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas, only: nicas_type
-use type_obsop, only: obsop_type
 use type_rng, only: rng_type
 use type_var, only: var_type
 use type_vbal, only: vbal_type
@@ -52,7 +50,6 @@ type bump_type
    type(mpl_type) :: mpl
    type(nam_type) :: nam
    type(nicas_type) :: nicas
-   type(obsop_type) :: obsop
    type(rng_type) :: rng
    type(var_type) :: var
    type(vbal_type) :: vbal
@@ -78,12 +75,6 @@ contains
    generic :: apply_nicas_sqrt => bump_apply_nicas_sqrt,bump_apply_nicas_sqrt_deprecated_atlas
    procedure :: apply_nicas_sqrt_ad => bump_apply_nicas_sqrt_ad
    procedure :: randomize => bump_randomize
-   procedure :: bump_apply_obsop
-   procedure :: bump_apply_obsop_deprecated_atlas
-   generic :: apply_obsop => bump_apply_obsop,bump_apply_obsop_deprecated_atlas
-   procedure :: bump_apply_obsop_ad
-   procedure :: bump_apply_obsop_ad_deprecated_atlas
-   generic :: apply_obsop_ad => bump_apply_obsop_ad,bump_apply_obsop_ad_deprecated_atlas
    procedure :: get_parameter => bump_get_parameter
    procedure :: copy_to_field => bump_copy_to_field
    procedure :: test_get_parameter => bump_test_get_parameter
@@ -193,7 +184,7 @@ end subroutine bump_create_deprecated_atlas
 ! Subroutine: bump_setup
 !> Setup
 !----------------------------------------------------------------------
-subroutine bump_setup(bump,f_comm,afunctionspace,fieldset,nobs,lonobs,latobs,lunit,msvali,msvalr)
+subroutine bump_setup(bump,f_comm,afunctionspace,fieldset,lunit,msvali,msvalr)
 
 implicit none
 
@@ -202,15 +193,9 @@ class(bump_type),intent(inout) :: bump                 !< BUMP
 type(fckit_mpi_comm),intent(in) :: f_comm              !< FCKIT MPI communicator wrapper
 type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS functionspace
 type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing geometry elements
-integer,intent(in),optional :: nobs                    !< Number of observations
-real(kind_real),intent(in),optional :: lonobs(:)       !< Observations longitude (in degrees)
-real(kind_real),intent(in),optional :: latobs(:)       !< Observations latitude (in degrees)
 integer,intent(in),optional :: lunit                   !< Listing unit
 integer,intent(in),optional :: msvali                  !< Missing value for integers
 real(kind_real),intent(in),optional :: msvalr          !< Missing value for reals
-
-! Local variables
-character(len=1024),parameter :: subr = 'bump_setup'
 
 ! Initialize MPL
 call bump%mpl%init(f_comm)
@@ -330,22 +315,6 @@ if (bump%nam%ens2_ne>0) then
    call bump%ens2%alloc(bump%nam%ens2_ne,bump%nam%ens2_nsub)
 else
    call bump%ens2%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
-end if
-
-if (present(nobs)) then
-   ! Check arguments consistency
-   if ((.not.present(lonobs)).or.(.not.present(latobs))) call bump%mpl%abort(subr,'lonobs and latobs are missing')
-
-   ! Check sizes consistency
-   if (size(lonobs)/=nobs) call bump%mpl%abort(subr,'wrong size for lonobs')
-   if (size(latobs)/=nobs) call bump%mpl%abort(subr,'wrong size for latobs')
-
-   ! Initialize observations locations
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Initialize observations locations'
-   call bump%mpl%flush
-   call bump%obsop%from(nobs,lonobs,latobs)
 end if
 
 end subroutine bump_setup
@@ -546,33 +515,6 @@ if (bump%nam%new_nicas.or.bump%nam%load_nicas) then
    write(bump%mpl%info,'(a)') '--- Run NICAS tests driver'
    call bump%mpl%flush
    call bump%nicas%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1)
-   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
-end if
-
-if (bump%nam%new_obsop) then
-   ! Run observation operator driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run observation operator driver'
-   call bump%mpl%flush
-   call bump%obsop%run_obsop(bump%mpl,bump%rng,bump%nam,bump%geom)
-   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
-elseif (bump%nam%load_obsop) then
-   ! Read observation operator
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Read observation operator'
-   call bump%mpl%flush
-   call bump%obsop%read(bump%mpl,bump%nam,bump%geom)
-end if
-
-if (bump%nam%new_obsop.or.bump%nam%load_obsop) then
-   ! Run observation operator tests driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run observation operator tests driver'
-   call bump%mpl%flush
-   call bump%obsop%run_obsop_tests(bump%mpl,bump%nam,bump%rng,bump%geom)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
@@ -1027,118 +969,6 @@ call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bum
 call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 
 end subroutine bump_randomize
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_obsop
-!> Observation operator application
-!----------------------------------------------------------------------
-subroutine bump_apply_obsop(bump,fieldset,obs)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                             !< BUMP
-type(fieldset_type),intent(inout) :: fieldset                      !< Fieldset
-real(kind_real),intent(out) :: obs(bump%obsop%nobsa,bump%geom%nl0) !< Observations columns
-
-! Local variables
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
-character(len=1024),parameter :: subr = 'bump_apply_obsop'
-
-! Test dimensions
-if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop')
-
-! Initialize fieldset
-call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d)
-
-! Fieldset to Fortran on subset Sc0
-call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
-
-! Apply observation operator
-call bump%obsop%apply(bump%mpl,bump%geom,fld_c0a,obs)
-
-end subroutine bump_apply_obsop
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_obsop_deprecated_atlas
-!> Observation operator application (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_apply_obsop_deprecated_atlas(bump,afieldset,obs)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                             !< BUMP
-type(atlas_fieldset),intent(inout) :: afieldset                    !< ATLAS fieldset
-real(kind_real),intent(out) :: obs(bump%obsop%nobsa,bump%geom%nl0) !< Observations columns
-
-! Local variables
-type(fieldset_type) :: fieldset
-
-! ATLAS fieldset to fieldset
-fieldset = atlas_fieldset(afieldset%c_ptr())
-
-! Call fieldset interface
-call bump%apply_obsop(fieldset,obs)
-
-end subroutine bump_apply_obsop_deprecated_atlas
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_obsop_ad
-!> Observation operator adjoint application
-!----------------------------------------------------------------------
-subroutine bump_apply_obsop_ad(bump,obs,fieldset)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                            !< BUMP
-real(kind_real),intent(in) :: obs(bump%obsop%nobsa,bump%geom%nl0) !< Observations columns
-type(fieldset_type),intent(inout) :: fieldset                     !< Fieldset
-
-! Local variables
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
-character(len=1024),parameter :: subr = 'bump_apply_obsop_ad'
-
-! Test dimensions
-if (bump%nam%nv>1) call bump%mpl%abort(subr,'only one variable to call bump_apply_obsop_ad')
-
-! Apply observation operator adjoint
-call bump%obsop%apply_ad(bump%mpl,bump%geom,obs,fld_c0a)
-
-! Initialize fieldset
-call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d,bump%geom%afunctionspace_mg)
-
-! Fortran array on subset Sc0 to fieldset
-call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-
-end subroutine bump_apply_obsop_ad
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_obsop_ad_deprecated_atlas
-!> Observation operator adjoint application (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_apply_obsop_ad_deprecated_atlas(bump,obs,afieldset)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                            !< BUMP
-real(kind_real),intent(in) :: obs(bump%obsop%nobsa,bump%geom%nl0) !< Observations columns
-type(atlas_fieldset),intent(inout) :: afieldset                   !< ATLAS fieldset
-
-! Local variables
-type(fieldset_type) :: fieldset
-
-! ATLAS fieldset to fieldset
-fieldset = atlas_fieldset(afieldset%c_ptr())
-
-! Call fieldset interface
-call bump%apply_obsop_ad(obs,fieldset)
-
-end subroutine bump_apply_obsop_ad_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_parameter
@@ -1706,8 +1536,8 @@ implicit none
 class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Local variables
-integer :: n,nv_save
-real(kind_real),allocatable :: fld_c0a(:,:,:),pcv(:),obs(:,:)
+integer :: n
+real(kind_real),allocatable :: fld_c0a(:,:,:),pcv(:)
 type(fieldset_type) :: fieldset
 
 ! Test apply_vbal
@@ -1800,44 +1630,6 @@ if (bump%nam%check_apply_nicas) then
    call fieldset%final()
 end if
 
-! Test apply_obsop
-if (bump%nam%check_apply_obsop) then
-   write(bump%mpl%info,'(a7,a)') '','Test apply_obsop'
-   call bump%mpl%flush
-
-   ! Save namelist parameters
-   nv_save = bump%nam%nv
-
-   ! Set namelist parameters
-   bump%nam%nv = 1
-
-   ! Allocation
-   allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv))
-   allocate(obs(bump%obsop%nobsa,bump%geom%nl0))
-
-   ! Initialization
-   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0a)
-
-   ! Create fieldset
-   call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d,bump%geom%afunctionspace_mg)
-
-   ! Fortran array on subset Sc0 to fieldset
-   call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-
-   ! Calls
-   call bump%apply_obsop(fieldset,obs)
-   call bump%apply_obsop_ad(obs,fieldset)
-
-   ! Reset namelist parameters
-   bump%nam%nv = nv_save
-
-   ! Release memory
-   deallocate(fld_c0a)
-   deallocate(obs)
-   call fieldset%final()
-end if
-
 end subroutine bump_test_apply_interfaces
 
 !----------------------------------------------------------------------
@@ -1861,7 +1653,6 @@ call bump%hdiag%dealloc
 call bump%io%dealloc
 call bump%lct%partial_dealloc
 call bump%nicas%partial_dealloc
-call bump%obsop%partial_dealloc
 call bump%var%partial_dealloc
 call bump%vbal%partial_dealloc
 
@@ -1889,7 +1680,6 @@ call bump%hdiag%dealloc
 call bump%io%dealloc
 call bump%lct%dealloc
 call bump%nicas%dealloc
-call bump%obsop%dealloc
 call bump%var%dealloc
 call bump%vbal%dealloc
 

@@ -558,7 +558,7 @@ if (size(fieldset%variables)<iv) call mpl%abort(subr,'inconsistency in number of
 afield = fieldset%field(fieldset%variables(iv))
 
 ! ATLAS field to Fortran array
-call field_to_array(mpl,afield,fld,fieldset%lev2d)
+call field_to_array(afield,mpl,fld,fieldset%lev2d)
 
 ! Release pointer
 call afield%final()
@@ -617,7 +617,7 @@ if (size(fieldset%variables)<iv) call mpl%abort(subr,'inconsistency in number of
 afield = fieldset%field(fieldset%variables(iv))
 
 ! Fortran array to ATLAS field
-call field_from_array(mpl,fld,afield,fieldset%lev2d)
+call field_from_array(afield,mpl,fld,fieldset%lev2d)
 
 ! Release pointer
 call afield%final()

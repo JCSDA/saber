@@ -35,6 +35,10 @@ endif()
 # Enable including of local header Fortran file templates
 target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> )
 
+# Process fypp files
+fckit_target_preprocess_fypp( ${PROJECT_NAME}
+                              DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/util/tools_generics.fypp )
+
 # Fortran module output directory for build and install interfaces
 set( MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION} )
 set_target_properties( ${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR} )

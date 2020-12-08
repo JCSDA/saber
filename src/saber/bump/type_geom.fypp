@@ -7,13 +7,15 @@
 !----------------------------------------------------------------------
 module type_geom
 
+#:include "util/tools_generics.fypp"
+
 use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_nodecolumns, &
  & atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_array
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,vector_triple_product
-use tools_kinds, only: kind_real,nc_kind_real,huge_real
+use tools_kinds, only: kind_int,kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
 use tools_samp, only: initialize_sampling_global
@@ -142,15 +144,25 @@ contains
    procedure :: index_from_lonlat => geom_index_from_lonlat
    procedure :: setup_dirac => geom_setup_dirac
    procedure :: check_arc => geom_check_arc
-   procedure :: geom_copy_c0a_to_mga_single
-   procedure :: geom_copy_c0a_to_mga_all
-   generic :: copy_c0a_to_mga => geom_copy_c0a_to_mga_single,geom_copy_c0a_to_mga_all
-   procedure :: geom_copy_mga_to_c0a_real_single
-   procedure :: geom_copy_mga_to_c0a_real_all
-   procedure :: geom_copy_mga_to_c0a_logical_single
-   procedure :: geom_copy_mga_to_c0a_logical_all
-   generic :: copy_mga_to_c0a => geom_copy_mga_to_c0a_real_single,geom_copy_mga_to_c0a_real_all, &
- & geom_copy_mga_to_c0a_logical_single,geom_copy_mga_to_c0a_logical_all
+   #:for dtype,ftype in types_irl
+      procedure :: geom_copy_c0a_to_mga_${dtype}$_single
+      procedure :: geom_copy_c0a_to_mga_${dtype}$_all
+      procedure :: geom_copy_mga_to_c0a_${dtype}$_single
+      procedure :: geom_copy_mga_to_c0a_${dtype}$_all
+   #:endfor
+   procedure :: dummy_method
+   generic :: copy_c0a_to_mga => &
+   #:for dtype,ftype in types_irl
+ & geom_copy_c0a_to_mga_${dtype}$_single, &
+ & geom_copy_c0a_to_mga_${dtype}$_all, &
+   #:endfor
+ & dummy_method
+   generic :: copy_mga_to_c0a => &
+   #:for dtype,ftype in types_irl
+ & geom_copy_mga_to_c0a_${dtype}$_single, &
+ & geom_copy_mga_to_c0a_${dtype}$_all, &
+   #:endfor
+ & dummy_method
    procedure :: fieldset_to_c0 => geom_fieldset_to_c0
    procedure :: c0_to_fieldset => geom_c0_to_fieldset
    procedure :: compute_deltas => geom_compute_deltas
@@ -485,7 +497,7 @@ if (present(fieldset)) then
    if (fieldset%has_field('area')) then
       afield = fieldset%field('area')
       allocate(area_mga(geom%nmga,1))
-      call field_to_array(mpl,afield,area_mga)
+      call field_to_array(afield,mpl,area_mga)
       geom%area_mga = area_mga(:,1)/req**2
       deallocate(area_mga)
       call afield%final()
@@ -495,21 +507,21 @@ if (present(fieldset)) then
    ! Get vertical unit
    if (fieldset%has_field('vunit')) then
       afield = fieldset%field('vunit')
-      call field_to_array(mpl,afield,geom%vunit_mga)
+      call field_to_array(afield,mpl,geom%vunit_mga)
       call afield%final()
    end if
 
    ! Get geometry mask
    if (fieldset%has_field('gmask')) then
       afield = fieldset%field('gmask')
-      call field_to_array(mpl,afield,geom%gmask_mga)
+      call field_to_array(afield,mpl,geom%gmask_mga)
       call afield%final()
    end if
 
    ! Get sampling mask
    if (fieldset%has_field('smask')) then
       afield = fieldset%field('smask')
-      call field_to_array(mpl,afield,geom%smask_mga)
+      call field_to_array(afield,mpl,geom%smask_mga)
       call afield%final()
    end if
 end if
@@ -1543,23 +1555,24 @@ end do
 
 end subroutine geom_check_arc
 
+#:for dtype,ftype in types_irl
 !----------------------------------------------------------------------
-! Subroutine: geom_copy_c0a_to_mga_single
+! Subroutine: geom_copy_c0a_to_mga_${dtype}$_single
 !> Copy from subset Sc0 to model grid, halo A, single field
 !----------------------------------------------------------------------
-subroutine geom_copy_c0a_to_mga_single(geom,mpl,fld_c0a,fld_mga)
+subroutine geom_copy_c0a_to_mga_${dtype}$_single(geom,mpl,fld_c0a,fld_mga)
 
 implicit none
 
 ! Passed variables
 class(geom_type),intent(in) :: geom                        !< Geometry
 type(mpl_type),intent(inout) :: mpl                        !< MPI data
-real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0)  !< Field on subset Sc0, halo A
-real(kind_real),intent(out) :: fld_mga(geom%nmga,geom%nl0) !< Field on model grid, halo A
+${ftype}$,intent(in) :: fld_c0a(geom%nc0a,geom%nl0)  !< Field on subset Sc0, halo A
+${ftype}$,intent(out) :: fld_mga(geom%nmga,geom%nl0) !< Field on model grid, halo A
 
 ! Local variables
 integer :: ic0a,il0
-real(kind_real) :: fld_c0a_masked(geom%nc0a,geom%nl0)
+${ftype}$ :: fld_c0a_masked(geom%nc0a,geom%nl0)
 
 ! Set masked values at missing value
 do il0=1,geom%nl0
@@ -1567,7 +1580,9 @@ do il0=1,geom%nl0
       if (geom%gmask_c0a(ic0a,il0)) then
          fld_c0a_masked(ic0a,il0) = fld_c0a(ic0a,il0)
       else
-         fld_c0a_masked(ic0a,il0) = mpl%msv%valr
+         #{if dtype == "int"}# fld_c0a_masked(ic0a,il0) = mpl%msv%vali #{endif}#
+         #{if dtype == "real"}# fld_c0a_masked(ic0a,il0) = mpl%msv%valr #{endif}#
+         #{if dtype == "logical"}# fld_c0a_masked(ic0a,il0) = .false. #{endif}#
       end if
    end do
 end do
@@ -1580,22 +1595,22 @@ else
    call geom%com_mg%ext(mpl,geom%nl0,fld_c0a_masked,fld_mga)
 end if
 
-end subroutine geom_copy_c0a_to_mga_single
+end subroutine geom_copy_c0a_to_mga_${dtype}$_single
 
 !----------------------------------------------------------------------
-! Subroutine: geom_copy_c0a_to_mga_all
+! Subroutine: geom_copy_c0a_to_mga_${dtype}$_all
 !> Copy from subset Sc0 to model grid, halo A, all fields
 !----------------------------------------------------------------------
-subroutine geom_copy_c0a_to_mga_all(geom,mpl,nam,fld_c0a,fld_mga)
+subroutine geom_copy_c0a_to_mga_${dtype}$_all(geom,mpl,nam,fld_c0a,fld_mga)
 
 implicit none
 
 ! Passed variables
-class(geom_type),intent(in) :: geom                               !< Geometry
-type(mpl_type),intent(inout) :: mpl                               !< MPI data
-type(nam_type),intent(in) :: nam                                  !< Namelist
-real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)  !< Field on subset Sc0, halo A
-real(kind_real),intent(out) :: fld_mga(geom%nmga,geom%nl0,nam%nv) !< Field on model grid, halo A
+class(geom_type),intent(in) :: geom                         !< Geometry
+type(mpl_type),intent(inout) :: mpl                         !< MPI data
+type(nam_type),intent(in) :: nam                            !< Namelist
+${ftype}$,intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)  !< Field on subset Sc0, halo A
+${ftype}$,intent(out) :: fld_mga(geom%nmga,geom%nl0,nam%nv) !< Field on model grid, halo A
 
 ! Local variables
 integer :: iv
@@ -1604,21 +1619,21 @@ do iv=1,nam%nv
    call geom%copy_c0a_to_mga(mpl,fld_c0a(:,:,iv),fld_mga(:,:,iv))
 end do
 
-end subroutine geom_copy_c0a_to_mga_all
+end subroutine geom_copy_c0a_to_mga_${dtype}$_all
 
 !----------------------------------------------------------------------
-! Subroutine: geom_copy_mga_to_c0a_real_single
-!> Copy from model grid to subset Sc0, halo A, real, single field
+! Subroutine: geom_copy_mga_to_c0a_${dtype}$_single
+!> Copy from model grid to subset Sc0, halo A, single field
 !----------------------------------------------------------------------
-subroutine geom_copy_mga_to_c0a_real_single(geom,mpl,fld_mga,fld_c0a)
+subroutine geom_copy_mga_to_c0a_${dtype}$_single(geom,mpl,fld_mga,fld_c0a)
 
 implicit none
 
 ! Passed variables
-class(geom_type),intent(in) :: geom                        !< Geometry
-type(mpl_type),intent(inout) :: mpl                        !< MPI data
-real(kind_real),intent(in) :: fld_mga(geom%nmga,geom%nl0)  !< Field on model grid, halo A
-real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on subset Sc0, halo A
+class(geom_type),intent(in) :: geom                  !< Geometry
+type(mpl_type),intent(inout) :: mpl                  !< MPI data
+${ftype}$,intent(in) :: fld_mga(geom%nmga,geom%nl0)  !< Field on model grid, halo A
+${ftype}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on subset Sc0, halo A
 
 ! Local variables
 integer :: ic0a,il0
@@ -1634,26 +1649,28 @@ end if
 ! Set masked values at missing value
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%valr
+      #{if dtype == "int"}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%vali #{endif}#
+      #{if dtype == "real"}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%valr #{endif}#
+      #{if dtype == "logical"}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = .false. #{endif}#
    end do
 end do
 
-end subroutine geom_copy_mga_to_c0a_real_single
+end subroutine geom_copy_mga_to_c0a_${dtype}$_single
 
 !----------------------------------------------------------------------
-! Subroutine: geom_copy_mga_to_c0a_real_all
-!> Copy from model grid to subset Sc0, halo A, real, all fields
+! Subroutine: geom_copy_mga_to_c0a_${dtype}$_all
+!> Copy from model grid to subset Sc0, halo A, all fields
 !----------------------------------------------------------------------
-subroutine geom_copy_mga_to_c0a_real_all(geom,mpl,nam,fld_c0a,fld_mga)
+subroutine geom_copy_mga_to_c0a_${dtype}$_all(geom,mpl,nam,fld_c0a,fld_mga)
 
 implicit none
 
 ! Passed variables
-class(geom_type),intent(in) :: geom                               !< Geometry
-type(mpl_type),intent(inout) :: mpl                               !< MPI data
-type(nam_type),intent(in) :: nam                                  !< Namelist
-real(kind_real),intent(in) :: fld_mga(geom%nmga,geom%nl0,nam%nv)  !< Field on model grid, halo A
-real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset Sc0, halo A
+class(geom_type),intent(in) :: geom                         !< Geometry
+type(mpl_type),intent(inout) :: mpl                         !< MPI data
+type(nam_type),intent(in) :: nam                            !< Namelist
+${ftype}$,intent(in) :: fld_mga(geom%nmga,geom%nl0,nam%nv)  !< Field on model grid, halo A
+${ftype}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset Sc0, halo A
 
 ! Local variables
 integer :: iv
@@ -1662,72 +1679,21 @@ do iv=1,nam%nv
    call geom%copy_mga_to_c0a(mpl,fld_mga(:,:,iv),fld_c0a(:,:,iv))
 end do
 
-end subroutine geom_copy_mga_to_c0a_real_all
+end subroutine geom_copy_mga_to_c0a_${dtype}$_all
+#:endfor
 
 !----------------------------------------------------------------------
-! Subroutine: geom_copy_mga_to_c0a_logical_single
-!> Copy from model grid to subset Sc0, halo A, logical, single field
+! Subroutine: dummy_method
+!> Dummy method
 !----------------------------------------------------------------------
-subroutine geom_copy_mga_to_c0a_logical_single(geom,mpl,fld_mga,fld_c0a)
+subroutine dummy_method(geom)
 
 implicit none
 
 ! Passed variables
-class(geom_type),intent(in) :: geom                !< Geometry
-type(mpl_type),intent(inout) :: mpl                !< MPI data
-logical,intent(in) :: fld_mga(geom%nmga,geom%nl0)  !< Field on model grid, halo A
-logical,intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on subset Sc0, halo A
+class(geom_type),intent(inout) :: geom !< Geometry
 
-! Local variables
-integer :: ic0a,imga,il0
-real(kind_real) :: fld_mga_real(geom%nmga,geom%nl0),fld_c0a_real(geom%nc0a,geom%nl0)
-
-! Convert array into real values
-do il0=1,geom%nl0
-   do imga=1,geom%nmga
-      if (fld_mga(imga,il0)) then
-         fld_mga_real(imga,il0) = 1.0
-      else
-         fld_mga_real(imga,il0) = 0.0
-      end if
-   end do
-end do
-
-! Copy
-call geom%copy_mga_to_c0a(mpl,fld_mga_real,fld_c0a_real)
-
-! Convert array back to logical values
-do il0=1,geom%nl0
-   do ic0a=1,geom%nc0a
-      fld_c0a(ic0a,il0) = (fld_c0a_real(ic0a,il0)>0.5)
-   end do
-end do
-
-end subroutine geom_copy_mga_to_c0a_logical_single
-
-!----------------------------------------------------------------------
-! Subroutine: geom_copy_mga_to_c0a_logical_all
-!> Copy from model grid to subset Sc0, halo A, logical, all fields
-!----------------------------------------------------------------------
-subroutine geom_copy_mga_to_c0a_logical_all(geom,mpl,nam,fld_c0a,fld_mga)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(in) :: geom                       !< Geometry
-type(mpl_type),intent(inout) :: mpl                       !< MPI data
-type(nam_type),intent(in) :: nam                          !< Namelist
-logical,intent(in) :: fld_mga(geom%nmga,geom%nl0,nam%nv)  !< Field on model grid, halo A
-logical,intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset Sc0, halo A
-
-! Local variables
-integer :: iv
-
-do iv=1,nam%nv
-   call geom%copy_mga_to_c0a(mpl,fld_mga(:,:,iv),fld_c0a(:,:,iv))
-end do
-
-end subroutine geom_copy_mga_to_c0a_logical_all
+end subroutine dummy_method
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_fieldset_to_c0

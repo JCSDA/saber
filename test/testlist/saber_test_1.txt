@@ -15,7 +15,6 @@ bump_read_cmat
 bump_read_cmat_serial
 bump_read_mom
 bump_read_nicas
-bump_read_obsop
 bump_read_sampling
 bump_read_var
 bump_read_vbal
@@ -25,7 +24,6 @@ bump_write_cmat
 bump_write_cmat_serial
 bump_write_mom
 bump_write_nicas
-bump_write_obsop
 bump_write_sampling
 bump_write_var
 bump_write_vbal

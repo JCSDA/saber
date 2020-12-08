@@ -129,7 +129,7 @@ implicit none
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
 ! Initialization
-allocate(self%fld(self%nlat,self%nlon,self%nlev,self%nvar))
+allocate(self%fld(self%nlon,self%nlat,self%nlev,self%nvar))
 
 end subroutine gaugrid_alloc_field
 
@@ -199,7 +199,7 @@ character(len=*),intent(in) :: var                         !< Variable name
 real(kind_real),pointer,intent(inout) :: fldpointer(:,:,:) !< Field pointer
 
 self%vname(iv) = trim(var)
-fldpointer => self%fld(1:self%nlat,1:self%nlon,1:self%nlev,iv)
+fldpointer => self%fld(1:self%nlon,1:self%nlat,1:self%nlev,iv)
 
 end subroutine gaugrid_fld3d_pointer
 
@@ -218,7 +218,7 @@ character(len=*),intent(in) :: var                       !< Variable name
 real(kind_real),pointer,intent(inout) :: fldpointer(:,:) !< Field pointer
 
 self%vname(iv) = trim(var)
-fldpointer => self%fld(1:self%nlat,1:self%nlon,1,iv)
+fldpointer => self%fld(1:self%nlon,1:self%nlat,1,iv)
 
 end subroutine gaugrid_fld2d_pointer
 

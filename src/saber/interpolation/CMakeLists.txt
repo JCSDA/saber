@@ -9,7 +9,7 @@ InterpolatorBump.h
 InterpolatorBump.cc
 interpolatorbump_f.h
 interpolatorbump_interface.F90
-bump_interpolation_mod.F90
+interpolatorbump_mod.fypp
 
 PARENT_SCOPE
 )

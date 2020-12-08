@@ -11,9 +11,9 @@ module interpolatorbump_interface
 use atlas_module, only: atlas_functionspace,atlas_fieldset
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
+use interpolatorbump_mod
 use iso_c_binding
 use missing_values_mod
-use bump_interpolation_mod
 use type_fieldset
 
 private
@@ -55,10 +55,10 @@ fspace2 = atlas_functionspace(c_fspace2)
 
 if (c_associated(c_masks)) then
    masks = atlas_fieldset(c_masks)
-   call bint%init(f_config,f_comm,fspace1,fspace2,masks)
 else
-   call bint%init(f_config,f_comm,fspace1,fspace2)
+   masks = atlas_fieldset()
 endif
+call bint%init(f_comm,afunctionspace_in=fspace1,afunctionspace_out=fspace2,masks=masks,config=f_config)
 
 end subroutine bint_create_c
 

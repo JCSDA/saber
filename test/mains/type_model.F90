@@ -71,11 +71,6 @@ type model_type
    ! Ensembles
    type(fieldset_type),allocatable :: ens1(:)  !< Ensemble 1 members
    type(fieldset_type),allocatable :: ens2(:)  !< Ensemble 2 members
-
-   ! Observations locations
-   integer :: nobsa                            !< Number of observations, halo A
-   real(kind_real),allocatable :: lonobs(:)    !< Observations longitudes, halo A
-   real(kind_real),allocatable :: latobs(:)    !< Observations latitudes, halo A
 contains
    ! Model specific procedures
    procedure :: aro_coord => model_aro_coord
@@ -112,7 +107,6 @@ contains
    procedure :: read => model_read
    procedure :: read_member => model_read_member
    procedure :: load_ens => model_load_ens
-   procedure :: generate_obs => model_generate_obs
 end type model_type
 
 private
@@ -196,8 +190,6 @@ if (allocated(model%ens2)) then
    end do
    deallocate(model%ens2)
 end if
-if (allocated(model%lonobs)) deallocate(model%lonobs)
-if (allocated(model%latobs)) deallocate(model%latobs)
 call model%afunctionspace%final()
 call model%fieldset%final()
 
@@ -517,8 +509,8 @@ do img=1,model%nmg
    if (model%mg_to_proc(img)==mpl%myproc) then
       imga = imga+1
       model%mga_to_mg(imga) = img
-      lon_mga(imga) = model%lon(img)
-      lat_mga(imga) = model%lat(img)
+      lon_mga(imga) = model%lon(img)*rad2deg
+      lat_mga(imga) = model%lat(img)*rad2deg
    end if
 end do
 
@@ -856,82 +848,5 @@ do isub=1,nsub
 end do
 
 end subroutine model_load_ens
-
-!----------------------------------------------------------------------
-! Subroutine: model_generate_obs
-!> Generate observations locations
-!----------------------------------------------------------------------
-subroutine model_generate_obs(model,mpl,nam)
-
-implicit none
-
-! Passed variables
-class(model_type),intent(inout) :: model !< Model
-type(mpl_type),intent(inout) :: mpl      !< MPI data
-type(nam_type),intent(in) :: nam         !< Namelist
-
-! Local variables
-integer :: nres,delta,iproc,iobs,proc_to_nobsa(mpl%nproc),nn_index(10),img,inb
-real(kind_real) :: nn_dist(10),dist_obs
-character(len=1024),parameter :: subr = 'model_generate_obs'
-type(rng_type) :: rng
-type(tree_type) :: tree
-
-! Initialize random number generator
-call rng%init(mpl,nam)
-
-! Set number of observations for each processor
-nres = nam%nobs
-do iproc=1,mpl%nproc
-   delta = nam%nobs/mpl%nproc
-   if (nres>(mpl%nproc-iproc+1)*delta) delta = delta+1
-   proc_to_nobsa(iproc) = delta
-   nres = nres-delta
-end do
-
-! No observations on the last task
-if (nam%check_no_obs) then
-   if (mpl%nproc==1) call mpl%abort(subr,'at least 2 MPI tasks required for test_no_obs')
-   proc_to_nobsa(mpl%nproc-1) = proc_to_nobsa(mpl%nproc-1)+proc_to_nobsa(mpl%nproc)
-   proc_to_nobsa(mpl%nproc) = 0
-end if
-
-! Allocation
-model%nobsa = proc_to_nobsa(mpl%myproc)
-allocate(model%lonobs(model%nobsa))
-allocate(model%latobs(model%nobsa))
-call tree%alloc(mpl,model%nmg)
-
-! Initialization
-call tree%init(model%lon,model%lat)
-
-! Generate random observation network
-iobs = 1
-do while (iobs<=model%nobsa)
-   ! Generate observation
-   call rng%rand_real(-pi,pi,model%lonobs(iobs))
-   call rng%rand_real(-0.5*pi,0.5*pi,model%latobs(iobs))
-
-   ! Check distance with nearest neighbor
-   call tree%find_nearest_neighbors(model%lonobs(iobs),model%latobs(iobs),1,nn_index(1:1),nn_dist(1:1))
-   img = nn_index(1)
-   dist_obs = nn_dist(1)
-   call tree%find_nearest_neighbors(model%lon(img),model%lat(img),10,nn_index,nn_dist)
-   do inb=1,10
-      if (nn_dist(inb)>0.0) then
-         if (dist_obs<nn_dist(inb)) iobs=iobs+1
-         exit
-      end if
-   end do
-end do
-
-! Convert to degrees
-model%lonobs = model%lonobs*rad2deg
-model%latobs = model%latobs*rad2deg
-
-! Release memory
-call tree%dealloc
-
-end subroutine model_generate_obs
 
 end module type_model

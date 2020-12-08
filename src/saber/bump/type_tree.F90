@@ -93,8 +93,8 @@ implicit none
 
 ! Passed variables
 class(tree_type),intent(inout) :: tree    !< Tree
-real(kind_real),intent(in) :: lon(tree%n) !< Points longitudes (in radians)
-real(kind_real),intent(in) :: lat(tree%n) !< Points latitudes (in radians)
+real(kind_real),intent(in) :: lon(tree%n) !< Points longitudes [in radians]
+real(kind_real),intent(in) :: lat(tree%n) !< Points latitudes [in radians]
 
 ! Local variable
 integer :: i,ieff
@@ -162,8 +162,8 @@ implicit none
 
 ! Passed variables
 class(tree_type),intent(in) :: tree                 !< Tree
-real(kind_real),intent(in) :: lon                   !< Point longitude (in radians)
-real(kind_real),intent(in) :: lat                   !< Point latitude (in radians)
+real(kind_real),intent(in) :: lon                   !< Point longitude [in radians]
+real(kind_real),intent(in) :: lat                   !< Point latitude [in radians]
 integer,intent(in) :: nn                            !< Number of nearest neighbors to find
 integer,intent(out) :: nn_index(nn)                 !< Nearest neighbors index
 real(kind_real),intent(out),optional :: nn_dist(nn) !< Nearest neighbors distance
@@ -266,9 +266,9 @@ implicit none
 
 ! Passed variables
 class(tree_type),intent(in) :: tree !< Tree
-real(kind_real),intent(in) :: lon   !< Point longitude (in radians)
-real(kind_real),intent(in) :: lat   !< Point latitude (in radians)
-real(kind_real),intent(in) :: sr    !< Spherical radius (in radians)
+real(kind_real),intent(in) :: lon   !< Point longitude [in radians]
+real(kind_real),intent(in) :: lat   !< Point latitude [in radians]
+real(kind_real),intent(in) :: sr    !< Spherical radius [in radians]
 integer,intent(out) :: nn           !< Number of nearest neighbors found
 
 ! Local variable
