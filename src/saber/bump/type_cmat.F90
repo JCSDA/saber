@@ -596,7 +596,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,iv,jv
+integer :: ib,iv,jv,il0
 character(len=1024),parameter :: subr = 'cmat_from_nam'
 
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -629,8 +629,10 @@ do ib=1,bpar%nbe
       if (iv/=jv) call mpl%abort(subr,'only diagonal blocks for cmat_from_nam')
 
       ! Copy support radii
-      cmat%blk(ib)%rh = nam%rh
-      cmat%blk(ib)%rv = nam%rv
+      do il0=1,geom%nl0
+         cmat%blk(ib)%rh(:,il0) = nam%rh(il0,iv)
+         cmat%blk(ib)%rv(:,il0) = nam%rv(il0,iv)
+      end do
 
       ! Set coefficients
       cmat%blk(ib)%coef_ens = 1.0

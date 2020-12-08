@@ -60,9 +60,11 @@ type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Allocation
-allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
-allocate(var%m4(geom%nc0a,geom%nl0,nam%nv))
-if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv))
+if (.not.nam%forced_var) then
+   allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
+   allocate(var%m4(geom%nc0a,geom%nl0,nam%nv))
+   if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv))
+end if
 allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv))
 
 end subroutine var_alloc
@@ -134,9 +136,6 @@ filename = trim(nam%prefix)//'_var'
 ! Read raw variance, fourth-order moment, filtered variance and standard-deviation
 do iv=1,nam%nv
    call nam%io_key_value(trim(nam%variables(iv)),grpname)
-   call io%fld_read(mpl,nam,geom,filename,'m2',var%m2(:,:,iv),grpname)
-   call io%fld_read(mpl,nam,geom,filename,'m4',var%m4(:,:,iv),grpname)
-   if (nam%var_filter) call io%fld_read(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv),grpname)
    call io%fld_read(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
 end do
 
@@ -174,9 +173,11 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 ! Write raw variance, fourth-order moment, filtered variance and standard-deviation
 do iv=1,nam%nv
    call nam%io_key_value(trim(nam%variables(iv)),grpname)
-   call io%fld_write(mpl,nam,geom,filename,'m2',var%m2(:,:,iv),grpname)
-   call io%fld_write(mpl,nam,geom,filename,'m4',var%m4(:,:,iv),grpname)
-   if (nam%var_filter) call io%fld_write(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv),grpname)
+   if (.not.nam%forced_var) then
+      call io%fld_write(mpl,nam,geom,filename,'m2',var%m2(:,:,iv),grpname)
+      call io%fld_write(mpl,nam,geom,filename,'m4',var%m4(:,:,iv),grpname)
+      if (nam%var_filter) call io%fld_write(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv),grpname)
+   end if
    call io%fld_write(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
 end do
 
@@ -200,40 +201,61 @@ type(ens_type), intent(inout) :: ens !< Ensemble
 type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
-integer :: ic0a,il0
+integer :: ic0a,il0,iv
 
 ! Allocation
 call var%alloc(nam,geom)
 
-! Initialization
-var%ne = ens%ne
+if (nam%forced_var) then
+   ! Initialization
+   var%ne = 0
 
-! Compute variance
-write(mpl%info,'(a7,a)') '','Compute variance'
-call mpl%flush
-call ens%compute_moments(mpl,nam,geom)
-call ens%get_c0(mpl,nam,geom,'m2',0,var%m2)
-call ens%get_c0(mpl,nam,geom,'m4',0,var%m4)
-
-! Apply mask
-do il0=1,geom%nl0
-   do ic0a=1,geom%nc0a
-      if (.not.geom%gmask_c0a(ic0a,il0)) then
-         var%m2(ic0a,il0,:) = mpl%msv%valr
-         var%m4(ic0a,il0,:) = mpl%msv%valr
-      end if
+   ! Copy standard-deviation
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         var%m2sqrt(:,il0,iv) = nam%stddev(il0,iv)
+      end do
    end do
-end do
 
-if (nam%var_filter) then
-   ! Filter variance
-   call var%filter(mpl,rng,nam,geom)
-
-   ! Take square-root
-   var%m2sqrt = sqrt(var%m2flt)
+   ! Apply mask
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if (.not.geom%gmask_c0a(ic0a,il0)) then
+            var%m2sqrt(ic0a,il0,:) = mpl%msv%valr
+         end if
+      end do
+   end do
 else
-   ! Take square-root
-   var%m2sqrt = sqrt(var%m2)
+   ! Initialization
+   var%ne = ens%ne
+
+   ! Compute variance
+   write(mpl%info,'(a7,a)') '','Compute variance'
+   call mpl%flush
+   call ens%compute_moments(mpl,nam,geom)
+   call ens%get_c0(mpl,nam,geom,'m2',0,var%m2)
+   call ens%get_c0(mpl,nam,geom,'m4',0,var%m4)
+
+   ! Apply mask
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if (.not.geom%gmask_c0a(ic0a,il0)) then
+            var%m2(ic0a,il0,:) = mpl%msv%valr
+            var%m4(ic0a,il0,:) = mpl%msv%valr
+         end if
+      end do
+   end do
+
+   if (nam%var_filter) then
+      ! Filter variance
+      call var%filter(mpl,rng,nam,geom)
+
+      ! Take square-root
+      var%m2sqrt = sqrt(var%m2flt)
+   else
+      ! Take square-root
+      var%m2sqrt = sqrt(var%m2)
+   end if
 end if
 
 ! Write variance

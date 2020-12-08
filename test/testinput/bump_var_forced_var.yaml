@@ -1,13 +1,12 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_nicas_pos_def_test/test__MPI_-_OMP_"
+prefix: "bump_var_forced_var/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-write_cmat: 0
-new_nicas: 1
+new_var: 1
 
 # model_param
 nl: 2
@@ -16,30 +15,23 @@ nv: 2
 variables: ["u","q"]
 
 # ens1_param
+ens1_ne: 50
 
 # ens2_param
 
 # sampling_param
-ntry: 30
 
 # diag_param
+forced_var: 1
+stddev:
+  u: [2.0,1.0]
+  q: [1.0,0.5]
 
 # fit_param
 
 # nicas_param
-resol: 8.0
-subsamp: "h"
-mpicom: 2
-forced_radii: 1
-rh:
-  u: [4000.0e3]
-  q: [4000.0e3]
-rv:
-  u: [6000.0]
-  q: [6000.0]
-pos_def_test: 1
 
-# dirac_param
+# obsop_param
 
 # output_param
 

@@ -53,6 +53,7 @@ type bump_type
    type(rng_type) :: rng
    type(var_type) :: var
    type(vbal_type) :: vbal
+   logical :: dummy_logical
 contains
    procedure :: bump_create
    procedure :: bump_create_deprecated_atlas
@@ -132,11 +133,11 @@ real(kind_real) :: lmsvalr
 ! Initialize namelist
 call bump%nam%init(comm%size())
 
-! Read configuration
-call bump%nam%from_conf(conf)
-
 ! Read grid configuration
-call bump%nam%from_conf(grid)
+call bump%nam%from_conf(comm,grid)
+
+! Read configuration
+call bump%nam%from_conf(comm,conf)
 
 ! Set missing values
 lmsvali = dmsvali
@@ -1695,6 +1696,9 @@ implicit none
 
 ! Passed variables
 type(bump_type),intent(inout) :: bump !< BUMP
+
+! Dummy action to avoid compiler warning
+bump%dummy_logical = .false.
 
 end subroutine dummy
 

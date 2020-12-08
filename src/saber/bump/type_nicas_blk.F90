@@ -1528,6 +1528,7 @@ if ((trim(nicas_blk%subsamp)=='h').or.(trim(nicas_blk%subsamp)=='hv').or.(trim(n
    rhs_min_norm = real(count(mpl%msv%isnot(rhs_min)),kind_real)
    call mpl%f_comm%allreduce(rhs_min_norm,rhs_min_norm_tot,fckit_mpi_sum())
    rhs_minavg = rhs_minavg/rhs_min_norm_tot
+   if (.not.(rhs_minavg>0.0)) call mpl%abort(subr,'minimum horizontal support radius is zero but should be positive')
    nc1_real = 2.0*maxval(geom%area)*nam%resol**2/(sqrt(3.0)*rhs_minavg**2)
    if (nc1_real>real(huge_int,kind_real)) call mpl%abort(subr,'estimated nc1 is too large for an integer')
    nicas_blk%nc1 = floor(nc1_real)

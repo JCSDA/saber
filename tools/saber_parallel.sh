@@ -16,12 +16,12 @@ fi
 PWD=`pwd`
 if test "${PWD##*/}" != "test"; then
    echo "This script should be run from \${build_directory}/saber/test"
-   exit 2
+   exit 1
 fi
 tmp=${PWD%/test}
 if test "${tmp##*/}" != "saber"; then
    echo "This script should be run from \${build_directory}/saber/test"
-   exit 2
+   exit 1
 fi
 echo "Working directory: ${PWD}"
 
@@ -33,13 +33,26 @@ if test -z ${nproc}; then
 fi
 if test ${nproc} -lt 1; then
    echo "At least one processor is required"
-   exit 3
+   exit 1
 fi
 if test ${nproc} -gt ${nprocmax}; then
    echo "Only ${nprocmax} processor(s) are available"
-   exit 4
+   exit 1
 fi
 echo "Tests run on ${nproc} logical core(s) (${nprocmax} available)"
+
+# Compiler
+mpirun_path=`which mpirun`
+if [[ ${mpirun_path} == *"openmpi"* ]]; then
+   list_command="-cpu-list "
+fi
+if [[ ${mpirun_path} == *"intel"* ]]; then
+   list_command="-genv I_MPI_PIN_PROCESSOR_LIST="   
+fi
+if test "${list_command}" = "" ; then
+   echo "Cannot find what compiler is used for mpirun"
+   exit 1
+fi
 
 # Make temporary directory
 mkdir -p saber_ctest_log
@@ -97,7 +110,7 @@ ntest_tot=`printf "%03d" $((ntest_run+ntest_compare+ntest_plot+ntest_valgrind+nt
 itest=0
 if test ${ntest_tot} = 0; then
    echo "No test detected, this script should be run from \${build_directory}/saber/test"
-   exit 5
+   exit 1
 fi
 
 # Declare pids array
@@ -106,7 +119,7 @@ declare -A pids=()
 # Setup tests
 for setup in ${list_setup}; do
    echo "Handling process ${setup}" >> saber_ctest_log/execution.log
-   ctest -R ${setup} > saber_ctest_log/${setup}.log 2> saber_ctest_log/${setup}.err &
+   ctest -R ${setup}\$ > saber_ctest_log/${setup}.log 2> saber_ctest_log/${setup}.err &
    pids[${setup}]=$!
 done
 
@@ -142,7 +155,7 @@ done
 # Download tests
 for get in ${list_get}; do
    echo "Handling process ${get}" >> saber_ctest_log/execution.log
-   ctest -R ${get} > saber_ctest_log/${get}.log 2> saber_ctest_log/${get}.err &
+   ctest -R ${get}\$ > saber_ctest_log/${get}.log 2> saber_ctest_log/${get}.err &
    pids[${get}]=$!
 done
 
@@ -187,9 +200,8 @@ for run in ${list_run}; do
    echo "Handling process ${run}" >> saber_ctest_log/execution.log
 
    # Get command and arguments
-   ctest --timeout 0.00001 -VV -R ${run} > saber_ctest_log/${run}_fail.log 2>/dev/null
+   ctest --timeout 0.00001 -VV -R ${run}\$ > saber_ctest_log/${run}_fail.log 2>/dev/null
    tmp=`grep "Test command:" saber_ctest_log/${run}_fail.log`
-   cmd=`echo ${tmp} | awk '{print $4}'`
    exe=`echo ${tmp} | awk '{print $7,$8,$9}'`
    tmp1=${run%%_run}
    omp=${tmp1##*-}
@@ -276,7 +288,7 @@ for run in ${list_run}; do
    # Fire!
    echo "   Process ${run} is launched on CPUs ${cpu_list}" >> saber_ctest_log/execution.log
    export OMP_NUM_THREADS=${omp}
-   full_cmd="${cmd} \"-n\" \"${mpi}\" \"-cpu-list\" \"${cpu_list}\" ${exe} > saber_ctest_log/${run}.log 2> saber_ctest_log/${run}.err &"
+   full_cmd="mpirun ${list_command}${cpu_list} -n ${mpi} ${exe} > saber_ctest_log/${run}.log 2> saber_ctest_log/${run}.err &"
    eval ${full_cmd}
    pids[${run}]=$!
 done
@@ -323,9 +335,9 @@ for compare in ${list_compare}; do
    echo "Handling process ${compare}" >> saber_ctest_log/execution.log
 
    # Get command and arguments
-   ctest --timeout 0.00001 -VV -R ${compare} > saber_ctest_log/${compare}_fail.log 2>/dev/null
+   ctest --timeout 0.00001 -VV -R ${compare}\$ > saber_ctest_log/${compare}_fail.log 2>/dev/null
    tmp=`grep "Test command:" saber_ctest_log/${compare}_fail.log`
-   exe=`echo ${tmp} | awk '{print $4,$5,$6,$7}'`
+   exe=`echo ${tmp} | awk '{print $4,$5,$6,$7,$8}'`
    mpi=1
    omp=1
    mpixomp=$((mpi*omp))
@@ -406,7 +418,7 @@ for compare in ${list_compare}; do
    # Fire!
    echo "   Process ${compare} is launched on CPUs ${cpu_list}" >> saber_ctest_log/execution.log
    export OMP_NUM_THREADS=${omp}
-   full_cmd="mpirun \"-n\" \"${mpi}\" \"-cpu-list\" \"${cpu_list}\" ${exe} > saber_ctest_log/${compare}.log 2> saber_ctest_log/${compare}.err &"
+   full_cmd="mpirun ${list_command}\"${cpu_list}\" \"-n\" \"${mpi}\" ${exe} > saber_ctest_log/${compare}.log 2> saber_ctest_log/${compare}.err &"
    eval ${full_cmd}
    pids[${compare}]=$!
 done
@@ -453,7 +465,7 @@ for plot in ${list_plot}; do
    echo "Handling process ${plot}" >> saber_ctest_log/execution.log
 
    # Get command and arguments
-   ctest --timeout 0.00001 -VV -R ${plot} > saber_ctest_log/${plot}_fail.log 2>/dev/null
+   ctest --timeout 0.00001 -VV -R ${plot}\$ > saber_ctest_log/${plot}_fail.log 2>/dev/null
    tmp=`grep "Test command:" saber_ctest_log/${plot}_fail.log`
    exe=`echo ${tmp} | awk '{print $4,$5,$6,$7,$8,$9}'`
    mpi=1
@@ -583,7 +595,7 @@ for valgrind in ${list_valgrind}; do
    echo "Handling process ${valgrind}" >> saber_ctest_log/execution.log
 
    # Get command and arguments
-   ctest --timeout 0.00001 -VV -R ${valgrind} > saber_ctest_log/${valgrind}_fail.log 2>/dev/null
+   ctest --timeout 0.00001 -VV -R ${valgrind}\$ > saber_ctest_log/${valgrind}_fail.log 2>/dev/null
    tmp=`grep "Test command:" saber_ctest_log/${valgrind}_fail.log`
    cmd=`echo ${tmp} | awk '{print $4}'`
    exe=`echo ${tmp} | awk '{print $7,$8,$9,$10}'`
@@ -714,11 +726,10 @@ for qg in ${list_qg}; do
    echo "Handling process ${qg}" >> saber_ctest_log/execution.log
 
    # Get command and arguments
-   ctest -VV -R ${qg} > saber_ctest_log/${qg}.log 2> saber_ctest_log/${qg}.err
+   ctest -VV -R ${qg}\$ > saber_ctest_log/${qg}.log 2> saber_ctest_log/${qg}.err
 
    # Check if this process passed
    err=`wc -l saber_ctest_log/${qg}.err | awk '{print $1}'`
-#   echo -e "BENJ : " $err
    itest=$((itest+1))
    itest_tot=`printf "%03d" ${itest}`
    if test "${err}" = "0"; then
@@ -739,7 +750,7 @@ for interpolation in ${list_interpolation}; do
    echo "Handling process ${interpolation}" >> saber_ctest_log/execution.log
 
    # Get command and arguments
-   ctest -VV -R ${interpolation} > saber_ctest_log/${interpolation}.log 2> saber_ctest_log/${interpolation}.err
+   ctest -VV -R ${interpolation}\$ > saber_ctest_log/${interpolation}.log 2> saber_ctest_log/${interpolation}.err
 
    # Check if this process passed
    err=`wc -l saber_ctest_log/${interpolation}.err | awk '{print $1}'`

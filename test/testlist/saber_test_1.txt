@@ -18,7 +18,7 @@ bump_read_nicas
 bump_read_sampling
 bump_read_var
 bump_read_vbal
-bump_var_filter
+bump_var_forced_var
 bump_vbal
 bump_write_cmat
 bump_write_cmat_serial

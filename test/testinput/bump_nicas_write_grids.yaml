@@ -34,8 +34,12 @@ ntry: 30
 resol: 8.0
 mpicom: 2
 forced_radii: 1
-rh: 4000.0e3
-rv: 6000.0
+rh:
+  u: [4000.0e3]
+  q: [4000.0e3]
+rv:
+  u: [6000.0]
+  q: [6000.0]
 write_grids: 1
 
 # dirac_param

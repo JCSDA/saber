@@ -42,8 +42,12 @@ fast_sampling: 1
 subsamp: "h"
 mpicom: 2
 forced_radii: 1
-rh: 2500.0e3
-rv: 10.0
+rh:
+  tn: [2500.0e3]
+  common: [2500.0e3]
+rv:
+  tn: [10.0]
+  common: [10.0]
 
 # dirac_param
 ndir: 20

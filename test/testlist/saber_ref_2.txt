@@ -78,6 +78,8 @@ bump_lct_write_cor/test_1-1_lct.nc
 bump_lct_write_grids/test_1-1_lct.nc
 bump_lct_write_grids/test_1-1_sampling_000001-000001.nc
 bump_lct_write_grids/test_1-1_sampling_grids_000001-000001.nc
+bump_nicas_fixed_radii_profiles/test_1-1_dirac.nc
+bump_nicas_fixed_radii_profiles/test_1-1_nicas_000001-000001.nc
 bump_nicas_mpicom_lsqrt_a/test_1-1_dirac.nc
 bump_nicas_mpicom_lsqrt_a/test_1-1_nicas_000001-000001.nc
 bump_nicas_mpicom_lsqrt_b/test_1-1_dirac.nc
@@ -94,6 +96,7 @@ bump_nicas_subsamp_vh/test_1-1_nicas_000001-000001.nc
 bump_nicas_write_grids/test_1-1_dirac.nc
 bump_nicas_write_grids/test_1-1_nicas_000001-000001.nc
 bump_nicas_write_grids/test_1-1_nicas_grids_000001-000001.nc
+bump_var_filter/test_1-1_var.nc
 bump_vbal_dlat/test_1-1_dirac.nc
 bump_vbal_dlat/test_1-1_vbal_000001-000001.nc
 bump_vbal_diag_auto/test_1-1_dirac.nc

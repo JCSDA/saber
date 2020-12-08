@@ -1,0 +1,34 @@
+background error:
+  covariance model: BUMP
+  bump:
+    datadir: testdata
+    load_nicas: 1
+    mpicom: 2
+    prefix: qg_dirac_bump_cov_no_ens/test
+    strategy: specific_univariate
+  variable changes:
+  - variable change: StdDev
+    input variables: [x]
+    output variables: [x]
+    bump:
+      datadir: testdata
+      load_var: 1
+      prefix: qg_dirac_bump_cov_no_ens/test
+dirac:
+  date: 2010-01-01T12:00:00Z
+  ixdir: [20]
+  iydir: [10]
+  izdir: [1]
+geometry:
+  nx: 40
+  ny: 20
+  depths: [4500.0, 5500.0]
+initial condition:
+  date: 2010-01-01T12:00:00Z
+  filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+model:
+  tstep: PT1H
+output B:
+  datadir: testdata/qg_dirac_bump_cov_no_ens
+  exp: B
+  type: an

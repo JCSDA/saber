@@ -1152,8 +1152,8 @@ do k=n,1,-1
       ! Shift from bottom 2*2 minor
       x = q(l)
       if (k>1) then
-         y = q(k-1)
-         g = e(k-1)
+         y = q(max(k-1,1))
+         g = e(max(k-1,1))
       else
          call mpl%abort(subr,'index below the lower bound')
       end if

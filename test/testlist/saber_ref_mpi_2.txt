@@ -40,6 +40,8 @@ bump_lct_write_grids/test_2-1_sampling_000002-000001.nc
 bump_lct_write_grids/test_2-1_sampling_000002-000002.nc
 bump_lct_write_grids/test_2-1_sampling_grids_000002-000001.nc
 bump_lct_write_grids/test_2-1_sampling_grids_000002-000002.nc
+bump_nicas_fixed_radii_profiles/test_2-1_nicas_000002-000001.nc
+bump_nicas_fixed_radii_profiles/test_2-1_nicas_000002-000002.nc
 bump_nicas_mpicom_lsqrt_a/test_2-1_nicas_000002-000001.nc
 bump_nicas_mpicom_lsqrt_a/test_2-1_nicas_000002-000002.nc
 bump_nicas_mpicom_lsqrt_b/test_2-1_nicas_000002-000001.nc

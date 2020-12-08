@@ -38,7 +38,10 @@ ne: 50
 resol: 8.0
 mpicom: 2
 forced_radii: 1
-rh: 4000.0e3
+rh:
+  q: [4000.0e3]
+rv:
+  q: [0.0]
 
 # dirac_param
 

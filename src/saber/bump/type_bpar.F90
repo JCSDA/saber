@@ -60,12 +60,10 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Number of blocks
 bpar%nb = nam%nv**2
 bpar%nbe = bpar%nb
-if (bpar%nb>1) then
-   select case (nam%strategy)
-   case ('common','common_weighted')
-      bpar%nbe = bpar%nb+1
-   end select
-end if
+select case (nam%strategy)
+case ('common','common_weighted')
+   bpar%nbe = bpar%nb+1
+end select
 
 ! Allocation
 bpar%nl0rmax = min(nam%nl0r,geom%nl0)

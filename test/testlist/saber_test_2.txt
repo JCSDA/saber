@@ -38,6 +38,7 @@ bump_lct_qc
 bump_lct_two_scales
 bump_lct_write_cor
 bump_lct_write_grids
+bump_nicas_fixed_radii_profiles
 bump_nicas_mpicom_lsqrt_a
 bump_nicas_mpicom_lsqrt_b
 bump_nicas_mpicom_lsqrt_c
@@ -46,6 +47,7 @@ bump_nicas_subsamp_h
 bump_nicas_subsamp_hv
 bump_nicas_subsamp_vh
 bump_nicas_write_grids
+bump_var_filter
 bump_vbal_dlat
 bump_vbal_diag_auto
 bump_vbal_diag_reg

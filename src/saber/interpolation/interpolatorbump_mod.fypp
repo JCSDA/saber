@@ -201,7 +201,7 @@ if (present(config)) then
    ! Optionally override defaults with BUMP config
    if (config%has("bump")) then
       call config%get_or_die("bump",bump_config)
-      call self%bump%nam%from_conf(bump_config)
+      call self%bump%nam%from_conf(comm,bump_config)
    end if
 
    ! Optionally set levels

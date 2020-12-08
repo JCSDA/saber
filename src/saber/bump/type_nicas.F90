@@ -62,7 +62,6 @@ contains
    procedure :: test_adjoint => nicas_test_adjoint
    procedure :: test_dirac => nicas_test_dirac
    procedure :: test_randomization => nicas_test_randomization
-   procedure :: test_consistency => nicas_test_consistency
    procedure :: test_optimality => nicas_test_optimality
 end type nicas_type
 
@@ -662,7 +661,7 @@ if (nam%check_consistency) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Test HDIAG-NICAS consistency'
    call mpl%flush
-   call nicas%test_consistency(mpl,rng,nam,geom,bpar,io)
+   call nicas_test_consistency(mpl,rng,nam,geom,bpar,io)
 end if
 
 if (nam%check_optimality) then
@@ -1757,23 +1756,23 @@ end subroutine nicas_test_randomization
 ! Subroutine: nicas_test_consistency
 !> Test HDIAG-NICAS consistency with a randomization method
 !----------------------------------------------------------------------
-subroutine nicas_test_consistency(nicas,mpl,rng,nam,geom,bpar,io)
+subroutine nicas_test_consistency(mpl,rng,nam,geom,bpar,io)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas !< NICAS data
-type(mpl_type),intent(inout) :: mpl      !< MPI data
-type(rng_type),intent(inout) :: rng      !< Random number generator
-type(nam_type),intent(inout) :: nam      !< Namelist variables
-type(geom_type),intent(inout) :: geom    !< Geometry
-type(bpar_type),intent(in) :: bpar       !< Block parameters
-type(io_type),intent(in) :: io           !< I/O
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(rng_type),intent(inout) :: rng   !< Random number generator
+type(nam_type),intent(inout) :: nam   !< Namelist variables
+type(geom_type),intent(inout) :: geom !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+type(io_type),intent(in) :: io        !< I/O
 
 ! Local variables
 integer,parameter :: nrad = 5
-integer :: irad,ib,il0
-real(kind_real) :: rh,rv,rad(nrad),rh_diag(nrad),rv_diag(nrad),rh_norm,rv_norm
+integer :: irad,ib,il0,iv
+real(kind_real) :: rh(geom%nl0,0:nam%nv),rv(geom%nl0,0:nam%nv)
+real(kind_real) :: rad(nrad),rh_diag(geom%nl0,bpar%nbe,nrad),rv_diag(geom%nl0,bpar%nbe,nrad)
 logical :: write_nicas
 character(len=1024) :: prefix
 type(cmat_type) :: cmat
@@ -1783,11 +1782,13 @@ type(nicas_type) :: nicas_test
 
 ! Initialization
 cmat%allocated = .false.
+rh_diag = mpl%msv%valr
+rv_diag = mpl%msv%valr
 
 ! Save namelist parameters
 prefix = nam%prefix
-rh = nam%rh
-rv = nam%rv
+rh = nam%rh(1:geom%nl0,0:nam%nv)
+rv = nam%rv(1:geom%nl0,0:nam%nv)
 write_nicas = nam%write_nicas
 
 do irad=1,nrad
@@ -1800,8 +1801,8 @@ do irad=1,nrad
    call mpl%flush
 
    ! Copy namelist support radii into C matrix
-   nam%rh = rh*rad(irad)
-   nam%rv = rv*rad(irad)
+   nam%rh(1:geom%nl0,0:nam%nv) = rh*rad(irad)
+   nam%rv(1:geom%nl0,0:nam%nv) = rv*rad(irad)
    call cmat%from_nam(mpl,nam,geom,bpar)
 
    ! Setup C matrix sampling
@@ -1821,26 +1822,17 @@ do irad=1,nrad
    if (nam%default_seed) call rng%reseed(mpl)
 
    ! Save result
-   rh_diag(irad) = 0.0
-   rv_diag(irad) = 0.0
-   rh_norm = 0.0
-   rv_norm = 0.0
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
+         iv = bpar%b_to_v1(ib)
          do il0=1,geom%nl0
-            if (hdiag%cor_1%blk(0,ib)%fit_rh(il0)>0.0) then
-               rh_diag(irad) = rh_diag(irad)+hdiag%cor_1%blk(0,ib)%fit_rh(il0)
-               rh_norm = rh_norm+1.0
-            end if
-            if (hdiag%cor_1%blk(0,ib)%fit_rv(il0)>0.0) then
-               rv_diag(irad) = rv_diag(irad)+hdiag%cor_1%blk(0,ib)%fit_rv(il0)
-               rv_norm = rv_norm+1.0
-            end if
+            if ((hdiag%cor_1%blk(0,ib)%fit_rh(il0)>0.0).and.(nam%rh(il0,iv)>0.0)) &
+ & rh_diag(il0,ib,irad) = hdiag%cor_1%blk(0,ib)%fit_rh(il0)/nam%rh(il0,iv)
+            if ((hdiag%cor_1%blk(0,ib)%fit_rv(il0)>0.0).and.(nam%rv(il0,iv)>0.0)) &
+ & rv_diag(il0,ib,irad) = hdiag%cor_1%blk(0,ib)%fit_rv(il0)/nam%rv(il0,iv)
          end do
       end if
    end do
-   if (rh_norm>0.0) rh_diag(irad) = rh_diag(irad)/rh_norm
-   if (rv_norm>0.0) rv_diag(irad) = rv_diag(irad)/rv_norm
 
    ! Write
    if (nam%write_hdiag) then
@@ -1860,22 +1852,30 @@ end do
 do irad=1,nrad
    write(mpl%info,'(a7,a,f4.2,a)') '','Radii factor: ',rad(irad),':'
    call mpl%flush
-   if (rh_diag(irad)>0.0) then
-      write(mpl%info,'(a10,a,f10.2,a,f10.2,a,f5.3,a)') '','Diagnostic for rh: ',rh*rad(irad)*reqkm,' ~> ',rh_diag(irad)*reqkm, &
- & ' (',rh*rad(irad)/rh_diag(irad),')'
-      call mpl%flush
-   end if
-   if (rv_diag(irad)>0.0) then
-      write(mpl%info,'(a10,a,f10.2,a,f10.2,a,f5.3,a)') '','Diagnostic for rv: ',rv*rad(irad),' ~> ',rv_diag(irad), &
- & ' (',rv*rad(irad)/rv_diag(irad),')'
-      call mpl%flush
-   end if
+   do ib=1,bpar%nbe
+      if (bpar%nicas_block(ib)) then
+         write(mpl%info,'(a10,a)') '','Block: '//trim(bpar%blockname(ib))
+         do il0=1,geom%nl0
+            if (mpl%msv%isnot(rh_diag(il0,ib,irad))) then
+               write(mpl%info,'(a13,a,i3,a,f5.3)') '','Level ',nam%levs(il0),' ~> ',rh_diag(il0,ib,irad)
+               call mpl%flush(.false.)
+            end if
+            if (mpl%msv%isnot(rv_diag(il0,ib,irad))) then
+               write(mpl%info,'(a,f5.3)') ' / ',rv_diag(il0,ib,irad)
+               call mpl%flush
+            else
+               write(mpl%info,'(a)') ''
+               call mpl%flush
+            end if
+         end do
+      end if
+   end do
 end do
 
 ! Reset namelist parameters
 nam%prefix = prefix
-nam%rh = rh
-nam%rv = rv
+nam%rh(1:geom%nl0,0:nam%nv) = rh
+nam%rv(1:geom%nl0,0:nam%nv) = rv
 nam%write_nicas = write_nicas
 
 end subroutine nicas_test_consistency
@@ -1898,7 +1898,7 @@ type(bpar_type),intent(in) :: bpar    !< Block parameters
 type(io_type),intent(in) :: io        !< I/O
 
 ! Local variables
-integer :: ib,ifac,itest,il0
+integer :: ib,ifac,itest,il0,iv
 real(kind_real) :: fac(-nfac_opt:nfac_opt),mse(ntest,-nfac_opt:nfac_opt),mse_sum,mse_max,rh_sum,rh_tot,rv_sum,rv_tot
 real(kind_real) :: fld_ref(geom%nc0a,geom%nl0,nam%nv,ntest),fld_save(geom%nc0a,geom%nl0,nam%nv,ntest)
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
@@ -2015,11 +2015,12 @@ do ifac=-nfac_opt,nfac_opt
       mse_max = sum(mse(:,ifac))
       do ib=1,bpar%nbe
          if (bpar%nicas_block(ib)) then
+            iv = bpar%b_to_v1(ib)
             do il0=1,geom%nl0
                rh_sum = sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rh(:,il0)))
                call mpl%f_comm%allreduce(rh_sum,rh_tot,fckit_mpi_sum())
                loc_opt%blk(0,ib)%fit_rh = rh_tot/real(geom%nc0_gmask(il0),kind_real)
-               if ((nam%nl>1).and.(nam%rv>0.0)) then
+               if ((nam%nl>1).and.(nam%rv(il0,iv)>0.0)) then
                   rv_sum = sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rv(:,il0)))
                   call mpl%f_comm%allreduce(rv_sum,rv_tot,fckit_mpi_sum())
                   loc_opt%blk(0,ib)%fit_rv = rv_tot/real(geom%nc0_gmask(il0),kind_real)

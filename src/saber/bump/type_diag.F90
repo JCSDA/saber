@@ -626,7 +626,7 @@ type(avg_type),intent(in) :: avg       !< Averaged statistics
 character(len=*),intent(in) :: prefix  !< Diagnostic prefix
 
 ! Local variables
-integer :: ib,ic2a,il0
+integer :: ib,ic2a,il0,iv
 
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
@@ -644,8 +644,9 @@ do ib=1,bpar%nbe
 
          if (nam%forced_radii) then
             ! No normalization/fitting, use forced radii
-            diag%blk(ic2a,ib)%fit_rh = nam%rh
-            diag%blk(ic2a,ib)%fit_rv = nam%rv
+            iv = bpar%b_to_v1(ib)
+            diag%blk(ic2a,ib)%fit_rh = nam%rh(1:geom%nl0,iv)
+            diag%blk(ic2a,ib)%fit_rv = nam%rv(1:geom%nl0,iv)
          else
             ! Normalization
             call diag%blk(ic2a,ib)%normalization(geom,bpar)

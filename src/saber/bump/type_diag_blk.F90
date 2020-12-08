@@ -659,9 +659,9 @@ type(bpar_type),intent(in) :: bpar             !< Block parameters
 type(avg_blk_type),intent(in) :: avg_blk       !< Averaged statistics block
 
 ! Local variables
-integer :: il0,jl0r,jl0,jc3
+integer :: il0,jl0r,jl0,jc3,iv
 real(kind_real) :: wgt,a,bc,d,e,f,num_ens,num_sta,num,den
-real(kind_real),allocatable :: coef_ens(:),rh(:),rv(:)
+real(kind_real),allocatable :: coef_ens(:)
 
 ! Associate
 associate(ib=>diag_blk%ib)
@@ -669,17 +669,14 @@ associate(ib=>diag_blk%ib)
 if (nam%forced_radii) then
    ! Allocation
    allocate(coef_ens(geom%nl0))
-   allocate(rh(geom%nl0))
-   allocate(rv(geom%nl0))
 
    ! Initialization
    coef_ens = 1.0
-   rh = nam%rh
-   rv = nam%rv
 
    ! Compute forced localization function
+   iv = bpar%b_to_v1(ib)
    call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
- & coef_ens,rh,rv,diag_blk%raw)
+ & coef_ens,nam%rh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),diag_blk%raw)
    diag_blk%valid = mpl%msv%valr
 
    ! Compute hybrid weights
@@ -719,8 +716,6 @@ if (nam%forced_radii) then
 
    ! Release memory
    deallocate(coef_ens)
-   deallocate(rh)
-   deallocate(rv)
 else
    ! Compute raw hybridization
    num = 0.0

@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_nicas_fast_sampling/test__MPI_-_OMP_"
+prefix: "bump_nicas_fixed_radii_profiles/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
@@ -31,16 +31,15 @@ ntry: 30
 
 # nicas_param
 resol: 8.0
-fast_sampling: 1
 subsamp: "h"
 mpicom: 2
 forced_radii: 1
 rh:
-  u: [4000.0e3]
-  q: [4000.0e3]
+  u: [4000.0e3,2000.0e3]
+  q: [3000.0e3,1500.0e3]
 rv:
-  u: [6000.0]
-  q: [6000.0]
+  u: [6000.0,3000.0]
+  q: [4000.0,2000.0]
 
 # dirac_param
 ndir: 1
@@ -49,6 +48,8 @@ latdir: [65.0]
 levdir: [1]
 ivdir: [1]
 itsdir: [1]
+
+# obsop_param
 
 # output_param
 

@@ -7,7 +7,9 @@
 !----------------------------------------------------------------------
 subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
 
+use fckit_configuration_module, only: fckit_configuration,fckit_yamlconfiguration
 use fckit_mpi_module, only: fckit_mpi_comm
+use fckit_pathname_module, only : fckit_pathname
 use iso_c_binding
 use iso_fortran_env, only : output_unit
 use type_bump, only: bump_type
@@ -26,6 +28,8 @@ character(c_char),intent(in) :: arg2(n2) !< Second argument
 ! Local variables
 integer :: i,ppos,iproc,ie,ifileunit
 character(len=1024) :: inputfile,logdir,ext,filename
+type(fckit_configuration) :: conf
+
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
 type(model_type) :: model
@@ -66,8 +70,14 @@ case ('nam')
    ! Namelist
    call bump%nam%read(mpl,inputfile)
 case ('yaml')
-   ! yaml
-   call bump%nam%read_yaml(mpl,inputfile)
+   ! YAML file
+   if (mpl%main) then
+      ! Set fckit configuration from input file
+      conf = fckit_yamlconfiguration(fckit_pathname(inputfile))
+
+      ! Convert fckit configuration to namelist
+      call bump%nam%from_conf(f_comm,conf)
+   end if
 case default
    ! Wrong extension
    write(output_unit,'(a)') 'Error: input file has a wrong extension (should be .nam or .yaml)'
