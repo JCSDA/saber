@@ -1,3 +1,4 @@
+#:include '../generics.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_repro
 !> Reproducibility functions
@@ -8,7 +9,7 @@
 module tools_repro
 
 use tools_const, only: pi
-use tools_kinds, only: kind_real
+use tools_kinds, only: kind_int,kind_real
 use type_mpl, only: mpl_type
 
 implicit none
@@ -16,112 +17,152 @@ implicit none
 logical :: repro = .true.                  !< Reproducibility flag
 real(kind_real),parameter :: rth = 1.0e-12 !< Reproducibility threshold
 
+interface eq
+  #:for dtype,ftype in types_irl
+     module procedure eq_${dtype}$
+  #:endfor
+end interface
+interface inf
+  #:for dtype,ftype in types_ir
+     module procedure inf_${dtype}$
+  #:endfor
+end interface
+interface infeq
+  #:for dtype,ftype in types_ir
+     module procedure infeq_${dtype}$
+  #:endfor
+end interface
+interface sup
+  #:for dtype,ftype in types_ir
+     module procedure sup_${dtype}$
+  #:endfor
+end interface
+interface supeq
+  #:for dtype,ftype in types_ir
+     module procedure supeq_${dtype}$
+  #:endfor
+end interface
+
 private
 public :: repro,rth
 public :: eq,inf,infeq,sup,supeq,indist,small
 
 contains
 
+#:for dtype,ftype in types_irl
 !----------------------------------------------------------------------
-! Function: eq
-!> Equal test for reals
+! Function: eq_${dtype}$
+!> Equal test for ${dtype}$
 !----------------------------------------------------------------------
-function eq(x,y) result(test)
+function eq_${dtype}$(x,y) result(test)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: x !< First real
-real(kind_real),intent(in) :: y !< Second real
+${ftype}$,intent(in) :: x !< First real
+${ftype}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
-if (repro) then
-   test = indist(x,y)
-else
-   test = .not.(abs(x-y)>0.0)
-end if
+#{if dtype == 'int'}# test = (x==y) #{endif}#
+#:if dtype == 'real'
+   if (repro) then
+      test = indist(x,y)
+   else
+      test = .not.(abs(x-y)>0.0)
+   end if
+#:endif
+#{if dtype == 'logical'}# test = (x.eqv.y) #{endif}#
 
-end function eq
+end function eq_${dtype}$
+#:endfor
 
+#:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Function: inf
-!> Inferior test for reals
+! Function: inf_${dtype}$
+!> Inferior test for ${dtype}$
 !----------------------------------------------------------------------
-function inf(x,y) result(test)
+function inf_${dtype}$(x,y) result(test)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: x !< First real
-real(kind_real),intent(in) :: y !< Second real
+${ftype}$,intent(in) :: x !< First real
+${ftype}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 test = (x<y)
-if (repro) test = test.and.(.not.indist(x,y))
+#{if dtype == 'real'}# if (repro) test = test.and.(.not.indist(x,y)) #{endif}#
 
-end function inf
+end function inf_${dtype}$
+#:endfor
 
+#:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Function: infeq
-!> Inferior or equal test for reals
+! Function: infeq_${dtype}$
+!> Inferior or equal test for ${dtype}$
 !----------------------------------------------------------------------
-function infeq(x,y) result(test)
+function infeq_${dtype}$(x,y) result(test)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: x !< First real
-real(kind_real),intent(in) :: y !< Second real
+${ftype}$,intent(in) :: x !< First real
+${ftype}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 test = inf(x,y).or.eq(x,y)
 
-end function infeq
+end function infeq_${dtype}$
+#:endfor
 
+#:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Function: sup
-!> Superior test for reals
+! Function: sup_${dtype}$
+!> Superior test for ${dtype}$
 !----------------------------------------------------------------------
-function sup(x,y) result(test)
+function sup_${dtype}$(x,y) result(test)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: x !< First real
-real(kind_real),intent(in) :: y !< Second real
+${ftype}$,intent(in) :: x !< First real
+${ftype}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 test = (x>y)
-if (repro) test = test.and.(.not.indist(x,y))
+#{if dtype == 'real'}# if (repro) test = test.and.(.not.indist(x,y)) #{endif}#
 
-end function sup
+end function sup_${dtype}$
+#:endfor
 
+#:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Function: supeq
-!> Superior or equal test for reals
+! Function: supeq_${dtype}$
+!> Superior or equal test for ${dtype}$
 !----------------------------------------------------------------------
-function supeq(x,y) result(test)
+function supeq_${dtype}$(x,y) result(test)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: x !< First real
-real(kind_real),intent(in) :: y !< Second real
+${ftype}$,intent(in) :: x !< First real
+${ftype}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 test = sup(x,y).or.eq(x,y)
 
-end function supeq
+end function supeq_${dtype}$
+#:endfor
 
 !----------------------------------------------------------------------
 ! Function: indist
@@ -140,7 +181,7 @@ logical :: test
 
 test = .false.
 if (repro) then
-   if ((abs(x)>0.0).or.(abs(y)>0.0)) then
+      if ((abs(x)>0.0).or.(abs(y)>0.0)) then
       test = abs(x-y)<rth*(abs(x+y))
    else
       test = .true.

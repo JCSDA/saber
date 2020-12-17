@@ -1,5 +1,5 @@
 !----------------------------------------------------------------------
-! Module: tools_generics
+! Header: generics
 !> Generic ranks, dimensions and types
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
@@ -8,16 +8,24 @@
 
 #:mute
 
+#:set ranks_12 = [1,2]
 #:set ranks_123 = [1,2,3]
+#:set ranks_1234 = [1,2,3,4]
+#:set ranks_123456 = [1,2,3,4,5,6]
 #:set ranks_23 = [2,3]
-#:set dim = ['',':',':,:',':,:,:',':,:,:,:',':,:,:,:,:']
+
+#:set dim = ['',':',':,:',':,:,:',':,:,:,:',':,:,:,:,:',':,:,:,:,:,:']
+
+#:set ftypes_ir = ['integer(kind_int)','real(kind_real)']
+#:set dtypes_ir = ['int','real']
+#:set types_ir = list(zip(dtypes_ir,ftypes_ir))
 
 #:set ftypes_irl = ['integer(kind_int)','real(kind_real)','logical']
 #:set dtypes_irl = ['int','real','logical']
 #:set types_irl = list(zip(dtypes_irl,ftypes_irl))
 
-#:set ftypes_ir = ['integer(kind_int)','real(kind_real)']
-#:set dtypes_ir = ['int','real']
-#:set types_ir = list(zip(dtypes_ir,ftypes_ir))
+#:set ftypes_irls = ['integer(kind_int)','real(kind_real)','logical','character(len=*)']
+#:set dtypes_irls = ['int','real','logical','string']
+#:set types_irls = list(zip(dtypes_irls,ftypes_irls))
 
 #:endmute

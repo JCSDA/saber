@@ -117,7 +117,7 @@ do i=1,tree%n
 end do
 
 ! Create geometry
-ageometry = atlas_geometry("UnitSphere")
+ageometry = atlas_geometry('UnitSphere')
 
 ! Create KDTree
 lon_deg = tree%lon*rad2deg

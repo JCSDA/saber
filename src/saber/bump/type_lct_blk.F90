@@ -845,7 +845,7 @@ do iscales=1,lct_blk%nscales
    write(mpl%info,'(a13,a)') '','Interpolate components'
    call mpl%flush
    do icomp=1,2*4+2
-      call samp%com_AB%ext(mpl,geom%nl0,fld_c2a(:,:,icomp),fld_c2b)
+      call samp%com_AB%ext(mpl,fld_c2a(:,:,icomp),fld_c2b)
       do il0=1,geom%nl0
          il0i = min(il0,geom%nl0i)
          call samp%h(il0i)%apply(mpl,fld_c2b(:,il0),fld(:,il0,icomp))

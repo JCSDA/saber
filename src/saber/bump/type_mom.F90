@@ -338,7 +338,7 @@ do isub=1,ens%nsub
          jv = bpar%b_to_v2(ib)
 
          ! Halo extension
-         if (iv==jv) call samp%com_AC%ext(mpl,geom%nl0,fld_c0a(:,:,iv),fld_ext(:,:,iv))
+         if (iv==jv) call samp%com_AC%ext(mpl,fld_c0a(:,:,iv),fld_ext(:,:,iv))
       end do
 
       do ib=1,bpar%nb

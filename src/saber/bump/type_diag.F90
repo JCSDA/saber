@@ -179,7 +179,7 @@ if (nam%local_diag) then
             end do
 
             ! Interpolation
-            call samp%com_AB%ext(mpl,geom%nl0,fld_c2a,fld_c2b)
+            call samp%com_AB%ext(mpl,fld_c2a,fld_c2b)
             do il0=1,geom%nl0
                il0i = min(il0,geom%nl0i)
                call samp%h(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0))

@@ -1,3 +1,4 @@
+#:include '../generics.fypp'
 ! (C) Copyright 2019-2020 UCAR
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -10,9 +11,6 @@
 !! written by Benjamin Menetrier (JCSDA/UCAR, CERFACS, METEO-FRANCE, IRIT)
 !! \date Dec, 2020: Updated by B. Menetrier (JCSDA/IRIT) to use FYPP preprocessing directives
 ! ------------------------------------------------------------------------------
-
-#:include "util/tools_generics.fypp"
-
 module interpolatorbump_mod
 
 use atlas_module, only: atlas_functionspace,atlas_fieldset,atlas_field,atlas_real
@@ -76,46 +74,46 @@ contains
    procedure,private :: driver => bint_driver
    procedure,public :: init => bint_init
    procedure,public :: bint_apply
-#:for dtype,ftype in types_irl
-#:for rank_in in ranks_123
-#:for rank_out in ranks_123
-   procedure,public :: bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
-#:endfor
-#:endfor
-#:endfor
-#:for dtype,ftype in types_irl
-   procedure,private :: apply_interp_${dtype}$
-#:endfor
+   #:for dtype,ftype in types_irl
+      #:for rank_in in ranks_123
+         #:for rank_out in ranks_123
+            procedure,public :: bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
+         #:endfor
+      #:endfor
+   #:endfor
+   #:for dtype,ftype in types_irl
+      procedure,private :: apply_interp_${dtype}$
+   #:endfor
    procedure,public :: bint_apply_ad
-#:for rank_out in ranks_123
-#:for rank_in in ranks_123
-   procedure,public :: bint_apply_ad_r${rank_in}$_r${rank_out}$
-#:endfor
-#:endfor
+   #:for rank_out in ranks_123
+      #:for rank_in in ranks_123
+         procedure,public :: bint_apply_ad_r${rank_in}$_r${rank_out}$
+      #:endfor
+   #:endfor
    procedure,private :: apply_interp_ad
    procedure :: deallocate_outgrid => bint_deallocate_outgrid
    procedure,public :: delete => bint_delete
    procedure,public :: dummy_method
    generic,public :: apply => bint_apply, &
-#:for dtype,ftype in types_irl
-#:for rank_in in ranks_123
-#:for rank_out in ranks_123
+   #:for dtype,ftype in types_irl
+      #:for rank_in in ranks_123
+         #:for rank_out in ranks_123
  & bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$, &
-#:endfor
-#:endfor
-#:endfor
+         #:endfor
+      #:endfor
+   #:endfor
  & dummy_method
    generic,public :: apply_interp => &
-#:for dtype,ftype in types_irl
+   #:for dtype,ftype in types_irl
  & apply_interp_${dtype}$, &
-#:endfor
+   #:endfor
  & dummy_method
    generic,public :: apply_ad => bint_apply_ad, &
-#:for rank_out in ranks_123
-#:for rank_in in ranks_123
+   #:for rank_out in ranks_123
+     #:for rank_in in ranks_123
  &  bint_apply_ad_r${rank_in}$_r${rank_out}$, &
-#:endfor
-#:endfor
+      #:endfor
+   #:endfor
  & dummy_method
   final :: dummy
 end type bump_interpolator
@@ -199,17 +197,17 @@ msvalr = -999.0
 
 if (present(config)) then
    ! Optionally override defaults with BUMP config
-   if (config%has("bump")) then
-      call config%get_or_die("bump",bump_config)
+   if (config%has('bump')) then
+      call config%get_or_die('bump',bump_config)
       call self%bump%nam%from_conf(comm,bump_config)
    end if
 
    ! Optionally set levels
-   if (config%has("nlevels")) call config%get_or_die("nlevels",self%bump%nam%nl)
+   if (config%has('nlevels')) call config%get_or_die('nlevels',self%bump%nam%nl)
 
    ! Optionally set missing values for integers and reals
-   if (config%has("missingvalue_int")) call config%get_or_die("missingvalue_int",msvali)
-   if (config%has("missingvalue_real")) call config%get_or_die("missingvalue_real",msvalr)
+   if (config%has('missingvalue_int')) call config%get_or_die('missingvalue_int',msvali)
+   if (config%has('missingvalue_real')) call config%get_or_die('missingvalue_real',msvalr)
 end if 
 
 ! Input ATLAS functionspace
@@ -517,8 +515,8 @@ deallocate(array_out)
 end subroutine bint_apply
 
 #:for dtype,ftype in types_irl
-#:for rank_in in ranks_123
-#:for rank_out in ranks_123
+   #:for rank_in in ranks_123
+      #:for rank_out in ranks_123
 ! ------------------------------------------------------------------------------
 ! Subroutine: bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
 !> Apply interpolation
@@ -630,8 +628,8 @@ end if
 #:endif
 
 end subroutine bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
-#:endfor
-#:endfor
+      #:endfor
+   #:endfor
 #:endfor
 
 #:for dtype,ftype in types_irl
@@ -650,7 +648,7 @@ ${ftype}$,intent(out) :: array_out(self%nouta,self%bump%geom%nl0)        !< Outp
 logical,intent(in),optional :: nn                                        !< Nearest neighbor interpolation
 
 ! Local variables
-#{if dtype == "real"}# integer :: ilev #{endif}#
+#{if dtype == 'real'}# integer :: ilev #{endif}#
 ${ftype}$,allocatable :: array_in_ext(:,:)
 logical :: lnn
 
@@ -662,10 +660,10 @@ if (present(nn)) lnn = nn
 allocate(array_in_ext(self%nc0b,self%bump%geom%nl0))
 
 ! Halo extension
-call self%com%ext(self%bump%mpl,self%bump%geom%nl0,array_in,array_in_ext)
+call self%com%ext(self%bump%mpl,array_in,array_in_ext)
 
 if (self%nouta > 0) then
-   #:if dtype == "real"
+   #:if dtype == 'real'
       if (lnn) then
          ! Copy nearest neighbor
          array_out = array_in_ext(self%nn_index,:)
@@ -759,7 +757,7 @@ deallocate(array_out)
 end subroutine bint_apply_ad
 
 #:for rank_out in ranks_123
-#:for rank_in in ranks_123
+   #:for rank_in in ranks_123
 ! ------------------------------------------------------------------------------
 ! Subroutine: bint_apply_ad_r${rank_out}$_r${rank_in}$
 !> Apply interpolation operator adjoint
@@ -813,7 +811,6 @@ self%bump%geom%nl0 = nl_in
 allocate(vec_out(self%nouta,self%bump%geom%nl0))
 if (.not.self%bump%geom%same_grid) allocate(vec_in_tmp(self%bump%geom%nc0a,self%bump%geom%nl0))
 allocate(vec_in(self%bump%geom%nmga,self%bump%geom%nl0))
-
 
 ! Pack output data
 #{if rank_out == 1}# vec_out(:,1) = array_out #{endif}#
@@ -874,7 +871,7 @@ if (.not.self%bump%geom%same_grid) deallocate(vec_in_tmp)
 deallocate(vec_in)
 
 end subroutine bint_apply_ad_r${rank_out}$_r${rank_in}$
-#:endfor
+   #:endfor
 #:endfor
 
 !----------------------------------------------------------------------
@@ -908,7 +905,7 @@ else
 end if
 
 ! Halo reduction
-call self%com%red(self%bump%mpl,self%bump%geom%nl0,array_in_ext,array_in)
+call self%com%red(self%bump%mpl,array_in_ext,array_in)
 
 end subroutine apply_interp_ad
 

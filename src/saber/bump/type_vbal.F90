@@ -637,7 +637,7 @@ real(kind_real) :: mse,mse_tot
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,nam%nv)
 
 ! Generate random field
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld_save)
 
 ! Direct / inverse
 fld = fld_save
@@ -702,8 +702,8 @@ real(kind_real) :: fld2_blk(geom%nc0a,geom%nl0,nam%nv),fld2_dir(geom%nc0a,geom%n
 real(kind_real) :: fld2_inv(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
 
 ! Generate random field
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld1_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld2_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld1_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld2_save)
 
 ! Block adjoint test
 fld1_blk = fld1_save

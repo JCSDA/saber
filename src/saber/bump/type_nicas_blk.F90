@@ -2483,14 +2483,14 @@ end do
 ! Communication
 write(mpl%info,'(a13,a)') '','Communication'
 if (nicas_blk%verbosity) call mpl%flush
-call nicas_blk%com_AU%ext(mpl,nicas_blk%nl1,rh_c1a,nicas_blk%rh_c1u)
-if (.not.nicas_blk%horizontal) call nicas_blk%com_AU%ext(mpl,nicas_blk%nl1,rv_c1a,nicas_blk%rv_c1u)
+call nicas_blk%com_AU%ext(mpl,rh_c1a,nicas_blk%rh_c1u)
+if (.not.nicas_blk%horizontal) call nicas_blk%com_AU%ext(mpl,rv_c1a,nicas_blk%rv_c1u)
 if (nicas_blk%anisotropic) then
-   call nicas_blk%com_AU%ext(mpl,nicas_blk%nl1,H11_c1a,nicas_blk%H11_c1u)
-   call nicas_blk%com_AU%ext(mpl,nicas_blk%nl1,H22_c1a,nicas_blk%H22_c1u)
-   if (.not.nicas_blk%horizontal) call nicas_blk%com_AU%ext(mpl,nicas_blk%nl1,H33_c1a,nicas_blk%H33_c1u)
-   call nicas_blk%com_AU%ext(mpl,nicas_blk%nl1,H12_c1a,nicas_blk%H12_c1u)
-   call nicas_blk%com_AU%ext(mpl,nicas_blk%nl1,Hcoef_c1a,Hcoef_c1u)
+   call nicas_blk%com_AU%ext(mpl,H11_c1a,nicas_blk%H11_c1u)
+   call nicas_blk%com_AU%ext(mpl,H22_c1a,nicas_blk%H22_c1u)
+   if (.not.nicas_blk%horizontal) call nicas_blk%com_AU%ext(mpl,H33_c1a,nicas_blk%H33_c1u)
+   call nicas_blk%com_AU%ext(mpl,H12_c1a,nicas_blk%H12_c1u)
+   call nicas_blk%com_AU%ext(mpl,Hcoef_c1a,Hcoef_c1u)
 end if
 
 ! Release memory
@@ -4293,10 +4293,10 @@ real(kind_real),allocatable :: alpha1(:),alpha1_save(:),alpha2(:),alpha2_save(:)
 ! Interpolation (subsampling)
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha_save)
 gamma_save = 0
 do isb=1,nicas_blk%nsb
-   call rng%rand_real(0.0_kind_real,1.0_kind_real,gamma_save(nicas_blk%sb_to_c1b(isb),nicas_blk%sb_to_l1(isb)))
+   call rng%rand(0.0_kind_real,1.0_kind_real,gamma_save(nicas_blk%sb_to_c1b(isb),nicas_blk%sb_to_l1(isb)))
 end do
 
 ! Adjoint test
@@ -4313,8 +4313,8 @@ if (nicas_blk%verbosity) call mpl%flush
 ! Interpolation (vertical)
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,gamma_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,delta_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,gamma_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,delta_save)
 
 ! Adjoint test
 call nicas_blk%apply_interp_v(mpl,geom,gamma_save,delta)
@@ -4330,8 +4330,8 @@ if (nicas_blk%verbosity) call mpl%flush
 ! Interpolation (horizontal)
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,delta_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,delta_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld_save)
 
 ! Adjoint test
 call nicas_blk%apply_interp_h(mpl,geom,delta_save,fld)
@@ -4347,8 +4347,8 @@ if (nicas_blk%verbosity) call mpl%flush
 ! Interpolation (total)
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld_save)
 
 ! Adjoint test
 call nicas_blk%apply_interp(mpl,geom,alpha_save,fld)
@@ -4368,8 +4368,8 @@ allocate(alpha2(nicas_blk%nsc))
 allocate(alpha2_save(nicas_blk%nsc))
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha1_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha2_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha1_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha2_save)
 alpha1 = alpha1_save
 alpha2 = alpha2_save
 
@@ -4397,8 +4397,8 @@ allocate(alpha2(nicas_blk%nsb))
 allocate(alpha2_save(nicas_blk%nsa))
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha1_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha2_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha1_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha2_save)
 
 ! Adjoint test
 call nicas_blk%com_AB%red(mpl,alpha1_save,alpha1)
@@ -4424,8 +4424,8 @@ allocate(alpha2(nicas_blk%nsc))
 allocate(alpha2_save(nicas_blk%nsa))
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha1_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha2_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha1_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha2_save)
 
 ! Adjoint test
 call nicas_blk%com_AC%red(mpl,alpha1_save,alpha1)
@@ -4449,8 +4449,8 @@ allocate(alpha2(nicas_blk%nsa))
 allocate(alpha2_save(nicas_blk%nsa))
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha1_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,alpha2_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha1_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,alpha2_save)
 alpha1 = alpha1_save
 alpha2 = alpha2_save
 
@@ -4472,8 +4472,8 @@ write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Convolution / communication a
 if (nicas_blk%verbosity) call mpl%flush
 
 ! Initialization
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld1_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld2_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld1_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld2_save)
 fld1 = fld1_save
 fld2 = fld2_save
 

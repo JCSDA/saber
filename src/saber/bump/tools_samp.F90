@@ -594,7 +594,7 @@ if (lfast) then
 
    do is2_glb=1,ns2_glb+nrep_eff
       ! Generate random number
-      call rng%rand_real(0.0_kind_real,1.0_kind_real,rr)
+      call rng%rand(0.0_kind_real,1.0_kind_real,rr)
 
       ! Dichotomy to find the value
       irvalmin = 1
@@ -650,7 +650,7 @@ else
       ! Find a new point
       do itry=1,ntry
          ! Generate a random index among valid points
-         call rng%rand_integer(1,ns1_glb_val,irval)
+         call rng%rand(1,ns1_glb_val,irval)
          ir = to_valid(irval)
 
          ! Check point validity

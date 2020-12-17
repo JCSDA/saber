@@ -1550,7 +1550,7 @@ if (bump%nam%check_apply_vbal) then
    allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv))
 
    ! Initialization
-   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0a)
+   call bump%rng%rand(0.0_kind_real,1.0_kind_real,fld_c0a)
 
    ! Create fieldset
    call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
@@ -1579,7 +1579,7 @@ if (bump%nam%check_apply_stddev) then
    allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv))
 
    ! Initialization
-   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0a)
+   call bump%rng%rand(0.0_kind_real,1.0_kind_real,fld_c0a)
 
    ! Create fieldset
    call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
@@ -1610,7 +1610,7 @@ if (bump%nam%check_apply_nicas) then
    allocate(pcv(n))
 
    ! Initialization
-   call bump%rng%rand_real(0.0_kind_real,1.0_kind_real,fld_c0a)
+   call bump%rng%rand(0.0_kind_real,1.0_kind_real,fld_c0a)
 
    ! Create fieldset
    call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &

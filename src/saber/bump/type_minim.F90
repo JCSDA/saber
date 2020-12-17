@@ -574,7 +574,7 @@ do while(iter<minim%praxis_itermax)
          ! A random step follows, to avoid resolution valleys
          if (illc) then
             do i=1,minim%nx
-               call rng%rand_real(0.0_kind_real,1.0_kind_real,r)
+               call rng%rand(0.0_kind_real,1.0_kind_real,r)
                s = (0.1*ldt+t2*10.0**kt)*(r-0.5)
                z(i) = s
                minim%x = minim%x+s*v(:,i)

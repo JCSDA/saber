@@ -1076,7 +1076,7 @@ else
 end if
 
 ! Commnication
-call geom%com_AU%ext(mpl,geom%nl0,samp%smask_c0a,samp%smask_c0u)
+call geom%com_AU%ext(mpl,samp%smask_c0a,samp%smask_c0u)
 
 ! Related masks
 samp%smask_hor_c0a = any(samp%smask_c0a,dim=2)
@@ -1913,7 +1913,7 @@ do il0=1,geom%nl0
 end do
 
 ! Communication
-call samp%com_AD%ext(mpl,npack,sbuf,rbuf)
+call samp%com_AD%ext(mpl,sbuf,rbuf)
 
 ! Unpack
 ipack = 0

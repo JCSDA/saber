@@ -8,11 +8,11 @@ set( util_src_files
 tools_atlas.fypp
 tools_const.F90
 tools_kinds.F90
-tools_repro.F90
+tools_repro.fypp
 type_fieldset.F90
-type_mpl.F90
-type_msv.F90
-type_rng.F90
+type_mpl.fypp
+type_msv.fypp
+type_rng.fypp
 type_timer.F90
 
 PARENT_SCOPE

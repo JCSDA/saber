@@ -1520,8 +1520,8 @@ if (allocated(ens%mem)) then
 end if
 
 ! Generate random field
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld1_save)
-call rng%rand_real(0.0_kind_real,1.0_kind_real,fld2_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld1_save)
+call rng%rand(0.0_kind_real,1.0_kind_real,fld2_save)
 
 ! Adjoint test
 fld1_loc = fld1_save
@@ -2085,7 +2085,7 @@ call rng%resync(mpl)
 
 do itest=1,ntest
    ! Define random dirac location
-   call rng%rand_integer(1,geom%nl0,il0dir)
+   call rng%rand(1,geom%nl0,il0dir)
    call geom%rand_point(mpl,rng,il0dir,iprocdir,ic0adir)
 
    ! Define test vector

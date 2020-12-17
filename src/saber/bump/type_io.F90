@@ -189,7 +189,7 @@ call f_comm%delete()
 call mpl%f_comm%barrier()
 
 ! Communication
-call io%com_AIO%red(mpl,geom%nl0,fld_c0io,fld)
+call io%com_AIO%red(mpl,fld_c0io,fld)
 
 ! Release memory
 deallocate(fld_c0io)
@@ -241,7 +241,7 @@ allocate(lon_c0io(io%nc0io))
 allocate(lat_c0io(io%nc0io))
 
 ! Communication
-call io%com_AIO%ext(mpl,geom%nl0,fld_c0a,fld_c0io)
+call io%com_AIO%ext(mpl,fld_c0a,fld_c0io)
 call io%com_AIO%ext(mpl,geom%lon_c0a,lon_c0io)
 call io%com_AIO%ext(mpl,geom%lat_c0a,lat_c0io)
 

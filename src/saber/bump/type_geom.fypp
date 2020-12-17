@@ -1,3 +1,4 @@
+#:include '../generics.fypp'
 !----------------------------------------------------------------------
 ! Module: type_geom
 !> Geometry derived type
@@ -6,8 +7,6 @@
 ! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
 module type_geom
-
-#:include "util/tools_generics.fypp"
 
 use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_nodecolumns, &
  & atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_structuredgrid
@@ -141,13 +140,13 @@ contains
    procedure :: index_from_lonlat => geom_index_from_lonlat
    procedure :: setup_dirac => geom_setup_dirac
    procedure :: check_arc => geom_check_arc
+   procedure :: dummy_method
    #:for dtype,ftype in types_irl
       procedure :: geom_copy_c0a_to_mga_${dtype}$_single
       procedure :: geom_copy_c0a_to_mga_${dtype}$_all
       procedure :: geom_copy_mga_to_c0a_${dtype}$_single
       procedure :: geom_copy_mga_to_c0a_${dtype}$_all
    #:endfor
-   procedure :: dummy_method
    generic :: copy_c0a_to_mga => &
    #:for dtype,ftype in types_irl
  & geom_copy_c0a_to_mga_${dtype}$_single, &
@@ -934,9 +933,9 @@ call geom%com_mg%red(mpl,geom%lon_mga,geom%lon_c0a,.true.)
 call geom%com_mg%red(mpl,geom%lat_mga,geom%lat_c0a,.true.)
 call geom%com_mg%red(mpl,geom%hash_mga,geom%hash_c0a,.true.)
 if (geom%area_provided) call geom%com_mg%red(mpl,geom%area_mga,geom%area_c0a,.true.)
-call geom%com_mg%red(mpl,geom%nl0,geom%vunit_mga,geom%vunit_c0a,.true.)
-call geom%com_mg%red(mpl,geom%nl0,geom%gmask_mga,geom%gmask_c0a,.true.)
-call geom%com_mg%red(mpl,geom%nl0,geom%smask_mga,geom%smask_c0a,.true.)
+call geom%com_mg%red(mpl,geom%vunit_mga,geom%vunit_c0a,.true.)
+call geom%com_mg%red(mpl,geom%gmask_mga,geom%gmask_c0a,.true.)
+call geom%com_mg%red(mpl,geom%smask_mga,geom%smask_c0a,.true.)
 
 ! Related fields
 geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
@@ -1051,8 +1050,8 @@ call geom%com_AU%setup(mpl,'com_AU',geom%nc0a,geom%nc0u,geom%nc0,geom%c0a_to_c0,
 call geom%com_AU%ext(mpl,geom%lon_c0a,geom%lon_c0u)
 call geom%com_AU%ext(mpl,geom%lat_c0a,geom%lat_c0u)
 call geom%com_AU%ext(mpl,geom%hash_c0a,hash_c0u)
-call geom%com_AU%ext(mpl,geom%nl0,geom%vunit_c0a,geom%vunit_c0u)
-call geom%com_AU%ext(mpl,geom%nl0,geom%gmask_c0a,geom%gmask_c0u)
+call geom%com_AU%ext(mpl,geom%vunit_c0a,geom%vunit_c0u)
+call geom%com_AU%ext(mpl,geom%gmask_c0a,geom%gmask_c0u)
 geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
 
 
@@ -1430,6 +1429,19 @@ end do
 
 end subroutine geom_check_arc
 
+!----------------------------------------------------------------------
+! Subroutine: dummy_method
+!> Dummy method
+!----------------------------------------------------------------------
+subroutine dummy_method(geom)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom !< Geometry
+
+end subroutine dummy_method
+
 #:for dtype,ftype in types_irl
 !----------------------------------------------------------------------
 ! Subroutine: geom_copy_c0a_to_mga_${dtype}$_single
@@ -1455,9 +1467,9 @@ do il0=1,geom%nl0
       if (geom%gmask_c0a(ic0a,il0)) then
          fld_c0a_masked(ic0a,il0) = fld_c0a(ic0a,il0)
       else
-         #{if dtype == "int"}# fld_c0a_masked(ic0a,il0) = mpl%msv%vali #{endif}#
-         #{if dtype == "real"}# fld_c0a_masked(ic0a,il0) = mpl%msv%valr #{endif}#
-         #{if dtype == "logical"}# fld_c0a_masked(ic0a,il0) = .false. #{endif}#
+         #{if dtype == 'int'}# fld_c0a_masked(ic0a,il0) = mpl%msv%vali #{endif}#
+         #{if dtype == 'real'}# fld_c0a_masked(ic0a,il0) = mpl%msv%valr #{endif}#
+         #{if dtype == 'logical'}# fld_c0a_masked(ic0a,il0) = .false. #{endif}#
       end if
    end do
 end do
@@ -1467,7 +1479,7 @@ if (geom%same_grid) then
    fld_mga = fld_c0a_masked
 else
    ! Extend subset Sc0 to model grid
-   call geom%com_mg%ext(mpl,geom%nl0,fld_c0a_masked,fld_mga)
+   call geom%com_mg%ext(mpl,fld_c0a_masked,fld_mga)
 end if
 
 end subroutine geom_copy_c0a_to_mga_${dtype}$_single
@@ -1518,15 +1530,15 @@ if (geom%same_grid) then
    fld_c0a = fld_mga
 else
    ! Reduce model grid to subset Sc0
-   call geom%com_mg%red(mpl,geom%nl0,fld_mga,fld_c0a,.true.)
+   call geom%com_mg%red(mpl,fld_mga,fld_c0a,.true.)
 end if
 
 ! Set masked values at missing value
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      #{if dtype == "int"}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%vali #{endif}#
-      #{if dtype == "real"}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%valr #{endif}#
-      #{if dtype == "logical"}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = .false. #{endif}#
+      #{if dtype == 'int'}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%vali #{endif}#
+      #{if dtype == 'real'}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%valr #{endif}#
+      #{if dtype == 'logical'}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = .false. #{endif}#
    end do
 end do
 
@@ -1556,19 +1568,6 @@ end do
 
 end subroutine geom_copy_mga_to_c0a_${dtype}$_all
 #:endfor
-
-!----------------------------------------------------------------------
-! Subroutine: dummy_method
-!> Dummy method
-!----------------------------------------------------------------------
-subroutine dummy_method(geom)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-
-end subroutine dummy_method
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_fieldset_to_c0
@@ -1700,8 +1699,8 @@ lnr = 0
 ! Loop
 do while (.not.valid)
    ! Generate random lon/lat
-   call rng%rand_real(-pi,pi,lon)
-   call rng%rand_real(-1.0_kind_real,1.0_kind_real,lat)
+   call rng%rand(-pi,pi,lon)
+   call rng%rand(-1.0_kind_real,1.0_kind_real,lat)
    lat = asin(lat)
 
    ! Get index from lon/lat

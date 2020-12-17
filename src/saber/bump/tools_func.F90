@@ -141,7 +141,7 @@ real(kind_real),intent(out) :: dist !< Great-circle distance
 type(atlas_geometry) :: ageometry
 
 ! Create ATLAS geometry
-ageometry = atlas_geometry("UnitSphere")
+ageometry = atlas_geometry('UnitSphere')
 
 ! Compute distance
 dist = ageometry%distance(lon_i*rad2deg,lat_i*rad2deg,lon_f*rad2deg,lat_f*rad2deg)
@@ -174,7 +174,7 @@ if (mpl%msv%isnot(lat).and.mpl%msv%isnot(lon)) then
    if (inf(lat,-0.5*pi).and.sup(lat,-0.5*pi)) call mpl%abort(subr,'wrong latitude')
 
    ! Create ATLAS geometry
-   ageometry = atlas_geometry("UnitSphere")
+   ageometry = atlas_geometry('UnitSphere')
 
    ! Convert to x/y/z
    call ageometry%lonlat2xyz(lon*rad2deg,lat*rad2deg,x,y,z)
@@ -208,7 +208,7 @@ type(atlas_geometry) :: ageometry
 
 if (mpl%msv%isnot(x).and.mpl%msv%isnot(y).and.mpl%msv%isnot(z)) then
    ! Create ATLAS geometry
-   ageometry = atlas_geometry("UnitSphere")
+   ageometry = atlas_geometry('UnitSphere')
 
    ! Convert to lon/lat
    call ageometry%xyz2lonlat(x,y,z,lon,lat)

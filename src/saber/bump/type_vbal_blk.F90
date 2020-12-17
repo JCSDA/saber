@@ -174,8 +174,8 @@ do isub=1,ens%nsub
       !$omp end parallel do
 
       ! Halo extension
-      call samp%com_AE%ext(mpl,geom%nl0,fld_1,fld_ext_1)
-      call samp%com_AE%ext(mpl,geom%nl0,fld_2,fld_ext_2)
+      call samp%com_AE%ext(mpl,fld_1,fld_ext_1)
+      call samp%com_AE%ext(mpl,fld_2,fld_ext_2)
 
       !$omp parallel do schedule(static) private(il0,jl0,ic1e,ic1u)
       do il0=1,geom%nl0

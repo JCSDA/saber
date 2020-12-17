@@ -37,7 +37,7 @@ target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CUR
 
 # Process fypp files
 fckit_target_preprocess_fypp( ${PROJECT_NAME}
-                              DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/util/tools_generics.fypp )
+                              DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/generics.fypp )
 
 # Fortran module output directory for build and install interfaces
 set( MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION} )

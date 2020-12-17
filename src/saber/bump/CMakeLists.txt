@@ -17,7 +17,7 @@ type_bump.h
 type_bump_interface.F90
 type_cmat_blk.F90
 type_cmat.F90
-type_com.F90
+type_com.fypp
 type_cv_blk.F90
 type_cv.F90
 type_diag_blk.F90

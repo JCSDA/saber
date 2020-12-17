@@ -139,7 +139,7 @@ do isub=1,mom_blk_out%nsub
 end do
 
 ! Communication
-call samp%com_AD%ext(mpl,npack,sbuf,rbuf)
+call samp%com_AD%ext(mpl,sbuf,rbuf)
 
 ! Unpack
 ipack = 0

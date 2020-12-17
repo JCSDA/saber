@@ -163,7 +163,7 @@ if (shuffle) then
 
    ! Shuffle order (more efficient to compute the Delaunay triangulation)
    call rng%resync(mpl)
-   call rng%rand_integer(1,mesh%n,jtab)
+   call rng%rand(1,mesh%n,jtab)
    call rng%desync(mpl)
    do i=mesh%n,2,-1
       k = mesh%order(jtab(i))
