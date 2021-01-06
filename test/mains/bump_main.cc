@@ -2,7 +2,7 @@
  @brief Command line arguments parsing and call to the BUMP library
  @author Benjamin Menetrier
  @copyright This code is distributed under the CeCILL-C license
- @copyright Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT.
+ @copyright Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT.
 */
 
 #include <string.h>

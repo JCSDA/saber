@@ -3,7 +3,7 @@
 !> I/O derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
-! Copyright © 2015-... UCAR, CERFACS and METEO-FRANCE
+! Copyright 2015-... UCAR, CERFACS and METEO-FRANCE
 !----------------------------------------------------------------------
 module type_io
 

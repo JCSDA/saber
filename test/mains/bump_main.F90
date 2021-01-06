@@ -3,7 +3,7 @@
 !> Call to the BUMP library
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
-! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
 subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
 

@@ -6,7 +6,7 @@
 ! Original licensing: none
 ! Modified by Benjamin Menetrier for BUMP
 ! Licensing: this code is distributed under the CeCILL-C license
-! Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
 module tools_stripack
 
