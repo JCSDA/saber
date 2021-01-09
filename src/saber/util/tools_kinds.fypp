@@ -1,0 +1,39 @@
+!----------------------------------------------------------------------
+! Module: tools_kinds
+!> Kinds definition
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_kinds
+
+use iso_c_binding, only: c_int,c_short,c_long,c_signed_char,c_float,c_double
+use netcdf, only: nf90_double,nf90_int
+
+implicit none
+
+! C kinds
+integer,parameter :: kind_int = c_int                        !< Integer kind
+integer,parameter :: kind_short = c_short                    !< Short integer kind
+integer,parameter :: kind_long = c_long                      !< Long integer kind
+integer,parameter :: kind_signed_char = c_signed_char        !< Signed char kind  
+integer,parameter :: kind_float = c_float                    !< Float kind
+integer,parameter :: kind_double = c_double                  !< Double kind
+
+! Real kind alias for the whole code
+integer,parameter :: kind_real = c_double                    !< Real kind alias for the whole code
+
+! NetCDF kind alias for the whole code
+integer,parameter :: nc_kind_int = nf90_int                  !< NetCDF integer kind alias
+integer,parameter :: nc_kind_real = nf90_double              !< NetCDF real kind alias
+
+! Huge values
+integer,parameter :: huge_int = huge(0_kind_int)             !< Integer huge
+real(kind_real),parameter :: huge_real = huge(0.0_kind_real) !< Real huge
+
+private
+public :: kind_int,kind_short,kind_long,kind_signed_char,kind_float,kind_double,kind_real
+public :: nc_kind_int,nc_kind_real
+public :: huge_int,huge_real
+
+end module tools_kinds

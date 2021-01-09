@@ -11,14 +11,23 @@ module interpolatorbump_interface
 use atlas_module, only: atlas_functionspace,atlas_fieldset
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
-use interpolatorbump_mod
-use iso_c_binding
-use missing_values_mod
-use type_fieldset
+use interpolatorbump_mod, only: bump_interpolator
+use iso_c_binding, only: c_int,c_ptr,c_associated
+use type_fieldset, only: fieldset_type
 
 private
 
+! BUMP interpolator registry
+#define LISTED_TYPE bump_interpolator
+#include "../../../oops/src/oops/util/linkedList_i.f"
+type(registry_t) :: bump_interpolator_registry
+
 contains
+
+!----------------------------------------------------------------------
+! Linked list implementation
+!----------------------------------------------------------------------
+#include "../../../oops/src/oops/util/linkedList_c.f"
 
 !-------------------------------------------------------------------------------
 ! Subroutine bint_create_c
@@ -36,7 +45,7 @@ type(c_ptr),intent(in),value :: c_fspace2  !< Target grid (atlas functionspace)
 type(c_ptr),intent(in),value :: c_masks    !< Masks and other metadata
 type(c_ptr),value,intent(in) :: c_config   !< Configuration
 
-! local variables
+! Local variables
 type(bump_interpolator),pointer :: bint
 type(fckit_mpi_comm) :: f_comm
 type(fckit_configuration) :: f_config

@@ -9,9 +9,9 @@
 module type_com
 
 use fckit_mpi_module, only: fckit_mpi_status
-use netcdf
+use netcdf, only: nf90_get_var,nf90_inq_grp_ncid,nf90_inq_varid,nf90_inq_varid,nf90_put_var
 !$ use omp_lib
-use tools_kinds, only: kind_int,kind_real,nc_kind_real
+use tools_kinds, only: kind_int,kind_real,nc_kind_int,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: eq
 use type_mpl, only: mpl_type
@@ -39,6 +39,9 @@ type com_type
    integer,allocatable :: jexcldispls(:) !< Exclusive interior displacement
    integer,allocatable :: halo(:)        !< Halo buffer
    integer,allocatable :: excl(:)        !< Exclusive interior buffer
+
+   ! Dummy variable
+   logical :: dummy_logical              !< Dummy variable
 contains
    procedure :: dealloc => com_dealloc
    procedure :: read => com_read
@@ -47,7 +50,7 @@ contains
    procedure :: serialize => com_serialize
    procedure :: deserialize => com_deserialize
    procedure :: setup => com_setup
-   procedure :: dummy_method
+   procedure :: com_dummy_method
    #:for dtype,ftype in types_irl
       #:for rank in ranks_12
          procedure :: com_ext_${dtype}$_r${rank}$
@@ -60,14 +63,14 @@ contains
  & com_ext_${dtype}$_r${rank}$, &
       #:endfor
    #:endfor
- & dummy_method
+ & com_dummy_method
    generic :: red => &
    #:for dtype,ftype in types_irl
       #:for rank in ranks_12
  & com_red_${dtype}$_r${rank}$, &
       #:endfor
    #:endfor
- & dummy_method
+ & com_dummy_method
 end type com_type
 
 private
@@ -189,14 +192,14 @@ if (com%nhalo>0) nhalo_id = mpl%nc_dim_define_or_get(subr,grpid,'nhalo',com%nhal
 if (com%nexcl>0) nexcl_id = mpl%nc_dim_define_or_get(subr,grpid,'nexcl',com%nexcl) 
 
 ! Define variables
-if (com%nown>0) own_to_ext_id = mpl%nc_var_define_or_get(subr,grpid,'own_to_ext',nf90_int,(/nown_id/))
-if (com%nown>0) own_to_red_id = mpl%nc_var_define_or_get(subr,grpid,'own_to_red',nf90_int,(/nown_id/))
-jhalocounts_id = mpl%nc_var_define_or_get(subr,grpid,'jhalocounts',nf90_int,(/nproc_id/))
-jexclcounts_id = mpl%nc_var_define_or_get(subr,grpid,'jexclcounts',nf90_int,(/nproc_id/))
-jhalodispls_id = mpl%nc_var_define_or_get(subr,grpid,'jhalodispls',nf90_int,(/nproc_id/))
-jexcldispls_id = mpl%nc_var_define_or_get(subr,grpid,'jexcldispls',nf90_int,(/nproc_id/))
-if (com%nhalo>0) halo_id = mpl%nc_var_define_or_get(subr,grpid,'halo',nf90_int,(/nhalo_id/))
-if (com%nexcl>0) excl_id = mpl%nc_var_define_or_get(subr,grpid,'excl',nf90_int,(/nexcl_id/))
+if (com%nown>0) own_to_ext_id = mpl%nc_var_define_or_get(subr,grpid,'own_to_ext',nc_kind_int,(/nown_id/))
+if (com%nown>0) own_to_red_id = mpl%nc_var_define_or_get(subr,grpid,'own_to_red',nc_kind_int,(/nown_id/))
+jhalocounts_id = mpl%nc_var_define_or_get(subr,grpid,'jhalocounts',nc_kind_int,(/nproc_id/))
+jexclcounts_id = mpl%nc_var_define_or_get(subr,grpid,'jexclcounts',nc_kind_int,(/nproc_id/))
+jhalodispls_id = mpl%nc_var_define_or_get(subr,grpid,'jhalodispls',nc_kind_int,(/nproc_id/))
+jexcldispls_id = mpl%nc_var_define_or_get(subr,grpid,'jexcldispls',nc_kind_int,(/nproc_id/))
+if (com%nhalo>0) halo_id = mpl%nc_var_define_or_get(subr,grpid,'halo',nc_kind_int,(/nhalo_id/))
+if (com%nexcl>0) excl_id = mpl%nc_var_define_or_get(subr,grpid,'excl',nc_kind_int,(/nexcl_id/))
 
 ! Write variables
 if (com%nown>0) call mpl%ncerr(subr,nf90_put_var(grpid,own_to_ext_id,com%own_to_ext))
@@ -682,17 +685,20 @@ com_out%prefix = prefix
 end subroutine com_setup
 
 !----------------------------------------------------------------------
-! Subroutine: dummy_method
+! Subroutine: com_dummy_method
 !> Dummy method
 !----------------------------------------------------------------------
-subroutine dummy_method(com)
+subroutine com_dummy_method(com)
 
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com !< Communication data
+class(com_type),intent(inout) :: com !< Communication data
 
-end subroutine dummy_method
+! Dummy action to avoid compiler warning
+com%dummy_logical = .false.
+
+end subroutine com_dummy_method
 
 #:for dtype,ftype in types_irl
    #:for rank in ranks_12

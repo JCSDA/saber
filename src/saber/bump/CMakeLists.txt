@@ -3,44 +3,57 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
+list(APPEND bump_src_files_list
+
+tools_fit.fypp
+tools_func.c
+tools_func.fypp
+tools_samp.fypp
+type_avg_blk.fypp
+type_avg.fypp
+type_bpar.fypp
+type_bump.fypp
+type_cmat_blk.fypp
+type_cmat.fypp
+type_com.fypp
+type_cv_blk.fypp
+type_cv.fypp
+type_diag_blk.fypp
+type_diag.fypp
+type_ens.fypp
+type_geom.fypp
+type_hdiag.fypp
+type_io.fypp
+type_lct_blk.fypp
+type_lct.fypp
+type_linop.fypp
+type_mesh.fypp
+type_minim.fypp
+type_mom_blk.fypp
+type_mom.fypp
+type_nam.fypp
+type_nicas_blk.fypp
+type_nicas.fypp
+type_samp.fypp
+type_tree.fypp
+type_var.fypp
+type_vbal_blk.fypp
+type_vbal.fypp
+
+)
+
+if( oops_FOUND )
+    list(APPEND bump_src_files_list
+
+    type_bump.h
+    type_bump_interface.F90 
+
+    )
+endif()
+
 set( bump_src_files
 
-tools_fit.F90
-tools_func.c
-tools_func.F90
-tools_samp.F90
-type_avg_blk.F90
-type_avg.F90
-type_bpar.F90
-type_bump.F90
-type_bump.h
-type_bump_interface.F90
-type_cmat_blk.F90
-type_cmat.F90
-type_com.fypp
-type_cv_blk.F90
-type_cv.F90
-type_diag_blk.F90
-type_diag.F90
-type_ens.F90
-type_geom.fypp
-type_hdiag.F90
-type_io.F90
-type_lct_blk.F90
-type_lct.F90
-type_linop.F90
-type_mesh.F90
-type_minim.F90
-type_mom_blk.F90
-type_mom.F90
-type_nam.F90
-type_nicas_blk.F90
-type_nicas.F90
-type_samp.F90
-type_tree.F90
-type_var.F90
-type_vbal_blk.F90
-type_vbal.F90
+${bump_src_files_list}
 
 PARENT_SCOPE
 )

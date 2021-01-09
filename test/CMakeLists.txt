@@ -291,7 +291,6 @@ endif()
 ecbuild_add_executable( TARGET  saber_bump.x
                         SOURCES mains/bump_main.cc
                                 mains/bump_main.F90
-                                mains/type_model.F90
                         LIBS    saber )
 
 if ( SABER_TEST_OOPS OR SABER_TEST_INTERPOLATION )

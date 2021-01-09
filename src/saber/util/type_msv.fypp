@@ -14,10 +14,13 @@ implicit none
 
 type msv_type
    ! Missing values
-   integer :: vali         !< Missing value for integers
-   real(kind_real) :: valr !< Missing value for reals
+   integer :: vali          !< Missing value for integers
+   real(kind_real) :: valr  !< Missing value for reals
+
+   ! Dummy variable
+   logical :: dummy_logical !< Dummy variable
 contains
-   procedure :: dummy_method
+   procedure :: msv_dummy_method
    #:for dtype,ftype in types_ir
       procedure msv_isnot_${dtype}$_r0
       procedure msv_is_${dtype}$_r0
@@ -37,7 +40,7 @@ contains
  & msv_isnot_${dtype}$_r${rank}$, &
    #:endfor
    #:endfor
- & dummy_method
+ & msv_dummy_method
    generic :: is => &
    #:for dtype,ftype in types_ir
  & msv_is_${dtype}$_r0, &
@@ -45,35 +48,35 @@ contains
  & msv_is_${dtype}$_r${rank}$, &
    #:endfor
    #:endfor
- & dummy_method
+ & msv_dummy_method
    generic :: isanynot => &
    #:for dtype,ftype in types_ir
    #:for rank in ranks_123456
  & msv_isanynot_${dtype}$_r${rank}$, &
    #:endfor
    #:endfor
- & dummy_method
+ & msv_dummy_method
    generic :: isany => &
    #:for dtype,ftype in types_ir
    #:for rank in ranks_123456
  & msv_isany_${dtype}$_r${rank}$, &
    #:endfor
    #:endfor
- & dummy_method
+ & msv_dummy_method
    generic :: isallnot => &
    #:for dtype,ftype in types_ir
    #:for rank in ranks_123456
  & msv_isallnot_${dtype}$_r${rank}$, &
    #:endfor
    #:endfor
- & dummy_method
+ & msv_dummy_method
    generic :: isall => &
    #:for dtype,ftype in types_ir
    #:for rank in ranks_123456
  & msv_isall_${dtype}$_r${rank}$, &
    #:endfor
    #:endfor
- & dummy_method
+ & msv_dummy_method
 end type msv_type
 
 private
@@ -82,22 +85,26 @@ public :: msv_type
 contains
 
 !----------------------------------------------------------------------
-! Function: dummy_method
+! Function: msv_dummy_method
 !> Dummy method
 !----------------------------------------------------------------------
-function dummy_method(msv) result(test)
+function msv_dummy_method(msv) result(test)
 
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv !< Missing values
+class(msv_type),intent(inout) :: msv !< Missing values
 
-! Result variable
+! Returned variable
 logical :: test
 
+! Dummy action to avoid compiler warning
+msv%dummy_logical = .false.
+
+! Set result value
 test = .false.
 
-end function dummy_method
+end function msv_dummy_method
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------

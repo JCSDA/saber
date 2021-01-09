@@ -19,19 +19,17 @@ implicit none
 
 interface qsort
   #:for dtype,ftype in types_ir
-     module procedure qsort_${dtype}$
+     module procedure qsort_qsort_${dtype}$
   #:endfor
 end interface
-
 interface quick_sort
   #:for dtype,ftype in types_ir
-     module procedure quick_sort_${dtype}$
+     module procedure qsort_quick_sort_${dtype}$
   #:endfor
 end interface
-
 interface interchange_sort
   #:for dtype,ftype in types_ir
-     module procedure interchange_sort_${dtype}$
+     module procedure qsort_interchange_sort_${dtype}$
   #:endfor
 end interface
 
@@ -42,10 +40,10 @@ contains
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Subroutine: qsort_${dtype}$
+! Subroutine: qsort_qsort_${dtype}$
 !> Sort a subvector
 !----------------------------------------------------------------------
-recursive subroutine qsort_${dtype}$(n,list,order)
+recursive subroutine qsort_qsort_${dtype}$(n,list,order)
 
 implicit none
 
@@ -63,15 +61,15 @@ end do
 
 call quick_sort(n,1,n,list,order)
 
-end subroutine qsort_${dtype}$
+end subroutine qsort_qsort_${dtype}$
 #:endfor
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Subroutine: quick_sort_${dtype}$
+! Subroutine: qsort_quick_sort_${dtype}$
 !> Sort an integer subvector
 !----------------------------------------------------------------------
-recursive subroutine quick_sort_${dtype}$(n,left_end,right_end,list,order)
+recursive subroutine qsort_quick_sort_${dtype}$(n,left_end,right_end,list,order)
 
 implicit none
 
@@ -127,15 +125,15 @@ else
   if (i<right_end) call quick_sort(n,i,right_end,list,order)
 end if
 
-end subroutine quick_sort_${dtype}$
+end subroutine qsort_quick_sort_${dtype}$
 #:endfor
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Subroutine: interchange_sort_${dtype}$
+! Subroutine: qsort_interchange_sort_${dtype}$
 !> Interchange integers
 !----------------------------------------------------------------------
-subroutine interchange_sort_${dtype}$(n,left_end,right_end,list,order)
+subroutine qsort_interchange_sort_${dtype}$(n,left_end,right_end,list,order)
 
 implicit none
 
@@ -163,7 +161,7 @@ do i=left_end,right_end-1
    end do
 end do
 
-end subroutine interchange_sort_${dtype}$
+end subroutine qsort_interchange_sort_${dtype}$
 #:endfor
 
 end module tools_qsort

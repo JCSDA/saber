@@ -3,16 +3,9 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-set( util_src_files
+set( model_src_files
 
-tools_atlas.fypp
-tools_const.fypp
-tools_kinds.fypp
-tools_repro.fypp
-type_fieldset.fypp
-type_mpl.fypp
-type_msv.fypp
-type_rng.fypp
+type_model.fypp
 
 PARENT_SCOPE
 )

@@ -8,19 +8,21 @@
 !----------------------------------------------------------------------
 module type_mpl
 
-use iso_fortran_env, only : output_unit
-use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
 use fckit_log_module, only: fckit_log
-use netcdf
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
+use iso_fortran_env, only: output_unit
+use netcdf, only: nf90_create,nf90_def_dim,nf90_def_grp,nf90_def_var,nf90_global,nf90_inq_dimid,nf90_inq_grp_ncid, &
+ & nf90_inquire_dimension,nf90_inq_varid,nf90_mpiio,nf90_netcdf4,nf90_noclobber,nf90_noerr,nf90_open,nf90_put_att, &
+ & nf90_strerror,nf90_write
 !$ use omp_lib
-use tools_kinds, only: kind_int,kind_real,nc_kind_real
+use tools_kinds, only: kind_int,kind_real,nc_kind_int,nc_kind_real
 use type_msv, only: msv_type
 
 implicit none
 
-integer,parameter :: lunit_min=10   !< Minimum unit number
-integer,parameter :: lunit_max=1000 !< Maximum unit number
-integer,parameter :: ddis = 5       !< Progression display step
+integer,parameter :: lunit_min = 10   !< Minimum unit number
+integer,parameter :: lunit_max = 1000 !< Maximum unit number
+integer,parameter :: ddis = 5         !< Progression display step
 
 type mpl_type
    ! MPI communicator
@@ -59,6 +61,9 @@ type mpl_type
    integer :: nprog                 !< Progression array size
    integer :: progint               !< Progression integer
    logical,allocatable :: done(:)   !< Progression array
+
+   ! Dummy variable
+   logical :: dummy_logical         !< Dummy variable
 contains
    procedure :: newunit => mpl_newunit
    procedure :: init => mpl_init
@@ -68,7 +73,7 @@ contains
    procedure :: warning => mpl_warning
    procedure :: update_tag => mpl_update_tag
    procedure :: broadcast => mpl_broadcast_string_array
-   procedure :: dummy_method
+   procedure :: mpl_dummy_method
    #:for rank in ranks_1234
       procedure :: mpl_dot_prod_r${rank}$
    #:endfor
@@ -76,7 +81,7 @@ contains
    #:for rank in ranks_1234
  & mpl_dot_prod_r${rank}$, &
    #:endfor
- & dummy_method
+ & mpl_dummy_method
    procedure :: glb_to_loc_index => mpl_glb_to_loc_index
    #:for dtype,ftype in types_irl
       procedure :: mpl_glb_to_loc_${dtype}$
@@ -86,12 +91,12 @@ contains
    #:for dtype,ftype in types_irl
  & mpl_glb_to_loc_${dtype}$, &
    #:endfor
- & dummy_method
+ & mpl_dummy_method
    generic :: loc_to_glb => &
    #:for dtype,ftype in types_irl
  & mpl_loc_to_glb_${dtype}$, &
    #:endfor
- & dummy_method
+ & mpl_dummy_method
    procedure :: prog_init => mpl_prog_init
    procedure :: prog_print => mpl_prog_print
    procedure :: prog_final => mpl_prog_final
@@ -111,7 +116,7 @@ contains
  & mpl_write_${dtype}$, &
  & mpl_write_${dtype}$_array, &
    #:endfor
- & dummy_method
+ & mpl_dummy_method
 end type mpl_type
 
 private
@@ -426,17 +431,20 @@ end do
 end subroutine mpl_broadcast_string_array
 
 !----------------------------------------------------------------------
-! Subroutine: dummy_method
+! Subroutine: mpl_dummy_method
 !> Dummy method
 !----------------------------------------------------------------------
-subroutine dummy_method(mpl)
+subroutine mpl_dummy_method(mpl)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(in) :: mpl !< MPI data
+class(mpl_type),intent(inout) :: mpl !< MPI data
 
-end subroutine dummy_method
+! Dummy action to avoid compiler warning
+mpl%dummy_logical = .false.
+
+end subroutine mpl_dummy_method
 
 #:for rank in ranks_1234
 !----------------------------------------------------------------------
@@ -1074,7 +1082,7 @@ info = nf90_def_var(ncid,varname,varkind,varshape,varid)
 
 if (info==nf90_noerr) then
    ! Set missing value attribute
-   if (varkind==nf90_int) then
+   if (varkind==nc_kind_int) then
       call mpl%ncerr(subr,nf90_put_att(ncid,varid,'_FillValue',mpl%msv%vali))
    elseif (varkind==nc_kind_real) then
       call mpl%ncerr(subr,nf90_put_att(ncid,varid,'_FillValue',mpl%msv%valr))

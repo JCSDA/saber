@@ -9,13 +9,12 @@ subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
 
 use fckit_configuration_module, only: fckit_configuration,fckit_yamlconfiguration
 use fckit_mpi_module, only: fckit_mpi_comm
-use fckit_pathname_module, only : fckit_pathname
-use iso_c_binding
-use iso_fortran_env, only : output_unit
+use fckit_pathname_module, only: fckit_pathname
+use iso_c_binding, only: c_int,c_char
+use iso_fortran_env, only: output_unit
 use type_bump, only: bump_type
 use type_model, only: model_type
 use type_mpl, only: mpl_type
-use type_timer, only: timer_type
 
 implicit none
 
@@ -29,12 +28,10 @@ character(c_char),intent(in) :: arg2(n2) !< Second argument
 integer :: i,ppos,iproc,ie,ifileunit
 character(len=1024) :: inputfile,logdir,ext,filename
 type(fckit_configuration) :: conf
-
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
 type(model_type) :: model
 type(mpl_type) :: mpl
-type(timer_type) :: timer
 
 ! Initialize MPI
 f_comm = fckit_mpi_comm()
@@ -55,9 +52,6 @@ mpl%msv%valr = -999.0
 
 ! Initialize MPL
 call mpl%init(f_comm)
-
-! Initialize timer
-call timer%start(mpl)
 
 ! Initialize namelist
 call bump%nam%init(mpl%nproc)
@@ -207,12 +201,9 @@ write(mpl%info,'(a)') '--- Test apply interfaces'
 call mpl%flush
 call bump%test_apply_interfaces
 
-! Execution stats
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Execution stats'
-call timer%display(mpl)
-call mpl%flush
+! Release memory
+call bump%dealloc
+call model%dealloc
 
 if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and.mpl%main)) then
    ! Close listings
@@ -227,9 +218,5 @@ end if
 
 ! Finalize MPL
 call mpl%final
-
-! Release memory
-call bump%dealloc
-call model%dealloc
 
 end subroutine bump_main

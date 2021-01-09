@@ -19,17 +19,19 @@ implicit none
 interface field_to_array
    #:for rank in ranks_23
       #:for dtype,ftype in types_irl
-         module procedure field_to_array_${dtype}$_r${rank}$
+         module procedure atlas_field_to_array_${dtype}$_r${rank}$
       #:endfor
    #:endfor
 end interface
-
 interface field_from_array
    #:for rank in ranks_23
       #:for dtype,ftype in types_irl
-         module procedure field_from_array_${dtype}$_r${rank}$
+         module procedure atlas_field_from_array_${dtype}$_r${rank}$
       #:endfor
    #:endfor
+end interface
+interface create_atlas_function_space
+   module procedure atlas_create_atlas_function_space
 end interface
 
 private
@@ -40,10 +42,10 @@ contains
 #:for rank in ranks_23
    #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Subroutine: field_to_array_${dtype}$_r${rank}$
+! Subroutine: atlas_field_to_array_${dtype}$_r${rank}$
 !> Convert ATLAS field to field
 !----------------------------------------------------------------------
-subroutine field_to_array_${dtype}$_r${rank}$(afield,mpl,array,lev2d)
+subroutine atlas_field_to_array_${dtype}$_r${rank}$(afield,mpl,array,lev2d)
 
 implicit none
 
@@ -59,7 +61,7 @@ integer :: shp(${rank}$)
 ${ftype}$,pointer :: ptr_1(:),ptr_2(:,:)
 #{if rank == 3}# logical,allocatable :: umask(:,:) #{endif}#
 character(len=1024) :: llev2d
-character(len=1024),parameter :: subr = 'field_to_array_${dtype}$_r${rank}$'
+character(len=1024),parameter :: subr = 'atlas_field_to_array_${dtype}$_r${rank}$'
 type(atlas_functionspace) :: afunctionspace
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
@@ -153,16 +155,16 @@ end if
 ! Release memory
 #{if rank == 3}# deallocate(umask) #{endif}#
 
-end subroutine field_to_array_${dtype}$_r${rank}$
+end subroutine atlas_field_to_array_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 
 #:for rank in ranks_23
 !----------------------------------------------------------------------
-! Subroutine: field_to_array_logical_r${rank}$
+! Subroutine: atlas_field_to_array_logical_r${rank}$
 !> Convert ATLAS field to field
 !----------------------------------------------------------------------
-subroutine field_to_array_logical_r${rank}$(afield,mpl,array,lev2d)
+subroutine atlas_field_to_array_logical_r${rank}$(afield,mpl,array,lev2d)
 
 implicit none
 
@@ -178,7 +180,7 @@ integer :: il0
 #{if rank == 3}# integer :: ixa,iya #{endif}#
 integer,allocatable :: array_int(${dim[rank]}$)
 character(len=1024) :: llev2d
-character(len=1024),parameter :: subr = 'field_to_array_logical_r${rank}$'
+character(len=1024),parameter :: subr = 'atlas_field_to_array_logical_r${rank}$'
 
 ! Local lev2d
 llev2d = 'first'
@@ -225,16 +227,16 @@ call field_to_array(afield,mpl,array_int,lev2d)
 ! Release memory
 deallocate(array_int)
 
-end subroutine field_to_array_logical_r${rank}$
+end subroutine atlas_field_to_array_logical_r${rank}$
 #:endfor
 
 #:for rank in ranks_23
    #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Subroutine: field_from_array_${dtype}$_r${rank}$
+! Subroutine: atlas_field_from_array_${dtype}$_r${rank}$
 !> Convert field to ATLAS field, real
 !----------------------------------------------------------------------
-subroutine field_from_array_${dtype}$_r${rank}$(afield,mpl,array,lev2d)
+subroutine atlas_field_from_array_${dtype}$_r${rank}$(afield,mpl,array,lev2d)
 
 implicit none
 
@@ -249,7 +251,7 @@ integer :: nmga,nnodes,nl,nl0,nl2d,il0
 integer :: shp(${rank}$)
 ${ftype}$,pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
-character(len=1024),parameter :: subr = 'field_from_array_${dtype}$_r${rank}$'
+character(len=1024),parameter :: subr = 'atlas_field_from_array_${dtype}$_r${rank}$'
 type(atlas_functionspace) :: afunctionspace
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
@@ -330,16 +332,16 @@ else
    end do
 end if
 
-end subroutine field_from_array_${dtype}$_r${rank}$
+end subroutine atlas_field_from_array_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 
 #:for rank in ranks_23
 !----------------------------------------------------------------------
-! Subroutine: field_from_array_logical_r${rank}$
+! Subroutine: atlas_field_from_array_logical_r${rank}$
 !> Convert ATLAS field from field
 !----------------------------------------------------------------------
-subroutine field_from_array_logical_r${rank}$(afield,mpl,array,lev2d)
+subroutine atlas_field_from_array_logical_r${rank}$(afield,mpl,array,lev2d)
 
 implicit none
 
@@ -355,7 +357,7 @@ integer :: il0
 #{if rank == 3}# integer :: ixa,iya #{endif}#
 integer,allocatable :: array_int(${dim[rank]}$)
 character(len=1024) :: llev2d
-character(len=1024),parameter :: subr = 'field_to_array_logical_r${rank}$'
+character(len=1024),parameter :: subr = 'atlas_field_to_array_logical_r${rank}$'
 
 ! Local lev2d
 llev2d = 'first'
@@ -398,14 +400,14 @@ call field_from_array(afield,mpl,array_int,lev2d)
 ! Release memory
 deallocate(array_int)
 
-end subroutine field_from_array_logical_r${rank}$
+end subroutine atlas_field_from_array_logical_r${rank}$
 #:endfor
 
 !----------------------------------------------------------------------
-! Subroutine: create_atlas_function_space
+! Subroutine: atlas_create_atlas_function_space
 !> Create ATLAS function space from lon/lat
 !----------------------------------------------------------------------
-subroutine create_atlas_function_space(nmga,lon_mga,lat_mga,afunctionspace)
+subroutine atlas_create_atlas_function_space(nmga,lon_mga,lat_mga,afunctionspace)
 
 implicit none
 
@@ -431,6 +433,6 @@ end do
 ! Create function space PointCloud
 afunctionspace = atlas_functionspace_pointcloud(afield)
 
-end subroutine create_atlas_function_space
+end subroutine atlas_create_atlas_function_space
 
 end module tools_atlas

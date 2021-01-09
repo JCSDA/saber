@@ -20,11 +20,11 @@ use tools_repro, only: inf,eq
 use tools_samp, only: initialize_sampling_global
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
-use type_tree, only: tree_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_rng, only: rng_type
+use type_tree, only: tree_type
 
 implicit none
 
@@ -127,6 +127,9 @@ type geom_type
    integer,allocatable :: ic0adir(:)              !< Dirac gridpoint
    integer,allocatable :: il0dir(:)               !< Dirac level
    integer,allocatable :: ivdir(:)                !< Dirac variable
+
+   ! Dummy variable
+   logical :: dummy_logical                       !< Dummy variable
 contains
    procedure :: partial_dealloc => geom_partial_dealloc
    procedure :: dealloc => geom_dealloc
@@ -140,7 +143,7 @@ contains
    procedure :: index_from_lonlat => geom_index_from_lonlat
    procedure :: setup_dirac => geom_setup_dirac
    procedure :: check_arc => geom_check_arc
-   procedure :: dummy_method
+   procedure :: geom_dummy_method
    #:for dtype,ftype in types_irl
       procedure :: geom_copy_c0a_to_mga_${dtype}$_single
       procedure :: geom_copy_c0a_to_mga_${dtype}$_all
@@ -152,13 +155,13 @@ contains
  & geom_copy_c0a_to_mga_${dtype}$_single, &
  & geom_copy_c0a_to_mga_${dtype}$_all, &
    #:endfor
- & dummy_method
+ & geom_dummy_method
    generic :: copy_mga_to_c0a => &
    #:for dtype,ftype in types_irl
  & geom_copy_mga_to_c0a_${dtype}$_single, &
  & geom_copy_mga_to_c0a_${dtype}$_all, &
    #:endfor
- & dummy_method
+ & geom_dummy_method
    procedure :: fieldset_to_c0 => geom_fieldset_to_c0
    procedure :: c0_to_fieldset => geom_c0_to_fieldset
    procedure :: compute_deltas => geom_compute_deltas
@@ -1430,17 +1433,20 @@ end do
 end subroutine geom_check_arc
 
 !----------------------------------------------------------------------
-! Subroutine: dummy_method
+! Subroutine: geom_dummy_method
 !> Dummy method
 !----------------------------------------------------------------------
-subroutine dummy_method(geom)
+subroutine geom_dummy_method(geom)
 
 implicit none
 
 ! Passed variables
 class(geom_type),intent(inout) :: geom !< Geometry
 
-end subroutine dummy_method
+! Dummy action to avoid compiler warning
+geom%dummy_logical = .false.
+
+end subroutine geom_dummy_method
 
 #:for dtype,ftype in types_irl
 !----------------------------------------------------------------------
@@ -1732,7 +1738,9 @@ integer :: iproc
 
 ! Find processor
 do iproc=1,geom%nproc-1
-   if ((geom%proc_to_mg_offset(iproc)<img).and.(img<=geom%proc_to_mg_offset(iproc+1))) return
+   if ((geom%proc_to_mg_offset(iproc)<img).and.(img<=geom%proc_to_mg_offset(iproc+1))) then
+      return
+   end if
 end do
 
 end function geom_mg_to_proc
@@ -1780,7 +1788,9 @@ integer :: iproc
 
 ! Find processor
 do iproc=1,geom%nproc-1
-   if ((geom%proc_to_c0_offset(iproc)<ic0).and.(ic0<=geom%proc_to_c0_offset(iproc+1))) return
+   if ((geom%proc_to_c0_offset(iproc)<ic0).and.(ic0<=geom%proc_to_c0_offset(iproc+1))) then
+      return
+   end if
 end do
 
 end function geom_c0_to_proc

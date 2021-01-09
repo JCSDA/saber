@@ -10,15 +10,25 @@ module type_bump_interface
 use atlas_module, only: atlas_functionspace,atlas_fieldset
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
-use iso_c_binding
-use type_bump, only: bump_type,bump_registry
+use iso_c_binding, only: c_int,c_ptr,c_double,c_char
+use type_bump, only: bump_type
 use type_fieldset, only: fieldset_type
 
 implicit none
 
 private
 
+! BUMP registry
+#define LISTED_TYPE bump_type
+#include "../../../oops/src/oops/util/linkedList_i.f"
+type(registry_t) :: bump_registry
+
 contains
+
+!----------------------------------------------------------------------
+! Linked list implementation
+!----------------------------------------------------------------------
+#include "../../../oops/src/oops/util/linkedList_c.f"
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create_c
@@ -392,10 +402,10 @@ subroutine bump_get_parameter_c(key_bump,nstr,cstr,c_afieldset) bind(c,name='bum
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: key_bump           !< BUMP
-integer(c_int),intent(in) :: nstr               !< Parameter name size
-character(kind=c_char),intent(in) :: cstr(nstr) !< Parameter name
-type(c_ptr),intent(in),value :: c_afieldset     !< ATLAS fieldset pointer
+integer(c_int),intent(in) :: key_bump       !< BUMP
+integer(c_int),intent(in) :: nstr           !< Parameter name size
+character(c_char),intent(in) :: cstr(nstr)  !< Parameter name
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
@@ -425,10 +435,10 @@ subroutine bump_set_parameter_c(key_bump,nstr,cstr,c_afieldset) bind(c,name='bum
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: key_bump           !< BUMP
-integer(c_int),intent(in) :: nstr               !< Parameter name size
-character(kind=c_char),intent(in) :: cstr(nstr) !< Parameter name
-type(c_ptr),intent(in),value :: c_afieldset     !< ATLAS fieldset pointer
+integer(c_int),intent(in) :: key_bump       !< BUMP
+integer(c_int),intent(in) :: nstr           !< Parameter name size
+character(c_char),intent(in) :: cstr(nstr)  !< Parameter name
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump

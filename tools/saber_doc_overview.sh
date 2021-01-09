@@ -8,10 +8,10 @@
 
 # Directories
 rootdir=$1/..
-docdir=${rootdir}/docs
+docdir=$2
 
 # Languages
-languages="*.cc *.f *.F90 *.h"
+languages="*.cc *.fypp *.F90 *.h"
 
 cat<<EOF > ${docdir}/mainpage.h
 #ifndef DOCS_MAINPAGE_H_
@@ -101,7 +101,7 @@ if type "cloc" > /dev/null ; then
 
    # Cloc report
    for index in ${!dir[*]}; do
-      cloc --quiet --csv --exclude-lang=CMake --out=cloc_${name[$index]}.csv ${rootdir}/${dir[$index]}
+      cloc --force-lang="Fortran 90",fypp --quiet --csv --exclude-lang=CMake --out=cloc_${name[$index]}.csv ${rootdir}/${dir[$index]}
    done
 
    # Code size and characteristics

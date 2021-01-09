@@ -10,7 +10,6 @@ module tools_repro
 
 use tools_const, only: pi
 use tools_kinds, only: kind_int,kind_real
-use type_mpl, only: mpl_type
 
 implicit none
 
@@ -19,28 +18,34 @@ real(kind_real),parameter :: rth = 1.0e-12 !< Reproducibility threshold
 
 interface eq
   #:for dtype,ftype in types_irl
-     module procedure eq_${dtype}$
+     module procedure repro_eq_${dtype}$
   #:endfor
 end interface
 interface inf
   #:for dtype,ftype in types_ir
-     module procedure inf_${dtype}$
+     module procedure repro_inf_${dtype}$
   #:endfor
 end interface
 interface infeq
   #:for dtype,ftype in types_ir
-     module procedure infeq_${dtype}$
+     module procedure repro_infeq_${dtype}$
   #:endfor
 end interface
 interface sup
   #:for dtype,ftype in types_ir
-     module procedure sup_${dtype}$
+     module procedure repro_sup_${dtype}$
   #:endfor
 end interface
 interface supeq
   #:for dtype,ftype in types_ir
-     module procedure supeq_${dtype}$
+     module procedure repro_supeq_${dtype}$
   #:endfor
+end interface
+interface indist
+   module procedure repro_indist
+end interface
+interface small
+   module procedure repro_small
 end interface
 
 private
@@ -51,10 +56,10 @@ contains
 
 #:for dtype,ftype in types_irl
 !----------------------------------------------------------------------
-! Function: eq_${dtype}$
+! Function: repro_eq_${dtype}$
 !> Equal test for ${dtype}$
 !----------------------------------------------------------------------
-function eq_${dtype}$(x,y) result(test)
+function repro_eq_${dtype}$(x,y) result(test)
 
 implicit none
 
@@ -75,15 +80,15 @@ logical :: test
 #:endif
 #{if dtype == 'logical'}# test = (x.eqv.y) #{endif}#
 
-end function eq_${dtype}$
+end function repro_eq_${dtype}$
 #:endfor
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Function: inf_${dtype}$
+! Function: repro_inf_${dtype}$
 !> Inferior test for ${dtype}$
 !----------------------------------------------------------------------
-function inf_${dtype}$(x,y) result(test)
+function repro_inf_${dtype}$(x,y) result(test)
 
 implicit none
 
@@ -97,15 +102,15 @@ logical :: test
 test = (x<y)
 #{if dtype == 'real'}# if (repro) test = test.and.(.not.indist(x,y)) #{endif}#
 
-end function inf_${dtype}$
+end function repro_inf_${dtype}$
 #:endfor
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Function: infeq_${dtype}$
+! Function: repro_infeq_${dtype}$
 !> Inferior or equal test for ${dtype}$
 !----------------------------------------------------------------------
-function infeq_${dtype}$(x,y) result(test)
+function repro_infeq_${dtype}$(x,y) result(test)
 
 implicit none
 
@@ -118,15 +123,15 @@ logical :: test
 
 test = inf(x,y).or.eq(x,y)
 
-end function infeq_${dtype}$
+end function repro_infeq_${dtype}$
 #:endfor
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Function: sup_${dtype}$
+! Function: repro_sup_${dtype}$
 !> Superior test for ${dtype}$
 !----------------------------------------------------------------------
-function sup_${dtype}$(x,y) result(test)
+function repro_sup_${dtype}$(x,y) result(test)
 
 implicit none
 
@@ -140,15 +145,15 @@ logical :: test
 test = (x>y)
 #{if dtype == 'real'}# if (repro) test = test.and.(.not.indist(x,y)) #{endif}#
 
-end function sup_${dtype}$
+end function repro_sup_${dtype}$
 #:endfor
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
-! Function: supeq_${dtype}$
+! Function: repro_supeq_${dtype}$
 !> Superior or equal test for ${dtype}$
 !----------------------------------------------------------------------
-function supeq_${dtype}$(x,y) result(test)
+function repro_supeq_${dtype}$(x,y) result(test)
 
 implicit none
 
@@ -161,14 +166,14 @@ logical :: test
 
 test = sup(x,y).or.eq(x,y)
 
-end function supeq_${dtype}$
+end function repro_supeq_${dtype}$
 #:endfor
 
 !----------------------------------------------------------------------
-! Function: indist
+! Function: repro_indist
 !> Indistiguishability test
 !----------------------------------------------------------------------
-function indist(x,y) result(test)
+function repro_indist(x,y) result(test)
 
 implicit none
 
@@ -188,13 +193,13 @@ if (repro) then
    end if
 end if
 
-end function indist
+end function repro_indist
 
 !----------------------------------------------------------------------
-! Function: small
+! Function: repro_small
 !> Small value test
 !----------------------------------------------------------------------
-function small(x,y) result(test)
+function repro_small(x,y) result(test)
 
 implicit none
 
@@ -208,6 +213,6 @@ logical :: test
 test = .false.
 if (repro) test = abs(x)<rth*abs(y)
 
-end function small
+end function repro_small
 
 end module tools_repro

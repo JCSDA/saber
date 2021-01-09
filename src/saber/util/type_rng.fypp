@@ -8,29 +8,34 @@
 !----------------------------------------------------------------------
 module type_rng
 
-use iso_fortran_env, only: int64
-use tools_kinds, only: kind_int,kind_real
+use tools_kinds, only: kind_int,kind_long,kind_real
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 
 implicit none
 
-integer,parameter :: default_seed = 140587       !< Default seed
-integer(int64),parameter :: a = 1103515245_int64 !< Linear congruential multiplier
-integer(int64),parameter :: c = 12345_int64      !< Linear congruential offset
-integer(int64),parameter :: m = 2147483648_int64 !< Linear congruential modulo
+integer,parameter :: default_seed = 140587               !< Default seed
+integer(kind_long),parameter :: a = 1103515245_kind_long !< Linear congruential multiplier
+integer(kind_long),parameter :: c = 12345_kind_long      !< Linear congruential offset
+integer(kind_long),parameter :: m = 2147483648_kind_long !< Linear congruential modulo
 
 type rng_type
-   integer(int64) :: seed   !< Random number generator seed
-   logical :: lset = .true. !< Gaussian number generator switch
-   real(kind_real) :: gset  !< Gaussian number generator alternative
+   ! Seed
+   integer(kind_long) :: seed !< Seed
+
+   ! Gaussian deviates parameters
+   logical :: lset = .true.   !< Gaussian number generator switch
+   real(kind_real) :: gset    !< Gaussian number generator alternative
+
+   ! Dummy variable
+   logical :: dummy_logical   !< Dummy variable 
 contains
    procedure :: init => rng_init
    procedure :: reseed => rng_reseed
    procedure :: resync => rng_resync
    procedure :: desync => rng_desync
    procedure :: lcg => rng_lcg
-   procedure :: dummy_method
+   procedure :: rng_dummy_method
    #:for dtype,ftype in types_ir
       procedure :: rng_rand_${dtype}$_r0
       #:for rank in ranks_123456
@@ -44,7 +49,7 @@ contains
  & rng_rand_${dtype}$_r${rank}$, &
       #:endfor
    #:endfor
- & dummy_method
+ & rng_dummy_method
    procedure :: rng_rand_gau_r0
    #:for rank in ranks_123456
       procedure :: rng_rand_gau_r${rank}$
@@ -53,7 +58,7 @@ contains
    #:for rank in ranks_123456
  & rng_rand_gau_r${rank}$, &
    #:endfor
- & dummy_method
+ & rng_dummy_method
 end type rng_type
 
 private
@@ -90,7 +95,7 @@ end if
 seed = seed+mpl%myproc-1
 
 ! Long integer
-rng%seed = int(seed,kind=int64)
+rng%seed = int(seed,kind_long)
 
 ! Print result
 if (nam%default_seed) then
@@ -125,7 +130,7 @@ seed = default_seed
 seed = seed+mpl%myproc-1
 
 ! Long integer
-rng%seed = int(seed,kind=int64)
+rng%seed = int(seed,kind_long)
 
 end subroutine rng_reseed
 
@@ -165,7 +170,7 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 call mpl%f_comm%barrier()
 
 ! Different seed for each processor
-rng%seed = rng%seed+int(mpl%myproc-1,kind=int64)
+rng%seed = rng%seed+int(mpl%myproc-1,kind_long)
 
 end subroutine rng_desync
 
@@ -178,12 +183,12 @@ subroutine rng_lcg(rng,x,seed)
 implicit none
 
 ! Passed variables
-class(rng_type),intent(inout) :: rng          !< Random number generator
-real(kind_real),intent(out) :: x              !< Random number between 0 and 1
-integer(int64),intent(inout),optional :: seed !< Seed
+class(rng_type),intent(inout) :: rng              !< Random number generator
+real(kind_real),intent(out) :: x                  !< Random number between 0 and 1
+integer(kind_long),intent(inout),optional :: seed !< Seed
 
 ! Local variables
-integer(int64) :: lseed
+integer(kind_long) :: lseed
 
 ! Local seed
 if (present(seed)) then
@@ -207,17 +212,20 @@ x = real(lseed,kind_real)/real(m-1,kind_real)
 end subroutine rng_lcg
 
 !----------------------------------------------------------------------
-! Subroutine: dummy_method
+! Subroutine: rng_dummy_method
 !> Dummy method
 !----------------------------------------------------------------------
-subroutine dummy_method(rng)
+subroutine rng_dummy_method(rng)
 
 implicit none
 
 ! Passed variables
 class(rng_type),intent(inout) :: rng !< Random number generator
 
-end subroutine dummy_method
+! Dummy action to avoid compiler warning
+rng%dummy_logical = .false.
+
+end subroutine rng_dummy_method
 
 #:for dtype,ftype in types_ir
 !----------------------------------------------------------------------
@@ -240,6 +248,7 @@ real(kind_real) :: x
 ! Generate random number between 0 and 1
 call rng%lcg(x)
 
+! Apply bounds
 #:if dtype == 'int'
    ! Adapt range
    x = x*real(bsup-binf+1,kind_real)
@@ -274,10 +283,12 @@ ${ftype}$,intent(in) :: bsup                  !< Upper bound
 ${ftype}$,intent(out) :: array(${dim[rank]}$) !< Random array
 
 ! Local variables
-#:for arg_dim in range(1,rank+1)
-   integer :: i${arg_dim}$
-#:endfor
+integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$, #{endfor}# dummy_integer
 
+! Set dummy integer
+dummy_integer = 0
+
+! Call r0 generator
 #:for arg_dim in range(1,rank+1)
 do i${arg_dim}$=1,size(array,${arg_dim}$)
 #:endfor
@@ -344,10 +355,12 @@ class(rng_type),intent(inout) :: rng          !< Random number generator
 ${ftype}$,intent(out) :: array(${dim[rank]}$) !< Random array
 
 ! Local variables
-#:for arg_dim in range(1,rank+1)
-   integer :: i${arg_dim}$
-#:endfor
+integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$, #{endfor}# dummy_integer
 
+! Set dummy integer
+dummy_integer = 0
+
+! Call r0 generator
 #:for arg_dim in range(1,rank+1)
 do i${arg_dim}$=1,size(array,${arg_dim}$)
 #:endfor
