@@ -1,4 +1,5 @@
 #:include '../generics.fypp'
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_rng
 !> Random numbers generator derived type
@@ -11,6 +12,7 @@ module type_rng
 use tools_kinds, only: kind_int,kind_long,kind_real
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 
 implicit none
 
@@ -28,7 +30,7 @@ type rng_type
    real(kind_real) :: gset    !< Gaussian number generator alternative
 
    ! Dummy variable
-   logical :: dummy_logical   !< Dummy variable 
+   logical :: dummy_logical   !< Dummy variable
 contains
    procedure :: init => rng_init
    procedure :: reseed => rng_reseed
@@ -82,6 +84,12 @@ type(nam_type),intent(in) :: nam     !< Namelist variables
 ! Local variable
 integer :: seed
 
+! Set name
+#:set subr = 'rng_init'
+
+! Probe in
+@:probe_in()
+
 ! Set seed
 if (nam%default_seed) then
    ! Default seed
@@ -106,6 +114,9 @@ else
    call mpl%flush
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine rng_init
 
 !----------------------------------------------------------------------
@@ -123,6 +134,12 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 ! Local variable
 integer :: seed
 
+! Set name
+#:set subr = 'rng_reseed'
+
+! Probe in
+@:probe_in()
+
 ! Default seed
 seed = default_seed
 
@@ -131,6 +148,9 @@ seed = seed+mpl%myproc-1
 
 ! Long integer
 rng%seed = int(seed,kind_long)
+
+! Probe out
+@:probe_out()
 
 end subroutine rng_reseed
 
@@ -146,11 +166,20 @@ implicit none
 class(rng_type),intent(inout) :: rng !< Random number generator
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
+! Set name
+#:set subr = 'rng_resync'
+
+! Probe in
+@:probe_in()
+
 ! Wait
 call mpl%f_comm%barrier()
 
 ! Broadcast root seed
 call mpl%f_comm%broadcast(rng%seed,mpl%rootproc-1)
+
+! Probe out
+@:probe_out()
 
 end subroutine rng_resync
 
@@ -166,11 +195,20 @@ implicit none
 class(rng_type),intent(inout) :: rng !< Random number generator
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
+! Set name
+#:set subr = 'rng_desync'
+
+! Probe in
+@:probe_in()
+
 ! Wait
 call mpl%f_comm%barrier()
 
 ! Different seed for each processor
 rng%seed = rng%seed+int(mpl%myproc-1,kind_long)
+
+! Probe out
+@:probe_out()
 
 end subroutine rng_desync
 
@@ -189,6 +227,12 @@ integer(kind_long),intent(inout),optional :: seed !< Seed
 
 ! Local variables
 integer(kind_long) :: lseed
+
+! Set name
+#:set subr = 'rng_lcg'
+
+! Probe in
+@:probe_in()
 
 ! Local seed
 if (present(seed)) then
@@ -209,6 +253,9 @@ end if
 ! Random number
 x = real(lseed,kind_real)/real(m-1,kind_real)
 
+! Probe out
+@:probe_out()
+
 end subroutine rng_lcg
 
 !----------------------------------------------------------------------
@@ -222,8 +269,17 @@ implicit none
 ! Passed variables
 class(rng_type),intent(inout) :: rng !< Random number generator
 
+! Set name
+#:set subr = 'rng_dummy_method'
+
+! Probe in
+@:probe_in()
+
 ! Dummy action to avoid compiler warning
 rng%dummy_logical = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine rng_dummy_method
 
@@ -245,6 +301,12 @@ ${ftype}$,intent(out) :: value       !< Random value
 ! Local variables
 real(kind_real) :: x
 
+! Set name
+#:set subr = 'rng_rand_${dtype}$_r0'
+
+! Probe in
+@:probe_in()
+
 ! Generate random number between 0 and 1
 call rng%lcg(x)
 
@@ -262,6 +324,9 @@ call rng%lcg(x)
    ! Add offset
    value = binf+x
 #:endif
+
+! Probe out
+@:probe_out()
 
 end subroutine rng_rand_${dtype}$_r0
 #:endfor
@@ -285,6 +350,12 @@ ${ftype}$,intent(out) :: array(${dim[rank]}$) !< Random array
 ! Local variables
 integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$, #{endfor}# dummy_integer
 
+! Set name
+#:set subr = 'rng_rand_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
+
 ! Set dummy integer
 dummy_integer = 0
 
@@ -300,6 +371,9 @@ do i${arg_dim}$=1,size(array,${arg_dim}$)
 #:for arg_dim in range(1,rank+1)
 end do
 #:endfor
+
+! Probe out
+@:probe_out()
 
 end subroutine rng_rand_${dtype}$_r${rank}$
    #:endfor
@@ -320,6 +394,12 @@ real(kind_real),intent(out) :: value !< Gaussian deviate
 ! Local variables
 real(kind_real) :: fac,rsq,v1,v2
 
+! Set name
+#:set subr = 'rng_rand_gau_r0'
+
+! Probe in
+@:probe_in()
+
 ! Gaussian distribution
 if (rng%lset) then
    rsq = 0.0
@@ -339,6 +419,9 @@ else
    rng%lset = .true.
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine rng_rand_gau_r0
 
 #:for rank in ranks_123456
@@ -357,6 +440,12 @@ ${ftype}$,intent(out) :: array(${dim[rank]}$) !< Random array
 ! Local variables
 integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$, #{endfor}# dummy_integer
 
+! Set name
+#:set subr = 'rng_rand_gau_r${rank}$'
+
+! Probe in
+@:probe_in()
+
 ! Set dummy integer
 dummy_integer = 0
 
@@ -372,6 +461,9 @@ do i${arg_dim}$=1,size(array,${arg_dim}$)
 #:for arg_dim in range(1,rank+1)
 end do
 #:endfor
+
+! Probe out
+@:probe_out()
 
 end subroutine rng_rand_gau_r${rank}$
 #:endfor

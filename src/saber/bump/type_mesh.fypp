@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_mesh
 !> Mesh derived type
@@ -18,6 +19,7 @@ use tools_repro, only: inf
 use tools_stripack, only: trfind,trmesh
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_tree, only: tree_type
 
@@ -88,6 +90,12 @@ class(mesh_type),intent(inout) :: mesh !< Mesh
 integer,intent(in) :: n                !< Mesh size
 type(nam_type),intent(in) :: nam       !< Namelist
 
+! Set name
+#:set subr = 'mesh_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 mesh%n = n
 mesh%use_cgal = nam%use_cgal
@@ -106,6 +114,9 @@ if (.not.mesh%use_cgal) then
    allocate(mesh%lptr(6*(mesh%n-2)))
    allocate(mesh%lend(mesh%n))
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine mesh_alloc
 
@@ -132,12 +143,17 @@ integer(kind_long) :: hash_long
 real(kind_real) :: hash
 real(kind_real),allocatable :: list(:),lon_pert(:),lat_pert(:),lonlat(:,:),dist(:),x(:),y(:),z(:)
 logical :: init
-character(len=1024),parameter :: subr = 'mesh_init'
 type(atlas_unstructuredgrid) :: agrid
 type(atlas_mesh) :: amesh
 type(atlas_meshgenerator) :: ameshgenerator
 type(atlas_mesh_nodes) :: anodes
 type(atlas_connectivity) :: aconnectivity
+
+! Set name
+#:set subr = 'mesh_init'
+
+! Probe in
+@:probe_in()
 
 ! Points order
 do i=1,mesh%n
@@ -243,7 +259,7 @@ if (mesh%use_cgal) then
    aconnectivity = anodes%edge_connectivity()
 
    ! Check number of rows
-   if (aconnectivity%rows()/=mesh%n) call mpl%abort(subr,'number of rows should be equal to the number of points')
+   if (aconnectivity%rows()/=mesh%n) call mpl%abort('${subr}$','number of rows should be equal to the number of points')
 
    ! Allocation
    maxedge = 0
@@ -269,7 +285,7 @@ if (mesh%use_cgal) then
             nodes(k,2) = i
          else
             ! Error
-            call mpl%abort(subr,'third node for the same edge')
+            call mpl%abort('${subr}$','third node for the same edge')
          end if
       end do
    end do
@@ -287,7 +303,7 @@ if (mesh%use_cgal) then
             mesh%rows(i)%nodes(j) = nodes(k,1)
          else
             ! Error
-            call mpl%abort(subr,'no node for the this edge')
+            call mpl%abort('${subr}$','no node for the this edge')
          end if
       end do
    end do
@@ -381,6 +397,9 @@ end do
 ! Compute boundary nodes
 call mesh%bnodes(mpl)
 
+! Probe out
+@:probe_out()
+
 end subroutine mesh_init
 
 !----------------------------------------------------------------------
@@ -396,6 +415,12 @@ class(mesh_type),intent(inout) :: mesh !< Mesh
 
 ! Local variables
 integer :: i
+
+! Set name
+#:set subr = 'mesh_dealloc'
+
+! Probe in
+@:probe_in()
 
 ! Release memory
 if (allocated(mesh%order)) deallocate(mesh%order)
@@ -415,6 +440,9 @@ end if
 if (allocated(mesh%list)) deallocate(mesh%list)
 if (allocated(mesh%lptr)) deallocate(mesh%lptr)
 if (allocated(mesh%lend)) deallocate(mesh%lend)
+
+! Probe out
+@:probe_out()
 
 end subroutine mesh_dealloc
 
@@ -437,7 +465,12 @@ integer,allocatable :: order(:),nodes(:)
 real(kind_real),allocatable :: x(:),y(:),z(:),diff(:)
 logical :: isbnd(mesh%n)
 logical,allocatable :: valid(:)
-character(len=1024),parameter :: subr = 'mesh_bnodes'
+
+! Set name
+#:set subr = 'mesh_bnodes'
+
+! Probe in
+@:probe_in()
 
 ! Find first boundary nodes
 ibnd = 0
@@ -496,7 +529,7 @@ if (ibnd>0) then
             end if
             exit
          end if
-         if (j==mesh%rows(ibnd_next)%cols) call mpl%abort(subr,'cannot find next boundary node')
+         if (j==mesh%rows(ibnd_next)%cols) call mpl%abort('${subr}$','cannot find next boundary node')
       end do
    end do
 
@@ -521,7 +554,7 @@ if (ibnd>0) then
             end if
             exit
          end if
-         if (j==mesh%rows(ibnd_next)%cols) call mpl%abort(subr,'cannot find next boundary node')
+         if (j==mesh%rows(ibnd_next)%cols) call mpl%abort('${subr}$','cannot find next boundary node')
       end do
    end do
 else
@@ -602,6 +635,9 @@ do ibnd=1,mesh%nb
    deallocate(valid)
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine mesh_bnodes
 
 !----------------------------------------------------------------------
@@ -622,6 +658,12 @@ logical,intent(out) :: inside_mesh  !< True if the point is inside the mesh
 ! Local variables
 integer :: i,inext
 real(kind_real) :: a(3),b(3),c(3),v1(3),v2(3),cp(3),cd(3)
+
+! Set name
+#:set subr = 'mesh_inside'
+
+! Probe in
+@:probe_in()
 
 ! Transform to cartesian coordinates
 call lonlat2xyz(mpl,lon,lat,a(1),a(2),a(3))
@@ -656,6 +698,9 @@ do i=1,mesh%nb
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine mesh_inside
 
 !----------------------------------------------------------------------
@@ -681,7 +726,12 @@ integer,allocatable :: nn_index(:)
 real(kind_real) :: xyz(3),pi(3),pk(3),pknext(3)
 real(kind_real),allocatable :: nn_dist(:)
 logical :: found,cflag(3),valid
-character(len=1024),parameter :: subr = 'mesh_barycentric'
+
+! Set name
+#:set subr = 'mesh_barycentric'
+
+! Probe in
+@:probe_in()
 
 ! Transform to cartesian coordinates
 call lonlat2xyz(mpl,lon,lat,xyz(1),xyz(2),xyz(3))
@@ -695,7 +745,7 @@ if (mesh%use_cgal) then
 
    do while ((.not.found).and.(nn<=nnmax))
       ! Allocation
-      if (nn>mesh%n) call mpl%abort(subr,'cannot find a triangle containing this point')
+      if (nn>mesh%n) call mpl%abort('${subr}$','cannot find a triangle containing this point')
       allocate(nn_index(nn))
       allocate(nn_dist(nn))
 
@@ -800,6 +850,9 @@ if (mpl%msv%isallnot(ib)) then
    b = b(order)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine mesh_barycentric
 
 !----------------------------------------------------------------------
@@ -817,6 +870,12 @@ integer,intent(out) :: nbnda        !< Number of boundary nodes
 
 ! Local variables
 integer :: i,ii,j,k,kk,knext,kknext
+
+! Set name
+#:set subr = 'mesh_count_bnda'
+
+! Probe in
+@:probe_in()
 
 ! Initialiation
 nbnda = 0
@@ -840,6 +899,9 @@ do i=1,mesh%n
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine mesh_count_bnda
 
 !----------------------------------------------------------------------
@@ -858,6 +920,12 @@ integer,intent(out) :: bnda_index(2,nbnda) !< Boundary node index
 
 ! Local variables
 integer :: ibnda,i,ii,j,k,kk,knext,kknext
+
+! Set name
+#:set subr = 'mesh_get_bnda'
+
+! Probe in
+@:probe_in()
 
 ! Initialiation
 ibnda = 0
@@ -885,6 +953,9 @@ do i=1,mesh%n
       end do
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine mesh_get_bnda
 

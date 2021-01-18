@@ -1,4 +1,5 @@
 #:include '../generics.fypp'
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_repro
 !> Reproducibility functions
@@ -10,6 +11,7 @@ module tools_repro
 
 use tools_const, only: pi
 use tools_kinds, only: kind_int,kind_real
+use type_probe, only: probe
 
 implicit none
 
@@ -70,6 +72,12 @@ ${ftype}$,intent(in) :: y !< Second real
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'repro_eq_${dtype}$'
+
+! Probe in
+@:probe_in()
+
 #{if dtype == 'int'}# test = (x==y) #{endif}#
 #:if dtype == 'real'
    if (repro) then
@@ -79,6 +87,9 @@ logical :: test
    end if
 #:endif
 #{if dtype == 'logical'}# test = (x.eqv.y) #{endif}#
+
+! Probe out
+@:probe_out()
 
 end function repro_eq_${dtype}$
 #:endfor
@@ -99,8 +110,17 @@ ${ftype}$,intent(in) :: y !< Second real
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'repro_inf_${dtype}$'
+
+! Probe in
+@:probe_in()
+
 test = (x<y)
 #{if dtype == 'real'}# if (repro) test = test.and.(.not.indist(x,y)) #{endif}#
+
+! Probe out
+@:probe_out()
 
 end function repro_inf_${dtype}$
 #:endfor
@@ -121,7 +141,16 @@ ${ftype}$,intent(in) :: y !< Second real
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'repro_infeq_${dtype}$'
+
+! Probe in
+@:probe_in()
+
 test = inf(x,y).or.eq(x,y)
+
+! Probe out
+@:probe_out()
 
 end function repro_infeq_${dtype}$
 #:endfor
@@ -142,8 +171,17 @@ ${ftype}$,intent(in) :: y !< Second real
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'repro_sup_${dtype}$'
+
+! Probe in
+@:probe_in()
+
 test = (x>y)
 #{if dtype == 'real'}# if (repro) test = test.and.(.not.indist(x,y)) #{endif}#
+
+! Probe out
+@:probe_out()
 
 end function repro_sup_${dtype}$
 #:endfor
@@ -164,7 +202,16 @@ ${ftype}$,intent(in) :: y !< Second real
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'repro_supeq_${dtype}$'
+
+! Probe in
+@:probe_in()
+
 test = sup(x,y).or.eq(x,y)
+
+! Probe out
+@:probe_out()
 
 end function repro_supeq_${dtype}$
 #:endfor
@@ -184,6 +231,12 @@ real(kind_real),intent(in) :: y !< Second real
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'repro_indist'
+
+! Probe in
+@:probe_in()
+
 test = .false.
 if (repro) then
       if ((abs(x)>0.0).or.(abs(y)>0.0)) then
@@ -192,6 +245,9 @@ if (repro) then
       test = .true.
    end if
 end if
+
+! Probe out
+@:probe_out()
 
 end function repro_indist
 
@@ -210,8 +266,17 @@ real(kind_real),intent(in) :: y !< Second real
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'repro_small'
+
+! Probe in
+@:probe_in()
+
 test = .false.
 if (repro) test = abs(x)<rth*abs(y)
+
+! Probe out
+@:probe_out()
 
 end function repro_small
 

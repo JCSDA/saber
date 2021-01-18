@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! (C) Copyright 2018-2019 UCAR
 !
@@ -11,6 +12,7 @@ module tools_sp
 
 use tools_const, only: pi
 use tools_kinds, only: kind_real
+use type_probe, only: probe
 
 implicit none
 
@@ -47,7 +49,7 @@ implicit none
 ! Passed variables
 integer,intent(in) :: IDRT                !< Grid identifier
 integer,intent(in) :: JMAX                !< Number of latitudes
-real(kind_real),intent(out) :: SLAT(JMAX) !< Sines of latitude 
+real(kind_real),intent(out) :: SLAT(JMAX) !< Sines of latitude
 real(kind_real),intent(out) :: WLAT(JMAX) !< Gaussian weights
 
 ! Local variables
@@ -62,6 +64,12 @@ integer:: JH,JHE,JHO,J0
 integer:: IPVT((JMAX+1)/2)
 real(kind_real),parameter:: C=(ONE-(TWO/PI)**2)*QUARTER
 integer:: J,JS,N
+
+! Set name
+#:set subr = 'sp_splat'
+
+! Probe in
+@:probe_in()
 
 data BZ / 2.4048255577_kind_real,  5.5200781103_kind_real, &
  &        8.6537279129_kind_real, 11.7915344391_kind_real, &
@@ -204,6 +212,9 @@ else if(IDRT==256) then
    end if
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine sp_splat
 
 !-----------------------------------------------------------------
@@ -224,6 +235,12 @@ integer,intent(in):: INDX(N)          !< ?
 ! Local variables
 real(kind_real):: SUM
 integer:: I,II,J,LL
+
+! Set name
+#:set subr = 'sp_lubksb'
+
+! Probe in
+@:probe_in()
 
 II=0
 do I=1,N
@@ -249,6 +266,9 @@ do I=N,1,-1
    B(I)=SUM/A(I,I)
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine sp_lubksb
 
 !-----------------------------------------------------------------
@@ -263,7 +283,7 @@ implicit none
 integer,intent(in):: N                   !< ?
 integer,intent(in):: NP                  !< ?
 real(kind_real),intent(inout):: A(NP,NP) !< ?
-integer,intent(out):: INDX(N)            !< ? 
+integer,intent(out):: INDX(N)            !< ?
 real(kind_real),intent(out),optional:: D !< ?
 
 ! Local variables
@@ -272,6 +292,12 @@ real(kind_real):: AAMAX,SUM,DUM
 real(kind_real):: VV(N)
 integer:: IMAX
 integer:: I,J,K
+
+! Set name
+#:set subr = 'sp_ludcmp'
+
+! Probe in
+@:probe_in()
 
 D=ONE
 do I=1,N
@@ -328,6 +354,9 @@ do J=1,N
    end if
 end do
 if(.NOT.(ABS(A(N,N))>ZERO)) A(N,N)=TINY
+
+! Probe out
+@:probe_out()
 
 end subroutine sp_ludcmp
 

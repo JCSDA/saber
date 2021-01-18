@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_lct_blk
 !> LCT data derived type
@@ -21,6 +22,7 @@ use type_minim, only: minim_type
 use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_samp, only: samp_type
 
@@ -93,6 +95,12 @@ type(bpar_type),intent(in) :: bpar           !< Block parameters
 type(samp_type),intent(in) :: samp           !< Sampling
 integer,intent(in) :: ib                     !< Block index
 
+! Set name
+#:set subr = 'lct_blk_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Attributes
 lct_blk%ib = ib
 lct_blk%nscales = nam%lct_nscales
@@ -120,6 +128,9 @@ allocate(lct_blk%H12(geom%nc0a,geom%nl0,lct_blk%nscales))
 allocate(lct_blk%Dcoef(geom%nc0a,geom%nl0,lct_blk%nscales))
 allocate(lct_blk%DLh(geom%nc0a,geom%nl0,lct_blk%nscales))
 
+! Probe out
+@:probe_out()
+
 end subroutine lct_blk_alloc
 
 !----------------------------------------------------------------------
@@ -132,6 +143,12 @@ implicit none
 
 ! Passed variables
 class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
+
+! Set name
+#:set subr = 'lct_blk_partial_dealloc'
+
+! Probe in
+@:probe_in()
 
 ! Release memory
 if (allocated(lct_blk%raw)) deallocate(lct_blk%raw)
@@ -148,6 +165,9 @@ if (allocated(lct_blk%H22)) deallocate(lct_blk%H22)
 if (allocated(lct_blk%H33)) deallocate(lct_blk%H33)
 if (allocated(lct_blk%H12)) deallocate(lct_blk%H12)
 
+! Probe out
+@:probe_out()
+
 end subroutine lct_blk_partial_dealloc
 
 !----------------------------------------------------------------------
@@ -161,6 +181,12 @@ implicit none
 ! Passed variables
 class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
 
+! Set name
+#:set subr = 'lct_blk_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 call lct_blk%partial_dealloc
 if (allocated(lct_blk%D11)) deallocate(lct_blk%D11)
@@ -169,6 +195,9 @@ if (allocated(lct_blk%D33)) deallocate(lct_blk%D33)
 if (allocated(lct_blk%D12)) deallocate(lct_blk%D12)
 if (allocated(lct_blk%Dcoef)) deallocate(lct_blk%Dcoef)
 if (allocated(lct_blk%DLh)) deallocate(lct_blk%DLh)
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_blk_dealloc
 
@@ -192,6 +221,12 @@ character(len=*),intent(in) :: filename      !< Filename
 ! Local variables
 integer :: iv,iscales
 character(len=1024) :: varname,scalename
+
+! Set name
+#:set subr = 'lct_blk_write'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>lct_blk%ib)
@@ -219,6 +254,9 @@ call io%fld_write(mpl,nam,geom,filename,'qc',lct_blk%qc_c0a,varname)
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine lct_blk_write
 
 !----------------------------------------------------------------------
@@ -242,7 +280,12 @@ integer :: ncid,grpid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,vunit_id,l0rl0
 integer :: ic1a,ic3,ic0u
 real(kind_real),allocatable :: lon(:,:),lat(:,:)
 character(len=1024) :: filename
-character(len=1024),parameter :: subr = 'lct_blk_write'
+
+! Set name
+#:set subr = 'lct_blk_write_cor'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>lct_blk%ib)
@@ -262,47 +305,50 @@ end do
 
 ! Define file
 write(filename,'(a,i6.6,a,i6.6)') trim(nam%prefix)//'_lct_cor_',mpl%nproc,'-',mpl%myproc
-ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,bpar%blockname(ib))
+grpid = mpl%nc_group_define_or_get(ncid,bpar%blockname(ib))
 
 ! Define dimensions
-nc3_id = mpl%nc_dim_define_or_get(subr,grpid,'nc3',bpar%nc3(ib))
-nl0r_id = mpl%nc_dim_define_or_get(subr,grpid,'nl0r',bpar%nl0r(ib))
-nc1a_id = mpl%nc_dim_define_or_get(subr,ncid,'nc1a',samp%nc1a)
-nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
+nc3_id = mpl%nc_dim_define_or_get(grpid,'nc3',bpar%nc3(ib))
+nl0r_id = mpl%nc_dim_define_or_get(grpid,'nl0r',bpar%nl0r(ib))
+nc1a_id = mpl%nc_dim_define_or_get(ncid,'nc1a',samp%nc1a)
+nl0_id = mpl%nc_dim_define_or_get(ncid,'nl0',geom%nl0)
 
 ! Define coordinates
-lon_id = mpl%nc_var_define_or_get(subr,grpid,'lon',nc_kind_real,(/nc3_id,nc1a_id/))
-lat_id = mpl%nc_var_define_or_get(subr,grpid,'lat',nc_kind_real,(/nc3_id,nc1a_id/))
-vunit_id = mpl%nc_var_define_or_get(subr,ncid,'vunit',nc_kind_real,(/nl0_id/))
+lon_id = mpl%nc_var_define_or_get(grpid,'lon',nc_kind_real,(/nc3_id,nc1a_id/))
+lat_id = mpl%nc_var_define_or_get(grpid,'lat',nc_kind_real,(/nc3_id,nc1a_id/))
+vunit_id = mpl%nc_var_define_or_get(ncid,'vunit',nc_kind_real,(/nl0_id/))
 
 ! Define variables
-l0rl0_to_l0_id = mpl%nc_var_define_or_get(subr,grpid,'l0rl0_to_l0',nc_kind_int,(/nl0r_id,nl0_id/))
-raw_id = mpl%nc_var_define_or_get(subr,grpid,'raw',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
-fit_id = mpl%nc_var_define_or_get(subr,grpid,'fit',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
-if (nam%diag_rhflt>0.0) fit_filt_id = mpl%nc_var_define_or_get(subr,grpid,'fit_filt',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+l0rl0_to_l0_id = mpl%nc_var_define_or_get(grpid,'l0rl0_to_l0',nc_kind_int,(/nl0r_id,nl0_id/))
+raw_id = mpl%nc_var_define_or_get(grpid,'raw',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+fit_id = mpl%nc_var_define_or_get(grpid,'fit',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+if (nam%diag_rhflt>0.0) fit_filt_id = mpl%nc_var_define_or_get(grpid,'fit_filt',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
 
 ! Write coordinates
-call mpl%ncerr(subr,nf90_put_var(grpid,lon_id,lon))
-call mpl%ncerr(subr,nf90_put_var(grpid,lat_id,lat))
-call mpl%ncerr(subr,nf90_put_var(ncid,vunit_id,geom%vunitavg))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,lon_id,lon))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,lat_id,lat))
+call mpl%ncerr('${subr}$',nf90_put_var(ncid,vunit_id,geom%vunitavg))
 
 ! Write variables
-call mpl%ncerr(subr,nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib)))
-call mpl%ncerr(subr,nf90_put_var(grpid,raw_id,lct_blk%raw))
-call mpl%ncerr(subr,nf90_put_var(grpid,fit_id,lct_blk%fit))
-if (nam%diag_rhflt>0.0) call mpl%ncerr(subr,nf90_put_var(grpid,fit_filt_id,lct_blk%fit_filt))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib)))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,raw_id,lct_blk%raw))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,fit_id,lct_blk%fit))
+if (nam%diag_rhflt>0.0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,fit_filt_id,lct_blk%fit_filt))
 
 ! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! End associate
 end associate
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_blk_write_cor
 
@@ -331,6 +377,12 @@ real(kind_real),allocatable :: norm_raw(:,:),Dh(:),Dv(:)
 logical :: valid
 logical,allocatable :: Dv_valid(:)
 type(minim_type) :: minim
+
+! Set name
+#:set subr = 'lct_blk_compute'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>lct_blk%ib)
@@ -612,6 +664,9 @@ end do
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine lct_blk_compute
 
 !----------------------------------------------------------------------
@@ -636,6 +691,12 @@ real(kind_real) :: fld_c2a(samp%nc2a),dx,dy,dz
 real(kind_real),allocatable :: fld_filt_c2a(:),dxsq(:,:),dysq(:,:),dxdy(:,:),dzsq(:,:)
 logical :: valid
 logical,allocatable :: dmask(:,:)
+
+! Set name
+#:set subr = 'lct_blk_filter'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>lct_blk%ib)
@@ -758,6 +819,9 @@ if (nam%diag_rhflt>0.0) deallocate(fld_filt_c2a)
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine lct_blk_filter
 
 !----------------------------------------------------------------------
@@ -781,7 +845,12 @@ integer :: il0,il0i,ic1a,ic2a,ic0a,icomp,iscales
 real(kind_real) :: det,Lavg_tot,norm_tot
 real(kind_real) :: fld_c2a(samp%nc2a,geom%nl0,2*4+2),fld_c2b(samp%nc2b,geom%nl0),fld(geom%nc0a,geom%nl0,2*4+3)
 real(kind_real),allocatable :: D(:,:,:,:),coef(:,:,:)
-character(len=1024),parameter :: subr = 'lct_interp'
+
+! Set name
+#:set subr = 'lct_blk_interp'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>lct_blk%ib)
@@ -863,7 +932,7 @@ do iscales=1,lct_blk%nscales
             if (det>0.0) then
                fld(ic0a,il0,2*4+3) = sqrt(sqrt(det))
             else
-               call mpl%abort(subr,'non-valid horizontal diffusion tensor determinant, grid c0')
+               call mpl%abort('${subr}$','non-valid horizontal diffusion tensor determinant, grid c0')
             end if
          end if
       end do
@@ -896,6 +965,9 @@ deallocate(coef)
 
 ! End associate
 end associate
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_blk_interp
 

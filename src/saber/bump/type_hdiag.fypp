@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_hdiag
 !> Hybrid diagnostics derived type
@@ -17,6 +18,7 @@ use type_io, only: io_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_samp, only: samp_type
 
@@ -58,6 +60,12 @@ implicit none
 ! Passed variables
 class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
 
+! Set name
+#:set subr = 'hdiag_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 call hdiag%avg_1%dealloc
 call hdiag%avg_2%dealloc
@@ -72,6 +80,9 @@ call hdiag%cor_2%dealloc
 call hdiag%loc_1%dealloc
 call hdiag%loc_2%dealloc
 call hdiag%loc_3%dealloc
+
+! Probe out
+@:probe_out()
 
 end subroutine hdiag_dealloc
 
@@ -93,6 +104,12 @@ type(bpar_type),intent(in) :: bpar         !< Block parameters
 type(io_type),intent(in) :: io             !< I/O
 type(ens_type),intent(inout) :: ens1       !< Ensemble 1
 type(ens_type),intent(in),optional :: ens2 !< Ensemble 2
+
+! Set name
+#:set subr = 'hdiag_run_hdiag'
+
+! Probe in
+@:probe_in()
 
 ! Setup sampling
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -293,6 +310,9 @@ if (trim(nam%method)=='dual-ens') then
    call mpl%flush
    call hdiag%loc_2%dualens(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,hdiag%avg_2,hdiag%loc_3,'loc_deh','loc_deh_lr')
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine hdiag_run_hdiag
 

@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_func
 !> Usual functions
@@ -15,6 +16,7 @@ use tools_kinds, only: kind_short,kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,sup,infeq,small
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 
 implicit none
 
@@ -123,8 +125,17 @@ real(kind_real),intent(in) :: var(:) !< Variable
 ! Returned variable
 integer :: value
 
+! Set name
+#:set subr = 'func_fletcher32'
+
+! Probe in
+@:probe_in()
+
 ! Call C function
 value = c_fletcher32(size(transfer(var,(/0_kind_short/))),transfer(var,(/0_kind_short/)))
+
+! Probe out
+@:probe_out()
 
 end function func_fletcher32
 
@@ -139,6 +150,12 @@ implicit none
 ! Passed variables
 real(kind_real),intent(inout) :: lon !< Longitude (radians)
 real(kind_real),intent(inout) :: lat !< Latitude (radians)
+
+! Set name
+#:set subr = 'func_lonlatmod'
+
+! Probe in
+@:probe_in()
 
 ! Check latitude bounds
 if (lat>0.5*pi) then
@@ -158,6 +175,9 @@ end if
 
 ! Same zero longitude for poles
 if (abs(lat)>(0.5-1.0e-6)*pi) lon = 0.0
+
+! Probe out
+@:probe_out()
 
 end subroutine func_lonlatmod
 
@@ -180,6 +200,12 @@ real(kind_real) :: value
 ! Local variables
 real(kind_real) :: lontmp,lattmp
 
+! Set name
+#:set subr = 'func_lonlathash'
+
+! Probe in
+@:probe_in()
+
 ! Set correct lon/lat
 lontmp = lon
 lattmp = lat
@@ -188,6 +214,9 @@ call lonlatmod(lontmp,lattmp)
 ! Hash value
 value = aint((lontmp+pi)*1.0e6)+(lattmp+0.5*pi)*1.0e-1
 if (present(il)) value = value+real(il*1e7,kind_real)
+
+! Probe out
+@:probe_out()
 
 end function func_lonlathash
 
@@ -209,11 +238,20 @@ real(kind_real),intent(out) :: dist !< Great-circle distance
 ! Local variables
 type(atlas_geometry) :: ageometry
 
+! Set name
+#:set subr = 'func_sphere_dist'
+
+! Probe in
+@:probe_in()
+
 ! Create ATLAS geometry
 ageometry = atlas_geometry('UnitSphere')
 
 ! Compute distance
 dist = ageometry%distance(lon_i*rad2deg,lat_i*rad2deg,lon_f*rad2deg,lat_f*rad2deg)
+
+! Probe out
+@:probe_out()
 
 end subroutine func_sphere_dist
 
@@ -235,12 +273,17 @@ real(kind_real),intent(out) :: z    !< Z coordinate
 
 ! Local variables
 type(atlas_geometry) :: ageometry
-character(len=1024),parameter :: subr = 'func_lonlat2xyz'
+
+! Set name
+#:set subr = 'func_lonlat2xyz'
+
+! Probe in
+@:probe_in()
 
 if (mpl%msv%isnot(lat).and.mpl%msv%isnot(lon)) then
    ! Check longitude/latitude
-   if (inf(lon,-pi).and.sup(lon,pi)) call mpl%abort(subr,'wrong longitude')
-   if (inf(lat,-0.5*pi).and.sup(lat,-0.5*pi)) call mpl%abort(subr,'wrong latitude')
+   if (inf(lon,-pi).and.sup(lon,pi)) call mpl%abort('${subr}$','wrong longitude')
+   if (inf(lat,-0.5*pi).and.sup(lat,-0.5*pi)) call mpl%abort('${subr}$','wrong latitude')
 
    ! Create ATLAS geometry
    ageometry = atlas_geometry('UnitSphere')
@@ -253,6 +296,9 @@ else
    y = mpl%msv%valr
    z = mpl%msv%valr
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine func_lonlat2xyz
 
@@ -275,6 +321,12 @@ real(kind_real),intent(out) :: lat !< Latitude (radians)
 ! Local variables
 type(atlas_geometry) :: ageometry
 
+! Set name
+#:set subr = 'func_xyz2lonlat'
+
+! Probe in
+@:probe_in()
+
 if (mpl%msv%isnot(x).and.mpl%msv%isnot(y).and.mpl%msv%isnot(z)) then
    ! Create ATLAS geometry
    ageometry = atlas_geometry('UnitSphere')
@@ -290,6 +342,9 @@ else
    lon = mpl%msv%valr
    lat = mpl%msv%valr
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine func_xyz2lonlat
 
@@ -309,6 +364,12 @@ real(kind_real),intent(out) :: vp(3) !< Vector product
 ! Local variable
 real(kind_real) :: r
 
+! Set name
+#:set subr = 'func_vector_product'
+
+! Probe in
+@:probe_in()
+
 ! Vector product
 vp(1) = v1(2)*v2(3)-v1(3)*v2(2)
 vp(2) = v1(3)*v2(1)-v1(1)*v2(3)
@@ -317,6 +378,9 @@ vp(3) = v1(1)*v2(2)-v1(2)*v2(1)
 ! Normalization
 r = sqrt(sum(vp**2))
 if (r>0.0) vp = vp/r
+
+! Probe out
+@:probe_out()
 
 end subroutine func_vector_product
 
@@ -339,6 +403,12 @@ logical,intent(out) :: cflag        !< Confidence flag
 integer :: i
 real(kind_real) :: terms(6)
 
+! Set name
+#:set subr = 'func_det'
+
+! Probe in
+@:probe_in()
+
 ! Terms
 terms(1) = v1(2)*v2(3)*v3(1)
 terms(2) = -v1(3)*v2(2)*v3(1)
@@ -355,6 +425,9 @@ cflag = .true.
 do i=1,6
    if ((abs(terms(i))>0.0).and.small(p,terms(i))) cflag = .false.
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine func_det
 
@@ -381,6 +454,12 @@ real(kind_real),intent(out),optional :: diff(n) !< Angles differences
 integer :: i
 real(kind_real) :: rvec(3),costheta,sintheta,p(3),rvecxv(3),v(3),list(n)
 real(kind_real),allocatable :: list_save(:)
+
+! Set name
+#:set subr = 'func_order_cc'
+
+! Probe in
+@:probe_in()
 
 ! Rotation vector in cartesian coordinates
 call lonlat2xyz(mpl,lon-0.5*pi,0.0_kind_real,rvec(1),rvec(2),rvec(3))
@@ -422,6 +501,9 @@ if (present(diff)) then
    deallocate(list_save)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine func_order_cc
 
 !----------------------------------------------------------------------
@@ -442,6 +524,12 @@ real(kind_real),intent(in),optional :: wgt !< Weight
 ! Local variables
 real(kind_real) :: lwgt
 
+! Set name
+#:set subr = 'func_add'
+
+! Probe in
+@:probe_in()
+
 ! Initialize weight
 lwgt = 1.0
 if (present(wgt)) lwgt = wgt
@@ -451,6 +539,9 @@ if (mpl%msv%isnot(val)) then
    cumul = cumul+lwgt*val
    num = num+lwgt
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine func_add
 
@@ -467,12 +558,21 @@ type(mpl_type),intent(in) :: mpl     !< MPI data
 real(kind_real),intent(inout) :: val !< Value to divide
 real(kind_real),intent(in) :: num    !< Divider
 
+! Set name
+#:set subr = 'func_divide'
+
+! Probe in
+@:probe_in()
+
 ! Divide cumul by num
 if (abs(num)>0.0) then
    val = val/num
 else
    val = mpl%msv%valr
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine func_divide
 
@@ -503,6 +603,12 @@ integer :: plist(nc3*nl0r,2),plist_new(nc3*nl0r,2)
 real(kind_real) :: rhsq,rvsq,distvsq,disttest,rhmax
 real(kind_real) :: predistnorm(-1:1,nc3,-1:1,nl0),distnorm(nc3,nl0r)
 logical :: add_to_front
+
+! Set name
+#:set subr = 'func_fit_diag'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 fit = 0.0
@@ -587,7 +693,7 @@ do il0=1,nl0
          jl0r = plist(ip,2)
          jl0 = l0rl0_to_l0(jl0r,il0)
 
-         ! Loop over neighbors              
+         ! Loop over neighbors
          do kc3=max(jc3-1,1),min(jc3+1,nc3max)
             do kl0r=max(jl0r-1,1),min(jl0r+1,nl0r)
                kl0 = l0rl0_to_l0(kl0r,il0)
@@ -653,6 +759,9 @@ do il0=1,nl0
    end do
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine func_fit_diag
 
 !----------------------------------------------------------------------
@@ -667,6 +776,12 @@ real(kind_real),intent(in) :: distnorm !< Normalized distance
 ! Returned variable
 real(kind_real) :: value
 
+! Set name
+#:set subr = 'func_gc99'
+
+! Probe in
+@:probe_in()
+
 ! Gaspari and Cohn (1999) function
 if (distnorm<0.5) then
    value = -8.0*distnorm**5+8.0*distnorm**4+5.0*distnorm**3-20.0/3.0*distnorm**2+1.0
@@ -675,6 +790,9 @@ else if (distnorm<1.0) then
 else
    value = 0.0
 end if
+
+! Probe out
+@:probe_out()
 
 end function func_gc99
 
@@ -691,17 +809,23 @@ real(kind_real),intent(in) :: distnorm !< Normalized distance
 ! Returned variable
 real(kind_real) :: value
 
-! Local variables
-character(len=1024),parameter :: subr = 'func_fit_func'
+! Set name
+#:set subr = 'func_fit_func'
+
+! Probe in
+@:probe_in()
 
 ! Distance check bound
-if (distnorm<0.0) call mpl%abort(subr,'negative normalized distance')
+if (distnorm<0.0) call mpl%abort('${subr}$','negative normalized distance')
 
 ! Gaspari and Cohn (1999) function
 value = gc99(distnorm)
 
 ! Enforce positivity
 value = max(value,0.0_kind_real)
+
+! Probe out
+@:probe_out()
 
 end function func_fit_func
 
@@ -730,6 +854,12 @@ real(kind_real),intent(out) :: fit(nc,nl0)  !< Fit
 ! Local variables
 integer :: jl0,jc3,iscales
 real(kind_real) :: Dcoef(nscales),D11,D22,D33,D12,H11,H22,H33,H12,rsq
+
+! Set name
+#:set subr = 'func_fit_lct'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 fit = mpl%msv%valr
@@ -774,6 +904,9 @@ do iscales=1,nscales
    end do
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine func_fit_lct
 
 !----------------------------------------------------------------------
@@ -797,7 +930,12 @@ real(kind_real),intent(out) :: H12 !< Local correlation tensor component 12
 
 ! Local variables
 real(kind_real) :: det
-character(len=1024),parameter :: subr = 'func_lct_d2h'
+
+! Set name
+#:set subr = 'func_lct_d2h'
+
+! Probe in
+@:probe_in()
 
 ! Compute horizontal determinant
 det = D11*D22-D12**2
@@ -808,13 +946,16 @@ if (det>0.0) then
    H22 = D11/det
    H12 = -D12/det
 else
-   call mpl%abort(subr,'non-invertible tensor')
+   call mpl%abort('${subr}$','non-invertible tensor')
 end if
 if (D33>0.0) then
    H33 = 1.0/D33
 else
    H33 = 0.0
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine func_lct_d2h
 
@@ -837,10 +978,15 @@ real(kind_real),intent(out) :: rv   !< Vertical support radius
 
 ! Local variables
 real(kind_real) :: tr,det,diff
-character(len=1024),parameter :: subr = 'func_lct_h2r'
+
+! Set name
+#:set subr = 'func_lct_h2r'
+
+! Probe in
+@:probe_in()
 
 ! Check diagonal positivity
-if ((H11<0.0).or.(H22<0.0)) call mpl%abort(subr,'negative diagonal LCT coefficients')
+if ((H11<0.0).or.(H22<0.0)) call mpl%abort('${subr}$','negative diagonal LCT coefficients')
 
 ! Compute horizontal trace
 tr = H11+H22
@@ -854,10 +1000,10 @@ if ((det>0.0).and..not.(diff<0.0)) then
    if (0.5*tr>sqrt(diff)) then
       rh = gau2gc/sqrt(0.5*tr-sqrt(diff))
    else
-      call mpl%abort(subr,'non positive-definite LCT (eigenvalue)')
+      call mpl%abort('${subr}$','non positive-definite LCT (eigenvalue)')
    end if
 else
-   call mpl%abort(subr,'non positive-definite LCT (determinant)')
+   call mpl%abort('${subr}$','non positive-definite LCT (determinant)')
 end if
 
 ! Compute vertical support radius
@@ -866,6 +1012,9 @@ if (H33>0.0) then
 else
    rv = 0.0
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine func_lct_h2r
 
@@ -881,8 +1030,17 @@ implicit none
 real(kind_real),intent(in) :: r  !< Support radius
 real(kind_real),intent(out) :: D !< Daley tensor diagonal element
 
+! Set name
+#:set subr = 'func_lct_r2d'
+
+! Probe in
+@:probe_in()
+
 ! Convert from support radius to Daley length-scale and square
 D = (gc2gau*r)**2
+
+! Probe out
+@:probe_out()
 
 end subroutine func_lct_r2d
 
@@ -902,6 +1060,12 @@ logical,intent(out) :: valid      !< Conditioning validity
 
 ! Local variables
 real(kind_real) :: det,tr,diff,ev1,ev2
+
+! Set name
+#:set subr = 'func_check_cond'
+
+! Probe in
+@:probe_in()
 
 ! Compute trace and determinant
 tr = d1+d2
@@ -925,6 +1089,9 @@ else
    valid = .false.
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine func_check_cond
 
 !----------------------------------------------------------------------
@@ -946,11 +1113,16 @@ real(kind_real) :: value
 ! Local variables
 integer :: j
 real(kind_real) :: xtmp,beta
-character(len=1024),parameter :: subr = 'func_matern'
+
+! Set name
+#:set subr = 'func_matern'
+
+! Probe in
+@:probe_in()
 
 ! Check
-if (M<2) call mpl%abort(subr,'M should be larger than 2')
-if (mod(M,2)>0) call mpl%abort(subr,'M should be even')
+if (M<2) call mpl%abort('${subr}$','M should be larger than 2')
+if (mod(M,2)>0) call mpl%abort('${subr}$','M should be even')
 
 ! Initialization
 value = 0.0
@@ -970,6 +1142,9 @@ value = value/beta+1.0
 
 ! Exponential factor
 value = value*exp(-xtmp)
+
+! Probe out
+@:probe_out()
 
 end function func_matern
 
@@ -991,6 +1166,12 @@ real(kind_real),intent(out) :: u(n,n) !< Matrix square-root
 ! Local variables
 integer :: nn,i,j,ij
 real(kind_real),allocatable :: apack(:),upack(:)
+
+! Set name
+#:set subr = 'func_cholesky'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 nn = (n*(n+1))/2
@@ -1023,6 +1204,9 @@ end do
 deallocate(apack)
 deallocate(upack)
 
+! Probe out
+@:probe_out()
+
 end subroutine func_cholesky
 
 !----------------------------------------------------------------------
@@ -1043,6 +1227,12 @@ real(kind_real),intent(out) :: c(n,n) !< Matrix inverse
 ! Local variables
 integer :: nn,i,j,ij
 real(kind_real),allocatable :: apack(:),cpack(:)
+
+! Set name
+#:set subr = 'func_syminv'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 nn = (n*(n+1))/2
@@ -1075,6 +1265,9 @@ end do
 deallocate(apack)
 deallocate(cpack)
 
+! Probe out
+@:probe_out()
+
 end subroutine func_syminv
 
 !----------------------------------------------------------------------
@@ -1099,13 +1292,18 @@ real(kind_real),intent(out) :: hist(nbins)   !< Histogram
 integer :: ibins,ilist
 real(kind_real) :: delta
 logical :: found
-character(len=1024) :: subr = 'histogram'
+
+! Set name
+#:set subr = 'func_histogram'
+
+! Probe in
+@:probe_in()
 
 ! Check data
-if (nbins<=0) call mpl%abort(subr,'the number of bins should be positive')
+if (nbins<=0) call mpl%abort('${subr}$','the number of bins should be positive')
 if (histmax>histmin) then
-   if (minval(list,mask=mpl%msv%isnot(list))<histmin) call mpl%abort(subr,'values below histogram minimum')
-   if (maxval(list,mask=mpl%msv%isnot(list))>histmax) call mpl%abort(subr,'values over histogram maximum')
+   if (minval(list,mask=mpl%msv%isnot(list))<histmin) call mpl%abort('${subr}$','values below histogram minimum')
+   if (maxval(list,mask=mpl%msv%isnot(list))>histmax) call mpl%abort('${subr}$','values over histogram maximum')
 
    ! Compute bins
    delta = (histmax-histmin)/real(nbins,kind_real)
@@ -1127,7 +1325,7 @@ if (histmax>histmin) then
          found = .false.
          do while (.not.found)
             ibins = ibins+1
-            if (ibins>nbins) call mpl%abort(subr,'bin not found')
+            if (ibins>nbins) call mpl%abort('${subr}$','bin not found')
             if (infeq(bins(ibins),list(ilist)).and.inf(list(ilist),bins(ibins+1))) then
                hist(ibins) = hist(ibins)+1.0
                found = .true.
@@ -1136,11 +1334,14 @@ if (histmax>histmin) then
       end if
    end do
    if (abs(sum(hist)-real(count(mpl%msv%isnot(list)),kind_real))>0.5) &
- & call mpl%abort(subr,'histogram sum is not equal to the number of valid elements')
+ & call mpl%abort('${subr}$','histogram sum is not equal to the number of valid elements')
 else
    bins = mpl%msv%valr
    hist = 0.0
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine func_histogram
 

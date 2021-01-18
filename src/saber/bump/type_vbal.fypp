@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_vbal
 !> Vertical balance derived type
@@ -19,6 +20,7 @@ use type_geom, only: geom_type
 use type_io, only: io_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_samp, only: samp_type
 use type_vbal_blk, only: vbal_blk_type
@@ -73,6 +75,12 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 ! Local variables
 integer :: iv,jv
 
+! Set name
+#:set subr = 'vbal_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 allocate(vbal%h_n_s(geom%nc0a,geom%nl0i))
 allocate(vbal%h_c2b(3,geom%nc0a,geom%nl0i))
@@ -88,6 +96,9 @@ end do
 
 ! Update allocation flag
 vbal%allocated = .true.
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_alloc
 
@@ -105,6 +116,12 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 ! Local variables
 integer :: iv,jv
 
+! Set name
+#:set subr = 'vbal_partial_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(vbal%blk)) then
    do jv=1,size(vbal%blk,2)
@@ -113,6 +130,9 @@ if (allocated(vbal%blk)) then
       end do
    end do
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_partial_dealloc
 
@@ -130,6 +150,12 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 ! Local variables
 integer :: iv,jv
 
+! Set name
+#:set subr = 'vbal_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(vbal%h_n_s)) deallocate(vbal%h_n_s)
 if (allocated(vbal%h_c2b)) deallocate(vbal%h_c2b)
@@ -145,6 +171,9 @@ end if
 
 ! Update allocation flag
 vbal%allocated = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_dealloc
 
@@ -167,55 +196,63 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 integer :: iv,jv,grid_hash
 integer :: ncid,grpid(nam%nv,nam%nv),h_n_s_id,h_c2b_id,h_S_id,reg_id(nam%nv,nam%nv)
 character(len=1024) :: filename,grpname
-character(len=1024),parameter :: subr = 'vbal_read'
+
+! Set name
+#:set subr = 'vbal_read'
+
+! Probe in
+@:probe_in()
 
 ! Open file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
 ! Check grid hash
-call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
-if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
+call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
+if (grid_hash/=geom%grid_hash) call mpl%abort('${subr}$','wrong grid hash')
 
 ! Get or check dimensions
-call mpl%nc_dim_check(subr,ncid,'nc0a',geom%nc0a)
-vbal%samp%nc2b = mpl%nc_dim_inquire(subr,ncid,'nc2b')
-call mpl%nc_dim_check(subr,ncid,'nl0i',geom%nl0i)
-call mpl%nc_dim_check(subr,ncid,'nl0_1',geom%nl0)
-call mpl%nc_dim_check(subr,ncid,'nl0_2',geom%nl0)
+call mpl%nc_dim_check(ncid,'nc0a',geom%nc0a)
+vbal%samp%nc2b = mpl%nc_dim_inquire(ncid,'nc2b')
+call mpl%nc_dim_check(ncid,'nl0i',geom%nl0i)
+call mpl%nc_dim_check(ncid,'nl0_1',geom%nl0)
+call mpl%nc_dim_check(ncid,'nl0_2',geom%nl0)
 
 ! Allocation
 call vbal%alloc(nam,geom,bpar)
 
 ! Get variables
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'h_n_s',h_n_s_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'h_c2b',h_c2b_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'h_S',h_S_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'h_n_s',h_n_s_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'h_c2b',h_c2b_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'h_S',h_S_id))
 do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Get group
          call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
-         call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid(iv,jv)))
+         call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,grpname,grpid(iv,jv)))
 
          ! Get variable
-         call mpl%ncerr(subr,nf90_inq_varid(grpid(iv,jv),'reg',reg_id(iv,jv)))
+         call mpl%ncerr('${subr}$',nf90_inq_varid(grpid(iv,jv),'reg',reg_id(iv,jv)))
       end if
    end do
 end do
 
 ! Read data
-call mpl%ncerr(subr,nf90_get_var(ncid,h_n_s_id,vbal%h_n_s))
-call mpl%ncerr(subr,nf90_get_var(ncid,h_c2b_id,vbal%h_c2b))
-call mpl%ncerr(subr,nf90_get_var(ncid,h_S_id,vbal%h_S))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,h_n_s_id,vbal%h_n_s))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,h_c2b_id,vbal%h_c2b))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,h_S_id,vbal%h_S))
 do iv=1,nam%nv
    do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) call mpl%ncerr(subr,nf90_get_var(grpid(iv,jv),reg_id(iv,jv),vbal%blk(iv,jv)%reg))
+      if (bpar%vbal_block(iv,jv)) call mpl%ncerr('${subr}$',nf90_get_var(grpid(iv,jv),reg_id(iv,jv),vbal%blk(iv,jv)%reg))
    end do
 end do
 
 ! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_read
 
@@ -239,63 +276,71 @@ integer :: iv,jv
 integer :: ncid,grpid(nam%nv,nam%nv),np_id,nc0a_id,nc2b_id,nl0i_id,nl0_1_id,nl0_2_id,h_n_s_id,h_c2b_id,h_S_id
 integer :: reg_id(nam%nv,nam%nv),auto_id(nam%nv,nam%nv),cross_id(nam%nv,nam%nv),auto_inv_id(nam%nv,nam%nv)
 character(len=1024) :: filename,grpname
-character(len=1024),parameter :: subr = 'vbal_write'
+
+! Set name
+#:set subr = 'vbal_write'
+
+! Probe in
+@:probe_in()
 
 ! Define file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
-ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Write grid hash
-call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
+call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
 
 ! Define dimensions
-np_id = mpl%nc_dim_define_or_get(subr,ncid,'np',3)
-nc0a_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0a',geom%nc0a)
-nl0i_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0i',geom%nl0i)
-nl0_1_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0_1',geom%nl0)
-nl0_2_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0_2',geom%nl0)
-nc2b_id = mpl%nc_dim_define_or_get(subr,ncid,'nc2b',vbal%samp%nc2b)
+np_id = mpl%nc_dim_define_or_get(ncid,'np',3)
+nc0a_id = mpl%nc_dim_define_or_get(ncid,'nc0a',geom%nc0a)
+nl0i_id = mpl%nc_dim_define_or_get(ncid,'nl0i',geom%nl0i)
+nl0_1_id = mpl%nc_dim_define_or_get(ncid,'nl0_1',geom%nl0)
+nl0_2_id = mpl%nc_dim_define_or_get(ncid,'nl0_2',geom%nl0)
+nc2b_id = mpl%nc_dim_define_or_get(ncid,'nc2b',vbal%samp%nc2b)
 
 ! Define variables
-h_n_s_id = mpl%nc_var_define_or_get(subr,ncid,'h_n_s',nc_kind_int,(/nc0a_id,nl0i_id/))
-h_c2b_id = mpl%nc_var_define_or_get(subr,ncid,'h_c2b',nc_kind_int,(/np_id,nc0a_id,nl0i_id/))
-h_S_id = mpl%nc_var_define_or_get(subr,ncid,'h_S',nc_kind_real,(/np_id,nc0a_id,nl0i_id/))
+h_n_s_id = mpl%nc_var_define_or_get(ncid,'h_n_s',nc_kind_int,(/nc0a_id,nl0i_id/))
+h_c2b_id = mpl%nc_var_define_or_get(ncid,'h_c2b',nc_kind_int,(/np_id,nc0a_id,nl0i_id/))
+h_S_id = mpl%nc_var_define_or_get(ncid,'h_S',nc_kind_real,(/np_id,nc0a_id,nl0i_id/))
 do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Define group
          call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
-         grpid(iv,jv) = mpl%nc_group_define_or_get(subr,ncid,grpname)
+         grpid(iv,jv) = mpl%nc_group_define_or_get(ncid,grpname)
 
          ! Define variables
-         auto_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'auto',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
-         cross_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'cross',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
-         auto_inv_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'auto_inv',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
-         reg_id(iv,jv) = mpl%nc_var_define_or_get(subr,grpid(iv,jv),'reg',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
+         auto_id(iv,jv) = mpl%nc_var_define_or_get(grpid(iv,jv),'auto',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
+         cross_id(iv,jv) = mpl%nc_var_define_or_get(grpid(iv,jv),'cross',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
+         auto_inv_id(iv,jv) = mpl%nc_var_define_or_get(grpid(iv,jv),'auto_inv',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
+         reg_id(iv,jv) = mpl%nc_var_define_or_get(grpid(iv,jv),'reg',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
       end if
    end do
 end do
 
 ! Write variables
-call mpl%ncerr(subr,nf90_put_var(ncid,h_n_s_id,vbal%h_n_s))
-call mpl%ncerr(subr,nf90_put_var(ncid,h_c2b_id,vbal%h_c2b))
-call mpl%ncerr(subr,nf90_put_var(ncid,h_S_id,vbal%h_S))
+call mpl%ncerr('${subr}$',nf90_put_var(ncid,h_n_s_id,vbal%h_n_s))
+call mpl%ncerr('${subr}$',nf90_put_var(ncid,h_c2b_id,vbal%h_c2b))
+call mpl%ncerr('${subr}$',nf90_put_var(ncid,h_S_id,vbal%h_S))
 do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
-         call mpl%ncerr(subr,nf90_put_var(grpid(iv,jv),reg_id(iv,jv),vbal%blk(iv,jv)%reg))
-         call mpl%ncerr(subr,nf90_put_var(grpid(iv,jv),auto_id(iv,jv),vbal%blk(iv,jv)%auto))
-         call mpl%ncerr(subr,nf90_put_var(grpid(iv,jv),cross_id(iv,jv),vbal%blk(iv,jv)%cross))
-         call mpl%ncerr(subr,nf90_put_var(grpid(iv,jv),auto_inv_id(iv,jv),vbal%blk(iv,jv)%auto_inv))
+         call mpl%ncerr('${subr}$',nf90_put_var(grpid(iv,jv),reg_id(iv,jv),vbal%blk(iv,jv)%reg))
+         call mpl%ncerr('${subr}$',nf90_put_var(grpid(iv,jv),auto_id(iv,jv),vbal%blk(iv,jv)%auto))
+         call mpl%ncerr('${subr}$',nf90_put_var(grpid(iv,jv),cross_id(iv,jv),vbal%blk(iv,jv)%cross))
+         call mpl%ncerr('${subr}$',nf90_put_var(grpid(iv,jv),auto_inv_id(iv,jv),vbal%blk(iv,jv)%auto_inv))
       end if
    end do
 end do
 
 ! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_write
 
@@ -321,6 +366,12 @@ type(ens_type),intent(inout) :: ensu   !< Unbalanced ensemble
 integer :: il0i,i_s,ic0a,ic2b,iv,jv,ie
 real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: auto(:,:,:,:),cross(:,:,:,:)
+
+! Set name
+#:set subr = 'vbal_run_vbal'
+
+! Probe in
+@:probe_in()
 
 ! Setup sampling
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -365,7 +416,7 @@ do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          ! Initialization
-         write(mpl%info,'(a7,a)') '','Unbalancing: '//trim(nam%variables(iv))//' with respect to unbalanced ' & 
+         write(mpl%info,'(a7,a)') '','Unbalancing: '//trim(nam%variables(iv))//' with respect to unbalanced ' &
  & //trim(nam%variables(jv))
          call mpl%flush
 
@@ -429,6 +480,9 @@ if (nam%write_vbal) call vbal%write(mpl,nam,geom,bpar)
 deallocate(auto)
 deallocate(cross)
 
+! Probe out
+@:probe_out()
+
 end subroutine vbal_run_vbal
 
 !----------------------------------------------------------------------
@@ -448,6 +502,12 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(io_type),intent(in) :: io         !< I/O
 
+! Set name
+#:set subr = 'vbal_run_vbal_tests'
+
+! Probe in
+@:probe_in()
+
 if (nam%check_vbal) then
    ! Test inverse
    call vbal%test_inverse(mpl,rng,nam,geom,bpar)
@@ -462,6 +522,9 @@ if (nam%check_dirac) then
    ! Test dirac
    call vbal%test_dirac(mpl,nam,geom,bpar,io)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_run_vbal_tests
 
@@ -484,6 +547,12 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destin
 integer :: iv,jv
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv)
 
+! Set name
+#:set subr = 'vbal_apply'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 fld_out = fld
 
@@ -500,6 +569,9 @@ end do
 
 ! Final copy
 fld = fld_out
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_apply
 
@@ -522,6 +594,12 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destin
 integer :: iv,jv
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv)
 
+! Set name
+#:set subr = 'vbal_apply_inv'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 fld_out = fld
 
@@ -538,6 +616,9 @@ end do
 
 ! Final copy
 fld = fld_out
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_apply_inv
 
@@ -560,6 +641,12 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destin
 integer :: iv,jv
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv)
 
+! Set name
+#:set subr = 'vbal_apply_ad'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 fld_out = fld
 
@@ -576,6 +663,9 @@ end do
 
 ! Final copy
 fld = fld_out
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_apply_ad
 
@@ -598,6 +688,12 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destin
 integer :: iv,jv
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv)
 
+! Set name
+#:set subr = 'vbal_apply_inv_ad'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 fld_out = fld
 
@@ -614,6 +710,9 @@ end do
 
 ! Final copy
 fld = fld_out
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_apply_inv_ad
 
@@ -636,6 +735,12 @@ type(bpar_type),intent(in) :: bpar  !< Block parameters
 ! Local variables
 real(kind_real) :: mse,mse_tot
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,nam%nv)
+
+! Set name
+#:set subr = 'vbal_test_inverse'
+
+! Probe in
+@:probe_in()
 
 ! Generate random field
 call rng%rand(0.0_kind_real,1.0_kind_real,fld_save)
@@ -676,6 +781,9 @@ call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse_tot
 call mpl%flush
 
+! Probe out
+@:probe_out()
+
 end subroutine vbal_test_inverse
 
 !----------------------------------------------------------------------
@@ -701,6 +809,12 @@ real(kind_real) :: fld1_blk(geom%nc0a,geom%nl0,nam%nv),fld1_dir(geom%nc0a,geom%n
 real(kind_real) :: fld1_inv(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: fld2_blk(geom%nc0a,geom%nl0,nam%nv),fld2_dir(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: fld2_inv(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
+
+! Set name
+#:set subr = 'vbal_test_adjoint'
+
+! Probe in
+@:probe_in()
 
 ! Generate random field
 call rng%rand(0.0_kind_real,1.0_kind_real,fld1_save)
@@ -747,6 +861,9 @@ write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjo
  & sum1,' / ',sum2,' / ',2.0*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 
+! Probe out
+@:probe_out()
+
 end subroutine vbal_test_adjoint
 
 !----------------------------------------------------------------------
@@ -770,6 +887,12 @@ integer :: idir,iv
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
 character(len=1024) :: filename
 
+! Set name
+#:set subr = 'vbal_test_dirac'
+
+! Probe in
+@:probe_in()
+
 ! Generate dirac field
 fld = 0.0
 do idir=1,geom%ndir
@@ -785,6 +908,9 @@ call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 do iv=1,nam%nv
    call io%fld_write(mpl,nam,geom,filename,'vbal',fld(:,:,iv),trim(nam%variables(iv)))
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine vbal_test_dirac
 

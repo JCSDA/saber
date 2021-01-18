@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_cv
 !> Control vector derived type
@@ -9,6 +10,7 @@ module type_cv
 
 use tools_kinds, only: kind_real
 use type_cv_blk, only: cv_blk_type
+use type_probe, only: probe
 
 implicit none
 
@@ -40,6 +42,12 @@ real(kind_real),intent(out) :: pcv(cv%n) !< Packed control variable
 ! Local variable
 integer :: ib,offset
 
+! Set name
+#:set subr = 'cv_pack'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 offset = 0
 
@@ -52,6 +60,9 @@ do ib=1,cv%nbe
       offset = offset+cv%blk(ib)%n
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine cv_pack
 
@@ -68,6 +79,12 @@ real(kind_real),intent(in) :: pcv(cv%n) !< Packed control variable
 ! Local variable
 integer :: ib,offset
 
+! Set name
+#:set subr = 'cv_unpack'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 offset = 0
 
@@ -80,6 +97,9 @@ do ib=1,cv%nbe
       offset = offset+cv%blk(ib)%n
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine cv_unpack
 

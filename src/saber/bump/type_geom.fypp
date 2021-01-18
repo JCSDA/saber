@@ -1,4 +1,5 @@
 #:include '../generics.fypp'
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_geom
 !> Geometry derived type
@@ -23,6 +24,7 @@ use type_fieldset, only: fieldset_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_tree, only: tree_type
 
@@ -188,6 +190,12 @@ implicit none
 ! Passed variables
 class(geom_type),intent(inout) :: geom !< Geometry
 
+! Set name
+#:set subr = 'geom_partial_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(geom%proc_to_nmga)) deallocate(geom%proc_to_nmga)
 if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
@@ -238,6 +246,9 @@ if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
 if (allocated(geom%il0dir)) deallocate(geom%il0dir)
 if (allocated(geom%ivdir)) deallocate(geom%ivdir)
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_partial_dealloc
 
 !----------------------------------------------------------------------
@@ -251,12 +262,21 @@ implicit none
 ! Passed variables
 class(geom_type),intent(inout) :: geom !< Geometry
 
+! Set name
+#:set subr = 'geom_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 call geom%partial_dealloc
 call geom%afunctionspace_mg%final()
 if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
 call geom%com_mg%dealloc
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_dealloc
 
@@ -279,6 +299,12 @@ type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing ge
 ! Local variables
 integer :: jc3,il0,iproc
 real(kind_real) :: lon_min,lon_max,lat_min,lat_max
+
+! Set name
+#:set subr = 'geom_setup'
+
+! Probe in
+@:probe_in()
 
 ! Number of processors
 geom%nproc = mpl%nproc
@@ -378,6 +404,9 @@ do iproc=1,mpl%nproc
    call mpl%flush
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_setup
 
 !----------------------------------------------------------------------
@@ -399,13 +428,18 @@ integer :: il0,i,j,imga
 real(kind_real) :: lonlat(2)
 real(kind_real),allocatable :: area_mga(:,:)
 real(kind_real),pointer :: real_ptr(:,:)
-character(len=1024),parameter :: subr = 'geom_from_atlas'
 type(atlas_field) :: afield,afield_lonlat
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
 type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
 type(atlas_mesh_nodes) :: anodes
 type(atlas_structuredgrid) :: asgrid
+
+! Set name
+#:set subr = 'geom_from_atlas'
+
+! Probe in
+@:probe_in()
 
 select case (afunctionspace%name())
 case ('NodeColumns')
@@ -464,7 +498,7 @@ case ('StructuredColumns')
        end do
     end do
 case default
-   call mpl%abort(subr,'wrong function space: '//afunctionspace%name())
+   call mpl%abort('${subr}$','wrong function space: '//afunctionspace%name())
 end select
 
 ! Enforce proper bounds
@@ -526,6 +560,9 @@ if (present(fieldset)) then
    end if
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_from_atlas
 
 !----------------------------------------------------------------------
@@ -549,6 +586,12 @@ integer,parameter :: subsize = 1e3
 integer,allocatable :: sa_to_mga(:),sam_mga(:)
 real(kind_real) :: dist
 real(kind_real),allocatable :: rh_mga(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
+
+! Set name
+#:set subr = 'geom_setup_universe'
+
+! Probe in
+@:probe_in()
 
 write(mpl%info,'(a7,a)') '','Setup universe'
 call mpl%flush
@@ -652,6 +695,9 @@ end do
 ! Reset random seed if necessary
 if (nam%default_seed) call rng%reseed(mpl)
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_setup_universe
 
 !----------------------------------------------------------------------
@@ -675,8 +721,13 @@ integer,allocatable :: c0a_to_mg(:),ra_to_r(:),r_to_mg(:),r_to_mg_tot(:),r_to_c0
 real(kind_real) :: areasum(geom%nl0),vunitsum(geom%nl0),vunitsum_tot(geom%nl0),norm(geom%nl0),norm_tot(geom%nl0)
 real(kind_real),allocatable :: hash_mgu(:),lonlat_c0a(:),hash_c0u(:)
 logical :: diff,chain
-character(len=1024),parameter :: subr = 'geom_setup_c0'
 type(com_type) :: com_AU
+
+! Set name
+#:set subr = 'geom_setup_c0'
+
+! Probe in
+@:probe_in()
 
 write(mpl%info,'(a7,a)') '','Setup subset Sc0'
 call mpl%flush
@@ -1014,7 +1065,7 @@ do iproc=1,mpl%nproc
 end do
 if (notempty>1) then
    do iproc=1,mpl%nproc
-      if (geom%proc_to_nc0u(iproc)==geom%proc_to_nc0a(iproc)) call mpl%abort(subr,'universe is not larger than halo A')
+      if (geom%proc_to_nc0u(iproc)==geom%proc_to_nc0a(iproc)) call mpl%abort('${subr}$','universe is not larger than halo A')
    end do
 end if
 
@@ -1063,12 +1114,16 @@ write(mpl%info,'(a7,a)') '','Check that Sc0 points in universe are not redundant
 call mpl%flush
 call qsort(geom%nc0u,hash_c0u,order)
 do ic0u=2,geom%nc0u
-   if (eq(hash_c0u(ic0u),hash_c0u(ic0u-1))) call mpl%abort(subr,'redundant points in Sc0 point on universe, check the universe')
+   if (eq(hash_c0u(ic0u),hash_c0u(ic0u-1))) call mpl%abort('${subr}$', &
+ & 'redundant points in Sc0 point on universe, check the universe')
 end do
 
 ! Release memory
 deallocate(order)
 deallocate(hash_c0u)
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_setup_c0
 
@@ -1088,6 +1143,12 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer :: il0
 integer :: diff_mask,diff_mask_tot
 logical :: same_mask
+
+! Set name
+#:set subr = 'geom_setup_independent_levels'
+
+! Probe in
+@:probe_in()
 
 write(mpl%info,'(a7,a)') '','Define number of independent levels'
 call mpl%flush
@@ -1117,6 +1178,9 @@ else
    geom%nl0i = geom%nl0
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_setup_independent_levels
 
 !----------------------------------------------------------------------
@@ -1136,6 +1200,12 @@ type(nam_type),intent(in) :: nam       !< Namelist
 integer :: il0i,ic0u,ic0a,nn_index(1)
 logical :: not_mask_c0u(geom%nc0u)
 type(tree_type) :: tree
+
+! Set name
+#:set subr = 'geom_setup_mask_distance'
+
+! Probe in
+@:probe_in()
 
 if (trim(nam%draw_type)=='random_coast') then
    write(mpl%info,'(a7,a)') '','Define minimum distance to mask'
@@ -1172,9 +1242,12 @@ if (trim(nam%draw_type)=='random_coast') then
    ! Local field
    do ic0a=1,geom%nc0a
       ic0u = geom%c0a_to_c0u(ic0a)
-   geom%mdist_c0a(ic0a,:) = geom%mdist_c0u(ic0u,:)   
+   geom%mdist_c0a(ic0a,:) = geom%mdist_c0u(ic0u,:)
    end do
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_setup_mask_distance
 
@@ -1195,6 +1268,12 @@ type(nam_type),intent(in) :: nam       !< Namelist
 integer :: il0,ibnda,nbndamax
 integer,allocatable :: bnda_to_c0u(:,:)
 real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
+
+! Set name
+#:set subr = 'geom_setup_mask_check'
+
+! Probe in
+@:probe_in()
 
 if (nam%mask_check) then
    write(mpl%info,'(a7,a)') '','Setup mask check'
@@ -1240,6 +1319,9 @@ if (nam%mask_check) then
    end do
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_setup_mask_check
 
 !----------------------------------------------------------------------
@@ -1264,7 +1346,12 @@ logical,intent(out) :: gmask        !< Local mask
 integer :: nn_index(1),ic0,nn_proc,proc_to_nn_proc(mpl%nproc),jproc,ic0u
 real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
 logical :: valid
-character(len=1024),parameter :: subr = 'geom_index_from_lonlat'
+
+! Set name
+#:set subr = 'geom_index_from_lonlat'
+
+! Probe in
+@:probe_in()
 
 ! Check whether the location is in convex hull of the universe
 call geom%mesh_c0u%inside(mpl,lon,lat,valid)
@@ -1290,11 +1377,11 @@ if (mpl%msv%isanynot(proc_to_nn_proc)) then
    do jproc=1,mpl%nproc
       if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_nn_dist(jproc),distmin)) iproc = jproc
    end do
-   if (mpl%msv%is(iproc)) call mpl%abort(subr,'cannot find root processor')
+   if (mpl%msv%is(iproc)) call mpl%abort('${subr}$','cannot find root processor')
 
    if (iproc==mpl%myproc) then
       ! Check whether the location is in the convex hull
-      if (.not.valid) call mpl%abort(subr,'wrong processor')
+      if (.not.valid) call mpl%abort('${subr}$','wrong processor')
 
       ! Local index
       ic0u = nn_index(1)
@@ -1318,6 +1405,9 @@ else
    gmask = .false.
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_index_from_lonlat
 
 !----------------------------------------------------------------------
@@ -1336,7 +1426,12 @@ type(nam_type),intent(in) :: nam       !< Namelist
 ! Local variables
 integer :: idir,il0,il0dir,iprocdir,ic0adir
 logical :: valid
-character(len=1024),parameter :: subr = 'geom_setup_dirac'
+
+! Set name
+#:set subr = 'geom_setup_dirac'
+
+! Probe in
+@:probe_in()
 
 if (nam%check_dirac.and.(nam%ndir>0)) then
    write(mpl%info,'(a7,a)') '','Setup Dirac parameters'
@@ -1358,7 +1453,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
       do il0=1,geom%nl0
          if (nam%levs(il0)==nam%levdir(idir)) il0dir = il0
       end do
-      if (mpl%msv%is(il0dir)) call mpl%abort(subr,'impossible to find the Dirac level')
+      if (mpl%msv%is(il0dir)) call mpl%abort('${subr}$','impossible to find the Dirac level')
 
       ! Index from lon/lat/level
       call geom%index_from_lonlat(mpl,nam%londir(idir),nam%latdir(idir),il0dir,iprocdir,ic0adir,valid)
@@ -1375,6 +1470,9 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
       end if
    end do
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_setup_dirac
 
@@ -1400,6 +1498,12 @@ logical,intent(out) :: valid        !< True for valid arcs
 integer :: ibnda
 real(kind_real) :: x(2),y(2),z(2),v1(3),v2(3),va(3),vp(3),t(4)
 logical :: cflag(4)
+
+! Set name
+#:set subr = 'geom_check_arc'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 valid = .true.
@@ -1430,6 +1534,9 @@ do ibnda=1,geom%nbnda(il0)
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_check_arc
 
 !----------------------------------------------------------------------
@@ -1443,8 +1550,17 @@ implicit none
 ! Passed variables
 class(geom_type),intent(inout) :: geom !< Geometry
 
+! Set name
+#:set subr = 'geom_dummy_method'
+
+! Probe in
+@:probe_in()
+
 ! Dummy action to avoid compiler warning
 geom%dummy_logical = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_dummy_method
 
@@ -1467,6 +1583,12 @@ ${ftype}$,intent(out) :: fld_mga(geom%nmga,geom%nl0) !< Field on model grid, hal
 integer :: ic0a,il0
 ${ftype}$ :: fld_c0a_masked(geom%nc0a,geom%nl0)
 
+! Set name
+#:set subr = 'geom_copy_c0a_to_mga_${dtype}$_single'
+
+! Probe in
+@:probe_in()
+
 ! Set masked values at missing value
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
@@ -1488,6 +1610,9 @@ else
    call geom%com_mg%ext(mpl,fld_c0a_masked,fld_mga)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_copy_c0a_to_mga_${dtype}$_single
 
 !----------------------------------------------------------------------
@@ -1508,9 +1633,18 @@ ${ftype}$,intent(out) :: fld_mga(geom%nmga,geom%nl0,nam%nv) !< Field on model gr
 ! Local variables
 integer :: iv
 
+! Set name
+#:set subr = 'geom_copy_c0a_to_mga_${dtype}$_all'
+
+! Probe in
+@:probe_in()
+
 do iv=1,nam%nv
    call geom%copy_c0a_to_mga(mpl,fld_c0a(:,:,iv),fld_mga(:,:,iv))
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_copy_c0a_to_mga_${dtype}$_all
 
@@ -1531,6 +1665,12 @@ ${ftype}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on subset Sc0, hal
 ! Local variables
 integer :: ic0a,il0
 
+! Set name
+#:set subr = 'geom_copy_mga_to_c0a_${dtype}$_single'
+
+! Probe in
+@:probe_in()
+
 if (geom%same_grid) then
    ! Same grid
    fld_c0a = fld_mga
@@ -1547,6 +1687,9 @@ do il0=1,geom%nl0
       #{if dtype == 'logical'}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = .false. #{endif}#
    end do
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_copy_mga_to_c0a_${dtype}$_single
 
@@ -1568,9 +1711,18 @@ ${ftype}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset S
 ! Local variables
 integer :: iv
 
+! Set name
+#:set subr = 'geom_copy_mga_to_c0a_${dtype}$_all'
+
+! Probe in
+@:probe_in()
+
 do iv=1,nam%nv
    call geom%copy_mga_to_c0a(mpl,fld_mga(:,:,iv),fld_c0a(:,:,iv))
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_copy_mga_to_c0a_${dtype}$_all
 #:endfor
@@ -1593,6 +1745,12 @@ real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on su
 ! Local variables
 real(kind_real),allocatable :: fld_mga(:,:,:)
 
+! Set name
+#:set subr = 'geom_fieldset_to_c0'
+
+! Probe in
+@:probe_in()
+
 if (geom%same_grid) then
    ! Fieldset to Fortran array on subset Sc0
    call fieldset%to_array(mpl,fld_c0a)
@@ -1609,6 +1767,9 @@ else
    ! Release memory
    deallocate(fld_mga)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_fieldset_to_c0
 
@@ -1630,6 +1791,12 @@ type(fieldset_type),intent(inout) :: fieldset                    !< Fieldset
 ! Local variables
 real(kind_real),allocatable :: fld_mga(:,:,:)
 
+! Set name
+#:set subr = 'geom_c0_to_fieldset'
+
+! Probe in
+@:probe_in()
+
 if (geom%same_grid) then
    ! Fortran array on subset Sc0 to fieldset
    call fieldset%from_array(mpl,fld_c0a)
@@ -1646,6 +1813,9 @@ else
    ! Release memory
    deallocate(fld_mga)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_c0_to_fieldset
 
@@ -1667,12 +1837,21 @@ real(kind_real),intent(out) :: dx   !< Longitude delta
 real(kind_real),intent(out) :: dy   !< Latitude delta
 real(kind_real),intent(out) :: dz   !< Altitude delta
 
+! Set name
+#:set subr = 'geom_compute_deltas'
+
+! Probe in
+@:probe_in()
+
 ! Compute deltas
 dx = geom%lon_c0u(jc0u)-geom%lon_c0u(ic0u)
 dy = geom%lat_c0u(jc0u)-geom%lat_c0u(ic0u)
 call lonlatmod(dx,dy)
 dx = dx*cos(geom%lat_c0u(ic0u))
 dz = real(geom%vunit_c0u(ic0u,jl0)-geom%vunit_c0u(ic0u,il0),kind_real)
+
+! Probe out
+@:probe_out()
 
 end subroutine geom_compute_deltas
 
@@ -1698,6 +1877,12 @@ integer :: lnr
 real(kind_real) :: lon,lat
 logical :: valid
 
+! Set name
+#:set subr = 'geom_rand_point'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 valid = .false.
 lnr = 0
@@ -1719,6 +1904,9 @@ end do
 ! Set number of tries
 if (present(nr)) nr = lnr
 
+! Probe out
+@:probe_out()
+
 end subroutine geom_rand_point
 
 !----------------------------------------------------------------------
@@ -1736,12 +1924,22 @@ integer,intent(in) :: img           !< Global index
 ! Returned variable
 integer :: iproc
 
+! Set name
+#:set subr = 'geom_mg_to_proc'
+
+! Probe in
+@:probe_in()
+
 ! Find processor
 do iproc=1,geom%nproc-1
    if ((geom%proc_to_mg_offset(iproc)<img).and.(img<=geom%proc_to_mg_offset(iproc+1))) then
+@:probe_out()
       return
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end function geom_mg_to_proc
 
@@ -1763,11 +1961,20 @@ integer :: ic0a
 ! Local variable
 integer :: iproc
 
+! Set name
+#:set subr = 'geom_c0_to_c0a'
+
+! Probe in
+@:probe_in()
+
 ! Find processor
 iproc = geom%c0_to_proc(ic0)
 
 ! Get halo A index
 ic0a = ic0-geom%proc_to_c0_offset(iproc)
+
+! Probe out
+@:probe_out()
 
 end function geom_c0_to_c0a
 
@@ -1786,12 +1993,22 @@ integer,intent(in) :: ic0           !< Global index
 ! Returned variable
 integer :: iproc
 
+! Set name
+#:set subr = 'geom_c0_to_proc'
+
+! Probe in
+@:probe_in()
+
 ! Find processor
 do iproc=1,geom%nproc-1
    if ((geom%proc_to_c0_offset(iproc)<ic0).and.(ic0<=geom%proc_to_c0_offset(iproc+1))) then
+@:probe_out()
       return
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end function geom_c0_to_proc
 
@@ -1813,6 +2030,12 @@ integer :: ic0u
 ! Local variable
 integer :: iproc,ic0a,offset,jproc
 
+! Set name
+#:set subr = 'geom_c0_to_c0u'
+
+! Probe in
+@:probe_in()
+
 ! Find processor
 iproc = geom%c0_to_proc(ic0)
 
@@ -1832,6 +2055,9 @@ else
    ! Not in my universe
    ic0u = 0
 end if
+
+! Probe out
+@:probe_out()
 
 end function geom_c0_to_c0u
 

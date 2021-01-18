@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! (C) Copyright 2018-2019 UCAR
 !
@@ -13,6 +14,7 @@ module type_gaugrid
 use tools_const, only: pi,rad2deg
 use tools_kinds, only: kind_real
 use tools_sp, only: splat
+use type_probe, only: probe
 
 implicit none
 
@@ -22,6 +24,7 @@ real(kind_real):: half = 0.5_kind_real !< Half
 
 ! Gaussian grid derived type
 type gaussian_grid
+  integer :: iinst                            !< Instance index
   integer :: nlat                             !< Number of longitudes
   integer :: nlon                             !< Number of latitudes
   integer :: nlev                             !< Number of levels
@@ -63,9 +66,21 @@ implicit none
 ! Passed variables
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
+! Set name
+#:set subr = 'gaugrid_create'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 call self%alloc_coord
 call self%alloc_field
+
+! Probe out
+@:probe_out()
 
 end subroutine gaugrid_create
 
@@ -80,8 +95,20 @@ implicit none
 ! Passed variables
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
+! Set name
+#:set subr = 'gaugrid_delete'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
+
 call self%dealloc_coord
 call self%dealloc_field
+
+! Probe out
+@:probe_out()
 
 end subroutine gaugrid_delete
 
@@ -96,11 +123,23 @@ implicit none
 ! Passed variables
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
+! Set name
+#:set subr = 'gaugrid_alloc_coord'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 allocate(self%rlons(self%nlon)); self%rlons=zero
 allocate(self%rlats(self%nlat)); self%rlats=zero
 allocate(self%wlats(self%nlat)); self%wlats=zero
 allocate(self%vname(self%nvar))
+
+! Probe out
+@:probe_out()
 
 end subroutine gaugrid_alloc_coord
 
@@ -115,10 +154,22 @@ implicit none
 ! Passed variables
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
+! Set name
+#:set subr = 'gaugrid_dealloc_coord'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
+
 if (allocated(self%rlons))    deallocate(self%rlons)
 if (allocated(self%rlats))    deallocate(self%rlats)
 if (allocated(self%wlats))    deallocate(self%wlats)
 if (allocated(self%vname))    deallocate(self%vname)
+
+! Probe out
+@:probe_out()
 
 end subroutine gaugrid_dealloc_coord
 
@@ -133,8 +184,20 @@ implicit none
 ! Passed variables
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
+! Set name
+#:set subr = 'gaugrid_alloc_field'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 allocate(self%fld(self%nlon,self%nlat,self%nlev,self%nvar))
+
+! Probe out
+@:probe_out()
 
 end subroutine gaugrid_alloc_field
 
@@ -149,7 +212,19 @@ implicit none
 ! Passed variables
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
+! Set name
+#:set subr = 'gaugrid_dealloc_field'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
+
 if (allocated(self%fld)) deallocate(self%fld)
+
+! Probe out
+@:probe_out()
 
 end subroutine gaugrid_dealloc_field
 
@@ -164,10 +239,19 @@ implicit none
 ! Passed variables
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
-! Local variable
+! Local variables
 integer :: i,j
 real(kind_real) :: dlon
 real(kind_real),allocatable :: slat(:)
+
+! Set name
+#:set subr = 'gaugrid_calc_glb_latlon'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
 
 ! Gaussian latitudes
 allocate(slat(self%nlat-2))
@@ -187,6 +271,9 @@ do i=1,self%nlon
   self%rlons(i) = real(i-1,kind_real)*dlon
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine gaugrid_calc_glb_latlon
 
 !----------------------------------------------------------------------
@@ -203,8 +290,20 @@ integer,intent(in) :: iv                                   !< Variable index
 character(len=*),intent(in) :: var                         !< Variable name
 real(kind_real),pointer,intent(inout) :: fldpointer(:,:,:) !< Field pointer
 
+! Set name
+#:set subr = 'gaugrid_fld3d_pointer'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
+
 self%vname(iv) = trim(var)
 fldpointer => self%fld(1:self%nlon,1:self%nlat,1:self%nlev,iv)
+
+! Probe out
+@:probe_out()
 
 end subroutine gaugrid_fld3d_pointer
 
@@ -222,8 +321,20 @@ integer,intent(in) :: iv                                 !< Variable index
 character(len=*),intent(in) :: var                       !< Variable name
 real(kind_real),pointer,intent(inout) :: fldpointer(:,:) !< Field pointer
 
+! Set name
+#:set subr = 'gaugrid_fld2d_pointer'
+
+! Get instance index
+call probe%get_instance(self%iinst)
+
+! Probe in
+@:probe_in()
+
 self%vname(iv) = trim(var)
 fldpointer => self%fld(1:self%nlon,1:self%nlat,1,iv)
+
+! Probe out
+@:probe_out()
 
 end subroutine gaugrid_fld2d_pointer
 
@@ -239,6 +350,12 @@ implicit none
 class(gaussian_grid), intent(inout) :: self !< Gaussian grid
 type (gaussian_grid), intent(in)    :: rhs  !< Other Gaussian grid
 
+! Set name
+#:set subr = 'equals'
+
+! Probe in
+@:probe_in()
+
 call self%delete
 self%nlat = rhs%nlat; self%nlon = rhs%nlon
 self%nlev = rhs%nlev; self%nvar = rhs%nvar
@@ -247,6 +364,9 @@ self%vname = rhs%vname
 self%rlats = rhs%rlats; self%rlons = rhs%rlons
 self%wlats = rhs%wlats
 self%fld = rhs%fld
+
+! Probe out
+@:probe_out()
 
 end subroutine equals
 

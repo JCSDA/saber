@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_cmat_blk
 !> Correlation matrix derived type
@@ -12,6 +13,7 @@ use type_bpar, only: bpar_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 
 implicit none
 
@@ -71,6 +73,12 @@ class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
+! Set name
+#:set subr = 'cmat_blk_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Associate
 associate(ib=>cmat_blk%ib)
 
@@ -94,6 +102,9 @@ end if
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine cmat_blk_alloc
 
 !----------------------------------------------------------------------
@@ -108,6 +119,12 @@ implicit none
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 type(mpl_type),intent(in) :: mpl               !< MPI data
 type(bpar_type),intent(in) :: bpar             !< Block parameters
+
+! Set name
+#:set subr = 'cmat_blk_init'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>cmat_blk%ib)
@@ -132,6 +149,9 @@ end if
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine cmat_blk_init
 
 !----------------------------------------------------------------------
@@ -145,6 +165,12 @@ implicit none
 ! Passed variables
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
+! Set name
+#:set subr = 'cmat_blk_partial_bump_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(cmat_blk%bump_coef_ens)) deallocate(cmat_blk%bump_coef_ens)
 if (allocated(cmat_blk%bump_coef_sta)) deallocate(cmat_blk%bump_coef_sta)
@@ -155,6 +181,9 @@ if (allocated(cmat_blk%bump_D22)) deallocate(cmat_blk%bump_D22)
 if (allocated(cmat_blk%bump_D33)) deallocate(cmat_blk%bump_D33)
 if (allocated(cmat_blk%bump_D12)) deallocate(cmat_blk%bump_D12)
 if (allocated(cmat_blk%bump_Dcoef)) deallocate(cmat_blk%bump_Dcoef)
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_blk_partial_bump_dealloc
 
@@ -169,6 +198,12 @@ implicit none
 ! Passed variables
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
+! Set name
+#:set subr = 'cmat_blk_partial_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(cmat_blk%rhs)) deallocate(cmat_blk%rhs)
 if (allocated(cmat_blk%rvs)) deallocate(cmat_blk%rvs)
@@ -177,6 +212,9 @@ if (allocated(cmat_blk%H22)) deallocate(cmat_blk%H22)
 if (allocated(cmat_blk%H33)) deallocate(cmat_blk%H33)
 if (allocated(cmat_blk%H12)) deallocate(cmat_blk%H12)
 if (allocated(cmat_blk%Hcoef)) deallocate(cmat_blk%Hcoef)
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_blk_partial_dealloc
 
@@ -191,6 +229,12 @@ implicit none
 ! Passed variables
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
+! Set name
+#:set subr = 'cmat_blk_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 call cmat_blk%partial_bump_dealloc
 call cmat_blk%partial_dealloc
@@ -198,6 +242,9 @@ if (allocated(cmat_blk%coef_ens)) deallocate(cmat_blk%coef_ens)
 if (allocated(cmat_blk%coef_sta)) deallocate(cmat_blk%coef_sta)
 if (allocated(cmat_blk%rh)) deallocate(cmat_blk%rh)
 if (allocated(cmat_blk%rv)) deallocate(cmat_blk%rv)
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_blk_dealloc
 

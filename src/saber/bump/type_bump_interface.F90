@@ -476,7 +476,7 @@ type(bump_type),pointer :: bump
 ! Interface
 call bump_registry%get(key_bump,bump)
 
-! Deallocate BUMP
+! Call Fortran
 call bump%dealloc
 
 ! Clean interface

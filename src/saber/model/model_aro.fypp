@@ -1,4 +1,5 @@
 #:def include_aro()
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Subroutine: model_aro_coord
 !> Load AROME coordinates
@@ -20,18 +21,23 @@ real(kind_real) :: dx,dy
 real(kind_real),allocatable :: lon(:,:),lat(:,:),cmask(:,:),a(:),b(:),fld_loc(:,:),fld(:,:)
 character(len=3) :: ilchar
 character(len=1024) :: filename
-character(len=1024),parameter :: subr = 'model_aro_coord'
+
+! Set name
+#:set subr = 'model_aro_coord'
+
+! Probe in
+@:probe_in()
 
 ! Open file and get dimensions
 model%ntile = 1
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'X',nlon_id))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'Y',nlat_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
+call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'X',nlon_id))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'Y',nlat_id))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
 model%nmg = model%nlon*model%nlat
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'Z',nlev_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'Z',nlev_id))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
 
 ! Allocation
 call model%alloc
@@ -42,20 +48,20 @@ allocate(a(model%nlev+1))
 allocate(b(model%nlev+1))
 
 ! Read data and close file
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'longitude',lon_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'latitude',lat_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'cmask',cmask_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'hybrid_coef_A',a_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'hybrid_coef_B',b_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'Projection_parameters',pp_id))
-call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon))
-call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat))
-call mpl%ncerr(subr,nf90_get_var(ncid,cmask_id,cmask))
-call mpl%ncerr(subr,nf90_get_var(ncid,a_id,a))
-call mpl%ncerr(subr,nf90_get_var(ncid,b_id,b))
-call mpl%ncerr(subr,nf90_get_att(ncid,pp_id,'x_resolution',dx))
-call mpl%ncerr(subr,nf90_get_att(ncid,pp_id,'y_resolution',dy))
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'longitude',lon_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'latitude',lat_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'cmask',cmask_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'hybrid_coef_A',a_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'hybrid_coef_B',b_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'Projection_parameters',pp_id))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lon_id,lon))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lat_id,lat))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,cmask_id,cmask))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,a_id,a))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,b_id,b))
+call mpl%ncerr('${subr}$',nf90_get_att(ncid,pp_id,'x_resolution',dx))
+call mpl%ncerr('${subr}$',nf90_get_att(ncid,pp_id,'y_resolution',dy))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! Convert to radian
 lon = lon*deg2rad
@@ -79,7 +85,7 @@ do ilon=1,model%nlon
       case ('C+I+E')
          model%mask(img,:) = .true.
       case default
-         call mpl%abort(subr,'wrong AROME zone')
+         call mpl%abort('${subr}$','wrong AROME zone')
       end select
    end do
 end do
@@ -94,16 +100,16 @@ case ("hyd")
    allocate(fld_loc(model%nlon,model%nlat))
 
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(nam%prefix)//'_hyd.nc',nf90_nowrite,ncid))
+   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(nam%prefix)//'_hyd.nc',nf90_nowrite,ncid))
 
    ! Read mask
    do il0=1,nam%nl
       ! Get id
       write(ilchar,'(i3.3)') nam%levs(il0)
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,'S'//ilchar//'MASK',mask_id))
+      call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'S'//ilchar//'MASK',mask_id))
 
       ! Read data
-      call mpl%ncerr(subr,nf90_get_var(ncid,mask_id,fld_loc))
+      call mpl%ncerr('${subr}$',nf90_get_var(ncid,mask_id,fld_loc))
 
       ! Pack data
       img = 0
@@ -116,7 +122,7 @@ case ("hyd")
    end do
 
    ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
+   call mpl%ncerr('${subr}$',nf90_close(ncid))
 
    ! Release memory
    deallocate(fld_loc)
@@ -148,16 +154,16 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
       write(filename,'(a,i6.6)') 'ens1_',ie
 
       ! Open file
-      call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+      call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
       ! Read LWC
       do il0=1,nam%nl
          ! Get id
          write(ilchar,'(i3.3)') nam%levs(il0)
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,'S'//ilchar//'CLOUD_WATER',fld_id))
+         call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'S'//ilchar//'CLOUD_WATER',fld_id))
 
          ! Read data
-         call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_loc))
+         call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_loc))
 
          ! Pack data
          img = 0
@@ -170,7 +176,7 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
       end do
 
       ! Close file
-      call mpl%ncerr(subr,nf90_close(ncid))
+      call mpl%ncerr('${subr}$',nf90_close(ncid))
 
       ! Update mask
       select case (trim(nam%mask_type))
@@ -213,6 +219,9 @@ deallocate(cmask)
 deallocate(a)
 deallocate(b)
 
+! Probe out
+@:probe_out()
+
 end subroutine model_aro_coord
 
 !----------------------------------------------------------------------
@@ -236,14 +245,19 @@ integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
 character(len=3) :: ilchar
-character(len=1024),parameter :: subr = 'model_aro_read'
+
+! Set name
+#:set subr = 'model_aro_read'
+
+! Probe in
+@:probe_in()
 
 if (mpl%main) then
    ! Allocation
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 end if
 
 do iv=1,nam%nv
@@ -256,15 +270,15 @@ do iv=1,nam%nv
          ! Read data
          if (info==nf90_noerr) then
             ! 3D data
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
          else
             ! Check if the variable exists as 2D data
-            call mpl%ncerr(subr,nf90_inq_varid(ncid,nam%variables(iv),fld_id))
+            call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,nam%variables(iv),fld_id))
 
             ! 2D data
             if (((trim(nam%lev2d)=='first').and.(il0==1)).or.((trim(nam%lev2d)=='last').and.(il0==model%nl0))) then
                fld_tmp = mpl%msv%valr
-               call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
+               call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
             end if
          end if
       end do
@@ -283,7 +297,7 @@ end do
 
 if (mpl%main) then
    ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
+   call mpl%ncerr('${subr}$',nf90_close(ncid))
 
    ! Release memory
    deallocate(fld_tmp)
@@ -301,16 +315,19 @@ case ('logq')
    if (mpl%msv%isnot(iv_q)) then
        fld(:,:,iv_q) = log(max(fld(:,:,iv_q),qmin))
    else
-      call mpl%abort(subr,'specific humidity not found')
+      call mpl%abort('${subr}$','specific humidity not found')
    end if
 case ('logqtot')
    if ((mpl%msv%isnot(iv_q)).and.(mpl%msv%isnot(iv_lwc))) then
       fld(:,:,iv_q) = log(max(fld(:,:,iv_q)+fld(:,:,iv_lwc),qmin))
       fld(:,:,iv_lwc) = mpl%msv%valr
    else
-      call mpl%abort(subr,'specific humidity, or LWC not found')
+      call mpl%abort('${subr}$','specific humidity, or LWC not found')
    end if
 end select
+
+! Probe out
+@:probe_out()
 
 end subroutine model_aro_read
 #:enddef include_aro

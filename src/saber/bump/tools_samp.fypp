@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_samp
 !> Sampling functions
@@ -15,6 +16,7 @@ use tools_kinds, only: kind_real,kind_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,inf,sup,eq
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_tree, only: tree_type
 
@@ -72,7 +74,12 @@ real(kind_real),allocatable :: lon1_glb_eff(:),lat1_glb_eff(:),rh1_glb_eff(:)
 real(kind_real),allocatable :: list(:)
 logical :: lfast,lverbosity
 logical,allocatable :: mask_glb(:)
-character(len=1024),parameter :: subr = 'samp_initialize_sampling'
+
+! Set name
+#:set subr = 'samp_initialize_sampling'
+
+! Probe in
+@:probe_in()
 
 ! Local flags
 lfast = .false.
@@ -89,9 +96,9 @@ call mpl%f_comm%allreduce(n_loc_eff,n_glb_eff,fckit_mpi_sum())
 
 ! Check mask size
 if (n_glb_eff==0) then
-   call mpl%abort(subr,'empty mask in initialize sampling')
+   call mpl%abort('${subr}$','empty mask in initialize sampling')
 elseif (n_glb_eff<ns2_glb) then
-   call mpl%abort(subr,'ns2_glb greater than n_glb_eff in initialize_sampling')
+   call mpl%abort('${subr}$','ns2_glb greater than n_glb_eff in initialize_sampling')
 elseif (n_glb_eff==ns2_glb) then
    write(mpl%info,'(a)') ' all points are used'
    if (lverbosity) call mpl%flush
@@ -169,11 +176,14 @@ end if
 ! Broadcast
 call mpl%f_comm%broadcast(sam2_glb,mpl%rootproc-1)
 
+! Probe out
+@:probe_out()
+
 end subroutine samp_initialize_sampling
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_initialize_sampling_local
-!> Intialize sampling, local, based on ATLAS octahedral grid 
+!> Intialize sampling, local, based on ATLAS octahedral grid
 !----------------------------------------------------------------------
 subroutine samp_initialize_sampling_local(mpl,area,n_loc,n_loc_eff,n_glb_eff,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ns2_glb, &
  & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,verbosity,n_uni,uni_to_loc,tree_uni)
@@ -212,9 +222,14 @@ real(kind_real),allocatable :: lon1_glb(:),lat1_glb(:),dist1_glb(:),rh1_glb(:)
 logical :: lfull_grid,lverbosity,update,retry
 logical,allocatable :: lmask(:)
 character(len=6) :: gridid
-character(len=1024),parameter :: subr = 'samp_initialize_sampling_local'
 type(fckit_mpi_status) :: status
 type(atlas_structuredgrid) :: agrid
+
+! Set name
+#:set subr = 'samp_initialize_sampling_local'
+
+! Probe in
+@:probe_in()
 
 ! Local flags
 lverbosity = .true.
@@ -456,8 +471,8 @@ do while (retry)
    call mpl%f_comm%broadcast(retry,mpl%rootproc-1)
 
    ! Check situation
-   if ((.not.lfull_grid).and.retry) call mpl%abort(subr,'retry activated for limited grid')
-   if ((nfac>=8).and.retry) call mpl%abort(subr,'retry activated for nfac>=8')
+   if ((.not.lfull_grid).and.retry) call mpl%abort('${subr}$','retry activated for limited grid')
+   if ((nfac>=8).and.retry) call mpl%abort('${subr}$','retry activated for nfac>=8')
 
    ! Release memory
    deallocate(lon1_loc)
@@ -511,6 +526,9 @@ if (mpl%main) then
    if (lfull_grid) deallocate(dist1_glb)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine samp_initialize_sampling_local
 
 !----------------------------------------------------------------------
@@ -546,8 +564,13 @@ real(kind_real) :: list(ns1_glb_eff),lon1_glb_tmp(ns1_glb_eff),lat1_glb_tmp(ns1_
 real(kind_real),allocatable :: cdf(:),lon_rep(:),lat_rep(:),dist(:)
 logical :: lfast,lverbosity
 logical,allocatable :: lmask(:),smask(:),rmask(:)
-character(len=1024),parameter :: subr = 'samp_initialize_sampling_global'
 type(tree_type) :: tree
+
+! Set name
+#:set subr = 'samp_initialize_sampling_global'
+
+! Probe in
+@:probe_in()
 
 ! Local flags
 lfast = .false.
@@ -748,7 +771,7 @@ if (nrep_eff>0) then
             elseif (nn_index(2)==is2_glb) then
                dist(is2_glb) = nn_dist(1)
             else
-               call mpl%abort(subr,'wrong index in replacement')
+               call mpl%abort('${subr}$','wrong index in replacement')
             end if
             dist(is2_glb) = dist(is2_glb)**2/(rh1_glb_tmp(sam2_glb_tmp(nn_index(1)))**2 &
  & +rh1_glb_tmp(sam2_glb_tmp(nn_index(2)))**2)
@@ -807,6 +830,9 @@ deallocate(sam2_glb_tmp)
 deallocate(lmask)
 deallocate(smask)
 deallocate(to_valid)
+
+! Probe out
+@:probe_out()
 
 end subroutine samp_initialize_sampling_global
 

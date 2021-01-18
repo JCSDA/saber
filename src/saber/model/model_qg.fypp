@@ -1,4 +1,5 @@
 #:def include_qg()
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Subroutine: model_qg_coord
 !> Get QG coordinates
@@ -16,19 +17,24 @@ type(nam_type),intent(in) :: nam         !< Namelist
 integer :: img,ilon,ilat,il0
 integer :: ncid,nx_id,ny_id,nz_id,lon_id,lat_id,z_id,area_id,lmask_id
 real(kind_real),allocatable :: lon(:,:),lat(:,:),z(:),area(:,:),lmask(:,:,:)
-character(len=1024),parameter :: subr = 'model_qg_coord'
+
+! Set name
+#:set subr = 'model_qg_coord'
+
+! Probe in
+@:probe_in()
 
 ! Open file and get dimensions
 model%ntile = 1
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nx',nx_id))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'ny',ny_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nx_id,len=model%nlon))
+call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'nx',nx_id))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'ny',ny_id))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nx_id,len=model%nlon))
 model%nlon = model%nlon+1
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,ny_id,len=model%nlat))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,ny_id,len=model%nlat))
 model%nmg = model%nlon*model%nlat
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'nz',nz_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nz_id,len=model%nlev))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'nz',nz_id))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nz_id,len=model%nlev))
 
 ! Allocation
 call model%alloc
@@ -39,17 +45,17 @@ allocate(area(model%nlon,model%nlat))
 allocate(lmask(model%nlon,model%nlat,model%nlev))
 
 ! Read data and close file
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'lon',lon_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'lat',lat_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'z',z_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'area',area_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'lmask',lmask_id))
-call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon(1:model%nlon-1,:)))
-call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat(1:model%nlon-1,:)))
-call mpl%ncerr(subr,nf90_get_var(ncid,z_id,z))
-call mpl%ncerr(subr,nf90_get_var(ncid,area_id,area(1:model%nlon-1,:)))
-call mpl%ncerr(subr,nf90_get_var(ncid,lmask_id,lmask(1:model%nlon-1,:,:)))
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'lon',lon_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'lat',lat_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'z',z_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'area',area_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'lmask',lmask_id))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lon_id,lon(1:model%nlon-1,:)))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lat_id,lat(1:model%nlon-1,:)))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,z_id,z))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,area_id,area(1:model%nlon-1,:)))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lmask_id,lmask(1:model%nlon-1,:,:)))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! Add redundant longitude for tests
 lon(model%nlon,:) = lon(1,:)
@@ -90,6 +96,9 @@ deallocate(z)
 deallocate(area)
 deallocate(lmask)
 
+! Probe out
+@:probe_out()
+
 end subroutine model_qg_coord
 
 !----------------------------------------------------------------------
@@ -112,23 +121,28 @@ integer :: iv,il0,img,ilon,ilat,ndims
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
-character(len=1024),parameter :: subr = 'model_qg_read'
+
+! Set name
+#:set subr = 'model_qg_read'
+
+! Probe in
+@:probe_in()
 
 if (mpl%main) then
    ! Allocation
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 end if
 
 do iv=1,nam%nv
    if (mpl%main) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,nam%variables(iv),fld_id))
+      call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,nam%variables(iv),fld_id))
 
       ! Check field size
-      call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,ndims=ndims))
+      call mpl%ncerr('${subr}$',nf90_inquire_variable(ncid,fld_id,ndims=ndims))
 
       ! Read data
       select case (ndims)
@@ -136,23 +150,23 @@ do iv=1,nam%nv
          ! 2D data
          fld_tmp = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,1),(/1,1/), &
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,1),(/1,1/), &
  & (/model%nlon-1,model%nlat/)))
             fld_tmp(model%nlon,:,1) = fld_tmp(1,:,1)
          elseif (trim(nam%lev2d)=='last') then
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,model%nl0),(/1,1/), &
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,model%nl0),(/1,1/), &
  & (/model%nlon-1,model%nlat/)))
             fld_tmp(model%nlon,:,model%nl0) = fld_tmp(1,:,model%nl0)
          end if
-      case (3) 
+      case (3)
          ! 3D data
          do il0=1,nam%nl
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,il0),(/1,1,nam%levs(il0)/), &
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,il0),(/1,1,nam%levs(il0)/), &
  & (/model%nlon-1,model%nlat,1/)))
             fld_tmp(model%nlon,:,il0) = fld_tmp(1,:,il0)
          end do
       case default
-         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%variables(iv)))
+         call mpl%abort('${subr}$','wrong number of dimensions for variable '//trim(nam%variables(iv)))
       end select
 
       ! Pack
@@ -169,11 +183,14 @@ end do
 
 if (mpl%main) then
    ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
+   call mpl%ncerr('${subr}$',nf90_close(ncid))
 
    ! Release memory
    deallocate(fld_tmp)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine model_qg_read
 #:enddef include_qg

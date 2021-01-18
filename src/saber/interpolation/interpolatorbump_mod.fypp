@@ -1,4 +1,5 @@
 #:include '../generics.fypp'
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! (C) Copyright 2019-2020 UCAR
 !
@@ -33,6 +34,7 @@ use type_linop, only: linop_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 
 implicit none
@@ -66,7 +68,7 @@ type bump_interpolator
    type(com_type) :: com                           !< Communication data
 
    ! Nearest neighbor (for discrete interpolation)
-   integer,allocatable :: nn_index(:)              !< Nearest neighbor index   
+   integer,allocatable :: nn_index(:)              !< Nearest neighbor index
 
    ! Dummy variable
    logical :: dummy_logical                        !< Dummy variable
@@ -164,6 +166,15 @@ real(kind_real),allocatable :: lon(:),lat(:)
 type(fckit_configuration) :: bump_config
 type(fieldset_type) :: lmasks
 
+! Set name
+#:set subr = 'bint_init'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
+
 ! BUMP defaults
 call bint%bump%nam%init(comm%size())
 
@@ -196,7 +207,7 @@ if (present(config)) then
    ! Optionally set missing values for integers and reals
    if (config%has('missingvalue_int')) call config%get_or_die('missingvalue_int',msvali)
    if (config%has('missingvalue_real')) call config%get_or_die('missingvalue_real',msvalr)
-end if 
+end if
 
 ! Input ATLAS functionspace
 if (present(lon1d_in).and.present(lat1d_in)) then
@@ -285,6 +296,9 @@ call fckit_log%info('--- Run bump_interpolation driver')
 call bint%driver(bint%bump%mpl,bint%bump%rng,bint%bump%nam,bint%bump%geom)
 if (bint%bump%nam%default_seed) call bint%bump%rng%reseed(bint%bump%mpl)
 
+! Probe out
+@:probe_out()
+
 end subroutine bint_init
 
 !----------------------------------------------------------------------
@@ -310,10 +324,18 @@ integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
 real(kind_real),allocatable :: maxweight(:)
 logical :: maskouta(bint%nouta),lcheck_nc0b(geom%nc0)
-character(len=1024),parameter :: subr = 'bint_driver'
+
+! Set name
+#:set subr = 'bint_driver'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
 
 ! Check that universe is global
-if (any(.not.geom%myuniverse)) call mpl%abort(subr,'universe should be global for interpolation')
+if (any(.not.geom%myuniverse)) call mpl%abort('${subr}$','universe should be global for interpolation')
 
 ! Check whether output grid points are inside the mesh
 if (bint%nouta > 0) then
@@ -415,7 +437,7 @@ if (bint%nouta > 0) then
          bint%nn_index(iouta) = bint%h%col(i_s)
       end if
    end do
-   if (bint%bump%mpl%msv%isany(bint%nn_index)) call bint%bump%mpl%abort(subr,'missing nearest neighbor')
+   if (bint%bump%mpl%msv%isany(bint%nn_index)) call bint%bump%mpl%abort('${subr}$','missing nearest neighbor')
 
    ! Release memory
    deallocate(maxweight)
@@ -438,6 +460,9 @@ if (nout_eff > 0) then
    call mpl%flush
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine bint_driver
 
 !----------------------------------------------------------------------
@@ -451,8 +476,20 @@ implicit none
 ! Passed variables
 class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 
+! Set name
+#:set subr = 'bint_dummy_method'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
+
 ! Dummy action to avoid compiler warning
 bint%dummy_logical = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine bint_dummy_method
 
@@ -478,6 +515,15 @@ real(kind_real),allocatable :: array_in_mga(:,:),array_in_c0a(:,:),array_out(:,:
 character(len=max_string) :: fieldname
 type(atlas_field) :: afield_in,afield_out
 
+! Set name
+#:set subr = 'bint_apply'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 allocate(array_in_mga(bint%bump%geom%nmga,bint%bump%geom%nl0))
 if (.not.bint%bump%geom%same_grid) allocate(array_in_c0a(bint%bump%geom%nc0a,bint%bump%geom%nl0))
@@ -495,7 +541,7 @@ do ifield=1,fieldset_in%size()
       afield_out = bint%afunctionspace_out%create_field(name=fieldname,kind=atlas_real(kind_real),levels=bint%bump%geom%nl0)
       call fieldset_out%add(afield_out)
    end if
-   
+
    ! ATLAS field to BUMP array
    call field_to_array(afield_in,bint%bump%mpl,array_in_mga)
 
@@ -524,6 +570,9 @@ deallocate(array_in_mga)
 if (.not.bint%bump%geom%same_grid) deallocate(array_in_c0a)
 deallocate(array_out)
 
+! Probe out
+@:probe_out()
+
 end subroutine bint_apply
 
 #:for dtype,ftype in types_irl
@@ -551,6 +600,15 @@ integer :: nl_in,nl_out
 ${ftype}$,allocatable :: vec_in(:,:),vec_in_tmp(:,:),vec_out(:,:)
 logical :: ltrans_in,ltrans_out,lnn
 #{if rank_out == 3}# logical,allocatable :: umask(:,:) #{endif}#
+
+! Set name
+#:set subr = 'bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
 
 ! Local flags
 ltrans_in = .false.
@@ -601,7 +659,7 @@ allocate(vec_out(bint%nouta,bint%bump%geom%nl0))
          vec_in(:,il) = pack(transpose(array_in(:,:,il)),.true.)
       else
          vec_in(:,il) = pack(array_in(:,:,il),.true.)
-      end if 
+      end if
    end do
 #:endif
 
@@ -639,6 +697,9 @@ end if
    deallocate(umask)
 #:endif
 
+! Probe out
+@:probe_out()
+
 end subroutine bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
       #:endfor
    #:endfor
@@ -663,6 +724,15 @@ logical,intent(in),optional :: nn                                        !< Near
 #{if dtype == 'real'}# integer :: ilev #{endif}#
 ${ftype}$,allocatable :: array_in_ext(:,:)
 logical :: lnn
+
+! Set name
+#:set subr = 'bint_apply_interp_${dtype}$'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
 
 ! Local flag
 lnn = .false.
@@ -696,12 +766,15 @@ end if
 ! Release memory
 deallocate(array_in_ext)
 
+! Probe out
+@:probe_out()
+
 end subroutine bint_apply_interp_${dtype}$
 #:endfor
 
 !----------------------------------------------------------------------
 !> Apply interpolator operator adjoint
-!! The caller can optionally pass this arguement as an empty fieldset and the 
+!! The caller can optionally pass this arguement as an empty fieldset and the
 !! routine will create and allocate each component of the fieldset. Or, if
 !! the field components of the fieldset are already allocated by the caller,
 !! then this routine will merely replace the field values with the result
@@ -721,6 +794,15 @@ integer :: ifield
 real(kind_real),allocatable :: array_in_mga(:,:),array_in_c0a(:,:),array_out(:,:)
 character(len=max_string) :: fieldname
 type(atlas_field) :: afield_in,afield_out
+
+! Set name
+#:set subr = 'bint_apply_ad'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 allocate(array_in_mga(bint%bump%geom%nmga,bint%bump%geom%nl0))
@@ -766,6 +848,9 @@ deallocate(array_in_mga)
 if (.not.bint%bump%geom%same_grid) deallocate(array_in_c0a)
 deallocate(array_out)
 
+! Probe out
+@:probe_out()
+
 end subroutine bint_apply_ad
 
 #:for rank_out in ranks_123
@@ -791,6 +876,15 @@ integer :: nl_in,nl_out
 real(kind_real),allocatable :: vec_in(:,:),vec_in_tmp(:,:),vec_out(:,:)
 logical :: ltrans_in,ltrans_out
 #{if rank_in == 3}# logical,allocatable :: umask(:,:) #{endif}#
+
+! Set name
+#:set subr = 'bint_apply_ad_r${rank_out}$_r${rank_in}$'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
 
 ! Local flags
 ltrans_out = .false.
@@ -882,6 +976,9 @@ deallocate(vec_out)
 if (.not.bint%bump%geom%same_grid) deallocate(vec_in_tmp)
 deallocate(vec_in)
 
+! Probe out
+@:probe_out()
+
 end subroutine bint_apply_ad_r${rank_out}$_r${rank_in}$
    #:endfor
 #:endfor
@@ -904,6 +1001,15 @@ real(kind_real),intent(out) :: array_in(bint%bump%geom%nc0a,bint%bump%geom%nl0) 
 integer :: ilev
 real(kind_real) :: array_in_ext(bint%nc0b,bint%bump%geom%nl0)
 
+! Set name
+#:set subr = 'bint_apply_interp_ad'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
+
 if (bint%nouta > 0) then
    ! Horizontal interpolation
    !$omp parallel do schedule(static) private(ilev)
@@ -919,6 +1025,9 @@ end if
 ! Halo reduction
 call bint%com%red(bint%bump%mpl,array_in_ext,array_in)
 
+! Probe out
+@:probe_out()
+
 end subroutine bint_apply_interp_ad
 
 !----------------------------------------------------------------------
@@ -932,8 +1041,20 @@ implicit none
 ! Passed variables
 class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 
+! Set name
+#:set subr = 'bint_deallocate_outgrid'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 call bint%geom_out%dealloc()
+
+! Probe out
+@:probe_out()
 
 end subroutine bint_deallocate_outgrid
 
@@ -948,11 +1069,23 @@ implicit none
 ! Passed variables
 class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 
+! Set name
+#:set subr = 'bint_delete'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
+
 ! Release memory
-call bint%bump%dealloc()
 call bint%deallocate_outgrid()
 call bint%h%dealloc()
 call bint%com%dealloc()
+call bint%bump%dealloc()
+
+! Probe out
+@:probe_out()
 
 end subroutine bint_delete
 
@@ -967,8 +1100,20 @@ implicit none
 ! Passed variables
 type(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 
+! Set name
+#:set subr = 'bint_dummy_final'
+
+! Get instance index
+call probe%get_instance(bint%bump%iinst)
+
+! Probe in
+@:probe_in()
+
 ! Dummy action to avoid compiler warning
 bint%dummy_logical = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine bint_dummy_final
 

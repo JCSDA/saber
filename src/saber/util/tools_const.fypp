@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_const
 !> Define usual constants and missing values
@@ -8,6 +9,7 @@
 module tools_const
 
 use tools_kinds, only: kind_real
+use type_probe, only: probe
 
 implicit none
 

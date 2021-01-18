@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_cv_blk
 !> Control vector derived type
@@ -8,6 +9,7 @@
 module type_cv_blk
 
 use tools_kinds, only: kind_real
+use type_probe, only: probe
 
 implicit none
 

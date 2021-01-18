@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_ens
 !> Ensemble derived type
@@ -20,6 +21,7 @@ use type_io, only: io_type
 use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 
 implicit none
@@ -72,9 +74,18 @@ class(ens_type),intent(inout) :: ens !< Ensemble
 integer,intent(in) :: ne             !< Ensemble size
 integer,intent(in) :: nsub           !< Number of sub-ensembles
 
+! Set name
+#:set subr = 'ens_set_att'
+
+! Probe in
+@:probe_in()
+
 ! Copy attributes
 ens%ne = ne
 ens%nsub = nsub
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_set_att
 
@@ -91,6 +102,12 @@ class(ens_type),intent(inout) :: ens !< Ensemble
 integer,intent(in) :: ne             !< Ensemble size
 integer,intent(in) :: nsub           !< Number of sub-ensembles
 
+! Set name
+#:set subr = 'ens_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Copy attributes
 call ens%set_att(ne,nsub)
 
@@ -99,6 +116,9 @@ if (ne>0) then
    allocate(ens%mem(ne))
    allocate(ens%mean(nsub))
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_alloc
 
@@ -116,6 +136,12 @@ class(ens_type),intent(inout) :: ens !< Ensemble
 ! Local variables
 integer :: ie,isub
 
+! Set name
+#:set subr = 'ens_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(ens%mem)) then
    do ie=1,ens%ne
@@ -131,6 +157,9 @@ if (allocated(ens%mean)) then
 end if
 call ens%m2%final()
 call ens%m4%final()
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_dealloc
 
@@ -151,6 +180,12 @@ type(ens_type),intent(in) :: ens_in      !< Input ensemble
 
 ! Local variables
 integer :: ie,isub
+
+! Set name
+#:set subr = 'ens_copy'
+
+! Probe in
+@:probe_in()
 
 ! Copy data
 if (allocated(ens_in%mem)) then
@@ -180,6 +215,9 @@ if (.not.ens_in%m4%is_null()) then
    call ens_out%m4%copy_fields(ens_in%m4)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine ens_copy
 
 !----------------------------------------------------------------------
@@ -199,6 +237,12 @@ type(geom_type),intent(in) :: geom   !< Geometry
 ! Local variables
 integer :: isub,ie_sub,ie
 
+! Set name
+#:set subr = 'ens_compute_mean'
+
+! Probe in
+@:probe_in()
+
 do isub=1,ens%nsub
    ! Initialization
    call ens%mean(isub)%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
@@ -213,6 +257,9 @@ do isub=1,ens%nsub
    end do
    call ens%mean(isub)%mult_fields(1.0/real(ens%ne/ens%nsub,kind_real))
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_compute_mean
 
@@ -233,6 +280,12 @@ type(geom_type),intent(in) :: geom   !< Geometry
 ! Local variables
 integer :: isub,ie_sub,ie
 type(fieldset_type) :: pert
+
+! Set name
+#:set subr = 'ens_compute_moments'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 call pert%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
@@ -264,6 +317,9 @@ end do
 call ens%m2%mult_fields(1.0/real(ens%ne-ens%nsub,kind_real))
 call ens%m4%mult_fields(1.0/real(ens%ne,kind_real))
 
+! Probe out
+@:probe_out()
+
 end subroutine ens_compute_moments
 
 !----------------------------------------------------------------------
@@ -283,6 +339,12 @@ type(geom_type),intent(in) :: geom   !< Geometry
 ! Local variables
 integer :: isub,ie_sub,ie
 type(fieldset_type) :: std
+
+! Set name
+#:set subr = 'ens_normalize'
+
+! Probe in
+@:probe_in()
 
 ! Compute ensemble mean
 call ens%compute_mean(mpl,nam,geom)
@@ -315,6 +377,9 @@ end do
 ! Recompute moments
 call ens%compute_moments(mpl,nam,geom)
 
+! Probe out
+@:probe_out()
+
 end subroutine ens_normalize
 
 !----------------------------------------------------------------------
@@ -337,7 +402,12 @@ real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on Sc0 subse
 ! Local variables
 integer :: isub
 real(kind_real),allocatable :: fld_mga(:,:),mean(:,:)
-character(len=1024),parameter :: subr = 'ens_get_c0_single'
+
+! Set name
+#:set subr = 'ens_get_c0_single'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 if (.not.geom%same_grid) allocate(fld_mga(geom%nmga,geom%nl0))
@@ -396,7 +466,7 @@ case ('m4')
       call ens%m4%to_array(mpl,iv,fld_mga)
    end if
 case default
-   call mpl%abort(subr,'wrong field type')
+   call mpl%abort('${subr}$','wrong field type')
 end select
 
 if (.not.geom%same_grid) then
@@ -406,6 +476,9 @@ if (.not.geom%same_grid) then
    ! Release memory
    deallocate(fld_mga)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_get_c0_single
 
@@ -429,10 +502,19 @@ real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on Sc
 ! Local variables
 integer :: iv
 
+! Set name
+#:set subr = 'ens_get_c0_all'
+
+! Probe in
+@:probe_in()
+
 ! Loop over fields
 do iv=1,nam%nv
    call ens%get_c0(mpl,iv,geom,fieldtype,i,fld_c0a(:,:,iv))
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_get_c0_all
 
@@ -456,7 +538,12 @@ real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on Sc0 subset
 ! Local variables
 integer :: isub
 real(kind_real),allocatable :: fld_mga(:,:),mean(:,:),fld_c0a_tmp(:,:)
-character(len=1024),parameter :: subr = 'ens_set_c0_single'
+
+! Set name
+#:set subr = 'ens_set_c0_single'
+
+! Probe in
+@:probe_in()
 
 if (.not.geom%same_grid) then
    ! Allocation
@@ -524,8 +611,11 @@ case ('m4')
       call ens%m4%from_array(mpl,iv,fld_mga)
    end if
 case default
-   call mpl%abort(subr,'wrong field type')
+   call mpl%abort('${subr}$','wrong field type')
 end select
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_set_c0_single
 
@@ -549,10 +639,19 @@ real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on Sc0
 ! Local variables
 integer :: iv
 
+! Set name
+#:set subr = 'ens_set_c0_all'
+
+! Probe in
+@:probe_in()
+
 ! Loop over fields
 do iv=1,nam%nv
    call ens%set_c0(mpl,iv,geom,fieldtype,i,fld_c0a(:,:,iv))
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_set_c0_all
 
@@ -576,6 +675,12 @@ integer :: ie,ic0a,il0,iv
 real(kind_real) :: alpha,norm
 real(kind_real) :: fld_copy(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: pert(geom%nc0a,geom%nl0,nam%nv)
+
+! Set name
+#:set subr = 'ens_apply_bens'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 fld_copy = fld
@@ -609,6 +714,9 @@ do ie=1,ens%ne
    !$omp end parallel do
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine ens_apply_bens
 
 !----------------------------------------------------------------------
@@ -634,6 +742,12 @@ real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer :: ie,ic0a,il0,iv
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: alpha(ens%ne),norm
+
+! Set name
+#:set subr = 'ens_apply_bens_dirac'
+
+! Probe in
+@:probe_in()
 
 ! Apply ensemble covariance formula for a Dirac function
 norm = 1.0/real(ens%ne-1,kind_real)
@@ -664,6 +778,9 @@ do ie=1,ens%ne
    end do
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine ens_apply_bens_dirac
 
 !----------------------------------------------------------------------
@@ -692,7 +809,12 @@ real(kind_real) :: m4(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: kurt(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
 character(len=1024) :: filename
-character(len=1024),parameter :: subr = 'ens_normality'
+
+! Set name
+#:set subr = 'ens_normality'
+
+! Probe in
+@:probe_in()
 
 ! Set file name
 filename = trim(nam%prefix)//'_umf'
@@ -777,35 +899,35 @@ call mpl%flush
 
 ! Set file name
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_normality_',mpl%nproc,'-',mpl%myproc
-ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Define dimensions
-nloc_id = mpl%nc_dim_define_or_get(subr,ncid,'nloc',nloc)
-ne_id = mpl%nc_dim_define_or_get(subr,ncid,'ne',ens%ne)
-nem1_id = mpl%nc_dim_define_or_get(subr,ncid,'nem1',ens%ne-1)
+nloc_id = mpl%nc_dim_define_or_get(ncid,'nloc',nloc)
+ne_id = mpl%nc_dim_define_or_get(ncid,'ne',ens%ne)
+nem1_id = mpl%nc_dim_define_or_get(ncid,'nem1',ens%ne-1)
 
 if (nloc>0) then
    ! Define variables
-   ic0a_id = mpl%nc_var_define_or_get(subr,ncid,'ic0a',nc_kind_int,(/nloc_id/))
-   il0_id = mpl%nc_var_define_or_get(subr,ncid,'il0',nc_kind_int,(/nloc_id/))
-   iv_id = mpl%nc_var_define_or_get(subr,ncid,'iv',nc_kind_int,(/nloc_id/))
-   order_id = mpl%nc_var_define_or_get(subr,ncid,'order',nc_kind_int,(/ne_id,nloc_id/))
-   ens_norm_id = mpl%nc_var_define_or_get(subr,ncid,'ens_norm',nc_kind_real,(/ne_id,nloc_id/))
-   ens_step_id = mpl%nc_var_define_or_get(subr,ncid,'ens_step',nc_kind_real,(/nem1_id,nloc_id/))
+   ic0a_id = mpl%nc_var_define_or_get(ncid,'ic0a',nc_kind_int,(/nloc_id/))
+   il0_id = mpl%nc_var_define_or_get(ncid,'il0',nc_kind_int,(/nloc_id/))
+   iv_id = mpl%nc_var_define_or_get(ncid,'iv',nc_kind_int,(/nloc_id/))
+   order_id = mpl%nc_var_define_or_get(ncid,'order',nc_kind_int,(/ne_id,nloc_id/))
+   ens_norm_id = mpl%nc_var_define_or_get(ncid,'ens_norm',nc_kind_real,(/ne_id,nloc_id/))
+   ens_step_id = mpl%nc_var_define_or_get(ncid,'ens_step',nc_kind_real,(/nem1_id,nloc_id/))
 end if
 
 if (nloc>0) then
    ! Write variables
-   call mpl%ncerr(subr,nf90_put_var(ncid,ic0a_id,ic0a_loc))
-   call mpl%ncerr(subr,nf90_put_var(ncid,il0_id,il0_loc))
-   call mpl%ncerr(subr,nf90_put_var(ncid,iv_id,iv_loc))
-   call mpl%ncerr(subr,nf90_put_var(ncid,order_id,order))
-   call mpl%ncerr(subr,nf90_put_var(ncid,ens_norm_id,ens_norm))
-   call mpl%ncerr(subr,nf90_put_var(ncid,ens_step_id,ens_step))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,ic0a_id,ic0a_loc))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,il0_id,il0_loc))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,iv_id,iv_loc))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,order_id,order))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,ens_norm_id,ens_norm))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,ens_step_id,ens_step))
 end if
 
 ! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! Release memory
 deallocate(ic0a_loc)
@@ -815,6 +937,9 @@ deallocate(order)
 deallocate(ens_loc)
 deallocate(ens_norm)
 deallocate(ens_step)
+
+! Probe out
+@:probe_out()
 
 end subroutine ens_normality
 

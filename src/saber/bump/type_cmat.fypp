@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_cmat
 !> C matrix derived type
@@ -22,6 +23,7 @@ use type_lct, only: lct_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_samp, only: samp_type
 
@@ -65,8 +67,17 @@ implicit none
 class(cmat_type),intent(inout) :: cmat !< C matrix
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
+! Set name
+#:set subr = 'cmat_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 if (.not.allocated(cmat%blk)) allocate(cmat%blk(bpar%nbe))
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_alloc
 
@@ -86,6 +97,12 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'cmat_alloc_blk'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
@@ -96,6 +113,9 @@ end do
 
 ! Update allocation flag
 cmat%allocated = .true.
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_alloc_blk
 
@@ -115,10 +135,19 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'cmat_init'
+
+! Probe in
+@:probe_in()
+
 ! Initialize blocks
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) call cmat%blk(ib)%init(mpl,bpar)
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_init
 
@@ -136,6 +165,12 @@ class(cmat_type),intent(inout) :: cmat !< C matrix
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'cmat_partial_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(cmat%blk)) then
    do ib=1,size(cmat%blk)
@@ -146,6 +181,9 @@ end if
 
 ! Update allocation flag
 cmat%allocated = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_partial_dealloc
 
@@ -163,6 +201,12 @@ class(cmat_type),intent(inout) :: cmat !< C matrix
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'cmat_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(cmat%blk)) then
    do ib=1,size(cmat%blk)
@@ -173,6 +217,9 @@ end if
 
 ! Update allocation flag
 cmat%allocated = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_dealloc
 
@@ -195,7 +242,12 @@ type(io_type),intent(in) :: io         !< I/O
 ! Local variables
 integer :: ib,ncid,anisotropic
 character(len=1024) :: filename,grpname
-character(len=1024),parameter :: subr = 'cmat_read'
+
+! Set name
+#:set subr = 'cmat_read'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call cmat%alloc(bpar)
@@ -205,9 +257,9 @@ filename = trim(nam%prefix)//'_cmat'
 
 if (mpl%main) then
    ! Read attribute
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
-   call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'anisotropic',anisotropic))
-   call mpl%ncerr(subr,nf90_close(ncid))
+   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'anisotropic',anisotropic))
+   call mpl%ncerr('${subr}$',nf90_close(ncid))
 end if
 
 ! Broadcast attribute
@@ -221,7 +273,7 @@ do ib=1,bpar%nbe
       elseif (anisotropic==0) then
          cmat%blk(ib)%anisotropic = .false.
       else
-         call mpl%abort(subr,'wrong anisotropic flag')
+         call mpl%abort('${subr}$','wrong anisotropic flag')
       end if
    end if
 end do
@@ -251,6 +303,9 @@ do ib=1,bpar%nbe
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine cmat_read
 
 !----------------------------------------------------------------------
@@ -273,7 +328,12 @@ type(io_type),intent(in) :: io      !< I/O
 integer :: ib
 integer :: ncid
 character(len=1024) :: filename,grpname
-character(len=1024),parameter :: subr = 'cmat_write'
+
+! Set name
+#:set subr = 'cmat_write'
+
+! Probe in
+@:probe_in()
 
 ! Set filename
 filename = trim(nam%prefix)//'_cmat'
@@ -303,16 +363,19 @@ do ib=1,bpar%nbe
 
       if (mpl%main) then
          ! Write attributes
-         call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
+         call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
          if (cmat%blk(ib)%anisotropic) then
-            call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'anisotropic',1))
+            call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'anisotropic',1))
          else
-            call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'anisotropic',0))
+            call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'anisotropic',0))
          end if
-         call mpl%ncerr(subr,nf90_close(ncid))
+         call mpl%ncerr('${subr}$',nf90_close(ncid))
       end if
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_write
 
@@ -335,7 +398,12 @@ type(hdiag_type),intent(in) :: hdiag   !< Hybrid diagnostics
 ! Local variables
 integer :: ib,n,i,il0,il0i,ic2a,ic0a
 real(kind_real),allocatable :: fld_c2a(:,:,:),fld_c2b(:,:),fld_c0a(:,:,:)
-character(len=1024),parameter :: subr = 'cmat_from_hdiag'
+
+! Set name
+#:set subr = 'cmat_from_hdiag'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call cmat%alloc(bpar)
@@ -391,9 +459,9 @@ do ib=1,bpar%nbe
                      fld_c2a(ic2a,:,4) = hdiag%loc_2%blk(ic2a,ib)%fit_rv
                   end if
                case ('dual-ens')
-                  call mpl%abort(subr,'dual-ens not ready yet for C matrix')
+                  call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
                case default
-                  call mpl%abort(subr,'cmat not implemented yet for this method')
+                  call mpl%abort('${subr}$','cmat not implemented yet for this method')
                end select
             end do
 
@@ -461,9 +529,9 @@ do ib=1,bpar%nbe
                      cmat%blk(ib)%rv(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rv(il0)
                   end if
                case ('dual-ens')
-                  call mpl%abort(subr,'dual-ens not ready yet for C matrix')
+                  call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
                case default
-                  call mpl%abort(subr,'cmat not implemented yet for this method')
+                  call mpl%abort('${subr}$','cmat not implemented yet for this method')
                end select
             end do
          end if
@@ -491,9 +559,9 @@ do ib=1,bpar%nbe
          case ('hyb-avg','hyb-rnd')
             cmat%blk(ib)%wgt = sum(hdiag%loc_2%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
          case ('dual-ens')
-            call mpl%abort(subr,'dual-ens not ready yet for C matrix')
+            call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
          case default
-            call mpl%abort(subr,'cmat not implemented yet for this method')
+            call mpl%abort('${subr}$','cmat not implemented yet for this method')
          end select
       end if
    end if
@@ -505,6 +573,9 @@ if (nam%local_diag) then
    deallocate(fld_c2b)
    deallocate(fld_c0a)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_from_hdiag
 
@@ -525,7 +596,12 @@ type(lct_type),intent(in) :: lct       !< LCT
 
 ! Local variables
 integer :: ib,iv,jv,iscales,il0,ic0a
-character(len=1024),parameter :: subr = 'cmat_from_lct'
+
+! Set name
+#:set subr = 'cmat_from_lct'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call cmat%alloc(bpar)
@@ -547,9 +623,9 @@ do ib=1,bpar%nbe
       ! Indices
       iv = bpar%b_to_v1(ib)
       jv = bpar%b_to_v2(ib)
-      if (iv/=jv) call mpl%abort(subr,'only diagonal blocks for cmat_from_lct')
+      if (iv/=jv) call mpl%abort('${subr}$','only diagonal blocks for cmat_from_lct')
 
-      if (lct%blk(ib)%nscales>1) call mpl%warning(subr,'only the first scale is used to define cmat from LCT')
+      if (lct%blk(ib)%nscales>1) call mpl%warning('${subr}$','only the first scale is used to define cmat from LCT')
       iscales = 1
 
       do il0=1,geom%nl0
@@ -578,6 +654,9 @@ do ib=1,bpar%nbe
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine cmat_from_lct
 
 !----------------------------------------------------------------------
@@ -597,7 +676,12 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ib,iv,jv,il0
-character(len=1024),parameter :: subr = 'cmat_from_nam'
+
+! Set name
+#:set subr = 'cmat_from_nam'
+
+! Probe in
+@:probe_in()
 
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
@@ -626,7 +710,7 @@ do ib=1,bpar%nbe
       ! Indices
       iv = bpar%b_to_v1(ib)
       jv = bpar%b_to_v2(ib)
-      if (iv/=jv) call mpl%abort(subr,'only diagonal blocks for cmat_from_nam')
+      if (iv/=jv) call mpl%abort('${subr}$','only diagonal blocks for cmat_from_nam')
 
       ! Copy support radii
       do il0=1,geom%nl0
@@ -640,6 +724,9 @@ do ib=1,bpar%nbe
       cmat%blk(ib)%wgt = 1.0
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_from_nam
 
@@ -660,6 +747,12 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 ! Local variables
 integer :: ib,il0,ic0a
 logical :: import_standard(bpar%nbe),import_static(bpar%nbe),import_anisotropic(bpar%nbe)
+
+! Set name
+#:set subr = 'cmat_from_bump'
+
+! Probe in
+@:probe_in()
 
 if (.not.cmat%allocated) then
    ! Allocation
@@ -735,7 +828,7 @@ do ib=1,bpar%nbe
                      cmat%blk(ib)%Hcoef(ic0a,il0) = cmat%blk(ib)%bump_Dcoef(ic0a,il0)
 
                      ! Copy support radii
-                     call lct_h2r(mpl,cmat%blk(ib)%H11(ic0a,il0),cmat%blk(ib)%H22(ic0a,il0),cmat%blk(ib)%H33(ic0a,il0), &   
+                     call lct_h2r(mpl,cmat%blk(ib)%H11(ic0a,il0),cmat%blk(ib)%H22(ic0a,il0),cmat%blk(ib)%H33(ic0a,il0), &
  & cmat%blk(ib)%H12(ic0a,il0),cmat%blk(ib)%rh(ic0a,il0),cmat%blk(ib)%rv(ic0a,il0))
                   end if
                end do
@@ -752,6 +845,9 @@ do ib=1,bpar%nbe
    ! Release memory (partial)
    call cmat%blk(ib)%partial_bump_dealloc
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_from_bump
 
@@ -774,7 +870,12 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 integer :: ib,il0,ic0a,il0i
 real(kind_real) :: rhs,rvs
 real(kind_real),allocatable :: rh_c0a(:)
-character(len=1024),parameter :: subr = 'cmat_setup_sampling'
+
+! Set name
+#:set subr = 'cmat_setup_sampling'
+
+! Probe in
+@:probe_in()
 
 ! Sampling parameters
 if (trim(nam%strategy)=='specific_multivariate') then
@@ -812,7 +913,7 @@ end if
 select case (trim(nam%draw_type))
 case ('random_coast')
    ! More points around coasts
-   if (all(geom%gmask_c0a)) call mpl%abort(subr,'random_coast is not relevant if there is no coast')
+   if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
 
    ! Allocation
    allocate(rh_c0a(geom%nc0a))
@@ -844,6 +945,9 @@ case ('random_coast')
    ! Release memory
    deallocate(rh_c0a)
 end select
+
+! Probe out
+@:probe_out()
 
 end subroutine cmat_setup_sampling
 

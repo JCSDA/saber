@@ -1,4 +1,5 @@
 #:include '../generics.fypp'
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_msv
 !> Deal with missing values
@@ -9,6 +10,7 @@
 module type_msv
 
 use tools_kinds,only: kind_int,kind_real
+use type_probe, only: probe
 
 implicit none
 
@@ -98,11 +100,20 @@ class(msv_type),intent(inout) :: msv !< Missing values
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'msv_dummy_method'
+
+! Probe in
+@:probe_in()
+
 ! Dummy action to avoid compiler warning
 msv%dummy_logical = .false.
 
 ! Set result value
 test = .false.
+
+! Probe out
+@:probe_out()
 
 end function msv_dummy_method
 
@@ -122,8 +133,17 @@ ${ftype}$,intent(in) :: value     !< value
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'msv_isnot_${dtype}$_r0'
+
+! Probe in
+@:probe_in()
+
 #{if dtype == 'int'}# test = abs(value-msv%vali)>0 #{endif}#
 #{if dtype == 'real'}# test = abs(value-msv%valr)>0.0 #{endif}#
+
+! Probe out
+@:probe_out()
 
 end function msv_isnot_${dtype}$_r0
 #:endfor
@@ -149,12 +169,21 @@ logical :: test( &
 #:endfor
  & max(size(array,${rank}$),1))
 
+! Set name
+#:set subr = 'msv_isnot_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
+
 if (size(array)>0) then
    #{if dtype == 'int'}# test = abs(array-msv%vali)>0 #{endif}#
    #{if dtype == 'real'}# test = abs(array-msv%valr)>0.0 #{endif}#
 else
    test = .false.
 end if
+
+! Probe out
+@:probe_out()
 
 end function msv_isnot_${dtype}$_r${rank}$
    #:endfor
@@ -176,7 +205,16 @@ ${ftype}$,intent(in) :: value     !< value
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'msv_is_${dtype}$_r0'
+
+! Probe in
+@:probe_in()
+
 test = .not.msv%isnot(value)
+
+! Probe out
+@:probe_out()
 
 end function msv_is_${dtype}$_r0
 #:endfor
@@ -202,7 +240,16 @@ logical :: test( &
 #:endfor
  & max(size(array,${rank}$),1))
 
+! Set name
+#:set subr = 'msv_is_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
+
 test = .not.msv%isnot(array)
+
+! Probe out
+@:probe_out()
 
 end function msv_is_${dtype}$_r${rank}$
    #:endfor
@@ -225,7 +272,16 @@ ${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'msv_isanynot_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
+
 test = any(msv%isnot(array))
+
+! Probe out
+@:probe_out()
 
 end function msv_isanynot_${dtype}$_r${rank}$
    #:endfor
@@ -248,7 +304,16 @@ ${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'msv_isany_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
+
 test = .not.msv%isallnot(array)
+
+! Probe out
+@:probe_out()
 
 end function msv_isany_${dtype}$_r${rank}$
    #:endfor
@@ -271,7 +336,16 @@ ${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'msv_isallnot_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
+
 test = all(msv%isnot(array))
+
+! Probe out
+@:probe_out()
 
 end function msv_isallnot_${dtype}$_r${rank}$
    #:endfor
@@ -294,7 +368,16 @@ ${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
 ! Returned variable
 logical :: test
 
+! Set name
+#:set subr = 'msv_isall_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
+
 test = .not.msv%isanynot(array)
+
+! Probe out
+@:probe_out()
 
 end function msv_isall_${dtype}$_r${rank}$
    #:endfor

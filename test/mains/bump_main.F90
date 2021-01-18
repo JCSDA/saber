@@ -15,6 +15,7 @@ use iso_fortran_env, only: output_unit
 use type_bump, only: bump_type
 use type_model, only: model_type
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 
 implicit none
 
@@ -49,6 +50,9 @@ end do
 ! Set missing values
 mpl%msv%vali = -999
 mpl%msv%valr = -999.0
+
+! Get BUMP instance index
+call probe%get_instance(bump%iinst)
 
 ! Initialize MPL
 call mpl%init(f_comm)

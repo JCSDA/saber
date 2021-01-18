@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_nicas
 !> NICAS data derived type
@@ -27,6 +28,7 @@ use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas_blk, only: nicas_blk_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 
 implicit none
@@ -90,6 +92,12 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 ! Local variable
 integer :: ib
 
+! Set name
+#:set subr = 'nicas_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 allocate(nicas%blk(bpar%nbe))
 
@@ -123,6 +131,9 @@ end do
 ! Update allocation flag
 nicas%allocated = .true.
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_alloc
 
 !----------------------------------------------------------------------
@@ -137,12 +148,21 @@ class(nicas_type),intent(inout) :: nicas !< NICAS data
 ! Local variable
 integer :: ib
 
+! Set name
+#:set subr = 'nicas_partial_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(nicas%blk)) then
    do ib=1,size(nicas%blk)
       call nicas%blk(ib)%partial_dealloc
    end do
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_partial_dealloc
 
@@ -158,6 +178,12 @@ class(nicas_type),intent(inout) :: nicas !< NICAS data
 ! Local variable
 integer :: ib
 
+! Set name
+#:set subr = 'nicas_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(nicas%blk)) then
    do ib=1,size(nicas%blk)
@@ -168,6 +194,9 @@ end if
 
 ! Update allocation flag
 nicas%allocated = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_dealloc
 
@@ -190,8 +219,13 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 integer :: ib,iproc,iprocio,ncid,grpid
 integer :: mpicom,lsqrt,grid_hash
 character(len=1024) :: filename,grpname
-character(len=1024),parameter :: subr = 'nicas_read'
 type(nicas_type) :: nicas_tmp
+
+! Set name
+#:set subr = 'nicas_read'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call nicas%alloc(nam,bpar)
@@ -208,27 +242,27 @@ do iproc=1,mpl%nproc
 
       ! Open file
       write(filename,'(a,i6.6,a,i6.6)') trim(nam%prefix)//'_nicas_',mpl%nproc,'-',iproc
-      call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+      call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
       ! Read parameters
-      call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'mpicom',mpicom))
-      call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'lsqrt',lsqrt))
-      call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
+      call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'mpicom',mpicom))
+      call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'lsqrt',lsqrt))
+      call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
 
       ! Check parameters
       if (mpicom/=nam%mpicom) &
- & call mpl%abort(subr,'different numbers of communication steps between current execution and NICAS file')
+ & call mpl%abort('${subr}$','different numbers of communication steps between current execution and NICAS file')
       if (((lsqrt==0).and.nam%lsqrt).or.((lsqrt==1).and.(.not.nam%lsqrt))) &
- & call mpl%abort(subr,'different square-root flags between current execution and NICAS file')
+ & call mpl%abort('${subr}$','different square-root flags between current execution and NICAS file')
       if (grid_hash/=geom%proc_to_grid_hash(iproc)) &
- & call mpl%abort(subr,'different grids between current execution and NICAS file')
+ & call mpl%abort('${subr}$','different grids between current execution and NICAS file')
 
       if (iproc==iprocio) then
          do ib=1,bpar%nbe
             if (bpar%B_block(ib)) then
                ! Get group
                call nam%io_key_value(bpar%blockname(ib),grpname)
-               call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
+               call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,grpname,grpid))
 
                ! Read data
                call nicas%blk(ib)%read(mpl,geom,bpar,grpid)
@@ -242,7 +276,7 @@ do iproc=1,mpl%nproc
             if (bpar%B_block(ib)) then
                ! Get group
                call nam%io_key_value(bpar%blockname(ib),grpname)
-               call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
+               call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,grpname,grpid))
 
                ! Read data
                call nicas_tmp%blk(ib)%read(mpl,geom,bpar,grpid)
@@ -257,7 +291,7 @@ do iproc=1,mpl%nproc
       end if
 
       ! Close files
-      call mpl%ncerr(subr,nf90_close(ncid))
+      call mpl%ncerr('${subr}$',nf90_close(ncid))
    elseif (mpl%myproc==iproc) then
       ! Receive data from task iprocio
       write(mpl%info,'(a7,a,i6)') '','Receive NICAS data from task ',iprocio
@@ -268,6 +302,9 @@ end do
 
 ! Update tag
 call mpl%update_tag(4)
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_read
 
@@ -289,8 +326,13 @@ type(bpar_type),intent(in) :: bpar    !< Block parameters
 ! Local variables
 integer :: ib,iproc,iprocio,ncid,grpid,ncid_grids,grpid_grids
 character(len=1024) :: filename,grpname
-character(len=1024),parameter :: subr = 'nicas_write'
 type(nicas_type) :: nicas_tmp
+
+! Set name
+#:set subr = 'nicas_write'
+
+! Probe in
+@:probe_in()
 
 ! Write NICAS blocks
 do iproc=1,mpl%nproc
@@ -304,24 +346,24 @@ do iproc=1,mpl%nproc
 
       ! Define file
       write(filename,'(a,i6.6,a,i6.6)') trim(nam%prefix)//'_nicas_',mpl%nproc,'-',iproc
-      ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+      ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
       ! Write namelist parameters
       call nam%write(mpl,ncid)
 
       ! Write parameters
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'mpicom',nam%mpicom))
+      call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'mpicom',nam%mpicom))
       if (nam%lsqrt) then
-         call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'lsqrt',1))
+         call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'lsqrt',1))
       else
-         call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'lsqrt',0))
+         call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'lsqrt',0))
       end if
-      call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%proc_to_grid_hash(iproc)))
+      call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'grid_hash',geom%proc_to_grid_hash(iproc)))
 
       if (nam%write_grids) then
          ! Define file
          write(filename,'(a,i6.6,a,i6.6)') trim(nam%prefix)//'_nicas_grids_',mpl%nproc,'-',iproc
-         ncid_grids = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+         ncid_grids = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
       end if
 
       if (iproc==iprocio) then
@@ -329,7 +371,7 @@ do iproc=1,mpl%nproc
             if (bpar%B_block(ib)) then
                ! Define group
                call nam%io_key_value(bpar%blockname(ib),grpname)
-               grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
+               grpid = mpl%nc_group_define_or_get(ncid,grpname)
 
                ! Write data
                call nicas%blk(ib)%write(mpl,geom,bpar,grpid)
@@ -337,7 +379,7 @@ do iproc=1,mpl%nproc
                if (nam%write_grids.and.bpar%nicas_block(ib)) then
                   ! Define group
                   call nam%io_key_value(bpar%blockname(ib),grpname)
-                  grpid_grids = mpl%nc_group_define_or_get(subr,ncid_grids,grpname)
+                  grpid_grids = mpl%nc_group_define_or_get(ncid_grids,grpname)
 
                   ! Write grids
                   call nicas%blk(ib)%write_grids(mpl,grpid_grids)
@@ -355,7 +397,7 @@ do iproc=1,mpl%nproc
             if (bpar%B_block(ib)) then
                ! Define group
                call nam%io_key_value(bpar%blockname(ib),grpname)
-               grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
+               grpid = mpl%nc_group_define_or_get(ncid,grpname)
 
                ! Write data
                call nicas_tmp%blk(ib)%write(mpl,geom,bpar,grpid)
@@ -363,7 +405,7 @@ do iproc=1,mpl%nproc
                if (nam%write_grids.and.bpar%nicas_block(ib)) then
                   ! Define group
                   call nam%io_key_value(bpar%blockname(ib),grpname)
-                  grpid_grids = mpl%nc_group_define_or_get(subr,ncid_grids,grpname)
+                  grpid_grids = mpl%nc_group_define_or_get(ncid_grids,grpname)
 
                   ! Write grids
                   call nicas_tmp%blk(ib)%write_grids(mpl,grpid_grids)
@@ -376,8 +418,8 @@ do iproc=1,mpl%nproc
       end if
 
       ! Close files
-      call mpl%ncerr(subr,nf90_close(ncid))
-      if (nam%write_grids) call mpl%ncerr(subr,nf90_close(ncid_grids))
+      call mpl%ncerr('${subr}$',nf90_close(ncid))
+      if (nam%write_grids) call mpl%ncerr('${subr}$',nf90_close(ncid_grids))
    elseif (mpl%myproc==iproc) then
       ! Send data to task iprocio
       write(mpl%info,'(a7,a,i6)') '','Send NICAS data to task ',iprocio
@@ -388,6 +430,9 @@ end do
 
 ! Update tag
 call mpl%update_tag(4)
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_write
 
@@ -412,6 +457,12 @@ integer :: ib,nbufi,nbufr,nbufl,nnbufi,nnbufr,nnbufl,ibufi,ibufr,ibufl,bufs(3)
 integer,allocatable :: bufi(:)
 real(kind_real),allocatable :: bufr(:)
 logical,allocatable :: bufl(:)
+
+! Set name
+#:set subr = 'nicas_send'
+
+! Probe in
+@:probe_in()
 
 ! Buffer size
 nbufi = 0
@@ -457,6 +508,9 @@ call mpl%f_comm%send(bufi,iproc-1,mpl%tag+1)
 call mpl%f_comm%send(bufr,iproc-1,mpl%tag+2)
 call mpl%f_comm%send(bufl,iproc-1,mpl%tag+3)
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_send
 
 !----------------------------------------------------------------------
@@ -481,6 +535,12 @@ integer,allocatable :: bufi(:)
 real(kind_real),allocatable :: bufr(:)
 logical,allocatable :: bufl(:)
 type(fckit_mpi_status) :: status
+
+! Set name
+#:set subr = 'nicas_receive'
+
+! Probe in
+@:probe_in()
 
 ! Receive buffer size
 call mpl%f_comm%receive(bufs,iproc-1,mpl%tag,status)
@@ -517,6 +577,9 @@ do ib=1,bpar%nbe
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_receive
 
 !----------------------------------------------------------------------
@@ -538,6 +601,12 @@ type(cmat_type),intent(in) :: cmat        !< C matrix data
 
 ! Local variables
 integer :: ib
+
+! Set name
+#:set subr = 'nicas_run_nicas'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call nicas%alloc(nam,bpar)
@@ -579,6 +648,9 @@ if (nam%write_nicas) then
    call nicas%write(mpl,nam,geom,bpar)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_run_nicas
 
 !----------------------------------------------------------------------
@@ -601,6 +673,12 @@ type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
 integer :: ib
+
+! Set name
+#:set subr = 'nicas_run_nicas_tests'
+
+! Probe in
+@:probe_in()
 
 if (nam%check_adjoints) then
    ! Test adjoint
@@ -679,6 +757,9 @@ if (nam%check_optimality) then
    call nicas%test_optimality(mpl,rng,nam,geom,bpar,io)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_run_nicas_tests
 
 !----------------------------------------------------------------------
@@ -699,6 +780,12 @@ logical,intent(in),optional :: getsizeonly !< Flag to get the control variable s
 ! Local variables
 integer :: ib
 logical :: lgetsizeonly
+
+! Set name
+#:set subr = 'nicas_alloc_cv'
+
+! Probe in
+@:probe_in()
 
 ! Check flag existence
 lgetsizeonly = .false.
@@ -732,6 +819,9 @@ do ib=1,bpar%nbe
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_alloc_cv
 
 !----------------------------------------------------------------------
@@ -753,6 +843,12 @@ type(cv_type),intent(out) :: cv       !< Control vector
 integer :: ib,jb,isa,is
 integer,allocatable :: order(:)
 real(kind_real),allocatable :: hash_s(:),alpha(:)
+
+! Set name
+#:set subr = 'nicas_random_cv'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call nicas%alloc_cv(mpl,bpar,cv)
@@ -781,7 +877,7 @@ do ib=1,bpar%nbe
       call qsort(nicas%blk(jb)%ns,hash_s,order)
       alpha = alpha(order)
 
-      ! Copy local section     
+      ! Copy local section
       do isa=1,nicas%blk(jb)%nsa
          is = nicas%blk(jb)%sa_to_s(isa)
          cv%blk(ib)%alpha(isa) = alpha(is)
@@ -796,6 +892,9 @@ end do
 
 ! Desynchronize random number generator
 call rng%desync(mpl)
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_random_cv
 
@@ -821,7 +920,12 @@ real(kind_real) :: prod,prod_tot
 real(kind_real),allocatable :: fld_3d(:,:),fld_tmp(:,:,:)
 real(kind_real),allocatable :: wgt(:,:),wgt_diag(:)
 real(kind_real),allocatable :: fld_save(:,:,:)
-character(len=1024),parameter :: subr = 'nicas_apply'
+
+! Set name
+#:set subr = 'nicas_apply'
+
+! Probe in
+@:probe_in()
 
 if (nam%pos_def_test) then
    ! Save field for positive-definiteness test
@@ -987,18 +1091,21 @@ case ('specific_univariate')
       end if
    end do
 case ('specific_multivariate')
-   call mpl%abort(subr,'specific multivariate strategy should not be called from apply_NICAS (lsqrt required)')
+   call mpl%abort('${subr}$','specific multivariate strategy should not be called from apply_NICAS (lsqrt required)')
 end select
 
 if (nam%pos_def_test) then
    ! Positive-definiteness test
    prod = sum(fld_save*fld)
    call mpl%f_comm%allreduce(prod,prod_tot,fckit_mpi_sum())
-   if (prod_tot<0.0) call mpl%abort(subr,'negative result in nicas_apply')
+   if (prod_tot<0.0) call mpl%abort('${subr}$','negative result in nicas_apply')
 
    ! Release memory
    deallocate(fld_save)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_apply
 
@@ -1021,8 +1128,13 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 ! Local variable
 real(kind_real) :: prod,prod_tot
 real(kind_real),allocatable :: fld_save(:,:,:)
-character(len=1024),parameter :: subr = 'nicas_apply_from_sqrt'
 type(cv_type) :: cv
+
+! Set name
+#:set subr = 'nicas_apply_from_sqrt'
+
+! Probe in
+@:probe_in()
 
 if (nam%pos_def_test) then
    ! Save field for positivity test
@@ -1040,11 +1152,14 @@ if (nam%pos_def_test) then
    ! Positivity test
    prod = sum(fld_save*fld)
    call mpl%f_comm%allreduce(prod,prod_tot,fckit_mpi_sum())
-   if (prod_tot<0.0) call mpl%abort(subr,'negative result in nicas_apply')
+   if (prod_tot<0.0) call mpl%abort('${subr}$','negative result in nicas_apply')
 
    ! Release memory
    deallocate(fld_save)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_apply_from_sqrt
 
@@ -1069,6 +1184,12 @@ real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer :: ib,iv,jv,ic0a,il0
 real(kind_real),allocatable :: fld_3d(:,:),fld_tmp(:,:,:)
 real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
+
+! Set name
+#:set subr = 'nicas_apply_sqrt'
+
+! Probe in
+@:probe_in()
 
 select case (nam%strategy)
 case ('common')
@@ -1205,6 +1326,9 @@ case ('specific_multivariate')
    end do
 end select
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_apply_sqrt
 
 !----------------------------------------------------------------------
@@ -1229,6 +1353,12 @@ integer :: ib,iv,jv,ic0a,il0
 real(kind_real),allocatable :: fld_3d(:,:),fld_tmp(:,:,:)
 real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
 type(cv_type) :: cv_tmp
+
+! Set name
+#:set subr = 'nicas_apply_sqrt_ad'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call nicas%alloc_cv(mpl,bpar,cv)
@@ -1395,6 +1525,9 @@ case ('specific_multivariate')
    deallocate(fld_tmp)
 end select
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_apply_sqrt_ad
 
 !----------------------------------------------------------------------
@@ -1420,6 +1553,12 @@ integer :: ie
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 type(cv_type) :: cv_ens(ne)
 
+! Set name
+#:set subr = 'nicas_randomize'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 call ens%alloc(ne,1)
 
@@ -1439,6 +1578,9 @@ end do
 
 ! Normalize ensemble members (unit variance)
 call ens%normalize(mpl,nam,geom)
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_randomize
 
@@ -1463,6 +1605,12 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer :: ie
 real(kind_real) :: fld_copy(geom%nc0a,geom%nl0,nam%nv),fld_tmp(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: pert(geom%nc0a,geom%nl0,nam%nv)
+
+! Set name
+#:set subr = 'nicas_apply_bens'
+
+! Probe in
+@:probe_in()
 
 ! Copy field
 fld_copy = fld
@@ -1490,6 +1638,9 @@ do ie=1,ens%ne
    fld = fld/real(ens%ne-1,kind_real)
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_apply_bens
 
 !----------------------------------------------------------------------
@@ -1514,6 +1665,12 @@ real(kind_real) :: sum1,sum2
 real(kind_real) :: fld1_loc(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: fld2_loc(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
+
+! Set name
+#:set subr = 'nicas_test_adjoint'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 if (allocated(ens%mem)) then
@@ -1562,6 +1719,9 @@ if (allocated(ens%mem)) then
    deallocate(fld2_bens)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_test_adjoint
 
 !----------------------------------------------------------------------
@@ -1586,6 +1746,12 @@ integer :: idir,iv
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: fld_bens(:,:,:)
 character(len=1024) :: filename
+
+! Set name
+#:set subr = 'nicas_test_dirac'
+
+! Probe in
+@:probe_in()
 
 ! Generate dirac field
 fld = 0.0
@@ -1621,6 +1787,9 @@ end do
 ! Release memory
 if (allocated(ens%mem).and.(trim(nam%method)/='cor')) deallocate(fld_bens)
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_test_dirac
 
 !----------------------------------------------------------------------
@@ -1645,8 +1814,13 @@ integer :: ncid,ntest_id,nfac_id,nefac_id,mse_id,mse_th_id
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),mse(ntest,nfac_rnd),mse_th(ntest,nfac_rnd),mse_avg,mse_th_avg
 real(kind_real),allocatable :: fld_ref(:,:,:,:),fld_save(:,:,:,:)
 character(len=1024) :: filename
-character(len=1024),parameter :: subr = 'nicas_test_randomization'
 type(ens_type) :: ens
+
+! Set name
+#:set subr = 'nicas_test_randomization'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 allocate(fld_ref(geom%nc0a,geom%nl0,nam%nv,ntest))
@@ -1725,32 +1899,35 @@ nam%ens1_ne = ens1_ne
 if (mpl%main) then
    ! Create file
    filename = trim(nam%prefix)//'_randomization'
-   ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+   ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
    ! Write namelist parameters
    call nam%write(mpl,ncid)
 
    ! Define dimensions
-   ntest_id = mpl%nc_dim_define_or_get(subr,ncid,'ntest',ntest)
-   nfac_id = mpl%nc_dim_define_or_get(subr,ncid,'nfac',nfac_rnd)
+   ntest_id = mpl%nc_dim_define_or_get(ncid,'ntest',ntest)
+   nfac_id = mpl%nc_dim_define_or_get(ncid,'nfac',nfac_rnd)
 
    ! Define variables
-   nefac_id = mpl%nc_var_define_or_get(subr,ncid,'nefac',nc_kind_real,(/nfac_id/))
-   mse_id = mpl%nc_var_define_or_get(subr,ncid,'mse',nc_kind_real,(/ntest_id,nfac_id/))
-   mse_th_id = mpl%nc_var_define_or_get(subr,ncid,'mse_th',nc_kind_real,(/ntest_id,nfac_id/))
+   nefac_id = mpl%nc_var_define_or_get(ncid,'nefac',nc_kind_real,(/nfac_id/))
+   mse_id = mpl%nc_var_define_or_get(ncid,'mse',nc_kind_real,(/ntest_id,nfac_id/))
+   mse_th_id = mpl%nc_var_define_or_get(ncid,'mse_th',nc_kind_real,(/ntest_id,nfac_id/))
 
    ! Write variables
-   call mpl%ncerr(subr,nf90_put_var(ncid,nefac_id,nefac))
-   call mpl%ncerr(subr,nf90_put_var(ncid,mse_id,mse))
-   call mpl%ncerr(subr,nf90_put_var(ncid,mse_th_id,mse_th))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,nefac_id,nefac))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,mse_id,mse))
+   call mpl%ncerr('${subr}$',nf90_put_var(ncid,mse_th_id,mse_th))
 
    ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
+   call mpl%ncerr('${subr}$',nf90_close(ncid))
 end if
 
 ! Release memory
 deallocate(fld_ref)
 deallocate(fld_save)
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_test_randomization
 
@@ -1781,6 +1958,12 @@ type(cmat_type) :: cmat
 type(ens_type) :: ens
 type(hdiag_type) :: hdiag
 type(nicas_type) :: nicas_test
+
+! Set name
+#:set subr = 'nicas_test_consistency'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 cmat%allocated = .false.
@@ -1880,6 +2063,9 @@ nam%rh(1:geom%nl0,0:nam%nv) = rh
 nam%rv(1:geom%nl0,0:nam%nv) = rv
 nam%write_nicas = write_nicas
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_test_consistency
 
 !----------------------------------------------------------------------
@@ -1910,6 +2096,12 @@ type(diag_type) :: loc_opt
 type(hdiag_type) :: hdiag
 type(ens_type) :: ens_loc,ens_test
 type(nicas_type) :: nicas_test
+
+! Set name
+#:set subr = 'nicas_test_optimality'
+
+! Probe in
+@:probe_in()
 
 ! Define test vectors
 write(mpl%info,'(a4,a)') '','Define test vectors'
@@ -2062,6 +2254,9 @@ call ens_loc%dealloc
 call ens_test%dealloc
 call hdiag%dealloc
 
+! Probe out
+@:probe_out()
+
 end subroutine nicas_test_optimality
 
 !----------------------------------------------------------------------
@@ -2082,6 +2277,12 @@ real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,ntest) !< Field
 integer :: itest
 integer :: il0dir,iprocdir,ic0adir
 
+! Set name
+#:set subr = 'nicas_define_test_vectors'
+
+! Probe in
+@:probe_in()
+
 ! Resynchronize random number generator
 call rng%resync(mpl)
 
@@ -2097,6 +2298,9 @@ end do
 
 ! Desynchronize random number generator
 call rng%desync(mpl)
+
+! Probe out
+@:probe_out()
 
 end subroutine nicas_define_test_vectors
 

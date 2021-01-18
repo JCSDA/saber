@@ -1,4 +1,5 @@
 #:def include_fv3()
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Subroutine: model_fv3_coord
 !> Get FV3 coordinates
@@ -17,19 +18,24 @@ integer :: img,ilon,ilat,itile,il0
 integer :: ncid,nlon_id,nlat_id,ntile_id,nlev_id,lon_id,lat_id,a_id,b_id
 real(kind_real) :: sigmaup,sigmadn,sigma
 real(kind_real),allocatable :: lon(:,:,:),lat(:,:,:),a(:),b(:)
-character(len=1024),parameter :: subr = 'model_fv3_coord'
+
+! Set name
+#:set subr = 'model_fv3_coord'
+
+! Probe in
+@:probe_in()
 
 ! Open file and get dimensions
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'fxdim',nlon_id))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'fydim',nlat_id))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'ntile',ntile_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,ntile_id,len=model%ntile))
+call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'fxdim',nlon_id))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'fydim',nlat_id))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'ntile',ntile_id))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,ntile_id,len=model%ntile))
 model%nmg = model%nlon*model%nlat*model%ntile
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'xaxis_1',nlev_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'xaxis_1',nlev_id))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
 model%nlev = model%nlev-1
 
 ! Allocation
@@ -40,15 +46,15 @@ allocate(a(model%nlev+1))
 allocate(b(model%nlev+1))
 
 ! Read data and close file
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'flons',lon_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'flats',lat_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'ak',a_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'bk',b_id))
-call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon))
-call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat))
-call mpl%ncerr(subr,nf90_get_var(ncid,a_id,a,(/1,1/),(/model%nlev+1,1/)))
-call mpl%ncerr(subr,nf90_get_var(ncid,b_id,b,(/1,1/),(/model%nlev+1,1/)))
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'flons',lon_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'flats',lat_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'ak',a_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'bk',b_id))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lon_id,lon))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lat_id,lat))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,a_id,a,(/1,1/),(/model%nlev+1,1/)))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,b_id,b,(/1,1/),(/model%nlev+1,1/)))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! Model grid
 img = 0
@@ -91,6 +97,9 @@ deallocate(lat)
 deallocate(a)
 deallocate(b)
 
+! Probe out
+@:probe_out()
+
 end subroutine model_fv3_coord
 
 !----------------------------------------------------------------------
@@ -114,7 +123,12 @@ integer :: ncid,fld_id,dimids(4),zlen
 real(kind_real) :: fld_mgt(model%nmgt,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
 character(len=1) :: ctile
-character(len=1024),parameter :: subr = 'model_fv3_read'
+
+! Set name
+#:set subr = 'model_fv3_read'
+
+! Probe in
+@:probe_in()
 
 if (model%ioproc(model%mytile)==mpl%myproc) then
    ! Allocation
@@ -122,31 +136,32 @@ if (model%ioproc(model%mytile)==mpl%myproc) then
 
    ! Open file
    write(ctile,'(i1.1)') model%mytile
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'_tile'//ctile//'.nc',nf90_nowrite,ncid))
+   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'_tile'//ctile//'.nc',nf90_nowrite,ncid))
 end if
 
 do iv=1,nam%nv
    if (model%ioproc(model%mytile)==mpl%myproc) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,nam%variables(iv),fld_id))
+      call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,nam%variables(iv),fld_id))
 
       ! Check field size
-      call mpl%ncerr(subr,nf90_inquire_variable(ncid,fld_id,dimids=dimids))
-      call mpl%ncerr(subr,nf90_inquire_dimension(ncid,dimids(3),len=zlen))
+      call mpl%ncerr('${subr}$',nf90_inquire_variable(ncid,fld_id,dimids=dimids))
+      call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,dimids(3),len=zlen))
 
       ! Read data
       if (zlen==1) then
          ! 2D data
          fld_tmp = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,1),(/1,1,1,1/),(/model%nlon,model%nlat,1,1/)))
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,1),(/1,1,1,1/),(/model%nlon,model%nlat,1,1/)))
          elseif (trim(nam%lev2d)=='last') then
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1,1,1/),(/model%nlon,model%nlat,1,1/)))
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1,1,1/),(/model%nlon,model%nlat,1,1/)))
          end if
       else
          ! 3D data
          do il0=1,nam%nl
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/),(/model%nlon,model%nlat,1,1/)))
+            call mpl%ncerr('${subr}$', &
+ & nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/),(/model%nlon,model%nlat,1,1/)))
          end do
       end if
 
@@ -164,11 +179,14 @@ end do
 
 if (model%ioproc(model%mytile)==mpl%myproc) then
    ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
+   call mpl%ncerr('${subr}$',nf90_close(ncid))
 
    ! Release memory
    deallocate(fld_tmp)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine model_fv3_read
 #:enddef include_fv3

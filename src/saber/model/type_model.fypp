@@ -11,6 +11,7 @@
 #:include 'model_qg.fypp'
 #:include 'model_res.fypp'
 #:include 'model_wrf.fypp'
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_model
 !> Model routines
@@ -33,6 +34,7 @@ use tools_repro, only: inf
 use type_fieldset, only: fieldset_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type,nvmax
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_tree, only: tree_type
 
@@ -155,6 +157,12 @@ implicit none
 ! Passed variables
 class(model_type),intent(inout) :: model !< Model
 
+! Set name
+#:set subr = 'model_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 allocate(model%mg_to_lon(model%nmg))
 allocate(model%mg_to_lat(model%nmg))
@@ -164,6 +172,9 @@ allocate(model%lat(model%nmg))
 allocate(model%area(model%nmg))
 allocate(model%vunit(model%nmg,model%nl0))
 allocate(model%mask(model%nmg,model%nl0))
+
+! Probe out
+@:probe_out()
 
 end subroutine model_alloc
 
@@ -180,6 +191,12 @@ class(model_type),intent(inout) :: model !< Model
 
 ! Local variables
 integer :: ie
+
+! Set name
+#:set subr = 'model_dealloc'
+
+! Probe in
+@:probe_in()
 
 ! Release memory
 if (allocated(model%lon)) deallocate(model%lon)
@@ -207,6 +224,9 @@ if (allocated(model%ens2)) then
 end if
 call model%afunctionspace%final()
 call model%fieldset%final()
+
+! Probe out
+@:probe_out()
 
 end subroutine model_dealloc
 
@@ -237,9 +257,14 @@ logical :: maskval
 logical :: found
 character(len=1024) :: variables,filename
 character(len=1024),dimension(nvmax) :: variables_save
-character(len=1024),parameter :: subr = 'model_define'
 type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask,afield_smask
 type(fieldset_type) :: fieldset
+
+! Set name
+#:set subr = 'model_setup'
+
+! Probe in
+@:probe_in()
 
 ! Number of levels
 model%nl0 = nam%nl
@@ -297,15 +322,15 @@ elseif (mpl%nproc>1) then
 
       if (mpl%main) then
          ! Get variables ID
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,'mg_to_proc',mg_to_proc_id))
-         call mpl%ncerr(subr,nf90_inq_varid(ncid,'mg_to_mga',mg_to_mga_id))
+         call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'mg_to_proc',mg_to_proc_id))
+         call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'mg_to_mga',mg_to_mga_id))
 
          ! Read varaibles
-         call mpl%ncerr(subr,nf90_get_var(ncid,mg_to_proc_id,model%mg_to_proc))
-         call mpl%ncerr(subr,nf90_get_var(ncid,mg_to_mga_id,model%mg_to_mga))
+         call mpl%ncerr('${subr}$',nf90_get_var(ncid,mg_to_proc_id,model%mg_to_proc))
+         call mpl%ncerr('${subr}$',nf90_get_var(ncid,mg_to_mga_id,model%mg_to_mga))
 
          ! Close file
-         call mpl%ncerr(subr,nf90_close(ncid))
+         call mpl%ncerr('${subr}$',nf90_close(ncid))
       end if
 
       ! Broadcast distribution
@@ -313,12 +338,12 @@ elseif (mpl%nproc>1) then
       call mpl%f_comm%broadcast(model%mg_to_mga,mpl%rootproc-1)
 
       ! Check
-      if (maxval(model%mg_to_proc)>mpl%nproc) call mpl%abort(subr,'wrong distribution')
+      if (maxval(model%mg_to_proc)>mpl%nproc) call mpl%abort('${subr}$','wrong distribution')
    else
       ! Generate a distribution
       if (mpl%msv%isnot(model%ntile)) then
          ! Special case for model with tiles
-         if (mod(mpl%nproc,model%ntile)/=0) call mpl%abort(subr, &
+         if (mod(mpl%nproc,model%ntile)/=0) call mpl%abort('${subr}$', &
  & 'the number of MPI tasks should be a multiple of the number of tiles')
          nprocpertile = mpl%nproc/model%ntile
       else
@@ -337,7 +362,7 @@ elseif (mpl%nproc>1) then
          nx(iy) = delta
          nres = nres-delta
       end do
-      if (sum(nx)/=nprocpertile) call mpl%abort(subr,'wrong number of subtiles in define_distribution')
+      if (sum(nx)/=nprocpertile) call mpl%abort('${subr}$','wrong number of subtiles in define_distribution')
 
       if (mpl%msv%isnot(model%nlon).and.mpl%msv%isnot(model%nlat)) then
          ! Regular grid
@@ -399,7 +424,7 @@ elseif (mpl%nproc>1) then
          deallocate(lonlattile_to_proc)
       else
          ! Unstructured grid
-         if ((model%ntile>1).and.inf(sum(model%area),4.0*pi)) call mpl%abort(subr, &
+         if ((model%ntile>1).and.inf(sum(model%area),4.0*pi)) call mpl%abort('${subr}$', &
  & 'unstructured grid requires a single tile and a global domain')
 
          ! Allocation
@@ -481,28 +506,28 @@ elseif (mpl%nproc>1) then
       ! Write distribution
       if (mpl%main) then
          ! Create file
-         call mpl%ncerr(subr,nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',ior(nf90_clobber,nf90_netcdf4),ncid))
+         call mpl%ncerr('${subr}$',nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',ior(nf90_clobber,nf90_netcdf4),ncid))
 
          ! Write namelist parameters
          call nam%write(mpl,ncid)
 
          ! Define dimension
-         call mpl%ncerr(subr,nf90_def_dim(ncid,'nmg',model%nmg,nmg_id))
+         call mpl%ncerr('${subr}$',nf90_def_dim(ncid,'nmg',model%nmg,nmg_id))
 
          ! Define variables
-         call mpl%ncerr(subr,nf90_def_var(ncid,'lon',nc_kind_real,(/nmg_id/),lon_id))
-         call mpl%ncerr(subr,nf90_def_var(ncid,'lat',nc_kind_real,(/nmg_id/),lat_id))
-         call mpl%ncerr(subr,nf90_def_var(ncid,'mg_to_proc',nc_kind_int,(/nmg_id/),mg_to_proc_id))
-         call mpl%ncerr(subr,nf90_def_var(ncid,'mg_to_mga',nc_kind_int,(/nmg_id/),mg_to_mga_id))
+         call mpl%ncerr('${subr}$',nf90_def_var(ncid,'lon',nc_kind_real,(/nmg_id/),lon_id))
+         call mpl%ncerr('${subr}$',nf90_def_var(ncid,'lat',nc_kind_real,(/nmg_id/),lat_id))
+         call mpl%ncerr('${subr}$',nf90_def_var(ncid,'mg_to_proc',nc_kind_int,(/nmg_id/),mg_to_proc_id))
+         call mpl%ncerr('${subr}$',nf90_def_var(ncid,'mg_to_mga',nc_kind_int,(/nmg_id/),mg_to_mga_id))
 
          ! Write variables
-         call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,model%lon*rad2deg))
-         call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,model%lat*rad2deg))
-         call mpl%ncerr(subr,nf90_put_var(ncid,mg_to_proc_id,model%mg_to_proc))
-         call mpl%ncerr(subr,nf90_put_var(ncid,mg_to_mga_id,model%mg_to_mga))
+         call mpl%ncerr('${subr}$',nf90_put_var(ncid,lon_id,model%lon*rad2deg))
+         call mpl%ncerr('${subr}$',nf90_put_var(ncid,lat_id,model%lat*rad2deg))
+         call mpl%ncerr('${subr}$',nf90_put_var(ncid,mg_to_proc_id,model%mg_to_proc))
+         call mpl%ncerr('${subr}$',nf90_put_var(ncid,mg_to_mga_id,model%mg_to_mga))
 
          ! Close file
-         call mpl%ncerr(subr,nf90_close(ncid))
+         call mpl%ncerr('${subr}$',nf90_close(ncid))
       end if
    end if
 end if
@@ -584,13 +609,14 @@ case ('ldwv')
             nam%lon_ldwv(ildw) = model%lon(nam%img_ldwv(ildw))*rad2deg
             nam%lat_ldwv(ildw) = model%lat(nam%img_ldwv(ildw))*rad2deg
          else
-            call mpl%abort(subr,'model grid index is positive but too large')
+            call mpl%abort('${subr}$','model grid index is positive but too large')
          end if
       end if
       write(mpl%info,'(a7,a,e15.8,a,e15.8)') '','Profile '//trim(nam%name_ldwv(ildw))//' required at lon/lat: ', &
  & nam%lon_ldwv(ildw),' / ',nam%lat_ldwv(ildw)
       call mpl%flush
-      if (.not.any(model%mask(nam%img_ldwv(ildw),:))) call mpl%warning(subr,'profile '//trim(nam%name_ldwv(ildw))//' is not valid')
+      if (.not.any(model%mask(nam%img_ldwv(ildw),:))) call mpl%warning('${subr}$', &
+ & 'profile '//trim(nam%name_ldwv(ildw))//' is not valid')
    end do
 case default
    if (nam%mask_type(1:3)=='lat') then
@@ -629,7 +655,7 @@ case default
                elseif (trim(nam%mask_lu(1))=='upper') then
                   maskval = (real_ptr(il0,imga)<nam%mask_th(1))
                else
-                  call mpl%abort(subr,'mask_lu not recognized')
+                  call mpl%abort('${subr}$','mask_lu not recognized')
                end if
                if (maskval) then
                   smask_ptr(il0,imga) = 1
@@ -647,7 +673,7 @@ case default
          call afield%final()
          call fieldset%final()
       else
-         call mpl%abort(subr,'mask_type should be formatted as VARIABLE@FILE to read a mask from file')
+         call mpl%abort('${subr}$','mask_type should be formatted as VARIABLE@FILE to read a mask from file')
       end if
    end if
 end select
@@ -667,7 +693,7 @@ if (model%ntile>1) then
 
    ! Check that a given task handles one tile only
    do iproc=1,mpl%nproc
-      if (count(model%tilepool(iproc,:))>1) call mpl%abort(subr,'a given task should handle one tile only')
+      if (count(model%tilepool(iproc,:))>1) call mpl%abort('${subr}$','a given task should handle one tile only')
    end do
 
    do itile=1,model%ntile
@@ -712,6 +738,9 @@ call afield_vunit%final()
 call afield_gmask%final()
 call afield_smask%final()
 
+! Probe out
+@:probe_out()
+
 end subroutine model_setup
 
 !----------------------------------------------------------------------
@@ -734,6 +763,12 @@ integer :: iv
 real(kind_real) :: fld_mga(model%nmga,model%nl0,nam%nv)
 real(kind_real),pointer :: real_ptr(:,:)
 type(atlas_field) :: afield
+
+! Set name
+#:set subr = 'model_read'
+
+! Probe in
+@:probe_in()
 
 ! Select model
 if (trim(nam%model)=='aro') call model%aro_read(mpl,nam,filename,fld_mga)
@@ -763,6 +798,9 @@ do iv=1,nam%nv
    real_ptr = transpose(fld_mga(:,:,iv))
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine model_read
 
 !----------------------------------------------------------------------
@@ -784,6 +822,12 @@ type(fieldset_type),intent(out) :: fieldset  !< Fieldset
 ! Local variables
 character(len=1024) :: fullname
 
+! Set name
+#:set subr = 'model_read_member'
+
+! Probe in
+@:probe_in()
+
 ! Create fieldset
 fieldset = atlas_fieldset()
 
@@ -792,6 +836,9 @@ write(fullname,'(a,i6.6)') trim(filename)//'_',ie
 
 ! Read file
 call model%read(mpl,nam,fullname,fieldset)
+
+! Probe out
+@:probe_out()
 
 end subroutine model_read_member
 
@@ -811,7 +858,12 @@ character(len=*),intent(in) :: filename  !< Filename ('ens1' or 'ens2')
 
 ! Local variables
 integer :: ne,ie,nsub,isub,ie_sub
-character(len=1024),parameter :: subr = 'model_load_ens'
+
+! Set name
+#:set subr = 'model_load_ens'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 ne = 0
@@ -833,7 +885,7 @@ case ('ens2')
    ! Allocation
    if (ne>0) allocate(model%ens2(ne))
 case default
-   call mpl%abort(subr,'wrong filename in model_load_ens')
+   call mpl%abort('${subr}$','wrong filename in model_load_ens')
 end select
 
 ! Loop over sub-ensembles
@@ -858,6 +910,9 @@ do isub=1,nsub
    write(mpl%info,'(a)') ''
    call mpl%flush
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine model_load_ens
 

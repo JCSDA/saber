@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_stripack
 !> STRIPACK routines
@@ -13,6 +14,7 @@ module tools_stripack
 use tools_kinds, only: kind_real
 use tools_repro, only: eq,inf,sup,supeq,small
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 
 implicit none
 
@@ -85,11 +87,16 @@ integer,intent(inout) :: lnew       !< cf. list
 integer :: i1,i2,i3,in1,io1,io2,ist,kk,km1,l,lp,lpf,lpo1,lpo1s
 real(kind_real) :: b1,b2,b3,p(3)
 logical :: output
-character(len=1024),parameter :: subr = 'addnod'
+
+! Set name
+#:set subr = 'stripack_addnod'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 kk = k
-if (kk<4) call mpl%abort(subr,'K<4')
+if (kk<4) call mpl%abort('${subr}$','K<4')
 km1 = kk-1
 ist = nst
 if (ist<1) ist = km1
@@ -101,14 +108,14 @@ p(3) = z(kk)
 call trfind(ist,p,km1,x,y,z,list,lptr,lend,b1,b2,b3,i1,i2,i3)
 
 ! Test for colinear or duplicate nodes.
-if (i1==0) call mpl%abort(subr,'colinear points')
+if (i1==0) call mpl%abort('${subr}$','colinear points')
 if (i3/=0) then
   l = i1
-  if (eq(p(1),x(l)).and.eq(p(2),y(l)).and.eq(p(3),z(l))) call mpl%abort(subr,'colinear or duplicate nodes')
+  if (eq(p(1),x(l)).and.eq(p(2),y(l)).and.eq(p(3),z(l))) call mpl%abort('${subr}$','colinear or duplicate nodes')
   l = i2
-  if (eq(p(1),x(l)).and.eq(p(2),y(l)).and.eq(p(3),z(l))) call mpl%abort(subr,'colinear or duplicate nodes')
+  if (eq(p(1),x(l)).and.eq(p(2),y(l)).and.eq(p(3),z(l))) call mpl%abort('${subr}$','colinear or duplicate nodes')
   l = i3
-  if (eq(p(1),x(l)).and.eq(p(2),y(l)).and.eq(p(3),z(l))) call mpl%abort(subr,'colinear or duplicate nodes')
+  if (eq(p(1),x(l)).and.eq(p(2),y(l)).and.eq(p(3),z(l))) call mpl%abort('${subr}$','colinear or duplicate nodes')
   call intadd(kk,i1,i2,i3,list,lptr,lend,lnew)
 else
   if (i1/=i2) then
@@ -159,6 +166,9 @@ do
   io1 = abs(list(lpo1))
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine stripack_addnod
 
 !----------------------------------------------------------------------
@@ -171,7 +181,7 @@ implicit none
 
 ! Passed variable
 integer,intent(in) :: kk         !< Index of a node to be connected to the sequence of all visible boundary nodes. 1<=KK and KK must not be equal to I1 or I2.
-integer,intent(in) :: i1         !< First (rightmost as viewed from KK) boundary node in the triangulation that is visible from node KK (the line segment KK-I1 intersects no arcs. 
+integer,intent(in) :: i1         !< First (rightmost as viewed from KK) boundary node in the triangulation that is visible from node KK (the line segment KK-I1 intersects no arcs.
 integer,intent(in) :: i2         !< Last (leftmost) boundary node that is visible from node KK. I1 and I2 may be determined by TRFIND.
 integer,intent(inout) :: list(*) !< Triangulation data structure created by TRMESH. Nodes I1 and I2 must be included in the triangulation. On output, the data structure is updated with the addition of node KK. Node KK is connected to I1, I2, and all boundary nodes in between.
 integer,intent(inout) :: lptr(*) !< cf. list
@@ -180,6 +190,12 @@ integer,intent(inout) :: lnew    !< cf. list
 
 ! Local variables
 integer :: k,lp,lsav,n1,n2,next,nsav
+
+! Set name
+#:set subr = 'stripack_bdyadd'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 k = kk
@@ -226,6 +242,9 @@ lptr(lnew) = lsav
 lend(k) = lnew
 lnew = lnew+1
 
+! Probe out
+@:probe_out()
+
 end subroutine stripack_bdyadd
 
 !----------------------------------------------------------------------
@@ -237,7 +256,7 @@ subroutine stripack_covsph(kk,n0,list,lptr,lend,lnew)
 implicit none
 
 ! Passed variables
-integer,intent(in) :: kk         !< Index of the node to be connected to the set of all boundary nodes. 4<=KK. 
+integer,intent(in) :: kk         !< Index of the node to be connected to the set of all boundary nodes. 4<=KK.
 integer,intent(in) :: n0         !< Index of a boundary node (in the range 1 to KK-1). N0 may be determined by TRFIND.
 integer,intent(inout) :: list(*) !< Triangulation data structure created by TRMESH. Node N0 must be included in the triangulation. On output, updated with the addition of node KK as the last entry. The updated triangulation contains no boundary nodes.
 integer,intent(inout) :: lptr(*) !< cf. list
@@ -246,6 +265,12 @@ integer,intent(inout) :: lnew    !< cf. list
 
 ! Local variables
 integer :: k,lp,lsav,next,nst
+
+! Set name
+#:set subr = 'stripack_covsph'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 k = kk
@@ -274,6 +299,9 @@ end do
 lptr(lnew-1) = lsav
 lend(k) = lnew-1
 
+! Probe out
+@:probe_out()
+
 end subroutine stripack_covsph
 
 !----------------------------------------------------------------------
@@ -299,6 +327,12 @@ real(kind_real),intent(out) :: output !< Determinant
 ! Local variables
 real(kind_real) :: t1,t2,t3
 
+! Set name
+#:set subr = 'stripack_det'
+
+! Probe in
+@:probe_in()
+
 ! Compute determinant terms
 t1 = x0*(y1*z2-y2*z1)
 t2 = y0*(x1*z2-x2*z1)
@@ -309,6 +343,9 @@ output = t1-t2+t3
 
 ! Indistinguishability threshold for cross-plateform reproducibility
 if (small(output,t1).or.small(output,t2).or.small(output,t3)) output = 0.0
+
+! Probe out
+@:probe_out()
 
 end subroutine stripack_det
 
@@ -330,11 +367,20 @@ integer,intent(inout) :: lnew    !< cf. list
 ! Local variables
 integer :: lsav
 
+! Set name
+#:set subr = 'stripack_insert'
+
+! Probe in
+@:probe_in()
+
 lsav = lptr(lp)
 lptr(lp) = lnew
 list(lnew) = k
 lptr(lnew) = lsav
 lnew = lnew+1
+
+! Probe out
+@:probe_out()
 
 end subroutine stripack_insert
 
@@ -358,6 +404,12 @@ integer,intent(inout) :: lnew    !< cf. list
 
 ! Local variables
 integer :: k,lp,n1,n2,n3
+
+! Set name
+#:set subr = 'stripack_intadd'
+
+! Probe in
+@:probe_in()
 
 ! Initialization.
 k = kk
@@ -383,6 +435,9 @@ lptr(lnew+2) = lnew
 lend(k) = lnew+2
 lnew = lnew+3
 
+! Probe out
+@:probe_out()
+
 end subroutine stripack_intadd
 
 !----------------------------------------------------------------------
@@ -403,6 +458,12 @@ integer,intent(out) :: output !< A random integer in the range 1 to N.
 ! Local variables
 real(kind_real) :: u,x
 
+! Set name
+#:set subr = 'stripack_jrand'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 ix = mod(171*ix,30269)
 iy = mod(172*iy,30307)
@@ -418,6 +479,9 @@ u = x-int(x)
 
 ! Random integer
 output = int(real(n,kind_real)*u)+1
+
+! Probe out
+@:probe_out()
 
 end subroutine stripack_jrand
 
@@ -444,9 +508,18 @@ logical,intent(out) :: output    !< TRUE if and only if N0 is in the closed left
 ! Local variables
 real(kind_real) :: zz
 
+! Set name
+#:set subr = 'stripack_left'
+
+! Probe in
+@:probe_in()
+
 ! LEFT = TRUE iff <N0,N1 X N2> = det(N0,N1,N2) >= 0.
 call det(x1,y1,z1,x2,y2,z2,x0,y0,z0,zz)
 output = sup(zz,0.0_kind_real)
+
+! Probe out
+@:probe_out()
 
 end subroutine stripack_left
 
@@ -468,6 +541,12 @@ integer,intent(out) :: output !< Pointer such that LIST(output) = NB or LIST(out
 ! Local variables
 integer :: lp,nd
 
+! Set name
+#:set subr = 'stripack_lstptr'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 lp = lptr(lpl)
 
@@ -478,6 +557,9 @@ do
    if (lp==lpl) exit
 end do
 output = lp
+
+! Probe out
+@:probe_out()
 
 end subroutine stripack_lstptr
 
@@ -502,10 +584,17 @@ integer,intent(out) :: lp21      !< Index of IN1 as a neighbor of IN2 after the 
 ! Local variables
 integer :: lp,lph,lpsav
 
+! Set name
+#:set subr = 'stripack_swap'
+
+! Probe in
+@:probe_in()
+
 ! Test for IN1 and IN2 adjacent.
 call lstptr(lend(in1),in2,list,lptr,lp)
 if (abs(list(lp))==in2) then
    lp21 = 0
+@:probe_out()
    return
 end if
 
@@ -540,6 +629,9 @@ list(lph) = in1
 lptr(lph) = lpsav
 lp21 = lph
 
+! Probe out
+@:probe_out()
+
 end subroutine stripack_swap
 
 !----------------------------------------------------------------------
@@ -562,6 +654,12 @@ logical,intent(out) :: output      !< TRUE if and only if the arc connecting N1 
 ! Local variables
 real(kind_real) :: dx1,dx2,dx3,dy1,dy2,dy3,dz1,dz2,dz3,x4,y4,z4,zz
 
+! Set name
+#:set subr = 'stripack_swptst'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 x4 = x(n4)
 y4 = y(n4)
@@ -579,6 +677,9 @@ dz3 = z(n3)-z4
 ! N4 lies above the plane of (N1,N2,N3) iff N3 lies above the plane of (N2,N1,N4) iff Det(N3-N4,N2-N4,N1-N4) = (N3-N4,N2-N4 X N1-N4) > 0.
 call det(dx2,dy2,dz2,dx1,dy1,dz1,dx3,dy3,dz3,zz)
 output = sup(zz,0.0_kind_real)
+
+! Probe out
+@:probe_out()
 
 end subroutine stripack_swptst
 
@@ -599,17 +700,23 @@ real(kind_real),intent(in) :: z(n) !< Z-coordinate of the triangulation nodes (u
 integer,intent(in) :: list(*)      !< Triangulation data structure created by TRMESH.
 integer,intent(in) :: lptr(*)      !< cf. list
 integer,intent(in) :: lend(*)      !< cf. list
-real(kind_real),intent(out) :: b1  !< First unnormalized barycentric coordinate of the central projection of P onto the underlying planar triangle if P is in the convex hull of the nodes. These parameters are not altered if I1 = 0. 
-real(kind_real),intent(out) :: b2  !< Second unnormalized barycentric coordinate. 
-real(kind_real),intent(out) :: b3  !< Third unnormalized barycentric coordinate. 
+real(kind_real),intent(out) :: b1  !< First unnormalized barycentric coordinate of the central projection of P onto the underlying planar triangle if P is in the convex hull of the nodes. These parameters are not altered if I1 = 0.
+real(kind_real),intent(out) :: b2  !< Second unnormalized barycentric coordinate.
+real(kind_real),intent(out) :: b3  !< Third unnormalized barycentric coordinate.
 integer,intent(out) :: i1          !< First counterclockwise-ordered vertex index of a triangle containing P if P is contained in a triangle. If P is not in the convex hull of the nodes, I1 and I2 are the rightmost and leftmost (boundary) nodes that are visible from P, and I3 = 0. (If all boundary nodes are visible from P, then I1 and I2 coincide.) I1 = I2 = I3 = 0 if P and all of the nodes are coplanar (lie on a common great circle).
-integer,intent(out) :: i2          !< Second counterclockwise-ordered vertex index. 
-integer,intent(out) :: i3          !< Third counterclockwise-ordered vertex index. 
+integer,intent(out) :: i2          !< Second counterclockwise-ordered vertex index.
+integer,intent(out) :: i3          !< Third counterclockwise-ordered vertex index.
 
 ! Local variables
 integer :: lp,n0,n1,n1s,n2,n2s,n3,n4,next,nf,nl
 integer,save :: ix = 1,iy = 2,iz = 3
 real(kind_real) :: output,eps,ptn1,ptn2,q(3),s12,tol,xp,yp,zp
+
+! Set name
+#:set subr = 'stripack_trfind'
+
+! Probe in
+@:probe_in()
 
 ! Initialize variables.
 xp = p(1)
@@ -685,6 +792,7 @@ if (inf(abs(x(n0)*xp+y(n0)*yp+z(n0)*zp),1.0-4.0*eps)) then
          i1 = 0
          i2 = 0
          i3 = 0
+@:probe_out()
          return
       end if
    end do
@@ -766,6 +874,7 @@ i2 = n2
 i3 = n3
 b1 = max(b1,0.0_kind_real)
 b2 = max(b2,0.0_kind_real)
+@:probe_out()
 return
 
 ! P Right N1->N2, where N1->N2 is a boundary edge. Save N1 and N2, and set NL = 0 to indicate that NL has not yet been found.
@@ -801,6 +910,7 @@ if (n2/=n1s) go to 10
 i1 = n1s
 i2 = n1s
 i3 = 0
+@:probe_out()
 return
 
 ! N2 is the rightmost visible node.
@@ -837,6 +947,7 @@ if (nl==0) then
    i1 = n1
    i2 = n1
    i3 = 0
+@:probe_out()
    return
 
    ! N1 is the leftmost visible node.
@@ -848,6 +959,9 @@ end if
 i1 = nf
 i2 = nl
 i3 = 0
+
+! Probe out
+@:probe_out()
 
 end subroutine stripack_trfind
 
@@ -876,11 +990,16 @@ real(kind_real),intent(inout) :: dist(n) !<  Workspace used to efficiently deter
 integer :: i,i0,j,k,lp,lpl,nexti,nn
 real(kind_real) :: d,d1,d2,d3
 logical :: output_1,output_2
-character(len=1024),parameter :: subr = 'trmesh'
+
+! Set name
+#:set subr = 'stripack_trmesh'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 nn = n
-if (nn<3) call mpl%abort(subr,'N < 3')
+if (nn<3) call mpl%abort('${subr}$','N < 3')
 list = 0
 lptr = 0
 lend = 0
@@ -929,12 +1048,13 @@ else if (.not.output_2) then
    lend(3) = 6
 else
    ! The first three nodes are colinear.
-   call mpl%abort(subr,'The first three nodes are colinear')
+   call mpl%abort('${subr}$','The first three nodes are colinear')
 end if
 
 ! Initialize LNEW and test for N = 3.
 lnew = 7
 if (nn==3) then
+@:probe_out()
    return
 end if
 
@@ -1021,6 +1141,9 @@ do k=4,nn
    ! Bottom of loop on neighbors J.
    if (lp/=lpl) go to 3
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine stripack_trmesh
 

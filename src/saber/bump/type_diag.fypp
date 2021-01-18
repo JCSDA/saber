@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_diag
 !> Diagnostic derived type
@@ -19,6 +20,7 @@ use type_geom, only: geom_type
 use type_io, only: io_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_samp, only: samp_type
 
@@ -69,6 +71,12 @@ character(len=*),intent(in) :: prefix  !< Block prefix
 ! Local variables
 integer :: ib,ic2a
 
+! Set name
+#:set subr = 'diag_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Number of local points
 if (nam%local_diag) then
    diag%nc2a = samp%nc2a
@@ -89,6 +97,9 @@ do ib=1,bpar%nbe
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine diag_alloc
 
 !----------------------------------------------------------------------
@@ -105,6 +116,12 @@ class(diag_type),intent(inout) :: diag !< Diagnostic
 ! Local variables
 integer :: ib,ic2a
 
+! Set name
+#:set subr = 'diag_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(diag%blk)) then
    do ib=1,size(diag%blk,2)
@@ -114,6 +131,9 @@ if (allocated(diag%blk)) then
    end do
    deallocate(diag%blk)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine diag_dealloc
 
@@ -138,7 +158,12 @@ type(samp_type),intent(in) :: samp     !< Sampling
 integer :: ib,i,il0,il0i,ic2a,ildw,n,ic0a
 real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
 character(len=2*1024+12) :: filename
-character(len=1024),parameter :: subr = 'diag_write'
+
+! Set name
+#:set subr = 'diag_write'
+
+! Probe in
+@:probe_in()
 
 write(mpl%info,'(a7,a)') '','Write diagnostic: '//trim(diag%prefix)
 call mpl%flush
@@ -163,7 +188,7 @@ if (nam%local_diag) then
    call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
 
    do ib=1,bpar%nbe
-      if (bpar%diag_block(ib)) then       
+      if (bpar%diag_block(ib)) then
          n = 1
          if (bpar%fit_block(ib).and.(trim(diag%prefix)/='cov')) n = n+2
          do i=1,n
@@ -220,9 +245,12 @@ do ildw=1,nam%nldwv
          end do
       end if
    else
-      call mpl%warning(subr,'missing local profile '//trim(nam%name_ldwv(ildw)))
+      call mpl%warning('${subr}$','missing local profile '//trim(nam%name_ldwv(ildw)))
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine diag_write
 
@@ -246,6 +274,12 @@ type(samp_type),intent(in) :: samp     !< Sampling
 integer :: ib,il0,ic2a
 real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
 real(kind_real),allocatable :: rh_c2a(:,:),rv_c2a(:,:)
+
+! Set name
+#:set subr = 'diag_filter_fit'
+
+! Probe in
+@:probe_in()
 
 if (nam%local_diag) then
    ! Horizontal filtering
@@ -347,6 +381,9 @@ if (nam%diag_rvflt>0.0) then
    end do
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine diag_filter_fit
 
 !----------------------------------------------------------------------
@@ -367,6 +404,12 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 ! Local variables
 integer :: ib,ic2a
 real(kind_real) :: rmse,norm,rmse_tot,norm_tot
+
+! Set name
+#:set subr = 'diag_build_fit'
+
+! Probe in
+@:probe_in()
 
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib).and.bpar%fit_block(ib)) then
@@ -392,6 +435,9 @@ do ib=1,bpar%nbe
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine diag_build_fit
 
 !----------------------------------------------------------------------
@@ -414,6 +460,12 @@ character(len=*),intent(in) :: prefix  !< Diagnostic prefix
 
 ! Local variables
 integer :: ib,ic2a,il0
+
+! Set name
+#:set subr = 'diag_covariance'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
@@ -441,6 +493,9 @@ do ib=1,bpar%nb
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine diag_covariance
 
 !----------------------------------------------------------------------
@@ -465,6 +520,12 @@ character(len=*),intent(in) :: prefix  !< Diagnostic prefix
 
 ! Local variables
 integer :: ib,ic2a,il0
+
+! Set name
+#:set subr = 'diag_correlation'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
@@ -522,6 +583,9 @@ call diag%build_fit(mpl,nam,geom,bpar)
 ! Write
 if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
 
+! Probe out
+@:probe_out()
+
 end subroutine diag_correlation
 
 !----------------------------------------------------------------------
@@ -546,6 +610,12 @@ character(len=*),intent(in) :: prefix  !< Block prefix
 
 ! Local variables
 integer :: ib,ic2a,il0
+
+! Set name
+#:set subr = 'diag_localization'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
@@ -603,6 +673,9 @@ call diag%build_fit(mpl,nam,geom,bpar)
 ! Write
 if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
 
+! Probe out
+@:probe_out()
+
 end subroutine diag_localization
 
 !----------------------------------------------------------------------
@@ -627,6 +700,12 @@ character(len=*),intent(in) :: prefix  !< Diagnostic prefix
 
 ! Local variables
 integer :: ib,ic2a,il0,iv
+
+! Set name
+#:set subr = 'diag_hybridization'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
@@ -691,6 +770,9 @@ call diag%build_fit(mpl,nam,geom,bpar)
 ! Write
 if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
 
+! Probe out
+@:probe_out()
+
 end subroutine diag_hybridization
 
 !----------------------------------------------------------------------
@@ -718,6 +800,12 @@ character(len=*),intent(in) :: prefix_lr !< LR diagnostic prefix
 
 ! Local variables
 integer :: ib,ic2a,il0
+
+! Set name
+#:set subr = 'diag_dualens'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
@@ -790,6 +878,9 @@ call diag_lr%build_fit(mpl,nam,geom,bpar)
 ! Write
 if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
 if (nam%write_hdiag) call diag_lr%write(mpl,nam,geom,bpar,io,samp)
+
+! Probe out
+@:probe_out()
 
 end subroutine diag_dualens
 

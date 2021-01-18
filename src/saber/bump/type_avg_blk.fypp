@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_avg_blk
 !> Averaged statistics block derived type
@@ -17,6 +18,7 @@ use type_geom, only: geom_type
 use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_samp, only: samp_type
 
 implicit none
@@ -92,6 +94,12 @@ integer,intent(in) :: ib                     !< Block index
 integer,intent(in) :: ne                     !< Ensemble size
 integer,intent(in) :: nsub                   !< Sub-ensembles number
 
+! Set name
+#:set subr = 'avg_blk_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Set attributes
 avg_blk%ic2a = ic2a
 avg_blk%ib = ib
@@ -136,6 +144,9 @@ if (bpar%diag_block(ib).and.(.not.allocated(avg_blk%nc1a))) then
    end if
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_blk_alloc
 
 !----------------------------------------------------------------------
@@ -148,6 +159,12 @@ implicit none
 
 ! Passed variables
 class(avg_blk_type),intent(inout) :: avg_blk !< Averaged statistics block
+
+! Set name
+#:set subr = 'avg_blk_dealloc'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 if (allocated(avg_blk%nc1a)) deallocate(avg_blk%nc1a)
@@ -175,6 +192,9 @@ if (allocated(avg_blk%m22_hist)) deallocate(avg_blk%m22_hist)
 if (allocated(avg_blk%cor_bins)) deallocate(avg_blk%cor_bins)
 if (allocated(avg_blk%cor_hist)) deallocate(avg_blk%cor_hist)
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_blk_dealloc
 
 !----------------------------------------------------------------------
@@ -188,6 +208,12 @@ implicit none
 ! Passed variables
 class(avg_blk_type),intent(inout) :: avg_blk_out !< Output averaged statistics block
 type(avg_blk_type),intent(in) :: avg_blk_in      !< Input averaged statistics block
+
+! Set name
+#:set subr = 'avg_blk_copy'
+
+! Probe in
+@:probe_in()
 
 ! Copy data
 if (allocated(avg_blk_in%nc1a)) avg_blk_out%nc1a = avg_blk_in%nc1a
@@ -217,6 +243,9 @@ if (allocated(avg_blk_in%m22_hist)) avg_blk_out%m22_hist = avg_blk_in%m22_hist
 if (allocated(avg_blk_in%cor_bins)) avg_blk_out%cor_bins = avg_blk_in%cor_bins
 if (allocated(avg_blk_in%cor_hist)) avg_blk_out%cor_hist = avg_blk_in%cor_hist
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_blk_copy
 
 !----------------------------------------------------------------------
@@ -239,66 +268,74 @@ character(len=*),intent(in) :: filename      !< File name
 integer :: ncid,grpid,nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vunit_id,l0rl0_to_l0_id
 integer :: m11_bins_id,m11_hist_id,m11m11_bins_id,m11m11_hist_id,m2m2_bins_id,m2m2_hist_id,m22_bins_id,m22_hist_id
 integer :: cor_bins_id,cor_hist_id
-character(len=1024),parameter :: subr = 'avg_blk_write'
+
+! Set name
+#:set subr = 'avg_blk_write'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>avg_blk%ib)
 
 ! Define file
-ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,bpar%blockname(ib))
+grpid = mpl%nc_group_define_or_get(ncid,bpar%blockname(ib))
 
 ! Define dimensions
-nc3_id = mpl%nc_dim_define_or_get(subr,grpid,'nc3',bpar%nc3(ib))
-nl0r_id = mpl%nc_dim_define_or_get(subr,grpid,'nl0r',bpar%nl0r(ib))
-nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
-nbinsp1_id = mpl%nc_dim_define_or_get(subr,ncid,'nbinsp1',nam%avg_nbins+1)
-nbins_id = mpl%nc_dim_define_or_get(subr,ncid,'nbins',nam%avg_nbins)
+nc3_id = mpl%nc_dim_define_or_get(grpid,'nc3',bpar%nc3(ib))
+nl0r_id = mpl%nc_dim_define_or_get(grpid,'nl0r',bpar%nl0r(ib))
+nl0_id = mpl%nc_dim_define_or_get(ncid,'nl0',geom%nl0)
+nbinsp1_id = mpl%nc_dim_define_or_get(ncid,'nbinsp1',nam%avg_nbins+1)
+nbins_id = mpl%nc_dim_define_or_get(ncid,'nbins',nam%avg_nbins)
 
 ! Define coordinates
-disth_id = mpl%nc_var_define_or_get(subr,grpid,'disth',nc_kind_real,(/nc3_id/))
-vunit_id = mpl%nc_var_define_or_get(subr,ncid,'vunit',nc_kind_real,(/nl0_id/))
+disth_id = mpl%nc_var_define_or_get(grpid,'disth',nc_kind_real,(/nc3_id/))
+vunit_id = mpl%nc_var_define_or_get(ncid,'vunit',nc_kind_real,(/nl0_id/))
 
 ! Define variables
-l0rl0_to_l0_id = mpl%nc_var_define_or_get(subr,grpid,'l0rl0_to_l0',nc_kind_int,(/nl0r_id,nl0_id/))
-m11_bins_id = mpl%nc_var_define_or_get(subr,grpid,'m11_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-m11_hist_id = mpl%nc_var_define_or_get(subr,grpid,'m11_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
-m11m11_bins_id = mpl%nc_var_define_or_get(subr,grpid,'m11m11_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-m11m11_hist_id = mpl%nc_var_define_or_get(subr,grpid,'m11m11_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
-m2m2_bins_id = mpl%nc_var_define_or_get(subr,grpid,'m2m2_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-m2m2_hist_id = mpl%nc_var_define_or_get(subr,grpid,'m2m2_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
-m22_bins_id = mpl%nc_var_define_or_get(subr,grpid,'m22_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-m22_hist_id = mpl%nc_var_define_or_get(subr,grpid,'m22_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
-cor_bins_id = mpl%nc_var_define_or_get(subr,grpid,'cor_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-cor_hist_id = mpl%nc_var_define_or_get(subr,grpid,'cor_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+l0rl0_to_l0_id = mpl%nc_var_define_or_get(grpid,'l0rl0_to_l0',nc_kind_int,(/nl0r_id,nl0_id/))
+m11_bins_id = mpl%nc_var_define_or_get(grpid,'m11_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m11_hist_id = mpl%nc_var_define_or_get(grpid,'m11_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m11m11_bins_id = mpl%nc_var_define_or_get(grpid,'m11m11_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m11m11_hist_id = mpl%nc_var_define_or_get(grpid,'m11m11_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m2m2_bins_id = mpl%nc_var_define_or_get(grpid,'m2m2_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m2m2_hist_id = mpl%nc_var_define_or_get(grpid,'m2m2_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m22_bins_id = mpl%nc_var_define_or_get(grpid,'m22_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m22_hist_id = mpl%nc_var_define_or_get(grpid,'m22_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+cor_bins_id = mpl%nc_var_define_or_get(grpid,'cor_bins',nc_kind_real,(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+cor_hist_id = mpl%nc_var_define_or_get(grpid,'cor_hist',nc_kind_real,(/nbins_id,nc3_id,nl0r_id,nl0_id/))
 
 ! Write coordinates
-call mpl%ncerr(subr,nf90_put_var(grpid,disth_id,geom%disth(1:bpar%nc3(ib))))
-call mpl%ncerr(subr,nf90_put_var(ncid,vunit_id,geom%vunitavg))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,disth_id,geom%disth(1:bpar%nc3(ib))))
+call mpl%ncerr('${subr}$',nf90_put_var(ncid,vunit_id,geom%vunitavg))
 
 ! Write variables
-call mpl%ncerr(subr,nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib)))
-call mpl%ncerr(subr,nf90_put_var(grpid,m11_bins_id,avg_blk%m11_bins))
-call mpl%ncerr(subr,nf90_put_var(grpid,m11_hist_id,avg_blk%m11_hist))
-call mpl%ncerr(subr,nf90_put_var(grpid,m11m11_bins_id,avg_blk%m11m11_bins))
-call mpl%ncerr(subr,nf90_put_var(grpid,m11m11_hist_id,avg_blk%m11m11_hist))
-call mpl%ncerr(subr,nf90_put_var(grpid,m2m2_bins_id,avg_blk%m2m2_bins))
-call mpl%ncerr(subr,nf90_put_var(grpid,m2m2_hist_id,avg_blk%m2m2_hist))
-call mpl%ncerr(subr,nf90_put_var(grpid,m22_bins_id,avg_blk%m22_bins))
-call mpl%ncerr(subr,nf90_put_var(grpid,m22_hist_id,avg_blk%m22_hist))
-call mpl%ncerr(subr,nf90_put_var(grpid,cor_bins_id,avg_blk%cor_bins))
-call mpl%ncerr(subr,nf90_put_var(grpid,cor_hist_id,avg_blk%cor_hist))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib)))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,m11_bins_id,avg_blk%m11_bins))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,m11_hist_id,avg_blk%m11_hist))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,m11m11_bins_id,avg_blk%m11m11_bins))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,m11m11_hist_id,avg_blk%m11m11_hist))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,m2m2_bins_id,avg_blk%m2m2_bins))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,m2m2_hist_id,avg_blk%m2m2_hist))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,m22_bins_id,avg_blk%m22_bins))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,m22_hist_id,avg_blk%m22_hist))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,cor_bins_id,avg_blk%cor_bins))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,cor_hist_id,avg_blk%cor_hist))
 
 ! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! End associate
 end associate
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_blk_write
 
@@ -331,6 +368,12 @@ real(kind_real),allocatable :: list1(:),list2(:)
 real(kind_real),allocatable :: sbuf(:),rbuf(:)
 logical :: valid
 logical,allocatable :: mask_0(:,:,:),mask_1(:,:,:,:),mask_2(:,:,:,:,:),mask_3(:,:,:,:)
+
+! Set name
+#:set subr = 'avg_blk_compute_global'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>avg_blk%ib)
@@ -658,6 +701,9 @@ end do
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_blk_compute_global
 
 !----------------------------------------------------------------------
@@ -682,6 +728,12 @@ integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,nc1max,ic1d,ic1u,i,nc1a,nc1a_cor
 real(kind_real) :: m2_1,m2_2,norm,gen_kurt
 real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
 logical :: valid
+
+! Set name
+#:set subr = 'avg_blk_compute_local'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
@@ -833,6 +885,9 @@ end do
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_blk_compute_local
 
 !----------------------------------------------------------------------
@@ -855,6 +910,12 @@ integer,intent(in) :: ne                     !< Ensemble size
 integer :: il0,jl0r,jc3,isub,jsub,n
 real(kind_real) :: P1,P3,P4,P7,P8,P9,P10,P11,P12,P13,P14,P15,P16,P17
 real(kind_real),allocatable :: m11asysq_gau(:,:),m2m2asy_gau(:,:),m11asysq(:,:),m2m2asy(:,:),m22asy(:)
+
+! Set name
+#:set subr = 'avg_blk_compute_asy'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
@@ -983,6 +1044,9 @@ end if
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_blk_compute_asy
 
 !----------------------------------------------------------------------
@@ -1002,6 +1066,12 @@ type(avg_blk_type),intent(in) :: avg_blk_sta     !< Static averaged statistics b
 
 ! Local variables
 integer :: il0,jl0r,jc3
+
+! Set name
+#:set subr = 'avg_blk_compute_hyb'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>avg_blk_hyb%ib)
@@ -1024,6 +1094,9 @@ end do
 
 ! End associate
 end associate
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_blk_compute_hyb
 
@@ -1051,7 +1124,12 @@ real(kind_real) :: m2_1,m2_2
 real(kind_real),allocatable :: list_m11lrm11sub(:,:,:),sbuf(:),rbuf(:)
 logical :: valid
 logical,allocatable :: mask_2(:,:,:,:,:)
-character(len=1024),parameter :: subr = 'avg_blk_compute_deh_global'
+
+! Set name
+#:set subr = 'avg_blk_compute_deh_global'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>avg_blk%ib)
@@ -1061,7 +1139,7 @@ iv = bpar%b_to_v1(ib)
 jv = bpar%b_to_v2(ib)
 
 ! Check number of sub-ensembles
-if (avg_blk%nsub/=avg_blk%nsub) call mpl%abort(subr,'different number of sub-ensembles')
+if (avg_blk%nsub/=avg_blk%nsub) call mpl%abort('${subr}$','different number of sub-ensembles')
 
 ! Average
 !$omp parallel do schedule(static) private(il0,jl0r,jl0,list_m11lrm11sub,jc3,nc1a,ic1a,valid,m2_1,m2_2,isub,jsub)
@@ -1179,6 +1257,9 @@ end do
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_blk_compute_deh_global
 
 !----------------------------------------------------------------------
@@ -1204,6 +1285,12 @@ integer :: iv,jv,il0,jl0,jl0r,jc3,isub,jsub,ic1d,ic1u,nc1max,nc1a,i
 real(kind_real) :: m2_1,m2_2
 real(kind_real),allocatable :: list_m11lrm11sub(:,:,:)
 logical :: valid
+
+! Set name
+#:set subr = 'avg_blk_compute_deh_local'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
@@ -1320,6 +1407,9 @@ end do
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_blk_compute_deh_local
 
 !----------------------------------------------------------------------
@@ -1339,6 +1429,12 @@ type(bpar_type),intent(in) :: bpar           !< Block parameters
 
 ! Local variables
 integer :: il0,jl0r,jc3
+
+! Set name
+#:set subr = 'avg_blk_compute_asy_deh'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
@@ -1367,6 +1463,9 @@ end if
 
 ! End associate
 end associate
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_blk_compute_asy_deh
 

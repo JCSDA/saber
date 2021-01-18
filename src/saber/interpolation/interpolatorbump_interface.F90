@@ -52,21 +52,21 @@ type(fckit_configuration) :: f_config
 type(atlas_functionspace) :: fspace1,fspace2
 type(fieldset_type) :: masks
 
+! Interface
 f_comm = fckit_mpi_comm(c_comm)
 f_config = fckit_configuration(c_config)
-
 call bump_interpolator_registry%init()
 call bump_interpolator_registry%add(c_key_bint)
 call bump_interpolator_registry%get(c_key_bint,bint)
-
 fspace1 = atlas_functionspace(c_fspace1)
 fspace2 = atlas_functionspace(c_fspace2)
-
 if (c_associated(c_masks)) then
    masks = atlas_fieldset(c_masks)
 else
    masks = atlas_fieldset()
 endif
+
+! Call Fortran
 call bint%init(f_comm,afunctionspace_in=fspace1,afunctionspace_out=fspace2,masks=masks,config=f_config)
 
 end subroutine bint_create_c
@@ -88,10 +88,12 @@ type(c_ptr),intent(in),value :: c_outfields !< Output fields
 type(bump_interpolator),pointer :: bint
 type(fieldset_type) :: infields,outfields
 
+! Interface
 call bump_interpolator_registry%get(c_key_bint,bint)
 infields = atlas_fieldset(c_infields)
 outfields = atlas_fieldset(c_outfields)
 
+! Call Fortran
 call bint%apply(infields,outfields)
 
 end subroutine bint_apply_c
@@ -113,10 +115,12 @@ type(c_ptr),intent(in),value :: c_fields1 !< Output fields
 type(bump_interpolator),pointer :: bint
 type(fieldset_type) :: fields_grid2,fields_grid1
 
+! Interface
 call bump_interpolator_registry%get(c_key_bint,bint)
 fields_grid2 = atlas_fieldset(c_fields2)
 fields_grid1 = atlas_fieldset(c_fields1)
 
+! Call Fortran
 call bint%apply_ad(fields_grid2,fields_grid1)
 
 end subroutine bint_apply_ad_c
@@ -135,10 +139,13 @@ integer(c_int),intent(inout) :: c_key_bint !< Key to BUMP interpolator
 ! Local variables
 type(bump_interpolator),pointer :: bint
 
+! Interface
 call bump_interpolator_registry%get(c_key_bint,bint)
 
+! Call Fortran
 call bint%delete()
 
+! Clean interface
 call bump_interpolator_registry%remove(c_key_bint)
 
 end subroutine bint_delete_c

@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_atlas
 !> Random numbers generator derived type
@@ -12,6 +13,7 @@ use atlas_module, only: atlas_fieldset,atlas_field,atlas_functionspace,atlas_rea
 use tools_atlas, only: field_to_array,field_from_array
 use tools_kinds, only: kind_real
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 
 implicit none
 
@@ -67,8 +69,13 @@ type(atlas_functionspace),intent(in),optional :: afunctionspace !< ATLAS functio
 
 ! Local variables
 integer :: iv
-character(len=1024),parameter :: subr = 'fieldset_init'
 type(atlas_field) :: afield
+
+! Set name
+#:set subr = 'fieldset_init'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 if (fieldset%is_null()) fieldset = atlas_fieldset()
@@ -88,7 +95,7 @@ if (trim(lev2d)=='first') then
 elseif (trim(lev2d)=='last') then
    fieldset%il2d = nl
 else
-   call mpl%abort(subr,'wrong lev2d in fieldset')
+   call mpl%abort('${subr}$','wrong lev2d in fieldset')
 end if
 fieldset%lev2d = trim(lev2d)
 
@@ -109,6 +116,9 @@ if (present(afunctionspace)) then
    end do
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine fieldset_init
 
 !----------------------------------------------------------------------
@@ -127,6 +137,12 @@ type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 integer :: iv,rank_in
 real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
+
+! Set name
+#:set subr = 'fieldset_copy_fields'
+
+! Probe in
+@:probe_in()
 
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
@@ -156,6 +172,9 @@ do iv=1,size(fieldset_out%variables)
    call afield_out%final()
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine fieldset_copy_fields
 
 !----------------------------------------------------------------------
@@ -174,6 +193,12 @@ type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 integer :: iv
 type(atlas_field) :: afield
 
+! Set name
+#:set subr = 'fieldset_pass_fields'
+
+! Probe in
+@:probe_in()
+
 do iv=1,size(fieldset_out%variables)
    ! Get input field
    afield = fieldset_in%field(fieldset_out%variables(iv))
@@ -181,6 +206,9 @@ do iv=1,size(fieldset_out%variables)
    ! Add field to output fieldset
    call fieldset_out%add(afield)
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine fieldset_pass_fields
 
@@ -199,6 +227,12 @@ class(fieldset_type),intent(inout) :: fieldset !< Fieldset
 integer :: iv,i,il
 real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
+
+! Set name
+#:set subr = 'fieldset_zero_fields'
+
+! Probe in
+@:probe_in()
 
 ! Loop over fields
 do iv=1,size(fieldset%variables)
@@ -221,6 +255,9 @@ do iv=1,size(fieldset%variables)
    call afield%final()
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine fieldset_zero_fields
 
 !----------------------------------------------------------------------
@@ -239,6 +276,12 @@ type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 integer :: iv,rank_in,i,il
 real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
+
+! Set name
+#:set subr = 'fieldset_add_fields'
+
+! Probe in
+@:probe_in()
 
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
@@ -272,6 +315,9 @@ do iv=1,size(fieldset_out%variables)
    call afield_out%final()
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine fieldset_add_fields
 
 !----------------------------------------------------------------------
@@ -290,6 +336,12 @@ type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 integer :: iv,rank_in,i,il
 real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
+
+! Set name
+#:set subr = 'fieldset_sub_fields'
+
+! Probe in
+@:probe_in()
 
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
@@ -323,6 +375,9 @@ do iv=1,size(fieldset_out%variables)
    call afield_out%final()
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine fieldset_sub_fields
 
 !----------------------------------------------------------------------
@@ -342,6 +397,12 @@ integer :: iv,i,il
 real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
+! Set name
+#:set subr = 'fieldset_mult_fields_scalar'
+
+! Probe in
+@:probe_in()
+
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    ! Field
@@ -358,6 +419,9 @@ do iv=1,size(fieldset%variables)
    ! Release pointer
    call afield%final()
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine fieldset_mult_fields_scalar
 
@@ -377,6 +441,12 @@ type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 integer :: iv,rank_in,i,il
 real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
+
+! Set name
+#:set subr = 'fieldset_mult_fields_fieldset'
+
+! Probe in
+@:probe_in()
 
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
@@ -410,6 +480,9 @@ do iv=1,size(fieldset_out%variables)
    call afield_out%final()
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine fieldset_mult_fields_fieldset
 
 !----------------------------------------------------------------------
@@ -428,6 +501,12 @@ type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 integer :: iv,rank_in,i,il
 real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
+
+! Set name
+#:set subr = 'fieldset_div_fields'
+
+! Probe in
+@:probe_in()
 
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
@@ -461,6 +540,9 @@ do iv=1,size(fieldset_out%variables)
    call afield_out%final()
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine fieldset_div_fields
 
 !----------------------------------------------------------------------
@@ -479,6 +561,12 @@ integer :: iv,i,il
 real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
+! Set name
+#:set subr = 'fieldset_square_fields'
+
+! Probe in
+@:probe_in()
+
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    ! Field
@@ -495,6 +583,9 @@ do iv=1,size(fieldset%variables)
    ! Release pointer
    call afield%final()
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine fieldset_square_fields
 
@@ -514,6 +605,12 @@ integer :: iv,i,il
 real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
+! Set name
+#:set subr = 'fieldset_sqrt_fields'
+
+! Probe in
+@:probe_in()
+
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    ! Field
@@ -530,6 +627,9 @@ do iv=1,size(fieldset%variables)
    ! Release pointer
    call afield%final()
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine fieldset_sqrt_fields
 
@@ -548,11 +648,16 @@ integer,intent(in) :: iv                    !< Variable index
 real(kind_real),intent(out) :: fld(:,:)     !< Fortran array
 
 ! Local variables
-character(len=1024),parameter :: subr = 'fieldset_to_array_single'
 type(atlas_field) :: afield
 
+! Set name
+#:set subr = 'fieldset_to_array_single'
+
+! Probe in
+@:probe_in()
+
 ! Check number of variables
-if (size(fieldset%variables)<iv) call mpl%abort(subr,'inconsistency in number of variables')
+if (size(fieldset%variables)<iv) call mpl%abort('${subr}$','inconsistency in number of variables')
 
 ! Get field
 afield = fieldset%field(fieldset%variables(iv))
@@ -562,6 +667,9 @@ call field_to_array(afield,mpl,fld,fieldset%lev2d)
 
 ! Release pointer
 call afield%final()
+
+! Probe out
+@:probe_out()
 
 end subroutine fieldset_to_array_single
 
@@ -580,15 +688,23 @@ real(kind_real),intent(out) :: fld(:,:,:)   !< Fortran array
 
 ! Local variables
 integer :: iv
-character(len=1024),parameter :: subr = 'fieldset_to_array_all'
+
+! Set name
+#:set subr = 'fieldset_to_array_all'
+
+! Probe in
+@:probe_in()
 
 ! Check number of variables
-if (size(fieldset%variables)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
+if (size(fieldset%variables)/=size(fld,3)) call mpl%abort('${subr}$','inconsistency in number of variables')
 
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    call fieldset%to_array(mpl,iv,fld(:,:,iv))
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine fieldset_to_array_all
 
@@ -607,11 +723,16 @@ integer,intent(in) :: iv                       !< Variable index
 real(kind_real),intent(in) :: fld(:,:)         !< Fortran array
 
 ! Local variables
-character(len=1024),parameter :: subr = 'fieldset_from_array_single'
 type(atlas_field) :: afield
 
+! Set name
+#:set subr = 'fieldset_from_array_single'
+
+! Probe in
+@:probe_in()
+
 ! Check number of variables
-if (size(fieldset%variables)<iv) call mpl%abort(subr,'inconsistency in number of variables')
+if (size(fieldset%variables)<iv) call mpl%abort('${subr}$','inconsistency in number of variables')
 
 ! Get field
 afield = fieldset%field(fieldset%variables(iv))
@@ -621,6 +742,9 @@ call field_from_array(afield,mpl,fld,fieldset%lev2d)
 
 ! Release pointer
 call afield%final()
+
+! Probe out
+@:probe_out()
 
 end subroutine fieldset_from_array_single
 
@@ -639,15 +763,23 @@ real(kind_real),intent(in) :: fld(:,:,:)       !< Fortran array
 
 ! Local variables
 integer :: iv
-character(len=1024),parameter :: subr = 'fieldset_from_array_all'
+
+! Set name
+#:set subr = 'fieldset_from_array_all'
+
+! Probe in
+@:probe_in()
 
 ! Check number of variables
-if (size(fieldset%variables)/=size(fld,3)) call mpl%abort(subr,'inconsistency in number of variables')
+if (size(fieldset%variables)/=size(fld,3)) call mpl%abort('${subr}$','inconsistency in number of variables')
 
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    call fieldset%from_array(mpl,iv,fld(:,:,iv))
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine fieldset_from_array_all
 

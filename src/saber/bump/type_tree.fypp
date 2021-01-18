@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_tree
 !> Tree derived type
@@ -15,6 +16,7 @@ use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,rth,sup,indist
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 
 implicit none
 
@@ -56,8 +58,11 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer,intent(in) :: n                !< Number of points
 logical,intent(in),optional :: mask(n) !< Mask
 
-! Local variables
-character(len=1024),parameter :: subr = 'tree_alloc'
+! Set name
+#:set subr = 'tree_alloc'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 tree%n = n
@@ -74,12 +79,15 @@ end if
 tree%neff = count(tree%mask)
 
 ! Check size
-if (tree%neff<1) call mpl%abort(subr,'mask should have at least one valid point to create a tree')
+if (tree%neff<1) call mpl%abort('${subr}$','mask should have at least one valid point to create a tree')
 
 ! Allocation
 allocate(tree%lon(tree%neff))
 allocate(tree%lat(tree%neff))
 allocate(tree%from_eff(tree%neff))
+
+! Probe out
+@:probe_out()
 
 end subroutine tree_alloc
 
@@ -100,6 +108,12 @@ real(kind_real),intent(in) :: lat(tree%n) !< Points latitudes [in radians]
 integer :: i,ieff
 real(kind_real) :: lon_deg(tree%neff),lat_deg(tree%neff)
 type(atlas_geometry) :: ageometry
+
+! Set name
+#:set subr = 'tree_init'
+
+! Probe in
+@:probe_in()
 
 ! Loop over points
 ieff = 0
@@ -126,6 +140,9 @@ tree%kd = atlas_indexkdtree(ageometry)
 call tree%kd%reserve(tree%neff)
 call tree%kd%build(tree%neff,lon_deg,lat_deg)
 
+! Probe out
+@:probe_out()
+
 end subroutine tree_init
 
 !----------------------------------------------------------------------
@@ -139,6 +156,12 @@ implicit none
 ! Passed variables
 class(tree_type),intent(inout) :: tree !< Tree
 
+! Set name
+#:set subr = 'tree_dealloc'
+
+! Probe in
+@:probe_in()
+
 if (allocated(tree%from_eff)) then
    ! Release memory
    deallocate(tree%mask)
@@ -149,6 +172,9 @@ if (allocated(tree%from_eff)) then
    ! Destroy KDTree
    call tree%kd%final()
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine tree_dealloc
 
@@ -174,6 +200,12 @@ integer,allocatable :: order(:),nn_index_tmp(:)
 real(kind_real) :: dist_ref,dist_last
 real(kind_real),allocatable :: list(:),nn_dist_tmp(:)
 logical :: separate
+
+! Set name
+#:set subr = 'tree_find_nearest_neighbors'
+
+! Probe in
+@:probe_in()
 
 if (nn>0) then
    ! Initialization
@@ -254,6 +286,9 @@ if (nn>0) then
    deallocate(nn_dist_tmp)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine tree_find_nearest_neighbors
 
 !----------------------------------------------------------------------
@@ -274,11 +309,20 @@ integer,intent(out) :: nn           !< Number of nearest neighbors found
 ! Local variable
 real(kind_real) :: ch
 
+! Set name
+#:set subr = 'tree_count_nearest_neighbors'
+
+! Probe in
+@:probe_in()
+
 ! Spherical radius to chord
 ch = 2.0*sin(0.5*sr)
 
 ! Count nearest neighbors
 call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,ch,nn)
+
+! Probe out
+@:probe_out()
 
 end subroutine tree_count_nearest_neighbors
 

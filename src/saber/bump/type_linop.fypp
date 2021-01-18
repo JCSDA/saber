@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_linop
 !> Linear operator derived type
@@ -15,6 +16,7 @@ use type_geom, only: geom_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_tree, only: tree_type
 
@@ -83,12 +85,21 @@ implicit none
 ! Passed variables
 class(interp_type),intent(inout) :: interp_data !< Interpolation data
 
+! Set name
+#:set subr = 'interp_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(interp_data%src_eff_to_src)) deallocate(interp_data%src_eff_to_src)
 if (allocated(interp_data%lon_src_eff)) deallocate(interp_data%lon_src_eff)
 if (allocated(interp_data%lat_src_eff)) deallocate(interp_data%lat_src_eff)
 call interp_data%mesh%dealloc
 call interp_data%tree%dealloc
+
+! Probe out
+@:probe_out()
 
 end subroutine interp_dealloc
 
@@ -103,6 +114,12 @@ implicit none
 ! Passed variables
 class(linop_type),intent(inout) :: linop !< Linear operator
 integer,intent(in),optional :: nvec      !< Size of the vector of linear operators with similar row and col
+
+! Set name
+#:set subr = 'linop_alloc'
+
+! Probe in
+@:probe_in()
 
 ! Vector size
 if (present(nvec)) then
@@ -120,6 +137,9 @@ else
    allocate(linop%S(linop%n_s))
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine linop_alloc
 
 !----------------------------------------------------------------------
@@ -133,12 +153,21 @@ implicit none
 ! Passed variables
 class(linop_type),intent(inout) :: linop !< Linear operator
 
+! Set name
+#:set subr = 'linop_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(linop%row)) deallocate(linop%row)
 if (allocated(linop%col)) deallocate(linop%col)
 if (allocated(linop%S)) deallocate(linop%S)
 if (allocated(linop%Svec)) deallocate(linop%Svec)
 call linop%interp_data%dealloc
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_dealloc
 
@@ -154,6 +183,12 @@ implicit none
 class(linop_type),intent(inout) :: linop_out !< Output linear operator
 type(linop_type),intent(in) :: linop_in      !< Input linear operator
 integer,intent(in),optional :: n_s           !< Number of operations to copy
+
+! Set name
+#:set subr = 'linop_copy'
+
+! Probe in
+@:probe_in()
 
 ! Release memory
 call linop_out%dealloc
@@ -182,6 +217,9 @@ if (linop_in%n_s>0) then
    end if
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine linop_copy
 
 !----------------------------------------------------------------------
@@ -200,39 +238,47 @@ integer,intent(in) :: ncid               !< NetCDF file
 ! Local variables
 integer :: nvec
 integer :: grpid,row_id,col_id,S_id,Svec_id
-character(len=1024),parameter :: subr = 'linop_read'
+
+! Set name
+#:set subr = 'linop_read'
+
+! Probe in
+@:probe_in()
 
 ! Get group
-call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,linop%prefix,grpid))
+call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,linop%prefix,grpid))
 
 ! Get dimensions
-linop%n_s = mpl%nc_dim_inquire(subr,grpid,'n_s')
-call mpl%ncerr(subr,nf90_get_att(grpid,nf90_global,'n_src',linop%n_src))
-call mpl%ncerr(subr,nf90_get_att(grpid,nf90_global,'n_dst',linop%n_dst))
-call mpl%ncerr(subr,nf90_get_att(grpid,nf90_global,'nvec',nvec))
+linop%n_s = mpl%nc_dim_inquire(grpid,'n_s')
+call mpl%ncerr('${subr}$',nf90_get_att(grpid,nf90_global,'n_src',linop%n_src))
+call mpl%ncerr('${subr}$',nf90_get_att(grpid,nf90_global,'n_dst',linop%n_dst))
+call mpl%ncerr('${subr}$',nf90_get_att(grpid,nf90_global,'nvec',nvec))
 
 ! Allocation
 call linop%alloc(nvec)
 
 if (linop%n_s>0) then
    ! Get variables
-   call mpl%ncerr(subr,nf90_inq_varid(grpid,'row',row_id))
-   call mpl%ncerr(subr,nf90_inq_varid(grpid,'col',col_id))
+   call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'row',row_id))
+   call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'col',col_id))
    if (linop%nvec>0) then
-      call mpl%ncerr(subr,nf90_inq_varid(grpid,'Svec',Svec_id))
+      call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'Svec',Svec_id))
    else
-      call mpl%ncerr(subr,nf90_inq_varid(grpid,'S',S_id))
+      call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'S',S_id))
    end if
 
    ! Read variables
-   call mpl%ncerr(subr,nf90_get_var(grpid,row_id,linop%row))
-   call mpl%ncerr(subr,nf90_get_var(grpid,col_id,linop%col))
+   call mpl%ncerr('${subr}$',nf90_get_var(grpid,row_id,linop%row))
+   call mpl%ncerr('${subr}$',nf90_get_var(grpid,col_id,linop%col))
    if (linop%nvec>0) then
-      call mpl%ncerr(subr,nf90_get_var(grpid,Svec_id,linop%Svec))
+      call mpl%ncerr('${subr}$',nf90_get_var(grpid,Svec_id,linop%Svec))
    else
-      call mpl%ncerr(subr,nf90_get_var(grpid,S_id,linop%S))
+      call mpl%ncerr('${subr}$',nf90_get_var(grpid,S_id,linop%S))
    end if
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_read
 
@@ -251,39 +297,47 @@ integer,intent(in) :: ncid            !< NetCDF file
 
 ! Local variables
 integer :: grpid,n_s_id,nvec_id,row_id,col_id,S_id,Svec_id
-character(len=1024),parameter :: subr = 'linop_write'
+
+! Set name
+#:set subr = 'linop_write'
+
+! Probe in
+@:probe_in()
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,linop%prefix)
+grpid = mpl%nc_group_define_or_get(ncid,linop%prefix)
 
 ! Define dimensions
-call mpl%ncerr(subr,nf90_put_att(grpid,nf90_global,'n_src',linop%n_src))
-call mpl%ncerr(subr,nf90_put_att(grpid,nf90_global,'n_dst',linop%n_dst))
-call mpl%ncerr(subr,nf90_put_att(grpid,nf90_global,'nvec',linop%nvec))
+call mpl%ncerr('${subr}$',nf90_put_att(grpid,nf90_global,'n_src',linop%n_src))
+call mpl%ncerr('${subr}$',nf90_put_att(grpid,nf90_global,'n_dst',linop%n_dst))
+call mpl%ncerr('${subr}$',nf90_put_att(grpid,nf90_global,'nvec',linop%nvec))
 
 if (linop%n_s>0) then
    ! Define dimensions
-   n_s_id = mpl%nc_dim_define_or_get(subr,grpid,'n_s',linop%n_s)
-   if (linop%nvec>0) nvec_id = mpl%nc_dim_define_or_get(subr,grpid,'nvec',linop%nvec)
+   n_s_id = mpl%nc_dim_define_or_get(grpid,'n_s',linop%n_s)
+   if (linop%nvec>0) nvec_id = mpl%nc_dim_define_or_get(grpid,'nvec',linop%nvec)
 
    ! Define variables
-   row_id = mpl%nc_var_define_or_get(subr,grpid,'row',nc_kind_int,(/n_s_id/))
-   col_id = mpl%nc_var_define_or_get(subr,grpid,'col',nc_kind_int,(/n_s_id/))
+   row_id = mpl%nc_var_define_or_get(grpid,'row',nc_kind_int,(/n_s_id/))
+   col_id = mpl%nc_var_define_or_get(grpid,'col',nc_kind_int,(/n_s_id/))
    if (linop%nvec>0) then
-      Svec_id = mpl%nc_var_define_or_get(subr,grpid,'Svec',nc_kind_real,(/n_s_id,nvec_id/))
+      Svec_id = mpl%nc_var_define_or_get(grpid,'Svec',nc_kind_real,(/n_s_id,nvec_id/))
    else
-      S_id = mpl%nc_var_define_or_get(subr,grpid,'S',nc_kind_real,(/n_s_id/))
+      S_id = mpl%nc_var_define_or_get(grpid,'S',nc_kind_real,(/n_s_id/))
    end if
 
    ! Write variables
-   call mpl%ncerr(subr,nf90_put_var(grpid,row_id,linop%row(1:linop%n_s)))
-   call mpl%ncerr(subr,nf90_put_var(grpid,col_id,linop%col(1:linop%n_s)))
+   call mpl%ncerr('${subr}$',nf90_put_var(grpid,row_id,linop%row(1:linop%n_s)))
+   call mpl%ncerr('${subr}$',nf90_put_var(grpid,col_id,linop%col(1:linop%n_s)))
    if (linop%nvec>0) then
-      call mpl%ncerr(subr,nf90_put_var(grpid,Svec_id,linop%Svec(1:linop%n_s,:)))
+      call mpl%ncerr('${subr}$',nf90_put_var(grpid,Svec_id,linop%Svec(1:linop%n_s,:)))
    else
-      call mpl%ncerr(subr,nf90_put_var(grpid,S_id,linop%S(1:linop%n_s)))
+      call mpl%ncerr('${subr}$',nf90_put_var(grpid,S_id,linop%S(1:linop%n_s)))
    end if
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_write
 
@@ -300,6 +354,12 @@ class(linop_type),intent(in) :: linop !< Linear operator
 integer,intent(out) :: nbufi          !< Buffer size (integer)
 integer,intent(out) :: nbufr          !< Buffer size (real)
 
+! Set name
+#:set subr = 'linop_buffer_size'
+
+! Probe in
+@:probe_in()
+
 ! Define buffer size
 nbufi = 6+2*linop%n_s
 if (linop%nvec>0) then
@@ -307,6 +367,9 @@ if (linop%nvec>0) then
 else
    nbufr = linop%n_s
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_buffer_size
 
@@ -329,7 +392,12 @@ real(kind_real),intent(out) :: bufr(nbufr) !< Buffer (real)
 ! Local variables
 integer :: ibufi,ibufr
 logical,allocatable :: mask_Svec(:,:)
-character(len=1024),parameter :: subr = 'linop_serialize'
+
+! Set name
+#:set subr = 'linop_serialize'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 ibufi = 0
@@ -377,8 +445,11 @@ if (linop%n_s>0) then
 end if
 
 ! Check
-if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
-if (ibufr/=nbufr) call mpl%abort(subr,'inconsistent final offset/buffer size (real)')
+if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','inconsistent final offset/buffer size (real)')
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_serialize
 
@@ -401,16 +472,21 @@ real(kind_real),intent(in) :: bufr(nbufr) !< Buffer (real)
 ! Local variables
 integer :: ibufi,ibufr,nvec
 logical,allocatable :: mask_Svec(:,:)
-character(len=1024),parameter :: subr = 'linop_serialize'
+
+! Set name
+#:set subr = 'linop_deserialize'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 ibufi = 0
 ibufr = 0
 
 ! Check
-if (bufi(ibufi+1)/=nbufi) call mpl%abort(subr,'inconsistent initial value/buffer size (integer)')
+if (bufi(ibufi+1)/=nbufi) call mpl%abort('${subr}$','inconsistent initial value/buffer size (integer)')
 ibufi = ibufi+1
-if (bufi(ibufi+1)/=nbufr) call mpl%abort(subr,'inconsistent initial value/buffer size (real)')
+if (bufi(ibufi+1)/=nbufr) call mpl%abort('${subr}$','inconsistent initial value/buffer size (real)')
 ibufi = ibufi+1
 
 ! Copy data
@@ -435,7 +511,7 @@ if (linop%n_s>0) then
       ! Initialization
       mask_Svec = .true.
    end if
-   
+
    ! Copy data
    linop%row = bufi(ibufi+1:ibufi+linop%n_s)
    ibufi = ibufi+linop%n_s
@@ -455,8 +531,11 @@ if (linop%n_s>0) then
 end if
 
 ! Check
-if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
-if (ibufr/=nbufr) call mpl%abort(subr,'inconsistent final offset/buffer size (real)')
+if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','inconsistent final offset/buffer size (real)')
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_deserialize
 
@@ -481,23 +560,28 @@ logical,intent(in),optional :: msdst                !< Check for missing destina
 integer :: i_s,i_dst
 logical :: lmssrc,lmsdst,valid
 logical,allocatable :: missing_src(:),missing_dst(:)
-character(len=1024),parameter :: subr = 'linop_apply'
+
+! Set name
+#:set subr = 'linop_apply'
+
+! Probe in
+@:probe_in()
 
 if (check_data) then
    ! Check linear operation
-   if (minval(linop%col)<1) call mpl%abort(subr,'col<1 for linear operation '//trim(linop%prefix))
-   if (maxval(linop%col)>linop%n_src) call mpl%abort(subr,'col>n_src for linear operation '//trim(linop%prefix))
-   if (minval(linop%row)<1) call mpl%abort(subr,'row<1 for linear operation '//trim(linop%prefix))
-   if (maxval(linop%row)>linop%n_dst) call mpl%abort(subr,'row>n_dst for linear operation '//trim(linop%prefix))
+   if (minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for linear operation '//trim(linop%prefix))
+   if (maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for linear operation '//trim(linop%prefix))
+   if (minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for linear operation '//trim(linop%prefix))
+   if (maxval(linop%row)>linop%n_dst) call mpl%abort('${subr}$','row>n_dst for linear operation '//trim(linop%prefix))
    if (present(ivec)) then
-      if (any(isnan(linop%Svec))) call mpl%abort(subr,'NaN in Svec for linear operation '//trim(linop%prefix))
+      if (any(isnan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for linear operation '//trim(linop%prefix))
    else
-      if (any(isnan(linop%S))) call mpl%abort(subr,'NaN in S for linear operation '//trim(linop%prefix))
+      if (any(isnan(linop%S))) call mpl%abort('${subr}$','NaN in S for linear operation '//trim(linop%prefix))
    end if
 
    ! Check input
-   if (any(fld_src>huge_real)) call mpl%abort(subr,'Overflowing number in fld_src for linear operation '//trim(linop%prefix))
-   if (any(isnan(fld_src))) call mpl%abort(subr,'NaN in fld_src for linear operation '//trim(linop%prefix))
+   if (any(fld_src>huge_real)) call mpl%abort('${subr}$','Overflowing number in fld_src for linear operation '//trim(linop%prefix))
+   if (any(isnan(fld_src))) call mpl%abort('${subr}$','NaN in fld_src for linear operation '//trim(linop%prefix))
 end if
 
 ! Initialization
@@ -562,8 +646,11 @@ end if
 
 if (check_data) then
    ! Check output
-   if (any(isnan(fld_dst))) call mpl%abort(subr,'NaN in fld_dst for linear operation '//trim(linop%prefix))
+   if (any(isnan(fld_dst))) call mpl%abort('${subr}$','NaN in fld_dst for linear operation '//trim(linop%prefix))
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_apply
 
@@ -584,24 +671,29 @@ integer,intent(in),optional :: ivec                 !< Index of the vector of li
 
 ! Local variables
 integer :: i_s
-character(len=1024),parameter :: subr = 'linop_apply_ad'
+
+! Set name
+#:set subr = 'linop_apply_ad'
+
+! Probe in
+@:probe_in()
 
 if (check_data) then
    ! Check linear operation
-   if (minval(linop%col)<1) call mpl%abort(subr,'col<1 for adjoint linear operation '//trim(linop%prefix))
-   if (maxval(linop%col)>linop%n_src) call mpl%abort(subr,'col>n_src for adjoint linear operation '//trim(linop%prefix))
-   if (minval(linop%row)<1) call mpl%abort(subr,'row<1 for adjoint linear operation '//trim(linop%prefix))
-   if (maxval(linop%row)>linop%n_dst) call mpl%abort(subr,'row>n_dst for adjoint linear operation '//trim(linop%prefix))
+   if (minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for adjoint linear operation '//trim(linop%prefix))
+   if (maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for adjoint linear operation '//trim(linop%prefix))
+   if (minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for adjoint linear operation '//trim(linop%prefix))
+   if (maxval(linop%row)>linop%n_dst) call mpl%abort('${subr}$','row>n_dst for adjoint linear operation '//trim(linop%prefix))
    if (present(ivec)) then
-      if (any(isnan(linop%Svec))) call mpl%abort(subr,'NaN in Svec for adjoint linear operation '//trim(linop%prefix))
+      if (any(isnan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for adjoint linear operation '//trim(linop%prefix))
    else
-      if (any(isnan(linop%S))) call mpl%abort(subr,'NaN in S for adjoint linear operation '//trim(linop%prefix))
+      if (any(isnan(linop%S))) call mpl%abort('${subr}$','NaN in S for adjoint linear operation '//trim(linop%prefix))
    end if
 
    ! Check input
    if (any(fld_dst>huge_real)) &
- & call mpl%abort(subr,'Overflowing number in fld_dst for adjoint linear operation '//trim(linop%prefix))
-   if (any(isnan(fld_dst))) call mpl%abort(subr,'NaN in fld_dst for adjoint linear operation '//trim(linop%prefix))
+ & call mpl%abort('${subr}$','Overflowing number in fld_dst for adjoint linear operation '//trim(linop%prefix))
+   if (any(isnan(fld_dst))) call mpl%abort('${subr}$','NaN in fld_dst for adjoint linear operation '//trim(linop%prefix))
 end if
 
 ! Initialization
@@ -618,8 +710,11 @@ end do
 
 if (check_data) then
    ! Check output
-   if (any(isnan(fld_src))) call mpl%abort(subr,'NaN in fld_src for adjoint linear operation '//trim(linop%prefix))
+   if (any(isnan(fld_src))) call mpl%abort('${subr}$','NaN in fld_src for adjoint linear operation '//trim(linop%prefix))
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_apply_ad
 
@@ -640,23 +735,29 @@ integer,intent(in),optional :: ivec               !< Index of the vector of line
 ! Local variables
 integer :: i_s,ithread
 real(kind_real) :: fld_arr(linop%n_dst,mpl%nthread)
-character(len=1024),parameter :: subr = 'linop_apply_sym'
+
+! Set name
+#:set subr = 'linop_apply_sym'
+
+! Probe in
+@:probe_in()
 
 if (check_data) then
    ! Check linear operation
-   if (minval(linop%col)<1) call mpl%abort(subr,'col<1 for symmetric linear operation '//trim(linop%prefix))
-   if (maxval(linop%col)>linop%n_src) call mpl%abort(subr,'col>n_src for symmetric linear operation '//trim(linop%prefix))
-   if (minval(linop%row)<1) call mpl%abort(subr,'row<1 for symmetric linear operation '//trim(linop%prefix))
-   if (maxval(linop%row)>linop%n_src) call mpl%abort(subr,'row>n_dst for symmetric linear operation '//trim(linop%prefix))
+   if (minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for symmetric linear operation '//trim(linop%prefix))
+   if (maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for symmetric linear operation '//trim(linop%prefix))
+   if (minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for symmetric linear operation '//trim(linop%prefix))
+   if (maxval(linop%row)>linop%n_src) call mpl%abort('${subr}$','row>n_dst for symmetric linear operation '//trim(linop%prefix))
    if (present(ivec)) then
-      if (any(isnan(linop%Svec))) call mpl%abort(subr,'NaN in Svec for symmetric linear operation '//trim(linop%prefix))
+      if (any(isnan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for symmetric linear operation '//trim(linop%prefix))
    else
-      if (any(isnan(linop%S))) call mpl%abort(subr,'NaN in S for symmetric linear operation '//trim(linop%prefix))
+      if (any(isnan(linop%S))) call mpl%abort('${subr}$','NaN in S for symmetric linear operation '//trim(linop%prefix))
    end if
 
    ! Check input
-   if (any(fld>huge_real)) call mpl%abort(subr,'Overflowing number in fld for symmetric linear operation '//trim(linop%prefix))
-   if (any(isnan(fld))) call mpl%abort(subr,'NaN in fld for symmetric linear operation '//trim(linop%prefix))
+   if (any(fld>huge_real)) call mpl%abort('${subr}$', &
+ & 'Overflowing number in fld for symmetric linear operation '//trim(linop%prefix))
+   if (any(isnan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
 end if
 
 ! Apply weights
@@ -685,8 +786,11 @@ end do
 
 if (check_data) then
    ! Check output
-   if (any(isnan(fld))) call mpl%abort(subr,'NaN in fld for symmetric linear operation '//trim(linop%prefix))
+   if (any(isnan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_apply_sym
 
@@ -707,6 +811,12 @@ real(kind_real),intent(in) :: S          !< Value
 
 ! Local variables
 type(linop_type) :: linop_tmp
+
+! Set name
+#:set subr = 'linop_add_op'
+
+! Probe in
+@:probe_in()
 
 ! Update
 n_s = n_s+1
@@ -733,6 +843,9 @@ linop%row(n_s) = row
 linop%col(n_s) = col
 linop%S(n_s) = S
 
+! Probe out
+@:probe_out()
+
 end subroutine linop_add_op
 
 !----------------------------------------------------------------------
@@ -751,6 +864,12 @@ type(linop_type),intent(in) :: linop_arr(mpl%nthread) !< Linear operator array
 
 ! Local variables
 integer :: ithread,offset
+
+! Set name
+#:set subr = 'linop_gather'
+
+! Probe in
+@:probe_in()
 
 if (mpl%nthread>1) then
    ! Total number of operations
@@ -771,6 +890,9 @@ else
    ! Copy
    call linop%copy(linop_arr(1),n_s_arr(1))
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_gather
 
@@ -807,7 +929,12 @@ real(kind_real),allocatable :: lon_src_eff(:),lat_src_eff(:),S(:)
 logical :: valid,valid_arc
 logical,allocatable :: missing(:)
 character(len=7) :: cfmt
-character(len=1024),parameter :: subr = 'linop_interp'
+
+! Set name
+#:set subr = 'linop_interp'
+
+! Probe in
+@:probe_in()
 
 ! Count non-missing source points
 n_src_eff = count(mask_src)
@@ -830,10 +957,10 @@ lat_src_eff = lat_src(src_eff_to_src)
 
 if (allocated(linop%interp_data%src_eff_to_src)) then
    ! Check that source is the same
-   if (n_src_eff/=linop%interp_data%n_src_eff) call mpl%abort(subr,'wrong n_src_eff')
-   if (any(src_eff_to_src/=linop%interp_data%src_eff_to_src)) call mpl%abort(subr,'wrong src_eff_to_src')
-   if (any(abs(lon_src_eff-linop%interp_data%lon_src_eff)>0.0)) call mpl%abort(subr,'wrong lon_src_eff')
-   if (any(abs(lat_src_eff-linop%interp_data%lat_src_eff)>0.0)) call mpl%abort(subr,'wrong lat_src_eff')
+   if (n_src_eff/=linop%interp_data%n_src_eff) call mpl%abort('${subr}$','wrong n_src_eff')
+   if (any(src_eff_to_src/=linop%interp_data%src_eff_to_src)) call mpl%abort('${subr}$','wrong src_eff_to_src')
+   if (any(abs(lon_src_eff-linop%interp_data%lon_src_eff)>0.0)) call mpl%abort('${subr}$','wrong lon_src_eff')
+   if (any(abs(lat_src_eff-linop%interp_data%lat_src_eff)>0.0)) call mpl%abort('${subr}$','wrong lat_src_eff')
 
    ! Release memory
    deallocate(linop%row)
@@ -941,7 +1068,7 @@ end do
 do i_s=1,n_s
    missing(row(i_s)) = .false.
 end do
-if (any(missing)) call mpl%abort(subr,'missing destination points')
+if (any(missing)) call mpl%abort('${subr}$','missing destination points')
 
 ! Allocation
 linop%n_s = n_s
@@ -962,6 +1089,9 @@ deallocate(row)
 deallocate(col)
 deallocate(S)
 deallocate(missing)
+
+! Probe out
+@:probe_out()
 
 end subroutine linop_interp
 

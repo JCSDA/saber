@@ -36,6 +36,17 @@ endif()
 target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> )
 
 # Process fypp files
+set( ENABLE_SABER_INSTRUMENTATION 0 )
+if( DEFINED ENV{ENABLE_SABER_INSTRUMENTATION} )
+    set( ENABLE_SABER_INSTRUMENTATION $ENV{ENABLE_SABER_INSTRUMENTATION} )
+endif()
+if( ENABLE_SABER_INSTRUMENTATION )
+    message( STATUS "SABER instrumentation is enabled" )
+    add_definitions(-DENABLE_SABER_INSTRUMENTATION=1)
+else()
+    message( STATUS "SABER instrumentation is not enabled" )
+    add_definitions(-DENABLE_SABER_INSTRUMENTATION=0)
+endif()
 fckit_target_preprocess_fypp( ${PROJECT_NAME} )
 
 # Fortran module output directory for build and install interfaces

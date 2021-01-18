@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_avg
 !> Average routines
@@ -19,6 +20,7 @@ use type_mom, only: mom_type
 use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_samp, only: samp_type
 
 implicit none
@@ -69,6 +71,12 @@ character(len=*),intent(in) :: prefix !< Prefix
 ! Local variables
 integer :: ib,ic2a
 
+! Set name
+#:set subr = 'avg_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Set attributes
 avg%prefix = prefix
 avg%ne = ne
@@ -81,6 +89,9 @@ do ib=1,bpar%nbe
       call avg%blk(ic2a,ib)%alloc(nam,geom,bpar,ic2a,ib,ne,nsub)
    end do
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_alloc
 
@@ -98,6 +109,12 @@ class(avg_type),intent(inout) :: avg !< Averaged statistics
 ! Local variables
 integer :: ib,ic2a
 
+! Set name
+#:set subr = 'avg_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 if (allocated(avg%blk)) then
    do ib=1,size(avg%blk,2)
@@ -107,6 +124,9 @@ if (allocated(avg%blk)) then
     end do
    deallocate(avg%blk)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_dealloc
 
@@ -125,12 +145,21 @@ class(avg_type),intent(in) :: avg_in     !< Input averaged statistics
 ! Local variables
 integer :: ib,ic2a
 
+! Set name
+#:set subr = 'avg_copy'
+
+! Probe in
+@:probe_in()
+
 ! Copy
 do ib=1,size(avg_in%blk,2)
    do ic2a=0,size(avg_in%blk,1)-1
       call avg_out%blk(ic2a,ib)%copy(avg_in%blk(ic2a,ib))
    end do
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_copy
 
@@ -153,12 +182,21 @@ type(bpar_type),intent(in) :: bpar   !< Block parameters
 integer :: ib
 character(len=1024) :: filename
 
+! Set name
+#:set subr = 'avg_write'
+
+! Probe in
+@:probe_in()
+
 if (mpl%main) then
    filename = trim(nam%prefix)//'_'//trim(avg%prefix)
    do ib=1,bpar%nb
       if (bpar%diag_block(ib)) call avg%blk(0,ib)%write(mpl,nam,geom,bpar,filename)
    end do
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_write
 
@@ -184,6 +222,12 @@ character(len=*),intent(in) :: prefix !< Prefix
 ! Local variables
 integer :: ib,ic2a
 type(mom_blk_type) :: mom_blk
+
+! Set name
+#:set subr = 'avg_compute'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call avg%alloc(nam,geom,bpar,samp,mom%ne,mom%nsub,prefix)
@@ -243,6 +287,9 @@ do ib=1,bpar%nb
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_compute
 
 !----------------------------------------------------------------------
@@ -264,6 +311,12 @@ type(avg_type),intent(in) :: avg_2     !< Ensemble 2 averaged statistics
 
 ! Local variables
 integer :: ib,ic2a
+
+! Set name
+#:set subr = 'avg_compute_hyb'
+
+! Probe in
+@:probe_in()
 
 ! Compute averaged statistics
 write(mpl%info,'(a10,a)') '','Compute averaged statistics'
@@ -290,6 +343,9 @@ do ib=1,bpar%nb
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_compute_hyb
 
 !----------------------------------------------------------------------
@@ -313,6 +369,12 @@ type(mom_type),intent(in) :: mom_2     !< Ensemble 2 moments
 ! Local variables
 integer :: ib,ic2a
 type(mom_blk_type) :: mom_blk_1,mom_blk_2
+
+! Set name
+#:set subr = 'avg_compute_deh'
+
+! Probe in
+@:probe_in()
 
 ! Compute averaged statistics
 write(mpl%info,'(a10,a)') '','Compute averaged statistics'
@@ -361,6 +423,9 @@ do ib=1,bpar%nb
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_compute_deh
 
 !----------------------------------------------------------------------
@@ -380,6 +445,12 @@ type(avg_type),intent(in) :: avg_in      !< Input averaged statistics
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'avg_copy_wgt'
+
+! Probe in
+@:probe_in()
+
 if (bpar%diag_block(bpar%nbe)) then
    ! Allocation
    allocate(avg_out%blk(0:0,bpar%nb))
@@ -394,6 +465,9 @@ if (bpar%diag_block(bpar%nbe)) then
       end if
    end do
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_copy_wgt
 
@@ -419,6 +493,12 @@ integer :: ib,ic2a,il0,jl0r,jc3
 real(kind_real) :: bwgtsq
 real(kind_real) :: cor(nam%nc3,bpar%nl0rmax,geom%nl0),nc1a_cor(nam%nc3,bpar%nl0rmax,geom%nl0)
 real(kind_real) :: m11asysq(nam%nc3,bpar%nl0rmax,geom%nl0),m11sq(nam%nc3,bpar%nl0rmax,geom%nl0),nc1a(nam%nc3,bpar%nl0rmax,geom%nl0)
+
+! Set name
+#:set subr = 'avg_compute_bwavg'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(bpar%nbe)),':'
@@ -448,7 +528,7 @@ do ic2a=0,samp%nc2a
          do ib=1,bpar%nb
             if (bpar%avg_block(ib)) then
                !$omp parallel do schedule(static) private(il0,jl0r,bwgtsq,jc3)
-               do il0=1,geom%nl0   
+               do il0=1,geom%nl0
                   do jl0r=1,bpar%nl0r(ib)
                      ! Weight
                      if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
@@ -504,6 +584,9 @@ do ic2a=0,samp%nc2a
 end do
 call mpl%prog_final
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_compute_bwavg
 
 !----------------------------------------------------------------------
@@ -527,6 +610,12 @@ type(avg_type),intent(in) :: avg_wgt !< Averaged statistics for weights
 integer :: ib,ic2a,il0,jl0r,jc3
 real(kind_real) :: bwgtsq
 real(kind_real) :: m11sta(nam%nc3,bpar%nl0rmax,geom%nl0),stasq(nam%nc3,bpar%nl0rmax,geom%nl0)
+
+! Set name
+#:set subr = 'avg_compute_bwavg_hyb'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(bpar%nbe)),':'
@@ -591,6 +680,9 @@ do ic2a=0,samp%nc2a
 end do
 call mpl%prog_final
 
+! Probe out
+@:probe_out()
+
 end subroutine avg_compute_bwavg_hyb
 
 !----------------------------------------------------------------------
@@ -614,6 +706,12 @@ type(avg_type),intent(in) :: avg_wgt !< Averaged statistics for weights
 integer :: ib,ic2a,il0,jl0r,jc3
 real(kind_real) :: bwgtsq
 real(kind_real) :: m11lrm11(nam%nc3,bpar%nl0rmax,geom%nl0),m11lrm11asy(nam%nc3,bpar%nl0rmax,geom%nl0)
+
+! Set name
+#:set subr = 'avg_compute_bwavg_deh'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(bpar%nbe)),':'
@@ -677,6 +775,9 @@ do ic2a=0,samp%nc2a
    call mpl%prog_print(ic2a+1)
 end do
 call mpl%prog_final
+
+! Probe out
+@:probe_out()
 
 end subroutine avg_compute_bwavg_deh
 

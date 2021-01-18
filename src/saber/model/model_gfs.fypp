@@ -1,4 +1,5 @@
 #:def include_gfs()
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Subroutine: model_gfs_coord
 !> Get GFS coordinates
@@ -16,18 +17,23 @@ type(nam_type),intent(in) :: nam         !< Namelist
 integer :: img,ilon,ilat
 integer :: ncid,nlon_id,nlat_id,nlev_id,lon_id,lat_id,a_id,b_id
 real(kind_real),allocatable :: lon(:),lat(:),a(:),b(:)
-character(len=1024),parameter :: subr = 'model_gfs_coord'
+
+! Set name
+#:set subr = 'model_gfs_coord'
+
+! Probe in
+@:probe_in()
 
 ! Open file and get dimensions
 model%ntile = 1
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'longitude',nlon_id))
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'latitude',nlat_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
+call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'longitude',nlon_id))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'latitude',nlat_id))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
 model%nmg = model%nlon*model%nlat
-call mpl%ncerr(subr,nf90_inq_dimid(ncid,'level',nlev_id))
-call mpl%ncerr(subr,nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
+call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'level',nlev_id))
+call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
 
 ! Allocation
 call model%alloc
@@ -37,15 +43,15 @@ allocate(a(model%nlev+1))
 allocate(b(model%nlev+1))
 
 ! Read data and close file
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'longitude',lon_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'latitude',lat_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'ak',a_id))
-call mpl%ncerr(subr,nf90_inq_varid(ncid,'bk',b_id))
-call mpl%ncerr(subr,nf90_get_var(ncid,lon_id,lon))
-call mpl%ncerr(subr,nf90_get_var(ncid,lat_id,lat))
-call mpl%ncerr(subr,nf90_get_var(ncid,a_id,a))
-call mpl%ncerr(subr,nf90_get_var(ncid,b_id,b))
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'longitude',lon_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'latitude',lat_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'ak',a_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'bk',b_id))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lon_id,lon))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,lat_id,lat))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,a_id,a))
+call mpl%ncerr('${subr}$',nf90_get_var(ncid,b_id,b))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! Convert to radian
 lon = lon*deg2rad
@@ -83,6 +89,9 @@ deallocate(lat)
 deallocate(a)
 deallocate(b)
 
+! Probe out
+@:probe_out()
+
 end subroutine model_gfs_coord
 
 !----------------------------------------------------------------------
@@ -105,20 +114,25 @@ integer :: iv,il0,img,ilon,ilat,ndims
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
-character(len=1024),parameter :: subr = 'model_gfs_read'
+
+! Set name
+#:set subr = 'model_gfs_read'
+
+! Probe in
+@:probe_in()
 
 if (mpl%main) then
    ! Allocation
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 end if
 
 do iv=1,nam%nv
    if (mpl%main) then
       ! Get variable id
-      call mpl%ncerr(subr,nf90_inq_varid(ncid,nam%variables(iv),fld_id))
+      call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,nam%variables(iv),fld_id))
 
 
       ! Read data
@@ -127,17 +141,17 @@ do iv=1,nam%nv
          ! 2D data
          fld_tmp = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,1),(/1,1/),(/model%nlon,model%nlat/)))
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,1),(/1,1/),(/model%nlon,model%nlat/)))
          elseif (trim(nam%lev2d)=='last') then
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1/),(/model%nlon,model%nlat/)))
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1/),(/model%nlon,model%nlat/)))
          end if
-      case (3) 
+      case (3)
          ! 3D data
          do il0=1,nam%nl
-            call mpl%ncerr(subr,nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/)))
+            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/)))
          end do
       case default
-         call mpl%abort(subr,'wrong number of dimensions for variable '//trim(nam%variables(iv)))
+         call mpl%abort('${subr}$','wrong number of dimensions for variable '//trim(nam%variables(iv)))
       end select
 
       ! Pack
@@ -154,11 +168,14 @@ end do
 
 if (mpl%main) then
    ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
+   call mpl%ncerr('${subr}$',nf90_close(ncid))
 
    ! Release memory
    deallocate(fld_tmp)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine model_gfs_read
 #:enddef include_gfs

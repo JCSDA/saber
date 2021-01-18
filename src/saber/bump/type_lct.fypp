@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_lct
 !> LCT data derived type
@@ -16,6 +17,7 @@ use type_lct_blk, only: lct_blk_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 use type_samp, only: samp_type
 
@@ -61,6 +63,12 @@ type(bpar_type),intent(in) :: bpar   !< Block parameters
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'lct_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 allocate(lct%blk(bpar%nb))
 do ib=1,bpar%nb
@@ -69,6 +77,9 @@ end do
 
 ! Update allocation flag
 lct%allocated = .true.
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_alloc
 
@@ -86,12 +97,21 @@ class(lct_type),intent(inout) :: lct !< LCT
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'lct_partial_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(lct%blk)) then
    do ib=1,size(lct%blk)
       call lct%blk(ib)%partial_dealloc
    end do
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_partial_dealloc
 
@@ -109,6 +129,12 @@ class(lct_type),intent(inout) :: lct !< LCT
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'lct_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(lct%blk)) then
    do ib=1,size(lct%blk)
@@ -119,6 +145,9 @@ end if
 
 ! Update allocation flag
 lct%allocated = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_dealloc
 
@@ -139,6 +168,12 @@ type(geom_type),intent(in) :: geom   !< Geometry
 type(bpar_type),intent(in) :: bpar   !< Block parameters
 type(io_type),intent(in) :: io       !< I/O
 type(ens_type),intent(inout) :: ens  !< Ensemble
+
+! Set name
+#:set subr = 'lct_run_lct'
+
+! Probe in
+@:probe_in()
 
 ! Set artificially small local radius
 nam%local_rad = 1.0e-12
@@ -205,6 +240,9 @@ if (nam%lct_write_cor) then
    call lct%write_cor(mpl,nam,geom,bpar)
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine lct_run_lct
 
 !----------------------------------------------------------------------
@@ -226,6 +264,12 @@ type(bpar_type),intent(in) :: bpar   !< Block parameters
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'lct_compute'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 call lct%alloc(nam,geom,bpar)
 
@@ -243,6 +287,9 @@ do ib=1,bpar%nb
       call lct%mom%blk(ib)%dealloc
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_compute
 
@@ -264,6 +311,12 @@ type(bpar_type),intent(in) :: bpar      !< Block parameters
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'lct_filter'
+
+! Probe in
+@:probe_in()
+
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       write(mpl%info,'(a7,a,a)') '','Block: ',trim(bpar%blockname(ib))
@@ -273,6 +326,9 @@ do ib=1,bpar%nb
       call lct%blk(ib)%filter(mpl,nam,geom,bpar,lct%samp)
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_filter
 
@@ -294,6 +350,12 @@ type(bpar_type),intent(in) :: bpar      !< Block parameters
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'lct_interp'
+
+! Probe in
+@:probe_in()
+
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       write(mpl%info,'(a7,a,a)') '','Block: ',trim(bpar%blockname(ib))
@@ -303,6 +365,9 @@ do ib=1,bpar%nb
       call lct%blk(ib)%interp(mpl,nam,geom,bpar,lct%samp)
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_interp
 
@@ -326,6 +391,12 @@ type(io_type),intent(in) :: io          !< I/O
 integer :: ib
 character(len=1024) :: filename
 
+! Set name
+#:set subr = 'lct_write'
+
+! Probe in
+@:probe_in()
+
 ! Set file name
 filename = trim(nam%prefix)//'_lct'
 
@@ -337,6 +408,9 @@ do ib=1,bpar%nb
       call lct%blk(ib)%write(mpl,nam,geom,bpar,io,filename)
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_write
 
@@ -358,11 +432,20 @@ type(bpar_type),intent(in) :: bpar      !< Block parameters
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'lct_write_cor'
+
+! Probe in
+@:probe_in()
+
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       call lct%blk(ib)%write_cor(mpl,nam,geom,bpar,lct%samp)
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine lct_write_cor
 

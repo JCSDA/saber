@@ -1,4 +1,5 @@
 #:include '../generics.fypp'
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_com
 !> Communications derived type
@@ -15,6 +16,7 @@ use tools_kinds, only: kind_int,kind_real,nc_kind_int,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: eq
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 
 implicit none
 
@@ -89,6 +91,12 @@ implicit none
 ! Passed variables
 class(com_type),intent(inout) :: com !< Communication data
 
+! Set name
+#:set subr = 'com_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(com%ext_to_proc)) deallocate(com%ext_to_proc)
 if (allocated(com%ext_to_red)) deallocate(com%ext_to_red)
@@ -100,6 +108,9 @@ if (allocated(com%jhalodispls)) deallocate(com%jhalodispls)
 if (allocated(com%jexcldispls)) deallocate(com%jexcldispls)
 if (allocated(com%halo)) deallocate(com%halo)
 if (allocated(com%excl)) deallocate(com%excl)
+
+! Probe out
+@:probe_out()
 
 end subroutine com_dealloc
 
@@ -118,17 +129,22 @@ integer,intent(in) :: ncid            !< NetCDF file
 
 ! Local variables
 integer :: grpid,own_to_ext_id,own_to_red_id,jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
-character(len=1024),parameter :: subr = 'com_read'
+
+! Set name
+#:set subr = 'com_read'
+
+! Probe in
+@:probe_in()
 
 ! Get group
-call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,com%prefix,grpid))
+call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,com%prefix,grpid))
 
 ! Get dimensions
-com%nred = mpl%nc_dim_inquire(subr,grpid,'nred')
-com%next = mpl%nc_dim_inquire(subr,grpid,'next')
-com%nown = mpl%nc_dim_inquire(subr,grpid,'nown')
-com%nhalo = mpl%nc_dim_inquire(subr,grpid,'nhalo')
-com%nexcl = mpl%nc_dim_inquire(subr,grpid,'nexcl')
+com%nred = mpl%nc_dim_inquire(grpid,'nred')
+com%next = mpl%nc_dim_inquire(grpid,'next')
+com%nown = mpl%nc_dim_inquire(grpid,'nown')
+com%nhalo = mpl%nc_dim_inquire(grpid,'nhalo')
+com%nexcl = mpl%nc_dim_inquire(grpid,'nexcl')
 
 ! Allocation
 if (com%nown>0) allocate(com%own_to_ext(com%nown))
@@ -141,24 +157,27 @@ if (com%nhalo>0) allocate(com%halo(com%nhalo))
 if (com%nexcl>0) allocate(com%excl(com%nexcl))
 
 ! Get variables
-if (com%nown>0) call mpl%ncerr(subr,nf90_inq_varid(grpid,'own_to_ext',own_to_ext_id))
-if (com%nown>0) call mpl%ncerr(subr,nf90_inq_varid(grpid,'own_to_red',own_to_red_id))
-call mpl%ncerr(subr,nf90_inq_varid(grpid,'jhalocounts',jhalocounts_id))
-call mpl%ncerr(subr,nf90_inq_varid(grpid,'jexclcounts',jexclcounts_id))
-call mpl%ncerr(subr,nf90_inq_varid(grpid,'jhalodispls',jhalodispls_id))
-call mpl%ncerr(subr,nf90_inq_varid(grpid,'jexcldispls',jexcldispls_id))
-if (com%nhalo>0) call mpl%ncerr(subr,nf90_inq_varid(grpid,'halo',halo_id))
-if (com%nexcl>0) call mpl%ncerr(subr,nf90_inq_varid(grpid,'excl',excl_id))
+if (com%nown>0) call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'own_to_ext',own_to_ext_id))
+if (com%nown>0) call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'own_to_red',own_to_red_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'jhalocounts',jhalocounts_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'jexclcounts',jexclcounts_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'jhalodispls',jhalodispls_id))
+call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'jexcldispls',jexcldispls_id))
+if (com%nhalo>0) call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'halo',halo_id))
+if (com%nexcl>0) call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'excl',excl_id))
 
 ! Read variables
-if (com%nown>0) call mpl%ncerr(subr,nf90_get_var(grpid,own_to_ext_id,com%own_to_ext))
-if (com%nown>0) call mpl%ncerr(subr,nf90_get_var(grpid,own_to_red_id,com%own_to_red))
-call mpl%ncerr(subr,nf90_get_var(grpid,jhalocounts_id,com%jhalocounts))
-call mpl%ncerr(subr,nf90_get_var(grpid,jexclcounts_id,com%jexclcounts))
-call mpl%ncerr(subr,nf90_get_var(grpid,jhalodispls_id,com%jhalodispls))
-call mpl%ncerr(subr,nf90_get_var(grpid,jexcldispls_id,com%jexcldispls))
-if (com%nhalo>0) call mpl%ncerr(subr,nf90_get_var(grpid,halo_id,com%halo))
-if (com%nexcl>0) call mpl%ncerr(subr,nf90_get_var(grpid,excl_id,com%excl))
+if (com%nown>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,own_to_ext_id,com%own_to_ext))
+if (com%nown>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,own_to_red_id,com%own_to_red))
+call mpl%ncerr('${subr}$',nf90_get_var(grpid,jhalocounts_id,com%jhalocounts))
+call mpl%ncerr('${subr}$',nf90_get_var(grpid,jexclcounts_id,com%jexclcounts))
+call mpl%ncerr('${subr}$',nf90_get_var(grpid,jhalodispls_id,com%jhalodispls))
+call mpl%ncerr('${subr}$',nf90_get_var(grpid,jexcldispls_id,com%jexcldispls))
+if (com%nhalo>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,halo_id,com%halo))
+if (com%nexcl>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,excl_id,com%excl))
+
+! Probe out
+@:probe_out()
 
 end subroutine com_read
 
@@ -178,38 +197,46 @@ integer,intent(in) :: ncid          !< NetCDF file
 ! Local variables
 integer :: grpid,nproc_id,nred_id,next_id,nown_id,own_to_ext_id,own_to_red_id,nhalo_id,nexcl_id
 integer :: jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
-character(len=1024),parameter :: subr = 'com_write'
+
+! Set name
+#:set subr = 'com_write'
+
+! Probe in
+@:probe_in()
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(subr,ncid,com%prefix)
+grpid = mpl%nc_group_define_or_get(ncid,com%prefix)
 
 ! Define dimensions
-nproc_id = mpl%nc_dim_define_or_get(subr,ncid,'nproc',mpl%nproc)
-if (com%nred>0) nred_id = mpl%nc_dim_define_or_get(subr,grpid,'nred',com%nred)
-if (com%next>0) next_id = mpl%nc_dim_define_or_get(subr,grpid,'next',com%next)
-if (com%nown>0) nown_id = mpl%nc_dim_define_or_get(subr,grpid,'nown',com%nown)
-if (com%nhalo>0) nhalo_id = mpl%nc_dim_define_or_get(subr,grpid,'nhalo',com%nhalo)
-if (com%nexcl>0) nexcl_id = mpl%nc_dim_define_or_get(subr,grpid,'nexcl',com%nexcl) 
+nproc_id = mpl%nc_dim_define_or_get(ncid,'nproc',mpl%nproc)
+if (com%nred>0) nred_id = mpl%nc_dim_define_or_get(grpid,'nred',com%nred)
+if (com%next>0) next_id = mpl%nc_dim_define_or_get(grpid,'next',com%next)
+if (com%nown>0) nown_id = mpl%nc_dim_define_or_get(grpid,'nown',com%nown)
+if (com%nhalo>0) nhalo_id = mpl%nc_dim_define_or_get(grpid,'nhalo',com%nhalo)
+if (com%nexcl>0) nexcl_id = mpl%nc_dim_define_or_get(grpid,'nexcl',com%nexcl)
 
 ! Define variables
-if (com%nown>0) own_to_ext_id = mpl%nc_var_define_or_get(subr,grpid,'own_to_ext',nc_kind_int,(/nown_id/))
-if (com%nown>0) own_to_red_id = mpl%nc_var_define_or_get(subr,grpid,'own_to_red',nc_kind_int,(/nown_id/))
-jhalocounts_id = mpl%nc_var_define_or_get(subr,grpid,'jhalocounts',nc_kind_int,(/nproc_id/))
-jexclcounts_id = mpl%nc_var_define_or_get(subr,grpid,'jexclcounts',nc_kind_int,(/nproc_id/))
-jhalodispls_id = mpl%nc_var_define_or_get(subr,grpid,'jhalodispls',nc_kind_int,(/nproc_id/))
-jexcldispls_id = mpl%nc_var_define_or_get(subr,grpid,'jexcldispls',nc_kind_int,(/nproc_id/))
-if (com%nhalo>0) halo_id = mpl%nc_var_define_or_get(subr,grpid,'halo',nc_kind_int,(/nhalo_id/))
-if (com%nexcl>0) excl_id = mpl%nc_var_define_or_get(subr,grpid,'excl',nc_kind_int,(/nexcl_id/))
+if (com%nown>0) own_to_ext_id = mpl%nc_var_define_or_get(grpid,'own_to_ext',nc_kind_int,(/nown_id/))
+if (com%nown>0) own_to_red_id = mpl%nc_var_define_or_get(grpid,'own_to_red',nc_kind_int,(/nown_id/))
+jhalocounts_id = mpl%nc_var_define_or_get(grpid,'jhalocounts',nc_kind_int,(/nproc_id/))
+jexclcounts_id = mpl%nc_var_define_or_get(grpid,'jexclcounts',nc_kind_int,(/nproc_id/))
+jhalodispls_id = mpl%nc_var_define_or_get(grpid,'jhalodispls',nc_kind_int,(/nproc_id/))
+jexcldispls_id = mpl%nc_var_define_or_get(grpid,'jexcldispls',nc_kind_int,(/nproc_id/))
+if (com%nhalo>0) halo_id = mpl%nc_var_define_or_get(grpid,'halo',nc_kind_int,(/nhalo_id/))
+if (com%nexcl>0) excl_id = mpl%nc_var_define_or_get(grpid,'excl',nc_kind_int,(/nexcl_id/))
 
 ! Write variables
-if (com%nown>0) call mpl%ncerr(subr,nf90_put_var(grpid,own_to_ext_id,com%own_to_ext))
-if (com%nown>0) call mpl%ncerr(subr,nf90_put_var(grpid,own_to_red_id,com%own_to_red))
-call mpl%ncerr(subr,nf90_put_var(grpid,jhalocounts_id,com%jhalocounts))
-call mpl%ncerr(subr,nf90_put_var(grpid,jexclcounts_id,com%jexclcounts))
-call mpl%ncerr(subr,nf90_put_var(grpid,jhalodispls_id,com%jhalodispls))
-call mpl%ncerr(subr,nf90_put_var(grpid,jexcldispls_id,com%jexcldispls))
-if (com%nhalo>0) call mpl%ncerr(subr,nf90_put_var(grpid,halo_id,com%halo))
-if (com%nexcl>0) call mpl%ncerr(subr,nf90_put_var(grpid,excl_id,com%excl))
+if (com%nown>0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,own_to_ext_id,com%own_to_ext))
+if (com%nown>0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,own_to_red_id,com%own_to_red))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,jhalocounts_id,com%jhalocounts))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,jexclcounts_id,com%jexclcounts))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,jhalodispls_id,com%jhalodispls))
+call mpl%ncerr('${subr}$',nf90_put_var(grpid,jexcldispls_id,com%jexcldispls))
+if (com%nhalo>0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,halo_id,com%halo))
+if (com%nexcl>0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,excl_id,com%excl))
+
+! Probe out
+@:probe_out()
 
 end subroutine com_write
 
@@ -226,8 +253,17 @@ class(com_type),intent(in) :: com   !< Communication data
 type(mpl_type),intent(inout) :: mpl !< MPI data
 integer,intent(out) :: nbufi        !< Buffer size (integer)
 
+! Set name
+#:set subr = 'com_buffer_size'
+
+! Probe in
+@:probe_in()
+
 ! Define buffer size
 nbufi = 6+2*com%nown+4*mpl%nproc+com%nhalo+com%nexcl
+
+! Probe out
+@:probe_out()
 
 end subroutine com_buffer_size
 
@@ -247,7 +283,12 @@ integer,intent(out) :: bufi(nbufi)  !< Buffer (integer)
 
 ! Local variables
 integer :: ibufi
-character(len=1024),parameter :: subr = 'com_serialize'
+
+! Set name
+#:set subr = 'com_serialize'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 ibufi = 0
@@ -285,7 +326,10 @@ if (com%nexcl>0) bufi(ibufi+1:ibufi+com%nexcl) = com%excl
 ibufi = ibufi+com%nexcl
 
 ! Check
-if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
+if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
+
+! Probe out
+@:probe_out()
 
 end subroutine com_serialize
 
@@ -305,13 +349,18 @@ integer,intent(in) :: bufi(nbufi)    !< Buffer (integer)
 
 ! Local variables
 integer :: ibufi
-character(len=1024),parameter :: subr = 'com_deserialize'
+
+! Set name
+#:set subr = 'com_deserialize'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 ibufi = 0
 
 ! Check
-if (bufi(ibufi+1)/=nbufi) call mpl%abort(subr,'inconsistent initial value/buffer size (integer)')
+if (bufi(ibufi+1)/=nbufi) call mpl%abort('${subr}$','inconsistent initial value/buffer size (integer)')
 ibufi = ibufi+1
 
 ! Dimensions
@@ -355,7 +404,10 @@ if (com%nexcl>0) com%excl = bufi(ibufi+1:ibufi+com%nexcl)
 ibufi = ibufi+com%nexcl
 
 ! Check
-if (ibufi/=nbufi) call mpl%abort(subr,'inconsistent final offset/buffer size (integer)')
+if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
+
+! Probe out
+@:probe_out()
 
 end subroutine com_deserialize
 
@@ -385,7 +437,12 @@ integer,allocatable :: own_to_glb_tmp(:),red_to_glb_tmp(:),ext_to_glb_tmp(:)
 integer,allocatable :: own_to_glb_order(:),red_to_glb_order(:),ext_to_glb_order(:)
 type(com_type) :: com_in(mpl%nproc)
 type(fckit_mpi_status) :: status
-character(len=1024),parameter :: subr = 'com_setup'
+
+! Set name
+#:set subr = 'com_setup'
+
+! Probe in
+@:probe_in()
 
 if (mpl%main) then
    ! Get dimensions
@@ -406,7 +463,7 @@ if (mpl%main) then
    end do
 
    ! Check global size
-   if (nglb_test/=nglb) call mpl%abort(subr,'sum of reduced halos sizes is not equal to the global size')
+   if (nglb_test/=nglb) call mpl%abort('${subr}$','sum of reduced halos sizes is not equal to the global size')
 
    ! Allocation
    allocate(glb_to_red(nglb))
@@ -431,7 +488,7 @@ if (mpl%main) then
       ! Fill glb_to_red and glb_to_proc
       do ired=1,com_in(iproc)%nred
          iglb = red_to_glb_tmp(ired)
-         if (mpl%msv%isnot(glb_to_red(iglb))) call mpl%abort(subr,'distinct reduced halo points have the same global index')
+         if (mpl%msv%isnot(glb_to_red(iglb))) call mpl%abort('${subr}$','distinct reduced halo points have the same global index')
          glb_to_red(iglb) = ired
          glb_to_proc(iglb) = iproc
       end do
@@ -643,8 +700,8 @@ if (com_out%nown>0) then
    deallocate(ext_to_glb_order)
 
    ! Check local conversion
-   if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort(subr,'missing own_to_red value')
-   if (mpl%msv%isany(com_out%own_to_ext)) call mpl%abort(subr,'missing own_to_ext value')
+   if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort('${subr}$','missing own_to_red value')
+   if (mpl%msv%isany(com_out%own_to_ext)) call mpl%abort('${subr}$','missing own_to_ext value')
 end if
 
 ! Communicate data
@@ -682,6 +739,9 @@ call mpl%update_tag(6)
 ! Set prefix
 com_out%prefix = prefix
 
+! Probe out
+@:probe_out()
+
 end subroutine com_setup
 
 !----------------------------------------------------------------------
@@ -695,8 +755,17 @@ implicit none
 ! Passed variables
 class(com_type),intent(inout) :: com !< Communication data
 
+! Set name
+#:set subr = 'com_dummy_method'
+
+! Probe in
+@:probe_in()
+
 ! Dummy action to avoid compiler warning
 com%dummy_logical = .false.
+
+! Probe out
+@:probe_out()
 
 end subroutine com_dummy_method
 
@@ -720,15 +789,20 @@ ${ftype}$,intent(out) :: vec_ext(${dim[rank]}$) !< Extended vector
 integer :: nl,il,iexcl,iown,ihalo
 integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
 ${ftype}$,allocatable :: sbuf(:),rbuf(:)
-character(len=1024),parameter :: subr = 'com_ext_${dtype}$_r${rank}$'
+
+! Set name
+#:set subr = 'com_ext_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
 
 ! Check dimensions
-if (size(vec_red,1)/=com%nred) call mpl%abort(subr,'wrong dimension for vec_red')
-if (size(vec_ext,1)/=com%next) call mpl%abort(subr,'wrong dimension for vec_ext')
+if (size(vec_red,1)/=com%nred) call mpl%abort('${subr}$','wrong dimension for vec_red')
+if (size(vec_ext,1)/=com%next) call mpl%abort('${subr}$','wrong dimension for vec_ext')
 #:if rank == 1
    nl = 1
 #:else
-   if (size(vec_red,2)/=size(vec_ext,2)) call mpl%abort(subr,'inconsistent number of levels')
+   if (size(vec_red,2)/=size(vec_ext,2)) call mpl%abort('${subr}$','inconsistent number of levels')
    nl = size(vec_red,2)
 #:endif
 
@@ -791,6 +865,9 @@ end do
 deallocate(sbuf)
 deallocate(rbuf)
 
+! Probe out
+@:probe_out()
+
 end subroutine com_ext_${dtype}$_r${rank}$
    #:endfor
 #:endfor
@@ -819,15 +896,20 @@ ${ftype}$,allocatable :: sbuf(:),rbuf(:),vec_red_arr(:,:,:)
 logical :: lnosum,valid
 logical,allocatable :: done(:)
 character(len=3) :: lop
-character(len=1024) :: subr = 'com_red_${dtype}$_r${rank}$'
+
+! Set name
+#:set subr = 'com_red_${dtype}$_r${rank}$'
+
+! Probe in
+@:probe_in()
 
 ! Check dimensions
-if (size(vec_ext,1)/=com%next) call mpl%abort(subr,'wrong dimension for vec_ext')
-if (size(vec_red,1)/=com%nred) call mpl%abort(subr,'wrong dimension for vec_red')
+if (size(vec_ext,1)/=com%next) call mpl%abort('${subr}$','wrong dimension for vec_ext')
+if (size(vec_red,1)/=com%nred) call mpl%abort('${subr}$','wrong dimension for vec_red')
 #:if rank == 1
    nl = 1
 #:else
-   if (size(vec_ext,2)/=size(vec_red,2)) call mpl%abort(subr,'inconsistent number of levels')
+   if (size(vec_ext,2)/=size(vec_red,2)) call mpl%abort('${subr}$','inconsistent number of levels')
    nl = size(vec_ext,2)
 #:endif
 
@@ -836,14 +918,14 @@ lnosum = .false.
 if (present(nosum)) lnosum = nosum
 
 ! Check operation argument
-if (lnosum.and.present(op)) call mpl%abort(subr,'logical operation inconsistent with the nosum flag')
+if (lnosum.and.present(op)) call mpl%abort('${subr}$','logical operation inconsistent with the nosum flag')
 
 ! Set logical operation
 lop = 'and'
 if (present(op)) lop = op
 
 ! Check operation argument
-if ((trim(lop)/='and').and.(trim(lop)/='or')) call mpl%abort(subr,'wrong logical operation')
+if ((trim(lop)/='and').and.(trim(lop)/='or')) call mpl%abort('${subr}$','wrong logical operation')
 
 ! Allocation
 allocate(sbuf(com%nhalo*nl))
@@ -921,7 +1003,7 @@ if (lnosum) then
                   if (mpl%msv%isnot(rbuf((iexcl-1)*nl+il))) valid = eq(vec_red(com%excl(iexcl),il),rbuf((iexcl-1)*nl+il))
                #:endif
             #:endif
-            if (.not.valid) call mpl%abort(subr,'both redundant values are different')
+            if (.not.valid) call mpl%abort('${subr}$','both redundant values are different')
          else
             ! Copy value
             #:if rank == 1
@@ -992,6 +1074,9 @@ if (lnosum) then
 else
    deallocate(vec_red_arr)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine com_red_${dtype}$_r${rank}$
    #:endfor

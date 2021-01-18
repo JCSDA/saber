@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_bpar
 !> Block parameters derived type
@@ -11,6 +12,7 @@ use tools_kinds,only: kind_real
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 
 implicit none
 
@@ -57,6 +59,12 @@ class(bpar_type),intent(inout) :: bpar !< Block parameters
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
+! Set name
+#:set subr = 'bpar_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Number of blocks
 bpar%nb = nam%nv**2
 bpar%nbe = bpar%nb
@@ -82,6 +90,9 @@ allocate(bpar%blockname(bpar%nbe))
 allocate(bpar%b_to_v1(bpar%nbe))
 allocate(bpar%b_to_v2(bpar%nbe))
 
+! Probe out
+@:probe_out()
+
 end subroutine bpar_alloc
 
 !----------------------------------------------------------------------
@@ -100,6 +111,12 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ib,iv,jv,il0,jl0r,jl0off
+
+! Set name
+#:set subr = 'bpar_init'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 bpar%vbal_block = .false.
@@ -276,6 +293,9 @@ do ib=1,bpar%nbe
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine bpar_init
 
 !----------------------------------------------------------------------
@@ -288,6 +308,12 @@ implicit none
 
 ! Passed variable
 class(bpar_type),intent(inout) :: bpar !< Block parameters
+
+! Set name
+#:set subr = 'bpar_dealloc'
+
+! Probe in
+@:probe_in()
 
 ! Release memory
 if (allocated(bpar%nl0r)) deallocate(bpar%nl0r)
@@ -304,6 +330,9 @@ if (allocated(bpar%cv_block)) deallocate(bpar%cv_block)
 if (allocated(bpar%blockname)) deallocate(bpar%blockname)
 if (allocated(bpar%b_to_v1)) deallocate(bpar%b_to_v1)
 if (allocated(bpar%b_to_v2)) deallocate(bpar%b_to_v2)
+
+! Probe out
+@:probe_out()
 
 end subroutine bpar_dealloc
 

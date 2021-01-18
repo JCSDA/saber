@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_fit
 !> Fit-related tools
@@ -11,6 +12,7 @@ use tools_func, only: fit_func
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 
 implicit none
 
@@ -52,9 +54,14 @@ integer :: di,i,im,ip,iter
 real(kind_real) :: th,thinv,dthinv,thtest
 real(kind_real) :: fit_rm,fit_rp,distmin
 real(kind_real) :: raw_tmp(n)
-character(len=1024),parameter :: subr = 'fit_fast_fit'
 
-if (any(dist<0.0)) call mpl%abort(subr,'negative distance')
+! Set name
+#:set subr = 'fit_fast_fit'
+
+! Probe in
+@:probe_in()
+
+if (any(dist<0.0)) call mpl%abort('${subr}$','negative distance')
 
 if (raw(iz)>0.0) then
    if (n>1) then
@@ -176,6 +183,9 @@ else
    fit_r = mpl%msv%valr
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine fit_fast_fit
 
 !----------------------------------------------------------------------
@@ -196,9 +206,14 @@ real(kind_real),intent(inout) :: profile(n) !< Vertical profile
 ! Local variables
 integer :: i,j
 real(kind_real) :: kernel(n,n),distnorm,profile_init(n),norm
-character(len=1024),parameter :: subr = 'fit_ver_smooth'
 
-if (rv<0.0) call mpl%abort(subr,'negative filtering support radius')
+! Set name
+#:set subr = 'fit_ver_smooth'
+
+! Probe in
+@:probe_in()
+
+if (rv<0.0) call mpl%abort('${subr}$','negative filtering support radius')
 
 if ((rv>0.0).and.mpl%msv%isanynot(profile)) then
    ! Vertical smoothing kernel
@@ -230,6 +245,9 @@ if ((rv>0.0).and.mpl%msv%isanynot(profile)) then
    end do
 end if
 
+! Probe out
+@:probe_out()
+
 end subroutine fit_ver_smooth
 
 !----------------------------------------------------------------------
@@ -249,7 +267,12 @@ real(kind_real),intent(inout) :: profile(n) !< Vertical profile
 ! Local variables
 integer :: i,j,iinf,isup
 real(kind_real) :: profile_init(n)
-character(len=1024),parameter :: subr = 'fit_ver_fill'
+
+! Set name
+#:set subr = 'fit_ver_fill'
+
+! Probe in
+@:probe_in()
 
 if (mpl%msv%isanynot(profile)) then
    ! Initialization
@@ -279,11 +302,14 @@ if (mpl%msv%isanynot(profile)) then
             ! Extrapolation with nearest inferior point
             profile(i) = profile(iinf)
          else
-            call mpl%abort(subr,'too many missing values')
+            call mpl%abort('${subr}$','too many missing values')
          end if
       end if
    end do
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine fit_ver_fill
 

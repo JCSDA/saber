@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_mom
 !> Moments derived type
@@ -20,6 +21,7 @@ use type_linop, only: linop_type
 use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_samp, only: samp_type
 
 implicit none
@@ -64,6 +66,12 @@ character(len=*),intent(in) :: prefix !< Prefix
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'mom_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Set attributes
 mom%ne = ne
 mom%nsub = nsub
@@ -75,6 +83,9 @@ do ib=1,bpar%nb
    mom%blk(ib)%ib = ib
    if (bpar%diag_block(ib)) call mom%blk(ib)%alloc(samp%nc1a,geom,bpar,ne,nsub)
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine mom_alloc
 
@@ -93,6 +104,12 @@ type(bpar_type),intent(in) :: bpar   !< Block parameters
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'mom_init'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
@@ -102,6 +119,9 @@ do ib=1,bpar%nb
       mom%blk(ib)%m22 = 0.0
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine mom_init
 
@@ -119,6 +139,12 @@ class(mom_type),intent(inout) :: mom !< Moments
 ! Local variables
 integer :: ib
 
+! Set name
+#:set subr = 'mom_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(mom%blk)) then
    do ib=1,size(mom%blk)
@@ -126,6 +152,9 @@ if (allocated(mom%blk)) then
    end do
    deallocate(mom%blk)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine mom_dealloc
 
@@ -151,7 +180,12 @@ character(len=*),intent(in) :: prefix !< Prefix
 integer :: ib,isub,grid_hash
 integer :: ncid,subgrpid,grpid,m2_1_id,m2_2_id,m11_id,m22_id
 character(len=1024) :: filename,grpname,subname
-character(len=1024),parameter :: subr = 'mom_read'
+
+! Set name
+#:set subr = 'mom_read'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call mom%alloc(geom,bpar,samp,ens%ne,ens%nsub,prefix)
@@ -161,48 +195,51 @@ call mom%init(bpar)
 
 ! Open file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_mom_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
 
 ! Check grid hash
-call mpl%ncerr(subr,nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
-if (grid_hash/=geom%grid_hash) call mpl%abort(subr,'wrong grid hash')
+call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
+if (grid_hash/=geom%grid_hash) call mpl%abort('${subr}$','wrong grid hash')
 
 ! Check dimensions
-call mpl%nc_dim_check(subr,ncid,'nc1a',samp%nc1a)
-call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
+call mpl%nc_dim_check(ncid,'nc1a',samp%nc1a)
+call mpl%nc_dim_check(ncid,'nl0',geom%nl0)
 
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       ! Get group
       call nam%io_key_value(bpar%blockname(ib),grpname)
-      call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,grpname,grpid))
+      call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,grpname,grpid))
 
       ! Check dimensions
-      call mpl%nc_dim_check(subr,grpid,'nc3',bpar%nc3(ib))
-      call mpl%nc_dim_check(subr,grpid,'nl0r',bpar%nl0r(ib))
+      call mpl%nc_dim_check(grpid,'nc3',bpar%nc3(ib))
+      call mpl%nc_dim_check(grpid,'nl0r',bpar%nl0r(ib))
 
       do isub=1,mom%blk(ib)%nsub
          ! Get subgroup
          write(subname,'(a,i6.6)') 'sub_',isub
-         call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,subname,subgrpid))
+         call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(grpid,subname,subgrpid))
 
          ! Get variables
-         call mpl%ncerr(subr,nf90_inq_varid(subgrpid,'m2_1',m2_1_id))
-         call mpl%ncerr(subr,nf90_inq_varid(subgrpid,'m2_2',m2_2_id))
-         call mpl%ncerr(subr,nf90_inq_varid(subgrpid,'m11',m11_id))
-         call mpl%ncerr(subr,nf90_inq_varid(subgrpid,'m22',m22_id))
+         call mpl%ncerr('${subr}$',nf90_inq_varid(subgrpid,'m2_1',m2_1_id))
+         call mpl%ncerr('${subr}$',nf90_inq_varid(subgrpid,'m2_2',m2_2_id))
+         call mpl%ncerr('${subr}$',nf90_inq_varid(subgrpid,'m11',m11_id))
+         call mpl%ncerr('${subr}$',nf90_inq_varid(subgrpid,'m22',m22_id))
 
          ! Read data
-         call mpl%ncerr(subr,nf90_get_var(subgrpid,m2_1_id,mom%blk(ib)%m2_1(:,:,isub)))
-         call mpl%ncerr(subr,nf90_get_var(subgrpid,m2_2_id,mom%blk(ib)%m2_2(:,:,:,isub)))
-         call mpl%ncerr(subr,nf90_get_var(subgrpid,m11_id,mom%blk(ib)%m11(:,:,:,:,isub)))
-         call mpl%ncerr(subr,nf90_get_var(subgrpid,m22_id,mom%blk(ib)%m22(:,:,:,:,isub)))
+         call mpl%ncerr('${subr}$',nf90_get_var(subgrpid,m2_1_id,mom%blk(ib)%m2_1(:,:,isub)))
+         call mpl%ncerr('${subr}$',nf90_get_var(subgrpid,m2_2_id,mom%blk(ib)%m2_2(:,:,:,isub)))
+         call mpl%ncerr('${subr}$',nf90_get_var(subgrpid,m11_id,mom%blk(ib)%m11(:,:,:,:,isub)))
+         call mpl%ncerr('${subr}$',nf90_get_var(subgrpid,m22_id,mom%blk(ib)%m22(:,:,:,:,isub)))
       end do
    end if
 end do
 
 ! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
+
+! Probe out
+@:probe_out()
 
 end subroutine mom_read
 
@@ -226,54 +263,62 @@ type(samp_type),intent(in) :: samp  !< Sampling
 integer :: ib,isub
 integer :: ncid,grpid,subgrpid,nc1a_id,nc3_id,nl0r_id,nl0_id,m2_1_id,m2_2_id,m11_id,m22_id
 character(len=1024) :: filename,grpname,subname
-character(len=1024),parameter :: subr = 'mom_write'
+
+! Set name
+#:set subr = 'mom_write'
+
+! Probe in
+@:probe_in()
 
 ! Define file
 write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_mom_',mpl%nproc,'-',mpl%myproc
-ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc')
+ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Write grid hash
-call mpl%ncerr(subr,nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
+call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
 
 ! Define dimensions
-nc1a_id = mpl%nc_dim_define_or_get(subr,ncid,'nc1a',samp%nc1a)
-nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
+nc1a_id = mpl%nc_dim_define_or_get(ncid,'nc1a',samp%nc1a)
+nl0_id = mpl%nc_dim_define_or_get(ncid,'nl0',geom%nl0)
 
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       ! Define group
       call nam%io_key_value(bpar%blockname(ib),grpname)
-      grpid = mpl%nc_group_define_or_get(subr,ncid,grpname)
+      grpid = mpl%nc_group_define_or_get(ncid,grpname)
 
       ! Define dimensions
-      nc3_id = mpl%nc_dim_define_or_get(subr,grpid,'nc3',bpar%nc3(ib))
-      nl0r_id = mpl%nc_dim_define_or_get(subr,grpid,'nl0r',bpar%nl0r(ib))
+      nc3_id = mpl%nc_dim_define_or_get(grpid,'nc3',bpar%nc3(ib))
+      nl0r_id = mpl%nc_dim_define_or_get(grpid,'nl0r',bpar%nl0r(ib))
 
       do isub=1,mom%blk(ib)%nsub
          ! Define subgroup
          write(subname,'(a,i6.6)') 'sub_',isub
-         subgrpid = mpl%nc_group_define_or_get(subr,grpid,subname)
+         subgrpid = mpl%nc_group_define_or_get(grpid,subname)
 
          ! Define variables
-         m2_1_id = mpl%nc_var_define_or_get(subr,subgrpid,'m2_1',nc_kind_real,(/nc1a_id,nl0_id/))
-         m2_2_id = mpl%nc_var_define_or_get(subr,subgrpid,'m2_2',nc_kind_real,(/nc1a_id,nc3_id,nl0_id/))
-         m11_id = mpl%nc_var_define_or_get(subr,subgrpid,'m11',nc_kind_real,(/nc1a_id,nc3_id,nl0r_id,nl0_id/))
-         m22_id = mpl%nc_var_define_or_get(subr,subgrpid,'m22',nc_kind_real,(/nc1a_id,nc3_id,nl0r_id,nl0_id/))
+         m2_1_id = mpl%nc_var_define_or_get(subgrpid,'m2_1',nc_kind_real,(/nc1a_id,nl0_id/))
+         m2_2_id = mpl%nc_var_define_or_get(subgrpid,'m2_2',nc_kind_real,(/nc1a_id,nc3_id,nl0_id/))
+         m11_id = mpl%nc_var_define_or_get(subgrpid,'m11',nc_kind_real,(/nc1a_id,nc3_id,nl0r_id,nl0_id/))
+         m22_id = mpl%nc_var_define_or_get(subgrpid,'m22',nc_kind_real,(/nc1a_id,nc3_id,nl0r_id,nl0_id/))
 
          ! Write variables
-         call mpl%ncerr(subr,nf90_put_var(subgrpid,m2_1_id,mom%blk(ib)%m2_1(:,:,isub)))
-         call mpl%ncerr(subr,nf90_put_var(subgrpid,m2_2_id,mom%blk(ib)%m2_2(:,:,:,isub)))
-         call mpl%ncerr(subr,nf90_put_var(subgrpid,m11_id,mom%blk(ib)%m11(:,:,:,:,isub)))
-         call mpl%ncerr(subr,nf90_put_var(subgrpid,m22_id,mom%blk(ib)%m22(:,:,:,:,isub)))
+         call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,m2_1_id,mom%blk(ib)%m2_1(:,:,isub)))
+         call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,m2_2_id,mom%blk(ib)%m2_2(:,:,:,isub)))
+         call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,m11_id,mom%blk(ib)%m11(:,:,:,:,isub)))
+         call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,m22_id,mom%blk(ib)%m22(:,:,:,:,isub)))
       end do
    end if
 end do
 
 ! Close file
-call mpl%ncerr(subr,nf90_close(ncid))
+call mpl%ncerr('${subr}$',nf90_close(ncid))
+
+! Probe out
+@:probe_out()
 
 end subroutine mom_write
 
@@ -300,6 +345,12 @@ integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: fld_ext(:,:,:),fld_1(:,:),fld_2(:,:,:)
 logical,allocatable :: mask_unpack(:,:)
+
+! Set name
+#:set subr = 'mom_compute'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call mom%alloc(geom,bpar,samp,ens%ne,ens%nsub,prefix)
@@ -455,6 +506,9 @@ if (nam%write_mom) then
    call mpl%flush
    call mom%write(mpl,nam,geom,bpar,samp)
 end if
+
+! Probe out
+@:probe_out()
 
 end subroutine mom_compute
 

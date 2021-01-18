@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_var
 !> Variance derived type
@@ -18,6 +19,7 @@ use type_io, only: io_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas_blk, only: nicas_blk_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 
 implicit none
@@ -59,6 +61,12 @@ class(var_type),intent(inout) :: var !< Variance
 type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 
+! Set name
+#:set subr = 'var_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Allocation
 if (.not.nam%forced_var) then
    allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
@@ -66,6 +74,9 @@ if (.not.nam%forced_var) then
    if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv))
 end if
 allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv))
+
+! Probe out
+@:probe_out()
 
 end subroutine var_alloc
 
@@ -80,10 +91,19 @@ implicit none
 ! Passed variables
 class(var_type),intent(inout) :: var !< Variance
 
+! Set name
+#:set subr = 'var_partial_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(var%m2)) deallocate(var%m2)
 if (allocated(var%m4)) deallocate(var%m4)
 if (allocated(var%m2flt)) deallocate(var%m2flt)
+
+! Probe out
+@:probe_out()
 
 end subroutine var_partial_dealloc
 
@@ -98,9 +118,18 @@ implicit none
 ! Passed variables
 class(var_type),intent(inout) :: var !< Variance
 
+! Set name
+#:set subr = 'var_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 call var%partial_dealloc
 if (allocated(var%m2sqrt)) deallocate(var%m2sqrt)
+
+! Probe out
+@:probe_out()
 
 end subroutine var_dealloc
 
@@ -123,6 +152,12 @@ type(io_type),intent(in) :: io       !< I/O
 integer :: iv
 character(len=1024) :: filename,grpname
 
+! Set name
+#:set subr = 'var_read'
+
+! Probe in
+@:probe_in()
+
 ! Read variance
 write(mpl%info,'(a7,a)') '','Read variance'
 call mpl%flush
@@ -138,6 +173,9 @@ do iv=1,nam%nv
    call nam%io_key_value(trim(nam%variables(iv)),grpname)
    call io%fld_read(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine var_read
 
@@ -160,6 +198,12 @@ type(io_type),intent(in) :: io       !< I/O
 integer :: iv
 character(len=1024) :: filename,grpname
 
+! Set name
+#:set subr = 'var_write'
+
+! Probe in
+@:probe_in()
+
 ! Write variance
 write(mpl%info,'(a7,a)') '','Write variance'
 call mpl%flush
@@ -180,6 +224,9 @@ do iv=1,nam%nv
    end if
    call io%fld_write(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine var_write
 
@@ -202,6 +249,12 @@ type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: ic0a,il0,iv
+
+! Set name
+#:set subr = 'var_run_var'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 call var%alloc(nam,geom)
@@ -261,6 +314,9 @@ end if
 ! Write variance
 call var%write(mpl,nam,geom,io)
 
+! Probe out
+@:probe_out()
+
 end subroutine var_run_var
 
 !----------------------------------------------------------------------
@@ -286,6 +342,12 @@ real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2prod_tot(
 real(kind_real) :: m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
 logical :: dichotomy(geom%nl0),convergence(geom%nl0)
 type(nicas_blk_type) :: nicas_blk
+
+! Set name
+#:set subr = 'var_filter'
+
+! Probe in
+@:probe_in()
 
 write(mpl%info,'(a7,a)') '','Filter variance'
 call mpl%flush
@@ -391,6 +453,9 @@ do iv=1,nam%nv
     end do
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine var_filter
 
 !----------------------------------------------------------------------
@@ -410,12 +475,21 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destin
 ! Local variables
 integer :: ic0a,il0
 
+! Set name
+#:set subr = 'var_apply_sqrt'
+
+! Probe in
+@:probe_in()
+
 ! Apply variance
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
       if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:) = fld(ic0a,il0,:)*var%m2sqrt(ic0a,il0,:)
    end do
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine var_apply_sqrt
 
@@ -436,12 +510,21 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destin
 ! Local variables
 integer :: ic0a,il0
 
+! Set name
+#:set subr = 'var_apply_sqrt_inv'
+
+! Probe in
+@:probe_in()
+
 ! Apply inverse variance
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
       if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:) = fld(ic0a,il0,:)/var%m2sqrt(ic0a,il0,:)
    end do
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine var_apply_sqrt_inv
 

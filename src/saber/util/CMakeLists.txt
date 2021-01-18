@@ -12,6 +12,7 @@ tools_repro.fypp
 type_fieldset.fypp
 type_mpl.fypp
 type_msv.fypp
+type_probe.fypp
 type_rng.fypp
 
 PARENT_SCOPE

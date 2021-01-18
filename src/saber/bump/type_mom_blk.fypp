@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_mom_blk
 !> Moments block derived type
@@ -12,6 +13,7 @@ use type_bpar, only: bpar_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 use type_samp, only: samp_type
 
 implicit none
@@ -52,6 +54,12 @@ type(bpar_type),intent(in) :: bpar           !< Block parameters
 integer,intent(in) :: ne                     !< Ensemble size
 integer,intent(in) :: nsub                   !< Number of sub-ensembles
 
+! Set name
+#:set subr = 'mom_blk_alloc'
+
+! Probe in
+@:probe_in()
+
 ! Associate
 associate(ib=>mom_blk%ib)
 
@@ -68,6 +76,9 @@ allocate(mom_blk%m22(nc1,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,nsub))
 ! End associate
 end associate
 
+! Probe out
+@:probe_out()
+
 end subroutine mom_blk_alloc
 
 !----------------------------------------------------------------------
@@ -81,11 +92,20 @@ implicit none
 ! Passed variables
 class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
 
+! Set name
+#:set subr = 'mom_blk_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(mom_blk%m2_1)) deallocate(mom_blk%m2_1)
 if (allocated(mom_blk%m2_2)) deallocate(mom_blk%m2_2)
 if (allocated(mom_blk%m11)) deallocate(mom_blk%m11)
 if (allocated(mom_blk%m22)) deallocate(mom_blk%m22)
+
+! Probe out
+@:probe_out()
 
 end subroutine mom_blk_dealloc
 
@@ -108,6 +128,12 @@ type(mom_blk_type),intent(in) :: mom_blk_in      !< Reduced moments block
 ! Local variables
 integer :: npack,ipack,isub,il0,jc3,jl0r
 real(kind_real),allocatable :: sbuf(:,:),rbuf(:,:)
+
+! Set name
+#:set subr = 'mom_blk_ext'
+
+! Probe in
+@:probe_in()
 
 ! Associate
 associate(ib=>mom_blk_in%ib)
@@ -166,6 +192,9 @@ deallocate(rbuf)
 
 ! End associate
 end associate
+
+! Probe out
+@:probe_out()
 
 end subroutine mom_blk_ext
 

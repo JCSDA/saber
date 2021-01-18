@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_minim
 !> Minimization data derived type
@@ -12,6 +13,7 @@ use tools_func, only: fit_diag,fit_lct
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 use type_rng, only: rng_type
 
 implicit none
@@ -117,12 +119,15 @@ class(minim_type),intent(inout) :: minim !< Minimization data
 type(mpl_type),intent(inout) :: mpl      !< MPI data
 type(rng_type),intent(inout) :: rng      !< Random number generator
 
-! Local variables
-character(len=1024),parameter :: subr = 'minim_compute'
+! Set name
+#:set subr = 'minim_compute'
+
+! Probe in
+@:probe_in()
 
 ! Check
-if (minim%nx<=0) call mpl%abort(subr,'nx should be positive to minimize')
-if (minim%ny<=0) call mpl%abort(subr,'nx should be positive to minimize')
+if (minim%nx<=0) call mpl%abort('${subr}$','nx should be positive to minimize')
+if (minim%ny<=0) call mpl%abort('${subr}$','nx should be positive to minimize')
 
 ! Initialization
 call minim%vt_inv(mpl,minim%guess)
@@ -148,6 +153,9 @@ if (minim%f_min>minim%f_guess) minim%x = minim%guess
 ! Direct transform
 call minim%vt_dir(minim%x)
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_compute
 
 !----------------------------------------------------------------------
@@ -164,8 +172,11 @@ type(mpl_type),intent(inout) :: mpl       !< MPI data
 real(kind_real),intent(in) :: x(minim%nx) !< Control vector
 real(kind_real),intent(out) :: f          !< Cost function value
 
-! Local variables
-character(len=1024) :: subr = 'minim_cost'
+! Set name
+#:set subr = 'minim_cost'
+
+! Probe in
+@:probe_in()
 
 select case (trim(minim%cost_function))
 case ('fit_diag')
@@ -173,8 +184,11 @@ case ('fit_diag')
 case ('fit_lct')
    call minim%cost_fit_lct(mpl,x,f)
 case default
-   call mpl%abort(subr,'wrong cost function')
+   call mpl%abort('${subr}$','wrong cost function')
 end select
+
+! Probe out
+@:probe_out()
 
 end subroutine minim_cost
 
@@ -198,6 +212,12 @@ real(kind_real) :: fo,fs,norm,coef_avg,fit_rh_avg,fit_rv_avg
 real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_rv(minim%nl0)
 real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
+
+! Set name
+#:set subr = 'minim_cost_fit_diag'
+
+! Probe in
+@:probe_in()
 
 ! Renormalize
 xtmp = x
@@ -293,6 +313,9 @@ end if
 ! Full penalty function
 f = fo+minim%smoothness_penalty*fs
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_cost_fit_diag
 
 !----------------------------------------------------------------------
@@ -314,6 +337,12 @@ integer :: iscales,icomp
 real(kind_real) :: norm
 real(kind_real) :: fit(minim%nc3,minim%nl0),D(4,minim%nscales)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny),coef(minim%nscales)
+
+! Set name
+#:set subr = 'minim_cost_fit_lct'
+
+! Probe in
+@:probe_in()
 
 ! Renormalize
 xtmp = x
@@ -342,6 +371,9 @@ f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(
 norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
 if (norm>0.0) f = f/norm
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_cost_fit_lct
 
 !----------------------------------------------------------------------
@@ -362,6 +394,12 @@ real(kind_real),intent(in) :: guess(minim%nx) !< Guess
 integer :: funevals,i,iters,keep
 real(kind_real) :: fbefore,newf,steplength,tmp
 real(kind_real) :: delta(minim%nx),newx(minim%nx)
+
+! Set name
+#:set subr = 'minim_hooke'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 newx = guess
@@ -439,6 +477,9 @@ do while ((iters<minim%hooke_itermax).and.inf(minim%hooke_tol,steplength))
    end if
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_hooke
 
 !----------------------------------------------------------------------
@@ -463,6 +504,12 @@ real(kind_real),intent(out) :: minf              !< Minimum cost
 integer :: i
 real(kind_real) :: ftmp
 real(kind_real) :: z(minim%nx)
+
+! Set name
+#:set subr = 'minim_best_nearby'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 minf = prevbest
@@ -492,6 +539,9 @@ end do
 ! Update
 point = z
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_best_nearby
 
 !----------------------------------------------------------------------
@@ -514,6 +564,12 @@ integer :: i,j,jsearch,k,k2,kl,kt,ktm,nits,nl,nf,iter
 real(kind_real) :: h0,d2,df,dmin,dn,dni,f1,fx,h,ldfac,lds,ldt,qa,qb,qc,qd0,qd1,qf1,r,s,scbd,sf,sl,t,t2,val
 real(kind_real) :: d(minim%nx),q0(minim%nx),q1(minim%nx),v(minim%nx,minim%nx),y(minim%nx),z(minim%nx)
 logical :: fk,illc
+
+! Set name
+#:set subr = 'minim_praxis'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 minim%x = guess
@@ -677,6 +733,7 @@ do while(iter<minim%praxis_itermax)
       end if
       kt = kt+1
       if (ktm<kt) then
+@:probe_out()
          return
       end if
    end do
@@ -744,6 +801,9 @@ do while(iter<minim%praxis_itermax)
    illc = inf(dmin,m2*d(1))
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_praxis
 
 !----------------------------------------------------------------------
@@ -775,6 +835,12 @@ real(kind_real),intent(out) :: flin                !< Value of the function at t
 ! Local variables
 real(kind_real) :: t(minim%nx)
 
+! Set name
+#:set subr = 'minim_flin'
+
+! Probe in
+@:probe_in()
+
 if (1<=jsearch) then
    ! The search is linear
    t = x+l*v(:,jsearch)
@@ -791,6 +857,9 @@ nf = nf+1
 
 ! Evaluate the function
 call minim%cost(mpl,t,flin)
+
+! Probe out
+@:probe_out()
 
 end subroutine minim_flin
 
@@ -828,6 +897,12 @@ integer :: i,jsearch,nits
 real(kind_real) :: l,s,temp,val
 logical :: fk
 
+! Set name
+#:set subr = 'minim_quad'
+
+! Probe in
+@:probe_in()
+
 ! Initialization
 temp = fx
 fx = qf1
@@ -858,6 +933,9 @@ do i=1,minim%nx
    q0(i) = minim%x(i)
    minim%x(i) = qa*s+qb*minim%x(i)+qc*q1(i)
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine minim_quad
 
@@ -900,6 +978,12 @@ real(kind_real),intent(in) :: qd1                  !< Second auxiliary value
 integer :: k
 real(kind_real) :: d1,f0,f2,fm,s,sf1,sx1,t2,temp,x2,xm
 logical :: dz,ok
+
+! Set name
+#:set subr = 'minim_minny'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 sf1 = f1
@@ -1018,6 +1102,9 @@ end if
 ! Update X for linear but not parabolic search
 if (1<=jsearch) x = x+x1*v(:,jsearch)
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_minny
 
 !----------------------------------------------------------------------
@@ -1034,19 +1121,25 @@ type(mpl_type),intent(inout) :: mpl     !< MPI data
 integer,intent(in) :: n                 !< Order of the matrix
 real(kind_real),intent(in) :: tol       !< Tolerance
 real(kind_real),intent(inout) :: a(n,n) !< Matrix
-real(kind_real),intent(inout) :: q(n)   !< Singular values                
+real(kind_real),intent(inout) :: q(n)   !< Singular values
 
 ! Local variables
 integer :: i,j,k,kt,l,l2
 integer,parameter :: kt_max = 30
 real(kind_real) :: c,e(n),eps,f,g,h,s,temp,x,y,z
 logical :: skip
-character(len=1024),parameter :: subr = 'minim_minfit'
+
+! Set name
+#:set subr = 'minim_minfit'
+
+! Probe in
+@:probe_in()
 
 ! Householder's reduction to bidiagonal form
 if (n==1) then
    q(1) = a(1,1)
    a(1,1) = 1.0
+@:probe_out()
    return
 end if
 eps = machep
@@ -1117,7 +1210,7 @@ do k=n,1,-1
       kt = kt+1
       if (kt_max<kt) then
          e(k) = 0.0
-         call mpl%abort(subr,'QR algorithm failed to converge')
+         call mpl%abort('${subr}$','QR algorithm failed to converge')
       end if
       skip = .false.
       do l2=k,1,-1
@@ -1167,7 +1260,7 @@ do k=n,1,-1
          y = q(max(k-1,1))
          g = e(max(k-1,1))
       else
-         call mpl%abort(subr,'index below the lower bound')
+         call mpl%abort('${subr}$','index below the lower bound')
       end if
       h = e(k)
       f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y)
@@ -1223,11 +1316,14 @@ do k=n,1,-1
    end do
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_minfit
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_swap
-!> Swaps the entries of two vectors	
+!> Swaps the entries of two vectors
 ! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
 !----------------------------------------------------------------------
 subroutine minim_swap(n,a1,a2)
@@ -1242,9 +1338,18 @@ real(kind_real),intent(inout) :: a2(n) !< Second vector
 ! Local variable
 real(kind_real) :: a3(n)
 
+! Set name
+#:set subr = 'minim_swap'
+
+! Probe in
+@:probe_in()
+
 a3(1:n) = a1(1:n)
 a1(1:n) = a2(1:n)
 a2(1:n) = a3(1:n)
+
+! Probe out
+@:probe_out()
 
 end subroutine minim_swap
 
@@ -1266,6 +1371,12 @@ real(kind_real),intent(inout) :: v(n,n) !< Array to adjust as d is sorted
 integer :: i,j,j2,j3
 real(kind_real) :: t
 
+! Set name
+#:set subr = 'minim_svsort'
+
+! Probe in
+@:probe_in()
+
 do j=1,n-1
    j3 = j
    do j2=j+1,n
@@ -1281,6 +1392,9 @@ do j=1,n-1
    end do
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine minim_svsort
 
 !----------------------------------------------------------------------
@@ -1295,8 +1409,17 @@ implicit none
 class(minim_type),intent(in) :: minim        !< Minimization data
 real(kind_real),intent(inout) :: x(minim%nx) !< Vector
 
+! Set name
+#:set subr = 'minim_vt_dir'
+
+! Probe in
+@:probe_in()
+
 ! Linear expansion of the hyperbolic tangent of the variable
 x = minim%binf+0.5*(1.0+tanh(x))*(minim%bsup-minim%binf)
+
+! Probe out
+@:probe_out()
 
 end subroutine minim_vt_dir
 
@@ -1315,10 +1438,15 @@ real(kind_real),intent(inout) :: x(minim%nx) !< Vector
 
 ! Local variables
 integer :: ix
-character(len=1024),parameter :: subr = 'minim_vt_inv'
+
+! Set name
+#:set subr = 'minim_vt_inv'
+
+! Probe in
+@:probe_in()
 
 ! Inverse hyperbolic tangent of the linearly bounded variable
-if (any((x<minim%binf).or.(x>minim%bsup))) call mpl%abort(subr,'variable out of bounds in vt_inv')
+if (any((x<minim%binf).or.(x>minim%bsup))) call mpl%abort('${subr}$','variable out of bounds in vt_inv')
 do ix=1,minim%nx
    if (sup(minim%bsup(ix),minim%binf(ix))) then
       x(ix) = atanh(2.0*(x(ix)-minim%binf(ix))/(minim%bsup(ix)-minim%binf(ix))-1.0)
@@ -1326,6 +1454,9 @@ do ix=1,minim%nx
       x(ix) = 0.0
    end if
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine minim_vt_inv
 

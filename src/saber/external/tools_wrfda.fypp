@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_wrfda
 !> WRFDA functions
@@ -12,6 +13,7 @@ module tools_wrfda
 
 use tools_kinds, only: kind_real
 use type_mpl, only: mpl_type
+use type_probe, only: probe
 
 implicit none
 
@@ -47,7 +49,12 @@ real(kind_real),intent(in),optional :: var_th ! Variance threshold
 integer :: k,k2,m,lmmax
 real(kind_real),allocatable :: work(:,:),evec(:,:),eval(:),laminvet(:,:)
 real(kind_real),allocatable :: summ,total_variance,cumul_variance
-character(len=1024),parameter :: subr = 'wrfda_pseudoinv'
+
+! Set name
+#:set subr = 'wrfda_pseudoinv'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 allocate(work(n,n))
@@ -68,7 +75,7 @@ if (present(mmax)) then
    lmmax = mmax
 else
    if (present(var_th)) then
-      ! Based on variance threshold 
+      ! Based on variance threshold
       summ = 0.0
       do m=1,n
          summ = summ+eval(m)
@@ -84,10 +91,10 @@ else
          end if
       end do
    else
-      call mpl%abort(subr,'either dominant mode or variance threshold should be specified')
+      call mpl%abort('${subr}$','either dominant mode or variance threshold should be specified')
    end if
 end if
-if (lmmax>n) call mpl%abort(subr,'dominant mode should smaller than the matrix rank')
+if (lmmax>n) call mpl%abort('${subr}$','dominant mode should smaller than the matrix rank')
 
 ! Lam{-1} . E^T:
 do k=1,n
@@ -120,6 +127,9 @@ deallocate(evec)
 deallocate(eval)
 deallocate(laminvet)
 
+! Probe out
+@:probe_out()
+
 end subroutine wrfda_pseudoinv
 
 !----------------------------------------------------------------------
@@ -141,7 +151,12 @@ real(kind_real),intent(out) :: l(1:kz)      ! Eigenvalues of Bx
 ! Local variables
 integer :: work,ierr,m
 real(kind_real) :: work_array(1:3*kz-1),ecopy(1:kz,1:kz),lcopy(1:kz)
-character(len=1024),parameter :: subr = 'wrfda_da_eof_decomposition'
+
+! Set name
+#:set subr = 'wrfda_da_eof_decomposition'
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 work = 3*kz-1
@@ -150,13 +165,16 @@ lcopy = 0.0
 
 ! Perform global eigenvalue decomposition using LAPACK software
 call dsyev('V','U',kz,ecopy,kz,lcopy,work_array,work,ierr)
-if (ierr/=0) call mpl%abort(subr,'dsyev failed')
+if (ierr/=0) call mpl%abort('${subr}$','dsyev failed')
 
 ! Swap order of eigenvalues, vectors so 1st is one with most variance
 do m=1,kz
    l(m) = lcopy(kz+1-m)
    e(1:kz,m) = ecopy(1:kz,kz+1-m)
 end do
+
+! Probe out
+@:probe_out()
 
 end subroutine wrfda_da_eof_decomposition
 

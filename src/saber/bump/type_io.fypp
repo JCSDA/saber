@@ -1,3 +1,4 @@
+#:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_io
 !> I/O derived type
@@ -17,6 +18,7 @@ use type_geom, only: geom_type
 use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
+use type_probe, only: probe
 
 implicit none
 
@@ -75,6 +77,12 @@ implicit none
 ! Passed variables
 class(io_type),intent(inout) :: io !< I/O
 
+! Set name
+#:set subr = 'io_dealloc'
+
+! Probe in
+@:probe_in()
+
 ! Release memory
 if (allocated(io%c0io_to_c0)) deallocate(io%c0io_to_c0)
 if (allocated(io%procio_to_proc)) deallocate(io%procio_to_proc)
@@ -94,6 +102,9 @@ if (allocated(io%mask)) deallocate(io%mask)
 if (allocated(io%ogio_to_og)) deallocate(io%ogio_to_og)
 if (allocated(io%procio_to_proc_grid)) deallocate(io%procio_to_proc_grid)
 call io%com_AIO_grid%dealloc
+
+! Probe out
+@:probe_out()
 
 end subroutine io_dealloc
 
@@ -121,8 +132,13 @@ integer :: color,iproc,iprocio
 integer :: ncid,grpid,subgrpid,fld_id
 real(kind_real),allocatable :: fld_c0io(:,:)
 character(len=1024) :: cname
-character(len=1024),parameter :: subr = 'io_fld_read'
 type(fckit_mpi_comm) :: f_comm
+
+! Set name
+#:set subr = 'io_fld_read'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 allocate(fld_c0io(io%nc0io,geom%nl0))
@@ -144,19 +160,19 @@ do iprocio=1,nam%nprocio
    if ((iproc==mpl%myproc).and.(io%nc0io>0)) then
       ! Open file
       if (mpl%parallel_io) then
-         call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid, &
+         call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid, &
  & comm=f_comm%communicator(),info=f_comm%info_null()))
       else
-         call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+         call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
       end if
 
       ! Get group
       if (present(groupname)) then
-         call mpl%ncerr(subr,nf90_inq_grp_ncid(ncid,groupname,grpid))
+         call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,groupname,grpid))
 
          ! Get sub-group
          if (present(subgroupname)) then
-            call mpl%ncerr(subr,nf90_inq_grp_ncid(grpid,subgroupname,subgrpid))
+            call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(grpid,subgroupname,subgrpid))
          else
             subgrpid = grpid
          end if
@@ -165,17 +181,17 @@ do iprocio=1,nam%nprocio
       end if
 
       ! Check dimension
-      call mpl%nc_dim_check(subr,ncid,'nc0',geom%nc0)
-      call mpl%nc_dim_check(subr,ncid,'nl0',geom%nl0)
+      call mpl%nc_dim_check(ncid,'nc0',geom%nc0)
+      call mpl%nc_dim_check(ncid,'nl0',geom%nl0)
 
       ! Get variable
-      call mpl%ncerr(subr,nf90_inq_varid(grpid,variable,fld_id))
+      call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,variable,fld_id))
 
       ! Get data
-      call mpl%ncerr(subr,nf90_get_var(grpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
+      call mpl%ncerr('${subr}$',nf90_get_var(grpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
 
       ! Close file
-      call mpl%ncerr(subr,nf90_close(ncid))
+      call mpl%ncerr('${subr}$',nf90_close(ncid))
    end if
 
    ! Synchronization needed for serial I/O
@@ -193,6 +209,9 @@ call io%com_AIO%red(mpl,fld_c0io,fld)
 
 ! Release memory
 deallocate(fld_c0io)
+
+! Probe out
+@:probe_out()
 
 end subroutine io_fld_read
 
@@ -221,8 +240,13 @@ integer :: ncid,grpid,subgrpid,nc0_id,nl0_id,fld_id,lon_id,lat_id
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: fld_c0io(:,:),lon_c0io(:),lat_c0io(:)
 character(len=1024) :: cname
-character(len=1024),parameter :: subr = 'io_fld_write'
 type(fckit_mpi_comm) :: f_comm
+
+! Set name
+#:set subr = 'io_fld_write'
+
+! Probe in
+@:probe_in()
 
 ! Apply mask
 do il0=1,geom%nl0
@@ -261,15 +285,15 @@ do iprocio=1,nam%nprocio
 
    if ((iproc==mpl%myproc).and.(io%nc0io>0)) then
       ! Define file
-      ncid = mpl%nc_file_create_or_open(subr,trim(nam%datadir)//'/'//trim(filename)//'.nc',f_comm)
+      ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',f_comm)
 
       ! Define group
       if (present(groupname)) then
-         grpid = mpl%nc_group_define_or_get(subr,ncid,groupname)
+         grpid = mpl%nc_group_define_or_get(ncid,groupname)
 
          ! Define sub-group
          if (present(subgroupname)) then
-            subgrpid = mpl%nc_group_define_or_get(subr,grpid,subgroupname)
+            subgrpid = mpl%nc_group_define_or_get(grpid,subgroupname)
          else
             subgrpid = grpid
          end if
@@ -278,29 +302,29 @@ do iprocio=1,nam%nprocio
       end if
 
       ! Define dimensions
-      nc0_id = mpl%nc_dim_define_or_get(subr,ncid,'nc0',geom%nc0)
-      nl0_id = mpl%nc_dim_define_or_get(subr,ncid,'nl0',geom%nl0)
+      nc0_id = mpl%nc_dim_define_or_get(ncid,'nc0',geom%nc0)
+      nl0_id = mpl%nc_dim_define_or_get(ncid,'nl0',geom%nl0)
 
       ! Define coordinates
-      lon_id = mpl%nc_var_define_or_get(subr,ncid,'lon',nc_kind_real,(/nc0_id/),'degrees_north')
-      lat_id = mpl%nc_var_define_or_get(subr,ncid,'lat',nc_kind_real,(/nc0_id/),'degrees_east')
+      lon_id = mpl%nc_var_define_or_get(ncid,'lon',nc_kind_real,(/nc0_id/),'degrees_north')
+      lat_id = mpl%nc_var_define_or_get(ncid,'lat',nc_kind_real,(/nc0_id/),'degrees_east')
 
       ! Define variable
-      fld_id = mpl%nc_var_define_or_get(subr,subgrpid,variable,nc_kind_real,(/nc0_id,nl0_id/))
+      fld_id = mpl%nc_var_define_or_get(subgrpid,variable,nc_kind_real,(/nc0_id,nl0_id/))
 
       ! Convert to degrees
       lon_c0io = lon_c0io*rad2deg
       lat_c0io = lat_c0io*rad2deg
 
       ! Write coordinates
-      call mpl%ncerr(subr,nf90_put_var(ncid,lon_id,lon_c0io,(/io%ic0_s/),(/io%nc0io/)))
-      call mpl%ncerr(subr,nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
+      call mpl%ncerr('${subr}$',nf90_put_var(ncid,lon_id,lon_c0io,(/io%ic0_s/),(/io%nc0io/)))
+      call mpl%ncerr('${subr}$',nf90_put_var(ncid,lat_id,lat_c0io,(/io%ic0_s/),(/io%nc0io/)))
 
       ! Write variable
-      call mpl%ncerr(subr,nf90_put_var(subgrpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
+      call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,fld_id,fld_c0io,(/io%ic0_s,1/),(/io%nc0io,geom%nl0/)))
 
       ! Close file
-      call mpl%ncerr(subr,nf90_close(ncid))
+      call mpl%ncerr('${subr}$',nf90_close(ncid))
    end if
 
    ! Synchronization needed for serial I/O
@@ -310,13 +334,13 @@ end do
 ! Write global attributes
 if (io%procio_to_proc(1)==mpl%myproc) then
    ! Reopen file with one task only
-   call mpl%ncerr(subr,nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
+   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
 
    ! Write namelist parameters
    call nam%write(mpl,ncid)
 
    ! Close file
-   call mpl%ncerr(subr,nf90_close(ncid))
+   call mpl%ncerr('${subr}$',nf90_close(ncid))
 end if
 
 ! Release memory
@@ -329,6 +353,9 @@ call f_comm%delete()
 
 ! Wait for everybody
 call mpl%f_comm%barrier()
+
+! Probe out
+@:probe_out()
 
 end subroutine io_fld_write
 
@@ -351,6 +378,12 @@ integer :: nres,iprocio,delta,ic0io,ic0,ic0_s,ic0_e,jc0,nc0own,ic0own,iproc,jpro
 integer,allocatable :: procio_to_nc0io(:),list_proc(:),order_proc(:),order_c0(:),c0own_to_c0(:)
 real(kind_real),allocatable :: hash_c0(:)
 logical,allocatable :: proc_isio(:)
+
+! Set name
+#:set subr = 'io_init'
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 allocate(procio_to_nc0io(nam%nprocio))
@@ -499,6 +532,9 @@ if (nam%repro) then
    deallocate(order_c0)
 end if
 deallocate(c0own_to_c0)
+
+! Probe out
+@:probe_out()
 
 end subroutine io_init
 
