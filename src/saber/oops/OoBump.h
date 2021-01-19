@@ -74,6 +74,7 @@ template<typename MODEL> class OoBump {
   void randomize(Increment_ &) const;
   void getParameter(const std::string &, Increment_ &) const;
   void setParameter(const std::string &, const Increment_ &) const;
+  void partialDealloc() const;
 
   // Aliases for inversion with GMRESR
   void multiply(const Increment_ & dxi, Increment_ & dxo) const {multiplyNicas(dxi, dxo);}
@@ -311,6 +312,13 @@ void OoBump<MODEL>::setParameter(const std::string & param, const Increment_ & d
   dx.toAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
     bump_set_parameter_f90(keyOoBump_[jgrid], nstr, cstr, atlasFieldSet->get());
+  }
+}
+// -----------------------------------------------------------------------------
+template<typename MODEL>
+void OoBump<MODEL>::partialDealloc() const {
+  for (unsigned int jgrid = 0; jgrid < keyOoBump_.size(); ++jgrid) {
+    bump_partial_dealloc_f90(keyOoBump_[jgrid]);
   }
 }
 // -----------------------------------------------------------------------------

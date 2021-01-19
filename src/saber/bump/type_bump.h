@@ -45,6 +45,7 @@ extern "C" {
                               const atlas::field::FieldSetImpl *);
   void bump_set_parameter_f90(const int &, const int &, const char *,
                               const atlas::field::FieldSetImpl *);
+  void bump_partial_dealloc_f90(const int &);
   void bump_dealloc_f90(const int &);
 }
 }  // namespace saber

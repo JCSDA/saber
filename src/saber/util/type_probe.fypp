@@ -14,9 +14,8 @@ use tools_kinds, only: kind_real,huge_real
 
 implicit none
 
-integer,parameter :: ninst = 999              !< Maximum number of instances
-integer,parameter :: maxlevel = 100           !< Maximum number of calling levels
-integer,parameter :: magic_numb = Z'5D7A9F43' !< Hash parameter
+integer,parameter :: ninst = 999    !< Maximum number of instances
+integer,parameter :: maxlevel = 100 !< Maximum number of calling levels
 
 type timing_type
    ! Timing info

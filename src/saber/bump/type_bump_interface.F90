@@ -460,6 +460,28 @@ call bump%set_parameter(param,f_fieldset)
 end subroutine bump_set_parameter_c
 
 !----------------------------------------------------------------------
+! Subroutine: bump_partial_dealloc_c
+!> Partial deallocation
+!----------------------------------------------------------------------
+subroutine bump_partial_dealloc_c(key_bump) bind(c,name='bump_partial_dealloc_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump !< BUMP
+
+! Local variables
+type(bump_type),pointer :: bump
+
+! Interface
+call bump_registry%get(key_bump,bump)
+
+! Partially deallocate BUMP
+call bump%partial_dealloc
+
+end subroutine bump_partial_dealloc_c
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_dealloc_c
 !> Deallocation
 !----------------------------------------------------------------------

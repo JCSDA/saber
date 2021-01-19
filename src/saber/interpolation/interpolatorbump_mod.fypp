@@ -296,6 +296,11 @@ call fckit_log%info('--- Run bump_interpolation driver')
 call bint%driver(bint%bump%mpl,bint%bump%rng,bint%bump%nam,bint%bump%geom)
 if (bint%bump%nam%default_seed) call bint%bump%rng%reseed(bint%bump%mpl)
 
+! Release memory (partial)
+call fckit_log%info('-------------------------------------------------------------------')
+call fckit_log%info('--- Release memory (partial)')
+call bint%bump%partial_dealloc
+
 ! Probe out
 @:probe_out()
 
