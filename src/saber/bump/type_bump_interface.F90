@@ -20,7 +20,7 @@ private
 
 ! BUMP registry
 #define LISTED_TYPE bump_type
-#include "../../../oops/src/oops/util/linkedList_i.f"
+#include "oops/util/linkedList_i.f"
 type(registry_t) :: bump_registry
 
 contains
@@ -28,7 +28,7 @@ contains
 !----------------------------------------------------------------------
 ! Linked list implementation
 !----------------------------------------------------------------------
-#include "../../../oops/src/oops/util/linkedList_c.f"
+#include "oops/util/linkedList_c.f"
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create_c

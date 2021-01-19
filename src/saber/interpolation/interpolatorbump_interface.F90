@@ -19,7 +19,7 @@ private
 
 ! BUMP interpolator registry
 #define LISTED_TYPE bump_interpolator
-#include "../../../oops/src/oops/util/linkedList_i.f"
+#include "oops/util/linkedList_i.f"
 type(registry_t) :: bump_interpolator_registry
 
 contains
@@ -27,7 +27,7 @@ contains
 !----------------------------------------------------------------------
 ! Linked list implementation
 !----------------------------------------------------------------------
-#include "../../../oops/src/oops/util/linkedList_c.f"
+#include "oops/util/linkedList_c.f"
 
 !-------------------------------------------------------------------------------
 ! Subroutine bint_create_c
