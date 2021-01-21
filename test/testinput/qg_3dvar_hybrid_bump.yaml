@@ -8,35 +8,39 @@ cost function:
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
   background error:
     covariance model: hybrid
-    static:
-      covariance model: QgError
-      horizontal_length_scale: 2.2e6
-      maximum_condition_number: 1.0e6
-      standard_deviation: 1.8e7
-      vertical_length_scale: 15000.0
-    static weight: 0.5
-    ensemble:
-      localization:
-        bump:
-          datadir: testdata
-          mpicom: 2
-          load_nicas: 1
-          prefix: qg_3dvar_hybrid_bump/test
-          strategy: common
-        localization method: BUMP
-        localization variables: [x]
-      members:
-      - date: 2010-01-01T12:00:00Z
-        filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc
-      - date: 2010-01-01T12:00:00Z
-        filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H.nc
-      - date: 2010-01-01T12:00:00Z
-        filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H.nc
-      - date: 2010-01-01T12:00:00Z
-        filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H.nc
-      - date: 2010-01-01T12:00:00Z
-        filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H.nc
-    ensemble weight: 0.5
+    components:
+    - covariance:
+        covariance model: ensemble
+        localization:
+          bump:
+            datadir: testdata
+            mpicom: 2
+            load_nicas: 1
+            prefix: qg_3dvar_hybrid_bump/test
+            strategy: common
+          localization method: BUMP
+          localization variables: [x]
+        members:
+        - date: 2010-01-01T12:00:00Z
+          filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc
+        - date: 2010-01-01T12:00:00Z
+          filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H.nc
+        - date: 2010-01-01T12:00:00Z
+          filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H.nc
+        - date: 2010-01-01T12:00:00Z
+          filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H.nc
+        - date: 2010-01-01T12:00:00Z
+          filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H.nc
+      weight:
+        value: 0.5
+    - covariance:
+        covariance model: QgError
+        horizontal_length_scale: 2.2e6
+        maximum_condition_number: 1.0e6
+        standard_deviation: 1.8e7
+        vertical_length_scale: 15000.0
+      weight:
+        value: 0.5
   observations:
   - obs operator:
       obs type: Stream

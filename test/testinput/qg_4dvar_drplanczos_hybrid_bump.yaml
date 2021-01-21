@@ -17,49 +17,53 @@ cost function:
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
   background error:
     covariance model: hybrid
-    ensemble:
-      localization:
-        bump:
-          datadir: testdata
-          io_keys:
-          - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
-          io_values:
-          - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
-          load_nicas: 1
-          mpicom: 2
-          prefix: qg_4dvar_drplanczos_hybrid_bump/test
-          strategy: common
-        localization method: BUMP
-        localization variables: [x]
-      members:
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D.nc
-      - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D.nc
-    ensemble weight: 0.5
-    static:
-      covariance model: QgError
-      horizontal_length_scale: 2.2e6
-      maximum_condition_number: 1.0e6
-      standard_deviation: 1.8e7
-      vertical_length_scale: 15000.0
-    static weight: 0.5
+    components:
+    - covariance:
+        covariance model: ensemble
+        localization:
+          bump:
+            datadir: testdata
+            io_keys:
+            - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
+            io_values:
+            - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
+            load_nicas: 1
+            mpicom: 2
+            prefix: qg_4dvar_drplanczos_hybrid_bump/test
+            strategy: common
+          localization method: BUMP
+          localization variables: [x]
+        members:
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D.nc
+        - date: 2010-01-01T00:00:00Z
+          filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D.nc
+      weight:
+        value: 0.5
+    - covariance:
+        covariance model: QgError
+        horizontal_length_scale: 2.2e6
+        maximum_condition_number: 1.0e6
+        standard_deviation: 1.8e7
+        vertical_length_scale: 15000.0
+      weight:
+        value: 0.5
   observations:
   - obs error:
       covariance model: diagonal

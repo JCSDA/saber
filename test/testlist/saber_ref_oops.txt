@@ -6,7 +6,8 @@ qg_4dvar_drplanczos_bump/test.log.out
 qg_4dvar_drplanczos_hybrid_bump/test.log.out
 qg_dirac_bump_cov/test.log.out
 qg_dirac_bump_cov_no_ens/test.log.out
-qg_dirac_bump_hyb/test.log.out
+qg_dirac_bump_hyb_field/test.log.out
+qg_dirac_bump_hyb_value/test.log.out
 qg_dirac_bump_lct/test.log.out
 qg_dirac_bump_loc_3d/test.log.out
 qg_dirac_bump_loc_4d/test.log.out

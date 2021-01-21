@@ -18,8 +18,11 @@ ln -sf ../qg_parameters_bump_cov_no_ens/test_var.nc testdata/qg_dirac_bump_cov_n
 ln -sf ../qg_parameters_bump_lct/test_nicas_000001-000001.nc testdata/qg_dirac_bump_lct/test_nicas_000001-000001.nc
 ln -sf ../qg_parameters_bump_lct/test_var.nc testdata/qg_dirac_bump_lct/test_var.nc
 
-# dirac_bump_hyb (hybrid localization is not very good, take localization alone instead)
-ln -sf ../qg_parameters_bump_loc/test_nicas_000001-000001.nc testdata/qg_dirac_bump_hyb/test_nicas_000001-000001.nc
+# dirac_bump_hyb_field (hybrid localization is not very good, take localization alone instead)
+ln -sf ../qg_parameters_bump_loc/test_nicas_000001-000001.nc testdata/qg_dirac_bump_hyb_field/test_nicas_000001-000001.nc
+
+# dirac_bump_hyb_value (hybrid localization is not very good, take localization alone instead)
+ln -sf ../qg_parameters_bump_loc/test_nicas_000001-000001.nc testdata/qg_dirac_bump_hyb_value/test_nicas_000001-000001.nc
 
 # dirac_bump_loc_3d
 ln -sf ../qg_parameters_bump_loc/test_nicas_000001-000001.nc testdata/qg_dirac_bump_loc_3d/test_nicas_000001-000001.nc

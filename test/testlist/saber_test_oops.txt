@@ -6,7 +6,8 @@ qg_4dvar_drplanczos_bump
 qg_4dvar_drplanczos_hybrid_bump
 qg_dirac_bump_cov
 qg_dirac_bump_cov_no_ens
-qg_dirac_bump_hyb
+qg_dirac_bump_hyb_field
+qg_dirac_bump_hyb_value
 qg_dirac_bump_lct
 qg_dirac_bump_loc_3d
 qg_dirac_bump_loc_4d
