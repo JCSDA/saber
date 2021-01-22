@@ -48,7 +48,8 @@ class LocalizationBUMP : public oops::LocalizationBase<MODEL> {
   LocalizationBUMP(const Geometry_ &, const util::DateTime & time, const eckit::Configuration &);
   ~LocalizationBUMP();
 
-  void multiply(Increment_ &) const override;
+  void doRandomize(Increment_ &) const override;
+  void doMultiply(Increment_ &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -89,10 +90,19 @@ LocalizationBUMP<MODEL>::~LocalizationBUMP() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void LocalizationBUMP<MODEL>::multiply(Increment_ & dx) const {
-  oops::Log::trace() << "LocalizationBUMP:multiply starting" << std::endl;
+void LocalizationBUMP<MODEL>::doRandomize(Increment_ & dx) const {
+  oops::Log::trace() << "LocalizationBUMP:doRandomize starting" << std::endl;
+  ooBump_->randomize(dx);
+  oops::Log::trace() << "LocalizationBUMP:doRandomize done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+void LocalizationBUMP<MODEL>::doMultiply(Increment_ & dx) const {
+  oops::Log::trace() << "LocalizationBUMP:doMultiply starting" << std::endl;
   ooBump_->multiplyNicas(dx);
-  oops::Log::trace() << "LocalizationBUMP:multiply done" << std::endl;
+  oops::Log::trace() << "LocalizationBUMP:doMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
