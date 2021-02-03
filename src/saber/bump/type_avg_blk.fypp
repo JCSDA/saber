@@ -398,7 +398,7 @@ do il0=1,geom%nl0
          !$omp parallel do schedule(static) private(ic1a,valid,den,gen_kurt,m2_1,m2_2,isub,jsub)
          do ic1a=1,samp%nc1a
             ! Check mask validity
-            valid = samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
+            valid = samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jl0)
 
             if (valid) then
                ! Check general kurtosis
@@ -1154,7 +1154,7 @@ do il0=1,geom%nl0
          nc1a = 0
          do ic1a=1,samp%nc1a
             ! Check validity
-            valid = samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
+            valid = samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jl0)
             if (trim(nam%mask_type)=='stddev') then
                m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
                m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)

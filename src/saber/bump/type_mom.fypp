@@ -14,10 +14,8 @@ use netcdf, only: nf90_close,nf90_get_att,nf90_get_var,nf90_global,nf90_inq_grp_
 use tools_kinds, only: kind_real,nc_kind_real
 use tools_repro, only: eq
 use type_bpar, only: bpar_type
-use type_com, only: com_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
-use type_linop, only: linop_type
 use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -199,7 +197,7 @@ call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc
 
 ! Check grid hash
 call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
-if (grid_hash/=geom%grid_hash) call mpl%abort('${subr}$','wrong grid hash')
+if (grid_hash/=geom%grid_hash(0)) call mpl%abort('${subr}$','wrong grid hash')
 
 ! Check dimensions
 call mpl%nc_dim_check(ncid,'nc1a',samp%nc1a)
@@ -275,7 +273,7 @@ write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_mom_',mpl%nproc,'-',mpl%m
 ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
 
 ! Write grid hash
-call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
+call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash(0)))
 
 ! Write namelist parameters
 call nam%write(mpl,ncid)
@@ -341,9 +339,9 @@ type(ens_type), intent(in) :: ens     !< Ensemble
 character(len=*),intent(in) :: prefix !< Prefix
 
 ! Local variables
-integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv
+integer :: ie,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,isub,jc3,ic1a,ib,jv,iv
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real),allocatable :: fld_ext(:,:,:),fld_1(:,:),fld_2(:,:,:)
+real(kind_real),allocatable :: fld_c0b(:,:,:),fld_c0c(:,:,:),fld_c1a(:,:),fld_c3a(:,:,:)
 
 ! Set name
 @:set_name(mom_compute)
@@ -376,7 +374,8 @@ do isub=1,ens%nsub
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
 
       ! Allocation
-      allocate(fld_ext(samp%nc0c,geom%nl0,nam%nv))
+      allocate(fld_c0b(samp%nc0b,geom%nl0,nam%nv))
+      allocate(fld_c0c(samp%nc0c,geom%nl0,nam%nv))
 
       ! Get perturbation on subset Sc0
       call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
@@ -387,42 +386,36 @@ do isub=1,ens%nsub
          jv = bpar%b_to_v2(ib)
 
          ! Halo extension
-         if (iv==jv) call samp%com_AC%ext(mpl,fld_c0a(:,:,iv),fld_ext(:,:,iv))
+         if (iv==jv) then
+            call samp%com_c0_AB%ext(mpl,fld_c0a(:,:,iv),fld_c0b(:,:,iv))
+            call samp%com_c0_AC%ext(mpl,fld_c0a(:,:,iv),fld_c0c(:,:,iv))
+         end if
       end do
 
       do ib=1,bpar%nb
          if (bpar%diag_block(ib)) then
             ! Allocation
-            allocate(fld_1(samp%nc1a,geom%nl0))
-            allocate(fld_2(samp%nc1a,bpar%nc3(ib),geom%nl0))
+            allocate(fld_c1a(samp%nc1a,geom%nl0))
+            allocate(fld_c3a(samp%nc1a,bpar%nc3(ib),geom%nl0))
 
             ! Initialization
             iv = bpar%b_to_v1(ib)
             jv = bpar%b_to_v2(ib)
 
-            ! Copy valid field points
-            fld_1 = mpl%msv%valr
-            fld_2 = mpl%msv%valr
-            !$omp parallel do schedule(static) private(il0,ic1a,jc3,ic0c,jc0c)
+            ! Interpolate fields
+            fld_c1a = mpl%msv%valr
+            fld_c3a = mpl%msv%valr
+            !$omp parallel do schedule(static) private(il0,il0ic1)
             do il0=1,geom%nl0
-               do ic1a=1,samp%nc1a
-                  if (samp%smask_c1a(ic1a,il0)) then
-                     ! Indices
-                     ic0c = samp%c1a_to_c0c(ic1a)
-
-                     ! Copy field 1
-                     fld_1(ic1a,il0) = fld_ext(ic0c,il0,iv)
-
-                     do jc3=1,bpar%nc3(ib)
-                        if (samp%smask_c1ac3(ic1a,jc3,il0)) then
-                           ! Indices
-                           jc0c = samp%c1ac3_to_c0c(ic1a,jc3)
-
-                           ! Copy field 2
-                           fld_2(ic1a,jc3,il0) = fld_ext(jc0c,il0,jv)
-                        end if
-                     end do
-                  end if
+               il0ic1 = samp%l0_to_l0ic1(il0)
+               call samp%interp_c0b_to_c1a(il0ic1)%apply(mpl,fld_c0b(:,il0,iv),fld_c1a(:,il0))
+            end do
+            !$omp end parallel do
+            !$omp parallel do schedule(static) private(il0,jc3,il0ic3)
+            do il0=1,geom%nl0
+               do jc3=1,bpar%nc3(ib)
+                  il0ic3 = samp%l0_to_l0ic3(il0,jc3)
+                  call samp%interp_c0c_to_c3a(jc3,il0ic3)%apply(mpl,fld_c0c(:,il0,jv),fld_c3a(:,jc3,il0))
                end do
             end do
             !$omp end parallel do
@@ -434,27 +427,30 @@ do isub=1,ens%nsub
 
                   do jc3=1,bpar%nc3(ib)
                      ! Fourth-order moment
-                     mom%blk(ib)%m22(:,jc3,jl0r,il0,isub) = mom%blk(ib)%m22(:,jc3,jl0r,il0,isub)+(fld_1(:,il0)*fld_2(:,jc3,jl0))**2
+                     mom%blk(ib)%m22(:,jc3,jl0r,il0,isub) = mom%blk(ib)%m22(:,jc3,jl0r,il0,isub)+(fld_c1a(:,il0) &
+ & *fld_c3a(:,jc3,jl0))**2
 
                      ! Covariance
-                     mom%blk(ib)%m11(:,jc3,jl0r,il0,isub) = mom%blk(ib)%m11(:,jc3,jl0r,il0,isub)+fld_1(:,il0)*fld_2(:,jc3,jl0)
+                     mom%blk(ib)%m11(:,jc3,jl0r,il0,isub) = mom%blk(ib)%m11(:,jc3,jl0r,il0,isub)+fld_c1a(:,il0) &
+ & *fld_c3a(:,jc3,jl0)
                   end do
                end do
             end do
             !$omp end parallel do
 
             ! Variances
-            mom%blk(ib)%m2_1(:,:,isub) = mom%blk(ib)%m2_1(:,:,isub)+fld_1**2
-            mom%blk(ib)%m2_2(:,:,:,isub) = mom%blk(ib)%m2_2(:,:,:,isub)+fld_2**2
+            mom%blk(ib)%m2_1(:,:,isub) = mom%blk(ib)%m2_1(:,:,isub)+fld_c1a**2
+            mom%blk(ib)%m2_2(:,:,:,isub) = mom%blk(ib)%m2_2(:,:,:,isub)+fld_c3a**2
 
             ! Release memory
-            deallocate(fld_1)
-            deallocate(fld_2)
+            deallocate(fld_c1a)
+            deallocate(fld_c3a)
          end if
       end do
 
       ! Release memory
-      deallocate(fld_ext)
+      deallocate(fld_c0b)
+      deallocate(fld_c0c)
    end do
    write(mpl%info,'(a)') ''
    call mpl%flush
@@ -474,14 +470,14 @@ do ib=1,bpar%nb
          end do
          do jc3=1,bpar%nc3(ib)
             do ic1a=1,samp%nc1a
-               if (samp%smask_c1ac3(ic1a,jc3,il0)) then
+               if (samp%smask_c3a(ic1a,jc3,il0)) then
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mom%blk(ib)%m2_2(ic1a,jc3,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
                else
                   mom%blk(ib)%m2_2(ic1a,jc3,il0,:) = mpl%msv%valr
                end if
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-                  if (samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)) then
+                  if (samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jl0)) then
                      mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jl0r,il0,:)/real(mom%ne/mom%nsub-1,kind_real)
                      mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jl0r,il0,:)/real(mom%ne/mom%nsub,kind_real)
                   else

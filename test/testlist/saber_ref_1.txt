@@ -36,10 +36,12 @@ bump_read_cmat_serial/test_1-1_nicas_000001-000001.nc
 bump_read_mom/test_1-1_diag.nc
 bump_read_nicas/test_1-1_dirac.nc
 bump_read_sampling/test_1-1_diag.nc
+bump_read_sampling/test_1-1_local_diag_cor.nc
 bump_read_vbal/test_1-1_dirac.nc
 bump_var_forced_var/test_1-1_var.nc
 bump_vbal/test_1-1_dirac.nc
-bump_vbal/test_1-1_vbal_000001-000001.nc
+bump_vbal/test_1-1_sampling.nc
+bump_vbal/test_1-1_vbal.nc
 bump_write_cmat/test_1-1_cmat.nc
 bump_write_cmat/test_1-1_diag.nc
 bump_write_cmat/test_1-1_dirac.nc
@@ -56,7 +58,9 @@ bump_write_nicas/test_1-1_diag.nc
 bump_write_nicas/test_1-1_dirac.nc
 bump_write_nicas/test_1-1_nicas_000001-000001.nc
 bump_write_sampling/test_1-1_diag.nc
-bump_write_sampling/test_1-1_sampling_000001-000001.nc
+bump_write_sampling/test_1-1_local_diag_cor.nc
+bump_write_sampling/test_1-1_sampling.nc
 bump_write_var/test_1-1_var.nc
 bump_write_vbal/test_1-1_dirac.nc
-bump_write_vbal/test_1-1_vbal_000001-000001.nc
+bump_write_vbal/test_1-1_sampling.nc
+bump_write_vbal/test_1-1_vbal.nc

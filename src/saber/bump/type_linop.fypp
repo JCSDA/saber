@@ -874,7 +874,7 @@ end subroutine linop_gather
 ! Subroutine: linop_interp
 !> Compute horizontal interpolation
 !----------------------------------------------------------------------
-subroutine linop_interp(linop,mpl,rng,nam,geom,il0,n_src,lon_src,lat_src,mask_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt)
+subroutine linop_interp(linop,mpl,rng,nam,geom,il0,n_src,lon_src,lat_src,mask_src,area_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt)
 
 implicit none
 
@@ -889,6 +889,7 @@ integer,intent(in) :: n_src                  !< Source size
 real(kind_real),intent(in) :: lon_src(n_src) !< Source longitudes
 real(kind_real),intent(in) :: lat_src(n_src) !< Source latitudes
 logical,intent(in) :: mask_src(n_src)        !< Source mask
+real(kind_real),intent(in) :: area_src       !< Source area
 integer,intent(in) :: n_dst                  !< Destination size
 real(kind_real),intent(in) :: lon_dst(n_dst) !< Destination longitudes
 real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
@@ -957,7 +958,7 @@ else
    call linop%interp_data%tree%alloc(mpl,n_src_eff)
 
    ! Initialization
-   call linop%interp_data%mesh%init(mpl,rng,lon_src_eff,lat_src_eff)
+   call linop%interp_data%mesh%init(mpl,rng,lon_src_eff,lat_src_eff,area_src)
    call linop%interp_data%tree%init(lon_src_eff,lat_src_eff)
 end if
 

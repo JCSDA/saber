@@ -155,7 +155,7 @@ real(kind_real),intent(in),optional :: lat_out(:)                   !< Output la
 type(atlas_functionspace),intent(in),optional :: afunctionspace_out !< Output ATLAS functionspace
 integer,intent(in),optional :: nl                                   !< Number of levels
 type(fieldset_type),intent(in),optional :: masks                    !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit), gmask (geometry mask) and smask (sampling mask). Each of these named fields is optional, if omitted default values will be provided
-class(fckit_configuration),intent(in),optional :: config            !< Configuration
+type(fckit_configuration),intent(in),optional :: config             !< Configuration
 
 ! Local variables
 integer :: msvali,inode,ilon,ilat
@@ -376,8 +376,8 @@ call mpl%flush
 bint%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call bint%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,bint%nouta,bint%geom_out%lon_mga,&
- & bint%geom_out%lat_mga,maskouta,10)
+call bint%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,geom%area_max_c0u,bint%nouta, &
+ & bint%geom_out%lon_mga,bint%geom_out%lat_mga,maskouta,10)
 
 ! Define halo B
 lcheck_nc0b = .false.

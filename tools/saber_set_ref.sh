@@ -11,7 +11,7 @@ testdata=$1
 listdir=$2
 
 # Special suffixes list for BUMP
-special_list="mom lct_cor nicas normality obs sampling vbal"
+special_list="mom lct_cor nicas normality sampling_grids obs vbal"
 
 # Multi-processor tests
 multi_list=$(seq 4 2 12)

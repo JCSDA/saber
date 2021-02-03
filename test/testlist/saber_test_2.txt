@@ -16,7 +16,8 @@ bump_hdiag_mask_lat
 bump_hdiag_mask_stddev_lower
 bump_hdiag_mask_stddev_ncontig
 bump_hdiag_write_grids
-bump_hdiag-nicas_draw_type
+bump_hdiag-nicas_draw_type_octahedral
+bump_hdiag-nicas_draw_type_random_coast
 bump_hdiag-nicas_lev2d_first
 bump_hdiag-nicas_lev2d_first_hvh
 bump_hdiag-nicas_lev2d_last

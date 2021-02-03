@@ -153,7 +153,7 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
-integer :: ib,i,il0,il0i,ic2a,ildw,n,ic0a
+integer :: ib,i,il0,il0i,ic2a,ildw,n
 real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
 character(len=2*1024+12) :: filename
 
@@ -204,10 +204,10 @@ if (nam%local_diag) then
             end do
 
             ! Interpolation
-            call samp%com_AB%ext(mpl,fld_c2a,fld_c2b)
+            call samp%com_c2_AB%ext(mpl,fld_c2a,fld_c2b)
             do il0=1,geom%nl0
-               il0i = min(il0,geom%nl0i)
-               call samp%h(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0))
+               il0i = geom%l0_to_l0i(il0)
+               call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0))
             end do
 
             ! Write fields
@@ -229,21 +229,15 @@ if (nam%local_diag) then
 end if
 
 do ildw=1,nam%nldwv
-   ic0a = samp%ldwv_to_c0a(ildw)
-   if (mpl%msv%isnot(ic0a)) then
-      if (geom%gmask_hor_c0a(ic0a)) then
-         ! Build file name
-         filename = trim(nam%prefix)//'_diag_'//trim(nam%name_ldwv(ildw))
+   ic2a = samp%ldwv_to_c2a(ildw)
+   if (mpl%msv%isnot(ic2a)) then
+      ! Build file name
+      filename = trim(nam%prefix)//'_diag_'//trim(nam%name_ldwv(ildw))
 
-         ! Find diagnostic point
-         do ic2a=1,samp%nc2a
-            if (samp%c2a_to_c0a(ic2a)==ic0a) then
-               do ib=1,bpar%nbe
-                  if (bpar%diag_block(ib)) call diag%blk(ic2a,ib)%write(mpl,nam,geom,bpar,filename)
-               end do
-            end if
-         end do
-      end if
+      ! Find diagnostic point
+      do ib=1,bpar%nbe
+         if (bpar%diag_block(ib)) call diag%blk(ic2a,ib)%write(mpl,nam,geom,bpar,filename)
+      end do
    else
       call mpl%warning('${subr}$','missing local profile '//trim(nam%name_ldwv(ildw)))
    end if
@@ -322,17 +316,17 @@ if (nam%local_diag) then
 
             if (nam%diag_rhflt>0.0) then
                ! Median filter to remove extreme values
-               call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,coef_ens_c2a(:,il0))
+               call samp%diag_filter(mpl,'median',nam%diag_rhflt,coef_ens_c2a(:,il0))
                if (bpar%fit_block(ib)) then
-                  call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rh_c2a(:,il0))
-                  call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,rv_c2a(:,il0))
+                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,rh_c2a(:,il0))
+                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,rv_c2a(:,il0))
                end if
 
                ! Average filter to smooth data
-               call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,coef_ens_c2a(:,il0))
+               call samp%diag_filter(mpl,'average',nam%diag_rhflt,coef_ens_c2a(:,il0))
                if (bpar%fit_block(ib)) then
-                  call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rh_c2a(:,il0))
-                  call samp%diag_filter(mpl,nam,'average',nam%diag_rhflt,rv_c2a(:,il0))
+                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,rh_c2a(:,il0))
+                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,rv_c2a(:,il0))
                end if
             end if
 

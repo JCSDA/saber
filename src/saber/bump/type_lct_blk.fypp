@@ -12,7 +12,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 use netcdf, only: nf90_close,nf90_put_var
 !$ use omp_lib
 use tools_const, only: reqkm,rad2deg
-use tools_func, only: gau2gc,fit_lct,lct_d2h,check_cond,Dmin
+use tools_func, only: gau2gc,lonlatmod,fit_lct,lct_d2h,check_cond,Dmin
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
 use tools_repro, only: rth,inf,sup,eq
 use type_bpar, only: bpar_type
@@ -275,7 +275,6 @@ type(samp_type),intent(in) :: samp           !< Sampling
 
 ! Local variables
 integer :: ncid,grpid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,vunit_id,l0rl0_to_l0_id,raw_id,fit_id,fit_filt_id
-integer :: ic1a,ic3,ic0u
 real(kind_real),allocatable :: lon(:,:),lat(:,:)
 character(len=1024) :: filename
 
@@ -293,13 +292,8 @@ allocate(lon(bpar%nc3(ib),samp%nc1a))
 allocate(lat(bpar%nc3(ib),samp%nc1a))
 
 ! Lon/lat initialization
-do ic1a=1,samp%nc1a
-   do ic3=1,bpar%nc3(ib)
-      ic0u = samp%c1ac3_to_c0u(ic1a,ic3)
-      lon(ic3,ic1a) = geom%lon_c0u(ic0u)*rad2deg
-      lat(ic3,ic1a) = geom%lat_c0u(ic0u)*rad2deg
-   end do
-end do
+lon = transpose(samp%lon_c3a)*rad2deg
+lat = transpose(samp%lat_c3a)*rad2deg
 
 ! Define file
 write(filename,'(a,i6.6,a,i6.6)') trim(nam%prefix)//'_lct_cor_',mpl%nproc,'-',mpl%myproc
@@ -369,7 +363,7 @@ type(samp_type),intent(in) :: samp           !< Sampling
 type(mom_blk_type),intent(in) :: mom_blk     !< Moments block
 
 ! Local variables
-integer :: jsub,il0,jl0r,jl0,jc3,ic1a,ic0a,ic0u,jc0u,iscales,icomp
+integer :: jsub,il0,jl0r,jl0,jc3,ic1a,iscales,icomp
 real(kind_real) :: den,dx,dy,dz,distsq,Dhbar,Dvbar,norm
 real(kind_real),allocatable :: norm_raw(:,:),Dh(:),Dv(:)
 logical :: valid
@@ -433,7 +427,7 @@ do il0=1,geom%nl0
          do jl0r=1,bpar%nl0r(ib)
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             do jc3=1,nam%nc3
-               if (samp%smask_c1ac3(ic1a,jc3,jl0)) then
+               if (samp%smask_c3a(ic1a,jc3,jl0)) then
                   do jsub=1,mom_blk%nsub
                      den = mom_blk%m2_1(ic1a,il0,jsub)*mom_blk%m2_2(ic1a,jc3,jl0,jsub)
                      if (den>0.0) then
@@ -454,15 +448,16 @@ do il0=1,geom%nl0
          end do
 
          ! Compute deltas
-         ic0a = samp%c1a_to_c0a(ic1a)
-         ic0u = geom%c0a_to_c0u(ic0a)
          do jl0r=1,bpar%nl0r(ib)
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             do jc3=1,nam%nc3
-               minim%dmask(jc3,jl0r) = samp%smask_c1ac3(ic1a,jc3,jl0)
+               minim%dmask(jc3,jl0r) = samp%smask_c3a(ic1a,jc3,jl0)
                if (minim%dmask(jc3,jl0r)) then
-                  jc0u = samp%c1ac3_to_c0u(ic1a,jc3)
-                  call geom%compute_deltas(ic0u,il0,jc0u,jl0,dx,dy,dz)
+                  dx = samp%lon_c3a(ic1a,jc3)-samp%lon_c1a(ic1a)
+                  dy = samp%lat_c3a(ic1a,jc3)-samp%lat_c1a(ic1a)
+                  call lonlatmod(dx,dy)
+                  dx = dx*cos(samp%lat_c1a(ic1a))
+                  dz = samp%vunit_c1a(ic1a,jl0)-samp%vunit_c1a(ic1a,il0)
                   minim%dxsq(jc3,jl0r) = dx**2
                   minim%dysq(jc3,jl0r) = dy**2
                   minim%dxdy(jc3,jl0r) = dx*dy
@@ -599,7 +594,7 @@ do il0=1,geom%nl0
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                   do jc3=1,nam%nc3
-                     if (samp%smask_c1ac3(ic1a,jc3,jl0)) then
+                     if (samp%smask_c3a(ic1a,jc3,jl0)) then
                         if (mpl%msv%isnot(lct_blk%fit(jc3,jl0r,ic1a,il0)).and.lct_blk%raw(jc3,jl0r,ic1a,il0)>nam%lct_qc_th) then
                            lct_blk%qc_c1a(ic1a,il0) = lct_blk%qc_c1a(ic1a,il0)+ &
  & (lct_blk%fit(jc3,jl0r,ic1a,il0)-lct_blk%raw(jc3,jl0r,ic1a,il0))**2
@@ -684,7 +679,7 @@ type(bpar_type),intent(in) :: bpar           !< Block parameters
 type(samp_type),intent(in) :: samp           !< Sampling
 
 ! Local variables
-integer :: il0,jl0,jl0r,ic1a,ic0a,ic0u,jc3,jc0u,icomp,iscales
+integer :: il0,jl0,jl0r,ic1a,jc3,icomp,iscales
 real(kind_real) :: fld_c2a(samp%nc2a),dx,dy,dz
 real(kind_real),allocatable :: fld_filt_c2a(:),dxsq(:,:),dysq(:,:),dxdy(:,:),dzsq(:,:)
 logical :: valid
@@ -717,8 +712,8 @@ do il0=1,geom%nl0
             fld_filt_c2a = fld_c2a
 
             ! Filter
-            call samp%diag_filter(mpl,nam,'median',nam%diag_rhflt,fld_filt_c2a)
-            call samp%diag_filter(mpl,nam,'gc99',nam%diag_rhflt,fld_filt_c2a)
+            call samp%diag_filter(mpl,'median',nam%diag_rhflt,fld_filt_c2a)
+            call samp%diag_filter(mpl,'gc99',nam%diag_rhflt,fld_filt_c2a)
          end if
 
          ! Fill missing values
@@ -767,15 +762,16 @@ if (nam%diag_rhflt>0.0) then
             if (valid) then
                if (nam%lct_write_cor) then
                   ! Compute deltas
-                  ic0a = samp%c1a_to_c0a(ic1a)
-                  ic0u = geom%c0a_to_c0u(ic0a)
                   do jl0r=1,bpar%nl0r(ib)
                      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                      do jc3=1,nam%nc3
-                        dmask(jc3,jl0r) = samp%smask_c1a(ic1a,il0).and.samp%smask_c1ac3(ic1a,jc3,jl0)
+                        dmask(jc3,jl0r) = samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jl0)
                         if (dmask(jc3,jl0r)) then
-                           jc0u = samp%c1ac3_to_c0u(ic1a,jc3)
-                           call geom%compute_deltas(ic0u,il0,jc0u,jl0,dx,dy,dz)
+                           dx = samp%lon_c3a(ic1a,jc3)-samp%lon_c1a(ic1a)
+                           dy = samp%lat_c3a(ic1a,jc3)-samp%lat_c1a(ic1a)
+                           call lonlatmod(dx,dy)
+                           dx = dx*cos(samp%lat_c1a(ic1a))
+                           dz = samp%vunit_c1a(ic1a,jl0)-samp%vunit_c1a(ic1a,il0)
                            dxsq(jc3,jl0r) = dx**2
                            dysq(jc3,jl0r) = dy**2
                            dxdy(jc3,jl0r) = dx*dy
@@ -912,10 +908,10 @@ do iscales=1,lct_blk%nscales
    write(mpl%info,'(a13,a)') '','Interpolate components'
    call mpl%flush
    do icomp=1,2*4+2
-      call samp%com_AB%ext(mpl,fld_c2a(:,:,icomp),fld_c2b)
+      call samp%com_c2_AB%ext(mpl,fld_c2a(:,:,icomp),fld_c2b)
       do il0=1,geom%nl0
-         il0i = min(il0,geom%nl0i)
-         call samp%h(il0i)%apply(mpl,fld_c2b(:,il0),fld(:,il0,icomp))
+         il0i = geom%l0_to_l0i(il0)
+         call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld(:,il0,icomp))
       end do
    end do
 

@@ -401,7 +401,7 @@ elseif (bump%nam%load_vbal) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Read vertical balance'
    call bump%mpl%flush
-   call bump%vbal%read(bump%mpl,bump%nam,bump%geom,bump%bpar)
+   call bump%vbal%read(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%ens1)
 end if
 
 if (bump%nam%new_vbal.or.bump%nam%load_vbal) then

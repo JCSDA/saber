@@ -471,10 +471,10 @@ do ib=1,bpar%nbe
                end do
 
                ! Interpolate
-               call hdiag%samp%com_AB%ext(mpl,fld_c2a(:,:,i),fld_c2b)
+               call hdiag%samp%com_c2_AB%ext(mpl,fld_c2a(:,:,i),fld_c2b)
                do il0=1,geom%nl0
                   il0i = min(il0,geom%nl0i)
-                  call hdiag%samp%h(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0,i))
+                  call hdiag%samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0,i))
                end do
             end do
 
@@ -919,7 +919,7 @@ case ('random_coast')
 
    do il0=1,geom%nl0
       ! Define modulation factor
-      il0i = min(il0,geom%nl0i)
+      il0i = geom%l0_to_l0i(il0)
       do ic0a=1,geom%nc0a
          if (geom%gmask_c0a(ic0a,il0)) then
             rh_c0a(ic0a) = exp(-geom%mdist_c0a(ic0a,il0i)/nam%Lcoast)

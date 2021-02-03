@@ -78,3 +78,8 @@ bump_hdiag-nicas_universe_rad/test_12-1_nicas_000012-000009.nc
 bump_hdiag-nicas_universe_rad/test_12-1_nicas_000012-000010.nc
 bump_hdiag-nicas_universe_rad/test_12-1_nicas_000012-000011.nc
 bump_hdiag-nicas_universe_rad/test_12-1_nicas_000012-000012.nc
+bump_write_vbal/test_4-1_vbal.nc
+bump_write_vbal/test_6-1_vbal.nc
+bump_write_vbal/test_8-1_vbal.nc
+bump_write_vbal/test_10-1_vbal.nc
+bump_write_vbal/test_12-1_vbal.nc

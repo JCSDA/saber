@@ -14,12 +14,13 @@ use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_node
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_array
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
+use tools_func, only: lonlatmod,gridhash,independent_levels,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
  & cx_to_cxa,cx_to_proc,cx_to_cxu
 use tools_kinds, only: kind_int,kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
 use tools_samp, only: initialize_sampling_global
+use tools_stripack, only: area
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
 use type_io, only: io_type
@@ -67,13 +68,12 @@ type geom_type
    real(kind_real),allocatable :: lon_c0a(:)      !< Longitudes
    real(kind_real),allocatable :: lat_c0a(:)      !< Latitudes
    real(kind_real),allocatable :: hash_c0a(:)     !< Longitudes/latitudes hash
-   real(kind_real),allocatable :: area_c0a(:)     !< Areas
    real(kind_real),allocatable :: vunit_c0a(:,:)  !< Vertical unit
    logical,allocatable :: gmask_c0a(:,:)          !< Geometry mask
    logical,allocatable :: smask_c0a(:,:)          !< Sampling mask
    logical,allocatable :: gmask_hor_c0a(:)        !< Union of horizontal geometry masks
    real(kind_real),allocatable :: mdist_c0a(:,:)  !< Minimum distance to mask
-   integer :: grid_hash                           !< Local grid hash
+   integer,allocatable :: grid_hash(:)            !< Local grid hash
    integer,allocatable :: proc_to_grid_hash(:)    !< Processor to local grid hash
 
    ! Geometry data on subset Sc0, universe
@@ -85,10 +85,18 @@ type geom_type
    logical,allocatable :: gmask_c0u(:,:)          !< Geometry mask
    logical,allocatable :: gmask_hor_c0u(:)        !< Union of horizontal geometry masks
    real(kind_real),allocatable :: mdist_c0u(:,:)  !< Minimum distance to mask
+   real(kind_real) :: area_max_c0u                !< Area maximum on universe
 
    ! Geometry data on subset Sc0, global
    integer :: nc0                                 !< Number of subset Sc0 points
    integer,allocatable :: proc_to_c0_offset(:)    !< Processor to offset on subset Sc0
+   real(kind_real) :: lon_min                     !< Minimum longitude
+   real(kind_real) :: lon_max                     !< Maximum longitude
+   real(kind_real) :: lat_min                     !< Minimum latitude
+   real(kind_real) :: lat_max                     !< Maximum latitude
+   integer,allocatable :: nc0_gmask(:)            !< Horizontal mask size on subset Sc0
+   real(kind_real),allocatable :: area_ver_c0(:)  !< Area profile on subset Sc0
+   real(kind_real) :: area_max_c0                 !< Area maximum on subset Sc0
 
    ! Link between halo A and universe on subset Sc0
    integer,allocatable :: c0a_to_c0u(:)           !< Halo A to universe on subset Sc0
@@ -104,10 +112,10 @@ type geom_type
    ! Number of levels
    integer :: nl0                                 !< Number of levels in subset Sl0
    integer :: nl0i                                !< Number of independent levels in subset Sl0
+   integer,allocatable :: l0_to_l0i(:)            !< Levels to independent levels in Sl0
+   integer,allocatable :: l0i_to_l0(:)            !< Independent levels to level in Sl0
 
    ! Other fields
-   integer,allocatable :: nc0_gmask(:)            !< Horizontal mask size on subset Sc0
-   real(kind_real),allocatable :: area(:)         !< Global area
    real(kind_real),allocatable :: vunitavg(:)     !< Averaged vertical unit
    real(kind_real),allocatable :: disth(:)        !< Horizontal distance
 
@@ -167,7 +175,6 @@ contains
    #:endfor
    procedure :: fieldset_to_c0 => geom_fieldset_to_c0
    procedure :: c0_to_fieldset => geom_c0_to_fieldset
-   procedure :: compute_deltas => geom_compute_deltas
    procedure :: rand_point => geom_rand_point
    procedure :: mg_to_proc => geom_mg_to_proc
    procedure :: c0_to_c0a => geom_c0_to_c0a
@@ -211,11 +218,11 @@ if (allocated(geom%proc_to_nc0a)) deallocate(geom%proc_to_nc0a)
 if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
 if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
 if (allocated(geom%hash_c0a)) deallocate(geom%hash_c0a)
-if (allocated(geom%area_c0a)) deallocate(geom%area_c0a)
 if (allocated(geom%vunit_c0a)) deallocate(geom%vunit_c0a)
 if (allocated(geom%smask_c0a)) deallocate(geom%smask_c0a)
 if (allocated(geom%gmask_hor_c0a)) deallocate(geom%gmask_hor_c0a)
 if (allocated(geom%mdist_c0a)) deallocate(geom%mdist_c0a)
+if (allocated(geom%grid_hash)) deallocate(geom%grid_hash)
 if (allocated(geom%proc_to_grid_hash)) deallocate(geom%proc_to_grid_hash)
 if (allocated(geom%proc_to_nc0u)) deallocate(geom%proc_to_nc0u)
 if (allocated(geom%lon_c0u)) deallocate(geom%lon_c0u)
@@ -231,7 +238,8 @@ call geom%com_AU%dealloc
 if (allocated(geom%c0a_to_c0)) deallocate(geom%c0a_to_c0)
 if (allocated(geom%c0u_to_c0)) deallocate(geom%c0u_to_c0)
 if (allocated(geom%nc0_gmask)) deallocate(geom%nc0_gmask)
-if (allocated(geom%area)) deallocate(geom%area)
+if (allocated(geom%l0i_to_l0)) deallocate(geom%l0i_to_l0)
+if (allocated(geom%area_ver_c0)) deallocate(geom%area_ver_c0)
 if (allocated(geom%vunitavg)) deallocate(geom%vunitavg)
 if (allocated(geom%disth)) deallocate(geom%disth)
 call geom%tree_c0u%dealloc
@@ -274,6 +282,7 @@ call geom%partial_dealloc
 call geom%afunctionspace_mg%final()
 if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
+if (allocated(geom%l0_to_l0i)) deallocate(geom%l0_to_l0i)
 call geom%com_mg%dealloc
 call geom%io%dealloc
 
@@ -300,7 +309,6 @@ type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing ge
 
 ! Local variables
 integer :: jc3,il0,iproc
-real(kind_real) :: lon_min,lon_max,lat_min,lat_max
 
 ! Set name
 @:set_name(geom_setup)
@@ -340,7 +348,7 @@ call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
 
 ! Setup mesh
 call geom%mesh_c0u%alloc(geom%nc0u,nam)
-call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u)
+call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,geom%area_max_c0)
 
 ! Setup number of independent levels
 call geom%setup_independent_levels(mpl)
@@ -365,12 +373,6 @@ call geom%setup_mask_check(mpl,nam)
 ! Setup fields output
 call geom%io%init(mpl,nam,'0',geom%nc0,geom%nc0a,geom%c0a_to_c0,geom%proc_to_c0_offset,nam%repro,geom%hash_c0a)
 
-! Summary data
-call mpl%f_comm%allreduce(minval(geom%lon_c0a),lon_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(maxval(geom%lon_c0a),lon_max,fckit_mpi_max())
-call mpl%f_comm%allreduce(minval(geom%lat_c0a),lat_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(maxval(geom%lat_c0a),lat_max,fckit_mpi_max())
-
 ! Print summary
 write(mpl%info,'(a7,a)') '','Geometry summary:'
 call mpl%flush
@@ -381,11 +383,11 @@ call mpl%flush
 write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Number of redundant points:    ',(geom%nmg-geom%nc0), &
  & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*100.0,'%)'
 call mpl%flush
-write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',lon_min*rad2deg,' / ',lon_max*rad2deg
+write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',lat_min*rad2deg,' / ',lat_max*rad2deg
+write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',geom%lat_min*rad2deg,' / ',geom%lat_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a10,a,f5.1,a)') '','Domain area (% of Earth area):',100.0*maxval(geom%area)/(4.0*pi),'%'
+write(mpl%info,'(a10,a,f5.1,a)') '','Domain area (% of Earth area):',100.0*geom%area_max_c0/(4.0*pi),'%'
 call mpl%flush
 write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
 call mpl%flush
@@ -394,8 +396,6 @@ do il0=1,geom%nl0
  & 100.0*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
-write(mpl%info,'(a10,a,i3)') '','Number of independent levels: ',geom%nl0i
-call mpl%flush
 write(mpl%info,'(a10,a)') '','Vertical unit:'
 call mpl%flush
 do il0=1,geom%nl0
@@ -510,6 +510,12 @@ end select
 do imga=1,geom%nmga
    call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
 end do
+
+! Get min/max lon/lat
+call mpl%f_comm%allreduce(minval(geom%lon_mga),geom%lon_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(maxval(geom%lon_mga),geom%lon_max,fckit_mpi_max())
+call mpl%f_comm%allreduce(minval(geom%lat_mga),geom%lat_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(maxval(geom%lat_mga),geom%lat_max,fckit_mpi_max())
 
 ! Allocation
 allocate(geom%hash_mga(geom%nmga))
@@ -723,8 +729,10 @@ integer :: notempty
 integer :: proc_to_nra(mpl%nproc),mga_to_mg(geom%nmga),mga_to_mgu(geom%nmga),mga_to_c0(geom%nmga),nc0_gmask(0:geom%nl0)
 integer,allocatable :: mgu_to_mg(:),mgu_to_proc(:),redundant(:),order(:)
 integer,allocatable :: c0a_to_mg(:),ra_to_r(:),r_to_mg(:),r_to_mg_tot(:),r_to_c0(:),r_to_c0_tot(:)
-real(kind_real) :: areasum(geom%nl0),vunitsum(geom%nl0),vunitsum_tot(geom%nl0),norm(geom%nl0),norm_tot(geom%nl0)
-real(kind_real),allocatable :: hash_mgu(:),lonlat_c0a(:),hash_c0u(:)
+real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se
+real(kind_real) :: area_max_c0a,area_ver_c0a(geom%nl0),vunit_hor_c0a(geom%nl0),norm_c0a(geom%nl0)
+real(kind_real) :: norm_c0u,norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
+real(kind_real),allocatable :: hash_mgu(:),hash_c0u(:),area_c0a(:),area_c0u(:)
 logical :: diff,chain
 type(com_type) :: com_AU
 
@@ -868,15 +876,15 @@ allocate(c0a_to_mg(geom%nc0a))
 allocate(geom%lon_c0a(geom%nc0a))
 allocate(geom%lat_c0a(geom%nc0a))
 allocate(geom%hash_c0a(geom%nc0a))
-if (geom%area_provided) allocate(geom%area_c0a(geom%nc0a))
+allocate(area_c0a(geom%nc0a))
 allocate(geom%vunit_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_c0a(geom%nc0a,geom%nl0))
 allocate(geom%smask_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_hor_c0a(geom%nc0a))
 allocate(geom%nc0_gmask(0:geom%nl0))
-allocate(geom%area(geom%nl0))
+allocate(geom%area_ver_c0(geom%nl0))
 allocate(geom%vunitavg(geom%nl0))
-allocate(lonlat_c0a(2*geom%nc0a))
+allocate(geom%grid_hash(0:geom%nl0))
 allocate(geom%proc_to_grid_hash(mpl%nproc))
 
 ! Subset Sc0 offset for halo A
@@ -991,7 +999,22 @@ call geom%com_mg%setup(mpl,'com_mg',geom%nc0a,geom%nmga,geom%nc0,geom%c0a_to_c0,
 call geom%com_mg%red(mpl,geom%lon_mga,geom%lon_c0a,.true.)
 call geom%com_mg%red(mpl,geom%lat_mga,geom%lat_c0a,.true.)
 call geom%com_mg%red(mpl,geom%hash_mga,geom%hash_c0a,.true.)
-if (geom%area_provided) call geom%com_mg%red(mpl,geom%area_mga,geom%area_c0a,.true.)
+if (geom%area_provided) then
+   ! Provided data
+   call geom%com_mg%red(mpl,geom%area_mga,area_c0a,.true.)
+elseif ((geom%lon_min<-0.9*pi).and.(geom%lon_max>0.9*pi).and.(geom%lat_min<-0.45*pi).and.(geom%lat_max>0.45*pi)) then
+   ! Full sphere, equally distributed
+   area_c0a = 4.0*pi*real(geom%nc0a,kind_real)/real(geom%nc0,kind_real)
+else
+   ! Limited Area Model, equally distributed
+   call lonlat2xyz(mpl,geom%lon_min,geom%lat_min,xyz_sw(1),xyz_sw(2),xyz_sw(3))
+   call lonlat2xyz(mpl,geom%lon_min,geom%lat_max,xyz_nw(1),xyz_nw(2),xyz_nw(3))
+   call lonlat2xyz(mpl,geom%lon_max,geom%lat_min,xyz_se(1),xyz_se(2),xyz_se(3))
+   call lonlat2xyz(mpl,geom%lon_max,geom%lat_max,xyz_ne(1),xyz_ne(2),xyz_ne(3))
+   call area(xyz_sw,xyz_nw,xyz_ne,area_nw)
+   call area(xyz_sw,xyz_ne,xyz_se,area_se)
+   area_c0a = (area_nw+area_se)*pi*real(geom%nc0a,kind_real)/real(geom%nc0,kind_real)
+end if
 call geom%com_mg%red(mpl,geom%vunit_mga,geom%vunit_c0a,.true.)
 call geom%com_mg%red(mpl,geom%gmask_mga,geom%gmask_c0a,.true.)
 call geom%com_mg%red(mpl,geom%smask_mga,geom%smask_c0a,.true.)
@@ -1001,36 +1024,36 @@ geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
 nc0_gmask(0) = count(geom%gmask_hor_c0a)
 nc0_gmask(1:geom%nl0) = count(geom%gmask_c0a,dim=1)
 call mpl%f_comm%allreduce(nc0_gmask,geom%nc0_gmask,fckit_mpi_sum())
+if (count(geom%gmask_hor_c0a)>0) then
+   area_max_c0a = sum(area_c0a,mask=geom%gmask_hor_c0a)
+else
+   area_max_c0a = 0.0
+end if
 do il0=1,geom%nl0
-   norm(il0) = count(geom%gmask_c0a(:,il0))
-   if (norm(il0)>0) then
-      if (geom%area_provided) areasum(il0) = sum(geom%area_c0a,mask=geom%gmask_c0a(:,il0))
-      vunitsum(il0) = sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
+   norm_c0a(il0) = count(geom%gmask_c0a(:,il0))
+   if (norm_c0a(il0)>0) then
+      area_ver_c0a(il0) = sum(area_c0a,mask=geom%gmask_c0a(:,il0))
+      vunit_hor_c0a(il0) = sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
    else
-      areasum(il0) = 0.0
-      vunitsum(il0) = 0.0
+      area_ver_c0a(il0) = 0.0
+      vunit_hor_c0a(il0) = 0.0
    end if
 end do
-call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
-if (geom%area_provided) then
-   call mpl%f_comm%allreduce(areasum,geom%area,fckit_mpi_sum())
-else
-   geom%area = 4.0*pi
-end if
-call mpl%f_comm%allreduce(vunitsum,vunitsum_tot,fckit_mpi_sum())
+call mpl%f_comm%allreduce(norm_c0a,norm_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(area_max_c0a,geom%area_max_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(area_ver_c0a,geom%area_ver_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(vunit_hor_c0a,vunit_hor_c0,fckit_mpi_sum())
 do il0=1,geom%nl0
-   if (norm_tot(il0)>0) then
-      geom%vunitavg(il0) = vunitsum_tot(il0)/real(norm_tot(il0),kind_real)
+   if (norm_c0(il0)>0) then
+      geom%vunitavg(il0) = vunit_hor_c0(il0)/real(norm_c0(il0),kind_real)
    else
       geom%vunitavg(il0) = mpl%msv%valr
    end if
 end do
 
 ! Grid hash
-lonlat_c0a(1:geom%nc0a) = geom%lon_c0a
-lonlat_c0a(geom%nc0a+1:2*geom%nc0a) = geom%lat_c0a
-geom%grid_hash = fletcher32(lonlat_c0a)
-call mpl%f_comm%allgather(geom%grid_hash,geom%proc_to_grid_hash)
+call gridhash(geom%nc0a,geom%nl0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,geom%grid_hash)
+call mpl%f_comm%allgather(geom%grid_hash(0),geom%proc_to_grid_hash)
 
 ! Deallocate memory
 deallocate(geom%lon_mga)
@@ -1042,7 +1065,6 @@ deallocate(mgu_to_mg)
 deallocate(hash_mgu)
 deallocate(order)
 deallocate(redundant)
-deallocate(lonlat_c0a)
 deallocate(c0a_to_mg)
 deallocate(ra_to_r)
 deallocate(r_to_mg)
@@ -1081,6 +1103,7 @@ allocate(geom%c0u_to_c0(geom%nc0u))
 allocate(geom%lon_c0u(geom%nc0u))
 allocate(geom%lat_c0u(geom%nc0u))
 allocate(hash_c0u(geom%nc0u))
+allocate(area_c0u(geom%nc0u))
 allocate(geom%vunit_c0u(geom%nc0u,geom%nl0))
 allocate(geom%gmask_c0u(geom%nc0u,geom%nl0))
 allocate(geom%gmask_hor_c0u(geom%nc0u))
@@ -1108,10 +1131,18 @@ call geom%com_AU%setup(mpl,'com_AU',geom%nc0a,geom%nc0u,geom%nc0,geom%c0a_to_c0,
 call geom%com_AU%ext(mpl,geom%lon_c0a,geom%lon_c0u)
 call geom%com_AU%ext(mpl,geom%lat_c0a,geom%lat_c0u)
 call geom%com_AU%ext(mpl,geom%hash_c0a,hash_c0u)
+call geom%com_AU%ext(mpl,area_c0a,area_c0u)
 call geom%com_AU%ext(mpl,geom%vunit_c0a,geom%vunit_c0u)
 call geom%com_AU%ext(mpl,geom%gmask_c0a,geom%gmask_c0u)
 geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
 
+! Related fields
+norm_c0u = count(geom%gmask_hor_c0u)
+if (norm_c0u>0) then
+   geom%area_max_c0u = sum(area_c0u,mask=geom%gmask_hor_c0u)
+else
+   geom%area_max_c0u = 0.0
+end if
 
 ! Check that Sc0 points in universe are not redundant
 write(mpl%info,'(a7,a)') '','Check that Sc0 points in universe are not redundant'
@@ -1142,44 +1173,18 @@ implicit none
 class(geom_type),intent(inout) :: geom !< Geometry
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 
-! Local variables
-integer :: il0
-integer :: diff_mask,diff_mask_tot
-logical :: same_mask
-
 ! Set name
 @:set_name(geom_setup_independent_levels)
 
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a7,a)') '','Define number of independent levels'
-call mpl%flush
+! Allocation
+allocate(geom%l0_to_l0i(geom%nl0))
+allocate(geom%l0i_to_l0(geom%nl0))
 
-! Check local mask similarity
-same_mask = .true.
-do il0=2,geom%nl0
-   same_mask = same_mask.and.(all((geom%gmask_c0a(:,il0).and.geom%gmask_c0a(:,1)) &
- & .or.(.not.geom%gmask_c0a(:,il0).and..not.geom%gmask_c0a(:,1))))
-end do
-if (same_mask) then
-   diff_mask = 0
-else
-   diff_mask = 1
-end if
-
-! Communication
-call mpl%f_comm%allreduce(diff_mask,diff_mask_tot,fckit_mpi_sum())
-
-! Global mask similarity
-same_mask = (diff_mask_tot==0)
-
-! Define number of independent levels
- if (same_mask) then
-   geom%nl0i = 1
-else
-   geom%nl0i = geom%nl0
-end if
+! Compute independent levels
+call independent_levels(mpl,geom%nl0,geom%grid_hash(1:geom%nl0),geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0,7)
 
 ! Probe out
 @:probe_out()
@@ -1792,42 +1797,6 @@ end if
 @:probe_out()
 
 end subroutine geom_c0_to_fieldset
-
-!----------------------------------------------------------------------
-! Subroutine: geom_compute_deltas
-!> Compute deltas for LCT definition
-!----------------------------------------------------------------------
-subroutine geom_compute_deltas(geom,ic0u,il0,jc0u,jl0,dx,dy,dz)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(in) :: geom !< Geometry
-integer,intent(in) :: ic0u          !< First horizontal index, universe
-integer,intent(in) :: il0           !< First vertical index
-integer,intent(in) :: jc0u          !< Second horizontal index, universe
-integer,intent(in) :: jl0           !< Second vertical index
-real(kind_real),intent(out) :: dx   !< Longitude delta
-real(kind_real),intent(out) :: dy   !< Latitude delta
-real(kind_real),intent(out) :: dz   !< Altitude delta
-
-! Set name
-@:set_name(geom_compute_deltas)
-
-! Probe in
-@:probe_in()
-
-! Compute deltas
-dx = geom%lon_c0u(jc0u)-geom%lon_c0u(ic0u)
-dy = geom%lat_c0u(jc0u)-geom%lat_c0u(ic0u)
-call lonlatmod(dx,dy)
-dx = dx*cos(geom%lat_c0u(ic0u))
-dz = real(geom%vunit_c0u(ic0u,jl0)-geom%vunit_c0u(ic0u,il0),kind_real)
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_compute_deltas
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_rand_point

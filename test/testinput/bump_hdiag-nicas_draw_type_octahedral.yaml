@@ -1,6 +1,6 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_hdiag-nicas_draw_type/test__MPI_-_OMP_"
+prefix: "bump_hdiag-nicas_draw_type_octahedral/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
@@ -24,9 +24,9 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-draw_type: "random_coast"
-Lcoast: 1000.0e3
-rcoast: 0.2
+sam_write: 1
+sam_write_grids: 1
+draw_type: "octahedral"
 nc1: 500
 ntry: 30
 nc3: 15
@@ -39,9 +39,10 @@ ne: 50
 # fit_param
 
 # nicas_param
-resol: 8.0
+resol: 3.0
 subsamp: "h"
 mpicom: 2
+write_grids: 1
 
 # dirac_param
 ndir: 1

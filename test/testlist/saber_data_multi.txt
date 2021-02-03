@@ -1,0 +1,15 @@
+bump_read_sampling/test_4-1_sampling.nc
+bump_read_vbal/test_4-1_sampling.nc
+bump_read_vbal/test_4-1_vbal.nc
+bump_read_sampling/test_6-1_sampling.nc
+bump_read_vbal/test_6-1_sampling.nc
+bump_read_vbal/test_6-1_vbal.nc
+bump_read_sampling/test_8-1_sampling.nc
+bump_read_vbal/test_8-1_sampling.nc
+bump_read_vbal/test_8-1_vbal.nc
+bump_read_sampling/test_10-1_sampling.nc
+bump_read_vbal/test_10-1_sampling.nc
+bump_read_vbal/test_10-1_vbal.nc
+bump_read_sampling/test_12-1_sampling.nc
+bump_read_vbal/test_12-1_sampling.nc
+bump_read_vbal/test_12-1_vbal.nc

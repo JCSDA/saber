@@ -154,10 +154,11 @@ real(kind_real),intent(out) :: auto(samp%nc1e,geom%nl0,geom%nl0,ens%nsub)  !< Au
 real(kind_real),intent(out) :: cross(samp%nc1e,geom%nl0,geom%nl0,ens%nsub) !< Cross-covariance
 
 ! Local variables
-integer :: isub,ie_sub,ie,il0,ic1a,ic0,ic0a,jl0,ic1e,ic1u
+integer :: isub,ie_sub,ie,il0,il0ic1,jl0,ic1e,ic1u
 real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
-real(kind_real) :: fld_1(samp%nc1a,geom%nl0),fld_2(samp%nc1a,geom%nl0)
-real(kind_real) :: fld_ext_1(samp%nc1e,geom%nl0),fld_ext_2(samp%nc1e,geom%nl0)
+real(kind_real) :: fld_c0b_1(samp%nc0b,geom%nl0),fld_c0b_2(samp%nc0b,geom%nl0)
+real(kind_real) :: fld_c1a_1(samp%nc1a,geom%nl0),fld_c1a_2(samp%nc1a,geom%nl0)
+real(kind_real) :: fld_c1e_1(samp%nc1e,geom%nl0),fld_c1e_2(samp%nc1e,geom%nl0)
 
 ! Set name
 @:set_name(vbal_blk_compute_covariances)
@@ -191,27 +192,24 @@ do isub=1,ens%nsub
       call ens%get_c0(mpl,vbal_blk%iv,geom,'pert',ie,fld_c0a_1)
       call ens%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
 
-      ! Copy all separations points
-      fld_1 = 0.0
-      fld_2 = 0.0
-      !$omp parallel do schedule(static) private(il0,ic1a,ic0,ic0a)
-      do il0=1,geom%nl0
-         do ic1a=1,samp%nc1a
-            if (samp%smask_c1a(ic1a,il0)) then
-               ! Index
-               ic0a = samp%c1a_to_c0a(ic1a)
+      ! Halo extension
+      call samp%com_c0_AB%ext(mpl,fld_c0a_1,fld_c0b_1)
+      call samp%com_c0_AB%ext(mpl,fld_c0a_2,fld_c0b_2)
 
-               ! Copy points
-               fld_1(ic1a,il0) = fld_c0a_1(ic0a,il0)
-               fld_2(ic1a,il0) = fld_c0a_2(ic0a,il0)
-            end if
-         end do
+      ! Interpolate fields
+      fld_c1a_1 = mpl%msv%valr
+      fld_c1a_2 = mpl%msv%valr
+      !$omp parallel do schedule(static) private(il0,il0ic1)
+      do il0=1,geom%nl0
+         il0ic1 = samp%l0_to_l0ic1(il0)
+         call samp%interp_c0b_to_c1a(il0ic1)%apply(mpl,fld_c0b_1(:,il0),fld_c1a_1(:,il0))
+         call samp%interp_c0b_to_c1a(il0ic1)%apply(mpl,fld_c0b_2(:,il0),fld_c1a_2(:,il0))
       end do
       !$omp end parallel do
 
       ! Halo extension
-      call samp%com_AE%ext(mpl,fld_1,fld_ext_1)
-      call samp%com_AE%ext(mpl,fld_2,fld_ext_2)
+      call samp%com_c1_AE%ext(mpl,fld_c1a_1,fld_c1e_1)
+      call samp%com_c1_AE%ext(mpl,fld_c1a_2,fld_c1e_2)
 
       !$omp parallel do schedule(static) private(il0,jl0,ic1e,ic1u)
       do il0=1,geom%nl0
@@ -222,8 +220,8 @@ do isub=1,ens%nsub
 
                ! Auto and cross-covariances
                if (samp%smask_c1u(ic1u,il0).and.samp%smask_c1u(ic1u,jl0)) then
-                  auto(ic1e,jl0,il0,isub) = auto(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_2(ic1e,jl0)
-                  cross(ic1e,jl0,il0,isub) = cross(ic1e,jl0,il0,isub)+fld_ext_2(ic1e,il0)*fld_ext_1(ic1e,jl0)
+                  auto(ic1e,jl0,il0,isub) = auto(ic1e,jl0,il0,isub)+fld_c1e_2(ic1e,il0)*fld_c1e_2(ic1e,jl0)
+                  cross(ic1e,jl0,il0,isub) = cross(ic1e,jl0,il0,isub)+fld_c1e_2(ic1e,il0)*fld_c1e_1(ic1e,jl0)
                end if
             end do
          end do
@@ -382,7 +380,7 @@ real(kind_real),intent(in) :: h_S(3,geom%nc0a,geom%nl0i) !< Weight of neighbors 
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Source/destination vector
 
 ! Local variables
-integer :: ic0a,il0,jl0,i_s,ic2b
+integer :: ic0a,il0,il0i,jl0,i_s,ic2b
 real(kind_real) :: S,fld_tmp(geom%nc0a,geom%nl0)
 
 ! Set name
@@ -396,12 +394,13 @@ fld_tmp = 0.0
 
 do ic0a=1,geom%nc0a
    do il0=1,geom%nl0
+      il0i = geom%l0_to_l0i(il0)
       do jl0=1,geom%nl0
          ! Loop over neighbors
-         do i_s=1,h_n_s(ic0a,min(il0,geom%nl0i))
+         do i_s=1,h_n_s(ic0a,il0i)
             ! Find neighbor index and weight
-            ic2b = h_c2b(i_s,ic0a,min(il0,geom%nl0i))
-            S = h_S(i_s,ic0a,min(il0,geom%nl0i))
+            ic2b = h_c2b(i_s,ic0a,il0i)
+            S = h_S(i_s,ic0a,il0i)
 
             ! Apply regression coefficient weighted by the neighbor weight
             fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)+S*vbal_blk%reg(il0,jl0,ic2b)*fld(ic0a,jl0)
@@ -435,7 +434,7 @@ real(kind_real),intent(in) :: h_S(3,geom%nc0a,geom%nl0i) !< Weight of neighbors 
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Source/destination vector
 
 ! Local variables
-integer :: ic0a,il0,jl0,i_s,ic2b
+integer :: ic0a,il0,il0i,jl0,i_s,ic2b
 real(kind_real) :: S,fld_tmp(geom%nc0a,geom%nl0)
 
 ! Set name
@@ -449,12 +448,13 @@ fld_tmp = 0.0
 
 do ic0a=1,geom%nc0a
    do il0=1,geom%nl0
+      il0i = geom%l0_to_l0i(il0)
       do jl0=1,geom%nl0
          ! Loop over neighbors
-         do i_s=1,h_n_s(ic0a,min(il0,geom%nl0i))
+         do i_s=1,h_n_s(ic0a,il0i)
             ! Find neighbor index and weight
-            ic2b = h_c2b(i_s,ic0a,min(il0,geom%nl0i))
-            S = h_S(i_s,ic0a,min(il0,geom%nl0i))
+            ic2b = h_c2b(i_s,ic0a,il0i)
+            S = h_S(i_s,ic0a,il0i)
 
             ! Apply regression coefficient weighted by the neighbor weight
             fld_tmp(ic0a,jl0) = fld_tmp(ic0a,jl0)+S*vbal_blk%reg(il0,jl0,ic2b)*fld(ic0a,il0)

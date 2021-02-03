@@ -25,9 +25,10 @@ use type_tree, only: tree_type
 
 implicit none
 
-logical,parameter :: shuffle = .true.              !< Shuffle mesh order (more efficient to compute the Delaunay triangulation)
-logical,parameter :: perturb_coordinates = .false. !< Perturb coordinates (required for reproducibility with regular grids)
-integer,parameter :: nnmax = 20                    !< Maximum number of nearest neighbors in the triangle search
+logical,parameter :: shuffle = .true.                !< Shuffle mesh order (more efficient to compute the Delaunay triangulation)
+logical,parameter :: perturb_coordinates = .false.   !< Perturb coordinates (required for reproducibility with regular grids)
+integer,parameter :: nnmax = 20                      !< Maximum number of nearest neighbors in the triangle search
+real(kind_real),parameter :: acc_fac = 5.0_kind_real !< Acceptance factor for mesh neighbors
 
 ! Connectivity table row derived type
 type row_type
@@ -124,7 +125,7 @@ end subroutine mesh_alloc
 ! Subroutine: mesh_init
 !> Intialization
 !----------------------------------------------------------------------
-subroutine mesh_init(mesh,mpl,rng,lon,lat)
+subroutine mesh_init(mesh,mpl,rng,lon,lat,area)
 
 implicit none
 
@@ -134,14 +135,15 @@ type(mpl_type),intent(inout) :: mpl       !< MPI data
 type(rng_type),intent(inout) :: rng       !< Random number generator
 real(kind_real),intent(in) :: lon(mesh%n) !< Longitudes
 real(kind_real),intent(in) :: lat(mesh%n) !< Latitudes
+real(kind_real),intent(in) :: area        !< Mesh area
 
 ! Local variables
-integer :: i,j,k,cols,maxedge
+integer :: i,j,k,cols,maxedge,j_eff
 integer,allocatable :: jtab(:),nodes(:,:),order(:),near(:),next(:)
 integer,pointer :: row(:)
 integer(kind_long) :: hash_long
-real(kind_real) :: hash
-real(kind_real),allocatable :: list(:),lon_pert(:),lat_pert(:),lonlat(:,:),dist(:),x(:),y(:),z(:)
+real(kind_real) :: hash,a
+real(kind_real),allocatable :: list(:),lon_pert(:),lat_pert(:),lonlat(:,:),dist(:),x(:),y(:),z(:),ndist(:)
 logical :: init
 type(atlas_unstructuredgrid) :: agrid
 type(atlas_mesh) :: amesh
@@ -387,6 +389,43 @@ else
    deallocate(next)
    deallocate(dist)
 end if
+
+! Typical distance between neighbors for a homogeneous Delaunay mesh, required for a limited area mesh
+a = sqrt(2.0*area/(sqrt(3.0)*real(mesh%n,kind_real)))
+do i=1,mesh%n
+   ! Allocation
+   allocate(nodes(mesh%rows(i)%cols,1))
+   allocate(ndist(mesh%rows(i)%cols))
+
+   ! Copy
+   cols = mesh%rows(i)%cols
+   nodes(:,1) = mesh%rows(i)%nodes
+
+   ! Compute distances
+   do j=1,cols
+      call sphere_dist(mesh%lon(i),mesh%lat(i),mesh%lon(nodes(j,1)),mesh%lat(nodes(j,1)),ndist(j))
+   end do
+
+   ! Count valid neighbors
+   mesh%rows(i)%cols = count(ndist<acc_fac*a)
+
+   ! Reallocation
+   deallocate(mesh%rows(i)%nodes)
+   allocate(mesh%rows(i)%nodes(mesh%rows(i)%cols))
+
+   ! Set valid neighbors
+   j_eff = 0
+   do j=1,cols
+      if (ndist(j)<acc_fac*a) then
+         j_eff = j_eff+1
+         mesh%rows(i)%nodes(j_eff) = nodes(j,1)
+      end if
+   end do
+
+   ! Release memory
+   deallocate(nodes)
+   deallocate(ndist)
+end do
 
 ! Maximum number of columns
 mesh%maxcols = 0

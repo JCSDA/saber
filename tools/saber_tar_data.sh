@@ -14,6 +14,7 @@ listdir=$2
 data_list="
 saber_data
 saber_data_mpi
+saber_data_multi
 saber_data_omp
 saber_data_oops"
 

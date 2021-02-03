@@ -32,8 +32,8 @@ def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
          # Check what is in the file
          if first:
             sc3 = ("lon" in f.groups[group].variables)
-            local = (group == "hdiag")
-            vbal = (group == "vbal")
+            local = ("lon_local" in f.groups[group].variables)
+            vbal = ("lon_vbal" in f.groups[group].variables)
 
          # Get data
          nc0a = f["lon_c0a"].shape[0]

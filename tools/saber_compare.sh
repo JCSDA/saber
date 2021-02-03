@@ -10,7 +10,7 @@
 test=$1
 
 # Special suffixes list
-special_list="mom lct_cor nicas normality obs sampling vbal"
+special_list="mom lct_cor nicas normality sampling_grids obs vbal"
 
 # Initialize exit status
 status=0
@@ -21,16 +21,28 @@ if test "${test%%_*}" = "bump" ; then
    nthreads=4
    tolerance=1.e-5
 
-   # Check whether arguments 2 and 3 are integers
-   normal=true
-   case $2 in
-      ''|*[!0-9]*) normal=false ;;
-   esac
-   case $3 in
-      ''|*[!0-9]*) normal=false ;;
-   esac
+   # Get comparison type
+   compare_type=''
+   if test "$#" = 3 ; then
+      # Arguments 2 and 3 are integer => normal
+      if [[ $2 =~ ^-?[0-9]+$ ]] && [[ $3 =~ ^-?[0-9]+$ ]] ; then
+         compare_type="normal"
+      fi
+   fi
+   if test "$#" = 4 ; then
+      # Arguments 2, 3 and 4 are strings => specific
+      if [[ ! $2 =~ ^-?[0-9]+$ ]] && [[ ! $4 =~ ^-?[0-9]+$ ]] && [[ ! $3 =~ ^-?[0-9]+$ ]] ; then
+         compare_type="specific"
+      fi
+   fi
 
-   if ${normal}; then
+   # Check comparison type
+   if test "${compare_type}" = '' ; then
+      echo -e "\e[31mWrong number/type of arguments\e[0m"
+      exit
+   fi
+
+   if test "${compare_type}" = "normal" ; then
       # Normal tests
       mpi=$2
       omp=$3
@@ -101,7 +113,9 @@ if test "${test%%_*}" = "bump" ; then
             status=6
          fi
       done
-   else
+   fi
+
+   if test "${compare_type}" = "specific" ; then
       # Specific tests
       test2=$2
       mpiomp=$3

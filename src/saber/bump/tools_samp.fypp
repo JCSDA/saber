@@ -15,6 +15,7 @@ use tools_func, only: lonlathash,lonlatmod,sphere_dist
 use tools_kinds, only: kind_real,kind_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,inf,sup,eq
+use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_probe, only: probe
 use type_rng, only: rng_type
@@ -42,29 +43,30 @@ contains
 !> Intialize sampling
 !----------------------------------------------------------------------
 subroutine samp_initialize_sampling(mpl,rng,area,n_loc,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ntry,nrep,ns2_glb,sam2_glb, &
- & fast,verbosity,n_uni,uni_to_loc,tree_uni)
+ & fast,verbosity,n_uni,uni_to_loc,mesh_uni,tree_uni)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl               !< MPI data
-type(rng_type),intent(inout) :: rng               !< Random number generator
-real(kind_real),intent(in) :: area                !< Global domain area
-integer,intent(in) :: n_loc                       !< Number of points (local)
-real(kind_real),intent(in) :: lon_loc(n_loc)      !< Longitudes (local)
-real(kind_real),intent(in) :: lat_loc(n_loc)      !< Latitudes (local)
-logical,intent(in) :: mask_loc(n_loc)             !< Mask (local)
-real(kind_real),intent(in) :: rh_loc(n_loc)       !< Horizontal support radius (local)
-integer,intent(in) :: loc_to_glb(n_loc)           !< Local to global index
-integer,intent(in) :: ntry                        !< Number of tries
-integer,intent(in) :: nrep                        !< Number of replacements
-integer,intent(in) :: ns2_glb                     !< Number of samplings points (global)
-integer,intent(out) :: sam2_glb(ns2_glb)          !< Horizontal sampling index (global)
-logical,intent(in),optional :: fast               !< Fast sampling flag
-logical,intent(in),optional :: verbosity          !< Verbosity flag
-integer,intent(in),optional :: n_uni              !< Universe size
-integer,intent(in),optional :: uni_to_loc(:)      !< Universe to local index
-type(tree_type),intent(in),optional :: tree_uni   !< Universe KD-tree
+type(mpl_type),intent(inout) :: mpl             !< MPI data
+type(rng_type),intent(inout) :: rng             !< Random number generator
+real(kind_real),intent(in) :: area              !< Global domain area
+integer,intent(in) :: n_loc                     !< Number of points (local)
+real(kind_real),intent(in) :: lon_loc(n_loc)    !< Longitudes (local)
+real(kind_real),intent(in) :: lat_loc(n_loc)    !< Latitudes (local)
+logical,intent(in) :: mask_loc(n_loc)           !< Mask (local)
+real(kind_real),intent(in) :: rh_loc(n_loc)     !< Horizontal support radius (local)
+integer,intent(in) :: loc_to_glb(n_loc)         !< Local to global index
+integer,intent(in) :: ntry                      !< Number of tries
+integer,intent(in) :: nrep                      !< Number of replacements
+integer,intent(in) :: ns2_glb                   !< Number of samplings points (global)
+integer,intent(out) :: sam2_glb(ns2_glb)        !< Horizontal sampling index (global)
+logical,intent(in),optional :: fast             !< Fast sampling flag
+logical,intent(in),optional :: verbosity        !< Verbosity flag
+integer,intent(in),optional :: n_uni            !< Universe size
+integer,intent(in),optional :: uni_to_loc(:)    !< Universe to local index
+type(mesh_type),intent(in),optional :: mesh_uni !< Universe mesh
+type(tree_type),intent(in),optional :: tree_uni !< Universe KD-tree
 
 ! Local variables
 integer :: n_glb,n_loc_eff,n_glb_eff,i_glb,i_loc,is2_glb,ns1_glb_eff
@@ -152,9 +154,9 @@ elseif (n_glb_eff==ns2_glb) then
    end if
 else
    ! First subsampling, local
-   if (present(n_uni).and.present(uni_to_loc).and.present(tree_uni)) then
+   if (present(n_uni).and.present(uni_to_loc).and.present(mesh_uni).and.present(tree_uni)) then
       call initialize_sampling_local(mpl,area,n_loc,n_loc_eff,n_glb_eff,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ns2_glb, &
- & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,lverbosity,n_uni,uni_to_loc,tree_uni)
+ & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,lverbosity,n_uni,uni_to_loc,mesh_uni,tree_uni)
    else
       call initialize_sampling_local(mpl,area,n_loc,n_loc_eff,n_glb_eff,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ns2_glb, &
  & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,lverbosity)
@@ -186,31 +188,32 @@ end subroutine samp_initialize_sampling
 !> Intialize sampling, local, based on ATLAS octahedral grid
 !----------------------------------------------------------------------
 subroutine samp_initialize_sampling_local(mpl,area,n_loc,n_loc_eff,n_glb_eff,lon_loc,lat_loc,mask_loc,rh_loc,loc_to_glb,ns2_glb, &
- & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,verbosity,n_uni,uni_to_loc,tree_uni)
+ & ns1_glb_eff,lon1_glb_eff,lat1_glb_eff,rh1_glb_eff,sam1_glb_eff,verbosity,n_uni,uni_to_loc,mesh_uni,tree_uni)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl               !< MPI data
-real(kind_real),intent(in) :: area                !< Global domain area
-integer,intent(in) :: n_loc                       !< Number of points (local)
-integer,intent(in) :: n_loc_eff                   !< Number of points (local, effective)
-integer,intent(in) :: n_glb_eff                   !< Number of points (global, effective)
-real(kind_real),intent(in) :: lon_loc(n_loc)      !< Longitudes (local)
-real(kind_real),intent(in) :: lat_loc(n_loc)      !< Latitudes (local)
-logical,intent(in) :: mask_loc(n_loc)             !< Mask (local)
-real(kind_real),intent(in) :: rh_loc(n_loc)       !< Horizontal support radius (local)
-integer,intent(in) :: loc_to_glb(n_loc)           !< Local to global index
-integer,intent(in) :: ns2_glb                     !< Number of samplings points (global)
-integer,intent(out) :: ns1_glb_eff
-real(kind_real),allocatable,intent(out) :: lon1_glb_eff(:)
-real(kind_real),allocatable,intent(out) :: lat1_glb_eff(:)
-real(kind_real),allocatable,intent(out) :: rh1_glb_eff(:)
-integer,allocatable,intent(out) :: sam1_glb_eff(:)
-logical,intent(in),optional :: verbosity          !< Verbosity flag
-integer,intent(in),optional :: n_uni              !< Universe size
-integer,intent(in),optional :: uni_to_loc(:)      !< Universe to local index
-type(tree_type),intent(in),optional :: tree_uni   !< Universe KD-tree
+type(mpl_type),intent(inout) :: mpl                        !< MPI data
+real(kind_real),intent(in) :: area                         !< Global domain area
+integer,intent(in) :: n_loc                                !< Number of points (local)
+integer,intent(in) :: n_loc_eff                            !< Number of points (local, effective)
+integer,intent(in) :: n_glb_eff                            !< Number of points (global, effective)
+real(kind_real),intent(in) :: lon_loc(n_loc)               !< Longitudes (local)
+real(kind_real),intent(in) :: lat_loc(n_loc)               !< Latitudes (local)
+logical,intent(in) :: mask_loc(n_loc)                      !< Mask (local)
+real(kind_real),intent(in) :: rh_loc(n_loc)                !< Horizontal support radius (local)
+integer,intent(in) :: loc_to_glb(n_loc)                    !< Local to global index
+integer,intent(in) :: ns2_glb                              !< Number of samplings points (global)
+integer,intent(out) :: ns1_glb_eff                         !< Number of first sampling points (global, effective)
+real(kind_real),allocatable,intent(out) :: lon1_glb_eff(:) !< First sampling longitudes (global, effective)
+real(kind_real),allocatable,intent(out) :: lat1_glb_eff(:) !< First sampling latitudes (global, effective)
+real(kind_real),allocatable,intent(out) :: rh1_glb_eff(:)  !< First sampling horizontal support radius (global, effective)
+integer,allocatable,intent(out) :: sam1_glb_eff(:)         !< First sampling indices (global, effective)
+logical,intent(in),optional :: verbosity                   !< Verbosity flag
+integer,intent(in),optional :: n_uni                       !< Universe size
+integer,intent(in),optional :: uni_to_loc(:)               !< Universe to local index
+type(mesh_type),intent(in),optional :: mesh_uni            !< Universe mesh
+type(tree_type),intent(in),optional :: tree_uni            !< Universe KD-tree
 
 ! Local variables
 integer :: i_loc,i_loc_eff,n,ix,iy,iproc,is1_glb,ns1_loc,is1_loc,nfac,ns1_loc_tmp,nn_index(1),ns1_glb,is1_glb_eff,offset
@@ -219,7 +222,7 @@ real(kind_real) :: lonlat(2),nn_dist(1)
 real(kind_real),allocatable :: lon1_loc(:),lat1_loc(:),dist1_loc(:),rh1_loc(:)
 real(kind_real),allocatable :: lon1_loc_tmp(:),lat1_loc_tmp(:),dist1_loc_tmp(:),rh1_loc_tmp(:)
 real(kind_real),allocatable :: lon1_glb(:),lat1_glb(:),dist1_glb(:),rh1_glb(:)
-logical :: lfull_grid,lverbosity,update,retry
+logical :: lfull_grid,lverbosity,update,retry,valid
 logical,allocatable :: lmask(:)
 character(len=6) :: gridid
 type(fckit_mpi_status) :: status
@@ -234,7 +237,7 @@ type(atlas_structuredgrid) :: agrid
 ! Local flags
 lverbosity = .true.
 if (present(verbosity)) lverbosity = verbosity
-lfull_grid = present(n_uni).and.present(uni_to_loc).and.present(tree_uni)
+lfull_grid = present(n_uni).and.present(uni_to_loc).and.present(mesh_uni).and.present(tree_uni)
 
 ! Initialization
 nfac = 1
@@ -277,22 +280,28 @@ do while (retry)
 
             ! Get longitude/latitude
             lonlat = agrid%lonlat(ix,iy)*deg2rad
+            call lonlatmod(lonlat(1),lonlat(2))
 
-            ! Find nearest neighbor in universe
-            call tree_uni%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index,nn_dist)
-            i_loc = uni_to_loc(nn_index(1))
+            ! Check if point is inside the convex hull
+            call mesh_uni%inside(mpl,lonlat(1),lonlat(2),valid)
 
-            if (mpl%msv%isnot(i_loc)) then
-               ! Keep valid points
-               if (lmask(i_loc)) then
-                  is1_loc = is1_loc+1
-                  lon1_loc(is1_loc) = lon_loc(i_loc)
-                  lat1_loc(is1_loc) = lat_loc(i_loc)
-                  rh1_loc(is1_loc) = rh_loc(i_loc)
-                  sam1_loc(is1_loc) = loc_to_glb(i_loc)
-                  dist1_loc(is1_loc) = nn_dist(1)
-                  s1_loc_to_glb(is1_loc) = is1_glb
-                  lmask(i_loc) = .false.
+            if (valid) then
+               ! Find nearest neighbor in universe
+               call tree_uni%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index,nn_dist)
+               i_loc = uni_to_loc(nn_index(1))
+
+               if (mpl%msv%isnot(i_loc)) then
+                  ! Keep valid points
+                  if (lmask(i_loc)) then
+                     is1_loc = is1_loc+1
+                     lon1_loc(is1_loc) = lon_loc(i_loc)
+                     lat1_loc(is1_loc) = lat_loc(i_loc)
+                     rh1_loc(is1_loc) = rh_loc(i_loc)
+                     sam1_loc(is1_loc) = loc_to_glb(i_loc)
+                     dist1_loc(is1_loc) = nn_dist(1)
+                     s1_loc_to_glb(is1_loc) = is1_glb
+                     lmask(i_loc) = .false.
+                  end if
                end if
             end if
 

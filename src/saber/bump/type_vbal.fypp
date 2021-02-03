@@ -11,8 +11,9 @@ module type_vbal
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use netcdf, only: nf90_close,nf90_get_att,nf90_get_var,nf90_global,nf90_inq_grp_ncid,nf90_inq_varid,nf90_nowrite,nf90_open, &
- & nf90_put_att,nf90_put_var
+ & nf90_put_att,nf90_put_var,nf90_write
 use tools_const, only: rad2deg
+use tools_func, only: lonlathash
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
 use tools_repro, only: infeq
 use type_bpar, only: bpar_type
@@ -30,13 +31,18 @@ implicit none
 
 ! Vertical balance derived type
 type vbal_type
+   ! Sampling
    type(samp_type) :: samp                     !< Sampling
-   integer :: nc2b                             !< Subset Sc2 size, halo B
+
+   ! Vertical balance data
    logical :: allocated                        !< Allocation flag
    integer,allocatable :: h_n_s(:,:)           !< Number of neighbors for the horizontal interpolation
    integer,allocatable :: h_c2b(:,:,:)         !< Index of neighbors for the horizontal interpolation
    real(kind_real),allocatable :: h_S(:,:,:)   !< Weight of neighbors for the horizontal interpolation
    type(vbal_blk_type),allocatable :: blk(:,:) !< Vertical balance blocks
+
+   ! I/O
+   type(io_type) :: io                         !< I/O
 contains
    procedure :: alloc => vbal_alloc
    procedure :: partial_dealloc => vbal_partial_dealloc
@@ -169,6 +175,8 @@ if (allocated(vbal%blk)) then
    end do
    deallocate(vbal%blk)
 end if
+call vbal%samp%dealloc
+call vbal%io%dealloc
 
 ! Update allocation flag
 vbal%allocated = .false.
@@ -182,20 +190,22 @@ end subroutine vbal_dealloc
 ! Subroutine: vbal_read
 !> Read
 !----------------------------------------------------------------------
-subroutine vbal_read(vbal,mpl,nam,geom,bpar)
+subroutine vbal_read(vbal,mpl,rng,nam,geom,bpar,ens)
 
 implicit none
 
 ! Passed variables
 class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
+type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(ens_type), intent(inout) :: ens   !< Ensemble
 
 ! Local variables
-integer :: iv,jv,grid_hash
-integer :: ncid,grpid(nam%nv,nam%nv),h_n_s_id,h_c2b_id,h_S_id,reg_id(nam%nv,nam%nv)
+integer :: iv,jv,ic2a,ic2b,i_s,ic0a,il0i
+real(kind_real),allocatable :: hash_c2a(:),reg_c2a(:,:),reg_c2b(:,:)
 character(len=1024) :: filename,grpname
 
 ! Set name
@@ -204,53 +214,76 @@ character(len=1024) :: filename,grpname
 ! Probe in
 @:probe_in()
 
-! Open file
-write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
-call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
-
-! Check grid hash
-call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'grid_hash',grid_hash))
-if (grid_hash/=geom%grid_hash) call mpl%abort('${subr}$','wrong grid hash')
-
-! Get or check dimensions
-call mpl%nc_dim_check(ncid,'nc0a',geom%nc0a)
-vbal%samp%nc2b = mpl%nc_dim_inquire(ncid,'nc2b')
-call mpl%nc_dim_check(ncid,'nl0i',geom%nl0i)
-call mpl%nc_dim_check(ncid,'nl0_1',geom%nl0)
-call mpl%nc_dim_check(ncid,'nl0_2',geom%nl0)
+! Setup sampling
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Setup sampling'
+call mpl%flush
+call vbal%samp%setup('vbal',mpl,rng,nam,geom,ens)
 
 ! Allocation
 call vbal%alloc(nam,geom,bpar)
 
-! Get variables
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'h_n_s',h_n_s_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'h_c2b',h_c2b_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'h_S',h_S_id))
+! Read vertical balance operators
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Read vertical balance operators'
+call mpl%flush
+
+! Allocation
+allocate(hash_c2a(vbal%samp%nc2a))
+allocate(reg_c2a(vbal%samp%nc2a,geom%nl0**2))
+allocate(reg_c2b(vbal%samp%nc2b,geom%nl0**2))
+
+! Set file name
+filename = trim(nam%prefix)//'_vbal'
+
+! Compute hash value
+do ic2a=1,vbal%samp%nc2a
+   hash_c2a(ic2a) = lonlathash(vbal%samp%lon_c2a(ic2a),vbal%samp%lat_c2a(ic2a))
+end do
+
+! Setup fields output
+call vbal%io%init(mpl,nam,'2',vbal%samp%nc2,vbal%samp%nc2a,vbal%samp%c2a_to_c2,vbal%samp%proc_to_c2_offset,.true.,hash_c2a)
 do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
-         ! Get group
+         ! Define group name
          call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
-         call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,grpname,grpid(iv,jv)))
 
-         ! Get variable
-         call mpl%ncerr('${subr}$',nf90_inq_varid(grpid(iv,jv),'reg',reg_id(iv,jv)))
+         ! Read variables
+         call vbal%io%fld_read(mpl,nam,filename,'reg',reg_c2a,groupname=grpname)
+
+         ! Local values, first dimension
+         call vbal%samp%com_c2_AB%ext(mpl,reg_c2a,reg_c2b)
+
+         ! Reshape data, horizontal index as last dimension
+         do ic2b=1,vbal%samp%nc2b
+            vbal%blk(iv,jv)%reg(:,:,ic2b) = reshape(reg_c2b(ic2b,:),(/geom%nl0,geom%nl0/))
+         end do
       end if
    end do
 end do
 
-! Read data
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,h_n_s_id,vbal%h_n_s))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,h_c2b_id,vbal%h_c2b))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,h_S_id,vbal%h_S))
-do iv=1,nam%nv
-   do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) call mpl%ncerr('${subr}$',nf90_get_var(grpid(iv,jv),reg_id(iv,jv),vbal%blk(iv,jv)%reg))
+! Initialization
+vbal%h_n_s = 0
+vbal%h_c2b = mpl%msv%vali
+vbal%h_S = mpl%msv%valr
+
+! Get interpolation coefficients
+do il0i=1,geom%nl0i
+   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
+      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%col(i_s)
+      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%S(i_s)
    end do
 end do
 
-! Close file
-call mpl%ncerr('${subr}$',nf90_close(ncid))
+! Release memory
+deallocate(hash_c2a)
+deallocate(reg_c2a)
+deallocate(reg_c2b)
 
 ! Probe out
 @:probe_out()
@@ -273,9 +306,9 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: iv,jv
-integer :: ncid,grpid(nam%nv,nam%nv),np_id,nc0a_id,nc2b_id,nl0i_id,nl0_1_id,nl0_2_id,h_n_s_id,h_c2b_id,h_S_id
-integer :: reg_id(nam%nv,nam%nv),auto_id(nam%nv,nam%nv),cross_id(nam%nv,nam%nv),auto_inv_id(nam%nv,nam%nv)
+integer :: iv,jv,ic2a,ic2b
+real(kind_real) :: hash_c2a(vbal%samp%nc2a),reg_c2a(vbal%samp%nc2a,geom%nl0**2),auto_c2a(vbal%samp%nc2a,geom%nl0**2)
+real(kind_real) :: cross_c2a(vbal%samp%nc2a,geom%nl0**2),auto_inv_c2a(vbal%samp%nc2a,geom%nl0**2)
 character(len=1024) :: filename,grpname
 
 ! Set name
@@ -284,61 +317,40 @@ character(len=1024) :: filename,grpname
 ! Probe in
 @:probe_in()
 
-! Define file
-write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_vbal_',mpl%nproc,'-',mpl%myproc
-ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
+! Set file name
+filename = trim(nam%prefix)//'_vbal'
 
-! Write grid hash
-call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'grid_hash',geom%grid_hash))
+! Compute hash value
+do ic2a=1,vbal%samp%nc2a
+   hash_c2a(ic2a) = lonlathash(vbal%samp%lon_c2a(ic2a),vbal%samp%lat_c2a(ic2a))
+end do
 
-! Write namelist parameters
-call nam%write(mpl,ncid)
+! Setup fields output
+call vbal%io%init(mpl,nam,'2',vbal%samp%nc2,vbal%samp%nc2a,vbal%samp%c2a_to_c2,vbal%samp%proc_to_c2_offset,.true.,hash_c2a)
 
-! Define dimensions
-np_id = mpl%nc_dim_define_or_get(ncid,'np',3)
-nc0a_id = mpl%nc_dim_define_or_get(ncid,'nc0a',geom%nc0a)
-nl0i_id = mpl%nc_dim_define_or_get(ncid,'nl0i',geom%nl0i)
-nl0_1_id = mpl%nc_dim_define_or_get(ncid,'nl0_1',geom%nl0)
-nl0_2_id = mpl%nc_dim_define_or_get(ncid,'nl0_2',geom%nl0)
-nc2b_id = mpl%nc_dim_define_or_get(ncid,'nc2b',vbal%samp%nc2b)
-
-! Define variables
-h_n_s_id = mpl%nc_var_define_or_get(ncid,'h_n_s',nc_kind_int,(/nc0a_id,nl0i_id/))
-h_c2b_id = mpl%nc_var_define_or_get(ncid,'h_c2b',nc_kind_int,(/np_id,nc0a_id,nl0i_id/))
-h_S_id = mpl%nc_var_define_or_get(ncid,'h_S',nc_kind_real,(/np_id,nc0a_id,nl0i_id/))
 do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
-         ! Define group
+         ! Define group name
          call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
-         grpid(iv,jv) = mpl%nc_group_define_or_get(ncid,grpname)
 
-         ! Define variables
-         auto_id(iv,jv) = mpl%nc_var_define_or_get(grpid(iv,jv),'auto',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
-         cross_id(iv,jv) = mpl%nc_var_define_or_get(grpid(iv,jv),'cross',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
-         auto_inv_id(iv,jv) = mpl%nc_var_define_or_get(grpid(iv,jv),'auto_inv',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
-         reg_id(iv,jv) = mpl%nc_var_define_or_get(grpid(iv,jv),'reg',nc_kind_real,(/nl0_1_id,nl0_2_id,nc2b_id/))
+         ! Reshape data for local values, horizontal index as first dimension
+         do ic2a=1,vbal%samp%nc2a
+            ic2b = vbal%samp%c2a_to_c2b(ic2a)
+            reg_c2a(ic2a,:) = reshape(vbal%blk(iv,jv)%reg(:,:,ic2b),(/geom%nl0**2/))
+            auto_c2a(ic2a,:) = reshape(vbal%blk(iv,jv)%auto(:,:,ic2b),(/geom%nl0**2/))
+            cross_c2a(ic2a,:) = reshape(vbal%blk(iv,jv)%cross(:,:,ic2b),(/geom%nl0**2/))
+            auto_inv_c2a(ic2a,:) = reshape(vbal%blk(iv,jv)%auto_inv(:,:,ic2b),(/geom%nl0**2/))
+         end do
+
+         ! Write variables
+         call vbal%io%fld_write(mpl,nam,filename,'reg',reg_c2a,groupname=grpname)
+         call vbal%io%fld_write(mpl,nam,filename,'auto',auto_c2a,groupname=grpname)
+         call vbal%io%fld_write(mpl,nam,filename,'cross',cross_c2a,groupname=grpname)
+         call vbal%io%fld_write(mpl,nam,filename,'auto_inv',auto_inv_c2a,groupname=grpname)
       end if
    end do
 end do
-
-! Write variables
-call mpl%ncerr('${subr}$',nf90_put_var(ncid,h_n_s_id,vbal%h_n_s))
-call mpl%ncerr('${subr}$',nf90_put_var(ncid,h_c2b_id,vbal%h_c2b))
-call mpl%ncerr('${subr}$',nf90_put_var(ncid,h_S_id,vbal%h_S))
-do iv=1,nam%nv
-   do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) then
-         call mpl%ncerr('${subr}$',nf90_put_var(grpid(iv,jv),reg_id(iv,jv),vbal%blk(iv,jv)%reg))
-         call mpl%ncerr('${subr}$',nf90_put_var(grpid(iv,jv),auto_id(iv,jv),vbal%blk(iv,jv)%auto))
-         call mpl%ncerr('${subr}$',nf90_put_var(grpid(iv,jv),cross_id(iv,jv),vbal%blk(iv,jv)%cross))
-         call mpl%ncerr('${subr}$',nf90_put_var(grpid(iv,jv),auto_inv_id(iv,jv),vbal%blk(iv,jv)%auto_inv))
-      end if
-   end do
-end do
-
-! Close file
-call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! Probe out
 @:probe_out()
@@ -405,11 +417,11 @@ vbal%h_S = mpl%msv%valr
 
 ! Get interpolation coefficients
 do il0i=1,geom%nl0i
-   do i_s=1,vbal%samp%h(il0i)%n_s
-      ic0a = vbal%samp%h(il0i)%row(i_s)
+   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
       vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
-      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%h(il0i)%col(i_s)
-      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%h(il0i)%S(i_s)
+      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%col(i_s)
+      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%S(i_s)
    end do
 end do
 

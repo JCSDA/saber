@@ -40,6 +40,12 @@ end interface
 interface lonlatmod
    module procedure func_lonlatmod
 end interface
+interface gridhash
+   module procedure func_gridhash
+end interface
+interface independent_levels
+   module procedure func_independent_levels
+end interface
 interface lonlathash
    module procedure func_lonlathash
 end interface
@@ -115,8 +121,8 @@ end interface
 
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det,order_cc, &
- & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram, &
+public :: fletcher32,lonlatmod,gridhash,independent_levels,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
+ & order_cc,add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram, &
  & cx_to_cxa,cx_to_proc,cx_to_cxu
 
 contains
@@ -190,6 +196,160 @@ if (abs(lat)>(0.5-1.0e-6)*pi) lon = 0.0
 @:probe_out()
 
 end subroutine func_lonlatmod
+
+!----------------------------------------------------------------------
+! Subroutine: func_gridhash
+!> Compute grid hash profile
+!----------------------------------------------------------------------
+subroutine func_gridhash(ncx,nlx,lon_cx,lat_cx,mask_cx,grid_hash)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: ncx                 !< Number of points
+integer,intent(in) :: nlx                 !< Number of levels
+real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude (radians)
+real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude (radians)
+logical,intent(in) :: mask_cx(ncx,nlx)    !< Mask
+integer,intent(out) :: grid_hash(0:nlx)   !< Grid hash profile
+
+! Local variables
+integer :: ilx,ncx_eff,icx_eff,icx
+real(kind_real),allocatable :: lonlat(:)
+
+! Set name
+@:set_name(func_grid_hash)
+
+! Probe in
+@:probe_in()
+
+do ilx=1,nlx
+   ! Count points in the mask
+   ncx_eff = count(mask_cx(:,ilx))
+
+   if (ncx_eff>0) then
+      ! Allocation
+      allocate(lonlat(2*ncx_eff))
+
+      ! Copy lonlat
+      icx_eff = 0
+      do icx=1,ncx
+         if (mask_cx(icx,ilx)) then
+            icx_eff = icx_eff+1
+            lonlat(icx_eff) = lon_cx(icx)
+            icx_eff = icx_eff+1
+            lonlat(icx_eff) = lat_cx(icx)
+         end if
+      end do
+
+      ! Compute hash
+      grid_hash(ilx) = fletcher32(lonlat)
+
+      ! Release memory
+      deallocate(lonlat)
+   else
+      grid_hash(ilx) = 0
+   end if
+end do
+
+! Final grid hash
+grid_hash(0) = fletcher32(real(grid_hash(1:nlx),kind_real))
+
+! Probe out
+@:probe_out()
+
+end subroutine func_gridhash
+
+!----------------------------------------------------------------------
+! Subroutine: func_independent_levels
+!> Compute independent levels
+!----------------------------------------------------------------------
+subroutine func_independent_levels(mpl,nlx,grid_hash,nlxi,lx_to_lxi,lxi_to_lx,ifmt)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: nlx             !< Number of levels
+integer,intent(in) :: grid_hash(nlx)  !< Grid hash profile
+integer,intent(out) :: nlxi           !< Number of independent levels
+integer,intent(out) :: lx_to_lxi(nlx) !< Levels to independent levels
+integer,intent(out) :: lxi_to_lx(nlx) !< Independent levels to levels
+integer,intent(in) :: ifmt            !< Indentation
+
+! Local variables
+integer :: ilx,ilxi,jlx,jlxi,n
+integer :: proc_to_grid_hash(mpl%nproc),grid_hash_glb(nlx)
+character(len=1024) :: cfmt
+
+! Set name
+@:set_name(func_independent_levels)
+
+! Probe in
+@:probe_in()
+
+! Compute global hash value
+do ilx=1,nlx
+   call mpl%f_comm%allgather(grid_hash(ilx),proc_to_grid_hash)
+   grid_hash_glb(ilx) = fletcher32(real(proc_to_grid_hash,kind_real))
+end do
+
+! Count independent levels
+nlxi = 1
+do ilx=2,nlx
+   if (all(grid_hash_glb(1:ilx-1)/=grid_hash_glb(ilx))) nlxi = nlxi+1
+end do
+
+! Initialization
+lxi_to_lx = mpl%msv%vali
+
+! Get independent level
+ilx = 1
+ilxi = 1
+lx_to_lxi(ilx) = ilxi
+lxi_to_lx(ilxi) = ilx
+do ilx=2,nlx
+   if (all(grid_hash_glb(1:ilx-1)/=grid_hash_glb(ilx))) then
+      ! New independent level
+      ilxi = ilxi+1
+      lx_to_lxi(ilx) = ilxi
+      lxi_to_lx(ilxi) = ilx
+   else
+      ! Similar level
+      do jlx=1,ilx-1
+         if (grid_hash_glb(jlx)==grid_hash_glb(ilx)) then
+            jlxi = lx_to_lxi(jlx)
+            lx_to_lxi(ilx) = jlxi
+            exit
+         end if
+      end do
+   end if
+end do
+
+! Print levels
+write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
+write(mpl%info,trim(cfmt)) '','Compute independent levels: '
+call mpl%flush(.false.)
+do ilxi=1,nlxi
+   ilx = lxi_to_lx(ilxi)
+   n = count(lx_to_lxi==ilxi)
+   if (n<10) then
+      cfmt = '(i3,a,i1,a)'
+   elseif (n<100) then
+      cfmt = '(i3,a,i2,a)'
+   else
+      cfmt = '(i3,a,i3,a)'
+   end if
+   write(mpl%info,trim(cfmt)) ilx,'[',n,'] '
+   call mpl%flush(.false.)
+end do
+write(mpl%info,'(a)') ''
+call mpl%flush
+
+! Probe out
+@:probe_out()
+
+end subroutine func_independent_levels
 
 !----------------------------------------------------------------------
 ! Function: func_lonlathash
