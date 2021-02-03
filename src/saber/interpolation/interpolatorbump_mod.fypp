@@ -24,7 +24,6 @@ use tools_atlas, only: field_from_array,field_to_array,create_atlas_function_spa
 use tools_const, only: pi,deg2rad,rad2deg
 use tools_func, only: lonlatmod,sphere_dist
 use tools_kinds, only: kind_int,kind_real
-use tools_qsort, only: qsort
 use tools_repro, only: rth
 use type_bump, only: bump_type
 use type_com, only: com_type
@@ -77,49 +76,48 @@ contains
 
    procedure,private :: driver => bint_driver
    procedure,public :: init => bint_init
-   procedure,public :: bint_dummy_method
    procedure,public :: bint_apply
-   #:for dtype,ftype in types_irl
+   #:for dtype in dtypes_irl
       #:for rank_in in ranks_123
          #:for rank_out in ranks_123
             procedure,public :: bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
          #:endfor
       #:endfor
    #:endfor
+@:init_procedure(27)
    generic,public :: apply => bint_apply, &
-   #:for dtype,ftype in types_irl
+   #:for dtype in dtypes_irl
       #:for rank_in in ranks_123
          #:for rank_out in ranks_123
- & bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$, &
+@:add_procedure(bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$)
          #:endfor
       #:endfor
    #:endfor
- & bint_dummy_method
-   #:for dtype,ftype in types_irl
+   #:for dtype in dtypes_irl
       procedure,private :: bint_apply_interp_${dtype}$
    #:endfor
+@:init_procedure(3)
    generic,public :: apply_interp => &
-   #:for dtype,ftype in types_irl
- & bint_apply_interp_${dtype}$, &
+   #:for dtype in dtypes_irl
+@:add_procedure(bint_apply_interp_${dtype}$)
    #:endfor
- & bint_dummy_method
    procedure,public :: bint_apply_ad
    #:for rank_out in ranks_123
       #:for rank_in in ranks_123
          procedure,public :: bint_apply_ad_r${rank_in}$_r${rank_out}$
       #:endfor
    #:endfor
+@:init_procedure(9)
    generic,public :: apply_ad => bint_apply_ad, &
    #:for rank_out in ranks_123
      #:for rank_in in ranks_123
- &  bint_apply_ad_r${rank_in}$_r${rank_out}$, &
+@:add_procedure(bint_apply_ad_r${rank_in}$_r${rank_out}$)
       #:endfor
    #:endfor
- & bint_dummy_method
    procedure,private :: apply_interp_ad => bint_apply_interp_ad
    procedure :: deallocate_outgrid => bint_deallocate_outgrid
    procedure,public :: delete => bint_delete
-  final :: bint_dummy_final
+   final :: bint_dummy_final
 end type bump_interpolator
 
 contains
@@ -167,7 +165,7 @@ type(fckit_configuration) :: bump_config
 type(fieldset_type) :: lmasks
 
 ! Set name
-#:set subr = 'bint_init'
+@:set_name(bint_init)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -331,7 +329,7 @@ real(kind_real),allocatable :: maxweight(:)
 logical :: maskouta(bint%nouta),lcheck_nc0b(geom%nc0)
 
 ! Set name
-#:set subr = 'bint_driver'
+@:set_name(bint_driver)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -471,34 +469,6 @@ end if
 end subroutine bint_driver
 
 !----------------------------------------------------------------------
-! Subroutine: bint_dummy_method
-!> Dummy method
-!----------------------------------------------------------------------
-subroutine bint_dummy_method(bint)
-
-implicit none
-
-! Passed variables
-class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
-
-! Set name
-#:set subr = 'bint_dummy_method'
-
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
-
-! Probe in
-@:probe_in()
-
-! Dummy action to avoid compiler warning
-bint%dummy_logical = .false.
-
-! Probe out
-@:probe_out()
-
-end subroutine bint_dummy_method
-
-!----------------------------------------------------------------------
 ! Subroutine bint_apply
 !> Apply interpolation
 !! If the fields that constitute the fieldset are not already allocated by
@@ -521,7 +491,7 @@ character(len=max_string) :: fieldname
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
-#:set subr = 'bint_apply'
+@:set_name(bint_apply)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -580,7 +550,7 @@ deallocate(array_out)
 
 end subroutine bint_apply
 
-#:for dtype,ftype in types_irl
+#:for dtype in dtypes_irl
    #:for rank_in in ranks_123
       #:for rank_out in ranks_123
 !----------------------------------------------------------------------
@@ -592,22 +562,22 @@ subroutine bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$(bint,array_in,array_o
 implicit none
 
 ! Passed variables
-class(bump_interpolator),intent(inout) :: bint        !< BUMP interpolator
-${ftype}$,intent(in) :: array_in(${dim[rank_in]}$)    !< Input array, the rightmost dimension being the vertical
-${ftype}$,intent(out) :: array_out(${dim[rank_out]}$) !< Output array, the rightmost dimension being the vertical
-logical,intent(in),optional :: trans_in               !< Input array should be transposed
-logical,intent(in),optional :: trans_out              !< Output array should be transposed
-logical,intent(in),optional :: nn                     !< Nearest neighbor interpolation
+class(bump_interpolator),intent(inout) :: bint               !< BUMP interpolator
+${ftype[dtype]}$,intent(in) :: array_in(${dim[rank_in]}$)    !< Input array, the rightmost dimension being the vertical
+${ftype[dtype]}$,intent(out) :: array_out(${dim[rank_out]}$) !< Output array, the rightmost dimension being the vertical
+logical,intent(in),optional :: trans_in                      !< Input array should be transposed
+logical,intent(in),optional :: trans_out                     !< Output array should be transposed
+logical,intent(in),optional :: nn                            !< Nearest neighbor interpolation
 
 ! Local variables
 integer :: nl_in,nl_out
+integer :: shp_out(${rank_out}$)
 #{if rank_in == 3 or rank_out == 3}# integer :: il #{endif}#
-${ftype}$,allocatable :: vec_in(:,:),vec_in_tmp(:,:),vec_out(:,:)
+${ftype[dtype]}$,allocatable :: vec_in(:,:),vec_in_tmp(:,:),vec_out(:,:)
 logical :: ltrans_in,ltrans_out,lnn
-#{if rank_out == 3}# logical,allocatable :: umask(:,:) #{endif}#
 
 ! Set name
-#:set subr = 'bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$'
+@:set_name(bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -661,9 +631,9 @@ allocate(vec_out(bint%nouta,bint%bump%geom%nl0))
 #:if rank_in == 3
    do il=1,nl_in
       if (ltrans_in) then
-         vec_in(:,il) = pack(transpose(array_in(:,:,il)),.true.)
+         vec_in(:,il) = reshape(transpose(array_in(:,:,il)),(/bint%bump%geom%nmga/))
       else
-         vec_in(:,il) = pack(array_in(:,:,il),.true.)
+         vec_in(:,il) = reshape(array_in(:,:,il),(/bint%bump%geom%nmga/))
       end if
    end do
 #:endif
@@ -677,6 +647,7 @@ else
 end if
 
 ! Unpack output data
+shp_out = shape(array_out)
 #{if rank_out == 1}# array_out = vec_out(:,1) #{endif}#
 #:if rank_out == 2
    if (ltrans_out) then
@@ -686,20 +657,13 @@ end if
    end if
 #:endif
 #:if rank_out == 3
-   if (ltrans_out) then
-      allocate(umask(size(array_out,3),size(array_out,2)))
-   else
-      allocate(umask(size(array_out,1),size(array_out,2)))
-   end if
-   umask = .true.
    do il=1,nl_out
       if (ltrans_out) then
-         array_out(:,:,il) = transpose(unpack(vec_out(:,il),umask,transpose(array_out(:,:,il))))
+         array_out(:,:,il) = transpose(reshape(vec_out(:,il),(/shp_out(2),shp_out(1)/)))
       else
-         array_out(:,:,il) = unpack(vec_out(:,il),umask,array_out(:,:,il))
+         array_out(:,:,il) = reshape(vec_out(:,il),shp_out(1:2))
       end if
    end do
-   deallocate(umask)
 #:endif
 
 ! Probe out
@@ -710,7 +674,7 @@ end subroutine bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
    #:endfor
 #:endfor
 
-#:for dtype,ftype in types_irl
+#:for dtype in dtypes_irl
 !----------------------------------------------------------------------
 ! Subroutine: bint_apply_interp_${dtype}$
 !> Low-level routine to apply the interpolation to a single field on a single level
@@ -720,18 +684,18 @@ subroutine bint_apply_interp_${dtype}$(bint,array_in,array_out,nn)
 implicit none
 
 ! Passed variables
-class(bump_interpolator),intent(inout) :: bint                           !< BUMP interpolator
-${ftype}$,intent(in) :: array_in(bint%bump%geom%nc0a,bint%bump%geom%nl0) !< Input field
-${ftype}$,intent(out) :: array_out(bint%nouta,bint%bump%geom%nl0)        !< Output field
-logical,intent(in),optional :: nn                                        !< Nearest neighbor interpolation
+class(bump_interpolator),intent(inout) :: bint                                  !< BUMP interpolator
+${ftype[dtype]}$,intent(in) :: array_in(bint%bump%geom%nc0a,bint%bump%geom%nl0) !< Input field
+${ftype[dtype]}$,intent(out) :: array_out(bint%nouta,bint%bump%geom%nl0)        !< Output field
+logical,intent(in),optional :: nn                                               !< Nearest neighbor interpolation
 
 ! Local variables
 #{if dtype == 'real'}# integer :: ilev #{endif}#
-${ftype}$,allocatable :: array_in_ext(:,:)
+${ftype[dtype]}$,allocatable :: array_in_ext(:,:)
 logical :: lnn
 
 ! Set name
-#:set subr = 'bint_apply_interp_${dtype}$'
+@:set_name(bint_apply_interp_${dtype}$)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -801,7 +765,7 @@ character(len=max_string) :: fieldname
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
-#:set subr = 'bint_apply_ad'
+@:set_name(bint_apply_ad)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -877,13 +841,13 @@ logical,intent(in),optional :: trans_in                     !< Input array shoul
 
 ! Local variables
 integer :: nl_in,nl_out
+integer :: shp_in(${rank_in}$)
 #{if rank_in == 3 or rank_out == 3}# integer :: il #{endif}#
 real(kind_real),allocatable :: vec_in(:,:),vec_in_tmp(:,:),vec_out(:,:)
 logical :: ltrans_in,ltrans_out
-#{if rank_in == 3}# logical,allocatable :: umask(:,:) #{endif}#
 
 ! Set name
-#:set subr = 'bint_apply_ad_r${rank_out}$_r${rank_in}$'
+@:set_name(bint_apply_ad_r${rank_out}$_r${rank_in}$)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -935,9 +899,9 @@ allocate(vec_in(bint%bump%geom%nmga,bint%bump%geom%nl0))
 #:if rank_out == 3
    do il=1,nl_out
       if (ltrans_out) then
-         vec_out(:,il) = pack(transpose(array_out(:,:,il)),.true.)
+         vec_out(:,il) = reshape(transpose(array_out(:,:,il)),(/bint%nouta/))
       else
-         vec_out(:,il) = pack(array_out(:,:,il),.true.)
+         vec_out(:,il) = reshape(array_out(:,:,il),(/bint%nouta/))
       end if
    end do
 #:endif
@@ -951,6 +915,7 @@ else
 end if
 
 ! Unpack input data
+shp_in = shape(array_in)
 #{if rank_in == 1}# array_in = vec_in(:,1) #{endif}#
 #:if rank_in == 2
    if (ltrans_in) then
@@ -960,20 +925,13 @@ end if
    end if
 #:endif
 #:if rank_in == 3
-   if (ltrans_in) then
-      allocate(umask(size(array_in,3),size(array_in,2)))
-   else
-      allocate(umask(size(array_in,1),size(array_in,2)))
-   end if
-   umask = .true.
    do il=1,nl_in
       if (ltrans_in) then
-         array_in(:,:,il) = transpose(unpack(vec_in(:,il),umask,transpose(array_in(:,:,il))))
+         array_in(:,:,il) = transpose(reshape(vec_in(:,il),(/shp_in(2),shp_in(1)/)))
       else
-         array_in(:,:,il) = unpack(vec_in(:,il),umask,array_in(:,:,il))
+         array_in(:,:,il) = reshape(vec_in(:,il),shp_in(1:2))
       end if
    end do
-   deallocate(umask)
 #:endif
 
 ! Release memory
@@ -1007,7 +965,7 @@ integer :: ilev
 real(kind_real) :: array_in_ext(bint%nc0b,bint%bump%geom%nl0)
 
 ! Set name
-#:set subr = 'bint_apply_interp_ad'
+@:set_name(bint_apply_interp_ad)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -1047,7 +1005,7 @@ implicit none
 class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 
 ! Set name
-#:set subr = 'bint_deallocate_outgrid'
+@:set_name(bint_deallocate_outgrid)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -1075,7 +1033,7 @@ implicit none
 class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 
 ! Set name
-#:set subr = 'bint_delete'
+@:set_name(bint_delete)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)
@@ -1106,7 +1064,7 @@ implicit none
 type(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 
 ! Set name
-#:set subr = 'bint_dummy_final'
+@:set_name(bint_dummy_final)
 
 ! Get instance index
 call probe%get_instance(bint%bump%iinst)

@@ -89,7 +89,7 @@ real(kind_real) :: b1,b2,b3,p(3)
 logical :: output
 
 ! Set name
-#:set subr = 'stripack_addnod'
+@:set_name(stripack_addnod)
 
 ! Probe in
 @:probe_in()
@@ -192,7 +192,7 @@ integer,intent(inout) :: lnew    !< cf. list
 integer :: k,lp,lsav,n1,n2,next,nsav
 
 ! Set name
-#:set subr = 'stripack_bdyadd'
+@:set_name(stripack_bdyadd)
 
 ! Probe in
 @:probe_in()
@@ -267,7 +267,7 @@ integer,intent(inout) :: lnew    !< cf. list
 integer :: k,lp,lsav,next,nst
 
 ! Set name
-#:set subr = 'stripack_covsph'
+@:set_name(stripack_covsph)
 
 ! Probe in
 @:probe_in()
@@ -328,7 +328,7 @@ real(kind_real),intent(out) :: output !< Determinant
 real(kind_real) :: t1,t2,t3
 
 ! Set name
-#:set subr = 'stripack_det'
+@:set_name(stripack_det)
 
 ! Probe in
 @:probe_in()
@@ -368,7 +368,7 @@ integer,intent(inout) :: lnew    !< cf. list
 integer :: lsav
 
 ! Set name
-#:set subr = 'stripack_insert'
+@:set_name(stripack_insert)
 
 ! Probe in
 @:probe_in()
@@ -406,7 +406,7 @@ integer,intent(inout) :: lnew    !< cf. list
 integer :: k,lp,n1,n2,n3
 
 ! Set name
-#:set subr = 'stripack_intadd'
+@:set_name(stripack_intadd)
 
 ! Probe in
 @:probe_in()
@@ -459,7 +459,7 @@ integer,intent(out) :: output !< A random integer in the range 1 to N.
 real(kind_real) :: u,x
 
 ! Set name
-#:set subr = 'stripack_jrand'
+@:set_name(stripack_jrand)
 
 ! Probe in
 @:probe_in()
@@ -509,7 +509,7 @@ logical,intent(out) :: output    !< TRUE if and only if N0 is in the closed left
 real(kind_real) :: zz
 
 ! Set name
-#:set subr = 'stripack_left'
+@:set_name(stripack_left)
 
 ! Probe in
 @:probe_in()
@@ -542,7 +542,7 @@ integer,intent(out) :: output !< Pointer such that LIST(output) = NB or LIST(out
 integer :: lp,nd
 
 ! Set name
-#:set subr = 'stripack_lstptr'
+@:set_name(stripack_lstptr)
 
 ! Probe in
 @:probe_in()
@@ -585,7 +585,7 @@ integer,intent(out) :: lp21      !< Index of IN1 as a neighbor of IN2 after the 
 integer :: lp,lph,lpsav
 
 ! Set name
-#:set subr = 'stripack_swap'
+@:set_name(stripack_swap)
 
 ! Probe in
 @:probe_in()
@@ -655,7 +655,7 @@ logical,intent(out) :: output      !< TRUE if and only if the arc connecting N1 
 real(kind_real) :: dx1,dx2,dx3,dy1,dy2,dy3,dz1,dz2,dz3,x4,y4,z4,zz
 
 ! Set name
-#:set subr = 'stripack_swptst'
+@:set_name(stripack_swptst)
 
 ! Probe in
 @:probe_in()
@@ -713,7 +713,7 @@ integer,save :: ix = 1,iy = 2,iz = 3
 real(kind_real) :: output,eps,ptn1,ptn2,q(3),s12,tol,xp,yp,zp
 
 ! Set name
-#:set subr = 'stripack_trfind'
+@:set_name(stripack_trfind)
 
 ! Probe in
 @:probe_in()
@@ -992,7 +992,7 @@ real(kind_real) :: d,d1,d2,d3
 logical :: output_1,output_2
 
 ! Set name
-#:set subr = 'stripack_trmesh'
+@:set_name(stripack_trmesh)
 
 ! Probe in
 @:probe_in()

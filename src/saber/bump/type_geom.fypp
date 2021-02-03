@@ -14,13 +14,15 @@ use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_node
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_array
 use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det
+use tools_func, only: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
+ & cx_to_cxa,cx_to_proc,cx_to_cxu
 use tools_kinds, only: kind_int,kind_real,nc_kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,eq
 use tools_samp, only: initialize_sampling_global
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
+use type_io, only: io_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -130,8 +132,8 @@ type geom_type
    integer,allocatable :: il0dir(:)               !< Dirac level
    integer,allocatable :: ivdir(:)                !< Dirac variable
 
-   ! Dummy variable
-   logical :: dummy_logical                       !< Dummy variable
+   ! I/O
+   type(io_type) :: io                            !< I/O
 contains
    procedure :: partial_dealloc => geom_partial_dealloc
    procedure :: dealloc => geom_dealloc
@@ -145,25 +147,24 @@ contains
    procedure :: index_from_lonlat => geom_index_from_lonlat
    procedure :: setup_dirac => geom_setup_dirac
    procedure :: check_arc => geom_check_arc
-   procedure :: geom_dummy_method
-   #:for dtype,ftype in types_irl
+   #:for dtype in dtypes_irl
       procedure :: geom_copy_c0a_to_mga_${dtype}$_single
       procedure :: geom_copy_c0a_to_mga_${dtype}$_all
       procedure :: geom_copy_mga_to_c0a_${dtype}$_single
       procedure :: geom_copy_mga_to_c0a_${dtype}$_all
    #:endfor
+@:init_procedure(6)
    generic :: copy_c0a_to_mga => &
-   #:for dtype,ftype in types_irl
- & geom_copy_c0a_to_mga_${dtype}$_single, &
- & geom_copy_c0a_to_mga_${dtype}$_all, &
+   #:for dtype in dtypes_irl
+@:add_procedure(geom_copy_c0a_to_mga_${dtype}$_single)
+@:add_procedure(geom_copy_c0a_to_mga_${dtype}$_all)
    #:endfor
- & geom_dummy_method
+@:init_procedure(6)
    generic :: copy_mga_to_c0a => &
-   #:for dtype,ftype in types_irl
- & geom_copy_mga_to_c0a_${dtype}$_single, &
- & geom_copy_mga_to_c0a_${dtype}$_all, &
+   #:for dtype in dtypes_irl
+@:add_procedure(geom_copy_mga_to_c0a_${dtype}$_single)
+@:add_procedure(geom_copy_mga_to_c0a_${dtype}$_all)
    #:endfor
- & geom_dummy_method
    procedure :: fieldset_to_c0 => geom_fieldset_to_c0
    procedure :: c0_to_fieldset => geom_c0_to_fieldset
    procedure :: compute_deltas => geom_compute_deltas
@@ -191,7 +192,7 @@ implicit none
 class(geom_type),intent(inout) :: geom !< Geometry
 
 ! Set name
-#:set subr = 'geom_partial_dealloc'
+@:set_name(geom_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -263,7 +264,7 @@ implicit none
 class(geom_type),intent(inout) :: geom !< Geometry
 
 ! Set name
-#:set subr = 'geom_dealloc'
+@:set_name(geom_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -274,6 +275,7 @@ call geom%afunctionspace_mg%final()
 if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
 call geom%com_mg%dealloc
+call geom%io%dealloc
 
 ! Probe out
 @:probe_out()
@@ -301,7 +303,7 @@ integer :: jc3,il0,iproc
 real(kind_real) :: lon_min,lon_max,lat_min,lat_max
 
 ! Set name
-#:set subr = 'geom_setup'
+@:set_name(geom_setup)
 
 ! Probe in
 @:probe_in()
@@ -359,6 +361,9 @@ call geom%setup_dirac(mpl,nam)
 
 ! Setup mask check
 call geom%setup_mask_check(mpl,nam)
+
+! Setup fields output
+call geom%io%init(mpl,nam,'0',geom%nc0,geom%nc0a,geom%c0a_to_c0,geom%proc_to_c0_offset,nam%repro,geom%hash_c0a)
 
 ! Summary data
 call mpl%f_comm%allreduce(minval(geom%lon_c0a),lon_min,fckit_mpi_min())
@@ -436,7 +441,7 @@ type(atlas_mesh_nodes) :: anodes
 type(atlas_structuredgrid) :: asgrid
 
 ! Set name
-#:set subr = 'geom_from_atlas'
+@:set_name(geom_from_atlas)
 
 ! Probe in
 @:probe_in()
@@ -588,7 +593,7 @@ real(kind_real) :: dist
 real(kind_real),allocatable :: rh_mga(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 
 ! Set name
-#:set subr = 'geom_setup_universe'
+@:set_name(geom_setup_universe)
 
 ! Probe in
 @:probe_in()
@@ -724,7 +729,7 @@ logical :: diff,chain
 type(com_type) :: com_AU
 
 ! Set name
-#:set subr = 'geom_setup_c0'
+@:set_name(geom_setup_c0)
 
 ! Probe in
 @:probe_in()
@@ -1079,7 +1084,6 @@ allocate(hash_c0u(geom%nc0u))
 allocate(geom%vunit_c0u(geom%nc0u,geom%nl0))
 allocate(geom%gmask_c0u(geom%nc0u,geom%nl0))
 allocate(geom%gmask_hor_c0u(geom%nc0u))
-allocate(order(geom%nc0u))
 
 ! Conversions
 geom%c0u_to_c0a = mpl%msv%vali
@@ -1112,14 +1116,13 @@ geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
 ! Check that Sc0 points in universe are not redundant
 write(mpl%info,'(a7,a)') '','Check that Sc0 points in universe are not redundant'
 call mpl%flush
-call qsort(geom%nc0u,hash_c0u,order)
+call qsort(geom%nc0u,hash_c0u)
 do ic0u=2,geom%nc0u
    if (eq(hash_c0u(ic0u),hash_c0u(ic0u-1))) call mpl%abort('${subr}$', &
  & 'redundant points in Sc0 point on universe, check the universe')
 end do
 
 ! Release memory
-deallocate(order)
 deallocate(hash_c0u)
 
 ! Probe out
@@ -1145,7 +1148,7 @@ integer :: diff_mask,diff_mask_tot
 logical :: same_mask
 
 ! Set name
-#:set subr = 'geom_setup_independent_levels'
+@:set_name(geom_setup_independent_levels)
 
 ! Probe in
 @:probe_in()
@@ -1202,7 +1205,7 @@ logical :: not_mask_c0u(geom%nc0u)
 type(tree_type) :: tree
 
 ! Set name
-#:set subr = 'geom_setup_mask_distance'
+@:set_name(geom_setup_mask_distance)
 
 ! Probe in
 @:probe_in()
@@ -1242,7 +1245,7 @@ if (trim(nam%draw_type)=='random_coast') then
    ! Local field
    do ic0a=1,geom%nc0a
       ic0u = geom%c0a_to_c0u(ic0a)
-   geom%mdist_c0a(ic0a,:) = geom%mdist_c0u(ic0u,:)
+      geom%mdist_c0a(ic0a,:) = geom%mdist_c0u(ic0u,:)
    end do
 end if
 
@@ -1270,7 +1273,7 @@ integer,allocatable :: bnda_to_c0u(:,:)
 real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
 
 ! Set name
-#:set subr = 'geom_setup_mask_check'
+@:set_name(geom_setup_mask_check)
 
 ! Probe in
 @:probe_in()
@@ -1348,7 +1351,7 @@ real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
 logical :: valid
 
 ! Set name
-#:set subr = 'geom_index_from_lonlat'
+@:set_name(geom_index_from_lonlat)
 
 ! Probe in
 @:probe_in()
@@ -1428,7 +1431,7 @@ integer :: idir,il0,il0dir,iprocdir,ic0adir
 logical :: valid
 
 ! Set name
-#:set subr = 'geom_setup_dirac'
+@:set_name(geom_setup_dirac)
 
 ! Probe in
 @:probe_in()
@@ -1500,7 +1503,7 @@ real(kind_real) :: x(2),y(2),z(2),v1(3),v2(3),va(3),vp(3),t(4)
 logical :: cflag(4)
 
 ! Set name
-#:set subr = 'geom_check_arc'
+@:set_name(geom_check_arc)
 
 ! Probe in
 @:probe_in()
@@ -1539,32 +1542,7 @@ end do
 
 end subroutine geom_check_arc
 
-!----------------------------------------------------------------------
-! Subroutine: geom_dummy_method
-!> Dummy method
-!----------------------------------------------------------------------
-subroutine geom_dummy_method(geom)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-
-! Set name
-#:set subr = 'geom_dummy_method'
-
-! Probe in
-@:probe_in()
-
-! Dummy action to avoid compiler warning
-geom%dummy_logical = .false.
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_dummy_method
-
-#:for dtype,ftype in types_irl
+#:for dtype in dtypes_irl
 !----------------------------------------------------------------------
 ! Subroutine: geom_copy_c0a_to_mga_${dtype}$_single
 !> Copy from subset Sc0 to model grid, halo A, single field
@@ -1574,17 +1552,17 @@ subroutine geom_copy_c0a_to_mga_${dtype}$_single(geom,mpl,fld_c0a,fld_mga)
 implicit none
 
 ! Passed variables
-class(geom_type),intent(in) :: geom                        !< Geometry
-type(mpl_type),intent(inout) :: mpl                        !< MPI data
-${ftype}$,intent(in) :: fld_c0a(geom%nc0a,geom%nl0)  !< Field on subset Sc0, halo A
-${ftype}$,intent(out) :: fld_mga(geom%nmga,geom%nl0) !< Field on model grid, halo A
+class(geom_type),intent(in) :: geom                         !< Geometry
+type(mpl_type),intent(inout) :: mpl                         !< MPI data
+${ftype[dtype]}$,intent(in) :: fld_c0a(geom%nc0a,geom%nl0)  !< Field on subset Sc0, halo A
+${ftype[dtype]}$,intent(out) :: fld_mga(geom%nmga,geom%nl0) !< Field on model grid, halo A
 
 ! Local variables
 integer :: ic0a,il0
-${ftype}$ :: fld_c0a_masked(geom%nc0a,geom%nl0)
+${ftype[dtype]}$ :: fld_c0a_masked(geom%nc0a,geom%nl0)
 
 ! Set name
-#:set subr = 'geom_copy_c0a_to_mga_${dtype}$_single'
+@:set_name(geom_copy_c0a_to_mga_${dtype}$_single)
 
 ! Probe in
 @:probe_in()
@@ -1595,9 +1573,7 @@ do il0=1,geom%nl0
       if (geom%gmask_c0a(ic0a,il0)) then
          fld_c0a_masked(ic0a,il0) = fld_c0a(ic0a,il0)
       else
-         #{if dtype == 'int'}# fld_c0a_masked(ic0a,il0) = mpl%msv%vali #{endif}#
-         #{if dtype == 'real'}# fld_c0a_masked(ic0a,il0) = mpl%msv%valr #{endif}#
-         #{if dtype == 'logical'}# fld_c0a_masked(ic0a,il0) = .false. #{endif}#
+         fld_c0a_masked(ic0a,il0) = mpl%${msv[dtype]}$
       end if
    end do
 end do
@@ -1624,17 +1600,17 @@ subroutine geom_copy_c0a_to_mga_${dtype}$_all(geom,mpl,nam,fld_c0a,fld_mga)
 implicit none
 
 ! Passed variables
-class(geom_type),intent(in) :: geom                         !< Geometry
-type(mpl_type),intent(inout) :: mpl                         !< MPI data
-type(nam_type),intent(in) :: nam                            !< Namelist
-${ftype}$,intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)  !< Field on subset Sc0, halo A
-${ftype}$,intent(out) :: fld_mga(geom%nmga,geom%nl0,nam%nv) !< Field on model grid, halo A
+class(geom_type),intent(in) :: geom                                !< Geometry
+type(mpl_type),intent(inout) :: mpl                                !< MPI data
+type(nam_type),intent(in) :: nam                                   !< Namelist
+${ftype[dtype]}$,intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)  !< Field on subset Sc0, halo A
+${ftype[dtype]}$,intent(out) :: fld_mga(geom%nmga,geom%nl0,nam%nv) !< Field on model grid, halo A
 
 ! Local variables
 integer :: iv
 
 ! Set name
-#:set subr = 'geom_copy_c0a_to_mga_${dtype}$_all'
+@:set_name(geom_copy_c0a_to_mga_${dtype}$_all)
 
 ! Probe in
 @:probe_in()
@@ -1657,16 +1633,16 @@ subroutine geom_copy_mga_to_c0a_${dtype}$_single(geom,mpl,fld_mga,fld_c0a)
 implicit none
 
 ! Passed variables
-class(geom_type),intent(in) :: geom                  !< Geometry
-type(mpl_type),intent(inout) :: mpl                  !< MPI data
-${ftype}$,intent(in) :: fld_mga(geom%nmga,geom%nl0)  !< Field on model grid, halo A
-${ftype}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on subset Sc0, halo A
+class(geom_type),intent(in) :: geom                         !< Geometry
+type(mpl_type),intent(inout) :: mpl                         !< MPI data
+${ftype[dtype]}$,intent(in) :: fld_mga(geom%nmga,geom%nl0)  !< Field on model grid, halo A
+${ftype[dtype]}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on subset Sc0, halo A
 
 ! Local variables
 integer :: ic0a,il0
 
 ! Set name
-#:set subr = 'geom_copy_mga_to_c0a_${dtype}$_single'
+@:set_name(geom_copy_mga_to_c0a_${dtype}$_single)
 
 ! Probe in
 @:probe_in()
@@ -1682,9 +1658,7 @@ end if
 ! Set masked values at missing value
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      #{if dtype == 'int'}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%vali #{endif}#
-      #{if dtype == 'real'}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%msv%valr #{endif}#
-      #{if dtype == 'logical'}# if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = .false. #{endif}#
+      if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%${msv[dtype]}$
    end do
 end do
 
@@ -1702,17 +1676,17 @@ subroutine geom_copy_mga_to_c0a_${dtype}$_all(geom,mpl,nam,fld_c0a,fld_mga)
 implicit none
 
 ! Passed variables
-class(geom_type),intent(in) :: geom                         !< Geometry
-type(mpl_type),intent(inout) :: mpl                         !< MPI data
-type(nam_type),intent(in) :: nam                            !< Namelist
-${ftype}$,intent(in) :: fld_mga(geom%nmga,geom%nl0,nam%nv)  !< Field on model grid, halo A
-${ftype}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset Sc0, halo A
+class(geom_type),intent(in) :: geom                                !< Geometry
+type(mpl_type),intent(inout) :: mpl                                !< MPI data
+type(nam_type),intent(in) :: nam                                   !< Namelist
+${ftype[dtype]}$,intent(in) :: fld_mga(geom%nmga,geom%nl0,nam%nv)  !< Field on model grid, halo A
+${ftype[dtype]}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset Sc0, halo A
 
 ! Local variables
 integer :: iv
 
 ! Set name
-#:set subr = 'geom_copy_mga_to_c0a_${dtype}$_all'
+@:set_name(geom_copy_mga_to_c0a_${dtype}$_all)
 
 ! Probe in
 @:probe_in()
@@ -1746,7 +1720,7 @@ real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on su
 real(kind_real),allocatable :: fld_mga(:,:,:)
 
 ! Set name
-#:set subr = 'geom_fieldset_to_c0'
+@:set_name(geom_fieldset_to_c0)
 
 ! Probe in
 @:probe_in()
@@ -1792,7 +1766,7 @@ type(fieldset_type),intent(inout) :: fieldset                    !< Fieldset
 real(kind_real),allocatable :: fld_mga(:,:,:)
 
 ! Set name
-#:set subr = 'geom_c0_to_fieldset'
+@:set_name(geom_c0_to_fieldset)
 
 ! Probe in
 @:probe_in()
@@ -1838,7 +1812,7 @@ real(kind_real),intent(out) :: dy   !< Latitude delta
 real(kind_real),intent(out) :: dz   !< Altitude delta
 
 ! Set name
-#:set subr = 'geom_compute_deltas'
+@:set_name(geom_compute_deltas)
 
 ! Probe in
 @:probe_in()
@@ -1878,7 +1852,7 @@ real(kind_real) :: lon,lat
 logical :: valid
 
 ! Set name
-#:set subr = 'geom_rand_point'
+@:set_name(geom_rand_point)
 
 ! Probe in
 @:probe_in()
@@ -1925,7 +1899,7 @@ integer,intent(in) :: img           !< Global index
 integer :: iproc
 
 ! Set name
-#:set subr = 'geom_mg_to_proc'
+@:set_name(geom_mg_to_proc)
 
 ! Probe in
 @:probe_in()
@@ -1958,20 +1932,14 @@ integer,intent(in) :: ic0           !< Global index
 ! Returned variable
 integer :: ic0a
 
-! Local variable
-integer :: iproc
-
 ! Set name
-#:set subr = 'geom_c0_to_c0a'
+@:set_name(geom_c0_to_c0a)
 
 ! Probe in
 @:probe_in()
 
-! Find processor
-iproc = geom%c0_to_proc(ic0)
-
-! Get halo A index
-ic0a = ic0-geom%proc_to_c0_offset(iproc)
+! Call generic function
+ic0a = cx_to_cxa(geom%nproc,geom%proc_to_c0_offset,ic0)
 
 ! Probe out
 @:probe_out()
@@ -1994,18 +1962,13 @@ integer,intent(in) :: ic0           !< Global index
 integer :: iproc
 
 ! Set name
-#:set subr = 'geom_c0_to_proc'
+@:set_name(geom_c0_to_proc)
 
 ! Probe in
 @:probe_in()
 
-! Find processor
-do iproc=1,geom%nproc-1
-   if ((geom%proc_to_c0_offset(iproc)<ic0).and.(ic0<=geom%proc_to_c0_offset(iproc+1))) then
-@:probe_out()
-      return
-   end if
-end do
+! Call generic function
+iproc = cx_to_proc(geom%nproc,geom%proc_to_c0_offset,ic0)
 
 ! Probe out
 @:probe_out()
@@ -2027,34 +1990,14 @@ integer,intent(in) :: ic0           !< Global index
 ! Returned variable
 integer :: ic0u
 
-! Local variable
-integer :: iproc,ic0a,offset,jproc
-
 ! Set name
-#:set subr = 'geom_c0_to_c0u'
+@:set_name(geom_c0_to_c0u)
 
 ! Probe in
 @:probe_in()
 
-! Find processor
-iproc = geom%c0_to_proc(ic0)
-
-if (geom%myuniverse(iproc)) then
-   ! Get halo A index
-   ic0a = ic0-geom%proc_to_c0_offset(iproc)
-
-   ! Compute universe offset
-   offset = 0
-   do jproc=1,iproc-1
-      if (geom%myuniverse(jproc)) offset = offset+geom%proc_to_nc0a(jproc)
-   end do
-
-   ! Get universe index
-   ic0u = offset+ic0a
-else
-   ! Not in my universe
-   ic0u = 0
-end if
+! Call generic function
+ic0u = cx_to_cxu(geom%nproc,geom%proc_to_c0_offset,geom%proc_to_nc0a,geom%myuniverse,ic0)
 
 ! Probe out
 @:probe_out()

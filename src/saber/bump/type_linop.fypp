@@ -86,7 +86,7 @@ implicit none
 class(interp_type),intent(inout) :: interp_data !< Interpolation data
 
 ! Set name
-#:set subr = 'interp_dealloc'
+@:set_name(interp_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -116,7 +116,7 @@ class(linop_type),intent(inout) :: linop !< Linear operator
 integer,intent(in),optional :: nvec      !< Size of the vector of linear operators with similar row and col
 
 ! Set name
-#:set subr = 'linop_alloc'
+@:set_name(linop_alloc)
 
 ! Probe in
 @:probe_in()
@@ -154,7 +154,7 @@ implicit none
 class(linop_type),intent(inout) :: linop !< Linear operator
 
 ! Set name
-#:set subr = 'linop_dealloc'
+@:set_name(linop_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -185,7 +185,7 @@ type(linop_type),intent(in) :: linop_in      !< Input linear operator
 integer,intent(in),optional :: n_s           !< Number of operations to copy
 
 ! Set name
-#:set subr = 'linop_copy'
+@:set_name(linop_copy)
 
 ! Probe in
 @:probe_in()
@@ -240,7 +240,7 @@ integer :: nvec
 integer :: grpid,row_id,col_id,S_id,Svec_id
 
 ! Set name
-#:set subr = 'linop_read'
+@:set_name(linop_read)
 
 ! Probe in
 @:probe_in()
@@ -299,7 +299,7 @@ integer,intent(in) :: ncid            !< NetCDF file
 integer :: grpid,n_s_id,nvec_id,row_id,col_id,S_id,Svec_id
 
 ! Set name
-#:set subr = 'linop_write'
+@:set_name(linop_write)
 
 ! Probe in
 @:probe_in()
@@ -355,7 +355,7 @@ integer,intent(out) :: nbufi          !< Buffer size (integer)
 integer,intent(out) :: nbufr          !< Buffer size (real)
 
 ! Set name
-#:set subr = 'linop_buffer_size'
+@:set_name(linop_buffer_size)
 
 ! Probe in
 @:probe_in()
@@ -391,10 +391,9 @@ real(kind_real),intent(out) :: bufr(nbufr) !< Buffer (real)
 
 ! Local variables
 integer :: ibufi,ibufr
-logical,allocatable :: mask_Svec(:,:)
 
 ! Set name
-#:set subr = 'linop_serialize'
+@:set_name(linop_serialize)
 
 ! Probe in
 @:probe_in()
@@ -417,31 +416,19 @@ ibufi = ibufi+1
 bufi(ibufi+1) = linop%nvec
 ibufi = ibufi+1
 
-! Data
+! Copy data
 if (linop%n_s>0) then
-   if (linop%nvec>0) then
-      ! Allocation
-      allocate(mask_Svec(linop%n_s,linop%nvec))
-
-      ! Initialization
-      mask_Svec = .true.
-   end if
-
-   ! Copy data
    bufi(ibufi+1:ibufi+linop%n_s) = linop%row
    ibufi = ibufi+linop%n_s
    bufi(ibufi+1:ibufi+linop%n_s) = linop%col
    ibufi = ibufi+linop%n_s
    if (linop%nvec>0) then
-      bufr(ibufr+1:ibufr+linop%n_s*linop%nvec) = pack(linop%Svec,mask_Svec)
+      bufr(ibufr+1:ibufr+linop%n_s*linop%nvec) = reshape(linop%Svec,(/linop%n_s*linop%nvec/))
       ibufr = ibufr+linop%n_s*linop%nvec
    else
       bufr(ibufr+1:ibufr+linop%n_s) = linop%S
       ibufr = ibufr+linop%n_s
    end if
-
-   ! Release memory
-   if (linop%nvec>0) deallocate(mask_Svec)
 end if
 
 ! Check
@@ -471,10 +458,9 @@ real(kind_real),intent(in) :: bufr(nbufr) !< Buffer (real)
 
 ! Local variables
 integer :: ibufi,ibufr,nvec
-logical,allocatable :: mask_Svec(:,:)
 
 ! Set name
-#:set subr = 'linop_deserialize'
+@:set_name(linop_deserialize)
 
 ! Probe in
 @:probe_in()
@@ -502,32 +488,20 @@ ibufi = ibufi+1
 ! Allocation
 call linop%alloc(nvec)
 
-! Data
+! Copy data
 if (linop%n_s>0) then
-   if (linop%nvec>0) then
-      ! Allocation
-      allocate(mask_Svec(linop%n_s,linop%nvec))
-
-      ! Initialization
-      mask_Svec = .true.
-   end if
-
-   ! Copy data
    linop%row = bufi(ibufi+1:ibufi+linop%n_s)
    ibufi = ibufi+linop%n_s
    linop%col = bufi(ibufi+1:ibufi+linop%n_s)
    ibufi = ibufi+linop%n_s
    if (linop%nvec>0) then
       linop%Svec = mpl%msv%valr
-      linop%Svec = unpack(bufr(ibufr+1:ibufr+linop%n_s*linop%nvec),mask_Svec,linop%Svec)
+      linop%Svec = reshape(bufr(ibufr+1:ibufr+linop%n_s*linop%nvec),(/linop%n_s,linop%nvec/))
       ibufr = ibufr+linop%n_s*linop%nvec
    else
       linop%S = bufr(ibufr+1:ibufr+linop%n_s)
       ibufr = ibufr+linop%n_s
    end if
-
-   ! Release memory
-   if (linop%nvec>0) deallocate(mask_Svec)
 end if
 
 ! Check
@@ -562,7 +536,7 @@ logical :: lmssrc,lmsdst,valid
 logical,allocatable :: missing_src(:),missing_dst(:)
 
 ! Set name
-#:set subr = 'linop_apply'
+@:set_name(linop_apply)
 
 ! Probe in
 @:probe_in()
@@ -673,7 +647,7 @@ integer,intent(in),optional :: ivec                 !< Index of the vector of li
 integer :: i_s
 
 ! Set name
-#:set subr = 'linop_apply_ad'
+@:set_name(linop_apply_ad)
 
 ! Probe in
 @:probe_in()
@@ -737,7 +711,7 @@ integer :: i_s,ithread
 real(kind_real) :: fld_arr(linop%n_dst,mpl%nthread)
 
 ! Set name
-#:set subr = 'linop_apply_sym'
+@:set_name(linop_apply_sym)
 
 ! Probe in
 @:probe_in()
@@ -813,7 +787,7 @@ real(kind_real),intent(in) :: S          !< Value
 type(linop_type) :: linop_tmp
 
 ! Set name
-#:set subr = 'linop_add_op'
+@:set_name(linop_add_op)
 
 ! Probe in
 @:probe_in()
@@ -866,7 +840,7 @@ type(linop_type),intent(in) :: linop_arr(mpl%nthread) !< Linear operator array
 integer :: ithread,offset
 
 ! Set name
-#:set subr = 'linop_gather'
+@:set_name(linop_gather)
 
 ! Probe in
 @:probe_in()
@@ -931,7 +905,7 @@ logical,allocatable :: missing(:)
 character(len=7) :: cfmt
 
 ! Set name
-#:set subr = 'linop_interp'
+@:set_name(linop_interp)
 
 ! Probe in
 @:probe_in()

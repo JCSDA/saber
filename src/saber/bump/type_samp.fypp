@@ -165,7 +165,7 @@ class(samp_type),intent(inout) :: samp !< Sampling
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Set name
-#:set subr = 'samp_alloc_mask'
+@:set_name(samp_alloc_mask)
 
 ! Probe in
 @:probe_in()
@@ -195,7 +195,7 @@ class(samp_type),intent(inout) :: samp !< Sampling
 type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Set name
-#:set subr = 'samp_alloc_other'
+@:set_name(samp_alloc_other)
 
 ! Probe in
 @:probe_in()
@@ -231,7 +231,7 @@ implicit none
 class(samp_type),intent(inout) :: samp !< Sampling
 
 ! Set name
-#:set subr = 'samp_partial_dealloc'
+@:set_name(samp_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -292,7 +292,7 @@ class(samp_type),intent(inout) :: samp !< Sampling
 integer :: il0
 
 ! Set name
-#:set subr = 'samp_dealloc'
+@:set_name(samp_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -360,7 +360,7 @@ integer,allocatable :: smask_c1uint(:,:),smask_c1ac3int(:,:,:)
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'samp_read'
+@:set_name(samp_read)
 
 ! Probe in
 @:probe_in()
@@ -493,7 +493,7 @@ integer,allocatable :: smask_c1uint(:,:),smask_c1ac3int(:,:,:)
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'samp_write'
+@:set_name(samp_write)
 
 ! Probe in
 @:probe_in()
@@ -609,7 +609,7 @@ real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'samp_write_grids'
+@:set_name(samp_write_grids)
 
 ! Probe in
 @:probe_in()
@@ -826,7 +826,7 @@ character(len=8) :: ivalformat
 character(len=1024) :: color
 
 ! Set name
-#:set subr = 'samp_setup'
+@:set_name(samp_setup)
 
 ! Probe in
 @:probe_in()
@@ -1049,7 +1049,7 @@ real(kind_real),allocatable :: m2(:,:,:)
 logical :: valid
 
 ! Set name
-#:set subr = 'samp_compute_mask'
+@:set_name(samp_compute_mask)
 
 ! Probe in
 @:probe_in()
@@ -1199,7 +1199,7 @@ real(kind_real) :: rh_c0a(geom%nc0a)
 logical :: smask_hor_c0a(geom%nc0a)
 
 ! Set name
-#:set subr = 'samp_compute_c1'
+@:set_name(samp_compute_c1)
 
 ! Probe in
 @:probe_in()
@@ -1309,7 +1309,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 integer :: ic0a,ic0u,ic1a,ic1u,ic1,iproc
 
 ! Set name
-#:set subr = 'samp_compute_mpi_c1a'
+@:set_name(samp_compute_mpi_c1a)
 
 ! Probe in
 @:probe_in()
@@ -1388,7 +1388,7 @@ real(kind_real) :: d,nn_dist(nam%nc3)
 logical :: found,proc_to_done(mpl%nproc)
 
 ! Set name
-#:set subr = 'samp_compute_c3'
+@:set_name(samp_compute_c3)
 
 ! Probe in
 @:probe_in()
@@ -1535,7 +1535,7 @@ integer :: il0,jc3,ic1a,jc0u
 logical :: valid
 
 ! Set name
-#:set subr = 'samp_check_mask'
+@:set_name(samp_check_mask)
 
 ! Probe in
 @:probe_in()
@@ -1598,7 +1598,7 @@ real(kind_real) :: rh_c1a(samp%nc1a)
 logical :: smask_hor_c1a(samp%nc1a)
 
 ! Set name
-#:set subr = 'samp_compute_c2'
+@:set_name(samp_compute_c2)
 
 ! Probe in
 @:probe_in()
@@ -1688,7 +1688,7 @@ integer :: ic0a,ic0u,ic1a,ic1u,ic2a,ic2u,ic2,iproc
 type(tree_type) :: tree
 
 ! Set name
-#:set subr = 'samp_compute_mpi_c2a'
+@:set_name(samp_compute_mpi_c2a)
 
 ! Probe in
 @:probe_in()
@@ -1800,7 +1800,7 @@ integer,allocatable :: c2b_to_c2(:),c2u_to_c2b(:)
 logical :: lcheck_c2b(samp%nc2u)
 
 ! Set name
-#:set subr = 'samp_compute_mpi_c2b'
+@:set_name(samp_compute_mpi_c2b)
 
 ! Probe in
 @:probe_in()
@@ -1895,7 +1895,7 @@ integer,allocatable :: c0c_to_c0(:)
 logical :: lcheck_c0c(geom%nc0u)
 
 ! Set name
-#:set subr = 'samp_compute_mpi_c'
+@:set_name(samp_compute_mpi_c)
 
 ! Probe in
 @:probe_in()
@@ -1989,7 +1989,7 @@ logical,allocatable :: sbuf(:,:),rbuf(:,:)
 type(tree_type) :: tree
 
 ! Set name
-#:set subr = 'samp_compute_mpi_d'
+@:set_name(samp_compute_mpi_d)
 
 ! Probe in
 @:probe_in()
@@ -2115,7 +2115,7 @@ logical :: lcheck_c1e(samp%nc1u)
 type(tree_type) :: tree
 
 ! Set name
-#:set subr = 'samp_compute_mpi_e'
+@:set_name(samp_compute_mpi_e)
 
 ! Probe in
 @:probe_in()
@@ -2237,7 +2237,7 @@ logical :: lcheck_c2f(samp%nc2u)
 type(com_type) :: com_AF
 
 ! Set name
-#:set subr = 'samp_diag_filter'
+@:set_name(samp_diag_filter)
 
 ! Probe in
 @:probe_in()
@@ -2400,7 +2400,7 @@ integer :: nmsr,nmsr_tot,ic2a,jc2u,kc2u
 real(kind_real),allocatable :: diag_c2u(:)
 
 ! Set name
-#:set subr = 'samp_diag_fill'
+@:set_name(samp_diag_fill)
 
 ! Probe in
 @:probe_in()

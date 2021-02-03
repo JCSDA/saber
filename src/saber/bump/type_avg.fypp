@@ -12,7 +12,6 @@ use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use tools_func, only: add,divide
 use tools_kinds, only: kind_real
-use tools_qsort, only: qsort
 use type_avg_blk, only: avg_blk_type
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
@@ -72,7 +71,7 @@ character(len=*),intent(in) :: prefix !< Prefix
 integer :: ib,ic2a
 
 ! Set name
-#:set subr = 'avg_alloc'
+@:set_name(avg_alloc)
 
 ! Probe in
 @:probe_in()
@@ -110,7 +109,7 @@ class(avg_type),intent(inout) :: avg !< Averaged statistics
 integer :: ib,ic2a
 
 ! Set name
-#:set subr = 'avg_dealloc'
+@:set_name(avg_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -146,7 +145,7 @@ class(avg_type),intent(in) :: avg_in     !< Input averaged statistics
 integer :: ib,ic2a
 
 ! Set name
-#:set subr = 'avg_copy'
+@:set_name(avg_copy)
 
 ! Probe in
 @:probe_in()
@@ -183,7 +182,7 @@ integer :: ib
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'avg_write'
+@:set_name(avg_write)
 
 ! Probe in
 @:probe_in()
@@ -224,7 +223,7 @@ integer :: ib,ic2a
 type(mom_blk_type) :: mom_blk
 
 ! Set name
-#:set subr = 'avg_compute'
+@:set_name(avg_compute)
 
 ! Probe in
 @:probe_in()
@@ -313,7 +312,7 @@ type(avg_type),intent(in) :: avg_2     !< Ensemble 2 averaged statistics
 integer :: ib,ic2a
 
 ! Set name
-#:set subr = 'avg_compute_hyb'
+@:set_name(avg_compute_hyb)
 
 ! Probe in
 @:probe_in()
@@ -371,7 +370,7 @@ integer :: ib,ic2a
 type(mom_blk_type) :: mom_blk_1,mom_blk_2
 
 ! Set name
-#:set subr = 'avg_compute_deh'
+@:set_name(avg_compute_deh)
 
 ! Probe in
 @:probe_in()
@@ -446,7 +445,7 @@ type(avg_type),intent(in) :: avg_in      !< Input averaged statistics
 integer :: ib
 
 ! Set name
-#:set subr = 'avg_copy_wgt'
+@:set_name(avg_copy_wgt)
 
 ! Probe in
 @:probe_in()
@@ -495,7 +494,7 @@ real(kind_real) :: cor(nam%nc3,bpar%nl0rmax,geom%nl0),nc1a_cor(nam%nc3,bpar%nl0r
 real(kind_real) :: m11asysq(nam%nc3,bpar%nl0rmax,geom%nl0),m11sq(nam%nc3,bpar%nl0rmax,geom%nl0),nc1a(nam%nc3,bpar%nl0rmax,geom%nl0)
 
 ! Set name
-#:set subr = 'avg_compute_bwavg'
+@:set_name(avg_compute_bwavg)
 
 ! Probe in
 @:probe_in()
@@ -612,7 +611,7 @@ real(kind_real) :: bwgtsq
 real(kind_real) :: m11sta(nam%nc3,bpar%nl0rmax,geom%nl0),stasq(nam%nc3,bpar%nl0rmax,geom%nl0)
 
 ! Set name
-#:set subr = 'avg_compute_bwavg_hyb'
+@:set_name(avg_compute_bwavg_hyb)
 
 ! Probe in
 @:probe_in()
@@ -708,7 +707,7 @@ real(kind_real) :: bwgtsq
 real(kind_real) :: m11lrm11(nam%nc3,bpar%nl0rmax,geom%nl0),m11lrm11asy(nam%nc3,bpar%nl0rmax,geom%nl0)
 
 ! Set name
-#:set subr = 'avg_compute_bwavg_deh'
+@:set_name(avg_compute_bwavg_deh)
 
 ! Probe in
 @:probe_in()

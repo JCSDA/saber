@@ -8,11 +8,11 @@
 !----------------------------------------------------------------------
 module type_lct
 
+use tools_const, only: rad2deg
 use tools_kinds, only: kind_real
 use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
-use type_io, only: io_type
 use type_lct_blk, only: lct_blk_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
@@ -64,7 +64,7 @@ type(bpar_type),intent(in) :: bpar   !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'lct_alloc'
+@:set_name(lct_alloc)
 
 ! Probe in
 @:probe_in()
@@ -98,7 +98,7 @@ class(lct_type),intent(inout) :: lct !< LCT
 integer :: ib
 
 ! Set name
-#:set subr = 'lct_partial_dealloc'
+@:set_name(lct_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -130,7 +130,7 @@ class(lct_type),intent(inout) :: lct !< LCT
 integer :: ib
 
 ! Set name
-#:set subr = 'lct_dealloc'
+@:set_name(lct_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -155,7 +155,7 @@ end subroutine lct_dealloc
 ! Subroutine: lct_run_lct
 !> LCT driver
 !----------------------------------------------------------------------
-subroutine lct_run_lct(lct,mpl,rng,nam,geom,bpar,io,ens)
+subroutine lct_run_lct(lct,mpl,rng,nam,geom,bpar,ens)
 
 implicit none
 
@@ -166,11 +166,10 @@ type(rng_type),intent(inout) :: rng  !< Random number generator
 type(nam_type),intent(inout) :: nam  !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 type(bpar_type),intent(in) :: bpar   !< Block parameters
-type(io_type),intent(in) :: io       !< I/O
 type(ens_type),intent(inout) :: ens  !< Ensemble
 
 ! Set name
-#:set subr = 'lct_run_lct'
+@:set_name(lct_run_lct)
 
 ! Probe in
 @:probe_in()
@@ -228,7 +227,7 @@ if (nam%write_lct) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Write LCT'
    call mpl%flush
-   call lct%write(mpl,nam,geom,bpar,io)
+   call lct%write(mpl,nam,geom,bpar)
 end if
 
 if (nam%lct_write_cor) then
@@ -265,7 +264,7 @@ type(bpar_type),intent(in) :: bpar   !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'lct_compute'
+@:set_name(lct_compute)
 
 ! Probe in
 @:probe_in()
@@ -312,7 +311,7 @@ type(bpar_type),intent(in) :: bpar      !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'lct_filter'
+@:set_name(lct_filter)
 
 ! Probe in
 @:probe_in()
@@ -351,7 +350,7 @@ type(bpar_type),intent(in) :: bpar      !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'lct_interp'
+@:set_name(lct_interp)
 
 ! Probe in
 @:probe_in()
@@ -375,7 +374,7 @@ end subroutine lct_interp
 ! Subroutine: lct_write
 !> Write LCT
 !----------------------------------------------------------------------
-subroutine lct_write(lct,mpl,nam,geom,bpar,io)
+subroutine lct_write(lct,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -385,14 +384,13 @@ type(mpl_type),intent(inout) :: mpl     !< MPI data
 type(nam_type),intent(in) :: nam        !< Namelist
 type(geom_type),intent(in) :: geom      !< Geometry
 type(bpar_type),intent(in) :: bpar      !< Block parameters
-type(io_type),intent(in) :: io          !< I/O
 
 ! Local variables
 integer :: ib
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'lct_write'
+@:set_name(lct_write)
 
 ! Probe in
 @:probe_in()
@@ -400,12 +398,15 @@ character(len=1024) :: filename
 ! Set file name
 filename = trim(nam%prefix)//'_lct'
 
-! Write vertical unit
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+! Write coordinates
+call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
+call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
+call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
 
+! Write field
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      call lct%blk(ib)%write(mpl,nam,geom,bpar,io,filename)
+      call lct%blk(ib)%write(mpl,nam,geom,bpar,filename)
    end if
 end do
 
@@ -433,7 +434,7 @@ type(bpar_type),intent(in) :: bpar      !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'lct_write_cor'
+@:set_name(lct_write_cor)
 
 ! Probe in
 @:probe_in()

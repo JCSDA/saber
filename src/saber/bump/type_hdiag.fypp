@@ -14,7 +14,6 @@ use type_bpar, only: bpar_type
 use type_diag, only: diag_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
-use type_io, only: io_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -61,7 +60,7 @@ implicit none
 class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
 
 ! Set name
-#:set subr = 'hdiag_dealloc'
+@:set_name(hdiag_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -90,7 +89,7 @@ end subroutine hdiag_dealloc
 ! Subroutine: hdiag_run_hdiag
 !> HDIAG driver
 !----------------------------------------------------------------------
-subroutine hdiag_run_hdiag(hdiag,mpl,rng,nam,geom,bpar,io,ens1,ens2)
+subroutine hdiag_run_hdiag(hdiag,mpl,rng,nam,geom,bpar,ens1,ens2)
 
 implicit none
 
@@ -101,12 +100,11 @@ type(rng_type),intent(inout) :: rng        !< Random number generator
 type(nam_type),intent(inout) :: nam        !< Namelist
 type(geom_type),intent(in) :: geom         !< Geometry
 type(bpar_type),intent(in) :: bpar         !< Block parameters
-type(io_type),intent(in) :: io             !< I/O
 type(ens_type),intent(inout) :: ens1       !< Ensemble 1
 type(ens_type),intent(in),optional :: ens2 !< Ensemble 2
 
 ! Set name
-#:set subr = 'hdiag_run_hdiag'
+@:set_name(hdiag_run_hdiag)
 
 ! Probe in
 @:probe_in()
@@ -261,7 +259,7 @@ call mpl%flush
 ! Compute ensemble 1 correlation
 write(mpl%info,'(a7,a)') '','Ensemble 1:'
 call mpl%flush
-call hdiag%cor_1%correlation(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'cor')
+call hdiag%cor_1%correlation(mpl,rng,nam,geom,bpar,hdiag%samp,hdiag%avg_1,'cor')
 
 select case (trim(nam%method))
 case ('hyb-avg','hyb-rnd','dual-ens')
@@ -270,9 +268,9 @@ case ('hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    select case (trim(nam%method))
    case ('hyb-avg','hyb-rnd')
-      call hdiag%cor_2%correlation(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cor_sta')
+      call hdiag%cor_2%correlation(mpl,rng,nam,geom,bpar,hdiag%samp,hdiag%avg_2,'cor_sta')
    case ('dual-ens')
-      call hdiag%cor_2%correlation(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_2,'cor_lr')
+      call hdiag%cor_2%correlation(mpl,rng,nam,geom,bpar,hdiag%samp,hdiag%avg_2,'cor_lr')
    end select
 end select
 
@@ -285,7 +283,7 @@ case ('loc','hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensemble 1:'
    call mpl%flush
-   call hdiag%loc_1%localization(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'loc')
+   call hdiag%loc_1%localization(mpl,rng,nam,geom,bpar,hdiag%samp,hdiag%avg_1,'loc')
 end select
 
 select case (trim(nam%method))
@@ -297,7 +295,7 @@ case ('hyb-avg','hyb-rnd')
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensemble 1 and 2:'
    call mpl%flush
-   call hdiag%loc_2%hybridization(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,'loc_hyb')
+   call hdiag%loc_2%hybridization(mpl,rng,nam,geom,bpar,hdiag%samp,hdiag%avg_1,'loc_hyb')
 end select
 
 if (trim(nam%method)=='dual-ens') then
@@ -308,7 +306,7 @@ if (trim(nam%method)=='dual-ens') then
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensembles 1 and 2:'
    call mpl%flush
-   call hdiag%loc_2%dualens(mpl,rng,nam,geom,bpar,io,hdiag%samp,hdiag%avg_1,hdiag%avg_2,hdiag%loc_3,'loc_deh','loc_deh_lr')
+   call hdiag%loc_2%dualens(mpl,rng,nam,geom,bpar,hdiag%samp,hdiag%avg_1,hdiag%avg_2,hdiag%loc_3,'loc_deh','loc_deh_lr')
 end if
 
 ! Probe out

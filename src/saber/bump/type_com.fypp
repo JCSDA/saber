@@ -41,9 +41,6 @@ type com_type
    integer,allocatable :: jexcldispls(:) !< Exclusive interior displacement
    integer,allocatable :: halo(:)        !< Halo buffer
    integer,allocatable :: excl(:)        !< Exclusive interior buffer
-
-   ! Dummy variable
-   logical :: dummy_logical              !< Dummy variable
 contains
    procedure :: dealloc => com_dealloc
    procedure :: read => com_read
@@ -52,27 +49,26 @@ contains
    procedure :: serialize => com_serialize
    procedure :: deserialize => com_deserialize
    procedure :: setup => com_setup
-   procedure :: com_dummy_method
-   #:for dtype,ftype in types_irl
+   #:for dtype in dtypes_irl
       #:for rank in ranks_12
          procedure :: com_ext_${dtype}$_r${rank}$
          procedure :: com_red_${dtype}$_r${rank}$
       #:endfor
    #:endfor
    generic :: ext => &
-   #:for dtype,ftype in types_irl
+@:init_procedure(6)
+   #:for dtype in dtypes_irl
       #:for rank in ranks_12
- & com_ext_${dtype}$_r${rank}$, &
+@:add_procedure(com_ext_${dtype}$_r${rank}$)
       #:endfor
    #:endfor
- & com_dummy_method
+@:init_procedure(6)
    generic :: red => &
-   #:for dtype,ftype in types_irl
+   #:for dtype in dtypes_irl
       #:for rank in ranks_12
- & com_red_${dtype}$_r${rank}$, &
+@:add_procedure(com_red_${dtype}$_r${rank}$)
       #:endfor
    #:endfor
- & com_dummy_method
 end type com_type
 
 private
@@ -92,7 +88,7 @@ implicit none
 class(com_type),intent(inout) :: com !< Communication data
 
 ! Set name
-#:set subr = 'com_dealloc'
+@:set_name(com_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -131,7 +127,7 @@ integer,intent(in) :: ncid            !< NetCDF file
 integer :: grpid,own_to_ext_id,own_to_red_id,jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
 
 ! Set name
-#:set subr = 'com_read'
+@:set_name(com_read)
 
 ! Probe in
 @:probe_in()
@@ -199,7 +195,7 @@ integer :: grpid,nproc_id,nred_id,next_id,nown_id,own_to_ext_id,own_to_red_id,nh
 integer :: jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
 
 ! Set name
-#:set subr = 'com_write'
+@:set_name(com_write)
 
 ! Probe in
 @:probe_in()
@@ -254,7 +250,7 @@ type(mpl_type),intent(inout) :: mpl !< MPI data
 integer,intent(out) :: nbufi        !< Buffer size (integer)
 
 ! Set name
-#:set subr = 'com_buffer_size'
+@:set_name(com_buffer_size)
 
 ! Probe in
 @:probe_in()
@@ -285,7 +281,7 @@ integer,intent(out) :: bufi(nbufi)  !< Buffer (integer)
 integer :: ibufi
 
 ! Set name
-#:set subr = 'com_serialize'
+@:set_name(com_serialize)
 
 ! Probe in
 @:probe_in()
@@ -351,7 +347,7 @@ integer,intent(in) :: bufi(nbufi)    !< Buffer (integer)
 integer :: ibufi
 
 ! Set name
-#:set subr = 'com_deserialize'
+@:set_name(com_deserialize)
 
 ! Probe in
 @:probe_in()
@@ -439,7 +435,7 @@ type(com_type) :: com_in(mpl%nproc)
 type(fckit_mpi_status) :: status
 
 ! Set name
-#:set subr = 'com_setup'
+@:set_name(com_setup)
 
 ! Probe in
 @:probe_in()
@@ -744,32 +740,7 @@ com_out%prefix = prefix
 
 end subroutine com_setup
 
-!----------------------------------------------------------------------
-! Subroutine: com_dummy_method
-!> Dummy method
-!----------------------------------------------------------------------
-subroutine com_dummy_method(com)
-
-implicit none
-
-! Passed variables
-class(com_type),intent(inout) :: com !< Communication data
-
-! Set name
-#:set subr = 'com_dummy_method'
-
-! Probe in
-@:probe_in()
-
-! Dummy action to avoid compiler warning
-com%dummy_logical = .false.
-
-! Probe out
-@:probe_out()
-
-end subroutine com_dummy_method
-
-#:for dtype,ftype in types_irl
+#:for dtype in dtypes_irl
    #:for rank in ranks_12
 !----------------------------------------------------------------------
 ! Subroutine: com_ext_${dtype}$_r${rank}$
@@ -780,18 +751,18 @@ subroutine com_ext_${dtype}$_r${rank}$(com,mpl,vec_red,vec_ext)
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com               !< Communication data
-type(mpl_type),intent(inout) :: mpl             !< MPI data
-${ftype}$,intent(in) :: vec_red(${dim[rank]}$)  !< Reduced vector
-${ftype}$,intent(out) :: vec_ext(${dim[rank]}$) !< Extended vector
+class(com_type),intent(in) :: com                      !< Communication data
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+${ftype[dtype]}$,intent(in) :: vec_red(${dim[rank]}$)  !< Reduced vector
+${ftype[dtype]}$,intent(out) :: vec_ext(${dim[rank]}$) !< Extended vector
 
 ! Local variables
 integer :: nl,il,iexcl,iown,ihalo
 integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
-${ftype}$,allocatable :: sbuf(:),rbuf(:)
+${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
 
 ! Set name
-#:set subr = 'com_ext_${dtype}$_r${rank}$'
+@:set_name(com_ext_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()
@@ -831,9 +802,7 @@ jhalodispls = com%jhalodispls*nl
 call mpl%f_comm%alltoall(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodispls)
 
 ! Initialization
-#{if dtype == 'int'}# vec_ext = 0 #{endif}#
-#{if dtype == 'real'}# vec_ext = 0.0 #{endif}#
-#{if dtype == 'logical'}# vec_ext = .false. #{endif}#
+vec_ext = ${zero[dtype]}$
 
 ! Copy interior
 !$omp parallel do schedule(static) private(il,iown)
@@ -872,7 +841,7 @@ end subroutine com_ext_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 
-#:for dtype,ftype in types_irl
+#:for dtype in dtypes_irl
    #:for rank in ranks_12
 !----------------------------------------------------------------------
 ! Subroutine: com_red_${dtype}$_r${rank}$
@@ -883,22 +852,22 @@ subroutine com_red_${dtype}$_r${rank}$(com,mpl,vec_ext,vec_red,nosum,op)
 implicit none
 
 ! Passed variables
-class(com_type),intent(in) :: com               !< Communication data
-type(mpl_type),intent(inout) :: mpl             !< MPI data
-${ftype}$,intent(in) :: vec_ext(${dim[rank]}$)  !< Extended vector
-${ftype}$,intent(out) :: vec_red(${dim[rank]}$) !< Reduced vector
-logical,intent(in),optional :: nosum            !< No-sum flag
-character(len=*),intent(in),optional :: op      !< Logical operation for the sum
+class(com_type),intent(in) :: com                      !< Communication data
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+${ftype[dtype]}$,intent(in) :: vec_ext(${dim[rank]}$)  !< Extended vector
+${ftype[dtype]}$,intent(out) :: vec_red(${dim[rank]}$) !< Reduced vector
+logical,intent(in),optional :: nosum                   !< No-sum flag
+character(len=*),intent(in),optional :: op             !< Logical operation for the sum
 
 ! Local variables
 integer :: nl,il,ihalo,iown,ired,iexcl,ithread
-${ftype}$,allocatable :: sbuf(:),rbuf(:),vec_red_arr(:,:,:)
+${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:),vec_red_arr(:,:,:)
 logical :: lnosum,valid
 logical,allocatable :: done(:)
 character(len=3) :: lop
 
 ! Set name
-#:set subr = 'com_red_${dtype}$_r${rank}$'
+@:set_name(com_red_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()
@@ -953,12 +922,9 @@ end do
 call mpl%f_comm%alltoall(sbuf,com%jhalocounts*nl,com%jhalodispls*nl,rbuf,com%jexclcounts*nl,com%jexcldispls*nl)
 
 ! Initialization
-#{if dtype == 'int'}# vec_red = 0 #{endif}#
-#{if dtype == 'real'}# vec_red = 0.0 #{endif}#
+vec_red = ${zero[dtype]}$
 #:if dtype == 'logical'
-   if (lnosum) then
-      vec_red = .false.
-   else
+   if (.not.lnosum) then
       if (trim(lop)=='and') vec_red = .true.
       if (trim(lop)=='or') vec_red = .false.
    end if
@@ -1017,8 +983,7 @@ if (lnosum) then
    end do
 else
    ! Initialization
-   #{if dtype == 'int'}# vec_red_arr = 0 #{endif}#
-   #{if dtype == 'real'}# vec_red_arr = 0.0 #{endif}#
+   vec_red_arr = ${zero[dtype]}$
    #:if dtype == 'logical'
       if (trim(lop)=='and') vec_red_arr = .true.
       if (trim(lop)=='or') vec_red_arr = .false.

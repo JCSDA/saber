@@ -22,7 +22,6 @@ use type_ens, only: ens_type
 use type_fieldset, only: fieldset_type
 use type_geom, only: geom_type
 use type_hdiag, only: hdiag_type
-use type_io, only: io_type
 use type_lct, only: lct_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -51,7 +50,6 @@ type bump_type
    type(ens_type) :: ens2    !< Second ensemble
    type(geom_type) :: geom   !< Geometry
    type(hdiag_type) :: hdiag !< Hybrid diagnostics
-   type(io_type) :: io       !< I/O
    type(lct_type) :: lct     !< LCT
    type(mpl_type) :: mpl     !< MPI data
    type(nam_type) :: nam     !< Namelist
@@ -124,7 +122,7 @@ integer :: lmsvali, llunit
 real(kind_real) :: lmsvalr
 
 ! Set name
-#:set subr = 'bump_create'
+@:set_name(bump_create)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -179,7 +177,7 @@ type(fckit_configuration),intent(in) :: grid           !< FCKIT grid configurati
 type(fieldset_type) :: fieldset
 
 ! Set name
-#:set subr = 'bump_create_deprecated_atlas'
+@:set_name(bump_create_deprecated_atlas)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -216,7 +214,7 @@ integer,intent(in),optional :: msvali                  !< Missing value for inte
 real(kind_real),intent(in),optional :: msvalr          !< Missing value for reals
 
 ! Set name
-#:set subr = 'bump_setup'
+@:set_name(bump_setup)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -307,14 +305,6 @@ else
 end if
 if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
-! Initialize fields output
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Initialize fields output'
-call bump%mpl%flush
-call bump%io%init(bump%mpl,bump%nam,bump%geom)
-if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
-
 ! Initialize block parameters
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
@@ -362,7 +352,7 @@ implicit none
 class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Set name
-#:set subr = 'bump_run_drivers'
+@:set_name(bump_run_drivers)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -394,7 +384,7 @@ if (bump%nam%new_normality) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run normality tests'
    call bump%mpl%flush
-   call bump%ens1%normality(bump%mpl,bump%nam,bump%geom,bump%io)
+   call bump%ens1%normality(bump%mpl,bump%nam,bump%geom)
 end if
 
 if (bump%nam%new_vbal) then
@@ -420,7 +410,7 @@ if (bump%nam%new_vbal.or.bump%nam%load_vbal) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run vertical balance tests driver'
    call bump%mpl%flush
-   call bump%vbal%run_vbal_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io)
+   call bump%vbal%run_vbal_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
@@ -430,7 +420,7 @@ if (bump%nam%new_var) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run variance driver'
    call bump%mpl%flush
-   call bump%var%run_var(bump%mpl,bump%rng,bump%nam,bump%geom,bump%ens1,bump%io)
+   call bump%var%run_var(bump%mpl,bump%rng,bump%nam,bump%geom,bump%ens1)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 elseif (bump%nam%load_var) then
    ! Read variance
@@ -438,7 +428,7 @@ elseif (bump%nam%load_var) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Read variance'
    call bump%mpl%flush
-   call bump%var%read(bump%mpl,bump%nam,bump%geom,bump%io)
+   call bump%var%read(bump%mpl,bump%nam,bump%geom)
 end if
 
 if (bump%nam%new_hdiag) then
@@ -448,9 +438,9 @@ if (bump%nam%new_hdiag) then
    write(bump%mpl%info,'(a)') '--- Run HDIAG driver'
    call bump%mpl%flush
    if ((trim(bump%nam%method)=='hyb-rnd').or.(trim(bump%nam%method)=='dual-ens')) then
-      call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1,ens2=bump%ens2)
+      call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%ens1,ens2=bump%ens2)
    else
-      call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1)
+      call bump%hdiag%run_hdiag(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%ens1)
    end if
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
@@ -471,7 +461,7 @@ if (bump%nam%new_lct) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run LCT driver'
    call bump%mpl%flush
-   call bump%lct%run_lct(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1)
+   call bump%lct%run_lct(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%ens1)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
    ! Copy LCT into C matrix
@@ -491,7 +481,7 @@ if (bump%nam%load_cmat) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Read C matrix'
    call bump%mpl%flush
-   call bump%cmat%read(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%io)
+   call bump%cmat%read(bump%mpl,bump%nam,bump%geom,bump%bpar)
 else
    if (bump%nam%forced_radii) then
       ! Copy namelist support radii into C matrix
@@ -524,7 +514,7 @@ if (bump%cmat%allocated.or.bump%nam%new_nicas) then
       call bump%mpl%flush
       write(bump%mpl%info,'(a)') '--- Write C matrix'
       call bump%mpl%flush
-      call bump%cmat%write(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%io)
+      call bump%cmat%write(bump%mpl,bump%nam,bump%geom,bump%bpar)
    end if
 end if
 
@@ -554,7 +544,7 @@ if (bump%nam%new_nicas.or.bump%nam%load_nicas) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run NICAS tests driver'
    call bump%mpl%flush
-   call bump%nicas%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%io,bump%ens1)
+   call bump%nicas%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom,bump%bpar,bump%ens1)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
@@ -578,7 +568,7 @@ integer,intent(in) :: ie                   !< Member index
 integer,intent(in) :: iens                 !< Ensemble number
 
 ! Set name
-#:set subr = 'bump_add_member'
+@:set_name(bump_add_member)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -644,7 +634,7 @@ type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_apply_vbal'
+@:set_name(bump_apply_vbal)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -686,7 +676,7 @@ type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_apply_vbal_inv'
+@:set_name(bump_apply_vbal_inv)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -728,7 +718,7 @@ type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_apply_vbal_ad'
+@:set_name(bump_apply_vbal_ad)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -770,7 +760,7 @@ type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_apply_vbal_inv_ad'
+@:set_name(bump_apply_vbal_inv_ad)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -812,7 +802,7 @@ type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_apply_stddev'
+@:set_name(bump_apply_stddev)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -854,7 +844,7 @@ type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_apply_stddev_inv'
+@:set_name(bump_apply_stddev_inv)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -896,7 +886,7 @@ type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_apply_nicas'
+@:set_name(bump_apply_nicas)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -942,7 +932,7 @@ type(atlas_fieldset),intent(inout) :: afieldset !< ATLAS fieldset
 type(fieldset_type) :: fieldset
 
 ! Set name
-#:set subr = 'bump_apply_nicas_deprecated_atlas'
+@:set_name(bump_apply_nicas_deprecated_atlas)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -977,7 +967,7 @@ integer,intent(out) :: n               !< Control variable size
 type(cv_type) :: cv
 
 ! Set name
-#:set subr = 'bump_get_cv_size'
+@:set_name(bump_get_cv_size)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1014,7 +1004,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 type(cv_type) :: cv
 
 ! Set name
-#:set subr = 'bump_apply_nicas_sqrt'
+@:set_name(bump_apply_nicas_sqrt)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1065,7 +1055,7 @@ type(atlas_fieldset),intent(inout) :: afieldset !< ATLAS Fieldset
 type(fieldset_type) :: fieldset
 
 ! Set name
-#:set subr = 'bump_apply_nicas_sqrt_deprecated_atlas'
+@:set_name(bump_apply_nicas_sqrt_deprecated_atlas)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1102,7 +1092,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 type(cv_type) :: cv
 
 ! Set name
-#:set subr = 'bump_apply_nicas_sqrt_ad'
+@:set_name(bump_apply_nicas_sqrt_ad)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1150,7 +1140,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 type(cv_type) :: cv
 
 ! Set name
-#:set subr = 'bump_randomize'
+@:set_name(bump_randomize)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1194,7 +1184,7 @@ integer :: ib,iv,jv
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_get_parameter'
+@:set_name(bump_get_parameter)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1269,7 +1259,7 @@ integer :: iscales,ie,imga,il0,iv
 real(kind_real) :: tmp
 
 ! Set name
-#:set subr = 'bump_copy_to_field'
+@:set_name(bump_copy_to_field)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1458,7 +1448,7 @@ class(bump_type),intent(inout) :: bump !< BUMP
 type(fieldset_type) :: fieldset
 
 ! Set name
-#:set subr = 'bump_test_get_parameter'
+@:set_name(bump_test_get_parameter)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1529,7 +1519,7 @@ integer :: ib,iv,jv
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-#:set subr = 'bump_set_parameter'
+@:set_name(bump_set_parameter)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1601,7 +1591,7 @@ type(atlas_fieldset),intent(inout) :: afieldset !< ATLAS fieldset
 type(fieldset_type) :: fieldset
 
 ! Set name
-#:set subr = 'bump_set_parameter_deprecated_atlas'
+@:set_name(bump_set_parameter_deprecated_atlas)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1638,7 +1628,7 @@ real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0) !< Field
 integer :: ic0a,il0
 
 ! Set name
-#:set subr = 'bump_copy_from_field'
+@:set_name(bump_copy_from_field)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1746,7 +1736,7 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 type(fieldset_type) :: fieldset,fieldset_req,fieldset_reqsq,fieldset_vert,fieldset_vertsq
 
 ! Set name
-#:set subr = 'bump_test_set_parameter'
+@:set_name(bump_test_set_parameter)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1786,7 +1776,8 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,(1.0+fld_c0a)*(maxval(bump%geom%
  & fieldset_vert)
 call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,((1.0+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg))), &
  & fieldset_vertsq)
-!call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,((1.0+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)))**2,fieldset) TODO: bugfix
+call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,((1.0+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)))**2, &
+ & fieldset_vertsq)
 
 ! Set parameter
 if (bump%nam%check_set_param_cor) then
@@ -1834,7 +1825,7 @@ real(kind_real),allocatable :: fld_c0a(:,:,:),pcv(:)
 type(fieldset_type) :: fieldset
 
 ! Set name
-#:set subr = 'bump_test_apply_interfaces'
+@:set_name(bump_test_apply_interfaces)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1949,7 +1940,7 @@ implicit none
 class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Set name
-#:set subr = 'bump_partial_dealloc'
+@:set_name(bump_partial_dealloc)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -1964,7 +1955,6 @@ call bump%ens1u%dealloc
 call bump%ens2%dealloc
 call bump%geom%partial_dealloc
 call bump%hdiag%dealloc
-call bump%io%dealloc
 call bump%lct%partial_dealloc
 call bump%nicas%partial_dealloc
 call bump%var%partial_dealloc
@@ -1987,7 +1977,7 @@ implicit none
 class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Set name
-#:set subr = 'bump_dealloc'
+@:set_name(bump_dealloc)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)
@@ -2006,7 +1996,6 @@ call bump%ens1u%dealloc
 call bump%ens2%dealloc
 call bump%geom%dealloc
 call bump%hdiag%dealloc
-call bump%io%dealloc
 call bump%lct%dealloc
 call bump%nicas%dealloc
 call bump%var%dealloc
@@ -2029,7 +2018,7 @@ implicit none
 type(bump_type),intent(inout) :: bump !< BUMP
 
 ! Set name
-#:set subr = 'bump_dummy_final'
+@:set_name(bump_dummy_final)
 
 ! Get instance index
 call probe%get_instance(bump%iinst)

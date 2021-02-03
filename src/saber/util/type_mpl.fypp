@@ -66,9 +66,6 @@ type mpl_type
    integer :: nprog                 !< Progression array size
    integer :: progint               !< Progression integer
    logical,allocatable :: done(:)   !< Progression array
-
-   ! Dummy variable
-   logical :: dummy_logical         !< Dummy variable
 contains
    procedure :: newunit => mpl_newunit
    procedure :: init => mpl_init
@@ -80,30 +77,29 @@ contains
    procedure :: timings => mpl_timings
    procedure :: update_tag => mpl_update_tag
    procedure :: broadcast => mpl_broadcast_string_array
-   procedure :: mpl_dummy_method
    #:for rank in ranks_1234
       procedure :: mpl_dot_prod_r${rank}$
    #:endfor
+@:init_procedure(4)
    generic :: dot_prod => &
    #:for rank in ranks_1234
- & mpl_dot_prod_r${rank}$, &
+@:add_procedure(mpl_dot_prod_r${rank}$)
    #:endfor
- & mpl_dummy_method
    procedure :: glb_to_loc_index => mpl_glb_to_loc_index
-   #:for dtype,ftype in types_irl
+   #:for dtype in dtypes_irl
       procedure :: mpl_glb_to_loc_${dtype}$
       procedure :: mpl_loc_to_glb_${dtype}$
    #:endfor
+@:init_procedure(3)
    generic :: glb_to_loc => &
-   #:for dtype,ftype in types_irl
- & mpl_glb_to_loc_${dtype}$, &
+   #:for dtype in dtypes_irl
+@:add_procedure(mpl_glb_to_loc_${dtype}$)
    #:endfor
- & mpl_dummy_method
+@:init_procedure(3)
    generic :: loc_to_glb => &
-   #:for dtype,ftype in types_irl
- & mpl_loc_to_glb_${dtype}$, &
+   #:for dtype in dtypes_irl
+@:add_procedure(mpl_loc_to_glb_${dtype}$)
    #:endfor
- & mpl_dummy_method
    procedure :: prog_init => mpl_prog_init
    procedure :: prog_print => mpl_prog_print
    procedure :: prog_final => mpl_prog_final
@@ -114,16 +110,16 @@ contains
    procedure :: nc_dim_check => mpl_nc_dim_check
    procedure :: nc_var_define_or_get => mpl_nc_var_define_or_get
    procedure :: ncerr => mpl_ncerr
-   #:for dtype,ftype in types_irls
+   #:for dtype in dtypes_irls
       procedure :: mpl_write_${dtype}$
       procedure :: mpl_write_${dtype}$_array
    #:endfor
+@:init_procedure(8)
    generic :: write => &
-   #:for dtype,ftype in types_irls
- & mpl_write_${dtype}$, &
- & mpl_write_${dtype}$_array, &
+   #:for dtype in dtypes_irls
+@:add_procedure(mpl_write_${dtype}$)
+@:add_procedure(mpl_write_${dtype}$_array)
    #:endfor
- & mpl_dummy_method
 end type mpl_type
 
 private
@@ -148,7 +144,7 @@ integer :: lun
 logical :: lopened
 
 ! Set name
-#:set subr = 'mpl_newunit'
+@:set_name(mpl_newunit)
 
 ! Probe in
 @:probe_in()
@@ -183,7 +179,7 @@ class(mpl_type),intent(inout) :: mpl             !< MPI data
 type(fckit_mpi_comm),intent(in),target :: f_comm !< FCKIT MPI communicator wrapper
 
 ! Set name
-#:set subr = 'mpl_init'
+@:set_name(mpl_init)
 
 ! Probe in
 @:probe_in()
@@ -250,7 +246,7 @@ implicit none
 class(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Set name
-#:set subr = 'mpl_final'
+@:set_name(mpl_final)
 
 ! Probe in
 @:probe_in()
@@ -279,7 +275,7 @@ logical,intent(in),optional :: advance_flag !< Advance flag
 logical :: ladvance_flag
 
 ! Set name
-#:set subr = 'mpl_flush'
+@:set_name(mpl_flush)
 
 ! Probe in
 @:probe_in()
@@ -443,7 +439,7 @@ implicit none
 class(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Set name
-#:set subr = 'mpl_print_instance'
+@:set_name(mpl_print_instance)
 
 ! Probe in
 @:probe_in()
@@ -478,7 +474,7 @@ character(len=1024),allocatable :: subfunc(:)
 probe_size = count(probe%instance(iinst)%timing_associated)
 
 ! Print number of instrumented functions/subroutines called
-write(mpl%info,'(a7,a,i3,a,i3)') '','Instrumented function/subroutines called :',probe_size,'/',${subr_list_size}$
+write(mpl%info,'(a7,a,i3,a,i3)') '','Instrumented function/subroutines called: ',probe_size,'/',${subr_list_size}$
 call mpl%flush
 
 if (probe_size>0) then
@@ -572,7 +568,7 @@ class(mpl_type),intent(inout) :: mpl !< MPI data
 integer,intent(in) :: add            !< Tag update incrememnt
 
 ! Set name
-#:set subr = 'mpl_update_tag'
+@:set_name(mpl_update_tag)
 
 ! Probe in
 @:probe_in()
@@ -606,7 +602,7 @@ integer,intent(in) :: root                         !< Root task
 integer :: i
 
 ! Set name
-#:set subr = 'mpl_broadcast_string_array'
+@:set_name(mpl_broadcast_string_array)
 
 ! Probe in
 @:probe_in()
@@ -620,31 +616,6 @@ end do
 @:probe_out()
 
 end subroutine mpl_broadcast_string_array
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_dummy_method
-!> Dummy method
-!----------------------------------------------------------------------
-subroutine mpl_dummy_method(mpl)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl !< MPI data
-
-! Set name
-#:set subr = 'mpl_dummy_method'
-
-! Probe in
-@:probe_in()
-
-! Dummy action to avoid compiler warning
-mpl%dummy_logical = .false.
-
-! Probe out
-@:probe_out()
-
-end subroutine mpl_dummy_method
 
 #:for rank in ranks_1234
 !----------------------------------------------------------------------
@@ -665,7 +636,7 @@ real(kind_real),intent(out) :: dp                 !< Global dot product
 real(kind_real) :: dp_loc(1),dp_out(1)
 
 ! Set name
-#:set subr = 'mpl_dot_prod_r${rank}$'
+@:set_name(mpl_dot_prod_r${rank}$)
 
 ! Probe in
 @:probe_in()
@@ -713,7 +684,7 @@ logical :: lpool(mpl%nproc)
 type(fckit_mpi_status) :: status
 
 ! Set name
-#:set subr = 'mpl_glb_to_loc_index'
+@:set_name(mpl_glb_to_loc_index)
 
 ! Probe in
 @:probe_in()
@@ -785,7 +756,7 @@ call mpl%update_tag(2)
 
 end subroutine mpl_glb_to_loc_index
 
-#:for dtype,ftype in types_irl
+#:for dtype in dtypes_irl
 !----------------------------------------------------------------------
 ! Subroutine: mpl_glb_to_loc_${dtype}$
 !> Global to local
@@ -800,20 +771,20 @@ integer,intent(in) :: nl                       !< Number of levels
 integer,intent(in) :: n_loc                    !< Local array size
 integer,intent(in) :: n_glb                    !< Global array size
 integer,intent(in) :: loc_to_glb(n_loc)        !< Local to global
-${ftype}$,intent(in) :: glb(:,:)               !< Global array
-${ftype}$,intent(out) :: loc(n_loc,nl)         !< Local array
+${ftype[dtype]}$,intent(in) :: glb(:,:)        !< Global array
+${ftype[dtype]}$,intent(out) :: loc(n_loc,nl)  !< Local array
 integer,intent(in),optional :: rootproc        !< Root task
 logical,intent(in),optional :: pool(mpl%nproc) !< Tasks pool
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,il,lrootproc
 integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
-${ftype}$,allocatable :: sbuf(:),rbuf(:)
+${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
 logical :: lpool(mpl%nproc)
 type(fckit_mpi_status) :: status
 
 ! Set name
-#:set subr = 'mpl_glb_to_loc_${dtype}$'
+@:set_name(mpl_glb_to_loc_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -906,7 +877,7 @@ deallocate(glb_to_proc)
 end subroutine mpl_glb_to_loc_${dtype}$
 #:endfor
 
-#:for dtype,ftype in types_irl
+#:for dtype in dtypes_irl
 !----------------------------------------------------------------------
 ! Subroutine: mpl_loc_to_glb_${dtype}$
 !> Local to global
@@ -916,23 +887,23 @@ subroutine mpl_loc_to_glb_${dtype}$(mpl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: n_loc             !< Local array size
-integer,intent(in) :: n_glb             !< Global array size
-integer,intent(in) :: loc_to_glb(n_loc) !< Local to global
-${ftype}$,intent(in) :: loc(n_loc)      !< Local array
-${ftype}$,intent(out) :: glb(:)         !< Global array
-logical,intent(in),optional :: bcast    !< Broadcast option
+class(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: n_loc               !< Local array size
+integer,intent(in) :: n_glb               !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)   !< Local to global
+${ftype[dtype]}$,intent(in) :: loc(n_loc) !< Local array
+${ftype[dtype]}$,intent(out) :: glb(:)    !< Global array
+logical,intent(in),optional :: bcast      !< Broadcast option
 
 ! Local variables
 integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp
 integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
-${ftype}$,allocatable :: rbuf(:)
+${ftype[dtype]}$,allocatable :: rbuf(:)
 logical :: lbcast
 type(fckit_mpi_status) :: status
 
 ! Set name
-#:set subr = 'mpl_loc_to_glb_${dtype}$'
+@:set_name(mpl_loc_to_glb_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -1019,7 +990,7 @@ integer,intent(in) :: nprog          !< Array size
 integer :: ithread
 
 ! Set name
-#:set subr = 'mpl_prog_init'
+@:set_name(mpl_prog_init)
 
 ! Probe in
 @:probe_in()
@@ -1062,7 +1033,7 @@ integer :: ithread
 real(kind_real) :: prog
 
 ! Set name
-#:set subr = 'mpl_prog_print'
+@:set_name(mpl_prog_print)
 
 ! Probe in
 @:probe_in()
@@ -1108,7 +1079,7 @@ integer :: ithread
 logical :: ladvance_flag
 
 ! Set name
-#:set subr = 'mpl_prog_final'
+@:set_name(mpl_prog_final)
 
 ! Probe in
 @:probe_in()
@@ -1163,7 +1134,7 @@ integer :: ncid
 integer :: info
 
 ! Set name
-#:set subr = 'mpl_nc_file_create_or_open'
+@:set_name(mpl_nc_file_create_or_open)
 
 ! Probe in
 @:probe_in()
@@ -1218,7 +1189,7 @@ integer :: grpid
 integer :: info
 
 ! Set name
-#:set subr = 'mpl_nc_group_define_or_get'
+@:set_name(mpl_nc_group_define_or_get)
 
 ! Probe in
 @:probe_in()
@@ -1255,7 +1226,7 @@ integer :: dimid
 integer :: info,dimsize_test
 
 ! Set name
-#:set subr = 'mpl_nc_dim_define_or_get'
+@:set_name(mpl_nc_dim_define_or_get)
 
 ! Probe in
 @:probe_in()
@@ -1299,7 +1270,7 @@ integer :: dimsize
 integer :: info,dimid
 
 ! Set name
-#:set subr = 'mpl_nc_dim_inquire'
+@:set_name(mpl_nc_dim_inquire)
 
 ! Probe in
 @:probe_in()
@@ -1335,7 +1306,7 @@ integer,intent(in) :: dimsize          !< Expected dimension size
 integer :: dimid,dimsize_test
 
 ! Set name
-#:set subr = 'mpl_nc_dim_check'
+@:set_name(mpl_nc_dim_check)
 
 ! Probe in
 @:probe_in()
@@ -1377,7 +1348,7 @@ integer :: varid
 integer :: info
 
 ! Set name
-#:set subr = 'mpl_nc_var_define_or_get'
+@:set_name(mpl_nc_var_define_or_get)
 
 ! Probe in
 @:probe_in()
@@ -1425,7 +1396,7 @@ if (info/=nf90_noerr) call mpl%abort(subr,nf90_strerror(info))
 
 end subroutine mpl_ncerr
 
-#:for dtype,ftype in types_irls
+#:for dtype in dtypes_irls
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_${dtype}$
 !> Write ${dtype}$ into a log file or into a NetCDF file
@@ -1439,14 +1410,14 @@ class(mpl_type),intent(inout) :: mpl     !< MPI data
 integer,intent(in) :: ncid               !< NetCDF file id
 character(len=*),intent(in) :: prefix    !< Prefix
 character(len=*),intent(in) :: variables !< Variable name
-${ftype}$,intent(in) :: var              !< Variable
+${ftype[dtype]}$,intent(in) :: var       !< Variable
 
 ! Local variables
 #{if dtype == 'int' or dtype == 'real'}# integer :: delta #{endif}#
 character(len=1024) :: for
 
 ! Set name
-#:set subr = 'mpl_write_${dtype}$'
+@:set_name(mpl_write_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -1477,7 +1448,7 @@ if (mpl%msv%is(ncid)) then
 
    ! Write in log file
    #:if dtype == 'string'
-      write(mpl%info,for) '',trim(variables),'',':',trim(var)
+      write(mpl%info,for) '',trim(variables),'',': ',trim(var)
    #:else
       write(mpl%info,for) '',trim(variables),'',':',var
    #:endif
@@ -1501,7 +1472,7 @@ end if
 end subroutine mpl_write_${dtype}$
 #:endfor
 
-#:for dtype,ftype in types_irls
+#:for dtype in dtypes_irls
 !----------------------------------------------------------------------
 ! Subroutine: mpl_write_${dtype}$_array
 !> Write ${dtype}$ array into a log file or into a NetCDF file
@@ -1516,7 +1487,7 @@ integer,intent(in) :: ncid               !< NetCDF file id
 character(len=*),intent(in) :: prefix    !< Prefix
 character(len=*),intent(in) :: variables !< Variable name
 integer,intent(in) :: n                  !< Array size
-${ftype}$,intent(in) :: var(n)           !< Array
+${ftype[dtype]}$,intent(in) :: var(n)    !< Array
 
 ! Local variables
 integer :: i
@@ -1524,7 +1495,7 @@ integer :: i
 character(len=1024) :: for,fullstr
 
 ! Set name
-#:set subr = 'mpl_write_${dtype}$_array'
+@:set_name(mpl_write_${dtype}$_array)
 
 ! Probe in
 @:probe_in()
@@ -1553,7 +1524,11 @@ if (mpl%msv%is(ncid)) then
       #{if dtype == 'string'}# for = '(a,a)' #{endif}#
 
       #:if dtype == 'string'
-         write(mpl%info,for) trim(var(i)),','
+         if (i==1) then
+            write(mpl%info,for) ' '//trim(var(i)),','
+         else
+            write(mpl%info,for) trim(var(i)),','
+         end if
       #:else
          write(mpl%info,for) var(i),','
       #:endif

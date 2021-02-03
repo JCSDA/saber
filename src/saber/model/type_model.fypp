@@ -29,7 +29,6 @@ use tools_atlas, only: create_atlas_function_space
 use tools_const, only: deg2rad,rad2deg,req,ps,pi
 use tools_func, only: lonlatmod
 use tools_kinds,only: kind_int,kind_signed_char,kind_float,kind_double,kind_real,nc_kind_int,nc_kind_real
-use tools_qsort, only: qsort
 use tools_repro, only: inf
 use type_fieldset, only: fieldset_type
 use type_mpl, only: mpl_type
@@ -158,7 +157,7 @@ implicit none
 class(model_type),intent(inout) :: model !< Model
 
 ! Set name
-#:set subr = 'model_alloc'
+@:set_name(model_alloc)
 
 ! Probe in
 @:probe_in()
@@ -193,7 +192,7 @@ class(model_type),intent(inout) :: model !< Model
 integer :: ie
 
 ! Set name
-#:set subr = 'model_dealloc'
+@:set_name(model_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -261,7 +260,7 @@ type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask,afield_smask
 type(fieldset_type) :: fieldset
 
 ! Set name
-#:set subr = 'model_setup'
+@:set_name(model_setup)
 
 ! Probe in
 @:probe_in()
@@ -765,7 +764,7 @@ real(kind_real),pointer :: real_ptr(:,:)
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'model_read'
+@:set_name(model_read)
 
 ! Probe in
 @:probe_in()
@@ -823,7 +822,7 @@ type(fieldset_type),intent(out) :: fieldset  !< Fieldset
 character(len=1024) :: fullname
 
 ! Set name
-#:set subr = 'model_read_member'
+@:set_name(model_read_member)
 
 ! Probe in
 @:probe_in()
@@ -860,7 +859,7 @@ character(len=*),intent(in) :: filename  !< Filename ('ens1' or 'ens2')
 integer :: ne,ie,nsub,isub,ie_sub
 
 ! Set name
-#:set subr = 'model_load_ens'
+@:set_name(model_load_ens)
 
 ! Probe in
 @:probe_in()

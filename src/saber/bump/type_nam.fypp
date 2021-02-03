@@ -221,7 +221,7 @@ integer,intent(in) :: nproc        !< Number of MPI task
 integer :: il,iv,i,ildwv
 
 ! Set name
-#:set subr = 'nam_init'
+@:set_name(nam_init)
 
 ! Probe in
 @:probe_in()
@@ -1097,7 +1097,7 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Set name
-#:set subr = 'nam_bcast'
+@:set_name(nam_bcast)
 
 ! Probe in
 @:probe_in()
@@ -1291,7 +1291,7 @@ character(len=:),allocatable :: str_array(:)
 type(fckit_configuration) :: subconf
 
 ! Set name
-#:set subr = 'nam_from_conf'
+@:set_name(nam_from_conf)
 
 ! Probe in
 @:probe_in()
@@ -1739,7 +1739,7 @@ integer :: iv,ivmin,i,il,idir,ildwv
 character(len=2) :: ivchar,ildwvchar
 
 ! Set name
-#:set subr = 'nam_check'
+@:set_name(nam_check)
 
 ! Probe in
 @:probe_in()
@@ -2130,7 +2130,7 @@ integer :: lncid
 real(kind_real),allocatable :: londir(:),latdir(:),lon_ldwv(:),lat_ldwv(:)
 
 ! Set name
-#:set subr = 'nam_write'
+@:set_name(nam_write)
 
 ! Probe in
 @:probe_in()
@@ -2278,7 +2278,7 @@ call mpl%write(lncid,'nam','vbal_pseudo_inv',nam%vbal_pseudo_inv)
 call mpl%write(lncid,'nam','vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 call mpl%write(lncid,'nam','vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
 call mpl%write(lncid,'nam','forced_var',nam%forced_var)
-call mpl%write(lncid,'nam','stddev',nam%nl*nam%nv,pack(nam%stddev(1:nam%nl,1:nam%nv),.true.))
+call mpl%write(lncid,'nam','stddev',nam%nl*nam%nv,reshape(nam%stddev(1:nam%nl,1:nam%nv),(/nam%nl*nam%nv/)))
 call mpl%write(lncid,'nam','var_filter',nam%var_filter)
 call mpl%write(lncid,'nam','var_niter',nam%var_niter)
 call mpl%write(lncid,'nam','var_rhflt',nam%var_rhflt*req)
@@ -2317,8 +2317,8 @@ call mpl%write(lncid,'nam','subsamp',nam%subsamp)
 call mpl%write(lncid,'nam','network',nam%network)
 call mpl%write(lncid,'nam','mpicom',nam%mpicom)
 call mpl%write(lncid,'nam','forced_radii',nam%forced_radii)
-call mpl%write(lncid,'nam','rh',nam%nl*(nam%nv+1),pack(nam%rh(1:nam%nl,0:nam%nv),.true.))
-call mpl%write(lncid,'nam','rv',nam%nl*(nam%nv+1),pack(nam%rv(1:nam%nl,0:nam%nv),.true.))
+call mpl%write(lncid,'nam','rh',nam%nl*(nam%nv+1),reshape(nam%rh(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/)))
+call mpl%write(lncid,'nam','rv',nam%nl*(nam%nv+1),reshape(nam%rv(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/)))
 call mpl%write(lncid,'nam','pos_def_test',nam%pos_def_test)
 call mpl%write(lncid,'nam','write_grids',nam%write_grids)
 
@@ -2380,7 +2380,7 @@ character(len=1024),intent(out) :: io_value !< I/O value
 integer :: i
 
 ! Set name
-#:set subr = 'nam_io_key_value'
+@:set_name(nam_io_key_value)
 
 ! Probe in
 @:probe_in()

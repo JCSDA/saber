@@ -19,7 +19,7 @@ integer :: ncid,nlon_id,nlat_id,nlev_id,lon_id,lat_id,a_id,b_id
 real(kind_double),allocatable :: lon(:),lat(:),a(:),b(:)
 
 ! Set name
-#:set subr = 'model_gem_coord'
+@:set_name(model_gem_coord)
 
 ! Probe in
 @:probe_in()
@@ -117,7 +117,7 @@ real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
 
 ! Set name
-#:set subr = 'model_gem_read'
+@:set_name(model_gem_read)
 
 ! Probe in
 @:probe_in()

@@ -19,7 +19,7 @@ integer :: ncid,nlon_id,nlat_id,nlev_id,lon_id,lat_id,a_id,b_id
 real(kind_real),allocatable :: lon(:,:),lat(:,:),a(:),b(:)
 
 ! Set name
-#:set subr = 'model_arp_coord'
+@:set_name(model_arp_coord)
 
 ! Probe in
 @:probe_in()
@@ -121,7 +121,7 @@ real(kind_real),allocatable :: fld_tmp(:,:,:)
 character(len=3) :: ilchar
 
 ! Set name
-#:set subr = 'model_arp_read'
+@:set_name(model_arp_read)
 
 ! Probe in
 @:probe_in()

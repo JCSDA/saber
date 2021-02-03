@@ -19,7 +19,7 @@ integer :: ncid,nx_id,ny_id,nz_id,lon_id,lat_id,z_id,area_id,lmask_id
 real(kind_real),allocatable :: lon(:,:),lat(:,:),z(:),area(:,:),lmask(:,:,:)
 
 ! Set name
-#:set subr = 'model_qg_coord'
+@:set_name(model_qg_coord)
 
 ! Probe in
 @:probe_in()
@@ -123,7 +123,7 @@ real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
 
 ! Set name
-#:set subr = 'model_qg_read'
+@:set_name(model_qg_read)
 
 ! Probe in
 @:probe_in()

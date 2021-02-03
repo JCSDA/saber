@@ -120,7 +120,7 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 type(rng_type),intent(inout) :: rng      !< Random number generator
 
 ! Set name
-#:set subr = 'minim_compute'
+@:set_name(minim_compute)
 
 ! Probe in
 @:probe_in()
@@ -173,7 +173,7 @@ real(kind_real),intent(in) :: x(minim%nx) !< Control vector
 real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Set name
-#:set subr = 'minim_cost'
+@:set_name(minim_cost)
 
 ! Probe in
 @:probe_in()
@@ -214,7 +214,7 @@ real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
 ! Set name
-#:set subr = 'minim_cost_fit_diag'
+@:set_name(minim_cost_fit_diag)
 
 ! Probe in
 @:probe_in()
@@ -275,7 +275,7 @@ end if
 call fit_diag(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef,fit_rh,fit_rv,fit)
 
 ! Pack
-fit_pack = pack(fit,mask=.true.)
+fit_pack = reshape(fit,(/minim%ny/))
 
 ! Observations penalty
 fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
@@ -339,7 +339,7 @@ real(kind_real) :: fit(minim%nc3,minim%nl0),D(4,minim%nscales)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny),coef(minim%nscales)
 
 ! Set name
-#:set subr = 'minim_cost_fit_lct'
+@:set_name(minim_cost_fit_lct)
 
 ! Probe in
 @:probe_in()
@@ -364,7 +364,7 @@ call fit_lct(mpl,minim%nc3,minim%nl0,minim%dxsq,minim%dysq,minim%dxdy,minim%dzsq
  & D,coef,fit)
 
 ! Pack
-fit_pack = pack(fit,mask=.true.)
+fit_pack = reshape(fit,(/minim%ny/))
 
 ! Observations penalty
 f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
@@ -396,7 +396,7 @@ real(kind_real) :: fbefore,newf,steplength,tmp
 real(kind_real) :: delta(minim%nx),newx(minim%nx)
 
 ! Set name
-#:set subr = 'minim_hooke'
+@:set_name(minim_hooke)
 
 ! Probe in
 @:probe_in()
@@ -506,7 +506,7 @@ real(kind_real) :: ftmp
 real(kind_real) :: z(minim%nx)
 
 ! Set name
-#:set subr = 'minim_best_nearby'
+@:set_name(minim_best_nearby)
 
 ! Probe in
 @:probe_in()
@@ -566,7 +566,7 @@ real(kind_real) :: d(minim%nx),q0(minim%nx),q1(minim%nx),v(minim%nx,minim%nx),y(
 logical :: fk,illc
 
 ! Set name
-#:set subr = 'minim_praxis'
+@:set_name(minim_praxis)
 
 ! Probe in
 @:probe_in()
@@ -836,7 +836,7 @@ real(kind_real),intent(out) :: flin                !< Value of the function at t
 real(kind_real) :: t(minim%nx)
 
 ! Set name
-#:set subr = 'minim_flin'
+@:set_name(minim_flin)
 
 ! Probe in
 @:probe_in()
@@ -898,7 +898,7 @@ real(kind_real) :: l,s,temp,val
 logical :: fk
 
 ! Set name
-#:set subr = 'minim_quad'
+@:set_name(minim_quad)
 
 ! Probe in
 @:probe_in()
@@ -980,7 +980,7 @@ real(kind_real) :: d1,f0,f2,fm,s,sf1,sx1,t2,temp,x2,xm
 logical :: dz,ok
 
 ! Set name
-#:set subr = 'minim_minny'
+@:set_name(minim_minny)
 
 ! Probe in
 @:probe_in()
@@ -1130,7 +1130,7 @@ real(kind_real) :: c,e(n),eps,f,g,h,s,temp,x,y,z
 logical :: skip
 
 ! Set name
-#:set subr = 'minim_minfit'
+@:set_name(minim_minfit)
 
 ! Probe in
 @:probe_in()
@@ -1339,7 +1339,7 @@ real(kind_real),intent(inout) :: a2(n) !< Second vector
 real(kind_real) :: a3(n)
 
 ! Set name
-#:set subr = 'minim_swap'
+@:set_name(minim_swap)
 
 ! Probe in
 @:probe_in()
@@ -1372,7 +1372,7 @@ integer :: i,j,j2,j3
 real(kind_real) :: t
 
 ! Set name
-#:set subr = 'minim_svsort'
+@:set_name(minim_svsort)
 
 ! Probe in
 @:probe_in()
@@ -1410,7 +1410,7 @@ class(minim_type),intent(in) :: minim        !< Minimization data
 real(kind_real),intent(inout) :: x(minim%nx) !< Vector
 
 ! Set name
-#:set subr = 'minim_vt_dir'
+@:set_name(minim_vt_dir)
 
 ! Probe in
 @:probe_in()
@@ -1440,7 +1440,7 @@ real(kind_real),intent(inout) :: x(minim%nx) !< Vector
 integer :: ix
 
 ! Set name
-#:set subr = 'minim_vt_inv'
+@:set_name(minim_vt_inv)
 
 ! Probe in
 @:probe_in()

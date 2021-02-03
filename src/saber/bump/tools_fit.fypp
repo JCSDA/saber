@@ -56,7 +56,7 @@ real(kind_real) :: fit_rm,fit_rp,distmin
 real(kind_real) :: raw_tmp(n)
 
 ! Set name
-#:set subr = 'fit_fast_fit'
+@:set_name(fit_fast_fit)
 
 ! Probe in
 @:probe_in()
@@ -208,7 +208,7 @@ integer :: i,j
 real(kind_real) :: kernel(n,n),distnorm,profile_init(n),norm
 
 ! Set name
-#:set subr = 'fit_ver_smooth'
+@:set_name(fit_ver_smooth)
 
 ! Probe in
 @:probe_in()
@@ -269,7 +269,7 @@ integer :: i,j,iinf,isup
 real(kind_real) :: profile_init(n)
 
 ! Set name
-#:set subr = 'fit_ver_fill'
+@:set_name(fit_ver_fill)
 
 ! Probe in
 @:probe_in()

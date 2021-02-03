@@ -19,7 +19,7 @@ integer :: ncid,nlon_id,nlat_id,nlev_id,lon_id,lat_id,pres_id
 real(kind_real),allocatable :: lon(:),lat(:),pres(:)
 
 ! Set name
-#:set subr = 'model_ifs_coord'
+@:set_name(model_ifs_coord)
 
 ! Probe in
 @:probe_in()
@@ -109,7 +109,7 @@ real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
 
 ! Set name
-#:set subr = 'model_ifs_read'
+@:set_name(model_ifs_read)
 
 ! Probe in
 @:probe_in()

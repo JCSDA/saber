@@ -17,7 +17,6 @@ use type_avg, only: avg_type
 use type_bpar, only: bpar_type
 use type_diag_blk, only: diag_blk_type
 use type_geom, only: geom_type
-use type_io, only: io_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_probe, only: probe
@@ -72,7 +71,7 @@ character(len=*),intent(in) :: prefix  !< Block prefix
 integer :: ib,ic2a
 
 ! Set name
-#:set subr = 'diag_alloc'
+@:set_name(diag_alloc)
 
 ! Probe in
 @:probe_in()
@@ -117,7 +116,7 @@ class(diag_type),intent(inout) :: diag !< Diagnostic
 integer :: ib,ic2a
 
 ! Set name
-#:set subr = 'diag_dealloc'
+@:set_name(diag_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -141,7 +140,7 @@ end subroutine diag_dealloc
 ! Subroutine: diag_write
 !> Write
 !----------------------------------------------------------------------
-subroutine diag_write(diag,mpl,nam,geom,bpar,io,samp)
+subroutine diag_write(diag,mpl,nam,geom,bpar,samp)
 
 implicit none
 
@@ -151,7 +150,6 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(io_type),intent(in) :: io         !< I/O
 type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
@@ -160,7 +158,7 @@ real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
 character(len=2*1024+12) :: filename
 
 ! Set name
-#:set subr = 'diag_write'
+@:set_name(diag_write)
 
 ! Probe in
 @:probe_in()
@@ -184,8 +182,10 @@ if (nam%local_diag) then
    ! Set file name
    filename = trim(nam%prefix)//'_local_diag_'//trim(diag%prefix)
 
-   ! Write vertical unit
-   call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+   ! Write coordinates
+   call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
+   call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
+   call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
 
    do ib=1,bpar%nbe
       if (bpar%diag_block(ib)) then
@@ -212,11 +212,11 @@ if (nam%local_diag) then
 
             ! Write fields
             if (i==1) then
-               call io%fld_write(mpl,nam,geom,filename,'coef_ens',fld_c0a,bpar%blockname(ib))
+               call geom%io%fld_write(mpl,nam,filename,'coef_ens',fld_c0a,geom%gmask_c0a,bpar%blockname(ib))
             elseif (i==2) then
-               call io%fld_write(mpl,nam,geom,filename,'fit_rh',fld_c0a,bpar%blockname(ib))
+               call geom%io%fld_write(mpl,nam,filename,'fit_rh',fld_c0a,geom%gmask_c0a,bpar%blockname(ib))
             elseif (i==3) then
-               call io%fld_write(mpl,nam,geom,filename,'fit_rv',fld_c0a,bpar%blockname(ib))
+               call geom%io%fld_write(mpl,nam,filename,'fit_rv',fld_c0a,geom%gmask_c0a,bpar%blockname(ib))
             end if
          end do
       end if
@@ -276,7 +276,7 @@ real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
 real(kind_real),allocatable :: rh_c2a(:,:),rv_c2a(:,:)
 
 ! Set name
-#:set subr = 'diag_filter_fit'
+@:set_name(diag_filter_fit)
 
 ! Probe in
 @:probe_in()
@@ -406,7 +406,7 @@ integer :: ib,ic2a
 real(kind_real) :: rmse,norm,rmse_tot,norm_tot
 
 ! Set name
-#:set subr = 'diag_build_fit'
+@:set_name(diag_build_fit)
 
 ! Probe in
 @:probe_in()
@@ -462,7 +462,7 @@ character(len=*),intent(in) :: prefix  !< Diagnostic prefix
 integer :: ib,ic2a,il0
 
 ! Set name
-#:set subr = 'diag_covariance'
+@:set_name(diag_covariance)
 
 ! Probe in
 @:probe_in()
@@ -502,7 +502,7 @@ end subroutine diag_covariance
 ! Subroutine: diag_correlation
 !> Compute correlation
 !----------------------------------------------------------------------
-subroutine diag_correlation(diag,mpl,rng,nam,geom,bpar,io,samp,avg,prefix)
+subroutine diag_correlation(diag,mpl,rng,nam,geom,bpar,samp,avg,prefix)
 
 implicit none
 
@@ -513,7 +513,6 @@ type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(io_type),intent(in) :: io         !< I/O
 type(samp_type),intent(in) :: samp     !< Sampling
 type(avg_type),intent(in) :: avg       !< Averaged statistics
 character(len=*),intent(in) :: prefix  !< Diagnostic prefix
@@ -522,7 +521,7 @@ character(len=*),intent(in) :: prefix  !< Diagnostic prefix
 integer :: ib,ic2a,il0
 
 ! Set name
-#:set subr = 'diag_correlation'
+@:set_name(diag_correlation)
 
 ! Probe in
 @:probe_in()
@@ -581,7 +580,7 @@ call diag%filter_fit(mpl,nam,geom,bpar,samp)
 call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
+if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,samp)
 
 ! Probe out
 @:probe_out()
@@ -592,7 +591,7 @@ end subroutine diag_correlation
 ! Subroutine: diag_localization
 !> Compute diagnostic localization
 !----------------------------------------------------------------------
-subroutine diag_localization(diag,mpl,rng,nam,geom,bpar,io,samp,avg,prefix)
+subroutine diag_localization(diag,mpl,rng,nam,geom,bpar,samp,avg,prefix)
 
 implicit none
 
@@ -603,7 +602,6 @@ type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(io_type),intent(in) :: io         !< I/O
 type(samp_type),intent(in) :: samp     !< Sampling
 type(avg_type),intent(in) :: avg       !< Averaged statistics
 character(len=*),intent(in) :: prefix  !< Block prefix
@@ -612,7 +610,7 @@ character(len=*),intent(in) :: prefix  !< Block prefix
 integer :: ib,ic2a,il0
 
 ! Set name
-#:set subr = 'diag_localization'
+@:set_name(diag_localization)
 
 ! Probe in
 @:probe_in()
@@ -671,7 +669,7 @@ call diag%filter_fit(mpl,nam,geom,bpar,samp)
 call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
+if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,samp)
 
 ! Probe out
 @:probe_out()
@@ -682,7 +680,7 @@ end subroutine diag_localization
 ! Subroutine: diag_hybridization
 !> Compute diagnostic hybridization
 !----------------------------------------------------------------------
-subroutine diag_hybridization(diag,mpl,rng,nam,geom,bpar,io,samp,avg,prefix)
+subroutine diag_hybridization(diag,mpl,rng,nam,geom,bpar,samp,avg,prefix)
 
 implicit none
 
@@ -693,7 +691,6 @@ type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(io_type),intent(in) :: io         !< I/O
 type(samp_type),intent(in) :: samp     !< Sampling
 type(avg_type),intent(in) :: avg       !< Averaged statistics
 character(len=*),intent(in) :: prefix  !< Diagnostic prefix
@@ -702,7 +699,7 @@ character(len=*),intent(in) :: prefix  !< Diagnostic prefix
 integer :: ib,ic2a,il0,iv
 
 ! Set name
-#:set subr = 'diag_hybridization'
+@:set_name(diag_hybridization)
 
 ! Probe in
 @:probe_in()
@@ -768,7 +765,7 @@ call diag%filter_fit(mpl,nam,geom,bpar,samp)
 call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
+if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,samp)
 
 ! Probe out
 @:probe_out()
@@ -779,7 +776,7 @@ end subroutine diag_hybridization
 ! Subroutine: diag_dualens
 !> Compute diagnostic dualens
 !----------------------------------------------------------------------
-subroutine diag_dualens(diag,mpl,rng,nam,geom,bpar,io,samp,avg,avg_lr,diag_lr,prefix,prefix_lr)
+subroutine diag_dualens(diag,mpl,rng,nam,geom,bpar,samp,avg,avg_lr,diag_lr,prefix,prefix_lr)
 
 implicit none
 
@@ -790,7 +787,6 @@ type(rng_type),intent(inout) :: rng      !< Random number generator
 type(nam_type),intent(in) :: nam         !< Namelist
 type(geom_type),intent(in) :: geom       !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
-type(io_type),intent(in) :: io           !< I/O
 type(samp_type),intent(in) :: samp       !< Sampling
 type(avg_type),intent(in) :: avg         !< Averaged statistics
 type(avg_type),intent(in) :: avg_lr      !< LR averaged statistics
@@ -802,7 +798,7 @@ character(len=*),intent(in) :: prefix_lr !< LR diagnostic prefix
 integer :: ib,ic2a,il0
 
 ! Set name
-#:set subr = 'diag_dualens'
+@:set_name(diag_dualens)
 
 ! Probe in
 @:probe_in()
@@ -876,8 +872,8 @@ call diag%build_fit(mpl,nam,geom,bpar)
 call diag_lr%build_fit(mpl,nam,geom,bpar)
 
 ! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,io,samp)
-if (nam%write_hdiag) call diag_lr%write(mpl,nam,geom,bpar,io,samp)
+if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,samp)
+if (nam%write_hdiag) call diag_lr%write(mpl,nam,geom,bpar,samp)
 
 ! Probe out
 @:probe_out()

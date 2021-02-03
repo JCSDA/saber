@@ -19,7 +19,7 @@ integer :: ncid,nmg_id,nlev_id,lon_id,lat_id,pres_id
 real(kind_float),allocatable :: lon(:),lat(:),pres(:)
 
 ! Set name
-#:set subr = 'model_mpas_coord'
+@:set_name(model_mpas_coord)
 
 ! Probe in
 @:probe_in()
@@ -97,7 +97,7 @@ integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 
 ! Set name
-#:set subr = 'model_mpas_read'
+@:set_name(model_mpas_read)
 
 ! Probe in
 @:probe_in()

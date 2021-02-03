@@ -18,7 +18,6 @@ use type_cmat_blk, only: cmat_blk_type
 use type_diag, only: diag_type
 use type_geom, only: geom_type
 use type_hdiag, only: hdiag_type
-use type_io, only: io_type
 use type_lct, only: lct_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
@@ -68,7 +67,7 @@ class(cmat_type),intent(inout) :: cmat !< C matrix
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Set name
-#:set subr = 'cmat_alloc'
+@:set_name(cmat_alloc)
 
 ! Probe in
 @:probe_in()
@@ -98,7 +97,7 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'cmat_alloc_blk'
+@:set_name(cmat_alloc_blk)
 
 ! Probe in
 @:probe_in()
@@ -136,7 +135,7 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'cmat_init'
+@:set_name(cmat_init)
 
 ! Probe in
 @:probe_in()
@@ -166,7 +165,7 @@ class(cmat_type),intent(inout) :: cmat !< C matrix
 integer :: ib
 
 ! Set name
-#:set subr = 'cmat_partial_dealloc'
+@:set_name(cmat_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -202,7 +201,7 @@ class(cmat_type),intent(inout) :: cmat !< C matrix
 integer :: ib
 
 ! Set name
-#:set subr = 'cmat_dealloc'
+@:set_name(cmat_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -227,7 +226,7 @@ end subroutine cmat_dealloc
 ! Subroutine: cmat_read
 !> Read
 !----------------------------------------------------------------------
-subroutine cmat_read(cmat,mpl,nam,geom,bpar,io)
+subroutine cmat_read(cmat,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -237,14 +236,13 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(io_type),intent(in) :: io         !< I/O
 
 ! Local variables
 integer :: ib,ncid,anisotropic
 character(len=1024) :: filename,grpname
 
 ! Set name
-#:set subr = 'cmat_read'
+@:set_name(cmat_read)
 
 ! Probe in
 @:probe_in()
@@ -286,18 +284,18 @@ do ib=1,bpar%nbe
       ! Read fields
       call nam%io_key_value(bpar%blockname(ib),grpname)
       if (bpar%nicas_block(ib)) then
-         call io%fld_read(mpl,nam,geom,filename,'coef_ens',cmat%blk(ib)%coef_ens,grpname)
-         call io%fld_read(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta,grpname)
-         call io%fld_read(mpl,nam,geom,filename,'rh',cmat%blk(ib)%rh,grpname)
-         call io%fld_read(mpl,nam,geom,filename,'rv',cmat%blk(ib)%rv,grpname)
-         call io%fld_read(mpl,nam,geom,filename,'rhs',cmat%blk(ib)%rhs,grpname)
-         call io%fld_read(mpl,nam,geom,filename,'rvs',cmat%blk(ib)%rvs,grpname)
+         call geom%io%fld_read(mpl,nam,filename,'coef_ens',cmat%blk(ib)%coef_ens,grpname)
+         call geom%io%fld_read(mpl,nam,filename,'coef_sta',cmat%blk(ib)%coef_sta,grpname)
+         call geom%io%fld_read(mpl,nam,filename,'rh',cmat%blk(ib)%rh,grpname)
+         call geom%io%fld_read(mpl,nam,filename,'rv',cmat%blk(ib)%rv,grpname)
+         call geom%io%fld_read(mpl,nam,filename,'rhs',cmat%blk(ib)%rhs,grpname)
+         call geom%io%fld_read(mpl,nam,filename,'rvs',cmat%blk(ib)%rvs,grpname)
          if (cmat%blk(ib)%anisotropic) then
-            call io%fld_read(mpl,nam,geom,filename,'H11',cmat%blk(ib)%H11,grpname)
-            call io%fld_read(mpl,nam,geom,filename,'H22',cmat%blk(ib)%H22,grpname)
-            call io%fld_read(mpl,nam,geom,filename,'H33',cmat%blk(ib)%H33,grpname)
-            call io%fld_read(mpl,nam,geom,filename,'H12',cmat%blk(ib)%H12,grpname)
-            call io%fld_read(mpl,nam,geom,filename,'Hcoef',cmat%blk(ib)%Hcoef,grpname)
+            call geom%io%fld_read(mpl,nam,filename,'H11',cmat%blk(ib)%H11,grpname)
+            call geom%io%fld_read(mpl,nam,filename,'H22',cmat%blk(ib)%H22,grpname)
+            call geom%io%fld_read(mpl,nam,filename,'H33',cmat%blk(ib)%H33,grpname)
+            call geom%io%fld_read(mpl,nam,filename,'H12',cmat%blk(ib)%H12,grpname)
+            call geom%io%fld_read(mpl,nam,filename,'Hcoef',cmat%blk(ib)%Hcoef,grpname)
          end if
       end if
    end if
@@ -312,7 +310,7 @@ end subroutine cmat_read
 ! Subroutine: cmat_write
 !> Write
 !----------------------------------------------------------------------
-subroutine cmat_write(cmat,mpl,nam,geom,bpar,io)
+subroutine cmat_write(cmat,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -322,7 +320,6 @@ type(mpl_type),intent(inout) :: mpl !< MPI data
 type(nam_type),intent(in) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom  !< Geometry
 type(bpar_type),intent(in) :: bpar  !< Block parameters
-type(io_type),intent(in) :: io      !< I/O
 
 ! Local variables
 integer :: ib
@@ -330,7 +327,7 @@ integer :: ncid
 character(len=1024) :: filename,grpname
 
 ! Set name
-#:set subr = 'cmat_write'
+@:set_name(cmat_write)
 
 ! Probe in
 @:probe_in()
@@ -338,26 +335,28 @@ character(len=1024) :: filename,grpname
 ! Set filename
 filename = trim(nam%prefix)//'_cmat'
 
-! Write vertical unit
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+! Write coordinates
+call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
+call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
+call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
 
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Write fields
       call nam%io_key_value(bpar%blockname(ib),grpname)
       if (bpar%nicas_block(ib)) then
-         call io%fld_write(mpl,nam,geom,filename,'coef_ens',cmat%blk(ib)%coef_ens,grpname)
-         call io%fld_write(mpl,nam,geom,filename,'coef_sta',cmat%blk(ib)%coef_sta,grpname)
-         call io%fld_write(mpl,nam,geom,filename,'rh',cmat%blk(ib)%rh,grpname)
-         call io%fld_write(mpl,nam,geom,filename,'rv',cmat%blk(ib)%rv,grpname)
-         call io%fld_write(mpl,nam,geom,filename,'rhs',cmat%blk(ib)%rhs,grpname)
-         call io%fld_write(mpl,nam,geom,filename,'rvs',cmat%blk(ib)%rvs,grpname)
+         call geom%io%fld_write(mpl,nam,filename,'coef_ens',cmat%blk(ib)%coef_ens,geom%gmask_c0a,grpname)
+         call geom%io%fld_write(mpl,nam,filename,'coef_sta',cmat%blk(ib)%coef_sta,geom%gmask_c0a,grpname)
+         call geom%io%fld_write(mpl,nam,filename,'rh',cmat%blk(ib)%rh,geom%gmask_c0a,grpname)
+         call geom%io%fld_write(mpl,nam,filename,'rv',cmat%blk(ib)%rv,geom%gmask_c0a,grpname)
+         call geom%io%fld_write(mpl,nam,filename,'rhs',cmat%blk(ib)%rhs,geom%gmask_c0a,grpname)
+         call geom%io%fld_write(mpl,nam,filename,'rvs',cmat%blk(ib)%rvs,geom%gmask_c0a,grpname)
          if (cmat%blk(ib)%anisotropic) then
-            call io%fld_write(mpl,nam,geom,filename,'H11',cmat%blk(ib)%H11,grpname)
-            call io%fld_write(mpl,nam,geom,filename,'H22',cmat%blk(ib)%H22,grpname)
-            call io%fld_write(mpl,nam,geom,filename,'H33',cmat%blk(ib)%H33,grpname)
-            call io%fld_write(mpl,nam,geom,filename,'H12',cmat%blk(ib)%H12,grpname)
-            call io%fld_write(mpl,nam,geom,filename,'Hcoef',cmat%blk(ib)%Hcoef,grpname)
+            call geom%io%fld_write(mpl,nam,filename,'H11',cmat%blk(ib)%H11,geom%gmask_c0a,grpname)
+            call geom%io%fld_write(mpl,nam,filename,'H22',cmat%blk(ib)%H22,geom%gmask_c0a,grpname)
+            call geom%io%fld_write(mpl,nam,filename,'H33',cmat%blk(ib)%H33,geom%gmask_c0a,grpname)
+            call geom%io%fld_write(mpl,nam,filename,'H12',cmat%blk(ib)%H12,geom%gmask_c0a,grpname)
+            call geom%io%fld_write(mpl,nam,filename,'Hcoef',cmat%blk(ib)%Hcoef,geom%gmask_c0a,grpname)
          end if
       end if
 
@@ -400,7 +399,7 @@ integer :: ib,n,i,il0,il0i,ic2a,ic0a
 real(kind_real),allocatable :: fld_c2a(:,:,:),fld_c2b(:,:),fld_c0a(:,:,:)
 
 ! Set name
-#:set subr = 'cmat_from_hdiag'
+@:set_name(cmat_from_hdiag)
 
 ! Probe in
 @:probe_in()
@@ -598,7 +597,7 @@ type(lct_type),intent(in) :: lct       !< LCT
 integer :: ib,iv,jv,iscales,il0,ic0a
 
 ! Set name
-#:set subr = 'cmat_from_lct'
+@:set_name(cmat_from_lct)
 
 ! Probe in
 @:probe_in()
@@ -678,7 +677,7 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 integer :: ib,iv,jv,il0
 
 ! Set name
-#:set subr = 'cmat_from_nam'
+@:set_name(cmat_from_nam)
 
 ! Probe in
 @:probe_in()
@@ -749,7 +748,7 @@ integer :: ib,il0,ic0a
 logical :: import_standard(bpar%nbe),import_static(bpar%nbe),import_anisotropic(bpar%nbe)
 
 ! Set name
-#:set subr = 'cmat_from_bump'
+@:set_name(cmat_from_bump)
 
 ! Probe in
 @:probe_in()
@@ -872,7 +871,7 @@ real(kind_real) :: rhs,rvs
 real(kind_real),allocatable :: rh_c0a(:)
 
 ! Set name
-#:set subr = 'cmat_setup_sampling'
+@:set_name(cmat_setup_sampling)
 
 ! Probe in
 @:probe_in()

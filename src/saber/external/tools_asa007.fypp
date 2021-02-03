@@ -54,7 +54,7 @@ integer :: i,icol,ii,irow,j,k,kk,l,m
 real(kind_real) :: w,x
 
 ! Set name
-#:set subr = 'asa007_cholesky'
+@:set_name(asa007_cholesky)
 
 ! Probe in
 @:probe_in()
@@ -131,7 +131,7 @@ integer :: i,icol,irow,j,jcol,k,l,mdiag,ndiag,nrow
 real(kind_real) :: w(n),x
 
 ! Set name
-#:set subr = 'asa007_syminv'
+@:set_name(asa007_syminv)
 
 ! Probe in
 @:probe_in()

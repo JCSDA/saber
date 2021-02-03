@@ -83,7 +83,7 @@ integer :: ic0a,il0,jl0
 real(kind_real) :: vunit(geom%nl0)
 
 ! Set name
-#:set subr = 'diag_blk_alloc'
+@:set_name(diag_blk_alloc)
 
 ! Probe in
 @:probe_in()
@@ -151,7 +151,7 @@ implicit none
 class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 
 ! Set name
-#:set subr = 'diag_blk_dealloc'
+@:set_name(diag_blk_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -193,7 +193,7 @@ integer :: fit_id,fit_zs_id,fit_rh_id,fit_rv_id
 integer :: il0,jl0r,jl0
 
 ! Set name
-#:set subr = 'diag_blk_write'
+@:set_name(diag_blk_write)
 
 ! Probe in
 @:probe_in()
@@ -302,7 +302,7 @@ type(bpar_type),intent(in) :: bpar             !< Block parameters
 integer :: il0,jl0r
 
 ! Set name
-#:set subr = 'diag_blk_normalization'
+@:set_name(diag_blk_normalization)
 
 ! Probe in
 @:probe_in()
@@ -351,7 +351,7 @@ logical :: valid,lcoef,lrh,lrv,var2d
 type(minim_type) :: minim
 
 ! Set name
-#:set subr = 'diag_blk_fitting'
+@:set_name(diag_blk_fitting)
 
 ! Probe in
 @:probe_in()
@@ -447,8 +447,8 @@ if (valid) then
  & diag_blk%coef_ens,fit_rh,fit_rv,fit)
 
       ! Pack
-      fit_pack = pack(fit,mask=.true.)
-      obs_pack = pack(diag_blk%raw,mask=.true.)
+      fit_pack = reshape(fit,(/nam%nc3*bpar%nl0r(ib)*geom%nl0/))
+      obs_pack = reshape(diag_blk%raw,(/nam%nc3*bpar%nl0r(ib)*geom%nl0/))
 
       ! Observations penalty
       fo = sum((fit_pack-obs_pack)**2,mask=mpl%msv%isnot(obs_pack).and.mpl%msv%isnot(fit_pack))
@@ -560,7 +560,7 @@ if (valid) then
          minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 2.0*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
          ivar = ivar+1
       end if
-      minim%obs = pack(diag_blk%raw,mask=.true.)
+      minim%obs = reshape(diag_blk%raw,(/minim%ny/))
       minim%cost_function = 'fit_diag'
       minim%algo = nam%minim_algo
       minim%nc3 = nam%nc3
@@ -659,7 +659,7 @@ type(avg_blk_type),intent(in) :: avg_blk       !< Averaged statistics block
 integer :: il0,jl0r,jc3
 
 ! Set name
-#:set subr = 'diag_blk_localization'
+@:set_name(diag_blk_localization)
 
 ! Probe in
 @:probe_in()
@@ -718,7 +718,7 @@ real(kind_real) :: wgt,a,bc,d,e,f,num_ens,num_sta,num,den
 real(kind_real),allocatable :: coef_ens(:)
 
 ! Set name
-#:set subr = 'diag_blk_hybridization'
+@:set_name(diag_blk_hybridization)
 
 ! Probe in
 @:probe_in()
@@ -859,7 +859,7 @@ integer :: il0,jl0r,jc3
 real(kind_real),allocatable :: num(:),num_lr(:),den(:)
 
 ! Set name
-#:set subr = 'diag_blk_dualens'
+@:set_name(diag_blk_dualens)
 
 ! Probe in
 @:probe_in()

@@ -23,7 +23,6 @@ use type_diag, only: diag_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_hdiag, only: hdiag_type
-use type_io, only: io_type
 use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -93,7 +92,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'nicas_alloc'
+@:set_name(nicas_alloc)
 
 ! Probe in
 @:probe_in()
@@ -149,7 +148,7 @@ class(nicas_type),intent(inout) :: nicas !< NICAS data
 integer :: ib
 
 ! Set name
-#:set subr = 'nicas_partial_dealloc'
+@:set_name(nicas_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -179,7 +178,7 @@ class(nicas_type),intent(inout) :: nicas !< NICAS data
 integer :: ib
 
 ! Set name
-#:set subr = 'nicas_dealloc'
+@:set_name(nicas_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -222,7 +221,7 @@ character(len=1024) :: filename,grpname
 type(nicas_type) :: nicas_tmp
 
 ! Set name
-#:set subr = 'nicas_read'
+@:set_name(nicas_read)
 
 ! Probe in
 @:probe_in()
@@ -329,7 +328,7 @@ character(len=1024) :: filename,grpname
 type(nicas_type) :: nicas_tmp
 
 ! Set name
-#:set subr = 'nicas_write'
+@:set_name(nicas_write)
 
 ! Probe in
 @:probe_in()
@@ -459,7 +458,7 @@ real(kind_real),allocatable :: bufr(:)
 logical,allocatable :: bufl(:)
 
 ! Set name
-#:set subr = 'nicas_send'
+@:set_name(nicas_send)
 
 ! Probe in
 @:probe_in()
@@ -537,7 +536,7 @@ logical,allocatable :: bufl(:)
 type(fckit_mpi_status) :: status
 
 ! Set name
-#:set subr = 'nicas_receive'
+@:set_name(nicas_receive)
 
 ! Probe in
 @:probe_in()
@@ -603,7 +602,7 @@ type(cmat_type),intent(in) :: cmat        !< C matrix data
 integer :: ib
 
 ! Set name
-#:set subr = 'nicas_run_nicas'
+@:set_name(nicas_run_nicas)
 
 ! Probe in
 @:probe_in()
@@ -657,7 +656,7 @@ end subroutine nicas_run_nicas
 ! Subroutine: nicas_run_nicas_tests
 !> NICAS tests driver
 !----------------------------------------------------------------------
-subroutine nicas_run_nicas_tests(nicas,mpl,rng,nam,geom,bpar,io,ens)
+subroutine nicas_run_nicas_tests(nicas,mpl,rng,nam,geom,bpar,ens)
 
 implicit none
 
@@ -668,14 +667,13 @@ type(rng_type),intent(inout) :: rng       !< Random number generator
 type(nam_type),intent(inout) :: nam       !< Namelist
 type(geom_type),intent(inout) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(io_type),intent(in) :: io            !< I/O
 type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
 integer :: ib
 
 ! Set name
-#:set subr = 'nicas_run_nicas_tests'
+@:set_name(nicas_run_nicas_tests)
 
 ! Probe in
 @:probe_in()
@@ -718,7 +716,7 @@ if (nam%check_dirac) then
          call mpl%flush
          write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
-         call nicas%blk(ib)%test_dirac(mpl,nam,geom,bpar,io)
+         call nicas%blk(ib)%test_dirac(mpl,nam,geom,bpar)
       end if
    end do
 
@@ -727,7 +725,7 @@ if (nam%check_dirac) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Apply NICAS to diracs'
    call mpl%flush
-   call nicas%test_dirac(mpl,nam,geom,bpar,io,ens)
+   call nicas%test_dirac(mpl,nam,geom,bpar,ens)
 end if
 
 if (nam%check_randomization) then
@@ -745,7 +743,7 @@ if (nam%check_consistency) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Test HDIAG-NICAS consistency'
    call mpl%flush
-   call test_consistency(mpl,rng,nam,geom,bpar,io)
+   call test_consistency(mpl,rng,nam,geom,bpar)
 end if
 
 if (nam%check_optimality) then
@@ -754,7 +752,7 @@ if (nam%check_optimality) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Test HDIAG optimality'
    call mpl%flush
-   call nicas%test_optimality(mpl,rng,nam,geom,bpar,io)
+   call nicas%test_optimality(mpl,rng,nam,geom,bpar)
 end if
 
 ! Probe out
@@ -782,7 +780,7 @@ integer :: ib
 logical :: lgetsizeonly
 
 ! Set name
-#:set subr = 'nicas_alloc_cv'
+@:set_name(nicas_alloc_cv)
 
 ! Probe in
 @:probe_in()
@@ -845,7 +843,7 @@ integer,allocatable :: order(:)
 real(kind_real),allocatable :: hash_s(:),alpha(:)
 
 ! Set name
-#:set subr = 'nicas_random_cv'
+@:set_name(nicas_random_cv)
 
 ! Probe in
 @:probe_in()
@@ -922,7 +920,7 @@ real(kind_real),allocatable :: wgt(:,:),wgt_diag(:)
 real(kind_real),allocatable :: fld_save(:,:,:)
 
 ! Set name
-#:set subr = 'nicas_apply'
+@:set_name(nicas_apply)
 
 ! Probe in
 @:probe_in()
@@ -1131,7 +1129,7 @@ real(kind_real),allocatable :: fld_save(:,:,:)
 type(cv_type) :: cv
 
 ! Set name
-#:set subr = 'nicas_apply_from_sqrt'
+@:set_name(nicas_apply_from_sqrt)
 
 ! Probe in
 @:probe_in()
@@ -1186,7 +1184,7 @@ real(kind_real),allocatable :: fld_3d(:,:),fld_tmp(:,:,:)
 real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
 
 ! Set name
-#:set subr = 'nicas_apply_sqrt'
+@:set_name(nicas_apply_sqrt)
 
 ! Probe in
 @:probe_in()
@@ -1355,7 +1353,7 @@ real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
 type(cv_type) :: cv_tmp
 
 ! Set name
-#:set subr = 'nicas_apply_sqrt_ad'
+@:set_name(nicas_apply_sqrt_ad)
 
 ! Probe in
 @:probe_in()
@@ -1554,7 +1552,7 @@ real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 type(cv_type) :: cv_ens(ne)
 
 ! Set name
-#:set subr = 'nicas_randomize'
+@:set_name(nicas_randomize)
 
 ! Probe in
 @:probe_in()
@@ -1607,7 +1605,7 @@ real(kind_real) :: fld_copy(geom%nc0a,geom%nl0,nam%nv),fld_tmp(geom%nc0a,geom%nl
 real(kind_real) :: pert(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
-#:set subr = 'nicas_apply_bens'
+@:set_name(nicas_apply_bens)
 
 ! Probe in
 @:probe_in()
@@ -1667,7 +1665,7 @@ real(kind_real) :: fld2_loc(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%
 real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
 
 ! Set name
-#:set subr = 'nicas_test_adjoint'
+@:set_name(nicas_test_adjoint)
 
 ! Probe in
 @:probe_in()
@@ -1728,7 +1726,7 @@ end subroutine nicas_test_adjoint
 ! Subroutine: nicas_test_dirac
 !> Apply NICAS to diracs
 !----------------------------------------------------------------------
-subroutine nicas_test_dirac(nicas,mpl,nam,geom,bpar,io,ens)
+subroutine nicas_test_dirac(nicas,mpl,nam,geom,bpar,ens)
 
 implicit none
 
@@ -1738,7 +1736,6 @@ type(mpl_type),intent(inout) :: mpl       !< MPI data
 type(nam_type),intent(in) :: nam          !< Namelist
 type(geom_type),intent(in) :: geom        !< Geometry
 type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(io_type),intent(in) :: io            !< I/O
 type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
@@ -1748,7 +1745,7 @@ real(kind_real),allocatable :: fld_bens(:,:,:)
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'nicas_test_dirac'
+@:set_name(nicas_test_dirac)
 
 ! Probe in
 @:probe_in()
@@ -1775,13 +1772,19 @@ end if
 ! Apply localized ensemble covariance
 if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
 
-! Write field
+! Set filename
 filename = trim(nam%prefix)//'_dirac'
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+
+! Write coordinates
+call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
+call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
+call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
+
+! Write field
 do iv=1,nam%nv
-   call io%fld_write(mpl,nam,geom,filename,'nicas',fld(:,:,iv),trim(nam%variables(iv)))
-   if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call io%fld_write(mpl,nam,geom,filename, &
- & 'Bens',fld_bens(:,:,iv),trim(nam%variables(iv)))
+   call geom%io%fld_write(mpl,nam,filename,'nicas',fld(:,:,iv),geom%gmask_c0a,trim(nam%variables(iv)))
+   if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call geom%io%fld_write(mpl,nam,filename,'Bens',fld_bens(:,:,iv), &
+ & geom%gmask_c0a,trim(nam%variables(iv)))
 end do
 
 ! Release memory
@@ -1817,7 +1820,7 @@ character(len=1024) :: filename
 type(ens_type) :: ens
 
 ! Set name
-#:set subr = 'nicas_test_randomization'
+@:set_name(nicas_test_randomization)
 
 ! Probe in
 @:probe_in()
@@ -1935,7 +1938,7 @@ end subroutine nicas_test_randomization
 ! Subroutine: nicas_test_consistency
 !> Test HDIAG-NICAS consistency with a randomization method
 !----------------------------------------------------------------------
-subroutine nicas_test_consistency(mpl,rng,nam,geom,bpar,io)
+subroutine nicas_test_consistency(mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -1945,7 +1948,6 @@ type(rng_type),intent(inout) :: rng   !< Random number generator
 type(nam_type),intent(inout) :: nam   !< Namelist variables
 type(geom_type),intent(inout) :: geom !< Geometry
 type(bpar_type),intent(in) :: bpar    !< Block parameters
-type(io_type),intent(in) :: io        !< I/O
 
 ! Local variables
 integer,parameter :: nrad = 5
@@ -1960,7 +1962,7 @@ type(hdiag_type) :: hdiag
 type(nicas_type) :: nicas_test
 
 ! Set name
-#:set subr = 'nicas_test_consistency'
+@:set_name(nicas_test_consistency)
 
 ! Probe in
 @:probe_in()
@@ -2003,7 +2005,7 @@ do irad=1,nrad
    if (nam%default_seed) call rng%reseed(mpl)
 
    ! Run HDIAG driver
-   call hdiag%run_hdiag(mpl,rng,nam,geom,bpar,io,ens)
+   call hdiag%run_hdiag(mpl,rng,nam,geom,bpar,ens)
    if (nam%default_seed) call rng%reseed(mpl)
 
    ! Save result
@@ -2022,7 +2024,7 @@ do irad=1,nrad
    ! Write
    if (nam%write_hdiag) then
       write(nam%prefix,'(a,a,i2.2)') trim(prefix),'_',int(rad(irad)*10.0)
-      call hdiag%cor_1%write(mpl,nam,geom,bpar,io,hdiag%samp)
+      call hdiag%cor_1%write(mpl,nam,geom,bpar,hdiag%samp)
       nam%prefix = prefix
    end if
 
@@ -2072,7 +2074,7 @@ end subroutine nicas_test_consistency
 ! Subroutine: nicas_test_optimality
 !> Test HDIAG localization optimality with a randomization method
 !----------------------------------------------------------------------
-subroutine nicas_test_optimality(nicas,mpl,rng,nam,geom,bpar,io)
+subroutine nicas_test_optimality(nicas,mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -2083,7 +2085,6 @@ type(rng_type),intent(inout) :: rng   !< Random number generator
 type(nam_type),intent(inout) :: nam   !< Namelist variables
 type(geom_type),intent(in) :: geom    !< Geometry
 type(bpar_type),intent(in) :: bpar    !< Block parameters
-type(io_type),intent(in) :: io        !< I/O
 
 ! Local variables
 integer :: ib,ifac,itest,il0,iv
@@ -2098,7 +2099,7 @@ type(ens_type) :: ens_loc,ens_test
 type(nicas_type) :: nicas_test
 
 ! Set name
-#:set subr = 'nicas_test_optimality'
+@:set_name(nicas_test_optimality)
 
 ! Probe in
 @:probe_in()
@@ -2132,7 +2133,7 @@ method = nam%method
 nam%method = 'loc'
 
 ! Call HDIAG driver
-call hdiag%run_hdiag(mpl,rng,nam,geom,bpar,io,ens_loc)
+call hdiag%run_hdiag(mpl,rng,nam,geom,bpar,ens_loc)
 if (nam%default_seed) call rng%reseed(mpl)
 
 ! Randomize ensemble to test localization
@@ -2278,7 +2279,7 @@ integer :: itest
 integer :: il0dir,iprocdir,ic0adir
 
 ! Set name
-#:set subr = 'nicas_define_test_vectors'
+@:set_name(nicas_define_test_vectors)
 
 ! Probe in
 @:probe_in()

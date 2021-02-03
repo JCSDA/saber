@@ -60,7 +60,7 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Set name
-#:set subr = 'bpar_alloc'
+@:set_name(bpar_alloc)
 
 ! Probe in
 @:probe_in()
@@ -113,7 +113,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 integer :: ib,iv,jv,il0,jl0r,jl0off
 
 ! Set name
-#:set subr = 'bpar_init'
+@:set_name(bpar_init)
 
 ! Probe in
 @:probe_in()
@@ -310,7 +310,7 @@ implicit none
 class(bpar_type),intent(inout) :: bpar !< Block parameters
 
 ! Set name
-#:set subr = 'bpar_dealloc'
+@:set_name(bpar_dealloc)
 
 ! Probe in
 @:probe_in()

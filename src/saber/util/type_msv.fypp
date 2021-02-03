@@ -16,14 +16,11 @@ implicit none
 
 type msv_type
    ! Missing values
-   integer :: vali          !< Missing value for integers
-   real(kind_real) :: valr  !< Missing value for reals
-
-   ! Dummy variable
-   logical :: dummy_logical !< Dummy variable
+   integer :: vali           !< Missing value for integers
+   real(kind_real) :: valr   !< Missing value for reals
+   logical :: vall = .false. !< Missing value for logicals
 contains
-   procedure :: msv_dummy_method
-   #:for dtype,ftype in types_ir
+   #:for dtype in dtypes_ir
       procedure msv_isnot_${dtype}$_r0
       procedure msv_is_${dtype}$_r0
       #:for rank in ranks_123456
@@ -35,50 +32,50 @@ contains
          procedure msv_isall_${dtype}$_r${rank}$
       #:endfor
    #:endfor
+@:init_procedure(14)
    generic :: isnot => &
-   #:for dtype,ftype in types_ir
- & msv_isnot_${dtype}$_r0, &
-   #:for rank in ranks_123456
- & msv_isnot_${dtype}$_r${rank}$, &
+   #:for dtype in dtypes_ir
+@:add_procedure(msv_isnot_${dtype}$_r0)
+      #:for rank in ranks_123456
+@:add_procedure(msv_isnot_${dtype}$_r${rank}$)
+      #:endfor
    #:endfor
-   #:endfor
- & msv_dummy_method
+@:init_procedure(14)
    generic :: is => &
-   #:for dtype,ftype in types_ir
- & msv_is_${dtype}$_r0, &
-   #:for rank in ranks_123456
- & msv_is_${dtype}$_r${rank}$, &
+   #:for dtype in dtypes_ir
+@:add_procedure(msv_is_${dtype}$_r0)
+      #:for rank in ranks_123456
+@:add_procedure(msv_is_${dtype}$_r${rank}$)
+      #:endfor
    #:endfor
-   #:endfor
- & msv_dummy_method
+@:init_procedure(12)
    generic :: isanynot => &
-   #:for dtype,ftype in types_ir
-   #:for rank in ranks_123456
- & msv_isanynot_${dtype}$_r${rank}$, &
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+@:add_procedure(msv_isanynot_${dtype}$_r${rank}$)
+      #:endfor
    #:endfor
-   #:endfor
- & msv_dummy_method
+@:init_procedure(12)
    generic :: isany => &
-   #:for dtype,ftype in types_ir
-   #:for rank in ranks_123456
- & msv_isany_${dtype}$_r${rank}$, &
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+@:add_procedure(msv_isany_${dtype}$_r${rank}$)
+      #:endfor
    #:endfor
-   #:endfor
- & msv_dummy_method
+@:init_procedure(12)
    generic :: isallnot => &
-   #:for dtype,ftype in types_ir
-   #:for rank in ranks_123456
- & msv_isallnot_${dtype}$_r${rank}$, &
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+@:add_procedure(msv_isallnot_${dtype}$_r${rank}$) 
+      #:endfor
    #:endfor
-   #:endfor
- & msv_dummy_method
+@:init_procedure(12)
    generic :: isall => &
-   #:for dtype,ftype in types_ir
-   #:for rank in ranks_123456
- & msv_isall_${dtype}$_r${rank}$, &
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+@:add_procedure(msv_isall_${dtype}$_r${rank}$)
+      #:endfor
    #:endfor
-   #:endfor
- & msv_dummy_method
 end type msv_type
 
 private
@@ -86,38 +83,7 @@ public :: msv_type
 
 contains
 
-!----------------------------------------------------------------------
-! Function: msv_dummy_method
-!> Dummy method
-!----------------------------------------------------------------------
-function msv_dummy_method(msv) result(test)
-
-implicit none
-
-! Passed variables
-class(msv_type),intent(inout) :: msv !< Missing values
-
-! Returned variable
-logical :: test
-
-! Set name
-#:set subr = 'msv_dummy_method'
-
-! Probe in
-@:probe_in()
-
-! Dummy action to avoid compiler warning
-msv%dummy_logical = .false.
-
-! Set result value
-test = .false.
-
-! Probe out
-@:probe_out()
-
-end function msv_dummy_method
-
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Function: msv_isnot_${dtype}$_r0
 !> Check if a value is not set to missing value
@@ -127,20 +93,19 @@ function msv_isnot_${dtype}$_r0(msv,value) result(test)
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv !< Missing values
-${ftype}$,intent(in) :: value     !< value
+class(msv_type),intent(in) :: msv    !< Missing values
+${ftype[dtype]}$,intent(in) :: value !< Value
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'msv_isnot_${dtype}$_r0'
+@:set_name(msv_isnot_${dtype}$_r0)
 
 ! Probe in
 @:probe_in()
 
-#{if dtype == 'int'}# test = abs(value-msv%vali)>0 #{endif}#
-#{if dtype == 'real'}# test = abs(value-msv%valr)>0.0 #{endif}#
+test = abs(value-${msv[dtype]}$)>${zero[dtype]}$
 
 ! Probe out
 @:probe_out()
@@ -148,7 +113,7 @@ logical :: test
 end function msv_isnot_${dtype}$_r0
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
    #:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Function: msv_isnot_${dtype}$_r${rank}$
@@ -159,8 +124,8 @@ function msv_isnot_${dtype}$_r${rank}$(msv,array) result(test)
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv            !< Missing values
-${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
+class(msv_type),intent(in) :: msv                   !< Missing values
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
 
 ! Returned variable
 logical :: test( &
@@ -170,14 +135,13 @@ logical :: test( &
  & max(size(array,${rank}$),1))
 
 ! Set name
-#:set subr = 'msv_isnot_${dtype}$_r${rank}$'
+@:set_name(msv_isnot_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()
 
 if (size(array)>0) then
-   #{if dtype == 'int'}# test = abs(array-msv%vali)>0 #{endif}#
-   #{if dtype == 'real'}# test = abs(array-msv%valr)>0.0 #{endif}#
+   test = abs(array-${msv[dtype]}$)>${zero[dtype]}$
 else
    test = .false.
 end if
@@ -189,7 +153,7 @@ end function msv_isnot_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Function: msv_is_${dtype}$_r0
 !> Check if a value is set to missing value
@@ -199,14 +163,14 @@ function msv_is_${dtype}$_r0(msv,value) result(test)
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv !< Missing values
-${ftype}$,intent(in) :: value     !< value
+class(msv_type),intent(in) :: msv    !< Missing values
+${ftype[dtype]}$,intent(in) :: value !< Value
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'msv_is_${dtype}$_r0'
+@:set_name(msv_is_${dtype}$_r0)
 
 ! Probe in
 @:probe_in()
@@ -219,7 +183,7 @@ test = .not.msv%isnot(value)
 end function msv_is_${dtype}$_r0
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
    #:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Function: msv_is_${dtype}$_r${rank}$
@@ -230,8 +194,8 @@ function msv_is_${dtype}$_r${rank}$(msv,array) result(test)
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv            !< Missing values
-${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
+class(msv_type),intent(in) :: msv                   !< Missing values
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
 
 ! Returned variable
 logical :: test( &
@@ -241,7 +205,7 @@ logical :: test( &
  & max(size(array,${rank}$),1))
 
 ! Set name
-#:set subr = 'msv_is_${dtype}$_r${rank}$'
+@:set_name(msv_is_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()
@@ -255,7 +219,7 @@ end function msv_is_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
    #:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Function: msv_isanynot_${dtype}$_r${rank}$
@@ -266,14 +230,14 @@ function msv_isanynot_${dtype}$_r${rank}$(msv,array) result(test)
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv            !< Missing values
-${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
+class(msv_type),intent(in) :: msv                   !< Missing values
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'msv_isanynot_${dtype}$_r${rank}$'
+@:set_name(msv_isanynot_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()
@@ -287,7 +251,7 @@ end function msv_isanynot_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
    #:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Function: msv_isany_${dtype}$_r${rank}$
@@ -298,14 +262,14 @@ function msv_isany_${dtype}$_r${rank}$(msv,array) result(test)
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv            !< Missing values
-${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
+class(msv_type),intent(in) :: msv                   !< Missing values
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'msv_isany_${dtype}$_r${rank}$'
+@:set_name(msv_isany_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()
@@ -319,7 +283,7 @@ end function msv_isany_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
    #:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Function: msv_isallnot_${dtype}$_r${rank}$
@@ -330,14 +294,14 @@ function msv_isallnot_${dtype}$_r${rank}$(msv,array) result(test)
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv            !< Missing values
-${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
+class(msv_type),intent(in) :: msv                   !< Missing values
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'msv_isallnot_${dtype}$_r${rank}$'
+@:set_name(msv_isallnot_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()
@@ -351,7 +315,7 @@ end function msv_isallnot_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
    #:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Function: msv_isall_${dtype}$_r${rank}$
@@ -362,14 +326,14 @@ function msv_isall_${dtype}$_r${rank}$(msv,array) result(test)
 implicit none
 
 ! Passed variables
-class(msv_type),intent(in) :: msv            !< Missing values
-${ftype}$,intent(in) :: array(${dim[rank]}$) !< Array
+class(msv_type),intent(in) :: msv                   !< Missing values
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'msv_isall_${dtype}$_r${rank}$'
+@:set_name(msv_isall_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()

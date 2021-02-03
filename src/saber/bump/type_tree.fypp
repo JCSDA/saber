@@ -59,7 +59,7 @@ integer,intent(in) :: n                !< Number of points
 logical,intent(in),optional :: mask(n) !< Mask
 
 ! Set name
-#:set subr = 'tree_alloc'
+@:set_name(tree_alloc)
 
 ! Probe in
 @:probe_in()
@@ -110,7 +110,7 @@ real(kind_real) :: lon_deg(tree%neff),lat_deg(tree%neff)
 type(atlas_geometry) :: ageometry
 
 ! Set name
-#:set subr = 'tree_init'
+@:set_name(tree_init)
 
 ! Probe in
 @:probe_in()
@@ -157,7 +157,7 @@ implicit none
 class(tree_type),intent(inout) :: tree !< Tree
 
 ! Set name
-#:set subr = 'tree_dealloc'
+@:set_name(tree_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -202,7 +202,7 @@ real(kind_real),allocatable :: list(:),nn_dist_tmp(:)
 logical :: separate
 
 ! Set name
-#:set subr = 'tree_find_nearest_neighbors'
+@:set_name(tree_find_nearest_neighbors)
 
 ! Probe in
 @:probe_in()
@@ -310,7 +310,7 @@ integer,intent(out) :: nn           !< Number of nearest neighbors found
 real(kind_real) :: ch
 
 ! Set name
-#:set subr = 'tree_count_nearest_neighbors'
+@:set_name(tree_count_nearest_neighbors)
 
 ! Probe in
 @:probe_in()

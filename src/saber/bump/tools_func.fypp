@@ -103,11 +103,21 @@ end interface
 interface histogram
    module procedure func_histogram
 end interface
+interface cx_to_cxa
+   module procedure func_cx_to_cxa
+end interface
+interface cx_to_proc
+   module procedure func_cx_to_proc
+end interface
+interface cx_to_cxu
+   module procedure func_cx_to_cxu
+end interface
 
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det,order_cc, &
- & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram
+ & add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram, &
+ & cx_to_cxa,cx_to_proc,cx_to_cxu
 
 contains
 
@@ -126,7 +136,7 @@ real(kind_real),intent(in) :: var(:) !< Variable
 integer :: value
 
 ! Set name
-#:set subr = 'func_fletcher32'
+@:set_name(func_fletcher32)
 
 ! Probe in
 @:probe_in()
@@ -152,7 +162,7 @@ real(kind_real),intent(inout) :: lon !< Longitude (radians)
 real(kind_real),intent(inout) :: lat !< Latitude (radians)
 
 ! Set name
-#:set subr = 'func_lonlatmod'
+@:set_name(func_lonlatmod)
 
 ! Probe in
 @:probe_in()
@@ -201,7 +211,7 @@ real(kind_real) :: value
 real(kind_real) :: lontmp,lattmp
 
 ! Set name
-#:set subr = 'func_lonlathash'
+@:set_name(func_lonlathash)
 
 ! Probe in
 @:probe_in()
@@ -239,7 +249,7 @@ real(kind_real),intent(out) :: dist !< Great-circle distance
 type(atlas_geometry) :: ageometry
 
 ! Set name
-#:set subr = 'func_sphere_dist'
+@:set_name(func_sphere_dist)
 
 ! Probe in
 @:probe_in()
@@ -275,7 +285,7 @@ real(kind_real),intent(out) :: z    !< Z coordinate
 type(atlas_geometry) :: ageometry
 
 ! Set name
-#:set subr = 'func_lonlat2xyz'
+@:set_name(func_lonlat2xyz)
 
 ! Probe in
 @:probe_in()
@@ -322,7 +332,7 @@ real(kind_real),intent(out) :: lat !< Latitude (radians)
 type(atlas_geometry) :: ageometry
 
 ! Set name
-#:set subr = 'func_xyz2lonlat'
+@:set_name(func_xyz2lonlat)
 
 ! Probe in
 @:probe_in()
@@ -365,7 +375,7 @@ real(kind_real),intent(out) :: vp(3) !< Vector product
 real(kind_real) :: r
 
 ! Set name
-#:set subr = 'func_vector_product'
+@:set_name(func_vector_product)
 
 ! Probe in
 @:probe_in()
@@ -404,7 +414,7 @@ integer :: i
 real(kind_real) :: terms(6)
 
 ! Set name
-#:set subr = 'func_det'
+@:set_name(func_det)
 
 ! Probe in
 @:probe_in()
@@ -456,7 +466,7 @@ real(kind_real) :: rvec(3),costheta,sintheta,p(3),rvecxv(3),v(3),list(n)
 real(kind_real),allocatable :: list_save(:)
 
 ! Set name
-#:set subr = 'func_order_cc'
+@:set_name(func_order_cc)
 
 ! Probe in
 @:probe_in()
@@ -525,7 +535,7 @@ real(kind_real),intent(in),optional :: wgt !< Weight
 real(kind_real) :: lwgt
 
 ! Set name
-#:set subr = 'func_add'
+@:set_name(func_add)
 
 ! Probe in
 @:probe_in()
@@ -559,7 +569,7 @@ real(kind_real),intent(inout) :: val !< Value to divide
 real(kind_real),intent(in) :: num    !< Divider
 
 ! Set name
-#:set subr = 'func_divide'
+@:set_name(func_divide)
 
 ! Probe in
 @:probe_in()
@@ -605,7 +615,7 @@ real(kind_real) :: predistnorm(-1:1,nc3,-1:1,nl0),distnorm(nc3,nl0r)
 logical :: add_to_front
 
 ! Set name
-#:set subr = 'func_fit_diag'
+@:set_name(func_fit_diag)
 
 ! Probe in
 @:probe_in()
@@ -777,7 +787,7 @@ real(kind_real),intent(in) :: distnorm !< Normalized distance
 real(kind_real) :: value
 
 ! Set name
-#:set subr = 'func_gc99'
+@:set_name(func_gc99)
 
 ! Probe in
 @:probe_in()
@@ -810,7 +820,7 @@ real(kind_real),intent(in) :: distnorm !< Normalized distance
 real(kind_real) :: value
 
 ! Set name
-#:set subr = 'func_fit_func'
+@:set_name(func_fit_func)
 
 ! Probe in
 @:probe_in()
@@ -856,7 +866,7 @@ integer :: jl0,jc3,iscales
 real(kind_real) :: Dcoef(nscales),D11,D22,D33,D12,H11,H22,H33,H12,rsq
 
 ! Set name
-#:set subr = 'func_fit_lct'
+@:set_name(func_fit_lct)
 
 ! Probe in
 @:probe_in()
@@ -932,7 +942,7 @@ real(kind_real),intent(out) :: H12 !< Local correlation tensor component 12
 real(kind_real) :: det
 
 ! Set name
-#:set subr = 'func_lct_d2h'
+@:set_name(func_lct_d2h)
 
 ! Probe in
 @:probe_in()
@@ -980,7 +990,7 @@ real(kind_real),intent(out) :: rv   !< Vertical support radius
 real(kind_real) :: tr,det,diff
 
 ! Set name
-#:set subr = 'func_lct_h2r'
+@:set_name(func_lct_h2r)
 
 ! Probe in
 @:probe_in()
@@ -1031,7 +1041,7 @@ real(kind_real),intent(in) :: r  !< Support radius
 real(kind_real),intent(out) :: D !< Daley tensor diagonal element
 
 ! Set name
-#:set subr = 'func_lct_r2d'
+@:set_name(func_lct_r2d)
 
 ! Probe in
 @:probe_in()
@@ -1062,7 +1072,7 @@ logical,intent(out) :: valid      !< Conditioning validity
 real(kind_real) :: det,tr,diff,ev1,ev2
 
 ! Set name
-#:set subr = 'func_check_cond'
+@:set_name(func_check_cond)
 
 ! Probe in
 @:probe_in()
@@ -1115,7 +1125,7 @@ integer :: j
 real(kind_real) :: xtmp,beta
 
 ! Set name
-#:set subr = 'func_matern'
+@:set_name(func_matern)
 
 ! Probe in
 @:probe_in()
@@ -1168,7 +1178,7 @@ integer :: nn,i,j,ij
 real(kind_real),allocatable :: apack(:),upack(:)
 
 ! Set name
-#:set subr = 'func_cholesky'
+@:set_name(func_cholesky)
 
 ! Probe in
 @:probe_in()
@@ -1229,7 +1239,7 @@ integer :: nn,i,j,ij
 real(kind_real),allocatable :: apack(:),cpack(:)
 
 ! Set name
-#:set subr = 'func_syminv'
+@:set_name(func_syminv)
 
 ! Probe in
 @:probe_in()
@@ -1294,7 +1304,7 @@ real(kind_real) :: delta
 logical :: found
 
 ! Set name
-#:set subr = 'func_histogram'
+@:set_name(func_histogram)
 
 ! Probe in
 @:probe_in()
@@ -1344,5 +1354,128 @@ end if
 @:probe_out()
 
 end subroutine func_histogram
+
+!----------------------------------------------------------------------
+! Function: func_cx_to_cxa
+!> Conversion from global to halo A on subset Scx
+!----------------------------------------------------------------------
+function func_cx_to_cxa(nproc,proc_to_cx_offset,icx) result(icxa)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: nproc                    !< Number of processors
+integer,intent(in) :: proc_to_cx_offset(nproc) !< Processor to offset on subset Scx
+integer,intent(in) :: icx                      !< Global index
+
+! Returned variable
+integer :: icxa
+
+! Local variable
+integer :: iproc
+
+! Set name
+@:set_name(func_cx_to_cxa)
+
+! Probe in
+@:probe_in()
+
+! Find processor
+iproc = cx_to_proc(nproc,proc_to_cx_offset,icx)
+
+! Get halo A index
+icxa = icx-proc_to_cx_offset(iproc)
+
+! Probe out
+@:probe_out()
+
+end function func_cx_to_cxa
+
+!----------------------------------------------------------------------
+! Function: func_cx_to_proc
+!> Conversion from global to processor on subset Scx
+!----------------------------------------------------------------------
+function func_cx_to_proc(nproc,proc_to_cx_offset,icx) result(iproc)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: nproc                    !< Number of processors
+integer,intent(in) :: proc_to_cx_offset(nproc) !< Processor to offset on subset Scx
+integer,intent(in) :: icx                      !< Global index
+
+! Returned variable
+integer :: iproc
+
+! Set name
+@:set_name(func_cx_to_proc)
+
+! Probe in
+@:probe_in()
+
+! Find processor
+do iproc=1,nproc-1
+   if ((proc_to_cx_offset(iproc)<icx).and.(icx<=proc_to_cx_offset(iproc+1))) then
+@:probe_out()
+      return
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end function func_cx_to_proc
+
+!----------------------------------------------------------------------
+! Function: func_cx_to_cxu
+!> Conversion from global to universe on subset Scx
+!----------------------------------------------------------------------
+function func_cx_to_cxu(nproc,proc_to_cx_offset,proc_to_ncxa,myuniverse,icx) result(icxu)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: nproc                    !< Number of processors
+integer,intent(in) :: proc_to_cx_offset(nproc) !< Processor to offset on subset Scx
+integer,intent(in) :: proc_to_ncxa(nproc)      !< Processor to halo A size for subset Scx
+logical,intent(in) :: myuniverse(nproc)        !< Task universe
+integer,intent(in) :: icx                      !< Global index
+
+! Returned variable
+integer :: icxu
+
+! Local variable
+integer :: iproc,icxa,offset,jproc
+
+! Set name
+@:set_name(func_cx_to_cxu)
+
+! Probe in
+@:probe_in()
+
+! Find processor
+iproc = cx_to_proc(nproc,proc_to_cx_offset,icx)
+
+if (myuniverse(iproc)) then
+   ! Get halo A index
+   icxa = icx-proc_to_cx_offset(iproc)
+
+   ! Compute universe offset
+   offset = 0
+   do jproc=1,iproc-1
+      if (myuniverse(jproc)) offset = offset+proc_to_ncxa(jproc)
+   end do
+
+   ! Get universe index
+   icxu = offset+icxa
+else
+   ! Not in my universe
+   icxu = 0
+end if
+
+! Probe out
+@:probe_out()
+
+end function func_cx_to_cxu
 
 end module tools_func

@@ -20,7 +20,7 @@ real(kind_real) :: sigmaup,sigmadn,sigma
 real(kind_real),allocatable :: lon(:,:,:),lat(:,:,:),a(:),b(:)
 
 ! Set name
-#:set subr = 'model_fv3_coord'
+@:set_name(model_fv3_coord)
 
 ! Probe in
 @:probe_in()
@@ -125,7 +125,7 @@ real(kind_real),allocatable :: fld_tmp(:,:,:)
 character(len=1) :: ctile
 
 ! Set name
-#:set subr = 'model_fv3_read'
+@:set_name(model_fv3_read)
 
 ! Probe in
 @:probe_in()

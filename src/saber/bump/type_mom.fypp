@@ -67,7 +67,7 @@ character(len=*),intent(in) :: prefix !< Prefix
 integer :: ib
 
 ! Set name
-#:set subr = 'mom_alloc'
+@:set_name(mom_alloc)
 
 ! Probe in
 @:probe_in()
@@ -105,7 +105,7 @@ type(bpar_type),intent(in) :: bpar   !< Block parameters
 integer :: ib
 
 ! Set name
-#:set subr = 'mom_init'
+@:set_name(mom_init)
 
 ! Probe in
 @:probe_in()
@@ -140,7 +140,7 @@ class(mom_type),intent(inout) :: mom !< Moments
 integer :: ib
 
 ! Set name
-#:set subr = 'mom_dealloc'
+@:set_name(mom_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -182,7 +182,7 @@ integer :: ncid,subgrpid,grpid,m2_1_id,m2_2_id,m11_id,m22_id
 character(len=1024) :: filename,grpname,subname
 
 ! Set name
-#:set subr = 'mom_read'
+@:set_name(mom_read)
 
 ! Probe in
 @:probe_in()
@@ -265,7 +265,7 @@ integer :: ncid,grpid,subgrpid,nc1a_id,nc3_id,nl0r_id,nl0_id,m2_1_id,m2_2_id,m11
 character(len=1024) :: filename,grpname,subname
 
 ! Set name
-#:set subr = 'mom_write'
+@:set_name(mom_write)
 
 ! Probe in
 @:probe_in()
@@ -344,10 +344,9 @@ character(len=*),intent(in) :: prefix !< Prefix
 integer :: ie,ie_sub,ic0c,jc0c,jl0r,jl0,il0,isub,jc3,ic1a,ib,jv,iv
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: fld_ext(:,:,:),fld_1(:,:),fld_2(:,:,:)
-logical,allocatable :: mask_unpack(:,:)
 
 ! Set name
-#:set subr = 'mom_compute'
+@:set_name(mom_compute)
 
 ! Probe in
 @:probe_in()
@@ -378,8 +377,6 @@ do isub=1,ens%nsub
 
       ! Allocation
       allocate(fld_ext(samp%nc0c,geom%nl0,nam%nv))
-      allocate(mask_unpack(samp%nc0c,geom%nl0))
-      mask_unpack = .true.
 
       ! Get perturbation on subset Sc0
       call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
@@ -458,7 +455,6 @@ do isub=1,ens%nsub
 
       ! Release memory
       deallocate(fld_ext)
-      deallocate(mask_unpack)
    end do
    write(mpl%info,'(a)') ''
    call mpl%flush

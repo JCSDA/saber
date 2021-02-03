@@ -76,7 +76,7 @@ logical :: lfast,lverbosity
 logical,allocatable :: mask_glb(:)
 
 ! Set name
-#:set subr = 'samp_initialize_sampling'
+@:set_name(samp_initialize_sampling)
 
 ! Probe in
 @:probe_in()
@@ -226,7 +226,7 @@ type(fckit_mpi_status) :: status
 type(atlas_structuredgrid) :: agrid
 
 ! Set name
-#:set subr = 'samp_initialize_sampling_local'
+@:set_name(samp_initialize_sampling_local)
 
 ! Probe in
 @:probe_in()
@@ -567,7 +567,7 @@ logical,allocatable :: lmask(:),smask(:),rmask(:)
 type(tree_type) :: tree
 
 ! Set name
-#:set subr = 'samp_initialize_sampling_global'
+@:set_name(samp_initialize_sampling_global)
 
 ! Probe in
 @:probe_in()

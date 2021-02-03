@@ -44,8 +44,8 @@ contains
   procedure :: fld3d_pointer => gaugrid_fld3d_pointer
   procedure :: fld2d_pointer => gaugrid_fld2d_pointer
   procedure :: calc_glb_latlon => gaugrid_calc_glb_latlon
-  procedure :: equals
-  generic :: assignment(=) => equals
+  procedure :: gaugrid_equals
+  generic :: assignment(=) => gaugrid_equals
 end type gaussian_grid
 
 private
@@ -67,7 +67,7 @@ implicit none
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
 ! Set name
-#:set subr = 'gaugrid_create'
+@:set_name(gaugrid_create)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -96,7 +96,7 @@ implicit none
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
 ! Set name
-#:set subr = 'gaugrid_delete'
+@:set_name(gaugrid_delete)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -124,7 +124,7 @@ implicit none
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
 ! Set name
-#:set subr = 'gaugrid_alloc_coord'
+@:set_name(gaugrid_alloc_coord)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -155,7 +155,7 @@ implicit none
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
 ! Set name
-#:set subr = 'gaugrid_dealloc_coord'
+@:set_name(gaugrid_dealloc_coord)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -185,7 +185,7 @@ implicit none
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
 ! Set name
-#:set subr = 'gaugrid_alloc_field'
+@:set_name(gaugrid_alloc_field)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -213,7 +213,7 @@ implicit none
 class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 
 ! Set name
-#:set subr = 'gaugrid_dealloc_field'
+@:set_name(gaugrid_dealloc_field)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -245,7 +245,7 @@ real(kind_real) :: dlon
 real(kind_real),allocatable :: slat(:)
 
 ! Set name
-#:set subr = 'gaugrid_calc_glb_latlon'
+@:set_name(gaugrid_calc_glb_latlon)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -291,7 +291,7 @@ character(len=*),intent(in) :: var                         !< Variable name
 real(kind_real),pointer,intent(inout) :: fldpointer(:,:,:) !< Field pointer
 
 ! Set name
-#:set subr = 'gaugrid_fld3d_pointer'
+@:set_name(gaugrid_fld3d_pointer)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -322,7 +322,7 @@ character(len=*),intent(in) :: var                       !< Variable name
 real(kind_real),pointer,intent(inout) :: fldpointer(:,:) !< Field pointer
 
 ! Set name
-#:set subr = 'gaugrid_fld2d_pointer'
+@:set_name(gaugrid_fld2d_pointer)
 
 ! Get instance index
 call probe%get_instance(self%iinst)
@@ -339,10 +339,10 @@ fldpointer => self%fld(1:self%nlon,1:self%nlat,1,iv)
 end subroutine gaugrid_fld2d_pointer
 
 !----------------------------------------------------------------------
-! Subroutine: equals
+! Subroutine: gaugrid_equals
 !> Create new gaussian grid from other
 !----------------------------------------------------------------------
-subroutine equals(self,rhs)
+subroutine gaugrid_equals(self,rhs)
 
 implicit none
 
@@ -351,7 +351,7 @@ class(gaussian_grid), intent(inout) :: self !< Gaussian grid
 type (gaussian_grid), intent(in)    :: rhs  !< Other Gaussian grid
 
 ! Set name
-#:set subr = 'equals'
+@:set_name(gaugrid_equals)
 
 ! Probe in
 @:probe_in()
@@ -368,6 +368,6 @@ self%fld = rhs%fld
 ! Probe out
 @:probe_out()
 
-end subroutine equals
+end subroutine gaugrid_equals
 
 end module type_gaugrid

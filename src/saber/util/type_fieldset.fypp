@@ -72,7 +72,7 @@ integer :: iv
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'fieldset_init'
+@:set_name(fieldset_init)
 
 ! Probe in
 @:probe_in()
@@ -139,7 +139,7 @@ real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
-#:set subr = 'fieldset_copy_fields'
+@:set_name(fieldset_copy_fields)
 
 ! Probe in
 @:probe_in()
@@ -194,7 +194,7 @@ integer :: iv
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'fieldset_pass_fields'
+@:set_name(fieldset_pass_fields)
 
 ! Probe in
 @:probe_in()
@@ -229,7 +229,7 @@ real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'fieldset_zero_fields'
+@:set_name(fieldset_zero_fields)
 
 ! Probe in
 @:probe_in()
@@ -278,7 +278,7 @@ real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
-#:set subr = 'fieldset_add_fields'
+@:set_name(fieldset_add_fields)
 
 ! Probe in
 @:probe_in()
@@ -338,7 +338,7 @@ real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
-#:set subr = 'fieldset_sub_fields'
+@:set_name(fieldset_sub_fields)
 
 ! Probe in
 @:probe_in()
@@ -398,7 +398,7 @@ real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'fieldset_mult_fields_scalar'
+@:set_name(fieldset_mult_fields_scalar)
 
 ! Probe in
 @:probe_in()
@@ -443,7 +443,7 @@ real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
-#:set subr = 'fieldset_mult_fields_fieldset'
+@:set_name(fieldset_mult_fields_fieldset)
 
 ! Probe in
 @:probe_in()
@@ -503,7 +503,7 @@ real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
-#:set subr = 'fieldset_div_fields'
+@:set_name(fieldset_div_fields)
 
 ! Probe in
 @:probe_in()
@@ -562,7 +562,7 @@ real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'fieldset_square_fields'
+@:set_name(fieldset_square_fields)
 
 ! Probe in
 @:probe_in()
@@ -606,7 +606,7 @@ real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'fieldset_sqrt_fields'
+@:set_name(fieldset_sqrt_fields)
 
 ! Probe in
 @:probe_in()
@@ -651,7 +651,7 @@ real(kind_real),intent(out) :: fld(:,:)     !< Fortran array
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'fieldset_to_array_single'
+@:set_name(fieldset_to_array_single)
 
 ! Probe in
 @:probe_in()
@@ -690,7 +690,7 @@ real(kind_real),intent(out) :: fld(:,:,:)   !< Fortran array
 integer :: iv
 
 ! Set name
-#:set subr = 'fieldset_to_array_all'
+@:set_name(fieldset_to_array_all)
 
 ! Probe in
 @:probe_in()
@@ -726,7 +726,7 @@ real(kind_real),intent(in) :: fld(:,:)         !< Fortran array
 type(atlas_field) :: afield
 
 ! Set name
-#:set subr = 'fieldset_from_array_single'
+@:set_name(fieldset_from_array_single)
 
 ! Probe in
 @:probe_in()
@@ -765,7 +765,7 @@ real(kind_real),intent(in) :: fld(:,:,:)       !< Fortran array
 integer :: iv
 
 ! Set name
-#:set subr = 'fieldset_from_array_all'
+@:set_name(fieldset_from_array_all)
 
 ! Probe in
 @:probe_in()

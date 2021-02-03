@@ -28,39 +28,35 @@ type rng_type
    ! Gaussian deviates parameters
    logical :: lset = .true.   !< Gaussian number generator switch
    real(kind_real) :: gset    !< Gaussian number generator alternative
-
-   ! Dummy variable
-   logical :: dummy_logical   !< Dummy variable
 contains
    procedure :: init => rng_init
    procedure :: reseed => rng_reseed
    procedure :: resync => rng_resync
    procedure :: desync => rng_desync
    procedure :: lcg => rng_lcg
-   procedure :: rng_dummy_method
-   #:for dtype,ftype in types_ir
+   #:for dtype in dtypes_ir
       procedure :: rng_rand_${dtype}$_r0
       #:for rank in ranks_123456
          procedure :: rng_rand_${dtype}$_r${rank}$
       #:endfor
    #:endfor
+@:init_procedure(14)
    generic :: rand => &
-   #:for dtype,ftype in types_ir
- & rng_rand_${dtype}$_r0, &
+   #:for dtype in dtypes_ir
+@:add_procedure(rng_rand_${dtype}$_r0)
       #:for rank in ranks_123456
- & rng_rand_${dtype}$_r${rank}$, &
+@:add_procedure(rng_rand_${dtype}$_r${rank}$)
       #:endfor
    #:endfor
- & rng_dummy_method
    procedure :: rng_rand_gau_r0
    #:for rank in ranks_123456
       procedure :: rng_rand_gau_r${rank}$
    #:endfor
+@:init_procedure(6)
    generic :: rand_gau => rng_rand_gau_r0, &
    #:for rank in ranks_123456
- & rng_rand_gau_r${rank}$, &
+@:add_procedure(rng_rand_gau_r${rank}$)
    #:endfor
- & rng_dummy_method
 end type rng_type
 
 private
@@ -85,7 +81,7 @@ type(nam_type),intent(in) :: nam     !< Namelist variables
 integer :: seed
 
 ! Set name
-#:set subr = 'rng_init'
+@:set_name(rng_init)
 
 ! Probe in
 @:probe_in()
@@ -135,7 +131,7 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 integer :: seed
 
 ! Set name
-#:set subr = 'rng_reseed'
+@:set_name(rng_reseed)
 
 ! Probe in
 @:probe_in()
@@ -167,7 +163,7 @@ class(rng_type),intent(inout) :: rng !< Random number generator
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Set name
-#:set subr = 'rng_resync'
+@:set_name(rng_resync)
 
 ! Probe in
 @:probe_in()
@@ -196,7 +192,7 @@ class(rng_type),intent(inout) :: rng !< Random number generator
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Set name
-#:set subr = 'rng_desync'
+@:set_name(rng_desync)
 
 ! Probe in
 @:probe_in()
@@ -229,7 +225,7 @@ integer(kind_long),intent(inout),optional :: seed !< Seed
 integer(kind_long) :: lseed
 
 ! Set name
-#:set subr = 'rng_lcg'
+@:set_name(rng_lcg)
 
 ! Probe in
 @:probe_in()
@@ -258,32 +254,7 @@ x = real(lseed,kind_real)/real(m-1,kind_real)
 
 end subroutine rng_lcg
 
-!----------------------------------------------------------------------
-! Subroutine: rng_dummy_method
-!> Dummy method
-!----------------------------------------------------------------------
-subroutine rng_dummy_method(rng)
-
-implicit none
-
-! Passed variables
-class(rng_type),intent(inout) :: rng !< Random number generator
-
-! Set name
-#:set subr = 'rng_dummy_method'
-
-! Probe in
-@:probe_in()
-
-! Dummy action to avoid compiler warning
-rng%dummy_logical = .false.
-
-! Probe out
-@:probe_out()
-
-end subroutine rng_dummy_method
-
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Subroutine: rng_rand_${dtype}$_r0
 !> Generate a random ${dtype}$
@@ -293,16 +264,16 @@ subroutine rng_rand_${dtype}$_r0(rng,binf,bsup,value)
 implicit none
 
 ! Passed variables
-class(rng_type),intent(inout) :: rng !< Random number generator
-${ftype}$,intent(in) :: binf         !< Lower bound
-${ftype}$,intent(in) :: bsup         !< Upper bound
-${ftype}$,intent(out) :: value       !< Random value
+class(rng_type),intent(inout) :: rng  !< Random number generator
+${ftype[dtype]}$,intent(in) :: binf   !< Lower bound
+${ftype[dtype]}$,intent(in) :: bsup   !< Upper bound
+${ftype[dtype]}$,intent(out) :: value !< Random value
 
 ! Local variables
 real(kind_real) :: x
 
 ! Set name
-#:set subr = 'rng_rand_${dtype}$_r0'
+@:set_name(rng_rand_${dtype}$_r0)
 
 ! Probe in
 @:probe_in()
@@ -331,7 +302,7 @@ call rng%lcg(x)
 end subroutine rng_rand_${dtype}$_r0
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
    #:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Subroutine: rng_rand_${dtype}$_r${rank}$
@@ -342,22 +313,19 @@ subroutine rng_rand_${dtype}$_r${rank}$(rng,binf,bsup,array)
 implicit none
 
 ! Passed variables
-class(rng_type),intent(inout) :: rng          !< Random number generator
-${ftype}$,intent(in) :: binf                  !< Lower bound
-${ftype}$,intent(in) :: bsup                  !< Upper bound
-${ftype}$,intent(out) :: array(${dim[rank]}$) !< Random array
+class(rng_type),intent(inout) :: rng                 !< Random number generator
+${ftype[dtype]}$,intent(in) :: binf                  !< Lower bound
+${ftype[dtype]}$,intent(in) :: bsup                  !< Upper bound
+${ftype[dtype]}$,intent(out) :: array(${dim[rank]}$) !< Random array
 
 ! Local variables
-integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$, #{endfor}# dummy_integer
+integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}#
 
 ! Set name
-#:set subr = 'rng_rand_${dtype}$_r${rank}$'
+@:set_name(rng_rand_${dtype}$_r${rank}$)
 
 ! Probe in
 @:probe_in()
-
-! Set dummy integer
-dummy_integer = 0
 
 ! Call r0 generator
 #:for arg_dim in range(1,rank+1)
@@ -395,7 +363,7 @@ real(kind_real),intent(out) :: value !< Gaussian deviate
 real(kind_real) :: fac,rsq,v1,v2
 
 ! Set name
-#:set subr = 'rng_rand_gau_r0'
+@:set_name(rng_rand_gau_r0)
 
 ! Probe in
 @:probe_in()
@@ -434,20 +402,17 @@ subroutine rng_rand_gau_r${rank}$(rng,array)
 implicit none
 
 ! Passed variables
-class(rng_type),intent(inout) :: rng          !< Random number generator
-${ftype}$,intent(out) :: array(${dim[rank]}$) !< Random array
+class(rng_type),intent(inout) :: rng                !< Random number generator
+real(kind_real),intent(out) :: array(${dim[rank]}$) !< Random array
 
 ! Local variables
-integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$, #{endfor}# dummy_integer
+integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}#
 
 ! Set name
-#:set subr = 'rng_rand_gau_r${rank}$'
+@:set_name(rng_rand_gau_r${rank}$)
 
 ! Probe in
 @:probe_in()
-
-! Set dummy integer
-dummy_integer = 0
 
 ! Call r0 generator
 #:for arg_dim in range(1,rank+1)

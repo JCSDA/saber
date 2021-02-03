@@ -20,17 +20,17 @@ use type_probe, only: probe
 implicit none
 
 interface qsort
-  #:for dtype,ftype in types_ir
+  #:for dtype in dtypes_ir
      module procedure qsort_qsort_${dtype}$
   #:endfor
 end interface
 interface quick_sort
-  #:for dtype,ftype in types_ir
+  #:for dtype in dtypes_ir
      module procedure qsort_quick_sort_${dtype}$
   #:endfor
 end interface
 interface interchange_sort
-  #:for dtype,ftype in types_ir
+  #:for dtype in dtypes_ir
      module procedure qsort_interchange_sort_${dtype}$
   #:endfor
 end interface
@@ -40,7 +40,7 @@ public :: qsort
 
 contains
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Subroutine: qsort_qsort_${dtype}$
 !> Sort a subvector
@@ -50,23 +50,26 @@ recursive subroutine qsort_qsort_${dtype}$(n,list,order)
 implicit none
 
 ! Passed variables
-integer, intent(in) :: n           !< Input vector size
-${ftype}$,intent(inout) :: list(n) !< Vector to sort
-integer,intent(inout) :: order(n)  !< Positions of the elements in the original order
+integer, intent(in) :: n                   !< Input vector size
+${ftype[dtype]}$,intent(inout) :: list(n)  !< Vector to sort
+integer,intent(inout),optional :: order(n) !< Positions of the elements in the original order
 
 ! Local variable
 integer :: i
+integer :: lorder(n)
 
 do i=1,n
-  order(i) = i
+  lorder(i) = i
 end do
 
-call quick_sort(n,1,n,list,order)
+call quick_sort(n,1,n,list,lorder)
+
+if (present(order)) order = lorder
 
 end subroutine qsort_qsort_${dtype}$
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Subroutine: qsort_quick_sort_${dtype}$
 !> Sort an integer subvector
@@ -76,16 +79,16 @@ recursive subroutine qsort_quick_sort_${dtype}$(n,left_end,right_end,list,order)
 implicit none
 
 ! Passed variables
-integer,intent(in) :: n            !< Input vector size
-integer,intent(in) :: left_end     !< Left end of the vector
-integer,intent(in) :: right_end    !< Right end of the vector
-${ftype}$,intent(inout) :: list(n) !< Vector to sort
-integer,intent(inout) :: order(n)  !< Positions of the elements in the original order
+integer,intent(in) :: n                   !< Input vector size
+integer,intent(in) :: left_end            !< Left end of the vector
+integer,intent(in) :: right_end           !< Right end of the vector
+${ftype[dtype]}$,intent(inout) :: list(n) !< Vector to sort
+integer,intent(inout) :: order(n)         !< Positions of the elements in the original order
 
 ! Local variables
 integer,parameter :: max_simple_sort_size = 6
 integer :: i,j,itemp
-${ftype}$ :: reference,temp
+${ftype[dtype]}$ :: reference,temp
 
 if (right_end<left_end+max_simple_sort_size) then
   ! Use interchange sort for small lists
@@ -130,7 +133,7 @@ end if
 end subroutine qsort_quick_sort_${dtype}$
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Subroutine: qsort_interchange_sort_${dtype}$
 !> Interchange integers
@@ -140,18 +143,18 @@ subroutine qsort_interchange_sort_${dtype}$(n,left_end,right_end,list,order)
 implicit none
 
 ! Passed variables
-integer,intent(in) :: n            !< Input vector size
-integer,intent(in) :: left_end     !< Left end of the vector
-integer,intent(in) :: right_end    !< Right end of the vector
-${ftype}$,intent(inout) :: list(n) !< Vector to sort
-integer,intent(inout) :: order(n)  !< Positions of the elements in the original order
+integer,intent(in) :: n                   !< Input vector size
+integer,intent(in) :: left_end            !< Left end of the vector
+integer,intent(in) :: right_end           !< Right end of the vector
+${ftype[dtype]}$,intent(inout) :: list(n) !< Vector to sort
+integer,intent(inout) :: order(n)         !< Positions of the elements in the original order
 
 ! Local variables
 integer :: i,j,itemp
-${ftype}$ :: temp
+${ftype[dtype]}$ :: temp
 
 ! Set name
-#:set subr = 'qsort_interchange_sort_${dtype}$'
+@:set_name(qsort_interchange_sort_${dtype}$)
 
 ! Probe in
 @:probe_in()

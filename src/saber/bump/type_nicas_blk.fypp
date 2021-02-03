@@ -21,7 +21,6 @@ use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_com, only: com_type
 use type_geom, only: geom_type
-use type_io, only: io_type
 use type_linop, only: linop_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
@@ -267,7 +266,7 @@ implicit none
 class(balldata_type),intent(inout) :: balldata !< Ball data
 
 ! Set name
-#:set subr = 'balldata_alloc'
+@:set_name(balldata_alloc)
 
 ! Probe in
 @:probe_in()
@@ -294,7 +293,7 @@ implicit none
 class(balldata_type),intent(inout) :: balldata !< Ball data
 
 ! Set name
-#:set subr = 'balldata_dealloc'
+@:set_name(balldata_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -328,7 +327,7 @@ real(kind_real),intent(in) :: val(nc1u,nl1)    !< Box value
 integer :: ibd,ic1u,il1
 
 ! Set name
-#:set subr = 'balldata_pack'
+@:set_name(balldata_pack)
 
 ! Probe in
 @:probe_in()
@@ -372,7 +371,7 @@ class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
 integer :: isbb
 
 ! Set name
-#:set subr = 'nicas_blk_partial_dealloc'
+@:set_name(nicas_blk_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -465,7 +464,7 @@ class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
 integer :: il0,il1
 
 ! Set name
-#:set subr = 'nicas_blk_dealloc'
+@:set_name(nicas_blk_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -534,7 +533,7 @@ integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,hash_sa_id,sa_to_sc_id,sb
 integer :: vlev_int(geom%nl0)
 
 ! Set name
-#:set subr = 'nicas_blk_read'
+@:set_name(nicas_blk_read)
 
 ! Probe in
 @:probe_in()
@@ -678,7 +677,7 @@ integer :: vlev_id,sb_to_c1b_id,sb_to_l1_id,sa_to_s_id,hash_sa_id,sa_to_sc_id,sb
 integer :: vlev_int(geom%nl0)
 
 ! Set name
-#:set subr = 'nicas_blk_write'
+@:set_name(nicas_blk_write)
 
 ! Probe in
 @:probe_in()
@@ -788,7 +787,7 @@ integer,intent(in) :: ncid                    !< NetCDF file
 integer :: nsa_id,nsb_id,nsc_id,lon_sa_id,lat_sa_id,lev_sa_id,lon_sb_id,lat_sb_id,lev_sb_id,lon_sc_id,lat_sc_id,lev_sc_id
 
 ! Set name
-#:set subr = 'nicas_blk_write_grids'
+@:set_name(nicas_blk_write_grids)
 
 ! Probe in
 @:probe_in()
@@ -860,7 +859,7 @@ integer :: nnbufi,nnbufr
 integer :: il0i,il1
 
 ! Set name
-#:set subr = 'nicas_blk_buffer_size'
+@:set_name(nicas_blk_buffer_size)
 
 ! Probe in
 @:probe_in()
@@ -946,7 +945,7 @@ integer :: il0i,il1
 logical,allocatable :: mask_c0a(:,:)
 
 ! Set name
-#:set subr = 'nicas_blk_serialize'
+@:set_name(nicas_blk_serialize)
 
 ! Probe in
 @:probe_in()
@@ -999,10 +998,10 @@ if (bpar%nicas_block(ib)) then
    ibufl = ibufl+geom%nl0
    if (nicas_blk%nc0a>0) then
       if (.not.nicas_blk%smoother) then
-         bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0) = pack(nicas_blk%norm,mask_c0a)
+         bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0) = reshape(nicas_blk%norm,(/nicas_blk%nc0a*geom%nl0/))
          ibufr = ibufr+nicas_blk%nc0a*geom%nl0
       end if
-      bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0) = pack(nicas_blk%coef_ens,mask_c0a)
+      bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0) = reshape(nicas_blk%coef_ens,(/nicas_blk%nc0a*geom%nl0/))
       ibufr = ibufr+nicas_blk%nc0a*geom%nl0
    end if
    if (nicas_blk%nsa>0) then
@@ -1130,7 +1129,7 @@ integer :: il0i,il1
 logical,allocatable :: mask_c0a(:,:)
 
 ! Set name
-#:set subr = 'nicas_blk_deserialize'
+@:set_name(nicas_blk_deserialize)
 
 ! Probe in
 @:probe_in()
@@ -1224,10 +1223,10 @@ if (bpar%nicas_block(ib)) then
    ibufl = ibufl+geom%nl0
    if (nicas_blk%nc0a>0) then
       if (.not.nicas_blk%smoother) then
-         nicas_blk%norm = unpack(bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0),mask_c0a,nicas_blk%norm)
+         nicas_blk%norm = reshape(bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0),(/nicas_blk%nc0a,geom%nl0/))
          ibufr = ibufr+nicas_blk%nc0a*geom%nl0
       end if
-      nicas_blk%coef_ens = unpack(bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0),mask_c0a,nicas_blk%coef_ens)
+      nicas_blk%coef_ens = reshape(bufr(ibufr+1:ibufr+nicas_blk%nc0a*geom%nl0),(/nicas_blk%nc0a,geom%nl0/))
       ibufr = ibufr+nicas_blk%nc0a*geom%nl0
    end if
    if (nicas_blk%nsa>0) then
@@ -1354,7 +1353,7 @@ logical,intent(in),optional :: sqrt_rescaling    !< Square-root rescaling flag
 integer :: il0i,il1
 
 ! Set name
-#:set subr = 'nicas_blk_compute_parameters'
+@:set_name(nicas_blk_compute_parameters)
 
 ! Probe in
 @:probe_in()
@@ -1506,7 +1505,7 @@ type(cmat_blk_type) :: cmat_blk
 type(nam_type) :: nam_smoother
 
 ! Set name
-#:set subr = 'nicas_blk_compute_parameters_horizontal_smoother'
+@:set_name(nicas_blk_compute_parameters_horizontal_smoother)
 
 ! Probe in
 @:probe_in()
@@ -1591,7 +1590,7 @@ real(kind_real) :: rhs_min(geom%nc0a)
 logical :: mask_hor_c0a(geom%nc0a)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_sampling_c1'
+@:set_name(nicas_blk_compute_sampling_c1)
 
 ! Probe in
 @:probe_in()
@@ -1752,7 +1751,7 @@ integer :: il0,il0_prev,il1,ic0a
 real(kind_real) :: distnormmin,distnorm(geom%nc0a),rv
 
 ! Set name
-#:set subr = 'nicas_blk_compute_sampling_v'
+@:set_name(nicas_blk_compute_sampling_v)
 
 ! Probe in
 @:probe_in()
@@ -1854,7 +1853,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 integer :: ic0,ic0a,ic1,ic1a,ic1u,il0,il1,iproc
 
 ! Set name
-#:set subr = 'nicas_blk_compute_mpi_a'
+@:set_name(nicas_blk_compute_mpi_a)
 
 ! Probe in
 @:probe_in()
@@ -1939,7 +1938,7 @@ integer,allocatable :: c2_to_c1(:)
 real(kind_real) :: nc2_real,rhs_c1a(nicas_blk%nc1a)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_sampling_c2'
+@:set_name(nicas_blk_compute_sampling_c2)
 
 ! Probe in
 @:probe_in()
@@ -2077,7 +2076,7 @@ logical :: lcheck_c1b_h(nicas_blk%nc1u),lcheck_c1b(nicas_blk%nc1u),inside
 logical,allocatable :: gmask_c1b_h(:,:)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_mpi_ab'
+@:set_name(nicas_blk_compute_mpi_ab)
 
 ! Probe in
 @:probe_in()
@@ -2342,7 +2341,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 integer :: ic1b,ic1u,jl0,il0,jl1,il0inf,il0sup
 
 ! Set name
-#:set subr = 'nicas_blk_compute_interp_v'
+@:set_name(nicas_blk_compute_interp_v)
 
 ! Probe in
 @:probe_in()
@@ -2446,7 +2445,7 @@ logical :: add_op,lcheck_c1bb(nicas_blk%nc1u)
 type(linop_type) :: ctmp,c(mpl%nthread)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_convol'
+@:set_name(nicas_blk_compute_convol)
 
 ! Probe in
 @:probe_in()
@@ -2877,7 +2876,7 @@ logical,allocatable :: net_arc(:,:,:)
 type(mesh_type) :: mesh
 
 ! Set name
-#:set subr = 'nicas_blk_compute_convol_network'
+@:set_name(nicas_blk_compute_convol_network)
 
 ! Probe in
 @:probe_in()
@@ -3130,7 +3129,7 @@ real(kind_real),allocatable :: distnorm(:,:),nn_dist(:,:)
 logical,allocatable :: valid_arc(:,:,:)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_convol_distance'
+@:set_name(nicas_blk_compute_convol_distance)
 
 ! Probe in
 @:probe_in()
@@ -3323,7 +3322,7 @@ logical :: add_op
 type(linop_type) :: c(mpl%nthread),c_nor(mpl%nthread)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_convol_weights'
+@:set_name(nicas_blk_compute_convol_weights)
 
 ! Probe in
 @:probe_in()
@@ -3434,7 +3433,7 @@ integer,allocatable :: sc_to_s(:),su_to_sc(:),sc_nor_to_s(:),su_to_sc_nor(:)
 logical,allocatable :: lcheck_sc(:),lcheck_sc_nor(:)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_mpi_c'
+@:set_name(nicas_blk_compute_mpi_c)
 
 ! Probe in
 @:probe_in()
@@ -3592,7 +3591,7 @@ integer,allocatable :: inec(:)
 real(kind_real),allocatable :: c_S(:,:),norm_a(:)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_internal_normalization'
+@:set_name(nicas_blk_compute_internal_normalization)
 
 ! Probe in
 @:probe_in()
@@ -3676,7 +3675,7 @@ real(kind_real),allocatable :: h_S(:,:,:),v_S(:,:,:),s_S(:,:,:),c_S(:,:)
 real(kind_real),allocatable :: list(:),S_list(:),S_list_tmp(:)
 
 ! Set name
-#:set subr = 'nicas_blk_compute_normalization'
+@:set_name(nicas_blk_compute_normalization)
 
 ! Probe in
 @:probe_in()
@@ -3927,7 +3926,7 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 integer :: isa,isb,isc,isu,ic1u,il1,il0
 
 ! Set name
-#:set subr = 'nicas_blk_compute_grids'
+@:set_name(nicas_blk_compute_grids)
 
 ! Probe in
 @:probe_in()
@@ -4009,7 +4008,7 @@ real(kind_real) :: sums(geom%nl0),sume(geom%nl0)
 real(kind_real) :: alpha_a(nicas_blk%nsa),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
 
 ! Set name
-#:set subr = 'nicas_blk_apply'
+@:set_name(nicas_blk_apply)
 
 ! Probe in
 @:probe_in()
@@ -4095,7 +4094,7 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
 real(kind_real) :: alpha(nicas_blk%nsa)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_from_sqrt'
+@:set_name(nicas_blk_apply_from_sqrt)
 
 ! Probe in
 @:probe_in()
@@ -4130,7 +4129,7 @@ real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
 real(kind_real) :: alpha_a(nicas_blk%nsa),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_sqrt'
+@:set_name(nicas_blk_apply_sqrt)
 
 ! Probe in
 @:probe_in()
@@ -4183,7 +4182,7 @@ real(kind_real),intent(out) :: alpha(nicas_blk%nsa)   !< Subgrid field
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_sqrt_ad'
+@:set_name(nicas_blk_apply_sqrt_ad)
 
 ! Probe in
 @:probe_in()
@@ -4239,7 +4238,7 @@ real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
 real(kind_real) :: gamma(nicas_blk%nc1b,nicas_blk%nl1),delta(nicas_blk%nc1b,geom%nl0)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_interp'
+@:set_name(nicas_blk_apply_interp)
 
 ! Probe in
 @:probe_in()
@@ -4277,7 +4276,7 @@ real(kind_real),intent(out) :: alpha(nicas_blk%nsb)   !< Subgrid field
 real(kind_real) :: gamma(nicas_blk%nc1b,nicas_blk%nl1),delta(nicas_blk%nc1b,geom%nl0)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_interp_ad'
+@:set_name(nicas_blk_apply_interp_ad)
 
 ! Probe in
 @:probe_in()
@@ -4315,7 +4314,7 @@ real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0)       !< Field
 integer :: il0
 
 ! Set name
-#:set subr = 'nicas_blk_apply_interp_h'
+@:set_name(nicas_blk_apply_interp_h)
 
 ! Probe in
 @:probe_in()
@@ -4355,7 +4354,7 @@ real(kind_real),intent(out) :: delta(nicas_blk%nc1b,geom%nl0) !< Subset Sc1 fiel
 integer :: il0
 
 ! Set name
-#:set subr = 'nicas_blk_apply_interp_h_ad'
+@:set_name(nicas_blk_apply_interp_h_ad)
 
 ! Probe in
 @:probe_in()
@@ -4395,7 +4394,7 @@ integer :: ic1b,il0
 real(kind_real),allocatable :: gamma_tmp(:),delta_tmp(:)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_interp_v'
+@:set_name(nicas_blk_apply_interp_v)
 
 ! Probe in
 @:probe_in()
@@ -4453,7 +4452,7 @@ integer :: ic1b
 real(kind_real),allocatable :: gamma_tmp(:),delta_tmp(:)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_interp_v_ad'
+@:set_name(nicas_blk_apply_interp_v_ad)
 
 ! Probe in
 @:probe_in()
@@ -4504,7 +4503,7 @@ integer :: isb,il1
 real(kind_real) :: beta(nicas_blk%nc1b,nicas_blk%nl1)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_interp_s'
+@:set_name(nicas_blk_apply_interp_s)
 
 ! Probe in
 @:probe_in()
@@ -4550,7 +4549,7 @@ integer :: il1,isb
 real(kind_real) :: beta(nicas_blk%nc1b,nicas_blk%nl1)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_interp_s_ad'
+@:set_name(nicas_blk_apply_interp_s_ad)
 
 ! Probe in
 @:probe_in()
@@ -4591,7 +4590,7 @@ real(kind_real),intent(inout) :: alpha(nicas_blk%nsc) !< Subgrid field
 real(kind_real),allocatable :: alpha_tmp(:)
 
 ! Set name
-#:set subr = 'nicas_blk_apply_convol'
+@:set_name(nicas_blk_apply_convol)
 
 ! Probe in
 @:probe_in()
@@ -4643,7 +4642,7 @@ real(kind_real) :: fld2(geom%nc0a,geom%nl0),fld2_save(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: alpha1(:),alpha1_save(:),alpha2(:),alpha2_save(:)
 
 ! Set name
-#:set subr = 'nicas_blk_test_adjoint'
+@:set_name(nicas_blk_test_adjoint)
 
 ! Probe in
 @:probe_in()
@@ -4866,7 +4865,7 @@ end subroutine nicas_blk_test_adjoint
 ! Subroutine: nicas_blk_test_dirac
 !> Apply NICAS to diracs
 !----------------------------------------------------------------------
-subroutine nicas_blk_test_dirac(nicas_blk,mpl,nam,geom,bpar,io)
+subroutine nicas_blk_test_dirac(nicas_blk,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -4876,7 +4875,6 @@ type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(nam_type),intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom            !< Geometry
 type(bpar_type),intent(in) :: bpar            !< Block parameters
-type(io_type),intent(in) :: io                !< I/O
 
 ! Local variables
 integer :: il0,idir
@@ -4885,7 +4883,7 @@ real(kind_real) :: fld(geom%nc0a,geom%nl0)
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'nicas_blk_test_dirac'
+@:set_name(nicas_blk_test_dirac)
 
 ! Probe in
 @:probe_in()
@@ -4906,10 +4904,16 @@ else
    call nicas_blk%apply(mpl,geom,fld)
 end if
 
-! Write field
+! Set filename
 filename = trim(nam%prefix)//'_dirac'
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
-call io%fld_write(mpl,nam,geom,filename,'nicas_blk',fld,bpar%blockname(ib))
+
+! Write coordinates
+call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
+call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
+call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
+
+! Write field
+call geom%io%fld_write(mpl,nam,filename,'nicas_blk',fld,geom%gmask_c0a,bpar%blockname(ib))
 
 ! Print results
 write(mpl%info,'(a7,a)') '','Values at dirac points:'

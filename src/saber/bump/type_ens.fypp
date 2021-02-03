@@ -17,8 +17,6 @@ use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
 use tools_qsort, only: qsort
 use type_fieldset, only: fieldset_type
 use type_geom, only: geom_type
-use type_io, only: io_type
-use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_probe, only: probe
@@ -75,7 +73,7 @@ integer,intent(in) :: ne             !< Ensemble size
 integer,intent(in) :: nsub           !< Number of sub-ensembles
 
 ! Set name
-#:set subr = 'ens_set_att'
+@:set_name(ens_set_att)
 
 ! Probe in
 @:probe_in()
@@ -103,7 +101,7 @@ integer,intent(in) :: ne             !< Ensemble size
 integer,intent(in) :: nsub           !< Number of sub-ensembles
 
 ! Set name
-#:set subr = 'ens_alloc'
+@:set_name(ens_alloc)
 
 ! Probe in
 @:probe_in()
@@ -137,7 +135,7 @@ class(ens_type),intent(inout) :: ens !< Ensemble
 integer :: ie,isub
 
 ! Set name
-#:set subr = 'ens_dealloc'
+@:set_name(ens_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -182,7 +180,7 @@ type(ens_type),intent(in) :: ens_in      !< Input ensemble
 integer :: ie,isub
 
 ! Set name
-#:set subr = 'ens_copy'
+@:set_name(ens_copy)
 
 ! Probe in
 @:probe_in()
@@ -238,7 +236,7 @@ type(geom_type),intent(in) :: geom   !< Geometry
 integer :: isub,ie_sub,ie
 
 ! Set name
-#:set subr = 'ens_compute_mean'
+@:set_name(ens_compute_mean)
 
 ! Probe in
 @:probe_in()
@@ -282,7 +280,7 @@ integer :: isub,ie_sub,ie
 type(fieldset_type) :: pert
 
 ! Set name
-#:set subr = 'ens_compute_moments'
+@:set_name(ens_compute_moments)
 
 ! Probe in
 @:probe_in()
@@ -341,7 +339,7 @@ integer :: isub,ie_sub,ie
 type(fieldset_type) :: std
 
 ! Set name
-#:set subr = 'ens_normalize'
+@:set_name(ens_normalize)
 
 ! Probe in
 @:probe_in()
@@ -404,7 +402,7 @@ integer :: isub
 real(kind_real),allocatable :: fld_mga(:,:),mean(:,:)
 
 ! Set name
-#:set subr = 'ens_get_c0_single'
+@:set_name(ens_get_c0_single)
 
 ! Probe in
 @:probe_in()
@@ -503,7 +501,7 @@ real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on Sc
 integer :: iv
 
 ! Set name
-#:set subr = 'ens_get_c0_all'
+@:set_name(ens_get_c0_all)
 
 ! Probe in
 @:probe_in()
@@ -540,7 +538,7 @@ integer :: isub
 real(kind_real),allocatable :: fld_mga(:,:),mean(:,:),fld_c0a_tmp(:,:)
 
 ! Set name
-#:set subr = 'ens_set_c0_single'
+@:set_name(ens_set_c0_single)
 
 ! Probe in
 @:probe_in()
@@ -640,7 +638,7 @@ real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on Sc0
 integer :: iv
 
 ! Set name
-#:set subr = 'ens_set_c0_all'
+@:set_name(ens_set_c0_all)
 
 ! Probe in
 @:probe_in()
@@ -677,7 +675,7 @@ real(kind_real) :: fld_copy(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: pert(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
-#:set subr = 'ens_apply_bens'
+@:set_name(ens_apply_bens)
 
 ! Probe in
 @:probe_in()
@@ -744,7 +742,7 @@ real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: alpha(ens%ne),norm
 
 ! Set name
-#:set subr = 'ens_apply_bens_dirac'
+@:set_name(ens_apply_bens_dirac)
 
 ! Probe in
 @:probe_in()
@@ -787,7 +785,7 @@ end subroutine ens_apply_bens_dirac
 ! Subroutine: ens_normality
 !> Perform some normality diagnostics
 !----------------------------------------------------------------------
-subroutine ens_normality(ens,mpl,nam,geom,io)
+subroutine ens_normality(ens,mpl,nam,geom)
 
 implicit none
 
@@ -796,7 +794,6 @@ class(ens_type),intent(inout) :: ens !< Ensemble
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
-type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: ncid,nloc_id,ne_id,nem1_id,ic0a_id,il0_id,iv_id,order_id,ens_norm_id,ens_step_id
@@ -811,7 +808,7 @@ real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'ens_normality'
+@:set_name(ens_normality)
 
 ! Probe in
 @:probe_in()
@@ -819,8 +816,10 @@ character(len=1024) :: filename
 ! Set file name
 filename = trim(nam%prefix)//'_umf'
 
-! Write vertical unit
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+! Write coordinates
+call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
+call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
+call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
 
 ! Compute variance and kurtosis
 write(mpl%info,'(a7,a)') '','Compute variance and kurtosis'
@@ -837,10 +836,12 @@ do iv=1,nam%nv
    end do
 end do
 
-! Write
-call io%fld_write(mpl,nam,geom,filename,'m2',m2)
-call io%fld_write(mpl,nam,geom,filename,'m4',m4)
-call io%fld_write(mpl,nam,geom,filename,'kurt',kurt)
+! Write fields
+do iv=1,nam%nv
+   call geom%io%fld_write(mpl,nam,filename,'m2',m2(:,:,iv),geom%gmask_c0a,nam%variables(iv))
+   call geom%io%fld_write(mpl,nam,filename,'m4',m4(:,:,iv),geom%gmask_c0a,nam%variables(iv))
+   call geom%io%fld_write(mpl,nam,filename,'kurt',kurt(:,:,iv),geom%gmask_c0a,nam%variables(iv))
+end do
 
 ! Allocation
 nloc = count(mpl%msv%isnot(kurt).and.(kurt>nam%gen_kurt_th))

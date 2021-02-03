@@ -20,7 +20,7 @@ real(kind_real) :: P0
 real(kind_double),allocatable :: lon(:,:),lat(:,:),delp(:,:,:)
 
 ! Set name
-#:set subr = 'model_geos_coord'
+@:set_name(model_geos_coord)
 
 ! Probe in
 @:probe_in()
@@ -117,7 +117,7 @@ real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
 
 ! Set name
-#:set subr = 'model_geos_read'
+@:set_name(model_geos_read)
 
 ! Probe in
 @:probe_in()

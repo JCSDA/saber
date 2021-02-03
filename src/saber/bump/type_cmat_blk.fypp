@@ -74,7 +74,7 @@ type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Set name
-#:set subr = 'cmat_blk_alloc'
+@:set_name(cmat_blk_alloc)
 
 ! Probe in
 @:probe_in()
@@ -121,7 +121,7 @@ type(mpl_type),intent(in) :: mpl               !< MPI data
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Set name
-#:set subr = 'cmat_blk_init'
+@:set_name(cmat_blk_init)
 
 ! Probe in
 @:probe_in()
@@ -166,7 +166,7 @@ implicit none
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
 ! Set name
-#:set subr = 'cmat_blk_partial_bump_dealloc'
+@:set_name(cmat_blk_partial_bump_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -199,7 +199,7 @@ implicit none
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
 ! Set name
-#:set subr = 'cmat_blk_partial_dealloc'
+@:set_name(cmat_blk_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -230,7 +230,7 @@ implicit none
 class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
 ! Set name
-#:set subr = 'cmat_blk_dealloc'
+@:set_name(cmat_blk_dealloc)
 
 ! Probe in
 @:probe_in()

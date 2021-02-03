@@ -43,7 +43,7 @@ real(kind_real),intent(out) :: pcv(cv%n) !< Packed control variable
 integer :: ib,offset
 
 ! Set name
-#:set subr = 'cv_pack'
+@:set_name(cv_pack)
 
 ! Probe in
 @:probe_in()
@@ -80,7 +80,7 @@ real(kind_real),intent(in) :: pcv(cv%n) !< Packed control variable
 integer :: ib,offset
 
 ! Set name
-#:set subr = 'cv_unpack'
+@:set_name(cv_unpack)
 
 ! Probe in
 @:probe_in()

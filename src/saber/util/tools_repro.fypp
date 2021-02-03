@@ -19,27 +19,27 @@ logical :: repro = .true.                  !< Reproducibility flag
 real(kind_real),parameter :: rth = 1.0e-12 !< Reproducibility threshold
 
 interface eq
-  #:for dtype,ftype in types_irl
+  #:for dtype in dtypes_irl
      module procedure repro_eq_${dtype}$
   #:endfor
 end interface
 interface inf
-  #:for dtype,ftype in types_ir
+  #:for dtype in dtypes_ir
      module procedure repro_inf_${dtype}$
   #:endfor
 end interface
 interface infeq
-  #:for dtype,ftype in types_ir
+  #:for dtype in dtypes_ir
      module procedure repro_infeq_${dtype}$
   #:endfor
 end interface
 interface sup
-  #:for dtype,ftype in types_ir
+  #:for dtype in dtypes_ir
      module procedure repro_sup_${dtype}$
   #:endfor
 end interface
 interface supeq
-  #:for dtype,ftype in types_ir
+  #:for dtype in dtypes_ir
      module procedure repro_supeq_${dtype}$
   #:endfor
 end interface
@@ -56,7 +56,7 @@ public :: eq,inf,infeq,sup,supeq,indist,small
 
 contains
 
-#:for dtype,ftype in types_irl
+#:for dtype in dtypes_irl
 !----------------------------------------------------------------------
 ! Function: repro_eq_${dtype}$
 !> Equal test for ${dtype}$
@@ -66,14 +66,14 @@ function repro_eq_${dtype}$(x,y) result(test)
 implicit none
 
 ! Passed variables
-${ftype}$,intent(in) :: x !< First real
-${ftype}$,intent(in) :: y !< Second real
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'repro_eq_${dtype}$'
+@:set_name(repro_eq_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -94,7 +94,7 @@ logical :: test
 end function repro_eq_${dtype}$
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Function: repro_inf_${dtype}$
 !> Inferior test for ${dtype}$
@@ -104,14 +104,14 @@ function repro_inf_${dtype}$(x,y) result(test)
 implicit none
 
 ! Passed variables
-${ftype}$,intent(in) :: x !< First real
-${ftype}$,intent(in) :: y !< Second real
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'repro_inf_${dtype}$'
+@:set_name(repro_inf_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -125,7 +125,7 @@ test = (x<y)
 end function repro_inf_${dtype}$
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Function: repro_infeq_${dtype}$
 !> Inferior or equal test for ${dtype}$
@@ -135,14 +135,14 @@ function repro_infeq_${dtype}$(x,y) result(test)
 implicit none
 
 ! Passed variables
-${ftype}$,intent(in) :: x !< First real
-${ftype}$,intent(in) :: y !< Second real
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'repro_infeq_${dtype}$'
+@:set_name(repro_infeq_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -155,7 +155,7 @@ test = inf(x,y).or.eq(x,y)
 end function repro_infeq_${dtype}$
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Function: repro_sup_${dtype}$
 !> Superior test for ${dtype}$
@@ -165,14 +165,14 @@ function repro_sup_${dtype}$(x,y) result(test)
 implicit none
 
 ! Passed variables
-${ftype}$,intent(in) :: x !< First real
-${ftype}$,intent(in) :: y !< Second real
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'repro_sup_${dtype}$'
+@:set_name(repro_sup_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -186,7 +186,7 @@ test = (x>y)
 end function repro_sup_${dtype}$
 #:endfor
 
-#:for dtype,ftype in types_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Function: repro_supeq_${dtype}$
 !> Superior or equal test for ${dtype}$
@@ -196,14 +196,14 @@ function repro_supeq_${dtype}$(x,y) result(test)
 implicit none
 
 ! Passed variables
-${ftype}$,intent(in) :: x !< First real
-${ftype}$,intent(in) :: y !< Second real
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
 
 ! Returned variable
 logical :: test
 
 ! Set name
-#:set subr = 'repro_supeq_${dtype}$'
+@:set_name(repro_supeq_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -232,7 +232,7 @@ real(kind_real),intent(in) :: y !< Second real
 logical :: test
 
 ! Set name
-#:set subr = 'repro_indist'
+@:set_name(repro_indist)
 
 ! Probe in
 @:probe_in()
@@ -267,7 +267,7 @@ real(kind_real),intent(in) :: y !< Second real
 logical :: test
 
 ! Set name
-#:set subr = 'repro_small'
+@:set_name(repro_small)
 
 ! Probe in
 @:probe_in()

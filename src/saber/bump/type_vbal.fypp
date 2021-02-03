@@ -12,6 +12,7 @@ use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use netcdf, only: nf90_close,nf90_get_att,nf90_get_var,nf90_global,nf90_inq_grp_ncid,nf90_inq_varid,nf90_nowrite,nf90_open, &
  & nf90_put_att,nf90_put_var
+use tools_const, only: rad2deg
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
 use tools_repro, only: infeq
 use type_bpar, only: bpar_type
@@ -76,7 +77,7 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 integer :: iv,jv
 
 ! Set name
-#:set subr = 'vbal_alloc'
+@:set_name(vbal_alloc)
 
 ! Probe in
 @:probe_in()
@@ -117,7 +118,7 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 integer :: iv,jv
 
 ! Set name
-#:set subr = 'vbal_partial_dealloc'
+@:set_name(vbal_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -151,7 +152,7 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 integer :: iv,jv
 
 ! Set name
-#:set subr = 'vbal_dealloc'
+@:set_name(vbal_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -198,7 +199,7 @@ integer :: ncid,grpid(nam%nv,nam%nv),h_n_s_id,h_c2b_id,h_S_id,reg_id(nam%nv,nam%
 character(len=1024) :: filename,grpname
 
 ! Set name
-#:set subr = 'vbal_read'
+@:set_name(vbal_read)
 
 ! Probe in
 @:probe_in()
@@ -278,7 +279,7 @@ integer :: reg_id(nam%nv,nam%nv),auto_id(nam%nv,nam%nv),cross_id(nam%nv,nam%nv),
 character(len=1024) :: filename,grpname
 
 ! Set name
-#:set subr = 'vbal_write'
+@:set_name(vbal_write)
 
 ! Probe in
 @:probe_in()
@@ -368,7 +369,7 @@ real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: auto(:,:,:,:),cross(:,:,:,:)
 
 ! Set name
-#:set subr = 'vbal_run_vbal'
+@:set_name(vbal_run_vbal)
 
 ! Probe in
 @:probe_in()
@@ -489,7 +490,7 @@ end subroutine vbal_run_vbal
 ! Subroutine: vbal_run_vbal_tests
 !> Compute vertical balance tests
 !----------------------------------------------------------------------
-subroutine vbal_run_vbal_tests(vbal,mpl,rng,nam,geom,bpar,io)
+subroutine vbal_run_vbal_tests(vbal,mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -500,10 +501,9 @@ type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(io_type),intent(in) :: io         !< I/O
 
 ! Set name
-#:set subr = 'vbal_run_vbal_tests'
+@:set_name(vbal_run_vbal_tests)
 
 ! Probe in
 @:probe_in()
@@ -520,7 +520,7 @@ end if
 
 if (nam%check_dirac) then
    ! Test dirac
-   call vbal%test_dirac(mpl,nam,geom,bpar,io)
+   call vbal%test_dirac(mpl,nam,geom,bpar)
 end if
 
 ! Probe out
@@ -548,7 +548,7 @@ integer :: iv,jv
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
-#:set subr = 'vbal_apply'
+@:set_name(vbal_apply)
 
 ! Probe in
 @:probe_in()
@@ -595,7 +595,7 @@ integer :: iv,jv
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
-#:set subr = 'vbal_apply_inv'
+@:set_name(vbal_apply_inv)
 
 ! Probe in
 @:probe_in()
@@ -642,7 +642,7 @@ integer :: iv,jv
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
-#:set subr = 'vbal_apply_ad'
+@:set_name(vbal_apply_ad)
 
 ! Probe in
 @:probe_in()
@@ -689,7 +689,7 @@ integer :: iv,jv
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
-#:set subr = 'vbal_apply_inv_ad'
+@:set_name(vbal_apply_inv_ad)
 
 ! Probe in
 @:probe_in()
@@ -737,7 +737,7 @@ real(kind_real) :: mse,mse_tot
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
-#:set subr = 'vbal_test_inverse'
+@:set_name(vbal_test_inverse)
 
 ! Probe in
 @:probe_in()
@@ -811,7 +811,7 @@ real(kind_real) :: fld2_blk(geom%nc0a,geom%nl0,nam%nv),fld2_dir(geom%nc0a,geom%n
 real(kind_real) :: fld2_inv(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
-#:set subr = 'vbal_test_adjoint'
+@:set_name(vbal_test_adjoint)
 
 ! Probe in
 @:probe_in()
@@ -870,7 +870,7 @@ end subroutine vbal_test_adjoint
 ! Subroutine: vbal_test_dirac
 !> Apply vertical balance to diracs
 !----------------------------------------------------------------------
-subroutine vbal_test_dirac(vbal,mpl,nam,geom,bpar,io)
+subroutine vbal_test_dirac(vbal,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -880,7 +880,6 @@ type(mpl_type),intent(inout) :: mpl !< MPI data
 type(nam_type),intent(in) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom  !< Geometry
 type(bpar_type),intent(in) :: bpar  !< Block parameters
-type(io_type),intent(in) :: io      !< I/O
 
 ! Local variables
 integer :: idir,iv
@@ -888,7 +887,7 @@ real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'vbal_test_dirac'
+@:set_name(vbal_test_dirac)
 
 ! Probe in
 @:probe_in()
@@ -902,11 +901,17 @@ end do
 ! Apply vertical balance to dirac
 call vbal%apply(nam,geom,bpar,fld)
 
-! Write field
+! Set filename
 filename = trim(nam%prefix)//'_dirac'
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+
+! Write coordinates
+call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
+call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
+call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
+
+! Write field
 do iv=1,nam%nv
-   call io%fld_write(mpl,nam,geom,filename,'vbal',fld(:,:,iv),trim(nam%variables(iv)))
+   call geom%io%fld_write(mpl,nam,filename,'vbal',fld(:,:,iv),geom%gmask_c0a,trim(nam%variables(iv)))
 end do
 
 ! Probe out

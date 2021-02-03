@@ -17,7 +17,6 @@ use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
 use tools_repro, only: rth,inf,sup,eq
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
-use type_io, only: io_type
 use type_minim, only: minim_type
 use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
@@ -96,7 +95,7 @@ type(samp_type),intent(in) :: samp           !< Sampling
 integer,intent(in) :: ib                     !< Block index
 
 ! Set name
-#:set subr = 'lct_blk_alloc'
+@:set_name(lct_blk_alloc)
 
 ! Probe in
 @:probe_in()
@@ -145,7 +144,7 @@ implicit none
 class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
 
 ! Set name
-#:set subr = 'lct_blk_partial_dealloc'
+@:set_name(lct_blk_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -182,7 +181,7 @@ implicit none
 class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
 
 ! Set name
-#:set subr = 'lct_blk_dealloc'
+@:set_name(lct_blk_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -205,7 +204,7 @@ end subroutine lct_blk_dealloc
 ! Subroutine: lct_blk_write
 !> Write LCT
 !----------------------------------------------------------------------
-subroutine lct_blk_write(lct_blk,mpl,nam,geom,bpar,io,filename)
+subroutine lct_blk_write(lct_blk,mpl,nam,geom,bpar,filename)
 
 implicit none
 
@@ -215,7 +214,6 @@ type(mpl_type),intent(inout) :: mpl          !< MPI data
 type(nam_type),intent(in) :: nam             !< Namelist
 type(geom_type),intent(in) :: geom           !< Geometry
 type(bpar_type),intent(in) :: bpar           !< Block parameters
-type(io_type),intent(in) :: io               !< I/O
 character(len=*),intent(in) :: filename      !< Filename
 
 ! Local variables
@@ -223,7 +221,7 @@ integer :: iv,iscales
 character(len=1024) :: varname,scalename
 
 ! Set name
-#:set subr = 'lct_blk_write'
+@:set_name(lct_blk_write)
 
 ! Probe in
 @:probe_in()
@@ -238,18 +236,18 @@ varname = trim(nam%variables(iv))
 do iscales=1,lct_blk%nscales
    ! Write fields
    write(scalename,'(a,i1)') 'scale_',iscales
-   call io%fld_write(mpl,nam,geom,filename,'D11',lct_blk%D11(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'D22',lct_blk%D22(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'D33',lct_blk%D33(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'D12',lct_blk%D12(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'H11',lct_blk%H11(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'H22',lct_blk%H22(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'H33',lct_blk%H33(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'H12',lct_blk%H12(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'coef',lct_blk%Dcoef(:,:,iscales),varname,scalename)
-   call io%fld_write(mpl,nam,geom,filename,'Lh',lct_blk%DLh(:,:,iscales),varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'D11',lct_blk%D11(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'D22',lct_blk%D22(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'D33',lct_blk%D33(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'D12',lct_blk%D12(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'H11',lct_blk%H11(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'H22',lct_blk%H22(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'H33',lct_blk%H33(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'H12',lct_blk%H12(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'coef',lct_blk%Dcoef(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   call geom%io%fld_write(mpl,nam,filename,'Lh',lct_blk%DLh(:,:,iscales),geom%gmask_c0a,varname,scalename)
 end do
-call io%fld_write(mpl,nam,geom,filename,'qc',lct_blk%qc_c0a,varname)
+call geom%io%fld_write(mpl,nam,filename,'qc',lct_blk%qc_c0a,geom%gmask_c0a,varname)
 
 ! End associate
 end associate
@@ -282,7 +280,7 @@ real(kind_real),allocatable :: lon(:,:),lat(:,:)
 character(len=1024) :: filename
 
 ! Set name
-#:set subr = 'lct_blk_write_cor'
+@:set_name(lct_blk_write_cor)
 
 ! Probe in
 @:probe_in()
@@ -379,7 +377,7 @@ logical,allocatable :: Dv_valid(:)
 type(minim_type) :: minim
 
 ! Set name
-#:set subr = 'lct_blk_compute'
+@:set_name(lct_blk_compute)
 
 ! Probe in
 @:probe_in()
@@ -550,7 +548,7 @@ do il0=1,geom%nl0
             end do
 
             ! Fill minim
-            minim%obs = pack(lct_blk%raw(:,:,ic1a,il0),.true.)
+            minim%obs = reshape(lct_blk%raw(:,:,ic1a,il0),(/minim%ny/))
             minim%cost_function = 'fit_lct'
             minim%algo = nam%minim_algo
             minim%nc3 = nam%nc3
@@ -693,7 +691,7 @@ logical :: valid
 logical,allocatable :: dmask(:,:)
 
 ! Set name
-#:set subr = 'lct_blk_filter'
+@:set_name(lct_blk_filter)
 
 ! Probe in
 @:probe_in()
@@ -847,7 +845,7 @@ real(kind_real) :: fld_c2a(samp%nc2a,geom%nl0,2*4+2),fld_c2b(samp%nc2b,geom%nl0)
 real(kind_real),allocatable :: D(:,:,:,:),coef(:,:,:)
 
 ! Set name
-#:set subr = 'lct_blk_interp'
+@:set_name(lct_blk_interp)
 
 ! Probe in
 @:probe_in()

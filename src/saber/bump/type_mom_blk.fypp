@@ -55,7 +55,7 @@ integer,intent(in) :: ne                     !< Ensemble size
 integer,intent(in) :: nsub                   !< Number of sub-ensembles
 
 ! Set name
-#:set subr = 'mom_blk_alloc'
+@:set_name(mom_blk_alloc)
 
 ! Probe in
 @:probe_in()
@@ -93,7 +93,7 @@ implicit none
 class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
 
 ! Set name
-#:set subr = 'mom_blk_dealloc'
+@:set_name(mom_blk_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -130,7 +130,7 @@ integer :: npack,ipack,isub,il0,jc3,jl0r
 real(kind_real),allocatable :: sbuf(:,:),rbuf(:,:)
 
 ! Set name
-#:set subr = 'mom_blk_ext'
+@:set_name(mom_blk_ext)
 
 ! Probe in
 @:probe_in()

@@ -91,7 +91,7 @@ integer,intent(in) :: n                !< Mesh size
 type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Set name
-#:set subr = 'mesh_alloc'
+@:set_name(mesh_alloc)
 
 ! Probe in
 @:probe_in()
@@ -150,7 +150,7 @@ type(atlas_mesh_nodes) :: anodes
 type(atlas_connectivity) :: aconnectivity
 
 ! Set name
-#:set subr = 'mesh_init'
+@:set_name(mesh_init)
 
 ! Probe in
 @:probe_in()
@@ -417,7 +417,7 @@ class(mesh_type),intent(inout) :: mesh !< Mesh
 integer :: i
 
 ! Set name
-#:set subr = 'mesh_dealloc'
+@:set_name(mesh_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -467,7 +467,7 @@ logical :: isbnd(mesh%n)
 logical,allocatable :: valid(:)
 
 ! Set name
-#:set subr = 'mesh_bnodes'
+@:set_name(mesh_bnodes)
 
 ! Probe in
 @:probe_in()
@@ -660,7 +660,7 @@ integer :: i,inext
 real(kind_real) :: a(3),b(3),c(3),v1(3),v2(3),cp(3),cd(3)
 
 ! Set name
-#:set subr = 'mesh_inside'
+@:set_name(mesh_inside)
 
 ! Probe in
 @:probe_in()
@@ -728,7 +728,7 @@ real(kind_real),allocatable :: nn_dist(:)
 logical :: found,cflag(3),valid
 
 ! Set name
-#:set subr = 'mesh_barycentric'
+@:set_name(mesh_barycentric)
 
 ! Probe in
 @:probe_in()
@@ -872,7 +872,7 @@ integer,intent(out) :: nbnda        !< Number of boundary nodes
 integer :: i,ii,j,k,kk,knext,kknext
 
 ! Set name
-#:set subr = 'mesh_count_bnda'
+@:set_name(mesh_count_bnda)
 
 ! Probe in
 @:probe_in()
@@ -922,7 +922,7 @@ integer,intent(out) :: bnda_index(2,nbnda) !< Boundary node index
 integer :: ibnda,i,ii,j,k,kk,knext,kknext
 
 ! Set name
-#:set subr = 'mesh_get_bnda'
+@:set_name(mesh_get_bnda)
 
 ! Probe in
 @:probe_in()

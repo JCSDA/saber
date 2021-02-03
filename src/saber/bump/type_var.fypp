@@ -10,12 +10,11 @@ module type_var
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const, only: reqkm
+use tools_const, only: rad2deg,reqkm
 use tools_kinds, only: kind_real,huge_real
 use type_cmat_blk, only: cmat_blk_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
-use type_io, only: io_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas_blk, only: nicas_blk_type
@@ -62,7 +61,7 @@ type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Set name
-#:set subr = 'var_alloc'
+@:set_name(var_alloc)
 
 ! Probe in
 @:probe_in()
@@ -92,7 +91,7 @@ implicit none
 class(var_type),intent(inout) :: var !< Variance
 
 ! Set name
-#:set subr = 'var_partial_dealloc'
+@:set_name(var_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -119,7 +118,7 @@ implicit none
 class(var_type),intent(inout) :: var !< Variance
 
 ! Set name
-#:set subr = 'var_dealloc'
+@:set_name(var_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -137,7 +136,7 @@ end subroutine var_dealloc
 ! Subroutine: var_read
 !> Read
 !----------------------------------------------------------------------
-subroutine var_read(var,mpl,nam,geom,io)
+subroutine var_read(var,mpl,nam,geom)
 
 implicit none
 
@@ -146,14 +145,13 @@ class(var_type),intent(inout) :: var !< Variance
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
-type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: iv
 character(len=1024) :: filename,grpname
 
 ! Set name
-#:set subr = 'var_read'
+@:set_name(var_read)
 
 ! Probe in
 @:probe_in()
@@ -171,7 +169,7 @@ filename = trim(nam%prefix)//'_var'
 ! Read raw variance, fourth-order moment, filtered variance and standard-deviation
 do iv=1,nam%nv
    call nam%io_key_value(trim(nam%variables(iv)),grpname)
-   call io%fld_read(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
+   call geom%io%fld_read(mpl,nam,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
 end do
 
 ! Probe out
@@ -183,7 +181,7 @@ end subroutine var_read
 ! Subroutine: var_write
 !> Write
 !----------------------------------------------------------------------
-subroutine var_write(var,mpl,nam,geom,io)
+subroutine var_write(var,mpl,nam,geom)
 
 implicit none
 
@@ -192,14 +190,13 @@ class(var_type),intent(inout) :: var !< Variance
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
-type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: iv
 character(len=1024) :: filename,grpname
 
 ! Set name
-#:set subr = 'var_write'
+@:set_name(var_write)
 
 ! Probe in
 @:probe_in()
@@ -211,18 +208,20 @@ call mpl%flush
 ! Set filename
 filename = trim(nam%prefix)//'_var'
 
-! Write vertical unit
-call io%fld_write(mpl,nam,geom,filename,'vunit',geom%vunit_c0a)
+! Write coordinates
+call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
+call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
+call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
 
 ! Write raw variance, fourth-order moment, filtered variance and standard-deviation
 do iv=1,nam%nv
    call nam%io_key_value(trim(nam%variables(iv)),grpname)
    if (.not.nam%forced_var) then
-      call io%fld_write(mpl,nam,geom,filename,'m2',var%m2(:,:,iv),grpname)
-      call io%fld_write(mpl,nam,geom,filename,'m4',var%m4(:,:,iv),grpname)
-      if (nam%var_filter) call io%fld_write(mpl,nam,geom,filename,'m2flt',var%m2flt(:,:,iv),grpname)
+      call geom%io%fld_write(mpl,nam,filename,'m2',var%m2(:,:,iv),geom%gmask_c0a,grpname)
+      call geom%io%fld_write(mpl,nam,filename,'m4',var%m4(:,:,iv),geom%gmask_c0a,grpname)
+      if (nam%var_filter) call geom%io%fld_write(mpl,nam,filename,'m2flt',var%m2flt(:,:,iv),geom%gmask_c0a,grpname)
    end if
-   call io%fld_write(mpl,nam,geom,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
+   call geom%io%fld_write(mpl,nam,filename,'m2sqrt',var%m2sqrt(:,:,iv),geom%gmask_c0a,grpname)
 end do
 
 ! Probe out
@@ -234,7 +233,7 @@ end subroutine var_write
 ! Subroutine: var_run_var
 !> Compute variance
 !----------------------------------------------------------------------
-subroutine var_run_var(var,mpl,rng,nam,geom,ens,io)
+subroutine var_run_var(var,mpl,rng,nam,geom,ens)
 
 implicit none
 
@@ -245,13 +244,12 @@ type(rng_type),intent(inout) :: rng  !< Random number generator
 type(nam_type),intent(inout) :: nam  !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 type(ens_type), intent(inout) :: ens !< Ensemble
-type(io_type),intent(in) :: io       !< I/O
 
 ! Local variables
 integer :: ic0a,il0,iv
 
 ! Set name
-#:set subr = 'var_run_var'
+@:set_name(var_run_var)
 
 ! Probe in
 @:probe_in()
@@ -312,7 +310,7 @@ else
 end if
 
 ! Write variance
-call var%write(mpl,nam,geom,io)
+call var%write(mpl,nam,geom)
 
 ! Probe out
 @:probe_out()
@@ -344,7 +342,7 @@ logical :: dichotomy(geom%nl0),convergence(geom%nl0)
 type(nicas_blk_type) :: nicas_blk
 
 ! Set name
-#:set subr = 'var_filter'
+@:set_name(var_filter)
 
 ! Probe in
 @:probe_in()
@@ -476,7 +474,7 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destin
 integer :: ic0a,il0
 
 ! Set name
-#:set subr = 'var_apply_sqrt'
+@:set_name(var_apply_sqrt)
 
 ! Probe in
 @:probe_in()
@@ -511,7 +509,7 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destin
 integer :: ic0a,il0
 
 ! Set name
-#:set subr = 'var_apply_sqrt_inv'
+@:set_name(var_apply_sqrt_inv)
 
 ! Probe in
 @:probe_in()

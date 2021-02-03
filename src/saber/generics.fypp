@@ -8,24 +8,48 @@
 
 #:mute
 
+! Ranks lists
 #:set ranks_12 = [1,2]
 #:set ranks_123 = [1,2,3]
 #:set ranks_1234 = [1,2,3,4]
 #:set ranks_123456 = [1,2,3,4,5,6]
 #:set ranks_23 = [2,3]
 
+! Dimension from rank
 #:set dim = ['',':',':,:',':,:,:',':,:,:,:',':,:,:,:,:',':,:,:,:,:,:']
 
-#:set ftypes_ir = ['integer(kind_int)','real(kind_real)']
+! Types list
 #:set dtypes_ir = ['int','real']
-#:set types_ir = list(zip(dtypes_ir,ftypes_ir))
-
-#:set ftypes_irl = ['integer(kind_int)','real(kind_real)','logical']
 #:set dtypes_irl = ['int','real','logical']
-#:set types_irl = list(zip(dtypes_irl,ftypes_irl))
-
-#:set ftypes_irls = ['integer(kind_int)','real(kind_real)','logical','character(len=*)']
 #:set dtypes_irls = ['int','real','logical','string']
-#:set types_irls = list(zip(dtypes_irls,ftypes_irls))
+
+! Dictionaries with type as input
+#:set ftype = dict([('int','integer(kind_int)'),('real','real(kind_real)'),('logical','logical'),('string','character(len=*)')])
+#:set msv = dict([('int','msv%vali'),('real','msv%valr'),('logical','msv%vall')])
+#:set zero = dict([('int','0'),('real','0.0_kind_real'),('logical','.false.')])
+#:set atlas_kind = dict([('int','atlas_integer(kind_int)'),('real','atlas_real(kind_real)')])
+#:set netcdf_kind = dict([('int','nc_kind_int'),('real','nc_kind_real'),('logical','nc_kind_int')])
+
+! Delimiter for declaration list
+#:set delim = dict([(True,''),(False,',')])
+
+! Procedure list initialization
+#:def init_procedure(total_len)
+#:global last
+#:set last = int(total_len)
+#:global ind
+#:set ind = 0
+#:enddef
+
+! Procedure list addition
+#:def add_procedure(name)
+#:global ind
+#:set ind = ind+1
+#:if ind == last
+ & ${name}$
+#:else
+ & ${name}$, &
+#:endif
+#:enddef
 
 #:endmute

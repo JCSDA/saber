@@ -20,7 +20,7 @@ integer(kind_signed_char),allocatable :: tmask(:,:,:)
 real(kind_real),allocatable :: lon(:,:),lat(:,:),e1t(:,:),e2t(:,:),e3t(:,:,:)
 
 ! Set name
-#:set subr = 'model_nemo_coord'
+@:set_name(model_nemo_coord)
 
 ! Probe in
 @:probe_in()
@@ -135,7 +135,7 @@ real(kind_real) :: fld_tmp2,fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
 
 ! Set name
-#:set subr = 'model_nemo_read'
+@:set_name(model_nemo_read)
 
 ! Probe in
 @:probe_in()
