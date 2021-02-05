@@ -154,6 +154,7 @@
 #:set subr_list = subr_list + ["diag_localization"]
 #:set subr_list = subr_list + ["diag_hybridization"]
 #:set subr_list = subr_list + ["diag_dualens"]
+#:set subr_list = subr_list + ["diag_full_vertical_covariance"]
 #:set subr_list = subr_list + ["ens_set_att"]
 #:set subr_list = subr_list + ["ens_alloc"]
 #:set subr_list = subr_list + ["ens_dealloc"]

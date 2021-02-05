@@ -640,6 +640,7 @@ case default
          nam%variables(1) = variables
 
          ! Read file
+         fieldset = atlas_fieldset()
          call model%read(mpl,nam,filename,fieldset)
 
          ! Get data

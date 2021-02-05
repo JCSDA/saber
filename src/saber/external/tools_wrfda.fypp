@@ -25,7 +25,7 @@ interface da_eof_decomposition
 end interface
 
 private
-public :: pseudoinv
+public :: pseudoinv,da_eof_decomposition
 
 contains
 
@@ -38,12 +38,12 @@ subroutine wrfda_pseudoinv(mpl,n,a,c,mmax,var_th)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-integer,intent(in) :: n                       ! Matrix rank
-real(kind_real),intent(in) :: a(n,n)          ! Matrix
-real(kind_real),intent(out) :: c(n,n)         ! Matrix inverse
-integer,intent(in),optional :: mmax           ! Dominant mode
-real(kind_real),intent(in),optional :: var_th ! Variance threshold
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: n                       !< Matrix rank
+real(kind_real),intent(in) :: a(n,n)          !< Matrix
+real(kind_real),intent(out) :: c(n,n)         !< Matrix inverse
+integer,intent(in),optional :: mmax           !< Dominant mode
+real(kind_real),intent(in),optional :: var_th !< Variance threshold
 
 ! Local variables
 integer :: k,k2,m,lmmax
@@ -142,11 +142,11 @@ subroutine wrfda_da_eof_decomposition(mpl,kz,bx,e,l)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl           ! MPI data
-integer, intent(in)  :: kz                  ! Dimension of error matrix
-real(kind_real),intent(in) :: bx(1:kz,1:kz) ! Vert. background error
-real(kind_real),intent(out) :: e(1:kz,1:kz) ! Eigenvectors of Bx
-real(kind_real),intent(out) :: l(1:kz)      ! Eigenvalues of Bx
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer, intent(in)  :: kz                  !< Dimension of error matrix
+real(kind_real),intent(in) :: bx(1:kz,1:kz) !< Vert. background error
+real(kind_real),intent(out) :: e(1:kz,1:kz) !< Eigenvectors of Bx
+real(kind_real),intent(out) :: l(1:kz)      !< Eigenvalues of Bx
 
 ! Local variables
 integer :: work,ierr,m
