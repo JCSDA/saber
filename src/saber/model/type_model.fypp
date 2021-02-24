@@ -33,7 +33,7 @@ use tools_repro, only: inf
 use type_fieldset, only: fieldset_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type,nvmax
-use type_probe, only: probe
+@:use_probe()
 use type_rng, only: rng_type
 use type_tree, only: tree_type
 

@@ -15,7 +15,7 @@ module tools_qsort
 
 use tools_kinds, only: kind_int,kind_real
 use tools_repro, only: inf,sup
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

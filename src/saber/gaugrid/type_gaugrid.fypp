@@ -14,7 +14,7 @@ module type_gaugrid
 use tools_const, only: pi,rad2deg
 use tools_kinds, only: kind_real
 use tools_sp, only: splat
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 
@@ -24,7 +24,6 @@ real(kind_real):: half = 0.5_kind_real !< Half
 
 ! Gaussian grid derived type
 type gaussian_grid
-  integer :: iinst                            !< Instance index
   integer :: nlat                             !< Number of longitudes
   integer :: nlon                             !< Number of latitudes
   integer :: nlev                             !< Number of levels
@@ -69,8 +68,8 @@ class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 ! Set name
 @:set_name(gaugrid_create)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()
@@ -98,8 +97,8 @@ class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 ! Set name
 @:set_name(gaugrid_delete)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()
@@ -109,6 +108,9 @@ call self%dealloc_field
 
 ! Probe out
 @:probe_out()
+
+! Release probe instance
+@:probe_dealloc()
 
 end subroutine gaugrid_delete
 
@@ -126,8 +128,8 @@ class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 ! Set name
 @:set_name(gaugrid_alloc_coord)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()
@@ -157,8 +159,8 @@ class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 ! Set name
 @:set_name(gaugrid_dealloc_coord)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()
@@ -187,8 +189,8 @@ class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 ! Set name
 @:set_name(gaugrid_alloc_field)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()
@@ -215,8 +217,8 @@ class(gaussian_grid),intent(inout) :: self !< Gaussian grid
 ! Set name
 @:set_name(gaugrid_dealloc_field)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()
@@ -247,8 +249,8 @@ real(kind_real),allocatable :: slat(:)
 ! Set name
 @:set_name(gaugrid_calc_glb_latlon)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()
@@ -293,8 +295,8 @@ real(kind_real),pointer,intent(inout) :: fldpointer(:,:,:) !< Field pointer
 ! Set name
 @:set_name(gaugrid_fld3d_pointer)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()
@@ -324,8 +326,8 @@ real(kind_real),pointer,intent(inout) :: fldpointer(:,:) !< Field pointer
 ! Set name
 @:set_name(gaugrid_fld2d_pointer)
 
-! Get instance index
-call probe%get_instance(self%iinst)
+! Get instance
+@:get_instance(gaugrid)
 
 ! Probe in
 @:probe_in()

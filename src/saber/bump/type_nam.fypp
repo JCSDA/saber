@@ -14,7 +14,7 @@ use iso_fortran_env, only: output_unit
 use tools_const, only: pi,req,deg2rad,rad2deg
 use tools_kinds,only: kind_real,huge_real
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

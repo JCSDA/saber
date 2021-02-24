@@ -12,7 +12,7 @@ use tools_func, only: fit_func
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

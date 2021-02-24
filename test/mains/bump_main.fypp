@@ -1,5 +1,6 @@
+#:include '../../src/saber/instrumentation.fypp'
 !----------------------------------------------------------------------
-! subroutine: bump_main
+! Subroutine: bump_main
 !> Call to the BUMP library
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
@@ -15,7 +16,7 @@ use iso_fortran_env, only: output_unit
 use type_bump, only: bump_type
 use type_model, only: model_type
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 
@@ -51,8 +52,8 @@ end do
 mpl%msv%vali = -999
 mpl%msv%valr = -999.0
 
-! Get BUMP instance index
-call probe%get_instance(bump%iinst)
+! Get main instance index
+@:get_instance(main)
 
 ! Initialize MPL
 call mpl%init(f_comm)
@@ -207,7 +208,15 @@ call bump%test_apply_interfaces
 
 ! Release memory
 call bump%dealloc
+
+! Get main instance index
+@:get_instance(main)
+
+! Release memory
 call model%dealloc
+
+! Execution stats
+@:execution_stats()
 
 if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and.mpl%main)) then
    ! Close listings
@@ -222,5 +231,8 @@ end if
 
 ! Finalize MPL
 call mpl%final
+
+! Release probe instance
+@:probe_dealloc()
 
 end subroutine bump_main

@@ -12,7 +12,7 @@ module tools_sp
 
 use tools_const, only: pi
 use tools_kinds, only: kind_real
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

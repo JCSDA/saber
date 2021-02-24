@@ -26,7 +26,7 @@ use type_lct, only: lct_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas, only: nicas_type
-use type_probe, only: probe
+@:use_probe()
 use type_rng, only: rng_type
 use type_var, only: var_type
 use type_vbal, only: vbal_type
@@ -39,9 +39,6 @@ logical :: copy_ensemble = .false.            !< Deep copy of ensemble members
 
 ! BUMP derived type
 type bump_type
-   ! Instance index
-   integer :: iinst = 0      !< Instance index
-
    ! Derived types
    type(bpar_type) :: bpar   !< Block parameters
    type(cmat_type) :: cmat   !< C matrix
@@ -124,8 +121,8 @@ real(kind_real) :: lmsvalr
 ! Set name
 @:set_name(bump_create)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -179,8 +176,8 @@ type(fieldset_type) :: fieldset
 ! Set name
 @:set_name(bump_create_deprecated_atlas)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -216,8 +213,8 @@ real(kind_real),intent(in),optional :: msvalr          !< Missing value for real
 ! Set name
 @:set_name(bump_setup)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -264,7 +261,7 @@ write(bump%mpl%info,'(a)') '----------------------------------------------------
 call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- You are running the BUMP library ------------------------------'
 call bump%mpl%flush
-call bump%mpl%print_instance
+@:print_bump_instance()
 
 ! Check namelist parameters
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -354,8 +351,8 @@ class(bump_type),intent(inout) :: bump !< BUMP
 ! Set name
 @:set_name(bump_run_drivers)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -570,8 +567,8 @@ integer,intent(in) :: iens                 !< Ensemble number
 ! Set name
 @:set_name(bump_add_member)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -636,8 +633,8 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_apply_vbal)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -678,8 +675,8 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_apply_vbal_inv)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -720,8 +717,8 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_apply_vbal_ad)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -762,8 +759,8 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_apply_vbal_inv_ad)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -804,8 +801,8 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_apply_stddev)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -846,8 +843,8 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_apply_stddev_inv)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -888,8 +885,8 @@ real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_apply_nicas)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -934,8 +931,8 @@ type(fieldset_type) :: fieldset
 ! Set name
 @:set_name(bump_apply_nicas_deprecated_atlas)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -969,8 +966,8 @@ type(cv_type) :: cv
 ! Set name
 @:set_name(bump_get_cv_size)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1006,8 +1003,8 @@ type(cv_type) :: cv
 ! Set name
 @:set_name(bump_apply_nicas_sqrt)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1057,8 +1054,8 @@ type(fieldset_type) :: fieldset
 ! Set name
 @:set_name(bump_apply_nicas_sqrt_deprecated_atlas)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1094,8 +1091,8 @@ type(cv_type) :: cv
 ! Set name
 @:set_name(bump_apply_nicas_sqrt_ad)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1142,8 +1139,8 @@ type(cv_type) :: cv
 ! Set name
 @:set_name(bump_randomize)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1186,8 +1183,8 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_get_parameter)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1261,8 +1258,8 @@ real(kind_real) :: tmp
 ! Set name
 @:set_name(bump_copy_to_field)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1450,8 +1447,8 @@ type(fieldset_type) :: fieldset
 ! Set name
 @:set_name(bump_test_get_parameter)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1521,8 +1518,8 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 ! Set name
 @:set_name(bump_set_parameter)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1593,8 +1590,8 @@ type(fieldset_type) :: fieldset
 ! Set name
 @:set_name(bump_set_parameter_deprecated_atlas)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1630,8 +1627,8 @@ integer :: ic0a,il0
 ! Set name
 @:set_name(bump_copy_from_field)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1738,8 +1735,8 @@ type(fieldset_type) :: fieldset,fieldset_req,fieldset_reqsq,fieldset_vert,fields
 ! Set name
 @:set_name(bump_test_set_parameter)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1827,8 +1824,8 @@ type(fieldset_type) :: fieldset
 ! Set name
 @:set_name(bump_test_apply_interfaces)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1942,8 +1939,8 @@ class(bump_type),intent(inout) :: bump !< BUMP
 ! Set name
 @:set_name(bump_partial_dealloc)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()
@@ -1979,11 +1976,8 @@ class(bump_type),intent(inout) :: bump !< BUMP
 ! Set name
 @:set_name(bump_dealloc)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
-
-! Probe in
-@:probe_in()
+! Get instance
+@:get_instance(bump)
 
 ! Execution stats
 @:execution_stats()
@@ -2001,8 +1995,11 @@ call bump%nicas%dealloc
 call bump%var%dealloc
 call bump%vbal%dealloc
 
-! Probe out
-@:probe_out()
+! Execution stats
+@:execution_stats()
+
+! Release probe instance
+@:probe_dealloc()
 
 end subroutine bump_dealloc
 
@@ -2020,8 +2017,8 @@ type(bump_type),intent(inout) :: bump !< BUMP
 ! Set name
 @:set_name(bump_dummy_final)
 
-! Get instance index
-call probe%get_instance(bump%iinst)
+! Get instance
+@:get_instance(bump)
 
 ! Probe in
 @:probe_in()

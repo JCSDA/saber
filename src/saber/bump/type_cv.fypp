@@ -10,7 +10,7 @@ module type_cv
 
 use tools_kinds, only: kind_real
 use type_cv_blk, only: cv_blk_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

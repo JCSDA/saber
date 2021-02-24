@@ -19,7 +19,7 @@ use tools_qsort, only: qsort
 use type_com, only: com_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

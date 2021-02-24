@@ -12,7 +12,7 @@ module type_rng
 use tools_kinds, only: kind_int,kind_long,kind_real
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

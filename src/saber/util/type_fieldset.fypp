@@ -13,7 +13,7 @@ use atlas_module, only: atlas_fieldset,atlas_field,atlas_functionspace,atlas_rea
 use tools_atlas, only: field_to_array,field_from_array
 use tools_kinds, only: kind_real
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

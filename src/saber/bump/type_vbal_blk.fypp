@@ -16,7 +16,7 @@ use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_probe, only: probe
+@:use_probe()
 use type_samp, only: samp_type
 
 implicit none

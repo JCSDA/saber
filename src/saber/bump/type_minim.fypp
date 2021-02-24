@@ -13,7 +13,7 @@ use tools_func, only: fit_diag,fit_lct
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 use type_rng, only: rng_type
 
 implicit none

@@ -14,8 +14,8 @@ use tools_kinds, only: kind_real,huge_real
 
 implicit none
 
-integer,parameter :: ninst = 999    !< Maximum number of instances
 integer,parameter :: maxlevel = 100 !< Maximum number of calling levels
+integer,parameter :: ninst = 5      !< Number of instances ('main', 'bump', 'interpolation', 'gaugrid' and 'soca')
 
 type timing_type
    ! Timing info
@@ -47,9 +47,7 @@ type instance_type
    logical,allocatable :: timing_associated(:) !< Timings allocation
 end type instance_type
 
-
 type probe_type
-   logical :: used(ninst) = .false.       !< Used instance indices
    type(instance_type) :: instance(ninst) !< Instances
 contains
    procedure :: dealloc => probe_dealloc
@@ -59,11 +57,15 @@ contains
    procedure :: traceback => probe_traceback
 end type probe_type
 
+! Global instance index and name
 integer :: iinst = 0
+character(len=1024) :: cinst = ''
+
+! Global probe
 type(probe_type) :: probe
 
 private
-public :: ninst,iinst,probe
+public :: iinst,cinst,probe
 
 contains
 
@@ -78,23 +80,11 @@ implicit none
 ! Passed variable
 class(probe_type),intent(inout) :: probe !< Probe
 
-if (omp_get_thread_num()==0) then
-   ! Check instance
-   if ((iinst<=0).or.(iinst>ninst)) then
-      write(output_unit,'(a,i4,a)') 'Error: wrong instance in probe%dealloc (',iinst,')'
-      call flush(output_unit)
-      error stop 5
-   end if
-
-   ! Release memory
-   deallocate(probe%instance(iinst)%trace)
-   deallocate(probe%instance(iinst)%trace_key)
-   deallocate(probe%instance(iinst)%timing)
-   deallocate(probe%instance(iinst)%timing_associated)
-
-   ! Index not used anymore
-   probe%used(iinst) = .false.
-end if
+! Release memory
+deallocate(probe%instance(iinst)%trace)
+deallocate(probe%instance(iinst)%trace_key)
+deallocate(probe%instance(iinst)%timing)
+deallocate(probe%instance(iinst)%timing_associated)
 
 end subroutine probe_dealloc
 
@@ -102,65 +92,63 @@ end subroutine probe_dealloc
 ! Subroutine: probe_get_instance
 !> Getinstance index
 !----------------------------------------------------------------------
-subroutine probe_get_instance(probe,iinst_in)
+subroutine probe_get_instance(probe,cinst_in)
 
 implicit none
 
 ! Passed variable
 class(probe_type),intent(inout) :: probe !< Probe
-integer,intent(inout) :: iinst_in        !< Saved index value
+character(len=*),intent(in) :: cinst_in  !< Instance name
 
-! Local variable
-integer :: jinst,isubr
+! Local variables
+integer :: isubr
 
-if (omp_get_thread_num()==0) then
-   if ((iinst_in<=0).or.(iinst_in>ninst)) then
-      ! Check if some instance indices are still available
-      if (count(probe%used)==ninst) then
-         write(output_unit,'(a,i4,a)') 'Error: too many instances in probe%get_instance'
-         call flush(output_unit)
-         error stop 6
-      end if
+! Copy instance name
+cinst = cinst_in
 
-      ! Find an instance index
-      do jinst=1,ninst
-         if (.not.probe%used(jinst)) then
-            ! Available index
-            iinst_in = jinst
-            exit
-         end if
-      end do
+! Select instance index
+select case (trim(cinst))
+case ('main')
+   ! Main instance
+   iinst = 1
+case ('bump')
+   ! BUMP instance
+   iinst = 2
+case ('interpolation')
+   ! Interpolation instance
+   iinst = 3
+case ('gaugrid')
+   ! Gaugrid instance
+   iinst = 4
+case ('soca')
+   ! SOCA instance
+   iinst = 5
+case default
+   write(output_unit,'(a)') 'Error: wrong instance name in probe%get_instance ('//trim(cinst)//')'
+   call flush(output_unit)
+   error stop 5
+end select
 
-      if ((iinst_in<=0).or.(iinst_in>ninst)) then
-         write(output_unit,'(a,i4,a)') 'Error: wrong instance in probe%get_instance (',iinst_in,')'
-         call flush(output_unit)
-         error stop 5
-      end if
+if (.not.allocated(probe%instance(iinst)%trace)) then
+   ! Allocation
+   allocate(probe%instance(iinst)%trace(maxlevel))
+   allocate(probe%instance(iinst)%trace_key(maxlevel))
+   allocate(probe%instance(iinst)%timing(0:${subr_list_size}$-1))
+   allocate(probe%instance(iinst)%timing_associated(0:${subr_list_size}$-1))
 
-      ! Allocation
-      allocate(probe%instance(iinst_in)%trace(maxlevel))
-      allocate(probe%instance(iinst_in)%trace_key(maxlevel))
-      allocate(probe%instance(iinst_in)%timing(0:${subr_list_size}$-1))
-      allocate(probe%instance(iinst_in)%timing_associated(0:${subr_list_size}$-1))
-
-      ! Initialization
-      probe%used(iinst_in) = .true.
-      probe%instance(iinst_in)%level = 0
-      call system_clock(count_rate=probe%instance(iinst_in)%count_rate,count_max=probe%instance(iinst_in)%count_max)
-      do isubr=0,${subr_list_size}$-1
-         probe%instance(iinst_in)%timing(isubr)%n = 0
-         probe%instance(iinst_in)%timing(isubr)%total = 0.0
-         probe%instance(iinst_in)%timing(isubr)%min = huge_real
-         probe%instance(iinst_in)%timing(isubr)%max = 0.0
-         probe%instance(iinst_in)%timing(isubr)%total_own = 0.0
-         probe%instance(iinst_in)%timing(isubr)%min_own = huge_real
-         probe%instance(iinst_in)%timing(isubr)%max_own = 0.0
-      end do
-      probe%instance(iinst_in)%timing_associated = .false.
-   end if
-
-   ! Set global index
-   iinst = iinst_in
+   ! Initialization
+   probe%instance(iinst)%level = 0
+   call system_clock(count_rate=probe%instance(iinst)%count_rate,count_max=probe%instance(iinst)%count_max)
+   do isubr=0,${subr_list_size}$-1
+      probe%instance(iinst)%timing(isubr)%n = 0
+      probe%instance(iinst)%timing(isubr)%total = 0.0
+      probe%instance(iinst)%timing(isubr)%min = huge_real
+      probe%instance(iinst)%timing(isubr)%max = 0.0
+      probe%instance(iinst)%timing(isubr)%total_own = 0.0
+      probe%instance(iinst)%timing(isubr)%min_own = huge_real
+      probe%instance(iinst)%timing(isubr)%max_own = 0.0
+   end do
+   probe%instance(iinst)%timing_associated = .false.
 end if
 
 end subroutine probe_get_instance
@@ -184,7 +172,7 @@ integer :: key_prev
 if (omp_get_thread_num()==0) then
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
-      write(output_unit,'(a,i4,a)') 'Error: wrong instance in probe%in (',iinst,') called by '//trim(subr)
+      write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%in (',iinst,') called by '//trim(subr)
       call flush(output_unit)
       error stop 5
    end if
@@ -255,7 +243,7 @@ real(kind_real) :: elapsed,elapsed_own
 if (omp_get_thread_num()==0) then
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
-      write(output_unit,'(a,i4,a)') 'Error: wrong instance in probe%out (',iinst,')'
+      write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%out (',iinst,')'
       call flush(output_unit)
       error stop 5
    end if
@@ -273,8 +261,9 @@ if (omp_get_thread_num()==0) then
  & /real(probe%instance(iinst)%count_rate,kind_real)
       end if
       if (probe%instance(iinst)%timing(key)%clock_own+clock_end<probe%instance(iinst)%timing(key)%clock_restart) then
-         elapsed_own = real(probe%instance(iinst)%timing(key)%clock_own+clock_end-probe%instance(iinst)%timing(key)%clock_restart &
- & +probe%instance(iinst)%count_max,kind_real)/real(probe%instance(iinst)%count_rate,kind_real)
+         elapsed_own = real(probe%instance(iinst)%timing(key)%clock_own+clock_end- &
+ & probe%instance(iinst)%timing(key)%clock_restart+probe%instance(iinst)%count_max,kind_real) &
+ & /real(probe%instance(iinst)%count_rate,kind_real)
       else
          elapsed_own = real(probe%instance(iinst)%timing(key)%clock_own+clock_end &
  & -probe%instance(iinst)%timing(key)%clock_restart,kind_real)/real(probe%instance(iinst)%count_rate,kind_real)
@@ -325,7 +314,7 @@ character(len=3) :: cindent
 if (omp_get_thread_num()==0) then
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
-      write(output_unit,'(a,i4,a)') 'Error: wrong instance probe%traceback (',iinst,')'
+      write(output_unit,'(a,i5,a)') 'Error: wrong instance probe%traceback (',iinst,')'
       call flush(output_unit)
       error stop 5
    end if

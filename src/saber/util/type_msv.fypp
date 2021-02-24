@@ -10,7 +10,7 @@
 module type_msv
 
 use tools_kinds,only: kind_int,kind_real
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

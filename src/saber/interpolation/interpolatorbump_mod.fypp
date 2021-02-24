@@ -33,7 +33,7 @@ use type_linop, only: linop_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_probe, only: probe
+@:use_probe()
 use type_rng, only: rng_type
 
 implicit none
@@ -167,8 +167,8 @@ type(fieldset_type) :: lmasks
 ! Set name
 @:set_name(bint_init)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -331,8 +331,8 @@ logical :: maskouta(bint%nouta),lcheck_nc0b(geom%nc0)
 ! Set name
 @:set_name(bint_driver)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -493,8 +493,8 @@ type(atlas_field) :: afield_in,afield_out
 ! Set name
 @:set_name(bint_apply)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -579,8 +579,8 @@ logical :: ltrans_in,ltrans_out,lnn
 ! Set name
 @:set_name(bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -697,8 +697,8 @@ logical :: lnn
 ! Set name
 @:set_name(bint_apply_interp_${dtype}$)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -767,8 +767,8 @@ type(atlas_field) :: afield_in,afield_out
 ! Set name
 @:set_name(bint_apply_ad)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -849,8 +849,8 @@ logical :: ltrans_in,ltrans_out
 ! Set name
 @:set_name(bint_apply_ad_r${rank_out}$_r${rank_in}$)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -967,8 +967,8 @@ real(kind_real) :: array_in_ext(bint%nc0b,bint%bump%geom%nl0)
 ! Set name
 @:set_name(bint_apply_interp_ad)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -1007,8 +1007,8 @@ class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 ! Set name
 @:set_name(bint_deallocate_outgrid)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -1035,8 +1035,8 @@ class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 ! Set name
 @:set_name(bint_delete)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()
@@ -1049,6 +1049,9 @@ call bint%bump%dealloc()
 
 ! Probe out
 @:probe_out()
+
+! Release probe instance
+@:probe_dealloc()
 
 end subroutine bint_delete
 
@@ -1066,8 +1069,8 @@ type(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 ! Set name
 @:set_name(bint_dummy_final)
 
-! Get instance index
-call probe%get_instance(bint%bump%iinst)
+! Get instance
+@:get_instance(interpolation)
 
 ! Probe in
 @:probe_in()

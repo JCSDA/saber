@@ -15,7 +15,7 @@ use tools_const, only: pi
 use tools_kinds, only: kind_real
 use tools_repro, only: eq,inf,sup,supeq,small
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

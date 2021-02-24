@@ -17,7 +17,7 @@ use type_lct_blk, only: lct_blk_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_probe, only: probe
+@:use_probe()
 use type_rng, only: rng_type
 use type_samp, only: samp_type
 

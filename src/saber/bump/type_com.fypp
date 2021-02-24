@@ -16,7 +16,7 @@ use tools_kinds, only: kind_int,kind_real,nc_kind_int,nc_kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: eq
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

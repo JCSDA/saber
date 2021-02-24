@@ -19,7 +19,7 @@ use netcdf, only: nf90_create,nf90_def_dim,nf90_def_grp,nf90_def_var,nf90_global
 use tools_kinds, only: kind_int,kind_real,nc_kind_int,nc_kind_real
 use tools_qsort, only: qsort
 use type_msv, only: msv_type
-use type_probe, only: iinst,probe
+use type_probe, only: iinst,cinst,probe
 
 implicit none
 
@@ -401,7 +401,7 @@ write(output_unit,'(a,i4.4,a)') '!!! ABORT in '//trim(subr)//' on task #',mpl%my
 call flush(output_unit)
 
 ! Print traceback
-call probe%traceback(output_unit)
+@:probe_traceback(output_unit)
 
 ! Abort with proper MPI communicator
 call mpl%f_comm%abort(1)
@@ -444,7 +444,7 @@ class(mpl_type),intent(inout) :: mpl !< MPI data
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a,i3)') '--- This is instance #',iinst
+write(mpl%info,'(a,i6,a,a,a)') '--- This is instance #',iinst,' (',trim(cinst),')'
 call mpl%flush
 
 ! Probe out

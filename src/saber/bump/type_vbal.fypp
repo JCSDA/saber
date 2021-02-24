@@ -22,7 +22,7 @@ use type_geom, only: geom_type
 use type_io, only: io_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_probe, only: probe
+@:use_probe()
 use type_rng, only: rng_type
 use type_samp, only: samp_type
 use type_vbal_blk, only: vbal_blk_type

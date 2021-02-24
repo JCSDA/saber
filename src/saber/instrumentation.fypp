@@ -35,6 +35,27 @@
    #:set subr = subr_in
 #:enddef set_name
 
+! get_instance function
+#:def get_instance(instance)
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+call probe%get_instance('${instance}$')
+   #:endif
+#:enddef get_instance
+
+! print_bump_instance function
+#:def print_bump_instance()
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+call bump%mpl%print_instance
+   #:endif
+#:enddef print_bump_instance
+
+! use_probe function
+#:def use_probe()
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+use type_probe, only: probe
+   #:endif
+#:enddef use_probe
+
 ! probe_in function
 #:def probe_in()
    #:set i = 0
@@ -60,6 +81,20 @@ call probe%in('${subr}$',${j}$)
 call probe%out(${j}$)
    #:endif
 #:enddef probe_out
+
+! probe_dealloc function
+#:def probe_dealloc()
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+call probe%dealloc()
+   #:endif
+#:enddef probe_dealloc
+
+! probe_traceback function
+#:def probe_traceback(output_unit)
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+call probe%traceback(${output_unit}$)
+   #:endif
+#:enddef probe_traceback
 
 ! execution_stats function
 #:def execution_stats()

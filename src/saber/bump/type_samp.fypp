@@ -26,7 +26,7 @@ use type_io, only: io_type
 use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_probe, only: probe
+@:use_probe()
 use type_rng, only: rng_type
 use type_tree, only: tree_type
 

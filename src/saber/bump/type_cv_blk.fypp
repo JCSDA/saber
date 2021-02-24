@@ -9,7 +9,7 @@
 module type_cv_blk
 
 use tools_kinds, only: kind_real
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

@@ -14,7 +14,7 @@ use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atla
 use tools_const, only: rad2deg
 use tools_kinds, only: kind_int,kind_real
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 

@@ -293,8 +293,11 @@ endif()
 # Executables
 ecbuild_add_executable( TARGET  saber_bump.x
                         SOURCES mains/bump_main.cc
-                                mains/bump_main.F90
+                                mains/bump_main.fypp
                         LIBS    saber )
+
+# Process fypp files
+fckit_target_preprocess_fypp( saber_bump.x )
 
 if ( SABER_TEST_OOPS OR SABER_TEST_INTERPOLATION )
     set( QG_LIBS saber ${oops_qg_LIBRARIES} )

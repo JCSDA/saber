@@ -13,7 +13,7 @@ module tools_wrfda
 
 use tools_kinds, only: kind_real
 use type_mpl, only: mpl_type
-use type_probe, only: probe
+@:use_probe()
 
 implicit none
 
