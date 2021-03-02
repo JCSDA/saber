@@ -11,7 +11,7 @@ module type_mesh
 use atlas_module, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,atlas_build_edges, &
  & atlas_build_node_to_edge_connectivity,atlas_mesh_nodes,atlas_connectivity
 !$ use omp_lib
-use tools_const, only: pi,req,rad2deg,reqkm
+use tools_const, only: zero,one,two,three,five,pi,req,rad2deg,reqkm
 use tools_func, only: lonlathash,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,order_cc,det
 use tools_kinds, only: kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
@@ -25,10 +25,9 @@ use type_tree, only: tree_type
 
 implicit none
 
-logical,parameter :: shuffle = .true.                !< Shuffle mesh order (more efficient to compute the Delaunay triangulation)
-logical,parameter :: perturb_coordinates = .false.   !< Perturb coordinates (required for reproducibility with regular grids)
-integer,parameter :: nnmax = 20                      !< Maximum number of nearest neighbors in the triangle search
-real(kind_real),parameter :: acc_fac = 5.0_kind_real !< Acceptance factor for mesh neighbors
+logical,parameter :: shuffle = .true.       !< Shuffle mesh order (more efficient to compute the Delaunay triangulation)
+integer,parameter :: nnmax = 20             !< Maximum number of nearest neighbors in the triangle search
+real(kind_real),parameter :: acc_fac = five !< Acceptance factor for mesh neighbors
 
 ! Connectivity table row derived type
 type row_type
@@ -202,7 +201,7 @@ end do
 mesh%lon = lon(mesh%order)
 mesh%lat = lat(mesh%order)
 
-if (perturb_coordinates) then
+if (mesh%use_cgal) then
    ! Allocation
    allocate(lon_pert(mesh%n))
    allocate(lat_pert(mesh%n))
@@ -213,11 +212,11 @@ if (perturb_coordinates) then
       hash = lonlathash(mesh%lon(i),mesh%lat(i))
 
       ! Generate pseudo-random numbers between -1e-12 and 1e-12 from the hash
-      hash_long = int(hash*1.0e6,kind_long)
+      hash_long = int(hash*1.0e6_kind_real,kind_long)
       call rng%lcg(lon_pert(i),hash_long)
       call rng%lcg(lat_pert(i),hash_long)
-      mesh%lon(i) = mesh%lon(i)*(1.0+1.0e-12*(2.0*lon_pert(i)-1.0))
-      mesh%lat(i) = mesh%lat(i)*(1.0+1.0e-12*(2.0*lat_pert(i)-1.0))
+      mesh%lon(i) = mesh%lon(i)*(one+1.0e-12_kind_real*(two*lon_pert(i)-one))
+      mesh%lat(i) = mesh%lat(i)*(one+1.0e-12_kind_real*(two*lat_pert(i)-one))
 
       ! Apply bounds
       call lonlatmod(mesh%lon(i),mesh%lat(i))
@@ -391,7 +390,7 @@ else
 end if
 
 ! Typical distance between neighbors for a homogeneous Delaunay mesh, required for a limited area mesh
-a = sqrt(2.0*area/(sqrt(3.0)*real(mesh%n,kind_real)))
+a = sqrt(two*area/(sqrt(three)*real(mesh%n,kind_real)))
 do i=1,mesh%n
    ! Allocation
    allocate(nodes(mesh%rows(i)%cols,1))
@@ -728,10 +727,10 @@ do i=1,mesh%nb
    call vector_product(v1,v2,cp)
 
    ! Centroid
-   cd = (a+b+c)/3.0
+   cd = (a+b+c)/three
 
    ! Compare the directions
-   if (inf(sum(cp*cd),0.0_kind_real)) then
+   if (inf(sum(cp*cd),zero)) then
       inside_mesh = .false.
       exit
    end if
@@ -793,7 +792,7 @@ if (mesh%use_cgal) then
       i = mesh%order_inv(nn_index(nn))
 
       ! Check distance
-      if (nn_dist(nn)>0.0) then
+      if (nn_dist(nn)>zero) then
          ! Loop over neigbors
          do j=1,mesh%rows(i)%cols
             ! Find the two other vertices of the triangle
@@ -817,13 +816,13 @@ if (mesh%use_cgal) then
                ! At least two non-flat triangles, check if weights are positive
                valid = .true.
                do l=1,3
-                  if (cflag(l)) valid = valid.and.(b(l)>0.0_kind_real)
+                  if (cflag(l)) valid = valid.and.(b(l)>zero)
                end do
                if (valid) then
                   ib(1) = nn_index(nn)
                   ib(2) = mesh%order(k)
                   ib(3) = mesh%order(knext)
-                  b = max(b,0.0_kind_real)
+                  b = max(b,zero)
                   b = b/sum(b)
                   found = .true.
                   exit
@@ -838,7 +837,7 @@ if (mesh%use_cgal) then
                ib = nn_index
                b(1) = nn_dist(2)
                b(2) = nn_dist(1)
-               b(3) = 0.0
+               b(3) = zero
                b = b/sum(b)
                found = .true.
                exit
@@ -848,9 +847,9 @@ if (mesh%use_cgal) then
          ib(1) = nn_index(nn)
          ib(2) = nn_index(nn)
          ib(3) = nn_index(nn)
-         b(1) = 1.0
-         b(2) = 0.0
-         b(3) = 0.0
+         b(1) = one
+         b(2) = zero
+         b(3) = zero
       end if
 
       ! Release memory
@@ -868,7 +867,7 @@ else
    call tree%find_nearest_neighbors(lon,lat,1,nn_index)
 
    ! Compute barycentric coordinates
-   b = 0.0
+   b = zero
    ib = 0
    call trfind(nn_index(1),xyz,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
 

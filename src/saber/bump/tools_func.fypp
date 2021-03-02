@@ -11,7 +11,7 @@ module tools_func
 use atlas_module, only: atlas_geometry
 use iso_c_binding, only: c_int16_t,c_int32_t
 use tools_asa007, only: cholesky,syminv
-use tools_const, only: pi,deg2rad,rad2deg
+use tools_const, only: zero,hundredth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
 use tools_kinds, only: kind_short,kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,sup,infeq,small
@@ -20,10 +20,10 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-real(kind_real),parameter :: gc2gau = 0.28            !< GC99 support radius to Gaussian Daley length-scale (empirical)
-real(kind_real),parameter :: gau2gc = 3.57            !< Gaussian Daley length-scale to GC99 support radius (empirical)
+real(kind_real),parameter :: gc2gau = 0.28_kind_real  !< GC99 support radius to Gaussian Daley length-scale (empirical)
+real(kind_real),parameter :: gau2gc = 3.57_kind_real  !< Gaussian Daley length-scale to GC99 support radius (empirical)
 real(kind_real),parameter :: Dmin = 1.0e-12_kind_real !< Minimum tensor diagonal value
-real(kind_real),parameter :: condmax = 1.0e3          !< Maximum tensor conditioning number
+real(kind_real),parameter :: condmax = thousand       !< Maximum tensor conditioning number
 integer,parameter :: M = 0                            !< Number of implicit iteration for the Matern function (0: Gaussian)
 
 interface
@@ -174,23 +174,23 @@ real(kind_real),intent(inout) :: lat !< Latitude (radians)
 @:probe_in()
 
 ! Check latitude bounds
-if (lat>0.5*pi) then
+if (lat>half*pi) then
    lat = pi-lat
    lon = lon+pi
-elseif (lat<-0.5*pi) then
+elseif (lat<-half*pi) then
    lat = -pi-lat
    lon = lon+pi
 end if
 
 ! Check longitude bounds
 if (lon>pi) then
-   lon = lon-2.0*pi
+   lon = lon-two*pi
 elseif (lon<-pi) then
-   lon = lon+2.0*pi
+   lon = lon+two*pi
 end if
 
 ! Same zero longitude for poles
-if (abs(lat)>(0.5-1.0e-6)*pi) lon = 0.0
+if (abs(lat)>(half-1.0e-6_kind_real)*pi) lon = zero
 
 ! Probe out
 @:probe_out()
@@ -382,7 +382,7 @@ lattmp = lat
 call lonlatmod(lontmp,lattmp)
 
 ! Hash value
-value = aint((lontmp+pi)*1.0e6)+(lattmp+0.5*pi)*1.0e-1
+value = aint((lontmp+pi)*1.0e6_kind_real)+(lattmp+half*pi)*1.0e-1_kind_real
 if (present(il)) value = value+real(il*1e7,kind_real)
 
 ! Probe out
@@ -453,7 +453,7 @@ type(atlas_geometry) :: ageometry
 if (mpl%msv%isnot(lat).and.mpl%msv%isnot(lon)) then
    ! Check longitude/latitude
    if (inf(lon,-pi).and.sup(lon,pi)) call mpl%abort('${subr}$','wrong longitude')
-   if (inf(lat,-0.5*pi).and.sup(lat,-0.5*pi)) call mpl%abort('${subr}$','wrong latitude')
+   if (inf(lat,-half*pi).and.sup(lat,-half*pi)) call mpl%abort('${subr}$','wrong latitude')
 
    ! Create ATLAS geometry
    ageometry = atlas_geometry('UnitSphere')
@@ -547,7 +547,7 @@ vp(3) = v1(1)*v2(2)-v1(2)*v2(1)
 
 ! Normalization
 r = sqrt(sum(vp**2))
-if (r>0.0) vp = vp/r
+if (r>zero) vp = vp/r
 
 ! Probe out
 @:probe_out()
@@ -593,7 +593,7 @@ p = sum(terms)
 ! Confidence flag
 cflag = .true.
 do i=1,6
-   if ((abs(terms(i))>0.0).and.small(p,terms(i))) cflag = .false.
+   if ((abs(terms(i))>zero).and.small(p,terms(i))) cflag = .false.
 end do
 
 ! Probe out
@@ -632,18 +632,18 @@ real(kind_real),allocatable :: list_save(:)
 @:probe_in()
 
 ! Rotation vector in cartesian coordinates
-call lonlat2xyz(mpl,lon-0.5*pi,0.0_kind_real,rvec(1),rvec(2),rvec(3))
+call lonlat2xyz(mpl,lon-half*pi,zero,rvec(1),rvec(2),rvec(3))
 
 ! Rotation angle
-costheta = cos(0.5*pi-lat)
-sintheta = sin(0.5*pi-lat)
+costheta = cos(half*pi-lat)
+sintheta = sin(half*pi-lat)
 
 ! Compute angle
 do i=1,n
    ! Rodrigues' rotation
    p = (/x(i),y(i),z(i)/)
    call vector_product(rvec,p,rvecxv)
-   v = p*costheta+rvecxv*sintheta+rvec*sum(rvec*p)*(1.0-costheta)
+   v = p*costheta+rvecxv*sintheta+rvec*sum(rvec*p)*(one-costheta)
 
    ! Angle
    list(i) = atan2(v(2),v(1))
@@ -662,7 +662,7 @@ call qsort(n,list,order)
 
 if (present(diff)) then
    ! Get angles differences
-   diff(order(1)) = list_save(order(1))-list_save(order(n))+2.0*pi
+   diff(order(1)) = list_save(order(1))-list_save(order(n))+two*pi
    do i=2,n
       diff(order(i)) = list_save(order(i))-list_save(order(i-1))
    end do
@@ -701,7 +701,7 @@ real(kind_real) :: lwgt
 @:probe_in()
 
 ! Initialize weight
-lwgt = 1.0
+lwgt = one
 if (present(wgt)) lwgt = wgt
 
 ! Add value to cumul
@@ -735,7 +735,7 @@ real(kind_real),intent(in) :: num    !< Divider
 @:probe_in()
 
 ! Divide cumul by num
-if (abs(num)>0.0) then
+if (abs(num)>zero) then
    val = val/num
 else
    val = mpl%msv%valr
@@ -781,7 +781,7 @@ logical :: add_to_front
 @:probe_in()
 
 ! Initialization
-fit = 0.0
+fit = zero
 
 ! Find maximum class
 rhmax = maxval(rh)
@@ -792,7 +792,7 @@ do ic3=1,nc3
 end do
 
 ! Precompute normalized local distances
-predistnorm = 1.0
+predistnorm = one
 do il0=1,nl0
    do djl0=-1,1
       ! Level index
@@ -800,23 +800,23 @@ do il0=1,nl0
 
       ! Averaged fit parameters
       if (mpl%msv%isnot(rh(il0)).and.mpl%msv%isnot(rh(jl0))) then
-         rhsq = 0.5*(rh(il0)**2+rh(jl0)**2)
+         rhsq = half*(rh(il0)**2+rh(jl0)**2)
       else
-         rhsq = 0.0
+         rhsq = zero
       end if
       if (mpl%msv%isnot(rv(il0)).and.mpl%msv%isnot(rv(jl0))) then
-         rvsq = 0.5*(rv(il0)**2+rv(jl0)**2)
+         rvsq = half*(rv(il0)**2+rv(jl0)**2)
       else
-         rvsq = 0.0
+         rvsq = zero
       end if
 
       ! Squared vertical distance
-      if (rvsq>0.0) then
+      if (rvsq>zero) then
          distvsq = distv(jl0,il0)**2/rvsq
       elseif (il0/=jl0) then
-         distvsq = 1.0
+         distvsq = one
       else
-         distvsq = 0.0
+         distvsq = zero
       end if
 
       do ic3=1,nc3max
@@ -828,10 +828,10 @@ do il0=1,nl0
             predistnorm(djc3,ic3,djl0,il0) = distvsq
 
             ! Add squared horizontal component to squared normalized distance
-            if (rhsq>0.0) then
+            if (rhsq>zero) then
                predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+(disth(jc3)-disth(ic3))**2/rhsq
             elseif (ic3/=jc3) then
-               predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+1.0
+               predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+one
             end if
 
             ! Get normalized distance
@@ -850,8 +850,8 @@ do il0=1,nl0
    do jl0r=1,nl0r
       if (l0rl0_to_l0(jl0r,il0)==il0) plist(1,2) = jl0r
    end do
-   distnorm = 1.0
-   distnorm(plist(1,1),plist(1,2)) = 0.0
+   distnorm = one
+   distnorm(plist(1,1),plist(1,2)) = zero
 
    do while (np>0)
       ! Propagate the front
@@ -869,7 +869,7 @@ do il0=1,nl0
                kl0 = l0rl0_to_l0(kl0r,il0)
                disttest = distnorm(jc3,jl0r)+predistnorm(kc3-jc3,jc3,kl0-jl0,jl0)
 
-               if (disttest<1.0) then
+               if (disttest<one) then
                   ! Point is inside the support
                   if (disttest<distnorm(kc3,kl0r)) then
                      ! Update distance
@@ -946,6 +946,9 @@ real(kind_real),intent(in) :: distnorm !< Normalized distance
 ! Returned variable
 real(kind_real) :: value
 
+! Local variables
+real(kind_real) :: t1,t2,t3,t4,t5,t6,t7,magnitude
+
 ! Set name
 @:set_name(func_gc99)
 
@@ -953,12 +956,26 @@ real(kind_real) :: value
 @:probe_in()
 
 ! Gaspari and Cohn (1999) function
-if (distnorm<0.5) then
-   value = -8.0*distnorm**5+8.0*distnorm**4+5.0*distnorm**3-20.0/3.0*distnorm**2+1.0
-else if (distnorm<1.0) then
-   value = 8.0/3.0*distnorm**5-8.0*distnorm**4+5.0*distnorm**3+20.0/3.0*distnorm**2-10.0*distnorm+4.0-1.0/(3.0*distnorm)
+if (distnorm<half) then
+   value = -eight*distnorm**5+eight*distnorm**4+five*distnorm**3-20.0_kind_real/three*distnorm**2+one
+else if (distnorm<one) then
+   ! Polynomial terms
+   t1 = eight/three*distnorm**5
+   t2 = -eight*distnorm**4
+   t3 = five*distnorm**3
+   t4 = 20.0_kind_real/three*distnorm**2
+   t5 = -ten*distnorm
+   t6 = four
+   t7 = -one/(three*distnorm)
+
+   ! Sum
+   value = t1+t2+t3+t4+t5+t6+t7
+   magnitude = abs(t1)+abs(t2)+abs(t3)+abs(t4)+abs(t5)+abs(t6)+abs(t7)
+
+   ! Indistinguishability threshold for cross-platform reproducibility
+   if (small(value,magnitude)) value = zero
 else
-   value = 0.0
+   value = zero
 end if
 
 ! Probe out
@@ -986,13 +1003,13 @@ real(kind_real) :: value
 @:probe_in()
 
 ! Distance check bound
-if (distnorm<0.0) call mpl%abort('${subr}$','negative normalized distance')
+if (distnorm<zero) call mpl%abort('${subr}$','negative normalized distance')
 
 ! Gaspari and Cohn (1999) function
 value = gc99(distnorm)
 
 ! Enforce positivity
-value = max(value,0.0_kind_real)
+value = max(value,zero)
 
 ! Probe out
 @:probe_out()
@@ -1035,7 +1052,7 @@ real(kind_real) :: Dcoef(nscales),D11,D22,D33,D12,H11,H22,H33,H12,rsq
 fit = mpl%msv%valr
 
 ! Coefficients
-Dcoef = max(Dmin,min(coef,1.0_kind_real))
+Dcoef = max(Dmin,min(coef,one))
 Dcoef = Dcoef/sum(Dcoef)
 
 do iscales=1,nscales
@@ -1045,9 +1062,9 @@ do iscales=1,nscales
    if (nl0>1) then
       D33 = max(Dmin,D(3,iscales))
    else
-      D33 = 0.0
+      D33 = zero
    end if
-   D12 = sqrt(D11*D22)*max(-1.0_kind_real+Dmin,min(D(4,iscales),1.0_kind_real-Dmin))
+   D12 = sqrt(D11*D22)*max(-one+Dmin,min(D(4,iscales),one-Dmin))
 
    ! Inverse D to get H
    call lct_d2h(mpl,D11,D22,D33,D12,H11,H22,H33,H12)
@@ -1057,14 +1074,14 @@ do iscales=1,nscales
       do jc3=1,nc
          if (dmask(jc3,jl0)) then
             ! Initialization
-            if (iscales==1) fit(jc3,jl0) = 0.0
+            if (iscales==1) fit(jc3,jl0) = zero
 
             ! Squared distance
-            rsq = H11*dxsq(jc3,jl0)+H22*dysq(jc3,jl0)+H33*dzsq(jc3,jl0)+2.0*H12*dxdy(jc3,jl0)
+            rsq = H11*dxsq(jc3,jl0)+H22*dysq(jc3,jl0)+H33*dzsq(jc3,jl0)+two*H12*dxdy(jc3,jl0)
 
             if (M==0) then
                ! Gaussian function
-               if (rsq<40.0) fit(jc3,jl0) = fit(jc3,jl0)+Dcoef(iscales)*exp(-0.5*rsq)
+               if (rsq<40.0_kind_real) fit(jc3,jl0) = fit(jc3,jl0)+Dcoef(iscales)*exp(-half*rsq)
             else
                ! Matern function
                fit(jc3,jl0) = fit(jc3,jl0)+Dcoef(iscales)*matern(mpl,M,sqrt(rsq))
@@ -1111,17 +1128,17 @@ real(kind_real) :: det
 det = D11*D22-D12**2
 
 ! Inverse D to get H
-if (det>0.0) then
+if (det>zero) then
    H11 = D22/det
    H22 = D11/det
    H12 = -D12/det
 else
    call mpl%abort('${subr}$','non-invertible tensor')
 end if
-if (D33>0.0) then
-   H33 = 1.0/D33
+if (D33>zero) then
+   H33 = one/D33
 else
-   H33 = 0.0
+   H33 = zero
 end if
 
 ! Probe out
@@ -1156,7 +1173,7 @@ real(kind_real) :: tr,det,diff
 @:probe_in()
 
 ! Check diagonal positivity
-if ((H11<0.0).or.(H22<0.0)) call mpl%abort('${subr}$','negative diagonal LCT coefficients')
+if ((H11<zero).or.(H22<zero)) call mpl%abort('${subr}$','negative diagonal LCT coefficients')
 
 ! Compute horizontal trace
 tr = H11+H22
@@ -1165,10 +1182,10 @@ tr = H11+H22
 det = H11*H22-H12**2
 
 ! Compute horizontal support radius
-diff = 0.25*(H11-H22)**2+H12**2
-if ((det>0.0).and..not.(diff<0.0)) then
-   if (0.5*tr>sqrt(diff)) then
-      rh = gau2gc/sqrt(0.5*tr-sqrt(diff))
+diff = quarter*(H11-H22)**2+H12**2
+if ((det>zero).and..not.(diff<zero)) then
+   if (half*tr>sqrt(diff)) then
+      rh = gau2gc/sqrt(half*tr-sqrt(diff))
    else
       call mpl%abort('${subr}$','non positive-definite LCT (eigenvalue)')
    end if
@@ -1177,10 +1194,10 @@ else
 end if
 
 ! Compute vertical support radius
-if (H33>0.0) then
+if (H33>zero) then
    rv = gau2gc/sqrt(H33)
 else
-   rv = 0.0
+   rv = zero
 end if
 
 ! Probe out
@@ -1239,15 +1256,15 @@ real(kind_real) :: det,tr,diff,ev1,ev2
 
 ! Compute trace and determinant
 tr = d1+d2
-det = d1*d2*(1.0-nod**2)
-diff = 0.25*(d1-d2)**2+d1*d2*nod**2
+det = d1*d2*(one-nod**2)
+diff = quarter*(d1-d2)**2+d1*d2*nod**2
 
-if ((det>0.0).and..not.(diff<0.0)) then
+if ((det>zero).and..not.(diff<zero)) then
    ! Compute eigenvalues
-   ev1 = 0.5*tr+sqrt(diff)
-   ev2 = 0.5*tr-sqrt(diff)
+   ev1 = half*tr+sqrt(diff)
+   ev2 = half*tr-sqrt(diff)
 
-   if (ev2>0.0) then
+   if (ev2>zero) then
       ! Check conditioning
       valid = inf(ev1,condmax*ev2)
    else
@@ -1295,8 +1312,8 @@ if (M<2) call mpl%abort('${subr}$','M should be larger than 2')
 if (mod(M,2)>0) call mpl%abort('${subr}$','M should be even')
 
 ! Initialization
-value = 0.0
-beta = 1.0
+value = zero
+beta = one
 xtmp = x*sqrt(real(2*M-5,kind_real))
 
 do j=0,M-3
@@ -1308,7 +1325,7 @@ do j=0,M-3
 end do
 
 ! Last term and normalization
-value = value/beta+1.0
+value = value/beta+one
 
 ! Exponential factor
 value = value*exp(-xtmp)
@@ -1362,7 +1379,7 @@ call cholesky(mpl,n,nn,apack,upack)
 
 ! Unpack matrix
 ij = 0
-u = 0.0
+u = zero
 do i=1,n
    do j=1,i
       ij = ij+1
@@ -1484,11 +1501,11 @@ if (histmax>histmin) then
    bins(nbins+1) = histmax
 
    ! Extend first and last bins
-   bins(1) = bins(1)-1.0e-6*delta
-   bins(nbins+1) = bins(nbins+1)+1.0e-6*delta
+   bins(1) = bins(1)-1.0e-6_kind_real*delta
+   bins(nbins+1) = bins(nbins+1)+1.0e-6_kind_real*delta
 
    ! Compute histogram
-   hist = 0.0
+   hist = zero
    do ilist=1,nlist
       if (mpl%msv%isnot(list(ilist))) then
          ibins = 0
@@ -1497,17 +1514,17 @@ if (histmax>histmin) then
             ibins = ibins+1
             if (ibins>nbins) call mpl%abort('${subr}$','bin not found')
             if (infeq(bins(ibins),list(ilist)).and.inf(list(ilist),bins(ibins+1))) then
-               hist(ibins) = hist(ibins)+1.0
+               hist(ibins) = hist(ibins)+one
                found = .true.
             end if
          end do
       end if
    end do
-   if (abs(sum(hist)-real(count(mpl%msv%isnot(list)),kind_real))>0.5) &
+   if (abs(sum(hist)-real(count(mpl%msv%isnot(list)),kind_real))>half) &
  & call mpl%abort('${subr}$','histogram sum is not equal to the number of valid elements')
 else
    bins = mpl%msv%valr
-   hist = 0.0
+   hist = zero
 end if
 
 ! Probe out

@@ -80,9 +80,9 @@ do img=1,model%nmg
 
    do il0=1,nam%nl
       if (nam%levs(il0)==1) then
-         model%vunit(img,il0) = ps+0.5*dp(ilon,ilat,1)
+         model%vunit(img,il0) = ps+half*dp(ilon,ilat,1)
       else
-         model%vunit(img,il0) = ps+sum(dp(ilon,ilat,1:nam%levs(il0)-1))+0.5*dp(ilon,ilat,nam%levs(il0))
+         model%vunit(img,il0) = ps+sum(dp(ilon,ilat,1:nam%levs(il0)-1))+half*dp(ilon,ilat,nam%levs(il0))
       end if
    end do
 end do

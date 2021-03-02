@@ -53,7 +53,7 @@ call mpl%ncerr('${subr}$',nf90_close(ncid))
 model%mg_to_tile = 1
 model%lon = lon
 model%lat = lat
-model%area = 4.0*pi/real(model%nmg,kind_real)
+model%area = four*pi/real(model%nmg,kind_real)
 model%mask = .true.
 
 ! Vertical unit

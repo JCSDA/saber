@@ -10,7 +10,7 @@ module tools_samp
 
 use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
-use tools_const, only: pi,deg2rad
+use tools_const, only: zero,quarter,one,four,pi,deg2rad
 use tools_func, only: lonlathash,lonlatmod,sphere_dist
 use tools_kinds, only: kind_real,kind_int,huge_real
 use tools_qsort, only: qsort
@@ -249,10 +249,10 @@ do while (retry)
 
    if (lfull_grid) then
       ! Number of required points
-      ns1_glb = nfac*int(real(ns2_glb,kind_real)*4.0*pi/area)
+      ns1_glb = nfac*int(real(ns2_glb,kind_real)*four*pi/area)
 
       ! Octahedral grid
-      n = int(-4.5+sqrt(20.25+0.25*real(ns1_glb,kind_real)))+1
+      n = int(-4.5_kind_real+sqrt(20.25_kind_real+quarter*real(ns1_glb,kind_real)))+1
       write(gridid,'(a,i5.5)') 'O',n
       agrid = atlas_structuredgrid(gridid)
       ns1_glb = 4*n**2+36*n
@@ -624,18 +624,18 @@ if (lfast) then
    allocate(cdf(ns1_glb_eff))
 
    ! Initialization
-   cdf(1) = 0.0
+   cdf(1) = zero
    do is1_glb_eff=2,ns1_glb_eff
       if (lmask(is1_glb_eff)) then
-         cdf(is1_glb_eff) = cdf(is1_glb_eff-1)+1.0/rh1_glb_tmp(is1_glb_eff)**2
+         cdf(is1_glb_eff) = cdf(is1_glb_eff-1)+one/rh1_glb_tmp(is1_glb_eff)**2
       end if
    end do
-   cdf_norm = 1.0/cdf(ns1_glb_eff)
+   cdf_norm = one/cdf(ns1_glb_eff)
    cdf = cdf*cdf_norm
 
    do is2_glb=1,ns2_glb+nrep_eff
       ! Generate random number
-      call rng%rand(0.0_kind_real,1.0_kind_real,rr)
+      call rng%rand(zero,one,rr)
 
       ! Dichotomy to find the value
       irvalmin = 1
@@ -661,7 +661,7 @@ if (lfast) then
       ns1_glb_val = ns1_glb_val-1
 
       ! Renormalize cdf
-      cdf_norm = 1.0/cdf(ns1_glb_val)
+      cdf_norm = one/cdf(ns1_glb_val)
       cdf(1:ns1_glb_val) = cdf(1:ns1_glb_val)*cdf_norm
 
       ! Update
@@ -683,7 +683,7 @@ else
       end if
 
       ! Initialization
-      distmax = 0.0
+      distmax = zero
       irmax = 0
       irvalmax = 0
       itry = 1

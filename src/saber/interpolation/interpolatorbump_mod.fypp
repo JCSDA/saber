@@ -21,7 +21,7 @@ use fckit_log_module, only: fckit_log
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 use iso_c_binding, only: c_char
 use tools_atlas, only: field_from_array,field_to_array,create_atlas_function_space
-use tools_const, only: pi,deg2rad,rad2deg
+use tools_const, only: zero,three,hundred,pi,deg2rad,rad2deg
 use tools_func, only: lonlatmod,sphere_dist
 use tools_kinds, only: kind_int,kind_real
 use tools_repro, only: rth
@@ -190,7 +190,7 @@ bint%bump%nam%variables(1) = 'var'
 
 ! Default missing values for integers and reals
 msvali = -999
-msvalr = -999.0
+msvalr = -999.0_kind_real
 
 if (present(config)) then
    ! Optionally override defaults with BUMP config
@@ -430,7 +430,7 @@ if (bint%nouta > 0) then
 
    ! Initialization
    bint%nn_index = bint%bump%mpl%msv%vali
-   maxweight = 0.0
+   maxweight = zero
 
    ! Get nearest neighbor index from the maximum interpolation coefficient
    do i_s=1,bint%h%n_s
@@ -449,11 +449,11 @@ end if
 ! Compute scores
 if (nout_eff > 0) then
    call mpl%f_comm%allreduce(real(bint%com%nhalo,kind_real),C_max,fckit_mpi_max())
-   C_max = C_max/(3.0*real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
+   C_max = C_max/(three*real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
    N_max = real(maxval(proc_to_nouta_eff),kind_real)/(real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
 
    ! Print results
-   write(mpl%info,'(a7,a,f5.1,a)') '','Output grid repartition imbalance: ',100.0*real(maxval(proc_to_nouta_eff) &
+   write(mpl%info,'(a7,a,f5.1,a)') '','Output grid repartition imbalance: ',hundred*real(maxval(proc_to_nouta_eff) &
  & -minval(proc_to_nouta_eff),kind_real)/(real(sum(proc_to_nouta_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
    call mpl%flush
    write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
@@ -525,7 +525,7 @@ do ifield=1,fieldset_in%size()
       call bint%apply_interp(array_in_mga,array_out)
    else
       ! Model grid to subset Sc0
-      array_in_c0a = 0.0_kind_real
+      array_in_c0a = zero
       call bint%bump%geom%copy_mga_to_c0a(bint%bump%mpl,array_in_mga,array_in_c0a)
 
       ! Apply interpolation
@@ -982,7 +982,7 @@ if (bint%nouta > 0) then
    !$omp end parallel do
 else
    ! No output point on this task
-   array_in_ext = 0.0
+   array_in_ext = zero
 end if
 
 ! Halo reduction

@@ -60,7 +60,7 @@ model%mg_to_tile = 1
 model%lon = (sum(lon,dim=2)/real(model%nlev,kind_real))/req
 model%lat = (sum(lat,dim=2)/real(model%nlev,kind_real))/req
 model%area = sum(area,dim=2)/real(model%nlev,kind_real)/req**2
-model%mask = (mask(:,nam%levs(1:model%nl0))>0.5)
+model%mask = (mask(:,nam%levs(1:model%nl0))>half)
 
 ! Vertical unit
 if (nam%logpres) call mpl%abort('${subr}$','pressure logarithm vertical coordinate is not available for this model')

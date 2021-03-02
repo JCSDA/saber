@@ -11,6 +11,7 @@ module type_fieldset
 
 use atlas_module, only: atlas_fieldset,atlas_field,atlas_functionspace,atlas_real
 use tools_atlas, only: field_to_array,field_from_array
+use tools_const, only: zero
 use tools_kinds, only: kind_real
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -244,7 +245,7 @@ do iv=1,size(fieldset%variables)
    do il=1,size(fieldset%mask3d,2)
       do i=1,size(fieldset%mask3d,1)
          if (fieldset%mask3d(i,il)) then
-            ptr_2(il,i) = 0.0
+            ptr_2(il,i) = zero
          else
             ptr_2(il,i) = fieldset%msvalr
          end if

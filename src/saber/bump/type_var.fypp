@@ -10,7 +10,7 @@ module type_var
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const, only: rad2deg,reqkm
+use tools_const, only: zero,half,two,rad2deg,reqkm
 use tools_kinds, only: kind_real,huge_real
 use type_cmat_blk, only: cmat_blk_type
 use type_ens, only: ens_type
@@ -405,7 +405,7 @@ do iv=1,nam%nv
       write(mpl%info,'(a16,a,i2)') '','Iteration ',iter
       call mpl%flush
       do il0=1,geom%nl0
-         if (m2sqasy(il0)>0.0) then
+         if (m2sqasy(il0)>zero) then
             write(mpl%info,'(a19,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm,' km, rel. diff. = ', &
  & (m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
             call mpl%flush
@@ -415,15 +415,15 @@ do iv=1,nam%nv
       ! Update support radius
       do il0=1,geom%nl0
          diff = m2prod_tot(il0)-m2sqasy(il0)
-         if (diff>0.0) then
+         if (diff>zero) then
             ! Increase filtering support radius
             if (dichotomy(il0)) then
-               drhflt(il0) = 0.5*drhflt(il0)
+               drhflt(il0) = half*drhflt(il0)
                rhflt(il0) = rhflt(il0)+drhflt(il0)
             else
                convergence(il0) = .false.
                rhflt(il0) = rhflt(il0)+drhflt(il0)
-               drhflt(il0) = 2.0*drhflt(il0)
+               drhflt(il0) = two*drhflt(il0)
             end if
          else
             ! Convergence
@@ -432,11 +432,11 @@ do iv=1,nam%nv
             ! Change dichotomy status
             if (.not.dichotomy(il0)) then
                dichotomy(il0) = .true.
-               drhflt(il0) = 0.5*drhflt(il0)
+               drhflt(il0) = half*drhflt(il0)
             end if
 
             ! Decrease filtering support radius
-            drhflt(il0) = 0.5*drhflt(il0)
+            drhflt(il0) = half*drhflt(il0)
             rhflt(il0) = rhflt(il0)-drhflt(il0)
          end if
          if ((abs(diff)<diff_abs_min).or.(nam%var_niter==1)) then

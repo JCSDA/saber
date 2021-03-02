@@ -8,6 +8,7 @@
 !----------------------------------------------------------------------
 module type_minim
 
+use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
 use tools_fit, only: ver_smooth
 use tools_func, only: fit_diag,fit_lct
 use tools_kinds, only: kind_real
@@ -19,13 +20,13 @@ use type_rng, only: rng_type
 implicit none
 
 ! Praxis precision parameters
-real(kind_real),parameter :: machep = epsilon(1.0_kind_real) !< Machine precision
-real(kind_real),parameter :: small = machep**2               !< Small value
-real(kind_real),parameter :: vsmall = small**2               !< Very small value
-real(kind_real),parameter :: large = 1.0/small               !< Large value
-real(kind_real),parameter :: vlarge = 1.0/vsmall             !< Very large value
-real(kind_real),parameter :: m2 = sqrt(machep)               !< Machine precision square-root
-real(kind_real),parameter :: m4 = sqrt(m2)                   !< Square-root of the machine precision square-root
+real(kind_real),parameter :: machep = epsilon(one) !< Machine precision
+real(kind_real),parameter :: small = machep**2     !< Small value
+real(kind_real),parameter :: vsmall = small**2     !< Very small value
+real(kind_real),parameter :: large = one/small     !< Large value
+real(kind_real),parameter :: vlarge = one/vsmall   !< Very large value
+real(kind_real),parameter :: m2 = sqrt(machep)     !< Machine precision square-root
+real(kind_real),parameter :: m4 = sqrt(m2)         !< Square-root of the machine precision square-root
 
 ! Minimization data derived type
 type minim_type
@@ -230,19 +231,19 @@ if (minim%dl0==1) then
       coef = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
       ivar = ivar+1
    else
-      coef = 1.0
+      coef = one
    end if
    if (minim%lrh) then
       fit_rh = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
       ivar = ivar+1
    else
-      fit_rh = 0.0
+      fit_rh = zero
    end if
    if (minim%lrv) then
       fit_rv = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
       ivar = ivar+1
    else
-      fit_rv = 0.0
+      fit_rv = zero
    end if
 else
    do il0=1,minim%nl0
@@ -252,21 +253,21 @@ else
  & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
          ivar = ivar+1
       else
-         coef(il0) = 1.0
+         coef(il0) = one
       end if
       if (minim%lrh) then
          fit_rh(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
  & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
          ivar = ivar+1
       else
-         fit_rh(il0) = 0.0
+         fit_rh(il0) = zero
       end if
       if (minim%lrv) then
          fit_rv(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
  & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
          ivar = ivar+1
       else
-         fit_rv(il0) = 0.0
+         fit_rv(il0) = zero
       end if
    end do
 end if
@@ -280,31 +281,31 @@ fit_pack = reshape(fit,(/minim%ny/))
 ! Observations penalty
 fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
 norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
-if (norm>0.0) fo = fo/norm
+if (norm>zero) fo = fo/norm
 
 ! Smoothness penalty
-fs = 0.0
-if (minim%smoothness_penalty>0.0) then
+fs = zero
+if (minim%smoothness_penalty>zero) then
    do il0=2,minim%nl0-1
       if (minim%lcoef) then
          if (mpl%msv%isallnot(coef(il0-1:il0+1))) then
-            coef_avg = 0.5*(coef(il0-1)+coef(il0+1))
+            coef_avg = half*(coef(il0-1)+coef(il0+1))
             norm = coef_avg**2
-            if (norm>0.0) fs = fs+(coef(il0)-coef_avg)**2/norm
+            if (norm>zero) fs = fs+(coef(il0)-coef_avg)**2/norm
          end if
       end if
       if (minim%lrh) then
          if (mpl%msv%isallnot(fit_rh(il0-1:il0+1))) then
-            fit_rh_avg = 0.5*(fit_rh(il0-1)+fit_rh(il0+1))
+            fit_rh_avg = half*(fit_rh(il0-1)+fit_rh(il0+1))
             norm = fit_rh_avg**2
-            if (norm>0.0) fs = fs+(fit_rh(il0)-fit_rh_avg)**2/norm
+            if (norm>zero) fs = fs+(fit_rh(il0)-fit_rh_avg)**2/norm
          end if
       end if
       if (minim%lrv) then
          if (mpl%msv%isallnot(fit_rv(il0-1:il0+1))) then
-            fit_rv_avg = 0.5*(fit_rv(il0-1)+fit_rv(il0+1))
+            fit_rv_avg = half*(fit_rv(il0-1)+fit_rv(il0+1))
             norm = fit_rv_avg**2
-            if (norm>0.0) fs = fs+(fit_rv(il0)-fit_rv_avg)**2/norm
+            if (norm>zero) fs = fs+(fit_rv(il0)-fit_rv_avg)**2/norm
          end if
       end if
    end do
@@ -356,9 +357,9 @@ do iscales=1,minim%nscales
 end do
 if (minim%nscales>1) then
    coef(1:minim%nscales-1) = xtmp(minim%nscales*4+1:minim%nscales*4+minim%nscales-1)
-   coef(minim%nscales) = 1.0-sum(coef(1:minim%nscales-1))
+   coef(minim%nscales) = one-sum(coef(1:minim%nscales-1))
 else
-   coef(1) = 1.0
+   coef(1) = one
 end if
 call fit_lct(mpl,minim%nc3,minim%nl0,minim%dxsq,minim%dysq,minim%dxdy,minim%dzsq,minim%dmask,minim%nscales, &
  & D,coef,fit)
@@ -369,7 +370,7 @@ fit_pack = reshape(fit,(/minim%ny/))
 ! Observations penalty
 f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
 norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
-if (norm>0.0) f = f/norm
+if (norm>zero) f = f/norm
 
 ! Probe out
 @:probe_out()
@@ -463,7 +464,7 @@ do while ((iters<minim%hooke_itermax).and.inf(minim%hooke_tol,steplength))
 
       do i=1,minim%nx
          if (minim%bsup(i)>minim%binf(i)) then
-            if (inf(0.5*abs(delta(i)),abs(newx(i)-minim%x(i)))) then
+            if (inf(half*abs(delta(i)),abs(newx(i)-minim%x(i)))) then
                keep = 1
                exit
             end if
@@ -573,16 +574,16 @@ logical :: fk,illc
 
 ! Initialization
 minim%x = guess
-h0 = 0.1*sqrt(real(minim%nx,kind_real))
+h0 = tenth*sqrt(real(minim%nx,kind_real))
 
 ! Heuristic numbers
-scbd = 1.0
+scbd = one
 illc = .false.
 ktm = 1
 if (illc) then
-   ldfac = 0.1
+   ldfac = tenth
 else
-   ldfac = 0.01
+   ldfac = hundredth
 end if
 kt = 0
 nl = 0
@@ -593,20 +594,20 @@ t = small+abs(minim%praxis_tol)
 t2 = t
 dmin = small
 h = h0
-h = max(h,100.0*t)
+h = max(h,hundred*t)
 ldt = h
 
 ! The initial set of search directions v is the identity matrix
-v = 0.0
+v = zero
 do i = 1, minim%nx
-   v(i,i) = 1.0
+   v(i,i) = one
 end do
-d = 0.0
-qa = 0.0
-qb = 0.0
-qc = 0.0
-qd0 = 0.0
-qd1 = 0.0
+d = zero
+qa = zero
+qb = zero
+qc = zero
+qd0 = zero
+qd1 = zero
 q0 = minim%x
 q1 = minim%x
 iter = 0
@@ -614,19 +615,19 @@ iter = 0
 do while(iter<minim%praxis_itermax)
    iter = iter+1
    sf = d(1)
-   d(1) = 0.0
+   d(1) = zero
 
    ! Minimize along the first direction v(*,1)
    jsearch = 1
    nits = 2
    d2 = d(1)
-   s = 0.0
+   s = zero
    val = fx
    fk = .false.
    call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
    d(1) = d2
-   if (.not.(s>0.0)) v(:,1) = -v(:,1)
-   if (infeq(sf,0.9*d(1)).or.infeq(d(1),0.9*sf)) d(2:minim%nx) = 0.0
+   if (.not.(s>zero)) v(:,1) = -v(:,1)
+   if (infeq(sf,0.9_kind_real*d(1)).or.infeq(d(1),0.9_kind_real*sf)) d(2:minim%nx) = zero
 
    ! The inner loop starts here
    do k=2,minim%nx
@@ -635,13 +636,13 @@ do while(iter<minim%praxis_itermax)
       if (0<kt) illc = .true.
       do
          kl = k
-         df = 0.0
+         df = zero
 
          ! A random step follows, to avoid resolution valleys
          if (illc) then
             do i=1,minim%nx
-               call rng%rand(0.0_kind_real,1.0_kind_real,r)
-               s = (0.1*ldt+t2*10.0**kt)*(r-0.5)
+               call rng%rand(zero,one,r)
+               s = (tenth*ldt+t2*ten**kt)*(r-half)
                z(i) = s
                minim%x = minim%x+s*v(:,i)
             end do
@@ -655,7 +656,7 @@ do while(iter<minim%praxis_itermax)
           jsearch = k2
           nits = 2
           d2 = d(k2)
-          s = 0.0
+          s = zero
           val = fx
           fk = .false.
           call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
@@ -674,7 +675,7 @@ do while(iter<minim%praxis_itermax)
 
        ! If there was not much improvement on the first try, set illc to true and start the inner loop again
        if (illc) exit
-       if (infeq(abs(100.0*machep*fx),df)) exit
+       if (infeq(abs(hundred*machep*fx),df)) exit
        illc = .true.
     end do
 
@@ -683,7 +684,7 @@ do while(iter<minim%praxis_itermax)
         jsearch = k2
         nits = 2
         d2 = d(k2)
-        s = 0.0
+        s = zero
         val = fx
         fk = .false.
         call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
@@ -691,7 +692,7 @@ do while(iter<minim%praxis_itermax)
      end do
      f1 = fx
      fx = sf
-     lds = 0.0
+     lds = zero
      do i=1,minim%nx
         sl = minim%x(i)
         minim%x(i) = y(i)
@@ -707,7 +708,7 @@ do while(iter<minim%praxis_itermax)
            v(:,j+1) = v(:,j)
            d(j+1) = d(j)
         end do
-        d(k) = 0.0
+        d(k) = zero
         v(:,k) = y/lds
 
         !  Minimize along the new "conjugate" direction v(*,k), which is the normalized vector: (new x)-(old x)
@@ -718,7 +719,7 @@ do while(iter<minim%praxis_itermax)
         fk = .true.
         call minim%minny(mpl,jsearch,nits,d2,lds,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
         d(k) = d2
-        if (.not.(lds>0.0)) then
+        if (.not.(lds>zero)) then
            lds = -lds
            v(:,k) = -v(:,k)
         end if
@@ -728,7 +729,7 @@ do while(iter<minim%praxis_itermax)
      t2 = m2*sqrt(sum(minim%x**2))+t
 
      ! See whether the length of the step taken since starting the inner loop exceeds half the tolerance
-      if (inf(0.5*t2,ldt)) then
+      if (inf(half*t2,ldt)) then
          kt = -1
       end if
       kt = kt+1
@@ -740,23 +741,23 @@ do while(iter<minim%praxis_itermax)
 
    ! Try quadratic extrapolation in case we are in a curved valley
    call minim%quad(mpl,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qf1,qa,qb,qc,qd0,qd1)
-   d = 1.0/sqrt(d)
+   d = one/sqrt(d)
    dn = maxval(d)
    do j=1,minim%nx
       v(:,j) = d(j)/dn*v(:,j)
    end do
 
    ! Scale the axes to try to reduce the condition number
-   if (inf(1.0_kind_real,scbd)) then
+   if (inf(one,scbd)) then
       do i=1,minim%nx
          z(i) = max(m4,sqrt(sum(v(i,:)**2)))
       end do
       s = minval(z)
       do i=1,minim%nx
          sl = s/z(i)
-         z(i) = 1.0/sl
+         z(i) = one/sl
          if (inf(scbd,z(i))) then
-            sl = 1.0/scbd
+            sl = one/scbd
             z(i) = scbd
          end if
          v(i,:) = sl*v(i,:)
@@ -770,7 +771,7 @@ do while(iter<minim%praxis_itermax)
    call minfit(mpl,minim%nx,vsmall,v,d)
 
    ! Unscale the axes
-   if (inf(1.0_kind_real,scbd)) then
+   if (inf(one,scbd)) then
       do i=1,minim%nx
          v(i,:) = z(i)*v(i,:)
       end do
@@ -787,7 +788,7 @@ do while(iter<minim%praxis_itermax)
       elseif (inf(dni,small)) then
         d(i) = vlarge
       else
-        d(i) = 1.0/dni**2
+        d(i) = one/dni**2
       end if
    end do
 
@@ -910,13 +911,13 @@ qf1 = temp
 call swap(minim%nx,minim%x,q1)
 qd1 = sqrt(sum((minim%x-q1)**2))
 l = qd1
-s = 0.0
+s = zero
 
-if ((.not.(qd0>0.0)).or.(.not.(qd1>0.0)).or.(nl<3*minim%nx**2)) then
+if ((.not.(qd0>zero)).or.(.not.(qd1>zero)).or.(nl<3*minim%nx**2)) then
    fx = qf1
-   qa = 0.0
-   qb = 0.0
-   qc = 1.0
+   qa = zero
+   qb = zero
+   qc = one
 else
    jsearch = -1
    nits = 2
@@ -989,7 +990,7 @@ logical :: dz,ok
 sf1 = f1
 sx1 = x1
 k = 0
-xm = 0.0
+xm = zero
 fm = fx
 f0 = fx
 dz = inf(d2,machep)
@@ -1005,16 +1006,16 @@ t2 = m4*sqrt(abs(fx)/temp+s*ldt)+m2*ldt
 s = m4*s+t
 if (dz.and.inf(s,t2)) t2 = s
 t2 = max(t2,small)
-t2 = min(t2,0.01*h)
+t2 = min(t2,hundredth*h)
 if (fk.and.infeq(f1,fm)) then
    xm = x1
    fm = f1
 end if
 if ((.not.fk).or.inf(abs(x1),t2)) then
-   if (.not.(x1<0.0)) then
-      temp = 1.0
+   if (.not.(x1<zero)) then
+      temp = one
    else
-      temp = -1.0
+      temp = -one
    end if
    x1 = temp*t2
    call minim%flin(mpl,jsearch,x1,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,f1)
@@ -1028,7 +1029,7 @@ end if
 do
    if (dz) then
       if (infeq(f1,f0)) then
-         x2 = 2.0*x1
+         x2 = two*x1
       else
          x2 = -x1
       end if
@@ -1046,16 +1047,16 @@ do
 
    ! Predict the minimum
    if (infeq(d2,small)) then
-      if (.not.(d1<0.0)) then
+      if (.not.(d1<zero)) then
          x2 = -h
       else
          x2 = h
       end if
    else
-      x2 = (-0.5*d1)/d2
+      x2 = (-half*d1)/d2
    end if
    if (inf(h,abs(x2))) then
-      if (.not.(x2>0.0)) then
+      if (.not.(x2>zero)) then
          x2 = -h
       else
          x2 = h
@@ -1068,11 +1069,11 @@ do
       call minim%flin (mpl,jsearch,x2,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,f2)
       if ((nits<=k).or.infeq(f2,f0)) exit
       k = k+1
-      if (inf(f0,f1).and.(x1*x2>0.0)) then
+      if (inf(f0,f1).and.(x1*x2>zero)) then
          ok = .false.
          exit
       end if
-      x2 = 0.5*x2
+      x2 = half*x2
    end do
    if (ok) exit
 end do
@@ -1089,7 +1090,7 @@ end if
 if (inf(small,abs(x2*(x2-x1)))) then
    d2 = (x2*(f1-f0)-x1*(fm-f0))/((x1*x2)*(x1-x2))
 else
-   if (0<k) d2 = 0.0
+   if (0<k) d2 = zero
 end if
 d2 = max (d2,small)
 x1 = x2
@@ -1138,22 +1139,22 @@ logical :: skip
 ! Householder's reduction to bidiagonal form
 if (n==1) then
    q(1) = a(1,1)
-   a(1,1) = 1.0
+   a(1,1) = one
 @:probe_out()
    return
 end if
 eps = machep
-g = 0.0
-x = 0.0
+g = zero
+x = zero
 do i=1,n
    e(i) = g
    l = i+1
    s = sum(a(i:n,i)**2)
-   g = 0.0
+   g = zero
    if (infeq(tol,s)) then
       f = a(i,i)
       g = sqrt(s)
-      if (.not.(f>0.0)) g = -g
+      if (.not.(f>zero)) g = -g
       h = f*g-s
       a(i,i) = f-g
       do j=l,n
@@ -1163,11 +1164,11 @@ do i=1,n
    end if
    q(i) = g
    s = sum(a(i,l:n)**2)
-   g = 0.0
+   g = zero
    if (infeq(tol,s)) then
       if (i/=n) f = a(i,i+1)
       g = sqrt(s)
-      if (.not.(f<0.0)) g = -g
+      if (.not.(f<zero)) g = -g
       h = f*g-s
       if (i/=n) then
          a(i,i+1) = f-g
@@ -1183,11 +1184,11 @@ do i=1,n
 end do
 
 ! Accumulation of right-hand transformations
-a(n,n) = 1.0
+a(n,n) = one
 g = e(n)
 l = n
 do i=n-1,1,-1
-   if (abs(g)>0.0) then
+   if (abs(g)>zero) then
       h = a(i,i+1)*g
       a(l:n,i) = a(i,l:n)/h
       do j=l,n
@@ -1195,9 +1196,9 @@ do i=n-1,1,-1
          a(l:n,j) = a(l:n,j)+s*a(l:n,i)
       end do
    end if
-   a(i,l:n) = 0.0
-   a(l:n,i) = 0.0
-   a(i,i) = 1.0
+   a(i,l:n) = zero
+   a(l:n,i) = zero
+   a(i,i) = one
    g = e(i)
    l = i
 end do
@@ -1209,7 +1210,7 @@ do k=n,1,-1
    do
       kt = kt+1
       if (kt_max<kt) then
-         e(k) = 0.0
+         e(k) = zero
          call mpl%abort('${subr}$','QR algorithm failed to converge')
       end if
       skip = .false.
@@ -1226,8 +1227,8 @@ do k=n,1,-1
 
       ! Cancellation of E(L) if 1<L
       if (.not.skip) then
-         c = 0.0
-         s = 1.0
+         c = zero
+         s = one
          do i=l,k
             f = s*e(i)
             e(i) = c*e(i)
@@ -1235,9 +1236,9 @@ do k=n,1,-1
             g = q(i)
             h = hypot(f,g)
             q(i) = h
-            if (.not.(abs(h)>0.0)) then
-               g = 1.0
-               h = 1.0
+            if (.not.(abs(h)>zero)) then
+               g = one
+               h = one
             end if
             c = g/h
             s = -f/h
@@ -1247,7 +1248,7 @@ do k=n,1,-1
       ! Test for convergence for this index K
       z = q(k)
       if (l==k) then
-         if (z<0.0) then
+         if (z<zero) then
             q(k) = -z
             a(1:n,k) = -a(1:n,k)
          end if
@@ -1263,9 +1264,9 @@ do k=n,1,-1
          call mpl%abort('${subr}$','index below the lower bound')
       end if
       h = e(k)
-      f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y)
-      g = hypot(f,1.0_kind_real)
-      if (f<0.0) then
+      f = ((y-z)*(y+z)+(g-h)*(g+h))/(two*h*y)
+      g = hypot(f,one)
+      if (f<zero) then
          temp = f-g
       else
          temp = f+g
@@ -1273,8 +1274,8 @@ do k=n,1,-1
       f = ((x-z)*(x+z)+h*(y/temp-h))/x
 
       ! Next QR transformation
-      c = 1.0
-      s = 1.0
+      c = one
+      s = one
       do i=l+1,k
          g = e(i)
          y = q(i)
@@ -1282,9 +1283,9 @@ do k=n,1,-1
          g = g*c
          z = hypot(f,h)
          e(i-1) = z
-         if (.not.(abs(z)>0.0)) then
-            f = 1.0
-            z = 1.0
+         if (.not.(abs(z)>zero)) then
+            f = one
+            z = one
          end if
          c = f/z
          s = h/z
@@ -1301,16 +1302,16 @@ do k=n,1,-1
          end do
          z = hypot(f,h)
          q(i-1) = z
-         if (.not.(abs(z)>0.0)) then
-            f = 1.0
-            z = 1.0
+         if (.not.(abs(z)>zero)) then
+            f = one
+            z = one
          end if
          c = f/z
          s = h/z
          f = c*g+s*y
          x = -s*g+c*y
       end do
-      e(l) = 0.0
+      e(l) = zero
       e(k) = f
       q(k) = x
    end do
@@ -1416,7 +1417,7 @@ real(kind_real),intent(inout) :: x(minim%nx) !< Vector
 @:probe_in()
 
 ! Linear expansion of the hyperbolic tangent of the variable
-x = minim%binf+0.5*(1.0+tanh(x))*(minim%bsup-minim%binf)
+x = minim%binf+half*(one+tanh(x))*(minim%bsup-minim%binf)
 
 ! Probe out
 @:probe_out()
@@ -1449,9 +1450,9 @@ integer :: ix
 if (any((x<minim%binf).or.(x>minim%bsup))) call mpl%abort('${subr}$','variable out of bounds in vt_inv')
 do ix=1,minim%nx
    if (sup(minim%bsup(ix),minim%binf(ix))) then
-      x(ix) = atanh(2.0*(x(ix)-minim%binf(ix))/(minim%bsup(ix)-minim%binf(ix))-1.0)
+      x(ix) = atanh(two*(x(ix)-minim%binf(ix))/(minim%bsup(ix)-minim%binf(ix))-one)
    else
-      x(ix) = 0.0
+      x(ix) = zero
    end if
 end do
 

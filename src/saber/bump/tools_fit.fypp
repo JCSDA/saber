@@ -8,6 +8,7 @@
 !----------------------------------------------------------------------
 module tools_fit
 
+use tools_const, only: zero,quarter,half,one
 use tools_func, only: fit_func
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
@@ -61,13 +62,13 @@ real(kind_real) :: raw_tmp(n)
 ! Probe in
 @:probe_in()
 
-if (any(dist<0.0)) call mpl%abort('${subr}$','negative distance')
+if (any(dist<zero)) call mpl%abort('${subr}$','negative distance')
 
-if (raw(iz)>0.0) then
+if (raw(iz)>zero) then
    if (n>1) then
       ! Copy points that are lower than the zero-separation
       raw_tmp = mpl%msv%valr
-      raw_tmp(iz) = 1.0
+      raw_tmp(iz) = one
       do i=1,n
         if (i/=iz) then
            if (inf(raw(i),raw(iz))) raw_tmp(i) = raw(i)/raw(iz)
@@ -75,13 +76,13 @@ if (raw(iz)>0.0) then
       end do
 
       if (count(mpl%msv%isnot(raw_tmp))>1) then
-         if (count(raw_tmp>0.0)>1) then
+         if (count(raw_tmp>zero)>1) then
             ! Curve-dependent threshold
-            th = 0.5*(1.0+minval(raw_tmp,mask=(raw_tmp>0.0)))
+            th = half*(one+minval(raw_tmp,mask=(raw_tmp>zero)))
 
             ! Find inverse threshold with a dichotomy
-            thinv = 0.5
-            dthinv = 0.25
+            thinv = half
+            dthinv = quarter
             do iter=1,itermax
                thtest = fit_func(mpl,thinv)
                if (sup(th,thtest)) then
@@ -89,7 +90,7 @@ if (raw(iz)>0.0) then
                else
                   thinv = thinv+dthinv
                end if
-               dthinv = 0.5*dthinv
+               dthinv = half*dthinv
             end do
 
             ! Find support radius, lower value
@@ -104,7 +105,7 @@ if (raw(iz)>0.0) then
                   ! Check index validity
                   if (im>=1) then
                      ! Check raw value validity
-                     if (raw_tmp(im)>0.0) then
+                     if (raw_tmp(im)>zero) then
                         ! Check whether threshold has been crossed
                         if (inf(raw_tmp(im),th)) then
                            ! Set fit value
@@ -130,7 +131,7 @@ if (raw(iz)>0.0) then
                   ! Check index validity
                   if (ip<=n) then
                      ! Check raw value validity
-                     if (raw_tmp(ip)>0.0) then
+                     if (raw_tmp(ip)>zero) then
                         ! Check whether threshold has been crossed
                         if (inf(raw_tmp(ip),th)) then
                            ! Set fit value
@@ -146,7 +147,7 @@ if (raw(iz)>0.0) then
 
             ! Gather values
             if (mpl%msv%isnot(fit_rm).and.mpl%msv%isnot(fit_rp)) then
-               fit_r = 0.5*(fit_rm+fit_rp)
+               fit_r = half*(fit_rm+fit_rp)
             elseif (mpl%msv%isnot(fit_rm)) then
                fit_r = fit_rm
             elseif (mpl%msv%isnot(fit_rp)) then
@@ -157,10 +158,10 @@ if (raw(iz)>0.0) then
             if (mpl%msv%isnot(fit_r)) fit_r = fit_r/thinv
 
             ! Check positivity
-            if (inf(fit_r,0.0_kind_real)) fit_r = mpl%msv%valr
+            if (inf(fit_r,zero)) fit_r = mpl%msv%valr
          else
             ! All positive-separation points are negative
-            fit_r = 0.0
+            fit_r = zero
          end if
       else
          ! All positive-separation points are missing
@@ -170,13 +171,13 @@ if (raw(iz)>0.0) then
       ! Set minimum distance
       if (mpl%msv%isnot(fit_r)) then
          distmin = huge_real
-         if (iz>1) distmin = min(distmin,1.0e-6*abs(dist(iz-1)-dist(iz)))
-         if (iz<n) distmin = min(distmin,1.0e-6*abs(dist(iz+1)-dist(iz)))
+         if (iz>1) distmin = min(distmin,1.0e-6_kind_real*abs(dist(iz-1)-dist(iz)))
+         if (iz<n) distmin = min(distmin,1.0e-6_kind_real*abs(dist(iz+1)-dist(iz)))
          fit_r = max(fit_r,distmin)
       end if
    else
       ! Only one point, zero radius
-      fit_r = 0.0
+      fit_r = zero
    end if
 else
    ! Zero-separation point is negative
@@ -213,11 +214,11 @@ real(kind_real) :: kernel(n,n),distnorm,profile_init(n),norm
 ! Probe in
 @:probe_in()
 
-if (rv<0.0) call mpl%abort('${subr}$','negative filtering support radius')
+if (rv<zero) call mpl%abort('${subr}$','negative filtering support radius')
 
-if ((rv>0.0).and.mpl%msv%isanynot(profile)) then
+if ((rv>zero).and.mpl%msv%isanynot(profile)) then
    ! Vertical smoothing kernel
-   kernel = 0.0
+   kernel = zero
    do i=1,n
       do j=1,n
          if (mpl%msv%isnot(profile(j))) then
@@ -230,14 +231,14 @@ if ((rv>0.0).and.mpl%msv%isanynot(profile)) then
 
    ! Apply kernel
    profile_init = profile
-   profile = 0.0
+   profile = zero
    do i=1,n
-      norm = 0.0
+      norm = zero
       do j=1,n
          profile(i) = profile(i)+kernel(i,j)*profile_init(j)
          norm = norm+kernel(i,j)
       end do
-      if (norm>0.0) then
+      if (norm>zero) then
          profile(i) = profile(i)/norm
       else
          profile(i) = mpl%msv%valr

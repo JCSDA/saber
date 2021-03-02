@@ -10,7 +10,7 @@ module type_tree
 
 use atlas_module, only: atlas_geometry,atlas_indexkdtree
 use iso_c_binding, only: c_ptr
-use tools_const, only: pi,rad2deg
+use tools_const, only: half,two,pi,rad2deg
 use tools_func, only: lonlathash,lonlat2xyz,sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
@@ -20,7 +20,7 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-real(kind_real),parameter :: nn_inc = 1.5 !< Increase factor for the nearest neighbors numbers search
+real(kind_real),parameter :: nn_inc = 1.5_kind_real !< Increase factor for the nearest neighbors numbers search
 
 ! Tree derived type
 type tree_type
@@ -316,7 +316,7 @@ real(kind_real) :: ch
 @:probe_in()
 
 ! Spherical radius to chord
-ch = 2.0*sin(0.5*sr)
+ch = two*sin(half*sr)
 
 ! Count nearest neighbors
 call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,ch,nn)

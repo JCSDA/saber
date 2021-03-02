@@ -9,14 +9,14 @@
 !----------------------------------------------------------------------
 module tools_repro
 
-use tools_const, only: pi
+use tools_const, only: zero,one,pi
 use tools_kinds, only: kind_int,kind_real
 @:use_probe()
 
 implicit none
 
-logical :: repro = .true.                  !< Reproducibility flag
-real(kind_real),parameter :: rth = 1.0e-12 !< Reproducibility threshold
+logical :: repro = .true.        !< Reproducibility flag
+real(kind_real) :: rth = 1.0e-10 !< Reproducibility threshold
 
 interface eq
   #:for dtype in dtypes_irl
@@ -83,7 +83,7 @@ logical :: test
    if (repro) then
       test = indist(x,y)
    else
-      test = .not.(abs(x-y)>0.0)
+      test = .not.(abs(x-y)>zero)
    end if
 #:endif
 #{if dtype == 'logical'}# test = (x.eqv.y) #{endif}#
@@ -239,7 +239,7 @@ logical :: test
 
 test = .false.
 if (repro) then
-      if ((abs(x)>0.0).or.(abs(y)>0.0)) then
+      if ((abs(x)>zero).or.(abs(y)>zero)) then
       test = abs(x-y)<rth*(abs(x+y))
    else
       test = .true.

@@ -26,7 +26,7 @@ use netcdf, only: nf90_clobber,nf90_close,nf90_create,nf90_def_dim,nf90_def_var,
  & nf90_global,nf90_inq_dimid,nf90_inquire_dimension,nf90_inquire_variable,nf90_inq_varid,nf90_netcdf4,nf90_noerr,nf90_nowrite, &
  & nf90_open,nf90_put_var,nf90_share
 use tools_atlas, only: create_atlas_function_space
-use tools_const, only: deg2rad,rad2deg,req,ps,pi
+use tools_const, only: zero,quarter,half,one,four,thousand,pi,deg2rad,rad2deg,req,ps
 use tools_func, only: lonlatmod
 use tools_kinds,only: kind_int,kind_signed_char,kind_float,kind_double,kind_real,nc_kind_int,nc_kind_real
 use tools_repro, only: inf
@@ -39,8 +39,8 @@ use type_tree, only: tree_type
 
 implicit none
 
-real(kind_real),parameter :: qmin = 1.0e-6 !< Minimum specific humidity value in the log variable change
-character(len=1024) :: zone = 'C+I'        !< Computation zone for AROME ('C', 'C+I' or 'C+I+E')
+real(kind_real),parameter :: qmin = 1.0e-6_kind_real !< Minimum specific humidity value in the log variable change
+character(len=1024) :: zone = 'C+I'                  !< Computation zone for AROME ('C', 'C+I' or 'C+I+E')
 
 ! Model derived type
 type model_type
@@ -423,7 +423,7 @@ elseif (mpl%nproc>1) then
          deallocate(lonlattile_to_proc)
       else
          ! Unstructured grid
-         if ((model%ntile>1).and.inf(sum(model%area),4.0*pi)) call mpl%abort('${subr}$', &
+         if ((model%ntile>1).and.inf(sum(model%area),four*pi)) call mpl%abort('${subr}$', &
  & 'unstructured grid requires a single tile and a global domain')
 
          ! Allocation

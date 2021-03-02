@@ -11,7 +11,7 @@ module type_ens
 use atlas_module, only: atlas_fieldset
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_max
 use netcdf, only: nf90_close,nf90_put_var
-use tools_const, only: deg2rad,rad2deg,req
+use tools_const, only: zero,one,deg2rad,rad2deg,req
 use tools_func, only: sphere_dist,lonlat2xyz,xyz2lonlat
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
 use tools_qsort, only: qsort
@@ -253,7 +253,7 @@ do isub=1,ens%nsub
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
       call ens%mean(isub)%add_fields(ens%mem(ie))
    end do
-   call ens%mean(isub)%mult_fields(1.0/real(ens%ne/ens%nsub,kind_real))
+   call ens%mean(isub)%mult_fields(one/real(ens%ne/ens%nsub,kind_real))
 end do
 
 ! Probe out
@@ -312,8 +312,8 @@ do isub=1,ens%nsub
 end do
 
 ! Normalize
-call ens%m2%mult_fields(1.0/real(ens%ne-ens%nsub,kind_real))
-call ens%m4%mult_fields(1.0/real(ens%ne,kind_real))
+call ens%m2%mult_fields(one/real(ens%ne-ens%nsub,kind_real))
+call ens%m4%mult_fields(one/real(ens%ne,kind_real))
 
 ! Probe out
 @:probe_out()
@@ -684,8 +684,8 @@ real(kind_real) :: pert(geom%nc0a,geom%nl0,nam%nv)
 fld_copy = fld
 
 ! Apply ensemble covariance formula
-fld = 0.0
-norm = 1.0/real(ens%ne-1,kind_real)
+fld = zero
+norm = one/real(ens%ne-1,kind_real)
 do ie=1,ens%ne
    ! Get perturbation on subset Sc0
    call ens%get_c0(mpl,nam,geom,'pert',ie,pert)
@@ -748,7 +748,7 @@ real(kind_real) :: alpha(ens%ne),norm
 @:probe_in()
 
 ! Apply ensemble covariance formula for a Dirac function
-norm = 1.0/real(ens%ne-1,kind_real)
+norm = one/real(ens%ne-1,kind_real)
 do ie=1,ens%ne
    ! Get perturbation on subset Sc0
    call ens%get_c0(mpl,ivdir,geom,'pert',ie,fld_c0a(:,:,1))
@@ -757,7 +757,7 @@ do ie=1,ens%ne
    if (mpl%myproc==iprocdir) alpha(ie) = fld_c0a(ic0adir,il0dir,1)
 end do
 call mpl%f_comm%broadcast(alpha,iprocdir-1)
-fld = 0.0
+fld = zero
 do ie=1,ens%ne
    ! Get perturbation on subset Sc0
    call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
@@ -831,7 +831,7 @@ kurt = mpl%msv%valr
 do iv=1,nam%nv
    do il0=1,geom%nl0
       do ic0a=1,geom%nc0a
-         if (m2(ic0a,il0,iv)>0.0) kurt(ic0a,il0,iv) = m4(ic0a,il0,iv)/m2(ic0a,il0,iv)**2
+         if (m2(ic0a,il0,iv)>zero) kurt(ic0a,il0,iv) = m4(ic0a,il0,iv)/m2(ic0a,il0,iv)**2
       end do
    end do
 end do
@@ -882,7 +882,7 @@ do iv=1,nam%nv
             call qsort(ens%ne,ens_loc,order(:,iloc))
 
             ! Normalize ensemble
-            norm = 1.0/(maxval(ens_loc)-minval(ens_loc))
+            norm = one/(maxval(ens_loc)-minval(ens_loc))
             ens_norm(:,iloc) = (ens_loc-minval(ens_loc))*norm
 
             ! Compute ensemble steps

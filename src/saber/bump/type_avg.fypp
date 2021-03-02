@@ -10,6 +10,7 @@ module type_avg
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
+use tools_const, only: zero,one
 use tools_func, only: add,divide
 use tools_kinds, only: kind_real
 use type_avg_blk, only: avg_blk_type
@@ -512,16 +513,16 @@ do ic2a=0,samp%nc2a
    if ((ic2a==0).or.nam%local_diag) then
       ! Initialization
       if (any(bpar%avg_block)) then
-         avg%blk(ic2a,bpar%nbe)%cor = 0.0
-         cor = 0.0
-         avg%blk(ic2a,bpar%nbe)%nc1a_cor = 0.0
-         nc1a_cor = 0.0
-         avg%blk(ic2a,bpar%nbe)%m11asysq = 0.0
-         m11asysq = 0.0
-         avg%blk(ic2a,bpar%nbe)%m11sq = 0.0
-         m11sq = 0.0
-         avg%blk(ic2a,bpar%nbe)%nc1a = 0.0
-         nc1a = 0.0
+         avg%blk(ic2a,bpar%nbe)%cor = zero
+         cor = zero
+         avg%blk(ic2a,bpar%nbe)%nc1a_cor = zero
+         nc1a_cor = zero
+         avg%blk(ic2a,bpar%nbe)%m11asysq = zero
+         m11asysq = zero
+         avg%blk(ic2a,bpar%nbe)%m11sq = zero
+         m11sq = zero
+         avg%blk(ic2a,bpar%nbe)%nc1a = zero
+         nc1a = zero
 
          ! Block averages
          do ib=1,bpar%nb
@@ -530,10 +531,10 @@ do ic2a=0,samp%nc2a
                do il0=1,geom%nl0
                   do jl0r=1,bpar%nl0r(ib)
                      ! Weight
-                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
-                        bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
+                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>zero) then
+                        bwgtsq = one/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
                      else
-                        bwgtsq = 0.0
+                        bwgtsq = zero
                      end if
 
                      ! Compute sum
@@ -625,10 +626,10 @@ do ic2a=0,samp%nc2a
    if ((ic2a==0).or.nam%local_diag) then
       if (any(bpar%avg_block)) then
          ! Initialization
-         avg%blk(ic2a,bpar%nbe)%m11sta = 0.0
-         m11sta = 0.0
-         avg%blk(ic2a,bpar%nbe)%stasq = 0.0
-         stasq = 0.0
+         avg%blk(ic2a,bpar%nbe)%m11sta = zero
+         m11sta = zero
+         avg%blk(ic2a,bpar%nbe)%stasq = zero
+         stasq = zero
 
          ! Block averages
          do ib=1,bpar%nb
@@ -637,10 +638,10 @@ do ic2a=0,samp%nc2a
                do il0=1,geom%nl0
                   do jl0r=1,bpar%nl0r(ib)
                      ! Weight
-                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
-                        bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
+                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>zero) then
+                        bwgtsq = one/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
                      else
-                        bwgtsq = 0.0
+                        bwgtsq = zero
                      end if
 
                      ! Compute sum
@@ -721,10 +722,10 @@ do ic2a=0,samp%nc2a
    if ((ic2a==0).or.nam%local_diag) then
       if (any(bpar%avg_block)) then
          ! Initialization
-         avg%blk(ic2a,bpar%nbe)%m11lrm11 = 0.0
-         m11lrm11 = 0.0
-         avg%blk(ic2a,bpar%nbe)%m11lrm11asy = 0.0
-         m11lrm11asy = 0.0
+         avg%blk(ic2a,bpar%nbe)%m11lrm11 = zero
+         m11lrm11 = zero
+         avg%blk(ic2a,bpar%nbe)%m11lrm11asy = zero
+         m11lrm11asy = zero
 
          ! Block averages
          do ib=1,bpar%nb
@@ -733,10 +734,10 @@ do ic2a=0,samp%nc2a
                do il0=1,geom%nl0
                   do jl0r=1,bpar%nl0r(ib)
                      ! Weight
-                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>0.0) then
-                        bwgtsq = 1.0/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
+                     if (avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)>zero) then
+                        bwgtsq = one/avg_wgt%blk(0,ib)%m2m2asy(1,jl0r,il0)
                      else
-                        bwgtsq = 0.0
+                        bwgtsq = zero
                      end if
 
                      ! Compute sum

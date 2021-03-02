@@ -11,6 +11,7 @@
 !----------------------------------------------------------------------
 module tools_wrfda
 
+use tools_const, only: zero,one
 use tools_kinds, only: kind_real
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -64,7 +65,7 @@ allocate(laminvet(n,n))
 
 ! Initialization
 work = a
-laminvet = 0.0
+laminvet = zero
 
 ! EOF decomposition
 call da_eof_decomposition(mpl,n,work,evec,eval)
@@ -76,16 +77,16 @@ if (present(mmax)) then
 else
    if (present(var_th)) then
       ! Based on variance threshold
-      summ = 0.0
+      summ = zero
       do m=1,n
          summ = summ+eval(m)
       end do
       total_variance = summ
-      cumul_variance = 0.0
+      cumul_variance = zero
       lmmax = n
       do m=1,n
          cumul_variance = cumul_variance+eval(m)/total_variance
-         if (cumul_variance>1.0-var_th ) then
+         if (cumul_variance>one-var_th ) then
             lmmax = m-1
             exit
          end if
@@ -106,7 +107,7 @@ end do
 ! <a,a>^{-1} = E . Lam{-1} . E^T:
 do k=1,n
    do k2=1,k
-      summ = 0.0
+      summ = zero
       do m=1,n
          summ = summ+evec(k,m)*laminvet(m,k2)
       end do
@@ -161,7 +162,7 @@ real(kind_real) :: work_array(1:3*kz-1),ecopy(1:kz,1:kz),lcopy(1:kz)
 ! Initialization
 work = 3*kz-1
 ecopy = bx
-lcopy = 0.0
+lcopy = zero
 
 ! Perform global eigenvalue decomposition using LAPACK software
 call dsyev('V','U',kz,ecopy,kz,lcopy,work_array,work,ierr)

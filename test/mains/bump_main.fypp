@@ -13,6 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_comm
 use fckit_pathname_module, only: fckit_pathname
 use iso_c_binding, only: c_int,c_char
 use iso_fortran_env, only: output_unit
+use tools_kinds, only: kind_real
 use type_bump, only: bump_type
 use type_model, only: model_type
 use type_mpl, only: mpl_type
@@ -50,7 +51,7 @@ end do
 
 ! Set missing values
 mpl%msv%vali = -999
-mpl%msv%valr = -999.0
+mpl%msv%valr = -999.0_kind_real
 
 ! Get main instance index
 @:get_instance(main)

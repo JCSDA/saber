@@ -11,7 +11,7 @@ module type_lct_blk
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 use netcdf, only: nf90_close,nf90_put_var
 !$ use omp_lib
-use tools_const, only: reqkm,rad2deg
+use tools_const, only: zero,tenth,half,one,two,reqkm,rad2deg
 use tools_func, only: gau2gc,lonlatmod,fit_lct,lct_d2h,check_cond,Dmin
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
 use tools_repro, only: rth,inf,sup,eq
@@ -111,7 +111,7 @@ allocate(lct_blk%D(4,lct_blk%nscales,samp%nc1a,geom%nl0))
 allocate(lct_blk%coef(lct_blk%nscales,samp%nc1a,geom%nl0))
 allocate(lct_blk%qc_c1a(samp%nc1a,geom%nl0))
 allocate(lct_blk%qc_c0a(geom%nc0a,geom%nl0))
-if (nam%diag_rhflt>0.0) then
+if (nam%diag_rhflt>zero) then
    allocate(lct_blk%fit_filt(bpar%nc3(ib),bpar%nl0r(ib),samp%nc1a,geom%nl0))
    allocate(lct_blk%D_filt(4,lct_blk%nscales,samp%nc1a,geom%nl0))
    allocate(lct_blk%coef_filt(lct_blk%nscales,samp%nc1a,geom%nl0))
@@ -320,7 +320,7 @@ vunit_id = mpl%nc_var_define_or_get(ncid,'vunit',nc_kind_real,(/nl0_id/))
 l0rl0_to_l0_id = mpl%nc_var_define_or_get(grpid,'l0rl0_to_l0',nc_kind_int,(/nl0r_id,nl0_id/))
 raw_id = mpl%nc_var_define_or_get(grpid,'raw',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
 fit_id = mpl%nc_var_define_or_get(grpid,'fit',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
-if (nam%diag_rhflt>0.0) fit_filt_id = mpl%nc_var_define_or_get(grpid,'fit_filt',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+if (nam%diag_rhflt>zero) fit_filt_id = mpl%nc_var_define_or_get(grpid,'fit_filt',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
 
 ! Write coordinates
 call mpl%ncerr('${subr}$',nf90_put_var(grpid,lon_id,lon))
@@ -331,7 +331,7 @@ call mpl%ncerr('${subr}$',nf90_put_var(ncid,vunit_id,geom%vunitavg))
 call mpl%ncerr('${subr}$',nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib)))
 call mpl%ncerr('${subr}$',nf90_put_var(grpid,raw_id,lct_blk%raw))
 call mpl%ncerr('${subr}$',nf90_put_var(grpid,fit_id,lct_blk%fit))
-if (nam%diag_rhflt>0.0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,fit_filt_id,lct_blk%fit_filt))
+if (nam%diag_rhflt>zero) call mpl%ncerr('${subr}$',nf90_put_var(grpid,fit_filt_id,lct_blk%fit_filt))
 
 ! Close file
 call mpl%ncerr('${subr}$',nf90_close(ncid))
@@ -380,7 +380,7 @@ type(minim_type) :: minim
 associate(ib=>lct_blk%ib)
 
 ! Initialization
-lct_blk%raw = 0.0
+lct_blk%raw = zero
 
 do il0=1,geom%nl0
    write(mpl%info,'(a13,a,i3,a)') '','Level ',nam%levs(il0),':'
@@ -391,12 +391,12 @@ do il0=1,geom%nl0
       select case (trim(nam%minim_algo))
       case ('hooke')
          ! Hooke parameters
-         minim%hooke_rho = 0.5
-         minim%hooke_tol = 1.0e-4
+         minim%hooke_rho = half
+         minim%hooke_tol = 1.0e-4_kind_real
          minim%hooke_itermax = 10
       case ('praxis')
          ! Praxis parameters
-         minim%praxis_tol = 1.0
+         minim%praxis_tol = one
          minim%praxis_itermax = 5
       end select
 
@@ -421,7 +421,7 @@ do il0=1,geom%nl0
 
       if (samp%smask_c1a(ic1a,il0)) then
          ! Initialization
-         norm_raw = 0.0
+         norm_raw = zero
 
          ! Compute correlation
          do jl0r=1,bpar%nl0r(ib)
@@ -430,10 +430,10 @@ do il0=1,geom%nl0
                if (samp%smask_c3a(ic1a,jc3,jl0)) then
                   do jsub=1,mom_blk%nsub
                      den = mom_blk%m2_1(ic1a,il0,jsub)*mom_blk%m2_2(ic1a,jc3,jl0,jsub)
-                     if (den>0.0) then
+                     if (den>zero) then
                         lct_blk%raw(jc3,jl0r,ic1a,il0) = lct_blk%raw(jc3,jl0r,ic1a,il0)+ &
  & mom_blk%m11(ic1a,jc3,jl0r,il0,jsub)/sqrt(den)
-                        norm_raw(jc3,jl0r) = norm_raw(jc3,jl0r)+1.0
+                        norm_raw(jc3,jl0r) = norm_raw(jc3,jl0r)+one
                      end if
                   end do
                end if
@@ -443,7 +443,7 @@ do il0=1,geom%nl0
          ! Normalize
          do jl0r=1,bpar%nl0r(ib)
             do jc3=1,nam%nc3
-               if (norm_raw(jc3,jl0r)>0.0) lct_blk%raw(jc3,jl0r,ic1a,il0) = lct_blk%raw(jc3,jl0r,ic1a,il0)/norm_raw(jc3,jl0r)
+               if (norm_raw(jc3,jl0r)>zero) lct_blk%raw(jc3,jl0r,ic1a,il0) = lct_blk%raw(jc3,jl0r,ic1a,il0)/norm_raw(jc3,jl0r)
             end do
          end do
 
@@ -475,7 +475,7 @@ do il0=1,geom%nl0
                   if (minim%dmask(jc3,jl0r)) then
                      distsq = minim%dxsq(jc3,jl0r)+minim%dysq(jc3,jl0r)
                      if (sup(lct_blk%raw(jc3,jl0r,ic1a,il0),nam%lct_cor_min).and.inf(lct_blk%raw(jc3,jl0r,ic1a,il0), &
- & 1.0_kind_real).and.(distsq>0.0)) Dh(jc3) = -distsq/(2.0*log(lct_blk%raw(jc3,jl0r,ic1a,il0)))
+ & one).and.(distsq>zero)) Dh(jc3) = -distsq/(two*log(lct_blk%raw(jc3,jl0r,ic1a,il0)))
                   end if
                end do
             end if
@@ -490,8 +490,8 @@ do il0=1,geom%nl0
          do jl0r=1,bpar%nl0r(ib)
             if (minim%dmask(jc3,jl0r)) then
                distsq = minim%dzsq(jc3,jl0r)
-               if (inf(abs(lct_blk%raw(jc3,jl0r,ic1a,il0)),1.0_kind_real).and.(distsq>0.0)) then
-                  if (lct_blk%raw(jc3,jl0r,ic1a,il0)>0.0) Dv(jl0r) = -distsq/(2.0*log(lct_blk%raw(jc3,jl0r,ic1a,il0)))
+               if (inf(abs(lct_blk%raw(jc3,jl0r,ic1a,il0)),one).and.(distsq>zero)) then
+                  if (lct_blk%raw(jc3,jl0r,ic1a,il0)>zero) Dv(jl0r) = -distsq/(two*log(lct_blk%raw(jc3,jl0r,ic1a,il0)))
                   Dv_valid(jl0r) = .true.
                end if
             end if
@@ -502,11 +502,11 @@ do il0=1,geom%nl0
                if (count(mpl%msv%isnot(Dv))>0) then
                   Dvbar = sum(Dv,mask=mpl%msv%isnot(Dv))/real(count(mpl%msv%isnot(Dv)),kind_real)
                else
-                  Dvbar = 1.0/rth
+                  Dvbar = one/rth
                end if
             end if
          else
-             Dvbar = 0.0
+             Dvbar = zero
          end if
 
          if (mpl%msv%isnot(Dhbar).and.(mpl%msv%isnot(Dvbar))) then
@@ -514,32 +514,32 @@ do il0=1,geom%nl0
             do iscales=1,lct_blk%nscales
                minim%guess((iscales-1)*4+1:(iscales-1)*4+3) = (/Dhbar,Dhbar,Dvbar/)*nam%lct_scale_ratio**(iscales-1)
                if (lct_blk%nscales==1) then
-                  minim%binf((iscales-1)*4+1:(iscales-1)*4+3) = (/1.0/nam%lct_scale_ratio,1.0/nam%lct_scale_ratio, &
- & 1.0/nam%lct_scale_ratio/)*minim%guess(1:3)
+                  minim%binf((iscales-1)*4+1:(iscales-1)*4+3) = (/one/nam%lct_scale_ratio,one/nam%lct_scale_ratio, &
+ & one/nam%lct_scale_ratio/)*minim%guess(1:3)
                   minim%bsup((iscales-1)*4+1:(iscales-1)*4+3) = (/nam%lct_scale_ratio,nam%lct_scale_ratio,nam%lct_scale_ratio/) &
  & *minim%guess(1:3)
                else
-                  minim%binf((iscales-1)*4+1:(iscales-1)*4+3) = (/1.0/sqrt(nam%lct_scale_ratio),1.0/sqrt(nam%lct_scale_ratio), &
- & 1.0/sqrt(nam%lct_scale_ratio)/) &
+                  minim%binf((iscales-1)*4+1:(iscales-1)*4+3) = (/one/sqrt(nam%lct_scale_ratio),one/sqrt(nam%lct_scale_ratio), &
+ & one/sqrt(nam%lct_scale_ratio)/) &
  & *minim%guess(1:3)*nam%lct_scale_ratio**(iscales-1)
                   minim%bsup((iscales-1)*4+1:(iscales-1)*4+3) = (/sqrt(nam%lct_scale_ratio),sqrt(nam%lct_scale_ratio), &
  & sqrt(nam%lct_scale_ratio)/)*minim%guess(1:3)*nam%lct_scale_ratio**(iscales-1)
                end if
-               minim%guess((iscales-1)*4+4) = 0.0
+               minim%guess((iscales-1)*4+4) = zero
                if (nam%lct_diag(iscales)) then
                   ! Diagonal tensor
-                  minim%binf((iscales-1)*4+4) = -1.0e-12
-                  minim%bsup((iscales-1)*4+4) = 1.0e-12
+                  minim%binf((iscales-1)*4+4) = -1.0e-12_kind_real
+                  minim%bsup((iscales-1)*4+4) = 1.0e-12_kind_real
                else
                   ! Non-diagonal tensor
-                  minim%binf((iscales-1)*4+4) = -1.0
-                  minim%bsup((iscales-1)*4+4) = 1.0
+                  minim%binf((iscales-1)*4+4) = -one
+                  minim%bsup((iscales-1)*4+4) = one
                end if
             end do
             do iscales=1,lct_blk%nscales-1
-               minim%guess(lct_blk%nscales*4+1) = 1.0/real(lct_blk%nscales,kind_real)
-               minim%binf(lct_blk%nscales*4+1) = 0.1
-               minim%bsup(lct_blk%nscales*4+1) = 1.0
+               minim%guess(lct_blk%nscales*4+1) = one/real(lct_blk%nscales,kind_real)
+               minim%binf(lct_blk%nscales*4+1) = tenth
+               minim%bsup(lct_blk%nscales*4+1) = one
             end do
 
             ! Fill minim
@@ -561,27 +561,27 @@ do il0=1,geom%nl0
             end do
             if (lct_blk%nscales>1) then
                lct_blk%coef(1:lct_blk%nscales-1,ic1a,il0) = minim%x(lct_blk%nscales*4+1:lct_blk%nscales*4+lct_blk%nscales-1)
-               lct_blk%coef(lct_blk%nscales,ic1a,il0) = 1.0-sum(lct_blk%coef(1:lct_blk%nscales-1,ic1a,il0))
+               lct_blk%coef(lct_blk%nscales,ic1a,il0) = one-sum(lct_blk%coef(1:lct_blk%nscales-1,ic1a,il0))
             else
-               lct_blk%coef(1,ic1a,il0) = 1.0
+               lct_blk%coef(1,ic1a,il0) = one
             end if
 
             ! Set vertical value at zero for the 2D case
-            if (bpar%nl0r(ib)==1) lct_blk%D(3,:,ic1a,il0) = 0.0
+            if (bpar%nl0r(ib)==1) lct_blk%D(3,:,ic1a,il0) = zero
 
             ! Check tensor validity
             valid = .true.
             do iscales=1,lct_blk%nscales
                if (valid) then
                   call check_cond(lct_blk%D(1,iscales,ic1a,il0),lct_blk%D(2,iscales,ic1a,il0),lct_blk%D(4,iscales,ic1a,il0),valid)
-                  if (bpar%nl0r(ib)>1) valid = valid.and.(lct_blk%D(3,iscales,ic1a,il0)>0.0)
-                  valid = valid.and.(lct_blk%coef(iscales,ic1a,il0)>0.0)
-                  if (lct_blk%nscales>1) valid = valid.and.(inf(lct_blk%coef(iscales,ic1a,il0),1.0_kind_real))
+                  if (bpar%nl0r(ib)>1) valid = valid.and.(lct_blk%D(3,iscales,ic1a,il0)>zero)
+                  valid = valid.and.(lct_blk%coef(iscales,ic1a,il0)>zero)
+                  if (lct_blk%nscales>1) valid = valid.and.(inf(lct_blk%coef(iscales,ic1a,il0),one))
                end if
             end do
             if (valid) then
                do iscales=1,lct_blk%nscales
-                  if (nam%lct_diag(iscales)) lct_blk%D(4,iscales,ic1a,il0) = 0.0
+                  if (nam%lct_diag(iscales)) lct_blk%D(4,iscales,ic1a,il0) = zero
                end do
 
                ! Rebuild fit
@@ -589,8 +589,8 @@ do il0=1,geom%nl0
  & lct_blk%D(:,:,ic1a,il0),lct_blk%coef(:,ic1a,il0),lct_blk%fit(:,:,ic1a,il0))
 
                ! Quality control
-               lct_blk%qc_c1a(ic1a,il0) = 0.0
-               norm = 0.0
+               lct_blk%qc_c1a(ic1a,il0) = zero
+               norm = zero
                do jl0r=1,bpar%nl0r(ib)
                   jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
                   do jc3=1,nam%nc3
@@ -598,7 +598,7 @@ do il0=1,geom%nl0
                         if (mpl%msv%isnot(lct_blk%fit(jc3,jl0r,ic1a,il0)).and.lct_blk%raw(jc3,jl0r,ic1a,il0)>nam%lct_qc_th) then
                            lct_blk%qc_c1a(ic1a,il0) = lct_blk%qc_c1a(ic1a,il0)+ &
  & (lct_blk%fit(jc3,jl0r,ic1a,il0)-lct_blk%raw(jc3,jl0r,ic1a,il0))**2
-                           norm = norm+1.0
+                           norm = norm+one
                         end if
                      end if
                   end do
@@ -695,7 +695,7 @@ logical,allocatable :: dmask(:,:)
 associate(ib=>lct_blk%ib)
 
 ! Allocation
-if (nam%diag_rhflt>0.0) allocate(fld_filt_c2a(samp%nc2a))
+if (nam%diag_rhflt>zero) allocate(fld_filt_c2a(samp%nc2a))
 
 do il0=1,geom%nl0
    do iscales=1,lct_blk%nscales
@@ -707,7 +707,7 @@ do il0=1,geom%nl0
             fld_c2a = lct_blk%coef(iscales,samp%c2a_to_c1a,il0)
          end if
 
-         if (nam%diag_rhflt>0.0) then
+         if (nam%diag_rhflt>zero) then
             ! Copy
             fld_filt_c2a = fld_c2a
 
@@ -718,15 +718,15 @@ do il0=1,geom%nl0
 
          ! Fill missing values
          call samp%diag_fill(mpl,fld_c2a)
-         if (nam%diag_rhflt>0.0) call samp%diag_fill(mpl,fld_filt_c2a)
+         if (nam%diag_rhflt>zero) call samp%diag_fill(mpl,fld_filt_c2a)
 
          ! Copy
          if (icomp<=4) then
             lct_blk%D(icomp,iscales,samp%c2a_to_c1a,il0) = fld_c2a
-            if (nam%diag_rhflt>0.0) lct_blk%D_filt(icomp,iscales,:,il0) = fld_filt_c2a
+            if (nam%diag_rhflt>zero) lct_blk%D_filt(icomp,iscales,:,il0) = fld_filt_c2a
          else
             lct_blk%coef(iscales,samp%c2a_to_c1a,il0) = fld_c2a
-            if (nam%diag_rhflt>0.0) lct_blk%coef_filt(iscales,:,il0) = fld_filt_c2a
+            if (nam%diag_rhflt>zero) lct_blk%coef_filt(iscales,:,il0) = fld_filt_c2a
          end if
       end do
    end do
@@ -737,7 +737,7 @@ do il0=1,geom%nl0
    lct_blk%qc_c1a(samp%c2a_to_c1a,il0) = fld_c2a
 end do
 
-if (nam%diag_rhflt>0.0) then
+if (nam%diag_rhflt>zero) then
    ! Allocation
    allocate(dxsq(nam%nc3,bpar%nl0r(ib)))
    allocate(dysq(nam%nc3,bpar%nl0r(ib)))
@@ -754,9 +754,9 @@ if (nam%diag_rhflt>0.0) then
                if (valid) then
                   call check_cond(lct_blk%D_filt(1,iscales,ic1a,il0),lct_blk%D_filt(2,iscales,ic1a,il0), &
  & lct_blk%D_filt(4,iscales,ic1a,il0),valid)
-                  if (bpar%nl0r(ib)>1) valid = valid.and.(lct_blk%D_filt(3,iscales,ic1a,il0)>0.0)
-                  valid = valid.and.(lct_blk%coef_filt(iscales,ic1a,il0)>0.0)
-                  if (lct_blk%nscales>1) valid = valid.and.(lct_blk%coef_filt(iscales,ic1a,il0)<1.0)
+                  if (bpar%nl0r(ib)>1) valid = valid.and.(lct_blk%D_filt(3,iscales,ic1a,il0)>zero)
+                  valid = valid.and.(lct_blk%coef_filt(iscales,ic1a,il0)>zero)
+                  if (lct_blk%nscales>1) valid = valid.and.(lct_blk%coef_filt(iscales,ic1a,il0)<one)
                end if
             end do
             if (valid) then
@@ -808,7 +808,7 @@ if (nam%diag_rhflt>0.0) then
 end if
 
 ! Release memory
-if (nam%diag_rhflt>0.0) deallocate(fld_filt_c2a)
+if (nam%diag_rhflt>zero) deallocate(fld_filt_c2a)
 
 ! End associate
 end associate
@@ -854,7 +854,7 @@ allocate(D(4,lct_blk%nscales,samp%nc1a,geom%nl0))
 allocate(coef(lct_blk%nscales,samp%nc1a,geom%nl0))
 
 ! Initialization
-if (nam%diag_rhflt>0.0) then
+if (nam%diag_rhflt>zero) then
    D = lct_blk%D_filt
    coef = lct_blk%coef_filt
 else
@@ -883,7 +883,7 @@ do iscales=1,lct_blk%nscales
             D(1,iscales,ic1a,il0) = max(Dmin,D(1,iscales,ic1a,il0))
             D(2,iscales,ic1a,il0) = max(Dmin,D(2,iscales,ic1a,il0))
             if (bpar%nl0r(ib)>1) D(3,iscales,ic1a,il0) = max(Dmin,D(3,iscales,ic1a,il0))
-            D(4,iscales,ic1a,il0) = max(-1.0_kind_real+Dmin,min(D(4,iscales,ic1a,il0),1.0_kind_real-Dmin))
+            D(4,iscales,ic1a,il0) = max(-one+Dmin,min(D(4,iscales,ic1a,il0),one-Dmin))
 
             ! Copy diffusion tensor
             fld_c2a(ic2a,il0,1) = D(1,iscales,ic1a,il0)
@@ -923,7 +923,7 @@ do iscales=1,lct_blk%nscales
          if (geom%gmask_c0a(ic0a,il0)) then
             ! Length-scale = D determinant^{1/4}
             det = fld(ic0a,il0,1)*fld(ic0a,il0,2)-fld(ic0a,il0,4)**2
-            if (det>0.0) then
+            if (det>zero) then
                fld(ic0a,il0,2*4+3) = sqrt(sqrt(det))
             else
                call mpl%abort('${subr}$','non-valid horizontal diffusion tensor determinant, grid c0')
@@ -932,7 +932,7 @@ do iscales=1,lct_blk%nscales
       end do
       call mpl%f_comm%allreduce(sum(fld(:,il0,2*4+3),mpl%msv%isnot(fld(:,il0,2*4+3))),Lavg_tot,fckit_mpi_sum())
       call mpl%f_comm%allreduce(real(count(mpl%msv%isnot(fld(:,il0,2*4+3))),kind_real),norm_tot,fckit_mpi_sum())
-      if (norm_tot>0.0) then
+      if (norm_tot>zero) then
          write(mpl%info,'(a16,a,i3,a,f10.2,a,f10.2,a)') '','Level',nam%levs(il0),' ~> ', &
  & Lavg_tot/norm_tot*reqkm,' km / ',Lavg_tot/norm_tot*gau2gc*reqkm,' km'
          call mpl%flush

@@ -11,10 +11,10 @@ module type_bump
 use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
-use tools_const, only: req,deg2rad
+use tools_const, only: zero,one,req,deg2rad
 use tools_func, only: sphere_dist,lct_r2d
 use tools_kinds,only: kind_real
-use tools_repro,only: repro
+use tools_repro,only: repro,rth
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
 use type_cv, only: cv_type
@@ -33,9 +33,9 @@ use type_vbal, only: vbal_type
 
 implicit none
 
-integer,parameter :: dmsvali = -999           !< Default missing value for integers
-real(kind_real),parameter :: dmsvalr = -999.0 !< Default missing value for reals
-logical :: copy_ensemble = .false.            !< Deep copy of ensemble members
+integer,parameter :: dmsvali = -999                     !< Default missing value for integers
+real(kind_real),parameter :: dmsvalr = -999.0_kind_real !< Default missing value for reals
+logical :: copy_ensemble = .false.                      !< Deep copy of ensemble members
 
 ! BUMP derived type
 type bump_type
@@ -231,8 +231,9 @@ bump%mpl%msv%valr = dmsvalr
 if (present(msvali)) bump%mpl%msv%vali = msvali
 if (present(msvalr)) bump%mpl%msv%valr = msvalr
 
-! Set reproducibility parameter
+! Set reproducibility parameters
 repro = bump%nam%repro
+rth = bump%nam%rth
 
 ! Initialize listing
 bump%mpl%lunit = bump%mpl%msv%vali
@@ -1344,7 +1345,7 @@ case ('loc_D33')
    end do
 case ('loc_D12')
    if (.not.allocated(bump%cmat%blk(ib)%rh)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated in bump%copy_to_field')
-   fld_mga = 0.0
+   fld_mga = zero
 case ('loc_Dcoef')
    if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated in bump%copy_to_field')
@@ -1744,12 +1745,12 @@ type(fieldset_type) :: fieldset,fieldset_req,fieldset_reqsq,fieldset_vert,fields
 ! Initialization
 call bump%mpl%f_comm%allreduce(minval(bump%geom%hash_c0a),hash_min,fckit_mpi_min())
 call bump%mpl%f_comm%allreduce(maxval(bump%geom%hash_c0a),hash_max,fckit_mpi_max())
-hash_spread_inv = 1.0/(hash_max-hash_min)
+hash_spread_inv = one/(hash_max-hash_min)
 do iv=1,bump%nam%nv
    do ic0a=1,bump%geom%nc0a
       ic0 = bump%geom%c0a_to_c0(ic0a)
       fld_c0a(ic0a,:,iv) = max(min(1.0e-6_kind_real,(bump%geom%hash_c0a(ic0a)-hash_min)*hash_spread_inv), &
- & 1.0-1.0e-6_kind_real)
+ & one-1.0e-6_kind_real)
    end do
 end do
 
@@ -1769,11 +1770,11 @@ call fieldset_vertsq%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_
 call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a*req,fieldset_req)
 call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a*req**2,fieldset_reqsq)
-call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,(1.0+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)), &
+call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,(one+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)), &
  & fieldset_vert)
-call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,((1.0+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg))), &
+call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,((one+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg))), &
  & fieldset_vertsq)
-call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,((1.0+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)))**2, &
+call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,((one+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)))**2, &
  & fieldset_vertsq)
 
 ! Set parameter
@@ -1839,7 +1840,7 @@ if (bump%nam%check_apply_vbal) then
    allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv))
 
    ! Initialization
-   call bump%rng%rand(0.0_kind_real,1.0_kind_real,fld_c0a)
+   call bump%rng%rand(zero,one,fld_c0a)
 
    ! Create fieldset
    call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
@@ -1868,7 +1869,7 @@ if (bump%nam%check_apply_stddev) then
    allocate(fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv))
 
    ! Initialization
-   call bump%rng%rand(0.0_kind_real,1.0_kind_real,fld_c0a)
+   call bump%rng%rand(zero,one,fld_c0a)
 
    ! Create fieldset
    call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
@@ -1899,7 +1900,7 @@ if (bump%nam%check_apply_nicas) then
    allocate(pcv(n))
 
    ! Initialization
-   call bump%rng%rand(0.0_kind_real,1.0_kind_real,fld_c0a)
+   call bump%rng%rand(zero,one,fld_c0a)
 
    ! Create fieldset
    call fieldset%init(bump%mpl,bump%geom%nmga,bump%geom%nl0,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv), &

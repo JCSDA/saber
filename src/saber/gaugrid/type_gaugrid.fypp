@@ -11,16 +11,12 @@
 !----------------------------------------------------------------------
 module type_gaugrid
 
-use tools_const, only: pi,rad2deg
+use tools_const, only: zero,two,half,pi,rad2deg
 use tools_kinds, only: kind_real
 use tools_sp, only: splat
 @:use_probe()
 
 implicit none
-
-real(kind_real):: zero = 0.0_kind_real !< Zero
-real(kind_real):: two  = 2.0_kind_real !< Two
-real(kind_real):: half = 0.5_kind_real !< Half
 
 ! Gaussian grid derived type
 type gaussian_grid

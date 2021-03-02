@@ -13,6 +13,7 @@
 !----------------------------------------------------------------------
 module tools_asa007
 
+use tools_const, only: zero,one
 use tools_kinds, only: kind_real
 use tools_repro, only: inf,infeq
 use type_mpl, only: mpl_type
@@ -66,7 +67,7 @@ k = 0
 if (nn/=(n*(n+1))/2) then
    call mpl%abort('${subr}$','wrong size in Cholesky decomposition')
 end if
-w = 0.0
+w = zero
 
 ! Factorize column by column, ICOL = column number
 do icol=1,n
@@ -88,19 +89,19 @@ do icol=1,n
       end do
       l = l+1
       if (irow==icol) exit
-      if (abs(u(l))>0.0) then
+      if (abs(u(l))>zero) then
          u(k) = w/u(l)
       else
-         u(k) = 0.0
+         u(k) = zero
          if (inf(abs(x*a(k)),w**2)) call mpl%abort('${subr}$','matrix is not positive semi-definite')
       end if
    end do
 
    ! End of row, estimate relative accuracy of diagonal element
    if (infeq(abs(w),abs(eta*a(k)))) then
-      u(k) = 0.0
+      u(k) = zero
    else
-      if (w<0.0) call mpl%abort('${subr}$','matrix is not positive semi-definite')
+      if (w<zero) call mpl%abort('${subr}$','matrix is not positive semi-definite')
       u(k) = sqrt(w)
    end if
    j = j+icol
@@ -141,7 +142,7 @@ nrow = n
 if (nn/=(n*(n+1))/2) then
    call mpl%abort('${subr}$','wrong size in matrix inversion')
 end if
-w = 0.0
+w = zero
 
 ! Compute the Cholesky factorization of A
 call cholesky(mpl,n,nn,a,c)
@@ -151,7 +152,7 @@ irow = nrow
 ndiag = nn
 
 do
-   if (abs(c(ndiag))>0.0) then
+   if (abs(c(ndiag))>zero) then
       ! General case
       l = ndiag
       do i=irow,nrow
@@ -164,9 +165,9 @@ do
       do
          l = jcol
          if (icol==irow) then
-            x = 1.0/w(irow)
+            x = one/w(irow)
          else
-            x = 0.0
+            x = zero
          end if
          k = nrow
          do while (irow<k)
@@ -185,7 +186,7 @@ do
       ! Special case, zero diagonal element
       l = ndiag
       do j=irow,nrow
-         c(l) = 0.0
+         c(l) = zero
          l = l+j
       end do
    end if

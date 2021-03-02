@@ -175,7 +175,7 @@ type(ens_type),intent(inout) :: ens  !< Ensemble
 @:probe_in()
 
 ! Set artificially small local radius
-nam%local_rad = 1.0e-12
+nam%local_rad = 1.0e-12_kind_real
 
 ! Setup sampling
 write(mpl%info,'(a)') '-------------------------------------------------------------------'

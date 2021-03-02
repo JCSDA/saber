@@ -13,7 +13,7 @@ use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_node
  & atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_array
-use tools_const, only: pi,req,deg2rad,rad2deg,reqkm
+use tools_const, only: zero,one,four,hundred,pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,gridhash,independent_levels,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
  & cx_to_cxa,cx_to_proc,cx_to_cxu
 use tools_kinds, only: kind_int,kind_real,nc_kind_real,huge_real
@@ -381,19 +381,19 @@ call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
 call mpl%flush
 write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Number of redundant points:    ',(geom%nmg-geom%nc0), &
- & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*100.0,'%)'
+ & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*hundred,'%)'
 call mpl%flush
 write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
 call mpl%flush
 write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',geom%lat_min*rad2deg,' / ',geom%lat_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a10,a,f5.1,a)') '','Domain area (% of Earth area):',100.0*geom%area_max_c0/(4.0*pi),'%'
+write(mpl%info,'(a10,a,f5.1,a)') '','Domain area (% of Earth area):',hundred*geom%area_max_c0/(four*pi),'%'
 call mpl%flush
 write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
 call mpl%flush
 do il0=1,geom%nl0
    write(mpl%info,'(a13,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
- & 100.0*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
+ & hundred*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
 write(mpl%info,'(a10,a)') '','Vertical unit:'
@@ -638,7 +638,7 @@ else
 
    ! Initialization
    do imga=1,geom%nmga
-      rh_mga(imga) = 1.0
+      rh_mga(imga) = one
       sam_mga(imga) = imga
    end do
 
@@ -698,7 +698,7 @@ call mpl%f_comm%allgather(count(geom%myuniverse),proc_to_universe_size)
 ! Print results
 call mpl%flush
 do iproc=1,mpl%nproc
-   write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Task ',iproc,': ',100.0*real(proc_to_universe_size(iproc),kind_real) &
+   write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Task ',iproc,': ',hundred*real(proc_to_universe_size(iproc),kind_real) &
  & /real(mpl%nproc,kind_real),'%'
    call mpl%flush
 end do
@@ -1002,9 +1002,10 @@ call geom%com_mg%red(mpl,geom%hash_mga,geom%hash_c0a,.true.)
 if (geom%area_provided) then
    ! Provided data
    call geom%com_mg%red(mpl,geom%area_mga,area_c0a,.true.)
-elseif ((geom%lon_min<-0.9*pi).and.(geom%lon_max>0.9*pi).and.(geom%lat_min<-0.45*pi).and.(geom%lat_max>0.45*pi)) then
+elseif ((geom%lon_min<-0.9_kind_real*pi).and.(geom%lon_max>0.9_kind_real*pi) &
+ & .and.(geom%lat_min<-0.45_kind_real*pi).and.(geom%lat_max>0.45_kind_real*pi)) then
    ! Full sphere, equally distributed
-   area_c0a = 4.0*pi*real(geom%nc0a,kind_real)/real(geom%nc0,kind_real)
+   area_c0a = four*pi*real(geom%nc0a,kind_real)/real(geom%nc0,kind_real)
 else
    ! Limited Area Model, equally distributed
    call lonlat2xyz(mpl,geom%lon_min,geom%lat_min,xyz_sw(1),xyz_sw(2),xyz_sw(3))
@@ -1027,7 +1028,7 @@ call mpl%f_comm%allreduce(nc0_gmask,geom%nc0_gmask,fckit_mpi_sum())
 if (count(geom%gmask_hor_c0a)>0) then
    area_max_c0a = sum(area_c0a,mask=geom%gmask_hor_c0a)
 else
-   area_max_c0a = 0.0
+   area_max_c0a = zero
 end if
 do il0=1,geom%nl0
    norm_c0a(il0) = count(geom%gmask_c0a(:,il0))
@@ -1035,8 +1036,8 @@ do il0=1,geom%nl0
       area_ver_c0a(il0) = sum(area_c0a,mask=geom%gmask_c0a(:,il0))
       vunit_hor_c0a(il0) = sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
    else
-      area_ver_c0a(il0) = 0.0
-      vunit_hor_c0a(il0) = 0.0
+      area_ver_c0a(il0) = zero
+      vunit_hor_c0a(il0) = zero
    end if
 end do
 call mpl%f_comm%allreduce(norm_c0a,norm_c0,fckit_mpi_sum())
@@ -1141,7 +1142,7 @@ norm_c0u = count(geom%gmask_hor_c0u)
 if (norm_c0u>0) then
    geom%area_max_c0u = sum(area_c0u,mask=geom%gmask_hor_c0u)
 else
-   geom%area_max_c0u = 0.0
+   geom%area_max_c0u = zero
 end if
 
 ! Check that Sc0 points in universe are not redundant
@@ -1536,7 +1537,7 @@ do ibnda=1,geom%nbnda(il0)
    call det(geom%v2bnda(:,ibnda,il0),geom%vabnda(:,ibnda,il0),vp,t(4),cflag(4))
    t(1) = -t(1)
    t(3) = -t(3)
-   if ((all(t>0.0).or.all(t<0.0)).and.all(cflag)) then
+   if ((all(t>zero).or.all(t<zero)).and.all(cflag)) then
       valid = .false.
       exit
    end if
@@ -1834,7 +1835,7 @@ lnr = 0
 do while (.not.valid)
    ! Generate random lon/lat
    call rng%rand(-pi,pi,lon)
-   call rng%rand(-1.0_kind_real,1.0_kind_real,lat)
+   call rng%rand(-one,one,lat)
    lat = asin(lat)
 
    ! Get index from lon/lat

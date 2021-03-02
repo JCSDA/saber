@@ -10,6 +10,7 @@ module type_probe
 
 use iso_fortran_env, only: output_unit
 !$ use omp_lib
+use tools_const, only: zero
 use tools_kinds, only: kind_real,huge_real
 
 implicit none
@@ -141,12 +142,12 @@ if (.not.allocated(probe%instance(iinst)%trace)) then
    call system_clock(count_rate=probe%instance(iinst)%count_rate,count_max=probe%instance(iinst)%count_max)
    do isubr=0,${subr_list_size}$-1
       probe%instance(iinst)%timing(isubr)%n = 0
-      probe%instance(iinst)%timing(isubr)%total = 0.0
+      probe%instance(iinst)%timing(isubr)%total = zero
       probe%instance(iinst)%timing(isubr)%min = huge_real
-      probe%instance(iinst)%timing(isubr)%max = 0.0
-      probe%instance(iinst)%timing(isubr)%total_own = 0.0
+      probe%instance(iinst)%timing(isubr)%max = zero
+      probe%instance(iinst)%timing(isubr)%total_own = zero
       probe%instance(iinst)%timing(isubr)%min_own = huge_real
-      probe%instance(iinst)%timing(isubr)%max_own = 0.0
+      probe%instance(iinst)%timing(isubr)%max_own = zero
    end do
    probe%instance(iinst)%timing_associated = .false.
 end if

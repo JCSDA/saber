@@ -63,7 +63,7 @@ do ilon=1,model%nlon
       model%lat(img) = real(lat(ilon,ilat),kind_real)*deg2rad
    end do
 end do
-model%area = 4.0*pi/real(model%nmg,kind_real)
+model%area = four*pi/real(model%nmg,kind_real)
 model%mask = .true.
 
 ! Vertical unit
@@ -74,9 +74,9 @@ do img=1,model%nmg
       P0 = sum(delp(ilon,ilat,:))
       do il0=1,nam%nl
          if (nam%levs(il0)==model%nlev) then
-            model%vunit(img,il0) = log(P0-0.5*delp(ilon,ilat,model%nlev))
+            model%vunit(img,il0) = log(P0-half*delp(ilon,ilat,model%nlev))
          else
-            model%vunit(img,il0) = log(P0-sum(delp(ilon,ilat,nam%levs(il0)+1:model%nlev))-0.5*delp(ilon,ilat,nam%levs(il0)))
+            model%vunit(img,il0) = log(P0-sum(delp(ilon,ilat,nam%levs(il0)+1:model%nlev))-half*delp(ilon,ilat,nam%levs(il0)))
          end if
       end do
       if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(P0)

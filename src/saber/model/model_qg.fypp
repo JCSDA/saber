@@ -79,7 +79,7 @@ do ilon=1,model%nlon
       model%lat(img) = lat(ilon,ilat)
       model%area(img) = area(ilon,ilat)/req**2
       do il0=1,model%nl0
-        model%mask(img,il0) = (lmask(ilon,ilat,nam%levs(il0))>0.5)
+        model%mask(img,il0) = (lmask(ilon,ilat,nam%levs(il0))>half)
       end do
    end do
 end do

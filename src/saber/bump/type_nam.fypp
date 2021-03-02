@@ -11,7 +11,7 @@ module type_nam
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_fortran_env, only: output_unit
-use tools_const, only: pi,req,deg2rad,rad2deg
+use tools_const, only: zero,hundredth,half,one,ten,pi,req,deg2rad,rad2deg
 use tools_kinds,only: kind_real,huge_real
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -37,6 +37,7 @@ type nam_type
    logical :: colorlog                                  !< Add colors to the log (for display on terminal)
    logical :: default_seed                              !< Default seed for random numbers
    logical :: repro                                     !< Inter-compilers reproducibility
+   real(kind_real) :: rth                               !< Reproducibility threshold
    logical :: parallel_io                               !< Parallel NetCDF I/O
    integer :: nprocio                                   !< Number of I/O processors
    real(kind_real) :: universe_rad                      !< Universe radius [in meters]
@@ -234,6 +235,7 @@ nam%verbosity = 'all'
 nam%colorlog = .false.
 nam%default_seed = .true.
 nam%repro = .true.
+nam%rth = 1.0e-10_kind_real
 nam%parallel_io = .true.
 nam%nprocio = min(nproc,nprociomax)
 nam%universe_rad = pi*req
@@ -315,19 +317,19 @@ nam%sam_read = .false.
 nam%mask_type = 'none'
 do iv=1,nvmax
    nam%mask_lu(iv) = 'lower'
-   nam%mask_th(iv) = 0.0
+   nam%mask_th(iv) = zero
 end do
 nam%ncontig_th = 0
 nam%mask_check = .false.
 nam%draw_type = 'random_uniform'
-nam%Lcoast = 0.0
-nam%rcoast = 0.0
+nam%Lcoast = zero
+nam%rcoast = zero
 nam%nc1 = 0
 nam%nc2 = 0
 nam%ntry = 0
 nam%nrep = 0
 nam%nc3 = 0
-nam%dc = 0.0
+nam%dc = zero
 nam%nl0r = 0
 nam%irmax = 10000
 
@@ -339,8 +341,8 @@ nam%avg_nbins = 0
 do iv=1,nvbalmax
    nam%vbal_block(iv) = .false.
 end do
-nam%vbal_rad = 0.0
-nam%vbal_dlat = 0.0
+nam%vbal_rad = zero
+nam%vbal_dlat = zero
 do iv=1,nvbalmax
    nam%vbal_diag_auto(iv) = .false.
 end do
@@ -349,56 +351,56 @@ do iv=1,nvbalmax
 end do
 nam%vbal_pseudo_inv = .false.
 nam%vbal_pseudo_inv_mmax = 0
-nam%vbal_pseudo_inv_var_th = 0.0
+nam%vbal_pseudo_inv_var_th = zero
 nam%forced_var = .false.
-nam%stddev = 0.0
+nam%stddev = zero
 nam%var_filter = .false.
 nam%var_niter = 0
-nam%var_rhflt = 0.0
+nam%var_rhflt = zero
 nam%local_diag = .false.
-nam%local_rad = 0.0
+nam%local_rad = zero
 
 ! fit_param default
 nam%minim_algo = 'hooke'
-nam%diag_rhflt = 0.0
-nam%diag_rvflt = 0.0
-nam%smoothness_penalty = 0.01
+nam%diag_rhflt = zero
+nam%diag_rvflt = zero
+nam%smoothness_penalty = hundredth
 nam%fit_dl0 = 1
 nam%lct_nscales = 0
-nam%lct_scale_ratio = 10.0
-nam%lct_cor_min = 0.5
+nam%lct_scale_ratio = ten
+nam%lct_cor_min = half
 nam%lct_diag = .false.
-nam%lct_qc_th = 0.0
-nam%lct_qc_max = 1.0
+nam%lct_qc_th = zero
+nam%lct_qc_max = one
 nam%lct_write_cor = .false.
 
 ! nicas_param default
 nam%nonunit_diag = .false.
 nam%lsqrt = .true.
-nam%resol = 0.0
+nam%resol = zero
 nam%nc1max = 15000
 nam%fast_sampling = .false.
 nam%subsamp = 'hv'
 nam%network = .false.
 nam%mpicom = 0
 nam%forced_radii = .false.
-nam%rh = -1.0
-nam%rv = -1.0
+nam%rh = -one
+nam%rv = -one
 nam%pos_def_test = .false.
 nam%write_grids = .false.
 
 ! dirac_param default
 nam%ndir = 0
-nam%londir = 0.0
-nam%latdir = 0.0
+nam%londir = zero
+nam%latdir = zero
 nam%levdir = 0
 nam%ivdir = 0
 
 ! output_param default
 nam%nldwv = 0
 nam%img_ldwv = 0
-nam%lon_ldwv = 0.0
-nam%lat_ldwv = 0.0
+nam%lon_ldwv = zero
+nam%lat_ldwv = zero
 do ildwv=1,nldwvmax
    nam%name_ldwv(ildwv) = ''
 end do
@@ -432,6 +434,7 @@ character(len=1024) :: verbosity
 logical :: colorlog
 logical :: default_seed
 logical :: repro
+real(kind_real) :: rth
 logical :: parallel_io
 integer :: nprocio
 real(kind_real) :: universe_rad
@@ -574,6 +577,7 @@ namelist/general_param/ &
  & colorlog, &
  & default_seed, &
  & repro, &
+ & rth, &
  & parallel_io, &
  & nprocio, &
  & universe_rad, &
@@ -726,6 +730,7 @@ if (mpl%main) then
    colorlog = .false.
    default_seed = .true.
    repro = .true.
+   rth = 1.0e-10_kind_real
    parallel_io = .true.
    nprocio = min(mpl%nproc,nprociomax)
    universe_rad = pi*req
@@ -807,19 +812,19 @@ if (mpl%main) then
    mask_type = 'none'
    do iv=1,nvmax
       mask_lu(iv) = 'lower'
-      mask_th(iv) = 0.0
+      mask_th(iv) = zero
    end do
    ncontig_th = 0
    mask_check = .false.
    draw_type = 'random_uniform'
-   Lcoast = 0.0
-   rcoast = 0.0
+   Lcoast = zero
+   rcoast = zero
    nc1 = 0
    nc2 = 0
    ntry = 0
    nrep = 0
    nc3 = 0
-   dc = 0.0
+   dc = zero
    nl0r = 0
    irmax = 10000
 
@@ -831,8 +836,8 @@ if (mpl%main) then
    do iv=1,nvbalmax
       vbal_block(iv) = .false.
    end do
-   vbal_rad = 0.0
-   vbal_dlat = 0.0
+   vbal_rad = zero
+   vbal_dlat = zero
    do iv=1,nvbalmax
       vbal_diag_auto(iv) = .true.
    end do
@@ -841,56 +846,56 @@ if (mpl%main) then
    end do
    vbal_pseudo_inv = .false.
    vbal_pseudo_inv_mmax = 0
-   vbal_pseudo_inv_var_th = 0.0
+   vbal_pseudo_inv_var_th = zero
    forced_var = .false.
-   stddev = 0.0
+   stddev = zero
    var_filter = .false.
    var_niter = 0
-   var_rhflt = 0.0
+   var_rhflt = zero
    local_diag = .false.
-   local_rad = 0.0
+   local_rad = zero
 
    ! fit_param default
    minim_algo = 'hooke'
-   diag_rhflt = 0.0
-   diag_rvflt = 0.0
-   smoothness_penalty = 0.01
+   diag_rhflt = zero
+   diag_rvflt = zero
+   smoothness_penalty = hundredth
    fit_dl0 = 1
    lct_nscales = 0
-   lct_scale_ratio = 10.0
-   lct_cor_min = 0.5
+   lct_scale_ratio = ten
+   lct_cor_min = half
    lct_diag = .false.
-   lct_qc_th = 0.0
-   lct_qc_max = 1.0
+   lct_qc_th = zero
+   lct_qc_max = one
    lct_write_cor = .false.
 
    ! nicas_param default
    nonunit_diag = .false.
    lsqrt = .true.
-   resol = 0.0
+   resol = zero
    nc1max = 15000
    fast_sampling = .false.
    subsamp = 'hv'
    network = .false.
    mpicom = 0
    forced_radii = .false.
-   rh = -1.0
-   rv = -1.0
+   rh = -one
+   rv = -one
    pos_def_test = .false.
    write_grids = .false.
 
    ! dirac_param default
    ndir = 0
-   londir = 0.0
-   latdir = 0.0
+   londir = zero
+   latdir = zero
    levdir = 0
    ivdir = 0
 
    ! output_param default
    nldwv = 0
    img_ldwv = 0
-   lon_ldwv = 0.0
-   lat_ldwv = 0.0
+   lon_ldwv = zero
+   lat_ldwv = zero
    do ildwv=1,nldwvmax
       name_ldwv(ildwv) = ''
    end do
@@ -916,6 +921,7 @@ if (mpl%main) then
    nam%colorlog = colorlog
    nam%default_seed = default_seed
    nam%repro = repro
+   nam%rth = rth
    nam%parallel_io = parallel_io
    nam%nprocio = nprocio
    nam%universe_rad = universe_rad
@@ -1110,6 +1116,7 @@ call mpl%f_comm%broadcast(nam%verbosity,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%colorlog,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%default_seed,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%repro,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%rth,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%parallel_io,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
@@ -1316,6 +1323,7 @@ end if
 if (conf%has('colorlog')) call conf%get_or_die('colorlog',nam%colorlog)
 if (conf%has('default_seed')) call conf%get_or_die('default_seed',nam%default_seed)
 if (conf%has('repro')) call conf%get_or_die('repro',nam%repro)
+if (conf%has('rth')) call conf%get_or_die('rth',nam%rth)
 if (conf%has('parallel_io')) call conf%get_or_die('parallel_io',nam%parallel_io)
 if (conf%has('nprocio')) call conf%get_or_die('nprocio',nam%nprocio)
 if (conf%has('universe_rad')) call conf%get_or_die('universe_rad',nam%universe_rad)
@@ -1898,8 +1906,8 @@ if (nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam
    select case (trim(nam%draw_type))
    case ('random_uniform')
    case ('random_coast')
-      if (.not.(nam%Lcoast>0.0)) call mpl%abort ('${subr}$','Lcoast should be positive')
-      if (.not.(nam%rcoast>0.0)) call mpl%abort ('${subr}$','rcoast should be positive')
+      if (.not.(nam%Lcoast>zero)) call mpl%abort ('${subr}$','Lcoast should be positive')
+      if (.not.(nam%rcoast>zero)) call mpl%abort ('${subr}$','rcoast should be positive')
    case ('octahedral')
       if (nam%nldwv>0) call mpl%abort('${subr}$','no local diagnostics with an octahedral draw')
    case default
@@ -1948,7 +1956,7 @@ if (nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam%check_optimalit
    if (nam%nc3<=0) call mpl%abort('${subr}$','nc3 should be positive')
 end if
 if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
-   if ((.not.nam%sam_read).and.(.not.(nam%dc>0.0))) call mpl%abort('${subr}$','dc should be positive')
+   if ((.not.nam%sam_read).and.(.not.(nam%dc>zero))) call mpl%abort('${subr}$','dc should be positive')
 end if
 if (nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%nl0r<1) call mpl%abort ('${subr}$','nl0r should be positive')
@@ -1962,10 +1970,10 @@ if (nam%new_vbal) then
    if (nam%nv<2) call mpl%abort('${subr}$','at least two variables required to diagnose vertical balance')
    if (.not.(any(nam%vbal_block(1:nam%nv*(nam%nv-1)/2)))) &
  & call mpl%abort('${subr}$','no block selected for the vertical balance diagnostics')
-   if ((.not.(nam%vbal_rad>0.0)).and.(.not.(nam%vbal_dlat>0.0))) call mpl%abort('${subr}$', &
+   if ((.not.(nam%vbal_rad>zero)).and.(.not.(nam%vbal_dlat>zero))) call mpl%abort('${subr}$', &
  & 'vbal_rad or vbal_dlat should be positive')
    if (nam%vbal_pseudo_inv) then
-      if ((nam%vbal_pseudo_inv_mmax<=0).and.(.not.nam%vbal_pseudo_inv_var_th>0.0)) call mpl%abort('${subr}$', &
+      if ((nam%vbal_pseudo_inv_mmax<=0).and.(.not.nam%vbal_pseudo_inv_var_th>zero)) call mpl%abort('${subr}$', &
  & 'dominant mode or variance threshold should be positive for pseudo-inverse')
    end if
 end if
@@ -1973,14 +1981,14 @@ if (nam%new_var) then
    if (nam%forced_var) then
       do iv=1,nam%nv
          do il=1,nam%nl
-            if (.not.(nam%stddev(il,iv)>0.0)) call mpl%abort('${subr}$','stddev should be positive')
+            if (.not.(nam%stddev(il,iv)>zero)) call mpl%abort('${subr}$','stddev should be positive')
          end do
       end do
       if (nam%var_filter) call mpl%abort('${subr}$','var_filter forbidden for forced_var')
    end if
    if (nam%var_filter) then
       if (nam%var_niter<=0) call mpl%abort('${subr}$','var_niter should be positive')
-      if (.not.(nam%var_rhflt>0.0)) call mpl%abort('${subr}$','var_rhflt should be positive')
+      if (.not.(nam%var_rhflt>zero)) call mpl%abort('${subr}$','var_rhflt should be positive')
    end if
 end if
 if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
@@ -1988,9 +1996,9 @@ if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    case ('loc','hyb-avg','hyb-rnd','dual-ens')
       if (nam%ne<=3) call mpl%abort('${subr}$','ne should be larger than 3')
    end select
-   if (.not.(nam%gen_kurt_th>0.0)) call mpl%abort('${subr}$','gen_kurt_th should be positive')
+   if (.not.(nam%gen_kurt_th>zero)) call mpl%abort('${subr}$','gen_kurt_th should be positive')
    if (nam%local_diag) then
-      if ((.not.nam%sam_read).and.(.not.(nam%local_rad>0.0))) call mpl%abort('${subr}$','local_rad should be positive')
+      if ((.not.nam%sam_read).and.(.not.(nam%local_rad>zero))) call mpl%abort('${subr}$','local_rad should be positive')
    end if
 end if
 
@@ -2003,17 +2011,17 @@ if (nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam%check_optimalit
    end select
    if (nam%new_lct.and.((trim(nam%minim_algo)=='none').or.(trim(nam%minim_algo)=='fast'))) &
  & call mpl%abort('${subr}$','wrong minim_algo for LCT')
-   if (nam%diag_rhflt<0.0) call mpl%abort('${subr}$','diag_rhflt should be non-negative')
-   if (nam%diag_rvflt<0.0) call mpl%abort('${subr}$','diag_rvflt should be non-negative')
-   if (nam%smoothness_penalty<0.0) call mpl%abort('${subr}$','smoothness_penalty should be non-negative')
+   if (nam%diag_rhflt<zero) call mpl%abort('${subr}$','diag_rhflt should be non-negative')
+   if (nam%diag_rvflt<zero) call mpl%abort('${subr}$','diag_rvflt should be non-negative')
+   if (nam%smoothness_penalty<zero) call mpl%abort('${subr}$','smoothness_penalty should be non-negative')
    if (nam%fit_dl0<=0) call mpl%abort('${subr}$','fit_dl0 should be postive')
 end if
 if (nam%new_lct) then
    if (nam%lct_nscales<=0) call mpl%abort('${subr}$','lct_nscales should be postive')
-   if (.not.(nam%lct_scale_ratio>0.0)) call mpl%abort('${subr}$','lct_scale_ratio should be postive')
+   if (.not.(nam%lct_scale_ratio>zero)) call mpl%abort('${subr}$','lct_scale_ratio should be postive')
    if (nam%lct_cor_min<0) call mpl%abort('${subr}$','lct_cor_min should be non-negative')
-   if ((nam%lct_qc_th<-1.0).or.(nam%lct_qc_th>1.0)) call mpl%abort('${subr}$','lct_qc_th should be between -1 and 1')
-   if ((nam%lct_qc_max<-1.0).or.(nam%lct_qc_max>1.0)) call mpl%abort('${subr}$','lct_qc_max should be between -1 and 1')
+   if ((nam%lct_qc_th<-one).or.(nam%lct_qc_th>one)) call mpl%abort('${subr}$','lct_qc_th should be between -1 and 1')
+   if ((nam%lct_qc_max<-one).or.(nam%lct_qc_max>one)) call mpl%abort('${subr}$','lct_qc_max should be between -1 and 1')
 end if
 
 ! Check ensemble sizes
@@ -2052,7 +2060,7 @@ if (nam%new_nicas.or.nam%load_nicas) then
       if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for check_optimality')
    end if
    if (nam%new_nicas) then
-      if (.not.(nam%resol>0.0)) call mpl%abort('${subr}$','resol should be positive')
+      if (.not.(nam%resol>zero)) call mpl%abort('${subr}$','resol should be positive')
       if (nam%nc1max<=0) call mpl%abort('${subr}$','nc1max should be positive')
    end if
    if (nam%new_nicas.or.nam%load_nicas) then
@@ -2074,8 +2082,8 @@ if (nam%new_nicas.or.nam%load_nicas) then
       end if
       do iv=ivmin,nam%nv
          do il=1,nam%nl
-            if (nam%rh(il,iv)<0.0) call mpl%abort('${subr}$','rh should be non-negative')
-            if (nam%rv(il,iv)<0.0) call mpl%abort('${subr}$','rv should be non-negative')
+            if (nam%rh(il,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
+            if (nam%rv(il,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
          end do
       end do
    end if
@@ -2092,7 +2100,7 @@ if (nam%check_dirac) then
    if (nam%ndir<1) call mpl%abort('${subr}$','ndir should be positive')
    do idir=1,nam%ndir
       if ((nam%londir(idir)<-pi).or.(nam%londir(idir)>pi)) call mpl%abort('${subr}$','londir should lie between -180 and 180')
-      if ((nam%latdir(idir)<-0.5*pi).or.(nam%latdir(idir)>0.5*pi)) call mpl%abort('${subr}$','latdir should lie between -90 and 90')
+      if ((nam%latdir(idir)<-half*pi).or.(nam%latdir(idir)>half*pi)) call mpl%abort('${subr}$','latdir should lie between -90 and 90')
       if (.not.any(nam%levs(1:nam%nl)==nam%levdir(idir))) call mpl%abort('${subr}$','wrong level for a Dirac')
       if ((nam%ivdir(idir)<1).or.(nam%ivdir(idir)>nam%nv)) call mpl%abort('${subr}$','wrong variable for a Dirac')
    end do
@@ -2106,7 +2114,7 @@ if (nam%new_hdiag) then
          if (.not.all(nam%img_ldwv(1:nam%nldwv)>0)) then
          if (any(nam%lon_ldwv(1:nam%nldwv)<-pi).or.any(nam%lon_ldwv(1:nam%nldwv)>pi)) &
  & call mpl%abort('${subr}$','lon_ldwv should lie between -180 and 180')
-         if (any(nam%lat_ldwv(1:nam%nldwv)<-0.5*pi).or.any(nam%lat_ldwv(1:nam%nldwv)>0.5*pi)) &
+         if (any(nam%lat_ldwv(1:nam%nldwv)<-half*pi).or.any(nam%lat_ldwv(1:nam%nldwv)>half*pi)) &
  & call mpl%abort('${subr}$','lat_ldwv should lie between -90 and 90')
          do ildwv=1,nam%nldwv
             write(ildwvchar,'(i2.2)') ildwv
@@ -2160,6 +2168,7 @@ call mpl%write(lncid,'nam','verbosity',nam%verbosity)
 call mpl%write(lncid,'nam','colorlog',nam%colorlog)
 call mpl%write(lncid,'nam','default_seed',nam%default_seed)
 call mpl%write(lncid,'nam','repro',nam%repro)
+call mpl%write(lncid,'nam','rth',nam%rth)
 call mpl%write(lncid,'nam','parallel_io',nam%parallel_io)
 call mpl%write(lncid,'nam','nprocio',nam%nprocio)
 call mpl%write(lncid,'nam','universe_rad',nam%universe_rad*req)

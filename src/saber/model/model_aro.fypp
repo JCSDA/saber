@@ -79,9 +79,9 @@ do ilon=1,model%nlon
       model%lat(img) = lat(ilon,ilat)
       select case (trim(zone))
       case ('C')
-         model%mask(img,:) = (cmask(ilon,ilat)>0.75)
+         model%mask(img,:) = (cmask(ilon,ilat)>one-quarter)
       case ('C+I')
-         model%mask(img,:) = (cmask(ilon,ilat)>0.25)
+         model%mask(img,:) = (cmask(ilon,ilat)>quarter)
       case ('C+I+E')
          model%mask(img,:) = .true.
       case default
@@ -197,15 +197,15 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
 
    ! Update mask
    do img=1,model%nmg
-      if (real(mask_counter(img),kind_real)<0.9*real(nam%ens1_ne,kind_real)) model%mask(img,:) = .false.
+      if (real(mask_counter(img),kind_real)<0.9_kind_real*real(nam%ens1_ne,kind_real)) model%mask(img,:) = .false.
    end do
 end select
 
 ! Vertical unit
 do img=1,model%nmg
    if (nam%logpres) then
-      model%vunit(img,1:nam%nl) = log(0.5*(a(nam%levs(1:nam%nl))+a(nam%levs(1:nam%nl)+1)) &
- & +0.5*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
+      model%vunit(img,1:nam%nl) = log(half*(a(nam%levs(1:nam%nl))+a(nam%levs(1:nam%nl)+1)) &
+ & +half*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
       if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(ps)
    else
       model%vunit(img,:) = real(nam%levs(1:model%nl0),kind_real)

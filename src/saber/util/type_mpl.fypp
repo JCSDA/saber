@@ -16,6 +16,7 @@ use netcdf, only: nf90_create,nf90_def_dim,nf90_def_grp,nf90_def_var,nf90_global
  & nf90_inquire_dimension,nf90_inq_varid,nf90_mpiio,nf90_netcdf4,nf90_noclobber,nf90_noerr,nf90_open,nf90_put_att, &
  & nf90_strerror,nf90_write
 !$ use omp_lib
+use tools_const, only: zero,one,ten,hundred
 use tools_kinds, only: kind_int,kind_real,nc_kind_int,nc_kind_real
 use tools_qsort, only: qsort
 use type_msv, only: msv_type
@@ -26,7 +27,7 @@ implicit none
 integer,parameter :: lunit_min = 10       !< Minimum unit number
 integer,parameter :: lunit_max = 1000     !< Maximum unit number
 integer,parameter :: ddis = 5             !< Progression display step
-real(kind_real) :: min_total_timing = 1.0 !< Minimum total timing to print
+real(kind_real) :: min_total_timing = one !< Minimum total timing to print
 integer :: max_calls = 10                 !< Number of timing to print with maximum calls
 
 type mpl_type
@@ -511,7 +512,7 @@ if (probe_size>0) then
    write(mpl%info,'(a7,a,e10.3,a)') '','Elapsed time: ',elapsed_total,' s'
    call mpl%flush
 
-   if (elapsed_total>0.0) then
+   if (elapsed_total>zero) then
       ! Order timings with total time
       call qsort(probe_size,stats(:,1),order)
       n = n(order)
@@ -522,9 +523,9 @@ if (probe_size>0) then
       write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing total time:'
       call mpl%flush
       do i=probe_size,1,-1
-         if (stats(i,1)/elapsed_total*100.0>min_total_timing) then
+         if (stats(i,1)/elapsed_total*hundred>min_total_timing) then
             write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
- & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*100.0,'% - min/mean/max: ',stats(i,2),' /', &
+ & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*hundred,'% - min/mean/max: ',stats(i,2),' /', &
  & stats(i,1)/real(n(i),kind_real),' /',stats(i,3)
             call mpl%flush
          end if
@@ -540,7 +541,7 @@ if (probe_size>0) then
       call mpl%flush
       do i=probe_size,probe_size-max_calls+1,-1
          write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
- & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*100.0,'% - min/mean/max: ',stats(i,2),' /', &
+ & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*hundred,'% - min/mean/max: ',stats(i,2),' /', &
  & stats(i,1)/real(n(i),kind_real),' /',stats(i,3)
          call mpl%flush
       end do
@@ -642,11 +643,11 @@ real(kind_real) :: dp_loc(1),dp_out(1)
 @:probe_in()
 
 ! Product and sum
-dp_loc(1) = 0.0
+dp_loc(1) = zero
 dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
 
 ! Allreduce
-dp_out = 0.0
+dp_out = zero
 call mpl%f_comm%allreduce(dp_loc,dp_out,fckit_mpi_sum())
 dp = dp_out(1)
 
@@ -1042,7 +1043,7 @@ real(kind_real) :: prog
 if (present(i)) mpl%done(i) = .true.
 
 ! Print message
-prog = 100.0*real(count(mpl%done),kind_real)/real(mpl%nprog,kind_real)
+prog = hundred*real(count(mpl%done),kind_real)/real(mpl%nprog,kind_real)
 ithread = 0
 !$ ithread = omp_get_thread_num()
 do while ((int(prog)>mpl%progint).and.(ithread==0))
@@ -1429,14 +1430,14 @@ if (mpl%msv%is(ncid)) then
       if (var<0) delta = delta+1
       if (abs(var)>0) then
          write(for,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,i', &
- & floor(log(abs(real(var,kind_real)))/log(10.0))+delta,')'
+ & floor(log(abs(real(var,kind_real)))/log(ten))+delta,')'
       else
          write(for,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,i',delta,')'
       end if
    #:endif
    #:if dtype == 'real'
       delta = 10
-      if (var<0.0) delta = delta+1
+      if (var<zero) delta = delta+1
       write(for,'(a,i4.4,a,i4.4,a,i2.2,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,e',delta,'.3)'
    #:endif
    #:if dtype == 'logical'
@@ -1510,14 +1511,14 @@ if (mpl%msv%is(ncid)) then
          delta = 2
          if (var(i)<0) delta = delta+1
          if (abs(var(i))>0) then
-            write(for,'(a,i4.4,a)') '(i',floor(log(abs(real(var(i),kind_real)))/log(10.0))+delta,',a)'
+            write(for,'(a,i4.4,a)') '(i',floor(log(abs(real(var(i),kind_real)))/log(ten))+delta,',a)'
          else
             write(for,'(a,i4.4,a)') '(i',delta,',a)'
          end if
       #:endif
       #:if dtype == 'real'
          delta = 10
-         if (var(i)<0.0) delta = delta+1
+         if (var(i)<zero) delta = delta+1
          write(for,'(a,i2,a)') '(e',delta,'.3,a)'
       #:endif
       #{if dtype == 'logical'}# write(for,'(a)') '(l2,a)' #{endif}#

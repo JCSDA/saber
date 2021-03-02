@@ -10,6 +10,7 @@ module type_diag_blk
 
 use netcdf, only: nf90_close,nf90_put_var
 !$ use omp_lib
+use tools_const, only: zero,half,one,two,five
 use tools_fit, only: fast_fit,ver_fill
 use tools_func, only: fit_diag
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real,huge_real
@@ -26,8 +27,8 @@ use type_samp, only: samp_type
 
 implicit none
 
-integer,parameter :: nsc = 50                          !< Number of iterations for the scaling optimization
-real(kind_real),parameter :: maxfactor = 2.0_kind_real !< Maximum factor for diagnostics with respect to the origin
+integer,parameter :: nsc = 50                !< Number of iterations for the scaling optimization
+real(kind_real),parameter :: maxfactor = two !< Maximum factor for diagnostics with respect to the origin
 
 ! Diagnostic block derived type
 type diag_blk_type
@@ -362,7 +363,7 @@ associate(ic2a=>diag_blk%ic2a,ib=>diag_blk%ib)
 if (trim(nam%minim_algo)=='none') call mpl%abort('${subr}$','cannot compute fit if minim_algo = none')
 
 ! Local estimation flags
-lcoef = any(diag_blk%coef_ens>0.0)
+lcoef = any(diag_blk%coef_ens>zero)
 if (present(coef)) lcoef = coef
 
 ! Allocation
@@ -407,13 +408,13 @@ do il0=1,geom%nl0
    m2(il0) = diag_blk%raw(1,jl0r,il0)
 end do
 var2d = .false.
-if (count(m2>0.0)==1) then
-   if ((trim(nam%lev2d)=='first').and.(m2(1)>0.0)) then
+if (count(m2>zero)==1) then
+   if ((trim(nam%lev2d)=='first').and.(m2(1)>zero)) then
       var2d = .true.
-      diag_blk%fit_rv(1) = 0.0
-   elseif ((trim(nam%lev2d)=='last').and.(m2(geom%nl0)>0.0)) then
+      diag_blk%fit_rv(1) = zero
+   elseif ((trim(nam%lev2d)=='last').and.(m2(geom%nl0)>zero)) then
       var2d = .true.
-      diag_blk%fit_rv(geom%nl0) = 0.0
+      diag_blk%fit_rv(geom%nl0) = zero
    end if
 end if
 
@@ -431,10 +432,10 @@ if (valid) then
 
    ! Scaling optimization (brute-force)
    fo_opt = huge_real
-   alpha_opt = 1.0
+   alpha_opt = one
    do isc=1,nsc
       ! Scaling factor
-      alpha = 0.5+real(isc-1,kind_real)/real(nsc-1,kind_real)*(2.0-0.5)
+      alpha = half+real(isc-1,kind_real)/real(nsc-1,kind_real)*(two-half)
 
       ! Scaled radii
       fit_rh = alpha*diag_blk%fit_rh
@@ -466,16 +467,16 @@ if (valid) then
    select case (trim(nam%minim_algo))
    case ('hooke')
       ! Hooke parameters
-      minim%hooke_rho = 0.5
-      minim%hooke_tol = 1.0e-2
+      minim%hooke_rho = half
+      minim%hooke_tol = 1.0e-2_kind_real
       minim%hooke_itermax = 5
    case ('praxis')
       ! Praxis parameters
-      minim%praxis_tol = 5.0
+      minim%praxis_tol = five
       minim%praxis_itermax = 5
    end select
-   lrh = any(diag_blk%fit_rh>0.0)
-   lrv = any(diag_blk%fit_rv>0.0)
+   lrh = any(diag_blk%fit_rh>zero)
+   lrv = any(diag_blk%fit_rv>zero)
 
    select case (trim(nam%minim_algo))
    case ('hooke','praxis')
@@ -518,9 +519,9 @@ if (valid) then
          do jl0=il0inf,il0sup
             if (il0inf==il0sup) then
                minim%il1inf(jl0) = il1inf
-               minim%rinf(jl0) = 1.0
+               minim%rinf(jl0) = one
                minim%il1sup(jl0) = il1sup
-               minim%rsup(jl0) = 0.0
+               minim%rsup(jl0) = zero
             else
                minim%il1inf(jl0) = il1inf
                minim%rinf(jl0) = real(il0sup-jl0,kind_real)/real(il0sup-il0inf,kind_real)
@@ -544,18 +545,18 @@ if (valid) then
       end do
       ivar = 0
       if (lcoef) then
-         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 0.9*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
-         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 1.1*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 0.9_kind_real*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 1.1_kind_real*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
          ivar = ivar+1
       end if
       if (lrh) then
-         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 0.5*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
-         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 2.0*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = half*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = two*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
          ivar = ivar+1
       end if
       if (lrv) then
-         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 0.5*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
-         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = 2.0*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%binf(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = half*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
+         minim%bsup(ivar*minim%nl1+1:(ivar+1)*minim%nl1) = two*minim%guess(ivar*minim%nl1+1:(ivar+1)*minim%nl1)
          ivar = ivar+1
       end if
       minim%obs = reshape(diag_blk%raw,(/minim%ny/))
@@ -729,7 +730,7 @@ if (nam%forced_radii) then
    allocate(coef_ens(geom%nl0))
 
    ! Initialization
-   coef_ens = 1.0
+   coef_ens = one
 
    ! Compute forced localization function
    iv = bpar%b_to_v1(ib)
@@ -738,11 +739,11 @@ if (nam%forced_radii) then
    diag_blk%valid = mpl%msv%valr
 
    ! Compute hybrid weights
-   a = 0.0
-   bc = 0.0
-   d = 0.0
-   e = 0.0
-   f = 0.0
+   a = zero
+   bc = zero
+   d = zero
+   e = zero
+   f = zero
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
@@ -762,7 +763,7 @@ if (nam%forced_radii) then
    num_ens = e*d-bc*f
    num_sta = a*f-e*bc
    den = a*d-bc**2
-   if ((num_ens>0.0).and.(num_sta>0.0).and.(den>0.0)) then
+   if ((num_ens>zero).and.(num_sta>zero).and.(den>zero)) then
       ! Valid numerators and denominator
       diag_blk%coef_ens = num_ens/den
       diag_blk%coef_sta = num_sta/den
@@ -776,8 +777,8 @@ if (nam%forced_radii) then
    deallocate(coef_ens)
 else
    ! Compute raw hybridization
-   num = 0.0
-   den = 0.0
+   num = zero
+   den = zero
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
@@ -785,13 +786,13 @@ else
             if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jl0r,il0))) then
                wgt = geom%disth(jc3)*diag_blk%distv(jl0,il0)/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real)
-               num = num+wgt*(1.0-avg_blk%m11asysq(jc3,jl0r,il0)/avg_blk%m11sq(jc3,jl0r,il0))*avg_blk%m11sta(jc3,jl0r,il0)
+               num = num+wgt*(one-avg_blk%m11asysq(jc3,jl0r,il0)/avg_blk%m11sq(jc3,jl0r,il0))*avg_blk%m11sta(jc3,jl0r,il0)
                den = den+wgt*(avg_blk%stasq(jc3,jl0r,il0)-avg_blk%m11sta(jc3,jl0r,il0)**2/avg_blk%m11sq(jc3,jl0r,il0))
             end if
          end do
       end do
    end do
-   if ((num>0.0).and.(den>0.0)) then
+   if ((num>zero).and.(den>zero)) then
       ! Valid numerator and denominator
       diag_blk%coef_sta = num/den
 
@@ -807,7 +808,7 @@ else
                   diag_blk%valid(jc3,jl0r,il0) = avg_blk%nc1a(jc3,jl0r,il0)
 
                   ! Lower bound
-                  if (diag_blk%raw(jc3,jl0r,il0)<0.0) then
+                  if (diag_blk%raw(jc3,jl0r,il0)<zero) then
                      diag_blk%raw(jc3,jl0r,il0) = mpl%msv%valr
                      diag_blk%valid(jc3,jl0r,il0) = mpl%msv%valr
                   end if
@@ -882,7 +883,7 @@ do il0=1,geom%nl0
             num_lr(jc3) = avg_blk%m11lrm11asy(jc3,jl0r,il0)*avg_blk%m11sq(jc3,jl0r,il0) &
  & -avg_blk%m11asysq(jc3,jl0r,il0)*avg_blk%m11lrm11(jc3,jl0r,il0)
             den(jc3) = avg_blk%m11sq(jc3,jl0r,il0)*avg_lr_blk%m11sq(jc3,jl0r,il0)-avg_blk%m11lrm11(jc3,jl0r,il0)**2
-            if ((num(jc3)>0.0).and.(den(jc3)>0.0)) then
+            if ((num(jc3)>zero).and.(den(jc3)>zero)) then
                ! Compute localization
                diag_blk%raw(jc3,jl0r,il0) = num(jc3)/den(jc3)
                diag_lr_blk%raw(jc3,jl0r,il0) = num_lr(jc3)/den(jc3)

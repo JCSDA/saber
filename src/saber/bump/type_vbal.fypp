@@ -12,7 +12,7 @@ use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use netcdf, only: nf90_close,nf90_get_att,nf90_get_var,nf90_global,nf90_inq_grp_ncid,nf90_inq_varid,nf90_nowrite,nf90_open, &
  & nf90_put_att,nf90_put_var,nf90_write
-use tools_const, only: rad2deg
+use tools_const, only: zero,one,two,rad2deg
 use tools_func, only: lonlathash
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
 use tools_repro, only: infeq
@@ -755,7 +755,7 @@ real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,na
 @:probe_in()
 
 ! Generate random field
-call rng%rand(0.0_kind_real,1.0_kind_real,fld_save)
+call rng%rand(zero,one,fld_save)
 
 ! Direct / inverse
 fld = fld_save
@@ -829,8 +829,8 @@ real(kind_real) :: fld2_inv(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%
 @:probe_in()
 
 ! Generate random field
-call rng%rand(0.0_kind_real,1.0_kind_real,fld1_save)
-call rng%rand(0.0_kind_real,1.0_kind_real,fld2_save)
+call rng%rand(zero,one,fld1_save)
+call rng%rand(zero,one,fld2_save)
 
 ! Block adjoint test
 fld1_blk = fld1_save
@@ -843,7 +843,7 @@ do iv=1,nam%nv
          call mpl%dot_prod(fld1_blk(:,:,iv),fld2_save(:,:,iv),sum1)
          call mpl%dot_prod(fld2_blk(:,:,iv),fld1_save(:,:,iv),sum2)
          write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block adjoint test:  ', &
- & sum1,' / ',sum2,' / ',2.0*abs(sum1-sum2)/abs(sum1+sum2)
+ & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
          call mpl%flush
       end if
    end do
@@ -865,12 +865,12 @@ call vbal%apply_inv_ad(nam,geom,bpar,fld2_inv)
 call mpl%dot_prod(fld1_dir,fld2_save,sum1)
 call mpl%dot_prod(fld2_dir,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test:  ', &
- & sum1,' / ',sum2,' / ',2.0*abs(sum1-sum2)/abs(sum1+sum2)
+ & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 call mpl%dot_prod(fld1_inv,fld2_save,sum1)
 call mpl%dot_prod(fld2_inv,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test: ', &
- & sum1,' / ',sum2,' / ',2.0*abs(sum1-sum2)/abs(sum1+sum2)
+ & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 
 ! Probe out
@@ -905,9 +905,9 @@ character(len=1024) :: filename
 @:probe_in()
 
 ! Generate dirac field
-fld = 0.0
+fld = zero
 do idir=1,geom%ndir
-   if (geom%iprocdir(idir)==mpl%myproc) fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = 1.0
+   if (geom%iprocdir(idir)==mpl%myproc) fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
 end do
 
 ! Apply vertical balance to dirac

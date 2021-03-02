@@ -10,6 +10,7 @@ module type_linop
 
 use netcdf, only: nf90_get_att,nf90_get_var,nf90_global,nf90_inq_grp_ncid,nf90_inq_varid,nf90_put_att,nf90_put_var
 !$ use omp_lib
+use tools_const, only: zero,one
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real,huge_real
 use tools_repro, only: inf
 use type_geom, only: geom_type
@@ -559,7 +560,7 @@ if (check_data) then
 end if
 
 ! Initialization
-fld_dst = 0.0
+fld_dst = zero
 lmssrc = .false.
 if (present(mssrc)) lmssrc = mssrc
 lmsdst = .true.
@@ -671,7 +672,7 @@ if (check_data) then
 end if
 
 ! Initialization
-fld_src = 0.0
+fld_src = zero
 
 ! Apply weights
 do i_s=1,linop%n_s
@@ -735,7 +736,7 @@ if (check_data) then
 end if
 
 ! Apply weights
-fld_arr = 0.0
+fld_arr = zero
 !$omp parallel do schedule(static) private(i_s,ithread)
 do i_s=1,linop%n_s
    ithread = 1
@@ -753,7 +754,7 @@ end do
 !$omp end parallel do
 
 ! Sum over threads
-fld = 0.0
+fld = zero
 do ithread=1,mpl%nthread
    fld = fld+fld_arr(:,ithread)
 end do
@@ -934,8 +935,8 @@ if (allocated(linop%interp_data%src_eff_to_src)) then
    ! Check that source is the same
    if (n_src_eff/=linop%interp_data%n_src_eff) call mpl%abort('${subr}$','wrong n_src_eff')
    if (any(src_eff_to_src/=linop%interp_data%src_eff_to_src)) call mpl%abort('${subr}$','wrong src_eff_to_src')
-   if (any(abs(lon_src_eff-linop%interp_data%lon_src_eff)>0.0)) call mpl%abort('${subr}$','wrong lon_src_eff')
-   if (any(abs(lat_src_eff-linop%interp_data%lat_src_eff)>0.0)) call mpl%abort('${subr}$','wrong lat_src_eff')
+   if (any(abs(lon_src_eff-linop%interp_data%lon_src_eff)>zero)) call mpl%abort('${subr}$','wrong lon_src_eff')
+   if (any(abs(lat_src_eff-linop%interp_data%lat_src_eff)>zero)) call mpl%abort('${subr}$','wrong lat_src_eff')
 
    ! Release memory
    deallocate(linop%row)
@@ -980,7 +981,7 @@ do i_dst=1,n_dst
       ! Find nearest neighbor
       call linop%interp_data%tree%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),1,nn_index,nn_dist)
 
-      if (abs(nn_dist(1))>0.0) then
+      if (abs(nn_dist(1))>zero) then
          ! Compute barycentric coordinates
          call linop%interp_data%mesh%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),linop%interp_data%tree,b,ib)
          valid = mpl%msv%isallnot(ib)
@@ -989,7 +990,7 @@ do i_dst=1,n_dst
             if (nam%mask_check) then
                ! Check if arc is crossing boundary arcs
                do i=1,3
-                  if (abs(b(i))>0.0) then
+                  if (abs(b(i))>zero) then
                      call geom%check_arc(mpl,il0,lon_src_eff(ib(i)),lat_src_eff(ib(i)),lon_dst(i_dst),lat_dst(i_dst),valid_arc)
                      if (.not.valid_arc) valid = .false.
                   end if
@@ -997,13 +998,13 @@ do i_dst=1,n_dst
             end if
             if (valid) then
                ! Bilinear interpolation
-               if (sum(b)>0.0) b = b/sum(b)
+               if (sum(b)>zero) b = b/sum(b)
                do i=1,3
-                  if (inf(b(i),S_inf)) b(i) = 0.0
+                  if (inf(b(i),S_inf)) b(i) = zero
                end do
-               if (sum(b)>0.0) b = b/sum(b)
+               if (sum(b)>zero) b = b/sum(b)
                do i=1,3
-                  if (b(i)>0.0) then
+                  if (b(i)>zero) then
                      n_s = n_s+1
                      row(n_s) = i_dst
                      col(n_s) = ib(i)
@@ -1018,7 +1019,7 @@ do i_dst=1,n_dst
          n_s = n_s+1
          row(n_s) = i_dst
          col(n_s) = nn_index(1)
-         S(n_s) = 1.0
+         S(n_s) = one
       end if
 
       if (.not.valid) then
@@ -1026,7 +1027,7 @@ do i_dst=1,n_dst
          n_s = n_s+1
          row(n_s) = i_dst
          col(n_s) = nn_index(1)
-         S(n_s) = 1.0
+         S(n_s) = one
       end if
    end if
 

@@ -69,7 +69,7 @@ do ilon=1,model%nlon
       model%lat(img) = lat(ilat)
    end do
 end do
-model%area = 4.0*pi/real(model%nmg,kind_real)
+model%area = four*pi/real(model%nmg,kind_real)
 model%mask = .true.
 
 ! Vertical unit

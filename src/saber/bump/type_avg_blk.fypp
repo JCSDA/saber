@@ -10,6 +10,7 @@ module type_avg_blk
 
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 use netcdf, only: nf90_close,nf90_put_var
+use tools_const, only: zero,one,two,three
 use tools_func, only: histogram
 use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real,huge_real
 use tools_repro, only: sup,inf
@@ -403,9 +404,9 @@ do il0=1,geom%nl0
             if (valid) then
                ! Check general kurtosis
                do isub=1,avg_blk%nsub
-                  den = 2.0*mom_blk%m11(ic1a,jc3,jl0r,il0,isub)**2+mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jl0,isub)
-                  if (den>0.0) then
-                     gen_kurt = 3.0*mom_blk%m22(ic1a,jc3,jl0r,il0,isub)/den
+                  den = two*mom_blk%m11(ic1a,jc3,jl0r,il0,isub)**2+mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jl0,isub)
+                  if (den>zero) then
+                     gen_kurt = three*mom_blk%m22(ic1a,jc3,jl0r,il0,isub)/den
                      if (gen_kurt>nam%gen_kurt_th) valid = .false.
                   else
                      valid = .false.
@@ -427,9 +428,9 @@ do il0=1,geom%nl0
                ! Correlation
                m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_blk%nsub,kind_real)
                m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
-               if ((m2_1>0.0).and.(m2_2>0.0)) then
+               if ((m2_1>zero).and.(m2_2>zero)) then
                   list_cor(ic1a) = list_m11(ic1a)/sqrt(m2_1*m2_2)
-                  if (sup(abs(list_cor(ic1a)),1.0_kind_real)) list_cor(ic1a) = mpl%msv%valr
+                  if (sup(abs(list_cor(ic1a)),one)) list_cor(ic1a) = mpl%msv%valr
                else
                   list_cor(ic1a) = mpl%msv%valr
                end if
@@ -467,19 +468,19 @@ do il0=1,geom%nl0
                avg_blk%m22(jc3,jl0r,il0,isub) = sum(list_m22(:,isub),mask=mpl%msv%isnot(list_m22(:,isub)))
             end do
          else
-            avg_blk%m11(jc3,jl0r,il0) = 0.0
+            avg_blk%m11(jc3,jl0r,il0) = zero
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
-                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = 0.0
-                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = 0.0
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = zero
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = zero
                end do
-               avg_blk%m22(jc3,jl0r,il0,isub) = 0.0
+               avg_blk%m22(jc3,jl0r,il0,isub) = zero
             end do
          end if
          if (nc1a_cor>0) then
             avg_blk%cor(jc3,jl0r,il0) = sum(list_cor,mask=mpl%msv%isnot(list_cor))
          else
-            avg_blk%cor(jc3,jl0r,il0) = 0.0
+            avg_blk%cor(jc3,jl0r,il0) = zero
          end if
 
          if (nam%avg_nbins>0) then
@@ -570,7 +571,7 @@ if (mpl%nproc>1) then
 
    ! Pack data
    offset = 0
-   sbuf = 0.0
+   sbuf = zero
    sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%nc1a,(/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
    offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
    sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%m11,(/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
@@ -656,8 +657,8 @@ end if
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
-         if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
-            norm = 1.0/avg_blk%nc1a(jc3,jl0r,il0)
+         if (avg_blk%nc1a(jc3,jl0r,il0)>zero) then
+            norm = one/avg_blk%nc1a(jc3,jl0r,il0)
             avg_blk%m11(jc3,jl0r,il0) = avg_blk%m11(jc3,jl0r,il0)*norm
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
@@ -676,21 +677,21 @@ do il0=1,geom%nl0
                avg_blk%m22(jc3,jl0r,il0,isub) = mpl%msv%valr
             end do
          end if
-         if (avg_blk%nc1a_cor(jc3,jl0r,il0)>0.0) then
+         if (avg_blk%nc1a_cor(jc3,jl0r,il0)>zero) then
             avg_blk%cor(jc3,jl0r,il0) = avg_blk%cor(jc3,jl0r,il0)/avg_blk%nc1a_cor(jc3,jl0r,il0)
          else
             avg_blk%cor(jc3,jl0r,il0) = mpl%msv%valr
          end if
          if (nam%avg_nbins>0) then
-            if (sum(avg_blk%m11_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m11_hist(:,jc3,jl0r,il0) = &
+            if (sum(avg_blk%m11_hist(:,jc3,jl0r,il0))>zero) avg_blk%m11_hist(:,jc3,jl0r,il0) = &
  & avg_blk%m11_hist(:,jc3,jl0r,il0)/sum(avg_blk%m11_hist(:,jc3,jl0r,il0))
-            if (sum(avg_blk%m11m11_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m11m11_hist(:,jc3,jl0r,il0) = &
+            if (sum(avg_blk%m11m11_hist(:,jc3,jl0r,il0))>zero) avg_blk%m11m11_hist(:,jc3,jl0r,il0) = &
  & avg_blk%m11m11_hist(:,jc3,jl0r,il0)/sum(avg_blk%m11m11_hist(:,jc3,jl0r,il0))
-            if (sum(avg_blk%m2m2_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m2m2_hist(:,jc3,jl0r,il0) = &
+            if (sum(avg_blk%m2m2_hist(:,jc3,jl0r,il0))>zero) avg_blk%m2m2_hist(:,jc3,jl0r,il0) = &
  & avg_blk%m2m2_hist(:,jc3,jl0r,il0)/sum(avg_blk%m2m2_hist(:,jc3,jl0r,il0))
-            if (sum(avg_blk%m22_hist(:,jc3,jl0r,il0))>0.0) avg_blk%m22_hist(:,jc3,jl0r,il0) = &
+            if (sum(avg_blk%m22_hist(:,jc3,jl0r,il0))>zero) avg_blk%m22_hist(:,jc3,jl0r,il0) = &
  & avg_blk%m22_hist(:,jc3,jl0r,il0)/sum(avg_blk%m22_hist(:,jc3,jl0r,il0))
-            if (sum(avg_blk%cor_hist(:,jc3,jl0r,il0))>0.0) avg_blk%cor_hist(:,jc3,jl0r,il0) = &
+            if (sum(avg_blk%cor_hist(:,jc3,jl0r,il0))>zero) avg_blk%cor_hist(:,jc3,jl0r,il0) = &
  & avg_blk%cor_hist(:,jc3,jl0r,il0)/sum(avg_blk%cor_hist(:,jc3,jl0r,il0))
          end if
       end do
@@ -775,7 +776,7 @@ do il0=1,geom%nl0
             if (valid) then
                ! Check generalized kurtosis
                do isub=1,avg_blk%nsub
-                  gen_kurt = 3.0*mom_blk%m22(ic1d,jc3,jl0r,il0,isub)/(2.0*mom_blk%m11(ic1d,jc3,jl0r,il0,isub)**2 &
+                  gen_kurt = three*mom_blk%m22(ic1d,jc3,jl0r,il0,isub)/(two*mom_blk%m11(ic1d,jc3,jl0r,il0,isub)**2 &
  & +mom_blk%m2_1(ic1d,il0,isub)*mom_blk%m2_2(ic1d,jc3,jl0,isub))
                   if (gen_kurt>nam%gen_kurt_th) valid = .false.
                end do
@@ -798,9 +799,9 @@ do il0=1,geom%nl0
                ! Correlation
                m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_blk%nsub,kind_real)
                m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jl0,:))/real(avg_blk%nsub,kind_real)
-               if ((m2_1>0.0).and.(m2_2>0.0)) then
+               if ((m2_1>zero).and.(m2_2>zero)) then
                   list_cor(i) = list_m11(i)/sqrt(m2_1*m2_2)
-                  if (sup(abs(list_cor(i)),1.0_kind_real)) list_cor(i) = mpl%msv%valr
+                  if (sup(abs(list_cor(i)),one)) list_cor(i) = mpl%msv%valr
                end if
             end if
          end do
@@ -822,19 +823,19 @@ do il0=1,geom%nl0
                avg_blk%m22(jc3,jl0r,il0,isub) = sum(list_m22(:,isub),mask=mpl%msv%isnot(list_m11))
             end do
          else
-            avg_blk%m11(jc3,jl0r,il0) = 0.0
+            avg_blk%m11(jc3,jl0r,il0) = zero
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
-                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = 0.0
-                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = 0.0
+                  avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) = zero
+                  avg_blk%m2m2(jc3,jl0r,il0,jsub,isub) = zero
                end do
-               avg_blk%m22(jc3,jl0r,il0,isub) = 0.0
+               avg_blk%m22(jc3,jl0r,il0,isub) = zero
             end do
          end if
          if (nc1a_cor>0) then
             avg_blk%cor(jc3,jl0r,il0) = sum(list_cor,mask=mpl%msv%isnot(list_cor))
           else
-            avg_blk%cor(jc3,jl0r,il0) = 0.0
+            avg_blk%cor(jc3,jl0r,il0) = zero
          end if
       end do
    end do
@@ -852,8 +853,8 @@ deallocate(list_cor)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
-         if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
-            norm = 1.0/avg_blk%nc1a(jc3,jl0r,il0)
+         if (avg_blk%nc1a(jc3,jl0r,il0)>zero) then
+            norm = one/avg_blk%nc1a(jc3,jl0r,il0)
             avg_blk%m11(jc3,jl0r,il0) = avg_blk%m11(jc3,jl0r,il0)*norm
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
@@ -872,7 +873,7 @@ do il0=1,geom%nl0
                avg_blk%m22(jc3,jl0r,il0,isub) = mpl%msv%valr
             end do
          end if
-         if (avg_blk%nc1a_cor(jc3,jl0r,il0)>0.0) then
+         if (avg_blk%nc1a_cor(jc3,jl0r,il0)>zero) then
             avg_blk%cor(jc3,jl0r,il0) = avg_blk%cor(jc3,jl0r,il0)/avg_blk%nc1a_cor(jc3,jl0r,il0)
          else
             avg_blk%cor(jc3,jl0r,il0) = mpl%msv%valr
@@ -923,9 +924,9 @@ associate(ic2a=>avg_blk%ic2a,ib=>avg_blk%ib)
 if ((ic2a==0).or.nam%local_diag) then
    ! Ensemble size-dependent coefficients
    n = ne
-   P1 = 1.0/real(n,kind_real)
-   P3 = 1.0/real(n*(n-1),kind_real)
-   P4 = 1.0/real(n-1,kind_real)
+   P1 = one/real(n,kind_real)
+   P3 = one/real(n*(n-1),kind_real)
+   P4 = one/real(n-1,kind_real)
    P14 = real(n**2-2*n+2,kind_real)/real(n*(n-1),kind_real)
    P16 = real(n,kind_real)/real(n-1,kind_real)
 
@@ -963,15 +964,15 @@ if ((ic2a==0).or.nam%local_diag) then
                      ! Gaussian approximation
                      m11asysq_gau(jsub,isub) = P17*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
  & +P13*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)
-                     m2m2asy_gau(jsub,isub) = 2.0*P13*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
+                     m2m2asy_gau(jsub,isub) = two*P13*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
  & +P12*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)
 
                      ! General case
                      m11asysq(jsub,isub) = P15*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
  & +P8*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)+P9*avg_blk%m22(jc3,jl0r,il0,jsub)
-                     m2m2asy(jsub,isub) = 2.0*P8*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
+                     m2m2asy(jsub,isub) = two*P8*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub) &
  & +P7*avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)+P9*avg_blk%m22(jc3,jl0r,il0,jsub)
-                     m22asy(jsub) = P10*(2.0*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub)+avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)) &
+                     m22asy(jsub) = P10*(two*avg_blk%m11m11(jc3,jl0r,il0,jsub,isub)+avg_blk%m2m2(jc3,jl0r,il0,jsub,isub)) &
  & +P11*avg_blk%m22(jc3,jl0r,il0,jsub)
                   else
                      ! Off-diagonal terms
@@ -994,9 +995,9 @@ if ((ic2a==0).or.nam%local_diag) then
             avg_blk%m22asy(jc3,jl0r,il0) = sum(m22asy)/real(avg_blk%nsub,kind_real)
 
             ! Check positivity
-            if (.not.(avg_blk%m11asysq(jc3,jl0r,il0)>0.0)) avg_blk%m11asysq(jc3,jl0r,il0) = mpl%msv%valr
-            if (.not.(avg_blk%m2m2asy(jc3,jl0r,il0)>0.0)) avg_blk%m2m2asy(jc3,jl0r,il0) = mpl%msv%valr
-            if (.not.(avg_blk%m22asy(jc3,jl0r,il0)>0.0)) avg_blk%m22asy(jc3,jl0r,il0) = mpl%msv%valr
+            if (.not.(avg_blk%m11asysq(jc3,jl0r,il0)>zero)) avg_blk%m11asysq(jc3,jl0r,il0) = mpl%msv%valr
+            if (.not.(avg_blk%m2m2asy(jc3,jl0r,il0)>zero)) avg_blk%m2m2asy(jc3,jl0r,il0) = mpl%msv%valr
+            if (.not.(avg_blk%m22asy(jc3,jl0r,il0)>zero)) avg_blk%m22asy(jc3,jl0r,il0) = mpl%msv%valr
 
             ! Check Cauchy-Schwarz inequality
             if (inf(avg_blk%m2m2asy(jc3,jl0r,il0),avg_blk%m11asysq(jc3,jl0r,il0))) avg_blk%m11asysq(jc3,jl0r,il0) = mpl%msv%valr
@@ -1229,7 +1230,7 @@ end if
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
-         if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
+         if (avg_blk%nc1a(jc3,jl0r,il0)>zero) then
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
                   avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) &
@@ -1362,7 +1363,7 @@ do il0=1,geom%nl0
           else
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
-                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = 0.0
+                  avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = zero
                end do
             end do
          end if
@@ -1378,7 +1379,7 @@ deallocate(list_m11lrm11sub)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
       do jc3=1,bpar%nc3(ib)
-         if (avg_blk%nc1a(jc3,jl0r,il0)>0.0) then
+         if (avg_blk%nc1a(jc3,jl0r,il0)>zero) then
             do isub=1,avg_blk%nsub
                do jsub=1,avg_blk%nsub
                   avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) = avg_blk%m11lrm11sub(jc3,jl0r,il0,jsub,isub) &

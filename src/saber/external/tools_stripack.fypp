@@ -11,7 +11,7 @@
 !----------------------------------------------------------------------
 module tools_stripack
 
-use tools_const, only: pi
+use tools_const, only: zero,one,four,hundred,pi
 use tools_kinds, only: kind_real
 use tools_repro, only: eq,inf,sup,supeq,small
 use type_mpl, only: mpl_type
@@ -221,8 +221,8 @@ s23 = dot_product(u23,u23)
 s31 = dot_product(u31,u31)
 
 ! Test for a degenerate triangle associated with collinear vertices
-if ((.not.(abs(s12)>0.0)).or.(.not.(abs(s23)>0.0)).or.(.not.(abs(s31)>0.0))) then
-   area = 0.0
+if ((.not.(abs(s12)>zero)).or.(.not.(abs(s23)>zero)).or.(.not.(abs(s31)>zero))) then
+   area = zero
 else
    s12 = sqrt(s12)
    s23 = sqrt(s23)
@@ -235,19 +235,19 @@ else
    ca1 = -dot_product(u12,u31)
    ca2 = -dot_product(u23,u12)
    ca3 = -dot_product(u31,u23)
-   ca1 = max(ca1,-1.0_kind_real)
-   ca1 = min(ca1,+1.0_kind_real)
-   ca2 = max(ca2,-1.0_kind_real)
-   ca2 = min(ca2,+1.0_kind_real)
-   ca3 = max(ca3,-1.0_kind_real)
-   ca3 = min(ca3,+1.0_kind_real)
+   ca1 = max(ca1,-one)
+   ca1 = min(ca1,+one)
+   ca2 = max(ca2,-one)
+   ca2 = min(ca2,+one)
+   ca3 = max(ca3,-one)
+   ca3 = min(ca3,+one)
    a1 = acos(ca1)
    a2 = acos(ca2)
    a3 = acos(ca3)
 
    ! Compute area = a1 + a2 + a3 - pi
    area = a1+a2+a3-pi
-   if (area<0.0) area = 0.0
+   if (area<zero) area = zero
 end if
 
 ! Probe out
@@ -426,8 +426,8 @@ t3 = z0*(x1*y2-x2*y1)
 ! Determinant
 output = t1-t2+t3
 
-! Indistinguishability threshold for cross-plateform reproducibility
-if (small(output,t1).or.small(output,t2).or.small(output,t3)) output = 0.0
+! Indistinguishability threshold for cross-platform reproducibility
+if (small(output,t1).or.small(output,t2).or.small(output,t3)) output = zero
 
 ! Probe out
 @:probe_out()
@@ -601,7 +601,7 @@ real(kind_real) :: zz
 
 ! LEFT = TRUE iff <N0,N1 X N2> = det(N0,N1,N2) >= 0.
 call det(x1,y1,z1,x2,y2,z2,x0,y0,z0,zz)
-output = sup(zz,0.0_kind_real)
+output = sup(zz,zero)
 
 ! Probe out
 @:probe_out()
@@ -761,7 +761,7 @@ dz3 = z(n3)-z4
 
 ! N4 lies above the plane of (N1,N2,N3) iff N3 lies above the plane of (N2,N1,N4) iff Det(N3-N4,N2-N4,N1-N4) = (N3-N4,N2-N4 X N1-N4) > 0.
 call det(dx2,dy2,dz2,dx1,dy1,dz1,dx3,dy3,dz3,zz)
-output = sup(zz,0.0_kind_real)
+output = sup(zz,zero)
 
 ! Probe out
 @:probe_out()
@@ -812,7 +812,7 @@ if ((n0<1).or.(n<n0)) call jrand(n,ix,iy,iz,n0)
 
 ! Compute the relative machine precision EPS and TOL.
 eps = epsilon(eps)
-tol = 100.0_kind_real*eps
+tol = hundred*eps
 
 ! Set NF and NL to the first and last neighbors of N0, and initialize N1 = NF.
 2 continue
@@ -827,7 +827,7 @@ if (0<nl) then
    ! N0 is an interior node. Find N1.
    3 continue
    call det(x(n0),y(n0),z(n0),x(n1),y(n1),z(n1),xp,yp,zp,output)
-   if (inf(output,0.0_kind_real)) then
+   if (inf(output,zero)) then
       lp = lptr(lp)
       n1 = list(lp)
       if (n1 == nl) go to 6
@@ -839,7 +839,7 @@ else
 
    ! Is P to the right of the boundary edge N0->NF?
    call det(x(n0),y(n0),z(n0),x(nf),y(nf),z(nf),xp,yp,zp,output)
-   if (inf(output,0.0_kind_real)) then
+   if (inf(output,zero)) then
       n1 = n0
       n2 = nf
       go to 9
@@ -847,7 +847,7 @@ else
 
    ! Is P to the right of the boundary edge NL->N0?
    call det(x(nl),y(nl),z(nl),x(n0),y(n0),z(n0),xp,yp,zp,output)
-   if (inf(output,0.0_kind_real)) then
+   if (inf(output,zero)) then
       n1 = nl
       n2 = n0
       go to 9
@@ -859,18 +859,18 @@ end if
 lp = lptr(lp)
 n2 = abs(list(lp))
 call det(x(n0),y(n0),z(n0),x(n2),y(n2),z(n2),xp,yp,zp,output)
-if (inf(output,0.0_kind_real)) go to 7
+if (inf(output,zero)) go to 7
 n1 = n2
 if (n1/=nl) go to 4
 call det(x(n0),y(n0),z(n0),x(nf),y(nf),z(nf),xp,yp,zp,output)
-if (inf(output,0.0_kind_real)) go to 6
+if (inf(output,zero)) go to 6
 
 ! P is left of or on arcs N0->NB for all neighbors NB of N0. Test for P = +/-N0.
-if (inf(abs(x(n0)*xp+y(n0)*yp+z(n0)*zp),1.0-4.0*eps)) then
+if (inf(abs(x(n0)*xp+y(n0)*yp+z(n0)*zp),one-four*eps)) then
    ! All points are collinear iff P Left NB->N0 for all neighbors NB of N0. Search the neighbors of N0. Note:  N1 = NL and LP points to NL.
    do
       call det(x(n1),y(n1),z(n1),x(n0),y(n0),z(n0),xp,yp,zp,output)
-      if (inf(output,0.0_kind_real)) exit
+      if (inf(output,zero)) exit
       lp = lptr(lp)
       n1 = abs(list(lp))
       if (n1==nl) then
@@ -900,7 +900,7 @@ n2s = n2
 ! Top of edge-hopping loop:
 8 continue
 call det(x(n1),y(n1),z(n1),x(n2),y(n2),z(n2),xp,yp,zp,b3)
-if (inf(b3,0.0_kind_real)) then
+if (inf(b3,zero)) then
    ! Set N4 to the first neighbor of N2 following N1 (the node opposite N2->N1) unless N1->N2 is a boundary arc.
    call lstptr(lend(n2),n1,list,lptr,lp)
    if (list(lp)<0) go to 9
@@ -909,7 +909,7 @@ if (inf(b3,0.0_kind_real)) then
 
    !  Define a new arc N1->N2 which intersects the geodesic N0-P.
    call det(x(n0),y(n0),z(n0),x(n4),y(n4),z(n4),xp,yp,zp,output)
-   if (inf(output,0.0_kind_real)) then
+   if (inf(output,zero)) then
       n3 = n2
       n2 = n4
       n1s = n1
@@ -939,7 +939,7 @@ if (supeq(b3,eps)) then
    end if
 else
     ! B3 = 0 and thus P lies on N1->N2. Compute B1 = Det(P,N2 X N1,N2) and B2 = Det(P,N1,N2 X N1).
-    b3 = 0.0_kind_real
+    b3 = zero
     s12 = x(n1)*x(n2)+y(n1)*y(n2)+z(n1)*z(n2)
     ptn1 = xp*x(n1)+yp*y(n1)+zp*z(n1)
     ptn2 = xp*x(n2)+yp*y(n2)+zp*z(n2)
@@ -957,8 +957,8 @@ end if
 i1 = n1
 i2 = n2
 i3 = n3
-b1 = max(b1,0.0_kind_real)
-b2 = max(b2,0.0_kind_real)
+b1 = max(b1,zero)
+b2 = max(b2,zero)
 @:probe_out()
 return
 
@@ -974,13 +974,13 @@ lp = lend(n2)
 lp = lptr(lp)
 next = list(lp)
 call det(x(n2),y(n2),z(n2),x(next),y(next),z(next),xp,yp,zp,output)
-if (supeq(output,0.0_kind_real)) then
+if (supeq(output,zero)) then
    ! N2 is the rightmost visible node if P Forward N2->N1 or NEXT Forward N2->N1. Set Q to (N2 X N1) X N2.
     s12 = x(n1)*x(n2)+y(n1)*y(n2)+z(n1)*z(n2)
     q(1) = x(n1)-s12*x(n2)
     q(2) = y(n1)-s12*y(n2)
     q(3) = z(n1)-s12*z(n2)
-    if (sup(xp*q(1)+yp*q(2)+zp*q(3),0.0_kind_real).or.sup(x(next)*q(1)+y(next)*q(2)+z(next)*q(3),0.0_kind_real)) go to 11
+    if (sup(xp*q(1)+yp*q(2)+zp*q(3),zero).or.sup(x(next)*q(1)+y(next)*q(2)+z(next)*q(3),zero)) go to 11
 
    ! N1, N2, NEXT, and P are nearly collinear, and N2 is the leftmost visible node.
    nl = n2
@@ -1011,13 +1011,13 @@ if (nl==0) then
    lp = lend(n1)
    next = -list(lp)
    call det(x(next),y(next),z(next),x(n1),y(n1),z(n1),xp,yp,zp,output)
-   if (supeq(output,0.0_kind_real)) then
+   if (supeq(output,zero)) then
       ! N1 is the leftmost visible node if P or NEXT is forward of N1->N2. Compute Q = N1 X (N2 X N1).
       s12 = x(n1)*x(n2)+y(n1)*y(n2)+z(n1)*z(n2)
       q(1) = x(n2)-s12*x(n1)
       q(2) = y(n2)-s12*y(n1)
       q(3) = z(n2)-s12*z(n1)
-      if (sup(xp*q(1)+yp*q(2)+zp*q(3),0.0_kind_real).or.sup(x(next)*q(1)+y(next)*q(2)+z(next)*q(3),0.0_kind_real)) go to 13
+      if (sup(xp*q(1)+yp*q(2)+zp*q(3),zero).or.sup(x(next)*q(1)+y(next)*q(2)+z(next)*q(3),zero)) go to 13
 
       ! P, NEXT, N1, and N2 are nearly collinear and N1 is the rightmost visible node.
       nf = n1
@@ -1204,7 +1204,7 @@ do k=4,nn
       if (i==0) exit
       nexti = next(i)
 
-      ! Test for the distance from I to K less than the distance from I to J. Indistinguishability threshold for cross-plateform reproducibility
+      ! Test for the distance from I to K less than the distance from I to J. Indistinguishability threshold for cross-platform reproducibility
       d =-(x(i)*x(k)+y(i)*y(k)+z(i)*z(k))
       if (inf(d,dist(i))) then
          ! Replace J by K as the nearest triangulation node to I: update NEAR(I) and DIST(I), and remove I from J's set of unprocessed nodes and add it to K's set.

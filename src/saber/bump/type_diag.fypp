@@ -10,7 +10,7 @@ module type_diag
 
 use fckit_mpi_module, only: fckit_mpi_sum
 use netcdf, only: nf90_put_var,nf90_close
-use tools_const, only: reqkm,rad2deg,pi
+use tools_const, only: zero,one,five,reqkm,rad2deg,pi
 use tools_fit, only: ver_smooth
 use tools_func, only: fit_diag
 use tools_kinds, only: kind_real,nc_kind_real
@@ -27,8 +27,8 @@ use type_samp, only: samp_type
 
 implicit none
 
-real(kind_real),parameter :: bound = 5.0_kind_real !< Restriction bound applied on local diagnostics with respect to the global diagnostic
-real(kind_real),parameter :: egvmin = 1.0e-12      !< Minimum eigenvalue for full vertical covariance matrix inversion
+real(kind_real),parameter :: bound = five               !< Restriction bound applied on local diagnostics with respect to the global diagnostic
+real(kind_real),parameter :: egvmin = 1.0e-12_kind_real !< Minimum eigenvalue for full vertical covariance matrix inversion
 
 ! Diagnostic derived type
 type diag_type
@@ -318,7 +318,7 @@ if (nam%local_diag) then
                end if
             end do
 
-            if (nam%diag_rhflt>0.0) then
+            if (nam%diag_rhflt>zero) then
                ! Median filter to remove extreme values
                call samp%diag_filter(mpl,'median',nam%diag_rhflt,coef_ens_c2a(:,il0))
                if (bpar%fit_block(ib)) then
@@ -360,7 +360,7 @@ if (nam%local_diag) then
    end do
 end if
 
-if (nam%diag_rvflt>0.0) then
+if (nam%diag_rvflt>zero) then
    ! Vertical filtering
    write(mpl%info,'(a7,a)') '','Vertical filtering'
    call mpl%flush
@@ -426,7 +426,7 @@ do ib=1,bpar%nbe
       end do
       call mpl%f_comm%allreduce(rmse,rmse_tot,fckit_mpi_sum())
       call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
-      if (norm_tot>0.0) rmse_tot = sqrt(rmse_tot/norm_tot)
+      if (norm_tot>zero) rmse_tot = sqrt(rmse_tot/norm_tot)
       write(mpl%info,'(a10,a,a,a,e15.8,a,i8,a)') '','Fit RMSE for block ',trim(bpar%blockname(ib)),': ',rmse_tot, &
  & ' for ',int(norm_tot),' diagnostic points'
       call mpl%flush
@@ -929,7 +929,7 @@ end do
 
 ! Compute standard-deviation and correlations
 do i=1,nam%nv*geom%nl0
-   if (.not.(abs(cov(i,i))<0.0)) then
+   if (.not.(abs(cov(i,i))<zero)) then
       std(i) = sqrt(cov(i,i))
    else
       call mpl%abort('${subr}','negative variance')
@@ -937,13 +937,13 @@ do i=1,nam%nv*geom%nl0
 end do
 do j=1,nam%nv*geom%nl0
    do i=1,nam%nv*geom%nl0
-      if (std(i)*std(j)>0.0) then
+      if (std(i)*std(j)>zero) then
          cor(i,j) = cov(i,j)/(std(i)*std(j))
       else
          if (i==j) then
-            cor(i,j) = 1.0
+            cor(i,j) = one
          else
-            cor(i,j) = 0.0
+            cor(i,j) = zero
          end if
       end if
    end do
@@ -952,13 +952,13 @@ end do
 !  Correlation matrix regularization
 call da_eof_decomposition(mpl,nam%nv*geom%nl0,cor,v,covegv)
 d = max(covegv,egvmin)
-covpos = 0.0
+covpos = zero
 do i=1,nam%nv*geom%nl0
    covpos(i,i) = d(i)
 end do
 covpos = matmul(v,matmul(covpos,transpose(v)))
 do i=1,nam%nv*geom%nl0
-   if (.not.(abs(covpos(i,i))<0.0)) then
+   if (.not.(abs(covpos(i,i))<zero)) then
       stdpos(i) = sqrt(covpos(i,i))
    else
       call mpl%abort('${subr}','negative variance (after diagonalization)')
@@ -966,22 +966,22 @@ do i=1,nam%nv*geom%nl0
 end do
 do i=1,nam%nv*geom%nl0
    do j=1,nam%nv*geom%nl0
-      if (stdpos(i)*stdpos(j)>0.0) then
+      if (stdpos(i)*stdpos(j)>zero) then
          corpos(i,j) = covpos(i,j)/(stdpos(i)*stdpos(j))
       else
          if (i==j) then
-            corpos(i,j) = 1.0
+            corpos(i,j) = one
          else
-            corpos(i,j) = 0.0
+            corpos(i,j) = zero
          end if
       end if
    end do
 end do
 
 ! Invert correlations
-covposinv = 0.0
+covposinv = zero
 do i=1,nam%nv*geom%nl0
-   covposinv(i,i) = 1.0/d(i)
+   covposinv(i,i) = one/d(i)
 end do
 covposinv = matmul(v,matmul(covposinv,transpose(v)))
 

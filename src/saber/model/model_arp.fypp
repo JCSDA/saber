@@ -53,7 +53,7 @@ call mpl%ncerr('${subr}$',nf90_get_var(ncid,b_id,b))
 call mpl%ncerr('${subr}$',nf90_close(ncid))
 
 ! Grid size
-model%nmg = count(lon>-1000.0)
+model%nmg = count(lon>-thousand)
 
 ! Convert to radian
 lon = lon*deg2rad
@@ -63,7 +63,7 @@ lat = lat*deg2rad
 img = 0
 do ilon=1,model%nlon
    do ilat=1,model%nlat
-      if (lon(ilon,ilat)>-1000.0) then
+      if (lon(ilon,ilat)>-thousand) then
          img = img+1
          model%mg_to_tile(img) = 1
          model%mg_to_lon(img) = ilon
@@ -73,14 +73,14 @@ do ilon=1,model%nlon
       end if
    end do
 end do
-model%area = 4.0*pi/real(model%nmg,kind_real)
+model%area = four*pi/real(model%nmg,kind_real)
 model%mask = .true.
 
 ! Vertical unit
 do img=1,model%nmg
    if (nam%logpres) then
-      model%vunit(img,1:nam%nl) = log(0.5*(a(nam%levs(1:nam%nl))+a(nam%levs(1:nam%nl)+1)) &
- & +0.5*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
+      model%vunit(img,1:nam%nl) = log(half*(a(nam%levs(1:nam%nl))+a(nam%levs(1:nam%nl)+1)) &
+ & +half*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
       if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(ps)
    else
       model%vunit(img,:) = real(nam%levs(1:model%nl0))
