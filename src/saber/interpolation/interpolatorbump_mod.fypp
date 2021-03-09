@@ -187,6 +187,7 @@ else
 end if
 bint%bump%nam%nv = 1
 bint%bump%nam%variables(1) = 'var'
+bint%bump%nam%interp_type = 'mesh_based'
 
 ! Default missing values for integers and reals
 msvali = -999
@@ -343,7 +344,11 @@ if (any(.not.geom%myuniverse)) call mpl%abort('${subr}$','universe should be glo
 ! Check whether output grid points are inside the mesh
 if (bint%nouta > 0) then
    do iouta=1,bint%nouta
-      call geom%mesh_c0u%inside(mpl,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
+      if (trim(bint%bump%nam%interp_type)=='mesh_based') then
+         call geom%mesh_c0u%inside(mpl,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
+      elseif (trim(bint%bump%nam%interp_type)=='tree_based') then
+         call geom%tree_c0u%inside(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
+      end if
       if (.not.maskouta(iouta)) then
          ! Check for very close points
          call geom%tree_c0u%find_nearest_neighbors(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta), &
@@ -411,7 +416,13 @@ end do
 ! Local interpolation source
 bint%h%n_src = bint%nc0b
 do i_s=1,bint%h%n_s
-   bint%h%col(i_s) = c0u_to_c0b(bint%h%col(i_s))
+   ic0u = bint%h%col(i_s)
+   ic0b = c0u_to_c0b(ic0u)
+   if (mpl%msv%isnot(ic0b)) then
+      bint%h%col(i_s) = ic0b
+   else
+      call mpl%abort('${subr}$','wrong local source for h')
+   end if
 end do
 
 ! Setup communications

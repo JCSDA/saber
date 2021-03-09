@@ -31,15 +31,16 @@ implicit none
 
 ! Vertical balance derived type
 type vbal_type
-   ! Sampling
-   type(samp_type) :: samp                     !< Sampling
-
    ! Vertical balance data
    logical :: allocated                        !< Allocation flag
+   integer :: h_n_s_max                        !< Maximum number of neighbors
    integer,allocatable :: h_n_s(:,:)           !< Number of neighbors for the horizontal interpolation
    integer,allocatable :: h_c2b(:,:,:)         !< Index of neighbors for the horizontal interpolation
    real(kind_real),allocatable :: h_S(:,:,:)   !< Weight of neighbors for the horizontal interpolation
    type(vbal_blk_type),allocatable :: blk(:,:) !< Vertical balance blocks
+
+   ! Sampling
+   type(samp_type) :: samp                     !< Sampling
 
    ! I/O
    type(io_type) :: io                         !< I/O
@@ -89,15 +90,13 @@ integer :: iv,jv
 @:probe_in()
 
 ! Allocation
-allocate(vbal%h_n_s(geom%nc0a,geom%nl0i))
-allocate(vbal%h_c2b(3,geom%nc0a,geom%nl0i))
-allocate(vbal%h_S(3,geom%nc0a,geom%nl0i))
 allocate(vbal%blk(nam%nv,nam%nv))
 do iv=1,nam%nv
    do jv=1,nam%nv
       if (bpar%vbal_block(iv,jv)) then
          call vbal%blk(iv,jv)%alloc(nam,geom,vbal%samp%nc2b,iv,jv)
       end if
+      vbal%blk(iv,jv)%h_n_s_max = vbal%h_n_s_max
    end do
 end do
 
@@ -137,6 +136,8 @@ if (allocated(vbal%blk)) then
       end do
    end do
 end if
+call vbal%samp%dealloc
+call vbal%io%dealloc
 
 ! Probe out
 @:probe_out()
@@ -222,7 +223,38 @@ call mpl%flush
 call vbal%samp%setup('vbal',mpl,rng,nam,geom,ens)
 
 ! Allocation
-call vbal%alloc(nam,geom,bpar)
+allocate(vbal%h_n_s(geom%nc0a,geom%nl0i))
+
+! Initialization
+vbal%h_n_s = 0
+
+! Get maximum number of interpolation coefficients
+do il0i=1,geom%nl0i
+   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
+   end do
+end do
+vbal%h_n_s_max = maxval(vbal%h_n_s)
+
+! Allocation
+allocate(vbal%h_c2b(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
+allocate(vbal%h_S(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
+
+! Initialization
+vbal%h_c2b = mpl%msv%vali
+vbal%h_S = mpl%msv%valr
+
+! Get interpolation coefficients
+vbal%h_n_s = 0
+do il0i=1,geom%nl0i
+   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
+      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%col(i_s)
+      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%S(i_s)
+   end do
+end do
 
 ! Read vertical balance operators
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -231,6 +263,7 @@ write(mpl%info,'(a)') '--- Read vertical balance operators'
 call mpl%flush
 
 ! Allocation
+call vbal%alloc(nam,geom,bpar)
 allocate(hash_c2a(vbal%samp%nc2a))
 allocate(reg_c2a(vbal%samp%nc2a,geom%nl0**2))
 allocate(reg_c2b(vbal%samp%nc2b,geom%nl0**2))
@@ -262,21 +295,6 @@ do iv=1,nam%nv
             vbal%blk(iv,jv)%reg(:,:,ic2b) = reshape(reg_c2b(ic2b,:),(/geom%nl0,geom%nl0/))
          end do
       end if
-   end do
-end do
-
-! Initialization
-vbal%h_n_s = 0
-vbal%h_c2b = mpl%msv%vali
-vbal%h_S = mpl%msv%valr
-
-! Get interpolation coefficients
-do il0i=1,geom%nl0i
-   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
-      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
-      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
-      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%col(i_s)
-      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%S(i_s)
    end do
 end do
 
@@ -393,6 +411,40 @@ write(mpl%info,'(a)') '--- Setup sampling'
 call mpl%flush
 call vbal%samp%setup('vbal',mpl,rng,nam,geom,ens)
 
+! Allocation
+allocate(vbal%h_n_s(geom%nc0a,geom%nl0i))
+
+! Initialization
+vbal%h_n_s = 0
+
+! Get maximum number of interpolation coefficients
+do il0i=1,geom%nl0i
+   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
+   end do
+end do
+vbal%h_n_s_max = maxval(vbal%h_n_s)
+
+! Allocation
+allocate(vbal%h_c2b(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
+allocate(vbal%h_S(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
+
+! Initialization
+vbal%h_c2b = mpl%msv%vali
+vbal%h_S = mpl%msv%valr
+
+! Get interpolation coefficients
+vbal%h_n_s = 0
+do il0i=1,geom%nl0i
+   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
+      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%col(i_s)
+      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%S(i_s)
+   end do
+end do
+
 ! Compute vertical balance operators
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
@@ -406,24 +458,9 @@ call ensu%alloc(ens%ne,ens%nsub)
 call ensu%copy(mpl,nam,geom,ens)
 
 ! Allocation
+call vbal%alloc(nam,geom,bpar)
 allocate(auto(vbal%samp%nc1e,geom%nl0,geom%nl0,ensu%nsub))
 allocate(cross(vbal%samp%nc1e,geom%nl0,geom%nl0,ensu%nsub))
-call vbal%alloc(nam,geom,bpar)
-
-! Initialization
-vbal%h_n_s = 0
-vbal%h_c2b = mpl%msv%vali
-vbal%h_S = mpl%msv%valr
-
-! Get interpolation coefficients
-do il0i=1,geom%nl0i
-   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
-      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
-      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
-      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%col(i_s)
-      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%S(i_s)
-   end do
-end do
 
 do iv=1,nam%nv
    do jv=1,nam%nv

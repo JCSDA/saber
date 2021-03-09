@@ -16,7 +16,7 @@ use tools_func, only: lonlathash,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vec
 use tools_kinds, only: kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf
-use tools_stripack, only: trfind,trmesh
+use tools_stripack, only: bnodes,trfind,trmesh
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
@@ -499,7 +499,7 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 ! Local variables
 integer :: i,j,k
 integer :: ibnd,ibnd_save,ibnd_next,ibnd_next_save,ibnd_prev,i_next,i_prev
-integer,allocatable :: order(:),nodes(:)
+integer,allocatable :: order(:),nodes(:),bnd(:)
 real(kind_real),allocatable :: x(:),y(:),z(:),diff(:)
 logical :: isbnd(mesh%n)
 logical,allocatable :: valid(:)
@@ -510,168 +510,187 @@ logical,allocatable :: valid(:)
 ! Probe in
 @:probe_in()
 
-! Find first boundary nodes
-ibnd = 0
-i = 0
-do while ((ibnd==0).and.(i<mesh%n))
-   i = i+1
+if (mesh%use_cgal) then
+   ! Find first boundary nodes
+   ibnd = 0
+   i = 0
+   do while ((ibnd==0).and.(i<mesh%n))
+      i = i+1
 
-   ! Allocation
-   allocate(x(mesh%rows(i)%cols))
-   allocate(y(mesh%rows(i)%cols))
-   allocate(z(mesh%rows(i)%cols))
-   allocate(order(mesh%rows(i)%cols))
-   allocate(diff(mesh%rows(i)%cols))
-
-   ! Copy coordinates
-   x = mesh%x(mesh%rows(i)%nodes)
-   y = mesh%y(mesh%rows(i)%nodes)
-   z = mesh%z(mesh%rows(i)%nodes)
-
-   ! Order neighbors counter-clockwise
-   call order_cc(mpl,mesh%lon(i),mesh%lat(i),mesh%rows(i)%cols,x,y,z,order,diff)
-
-   ! Look for differences larger than pi
-   do j=1,mesh%rows(i)%cols
-      if (diff(j)>pi) then
-         ibnd = i
-         ibnd_next = mesh%rows(i)%nodes(j)
-         exit
-      end if
-   end do
-
-   ! Release memory
-   deallocate(x)
-   deallocate(y)
-   deallocate(z)
-   deallocate(order)
-   deallocate(diff)
-end do
-
-if (ibnd>0) then
-   ! Save the first two boundary nodes
-   ibnd_save = ibnd
-   ibnd_next_save = ibnd_next
-
-   ! Count boundary nodes
-   mesh%nb = 1
-   do while (ibnd_next/=ibnd_save)
-      mesh%nb = mesh%nb+1
-      do j=1,mesh%rows(ibnd_next)%cols
-         if (mesh%rows(ibnd_next)%nodes(j)==ibnd) then
-            ibnd = ibnd_next
-            if (j<mesh%rows(ibnd_next)%cols) then
-               ibnd_next = mesh%rows(ibnd_next)%nodes(j+1)
-            else
-               ibnd_next = mesh%rows(ibnd_next)%nodes(1)
-            end if
-            exit
-         end if
-         if (j==mesh%rows(ibnd_next)%cols) call mpl%abort('${subr}$','cannot find next boundary node')
-      end do
-   end do
-
-   ! Allocation
-   allocate(mesh%bnd(mesh%nb))
-
-   ! Copy boundary nodes
-   ibnd = ibnd_save
-   ibnd_next = ibnd_next_save
-   mesh%nb = 1
-   mesh%bnd(mesh%nb) = ibnd_save
-   do while (ibnd_next/=ibnd_save)
-      mesh%nb = mesh%nb+1
-      mesh%bnd(mesh%nb) = ibnd_next
-      do j=1,mesh%rows(ibnd_next)%cols
-         if (mesh%rows(ibnd_next)%nodes(j)==ibnd) then
-            ibnd = ibnd_next
-            if (j<mesh%rows(ibnd_next)%cols) then
-               ibnd_next = mesh%rows(ibnd_next)%nodes(j+1)
-            else
-               ibnd_next = mesh%rows(ibnd_next)%nodes(1)
-            end if
-            exit
-         end if
-         if (j==mesh%rows(ibnd_next)%cols) call mpl%abort('${subr}$','cannot find next boundary node')
-      end do
-   end do
-else
-   ! No boundary nodes
-   mesh%nb = 0
-end if
-
-! Flag boundary points
-isbnd = .false.
-do ibnd=1,mesh%nb
-   isbnd(mesh%bnd(ibnd)) = .true.
-end do
-
-! Remove out-of-boundaries edges
-do ibnd=1,mesh%nb
-   ! Get previous and next boundary nodes
-   i = mesh%bnd(ibnd)
-   if (ibnd==1) then
-      ibnd_prev = mesh%nb
-      ibnd_next = ibnd+1
-   elseif (ibnd<mesh%nb) then
-      ibnd_prev = ibnd-1
-      ibnd_next = ibnd+1
-   else
-      ibnd_prev = ibnd-1
-      ibnd_next = 1
-   end if
-   i_prev = mesh%bnd(ibnd_prev)
-   i_next = mesh%bnd(ibnd_next)
-
-   ! Allocation
-   allocate(valid(mesh%rows(i)%cols))
-
-   ! Initialization
-   valid = .false.
-
-   ! Check consistency
-   do j=1,mesh%rows(i)%cols
-      k = mesh%rows(i)%nodes(j)
-      if (isbnd(k)) then
-         ! Keep previous and next boundary nodes
-         if ((k==i_prev).or.(k==i_next)) valid(j) = .true.
-      else
-         ! Non-boundary nodes are kept
-         valid(j) = .true.
-      end if
-   end do
-
-   ! Remove edges
-   if (any(.not.valid)) then
       ! Allocation
-      allocate(nodes(mesh%rows(i)%cols))
+      allocate(x(mesh%rows(i)%cols))
+      allocate(y(mesh%rows(i)%cols))
+      allocate(z(mesh%rows(i)%cols))
+      allocate(order(mesh%rows(i)%cols))
+      allocate(diff(mesh%rows(i)%cols))
 
-      ! Save nodes
-      nodes = mesh%rows(i)%nodes
+      ! Copy coordinates
+      x = mesh%x(mesh%rows(i)%nodes)
+      y = mesh%y(mesh%rows(i)%nodes)
+      z = mesh%z(mesh%rows(i)%nodes)
 
-      ! Reallocation
-      deallocate(mesh%rows(i)%nodes)
-      allocate(mesh%rows(i)%nodes(count(valid)))
+      ! Order neighbors counter-clockwise
+      call order_cc(mpl,mesh%lon(i),mesh%lat(i),mesh%rows(i)%cols,x,y,z,order,diff)
 
-      ! Reset nodes
-      k = 0
+      ! Look for differences larger than pi
       do j=1,mesh%rows(i)%cols
-         if (valid(j)) then
-            k = k+1
-            mesh%rows(i)%nodes(k) = nodes(j)
+         if (diff(j)>pi) then
+            ibnd = i
+            ibnd_next = mesh%rows(i)%nodes(j)
+            exit
          end if
       end do
-
-      ! Reset number of columns
-      mesh%rows(i)%cols = count(valid)
 
       ! Release memory
-      deallocate(nodes)
+      deallocate(x)
+      deallocate(y)
+      deallocate(z)
+      deallocate(order)
+      deallocate(diff)
+   end do
+
+   if (ibnd>0) then
+      ! Save the first two boundary nodes
+      ibnd_save = ibnd
+      ibnd_next_save = ibnd_next
+
+      ! Count boundary nodes
+      mesh%nb = 1
+      do while (ibnd_next/=ibnd_save)
+         mesh%nb = mesh%nb+1
+         do j=1,mesh%rows(ibnd_next)%cols
+            if (mesh%rows(ibnd_next)%nodes(j)==ibnd) then
+               ibnd = ibnd_next
+               if (j<mesh%rows(ibnd_next)%cols) then
+                  ibnd_next = mesh%rows(ibnd_next)%nodes(j+1)
+               else
+                  ibnd_next = mesh%rows(ibnd_next)%nodes(1)
+               end if
+               exit
+            end if
+            if (j==mesh%rows(ibnd_next)%cols) call mpl%abort('${subr}$','cannot find next boundary node')
+         end do
+      end do
+
+      ! Allocation
+      allocate(mesh%bnd(mesh%nb))
+
+      ! Copy boundary nodes
+      ibnd = ibnd_save
+      ibnd_next = ibnd_next_save
+      mesh%nb = 1
+      mesh%bnd(mesh%nb) = ibnd_save
+      do while (ibnd_next/=ibnd_save)
+         mesh%nb = mesh%nb+1
+         mesh%bnd(mesh%nb) = ibnd_next
+         do j=1,mesh%rows(ibnd_next)%cols
+            if (mesh%rows(ibnd_next)%nodes(j)==ibnd) then
+               ibnd = ibnd_next
+               if (j<mesh%rows(ibnd_next)%cols) then
+                  ibnd_next = mesh%rows(ibnd_next)%nodes(j+1)
+               else
+                  ibnd_next = mesh%rows(ibnd_next)%nodes(1)
+               end if
+               exit
+            end if
+            if (j==mesh%rows(ibnd_next)%cols) call mpl%abort('${subr}$','cannot find next boundary node')
+         end do
+      end do
+   else
+      ! No boundary nodes
+      mesh%nb = 0
+   end if
+
+   ! Flag boundary points
+   isbnd = .false.
+   do ibnd=1,mesh%nb
+      isbnd(mesh%bnd(ibnd)) = .true.
+   end do
+
+   ! Remove out-of-boundaries edges
+   do ibnd=1,mesh%nb
+      ! Get previous and next boundary nodes
+      i = mesh%bnd(ibnd)
+      if (ibnd==1) then
+         ibnd_prev = mesh%nb
+         ibnd_next = ibnd+1
+      elseif (ibnd<mesh%nb) then
+         ibnd_prev = ibnd-1
+         ibnd_next = ibnd+1
+      else
+         ibnd_prev = ibnd-1
+         ibnd_next = 1
+      end if
+      i_prev = mesh%bnd(ibnd_prev)
+      i_next = mesh%bnd(ibnd_next)
+
+      ! Allocation
+      allocate(valid(mesh%rows(i)%cols))
+
+      ! Initialization
+      valid = .false.
+
+      ! Check consistency
+      do j=1,mesh%rows(i)%cols
+         k = mesh%rows(i)%nodes(j)
+         if (isbnd(k)) then
+            ! Keep previous and next boundary nodes
+            if ((k==i_prev).or.(k==i_next)) valid(j) = .true.
+         else
+            ! Non-boundary nodes are kept
+            valid(j) = .true.
+         end if
+      end do
+
+      ! Remove edges
+      if (any(.not.valid)) then
+         ! Allocation
+         allocate(nodes(mesh%rows(i)%cols))
+
+         ! Save nodes
+         nodes = mesh%rows(i)%nodes
+
+         ! Reallocation
+         deallocate(mesh%rows(i)%nodes)
+         allocate(mesh%rows(i)%nodes(count(valid)))
+
+         ! Reset nodes
+         k = 0
+         do j=1,mesh%rows(i)%cols
+            if (valid(j)) then
+               k = k+1
+               mesh%rows(i)%nodes(k) = nodes(j)
+            end if
+         end do
+
+         ! Reset number of columns
+         mesh%rows(i)%cols = count(valid)
+
+         ! Release memory
+         deallocate(nodes)
+      end if
+
+      ! Release memory
+      deallocate(valid)
+   end do
+else
+   ! Allocation
+   allocate(bnd(mesh%n))
+
+   ! Find boundary nodes
+   call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,mesh%nb)
+
+   if (mesh%nb>0) then
+      ! Allocation
+      allocate(mesh%bnd(mesh%nb))
+
+      ! Copy
+      mesh%bnd = bnd(1:mesh%nb)
    end if
 
    ! Release memory
-   deallocate(valid)
-end do
+   deallocate(bnd)
+end if
 
 ! Probe out
 @:probe_out()

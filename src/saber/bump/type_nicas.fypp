@@ -2290,7 +2290,7 @@ call rng%resync(mpl)
 do itest=1,ntest
    ! Define random dirac location
    call rng%rand(1,geom%nl0,il0dir)
-   call geom%rand_point(mpl,rng,il0dir,iprocdir,ic0adir)
+   call geom%rand_point(mpl,rng,nam,il0dir,iprocdir,ic0adir)
 
    ! Define test vector
    fld(:,:,:,itest) = zero

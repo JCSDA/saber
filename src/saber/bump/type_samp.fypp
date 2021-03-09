@@ -102,7 +102,6 @@ type samp_type
    real(kind_real),allocatable :: lon_c2u(:)              !< Longitudes on subset Sc2, universe
    real(kind_real),allocatable :: lat_c2u(:)              !< Latitudes on subset Sc2, universe
    logical,allocatable :: smask_c2u(:,:)                  !< Mask on subset Sc2, universe
-   logical,allocatable :: smask_hor_c2u(:)                !< Union of horizontal masks on subset Sc2, universe
    integer :: nc2a                                        !< Number of points in subset Sc2, halo A
    integer,allocatable :: c2a_to_c2(:)                    !< Subset Sc2, halo A, to subset Sc2, global
    integer,allocatable :: c2a_to_c2u(:)                   !< Subset Sc2, halo A, to subset Sc2, universe
@@ -111,7 +110,6 @@ type samp_type
    real(kind_real),allocatable :: lat_c2a(:)              !< Latitudes on subset Sc2, halo A
    real(kind_real),allocatable :: vunit_c2a(:,:)          !< Vertical unit on subset Sc2, halo A
    logical,allocatable :: smask_c2a(:,:)                  !< Mask on subset Sc2, halo A
-   logical,allocatable :: smask_hor_c2a(:)                !< Union of horizontal masks on subset Sc2, halo A
    integer :: nc2b                                        !< Number of points in subset Sc2, halo B
    integer,allocatable :: c2a_to_c2b(:)                   !< Subset Sc2, halo A to halo B
    integer,allocatable :: c2b_to_c2u(:)                   !< Subset Sc2, halo B to universe
@@ -145,7 +143,6 @@ type samp_type
    type(io_type) :: io                                    !< I/O
 contains
    procedure :: alloc => samp_alloc
-   procedure :: partial_dealloc => samp_partial_dealloc
    procedure :: dealloc => samp_dealloc
    procedure :: read => samp_read
    procedure :: write => samp_write
@@ -220,52 +217,6 @@ samp%myuniverse = geom%myuniverse
 end subroutine samp_alloc
 
 !----------------------------------------------------------------------
-! Subroutine: samp_partial_dealloc
-!> Release memory (partial)
-!----------------------------------------------------------------------
-subroutine samp_partial_dealloc(samp)
-
-implicit none
-
-! Passed variables
-class(samp_type),intent(inout) :: samp !< Sampling
-
-! Set name
-@:set_name(samp_partial_dealloc)
-
-! Probe in
-@:probe_in()
-
-! Release memory
-if (allocated(samp%smask_c0u)) deallocate(samp%smask_c0u)
-if (allocated(samp%smask_hor_c0u)) deallocate(samp%smask_hor_c0u)
-if (allocated(samp%smask_c0a)) deallocate(samp%smask_c0a)
-if (allocated(samp%smask_hor_c0a)) deallocate(samp%smask_hor_c0a)
-if (allocated(samp%nc0_smask)) deallocate(samp%nc0_smask)
-if (allocated(samp%c1u_to_c1)) deallocate(samp%c1u_to_c1)
-if (allocated(samp%c1u_to_c1a)) deallocate(samp%c1u_to_c1a)
-if (allocated(samp%lon_c1u)) deallocate(samp%lon_c1u)
-if (allocated(samp%lat_c1u)) deallocate(samp%lat_c1u)
-if (allocated(samp%c1a_to_c1)) deallocate(samp%c1a_to_c1)
-if (allocated(samp%c1a_to_c1u)) deallocate(samp%c1a_to_c1u)
-if (allocated(samp%c1al0_check)) deallocate(samp%c1al0_check)
-if (allocated(samp%lcheck_c2a)) deallocate(samp%lcheck_c2a)
-if (allocated(samp%c2u_to_c1u)) deallocate(samp%c2u_to_c1u)
-if (allocated(samp%lon_c2u)) deallocate(samp%lon_c2u)
-if (allocated(samp%lat_c2u)) deallocate(samp%lat_c2u)
-if (allocated(samp%smask_c2u)) deallocate(samp%smask_c2u)
-if (allocated(samp%smask_hor_c2u)) deallocate(samp%smask_hor_c2u)
-if (allocated(samp%smask_hor_c2a)) deallocate(samp%smask_hor_c2a)
-if (allocated(samp%c2b_to_c2u)) deallocate(samp%c2b_to_c2u)
-if (allocated(samp%ldwv_to_proc)) deallocate(samp%ldwv_to_proc)
-if (allocated(samp%ldwv_to_c0a)) deallocate(samp%ldwv_to_c0a)
-
-! Probe out
-@:probe_out()
-
-end subroutine samp_partial_dealloc
-
-!----------------------------------------------------------------------
 ! Subroutine: samp_dealloc
 !> Release memory
 !----------------------------------------------------------------------
@@ -286,15 +237,27 @@ integer :: il0ic1,il0ic3,il0,jc3
 @:probe_in()
 
 ! Release memory
-call samp%partial_dealloc
 if (allocated(samp%myuniverse)) deallocate(samp%myuniverse)
 if (allocated(samp%l0_to_l0ic1)) deallocate(samp%l0_to_l0ic1)
 if (allocated(samp%l0ic1_to_l0)) deallocate(samp%l0ic1_to_l0)
 if (allocated(samp%nl0ic3)) deallocate(samp%nl0ic3)
 if (allocated(samp%l0_to_l0ic3)) deallocate(samp%l0_to_l0ic3)
 if (allocated(samp%l0ic3_to_l0)) deallocate(samp%l0ic3_to_l0)
+if (allocated(samp%smask_c0u)) deallocate(samp%smask_c0u)
+if (allocated(samp%smask_hor_c0u)) deallocate(samp%smask_hor_c0u)
+if (allocated(samp%smask_c0a)) deallocate(samp%smask_c0a)
+if (allocated(samp%smask_hor_c0a)) deallocate(samp%smask_hor_c0a)
+if (allocated(samp%nc0_smask)) deallocate(samp%nc0_smask)
 if (allocated(samp%proc_to_nc1a)) deallocate(samp%proc_to_nc1a)
 if (allocated(samp%proc_to_c1_offset)) deallocate(samp%proc_to_c1_offset)
+if (allocated(samp%c1u_to_c1)) deallocate(samp%c1u_to_c1)
+if (allocated(samp%c1u_to_c1a)) deallocate(samp%c1u_to_c1a)
+if (allocated(samp%lon_c1u)) deallocate(samp%lon_c1u)
+if (allocated(samp%lat_c1u)) deallocate(samp%lat_c1u)
+if (allocated(samp%smask_c1u)) deallocate(samp%smask_c1u)
+if (allocated(samp%c1a_to_c1)) deallocate(samp%c1a_to_c1)
+if (allocated(samp%c1a_to_c1u)) deallocate(samp%c1a_to_c1u)
+if (allocated(samp%c1al0_check)) deallocate(samp%c1al0_check)
 if (allocated(samp%lon_c1a)) deallocate(samp%lon_c1a)
 if (allocated(samp%lat_c1a)) deallocate(samp%lat_c1a)
 if (allocated(samp%vunit_c1a)) deallocate(samp%vunit_c1a)
@@ -303,24 +266,31 @@ if (allocated(samp%lon_c3a)) deallocate(samp%lon_c3a)
 if (allocated(samp%lat_c3a)) deallocate(samp%lat_c3a)
 if (allocated(samp%smask_c3a)) deallocate(samp%smask_c3a)
 if (allocated(samp%smask_c1dc3)) deallocate(samp%smask_c1dc3)
-if (allocated(samp%smask_c1u)) deallocate(samp%smask_c1u)
 if (allocated(samp%c1d_to_c1u)) deallocate(samp%c1d_to_c1u)
 if (allocated(samp%c1e_to_c1u)) deallocate(samp%c1e_to_c1u)
+if (allocated(samp%lcheck_c2a)) deallocate(samp%lcheck_c2a)
 if (allocated(samp%proc_to_nc2a)) deallocate(samp%proc_to_nc2a)
 if (allocated(samp%proc_to_c2_offset)) deallocate(samp%proc_to_c2_offset)
 if (allocated(samp%c2u_to_c2)) deallocate(samp%c2u_to_c2)
+if (allocated(samp%c2u_to_c1u)) deallocate(samp%c2u_to_c1u)
+if (allocated(samp%lon_c2u)) deallocate(samp%lon_c2u)
+if (allocated(samp%lat_c2u)) deallocate(samp%lat_c2u)
+if (allocated(samp%smask_c2u)) deallocate(samp%smask_c2u)
 if (allocated(samp%c2a_to_c2)) deallocate(samp%c2a_to_c2)
 if (allocated(samp%c2a_to_c2u)) deallocate(samp%c2a_to_c2u)
 if (allocated(samp%c2a_to_c1a)) deallocate(samp%c2a_to_c1a)
 if (allocated(samp%lon_c2a)) deallocate(samp%lon_c2a)
 if (allocated(samp%lat_c2a)) deallocate(samp%lat_c2a)
 if (allocated(samp%vunit_c2a)) deallocate(samp%vunit_c2a)
-if (allocated(samp%c2a_to_c2b)) deallocate(samp%c2a_to_c2b)
 if (allocated(samp%smask_c2a)) deallocate(samp%smask_c2a)
+if (allocated(samp%c2a_to_c2b)) deallocate(samp%c2a_to_c2b)
+if (allocated(samp%c2b_to_c2u)) deallocate(samp%c2b_to_c2u)
 if (allocated(samp%vbal_mask)) deallocate(samp%vbal_mask)
 if (allocated(samp%local_mask)) deallocate(samp%local_mask)
 if (allocated(samp%nn_c2a_index)) deallocate(samp%nn_c2a_index)
 if (allocated(samp%nn_c2a_dist)) deallocate(samp%nn_c2a_dist)
+if (allocated(samp%ldwv_to_proc)) deallocate(samp%ldwv_to_proc)
+if (allocated(samp%ldwv_to_c0a)) deallocate(samp%ldwv_to_c0a)
 if (allocated(samp%ldwv_to_c2a)) deallocate(samp%ldwv_to_c2a)
 if (allocated(samp%interp_c0b_to_c1a)) then
    do il0ic1=1,size(samp%interp_c0b_to_c1a)
@@ -371,12 +341,12 @@ type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: ic0,ic0u,ic1,ic1a,nn_index(1),iproc,nc1a,ic2,ic2a
+integer :: ic1,ic1a,iproc,ic2,ic2a,ic0a
 integer :: ncid,grpid,lon_c1_id,lat_c1_id
-integer,allocatable :: c1_to_proc(:)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_c1a(:),lat_c1a(:),hash_c1a(:)
+real(kind_real),allocatable :: lon_c1(:),lat_c1(:),hash_c1a(:)
+logical :: gmask
+logical,allocatable :: owned(:)
 character(len=1024) :: filename
-type(fckit_mpi_status) :: status
 
 ! Set name
 @:set_name(samp_read)
@@ -396,12 +366,14 @@ if (mpl%main) then
 
    ! Get dimensions
    samp%nc1 = mpl%nc_dim_inquire(grpid,'nc1')
+end if
+call mpl%f_comm%broadcast(samp%nc1,mpl%rootproc-1)
 
-   ! Allocation
-   allocate(c1_to_proc(samp%nc1))
-   allocate(lon_c1(samp%nc1))
-   allocate(lat_c1(samp%nc1))
+! Allocation
+allocate(lon_c1(samp%nc1))
+allocate(lat_c1(samp%nc1))
 
+if (mpl%main) then
    ! Get variables
    call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'lon_c1',lon_c1_id))
    call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'lat_c1',lat_c1_id))
@@ -412,78 +384,38 @@ if (mpl%main) then
 
    ! Close file
    call mpl%ncerr('${subr}$',nf90_close(ncid))
-
-   ! Select a processor for each point
-   do ic1=1,samp%nc1
-      ! Find neighbor
-      call geom%tree_c0u%find_nearest_neighbors(lon_c1(ic1),lat_c1(ic1),1,nn_index)
-
-      ! Get processor
-      ic0u = nn_index(1)
-      ic0 = geom%c0u_to_c0(ic0u)
-      c1_to_proc(ic1) = geom%c0_to_proc(ic0)
-   end do
-
-   do iproc=1,samp%nproc
-      ! Count local number of points on each task
-      nc1a = count(c1_to_proc==iproc)
-
-      ! Allocation
-      allocate(lon_c1a(nc1a))
-      allocate(lat_c1a(nc1a))
-
-      ! Fill lon/lat
-      ic1a = 0
-      do ic1=1,samp%nc1
-         if (c1_to_proc(ic1)==iproc) then
-            ic1a = ic1a+1
-            lon_c1a(ic1a) = lon_c1(ic1)
-            lat_c1a(ic1a) = lat_c1(ic1)
-         end if
-      end do
-
-      if (iproc==mpl%rootproc) then
-         ! Copy local number of points
-         samp%nc1a = nc1a
-
-         ! Allocation
-         allocate(samp%lon_c1a(samp%nc1a))
-         allocate(samp%lat_c1a(samp%nc1a))
-
-         ! Copy conversion
-         samp%lon_c1a = lon_c1a
-         samp%lat_c1a = lat_c1a
-      else
-         ! Send local number of points
-         call mpl%f_comm%send(nc1a,iproc-1,mpl%tag)
-
-         ! Send conversion
-         call mpl%f_comm%send(lon_c1a,iproc-1,mpl%tag+1)
-         call mpl%f_comm%send(lat_c1a,iproc-1,mpl%tag+2)
-      end if
-
-      ! Release memory
-      deallocate(lon_c1a)
-      deallocate(lat_c1a)
-   end do
-
-   ! Release memory
-   deallocate(c1_to_proc)
-   deallocate(lon_c1)
-   deallocate(lat_c1)
-else
-   ! Receive local number of points
-   call mpl%f_comm%receive(samp%nc1a,mpl%rootproc-1,mpl%tag,status)
-
-   ! Allocation
-   allocate(samp%lon_c1a(samp%nc1a))
-   allocate(samp%lat_c1a(samp%nc1a))
-
-   ! Receive conversion
-   call mpl%f_comm%receive(samp%lon_c1a,mpl%rootproc-1,mpl%tag+1,status)
-   call mpl%f_comm%receive(samp%lat_c1a,mpl%rootproc-1,mpl%tag+2,status)
 end if
-call mpl%update_tag(3)
+call mpl%f_comm%broadcast(lon_c1,mpl%rootproc-1)
+call mpl%f_comm%broadcast(lat_c1,mpl%rootproc-1)
+
+! Allocation
+allocate(owned(samp%nc1))
+
+! Split sampling among processors
+do ic1=1,samp%nc1
+   ! Get local processor
+   call geom%index_from_lonlat(mpl,nam,lon_c1(ic1),lat_c1(ic1),0,iproc,ic0a,gmask)
+
+   ! Save lon/lat
+   owned(ic1) = (iproc==mpl%myproc)
+end do
+
+! Sampling size on halo A
+samp%nc1a = count(owned)
+
+! Allocation
+allocate(samp%lon_c1a(samp%nc1a))
+allocate(samp%lat_c1a(samp%nc1a))
+
+! Copy lon/lat
+ic1a = 0
+do ic1=1,samp%nc1
+   if (owned(ic1)) then
+      ic1a = ic1a+1
+      samp%lon_c1a(ic1a) = lon_c1(ic1)
+      samp%lat_c1a(ic1a) = lat_c1(ic1)
+   end if
+end do
 
 ! Communication
 call mpl%f_comm%allgather(samp%nc1a,samp%proc_to_nc1a)
@@ -493,9 +425,6 @@ samp%proc_to_c1_offset(1) = 0
 do iproc=2,mpl%nproc
    samp%proc_to_c1_offset(iproc) = samp%proc_to_c1_offset(iproc-1)+samp%proc_to_nc1a(iproc-1)
 end do
-
-! Get subset Sc1 size
-samp%nc1 = sum(samp%proc_to_nc1a)
 
 ! Allocation
 allocate(samp%vunit_c1a(samp%nc1a,geom%nl0))
@@ -917,7 +846,7 @@ else
 
       do ildwv=1,nam%nldwv
          ! Get index from lon/lat
-         call geom%index_from_lonlat(mpl,nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),0,samp%ldwv_to_proc(ildwv), &
+         call geom%index_from_lonlat(mpl,nam,nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),0,samp%ldwv_to_proc(ildwv), &
  & samp%ldwv_to_c0a(ildwv),valid)
          if (valid) then
             if (samp%ldwv_to_proc(ildwv)==mpl%myproc) then
@@ -1064,9 +993,6 @@ if (samp%sc3) then
       call mpl%flush
    end do
 end if
-
-! Release memory (partial)
-call samp%partial_dealloc
 
 ! Probe out
 @:probe_out()
@@ -1319,7 +1245,7 @@ case ('random_uniform','random_coast')
    call mpl%flush(.false.)
    call initialize_sampling(mpl,rng,geom%area_max_c0,geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
  & nam%ntry,nam%nrep,samp%nc1-nam%nldwv,c1_to_c0,n_uni=geom%nc0u,uni_to_loc=geom%c0u_to_c0a,mesh_uni=geom%mesh_c0u, &
- & tree_uni=geom%tree_c0u)
+ & tree_uni=geom%tree_c0u,inside_type=nam%interp_type)
 
    ! Count Sc1 point in halo A
    samp%nc1a = 0
@@ -1371,7 +1297,7 @@ case ('octahedral')
    call mpl%flush
 
    ! Octahedral grid
-   n = int(-4.5+sqrt(20.25+quarter*(real(samp%nc1,kind_real)*four*pi/geom%area_max_c0)))+1
+   n = int(-4.5_kind_real+sqrt(20.25_kind_real+quarter*(real(samp%nc1,kind_real)*four*pi/geom%area_max_c0)))+1
    write(gridid,'(a,i5.5)') 'O',n
    agrid = atlas_structuredgrid(gridid)
 
@@ -1382,8 +1308,11 @@ case ('octahedral')
          ! Get longitude/latitude
          lonlat = agrid%lonlat(ix,iy)*deg2rad
 
-         ! Check if point is inside the convex hull
-         call geom%mesh_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
+         if (trim(nam%interp_type)=='mesh_based') then
+            call geom%mesh_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
+         elseif (trim(nam%interp_type)=='tree_based') then
+            call geom%tree_c0u%inside(lonlat(1),lonlat(2),valid)
+         end if
 
          if (valid) then
             ! Find nearest neighbor in universe
@@ -1415,8 +1344,11 @@ case ('octahedral')
          lonlat = agrid%lonlat(ix,iy)*deg2rad
          call lonlatmod(lonlat(1),lonlat(2))
 
-         ! Check if point is inside the convex hull
-         call geom%mesh_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
+         if (trim(nam%interp_type)=='mesh_based') then
+            call geom%mesh_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
+         elseif (trim(nam%interp_type)=='tree_based') then
+            call geom%tree_c0u%inside(lonlat(1),lonlat(2),valid)
+         end if
 
          if (valid) then
             ! Find nearest neighbor in universe
@@ -1554,7 +1486,7 @@ if (nam%nc3>1) then
       ! Sample classes of positive separation
       do while ((.not.all(proc_to_done)).and.(ir<=nam%irmax))
          ! Define a random geographical point
-         call geom%rand_point(mpl,rng,0,iproc,jc0a,irtmp)
+         call geom%rand_point(mpl,rng,nam,0,iproc,jc0a,irtmp)
          ir = ir+irtmp
 
          if (samp%myuniverse(iproc)) then
@@ -1900,7 +1832,6 @@ allocate(samp%lon_c2a(samp%nc2a))
 allocate(samp%lat_c2a(samp%nc2a))
 allocate(samp%vunit_c2a(samp%nc2a,geom%nl0))
 allocate(samp%smask_c2a(samp%nc2a,geom%nl0))
-allocate(samp%smask_hor_c2a(samp%nc2a))
 
 ! Get vertical unit and sampling mask on nearest neighbor
 ic2a = 0
@@ -1925,7 +1856,6 @@ allocate(samp%c2u_to_c1u(samp%nc2u))
 allocate(samp%lon_c2u(samp%nc2u))
 allocate(samp%lat_c2u(samp%nc2u))
 allocate(samp%smask_c2u(samp%nc2u,geom%nl0))
-allocate(samp%smask_hor_c2u(samp%nc2u))
 
 ! Communication
 call samp%com_c1_AU%ext(mpl,samp%lcheck_c2a,lcheck_c2u)
@@ -2079,7 +2009,7 @@ do ic2u=1,samp%nc2u
          samp%c2a_to_c2b(ic2a) = ic2b
       end if
       c2b_to_c2(ic2b) = ic2
-      samp%c2b_to_c2u(ic2b) = ic2
+      samp%c2b_to_c2u(ic2b) = ic2u
       c2u_to_c2b(ic2u) = ic2b
    end if
 end do
@@ -2088,7 +2018,13 @@ end do
 do il0i=1,geom%nl0i
    samp%interp_c2b_to_c0a(il0i)%n_src = samp%nc2b
    do i_s=1,samp%interp_c2b_to_c0a(il0i)%n_s
-      samp%interp_c2b_to_c0a(il0i)%col(i_s) = c2u_to_c2b(samp%interp_c2b_to_c0a(il0i)%col(i_s))
+      ic2u = samp%interp_c2b_to_c0a(il0i)%col(i_s)
+      ic2b = c2u_to_c2b(ic2u)
+      if (mpl%msv%isnot(ic2b)) then
+         samp%interp_c2b_to_c0a(il0i)%col(i_s) = ic2b
+      else
+         call mpl%abort('${subr}$','wrong local source for interp_c2b_to_c0a')
+      end if
    end do
 end do
 
@@ -2206,7 +2142,13 @@ end do
 do il0ic1=1,samp%nl0ic1
    samp%interp_c0b_to_c1a(il0ic1)%n_src = samp%nc0b
    do i_s=1,samp%interp_c0b_to_c1a(il0ic1)%n_s
-      samp%interp_c0b_to_c1a(il0ic1)%col(i_s) = c0u_to_c0b(samp%interp_c0b_to_c1a(il0ic1)%col(i_s))
+      ic0u = samp%interp_c0b_to_c1a(il0ic1)%col(i_s)
+      ic0b = c0u_to_c0b(ic0u)
+      if (mpl%msv%isnot(ic0b)) then
+         samp%interp_c0b_to_c1a(il0ic1)%col(i_s) = ic0b
+      else
+         call mpl%abort('${subr}$','wrong local source for interp_c0b_to_c1a')
+      end if
    end do
 end do
 
@@ -2332,7 +2274,13 @@ do jc3=1,nam%nc3
    do il0ic3=1,samp%nl0ic3(jc3)
       samp%interp_c0c_to_c3a(jc3,il0ic3)%n_src = samp%nc0c
       do i_s=1,samp%interp_c0c_to_c3a(jc3,il0ic3)%n_s
-         samp%interp_c0c_to_c3a(jc3,il0ic3)%col(i_s) = c0u_to_c0c(samp%interp_c0c_to_c3a(jc3,il0ic3)%col(i_s))
+         ic0u = samp%interp_c0c_to_c3a(jc3,il0ic3)%col(i_s)
+         ic0c = c0u_to_c0c(ic0u)
+         if (mpl%msv%isnot(ic0u)) then
+            samp%interp_c0c_to_c3a(jc3,il0ic3)%col(i_s) = ic0c
+         else
+            call mpl%abort('${subr}$','wrong local source for interp_c0c_to_c3a')
+         end if
       end do
    end do
 end do

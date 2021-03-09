@@ -1500,6 +1500,7 @@ call nam_smoother%init(mpl%nproc)
 
 ! Set local namelist parameters
 nam_smoother%levs = nam%levs
+nam_smoother%interp_type = nam%interp_type
 if (nam%ntry==nam_smoother%ntry) then
    nam_smoother%ntry = 10
 else
@@ -1684,9 +1685,10 @@ case ('random_uniform','random_coast')
    ! Compute subsampling
    write(mpl%info,'(a10,a)') '','Compute horizontal subset C1: '
    if (nicas_blk%verbosity) call mpl%flush(.false.)
+
    call initialize_sampling(mpl,rng,geom%area_max_c0,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,rhs_min,geom%c0a_to_c0, &
  & nam%ntry,nam%nrep,nicas_blk%nc1,c1_to_c0,fast=nam%fast_sampling,verbosity=nicas_blk%verbosity, &
- & n_uni=geom%nc0u,uni_to_loc=geom%c0u_to_c0a,mesh_uni=geom%mesh_c0u,tree_uni=geom%tree_c0u)
+ & n_uni=geom%nc0u,uni_to_loc=geom%c0u_to_c0a,mesh_uni=geom%mesh_c0u,tree_uni=geom%tree_c0u,inside_type=nam%interp_type)
 
    ! Count Sc1 point in halo A
    nicas_blk%nc1a = 0
@@ -1732,8 +1734,12 @@ case ('octahedral')
          ! Get longitude/latitude
          lonlat = agrid%lonlat(ix,iy)*deg2rad
 
-         ! Check if point is inside the convex hull
-         call geom%mesh_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
+         ! Check if point is inside the hull
+         if (trim(nam%interp_type)=='mesh_based') then
+            call geom%mesh_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
+         elseif (trim(nam%interp_type)=='tree_based') then
+            call geom%tree_c0u%inside(lonlat(1),lonlat(2),valid)
+         end if
 
          if (valid) then
             ! Find nearest neighbor in universe
@@ -1765,8 +1771,12 @@ case ('octahedral')
          lonlat = agrid%lonlat(ix,iy)*deg2rad
          call lonlatmod(lonlat(1),lonlat(2))
 
-         ! Check if point is inside the convex hull
-         call geom%mesh_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
+         ! Check if point is inside the hull
+         if (trim(nam%interp_type)=='mesh_based') then
+            call geom%mesh_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
+         elseif (trim(nam%interp_type)=='tree_based') then
+            call geom%tree_c0u%inside(lonlat(1),lonlat(2),valid)
+         end if
 
          if (valid) then
             ! Find nearest neighbor in universe
@@ -2141,7 +2151,7 @@ logical :: lcheck_c0b(geom%nc0u)
 ! Allocation
 allocate(nicas_blk%interp_c0b_to_c1a(geom%nl0i))
 
-! Save seed (TODO: remove that)
+! Save seed  (TODO: remove that)
 seed = rng%seed
 
 ! Compute interpolation
@@ -2200,7 +2210,13 @@ end do
 do il0i=1,geom%nl0i
    nicas_blk%interp_c0b_to_c1a(il0i)%n_src = nicas_blk%nc0b
    do i_s=1,nicas_blk%interp_c0b_to_c1a(il0i)%n_s
-      nicas_blk%interp_c0b_to_c1a(il0i)%col(i_s) = c0u_to_c0b(nicas_blk%interp_c0b_to_c1a(il0i)%col(i_s))
+      ic0u = nicas_blk%interp_c0b_to_c1a(il0i)%col(i_s)
+      ic0b = c0u_to_c0b(ic0u)
+      if (mpl%msv%isnot(ic0b)) then
+         nicas_blk%interp_c0b_to_c1a(il0i)%col(i_s) = ic0b
+      else
+         call mpl%abort('${subr}$','wrong local source for interp_c0b_to_c1a')
+      end if
    end do
 end do
 
@@ -2210,12 +2226,12 @@ call nicas_blk%com_c0_AB%setup(mpl,'com_c0_AB',geom%nc0a,nicas_blk%nc0b,geom%nc0
 ! Release memory
 deallocate(c0b_to_c0)
 
+! Reset seed (TODO: remove that)
+rng%seed = seed
+
 ! Print results
 write(mpl%info,'(a10,a,i8)') '','nc0b = ',nicas_blk%nc0b
 call mpl%flush
-
-! Reset seed (TODO: remove that)
-rng%seed = seed
 
 ! Probe out
 @:probe_out()
@@ -2407,19 +2423,37 @@ do ic1b_h=1,nc1b_h
    c1b_h_to_c1b(ic1b_h) = ic1b
 end do
 
-! Local interpolation source
+! Local interpolation source and destination
 do il0i=1,geom%nl0i
    nicas_blk%interp_c1b_to_c0a(il0i)%n_src = nicas_blk%nc1b
    do i_s=1,nicas_blk%interp_c1b_to_c0a(il0i)%n_s
-      nicas_blk%interp_c1b_to_c0a(il0i)%col(i_s) = nicas_blk%c1u_to_c1b(nicas_blk%interp_c1b_to_c0a(il0i)%col(i_s))
+      ic1u = nicas_blk%interp_c1b_to_c0a(il0i)%col(i_s)
+      ic1b = nicas_blk%c1u_to_c1b(ic1u)
+      if (mpl%msv%isnot(ic1b)) then
+         nicas_blk%interp_c1b_to_c0a(il0i)%col(i_s) = ic1b
+      else
+         call mpl%abort('${subr}$','wrong local source for interp_c1b_to_c0a')
+      end if
    end do
 end do
 do il1=1,nicas_blk%nl1
    nicas_blk%s(il1)%n_src = nicas_blk%nc1b
    nicas_blk%s(il1)%n_dst = nicas_blk%nc1b
    do i_s=1,nicas_blk%s(il1)%n_s
-      nicas_blk%s(il1)%row(i_s) = c1b_h_to_c1b(nicas_blk%s(il1)%row(i_s))
-      nicas_blk%s(il1)%col(i_s) = nicas_blk%c1u_to_c1b(nicas_blk%s(il1)%col(i_s))
+      ic1u = nicas_blk%s(il1)%col(i_s)
+      ic1b = nicas_blk%c1u_to_c1b(ic1u)
+      if (mpl%msv%isnot(ic1b)) then
+         nicas_blk%s(il1)%col(i_s) = ic1b
+      else
+         call mpl%abort('${subr}$','wrong local source for s')
+      end if
+      ic1b_h = nicas_blk%s(il1)%row(i_s)
+      ic1b = c1b_h_to_c1b(ic1b_h)
+      if (mpl%msv%isnot(ic1b)) then
+         nicas_blk%s(il1)%row(i_s) = ic1b
+      else
+         call mpl%abort('${subr}$','wrong local source for s')
+      end if
    end do
 end do
 

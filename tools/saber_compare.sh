@@ -19,7 +19,7 @@ status=0
 if test "${test%%_*}" = "bump" ; then
    # NCCMP Parameters
    nthreads=4
-   tolerance=1.e-5
+   tolerance=1.e-4
 
    # Get comparison type
    compare_type=''

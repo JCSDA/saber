@@ -28,6 +28,9 @@ end interface
 interface bdyadd
    module procedure stripack_bdyadd
 end interface
+interface bnodes
+   module procedure stripack_bnodes
+end interface
 interface covsph
    module procedure stripack_covsph
 end interface
@@ -63,7 +66,7 @@ interface trmesh
 end interface
 
 private
-public :: area,trfind,trmesh
+public :: area,bnodes,trfind,trmesh
 
 contains
 
@@ -331,6 +334,78 @@ lnew = lnew+1
 @:probe_out()
 
 end subroutine stripack_bdyadd
+
+!----------------------------------------------------------------------
+! Subroutine: stripack_bnodes
+!> Return the boundary nodes of a triangulation
+!----------------------------------------------------------------------
+subroutine stripack_bnodes(n,list,lptr,lend,nodes,nb)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: n             !< Number of nodes in the triangulation. 3 <= N.
+integer,intent(in) :: list(6*(n-2)) !< The data structure defining the triangulation, created by TRMESH.
+integer,intent(in) :: lptr(6*(n-2)) !< cf. list
+integer,intent(in) :: lend(n)       !< cf. list
+integer,intent(out) :: nodes(n)     !< Ordered sequence of NB boundary node indexes in the range 1 to N.
+integer,intent(out) :: nb           !< Number of boundary nodes.
+
+! Local variables
+integer :: i,k,lp,n0,na,nn,nst,nt
+
+! Set name
+@:set_name(stripack_bnodes)
+
+! Initialization
+nn = n
+
+! Search for a boundary node
+nst = 0
+do i = 1, nn
+   lp = lend(i)
+   if (list(lp)<0) then
+      nst = i
+      exit
+   end if
+end do
+
+! The triangulation contains no boundary nodes
+if (nst==0) then
+   nb = 0
+   na = 3*(nn-2)
+   nt = 2*(nn-2)
+@:probe_out()
+   return
+end if
+
+! NST is the first boundary node encountered
+! Initialize for traversal of the boundary
+nodes(1) = nst
+k = 1
+n0 = nst
+
+! Traverse the boundary in counterclockwise order
+do
+   lp = lend(n0)
+   lp = lptr(lp)
+   n0 = list(lp)
+   if (n0==nst) then
+      exit
+   end if
+   k = k+1
+   nodes(k) = n0
+end do
+
+! Store the counts
+nb = k
+nt = 2*n-nb-2
+na = nt+n-1
+
+! Probe out
+@:probe_out()
+
+end subroutine stripack_bnodes
 
 !----------------------------------------------------------------------
 ! Subroutine: stripack_covsph

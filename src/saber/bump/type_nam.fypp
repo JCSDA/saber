@@ -106,6 +106,10 @@ type nam_type
    integer :: ens2_ne                                   !< Ensemble 2 size
    integer :: ens2_nsub                                 !< Ensemble 2 sub-ensembles number
 
+   ! interpolation_param
+   character(len=1024) :: interp_type                   !< Interpolation type ('mesh_based' or 'tree_based')
+   integer :: interp_nn                                 !< Number of interpolation nearest neighbors
+
    ! sampling_param
    logical :: sam_write                                 !< Write sampling
    logical :: sam_write_grids                           !< Write sampling grids
@@ -235,7 +239,7 @@ nam%verbosity = 'all'
 nam%colorlog = .false.
 nam%default_seed = .true.
 nam%repro = .true.
-nam%rth = 1.0e-10_kind_real
+nam%rth = 1.0e-12_kind_real
 nam%parallel_io = .true.
 nam%nprocio = min(nproc,nprociomax)
 nam%universe_rad = pi*req
@@ -309,6 +313,10 @@ nam%ens1_nsub = 1
 ! ens2_param default
 nam%ens2_ne = 0
 nam%ens2_nsub = 1
+
+! interpolation_param default
+nam%interp_type = 'tree_based'
+nam%interp_nn = 4
 
 ! sampling_param default
 nam%sam_write = .false.
@@ -494,6 +502,8 @@ integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
 integer :: ens2_nsub
+character(len=1024) :: interp_type
+integer :: interp_nn
 logical :: sam_write
 logical :: sam_write_grids
 logical :: sam_read
@@ -641,6 +651,9 @@ namelist/ens1_param/ &
 namelist/ens2_param/ &
  & ens2_ne, &
  & ens2_nsub
+namelist/interpolation_param/ &
+ & interp_type, &
+ & interp_nn
 namelist/sampling_param/ &
  & sam_write, &
  & sam_write_grids, &
@@ -730,7 +743,7 @@ if (mpl%main) then
    colorlog = .false.
    default_seed = .true.
    repro = .true.
-   rth = 1.0e-10_kind_real
+   rth = 1.0e-12_kind_real
    parallel_io = .true.
    nprocio = min(mpl%nproc,nprociomax)
    universe_rad = pi*req
@@ -804,6 +817,10 @@ if (mpl%main) then
    ! ens2_param default
    ens2_ne = 0
    ens2_nsub = 1
+
+   ! interpolation default
+   interp_type = 'tree_based'
+   interp_nn = 4
 
    ! sampling_param default
    sam_write = .false.
@@ -993,6 +1010,11 @@ if (mpl%main) then
    read(lunit,nml=ens2_param)
    nam%ens2_ne = ens2_ne
    nam%ens2_nsub = ens2_nsub
+
+   ! interpolation_param
+   read(lunit,nml=interpolation_param)
+   nam%interp_type = interp_type
+   nam%interp_nn = interp_nn
 
    ! sampling_param
    read(lunit,nml=sampling_param)
@@ -1184,6 +1206,10 @@ call mpl%f_comm%broadcast(nam%ens1_nsub,mpl%rootproc-1)
 ! ens2_param
 call mpl%f_comm%broadcast(nam%ens2_ne,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%ens2_nsub,mpl%rootproc-1)
+
+! interpolation_param
+call mpl%f_comm%broadcast(nam%interp_type,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%interp_nn,mpl%rootproc-1)
 
 ! sampling_param
 call mpl%f_comm%broadcast(nam%sam_write,mpl%rootproc-1)
@@ -1435,6 +1461,13 @@ if (conf%has('ens1_nsub')) call conf%get_or_die('ens1_nsub',nam%ens1_nsub)
 ! ens2_param
 if (conf%has('ens2_ne')) call conf%get_or_die('ens2_ne',nam%ens2_ne)
 if (conf%has('ens2_nsub')) call conf%get_or_die('ens2_nsub',nam%ens2_nsub)
+
+! interpolation_param
+if (conf%has('interp_type')) then
+   call conf%get_or_die('interp_type',str)
+   nam%interp_type = str
+end if
+if (conf%has('interp_nn')) call conf%get_or_die('interp_nn',nam%interp_nn)
 
 ! sampling_param
 if (conf%has('sam_read')) call conf%get_or_die('sam_read',nam%sam_read)
@@ -1788,6 +1821,9 @@ case ('all','main','none')
 case default
    call mpl%abort('${subr}$','wrong verbosity level')
 end select
+if (nam%repro) then
+  if (nam%rth<zero) call mpl%abort('${subr}$','rth should be non-negative')
+end if
 if (nam%nprocio<1) call mpl%abort('${subr}$','number of I/O tasks should be positive')
 if (nam%nprocio>mpl%nproc) then
    call mpl%warning('${subr}$','number of I/O tasks should be smaller than the total number of tasks, resetting nprocio')
@@ -1898,6 +1934,16 @@ if (nam%new_hdiag.and.((trim(nam%method)=='hyb-rnd').or.(trim(nam%method)=='dual
    if (mod(nam%ens2_ne,nam%ens2_nsub)/=0) call mpl%abort('${subr}$','ens2_nsub should be a divider of ens2_ne')
    if (nam%ens2_ne/nam%ens2_nsub<=3) call mpl%abort('${subr}$','ens2_ne/ens2_nsub should be larger than 3')
 end if
+
+! Check interpolation_param
+select case (trim(nam%interp_type))
+case ('mesh_based')
+   if (nam%universe_rad<pi) call mpl%warning('${subr}$','mesh based interpolation would require a larger universe')
+case ('tree_based')
+   if (nam%interp_nn<1) call mpl%abort('${subr}$','at least on interpolation neighbor required')
+case default
+   call mpl%abort('${subr}$','wrong interpolation type')
+end select
 
 ! Check sampling_param
 if (nam%new_vbal.or.nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam%check_optimality) then
@@ -2252,6 +2298,14 @@ if (mpl%msv%is(lncid)) then
 end if
 call mpl%write(lncid,'nam','ens2_ne',nam%ens2_ne)
 call mpl%write(lncid,'nam','ens2_nsub',nam%ens2_nsub)
+
+! interpolation_param
+if (mpl%msv%is(lncid)) then
+   write(mpl%info,'(a7,a)') '','Interpolation parameters'
+   call mpl%flush
+end if
+call mpl%write(lncid,'nam','interp_type',nam%interp_type)
+call mpl%write(lncid,'nam','interp_nn',nam%interp_nn)
 
 ! sampling_param
 if (mpl%msv%is(lncid)) then

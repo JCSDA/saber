@@ -16,7 +16,7 @@ use tools_kinds, only: kind_int,kind_real
 implicit none
 
 logical :: repro = .true.        !< Reproducibility flag
-real(kind_real) :: rth = 1.0e-10 !< Reproducibility threshold
+real(kind_real) :: rth = 1.0e-12 !< Reproducibility threshold
 
 interface eq
   #:for dtype in dtypes_irl

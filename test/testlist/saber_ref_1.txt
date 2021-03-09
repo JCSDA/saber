@@ -19,6 +19,9 @@ bump_hdiag-nicas_loc_common/test_1-1_nicas_000001-000001.nc
 bump_hdiag-nicas_mask_check/test_1-1_diag.nc
 bump_hdiag-nicas_mask_check/test_1-1_dirac.nc
 bump_hdiag-nicas_mask_check/test_1-1_nicas_000001-000001.nc
+bump_hdiag-nicas_mesh_based/test_1-1_diag.nc
+bump_hdiag-nicas_mesh_based/test_1-1_dirac.nc
+bump_hdiag-nicas_mesh_based/test_1-1_nicas_000001-000001.nc
 bump_hdiag-nicas_network/test_1-1_diag.nc
 bump_hdiag-nicas_network/test_1-1_dirac.nc
 bump_hdiag-nicas_network/test_1-1_nicas_000001-000001.nc

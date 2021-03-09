@@ -7,8 +7,13 @@
 #----------------------------------------------------------------------
 
 # Parameters
-datadir=$1
-listdir=$2
+if test "$#" = "0" ; then
+   datadir=${HOME}/build/gnu_9.3.0/bundle/saber/test/testdata
+   listdir=${HOME}/code/bundle/saber/test/testlist
+else
+   datadir=$1
+   listdir=$2
+fi
 
 # References list
 ref_list="
@@ -25,9 +30,6 @@ saber_ref_oops"
 # Get git branch
 branch=`git rev-parse --abbrev-ref HEAD`
 
-# Get initial pwd
-ipwd=`pwd`
-
 # Go to data directory
 cd ${datadir}
 
@@ -42,7 +44,7 @@ for ref in ${ref_list}; do
       if test ${ref} == "saber_ref_oops"; then
          grep -si 'Test     : ' ../testoutput/${line} > ${line}
       fi
-   done < ${ipwd}/${listdir}/${ref}.txt
+   done < ${listdir}/${ref}.txt
 
    # Archive
    tar -cvzf ${ref}.tar.gz ${files}

@@ -7,8 +7,13 @@
 #----------------------------------------------------------------------
 
 # Parameters
-datadir=$1
-listdir=$2
+if test "$#" = "0" ; then
+   datadir=${HOME}/build/gnu_9.3.0/bundle/saber/test/testdata
+   listdir=${HOME}/code/bundle/saber/test/testlist
+else
+   datadir=$1
+   listdir=$2
+fi
 
 # Data list
 data_list="

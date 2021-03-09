@@ -7,8 +7,13 @@
 #----------------------------------------------------------------------
 
 # Parameters
-testdata=$1
-listdir=$2
+if test "$#" = "0" ; then
+   datadir=${HOME}/build/gnu_9.3.0/bundle/saber/test/testdata
+   listdir=${HOME}/code/bundle/saber/test/testlist
+else
+   datadir=$1
+   listdir=$2
+fi
 
 # Special suffixes list for BUMP
 special_list="mom lct_cor nicas normality sampling_grids obs vbal"
@@ -26,7 +31,7 @@ for tier in $(seq 1 3); do
    while IFS= read -r bump_test
    do
       # Copy 1-1 files
-      for file in `ls ${testdata}/${bump_test}/test_1-1_*.nc`; do
+      for file in `ls ${datadir}/${bump_test}/test_1-1_*.nc`; do
          if test ! -L ${file}; then
             echo ${bump_test}/"$(basename -- ${file})" >> ${listdir}/saber_ref_${tier}.txt
          fi
@@ -34,8 +39,8 @@ for tier in $(seq 1 3); do
 
       # Copy 2-1 special files
       for special in ${special_list}; do
-         if ls ${testdata}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
-            for file in `ls ${testdata}/${bump_test}/test_2-1_${special}*.nc`; do
+         if ls ${datadir}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
+            for file in `ls ${datadir}/${bump_test}/test_2-1_${special}*.nc`; do
                if test ! -L ${file}; then
                   echo ${bump_test}/"$(basename -- $file)" >> ${listdir}/saber_ref_mpi_${tier}.txt
                fi
@@ -55,7 +60,7 @@ rm -f ${listdir}/saber_ref_mpi_cgal.txt
 while IFS= read -r bump_test
 do
    # Copy 1-1 files
-   for file in `ls ${testdata}/${bump_test}/test_1-1_*.nc`; do
+   for file in `ls ${datadir}/${bump_test}/test_1-1_*.nc`; do
       if test ! -L ${file}; then
          echo ${bump_test}/"$(basename -- ${file})" >> ${listdir}/saber_ref_cgal.txt
       fi
@@ -63,8 +68,8 @@ do
 
    # Copy 2-1 special files
    for special in ${special_list}; do
-      if ls ${testdata}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
-         for file in `ls ${testdata}/${bump_test}/test_2-1_${special}*.nc`; do
+      if ls ${datadir}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
+         for file in `ls ${datadir}/${bump_test}/test_2-1_${special}*.nc`; do
             if test ! -L ${file}; then
                echo ${bump_test}/"$(basename -- $file)" >> ${listdir}/saber_ref_mpi_cgal.txt
             fi
@@ -84,8 +89,8 @@ do
    for multi in ${multi_list}; do
       # Copy N-1 special files
       for special in ${special_list}; do
-         if ls ${testdata}/${bump_test}/test_${multi}-1_${special}*.nc 1> /dev/null 2>&1; then
-            for file in `ls ${testdata}/${bump_test}/test_${multi}-1_${special}*.nc`; do
+         if ls ${datadir}/${bump_test}/test_${multi}-1_${special}*.nc 1> /dev/null 2>&1; then
+            for file in `ls ${datadir}/${bump_test}/test_${multi}-1_${special}*.nc`; do
                if test ! -L ${file}; then
                   echo ${bump_test}/"$(basename -- $file)" >> ${listdir}/saber_ref_multi.txt
                fi

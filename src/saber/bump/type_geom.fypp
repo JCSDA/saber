@@ -344,11 +344,17 @@ call geom%setup_c0(mpl)
 
 ! Setup tree
 call geom%tree_c0u%alloc(mpl,geom%nc0u)
-call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
+if (trim(nam%interp_type)=='mesh_based') then
+   call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
+elseif (trim(nam%interp_type)=='tree_based') then
+   call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u,nam%interp_nn)
+end if
 
-! Setup mesh
-call geom%mesh_c0u%alloc(geom%nc0u,nam)
-call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,geom%area_max_c0)
+if ((trim(nam%interp_type)=='mesh_based').or.nam%mask_check) then
+   ! Setup mesh
+   call geom%mesh_c0u%alloc(geom%nc0u,nam)
+   call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,geom%area_max_c0)
+end if
 
 ! Setup number of independent levels
 call geom%setup_independent_levels(mpl)
@@ -1337,13 +1343,14 @@ end subroutine geom_setup_mask_check
 ! Subroutine: geom_index_from_lonlat
 !> Get nearest neighbor index from longitude/latitude/level
 !----------------------------------------------------------------------
-subroutine geom_index_from_lonlat(geom,mpl,lon,lat,il0,iproc,ic0a,gmask)
+subroutine geom_index_from_lonlat(geom,mpl,nam,lon,lat,il0,iproc,ic0a,gmask)
 
 implicit none
 
 ! Passed variables
 class(geom_type),intent(in) :: geom !< Geometry
 type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
 real(kind_real),intent(in) :: lon   !< Longitude
 real(kind_real),intent(in) :: lat   !< Latitude
 integer,intent(in) :: il0           !< Level index
@@ -1362,8 +1369,12 @@ logical :: valid
 ! Probe in
 @:probe_in()
 
-! Check whether the location is in convex hull of the universe
-call geom%mesh_c0u%inside(mpl,lon,lat,valid)
+! Check whether the location is in hull of the universe
+if (trim(nam%interp_type)=='mesh_based') then
+   call geom%mesh_c0u%inside(mpl,lon,lat,valid)
+elseif (trim(nam%interp_type)=='tree_based') then
+   call geom%tree_c0u%inside(lon,lat,valid)
+end if
 
 if (valid) then
    ! Find nearest neighbor
@@ -1389,7 +1400,7 @@ if (mpl%msv%isanynot(proc_to_nn_proc)) then
    if (mpl%msv%is(iproc)) call mpl%abort('${subr}$','cannot find root processor')
 
    if (iproc==mpl%myproc) then
-      ! Check whether the location is in the convex hull
+      ! Check whether the location is in the hull
       if (.not.valid) call mpl%abort('${subr}$','wrong processor')
 
       ! Local index
@@ -1465,7 +1476,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
       if (mpl%msv%is(il0dir)) call mpl%abort('${subr}$','impossible to find the Dirac level')
 
       ! Index from lon/lat/level
-      call geom%index_from_lonlat(mpl,nam%londir(idir),nam%latdir(idir),il0dir,iprocdir,ic0adir,valid)
+      call geom%index_from_lonlat(mpl,nam,nam%londir(idir),nam%latdir(idir),il0dir,iprocdir,ic0adir,valid)
 
       if (valid) then
          ! Add valid dirac point
@@ -1803,7 +1814,7 @@ end subroutine geom_c0_to_fieldset
 ! Subroutine: geom_rand_point
 !> Select random valid point on the horizontal grid
 !----------------------------------------------------------------------
-subroutine geom_rand_point(geom,mpl,rng,il0,iproc,ic0a,nr)
+subroutine geom_rand_point(geom,mpl,rng,nam,il0,iproc,ic0a,nr)
 
 implicit none
 
@@ -1811,6 +1822,7 @@ implicit none
 class(geom_type),intent(in) :: geom !< Geometry
 type(mpl_type),intent(inout) :: mpl !< MPI data
 type(rng_type),intent(inout) :: rng !< Random number generator
+type(nam_type),intent(in) :: nam    !< Namelist
 integer,intent(in) :: il0           !< Level
 integer,intent(out) :: iproc        !< Processor
 integer,intent(out) :: ic0a         !< Local index
@@ -1839,7 +1851,7 @@ do while (.not.valid)
    lat = asin(lat)
 
    ! Get index from lon/lat
-   call geom%index_from_lonlat(mpl,lon,lat,il0,iproc,ic0a,valid)
+   call geom%index_from_lonlat(mpl,nam,lon,lat,il0,iproc,ic0a,valid)
 
    ! Update number of tries
    lnr = lnr+1

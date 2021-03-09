@@ -11,7 +11,7 @@ module tools_func
 use atlas_module, only: atlas_geometry
 use iso_c_binding, only: c_int16_t,c_int32_t
 use tools_asa007, only: cholesky,syminv
-use tools_const, only: zero,hundredth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
+use tools_const, only: zero,tenth,hundredth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
 use tools_kinds, only: kind_short,kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,sup,infeq,small
@@ -382,8 +382,8 @@ lattmp = lat
 call lonlatmod(lontmp,lattmp)
 
 ! Hash value
-value = aint((lontmp+pi)*1.0e6_kind_real)+(lattmp+half*pi)*1.0e-1_kind_real
-if (present(il)) value = value+real(il*1e7,kind_real)
+value = aint((lontmp+pi)*1.0e7_kind_real)+(lattmp+half*pi)*tenth
+if (present(il)) value = value+real(il*1e8,kind_real)
 
 ! Probe out
 @:probe_out()
@@ -946,9 +946,6 @@ real(kind_real),intent(in) :: distnorm !< Normalized distance
 ! Returned variable
 real(kind_real) :: value
 
-! Local variables
-real(kind_real) :: t1,t2,t3,t4,t5,t6,t7,magnitude
-
 ! Set name
 @:set_name(func_gc99)
 
@@ -957,23 +954,18 @@ real(kind_real) :: t1,t2,t3,t4,t5,t6,t7,magnitude
 
 ! Gaspari and Cohn (1999) function
 if (distnorm<half) then
-   value = -eight*distnorm**5+eight*distnorm**4+five*distnorm**3-20.0_kind_real/three*distnorm**2+one
+   value = one-distnorm
+   value = one+eight/five*distnorm*value
+   value = one-three/four*distnorm*value
+   value = one-20.0_kind_real/three*distnorm**2*value
 else if (distnorm<one) then
-   ! Polynomial terms
-   t1 = eight/three*distnorm**5
-   t2 = -eight*distnorm**4
-   t3 = five*distnorm**3
-   t4 = 20.0_kind_real/three*distnorm**2
-   t5 = -ten*distnorm
-   t6 = four
-   t7 = -one/(three*distnorm)
-
-   ! Sum
-   value = t1+t2+t3+t4+t5+t6+t7
-   magnitude = abs(t1)+abs(t2)+abs(t3)+abs(t4)+abs(t5)+abs(t6)+abs(t7)
-
-   ! Indistinguishability threshold for cross-platform reproducibility
-   if (small(value,magnitude)) value = zero
+   value = one-distnorm/three
+   value = one-eight/five*distnorm*value
+   value = one+three/four*distnorm*value
+   value = one-two/three*distnorm*value
+   value = one-five/two*distnorm*value
+   value = one-12.0_kind_real*distnorm*value
+   value = -value/(three*distnorm)
 else
    value = zero
 end if

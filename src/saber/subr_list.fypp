@@ -398,6 +398,7 @@
 #:set subr_list = subr_list + ["tree_dealloc"]
 #:set subr_list = subr_list + ["tree_find_nearest_neighbors"]
 #:set subr_list = subr_list + ["tree_count_nearest_neighbors"]
+#:set subr_list = subr_list + ["tree_inside"]
 #:set subr_list = subr_list + ["var_alloc"]
 #:set subr_list = subr_list + ["var_partial_dealloc"]
 #:set subr_list = subr_list + ["var_dealloc"]
