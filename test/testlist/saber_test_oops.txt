@@ -14,7 +14,10 @@ qg_dirac_bump_loc_4d
 qg_dirac_id_cov
 qg_dirac_id_loc_3d
 qg_dirac_id_loc_4d
+qg_ens_recenter
 qg_parameters_bump_cov
+qg_parameters_bump_cov_pairs
+qg_parameters_bump_cov_incens
 qg_parameters_bump_cov_no_ens
 qg_parameters_bump_cov_nsub
 qg_parameters_bump_hyb

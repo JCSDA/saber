@@ -80,6 +80,19 @@ template <typename MODEL> class EstimateParams : public oops::Application {
       for (size_t ie = 0; ie < ens1->size(); ++ie) {
         (*ens1)[ie].toAtlas();
       }
+    } else if (fullConfig.has("ensemble pert")) {
+      const eckit::LocalConfiguration ensemblePertConfig(fullConfig, "ensemble pert");
+      if (fullConfig.has("ensemble base")) {
+        // Increment ensemble from difference of two state ensembles
+        const eckit::LocalConfiguration ensembleBaseConfig(fullConfig, "ensemble base");
+        ens1.reset(new Ensemble_(resol, vars, ensembleBaseConfig, ensemblePertConfig));
+      } else {
+        // Increment ensemble from increments on disk
+        ens1.reset(new Ensemble_(resol, vars, ensemblePertConfig));
+      }
+      for (size_t ie = 0; ie < ens1->size(); ++ie) {
+        (*ens1)[ie].toAtlas();
+      }
     }
 
     // Setup ensemble 2

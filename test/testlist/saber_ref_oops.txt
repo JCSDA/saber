@@ -14,6 +14,7 @@ qg_dirac_bump_loc_4d/test.log.out
 qg_dirac_id_cov/test.log.out
 qg_dirac_id_loc_3d/test.log.out
 qg_dirac_id_loc_4d/test.log.out
+qg_ens_recenter/test.log.out
 qg_parameters_bump_cov/test.log.out
 qg_parameters_bump_cov_no_ens/test.log.out
 qg_parameters_bump_cov_nsub/test.log.out

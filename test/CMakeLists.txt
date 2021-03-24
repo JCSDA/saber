@@ -311,6 +311,10 @@ if( SABER_TEST_OOPS )
                             SOURCES mains/qgDirac.cc
                             LIBS    ${QG_LIBS} )
 
+    ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
+                            SOURCES mains/qgEnsRecenter.cc
+                            LIBS    ${QG_LIBS} )
+
     ecbuild_add_executable( TARGET  saber_qg_4dvar.x
                             SOURCES mains/qg4DVar.cc
                             LIBS    ${QG_LIBS} )
@@ -540,17 +544,16 @@ if( SABER_TEST_OOPS )
                          ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test}/test.ref )
     endforeach()
 
-    # Parameters tests
+    # Ens recenter test
     set( mpi 1 )
     set( omp 2 )
     foreach( test ${saber_test_oops} )
-        string( FIND ${test} "qg_parameters" qg_parameters )
-        if( qg_parameters MATCHES 0 )
-            string(SUBSTRING ${test} 3 -1 testname )
-            ecbuild_add_test( TARGET test_qg_${testname}
+        string( FIND ${test} "qg_ens_recenter" qg_ens_recenter )
+        if( qg_ens_recenter MATCHES 0 )
+            ecbuild_add_test( TARGET test_qg_ens_recenter
                               TYPE SCRIPT
                               COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
-                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_ens_recenter.x
                                    testinput/${test}.yaml
                                    ${oops_BINDIR}/oops_compare.py
                                    ${test}/test.log.out
@@ -559,8 +562,37 @@ if( SABER_TEST_OOPS )
                                    0
                                    "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${mpi}"
                               OMP ${omp}
-                              DEPENDS saber_qg_estimate_parameters.x
+                              DEPENDS saber_qg_ens_recenter.x
                               TEST_DEPENDS get_saber_data )
+        endif()
+    endforeach()
+
+    # Parameters tests
+    set( mpi 1 )
+    set( omp 2 )
+    foreach( test ${saber_test_oops} )
+        string( FIND ${test} "qg_parameters" qg_parameters )
+        if( qg_parameters MATCHES 0 )
+            string(SUBSTRING ${test} 3 -1 testname )
+            if ( (test MATCHES qg_parameters_bump_cov_incens) OR (test MATCHES qg_parameters_bump_cov_pairs) )
+              set(logref qg_parameters_bump_cov/test.ref) #Matches qg_parameters_bump_cov output
+            else()
+              set(logref ${test}/test.ref)
+            endif()
+            ecbuild_add_test( TARGET test_qg_${testname}
+                              TYPE SCRIPT
+                              COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
+                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                                   testinput/${test}.yaml
+                                   ${oops_BINDIR}/oops_compare.py
+                                   ${test}/test.log.out
+                                   ${logref}
+                                   0.0
+                                   0
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${mpi}"
+                              OMP ${omp}
+                              DEPENDS saber_qg_estimate_parameters.x
+                              TEST_DEPENDS get_saber_data test_qg_ens_recenter )
         endif()
     endforeach()
 
