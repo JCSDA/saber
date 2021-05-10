@@ -1011,7 +1011,7 @@ if (geom%area_provided) then
 elseif ((geom%lon_min<-0.9_kind_real*pi).and.(geom%lon_max>0.9_kind_real*pi) &
  & .and.(geom%lat_min<-0.45_kind_real*pi).and.(geom%lat_max>0.45_kind_real*pi)) then
    ! Full sphere, equally distributed
-   area_c0a = four*pi*real(geom%nc0a,kind_real)/real(geom%nc0,kind_real)
+   area_c0a = four*pi/real(geom%nc0,kind_real)
 else
    ! Limited Area Model, equally distributed
    call lonlat2xyz(mpl,geom%lon_min,geom%lat_min,xyz_sw(1),xyz_sw(2),xyz_sw(3))
@@ -1020,7 +1020,7 @@ else
    call lonlat2xyz(mpl,geom%lon_max,geom%lat_max,xyz_ne(1),xyz_ne(2),xyz_ne(3))
    call area(xyz_sw,xyz_nw,xyz_ne,area_nw)
    call area(xyz_sw,xyz_ne,xyz_se,area_se)
-   area_c0a = (area_nw+area_se)*pi*real(geom%nc0a,kind_real)/real(geom%nc0,kind_real)
+   area_c0a = (area_nw+area_se)/real(geom%nc0,kind_real)
 end if
 call geom%com_mg%red(mpl,geom%vunit_mga,geom%vunit_c0a,.true.)
 call geom%com_mg%red(mpl,geom%gmask_mga,geom%gmask_c0a,.true.)
