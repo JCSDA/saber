@@ -30,3 +30,6 @@ ecbuild_bundle( PROJECT oops GIT "https://github.com/JCSDA-internal/oops.git" )
 ecbuild_bundle( PROJECT saber GIT "https://github.com/JCSDA-internal/saber.git" )
 
 ecbuild_bundle_finalize()
+
+include(cmake/cdash-integration.cmake)
+include(CTest)

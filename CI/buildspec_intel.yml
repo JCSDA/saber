@@ -44,7 +44,12 @@ phases:
         then export CODEBUILD_GIT_BRANCH_FORK="release-stable";
         else export CODEBUILD_GIT_BRANCH_FORK=${CODEBUILD_GIT_BRANCH};
         echo "CODEBUILD_GIT_BRANCH_FORK=${CODEBUILD_GIT_BRANCH_FORK}";
-        fi        
+        fi
+
+      # Upload branch name and commit sha as CodeBuild artifact to S3
+      - mkdir -p /jcsda/artifacts
+      - echo ${CODEBUILD_GIT_BRANCH} > /jcsda/artifacts/branch_name.txt
+      - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} > /jcsda/artifacts/commit_sha.txt
 
       - cd CI
       - . /etc/profile.d/intel.sh
@@ -60,14 +65,21 @@ phases:
 
       # move CMakeLists.txt from saber/CI to bundle directory
       - cp CMakeLists.txt /jcsda/saber-bundle
+      - cp -r cmake /jcsda/saber-bundle/
+      # cdash upload setup
+      - cp /jcsda/saber-bundle/cmake/CTestConfig.cmake /jcsda/saber-bundle/
       - chmod 777 -R /jcsda/saber-bundle
 
       - cd /jcsda/saber-bundle
-      - ls 
+      - ls
 
   build:
+    on-failure: CONTINUE
     commands:
       - echo Executing build phase
+      - echo $CODEBUILD_BUILD_SUCCEEDING
+      - export BUILD_STATUS="0"
+      - echo $BUILD_STATUS
 
       - su - jedi -c "export CC=mpiicc
         && export FC=mpiifort
@@ -75,13 +87,19 @@ phases:
         && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
         && export PATH=/usr/local/lib:$PATH
         && cd /home/jedi
-        && ecbuild /jcsda/saber-bundle/
-        && cd /home/jedi/saber
-        && make -j4"
+        && ecbuild /jcsda/saber-bundle/ -Wno-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE"
 
-      - export BUILD_STATUS="0"
-      - echo $BUILD_STATUS
-      - echo $CODEBUILD_BUILD_SUCCEEDING
+      - su - jedi -c "export CC=mpiicc
+        && export FC=mpiifort
+        && export CXX=mpiicpc
+        && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+        && export PATH=/usr/local/lib:$PATH
+        && cd /home/jedi/saber
+        && cp ../DartConfiguration.tcl .
+        && sed -i 's/saber-bundle/saber\/saber-jedi/' DartConfiguration.tcl
+        && sed -i 's/home\/jedi/home\/jedi\/saber-jedi/' DartConfiguration.tcl
+        && cat DartConfiguration.tcl
+        && make -j4"
 
       - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
         then export BUILD_STATUS="1";
@@ -95,21 +113,36 @@ phases:
         && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
         && export PATH=/usr/local/lib:$PATH
         && cd /home/jedi/saber
-        && ctest"
+        && ctest -C RelWithDebInfo -D ExperimentalTest"
 
-  post_build:
-    commands:
-      - echo Executing post_build phase
-      - echo $CODEBUILD_BUILD_SUCCEEDING
-
-      - if [ "$BUILD_STATUS" = "1" ] && [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ];
-        then echo "Build passed, rerun failed tests";
-        su - jedi -c "export CC=mpiicc
+    finally:
+      # upload ctest report to CDASH
+      - su - jedi -c "export CC=mpiicc
         && export FC=mpiifort
         && export CXX=mpiicpc
         && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
         && export PATH=/usr/local/lib:$PATH
         && cd /home/jedi/saber
-        && ctest -VV --rerun-failed";
+        && ctest -C RelWithDebInfo -D ExperimentalSubmit -M Continuous -- --track Continuous --group Continuous"
+
+  post_build:
+    commands:
+      - echo Executing post_build phase
+      - echo $CODEBUILD_BUILD_SUCCEEDING
+      - echo $BUILD_STATUS
+
+      # upload find cdash url and upload it as CodeBuild artifact to S3
+      - if [ "$BUILD_STATUS" = "1" ];
+        then echo "Build & tests passed, find cdash url";
+        bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /home/jedi/saber/Testing;
+        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /home/jedi/saber/Testing);
+        echo $url;
+        echo ${url} > /jcsda/artifacts/cdash-url.txt;
+        cat /jcsda/artifacts/cdash-url.txt;
         else echo "Build failed";
-        fi 
+        fi
+
+artifacts:
+  files:
+    - '/jcsda/artifacts/*'
+  name: saber-intel-url
