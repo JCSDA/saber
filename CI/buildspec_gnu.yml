@@ -48,10 +48,6 @@ phases:
 
       - cd CI
 
-      # fckit
-      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/fckit $CODEBUILD_GIT_BRANCH fckit /jcsda/saber-bundle release-stable
-      # atlas
-      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/atlas $CODEBUILD_GIT_BRANCH atlas /jcsda/saber-bundle release-stable
       # oops
       - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/oops $CODEBUILD_GIT_BRANCH oops /jcsda/saber-bundle develop
       # saber

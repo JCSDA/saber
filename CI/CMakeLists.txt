@@ -7,9 +7,9 @@
 # SABER bundle
 #
 
-project( saber-bundle CXX Fortran )
+cmake_minimum_required( VERSION 3.12 FATAL_ERROR )
 
-cmake_minimum_required( VERSION 3.3.2 FATAL_ERROR )
+project( saber-bundle VERSION 1.0.0 LANGUAGES CXX Fortran )
 
 set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_CURRENT_SOURCE_DIR}/ecbuild/cmake;${CMAKE_MODULE_PATH}")
 include( ecbuild_bundle )
@@ -24,8 +24,6 @@ ecbuild_add_option( FEATURE OMP
                     DEFAULT ON
                     DESCRIPTION "Use OpenMP" )
 
-ecbuild_bundle( PROJECT fckit GIT "https://github.com/JCSDA-internal/fckit.git" )
-ecbuild_bundle( PROJECT atlas GIT "https://github.com/JCSDA-internal/atlas.git" )
 ecbuild_bundle( PROJECT oops GIT "https://github.com/JCSDA-internal/oops.git" )
 ecbuild_bundle( PROJECT saber GIT "https://github.com/JCSDA-internal/saber.git" )
 
