@@ -7,6 +7,7 @@ bump_hdiag-nicas_cor_specific_univariate
 bump_hdiag-nicas_local_diag
 bump_hdiag-nicas_loc_common
 bump_hdiag-nicas_mask_check
+bump_hdiag-nicas_mesh_based
 bump_hdiag-nicas_network
 bump_lct-nicas_one_scale
 bump_nicas_fast_sampling
@@ -15,17 +16,15 @@ bump_read_cmat
 bump_read_cmat_serial
 bump_read_mom
 bump_read_nicas
-bump_read_obsop
 bump_read_sampling
 bump_read_var
 bump_read_vbal
-bump_var_filter
+bump_var_forced_var
 bump_vbal
 bump_write_cmat
 bump_write_cmat_serial
 bump_write_mom
 bump_write_nicas
-bump_write_obsop
 bump_write_sampling
 bump_write_var
 bump_write_vbal

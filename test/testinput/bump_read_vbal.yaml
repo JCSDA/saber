@@ -20,9 +20,7 @@ variables: ["u","q"]
 # ens2_param
 
 # sampling_param
-nc1: 500
-nc2: 250
-ntry: 30
+sam_read: 1
 
 # diag_param
 vbal_block: [1]
@@ -38,8 +36,6 @@ latdir: [65.0]
 levdir: [1]
 ivdir: [1]
 itsdir: [1]
-
-# obsop_param
 
 # output_param
 

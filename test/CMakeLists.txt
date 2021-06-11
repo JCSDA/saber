@@ -3,6 +3,9 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
+# use find_branch functionn in jedi-cmake
+include( ${CMAKE_SOURCE_DIR}/jedicmake/cmake/Functions/git_functions.cmake )
+
 # Default SABER_TEST_TIER
 set( SABER_TEST_TIER 1 )
 
@@ -136,8 +139,26 @@ if( SABER_TEST_TIER GREATER 2 )
 #    endif()
 endif()
 
+# CGAL-specific tests
+if( atlas_HAVE_TESSELATION )
+    message( STATUS "ATLAS has feature TESSELATION enabled: CGAL-specific tests activated" )
+    file( STRINGS testlist/saber_test_cgal.txt saber_test_tmp )
+    list( APPEND saber_test ${saber_test_tmp} )
+    file( STRINGS testlist/saber_ref_cgal.txt saber_ref_tmp )
+    list( APPEND saber_ref ${saber_ref_tmp} )
+    list( APPEND saber_ref_tar saber_ref_cgal.tar.gz )
+    if( SABER_TEST_MPI )
+        file( STRINGS testlist/saber_ref_mpi_cgal.txt saber_ref_tmp )
+        list( APPEND saber_ref ${saber_ref_tmp} )
+        list( APPEND saber_ref_tar saber_ref_mpi_cgal.tar.gz )
+    endif()
+endif()
+
 # Multi-core tests (more than two)
 if( SABER_TEST_MULTI )
+    file( STRINGS testlist/saber_data_multi.txt saber_data_tmp )
+    list( APPEND saber_data ${saber_data_tmp} )
+    list( APPEND saber_data_tar saber_data_multi.tar.gz )
     file( STRINGS testlist/saber_test_multi.txt saber_test_multi_tmp )
     list( APPEND saber_test_multi ${saber_test_multi_tmp} )
     file( STRINGS testlist/saber_ref_multi.txt saber_ref_tmp )
@@ -164,21 +185,25 @@ if( SABER_TEST_OOPS )
 endif()
 
 # Set download URL
-set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber )
 
 # Define branch name
 if ( DEFINED ENV{SABER_TESTFILES_BRANCH} )
     set( GIT_BRANCH_SABER $ENV{SABER_TESTFILES_BRANCH} )
     message( STATUS "Branch name provided by user: ${GIT_BRANCH_SABER}" )
 else()
-    # Get the current git branch of ufo repo
-    execute_process(
-        COMMAND bash "-c" "git symbolic-ref -q --short HEAD || git describe --tags --exact-match"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_BRANCH_SABER
-        OUTPUT_STRIP_TRAILING_WHITESPACE )
-    message( STATUS "SABER is in branch: ${GIT_BRANCH_SABER}" )
+    find_branch_name(REPO_DIR_NAME ${repo})
+    if( DEFINED GIT_BRANCH_FUNC )
+        set( GIT_BRANCH_SABER ${GIT_BRANCH_FUNC} ) # Branch is checked out
+        message( STATUS "SABER is in branch: ${GIT_BRANCH_SABER}" )
+        set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber )
+    elseif( DEFINED GIT_TAG_FUNC )
+       set( GIT_BRANCH_SABER ${GIT_TAG_FUNC} )    # Tag is checked out
+        message( STATUS "SABER is in tag: ${GIT_BRANCH_SABER}" )
+        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/1.1.0/file )
+    endif()
+
 endif()
+
 
 # If local path to testfiles is defined don't download
 if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
@@ -196,7 +221,34 @@ if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
     message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
 else()
     # Set SABER_TESTFILES_PATH
-    set( SABER_TESTFILES_PATH ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_BRANCH_SABER} )
+
+    # Set distant directory
+    if( DEFINED GIT_TAG_FUNC )
+        set( DIRNAME "" )
+        set( DIRNAME_SAVE ${GIT_TAG_FUNC} )
+        set( checksum "0")
+
+    else()
+        # Check whether the URLs exist or not
+        foreach ( saber_data_tar_name ${saber_data_tar} )
+            list( APPEND url_names_data ${GIT_BRANCH_SABER}/${saber_data_tar_name} )
+        endforeach()
+        ecbuild_check_urls( NAMES  ${url_names_data}
+                            RESULT SPECIFIC_TEST_FILES )
+
+        if( SPECIFIC_TEST_FILES MATCHES 0 )
+        # Download and extract new test files (distant directory = git branch)
+            set( DIRNAME ${GIT_BRANCH_SABER} )
+        else()
+        # Download and extract develop test files (distant directory = develop)
+            set( DIRNAME "develop" )
+        endif()
+        set( DIRNAME_SAVE ${DIRNAME} )
+        set( checksum "1")
+    endif()
+    message( STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL} "/" ${DIRNAME} )
+
+    set( SABER_TESTFILES_PATH ${CMAKE_BINARY_DIR}/test_data/saber/${DIRNAME_SAVE} )
     message( STATUS "Files downloaded into: " ${SABER_TESTFILES_PATH} )
 endif()
 
@@ -223,61 +275,81 @@ execute_process( COMMAND bash ${CMAKE_BINARY_DIR}/bin/saber_setup.sh
 if( NOT DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
     message( STATUS "Download sources:" )
 
-    # Check whether the URLs exist or not
-    foreach ( saber_data_tar_name ${saber_data_tar} )
-        list( APPEND url_names_data ${GIT_BRANCH_SABER}/${saber_data_tar_name} )
-    endforeach()
-    ecbuild_check_urls( NAMES  ${url_names_data}
-                        RESULT SPECIFIC_TEST_FILES )
+    # Download saber data
+    foreach( saber_data_tar_name ${saber_data_tar} )
 
-    # Set distant directory
-    if( SPECIFIC_TEST_FILES MATCHES 0 )
-        # Download and extract new test files (distant directory = git branch)
-        set( DIRNAME ${GIT_BRANCH_SABER} )
-    else()
-        # Download and extract develop test files (distant directory = develop)
-        set( DIRNAME "develop" )
-    endif()
-    message( STATUS "  Test data: " ${ECBUILD_DOWNLOAD_BASE_URL} "/" ${DIRNAME} )
+        list( APPEND SABER_DATA_DOWNLOADER_ARGS
+              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
+              ${SABER_TESTFILES_PATH}/testdata
+              ${saber_data_tar_name}
+              ${checksum} )
 
-    # Download and extract data files
-    ecbuild_get_test_multidata( TARGET   get_saber_data
-                                NAMES    ${saber_data_tar}
-                                DIRNAME  ${DIRNAME}
-                                DIRLOCAL ${SABER_TESTFILES_PATH}/testdata
-                                EXTRACT )
+        # add test for downloading data
+        ecbuild_add_test( TARGET    get_data_${saber_data_tar_name}
+                          TYPE      SCRIPT
+                          COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
+                          ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
+        set (SABER_DATA_DOWNLOADER_ARGS "")
+        # Create download script for get_saber_ref test
+        set ( FILENAME saber_data_downloader.py)
+        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
+        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
 
-    # Check whether the URLs exist or not
-    foreach( saber_ref_tar_name ${saber_ref_tar} )
-        list( APPEND url_names_ref ${GIT_BRANCH_SABER}/${saber_ref_tar_name} )
-    endforeach()
-    ecbuild_check_urls( NAMES  ${url_names_ref}
-                        RESULT SPECIFIC_TEST_FILES )
+        if( EXISTS "${SOURCE_FILE}.in" )
+          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
+        else()
+          configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
+        endif()
 
-    # Set distant directory
-    if( SPECIFIC_TEST_FILES MATCHES 0 )
-        # Download and extract new test files (distant directory = git branch)
-        set( DIRNAME ${GIT_BRANCH_SABER} )
-    else()
-        # Download and extract develop test files (distant directory = develop)
-        set( DIRNAME "develop" )
-    endif()
+        add_custom_target( bin_saber_test_download_script_${saber_data_tar_name} ALL
+          COMMAND chmod +x ${DEST_FILE}
+          DEPENDS ${DEST_FILE} )
+
+     endforeach()
+
+   # Download saber reference data
     message( STATUS "  Reference: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME} )
 
-    # Download and extract reference files
-    ecbuild_get_test_multidata( TARGET   get_saber_ref
-                                NAMES    ${saber_ref_tar}
-                                DIRNAME  ${DIRNAME}
-                                DIRLOCAL ${SABER_TESTFILES_PATH}/testref
-                                EXTRACT )
+   foreach( saber_ref_tar_name ${saber_ref_tar} )
+        list( APPEND SABER_DATA_DOWNLOADER_ARGS
+              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
+              ${SABER_TESTFILES_PATH}/testref
+              ${saber_ref_tar_name}
+              ${checksum} )
+
+        # add test for downloading data
+        ecbuild_add_test( TARGET    get_data_${saber_ref_tar_name}
+                          TYPE      SCRIPT
+                          COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
+                          ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
+
+        set (SABER_DATA_DOWNLOADER_ARGS "")
+        # Create download script for get_saber_ref test
+        set ( FILENAME saber_data_downloader.py)
+        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
+        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
+
+        if( EXISTS "${SOURCE_FILE}.in" )
+          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
+        else()
+          configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
+        endif()
+
+        add_custom_target( bin_saber_test_download_script_${saber_ref_tar_name} ALL
+          COMMAND chmod +x ${DEST_FILE}
+          DEPENDS ${DEST_FILE} )
+   endforeach()
+
 endif()
 
 # Executables
 ecbuild_add_executable( TARGET  saber_bump.x
                         SOURCES mains/bump_main.cc
-                                mains/bump_main.F90
-                                mains/type_model.F90
+                                mains/bump_main.fypp
                         LIBS    saber )
+
+# Process fypp files
+fckit_target_preprocess_fypp( saber_bump.x )
 
 if ( SABER_TEST_OOPS OR SABER_TEST_INTERPOLATION )
     set( QG_LIBS saber ${oops_qg_LIBRARIES} )
@@ -289,6 +361,10 @@ if( SABER_TEST_OOPS )
 
     ecbuild_add_executable( TARGET  saber_qg_dirac.x
                             SOURCES mains/qgDirac.cc
+                            LIBS    ${QG_LIBS} )
+
+    ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
+                            SOURCES mains/qgEnsRecenter.cc
                             LIBS    ${QG_LIBS} )
 
     ecbuild_add_executable( TARGET  saber_qg_4dvar.x
@@ -520,17 +596,16 @@ if( SABER_TEST_OOPS )
                          ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${test}/test.ref )
     endforeach()
 
-    # Parameters tests
+    # Ens recenter test
     set( mpi 1 )
     set( omp 2 )
     foreach( test ${saber_test_oops} )
-        string( FIND ${test} "qg_parameters" qg_parameters )
-        if( qg_parameters MATCHES 0 )
-            string(SUBSTRING ${test} 3 -1 testname )
-            ecbuild_add_test( TARGET test_qg_${testname}
+        string( FIND ${test} "qg_ens_recenter" qg_ens_recenter )
+        if( qg_ens_recenter MATCHES 0 )
+            ecbuild_add_test( TARGET test_qg_ens_recenter
                               TYPE SCRIPT
                               COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
-                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_ens_recenter.x
                                    testinput/${test}.yaml
                                    ${oops_BINDIR}/oops_compare.py
                                    ${test}/test.log.out
@@ -539,12 +614,41 @@ if( SABER_TEST_OOPS )
                                    0
                                    "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${mpi}"
                               OMP ${omp}
-                              DEPENDS saber_qg_estimate_parameters.x
+                              DEPENDS saber_qg_ens_recenter.x
                               TEST_DEPENDS get_saber_data )
         endif()
     endforeach()
 
-    # Links
+    # Parameters tests
+    set( mpi 1 )
+    set( omp 2 )
+    foreach( test ${saber_test_oops} )
+        string( FIND ${test} "qg_parameters" qg_parameters )
+        if( qg_parameters MATCHES 0 )
+            string(SUBSTRING ${test} 3 -1 testname )
+            if ( (test MATCHES qg_parameters_bump_cov_incens) OR (test MATCHES qg_parameters_bump_cov_pairs) )
+              set(logref qg_parameters_bump_cov/test.ref) #Matches qg_parameters_bump_cov output
+            else()
+              set(logref ${test}/test.ref)
+            endif()
+            ecbuild_add_test( TARGET test_qg_${testname}
+                              TYPE SCRIPT
+                              COMMAND ${oops_BINDIR}/oops_test_wrapper.sh
+                              ARGS ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                                   testinput/${test}.yaml
+                                   ${oops_BINDIR}/oops_compare.py
+                                   ${test}/test.log.out
+                                   ${logref}
+                                   0.0
+                                   0
+                                   "${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${mpi}"
+                              OMP ${omp}
+                              DEPENDS saber_qg_estimate_parameters.x
+                              TEST_DEPENDS get_saber_data test_qg_ens_recenter )
+        endif()
+    endforeach()
+
+    # Links
     ecbuild_add_test( TARGET       test_qg_links
                       TYPE SCRIPT
                       COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_qg_links.sh

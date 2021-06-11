@@ -1,2 +1,6 @@
 bump_hdiag-nicas_nprocio
 bump_hdiag-nicas_universe_rad
+bump_read_sampling
+bump_read_vbal
+bump_write_sampling
+bump_write_vbal

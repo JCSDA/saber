@@ -1,0 +1,182 @@
+#:include '../instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_wrfda
+!> WRFDA functions
+! Source: https://github.com/wrf-model/WRFDA
+! Author: This routine is from WRFDA
+! Original licensing: none
+! Modified by Benjamin Menetrier for BUMP
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_wrfda
+
+use tools_const, only: zero,one
+use tools_kinds, only: kind_real
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+interface pseudoinv
+   module procedure wrfda_pseudoinv
+end interface
+interface da_eof_decomposition
+   module procedure wrfda_da_eof_decomposition
+end interface
+
+private
+public :: pseudoinv,da_eof_decomposition
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: wrfda_pseudoinv
+!> Compute pseudo inverse of a symmetric matrix.
+!----------------------------------------------------------------------
+subroutine wrfda_pseudoinv(mpl,n,a,c,mmax,var_th)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: n                       !< Matrix rank
+real(kind_real),intent(in) :: a(n,n)          !< Matrix
+real(kind_real),intent(out) :: c(n,n)         !< Matrix inverse
+integer,intent(in),optional :: mmax           !< Dominant mode
+real(kind_real),intent(in),optional :: var_th !< Variance threshold
+
+! Local variables
+integer :: k,k2,m,lmmax
+real(kind_real),allocatable :: work(:,:),evec(:,:),eval(:),laminvet(:,:)
+real(kind_real),allocatable :: summ,total_variance,cumul_variance
+
+! Set name
+@:set_name(wrfda_pseudoinv)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(work(n,n))
+allocate(evec(n,n))
+allocate(eval(n))
+allocate(laminvet(n,n))
+
+! Initialization
+work = a
+laminvet = zero
+
+! EOF decomposition
+call da_eof_decomposition(mpl,n,work,evec,eval)
+
+! Select dominant mode
+if (present(mmax)) then
+   ! Input argument
+   lmmax = mmax
+else
+   if (present(var_th)) then
+      ! Based on variance threshold
+      summ = zero
+      do m=1,n
+         summ = summ+eval(m)
+      end do
+      total_variance = summ
+      cumul_variance = zero
+      lmmax = n
+      do m=1,n
+         cumul_variance = cumul_variance+eval(m)/total_variance
+         if (cumul_variance>one-var_th ) then
+            lmmax = m-1
+            exit
+         end if
+      end do
+   else
+      call mpl%abort('${subr}$','either dominant mode or variance threshold should be specified')
+   end if
+end if
+if (lmmax>n) call mpl%abort('${subr}$','dominant mode should smaller than the matrix rank')
+
+! Lam{-1} . E^T:
+do k=1,n
+   do m=1,lmmax
+      laminvet(m,k) = evec(k,m)/eval(m)
+   end do
+end do
+
+! <a,a>^{-1} = E . Lam{-1} . E^T:
+do k=1,n
+   do k2=1,k
+      summ = zero
+      do m=1,n
+         summ = summ+evec(k,m)*laminvet(m,k2)
+      end do
+      c(k,k2) = summ
+   end do
+end do
+
+! Symmetry
+do k=1,n
+   do k2=k+1,n
+      c(k,k2) = c(k2,k)
+   end do
+end do
+
+! Release memory
+deallocate(work)
+deallocate(evec)
+deallocate(eval)
+deallocate(laminvet)
+
+! Probe out
+@:probe_out()
+
+end subroutine wrfda_pseudoinv
+
+!----------------------------------------------------------------------
+! Subroutine: wrfda_da_eof_decomposition
+!> Compute eigenvectors E and eigenvalues L of covariance matrix.
+!! B_{x} defined by equation:  E^{T} B_{x} E = L, given input kz x kz matrix.
+!----------------------------------------------------------------------
+subroutine wrfda_da_eof_decomposition(mpl,kz,bx,e,l)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer, intent(in)  :: kz                  !< Dimension of error matrix
+real(kind_real),intent(in) :: bx(1:kz,1:kz) !< Vert. background error
+real(kind_real),intent(out) :: e(1:kz,1:kz) !< Eigenvectors of Bx
+real(kind_real),intent(out) :: l(1:kz)      !< Eigenvalues of Bx
+
+! Local variables
+integer :: work,ierr,m
+real(kind_real) :: work_array(1:3*kz-1),ecopy(1:kz,1:kz),lcopy(1:kz)
+
+! Set name
+@:set_name(wrfda_da_eof_decomposition)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+work = 3*kz-1
+ecopy = bx
+lcopy = zero
+
+! Perform global eigenvalue decomposition using LAPACK software
+call dsyev('V','U',kz,ecopy,kz,lcopy,work_array,work,ierr)
+if (ierr/=0) call mpl%abort('${subr}$','dsyev failed')
+
+! Swap order of eigenvalues, vectors so 1st is one with most variance
+do m=1,kz
+   l(m) = lcopy(kz+1-m)
+   e(1:kz,m) = ecopy(1:kz,kz+1-m)
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine wrfda_da_eof_decomposition
+
+end module tools_wrfda

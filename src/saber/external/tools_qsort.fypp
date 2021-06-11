@@ -1,0 +1,181 @@
+#:include '../generics.fypp'
+#:include '../instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_qsort
+!> Qsort routines
+! Source: http://jblevins.org/mirror/amiller/qsort.f90
+! Author: Brainerd, W.S., Goldberg, C.H. & Adams, J.C. (1990) "Programmer's Guide to Fortran 90", McGraw-Hill  ISBN 0-07-000248-7, pages 149-150.
+! Original licensing: none
+! Modified by Alan Miller
+! Modified by Benjamin Menetrier for BUMP
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_qsort
+
+use tools_kinds, only: kind_int,kind_real
+use tools_repro, only: inf,sup
+@:use_probe()
+
+implicit none
+
+interface qsort
+  #:for dtype in dtypes_ir
+     module procedure qsort_qsort_${dtype}$
+  #:endfor
+end interface
+interface quick_sort
+  #:for dtype in dtypes_ir
+     module procedure qsort_quick_sort_${dtype}$
+  #:endfor
+end interface
+interface interchange_sort
+  #:for dtype in dtypes_ir
+     module procedure qsort_interchange_sort_${dtype}$
+  #:endfor
+end interface
+
+private
+public :: qsort
+
+contains
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Subroutine: qsort_qsort_${dtype}$
+!> Sort a subvector
+!----------------------------------------------------------------------
+recursive subroutine qsort_qsort_${dtype}$(n,list,order)
+
+implicit none
+
+! Passed variables
+integer, intent(in) :: n                   !< Input vector size
+${ftype[dtype]}$,intent(inout) :: list(n)  !< Vector to sort
+integer,intent(inout),optional :: order(n) !< Positions of the elements in the original order
+
+! Local variable
+integer :: i
+integer :: lorder(n)
+
+do i=1,n
+  lorder(i) = i
+end do
+
+call quick_sort(n,1,n,list,lorder)
+
+if (present(order)) order = lorder
+
+end subroutine qsort_qsort_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Subroutine: qsort_quick_sort_${dtype}$
+!> Sort an integer subvector
+!----------------------------------------------------------------------
+recursive subroutine qsort_quick_sort_${dtype}$(n,left_end,right_end,list,order)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: n                   !< Input vector size
+integer,intent(in) :: left_end            !< Left end of the vector
+integer,intent(in) :: right_end           !< Right end of the vector
+${ftype[dtype]}$,intent(inout) :: list(n) !< Vector to sort
+integer,intent(inout) :: order(n)         !< Positions of the elements in the original order
+
+! Local variables
+integer,parameter :: max_simple_sort_size = 6
+integer :: i,j,itemp
+${ftype[dtype]}$ :: reference,temp
+
+if (right_end<left_end+max_simple_sort_size) then
+  ! Use interchange sort for small lists
+  call interchange_sort(n,left_end,right_end,list,order)
+else
+  ! Use partition ("quick") sort
+  reference = list((left_end+right_end)/2)
+  i = left_end-1
+  j = right_end+1
+  do
+    ! Scan list from left end until element >= reference is found
+    do
+      i = i+1
+      if (.not.inf(list(i),reference)) exit
+    end do
+    ! Scan list from right end until element <= reference is found
+    do
+      j = j-1
+      if (.not.sup(list(j),reference)) exit
+    end do
+
+    if (i<j) then
+      ! Swap two out-of-order elements
+      temp = list(i)
+      list(i) = list(j)
+      list(j) = temp
+      itemp = order(i)
+      order(i) = order(j)
+      order(j) = itemp
+    elseif (i==j) then
+      i = i+1
+      exit
+    else
+      exit
+    end if
+  end do
+
+  if (left_end<j) call quick_sort(n,left_end,j,list,order)
+  if (i<right_end) call quick_sort(n,i,right_end,list,order)
+end if
+
+end subroutine qsort_quick_sort_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Subroutine: qsort_interchange_sort_${dtype}$
+!> Interchange integers
+!----------------------------------------------------------------------
+subroutine qsort_interchange_sort_${dtype}$(n,left_end,right_end,list,order)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: n                   !< Input vector size
+integer,intent(in) :: left_end            !< Left end of the vector
+integer,intent(in) :: right_end           !< Right end of the vector
+${ftype[dtype]}$,intent(inout) :: list(n) !< Vector to sort
+integer,intent(inout) :: order(n)         !< Positions of the elements in the original order
+
+! Local variables
+integer :: i,j,itemp
+${ftype[dtype]}$ :: temp
+
+! Set name
+@:set_name(qsort_interchange_sort_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+do i=left_end,right_end-1
+   do j=i+1,right_end
+      if (sup(list(i),list(j))) then
+         temp = list(i)
+         list(i) = list(j)
+         list(j) = temp
+         itemp = order(i)
+         order(i) = order(j)
+         order(j) = itemp
+      end if
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine qsort_interchange_sort_${dtype}$
+#:endfor
+
+end module tools_qsort

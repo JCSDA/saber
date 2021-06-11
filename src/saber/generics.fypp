@@ -1,0 +1,55 @@
+!----------------------------------------------------------------------
+! Header: generics
+!> Generic ranks, dimensions and types
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+
+#:mute
+
+! Ranks lists
+#:set ranks_12 = [1,2]
+#:set ranks_123 = [1,2,3]
+#:set ranks_1234 = [1,2,3,4]
+#:set ranks_123456 = [1,2,3,4,5,6]
+#:set ranks_23 = [2,3]
+
+! Dimension from rank
+#:set dim = ['',':',':,:',':,:,:',':,:,:,:',':,:,:,:,:',':,:,:,:,:,:']
+
+! Types list
+#:set dtypes_ir = ['int','real']
+#:set dtypes_irl = ['int','real','logical']
+#:set dtypes_irls = ['int','real','logical','string']
+
+! Dictionaries with type as input
+#:set ftype = dict([('int','integer(kind_int)'),('real','real(kind_real)'),('logical','logical'),('string','character(len=*)')])
+#:set msv = dict([('int','msv%vali'),('real','msv%valr'),('logical','msv%vall')])
+#:set zero = dict([('int','0'),('real','0.0_kind_real'),('logical','.false.')])
+#:set atlas_kind = dict([('int','atlas_integer(kind_int)'),('real','atlas_real(kind_real)')])
+#:set netcdf_kind = dict([('int','nc_kind_int'),('real','nc_kind_real'),('logical','nc_kind_int')])
+
+! Delimiter for declaration list
+#:set delim = dict([(True,''),(False,',')])
+
+! Procedure list initialization
+#:def init_procedure(total_len)
+#:global last
+#:set last = int(total_len)
+#:global ind
+#:set ind = 0
+#:enddef
+
+! Procedure list addition
+#:def add_procedure(name)
+#:global ind
+#:set ind = ind+1
+#:if ind == last
+ & ${name}$
+#:else
+ & ${name}$, &
+#:endif
+#:enddef
+
+#:endmute

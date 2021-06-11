@@ -41,7 +41,8 @@ template<typename MODEL> class LocalizationID : public oops::LocalizationBase<MO
                  const eckit::Configuration &);
   ~LocalizationID();
 
-  void multiply(Increment_ &) const override;
+  void doRandomize(Increment_ &) const override;
+  void doMultiply(Increment_ &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -66,8 +67,16 @@ LocalizationID<MODEL>::~LocalizationID() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void LocalizationID<MODEL>::multiply(Increment_ & dx) const {
-  oops::Log::trace() << "LocalizationID:multiply done" << std::endl;
+void LocalizationID<MODEL>::doRandomize(Increment_ & dx) const {
+  dx.random();
+  oops::Log::trace() << "LocalizationID:doRandomize done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+void LocalizationID<MODEL>::doMultiply(Increment_ & dx) const {
+  oops::Log::trace() << "LocalizationID:doMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

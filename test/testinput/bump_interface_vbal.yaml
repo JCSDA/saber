@@ -19,6 +19,7 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
+sam_write: 1
 nc1: 500
 nc2: 250
 ntry: 30
@@ -32,8 +33,6 @@ vbal_rad: 2000.0e3
 # nicas_param
 
 # dirac_param
-
-# obsop_param
 
 # output_param
 

@@ -5,10 +5,11 @@
 
 set( external_src_files
 
-tools_asa007.F90
-tools_qsort.F90
-tools_sp.F90
-tools_stripack.F90
+tools_asa007.fypp
+tools_qsort.fypp
+tools_sp.fypp
+tools_stripack.fypp
+tools_wrfda.fypp
 
 PARENT_SCOPE
 )

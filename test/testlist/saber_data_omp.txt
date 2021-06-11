@@ -2,7 +2,7 @@ bump_read_cmat/test_1-2_cmat.nc
 bump_read_cmat_serial/test_1-2_cmat.nc
 bump_read_mom/test_1-2_mom_000001-000001.nc
 bump_read_nicas/test_1-2_nicas_000001-000001.nc
-bump_read_obsop/test_1-2_obs_000001-000001.nc
-bump_read_sampling/test_1-2_sampling_000001-000001.nc
+bump_read_sampling/test_1-2_sampling.nc
 bump_read_var/test_1-2_var.nc
-bump_read_vbal/test_1-2_vbal_000001-000001.nc
+bump_read_vbal/test_1-2_sampling.nc
+bump_read_vbal/test_1-2_vbal.nc

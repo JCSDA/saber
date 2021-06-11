@@ -5,23 +5,15 @@
 
 set( util_src_files
 
-tools_atlas.F90
-tools_const.F90
-tools_kinds.F90
-tools_repro.F90
-type_fieldset.F90
-type_mpl.F90
-type_msv.F90
-type_rng.F90
-type_timer.F90
-
-PARENT_SCOPE
-)
-
-set ( util_tmpl_files
-
-linkedList_c.f
-linkedList_i.f
+tools_atlas.fypp
+tools_const.fypp
+tools_kinds.fypp
+tools_repro.fypp
+type_fieldset.fypp
+type_mpl.fypp
+type_msv.fypp
+type_probe.fypp
+type_rng.fypp
 
 PARENT_SCOPE
 )

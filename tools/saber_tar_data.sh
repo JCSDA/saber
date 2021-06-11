@@ -3,17 +3,23 @@
 # Bash script: saber_tar_data
 # Author: Benjamin Menetrier
 # Licensing: this code is distributed under the CeCILL-C license
-# Copyright © 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+# Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 #----------------------------------------------------------------------
 
 # Parameters
-datadir=$1
-listdir=$2
+if test "$#" = "0" ; then
+   datadir=${HOME}/build/gnu_9.3.0/bundle/saber/test/testdata
+   listdir=${HOME}/code/bundle/saber/test/testlist
+else
+   datadir=$1
+   listdir=$2
+fi
 
 # Data list
 data_list="
 saber_data
 saber_data_mpi
+saber_data_multi
 saber_data_omp
 saber_data_oops"
 

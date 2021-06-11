@@ -1,0 +1,111 @@
+#:include 'subr_list.fypp'
+!----------------------------------------------------------------------
+! Header: instrumentation
+!> Instrumentation functions
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+
+#:mute
+
+! Black list
+#:set black_list = []
+#:set black_list = black_list + ["func_gc99"]
+#:set black_list = black_list + ["repro_eq_int"]
+#:set black_list = black_list + ["repro_eq_real"]
+#:set black_list = black_list + ["repro_eq_logical"]
+#:set black_list = black_list + ["repro_inf_int"]
+#:set black_list = black_list + ["repro_inf_real"]
+#:set black_list = black_list + ["repro_infeq_int"]
+#:set black_list = black_list + ["repro_infeq_real"]
+#:set black_list = black_list + ["repro_sup_int"]
+#:set black_list = black_list + ["repro_sup_real"]
+#:set black_list = black_list + ["repro_supeq_int"]
+#:set black_list = black_list + ["repro_supeq_real"]
+#:set black_list = black_list + ["repro_indist"]
+#:set black_list = black_list + ["repro_small"]
+#:set black_list = black_list + ["rng_rand_int_r0"]
+#:set black_list = black_list + ["rng_rand_real_r0"]
+#:set black_list = black_list + ["rng_rand_gau_r0"]
+
+! set_name function
+#:def set_name(subr_in)
+   #:global subr
+   #:set subr = subr_in
+#:enddef set_name
+
+! get_instance function
+#:def get_instance(instance)
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+call probe%get_instance('${instance}$')
+   #:endif
+#:enddef get_instance
+
+! print_bump_instance function
+#:def print_bump_instance()
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+call bump%mpl%print_instance
+   #:endif
+#:enddef print_bump_instance
+
+! use_probe function
+#:def use_probe()
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+use type_probe, only: probe
+   #:endif
+#:enddef use_probe
+
+! probe_in function
+#:def probe_in()
+   #:set i = 0
+   #:global j
+   #:set j = -1
+   #:for subr_test in subr_list
+      #:if subr_test == subr
+         #:set j = i
+      #:endif
+      #:set i = i+1
+   #:endfor
+   #:if j == -1
+      #:stop 'Add the line >>> #:set subr_list = subr_list + ["' + subr + '"] <<< in subr_list.fypp'
+   #:endif
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0) and not subr in black_list
+call probe%in('${subr}$',${j}$)
+   #:endif
+#:enddef probe_in
+
+! probe_out function
+#:def probe_out()
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0) and not subr in black_list
+call probe%out(${j}$)
+   #:endif
+#:enddef probe_out
+
+! probe_dealloc function
+#:def probe_dealloc()
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+call probe%dealloc()
+   #:endif
+#:enddef probe_dealloc
+
+! probe_traceback function
+#:def probe_traceback(output_unit)
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+call probe%traceback(${output_unit}$)
+   #:endif
+#:enddef probe_traceback
+
+! execution_stats function
+#:def execution_stats()
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- BUMP execution timings'
+call bump%mpl%flush
+call bump%mpl%print_instance
+call bump%mpl%timings
+   #:endif
+#:enddef execution_stats
+
+#:endmute

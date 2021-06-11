@@ -4,9 +4,9 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set(_subdirs bump external gaugrid util)
+set(_subdirs bump external gaugrid interpolation model util)
 if( oops_FOUND )
-    list(APPEND _subdirs oops interpolation)
+    list(APPEND _subdirs oops)
 endif()
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
@@ -34,6 +34,9 @@ endif()
 
 # Enable including of local header Fortran file templates
 target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> )
+
+# Process fypp files
+fckit_target_preprocess_fypp( ${PROJECT_NAME} )
 
 # Fortran module output directory for build and install interfaces
 set( MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION} )

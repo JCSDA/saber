@@ -3,18 +3,41 @@
 
 include(CMakeFindDependencyMacro)
 
-find_package(OpenMP REQUIRED COMPONENTS Fortran)
-find_package(MPI REQUIRED COMPONENTS Fortran)
-find_package(NetCDF REQUIRED COMPONENTS Fortran)
-find_dependency(eckit)
-find_dependency(fckit)
-find_package(atlas REQUIRED COMPONENTS OMP_Fortran)
+if(@jedicmake_FOUND@ AND NOT jedicmake_FOUND)
+    find_dependency(jedicmake REQUIRED)
+endif()
 
-if( @MKL_FOUND@ )
-    find_dependency( MKL REQUIRED )
-    set( LAPACK_LIBRARIES ${MKL_LIBRARIES} )
-else()
-    find_dependency( LAPACK REQUIRED )
+if(NOT OpenMP_Fortran_FOUND)
+    find_dependency(OpenMP REQUIRED COMPONENTS Fortran)
+endif()
+
+if(NOT MPI_Fortran_FOUND)
+    find_dependency(MPI REQUIRED COMPONENTS Fortran)
+endif()
+
+if(NOT NetCDF_Fortran_FOUND)
+    find_dependency(NetCDF REQUIRED COMPONENTS Fortran)
+endif()
+
+if(NOT eckit_FOUND)
+    find_dependency(eckit REQUIRED)
+endif()
+
+if(NOT fckit_FOUND)
+    find_dependency(fckit REQUIRED)
+endif()
+
+if(NOT atlas_FOUND)
+    find_package(atlas REQUIRED COMPONENTS OMP_Fortran)
+endif()
+
+if((@LAPACK_FOUND@ AND NOT LAPACK_FOUND) OR (@MKL_FOUND@ AND NOT MKL_FOUND))
+    if( @MKL_FOUND@ )
+        find_dependency( MKL REQUIRED )
+        set( LAPACK_LIBRARIES ${MKL_LIBRARIES} )
+    else()
+        find_dependency( LAPACK REQUIRED )
+    endif()
 endif()
 
 if(@oops_FOUND@) # oops_FOUND

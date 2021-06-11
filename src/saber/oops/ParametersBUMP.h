@@ -147,6 +147,9 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
   // Estimate parameters
   ooBump_->runDrivers();
 
+  // Partial deallocation
+  ooBump_->partialDealloc();
+
   oops::Log::trace() << "ParametersBUMP:ParametersBUMP constructed" << std::endl;
 }
 

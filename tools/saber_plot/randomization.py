@@ -9,6 +9,8 @@ import numpy.ma as ma
 import os
 
 def randomization(testdata, test, mpi, omp, suffix, testfig):
+   """! Plot script for the "randomization" files produced by BUMP"""
+
    # Open file
    f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 

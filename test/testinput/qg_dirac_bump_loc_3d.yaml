@@ -6,7 +6,7 @@ background error:
       mpicom: 2
       load_nicas: 1
       prefix: qg_dirac_bump_loc_3d/test
-      strategy: specific_univariate
+      strategy: common
     localization method: BUMP
     localization variables: [x]
   members:
@@ -35,6 +35,7 @@ dirac:
   ixdir: [20]
   iydir: [10]
   izdir: [1]
+  var: x
 geometry:
   nx: 40
   ny: 20

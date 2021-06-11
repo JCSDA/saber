@@ -16,7 +16,9 @@ bump_hdiag_mask_lat
 bump_hdiag_mask_stddev_lower
 bump_hdiag_mask_stddev_ncontig
 bump_hdiag_write_grids
-bump_hdiag-nicas_draw_type
+bump_hdiag-nicas_draw_type_octahedral
+bump_hdiag-nicas_draw_type_random_coast
+bump_hdiag-nicas_interp_nn
 bump_hdiag-nicas_lev2d_first
 bump_hdiag-nicas_lev2d_first_hvh
 bump_hdiag-nicas_lev2d_last
@@ -29,7 +31,6 @@ bump_hdiag-nicas_nrep
 bump_hdiag-nicas_universe_rad
 bump_hdiag_no_smoothness_penalty
 bump_interface_nicas
-bump_interface_obsop
 bump_interface_stddev
 bump_interface_vbal
 bump_lct-nicas_diagonal
@@ -39,6 +40,7 @@ bump_lct_qc
 bump_lct_two_scales
 bump_lct_write_cor
 bump_lct_write_grids
+bump_nicas_fixed_radii_profiles
 bump_nicas_mpicom_lsqrt_a
 bump_nicas_mpicom_lsqrt_b
 bump_nicas_mpicom_lsqrt_c
@@ -47,7 +49,7 @@ bump_nicas_subsamp_h
 bump_nicas_subsamp_hv
 bump_nicas_subsamp_vh
 bump_nicas_write_grids
-bump_obsop
+bump_var_filter
 bump_vbal_dlat
 bump_vbal_diag_auto
 bump_vbal_diag_reg

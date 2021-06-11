@@ -5,7 +5,7 @@
 
 set( gaugrid_src_files
 
-type_gaugrid.F90
+type_gaugrid.fypp
 
 PARENT_SCOPE
 )

@@ -30,7 +30,7 @@ token = os.getenv('GIT_PASS', '...')
 g = Github(token)
 ownerList = ["JCSDA", "jcsda-internal"]
 
-saberRepo = g.get_repo("jcsda/saber")
+saberRepo = g.get_repo("jcsda-internal/saber")
 
 for owner in ownerList:
   for repoName in repoList:

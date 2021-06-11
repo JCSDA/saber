@@ -9,7 +9,7 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber VERSION 1.0.0 LANGUAGES CXX Fortran )
+project( saber VERSION 1.1.0 LANGUAGES CXX Fortran )
 
 ## Ecbuild integration
 find_package( ecbuild QUIET )
@@ -25,6 +25,7 @@ include( ${PROJECT_NAME}_compiler_flags )
 
 ## Dependencies
 # Required
+find_package( jedicmake QUIET )  # Prefer find modules from jedi-cmake
 find_package( OpenMP REQUIRED COMPONENTS Fortran )
 find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS Fortran )
@@ -41,6 +42,19 @@ else()
 endif()
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
+
+## SABER instrumentation
+set( ENABLE_SABER_INSTRUMENTATION 0 )
+if( DEFINED ENV{ENABLE_SABER_INSTRUMENTATION} )
+    set( ENABLE_SABER_INSTRUMENTATION $ENV{ENABLE_SABER_INSTRUMENTATION} )
+endif()
+if( ENABLE_SABER_INSTRUMENTATION )
+    message( STATUS "SABER instrumentation is enabled" )
+    add_definitions(-DENABLE_SABER_INSTRUMENTATION=1)
+else()
+    message( STATUS "SABER instrumentation is not enabled" )
+    add_definitions(-DENABLE_SABER_INSTRUMENTATION=0)
+endif()
 
 ## Sources
 add_subdirectory( src/saber )

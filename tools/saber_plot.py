@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""! Plot management script"""
 
 import argparse
 import os

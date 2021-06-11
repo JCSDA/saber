@@ -12,7 +12,7 @@ cost function:
       load_nicas: 1
       mpicom: 2
       prefix: qg_4dvar_drplanczos_bump/test
-      strategy: common
+      strategy: specific_univariate
     covariance model: BUMP
     variable changes:
     - variable change: StdDev

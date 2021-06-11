@@ -1,0 +1,1097 @@
+#:include '../generics.fypp'
+#:include '../instrumentation.fypp'
+!----------------------------------------------------------------------
+! (C) Copyright 2019-2020 UCAR
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!----------------------------------------------------------------------
+! Module: bump_interpolation_mod
+!> BUMP interpolation module
+!!
+!! \date Jan, 2020: Created by M. Miesch (JCSDA/UCAR) based on previously exising type_obsop.F90
+!! written by Benjamin Menetrier (JCSDA/UCAR, CERFACS, METEO-FRANCE, IRIT)
+!! \date Dec, 2020: Updated by B. Menetrier (JCSDA/IRIT) to use FYPP preprocessing directives
+!----------------------------------------------------------------------
+module interpolatorbump_mod
+
+use atlas_module, only: atlas_functionspace,atlas_fieldset,atlas_field,atlas_real
+use fckit_configuration_module, only: fckit_configuration
+use fckit_log_module, only: fckit_log
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
+use iso_c_binding, only: c_char
+use tools_atlas, only: field_from_array,field_to_array,create_atlas_function_space
+use tools_const, only: zero,three,hundred,pi,deg2rad,rad2deg
+use tools_func, only: lonlatmod,sphere_dist
+use tools_kinds, only: kind_int,kind_real
+use tools_repro, only: rth
+use type_bump, only: bump_type
+use type_com, only: com_type
+use type_fieldset, only: fieldset_type
+use type_geom, only: geom_type
+use type_linop, only: linop_type
+use type_mesh, only: mesh_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+@:use_probe()
+use type_rng, only: rng_type
+
+implicit none
+
+private
+public :: bump_interpolator
+
+integer,parameter :: max_string = 1024 !< Maximum string size
+
+! BUMP interpolator type
+type bump_interpolator
+   private
+
+   ! BUMP object
+   type(bump_type),public :: bump                  !< BUMP
+
+   ! Grid information
+   type(geom_type) :: geom_out                     !< Output grid geometry
+   type(atlas_functionspace) :: afunctionspace_in  !< ATLAS functionspace for input grid
+   type(atlas_functionspace) :: afunctionspace_out !< ATLAS functionspace for output grid
+
+   ! Number of points
+   integer :: nc0b                                 !< Halo B size
+   integer :: nout                                 !< Global number of output grid points
+   integer :: nouta                                !< Local number of output grid points
+
+   ! Interpolation data (operator)
+   type(linop_type) :: h                           !< Interpolation operator
+
+   ! Communication data
+   type(com_type) :: com                           !< Communication data
+
+   ! Nearest neighbor (for discrete interpolation)
+   integer,allocatable :: nn_index(:)              !< Nearest neighbor index
+
+   ! Dummy variable
+   logical :: dummy_logical                        !< Dummy variable
+contains
+   private
+
+   procedure,private :: driver => bint_driver
+   procedure,public :: init => bint_init
+   procedure,public :: bint_apply
+   #:for dtype in dtypes_irl
+      #:for rank_in in ranks_123
+         #:for rank_out in ranks_123
+            procedure,public :: bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
+         #:endfor
+      #:endfor
+   #:endfor
+@:init_procedure(27)
+   generic,public :: apply => bint_apply, &
+   #:for dtype in dtypes_irl
+      #:for rank_in in ranks_123
+         #:for rank_out in ranks_123
+@:add_procedure(bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$)
+         #:endfor
+      #:endfor
+   #:endfor
+   #:for dtype in dtypes_irl
+      procedure,private :: bint_apply_interp_${dtype}$
+   #:endfor
+@:init_procedure(3)
+   generic,public :: apply_interp => &
+   #:for dtype in dtypes_irl
+@:add_procedure(bint_apply_interp_${dtype}$)
+   #:endfor
+   procedure,public :: bint_apply_ad
+   #:for rank_out in ranks_123
+      #:for rank_in in ranks_123
+         procedure,public :: bint_apply_ad_r${rank_in}$_r${rank_out}$
+      #:endfor
+   #:endfor
+@:init_procedure(9)
+   generic,public :: apply_ad => bint_apply_ad, &
+   #:for rank_out in ranks_123
+     #:for rank_in in ranks_123
+@:add_procedure(bint_apply_ad_r${rank_in}$_r${rank_out}$)
+      #:endfor
+   #:endfor
+   procedure,private :: apply_interp_ad => bint_apply_interp_ad
+   procedure :: deallocate_outgrid => bint_deallocate_outgrid
+   procedure,public :: delete => bint_delete
+   final :: bint_dummy_final
+end type bump_interpolator
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: bint_init
+!> Initialize interpolation object
+!! The input and output fields are ATLAS_FieldSet objects that are assumed
+!! to be created from ATLAS functionspaces. So, they have the grid and
+!! mesh information built in.
+!----------------------------------------------------------------------
+subroutine bint_init(bint,comm, &
+                   & lon1d_in,lat1d_in, &
+                   & lon_in,lat_in, &
+                   & afunctionspace_in, &
+                   & lon1d_out,lat1d_out, &
+                   & lon_out,lat_out, &
+                   & afunctionspace_out, &
+                   & nl,masks,config)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint                      !< BUMP interpolator
+type(fckit_mpi_comm),intent(in) :: comm                             !< Communicator
+real(kind_real),intent(in),optional :: lon1d_in(:)                  !< Input longitudes (regular grid) [in degrees]
+real(kind_real),intent(in),optional :: lat1d_in(:)                  !< Input latitudes (regular grid) [in degrees]
+real(kind_real),intent(in),optional :: lon_in(:)                    !< Input longitudes [in degrees]
+real(kind_real),intent(in),optional :: lat_in(:)                    !< Input latitudes [in degrees]
+type(atlas_functionspace),intent(in),optional :: afunctionspace_in  !< Input ATLAS functionspace
+real(kind_real),intent(in),optional :: lon1d_out(:)                 !< Output longitudes (regular grid) [in degrees]
+real(kind_real),intent(in),optional :: lat1d_out(:)                 !< Output latitudes (regular grid) [in degrees]
+real(kind_real),intent(in),optional :: lon_out(:)                   !< Output longitudes [in degrees]
+real(kind_real),intent(in),optional :: lat_out(:)                   !< Output latitudes [in degrees]
+type(atlas_functionspace),intent(in),optional :: afunctionspace_out !< Output ATLAS functionspace
+integer,intent(in),optional :: nl                                   !< Number of levels
+type(fieldset_type),intent(in),optional :: masks                    !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit), gmask (geometry mask) and smask (sampling mask). Each of these named fields is optional, if omitted default values will be provided
+type(fckit_configuration),intent(in),optional :: config             !< Configuration
+
+! Local variables
+integer :: msvali,inode,ilon,ilat
+real(kind_real) :: msvalr
+real(kind_real),allocatable :: lon(:),lat(:)
+type(fckit_configuration) :: bump_config
+type(fieldset_type) :: lmasks
+
+! Set name
+@:set_name(bint_init)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! BUMP defaults
+call bint%bump%nam%init(comm%size())
+
+! Modified defaults for BUMP interpolator
+bint%bump%nam%prefix = 'bump_interpolator'
+bint%bump%nam%datadir = 'testdata'
+bint%bump%nam%verbosity = 'none'
+if (present(nl)) then
+   bint%bump%nam%nl = nl
+else
+   bint%bump%nam%nl = 1
+end if
+bint%bump%nam%nv = 1
+bint%bump%nam%variables(1) = 'var'
+bint%bump%nam%interp_type = 'mesh_based'
+
+! Default missing values for integers and reals
+msvali = -999
+msvalr = -999.0_kind_real
+
+if (present(config)) then
+   ! Optionally override defaults with BUMP config
+   if (config%has('bump')) then
+      call config%get_or_die('bump',bump_config)
+      call bint%bump%nam%from_conf(comm,bump_config)
+   end if
+
+   ! Optionally set levels
+   if (config%has('nlevels')) call config%get_or_die('nlevels',bint%bump%nam%nl)
+
+   ! Optionally set missing values for integers and reals
+   if (config%has('missingvalue_int')) call config%get_or_die('missingvalue_int',msvali)
+   if (config%has('missingvalue_real')) call config%get_or_die('missingvalue_real',msvalr)
+end if
+
+! Input ATLAS functionspace
+if (present(lon1d_in).and.present(lat1d_in)) then
+   allocate(lon(size(lon1d_in)*size(lat1d_in)))
+   allocate(lat(size(lon1d_in)*size(lat1d_in)))
+   inode = 0
+   do ilat=1,size(lat1d_in)
+      do ilon=1,size(lon1d_in)
+         inode = inode+1
+         lon(inode) = lon1d_in(ilon)
+         lat(inode) = lat1d_in(ilat)
+      end do
+   end do
+   call create_atlas_function_space(size(lon1d_in)*size(lat1d_in), lon, lat, bint%afunctionspace_in)
+   deallocate(lon)
+   deallocate(lat)
+elseif (present(lon_in).and.present(lat_in)) then
+   if (size(lon_in)/=size(lat_in)) then
+      call fckit_log%info('input longitudes and latitudes have different sizes')
+      call comm%abort(1)
+   end if
+   call create_atlas_function_space(size(lon_in), lon_in, lat_in, bint%afunctionspace_in)
+elseif (present(afunctionspace_in)) then
+   bint%afunctionspace_in = afunctionspace_in
+else
+   call fckit_log%info('output ATLAS function space or lon/lat vector should be provided')
+   call comm%abort(1)
+end if
+
+! Output ATLAS functionspace
+if (present(lon1d_out).and.present(lat1d_out)) then
+   allocate(lon(size(lon1d_out)*size(lat1d_out)))
+   allocate(lat(size(lon1d_out)*size(lat1d_out)))
+   inode = 0
+   do ilat=1,size(lat1d_out)
+      do ilon=1,size(lon1d_out)
+         inode = inode+1
+         lon(inode) = lon1d_out(ilon)
+         lat(inode) = lat1d_out(ilat)
+      end do
+   end do
+   call create_atlas_function_space(size(lon1d_out)*size(lat1d_out), lon, lat, bint%afunctionspace_out)
+   deallocate(lon)
+   deallocate(lat)
+elseif (present(lon_out).and.present(lat_out)) then
+   if (size(lon_out)/=size(lat_out)) then
+      call fckit_log%info('output longitudes and latitudes have different sizes')
+      call comm%abort(1)
+   end if
+   call create_atlas_function_space(size(lon_out), lon_out, lat_out, bint%afunctionspace_out)
+elseif (present(afunctionspace_out)) then
+   bint%afunctionspace_out = afunctionspace_out
+else
+   call fckit_log%info('output ATLAS function space or lon/lat vector should be provided')
+   call comm%abort(1)
+end if
+
+! Initialize BUMP
+
+! Clear any pre-existing data
+call bint%delete
+
+! Basic BUMP setup
+if (present(masks)) then
+   lmasks = masks
+else
+   lmasks = atlas_fieldset()
+end if
+call bint%bump%setup(comm,bint%afunctionspace_in,lmasks,msvali=msvali,msvalr=msvalr)
+
+! Initialize output grid
+call fckit_log%info('-------------------------------------------------------------------')
+call fckit_log%info('--- Initialize output grid')
+
+! Unpack output grid from output functionspace
+bint%geom_out%nl0 = bint%bump%nam%nl
+call bint%geom_out%from_atlas(bint%bump%mpl,bint%afunctionspace_out)
+bint%nouta = size(bint%geom_out%lon_mga)
+
+! Run basic BUMP drivers
+call bint%bump%run_drivers
+
+! Run interpolation driver
+call fckit_log%info('-------------------------------------------------------------------')
+call fckit_log%info('--- Run bump_interpolation driver')
+call bint%driver(bint%bump%mpl,bint%bump%rng,bint%bump%nam,bint%bump%geom)
+if (bint%bump%nam%default_seed) call bint%bump%rng%reseed(bint%bump%mpl)
+
+! Release memory (partial)
+call fckit_log%info('-------------------------------------------------------------------')
+call fckit_log%info('--- Release memory (partial)')
+call bint%bump%partial_dealloc
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_init
+
+!----------------------------------------------------------------------
+! Subroutine: bint_driver
+!> Initialize BUMP to perform interpolation
+!----------------------------------------------------------------------
+subroutine bint_driver(bint,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(rng_type),intent(inout) :: rng            !< Random number generator
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+
+! Local variables
+integer :: iouta,iproc,i_s,ic0,ic0u,jc0u,ic0b,ic0a,nouta_eff
+integer :: nout_eff,nn_index(1),proc_to_nouta(mpl%nproc),proc_to_nouta_eff(mpl%nproc)
+integer :: c0u_to_c0b(geom%nc0u)
+integer,allocatable :: c0b_to_c0(:)
+real(kind_real) :: nn_dist(1),N_max,C_max
+real(kind_real),allocatable :: maxweight(:)
+logical :: maskouta(bint%nouta),lcheck_nc0b(geom%nc0)
+
+! Set name
+@:set_name(bint_driver)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Check that universe is global
+if (any(.not.geom%myuniverse)) call mpl%abort('${subr}$','universe should be global for interpolation')
+
+! Check whether output grid points are inside the mesh
+if (bint%nouta > 0) then
+   do iouta=1,bint%nouta
+      if (trim(bint%bump%nam%interp_type)=='mesh_based') then
+         call geom%mesh_c0u%inside(mpl,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
+      elseif (trim(bint%bump%nam%interp_type)=='tree_based') then
+         call geom%tree_c0u%inside(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
+      end if
+      if (.not.maskouta(iouta)) then
+         ! Check for very close points
+         call geom%tree_c0u%find_nearest_neighbors(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta), &
+ & 1,nn_index,nn_dist)
+         if (nn_dist(1)<rth) maskouta(iouta) = .true.
+      end if
+   end do
+   nouta_eff = count(maskouta)
+else
+   nouta_eff = 0
+end if
+
+! Get global number of output grid points
+call mpl%f_comm%allgather(bint%nouta,proc_to_nouta)
+call mpl%f_comm%allgather(nouta_eff,proc_to_nouta_eff)
+bint%nout = sum(proc_to_nouta)
+nout_eff = sum(proc_to_nouta_eff)
+
+! Print input
+write(mpl%info,'(a7,a)') '','Number of points in output grid / valid points per MPI task:'
+call mpl%flush
+do iproc=1,mpl%nproc
+   write(mpl%info,'(a10,a,i3,a,i8,a,i8)') '','Task ',iproc,': ',proc_to_nouta(iproc),' / ',proc_to_nouta_eff(iproc)
+   call mpl%flush
+end do
+write(mpl%info,'(a10,a,i8,a,i8)') '','Total   : ',bint%nout,' / ',nout_eff
+call mpl%flush
+
+! Compute interpolation
+bint%h%prefix = 'o'
+write(mpl%info,'(a7,a)') '','Single level:'
+call mpl%flush
+call bint%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,geom%area_max_c0u,bint%nouta, &
+ & bint%geom_out%lon_mga,bint%geom_out%lat_mga,maskouta,10)
+
+! Define halo B
+lcheck_nc0b = .false.
+do ic0a=1,geom%nc0a
+   ic0u = geom%c0a_to_c0u(ic0a)
+   lcheck_nc0b(ic0u) = .true.
+end do
+do iouta=1,bint%nouta
+   do i_s=1,bint%h%n_s
+      jc0u = bint%h%col(i_s)
+      lcheck_nc0b(jc0u) = .true.
+   end do
+end do
+bint%nc0b = count(lcheck_nc0b)
+
+! Allocation
+allocate(c0b_to_c0(bint%nc0b))
+
+! Global-local conversion for halo B
+c0u_to_c0b = mpl%msv%vali
+ic0b = 0
+do ic0u=1,geom%nc0u
+   if (lcheck_nc0b(ic0u)) then
+      ic0b = ic0b+1
+      ic0 = geom%c0u_to_c0(ic0u)
+      c0b_to_c0(ic0b) = ic0
+      c0u_to_c0b(ic0u) = ic0b
+   end if
+end do
+
+! Local interpolation source
+bint%h%n_src = bint%nc0b
+do i_s=1,bint%h%n_s
+   ic0u = bint%h%col(i_s)
+   ic0b = c0u_to_c0b(ic0u)
+   if (mpl%msv%isnot(ic0b)) then
+      bint%h%col(i_s) = ic0b
+   else
+      call mpl%abort('${subr}$','wrong local source for h')
+   end if
+end do
+
+! Setup communications
+call bint%com%setup(mpl,'com',geom%nc0a,bint%nc0b,geom%nc0,geom%c0a_to_c0,c0b_to_c0)
+
+! Release memory
+deallocate(c0b_to_c0)
+
+! Allocation
+allocate(bint%nn_index(bint%nouta))
+
+! Get nearest neighbor index for integer interpolation
+if (bint%nouta > 0) then
+   ! Allocation
+   allocate(maxweight(bint%nouta))
+
+   ! Initialization
+   bint%nn_index = bint%bump%mpl%msv%vali
+   maxweight = zero
+
+   ! Get nearest neighbor index from the maximum interpolation coefficient
+   do i_s=1,bint%h%n_s
+      iouta = bint%h%row(i_s)
+      if (bint%h%S(i_s)>maxweight(iouta)) then
+         maxweight(iouta) = bint%h%S(i_s)
+         bint%nn_index(iouta) = bint%h%col(i_s)
+      end if
+   end do
+   if (bint%bump%mpl%msv%isany(bint%nn_index)) call bint%bump%mpl%abort('${subr}$','missing nearest neighbor')
+
+   ! Release memory
+   deallocate(maxweight)
+end if
+
+! Compute scores
+if (nout_eff > 0) then
+   call mpl%f_comm%allreduce(real(bint%com%nhalo,kind_real),C_max,fckit_mpi_max())
+   C_max = C_max/(three*real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
+   N_max = real(maxval(proc_to_nouta_eff),kind_real)/(real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
+
+   ! Print results
+   write(mpl%info,'(a7,a,f5.1,a)') '','Output grid repartition imbalance: ',hundred*real(maxval(proc_to_nouta_eff) &
+ & -minval(proc_to_nouta_eff),kind_real)/(real(sum(proc_to_nouta_eff),kind_real)/real(mpl%nproc,kind_real)),' %'
+   call mpl%flush
+   write(mpl%info,'(a7,a,i8,a,i8,a,i8)') '','Number of grid points / halo size / number of received values: ', &
+ & bint%com%nred,' / ',bint%com%next,' / ',bint%com%nhalo
+   call mpl%flush
+   write(mpl%info,'(a7,a,f10.2,a,f10.2)') '','Scores (N_max / C_max):',N_max,' / ',C_max
+   call mpl%flush
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_driver
+
+!----------------------------------------------------------------------
+! Subroutine bint_apply
+!> Apply interpolation
+!! If the fields that constitute the fieldset are not already allocated by
+!! the caller, then they will be created and allocated by this method.
+!! So, the user can optionally pass this routine an empty output fieldset.
+!----------------------------------------------------------------------
+subroutine bint_apply(bint,fieldset_in,fieldset_out)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint    !< BUMP interpolator
+type(fieldset_type),intent(in) :: fieldset_in     !< Input fields represented as an ATLAS fieldset, created from a functionspace
+type(fieldset_type),intent(inout) :: fieldset_out !< Output fields represented as an ATLAS fieldset
+
+! Local variables
+integer :: ifield
+real(kind_real),allocatable :: array_in_mga(:,:),array_in_c0a(:,:),array_out(:,:)
+character(len=max_string) :: fieldname
+type(atlas_field) :: afield_in,afield_out
+
+! Set name
+@:set_name(bint_apply)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(array_in_mga(bint%bump%geom%nmga,bint%bump%geom%nl0))
+if (.not.bint%bump%geom%same_grid) allocate(array_in_c0a(bint%bump%geom%nc0a,bint%bump%geom%nl0))
+allocate(array_out(bint%nouta,bint%bump%geom%nl0))
+
+do ifield=1,fieldset_in%size()
+   ! Copy field and field name
+   afield_in = fieldset_in%field(ifield)
+   fieldname = afield_in%name()
+
+   ! Allocation
+   if (fieldset_out%has_field(fieldname)) then
+      afield_out = fieldset_out%field(name=fieldname)
+   else
+      afield_out = bint%afunctionspace_out%create_field(name=fieldname,kind=atlas_real(kind_real),levels=bint%bump%geom%nl0)
+      call fieldset_out%add(afield_out)
+   end if
+
+   ! ATLAS field to BUMP array
+   call field_to_array(afield_in,bint%bump%mpl,array_in_mga)
+
+   if (bint%bump%geom%same_grid) then
+      ! Apply interpolation
+      call bint%apply_interp(array_in_mga,array_out)
+   else
+      ! Model grid to subset Sc0
+      array_in_c0a = zero
+      call bint%bump%geom%copy_mga_to_c0a(bint%bump%mpl,array_in_mga,array_in_c0a)
+
+      ! Apply interpolation
+      call bint%apply_interp(array_in_c0a,array_out)
+   end if
+
+   ! BUMP array to ATLAS field
+   call field_from_array(afield_out,bint%bump%mpl,array_out)
+
+   ! Release pointers
+   call afield_in%final()
+   call afield_out%final()
+end do
+
+! Release memory
+deallocate(array_in_mga)
+if (.not.bint%bump%geom%same_grid) deallocate(array_in_c0a)
+deallocate(array_out)
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_apply
+
+#:for dtype in dtypes_irl
+   #:for rank_in in ranks_123
+      #:for rank_out in ranks_123
+!----------------------------------------------------------------------
+! Subroutine: bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
+!> Apply interpolation
+!----------------------------------------------------------------------
+subroutine bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$(bint,array_in,array_out,trans_in,trans_out,nn)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint               !< BUMP interpolator
+${ftype[dtype]}$,intent(in) :: array_in(${dim[rank_in]}$)    !< Input array, the rightmost dimension being the vertical
+${ftype[dtype]}$,intent(out) :: array_out(${dim[rank_out]}$) !< Output array, the rightmost dimension being the vertical
+logical,intent(in),optional :: trans_in                      !< Input array should be transposed
+logical,intent(in),optional :: trans_out                     !< Output array should be transposed
+logical,intent(in),optional :: nn                            !< Nearest neighbor interpolation
+
+! Local variables
+integer :: nl_in,nl_out
+integer :: shp_out(${rank_out}$)
+#{if rank_in == 3 or rank_out == 3}# integer :: il #{endif}#
+${ftype[dtype]}$,allocatable :: vec_in(:,:),vec_in_tmp(:,:),vec_out(:,:)
+logical :: ltrans_in,ltrans_out,lnn
+
+! Set name
+@:set_name(bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Local flags
+ltrans_in = .false.
+if (present(trans_in)) ltrans_in = trans_in
+ltrans_out = .false.
+if (present(trans_out)) ltrans_out = trans_out
+lnn = .false.
+if (present(nn)) lnn = nn
+
+! Get number of levels
+#:if rank_in == 1
+   nl_in = 1
+#:else
+   if (ltrans_in) then
+      nl_in = size(array_in,1)
+   else
+      nl_in = size(array_in,${rank_in}$)
+   end if
+#:endif
+#:if rank_out == 1
+   nl_out = 1
+#:else
+   if (ltrans_out) then
+      nl_out = size(array_out,1)
+   else
+      nl_out = size(array_out,${rank_out}$)
+   end if
+#:endif
+bint%bump%geom%nl0 = nl_in
+
+! Allocation
+allocate(vec_in(bint%bump%geom%nmga,bint%bump%geom%nl0))
+if (.not.bint%bump%geom%same_grid) allocate(vec_in_tmp(bint%bump%geom%nc0a,bint%bump%geom%nl0))
+allocate(vec_out(bint%nouta,bint%bump%geom%nl0))
+
+! Pack input data
+#{if rank_in == 1}# vec_in(:,1) = array_in #{endif}#
+#:if rank_in == 2
+   if (ltrans_in) then
+      vec_in = transpose(array_in)
+   else
+      vec_in = array_in
+   end if
+#:endif
+#:if rank_in == 3
+   do il=1,nl_in
+      if (ltrans_in) then
+         vec_in(:,il) = reshape(transpose(array_in(:,:,il)),(/bint%bump%geom%nmga/))
+      else
+         vec_in(:,il) = reshape(array_in(:,:,il),(/bint%bump%geom%nmga/))
+      end if
+   end do
+#:endif
+
+! Interpolate
+if (bint%bump%geom%same_grid) then
+   call bint%apply_interp(vec_in,vec_out,lnn)
+else
+   call bint%bump%geom%copy_mga_to_c0a(bint%bump%mpl,vec_in,vec_in_tmp)
+   call bint%apply_interp(vec_in_tmp,vec_out,lnn)
+end if
+
+! Unpack output data
+shp_out = shape(array_out)
+#{if rank_out == 1}# array_out = vec_out(:,1) #{endif}#
+#:if rank_out == 2
+   if (ltrans_out) then
+      array_out = transpose(vec_out)
+   else
+      array_out = vec_out
+   end if
+#:endif
+#:if rank_out == 3
+   do il=1,nl_out
+      if (ltrans_out) then
+         array_out(:,:,il) = transpose(reshape(vec_out(:,il),(/shp_out(2),shp_out(1)/)))
+      else
+         array_out(:,:,il) = reshape(vec_out(:,il),shp_out(1:2))
+      end if
+   end do
+#:endif
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_apply_${dtype}$_r${rank_in}$_r${rank_out}$
+      #:endfor
+   #:endfor
+#:endfor
+
+#:for dtype in dtypes_irl
+!----------------------------------------------------------------------
+! Subroutine: bint_apply_interp_${dtype}$
+!> Low-level routine to apply the interpolation to a single field on a single level
+!----------------------------------------------------------------------
+subroutine bint_apply_interp_${dtype}$(bint,array_in,array_out,nn)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint                                  !< BUMP interpolator
+${ftype[dtype]}$,intent(in) :: array_in(bint%bump%geom%nc0a,bint%bump%geom%nl0) !< Input field
+${ftype[dtype]}$,intent(out) :: array_out(bint%nouta,bint%bump%geom%nl0)        !< Output field
+logical,intent(in),optional :: nn                                               !< Nearest neighbor interpolation
+
+! Local variables
+#{if dtype == 'real'}# integer :: ilev #{endif}#
+${ftype[dtype]}$,allocatable :: array_in_ext(:,:)
+logical :: lnn
+
+! Set name
+@:set_name(bint_apply_interp_${dtype}$)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Local flag
+lnn = .false.
+if (present(nn)) lnn = nn
+
+! Allocation
+allocate(array_in_ext(bint%nc0b,bint%bump%geom%nl0))
+
+! Halo extension
+call bint%com%ext(bint%bump%mpl,array_in,array_in_ext)
+
+if (bint%nouta > 0) then
+   #:if dtype == 'real'
+      if (lnn) then
+         ! Copy nearest neighbor
+         array_out = array_in_ext(bint%nn_index,:)
+      else
+         ! Horizontal interpolation
+         !$omp parallel do schedule(static) private(ilev)
+         do ilev=1,bint%bump%geom%nl0
+            call bint%h%apply(bint%bump%mpl,array_in_ext(:,ilev),array_out(:,ilev))
+         end do
+         !$omp end parallel do
+       end if
+   #:else
+      ! Copy nearest neighbor
+      array_out = array_in_ext(bint%nn_index,:)
+   #:endif
+end if
+
+! Release memory
+deallocate(array_in_ext)
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_apply_interp_${dtype}$
+#:endfor
+
+!----------------------------------------------------------------------
+!> Apply interpolator operator adjoint
+!! The caller can optionally pass this arguement as an empty fieldset and the
+!! routine will create and allocate each component of the fieldset. Or, if
+!! the field components of the fieldset are already allocated by the caller,
+!! then this routine will merely replace the field values with the result
+!! of the computation.
+!----------------------------------------------------------------------
+subroutine bint_apply_ad(bint,fieldset_out,fieldset_in)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint   !< BUMP interpolator
+type(fieldset_type),intent(in) :: fieldset_out   !< Fields on the second grid, i.e. the target grid of the original interpolation. For the adjoint, these fields are treated as an input.
+type(fieldset_type),intent(inout) :: fieldset_in !< Fields defined on the first grid, i.e. the source grid of the original interpolation. For the adjoint, these are treated as an output.
+
+! Local variables
+integer :: ifield
+real(kind_real),allocatable :: array_in_mga(:,:),array_in_c0a(:,:),array_out(:,:)
+character(len=max_string) :: fieldname
+type(atlas_field) :: afield_in,afield_out
+
+! Set name
+@:set_name(bint_apply_ad)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(array_in_mga(bint%bump%geom%nmga,bint%bump%geom%nl0))
+if (.not.bint%bump%geom%same_grid) allocate(array_in_c0a(bint%bump%geom%nc0a,bint%bump%geom%nl0))
+allocate(array_out(bint%nouta,bint%bump%geom%nl0))
+
+do ifield=1,fieldset_out%size()
+   ! Copy field and field name
+   afield_out = fieldset_out%field(ifield)
+   fieldname = afield_out%name()
+
+   ! Allocation
+   if (fieldset_in%has_field(fieldname)) then
+      afield_in = fieldset_in%field(name=fieldname)
+   else
+      afield_in = bint%afunctionspace_in%create_field(name=fieldname,kind=atlas_real(kind_real),levels=bint%bump%geom%nl0)
+      call fieldset_in%add(afield_in)
+   end if
+
+   ! ATLAS field to BUMP array
+   call field_to_array(afield_out,bint%bump%mpl,array_out)
+   if (bint%bump%geom%same_grid) then
+      ! Apply interpolation operator adjoint
+      call bint%apply_interp_ad(array_out,array_in_mga)
+   else
+      ! Apply interpolation operator adjoint
+      call bint%apply_interp_ad(array_out,array_in_c0a)
+
+      ! Subset Sc0 to model grid
+      call bint%bump%geom%copy_c0a_to_mga(bint%bump%mpl,array_in_c0a,array_in_mga)
+   end if
+
+   ! BUMP array to ATLAS field
+   call field_from_array(afield_in,bint%bump%mpl,array_in_mga)
+
+   ! Release pointers
+   call afield_in%final()
+   call afield_out%final()
+end do
+
+! Release memory
+deallocate(array_in_mga)
+if (.not.bint%bump%geom%same_grid) deallocate(array_in_c0a)
+deallocate(array_out)
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_apply_ad
+
+#:for rank_out in ranks_123
+   #:for rank_in in ranks_123
+!----------------------------------------------------------------------
+! Subroutine: bint_apply_ad_r${rank_out}$_r${rank_in}$
+!> Apply interpolation operator adjoint
+!----------------------------------------------------------------------
+subroutine bint_apply_ad_r${rank_out}$_r${rank_in}$(bint,array_out,array_in,trans_out,trans_in)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint              !< BUMP interpolator
+real(kind_real),intent(in) :: array_out(${dim[rank_out]}$)  !< Output array, the rightmost dimension being the vertical
+real(kind_real),intent(inout) :: array_in(${dim[rank_in]}$) !< Input array, the rightmost dimension being the vertical
+logical,intent(in),optional :: trans_out                    !< Output array should be transposed
+logical,intent(in),optional :: trans_in                     !< Input array should be transposed
+
+! Local variables
+integer :: nl_in,nl_out
+integer :: shp_in(${rank_in}$)
+#{if rank_in == 3 or rank_out == 3}# integer :: il #{endif}#
+real(kind_real),allocatable :: vec_in(:,:),vec_in_tmp(:,:),vec_out(:,:)
+logical :: ltrans_in,ltrans_out
+
+! Set name
+@:set_name(bint_apply_ad_r${rank_out}$_r${rank_in}$)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Local flags
+ltrans_out = .false.
+if (present(trans_out)) ltrans_out = trans_out
+ltrans_in = .false.
+if (present(trans_in)) ltrans_in = trans_in
+
+! Get number of levels
+#:if rank_out == 1
+   nl_out = 1
+#:else
+   if (ltrans_out) then
+      nl_out = size(array_out,1)
+   else
+      nl_out = size(array_out,${rank_out}$)
+   end if
+#:endif
+#:if rank_in == 1
+   nl_in = 1
+#:else
+   if (ltrans_in) then
+      nl_in = size(array_in,1)
+   else
+      nl_in = size(array_in,${rank_in}$)
+   end if
+#:endif
+bint%bump%geom%nl0 = nl_in
+
+! Allocation
+allocate(vec_out(bint%nouta,bint%bump%geom%nl0))
+if (.not.bint%bump%geom%same_grid) allocate(vec_in_tmp(bint%bump%geom%nc0a,bint%bump%geom%nl0))
+allocate(vec_in(bint%bump%geom%nmga,bint%bump%geom%nl0))
+
+! Pack output data
+#{if rank_out == 1}# vec_out(:,1) = array_out #{endif}#
+#:if rank_out == 2
+   if (ltrans_out) then
+     vec_out = transpose(array_out)
+   else
+     vec_out = array_out
+   end if
+#:endif
+#:if rank_out == 3
+   do il=1,nl_out
+      if (ltrans_out) then
+         vec_out(:,il) = reshape(transpose(array_out(:,:,il)),(/bint%nouta/))
+      else
+         vec_out(:,il) = reshape(array_out(:,:,il),(/bint%nouta/))
+      end if
+   end do
+#:endif
+
+! Interpolate
+if (bint%bump%geom%same_grid) then
+   call bint%apply_interp_ad(vec_out,vec_in)
+else
+   call bint%apply_interp_ad(vec_out,vec_in_tmp)
+   call bint%bump%geom%copy_c0a_to_mga(bint%bump%mpl,vec_in_tmp,vec_in)
+end if
+
+! Unpack input data
+shp_in = shape(array_in)
+#{if rank_in == 1}# array_in = vec_in(:,1) #{endif}#
+#:if rank_in == 2
+   if (ltrans_in) then
+      array_in = transpose(vec_in)
+   else
+      array_in = vec_in
+   end if
+#:endif
+#:if rank_in == 3
+   do il=1,nl_in
+      if (ltrans_in) then
+         array_in(:,:,il) = transpose(reshape(vec_in(:,il),(/shp_in(2),shp_in(1)/)))
+      else
+         array_in(:,:,il) = reshape(vec_in(:,il),shp_in(1:2))
+      end if
+   end do
+#:endif
+
+! Release memory
+deallocate(vec_out)
+if (.not.bint%bump%geom%same_grid) deallocate(vec_in_tmp)
+deallocate(vec_in)
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_apply_ad_r${rank_out}$_r${rank_in}$
+   #:endfor
+#:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: bint_apply_interp_ad
+!> Low-level routine to apply the adjoint of the interpolation operator
+!! to a single field on a single level
+!----------------------------------------------------------------------
+subroutine bint_apply_interp_ad(bint,array_out,array_in)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint                                  !< BUMP interpolator
+real(kind_real),intent(in) :: array_out(bint%nouta,bint%bump%geom%nl0)          !< Field on input grid
+real(kind_real),intent(out) :: array_in(bint%bump%geom%nc0a,bint%bump%geom%nl0) !< Field on output grid
+
+! Local variables
+integer :: ilev
+real(kind_real) :: array_in_ext(bint%nc0b,bint%bump%geom%nl0)
+
+! Set name
+@:set_name(bint_apply_interp_ad)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+if (bint%nouta > 0) then
+   ! Horizontal interpolation
+   !$omp parallel do schedule(static) private(ilev)
+   do ilev=1,bint%bump%geom%nl0
+      call bint%h%apply_ad(bint%bump%mpl,array_out(:,ilev),array_in_ext(:,ilev))
+   end do
+   !$omp end parallel do
+else
+   ! No output point on this task
+   array_in_ext = zero
+end if
+
+! Halo reduction
+call bint%com%red(bint%bump%mpl,array_in_ext,array_in)
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_apply_interp_ad
+
+!----------------------------------------------------------------------
+! Subroutine: bint_deallocate_outgrid
+!> Release memory (partial) by deallocating output grid
+!----------------------------------------------------------------------
+subroutine bint_deallocate_outgrid(bint)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
+
+! Set name
+@:set_name(bint_deallocate_outgrid)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call bint%geom_out%dealloc()
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_deallocate_outgrid
+
+!----------------------------------------------------------------------
+! Subroutine: bint_delete
+!> Release all memory
+!----------------------------------------------------------------------
+subroutine bint_delete(bint)
+
+implicit none
+
+! Passed variables
+class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
+
+! Set name
+@:set_name(bint_delete)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call bint%deallocate_outgrid()
+call bint%h%dealloc()
+call bint%com%dealloc()
+call bint%bump%dealloc()
+
+! Probe out
+@:probe_out()
+
+! Release probe instance
+@:probe_dealloc()
+
+end subroutine bint_delete
+
+!----------------------------------------------------------------------
+! Subroutine: bint_dummy_final
+!> Dummy finalization
+!----------------------------------------------------------------------
+subroutine bint_dummy_final(bint)
+
+implicit none
+
+! Passed variables
+type(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
+
+! Set name
+@:set_name(bint_dummy_final)
+
+! Get instance
+@:get_instance(interpolation)
+
+! Probe in
+@:probe_in()
+
+! Dummy action to avoid compiler warning
+bint%dummy_logical = .false.
+
+! Probe out
+@:probe_out()
+
+end subroutine bint_dummy_final
+
+end module interpolatorbump_mod

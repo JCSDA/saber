@@ -35,12 +35,16 @@ ne: 50
 
 # nicas_param
 forced_radii: 1
-rh: 4000.0e3
-rv: 30000.0
+rh:
+  u: [4000.0e3]
+  q: [4000.0e3]
+  common: [4000.0e3]
+rv:
+  u: [30000.0]
+  q: [30000.0]
+  common: [30000.0]
 
 # dirac_param
-
-# obsop_param
 
 # output_param
 

@@ -39,8 +39,6 @@ local_rad: 1000.0e3
 
 # dirac_param
 
-# obsop_param
-
 # output_param
 nldwv: 3
 lon_ldwv: [0.0,22.0,-127.0]

@@ -3,23 +3,33 @@
 !> BUMP derived type interface
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
-! Copyright © 2015-... UCAR,CERFACS,METEO-FRANCE and IRIT
+! Copyright 2015-... UCAR,CERFACS,METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
-
 module type_bump_interface
 
 use atlas_module, only: atlas_functionspace,atlas_fieldset
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
-use iso_c_binding
-use type_bump, only: bump_type,bump_registry
+use iso_c_binding, only: c_int,c_ptr,c_double,c_char
+use type_bump, only: bump_type
 use type_fieldset, only: fieldset_type
 
 implicit none
 
 private
 
+! BUMP registry
+#define LISTED_TYPE bump_type
+#include "oops/util/linkedList_i.f"
+type(registry_t) :: bump_registry
+
 contains
+
+!----------------------------------------------------------------------
+! Linked list implementation
+!----------------------------------------------------------------------
+#include "oops/util/linkedList_c.f"
+
 !----------------------------------------------------------------------
 ! Subroutine: bump_create_c
 !> Create
@@ -392,10 +402,10 @@ subroutine bump_get_parameter_c(key_bump,nstr,cstr,c_afieldset) bind(c,name='bum
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: key_bump           !< BUMP
-integer(c_int),intent(in) :: nstr               !< Parameter name size
-character(kind=c_char),intent(in) :: cstr(nstr) !< Parameter name
-type(c_ptr),intent(in),value :: c_afieldset     !< ATLAS fieldset pointer
+integer(c_int),intent(in) :: key_bump       !< BUMP
+integer(c_int),intent(in) :: nstr           !< Parameter name size
+character(c_char),intent(in) :: cstr(nstr)  !< Parameter name
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
@@ -425,10 +435,10 @@ subroutine bump_set_parameter_c(key_bump,nstr,cstr,c_afieldset) bind(c,name='bum
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: key_bump           !< BUMP
-integer(c_int),intent(in) :: nstr               !< Parameter name size
-character(kind=c_char),intent(in) :: cstr(nstr) !< Parameter name
-type(c_ptr),intent(in),value :: c_afieldset     !< ATLAS fieldset pointer
+integer(c_int),intent(in) :: key_bump       !< BUMP
+integer(c_int),intent(in) :: nstr           !< Parameter name size
+character(c_char),intent(in) :: cstr(nstr)  !< Parameter name
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
@@ -450,6 +460,28 @@ call bump%set_parameter(param,f_fieldset)
 end subroutine bump_set_parameter_c
 
 !----------------------------------------------------------------------
+! Subroutine: bump_partial_dealloc_c
+!> Partial deallocation
+!----------------------------------------------------------------------
+subroutine bump_partial_dealloc_c(key_bump) bind(c,name='bump_partial_dealloc_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump !< BUMP
+
+! Local variables
+type(bump_type),pointer :: bump
+
+! Interface
+call bump_registry%get(key_bump,bump)
+
+! Partially deallocate BUMP
+call bump%partial_dealloc
+
+end subroutine bump_partial_dealloc_c
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_dealloc_c
 !> Deallocation
 !----------------------------------------------------------------------
@@ -466,7 +498,7 @@ type(bump_type),pointer :: bump
 ! Interface
 call bump_registry%get(key_bump,bump)
 
-! Deallocate BUMP
+! Call Fortran
 call bump%dealloc
 
 ! Clean interface

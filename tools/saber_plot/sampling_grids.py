@@ -11,6 +11,8 @@ import numpy.ma as ma
 import os
 
 def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
+   """! Plot script for the "sampling grids" files produced by BUMP"""
+
    # c3 plot
    ic3_plot = [0,2,4,8]
 
@@ -30,8 +32,8 @@ def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
          # Check what is in the file
          if first:
             sc3 = ("lon" in f.groups[group].variables)
-            local = (group == "hdiag")
-            vbal = (group == "vbal")
+            local = ("lon_local" in f.groups[group].variables)
+            vbal = ("lon_vbal" in f.groups[group].variables)
 
          # Get data
          nc0a = f["lon_c0a"].shape[0]
