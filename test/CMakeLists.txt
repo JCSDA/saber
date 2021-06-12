@@ -192,14 +192,14 @@ if ( DEFINED ENV{SABER_TESTFILES_BRANCH} )
     message( STATUS "Branch name provided by user: ${GIT_BRANCH_SABER}" )
 else()
     find_branch_name(REPO_DIR_NAME ${repo})
-    if( DEFINED GIT_BRANCH_FUNC )
+    if( DEFINED GIT_TAG_FUNC )
+        set( GIT_BRANCH_SABER ${GIT_TAG_FUNC} )    # Tag is checked out
+        message( STATUS "SABER is in tag: ${GIT_BRANCH_SABER}" )
+        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/1.1.0/file )
+    elseif( DEFINED GIT_BRANCH_FUNC )
         set( GIT_BRANCH_SABER ${GIT_BRANCH_FUNC} ) # Branch is checked out
         message( STATUS "SABER is in branch: ${GIT_BRANCH_SABER}" )
         set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber )
-    elseif( DEFINED GIT_TAG_FUNC )
-       set( GIT_BRANCH_SABER ${GIT_TAG_FUNC} )    # Tag is checked out
-        message( STATUS "SABER is in tag: ${GIT_BRANCH_SABER}" )
-        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/1.1.0/file )
     endif()
 
 endif()
