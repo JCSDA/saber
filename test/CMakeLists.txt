@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # use find_branch functionn in jedi-cmake
-include( ${CMAKE_SOURCE_DIR}/jedicmake/cmake/Functions/git_functions.cmake )
+include( git_functions )
 
 # Default SABER_TEST_TIER
 set( SABER_TEST_TIER 1 )
@@ -191,7 +191,7 @@ if ( DEFINED ENV{SABER_TESTFILES_BRANCH} )
     set( GIT_BRANCH_SABER $ENV{SABER_TESTFILES_BRANCH} )
     message( STATUS "Branch name provided by user: ${GIT_BRANCH_SABER}" )
 else()
-    find_branch_name(REPO_DIR_NAME ${repo})
+    find_branch_name(REPO_DIR_NAME saber)
     if( DEFINED GIT_TAG_FUNC )
         set( GIT_BRANCH_SABER ${GIT_TAG_FUNC} )    # Tag is checked out
         message( STATUS "SABER is in tag: ${GIT_BRANCH_SABER}" )
