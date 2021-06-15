@@ -48,6 +48,8 @@ phases:
 
       - cd CI
 
+      # jedi-cmake
+      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/jedi-cmake $CODEBUILD_GIT_BRANCH jedicmake /jcsda/saber-bundle develop
       # oops
       - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/oops $CODEBUILD_GIT_BRANCH oops /jcsda/saber-bundle develop
       # saber
