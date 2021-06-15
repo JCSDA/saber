@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # use find_branch functionn in jedi-cmake
-include( ${CMAKE_SOURCE_DIR}/jedicmake/cmake/Functions/git_functions.cmake )
+include( git_functions )
 
 # Default SABER_TEST_TIER
 set( SABER_TEST_TIER 1 )
