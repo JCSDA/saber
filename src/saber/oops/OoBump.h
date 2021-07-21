@@ -116,28 +116,28 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
       grids[jgrid].set("prefix", prefix + "_" + ss.str());
     }
 
+    // Get the required number of levels add it to the grid configuration
+    Increment_ dx(resol, vars, time);
+    std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
+    dx.setAtlas(atlasFieldSet.get());
+    std::vector<std::string> vars_atlas;
+    int nl = 0;
+    for (unsigned int jvar = 0; jvar < atlasFieldSet->size(); ++jvar) {
+      atlas::Field atlasField = atlasFieldSet->field(jvar);
+      nl = std::max(nl, atlasField.levels());
+      vars_atlas.push_back(atlasField.name());
+    }
+    grids[jgrid].set("nl", nl);
+
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;
     if (grids[jgrid].has("variables")) {
       grids[jgrid].get("variables", vars_str);
     } else {
-      for (unsigned int jvar = 0; jvar < vars.size(); ++jvar) {
-        vars_str.push_back(vars[jvar]);
-      }
+      vars_str = vars_atlas;
       grids[jgrid].set("variables", vars_str);
     }
     grids[jgrid].set("nv", vars_str.size());
-
-    // Get the required number of levels add it to the grid configuration
-    Increment_ dx(resol, vars, time);
-    std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-    dx.setAtlas(atlasFieldSet.get());
-    int nl = 0;
-    for (unsigned int jvar = 0; jvar < vars_str.size(); ++jvar) {
-      atlas::Field atlasField = atlasFieldSet->field(vars_str[jvar]);
-      nl = std::max(nl, atlasField.levels());
-    }
-    grids[jgrid].set("nl", nl);
 
     // Add level index for 2D fields (first or last, first by default)
     if (!grids[jgrid].has("lev2d")) {
