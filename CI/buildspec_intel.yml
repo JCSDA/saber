@@ -94,10 +94,10 @@ phases:
         && export PATH=/usr/local/lib:$PATH
         && cd /home/jedi/saber
         && cp ../DartConfiguration.tcl .
-        && sed -i 's/saber-bundle/saber\/saber-jedi/' DartConfiguration.tcl
-        && sed -i 's/home\/jedi/home\/jedi\/saber-jedi/' DartConfiguration.tcl
+        && sed -i 's/saber-bundle/saber-bundle\/saber/' DartConfiguration.tcl
+        && sed -i 's/jedi/jedi\/saber/' DartConfiguration.tcl
         && cat DartConfiguration.tcl
-        && make -j4"
+        && ctest -C RelWithDebInfo -V -D ExperimentalBuild -j4"
 
       - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
         then export BUILD_STATUS="1";
