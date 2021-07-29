@@ -83,7 +83,7 @@ ErrorCovarianceBUMP<MODEL>::ErrorCovarianceBUMP(const Geometry_ & resol,
   oops::Log::trace() << "ErrorCovarianceBUMP::ErrorCovarianceBUMP starting" << std::endl;
 
 // Setup parameters
-  ParametersBUMP_ param(resol, vars, xb.validTime(), conf);
+  ParametersBUMP_ param(resol, vars, conf);
 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));

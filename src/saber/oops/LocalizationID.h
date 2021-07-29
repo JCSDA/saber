@@ -15,7 +15,7 @@
 
 #include "eckit/config/Configuration.h"
 
-#include "oops/base/LocalizationBase.h"
+#include "oops/generic/LocalizationBase.h"
 #include "oops/util/Logger.h"
 
 namespace eckit {
@@ -37,12 +37,11 @@ template<typename MODEL> class LocalizationID : public oops::LocalizationBase<MO
 
  public:
   LocalizationID(const Geometry_ &,
-                 const util::DateTime & time,
                  const eckit::Configuration &);
   ~LocalizationID();
 
-  void doRandomize(Increment_ &) const override;
-  void doMultiply(Increment_ &) const override;
+  void randomize(Increment_ &) const override;
+  void multiply(Increment_ &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -52,7 +51,6 @@ template<typename MODEL> class LocalizationID : public oops::LocalizationBase<MO
 
 template<typename MODEL>
 LocalizationID<MODEL>::LocalizationID(const Geometry_ & resol,
-                                      const util::DateTime & time,
                                       const eckit::Configuration & conf) {
   oops::Log::trace() << "LocalizationID:LocalizationID constructed" << std::endl;
 }
@@ -67,16 +65,16 @@ LocalizationID<MODEL>::~LocalizationID() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void LocalizationID<MODEL>::doRandomize(Increment_ & dx) const {
+void LocalizationID<MODEL>::randomize(Increment_ & dx) const {
   dx.random();
-  oops::Log::trace() << "LocalizationID:doRandomize done" << std::endl;
+  oops::Log::trace() << "LocalizationID:randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void LocalizationID<MODEL>::doMultiply(Increment_ & dx) const {
-  oops::Log::trace() << "LocalizationID:doMultiply done" << std::endl;
+void LocalizationID<MODEL>::multiply(Increment_ & dx) const {
+  oops::Log::trace() << "LocalizationID:multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

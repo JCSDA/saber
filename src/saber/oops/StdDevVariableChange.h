@@ -86,7 +86,7 @@ StdDevVariableChange<MODEL>::StdDevVariableChange(const State_ & xb, const State
   const oops::Variables vars(conf, "input variables");
 
 // Setup parameters
-  ParametersBUMP_ param(resol, vars, xb.validTime(), conf);
+  ParametersBUMP_ param(resol, vars, conf);
 
 // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));

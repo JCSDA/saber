@@ -49,8 +49,7 @@ template<typename MODEL> class OoBump {
   typedef oops::Increment<MODEL>   Increment_;
 
  public:
-  OoBump(const Geometry_ &, const oops::Variables &, const util::DateTime &,
-         const eckit::LocalConfiguration);
+  OoBump(const Geometry_ &, const oops::Variables &, const eckit::LocalConfiguration);
   explicit OoBump(OoBump &);
   ~OoBump();
 
@@ -87,7 +86,6 @@ template<typename MODEL> class OoBump {
 template<typename MODEL>
 OoBump<MODEL>::OoBump(const Geometry_ & resol,
                       const oops::Variables & vars,
-                      const util::DateTime & time,
                       const eckit::LocalConfiguration conf) : keyOoBump_() {
   // Grids
   std::vector<eckit::LocalConfiguration> grids;
@@ -117,6 +115,7 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
     }
 
     // Get the required number of levels add it to the grid configuration
+    util::DateTime time(1987, 5, 14, 21, 30, 00);
     Increment_ dx(resol, vars, time);
     std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
     dx.setAtlas(atlasFieldSet.get());

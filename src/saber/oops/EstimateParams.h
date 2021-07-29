@@ -117,7 +117,7 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     }
 
     // Setup parameters
-    ParametersBUMP_ param(resol, vars, time, fullConfig, ens1, ens2);
+    ParametersBUMP_ param(resol, vars, fullConfig, ens1, ens2);
 
     // Write parameters
     param.write();

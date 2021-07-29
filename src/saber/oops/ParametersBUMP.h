@@ -51,7 +51,6 @@ class ParametersBUMP {
   static const std::string classname() {return "oops::ParametersBUMP";}
   ParametersBUMP(const Geometry_ &,
                  const oops::Variables &,
-                 const util::DateTime &,
                  const eckit::Configuration &,
                  const EnsemblePtr_ ens1 = NULL,
                  const EnsemblePtr_ ens2 = NULL);
@@ -63,7 +62,6 @@ class ParametersBUMP {
  private:
   const Geometry_ resol_;
   const oops::Variables vars_;
-  util::DateTime time_;
   const eckit::LocalConfiguration conf_;
   std::unique_ptr<OoBump_> ooBump_;
 };
@@ -73,11 +71,10 @@ class ParametersBUMP {
 template<typename MODEL>
 ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
                                       const oops::Variables & vars,
-                                      const util::DateTime & time,
                                       const eckit::Configuration & conf,
                                       const EnsemblePtr_ ens1,
                                       const EnsemblePtr_ ens2)
-  : resol_(resol), vars_(vars), time_(time), conf_(conf), ooBump_()
+  : resol_(resol), vars_(vars), conf_(conf), ooBump_()
 {
   oops::Log::trace() << "ParametersBUMP<MODEL>::ParametersBUMP construction starting" << std::endl;
   util::Timer timer(classname(), "ParametersBUMP");
@@ -103,7 +100,7 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
 
   // Create BUMP
   oops::Log::info() << "Create BUMP" << std::endl;
-  ooBump_.reset(new OoBump_(resol, vars, time_, BUMPConf));
+  ooBump_.reset(new OoBump_(resol, vars, BUMPConf));
 
   // Add members of ensemble 1
   if (ens1) {
@@ -131,11 +128,11 @@ ParametersBUMP<MODEL>::ParametersBUMP(const Geometry_ & resol,
     conf_.get("input", inputConfs);
 
     for (const auto & inputConf : inputConfs) {
-      // Read parameter for the specified time
+      // Get date
       const util::DateTime date(inputConf.getString("date"));
 
       // Setup increment
-      Increment_ dx(resol_, vars_, time_);
+      Increment_ dx(resol_, vars_, date);
       dx.read(inputConf);
 
       // Set parameter to BUMP
@@ -177,16 +174,18 @@ void ParametersBUMP<MODEL>::write() const {
   std::vector<eckit::LocalConfiguration> outputConfs;
   conf_.get("output", outputConfs);
   for (const auto & outputConf : outputConfs) {
-  // Setup dummy increment
-    Increment_ dx(resol_, vars_, time_);
+  // Get date
+    const util::DateTime date(outputConf.getString("date"));
+
+  // Setup increment
+    Increment_ dx(resol_, vars_, date);
     dx.zero();
 
   // Get parameter from BUMP
     std::string param = outputConf.getString("parameter");
     ooBump_->getParameter(param, dx);
 
-  // Write parameter for the specified time
-    const util::DateTime date(outputConf.getString("date"));
+  // Write parameter
     dx.write(outputConf);
     oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
                       << std::setprecision(3) << dx.norm() << std::endl;
