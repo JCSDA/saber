@@ -18,7 +18,7 @@ args = parser.parse_args()
 sys.path.insert(1, os.path.join(args.bindir, "saber_plot"))
 
 # Available plots list
-plot_list=["avg","diag","dirac","lct","lct_cor","local_diag_cor","local_diag_loc","normality","randomization","sampling_grids","umf","var"]
+plot_list=["avg","diag","dirac","lct","lct_cor","normality","randomization","sampling_grids","umf","var"]
 done_list=["normality","sampling_grids","lct","lct_cor"]
 done = {}
 alias_list = {
@@ -27,8 +27,6 @@ alias_list = {
    "dirac": "contour_centered",
    "lct": "contour_positive",
    "lct_cor": "lct_cor",
-   "local_diag_cor": "contour_positive",
-   "local_diag_loc": "contour_positive",
    "normality": "normality",
    "randomization": "randomization",
    "sampling_grids": "sampling_grids",

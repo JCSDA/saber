@@ -15,7 +15,7 @@ type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,ilon,ilat,il0
-integer :: ncid,nx_id,ny_id,nz_id,lon_id,lat_id,z_id,area_id,lmask_id
+integer :: ncid,lon_id,lat_id,z_id,area_id,lmask_id
 real(kind_real),allocatable :: lon(:,:),lat(:,:),z(:),area(:,:),lmask(:,:,:)
 
 ! Set name
@@ -26,15 +26,12 @@ real(kind_real),allocatable :: lon(:,:),lat(:,:),z(:),area(:,:),lmask(:,:,:)
 
 ! Open file and get dimensions
 model%ntile = 1
-call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'nx',nx_id))
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'ny',ny_id))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nx_id,len=model%nlon))
+ncid = open_file(mpl,'grid',0)
+model%nlon = inquire_dim_size(mpl,ncid,'nx')
+model%nlat = inquire_dim_size(mpl,ncid,'ny')
 model%nlon = model%nlon+1
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,ny_id,len=model%nlat))
 model%nmg = model%nlon*model%nlat
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'nz',nz_id))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nz_id,len=model%nlev))
+model%nlev = inquire_dim_size(mpl,ncid,'nz')
 
 ! Allocation
 call model%alloc
@@ -45,17 +42,17 @@ allocate(area(model%nlon,model%nlat))
 allocate(lmask(model%nlon,model%nlat,model%nlev))
 
 ! Read data and close file
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'lon',lon_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'lat',lat_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'z',z_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'area',area_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'lmask',lmask_id))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lon_id,lon(1:model%nlon-1,:)))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lat_id,lat(1:model%nlon-1,:)))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,z_id,z))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,area_id,area(1:model%nlon-1,:)))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lmask_id,lmask(1:model%nlon-1,:,:)))
-call mpl%ncerr('${subr}$',nf90_close(ncid))
+lon_id = inquire_var(mpl,ncid,'lon')
+lat_id = inquire_var(mpl,ncid,'lat')
+z_id = inquire_var(mpl,ncid,'z')
+area_id = inquire_var(mpl,ncid,'area')
+lmask_id = inquire_var(mpl,ncid,'lmask')
+call get_var(mpl,ncid,lon_id,lon(1:model%nlon-1,:))
+call get_var(mpl,ncid,lat_id,lat(1:model%nlon-1,:))
+call get_var(mpl,ncid,z_id,z)
+call get_var(mpl,ncid,area_id,area(1:model%nlon-1,:))
+call get_var(mpl,ncid,lmask_id,lmask(1:model%nlon-1,:,:))
+call close_file(mpl,ncid)
 
 ! Add redundant longitude for tests
 lon(model%nlon,:) = lon(1,:)
@@ -117,7 +114,7 @@ character(len=*),intent(in) :: filename                         !< File name
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
-integer :: iv,il0,img,ilon,ilat,ndims
+integer :: iv,il0,img,ilon,ilat,rank,iv_u,iv_q,imga
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
@@ -133,61 +130,90 @@ if (mpl%main) then
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   ncid = open_file(mpl,filename,0)
 end if
 
 do iv=1,nam%nv
-   if (mpl%main) then
-      ! Get variable id
-      call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,nam%variables(iv),fld_id))
+   if ((trim(nam%variables(iv))=='u').or.(trim(nam%variables(iv))=='q').or.(trim(nam%variables(iv))=='qs')) then
+      if (mpl%main) then
+         ! Get variable ID
+         fld_id = inquire_var(mpl,ncid,nam%variables(iv))
 
-      ! Check field size
-      call mpl%ncerr('${subr}$',nf90_inquire_variable(ncid,fld_id,ndims=ndims))
+         ! Get variable rank
+         rank = inquire_var_rank(mpl,ncid,nam%variables(iv))
 
-      ! Read data
-      select case (ndims)
-      case (2)
-         ! 2D data
-         fld_tmp = mpl%msv%valr
-         if (trim(nam%lev2d)=='first') then
-            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,1),(/1,1/), &
- & (/model%nlon-1,model%nlat/)))
-            fld_tmp(model%nlon,:,1) = fld_tmp(1,:,1)
-         elseif (trim(nam%lev2d)=='last') then
-            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,model%nl0),(/1,1/), &
- & (/model%nlon-1,model%nlat/)))
-            fld_tmp(model%nlon,:,model%nl0) = fld_tmp(1,:,model%nl0)
-         end if
-      case (3)
-         ! 3D data
-         do il0=1,nam%nl
-            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(1:model%nlon-1,:,il0),(/1,1,nam%levs(il0)/), &
- & (/model%nlon-1,model%nlat,1/)))
-            fld_tmp(model%nlon,:,il0) = fld_tmp(1,:,il0)
+         ! Read data
+         select case (rank)
+         case (2)
+            ! 2D data
+            fld_tmp = mpl%msv%valr
+            if (trim(nam%lev2d)=='first') then
+               call get_var(mpl,ncid,fld_id,fld_tmp(1:model%nlon-1,:,1),(/1,1/),(/model%nlon-1,model%nlat/))
+               fld_tmp(model%nlon,:,1) = fld_tmp(1,:,1)
+            elseif (trim(nam%lev2d)=='last') then
+               call get_var(mpl,ncid,fld_id,fld_tmp(1:model%nlon-1,:,model%nl0),(/1,1/),(/model%nlon-1,model%nlat/))
+               fld_tmp(model%nlon,:,model%nl0) = fld_tmp(1,:,model%nl0)
+            end if
+         case (3)
+            ! 3D data
+            do il0=1,nam%nl
+               call get_var(mpl,ncid,fld_id,fld_tmp(1:model%nlon-1,:,il0),(/1,1,nam%levs(il0)/),(/model%nlon-1,model%nlat,1/))
+               fld_tmp(model%nlon,:,il0) = fld_tmp(1,:,il0)
+            end do
+         case default
+            call mpl%abort('${subr}$','wrong number of dimensions for variable '//trim(nam%variables(iv)))
+         end select
+
+         ! Pack
+         do il0=1,model%nl0
+            do img=1,model%nmg
+               ilon = model%mg_to_lon(img)
+               ilat = model%mg_to_lat(img)
+               fld_mg(img,il0) = fld_tmp(ilon,ilat,il0)
+            end do
          end do
-      case default
-         call mpl%abort('${subr}$','wrong number of dimensions for variable '//trim(nam%variables(iv)))
-      end select
-
-      ! Pack
-      do il0=1,model%nl0
-         do img=1,model%nmg
-            ilon = model%mg_to_lon(img)
-            ilat = model%mg_to_lat(img)
-            fld_mg(img,il0) = fld_tmp(ilon,ilat,il0)
-         end do
-      end do
+      end if
+      call mpl%glb_to_loc(model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 if (mpl%main) then
    ! Close file
-   call mpl%ncerr('${subr}$',nf90_close(ncid))
+   call close_file(mpl,ncid)
 
    ! Release memory
    deallocate(fld_tmp)
 end if
+
+! Post-processing
+iv_u = mpl%msv%vali
+iv_q = mpl%msv%vali
+do iv=1,nam%nv
+   if (trim(nam%variables(iv))=='u') iv_u = iv
+   if (trim(nam%variables(iv))=='q') iv_q = iv
+end do
+do iv=1,nam%nv
+   select case(trim(nam%variables(iv)))
+   case ('u','q','qs')
+      ! Nothing to do
+   case ('cosu_plus_q2')
+      if (mpl%msv%isnot(iv_u).and.mpl%msv%isnot(iv_q)) then
+         do il0=1,model%nl0
+            do imga=1,model%nmga
+               if (mpl%msv%isnot(fld(imga,il0,iv_u)).and.mpl%msv%isnot(fld(imga,il0,iv_q))) then
+                  fld(imga,il0,iv) = cos(fld(imga,il0,iv_u))+(fld(imga,il0,iv_q)/4.0e-6)**2
+               else
+                  fld(imga,il0,iv) = mpl%msv%valr
+               end if
+            end do
+         end do
+      else
+         call mpl%abort('${subr}$','u, q and cosu_plus_q2 variables required for cosu_plus_q2 change of variables')
+      end if
+   case default
+      call mpl%abort('${subr}$','wrong variable in QG model')
+   end select
+end do
 
 ! Probe out
 @:probe_out()

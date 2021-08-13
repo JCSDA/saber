@@ -9,12 +9,10 @@
 module type_diag
 
 use fckit_mpi_module, only: fckit_mpi_sum
-use netcdf, only: nf90_put_var,nf90_close
 use tools_const, only: zero,one,five,reqkm,rad2deg,pi
 use tools_fit, only: ver_smooth
 use tools_func, only: fit_diag
-use tools_kinds, only: kind_real,nc_kind_real
-use tools_wrfda, only: da_eof_decomposition
+use tools_kinds, only: kind_real
 use type_avg, only: avg_type
 use type_bpar, only: bpar_type
 use type_diag_blk, only: diag_blk_type
@@ -22,13 +20,11 @@ use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
-use type_rng, only: rng_type
 use type_samp, only: samp_type
 
 implicit none
 
-real(kind_real),parameter :: bound = five               !< Restriction bound applied on local diagnostics with respect to the global diagnostic
-real(kind_real),parameter :: egvmin = 1.0e-12_kind_real !< Minimum eigenvalue for full vertical covariance matrix inversion
+real(kind_real),parameter :: bound = five !< Restriction bound applied on local diagnostics with respect to the global diagnostic
 
 ! Diagnostic derived type
 type diag_type
@@ -38,7 +34,6 @@ type diag_type
 contains
    procedure :: alloc => diag_alloc
    procedure :: dealloc => diag_dealloc
-   procedure :: write => diag_write
    procedure :: filter_fit => diag_filter_fit
    procedure :: build_fit => diag_build_fit
    procedure :: covariance => diag_covariance
@@ -46,7 +41,6 @@ contains
    procedure :: localization => diag_localization
    procedure :: hybridization => diag_hybridization
    procedure :: dualens => diag_dualens
-   procedure :: full_vertical_covariance => diag_full_vertical_covariance
 end type diag_type
 
 private
@@ -139,118 +133,6 @@ end if
 @:probe_out()
 
 end subroutine diag_dealloc
-
-!----------------------------------------------------------------------
-! Subroutine: diag_write
-!> Write
-!----------------------------------------------------------------------
-subroutine diag_write(diag,mpl,nam,geom,bpar,samp)
-
-implicit none
-
-! Passed variables
-class(diag_type),intent(inout) :: diag !< Diagnostic
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(samp_type),intent(in) :: samp     !< Sampling
-
-! Local variables
-integer :: ib,i,il0,il0i,ic2a,ildw,n
-real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
-character(len=2*1024+12) :: filename
-
-! Set name
-@:set_name(diag_write)
-
-! Probe in
-@:probe_in()
-
-write(mpl%info,'(a7,a)') '','Write diagnostic: '//trim(diag%prefix)
-call mpl%flush
-
-if (mpl%main) then
-   filename = trim(nam%prefix)//'_diag'
-   do ib=1,bpar%nbe
-      if (bpar%diag_block(ib)) call diag%blk(0,ib)%write(mpl,nam,geom,bpar,filename)
-   end do
-end if
-
-if (nam%local_diag) then
-   ! Allocation
-   allocate(fld_c2a(samp%nc2a,geom%nl0))
-   allocate(fld_c2b(samp%nc2b,geom%nl0))
-   allocate(fld_c0a(geom%nc0a,geom%nl0))
-
-   ! Set file name
-   filename = trim(nam%prefix)//'_local_diag_'//trim(diag%prefix)
-
-   ! Write coordinates
-   call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
-   call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
-   call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
-
-   do ib=1,bpar%nbe
-      if (bpar%diag_block(ib)) then
-         n = 1
-         if (bpar%fit_block(ib).and.(trim(diag%prefix)/='cov')) n = n+2
-         do i=1,n
-            ! Copy data
-            do ic2a=1,samp%nc2a
-               if (i==1) then
-                  fld_c2a(ic2a,:) = diag%blk(ic2a,ib)%coef_ens
-               elseif (i==2) then
-                  fld_c2a(ic2a,:) = diag%blk(ic2a,ib)%fit_rh*reqkm
-               elseif (i==3) then
-                  fld_c2a(ic2a,:) = diag%blk(ic2a,ib)%fit_rv
-               end if
-            end do
-
-            ! Interpolation
-            call samp%com_c2_AB%ext(mpl,fld_c2a,fld_c2b)
-            do il0=1,geom%nl0
-               il0i = geom%l0_to_l0i(il0)
-               call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0))
-            end do
-
-            ! Write fields
-            if (i==1) then
-               call geom%io%fld_write(mpl,nam,filename,'coef_ens',fld_c0a,geom%gmask_c0a,bpar%blockname(ib))
-            elseif (i==2) then
-               call geom%io%fld_write(mpl,nam,filename,'fit_rh',fld_c0a,geom%gmask_c0a,bpar%blockname(ib))
-            elseif (i==3) then
-               call geom%io%fld_write(mpl,nam,filename,'fit_rv',fld_c0a,geom%gmask_c0a,bpar%blockname(ib))
-            end if
-         end do
-      end if
-   end do
-
-   ! Release memory
-   deallocate(fld_c2a)
-   deallocate(fld_c2b)
-   deallocate(fld_c0a)
-end if
-
-do ildw=1,nam%nldwv
-   ic2a = samp%ldwv_to_c2a(ildw)
-   if (mpl%msv%isnot(ic2a)) then
-      ! Build file name
-      filename = trim(nam%prefix)//'_diag_'//trim(nam%name_ldwv(ildw))
-
-      ! Find diagnostic point
-      do ib=1,bpar%nbe
-         if (bpar%diag_block(ib)) call diag%blk(ic2a,ib)%write(mpl,nam,geom,bpar,filename)
-      end do
-   else
-      call mpl%warning('${subr}$','missing local profile '//trim(nam%name_ldwv(ildw)))
-   end if
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine diag_write
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_filter_fit
@@ -400,7 +282,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,ic2a
+integer :: ib,ic2a,il0
 real(kind_real) :: rmse,norm,rmse_tot,norm_tot
 
 ! Set name
@@ -413,8 +295,11 @@ do ib=1,bpar%nbe
    if (bpar%diag_block(ib).and.bpar%fit_block(ib)) then
       ! Build fit
       do ic2a=0,diag%nc2a
-         call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag%blk(ic2a,ib)%distv, &
- & diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit)
+         do il0=1,geom%nl0
+            ! Compute fit
+            call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%disth,diag%blk(ic2a,ib)%distv(:,il0), &
+ & diag%blk(ic2a,ib)%coef_ens(il0),diag%blk(ic2a,ib)%fit_rh(il0),diag%blk(ic2a,ib)%fit_rv(il0),diag%blk(ic2a,ib)%fit(:,:,il0))
+         end do
       end do
 
       ! Compute RMSE
@@ -491,9 +376,6 @@ do ib=1,bpar%nb
    end if
 end do
 
-! Compute and write full vertical covariance
-if (trim(nam%strategy)=='diag_all') call diag%full_vertical_covariance(mpl,nam,geom,bpar,avg)
-
 ! Probe out
 @:probe_out()
 
@@ -503,14 +385,13 @@ end subroutine diag_covariance
 ! Subroutine: diag_correlation
 !> Compute correlation
 !----------------------------------------------------------------------
-subroutine diag_correlation(diag,mpl,rng,nam,geom,bpar,samp,avg,prefix)
+subroutine diag_correlation(diag,mpl,nam,geom,bpar,samp,avg,prefix)
 
 implicit none
 
 ! Passed variables
 class(diag_type),intent(inout) :: diag !< Diagnostic
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
@@ -548,7 +429,7 @@ do ib=1,bpar%nbe
          end do
 
          ! Fitting
-         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,rng,nam,geom,bpar,samp,.false.)
+         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,.false.)
 
          ! Update
          call mpl%prog_print(ic2a+1)
@@ -580,9 +461,6 @@ call diag%filter_fit(mpl,nam,geom,bpar,samp)
 ! Build fit
 call diag%build_fit(mpl,nam,geom,bpar)
 
-! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,samp)
-
 ! Probe out
 @:probe_out()
 
@@ -592,14 +470,13 @@ end subroutine diag_correlation
 ! Subroutine: diag_localization
 !> Compute diagnostic localization
 !----------------------------------------------------------------------
-subroutine diag_localization(diag,mpl,rng,nam,geom,bpar,samp,avg,prefix)
+subroutine diag_localization(diag,mpl,nam,geom,bpar,samp,avg,prefix)
 
 implicit none
 
 ! Passed variables
 class(diag_type),intent(inout) :: diag !< Diagnostic
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
@@ -634,7 +511,7 @@ do ib=1,bpar%nbe
          call diag%blk(ic2a,ib)%normalization(geom,bpar)
 
          ! Fitting
-         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,rng,nam,geom,bpar,samp)
+         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
 
          ! Update
          call mpl%prog_print(ic2a+1)
@@ -669,9 +546,6 @@ call diag%filter_fit(mpl,nam,geom,bpar,samp)
 ! Build fit
 call diag%build_fit(mpl,nam,geom,bpar)
 
-! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,samp)
-
 ! Probe out
 @:probe_out()
 
@@ -681,14 +555,13 @@ end subroutine diag_localization
 ! Subroutine: diag_hybridization
 !> Compute diagnostic hybridization
 !----------------------------------------------------------------------
-subroutine diag_hybridization(diag,mpl,rng,nam,geom,bpar,samp,avg,prefix)
+subroutine diag_hybridization(diag,mpl,nam,geom,bpar,samp,avg,prefix)
 
 implicit none
 
 ! Passed variables
 class(diag_type),intent(inout) :: diag !< Diagnostic (localization)
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
@@ -729,7 +602,7 @@ do ib=1,bpar%nbe
             call diag%blk(ic2a,ib)%normalization(geom,bpar)
 
             ! Fitting
-            if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,rng,nam,geom,bpar,samp)
+            if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
          end if
 
          ! Update
@@ -765,9 +638,6 @@ call diag%filter_fit(mpl,nam,geom,bpar,samp)
 ! Build fit
 call diag%build_fit(mpl,nam,geom,bpar)
 
-! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,samp)
-
 ! Probe out
 @:probe_out()
 
@@ -777,14 +647,13 @@ end subroutine diag_hybridization
 ! Subroutine: diag_dualens
 !> Compute diagnostic dualens
 !----------------------------------------------------------------------
-subroutine diag_dualens(diag,mpl,rng,nam,geom,bpar,samp,avg,avg_lr,diag_lr,prefix,prefix_lr)
+subroutine diag_dualens(diag,mpl,nam,geom,bpar,samp,avg,avg_lr,diag_lr,prefix,prefix_lr)
 
 implicit none
 
 ! Passed variables
 class(diag_type),intent(inout) :: diag   !< Diagnostic (localization)
 type(mpl_type),intent(inout) :: mpl      !< MPI data
-type(rng_type),intent(inout) :: rng      !< Random number generator
 type(nam_type),intent(in) :: nam         !< Namelist
 type(geom_type),intent(in) :: geom       !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
@@ -825,8 +694,8 @@ do ib=1,bpar%nbe
 
          ! Fitting
          if (bpar%fit_block(ib)) then
-            call diag%blk(ic2a,ib)%fitting(mpl,rng,nam,geom,bpar,samp)
-            call diag_lr%blk(ic2a,ib)%fitting(mpl,rng,nam,geom,bpar,samp)
+            call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+            call diag_lr%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
          end if
 
          ! Update
@@ -872,163 +741,9 @@ call diag_lr%filter_fit(mpl,nam,geom,bpar,samp)
 call diag%build_fit(mpl,nam,geom,bpar)
 call diag_lr%build_fit(mpl,nam,geom,bpar)
 
-! Write
-if (nam%write_hdiag) call diag%write(mpl,nam,geom,bpar,samp)
-if (nam%write_hdiag) call diag_lr%write(mpl,nam,geom,bpar,samp)
-
 ! Probe out
 @:probe_out()
 
 end subroutine diag_dualens
-
-!----------------------------------------------------------------------
-! Subroutine: diag_full_vertical_covariance
-!> Compute full vertical covariance/standard-deviation/correlation
-!----------------------------------------------------------------------
-subroutine diag_full_vertical_covariance(diag,mpl,nam,geom,bpar,avg)
-
-implicit none
-
-! Passed variables
-class(diag_type),intent(inout) :: diag !< Diagnostic
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(avg_type),intent(in) :: avg       !< Averaged statistics
-
-! Local variables
-integer :: ib,il0,jl0r,jl0,i,j
-integer :: ncid,grpid,n1_id,n2_id,cov_id,std_id,cor_id,covegv_id,covpos_id,stdpos_id,corpos_id,covposinv_id
-real(kind_real) :: cov(nam%nv*geom%nl0,nam%nv*geom%nl0),std(nam%nv*geom%nl0),cor(nam%nv*geom%nl0,nam%nv*geom%nl0)
-real(kind_real) :: covegv(nam%nv*geom%nl0),d(nam%nv*geom%nl0),v(nam%nv*geom%nl0,nam%nv*geom%nl0)
-real(kind_real) :: covpos(nam%nv*geom%nl0,nam%nv*geom%nl0),stdpos(nam%nv*geom%nl0),corpos(nam%nv*geom%nl0,nam%nv*geom%nl0)
-real(kind_real) :: covposinv(nam%nv*geom%nl0,nam%nv*geom%nl0)
-character(len=1024) :: filename
-
-! Set name
-#:set subr = 'diag_full_vertical_covariance'
-
-! Probe in
-@:probe_in()
-
-! Gather full vertical covariance matrix
-do ib=1,bpar%nb
-   if (bpar%b_to_v2(ib)<=bpar%b_to_v1(ib)) then
-      do il0=1,geom%nl0
-         do jl0r=1,bpar%nl0r(ib)
-            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-            i = (bpar%b_to_v1(ib)-1)*geom%nl0+il0
-            j = (bpar%b_to_v2(ib)-1)*geom%nl0+jl0
-            cov(i,j) = avg%blk(0,ib)%m11(1,jl0r,il0)
-            cov(j,i) = cov(i,j)
-         end do
-      end do
-   end if
-end do
-
-! Compute standard-deviation and correlations
-do i=1,nam%nv*geom%nl0
-   if (.not.(abs(cov(i,i))<zero)) then
-      std(i) = sqrt(cov(i,i))
-   else
-      call mpl%abort('${subr}','negative variance')
-   end if
-end do
-do j=1,nam%nv*geom%nl0
-   do i=1,nam%nv*geom%nl0
-      if (std(i)*std(j)>zero) then
-         cor(i,j) = cov(i,j)/(std(i)*std(j))
-      else
-         if (i==j) then
-            cor(i,j) = one
-         else
-            cor(i,j) = zero
-         end if
-      end if
-   end do
-end do
-
-!  Correlation matrix regularization
-call da_eof_decomposition(mpl,nam%nv*geom%nl0,cor,v,covegv)
-d = max(covegv,egvmin)
-covpos = zero
-do i=1,nam%nv*geom%nl0
-   covpos(i,i) = d(i)
-end do
-covpos = matmul(v,matmul(covpos,transpose(v)))
-do i=1,nam%nv*geom%nl0
-   if (.not.(abs(covpos(i,i))<zero)) then
-      stdpos(i) = sqrt(covpos(i,i))
-   else
-      call mpl%abort('${subr}','negative variance (after diagonalization)')
-   end if
-end do
-do i=1,nam%nv*geom%nl0
-   do j=1,nam%nv*geom%nl0
-      if (stdpos(i)*stdpos(j)>zero) then
-         corpos(i,j) = covpos(i,j)/(stdpos(i)*stdpos(j))
-      else
-         if (i==j) then
-            corpos(i,j) = one
-         else
-            corpos(i,j) = zero
-         end if
-      end if
-   end do
-end do
-
-! Invert correlations
-covposinv = zero
-do i=1,nam%nv*geom%nl0
-   covposinv(i,i) = one/d(i)
-end do
-covposinv = matmul(v,matmul(covposinv,transpose(v)))
-
-if (nam%write_hdiag.and.mpl%main) then
-   ! Set file name
-   filename = trim(nam%prefix)//'_diag'
-
-   ! Define file
-   ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
-
-   ! Write namelist parameters
-   call nam%write(mpl,ncid)
-
-   ! Define group
-   grpid = mpl%nc_group_define_or_get(ncid,trim(diag%prefix)//'_full_vertical')
-
-   ! Define dimensions
-   n1_id = mpl%nc_dim_define_or_get(grpid,'n1',nam%nv*geom%nl0)
-   n2_id = mpl%nc_dim_define_or_get(grpid,'n2',nam%nv*geom%nl0)
-
-   ! Define variables
-   cov_id = mpl%nc_var_define_or_get(grpid,'cov',nc_kind_real,(/n2_id,n1_id/))
-   std_id = mpl%nc_var_define_or_get(grpid,'std',nc_kind_real,(/n1_id/))
-   cor_id = mpl%nc_var_define_or_get(grpid,'cor',nc_kind_real,(/n2_id,n1_id/))
-   covegv_id = mpl%nc_var_define_or_get(grpid,'covegv',nc_kind_real,(/n1_id/))
-   covpos_id = mpl%nc_var_define_or_get(grpid,'covpos',nc_kind_real,(/n2_id,n1_id/))
-   stdpos_id = mpl%nc_var_define_or_get(grpid,'stdpos',nc_kind_real,(/n1_id/))
-   corpos_id = mpl%nc_var_define_or_get(grpid,'corpos',nc_kind_real,(/n2_id,n1_id/))
-   covposinv_id = mpl%nc_var_define_or_get(grpid,'covpos',nc_kind_real,(/n2_id,n1_id/))
-
-   ! Write variables
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,cov_id,cov))
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,std_id,std))
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,cor_id,cor))
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,covegv_id,covegv))
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,covpos_id,covpos))
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,stdpos_id,stdpos))
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,corpos_id,corpos))
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,covposinv_id,covposinv))
-
-   ! Close file
-   call mpl%ncerr('${subr}$',nf90_close(ncid))
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine diag_full_vertical_covariance
 
 end module type_diag

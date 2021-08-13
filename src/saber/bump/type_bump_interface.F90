@@ -34,7 +34,7 @@ contains
 ! Subroutine: bump_create_c
 !> Create
 !----------------------------------------------------------------------
-subroutine bump_create_c(key_bump,c_comm,c_afunctionspace,c_afieldset,c_conf,c_grid) bind(c,name='bump_create_f90')
+subroutine bump_create_c(key_bump,c_comm,c_afunctionspace,c_afieldset,c_conf,c_grid,c_universe_rad) bind(c,name='bump_create_f90')
 
 implicit none
 
@@ -45,6 +45,7 @@ type(c_ptr),intent(in),value :: c_afunctionspace !< ATLAS function space
 type(c_ptr),intent(in),value :: c_afieldset      !< ATLAS fieldset containing geometry elements
 type(c_ptr),intent(in),value :: c_conf           !< FCKIT configuration
 type(c_ptr),intent(in),value :: c_grid           !< FCKIT grid configuration
+type(c_ptr),intent(in),value :: c_universe_rad   !< ATLAS fieldset optionally containing universe radius
 
 ! Local variables
 type(bump_type),pointer :: bump
@@ -53,6 +54,7 @@ type(atlas_functionspace) :: f_afunctionspace
 type(fieldset_type) :: f_fieldset
 type(fckit_configuration) :: f_conf
 type(fckit_configuration) :: f_grid
+type(fieldset_type) :: f_universe_rad
 
 ! Interface
 call bump_registry%init()
@@ -63,11 +65,117 @@ f_afunctionspace = atlas_functionspace(c_afunctionspace)
 f_fieldset = atlas_fieldset(c_afieldset)
 f_conf = fckit_configuration(c_conf)
 f_grid = fckit_configuration(c_grid)
+f_universe_rad = atlas_fieldset(c_universe_rad)
 
 ! Call Fortran
-call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf,f_grid)
+call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf,f_grid,f_universe_rad)
 
 end subroutine bump_create_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_add_member_c
+!> Add member into bump%ens[1,2]
+!----------------------------------------------------------------------
+subroutine bump_add_member_c(key_bump,c_afieldset,ie,iens) bind(c,name='bump_add_member_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
+integer(c_int),intent(in) :: ie             !< Member index
+integer(c_int),intent(in) :: iens           !< Ensemble index
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fieldset_type) :: f_fieldset
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_fieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call bump%add_member(f_fieldset,ie,iens)
+
+end subroutine bump_add_member_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_update_vbal_cov_c
+!> Update vertical covariance, one member at a time
+!----------------------------------------------------------------------
+subroutine bump_update_vbal_cov_c(key_bump,c_afieldset,ie) bind(c,name='bump_update_vbal_cov_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
+integer(c_int),intent(in) :: ie             !< Member index
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fieldset_type) :: f_fieldset
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_fieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call bump%update_vbal_cov(f_fieldset,ie)
+
+end subroutine bump_update_vbal_cov_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_update_var_c
+!> Update variance, one member at a time
+!----------------------------------------------------------------------
+subroutine bump_update_var_c(key_bump,c_afieldset,ie) bind(c,name='bump_update_var_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
+integer(c_int),intent(in) :: ie             !< Member index
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fieldset_type) :: f_fieldset
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_fieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call bump%update_var(f_fieldset,ie)
+
+end subroutine bump_update_var_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_update_mom_c
+!> Update moments, one member at a time
+!----------------------------------------------------------------------
+subroutine bump_update_mom_c(key_bump,c_afieldset,ie) bind(c,name='bump_update_mom_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
+integer(c_int),intent(in) :: ie             !< Member index
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fieldset_type) :: f_fieldset
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_fieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call bump%update_mom(f_fieldset,ie)
+
+end subroutine bump_update_mom_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_run_drivers_c
@@ -90,33 +198,6 @@ call bump_registry%get(key_bump,bump)
 call bump%run_drivers
 
 end subroutine bump_run_drivers_c
-
-!----------------------------------------------------------------------
-! Subroutine: bump_add_member_c
-!> Add member into bump%ens[1,2]
-!----------------------------------------------------------------------
-subroutine bump_add_member_c(key_bump,c_afieldset,ie,iens) bind(c,name='bump_add_member_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump       !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
-integer(c_int),intent(in) :: ie             !< Ensemble member index
-integer(c_int),intent(in) :: iens           !< Ensemble index
-
-! Local variables
-type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_fieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%add_member(f_fieldset,ie,iens)
-
-end subroutine bump_add_member_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal_c
@@ -392,6 +473,60 @@ f_fieldset = atlas_fieldset(c_afieldset)
 call bump%randomize(f_fieldset)
 
 end subroutine bump_randomize_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_psichi_to_uv_c
+!> psi/chi to u/v transform
+!----------------------------------------------------------------------
+subroutine bump_psichi_to_uv_c(key_bump,c_afieldset_in,c_afieldset_out) bind(c,name='bump_psichi_to_uv_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump           !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset_in  !< ATLAS fieldset pointer (input)
+type(c_ptr),intent(in),value :: c_afieldset_out !< ATLAS fieldset pointer (output)
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fieldset_type) :: f_fieldset_in,f_fieldset_out
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_fieldset_in = atlas_fieldset(c_afieldset_in)
+f_fieldset_out = atlas_fieldset(c_afieldset_out)
+
+! Call Fortran
+call bump%psichi_to_uv(f_fieldset_in,f_fieldset_out)
+
+end subroutine bump_psichi_to_uv_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_psichi_to_uv_ad_c
+!> psi/chi to u/v transform, adjoint
+!----------------------------------------------------------------------
+subroutine bump_psichi_to_uv_ad_c(key_bump,c_afieldset_in,c_afieldset_out) bind(c,name='bump_psichi_to_uv_ad_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump           !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset_in  !< ATLAS fieldset pointer (input)
+type(c_ptr),intent(in),value :: c_afieldset_out !< ATLAS fieldset pointer (output)
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fieldset_type) :: f_fieldset_in,f_fieldset_out
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_fieldset_in = atlas_fieldset(c_afieldset_in)
+f_fieldset_out = atlas_fieldset(c_afieldset_out)
+
+! Call Fortran
+call bump%psichi_to_uv_ad(f_fieldset_in,f_fieldset_out)
+
+end subroutine bump_psichi_to_uv_ad_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_parameter_c

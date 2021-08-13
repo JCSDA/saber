@@ -69,7 +69,7 @@ LocalizationBUMP<MODEL>::LocalizationBUMP(const Geometry_ & resol,
   size_t myslot = resol.timeComm().rank();
   if (myslot == 0) {
   // Setup parameters
-    ParametersBUMP_ param(resol, vars, conf);
+    ParametersBUMP_ param(resol, vars, vars, conf);
 
   // Transfer OoBump pointer
     ooBump_.reset(new OoBump_(param.getOoBump()));

@@ -21,13 +21,13 @@ def umf(testdata, test, mpi, omp, suffix, testfig):
    lon = f["lon"][:]
    lat = f["lat"][:]
 
-   # Get number of levels
-   nl0 = f["vunit"][:,:].shape[0]
-
    # Variables
    var_list = ["m2","m4","kurt"]
 
    for group in f.groups:
+      # Get number of levels
+      nl0 = f.groups[group]["vunit"][:,:].shape[0]
+
       for var in f.groups[group].variables:
          # Read variable
          field = f.groups[group][var][:,:]

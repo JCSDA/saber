@@ -82,13 +82,24 @@ StdDevVariableChange<MODEL>::StdDevVariableChange(const State_ & xb, const State
 {
   oops::Log::trace() << "StdDevVariableChange<MODEL>::StdDevVariableChange starting" << std::endl;
 
-// Setup variables
-  const oops::Variables vars(conf, "input variables");
+  // Setup variables
+  const oops::Variables inputVars(conf, "input variables");
+  const oops::Variables outputVars(conf, "output variables");
+  oops::Variables activeVars;
+  if (conf.has("active variables")) {
+    activeVars = oops::Variables(conf, "active variables");
+  } else {
+    activeVars = inputVars;
+  }
 
-// Setup parameters
-  ParametersBUMP_ param(resol, vars, conf);
+  // Check variables
+  ASSERT(inputVars == outputVars);
+  ASSERT(activeVars <= inputVars);
 
-// Transfer OoBump pointer
+  // Setup parameters
+  ParametersBUMP_ param(resol, inputVars, activeVars, conf);
+
+  // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));
 
   oops::Log::trace() << "StdDevVariableChange<MODEL>::StdDevVariableChange done" << std::endl;

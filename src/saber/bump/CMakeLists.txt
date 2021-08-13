@@ -39,6 +39,7 @@ type_tree.fypp
 type_var.fypp
 type_vbal_blk.fypp
 type_vbal.fypp
+type_wind.fypp
 
 )
 
@@ -46,7 +47,7 @@ if( oops_FOUND )
     list(APPEND bump_src_files_list
 
     type_bump.h
-    type_bump_interface.F90 
+    type_bump_interface.F90
 
     )
 endif()

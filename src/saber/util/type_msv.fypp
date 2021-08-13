@@ -66,7 +66,7 @@ contains
    generic :: isallnot => &
    #:for dtype in dtypes_ir
       #:for rank in ranks_123456
-@:add_procedure(msv_isallnot_${dtype}$_r${rank}$) 
+@:add_procedure(msv_isallnot_${dtype}$_r${rank}$)
       #:endfor
    #:endfor
 @:init_procedure(12)

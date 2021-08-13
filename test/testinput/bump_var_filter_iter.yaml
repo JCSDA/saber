@@ -1,21 +1,19 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_read_nicas/test__MPI_-_OMP_"
+prefix: "bump_var_filter_iter/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-load_nicas: 1
-check_adjoints: 1
-check_dirac: 1
+new_var: 1
+write_var: 1
 
 # model_param
 nl: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
-nomask: 1
 
 # ens1_param
 ens1_ne: 50
@@ -25,20 +23,16 @@ ens1_ne: 50
 # sampling_param
 
 # diag_param
+ne: 50
+var_filter: 1
+var_niter: 3
+var_rhflt: 
+  u: [1000.0e3]
+  q: [1000.0e3]
 
 # fit_param
 
 # nicas_param
-subsamp: "hvh"
-mpicom: 2
-
-# dirac_param
-ndir: 1
-londir: [-85.0]
-latdir: [65.0]
-levdir: [1]
-ivdir: [1]
-itsdir: [1]
 
 # output_param
 

@@ -191,3 +191,7 @@ output localization:
   date: 2010-01-01T00:00:00Z
   exp: localization
   type: an
+
+test:
+  reference filename: testref/qg_dirac_id_loc_4d/test.log.out
+  test output filename: testoutput/qg_dirac_id_loc_4d/test.log.out

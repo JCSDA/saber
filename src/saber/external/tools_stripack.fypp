@@ -357,6 +357,9 @@ integer :: i,k,lp,n0,na,nn,nst,nt
 ! Set name
 @:set_name(stripack_bnodes)
 
+! Probe in
+@:probe_in()
+
 ! Initialization
 nn = n
 

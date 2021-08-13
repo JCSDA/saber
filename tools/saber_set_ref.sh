@@ -8,7 +8,7 @@
 
 # Parameters
 if test "$#" = "0" ; then
-   datadir=${HOME}/build/gnu_9.3.0/bundle/saber/test/testdata
+   datadir=${HOME}/build/gnu_9.3.0/bundle_RelWithDebInfo/saber/test/testdata
    listdir=${HOME}/code/bundle/saber/test/testlist
 else
    datadir=$1
@@ -16,7 +16,7 @@ else
 fi
 
 # Special suffixes list for BUMP
-special_list="mom lct_cor nicas normality sampling_grids obs vbal"
+mpi_dependent="mom lct_cor nicas_grids nicas_local normality sampling_local sampling_grids vbal_cov_local vbal_local"
 
 # Multi-processor tests
 multi_list=$(seq 4 2 12)
@@ -38,7 +38,7 @@ for tier in $(seq 1 3); do
       done
 
       # Copy 2-1 special files
-      for special in ${special_list}; do
+      for special in ${mpi_dependent}; do
          if ls ${datadir}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
             for file in `ls ${datadir}/${bump_test}/test_2-1_${special}*.nc`; do
                if test ! -L ${file}; then
@@ -67,7 +67,7 @@ do
    done
 
    # Copy 2-1 special files
-   for special in ${special_list}; do
+   for special in ${mpi_dependent}; do
       if ls ${datadir}/${bump_test}/test_2-1_${special}*.nc 1> /dev/null 2>&1; then
          for file in `ls ${datadir}/${bump_test}/test_2-1_${special}*.nc`; do
             if test ! -L ${file}; then
@@ -88,7 +88,7 @@ while IFS= read -r bump_test
 do
    for multi in ${multi_list}; do
       # Copy N-1 special files
-      for special in ${special_list}; do
+      for special in ${mpi_dependent}; do
          if ls ${datadir}/${bump_test}/test_${multi}-1_${special}*.nc 1> /dev/null 2>&1; then
             for file in `ls ${datadir}/${bump_test}/test_${multi}-1_${special}*.nc`; do
                if test ! -L ${file}; then

@@ -23,13 +23,13 @@ def contour_positive(testdata, test, mpi, omp, suffix, testfig):
    lon = f["lon"][:]
    lat = f["lat"][:]
 
-   # Get vertical unit
-   vunit = f["vunit"][:,:]
-
-   # Get number of levels
-   nl0 = vunit.shape[0]
-
    for group in f.groups:
+      # Get vertical unit
+      vunit = f.groups[group]["vunit"][:,:]
+
+      # Get number of levels
+      nl0 = vunit.shape[0]
+
       for var in f.groups[group].variables:
          # Read variable
          field = f.groups[group][var][:,:]
@@ -37,7 +37,10 @@ def contour_positive(testdata, test, mpi, omp, suffix, testfig):
          # Set masked values and levels
          field = ma.masked_invalid(field)
          vmax = np.max(field)
-         levels = np.linspace(0, vmax, 21)
+         if (vmax > 0.0):
+            levels = np.linspace(0, vmax, 21)
+         else:
+            levels = np.linspace(-1.0, 1.0, 3)
          field = field.filled(fill_value=-1.0e38)
 
          # Plots

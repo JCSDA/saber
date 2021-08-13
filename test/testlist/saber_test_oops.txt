@@ -20,6 +20,9 @@ qg_parameters_bump_cov_pairs
 qg_parameters_bump_cov_incens
 qg_parameters_bump_cov_no_ens
 qg_parameters_bump_cov_nsub
+qg_parameters_bump_cov_update
 qg_parameters_bump_hyb
 qg_parameters_bump_lct
 qg_parameters_bump_loc
+qg_parameters_bump_vbal_new
+qg_parameters_bump_vbal_update

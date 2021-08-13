@@ -23,13 +23,13 @@ def contour_centered(testdata, test, mpi, omp, suffix, testfig):
    lon = f["lon"][:]
    lat = f["lat"][:]
 
-   # Get vertical unit
-   vunit = f["vunit"][:,:]
-
-   # Get number of levels
-   nl0 = vunit.shape[0]
-
    for group in f.groups:
+      # Get vertical unit
+      vunit = f.groups[group]["vunit"][:,:]
+
+      # Get number of levels
+      nl0 = vunit.shape[0]
+
       for var in f.groups[group].variables:
          # Read variable
          field = f.groups[group][var][:,:]

@@ -7,6 +7,7 @@ model: "qg"
 method: "cor"
 strategy: "specific_univariate"
 new_var: 1
+write_var: 1
 
 # model_param
 nl: 2

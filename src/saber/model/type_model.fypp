@@ -21,14 +21,13 @@
 !----------------------------------------------------------------------
 module type_model
 
-use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
-use netcdf, only: nf90_clobber,nf90_close,nf90_create,nf90_def_dim,nf90_def_var,nf90_get_att,nf90_get_var, &
- & nf90_global,nf90_inq_dimid,nf90_inquire_dimension,nf90_inquire_variable,nf90_inq_varid,nf90_netcdf4,nf90_noerr,nf90_nowrite, &
- & nf90_open,nf90_put_var,nf90_share
+use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace,atlas_metadata
 use tools_atlas, only: create_atlas_function_space
 use tools_const, only: zero,quarter,half,one,four,thousand,pi,deg2rad,rad2deg,req,ps
 use tools_func, only: lonlatmod
-use tools_kinds,only: kind_int,kind_signed_char,kind_float,kind_double,kind_real,nc_kind_int,nc_kind_real
+use tools_kinds,only: kind_int,kind_signed_char,kind_float,kind_double,kind_real
+use tools_netcdf, only: open_file,get_att,inquire_dim,inquire_dim_size,inquire_var,inquire_var_rank,inquire_var_dim_size,get_var, &
+ & close_file
 use tools_repro, only: inf
 use type_fieldset, only: fieldset_type
 use type_mpl, only: mpl_type
@@ -243,9 +242,8 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 type(nam_type),intent(inout) :: nam      !< Namelist variables
 
 ! Local variables
-integer :: img,info,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,itile,ilon,ilat,ilonsub,ilatsub,imgt
+integer :: img,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,itile,ilon,ilat,ilonsub,ilatsub,imgt
 integer :: deltalon,deltalat,nprocpertile,nreslon,nreslat,nxmax
-integer :: ncid,nmg_id,mg_to_proc_id,mg_to_mga_id,lon_id,lat_id
 integer,allocatable :: nx(:),nlatsub(:),nlonsub(:,:),lonlattile_to_proc(:,:,:),imga_arr(:)
 integer(kind_int),pointer :: gmask_ptr(:,:),smask_ptr(:,:)
 real(kind_real) :: dlat,dlon
@@ -256,7 +254,8 @@ logical :: maskval
 logical :: found
 character(len=1024) :: variables,filename
 character(len=1024),dimension(nvmax) :: variables_save
-type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask,afield_smask
+type(atlas_field) :: afield_meta,afield,afield_area,afield_vunit,afield_gmask,afield_smask
+type(atlas_metadata) :: ametadata
 type(fieldset_type) :: fieldset
 
 ! Set name
@@ -264,6 +263,9 @@ type(fieldset_type) :: fieldset
 
 ! Probe in
 @:probe_in()
+
+! Copy datadir
+mpl%datadir = nam%datadir
 
 ! Number of levels
 model%nl0 = nam%nl
@@ -300,234 +302,167 @@ if (mpl%nproc==1) then
       model%mg_to_mga(img) = img
    end do
 elseif (mpl%nproc>1) then
-   ! Set file name
-   write(filename,'(a,a,i6.6)') trim(nam%prefix),'_distribution_',mpl%nproc
-
-   if (nam%check_no_point) then
-      ! No points on the last task
-      info = nf90_noerr+1
+   ! Generate a distribution
+   if (mpl%msv%isnot(model%ntile)) then
+      ! Special case for model with tiles
+      if (mod(mpl%nproc,model%ntile)/=0) call mpl%abort('${subr}$', &
+ & 'the number of MPI tasks should be a multiple of the number of tiles')
+      nprocpertile = mpl%nproc/model%ntile
    else
-      if (mpl%main) then
-         ! Open file
-         info = nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid)
-      end if
-      call mpl%f_comm%broadcast(info,mpl%rootproc-1)
+      ! General case
+      nprocpertile = mpl%nproc
    end if
 
-   if (info==nf90_noerr) then
-      ! Read local distribution
-      write(mpl%info,'(a7,a,i6,a)') '','Read local distribution for: ',mpl%nproc,' MPI tasks'
-      call mpl%flush
+   ! Define number of subtiles in x and y directions
+   ny = nint(sqrt(real(nprocpertile,kind_real)))
+   if (ny**2<nprocpertile) ny = ny+1
+   allocate(nx(ny))
+   nres = nprocpertile
+   do iy=1,ny
+      delta = nprocpertile/ny
+      if (nres>(ny-iy+1)*delta) delta = delta+1
+      nx(iy) = delta
+      nres = nres-delta
+   end do
+   if (sum(nx)/=nprocpertile) call mpl%abort('${subr}$','wrong number of subtiles in define_distribution')
 
-      if (mpl%main) then
-         ! Get variables ID
-         call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'mg_to_proc',mg_to_proc_id))
-         call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'mg_to_mga',mg_to_mga_id))
+   if (mpl%msv%isnot(model%nlon).and.mpl%msv%isnot(model%nlat)) then
+      ! Regular grid
 
-         ! Read varaibles
-         call mpl%ncerr('${subr}$',nf90_get_var(ncid,mg_to_proc_id,model%mg_to_proc))
-         call mpl%ncerr('${subr}$',nf90_get_var(ncid,mg_to_mga_id,model%mg_to_mga))
+      ! Allocation
+      nxmax = maxval(nx)
+      allocate(nlatsub(ny))
+      allocate(nlonsub(nxmax,ny))
+      allocate(lonlattile_to_proc(model%nlon,model%nlat,model%ntile))
 
-         ! Close file
-         call mpl%ncerr('${subr}$',nf90_close(ncid))
-      end if
-
-      ! Broadcast distribution
-      call mpl%f_comm%broadcast(model%mg_to_proc,mpl%rootproc-1)
-      call mpl%f_comm%broadcast(model%mg_to_mga,mpl%rootproc-1)
-
-      ! Check
-      if (maxval(model%mg_to_proc)>mpl%nproc) call mpl%abort('${subr}$','wrong distribution')
-   else
-      ! Generate a distribution
-      if (mpl%msv%isnot(model%ntile)) then
-         ! Special case for model with tiles
-         if (mod(mpl%nproc,model%ntile)/=0) call mpl%abort('${subr}$', &
- & 'the number of MPI tasks should be a multiple of the number of tiles')
-         nprocpertile = mpl%nproc/model%ntile
-      else
-         ! General case
-         nprocpertile = mpl%nproc
-      end if
-
-      ! Define number of subtiles in x and y directions
-      ny = nint(sqrt(real(nprocpertile,kind_real)))
-      if (ny**2<nprocpertile) ny = ny+1
-      allocate(nx(ny))
-      nres = nprocpertile
+      ! Split tile
+      nlatsub = 0
+      nlonsub = 0
+      nreslat = model%nlat
       do iy=1,ny
-         delta = nprocpertile/ny
-         if (nres>(ny-iy+1)*delta) delta = delta+1
-         nx(iy) = delta
-         nres = nres-delta
-      end do
-      if (sum(nx)/=nprocpertile) call mpl%abort('${subr}$','wrong number of subtiles in define_distribution')
-
-      if (mpl%msv%isnot(model%nlon).and.mpl%msv%isnot(model%nlat)) then
-         ! Regular grid
-
-         ! Allocation
-         nxmax = maxval(nx)
-         allocate(nlatsub(ny))
-         allocate(nlonsub(nxmax,ny))
-         allocate(lonlattile_to_proc(model%nlon,model%nlat,model%ntile))
-
-         ! Split tile
-         nlatsub = 0
-         nlonsub = 0
-         nreslat = model%nlat
-         do iy=1,ny
-            deltalat = model%nlat/ny
-            if (nreslat>(ny-iy+1)*deltalat) deltalat = deltalat+1
-            nlatsub(iy) = deltalat
-            nreslat = nreslat-deltalat
-            nreslon = model%nlon
-            do ix=1,nx(iy)
-               deltalon = model%nlon/nx(iy)
-               if (nreslon>(nx(iy)-ix+1)*deltalon) deltalon = deltalon+1
-               nlonsub(ix,iy) = deltalon
-               nreslon = nreslon-deltalon
-            end do
+         deltalat = model%nlat/ny
+         if (nreslat>(ny-iy+1)*deltalat) deltalat = deltalat+1
+         nlatsub(iy) = deltalat
+         nreslat = nreslat-deltalat
+         nreslon = model%nlon
+         do ix=1,nx(iy)
+            deltalon = model%nlon/nx(iy)
+            if (nreslon>(nx(iy)-ix+1)*deltalon) deltalon = deltalon+1
+            nlonsub(ix,iy) = deltalon
+            nreslon = nreslon-deltalon
          end do
+      end do
 
-         ! Assign task
-         iproc = 0
-         do itile=1,model%ntile
-            do iy=1,ny
-               do ix=1,nx(iy)
-                  iproc = iproc+1
-                  do ilatsub=1,nlatsub(iy)
-                     do ilonsub=1,nlonsub(ix,iy)
-                        ilat = ilatsub
-                        if (iy>1) ilat = ilat+sum(nlatsub(1:iy-1))
-                        ilon = ilonsub
-                        if (ix>1) ilon = ilon+sum(nlonsub(1:ix-1,iy))
-                        lonlattile_to_proc(ilon,ilat,itile) = iproc
-                     end do
+      ! Assign task
+      iproc = 0
+      do itile=1,model%ntile
+         do iy=1,ny
+            do ix=1,nx(iy)
+               iproc = iproc+1
+               do ilatsub=1,nlatsub(iy)
+                  do ilonsub=1,nlonsub(ix,iy)
+                     ilat = ilatsub
+                     if (iy>1) ilat = ilat+sum(nlatsub(1:iy-1))
+                     ilon = ilonsub
+                     if (ix>1) ilon = ilon+sum(nlonsub(1:ix-1,iy))
+                     lonlattile_to_proc(ilon,ilat,itile) = iproc
                   end do
                end do
             end do
          end do
+      end do
 
-         ! Pack task
-         do img=1,model%nmg
-            itile = model%mg_to_tile(img)
-            ilon = model%mg_to_lon(img)
-            ilat = model%mg_to_lat(img)
-            model%mg_to_proc(img) = lonlattile_to_proc(ilon,ilat,itile)
-         end do
-
-         ! Release memory
-         deallocate(nlatsub)
-         deallocate(nlonsub)
-         deallocate(lonlattile_to_proc)
-      else
-         ! Unstructured grid
-         if ((model%ntile>1).and.inf(sum(model%area),four*pi)) call mpl%abort('${subr}$', &
- & 'unstructured grid requires a single tile and a global domain')
-
-         ! Allocation
-         allocate(lon_inf(nprocpertile))
-         allocate(lon_sup(nprocpertile))
-         allocate(lat_inf(nprocpertile))
-         allocate(lat_sup(nprocpertile))
-
-         ! Define distribution bounds using a regular splitting
-         dlat = (maxval(model%lat)-minval(model%lat))/ny
-         iproc = 0
-         do iy=1,ny
-            dlon = (maxval(model%lon)-minval(model%lon))/nx(iy)
-            do ix=1,nx(iy)
-               iproc = iproc+1
-               lon_inf(iproc) = minval(model%lon)+real(ix-1,kind_real)*dlon
-               lon_sup(iproc) = minval(model%lon)+real(ix,kind_real)*dlon
-               lat_inf(iproc) = minval(model%lat)+real(iy-1,kind_real)*dlat
-               lat_sup(iproc) = minval(model%lat)+real(iy,kind_real)*dlat
-            end do
-         end do
-
-         ! Define distribution
-         do img=1,model%nmg
-            ! Processor index
-            iproc = 1
-            found = .false.
-            do while (.not.found)
-               if (iproc<=nprocpertile) then
-                  if (((model%lon(img)>=lon_inf(iproc)).and.(model%lon(img)<=lon_sup(iproc)) &
- & .and.(model%lat(img)>=lat_inf(iproc)).and.(model%lat(img)<=lat_sup(iproc)))) then
-                     model%mg_to_proc(img) = iproc
-                     found = .true.
-                  end if
-               else
-                  model%mg_to_proc(img) = nprocpertile
-                  found = .true.
-               end if
-               iproc = iproc+1
-            end do
-         end do
-
-         ! Release memory
-         deallocate(lon_inf)
-         deallocate(lon_sup)
-         deallocate(lat_inf)
-         deallocate(lat_sup)
-      end if
-
-      ! Allocation
-      allocate(imga_arr(mpl%nproc))
-
-      ! Local index
-      imga_arr = 0
+      ! Pack task
       do img=1,model%nmg
-         iproc = model%mg_to_proc(img)
-         imga_arr(iproc) = imga_arr(iproc)+1
-         model%mg_to_mga(img) = imga_arr(iproc)
+         itile = model%mg_to_tile(img)
+         ilon = model%mg_to_lon(img)
+         ilat = model%mg_to_lat(img)
+         model%mg_to_proc(img) = lonlattile_to_proc(ilon,ilat,itile)
       end do
 
       ! Release memory
-      deallocate(imga_arr)
+      deallocate(nlatsub)
+      deallocate(nlonsub)
+      deallocate(lonlattile_to_proc)
+   else
+      ! Unstructured grid
+      if ((model%ntile>1).and.inf(sum(model%area),four*pi)) call mpl%abort('${subr}$', &
+ & 'unstructured grid requires a single tile and a global domain')
 
-      ! No points on the last task
-      if (nam%check_no_point) then
-         ! Count points on the penultimate task
-         nmga = count(model%mg_to_proc==mpl%nproc-1)
+      ! Allocation
+      allocate(lon_inf(nprocpertile))
+      allocate(lon_sup(nprocpertile))
+      allocate(lat_inf(nprocpertile))
+      allocate(lat_sup(nprocpertile))
 
-         ! Move all points from the last to the penultimate task
-         do img=1,model%nmg
-            if (model%mg_to_proc(img)==mpl%nproc) then
-               nmga = nmga+1
-               model%mg_to_proc(img) = mpl%nproc-1
-               model%mg_to_mga(img) = nmga
-            end if
+      ! Define distribution bounds using a regular splitting
+      dlat = (maxval(model%lat)-minval(model%lat))/ny
+      iproc = 0
+      do iy=1,ny
+         dlon = (maxval(model%lon)-minval(model%lon))/nx(iy)
+         do ix=1,nx(iy)
+            iproc = iproc+1
+            lon_inf(iproc) = minval(model%lon)+real(ix-1,kind_real)*dlon
+            lon_sup(iproc) = minval(model%lon)+real(ix,kind_real)*dlon
+            lat_inf(iproc) = minval(model%lat)+real(iy-1,kind_real)*dlat
+            lat_sup(iproc) = minval(model%lat)+real(iy,kind_real)*dlat
          end do
-      end if
+      end do
 
-      ! Write distribution
-      if (mpl%main) then
-         ! Create file
-         call mpl%ncerr('${subr}$',nf90_create(trim(nam%datadir)//'/'//trim(filename)//'.nc',ior(nf90_clobber,nf90_netcdf4),ncid))
+      ! Define distribution
+      do img=1,model%nmg
+         ! Processor index
+         iproc = 1
+         found = .false.
+         do while (.not.found)
+            if (iproc<=nprocpertile) then
+               if (((model%lon(img)>=lon_inf(iproc)).and.(model%lon(img)<=lon_sup(iproc)) &
+ & .and.(model%lat(img)>=lat_inf(iproc)).and.(model%lat(img)<=lat_sup(iproc)))) then
+                  model%mg_to_proc(img) = iproc
+                  found = .true.
+               end if
+            else
+               model%mg_to_proc(img) = nprocpertile
+               found = .true.
+            end if
+            iproc = iproc+1
+         end do
+      end do
 
-         ! Write namelist parameters
-         call nam%write(mpl,ncid)
+      ! Release memory
+      deallocate(lon_inf)
+      deallocate(lon_sup)
+      deallocate(lat_inf)
+      deallocate(lat_sup)
+   end if
 
-         ! Define dimension
-         call mpl%ncerr('${subr}$',nf90_def_dim(ncid,'nmg',model%nmg,nmg_id))
+   ! Allocation
+   allocate(imga_arr(mpl%nproc))
 
-         ! Define variables
-         call mpl%ncerr('${subr}$',nf90_def_var(ncid,'lon',nc_kind_real,(/nmg_id/),lon_id))
-         call mpl%ncerr('${subr}$',nf90_def_var(ncid,'lat',nc_kind_real,(/nmg_id/),lat_id))
-         call mpl%ncerr('${subr}$',nf90_def_var(ncid,'mg_to_proc',nc_kind_int,(/nmg_id/),mg_to_proc_id))
-         call mpl%ncerr('${subr}$',nf90_def_var(ncid,'mg_to_mga',nc_kind_int,(/nmg_id/),mg_to_mga_id))
+   ! Local index
+   imga_arr = 0
+   do img=1,model%nmg
+      iproc = model%mg_to_proc(img)
+      imga_arr(iproc) = imga_arr(iproc)+1
+      model%mg_to_mga(img) = imga_arr(iproc)
+   end do
 
-         ! Write variables
-         call mpl%ncerr('${subr}$',nf90_put_var(ncid,lon_id,model%lon*rad2deg))
-         call mpl%ncerr('${subr}$',nf90_put_var(ncid,lat_id,model%lat*rad2deg))
-         call mpl%ncerr('${subr}$',nf90_put_var(ncid,mg_to_proc_id,model%mg_to_proc))
-         call mpl%ncerr('${subr}$',nf90_put_var(ncid,mg_to_mga_id,model%mg_to_mga))
+   ! Release memory
+   deallocate(imga_arr)
 
-         ! Close file
-         call mpl%ncerr('${subr}$',nf90_close(ncid))
-      end if
+   ! No points on the last task
+   if (nam%check_no_point) then
+      ! Count points on the penultimate task
+      nmga = count(model%mg_to_proc==mpl%nproc-1)
+
+      ! Move all points from the last to the penultimate task
+      do img=1,model%nmg
+         if (model%mg_to_proc(img)==mpl%nproc) then
+            nmga = nmga+1
+            model%mg_to_proc(img) = mpl%nproc-1
+            model%mg_to_mga(img) = nmga
+         end if
+      end do
    end if
 end if
 
@@ -555,6 +490,20 @@ call create_atlas_function_space(model%nmga,lon_mga,lat_mga,model%afunctionspace
 
 ! Create fieldset
 model%fieldset = atlas_fieldset()
+
+! Add meta field containing metadata
+afield_meta = atlas_field(name='meta',kind=atlas_integer(kind_int),shape=(/0/))
+ametadata = afield_meta%metadata()
+select case (trim(nam%model))
+case('nemo','qg')
+   ! Redundant points
+   call ametadata%set('unique_points',.false.)
+case default
+   ! Unique points
+   call ametadata%set('unique_points',.true.)
+end select
+call model%fieldset%add(afield_meta)
+call ametadata%final()
 
 ! Add area
 afield_area = model%afunctionspace%create_field(name='area',kind=atlas_real(kind_real),levels=0)
@@ -733,6 +682,7 @@ end if
 ! Release memory
 deallocate(lon_mga)
 deallocate(lat_mga)
+call afield_meta%final()
 call afield_area%final()
 call afield_vunit%final()
 call afield_gmask%final()

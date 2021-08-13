@@ -11,7 +11,7 @@ module type_tree
 use atlas_module, only: atlas_geometry,atlas_indexkdtree
 use iso_c_binding, only: c_ptr
 use tools_const, only: zero,half,two,pi,rad2deg
-use tools_func, only: lonlathash,lonlat2xyz,sphere_dist
+use tools_func, only: lonlat2xyz,sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro,rth,sup,indist
@@ -30,7 +30,6 @@ type tree_type
     integer,allocatable :: from_eff(:)        !< Effective index conversion
     real(kind_real),allocatable :: lon(:)     !< Longitudes
     real(kind_real),allocatable :: lat(:)     !< Latitudes
-    real(kind_real),allocatable :: distmax(:) !< Maximum distance for interpolation
     type(atlas_indexkdtree) :: kd             !< KDTree from ATLAS
 contains
     procedure :: alloc => tree_alloc
@@ -38,7 +37,6 @@ contains
     procedure :: dealloc => tree_dealloc
     procedure :: find_nearest_neighbors => tree_find_nearest_neighbors
     procedure :: count_nearest_neighbors => tree_count_nearest_neighbors
-    procedure :: inside => tree_inside
 end type tree_type
 
 private
@@ -97,7 +95,7 @@ end subroutine tree_alloc
 ! Subroutine: tree_init
 !> Initialization
 !----------------------------------------------------------------------
-subroutine tree_init(tree,lon,lat,interp_nn)
+subroutine tree_init(tree,lon,lat)
 
 implicit none
 
@@ -105,13 +103,10 @@ implicit none
 class(tree_type),intent(inout) :: tree    !< Tree
 real(kind_real),intent(in) :: lon(tree%n) !< Points longitudes [in radians]
 real(kind_real),intent(in) :: lat(tree%n) !< Points latitudes [in radians]
-integer,intent(in),optional :: interp_nn  !< Number of interpolation neighbor
 
 ! Local variable
 integer :: i,ieff
-integer,allocatable :: nn_index(:)
 real(kind_real) :: lon_deg(tree%neff),lat_deg(tree%neff)
-real(kind_real),allocatable :: nn_dist(:)
 type(atlas_geometry) :: ageometry
 
 ! Set name
@@ -146,32 +141,6 @@ tree%kd = atlas_indexkdtree(ageometry)
 call tree%kd%reserve(tree%neff)
 call tree%kd%build(tree%neff,lon_deg,lat_deg)
 
-if (present(interp_nn)) then
-   ! Allocation
-   allocate(nn_index(interp_nn))
-   allocate(nn_dist(interp_nn))
-   allocate(tree%distmax(tree%n))
-
-   ! Find distance of the last interpolation neighbor
-   ieff = 0
-   do i=1,tree%n
-      if (tree%mask(i)) then
-         ! Find neighbors
-         call tree%find_nearest_neighbors(lon(i),lat(i),interp_nn,nn_index,nn_dist)
-
-         ! Save maximum distance
-         tree%distmax(i) = nn_dist(interp_nn)
-      else
-         ! Not in the mask
-         tree%distmax(i) = zero
-      end if
-   end do
-
-   ! Release memory
-   deallocate(nn_index)
-   deallocate(nn_dist)
-end if
-
 ! Probe out
 @:probe_out()
 
@@ -200,7 +169,6 @@ if (allocated(tree%from_eff)) then
    deallocate(tree%from_eff)
    deallocate(tree%lon)
    deallocate(tree%lat)
-   if (allocated(tree%distmax)) deallocate(tree%distmax)
 
    ! Destroy KDTree
    call tree%kd%final()
@@ -231,7 +199,7 @@ real(kind_real),intent(out),optional :: nn_dist(nn) !< Nearest neighbors distanc
 integer :: nn_tmp,i,j,nid
 integer,allocatable :: order(:),nn_index_tmp(:)
 real(kind_real) :: dist_ref,dist_last
-real(kind_real),allocatable :: list(:),nn_dist_tmp(:)
+real(kind_real),allocatable :: lontmp(:),lattmp(:),nn_dist_tmp(:)
 logical :: separate
 
 ! Set name
@@ -276,7 +244,7 @@ if (nn>0) then
    end do
 
    if (repro) then
-      ! Reorder neighbors based on their hash value
+      ! Reorder neighbors based on their lon/lat
       i = 1
       do while (i<nn_tmp)
          ! Count indistinguishable neighbors
@@ -285,18 +253,27 @@ if (nn>0) then
             if (indist(nn_dist_tmp(i),nn_dist_tmp(j))) nid = nid+1
          end do
 
-         ! Reorder
          if (nid>1) then
-            allocate(list(nid))
+            ! Allocation
+            allocate(lontmp(nid))
+            allocate(lattmp(nid))
             allocate(order(nid))
+
+            ! Sort lon/lat
             do j=1,nid
-               list(j) = lonlathash(tree%lon(nn_index_tmp(i+j-1)),tree%lat(nn_index_tmp(i+j-1)))
+               lontmp(j) = tree%lon(nn_index_tmp(i+j-1))
+               lattmp(j) = tree%lat(nn_index_tmp(i+j-1))
             end do
-            call qsort(nid,list,order)
+            call qsort(nid,lontmp,lattmp,order)
+
+            ! Reorder
             order = i+order-1
             nn_index_tmp(i:i+nid-1) = nn_index_tmp(order)
             nn_dist_tmp(i:i+nid-1) = nn_dist_tmp(order)
-            deallocate(list)
+
+            ! Release memory
+            deallocate(lontmp)
+            deallocate(lattmp)
             deallocate(order)
          end if
 
@@ -349,7 +326,7 @@ real(kind_real) :: ch
 @:probe_in()
 
 ! Spherical radius to chord
-ch = two*sin(half*sr)
+ch = two*sin(half*min(sr,pi))
 
 ! Count nearest neighbors
 call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,ch,nn)
@@ -358,48 +335,5 @@ call tree%kd%closestPointsWithinRadius(lon*rad2deg,lat*rad2deg,ch,nn)
 @:probe_out()
 
 end subroutine tree_count_nearest_neighbors
-
-!----------------------------------------------------------------------
-! Subroutine: tree_inside
-!> Find if a point is inside (or close to) the tree points
-!----------------------------------------------------------------------
-subroutine tree_inside(tree,lon,lat,inside_tree)
-
-implicit none
-
-! Passed variables
-class(tree_type),intent(in) :: tree !< Tree
-real(kind_real),intent(in) :: lon   !< Point longitude [in radians]
-real(kind_real),intent(in) :: lat   !< Point latitude [in radians]
-logical,intent(out) :: inside_tree  !< True if the point is inside the tree
-
-! Local variable
-integer :: nn_index(1)
-real(kind_real) :: nn_dist(1)
-
-! Set name
-@:set_name(tree_inside)
-
-! Probe in
-@:probe_in()
-
-if (lat>0.4_kind_real*pi) then
-   ! Special case at North pole
-   inside_tree = (maxval(tree%lat)>0.4_kind_real*pi)
-elseif (lat<-0.4_kind_real*pi) then
-   ! Special case at South pole
-   inside_tree = (minval(tree%lat)<-0.4_kind_real*pi)
-else
-   ! Find nearest neighbor
-   call tree%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
-
-   ! Check distance
-   inside_tree = (nn_dist(1)<tree%distmax(nn_index(1)))
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine tree_inside
 
 end module type_tree

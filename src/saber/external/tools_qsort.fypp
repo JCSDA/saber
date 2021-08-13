@@ -14,7 +14,7 @@
 module tools_qsort
 
 use tools_kinds, only: kind_int,kind_real
-use tools_repro, only: inf,sup
+use tools_repro, only: eq,inf
 @:use_probe()
 
 implicit none
@@ -22,6 +22,7 @@ implicit none
 interface qsort
   #:for dtype in dtypes_ir
      module procedure qsort_qsort_${dtype}$
+     module procedure qsort_qsort_pair_${dtype}$
   #:endfor
 end interface
 interface quick_sort
@@ -34,6 +35,9 @@ interface interchange_sort
      module procedure qsort_interchange_sort_${dtype}$
   #:endfor
 end interface
+interface reorder_eq
+  module procedure qsort_reorder_eq
+end interface
 
 private
 public :: qsort
@@ -43,30 +47,156 @@ contains
 #:for dtype in dtypes_ir
 !----------------------------------------------------------------------
 ! Subroutine: qsort_qsort_${dtype}$
-!> Sort a subvector
+!> Sort a vector
 !----------------------------------------------------------------------
-recursive subroutine qsort_qsort_${dtype}$(n,list,order)
+recursive subroutine qsort_qsort_${dtype}$(n,list,order,order_list)
+
+implicit none
+
+! Passed variables
+integer, intent(in) :: n                  !< Input vector size
+${ftype[dtype]}$,intent(inout) :: list(n) !< Vector to sort
+integer,intent(out) :: order(n)           !< Positions of the elements in the original order
+logical,intent(in),optional :: order_list !< Flag to reorder the list (default: .true.)
+
+! Local variables
+integer :: i
+${ftype[dtype]}$,allocatable :: list_tmp(:)
+logical :: lorder_list
+
+! Local flag
+lorder_list = .true.
+if (present(order_list)) lorder_list = order_list
+
+! Initialize order
+do i=1,n
+  order(i) = i
+end do
+
+if (lorder_list) then
+   ! Sort
+   call quick_sort(n,1,n,list,order)
+
+   ! Reorder equal values
+   #{if dtype == 'real'}# call reorder_eq(n,list,order) #{endif}#
+else
+   ! Allocation
+   allocate(list_tmp(n))
+
+   ! Copy list
+   list = list_tmp
+
+   ! Sort
+   call quick_sort(n,1,n,list_tmp,order)
+
+   ! Reorder equal values
+   #{if dtype == 'real'}# call reorder_eq(n,list_tmp,order) #{endif}#
+
+   ! Release memory
+   deallocate(list_tmp)
+end if
+
+end subroutine qsort_qsort_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Subroutine: qsort_qsort_pair_${dtype}$
+!> Sort two joint vectors
+!----------------------------------------------------------------------
+recursive subroutine qsort_qsort_pair_${dtype}$(n,list1,list2,order,order_list)
 
 implicit none
 
 ! Passed variables
 integer, intent(in) :: n                   !< Input vector size
-${ftype[dtype]}$,intent(inout) :: list(n)  !< Vector to sort
-integer,intent(inout),optional :: order(n) !< Positions of the elements in the original order
+${ftype[dtype]}$,intent(inout) :: list1(n) !< First vector to sort
+${ftype[dtype]}$,intent(inout) :: list2(n) !< Second vector to sort
+integer,intent(out) :: order(n)            !< Positions of the elements in the original order
+logical,intent(in),optional :: order_list  !< Flag to reorder the list (default: .true.)
 
-! Local variable
-integer :: i
-integer :: lorder(n)
+! Local variables
+integer :: i_s,i_e,ntmp,i
+integer,allocatable :: order_tmp(:)
+${ftype[dtype]}$ :: list1_tmp(n),list2_tmp(n)
+logical :: lorder_list,chain,diff
 
+! Local flag
+lorder_list = .true.
+if (present(order_list)) lorder_list = order_list
+
+! Initialize order
 do i=1,n
-  lorder(i) = i
+  order(i) = i
 end do
 
-call quick_sort(n,1,n,list,lorder)
+! Copy first vector
+list1_tmp = list1
 
-if (present(order)) order = lorder
+! Sort first vector
+call quick_sort(n,1,n,list1_tmp,order)
 
-end subroutine qsort_qsort_${dtype}$
+! Reorder equal values
+#{if dtype == 'real'}# call reorder_eq(n,list1_tmp,order) #{endif}#
+
+! Order second vector
+list2_tmp = list2(order)
+
+! Initialization
+i_s = 1
+chain = .false.
+do i_e=2,n+1
+   if (i_e==n+1) then
+      diff = .true.
+   else
+      diff = inf(list1_tmp(i_s),list1_tmp(i_e))
+   end if
+   if (diff) then
+      ! Different value
+      if (chain) then
+         ! Allocation
+         ntmp = i_e-i_s
+         allocate(order_tmp(ntmp))
+
+         ! Initialize order
+         do i=1,ntmp
+           order_tmp(i) = i
+         end do
+
+         ! Sort second vector
+         call quick_sort(ntmp,1,ntmp,list2_tmp(i_s:i_e-1),order_tmp)
+
+         ! Reorder equal values
+         #{if dtype == 'real'}# call reorder_eq(ntmp,list2_tmp(i_s:i_e-1),order_tmp) #{endif}#
+
+         ! Offset temporary order
+         order_tmp = order_tmp+i_s-1
+
+         ! Sorder order
+         order(i_s:i_e-1) = order(order_tmp)
+
+         ! Chain done
+         chain = .false.
+
+         ! Release memory
+         deallocate(order_tmp)
+      end if
+
+      ! Update
+      i_s = i_e
+   else
+      ! Same value, this is a chain
+      chain = .true.
+   endif
+end do
+
+if (lorder_list) then
+   ! Reorder vectors
+   list1 = list1(order)
+   list2 = list2(order)
+end if
+
+end subroutine qsort_qsort_pair_${dtype}$
 #:endfor
 
 #:for dtype in dtypes_ir
@@ -102,12 +232,12 @@ else
     ! Scan list from left end until element >= reference is found
     do
       i = i+1
-      if (.not.inf(list(i),reference)) exit
+      if (.not.(list(i)<reference)) exit
     end do
     ! Scan list from right end until element <= reference is found
     do
       j = j-1
-      if (.not.sup(list(j),reference)) exit
+      if (.not.(list(j)>reference)) exit
     end do
 
     if (i<j) then
@@ -161,7 +291,7 @@ ${ftype[dtype]}$ :: temp
 
 do i=left_end,right_end-1
    do j=i+1,right_end
-      if (sup(list(i),list(j))) then
+      if (list(i)>list(j)) then
          temp = list(i)
          list(i) = list(j)
          list(j) = temp
@@ -177,5 +307,66 @@ end do
 
 end subroutine qsort_interchange_sort_${dtype}$
 #:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: qsort_reorder_eq
+!> Reorder equal values
+!----------------------------------------------------------------------
+recursive subroutine qsort_reorder_eq(n,list,order)
+
+implicit none
+
+! Passed variables
+integer, intent(in) :: n                 !< Input vector size
+real(kind_real),intent(inout) :: list(n) !< Vector to sort
+integer,intent(out) :: order(n)          !< Positions of the elements in the original order
+
+! Local variables
+integer :: i_s,i_e,ntmp,i
+integer,allocatable :: order_tmp(:)
+logical :: chain,diff
+
+! Initialization
+i_s = 1
+chain = .false.
+do i_e=2,n+1
+   if (i_e==n+1) then
+      diff = .true.
+   else
+      diff = .not.eq(list(i_s),list(i_e))
+   end if
+   if (diff) then
+      ! Different value
+      if (chain) then
+         ! Allocation
+         ntmp = i_e-i_s
+         allocate(order_tmp(ntmp))
+
+         ! Initialize order
+         do i=1,ntmp
+           order_tmp(i) = i
+         end do
+
+         ! Sort second vector
+         call quick_sort(ntmp,1,ntmp,order(i_s:i_e-1),order_tmp)
+         order_tmp = order_tmp+i_s-1
+         list(i_s:i_e-1) = list(order_tmp)
+
+         ! Chain done
+         chain = .false.
+
+         ! Release memory
+         deallocate(order_tmp)
+      end if
+
+      ! Update
+      i_s = i_e
+   else
+      ! Same value, this is a chain
+      chain = .true.
+   endif
+end do
+
+end subroutine qsort_reorder_eq
 
 end module tools_qsort

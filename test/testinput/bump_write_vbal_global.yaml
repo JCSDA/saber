@@ -1,22 +1,20 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_nicas_subsamp_h/test__MPI_-_OMP_"
+prefix: "bump_write_vbal_global/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
-method: "cor"
-strategy: "specific_univariate"
-write_cmat: 0
-new_nicas: 1
+new_vbal: 1
+write_vbal: 1
+check_vbal: 1
 check_adjoints: 1
 check_dirac: 1
 
 # model_param
 nl: 4
 levs: [1,2,3,4]
-nv: 2
-variables: ["u","q"]
-nomask: 1
+nv: 3
+variables: ["u","q","cosu_plus_q2"]
 
 # ens1_param
 ens1_ne: 50
@@ -24,23 +22,17 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-ntry: 30
+write_samp_global: 1
+nc1: 500
+nc2: 250
 
 # diag_param
+vbal_block: [1,1,1]
+vbal_rad: 2000.0e3
 
 # fit_param
 
 # nicas_param
-resol: 8.0
-subsamp: "h"
-mpicom: 2
-forced_radii: 1
-rh:
-  u: [4000.0e3]
-  q: [4000.0e3]
-rv:
-  u: [6000.0]
-  q: [6000.0]
 
 # dirac_param
 ndir: 1

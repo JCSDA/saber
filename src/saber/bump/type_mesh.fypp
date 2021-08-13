@@ -12,22 +12,21 @@ use atlas_module, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,at
  & atlas_build_node_to_edge_connectivity,atlas_mesh_nodes,atlas_connectivity
 !$ use omp_lib
 use tools_const, only: zero,one,two,three,five,pi,req,rad2deg,reqkm
-use tools_func, only: lonlathash,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,order_cc,det
+use tools_func, only: fletcher32,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,inside,vector_product,order_cc,det
 use tools_kinds, only: kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf
-use tools_stripack, only: bnodes,trfind,trmesh
+use tools_stripack, only: trfind,trmesh,bnodes
 use type_mpl, only: mpl_type
-use type_nam, only: nam_type
 @:use_probe()
 use type_rng, only: rng_type
 use type_tree, only: tree_type
 
 implicit none
 
-logical,parameter :: shuffle = .true.       !< Shuffle mesh order (more efficient to compute the Delaunay triangulation)
-integer,parameter :: nnmax = 20             !< Maximum number of nearest neighbors in the triangle search
-real(kind_real),parameter :: acc_fac = five !< Acceptance factor for mesh neighbors
+integer,parameter :: nnmax = 20                          !< Maximum number of nearest neighbors in the triangle search
+real(kind_real),parameter :: acc_fac = five              !< Acceptance factor for mesh neighbors
+real(kind_real),parameter :: pfactor = 1.0e-10_kind_real !< Perturbation factor
 
 ! Connectivity table row derived type
 type row_type
@@ -52,24 +51,26 @@ type mesh_type
    real(kind_real),allocatable :: y(:)     !< y-coordinate
    real(kind_real),allocatable :: z(:)     !< z-coordinate
 
-   ! Mesh boundaries
-   integer :: nb                           !< Number of boundary nodes
-   integer,allocatable :: bnd(:)           !< Boundary nodes
-
    ! STRIPACK
    integer,allocatable :: list(:)          !< STRIPACK list
    integer,allocatable :: lptr(:)          !< STRIPACK list pointer
    integer,allocatable :: lend(:)          !< STRIPACK list end
    integer :: lnew                         !< STRIPACK pointer to the first empty location in list
+
+   ! Boundary fields
+   real(kind_real),allocatable :: vbnd(:,:)       !< Hull boundary vertices
+   integer,allocatable :: nbnda(:)                !< Number of mask boundary arcs
+   real(kind_real),allocatable :: v1bnda(:,:,:)   !< Mask boundary arcs, first vector
+   real(kind_real),allocatable :: v2bnda(:,:,:)   !< Mask boundary arcs, second vector
+   real(kind_real),allocatable :: vabnda(:,:,:)   !< Mask boundary arcs, orthogonal vector
 contains
    procedure :: alloc => mesh_alloc
    procedure :: init => mesh_init
    procedure :: dealloc => mesh_dealloc
-   procedure :: bnodes => mesh_bnodes
-   procedure :: inside => mesh_inside
    procedure :: barycentric => mesh_barycentric
    procedure :: count_bnda => mesh_count_bnda
    procedure :: get_bnda => mesh_get_bnda
+   procedure :: check_arc => mesh_check_arc
 end type mesh_type
 
 private
@@ -81,14 +82,14 @@ contains
 ! Subroutine: mesh_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine mesh_alloc(mesh,n,nam)
+subroutine mesh_alloc(mesh,n,use_cgal)
 
 implicit none
 
 ! Passed variables
 class(mesh_type),intent(inout) :: mesh !< Mesh
 integer,intent(in) :: n                !< Mesh size
-type(nam_type),intent(in) :: nam       !< Namelist
+logical,intent(in) :: use_cgal         !< Use CGAL option
 
 ! Set name
 @:set_name(mesh_alloc)
@@ -96,9 +97,9 @@ type(nam_type),intent(in) :: nam       !< Namelist
 ! Probe in
 @:probe_in()
 
-! Allocation
+! Initialization
 mesh%n = n
-mesh%use_cgal = nam%use_cgal
+mesh%use_cgal = use_cgal
 
 ! Allocation
 allocate(mesh%order(mesh%n))
@@ -124,7 +125,7 @@ end subroutine mesh_alloc
 ! Subroutine: mesh_init
 !> Intialization
 !----------------------------------------------------------------------
-subroutine mesh_init(mesh,mpl,rng,lon,lat,area)
+subroutine mesh_init(mesh,mpl,rng,lon,lat,hull_bnd)
 
 implicit none
 
@@ -134,16 +135,16 @@ type(mpl_type),intent(inout) :: mpl       !< MPI data
 type(rng_type),intent(inout) :: rng       !< Random number generator
 real(kind_real),intent(in) :: lon(mesh%n) !< Longitudes
 real(kind_real),intent(in) :: lat(mesh%n) !< Latitudes
-real(kind_real),intent(in) :: area        !< Mesh area
+logical,intent(in),optional :: hull_bnd   !< Flag to compute hull boundary vertices
 
 ! Local variables
-integer :: i,j,k,cols,maxedge,j_eff
-integer,allocatable :: jtab(:),nodes(:,:),order(:),near(:),next(:)
+integer :: i,j,k,cols,maxedge,jtab(mesh%n),nb,ib
+integer,allocatable :: nodes(:,:),order(:),near(:),next(:),bnd(:)
 integer,pointer :: row(:)
 integer(kind_long) :: hash_long
-real(kind_real) :: hash,a
-real(kind_real),allocatable :: list(:),lon_pert(:),lat_pert(:),lonlat(:,:),dist(:),x(:),y(:),z(:),ndist(:)
-logical :: init
+real(kind_real) :: lon_pert(mesh%n),lat_pert(mesh%n)
+real(kind_real),allocatable :: lonlat(:,:),dist(:),x(:),y(:),z(:)
+logical :: lhull_bnd,init
 type(atlas_unstructuredgrid) :: agrid
 type(atlas_mesh) :: amesh
 type(atlas_meshgenerator) :: ameshgenerator
@@ -156,80 +157,58 @@ type(atlas_connectivity) :: aconnectivity
 ! Probe in
 @:probe_in()
 
-! Points order
-do i=1,mesh%n
-   mesh%order(i) = i
-end do
+! Local flag
+lhull_bnd = .false.
+if (present(hull_bnd)) lhull_bnd = hull_bnd
 
-! Allocation
-allocate(list(mesh%n))
+! Copy lon/lat
+mesh%lon = lon
+mesh%lat = lat
 
 ! Reorder points
-do i=1,mesh%n
-   list(i) = lonlathash(lon(i),lat(i))
+call qsort(mesh%n,mesh%lon,mesh%lat,mesh%order,.false.)
+
+! Shuffle order (more efficient to compute the Delaunay triangulation)
+call rng%resync(mpl)
+call rng%rand(1,mesh%n,jtab)
+call rng%desync(mpl)
+do i=mesh%n,2,-1
+   k = mesh%order(jtab(i))
+   mesh%order(jtab(i)) = mesh%order(i)
+   mesh%order(i) = k
 end do
-call qsort(mesh%n,list,mesh%order)
 
-! Release memory
-deallocate(list)
-
-if (shuffle) then
-   ! Allocation
-   allocate(jtab(mesh%n))
-
-   ! Shuffle order (more efficient to compute the Delaunay triangulation)
-   call rng%resync(mpl)
-   call rng%rand(1,mesh%n,jtab)
-   call rng%desync(mpl)
-   do i=mesh%n,2,-1
-      k = mesh%order(jtab(i))
-      mesh%order(jtab(i)) = mesh%order(i)
-      mesh%order(i) = k
-   end do
-
-   ! Release memory
-   deallocate(jtab)
-end if
-
-! Restrictive inverse order
-mesh%order_inv = mpl%msv%vali
+! Inverse order
 do i=1,mesh%n
    mesh%order_inv(mesh%order(i)) = i
 end do
 
-! Copy lon/lat
-mesh%lon = lon(mesh%order)
-mesh%lat = lat(mesh%order)
-
-if (mesh%use_cgal) then
-   ! Allocation
-   allocate(lon_pert(mesh%n))
-   allocate(lat_pert(mesh%n))
-
-   ! Perturb grid coordinates
-   do i=1,mesh%n
-      ! Compute hash
-      hash = lonlathash(mesh%lon(i),mesh%lat(i))
-
-      ! Generate pseudo-random numbers between -1e-12 and 1e-12 from the hash
-      hash_long = int(hash*1.0e6_kind_real,kind_long)
-      call rng%lcg(lon_pert(i),hash_long)
-      call rng%lcg(lat_pert(i),hash_long)
-      mesh%lon(i) = mesh%lon(i)*(one+1.0e-12_kind_real*(two*lon_pert(i)-one))
-      mesh%lat(i) = mesh%lat(i)*(one+1.0e-12_kind_real*(two*lat_pert(i)-one))
-
-      ! Apply bounds
-      call lonlatmod(mesh%lon(i),mesh%lat(i))
-   end do
-
-   ! Release memory
-   deallocate(lon_pert)
-   deallocate(lat_pert)
-end if
+! Reorder lon/lat
+mesh%lon = mesh%lon(mesh%order)
+mesh%lat = mesh%lat(mesh%order)
 
 ! Transform to cartesian coordinates
 do i=1,mesh%n
-  call lonlat2xyz(mpl,mesh%lon(i),mesh%lat(i),mesh%x(i),mesh%y(i),mesh%z(i))
+   call lonlat2xyz(mpl,mesh%lon(i),mesh%lat(i),mesh%x(i),mesh%y(i),mesh%z(i))
+end do
+
+! Perturb grid coordinates to avoid colinear points
+do i=1,mesh%n
+   ! Compute hash
+   hash_long = int(fletcher32((/mesh%lon(i),mesh%lat(i)/)),kind_long)
+
+   ! Generate pseudo-random numbers between -1e-10 and 1e-10 from the hash
+   call rng%lcg(lon_pert(i),hash_long)
+   call rng%lcg(lat_pert(i),hash_long)
+   lon_pert(i) = pfactor*(two*lon_pert(i)-one)
+   lat_pert(i) = pfactor*(two*lat_pert(i)-one)
+
+   ! Perturb grid coordinates
+   mesh%lon(i) = mesh%lon(i)+lon_pert(i)
+   mesh%lat(i) = mesh%lat(i)+lat_pert(i)
+
+   ! Apply bounds
+   call lonlatmod(mesh%lon(i),mesh%lat(i))
 end do
 
 if (mesh%use_cgal) then
@@ -389,51 +368,39 @@ else
    deallocate(dist)
 end if
 
-! Typical distance between neighbors for a homogeneous Delaunay mesh, required for a limited area mesh
-a = sqrt(two*area/(sqrt(three)*real(mesh%n,kind_real)))
-do i=1,mesh%n
-   ! Allocation
-   allocate(nodes(mesh%rows(i)%cols,1))
-   allocate(ndist(mesh%rows(i)%cols))
-
-   ! Copy
-   cols = mesh%rows(i)%cols
-   nodes(:,1) = mesh%rows(i)%nodes
-
-   ! Compute distances
-   do j=1,cols
-      call sphere_dist(mesh%lon(i),mesh%lat(i),mesh%lon(nodes(j,1)),mesh%lat(nodes(j,1)),ndist(j))
-   end do
-
-   ! Count valid neighbors
-   mesh%rows(i)%cols = count(ndist<acc_fac*a)
-
-   ! Reallocation
-   deallocate(mesh%rows(i)%nodes)
-   allocate(mesh%rows(i)%nodes(mesh%rows(i)%cols))
-
-   ! Set valid neighbors
-   j_eff = 0
-   do j=1,cols
-      if (ndist(j)<acc_fac*a) then
-         j_eff = j_eff+1
-         mesh%rows(i)%nodes(j_eff) = nodes(j,1)
-      end if
-   end do
-
-   ! Release memory
-   deallocate(nodes)
-   deallocate(ndist)
-end do
-
 ! Maximum number of columns
 mesh%maxcols = 0
 do i=1,mesh%n
    mesh%maxcols = max(mesh%maxcols,mesh%rows(i)%cols)
 end do
 
-! Compute boundary nodes
-call mesh%bnodes(mpl)
+do i=1,mesh%n
+   ! Unperturb grid coordinates
+   mesh%lon(i) = mesh%lon(i)-lon_pert(i)
+   mesh%lat(i) = mesh%lat(i)-lat_pert(i)
+
+   ! Apply bounds
+   call lonlatmod(mesh%lon(i),mesh%lat(i))
+end do
+
+if (lhull_bnd) then
+   ! Allocation
+   allocate(bnd(mesh%n))
+
+   ! Get bboundary nodes
+   call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,nb)
+
+   ! Allocation
+   allocate(mesh%vbnd(3,nb))
+
+   ! Copy boundary vertices
+   do ib=1,nb
+      mesh%vbnd(:,ib) = (/mesh%x(bnd(ib)),mesh%y(bnd(ib)),mesh%z(bnd(ib))/)
+   end do
+
+   ! Release memory
+   deallocate(bnd)
+end if
 
 ! Probe out
 @:probe_out()
@@ -468,7 +435,6 @@ if (allocated(mesh%lat)) deallocate(mesh%lat)
 if (allocated(mesh%x)) deallocate(mesh%x)
 if (allocated(mesh%y)) deallocate(mesh%y)
 if (allocated(mesh%z)) deallocate(mesh%z)
-if (allocated(mesh%bnd)) deallocate(mesh%bnd)
 if (allocated(mesh%rows)) then
    do i=1,mesh%n
       if (allocated(mesh%rows(i)%nodes)) deallocate(mesh%rows(i)%nodes)
@@ -478,287 +444,16 @@ end if
 if (allocated(mesh%list)) deallocate(mesh%list)
 if (allocated(mesh%lptr)) deallocate(mesh%lptr)
 if (allocated(mesh%lend)) deallocate(mesh%lend)
+if (allocated(mesh%vbnd)) deallocate(mesh%vbnd)
+if (allocated(mesh%nbnda)) deallocate(mesh%nbnda)
+if (allocated(mesh%v1bnda)) deallocate(mesh%v1bnda)
+if (allocated(mesh%v2bnda)) deallocate(mesh%v2bnda)
+if (allocated(mesh%vabnda)) deallocate(mesh%vabnda)
 
 ! Probe out
 @:probe_out()
 
 end subroutine mesh_dealloc
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_bnodes
-!> Find boundary nodes
-!----------------------------------------------------------------------
-subroutine mesh_bnodes(mesh,mpl)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(inout) :: mesh !< Mesh
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-
-! Local variables
-integer :: i,j,k
-integer :: ibnd,ibnd_save,ibnd_next,ibnd_next_save,ibnd_prev,i_next,i_prev
-integer,allocatable :: order(:),nodes(:),bnd(:)
-real(kind_real),allocatable :: x(:),y(:),z(:),diff(:)
-logical :: isbnd(mesh%n)
-logical,allocatable :: valid(:)
-
-! Set name
-@:set_name(mesh_bnodes)
-
-! Probe in
-@:probe_in()
-
-if (mesh%use_cgal) then
-   ! Find first boundary nodes
-   ibnd = 0
-   i = 0
-   do while ((ibnd==0).and.(i<mesh%n))
-      i = i+1
-
-      ! Allocation
-      allocate(x(mesh%rows(i)%cols))
-      allocate(y(mesh%rows(i)%cols))
-      allocate(z(mesh%rows(i)%cols))
-      allocate(order(mesh%rows(i)%cols))
-      allocate(diff(mesh%rows(i)%cols))
-
-      ! Copy coordinates
-      x = mesh%x(mesh%rows(i)%nodes)
-      y = mesh%y(mesh%rows(i)%nodes)
-      z = mesh%z(mesh%rows(i)%nodes)
-
-      ! Order neighbors counter-clockwise
-      call order_cc(mpl,mesh%lon(i),mesh%lat(i),mesh%rows(i)%cols,x,y,z,order,diff)
-
-      ! Look for differences larger than pi
-      do j=1,mesh%rows(i)%cols
-         if (diff(j)>pi) then
-            ibnd = i
-            ibnd_next = mesh%rows(i)%nodes(j)
-            exit
-         end if
-      end do
-
-      ! Release memory
-      deallocate(x)
-      deallocate(y)
-      deallocate(z)
-      deallocate(order)
-      deallocate(diff)
-   end do
-
-   if (ibnd>0) then
-      ! Save the first two boundary nodes
-      ibnd_save = ibnd
-      ibnd_next_save = ibnd_next
-
-      ! Count boundary nodes
-      mesh%nb = 1
-      do while (ibnd_next/=ibnd_save)
-         mesh%nb = mesh%nb+1
-         do j=1,mesh%rows(ibnd_next)%cols
-            if (mesh%rows(ibnd_next)%nodes(j)==ibnd) then
-               ibnd = ibnd_next
-               if (j<mesh%rows(ibnd_next)%cols) then
-                  ibnd_next = mesh%rows(ibnd_next)%nodes(j+1)
-               else
-                  ibnd_next = mesh%rows(ibnd_next)%nodes(1)
-               end if
-               exit
-            end if
-            if (j==mesh%rows(ibnd_next)%cols) call mpl%abort('${subr}$','cannot find next boundary node')
-         end do
-      end do
-
-      ! Allocation
-      allocate(mesh%bnd(mesh%nb))
-
-      ! Copy boundary nodes
-      ibnd = ibnd_save
-      ibnd_next = ibnd_next_save
-      mesh%nb = 1
-      mesh%bnd(mesh%nb) = ibnd_save
-      do while (ibnd_next/=ibnd_save)
-         mesh%nb = mesh%nb+1
-         mesh%bnd(mesh%nb) = ibnd_next
-         do j=1,mesh%rows(ibnd_next)%cols
-            if (mesh%rows(ibnd_next)%nodes(j)==ibnd) then
-               ibnd = ibnd_next
-               if (j<mesh%rows(ibnd_next)%cols) then
-                  ibnd_next = mesh%rows(ibnd_next)%nodes(j+1)
-               else
-                  ibnd_next = mesh%rows(ibnd_next)%nodes(1)
-               end if
-               exit
-            end if
-            if (j==mesh%rows(ibnd_next)%cols) call mpl%abort('${subr}$','cannot find next boundary node')
-         end do
-      end do
-   else
-      ! No boundary nodes
-      mesh%nb = 0
-   end if
-
-   ! Flag boundary points
-   isbnd = .false.
-   do ibnd=1,mesh%nb
-      isbnd(mesh%bnd(ibnd)) = .true.
-   end do
-
-   ! Remove out-of-boundaries edges
-   do ibnd=1,mesh%nb
-      ! Get previous and next boundary nodes
-      i = mesh%bnd(ibnd)
-      if (ibnd==1) then
-         ibnd_prev = mesh%nb
-         ibnd_next = ibnd+1
-      elseif (ibnd<mesh%nb) then
-         ibnd_prev = ibnd-1
-         ibnd_next = ibnd+1
-      else
-         ibnd_prev = ibnd-1
-         ibnd_next = 1
-      end if
-      i_prev = mesh%bnd(ibnd_prev)
-      i_next = mesh%bnd(ibnd_next)
-
-      ! Allocation
-      allocate(valid(mesh%rows(i)%cols))
-
-      ! Initialization
-      valid = .false.
-
-      ! Check consistency
-      do j=1,mesh%rows(i)%cols
-         k = mesh%rows(i)%nodes(j)
-         if (isbnd(k)) then
-            ! Keep previous and next boundary nodes
-            if ((k==i_prev).or.(k==i_next)) valid(j) = .true.
-         else
-            ! Non-boundary nodes are kept
-            valid(j) = .true.
-         end if
-      end do
-
-      ! Remove edges
-      if (any(.not.valid)) then
-         ! Allocation
-         allocate(nodes(mesh%rows(i)%cols))
-
-         ! Save nodes
-         nodes = mesh%rows(i)%nodes
-
-         ! Reallocation
-         deallocate(mesh%rows(i)%nodes)
-         allocate(mesh%rows(i)%nodes(count(valid)))
-
-         ! Reset nodes
-         k = 0
-         do j=1,mesh%rows(i)%cols
-            if (valid(j)) then
-               k = k+1
-               mesh%rows(i)%nodes(k) = nodes(j)
-            end if
-         end do
-
-         ! Reset number of columns
-         mesh%rows(i)%cols = count(valid)
-
-         ! Release memory
-         deallocate(nodes)
-      end if
-
-      ! Release memory
-      deallocate(valid)
-   end do
-else
-   ! Allocation
-   allocate(bnd(mesh%n))
-
-   ! Find boundary nodes
-   call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,mesh%nb)
-
-   if (mesh%nb>0) then
-      ! Allocation
-      allocate(mesh%bnd(mesh%nb))
-
-      ! Copy
-      mesh%bnd = bnd(1:mesh%nb)
-   end if
-
-   ! Release memory
-   deallocate(bnd)
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine mesh_bnodes
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_inside
-!> Find whether a point is inside the mesh
-!----------------------------------------------------------------------
-subroutine mesh_inside(mesh,mpl,lon,lat,inside_mesh)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(in) :: mesh !< Mesh
-type(mpl_type),intent(inout) :: mpl !< MPI data
-real(kind_real),intent(in) :: lon   !< Longitude
-real(kind_real),intent(in) :: lat   !< Latitude
-logical,intent(out) :: inside_mesh  !< True if the point is inside the mesh
-
-! Local variables
-integer :: i,inext
-real(kind_real) :: a(3),b(3),c(3),v1(3),v2(3),cp(3),cd(3)
-
-! Set name
-@:set_name(mesh_inside)
-
-! Probe in
-@:probe_in()
-
-! Transform to cartesian coordinates
-call lonlat2xyz(mpl,lon,lat,a(1),a(2),a(3))
-
-! Initialization
-inside_mesh = .true.
-
-do i=1,mesh%nb
-   ! Index
-   if (i<mesh%nb) then
-      inext = i+1
-   else
-      inext = 1
-   end if
-
-   ! Vertices
-   b = (/mesh%x(mesh%bnd(i)),mesh%y(mesh%bnd(i)),mesh%z(mesh%bnd(i))/)
-   c = (/mesh%x(mesh%bnd(inext)),mesh%y(mesh%bnd(inext)),mesh%z(mesh%bnd(inext))/)
-
-   ! Cross-product (c-b)x(a-b)
-   v1 = c-b
-   v2 = a-b
-   call vector_product(v1,v2,cp)
-
-   ! Centroid
-   cd = (a+b+c)/three
-
-   ! Compare the directions
-   if (inf(sum(cp*cd),zero)) then
-      inside_mesh = .false.
-      exit
-   end if
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine mesh_inside
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_barycentric
@@ -1015,5 +710,82 @@ end do
 @:probe_out()
 
 end subroutine mesh_get_bnda
+
+!----------------------------------------------------------------------
+! Subroutine: mesh_check_arc
+!> Check if an arc is crossing mask boundaries
+!----------------------------------------------------------------------
+subroutine mesh_check_arc(mesh,mpl,lon_s,lat_s,il0,lon_e,lat_e,jl0,valid)
+
+implicit none
+
+! Passed variables
+class(mesh_type),intent(in) :: mesh !< Mesh
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: lon_s !< First point longitude
+real(kind_real),intent(in) :: lat_s !< First point latitude
+integer,intent(in) :: il0           !< First point level
+real(kind_real),intent(in) :: lon_e !< Second point longitude
+real(kind_real),intent(in) :: lat_e !< Second point latitude
+integer,intent(in) :: jl0           !< Second point level
+logical,intent(out) :: valid        !< True for valid arcs
+
+! Local variables
+integer :: ibnda
+real(kind_real) :: v1(3),v2(3),va(3),vp(3),t(4)
+logical :: cflag(4)
+
+! Set name
+@:set_name(mesh_check_arc)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+valid = .true.
+
+! Transform to cartesian coordinates
+call lonlat2xyz(mpl,lon_s,lat_s,v1(1),v1(2),v1(3))
+call lonlat2xyz(mpl,lon_e,lat_e,v2(1),v2(2),v2(3))
+
+! Compute arc orthogonal vector
+call vector_product(v1,v2,va)
+
+! Check if arc is crossing boundary arcs
+do ibnda=1,mesh%nbnda(il0)
+   call vector_product(va,mesh%vabnda(:,ibnda,il0),vp)
+   call det(v1,va,vp,t(1),cflag(1))
+   call det(v2,va,vp,t(2),cflag(2))
+   call det(mesh%v1bnda(:,ibnda,il0),mesh%vabnda(:,ibnda,il0),vp,t(3),cflag(3))
+   call det(mesh%v2bnda(:,ibnda,il0),mesh%vabnda(:,ibnda,il0),vp,t(4),cflag(4))
+   t(1) = -t(1)
+   t(3) = -t(3)
+   if ((all(t>zero).or.all(t<zero)).or.any(.not.cflag)) then
+      valid = .false.
+      exit
+   end if
+end do
+
+if (jl0/=il0) then
+   ! Check if arc is crossing boundary arcs
+   do ibnda=1,mesh%nbnda(jl0)
+      call vector_product(va,mesh%vabnda(:,ibnda,jl0),vp)
+      call det(v1,va,vp,t(1),cflag(1))
+      call det(v2,va,vp,t(2),cflag(2))
+      call det(mesh%v1bnda(:,ibnda,jl0),mesh%vabnda(:,ibnda,jl0),vp,t(3),cflag(3))
+      call det(mesh%v2bnda(:,ibnda,jl0),mesh%vabnda(:,ibnda,jl0),vp,t(4),cflag(4))
+      t(1) = -t(1)
+      t(3) = -t(3)
+      if ((all(t>zero).or.all(t<zero)).or.any(.not.cflag)) then
+         valid = .false.
+         exit
+      end if
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine mesh_check_arc
 
 end module type_mesh

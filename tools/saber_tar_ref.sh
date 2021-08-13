@@ -8,7 +8,7 @@
 
 # Parameters
 if test "$#" = "0" ; then
-   datadir=${HOME}/build/gnu_9.3.0/bundle/saber/test/testdata
+   datadir=${HOME}/build/gnu_9.3.0/bundle_RelWithDebInfo/saber/test/testdata
    listdir=${HOME}/code/bundle/saber/test/testlist
 else
    datadir=$1
@@ -23,15 +23,11 @@ saber_ref_3
 saber_ref_cgal
 saber_ref_mpi_1
 saber_ref_mpi_2
-saber_ref_mpi_cgal
 saber_ref_multi
 saber_ref_oops"
 
 # Get git branch
 branch=`git rev-parse --abbrev-ref HEAD`
-
-# Go to data directory
-cd ${datadir}
 
 for ref in ${ref_list}; do
    # Loop over files
@@ -39,12 +35,15 @@ for ref in ${ref_list}; do
    while IFS= read -r line
    do
       files=${files}' '${line}
-
-      # Special case for OOPS references
-      if test ${ref} == "saber_ref_oops"; then
-         grep -si 'Test     : ' ../testoutput/${line} > ${line}
-      fi
    done < ${listdir}/${ref}.txt
+
+   # Go to data directory
+   if test ${ref} == "saber_ref_oops"; then
+      # Special case for OOPS references
+      cd ${datadir}/../testoutput
+   else
+      cd ${datadir}
+   fi
 
    # Archive
    tar -cvzf ${ref}.tar.gz ${files}

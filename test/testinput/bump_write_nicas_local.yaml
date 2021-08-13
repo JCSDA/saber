@@ -1,14 +1,15 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_hdiag-nicas_local_diag/test__MPI_-_OMP_"
+prefix: "bump_write_nicas_local/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
-method: "loc"
-strategy: "common"
+method: "cor"
+strategy: "specific_univariate"
 new_hdiag: 1
-write_cmat: 0
+write_hdiag: 1
 new_nicas: 1
+write_nicas_local: 1
 check_adjoints: 1
 check_dirac: 1
 
@@ -17,6 +18,7 @@ nl: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
+nomask: 1
 
 # ens1_param
 ens1_ne: 50
@@ -25,23 +27,17 @@ ens1_ne: 50
 
 # sampling_param
 nc1: 500
-nc2: 150
-ntry: 30
 nc3: 15
-dc: [400.0e3]
+dc: 400.0e3
 nl0r: 2
 
 # diag_param
 ne: 50
-local_diag: 1
-local_rad: 2000.0e3
 
 # fit_param
 
 # nicas_param
 resol: 8.0
-subsamp: "h"
-mpicom: 2
 
 # dirac_param
 ndir: 1

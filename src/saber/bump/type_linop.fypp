@@ -9,36 +9,23 @@
 module type_linop
 
 use ieee_arithmetic
-use netcdf, only: nf90_get_att,nf90_get_var,nf90_global,nf90_inq_grp_ncid,nf90_inq_varid,nf90_put_att,nf90_put_var
 !$ use omp_lib
 use tools_const, only: zero,one,rad2deg
 use tools_func, only: sphere_dist
-use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real,huge_real
-use tools_repro, only: inf
-use type_geom, only: geom_type
+use tools_kinds, only: kind_real,huge_real
+use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
+use tools_qsort, only: qsort
+use tools_repro, only: inf,eq,infeq,sup
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
-use type_rng, only: rng_type
 use type_tree, only: tree_type
 
 implicit none
 
 logical,parameter :: check_data = .false.             !< Activate data check for all linear operations
 real(kind_real),parameter :: S_inf = 1.0e-2_kind_real !< Minimum interpolation coefficient
-
-! Interpolation data derived type
-type interp_type
-   integer :: n_src_eff                          !< Number of effective source points
-   integer,allocatable :: from_eff(:)            !< Conversion from effective source points
-   real(kind_real),allocatable :: lon_src_eff(:) !< Effective source longitudes
-   real(kind_real),allocatable :: lat_src_eff(:) !< Effective source latgitudes
-   type(tree_type) :: tree
-   type(mesh_type) :: mesh
-contains
-   procedure :: dealloc => interp_dealloc
-end type
 
 ! Linear operator derived type
 type linop_type
@@ -54,13 +41,20 @@ type linop_type
    integer,allocatable :: col(:)            !< Input indices
    real(kind_real),allocatable :: S(:)      !< Coefficients
    real(kind_real),allocatable :: Svec(:,:) !< Coefficients of the vector of linear operators with similar row and col
-   type(interp_type) :: interp_data         !< Interpolation data
+
+   ! I/O IDs
+   integer :: grpid                        !< group ID
+   integer :: row_id                        !< row ID
+   integer :: col_id                        !< col ID
+   integer :: S_id                          !< S ID
+   integer :: Svec_id                       !< Svec ID
 contains
    procedure :: alloc => linop_alloc
    procedure :: dealloc => linop_dealloc
    procedure :: copy => linop_copy
    procedure :: read => linop_read
-   procedure :: write => linop_write
+   procedure :: write_def => linop_write_def
+   procedure :: write_data => linop_write_data
    procedure :: buffer_size => linop_buffer_size
    procedure :: serialize => linop_serialize
    procedure :: deserialize => linop_deserialize
@@ -69,42 +63,16 @@ contains
    procedure :: apply_sym => linop_apply_sym
    procedure :: add_op => linop_add_op
    procedure :: gather => linop_gather
-   procedure :: interp => linop_interp
+   procedure :: linop_interp
+   procedure :: linop_interp_lat
+   procedure :: linop_interp_nn
+   generic :: interp => linop_interp,linop_interp_lat,linop_interp_nn
 end type linop_type
 
 private
 public :: linop_type
 
 contains
-
-!----------------------------------------------------------------------
-! Subroutine: interp_dealloc
-!> Release memory
-!----------------------------------------------------------------------
-subroutine interp_dealloc(interp_data)
-
-implicit none
-
-! Passed variables
-class(interp_type),intent(inout) :: interp_data !< Interpolation data
-
-! Set name
-@:set_name(interp_dealloc)
-
-! Probe in
-@:probe_in()
-
-! Release memory
-if (allocated(interp_data%from_eff)) deallocate(interp_data%from_eff)
-if (allocated(interp_data%lon_src_eff)) deallocate(interp_data%lon_src_eff)
-if (allocated(interp_data%lat_src_eff)) deallocate(interp_data%lat_src_eff)
-call interp_data%mesh%dealloc
-call interp_data%tree%dealloc
-
-! Probe out
-@:probe_out()
-
-end subroutine interp_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_alloc
@@ -167,7 +135,6 @@ if (allocated(linop%row)) deallocate(linop%row)
 if (allocated(linop%col)) deallocate(linop%col)
 if (allocated(linop%S)) deallocate(linop%S)
 if (allocated(linop%Svec)) deallocate(linop%Svec)
-call linop%interp_data%dealloc
 
 ! Probe out
 @:probe_out()
@@ -240,7 +207,6 @@ integer,intent(in) :: ncid               !< NetCDF file
 
 ! Local variables
 integer :: nvec
-integer :: grpid,row_id,col_id,S_id,Svec_id
 
 ! Set name
 @:set_name(linop_read)
@@ -249,34 +215,34 @@ integer :: grpid,row_id,col_id,S_id,Svec_id
 @:probe_in()
 
 ! Get group
-call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,linop%prefix,grpid))
+linop%grpid = inquire_grp(mpl,ncid,linop%prefix)
 
 ! Get dimensions
-linop%n_s = mpl%nc_dim_inquire(grpid,'n_s')
-call mpl%ncerr('${subr}$',nf90_get_att(grpid,nf90_global,'n_src',linop%n_src))
-call mpl%ncerr('${subr}$',nf90_get_att(grpid,nf90_global,'n_dst',linop%n_dst))
-call mpl%ncerr('${subr}$',nf90_get_att(grpid,nf90_global,'nvec',nvec))
+linop%n_s = inquire_dim_size(mpl,linop%grpid,'n_s',0)
+call get_att(mpl,linop%grpid,'n_src',linop%n_src)
+call get_att(mpl,linop%grpid,'n_dst',linop%n_dst)
+call get_att(mpl,linop%grpid,'nvec',nvec)
 
 ! Allocation
 call linop%alloc(nvec)
 
 if (linop%n_s>0) then
    ! Get variables
-   call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'row',row_id))
-   call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'col',col_id))
+   linop%row_id = inquire_var(mpl,linop%grpid,'row')
+   linop%col_id = inquire_var(mpl,linop%grpid,'col')
    if (linop%nvec>0) then
-      call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'Svec',Svec_id))
+      linop%Svec_id = inquire_var(mpl,linop%grpid,'Svec')
    else
-      call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'S',S_id))
+      linop%S_id = inquire_var(mpl,linop%grpid,'S')
    end if
 
    ! Read variables
-   call mpl%ncerr('${subr}$',nf90_get_var(grpid,row_id,linop%row))
-   call mpl%ncerr('${subr}$',nf90_get_var(grpid,col_id,linop%col))
+   call get_var(mpl,linop%grpid,linop%row_id,linop%row)
+   call get_var(mpl,linop%grpid,linop%col_id,linop%col)
    if (linop%nvec>0) then
-      call mpl%ncerr('${subr}$',nf90_get_var(grpid,Svec_id,linop%Svec))
+      call get_var(mpl,linop%grpid,linop%Svec_id,linop%Svec)
    else
-      call mpl%ncerr('${subr}$',nf90_get_var(grpid,S_id,linop%S))
+      call get_var(mpl,linop%grpid,linop%S_id,linop%S)
    end if
 end if
 
@@ -286,63 +252,88 @@ end if
 end subroutine linop_read
 
 !----------------------------------------------------------------------
-! Subroutine: linop_write
-!> Write
+! Subroutine: linop_write_def
+!> Write, definition mode
 !----------------------------------------------------------------------
-subroutine linop_write(linop,mpl,ncid)
+subroutine linop_write_def(linop,mpl,ncid)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(in) :: linop !< Linear operator
-type(mpl_type),intent(inout) :: mpl   !< MPI data
-integer,intent(in) :: ncid            !< NetCDF file
+class(linop_type),intent(inout) :: linop !< Linear operator
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: ncid               !< NetCDF file
 
 ! Local variables
-integer :: grpid,n_s_id,nvec_id,row_id,col_id,S_id,Svec_id
+integer :: n_s_id,nvec_id
 
 ! Set name
-@:set_name(linop_write)
+@:set_name(linop_write_def)
 
 ! Probe in
 @:probe_in()
 
 ! Define group
-grpid = mpl%nc_group_define_or_get(ncid,linop%prefix)
+linop%grpid = define_grp(mpl,ncid,linop%prefix)
 
 ! Define dimensions
-call mpl%ncerr('${subr}$',nf90_put_att(grpid,nf90_global,'n_src',linop%n_src))
-call mpl%ncerr('${subr}$',nf90_put_att(grpid,nf90_global,'n_dst',linop%n_dst))
-call mpl%ncerr('${subr}$',nf90_put_att(grpid,nf90_global,'nvec',linop%nvec))
+call put_att(mpl,linop%grpid,'n_src',linop%n_src)
+call put_att(mpl,linop%grpid,'n_dst',linop%n_dst)
+call put_att(mpl,linop%grpid,'nvec',linop%nvec)
 
 if (linop%n_s>0) then
    ! Define dimensions
-   n_s_id = mpl%nc_dim_define_or_get(grpid,'n_s',linop%n_s)
-   if (linop%nvec>0) nvec_id = mpl%nc_dim_define_or_get(grpid,'nvec',linop%nvec)
+   n_s_id = define_dim(mpl,linop%grpid,'n_s',linop%n_s)
+   if (linop%nvec>0) nvec_id = define_dim(mpl,linop%grpid,'nvec',linop%nvec)
 
    ! Define variables
-   row_id = mpl%nc_var_define_or_get(grpid,'row',nc_kind_int,(/n_s_id/))
-   col_id = mpl%nc_var_define_or_get(grpid,'col',nc_kind_int,(/n_s_id/))
+   linop%row_id = define_var(mpl,linop%grpid,'row','int',(/n_s_id/))
+   linop%col_id = define_var(mpl,linop%grpid,'col','int',(/n_s_id/))
    if (linop%nvec>0) then
-      Svec_id = mpl%nc_var_define_or_get(grpid,'Svec',nc_kind_real,(/n_s_id,nvec_id/))
+      linop%Svec_id = define_var(mpl,linop%grpid,'Svec','real',(/n_s_id,nvec_id/))
    else
-      S_id = mpl%nc_var_define_or_get(grpid,'S',nc_kind_real,(/n_s_id/))
-   end if
-
-   ! Write variables
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,row_id,linop%row(1:linop%n_s)))
-   call mpl%ncerr('${subr}$',nf90_put_var(grpid,col_id,linop%col(1:linop%n_s)))
-   if (linop%nvec>0) then
-      call mpl%ncerr('${subr}$',nf90_put_var(grpid,Svec_id,linop%Svec(1:linop%n_s,:)))
-   else
-      call mpl%ncerr('${subr}$',nf90_put_var(grpid,S_id,linop%S(1:linop%n_s)))
+      linop%S_id = define_var(mpl,linop%grpid,'S','real',(/n_s_id/))
    end if
 end if
 
 ! Probe out
 @:probe_out()
 
-end subroutine linop_write
+end subroutine linop_write_def
+
+!----------------------------------------------------------------------
+! Subroutine: linop_write_data
+!> Write, data mode
+!----------------------------------------------------------------------
+subroutine linop_write_data(linop,mpl)
+
+implicit none
+
+! Passed variables
+class(linop_type),intent(in) :: linop !< Linear operator
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+
+! Set name
+@:set_name(linop_write_data)
+
+! Probe in
+@:probe_in()
+
+if (linop%n_s>0) then
+   ! Write variables
+   call put_var(mpl,linop%grpid,linop%row_id,linop%row(1:linop%n_s))
+   call put_var(mpl,linop%grpid,linop%col_id,linop%col(1:linop%n_s))
+   if (linop%nvec>0) then
+      call put_var(mpl,linop%grpid,linop%Svec_id,linop%Svec(1:linop%n_s,:))
+   else
+      call put_var(mpl,linop%grpid,linop%S_id,linop%S(1:linop%n_s))
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine linop_write_data
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_buffer_size
@@ -877,36 +868,35 @@ end subroutine linop_gather
 ! Subroutine: linop_interp
 !> Compute horizontal interpolation
 !----------------------------------------------------------------------
-subroutine linop_interp(linop,mpl,rng,nam,geom,il0,n_src,lon_src,lat_src,mask_src,area_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt)
+subroutine linop_interp(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
+ & n_dst,lon_dst,lat_dst,mask_dst,mesh_mask,ifmt)
 
 implicit none
 
 ! Passed variables
 class(linop_type),intent(inout) :: linop     !< Linear operator
 type(mpl_type),intent(inout) :: mpl          !< MPI data
-type(rng_type),intent(inout) :: rng          !< Random number generator
 type(nam_type),intent(in) :: nam             !< Namelist
-type(geom_type),intent(in) :: geom           !< Geometry
 integer,intent(in) :: il0                    !< Level
 integer,intent(in) :: n_src                  !< Source size
 real(kind_real),intent(in) :: lon_src(n_src) !< Source longitudes
 real(kind_real),intent(in) :: lat_src(n_src) !< Source latitudes
 logical,intent(in) :: mask_src(n_src)        !< Source mask
-real(kind_real),intent(in) :: area_src       !< Source area
+type(mesh_type),intent(in) :: mesh_src       !< Source mesh
+type(tree_type),intent(in) :: tree_src       !< Source tree
 integer,intent(in) :: n_dst                  !< Destination size
 real(kind_real),intent(in) :: lon_dst(n_dst) !< Destination longitudes
 real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
+type(mesh_type),intent(in) :: mesh_mask      !< Mask checking mesh
 integer,intent(in) :: ifmt                   !< Format indentation
 
 ! Local variables
-integer :: n_src_eff,interp_nn,i_src,i_src_eff,i,j,i_dst,n_s,i_s
-integer,allocatable :: from_eff(:),nn_index(:),ib(:),row(:),col(:)
-real(kind_real) :: wprod,dist
-real(kind_real),allocatable :: lon_src_eff(:),lat_src_eff(:)
-real(kind_real),allocatable :: nn_dist(:),b(:),S(:)
-logical :: valid
-logical,allocatable :: valid_arc(:),missing(:)
+integer :: i_dst,i,n_s,i_s,next
+integer :: nn_index(1),ib(3),row(3*n_dst),col(3*n_dst)
+integer,allocatable :: nn_index_ext(:)
+real(kind_real) :: nn_dist(1),b(3),S(3*n_dst)
+logical :: valid,valid_arc,found,missing(n_dst)
 character(len=7) :: cfmt
 
 ! Set name
@@ -914,84 +904,6 @@ character(len=7) :: cfmt
 
 ! Probe in
 @:probe_in()
-
-! Count non-missing source points
-n_src_eff = count(mask_src)
-
-! Number of interpolation nearest neighbors
-if (trim(nam%interp_type)=='mesh_based') then
-   interp_nn = 3
-elseif (trim(nam%interp_type)=='tree_based') then
-   interp_nn = min(nam%interp_nn,n_src_eff)
-end if
-
-! Allocation
-allocate(from_eff(n_src_eff))
-allocate(lon_src_eff(n_src_eff))
-allocate(lat_src_eff(n_src_eff))
-if (trim(nam%interp_type)=='mesh_based') then
-   allocate(nn_index(1))
-   allocate(nn_dist(1))
-elseif (trim(nam%interp_type)=='tree_based') then
-   allocate(nn_index(interp_nn))
-   allocate(nn_dist(interp_nn))
-end if
-allocate(valid_arc(interp_nn))
-allocate(ib(interp_nn))
-allocate(b(interp_nn))
-
-! Conversion
-i_src_eff = 0
-do i_src=1,n_src
-   if (mask_src(i_src)) then
-      i_src_eff = i_src_eff+1
-      from_eff(i_src_eff) = i_src
-   end if
-end do
-lon_src_eff = lon_src(from_eff)
-lat_src_eff = lat_src(from_eff)
-
-if (allocated(linop%interp_data%from_eff)) then
-   ! Check that source is the same
-   if (n_src_eff/=linop%interp_data%n_src_eff) call mpl%abort('${subr}$','wrong n_src_eff')
-   if (any(from_eff/=linop%interp_data%from_eff)) call mpl%abort('${subr}$','wrong from_eff')
-   if (any(abs(lon_src_eff-linop%interp_data%lon_src_eff)>zero)) call mpl%abort('${subr}$','wrong lon_src_eff')
-   if (any(abs(lat_src_eff-linop%interp_data%lat_src_eff)>zero)) call mpl%abort('${subr}$','wrong lat_src_eff')
-
-   ! Release memory
-   deallocate(linop%row)
-   deallocate(linop%col)
-   deallocate(linop%S)
-else
-   ! Allocation
-   allocate(linop%interp_data%from_eff(n_src_eff))
-   allocate(linop%interp_data%lon_src_eff(n_src_eff))
-   allocate(linop%interp_data%lat_src_eff(n_src_eff))
-
-   ! Copy source data
-   linop%interp_data%n_src_eff = n_src_eff
-   linop%interp_data%from_eff = from_eff
-   linop%interp_data%lon_src_eff = lon_src_eff
-   linop%interp_data%lat_src_eff = lat_src_eff
-
-   ! Allocation
-   if (trim(nam%interp_type)=='mesh_based') call linop%interp_data%mesh%alloc(n_src_eff,nam)
-   call linop%interp_data%tree%alloc(mpl,n_src_eff)
-
-   ! Initialization
-   if (trim(nam%interp_type)=='mesh_based') call linop%interp_data%mesh%init(mpl,rng,lon_src_eff,lat_src_eff,area_src)
-   call linop%interp_data%tree%init(lon_src_eff,lat_src_eff)
-
-   ! Release memory
-   deallocate(from_eff)
-   deallocate(lon_src_eff)
-   deallocate(lat_src_eff)
-end if
-
-! Allocation
-allocate(row(interp_nn*n_dst))
-allocate(col(interp_nn*n_dst))
-allocate(S(interp_nn*n_dst))
 
 ! Compute interpolation
 if (ifmt>0) then
@@ -1004,71 +916,45 @@ n_s = 0
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
       ! Find nearest neighbor
-      if (trim(nam%interp_type)=='mesh_based') then
-         call linop%interp_data%tree%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),1,nn_index,nn_dist)
-      elseif (trim(nam%interp_type)=='tree_based') then
-         call linop%interp_data%tree%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),interp_nn,nn_index,nn_dist)
-      end if
+      call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),1,nn_index,nn_dist)
 
-      if (abs(nn_dist(1))>1.0e-10_kind_real) then
-         if (trim(nam%interp_type)=='mesh_based') then
-            ! Compute barycentric coordinates
-            call linop%interp_data%mesh%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),linop%interp_data%tree,b,ib)
-            valid = mpl%msv%isallnot(ib)
-         elseif (trim(nam%interp_type)=='tree_based') then
-            ! Copy indices
-            ib = nn_index
-            valid = .true.
-         end if
+      if (sup(nn_dist(1),1.0e-10_kind_real).or.(.not.mask_src(nn_index(1)))) then
+         ! Compute barycentric coordinates
+         call mesh_src%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),tree_src,b,ib)
+         valid = mpl%msv%isallnot(ib)
 
-         ! Get valid arcs
+         ! Check mask
          if (valid) then
-            valid_arc = .true.
-            if (nam%mask_check) then
-               do i=1,interp_nn
-                  if (mpl%msv%isnot(ib(i))) then
-                     ! Check if arc is crossing boundary arcs
-                     call geom%check_arc(mpl,il0,linop%interp_data%lon_src_eff(ib(i)),linop%interp_data%lat_src_eff(ib(i)), &
- & lon_dst(i_dst),lat_dst(i_dst),valid_arc(i))
-                  end if
-              end do
-            end if
-         else
-            valid_arc = .false.
+            do i=1,3
+               if (b(i)>zero) valid = valid.and.mask_src(ib(i))
+            end do
          end if
 
-         ! Compute barycentric weight
-         if (trim(nam%interp_type)=='mesh_based') then
-            valid = valid.and.all(valid_arc)
-            if (valid) then
-               ! Bilinear interpolation
-               if (sum(b)>zero) b = b/sum(b)
-               do i=1,3
-                  if (inf(b(i),S_inf)) b(i) = zero
-               end do
-            else
-               b = zero
-            end if
-         else
-            do i=1,interp_nn
-               if (valid_arc(i)) then
-                  wprod = one
-                  do j=1,interp_nn
-                     if ((i/=j).and.valid_arc(j)) then
-                        call sphere_dist(linop%interp_data%lon_src_eff(ib(i)),linop%interp_data%lat_src_eff(ib(i)), &
- & linop%interp_data%lon_src_eff(ib(j)),linop%interp_data%lat_src_eff(ib(j)),dist)
-                        wprod = wprod*dist
-                     end if
-                  end do
-                  b(i) = one/(wprod*nn_dist(i))
-               else
-                  b(i) = zero
+         ! Check arcs
+         if (valid.and.nam%mask_check) then
+            do i=1,3
+               if (b(i)>zero) then
+                  call mesh_mask%check_arc(mpl,lon_src(ib(i)),lat_src(ib(i)),il0,lon_dst(i_dst),lat_dst(i_dst),il0,valid_arc)
+                  valid = valid.and.valid_arc
                end if
             end do
          end if
+
+         ! Compute barycentric weight
+         if (valid) then
+            ! Bilinear interpolation
+            if (sum(b)>zero) b = b/sum(b)
+            do i=1,3
+               if (inf(b(i),S_inf)) b(i) = zero
+            end do
+         else
+            b = zero
+         end if
+
+         ! Copy into row/col/S
          if (sum(b)>zero) then
             b = b/sum(b)
-            do i=1,interp_nn
+            do i=1,3
                if (b(i)>zero) then
                   n_s = n_s+1
                   row(n_s) = i_dst
@@ -1077,15 +963,35 @@ do i_dst=1,n_dst
                end if
             end do
          else
-            ! Use nearest neighbor
-            call linop%interp_data%tree%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),1,nn_index(1:1))
+            ! Find nearest valid neighbor
+            found = .false.
+            next = 1
+            do while (.not.found)
+               ! Allocation
+               allocate(nn_index_ext(next))
+
+               ! Find nearest neighors
+               call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),next,nn_index_ext)
+
+               ! Check mask
+               if (mask_src(nn_index_ext(next))) then
+                  found = .true.
+               else
+                  next = next+1
+                  deallocate(nn_index_ext)
+               end if
+
+               ! Check next
+               if (next>n_src) call mpl%abort('${subr}$','cannot find valid nearest neighbor')
+            end do
             n_s = n_s+1
             row(n_s) = i_dst
-            col(n_s) = nn_index(1)
+            col(n_s) = nn_index_ext(next)
             S(n_s) = one
+            deallocate(nn_index_ext)
          end if
       else
-         ! Subsampled point
+         ! Valid subsampled point
          n_s = n_s+1
          row(n_s) = i_dst
          col(n_s) = nn_index(1)
@@ -1099,7 +1005,9 @@ end do
 if (ifmt>0) call mpl%prog_final
 
 ! Check interpolation
-allocate(missing(n_dst))
+do i_s=1,n_s
+   if (.not.mask_src(col(i_s))) call mpl%abort('${subr}$','masked source point')
+end do
 missing = .false.
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) missing(i_dst) = .true.
@@ -1117,22 +1025,227 @@ call linop%alloc
 
 ! Copy data
 linop%row = row(1:linop%n_s)
-linop%col = linop%interp_data%from_eff(col(1:linop%n_s))
+linop%col = col(1:linop%n_s)
 linop%S = S(1:linop%n_s)
-
-! Release memory
-deallocate(nn_index)
-deallocate(ib)
-deallocate(nn_dist)
-deallocate(b)
-deallocate(row)
-deallocate(col)
-deallocate(S)
-deallocate(missing)
 
 ! Probe out
 @:probe_out()
 
 end subroutine linop_interp
+
+!----------------------------------------------------------------------
+! Subroutine: linop_interp_lat
+!> Compute horizontal interpolation (latitude bands)
+!----------------------------------------------------------------------
+subroutine linop_interp_lat(linop,mpl,n_src,lat_src,n_dst,lat_dst,mask_dst,ifmt)
+
+implicit none
+
+! Passed variables
+class(linop_type),intent(inout) :: linop     !< Linear operator
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+integer,intent(in) :: n_src                  !< Source size
+real(kind_real),intent(in) :: lat_src(n_src) !< Source latitudes
+integer,intent(in) :: n_dst                  !< Destination size
+real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
+logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
+integer,intent(in) :: ifmt                   !< Format indentation
+
+! Local variables
+integer :: i_src,i_dst,n_s
+integer :: order(n_src)
+integer :: row(2*n_dst),col(2*n_dst)
+real(kind_real) :: lat_src_tmp(n_src),S(2*n_dst)
+character(len=7) :: cfmt
+
+! Set name
+@:set_name(linop_interp_lat)
+
+! Probe in
+@:probe_in()
+
+! Order source points
+lat_src_tmp = lat_src
+call qsort(n_src,lat_src_tmp,order)
+
+! Compute interpolation
+if (ifmt>0) then
+   write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
+   write(mpl%info,cfmt) '','Compute interpolation: '
+   call mpl%flush(.false.)
+   call mpl%prog_init(n_dst)
+end if
+n_s = 0
+col = mpl%msv%vali
+do i_dst=1,n_dst
+   if (mask_dst(i_dst)) then
+      if (n_src==1) then
+         ! Destination point
+         row(n_s+1) = i_dst
+
+         ! Source point
+         col(n_s+1) = 1
+
+         ! Weights
+         S(n_s+1) = one
+
+         ! Update counter
+         n_s = n_s+1
+      else
+         ! Destination point
+         row(n_s+1) = i_dst
+         row(n_s+2) = i_dst
+
+         ! Source points
+         if (eq(lat_dst(i_dst),lat_src_tmp(1))) then
+            ! First latitude point
+            col(n_s+1) = 1
+            col(n_s+2) = 2
+         else
+            ! In between
+            do i_src=1,n_src-1
+               if (inf(lat_src_tmp(i_src),lat_dst(i_dst)).and.infeq(lat_dst(i_dst),lat_src_tmp(i_src+1))) then
+                  col(n_s+1) = i_src
+                  col(n_s+2) = i_src+1
+                  exit
+               end if
+            end do
+         end if
+
+         ! Check source points
+         if (mpl%msv%is(col(n_s+1)).or.mpl%msv%is(col(n_s+2))) call mpl%abort('${subr}$','cannot find source points')
+
+         ! Weights
+         S(n_s+1) = (lat_src_tmp(col(n_s+2))-lat_dst(i_dst))/(lat_src_tmp(col(n_s+2))-lat_src_tmp(col(n_s+1)))
+         S(n_s+2) = (lat_dst(i_dst)-lat_src_tmp(col(n_s+1)))/(lat_src_tmp(col(n_s+2))-lat_src_tmp(col(n_s+1)))
+
+         ! Update counter
+         n_s = n_s+2
+      end if
+   end if
+
+   ! Update
+   if (ifmt>0) call mpl%prog_print(i_dst)
+end do
+if (ifmt>0) call mpl%prog_final
+
+! Allocation
+linop%n_s = n_s
+linop%n_src = n_src
+linop%n_dst = n_dst
+call linop%alloc
+
+! Copy data
+linop%row = row(1:linop%n_s)
+linop%col = order(col(1:linop%n_s))
+linop%S = S(1:linop%n_s)
+
+! Probe out
+@:probe_out()
+
+end subroutine linop_interp_lat
+
+!----------------------------------------------------------------------
+! Subroutine: linop_interp_nn
+!> Compute horizontal interpolation (nearest valid neighbor)
+!----------------------------------------------------------------------
+subroutine linop_interp_nn(linop,mpl,n_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt)
+
+implicit none
+
+! Passed variables
+class(linop_type),intent(inout) :: linop     !< Linear operator
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+integer,intent(in) :: n_src                  !< Source size
+logical,intent(in) :: mask_src(n_src)        !< Source mask
+type(tree_type),intent(in) :: tree_src       !< Source tree
+integer,intent(in) :: n_dst                  !< Destination size
+real(kind_real),intent(in) :: lon_dst(n_dst) !< Destination longitudes
+real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
+logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
+integer,intent(in) :: ifmt                   !< Format indentation
+
+! Local variables
+integer :: i_dst,n_s,i_s,next
+integer :: row(n_dst),col(n_dst)
+integer,allocatable :: nn_index_ext(:)
+real(kind_real) :: S(n_dst)
+logical :: found,missing(n_dst)
+character(len=7) :: cfmt
+
+! Set name
+@:set_name(linop_interp_nn)
+
+! Probe in
+@:probe_in()
+
+! Compute interpolation
+if (ifmt>0) then
+   write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
+   write(mpl%info,cfmt) '','Compute interpolation: '
+   call mpl%flush(.false.)
+   call mpl%prog_init(n_dst)
+end if
+n_s = 0
+do i_dst=1,n_dst
+   if (mask_dst(i_dst)) then
+      ! Find nearest valid neighbor
+      found = .false.
+      next = 1
+      do while (.not.found)
+         ! Allocation
+         allocate(nn_index_ext(next))
+
+         ! Find nearest neighors
+         call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),next,nn_index_ext)
+
+         ! Check mask
+         if (mask_src(nn_index_ext(next))) then
+            found = .true.
+         else
+            next = next+1
+            deallocate(nn_index_ext)
+         end if
+
+         ! Check next
+         if (next>n_src) call mpl%abort('${subr}$','cannot find valid nearest neighbor')
+      end do
+      n_s = n_s+1
+      row(n_s) = i_dst
+      col(n_s) = nn_index_ext(next)
+      S(n_s) = one
+      deallocate(nn_index_ext)
+   end if
+
+   ! Update
+   if (ifmt>0) call mpl%prog_print(i_dst)
+end do
+if (ifmt>0) call mpl%prog_final
+
+! Check interpolation
+missing = .false.
+do i_dst=1,n_dst
+   if (mask_dst(i_dst)) missing(i_dst) = .true.
+end do
+do i_s=1,n_s
+   missing(row(i_s)) = .false.
+end do
+if (any(missing)) call mpl%abort('${subr}$','missing destination points')
+
+! Allocation
+linop%n_s = n_s
+linop%n_src = n_src
+linop%n_dst = n_dst
+call linop%alloc
+
+! Copy data
+linop%row = row(1:linop%n_s)
+linop%col = col(1:linop%n_s)
+linop%S = S(1:linop%n_s)
+
+! Probe out
+@:probe_out()
+
+end subroutine linop_interp_nn
 
 end module type_linop

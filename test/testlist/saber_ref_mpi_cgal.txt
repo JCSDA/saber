@@ -1,2 +1,0 @@
-bump_hdiag-nicas_use_cgal/test_2-1_nicas_000002-000001.nc
-bump_hdiag-nicas_use_cgal/test_2-1_nicas_000002-000002.nc

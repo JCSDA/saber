@@ -63,7 +63,16 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     const Geometry_ resol(resolConfig, this->getComm());
 
     // Setup variables
-    const oops::Variables vars(fullConfig, "input variables");
+    const oops::Variables inputVars(fullConfig, "input variables");
+    oops::Variables activeVars;
+    if (fullConfig.has("active variables")) {
+      activeVars = oops::Variables(fullConfig, "active variables");
+    } else {
+      activeVars = inputVars;
+    }
+
+    // Check variables
+    ASSERT(activeVars <= inputVars);
 
     // Setup background state
     const eckit::LocalConfiguration backgroundConfig(fullConfig, "background");
@@ -76,7 +85,7 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     EnsemblePtr_ ens1 = NULL;
     if (fullConfig.has("ensemble")) {
       const eckit::LocalConfiguration ensembleConfig(fullConfig, "ensemble");
-      ens1.reset(new Ensemble_(ensembleConfig, xx, xx, resol, vars));
+      ens1.reset(new Ensemble_(ensembleConfig, xx, xx, resol, inputVars));
       for (size_t ie = 0; ie < ens1->size(); ++ie) {
         (*ens1)[ie].toAtlas();
       }
@@ -85,10 +94,10 @@ template <typename MODEL> class EstimateParams : public oops::Application {
       if (fullConfig.has("ensemble base")) {
         // Increment ensemble from difference of two state ensembles
         const eckit::LocalConfiguration ensembleBaseConfig(fullConfig, "ensemble base");
-        ens1.reset(new Ensemble_(resol, vars, ensembleBaseConfig, ensemblePertConfig));
+        ens1.reset(new Ensemble_(resol, inputVars, ensembleBaseConfig, ensemblePertConfig));
       } else {
         // Increment ensemble from increments on disk
-        ens1.reset(new Ensemble_(resol, vars, ensemblePertConfig));
+        ens1.reset(new Ensemble_(resol, inputVars, ensemblePertConfig));
       }
       for (size_t ie = 0; ie < ens1->size(); ++ie) {
         (*ens1)[ie].toAtlas();
@@ -100,16 +109,16 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     if (fullConfig.has("covariance")) {
       const eckit::LocalConfiguration covarConfig(fullConfig, "covariance");
       int ens2_ne = covarConfig.getInt("pseudoens_size");
-      ens2.reset(new Ensemble_(resol, vars, time, ens2_ne));
+      ens2.reset(new Ensemble_(resol, inputVars, time, ens2_ne));
       // One time-slot only
       std::unique_ptr<oops::ModelSpaceCovarianceBase<MODEL>>
-        cov(oops::CovarianceFactory<MODEL>::create(covarConfig, resol, vars, xx, xx));
+        cov(oops::CovarianceFactory<MODEL>::create(covarConfig, resol, inputVars, xx, xx));
       for (int ie = 0; ie < ens2_ne; ++ie) {
         oops::Log::info() << "Generate pseudo ensemble member " << ie+1 << " / "
                           << ens2_ne << std::endl;
 
         // Compute a pseudo ensemble using randomization
-        Increment_ incr(resol, vars, time);
+        Increment_ incr(resol, inputVars, time);
         cov->randomize(incr);
         (*ens2)[ie] = incr;
         (*ens2)[ie].toAtlas();
@@ -117,10 +126,13 @@ template <typename MODEL> class EstimateParams : public oops::Application {
     }
 
     // Setup parameters
-    ParametersBUMP_ param(resol, vars, fullConfig, ens1, ens2);
+    ParametersBUMP_ param(resol, inputVars, activeVars, fullConfig, ens1, ens2);
 
     // Write parameters
     param.write();
+
+    // Apply operator
+    param.apply();
 
     return 0;
   }

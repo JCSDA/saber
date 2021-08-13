@@ -1,13 +1,13 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_write_sampling/test__MPI_-_OMP_"
+prefix: "bump_write_sampling_local/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
 new_hdiag: 1
-write_cmat: 0
+write_hdiag: 1
 
 # model_param
 nl: 2
@@ -21,12 +21,11 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-sam_write: 1
+write_samp_local: 1
 nc1: 500
 nc2: 150
-ntry: 30
 nc3: 15
-dc: [400.0e3]
+dc: 400.0e3
 nl0r: 2
 
 # diag_param

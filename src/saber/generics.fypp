@@ -21,14 +21,14 @@
 ! Types list
 #:set dtypes_ir = ['int','real']
 #:set dtypes_irl = ['int','real','logical']
+#:set dtypes_bifrl = ['byte','int','float','real','logical']
 #:set dtypes_irls = ['int','real','logical','string']
 
 ! Dictionaries with type as input
-#:set ftype = dict([('int','integer(kind_int)'),('real','real(kind_real)'),('logical','logical'),('string','character(len=*)')])
+#:set ftype = dict([('byte','integer(kind_signed_char)'),('int','integer(kind_int)'),('float','real(kind_float)'),('real','real(kind_real)'),('logical','logical'),('string','character(len=*)')])
 #:set msv = dict([('int','msv%vali'),('real','msv%valr'),('logical','msv%vall')])
-#:set zero = dict([('int','0'),('real','0.0_kind_real'),('logical','.false.')])
-#:set atlas_kind = dict([('int','atlas_integer(kind_int)'),('real','atlas_real(kind_real)')])
-#:set netcdf_kind = dict([('int','nc_kind_int'),('real','nc_kind_real'),('logical','nc_kind_int')])
+#:set zero = dict([('byte','0'),('int','0'),('float','0.0_kind_float'),('real','0.0_kind_real'),('logical','.false.')])
+#:set atlas_kind = dict([('int','atlas_integer(kind_int)'),('float','atlas_real(kind_float)'),('real','atlas_real(kind_real)')])
 
 ! Delimiter for declaration list
 #:set delim = dict([(True,''),(False,',')])

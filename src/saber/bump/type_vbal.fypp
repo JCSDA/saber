@@ -10,16 +10,13 @@ module type_vbal
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use netcdf, only: nf90_close,nf90_get_att,nf90_get_var,nf90_global,nf90_inq_grp_ncid,nf90_inq_varid,nf90_nowrite,nf90_open, &
- & nf90_put_att,nf90_put_var,nf90_write
 use tools_const, only: zero,one,two,rad2deg
-use tools_func, only: lonlathash
-use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
+use tools_kinds, only: kind_real
+use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,define_var,inquire_var,put_var,get_var,close_file
 use tools_repro, only: infeq
 use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
-use type_io, only: io_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
@@ -32,24 +29,25 @@ implicit none
 ! Vertical balance derived type
 type vbal_type
    ! Vertical balance data
-   logical :: allocated                        !< Allocation flag
    integer :: h_n_s_max                        !< Maximum number of neighbors
    integer,allocatable :: h_n_s(:,:)           !< Number of neighbors for the horizontal interpolation
    integer,allocatable :: h_c2b(:,:,:)         !< Index of neighbors for the horizontal interpolation
    real(kind_real),allocatable :: h_S(:,:,:)   !< Weight of neighbors for the horizontal interpolation
    type(vbal_blk_type),allocatable :: blk(:,:) !< Vertical balance blocks
-
-   ! Sampling
-   type(samp_type) :: samp                     !< Sampling
-
-   ! I/O
-   type(io_type) :: io                         !< I/O
 contains
    procedure :: alloc => vbal_alloc
    procedure :: partial_dealloc => vbal_partial_dealloc
    procedure :: dealloc => vbal_dealloc
-   procedure :: read => vbal_read
-   procedure :: write => vbal_write
+   procedure :: cov_read_local  => vbal_cov_read_local
+   procedure :: cov_write_local  => vbal_cov_write_local
+   procedure :: cov_read_global  => vbal_cov_read_global
+   procedure :: cov_write_global  => vbal_cov_write_global
+   procedure :: cov_run => vbal_cov_run
+   procedure :: cov_update => vbal_cov_update
+   procedure :: read_local => vbal_read_local
+   procedure :: write_local => vbal_write_local
+   procedure :: read_global => vbal_read_global
+   procedure :: write_global => vbal_write_global
    procedure :: run_vbal => vbal_run_vbal
    procedure :: run_vbal_tests => vbal_run_vbal_tests
    procedure :: apply => vbal_apply
@@ -70,15 +68,18 @@ contains
 ! Subroutine: vbal_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine vbal_alloc(vbal,nam,geom,bpar)
+subroutine vbal_alloc(vbal,mpl,nam,geom,bpar,samp,nsub)
 
 implicit none
 
 ! Passed variables
 class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
+integer,intent(in),optional :: nsub    !< Number of sub-ensembles
 
 ! Local variables
 integer :: iv,jv
@@ -89,19 +90,22 @@ integer :: iv,jv
 ! Probe in
 @:probe_in()
 
+! Check independent levels
+if ((nam%new_vbal_cov.or.nam%load_vbal_cov).and.(geom%nl0i>1)) &
+ & call mpl%abort('${subr}$','single independent level required for new_vbal_cov or load_vbal_cov')
+
 ! Allocation
 allocate(vbal%blk(nam%nv,nam%nv))
 do iv=1,nam%nv
-   do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) then
-         call vbal%blk(iv,jv)%alloc(nam,geom,vbal%samp%nc2b,iv,jv)
+   do jv=1,iv
+      if (present(nsub)) then
+         vbal%blk(iv,jv)%nsub = nsub
+      else
+         vbal%blk(iv,jv)%nsub = 0
       end if
-      vbal%blk(iv,jv)%h_n_s_max = vbal%h_n_s_max
+      call vbal%blk(iv,jv)%alloc(nam,geom,bpar,samp,iv,jv)
    end do
 end do
-
-! Update allocation flag
-vbal%allocated = .true.
 
 ! Probe out
 @:probe_out()
@@ -136,8 +140,6 @@ if (allocated(vbal%blk)) then
       end do
    end do
 end if
-call vbal%samp%dealloc
-call vbal%io%dealloc
 
 ! Probe out
 @:probe_out()
@@ -176,11 +178,6 @@ if (allocated(vbal%blk)) then
    end do
    deallocate(vbal%blk)
 end if
-call vbal%samp%dealloc
-call vbal%io%dealloc
-
-! Update allocation flag
-vbal%allocated = .false.
 
 ! Probe out
 @:probe_out()
@@ -188,39 +185,433 @@ vbal%allocated = .false.
 end subroutine vbal_dealloc
 
 !----------------------------------------------------------------------
-! Subroutine: vbal_read
-!> Read
+! Subroutine: vbal_cov_read_local
+!> Read local full covariances
 !----------------------------------------------------------------------
-subroutine vbal_read(vbal,mpl,rng,nam,geom,bpar,ens)
+subroutine vbal_cov_read_local(vbal,mpl,nam,geom,bpar,samp,nsub)
 
 implicit none
 
 ! Passed variables
 class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(ens_type), intent(inout) :: ens   !< Ensemble
+type(samp_type),intent(in) :: samp     !< Sampling
+integer,intent(in) :: nsub             !< Number of sub-ensembles
 
 ! Local variables
-integer :: iv,jv,ic2a,ic2b,i_s,ic0a,il0i
-real(kind_real),allocatable :: hash_c2a(:),reg_c2a(:,:),reg_c2b(:,:)
-character(len=1024) :: filename,grpname
+integer :: ncid,grpid,full_cov_c1a_id
+integer :: isub,iv,jv
+real(kind_real) :: full_cov_c1a(samp%nc1a,geom%nl0,geom%nl0)
+character(len=1024) :: grpname,fname_vbal_cov
 
 ! Set name
-@:set_name(vbal_read)
+@:set_name(vbal_cov_read_local)
 
 ! Probe in
 @:probe_in()
 
-! Setup sampling
+! Allocation
+call vbal%alloc(mpl,nam,geom,bpar,samp,nsub)
+
+! Initialization
+do iv=1,nam%nv
+   do jv=1,iv
+      vbal%blk(iv,jv)%full_cov_c1a = 0.0
+   end do
+end do
+
+do isub=1,nsub
+   ! Set file name
+   if ((nsub==1).and.(.not.nam%fname_vbal_cov_used)) then
+      fname_vbal_cov = nam%fname_vbal_cov(0)
+   else
+      fname_vbal_cov = nam%fname_vbal_cov(isub)
+   end if
+
+   ! Open file
+   ncid = open_file(mpl,fname_vbal_cov,mpl%myproc)
+
+   do iv=1,nam%nv
+      do jv=1,iv
+         ! Get group name
+         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+
+         ! Inquire group
+         grpid = inquire_grp(mpl,ncid,grpname)
+
+         ! Inquire variable
+         full_cov_c1a_id = inquire_var(mpl,grpid,'full_cov_c1a')
+
+         ! Read variable
+         call get_var(mpl,grpid,full_cov_c1a_id,full_cov_c1a)
+
+         ! Average data
+         vbal%blk(iv,jv)%full_cov_c1a = vbal%blk(iv,jv)%full_cov_c1a+full_cov_c1a
+      end do
+   end do
+
+   ! Close file
+   call close_file(mpl,ncid)
+end do
+
+! Normalization
+do iv=1,nam%nv
+   do jv=1,iv
+      vbal%blk(iv,jv)%full_cov_c1a = vbal%blk(iv,jv)%full_cov_c1a/real(nsub,kind_real)
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_cov_read_local
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_cov_write_local
+!> Write local full covariances
+!----------------------------------------------------------------------
+subroutine vbal_cov_write_local(vbal,mpl,nam,geom,samp)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(samp_type),intent(in) :: samp     !< Sampling
+
+! Local variables
+integer :: ncid,nc1a_id,nl0_1_id,nl0_2_id
+integer :: grpid(nam%nv,nam%nv),full_cov_c1a_id(nam%nv,nam%nv)
+integer :: iv,jv
+character(len=1024) :: grpname
+
+! Set name
+@:set_name(vbal_cov_write_local)
+
+! Probe in
+@:probe_in()
+
+! Open files
+ncid = create_file(mpl,nam%fname_vbal_cov(0),mpl%myproc)
+
+! Define dimensions
+nc1a_id = define_dim(mpl,ncid,'nc1a',samp%nc1a)
+nl0_1_id = define_dim(mpl,ncid,'nl0_1',geom%nl0)
+nl0_2_id = define_dim(mpl,ncid,'nl0_2',geom%nl0)
+
+do iv=1,nam%nv
+   do jv=1,iv
+      ! Get group name
+      call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+
+      ! Define group
+      grpid(iv,jv) = define_grp(mpl,ncid,grpname)
+
+      ! Define variable
+      full_cov_c1a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'full_cov_c1a','real',(/nc1a_id,nl0_1_id,nl0_2_id/))
+   end do
+end do
+
+do iv=1,nam%nv
+   do jv=1,iv
+      ! Write variable
+      call put_var(mpl,grpid(iv,jv),full_cov_c1a_id(iv,jv),vbal%blk(iv,jv)%full_cov_c1a)
+   end do
+end do
+
+! Close files
+call close_file(mpl,ncid)
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_cov_write_local
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_cov_read_global
+!> Read local full covariances
+!----------------------------------------------------------------------
+subroutine vbal_cov_read_global(vbal,mpl,nam,geom,bpar,samp,nsub)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
+integer,intent(in) :: nsub             !< Number of sub-ensembles
+
+! Local variables
+integer :: ncid,grpid,full_cov_c1_id
+integer :: isub,iv,jv
+real(kind_real) :: full_cov_c1a(samp%nc1a,geom%nl0,geom%nl0)
+character(len=1024) :: grpname,fname_vbal_cov
+
+! Set name
+@:set_name(vbal_cov_read_global)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+call vbal%alloc(mpl,nam,geom,bpar,samp,nsub)
+
+! Initialization
+do iv=1,nam%nv
+   do jv=1,iv
+      vbal%blk(iv,jv)%full_cov_c1a = 0.0
+   end do
+end do
+
+do isub=1,nsub
+   ! Set file name
+   if ((nsub==1).and.(.not.nam%fname_vbal_cov_used)) then
+      fname_vbal_cov = nam%fname_vbal_cov(0)
+   else
+      fname_vbal_cov = nam%fname_vbal_cov(isub)
+   end if
+
+   ! Open file
+   ncid = open_file(mpl,fname_vbal_cov)
+
+   do iv=1,nam%nv
+      do jv=1,iv
+         ! Get group name
+         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+
+         ! Define group
+         grpid = inquire_grp(mpl,ncid,grpname)
+
+         ! Inquire variable
+         full_cov_c1_id = inquire_var(mpl,grpid,'full_cov_c1')
+
+         ! Read variable
+         call samp%io_c1%fld_read(mpl,grpid,full_cov_c1_id,full_cov_c1a)
+
+         ! Average data
+         vbal%blk(iv,jv)%full_cov_c1a = vbal%blk(iv,jv)%full_cov_c1a+full_cov_c1a
+      end do
+   end do
+
+   ! Close file
+   call close_file(mpl,ncid)
+end do
+
+! Normalization
+do iv=1,nam%nv
+   do jv=1,iv
+      vbal%blk(iv,jv)%full_cov_c1a = vbal%blk(iv,jv)%full_cov_c1a/real(nsub,kind_real)
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_cov_read_global
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_cov_write_global
+!> Write local full covariances
+!----------------------------------------------------------------------
+subroutine vbal_cov_write_global(vbal,mpl,nam,geom,samp)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(samp_type),intent(in) :: samp     !< Sampling
+
+! Local variables
+integer :: ncid,nc1_id,nl0_1_id,nl0_2_id
+integer :: grpid(nam%nv,nam%nv),full_cov_c1_id(nam%nv,nam%nv)
+integer :: iv,jv
+character(len=1024) :: grpname
+
+! Set name
+@:set_name(vbal_cov_write_global)
+
+! Probe in
+@:probe_in()
+
+! Open files
+ncid = create_file(mpl,nam%fname_vbal_cov(0))
+
+! Define dimensions
+nc1_id = define_dim(mpl,ncid,'nc1',samp%nc1)
+nl0_1_id = define_dim(mpl,ncid,'nl0_1',geom%nl0)
+nl0_2_id = define_dim(mpl,ncid,'nl0_2',geom%nl0)
+
+do iv=1,nam%nv
+   do jv=1,iv
+      ! Get group name
+      call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+
+      ! Define group
+      grpid(iv,jv) = define_grp(mpl,ncid,grpname)
+
+      ! Define variable
+      full_cov_c1_id(iv,jv) = define_var(mpl,grpid(iv,jv),'full_cov_c1','real',(/nc1_id,nl0_1_id,nl0_2_id/))
+   end do
+end do
+
+do iv=1,nam%nv
+   do jv=1,iv
+      ! Write variable
+      call samp%io_c1%fld_write(mpl,grpid(iv,jv),full_cov_c1_id(iv,jv),vbal%blk(iv,jv)%full_cov_c1a)
+   end do
+end do
+
+! Close files
+call close_file(mpl,ncid)
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_cov_write_global
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_cov_run
+!> Compute vertical covariance
+!----------------------------------------------------------------------
+subroutine vbal_cov_run(vbal,mpl,nam,geom,bpar,samp,ens)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
+type(ens_type), intent(inout) :: ens   !< Ensemble
+
+! Local variables
+integer :: iv,jv
+
+! Set name
+@:set_name(vbal_run_vbal)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+call vbal%alloc(mpl,nam,geom,bpar,samp,ens%nsub)
+
+! Compute vertical covariances
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Setup sampling'
+write(mpl%info,'(a)') '--- Compute vertical covariances'
 call mpl%flush
-call vbal%samp%setup('vbal',mpl,rng,nam,geom,ens)
+do iv=1,nam%nv
+   do jv=1,iv
+      call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ens)
+   end do
+end do
+
+! Write vertical covariances
+if (nam%write_vbal_cov) then
+   if (nam%load_samp_local.or.nam%write_samp_local) call vbal%cov_write_local(mpl,nam,geom,samp)
+   if (nam%load_samp_global.or.nam%write_samp_global) call vbal%cov_write_global(mpl,nam,geom,samp)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_cov_run
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_cov_update
+!> Update vertical covariance
+!----------------------------------------------------------------------
+subroutine vbal_cov_update(vbal,mpl,nam,geom,bpar,samp,fld_c0a,ie)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal                           !< Vertical balance
+type(mpl_type),intent(inout) :: mpl                              !< MPI data
+type(nam_type),intent(inout) :: nam                              !< Namelist
+type(geom_type),intent(in) :: geom                               !< Geometry
+type(bpar_type),intent(in) :: bpar                               !< Block parameters
+type(samp_type),intent(inout) :: samp                            !< Sampling
+real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field
+integer,intent(in) :: ie                                         !< Member index
+
+! Local variables
+integer :: iv,jv
+
+! Set name
+@:set_name(vbal_cov_update)
+
+! Probe in
+@:probe_in()
+
+! Update vertical covariance
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Update vertical covariance'
+call mpl%flush
+
+! Allocation
+if (ie==1) call vbal%alloc(mpl,nam,geom,bpar,samp,nam%ens1_nsub)
+
+! Update vertical covariance
+do iv=1,nam%nv
+   do jv=1,iv
+      call vbal%blk(iv,jv)%cov_update(mpl,nam,geom,samp,fld_c0a,ie)
+   end do
+end do
+
+! Write vertical covariance
+if ((ie==nam%ens1_ne).and.nam%write_vbal) then
+   if (nam%load_samp_local.or.nam%write_samp_local) call vbal%cov_write_local(mpl,nam,geom,samp)
+   if (nam%load_samp_global.or.nam%write_samp_global) call vbal%cov_write_global(mpl,nam,geom,samp)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_cov_update
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_read_local
+!> Read local data
+!----------------------------------------------------------------------
+subroutine vbal_read_local(vbal,mpl,nam,geom,bpar,samp)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
+
+! Local variables
+integer :: ncid,grpid,reg_c2a_id
+integer :: iv,jv,ic2b,i_s,ic0a,il0i
+real(kind_real),allocatable :: reg_c2a(:,:,:),reg_c2b(:,:,:)
+character(len=1024) :: grpname
+
+! Set name
+@:set_name(vbal_read_local)
+
+! Probe in
+@:probe_in()
 
 ! Allocation
 allocate(vbal%h_n_s(geom%nc0a,geom%nl0i))
@@ -230,8 +621,8 @@ vbal%h_n_s = 0
 
 ! Get maximum number of interpolation coefficients
 do il0i=1,geom%nl0i
-   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
-      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+   do i_s=1,samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = samp%interp_c2b_to_c0a(il0i)%row(i_s)
       vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
    end do
 end do
@@ -248,71 +639,69 @@ vbal%h_S = mpl%msv%valr
 ! Get interpolation coefficients
 vbal%h_n_s = 0
 do il0i=1,geom%nl0i
-   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
-      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+   do i_s=1,samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = samp%interp_c2b_to_c0a(il0i)%row(i_s)
       vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
-      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%col(i_s)
-      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%S(i_s)
+      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = samp%interp_c2b_to_c0a(il0i)%col(i_s)
+      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = samp%interp_c2b_to_c0a(il0i)%S(i_s)
    end do
 end do
 
-! Read vertical balance operators
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Read vertical balance operators'
-call mpl%flush
-
 ! Allocation
-call vbal%alloc(nam,geom,bpar)
-allocate(hash_c2a(vbal%samp%nc2a))
-allocate(reg_c2a(vbal%samp%nc2a,geom%nl0**2))
-allocate(reg_c2b(vbal%samp%nc2b,geom%nl0**2))
+call vbal%alloc(mpl,nam,geom,bpar,samp)
+allocate(reg_c2a(samp%nc2a,geom%nl0,geom%nl0))
+allocate(reg_c2b(samp%nc2b,geom%nl0,geom%nl0))
 
-! Set file name
-filename = trim(nam%prefix)//'_vbal'
-
-! Compute hash value
-do ic2a=1,vbal%samp%nc2a
-   hash_c2a(ic2a) = lonlathash(vbal%samp%lon_c2a(ic2a),vbal%samp%lat_c2a(ic2a))
-end do
+! Open file
+ncid = open_file(mpl,nam%fname_vbal,mpl%myproc)
 
 ! Setup fields output
-call vbal%io%init(mpl,nam,'2',vbal%samp%nc2,vbal%samp%nc2a,vbal%samp%c2a_to_c2,vbal%samp%proc_to_c2_offset,.true.,hash_c2a)
 do iv=1,nam%nv
-   do jv=1,nam%nv
+   do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
          ! Define group name
          call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
 
-         ! Read variables
-         call vbal%io%fld_read(mpl,nam,filename,'reg',reg_c2a,groupname=grpname)
+         ! Get group
+         grpid = inquire_grp(mpl,ncid,grpname)
+
+         ! Inquire variable
+         reg_c2a_id = inquire_var(mpl,grpid,'reg_c2a')
+
+         ! Read variable
+         call get_var(mpl,grpid,reg_c2a_id,reg_c2a)
 
          ! Local values, first dimension
-         call vbal%samp%com_c2_AB%ext(mpl,reg_c2a,reg_c2b)
+         call samp%com_c2_AB%ext(mpl,reg_c2a,reg_c2b)
 
-         ! Reshape data, horizontal index as last dimension
-         do ic2b=1,vbal%samp%nc2b
-            vbal%blk(iv,jv)%reg(:,:,ic2b) = reshape(reg_c2b(ic2b,:),(/geom%nl0,geom%nl0/))
+         ! Horizontal index as last dimension
+         do ic2b=1,samp%nc2b
+            vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = reg_c2b(ic2b,:,:)
          end do
       end if
    end do
 end do
 
+! Close file
+call close_file(mpl,ncid)
+
 ! Release memory
-deallocate(hash_c2a)
 deallocate(reg_c2a)
 deallocate(reg_c2b)
+
+! Write balance operator
+if (nam%write_vbal.and.nam%write_samp_global) call vbal%write_global(mpl,nam,geom,bpar,samp)
 
 ! Probe out
 @:probe_out()
 
-end subroutine vbal_read
+end subroutine vbal_read_local
 
 !----------------------------------------------------------------------
-! Subroutine: vbal_write
-!> Write
+! Subroutine: vbal_write_local
+!> Write local data
 !----------------------------------------------------------------------
-subroutine vbal_write(vbal,mpl,nam,geom,bpar)
+subroutine vbal_write_local(vbal,mpl,nam,geom,bpar,samp)
 
 implicit none
 
@@ -322,94 +711,150 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
-integer :: iv,jv,ic2a,ic2b
-real(kind_real) :: hash_c2a(vbal%samp%nc2a),reg_c2a(vbal%samp%nc2a,geom%nl0**2),auto_c2a(vbal%samp%nc2a,geom%nl0**2)
-real(kind_real) :: cross_c2a(vbal%samp%nc2a,geom%nl0**2),auto_inv_c2a(vbal%samp%nc2a,geom%nl0**2)
-character(len=1024) :: filename,grpname
+integer :: ncid,nc2a_id,nl0_1_id,nl0_2_id
+integer :: grpid(nam%nv,nam%nv),reg_c2a_id(nam%nv,nam%nv),cov_c2a_id(nam%nv,nam%nv),explained_var_c2a_id(nam%nv,nam%nv)
+integer :: iv,jv,il0,ic2a,ic2b
+real(kind_real) :: reg_c2a(samp%nc2a,geom%nl0,geom%nl0)
+real(kind_real),allocatable :: cov_c2a(:,:,:),explained_var_norm(:,:),explained_var_c2a(:,:)
+character(len=1024) :: grpname
 
 ! Set name
-@:set_name(vbal_write)
+@:set_name(vbal_write_local)
 
 ! Probe in
 @:probe_in()
 
-! Set file name
-filename = trim(nam%prefix)//'_vbal'
+! Write vertical balance operators
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Write local vertical balance operators'
+call mpl%flush
 
-! Compute hash value
-do ic2a=1,vbal%samp%nc2a
-   hash_c2a(ic2a) = lonlathash(vbal%samp%lon_c2a(ic2a),vbal%samp%lat_c2a(ic2a))
-end do
+! Create files
+ncid = create_file(mpl,nam%fname_vbal,mpl%myproc)
 
-! Setup fields output
-call vbal%io%init(mpl,nam,'2',vbal%samp%nc2,vbal%samp%nc2a,vbal%samp%c2a_to_c2,vbal%samp%proc_to_c2_offset,.true.,hash_c2a)
+! Define dimensions
+nc2a_id = define_dim(mpl,ncid,'nc2a',samp%nc2a)
+nl0_1_id = define_dim(mpl,ncid,'nl0_1',geom%nl0)
+nl0_2_id = define_dim(mpl,ncid,'nl0_2',geom%nl0)
 
 do iv=1,nam%nv
-   do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) then
-         ! Define group name
-         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+   do jv=1,iv
+      ! Get group name
+      call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
 
-         ! Reshape data for local values, horizontal index as first dimension
-         do ic2a=1,vbal%samp%nc2a
-            ic2b = vbal%samp%c2a_to_c2b(ic2a)
-            reg_c2a(ic2a,:) = reshape(vbal%blk(iv,jv)%reg(:,:,ic2b),(/geom%nl0**2/))
-            auto_c2a(ic2a,:) = reshape(vbal%blk(iv,jv)%auto(:,:,ic2b),(/geom%nl0**2/))
-            cross_c2a(ic2a,:) = reshape(vbal%blk(iv,jv)%cross(:,:,ic2b),(/geom%nl0**2/))
-            auto_inv_c2a(ic2a,:) = reshape(vbal%blk(iv,jv)%auto_inv(:,:,ic2b),(/geom%nl0**2/))
+      ! Define group
+      grpid(iv,jv) = define_grp(mpl,ncid,grpname)
+
+      ! Define variables
+      if (bpar%vbal_block(iv,jv)) reg_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
+      if (nam%new_vbal.and.(bpar%vbal_block(iv,jv).or.(iv==jv))) cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2a', &
+ & 'real',(/nc2a_id,nl0_1_id,nl0_2_id/))
+      if (nam%new_vbal.and.bpar%vbal_block(iv,jv)) explained_var_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2a', &
+ & 'real',(/nc2a_id,nl0_1_id/))
+   end do
+end do
+
+! Allocation
+if (nam%new_vbal) then
+   allocate(cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
+   allocate(explained_var_norm(geom%nl0,samp%nc2b))
+   allocate(explained_var_c2a(samp%nc2a,geom%nl0))
+end if
+
+do iv=1,nam%nv
+   if (nam%new_vbal) then
+      ! Compute explained variance normalization
+      explained_var_norm = 0.0
+      do jv=1,iv
+         if (bpar%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
+      end do
+      do il0=1,geom%nl0
+         explained_var_norm(il0,:) = explained_var_norm(il0,:)+vbal%blk(iv,iv)%cov_c2b(il0,il0,:)
+      end do
+   end if
+
+   do jv=1,iv
+      if (bpar%vbal_block(iv,jv)) then
+         ! Horizontal index as first dimension
+         do ic2a=1,samp%nc2a
+            ic2b = samp%c2a_to_c2b(ic2a)
+            reg_c2a(ic2a,:,:) = vbal%blk(iv,jv)%reg_c2b(:,:,ic2b)
          end do
 
-         ! Write variables
-         call vbal%io%fld_write(mpl,nam,filename,'reg',reg_c2a,groupname=grpname)
-         call vbal%io%fld_write(mpl,nam,filename,'auto',auto_c2a,groupname=grpname)
-         call vbal%io%fld_write(mpl,nam,filename,'cross',cross_c2a,groupname=grpname)
-         call vbal%io%fld_write(mpl,nam,filename,'auto_inv',auto_inv_c2a,groupname=grpname)
+         ! Write variable
+         call put_var(mpl,grpid(iv,jv),reg_c2a_id(iv,jv),reg_c2a)
+      end if
+
+      if (nam%new_vbal.and.(bpar%vbal_block(iv,jv).or.(iv==jv))) then
+         ! Horizontal index as first dimension
+         do ic2a=1,samp%nc2a
+            ic2b = samp%c2a_to_c2b(ic2a)
+            cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%cov_c2b(:,:,ic2b)
+         end do
+
+         ! Write variable
+         call put_var(mpl,grpid(iv,jv),cov_c2a_id(iv,jv),cov_c2a)
+      end if
+
+      if (nam%new_vbal.and.bpar%vbal_block(iv,jv)) then
+         ! Horizontal index as first dimension
+         do ic2a=1,samp%nc2a
+            ic2b = samp%c2a_to_c2b(ic2a)
+            explained_var_c2a(ic2a,:) = vbal%blk(iv,jv)%explained_var_c2b(:,ic2b)/explained_var_norm(:,ic2b)
+         end do
+
+         ! Write variable
+         call put_var(mpl,grpid(iv,jv),explained_var_c2a_id(iv,jv),explained_var_c2a)
       end if
    end do
 end do
 
+! Release memory
+if (nam%new_vbal) then
+   deallocate(cov_c2a)
+   deallocate(explained_var_norm)
+   deallocate(explained_var_c2a)
+end if
+
+! Close files
+call close_file(mpl,ncid)
+
 ! Probe out
 @:probe_out()
 
-end subroutine vbal_write
+end subroutine vbal_write_local
 
 !----------------------------------------------------------------------
-! Subroutine: vbal_run_vbal
-!> Compute vertical balance
+! Subroutine: vbal_read_global
+!> Read global data
 !----------------------------------------------------------------------
-subroutine vbal_run_vbal(vbal,mpl,rng,nam,geom,bpar,ens,ensu)
+subroutine vbal_read_global(vbal,mpl,nam,geom,bpar,samp)
 
 implicit none
 
 ! Passed variables
 class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(ens_type), intent(inout) :: ens   !< Ensemble
-type(ens_type),intent(inout) :: ensu   !< Unbalanced ensemble
+type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
-integer :: il0i,i_s,ic0a,ic2b,iv,jv,ie
-real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
-real(kind_real),allocatable :: auto(:,:,:,:),cross(:,:,:,:)
+integer :: ncid,grpid,reg_c2_id
+integer :: iv,jv,ic2b,i_s,ic0a,il0i
+real(kind_real),allocatable :: reg_c2a(:,:,:),reg_c2b(:,:,:)
+character(len=1024) :: grpname
 
 ! Set name
-@:set_name(vbal_run_vbal)
+@:set_name(vbal_read_global)
 
 ! Probe in
 @:probe_in()
-
-! Setup sampling
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Setup sampling'
-call mpl%flush
-call vbal%samp%setup('vbal',mpl,rng,nam,geom,ens)
 
 ! Allocation
 allocate(vbal%h_n_s(geom%nc0a,geom%nl0i))
@@ -419,8 +864,8 @@ vbal%h_n_s = 0
 
 ! Get maximum number of interpolation coefficients
 do il0i=1,geom%nl0i
-   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
-      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+   do i_s=1,samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = samp%interp_c2b_to_c0a(il0i)%row(i_s)
       vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
    end do
 end do
@@ -437,11 +882,254 @@ vbal%h_S = mpl%msv%valr
 ! Get interpolation coefficients
 vbal%h_n_s = 0
 do il0i=1,geom%nl0i
-   do i_s=1,vbal%samp%interp_c2b_to_c0a(il0i)%n_s
-      ic0a = vbal%samp%interp_c2b_to_c0a(il0i)%row(i_s)
+   do i_s=1,samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = samp%interp_c2b_to_c0a(il0i)%row(i_s)
       vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
-      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%col(i_s)
-      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = vbal%samp%interp_c2b_to_c0a(il0i)%S(i_s)
+      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = samp%interp_c2b_to_c0a(il0i)%col(i_s)
+      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = samp%interp_c2b_to_c0a(il0i)%S(i_s)
+   end do
+end do
+
+! Allocation
+call vbal%alloc(mpl,nam,geom,bpar,samp)
+allocate(reg_c2a(samp%nc2a,geom%nl0,geom%nl0))
+allocate(reg_c2b(samp%nc2b,geom%nl0,geom%nl0))
+
+! Open file
+ncid = open_file(mpl,nam%fname_vbal)
+
+! Setup fields output
+do iv=1,nam%nv
+   do jv=1,iv
+      if (bpar%vbal_block(iv,jv)) then
+         ! Define group name
+         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+
+         ! Get group
+         grpid = inquire_grp(mpl,ncid,grpname)
+
+         ! Inquire variable
+         reg_c2_id = inquire_var(mpl,grpid,'reg_c2')
+
+         ! Read variable
+         call samp%io_c2%fld_read(mpl,grpid,reg_c2_id,reg_c2a)
+
+         ! Local values, first dimension
+         call samp%com_c2_AB%ext(mpl,reg_c2a,reg_c2b)
+
+         ! Horizontal index as first dimension
+         do ic2b=1,samp%nc2b
+            vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = reg_c2b(ic2b,:,:)
+         end do
+      end if
+   end do
+end do
+
+! Close file
+call close_file(mpl,ncid)
+
+! Release memory
+deallocate(reg_c2a)
+deallocate(reg_c2b)
+
+! Write balance operator
+if (nam%write_vbal.and.nam%write_samp_local) call vbal%write_local(mpl,nam,geom,bpar,samp)
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_read_global
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_write_global
+!> Write global data
+!----------------------------------------------------------------------
+subroutine vbal_write_global(vbal,mpl,nam,geom,bpar,samp)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
+
+! Local variables
+integer :: ncid,nc2_id,nl0_1_id,nl0_2_id
+integer :: grpid(nam%nv,nam%nv),reg_c2_id(nam%nv,nam%nv),cov_c2_id(nam%nv,nam%nv),explained_var_c2_id(nam%nv,nam%nv)
+integer :: iv,jv,il0,ic2a,ic2b
+real(kind_real) :: reg_c2a(samp%nc2a,geom%nl0,geom%nl0)
+real(kind_real),allocatable :: cov_c2a(:,:,:),explained_var_norm(:,:),explained_var_c2a(:,:)
+character(len=1024) :: grpname
+
+! Set name
+@:set_name(vbal_write_global)
+
+! Probe in
+@:probe_in()
+
+! Write vertical balance operators
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Write global vertical balance operators'
+call mpl%flush
+
+! Create files
+ncid = create_file(mpl,nam%fname_vbal)
+
+! Define dimensions
+nc2_id = define_dim(mpl,ncid,'nc2',samp%nc2)
+nl0_1_id = define_dim(mpl,ncid,'nl0_1',geom%nl0)
+nl0_2_id = define_dim(mpl,ncid,'nl0_2',geom%nl0)
+
+do iv=1,nam%nv
+   do jv=1,iv
+      ! Get group name
+      call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+
+      ! Define group
+      grpid(iv,jv) = define_grp(mpl,ncid,grpname)
+
+      ! Define variables
+      if (bpar%vbal_block(iv,jv)) reg_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
+      if (nam%new_vbal.and.(bpar%vbal_block(iv,jv).or.(iv==jv))) cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2', &
+ & 'real',(/nc2_id,nl0_1_id,nl0_2_id/))
+      if (nam%new_vbal.and.bpar%vbal_block(iv,jv)) explained_var_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2', &
+ & 'real',(/nc2_id,nl0_1_id/))
+   end do
+end do
+
+! Allocation
+if (nam%new_vbal) then
+   allocate(cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
+   allocate(explained_var_norm(geom%nl0,samp%nc2b))
+   allocate(explained_var_c2a(samp%nc2a,geom%nl0))
+end if
+
+do iv=1,nam%nv
+   if (nam%new_vbal) then
+      ! Compute explained variance normalization
+      explained_var_norm = 0.0
+      do jv=1,iv
+         if (bpar%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
+      end do
+      do il0=1,geom%nl0
+         explained_var_norm(il0,:) = explained_var_norm(il0,:)+vbal%blk(iv,iv)%cov_c2b(il0,il0,:)
+      end do
+   end if
+
+   do jv=1,iv
+      if (bpar%vbal_block(iv,jv)) then
+         ! Horizontal index as first dimension
+         do ic2a=1,samp%nc2a
+            ic2b = samp%c2a_to_c2b(ic2a)
+            reg_c2a(ic2a,:,:) = vbal%blk(iv,jv)%reg_c2b(:,:,ic2b)
+         end do
+
+         ! Write variable
+         call samp%io_c2%fld_write(mpl,grpid(iv,jv),reg_c2_id(iv,jv),reg_c2a)
+      end if
+
+      if (nam%new_vbal.and.(bpar%vbal_block(iv,jv).or.(iv==jv))) then
+         ! Horizontal index as first dimension
+         do ic2a=1,samp%nc2a
+            ic2b = samp%c2a_to_c2b(ic2a)
+            cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%cov_c2b(:,:,ic2b)
+         end do
+
+         ! Write variable
+         call samp%io_c2%fld_write(mpl,grpid(iv,jv),cov_c2_id(iv,jv),cov_c2a)
+      end if
+
+      if (nam%new_vbal.and.bpar%vbal_block(iv,jv)) then
+         ! Horizontal index as first dimension
+         do ic2a=1,samp%nc2a
+            ic2b = samp%c2a_to_c2b(ic2a)
+            explained_var_c2a(ic2a,:) = vbal%blk(iv,jv)%explained_var_c2b(:,ic2b)/explained_var_norm(:,ic2b)
+         end do
+
+         ! Write variable
+         call samp%io_c2%fld_write(mpl,grpid(iv,jv),explained_var_c2_id(iv,jv),explained_var_c2a)
+      end if
+   end do
+end do
+
+! Release memory
+if (nam%new_vbal) then
+   deallocate(cov_c2a)
+   deallocate(explained_var_norm)
+   deallocate(explained_var_c2a)
+end if
+
+! Close files
+call close_file(mpl,ncid)
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_write_global
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_run_vbal
+!> Compute vertical balance
+!----------------------------------------------------------------------
+subroutine vbal_run_vbal(vbal,mpl,nam,geom,bpar,samp,ens,ensu)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
+type(ens_type), intent(inout) :: ens   !< Ensemble
+type(ens_type),intent(inout) :: ensu   !< Unbalanced ensemble
+
+! Local variables
+integer :: il0,il0i,i_s,ic0a,ic1a,iv,jv,kv,lv,ie
+real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
+
+! Set name
+@:set_name(vbal_run_vbal)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(vbal%h_n_s(geom%nc0a,geom%nl0i))
+
+! Initialization
+vbal%h_n_s = 0
+
+! Get maximum number of interpolation coefficients
+do il0i=1,geom%nl0i
+   do i_s=1,samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = samp%interp_c2b_to_c0a(il0i)%row(i_s)
+      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
+   end do
+end do
+vbal%h_n_s_max = maxval(vbal%h_n_s)
+
+! Allocation
+allocate(vbal%h_c2b(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
+allocate(vbal%h_S(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
+
+! Initialization
+vbal%h_c2b = mpl%msv%vali
+vbal%h_S = mpl%msv%valr
+
+! Get interpolation coefficients
+vbal%h_n_s = 0
+do il0i=1,geom%nl0i
+   do i_s=1,samp%interp_c2b_to_c0a(il0i)%n_s
+      ic0a = samp%interp_c2b_to_c0a(il0i)%row(i_s)
+      vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
+      vbal%h_c2b(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = samp%interp_c2b_to_c0a(il0i)%col(i_s)
+      vbal%h_S(vbal%h_n_s(ic0a,il0i),ic0a,il0i) = samp%interp_c2b_to_c0a(il0i)%S(i_s)
    end do
 end do
 
@@ -452,83 +1140,144 @@ write(mpl%info,'(a)') '--- Compute vertical balance operators'
 call mpl%flush
 
 ! Allocation
-call ensu%alloc(ens%ne,ens%nsub)
+if (.not.(nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov)) then
+   call vbal%alloc(mpl,nam,geom,bpar,samp,ens%nsub)
+   call ensu%alloc(ens%ne,ens%nsub)
+end if
 
-! Copy ensemble
-call ensu%copy(mpl,nam,geom,ens)
-
-! Allocation
-call vbal%alloc(nam,geom,bpar)
-allocate(auto(vbal%samp%nc1e,geom%nl0,geom%nl0,ensu%nsub))
-allocate(cross(vbal%samp%nc1e,geom%nl0,geom%nl0,ensu%nsub))
+if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
+   ! Initialize diagonal block of A
+   do iv=1,nam%nv
+      vbal%blk(iv,iv)%a_c1a = 0.0
+      do ic1a=1,samp%nc1a
+         do il0=1,geom%nl0
+            vbal%blk(iv,iv)%a_c1a(il0,il0,ic1a) = 1.0
+         end do
+      end do
+   end do
+else
+   ! Copy ensemble
+   call ensu%copy(mpl,nam,geom,ens)
+end if
 
 do iv=1,nam%nv
-   do jv=1,nam%nv
+   do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
-         ! Initialization
-         write(mpl%info,'(a7,a)') '','Unbalancing: '//trim(nam%variables(iv))//' with respect to unbalanced ' &
+         ! Compute cross-covariance
+         write(mpl%info,'(a7,a)') '','Compute cross-covariance between '//trim(nam%variables(iv))//' and unbalanced ' &
  & //trim(nam%variables(jv))
          call mpl%flush
+         if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
+            do ic1a=1,samp%nc1a
+               vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = 0.0
+               do kv=1,jv
+                  vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%full_cov_c1a(ic1a,:,:),transpose(vbal%blk(jv,kv)%a_c1a(:,:,ic1a)))
+               end do
+            end do
+         else
+            call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ens,ensu)
+         end if
 
-         ! Compute auto- and cross-covariances
-         call vbal%blk(iv,jv)%compute_covariances(mpl,geom,vbal%samp,ensu,auto,cross)
+         ! Spatial average
+         write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
+         call mpl%flush(.false.)
+         call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp)
 
          ! Compute regression
-         write(mpl%info,'(a10,a)') '','Compute regression: '
+         write(mpl%info,'(a7,a)') '','Compute regression:'
          call mpl%flush(.false.)
-         call mpl%prog_init(vbal%samp%nc2b)
-         do ic2b=1,vbal%samp%nc2b
-            ! Compute
-            call vbal%blk(iv,jv)%compute_regression(mpl,nam,geom,vbal%samp,ensu%nsub,auto,cross,ic2b)
-
-            ! Update
-            call mpl%prog_print(ic2b)
-         end do
-         call mpl%prog_final
+         call vbal%blk(iv,jv)%compute_regression(mpl,nam,geom,samp,vbal%blk(jv,jv)%cov_c2b,vbal%blk(iv,jv)%cov_c2b)
       end if
    end do
 
-   ! Unbalance ensemble
-   if (any(bpar%vbal_block(iv,1:iv-1))) then
-      write(mpl%info,'(a10,a)') '','Unbalance ensemble members: '
-      call mpl%flush(.false.)
-      do ie=1,ensu%ne
-         write(mpl%info,'(i6)') ie
-         call mpl%flush(.false.)
-
-         ! Get member on subset Sc0
-         call ensu%get_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
-
-         do jv=1,iv-1
-            if (bpar%vbal_block(iv,jv)) then
-               ! Get member on subset Sc0
-               call ensu%get_c0(mpl,jv,geom,'member',ie,fld_c0a_2)
-
-               ! Apply balance operator block
-               call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_c0a_2)
-
-               ! Subtract balanced part
-               fld_c0a_1 = fld_c0a_1-fld_c0a_2
-            end if
+   if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
+      do jv=1,iv-1
+         ! Compute A matrix
+         write(mpl%info,'(a7,a)') '','Compute A matrix between '//trim(nam%variables(iv))//' and '//trim(nam%variables(jv))
+         call mpl%flush
+         vbal%blk(iv,jv)%a_c1a = 0.0
+         do ic1a=1,samp%nc1a
+            do kv=jv,iv-1
+               if (bpar%vbal_block(iv,kv)) then
+                  vbal%blk(iv,jv)%a_c1a(:,:,ic1a) = vbal%blk(iv,jv)%a_c1a(:,:,ic1a) &
+ & -matmul(vbal%blk(iv,kv)%reg_c1a(:,:,ic1a),vbal%blk(kv,jv)%a_c1a(:,:,ic1a))
+               end if
+            end do
          end do
-
-         ! Set member from subset Sc0
-         call ensu%set_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
       end do
-      write(mpl%info,'(a)') ''
-      call mpl%flush
 
-      ! Recompute ensemble mean
-      call ensu%compute_mean(mpl,nam,geom)
+      ! Compute auto-covariance
+      write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
+      call mpl%flush
+      do ic1a=1,samp%nc1a
+         vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = 0.0
+         do kv=1,iv
+            do lv=1,iv
+               if (kv>=lv) then
+                  vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(vbal%blk(kv,lv)%full_cov_c1a(ic1a,:,:), &
+ & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
+               else
+                  vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(transpose(vbal%blk(lv,kv)%full_cov_c1a(ic1a,:,:)), &
+ & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
+               end if
+            end do
+         end do
+      end do
+   else
+      ! Unbalance ensemble
+      if (any(bpar%vbal_block(iv,:))) then
+         write(mpl%info,'(a7,a)') '','Unbalance ensemble members: '
+         call mpl%flush(.false.)
+         do ie=1,ensu%ne
+            write(mpl%info,'(i6)') ie
+            call mpl%flush(.false.)
+
+            ! Get member on subset Sc0
+            call ensu%get_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
+
+            do jv=1,iv
+               if (bpar%vbal_block(iv,jv)) then
+                  ! Get member on subset Sc0
+                  call ensu%get_c0(mpl,jv,geom,'member',ie,fld_c0a_2)
+
+                  ! Apply balance operator block
+                  call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_c0a_2)
+
+                  ! Subtract balanced part
+                  fld_c0a_1 = fld_c0a_1-fld_c0a_2
+               end if
+            end do
+
+            ! Set member from subset Sc0
+            call ensu%set_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
+         end do
+         write(mpl%info,'(a)') ''
+         call mpl%flush
+
+         ! Recompute ensemble mean
+         call ensu%compute_mean(mpl,nam,geom)
+      end if
+
+      ! Compute auto-covariance
+      write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
+      call mpl%flush
+      call vbal%blk(iv,iv)%compute_covariance(mpl,nam,geom,samp,ensu)
    end if
+
+   ! Spatial average
+   write(mpl%info,'(a7,a)') '','Spatial average for auto-covariance:'
+   call mpl%flush(.false.)
+   call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp)
 end do
 
 ! Write balance operator
-if (nam%write_vbal) call vbal%write(mpl,nam,geom,bpar)
-
-! Release memory
-deallocate(auto)
-deallocate(cross)
+if (nam%write_vbal) then
+   if (nam%load_samp_local.or.nam%write_samp_local) call vbal%write_local(mpl,nam,geom,bpar,samp)
+   if (nam%load_samp_global.or.nam%write_samp_global) call vbal%write_global(mpl,nam,geom,bpar,samp)
+end if
 
 ! Probe out
 @:probe_out()
@@ -607,10 +1356,10 @@ fld_out = fld
 
 ! Add balance component
 do iv=1,nam%nv
-   do jv=1,nam%nv
+   do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
          fld_tmp = fld(:,:,jv)
-         call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
          fld_out(:,:,iv) = fld_out(:,:,iv)+fld_tmp
       end if
    end do
@@ -654,10 +1403,10 @@ fld_out = fld
 
 ! Remove balance component
 do iv=1,nam%nv
-   do jv=1,nam%nv
+   do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
          fld_tmp = fld_out(:,:,jv)
-         call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
          fld_out(:,:,iv) = fld_out(:,:,iv)-fld_tmp
       end if
    end do
@@ -701,10 +1450,10 @@ fld_out = fld
 
 ! Add balance component
 do iv=1,nam%nv
-   do jv=1,nam%nv
+   do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
          fld_tmp = fld(:,:,iv)
-         call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
          fld_out(:,:,jv) = fld_out(:,:,jv)+fld_tmp
       end if
    end do
@@ -747,12 +1496,12 @@ real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),fld_out(geom%nc0a,geom%nl0,nam%nv
 fld_out = fld
 
 ! Remove balance component
-do iv=1,nam%nv
-   do jv=1,nam%nv
-      if (bpar%vbal_block(iv,jv)) then
-         fld_tmp = fld_out(:,:,iv)
-         call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
-         fld_out(:,:,jv) = fld_out(:,:,jv)-fld_tmp
+do iv=nam%nv,1,-1
+   do jv=iv+1,nam%nv
+      if (bpar%vbal_block(jv,iv)) then
+         fld_tmp = fld_out(:,:,jv)
+         call vbal%blk(jv,iv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         fld_out(:,:,iv) = fld_out(:,:,iv)-fld_tmp
       end if
    end do
 end do
@@ -782,7 +1531,7 @@ type(geom_type),intent(in) :: geom  !< Geometry
 type(bpar_type),intent(in) :: bpar  !< Block parameters
 
 ! Local variables
-real(kind_real) :: mse,mse_tot
+real(kind_real) :: norm,norm_tot,mse,mse_tot
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
@@ -793,6 +1542,8 @@ real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,na
 
 ! Generate random field
 call rng%rand(zero,one,fld_save)
+norm = sum(fld_save**2)
+call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
 
 ! Direct / inverse
 fld = fld_save
@@ -800,7 +1551,7 @@ call vbal%apply(nam,geom,bpar,fld)
 call vbal%apply_inv(nam,geom,bpar,fld)
 mse = sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse_tot
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse_tot/norm_tot
 call mpl%flush
 
 ! Inverse / direct
@@ -809,7 +1560,7 @@ call vbal%apply_inv(nam,geom,bpar,fld)
 call vbal%apply(nam,geom,bpar,fld)
 mse = sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse_tot
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse_tot/norm_tot
 call mpl%flush
 
 ! Direct / inverse, adjoint
@@ -818,7 +1569,7 @@ call vbal%apply_ad(nam,geom,bpar,fld)
 call vbal%apply_inv_ad(nam,geom,bpar,fld)
 mse = sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse_tot
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse_tot/norm_tot
 call mpl%flush
 
 ! Inverse / direct
@@ -827,7 +1578,7 @@ call vbal%apply_inv_ad(nam,geom,bpar,fld)
 call vbal%apply_ad(nam,geom,bpar,fld)
 mse = sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse_tot
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse_tot/norm_tot
 call mpl%flush
 
 ! Probe out
@@ -854,10 +1605,8 @@ type(bpar_type),intent(in) :: bpar  !< Block parameters
 ! Local variables
 integer :: iv,jv
 real(kind_real) :: sum1,sum2
-real(kind_real) :: fld1_blk(geom%nc0a,geom%nl0,nam%nv),fld1_dir(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real) :: fld1_inv(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real) :: fld2_blk(geom%nc0a,geom%nl0,nam%nv),fld2_dir(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real) :: fld2_inv(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
+real(kind_real) :: fld1(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
+real(kind_real) :: fld2(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
 @:set_name(vbal_test_adjoint)
@@ -870,42 +1619,40 @@ call rng%rand(zero,one,fld1_save)
 call rng%rand(zero,one,fld2_save)
 
 ! Block adjoint test
-fld1_blk = fld1_save
-fld2_blk = fld2_save
 do iv=1,nam%nv
-   do jv=1,nam%nv
+   do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
-         call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld1_blk(:,:,iv))
-         call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld2_blk(:,:,iv))
-         call mpl%dot_prod(fld1_blk(:,:,iv),fld2_save(:,:,iv),sum1)
-         call mpl%dot_prod(fld2_blk(:,:,iv),fld1_save(:,:,iv),sum2)
-         write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block adjoint test:  ', &
- & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+         fld1(:,:,iv) = fld1_save(:,:,iv)
+         fld2(:,:,iv) = fld2_save(:,:,iv)
+         call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld1(:,:,iv))
+         call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld2(:,:,iv))
+         call mpl%dot_prod(fld1(:,:,iv),fld2_save(:,:,iv),sum1)
+         call mpl%dot_prod(fld2(:,:,iv),fld1_save(:,:,iv),sum2)
+         write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
+ & ' adjoint test:  ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
          call mpl%flush
       end if
    end do
 end do
 
 ! Direct adjoint test
-fld1_dir = fld1_save
-fld2_dir = fld2_save
-call vbal%apply(nam,geom,bpar,fld1_dir)
-call vbal%apply_ad(nam,geom,bpar,fld2_dir)
-
-! Inverse adjoint test
-fld1_inv = fld1_save
-fld2_inv = fld2_save
-call vbal%apply_inv(nam,geom,bpar,fld1_inv)
-call vbal%apply_inv_ad(nam,geom,bpar,fld2_inv)
-
-! Print result
-call mpl%dot_prod(fld1_dir,fld2_save,sum1)
-call mpl%dot_prod(fld2_dir,fld1_save,sum2)
+fld1 = fld1_save
+fld2 = fld2_save
+call vbal%apply(nam,geom,bpar,fld1)
+call vbal%apply_ad(nam,geom,bpar,fld2)
+call mpl%dot_prod(fld1,fld2_save,sum1)
+call mpl%dot_prod(fld2,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test:  ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
-call mpl%dot_prod(fld1_inv,fld2_save,sum1)
-call mpl%dot_prod(fld2_inv,fld1_save,sum2)
+
+! Inverse adjoint test
+fld1 = fld1_save
+fld2 = fld2_save
+call vbal%apply_inv(nam,geom,bpar,fld1)
+call vbal%apply_inv_ad(nam,geom,bpar,fld2)
+call mpl%dot_prod(fld1,fld2_save,sum1)
+call mpl%dot_prod(fld2,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test: ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
@@ -931,9 +1678,11 @@ type(geom_type),intent(in) :: geom  !< Geometry
 type(bpar_type),intent(in) :: bpar  !< Block parameters
 
 ! Local variables
+integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
+integer :: grpid(nam%nv),vbal_id(nam%nv)
 integer :: idir,iv
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
-character(len=1024) :: filename
+character(len=1024) :: grpname
 
 ! Set name
 @:set_name(vbal_test_dirac)
@@ -950,18 +1699,38 @@ end do
 ! Apply vertical balance to dirac
 call vbal%apply(nam,geom,bpar,fld)
 
-! Set filename
-filename = trim(nam%prefix)//'_dirac'
+! Create file
+ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
 
-! Write coordinates
-call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
-call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
-call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
+! Define dimensions
+nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
-! Write field
+! Define variables
+lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
 do iv=1,nam%nv
-   call geom%io%fld_write(mpl,nam,filename,'vbal',fld(:,:,iv),geom%gmask_c0a,trim(nam%variables(iv)))
+   ! Get group name
+   call nam%io_key_value(nam%variables(iv),grpname)
+
+   ! Define group
+   grpid(iv) = define_grp(mpl,ncid,grpname)
+
+   ! Write variable
+   vbal_id(iv) = define_var(mpl,grpid(iv),'vbal','real',(/nc0_id,nl0_id/))
 end do
+
+! Write variables
+call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+do iv=1,nam%nv
+   call geom%io%fld_write(mpl,grpid(iv),vbal_id(iv),fld(:,:,iv),geom%gmask_c0a)
+end do
+
+! Close file
+call close_file(mpl,ncid)
 
 ! Probe out
 @:probe_out()

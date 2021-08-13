@@ -10,23 +10,20 @@ module type_lct
 
 use tools_const, only: rad2deg
 use tools_kinds, only: kind_real
+use tools_netcdf, only: create_file,define_grp,define_dim,define_var,close_file
 use type_bpar, only: bpar_type
-use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_lct_blk, only: lct_blk_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
-use type_rng, only: rng_type
 use type_samp, only: samp_type
 
 implicit none
 
 ! LCT data derived type
 type lct_type
-   type(samp_type) :: samp                  !< Sampling
-   type(mom_type) :: mom                    !< Moments
    type(lct_blk_type),allocatable :: blk(:) !< LCT blocks
    logical :: allocated                     !< Allocation flag
 contains
@@ -50,7 +47,7 @@ contains
 ! Subroutine: lct_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine lct_alloc(lct,nam,geom,bpar)
+subroutine lct_alloc(lct,nam,geom,bpar,samp)
 
 implicit none
 
@@ -59,6 +56,7 @@ class(lct_type),intent(inout) :: lct !< LCT
 type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 type(bpar_type),intent(in) :: bpar   !< Block parameters
+type(samp_type),intent(in) :: samp   !< Sampling
 
 ! Local variables
 integer :: ib
@@ -72,7 +70,7 @@ integer :: ib
 ! Allocation
 allocate(lct%blk(bpar%nb))
 do ib=1,bpar%nb
-   if (bpar%diag_block(ib)) call lct%blk(ib)%alloc(nam,geom,bpar,lct%samp,ib)
+   if (bpar%diag_block(ib)) call lct%blk(ib)%alloc(nam,geom,bpar,samp,ib)
 end do
 
 ! Update allocation flag
@@ -155,18 +153,18 @@ end subroutine lct_dealloc
 ! Subroutine: lct_run_lct
 !> LCT driver
 !----------------------------------------------------------------------
-subroutine lct_run_lct(lct,mpl,rng,nam,geom,bpar,ens)
+subroutine lct_run_lct(lct,mpl,nam,geom,bpar,samp,mom)
 
 implicit none
 
 ! Passed variables
 class(lct_type),intent(inout) :: lct !< LCT
 type(mpl_type),intent(inout) :: mpl  !< MPI data
-type(rng_type),intent(inout) :: rng  !< Random number generator
 type(nam_type),intent(inout) :: nam  !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 type(bpar_type),intent(in) :: bpar   !< Block parameters
-type(ens_type),intent(inout) :: ens  !< Ensemble
+type(samp_type),intent(in) :: samp   !< Sampling
+type(mom_type),intent(in) :: mom     !< Moments
 
 ! Set name
 @:set_name(lct_run_lct)
@@ -174,52 +172,26 @@ type(ens_type),intent(inout) :: ens  !< Ensemble
 ! Probe in
 @:probe_in()
 
-! Set artificially small local radius
-nam%local_rad = 1.0e-12_kind_real
-
-! Setup sampling
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Setup sampling'
-call mpl%flush
-call lct%samp%setup('lct',mpl,rng,nam,geom,ens)
-
-if (nam%new_mom) then
-   ! Compute sample moments
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Compute sample moments'
-   call mpl%flush
-   call lct%mom%compute(mpl,nam,geom,bpar,lct%samp,ens,'mom')
-else
-   ! Load sample moments
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Load sample moments'
-   call mpl%flush
-   call lct%mom%read(mpl,nam,geom,bpar,lct%samp,ens,'mom')
-end if
-
 ! Compute LCT
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
 write(mpl%info,'(a)') '--- Compute LCT'
 call mpl%flush
-call lct%compute(mpl,rng,nam,geom,bpar)
+call lct%compute(mpl,nam,geom,bpar,samp,mom)
 
 ! Filter LCT
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
 write(mpl%info,'(a)') '--- Filter LCT'
 call mpl%flush
-call lct%filter(mpl,nam,geom,bpar)
+call lct%filter(mpl,nam,geom,bpar,samp)
 
 ! Interpolate LCT
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
 write(mpl%info,'(a)') '--- Interpolate LCT'
 call mpl%flush
-call lct%interp(mpl,nam,geom,bpar)
+call lct%interp(mpl,nam,geom,bpar,samp)
 
 if (nam%write_lct) then
    ! Write LCT
@@ -236,7 +208,7 @@ if (nam%lct_write_cor) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Write full correlations'
    call mpl%flush
-   call lct%write_cor(mpl,nam,geom,bpar)
+   call lct%write_cor(mpl,nam,geom,bpar,samp)
 end if
 
 ! Probe out
@@ -248,17 +220,18 @@ end subroutine lct_run_lct
 ! Subroutine: lct_compute
 !> Compute LCT
 !----------------------------------------------------------------------
-subroutine lct_compute(lct,mpl,rng,nam,geom,bpar)
+subroutine lct_compute(lct,mpl,nam,geom,bpar,samp,mom)
 
 implicit none
 
 ! Passed variables
 class(lct_type),intent(inout) :: lct !< LCT
-type(rng_type),intent(inout) :: rng  !< Random number generator
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 type(bpar_type),intent(in) :: bpar   !< Block parameters
+type(samp_type),intent(in) :: samp   !< Sampling
+type(mom_type),intent(in) :: mom     !< Moments
 
 ! Local variables
 integer :: ib
@@ -270,7 +243,7 @@ integer :: ib
 @:probe_in()
 
 ! Allocation
-call lct%alloc(nam,geom,bpar)
+call lct%alloc(nam,geom,bpar,samp)
 
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
@@ -280,10 +253,7 @@ do ib=1,bpar%nb
       ! Compute
       write(mpl%info,'(a10,a)') '','Compute'
       call mpl%flush
-      call lct%blk(ib)%compute(mpl,rng,nam,geom,bpar,lct%samp,lct%mom%blk(ib))
-
-      ! Release memory
-      call lct%mom%blk(ib)%dealloc
+      call lct%blk(ib)%compute(mpl,nam,geom,bpar,samp,mom%blk(ib))
    end if
 end do
 
@@ -296,16 +266,17 @@ end subroutine lct_compute
 ! Subroutine: lct_filter
 !> Filter LCT
 !----------------------------------------------------------------------
-subroutine lct_filter(lct,mpl,nam,geom,bpar)
+subroutine lct_filter(lct,mpl,nam,geom,bpar,samp)
 
 implicit none
 
 ! Passed variables
-class(lct_type),intent(inout) :: lct    !< LCT
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-type(nam_type),intent(in) :: nam        !< Namelist
-type(geom_type),intent(in) :: geom      !< Geometry
-type(bpar_type),intent(in) :: bpar      !< Block parameters
+class(lct_type),intent(inout) :: lct !< LCT
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(bpar_type),intent(in) :: bpar   !< Block parameters
+type(samp_type),intent(in) :: samp   !< Sampling
 
 ! Local variables
 integer :: ib
@@ -322,7 +293,7 @@ do ib=1,bpar%nb
       call mpl%flush
 
       ! Filter
-      call lct%blk(ib)%filter(mpl,nam,geom,bpar,lct%samp)
+      call lct%blk(ib)%filter(mpl,nam,geom,bpar,samp)
    end if
 end do
 
@@ -335,16 +306,17 @@ end subroutine lct_filter
 ! Subroutine: lct_interp
 !> Interpolate LCT
 !----------------------------------------------------------------------
-subroutine lct_interp(lct,mpl,nam,geom,bpar)
+subroutine lct_interp(lct,mpl,nam,geom,bpar,samp)
 
 implicit none
 
 ! Passed variables
-class(lct_type),intent(inout) :: lct    !< LCT
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-type(nam_type),intent(in) :: nam        !< Namelist
-type(geom_type),intent(in) :: geom      !< Geometry
-type(bpar_type),intent(in) :: bpar      !< Block parameters
+class(lct_type),intent(inout) :: lct !< LCT
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(bpar_type),intent(in) :: bpar   !< Block parameters
+type(samp_type),intent(in) :: samp   !< Sampling
 
 ! Local variables
 integer :: ib
@@ -361,7 +333,7 @@ do ib=1,bpar%nb
       call mpl%flush
 
       ! Interpolation
-      call lct%blk(ib)%interp(mpl,nam,geom,bpar,lct%samp)
+      call lct%blk(ib)%interp(mpl,nam,geom,bpar,samp)
    end if
 end do
 
@@ -379,15 +351,15 @@ subroutine lct_write(lct,mpl,nam,geom,bpar)
 implicit none
 
 ! Passed variables
-class(lct_type),intent(inout) :: lct    !< LCT
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-type(nam_type),intent(in) :: nam        !< Namelist
-type(geom_type),intent(in) :: geom      !< Geometry
-type(bpar_type),intent(in) :: bpar      !< Block parameters
+class(lct_type),intent(inout) :: lct !< LCT
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(bpar_type),intent(in) :: bpar   !< Block parameters
 
 ! Local variables
+integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
 integer :: ib
-character(len=1024) :: filename
 
 ! Set name
 @:set_name(lct_write)
@@ -395,20 +367,40 @@ character(len=1024) :: filename
 ! Probe in
 @:probe_in()
 
-! Set file name
-filename = trim(nam%prefix)//'_lct'
+! Create file
+ncid = create_file(mpl,trim(nam%prefix)//'_lct')
 
-! Write coordinates
-call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
-call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
-call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
+! Define dimensions
+nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
-! Write field
+! Define variables
+lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      call lct%blk(ib)%write(mpl,nam,geom,bpar,filename)
+      ! Copy global IDs
+      lct%blk(ib)%ncid = ncid
+      lct%blk(ib)%nc0_id = nc0_id
+      lct%blk(ib)%nl0_id = nl0_id
+
+      ! Write LCT (definition mode)
+      call lct%blk(ib)%write_def(mpl,nam,bpar)
    end if
 end do
+
+! Write variables
+call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+do ib=1,bpar%nb
+   ! Write LCT (data mode)
+   if (bpar%diag_block(ib)) call lct%blk(ib)%write_data(mpl,geom)
+end do
+
+! Close file
+call close_file(mpl,ncid)
 
 ! Probe out
 @:probe_out()
@@ -419,18 +411,20 @@ end subroutine lct_write
 ! Subroutine: lct_write_cor
 !> Write full correlation
 !----------------------------------------------------------------------
-subroutine lct_write_cor(lct,mpl,nam,geom,bpar)
+subroutine lct_write_cor(lct,mpl,nam,geom,bpar,samp)
 
 implicit none
 
 ! Passed variables
-class(lct_type),intent(inout) :: lct    !< LCT
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-type(nam_type),intent(in) :: nam        !< Namelist
-type(geom_type),intent(in) :: geom      !< Geometry
-type(bpar_type),intent(in) :: bpar      !< Block parameters
+class(lct_type),intent(inout) :: lct !< LCT
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(bpar_type),intent(in) :: bpar   !< Block parameters
+type(samp_type),intent(in) :: samp   !< Sampling
 
 ! Local variables
+integer :: ncid
 integer :: ib
 
 ! Set name
@@ -439,11 +433,26 @@ integer :: ib
 ! Probe in
 @:probe_in()
 
+! Create file
+ncid = create_file(mpl,trim(nam%prefix)//'_lct_cor',mpl%myproc)
+
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      call lct%blk(ib)%write_cor(mpl,nam,geom,bpar,lct%samp)
+      ! Copy global ID
+      lct%blk(ib)%ncid = ncid
+
+      ! Write correlations (definition mode)
+      call lct%blk(ib)%write_cor_def(mpl,nam,geom,bpar,samp)
    end if
 end do
+
+do ib=1,bpar%nb
+   ! Write correlations (data mode)
+   if (bpar%diag_block(ib)) call lct%blk(ib)%write_cor_data(mpl,nam,bpar,samp)
+end do
+
+! Close file
+call close_file(mpl,ncid)
 
 ! Probe out
 @:probe_out()

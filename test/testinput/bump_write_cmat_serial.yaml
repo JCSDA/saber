@@ -8,7 +8,10 @@ parallel_io: 0
 method: "cor"
 strategy: "specific_univariate"
 new_hdiag: 1
+write_hdiag: 1
+write_cmat: 1
 new_nicas: 1
+write_nicas_global: 1
 check_adjoints: 1
 check_dirac: 1
 
@@ -28,9 +31,8 @@ local_rad: 2000.0e3
 # sampling_param
 nc1: 500
 nc2: 150
-ntry: 30
 nc3: 15
-dc: [400.0e3]
+dc: 400.0e3
 nl0r: 2
 
 # diag_param
@@ -40,8 +42,6 @@ ne: 50
 
 # nicas_param
 resol: 8.0
-subsamp: "h"
-mpicom: 2
 
 # dirac_param
 ndir: 1

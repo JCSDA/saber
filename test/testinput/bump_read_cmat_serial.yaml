@@ -8,8 +8,8 @@ parallel_io: 0
 method: "cor"
 strategy: "specific_univariate"
 load_cmat: 1
-write_cmat: 0
 new_nicas: 1
+write_nicas_global: 1
 check_adjoints: 1
 check_dirac: 1
 
@@ -25,7 +25,6 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-ntry: 30
 
 # diag_param
 
@@ -33,8 +32,6 @@ ntry: 30
 
 # nicas_param
 resol: 8.0
-subsamp: "h"
-mpicom: 2
 
 # dirac_param
 ndir: 1

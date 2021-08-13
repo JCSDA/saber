@@ -14,8 +14,8 @@ cost function:
         localization:
           bump:
             datadir: testdata
-            mpicom: 2
-            load_nicas: 1
+            fname_nicas: qg_parameters_bump_loc/test_nicas
+            load_nicas_local: 1
             prefix: qg_3dvar_hybrid_bump/test
             strategy: common
           localization method: BUMP
@@ -121,3 +121,7 @@ output:
   exp: test
   frequency: PT6H
   type: an
+
+test:
+  reference filename: testref/qg_3dvar_hybrid_bump/test.log.out
+  test output filename: testoutput/qg_3dvar_hybrid_bump/test.log.out

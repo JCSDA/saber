@@ -214,36 +214,38 @@ real(kind_real) :: kernel(n,n),distnorm,profile_init(n),norm
 ! Probe in
 @:probe_in()
 
-if (rv<zero) call mpl%abort('${subr}$','negative filtering support radius')
+if (n>1) then
+   if (rv<zero) call mpl%abort('${subr}$','negative filtering support radius')
 
-if ((rv>zero).and.mpl%msv%isanynot(profile)) then
-   ! Vertical smoothing kernel
-   kernel = zero
-   do i=1,n
-      do j=1,n
-         if (mpl%msv%isnot(profile(j))) then
-            ! Gaspari-Cohn (1999) function
-            distnorm = abs(x(j)-x(i))/rv
-            kernel(i,j) = fit_func(mpl,distnorm)
+   if ((rv>zero).and.mpl%msv%isanynot(profile)) then
+      ! Vertical smoothing kernel
+      kernel = zero
+      do i=1,n
+         do j=1,n
+            if (mpl%msv%isnot(profile(i)).and.mpl%msv%isnot(profile(j))) then
+               ! Gaspari-Cohn (1999) function
+               distnorm = abs(x(j)-x(i))/rv
+               kernel(i,j) = fit_func(mpl,distnorm)
+            end if
+         end do
+      end do
+
+      ! Apply kernel
+      profile_init = profile
+      profile = zero
+      do i=1,n
+         norm = zero
+         do j=1,n
+            profile(i) = profile(i)+kernel(i,j)*profile_init(j)
+            norm = norm+kernel(i,j)
+         end do
+         if (norm>zero) then
+            profile(i) = profile(i)/norm
+         else
+            profile(i) = mpl%msv%valr
          end if
       end do
-   end do
-
-   ! Apply kernel
-   profile_init = profile
-   profile = zero
-   do i=1,n
-      norm = zero
-      do j=1,n
-         profile(i) = profile(i)+kernel(i,j)*profile_init(j)
-         norm = norm+kernel(i,j)
-      end do
-      if (norm>zero) then
-         profile(i) = profile(i)/norm
-      else
-         profile(i) = mpl%msv%valr
-      end if
-   end do
+   end if
 end if
 
 ! Probe out

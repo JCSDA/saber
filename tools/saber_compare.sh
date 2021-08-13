@@ -9,8 +9,9 @@
 # Parameters
 test=$1
 
-# Special suffixes list
-special_list="mom lct_cor nicas normality sampling_grids obs vbal"
+# Special suffixes lists
+mpi_dependent="mom lct_cor nicas_grids nicas_local normality sampling_local sampling_grids vbal_cov_local vbal_local"
+not_compared=""
 
 # Initialize exit status
 status=0
@@ -28,9 +29,6 @@ if test "${test%%_*}" = "bump" ; then
       if [[ $2 =~ ^-?[0-9]+$ ]] && [[ $3 =~ ^-?[0-9]+$ ]] ; then
          compare_type="normal"
       fi
-   fi
-   if test "$#" = 4 ; then
-      # Arguments 2, 3 and 4 are strings => specific
       if [[ ! $2 =~ ^-?[0-9]+$ ]] && [[ ! $4 =~ ^-?[0-9]+$ ]] && [[ ! $3 =~ ^-?[0-9]+$ ]] ; then
          compare_type="specific"
       fi
@@ -64,26 +62,36 @@ if test "${test%%_*}" = "bump" ; then
                # Remove distribution
                rm -f ${file}
             else
-               # Build reference file name, with a special case where the file is mpi-dependent
-               fileref=testref/${test}/test_1-1_${suffix}.nc
-               for special in ${special_list} ; do
+               # Check if this file should be compared
+               compare=true
+               for special in ${not_compared} ; do
                   if printf %s\\n "${suffix}" | grep -qF "${special}" ; then
-                     fileref=testref/${test}/test_${mpi}-1_${suffix}.nc
+                     compare=false
                   fi
                done
 
-               if [ -x "$(command -v nccmp)" ] ; then
-                  # Compare files with NCCMP
-                  echo -e "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}"
-                  nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}
-                  exit_code=$?
-                  if test "${exit_code}" != "0" ; then
-                     echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
-                     status=2
+               if test "${compare}" = "true"; then
+                  # Build reference file name, with a special case where the file is mpi-dependent
+                  fileref=testref/${test}/test_1-1_${suffix}.nc
+                  for special in ${mpi_dependent} ; do
+                     if printf %s\\n "${suffix}" | grep -qF "${special}" ; then
+                        fileref=testref/${test}/test_${mpi}-1_${suffix}.nc
+                     fi
+                  done
+
+                  if [ -x "$(command -v nccmp)" ] ; then
+                     # Compare files with NCCMP
+                     echo -e "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}"
+                     nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}
+                     exit_code=$?
+                     if test "${exit_code}" != "0" ; then
+                        echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
+                        status=2
+                     fi
+                  else
+                     echo -e "\e[31mCannot find command: nccmp\e[0m"
+                     status=3
                   fi
-               else
-                  echo -e "\e[31mCannot find command: nccmp\e[0m"
-                  status=3
                fi
             fi
          fi
@@ -117,27 +125,53 @@ if test "${test%%_*}" = "bump" ; then
 
    if test "${compare_type}" = "specific" ; then
       # Specific tests
-      test2=$2
+      testref=$2
       mpiomp=$3
-      suffix=$4
-      
-      # Build file names
-      file=testdata/${test}/test_${mpiomp}_${suffix}.nc
-      file2=testdata/${test2}/test_${mpiomp}_${suffix}.nc
 
-      # Compare files with NCCMP
-      if [ -x "$(command -v nccmp)" ] ; then
-         echo -e "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${file2}"
-         nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${file2}
-         exit_code=$?
-         if test "${exit_code}" != "0" ; then
-            echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
-            status=7
-         fi
-      else
-         echo -e "\e[31mCannot find command: nccmp\e[0m"
-         status=8
+      # Check number of files
+      nfiles=`ls testdata/${test}/test_${mpiomp}_*.nc 2>/dev/null | wc -l`
+      if test "${nfiles}" = "0"; then
+         echo -e "\e[31mNo NetCDF file to check\e[0m"
+         status=7
       fi
+
+      for file in `ls testdata/${test}/test_${mpiomp}_*.nc 2>/dev/null` ; do
+         if test ! -L ${file}; then
+            # Get suffix
+            tmp=${file#testdata/${test}/test_${mpiomp}_}
+            suffix=${tmp%.nc}
+
+            if printf %s\\n "${suffix}" | grep -qF "distribution" ; then
+               # Remove distribution
+               rm -f ${file}
+            else
+               # Check if this file should be compared
+               compare=true
+               for special in ${not_compared} ; do
+                  if printf %s\\n "${suffix}" | grep -qF "${special}" ; then
+                     compare=false
+                  fi
+               done
+
+               if test "${compare}" = "true"; then
+                  fileref=testdata/${test}/test_${mpiomp}_${suffix}.nc
+                  if [ -x "$(command -v nccmp)" ] ; then
+                     # Compare files with NCCMP
+                     echo -e "Command: nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}"
+                     nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}
+                     exit_code=$?
+                     if test "${exit_code}" != "0" ; then
+                        echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
+                        status=8
+                     fi
+                  else
+                     echo -e "\e[31mCannot find command: nccmp\e[0m"
+                     status=9
+                  fi
+               fi
+            fi
+         fi
+      done
    fi
 fi
 

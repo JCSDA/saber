@@ -9,22 +9,23 @@
 !----------------------------------------------------------------------
 module type_io
 
-use fckit_mpi_module, only: fckit_mpi_comm
-use netcdf, only: nf90_close,nf90_get_var,nf90_inq_grp_ncid,nf90_inq_varid,nf90_nowrite,nf90_open,nf90_put_att,nf90_put_var, &
- & nf90_write
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
 use tools_const, only: pi,deg2rad,rad2deg,reqkm
-use tools_func, only: lonlathash,cx_to_proc
-use tools_kinds, only: kind_int,kind_real,nc_kind_int,nc_kind_real
+use tools_func, only: cx_to_proc,cx_to_cxa,convert_i2l,convert_l2i
+use tools_kinds, only: kind_int,kind_real
+use tools_netcdf, only: put_att,define_dim,check_dim,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
 use type_com, only: com_type
 use type_mpl, only: mpl_type
-use type_nam, only: nam_type
 @:use_probe()
 
 implicit none
 
 ! I/O derived type
 type io_type
+   ! Initialization flag
+   logical :: initialized = .false.           !< Initialization flag
+
    ! Unstructured grid parameters
    character(len=1) :: x                      !< Subset index
    integer :: ncx                             !< Number of subset Scx points
@@ -34,7 +35,6 @@ type io_type
    integer :: ncxio                           !< I/O chunk size on subset Scx
    integer :: icx_s                           !< Starting index for the I/O chunk on subset Scx
    integer,allocatable :: cxio_to_cx(:)       !< Subset Scx, I/O chunk to global
-   integer,allocatable :: procio_to_proc(:)   !< I/O task to main communicator task
    type(com_type) :: com_AIO                  !< Communication between halo A and I/O chunk
    real(kind_real),allocatable :: lon_cxio(:) !< Longitudes
    real(kind_real),allocatable :: lat_cxio(:) !< Latitudes
@@ -87,7 +87,6 @@ class(io_type),intent(inout) :: io !< I/O
 
 ! Release memory
 if (allocated(io%cxio_to_cx)) deallocate(io%cxio_to_cx)
-if (allocated(io%procio_to_proc)) deallocate(io%procio_to_proc)
 call io%com_AIO%dealloc
 if (allocated(io%lon_cxio)) deallocate(io%lon_cxio)
 if (allocated(io%lat_cxio)) deallocate(io%lat_cxio)
@@ -101,28 +100,30 @@ end subroutine io_dealloc
 ! Subroutine: io_init
 !> Initialize fields output
 !----------------------------------------------------------------------
-subroutine io_init(io,mpl,nam,x,ncx,ncxa,cxa_to_cx,proc_to_cx_offset,order_points,hash_cxa)
+subroutine io_init(io,mpl,x,ncx,ncxa,cxa_to_cx,proc_to_cx_offset,order_cxa,lon_cxa,lat_cxa)
 
 implicit none
 
 ! Passed variables
-class(io_type),intent(inout) :: io                    !< I/O
-type(mpl_type),intent(inout) :: mpl                   !< MPI data
-type(nam_type),intent(in) :: nam                      !< Namelist
-character(len=*),intent(in) :: x                      !< Subset index
-integer,intent(in) :: ncx                             !< Number of subset Scx points
-integer,intent(in) :: ncxa                            !< Number of subset Scx points, halo A
-integer,intent(in) :: cxa_to_cx(ncxa)                 !< Subset Scx, halo A to global
-integer,intent(in) :: proc_to_cx_offset(mpl%nproc)    !< Processor to offset on subset Scx
-logical,intent(in),optional :: order_points           !< Order points given their hash value
-real(kind_real),intent(in),optional :: hash_cxa(ncxa) !< Longitudes/latitude hash, halo A
+class(io_type),intent(inout) :: io                   !< I/O
+type(mpl_type),intent(inout) :: mpl                  !< MPI data
+character(len=*),intent(in) :: x                     !< Subset index
+integer,intent(in) :: ncx                            !< Number of subset Scx points
+integer,intent(in) :: ncxa                           !< Number of subset Scx points, halo A
+integer,intent(in) :: cxa_to_cx(ncxa)                !< Subset Scx, halo A to global
+integer,intent(in) :: proc_to_cx_offset(mpl%nproc)   !< Processor to offset on subset Scx
+integer,intent(in),optional :: order_cxa(ncxa)       !< Global order on halo A
+real(kind_real),intent(in),optional :: lon_cxa(ncxa) !< Longitudes on halo A
+real(kind_real),intent(in),optional :: lat_cxa(ncxa) !< Latitudes on halo A
 
 ! Local variables
-integer :: nres,iprocio,delta,icxio,icx,icx_s,icx_e,jcx,ncxown,icxown,iproc,jproc
-integer,allocatable :: procio_to_ncxio(:),list_proc(:),order_proc(:),order_cx(:),cxown_to_cx(:)
-real(kind_real),allocatable :: hash_cx(:)
-logical :: lorder_points
-logical,allocatable :: proc_isio(:)
+integer :: nres,nprocio,iprocio,delta,icxio,icx,icxa,icx_s,icx_e,jcx,ncxown,icxown,iproc,jproc
+integer :: list_proc(mpl%nproc),list_proc_tot(mpl%nproc)
+integer :: lorder_cxa(ncxa),order_proc(mpl%nproc)
+integer,allocatable :: procio_to_ncxio(:),procio_to_proc(:),cxown_to_cx(:),order_cx(:),order_inv_cx(:)
+real(kind_real),allocatable :: lon_cx(:),lat_cx(:)
+logical :: proc_isio(mpl%nproc)
+type(fckit_mpi_status) :: status
 
 ! Set name
 @:set_name(io_init)
@@ -130,45 +131,63 @@ logical,allocatable :: proc_isio(:)
 ! Probe in
 @:probe_in()
 
-! Local flag
-lorder_points = .false.
-if (present(order_points)) lorder_points = order_points
-if (lorder_points.and.(.not.present(hash_cxa))) call mpl%abort('${subr}$','hash should be provided to order points')
-
 ! Save parameters
 io%x = x(1:1)
 io%ncx = ncx
 io%ncxa = ncxa
 
-! Allocation
-allocate(procio_to_ncxio(nam%nprocio))
-allocate(list_proc(mpl%nproc))
-allocate(order_proc(mpl%nproc))
-allocate(proc_isio(mpl%nproc))
-allocate(io%procio_to_proc(nam%nprocio))
-if (lorder_points) then
-   allocate(hash_cx(io%ncx))
-   allocate(order_cx(io%ncx))
+! Get order
+if (present(order_cxa)) then
+   ! Copy order
+   lorder_cxa = order_cxa
+elseif (present(lon_cxa).and.present(lat_cxa)) then
+   ! Allocation
+   if (mpl%main) then
+      allocate(lon_cx(ncx))
+      allocate(lat_cx(ncx))
+      allocate(order_cx(ncx))
+      allocate(order_inv_cx(ncx))
+   else
+      allocate(lon_cx(0))
+      allocate(lat_cx(0))
+      allocate(order_cx(0))
+      allocate(order_inv_cx(0))
+   end if
+
+   ! Communication
+   call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,lon_cxa,lon_cx)
+   call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,lat_cxa,lat_cx)
+
+   ! Compute global order
+   if (mpl%main) call qsort(ncx,lon_cx,lat_cx,order_cx)
+
+   ! Communication
+   call mpl%glb_to_loc(ncxa,ncx,cxa_to_cx,order_cx,lorder_cxa)
+
+   ! Release memory
+   deallocate(lon_cx)
+   deallocate(lat_cx)
+   deallocate(order_cx)
+   deallocate(order_inv_cx)
+else
+   call mpl%abort('${subr}$','order_cxa or lon_cxa/lat_cxa should be provided')
 end if
 
 ! Initialization
 nres = io%ncx
 proc_isio = .false.
 io%ncxio = 0
+nprocio = min(mpl%nprocio,count(mpl%pioproc))
 
-if (lorder_points) then
-   ! Communication
-   call mpl%loc_to_glb(io%ncxa,io%ncx,cxa_to_cx,hash_cxa,hash_cx,.true.)
-
-   ! Use hash order to order points
-   call qsort(io%ncx,hash_cx,order_cx)
-end if
+! Allocation
+allocate(procio_to_ncxio(nprocio))
+allocate(procio_to_proc(nprocio))
 
 ! Define Scx subset splitting among I/O processors
-do iprocio=1,nam%nprocio
-   ! Define contiguous chunk
-   delta = io%ncx/nam%nprocio
-   if (nres>(nam%nprocio-iprocio+1)*delta) delta = delta+1
+do iprocio=1,nprocio
+   ! Define contiguous chunks
+   delta = io%ncx/nprocio
+   if (nres>(nprocio-iprocio+1)*delta) delta = delta+1
    procio_to_ncxio(iprocio) = delta
    nres = nres-delta
    if (iprocio==1) then
@@ -180,24 +199,24 @@ do iprocio=1,nam%nprocio
 
    ! Order processors given their implication in this chunk
    list_proc = 0
-   do iproc=1,mpl%nproc
-      do icx=icx_s,icx_e
-         if (lorder_points) then
-            jcx = order_cx(icx)
-         else
-            jcx = icx
-         end if
-         if (cx_to_proc(mpl%nproc,proc_to_cx_offset,jcx)==iproc) list_proc(iproc) = list_proc(iproc)+1
-      end do
+   do icx=icx_s,icx_e
+      iproc = cx_to_proc(mpl%nproc,proc_to_cx_offset,icx)
+      if (iproc==mpl%myproc) then
+         icxa = cx_to_cxa(mpl%nproc,proc_to_cx_offset,icx)
+         jcx = lorder_cxa(icxa)
+         jproc = cx_to_proc(mpl%nproc,proc_to_cx_offset,jcx)
+         list_proc(jproc) = list_proc(jproc)+1
+      end if
    end do
-   call qsort(mpl%nproc,list_proc,order_proc)
+   call mpl%f_comm%allreduce(list_proc,list_proc_tot,fckit_mpi_sum())
+   call qsort(mpl%nproc,list_proc_tot,order_proc)
 
    ! Select I/O processor for this chunk
    do iproc=mpl%nproc,1,-1
       jproc = order_proc(iproc)
-      if (.not.proc_isio(jproc)) then
+      if (mpl%pioproc(jproc).and.(.not.proc_isio(jproc))) then
          proc_isio(jproc) = .true.
-         io%procio_to_proc(iprocio) = jproc
+         procio_to_proc(iprocio) = jproc
          if (mpl%myproc==jproc) then
             io%ncxio = procio_to_ncxio(iprocio)
             io%icx_s = icx_s
@@ -207,12 +226,43 @@ do iprocio=1,nam%nprocio
    end do
 end do
 
+! Check procio_to_proc
+do iprocio=1,nprocio
+   iproc = procio_to_proc(iprocio)
+   if (.not.mpl%pioproc(iproc)) call mpl%abort('${subr}$','wrong I/O processor')
+end do
+
+! Allocation
+if (mpl%main.or.mpl%pioproc(mpl%myproc)) then
+   allocate(order_cx(ncx))
+else
+   allocate(order_cx(0))
+end if
+
+! Communication
+call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,lorder_cxa,order_cx)
+
+! Communicate global order to I/O tasks
+do iprocio=1,nprocio
+   iproc = procio_to_proc(iprocio)
+   if (iproc/=mpl%rootproc) then
+      if (iproc==mpl%myproc) then
+         ! Receive data
+         call mpl%f_comm%receive(order_cx,mpl%rootproc-1,mpl%tag,status)
+      elseif (mpl%main) then
+         ! Send data
+         call mpl%f_comm%send(order_cx,iproc-1,mpl%tag)
+      end if
+   end if
+   call mpl%update_tag(1)
+end do
+
 ! Allocation
 allocate(io%cxio_to_cx(io%ncxio))
 
 ! Initialization
 iprocio = 1
-iproc = io%procio_to_proc(iprocio)
+iproc = procio_to_proc(iprocio)
 icxio = 0
 ncxown = 0
 
@@ -221,17 +271,14 @@ do icx=1,io%ncx
    icxio = icxio+1
    if (icxio>procio_to_ncxio(iprocio)) then
       iprocio = iprocio+1
-      iproc = io%procio_to_proc(iprocio)
+      iproc = procio_to_proc(iprocio)
       icxio = 1
    end if
-   if (lorder_points) then
-      jcx = order_cx(icx)
-   else
-      jcx = icx
-   end if
    if (iproc==mpl%myproc) then
+      jcx = order_cx(icx)
+      jproc = cx_to_proc(mpl%nproc,proc_to_cx_offset,jcx)
+      if (jproc==iproc) ncxown = ncxown+1
       io%cxio_to_cx(icxio) = jcx
-      if (cx_to_proc(mpl%nproc,proc_to_cx_offset,jcx)==iproc) ncxown = ncxown+1
    end if
 end do
 
@@ -240,7 +287,7 @@ allocate(cxown_to_cx(ncxown))
 
 ! Initialization
 iprocio = 1
-iproc = io%procio_to_proc(iprocio)
+iproc = procio_to_proc(iprocio)
 icxio = 0
 icxown = 0
 
@@ -249,16 +296,13 @@ do icx=1,io%ncx
    icxio = icxio+1
    if (icxio>procio_to_ncxio(iprocio)) then
       iprocio = iprocio+1
-      iproc = io%procio_to_proc(iprocio)
+      iproc = procio_to_proc(iprocio)
       icxio = 1
    end if
-   if (lorder_points) then
-      jcx = order_cx(icx)
-   else
-      jcx = icx
-   end if
    if (iproc==mpl%myproc) then
-      if (cx_to_proc(mpl%nproc,proc_to_cx_offset,jcx)==iproc) then
+      jcx = order_cx(icx)
+      jproc = cx_to_proc(mpl%nproc,proc_to_cx_offset,jcx)
+      if (jproc==iproc) then
          icxown = icxown+1
          cxown_to_cx(icxown) = jcx
       end if
@@ -268,9 +312,9 @@ end do
 ! Print results
 write(mpl%info,'(a7,a)') '','I/O splitting:'
 call mpl%flush
-do iprocio=1,nam%nprocio
+do iprocio=1,nprocio
    write(mpl%info,'(a10,a,i6,a,i8,a,i6)') '','Chunk ',iprocio,' ~> ',procio_to_ncxio(iprocio),' grid-points handled by task ', &
- & io%procio_to_proc(iprocio)
+ & procio_to_proc(iprocio)
    call mpl%flush
 end do
 
@@ -278,15 +322,13 @@ end do
 call io%com_AIO%setup(mpl,'com_AIO',io%ncxa,io%ncxio,io%ncx,cxa_to_cx,io%cxio_to_cx,cxown_to_cx)
 
 ! Release memory
-deallocate(list_proc)
-deallocate(order_proc)
-deallocate(proc_isio)
 deallocate(procio_to_ncxio)
-if (lorder_points) then
-   deallocate(hash_cx)
-   deallocate(order_cx)
-end if
+deallocate(procio_to_proc)
+if (mpl%main.or.mpl%pioproc(mpl%myproc)) deallocate(order_cx)
 deallocate(cxown_to_cx)
+
+! Set initialization flag
+io%initialized = .true.
 
 ! Probe out
 @:probe_out()
@@ -299,28 +341,20 @@ end subroutine io_init
 ! Subroutine: io_fld_read_${dtype}$_r${rank}$
 !> Read field
 !----------------------------------------------------------------------
-subroutine io_fld_read_${dtype}$_r${rank}$(io,mpl,nam,filename,variable,fld_cxa,groupname,subgroupname)
+subroutine io_fld_read_${dtype}$_r${rank}$(io,mpl,ncid,varid,fld_cxa)
 
 implicit none
 
 ! Passed variables
 class(io_type),intent(in) :: io                        !< I/O
 type(mpl_type),intent(inout) :: mpl                    !< MPI data
-type(nam_type),intent(in) :: nam                       !< Namelist
-character(len=*),intent(in) :: filename                !< File name
-character(len=*),intent(in) :: variable                !< Variable name
+integer,intent(in) :: ncid                             !< File/group ID
+integer,intent(in) :: varid                            !< Variable ID
 ${ftype[dtype]}$,intent(out) :: fld_cxa(${dim[rank]}$) !< Field
-character(len=*),intent(in),optional :: groupname      !< Group name
-character(len=*),intent(in),optional :: subgroupname   !< Subgroup name
 
 ! Local variables
-integer :: npack,color,iproc,iprocio
-integer :: ncid,grpid,subgrpid,fld_id
-#{if dtype == 'logical'}# integer :: icxio,ipack #{endif}#
-#{if dtype == 'logical'}# integer,allocatable :: fld_cxio_int(:,:) #{endif}#
-${ftype[dtype]}$,allocatable :: fld_cxa_packed(:,:),fld_cxio(:,:)
-character(len=1024) :: cname
-type(fckit_mpi_comm) :: f_comm
+integer :: shp(${rank}$),shp_io(${rank}$),dim_start(${rank}$)
+${ftype[dtype]}$,allocatable :: fld_cxio(${dim[rank]}$)
 
 ! Set name
 @:set_name(io_fld_read_${dtype}$_r${rank}$)
@@ -328,119 +362,36 @@ type(fckit_mpi_comm) :: f_comm
 ! Probe in
 @:probe_in()
 
+! Check initialization
+if (.not.io%initialized) call mpl%abort('${subr}$','I/O not initialized')
+
 ! Check field size
 if (size(fld_cxa,1)/=io%ncxa) call mpl%abort('${subr}$','wrong field size')
-npack = 1
-#:for arg_dim in range(1,rank)
-  npack = npack*size(fld_cxa,${arg_dim}$+1)
-#:endfor
+
+! Get field dimensions
+shp = shape(fld_cxa)
+shp_io = shp
+shp_io(1) = io%ncxio
+dim_start = 1
+dim_start(1) = io%icx_s
 
 ! Allocation
-allocate(fld_cxa_packed(io%ncxa,npack))
-allocate(fld_cxio(io%ncxio,npack))
+#{if rank == 1}# allocate(fld_cxio(io%ncxio)) #{endif}#
+#{if rank == 2}# allocate(fld_cxio(io%ncxio,shp(2))) #{endif}#
+#{if rank == 3}# allocate(fld_cxio(io%ncxio,shp(2),shp(3))) #{endif}#
+#{if rank == 4}# allocate(fld_cxio(io%ncxio,shp(2),shp(3),shp(4))) #{endif}#
 
-! Create communicator for parallel NetCDF I/O
-if (any(io%procio_to_proc==mpl%myproc).and.(io%ncxio>0)) then
-   color = 1
-   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_io'
-else
-   color = 0
-   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_no_io'
-endif
-f_comm = mpl%f_comm%split(color,cname)
+! Read variable
+call get_var(mpl,ncid,varid,fld_cxio,dim_start,shp_io)
 
-do iprocio=1,nam%nprocio
-   ! Processor index
-   iproc = io%procio_to_proc(iprocio)
+! Communication
+call io%com_AIO%red(mpl,fld_cxio,fld_cxa)
 
-   if ((iproc==mpl%myproc).and.(io%ncxio>0)) then
-      ! Open file
-      if (mpl%parallel_io) then
-         call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid, &
- & comm=f_comm%communicator(),info=f_comm%info_null()))
-      else
-         call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
-      end if
-
-      ! Get group
-      if (present(groupname)) then
-         call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,groupname,grpid))
-
-         ! Get sub-group
-         if (present(subgroupname)) then
-            call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(grpid,subgroupname,subgrpid))
-         else
-            subgrpid = grpid
-         end if
-      else
-         subgrpid = ncid
-      end if
-
-      ! Check dimension
-      call mpl%nc_dim_check(subgrpid,'nc'//io%x,io%ncx)
-      #{if rank > 1}# call mpl%nc_dim_check(subgrpid,'npack_'//trim(variable),npack) #{endif}#
-
-      ! Get variable
-      call mpl%ncerr('${subr}$',nf90_inq_varid(subgrpid,variable,fld_id))
-
-      #:if dtype == 'logical'
-         ! Allocation
-         allocate(fld_cxio_int(io%ncxio,npack))
-
-         ! Read variable
-         #:if rank == 1
-            call mpl%ncerr('${subr}$',nf90_get_var(subgrpid,fld_id,fld_cxio_int,(/io%icx_s/),(/io%ncxio/)))
-         #:else
-            call mpl%ncerr('${subr}$',nf90_get_var(subgrpid,fld_id,fld_cxio_int,(/io%icx_s,1/),(/io%ncxio,npack/)))
-         #:endif
-
-         ! Conversion
-         do ipack=1,npack
-            do icxio=1,io%ncxio
-               if (fld_cxio_int(icxio,ipack)==1) then
-                  fld_cxio(icxio,ipack) = .true.
-               elseif (fld_cxio_int(icxio,ipack)==0) then
-                  fld_cxio(icxio,ipack) = .false.
-               else
-                  call mpl%abort('${subr}','wrong value for integer-logical conversion')
-               end if
-            end do
-         end do
-
-         ! Release memory
-         deallocate(fld_cxio_int)
-      #:else
-         ! Read variable
-         #:if rank == 1
-            call mpl%ncerr('${subr}$',nf90_get_var(subgrpid,fld_id,fld_cxio,(/io%icx_s/),(/io%ncxio/)))
-         #:else
-            call mpl%ncerr('${subr}$',nf90_get_var(subgrpid,fld_id,fld_cxio,(/io%icx_s,1/),(/io%ncxio,npack/)))
-         #:endif
-      #:endif
-
-      ! Close file
-      call mpl%ncerr('${subr}$',nf90_close(ncid))
-   end if
-
-   ! Synchronization needed for serial I/O
-   if (.not.mpl%parallel_io) call mpl%f_comm%barrier()
-end do
-
-! Delete communicator
-call f_comm%delete()
+! Release memory
+deallocate(fld_cxio)
 
 ! Wait for everybody
 call mpl%f_comm%barrier()
-
-! Communication
-call io%com_AIO%red(mpl,fld_cxio,fld_cxa_packed)
-
-! Unpack data
-fld_cxa = reshape(fld_cxa_packed,shape(fld_cxa))
-
-! Release memory
-deallocate(fld_cxa_packed)
-deallocate(fld_cxio)
 
 ! Probe out
 @:probe_out()
@@ -455,32 +406,22 @@ end subroutine io_fld_read_${dtype}$_r${rank}$
 ! Subroutine: io_fld_write_${dtype}$_r${rank}$
 !> Write field
 !----------------------------------------------------------------------
-subroutine io_fld_write_${dtype}$_r${rank}$(io,mpl,nam,filename,variable,fld_cxa,gmask_cxa,groupname,subgroupname,ncunit)
+subroutine io_fld_write_${dtype}$_r${rank}$(io,mpl,ncid,varid,fld_cxa,gmask_cxa)
 
 implicit none
 
 ! Passed variables
 class(io_type),intent(in) :: io                         !< I/O
 type(mpl_type),intent(inout) :: mpl                     !< MPI data
-type(nam_type),intent(in) :: nam                        !< Namelist
-character(len=*),intent(in) :: filename                 !< File name
-character(len=*),intent(in) :: variable                 !< Variable name
+integer,intent(in) :: ncid                              !< File/group ID
+integer,intent(in) :: varid                             !< Variable ID
 ${ftype[dtype]}$,intent(in) :: fld_cxa(${dim[rank]}$)   !< Field
 logical,intent(in),optional :: gmask_cxa(${dim[rank]}$) !< Geographical mask
-character(len=*),intent(in),optional :: groupname       !< Group name
-character(len=*),intent(in),optional :: subgroupname    !< Subgroup name
-character(len=*),intent(in),optional :: ncunit          !< Variable unit
 
 ! Local variables
-integer :: npack,ipack,icxa,color,iproc,iprocio
-integer :: ncid,grpid,subgrpid,ncx_id,fld_id
-#{if rank > 1}# integer :: npack_id #{endif}#
-#{if dtype == 'logical'}# integer :: icxio #{endif}#
-#{if dtype == 'logical'}# integer,allocatable :: fld_cxio_int(:,:) #{endif}#
-${ftype[dtype]}$,allocatable :: fld_cxa_packed(:,:),fld_cxio(:,:)
-logical,allocatable :: gmask_cxa_packed(:,:)
-character(len=1024) :: cname
-type(fckit_mpi_comm) :: f_comm
+integer :: shp(${rank}$),shp_io(${rank}$),dim_start(${rank}$)
+integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}#
+${ftype[dtype]}$,allocatable :: fld_cxio(${dim[rank]}$),fld_cxa_masked(${dim[rank]}$)
 
 ! Set name
 @:set_name(io_fld_write_${dtype}$_r${rank}$)
@@ -488,148 +429,67 @@ type(fckit_mpi_comm) :: f_comm
 ! Probe in
 @:probe_in()
 
+! Check initialization
+if (.not.io%initialized) call mpl%abort('${subr}$','I/O not initialized')
+
 ! Check field size
 if (size(fld_cxa,1)/=io%ncxa) call mpl%abort('${subr}$','wrong field size')
-npack = 1
-#:for arg_dim in range(1,rank)
-  npack = npack*size(fld_cxa,${arg_dim}$+1)
-#:endfor
+
+! Get field dimensions
+shp = shape(fld_cxa)
+shp_io = shp
+shp_io(1) = io%ncxio
+dim_start = 1
+dim_start(1) = io%icx_s
 
 ! Allocation
-allocate(fld_cxa_packed(io%ncxa,npack))
-allocate(fld_cxio(io%ncxio,npack))
-
-! Pack data
-fld_cxa_packed = reshape(fld_cxa,(/io%ncxa,npack/))
+#{if rank == 1}# allocate(fld_cxio(io%ncxio)) #{endif}#
+#{if rank == 2}# allocate(fld_cxio(io%ncxio,shp(2))) #{endif}#
+#{if rank == 3}# allocate(fld_cxio(io%ncxio,shp(2),shp(3))) #{endif}#
+#{if rank == 4}# allocate(fld_cxio(io%ncxio,shp(2),shp(3),shp(4))) #{endif}#
 
 if (present(gmask_cxa)) then
    ! Allocation
-   allocate(gmask_cxa_packed(io%ncxa,npack))
+   #{if rank == 1}# allocate(fld_cxa_masked(shp(1))) #{endif}#
+   #{if rank == 2}# allocate(fld_cxa_masked(shp(1),shp(2))) #{endif}#
+   #{if rank == 3}# allocate(fld_cxa_masked(shp(1),shp(2),shp(3))) #{endif}#
+   #{if rank == 4}# allocate(fld_cxa_masked(shp(1),shp(2),shp(3),shp(4))) #{endif}#
+
+   ! Initialization
+   fld_cxa_masked = fld_cxa
 
    ! Apply mask
-   gmask_cxa_packed = reshape(gmask_cxa,(/io%ncxa,npack/))
-   do ipack=1,npack
-      do icxa=1,io%ncxa
-         if (.not.gmask_cxa_packed(icxa,ipack)) fld_cxa_packed(icxa,ipack) = mpl%${msv[dtype]}$
-      end do
+   #:for arg_dim in range(1,rank+1)
+   do i${arg_dim}$=shp(${arg_dim}$),1,-1
+   #:endfor
+      if (.not.gmask_cxa( &
+      #:for arg_dim in range(1,rank)
+    & i${arg_dim}$, &
+      #:endfor
+    & i${rank}$)) fld_cxa_masked( &
+      #:for arg_dim in range(1,rank)
+    & i${arg_dim}$, &
+      #:endfor
+    & i${rank}$) = mpl%${msv[dtype]}$
+   #:for arg_dim in range(1,rank+1)
    end do
-
+   #:endfor
+ 
    ! Communication
-   call io%com_AIO%ext(mpl,fld_cxa_packed,fld_cxio)
+   call io%com_AIO%ext(mpl,fld_cxa_masked,fld_cxio)
 
    ! Release memory
-   deallocate(gmask_cxa_packed)
+   deallocate(fld_cxa_masked)
 else
    ! Communication
-   call io%com_AIO%ext(mpl,fld_cxa_packed,fld_cxio)
+   call io%com_AIO%ext(mpl,fld_cxa,fld_cxio)
 end if
 
-! Create communicator for parallel NetCDF I/O
-if (any(io%procio_to_proc==mpl%myproc).and.(io%ncxio>0)) then
-   color = 1
-   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_io'
-else
-   color = 0
-   cname = trim(mpl%f_comm%name())//'_'//trim(nam%prefix)//'_no_io'
-endif
-f_comm = mpl%f_comm%split(color,cname)
-
-do iprocio=1,nam%nprocio
-   ! Processor index
-   iproc = io%procio_to_proc(iprocio)
-
-   if ((iproc==mpl%myproc).and.(io%ncxio>0)) then
-      ! Define file'
-      ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',f_comm)
-
-      ! Define group
-      if (present(groupname)) then
-         grpid = mpl%nc_group_define_or_get(ncid,groupname)
-
-         ! Define sub-group
-         if (present(subgroupname)) then
-            subgrpid = mpl%nc_group_define_or_get(grpid,subgroupname)
-         else
-            subgrpid = grpid
-         end if
-      else
-         grpid = ncid
-         subgrpid = ncid
-      end if
-
-      ! Define dimensions
-      ncx_id = mpl%nc_dim_define_or_get(subgrpid,'nc'//io%x,io%ncx)
-      #{if rank > 1}# npack_id = mpl%nc_dim_define_or_get(subgrpid,'npack_'//trim(variable),npack) #{endif}#
-
-      ! Define variable
-      #:if rank == 1
-         fld_id = mpl%nc_var_define_or_get(subgrpid,variable,${netcdf_kind[dtype]}$,(/ncx_id/))
-      #:else
-         fld_id = mpl%nc_var_define_or_get(subgrpid,variable,${netcdf_kind[dtype]}$,(/ncx_id,npack_id/))
-      #:endif
-
-      ! Add unit attribute
-      if (present(ncunit)) call mpl%ncerr('${subr}$',nf90_put_att(subgrpid,fld_id,'unit',ncunit))
-
-      #:if dtype == 'logical'
-         ! Allocation
-         allocate(fld_cxio_int(io%ncxio,npack))
-
-         ! Conversion
-         do ipack=1,npack
-            do icxio=1,io%ncxio
-               if (fld_cxio(icxio,ipack)) then
-                  fld_cxio_int(icxio,ipack) = 1
-               else
-                  fld_cxio_int(icxio,ipack) = 0
-               end if
-            end do
-         end do
-
-         ! Write variable
-         #:if rank == 1
-            call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,fld_id,fld_cxio_int,(/io%icx_s/),(/io%ncxio/)))
-         #:else
-            call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,fld_id,fld_cxio_int,(/io%icx_s,1/),(/io%ncxio,npack/)))
-         #:endif
-
-         ! Release memory
-         deallocate(fld_cxio_int)
-      #:else
-         ! Write variable
-         #:if rank == 1
-            call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,fld_id,fld_cxio,(/io%icx_s/),(/io%ncxio/)))
-         #:else
-            call mpl%ncerr('${subr}$',nf90_put_var(subgrpid,fld_id,fld_cxio,(/io%icx_s,1/),(/io%ncxio,npack/)))
-         #:endif
-      #:endif
-
-      ! Close file
-      call mpl%ncerr('${subr}$',nf90_close(ncid))
-   end if
-
-   ! Synchronization needed for serial I/O
-   if (.not.mpl%parallel_io) call mpl%f_comm%barrier()
-end do
-
-! Write global attributes
-if (io%procio_to_proc(1)==mpl%myproc) then
-   ! Reopen file with one task only
-   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
-
-   ! Write namelist parameters
-   call nam%write(mpl,ncid)
-
-   ! Close file
-   call mpl%ncerr('${subr}$',nf90_close(ncid))
-end if
+! Write variable
+call put_var(mpl,ncid,varid,fld_cxio,dim_start,shp_io)
 
 ! Release memory
-deallocate(fld_cxa_packed)
 deallocate(fld_cxio)
-
-! Delete communicator
-call f_comm%delete()
 
 ! Wait for everybody
 call mpl%f_comm%barrier()

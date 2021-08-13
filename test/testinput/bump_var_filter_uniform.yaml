@@ -1,13 +1,13 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_hdiag_no_smoothness_penalty/test__MPI_-_OMP_"
+prefix: "bump_var_filter_uniform/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_hdiag: 1
-write_cmat: 0
+new_var: 1
+write_var: 1
 
 # model_param
 nl: 2
@@ -21,17 +21,12 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-nc1: 500
-ntry: 30
-nc3: 15
-dc: [400.0e3]
-nl0r: 2
 
 # diag_param
 ne: 50
+var_filter: 1
 
 # fit_param
-smoothness_penalty: 0
 
 # nicas_param
 

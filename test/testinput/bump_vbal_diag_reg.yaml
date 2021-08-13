@@ -5,6 +5,7 @@ model: "qg"
 
 # driver_param
 new_vbal: 1
+write_vbal: 1
 check_vbal: 1
 check_adjoints: 1
 check_dirac: 1
@@ -12,8 +13,8 @@ check_dirac: 1
 # model_param
 nl: 4
 levs: [1,2,3,4]
-nv: 2
-variables: ["u","q"]
+nv: 3
+variables: ["u","q","cosu_plus_q2"]
 
 # ens1_param
 ens1_ne: 50
@@ -21,15 +22,14 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-sam_write: 1
+write_samp_global: 1
 nc1: 500
 nc2: 250
-ntry: 30
 
 # diag_param
-vbal_block: [1]
+vbal_block: [1,1,1]
 vbal_rad: 2000.0e3
-vbal_diag_reg: [1]
+vbal_diag_reg: [1,0,1]
 
 # fit_param
 
