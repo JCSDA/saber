@@ -13,7 +13,7 @@ use atlas_module, only: atlas_geometry
 use iso_c_binding, only: c_int16_t,c_int32_t
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
-use tools_kinds, only: kind_short,kind_real
+use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small
 use type_mpl, only: mpl_type
@@ -143,12 +143,39 @@ interface convert_l2i
    module procedure func_convert_l2i_r${rank}$
 #:endfor
 end interface
+interface zss_maxval
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+         module procedure func_zss_maxval_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+end interface
+interface zss_minval
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+         module procedure func_zss_minval_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+end interface
+interface zss_sum
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+         module procedure func_zss_sum_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+end interface
+interface zss_count
+   #:for rank in ranks_123456
+      module procedure func_zss_count_r${rank}$
+   #:endfor
+end interface
 
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
  & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag,fit_func,fit_lct,lct_d2h, &
- & lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i
+ & lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i, &
+ & zss_maxval,zss_minval,zss_sum,zss_count
 
 contains
 
@@ -1636,8 +1663,8 @@ logical :: found
 ! Check data
 if (nbins<=0) call mpl%abort('${subr}$','the number of bins should be positive')
 if (histmax>histmin) then
-   if (minval(list,mask=mpl%msv%isnot(list))<histmin) call mpl%abort('${subr}$','values below histogram minimum')
-   if (maxval(list,mask=mpl%msv%isnot(list))>histmax) call mpl%abort('${subr}$','values over histogram maximum')
+   if (zss_minval(list,mask=mpl%msv%isnot(list))<histmin) call mpl%abort('${subr}$','values below histogram minimum')
+   if (zss_maxval(list,mask=mpl%msv%isnot(list))>histmax) call mpl%abort('${subr}$','values over histogram maximum')
 
    ! Compute bins
    delta = (histmax-histmin)/real(nbins,kind_real)
@@ -1954,6 +1981,171 @@ end do
 @:probe_out()
 
 end subroutine func_convert_l2i_r${rank}$
+#:endfor
+
+#:for dtype in dtypes_ir
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Function: func_zss_maxval_${dtype}$_r${rank}$
+!> Zero-size-safe maxval function
+!----------------------------------------------------------------------
+function func_zss_maxval_${dtype}$_r${rank}$(array,mask) result(value)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
+logical,intent(in),optional :: mask(${dim[rank]}$)  !< Mask
+
+! Returned variable
+${ftype[dtype]}$ :: value
+
+! Set name
+@:set_name(func_zss_maxval_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+if (size(array)>0) then
+   if (present(mask)) then
+      if (any(mask)) then
+         value = maxval(array,mask=mask)
+      else
+         value = -${huge[dtype]}$
+      end if
+   else
+      value = maxval(array)
+   end if
+else
+   value = -${huge[dtype]}$
+endif
+
+! Probe out
+@:probe_out()
+
+end function func_zss_maxval_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+
+#:for dtype in dtypes_ir
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Function: func_zss_minval_${dtype}$_r${rank}$
+!> Zero-size-safe minval function
+!----------------------------------------------------------------------
+function func_zss_minval_${dtype}$_r${rank}$(array,mask) result(value)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
+logical,intent(in),optional :: mask(${dim[rank]}$)  !< Mask
+
+! Returned variable
+${ftype[dtype]}$ :: value
+
+! Set name
+@:set_name(func_zss_minval_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+if (size(array)>0) then
+   if (present(mask)) then
+      if (any(mask)) then
+         value = minval(array,mask=mask)
+      else
+         value = ${huge[dtype]}$
+      end if
+   else
+      value = minval(array)
+   end if
+else
+   value = ${huge[dtype]}$
+endif
+
+! Probe out
+@:probe_out()
+
+end function func_zss_minval_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+
+#:for dtype in dtypes_ir
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Function: func_zss_sum_${dtype}$_r${rank}$
+!> Zero-size-safe sum function
+!----------------------------------------------------------------------
+function func_zss_sum_${dtype}$_r${rank}$(array,mask) result(value)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
+logical,intent(in),optional :: mask(${dim[rank]}$)  !< Mask
+
+! Returned variable
+${ftype[dtype]}$ :: value
+
+! Set name
+@:set_name(func_zss_sum_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+if (size(array)>0) then
+   if (present(mask)) then
+      if (any(mask)) then
+         value = sum(array,mask=mask)
+      else
+         value = ${zero[dtype]}$
+      end if
+   else
+      value = sum(array)
+   end if
+else
+   value = ${zero[dtype]}$
+endif
+
+! Probe out
+@:probe_out()
+
+end function func_zss_sum_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Function: func_zss_count_r${rank}$
+!> Zero-size-safe count function
+!----------------------------------------------------------------------
+function func_zss_count_r${rank}$(array) result(value)
+
+implicit none
+
+! Passed variables
+logical,intent(in) :: array(${dim[rank]}$) !< Array
+
+! Returned variable
+integer :: value
+
+! Set name
+@:set_name(func_zss_count_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+if (size(array)>0) then
+   value = count(array)
+else
+   value = 0
+endif
+
+! Probe out
+@:probe_out()
+
+end function func_zss_count_r${rank}$
 #:endfor
 
 end module tools_func

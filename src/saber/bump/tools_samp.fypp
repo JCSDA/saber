@@ -12,7 +12,7 @@ use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min
 !$ use omp_lib
 use tools_const, only: zero,half,quarter,one,two,four,pi,deg2rad
-use tools_func, only: fletcher32,lonlatmod,lonlat2xyz,cart_dist,inside
+use tools_func, only: fletcher32,lonlatmod,lonlat2xyz,cart_dist,inside,zss_minval,zss_count
 use tools_kinds, only: kind_real,kind_int,huge_real,huge_int
 use tools_qsort, only: qsort
 use tools_repro, only: inf,indist
@@ -83,7 +83,7 @@ type(atlas_structuredgrid) :: agrid
 @:probe_in()
 
 ! Number of effective points
-ncxa_eff = count(mask_cxa)
+ncxa_eff = zss_count(mask_cxa)
 call mpl%f_comm%allreduce(ncxa_eff,ncx_eff,fckit_mpi_sum())
 
 ! Check mask size
@@ -192,7 +192,7 @@ else
       end do
 
       ! Local and global number of valid points
-      nssa = count(lmask_cxa)
+      nssa = zss_count(lmask_cxa)
       call mpl%f_comm%allreduce(nssa,nss,fckit_mpi_sum())
 
       ! Print result
@@ -261,28 +261,29 @@ else
    end do
 
    ! Find minimum distance globally
-   valmin = minval(potential)
+   valmin = zss_minval(potential)
    call mpl%f_comm%allreduce(valmin,valmin_tot,fckit_mpi_min())
 
    ! Check if minimum is indistinguishable
    do issa=1,nssa
       indist_ssa(issa) = indist(potential(issa),valmin_tot)
    end do
-   if (any(indist_ssa)) then
-      issamin = minloc(ssa_to_node,mask=indist_ssa,dim=1)
-      nodemin = ssa_to_node(issamin)
-      xmin = x_ssa(issamin)
-      ymin = y_ssa(issamin)
-      zmin = z_ssa(issamin)
-      chmin = ch_ssa(issamin)
-      icxmin = ssa_to_cx(issamin)
-   else
-      nodemin = mpl%msv%vali
-      xmin = mpl%msv%valr
-      ymin = mpl%msv%valr
-      zmin = mpl%msv%valr
-      chmin = mpl%msv%valr
-      icxmin = mpl%msv%vali
+   nodemin = mpl%msv%vali
+   xmin = mpl%msv%valr
+   ymin = mpl%msv%valr
+   zmin = mpl%msv%valr
+   chmin = mpl%msv%valr
+   icxmin = mpl%msv%vali
+   if (nssa>0) then
+      if (any(indist_ssa)) then
+         issamin = minloc(ssa_to_node,mask=indist_ssa,dim=1)
+         nodemin = ssa_to_node(issamin)
+         xmin = x_ssa(issamin)
+         ymin = y_ssa(issamin)
+         zmin = z_ssa(issamin)
+         chmin = ch_ssa(issamin)
+         icxmin = ssa_to_cx(issamin)
+      end if
    end if
 
    ! Communication
@@ -324,10 +325,9 @@ else
    ! Set other points where the potential is minimum
    do is=2,ns
       ! Find minimum distance globally
-      if (any(lmask_ssa)) then
-         valmin = minval(potential,mask=lmask_ssa)
-      else
-         valmin = huge_real
+      valmin = huge_real
+      if (nssa>0) then
+         if (any(lmask_ssa)) valmin = zss_minval(potential,mask=lmask_ssa)
       end if
       call mpl%f_comm%allreduce(valmin,valmin_tot,fckit_mpi_min())
 
@@ -336,22 +336,22 @@ else
       do issa=1,nssa
          if (lmask_ssa(issa)) indist_ssa(issa) = indist(potential(issa),valmin_tot)
       end do
-
-      if (any(indist_ssa)) then
-         issamin = minloc(ssa_to_node,mask=indist_ssa,dim=1)
-         nodemin = ssa_to_node(issamin)
-         xmin = x_ssa(issamin)
-         ymin = y_ssa(issamin)
-         zmin = z_ssa(issamin)
-         chmin = ch_ssa(issamin)
-         icxmin = ssa_to_cx(issamin)
-      else
-         nodemin = mpl%msv%vali
-         xmin = mpl%msv%valr
-         ymin = mpl%msv%valr
-         zmin = mpl%msv%valr
-         chmin = mpl%msv%valr
-         icxmin = mpl%msv%vali
+      nodemin = mpl%msv%vali
+      xmin = mpl%msv%valr
+      ymin = mpl%msv%valr
+      zmin = mpl%msv%valr
+      chmin = mpl%msv%valr
+      icxmin = mpl%msv%vali
+      if (nssa>0) then
+         if (any(indist_ssa)) then
+            issamin = minloc(ssa_to_node,mask=indist_ssa,dim=1)
+            nodemin = ssa_to_node(issamin)
+            xmin = x_ssa(issamin)
+            ymin = y_ssa(issamin)
+            zmin = z_ssa(issamin)
+            chmin = ch_ssa(issamin)
+            icxmin = ssa_to_cx(issamin)
+         end if
       end if
 
       ! Communication

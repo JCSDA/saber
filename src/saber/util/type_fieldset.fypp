@@ -13,6 +13,7 @@ use atlas_module, only: atlas_fieldset,atlas_field,atlas_functionspace,atlas_rea
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_atlas, only: field_to_array,field_from_array,get_atlas_field_size
 use tools_const, only: zero,one
+use tools_func, only: zss_sum
 use tools_kinds, only: kind_real
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -357,10 +358,10 @@ do iv=1,size(fieldset%variables)
    select case (afield%rank())
    case (1)
       call afield%data(ptr_1)
-      norm = sum(ptr_1**2,mask=mpl%msv%isnot(ptr_1))
+      norm = zss_sum(ptr_1**2,mask=mpl%msv%isnot(ptr_1))
    case (2)
       call afield%data(ptr_2)
-      norm = sum(ptr_2**2,mask=mpl%msv%isnot(ptr_2))
+      norm = zss_sum(ptr_2**2,mask=mpl%msv%isnot(ptr_2))
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -929,7 +930,9 @@ call fieldset_in%check(mpl)
 call fieldset_out%check(mpl)
 
 ! Check mask, variables and lev2d consistency
-if (any(fieldset_in%mask3d.neqv.fieldset_out%mask3d)) call mpl%abort('${subr}$','inconsistent masks')
+if ((size(fieldset_in%mask3d)>0).and.(size(fieldset_in%mask3d)>0)) then
+   if (any(fieldset_in%mask3d.neqv.fieldset_out%mask3d)) call mpl%abort('${subr}$','inconsistent masks')
+end if
 if (any(fieldset_in%variables/=fieldset_out%variables)) call mpl%abort('${subr}$','inconsistent variables')
 if (fieldset_in%lev2d/=fieldset_out%lev2d) call mpl%abort('${subr}$','inconsistent lev2d')
 
@@ -984,40 +987,42 @@ real(kind_real),allocatable :: fld(:,:,:)
 ! Check fieldset
 call fieldset%check(mpl)
 
-if (any(.not.(fieldset%mask3d))) then
-   ! Set local missing value
-   lmsvalr = mpl%msv%valr
-   if (present(msvalr)) lmsvalr = msvalr
+if (size(fieldset%mask3d)>0) then
+   if (any(.not.(fieldset%mask3d))) then
+      ! Set local missing value
+      lmsvalr = mpl%msv%valr
+      if (present(msvalr)) lmsvalr = msvalr
 
-   ! Get number of nodes
-   nmga = size(fieldset%mask3d,1)
+      ! Get number of nodes
+      nmga = size(fieldset%mask3d,1)
 
-   ! Get number of levels
-   nl0 = size(fieldset%mask3d,2)
+      ! Get number of levels
+      nl0 = size(fieldset%mask3d,2)
 
-   ! Get number of variables
-   nv = size(fieldset%variables)
+      ! Get number of variables
+      nv = size(fieldset%variables)
 
-   ! Allocation
-   allocate(fld(nmga,nl0,nv))
+      ! Allocation
+      allocate(fld(nmga,nl0,nv))
 
-   ! Conversion to array
-   call fieldset%to_array(mpl,fld)
+      ! Conversion to array
+      call fieldset%to_array(mpl,fld)
 
-   ! Apply missing value to mask points
-   do iv=1,nv
-      do il0=1,nl0
-         do imga=1,nmga
-            if (.not.fieldset%mask3d(imga,il0)) fld(imga,il0,iv) = lmsvalr
+      ! Apply missing value to mask points
+      do iv=1,nv
+         do il0=1,nl0
+            do imga=1,nmga
+               if (.not.fieldset%mask3d(imga,il0)) fld(imga,il0,iv) = lmsvalr
+            end do
          end do
       end do
-   end do
 
-   ! Conversion from array
-   call fieldset%from_array(mpl,fld)
+      ! Conversion from array
+      call fieldset%from_array(mpl,fld)
 
-   ! Release memory
-   deallocate(fld)
+      ! Release memory
+      deallocate(fld)
+   end if
 end if
 
 ! Probe out

@@ -11,6 +11,7 @@ module type_vbal
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use tools_const, only: zero,one,two,rad2deg
+use tools_func, only: zss_maxval,zss_sum
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,define_var,inquire_var,put_var,get_var,close_file
 use tools_repro, only: infeq
@@ -626,7 +627,7 @@ do il0i=1,geom%nl0i
       vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
    end do
 end do
-vbal%h_n_s_max = maxval(vbal%h_n_s)
+vbal%h_n_s_max = zss_maxval(vbal%h_n_s)
 
 ! Allocation
 allocate(vbal%h_c2b(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
@@ -869,7 +870,7 @@ do il0i=1,geom%nl0i
       vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
    end do
 end do
-vbal%h_n_s_max = maxval(vbal%h_n_s)
+vbal%h_n_s_max = zss_maxval(vbal%h_n_s)
 
 ! Allocation
 allocate(vbal%h_c2b(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
@@ -1112,7 +1113,7 @@ do il0i=1,geom%nl0i
       vbal%h_n_s(ic0a,il0i) = vbal%h_n_s(ic0a,il0i)+1
    end do
 end do
-vbal%h_n_s_max = maxval(vbal%h_n_s)
+vbal%h_n_s_max = zss_maxval(vbal%h_n_s)
 
 ! Allocation
 allocate(vbal%h_c2b(vbal%h_n_s_max,geom%nc0a,geom%nl0i))
@@ -1542,14 +1543,14 @@ real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,na
 
 ! Generate random field
 call rng%rand(zero,one,fld_save)
-norm = sum(fld_save**2)
+norm = zss_sum(fld_save**2)
 call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
 
 ! Direct / inverse
 fld = fld_save
 call vbal%apply(nam,geom,bpar,fld)
 call vbal%apply_inv(nam,geom,bpar,fld)
-mse = sum((fld-fld_save)**2)
+mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse_tot/norm_tot
 call mpl%flush
@@ -1558,7 +1559,7 @@ call mpl%flush
 fld = fld_save
 call vbal%apply_inv(nam,geom,bpar,fld)
 call vbal%apply(nam,geom,bpar,fld)
-mse = sum((fld-fld_save)**2)
+mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse_tot/norm_tot
 call mpl%flush
@@ -1567,7 +1568,7 @@ call mpl%flush
 fld = fld_save
 call vbal%apply_ad(nam,geom,bpar,fld)
 call vbal%apply_inv_ad(nam,geom,bpar,fld)
-mse = sum((fld-fld_save)**2)
+mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse_tot/norm_tot
 call mpl%flush
@@ -1576,7 +1577,7 @@ call mpl%flush
 fld = fld_save
 call vbal%apply_inv_ad(nam,geom,bpar,fld)
 call vbal%apply_ad(nam,geom,bpar,fld)
-mse = sum((fld-fld_save)**2)
+mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse_tot/norm_tot
 call mpl%flush

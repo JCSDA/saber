@@ -11,7 +11,8 @@ module type_lct_blk
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 !$ use omp_lib
 use tools_const, only: zero,tenth,half,one,two,reqkm,rad2deg
-use tools_func, only: gau2gc,lonlatmod,fit_lct,lct_d2h,lct_h2r,check_cond,Dmin,vert_interp_size,vert_interp_setup,vert_interp
+use tools_func, only: gau2gc,lonlatmod,fit_lct,lct_d2h,lct_h2r,check_cond,Dmin,vert_interp_size,vert_interp_setup,vert_interp, &
+ & zss_sum,zss_count
 use tools_kinds, only: kind_real
 use tools_netcdf, only: define_grp,put_att,define_dim,define_var,put_var
 use tools_repro, only: rth,inf,sup,eq
@@ -1155,10 +1156,10 @@ do iscales=1,lct_blk%nscales
             end if
          end if
       end do
-      call mpl%f_comm%allreduce(sum(fld(:,il0,11),mpl%msv%isnot(fld(:,il0,11))),Lh_tot,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(sum(fld(:,il0,12),mpl%msv%isnot(fld(:,il0,12))),Lv_tot,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(real(count(mpl%msv%isnot(fld(:,il0,11))),kind_real),norm_Lh_tot,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(real(count(mpl%msv%isnot(fld(:,il0,12))),kind_real),norm_Lv_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(zss_sum(fld(:,il0,11),mpl%msv%isnot(fld(:,il0,11))),Lh_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(zss_sum(fld(:,il0,12),mpl%msv%isnot(fld(:,il0,12))),Lv_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(real(zss_count(mpl%msv%isnot(fld(:,il0,11))),kind_real),norm_Lh_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(real(zss_count(mpl%msv%isnot(fld(:,il0,12))),kind_real),norm_Lv_tot,fckit_mpi_sum())
       if ((norm_Lh_tot>zero).and.(norm_Lv_tot>zero)) then
          write(mpl%info,'(a16,a,i3,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a)') '','Level',nam%levs(il0),' ~> ', &
  & Lh_tot/norm_Lh_tot*reqkm,' km / ',Lv_tot/norm_Lv_tot,' (',Lh_tot/norm_Lh_tot*gau2gc*reqkm,' km / ',Lv_tot/norm_Lv_tot*gau2gc,')'

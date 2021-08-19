@@ -11,7 +11,7 @@ module type_linop
 use ieee_arithmetic
 !$ use omp_lib
 use tools_const, only: zero,one,rad2deg
-use tools_func, only: sphere_dist
+use tools_func, only: sphere_dist,zss_maxval,zss_minval
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
@@ -537,19 +537,23 @@ logical,allocatable :: missing_src(:),missing_dst(:)
 
 if (check_data) then
    ! Check linear operation
-   if (minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for linear operation '//trim(linop%prefix))
-   if (maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for linear operation '//trim(linop%prefix))
-   if (minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for linear operation '//trim(linop%prefix))
-   if (maxval(linop%row)>linop%n_dst) call mpl%abort('${subr}$','row>n_dst for linear operation '//trim(linop%prefix))
-   if (present(ivec)) then
-      if (any(ieee_is_nan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for linear operation '//trim(linop%prefix))
-   else
-      if (any(ieee_is_nan(linop%S))) call mpl%abort('${subr}$','NaN in S for linear operation '//trim(linop%prefix))
+   if (zss_minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for linear operation '//trim(linop%prefix))
+   if (zss_maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for linear operation '//trim(linop%prefix))
+   if (zss_minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for linear operation '//trim(linop%prefix))
+   if (zss_maxval(linop%row)>linop%n_dst) call mpl%abort('${subr}$','row>n_dst for linear operation '//trim(linop%prefix))
+   if (linop%n_s>0) then
+      if (present(ivec)) then
+         if (any(ieee_is_nan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for linear operation '//trim(linop%prefix))
+      else
+         if (any(ieee_is_nan(linop%S))) call mpl%abort('${subr}$','NaN in S for linear operation '//trim(linop%prefix))
+      end if
    end if
 
    ! Check input
-   if (any(fld_src>huge_real)) call mpl%abort('${subr}$','Overflowing number in fld_src for linear operation '//trim(linop%prefix))
-   if (any(ieee_is_nan(fld_src))) call mpl%abort('${subr}$','NaN in fld_src for linear operation '//trim(linop%prefix))
+   if (linop%n_src>0) then
+      if (any(fld_src>huge_real)) call mpl%abort('${subr}$','Overflowing number in fld_src for linear operation '//trim(linop%prefix))
+      if (any(ieee_is_nan(fld_src))) call mpl%abort('${subr}$','NaN in fld_src for linear operation '//trim(linop%prefix))
+   end if
 end if
 
 ! Initialization
@@ -614,7 +618,9 @@ end if
 
 if (check_data) then
    ! Check output
-   if (any(ieee_is_nan(fld_dst))) call mpl%abort('${subr}$','NaN in fld_dst for linear operation '//trim(linop%prefix))
+   if (linop%n_dst>0) then
+      if (any(ieee_is_nan(fld_dst))) call mpl%abort('${subr}$','NaN in fld_dst for linear operation '//trim(linop%prefix))
+   end if
 end if
 
 ! Probe out
@@ -648,20 +654,24 @@ integer :: i_s
 
 if (check_data) then
    ! Check linear operation
-   if (minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for adjoint linear operation '//trim(linop%prefix))
-   if (maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for adjoint linear operation '//trim(linop%prefix))
-   if (minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for adjoint linear operation '//trim(linop%prefix))
-   if (maxval(linop%row)>linop%n_dst) call mpl%abort('${subr}$','row>n_dst for adjoint linear operation '//trim(linop%prefix))
-   if (present(ivec)) then
-      if (any(ieee_is_nan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for adjoint linear operation '//trim(linop%prefix))
-   else
-      if (any(ieee_is_nan(linop%S))) call mpl%abort('${subr}$','NaN in S for adjoint linear operation '//trim(linop%prefix))
+   if (zss_minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for adjoint linear operation '//trim(linop%prefix))
+   if (zss_maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for adjoint linear operation '//trim(linop%prefix))
+   if (zss_minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for adjoint linear operation '//trim(linop%prefix))
+   if (zss_maxval(linop%row)>linop%n_dst) call mpl%abort('${subr}$','row>n_dst for adjoint linear operation '//trim(linop%prefix))
+   if (linop%n_s>0) then
+      if (present(ivec)) then
+         if (any(ieee_is_nan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for adjoint linear operation '//trim(linop%prefix))
+      else
+         if (any(ieee_is_nan(linop%S))) call mpl%abort('${subr}$','NaN in S for adjoint linear operation '//trim(linop%prefix))
+      end if
    end if
 
    ! Check input
-   if (any(fld_dst>huge_real)) &
+   if (linop%n_dst>0) then
+      if (any(fld_dst>huge_real)) &
  & call mpl%abort('${subr}$','Overflowing number in fld_dst for adjoint linear operation '//trim(linop%prefix))
-   if (any(ieee_is_nan(fld_dst))) call mpl%abort('${subr}$','NaN in fld_dst for adjoint linear operation '//trim(linop%prefix))
+      if (any(ieee_is_nan(fld_dst))) call mpl%abort('${subr}$','NaN in fld_dst for adjoint linear operation '//trim(linop%prefix))
+   end if
 end if
 
 ! Initialization
@@ -678,7 +688,9 @@ end do
 
 if (check_data) then
    ! Check output
-   if (any(ieee_is_nan(fld_src))) call mpl%abort('${subr}$','NaN in fld_src for adjoint linear operation '//trim(linop%prefix))
+   if (linop%n_src>0) then
+      if (any(ieee_is_nan(fld_src))) call mpl%abort('${subr}$','NaN in fld_src for adjoint linear operation '//trim(linop%prefix))
+   end if
 end if
 
 ! Probe out
@@ -712,20 +724,24 @@ real(kind_real) :: fld_arr(linop%n_dst,mpl%nthread)
 
 if (check_data) then
    ! Check linear operation
-   if (minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for symmetric linear operation '//trim(linop%prefix))
-   if (maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for symmetric linear operation '//trim(linop%prefix))
-   if (minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for symmetric linear operation '//trim(linop%prefix))
-   if (maxval(linop%row)>linop%n_src) call mpl%abort('${subr}$','row>n_dst for symmetric linear operation '//trim(linop%prefix))
-   if (present(ivec)) then
-      if (any(ieee_is_nan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for symmetric linear operation '//trim(linop%prefix))
-   else
-      if (any(ieee_is_nan(linop%S))) call mpl%abort('${subr}$','NaN in S for symmetric linear operation '//trim(linop%prefix))
+   if (zss_minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for symmetric linear operation '//trim(linop%prefix))
+   if (zss_maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for symmetric linear operation '//trim(linop%prefix))
+   if (zss_minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for symmetric linear operation '//trim(linop%prefix))
+   if (zss_maxval(linop%row)>linop%n_src) call mpl%abort('${subr}$','row>n_dst for symmetric linear operation '//trim(linop%prefix))
+   if (linop%n_s>0) then
+      if (present(ivec)) then
+         if (any(ieee_is_nan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for symmetric linear operation '//trim(linop%prefix))
+      else
+         if (any(ieee_is_nan(linop%S))) call mpl%abort('${subr}$','NaN in S for symmetric linear operation '//trim(linop%prefix))
+      end if
    end if
 
    ! Check input
-   if (any(fld>huge_real)) call mpl%abort('${subr}$', &
+   if (linop%n_src>0) then
+      if (any(fld>huge_real)) call mpl%abort('${subr}$', &
  & 'Overflowing number in fld for symmetric linear operation '//trim(linop%prefix))
-   if (any(ieee_is_nan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
+      if (any(ieee_is_nan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
+   end if
 end if
 
 ! Apply weights
@@ -754,7 +770,9 @@ end do
 
 if (check_data) then
    ! Check output
-   if (any(ieee_is_nan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
+   if (linop%n_src>0) then
+      if (any(ieee_is_nan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
+   end if
 end if
 
 ! Probe out
@@ -1230,7 +1248,9 @@ end do
 do i_s=1,n_s
    missing(row(i_s)) = .false.
 end do
-if (any(missing)) call mpl%abort('${subr}$','missing destination points')
+if (n_s>0) then
+   if (any(missing)) call mpl%abort('${subr}$','missing destination points')
+end if
 
 ! Allocation
 linop%n_s = n_s

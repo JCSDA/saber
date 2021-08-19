@@ -11,7 +11,7 @@ module type_wind
 use fckit_mpi_module, only: fckit_mpi_status
 !$ use omp_lib
 use tools_const, only: zero,half,one,two,eight,ten,twelve,pi,req
-use tools_func, only: sphere_dist
+use tools_func, only: sphere_dist,zss_count
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,put_att,get_att,close_file
 use type_com, only: com_type
@@ -769,7 +769,7 @@ if (nam%new_wind) then
    end do
 
    ! Allocation
-   wind%nc0b = count(lcheck_c0b)
+   wind%nc0b = zss_count(lcheck_c0b)
    allocate(c0u_to_c0b(geom%nc0u))
    allocate(c0b_to_c0(wind%nc0b))
 
@@ -1037,7 +1037,7 @@ if (nam%new_wind) then
    end do
 
    ! Allocation
-   wind%nllb = count(lcheck_llb)
+   wind%nllb = zss_count(lcheck_llb)
    allocate(ll_to_llb(nll))
    allocate(llb_to_ll(wind%nllb))
 

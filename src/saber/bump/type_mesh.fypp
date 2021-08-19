@@ -12,7 +12,7 @@ use atlas_module, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,at
  & atlas_build_node_to_edge_connectivity,atlas_mesh_nodes,atlas_connectivity
 !$ use omp_lib
 use tools_const, only: zero,one,two,three,five,pi,req,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,inside,vector_product,order_cc,det
+use tools_func, only: fletcher32,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,inside,vector_product,order_cc,det,zss_maxval
 use tools_kinds, only: kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf
@@ -246,7 +246,7 @@ if (mesh%use_cgal) then
    do i=1,mesh%n
       call aconnectivity%row(i,row,cols)
       mesh%rows(i)%cols = cols
-      maxedge = max(maxedge,maxval(row(1:cols)))
+      maxedge = max(maxedge,zss_maxval(row(1:cols)))
       allocate(mesh%rows(i)%nodes(mesh%rows(i)%cols))
    end do
    allocate(nodes(maxedge,2))

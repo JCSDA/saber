@@ -12,7 +12,7 @@ use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
-use tools_func, only: gc2gau,lonlatmod,sphere_dist,inside,fit_func,convert_i2l,convert_l2i
+use tools_func, only: gc2gau,lonlatmod,sphere_dist,inside,fit_func,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
  & inquire_var_presence,put_var,get_var
@@ -352,7 +352,7 @@ integer :: ibd,ic1u
 
 if (nc1u>0) then
    ! Count non-missing values
-   balldata%nbd = count(mpl%msv%isnot(val))
+   balldata%nbd = zss_count(mpl%msv%isnot(val))
 
    ! Allocation
    call balldata%alloc
@@ -1723,7 +1723,7 @@ if (bpar%nicas_block(ib)) then
    ! Allocation
    nicas_blk%c%n_s = 0
    do isa=1,nicas_blk%nsa
-      nop = count(mpl%msv%isnot(c_col_sa(isa,:)))
+      nop = zss_count(mpl%msv%isnot(c_col_sa(isa,:)))
       do iop=1,nop
          js = order_s(c_col_sa(isa,iop))
          jproc = nicas_blk%s_to_proc(js)
@@ -1741,7 +1741,7 @@ if (bpar%nicas_block(ib)) then
    i_s = 0
    do isa=1,nicas_blk%nsa
       is = nicas_blk%sa_to_s(isa)
-      nop = count(mpl%msv%isnot(c_col_sa(isa,:)))
+      nop = zss_count(mpl%msv%isnot(c_col_sa(isa,:)))
       do iop=1,nop
          js = order_s(c_col_sa(isa,iop))
          jproc = nicas_blk%s_to_proc(js)
@@ -1828,9 +1828,9 @@ if (bpar%nicas_block(ib)) then
       call mpl%flush
 
       ! Check if coef_ens should be written
-      if (count(geom%gmask_c0a)>0) then
-         coef_ens_min = minval(nicas_blk%coef_ens,mask=geom%gmask_c0a)
-         coef_ens_max = maxval(nicas_blk%coef_ens,mask=geom%gmask_c0a)
+      if ((geom%nc0a>0).and.(zss_count(geom%gmask_c0a)>0)) then
+         coef_ens_min = zss_minval(nicas_blk%coef_ens,mask=geom%gmask_c0a)
+         coef_ens_max = zss_maxval(nicas_blk%coef_ens,mask=geom%gmask_c0a)
       else
          coef_ens_min = one
          coef_ens_max = one
@@ -1900,7 +1900,7 @@ if (bpar%nicas_block(ib)) then
          if (nicas_blk%order_inv_sa(isa)/=nicas_blk%order_inv_sa(jsa)) c_nop(jsa) = c_nop(jsa)+1
       end if
    end do
-   call mpl%f_comm%allreduce(maxval(c_nop),nicas_blk%c_nopmax,fckit_mpi_max())
+   call mpl%f_comm%allreduce(zss_maxval(c_nop),nicas_blk%c_nopmax,fckit_mpi_max())
 
    ! Define dimensions
    ns_id = define_dim(mpl,nicas_blk%grpid,'ns',nicas_blk%ns)
@@ -2479,12 +2479,14 @@ do il0=1,geom%nl0
 end do
 
 ! Check horizontal support radius vs. universe radius
-rhs_max = zero
-if (any(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%rhs))) rhs_max = maxval(nicas_blk%rhs, &
+if (geom%nc0a>0) then
+   rhs_max = zero
+   if (any(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%rhs))) rhs_max = zss_maxval(nicas_blk%rhs, &
  & mask=(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%rhs)))
-if (rhs_max>nam%universe_rad) then
-   write(message,'(a,f10.2,a)') 'horizontal support radius (',rhs_max*reqkm,' km) larger than universe radius'
-   call mpl%warning('${subr}$',message)
+   if (rhs_max>nam%universe_rad) then
+      write(message,'(a,f10.2,a)') 'horizontal support radius (',rhs_max*reqkm,' km) larger than universe radius'
+      call mpl%warning('${subr}$',message)
+   end if
 end if
 
 ! End associate
@@ -2531,13 +2533,14 @@ if (.not.nam%load_nicas_global) then
 
    ! Get valid levels
    do il0=1,geom%nl0
-      npos(il0) = count(((nicas_blk%rhs(:,il0)>zero).or.(nicas_blk%rvs(:,il0)>zero)).and.geom%gmask_c0a(:,il0))
-      nmis(il0) = count((mpl%msv%is(nicas_blk%rhs(:,il0)).or.mpl%msv%is(nicas_blk%rvs(:,il0))).and.geom%gmask_c0a(:,il0))
+      npos(il0) = zss_count(((nicas_blk%rhs(:,il0)>zero).or.(nicas_blk%rvs(:,il0)>zero)).and.geom%gmask_c0a(:,il0))
+      nmis(il0) = zss_count((mpl%msv%is(nicas_blk%rhs(:,il0)).or.mpl%msv%is(nicas_blk%rvs(:,il0))).and.geom%gmask_c0a(:,il0))
    end do
    call mpl%f_comm%allreduce(npos,npostot,fckit_mpi_sum())
    call mpl%f_comm%allreduce(nmis,nmistot,fckit_mpi_sum())
    nicas_blk%vlev = (npostot>0).and.(nmistot==0)
 end if
+if (count(nicas_blk%vlev)==0) call mpl%abort('${subr}$','no valid level')
 
 ! Initialization
 il0first = mpl%msv%vali
@@ -2575,7 +2578,7 @@ else
                   if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/rv
                end if
             end do
-            call mpl%f_comm%allreduce(minval(distnorm),distnormmin,fckit_mpi_min())
+            call mpl%f_comm%allreduce(zss_minval(distnorm),distnormmin,fckit_mpi_min())
             slev(il0) = distnormmin>one/nam%resol
          end if
 
@@ -2725,9 +2728,11 @@ allocate(nicas_blk%com_c0_AB(nicas_blk%nl1))
 
 if (.not.nam%load_nicas_global) then
    ! Compute averaged horizontal support radius
-   rhs_min = minval(nicas_blk%rhs,dim=1,mask=geom%gmask_c0a)
-   rhs_max = maxval(nicas_blk%rhs,dim=1,mask=geom%gmask_c0a)
-   rhs_sum = sum(nicas_blk%rhs,dim=1,mask=geom%gmask_c0a)
+   do il0=1,geom%nl0
+      rhs_min(il0) = zss_minval(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
+      rhs_max(il0) = zss_maxval(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
+      rhs_sum(il0) = zss_sum(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
+   end do
    call mpl%f_comm%allreduce(rhs_min,rhs_min_tot,fckit_mpi_min())
    call mpl%f_comm%allreduce(rhs_max,rhs_max_tot,fckit_mpi_max())
    call mpl%f_comm%allreduce(rhs_sum,rhs_avg,fckit_mpi_sum())
@@ -2735,9 +2740,6 @@ if (.not.nam%load_nicas_global) then
 
    ! Mask initialization
    mask_hor_c0a = geom%gmask_hor_c0a
-   if (nam%check_no_point_nicas) then
-      if (mpl%myproc==mpl%nproc) mask_hor_c0a = .false.
-   end if
 end if
 
 ! Vertically dependent horizontal subsampling
@@ -3082,7 +3084,7 @@ do il1=1,nicas_blk%nl1
          call mpl%abort('${subr}$','point of halo B out of universe (increase universe_rad)')
       end if
    end do
-   nicas_blk%hor(il1)%nc1b = count(nicas_blk%hor(il1)%lcheck_c1b)
+   nicas_blk%hor(il1)%nc1b = zss_count(nicas_blk%hor(il1)%lcheck_c1b)
 
    ! Allocation
    allocate(nicas_blk%hor(il1)%c1b_to_c1(nicas_blk%hor(il1)%nc1b))
@@ -3137,7 +3139,7 @@ do il1=1,nicas_blk%nl1
       jc0u = nicas_blk%interp_c0b_to_c1a(il1)%col(i_s)
       lcheck_c0b(jc0u) = .true.
    end do
-   nicas_blk%hor(il1)%nc0b = count(lcheck_c0b)
+   nicas_blk%hor(il1)%nc0b = zss_count(lcheck_c0b)
 
    ! Compute own points
    ic0b = 0
@@ -3642,7 +3644,7 @@ do i_s=1,nicas_blk%c%n_s
    lcheck_sc(isu) = .true.
    lcheck_sc(jsu) = .true.
 end do
-nicas_blk%nsc = count(lcheck_sc)
+nicas_blk%nsc = zss_count(lcheck_sc)
 
 ! Check halos consistency
 do isu=1,nicas_blk%nsu
@@ -3777,7 +3779,7 @@ integer :: isu,ic1u,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
 real(kind_real) :: rr,disthsq,distvsq,rhsq,rvsq
 real(kind_real) :: dx,dy,dz,H11,H22,H33,H12
-real(kind_real) :: rh_max(geom%nl0)
+real(kind_real) :: rh_max(geom%nl0),rh_max_tot(geom%nl0)
 real(kind_real),allocatable :: distnorm(:),nn_dist(:)
 logical :: valid
 
@@ -3788,13 +3790,16 @@ logical :: valid
 @:probe_in()
 
 ! Find largest possible radius
-call mpl%f_comm%allreduce(maxval(nicas_blk%rh,mask=mpl%msv%isnot(nicas_blk%rh),dim=1),rh_max,fckit_mpi_max())
+do il0=1,geom%nl0
+   rh_max(il0) = zss_maxval(nicas_blk%rh(:,il0),mask=mpl%msv%isnot(nicas_blk%rh(:,il0)))
+end do
+call mpl%f_comm%allreduce(rh_max,rh_max_tot,fckit_mpi_max())
 if ((.not.nicas_blk%smoother).and.nicas_blk%sqrt_rescaling) then
    ! Square-root rescaling of the largest possible radius
    if (nicas_blk%anisotropic) then
-      rh_max = rh_max*sqrt_h
+      rh_max_tot = rh_max_tot*sqrt_h
    else
-      rh_max = rh_max*sqrt_r
+      rh_max_tot = rh_max_tot*sqrt_r
    end if
 end if
 
@@ -3818,7 +3823,7 @@ do isb=1,nicas_blk%nsb
       jl0 = nicas_blk%l1_to_l0(jl1)
 
       ! Research radius
-      rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rh_max(jl0)**2))
+      rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rh_max_tot(jl0)**2))
 
       ! Count nearest neighbors
       call nicas_blk%hor(jl1)%tree_c1u%count_nearest_neighbors(nicas_blk%hor(il1)%lon_c1u(ic1u), &
@@ -4005,7 +4010,11 @@ if (nicas_blk%verbosity) call mpl%prog_final
 
 ! Gather data from threads
 call nicas_blk%c%gather(mpl,c_n_s,c)
-if (nicas_blk%smoother) nicas_blk%smoother_norm = sum(S_test_tot,dim=2)
+if (nicas_blk%smoother) then
+   do isb=1,nicas_blk%nsb
+      nicas_blk%smoother_norm(isb) = sum(S_test_tot(isb,:))
+   end do
+end if
 
 ! Release memory
 do ithread=1,mpl%nthread
@@ -4031,7 +4040,7 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
 
 ! Local variables
-integer :: i_s,isa,isc,jsc
+integer :: i_s,isa,isc,jsc,inecmax
 integer,allocatable :: inec(:)
 real(kind_real),allocatable :: c_S(:,:)
 
@@ -4053,7 +4062,8 @@ if (.not.nam%load_nicas_global) then
          inec(jsc) = inec(jsc)+1
       end if
    end do
-   allocate(c_S(maxval(inec),nicas_blk%nsc))
+   inecmax = zss_maxval(inec)
+   allocate(c_S(inecmax,nicas_blk%nsc))
    c_S = mpl%msv%valr
    inec = 0
    do i_s=1,nicas_blk%c%n_s
@@ -4076,7 +4086,7 @@ if (.not.nam%load_nicas_global) then
       isc = nicas_blk%sa_to_sc(isa)
 
       ! Sum of squared values
-      nicas_blk%inorm_sa(isa) = one+sum(c_S(1:inec(isc),isc)**2)
+      nicas_blk%inorm_sa(isa) = one+zss_sum(c_S(1:inec(isc),isc)**2)
 
       ! Normalization factor
       nicas_blk%inorm_sa(isa) = one/sqrt(nicas_blk%inorm_sa(isa))
@@ -4119,7 +4129,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il0i,i_s,ic1b,jc1b,isc,jsb,jsc,ih,ic0a,il0,il1,jv,nlr,ilr,ic,isu_add,isa,jsa,isu,jsu,isb,js,jproc
-integer :: inevmax,inehmax,inecmax
+integer :: inevmax,inehmax,inecmax_sa,inecmax
 integer,allocatable :: inev(:),ineh(:,:),inec(:),order(:),isu_list(:),inec_sa(:),inec_sb(:)
 integer,allocatable :: v_col(:,:),h_col(:,:,:),c_ind(:,:),c_ind_sa(:,:),c_ind_sb(:,:)
 real(kind_real) :: S_add
@@ -4139,7 +4149,7 @@ do i_s=1,nicas_blk%v%n_s
    il0 = nicas_blk%v%row(i_s)
    inev(il0) = inev(il0)+1
 end do
-inevmax = maxval(inev)
+inevmax = zss_maxval(inev)
 allocate(v_col(inevmax,geom%nl0))
 allocate(v_S(inevmax,geom%nc0a,geom%nl0))
 v_col = mpl%msv%vali
@@ -4163,7 +4173,7 @@ do il1=1,nicas_blk%nl1
       ineh(ic0a,il1) = ineh(ic0a,il1)+1
    end do
 end do
-inehmax = maxval(ineh)
+inehmax = zss_maxval(ineh)
 allocate(h_col(inehmax,geom%nc0a,nicas_blk%nl1))
 allocate(h_S(inehmax,geom%nc0a,nicas_blk%nl1))
 h_col = mpl%msv%vali
@@ -4196,7 +4206,8 @@ do i_s=1,nicas_blk%c%n_s
       if (nicas_blk%order_inv_sa(isa)<nicas_blk%order_inv_sa(jsa)) inec_sa(jsa) = inec_sa(jsa)+1
    end if
 end do
-call mpl%f_comm%allreduce(maxval(inec_sa),inecmax,fckit_mpi_max())
+inecmax_sa = zss_maxval(inec_sa)
+call mpl%f_comm%allreduce(inecmax_sa,inecmax,fckit_mpi_max())
 allocate(c_ind_sa(nicas_blk%nsa,inecmax))
 allocate(c_S_sa(nicas_blk%nsa,inecmax))
 c_ind_sa = mpl%msv%vali
@@ -4258,7 +4269,7 @@ do isb=1,nicas_blk%nsb
       end if
    end do
 end do
-inecmax = maxval(inec)
+inecmax = zss_maxval(inec)
 allocate(c_ind(inecmax,nicas_blk%nsu))
 allocate(c_S(inecmax,nicas_blk%nsu))
 c_ind = mpl%msv%vali
@@ -4388,7 +4399,7 @@ do il0=1,geom%nl0
             end do
 
             ! Sum of squared values
-            nicas_blk%norm(ic0a,il0) = sum(S_list_tmp**2)
+            nicas_blk%norm(ic0a,il0) = zss_sum(S_list_tmp**2)
 
             ! Normalization factor
             nicas_blk%norm(ic0a,il0) = one/sqrt(nicas_blk%norm(ic0a,il0))
@@ -4442,7 +4453,7 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
 
 ! Local variables
 integer :: il0
-real(kind_real) :: sums(geom%nl0),sume(geom%nl0)
+real(kind_real) :: sums(geom%nl0),sums_tot(geom%nl0),sume(geom%nl0),sume_tot(geom%nl0)
 real(kind_real) :: alpha_a(nicas_blk%nsa),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
 
 ! Set name
@@ -4453,7 +4464,10 @@ real(kind_real) :: alpha_a(nicas_blk%nsa),alpha_b(nicas_blk%nsb),alpha_c(nicas_b
 
 if (nicas_blk%smoother) then
    ! Save global sum for each level
-   call mpl%f_comm%allreduce(sum(fld,dim=1,mask=geom%gmask_c0a),sums,fckit_mpi_sum())
+   do il0=1,geom%nl0
+      sums(il0) = zss_sum(fld(:,il0),mask=geom%gmask_c0a(:,il0))
+   end do
+   call mpl%f_comm%allreduce(sums,sums_tot,fckit_mpi_sum())
 
    ! Adjoint interpolation
    call nicas_blk%apply_interp_ad(mpl,geom,fld,alpha_b)
@@ -4477,9 +4491,12 @@ if (nicas_blk%smoother) then
    call nicas_blk%apply_interp(mpl,geom,alpha_b,fld)
 
    ! Reset global sum for each level
-   call mpl%f_comm%allreduce(sum(fld,dim=1,mask=geom%gmask_c0a),sume,fckit_mpi_sum())
    do il0=1,geom%nl0
-      fld(:,il0) = fld(:,il0)*sums(il0)/sume(il0)
+      sume(il0) = zss_sum(fld(:,il0),mask=geom%gmask_c0a(:,il0))
+   end do
+   call mpl%f_comm%allreduce(sume,sume_tot,fckit_mpi_sum())
+   do il0=1,geom%nl0
+      fld(:,il0) = fld(:,il0)*sums_tot(il0)/sume_tot(il0)
    end do
 else
    ! Apply square-root adjoint
@@ -5200,8 +5217,8 @@ end do
 write(mpl%info,'(a7,a)') '','Min - max: '
 if (nicas_blk%verbosity) call mpl%flush
 do il0=1,geom%nl0
-   call mpl%f_comm%allreduce(minval(fld(:,il0),mask=geom%gmask_c0a(:,il0)),valmin_tot,fckit_mpi_min())
-   call mpl%f_comm%allreduce(maxval(fld(:,il0),mask=geom%gmask_c0a(:,il0)),valmax_tot,fckit_mpi_max())
+   call mpl%f_comm%allreduce(zss_minval(fld(:,il0),mask=geom%gmask_c0a(:,il0)),valmin_tot,fckit_mpi_min())
+   call mpl%f_comm%allreduce(zss_maxval(fld(:,il0),mask=geom%gmask_c0a(:,il0)),valmax_tot,fckit_mpi_max())
    if (mpl%msv%isnot(valmin_tot).or.mpl%msv%isnot(valmax_tot)) then
       write(mpl%info,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',nam%levs(il0),': ',valmin_tot,' - ',valmax_tot
       if (nicas_blk%verbosity) call mpl%flush

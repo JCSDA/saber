@@ -709,7 +709,7 @@ subroutine mpl_dot_prod_r${rank}$(mpl,fld1,fld2,dp)
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(in) :: mpl                 !< MPI data
+class(mpl_type),intent(inout) :: mpl              !< MPI data
 real(kind_real),intent(in) :: fld1(${dim[rank]}$) !< Field 1
 real(kind_real),intent(in) :: fld2(${dim[rank]}$) !< Field 2
 real(kind_real),intent(out) :: dp                 !< Global dot product
@@ -723,12 +723,16 @@ real(kind_real) :: dp_loc(1),dp_out(1)
 ! Probe in
 @:probe_in()
 
-! Product and sum
+! Check sizes
+if (size(fld1)/=size(fld2)) call mpl%abort('${subr}$','different sizes')
+
+! Initialization
 dp_loc(1) = zero
-dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
+
+! Product and sum
+if (size(fld1)>0) dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
 
 ! Allreduce
-dp_out = zero
 call mpl%f_comm%allreduce(dp_loc,dp_out,fckit_mpi_sum())
 dp = dp_out(1)
 

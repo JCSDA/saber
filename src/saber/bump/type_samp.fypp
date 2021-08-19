@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 !$ use omp_lib
 use tools_const, only: zero,quarter,half,one,four,hundred,pi,req,reqkm,deg2rad,rad2deg
 use tools_func, only: lonlatmod,gridhash,independent_levels,sphere_dist,inside,fit_func,cx_to_cxa,cx_to_proc,cx_to_cxu, &
- & convert_i2l,convert_l2i
+ & convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real
 use tools_netcdf, only: create_file,open_file,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var, &
  & close_file
@@ -932,7 +932,7 @@ end if
 if (nam%new_hdiag.and.nam%local_diag) then
    nc1max = 0
    do ic2a=1,samp%nc2a
-      nc1max = max(count(samp%local_mask(:,ic2a)),nc1max)
+      nc1max = max(zss_count(samp%local_mask(:,ic2a)),nc1max)
    end do
    call mpl%f_comm%allreduce(nc1max,nc1max_tot,fckit_mpi_sum())
    nc1max_tot = nc1max_tot+1
@@ -942,7 +942,7 @@ end if
 if (nam%new_vbal) then
    nc1max = 0
    do ic2b=1,samp%nc2b
-      nc1max = max(count(samp%vbal_mask(:,ic2b)),nc1max)
+      nc1max = max(zss_count(samp%vbal_mask(:,ic2b)),nc1max)
    end do
    call mpl%f_comm%allreduce(nc1max,nc1max_tot,fckit_mpi_sum())
    nc1max_tot = nc1max_tot+1
@@ -1276,7 +1276,7 @@ if (samp%sc3) then
       write(mpl%info,'(a10,a,i3,a3)') '','Level ',nam%levs(il0),' ~>'
       call mpl%flush(.false.)
       do jc3=1,nam%nc3
-         call mpl%f_comm%allreduce(count(samp%smask_c3a(:,jc3,il0)),nc1_valid,fckit_mpi_sum())
+         call mpl%f_comm%allreduce(zss_count(samp%smask_c3a(:,jc3,il0)),nc1_valid,fckit_mpi_sum())
          ival = int(hundred*real(nc1_valid,kind_real)/real(samp%nc1,kind_real))
          if (ival==100) then
             ivalformat = '(a,i3,a)'
@@ -1383,7 +1383,7 @@ allocate(samp%smask_hor_c0a(geom%nc0a))
 allocate(samp%nc0_smask(0:geom%nl0))
 
 ! Count extra masked points in sampling
-nsmask = count(geom%gmask_c0a.and..not.geom%smask_c0a)
+nsmask = zss_count(geom%gmask_c0a.and..not.geom%smask_c0a)
 call mpl%f_comm%allreduce(nsmask,nsmask_tot,fckit_mpi_sum())
 
 if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
@@ -1484,10 +1484,12 @@ end if
 call geom%com_AU%ext(mpl,samp%smask_c0a,samp%smask_c0u)
 
 ! Related masks
-samp%smask_hor_c0a = any(samp%smask_c0a,dim=2)
-samp%smask_hor_c0u = any(samp%smask_c0u,dim=2)
-nc0_smask(0) = count(samp%smask_hor_c0a)
-nc0_smask(1:geom%nl0) = count(samp%smask_c0a,dim=1)
+if (geom%nc0a>0) samp%smask_hor_c0a = any(samp%smask_c0a,dim=2)
+if (geom%nc0u>0) samp%smask_hor_c0u = any(samp%smask_c0u,dim=2)
+nc0_smask(0) = zss_count(samp%smask_hor_c0a)
+do il0=1,geom%nl0
+   nc0_smask(il0) = zss_count(samp%smask_c0a(:,il0))
+end do
 call mpl%f_comm%allreduce(nc0_smask,samp%nc0_smask,fckit_mpi_sum())
 
 ! Check mask size
@@ -1542,7 +1544,9 @@ case ('random_uniform')
     rh_c0a = one
 case ('random_coast')
    ! More points around coasts
-   if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
+   if (geom%nc0a>0) then
+      if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
+   end if
    rh_c0a = zero
    do il0=1,geom%nl0
       il0i = geom%l0_to_l0i(il0)
@@ -1778,7 +1782,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 integer :: jc3,ic1a,ir,irtmp,jc0a,jc0u,jc0,icinf,icsup,ictest,il0,iproc
 integer,allocatable :: nn_index(:)
 real(kind_real) :: d
-logical :: found,proc_to_done(mpl%nproc),valid
+logical :: done,found,proc_to_done(mpl%nproc),valid
 logical,allocatable :: c3a_free(:,:)
 
 ! Set name
@@ -1822,7 +1826,12 @@ if (nam%nc3>1) then
       do ic1a=1,samp%nc1a
          mpl%done((ic1a-1)*nam%nc3+1) = .true.
       end do
-      call mpl%f_comm%allgather(all(mpl%done),proc_to_done)
+      if (samp%nc1a>0) then
+         done = all(mpl%done)
+      else
+         done = .true.
+      end if
+      call mpl%f_comm%allgather(done,proc_to_done)
       ir = 0
 
       ! Sample classes of positive separation
@@ -1886,7 +1895,12 @@ if (nam%nc3>1) then
             ! Update
             call mpl%prog_print
          end if
-         call mpl%f_comm%allgather(all(mpl%done),proc_to_done)
+         if (samp%nc1a>0) then
+            done = all(mpl%done)
+         else
+            done = .true.
+         end if
+         call mpl%f_comm%allgather(done,proc_to_done)
       end do
       call mpl%prog_final
 
@@ -2032,8 +2046,8 @@ else
          end if
       else
          ! Latitude bounds
-         call mpl%f_comm%allreduce(minval(geom%lat_c0a),latmin,fckit_mpi_min())
-         call mpl%f_comm%allreduce(maxval(geom%lat_c0a),latmax,fckit_mpi_max())
+         call mpl%f_comm%allreduce(zss_minval(geom%lat_c0a),latmin,fckit_mpi_min())
+         call mpl%f_comm%allreduce(zss_maxval(geom%lat_c0a),latmax,fckit_mpi_max())
 
          ! Regularly spaced points along zero meridian
          if (mpl%main) then
@@ -2479,7 +2493,7 @@ if (samp%compute_c2b_to_c1a) then
       end if
    end do
 end if
-samp%nc2b = count(lcheck_c2b)
+samp%nc2b = zss_count(lcheck_c2b)
 
 ! Allocation
 allocate(c2b_to_c2(samp%nc2b))
@@ -2612,7 +2626,7 @@ do il0ic1=1,samp%nl0ic1
       lcheck_c0b(jc0u) = .true.
    end do
 end do
-samp%nc0b = count(lcheck_c0b)
+samp%nc0b = zss_count(lcheck_c0b)
 
 ! Compute own points
 ic0b = 0
@@ -2742,7 +2756,7 @@ do jc3=1,nam%nc3
       end do
    end do
 end do
-samp%nc0c = count(lcheck_c0c)
+samp%nc0c = zss_count(lcheck_c0c)
 
 ! Compute own points
 ic0c = 0
@@ -2881,7 +2895,7 @@ do ic2a=1,samp%nc2a
       end do
    end if
 end do
-samp%nc1d = count(lcheck_c1d)
+samp%nc1d = zss_count(lcheck_c1d)
 
 ! Release memory
 call tree%dealloc
@@ -3022,7 +3036,7 @@ do ic2b=1,samp%nc2b
       call mpl%abort('${subr}$','vbal_rad or vbal_dlat should be positive')
    end if
 end do
-samp%nc1e = count(lcheck_c1e)
+samp%nc1e = zss_count(lcheck_c1e)
 
 ! Release memory
 call tree%dealloc
@@ -3113,7 +3127,7 @@ if (rflt>zero) then
          if (jc2u>samp%nc2u) exit
       end do
    end do
-   nc2f = count(lcheck_c2f)
+   nc2f = zss_count(lcheck_c2f)
 
    ! Allocation
    allocate(c2f_to_c2(nc2f))
@@ -3183,7 +3197,7 @@ if (rflt>zero) then
          select case (trim(filter_type))
          case ('average')
             ! Compute average
-            diag_c2a(ic2a) = sum(diag_eff)/real(nc2eff,kind_real)
+            diag_c2a(ic2a) = zss_sum(diag_eff)/real(nc2eff,kind_real)
          case ('gc99')
             ! Gaspari-Cohn (1999) kernel
             diag_c2a(ic2a) = zero
@@ -3264,7 +3278,7 @@ real(kind_real),allocatable :: diag_c2u(:)
 
 ! Count missing points
 if (samp%nc2a>0) then
-   nmsr = count(mpl%msv%is(diag_c2a))
+   nmsr = zss_count(mpl%msv%is(diag_c2a))
 else
    nmsr = 0
 end if

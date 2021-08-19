@@ -55,9 +55,11 @@ call close_file(mpl,ncid)
 
 ! Model grid
 model%mg_to_tile = 1
-model%lon = (sum(lon,dim=2)/real(model%nlev,kind_real))/req
-model%lat = (sum(lat,dim=2)/real(model%nlev,kind_real))/req
-model%area = sum(area,dim=2)/real(model%nlev,kind_real)/req**2
+do img=1,model%nmg
+   model%lon(img) = (sum(lon(img,:))/real(model%nlev,kind_real))/req
+   model%lat(img) = (sum(lat(img,:))/real(model%nlev,kind_real))/req
+   model%area(img) = (sum(area(img,:))/real(model%nlev,kind_real))/req**2
+end do
 model%mask = (mask(:,nam%levs(1:model%nl0))>half)
 
 ! Vertical unit

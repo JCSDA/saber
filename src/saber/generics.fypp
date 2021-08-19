@@ -28,6 +28,7 @@
 #:set ftype = dict([('byte','integer(kind_signed_char)'),('int','integer(kind_int)'),('float','real(kind_float)'),('real','real(kind_real)'),('logical','logical'),('string','character(len=*)')])
 #:set msv = dict([('int','msv%vali'),('real','msv%valr'),('logical','msv%vall')])
 #:set zero = dict([('byte','0'),('int','0'),('float','0.0_kind_float'),('real','0.0_kind_real'),('logical','.false.')])
+#:set huge = dict([('int','huge_int'),('real','huge_real')])
 #:set atlas_kind = dict([('int','atlas_integer(kind_int)'),('float','atlas_real(kind_float)'),('real','atlas_real(kind_real)')])
 
 ! Delimiter for declaration list

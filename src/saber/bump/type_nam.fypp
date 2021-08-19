@@ -83,9 +83,8 @@ type nam_type
    logical :: check_randomization                             !< Test NICAS randomization
    logical :: check_consistency                               !< Test HDIAG-NICAS consistency
    logical :: check_optimality                                !< Test HDIAG optimality
-   logical :: check_no_point                                  !< Test BUMP with no grid point on the last MPI task
-   logical :: check_no_point_mask                             !< Test BUMP with all grid points masked on the last MPI task
-   logical :: check_no_point_nicas                            !< Test NICAS with no subgrid point on the last MPI task
+   logical :: check_no_point_mpi                              !< Test BUMP with no grid point on the last MPI task
+   logical :: check_no_point_mask                             !< Test BUMP with all grid points masked on half of the domain
    logical :: check_set_param_cor                             !< Test set_parameter interface for correlation
    logical :: check_set_param_hyb                             !< Test set_parameter interface for hybrid case
    logical :: check_set_param_lct                             !< Test set_parameter interface for LCT
@@ -318,9 +317,8 @@ nam%check_dirac = .false.
 nam%check_randomization = .false.
 nam%check_consistency = .false.
 nam%check_optimality = .false.
-nam%check_no_point = .false.
+nam%check_no_point_mpi = .false.
 nam%check_no_point_mask = .false.
-nam%check_no_point_nicas = .false.
 nam%check_set_param_cor = .false.
 nam%check_set_param_hyb = .false.
 nam%check_set_param_lct = .false.
@@ -553,9 +551,8 @@ logical :: check_dirac
 logical :: check_randomization
 logical :: check_consistency
 logical :: check_optimality
-logical :: check_no_point
+logical :: check_no_point_mpi
 logical :: check_no_point_mask
-logical :: check_no_point_nicas
 logical :: check_set_param_cor
 logical :: check_set_param_hyb
 logical :: check_set_param_lct
@@ -725,9 +722,8 @@ namelist/driver_param/ &
  & check_randomization, &
  & check_consistency, &
  & check_optimality, &
- & check_no_point, &
+ & check_no_point_mpi, &
  & check_no_point_mask, &
- & check_no_point_nicas, &
  & check_set_param_cor, &
  & check_set_param_hyb, &
  & check_set_param_lct, &
@@ -908,9 +904,8 @@ if (mpl%main) then
    check_randomization = .false.
    check_consistency = .false.
    check_optimality = .false.
-   check_no_point = .false.
+   check_no_point_mpi = .false.
    check_no_point_mask = .false.
-   check_no_point_nicas = .false.
    check_set_param_cor = .false.
    check_set_param_hyb = .false.
    check_set_param_lct = .false.
@@ -1138,9 +1133,8 @@ if (mpl%main) then
    nam%check_randomization = check_randomization
    nam%check_consistency = check_consistency
    nam%check_optimality = check_optimality
-   nam%check_no_point = check_no_point
+   nam%check_no_point_mpi = check_no_point_mpi
    nam%check_no_point_mask = check_no_point_mask
-   nam%check_no_point_nicas = check_no_point_nicas
    nam%check_set_param_cor = check_set_param_cor
    nam%check_set_param_hyb = check_set_param_hyb
    nam%check_set_param_lct = check_set_param_lct
@@ -1364,9 +1358,8 @@ call mpl%f_comm%broadcast(nam%check_dirac,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_randomization,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_consistency,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_optimality,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_no_point,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%check_no_point_mpi,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_no_point_mask,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_no_point_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_set_param_cor,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_set_param_hyb,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_set_param_lct,mpl%rootproc-1)
@@ -1609,9 +1602,8 @@ if (conf%has('check_dirac')) call conf%get_or_die('check_dirac',nam%check_dirac)
 if (conf%has('check_randomization')) call conf%get_or_die('check_randomization',nam%check_randomization)
 if (conf%has('check_consistency')) call conf%get_or_die('check_consistency',nam%check_consistency)
 if (conf%has('check_optimality')) call conf%get_or_die('check_optimality',nam%check_optimality)
-if (conf%has('check_no_point')) call conf%get_or_die('check_no_point',nam%check_no_point)
+if (conf%has('check_no_point_mpi')) call conf%get_or_die('check_no_point_mpi',nam%check_no_point_mpi)
 if (conf%has('check_no_point_mask')) call conf%get_or_die('check_no_point_mask',nam%check_no_point_mask)
-if (conf%has('check_no_point_nicas')) call conf%get_or_die('check_no_point_nicas',nam%check_no_point_nicas)
 if (conf%has('check_set_param_cor')) call conf%get_or_die('check_set_param_cor',nam%check_set_param_cor)
 if (conf%has('check_set_param_hyb')) call conf%get_or_die('check_set_param_hyb',nam%check_set_param_hyb)
 if (conf%has('check_set_param_lct')) call conf%get_or_die('check_set_param_lct',nam%check_set_param_lct)
@@ -2203,13 +2195,8 @@ if (nam%check_optimality) then
    if (.not.nam%new_nicas) call mpl%abort('${subr}$','new_nicas required for check_optimality')
    if (.not.nam%write_hdiag) call mpl%abort('${subr}$','write_hdiag required for check_optimality')
 end if
-if (nam%check_no_point.and.nam%check_no_point_mask) &
- & call mpl%abort('${subr}$','check_no_point and check_no_point_mask are exclusive')
-if (nam%check_no_point.and.(mpl%nproc<2)) call mpl%abort('${subr}$','at least 2 MPI tasks required for check_no_point')
-if (nam%check_no_point_mask.and.(mpl%nproc<2)) call mpl%abort('${subr}$','at least 2 MPI tasks required for check_no_point_mask')
-if (nam%check_no_point_nicas.and..not.(nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global)) &
- & call mpl%abort('${subr}$','new_nicas or load_nicas_local/load_nicas_global required for check_no_point_nicas')
-if (nam%check_no_point_nicas.and.(mpl%nproc<2)) call mpl%abort('${subr}$','at least 2 MPI tasks required for check_no_point_nicas')
+if (nam%check_no_point_mpi.and.nam%check_no_point_mask) &
+ & call mpl%abort('${subr}$','check_no_point_mpi and check_no_point_mask are exclusive')
 if ((nam%check_set_param_cor.or.nam%check_set_param_cor.or.nam%check_set_param_cor).and..not.nam%new_nicas) &
  & call mpl%abort('${subr}$','new_nicas required for check_set_param_[...]')
 if (nam%check_get_param_stddev.and..not.(nam%new_var.or.nam%update_var)) &
@@ -2615,9 +2602,8 @@ call mpl%write('check_dirac',nam%check_dirac)
 call mpl%write('check_randomization',nam%check_randomization)
 call mpl%write('check_consistency',nam%check_consistency)
 call mpl%write('check_optimality',nam%check_optimality)
-call mpl%write('check_no_point',nam%check_no_point)
+call mpl%write('check_no_point_mpi',nam%check_no_point_mpi)
 call mpl%write('check_no_point_mask',nam%check_no_point_mask)
-call mpl%write('check_no_point_nicas',nam%check_no_point_nicas)
 call mpl%write('check_set_param_cor',nam%check_set_param_cor)
 call mpl%write('check_set_param_hyb',nam%check_set_param_hyb)
 call mpl%write('check_set_param_lct',nam%check_set_param_lct)

@@ -127,7 +127,7 @@ case ('soca')
 case default
    write(output_unit,'(a)') 'Error: wrong instance name in probe%get_instance ('//trim(cinst)//')'
    call flush(output_unit)
-   error stop 5
+   error stop 1
 end select
 
 if (.not.allocated(probe%instance(iinst)%trace)) then
@@ -175,7 +175,7 @@ if (omp_get_thread_num()==0) then
    if ((iinst<=0).or.(iinst>ninst)) then
       write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%in (',iinst,') called by '//trim(subr)
       call flush(output_unit)
-      error stop 5
+      error stop 2
    end if
 
    ! Update level
@@ -186,7 +186,7 @@ if (omp_get_thread_num()==0) then
       write(output_unit,'(a,i4,a,i4)') 'Error: calling level is too high: ',probe%instance(iinst)%level,' > ',maxlevel
       call flush(output_unit)
       call probe%traceback(output_unit)
-      error stop 4
+      error stop 3
    end if
 
    ! Update trace
@@ -246,7 +246,7 @@ if (omp_get_thread_num()==0) then
    if ((iinst<=0).or.(iinst>ninst)) then
       write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%out (',iinst,')'
       call flush(output_unit)
-      error stop 5
+      error stop 4
    end if
 
    if (key>=0) then

@@ -22,7 +22,7 @@ use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi
 use iso_c_binding, only: c_char
 use tools_atlas, only: field_from_array,field_to_array,create_atlas_function_space
 use tools_const, only: zero,three,hundred,pi,deg2rad,rad2deg
-use tools_func, only: lonlatmod,sphere_dist,inside
+use tools_func, only: lonlatmod,sphere_dist,inside,zss_count
 use tools_kinds, only: kind_int,kind_real
 use tools_repro, only: rth
 use type_bump, only: bump_type
@@ -379,7 +379,7 @@ if (bint%nouta > 0) then
          if (nn_dist(1)<rth) maskouta(iouta) = .true.
       end if
    end do
-   nouta_eff = count(maskouta)
+   nouta_eff = zss_count(maskouta)
 else
    nouta_eff = 0
 end if
@@ -419,7 +419,7 @@ do iouta=1,bint%nouta
       lcheck_nc0b(jc0u) = .true.
    end do
 end do
-bint%nc0b = count(lcheck_nc0b)
+bint%nc0b = zss_count(lcheck_nc0b)
 
 ! Allocation
 allocate(c0b_to_c0(bint%nc0b))

@@ -727,8 +727,10 @@ if (com_out%nown>0) then
    deallocate(ext_to_glb_order)
 
    ! Check local conversion
-   if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort('${subr}$','missing own_to_red value')
-   if (mpl%msv%isany(com_out%own_to_ext)) call mpl%abort('${subr}$','missing own_to_ext value')
+   if (com_out%nown>0) then
+      if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort('${subr}$','missing own_to_red value')
+      if (mpl%msv%isany(com_out%own_to_ext)) call mpl%abort('${subr}$','missing own_to_ext value')
+   end if
 end if
 
 ! Communicate data

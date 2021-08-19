@@ -9,6 +9,7 @@
 !----------------------------------------------------------------------
 module type_msv
 
+use iso_fortran_env, only: output_unit
 use tools_kinds,only: kind_int,kind_real
 @:use_probe()
 
@@ -105,6 +106,7 @@ logical :: test
 ! Probe in
 @:probe_in()
 
+! Check distance to missing value
 test = abs(value-${msv[dtype]}$)>${zero[dtype]}$
 
 ! Probe out
@@ -130,9 +132,9 @@ ${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
 ! Returned variable
 logical :: test( &
 #:for arg_dim in range(1,rank)
- & max(size(array,${arg_dim}$),1), &
+ & size(array,${arg_dim}$), &
 #:endfor
- & max(size(array,${rank}$),1))
+ & size(array,${rank}$))
 
 ! Set name
 @:set_name(msv_isnot_${dtype}$_r${rank}$)
@@ -140,11 +142,8 @@ logical :: test( &
 ! Probe in
 @:probe_in()
 
-if (size(array)>0) then
-   test = abs(array-${msv[dtype]}$)>${zero[dtype]}$
-else
-   test = .false.
-end if
+! Check distance to missing value
+test = abs(array-${msv[dtype]}$)>${zero[dtype]}$
 
 ! Probe out
 @:probe_out()
@@ -175,6 +174,7 @@ logical :: test
 ! Probe in
 @:probe_in()
 
+! Inverse of msv%isnot
 test = .not.msv%isnot(value)
 
 ! Probe out
@@ -200,9 +200,9 @@ ${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
 ! Returned variable
 logical :: test( &
 #:for arg_dim in range(1,rank)
- & max(size(array,${arg_dim}$),1), &
+ & size(array,${arg_dim}$), &
 #:endfor
- & max(size(array,${rank}$),1))
+ & size(array,${rank}$))
 
 ! Set name
 @:set_name(msv_is_${dtype}$_r${rank}$)
@@ -210,6 +210,7 @@ logical :: test( &
 ! Probe in
 @:probe_in()
 
+! Inverse of msv%isnot
 test = .not.msv%isnot(array)
 
 ! Probe out
@@ -242,6 +243,14 @@ logical :: test
 ! Probe in
 @:probe_in()
 
+! Check array size
+if (size(array)==0) then
+   write(output_unit,'(a)') 'Error: empty array in ${subr}$'
+   call flush(output_unit)
+   error stop 6
+end if
+
+! Any of msv%isnot
 test = any(msv%isnot(array))
 
 ! Probe out
@@ -274,6 +283,14 @@ logical :: test
 ! Probe in
 @:probe_in()
 
+! Check array size
+if (size(array)==0) then
+   write(output_unit,'(a)') 'Error: empty array in ${subr}$'
+   call flush(output_unit)
+   error stop 7
+end if
+
+! Inverse of msv%isallnot
 test = .not.msv%isallnot(array)
 
 ! Probe out
@@ -306,6 +323,14 @@ logical :: test
 ! Probe in
 @:probe_in()
 
+! Check array size
+if (size(array)==0) then
+   write(output_unit,'(a)') 'Error: empty array in ${subr}$'
+   call flush(output_unit)
+   error stop 8
+end if
+
+! All of msv%isnot
 test = all(msv%isnot(array))
 
 ! Probe out
@@ -338,6 +363,14 @@ logical :: test
 ! Probe in
 @:probe_in()
 
+! Check array size
+if (size(array)==0) then
+   write(output_unit,'(a)') 'Error: empty array in ${subr}$'
+   call flush(output_unit)
+   error stop 9
+end if
+
+! Inverse of msv%isanynot
 test = .not.msv%isanynot(array)
 
 ! Probe out

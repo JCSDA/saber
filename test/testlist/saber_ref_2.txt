@@ -22,6 +22,14 @@ bump_hdiag_mask_stddev_ncontig/test_1-1_diag.nc
 bump_hdiag_write_grids/test_1-1_diag.nc
 bump_hdiag_write_grids/test_1-1_sampling_grids_local_000001-000001.nc
 bump_hdiag_write_grids/test_1-1_sampling_local_000001-000001.nc
+bump_hdiag-nicas_check_no_point_mask/test_1-1_diag.nc
+bump_hdiag-nicas_check_no_point_mask/test_1-1_dirac.nc
+bump_hdiag-nicas_check_no_point_mask/test_1-1_nicas_local_000001-000001.nc
+bump_hdiag-nicas_check_no_point_mask/test_1-1_nicas.nc
+bump_hdiag-nicas_check_no_point_mpi/test_1-1_diag.nc
+bump_hdiag-nicas_check_no_point_mpi/test_1-1_dirac.nc
+bump_hdiag-nicas_check_no_point_mpi/test_1-1_nicas_local_000001-000001.nc
+bump_hdiag-nicas_check_no_point_mpi/test_1-1_nicas.nc
 bump_hdiag-nicas_draw_type_octahedral/test_1-1_diag.nc
 bump_hdiag-nicas_draw_type_octahedral/test_1-1_dirac.nc
 bump_hdiag-nicas_draw_type_octahedral/test_1-1_nicas_grids_local_000001-000001.nc

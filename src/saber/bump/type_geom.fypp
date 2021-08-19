@@ -15,7 +15,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: field_to_array
 use tools_const, only: zero,one,four,hundred,pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: lonlatmod,gridhash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,inside,vector_product, &
- & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l
+ & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: inf,sup,eq
@@ -519,60 +519,64 @@ type(atlas_structuredgrid) :: asgrid
 
 select case (afunctionspace%name())
 case ('NodeColumns')
-    ! Get node columns function space
-    afunctionspace_nc = atlas_functionspace_nodecolumns(afunctionspace%c_ptr())
+   ! Get node columns function space
+   afunctionspace_nc = atlas_functionspace_nodecolumns(afunctionspace%c_ptr())
 
-    ! Get number of nodes
-    geom%nmga = afunctionspace_nc%nb_nodes()
+   ! Get number of nodes
+   geom%nmga = afunctionspace_nc%nb_nodes()
 
-    ! Allocation
-    allocate(geom%lon_mga(geom%nmga))
-    allocate(geom%lat_mga(geom%nmga))
+   ! Allocation
+   allocate(geom%lon_mga(geom%nmga))
+   allocate(geom%lat_mga(geom%nmga))
 
-    ! Get lon/lat field
-    anodes = afunctionspace_nc%nodes()
-    afield_lonlat = anodes%lonlat()
-    call afield_lonlat%data(real_ptr)
-    geom%lon_mga = real_ptr(1,:)*deg2rad
-    geom%lat_mga = real_ptr(2,:)*deg2rad
+   ! Get lon/lat field
+   anodes = afunctionspace_nc%nodes()
+   afield_lonlat = anodes%lonlat()
+   call afield_lonlat%data(real_ptr)
+   if (geom%nmga>0) then
+      geom%lon_mga = real_ptr(1,:)*deg2rad
+      geom%lat_mga = real_ptr(2,:)*deg2rad
+   end if
 case ('PointCloud')
-    ! Get point cloud function space
-    afunctionspace_pc = atlas_functionspace_pointcloud(afunctionspace%c_ptr())
+   ! Get point cloud function space
+   afunctionspace_pc = atlas_functionspace_pointcloud(afunctionspace%c_ptr())
 
-    ! Get number of points
-    geom%nmga = afunctionspace_pc%size()
+   ! Get number of points
+   geom%nmga = afunctionspace_pc%size()
 
-    ! Allocation
-    allocate(geom%lon_mga(geom%nmga))
-    allocate(geom%lat_mga(geom%nmga))
+   ! Allocation
+   allocate(geom%lon_mga(geom%nmga))
+   allocate(geom%lat_mga(geom%nmga))
 
-    ! Get lon/lat field
-    afield_lonlat = afunctionspace_pc%lonlat()
-    call afield_lonlat%data(real_ptr)
-    geom%lon_mga = real_ptr(1,:)*deg2rad
-    geom%lat_mga = real_ptr(2,:)*deg2rad
+   ! Get lon/lat field
+   afield_lonlat = afunctionspace_pc%lonlat()
+   call afield_lonlat%data(real_ptr)
+   if (geom%nmga>0) then
+     geom%lon_mga = real_ptr(1,:)*deg2rad
+     geom%lat_mga = real_ptr(2,:)*deg2rad
+   end if
 case ('StructuredColumns')
-    ! Get structured columns function space
-    afunctionspace_sc = atlas_functionspace_structuredcolumns(afunctionspace%c_ptr())
+   ! Get structured columns function space
+   afunctionspace_sc = atlas_functionspace_structuredcolumns(afunctionspace%c_ptr())
 
-    ! Get number of nodes
-    geom%nmga = afunctionspace_sc%size_owned()
+   ! Get number of nodes
+   geom%nmga = afunctionspace_sc%size_owned()
 
-    ! Allocation
-    allocate(geom%lon_mga(geom%nmga))
-    allocate(geom%lat_mga(geom%nmga))
+   ! Allocation
+   allocate(geom%lon_mga(geom%nmga))
+   allocate(geom%lat_mga(geom%nmga))
 
-    ! Get lon/lat
-    asgrid = afunctionspace_sc%grid()
-    imga = 0
-    do j=afunctionspace_sc%j_begin(),afunctionspace_sc%j_end()
-       do i=afunctionspace_sc%i_begin(j),afunctionspace_sc%i_end(j)
-          imga = imga+1
-          lonlat = asgrid%lonlat(i,j)
-          geom%lon_mga(imga) = lonlat(1)*deg2rad
-          geom%lat_mga(imga) = lonlat(2)*deg2rad
-       end do
-    end do
+   ! Get lon/lat
+   asgrid = afunctionspace_sc%grid()
+   imga = 0
+   do j=afunctionspace_sc%j_begin(),afunctionspace_sc%j_end()
+      do i=afunctionspace_sc%i_begin(j),afunctionspace_sc%i_end(j)
+         imga = imga+1
+         lonlat = asgrid%lonlat(i,j)
+         geom%lon_mga(imga) = lonlat(1)*deg2rad
+         geom%lat_mga(imga) = lonlat(2)*deg2rad
+      end do
+   end do
 case default
    call mpl%abort('${subr}$','wrong function space: '//afunctionspace%name())
 end select
@@ -583,10 +587,10 @@ do imga=1,geom%nmga
 end do
 
 ! Get min/max lon/lat
-call mpl%f_comm%allreduce(minval(geom%lon_mga),geom%lon_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(maxval(geom%lon_mga),geom%lon_max,fckit_mpi_max())
-call mpl%f_comm%allreduce(minval(geom%lat_mga),geom%lat_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(maxval(geom%lat_mga),geom%lat_max,fckit_mpi_max())
+call mpl%f_comm%allreduce(zss_minval(geom%lon_mga),geom%lon_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(zss_maxval(geom%lon_mga),geom%lon_max,fckit_mpi_max())
+call mpl%f_comm%allreduce(zss_minval(geom%lat_mga),geom%lat_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(zss_maxval(geom%lat_mga),geom%lat_max,fckit_mpi_max())
 
 ! Allocation
 allocate(geom%vunit_mga(geom%nmga,geom%nl0))
@@ -1147,20 +1151,22 @@ deallocate(geom%vunit_mga)
 deallocate(geom%smask_mga)
 
 ! Related fields
-geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
-nc0_gmask(0) = count(geom%gmask_hor_c0a)
-nc0_gmask(1:geom%nl0) = count(geom%gmask_c0a,dim=1)
+if (geom%nc0a>0) geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
+nc0_gmask(0) = zss_count(geom%gmask_hor_c0a)
+do il0=1,geom%nl0
+   nc0_gmask(il0) = zss_count(geom%gmask_c0a(:,il0))
+end do
 call mpl%f_comm%allreduce(nc0_gmask,geom%nc0_gmask,fckit_mpi_sum())
-if (count(geom%gmask_hor_c0a)>0) then
-   area_max_c0a = sum(geom%area_c0a,mask=geom%gmask_hor_c0a)
+if (zss_count(geom%gmask_hor_c0a)>0) then
+   area_max_c0a = zss_sum(geom%area_c0a,mask=geom%gmask_hor_c0a)
 else
    area_max_c0a = zero
 end if
 do il0=1,geom%nl0
-   norm_c0a(il0) = count(geom%gmask_c0a(:,il0))
+   norm_c0a(il0) = zss_count(geom%gmask_c0a(:,il0))
    if (norm_c0a(il0)>0) then
-      area_ver_c0a(il0) = sum(geom%area_c0a,mask=geom%gmask_c0a(:,il0))
-      vunit_hor_c0a(il0) = sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
+      area_ver_c0a(il0) = zss_sum(geom%area_c0a,mask=geom%gmask_c0a(:,il0))
+      vunit_hor_c0a(il0) = zss_sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
    else
       area_ver_c0a(il0) = zero
       vunit_hor_c0a(il0) = zero
@@ -1243,12 +1249,12 @@ call geom%com_AU%ext(mpl,geom%lat_c0a,geom%lat_c0u)
 call geom%com_AU%ext(mpl,geom%area_c0a,area_c0u)
 call geom%com_AU%ext(mpl,geom%vunit_c0a,geom%vunit_c0u)
 call geom%com_AU%ext(mpl,geom%gmask_c0a,geom%gmask_c0u)
-geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
+if (geom%nc0u>0) geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
 
 ! Related fields
-norm_c0u = count(geom%gmask_hor_c0u)
+norm_c0u = zss_count(geom%gmask_hor_c0u)
 if (norm_c0u>0) then
-   geom%area_max_c0u = sum(area_c0u,mask=geom%gmask_hor_c0u)
+   geom%area_max_c0u = zss_sum(area_c0u,mask=geom%gmask_hor_c0u)
 else
    geom%area_max_c0u = zero
 end if
@@ -1337,22 +1343,24 @@ if ((trim(nam%diag_draw_type)=='random_coast').or.(trim(nam%nicas_draw_type)=='r
 
    do il0i=1,geom%nl0i
       ! Check mask
-      if (any(.not.geom%gmask_c0u(:,il0i))) then
-         ! Allocation
-         not_mask_c0u = .not.geom%gmask_c0u(:,il0i)
-         call tree%alloc(mpl,geom%nc0u,mask=not_mask_c0u)
+      if (geom%nc0u>0) then
+         if (any(.not.geom%gmask_c0u(:,il0i))) then
+            ! Allocation
+            not_mask_c0u = .not.geom%gmask_c0u(:,il0i)
+            call tree%alloc(mpl,geom%nc0u,mask=not_mask_c0u)
 
-         ! Initialization
-         call tree%init(geom%lon_c0u,geom%lat_c0u)
+            ! Initialization
+            call tree%init(geom%lon_c0u,geom%lat_c0u)
 
-         ! Find nearest neighbors
-         do ic0u=1,geom%nc0u
-            if (geom%gmask_c0u(ic0u,il0i)) call tree%find_nearest_neighbors(geom%lon_c0u(ic0u),geom%lat_c0u(ic0u),1,nn_index, &
+            ! Find nearest neighbors
+            do ic0u=1,geom%nc0u
+               if (geom%gmask_c0u(ic0u,il0i)) call tree%find_nearest_neighbors(geom%lon_c0u(ic0u),geom%lat_c0u(ic0u),1,nn_index, &
  & geom%mdist_c0u(ic0u,il0i))
-         end do
+            end do
 
-         ! Release memory
-         call tree%dealloc
+            ! Release memory
+            call tree%dealloc
+         end if
       end if
    end do
 
@@ -1410,7 +1418,7 @@ if (nam%mask_check) then
    end do
 
    ! Allocation
-   nbndamax = maxval(geom%mesh_c0u%nbnda)
+   nbndamax = zss_maxval(geom%mesh_c0u%nbnda)
    allocate(bnda_to_c0u(2,nbndamax))
    allocate(geom%mesh_c0u%v1bnda(3,nbndamax,0:geom%nl0))
    allocate(geom%mesh_c0u%v2bnda(3,nbndamax,0:geom%nl0))
@@ -1432,7 +1440,8 @@ if (nam%mask_check) then
          call lonlat2xyz(mpl,lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2))
          geom%mesh_c0u%v1bnda(:,ibnda,il0) = (/xbnda(1),ybnda(1),zbnda(1)/)
          geom%mesh_c0u%v2bnda(:,ibnda,il0) = (/xbnda(2),ybnda(2),zbnda(2)/)
-         call vector_product(geom%mesh_c0u%v1bnda(:,ibnda,il0),geom%mesh_c0u%v2bnda(:,ibnda,il0),geom%mesh_c0u%vabnda(:,ibnda,il0))
+         call vector_product(geom%mesh_c0u%v1bnda(:,ibnda,il0),geom%mesh_c0u%v2bnda(:,ibnda,il0), &
+ & geom%mesh_c0u%vabnda(:,ibnda,il0))
       end do
    end do
 end if
@@ -2040,7 +2049,7 @@ do ic0a=1,geom%nc0a
    ! Count operations
    do il0=1,geom%nl0
       if (geom%gmask_c0a(ic0a,il0)) then
-         geom%smoother(il0)%n_s = geom%smoother(il0)%n_s+count(geom%gmask_c0u(nn_index(:,ic0a),il0))
+         geom%smoother(il0)%n_s = geom%smoother(il0)%n_s+zss_count(geom%gmask_c0u(nn_index(:,ic0a),il0))
       end if
    end do
 
@@ -2065,7 +2074,7 @@ do il0=1,geom%nl0
       if (geom%gmask_c0a(ic0a,il0)) then
          do i=1,nam%full_grid_smoother_nn
             jc0u = nn_index(i,ic0a)
-            S = one/real(count(geom%gmask_c0u(nn_index(:,ic0a),il0)),kind_real)
+            S = one/real(zss_count(geom%gmask_c0u(nn_index(:,ic0a),il0)),kind_real)
             if (geom%gmask_c0u(jc0u,il0)) then
                i_s = i_s+1
                geom%smoother(il0)%row(i_s) = ic0a
@@ -2081,7 +2090,7 @@ end do
 deallocate(nn_index)
 
 ! Allocation
-geom%nc0s = count(lcheck_c0s)
+geom%nc0s = zss_count(lcheck_c0s)
 allocate(c0u_to_c0s(geom%nc0u))
 allocate(c0s_to_c0(geom%nc0s))
 

@@ -11,6 +11,7 @@ module type_var
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use tools_const, only: zero,half,one,two,three,four,six,rad2deg,reqkm
+use tools_func, only: zss_sum,zss_count
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_bpar, only: bpar_type
@@ -652,11 +653,11 @@ if ((nam%var_niter<=0).and.(nam%var_npass<=0)) then
    m2norm = zero
    do iv=1,nam%nv
       do il0=1,geom%nl0
-         if (mpl%msv%isanynot(var%m2(:,il0,iv))) m2uni(il0,iv) = sum(var%m2(:,il0,iv),mask=geom%gmask_c0a(:,il0))
+         if (mpl%msv%isanynot(var%m2(:,il0,iv))) m2uni(il0,iv) = zss_sum(var%m2(:,il0,iv),mask=geom%gmask_c0a(:,il0))
       end do
    end do
    do il0=1,geom%nl0
-      m2norm(il0) = real(count(geom%gmask_c0a(:,il0)),kind_real)
+      m2norm(il0) = real(zss_count(geom%gmask_c0a(:,il0)),kind_real)
    end do
 
    ! Communication
@@ -697,8 +698,8 @@ else
          m2sq = zero
          m4 = zero
          do il0=1,geom%nl0
-            if (mpl%msv%isanynot(var%m2(:,il0,iv))) m2sq(il0) = sum(var%m2(:,il0,iv)**2,mask=geom%gmask_c0a(:,il0))
-            if (mpl%msv%isanynot(var%m4(:,il0,iv))) m4(il0) = sum(var%m4(:,il0,iv),mask=geom%gmask_c0a(:,il0))
+            if (mpl%msv%isanynot(var%m2(:,il0,iv))) m2sq(il0) = zss_sum(var%m2(:,il0,iv)**2,mask=geom%gmask_c0a(:,il0))
+            if (mpl%msv%isanynot(var%m4(:,il0,iv))) m4(il0) = zss_sum(var%m4(:,il0,iv),mask=geom%gmask_c0a(:,il0))
          end do
          call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
          call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
@@ -725,7 +726,7 @@ else
 
             ! Global product
             do il0=1,geom%nl0
-               m2prod(il0) = sum(m2_ini(:,il0)**2,mask=geom%gmask_c0a(:,il0))
+               m2prod(il0) = zss_sum(m2_ini(:,il0)**2,mask=geom%gmask_c0a(:,il0))
             end do
             call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
 
@@ -748,7 +749,7 @@ else
 
                ! Global product
                do il0=1,geom%nl0
-                  m2prod(il0) = sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
+                  m2prod(il0) = zss_sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
                end do
                call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
 
@@ -791,7 +792,7 @@ else
 
             ! Global product
             do il0=1,geom%nl0
-               m2prod(il0) = sum(var%m2flt(:,il0,iv)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
+               m2prod(il0) = zss_sum(var%m2flt(:,il0,iv)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
             end do
             call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
 
@@ -812,7 +813,7 @@ else
 
             ! Global product
             do il0=1,geom%nl0
-               m2prod(il0) = sum(m2_ini(:,il0)**2,mask=geom%gmask_c0a(:,il0))
+               m2prod(il0) = zss_sum(m2_ini(:,il0)**2,mask=geom%gmask_c0a(:,il0))
             end do
             call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
 
@@ -835,7 +836,7 @@ else
 
                ! Global product
                do il0=1,geom%nl0
-                  m2prod(il0) = sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
+                  m2prod(il0) = zss_sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
                end do
                call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
 
@@ -855,7 +856,7 @@ else
 
             ! Global product
             do il0=1,geom%nl0
-               m2prod(il0) = sum(var%m2flt(:,il0,iv)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
+               m2prod(il0) = zss_sum(var%m2flt(:,il0,iv)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
             end do
             call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
 

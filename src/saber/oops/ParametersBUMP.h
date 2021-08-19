@@ -319,7 +319,6 @@ void ParametersBUMP<MODEL>::apply() const {
         if (bumpOperator == "multiplyStdDevInv") ooBump_->multiplyStdDevInv(dxi, dxo);
         if (bumpOperator == "multiplyNicas") ooBump_->multiplyNicas(dxi, dxo);
         if (bumpOperator == "inverseMultiplyNicas") ooBump_->inverseMultiplyNicas(dxi, dxo);
-// TODO(Benjamin): psichi_to_uv ?
         dxi = dxo;
       }
 

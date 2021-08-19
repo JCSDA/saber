@@ -448,10 +448,11 @@ elseif (mpl%nproc>1) then
    end do
 
    ! Release memory
+   deallocate(nx)
    deallocate(imga_arr)
 
    ! No points on the last task
-   if (nam%check_no_point) then
+   if (nam%check_no_point_mpi) then
       ! Count points on the penultimate task
       nmga = count(model%mg_to_proc==mpl%nproc-1)
 
@@ -534,7 +535,7 @@ do img=1,model%nmg
       area_ptr(imga) = model%area(img)*req**2
       vunit_ptr(:,imga) = model%vunit(img,:)
       do il0=1,model%nl0
-         if (model%mask(img,il0).and.(.not.nam%check_no_point_mask)) then
+         if (model%mask(img,il0)) then
             gmask_ptr(il0,imga) = 1
          else
             gmask_ptr(il0,imga) = 0
@@ -542,6 +543,147 @@ do img=1,model%nmg
       end do
    end if
 end do
+
+! Mask more points
+if (nam%check_no_point_mask) then
+   ! Force nprocpertile
+   nprocpertile = 2
+
+   ! Define number of subtiles in x and y directions
+   ny = nint(sqrt(real(nprocpertile,kind_real)))
+   if (ny**2<nprocpertile) ny = ny+1
+   allocate(nx(ny))
+   nres = nprocpertile
+   do iy=1,ny
+      delta = nprocpertile/ny
+      if (nres>(ny-iy+1)*delta) delta = delta+1
+      nx(iy) = delta
+      nres = nres-delta
+   end do
+   if (sum(nx)/=nprocpertile) call mpl%abort('${subr}$','wrong number of subtiles in define_distribution')
+
+   if (mpl%msv%isnot(model%nlon).and.mpl%msv%isnot(model%nlat)) then
+      ! Regular grid
+
+      ! Allocation
+      nxmax = maxval(nx)
+      allocate(nlatsub(ny))
+      allocate(nlonsub(nxmax,ny))
+      allocate(lonlattile_to_proc(model%nlon,model%nlat,model%ntile))
+
+      ! Split tile
+      nlatsub = 0
+      nlonsub = 0
+      nreslat = model%nlat
+      do iy=1,ny
+         deltalat = model%nlat/ny
+         if (nreslat>(ny-iy+1)*deltalat) deltalat = deltalat+1
+         nlatsub(iy) = deltalat
+         nreslat = nreslat-deltalat
+         nreslon = model%nlon
+         do ix=1,nx(iy)
+            deltalon = model%nlon/nx(iy)
+            if (nreslon>(nx(iy)-ix+1)*deltalon) deltalon = deltalon+1
+            nlonsub(ix,iy) = deltalon
+            nreslon = nreslon-deltalon
+         end do
+      end do
+
+      ! Assign task
+      iproc = 0
+      do itile=1,model%ntile
+         do iy=1,ny
+            do ix=1,nx(iy)
+               iproc = iproc+1
+               do ilatsub=1,nlatsub(iy)
+                  do ilonsub=1,nlonsub(ix,iy)
+                     ilat = ilatsub
+                     if (iy>1) ilat = ilat+sum(nlatsub(1:iy-1))
+                     ilon = ilonsub
+                     if (ix>1) ilon = ilon+sum(nlonsub(1:ix-1,iy))
+                     lonlattile_to_proc(ilon,ilat,itile) = iproc
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      ! Pack task
+      do img=1,model%nmg
+         itile = model%mg_to_tile(img)
+         ilon = model%mg_to_lon(img)
+         ilat = model%mg_to_lat(img)
+         if ((lonlattile_to_proc(ilon,ilat,itile)==2).and.(model%mg_to_proc(img)==mpl%myproc)) then
+            imga = model%mg_to_mga(img)
+            gmask_ptr(:,imga) = 0
+         end if
+      end do
+
+      ! Release memory
+      deallocate(nlatsub)
+      deallocate(nlonsub)
+      deallocate(lonlattile_to_proc)
+   else
+      ! Unstructured grid
+      if ((model%ntile>1).and.inf(sum(model%area),four*pi)) call mpl%abort('${subr}$', &
+ & 'unstructured grid requires a single tile and a global domain')
+
+      ! Allocation
+      allocate(lon_inf(nprocpertile))
+      allocate(lon_sup(nprocpertile))
+      allocate(lat_inf(nprocpertile))
+      allocate(lat_sup(nprocpertile))
+
+      ! Define distribution bounds using a regular splitting
+      dlat = (maxval(model%lat)-minval(model%lat))/ny
+      iproc = 0
+      do iy=1,ny
+         dlon = (maxval(model%lon)-minval(model%lon))/nx(iy)
+         do ix=1,nx(iy)
+            iproc = iproc+1
+            lon_inf(iproc) = minval(model%lon)+real(ix-1,kind_real)*dlon
+            lon_sup(iproc) = minval(model%lon)+real(ix,kind_real)*dlon
+            lat_inf(iproc) = minval(model%lat)+real(iy-1,kind_real)*dlat
+            lat_sup(iproc) = minval(model%lat)+real(iy,kind_real)*dlat
+         end do
+      end do
+
+      ! Define distribution
+      do img=1,model%nmg
+         ! Processor index
+         iproc = 1
+         found = .false.
+         do while (.not.found)
+            if (iproc<=nprocpertile) then
+               if (((model%lon(img)>=lon_inf(iproc)).and.(model%lon(img)<=lon_sup(iproc)) &
+ & .and.(model%lat(img)>=lat_inf(iproc)).and.(model%lat(img)<=lat_sup(iproc)))) then
+                  if ((iproc==2).and.(model%mg_to_proc(img)==mpl%myproc)) then
+                     imga = model%mg_to_mga(img)
+                     gmask_ptr(:,imga) = 0
+                  end if
+                  found = .true.
+               end if
+            else
+               if ((nprocpertile==2).and.(model%mg_to_proc(img)==mpl%myproc)) then
+                  imga = model%mg_to_mga(img)
+                  gmask_ptr(:,imga) = 0
+               end if
+               found = .true.
+            end if
+            iproc = iproc+1
+         end do
+      end do
+
+      ! Release memory
+      deallocate(lon_inf)
+      deallocate(lon_sup)
+      deallocate(lat_inf)
+      deallocate(lat_sup)
+   end if
+
+   ! Release memory
+   deallocate(nx)
+end if
 
 ! Define sampling mask
 smask_ptr = gmask_ptr

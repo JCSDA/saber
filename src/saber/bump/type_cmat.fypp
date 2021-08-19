@@ -10,7 +10,7 @@ module type_cmat
 
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,one,rad2deg,reqkm,req
-use tools_func, only: lct_d2h,lct_h2r,convert_l2i,convert_i2l
+use tools_func, only: lct_d2h,lct_h2r,convert_l2i,convert_i2l,zss_sum
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_bpar, only: bpar_type
@@ -531,7 +531,7 @@ do ib=1,bpar%nbe
 
             ! Copy to C matrix
             cmat%blk(ib)%coef_ens = fld_c0a(:,:,1)
-            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(zss_sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%coef_sta = fld_c0a(:,:,2)
             if (bpar%fit_block(ib)) then
@@ -861,7 +861,7 @@ do ib=1,bpar%nbe
             else
                cmat%blk(ib)%coef_ens = one
             end if
-            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(zss_sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
@@ -980,7 +980,9 @@ end if
 select case (trim(nam%diag_draw_type))
 case ('random_coast')
    ! More points around coasts
-   if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
+   if (geom%nc0a>0) then
+      if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
+   end if
 
    ! Allocation
    allocate(rh_c0a(geom%nc0a))
