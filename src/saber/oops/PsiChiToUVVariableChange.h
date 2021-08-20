@@ -19,6 +19,7 @@
 #include "oops/interface/Geometry.h"
 #include "oops/interface/Increment.h"
 #include "oops/interface/State.h"
+#include "oops/util/abor1_cpp.h"
 
 #include "saber/oops/OoBump.h"
 #include "saber/oops/ParametersBUMP.h"
