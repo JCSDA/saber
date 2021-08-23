@@ -17,7 +17,7 @@ use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
  & inquire_var_presence,put_var,get_var
 use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf,eq,indist
+use tools_repro, only: supeq,sup,inf,infeq,eq,indist
 use tools_samp, only: initialize_sampling
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
@@ -2381,6 +2381,7 @@ end if
 
 ! Allocation
 allocate(nicas_blk%rh(geom%nc0a,geom%nl0))
+allocate(nicas_blk%rv(geom%nc0a,geom%nl0))
 allocate(nicas_blk%rhs(geom%nc0a,geom%nl0))
 allocate(nicas_blk%rvs(geom%nc0a,geom%nl0))
 
@@ -2389,6 +2390,7 @@ nicas_blk%anisotropic = .false.
 do il0=1,geom%nl0
    nicas_blk%rh(:,il0) = rhflt(il0)
 end do
+nicas_blk%rv = zero
 nicas_blk%rhs = nicas_blk%rh
 nicas_blk%rvs = zero
 nicas_blk%wgt = one
@@ -3237,7 +3239,7 @@ do il1=1,nicas_blk%nl1
    allocate(nicas_blk%hor(il1)%c1a_to_sa(nicas_blk%hor(il1)%nc1a))
    allocate(nicas_blk%hor(il1)%c1b_to_sb(nicas_blk%hor(il1)%nc1b))
 end do
-allocate(lon_sa(nicas_blk%nsa)) ! TODO: no need for order anymore...
+allocate(lon_sa(nicas_blk%nsa))
 allocate(lat_sa(nicas_blk%nsa))
 if (mpl%main) then
    allocate(lon_s(nicas_blk%ns))
@@ -3245,8 +3247,8 @@ if (mpl%main) then
    allocate(order_s(nicas_blk%ns))
    allocate(order_inv_s(nicas_blk%ns))
 else
-   allocate(lon_s(nicas_blk%ns))
-   allocate(lat_s(nicas_blk%ns))
+   allocate(lon_s(0))
+   allocate(lat_s(0))
    allocate(order_s(0))
    allocate(order_inv_s(0))
 end if
@@ -3777,9 +3779,10 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: isu,ic1u,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
-real(kind_real) :: rr,disthsq,distvsq,rhsq,rvsq
+real(kind_real) :: min_minus_max,max_minus_min,rvsq_max,rr,disthsq,distvsq,rhsq,rvsq
 real(kind_real) :: dx,dy,dz,H11,H22,H33,H12
-real(kind_real) :: rh_max(geom%nl0),rh_max_tot(geom%nl0)
+real(kind_real) :: rv_max(geom%nl0),rv_max_tot(geom%nl0),rh_max(geom%nl0),rh_max_tot(geom%nl0)
+real(kind_real) :: vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distvsq_min(nicas_blk%nl1,nicas_blk%nl1)
 real(kind_real),allocatable :: distnorm(:),nn_dist(:)
 logical :: valid
 
@@ -3792,23 +3795,42 @@ logical :: valid
 ! Find largest possible radius
 do il0=1,geom%nl0
    rh_max(il0) = zss_maxval(nicas_blk%rh(:,il0),mask=mpl%msv%isnot(nicas_blk%rh(:,il0)))
+   rv_max(il0) = zss_maxval(nicas_blk%rv(:,il0),mask=mpl%msv%isnot(nicas_blk%rv(:,il0)))
 end do
 call mpl%f_comm%allreduce(rh_max,rh_max_tot,fckit_mpi_max())
+call mpl%f_comm%allreduce(rv_max,rv_max_tot,fckit_mpi_max())
 if ((.not.nicas_blk%smoother).and.nicas_blk%sqrt_rescaling) then
    ! Square-root rescaling of the largest possible radius
    if (nicas_blk%anisotropic) then
       rh_max_tot = rh_max_tot*sqrt_h
+      rv_max_tot = rv_max_tot*sqrt_h
    else
       rh_max_tot = rh_max_tot*sqrt_r
+      rv_max_tot = rv_max_tot*sqrt_r
    end if
 end if
 
-! Count nearest neighbors
+! Find smallest possible vertical distance
+do il1=1,nicas_blk%nl1
+   vunit_min(il1) = zss_minval(nicas_blk%hor(il1)%vunit_c1u)
+   vunit_max(il1) = zss_maxval(nicas_blk%hor(il1)%vunit_c1u)
+end do
+distvsq_min = zero
+do il1=1,nicas_blk%nl1
+   do jl1=1,il1
+      min_minus_max = (vunit_min(il1)-vunit_max(jl1))**2
+      max_minus_min = (vunit_max(il1)-vunit_min(jl1))**2
+      distvsq_min(il1,jl1) = min(min_minus_max,max_minus_min)
+      distvsq_min(jl1,il1) = distvsq_min(il1,jl1)
+   end do
+end do
+
+! Count and find nearest neighbors
 write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distances: '
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
-!!!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,rr,nn,j,jc1u,jl1,jl0,disthsq,distvsq,rhsq,rvsq), & TODO
-!!!$omp&                             private(dx,dy,dz,H11,H22,H33,H12) firstprivate(nn_index,nn_dist,valid_arc,distnorm)
+!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rvsq_max,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12,H33), &
+!$omp&                             private(disthsq,rhsq,distvsq,rvsq) firstprivate(nn_index,nn_dist,distnorm)
 do isb=1,nicas_blk%nsb
    ! Indices
    isu = nicas_blk%sb_to_su(isb)
@@ -3817,25 +3839,8 @@ do isb=1,nicas_blk%nsb
    il0 = nicas_blk%l1_to_l0(il1)
 
    do jl1=1,nicas_blk%nl1
-      ! TODO: test on rv/rvmax to save CPU
-
       ! Index
       jl0 = nicas_blk%l1_to_l0(jl1)
-
-      ! Research radius
-      rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rh_max_tot(jl0)**2))
-
-      ! Count nearest neighbors
-      call nicas_blk%hor(jl1)%tree_c1u%count_nearest_neighbors(nicas_blk%hor(il1)%lon_c1u(ic1u), &
- & nicas_blk%hor(il1)%lat_c1u(ic1u),rr,nn)
-
-      ! Allocation
-      allocate(nn_index(nn))
-      allocate(nn_dist(nn))
-
-      ! Find nearest neighbors
-      call nicas_blk%hor(jl1)%tree_c1u%find_nearest_neighbors(nicas_blk%hor(il1)%lon_c1u(ic1u), &
- & nicas_blk%hor(il1)%lat_c1u(ic1u),nn,nn_index,nn_dist)
 
       ! Allocation
       allocate(distnorm(nicas_blk%hor(jl1)%nc1u))
@@ -3843,76 +3848,99 @@ do isb=1,nicas_blk%nsb
       ! Initialization
       distnorm = mpl%msv%valr
 
-      ! Loop on nearest neighbors
-      do j=1,nn
-         jc1u = nn_index(j)
+      ! Check vertical radius
+      rvsq_max = half*(rv_max(il0)**2+rv_max(jl0)**2)
+      if (infeq(distvsq_min(il1,jl1),rvsq_max)) then
+         ! Research radius
+         rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rh_max_tot(jl0)**2))
 
-         ! Check arc validity
-         valid = .true.
-         if (nam%mask_check) call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
+         ! Count nearest neighbors
+         call nicas_blk%hor(jl1)%tree_c1u%count_nearest_neighbors(nicas_blk%hor(il1)%lon_c1u(ic1u), &
+ & nicas_blk%hor(il1)%lat_c1u(ic1u),rr,nn)
+
+         ! Allocation
+         allocate(nn_index(nn))
+         allocate(nn_dist(nn))
+
+         ! Find nearest neighbors
+         call nicas_blk%hor(jl1)%tree_c1u%find_nearest_neighbors(nicas_blk%hor(il1)%lon_c1u(ic1u), &
+ & nicas_blk%hor(il1)%lat_c1u(ic1u),nn,nn_index,nn_dist)
+
+         ! Loop on nearest neighbors
+         do j=1,nn
+            jc1u = nn_index(j)
+
+            ! Check arc validity
+            valid = .true.
+            if (nam%mask_check) call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
  & nicas_blk%hor(il1)%lat_c1u(ic1u),il0,nicas_blk%hor(jl1)%lon_c1u(jc1u),nicas_blk%hor(jl1)%lat_c1u(jc1u),jl0,valid)
 
-         if (valid) then
-            ! Normalized distance
-            if (nicas_blk%anisotropic) then
-               dx = nicas_blk%hor(jl1)%lon_c1u(jc1u)-nicas_blk%hor(il1)%lon_c1u(ic1u)
-               dy = nicas_blk%hor(jl1)%lat_c1u(jc1u)-nicas_blk%hor(il1)%lat_c1u(ic1u)
-               call lonlatmod(dx,dy)
-               dx = dx*cos(half*(nicas_blk%hor(il1)%lat_c1u(ic1u)+nicas_blk%hor(jl1)%lat_c1u(jc1u)))
-               H11 = half*(nicas_blk%hor(il1)%H11_c1u(ic1u)+nicas_blk%hor(jl1)%H11_c1u(jc1u))
-               H22 = half*(nicas_blk%hor(il1)%H22_c1u(ic1u)+nicas_blk%hor(jl1)%H22_c1u(jc1u))
-               H12 = half*(nicas_blk%hor(il1)%H12_c1u(ic1u)+nicas_blk%hor(jl1)%H12_c1u(jc1u))
-               distnorm(jc1u) = H11*dx**2+H22*dy**2+two*H12*dx*dy
-               if (nicas_blk%horizontal) then
-                  if (il0/=jl0) distnorm(jc1u) = distnorm(jc1u)+half*huge_real
-               else
-                  dz = nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u)
-                  H33 = half*(nicas_blk%hor(il1)%H33_c1u(ic1u)+nicas_blk%hor(jl1)%H33_c1u(jc1u))
-                  distnorm(jc1u) = distnorm(jc1u)+H33*dz**2
-               end if
-               distnorm(jc1u) = sqrt(distnorm(jc1u))*gc2gau
-            else
-               disthsq = nn_dist(j)**2
-               rhsq = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+nicas_blk%hor(jl1)%rh_c1u(jc1u)**2)
-               if (rhsq>zero) then
-                  distnorm(jc1u) = disthsq/rhsq
-               elseif (disthsq>zero) then
-                  distnorm(jc1u) = half*huge_real
-               else
-                  distnorm(jc1u) = zero
-               end if
-               if (nicas_blk%horizontal) then
-                  if (il0/=jl0) distnorm(jc1u) = distnorm(jc1u)+half*huge_real
-               else
-                  distvsq = (nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))**2
-                  rvsq = half*(nicas_blk%hor(il1)%rv_c1u(ic1u)**2+nicas_blk%hor(jl1)%rv_c1u(jc1u)**2)
-                  if (rvsq>zero) then
-                     distnorm(jc1u) = distnorm(jc1u)+distvsq/rvsq
-                  elseif (distvsq>zero) then
-                     distnorm(jc1u) = distnorm(jc1u)+half*huge_real
+            if (valid) then
+               ! Normalized distance
+               if (nicas_blk%anisotropic) then
+                  dx = nicas_blk%hor(jl1)%lon_c1u(jc1u)-nicas_blk%hor(il1)%lon_c1u(ic1u)
+                  dy = nicas_blk%hor(jl1)%lat_c1u(jc1u)-nicas_blk%hor(il1)%lat_c1u(ic1u)
+                  call lonlatmod(dx,dy)
+                  dx = dx*cos(half*(nicas_blk%hor(il1)%lat_c1u(ic1u)+nicas_blk%hor(jl1)%lat_c1u(jc1u)))
+                  H11 = half*(nicas_blk%hor(il1)%H11_c1u(ic1u)+nicas_blk%hor(jl1)%H11_c1u(jc1u))
+                  H22 = half*(nicas_blk%hor(il1)%H22_c1u(ic1u)+nicas_blk%hor(jl1)%H22_c1u(jc1u))
+                  H12 = half*(nicas_blk%hor(il1)%H12_c1u(ic1u)+nicas_blk%hor(jl1)%H12_c1u(jc1u))
+                  distnorm(jc1u) = H11*dx**2+H22*dy**2+two*H12*dx*dy
+                  if (nicas_blk%horizontal) then
+                     if (il0/=jl0) distnorm(jc1u) = distnorm(jc1u)+half*huge_real
+                  else
+                     dz = nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u)
+                     H33 = half*(nicas_blk%hor(il1)%H33_c1u(ic1u)+nicas_blk%hor(jl1)%H33_c1u(jc1u))
+                     distnorm(jc1u) = distnorm(jc1u)+H33*dz**2
                   end if
+                  distnorm(jc1u) = sqrt(distnorm(jc1u))*gc2gau
+               else
+                  disthsq = nn_dist(j)**2
+                  rhsq = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+nicas_blk%hor(jl1)%rh_c1u(jc1u)**2)
+                  if (rhsq>zero) then
+                     distnorm(jc1u) = disthsq/rhsq
+                  elseif (disthsq>zero) then
+                     distnorm(jc1u) = half*huge_real
+                  else
+                     distnorm(jc1u) = zero
+                  end if
+                  if (nicas_blk%horizontal) then
+                     if (il0/=jl0) distnorm(jc1u) = distnorm(jc1u)+half*huge_real
+                  else
+                     distvsq = (nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))**2
+                     rvsq = half*(nicas_blk%hor(il1)%rv_c1u(ic1u)**2+nicas_blk%hor(jl1)%rv_c1u(jc1u)**2)
+                     if (rvsq>zero) then
+                        distnorm(jc1u) = distnorm(jc1u)+distvsq/rvsq
+                     elseif (distvsq>zero) then
+                        distnorm(jc1u) = distnorm(jc1u)+half*huge_real
+                     end if
+                  end if
+                  distnorm(jc1u) = sqrt(distnorm(jc1u))
                end if
-               distnorm(jc1u) = sqrt(distnorm(jc1u))
             end if
-         end if
-      end do
+         end do
+
+         ! Upper bound
+         do jc1u=1,nicas_blk%hor(jl1)%nc1u
+             if (supeq(distnorm(jc1u),one)) distnorm(jc1u) = mpl%msv%valr
+         end do
+
+         ! Release memory
+         deallocate(nn_index)
+         deallocate(nn_dist)
+      end if
 
       ! Pack data
-      do jc1u=1,nicas_blk%hor(jl1)%nc1u
-         if (supeq(distnorm(jc1u),one)) distnorm(jc1u) = mpl%msv%valr
-      end do
       call nicas_blk%distnorm(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,distnorm)
 
       ! Release memory
-      deallocate(nn_index)
-      deallocate(nn_dist)
       deallocate(distnorm)
    end do
 
    ! Update
    if (nicas_blk%verbosity) call mpl%prog_print(isb)
 end do
-!!!$omp end parallel do
+!$omp end parallel do
 if (nicas_blk%verbosity) call mpl%prog_final
 
 ! Probe out
