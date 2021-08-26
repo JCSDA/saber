@@ -723,32 +723,37 @@ else
    y_avg = zero
    z_avg = zero
    n_avg = zero
+   distmax = zero
 
    ! Convert to cartesian coordinates and average
    do imga=1,geom%nmga
-      if (any(geom%gmask_mga(imga,:))) then
-         call lonlat2xyz(mpl,geom%lon_mga(imga),geom%lat_mga(imga),x,y,z)
-         x_avg = x_avg+x
-         y_avg = y_avg+y
-         z_avg = z_avg+z
-         n_avg = n_avg+one
-      end if
+      call lonlat2xyz(mpl,geom%lon_mga(imga),geom%lat_mga(imga),x,y,z)
+      x_avg = x_avg+x
+      y_avg = y_avg+y
+      z_avg = z_avg+z
+      n_avg = n_avg+one
    end do
-   x_avg = x_avg/n_avg
-   y_avg = y_avg/n_avg
-   z_avg = z_avg/n_avg
+   if (n_avg>zero) then
+      ! Normalization
+      x_avg = x_avg/n_avg
+      y_avg = y_avg/n_avg
+      z_avg = z_avg/n_avg
 
-   ! Convert average back to lon/lat
-   call xyz2lonlat(mpl,x_avg,y_avg,z_avg,lon_avg,lat_avg)
+      ! Convert average back to lon/lat
+      call xyz2lonlat(mpl,x_avg,y_avg,z_avg,lon_avg,lat_avg)
 
-   ! Compute maximum distance to average
-   distmax = zero
-   do imga=1,geom%nmga
-      if (any(geom%gmask_mga(imga,:))) then
-         call sphere_dist(lon_avg,lat_avg,geom%lon_mga(imga),geom%lat_mga(imga),dist)
-         if (sup(dist,distmax)) distmax = dist
-      end if
-   end do
+      ! Compute maximum distance to average
+      do imga=1,geom%nmga
+         if (any(geom%gmask_mga(imga,:))) then
+            call sphere_dist(lon_avg,lat_avg,geom%lon_mga(imga),geom%lat_mga(imga),dist)
+            if (sup(dist,distmax)) distmax = dist
+         end if
+      end do
+   else
+      ! Missing values
+      lon_avg = mpl%msv%valr
+      lat_avg = mpl%msv%valr
+   end if
 
    ! Communication
    call mpl%f_comm%allgather(lon_avg,proc_to_lon)
@@ -758,11 +763,14 @@ else
    ! Compute distances from sampling points to my processor to other sampling points
    geom%myuniverse = .false.
    do iproc=1,geom%nproc
-      ! Compute distance
-      call sphere_dist(lon_avg,lat_avg,proc_to_lon(iproc),proc_to_lat(iproc),dist)
+      if (mpl%msv%isnot(lon_avg).and.mpl%msv%isnot(lat_avg) &
+ & .and.mpl%msv%isnot(proc_to_lon(iproc)).and.mpl%msv%isnot(proc_to_lat(iproc))) then
+         ! Compute distance
+         call sphere_dist(lon_avg,lat_avg,proc_to_lon(iproc),proc_to_lat(iproc),dist)
 
-      ! Check distance
-      if (inf(dist,distmax+proc_to_distmax(iproc)+nam%universe_rad)) geom%myuniverse(iproc) = .true.
+         ! Check distance
+         if (inf(dist,distmax+proc_to_distmax(iproc)+nam%universe_rad)) geom%myuniverse(iproc) = .true.
+      end if
    end do
 
    ! Release memory
