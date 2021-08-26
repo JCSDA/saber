@@ -37,7 +37,6 @@ ne: 50
 
 # nicas_param
 resol: 8.0
-mpicom: 2
 min_lev:
   u: 1
   q: 2

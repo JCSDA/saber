@@ -66,7 +66,7 @@ def contour_centered(testdata, test, mpi, omp, suffix, testfig):
             # Set masked values and levels
             field = ma.masked_invalid(field)
             vmax = np.max(np.abs(field))
-           
+
             levels = np.linspace(-vmax, vmax, 21)
             field = field.filled(fill_value=-1.0e38)
 

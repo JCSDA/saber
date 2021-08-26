@@ -62,7 +62,7 @@ if [[ ${mpirun_path} == *"openmpi"* ]]; then
    list_command="-cpu-list "
 fi
 if [[ ${mpirun_path} == *"intel"* ]]; then
-   list_command="-genv I_MPI_PIN_PROCESSOR_LIST="   
+   list_command="-genv I_MPI_PIN_PROCESSOR_LIST="
 fi
 if test "${list_command}" = "" ; then
    echo "Cannot find what compiler is used for mpirun"

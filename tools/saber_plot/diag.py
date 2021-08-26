@@ -18,7 +18,7 @@ def diag(testdata, test, mpi, omp, suffix, testfig):
    _FillValue = f.__dict__["_FillValue"]
 
    # Diagnostics list
-   diag_list = ["coef_ens","fit_rh","fit_rv"]   
+   diag_list = ["coef_ens","fit_rh","fit_rv"]
 
    # Plots
    for diag in diag_list:

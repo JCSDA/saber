@@ -54,6 +54,7 @@ phases:
       - echo ${CODEBUILD_GIT_BRANCH} > /jcsda/artifacts/branch_name.txt
       - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} > /jcsda/artifacts/commit_sha.txt
 
+      # initialization
       - git lfs install
       - cd CI
 
@@ -62,16 +63,19 @@ phases:
 
       # oops
       - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/oops $CODEBUILD_GIT_BRANCH oops /jcsda/saber-bundle develop
+
       # saber
       - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/saber $CODEBUILD_GIT_BRANCH saber /jcsda/saber-bundle develop
 
-      - cp CMakeLists.txt /jcsda/saber-bundle
+      # saber-data
+      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/saber-data $CODEBUILD_GIT_BRANCH saber-data /jcsda/saber-bundle develop
 
       # move CMakeLists.txt
       - cp CMakeLists.txt /jcsda/saber-bundle
       - cp -r cmake /jcsda/saber-bundle/
       - cp /jcsda/saber-bundle/cmake/CTestConfig.cmake /jcsda/saber-bundle
 
+      # print list
       - cd /jcsda/saber-bundle
       - ls
 

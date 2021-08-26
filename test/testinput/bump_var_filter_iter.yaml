@@ -26,7 +26,7 @@ ens1_ne: 50
 ne: 50
 var_filter: 1
 var_niter: 3
-var_rhflt: 
+var_rhflt:
   u: [1000.0e3]
   q: [1000.0e3]
 

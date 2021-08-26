@@ -67,103 +67,65 @@ if ( oops_qg_FOUND )
 endif()
 
 # Summary
-message( STATUS "SABER_TEST_TIER:          ${SABER_TEST_TIER}" )
-message( STATUS "SABER_TEST_MPI:           ${SABER_TEST_MPI}" )
-message( STATUS "SABER_TEST_OMP:           ${SABER_TEST_OMP}" )
-message( STATUS "SABER_TEST_MULTI:         ${SABER_TEST_MULTI}" )
-message( STATUS "SABER_TEST_PLOT:          ${SABER_TEST_PLOT}" )
-message( STATUS "SABER_TEST_VALGRIND:      ${SABER_TEST_VALGRIND}" )
-message( STATUS "SABER_TEST_OOPS:          ${SABER_TEST_OOPS}" )
-message( STATUS "SABER_TEST_INTERPOLATION: ${SABER_TEST_INTERPOLATION}" )
+message( STATUS "SABER variables:" )
+message( STATUS "  - SABER_TEST_TIER:          ${SABER_TEST_TIER}" )
+message( STATUS "  - SABER_TEST_MPI:           ${SABER_TEST_MPI}" )
+message( STATUS "  - SABER_TEST_OMP:           ${SABER_TEST_OMP}" )
+message( STATUS "  - SABER_TEST_MULTI:         ${SABER_TEST_MULTI}" )
+message( STATUS "  - SABER_TEST_PLOT:          ${SABER_TEST_PLOT}" )
+message( STATUS "  - SABER_TEST_VALGRIND:      ${SABER_TEST_VALGRIND}" )
+message( STATUS "  - SABER_TEST_OOPS:          ${SABER_TEST_OOPS}" )
+message( STATUS "  - SABER_TEST_INTERPOLATION: ${SABER_TEST_INTERPOLATION}" )
 
-# TIER 1
-file( STRINGS testlist/saber_test_1.txt saber_test_tmp )
-list( APPEND saber_test ${saber_test_tmp} )
+# Tests
+message( STATUS "SABER tests activated:" )
+
+# Input data
 file( STRINGS testlist/saber_data.txt saber_data_tmp )
 list( APPEND saber_data ${saber_data_tmp} )
-list( APPEND saber_data_tar saber_data.tar.gz )
-file( STRINGS testlist/saber_ref_1.txt saber_ref_tmp )
+list( APPEND saber_data_tar saber_data.tar.gz)
+
+# TIER 1
+message( STATUS "  - TIER 1 base" )
+file( STRINGS testlist/saber_test_tier1.txt saber_test_tmp )
+list( APPEND saber_test ${saber_test_tmp} )
+if( atlas_HAVE_TESSELATION )
+    message( STATUS "  - TIER 1 CGAL-specific" )
+    file( STRINGS testlist/saber_test_tier1-cgal.txt saber_test_tmp )
+    list( APPEND saber_test ${saber_test_tmp} )
+endif()
+if( SABER_TEST_MULTI )
+    message( STATUS "  - TIER 1 multicores" )
+    file( STRINGS testlist/saber_test_tier1-multi.txt saber_test_multi_tmp )
+    list( APPEND saber_test_multi ${saber_test_multi_tmp} )
+endif()
+if( SABER_TEST_OOPS )
+    message( STATUS "  - TIER 1 OOPS-specific" )
+    file( STRINGS testlist/saber_test_tier1-oops.txt saber_test_oops_tmp )
+    list( APPEND saber_test_oops ${saber_test_oops_tmp} )
+endif()
+file( STRINGS testlist/saber_ref_tier1.txt saber_ref_tmp )
 list( APPEND saber_ref ${saber_ref_tmp} )
-list( APPEND saber_ref_tar saber_ref_1.tar.gz)
-if( SABER_TEST_MPI )
-    file( STRINGS testlist/saber_data_mpi.txt saber_data_tmp )
-    list( APPEND saber_data ${saber_data_tmp} )
-    list( APPEND saber_data_tar saber_data_mpi.tar.gz )
-    file( STRINGS testlist/saber_ref_mpi_1.txt saber_ref_tmp )
-    list( APPEND saber_ref ${saber_ref_tmp} )
-    list( APPEND saber_ref_tar saber_ref_mpi_1.tar.gz )
-endif()
-if( SABER_TEST_OMP )
-    file( STRINGS testlist/saber_data_omp.txt saber_data_tmp )
-    list( APPEND saber_data ${saber_data_tmp} )
-    list( APPEND saber_data_tar saber_data_omp.tar.gz )
-endif()
+list( APPEND saber_ref_tar saber_ref_tier1.tar.gz)
 
 # TIER > 1
 if( SABER_TEST_TIER GREATER 1 )
-    file( STRINGS testlist/saber_test_2.txt saber_test_tmp )
+    message( STATUS "  - TIER 2 base" )
+    file( STRINGS testlist/saber_test_tier2.txt saber_test_tmp )
     list( APPEND saber_test ${saber_test_tmp} )
-    file( STRINGS testlist/saber_ref_2.txt saber_ref_tmp )
+    file( STRINGS testlist/saber_ref_tier2.txt saber_ref_tmp )
     list( APPEND saber_ref ${saber_ref_tmp} )
-    list( APPEND saber_ref_tar saber_ref_2.tar.gz )
-    if( SABER_TEST_MPI )
-        file( STRINGS testlist/saber_ref_mpi_2.txt saber_ref_tmp )
-        list( APPEND saber_ref ${saber_ref_tmp} )
-        list( APPEND saber_ref_tar saber_ref_mpi_2.tar.gz )
-    endif()
+    list( APPEND saber_ref_tar saber_ref_tier2.tar.gz )
 endif()
 
 # TIER > 2
 if( SABER_TEST_TIER GREATER 2 )
-    file( STRINGS testlist/saber_test_3.txt saber_test_tmp )
+    message( STATUS "  - TIER 3 base" )
+    file( STRINGS testlist/saber_test_tier3.txt saber_test_tmp )
     list( APPEND saber_test ${saber_test_tmp} )
-    file( STRINGS testlist/saber_ref_3.txt saber_ref_tmp )
+    file( STRINGS testlist/saber_ref_tier3.txt saber_ref_tmp )
     list( APPEND saber_ref ${saber_ref_tmp} )
-    list( APPEND saber_ref_tar saber_ref_3.tar.gz )
-#    if( SABER_TEST_MPI )
-#        file( STRINGS testlist/saber_ref_mpi_3.txt saber_ref_tmp )
-#        list( APPEND saber_ref ${saber_ref_tmp} )
-#        list( APPEND saber_ref_tar saber_ref_mpi_3.tar.gz )
-#    endif()
-endif()
-
-# CGAL-specific tests
-if( atlas_HAVE_TESSELATION )
-    message( STATUS "ATLAS has feature TESSELATION enabled: CGAL-specific tests activated" )
-    file( STRINGS testlist/saber_test_cgal.txt saber_test_tmp )
-    list( APPEND saber_test ${saber_test_tmp} )
-    file( STRINGS testlist/saber_ref_cgal.txt saber_ref_tmp )
-    list( APPEND saber_ref ${saber_ref_tmp} )
-    list( APPEND saber_ref_tar saber_ref_cgal.tar.gz )
-#    if( SABER_TEST_MPI )
-#        file( STRINGS testlist/saber_ref_mpi_cgal.txt saber_ref_tmp )
-#        list( APPEND saber_ref ${saber_ref_tmp} )
-#        list( APPEND saber_ref_tar saber_ref_mpi_cgal.tar.gz )
-#    endif()
-endif()
-
-# Multi-core tests (more than two)
-if( SABER_TEST_MULTI )
-    file( STRINGS testlist/saber_data_multi.txt saber_data_tmp )
-    list( APPEND saber_data ${saber_data_tmp} )
-    list( APPEND saber_data_tar saber_data_multi.tar.gz )
-    file( STRINGS testlist/saber_test_multi.txt saber_test_multi_tmp )
-    list( APPEND saber_test_multi ${saber_test_multi_tmp} )
-    file( STRINGS testlist/saber_ref_multi.txt saber_ref_tmp )
-    list( APPEND saber_ref ${saber_ref_tmp} )
-    list( APPEND saber_ref_tar saber_ref_multi.tar.gz )
-endif()
-
-# OOPS tests
-if( SABER_TEST_OOPS )
-    file( STRINGS testlist/saber_test_oops.txt saber_test_oops_tmp )
-    list( APPEND saber_test_oops ${saber_test_oops_tmp} )
-    file( STRINGS testlist/saber_data_oops.txt saber_data_tmp )
-    list( APPEND saber_data ${saber_data_tmp} )
-    list( APPEND saber_data_tar saber_data_oops.tar.gz )
-    file( STRINGS testlist/saber_ref_oops.txt saber_ref_tmp )
-    list( APPEND saber_ref ${saber_ref_tmp} )
-    list( APPEND saber_ref_tar saber_ref_oops.tar.gz )
+    list( APPEND saber_ref_tar saber_ref_tier3.tar.gz )
 endif()
 
 # Set download URL
@@ -177,65 +139,115 @@ else()
     # Find branch name
     find_branch_name( REPO_DIR_NAME saber )
 
-    if( DEFINED GIT_BRANCH_FUNC )
-        # Branch is checked out
-        set( GIT_BRANCH_SABER ${GIT_BRANCH_FUNC} )
-        message( STATUS "SABER is in branch: ${GIT_BRANCH_SABER}" )
-        set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com/saber )
-    elseif( DEFINED GIT_TAG_FUNC )
-        # Tag is checked out
+    if( DEFINED GIT_TAG_FUNC )
+        # Tag is checked out => download data from DASH
         set( GIT_BRANCH_SABER ${GIT_TAG_FUNC} )
         message( STATUS "SABER is in tag: ${GIT_BRANCH_SABER}" )
-        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/${GIT_BRANCH_SABER}/file )
+    elseif( DEFINED GIT_BRANCH_FUNC )
+        # Branch is checked out => data already downloaded in saber-data
+        set( GIT_BRANCH_SABER ${GIT_BRANCH_FUNC} )
+        message( STATUS "SABER is in branch: ${GIT_BRANCH_SABER}" )
     endif()
 endif()
 
-# If local path to testfiles is defined don't download
+# Define where the data are already present or need to be downloaded (and how)
 if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
-    # Set SABER_TESTFILES_PATH
+    # Data should be present in the path defined by LOCAL_PATH_JEDI_TESTFILES
     if( EXISTS $ENV{LOCAL_PATH_JEDI_TESTFILES}/saber/${GIT_BRANCH_SABER} )
         set( SABER_TESTFILES_PATH $ENV{LOCAL_PATH_JEDI_TESTFILES}/saber/${GIT_BRANCH_SABER} )
     else()
         set( SABER_TESTFILES_PATH $ENV{LOCAL_PATH_JEDI_TESTFILES}/saber/develop )
     endif()
     message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
+elseif( DEFINED GIT_BRANCH_FUNC )
+    # Data loaded from saber-data repo
+    set( SABER_TESTFILES_PATH ${CMAKE_SOURCE_DIR}/saber-data )
+    message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
+else( DEFINED GIT_TAG_FUNC )
+    # ECBUILD_DOWNLOAD_BASE_URL env var can be used to force test files and
+    # crtm coef to be downloaded from other databases such as S3 instead of DASH
+    # example ECBUILD_DOWNLOAD_BASE_URL=https://jedi-test-files.s3.amazonaws.com
 
-    # Check testdata and testref directories existence
-    if( NOT EXISTS ${SABER_TESTFILES_PATH}/testdata )
-        message( FATAL_ERROR "Directory ${SABER_TESTFILES_PATH}/testdata is missing" )
-    endif()
-    if( NOT EXISTS ${SABER_TESTFILES_PATH}/testref )
-        message( FATAL_ERROR "Directory ${SABER_TESTFILES_PATH}/testref is missing" )
-    endif()
-else()
-    # Set distant directory
-    if( DEFINED GIT_TAG_FUNC )
-        set( DIRNAME "" )
-        set( DIRNAME_SAVE ${GIT_TAG_FUNC} )
-        set( checksum "0")
-    else()
-        # Check whether the URLs exist or not
-        foreach ( saber_data_tar_name ${saber_data_tar} )
-            list( APPEND url_names_data ${GIT_BRANCH_SABER}/${saber_data_tar_name} )
-        endforeach()
-        ecbuild_check_urls( NAMES  ${url_names_data}
-                            RESULT SPECIFIC_TEST_FILES )
-
-        if( SPECIFIC_TEST_FILES MATCHES 0 )
-            # Download and extract new test files (distant directory = git branch)
-            set( DIRNAME ${GIT_BRANCH_SABER} )
-        else()
-            # Download and extract develop test files (distant directory = develop)
-            set( DIRNAME "develop" )
-        endif()
-        set( DIRNAME_SAVE ${DIRNAME} )
+    if( DEFINED ENV{ECBUILD_DOWNLOAD_BASE_URL} )
+        set( ECBUILD_DOWNLOAD_BASE_URL "$ENV{ECBUILD_DOWNLOAD_BASE_URL}/saber/${GIT_TAG_FUNC}" )
         set( checksum "1")
+    else()
+        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/${GIT_TAG_FUNC}/file )
+        set( checksum "0")
     endif()
-    message( STATUS "Files downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} "/" ${DIRNAME} )
+    message( STATUS "Files downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} )
 
     # Set SABER_TESTFILES_PATH
-    set( SABER_TESTFILES_PATH ${CMAKE_BINARY_DIR}/test_data/saber/${DIRNAME_SAVE} )
+    set( SABER_TESTFILES_PATH ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_TAG_FUNC} )
     message( STATUS "Files downloaded into: " ${SABER_TESTFILES_PATH} )
+
+    # Download SABER data
+    foreach( saber_data_tar_name ${saber_data_tar} )
+        # Downloader arguments
+        list( APPEND SABER_DATA_DOWNLOADER_ARGS
+              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
+              ${SABER_TESTFILES_PATH}/testdata
+              ${saber_tar_name}
+              ${checksum} )
+
+        # Add test for downloading data
+        ecbuild_add_test( TARGET    get_data_${saber_tar_name}
+                          TYPE      SCRIPT
+                          COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
+                          ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
+        set ( SABER_DATA_DOWNLOADER_ARGS "" )
+
+        # Create download script
+        set ( FILENAME saber_data_downloader.py )
+        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
+        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
+
+        # Set configure file
+        if( EXISTS "${SOURCE_FILE}.in" )
+          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
+        else()
+          configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
+        endif()
+
+        # Add download script
+        add_custom_target( bin_saber_test_download_script_${saber_tar_name} ALL
+                           COMMAND chmod +x ${DEST_FILE}
+                           DEPENDS ${DEST_FILE} )
+    endforeach()
+
+    # Download SABER reference
+    foreach( saber_tar_name ${saber_ref_tar} )
+        # Downloader arguments
+        list( APPEND SABER_DATA_DOWNLOADER_ARGS
+              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
+              ${SABER_TESTFILES_PATH}/testref
+              ${saber_tar_name}
+              ${checksum} )
+
+        # Add test for downloading data
+        ecbuild_add_test( TARGET    get_data_${saber_tar_name}
+                          TYPE      SCRIPT
+                          COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
+                          ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
+        set ( SABER_DATA_DOWNLOADER_ARGS "" )
+
+        # Create download script
+        set ( FILENAME saber_data_downloader.py )
+        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
+        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
+
+        # Set configure file
+        if( EXISTS "${SOURCE_FILE}.in" )
+          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
+        else()
+          configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
+        endif()
+
+        # Add download script
+        add_custom_target( bin_saber_test_download_script_${saber_tar_name} ALL
+                           COMMAND chmod +x ${DEST_FILE}
+                           DEPENDS ${DEST_FILE} )
+    endforeach()
 endif()
 
 # Setup SABER directories and links
@@ -256,76 +268,6 @@ execute_process( COMMAND bash ${CMAKE_BINARY_DIR}/bin/saber_setup.sh
                          ${SABER_TESTFILES_PATH}
                          ${CMAKE_CURRENT_BINARY_DIR}
                          ${CMAKE_BINARY_DIR} )
-
-if( NOT DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
-    # Download SABER data
-    foreach( saber_data_tar_name ${saber_data_tar} )
-        # Downloader arguments
-        list( APPEND SABER_DATA_DOWNLOADER_ARGS
-              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
-              ${SABER_TESTFILES_PATH}/testdata
-              ${saber_data_tar_name}
-              ${checksum} )
-
-        # Add test for downloading data
-        ecbuild_add_test( TARGET    get_data_${saber_data_tar_name}
-                          TYPE      SCRIPT
-                          COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
-                          ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
-        set ( SABER_DATA_DOWNLOADER_ARGS "" )
-
-        # Create download script
-        set ( FILENAME saber_data_downloader.py )
-        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
-        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
-
-        # Set configure file
-        if( EXISTS "${SOURCE_FILE}.in" )
-          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
-        else()
-          configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
-        endif()
-
-        # Add download script
-        add_custom_target( bin_saber_test_download_script_${saber_data_tar_name} ALL
-                           COMMAND chmod +x ${DEST_FILE}
-                           DEPENDS ${DEST_FILE} )
-    endforeach()
-
-    # Download SABER reference
-    foreach( saber_ref_tar_name ${saber_ref_tar} )
-        # Downloader arguments
-        list( APPEND SABER_DATA_DOWNLOADER_ARGS
-              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
-              ${SABER_TESTFILES_PATH}/testref
-              ${saber_ref_tar_name}
-              ${checksum} )
-
-        # Add test for downloading data
-        ecbuild_add_test( TARGET    get_data_${saber_ref_tar_name}
-                          TYPE      SCRIPT
-                          COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
-                          ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
-        set (SABER_DATA_DOWNLOADER_ARGS "")
-
-        # Create download script
-        set ( FILENAME saber_data_downloader.py)
-        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
-        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
-
-        # Create download script
-        if( EXISTS "${SOURCE_FILE}.in" )
-          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
-        else()
-          configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
-        endif()
-
-        # Add download script
-        add_custom_target( bin_saber_test_download_script_${saber_ref_tar_name} ALL
-                           COMMAND chmod +x ${DEST_FILE}
-                           DEPENDS ${DEST_FILE} )
-   endforeach()
-endif()
 
 # Executables
 ecbuild_add_executable( TARGET  saber_bump.x

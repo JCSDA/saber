@@ -68,7 +68,7 @@ cost function:
   - obs error:
       covariance model: diagonal
     obs operator:
-      obs type: Stream  
+      obs type: Stream
     obs space:
       obsdatain:
         obsfile: testdata/truth.obs4d_24h.nc
@@ -78,7 +78,7 @@ cost function:
   - obs error:
       covariance model: diagonal
     obs operator:
-      obs type: Wind  
+      obs type: Wind
     obs space:
       obsdatain:
         obsfile: testdata/truth.obs4d_24h.nc
@@ -94,7 +94,7 @@ cost function:
         obsfile: testdata/truth.obs4d_24h.nc
       obsdataout:
         obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: WSpeed  
+      obs type: WSpeed
   constraints:
   - jcdfi:
       filtered variables: [x]

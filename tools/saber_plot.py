@@ -77,4 +77,4 @@ if args.test.find("bump_")==0:
       message = message + "</body></html>"
       f = open(os.path.join(args.testdata, args.test, "fig", "index_" + args.mpi + "-" + args.omp + ".html"), "w")
       f.write(message)
-      f.close()   
+      f.close()

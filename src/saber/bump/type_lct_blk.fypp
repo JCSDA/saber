@@ -64,7 +64,7 @@ type lct_blk_type
    real(kind_real),allocatable :: DLv(:,:,:)        !< Tensor vertical length-scale
 
    ! I/O IDs
-   integer :: ncid                                  !< main ID  
+   integer :: ncid                                  !< main ID
    integer :: nc0_id                                !< nc0 ID
    integer :: nl0_id                                !< nl0 ID
    integer :: grpid                                 !< group ID

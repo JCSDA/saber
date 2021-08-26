@@ -386,7 +386,7 @@ end do
 ! Average covariances
 do il0=1,geom%nl0
    do jl0=1,geom%nl0
-      do ic1a=1,samp%nc1a 
+      do ic1a=1,samp%nc1a
          if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
             vbal_blk%full_cov_c1a(ic1a,jl0,il0) = sum(cov(ic1a,jl0,il0,:))/real(vbal_blk%nsub,kind_real)
          else

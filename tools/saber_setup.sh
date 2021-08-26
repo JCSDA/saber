@@ -11,10 +11,6 @@ TESTFILE_DIR_SABER=$1
 CMAKE_CURRENT_BINARY_DIR=$2
 CMAKE_BINARY_DIR=$3
 
-# Make test data and reference directories
-mkdir -p ${TESTFILE_DIR_SABER}/testdata
-mkdir -p ${TESTFILE_DIR_SABER}/testref
-
 # Clear working directories
 rm -fr ${CMAKE_CURRENT_BINARY_DIR}/testdata
 rm -fr ${CMAKE_CURRENT_BINARY_DIR}/testinput
