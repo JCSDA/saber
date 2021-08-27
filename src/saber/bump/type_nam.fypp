@@ -470,10 +470,10 @@ do ildwv=1,nldwvmax
 end do
 
 ! wind_param default
-nam%wind_streamfunction = ''
-nam%wind_velocity_potential = ''
-nam%wind_zonal = ''
-nam%wind_meridional = ''
+nam%wind_streamfunction = 'stream_function'
+nam%wind_velocity_potential = 'velocity_potential'
+nam%wind_zonal = 'eastward_wind'
+nam%wind_meridional = 'northward_wind'
 nam%wind_nlon = 0
 nam%wind_nlat = 0
 nam%wind_nsg = 0
@@ -1057,10 +1057,10 @@ if (mpl%main) then
    end do
 
    ! wind_param default
-   wind_streamfunction = ''
-   wind_velocity_potential = ''
-   wind_zonal = ''
-   wind_meridional = ''
+   wind_streamfunction = 'stream_function'
+   wind_velocity_potential = 'velocity_potential'
+   wind_zonal = 'eastward_wind'
+   wind_meridional = 'northward_wind'
    wind_nlon = 0
    wind_nlat = 0
    wind_nsg = 0
