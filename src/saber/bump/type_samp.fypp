@@ -19,7 +19,6 @@ use tools_netcdf, only: create_file,open_file,put_att,get_att,define_dim,inquire
  & close_file
 use tools_qsort, only: qsort
 use tools_repro, only: eq,inf
-use tools_samp, only: initialize_sampling
 use type_com, only: com_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
@@ -1595,7 +1594,7 @@ case ('random_uniform','random_coast')
    ! Compte subsampling
    write(mpl%info,'(a7,a)') '','Compute horizontal subset Sc1:'
    call mpl%flush
-   call initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a,geom%c0a_to_c0,geom%area_max_c0, &
+   call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
  & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,.true.,7,samp%nc1-nam%nldwv,c1_to_c0)
 
    ! Count Sc1 point in halo A
@@ -2085,7 +2084,7 @@ else
       ! Initialize subsampling
       write(mpl%info,'(a7,a)') '','Compute horizontal subset Sc2:'
       call mpl%flush
-      call initialize_sampling(mpl,samp%nc1a,samp%lon_c1a,samp%lat_c1a,smask_hor_c1a,rh_c1a,samp%c1a_to_c1,geom%area_max_c0, &
+      call geom%initialize_sampling(mpl,samp%nc1a,samp%lon_c1a,samp%lat_c1a,smask_hor_c1a,rh_c1a,samp%c1a_to_c1, &
  & samp%nc1u,samp%c1u_to_c1a,samp%tree_c1u,samp%mesh_c1u,.true.,7,samp%nc2-nam%nldwv,c2_to_c1(nam%nldwv+1:samp%nc2))
 
       ! Get subset Sc2 size on halo A

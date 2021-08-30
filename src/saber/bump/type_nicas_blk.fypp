@@ -18,7 +18,6 @@ use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquir
  & inquire_var_presence,put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf,infeq,eq,indist
-use tools_samp, only: initialize_sampling
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_com, only: com_type
@@ -2786,8 +2785,8 @@ do il1=1,nicas_blk%nl1
          ! Compute sampling
          write(mpl%info,'(a16,a)') '','Compute horizontal subset Sc1:'
          if (nicas_blk%verbosity) call mpl%flush
-         call initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,nicas_blk%rhs(:,il0),geom%c0a_to_c0, &
- & geom%area_max_c0,geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,nicas_blk%verbosity,16,nicas_blk%hor(il1)%nc1,c1_to_c0)
+         call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,nicas_blk%rhs(:,il0),geom%c0a_to_c0, &
+ & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,nicas_blk%verbosity,16,nicas_blk%hor(il1)%nc1,c1_to_c0)
 
          ! Count Sc1 point in halo A
          nicas_blk%hor(il1)%nc1a = 0
