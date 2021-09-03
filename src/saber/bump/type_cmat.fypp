@@ -237,7 +237,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ncid,grpid,coef_ens_id,coef_sta_id,rh_id,rv_id,rhs_id,rvs_id,H11_id,H22_id,H33_id,H12_id,Hcoef_id
+integer :: ncid,grpid,coef_ens_id,coef_sta_id,rh_id,rv_id,rhs_id,rvs_id,H11_id,H22_id,H33_id,H12_id,Hcoef_id,peakness_id
 integer :: ib,anisotropic(bpar%nbe)
 character(len=1024) :: grpname
 
@@ -304,6 +304,7 @@ do ib=1,bpar%nbe
          H12_id = inquire_var(mpl,grpid,'H12')
          Hcoef_id = inquire_var(mpl,grpid,'Hcoef')
       end if
+      peakness_id = inquire_var(mpl,grpid,'peakness')
 
       ! Read variables
       call geom%io%fld_read(mpl,grpid,coef_ens_id,cmat%blk(ib)%coef_ens)
@@ -319,6 +320,7 @@ do ib=1,bpar%nbe
          call geom%io%fld_read(mpl,grpid,H12_id,cmat%blk(ib)%H12)
          call geom%io%fld_read(mpl,grpid,Hcoef_id,cmat%blk(ib)%Hcoef)
       end if
+      call geom%io%fld_read(mpl,grpid,peakness_id,cmat%blk(ib)%peakness)
    end if
 end do
 
@@ -349,6 +351,7 @@ type(bpar_type),intent(in) :: bpar  !< Block parameters
 integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
 integer :: grpid(bpar%nbe),coef_ens_id(bpar%nbe),coef_sta_id(bpar%nbe),rh_id(bpar%nbe),rv_id(bpar%nbe),rhs_id(bpar%nbe)
 integer :: rvs_id(bpar%nbe),H11_id(bpar%nbe),H22_id(bpar%nbe),H33_id(bpar%nbe),H12_id(bpar%nbe),Hcoef_id(bpar%nbe)
+integer :: peakness_id(bpar%nbe)
 integer :: ib,anisotropic
 character(len=1024) :: grpname
 
@@ -391,6 +394,7 @@ do ib=1,bpar%nbe
          H12_id(ib) = define_var(mpl,grpid(ib),'H12','real',(/nc0_id,nl0_id/))
          Hcoef_id(ib) = define_var(mpl,grpid(ib),'Hcoef','real',(/nc0_id,nl0_id/))
       end if
+      peakness_id(ib) = define_var(mpl,grpid(ib),'peakness','real',(/nc0_id,nl0_id/))
 
       ! Put attribute
       call convert_l2i(cmat%blk(ib)%anisotropic,anisotropic)
@@ -417,6 +421,7 @@ do ib=1,bpar%nbe
          call geom%io%fld_write(mpl,grpid(ib),H12_id(ib),cmat%blk(ib)%H12,geom%gmask_c0a)
          call geom%io%fld_write(mpl,grpid(ib),Hcoef_id(ib),cmat%blk(ib)%Hcoef,geom%gmask_c0a)
       end if
+      call geom%io%fld_write(mpl,grpid(ib),peakness_id(ib),cmat%blk(ib)%peakness,geom%gmask_c0a)
    end if
 end do
 
@@ -466,9 +471,9 @@ end do
 ! Allocation
 call cmat%alloc(geom,bpar)
 if (nam%local_diag) then
-   allocate(fld_c2a(samp%nc2a,geom%nl0,4))
+   allocate(fld_c2a(samp%nc2a,geom%nl0,5))
    allocate(fld_c2b(samp%nc2b,geom%nl0))
-   allocate(fld_c0a(geom%nc0a,geom%nl0,4))
+   allocate(fld_c0a(geom%nc0a,geom%nl0,5))
 end if
 
 ! Initialization
@@ -484,7 +489,7 @@ do ib=1,bpar%nbe
 
             ! Copy data
             n = 2
-            if (bpar%fit_block(ib)) n = n+2
+            if (bpar%fit_block(ib)) n = n+3
             do ic2a=1,samp%nc2a
                select case (trim(nam%method))
                case ('cor')
@@ -493,6 +498,7 @@ do ib=1,bpar%nbe
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%cor_1%blk(ic2a,ib)%fit_rh
                      fld_c2a(ic2a,:,4) = hdiag%cor_1%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,5) = hdiag%cor_1%blk(ic2a,ib)%fit_peakness
                   end if
                case ('loc')
                   fld_c2a(ic2a,:,1) = hdiag%loc_1%blk(ic2a,ib)%coef_ens
@@ -500,6 +506,7 @@ do ib=1,bpar%nbe
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%loc_1%blk(ic2a,ib)%fit_rh
                      fld_c2a(ic2a,:,4) = hdiag%loc_1%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,5) = hdiag%loc_1%blk(ic2a,ib)%fit_peakness
                   end if
                case ('hyb-avg','hyb-rnd')
                   fld_c2a(ic2a,:,1) = hdiag%loc_2%blk(ic2a,ib)%coef_ens
@@ -507,6 +514,7 @@ do ib=1,bpar%nbe
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%loc_2%blk(ic2a,ib)%fit_rh
                      fld_c2a(ic2a,:,4) = hdiag%loc_2%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,5) = hdiag%loc_2%blk(ic2a,ib)%fit_peakness
                   end if
                case ('dual-ens')
                   call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
@@ -537,6 +545,7 @@ do ib=1,bpar%nbe
             if (bpar%fit_block(ib)) then
                cmat%blk(ib)%rh = fld_c0a(:,:,3)
                cmat%blk(ib)%rv = fld_c0a(:,:,4)
+               cmat%blk(ib)%peakness = fld_c0a(:,:,5)
             end if
          else
             ! Initialization
@@ -546,6 +555,7 @@ do ib=1,bpar%nbe
             if (bpar%fit_block(ib)) then
                cmat%blk(ib)%rh = mpl%msv%valr
                cmat%blk(ib)%rv = mpl%msv%valr
+               cmat%blk(ib)%peakness = mpl%msv%valr
             end if
 
             ! Copy to C matrix
@@ -559,6 +569,7 @@ do ib=1,bpar%nbe
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rh(il0)
                      cmat%blk(ib)%rv(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rv(il0)
+                     cmat%blk(ib)%peakness(:,il0) = hdiag%cor_1%blk(0,ib)%fit_peakness(il0)
                   else
 
                   end if
@@ -569,6 +580,7 @@ do ib=1,bpar%nbe
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rh(il0)
                      cmat%blk(ib)%rv(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rv(il0)
+                     cmat%blk(ib)%peakness(:,il0) = hdiag%loc_1%blk(0,ib)%fit_peakness(il0)
                   end if
                case ('hyb-avg','hyb-rnd')
                   cmat%blk(ib)%coef_ens(:,il0) = hdiag%loc_2%blk(0,ib)%coef_ens(il0)
@@ -577,6 +589,7 @@ do ib=1,bpar%nbe
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rh(il0)
                      cmat%blk(ib)%rv(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rv(il0)
+                     cmat%blk(ib)%peakness(:,il0) = hdiag%loc_2%blk(0,ib)%fit_peakness(il0)
                   end if
                case ('dual-ens')
                   call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
@@ -595,6 +608,7 @@ do ib=1,bpar%nbe
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%rv(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%peakness(ic0a,il0) = mpl%msv%valr
                   end if
                end if
             end do
@@ -766,6 +780,7 @@ do ib=1,bpar%nbe
       do il0=1,geom%nl0
          cmat%blk(ib)%rh(:,il0) = nam%rh(il0,iv)
          cmat%blk(ib)%rv(:,il0) = nam%rv(il0,iv)
+         cmat%blk(ib)%peakness(:,il0) = nam%peakness(il0,iv)
       end do
 
       ! Set coefficients
@@ -827,7 +842,8 @@ do ib=1,bpar%nbe
 
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       ! Define import configuration
-      import_standard(ib) = allocated(cmat%blk(ib)%bump_rh).and.allocated(cmat%blk(ib)%bump_rv)
+      import_standard(ib) = allocated(cmat%blk(ib)%bump_rh).and.allocated(cmat%blk(ib)%bump_rv) &
+& .and.allocated(cmat%blk(ib)%bump_peakness)
       import_static(ib) = allocated(cmat%blk(ib)%bump_coef_sta)
       import_anisotropic(ib) = allocated(cmat%blk(ib)%bump_D11).and.allocated(cmat%blk(ib)%bump_D22) &
  & .and.allocated(cmat%blk(ib)%bump_D33).and.allocated(cmat%blk(ib)%bump_D12).and.allocated(cmat%blk(ib)%bump_Dcoef)
@@ -865,6 +881,7 @@ do ib=1,bpar%nbe
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
+            cmat%blk(ib)%peakness = cmat%blk(ib)%bump_peakness
          end if
          if (import_static(ib)) then
             write(mpl%info,'(a10,a)') '','Static import'
@@ -897,6 +914,7 @@ do ib=1,bpar%nbe
                      cmat%blk(ib)%Hcoef(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%rh(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%rv(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%peakness(ic0a,il0) = mpl%msv%valr
                   end if
                end do
             end do

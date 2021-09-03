@@ -24,8 +24,16 @@ real(kind_real),parameter :: four = 4.0_kind_real         !< Four
 real(kind_real),parameter :: five = 5.0_kind_real         !< Five
 real(kind_real),parameter :: six = 6.0_kind_real          !< Six
 real(kind_real),parameter :: eight = 8.0_kind_real        !< Eight
+real(kind_real),parameter :: nine = 9.0_kind_real         !< Nine
 real(kind_real),parameter :: ten = 10.0_kind_real         !< Ten
 real(kind_real),parameter :: twelve = 12.0_kind_real      !< Twelve
+real(kind_real),parameter :: fifteen = 15.0_kind_real     !< Fifteen
+real(kind_real),parameter :: eighteen = 18.0_kind_real    !< Eighteen
+real(kind_real),parameter :: twenty = 20.0_kind_real      !< Twenty
+real(kind_real),parameter :: twentyfour = 24.0_kind_real  !< Twenty-four
+real(kind_real),parameter :: fortytwo = 42.0_kind_real    !< Forty-two
+real(kind_real),parameter :: fortyfive = 45.0_kind_real   !< Forty-five
+real(kind_real),parameter :: fortyeight = 48.0_kind_real  !< Forty-eight
 real(kind_real),parameter :: hundred = 100.0_kind_real    !< Hundred
 real(kind_real),parameter :: thousand = 1000.0_kind_real  !< Thousand
 real(kind_real),parameter :: pi = acos(-1.0_kind_real)    !< Pi
@@ -35,8 +43,6 @@ real(kind_real),parameter :: req = 6371229.0_kind_real    !< Earth radius [in m]
 real(kind_real),parameter :: reqkm = 6371.229_kind_real   !< Earth radius [in km]
 real(kind_real),parameter :: ps = 101325.0_kind_real      !< Reference surface pressure [in Pa]
 
-private
-public :: zero,hundredth,tenth,quarter,half,one,two,three,four,five,six,eight,ten,twelve,hundred,thousand, &
- & pi,deg2rad,rad2deg,req,reqkm,ps
+public
 
 end module tools_const

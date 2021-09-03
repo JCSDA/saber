@@ -298,7 +298,8 @@ do ib=1,bpar%nbe
          do il0=1,geom%nl0
             ! Compute fit
             call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%disth,diag%blk(ic2a,ib)%distv(:,il0), &
- & diag%blk(ic2a,ib)%coef_ens(il0),diag%blk(ic2a,ib)%fit_rh(il0),diag%blk(ic2a,ib)%fit_rv(il0),diag%blk(ic2a,ib)%fit(:,:,il0))
+ & diag%blk(ic2a,ib)%coef_ens(il0),diag%blk(ic2a,ib)%fit_rh(il0),diag%blk(ic2a,ib)%fit_rv(il0), &
+ & diag%blk(ic2a,ib)%fit_peakness(il0),diag%blk(ic2a,ib)%fit(:,:,il0))
          end do
       end do
 

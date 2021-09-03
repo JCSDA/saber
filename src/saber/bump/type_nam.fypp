@@ -192,6 +192,7 @@ type nam_type
    logical :: forced_radii                                    !< Force specific support radii
    real(kind_real) :: rh(nlmax,0:nvmax)                       !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nlmax,0:nvmax)                       !< Forced vertical support radius
+   real(kind_real) :: peakness(nlmax,0:nvmax)                 !< Forced peakness
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
@@ -446,6 +447,7 @@ nam%network = .false.
 nam%forced_radii = .false.
 nam%rh = -one
 nam%rv = -one
+nam%peakness = -one
 nam%min_lev = 1
 nam%max_lev = nlmax
 nam%pos_def_test = .false.
@@ -644,6 +646,7 @@ logical :: network
 logical :: forced_radii
 real(kind_real) :: rh(nlmax,0:nvmax)
 real(kind_real) :: rv(nlmax,0:nvmax)
+real(kind_real) :: peakness(nlmax,0:nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
@@ -823,6 +826,7 @@ namelist/nicas_param/ &
  & forced_radii, &
  & rh, &
  & rv, &
+ & peakness, &
  & min_lev, &
  & max_lev, &
  & pos_def_test, &
@@ -1033,6 +1037,7 @@ if (mpl%main) then
    forced_radii = .false.
    rh = -one
    rv = -one
+   peakness = -one
    min_lev = 1
    max_lev = nlmax
    pos_def_test = .false.
@@ -1249,6 +1254,7 @@ if (mpl%main) then
    nam%forced_radii = forced_radii
    nam%rh = rh
    nam%rv = rv
+   nam%peakness = peakness
    nam%min_lev = min_lev
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
@@ -1467,6 +1473,7 @@ call mpl%f_comm%broadcast(nam%network,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%peakness,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
@@ -1939,6 +1946,38 @@ if (conf%has('rv')) then
             nam%rv(:,iv) = real_array(1)
          else
             nam%rv(1:size(real_array),iv) = real_array
+         end if
+      end if
+   end do
+end if
+if (conf%has('peakness')) then
+   call conf%get_or_die('peakness',subconf)
+   if (subconf%has('common')) then
+      call subconf%get_or_die('common',real_array)
+      if (size(real_array)>nlmax) then
+         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: peakness-common size should be smaller than ',nlmax
+         call flush(output_unit)
+         call comm%abort(1)
+      end if
+      if (size(real_array)==1) then
+         nam%peakness(:,0) = real_array(1)
+      else
+         nam%peakness(1:size(real_array),0) = real_array
+      end if
+   end if
+   do iv=1,nam%nv
+      if (subconf%has(nam%variables(iv))) then
+         call subconf%get_or_die(nam%variables(iv),real_array)
+         if (size(real_array)>nlmax) then
+            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: peakness-',trim(nam%variables(iv)), &
+ & ' size should be smaller than ',nlmax
+            call flush(output_unit)
+            call comm%abort(1)
+         end if
+         if (size(real_array)==1) then
+            nam%peakness(:,iv) = real_array(1)
+         else
+            nam%peakness(1:size(real_array),iv) = real_array
          end if
       end if
    end do
@@ -2462,6 +2501,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          do il=1,nam%nl
             if (nam%rh(il,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
             if (nam%rv(il,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
+            if (nam%peakness(il,iv)<zero) call mpl%abort('${subr}$','peakness should be non-negative')
          end do
       end do
    end if
@@ -2729,6 +2769,7 @@ real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%rh(1:nam%nl,0:nam%nv),(/nam%nl*(na
 call mpl%write('rh',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
 real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%rv(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
 call mpl%write('rv',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
+call mpl%write('peakness',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)

@@ -12,10 +12,11 @@ module tools_func
 use atlas_module, only: atlas_geometry
 use iso_c_binding, only: c_int16_t,c_int32_t
 use tools_asa007, only: cholesky,syminv
-use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
+use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,six,eight,nine,ten,twelve,fifteen,eighteen, &
+ & twenty,twentyfour,fortytwo,fortyfive,fortyeight,thousand,pi,deg2rad,rad2deg
 use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
-use tools_repro, only: rth,inf,sup,infeq,small
+use tools_repro, only: rth,inf,sup,infeq,small,eq
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -92,8 +93,14 @@ end interface
 interface gc99
    module procedure func_gc99
 end interface
+interface gc99_sqrt
+   module procedure func_gc99_sqrt
+end interface
 interface fit_func
    module procedure func_fit_func
+end interface
+interface fit_func_sqrt
+   module procedure func_fit_func_sqrt
 end interface
 interface fit_lct
    module procedure func_fit_lct
@@ -173,7 +180,7 @@ end interface
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
- & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag,fit_func,fit_lct,lct_d2h, &
+ & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag,fit_func,fit_func_sqrt,fit_lct,lct_d2h, &
  & lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i, &
  & zss_maxval,zss_minval,zss_sum,zss_count
 
@@ -1018,7 +1025,7 @@ end subroutine func_vert_interp
 ! Subroutine: func_fit_diag
 !> Compute diagnostic fit function
 !----------------------------------------------------------------------
-subroutine func_fit_diag(mpl,nc3,nl0r,disth,distv,coef,rh,rv,fit)
+subroutine func_fit_diag(mpl,nc3,nl0r,disth,distv,coef,rh,rv,peakness,fit)
 
 implicit none
 
@@ -1031,6 +1038,7 @@ real(kind_real),intent(in) :: distv(nl0r)    !< Vertical distance
 real(kind_real),intent(in) :: coef           !< Diagonal coefficient
 real(kind_real),intent(in) :: rh             !< Horizontal support radius
 real(kind_real),intent(in) :: rv             !< Vertical support radius
+real(kind_real),intent(in) :: peakness       !< Peakness
 real(kind_real),intent(out) :: fit(nc3,nl0r) !< Fit
 
 ! Local variables
@@ -1083,7 +1091,7 @@ else
    do jl0r=1,nl0r
       do jc3=1,nc3max
          distnorm = sqrt(disthsq(jc3)+distvsq(jl0r))
-         fit(jc3,jl0r) = fit_func(mpl,distnorm)
+         fit(jc3,jl0r) = fit_func(mpl,distnorm,peakness)
       end do
    end do
 
@@ -1100,13 +1108,17 @@ end subroutine func_fit_diag
 ! Function: func_gc99
 !> Gaspari and Cohn (1999) function, with the support radius as a parameter
 !----------------------------------------------------------------------
-function func_gc99(distnorm) result(value)
+function func_gc99(distnorm,peakness) result(value)
 
 ! Passed variables
 real(kind_real),intent(in) :: distnorm !< Normalized distance
+real(kind_real),intent(in) :: peakness !< Peakness
 
 ! Returned variable
 real(kind_real) :: value
+
+! Local values
+real(kind_real) :: z1,z2,z3,z4,p1,p2,p3,p4,expp,exppd
 
 ! Set name
 @:set_name(func_gc99)
@@ -1114,26 +1126,116 @@ real(kind_real) :: value
 ! Probe in
 @:probe_in()
 
-! Gaspari and Cohn (1999) function
-if (distnorm<half) then
-   value = one-distnorm
-   value = one+eight/five*distnorm*value
-   value = one-three/four*distnorm*value
-   value = one-20.0_kind_real/three*distnorm**2*value
-elseif (distnorm<one) then
-   value = one-distnorm/three
-   value = one-eight/five*distnorm*value
-   value = one+three/four*distnorm*value
-   value = one-two/three*distnorm*value
-   value = one-five/two*distnorm*value
-   value = one-12.0_kind_real*distnorm*value
-   value = -value/(three*distnorm)
+if (inf(peakness,tenth)) then
+   ! Equation (4.10) of Gaspari and Cohn (1999)
+   if (eq(distnorm,zero)) then
+      value = one
+   elseif (inf(distnorm,half)) then
+      value = one-distnorm
+      value = one+eight/five*distnorm*value
+      value = one-three/four*distnorm*value
+      value = one-twenty/three*distnorm**2*value
+   elseif (inf(distnorm,one)) then
+      value = one-distnorm/three
+      value = one-eight/five*distnorm*value
+      value = one+three/four*distnorm*value
+      value = one-two/three*distnorm*value
+      value = one-five/two*distnorm*value
+      value = one-twelve*distnorm*value
+      value = -value/(three*distnorm)
+   else
+      value = zero
+   end if
 else
-   value = zero
+   ! TODO
+   if (inf(distnorm,half).and.inf(distnorm,one)) then
+      ! Prepare coefficients
+      z1 = distnorm
+      z2 = z1*distnorm
+      z3 = z2*distnorm
+      z4 = z3*distnorm
+      p1 = peakness
+      p2 = p1*peakness
+      p3 = p2*peakness
+      p4 = p3*peakness
+      expp = exp(peakness)
+      exppd = exp(peakness*distnorm)
+   end if
+
+   if (eq(distnorm,zero)) then
+      value = one
+   elseif (inf(distnorm,half)) then
+      value = ( &
+ & two*p4*z4*exppd**2 &
+ & -six*p4*z2*exppd**2 &
+ & +four*p4*z1*exppd**2 &
+ & +four*p3*z3*expp**2 &
+ & -twelve*p3*z2*exppd**2 &
+ & +twelve*p3*z1*exppd**2 &
+ & +six*p2*z2*expp**2 &
+ & -twelve*p2*z2*exppd**2 &
+ & -six*p2*z1*exppd**4 &
+ & +twentyfour*p2*z1*exppd**2 &
+ & +three*p2*exppd**4 &
+ & -three*p2*exppd**2 &
+ & +three*p1*z1*expp**2 &
+ & -fortyeight*p1*z1*expp*exppd**2 &
+ & -nine*p1*z1*exppd**4 &
+ & +twentyfour*p1*z1*exppd**2 &
+ & +twelve*p1*exppd**4 &
+ & -twelve*p1*exppd**2 &
+ & +fifteen*exppd**4 &
+ & -fifteen*exppd**2 &
+ & )/( &
+ & four*p4*z1*exppd**2 &
+ & +eighteen*p3*z1*exppd**2 &
+ & +fortytwo*p2*z1*exppd**2 &
+ & +three*p1*z1*expp**2*exppd**2 &
+ & -fortyeight*p1*z1*expp*exppd**2 &
+ & +fortyfive*p1*z1*exppd**2 &
+ & )
+   elseif (inf(distnorm,one)) then
+      expp = exp(peakness)
+      exppd = exp(peakness*distnorm)
+      value = ( &
+ & two*p4*z4*exppd**2 &
+ & -six*p4*z2*exppd**2 &
+ & +four*p4*z1*exppd**2 &
+ & -four*p3*z3*expp**2 &
+ & -twelve*p3*z2*exppd**2 &
+ & +six*p3*z1*expp**2 &
+ & +twelve*p3*z1*exppd**2 &
+ & -two*p3*expp**2 &
+ & -six*p2*z2*expp**2 &
+ & -twelve*p2*z2*exppd**2 &
+ & -twelve*p2*z1*expp**2 &
+ & +twentyfour*p2*z1*exppd**2 &
+ & +nine*p2*expp**2 &
+ & -three*p2*exppd**2 &
+ & +six*p1*z1*expp**2 &
+ & +twentyfour*p1*z1*exppd**2 &
+ & -eighteen*p1*expp**2 &
+ & -twelve*p1*exppd**2 &
+ & +fifteen*expp**2 &
+ & -fifteen*exppd**2 &
+ & )/( &
+ & four*p4*z1*exppd**2 &
+ & +eighteen*p3*z1*exppd**2 &
+ & +fortytwo*p2*z1*exppd**2 &
+ & +three*p1*z1*expp**2*exppd**2 &
+ & -fortyeight*p1*z1*expp*exppd**2 &
+ & +fortyfive*p1*z1*exppd**2 &
+ & )
+   else
+      value = zero
+   end if
 end if
 
 ! Set small values to zero (bad conditioning)
 if (inf(value,sqrt(rth))) value = zero
+
+! Enforce positivity
+value = max(value,zero)
 
 ! Probe out
 @:probe_out()
@@ -1141,14 +1243,81 @@ if (inf(value,sqrt(rth))) value = zero
 end function func_gc99
 
 !----------------------------------------------------------------------
+! Function: func_gc99_sqrt
+!> Gaspari and Cohn (1999) function square-root, with the final support radius as a parameter
+!----------------------------------------------------------------------
+function func_gc99_sqrt(distnorm,peakness) result(value)
+
+! Passed variables
+real(kind_real),intent(in) :: distnorm !< Normalized distance
+real(kind_real),intent(in) :: peakness !< Peakness
+
+! Returned variable
+real(kind_real) :: value
+
+! Set name
+@:set_name(func_gc99_sqrt)
+
+! Probe in
+@:probe_in()
+
+if (inf(peakness,tenth)) then
+   ! Gaussian-shaped function
+
+   ! Equation (4.10) of Gaspari and Cohn (1999)
+   if (eq(distnorm,zero)) then
+      value = one
+   elseif (inf(distnorm,half)) then
+      value = one-distnorm
+      value = one+eight/five*distnorm*value
+      value = one-three/four*distnorm*value
+      value = one-twenty/three*distnorm**2*value
+   elseif (inf(distnorm,one)) then
+      value = one-distnorm/three
+      value = one-eight/five*distnorm*value
+      value = one+three/four*distnorm*value
+      value = one-two/three*distnorm*value
+      value = one-five/two*distnorm*value
+      value = one-twelve*distnorm*value
+      value = -value/(three*distnorm)
+   else
+      value = zero
+   end if
+
+!   if (distnorm<half) then
+!      value = one-two*distnorm
+!   else
+!      value = zero
+!   end if
+else
+   if (inf(distnorm,half)) then
+      value = exp(-two*distnorm*peakness)-exp(-peakness)
+   else
+      value = zero
+   end if
+end if
+
+! Set small values to zero (bad conditioning)
+if (inf(value,sqrt(rth))) value = zero
+
+! Enforce positivity
+value = max(value,zero)
+
+! Probe out
+@:probe_out()
+
+end function func_gc99_sqrt
+
+!----------------------------------------------------------------------
 ! Function: func_fit_func
 !> Fit_function
 !----------------------------------------------------------------------
-function func_fit_func(mpl,distnorm) result(value)
+function func_fit_func(mpl,distnorm,peakness) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 real(kind_real),intent(in) :: distnorm !< Normalized distance
+real(kind_real),intent(in) :: peakness !< Peakness
 
 ! Returned variable
 real(kind_real) :: value
@@ -1161,17 +1330,47 @@ real(kind_real) :: value
 
 ! Distance check bound
 if (distnorm<zero) call mpl%abort('${subr}$','negative normalized distance')
+if (peakness<zero) call mpl%abort('${subr}$','negative peakness')
 
 ! Gaspari and Cohn (1999) function
-value = gc99(distnorm)
-
-! Enforce positivity
-value = max(value,zero)
+value = gc99(distnorm,peakness)
 
 ! Probe out
 @:probe_out()
 
 end function func_fit_func
+
+!----------------------------------------------------------------------
+! Function: func_fit_func_sqrt
+!> Fit function square-root
+!----------------------------------------------------------------------
+function func_fit_func_sqrt(mpl,distnorm,peakness) result(value)
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+real(kind_real),intent(in) :: distnorm !< Normalized distance
+real(kind_real),intent(in) :: peakness !< Peakness
+
+! Returned variable
+real(kind_real) :: value
+
+! Set name
+@:set_name(func_fit_func_sqrt)
+
+! Probe in
+@:probe_in()
+
+! Distance check bound
+if (distnorm<zero) call mpl%abort('${subr}$','negative normalized distance')
+if (peakness<zero) call mpl%abort('${subr}$','negative peakness')
+
+! Gaspari and Cohn (1999) function
+value = gc99_sqrt(distnorm,peakness)
+
+! Probe out
+@:probe_out()
+
+end function func_fit_func_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: func_fit_lct
@@ -1238,7 +1437,7 @@ do iscales=1,nscales
             if (M==-1) then
                ! Gaspari-Cohn 1999 function
                distnorm = sqrt(rsq)*gc2gau
-               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*gc99(distnorm)
+               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*gc99(distnorm,zero) ! TODO: non-zero peakness
             elseif (M==0) then
                ! Gaussian function
                if (rsq<40.0_kind_real) fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*exp(-half*rsq)
