@@ -27,10 +27,6 @@ while IFS= read -r line; do
    mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testoutput/${line}
    mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testref/${line}
 done < ${CMAKE_BINARY_DIR}/bin/saber_testdir
-for imem in $(seq 1 10); do
-   imem4=$(printf "%.4d" "${imem}")
-   mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testdata/E${imem4}
-done
 
 # Link data and reference files
 while IFS= read -r line; do
