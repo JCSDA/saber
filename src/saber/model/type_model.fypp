@@ -23,7 +23,7 @@ module type_model
 
 use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace,atlas_metadata
 use tools_atlas, only: create_atlas_function_space
-use tools_const, only: zero,quarter,half,one,four,thousand,pi,deg2rad,rad2deg,req,ps
+use tools_const, only: zero,hundredth,tenth,quarter,half,one,four,thousand,pi,deg2rad,rad2deg,req,ps
 use tools_func, only: lonlatmod
 use tools_kinds,only: kind_int,kind_signed_char,kind_float,kind_double,kind_real
 use tools_netcdf, only: open_file,get_att,inquire_dim,inquire_dim_size,inquire_var,inquire_var_rank,inquire_var_dim_size,get_var, &
@@ -507,9 +507,11 @@ call model%fieldset%add(afield_meta)
 call ametadata%final()
 
 ! Add area
-afield_area = model%afunctionspace%create_field(name='area',kind=atlas_real(kind_real),levels=0)
-call afield_area%data(area_ptr)
-call model%fieldset%add(afield_area)
+if (mpl%msv%isanynot(model%area)) then
+   afield_area = model%afunctionspace%create_field(name='area',kind=atlas_real(kind_real),levels=0)
+   call afield_area%data(area_ptr)
+   call model%fieldset%add(afield_area)
+end if
 
 ! Add vertical unit
 afield_vunit = model%afunctionspace%create_field(name='vunit',kind=atlas_real(kind_real),levels=model%nl0)
@@ -532,7 +534,7 @@ do img=1,model%nmg
    if (model%mg_to_proc(img)==mpl%myproc) then
       imga = imga+1
       model%mga_to_mg(imga) = img
-      area_ptr(imga) = model%area(img)*req**2
+      if (mpl%msv%isanynot(model%area)) area_ptr(imga) = model%area(img)*req**2
       vunit_ptr(:,imga) = model%vunit(img,:)
       do il0=1,model%nl0
          if (model%mask(img,il0)) then
@@ -625,6 +627,7 @@ if (nam%check_no_point_mask) then
       deallocate(lonlattile_to_proc)
    else
       ! Unstructured grid
+      if (mpl%msv%isanynot(model%area)) call mpl%abort('${subr}$','unstructured grid requires area')
       if ((model%ntile>1).and.inf(sum(model%area),four*pi)) call mpl%abort('${subr}$', &
  & 'unstructured grid requires a single tile and a global domain')
 

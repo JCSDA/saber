@@ -389,7 +389,7 @@ if (present(iproc)) then
    end if
 
    ! Create file
-   call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid))
+   call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname))
 else
    ! Global I/O
    if (mpl%pioproc(mpl%myproc)) then
@@ -399,9 +399,9 @@ else
       ! Create file
       if (mpl%parallel_io) then
          call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
- & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()))
+ & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()),'file '//trim(fullname))
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid))
+         call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname))
       end if
    end if
 end if
@@ -453,7 +453,7 @@ if (present(iproc)) then
    end if
 
    ! Open file
-   call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid))
+   call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid),'file '//trim(fullname))
 else
    ! Global I/O
    if (mpl%pioproc(mpl%myproc)) then
@@ -463,9 +463,9 @@ else
       ! Open file
       if (mpl%parallel_io) then
          call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid, &
- & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()))
+ & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()),'file '//trim(fullname))
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid))
+         call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid),'file '//trim(fullname))
       end if
    end if
 end if
@@ -511,7 +511,7 @@ rid = registry%get_root_id(mpl,ncid)
 
 if (mpl%msv%isnot(rid)) then
    ! Define group
-   call strerror(mpl,'${subr}$',ncid,nf90_def_grp(ncid,grpname,grpid))
+   call strerror(mpl,'${subr}$',ncid,nf90_def_grp(ncid,grpname,grpid),'group '//trim(grpname))
 
    ! Save ID in registry
    if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
@@ -555,7 +555,7 @@ rid = registry%get_root_id(mpl,ncid)
 
 if (mpl%msv%isnot(rid)) then
    ! Define group
-   call strerror(mpl,'${subr}$',ncid,nf90_inq_grp_ncid(ncid,grpname,grpid))
+   call strerror(mpl,'${subr}$',ncid,nf90_inq_grp_ncid(ncid,grpname,grpid),'group '//trim(grpname))
 
    ! Save ID in registry
    if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
@@ -603,9 +603,9 @@ if (mpl%msv%isnot(rid)) then
    ! Put attribute
    #:if dtype == 'logical'
       call convert_l2i(att,attint)
-      call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,attint))
+      call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,attint),'attribute '//trim(attname))
    #:else
-      call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,att))
+      call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,att),'attribute '//trim(attname))
    #:endif
 end if
 
@@ -651,10 +651,10 @@ if (mpl%msv%isnot(rid)) then
 
    ! Get attribute
    #:if dtype == 'logical'
-      call strerror(mpl,'${subr}$',ncid,nf90_get_att(ncid,lvarid,attname,attint))
+      call strerror(mpl,'${subr}$',ncid,nf90_get_att(ncid,lvarid,attname,attint),'attribute '//trim(attname))
       call convert_i2l(mpl,attint,att)
    #:else
-      call strerror(mpl,'${subr}$',ncid,nf90_get_att(ncid,lvarid,attname,att))
+      call strerror(mpl,'${subr}$',ncid,nf90_get_att(ncid,lvarid,attname,att),'attribute '//trim(attname))
    #:endif
 end if
 
@@ -697,7 +697,7 @@ rid = registry%get_root_id(mpl,ncid)
 dimid = mpl%msv%vali
 
 ! Define dimension
-if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_def_dim(ncid,dimname,dimsize,dimid))
+if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_def_dim(ncid,dimname,dimsize,dimid),'dimension '//trim(dimname))
 
 ! Probe out
 @:probe_out()
@@ -742,7 +742,7 @@ if (mpl%msv%isnot(rid)) then
    if (info==nf90_ebaddim) then
       dimid = mpl%msv%vali
    else
-      call strerror(mpl,'${subr}$',ncid,info)
+      call strerror(mpl,'${subr}$',ncid,info,'dimension '//trim(dimname))
    end if
 end if
 
@@ -789,7 +789,8 @@ if (mpl%msv%isnot(rid)) then
    dimid = netcdf_inquire_dim(mpl,ncid,dimname)
 
    ! Inquire dimension size
-   if (mpl%msv%isnot(dimid)) call strerror(mpl,'${subr}$',ncid,nf90_inquire_dimension(ncid,dimid,len=dimsize))
+   if (mpl%msv%isnot(dimid)) call strerror(mpl,'${subr}$',ncid,nf90_inquire_dimension(ncid,dimid,len=dimsize), &
+ & 'dimension '//trim(dimname))
 end if
 
 ! Probe out
@@ -879,13 +880,13 @@ varid = mpl%msv%vali
 if (mpl%msv%isnot(rid)) then
    if ((trim(varkind)=='int').or.(trim(varkind)=='logical')) then
       ! Define variable
-      call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_int,varshape,varid))
+      call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_int,varshape,varid),'variable '//trim(varname))
 
       ! Set missing value attribute
       call put_att(mpl,ncid,'_FillValue',mpl%msv%vali,varid)
    elseif (trim(varkind)=='real') then
       ! Define variable
-      call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_real,varshape,varid))
+      call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_real,varshape,varid),'variable '//trim(varname))
 
       ! Set missing value attribute
       call put_att(mpl,ncid,'_FillValue',mpl%msv%valr,varid)
@@ -934,7 +935,7 @@ rid = registry%get_root_id(mpl,ncid)
 varid = mpl%msv%vali
 
 ! Inquire variable ID
-if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_inq_varid(ncid,varname,varid))
+if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_inq_varid(ncid,varname,varid),'variable '//trim(varname))
 
 ! Probe out
 @:probe_out()
@@ -1021,7 +1022,8 @@ if (mpl%msv%isnot(rid)) then
    varid = inquire_var(mpl,ncid,varname)
 
    ! Inquire variable rank
-   if (mpl%msv%isnot(varid)) call strerror(mpl,'${subr}$',ncid,nf90_inquire_variable(ncid,varid,ndims=rank))
+   if (mpl%msv%isnot(varid)) call strerror(mpl,'${subr}$',ncid,nf90_inquire_variable(ncid,varid,ndims=rank), &
+ & 'variable '//trim(varname))
 end if
 
 ! Probe out
@@ -1077,10 +1079,10 @@ if (mpl%msv%isnot(rid)) then
       varid = inquire_var(mpl,ncid,varname)
 
       ! Inquire variable dimensions IDs
-      call strerror(mpl,'${subr}$',ncid,nf90_inquire_variable(ncid,varid,dimids=dimids))
+      call strerror(mpl,'${subr}$',ncid,nf90_inquire_variable(ncid,varid,dimids=dimids),'variable '//trim(varname))
 
       ! Inquire required dimension size
-      call strerror(mpl,'${subr}$',ncid,nf90_inquire_dimension(ncid,dimids(dimindex),len=dimsize))
+      call strerror(mpl,'${subr}$',ncid,nf90_inquire_dimension(ncid,dimids(dimindex),len=dimsize),'variable '//trim(varname))
    end if
 end if
 
@@ -1123,15 +1125,15 @@ if (mpl%msv%isnot(rid)) then
    #:if dtype == 'logical'
       call convert_l2i(var,varint)
       if (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart),'variable',varid)
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint),'variable',varid)
       end if
    #:else
       if (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart),'variable',varid)
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var),'variable',varid)
       end if
    #:endif
 end if
@@ -1186,20 +1188,20 @@ if (mpl%msv%isnot(rid)) then
       #{if rank == 4}# allocate(varint(shp(1),shp(2),shp(3),shp(4))) #{endif}#
       call convert_l2i(var,varint)
       if (present(varstart).and.present(varcount)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart,varcount))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart,varcount),'variable',varid)
       elseif (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart),'variable',varid)
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint),'variable',varid)
       end if
       deallocate(varint)
    #:else
       if (present(varstart).and.present(varcount)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart,varcount))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart,varcount),'variable',varid)
       elseif (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart),'variable',varid)
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var))
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var),'variable',varid)
       end if
    #:endif
 end if
@@ -1244,16 +1246,16 @@ if (mpl%msv%isnot(rid)) then
    ! Get variable
    #:if dtype == 'logical'
       if (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart),'variable',varid)
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint),'variable',varid)
       end if
       call convert_i2l(mpl,varint,var)
    #:else
       if (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart),'variable',varid)
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var),'variable',varid)
       end if
    #:endif
 end if
@@ -1307,21 +1309,21 @@ if (mpl%msv%isnot(rid)) then
       #{if rank == 3}# allocate(varint(shp(1),shp(2),shp(3))) #{endif}#
       #{if rank == 4}# allocate(varint(shp(1),shp(2),shp(3),shp(4))) #{endif}#
       if (present(varstart).and.present(varcount)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart,varcount))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart,varcount),'variable',varid)
       elseif (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart),'variable',varid)
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint),'variable',varid)
       end if
       call convert_i2l(mpl,varint,var)
       deallocate(varint)
    #:else
       if (present(varstart).and.present(varcount)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart,varcount))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart,varcount),'variable',varid)
       elseif (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart),'variable',varid)
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var))
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var),'variable',varid)
       end if
    #:endif
 end if
@@ -1359,7 +1361,7 @@ rid = registry%get_root_id(mpl,ncid)
 
 if (mpl%msv%isnot(rid)) then
    ! Close file
-   call strerror(mpl,'${subr}$',ncid,nf90_close(ncid))
+   call strerror(mpl,'${subr}$',ncid,nf90_close(ncid),'file',ncid)
 
    ! Free registry slot
    call registry%free(mpl,ncid)
@@ -1374,20 +1376,23 @@ end subroutine netcdf_close_file
 ! Subroutine: netcdf_strerror
 !> Handle error
 !----------------------------------------------------------------------
-subroutine netcdf_strerror(mpl,subr,ncid,info)
+subroutine netcdf_strerror(mpl,subr,ncid,info,hint,hint_id)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl !< MPI data
-character(len=*),intent(in) :: subr !< Calling subroutine
-integer,intent(in) :: ncid          !< File ID
-integer,intent(in) :: info          !< Info index
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+character(len=*),intent(in) :: subr          !< Calling subroutine
+integer,intent(in) :: ncid                   !< File ID
+integer,intent(in) :: info                   !< Info index
+character(len=*),intent(in),optional :: hint !< Hint
+integer,intent(in),optional :: hint_id       !< Hint ID
 
 ! Local variables
 integer :: child_id,rid,i,parent_id,indent
 logical :: found
 character(len=3) :: cindent
+character(len=1024) :: message
 
 ! Set name
 @:set_name(netcdf_strerror)
@@ -1399,6 +1404,15 @@ character(len=3) :: cindent
 if (info/=nf90_noerr) then
    write(output_unit,'(a,i6.6,a)') '!!! NetCDF error in '//trim(subr)//' on task #',mpl%myproc,': '//trim(nf90_strerror(info))
    call flush(output_unit)
+   if (present(hint)) then
+      if (present(hint_id)) then
+         write(message,'(a,i6)') trim(hint)//' ID ',hint_id
+      else
+         message = trim(hint)
+      end if
+      write(output_unit,'(a)') '!!! Hint: '//trim(message)
+      call flush(output_unit)
+   end if
 
    ! Initialization
    found = .false.

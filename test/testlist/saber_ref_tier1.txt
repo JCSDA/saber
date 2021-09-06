@@ -21,6 +21,15 @@ bump_hdiag-nicas_loc_common/test_1-1_nicas.nc
 bump_hdiag-nicas_mask_check/test_1-1_diag.nc
 bump_hdiag-nicas_mask_check/test_1-1_dirac.nc
 bump_hdiag-nicas_mask_check/test_1-1_nicas.nc
+bump_hdiag-nicas_redundant/test_1-1_diag.nc
+bump_hdiag-nicas_redundant/test_1-1_dirac.nc
+bump_hdiag-nicas_redundant/test_1-1_nicas.nc
+bump_hdiag-nicas_regional/test_1-1_diag.nc
+bump_hdiag-nicas_regional/test_1-1_dirac.nc
+bump_hdiag-nicas_regional/test_1-1_nicas.nc
+bump_hdiag-nicas_urban/test_1-1_diag.nc
+bump_hdiag-nicas_urban/test_1-1_dirac.nc
+bump_hdiag-nicas_urban/test_1-1_nicas.nc
 bump_lct-nicas_one_scale/test_1-1_dirac.nc
 bump_lct-nicas_one_scale/test_1-1_lct.nc
 bump_lct-nicas_one_scale/test_1-1_nicas.nc

@@ -22,10 +22,6 @@ list( APPEND test_files
     saber_valgrind.sh
 )
 
-if( oops_qg_FOUND )
-    list( APPEND test_files saber_qg_links.sh )
-endif()
-
 file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/saber_plot )
 foreach( FILENAME ${test_files} )
     execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink

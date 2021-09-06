@@ -8,7 +8,6 @@ list(APPEND bump_src_files_list
 tools_fit.fypp
 tools_func.c
 tools_func.fypp
-tools_samp.fypp
 type_avg_blk.fypp
 type_avg.fypp
 type_bpar.fypp
