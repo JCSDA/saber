@@ -1025,7 +1025,7 @@ end subroutine func_vert_interp
 ! Subroutine: func_fit_diag
 !> Compute diagnostic fit function
 !----------------------------------------------------------------------
-subroutine func_fit_diag(mpl,nc3,nl0r,disth,distv,coef,rh,rv,peakness,fit)
+subroutine func_fit_diag(mpl,nc3,nl0r,disth,distv,coef,rh,rv,pk,fit)
 
 implicit none
 
@@ -1038,7 +1038,7 @@ real(kind_real),intent(in) :: distv(nl0r)    !< Vertical distance
 real(kind_real),intent(in) :: coef           !< Diagonal coefficient
 real(kind_real),intent(in) :: rh             !< Horizontal support radius
 real(kind_real),intent(in) :: rv             !< Vertical support radius
-real(kind_real),intent(in) :: peakness       !< Peakness
+real(kind_real),intent(in) :: pk             !< Peakness
 real(kind_real),intent(out) :: fit(nc3,nl0r) !< Fit
 
 ! Local variables
@@ -1091,7 +1091,7 @@ else
    do jl0r=1,nl0r
       do jc3=1,nc3max
          distnorm = sqrt(disthsq(jc3)+distvsq(jl0r))
-         fit(jc3,jl0r) = fit_func(mpl,distnorm,peakness)
+         fit(jc3,jl0r) = fit_func(mpl,distnorm,pk)
       end do
    end do
 
@@ -1108,11 +1108,11 @@ end subroutine func_fit_diag
 ! Function: func_gc99
 !> Gaspari and Cohn (1999) function, with the support radius as a parameter
 !----------------------------------------------------------------------
-function func_gc99(distnorm,peakness) result(value)
+function func_gc99(distnorm,pk) result(value)
 
 ! Passed variables
 real(kind_real),intent(in) :: distnorm !< Normalized distance
-real(kind_real),intent(in) :: peakness !< Peakness
+real(kind_real),intent(in) :: pk       !< Peakness
 
 ! Returned variable
 real(kind_real) :: value
@@ -1126,7 +1126,7 @@ real(kind_real) :: z1,z2,z3,z4,p1,p2,p3,p4,expp,exppd
 ! Probe in
 @:probe_in()
 
-if (inf(peakness,tenth)) then
+if (inf(pk,tenth)) then
    ! Equation (4.10) of Gaspari and Cohn (1999)
    if (eq(distnorm,zero)) then
       value = one
@@ -1154,12 +1154,12 @@ else
       z2 = z1*distnorm
       z3 = z2*distnorm
       z4 = z3*distnorm
-      p1 = peakness
-      p2 = p1*peakness
-      p3 = p2*peakness
-      p4 = p3*peakness
-      expp = exp(peakness)
-      exppd = exp(peakness*distnorm)
+      p1 = pk
+      p2 = p1*pk
+      p3 = p2*pk
+      p4 = p3*pk
+      expp = exp(pk)
+      exppd = exp(pk*distnorm)
    end if
 
    if (eq(distnorm,zero)) then
@@ -1195,8 +1195,8 @@ else
  & +fortyfive*p1*z1*exppd**2 &
  & )
    elseif (inf(distnorm,one)) then
-      expp = exp(peakness)
-      exppd = exp(peakness*distnorm)
+      expp = exp(pk)
+      exppd = exp(pk*distnorm)
       value = ( &
  & two*p4*z4*exppd**2 &
  & -six*p4*z2*exppd**2 &
@@ -1234,9 +1234,6 @@ end if
 ! Set small values to zero (bad conditioning)
 if (inf(value,sqrt(rth))) value = zero
 
-! Enforce positivity
-value = max(value,zero)
-
 ! Probe out
 @:probe_out()
 
@@ -1246,11 +1243,11 @@ end function func_gc99
 ! Function: func_gc99_sqrt
 !> Gaspari and Cohn (1999) function square-root, with the final support radius as a parameter
 !----------------------------------------------------------------------
-function func_gc99_sqrt(distnorm,peakness) result(value)
+function func_gc99_sqrt(distnorm,pk) result(value)
 
 ! Passed variables
 real(kind_real),intent(in) :: distnorm !< Normalized distance
-real(kind_real),intent(in) :: peakness !< Peakness
+real(kind_real),intent(in) :: pk       !< Peakness
 
 ! Returned variable
 real(kind_real) :: value
@@ -1261,37 +1258,16 @@ real(kind_real) :: value
 ! Probe in
 @:probe_in()
 
-if (inf(peakness,tenth)) then
+if (inf(pk,tenth)) then
    ! Gaussian-shaped function
-
-   ! Equation (4.10) of Gaspari and Cohn (1999)
-   if (eq(distnorm,zero)) then
-      value = one
-   elseif (inf(distnorm,half)) then
-      value = one-distnorm
-      value = one+eight/five*distnorm*value
-      value = one-three/four*distnorm*value
-      value = one-twenty/three*distnorm**2*value
-   elseif (inf(distnorm,one)) then
-      value = one-distnorm/three
-      value = one-eight/five*distnorm*value
-      value = one+three/four*distnorm*value
-      value = one-two/three*distnorm*value
-      value = one-five/two*distnorm*value
-      value = one-twelve*distnorm*value
-      value = -value/(three*distnorm)
+   if (distnorm<half) then
+      value = one-two*distnorm
    else
       value = zero
    end if
-
-!   if (distnorm<half) then
-!      value = one-two*distnorm
-!   else
-!      value = zero
-!   end if
 else
    if (inf(distnorm,half)) then
-      value = exp(-two*distnorm*peakness)-exp(-peakness)
+      value = exp(-two*distnorm*pk)-exp(-pk)
    else
       value = zero
    end if
@@ -1299,9 +1275,6 @@ end if
 
 ! Set small values to zero (bad conditioning)
 if (inf(value,sqrt(rth))) value = zero
-
-! Enforce positivity
-value = max(value,zero)
 
 ! Probe out
 @:probe_out()
@@ -1312,12 +1285,12 @@ end function func_gc99_sqrt
 ! Function: func_fit_func
 !> Fit_function
 !----------------------------------------------------------------------
-function func_fit_func(mpl,distnorm,peakness) result(value)
+function func_fit_func(mpl,distnorm,pk) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 real(kind_real),intent(in) :: distnorm !< Normalized distance
-real(kind_real),intent(in) :: peakness !< Peakness
+real(kind_real),intent(in) :: pk       !< Peakness
 
 ! Returned variable
 real(kind_real) :: value
@@ -1330,10 +1303,13 @@ real(kind_real) :: value
 
 ! Distance check bound
 if (distnorm<zero) call mpl%abort('${subr}$','negative normalized distance')
-if (peakness<zero) call mpl%abort('${subr}$','negative peakness')
+if (pk<zero) call mpl%abort('${subr}$','negative pk')
 
 ! Gaspari and Cohn (1999) function
-value = gc99(distnorm,peakness)
+value = gc99(distnorm,pk)
+
+! Enforce positivity
+value = max(value,zero)
 
 ! Probe out
 @:probe_out()
@@ -1344,12 +1320,12 @@ end function func_fit_func
 ! Function: func_fit_func_sqrt
 !> Fit function square-root
 !----------------------------------------------------------------------
-function func_fit_func_sqrt(mpl,distnorm,peakness) result(value)
+function func_fit_func_sqrt(mpl,distnorm,pk) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 real(kind_real),intent(in) :: distnorm !< Normalized distance
-real(kind_real),intent(in) :: peakness !< Peakness
+real(kind_real),intent(in) :: pk       !< Peakness
 
 ! Returned variable
 real(kind_real) :: value
@@ -1362,10 +1338,13 @@ real(kind_real) :: value
 
 ! Distance check bound
 if (distnorm<zero) call mpl%abort('${subr}$','negative normalized distance')
-if (peakness<zero) call mpl%abort('${subr}$','negative peakness')
+if (pk<zero) call mpl%abort('${subr}$','negative pk')
 
 ! Gaspari and Cohn (1999) function
-value = gc99_sqrt(distnorm,peakness)
+value = gc99_sqrt(distnorm,pk)
+
+! Enforce positivity
+value = max(value,zero)
 
 ! Probe out
 @:probe_out()

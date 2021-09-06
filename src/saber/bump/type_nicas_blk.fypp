@@ -34,7 +34,6 @@ use type_tree, only: tree_type
 
 implicit none
 
-real(kind_real),parameter :: sqrt_r = one            !< Square-root factor on support radius (empirical)
 real(kind_real),parameter :: sqrt_h = 0.725_kind_real !< Square-root factor on LCT (empirical)
 real(kind_real),parameter :: S_inf = 1.0e-2_kind_real !< Minimum value for the convolution coefficients
 
@@ -76,7 +75,7 @@ type hor_type
    real(kind_real),allocatable :: H33_c1u(:)      !< Local correlation tensor, component 33, on subset Sc1, universe
    real(kind_real),allocatable :: H12_c1u(:)      !< Local correlation tensor, component 12, on subset Sc1, universe
    real(kind_real),allocatable :: Hcoef_c1u(:)    !< Local correlation tensor, coefficient, on subset Sc1, universe
-   real(kind_real),allocatable :: peakness_c1u(:) !< Peakness on subset Sc1, universe
+   real(kind_real),allocatable :: pk_c1u(:)       !< Peakness on subset Sc1, universe
    type(tree_type) :: tree_c1u                    !< Tree on subset Sc1, universe
    logical,allocatable :: lcheck_c1a(:)           !< Detection of halo A on subset Sc1
    logical,allocatable :: lcheck_c1b(:)           !< Detection of halo B on subset Sc1
@@ -172,14 +171,14 @@ type nicas_blk_type
    real(kind_real),allocatable :: H33(:,:)              !< LCT component 33
    real(kind_real),allocatable :: H12(:,:)              !< LCT component 12
    real(kind_real),allocatable :: Hcoef(:,:)            !< LCT scales coefficients
-   real(kind_real),allocatable :: peakness(:,:)         !< Peakness
+   real(kind_real),allocatable :: pk(:,:)               !< Peakness
    type(com_type) :: com_s_AB                           !< Communication between halos A and B on subgrid
    type(com_type) :: com_s_AC                           !< Communication between halos A and C on subgrid
    type(com_type) :: com_s_AU                           !< Communication between halo A and universe on subgrid
 
    ! Convolution
    type(balldata_type),allocatable :: distnorm_sb(:,:)  !< Normalized distance
-   type(balldata_type),allocatable :: peakness_sb(:,:)  !< Peakness ball
+   type(balldata_type),allocatable :: pk_sb(:,:)        !< Peakness ball
    type(balldata_type),allocatable :: Hcoef_sb(:,:)     !< Tensor coefficient on subgrid, halo B
    type(linop_type) :: c                                !< Convolution
 
@@ -412,7 +411,7 @@ if (allocated(hor%H22_c1u)) deallocate(hor%H22_c1u)
 if (allocated(hor%H33_c1u)) deallocate(hor%H33_c1u)
 if (allocated(hor%H12_c1u)) deallocate(hor%H12_c1u)
 if (allocated(hor%Hcoef_c1u)) deallocate(hor%Hcoef_c1u)
-if (allocated(hor%peakness_c1u)) deallocate(hor%peakness_c1u)
+if (allocated(hor%pk_c1u)) deallocate(hor%pk_c1u)
 call hor%tree_c1u%dealloc
 if (allocated(hor%lcheck_c1a)) deallocate(hor%lcheck_c1a)
 if (allocated(hor%lcheck_c1b)) deallocate(hor%lcheck_c1b)
@@ -536,7 +535,7 @@ if (allocated(nicas_blk%H22)) deallocate(nicas_blk%H22)
 if (allocated(nicas_blk%H33)) deallocate(nicas_blk%H33)
 if (allocated(nicas_blk%H12)) deallocate(nicas_blk%H12)
 if (allocated(nicas_blk%Hcoef)) deallocate(nicas_blk%Hcoef)
-if (allocated(nicas_blk%peakness)) deallocate(nicas_blk%peakness)
+if (allocated(nicas_blk%pk)) deallocate(nicas_blk%pk)
 call nicas_blk%com_s_AU%dealloc
 if (allocated(nicas_blk%distnorm_sb)) then
    do isb=1,size(nicas_blk%distnorm_sb,2)
@@ -546,13 +545,13 @@ if (allocated(nicas_blk%distnorm_sb)) then
    end do
    deallocate(nicas_blk%distnorm_sb)
 end if
-if (allocated(nicas_blk%peakness_sb)) then
-   do isb=1,size(nicas_blk%peakness_sb,2)
-      do il1=1,size(nicas_blk%peakness_sb,1)
-         call nicas_blk%peakness_sb(il1,isb)%dealloc
+if (allocated(nicas_blk%pk_sb)) then
+   do isb=1,size(nicas_blk%pk_sb,2)
+      do il1=1,size(nicas_blk%pk_sb,1)
+         call nicas_blk%pk_sb(il1,isb)%dealloc
       end do
    end do
-   deallocate(nicas_blk%peakness_sb)
+   deallocate(nicas_blk%pk_sb)
 end if
 if (allocated(nicas_blk%Hcoef_sb)) then
    do isb=1,size(nicas_blk%Hcoef_sb,2)
@@ -2391,9 +2390,9 @@ end if
 ! Allocation
 allocate(nicas_blk%rh(geom%nc0a,geom%nl0))
 allocate(nicas_blk%rv(geom%nc0a,geom%nl0))
+allocate(nicas_blk%pk(geom%nc0a,geom%nl0))
 allocate(nicas_blk%rhs(geom%nc0a,geom%nl0))
 allocate(nicas_blk%rvs(geom%nc0a,geom%nl0))
-allocate(nicas_blk%peakness(geom%nc0a,geom%nl0))
 
 ! Initialization
 nicas_blk%anisotropic = .false.
@@ -2401,9 +2400,9 @@ do il0=1,geom%nl0
    nicas_blk%rh(:,il0) = rhflt(il0)
 end do
 nicas_blk%rv = zero
+nicas_blk%pk = zero
 nicas_blk%rhs = nicas_blk%rh
 nicas_blk%rvs = zero
-nicas_blk%peakness = zero
 nicas_blk%wgt = one
 
 ! NICAS block initialization
@@ -2463,7 +2462,7 @@ if (allocated(cmat_blk%H22)) allocate(nicas_blk%H22(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%H33)) allocate(nicas_blk%H33(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%H12)) allocate(nicas_blk%H12(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%Hcoef)) allocate(nicas_blk%Hcoef(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%peakness)) allocate(nicas_blk%peakness(geom%nc0a,geom%nl0))
+if (allocated(cmat_blk%pk)) allocate(nicas_blk%pk(geom%nc0a,geom%nl0))
 
 ! Initialization
 if (allocated(cmat_blk%rh)) nicas_blk%rh = mpl%msv%valr
@@ -2475,7 +2474,7 @@ if (allocated(cmat_blk%H22)) nicas_blk%H22 = mpl%msv%valr
 if (allocated(cmat_blk%H33)) nicas_blk%H33 = mpl%msv%valr
 if (allocated(cmat_blk%H12)) nicas_blk%H12 = mpl%msv%valr
 if (allocated(cmat_blk%Hcoef)) nicas_blk%Hcoef = mpl%msv%valr
-if (allocated(cmat_blk%peakness)) nicas_blk%peakness = mpl%msv%valr
+if (allocated(cmat_blk%pk)) nicas_blk%pk = mpl%msv%valr
 
 ! Copy C matrix fields from min_lev to max_lev
 iv = bpar%b_to_v1(ib)
@@ -2490,7 +2489,7 @@ do il0=1,geom%nl0
       if (allocated(cmat_blk%H33)) nicas_blk%H33(:,il0) = cmat_blk%H33(:,il0)
       if (allocated(cmat_blk%H12)) nicas_blk%H12(:,il0) = cmat_blk%H12(:,il0)
       if (allocated(cmat_blk%Hcoef)) nicas_blk%Hcoef(:,il0) = cmat_blk%Hcoef(:,il0)
-      if (allocated(cmat_blk%peakness)) nicas_blk%peakness(:,il0) = cmat_blk%peakness(:,il0)
+      if (allocated(cmat_blk%pk)) nicas_blk%pk(:,il0) = cmat_blk%pk(:,il0)
    end if
 end do
 
@@ -3427,8 +3426,8 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: isu,ic1u,jc1u,il1,il0,isa,isb,isc,ic1a,jbd,jl1,i_s,is,jsu,js
 integer,allocatable :: su_to_sc(:)
-real(kind_real),allocatable :: rh_c0b(:),rv_c0b(:),peakness_c0b(:)
-real(kind_real),allocatable :: rh_c1a(:),rv_c1a(:),peakness_c1a(:)
+real(kind_real),allocatable :: rh_c0b(:),rv_c0b(:),pk_c0b(:)
+real(kind_real),allocatable :: rh_c1a(:),rv_c1a(:),pk_c1a(:)
 real(kind_real),allocatable :: H11_c0b(:),H22_c0b(:),H33_c0b(:),H12_c0b(:),Hcoef_c0b(:)
 real(kind_real),allocatable :: H11_c1a(:),H22_c1a(:),H33_c1a(:),H12_c1a(:),Hcoef_c1a(:)
 real(kind_real),allocatable :: Hcoef(:)
@@ -3483,9 +3482,9 @@ if (.not.nam%load_nicas_global) then
          allocate(Hcoef_c1a(nicas_blk%hor(il1)%nc1a))
          allocate(nicas_blk%hor(il1)%Hcoef_c1u(nicas_blk%hor(il1)%nc1u))
       end if
-      allocate(peakness_c0b(nicas_blk%hor(il1)%nc0b))
-      allocate(peakness_c1a(nicas_blk%hor(il1)%nc1a))
-      allocate(nicas_blk%hor(il1)%peakness_c1u(nicas_blk%hor(il1)%nc1u))
+      allocate(pk_c0b(nicas_blk%hor(il1)%nc0b))
+      allocate(pk_c1a(nicas_blk%hor(il1)%nc1a))
+      allocate(nicas_blk%hor(il1)%pk_c1u(nicas_blk%hor(il1)%nc1u))
 
       ! Interpolate and rescale
       write(mpl%info,'(a16,a)') '','Interpolate and rescale'
@@ -3501,7 +3500,7 @@ if (.not.nam%load_nicas_global) then
          call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%H12(:,il0),H12_c0b)
          call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%Hcoef(:,il0),Hcoef_c0b)
       end if
-      call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%peakness(:,il0),peakness_c0b)
+      call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%pk(:,il0),pk_c0b)
 
       ! Interpolate fields
       call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,rh_c0b,rh_c1a)
@@ -3513,7 +3512,7 @@ if (.not.nam%load_nicas_global) then
          call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,H12_c0b,H12_c1a)
          call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,Hcoef_c0b,Hcoef_c1a)
       end if
-      call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,peakness_c0b,peakness_c1a)
+      call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,pk_c0b,pk_c1a)
 
       do ic1a=1,nicas_blk%hor(il1)%nc1a
          if ((.not.nicas_blk%smoother).and.nicas_blk%sqrt_rescaling) then
@@ -3525,9 +3524,6 @@ if (.not.nam%load_nicas_global) then
                H22_c1a(ic1a) = H22_c1a(ic1a)/sqrt_h**2
                if (.not.nicas_blk%horizontal) H33_c1a(ic1a) = H33_c1a(ic1a)/sqrt_h**2
                H12_c1a(ic1a) = H12_c1a(ic1a)/sqrt_h**2
-            else
-               rh_c1a(ic1a) = rh_c1a(ic1a)*sqrt_r
-               if (.not.nicas_blk%horizontal) rv_c1a(ic1a) = rv_c1a(ic1a)*sqrt_r
             end if
          end if
       end do
@@ -3544,7 +3540,7 @@ if (.not.nam%load_nicas_global) then
          call nicas_blk%com_c1_AU(il1)%ext(mpl,H12_c1a,nicas_blk%hor(il1)%H12_c1u)
          call nicas_blk%com_c1_AU(il1)%ext(mpl,Hcoef_c1a,nicas_blk%hor(il1)%Hcoef_c1u)
       end if
-      call nicas_blk%com_c1_AU(il1)%ext(mpl,peakness_c1a,nicas_blk%hor(il1)%peakness_c1u)
+      call nicas_blk%com_c1_AU(il1)%ext(mpl,pk_c1a,nicas_blk%hor(il1)%pk_c1u)
 
       ! Release memory
       deallocate(rh_c0b)
@@ -3567,13 +3563,13 @@ if (.not.nam%load_nicas_global) then
          deallocate(Hcoef_c0b)
          deallocate(Hcoef_c1a)
       end if
-      deallocate(peakness_c0b)
-      deallocate(peakness_c1a)
+      deallocate(pk_c0b)
+      deallocate(pk_c1a)
    end do
 
    ! Allocation
    allocate(nicas_blk%distnorm_sb(nicas_blk%nl1,nicas_blk%nsb))
-   allocate(nicas_blk%peakness_sb(nicas_blk%nl1,nicas_blk%nsb))
+   allocate(nicas_blk%pk_sb(nicas_blk%nl1,nicas_blk%nsb))
 
    ! Compute distances
    if (nam%network) then
@@ -3592,7 +3588,7 @@ if (.not.nam%load_nicas_global) then
          if (.not.nicas_blk%horizontal) deallocate(nicas_blk%hor(il1)%H33_c1u)
          deallocate(nicas_blk%hor(il1)%H12_c1u)
       end if
-      deallocate(nicas_blk%hor(il1)%peakness_c1u)
+      deallocate(nicas_blk%hor(il1)%pk_c1u)
    end do
 
    ! Allocation
@@ -3642,12 +3638,12 @@ if (.not.nam%load_nicas_global) then
    do isb=1,nicas_blk%nsb
       do jl1=1,nicas_blk%nl1
          call nicas_blk%distnorm_sb(jl1,isb)%dealloc
-         call nicas_blk%peakness_sb(jl1,isb)%dealloc
+         call nicas_blk%pk_sb(jl1,isb)%dealloc
          if (nicas_blk%anisotropic) call nicas_blk%Hcoef_sb(jl1,isb)%dealloc
       end do
    end do
    deallocate(nicas_blk%distnorm_sb)
-   deallocate(nicas_blk%peakness_sb)
+   deallocate(nicas_blk%pk_sb)
    if (nicas_blk%anisotropic) deallocate(nicas_blk%Hcoef_sb)
 end if
 
@@ -3809,7 +3805,7 @@ real(kind_real) :: min_minus_max,max_minus_min,rvsq_max,rr,disthsq,distvsq,rhsq,
 real(kind_real) :: dx,dy,dz,H11,H22,H33,H12
 real(kind_real) :: rv_max(geom%nl0),rv_max_tot(geom%nl0),rh_max(geom%nl0),rh_max_tot(geom%nl0)
 real(kind_real) :: vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distvsq_min(nicas_blk%nl1,nicas_blk%nl1)
-real(kind_real),allocatable :: distnorm(:),peakness(:),nn_dist(:)
+real(kind_real),allocatable :: distnorm(:),pk(:),nn_dist(:)
 logical :: valid
 
 ! Set name
@@ -3830,9 +3826,6 @@ if ((.not.nicas_blk%smoother).and.nicas_blk%sqrt_rescaling) then
    if (nicas_blk%anisotropic) then
       rh_max_tot = rh_max_tot*sqrt_h
       rv_max_tot = rv_max_tot*sqrt_h
-   else
-      rh_max_tot = rh_max_tot*sqrt_r
-      rv_max_tot = rv_max_tot*sqrt_r
    end if
 end if
 
@@ -3856,7 +3849,7 @@ write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distance
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
 !$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rvsq_max,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12,H33), &
-!$omp&                             private(disthsq,rhsq,distvsq,rvsq) firstprivate(nn_index,nn_dist,distnorm,peakness)
+!$omp&                             private(disthsq,rhsq,distvsq,rvsq) firstprivate(nn_index,nn_dist,distnorm,pk)
 do isb=1,nicas_blk%nsb
    ! Indices
    isu = nicas_blk%sb_to_su(isb)
@@ -3870,11 +3863,11 @@ do isb=1,nicas_blk%nsb
 
       ! Allocation
       allocate(distnorm(nicas_blk%hor(jl1)%nc1u))
-      allocate(peakness(nicas_blk%hor(jl1)%nc1u))
+      allocate(pk(nicas_blk%hor(jl1)%nc1u))
 
       ! Initialization
       distnorm = mpl%msv%valr
-      peakness = mpl%msv%valr
+      pk = mpl%msv%valr
 
       ! Check vertical radius
       rvsq_max = half*(rv_max(il0)**2+rv_max(jl0)**2)
@@ -3948,26 +3941,29 @@ do isb=1,nicas_blk%nsb
             end if
          end do
 
-         ! Upper bound
+
          do jc1u=1,nicas_blk%hor(jl1)%nc1u
-             if (supeq(distnorm(jc1u),one)) distnorm(jc1u) = mpl%msv%valr
+             if (supeq(distnorm(jc1u),one)) then
+                ! Upper bound
+                distnorm(jc1u) = mpl%msv%valr
+             else
+                ! Average peakness
+                pk(jc1u) = half*(nicas_blk%hor(il1)%pk_c1u(ic1u)+nicas_blk%hor(il1)%pk_c1u(jc1u))
+             end if
          end do
 
          ! Release memory
          deallocate(nn_index)
          deallocate(nn_dist)
-
-         ! Average peakness
-         peakness(jc1u) = half*(nicas_blk%hor(il1)%peakness_c1u(ic1u)+nicas_blk%hor(il1)%peakness_c1u(jc1u))
       end if
 
       ! Pack data
       call nicas_blk%distnorm_sb(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,distnorm)
-      call nicas_blk%peakness_sb(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,peakness)
+      call nicas_blk%pk_sb(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,pk)
 
       ! Release memory
       deallocate(distnorm)
-      deallocate(peakness)
+      deallocate(pk)
    end do
 
    ! Update
@@ -4037,9 +4033,9 @@ do isb=1,nicas_blk%nsb
          ! Fit function
          if (nicas_blk%anisotropic) then
             S_test = nicas_blk%Hcoef_sb(jl1,isb)%val(jbd)*fit_func_sqrt(mpl,nicas_blk%distnorm_sb(jl1,isb)%val(jbd), &
- & nicas_blk%peakness_sb(jl1,isb)%val(jbd))
+ & nicas_blk%pk_sb(jl1,isb)%val(jbd))
          else
-            S_test = fit_func_sqrt(mpl,nicas_blk%distnorm_sb(jl1,isb)%val(jbd),nicas_blk%peakness_sb(jl1,isb)%val(jbd))
+            S_test = fit_func_sqrt(mpl,nicas_blk%distnorm_sb(jl1,isb)%val(jbd),nicas_blk%pk_sb(jl1,isb)%val(jbd))
          end if
 
          if (sup(S_test,S_inf)) then

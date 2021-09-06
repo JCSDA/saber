@@ -84,6 +84,11 @@ output:
   type: an
 - datadir: testdata/qg_parameters_bump_cov_pairs
   date: 2010-01-01T12:00:00Z
+  exp: cor_pk
+  parameter: cor_pk
+  type: an
+- datadir: testdata/qg_parameters_bump_cov_pairs
+  date: 2010-01-01T12:00:00Z
   exp: cor_rv
   parameter: cor_rv
   type: an

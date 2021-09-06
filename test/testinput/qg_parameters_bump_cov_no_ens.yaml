@@ -14,6 +14,8 @@ bump:
     x: [6.4e6,7.4e6]
   rv:
     x: [33000.0]
+  pk:
+    x: [3.0]
   stddev:
     x: [1.8e7]
   strategy: specific_univariate
@@ -39,6 +41,11 @@ output:
   date: 2010-01-01T12:00:00Z
   exp: cor_rv
   parameter: cor_rv
+  type: an
+- datadir: testdata/qg_parameters_bump_cov_no_ens
+  date: 2010-01-01T12:00:00Z
+  exp: cor_pk
+  parameter: cor_pk
   type: an
 - datadir: testdata/qg_parameters_bump_cov_no_ens
   date: 2010-01-01T12:00:00Z

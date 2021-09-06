@@ -61,6 +61,11 @@ output:
   type: an
 - datadir: testdata/qg_parameters_bump_loc
   date: 2010-01-01T12:00:00Z
+  exp: loc_pk
+  parameter: loc_pk
+  type: an
+- datadir: testdata/qg_parameters_bump_loc
+  date: 2010-01-01T12:00:00Z
   exp: nicas_norm
   parameter: nicas_norm
   type: an

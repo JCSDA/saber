@@ -47,7 +47,7 @@ type minim_type
    logical :: lcoef                           !< Diagonal coefficient flag
    logical :: lrh                             !< Horizontal support radius flag
    logical :: lrv                             !< Vertical support radius flag
-   logical :: lpeakness                       !< Peakness flag
+   logical :: lpk                             !< Peakness flag
 
    ! Specific data (LCT)
    integer :: nscales                         !< Number of LCT scales
@@ -168,7 +168,7 @@ real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 integer :: ix
-real(kind_real) :: coef,fit_rh,fit_rv,fit_peakness
+real(kind_real) :: coef,fit_rh,fit_rv,fit_pk
 real(kind_real) :: fit(minim%nc3,minim%nl0r)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
@@ -202,15 +202,15 @@ if (minim%lrv) then
 else
    fit_rv = zero
 end if
-if (minim%lpeakness) then
+if (minim%lpk) then
    ix = ix+1
-   fit_peakness = xtmp(ix)
+   fit_pk = xtmp(ix)
 else
-   fit_peakness = zero
+   fit_pk = zero
 end if
 
 ! Compute function
-call fit_diag(mpl,minim%nc3,minim%nl0r,minim%disth,minim%distv,coef,fit_rh,fit_rv,fit_peakness,fit)
+call fit_diag(mpl,minim%nc3,minim%nl0r,minim%disth,minim%distv,coef,fit_rh,fit_rv,fit_pk,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))

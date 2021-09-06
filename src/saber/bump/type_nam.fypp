@@ -175,6 +175,7 @@ type nam_type
    real(kind_real) :: local_dlat                              !< Local diagnostics calculation latitude band half-width [in degrees]
 
    ! fit_param
+   logical :: estimate_peakness                               !< Estimate peakness
    real(kind_real) :: diag_rhflt                              !< Horizontal filtering suport radius [in meters]
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
@@ -195,7 +196,7 @@ type nam_type
    logical :: forced_radii                                    !< Force specific support radii
    real(kind_real) :: rh(nlmax,0:nvmax)                       !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nlmax,0:nvmax)                       !< Forced vertical support radius
-   real(kind_real) :: peakness(nlmax,0:nvmax)                 !< Forced peakness
+   real(kind_real) :: pk(nlmax,0:nvmax)                       !< Forced peakness
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
@@ -433,6 +434,7 @@ nam%local_rad = zero
 nam%local_dlat = zero
 
 ! fit_param default
+nam%estimate_peakness = .true.
 nam%diag_rhflt = zero
 nam%diag_rvflt = zero
 nam%fit_dl0 = 1
@@ -453,7 +455,7 @@ nam%network = .false.
 nam%forced_radii = .false.
 nam%rh = -one
 nam%rv = -one
-nam%peakness = -one
+nam%pk = zero
 nam%min_lev = 1
 nam%max_lev = nlmax
 nam%pos_def_test = .false.
@@ -639,6 +641,7 @@ real(kind_real) :: local_rad
 real(kind_real) :: local_dlat
 real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
+logical :: estimate_peakness
 integer :: fit_dl0
 integer :: lct_nscales
 real(kind_real) :: lct_scale_ratio
@@ -655,7 +658,7 @@ logical :: network
 logical :: forced_radii
 real(kind_real) :: rh(nlmax,0:nvmax)
 real(kind_real) :: rv(nlmax,0:nvmax)
-real(kind_real) :: peakness(nlmax,0:nvmax)
+real(kind_real) :: pk(nlmax,0:nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
@@ -819,6 +822,7 @@ namelist/diag_param/ &
  & local_rad, &
  & local_dlat
 namelist/fit_param/ &
+ & estimate_peakness, &
  & diag_rhflt, &
  & diag_rvflt, &
  & fit_dl0, &
@@ -838,7 +842,7 @@ namelist/nicas_param/ &
  & forced_radii, &
  & rh, &
  & rv, &
- & peakness, &
+ & pk, &
  & min_lev, &
  & max_lev, &
  & pos_def_test, &
@@ -1032,6 +1036,7 @@ if (mpl%main) then
    local_dlat = zero
 
    ! fit_param default
+   estimate_peakness = .true.
    diag_rhflt = zero
    diag_rvflt = zero
    fit_dl0 = 1
@@ -1052,7 +1057,7 @@ if (mpl%main) then
    forced_radii = .false.
    rh = -one
    rv = -one
-   peakness = -one
+   pk = zero
    min_lev = 1
    max_lev = nlmax
    pos_def_test = .false.
@@ -1251,6 +1256,7 @@ if (mpl%main) then
 
    ! fit_param
    read(lunit,nml=fit_param)
+   nam%estimate_peakness = estimate_peakness
    nam%diag_rhflt = diag_rhflt
    nam%diag_rvflt = diag_rvflt
    nam%fit_dl0 = fit_dl0
@@ -1272,7 +1278,7 @@ if (mpl%main) then
    nam%forced_radii = forced_radii
    nam%rh = rh
    nam%rv = rv
-   nam%peakness = peakness
+   nam%pk = pk
    nam%min_lev = min_lev
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
@@ -1474,6 +1480,7 @@ call mpl%f_comm%broadcast(nam%local_rad,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%local_dlat,mpl%rootproc-1)
 
 ! fit_param
+call mpl%f_comm%broadcast(nam%estimate_peakness,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
@@ -1494,7 +1501,7 @@ call mpl%f_comm%broadcast(nam%network,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%peakness,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%pk,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
@@ -1881,6 +1888,7 @@ if (conf%has('local_rad')) call conf%get_or_die('local_rad',nam%local_rad)
 if (conf%has('local_dlat')) call conf%get_or_die('local_dlat',nam%local_dlat)
 
 ! fit_param
+if (conf%has('estimate_peakness')) call conf%get_or_die('estimate_peakness',nam%estimate_peakness)
 if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
 if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
 if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
@@ -1974,34 +1982,34 @@ if (conf%has('rv')) then
       end if
    end do
 end if
-if (conf%has('peakness')) then
-   call conf%get_or_die('peakness',subconf)
+if (conf%has('pk')) then
+   call conf%get_or_die('pk',subconf)
    if (subconf%has('common')) then
       call subconf%get_or_die('common',real_array)
       if (size(real_array)>nlmax) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: peakness-common size should be smaller than ',nlmax
+         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pk-common size should be smaller than ',nlmax
          call flush(output_unit)
          call comm%abort(1)
       end if
       if (size(real_array)==1) then
-         nam%peakness(:,0) = real_array(1)
+         nam%pk(:,0) = real_array(1)
       else
-         nam%peakness(1:size(real_array),0) = real_array
+         nam%pk(1:size(real_array),0) = real_array
       end if
    end if
    do iv=1,nam%nv
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
          if (size(real_array)>nlmax) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: peakness-',trim(nam%variables(iv)), &
+            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: pk-',trim(nam%variables(iv)), &
  & ' size should be smaller than ',nlmax
             call flush(output_unit)
             call comm%abort(1)
          end if
          if (size(real_array)==1) then
-            nam%peakness(:,iv) = real_array(1)
+            nam%pk(:,iv) = real_array(1)
          else
-            nam%peakness(1:size(real_array),iv) = real_array
+            nam%pk(1:size(real_array),iv) = real_array
          end if
       end if
    end do
@@ -2528,7 +2536,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          do il=1,nam%nl
             if (nam%rh(il,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
             if (nam%rv(il,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
-            if (nam%peakness(il,iv)<zero) call mpl%abort('${subr}$','peakness should be non-negative')
+            if (nam%pk(il,iv)<zero) call mpl%abort('${subr}$','pk should be non-negative')
          end do
       end do
    end if
@@ -2775,6 +2783,7 @@ call mpl%write('local_dlat',nam%local_dlat*rad2deg)
 ! fit_param
 write(mpl%info,'(a7,a)') '','Fit parameters'
 call mpl%flush
+call mpl%write('estimate_peakness',nam%estimate_peakness)
 call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
@@ -2799,7 +2808,8 @@ real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%rh(1:nam%nl,0:nam%nv),(/nam%nl*(na
 call mpl%write('rh',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
 real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%rv(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
 call mpl%write('rv',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
-call mpl%write('peakness',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
+real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%pk(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
+call mpl%write('pk',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)

@@ -38,7 +38,7 @@ contains
 ! Subroutine: fit_fast_fit
 !> Fast fit length-scale estimation based on the value at mid-height
 !----------------------------------------------------------------------
-subroutine fit_fast_fit(mpl,n,iz,dist,raw,peakness,fit_r)
+subroutine fit_fast_fit(mpl,n,iz,dist,raw,pk,fit_r)
 
 implicit none
 
@@ -48,7 +48,7 @@ integer,intent(in) :: n                !< Vector size
 integer,intent(in) :: iz               !< Zero separation index
 real(kind_real),intent(in) :: dist(n)  !< Distance
 real(kind_real),intent(in) :: raw(n)   !< Raw data
-real(kind_real),intent(in) :: peakness !< Peakness
+real(kind_real),intent(in) :: pk       !< Peakness
 real(kind_real),intent(out) :: fit_r   !< Fast fit result
 
 ! Local variables
@@ -85,7 +85,7 @@ if (raw(iz)>zero) then
             thinv = half
             dthinv = quarter
             do iter=1,itermax
-               thtest = fit_func(mpl,thinv,peakness)
+               thtest = fit_func(mpl,thinv,pk)
                if (sup(th,thtest)) then
                   thinv = thinv-dthinv
                else
