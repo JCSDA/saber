@@ -152,5 +152,6 @@ output:
   type: an
 
 test:
+  float relative tolerance: 4.e-6
   reference filename: testref/qg_4dvar_drplanczos_hybrid_bump/test.log.out
   test output filename: testoutput/qg_4dvar_drplanczos_hybrid_bump/test.log.out
