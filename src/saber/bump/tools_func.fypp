@@ -1,5 +1,6 @@
 #:include '../instrumentation.fypp'
 #:include '../generics.fypp'
+#:include 'tools_gc99.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_func
 !> Usual functions
@@ -12,8 +13,7 @@ module tools_func
 use atlas_module, only: atlas_geometry
 use iso_c_binding, only: c_int16_t,c_int32_t
 use tools_asa007, only: cholesky,syminv
-use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,six,eight,nine,ten,twelve,fifteen,eighteen, &
- & twenty,twentyfour,fortytwo,fortyfive,fortyeight,thousand,pi,deg2rad,rad2deg
+use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
 use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small,eq
@@ -1118,7 +1118,11 @@ real(kind_real),intent(in) :: pk       !< Peakness
 real(kind_real) :: value
 
 ! Local values
-real(kind_real) :: z1,z2,z3,z4,p1,p2,p3,p4,expp,exppd
+integer :: idm,idp,ipkm,ipkp
+real(kind_real) :: rdm,rdp,rpkm,rpkp
+
+! Local data
+@:include_gc99()
 
 ! Set name
 @:set_name(func_gc99)
@@ -1126,109 +1130,30 @@ real(kind_real) :: z1,z2,z3,z4,p1,p2,p3,p4,expp,exppd
 ! Probe in
 @:probe_in()
 
-if (inf(pk,tenth)) then
-   ! Equation (4.10) of Gaspari and Cohn (1999)
-   if (eq(distnorm,zero)) then
-      value = one
-   elseif (inf(distnorm,half)) then
-      value = one-distnorm
-      value = one+eight/five*distnorm*value
-      value = one-three/four*distnorm*value
-      value = one-twenty/three*distnorm**2*value
-   elseif (inf(distnorm,one)) then
-      value = one-distnorm/three
-      value = one-eight/five*distnorm*value
-      value = one+three/four*distnorm*value
-      value = one-two/three*distnorm*value
-      value = one-five/two*distnorm*value
-      value = one-twelve*distnorm*value
-      value = -value/(three*distnorm)
-   else
-      value = zero
-   end if
+if (eq(distnorm,zero)) then
+   ! Normalized origin
+   value = one
+elseif (sup(distnorm,one)) then
+   ! Out of support
+   value = zero
 else
-   ! TODO
-   if (inf(distnorm,half).and.inf(distnorm,one)) then
-      ! Prepare coefficients
-      z1 = distnorm
-      z2 = z1*distnorm
-      z3 = z2*distnorm
-      z4 = z3*distnorm
-      p1 = pk
-      p2 = p1*pk
-      p3 = p2*pk
-      p4 = p3*pk
-      expp = exp(pk)
-      exppd = exp(pk*distnorm)
-   end if
+   ! Indices
+   idm = distnorm/deltad+1
+   idp = idm+1
+   ipkm = pk/deltapk+1
+   ipkp = ipkm+1
 
-   if (eq(distnorm,zero)) then
-      value = one
-   elseif (inf(distnorm,half)) then
-      value = ( &
- & two*p4*z4*exppd**2 &
- & -six*p4*z2*exppd**2 &
- & +four*p4*z1*exppd**2 &
- & +four*p3*z3*expp**2 &
- & -twelve*p3*z2*exppd**2 &
- & +twelve*p3*z1*exppd**2 &
- & +six*p2*z2*expp**2 &
- & -twelve*p2*z2*exppd**2 &
- & -six*p2*z1*exppd**4 &
- & +twentyfour*p2*z1*exppd**2 &
- & +three*p2*exppd**4 &
- & -three*p2*exppd**2 &
- & +three*p1*z1*expp**2 &
- & -fortyeight*p1*z1*expp*exppd**2 &
- & -nine*p1*z1*exppd**4 &
- & +twentyfour*p1*z1*exppd**2 &
- & +twelve*p1*exppd**4 &
- & -twelve*p1*exppd**2 &
- & +fifteen*exppd**4 &
- & -fifteen*exppd**2 &
- & )/( &
- & four*p4*z1*exppd**2 &
- & +eighteen*p3*z1*exppd**2 &
- & +fortytwo*p2*z1*exppd**2 &
- & +three*p1*z1*expp**2*exppd**2 &
- & -fortyeight*p1*z1*expp*exppd**2 &
- & +fortyfive*p1*z1*exppd**2 &
- & )
-   elseif (inf(distnorm,one)) then
-      expp = exp(pk)
-      exppd = exp(pk*distnorm)
-      value = ( &
- & two*p4*z4*exppd**2 &
- & -six*p4*z2*exppd**2 &
- & +four*p4*z1*exppd**2 &
- & -four*p3*z3*expp**2 &
- & -twelve*p3*z2*exppd**2 &
- & +six*p3*z1*expp**2 &
- & +twelve*p3*z1*exppd**2 &
- & -two*p3*expp**2 &
- & -six*p2*z2*expp**2 &
- & -twelve*p2*z2*exppd**2 &
- & -twelve*p2*z1*expp**2 &
- & +twentyfour*p2*z1*exppd**2 &
- & +nine*p2*expp**2 &
- & -three*p2*exppd**2 &
- & +six*p1*z1*expp**2 &
- & +twentyfour*p1*z1*exppd**2 &
- & -eighteen*p1*expp**2 &
- & -twelve*p1*exppd**2 &
- & +fifteen*expp**2 &
- & -fifteen*exppd**2 &
- & )/( &
- & four*p4*z1*exppd**2 &
- & +eighteen*p3*z1*exppd**2 &
- & +fortytwo*p2*z1*exppd**2 &
- & +three*p1*z1*expp**2*exppd**2 &
- & -fortyeight*p1*z1*expp*exppd**2 &
- & +fortyfive*p1*z1*exppd**2 &
- & )
-   else
-      value = zero
-   end if
+   ! Coefficients
+   rdm = (real(idp,kind_real)-distnorm)/deltad
+   rdp = (distnorm-real(idm,kind_real))/deltad
+   rdm = (real(ipkp,kind_real)-pk)/deltapk
+   rdp = (pk-real(ipkm,kind_real))/deltapk
+
+   ! Interpolated value
+   value = rdm*rpkm*func_array3D(ipkm,idm) &
+ & +rdp*rpkm*func_array3D(ipkm,idp) &
+ & +rdm*rpkp*func_array3D(ipkp,idm) &
+ & +rdp*rpkp*func_array3D(ipkp,idp)
 end if
 
 ! Set small values to zero (bad conditioning)
@@ -1258,16 +1183,16 @@ real(kind_real) :: value
 ! Probe in
 @:probe_in()
 
-if (inf(pk,tenth)) then
+if (eq(pk,zero)) then
    ! Gaussian-shaped function
-   if (distnorm<half) then
+   if (inf(distnorm,half)) then
       value = one-two*distnorm
    else
       value = zero
    end if
 else
    if (inf(distnorm,half)) then
-      value = exp(-two*distnorm*pk)-exp(-pk)
+      value = exp(-sqrt(two*distnorm)*pk)-exp(-pk)
    else
       value = zero
    end if

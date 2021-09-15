@@ -477,7 +477,7 @@ do il1=1,nl1
       if (lpk) then
          ix = ix+1
          minim%guess(ix) = fit_pk_l1(il1)
-         minim%binf(ix) = tenth
+         minim%binf(ix) = zero
          minim%bsup(ix) = ten
       end if
 
