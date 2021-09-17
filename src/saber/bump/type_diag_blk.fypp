@@ -9,7 +9,7 @@
 module type_diag_blk
 
 !$ use omp_lib
-use tools_const, only: zero,hundredth,tenth,half,one,two,three,five,ten
+use tools_const, only: zero,hundredth,tenth,half,one,two,three,five,ten,fifteen
 use tools_fit, only: fast_fit,ver_fill
 use tools_func, only: fit_diag,vert_interp_size,vert_interp_setup,vert_interp
 use tools_kinds, only: kind_real,huge_real
@@ -478,7 +478,7 @@ do il1=1,nl1
          ix = ix+1
          minim%guess(ix) = fit_pk_l1(il1)
          minim%binf(ix) = zero
-         minim%bsup(ix) = ten
+         minim%bsup(ix) = fifteen
       end if
 
       ! Fill obs
@@ -520,13 +520,15 @@ do il1=1,nl1
       if (lrv) then
          ix = ix+1
          fit_rv_l1(il1) = minim%x(ix)
+      elseif (var2d.or.(nl0r==1)) then
+         fit_rv_l1(il1) = zero
       elseif (.not.(var2d.or.(nl0r==1))) then
          fit_rv_l1(il1) = mpl%msv%valr
       end if
       if (lpk) then
          ix = ix+1
          fit_pk_l1(il1) = minim%x(ix)
-      elseif (.not.(var2d.or.(nl0r==1))) then
+      else
          fit_pk_l1(il1) = zero
       end if
 

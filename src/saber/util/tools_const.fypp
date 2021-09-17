@@ -26,6 +26,7 @@ real(kind_real),parameter :: six = 6.0_kind_real          !< Six
 real(kind_real),parameter :: eight = 8.0_kind_real        !< Eight
 real(kind_real),parameter :: ten = 10.0_kind_real         !< Ten
 real(kind_real),parameter :: twelve = 12.0_kind_real      !< Twelve
+real(kind_real),parameter :: fifteen = 15.0_kind_real     !< Fifteen
 real(kind_real),parameter :: hundred = 100.0_kind_real    !< Hundred
 real(kind_real),parameter :: thousand = 1000.0_kind_real  !< Thousand
 real(kind_real),parameter :: pi = acos(-1.0_kind_real)    !< Pi

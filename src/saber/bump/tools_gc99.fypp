@@ -1,9 +1,14 @@
 #:def include_gc99()
-integer,parameter :: npk = 11
+integer,parameter :: npk = 16
 integer,parameter :: nd = 41
 real(kind_real),parameter :: deltapk = 1.00000000_kind_real
 real(kind_real),parameter :: deltad = 0.02500000_kind_real
 real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
+ & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
  & 1.00000000_kind_real, &
  & 1.00000000_kind_real, &
  & 1.00000000_kind_real, &
@@ -26,6 +31,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.83866068_kind_real, &
  & 0.78328271_kind_real, &
  & 0.72237100_kind_real, &
+ & 0.65905780_kind_real, &
+ & 0.59489004_kind_real, &
+ & 0.53164254_kind_real, &
+ & 0.47074264_kind_real, &
+ & 0.41326408_kind_real, &
  & 0.98551301_kind_real, &
  & 0.97729849_kind_real, &
  & 0.96719980_kind_real, &
@@ -37,6 +47,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.65160142_kind_real, &
  & 0.56543307_kind_real, &
  & 0.48118285_kind_real, &
+ & 0.40287556_kind_real, &
+ & 0.33224187_kind_real, &
+ & 0.27029334_kind_real, &
+ & 0.21721909_kind_real, &
+ & 0.17264518_kind_real, &
  & 0.96873251_kind_real, &
  & 0.96061718_kind_real, &
  & 0.95013702_kind_real, &
@@ -48,6 +63,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.63374289_kind_real, &
  & 0.54643296_kind_real, &
  & 0.46110461_kind_real, &
+ & 0.38210085_kind_real, &
+ & 0.31137542_kind_real, &
+ & 0.24999510_kind_real, &
+ & 0.19807974_kind_real, &
+ & 0.15511211_kind_real, &
  & 0.94459916_kind_real, &
  & 0.91858448_kind_real, &
  & 0.89067398_kind_real, &
@@ -59,6 +79,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.37417514_kind_real, &
  & 0.28433094_kind_real, &
  & 0.21016997_kind_real, &
+ & 0.15194390_kind_real, &
+ & 0.10773571_kind_real, &
+ & 0.07512492_kind_real, &
+ & 0.05163089_kind_real, &
+ & 0.03503654_kind_real, &
  & 0.91528802_kind_real, &
  & 0.87933869_kind_real, &
  & 0.84272151_kind_real, &
@@ -70,6 +95,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.28459655_kind_real, &
  & 0.20430812_kind_real, &
  & 0.14228978_kind_real, &
+ & 0.09674974_kind_real, &
+ & 0.06444553_kind_real, &
+ & 0.04218784_kind_real, &
+ & 0.02721005_kind_real, &
+ & 0.01732635_kind_real, &
  & 0.88115089_kind_real, &
  & 0.83555817_kind_real, &
  & 0.79149163_kind_real, &
@@ -81,6 +111,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.22064339_kind_real, &
  & 0.15108306_kind_real, &
  & 0.10020682_kind_real, &
+ & 0.06483734_kind_real, &
+ & 0.04108846_kind_real, &
+ & 0.02559382_kind_real, &
+ & 0.01571385_kind_real, &
+ & 0.00953076_kind_real, &
  & 0.84256781_kind_real, &
  & 0.78803356_kind_real, &
  & 0.73780829_kind_real, &
@@ -92,6 +127,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.17277457_kind_real, &
  & 0.11353400_kind_real, &
  & 0.07220633_kind_real, &
+ & 0.04479724_kind_real, &
+ & 0.02723525_kind_real, &
+ & 0.01629164_kind_real, &
+ & 0.00961858_kind_real, &
+ & 0.00561884_kind_real, &
  & 0.80041852_kind_real, &
  & 0.73652561_kind_real, &
  & 0.68068083_kind_real, &
@@ -103,6 +143,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.13042382_kind_real, &
  & 0.08133220_kind_real, &
  & 0.04889894_kind_real, &
+ & 0.02858212_kind_real, &
+ & 0.01632192_kind_real, &
+ & 0.00914490_kind_real, &
+ & 0.00504365_kind_real, &
+ & 0.00274534_kind_real, &
  & 0.75531369_kind_real, &
  & 0.68683314_kind_real, &
  & 0.62407833_kind_real, &
@@ -114,6 +159,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.10150309_kind_real, &
  & 0.06090600_kind_real, &
  & 0.03519048_kind_real, &
+ & 0.01975433_kind_real, &
+ & 0.01083179_kind_real, &
+ & 0.00582833_kind_real, &
+ & 0.00308843_kind_real, &
+ & 0.00161618_kind_real, &
  & 0.70716104_kind_real, &
  & 0.62986595_kind_real, &
  & 0.56819509_kind_real, &
@@ -125,6 +175,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.08054503_kind_real, &
  & 0.04696753_kind_real, &
  & 0.02639013_kind_real, &
+ & 0.01442773_kind_real, &
+ & 0.00772125_kind_real, &
+ & 0.00406593_kind_real, &
+ & 0.00211522_kind_real, &
+ & 0.00109054_kind_real, &
  & 0.65766290_kind_real, &
  & 0.57463389_kind_real, &
  & 0.51150757_kind_real, &
@@ -136,6 +191,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.06104064_kind_real, &
  & 0.03404919_kind_real, &
  & 0.01822695_kind_real, &
+ & 0.00945601_kind_real, &
+ & 0.00478321_kind_real, &
+ & 0.00237129_kind_real, &
+ & 0.00115670_kind_real, &
+ & 0.00055689_kind_real, &
  & 0.60715551_kind_real, &
  & 0.52012111_kind_real, &
  & 0.45708881_kind_real, &
@@ -147,6 +207,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.04738269_kind_real, &
  & 0.02561332_kind_real, &
  & 0.01327413_kind_real, &
+ & 0.00666345_kind_real, &
+ & 0.00326086_kind_real, &
+ & 0.00156413_kind_real, &
+ & 0.00073847_kind_real, &
+ & 0.00034430_kind_real, &
  & 0.55595832_kind_real, &
  & 0.46655403_kind_real, &
  & 0.40484214_kind_real, &
@@ -158,6 +223,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.03713154_kind_real, &
  & 0.01960216_kind_real, &
  & 0.00992969_kind_real, &
+ & 0.00487958_kind_real, &
+ & 0.00234255_kind_real, &
+ & 0.00110520_kind_real, &
+ & 0.00051479_kind_real, &
+ & 0.00023757_kind_real, &
  & 0.50507123_kind_real, &
  & 0.41489459_kind_real, &
  & 0.35430082_kind_real, &
@@ -169,6 +239,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.02802911_kind_real, &
  & 0.01428595_kind_real, &
  & 0.00696677_kind_real, &
+ & 0.00328631_kind_real, &
+ & 0.00150992_kind_real, &
+ & 0.00067968_kind_real, &
+ & 0.00030110_kind_real, &
+ & 0.00013173_kind_real, &
  & 0.45500945_kind_real, &
  & 0.36389904_kind_real, &
  & 0.30686158_kind_real, &
@@ -180,6 +255,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.02118210_kind_real, &
  & 0.01048719_kind_real, &
  & 0.00496266_kind_real, &
+ & 0.00226971_kind_real, &
+ & 0.00101047_kind_real, &
+ & 0.00044054_kind_real, &
+ & 0.00018895_kind_real, &
+ & 0.00008002_kind_real, &
  & 0.40620171_kind_real, &
  & 0.31624622_kind_real, &
  & 0.26265795_kind_real, &
@@ -191,6 +271,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.01588001_kind_real, &
  & 0.00766009_kind_real, &
  & 0.00353149_kind_real, &
+ & 0.00157403_kind_real, &
+ & 0.00068332_kind_real, &
+ & 0.00029073_kind_real, &
+ & 0.00012182_kind_real, &
+ & 0.00005045_kind_real, &
  & 0.35931844_kind_real, &
  & 0.27161381_kind_real, &
  & 0.22192756_kind_real, &
@@ -202,6 +287,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.01165282_kind_real, &
  & 0.00546822_kind_real, &
  & 0.00245244_kind_real, &
+ & 0.00106379_kind_real, &
+ & 0.00044977_kind_real, &
+ & 0.00018657_kind_real, &
+ & 0.00007631_kind_real, &
+ & 0.00003089_kind_real, &
  & 0.31483494_kind_real, &
  & 0.23120458_kind_real, &
  & 0.18575263_kind_real, &
@@ -213,6 +303,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00830188_kind_real, &
  & 0.00377201_kind_real, &
  & 0.00163674_kind_real, &
+ & 0.00068664_kind_real, &
+ & 0.00028076_kind_real, &
+ & 0.00011266_kind_real, &
+ & 0.00004460_kind_real, &
+ & 0.00001749_kind_real, &
  & 0.27312192_kind_real, &
  & 0.19323534_kind_real, &
  & 0.15218327_kind_real, &
@@ -224,6 +319,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00572951_kind_real, &
  & 0.00250448_kind_real, &
  & 0.00104337_kind_real, &
+ & 0.00041952_kind_real, &
+ & 0.00016419_kind_real, &
+ & 0.00006300_kind_real, &
+ & 0.00002383_kind_real, &
+ & 0.00000893_kind_real, &
  & 0.23452434_kind_real, &
  & 0.16012839_kind_real, &
  & 0.12368993_kind_real, &
@@ -235,6 +335,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00385566_kind_real, &
  & 0.00161153_kind_real, &
  & 0.00063932_kind_real, &
+ & 0.00024377_kind_real, &
+ & 0.00009009_kind_real, &
+ & 0.00003250_kind_real, &
+ & 0.00001151_kind_real, &
+ & 0.00000402_kind_real, &
  & 0.19990993_kind_real, &
  & 0.13189142_kind_real, &
  & 0.09996780_kind_real, &
@@ -246,6 +351,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00259842_kind_real, &
  & 0.00104213_kind_real, &
  & 0.00039528_kind_real, &
+ & 0.00014356_kind_real, &
+ & 0.00005034_kind_real, &
+ & 0.00001716_kind_real, &
+ & 0.00000572_kind_real, &
+ & 0.00000187_kind_real, &
  & 0.16743259_kind_real, &
  & 0.10675414_kind_real, &
  & 0.07940749_kind_real, &
@@ -257,6 +367,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00176001_kind_real, &
  & 0.00068761_kind_real, &
  & 0.00025156_kind_real, &
+ & 0.00008661_kind_real, &
+ & 0.00002908_kind_real, &
+ & 0.00000947_kind_real, &
+ & 0.00000301_kind_real, &
+ & 0.00000094_kind_real, &
  & 0.13905663_kind_real, &
  & 0.08577915_kind_real, &
  & 0.06270191_kind_real, &
@@ -268,6 +383,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00119501_kind_real, &
  & 0.00044754_kind_real, &
  & 0.00015782_kind_real, &
+ & 0.00005307_kind_real, &
+ & 0.00001716_kind_real, &
+ & 0.00000537_kind_real, &
+ & 0.00000164_kind_real, &
+ & 0.00000049_kind_real, &
  & 0.11462341_kind_real, &
  & 0.06854483_kind_real, &
  & 0.04925001_kind_real, &
@@ -279,6 +399,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00081130_kind_real, &
  & 0.00029503_kind_real, &
  & 0.00010086_kind_real, &
+ & 0.00003283_kind_real, &
+ & 0.00001026_kind_real, &
+ & 0.00000310_kind_real, &
+ & 0.00000091_kind_real, &
+ & 0.00000026_kind_real, &
  & 0.09222208_kind_real, &
  & 0.05341306_kind_real, &
  & 0.03775009_kind_real, &
@@ -290,6 +415,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00054851_kind_real, &
  & 0.00019407_kind_real, &
  & 0.00006448_kind_real, &
+ & 0.00002037_kind_real, &
+ & 0.00000617_kind_real, &
+ & 0.00000181_kind_real, &
+ & 0.00000052_kind_real, &
+ & 0.00000014_kind_real, &
  & 0.07335935_kind_real, &
  & 0.04121696_kind_real, &
  & 0.02866905_kind_real, &
@@ -301,6 +431,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00036746_kind_real, &
  & 0.00012678_kind_real, &
  & 0.00004100_kind_real, &
+ & 0.00001260_kind_real, &
+ & 0.00000370_kind_real, &
+ & 0.00000105_kind_real, &
+ & 0.00000029_kind_real, &
+ & 0.00000008_kind_real, &
  & 0.05763835_kind_real, &
  & 0.03147897_kind_real, &
  & 0.02156361_kind_real, &
@@ -312,6 +447,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00024255_kind_real, &
  & 0.00008165_kind_real, &
  & 0.00002574_kind_real, &
+ & 0.00000770_kind_real, &
+ & 0.00000220_kind_real, &
+ & 0.00000061_kind_real, &
+ & 0.00000016_kind_real, &
+ & 0.00000004_kind_real, &
  & 0.04369898_kind_real, &
  & 0.02316812_kind_real, &
  & 0.01564419_kind_real, &
@@ -323,6 +463,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00015894_kind_real, &
  & 0.00005234_kind_real, &
  & 0.00001613_kind_real, &
+ & 0.00000471_kind_real, &
+ & 0.00000132_kind_real, &
+ & 0.00000035_kind_real, &
+ & 0.00000009_kind_real, &
+ & 0.00000002_kind_real, &
  & 0.03265785_kind_real, &
  & 0.01683953_kind_real, &
  & 0.01119760_kind_real, &
@@ -334,6 +479,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00010232_kind_real, &
  & 0.00003299_kind_real, &
  & 0.00000995_kind_real, &
+ & 0.00000284_kind_real, &
+ & 0.00000077_kind_real, &
+ & 0.00000020_kind_real, &
+ & 0.00000005_kind_real, &
+ & 0.00000001_kind_real, &
  & 0.02352491_kind_real, &
  & 0.01180656_kind_real, &
  & 0.00773829_kind_real, &
@@ -345,6 +495,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00006472_kind_real, &
  & 0.00002047_kind_real, &
  & 0.00000605_kind_real, &
+ & 0.00000169_kind_real, &
+ & 0.00000044_kind_real, &
+ & 0.00000011_kind_real, &
+ & 0.00000003_kind_real, &
+ & 0.00000001_kind_real, &
  & 0.01645964_kind_real, &
  & 0.00804904_kind_real, &
  & 0.00520478_kind_real, &
@@ -356,6 +511,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00003884_kind_real, &
  & 0.00001205_kind_real, &
  & 0.00000349_kind_real, &
+ & 0.00000096_kind_real, &
+ & 0.00000025_kind_real, &
+ & 0.00000006_kind_real, &
+ & 0.00000002_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.01106331_kind_real, &
  & 0.00526324_kind_real, &
  & 0.00335809_kind_real, &
@@ -367,6 +527,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00002287_kind_real, &
  & 0.00000697_kind_real, &
  & 0.00000198_kind_real, &
+ & 0.00000053_kind_real, &
+ & 0.00000014_kind_real, &
+ & 0.00000003_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00692736_kind_real, &
  & 0.00321188_kind_real, &
  & 0.00202221_kind_real, &
@@ -378,6 +543,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00001257_kind_real, &
  & 0.00000376_kind_real, &
  & 0.00000105_kind_real, &
+ & 0.00000028_kind_real, &
+ & 0.00000007_kind_real, &
+ & 0.00000002_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00408383_kind_real, &
  & 0.00184681_kind_real, &
  & 0.00114805_kind_real, &
@@ -389,6 +559,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00000656_kind_real, &
  & 0.00000193_kind_real, &
  & 0.00000053_kind_real, &
+ & 0.00000014_kind_real, &
+ & 0.00000003_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00220247_kind_real, &
  & 0.00097211_kind_real, &
  & 0.00059689_kind_real, &
@@ -400,6 +575,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00000314_kind_real, &
  & 0.00000091_kind_real, &
  & 0.00000025_kind_real, &
+ & 0.00000006_kind_real, &
+ & 0.00000002_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00101978_kind_real, &
  & 0.00043937_kind_real, &
  & 0.00026649_kind_real, &
@@ -411,6 +591,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00000129_kind_real, &
  & 0.00000037_kind_real, &
  & 0.00000010_kind_real, &
+ & 0.00000002_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00037298_kind_real, &
  & 0.00015692_kind_real, &
  & 0.00009404_kind_real, &
@@ -422,6 +607,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00000042_kind_real, &
  & 0.00000012_kind_real, &
  & 0.00000003_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00009198_kind_real, &
  & 0.00003780_kind_real, &
  & 0.00002239_kind_real, &
@@ -433,6 +623,11 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00000009_kind_real, &
  & 0.00000003_kind_real, &
  & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00000880_kind_real, &
  & 0.00000354_kind_real, &
  & 0.00000207_kind_real, &
@@ -442,6 +637,21 @@ real(kind_real),parameter :: func_array2D(npk,nd) = reshape((/ &
  & 0.00000008_kind_real, &
  & 0.00000003_kind_real, &
  & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00000000_kind_real, &
  & 0.00000000_kind_real, &
  & 0.00000000_kind_real, &
@@ -479,6 +689,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 1.00000000_kind_real, &
  & 1.00000000_kind_real, &
  & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
+ & 1.00000000_kind_real, &
  & 0.99585997_kind_real, &
  & 0.99522112_kind_real, &
  & 0.99422704_kind_real, &
@@ -490,6 +705,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.93460251_kind_real, &
  & 0.90587863_kind_real, &
  & 0.87060975_kind_real, &
+ & 0.82942237_kind_real, &
+ & 0.78326782_kind_real, &
+ & 0.73326893_kind_real, &
+ & 0.68061827_kind_real, &
+ & 0.62649990_kind_real, &
  & 0.98396738_kind_real, &
  & 0.98150316_kind_real, &
  & 0.97762753_kind_real, &
@@ -501,6 +721,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.81317601_kind_real, &
  & 0.74926695_kind_real, &
  & 0.67854412_kind_real, &
+ & 0.60446354_kind_real, &
+ & 0.53023364_kind_real, &
+ & 0.45848543_kind_real, &
+ & 0.39117466_kind_real, &
+ & 0.32960297_kind_real, &
  & 0.96486050_kind_real, &
  & 0.95985078_kind_real, &
  & 0.95342636_kind_real, &
@@ -512,6 +737,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.72729205_kind_real, &
  & 0.65060156_kind_real, &
  & 0.56997834_kind_real, &
+ & 0.48973861_kind_real, &
+ & 0.41336300_kind_real, &
+ & 0.34327051_kind_real, &
+ & 0.28087015_kind_real, &
+ & 0.22673102_kind_real, &
  & 0.93904951_kind_real, &
  & 0.92928401_kind_real, &
  & 0.91763246_kind_real, &
@@ -523,6 +753,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.58007167_kind_real, &
  & 0.47087837_kind_real, &
  & 0.37934278_kind_real, &
+ & 0.29761744_kind_real, &
+ & 0.22813774_kind_real, &
+ & 0.17133913_kind_real, &
+ & 0.14094285_kind_real, &
+ & 0.10434599_kind_real, &
  & 0.90731772_kind_real, &
  & 0.89264947_kind_real, &
  & 0.87569356_kind_real, &
@@ -534,6 +769,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.46600111_kind_real, &
  & 0.36861660_kind_real, &
  & 0.28169306_kind_real, &
+ & 0.20891401_kind_real, &
+ & 0.15099653_kind_real, &
+ & 0.10673223_kind_real, &
+ & 0.07399198_kind_real, &
+ & 0.05042293_kind_real, &
  & 0.87029726_kind_real, &
  & 0.85025721_kind_real, &
  & 0.82888691_kind_real, &
@@ -545,6 +785,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.38167043_kind_real, &
  & 0.28893928_kind_real, &
  & 0.21054039_kind_real, &
+ & 0.14849331_kind_real, &
+ & 0.10188623_kind_real, &
+ & 0.06829250_kind_real, &
+ & 0.04486695_kind_real, &
+ & 0.02896867_kind_real, &
  & 0.82896083_kind_real, &
  & 0.80344607_kind_real, &
  & 0.77774840_kind_real, &
@@ -556,6 +801,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.31137271_kind_real, &
  & 0.22622240_kind_real, &
  & 0.15767022_kind_real, &
+ & 0.10611047_kind_real, &
+ & 0.06935805_kind_real, &
+ & 0.04424327_kind_real, &
+ & 0.02764798_kind_real, &
+ & 0.01697682_kind_real, &
  & 0.78353308_kind_real, &
  & 0.75299016_kind_real, &
  & 0.72364323_kind_real, &
@@ -567,6 +817,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.25208823_kind_real, &
  & 0.17586673_kind_real, &
  & 0.11725883_kind_real, &
+ & 0.07526255_kind_real, &
+ & 0.04680317_kind_real, &
+ & 0.02834726_kind_real, &
+ & 0.01679105_kind_real, &
+ & 0.00975835_kind_real, &
  & 0.73551214_kind_real, &
  & 0.69995308_kind_real, &
  & 0.66753003_kind_real, &
@@ -578,6 +833,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.20418140_kind_real, &
  & 0.13739528_kind_real, &
  & 0.08811335_kind_real, &
+ & 0.05428580_kind_real, &
+ & 0.03235792_kind_real, &
+ & 0.01876882_kind_real, &
+ & 0.01064231_kind_real, &
+ & 0.00592005_kind_real, &
  & 0.68497186_kind_real, &
  & 0.64455305_kind_real, &
  & 0.60943845_kind_real, &
@@ -589,6 +849,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.16502054_kind_real, &
  & 0.10743555_kind_real, &
  & 0.06650523_kind_real, &
+ & 0.03948413_kind_real, &
+ & 0.02265708_kind_real, &
+ & 0.01264616_kind_real, &
+ & 0.00690048_kind_real, &
+ & 0.00369569_kind_real, &
  & 0.63295606_kind_real, &
  & 0.58858025_kind_real, &
  & 0.55154291_kind_real, &
@@ -600,6 +865,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.13218351_kind_real, &
  & 0.08324782_kind_real, &
  & 0.04970067_kind_real, &
+ & 0.02838443_kind_real, &
+ & 0.01563266_kind_real, &
+ & 0.00835788_kind_real, &
+ & 0.00436054_kind_real, &
+ & 0.00222914_kind_real, &
  & 0.58058196_kind_real, &
  & 0.53260730_kind_real, &
  & 0.49483747_kind_real, &
@@ -611,6 +881,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.10560440_kind_real, &
  & 0.06456378_kind_real, &
  & 0.03733774_kind_real, &
+ & 0.02062067_kind_real, &
+ & 0.01096880_kind_real, &
+ & 0.00565942_kind_real, &
+ & 0.00284818_kind_real, &
+ & 0.00140427_kind_real, &
  & 0.52768451_kind_real, &
  & 0.47698750_kind_real, &
  & 0.43897523_kind_real, &
@@ -622,6 +897,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.08387314_kind_real, &
  & 0.04989109_kind_real, &
  & 0.02802392_kind_real, &
+ & 0.01501384_kind_real, &
+ & 0.00774146_kind_real, &
+ & 0.00387058_kind_real, &
+ & 0.00188783_kind_real, &
+ & 0.00090253_kind_real, &
  & 0.47576493_kind_real, &
  & 0.42315284_kind_real, &
  & 0.38556164_kind_real, &
@@ -633,6 +913,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.06584504_kind_real, &
  & 0.03810315_kind_real, &
  & 0.02077699_kind_real, &
+ & 0.01078540_kind_real, &
+ & 0.00537928_kind_real, &
+ & 0.00259757_kind_real, &
+ & 0.00122187_kind_real, &
+ & 0.00056259_kind_real, &
  & 0.42513790_kind_real, &
  & 0.37135899_kind_real, &
  & 0.33468899_kind_real, &
@@ -644,6 +929,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.05118674_kind_real, &
  & 0.02886112_kind_real, &
  & 0.01530895_kind_real, &
+ & 0.00772016_kind_real, &
+ & 0.00373654_kind_real, &
+ & 0.00174947_kind_real, &
+ & 0.00079741_kind_real, &
+ & 0.00035561_kind_real, &
  & 0.37633151_kind_real, &
  & 0.32239405_kind_real, &
  & 0.28725708_kind_real, &
@@ -655,6 +945,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.03928592_kind_real, &
  & 0.02159959_kind_real, &
  & 0.01115787_kind_real, &
+ & 0.00547452_kind_real, &
+ & 0.00257628_kind_real, &
+ & 0.00117240_kind_real, &
+ & 0.00051935_kind_real, &
+ & 0.00022512_kind_real, &
  & 0.32974233_kind_real, &
  & 0.27658470_kind_real, &
  & 0.24348122_kind_real, &
@@ -666,6 +961,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.02965393_kind_real, &
  & 0.01588949_kind_real, &
  & 0.00798964_kind_real, &
+ & 0.00381214_kind_real, &
+ & 0.00174347_kind_real, &
+ & 0.00077080_kind_real, &
+ & 0.00033169_kind_real, &
+ & 0.00013969_kind_real, &
  & 0.28614246_kind_real, &
  & 0.23457699_kind_real, &
  & 0.20379680_kind_real, &
@@ -677,6 +977,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.02208576_kind_real, &
  & 0.01144782_kind_real, &
  & 0.00559309_kind_real, &
+ & 0.00258998_kind_real, &
+ & 0.00114856_kind_real, &
+ & 0.00049205_kind_real, &
+ & 0.00020510_kind_real, &
+ & 0.00008365_kind_real, &
  & 0.24559425_kind_real, &
  & 0.19648254_kind_real, &
  & 0.16837688_kind_real, &
@@ -688,6 +993,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.01592943_kind_real, &
  & 0.00806300_kind_real, &
  & 0.00381679_kind_real, &
+ & 0.00170940_kind_real, &
+ & 0.00073802_kind_real, &
+ & 0.00030242_kind_real, &
+ & 0.00012143_kind_real, &
+ & 0.00004766_kind_real, &
  & 0.20828676_kind_real, &
  & 0.16258283_kind_real, &
  & 0.13733877_kind_real, &
@@ -699,6 +1009,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.01135473_kind_real, &
  & 0.00556870_kind_real, &
  & 0.00254735_kind_real, &
+ & 0.00109955_kind_real, &
+ & 0.00045260_kind_real, &
+ & 0.00017926_kind_real, &
+ & 0.00006881_kind_real, &
+ & 0.00002576_kind_real, &
  & 0.17476262_kind_real, &
  & 0.13285130_kind_real, &
  & 0.11063101_kind_real, &
@@ -710,6 +1025,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00800909_kind_real, &
  & 0.00380919_kind_real, &
  & 0.00168535_kind_real, &
+ & 0.00070182_kind_real, &
+ & 0.00027798_kind_real, &
+ & 0.00010566_kind_real, &
+ & 0.00003882_kind_real, &
+ & 0.00001387_kind_real, &
  & 0.14467460_kind_real, &
  & 0.10717597_kind_real, &
  & 0.08798595_kind_real, &
@@ -721,6 +1041,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00560511_kind_real, &
  & 0.00258993_kind_real, &
  & 0.00111093_kind_real, &
+ & 0.00044752_kind_real, &
+ & 0.00017111_kind_real, &
+ & 0.00006266_kind_real, &
+ & 0.00002239_kind_real, &
+ & 0.00000770_kind_real, &
  & 0.11813260_kind_real, &
  & 0.08525582_kind_real, &
  & 0.06902182_kind_real, &
@@ -732,6 +1057,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00389237_kind_real, &
  & 0.00175094_kind_real, &
  & 0.00072983_kind_real, &
+ & 0.00028517_kind_real, &
+ & 0.00010560_kind_real, &
+ & 0.00003738_kind_real, &
+ & 0.00001275_kind_real, &
+ & 0.00000421_kind_real, &
  & 0.09506044_kind_real, &
  & 0.06687271_kind_real, &
  & 0.05339407_kind_real, &
@@ -743,6 +1073,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00269955_kind_real, &
  & 0.00117585_kind_real, &
  & 0.00047723_kind_real, &
+ & 0.00018131_kind_real, &
+ & 0.00006518_kind_real, &
+ & 0.00002237_kind_real, &
+ & 0.00000739_kind_real, &
+ & 0.00000236_kind_real, &
  & 0.07519159_kind_real, &
  & 0.05155796_kind_real, &
  & 0.04061467_kind_real, &
@@ -754,6 +1089,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00182655_kind_real, &
  & 0.00078282_kind_real, &
  & 0.00030994_kind_real, &
+ & 0.00011470_kind_real, &
+ & 0.00004012_kind_real, &
+ & 0.00001338_kind_real, &
+ & 0.00000429_kind_real, &
+ & 0.00000133_kind_real, &
  & 0.05838110_kind_real, &
  & 0.03905911_kind_real, &
  & 0.03036267_kind_real, &
@@ -765,6 +1105,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00122835_kind_real, &
  & 0.00051493_kind_real, &
  & 0.00019917_kind_real, &
+ & 0.00007191_kind_real, &
+ & 0.00002451_kind_real, &
+ & 0.00000796_kind_real, &
+ & 0.00000248_kind_real, &
+ & 0.00000075_kind_real, &
  & 0.04435553_kind_real, &
  & 0.02894992_kind_real, &
  & 0.02221187_kind_real, &
@@ -776,6 +1121,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00081768_kind_real, &
  & 0.00033579_kind_real, &
  & 0.00012721_kind_real, &
+ & 0.00004493_kind_real, &
+ & 0.00001477_kind_real, &
+ & 0.00000468_kind_real, &
+ & 0.00000142_kind_real, &
+ & 0.00000042_kind_real, &
  & 0.03284228_kind_real, &
  & 0.02093075_kind_real, &
  & 0.01585593_kind_real, &
@@ -787,6 +1137,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00052554_kind_real, &
  & 0.00021151_kind_real, &
  & 0.00007839_kind_real, &
+ & 0.00002707_kind_real, &
+ & 0.00000881_kind_real, &
+ & 0.00000272_kind_real, &
+ & 0.00000081_kind_real, &
+ & 0.00000023_kind_real, &
  & 0.02377951_kind_real, &
  & 0.01475484_kind_real, &
  & 0.01103991_kind_real, &
@@ -798,6 +1153,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00033371_kind_real, &
  & 0.00013186_kind_real, &
  & 0.00004793_kind_real, &
+ & 0.00001622_kind_real, &
+ & 0.00000517_kind_real, &
+ & 0.00000156_kind_real, &
+ & 0.00000045_kind_real, &
+ & 0.00000013_kind_real, &
  & 0.01650221_kind_real, &
  & 0.01002796_kind_real, &
  & 0.00741071_kind_real, &
@@ -809,6 +1169,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00020468_kind_real, &
  & 0.00007944_kind_real, &
  & 0.00002835_kind_real, &
+ & 0.00000941_kind_real, &
+ & 0.00000294_kind_real, &
+ & 0.00000087_kind_real, &
+ & 0.00000025_kind_real, &
+ & 0.00000007_kind_real, &
  & 0.01102253_kind_real, &
  & 0.00654231_kind_real, &
  & 0.00477552_kind_real, &
@@ -820,6 +1185,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00012110_kind_real, &
  & 0.00004623_kind_real, &
  & 0.00001622_kind_real, &
+ & 0.00000529_kind_real, &
+ & 0.00000162_kind_real, &
+ & 0.00000047_kind_real, &
+ & 0.00000013_kind_real, &
+ & 0.00000004_kind_real, &
  & 0.00703052_kind_real, &
  & 0.00408118_kind_real, &
  & 0.00294558_kind_real, &
@@ -831,6 +1201,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00006959_kind_real, &
  & 0.00002617_kind_real, &
  & 0.00000903_kind_real, &
+ & 0.00000287_kind_real, &
+ & 0.00000086_kind_real, &
+ & 0.00000025_kind_real, &
+ & 0.00000007_kind_real, &
+ & 0.00000002_kind_real, &
  & 0.00418503_kind_real, &
  & 0.00237593_kind_real, &
  & 0.00169427_kind_real, &
@@ -842,6 +1217,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00003657_kind_real, &
  & 0.00001354_kind_real, &
  & 0.00000460_kind_real, &
+ & 0.00000145_kind_real, &
+ & 0.00000043_kind_real, &
+ & 0.00000012_kind_real, &
+ & 0.00000003_kind_real, &
+ & 0.00000001_kind_real, &
  & 0.00228863_kind_real, &
  & 0.00127097_kind_real, &
  & 0.00089675_kind_real, &
@@ -853,6 +1233,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00001793_kind_real, &
  & 0.00000654_kind_real, &
  & 0.00000219_kind_real, &
+ & 0.00000068_kind_real, &
+ & 0.00000020_kind_real, &
+ & 0.00000005_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00112967_kind_real, &
  & 0.00061445_kind_real, &
  & 0.00042839_kind_real, &
@@ -864,6 +1249,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00000796_kind_real, &
  & 0.00000287_kind_real, &
  & 0.00000095_kind_real, &
+ & 0.00000029_kind_real, &
+ & 0.00000008_kind_real, &
+ & 0.00000002_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00047446_kind_real, &
  & 0.00025239_kind_real, &
  & 0.00017446_kind_real, &
@@ -875,6 +1265,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00000302_kind_real, &
  & 0.00000107_kind_real, &
  & 0.00000035_kind_real, &
+ & 0.00000011_kind_real, &
+ & 0.00000003_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00015333_kind_real, &
  & 0.00007985_kind_real, &
  & 0.00005453_kind_real, &
@@ -886,6 +1281,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00000088_kind_real, &
  & 0.00000031_kind_real, &
  & 0.00000010_kind_real, &
+ & 0.00000003_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00003124_kind_real, &
  & 0.00001594_kind_real, &
  & 0.00001077_kind_real, &
@@ -897,6 +1297,11 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00000016_kind_real, &
  & 0.00000006_kind_real, &
  & 0.00000002_kind_real, &
+ & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00000203_kind_real, &
  & 0.00000102_kind_real, &
  & 0.00000068_kind_real, &
@@ -906,6 +1311,21 @@ real(kind_real),parameter :: func_array3D(npk,nd) = reshape((/ &
  & 0.00000006_kind_real, &
  & 0.00000003_kind_real, &
  & 0.00000001_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
+ & 0.00000000_kind_real, &
  & 0.00000000_kind_real, &
  & 0.00000000_kind_real, &
  & 0.00000000_kind_real, &

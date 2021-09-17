@@ -1070,9 +1070,9 @@ else
       if (rh>zero) then
          disthsq(jc3) = (disth(jc3)/rh)**2
       elseif (disth(jc3)>zero) then
-         disthsq(jc3) = zero
-      else
          disthsq(jc3) = one
+      else
+         disthsq(jc3) = zero
       end if
    end do
 
@@ -1081,9 +1081,9 @@ else
       if (rv>zero) then
          distvsq(jl0r) = (distv(jl0r)/rv)**2
       elseif (distv(jl0r)>zero) then
-         distvsq(jl0r) = zero
-      else
          distvsq(jl0r) = one
+      else
+         distvsq(jl0r) = zero
       end if
    end do
 
@@ -1144,10 +1144,10 @@ else
    ipkp = ipkm+1
 
    ! Coefficients
-   rdm = (real(idp,kind_real)-distnorm)/deltad
-   rdp = (distnorm-real(idm,kind_real))/deltad
-   rdm = (real(ipkp,kind_real)-pk)/deltapk
-   rdp = (pk-real(ipkm,kind_real))/deltapk
+   rdm = real(idp-1,kind_real)-distnorm/deltad
+   rdp = distnorm/deltad-real(idm-1,kind_real)
+   rpkm = real(ipkp-1,kind_real)-pk/deltapk
+   rpkp = pk/deltapk-real(ipkm-1,kind_real)
 
    ! Interpolated value
    value = rdm*rpkm*func_array3D(ipkm,idm) &
