@@ -417,7 +417,7 @@ type(geom_type),intent(in) :: geom             !< Geometry
 type(samp_type),intent(in) :: samp             !< Sampling
 
 ! Local variables
-integer :: i,jl0_min,jl0_max,jl0,il0,ic1e,ic1u,nc1e,nc1max,ic1a,ic2a,ic2b
+integer :: i,jl0,il0,ic1e,ic1u,nc1e,nc1max,ic1a,ic2a,ic2b
 real(kind_real) :: cov_c1a_pack(samp%nc1a,geom%nl0**2)
 real(kind_real) :: cov_c1e(samp%nc1e,geom%nl0,geom%nl0)
 real(kind_real) :: cov_c1e_pack(samp%nc1e,geom%nl0**2)
@@ -452,17 +452,7 @@ do ic2b=1,samp%nc2b
    allocate(list_cov(nc1max))
 
    do il0=1,geom%nl0
-      ! Indices
-      if (nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
-         ! Diagonal regression
-         jl0_min = il0
-         jl0_max = il0
-      else
-         jl0_min = 1
-         jl0_max = geom%nl0
-      end if
-
-      do jl0=jl0_min,jl0_max
+      do jl0=1,geom%nl0
          ! Initialization
          list_cov = mpl%msv%valr
 
@@ -553,7 +543,7 @@ real(kind_real),intent(in) :: cross_c2b(geom%nl0,geom%nl0,samp%nc2b) !< Cross-co
 
 ! Local variables
 integer :: ic2b,il0,jl0
-real(kind_real) :: auto_inv(geom%nl0,geom%nl0),explained_cov(geom%nl0,geom%nl0)
+real(kind_real) :: cross_eff(geom%nl0,geom%nl0),auto_inv(geom%nl0,geom%nl0),explained_cov(geom%nl0,geom%nl0)
 real(kind_real),allocatable :: fld_c1a(:),fld_c2b(:)
 logical :: valid
 
@@ -574,15 +564,28 @@ do ic2b=1,samp%nc2b
    end do
 
    if (valid) then
+      ! Compute effective cross-covariance
+      if (nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
+         ! Keep diagonal coefficients only
+         cross_eff = zero
+         do il0=1,geom%nl0
+            cross_eff(il0,il0) = cross_c2b(il0,il0,ic2b)
+         end do
+      else
+         ! Copy all coefficients
+         cross_eff = cross_c2b(:,:,ic2b)
+      end if
+
+      ! Compute effective auto-coariance inverse
       if (nam%vbal_diag_auto((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv) &
  & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
-         ! Diagonal inversion
+         ! Diagonal auto-covariance inversion
          auto_inv = zero
          do il0=1,geom%nl0
             auto_inv(il0,il0) = one/auto_c2b(il0,il0,ic2b)
          end do
       else
-         ! Inverse the vertical auto-covariance
+         ! Full auto-covariance inversion
          if (nam%vbal_pseudo_inv) then
             if (nam%vbal_pseudo_inv_mmax>0) then
                call pseudoinv(mpl,geom%nl0,auto_c2b(:,:,ic2b),auto_inv,mmax=nam%vbal_pseudo_inv_mmax)
@@ -595,7 +598,7 @@ do ic2b=1,samp%nc2b
       end if
 
       ! Compute the regression
-      vbal_blk%reg_c2b(:,:,ic2b) = matmul(cross_c2b(:,:,ic2b),auto_inv)
+      vbal_blk%reg_c2b(:,:,ic2b) = matmul(cross_eff,auto_inv)
    else
       ! No regression
       vbal_blk%reg_c2b(:,:,ic2b) = zero
