@@ -1547,6 +1547,7 @@ if (bpar%nicas_block(ib)) then
       ! Split sampling among processors
       lev_c1 = 0
       call geom%index_from_lonlat(mpl,nicas_blk%hor(il1)%nc1,lon_c1,lat_c1,lev_c1,c1_to_proc,c1_to_c0a,gmask_c1)
+      if (mpl%msv%isany(c1_to_proc)) call mpl%abort('${subr}$','subset Sc1 point is out of the domain')
 
       ! Sampling size on halo A
       nicas_blk%hor(il1)%nc1a = count(c1_to_proc==mpl%myproc)

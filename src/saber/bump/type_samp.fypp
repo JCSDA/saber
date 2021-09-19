@@ -622,6 +622,7 @@ allocate(gmask_c1(samp%nc1))
 ! Split sampling among processors
 lev_c1 = 0
 call geom%index_from_lonlat(mpl,samp%nc1,lon_c1,lat_c1,lev_c1,c1_on_file_to_proc,c1_to_c0a,gmask_c1)
+if (mpl%msv%isany(c1_on_file_to_proc)) call mpl%abort('${subr}$','subset Sc1 point is out of the domain')
 
 ! Sampling size on halo A
 samp%nc1a = count(c1_on_file_to_proc==mpl%myproc)
@@ -734,6 +735,7 @@ if (samp%sc2) then
    ! Split sampling among processors
    lev_c2 = 0
    call geom%index_from_lonlat(mpl,samp%nc2,lon_c2,lat_c2,lev_c2,c2_on_file_to_proc,c2_to_c0a,gmask_c2)
+   if (mpl%msv%isany(c2_on_file_to_proc)) call mpl%abort('${subr}$','subset Sc2 point is out of the domain')
 
    ! Sampling size on halo A
    samp%nc2a = count(c2_on_file_to_proc==mpl%myproc)
@@ -3154,8 +3156,8 @@ if (rflt>zero) then
    call com_c2_AF%ext(mpl,diag_c2a,diag_c2f)
    if (present(val_c2a)) call com_c2_AF%ext(mpl,val_c2a,val_c2f)
 
-   !$omp parallel do schedule(static) private(ic2a,nc2eff,ic2eff,jc2u,kc2u,kc2f,distnorm,norm,wgt), &
-   !$omp&                             firstprivate(diag_eff,diag_eff_dist,val_eff,order)
+   !!$omp parallel do schedule(static) private(ic2a,nc2eff,ic2eff,jc2u,kc2u,kc2f,distnorm,norm,wgt), & ! TODO: buggy with PGI
+   !!$omp&                             firstprivate(diag_eff,diag_eff_dist,val_eff,order)
    do ic2a=1,samp%nc2a
       ! Count involved points
       nc2eff = 0
@@ -3169,30 +3171,30 @@ if (rflt>zero) then
          if (jc2u>samp%nc2u) exit
       end do
 
-      ! Allocation
-      allocate(diag_eff(nc2eff))
-      allocate(diag_eff_dist(nc2eff))
-      if (present(val_c2a)) allocate(val_eff(nc2eff))
-
-      ! Build diag_eff of valid points
-      ic2eff = 0
-      jc2u = 1
-      do while (inf(samp%nn_c2a_dist(jc2u,ic2a),rflt))
-         ! Check the point validity
-         kc2u = samp%nn_c2a_index(jc2u,ic2a)
-         kc2f = c2u_to_c2f(kc2u)
-         if (mpl%msv%isnot(diag_c2f(kc2f))) then
-            ic2eff = ic2eff+1
-            diag_eff(ic2eff) = diag_c2f(kc2f)
-            diag_eff_dist(ic2eff) = samp%nn_c2a_dist(jc2u,ic2a)
-            if (present(val_c2a)) val_eff(ic2eff) = val_c2f(kc2f)
-         end if
-         jc2u = jc2u+1
-         if (jc2u>samp%nc2u) exit
-      end do
-
-      ! Apply filter
       if (nc2eff>0) then
+         ! Allocation
+         allocate(diag_eff(nc2eff))
+         allocate(diag_eff_dist(nc2eff))
+         if (present(val_c2a)) allocate(val_eff(nc2eff))
+
+         ! Build diag_eff of valid points
+         ic2eff = 0
+         jc2u = 1
+         do while (inf(samp%nn_c2a_dist(jc2u,ic2a),rflt))
+            ! Check the point validity
+            kc2u = samp%nn_c2a_index(jc2u,ic2a)
+            kc2f = c2u_to_c2f(kc2u)
+            if (mpl%msv%isnot(diag_c2f(kc2f))) then
+               ic2eff = ic2eff+1
+               diag_eff(ic2eff) = diag_c2f(kc2f)
+               diag_eff_dist(ic2eff) = samp%nn_c2a_dist(jc2u,ic2a)
+               if (present(val_c2a)) val_eff(ic2eff) = val_c2f(kc2f)
+            end if
+            jc2u = jc2u+1
+            if (jc2u>samp%nc2u) exit
+         end do
+
+         ! Apply filter
          select case (trim(filter_type))
          case ('average')
             ! Compute average
@@ -3229,16 +3231,16 @@ if (rflt>zero) then
             ! Wrong filter
             call mpl%abort('${subr}$','wrong filter type')
          end select
+
+         ! Release memory
+         deallocate(diag_eff)
+         deallocate(diag_eff_dist)
+         if (present(val_c2a)) deallocate(val_eff)
       else
          diag_c2a(ic2a) = mpl%msv%valr
       end if
-
-      ! Release memory
-      deallocate(diag_eff)
-      deallocate(diag_eff_dist)
-      if (present(val_c2a)) deallocate(val_eff)
    end do
-   !$omp end parallel do
+   !!$omp end parallel do
 
    ! Release memory
    deallocate(c2f_to_c2)
