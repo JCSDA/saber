@@ -178,82 +178,47 @@ else( DEFINED GIT_TAG_FUNC )
         set( ECBUILD_DOWNLOAD_BASE_URL "$ENV{ECBUILD_DOWNLOAD_BASE_URL}/saber/${GIT_TAG_FUNC}" )
         set( checksum "1")
     else()
-        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/${GIT_TAG_FUNC}/file )
+        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147b_jcsda/version/1.0.0/file )
         set( checksum "0")
     endif()
     message( STATUS "Files downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} )
 
     # Set SABER_TESTFILES_PATH
-    set( SABER_TESTFILES_PATH ${CMAKE_BINARY_DIR}/test_data/saber/${GIT_TAG_FUNC} )
+    set( SABER_TESTFILES_PATH ${CMAKE_SOURCE_DIR}/test-data-release/saber/${GIT_TAG_FUNC} )
     message( STATUS "Files downloaded into: " ${SABER_TESTFILES_PATH} )
 
-    # Download SABER data
-    foreach( saber_data_tar_name ${saber_data_tar} )
-        # Downloader arguments
-        list( APPEND SABER_DATA_DOWNLOADER_ARGS
-              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
-              ${SABER_TESTFILES_PATH}/testdata
-              ${saber_tar_name}
-              ${checksum} )
+    list( APPEND SABER_DATA_DOWNLOADER_ARGS
+          ${ECBUILD_DOWNLOAD_BASE_URL}
+          ${CMAKE_SOURCE_DIR}/test-data-release
+          "saber_testinput_tier_1.tar.gz"
+          ${checksum} )
 
-        # Add test for downloading data
-        ecbuild_add_test( TARGET    get_data_${saber_tar_name}
-                          TYPE      SCRIPT
-                          COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
-                          ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
-        set ( SABER_DATA_DOWNLOADER_ARGS "" )
+    # Create test-data-release in source directory
+    file( MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/test-data-release )
 
-        # Create download script
-        set ( FILENAME saber_data_downloader.py )
-        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
-        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
+    # Create download script
+    set ( FILENAME saber_data_downloader.py )
+    set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
+    set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
 
-        # Set configure file
-        if( EXISTS "${SOURCE_FILE}.in" )
-          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
-        else()
-          configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
-        endif()
+    # Set configure file
+    if( EXISTS "${SOURCE_FILE}.in" )
+      configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
+    else()
+      configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
+    endif()
 
-        # Add download script
-        add_custom_target( bin_saber_test_download_script_${saber_tar_name} ALL
-                           COMMAND chmod +x ${DEST_FILE}
-                           DEPENDS ${DEST_FILE} )
-    endforeach()
+    # Add download script
+    add_custom_target( bin_saber_test_download_script ALL
+                       COMMAND chmod +x ${DEST_FILE}
+                       DEPENDS ${DEST_FILE} )
 
-    # Download SABER reference
-    foreach( saber_tar_name ${saber_ref_tar} )
-        # Downloader arguments
-        list( APPEND SABER_DATA_DOWNLOADER_ARGS
-              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
-              ${SABER_TESTFILES_PATH}/testref
-              ${saber_tar_name}
-              ${checksum} )
 
-        # Add test for downloading data
-        ecbuild_add_test( TARGET    get_data_${saber_tar_name}
-                          TYPE      SCRIPT
-                          COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
-                          ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
-        set ( SABER_DATA_DOWNLOADER_ARGS "" )
-
-        # Create download script
-        set ( FILENAME saber_data_downloader.py )
-        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
-        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
-
-        # Set configure file
-        if( EXISTS "${SOURCE_FILE}.in" )
-          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
-        else()
-          configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
-        endif()
-
-        # Add download script
-        add_custom_target( bin_saber_test_download_script_${saber_tar_name} ALL
-                           COMMAND chmod +x ${DEST_FILE}
-                           DEPENDS ${DEST_FILE} )
-    endforeach()
+    # Add test for downloading data
+    ecbuild_add_test( TARGET    get_saber_test_data
+                      TYPE      SCRIPT
+                      COMMAND   ${CMAKE_BINARY_DIR}/bin/saber_data_downloader.py
+                      ARGS  ${SABER_DATA_DOWNLOADER_ARGS} )
 endif()
 
 # Setup SABER directories and links
