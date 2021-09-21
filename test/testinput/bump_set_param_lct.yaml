@@ -7,8 +7,9 @@ model: "qg"
 method: "cor"
 strategy: "specific_univariate"
 new_lct: 1
-write_cmat: 0
+write_lct: 1
 new_nicas: 1
+write_nicas_global: 1
 check_adjoints: 1
 check_dirac: 1
 check_set_param_lct: 1
@@ -27,7 +28,6 @@ ens1_ne: 50
 # sampling_param
 nc1: 100
 nc2: 100
-ntry: 30
 nc3: 50
 nl0r: 2
 
@@ -39,8 +39,6 @@ lct_nscales: 1
 
 # nicas_param
 resol: 8.0
-subsamp: "h"
-mpicom: 2
 
 # dirac_param
 ndir: 1

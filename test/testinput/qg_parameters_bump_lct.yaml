@@ -3,24 +3,25 @@ background:
   filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
   datadir: testdata
-  dc: 500.0e3
   lct_nscales: 1
   lct_diag: [0]
   method: cor
-  mpicom: 2
   nc1: 500
   nc3: 50
   new_lct: 1
   new_nicas: 1
   new_var: 1
   nl0r: 2
-  ntry: 10
   prefix: qg_parameters_bump_lct/test
   resol: 8.0
   strategy: specific_univariate
   var_filter: 1
   var_niter: 5
-  var_rhflt: 3000.0e3
+  var_rhflt:
+    x: [3000.0e3]
+  write_lct: 1
+  write_nicas_local: 1
+  write_var: 1
 ensemble:
   members:
   - date: 2010-01-01T12:00:00Z
@@ -84,3 +85,12 @@ output:
   exp: DLh_1
   parameter: DLh_1
   type: an
+- datadir: testdata/qg_parameters_bump_lct
+  date: 2010-01-01T12:00:00Z
+  exp: nicas_norm
+  parameter: nicas_norm
+  type: an
+
+test:
+  reference filename: testref/qg_parameters_bump_lct/test.log.out
+  test output filename: testoutput/qg_parameters_bump_lct/test.log.out

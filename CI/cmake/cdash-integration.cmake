@@ -1,5 +1,5 @@
 # This CMake script customizes the site and build names for CDash
-# By default, it tries to autodetect the system hostname, compiler, 
+# By default, it tries to autodetect the system hostname, compiler,
 # and if you are in a Charliecloud environment. Then, it sets
 # the ctest/cdash variables SITE and BUILDNAME based on a combination
 # of auto-detected values and user overrides.

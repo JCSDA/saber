@@ -330,7 +330,7 @@ integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$${delim[arg_dim == ran
 
 ! Call r0 generator
 #:for arg_dim in range(1,rank+1)
-do i${arg_dim}$=1,size(array,${arg_dim}$)
+do i${arg_dim}$=size(array,${arg_dim}$),1,-1
 #:endfor
    call rng%rand(binf,bsup,array( &
    #:for arg_dim in range(1,rank)
@@ -417,7 +417,7 @@ integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$${delim[arg_dim == ran
 
 ! Call r0 generator
 #:for arg_dim in range(1,rank+1)
-do i${arg_dim}$=1,size(array,${arg_dim}$)
+do i${arg_dim}$=size(array,${arg_dim}$),1,-1
 #:endfor
    call rng%rand_gau(array( &
    #:for arg_dim in range(1,rank)

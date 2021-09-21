@@ -20,8 +20,8 @@ cost function:
     localization:
       bump:
         datadir: testdata
-        mpicom: 2
-        load_nicas: 1
+        fname_nicas: qg_parameters_bump_loc/test_nicas
+        load_nicas_local: 1
         prefix: qg_3densvar_bump/test
         strategy: common
       localization method: BUMP
@@ -51,7 +51,7 @@ cost function:
   - obs error:
       covariance model: diagonal
     obs operator:
-      obs type: Stream  
+      obs type: Stream
     obs space:
       obsdatain:
         obsfile: testdata/truth.obs3d.nc
@@ -61,7 +61,7 @@ cost function:
   - obs error:
       covariance model: diagonal
     obs operator:
-      obs type: Wind  
+      obs type: Wind
     obs space:
       obsdatain:
         obsfile: testdata/truth.obs3d.nc
@@ -71,7 +71,7 @@ cost function:
   - obs error:
       covariance model: diagonal
     obs operator:
-      obs type: WSpeed  
+      obs type: WSpeed
     obs space:
       obsdatain:
         obsfile: testdata/truth.obs3d.nc
@@ -124,3 +124,7 @@ output:
   exp: 3densvar
   frequency: PT6H
   type: an
+
+test:
+  reference filename: testref/qg_3densvar_bump/test.log.out
+  test output filename: testoutput/qg_3densvar_bump/test.log.out

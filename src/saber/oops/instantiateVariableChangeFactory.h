@@ -13,6 +13,7 @@
 
 #include "oops/generic/instantiateVariableChangeFactory.h"
 
+#include "saber/oops/PsiChiToUVVariableChange.h"
 #include "saber/oops/StatsVariableChange.h"
 #include "saber/oops/StdDevVariableChange.h"
 
@@ -25,6 +26,8 @@ void instantiateVariableChangeFactory() {
                         makerStatsVarChange_("StatsVariableChange");
   static oops::LinearVariableChangeMaker<MODEL, StdDevVariableChange<MODEL> >
                         makerStdDev_("StdDev");
+  static oops::LinearVariableChangeMaker<MODEL, PsiChiToUVVariableChange<MODEL> >
+                        makerPsiChiToUV_("PsiChiToUV");
 }
 
 }  // namespace saber

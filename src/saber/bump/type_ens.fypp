@@ -10,10 +10,10 @@ module type_ens
 
 use atlas_module, only: atlas_fieldset
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_max
-use netcdf, only: nf90_close,nf90_put_var
 use tools_const, only: zero,one,deg2rad,rad2deg,req
-use tools_func, only: sphere_dist,lonlat2xyz,xyz2lonlat
-use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
+use tools_func, only: sphere_dist,lonlat2xyz,xyz2lonlat,zss_count
+use tools_kinds, only: kind_real
+use tools_netcdf, only: create_file,define_grp,define_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort
 use type_fieldset, only: fieldset_type
 use type_geom, only: geom_type
@@ -29,6 +29,7 @@ type ens_type
    ! Attributes
    integer :: ne                              !< Ensemble size
    integer :: nsub                            !< Number of sub-ensembles
+   logical :: loaded                          !< True if members are loaded
 
    ! Data
    type(fieldset_type),allocatable :: mem(:)  !< Members
@@ -81,6 +82,7 @@ integer,intent(in) :: nsub           !< Number of sub-ensembles
 ! Copy attributes
 ens%ne = ne
 ens%nsub = nsub
+ens%loaded = .false.
 
 ! Probe out
 @:probe_out()
@@ -155,6 +157,7 @@ if (allocated(ens%mean)) then
 end if
 call ens%m2%final()
 call ens%m4%final()
+ens%loaded = .false.
 
 ! Probe out
 @:probe_out()
@@ -188,30 +191,20 @@ integer :: ie,isub
 ! Copy data
 if (allocated(ens_in%mem)) then
    do ie=1,ens_in%ne
-      if (.not.ens_in%mem(ie)%is_null()) then
-         call ens_out%mem(ie)%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
-         call ens_out%mem(ie)%copy_fields(ens_in%mem(ie))
-      end if
+      if (.not.ens_in%mem(ie)%is_null()) call ens_out%mem(ie)%init(mpl,ens_in%mem(ie),geom%gmask_mga, &
+ & nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
    end do
 end if
 if (allocated(ens_in%mean)) then
    do isub=1,ens_in%nsub
-      if (.not.ens_in%mean(isub)%is_null()) then
-         ens_out%mean(isub) = atlas_fieldset()
-         call ens_out%mean(isub)%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d, &
- & geom%afunctionspace_mg)
-         call ens_out%mean(isub)%copy_fields(ens_in%mean(isub))
-      end if
+      if (.not.ens_in%mean(isub)%is_null()) call ens_out%mean(isub)%init(mpl,ens_in%mean(isub),geom%gmask_mga, &
+ & nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
    end do
 end if
-if (.not.ens_in%m2%is_null()) then
-   call ens_out%m2%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
-   call ens_out%m2%copy_fields(ens_in%m2)
-end if
-if (.not.ens_in%m4%is_null()) then
-   call ens_out%m4%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
-   call ens_out%m4%copy_fields(ens_in%m4)
-end if
+if (.not.ens_in%m2%is_null()) call ens_out%m2%init(mpl,ens_in%m2,geom%gmask_mga, &
+ & nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
+if (.not.ens_in%m4%is_null()) call ens_out%m4%init(mpl,ens_in%m4,geom%gmask_mga, &
+ & nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
 
 ! Probe out
 @:probe_out()
@@ -243,17 +236,17 @@ integer :: isub,ie_sub,ie
 
 do isub=1,ens%nsub
    ! Initialization
-   call ens%mean(isub)%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
+   call ens%mean(isub)%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d)
 
    ! Set fields at zero
-   call ens%mean(isub)%zero_fields
+   call ens%mean(isub)%zero_fields(mpl)
 
    ! Compute mean
    do ie_sub=1,ens%ne/ens%nsub
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-      call ens%mean(isub)%add_fields(ens%mem(ie))
+      call ens%mean(isub)%add_fields(mpl,ens%mem(ie))
    end do
-   call ens%mean(isub)%mult_fields(one/real(ens%ne/ens%nsub,kind_real))
+   call ens%mean(isub)%mult_fields(mpl,one/real(ens%ne/ens%nsub,kind_real))
 end do
 
 ! Probe out
@@ -286,34 +279,33 @@ type(fieldset_type) :: pert
 @:probe_in()
 
 ! Initialization
-call pert%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
-call ens%m2%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
-call ens%m4%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
+call ens%m2%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d)
+call ens%m4%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d)
 
 ! Set fields at zero
-call ens%m2%zero_fields
-call ens%m4%zero_fields
+call ens%m2%zero_fields(mpl)
+call ens%m4%zero_fields(mpl)
 
 do isub=1,ens%nsub
    do ie_sub=1,ens%ne/ens%nsub
       ! Compute perturbation
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-      call pert%copy_fields(ens%mem(ie))
-      call pert%sub_fields(ens%mean(isub))
+      call pert%init(mpl,ens%mem(ie),geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
+      call pert%sub_fields(mpl,ens%mean(isub))
 
       ! Square
-      call pert%square_fields
-      call ens%m2%add_fields(pert)
+      call pert%square_fields(mpl)
+      call ens%m2%add_fields(mpl,pert)
 
       ! Square again
-      call pert%square_fields
-      call ens%m4%add_fields(pert)
+      call pert%square_fields(mpl)
+      call ens%m4%add_fields(mpl,pert)
    end do
 end do
 
 ! Normalize
-call ens%m2%mult_fields(one/real(ens%ne-ens%nsub,kind_real))
-call ens%m4%mult_fields(one/real(ens%ne,kind_real))
+call ens%m2%mult_fields(mpl,one/real(ens%ne-ens%nsub,kind_real))
+call ens%m4%mult_fields(mpl,one/real(ens%ne,kind_real))
 
 ! Probe out
 @:probe_out()
@@ -351,24 +343,23 @@ call ens%compute_mean(mpl,nam,geom)
 do isub=1,ens%nsub
    do ie_sub=1,ens%ne/ens%nsub
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-      call ens%mem(ie)%sub_fields(ens%mean(isub))
+      call ens%mem(ie)%sub_fields(mpl,ens%mean(isub))
    end do
-   call ens%mean(isub)%zero_fields
+   call ens%mean(isub)%zero_fields(mpl)
 end do
 
 ! Compute moments
 call ens%compute_moments(mpl,nam,geom)
 
 ! Compute standard deviation
-call std%init(mpl,geom%nmga,geom%nl0,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,geom%afunctionspace_mg)
-call std%copy_fields(ens%m2)
-call std%sqrt_fields
+call std%init(mpl,ens%m2,copy=.true.)
+call std%sqrt_fields(mpl)
 
 ! Normalize members
 do isub=1,ens%nsub
    do ie_sub=1,ens%ne/ens%nsub
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-      call ens%mem(ie)%div_fields(std)
+      call ens%mem(ie)%div_fields(mpl,std)
    end do
 end do
 
@@ -796,7 +787,9 @@ type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Local variables
-integer :: ncid,nloc_id,ne_id,nem1_id,ic0a_id,il0_id,iv_id,order_id,ens_norm_id,ens_step_id
+integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
+integer :: grpid(nam%nv),m2_id(nam%nv),m4_id(nam%nv),kurt_id(nam%nv)
+integer :: nloc_id,ne_id,nem1_id,ic0a_id,il0_id,iv_id,order_id,ens_norm_id,ens_step_id
 integer :: iv,il0,ic0a,ie,nloc,iloc,nglb
 integer,allocatable :: ic0a_loc(:),il0_loc(:),iv_loc(:),order(:,:)
 real(kind_real) :: norm
@@ -805,7 +798,7 @@ real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: m4(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: kurt(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
-character(len=1024) :: filename
+character(len=1024) :: grpname
 
 ! Set name
 @:set_name(ens_normality)
@@ -813,13 +806,8 @@ character(len=1024) :: filename
 ! Probe in
 @:probe_in()
 
-! Set file name
-filename = trim(nam%prefix)//'_umf'
-
-! Write coordinates
-call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
-call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
-call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
+! Create file
+ncid = create_file(mpl,trim(nam%prefix)//'_umf')
 
 ! Compute variance and kurtosis
 write(mpl%info,'(a7,a)') '','Compute variance and kurtosis'
@@ -836,15 +824,42 @@ do iv=1,nam%nv
    end do
 end do
 
-! Write fields
+! Define dimensions
+nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
+
+! Define variables
+lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
 do iv=1,nam%nv
-   call geom%io%fld_write(mpl,nam,filename,'m2',m2(:,:,iv),geom%gmask_c0a,nam%variables(iv))
-   call geom%io%fld_write(mpl,nam,filename,'m4',m4(:,:,iv),geom%gmask_c0a,nam%variables(iv))
-   call geom%io%fld_write(mpl,nam,filename,'kurt',kurt(:,:,iv),geom%gmask_c0a,nam%variables(iv))
+   ! Get group name
+   call nam%io_key_value(nam%variables(iv),grpname)
+
+   ! Define group
+   grpid(iv) = define_grp(mpl,ncid,grpname)
+
+   ! Define variables
+   m2_id(iv) = define_var(mpl,grpid(iv),'m2','real',(/nc0_id,nl0_id/))
+   m4_id(iv) = define_var(mpl,grpid(iv),'m4','real',(/nc0_id,nl0_id/))
+   kurt_id(iv) = define_var(mpl,grpid(iv),'kurt','real',(/nc0_id,nl0_id/))
 end do
 
+! Write variables
+call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+do iv=1,nam%nv
+   call geom%io%fld_write(mpl,grpid(iv),m2_id(iv),m2(:,:,iv),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,grpid(iv),m4_id(iv),m4(:,:,iv),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,grpid(iv),kurt_id(iv),kurt(:,:,iv),geom%gmask_c0a)
+end do
+
+! Close file
+call close_file(mpl,ncid)
+
 ! Allocation
-nloc = count(mpl%msv%isnot(kurt).and.(kurt>nam%gen_kurt_th))
+nloc = zss_count(mpl%msv%isnot(kurt).and.(kurt>nam%gen_kurt_th))
 allocate(ic0a_loc(nloc))
 allocate(il0_loc(nloc))
 allocate(iv_loc(nloc))
@@ -898,37 +913,36 @@ end do
 write(mpl%info,'(a7,a)') '','Write normality diagnostics'
 call mpl%flush
 
-! Set file name
-write(filename,'(a,a,i6.6,a,i6.6)') trim(nam%prefix),'_normality_',mpl%nproc,'-',mpl%myproc
-ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
+! Create file
+ncid = create_file(mpl,trim(nam%prefix)//'_normality',mpl%myproc)
 
 ! Define dimensions
-nloc_id = mpl%nc_dim_define_or_get(ncid,'nloc',nloc)
-ne_id = mpl%nc_dim_define_or_get(ncid,'ne',ens%ne)
-nem1_id = mpl%nc_dim_define_or_get(ncid,'nem1',ens%ne-1)
+nloc_id = define_dim(mpl,ncid,'nloc',nloc)
+ne_id = define_dim(mpl,ncid,'ne',ens%ne)
+nem1_id = define_dim(mpl,ncid,'nem1',ens%ne-1)
 
 if (nloc>0) then
    ! Define variables
-   ic0a_id = mpl%nc_var_define_or_get(ncid,'ic0a',nc_kind_int,(/nloc_id/))
-   il0_id = mpl%nc_var_define_or_get(ncid,'il0',nc_kind_int,(/nloc_id/))
-   iv_id = mpl%nc_var_define_or_get(ncid,'iv',nc_kind_int,(/nloc_id/))
-   order_id = mpl%nc_var_define_or_get(ncid,'order',nc_kind_int,(/ne_id,nloc_id/))
-   ens_norm_id = mpl%nc_var_define_or_get(ncid,'ens_norm',nc_kind_real,(/ne_id,nloc_id/))
-   ens_step_id = mpl%nc_var_define_or_get(ncid,'ens_step',nc_kind_real,(/nem1_id,nloc_id/))
+   ic0a_id = define_var(mpl,ncid,'ic0a','int',(/nloc_id/))
+   il0_id = define_var(mpl,ncid,'il0','int',(/nloc_id/))
+   iv_id = define_var(mpl,ncid,'iv','int',(/nloc_id/))
+   order_id = define_var(mpl,ncid,'order','int',(/ne_id,nloc_id/))
+   ens_norm_id = define_var(mpl,ncid,'ens_norm','real',(/ne_id,nloc_id/))
+   ens_step_id = define_var(mpl,ncid,'ens_step','real',(/nem1_id,nloc_id/))
 end if
 
 if (nloc>0) then
    ! Write variables
-   call mpl%ncerr('${subr}$',nf90_put_var(ncid,ic0a_id,ic0a_loc))
-   call mpl%ncerr('${subr}$',nf90_put_var(ncid,il0_id,il0_loc))
-   call mpl%ncerr('${subr}$',nf90_put_var(ncid,iv_id,iv_loc))
-   call mpl%ncerr('${subr}$',nf90_put_var(ncid,order_id,order))
-   call mpl%ncerr('${subr}$',nf90_put_var(ncid,ens_norm_id,ens_norm))
-   call mpl%ncerr('${subr}$',nf90_put_var(ncid,ens_step_id,ens_step))
+   call put_var(mpl,ncid,ic0a_id,ic0a_loc)
+   call put_var(mpl,ncid,il0_id,il0_loc)
+   call put_var(mpl,ncid,iv_id,iv_loc)
+   call put_var(mpl,ncid,order_id,order)
+   call put_var(mpl,ncid,ens_norm_id,ens_norm)
+   call put_var(mpl,ncid,ens_step_id,ens_step)
 end if
 
 ! Close file
-call mpl%ncerr('${subr}$',nf90_close(ncid))
+call close_file(mpl,ncid)
 
 ! Release memory
 deallocate(ic0a_loc)

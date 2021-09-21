@@ -2,8 +2,8 @@ background error:
   covariance model: BUMP
   bump:
     datadir: testdata
-    load_nicas: 1
-    mpicom: 2
+    fname_nicas: qg_parameters_bump_lct/test_nicas
+    load_nicas_local: 1
     prefix: qg_dirac_bump_lct/test
     strategy: specific_univariate
   variable changes:
@@ -12,6 +12,7 @@ background error:
     output variables: [x]
     bump:
       datadir: testdata
+      fname_var: [qg_parameters_bump_lct/test_var]
       load_var: 1
       prefix: qg_dirac_bump_lct/test
 dirac:
@@ -33,3 +34,7 @@ output B:
   datadir: testdata/qg_dirac_bump_lct
   exp: B
   type: an
+
+test:
+  reference filename: testref/qg_dirac_bump_lct/test.log.out
+  test output filename: testoutput/qg_dirac_bump_lct/test.log.out

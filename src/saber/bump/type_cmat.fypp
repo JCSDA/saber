@@ -9,10 +9,10 @@
 module type_cmat
 
 use fckit_mpi_module, only: fckit_mpi_sum
-use netcdf, only: nf90_close,nf90_get_att,nf90_global,nf90_nowrite,nf90_open,nf90_put_att,nf90_write
 use tools_const, only: zero,one,rad2deg,reqkm,req
-use tools_func, only: lct_d2h,lct_h2r
+use tools_func, only: lct_d2h,lct_h2r,convert_l2i,convert_i2l,zss_sum
 use tools_kinds, only: kind_real,huge_real
+use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_diag, only: diag_type
@@ -173,7 +173,6 @@ integer :: ib
 ! Release memory
 if (allocated(cmat%blk)) then
    do ib=1,size(cmat%blk)
-      call cmat%blk(ib)%partial_bump_dealloc
       call cmat%blk(ib)%partial_dealloc
    end do
 end if
@@ -238,8 +237,9 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,ncid,anisotropic
-character(len=1024) :: filename,grpname
+integer :: ncid,grpid,coef_ens_id,coef_sta_id,rh_id,rv_id,rhs_id,rvs_id,H11_id,H22_id,H33_id,H12_id,Hcoef_id
+integer :: ib,anisotropic(bpar%nbe)
+character(len=1024) :: grpname
 
 ! Set name
 @:set_name(cmat_read)
@@ -250,30 +250,33 @@ character(len=1024) :: filename,grpname
 ! Allocation
 call cmat%alloc(bpar)
 
-! Set filename
-filename = trim(nam%prefix)//'_cmat'
+! Open file
+ncid = open_file(mpl,nam%fname_cmat)
 
 if (mpl%main) then
-   ! Read attribute
-   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
-   call mpl%ncerr('${subr}$',nf90_get_att(ncid,nf90_global,'anisotropic',anisotropic))
-   call mpl%ncerr('${subr}$',nf90_close(ncid))
+   do ib=1,bpar%nbe
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+         ! Get group name
+         call nam%io_key_value(bpar%blockname(ib),grpname)
+
+         ! Get group
+         grpid = inquire_grp(mpl,ncid,grpname)
+
+         ! Get attribute
+         call get_att(mpl,grpid,'anisotropic',anisotropic(ib))
+      else
+         ! Missing value
+         anisotropic(ib) = mpl%msv%vali
+      end if
+   end do
 end if
 
 ! Broadcast attribute
 call mpl%f_comm%broadcast(anisotropic,mpl%rootproc-1)
 
-! Copy attribute
+! Convert attribute
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      if (anisotropic==1) then
-         cmat%blk(ib)%anisotropic = .true.
-      elseif (anisotropic==0) then
-         cmat%blk(ib)%anisotropic = .false.
-      else
-         call mpl%abort('${subr}$','wrong anisotropic flag')
-      end if
-   end if
+   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) call convert_i2l(mpl,anisotropic(ib),cmat%blk(ib)%anisotropic)
 end do
 
 ! Allocation
@@ -281,25 +284,46 @@ call cmat%alloc(geom,bpar)
 
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      ! Read fields
+      ! Get group name
       call nam%io_key_value(bpar%blockname(ib),grpname)
-      if (bpar%nicas_block(ib)) then
-         call geom%io%fld_read(mpl,nam,filename,'coef_ens',cmat%blk(ib)%coef_ens,grpname)
-         call geom%io%fld_read(mpl,nam,filename,'coef_sta',cmat%blk(ib)%coef_sta,grpname)
-         call geom%io%fld_read(mpl,nam,filename,'rh',cmat%blk(ib)%rh,grpname)
-         call geom%io%fld_read(mpl,nam,filename,'rv',cmat%blk(ib)%rv,grpname)
-         call geom%io%fld_read(mpl,nam,filename,'rhs',cmat%blk(ib)%rhs,grpname)
-         call geom%io%fld_read(mpl,nam,filename,'rvs',cmat%blk(ib)%rvs,grpname)
-         if (cmat%blk(ib)%anisotropic) then
-            call geom%io%fld_read(mpl,nam,filename,'H11',cmat%blk(ib)%H11,grpname)
-            call geom%io%fld_read(mpl,nam,filename,'H22',cmat%blk(ib)%H22,grpname)
-            call geom%io%fld_read(mpl,nam,filename,'H33',cmat%blk(ib)%H33,grpname)
-            call geom%io%fld_read(mpl,nam,filename,'H12',cmat%blk(ib)%H12,grpname)
-            call geom%io%fld_read(mpl,nam,filename,'Hcoef',cmat%blk(ib)%Hcoef,grpname)
-         end if
+
+      ! Get group
+      grpid = inquire_grp(mpl,ncid,grpname)
+
+      ! Inquire variables
+      coef_ens_id = inquire_var(mpl,grpid,'coef_ens')
+      coef_sta_id = inquire_var(mpl,grpid,'coef_sta')
+      rh_id = inquire_var(mpl,grpid,'rh')
+      rv_id = inquire_var(mpl,grpid,'rv')
+      rhs_id = inquire_var(mpl,grpid,'rhs')
+      rvs_id = inquire_var(mpl,grpid,'rvs')
+      if (cmat%blk(ib)%anisotropic) then
+         H11_id = inquire_var(mpl,grpid,'H11')
+         H22_id = inquire_var(mpl,grpid,'H22')
+         H33_id = inquire_var(mpl,grpid,'H33')
+         H12_id = inquire_var(mpl,grpid,'H12')
+         Hcoef_id = inquire_var(mpl,grpid,'Hcoef')
+      end if
+
+      ! Read variables
+      call geom%io%fld_read(mpl,grpid,coef_ens_id,cmat%blk(ib)%coef_ens)
+      call geom%io%fld_read(mpl,grpid,coef_sta_id,cmat%blk(ib)%coef_sta)
+      call geom%io%fld_read(mpl,grpid,rh_id,cmat%blk(ib)%rh)
+      call geom%io%fld_read(mpl,grpid,rv_id,cmat%blk(ib)%rv)
+      call geom%io%fld_read(mpl,grpid,rhs_id,cmat%blk(ib)%rhs)
+      call geom%io%fld_read(mpl,grpid,rvs_id,cmat%blk(ib)%rvs)
+      if (cmat%blk(ib)%anisotropic) then
+         call geom%io%fld_read(mpl,grpid,H11_id,cmat%blk(ib)%H11)
+         call geom%io%fld_read(mpl,grpid,H22_id,cmat%blk(ib)%H22)
+         call geom%io%fld_read(mpl,grpid,H33_id,cmat%blk(ib)%H33)
+         call geom%io%fld_read(mpl,grpid,H12_id,cmat%blk(ib)%H12)
+         call geom%io%fld_read(mpl,grpid,Hcoef_id,cmat%blk(ib)%Hcoef)
       end if
    end if
 end do
+
+! Close file
+call close_file(mpl,ncid)
 
 ! Probe out
 @:probe_out()
@@ -322,9 +346,11 @@ type(geom_type),intent(in) :: geom  !< Geometry
 type(bpar_type),intent(in) :: bpar  !< Block parameters
 
 ! Local variables
-integer :: ib
-integer :: ncid
-character(len=1024) :: filename,grpname
+integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
+integer :: grpid(bpar%nbe),coef_ens_id(bpar%nbe),coef_sta_id(bpar%nbe),rh_id(bpar%nbe),rv_id(bpar%nbe),rhs_id(bpar%nbe)
+integer :: rvs_id(bpar%nbe),H11_id(bpar%nbe),H22_id(bpar%nbe),H33_id(bpar%nbe),H12_id(bpar%nbe),Hcoef_id(bpar%nbe)
+integer :: ib,anisotropic
+character(len=1024) :: grpname
 
 ! Set name
 @:set_name(cmat_write)
@@ -332,46 +358,70 @@ character(len=1024) :: filename,grpname
 ! Probe in
 @:probe_in()
 
-! Set filename
-filename = trim(nam%prefix)//'_cmat'
+! Create file
+ncid = create_file(mpl,nam%fname_cmat)
 
-! Write coordinates
-call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
-call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
-call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
+! Define dimensions
+nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
+! Define variables
+lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      ! Write fields
+      ! Get group name
       call nam%io_key_value(bpar%blockname(ib),grpname)
-      if (bpar%nicas_block(ib)) then
-         call geom%io%fld_write(mpl,nam,filename,'coef_ens',cmat%blk(ib)%coef_ens,geom%gmask_c0a,grpname)
-         call geom%io%fld_write(mpl,nam,filename,'coef_sta',cmat%blk(ib)%coef_sta,geom%gmask_c0a,grpname)
-         call geom%io%fld_write(mpl,nam,filename,'rh',cmat%blk(ib)%rh,geom%gmask_c0a,grpname)
-         call geom%io%fld_write(mpl,nam,filename,'rv',cmat%blk(ib)%rv,geom%gmask_c0a,grpname)
-         call geom%io%fld_write(mpl,nam,filename,'rhs',cmat%blk(ib)%rhs,geom%gmask_c0a,grpname)
-         call geom%io%fld_write(mpl,nam,filename,'rvs',cmat%blk(ib)%rvs,geom%gmask_c0a,grpname)
-         if (cmat%blk(ib)%anisotropic) then
-            call geom%io%fld_write(mpl,nam,filename,'H11',cmat%blk(ib)%H11,geom%gmask_c0a,grpname)
-            call geom%io%fld_write(mpl,nam,filename,'H22',cmat%blk(ib)%H22,geom%gmask_c0a,grpname)
-            call geom%io%fld_write(mpl,nam,filename,'H33',cmat%blk(ib)%H33,geom%gmask_c0a,grpname)
-            call geom%io%fld_write(mpl,nam,filename,'H12',cmat%blk(ib)%H12,geom%gmask_c0a,grpname)
-            call geom%io%fld_write(mpl,nam,filename,'Hcoef',cmat%blk(ib)%Hcoef,geom%gmask_c0a,grpname)
-         end if
+
+      ! Define group
+      grpid(ib) = define_grp(mpl,ncid,grpname)
+
+      ! Define variables
+      coef_ens_id(ib) = define_var(mpl,grpid(ib),'coef_ens','real',(/nc0_id,nl0_id/))
+      coef_sta_id(ib) = define_var(mpl,grpid(ib),'coef_sta','real',(/nc0_id,nl0_id/))
+      rh_id(ib) = define_var(mpl,grpid(ib),'rh','real',(/nc0_id,nl0_id/))
+      rv_id(ib) = define_var(mpl,grpid(ib),'rv','real',(/nc0_id,nl0_id/))
+      rhs_id(ib) = define_var(mpl,grpid(ib),'rhs','real',(/nc0_id,nl0_id/))
+      rvs_id(ib) = define_var(mpl,grpid(ib),'rvs','real',(/nc0_id,nl0_id/))
+      if (cmat%blk(ib)%anisotropic) then
+         H11_id(ib) = define_var(mpl,grpid(ib),'H11','real',(/nc0_id,nl0_id/))
+         H22_id(ib) = define_var(mpl,grpid(ib),'H22','real',(/nc0_id,nl0_id/))
+         H33_id(ib) = define_var(mpl,grpid(ib),'H33','real',(/nc0_id,nl0_id/))
+         H12_id(ib) = define_var(mpl,grpid(ib),'H12','real',(/nc0_id,nl0_id/))
+         Hcoef_id(ib) = define_var(mpl,grpid(ib),'Hcoef','real',(/nc0_id,nl0_id/))
       end if
 
-      if (mpl%main) then
-         ! Write attributes
-         call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_write,ncid))
-         if (cmat%blk(ib)%anisotropic) then
-            call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'anisotropic',1))
-         else
-            call mpl%ncerr('${subr}$',nf90_put_att(ncid,nf90_global,'anisotropic',0))
-         end if
-         call mpl%ncerr('${subr}$',nf90_close(ncid))
+      ! Put attribute
+      call convert_l2i(cmat%blk(ib)%anisotropic,anisotropic)
+      call put_att(mpl,grpid(ib),'anisotropic',anisotropic)
+   end if
+end do
+
+! Write data
+call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+do ib=1,bpar%nbe
+   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+      call geom%io%fld_write(mpl,grpid(ib),coef_ens_id(ib),cmat%blk(ib)%coef_ens,geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(ib),coef_sta_id(ib),cmat%blk(ib)%coef_sta,geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(ib),rh_id(ib),cmat%blk(ib)%rh,geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(ib),rv_id(ib),cmat%blk(ib)%rv,geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(ib),rhs_id(ib),cmat%blk(ib)%rhs,geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(ib),rvs_id(ib),cmat%blk(ib)%rvs,geom%gmask_c0a)
+      if (cmat%blk(ib)%anisotropic) then
+         call geom%io%fld_write(mpl,grpid(ib),H11_id(ib),cmat%blk(ib)%H11,geom%gmask_c0a)
+         call geom%io%fld_write(mpl,grpid(ib),H22_id(ib),cmat%blk(ib)%H22,geom%gmask_c0a)
+         call geom%io%fld_write(mpl,grpid(ib),H33_id(ib),cmat%blk(ib)%H33,geom%gmask_c0a)
+         call geom%io%fld_write(mpl,grpid(ib),H12_id(ib),cmat%blk(ib)%H12,geom%gmask_c0a)
+         call geom%io%fld_write(mpl,grpid(ib),Hcoef_id(ib),cmat%blk(ib)%Hcoef,geom%gmask_c0a)
       end if
    end if
 end do
+
+! Close file
+call close_file(mpl,ncid)
 
 ! Probe out
 @:probe_out()
@@ -382,7 +432,7 @@ end subroutine cmat_write
 ! Subroutine: cmat_from_hdiag
 !> Import HDIAG into C matrix
 !----------------------------------------------------------------------
-subroutine cmat_from_hdiag(cmat,mpl,nam,geom,bpar,hdiag)
+subroutine cmat_from_hdiag(cmat,mpl,nam,geom,bpar,samp,hdiag)
 
 implicit none
 
@@ -392,6 +442,7 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
 type(hdiag_type),intent(in) :: hdiag   !< Hybrid diagnostics
 
 ! Local variables
@@ -415,8 +466,8 @@ end do
 ! Allocation
 call cmat%alloc(geom,bpar)
 if (nam%local_diag) then
-   allocate(fld_c2a(hdiag%samp%nc2a,geom%nl0,4))
-   allocate(fld_c2b(hdiag%samp%nc2b,geom%nl0))
+   allocate(fld_c2a(samp%nc2a,geom%nl0,4))
+   allocate(fld_c2b(samp%nc2b,geom%nl0))
    allocate(fld_c0a(geom%nc0a,geom%nl0,4))
 end if
 
@@ -434,10 +485,10 @@ do ib=1,bpar%nbe
             ! Copy data
             n = 2
             if (bpar%fit_block(ib)) n = n+2
-            do ic2a=1,hdiag%samp%nc2a
+            do ic2a=1,samp%nc2a
                select case (trim(nam%method))
                case ('cor')
-                  fld_c2a(ic2a,:,1) = hdiag%cov_1%blk(ic2a,ib)%coef_ens
+                  fld_c2a(ic2a,:,1) = hdiag%cor_1%blk(ic2a,ib)%coef_ens
                   fld_c2a(ic2a,:,2) = zero
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%cor_1%blk(ic2a,ib)%fit_rh
@@ -467,20 +518,20 @@ do ib=1,bpar%nbe
             do i=1,n
                ! Fill missing values
                do il0=1,geom%nl0
-                  call hdiag%samp%diag_fill(mpl,fld_c2a(:,il0,i))
+                  call samp%diag_fill(mpl,fld_c2a(:,il0,i))
                end do
 
                ! Interpolate
-               call hdiag%samp%com_c2_AB%ext(mpl,fld_c2a(:,:,i),fld_c2b)
+               call samp%com_c2_AB%ext(mpl,fld_c2a(:,:,i),fld_c2b)
                do il0=1,geom%nl0
                   il0i = min(il0,geom%nl0i)
-                  call hdiag%samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0,i))
+                  call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0,i))
                end do
             end do
 
             ! Copy to C matrix
             cmat%blk(ib)%coef_ens = fld_c0a(:,:,1)
-            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(zss_sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%coef_sta = fld_c0a(:,:,2)
             if (bpar%fit_block(ib)) then
@@ -502,8 +553,8 @@ do ib=1,bpar%nbe
                ! Copy data
                select case (trim(nam%method))
                case ('cor')
-                  cmat%blk(ib)%coef_ens(:,il0) = hdiag%cov_1%blk(0,ib)%coef_ens(il0)
-                  cmat%blk(ib)%wgt = sum(hdiag%cov_1%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
+                  cmat%blk(ib)%coef_ens(:,il0) = hdiag%cor_1%blk(0,ib)%coef_ens(il0)
+                  cmat%blk(ib)%wgt = one
                   cmat%blk(ib)%coef_sta(:,il0) = zero
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rh(il0)
@@ -552,7 +603,7 @@ do ib=1,bpar%nbe
          ! Define weight only
          select case (trim(nam%method))
          case ('cor')
-            cmat%blk(ib)%wgt = sum(hdiag%cov_1%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
+            cmat%blk(ib)%wgt = one
          case ('loc')
             cmat%blk(ib)%wgt = sum(hdiag%loc_1%blk(0,ib)%coef_ens)/real(geom%nl0,kind_real)
          case ('hyb-avg','hyb-rnd')
@@ -745,7 +796,7 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ib,il0,ic0a
-logical :: import_standard(bpar%nbe),import_static(bpar%nbe),import_anisotropic(bpar%nbe)
+logical :: cmat_allocated,import_standard(bpar%nbe),import_static(bpar%nbe),import_anisotropic(bpar%nbe)
 
 ! Set name
 @:set_name(cmat_from_bump)
@@ -753,7 +804,11 @@ logical :: import_standard(bpar%nbe),import_static(bpar%nbe),import_anisotropic(
 ! Probe in
 @:probe_in()
 
-if (.not.cmat%allocated) then
+! Check allocation
+cmat_allocated = cmat%allocated
+
+! Initial allocation
+if (.not.cmat_allocated) then
    ! Allocation
    call cmat%alloc(bpar)
 
@@ -761,14 +816,9 @@ if (.not.cmat%allocated) then
    do ib=1,bpar%nbe
       if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat%blk(ib)%anisotropic = .false.
    end do
-
-   ! Allocation
-   call cmat%alloc(geom,bpar)
-
-   ! Initialization
-   call cmat%init(mpl,bpar)
 end if
 
+! Check BUMP import
 do ib=1,bpar%nbe
    ! Initialization
    import_standard(ib) = .false.
@@ -787,6 +837,15 @@ do ib=1,bpar%nbe
    end if
 end do
 
+! Final allocation
+if (.not.cmat_allocated) then
+   ! Allocation
+   call cmat%alloc(geom,bpar)
+
+   ! Initialization
+   call cmat%init(mpl,bpar)
+end if
+
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       if (import_standard(ib).or.import_static(ib).or.import_anisotropic(ib)) then
@@ -802,7 +861,7 @@ do ib=1,bpar%nbe
             else
                cmat%blk(ib)%coef_ens = one
             end if
-            call mpl%f_comm%allreduce(sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(zss_sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
@@ -815,6 +874,7 @@ do ib=1,bpar%nbe
          if (import_anisotropic(ib)) then
             write(mpl%info,'(a10,a)') '','Anisotropic import'
             call mpl%flush
+
             do il0=1,geom%nl0
                do ic0a=1,geom%nc0a
                   if (geom%gmask_c0a(ic0a,il0)) then
@@ -829,6 +889,14 @@ do ib=1,bpar%nbe
                      ! Copy support radii
                      call lct_h2r(mpl,cmat%blk(ib)%H11(ic0a,il0),cmat%blk(ib)%H22(ic0a,il0),cmat%blk(ib)%H33(ic0a,il0), &
  & cmat%blk(ib)%H12(ic0a,il0),cmat%blk(ib)%rh(ic0a,il0),cmat%blk(ib)%rv(ic0a,il0))
+                  else
+                     cmat%blk(ib)%H11(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%H22(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%H33(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%H12(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%Hcoef(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%rh(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%rv(ic0a,il0) = mpl%msv%valr
                   end if
                end do
             end do
@@ -909,10 +977,12 @@ else
    end do
 end if
 
-select case (trim(nam%draw_type))
+select case (trim(nam%diag_draw_type))
 case ('random_coast')
    ! More points around coasts
-   if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
+   if (geom%nc0a>0) then
+      if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
+   end if
 
    ! Allocation
    allocate(rh_c0a(geom%nc0a))

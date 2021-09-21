@@ -13,6 +13,8 @@ use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,one
 use tools_func, only: add,divide
 use tools_kinds, only: kind_real
+use tools_netcdf, only: define_dim,define_var,put_var
+use tools_wrfda, only: da_eof_decomposition
 use type_avg_blk, only: avg_blk_type
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
@@ -43,7 +45,10 @@ contains
    procedure :: compute_bwavg => avg_compute_bwavg
    procedure :: compute_bwavg_hyb => avg_compute_bwavg_hyb
    procedure :: compute_bwavg_deh => avg_compute_bwavg_deh
+   procedure :: full_vertical_covariance => avg_full_vertical_covariance
 end type avg_type
+
+real(kind_real),parameter :: egvmin = 1.0e-12_kind_real !< Minimum eigenvalue for full vertical covariance matrix inversion
 
 private
 public :: avg_type
@@ -780,5 +785,137 @@ call mpl%prog_final
 @:probe_out()
 
 end subroutine avg_compute_bwavg_deh
+
+!----------------------------------------------------------------------
+! Subroutine: avg_full_vertical_covariance
+!> Compute full vertical covariance/standard-deviation/correlation
+!----------------------------------------------------------------------
+subroutine avg_full_vertical_covariance(avg,mpl,nam,geom,bpar,ncid)
+
+implicit none
+
+! Passed variables
+class(avg_type),intent(in) :: avg   !< Averaged statistics
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
+type(bpar_type),intent(in) :: bpar  !< Block parameters
+integer,intent(in) :: ncid          !< NetCDF ID
+
+! Local variables
+integer :: ib,il0,jl0r,jl0,i,j
+integer :: n1_id,n2_id,cov_id,std_id,cor_id,covegv_id,covpos_id,stdpos_id,corpos_id,covposinv_id
+real(kind_real) :: cov(nam%nv*geom%nl0,nam%nv*geom%nl0),std(nam%nv*geom%nl0),cor(nam%nv*geom%nl0,nam%nv*geom%nl0)
+real(kind_real) :: covegv(nam%nv*geom%nl0),d(nam%nv*geom%nl0),v(nam%nv*geom%nl0,nam%nv*geom%nl0)
+real(kind_real) :: covpos(nam%nv*geom%nl0,nam%nv*geom%nl0),stdpos(nam%nv*geom%nl0),corpos(nam%nv*geom%nl0,nam%nv*geom%nl0)
+real(kind_real) :: covposinv(nam%nv*geom%nl0,nam%nv*geom%nl0)
+
+! Set name
+#:set subr = 'avg_full_vertical_covariance'
+
+! Probe in
+@:probe_in()
+
+! Gather full vertical covariance matrix
+do ib=1,bpar%nb
+   if (bpar%b_to_v2(ib)<=bpar%b_to_v1(ib)) then
+      do il0=1,geom%nl0
+         do jl0r=1,bpar%nl0r(ib)
+            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+            i = (bpar%b_to_v1(ib)-1)*geom%nl0+il0
+            j = (bpar%b_to_v2(ib)-1)*geom%nl0+jl0
+            cov(i,j) = avg%blk(0,ib)%m11(1,jl0r,il0)
+            cov(j,i) = cov(i,j)
+         end do
+      end do
+   end if
+end do
+
+! Compute standard-deviation and correlations
+do i=1,nam%nv*geom%nl0
+   if (.not.(abs(cov(i,i))<zero)) then
+      std(i) = sqrt(cov(i,i))
+   else
+      call mpl%abort('${subr}','negative variance')
+   end if
+end do
+do j=1,nam%nv*geom%nl0
+   do i=1,nam%nv*geom%nl0
+      if (std(i)*std(j)>zero) then
+         cor(i,j) = cov(i,j)/(std(i)*std(j))
+      else
+         if (i==j) then
+            cor(i,j) = one
+         else
+            cor(i,j) = zero
+         end if
+      end if
+   end do
+end do
+
+!  Correlation matrix regularization
+call da_eof_decomposition(mpl,nam%nv*geom%nl0,cor,v,covegv)
+d = max(covegv,egvmin)
+covpos = zero
+do i=1,nam%nv*geom%nl0
+   covpos(i,i) = d(i)
+end do
+covpos = matmul(v,matmul(covpos,transpose(v)))
+do i=1,nam%nv*geom%nl0
+   if (.not.(abs(covpos(i,i))<zero)) then
+      stdpos(i) = sqrt(covpos(i,i))
+   else
+      call mpl%abort('${subr}','negative variance (after diagonalization)')
+   end if
+end do
+do i=1,nam%nv*geom%nl0
+   do j=1,nam%nv*geom%nl0
+      if (stdpos(i)*stdpos(j)>zero) then
+         corpos(i,j) = covpos(i,j)/(stdpos(i)*stdpos(j))
+      else
+         if (i==j) then
+            corpos(i,j) = one
+         else
+            corpos(i,j) = zero
+         end if
+      end if
+   end do
+end do
+
+! Invert correlations
+covposinv = zero
+do i=1,nam%nv*geom%nl0
+   covposinv(i,i) = one/d(i)
+end do
+covposinv = matmul(v,matmul(covposinv,transpose(v)))
+
+! Define dimensions
+n1_id = define_dim(mpl,ncid,'n1',nam%nv*geom%nl0)
+n2_id = define_dim(mpl,ncid,'n2',nam%nv*geom%nl0)
+
+! Define variables
+cov_id = define_var(mpl,ncid,'cov','real',(/n2_id,n1_id/))
+std_id = define_var(mpl,ncid,'std','real',(/n1_id/))
+cor_id = define_var(mpl,ncid,'cor','real',(/n2_id,n1_id/))
+covegv_id = define_var(mpl,ncid,'covegv','real',(/n1_id/))
+covpos_id = define_var(mpl,ncid,'covpos','real',(/n2_id,n1_id/))
+stdpos_id = define_var(mpl,ncid,'stdpos','real',(/n1_id/))
+corpos_id = define_var(mpl,ncid,'corpos','real',(/n2_id,n1_id/))
+covposinv_id = define_var(mpl,ncid,'covposinv','real',(/n2_id,n1_id/))
+
+! Write variables
+call put_var(mpl,ncid,cov_id,cov)
+call put_var(mpl,ncid,std_id,std)
+call put_var(mpl,ncid,cor_id,cor)
+call put_var(mpl,ncid,covegv_id,covegv)
+call put_var(mpl,ncid,covpos_id,covpos)
+call put_var(mpl,ncid,stdpos_id,stdpos)
+call put_var(mpl,ncid,corpos_id,corpos)
+call put_var(mpl,ncid,covposinv_id,covposinv)
+
+! Probe out
+@:probe_out()
+
+end subroutine avg_full_vertical_covariance
 
 end module type_avg

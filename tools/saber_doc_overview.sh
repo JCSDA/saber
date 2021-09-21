@@ -25,7 +25,7 @@ cat<<EOF > ${docdir}/mainpage.h
  * \mainpage System Agnostic Background Error Representation
  *
  * \section IntroSection Introduction
- * Welcome to the documentation for the System Agnostic Background Error 
+ * Welcome to the documentation for the System Agnostic Background Error
  * Representation (SABER)
  *
  * \section DirStructure Directory structure
@@ -89,7 +89,7 @@ for dir1 in ${lev1}; do
             done
             cd ..
          done
-         cd ..  
+         cd ..
       done
       cd ..
    done

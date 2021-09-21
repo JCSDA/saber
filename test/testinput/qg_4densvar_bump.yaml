@@ -25,8 +25,8 @@ cost function:
     localization:
       bump:
         datadir: testdata
-        mpicom: 2
-        load_nicas: 1
+        fname_nicas: qg_parameters_bump_loc/test_nicas
+        load_nicas_local: 1
         prefix: qg_4densvar_bump/test
         strategy: common
       localization method: BUMP
@@ -269,3 +269,7 @@ output:
   first: PT0S
   frequency: PT6H
   type: an
+
+test:
+  reference filename: testref/qg_4densvar_bump/test.log.out
+  test output filename: testoutput/qg_4densvar_bump/test.log.out

@@ -10,9 +10,9 @@
 module type_com
 
 use fckit_mpi_module, only: fckit_mpi_status
-use netcdf, only: nf90_get_var,nf90_inq_grp_ncid,nf90_inq_varid,nf90_inq_varid,nf90_put_var
 !$ use omp_lib
-use tools_kinds, only: kind_int,kind_real,nc_kind_int,nc_kind_real
+use tools_kinds, only: kind_int,kind_real
+use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: eq
 use type_mpl, only: mpl_type
@@ -41,31 +41,43 @@ type com_type
    integer,allocatable :: jexcldispls(:) !< Exclusive interior displacement
    integer,allocatable :: halo(:)        !< Halo buffer
    integer,allocatable :: excl(:)        !< Exclusive interior buffer
+
+   ! I/O IDs
+   integer :: grpid                      !< group ID
+   integer :: own_to_ext_id              !< own_to_ext ID
+   integer :: own_to_red_id              !< own_to_red ID
+   integer :: jhalocounts_id             !< jhalocounts ID
+   integer :: jexclcounts_id             !< jexclcounts ID
+   integer :: jhalodispls_id             !< jhalodispls ID
+   integer :: jexcldispls_id             !< jexcldispls ID
+   integer :: halo_id                    !< halo ID
+   integer :: excl_id                    !< excl ID
 contains
    procedure :: dealloc => com_dealloc
    procedure :: read => com_read
-   procedure :: write => com_write
+   procedure :: write_def => com_write_def
+   procedure :: write_data => com_write_data
    procedure :: buffer_size => com_buffer_size
    procedure :: serialize => com_serialize
    procedure :: deserialize => com_deserialize
    procedure :: setup => com_setup
    #:for dtype in dtypes_irl
-      #:for rank in ranks_12
+      #:for rank in ranks_1234
          procedure :: com_ext_${dtype}$_r${rank}$
          procedure :: com_red_${dtype}$_r${rank}$
       #:endfor
    #:endfor
    generic :: ext => &
-@:init_procedure(6)
+@:init_procedure(12)
    #:for dtype in dtypes_irl
-      #:for rank in ranks_12
+      #:for rank in ranks_1234
 @:add_procedure(com_ext_${dtype}$_r${rank}$)
       #:endfor
    #:endfor
-@:init_procedure(6)
+@:init_procedure(12)
    generic :: red => &
    #:for dtype in dtypes_irl
-      #:for rank in ranks_12
+      #:for rank in ranks_1234
 @:add_procedure(com_red_${dtype}$_r${rank}$)
       #:endfor
    #:endfor
@@ -123,9 +135,6 @@ class(com_type),intent(inout) :: com  !< Communication data
 type(mpl_type),intent(inout) :: mpl   !< MPI data
 integer,intent(in) :: ncid            !< NetCDF file
 
-! Local variables
-integer :: grpid,own_to_ext_id,own_to_red_id,jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
-
 ! Set name
 @:set_name(com_read)
 
@@ -133,14 +142,14 @@ integer :: grpid,own_to_ext_id,own_to_red_id,jhalocounts_id,jexclcounts_id,jhalo
 @:probe_in()
 
 ! Get group
-call mpl%ncerr('${subr}$',nf90_inq_grp_ncid(ncid,com%prefix,grpid))
+com%grpid = inquire_grp(mpl,ncid,com%prefix)
 
 ! Get dimensions
-com%nred = mpl%nc_dim_inquire(grpid,'nred')
-com%next = mpl%nc_dim_inquire(grpid,'next')
-com%nown = mpl%nc_dim_inquire(grpid,'nown')
-com%nhalo = mpl%nc_dim_inquire(grpid,'nhalo')
-com%nexcl = mpl%nc_dim_inquire(grpid,'nexcl')
+call get_att(mpl,com%grpid,'nred',com%nred)
+call get_att(mpl,com%grpid,'next',com%next)
+com%nown = inquire_dim_size(mpl,com%grpid,'nown',0)
+com%nhalo = inquire_dim_size(mpl,com%grpid,'nhalo',0)
+com%nexcl = inquire_dim_size(mpl,com%grpid,'nexcl',0)
 
 ! Allocation
 if (com%nown>0) allocate(com%own_to_ext(com%nown))
@@ -153,24 +162,24 @@ if (com%nhalo>0) allocate(com%halo(com%nhalo))
 if (com%nexcl>0) allocate(com%excl(com%nexcl))
 
 ! Get variables
-if (com%nown>0) call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'own_to_ext',own_to_ext_id))
-if (com%nown>0) call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'own_to_red',own_to_red_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'jhalocounts',jhalocounts_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'jexclcounts',jexclcounts_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'jhalodispls',jhalodispls_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'jexcldispls',jexcldispls_id))
-if (com%nhalo>0) call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'halo',halo_id))
-if (com%nexcl>0) call mpl%ncerr('${subr}$',nf90_inq_varid(grpid,'excl',excl_id))
+if (com%nown>0) com%own_to_ext_id = inquire_var(mpl,com%grpid,'own_to_ext')
+if (com%nown>0) com%own_to_red_id = inquire_var(mpl,com%grpid,'own_to_red')
+com%jhalocounts_id = inquire_var(mpl,com%grpid,'jhalocounts')
+com%jexclcounts_id = inquire_var(mpl,com%grpid,'jexclcounts')
+com%jhalodispls_id = inquire_var(mpl,com%grpid,'jhalodispls')
+com%jexcldispls_id = inquire_var(mpl,com%grpid,'jexcldispls')
+if (com%nhalo>0) com%halo_id = inquire_var(mpl,com%grpid,'halo')
+if (com%nexcl>0) com%excl_id = inquire_var(mpl,com%grpid,'excl')
 
 ! Read variables
-if (com%nown>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,own_to_ext_id,com%own_to_ext))
-if (com%nown>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,own_to_red_id,com%own_to_red))
-call mpl%ncerr('${subr}$',nf90_get_var(grpid,jhalocounts_id,com%jhalocounts))
-call mpl%ncerr('${subr}$',nf90_get_var(grpid,jexclcounts_id,com%jexclcounts))
-call mpl%ncerr('${subr}$',nf90_get_var(grpid,jhalodispls_id,com%jhalodispls))
-call mpl%ncerr('${subr}$',nf90_get_var(grpid,jexcldispls_id,com%jexcldispls))
-if (com%nhalo>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,halo_id,com%halo))
-if (com%nexcl>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,excl_id,com%excl))
+if (com%nown>0) call get_var(mpl,com%grpid,com%own_to_ext_id,com%own_to_ext)
+if (com%nown>0) call get_var(mpl,com%grpid,com%own_to_red_id,com%own_to_red)
+call get_var(mpl,com%grpid,com%jhalocounts_id,com%jhalocounts)
+call get_var(mpl,com%grpid,com%jexclcounts_id,com%jexclcounts)
+call get_var(mpl,com%grpid,com%jhalodispls_id,com%jhalodispls)
+call get_var(mpl,com%grpid,com%jexcldispls_id,com%jexcldispls)
+if (com%nhalo>0) call get_var(mpl,com%grpid,com%halo_id,com%halo)
+if (com%nexcl>0) call get_var(mpl,com%grpid,com%excl_id,com%excl)
 
 ! Probe out
 @:probe_out()
@@ -178,63 +187,85 @@ if (com%nexcl>0) call mpl%ncerr('${subr}$',nf90_get_var(grpid,excl_id,com%excl))
 end subroutine com_read
 
 !----------------------------------------------------------------------
-! Subroutine: com_write
-!> Write communications to a NetCDF file
+! Subroutine: com_write_def
+!> Write, definition mode
 !----------------------------------------------------------------------
-subroutine com_write(com,mpl,ncid)
+subroutine com_write_def(com,mpl,ncid)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(inout) :: com !< Communication data
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+integer,intent(in) :: ncid           !< NetCDF file
+
+! Local variables
+integer :: nproc_id,nown_id,nhalo_id,nexcl_id
+
+! Set name
+@:set_name(com_write_def)
+
+! Probe in
+@:probe_in()
+
+! Define group
+com%grpid = define_grp(mpl,ncid,com%prefix)
+
+! Define dimensions
+nproc_id = define_dim(mpl,com%grpid,'nproc',mpl%nproc)
+call put_att(mpl,com%grpid,'nred',com%nred)
+call put_att(mpl,com%grpid,'next',com%next)
+if (com%nown>0) nown_id = define_dim(mpl,com%grpid,'nown',com%nown)
+if (com%nhalo>0) nhalo_id = define_dim(mpl,com%grpid,'nhalo',com%nhalo)
+if (com%nexcl>0) nexcl_id = define_dim(mpl,com%grpid,'nexcl',com%nexcl)
+
+! Define variables
+if (com%nown>0) com%own_to_ext_id = define_var(mpl,com%grpid,'own_to_ext','int',(/nown_id/))
+if (com%nown>0) com%own_to_red_id = define_var(mpl,com%grpid,'own_to_red','int',(/nown_id/))
+com%jhalocounts_id = define_var(mpl,com%grpid,'jhalocounts','int',(/nproc_id/))
+com%jexclcounts_id = define_var(mpl,com%grpid,'jexclcounts','int',(/nproc_id/))
+com%jhalodispls_id = define_var(mpl,com%grpid,'jhalodispls','int',(/nproc_id/))
+com%jexcldispls_id = define_var(mpl,com%grpid,'jexcldispls','int',(/nproc_id/))
+if (com%nhalo>0) com%halo_id = define_var(mpl,com%grpid,'halo','int',(/nhalo_id/))
+if (com%nexcl>0) com%excl_id = define_var(mpl,com%grpid,'excl','int',(/nexcl_id/))
+
+! Probe out
+@:probe_out()
+
+end subroutine com_write_def
+
+!----------------------------------------------------------------------
+! Subroutine: com_write_data
+!> Write, data mode
+!----------------------------------------------------------------------
+subroutine com_write_data(com,mpl)
 
 implicit none
 
 ! Passed variables
 class(com_type),intent(in) :: com   !< Communication data
 type(mpl_type),intent(inout) :: mpl !< MPI data
-integer,intent(in) :: ncid          !< NetCDF file
-
-! Local variables
-integer :: grpid,nproc_id,nred_id,next_id,nown_id,own_to_ext_id,own_to_red_id,nhalo_id,nexcl_id
-integer :: jhalocounts_id,jexclcounts_id,jhalodispls_id,jexcldispls_id,halo_id,excl_id
 
 ! Set name
-@:set_name(com_write)
+@:set_name(com_write_data)
 
 ! Probe in
 @:probe_in()
 
-! Define group
-grpid = mpl%nc_group_define_or_get(ncid,com%prefix)
-
-! Define dimensions
-nproc_id = mpl%nc_dim_define_or_get(ncid,'nproc',mpl%nproc)
-if (com%nred>0) nred_id = mpl%nc_dim_define_or_get(grpid,'nred',com%nred)
-if (com%next>0) next_id = mpl%nc_dim_define_or_get(grpid,'next',com%next)
-if (com%nown>0) nown_id = mpl%nc_dim_define_or_get(grpid,'nown',com%nown)
-if (com%nhalo>0) nhalo_id = mpl%nc_dim_define_or_get(grpid,'nhalo',com%nhalo)
-if (com%nexcl>0) nexcl_id = mpl%nc_dim_define_or_get(grpid,'nexcl',com%nexcl)
-
-! Define variables
-if (com%nown>0) own_to_ext_id = mpl%nc_var_define_or_get(grpid,'own_to_ext',nc_kind_int,(/nown_id/))
-if (com%nown>0) own_to_red_id = mpl%nc_var_define_or_get(grpid,'own_to_red',nc_kind_int,(/nown_id/))
-jhalocounts_id = mpl%nc_var_define_or_get(grpid,'jhalocounts',nc_kind_int,(/nproc_id/))
-jexclcounts_id = mpl%nc_var_define_or_get(grpid,'jexclcounts',nc_kind_int,(/nproc_id/))
-jhalodispls_id = mpl%nc_var_define_or_get(grpid,'jhalodispls',nc_kind_int,(/nproc_id/))
-jexcldispls_id = mpl%nc_var_define_or_get(grpid,'jexcldispls',nc_kind_int,(/nproc_id/))
-if (com%nhalo>0) halo_id = mpl%nc_var_define_or_get(grpid,'halo',nc_kind_int,(/nhalo_id/))
-if (com%nexcl>0) excl_id = mpl%nc_var_define_or_get(grpid,'excl',nc_kind_int,(/nexcl_id/))
-
 ! Write variables
-if (com%nown>0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,own_to_ext_id,com%own_to_ext))
-if (com%nown>0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,own_to_red_id,com%own_to_red))
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,jhalocounts_id,com%jhalocounts))
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,jexclcounts_id,com%jexclcounts))
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,jhalodispls_id,com%jhalodispls))
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,jexcldispls_id,com%jexcldispls))
-if (com%nhalo>0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,halo_id,com%halo))
-if (com%nexcl>0) call mpl%ncerr('${subr}$',nf90_put_var(grpid,excl_id,com%excl))
+if (com%nown>0) call put_var(mpl,com%grpid,com%own_to_ext_id,com%own_to_ext)
+if (com%nown>0) call put_var(mpl,com%grpid,com%own_to_red_id,com%own_to_red)
+call put_var(mpl,com%grpid,com%jhalocounts_id,com%jhalocounts)
+call put_var(mpl,com%grpid,com%jexclcounts_id,com%jexclcounts)
+call put_var(mpl,com%grpid,com%jhalodispls_id,com%jhalodispls)
+call put_var(mpl,com%grpid,com%jexcldispls_id,com%jexcldispls)
+if (com%nhalo>0) call put_var(mpl,com%grpid,com%halo_id,com%halo)
+if (com%nexcl>0) call put_var(mpl,com%grpid,com%excl_id,com%excl)
 
 ! Probe out
 @:probe_out()
 
-end subroutine com_write
+end subroutine com_write_data
 
 !----------------------------------------------------------------------
 ! Subroutine: com_buffer_size
@@ -696,8 +727,10 @@ if (com_out%nown>0) then
    deallocate(ext_to_glb_order)
 
    ! Check local conversion
-   if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort('${subr}$','missing own_to_red value')
-   if (mpl%msv%isany(com_out%own_to_ext)) call mpl%abort('${subr}$','missing own_to_ext value')
+   if (com_out%nown>0) then
+      if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort('${subr}$','missing own_to_red value')
+      if (mpl%msv%isany(com_out%own_to_ext)) call mpl%abort('${subr}$','missing own_to_ext value')
+   end if
 end if
 
 ! Communicate data
@@ -741,7 +774,7 @@ com_out%prefix = prefix
 end subroutine com_setup
 
 #:for dtype in dtypes_irl
-   #:for rank in ranks_12
+   #:for rank in ranks_1234
 !----------------------------------------------------------------------
 ! Subroutine: com_ext_${dtype}$_r${rank}$
 !> Communicate field to halo (extension)
@@ -757,8 +790,10 @@ ${ftype[dtype]}$,intent(in) :: vec_red(${dim[rank]}$)  !< Reduced vector
 ${ftype[dtype]}$,intent(out) :: vec_ext(${dim[rank]}$) !< Extended vector
 
 ! Local variables
-integer :: nl,il,iexcl,iown,ihalo
+integer :: nl,iexcl,iown,ihalo
 integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
+#{if rank > 1}# integer :: il,shp_red(${rank}$),shp_ext(${rank}$) #{endif}#
+#{if rank > 1}# integer :: #{for arg_dim in range(2,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}# #{endif}#
 ${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
 
 ! Set name
@@ -773,8 +808,10 @@ if (size(vec_ext,1)/=com%next) call mpl%abort('${subr}$','wrong dimension for ve
 #:if rank == 1
    nl = 1
 #:else
-   if (size(vec_red,2)/=size(vec_ext,2)) call mpl%abort('${subr}$','inconsistent number of levels')
-   nl = size(vec_red,2)
+   shp_red = shape(vec_red)
+   shp_ext = shape(vec_ext)
+   if (any(shp_red(2:${rank}$)/=shp_ext(2:${rank}$))) call mpl%abort('${subr}$','inconsistent red/ext sizes')
+   nl = product(shp_red(2:${rank}$))
 #:endif
 
 ! Allocation
@@ -782,17 +819,25 @@ allocate(sbuf(com%nexcl*nl))
 allocate(rbuf(com%nhalo*nl))
 
 ! Prepare buffers to send
-!$omp parallel do schedule(static) private(il,iexcl)
-do il=1,nl
-   do iexcl=1,com%nexcl
-      #:if rank == 1
-         sbuf(iexcl) = vec_red(com%excl(iexcl))
-      #:else
-         sbuf((iexcl-1)*nl+il) = vec_red(com%excl(iexcl),il)
-      #:endif
-   end do
+do iexcl=1,com%nexcl
+   #:if rank == 1
+      sbuf(iexcl) = vec_red(com%excl(iexcl))
+   #:else
+      il = 0
+      #:for arg_dim in range(2,rank+1)
+      do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+      #:endfor
+         il = il+1
+         sbuf((iexcl-1)*nl+il) = vec_red(com%excl(iexcl), &
+         #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+         #:endfor
+ & i${rank}$)
+      #:for arg_dim in range(2,rank+1)
+      end do
+      #:endfor
+   #:endif
 end do
-!$omp end parallel do
 
 ! Communication
 jexclcounts = com%jexclcounts*nl
@@ -805,30 +850,34 @@ call mpl%f_comm%alltoall(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodisp
 vec_ext = ${zero[dtype]}$
 
 ! Copy interior
-!$omp parallel do schedule(static) private(il,iown)
-do il=1,nl
-   do iown=1,com%nown
-      #:if rank == 1
+do iown=1,com%nown
+   #:if rank == 1
       vec_ext(com%own_to_ext(iown)) = vec_red(com%own_to_red(iown))
-      #:else
-         vec_ext(com%own_to_ext(iown),il) = vec_red(com%own_to_red(iown),il)
-      #:endif
-   end do
+   #:else
+      vec_ext(com%own_to_ext(iown),${dim[rank-1]}$) = vec_red(com%own_to_red(iown),${dim[rank-1]}$)
+   #:endif
 end do
-!$omp end parallel do
 
 ! Copy halo
-!$omp parallel do schedule(static) private(il,ihalo)
-do il=1,nl
-   do ihalo=1,com%nhalo
-      #:if rank == 1
-         vec_ext(com%halo(ihalo)) = rbuf(ihalo)
-      #:else
-         vec_ext(com%halo(ihalo),il) = rbuf((ihalo-1)*nl+il)
-      #:endif
-   end do
+do ihalo=1,com%nhalo
+   #:if rank == 1
+      vec_ext(com%halo(ihalo)) = rbuf(ihalo)
+   #:else
+      il = 0
+      #:for arg_dim in range(2,rank+1)
+      do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+      #:endfor
+         il = il+1
+         vec_ext(com%halo(ihalo), &
+         #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+         #:endfor
+ & i${rank}$) = rbuf((ihalo-1)*nl+il)
+      #:for arg_dim in range(2,rank+1)
+      end do
+      #:endfor
+   #:endif
 end do
-!$omp end parallel do
 
 ! Release memory
 deallocate(sbuf)
@@ -842,7 +891,7 @@ end subroutine com_ext_${dtype}$_r${rank}$
 #:endfor
 
 #:for dtype in dtypes_irl
-   #:for rank in ranks_12
+   #:for rank in ranks_1234
 !----------------------------------------------------------------------
 ! Subroutine: com_red_${dtype}$_r${rank}$
 !> Communicate vector from halo (reduction)
@@ -860,10 +909,13 @@ logical,intent(in),optional :: nosum                   !< No-sum flag
 character(len=*),intent(in),optional :: op             !< Logical operation for the sum
 
 ! Local variables
-integer :: nl,il,ihalo,iown,ired,iexcl,ithread
-${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:),vec_red_arr(:,:,:)
-logical :: lnosum,valid
-logical,allocatable :: done(:)
+integer :: nl,ihalo,iown,iexcl
+integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
+#{if rank > 1}# integer :: il,shp_red(${rank}$),shp_ext(${rank}$) #{endif}#
+#{if rank > 1}# integer :: #{for arg_dim in range(2,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}# #{endif}#
+${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
+logical :: lnosum
+logical,allocatable :: done(:),valid(:)
 character(len=3) :: lop
 
 ! Set name
@@ -878,8 +930,10 @@ if (size(vec_red,1)/=com%nred) call mpl%abort('${subr}$','wrong dimension for ve
 #:if rank == 1
    nl = 1
 #:else
-   if (size(vec_ext,2)/=size(vec_red,2)) call mpl%abort('${subr}$','inconsistent number of levels')
-   nl = size(vec_ext,2)
+   shp_ext = shape(vec_ext)
+   shp_red = shape(vec_red)
+   if (any(shp_ext(2:${rank}$)/=shp_red(2:${rank}$))) call mpl%abort('${subr}$','inconsistent red/ext sizes')
+   nl = product(shp_ext(2:${rank}$))
 #:endif
 
 ! Set no-sum flag
@@ -899,27 +953,36 @@ if ((trim(lop)/='and').and.(trim(lop)/='or')) call mpl%abort('${subr}$','wrong l
 ! Allocation
 allocate(sbuf(com%nhalo*nl))
 allocate(rbuf(com%nexcl*nl))
-if (lnosum) then
-   allocate(done(com%nred))
-else
-   allocate(vec_red_arr(com%nred,nl,mpl%nthread))
-end if
+if (lnosum) allocate(done(com%nred))
+allocate(valid(nl))
 
 ! Prepare buffers to send
-!$omp parallel do schedule(static) private(il,ihalo)
-do il=1,nl
-   do ihalo=1,com%nhalo
-      #:if rank == 1
-         sbuf(ihalo) = vec_ext(com%halo(ihalo))
-      #:else
-         sbuf((ihalo-1)*nl+il) = vec_ext(com%halo(ihalo),il)
-      #:endif
-   end do
+do ihalo=1,com%nhalo
+   #:if rank == 1
+      sbuf(ihalo) = vec_ext(com%halo(ihalo))
+   #:else
+      il = 0
+      #:for arg_dim in range(2,rank+1)
+      do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+      #:endfor
+         il = il+1
+         sbuf((ihalo-1)*nl+il) = vec_ext(com%halo(ihalo), &
+         #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+         #:endfor
+ & i${rank}$)
+      #:for arg_dim in range(2,rank+1)
+      end do
+      #:endfor
+   #:endif
 end do
-!$omp end parallel do
 
 ! Communication
-call mpl%f_comm%alltoall(sbuf,com%jhalocounts*nl,com%jhalodispls*nl,rbuf,com%jexclcounts*nl,com%jexcldispls*nl)
+jexclcounts = com%jexclcounts*nl
+jexcldispls = com%jexcldispls*nl
+jhalocounts = com%jhalocounts*nl
+jhalodispls = com%jhalodispls*nl
+call mpl%f_comm%alltoall(sbuf,jhalocounts,jhalodispls,rbuf,jexclcounts,jexcldispls)
 
 ! Initialization
 vec_red = ${zero[dtype]}$
@@ -931,114 +994,134 @@ vec_red = ${zero[dtype]}$
 #:endif
 
 ! Copy interior
-!$omp parallel do schedule(static) private(il,iown)
-do il=1,nl
-   do iown=1,com%nown
-      #:if rank == 1
-         vec_red(com%own_to_red(iown)) = vec_ext(com%own_to_ext(iown))
-      #:else
-         vec_red(com%own_to_red(iown),il) = vec_ext(com%own_to_ext(iown),il)
-      #:endif
-   end do
+do iown=1,com%nown
+   #:if rank == 1
+      vec_red(com%own_to_red(iown)) = vec_ext(com%own_to_ext(iown))
+   #:else
+      vec_red(com%own_to_red(iown),${dim[rank-1]}$) = vec_ext(com%own_to_ext(iown),${dim[rank-1]}$)
+   #:endif
 end do
-!$omp end parallel do
 
 if (lnosum) then
-   do il=1,nl
-      ! Initialization
-      done = .false.
-      do iown=1,com%nown
-         done(com%own_to_red(iown)) = .true.
-      end do
+   ! Initialization
+   done = .false.
+   do iown=1,com%nown
+      done(com%own_to_red(iown)) = .true.
+   end do
 
-      do iexcl=1,com%nexcl
-         if (done(com%excl(iexcl))) then
-            ! Check that values are similar
-            valid = .true.
-            #:if rank == 1
-               #:if dtype == 'logical'
-                  valid = (vec_red(com%excl(iexcl)).eqv.rbuf(iexcl))
-               #:else
-                  ! Check that the new value is not missing
-                  if (mpl%msv%isnot(rbuf((iexcl-1)*nl+il))) valid = eq(vec_red(com%excl(iexcl)),rbuf(iexcl))
-               #:endif
+   do iexcl=1,com%nexcl
+      if (done(com%excl(iexcl))) then
+         #:if rank == 1
+            #:if dtype == 'logical'
+               valid(1) = (vec_red(com%excl(iexcl)).eqv.rbuf(iexcl))
             #:else
+               valid(1) = mpl%msv%is(rbuf(iexcl)).or.eq(vec_red(com%excl(iexcl)),rbuf(iexcl))
+            #:endif
+         #:else
+            il = 0
+            #:for arg_dim in range(2,rank+1)
+            do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+            #:endfor
+               il = il+1
                #:if dtype == 'logical'
-                  valid = (vec_red(com%excl(iexcl),il).eqv.rbuf((iexcl-1)*nl+il))
+                  valid(il) = vec_red(com%excl(iexcl), &
+                  #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+                  #:endfor
+ & i${rank}$).eqv.rbuf((iexcl-1)*nl+il)
                #:else
-                  if (mpl%msv%isnot(rbuf((iexcl-1)*nl+il))) valid = eq(vec_red(com%excl(iexcl),il),rbuf((iexcl-1)*nl+il))
+                  valid(il) = mpl%msv%is(rbuf((iexcl-1)*nl+il)).or.eq(vec_red(com%excl(iexcl), &
+                  #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+                  #:endfor
+ & i${rank}$),rbuf((iexcl-1)*nl+il))
                #:endif
-            #:endif
-            if (.not.valid) call mpl%abort('${subr}$','both redundant values are different')
-         else
-            ! Copy value
-            #:if rank == 1
-               vec_red(com%excl(iexcl)) = rbuf(iexcl)
-            #:else
-               vec_red(com%excl(iexcl),il) = rbuf((iexcl-1)*nl+il)
-            #:endif
-         end if
-         done(com%excl(iexcl)) = .true.
-      end do
+            #:for arg_dim in range(2,rank+1)
+            end do
+            #:endfor
+         #:endif
+         if (.not.all(valid)) call mpl%abort('${subr}$','both redundant values are different')
+      else
+         ! Copy value
+         #:if rank == 1
+            vec_red(com%excl(iexcl)) = rbuf(iexcl)
+         #:else
+            il = 0
+            #:for arg_dim in range(2,rank+1)
+            do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+            #:endfor
+               il = il+1
+               vec_red(com%excl(iexcl), &
+               #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+               #:endfor
+ & i${rank}$) = rbuf((iexcl-1)*nl+il)
+            #:for arg_dim in range(2,rank+1)
+            end do
+            #:endfor
+         #:endif
+      end if
+      done(com%excl(iexcl)) = .true.
    end do
 else
-   ! Initialization
-   vec_red_arr = ${zero[dtype]}$
-   #:if dtype == 'logical'
-      if (trim(lop)=='and') vec_red_arr = .true.
-      if (trim(lop)=='or') vec_red_arr = .false.
-   #:endif
-
    ! Copy halo
-   !$omp parallel do schedule(static) private(il,iexcl,ithread)
-   do il=1,nl
-      do iexcl=1,com%nexcl
-         ithread = 1
-         !$ ithread = omp_get_thread_num()+1
+   do iexcl=1,com%nexcl
+      #:if rank == 1
          #:if dtype == 'logical'
-            if (trim(lop)=='and') vec_red_arr(com%excl(iexcl),il,ithread) = vec_red_arr(com%excl(iexcl),il,ithread) &
- & .and.rbuf((iexcl-1)*nl+il)
-            if (trim(lop)=='or') vec_red_arr(com%excl(iexcl),il,ithread) = vec_red_arr(com%excl(iexcl),il,ithread) &
- & .or.rbuf((iexcl-1)*nl+il)
+            if (trim(lop)=='and') vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl)).and.rbuf(iexcl)
+            if (trim(lop)=='or') vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl)).or.rbuf(iexcl)
          #:else
-            vec_red_arr(com%excl(iexcl),il,ithread) = vec_red_arr(com%excl(iexcl),il,ithread)+rbuf((iexcl-1)*nl+il)
+            vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl))+rbuf(iexcl)
          #:endif
-      end do
-   end do
-   !$omp end parallel do
+      #:else
 
-   ! Sum over threads
-   do ithread=1,mpl%nthread
-      do il=1,nl
-         do ired=1,com%nred
-            #:if rank == 1
-               #:if dtype == 'logical'
-                  if (trim(lop)=='and') vec_red(ired) = vec_red(ired).and.vec_red_arr(ired,il,ithread)
-                  if (trim(lop)=='or') vec_red(ired) = vec_red(ired).or.vec_red_arr(ired,il,ithread)
-               #:else
-                  vec_red(ired) = vec_red(ired)+vec_red_arr(ired,il,ithread)
-               #:endif
+         il = 0
+         #:for arg_dim in range(2,rank+1)
+         do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+         #:endfor
+            il = il+1
+            #:if dtype == 'logical'
+               if (trim(lop)=='and') vec_red(com%excl(iexcl), &
+               #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+               #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+               #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+               #:endfor
+ & i${rank}$).and.rbuf((iexcl-1)*nl+il)
+               if (trim(lop)=='or') vec_red(com%excl(iexcl), &
+               #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+               #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+               #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+               #:endfor
+ & i${rank}$).or.rbuf((iexcl-1)*nl+il)
             #:else
-               #:if dtype == 'logical'
-                  if (trim(lop)=='and') vec_red(ired,il) = vec_red(ired,il).and.vec_red_arr(ired,il,ithread)
-                  if (trim(lop)=='or') vec_red(ired,il) = vec_red(ired,il).or.vec_red_arr(ired,il,ithread)
-               #:else
-                  vec_red(ired,il) = vec_red(ired,il)+vec_red_arr(ired,il,ithread)
-               #:endif
+               vec_red(com%excl(iexcl), &
+               #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+               #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+               #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+               #:endfor
+ & i${rank}$)+rbuf((iexcl-1)*nl+il)
             #:endif
+         #:for arg_dim in range(2,rank+1)
          end do
-      end do
+         #:endfor
+      #:endif
    end do
 end if
 
 ! Release memory
 deallocate(sbuf)
 deallocate(rbuf)
-if (lnosum) then
-   deallocate(done)
-else
-   deallocate(vec_red_arr)
-end if
+if (lnosum) deallocate(done)
+#{if rank > 1}# deallocate(valid) #{endif}#
 
 ! Probe out
 @:probe_out()

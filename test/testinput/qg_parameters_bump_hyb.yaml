@@ -5,17 +5,17 @@ bump:
   datadir: testdata
   dc: 500.0e3
   method: hyb-rnd
-  mpicom: 2
   nc1: 500
   nc3: 20
   ne: 10
   new_hdiag: 1
   new_nicas: 1
   nl0r: 2
-  ntry: 10
   prefix: qg_parameters_bump_hyb/test
   resol: 8.0
   strategy: common
+  write_hdiag: 1
+  write_nicas_local: 1
 covariance:
   covariance model: QgError
   horizontal_length_scale: 2.2e6
@@ -71,3 +71,12 @@ output:
   exp: hyb_coef
   parameter: hyb_coef
   type: an
+- datadir: testdata/qg_parameters_bump_hyb
+  date: 2010-01-01T12:00:00Z
+  exp: nicas_norm
+  parameter: nicas_norm
+  type: an
+
+test:
+  reference filename: testref/qg_parameters_bump_hyb/test.log.out
+  test output filename: testoutput/qg_parameters_bump_hyb/test.log.out

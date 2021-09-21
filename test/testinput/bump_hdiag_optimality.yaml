@@ -6,9 +6,8 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-write_cmat: 0
+write_hdiag: 1
 new_nicas: 1
-write_nicas: 0
 check_optimality: 1
 
 # model_param
@@ -24,9 +23,8 @@ ens1_ne: 50
 
 # sampling_param
 nc1: 1500
-ntry: 30
 nc3: 15
-dc: [400.0e3]
+dc: 400.0e3
 nl0r: 1
 
 # diag_param
@@ -36,7 +34,6 @@ ne: 50
 
 # nicas_param
 resol: 8.0
-mpicom: 2
 forced_radii: 1
 rh:
   q: [4000.0e3]

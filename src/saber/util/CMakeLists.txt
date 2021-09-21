@@ -8,6 +8,7 @@ set( util_src_files
 tools_atlas.fypp
 tools_const.fypp
 tools_kinds.fypp
+tools_netcdf.fypp
 tools_repro.fypp
 type_fieldset.fypp
 type_mpl.fypp

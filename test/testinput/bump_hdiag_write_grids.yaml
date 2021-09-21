@@ -7,7 +7,7 @@ model: "qg"
 method: "cor"
 strategy: "specific_univariate"
 new_hdiag: 1
-write_cmat: 0
+write_hdiag: 1
 
 # model_param
 nl: 2
@@ -21,13 +21,12 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-sam_write: 1
-sam_write_grids: 1
+write_samp_local: 1
+write_samp_grids: 1
 nc1: 500
 nc2: 250
-ntry: 30
 nc3: 15
-dc: [400.0e3]
+dc: 400.0e3
 nl0r: 2
 
 # diag_param

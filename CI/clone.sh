@@ -1,8 +1,8 @@
-#!/bin/bash 
+#!/bin/bash
 
 # clones specific branch of a given repo
 # if branch does not exist clones develop
- 
+
 git_user=$1
 git_token=$2
 org_repo_name=$3

@@ -1,0 +1,41 @@
+# general_param
+datadir: "testdata"
+prefix: "bump_read_vbal_global/test__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+load_vbal: 1
+check_vbal: 1
+check_adjoints: 1
+check_dirac: 1
+
+# model_param
+nl: 4
+levs: [1,2,3,4]
+nv: 3
+variables: ["u","q","cosu_plus_q2"]
+
+# ens1_param
+
+# ens2_param
+
+# sampling_param
+load_samp_global: 1
+
+# diag_param
+vbal_block: [1,1,1]
+
+# fit_param
+
+# nicas_param
+
+# dirac_param
+ndir: 1
+londir: [-85.0]
+latdir: [65.0]
+levdir: [1]
+ivdir: [1]
+itsdir: [1]
+
+# output_param
+

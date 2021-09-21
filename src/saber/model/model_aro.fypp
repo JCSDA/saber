@@ -15,7 +15,7 @@ type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,ilon,ilat,il0,il0_bot,il0_top,ie
-integer :: ncid,nlon_id,nlat_id,nlev_id,pp_id,lon_id,lat_id,cmask_id,a_id,b_id,fld_id,mask_id
+integer :: ncid,lon_id,lat_id,cmask_id,a_id,b_id,pp_id,fld_id,mask_id
 integer,allocatable :: mask_counter(:)
 real(kind_real) :: dx,dy
 real(kind_real),allocatable :: lon(:,:),lat(:,:),cmask(:,:),a(:),b(:),fld_loc(:,:),fld(:,:)
@@ -30,14 +30,11 @@ character(len=1024) :: filename
 
 ! Open file and get dimensions
 model%ntile = 1
-call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'X',nlon_id))
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'Y',nlat_id))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
+ncid = open_file(mpl,'grid',0)
+model%nlon = inquire_dim_size(mpl,ncid,'X')
+model%nlat = inquire_dim_size(mpl,ncid,'Y')
 model%nmg = model%nlon*model%nlat
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'Z',nlev_id))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
+model%nlev = inquire_dim_size(mpl,ncid,'Z')
 
 ! Allocation
 call model%alloc
@@ -48,20 +45,20 @@ allocate(a(model%nlev+1))
 allocate(b(model%nlev+1))
 
 ! Read data and close file
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'longitude',lon_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'latitude',lat_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'cmask',cmask_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'hybrid_coef_A',a_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'hybrid_coef_B',b_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'Projection_parameters',pp_id))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lon_id,lon))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lat_id,lat))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,cmask_id,cmask))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,a_id,a))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,b_id,b))
-call mpl%ncerr('${subr}$',nf90_get_att(ncid,pp_id,'x_resolution',dx))
-call mpl%ncerr('${subr}$',nf90_get_att(ncid,pp_id,'y_resolution',dy))
-call mpl%ncerr('${subr}$',nf90_close(ncid))
+lon_id = inquire_var(mpl,ncid,'longitude')
+lat_id = inquire_var(mpl,ncid,'latitude')
+cmask_id = inquire_var(mpl,ncid,'cmask')
+a_id = inquire_var(mpl,ncid,'hybrid_coef_A')
+b_id = inquire_var(mpl,ncid,'hybrid_coef_B')
+pp_id = inquire_var(mpl,ncid,'Projection_parameters')
+call get_var(mpl,ncid,lon_id,lon)
+call get_var(mpl,ncid,lat_id,lat)
+call get_var(mpl,ncid,cmask_id,cmask)
+call get_var(mpl,ncid,a_id,a)
+call get_var(mpl,ncid,b_id,b)
+call get_att(mpl,ncid,'x_resolution',dx,pp_id)
+call get_att(mpl,ncid,'y_resolution',dy,pp_id)
+call close_file(mpl,ncid)
 
 ! Convert to radian
 lon = lon*deg2rad
@@ -100,16 +97,16 @@ case ("hyd")
    allocate(fld_loc(model%nlon,model%nlat))
 
    ! Open file
-   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(nam%prefix)//'_hyd.nc',nf90_nowrite,ncid))
+   ncid = open_file(mpl,trim(nam%prefix)//'_hyd',0)
 
    ! Read mask
    do il0=1,nam%nl
       ! Get id
       write(ilchar,'(i3.3)') nam%levs(il0)
-      call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'S'//ilchar//'MASK',mask_id))
+      mask_id = inquire_var(mpl,ncid,'S'//ilchar//'MASK')
 
       ! Read data
-      call mpl%ncerr('${subr}$',nf90_get_var(ncid,mask_id,fld_loc))
+      call get_var(mpl,ncid,mask_id,fld_loc)
 
       ! Pack data
       img = 0
@@ -122,7 +119,7 @@ case ("hyd")
    end do
 
    ! Close file
-   call mpl%ncerr('${subr}$',nf90_close(ncid))
+   call close_file(mpl,ncid)
 
    ! Release memory
    deallocate(fld_loc)
@@ -154,16 +151,16 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
       write(filename,'(a,i6.6)') 'ens1_',ie
 
       ! Open file
-      call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+      ncid = open_file(mpl,filename,0)
 
       ! Read LWC
       do il0=1,nam%nl
          ! Get id
          write(ilchar,'(i3.3)') nam%levs(il0)
-         call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'S'//ilchar//'CLOUD_WATER',fld_id))
+         fld_id = inquire_var(mpl,ncid,'S'//ilchar//'CLOUD_WATER')
 
          ! Read data
-         call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_loc))
+         call get_var(mpl,ncid,fld_id,fld_loc)
 
          ! Pack data
          img = 0
@@ -176,7 +173,7 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
       end do
 
       ! Close file
-      call mpl%ncerr('${subr}$',nf90_close(ncid))
+      call close_file(mpl,ncid)
 
       ! Update mask
       select case (trim(nam%mask_type))
@@ -240,7 +237,7 @@ character(len=*),intent(in) :: filename                         !< File name
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
-integer :: iv,il0,img,ilon,ilat,info,iv_q,iv_lwc
+integer :: iv,il0,img,ilon,ilat,iv_q,iv_lwc
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
@@ -257,7 +254,7 @@ if (mpl%main) then
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   ncid = open_file(mpl,filename,0)
 end if
 
 do iv=1,nam%nv
@@ -265,20 +262,20 @@ do iv=1,nam%nv
       do il0=1,nam%nl
          ! Get id
          write(ilchar,'(i3.3)') nam%levs(il0)
-         info = nf90_inq_varid(ncid,'S'//ilchar//trim(nam%variables(iv)),fld_id)
+         fld_id = inquire_var(mpl,ncid,'S'//ilchar//trim(nam%variables(iv)))
 
          ! Read data
-         if (info==nf90_noerr) then
+         if (mpl%msv%isnot(fld_id)) then
             ! 3D data
-            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
+            call get_var(mpl,ncid,fld_id,fld_tmp(:,:,il0))
          else
             ! Check if the variable exists as 2D data
-            call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,nam%variables(iv),fld_id))
+            fld_id = inquire_var(mpl,ncid,nam%variables(iv))
 
             ! 2D data
             if (((trim(nam%lev2d)=='first').and.(il0==1)).or.((trim(nam%lev2d)=='last').and.(il0==model%nl0))) then
                fld_tmp = mpl%msv%valr
-               call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0)))
+               call get_var(mpl,ncid,fld_id,fld_tmp(:,:,il0))
             end if
          end if
       end do
@@ -292,12 +289,12 @@ do iv=1,nam%nv
          end do
       end do
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 if (mpl%main) then
    ! Close file
-   call mpl%ncerr('${subr}$',nf90_close(ncid))
+   call close_file(mpl,ncid)
 
    ! Release memory
    deallocate(fld_tmp)

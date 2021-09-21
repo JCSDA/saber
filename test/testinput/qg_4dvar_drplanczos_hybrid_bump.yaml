@@ -23,12 +23,12 @@ cost function:
         localization:
           bump:
             datadir: testdata
+            fname_nicas: qg_parameters_bump_loc/test_nicas
             io_keys:
             - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
             io_values:
             - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
-            load_nicas: 1
-            mpicom: 2
+            load_nicas_local: 1
             prefix: qg_4dvar_drplanczos_hybrid_bump/test
             strategy: common
           localization method: BUMP
@@ -68,7 +68,7 @@ cost function:
   - obs error:
       covariance model: diagonal
     obs operator:
-      obs type: Stream  
+      obs type: Stream
     obs space:
       obsdatain:
         obsfile: testdata/truth.obs4d_24h.nc
@@ -78,7 +78,7 @@ cost function:
   - obs error:
       covariance model: diagonal
     obs operator:
-      obs type: Wind  
+      obs type: Wind
     obs space:
       obsdatain:
         obsfile: testdata/truth.obs4d_24h.nc
@@ -94,7 +94,7 @@ cost function:
         obsfile: testdata/truth.obs4d_24h.nc
       obsdataout:
         obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: WSpeed  
+      obs type: WSpeed
   constraints:
   - jcdfi:
       filtered variables: [x]
@@ -150,3 +150,7 @@ output:
   first: PT0S
   frequency: PT6H
   type: an
+
+test:
+  reference filename: testref/qg_4dvar_drplanczos_hybrid_bump/test.log.out
+  test output filename: testoutput/qg_4dvar_drplanczos_hybrid_bump/test.log.out

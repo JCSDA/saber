@@ -16,6 +16,7 @@ LocalizationBUMP.h
 LocalizationID.h
 OoBump.h
 ParametersBUMP.h
+PsiChiToUVVariableChange.h
 StatsVariableChange.h
 StdDevVariableChange.h
 

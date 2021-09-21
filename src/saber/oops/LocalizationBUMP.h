@@ -15,9 +15,8 @@
 
 #include "eckit/config/Configuration.h"
 
-#include "oops/base/LocalizationBase.h"
 #include "oops/base/Variables.h"
-#include "oops/util/DateTime.h"
+#include "oops/generic/LocalizationBase.h"
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
@@ -45,11 +44,11 @@ class LocalizationBUMP : public oops::LocalizationBase<MODEL> {
   typedef ParametersBUMP<MODEL>                           ParametersBUMP_;
 
  public:
-  LocalizationBUMP(const Geometry_ &, const util::DateTime & time, const eckit::Configuration &);
+  LocalizationBUMP(const Geometry_ &, const eckit::Configuration &);
   ~LocalizationBUMP();
 
-  void doRandomize(Increment_ &) const override;
-  void doMultiply(Increment_ &) const override;
+  void randomize(Increment_ &) const override;
+  void multiply(Increment_ &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -61,7 +60,6 @@ class LocalizationBUMP : public oops::LocalizationBase<MODEL> {
 
 template<typename MODEL>
 LocalizationBUMP<MODEL>::LocalizationBUMP(const Geometry_ & resol,
-                                          const util::DateTime & time,
                                           const eckit::Configuration & conf)
   : ooBump_()
 {
@@ -71,7 +69,7 @@ LocalizationBUMP<MODEL>::LocalizationBUMP(const Geometry_ & resol,
   size_t myslot = resol.timeComm().rank();
   if (myslot == 0) {
   // Setup parameters
-    ParametersBUMP_ param(resol, vars, time, conf);
+    ParametersBUMP_ param(resol, vars, vars, conf);
 
   // Transfer OoBump pointer
     ooBump_.reset(new OoBump_(param.getOoBump()));
@@ -90,19 +88,19 @@ LocalizationBUMP<MODEL>::~LocalizationBUMP() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void LocalizationBUMP<MODEL>::doRandomize(Increment_ & dx) const {
-  oops::Log::trace() << "LocalizationBUMP:doRandomize starting" << std::endl;
+void LocalizationBUMP<MODEL>::randomize(Increment_ & dx) const {
+  oops::Log::trace() << "LocalizationBUMP:randomize starting" << std::endl;
   ooBump_->randomize(dx);
-  oops::Log::trace() << "LocalizationBUMP:doRandomize done" << std::endl;
+  oops::Log::trace() << "LocalizationBUMP:randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void LocalizationBUMP<MODEL>::doMultiply(Increment_ & dx) const {
-  oops::Log::trace() << "LocalizationBUMP:doMultiply starting" << std::endl;
+void LocalizationBUMP<MODEL>::multiply(Increment_ & dx) const {
+  oops::Log::trace() << "LocalizationBUMP:multiply starting" << std::endl;
   ooBump_->multiplyNicas(dx);
-  oops::Log::trace() << "LocalizationBUMP:doMultiply done" << std::endl;
+  oops::Log::trace() << "LocalizationBUMP:multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

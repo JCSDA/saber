@@ -16,8 +16,8 @@ cost function:
   background error:
     bump:
       datadir: testdata
-      load_nicas: 1
-      mpicom: 2
+      fname_nicas: qg_parameters_bump_cov/test_nicas
+      load_nicas_local: 1
       prefix: qg_3dvar_bump/test
       strategy: specific_univariate
     covariance model: BUMP
@@ -27,6 +27,7 @@ cost function:
       output variables: [x]
       bump:
         datadir: testdata
+        fname_var: [qg_parameters_bump_cov/test_var]
         load_var: 1
         prefix: qg_3dvar_bump/test
   observations:
@@ -102,3 +103,7 @@ output:
   exp: test
   frequency: PT6H
   type: an
+
+test:
+  reference filename: testref/qg_3dvar_bump/test.log.out
+  test output filename: testoutput/qg_3dvar_bump/test.log.out

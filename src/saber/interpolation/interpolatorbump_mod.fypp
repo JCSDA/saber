@@ -15,14 +15,14 @@
 !----------------------------------------------------------------------
 module interpolatorbump_mod
 
-use atlas_module, only: atlas_functionspace,atlas_fieldset,atlas_field,atlas_real
+use atlas_module, only: atlas_functionspace,atlas_fieldset,atlas_field,atlas_integer,atlas_metadata,atlas_real
 use fckit_configuration_module, only: fckit_configuration
 use fckit_log_module, only: fckit_log
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 use iso_c_binding, only: c_char
 use tools_atlas, only: field_from_array,field_to_array,create_atlas_function_space
 use tools_const, only: zero,three,hundred,pi,deg2rad,rad2deg
-use tools_func, only: lonlatmod,sphere_dist
+use tools_func, only: lonlatmod,sphere_dist,inside,zss_count
 use tools_kinds, only: kind_int,kind_real
 use tools_repro, only: rth
 use type_bump, only: bump_type
@@ -34,7 +34,6 @@ use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
-use type_rng, only: rng_type
 
 implicit none
 
@@ -136,7 +135,7 @@ subroutine bint_init(bint,comm, &
                    & lon1d_out,lat1d_out, &
                    & lon_out,lat_out, &
                    & afunctionspace_out, &
-                   & nl,masks,config)
+                   & nl,fieldset,config)
 
 implicit none
 
@@ -154,15 +153,18 @@ real(kind_real),intent(in),optional :: lon_out(:)                   !< Output lo
 real(kind_real),intent(in),optional :: lat_out(:)                   !< Output latitudes [in degrees]
 type(atlas_functionspace),intent(in),optional :: afunctionspace_out !< Output ATLAS functionspace
 integer,intent(in),optional :: nl                                   !< Number of levels
-type(fieldset_type),intent(in),optional :: masks                    !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit), gmask (geometry mask) and smask (sampling mask). Each of these named fields is optional, if omitted default values will be provided
+type(fieldset_type),intent(in),optional :: fieldset                 !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit), gmask (geometry mask) and smask (sampling mask). Each of these named fields is optional, if omitted default values will be provided
 type(fckit_configuration),intent(in),optional :: config             !< Configuration
 
 ! Local variables
 integer :: msvali,inode,ilon,ilat
 real(kind_real) :: msvalr
 real(kind_real),allocatable :: lon(:),lat(:)
+logical :: unique_points
 type(fckit_configuration) :: bump_config
-type(fieldset_type) :: lmasks
+type(atlas_field) :: afield
+type(atlas_metadata) :: ametadata
+type(fieldset_type) :: lfieldset
 
 ! Set name
 @:set_name(bint_init)
@@ -187,11 +189,13 @@ else
 end if
 bint%bump%nam%nv = 1
 bint%bump%nam%variables(1) = 'var'
-bint%bump%nam%interp_type = 'mesh_based'
 
 ! Default missing values for integers and reals
 msvali = -999
 msvalr = -999.0_kind_real
+
+! By default, input grid contains unique points only
+unique_points = .true.
 
 if (present(config)) then
    ! Optionally override defaults with BUMP config
@@ -206,6 +210,9 @@ if (present(config)) then
    ! Optionally set missing values for integers and reals
    if (config%has('missingvalue_int')) call config%get_or_die('missingvalue_int',msvali)
    if (config%has('missingvalue_real')) call config%get_or_die('missingvalue_real',msvalr)
+
+   ! Optionnaly set unique_points flag
+   if (config%has('unique_points')) call config%get_or_die('unique_points',unique_points)
 end if
 
 ! Input ATLAS functionspace
@@ -264,22 +271,36 @@ else
    call comm%abort(1)
 end if
 
+! Local fieldset
+if (present(fieldset)) then
+   lfieldset = fieldset
+else
+   lfieldset = atlas_fieldset()
+end if
+
+! Set metadata
+if (lfieldset%has_field('meta')) then
+   afield = lfieldset%field('meta')
+else
+   afield = atlas_field(name='meta',kind=atlas_integer(kind_int),shape=(/0/))
+   call lfieldset%add(afield)
+end if
+ametadata = afield%metadata()
+call ametadata%set('unique_points',unique_points)
+
 ! Initialize BUMP
 
 ! Clear any pre-existing data
 call bint%delete
 
-! Basic BUMP setup
-if (present(masks)) then
-   lmasks = masks
-else
-   lmasks = atlas_fieldset()
-end if
-call bint%bump%setup(comm,bint%afunctionspace_in,lmasks,msvali=msvali,msvalr=msvalr)
+! BUMP setup
+call bint%bump%setup(comm,bint%afunctionspace_in,lfieldset,msvali=msvali,msvalr=msvalr)
 
 ! Initialize output grid
-call fckit_log%info('-------------------------------------------------------------------')
-call fckit_log%info('--- Initialize output grid')
+if (bint%bump%mpl%main) then
+   call fckit_log%info('-------------------------------------------------------------------')
+   call fckit_log%info('--- Initialize output grid')
+end if
 
 ! Unpack output grid from output functionspace
 bint%geom_out%nl0 = bint%bump%nam%nl
@@ -290,15 +311,22 @@ bint%nouta = size(bint%geom_out%lon_mga)
 call bint%bump%run_drivers
 
 ! Run interpolation driver
-call fckit_log%info('-------------------------------------------------------------------')
-call fckit_log%info('--- Run bump_interpolation driver')
-call bint%driver(bint%bump%mpl,bint%bump%rng,bint%bump%nam,bint%bump%geom)
-if (bint%bump%nam%default_seed) call bint%bump%rng%reseed(bint%bump%mpl)
+if (bint%bump%mpl%main) then
+   call fckit_log%info('-------------------------------------------------------------------')
+   call fckit_log%info('--- Run bump_interpolation driver')
+end if
+call bint%driver(bint%bump%mpl,bint%bump%nam,bint%bump%geom)
 
 ! Release memory (partial)
-call fckit_log%info('-------------------------------------------------------------------')
-call fckit_log%info('--- Release memory (partial)')
+if (bint%bump%mpl%main) then
+   call fckit_log%info('-------------------------------------------------------------------')
+   call fckit_log%info('--- Release memory (partial)')
+end if
 call bint%bump%partial_dealloc
+call bint%geom_out%partial_dealloc
+if (.not.present(fieldset)) call lfieldset%final()
+call afield%final()
+call ametadata%final()
 
 ! Probe out
 @:probe_out()
@@ -309,14 +337,13 @@ end subroutine bint_init
 ! Subroutine: bint_driver
 !> Initialize BUMP to perform interpolation
 !----------------------------------------------------------------------
-subroutine bint_driver(bint,mpl,rng,nam,geom)
+subroutine bint_driver(bint,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 type(mpl_type),intent(inout) :: mpl            !< MPI data
-type(rng_type),intent(inout) :: rng            !< Random number generator
 type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 
@@ -341,14 +368,10 @@ logical :: maskouta(bint%nouta),lcheck_nc0b(geom%nc0)
 ! Check that universe is global
 if (any(.not.geom%myuniverse)) call mpl%abort('${subr}$','universe should be global for interpolation')
 
-! Check whether output grid points are inside the mesh
+! Check whether output grid points are inside the hull boundaries
 if (bint%nouta > 0) then
    do iouta=1,bint%nouta
-      if (trim(bint%bump%nam%interp_type)=='mesh_based') then
-         call geom%mesh_c0u%inside(mpl,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
-      elseif (trim(bint%bump%nam%interp_type)=='tree_based') then
-         call geom%tree_c0u%inside(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
-      end if
+      call inside(mpl,bint%bump%geom%mesh_c0u%vbnd,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
       if (.not.maskouta(iouta)) then
          ! Check for very close points
          call geom%tree_c0u%find_nearest_neighbors(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta), &
@@ -356,7 +379,7 @@ if (bint%nouta > 0) then
          if (nn_dist(1)<rth) maskouta(iouta) = .true.
       end if
    end do
-   nouta_eff = count(maskouta)
+   nouta_eff = zss_count(maskouta)
 else
    nouta_eff = 0
 end if
@@ -381,8 +404,8 @@ call mpl%flush
 bint%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call bint%h%interp(mpl,rng,nam,geom,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,geom%area_max_c0u,bint%nouta, &
- & bint%geom_out%lon_mga,bint%geom_out%lat_mga,maskouta,10)
+call bint%h%interp(mpl,nam,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,geom%mesh_c0u,geom%tree_c0u, &
+ & bint%nouta,bint%geom_out%lon_mga,bint%geom_out%lat_mga,maskouta,geom%mesh_c0u,10)
 
 ! Define halo B
 lcheck_nc0b = .false.
@@ -396,7 +419,7 @@ do iouta=1,bint%nouta
       lcheck_nc0b(jc0u) = .true.
    end do
 end do
-bint%nc0b = count(lcheck_nc0b)
+bint%nc0b = zss_count(lcheck_nc0b)
 
 ! Allocation
 allocate(c0b_to_c0(bint%nc0b))

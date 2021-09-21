@@ -15,7 +15,7 @@ type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,ilon,ilat
-integer :: ncid,nlon_id,nlat_id,nlev_id,lon_id,lat_id,a_id,b_id
+integer :: ncid,lon_id,lat_id,a_id,b_id
 real(kind_double),allocatable :: lon(:),lat(:),a(:),b(:)
 
 ! Set name
@@ -26,14 +26,11 @@ real(kind_double),allocatable :: lon(:),lat(:),a(:),b(:)
 
 ! Open file and get dimensions
 model%ntile = 1
-call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'lon',nlon_id))
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'lat',nlat_id))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
+ncid = open_file(mpl,'grid',0)
+model%nlon = inquire_dim_size(mpl,ncid,'lon')
+model%nlat = inquire_dim_size(mpl,ncid,'lat')
 model%nmg = model%nlon*model%nlat
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'lev',nlev_id))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
+model%nlev = inquire_dim_size(mpl,ncid,'lev')
 
 ! Allocation
 call model%alloc
@@ -43,15 +40,15 @@ allocate(a(model%nlev))
 allocate(b(model%nlev))
 
 ! Read data and close file
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'lon',lon_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'lat',lat_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'ap',a_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'b',b_id))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lon_id,lon))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lat_id,lat))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,a_id,a))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,b_id,b))
-call mpl%ncerr('${subr}$',nf90_close(ncid))
+lon_id = inquire_var(mpl,ncid,'lon')
+lat_id = inquire_var(mpl,ncid,'lat')
+a_id = inquire_var(mpl,ncid,'ap')
+b_id = inquire_var(mpl,ncid,'b')
+call get_var(mpl,ncid,lon_id,lon)
+call get_var(mpl,ncid,lat_id,lat)
+call get_var(mpl,ncid,a_id,a)
+call get_var(mpl,ncid,b_id,b)
+call close_file(mpl,ncid)
 
 ! Convert to radian
 lon = lon*deg2rad
@@ -109,7 +106,7 @@ character(len=*),intent(in) :: filename                         !< File name
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
-integer :: iv,il0,img,ilon,ilat,ndims
+integer :: iv,il0,img,ilon,ilat,rank
 integer :: ncid,fld_id
 integer,allocatable :: fld_tmp_int(:,:)
 real(kind_real) :: add_offset,scale_factor
@@ -128,22 +125,28 @@ if (mpl%main) then
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   ncid = open_file(mpl,filename,0)
 end if
 
 do iv=1,nam%nv
    if (mpl%main) then
-      ! Get variable id
-      call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,nam%variables(iv),fld_id))
+      ! Get variable ID
+      fld_id = inquire_var(mpl,ncid,nam%variables(iv))
 
-      ! Check variable type and read data
-      call mpl%ncerr('${subr}$',nf90_inquire_variable(ncid,fld_id,ndims=ndims))
-      call mpl%ncerr('${subr}$',nf90_get_att(ncid,fld_id,'add_offset',add_offset))
-      call mpl%ncerr('${subr}$',nf90_get_att(ncid,fld_id,'scale_factor',scale_factor))
-      select case (ndims)
+      ! Get variable rank
+      rank = inquire_var_rank(mpl,ncid,nam%variables(iv))
+
+      ! Get offset and factor
+      call get_att(mpl,ncid,'add_offset',add_offset,fld_id)
+      call get_att(mpl,ncid,'scale_factor',scale_factor,fld_id)
+
+      ! Read data
+      select case (rank)
       case (2)
          ! 2D data
-         call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp_int,(/1,1/),(/model%nlon,model%nlat/)))
+         call get_var(mpl,ncid,fld_id,fld_tmp_int,(/1,1/),(/model%nlon,model%nlat/))
+
+         ! Convert integer to real
          fld_tmp = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
             fld_tmp(:,:,1) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
@@ -151,9 +154,11 @@ do iv=1,nam%nv
             fld_tmp(:,:,model%nl0) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
          end if
       case (3)
-         ! 3D data
          do il0=1,nam%nl
-            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp_int,(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/)))
+            ! 3D data
+            call get_var(mpl,ncid,fld_id,fld_tmp_int,(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/))
+
+            ! Convert integer to real
             fld_tmp(:,:,il0) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
          end do
       case default
@@ -169,12 +174,12 @@ do iv=1,nam%nv
          end do
       end do
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 if (mpl%main) then
    ! Close file
-   call mpl%ncerr('${subr}$',nf90_close(ncid))
+   call close_file(mpl,ncid)
 
    ! Release memory
    deallocate(fld_tmp_int)

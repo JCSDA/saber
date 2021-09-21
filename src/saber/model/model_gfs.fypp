@@ -15,7 +15,7 @@ type(nam_type),intent(in) :: nam         !< Namelist
 
 ! Local variables
 integer :: img,ilon,ilat
-integer :: ncid,nlon_id,nlat_id,nlev_id,lon_id,lat_id,a_id,b_id
+integer :: ncid,lon_id,lat_id,a_id,b_id
 real(kind_real),allocatable :: lon(:),lat(:),a(:),b(:)
 
 ! Set name
@@ -26,14 +26,11 @@ real(kind_real),allocatable :: lon(:),lat(:),a(:),b(:)
 
 ! Open file and get dimensions
 model%ntile = 1
-call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/grid.nc',nf90_share,ncid))
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'longitude',nlon_id))
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'latitude',nlat_id))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlon_id,len=model%nlon))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlat_id,len=model%nlat))
+ncid = open_file(mpl,'grid',0)
+model%nlon = inquire_dim_size(mpl,ncid,'longitude')
+model%nlat = inquire_dim_size(mpl,ncid,'latitude')
 model%nmg = model%nlon*model%nlat
-call mpl%ncerr('${subr}$',nf90_inq_dimid(ncid,'level',nlev_id))
-call mpl%ncerr('${subr}$',nf90_inquire_dimension(ncid,nlev_id,len=model%nlev))
+model%nlev = inquire_dim_size(mpl,ncid,'level')
 
 ! Allocation
 call model%alloc
@@ -43,15 +40,15 @@ allocate(a(model%nlev+1))
 allocate(b(model%nlev+1))
 
 ! Read data and close file
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'longitude',lon_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'latitude',lat_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'ak',a_id))
-call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,'bk',b_id))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lon_id,lon))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,lat_id,lat))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,a_id,a))
-call mpl%ncerr('${subr}$',nf90_get_var(ncid,b_id,b))
-call mpl%ncerr('${subr}$',nf90_close(ncid))
+lon_id = inquire_var(mpl,ncid,'longitude')
+lat_id = inquire_var(mpl,ncid,'latitude')
+a_id = inquire_var(mpl,ncid,'ak')
+b_id = inquire_var(mpl,ncid,'bk')
+call get_var(mpl,ncid,lon_id,lon)
+call get_var(mpl,ncid,lat_id,lat)
+call get_var(mpl,ncid,a_id,a)
+call get_var(mpl,ncid,b_id,b)
+call close_file(mpl,ncid)
 
 ! Convert to radian
 lon = lon*deg2rad
@@ -126,13 +123,13 @@ if (mpl%main) then
    allocate(fld_tmp(model%nlon,model%nlat,model%nl0))
 
    ! Open file
-   call mpl%ncerr('${subr}$',nf90_open(trim(nam%datadir)//'/'//trim(filename)//'.nc',nf90_nowrite,ncid))
+   ncid = open_file(mpl,filename,0)
 end if
 
 do iv=1,nam%nv
    if (mpl%main) then
       ! Get variable id
-      call mpl%ncerr('${subr}$',nf90_inq_varid(ncid,nam%variables(iv),fld_id))
+      fld_id = inquire_var(mpl,ncid,nam%variables(iv))
 
 
       ! Read data
@@ -141,14 +138,14 @@ do iv=1,nam%nv
          ! 2D data
          fld_tmp = mpl%msv%valr
          if (trim(nam%lev2d)=='first') then
-            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,1),(/1,1/),(/model%nlon,model%nlat/)))
+            call get_var(mpl,ncid,fld_id,fld_tmp(:,:,1),(/1,1/),(/model%nlon,model%nlat/))
          elseif (trim(nam%lev2d)=='last') then
-            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1/),(/model%nlon,model%nlat/)))
+            call get_var(mpl,ncid,fld_id,fld_tmp(:,:,model%nl0),(/1,1/),(/model%nlon,model%nlat/))
          end if
       case (3)
          ! 3D data
          do il0=1,nam%nl
-            call mpl%ncerr('${subr}$',nf90_get_var(ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/)))
+            call get_var(mpl,ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/))
          end do
       case default
          call mpl%abort('${subr}$','wrong number of dimensions for variable '//trim(nam%variables(iv)))
@@ -163,12 +160,12 @@ do iv=1,nam%nv
          end do
       end do
    end if
-   call mpl%glb_to_loc(model%nl0,model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
+   call mpl%glb_to_loc(model%nmga,model%nmg,model%mga_to_mg,fld_mg,fld(:,:,iv))
 end do
 
 if (mpl%main) then
    ! Close file
-   call mpl%ncerr('${subr}$',nf90_close(ncid))
+   call close_file(mpl,ncid)
 
    ! Release memory
    deallocate(fld_tmp)

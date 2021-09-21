@@ -64,9 +64,7 @@ real(kind_real) :: w,x
 ii = 0
 j = 1
 k = 0
-if (nn/=(n*(n+1))/2) then
-   call mpl%abort('${subr}$','wrong size in Cholesky decomposition')
-end if
+if (nn/=(n*(n+1))/2) call mpl%abort('${subr}$','wrong size in Cholesky decomposition')
 w = zero
 
 ! Factorize column by column, ICOL = column number

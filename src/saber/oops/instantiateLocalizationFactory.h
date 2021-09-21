@@ -12,7 +12,7 @@
 #ifndef SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_
 #define SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_
 
-#include "oops/base/LocalizationBase.h"
+#include "oops/generic/LocalizationBase.h"
 #include "saber/oops/LocalizationBUMP.h"
 #include "saber/oops/LocalizationID.h"
 

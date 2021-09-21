@@ -46,21 +46,27 @@ phases:
       - echo ${CODEBUILD_GIT_BRANCH} > /jcsda/artifacts/branch_name.txt
       - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} > /jcsda/artifacts/commit_sha.txt
 
+      # initialization
       - cd CI
 
       # jedi-cmake
       - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/jedi-cmake $CODEBUILD_GIT_BRANCH jedicmake /jcsda/saber-bundle develop
+
       # oops
       - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/oops $CODEBUILD_GIT_BRANCH oops /jcsda/saber-bundle develop
+
       # saber
       - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/saber $CODEBUILD_GIT_BRANCH saber /jcsda/saber-bundle develop
+
+      # saber-data
+      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/saber-data $CODEBUILD_GIT_BRANCH saber-data /jcsda/saber-bundle develop
 
       # move CMakeLists.txt
       - cp CMakeLists.txt /jcsda/saber-bundle
       - cp -r cmake /jcsda/saber-bundle/
+
       # cdash upload setup
       - cp /jcsda/saber-bundle/cmake/CTestConfig.cmake /jcsda/saber-bundle/
-
       - chmod -R 777 /jcsda/saber-bundle
 
   build:
@@ -85,7 +91,7 @@ phases:
         && sed -i 's/saber-bundle/saber-bundle\/saber/' DartConfiguration.tcl
         && sed -i 's/jedi/jedi\/saber/' DartConfiguration.tcl
         && cat DartConfiguration.tcl
-        && make -j4"
+        && ctest -C RelWithDebInfo -V -D ExperimentalBuild -j4"
 
       - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
         then export BUILD_STATUS="1";

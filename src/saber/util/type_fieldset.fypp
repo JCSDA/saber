@@ -10,8 +10,10 @@
 module type_fieldset
 
 use atlas_module, only: atlas_fieldset,atlas_field,atlas_functionspace,atlas_real
-use tools_atlas, only: field_to_array,field_from_array
-use tools_const, only: zero
+use fckit_mpi_module, only: fckit_mpi_sum
+use tools_atlas, only: field_to_array,field_from_array,get_atlas_field_size
+use tools_const, only: zero,one
+use tools_func, only: zss_sum
 use tools_kinds, only: kind_real
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -19,15 +21,15 @@ use type_mpl, only: mpl_type
 implicit none
 
 type,extends(atlas_fieldset) :: fieldset_type
+   logical,allocatable :: mask3d(:,:)              ! 3D mask
    character(len=1024),allocatable :: variables(:) ! Variables names
    character(len=1024) :: lev2d                    ! Level for 2D variables
-   integer :: il2d                                 ! Level index for 2D variables
-   logical,allocatable :: mask3d(:,:)              ! 3D mask
-   real(kind_real) :: msvalr                       ! Missing value (real)
 contains
-   procedure :: init => fieldset_init
-   procedure :: copy_fields => fieldset_copy_fields
-   procedure :: pass_fields => fieldset_pass_fields
+   procedure :: fieldset_init_from_functionspace
+   procedure :: fieldset_init_from_fieldset
+   generic :: init => fieldset_init_from_functionspace,fieldset_init_from_fieldset
+   procedure :: set_metadata => fieldset_set_metadata
+   procedure :: print => fieldset_print
    procedure :: zero_fields => fieldset_zero_fields
    procedure :: add_fields => fieldset_add_fields
    procedure :: sub_fields => fieldset_sub_fields
@@ -37,6 +39,10 @@ contains
    procedure :: div_fields => fieldset_div_fields
    procedure :: square_fields => fieldset_square_fields
    procedure :: sqrt_fields => fieldset_sqrt_fields
+   procedure :: fieldset_check_single
+   procedure :: fieldset_check_pair
+   generic :: check => fieldset_check_single,fieldset_check_pair
+   procedure :: apply_mask => fieldset_apply_mask
    procedure :: fieldset_to_array_single
    procedure :: fieldset_to_array_all
    generic :: to_array => fieldset_to_array_single,fieldset_to_array_all
@@ -51,29 +57,27 @@ public :: fieldset_type
 contains
 
 !----------------------------------------------------------------------
-! Subroutine: fieldset_init
-!> Initialized fieldset
+! Subroutine: fieldset_init_from_functionspace
+!> Initialize fieldset from function space
 !----------------------------------------------------------------------
-subroutine fieldset_init(fieldset,mpl,nmga,nl,gmask,variables,lev2d,afunctionspace)
+subroutine fieldset_init_from_functionspace(fieldset,mpl,afunctionspace,gmask,variables,lev2d)
 
 implicit none
 
 ! Passed variables
-class(fieldset_type),intent(inout) :: fieldset                  !< Fieldset
-type(mpl_type),intent(inout) :: mpl                             !< MPI data
-integer,intent(in) :: nmga                                      !< Number of gridpoints
-integer,intent(in) :: nl                                        !< Number of levels
-logical,intent(in) :: gmask(nmga,nl)                            !< Geographical mask
-character(len=*),intent(in) :: variables(:)                     !< Variables names
-character(len=*),intent(in) :: lev2d                            !< Level for 2D variables
-type(atlas_functionspace),intent(in),optional :: afunctionspace !< ATLAS function space
+class(fieldset_type),intent(inout) :: fieldset         !< Fieldset
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(atlas_functionspace),intent(in) :: afunctionspace !< Function space
+logical,intent(in) :: gmask(:,:)                       !< Geographical mask
+character(len=*),intent(in) :: variables(:)            !< Variables names
+character(len=*),intent(in) :: lev2d                   !< Level for 2D variables
 
 ! Local variables
-integer :: iv
+integer :: nmga,nl0,nv,iv
 type(atlas_field) :: afield
 
 ! Set name
-@:set_name(fieldset_init)
+@:set_name(fieldset_init_from_functionspace)
 
 ! Probe in
 @:probe_in()
@@ -81,152 +85,316 @@ type(atlas_field) :: afield
 ! Initialization
 if (fieldset%is_null()) fieldset = atlas_fieldset()
 
-! Allocation
-if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(nmga,nl))
-if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(size(variables)))
+! Get number of nodes
+nmga = size(gmask,1)
 
-! Copy
+! Get number of levels
+nl0 = size(gmask,2)
+
+! Get number of variables
+nv = size(variables)
+
+! Allocation
+if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(nmga,nl0))
+if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(nv))
+
+! Copy mask, variables and lev2d
 fieldset%mask3d = gmask
-fieldset%msvalr = mpl%msv%valr
-do iv=1,size(variables)
+do iv=1,nv
    fieldset%variables(iv) = trim(variables(iv))
 end do
-if (trim(lev2d)=='first') then
-   fieldset%il2d = 1
-elseif (trim(lev2d)=='last') then
-   fieldset%il2d = nl
-else
-   call mpl%abort('${subr}$','wrong lev2d in fieldset')
-end if
 fieldset%lev2d = trim(lev2d)
 
-if (present(afunctionspace)) then
-   ! Create (empty) fields if necessary
-   do iv=1,size(variables)
-      ! Check field existence
-      if (.not.fieldset%has_field(variables(iv))) then
-         ! Create field
-         afield = afunctionspace%create_field(name=variables(iv),kind=atlas_real(kind_real),levels=nl)
+! Create fields if necessary
+do iv=1,nv
+   ! Check field existence
+   if (.not.fieldset%has_field(fieldset%variables(iv))) then
+      ! Create output field
+      afield = afunctionspace%create_field(name=fieldset%variables(iv),kind=atlas_real(kind_real),levels=nl0)
 
-         ! Add field
-         call fieldset%add(afield)
+      ! Add field
+      call fieldset%add(afield)
 
-         ! Release pointer
-         call afield%final()
-      end if
+      ! Release pointer
+      call afield%final()
+   end if
+end do
+
+! Check fieldset
+call fieldset%check(mpl)
+
+! Probe out
+@:probe_out()
+
+end subroutine fieldset_init_from_functionspace
+
+!----------------------------------------------------------------------
+! Subroutine: fieldset_init_from_fieldset
+!> Initialize fieldset from another fieldset
+!----------------------------------------------------------------------
+subroutine fieldset_init_from_fieldset(fieldset_out,mpl,fieldset_in,gmask,variables,lev2d,copy,pass)
+
+implicit none
+
+! Passed variables
+class(fieldset_type),intent(inout) :: fieldset_out   !< Output fieldset
+type(mpl_type),intent(inout) :: mpl                  !< MPI data
+type(fieldset_type),intent(in) :: fieldset_in        !< Input fieldset
+logical,intent(in),optional :: gmask(:,:)            !< Geographical mask
+character(len=*),intent(in),optional :: variables(:) !< Variables names
+character(len=*),intent(in),optional :: lev2d        !< Level for 2D variables
+logical,intent(in),optional :: copy                  !< Copy fields data
+logical,intent(in),optional :: pass                  !< Pass fields pointers
+
+! Local variables
+integer :: nmga,nl0,nv,iv,nl
+real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:)
+real(kind_real),pointer :: ptr_1_out(:),ptr_2_out(:,:)
+logical :: lcopy,lpass
+type(atlas_field) :: afield_in,afield_out
+type(atlas_functionspace) :: afunctionspace
+
+! Set name
+@:set_name(fieldset_init_from_fieldset)
+
+! Probe in
+@:probe_in()
+
+! Local flag
+lcopy = .false.
+if (present(copy)) lcopy = copy
+lpass = .false.
+if (present(pass)) lpass = pass
+
+! Initialization
+if (fieldset_out%is_null()) fieldset_out = atlas_fieldset()
+
+if (present(gmask).and.present(variables).and.present(lev2d)) then
+   ! Get number of nodes
+   nmga = size(gmask,1)
+
+   ! Get number of levels
+   nl0 = size(gmask,2)
+
+   ! Get number of variables
+   nv = size(variables)
+
+   ! Allocation
+   if (.not.allocated(fieldset_out%mask3d)) allocate(fieldset_out%mask3d(nmga,nl0))
+   if (.not.allocated(fieldset_out%variables)) allocate(fieldset_out%variables(nv))
+
+   ! Copy mask and variables
+   fieldset_out%mask3d = gmask
+   do iv=1,nv
+      fieldset_out%variables(iv) = trim(variables(iv))
    end do
+   fieldset_out%lev2d = lev2d
+elseif (allocated(fieldset_in%mask3d).and.allocated(fieldset_in%variables)) then
+   ! Get number of nodes
+   nmga = size(fieldset_in%mask3d,1)
+
+   ! Get number of levels
+   nl0 = size(fieldset_in%mask3d,2)
+
+   ! Get number of variables
+   nv = size(fieldset_in%variables)
+
+   ! Allocation
+   if (.not.allocated(fieldset_out%mask3d)) allocate(fieldset_out%mask3d(nmga,nl0))
+   if (.not.allocated(fieldset_out%variables)) allocate(fieldset_out%variables(nv))
+
+   ! Copy mask, variables and lev2d
+   fieldset_out%mask3d = fieldset_in%mask3d
+   fieldset_out%variables = fieldset_in%variables
+   fieldset_out%lev2d = fieldset_in%lev2d
+else
+   call mpl%abort('${subr}$','inconsistent optional arguments')
 end if
 
-! Probe out
-@:probe_out()
-
-end subroutine fieldset_init
-
-!----------------------------------------------------------------------
-! Subroutine: fieldset_copy_fields
-!> Copy fieldset
-!----------------------------------------------------------------------
-subroutine fieldset_copy_fields(fieldset_out,fieldset_in)
-
-implicit none
-
-! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
-
-! Local variables
-integer :: iv,rank_in
-real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
-type(atlas_field) :: afield_in,afield_out
-
-! Set name
-@:set_name(fieldset_copy_fields)
-
-! Probe in
-@:probe_in()
-
-! Loop over fields
-do iv=1,size(fieldset_out%variables)
-   ! Fields
+! Pass or create/copy fields if necessary
+do iv=1,nv
+   ! Get input field
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
-   afield_out = fieldset_out%field(fieldset_out%variables(iv))
 
-   ! Rank of input field
-   rank_in = afield_in%rank()
-
-   ! Copy data
-   if (rank_in==1) then
-      call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_2_out)
-      ptr_2_out(fieldset_out%il2d,:) = ptr_1_in
+   if (lpass) then
+      ! Add field to output fieldset
+      call fieldset_out%add(afield_in)
    else
-      call afield_in%data(ptr_2_in)
-      call afield_out%data(ptr_2_out)
-      ptr_2_out = ptr_2_in
+      ! Check field existence
+      if (.not.fieldset_out%has_field(fieldset_out%variables(iv))) then
+         ! Get field function space
+         afunctionspace = afield_in%functionspace()
+
+         ! Get number of levels
+         nl = afield_in%levels()
+
+         ! Create output field
+         afield_out = afunctionspace%create_field(name=fieldset_out%variables(iv),kind=atlas_real(kind_real),levels=nl)
+
+         ! Add field
+         call fieldset_out%add(afield_out)
+      elseif (lcopy) then
+         ! Get output field
+         afield_out = fieldset_out%field(fieldset_out%variables(iv))
+      end if
+
+      ! Copy fields data
+      if (lcopy) then
+         select case (afield_in%rank())
+         case (1)
+            call afield_in%data(ptr_1_in)
+            call afield_out%data(ptr_1_out)
+            ptr_1_out = ptr_1_in
+         case (2)
+            call afield_in%data(ptr_2_in)
+            call afield_out%data(ptr_2_out)
+            ptr_2_out = ptr_2_in
+         case default
+            call mpl%abort('${subr}$','wrong field rank')
+         end select
+      end if
+
+      ! Release pointer
+      call afield_out%final()
    end if
 
-   ! Add field
-   call fieldset_out%add(afield_out)
-
-   ! Release pointers
+   ! Release pointer
    call afield_in%final()
-   call afield_out%final()
 end do
+
+! Check fieldset
+call fieldset_out%check(mpl)
 
 ! Probe out
 @:probe_out()
 
-end subroutine fieldset_copy_fields
+end subroutine fieldset_init_from_fieldset
 
 !----------------------------------------------------------------------
-! Subroutine: fieldset_pass_fields
-!> Pass ATLAS fields from a fieldset to another
+! Subroutine: fieldset_set_metadata
+!> Set metadata
 !----------------------------------------------------------------------
-subroutine fieldset_pass_fields(fieldset_out,fieldset_in)
-
-implicit none
-
-! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
-
-! Local variables
-integer :: iv
-type(atlas_field) :: afield
-
-! Set name
-@:set_name(fieldset_pass_fields)
-
-! Probe in
-@:probe_in()
-
-do iv=1,size(fieldset_out%variables)
-   ! Get input field
-   afield = fieldset_in%field(fieldset_out%variables(iv))
-
-   ! Add field to output fieldset
-   call fieldset_out%add(afield)
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine fieldset_pass_fields
-
-!----------------------------------------------------------------------
-! Subroutine: fieldset_zero_fields
-!> Set fieldset to zero
-!----------------------------------------------------------------------
-subroutine fieldset_zero_fields(fieldset)
+subroutine fieldset_set_metadata(fieldset,mpl,gmask,variables,lev2d)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+logical,intent(in) :: gmask(:,:)               !< Geographical mask
+character(len=*),intent(in) :: variables(:)    !< Variables names
+character(len=*),intent(in) :: lev2d           !< Level for 2D variables
 
 ! Local variables
-integer :: iv,i,il
-real(kind_real),pointer :: ptr_2(:,:)
+integer :: nmga,nl0,nv,iv
+
+! Set name
+@:set_name(fieldset_set_metadata)
+
+! Probe in
+@:probe_in()
+
+! Get number of nodes
+nmga = size(gmask,1)
+
+! Get number of levels
+nl0 = size(gmask,2)
+
+! Get number of variables
+nv = size(variables)
+
+! Allocation
+if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(nmga,nl0))
+if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(nv))
+
+! Copy mask and variables
+fieldset%mask3d = gmask
+do iv=1,nv
+   fieldset%variables(iv) = trim(variables(iv))
+end do
+fieldset%lev2d = trim(lev2d)
+
+! Check fieldset
+call fieldset%check(mpl)
+
+! Probe out
+@:probe_out()
+
+end subroutine fieldset_set_metadata
+
+!----------------------------------------------------------------------
+! Subroutine: fieldset_print
+!> Print active fields norm
+!----------------------------------------------------------------------
+subroutine fieldset_print(fieldset,mpl)
+
+implicit none
+
+! Passed variables
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+
+! Local variables
+integer :: iv
+real(kind_real) :: norm,norm_tot
+real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
+type(atlas_field) :: afield
+
+! Set name
+@:set_name(fieldset_print)
+
+! Probe in
+@:probe_in()
+
+! Check fieldset
+call fieldset%check(mpl)
+
+! Loop over fields
+do iv=1,size(fieldset%variables)
+   ! Field
+   afield = fieldset%field(fieldset%variables(iv))
+
+   ! Comute global norm
+   select case (afield%rank())
+   case (1)
+      call afield%data(ptr_1)
+      norm = zss_sum(ptr_1**2,mask=mpl%msv%isnot(ptr_1))
+   case (2)
+      call afield%data(ptr_2)
+      norm = zss_sum(ptr_2**2,mask=mpl%msv%isnot(ptr_2))
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
+   call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
+
+   ! Print norm
+   write(mpl%info,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm_tot
+   call mpl%flush
+
+   ! Release pointer
+   call afield%final()
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fieldset_print
+
+!----------------------------------------------------------------------
+! Subroutine: fieldset_zero_fields
+!> Set fieldset to zero
+!----------------------------------------------------------------------
+subroutine fieldset_zero_fields(fieldset,mpl)
+
+implicit none
+
+! Passed variables
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+
+! Local variables
+integer :: iv
+real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
@@ -235,26 +403,32 @@ type(atlas_field) :: afield
 ! Probe in
 @:probe_in()
 
+! Check fieldset
+call fieldset%check(mpl)
+
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
    ! Set data to zero
-   call afield%data(ptr_2)
-   do il=1,size(fieldset%mask3d,2)
-      do i=1,size(fieldset%mask3d,1)
-         if (fieldset%mask3d(i,il)) then
-            ptr_2(il,i) = zero
-         else
-            ptr_2(il,i) = fieldset%msvalr
-         end if
-      end do
-   end do
+   select case (afield%rank())
+   case (1)
+      call afield%data(ptr_1)
+      ptr_1 = zero
+   case (2)
+      call afield%data(ptr_2)
+      ptr_2 = zero
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
 
    ! Release pointer
    call afield%final()
 end do
+
+! Apply mask
+call fieldset%apply_mask(mpl)
 
 ! Probe out
 @:probe_out()
@@ -265,17 +439,18 @@ end subroutine fieldset_zero_fields
 ! Subroutine: fieldset_add_fields
 !> Add fieldset
 !----------------------------------------------------------------------
-subroutine fieldset_add_fields(fieldset_out,fieldset_in)
+subroutine fieldset_add_fields(fieldset_out,mpl,fieldset_in)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(mpl_type),intent(inout) :: mpl                !< MPI data
 type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
-integer :: iv,rank_in,i,il
-real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
+integer :: iv
+real(kind_real),pointer :: ptr_1_in(:),ptr_1_out(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
@@ -284,37 +459,36 @@ type(atlas_field) :: afield_in,afield_out
 ! Probe in
 @:probe_in()
 
+! Check fieldsets
+call fieldset_out%check(mpl,fieldset_in)
+
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
    ! Fields
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
 
-   ! Rank of input field
-   rank_in = afield_in%rank()
-
-   ! Add data
-   if (rank_in==1) then
+   ! Set data to zero
+   select case (afield_in%rank())
+   case (1)
       call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_2_out)
-      do i=1,size(fieldset_out%mask3d,1)
-         if (fieldset_out%mask3d(i,fieldset_out%il2d)) ptr_2_out(fieldset_out%il2d,i) = ptr_2_out(fieldset_out%il2d,i) &
- & +ptr_1_in(i)
-      end do
-   else
+      call afield_out%data(ptr_1_out)
+      ptr_1_out = ptr_1_out+ptr_1_in
+   case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
-      do il=1,size(fieldset_out%mask3d,2)
-         do i=1,size(fieldset_out%mask3d,1)
-            if (fieldset_out%mask3d(i,il)) ptr_2_out(il,i) = ptr_2_out(il,i)+ptr_2_in(il,i)
-         end do
-      end do
-   end if
+      ptr_2_out = ptr_2_out+ptr_2_in
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
 
    ! Release pointers
    call afield_in%final()
    call afield_out%final()
 end do
+
+! Apply mask
+call fieldset_out%apply_mask(mpl)
 
 ! Probe out
 @:probe_out()
@@ -325,17 +499,18 @@ end subroutine fieldset_add_fields
 ! Subroutine: fieldset_sub_fields
 !> Subtract fieldset
 !----------------------------------------------------------------------
-subroutine fieldset_sub_fields(fieldset_out,fieldset_in)
+subroutine fieldset_sub_fields(fieldset_out,mpl,fieldset_in)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(mpl_type),intent(inout) :: mpl                !< MPI data
 type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
-integer :: iv,rank_in,i,il
-real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
+integer :: iv
+real(kind_real),pointer :: ptr_1_in(:),ptr_1_out(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
@@ -344,37 +519,36 @@ type(atlas_field) :: afield_in,afield_out
 ! Probe in
 @:probe_in()
 
+! Check fieldsets
+call fieldset_out%check(mpl,fieldset_in)
+
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
    ! Fields
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
 
-   ! Rank of input field
-   rank_in = afield_in%rank()
-
-   ! Subtract data
-   if (rank_in==1) then
+   ! Set data to zero
+   select case (afield_in%rank())
+   case (1)
       call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_2_out)
-      do i=1,size(fieldset_out%mask3d,1)
-         if (fieldset_out%mask3d(i,fieldset_out%il2d)) ptr_2_out(fieldset_out%il2d,i) = ptr_2_out(fieldset_out%il2d,i) &
- & -ptr_1_in(i)
-      end do
-   else
+      call afield_out%data(ptr_1_out)
+      ptr_1_out = ptr_1_out-ptr_1_in
+   case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
-      do il=1,size(fieldset_out%mask3d,2)
-         do i=1,size(fieldset_out%mask3d,1)
-            if (fieldset_out%mask3d(i,il)) ptr_2_out(il,i) = ptr_2_out(il,i)-ptr_2_in(il,i)
-         end do
-      end do
-   end if
+      ptr_2_out = ptr_2_out-ptr_2_in
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
 
    ! Release pointers
    call afield_in%final()
    call afield_out%final()
 end do
+
+! Apply mask
+call fieldset_out%apply_mask(mpl)
 
 ! Probe out
 @:probe_out()
@@ -385,17 +559,18 @@ end subroutine fieldset_sub_fields
 ! Subroutine: fieldset_mult_fields_scalar
 !> Multiply fieldset with a scalar
 !----------------------------------------------------------------------
-subroutine fieldset_mult_fields_scalar(fieldset,factor)
+subroutine fieldset_mult_fields_scalar(fieldset,mpl,factor)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
 real(kind_real),intent(in) :: factor           !< Scalar factor
 
 ! Local variables
-integer :: iv,i,il
-real(kind_real),pointer :: ptr_2(:,:)
+integer :: iv
+real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
@@ -404,22 +579,32 @@ type(atlas_field) :: afield
 ! Probe in
 @:probe_in()
 
+! Check fieldset
+call fieldset%check(mpl)
+
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
-   ! Multiply data with a factor
-   call afield%data(ptr_2)
-   do il=1,size(fieldset%mask3d,2)
-      do i=1,size(fieldset%mask3d,1)
-         if (fieldset%mask3d(i,il)) ptr_2(il,i) = ptr_2(il,i)*factor
-      end do
-   end do
+   ! Set data to zero
+   select case (afield%rank())
+   case (1)
+      call afield%data(ptr_1)
+      ptr_1 = ptr_1*factor
+   case (2)
+      call afield%data(ptr_2)
+      ptr_2 = ptr_2*factor
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
 
    ! Release pointer
    call afield%final()
 end do
+
+! Apply mask
+call fieldset%apply_mask(mpl)
 
 ! Probe out
 @:probe_out()
@@ -430,17 +615,18 @@ end subroutine fieldset_mult_fields_scalar
 ! Subroutine: fieldset_mult_fields_fieldset
 !> Multiply fieldset with another fieldset
 !----------------------------------------------------------------------
-subroutine fieldset_mult_fields_fieldset(fieldset_out,fieldset_in)
+subroutine fieldset_mult_fields_fieldset(fieldset_out,mpl,fieldset_in)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
+type(mpl_type),intent(inout) :: mpl                !< MPI data
 type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
-integer :: iv,rank_in,i,il
-real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
+integer :: iv
+real(kind_real),pointer :: ptr_1_in(:),ptr_1_out(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
@@ -449,37 +635,36 @@ type(atlas_field) :: afield_in,afield_out
 ! Probe in
 @:probe_in()
 
+! Check fieldsets
+call fieldset_out%check(mpl,fieldset_in)
+
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
    ! Fields
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
 
-   ! Rank of input field
-   rank_in = afield_in%rank()
-
-   ! Multiply data
-   if (rank_in==1) then
+   ! Set data to zero
+   select case (afield_in%rank())
+   case (1)
       call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_2_out)
-      do i=1,size(fieldset_out%mask3d,1)
-         if (fieldset_out%mask3d(i,fieldset_out%il2d)) ptr_2_out(fieldset_out%il2d,i) = ptr_2_out(fieldset_out%il2d,i) &
- & *ptr_1_in(i)
-      end do
-   else
+      call afield_out%data(ptr_1_out)
+      ptr_1_out = ptr_1_out*ptr_1_in
+   case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
-      do il=1,size(fieldset_out%mask3d,2)
-         do i=1,size(fieldset_out%mask3d,1)
-            if (fieldset_out%mask3d(i,il)) ptr_2_out(il,i) = ptr_2_out(il,i)*ptr_2_in(il,i)
-         end do
-      end do
-   end if
+      ptr_2_out = ptr_2_out*ptr_2_in
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
 
    ! Release pointers
    call afield_in%final()
    call afield_out%final()
 end do
+
+! Apply mask
+call fieldset_out%apply_mask(mpl)
 
 ! Probe out
 @:probe_out()
@@ -490,17 +675,18 @@ end subroutine fieldset_mult_fields_fieldset
 ! Subroutine: fieldset_div_fields
 !> Divide fieldset
 !----------------------------------------------------------------------
-subroutine fieldset_div_fields(fieldset_out,fieldset_in)
+subroutine fieldset_div_fields(fieldset_out,mpl,fieldset_in)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
-type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
+type(mpl_type),intent(inout) :: mpl                !< MPI data
+type(fieldset_type),intent(inout) :: fieldset_in   !< Input fieldset
 
 ! Local variables
-integer :: iv,rank_in,i,il
-real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:),ptr_2_out(:,:)
+integer :: iv
+real(kind_real),pointer :: ptr_1_in(:),ptr_1_out(:),ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
@@ -509,37 +695,39 @@ type(atlas_field) :: afield_in,afield_out
 ! Probe in
 @:probe_in()
 
+! Check fieldsets
+call fieldset_out%check(mpl,fieldset_in)
+
+! Apply mask
+call fieldset_in%apply_mask(mpl,one)
+
 ! Loop over fields
 do iv=1,size(fieldset_out%variables)
    ! Fields
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
 
-   ! Rank of input field
-   rank_in = afield_in%rank()
-
-   ! Divide data
-   if (rank_in==1) then
+   ! Set data to zero
+   select case (afield_in%rank())
+   case (1)
       call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_2_out)
-      do i=1,size(fieldset_out%mask3d,1)
-         if (fieldset_out%mask3d(i,fieldset_out%il2d)) ptr_2_out(fieldset_out%il2d,i) = ptr_2_out(fieldset_out%il2d,i) &
- & /ptr_1_in(i)
-      end do
-   else
+      call afield_out%data(ptr_1_out)
+      ptr_1_out = ptr_1_out/ptr_1_in
+   case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
-      do il=1,size(fieldset_out%mask3d,2)
-         do i=1,size(fieldset_out%mask3d,1)
-            if (fieldset_out%mask3d(i,il)) ptr_2_out(il,i) = ptr_2_out(il,i)/ptr_2_in(il,i)
-         end do
-      end do
-   end if
+      ptr_2_out = ptr_2_out/ptr_2_in
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
 
    ! Release pointers
    call afield_in%final()
    call afield_out%final()
 end do
+
+! Apply mask
+call fieldset_out%apply_mask(mpl)
 
 ! Probe out
 @:probe_out()
@@ -550,16 +738,17 @@ end subroutine fieldset_div_fields
 ! Subroutine: fieldset_square_fields
 !> Square fieldset
 !----------------------------------------------------------------------
-subroutine fieldset_square_fields(fieldset)
+subroutine fieldset_square_fields(fieldset,mpl)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
 
 ! Local variables
-integer :: iv,i,il
-real(kind_real),pointer :: ptr_2(:,:)
+integer :: iv
+real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
@@ -568,22 +757,32 @@ type(atlas_field) :: afield
 ! Probe in
 @:probe_in()
 
+! Check fieldset
+call fieldset%check(mpl)
+
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
-   ! Square data
-   call afield%data(ptr_2)
-   do il=1,size(fieldset%mask3d,2)
-      do i=1,size(fieldset%mask3d,1)
-         if (fieldset%mask3d(i,il)) ptr_2(il,i) = ptr_2(il,i)**2
-      end do
-   end do
+   ! Set data to zero
+   select case (afield%rank())
+   case (1)
+      call afield%data(ptr_1)
+      ptr_1 = ptr_1**2
+   case (2)
+      call afield%data(ptr_2)
+      ptr_2 = ptr_2**2
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
 
    ! Release pointer
    call afield%final()
 end do
+
+! Apply mask
+call fieldset%apply_mask(mpl)
 
 ! Probe out
 @:probe_out()
@@ -594,45 +793,242 @@ end subroutine fieldset_square_fields
 ! Subroutine: fieldset_sqrt_fields
 !> Take square-root of the fieldset
 !----------------------------------------------------------------------
-subroutine fieldset_sqrt_fields(fieldset)
+subroutine fieldset_sqrt_fields(fieldset,mpl)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
 
 ! Local variables
-integer :: iv,i,il
-real(kind_real),pointer :: ptr_2(:,:)
+integer :: iv
+real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
-@:set_name(fieldset_sqrt_fields)
+@:set_name(fieldset_square_fields)
 
 ! Probe in
 @:probe_in()
+
+! Check fieldset
+call fieldset%check(mpl)
+
+! Apply mask
+call fieldset%apply_mask(mpl,zero)
 
 ! Loop over fields
 do iv=1,size(fieldset%variables)
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
-   ! Take square-root of data
-   call afield%data(ptr_2)
-   do il=1,size(fieldset%mask3d,2)
-      do i=1,size(fieldset%mask3d,1)
-         if (fieldset%mask3d(i,il)) ptr_2(il,i) = sqrt(ptr_2(il,i))
-      end do
-   end do
+   ! Set data to zero
+   select case (afield%rank())
+   case (1)
+      call afield%data(ptr_1)
+      ptr_1 = sqrt(ptr_1)
+   case (2)
+      call afield%data(ptr_2)
+      ptr_2 = sqrt(ptr_2)
+   case default
+      call mpl%abort('${subr}$','wrong field rank')
+   end select
 
    ! Release pointer
    call afield%final()
 end do
 
+! Apply mask
+call fieldset%apply_mask(mpl)
+
 ! Probe out
 @:probe_out()
 
 end subroutine fieldset_sqrt_fields
+
+!----------------------------------------------------------------------
+! Subroutine: fieldset_check_single
+!> Check single fieldset consistency
+!----------------------------------------------------------------------
+subroutine fieldset_check_single(fieldset,mpl)
+
+implicit none
+
+! Passed variables
+class(fieldset_type),intent(in) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+
+! Local variables
+integer :: nmga,nl0,nv,iv
+type(atlas_field) :: afield
+
+! Set name
+@:set_name(fieldset_check_single)
+
+! Probe in
+@:probe_in()
+
+! Get number of nodes
+nmga = size(fieldset%mask3d,1)
+
+! Get number of levels
+nl0 = size(fieldset%mask3d,2)
+
+! Get number of variables
+nv = size(fieldset%variables)
+
+! Check allocation
+if (.not.allocated(fieldset%mask3d)) call mpl%abort('${subr}$','mask is not allocated')
+if (.not.allocated(fieldset%variables)) call mpl%abort('${subr}$','variables is not allocated')
+
+! Check lev2d
+if (.not.((trim(fieldset%lev2d)=='first').or.(trim(fieldset%lev2d)=='last'))) call mpl%abort('${subr}$','wrong lev2d')
+
+do iv=1,nv
+   ! Check that all variables are present
+   if (.not.fieldset%has_field(fieldset%variables(iv))) call mpl%abort('${subr}$', &
+ & 'missing variable '//trim(fieldset%variables(iv)))
+
+   ! Check sizes
+   afield = fieldset%field(fieldset%variables(iv))
+   if (get_atlas_field_size(mpl,afield)/=nmga) call mpl%abort('${subr}$','wrong horizontal size')
+   if ((afield%levels()/=0).and.(afield%levels()/=nl0)) call mpl%abort('${subr}$','wrong number of levels')
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fieldset_check_single
+
+!----------------------------------------------------------------------
+! Subroutine: fieldset_check_pair
+!> Check pair of fieldsets consistency
+!----------------------------------------------------------------------
+subroutine fieldset_check_pair(fieldset_out,mpl,fieldset_in)
+
+implicit none
+
+! Passed variables
+class(fieldset_type),intent(in) :: fieldset_out !< Output fieldset
+type(mpl_type),intent(inout) :: mpl             !< MPI data
+class(fieldset_type),intent(in) :: fieldset_in  !< Input fieldset
+
+! Local variables
+integer :: nv,iv
+integer,allocatable :: shp_in(:),shp_out(:)
+type(atlas_field) :: afield_in,afield_out
+
+! Set name
+@:set_name(fieldset_check_pair)
+
+! Probe in
+@:probe_in()
+
+! Check single fields
+call fieldset_in%check(mpl)
+call fieldset_out%check(mpl)
+
+! Check mask, variables and lev2d consistency
+if ((size(fieldset_in%mask3d)>0).and.(size(fieldset_in%mask3d)>0)) then
+   if (any(fieldset_in%mask3d.neqv.fieldset_out%mask3d)) call mpl%abort('${subr}$','inconsistent masks')
+end if
+if (any(fieldset_in%variables/=fieldset_out%variables)) call mpl%abort('${subr}$','inconsistent variables')
+if (fieldset_in%lev2d/=fieldset_out%lev2d) call mpl%abort('${subr}$','inconsistent lev2d')
+
+! Get number of variables
+nv = size(fieldset_in%variables)
+
+! Check shapes consistency
+do iv=1,nv
+   ! Get fields
+   afield_in = fieldset_in%field(fieldset_in%variables(iv))
+   afield_out = fieldset_out%field(fieldset_out%variables(iv))
+
+   ! Get shapes
+   shp_in = afield_in%shape()
+   shp_out = afield_in%shape()
+   if (any(shp_in/=shp_out)) call mpl%abort('${subr}$','inconsistent shapes')
+
+   ! Release pointers
+   call afield_in%final()
+   call afield_out%final()
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fieldset_check_pair
+
+!----------------------------------------------------------------------
+! Subroutine: fieldset_apply_mask
+!> Set masked point to missing value
+!----------------------------------------------------------------------
+subroutine fieldset_apply_mask(fieldset,mpl,msvalr)
+
+implicit none
+
+! Passed variables
+class(fieldset_type),intent(inout) :: fieldset !< Fieldset
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+real(kind_real),intent(in),optional :: msvalr  !< Specific missing value
+
+! Local variables
+integer :: nmga,nl0,nv,iv,il0,imga
+real(kind_real) :: lmsvalr
+real(kind_real),allocatable :: fld(:,:,:)
+
+! Set name
+@:set_name(fieldset_apply_mask)
+
+! Probe in
+@:probe_in()
+
+! Check fieldset
+call fieldset%check(mpl)
+
+if (size(fieldset%mask3d)>0) then
+   if (any(.not.(fieldset%mask3d))) then
+      ! Set local missing value
+      lmsvalr = mpl%msv%valr
+      if (present(msvalr)) lmsvalr = msvalr
+
+      ! Get number of nodes
+      nmga = size(fieldset%mask3d,1)
+
+      ! Get number of levels
+      nl0 = size(fieldset%mask3d,2)
+
+      ! Get number of variables
+      nv = size(fieldset%variables)
+
+      ! Allocation
+      allocate(fld(nmga,nl0,nv))
+
+      ! Conversion to array
+      call fieldset%to_array(mpl,fld)
+
+      ! Apply missing value to mask points
+      do iv=1,nv
+         do il0=1,nl0
+            do imga=1,nmga
+               if (.not.fieldset%mask3d(imga,il0)) fld(imga,il0,iv) = lmsvalr
+            end do
+         end do
+      end do
+
+      ! Conversion from array
+      call fieldset%from_array(mpl,fld)
+
+      ! Release memory
+      deallocate(fld)
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fieldset_apply_mask
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_to_array_single
@@ -656,6 +1052,9 @@ type(atlas_field) :: afield
 
 ! Probe in
 @:probe_in()
+
+! Check fieldset
+call fieldset%check(mpl)
 
 ! Check number of variables
 if (size(fieldset%variables)<iv) call mpl%abort('${subr}$','inconsistency in number of variables')
@@ -696,6 +1095,9 @@ integer :: iv
 ! Probe in
 @:probe_in()
 
+! Check fieldset
+call fieldset%check(mpl)
+
 ! Check number of variables
 if (size(fieldset%variables)/=size(fld,3)) call mpl%abort('${subr}$','inconsistency in number of variables')
 
@@ -731,6 +1133,9 @@ type(atlas_field) :: afield
 
 ! Probe in
 @:probe_in()
+
+! Check fieldset
+call fieldset%check(mpl)
 
 ! Check number of variables
 if (size(fieldset%variables)<iv) call mpl%abort('${subr}$','inconsistency in number of variables')
@@ -770,6 +1175,9 @@ integer :: iv
 
 ! Probe in
 @:probe_in()
+
+! Check fieldset
+call fieldset%check(mpl)
 
 ! Check number of variables
 if (size(fieldset%variables)/=size(fld,3)) call mpl%abort('${subr}$','inconsistency in number of variables')

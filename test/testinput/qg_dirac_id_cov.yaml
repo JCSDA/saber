@@ -6,6 +6,7 @@ background error:
     output variables: [x]
     bump:
       datadir: testdata
+      fname_var: [qg_parameters_bump_cov/test_var]
       load_var: 1
       prefix: qg_dirac_bump_cov/test
 dirac:
@@ -27,3 +28,7 @@ output B:
   datadir: testdata/qg_dirac_bump_cov
   exp: B
   type: an
+
+test:
+  reference filename: testref/qg_dirac_id_cov/test.log.out
+  test output filename: testoutput/qg_dirac_id_cov/test.log.out

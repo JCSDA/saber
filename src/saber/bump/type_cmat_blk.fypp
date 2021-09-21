@@ -19,22 +19,11 @@ implicit none
 
 ! C matrix block data derived type
 type cmat_blk_type
-   ! Block index and anisotropic flag
+   ! Attributes
    integer :: ib                                     !< Block index
    logical :: anisotropic                            !< Anisoptropic tensor flag
 
-   ! Read data
-   real(kind_real),allocatable :: bump_coef_ens(:,:) !< BUMP ensemble coefficient
-   real(kind_real),allocatable :: bump_coef_sta(:,:) !< BUMP static coefficient
-   real(kind_real),allocatable :: bump_rh(:,:)       !< BUMP horizontal fit support radius
-   real(kind_real),allocatable :: bump_rv(:,:)       !< BUMP vertical fit support radius
-   real(kind_real),allocatable :: bump_D11(:,:)      !< BUMP Daley tensor component 11
-   real(kind_real),allocatable :: bump_D22(:,:)      !< BUMP Daley tensor component 22
-   real(kind_real),allocatable :: bump_D33(:,:)      !< BUMP Daley tensor component 33
-   real(kind_real),allocatable :: bump_D12(:,:)      !< BUMP Daley tensor component 12
-   real(kind_real),allocatable :: bump_Dcoef(:,:)    !< BUMP Daley tensor scales coefficients
-
-   ! Data
+   ! Computational data
    real(kind_real),allocatable :: coef_ens(:,:)      !< Ensemble coefficient
    real(kind_real),allocatable :: coef_sta(:,:)      !< Static coefficient
    real(kind_real),allocatable :: rh(:,:)            !< Horizontal fit support radius
@@ -47,6 +36,17 @@ type cmat_blk_type
    real(kind_real),allocatable :: H33(:,:)           !< LCT component 33
    real(kind_real),allocatable :: H12(:,:)           !< LCT component 12
    real(kind_real),allocatable :: Hcoef(:,:)         !< LCT scales coefficients
+
+   ! BUMP interface data
+   real(kind_real),allocatable :: bump_coef_ens(:,:) !< BUMP ensemble coefficient
+   real(kind_real),allocatable :: bump_coef_sta(:,:) !< BUMP static coefficient
+   real(kind_real),allocatable :: bump_rh(:,:)       !< BUMP horizontal fit support radius
+   real(kind_real),allocatable :: bump_rv(:,:)       !< BUMP vertical fit support radius
+   real(kind_real),allocatable :: bump_D11(:,:)      !< BUMP Daley tensor component 11
+   real(kind_real),allocatable :: bump_D22(:,:)      !< BUMP Daley tensor component 22
+   real(kind_real),allocatable :: bump_D33(:,:)      !< BUMP Daley tensor component 33
+   real(kind_real),allocatable :: bump_D12(:,:)      !< BUMP Daley tensor component 12
+   real(kind_real),allocatable :: bump_Dcoef(:,:)    !< BUMP Daley tensor scales coefficients
 contains
    procedure :: alloc => cmat_blk_alloc
    procedure :: init => cmat_blk_init
@@ -205,6 +205,7 @@ class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 @:probe_in()
 
 ! Release memory
+call cmat_blk%partial_bump_dealloc
 if (allocated(cmat_blk%rhs)) deallocate(cmat_blk%rhs)
 if (allocated(cmat_blk%rvs)) deallocate(cmat_blk%rvs)
 if (allocated(cmat_blk%H11)) deallocate(cmat_blk%H11)
@@ -236,7 +237,6 @@ class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 @:probe_in()
 
 ! Release memory
-call cmat_blk%partial_bump_dealloc
 call cmat_blk%partial_dealloc
 if (allocated(cmat_blk%coef_ens)) deallocate(cmat_blk%coef_ens)
 if (allocated(cmat_blk%coef_sta)) deallocate(cmat_blk%coef_sta)

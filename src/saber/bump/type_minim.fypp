@@ -15,18 +15,8 @@ use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
 @:use_probe()
-use type_rng, only: rng_type
 
 implicit none
-
-! Praxis precision parameters
-real(kind_real),parameter :: machep = epsilon(one) !< Machine precision
-real(kind_real),parameter :: small = machep**2     !< Small value
-real(kind_real),parameter :: vsmall = small**2     !< Very small value
-real(kind_real),parameter :: large = one/small     !< Large value
-real(kind_real),parameter :: vlarge = one/vsmall   !< Very large value
-real(kind_real),parameter :: m2 = sqrt(machep)     !< Machine precision square-root
-real(kind_real),parameter :: m4 = sqrt(m2)         !< Square-root of the machine precision square-root
 
 ! Minimization data derived type
 type minim_type
@@ -34,8 +24,6 @@ type minim_type
    real(kind_real) :: hooke_rho               !< Convergence parameter for the Hooke algorithm
    real(kind_real) :: hooke_tol               !< Tolerance for the Hooke algorithm
    integer :: hooke_itermax                   !< Maximum number of iteration for the Hooke algorithm
-   real(kind_real) :: praxis_tol              !< Tolerance for the praxis algorithm
-   integer :: praxis_itermax                  !< Maximum number of iteration for the praxis algorithm
 
    ! Generic data
    integer :: nx                              !< Control vector size
@@ -48,30 +36,21 @@ type minim_type
    character(len=1024) :: cost_function       !< Cost function
    real(kind_real) :: f_guess                 !< Guess cost
    real(kind_real) :: f_min                   !< Minimum cost
-   character(len=1024) :: algo                !< Minimization algorithm
 
    ! Common data
-   integer :: nl0                             !< Number of levels
    integer :: nc3                             !< Number of classes
+   integer :: nl0r                            !< Effective number of levels
 
    ! Specific data (fit)
-   real(kind_real) :: smoothness_penalty      !< Smoothness penalty weight
-   integer :: dl0                             !< Number of levels between interpolation levels
-   integer :: nl1                             !< Number of interpolation levels
-   integer,allocatable :: il1inf(:)           !< Inferior interpolation level
-   real(kind_real),allocatable :: rinf(:)     !< Inferior interpolation coefficient
-   integer,allocatable :: il1sup(:)           !< Superior interpolation level
-   real(kind_real),allocatable :: rsup(:)     !< Superior interpolation coefficient
-   integer :: nl0r                            !< Effective number of levels
-   integer,allocatable :: l0rl0_to_l0(:,:)    !< Effective level to level
    real(kind_real),allocatable :: disth(:)    !< Horizontal distance
-   real(kind_real),allocatable :: distv(:,:)  !< Vertical distance
+   real(kind_real),allocatable :: distv(:)    !< Vertical distance
    logical :: lcoef                           !< Diagonal coefficient flag
    logical :: lrh                             !< Horizontal support radius flag
    logical :: lrv                             !< Vertical support radius flag
 
    ! Specific data (LCT)
    integer :: nscales                         !< Number of LCT scales
+   logical,allocatable :: lct_diag(:)         !< Diagonal LCT flag
    real(kind_real),allocatable :: dxsq(:,:)   !< Zonal separation squared
    real(kind_real),allocatable :: dysq(:,:)   !< Meridian separation squared
    real(kind_real),allocatable :: dxdy(:,:)   !< Zonal x meridional separation product
@@ -84,23 +63,9 @@ contains
    procedure :: cost_fit_lct => minim_cost_fit_lct
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
-   procedure :: praxis => minim_praxis
-   procedure :: flin => minim_flin
-   procedure :: quad => minim_quad
-   procedure :: minny => minim_minny
    procedure :: vt_dir => minim_vt_dir
    procedure :: vt_inv => minim_vt_inv
 end type minim_type
-
-interface minfit
-   module procedure minim_minfit
-end interface
-interface swap
-   module procedure minim_swap
-end interface
-interface svsort
-   module procedure minim_svsort
-end interface
 
 private
 public :: minim_type
@@ -111,14 +76,13 @@ contains
 ! subroutine: minim_compute
 !> Minimize ensuring bounds constraints
 !----------------------------------------------------------------------
-subroutine minim_compute(minim,mpl,rng)
+subroutine minim_compute(minim,mpl)
 
 implicit none
 
 ! Passed variables
 class(minim_type),intent(inout) :: minim !< Minimization data
 type(mpl_type),intent(inout) :: mpl      !< MPI data
-type(rng_type),intent(inout) :: rng      !< Random number generator
 
 ! Set name
 @:set_name(minim_compute)
@@ -136,14 +100,8 @@ call minim%vt_inv(mpl,minim%guess)
 ! Initial cost
 call minim%cost(mpl,minim%guess,minim%f_guess)
 
-select case (trim(minim%algo))
-case ('hooke')
-   ! Hooke algorithm
-   call minim%hooke(mpl,minim%guess)
-case ('praxis')
-   ! Praxis algorithm
-   call minim%praxis(mpl,rng,minim%guess)
-end select
+! Hooke algorithm
+call minim%hooke(mpl,minim%guess)
 
 ! Final cost
 call minim%cost(mpl,minim%x,minim%f_min)
@@ -208,10 +166,9 @@ real(kind_real),intent(in) :: x(minim%nx) !< Control vector
 real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
-integer :: ivar,il0
-real(kind_real) :: fo,fs,norm,coef_avg,fit_rh_avg,fit_rv_avg
-real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_rv(minim%nl0)
-real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
+integer :: ix
+real(kind_real) :: coef,fit_rh,fit_rv
+real(kind_real) :: fit(minim%nc3,minim%nl0r)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
 ! Set name
@@ -225,94 +182,34 @@ xtmp = x
 call minim%vt_dir(xtmp)
 
 ! Get data
-if (minim%dl0==1) then
-   ivar = 0
-   if (minim%lcoef) then
-      coef = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
-      ivar = ivar+1
-   else
-      coef = one
-   end if
-   if (minim%lrh) then
-      fit_rh = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
-      ivar = ivar+1
-   else
-      fit_rh = zero
-   end if
-   if (minim%lrv) then
-      fit_rv = xtmp(ivar*minim%nl0+1:(ivar+1)*minim%nl0)
-      ivar = ivar+1
-   else
-      fit_rv = zero
-   end if
+ix = 0
+if (minim%lcoef) then
+   ix = ix+1
+   coef = xtmp(ix)
 else
-   do il0=1,minim%nl0
-      ivar = 0
-      if (minim%lcoef) then
-         coef(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
- & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
-         ivar = ivar+1
-      else
-         coef(il0) = one
-      end if
-      if (minim%lrh) then
-         fit_rh(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
- & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
-         ivar = ivar+1
-      else
-         fit_rh(il0) = zero
-      end if
-      if (minim%lrv) then
-         fit_rv(il0) = minim%rinf(il0)*xtmp(ivar*minim%nl1+minim%il1inf(il0)) &
- & +minim%rsup(il0)*xtmp(ivar*minim%nl1+minim%il1sup(il0))
-         ivar = ivar+1
-      else
-         fit_rv(il0) = zero
-      end if
-   end do
+   coef = one
+end if
+if (minim%lrh) then
+   ix = ix+1
+   fit_rh = xtmp(ix)
+else
+   fit_rh = zero
+end if
+if (minim%lrv) then
+   ix = ix+1
+   fit_rv = xtmp(ix)
+else
+   fit_rv = zero
 end if
 
 ! Compute function
-call fit_diag(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv,coef,fit_rh,fit_rv,fit)
+call fit_diag(mpl,minim%nc3,minim%nl0r,minim%disth,minim%distv,coef,fit_rh,fit_rv,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))
 
 ! Observations penalty
-fo = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
-norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
-if (norm>zero) fo = fo/norm
-
-! Smoothness penalty
-fs = zero
-if (minim%smoothness_penalty>zero) then
-   do il0=2,minim%nl0-1
-      if (minim%lcoef) then
-         if (mpl%msv%isallnot(coef(il0-1:il0+1))) then
-            coef_avg = half*(coef(il0-1)+coef(il0+1))
-            norm = coef_avg**2
-            if (norm>zero) fs = fs+(coef(il0)-coef_avg)**2/norm
-         end if
-      end if
-      if (minim%lrh) then
-         if (mpl%msv%isallnot(fit_rh(il0-1:il0+1))) then
-            fit_rh_avg = half*(fit_rh(il0-1)+fit_rh(il0+1))
-            norm = fit_rh_avg**2
-            if (norm>zero) fs = fs+(fit_rh(il0)-fit_rh_avg)**2/norm
-         end if
-      end if
-      if (minim%lrv) then
-         if (mpl%msv%isallnot(fit_rv(il0-1:il0+1))) then
-            fit_rv_avg = half*(fit_rv(il0-1)+fit_rv(il0+1))
-            norm = fit_rv_avg**2
-            if (norm>zero) fs = fs+(fit_rv(il0)-fit_rv_avg)**2/norm
-         end if
-      end if
-   end do
-end if
-
-! Full penalty function
-f = fo+minim%smoothness_penalty*fs
+f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
 
 ! Probe out
 @:probe_out()
@@ -334,9 +231,8 @@ real(kind_real),intent(in) :: x(minim%nx) !< Control vector
 real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
-integer :: iscales,icomp
-real(kind_real) :: norm
-real(kind_real) :: fit(minim%nc3,minim%nl0),D(4,minim%nscales)
+integer :: iscales,ix
+real(kind_real) :: fit(minim%nc3,minim%nl0r),D(4,minim%nscales)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny),coef(minim%nscales)
 
 ! Set name
@@ -350,18 +246,35 @@ xtmp = x
 call minim%vt_dir(xtmp)
 
 ! Compute function
+ix = 0
 do iscales=1,minim%nscales
-   do icomp=1,4
-      D(icomp,iscales) = xtmp((iscales-1)*4+icomp)
-   end do
+   D(1:2,iscales) = xtmp(ix+1:ix+2)
+   ix = ix+2
+   if (minim%nl0r>1) then
+      D(3,iscales) = xtmp(ix+1)
+      ix = ix+1
+   else
+      D(3,iscales) = zero
+   end if
+   if (minim%lct_diag(iscales)) then
+      D(4,iscales) = zero
+   else
+      D(4,iscales) = xtmp(ix+1)
+      ix = ix+1
+   end if
 end do
+
+! Coefficient
 if (minim%nscales>1) then
-   coef(1:minim%nscales-1) = xtmp(minim%nscales*4+1:minim%nscales*4+minim%nscales-1)
+   do iscales=1,minim%nscales-1
+      coef(iscales) = xtmp(ix+1)
+      ix = ix+1
+   end do
    coef(minim%nscales) = one-sum(coef(1:minim%nscales-1))
 else
    coef(1) = one
 end if
-call fit_lct(mpl,minim%nc3,minim%nl0,minim%dxsq,minim%dysq,minim%dxdy,minim%dzsq,minim%dmask,minim%nscales, &
+call fit_lct(mpl,minim%nc3,minim%nl0r,minim%dxsq,minim%dysq,minim%dxdy,minim%dzsq,minim%dmask,minim%nscales, &
  & D,coef,fit)
 
 ! Pack
@@ -369,8 +282,6 @@ fit_pack = reshape(fit,(/minim%ny/))
 
 ! Observations penalty
 f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
-norm = sum(minim%obs**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
-if (norm>zero) f = f/norm
 
 ! Probe out
 @:probe_out()
@@ -544,859 +455,6 @@ point = z
 @:probe_out()
 
 end subroutine minim_best_nearby
-
-!----------------------------------------------------------------------
-! Subroutine: minim_praxis
-!> Seeks a minimizer of a scalar function of several variables
-! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
-!----------------------------------------------------------------------
-subroutine minim_praxis(minim,mpl,rng,guess)
-
-implicit none
-
-! Passed variables
-class(minim_type),intent(inout) :: minim      !< Minimization data
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(rng_type),intent(inout) :: rng           !< Random number generator
-real(kind_real),intent(in) :: guess(minim%nx) !< Guess
-
-! Local variables
-integer :: i,j,jsearch,k,k2,kl,kt,ktm,nits,nl,nf,iter
-real(kind_real) :: h0,d2,df,dmin,dn,dni,f1,fx,h,ldfac,lds,ldt,qa,qb,qc,qd0,qd1,qf1,r,s,scbd,sf,sl,t,t2,val
-real(kind_real) :: d(minim%nx),q0(minim%nx),q1(minim%nx),v(minim%nx,minim%nx),y(minim%nx),z(minim%nx)
-logical :: fk,illc
-
-! Set name
-@:set_name(minim_praxis)
-
-! Probe in
-@:probe_in()
-
-! Initialization
-minim%x = guess
-h0 = tenth*sqrt(real(minim%nx,kind_real))
-
-! Heuristic numbers
-scbd = one
-illc = .false.
-ktm = 1
-if (illc) then
-   ldfac = tenth
-else
-   ldfac = hundredth
-end if
-kt = 0
-nl = 0
-nf = 1
-call minim%cost(mpl,minim%x,fx)
-qf1 = fx
-t = small+abs(minim%praxis_tol)
-t2 = t
-dmin = small
-h = h0
-h = max(h,hundred*t)
-ldt = h
-
-! The initial set of search directions v is the identity matrix
-v = zero
-do i = 1, minim%nx
-   v(i,i) = one
-end do
-d = zero
-qa = zero
-qb = zero
-qc = zero
-qd0 = zero
-qd1 = zero
-q0 = minim%x
-q1 = minim%x
-iter = 0
-
-do while(iter<minim%praxis_itermax)
-   iter = iter+1
-   sf = d(1)
-   d(1) = zero
-
-   ! Minimize along the first direction v(*,1)
-   jsearch = 1
-   nits = 2
-   d2 = d(1)
-   s = zero
-   val = fx
-   fk = .false.
-   call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
-   d(1) = d2
-   if (.not.(s>zero)) v(:,1) = -v(:,1)
-   if (infeq(sf,0.9_kind_real*d(1)).or.infeq(d(1),0.9_kind_real*sf)) d(2:minim%nx) = zero
-
-   ! The inner loop starts here
-   do k=2,minim%nx
-      y = minim%x
-      sf = fx
-      if (0<kt) illc = .true.
-      do
-         kl = k
-         df = zero
-
-         ! A random step follows, to avoid resolution valleys
-         if (illc) then
-            do i=1,minim%nx
-               call rng%rand(zero,one,r)
-               s = (tenth*ldt+t2*ten**kt)*(r-half)
-               z(i) = s
-               minim%x = minim%x+s*v(:,i)
-            end do
-            call minim%cost(mpl,minim%x,fx)
-            nf = nf+1
-         end if
-
-        ! Minimize along the "non-conjugate" directions v(*,k),...,v(*,minim%nx).
-        do k2=k,minim%nx
-          sl = fx
-          jsearch = k2
-          nits = 2
-          d2 = d(k2)
-          s = zero
-          val = fx
-          fk = .false.
-          call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
-          d(k2) = d2
-          if (illc) then
-            s = d(k2)*(s+z(k2))**2
-          else
-            s = sl-fx
-          end if
-
-          if (infeq(df,s)) then
-            df = s
-            kl = k2
-          end if
-       end do
-
-       ! If there was not much improvement on the first try, set illc to true and start the inner loop again
-       if (illc) exit
-       if (infeq(abs(hundred*machep*fx),df)) exit
-       illc = .true.
-    end do
-
-    ! Minimize along the "conjugate" directions v(*,1),...,v(*,k-1).
-     do k2=1,k-1
-        jsearch = k2
-        nits = 2
-        d2 = d(k2)
-        s = zero
-        val = fx
-        fk = .false.
-        call minim%minny(mpl,jsearch,nits,d2,s,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
-        d(k2) = d2
-     end do
-     f1 = fx
-     fx = sf
-     lds = zero
-     do i=1,minim%nx
-        sl = minim%x(i)
-        minim%x(i) = y(i)
-        sl = sl-y(i)
-        y(i) = sl
-        lds = lds+sl**2
-     end do
-     lds = sqrt(lds)
-
-     ! Discard direction v(*,kl), if no random step was taken, v(*,kl) is the "non-conjugate" direction along which the greatest improvement was made
-     if (inf(small,lds)) then
-        do j=kl-1,k,-1
-           v(:,j+1) = v(:,j)
-           d(j+1) = d(j)
-        end do
-        d(k) = zero
-        v(:,k) = y/lds
-
-        !  Minimize along the new "conjugate" direction v(*,k), which is the normalized vector: (new x)-(old x)
-        jsearch = k
-        nits = 4
-        d2 = d(k)
-        val = f1
-        fk = .true.
-        call minim%minny(mpl,jsearch,nits,d2,lds,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
-        d(k) = d2
-        if (.not.(lds>zero)) then
-           lds = -lds
-           v(:,k) = -v(:,k)
-        end if
-     end if
-     ldt = ldfac*ldt
-     ldt = max(ldt,lds)
-     t2 = m2*sqrt(sum(minim%x**2))+t
-
-     ! See whether the length of the step taken since starting the inner loop exceeds half the tolerance
-      if (inf(half*t2,ldt)) then
-         kt = -1
-      end if
-      kt = kt+1
-      if (ktm<kt) then
-@:probe_out()
-         return
-      end if
-   end do
-
-   ! Try quadratic extrapolation in case we are in a curved valley
-   call minim%quad(mpl,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qf1,qa,qb,qc,qd0,qd1)
-   d = one/sqrt(d)
-   dn = maxval(d)
-   do j=1,minim%nx
-      v(:,j) = d(j)/dn*v(:,j)
-   end do
-
-   ! Scale the axes to try to reduce the condition number
-   if (inf(one,scbd)) then
-      do i=1,minim%nx
-         z(i) = max(m4,sqrt(sum(v(i,:)**2)))
-      end do
-      s = minval(z)
-      do i=1,minim%nx
-         sl = s/z(i)
-         z(i) = one/sl
-         if (inf(scbd,z(i))) then
-            sl = one/scbd
-            z(i) = scbd
-         end if
-         v(i,:) = sl*v(i,:)
-      end do
-   end if
-
-   ! Calculate a new set of orthogonal directions before repeating the main loop
-
-   ! Call minfit to find the singular value decomposition of v
-   v = transpose(v)
-   call minfit(mpl,minim%nx,vsmall,v,d)
-
-   ! Unscale the axes
-   if (inf(one,scbd)) then
-      do i=1,minim%nx
-         v(i,:) = z(i)*v(i,:)
-      end do
-      do i=1,minim%nx
-         s = sqrt(sum(v(:,i)**2))
-         d(i) = s*d(i)
-         v(:,i) = v(:,i)/s
-      end do
-   end if
-   do i=1,minim%nx
-      dni = dn*d(i)
-      if (inf(large,dni)) then
-        d(i) = vsmall
-      elseif (inf(dni,small)) then
-        d(i) = vlarge
-      else
-        d(i) = one/dni**2
-      end if
-   end do
-
-   ! Sort the singular values and singular vectors
-   call svsort(minim%nx,d,v)
-
-   ! Determine the smallest eigenvalue
-   dmin = max(d(minim%nx),small)
-
-   ! The ratio of the smallest to largest eigenvalue determines whether the system is ill conditioned
-   illc = inf(dmin,m2*d(1))
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine minim_praxis
-
-!----------------------------------------------------------------------
-! Subroutine: minim_flin
-!> Seeks a minimizer of a scalar function of one variable
-! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
-!----------------------------------------------------------------------
-subroutine minim_flin(minim,mpl,jsearch,l,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,flin)
-
-implicit none
-
-! Passed variables
-class(minim_type),intent(inout) :: minim           !< Minimization data
-type(mpl_type),intent(inout) :: mpl                !< MPI data
-integer,intent(in) :: jsearch                      !< Kind of search
-real(kind_real),intent(in) :: l                    !< Particular point at which the function is to be evaluated
-real(kind_real),intent(in) :: x(minim%nx)          !< State
-integer,intent(inout) :: nf                        !< Number of function evaluations
-real(kind_real),intent(in) :: v(minim%nx,minim%nx) !< Search directions
-real(kind_real),intent(in) :: q0(minim%nx)         !< First auxiliary point
-real(kind_real),intent(in) :: q1(minim%nx)         !< Second auxiliary point
-real(kind_real),intent(in) :: qd0                  !< First auxiliary value
-real(kind_real),intent(in) :: qd1                  !< Second auxiliary value
-real(kind_real),intent(out) :: qa                  !< First combination coefficient
-real(kind_real),intent(out) :: qb                  !< Second combination coefficient
-real(kind_real),intent(out) :: qc                  !< Third combination coefficient
-real(kind_real),intent(out) :: flin                !< Value of the function at the minimizing point
-
-! Local variables
-real(kind_real) :: t(minim%nx)
-
-! Set name
-@:set_name(minim_flin)
-
-! Probe in
-@:probe_in()
-
-if (1<=jsearch) then
-   ! The search is linear
-   t = x+l*v(:,jsearch)
-else
-   ! The search is along a parabolic space curve
-   qa = l*(l-qd1)/(qd0+qd1)/qd0
-   qb = -(l+qd0)*(l-qd1)/qd1/qd0
-   qc = (l+qd0)*l/qd1/(qd0+qd1)
-   t = qa*q0+qb*x+qc*q1
-end if
-
-! The function evaluation counter nf is incremented
-nf = nf+1
-
-! Evaluate the function
-call minim%cost(mpl,t,flin)
-
-! Probe out
-@:probe_out()
-
-end subroutine minim_flin
-
-!----------------------------------------------------------------------
-! Subroutine: minim_quad
-!> Minimize the scalar function F along a particular curve
-! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
-!----------------------------------------------------------------------
-subroutine minim_quad(minim,mpl,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qf1,qa,qb,qc,qd0,qd1)
-
-implicit none
-
-! Passed variables
-class(minim_type),intent(inout) :: minim           !< Minimization data
-type(mpl_type),intent(inout) :: mpl                !< MPI data
-real(kind_real),intent(in) :: t                    !< ?
-real(kind_real),intent(in) :: h                    !< ?
-real(kind_real),intent(in) :: v(minim%nx,minim%nx) !< Search directions
-real(kind_real),intent(inout) :: q0(minim%nx)      !< First auxiliary point
-real(kind_real),intent(inout) :: q1(minim%nx)      !< Second auxiliary point
-integer,intent(inout) :: nl                        !< Number of linear searches
-integer,intent(inout) :: nf                        !< Number of function evaluations
-real(kind_real),intent(in) :: dmin                 !< Smallest eigenvalue estimate
-real(kind_real),intent(in) :: ldt                  !< Step length
-real(kind_real),intent(inout) :: fx                !< Function value
-real(kind_real),intent(inout) :: qf1               !< ?
-real(kind_real),intent(inout) :: qa                !< First combination coefficient
-real(kind_real),intent(inout) :: qb                !< Second combination coefficient
-real(kind_real),intent(inout) :: qc                !< Third combination coefficient
-real(kind_real),intent(inout) :: qd0               !< First auxiliary value
-real(kind_real),intent(inout) :: qd1               !< Second auxiliary value
-
-! Local variables
-integer :: i,jsearch,nits
-real(kind_real) :: l,s,temp,val
-logical :: fk
-
-! Set name
-@:set_name(minim_quad)
-
-! Probe in
-@:probe_in()
-
-! Initialization
-temp = fx
-fx = qf1
-qf1 = temp
-call swap(minim%nx,minim%x,q1)
-qd1 = sqrt(sum((minim%x-q1)**2))
-l = qd1
-s = zero
-
-if ((.not.(qd0>zero)).or.(.not.(qd1>zero)).or.(nl<3*minim%nx**2)) then
-   fx = qf1
-   qa = zero
-   qb = zero
-   qc = one
-else
-   jsearch = -1
-   nits = 2
-   val = qf1
-   fk = .true.
-   call minim%minny(mpl,jsearch,nits,s,l,val,fk,minim%x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
-   qa = l*(l-qd1)/(qd0+qd1)/qd0
-   qb = -(l+qd0)*(l-qd1)/qd1/qd0
-   qc = (l+qd0)*l/qd1/(qd0+qd1)
-end if
-qd0 = qd1
-do i=1,minim%nx
-   s = q0(i)
-   q0(i) = minim%x(i)
-   minim%x(i) = qa*s+qb*minim%x(i)+qc*q1(i)
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine minim_quad
-
-!----------------------------------------------------------------------
-! Subroutine: minim_minny
-!> Minimization of a scalar function of N variables along a line
-! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
-!----------------------------------------------------------------------
-subroutine minim_minny(minim,mpl,jsearch,nits,d2,x1,f1,fk,x,t,h,v,q0,q1,nl,nf,dmin,ldt,fx,qa,qb,qc,qd0,qd1)
-
-implicit none
-
-! Passed variables
-class(minim_type),intent(inout) :: minim           !< Minimization data
-type(mpl_type),intent(inout) :: mpl                !< MPI data
-integer,intent(in) :: jsearch                      !< Kind of search
-integer,intent(in) :: nits                         !< Maximum number of times the interval may be halved to retry the calculation
-real(kind_real),intent(inout) :: d2                !< Approximation to the second derivative of the function halved
-real(kind_real),intent(inout) :: x1                !< Estimate of the distance from x to the minimum along v(*,j)
-real(kind_real),intent(inout) :: f1                !< ?
-logical,intent(in) :: fk                           !< If fk is .true., then on input f1 contains the value fline(x1)
-real(kind_real),intent(inout) :: x(minim%nx)       !< State
-real(kind_real),intent(in) :: t                    !< ?
-real(kind_real),intent(in) :: h                    !< ?
-real(kind_real),intent(in) :: v(minim%nx,minim%nx) !< Search directions
-real(kind_real),intent(in) :: q0(minim%nx)         !< First auxiliary point
-real(kind_real),intent(in) :: q1(minim%nx)         !< Second auxiliary point
-integer,intent(inout) :: nl                        !< Number of linear searches
-integer,intent(inout) :: nf                        !< Number of function evaluations
-real(kind_real),intent(in) :: dmin                 !< Smallest eigenvalue estimate
-real(kind_real),intent(in) :: ldt                  !< Step length
-real(kind_real),intent(inout) :: fx                !< Function value
-real(kind_real),intent(inout) :: qa                !< First combination coefficient
-real(kind_real),intent(inout) :: qb                !< Second combination coefficient
-real(kind_real),intent(inout) :: qc                !< Third combination coefficient
-real(kind_real),intent(in) :: qd0                  !< First auxiliary value
-real(kind_real),intent(in) :: qd1                  !< Second auxiliary value
-
-! Local variables
-integer :: k
-real(kind_real) :: d1,f0,f2,fm,s,sf1,sx1,t2,temp,x2,xm
-logical :: dz,ok
-
-! Set name
-@:set_name(minim_minny)
-
-! Probe in
-@:probe_in()
-
-! Initialization
-sf1 = f1
-sx1 = x1
-k = 0
-xm = zero
-fm = fx
-f0 = fx
-dz = inf(d2,machep)
-
-! Find the step size
-s = sqrt(sum(x**2))
-if (dz) then
-   temp = dmin
-else
-   temp = d2
-end if
-t2 = m4*sqrt(abs(fx)/temp+s*ldt)+m2*ldt
-s = m4*s+t
-if (dz.and.inf(s,t2)) t2 = s
-t2 = max(t2,small)
-t2 = min(t2,hundredth*h)
-if (fk.and.infeq(f1,fm)) then
-   xm = x1
-   fm = f1
-end if
-if ((.not.fk).or.inf(abs(x1),t2)) then
-   if (.not.(x1<zero)) then
-      temp = one
-   else
-      temp = -one
-   end if
-   x1 = temp*t2
-   call minim%flin(mpl,jsearch,x1,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,f1)
-end if
-if (infeq(f1,fm)) then
-   xm = x1
-   fm = f1
-end if
-
-! Evaluate flin at another point and estimate the second derivative
-do
-   if (dz) then
-      if (infeq(f1,f0)) then
-         x2 = two*x1
-      else
-         x2 = -x1
-      end if
-      call minim%flin(mpl,jsearch,x2,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,f2)
-      if (infeq(f2,fm)) then
-        xm = x2
-        fm = f2
-      end if
-      d2 = (x2*(f1-f0)-x1*(f2-f0))/((x1*x2)*(x1-x2))
-   end if
-
-   ! Estimate the first derivative at 0
-   d1 = (f1-f0)/x1-x1*d2
-   dz = .true.
-
-   ! Predict the minimum
-   if (infeq(d2,small)) then
-      if (.not.(d1<zero)) then
-         x2 = -h
-      else
-         x2 = h
-      end if
-   else
-      x2 = (-half*d1)/d2
-   end if
-   if (inf(h,abs(x2))) then
-      if (.not.(x2>zero)) then
-         x2 = -h
-      else
-         x2 = h
-      end if
-   end if
-
-   ! Evaluate function at the predicted minimum
-   ok = .true.
-   do
-      call minim%flin (mpl,jsearch,x2,x,nf,v,q0,q1,qd0,qd1,qa,qb,qc,f2)
-      if ((nits<=k).or.infeq(f2,f0)) exit
-      k = k+1
-      if (inf(f0,f1).and.(x1*x2>zero)) then
-         ok = .false.
-         exit
-      end if
-      x2 = half*x2
-   end do
-   if (ok) exit
-end do
-
-! Increment the one-dimensional search counter
-nl = nl+1
-if (inf(fm,f2)) then
-   x2 = xm
-else
-   fm = f2
-end if
-
-! Get a new estimate of the second derivative
-if (inf(small,abs(x2*(x2-x1)))) then
-   d2 = (x2*(f1-f0)-x1*(fm-f0))/((x1*x2)*(x1-x2))
-else
-   if (0<k) d2 = zero
-end if
-d2 = max (d2,small)
-x1 = x2
-fx = fm
-if (inf(sf1,fx)) then
-   fx = sf1
-   x1 = sx1
-end if
-
-! Update X for linear but not parabolic search
-if (1<=jsearch) x = x+x1*v(:,jsearch)
-
-! Probe out
-@:probe_out()
-
-end subroutine minim_minny
-
-!----------------------------------------------------------------------
-! Subroutine: minim_minfit
-!> Singular value decomposition of an N by N array
-! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
-!----------------------------------------------------------------------
-subroutine minim_minfit(mpl,n,tol,a,q)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-integer,intent(in) :: n                 !< Order of the matrix
-real(kind_real),intent(in) :: tol       !< Tolerance
-real(kind_real),intent(inout) :: a(n,n) !< Matrix
-real(kind_real),intent(inout) :: q(n)   !< Singular values
-
-! Local variables
-integer :: i,j,k,kt,l,l2
-integer,parameter :: kt_max = 30
-real(kind_real) :: c,e(n),eps,f,g,h,s,temp,x,y,z
-logical :: skip
-
-! Set name
-@:set_name(minim_minfit)
-
-! Probe in
-@:probe_in()
-
-! Householder's reduction to bidiagonal form
-if (n==1) then
-   q(1) = a(1,1)
-   a(1,1) = one
-@:probe_out()
-   return
-end if
-eps = machep
-g = zero
-x = zero
-do i=1,n
-   e(i) = g
-   l = i+1
-   s = sum(a(i:n,i)**2)
-   g = zero
-   if (infeq(tol,s)) then
-      f = a(i,i)
-      g = sqrt(s)
-      if (.not.(f>zero)) g = -g
-      h = f*g-s
-      a(i,i) = f-g
-      do j=l,n
-         f = dot_product(a(i:n,i),a(i:n,j))/h
-         a(i:n,j) = a(i:n,j)+f*a(i:n,i)
-      end do
-   end if
-   q(i) = g
-   s = sum(a(i,l:n)**2)
-   g = zero
-   if (infeq(tol,s)) then
-      if (i/=n) f = a(i,i+1)
-      g = sqrt(s)
-      if (.not.(f<zero)) g = -g
-      h = f*g-s
-      if (i/=n) then
-         a(i,i+1) = f-g
-         e(l:n) = a(i,l:n)/h
-         do j=l,n
-            s = dot_product(a(j,l:n),a(i,l:n))
-            a(j,l:n) = a(j,l:n)+s*e(l:n)
-         end do
-      end if
-   end if
-   y = abs(q(i))+abs(e(i))
-   x = max(x,y)
-end do
-
-! Accumulation of right-hand transformations
-a(n,n) = one
-g = e(n)
-l = n
-do i=n-1,1,-1
-   if (abs(g)>zero) then
-      h = a(i,i+1)*g
-      a(l:n,i) = a(i,l:n)/h
-      do j=l,n
-         s = dot_product(a(i,l:n),a(l:n,j))
-         a(l:n,j) = a(l:n,j)+s*a(l:n,i)
-      end do
-   end if
-   a(i,l:n) = zero
-   a(l:n,i) = zero
-   a(i,i) = one
-   g = e(i)
-   l = i
-end do
-
-! Diagonalization of the bidiagonal form
-eps = eps*x
-do k=n,1,-1
-   kt = 0
-   do
-      kt = kt+1
-      if (kt_max<kt) then
-         e(k) = zero
-         call mpl%abort('${subr}$','QR algorithm failed to converge')
-      end if
-      skip = .false.
-      do l2=k,1,-1
-         l = l2
-         if (infeq(abs(e(l)),eps)) then
-            skip = .true.
-            exit
-         end if
-         if (l/=1) then
-            if (infeq(abs(q(l-1)),eps)) exit
-         end if
-      end do
-
-      ! Cancellation of E(L) if 1<L
-      if (.not.skip) then
-         c = zero
-         s = one
-         do i=l,k
-            f = s*e(i)
-            e(i) = c*e(i)
-            if (infeq(abs(f),eps)) exit
-            g = q(i)
-            h = hypot(f,g)
-            q(i) = h
-            if (.not.(abs(h)>zero)) then
-               g = one
-               h = one
-            end if
-            c = g/h
-            s = -f/h
-         end do
-      end if
-
-      ! Test for convergence for this index K
-      z = q(k)
-      if (l==k) then
-         if (z<zero) then
-            q(k) = -z
-            a(1:n,k) = -a(1:n,k)
-         end if
-         exit
-      end if
-
-      ! Shift from bottom 2*2 minor
-      x = q(l)
-      if (k>1) then
-         y = q(max(k-1,1))
-         g = e(max(k-1,1))
-      else
-         call mpl%abort('${subr}$','index below the lower bound')
-      end if
-      h = e(k)
-      f = ((y-z)*(y+z)+(g-h)*(g+h))/(two*h*y)
-      g = hypot(f,one)
-      if (f<zero) then
-         temp = f-g
-      else
-         temp = f+g
-      end if
-      f = ((x-z)*(x+z)+h*(y/temp-h))/x
-
-      ! Next QR transformation
-      c = one
-      s = one
-      do i=l+1,k
-         g = e(i)
-         y = q(i)
-         h = s*g
-         g = g*c
-         z = hypot(f,h)
-         e(i-1) = z
-         if (.not.(abs(z)>zero)) then
-            f = one
-            z = one
-         end if
-         c = f/z
-         s = h/z
-         f = x*c+g*s
-         g = -x*s+g*c
-         h = y*s
-         y = y*c
-
-         do j=1,n
-            x = a(j,i-1)
-            z = a(j,i)
-            a(j,i-1) = x*c+z*s
-            a(j,i) = -x*s+z*c
-         end do
-         z = hypot(f,h)
-         q(i-1) = z
-         if (.not.(abs(z)>zero)) then
-            f = one
-            z = one
-         end if
-         c = f/z
-         s = h/z
-         f = c*g+s*y
-         x = -s*g+c*y
-      end do
-      e(l) = zero
-      e(k) = f
-      q(k) = x
-   end do
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine minim_minfit
-
-!----------------------------------------------------------------------
-! Subroutine: minim_swap
-!> Swaps the entries of two vectors
-! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
-!----------------------------------------------------------------------
-subroutine minim_swap(n,a1,a2)
-
-implicit none
-
-! Passed variables
-integer,intent(in) :: n                !< Vectors size
-real(kind_real),intent(inout) :: a1(n) !< First vector
-real(kind_real),intent(inout) :: a2(n) !< Second vector
-
-! Local variable
-real(kind_real) :: a3(n)
-
-! Set name
-@:set_name(minim_swap)
-
-! Probe in
-@:probe_in()
-
-a3(1:n) = a1(1:n)
-a1(1:n) = a2(1:n)
-a2(1:n) = a3(1:n)
-
-! Probe out
-@:probe_out()
-
-end subroutine minim_swap
-
-!----------------------------------------------------------------------
-! Subroutine: minim_svsort
-!> Descending sorts singular values D and adjusts V
-! Author:  FORTRAN77 original by Richard Brent, FORTRAN90 version by John Burkardt
-!----------------------------------------------------------------------
-subroutine minim_svsort(n,d,v)
-
-implicit none
-
-! Passed variables
-integer,intent(in) :: n                 !< Vector and array size
-real(kind_real),intent(inout) :: d(n)   !< Vector to be sorted
-real(kind_real),intent(inout) :: v(n,n) !< Array to adjust as d is sorted
-
-! Local variables
-integer :: i,j,j2,j3
-real(kind_real) :: t
-
-! Set name
-@:set_name(minim_svsort)
-
-! Probe in
-@:probe_in()
-
-do j=1,n-1
-   j3 = j
-   do j2=j+1,n
-      if (inf(d(j3),d(j2))) j3 = j2
-   end do
-   t = d(j)
-   d(j) = d(j3)
-   d(j3) = t
-   do i=1,n
-      t = v(i,j)
-      v(i,j) = v(i,j3)
-      v(i,j3) = t
-   end do
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine minim_svsort
 
 !----------------------------------------------------------------------
 ! Subroutine: vt_dir

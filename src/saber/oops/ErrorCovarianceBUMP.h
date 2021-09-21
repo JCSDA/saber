@@ -75,17 +75,28 @@ class ErrorCovarianceBUMP : public oops::ModelSpaceCovarianceBase<MODEL>,
 
 template<typename MODEL>
 ErrorCovarianceBUMP<MODEL>::ErrorCovarianceBUMP(const Geometry_ & resol,
-                                                const oops::Variables & vars,
+                                                const oops::Variables & inputVars,
                                                 const eckit::Configuration & conf,
                                                 const State_ & xb, const State_ & fg)
   : oops::ModelSpaceCovarianceBase<MODEL>(xb, fg, resol, conf), ooBump_()
 {
   oops::Log::trace() << "ErrorCovarianceBUMP::ErrorCovarianceBUMP starting" << std::endl;
 
-// Setup parameters
-  ParametersBUMP_ param(resol, vars, xb.validTime(), conf);
+  // Setup variables
+  oops::Variables activeVars;
+  if (conf.has("active variables")) {
+    activeVars = oops::Variables(conf, "active variables");
+  } else {
+    activeVars = inputVars;
+  }
 
-// Transfer OoBump pointer
+  // Check variables
+  ASSERT(activeVars <= inputVars);
+
+  // Setup parameters
+  ParametersBUMP_ param(resol, inputVars, activeVars, conf);
+
+  // Transfer OoBump pointer
   ooBump_.reset(new OoBump_(param.getOoBump()));
 
   oops::Log::trace() << "ErrorCovarianceBUMP::ErrorCovarianceBUMP done" << std::endl;

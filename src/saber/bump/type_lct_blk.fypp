@@ -9,11 +9,12 @@
 module type_lct_blk
 
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
-use netcdf, only: nf90_close,nf90_put_var
 !$ use omp_lib
 use tools_const, only: zero,tenth,half,one,two,reqkm,rad2deg
-use tools_func, only: gau2gc,lonlatmod,fit_lct,lct_d2h,check_cond,Dmin
-use tools_kinds, only: kind_real,nc_kind_int,nc_kind_real
+use tools_func, only: gau2gc,lonlatmod,fit_lct,lct_d2h,lct_h2r,check_cond,Dmin,vert_interp_size,vert_interp_setup,vert_interp, &
+ & zss_sum,zss_count
+use tools_kinds, only: kind_real
+use tools_netcdf, only: define_grp,put_att,define_dim,define_var,put_var
 use tools_repro, only: rth,inf,sup,eq
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
@@ -22,7 +23,6 @@ use type_mom_blk, only: mom_blk_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
-use type_rng, only: rng_type
 use type_samp, only: samp_type
 
 implicit none
@@ -32,7 +32,6 @@ type lct_blk_type
    ! Attributes
    integer :: ib                                    !< Block index
    integer :: nscales                               !< Number of LCT scales
-   character(len=1024) :: name                      !< Name
 
    ! Correlation/variances
    real(kind_real),allocatable :: raw(:,:,:,:)      !< Raw correlations
@@ -61,13 +60,42 @@ type lct_blk_type
    real(kind_real),allocatable :: D33(:,:,:)        !< Daley tensor, component 33
    real(kind_real),allocatable :: D12(:,:,:)        !< Daley tensor, component 12
    real(kind_real),allocatable :: Dcoef(:,:,:)      !< Tensor coefficient
-   real(kind_real),allocatable :: DLh(:,:,:)        !< Tensor length-scale
+   real(kind_real),allocatable :: DLh(:,:,:)        !< Tensor horizontal length-scale
+   real(kind_real),allocatable :: DLv(:,:,:)        !< Tensor vertical length-scale
+
+   ! I/O IDs
+   integer :: ncid                                  !< main ID
+   integer :: nc0_id                                !< nc0 ID
+   integer :: nl0_id                                !< nl0 ID
+   integer :: grpid                                 !< group ID
+   integer,allocatable :: subgrpid(:)               !< subgroup IDs
+   integer,allocatable :: D11_id(:)                 !< D11 IDs
+   integer,allocatable :: D22_id(:)                 !< D22 IDs
+   integer,allocatable :: D33_id(:)                 !< D33 IDs
+   integer,allocatable :: D12_id(:)                 !< D12 IDs
+   integer,allocatable :: H11_id(:)                 !< H11 IDs
+   integer,allocatable :: H22_id(:)                 !< H22 IDs
+   integer,allocatable :: H33_id(:)                 !< H33 IDs
+   integer,allocatable :: H12_id(:)                 !< H12 IDs
+   integer,allocatable :: coef_id(:)                !< coef IDs
+   integer,allocatable :: DLh_id(:)                 !< DLh IDs
+   integer,allocatable :: DLv_id(:)                 !< DLv IDs
+   integer :: qc_id                                 !< qc ID
+   integer :: lon_id                                !< lon ID
+   integer :: lat_id                                !< lat ID
+   integer :: vunit_id                              !< vunit ID
+   integer :: l0rl0_to_l0_id                        !< l0rl0_to_l0 ID
+   integer :: raw_id                                !< raw ID
+   integer :: fit_id                                !< fit ID
+   integer :: fit_filt_id                           !< fit_filt ID
 contains
    procedure :: alloc => lct_blk_alloc
    procedure :: partial_dealloc => lct_blk_partial_dealloc
    procedure :: dealloc => lct_blk_dealloc
-   procedure :: write => lct_blk_write
-   procedure :: write_cor => lct_blk_write_cor
+   procedure :: write_def => lct_blk_write_def
+   procedure :: write_data => lct_blk_write_data
+   procedure :: write_cor_def => lct_blk_write_cor_def
+   procedure :: write_cor_data => lct_blk_write_cor_data
    procedure :: compute => lct_blk_compute
    procedure :: filter => lct_blk_filter
    procedure :: interp => lct_blk_interp
@@ -126,6 +154,7 @@ allocate(lct_blk%H33(geom%nc0a,geom%nl0,lct_blk%nscales))
 allocate(lct_blk%H12(geom%nc0a,geom%nl0,lct_blk%nscales))
 allocate(lct_blk%Dcoef(geom%nc0a,geom%nl0,lct_blk%nscales))
 allocate(lct_blk%DLh(geom%nc0a,geom%nl0,lct_blk%nscales))
+allocate(lct_blk%DLv(geom%nc0a,geom%nl0,lct_blk%nscales))
 
 ! Probe out
 @:probe_out()
@@ -163,6 +192,18 @@ if (allocated(lct_blk%H11)) deallocate(lct_blk%H11)
 if (allocated(lct_blk%H22)) deallocate(lct_blk%H22)
 if (allocated(lct_blk%H33)) deallocate(lct_blk%H33)
 if (allocated(lct_blk%H12)) deallocate(lct_blk%H12)
+if (allocated(lct_blk%subgrpid)) deallocate(lct_blk%subgrpid)
+if (allocated(lct_blk%D11_id)) deallocate(lct_blk%D11_id)
+if (allocated(lct_blk%D22_id)) deallocate(lct_blk%D22_id)
+if (allocated(lct_blk%D33_id)) deallocate(lct_blk%D33_id)
+if (allocated(lct_blk%D12_id)) deallocate(lct_blk%D12_id)
+if (allocated(lct_blk%H11_id)) deallocate(lct_blk%H11_id)
+if (allocated(lct_blk%H22_id)) deallocate(lct_blk%H22_id)
+if (allocated(lct_blk%H33_id)) deallocate(lct_blk%H33_id)
+if (allocated(lct_blk%H12_id)) deallocate(lct_blk%H12_id)
+if (allocated(lct_blk%coef_id)) deallocate(lct_blk%coef_id)
+if (allocated(lct_blk%DLh_id)) deallocate(lct_blk%DLh_id)
+if (allocated(lct_blk%DLv_id)) deallocate(lct_blk%DLv_id)
 
 ! Probe out
 @:probe_out()
@@ -194,6 +235,7 @@ if (allocated(lct_blk%D33)) deallocate(lct_blk%D33)
 if (allocated(lct_blk%D12)) deallocate(lct_blk%D12)
 if (allocated(lct_blk%Dcoef)) deallocate(lct_blk%Dcoef)
 if (allocated(lct_blk%DLh)) deallocate(lct_blk%DLh)
+if (allocated(lct_blk%DLv)) deallocate(lct_blk%DLv)
 
 ! Probe out
 @:probe_out()
@@ -201,27 +243,25 @@ if (allocated(lct_blk%DLh)) deallocate(lct_blk%DLh)
 end subroutine lct_blk_dealloc
 
 !----------------------------------------------------------------------
-! Subroutine: lct_blk_write
-!> Write LCT
+! Subroutine: lct_blk_write_def
+!> Write LCT, definition mode
 !----------------------------------------------------------------------
-subroutine lct_blk_write(lct_blk,mpl,nam,geom,bpar,filename)
+subroutine lct_blk_write_def(lct_blk,mpl,nam,bpar)
 
 implicit none
 
 ! Passed variables
 class(lct_blk_type),intent(inout) :: lct_blk !< Averaged statistics block
-type(mpl_type),intent(inout) :: mpl          !< MPI data
 type(nam_type),intent(in) :: nam             !< Namelist
-type(geom_type),intent(in) :: geom           !< Geometry
+type(mpl_type),intent(inout) :: mpl          !< MPI data
 type(bpar_type),intent(in) :: bpar           !< Block parameters
-character(len=*),intent(in) :: filename      !< Filename
 
 ! Local variables
 integer :: iv,iscales
-character(len=1024) :: varname,scalename
+character(len=1024) :: grpname,subgrpname
 
 ! Set name
-@:set_name(lct_blk_write)
+@:set_name(lct_blk_write_def)
 
 ! Probe in
 @:probe_in()
@@ -229,25 +269,49 @@ character(len=1024) :: varname,scalename
 ! Associate
 associate(ib=>lct_blk%ib)
 
-! Indices
+! Get group name
 iv = bpar%b_to_v1(ib)
-varname = trim(nam%variables(iv))
+call nam%io_key_value(nam%variables(iv),grpname)
 
+! Define group
+lct_blk%grpid = define_grp(mpl,lct_blk%ncid,grpname)
+
+! Allocation
+allocate(lct_blk%subgrpid(lct_blk%nscales))
+allocate(lct_blk%D11_id(lct_blk%nscales))
+allocate(lct_blk%D22_id(lct_blk%nscales))
+allocate(lct_blk%D33_id(lct_blk%nscales))
+allocate(lct_blk%D12_id(lct_blk%nscales))
+allocate(lct_blk%H11_id(lct_blk%nscales))
+allocate(lct_blk%H22_id(lct_blk%nscales))
+allocate(lct_blk%H33_id(lct_blk%nscales))
+allocate(lct_blk%H12_id(lct_blk%nscales))
+allocate(lct_blk%coef_id(lct_blk%nscales))
+allocate(lct_blk%DLh_id(lct_blk%nscales))
+allocate(lct_blk%DLv_id(lct_blk%nscales))
+
+! Define variables
 do iscales=1,lct_blk%nscales
-   ! Write fields
-   write(scalename,'(a,i1)') 'scale_',iscales
-   call geom%io%fld_write(mpl,nam,filename,'D11',lct_blk%D11(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'D22',lct_blk%D22(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'D33',lct_blk%D33(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'D12',lct_blk%D12(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'H11',lct_blk%H11(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'H22',lct_blk%H22(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'H33',lct_blk%H33(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'H12',lct_blk%H12(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'coef',lct_blk%Dcoef(:,:,iscales),geom%gmask_c0a,varname,scalename)
-   call geom%io%fld_write(mpl,nam,filename,'Lh',lct_blk%DLh(:,:,iscales),geom%gmask_c0a,varname,scalename)
+   ! Get group name
+   write(subgrpname,'(a,i1)') 'scale_',iscales
+
+   ! Define subgroup
+   lct_blk%subgrpid(iscales) = define_grp(mpl,lct_blk%grpid,subgrpname)
+
+   ! Define variables
+   lct_blk%D11_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'D11','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%D22_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'D22','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%D33_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'D33','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%D12_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'D12','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%H11_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'H11','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%H22_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'H22','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%H33_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'H33','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%H12_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'H12','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%coef_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'coef','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%DLh_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'DLh','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
+   lct_blk%DLv_id(iscales) = define_var(mpl,lct_blk%subgrpid(iscales),'DLv','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
 end do
-call geom%io%fld_write(mpl,nam,filename,'qc',lct_blk%qc_c0a,geom%gmask_c0a,varname)
+lct_blk%qc_id = define_var(mpl,lct_blk%grpid,'qc','real',(/lct_blk%nc0_id,lct_blk%nl0_id/))
 
 ! End associate
 end associate
@@ -255,13 +319,56 @@ end associate
 ! Probe out
 @:probe_out()
 
-end subroutine lct_blk_write
+end subroutine lct_blk_write_def
 
 !----------------------------------------------------------------------
-! Subroutine: lct_blk_write_cor
-!> Write full correlations
+! Subroutine: lct_blk_write_data
+!> Write LCT, data mode
 !----------------------------------------------------------------------
-subroutine lct_blk_write_cor(lct_blk,mpl,nam,geom,bpar,samp)
+subroutine lct_blk_write_data(lct_blk,mpl,geom)
+
+implicit none
+
+! Passed variables
+class(lct_blk_type),intent(in) :: lct_blk !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+type(geom_type),intent(in) :: geom        !< Geometry
+
+! Local variables
+integer :: iscales
+
+! Set name
+@:set_name(lct_blk_write_data)
+
+! Probe in
+@:probe_in()
+
+! Write variables
+do iscales=1,lct_blk%nscales
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%D11_id(iscales),lct_blk%D11(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%D22_id(iscales),lct_blk%D22(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%D33_id(iscales),lct_blk%D33(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%D12_id(iscales),lct_blk%D12(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%H11_id(iscales),lct_blk%H11(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%H22_id(iscales),lct_blk%H22(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%H33_id(iscales),lct_blk%H33(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%H12_id(iscales),lct_blk%H12(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%coef_id(iscales),lct_blk%Dcoef(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%DLh_id(iscales),lct_blk%DLh(:,:,iscales),geom%gmask_c0a)
+   call geom%io%fld_write(mpl,lct_blk%subgrpid(iscales),lct_blk%DLv_id(iscales),lct_blk%DLv(:,:,iscales),geom%gmask_c0a)
+end do
+call geom%io%fld_write(mpl,lct_blk%grpid,lct_blk%qc_id,lct_blk%qc_c0a,geom%gmask_c0a)
+
+! Probe out
+@:probe_out()
+
+end subroutine lct_blk_write_data
+
+!----------------------------------------------------------------------
+! Subroutine: lct_blk_write_cor_def
+!> Write correlations (definition mode)
+!----------------------------------------------------------------------
+subroutine lct_blk_write_cor_def(lct_blk,mpl,nam,geom,bpar,samp)
 
 implicit none
 
@@ -274,12 +381,68 @@ type(bpar_type),intent(in) :: bpar           !< Block parameters
 type(samp_type),intent(in) :: samp           !< Sampling
 
 ! Local variables
-integer :: ncid,grpid,nc3_id,nl0r_id,nc1a_id,nl0_id,lon_id,lat_id,vunit_id,l0rl0_to_l0_id,raw_id,fit_id,fit_filt_id
-real(kind_real),allocatable :: lon(:,:),lat(:,:)
-character(len=1024) :: filename
+integer :: nc3_id,nl0r_id,nc1a_id,nl0_id
+integer :: iv
+character(len=1024) :: grpname
 
 ! Set name
-@:set_name(lct_blk_write_cor)
+@:set_name(lct_blk_write_cor_def)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ib=>lct_blk%ib)
+
+! Get group name
+iv = bpar%b_to_v1(ib)
+call nam%io_key_value(nam%variables(iv),grpname)
+
+! Define group
+lct_blk%grpid = define_grp(mpl,lct_blk%ncid,grpname)
+
+! Define dimensions
+nc3_id = define_dim(mpl,lct_blk%grpid,'nc3',bpar%nc3(ib))
+nl0r_id = define_dim(mpl,lct_blk%grpid,'nl0r',bpar%nl0r(ib))
+nc1a_id = define_dim(mpl,lct_blk%grpid,'nc1a',samp%nc1a)
+nl0_id = define_dim(mpl,lct_blk%grpid,'nl0',geom%nl0)
+
+! Define variables
+lct_blk%lon_id = define_var(mpl,lct_blk%grpid,'lon','real',(/nc3_id,nc1a_id/),'degrees_east')
+lct_blk%lat_id = define_var(mpl,lct_blk%grpid,'lat','real',(/nc3_id,nc1a_id/),'degrees_north')
+lct_blk%l0rl0_to_l0_id = define_var(mpl,lct_blk%grpid,'l0rl0_to_l0','int',(/nl0r_id,nl0_id/))
+lct_blk%raw_id = define_var(mpl,lct_blk%grpid,'raw','real',(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+lct_blk%fit_id = define_var(mpl,lct_blk%grpid,'fit','real',(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+if (nam%diag_rhflt>zero) lct_blk%fit_filt_id = define_var(mpl,lct_blk%grpid,'fit_filt','real',(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine lct_blk_write_cor_def
+
+!----------------------------------------------------------------------
+! Subroutine: lct_blk_write_cor_data
+!> Write correlations (data mode)
+!----------------------------------------------------------------------
+subroutine lct_blk_write_cor_data(lct_blk,mpl,nam,bpar,samp)
+
+implicit none
+
+! Passed variables
+class(lct_blk_type),intent(in) :: lct_blk !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+type(nam_type),intent(in) :: nam          !< Namelist
+type(bpar_type),intent(in) :: bpar        !< Block parameters
+type(samp_type),intent(in) :: samp        !< Sampling
+
+! Local variables
+real(kind_real),allocatable :: lon(:,:),lat(:,:)
+
+! Set name
+@:set_name(lct_blk_write_cor_data)
 
 ! Probe in
 @:probe_in()
@@ -295,46 +458,17 @@ allocate(lat(bpar%nc3(ib),samp%nc1a))
 lon = transpose(samp%lon_c3a)*rad2deg
 lat = transpose(samp%lat_c3a)*rad2deg
 
-! Define file
-write(filename,'(a,i6.6,a,i6.6)') trim(nam%prefix)//'_lct_cor_',mpl%nproc,'-',mpl%myproc
-ncid = mpl%nc_file_create_or_open(trim(nam%datadir)//'/'//trim(filename)//'.nc')
-
-! Write namelist parameters
-call nam%write(mpl,ncid)
-
-! Define group
-grpid = mpl%nc_group_define_or_get(ncid,bpar%blockname(ib))
-
-! Define dimensions
-nc3_id = mpl%nc_dim_define_or_get(grpid,'nc3',bpar%nc3(ib))
-nl0r_id = mpl%nc_dim_define_or_get(grpid,'nl0r',bpar%nl0r(ib))
-nc1a_id = mpl%nc_dim_define_or_get(ncid,'nc1a',samp%nc1a)
-nl0_id = mpl%nc_dim_define_or_get(ncid,'nl0',geom%nl0)
-
-! Define coordinates
-lon_id = mpl%nc_var_define_or_get(grpid,'lon',nc_kind_real,(/nc3_id,nc1a_id/))
-lat_id = mpl%nc_var_define_or_get(grpid,'lat',nc_kind_real,(/nc3_id,nc1a_id/))
-vunit_id = mpl%nc_var_define_or_get(ncid,'vunit',nc_kind_real,(/nl0_id/))
-
-! Define variables
-l0rl0_to_l0_id = mpl%nc_var_define_or_get(grpid,'l0rl0_to_l0',nc_kind_int,(/nl0r_id,nl0_id/))
-raw_id = mpl%nc_var_define_or_get(grpid,'raw',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
-fit_id = mpl%nc_var_define_or_get(grpid,'fit',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
-if (nam%diag_rhflt>zero) fit_filt_id = mpl%nc_var_define_or_get(grpid,'fit_filt',nc_kind_real,(/nc3_id,nl0r_id,nc1a_id,nl0_id/))
-
-! Write coordinates
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,lon_id,lon))
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,lat_id,lat))
-call mpl%ncerr('${subr}$',nf90_put_var(ncid,vunit_id,geom%vunitavg))
-
 ! Write variables
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib)))
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,raw_id,lct_blk%raw))
-call mpl%ncerr('${subr}$',nf90_put_var(grpid,fit_id,lct_blk%fit))
-if (nam%diag_rhflt>zero) call mpl%ncerr('${subr}$',nf90_put_var(grpid,fit_filt_id,lct_blk%fit_filt))
+call put_var(mpl,lct_blk%grpid,lct_blk%lon_id,lon)
+call put_var(mpl,lct_blk%grpid,lct_blk%lat_id,lat)
+call put_var(mpl,lct_blk%grpid,lct_blk%l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib))
+call put_var(mpl,lct_blk%grpid,lct_blk%raw_id,lct_blk%raw)
+call put_var(mpl,lct_blk%grpid,lct_blk%fit_id,lct_blk%fit)
+if (nam%diag_rhflt>zero) call put_var(mpl,lct_blk%grpid,lct_blk%fit_filt_id,lct_blk%fit_filt)
 
-! Close file
-call mpl%ncerr('${subr}$',nf90_close(ncid))
+! Release memory
+deallocate(lon)
+deallocate(lat)
 
 ! End associate
 end associate
@@ -342,20 +476,19 @@ end associate
 ! Probe out
 @:probe_out()
 
-end subroutine lct_blk_write_cor
+end subroutine lct_blk_write_cor_data
 
 !----------------------------------------------------------------------
 ! Subroutine: lct_blk_compute
 !> Compute raw correlation and fit to get LCT components
 !----------------------------------------------------------------------
-subroutine lct_blk_compute(lct_blk,mpl,rng,nam,geom,bpar,samp,mom_blk)
+subroutine lct_blk_compute(lct_blk,mpl,nam,geom,bpar,samp,mom_blk)
 
 implicit none
 
 ! Passed variables
 class(lct_blk_type),intent(inout) :: lct_blk !< LCT block
 type(mpl_type),intent(inout) :: mpl          !< MPI data
-type(rng_type),intent(inout) :: rng          !< Random number generator
 type(nam_type),intent(in) :: nam             !< Namelist
 type(geom_type),intent(in) :: geom           !< Geometry
 type(bpar_type),intent(in) :: bpar           !< Block parameters
@@ -363,11 +496,13 @@ type(samp_type),intent(in) :: samp           !< Sampling
 type(mom_blk_type),intent(in) :: mom_blk     !< Moments block
 
 ! Local variables
-integer :: jsub,il0,jl0r,jl0,jc3,ic1a,iscales,icomp
-real(kind_real) :: den,dx,dy,dz,distsq,Dhbar,Dvbar,norm
-real(kind_real),allocatable :: norm_raw(:,:),Dh(:),Dv(:)
-logical :: valid
-logical,allocatable :: Dv_valid(:)
+integer :: nl1,il1,il0,jl0r,jl0rz,jl0,jc3,ic1a,iscales,icomp,ix
+integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
+real(kind_real) :: dx,dy,dz,distsq,Dhbar,Dvbar,norm,m2_1,m2_2,m11
+real(kind_real),allocatable :: rinf(:),rsup(:),D_l1(:,:,:,:),coef_l1(:,:,:),Dh(:),Dv(:)
+real(kind_real),allocatable :: dxsq(:,:,:,:),dysq(:,:,:,:),dxdy(:,:,:,:),dzsq(:,:,:,:)
+real(kind_real),allocatable :: profile_l1(:),profile_l0(:)
+logical,allocatable :: smask_c1a(:,:),dmask(:,:,:,:),Dv_valid(:)
 type(minim_type) :: minim
 
 ! Set name
@@ -379,89 +514,111 @@ type(minim_type) :: minim
 ! Associate
 associate(ib=>lct_blk%ib)
 
+! Count interpolation levels
+call vert_interp_size(geom%nl0,nam%fit_dl0,nl1)
+
+! Allocation
+allocate(il0_interp(nl1))
+allocate(il1inf(geom%nl0))
+allocate(il1sup(geom%nl0))
+allocate(rinf(geom%nl0))
+allocate(rsup(geom%nl0))
+allocate(D_l1(4,lct_blk%nscales,samp%nc1a,nl1))
+allocate(coef_l1(lct_blk%nscales,samp%nc1a,nl1))
+
+! Get interpolation levels and weights
+call vert_interp_setup(geom%nl0,nam%fit_dl0,nl1,il0_interp,il1inf,il1sup,rinf,rsup)
+
 ! Initialization
 lct_blk%raw = zero
 
+! Hooke parameters
+minim%hooke_rho = half
+minim%hooke_tol = 1.0e-4_kind_real
+minim%hooke_itermax = 10
+
+! Allocation
+allocate(Dh(nam%nc3))
+allocate(Dv(bpar%nl0r(ib)))
+allocate(Dv_valid(bpar%nl0r(ib)))
+allocate(smask_c1a(samp%nc1a,nl1))
+allocate(dxsq(nam%nc3,bpar%nl0r(ib),samp%nc1a,geom%nl0))
+allocate(dysq(nam%nc3,bpar%nl0r(ib),samp%nc1a,geom%nl0))
+allocate(dxdy(nam%nc3,bpar%nl0r(ib),samp%nc1a,geom%nl0))
+allocate(dzsq(nam%nc3,bpar%nl0r(ib),samp%nc1a,geom%nl0))
+allocate(dmask(nam%nc3,bpar%nl0r(ib),samp%nc1a,geom%nl0))
+minim%nx = 0
+do iscales=1,lct_blk%nscales
+   minim%nx = minim%nx+2
+   if (bpar%nl0r(ib)>1) minim%nx = minim%nx+1
+   if (.not.nam%lct_diag(iscales)) minim%nx = minim%nx+1
+end do
+minim%nx = minim%nx+lct_blk%nscales-1
+minim%ny = nam%nc3*bpar%nl0r(ib)
+allocate(minim%x(minim%nx))
+allocate(minim%guess(minim%nx))
+allocate(minim%binf(minim%nx))
+allocate(minim%bsup(minim%nx))
+allocate(minim%obs(minim%ny))
+allocate(minim%lct_diag(lct_blk%nscales))
+allocate(minim%dxsq(nam%nc3,bpar%nl0r(ib)))
+allocate(minim%dysq(nam%nc3,bpar%nl0r(ib)))
+allocate(minim%dxdy(nam%nc3,bpar%nl0r(ib)))
+allocate(minim%dzsq(nam%nc3,bpar%nl0r(ib)))
+allocate(minim%dmask(nam%nc3,bpar%nl0r(ib)))
+allocate(profile_l1(nl1))
+allocate(profile_l0(geom%nl0))
+
+! Initialization
+smask_c1a = samp%smask_c1a(:,il0_interp)
 do il0=1,geom%nl0
+   do ic1a=1,samp%nc1a
+      do jl0r=1,bpar%nl0r(ib)
+         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+         do jc3=1,nam%nc3
+            dmask(jc3,jl0r,ic1a,il0) = samp%smask_c3a(ic1a,jc3,jl0)
+            if (dmask(jc3,jl0r,ic1a,il0)) then
+               dx = samp%lon_c3a(ic1a,jc3)-samp%lon_c1a(ic1a)
+               dy = samp%lat_c3a(ic1a,jc3)-samp%lat_c1a(ic1a)
+               call lonlatmod(dx,dy)
+               dx = dx*cos(samp%lat_c1a(ic1a))
+               dz = samp%vunit_c1a(ic1a,jl0)-samp%vunit_c1a(ic1a,il0)
+               dxsq(jc3,jl0r,ic1a,il0) = dx**2
+               dysq(jc3,jl0r,ic1a,il0) = dy**2
+               dxdy(jc3,jl0r,ic1a,il0) = dx*dy
+               dzsq(jc3,jl0r,ic1a,il0) = dz**2
+            end if
+         end do
+      end do
+   end do
+end do
+
+do il1=1,nl1
+   ! Index
+   il0 = il0_interp(il1)
+   jl0rz = bpar%il0rz(il0,ib)
+
    write(mpl%info,'(a13,a,i3,a)') '','Level ',nam%levs(il0),':'
    call mpl%flush(.false.)
    call mpl%prog_init(samp%nc1a)
 
    do ic1a=1,samp%nc1a
-      select case (trim(nam%minim_algo))
-      case ('hooke')
-         ! Hooke parameters
-         minim%hooke_rho = half
-         minim%hooke_tol = 1.0e-4_kind_real
-         minim%hooke_itermax = 10
-      case ('praxis')
-         ! Praxis parameters
-         minim%praxis_tol = one
-         minim%praxis_itermax = 5
-      end select
-
-      ! Allocation
-      allocate(norm_raw(nam%nc3,bpar%nl0r(ib)))
-      allocate(Dh(nam%nc3))
-      allocate(Dv(bpar%nl0r(ib)))
-      allocate(Dv_valid(bpar%nl0r(ib)))
-      minim%nx = lct_blk%nscales*4
-      if (lct_blk%nscales>1) minim%nx = minim%nx+lct_blk%nscales-1
-      minim%ny = nam%nc3*bpar%nl0r(ib)
-      allocate(minim%x(minim%nx))
-      allocate(minim%guess(minim%nx))
-      allocate(minim%binf(minim%nx))
-      allocate(minim%bsup(minim%nx))
-      allocate(minim%obs(minim%ny))
-      allocate(minim%dxsq(nam%nc3,bpar%nl0r(ib)))
-      allocate(minim%dysq(nam%nc3,bpar%nl0r(ib)))
-      allocate(minim%dxdy(nam%nc3,bpar%nl0r(ib)))
-      allocate(minim%dzsq(nam%nc3,bpar%nl0r(ib)))
-      allocate(minim%dmask(nam%nc3,bpar%nl0r(ib)))
-
-      if (samp%smask_c1a(ic1a,il0)) then
-         ! Initialization
-         norm_raw = zero
-
+      if (smask_c1a(ic1a,il1)) then
          ! Compute correlation
          do jl0r=1,bpar%nl0r(ib)
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             do jc3=1,nam%nc3
                if (samp%smask_c3a(ic1a,jc3,jl0)) then
-                  do jsub=1,mom_blk%nsub
-                     den = mom_blk%m2_1(ic1a,il0,jsub)*mom_blk%m2_2(ic1a,jc3,jl0,jsub)
-                     if (den>zero) then
-                        lct_blk%raw(jc3,jl0r,ic1a,il0) = lct_blk%raw(jc3,jl0r,ic1a,il0)+ &
- & mom_blk%m11(ic1a,jc3,jl0r,il0,jsub)/sqrt(den)
-                        norm_raw(jc3,jl0r) = norm_raw(jc3,jl0r)+one
-                     end if
-                  end do
-               end if
-            end do
-         end do
+                  m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(mom_blk%nsub,kind_real)
+                  m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jl0,:))/real(mom_blk%nsub,kind_real)
+                  m11 = sum(mom_blk%m11(ic1a,jc3,jl0r,il0,:))/real(mom_blk%nsub,kind_real)
 
-         ! Normalize
-         do jl0r=1,bpar%nl0r(ib)
-            do jc3=1,nam%nc3
-               if (norm_raw(jc3,jl0r)>zero) lct_blk%raw(jc3,jl0r,ic1a,il0) = lct_blk%raw(jc3,jl0r,ic1a,il0)/norm_raw(jc3,jl0r)
-            end do
-         end do
-
-         ! Compute deltas
-         do jl0r=1,bpar%nl0r(ib)
-            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-            do jc3=1,nam%nc3
-               minim%dmask(jc3,jl0r) = samp%smask_c3a(ic1a,jc3,jl0)
-               if (minim%dmask(jc3,jl0r)) then
-                  dx = samp%lon_c3a(ic1a,jc3)-samp%lon_c1a(ic1a)
-                  dy = samp%lat_c3a(ic1a,jc3)-samp%lat_c1a(ic1a)
-                  call lonlatmod(dx,dy)
-                  dx = dx*cos(samp%lat_c1a(ic1a))
-                  dz = samp%vunit_c1a(ic1a,jl0)-samp%vunit_c1a(ic1a,il0)
-                  minim%dxsq(jc3,jl0r) = dx**2
-                  minim%dysq(jc3,jl0r) = dy**2
-                  minim%dxdy(jc3,jl0r) = dx*dy
-                  minim%dzsq(jc3,jl0r) = dz**2
+                  if ((m2_1>zero).and.(m2_2>zero)) then
+                     lct_blk%raw(jc3,jl0r,ic1a,il0) = m11/sqrt(m2_1*m2_2)
+                     if (sup(abs(lct_blk%raw(jc3,jl0r,ic1a,il0)),one)) lct_blk%raw(jc3,jl0r,ic1a,il0) = mpl%msv%valr
+                  else
+                     lct_blk%raw(jc3,jl0r,ic1a,il0) = mpl%msv%valr
+                  end if
                end if
             end do
          end do
@@ -472,8 +629,8 @@ do il0=1,geom%nl0
             jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
             if (il0==jl0) then
                do jc3=1,nam%nc3
-                  if (minim%dmask(jc3,jl0r)) then
-                     distsq = minim%dxsq(jc3,jl0r)+minim%dysq(jc3,jl0r)
+                  if (dmask(jc3,jl0r,ic1a,il1)) then
+                     distsq = dxsq(jc3,jl0r,ic1a,il1)+dysq(jc3,jl0r,ic1a,il1)
                      if (sup(lct_blk%raw(jc3,jl0r,ic1a,il0),nam%lct_cor_min).and.inf(lct_blk%raw(jc3,jl0r,ic1a,il0), &
  & one).and.(distsq>zero)) Dh(jc3) = -distsq/(two*log(lct_blk%raw(jc3,jl0r,ic1a,il0)))
                   end if
@@ -488,8 +645,8 @@ do il0=1,geom%nl0
          Dv_valid = .false.
          jc3 = 1
          do jl0r=1,bpar%nl0r(ib)
-            if (minim%dmask(jc3,jl0r)) then
-               distsq = minim%dzsq(jc3,jl0r)
+            if (dmask(jc3,jl0r,ic1a,il1)) then
+               distsq = dzsq(jc3,jl0r,ic1a,il1)
                if (inf(abs(lct_blk%raw(jc3,jl0r,ic1a,il0)),one).and.(distsq>zero)) then
                   if (lct_blk%raw(jc3,jl0r,ic1a,il0)>zero) Dv(jl0r) = -distsq/(two*log(lct_blk%raw(jc3,jl0r,ic1a,il0)))
                   Dv_valid(jl0r) = .true.
@@ -509,115 +666,171 @@ do il0=1,geom%nl0
              Dvbar = zero
          end if
 
-         if (mpl%msv%isnot(Dhbar).and.(mpl%msv%isnot(Dvbar))) then
-            ! Define norm and bounds
-            do iscales=1,lct_blk%nscales
-               minim%guess((iscales-1)*4+1:(iscales-1)*4+3) = (/Dhbar,Dhbar,Dvbar/)*nam%lct_scale_ratio**(iscales-1)
+         ! Update mask
+         smask_c1a(ic1a,il1) = smask_c1a(ic1a,il1).and.(mpl%msv%isnot(Dhbar).and.(mpl%msv%isnot(Dvbar)))
+      end if
+
+      if (smask_c1a(ic1a,il1)) then
+         ! Define norm and bounds
+         ix = 0
+         do iscales=1,lct_blk%nscales
+            ! Horizontal diagonal components
+            if (lct_blk%nscales==1) then
+               minim%guess(ix+1:ix+2) = Dhbar
+               minim%binf(ix+1:ix+2) = one/nam%lct_scale_ratio*minim%guess(ix+1:ix+2)
+               minim%bsup(ix+1:ix+2) = nam%lct_scale_ratio*minim%guess(ix+1:ix+2)
+            else
+               minim%guess(ix+1:ix+2) = Dhbar*nam%lct_scale_ratio**(iscales-1)
+               minim%binf(ix+1:ix+2) = one/sqrt(nam%lct_scale_ratio)*minim%guess(ix+1:ix+2)
+               minim%bsup(ix+1:ix+2) = sqrt(nam%lct_scale_ratio)*minim%guess(ix+1:ix+2)
+            end if
+            ix = ix+2
+
+            if (bpar%nl0r(ib)>1) then
+               ! Vertical component
                if (lct_blk%nscales==1) then
-                  minim%binf((iscales-1)*4+1:(iscales-1)*4+3) = (/one/nam%lct_scale_ratio,one/nam%lct_scale_ratio, &
- & one/nam%lct_scale_ratio/)*minim%guess(1:3)
-                  minim%bsup((iscales-1)*4+1:(iscales-1)*4+3) = (/nam%lct_scale_ratio,nam%lct_scale_ratio,nam%lct_scale_ratio/) &
- & *minim%guess(1:3)
+                  minim%guess(ix+1) = Dvbar
+                  minim%binf(ix+1) = one/nam%lct_scale_ratio*minim%guess(ix+1)
+                  minim%bsup(ix+1) = nam%lct_scale_ratio*minim%guess(ix+1)
                else
-                  minim%binf((iscales-1)*4+1:(iscales-1)*4+3) = (/one/sqrt(nam%lct_scale_ratio),one/sqrt(nam%lct_scale_ratio), &
- & one/sqrt(nam%lct_scale_ratio)/) &
- & *minim%guess(1:3)*nam%lct_scale_ratio**(iscales-1)
-                  minim%bsup((iscales-1)*4+1:(iscales-1)*4+3) = (/sqrt(nam%lct_scale_ratio),sqrt(nam%lct_scale_ratio), &
- & sqrt(nam%lct_scale_ratio)/)*minim%guess(1:3)*nam%lct_scale_ratio**(iscales-1)
+                  minim%guess(ix+1) = Dvbar*nam%lct_scale_ratio**(iscales-1)
+                  minim%binf(ix+1) = one/sqrt(nam%lct_scale_ratio)*minim%guess(ix+1)
+                  minim%bsup(ix+1) = sqrt(nam%lct_scale_ratio)*minim%guess(ix+1)
                end if
-               minim%guess((iscales-1)*4+4) = zero
-               if (nam%lct_diag(iscales)) then
-                  ! Diagonal tensor
-                  minim%binf((iscales-1)*4+4) = -1.0e-12_kind_real
-                  minim%bsup((iscales-1)*4+4) = 1.0e-12_kind_real
-               else
-                  ! Non-diagonal tensor
-                  minim%binf((iscales-1)*4+4) = -one
-                  minim%bsup((iscales-1)*4+4) = one
-               end if
-            end do
+               ix = ix+1
+            end if
+
+            if (.not.nam%lct_diag(iscales)) then
+               ! Horizontal off-diagonal component
+               minim%guess(ix+1) = zero
+               minim%binf(ix+1) = -one
+               minim%bsup(ix+1) = one
+               ix = ix+1
+            end if
+         end do
+
+         ! Coefficient
+         do iscales=1,lct_blk%nscales-1
+            minim%guess(ix+1) = one/real(lct_blk%nscales,kind_real)
+            minim%binf(ix+1) = tenth
+            minim%bsup(ix+1) = one
+            ix = ix+1
+         end do
+
+         ! Fill minim
+         minim%dxsq = dxsq(:,:,ic1a,il0)
+         minim%dysq = dysq(:,:,ic1a,il0)
+         minim%dxdy = dxdy(:,:,ic1a,il0)
+         minim%dzsq = dzsq(:,:,ic1a,il0)
+         minim%dmask = dmask(:,:,ic1a,il0)
+         minim%obs = reshape(lct_blk%raw(:,:,ic1a,il0),(/minim%ny/))
+         minim%cost_function = 'fit_lct'
+         minim%nc3 = nam%nc3
+         minim%nl0r = bpar%nl0r(ib)
+         minim%nscales = lct_blk%nscales
+         minim%lct_diag = nam%lct_diag(1:lct_blk%nscales)
+
+         ! Compute fit
+         call minim%compute(mpl)
+
+         ! Define norm and bounds
+         ix = 0
+         do iscales=1,lct_blk%nscales
+            ! Horizontal diagonal components
+            D_l1(1:2,iscales,ic1a,il1) = minim%x(ix+1:ix+2)
+            ix = ix+2
+
+            if (bpar%nl0r(ib)>1) then
+               ! Vertical component
+               D_l1(3,iscales,ic1a,il1) = minim%x(ix+1)
+               ix = ix+1
+            else
+               ! Set vertical component to zero for the 2D case
+               D_l1(3,iscales,ic1a,il1) = zero
+            end if
+
+            if (nam%lct_diag(iscales)) then
+               ! Set off-diagonal component to zero for the diagonal case
+               D_l1(4,iscales,ic1a,il1) = zero
+            else
+               ! Horizontal off-diagonal component
+               D_l1(4,iscales,ic1a,il1) = minim%guess(ix+1)
+               ix = ix+1
+            end if
+         end do
+
+         ! Coefficient
+         if (lct_blk%nscales>1) then
             do iscales=1,lct_blk%nscales-1
-               minim%guess(lct_blk%nscales*4+1) = one/real(lct_blk%nscales,kind_real)
-               minim%binf(lct_blk%nscales*4+1) = tenth
-               minim%bsup(lct_blk%nscales*4+1) = one
+               coef_l1(iscales,ic1a,il1) = minim%x(ix+1)
+               ix = ix+1
             end do
-
-            ! Fill minim
-            minim%obs = reshape(lct_blk%raw(:,:,ic1a,il0),(/minim%ny/))
-            minim%cost_function = 'fit_lct'
-            minim%algo = nam%minim_algo
-            minim%nc3 = nam%nc3
-            minim%nl0 = bpar%nl0r(ib)
-            minim%nscales = lct_blk%nscales
-
-            ! Compute fit
-            call minim%compute(mpl,rng)
-
-            ! Copy parameters
-            do iscales=1,lct_blk%nscales
-               do icomp=1,4
-                   lct_blk%D(icomp,iscales,ic1a,il0) = minim%x((iscales-1)*4+icomp)
-               end do
-            end do
-            if (lct_blk%nscales>1) then
-               lct_blk%coef(1:lct_blk%nscales-1,ic1a,il0) = minim%x(lct_blk%nscales*4+1:lct_blk%nscales*4+lct_blk%nscales-1)
-               lct_blk%coef(lct_blk%nscales,ic1a,il0) = one-sum(lct_blk%coef(1:lct_blk%nscales-1,ic1a,il0))
-            else
-               lct_blk%coef(1,ic1a,il0) = one
-            end if
-
-            ! Set vertical value at zero for the 2D case
-            if (bpar%nl0r(ib)==1) lct_blk%D(3,:,ic1a,il0) = zero
-
-            ! Check tensor validity
-            valid = .true.
-            do iscales=1,lct_blk%nscales
-               if (valid) then
-                  call check_cond(lct_blk%D(1,iscales,ic1a,il0),lct_blk%D(2,iscales,ic1a,il0),lct_blk%D(4,iscales,ic1a,il0),valid)
-                  if (bpar%nl0r(ib)>1) valid = valid.and.(lct_blk%D(3,iscales,ic1a,il0)>zero)
-                  valid = valid.and.(lct_blk%coef(iscales,ic1a,il0)>zero)
-                  if (lct_blk%nscales>1) valid = valid.and.(inf(lct_blk%coef(iscales,ic1a,il0),one))
-               end if
-            end do
-            if (valid) then
-               do iscales=1,lct_blk%nscales
-                  if (nam%lct_diag(iscales)) lct_blk%D(4,iscales,ic1a,il0) = zero
-               end do
-
-               ! Rebuild fit
-               call fit_lct(mpl,nam%nc3,bpar%nl0r(ib),minim%dxsq,minim%dysq,minim%dxdy,minim%dzsq,minim%dmask,lct_blk%nscales, &
- & lct_blk%D(:,:,ic1a,il0),lct_blk%coef(:,ic1a,il0),lct_blk%fit(:,:,ic1a,il0))
-
-               ! Quality control
-               lct_blk%qc_c1a(ic1a,il0) = zero
-               norm = zero
-               do jl0r=1,bpar%nl0r(ib)
-                  jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-                  do jc3=1,nam%nc3
-                     if (samp%smask_c3a(ic1a,jc3,jl0)) then
-                        if (mpl%msv%isnot(lct_blk%fit(jc3,jl0r,ic1a,il0)).and.lct_blk%raw(jc3,jl0r,ic1a,il0)>nam%lct_qc_th) then
-                           lct_blk%qc_c1a(ic1a,il0) = lct_blk%qc_c1a(ic1a,il0)+ &
- & (lct_blk%fit(jc3,jl0r,ic1a,il0)-lct_blk%raw(jc3,jl0r,ic1a,il0))**2
-                           norm = norm+one
-                        end if
-                     end if
-                  end do
-               end do
-               lct_blk%qc_c1a(ic1a,il0) = sqrt(lct_blk%qc_c1a(ic1a,il0)/norm)
-               if (lct_blk%qc_c1a(ic1a,il0)>nam%lct_qc_max) then
-                  ! Missing values
-                  lct_blk%D(:,:,ic1a,il0) = mpl%msv%valr
-                  lct_blk%coef(:,ic1a,il0) = mpl%msv%valr
-                  lct_blk%fit(:,:,ic1a,il0) = mpl%msv%valr
-               end if
-            else
-               ! Missing values
-               lct_blk%D(:,:,ic1a,il0) = mpl%msv%valr
-               lct_blk%coef(:,ic1a,il0) = mpl%msv%valr
-               lct_blk%fit(:,:,ic1a,il0) = mpl%msv%valr
-               lct_blk%qc_c1a(ic1a,il0) = mpl%msv%valr
-            end if
+            coef_l1(lct_blk%nscales,ic1a,il1) = one-sum(coef_l1(1:lct_blk%nscales-1,ic1a,il1))
          else
+            coef_l1(1,ic1a,il1) = one
+         end if
+
+         ! Check tensor validity
+         do iscales=1,lct_blk%nscales
+            if (smask_c1a(ic1a,il1)) then
+               call check_cond(D_l1(1,iscales,ic1a,il1),D_l1(2,iscales,ic1a,il1),D_l1(4,iscales,ic1a,il1),smask_c1a(ic1a,il1))
+               if (bpar%nl0r(ib)>1) smask_c1a(ic1a,il1) = smask_c1a(ic1a,il1).and.(D_l1(3,iscales,ic1a,il1)>zero)
+               smask_c1a(ic1a,il1) = smask_c1a(ic1a,il1).and.(coef_l1(iscales,ic1a,il1)>zero)
+               if (lct_blk%nscales>1) smask_c1a(ic1a,il1) = smask_c1a(ic1a,il1).and.(inf(coef_l1(iscales,ic1a,il1),one))
+            end if
+         end do
+      end if
+
+      ! Set masked points at missing value
+      if (.not.smask_c1a(ic1a,il1)) then
+         D_l1(:,:,ic1a,il1) = mpl%msv%valr
+         coef_l1(:,ic1a,il1) = mpl%msv%valr
+      end if
+
+      ! Update
+      call mpl%prog_print(ic1a)
+   end do
+   call mpl%prog_final
+end do
+
+do ic1a=1,samp%nc1a
+   ! Interpolate results
+   do iscales=1,lct_blk%nscales
+      do icomp=1,4
+         profile_l1 = D_l1(icomp,iscales,ic1a,:)
+         call vert_interp(mpl,nl1,profile_l1,geom%nl0,il1inf,il1sup,rinf,rsup,profile_l0)
+         lct_blk%D(icomp,iscales,ic1a,:) = profile_l0
+      end do
+      profile_l1 = coef_l1(iscales,ic1a,:)
+      call vert_interp(mpl,nl1,profile_l1,geom%nl0,il1inf,il1sup,rinf,rsup,profile_l0)
+      lct_blk%coef(iscales,ic1a,:) = profile_l0
+   end do
+end do
+
+do il0=1,geom%nl0
+   do ic1a=1,samp%nc1a
+      if (mpl%msv%isallnot(lct_blk%D(:,:,ic1a,il0)).and.mpl%msv%isallnot(lct_blk%coef(:,ic1a,il0))) then
+         ! Rebuild fit
+         call fit_lct(mpl,nam%nc3,bpar%nl0r(ib),dxsq(:,:,ic1a,il0),dysq(:,:,ic1a,il0),dxdy(:,:,ic1a,il0),dzsq(:,:,ic1a,il0), &
+ & dmask(:,:,ic1a,il0),lct_blk%nscales,lct_blk%D(:,:,ic1a,il0),lct_blk%coef(:,ic1a,il0),lct_blk%fit(:,:,ic1a,il0))
+
+         ! Quality control
+         lct_blk%qc_c1a(ic1a,il0) = zero
+         norm = zero
+         do jl0r=1,bpar%nl0r(ib)
+            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+            do jc3=1,nam%nc3
+               if (samp%smask_c3a(ic1a,jc3,jl0)) then
+                  if (mpl%msv%isnot(lct_blk%fit(jc3,jl0r,ic1a,il0)).and.(lct_blk%raw(jc3,jl0r,ic1a,il0)>nam%lct_qc_th)) then
+                     lct_blk%qc_c1a(ic1a,il0) = lct_blk%qc_c1a(ic1a,il0)+ &
+ & (lct_blk%fit(jc3,jl0r,ic1a,il0)-lct_blk%raw(jc3,jl0r,ic1a,il0))**2
+                     norm = norm+one
+                  end if
+               end if
+            end do
+         end do
+         lct_blk%qc_c1a(ic1a,il0) = sqrt(lct_blk%qc_c1a(ic1a,il0)/norm)
+         if (lct_blk%qc_c1a(ic1a,il0)>nam%lct_qc_max) then
             ! Missing values
             lct_blk%D(:,:,ic1a,il0) = mpl%msv%valr
             lct_blk%coef(:,ic1a,il0) = mpl%msv%valr
@@ -631,28 +844,29 @@ do il0=1,geom%nl0
          lct_blk%fit(:,:,ic1a,il0) = mpl%msv%valr
          lct_blk%qc_c1a(ic1a,il0) = mpl%msv%valr
       end if
-
-      ! Release memory
-      deallocate(norm_raw)
-      deallocate(Dh)
-      deallocate(Dv)
-      deallocate(Dv_valid)
-      deallocate(minim%x)
-      deallocate(minim%guess)
-      deallocate(minim%binf)
-      deallocate(minim%bsup)
-      deallocate(minim%obs)
-      deallocate(minim%dxsq)
-      deallocate(minim%dysq)
-      deallocate(minim%dxdy)
-      deallocate(minim%dzsq)
-      deallocate(minim%dmask)
-
-      ! Update
-      call mpl%prog_print(ic1a)
    end do
-   call mpl%prog_final
 end do
+
+! Release memory
+deallocate(smask_c1a)
+deallocate(dxsq)
+deallocate(dysq)
+deallocate(dxdy)
+deallocate(dzsq)
+deallocate(dmask)
+deallocate(minim%x)
+deallocate(minim%guess)
+deallocate(minim%binf)
+deallocate(minim%bsup)
+deallocate(minim%obs)
+deallocate(minim%lct_diag)
+deallocate(minim%dxsq)
+deallocate(minim%dysq)
+deallocate(minim%dxdy)
+deallocate(minim%dzsq)
+deallocate(minim%dmask)
+deallocate(profile_l1)
+deallocate(profile_l0)
 
 ! End associate
 end associate
@@ -702,9 +916,9 @@ do il0=1,geom%nl0
       do icomp=1,4+1
          ! Copy
          if (icomp<=4) then
-            fld_c2a = lct_blk%D(icomp,iscales,samp%c2a_to_c1a,il0)
+             fld_c2a = lct_blk%D(icomp,iscales,:,il0)
          else
-            fld_c2a = lct_blk%coef(iscales,samp%c2a_to_c1a,il0)
+            fld_c2a = lct_blk%coef(iscales,:,il0)
          end if
 
          if (nam%diag_rhflt>zero) then
@@ -713,7 +927,7 @@ do il0=1,geom%nl0
 
             ! Filter
             call samp%diag_filter(mpl,'median',nam%diag_rhflt,fld_filt_c2a)
-            call samp%diag_filter(mpl,'gc99',nam%diag_rhflt,fld_filt_c2a)
+            call samp%diag_filter(mpl,'average',nam%diag_rhflt,fld_filt_c2a)
          end if
 
          ! Fill missing values
@@ -722,19 +936,19 @@ do il0=1,geom%nl0
 
          ! Copy
          if (icomp<=4) then
-            lct_blk%D(icomp,iscales,samp%c2a_to_c1a,il0) = fld_c2a
+            lct_blk%D(icomp,iscales,:,il0) = fld_c2a
             if (nam%diag_rhflt>zero) lct_blk%D_filt(icomp,iscales,:,il0) = fld_filt_c2a
          else
-            lct_blk%coef(iscales,samp%c2a_to_c1a,il0) = fld_c2a
+            lct_blk%coef(iscales,:,il0) = fld_c2a
             if (nam%diag_rhflt>zero) lct_blk%coef_filt(iscales,:,il0) = fld_filt_c2a
          end if
       end do
    end do
 
    ! Fill missing values for quality control
-   fld_c2a = lct_blk%qc_c1a(samp%c2a_to_c1a,il0)
+   fld_c2a = lct_blk%qc_c1a(:,il0)
    call samp%diag_fill(mpl,fld_c2a)
-   lct_blk%qc_c1a(samp%c2a_to_c1a,il0) = fld_c2a
+   lct_blk%qc_c1a(:,il0) = fld_c2a
 end do
 
 if (nam%diag_rhflt>zero) then
@@ -836,8 +1050,8 @@ type(samp_type),intent(in) :: samp           !< Sampling
 
 ! Local variables
 integer :: il0,il0i,ic1a,ic2a,ic0a,icomp,iscales
-real(kind_real) :: det,Lavg_tot,norm_tot
-real(kind_real) :: fld_c2a(samp%nc2a,geom%nl0,2*4+2),fld_c2b(samp%nc2b,geom%nl0),fld(geom%nc0a,geom%nl0,2*4+3)
+real(kind_real) :: det,Lh_tot,Lv_tot,norm_Lh_tot,norm_Lv_tot
+real(kind_real) :: fld_c2a(samp%nc2a,geom%nl0,6),fld_c2b(samp%nc2b,geom%nl0),fld(geom%nc0a,geom%nl0,12)
 real(kind_real),allocatable :: D(:,:,:,:),coef(:,:,:)
 
 ! Set name
@@ -877,29 +1091,28 @@ do iscales=1,lct_blk%nscales
       do ic2a=1,samp%nc2a
          if (samp%smask_c2a(ic2a,il0)) then
             ! Index
-            ic1a = samp%c2a_to_c1a(ic2a)
+            ic1a = ic2a
 
-            ! Ensure positive-definiteness of D
-            D(1,iscales,ic1a,il0) = max(Dmin,D(1,iscales,ic1a,il0))
-            D(2,iscales,ic1a,il0) = max(Dmin,D(2,iscales,ic1a,il0))
-            if (bpar%nl0r(ib)>1) D(3,iscales,ic1a,il0) = max(Dmin,D(3,iscales,ic1a,il0))
-            D(4,iscales,ic1a,il0) = max(-one+Dmin,min(D(4,iscales,ic1a,il0),one-Dmin))
+            if (mpl%msv%isallnot(D(:,iscales,ic1a,il0)).and.mpl%msv%isnot(coef(iscales,ic1a,il0)) &
+ & .and.mpl%msv%isnot(lct_blk%qc_c1a(ic1a,il0))) then
+               ! Ensure positive-definiteness of D
+               D(1,iscales,ic1a,il0) = max(Dmin,D(1,iscales,ic1a,il0))
+               D(2,iscales,ic1a,il0) = max(Dmin,D(2,iscales,ic1a,il0))
+               if (bpar%nl0r(ib)>1) D(3,iscales,ic1a,il0) = max(Dmin,D(3,iscales,ic1a,il0))
+               D(4,iscales,ic1a,il0) = max(-one+Dmin,min(D(4,iscales,ic1a,il0),one-Dmin))
 
-            ! Copy diffusion tensor
-            fld_c2a(ic2a,il0,1) = D(1,iscales,ic1a,il0)
-            fld_c2a(ic2a,il0,2) = D(2,iscales,ic1a,il0)
-            fld_c2a(ic2a,il0,3) = D(3,iscales,ic1a,il0)
-            fld_c2a(ic2a,il0,4) = sqrt(D(1,iscales,ic1a,il0)*D(2,iscales,ic1a,il0))*D(4,iscales,ic1a,il0)
+               ! Copy diffusion tensor
+               fld_c2a(ic2a,il0,1) = D(1,iscales,ic1a,il0)
+               fld_c2a(ic2a,il0,2) = D(2,iscales,ic1a,il0)
+               fld_c2a(ic2a,il0,3) = D(3,iscales,ic1a,il0)
+               fld_c2a(ic2a,il0,4) = sqrt(D(1,iscales,ic1a,il0)*D(2,iscales,ic1a,il0))*D(4,iscales,ic1a,il0)
 
-            ! Inverse diffusion tensor
-            call lct_d2h(mpl,fld_c2a(ic2a,il0,1),fld_c2a(ic2a,il0,2),fld_c2a(ic2a,il0,3),fld_c2a(ic2a,il0,4), &
- & fld_c2a(ic2a,il0,4+1),fld_c2a(ic2a,il0,4+2),fld_c2a(ic2a,il0,4+3),fld_c2a(ic2a,il0,4+4))
+               ! Copy coefficient
+               fld_c2a(ic2a,il0,5) = coef(iscales,ic1a,il0)
 
-            ! Copy coefficient
-            fld_c2a(ic2a,il0,2*4+1) = coef(iscales,ic1a,il0)
-
-            ! Copy quality control
-            fld_c2a(ic2a,il0,2*4+2) = lct_blk%qc_c1a(ic1a,il0)
+               ! Copy quality control
+               fld_c2a(ic2a,il0,6) = lct_blk%qc_c1a(ic1a,il0)
+            end if
          end if
       end do
    end do
@@ -907,34 +1120,49 @@ do iscales=1,lct_blk%nscales
    ! Interpolate components
    write(mpl%info,'(a13,a)') '','Interpolate components'
    call mpl%flush
-   do icomp=1,2*4+2
+   do icomp=1,6
       call samp%com_c2_AB%ext(mpl,fld_c2a(:,:,icomp),fld_c2b)
       do il0=1,geom%nl0
          il0i = geom%l0_to_l0i(il0)
-         call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld(:,il0,icomp))
+         call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld(:,il0,icomp),mssrc=.true.)
       end do
    end do
 
    ! Compute horizontal length-scale and equivalent support radius
-   write(mpl%info,'(a13,a)') '','Compute horizontal length-scale and equivalent support radius:'
+   write(mpl%info,'(a13,a)') '','Compute length-scales and equivalent support radii:'
    call mpl%flush
    do il0=1,geom%nl0
       do ic0a=1,geom%nc0a
          if (geom%gmask_c0a(ic0a,il0)) then
-            ! Length-scale = D determinant^{1/4}
-            det = fld(ic0a,il0,1)*fld(ic0a,il0,2)-fld(ic0a,il0,4)**2
-            if (det>zero) then
-               fld(ic0a,il0,2*4+3) = sqrt(sqrt(det))
-            else
-               call mpl%abort('${subr}$','non-valid horizontal diffusion tensor determinant, grid c0')
+            if (mpl%msv%isallnot(fld(ic0a,il0,1:4))) then
+               ! Inverse diffusion tensor
+               call lct_d2h(mpl,fld(ic0a,il0,1),fld(ic0a,il0,2),fld(ic0a,il0,3),fld(ic0a,il0,4), &
+ & fld(ic0a,il0,7),fld(ic0a,il0,8),fld(ic0a,il0,9),fld(ic0a,il0,10))
+
+               ! Horizontal length-scale = D determinant^{1/4}
+               det = fld(ic0a,il0,1)*fld(ic0a,il0,2)-fld(ic0a,il0,4)**2
+               if (det>zero) then
+                  fld(ic0a,il0,11) = sqrt(sqrt(det))
+               else
+                  call mpl%abort('${subr}$','non-valid horizontal diffusion tensor determinant, grid c0')
+               end if
+
+               ! Vertical length-scale = 1/sqrt(D33)
+               if (fld(ic0a,il0,3)>zero) then
+                  fld(ic0a,il0,12) = one/sqrt(fld(ic0a,il0,3))
+               else
+                  fld(ic0a,il0,12) = zero
+               end if
             end if
          end if
       end do
-      call mpl%f_comm%allreduce(sum(fld(:,il0,2*4+3),mpl%msv%isnot(fld(:,il0,2*4+3))),Lavg_tot,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(real(count(mpl%msv%isnot(fld(:,il0,2*4+3))),kind_real),norm_tot,fckit_mpi_sum())
-      if (norm_tot>zero) then
-         write(mpl%info,'(a16,a,i3,a,f10.2,a,f10.2,a)') '','Level',nam%levs(il0),' ~> ', &
- & Lavg_tot/norm_tot*reqkm,' km / ',Lavg_tot/norm_tot*gau2gc*reqkm,' km'
+      call mpl%f_comm%allreduce(zss_sum(fld(:,il0,11),mpl%msv%isnot(fld(:,il0,11))),Lh_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(zss_sum(fld(:,il0,12),mpl%msv%isnot(fld(:,il0,12))),Lv_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(real(zss_count(mpl%msv%isnot(fld(:,il0,11))),kind_real),norm_Lh_tot,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(real(zss_count(mpl%msv%isnot(fld(:,il0,12))),kind_real),norm_Lv_tot,fckit_mpi_sum())
+      if ((norm_Lh_tot>zero).and.(norm_Lv_tot>zero)) then
+         write(mpl%info,'(a16,a,i3,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a)') '','Level',nam%levs(il0),' ~> ', &
+ & Lh_tot/norm_Lh_tot*reqkm,' km / ',Lv_tot/norm_Lv_tot,' (',Lh_tot/norm_Lh_tot*gau2gc*reqkm,' km / ',Lv_tot/norm_Lv_tot*gau2gc,')'
          call mpl%flush
       end if
    end do
@@ -944,13 +1172,14 @@ do iscales=1,lct_blk%nscales
    lct_blk%D22(:,:,iscales) = fld(:,:,2)
    lct_blk%D33(:,:,iscales) = fld(:,:,3)
    lct_blk%D12(:,:,iscales) = fld(:,:,4)
-   lct_blk%H11(:,:,iscales) = fld(:,:,4+1)
-   lct_blk%H22(:,:,iscales) = fld(:,:,4+2)
-   lct_blk%H33(:,:,iscales) = fld(:,:,4+3)
-   lct_blk%H12(:,:,iscales) = fld(:,:,4+4)
-   lct_blk%Dcoef(:,:,iscales) = fld(:,:,2*4+1)
-   lct_blk%qc_c0a = fld(:,:,2*4+2)
-   lct_blk%DLh(:,:,iscales) = fld(:,:,2*4+3)
+   lct_blk%Dcoef(:,:,iscales) = fld(:,:,5)
+   lct_blk%qc_c0a = fld(:,:,6)
+   lct_blk%H11(:,:,iscales) = fld(:,:,7)
+   lct_blk%H22(:,:,iscales) = fld(:,:,8)
+   lct_blk%H33(:,:,iscales) = fld(:,:,9)
+   lct_blk%H12(:,:,iscales) = fld(:,:,10)
+   lct_blk%DLh(:,:,iscales) = fld(:,:,11)
+   lct_blk%DLv(:,:,iscales) = fld(:,:,12)
 end do
 
 ! Allocation

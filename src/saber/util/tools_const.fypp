@@ -22,8 +22,10 @@ real(kind_real),parameter :: two = 2.0_kind_real          !< Two
 real(kind_real),parameter :: three = 3.0_kind_real        !< Three
 real(kind_real),parameter :: four = 4.0_kind_real         !< Four
 real(kind_real),parameter :: five = 5.0_kind_real         !< Five
+real(kind_real),parameter :: six = 6.0_kind_real          !< Six
 real(kind_real),parameter :: eight = 8.0_kind_real        !< Eight
 real(kind_real),parameter :: ten = 10.0_kind_real         !< Ten
+real(kind_real),parameter :: twelve = 12.0_kind_real      !< Twelve
 real(kind_real),parameter :: hundred = 100.0_kind_real    !< Hundred
 real(kind_real),parameter :: thousand = 1000.0_kind_real  !< Thousand
 real(kind_real),parameter :: pi = acos(-1.0_kind_real)    !< Pi
@@ -34,6 +36,7 @@ real(kind_real),parameter :: reqkm = 6371.229_kind_real   !< Earth radius [in km
 real(kind_real),parameter :: ps = 101325.0_kind_real      !< Reference surface pressure [in Pa]
 
 private
-public :: zero,hundredth,tenth,quarter,half,one,two,three,four,five,eight,ten,hundred,thousand,pi,deg2rad,rad2deg,req,reqkm,ps
+public :: zero,hundredth,tenth,quarter,half,one,two,three,four,five,six,eight,ten,twelve,hundred,thousand, &
+ & pi,deg2rad,rad2deg,req,reqkm,ps
 
 end module tools_const

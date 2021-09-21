@@ -28,10 +28,10 @@ namespace saber {
 InterpolatorBump::InterpolatorBump(const eckit::Configuration & config,
                    const atlas::FunctionSpace & infspace,
                    const atlas::FunctionSpace & outfspace,
-                   const atlas::field::FieldSetImpl * masks,
+                   const atlas::field::FieldSetImpl * fieldset,
                    const eckit::mpi::Comm & comm) {
   bint_create_f90(keyBumpInterpolator_, &comm, infspace.get(), outfspace.get(),
-                  masks, config);
+                  fieldset, config);
 }
 
 // -----------------------------------------------------------------------------

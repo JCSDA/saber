@@ -1,4 +1,5 @@
 #:include '../instrumentation.fypp'
+#:include '../generics.fypp'
 !----------------------------------------------------------------------
 ! Module: tools_func
 !> Usual functions
@@ -11,20 +12,20 @@ module tools_func
 use atlas_module, only: atlas_geometry
 use iso_c_binding, only: c_int16_t,c_int32_t
 use tools_asa007, only: cholesky,syminv
-use tools_const, only: zero,tenth,hundredth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
-use tools_kinds, only: kind_short,kind_real
+use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
+use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup,infeq,small
+use tools_repro, only: rth,inf,sup,infeq,small
 use type_mpl, only: mpl_type
 @:use_probe()
 
 implicit none
 
 real(kind_real),parameter :: gc2gau = 0.28_kind_real  !< GC99 support radius to Gaussian Daley length-scale (empirical)
-real(kind_real),parameter :: gau2gc = 3.57_kind_real  !< Gaussian Daley length-scale to GC99 support radius (empirical)
+real(kind_real),parameter :: gau2gc = one/gc2gau      !< Gaussian Daley length-scale to GC99 support radius (empirical)
 real(kind_real),parameter :: Dmin = 1.0e-12_kind_real !< Minimum tensor diagonal value
 real(kind_real),parameter :: condmax = thousand       !< Maximum tensor conditioning number
-integer,parameter :: M = 0                            !< Number of implicit iteration for the Matern function (0: Gaussian)
+integer,parameter :: M = 0                            !< Number of implicit iteration for the Matern function (-1: GC99, 0: Gaussian, >0: Matern)
 
 interface
    function c_fletcher32(n,var) bind(c,name='fletcher32') result(hash)
@@ -46,11 +47,11 @@ end interface
 interface independent_levels
    module procedure func_independent_levels
 end interface
-interface lonlathash
-   module procedure func_lonlathash
-end interface
 interface sphere_dist
    module procedure func_sphere_dist
+end interface
+interface cart_dist
+   module procedure func_cart_dist
 end interface
 interface lonlat2xyz
    module procedure func_lonlat2xyz
@@ -64,6 +65,9 @@ end interface
 interface det
    module procedure func_det
 end interface
+interface inside
+   module procedure func_inside
+end interface
 interface order_cc
    module procedure func_order_cc
 end interface
@@ -72,6 +76,15 @@ interface add
 end interface
 interface divide
    module procedure func_divide
+end interface
+interface vert_interp_size
+   module procedure func_vert_interp_size
+end interface
+interface vert_interp_setup
+   module procedure func_vert_interp_setup
+end interface
+interface vert_interp
+   module procedure func_vert_interp
 end interface
 interface fit_diag
    module procedure func_fit_diag
@@ -118,12 +131,51 @@ end interface
 interface cx_to_cxu
    module procedure func_cx_to_cxu
 end interface
+interface convert_i2l
+   module procedure func_convert_i2l_r0
+#:for rank in ranks_1234
+   module procedure func_convert_i2l_r${rank}$
+#:endfor
+end interface
+interface convert_l2i
+   module procedure func_convert_l2i_r0
+#:for rank in ranks_1234
+   module procedure func_convert_l2i_r${rank}$
+#:endfor
+end interface
+interface zss_maxval
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+         module procedure func_zss_maxval_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+end interface
+interface zss_minval
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+         module procedure func_zss_minval_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+end interface
+interface zss_sum
+   #:for dtype in dtypes_ir
+      #:for rank in ranks_123456
+         module procedure func_zss_sum_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+end interface
+interface zss_count
+   #:for rank in ranks_123456
+      module procedure func_zss_count_r${rank}$
+   #:endfor
+end interface
 
 private
 public :: gc2gau,gau2gc,Dmin,M
-public :: fletcher32,lonlatmod,gridhash,independent_levels,lonlathash,sphere_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
- & order_cc,add,divide,fit_diag,fit_func,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram, &
- & cx_to_cxa,cx_to_proc,cx_to_cxu
+public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
+ & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag,fit_func,fit_lct,lct_d2h, &
+ & lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i, &
+ & zss_maxval,zss_minval,zss_sum,zss_count
 
 contains
 
@@ -141,14 +193,28 @@ real(kind_real),intent(in) :: var(:) !< Variable
 ! Returned variable
 integer :: value
 
+! Local values
+integer(c_int32_t) :: array_size
+integer(c_int16_t),allocatable :: array(:)
+
 ! Set name
 @:set_name(func_fletcher32)
 
 ! Probe in
 @:probe_in()
 
+! Allocation
+allocate(array(size(var)))
+
+! Initialization
+array = transfer(var,(/0_kind_short/))
+array_size  = size(array)
+
 ! Call C function
-value = c_fletcher32(size(transfer(var,(/0_kind_short/))),transfer(var,(/0_kind_short/)))
+value = c_fletcher32(array_size,array)
+
+! Release memory
+deallocate(array)
 
 ! Probe out
 @:probe_out()
@@ -164,8 +230,8 @@ subroutine func_lonlatmod(lon,lat)
 implicit none
 
 ! Passed variables
-real(kind_real),intent(inout) :: lon !< Longitude (radians)
-real(kind_real),intent(inout) :: lat !< Latitude (radians)
+real(kind_real),intent(inout) :: lon !< Longitude [radians]
+real(kind_real),intent(inout) :: lat !< Latitude [radians]
 
 ! Set name
 @:set_name(func_lonlatmod)
@@ -208,8 +274,8 @@ implicit none
 ! Passed variables
 integer,intent(in) :: ncx                 !< Number of points
 integer,intent(in) :: nlx                 !< Number of levels
-real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude (radians)
-real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude (radians)
+real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude [radians]
+real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude [radians]
 logical,intent(in) :: mask_cx(ncx,nlx)    !< Mask
 integer,intent(out) :: grid_hash(0:nlx)   !< Grid hash profile
 
@@ -352,43 +418,35 @@ call mpl%flush
 end subroutine func_independent_levels
 
 !----------------------------------------------------------------------
-! Function: func_lonlathash
-!> Define a unique real from a lon/lat pair
+! Subroutine: func_cart_dist
+!> Compute the cartesian distance between two points
 !----------------------------------------------------------------------
-function func_lonlathash(lon,lat,il) result(value)
+subroutine func_cart_dist(x_i,y_i,z_i,x_f,y_f,z_f,dist)
 
 implicit none
 
-! Passed variables
-real(kind_real),intent(in) :: lon !< Longitude (radians)
-real(kind_real),intent(in) :: lat !< Latitude (radians)
-integer,intent(in),optional :: il !< Level
-
-! Returned variable
-real(kind_real) :: value
-
-! Local variables
-real(kind_real) :: lontmp,lattmp
+! Passed variable
+real(kind_real),intent(in) :: x_i   !< Initial point X coordinate
+real(kind_real),intent(in) :: y_i   !< Initial point Y coordinate
+real(kind_real),intent(in) :: z_i   !< Initial point Z coordinate
+real(kind_real),intent(in) :: x_f   !< Final point X coordinate
+real(kind_real),intent(in) :: y_f   !< Final point Y coordinate
+real(kind_real),intent(in) :: z_f   !< Final point Z coordinate
+real(kind_real),intent(out) :: dist !< Great-circle distance
 
 ! Set name
-@:set_name(func_lonlathash)
+@:set_name(func_cart_dist)
 
 ! Probe in
 @:probe_in()
 
-! Set correct lon/lat
-lontmp = lon
-lattmp = lat
-call lonlatmod(lontmp,lattmp)
-
-! Hash value
-value = aint((lontmp+pi)*1.0e7_kind_real)+(lattmp+half*pi)*tenth
-if (present(il)) value = value+real(il*1e8,kind_real)
+! Compute distance
+dist = sqrt((x_f-x_i)**2+(y_f-y_i)**2+(z_f-z_i)**2)
 
 ! Probe out
 @:probe_out()
 
-end function func_lonlathash
+end subroutine func_cart_dist
 
 !----------------------------------------------------------------------
 ! Subroutine: func_sphere_dist
@@ -399,10 +457,10 @@ subroutine func_sphere_dist(lon_i,lat_i,lon_f,lat_f,dist)
 implicit none
 
 ! Passed variable
-real(kind_real),intent(in) :: lon_i !< Initial point longitude (radians)
-real(kind_real),intent(in) :: lat_i !< Initial point latitude (radians)
-real(kind_real),intent(in) :: lon_f !< Final point longitude (radians)
-real(kind_real),intent(in) :: lat_f !< Final point latitude (radians)
+real(kind_real),intent(in) :: lon_i !< Initial point longitude [radians]
+real(kind_real),intent(in) :: lat_i !< Initial point latitude [radians]
+real(kind_real),intent(in) :: lon_f !< Final point longitude [radians]
+real(kind_real),intent(in) :: lat_f !< Final point latitude [radians]
 real(kind_real),intent(out) :: dist !< Great-circle distance
 
 ! Local variables
@@ -435,8 +493,8 @@ implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
-real(kind_real),intent(in) :: lon   !< Longitude (radians)
-real(kind_real),intent(in) :: lat   !< Latitude (radians)
+real(kind_real),intent(in) :: lon   !< Longitude [radians]
+real(kind_real),intent(in) :: lat   !< Latitude [radians]
 real(kind_real),intent(out) :: x    !< X coordinate
 real(kind_real),intent(out) :: y    !< Y coordinate
 real(kind_real),intent(out) :: z    !< Z coordinate
@@ -485,8 +543,8 @@ type(mpl_type),intent(in) :: mpl   !< MPI data
 real(kind_real),intent(in) :: x    !< X coordinate
 real(kind_real),intent(in) :: y    !< Y coordinate
 real(kind_real),intent(in) :: z    !< Z coordinate
-real(kind_real),intent(out) :: lon !< Longitude (radians)
-real(kind_real),intent(out) :: lat !< Latitude (radians)
+real(kind_real),intent(out) :: lon !< Longitude [radians]
+real(kind_real),intent(out) :: lat !< Latitude [radians]
 
 ! Local variables
 type(atlas_geometry) :: ageometry
@@ -600,6 +658,65 @@ end do
 @:probe_out()
 
 end subroutine func_det
+
+!----------------------------------------------------------------------
+! Subroutine: func_inside
+!> Find whether a point is inside the hull boundaries or not
+!----------------------------------------------------------------------
+subroutine func_inside(mpl,vbnd,lon,lat,inside_hull)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl     !< MPI data
+real(kind_real),intent(in) :: vbnd(:,:) !< Boundary coordinates
+real(kind_real),intent(in) :: lon       !< Longitude
+real(kind_real),intent(in) :: lat       !< Latitude
+logical,intent(out) :: inside_hull      !< True if the point is inside the hull
+
+! Local variables
+integer :: i,inext
+real(kind_real) :: vp(3),v1(3),v2(3),cp(3),cd(3)
+
+! Set name
+@:set_name(func_inside)
+
+! Probe in
+@:probe_in()
+
+! Transform to cartesian coordinates
+call lonlat2xyz(mpl,lon,lat,vp(1),vp(2),vp(3))
+
+! Initialization
+inside_hull = .true.
+
+do i=1,size(vbnd,2)
+   ! Index
+   if (i<size(vbnd,2)) then
+      inext = i+1
+   else
+      inext = 1
+   end if
+
+   ! Cross-product
+   v1 = vbnd(:,inext)-vbnd(:,i)
+   v2 = vp-vbnd(:,i)
+   call vector_product(v1,v2,cp)
+
+   ! Centroid
+   cd = (vp+vbnd(:,i)+vbnd(:,inext))/three
+
+   ! Compare the directions
+   if (inf(sum(cp*cd),zero)) then
+      inside_hull = .false.
+      exit
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine func_inside
 
 !----------------------------------------------------------------------
 ! Subroutine: func_order_cc
@@ -747,32 +864,178 @@ end if
 end subroutine func_divide
 
 !----------------------------------------------------------------------
-! Subroutine: func_fit_diag
-!> Compute diagnostic fit function
+! Subroutine: func_vert_interp_size
+!> Count vertical interpolation levels
 !----------------------------------------------------------------------
-subroutine func_fit_diag(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,coef,rh,rv,fit)
+subroutine func_vert_interp_size(nl0,dl0,nl1)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl              !< MPI data
-integer,intent(in) :: nc3                        !< Number of classes
-integer,intent(in) :: nl0r                       !< Effective number of levels
-integer,intent(in) :: nl0                        !< Number of levels
-integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      !< Effective level to level
-real(kind_real),intent(in) :: disth(nc3)         !< Horizontal distance
-real(kind_real),intent(in) :: distv(nl0,nl0)     !< Vertical distance
-real(kind_real),intent(in) :: coef(nl0)          !< Diagonal coefficient
-real(kind_real),intent(in) :: rh(nl0)            !< Horizontal support radius
-real(kind_real),intent(in) :: rv(nl0)            !< Vertical support radius
-real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
+integer,intent(in) :: nl0     !< Number of levels
+integer,intent(in) :: dl0     !< Level delta
+integer,intent(out) :: nl1    !< Number of interpolation levels
 
 ! Local variables
-integer :: jl0r,jl0,djl0,il0,kl0r,kl0,ic3,jc3,djc3,kc3,ip,jp,np,np_new,nc3max
-integer :: plist(nc3*nl0r,2),plist_new(nc3*nl0r,2)
-real(kind_real) :: rhsq,rvsq,distvsq,disttest,rhmax
-real(kind_real) :: predistnorm(-1:1,nc3,-1:1,nl0),distnorm(nc3,nl0r)
-logical :: add_to_front
+integer :: il0_prev,il0,dl0_tmp
+
+! Set name
+@:set_name(func_vert_interp_size)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+nl1 = 1
+il0_prev = 1
+
+! Loop over levels
+do il0=2,nl0
+   dl0_tmp = il0-il0_prev
+   if (dl0_tmp==dl0) then
+      il0_prev = il0
+      nl1 = nl1+1
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine func_vert_interp_size
+
+!----------------------------------------------------------------------
+! Subroutine: func_vert_interp_setup
+!> Setup vertical interpolation levels and weights
+!----------------------------------------------------------------------
+subroutine func_vert_interp_setup(nl0,dl0,nl1,il0_interp,il1inf,il1sup,rinf,rsup)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: nl0                !< Number of levels
+integer,intent(in) :: dl0                !< Level delta
+integer,intent(in) :: nl1                !< Number of interpolation levels
+integer,intent(out) :: il0_interp(nl1)   !< Interpolation levels
+integer,intent(out) :: il1inf(nl0)       !< Inferior interpolation levels
+integer,intent(out) :: il1sup(nl0)       !< Superior interpolation levels
+real(kind_real),intent(out) :: rinf(nl0) !< Inferior interpolation weights
+real(kind_real),intent(out) :: rsup(nl0) !< Superior interpolation weights
+
+! Local variables
+integer :: il0,il0_prev,jl0,dl0_tmp,il0_inf,il0_sup
+integer :: il1,il1_inf,il1_sup
+
+! Set name
+@:set_name(func_vert_interp_setup)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+il1 = 1
+il0_interp(il1) = 1
+il0_prev = 1
+il0_sup = 1
+
+! Loop over levels
+do il0=2,nl0
+   dl0_tmp = il0-il0_prev
+   if (dl0_tmp==dl0) then
+      il0_prev = il0
+      il1 = il1+1
+      il0_interp(il1) = il0
+   end if
+end do
+
+! Loop over interpolation levels
+do il1_inf=1,nl1
+   il1_sup = min(il1_inf+1,nl1)
+   il0_inf = il0_sup
+   il0_sup = min(il0_inf+dl0,nl0)
+   do jl0=il0_inf,il0_sup
+      if (il0_inf==il0_sup) then
+         il1inf(jl0) = il1_inf
+         rinf(jl0) = one
+         il1sup(jl0) = il1_sup
+         rsup(jl0) = zero
+      else
+         il1inf(jl0) = il1_inf
+         rinf(jl0) = real(il0_sup-jl0,kind_real)/real(il0_sup-il0_inf,kind_real)
+         il1sup(jl0) = il1_sup
+         rsup(jl0) = real(jl0-il0_inf,kind_real)/real(il0_sup-il0_inf,kind_real)
+      end if
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine func_vert_interp_setup
+
+!----------------------------------------------------------------------
+! Subroutine: func_vert_interp
+!> Apply vertical interpolation
+!----------------------------------------------------------------------
+subroutine func_vert_interp(mpl,nl1,var_l1,nl0,il1inf,il1sup,rinf,rsup,var_l0)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: nl1                  !< Number of interpolation levels
+real(kind_real),intent(in) :: var_l1(nl1)  !< Input variable
+integer,intent(in) :: nl0                  !< Number of levels
+integer,intent(in) :: il1inf(nl0)          !< Inferior interpolation levels
+integer,intent(in) :: il1sup(nl0)          !< Superior interpolation levels
+real(kind_real),intent(in) :: rinf(nl0)    !< Inferior interpolation weights
+real(kind_real),intent(in) :: rsup(nl0)    !< Superior interpolation weights
+real(kind_real),intent(out) :: var_l0(nl0) !< Output variable
+
+! Local variables
+integer :: il0
+
+! Set name
+@:set_name(func_vert_interp)
+
+! Probe in
+@:probe_in()
+
+! Interpolate
+do il0=1,nl0
+   if (mpl%msv%isnot(var_l1(il1inf(il0))).and.mpl%msv%isnot(var_l1(il1sup(il0)))) then
+      var_l0(il0) = rinf(il0)*var_l1(il1inf(il0))+rsup(il0)*var_l1(il1sup(il0))
+   else
+      var_l0(il0) = mpl%msv%valr
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine func_vert_interp
+
+!----------------------------------------------------------------------
+! Subroutine: func_fit_diag
+!> Compute diagnostic fit function
+!----------------------------------------------------------------------
+subroutine func_fit_diag(mpl,nc3,nl0r,disth,distv,coef,rh,rv,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+integer,intent(in) :: nc3                    !< Number of classes
+integer,intent(in) :: nl0r                   !< Effective number of levels
+real(kind_real),intent(in) :: disth(nc3)     !< Horizontal distance
+real(kind_real),intent(in) :: distv(nl0r)    !< Vertical distance
+real(kind_real),intent(in) :: coef           !< Diagonal coefficient
+real(kind_real),intent(in) :: rh             !< Horizontal support radius
+real(kind_real),intent(in) :: rv             !< Vertical support radius
+real(kind_real),intent(out) :: fit(nc3,nl0r) !< Fit
+
+! Local variables
+integer :: jl0r,jc3,nc3max
+real(kind_real) :: disthsq(nc3),distvsq(nl0r),distnorm
 
 ! Set name
 @:set_name(func_fit_diag)
@@ -780,154 +1043,53 @@ logical :: add_to_front
 ! Probe in
 @:probe_in()
 
-! Initialization
-fit = zero
+if (mpl%msv%is(coef).or.mpl%msv%is(rh).or.mpl%msv%is(rv)) then
+   ! Set to missing values if no value available
+   fit = mpl%msv%valr
+else
+   ! Initialization
+   fit = zero
 
-! Find maximum class
-rhmax = maxval(rh)
-nc3max = 0
-do ic3=1,nc3
-   if (disth(ic3)>rhmax) exit
-   nc3max = ic3
-end do
+   ! Find maximum class
+   nc3max = 0
+   do jc3=1,nc3
+      if (disth(jc3)>rh) exit
+      nc3max = jc3
+   end do
 
-! Precompute normalized local distances
-predistnorm = one
-do il0=1,nl0
-   do djl0=-1,1
-      ! Level index
-      jl0 = max(1,min(il0+djl0,nl0))
-
-      ! Averaged fit parameters
-      if (mpl%msv%isnot(rh(il0)).and.mpl%msv%isnot(rh(jl0))) then
-         rhsq = half*(rh(il0)**2+rh(jl0)**2)
+   ! Squared normalized horizontal distance
+   do jc3=1,nc3max
+      if (rh>zero) then
+         disthsq(jc3) = (disth(jc3)/rh)**2
+      elseif (disth(jc3)>zero) then
+         disthsq(jc3) = zero
       else
-         rhsq = zero
+         disthsq(jc3) = one
       end if
-      if (mpl%msv%isnot(rv(il0)).and.mpl%msv%isnot(rv(jl0))) then
-         rvsq = half*(rv(il0)**2+rv(jl0)**2)
+   end do
+
+   ! Squared normalized vertical distance
+   do jl0r=1,nl0r
+      if (rv>zero) then
+         distvsq(jl0r) = (distv(jl0r)/rv)**2
+      elseif (distv(jl0r)>zero) then
+         distvsq(jl0r) = zero
       else
-         rvsq = zero
+         distvsq(jl0r) = one
       end if
+   end do
 
-      ! Squared vertical distance
-      if (rvsq>zero) then
-         distvsq = distv(jl0,il0)**2/rvsq
-      elseif (il0/=jl0) then
-         distvsq = one
-      else
-         distvsq = zero
-      end if
-
-      do ic3=1,nc3max
-         do djc3=-1,1
-            ! Horizontal index
-            jc3 = max(1,min(ic3+djc3,nc3max))
-
-            ! Squared normalized distance initialization (squared vertical component)
-            predistnorm(djc3,ic3,djl0,il0) = distvsq
-
-            ! Add squared horizontal component to squared normalized distance
-            if (rhsq>zero) then
-               predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+(disth(jc3)-disth(ic3))**2/rhsq
-            elseif (ic3/=jc3) then
-               predistnorm(djc3,ic3,djl0,il0) = predistnorm(djc3,ic3,djl0,il0)+one
-            end if
-
-            ! Get normalized distance
-            predistnorm(djc3,ic3,djl0,il0) = sqrt(predistnorm(djc3,ic3,djl0,il0))
-         end do
+   ! Unitary fit function
+   do jl0r=1,nl0r
+      do jc3=1,nc3max
+         distnorm = sqrt(disthsq(jc3)+distvsq(jl0r))
+         fit(jc3,jl0r) = fit_func(mpl,distnorm)
       end do
    end do
-end do
 
-! Compte fit
-do il0=1,nl0
-   ! Initialize the front
-   np = 1
-   plist = mpl%msv%vali
-   plist(1,1) = 1
-   do jl0r=1,nl0r
-      if (l0rl0_to_l0(jl0r,il0)==il0) plist(1,2) = jl0r
-   end do
-   distnorm = one
-   distnorm(plist(1,1),plist(1,2)) = zero
-
-   do while (np>0)
-      ! Propagate the front
-      np_new = 0
-
-      do ip=1,np
-         ! Indices of the central point
-         jc3 = plist(ip,1)
-         jl0r = plist(ip,2)
-         jl0 = l0rl0_to_l0(jl0r,il0)
-
-         ! Loop over neighbors
-         do kc3=max(jc3-1,1),min(jc3+1,nc3max)
-            do kl0r=max(jl0r-1,1),min(jl0r+1,nl0r)
-               kl0 = l0rl0_to_l0(kl0r,il0)
-               disttest = distnorm(jc3,jl0r)+predistnorm(kc3-jc3,jc3,kl0-jl0,jl0)
-
-               if (disttest<one) then
-                  ! Point is inside the support
-                  if (disttest<distnorm(kc3,kl0r)) then
-                     ! Update distance
-                     distnorm(kc3,kl0r) = disttest
-
-                     ! Check if the point should be added to the front (avoid duplicates)
-                     add_to_front = .true.
-                     do jp=1,np_new
-                        if ((plist_new(jp,1)==kc3).and.(plist_new(jp,2)==kl0r)) then
-                           add_to_front = .false.
-                           exit
-                        end if
-                     end do
-
-                     if (add_to_front) then
-                        ! Add point to the front
-                        np_new = np_new+1
-                        plist_new(np_new,1) = kc3
-                        plist_new(np_new,2) = kl0r
-                     end if
-                  end if
-               end if
-            end do
-         end do
-      end do
-
-      ! Copy new front
-      np = np_new
-      plist(1:np,:) = plist_new(1:np,:)
-   end do
-
-   do jl0r=1,nl0r
-      ! Level index
-      jl0 = l0rl0_to_l0(jl0r,il0)
-
-      do jc3=1,nc3
-         ! Fit function
-         fit(jc3,jl0r,il0) = fit_func(mpl,distnorm(jc3,jl0r))
-      end do
-   end do
-end do
-
-! Diagonal coefficient
-do il0=1,nl0
-   do jl0r=1,nl0r
-      jl0 = l0rl0_to_l0(jl0r,il0)
-      fit(:,jl0r,il0) = fit(:,jl0r,il0)*sqrt(coef(il0)*coef(jl0))
-   end do
-end do
-
-! Set to missing values if no value available
-do il0=1,nl0
-   if (mpl%msv%is(coef(il0)).or.mpl%msv%is(rh(il0)).or.mpl%msv%is(rv(il0))) fit(:,:,il0) = mpl%msv%valr
-   do jl0r=1,nl0r
-      jl0 = l0rl0_to_l0(jl0r,il0)
-      if (mpl%msv%is(coef(jl0)).or.mpl%msv%is(rh(jl0)).or.mpl%msv%is(rv(jl0))) fit(:,jl0r,il0) = mpl%msv%valr
-   end do
-end do
+   ! Diagonal coefficient
+   fit = fit*coef
+end if
 
 ! Probe out
 @:probe_out()
@@ -958,7 +1120,7 @@ if (distnorm<half) then
    value = one+eight/five*distnorm*value
    value = one-three/four*distnorm*value
    value = one-20.0_kind_real/three*distnorm**2*value
-else if (distnorm<one) then
+elseif (distnorm<one) then
    value = one-distnorm/three
    value = one-eight/five*distnorm*value
    value = one+three/four*distnorm*value
@@ -969,6 +1131,9 @@ else if (distnorm<one) then
 else
    value = zero
 end if
+
+! Set small values to zero (bad conditioning)
+if (inf(value,sqrt(rth))) value = zero
 
 ! Probe out
 @:probe_out()
@@ -1012,27 +1177,27 @@ end function func_fit_func
 ! Subroutine: func_fit_lct
 !> LCT fit
 !----------------------------------------------------------------------
-subroutine func_fit_lct(mpl,nc,nl0,dxsq,dysq,dxdy,dzsq,dmask,nscales,D,coef,fit)
+subroutine func_fit_lct(mpl,nc3,nl0r,dxsq,dysq,dxdy,dzsq,dmask,nscales,D,coef,fit)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl         !< MPI data
-integer,intent(in) :: nc                    !< Number of classes
-integer,intent(in) :: nl0                   !< Number of levels
-real(kind_real),intent(in) :: dxsq(nc,nl0)  !< Zonal separation squared
-real(kind_real),intent(in) :: dysq(nc,nl0)  !< Meridian separation squared
-real(kind_real),intent(in) :: dxdy(nc,nl0)  !< Zonal x meridian separations product
-real(kind_real),intent(in) :: dzsq(nc,nl0)  !< Vertical separation squared
-logical,intent(in) :: dmask(nc,nl0)         !< Mask
-integer,intent(in) :: nscales               !< Number of LCT scales
-real(kind_real),intent(in) :: D(4,nscales)  !< LCT components
-real(kind_real),intent(in) :: coef(nscales) !< LCT coefficients
-real(kind_real),intent(out) :: fit(nc,nl0)  !< Fit
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: nc3                     !< Number of classes
+integer,intent(in) :: nl0r                    !< Number of levels
+real(kind_real),intent(in) :: dxsq(nc3,nl0r)  !< Zonal separation squared
+real(kind_real),intent(in) :: dysq(nc3,nl0r)  !< Meridian separation squared
+real(kind_real),intent(in) :: dxdy(nc3,nl0r)  !< Zonal x meridian separations product
+real(kind_real),intent(in) :: dzsq(nc3,nl0r)  !< Vertical separation squared
+logical,intent(in) :: dmask(nc3,nl0r)         !< Mask
+integer,intent(in) :: nscales                 !< Number of LCT scales
+real(kind_real),intent(in) :: D(4,nscales)    !< LCT components
+real(kind_real),intent(in) :: coef(nscales)   !< LCT coefficients
+real(kind_real),intent(out) :: fit(nc3,nl0r)  !< Fit
 
 ! Local variables
-integer :: jl0,jc3,iscales
-real(kind_real) :: Dcoef(nscales),D11,D22,D33,D12,H11,H22,H33,H12,rsq
+integer :: jl0r,jc3,iscales
+real(kind_real) :: Dcoef(nscales),D11,D22,D33,D12,H11,H22,H33,H12,rsq,distnorm
 
 ! Set name
 @:set_name(func_fit_lct)
@@ -1046,13 +1211,12 @@ fit = mpl%msv%valr
 ! Coefficients
 Dcoef = max(Dmin,min(coef,one))
 Dcoef = Dcoef/sum(Dcoef)
-
 do iscales=1,nscales
    ! Ensure positive-definiteness of D
    D11 = max(Dmin,D(1,iscales))
    D22 = max(Dmin,D(2,iscales))
-   if (nl0>1) then
-      D33 = max(Dmin,D(3,iscales))
+   if (nl0r>1) then
+      D33 = D(3,iscales)
    else
       D33 = zero
    end if
@@ -1062,21 +1226,25 @@ do iscales=1,nscales
    call lct_d2h(mpl,D11,D22,D33,D12,H11,H22,H33,H12)
 
    ! Homogeneous anisotropic approximation
-   do jl0=1,nl0
-      do jc3=1,nc
-         if (dmask(jc3,jl0)) then
+   do jl0r=1,nl0r
+      do jc3=1,nc3
+         if (dmask(jc3,jl0r)) then
             ! Initialization
-            if (iscales==1) fit(jc3,jl0) = zero
+            if (iscales==1) fit(jc3,jl0r) = zero
 
             ! Squared distance
-            rsq = H11*dxsq(jc3,jl0)+H22*dysq(jc3,jl0)+H33*dzsq(jc3,jl0)+two*H12*dxdy(jc3,jl0)
+            rsq = H11*dxsq(jc3,jl0r)+H22*dysq(jc3,jl0r)+H33*dzsq(jc3,jl0r)+two*H12*dxdy(jc3,jl0r)
 
-            if (M==0) then
+            if (M==-1) then
+               ! Gaspari-Cohn 1999 function
+               distnorm = sqrt(rsq)*gc2gau
+               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*gc99(distnorm)
+            elseif (M==0) then
                ! Gaussian function
-               if (rsq<40.0_kind_real) fit(jc3,jl0) = fit(jc3,jl0)+Dcoef(iscales)*exp(-half*rsq)
+               if (rsq<40.0_kind_real) fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*exp(-half*rsq)
             else
                ! Matern function
-               fit(jc3,jl0) = fit(jc3,jl0)+Dcoef(iscales)*matern(mpl,M,sqrt(rsq))
+               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*matern(mpl,M,sqrt(rsq))
             end if
          end if
       end do
@@ -1116,21 +1284,29 @@ real(kind_real) :: det
 ! Probe in
 @:probe_in()
 
-! Compute horizontal determinant
-det = D11*D22-D12**2
+if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D33).and.mpl%msv%isnot(D12)) then
+   ! Compute horizontal determinant
+   det = D11*D22-D12**2
 
-! Inverse D to get H
-if (det>zero) then
-   H11 = D22/det
-   H22 = D11/det
-   H12 = -D12/det
+   ! Inverse D to get H
+   if (det>zero) then
+      H11 = D22/det
+      H22 = D11/det
+      H12 = -D12/det
+   else
+      call mpl%abort('${subr}$','non-invertible tensor')
+   end if
+   if (D33>zero) then
+      H33 = one/D33
+   else
+      H33 = zero
+   end if
 else
-   call mpl%abort('${subr}$','non-invertible tensor')
-end if
-if (D33>zero) then
-   H33 = one/D33
-else
-   H33 = zero
+   ! Missing values
+   H11 = mpl%msv%valr
+   H22 = mpl%msv%valr
+   H33 = mpl%msv%valr
+   H12 = mpl%msv%valr
 end if
 
 ! Probe out
@@ -1164,32 +1340,38 @@ real(kind_real) :: tr,det,diff
 ! Probe in
 @:probe_in()
 
-! Check diagonal positivity
-if ((H11<zero).or.(H22<zero)) call mpl%abort('${subr}$','negative diagonal LCT coefficients')
+if (mpl%msv%isnot(H11).and.mpl%msv%isnot(H22).and.mpl%msv%isnot(H33).and.mpl%msv%isnot(H12)) then
+   ! Check diagonal positivity
+   if ((H11<zero).or.(H22<zero)) call mpl%abort('${subr}$','negative diagonal LCT coefficients')
 
-! Compute horizontal trace
-tr = H11+H22
+   ! Compute horizontal trace
+   tr = H11+H22
 
-! Compute horizontal determinant
-det = H11*H22-H12**2
+   ! Compute horizontal determinant
+   det = H11*H22-H12**2
 
-! Compute horizontal support radius
-diff = quarter*(H11-H22)**2+H12**2
-if ((det>zero).and..not.(diff<zero)) then
-   if (half*tr>sqrt(diff)) then
-      rh = gau2gc/sqrt(half*tr-sqrt(diff))
+   ! Compute horizontal support radius
+   diff = quarter*(H11-H22)**2+H12**2
+   if ((det>zero).and..not.(diff<zero)) then
+      if (sup(half*tr,sqrt(diff))) then
+         rh = gau2gc/sqrt(half*tr-sqrt(diff))
+      else
+         call mpl%abort('${subr}$','non positive-definite LCT (eigenvalue)')
+      end if
    else
-      call mpl%abort('${subr}$','non positive-definite LCT (eigenvalue)')
+      call mpl%abort('${subr}$','non positive-definite LCT (determinant)')
+   end if
+
+   ! Compute vertical support radius
+   if (H33>zero) then
+      rv = gau2gc/sqrt(H33)
+   else
+      rv = zero
    end if
 else
-   call mpl%abort('${subr}$','non positive-definite LCT (determinant)')
-end if
-
-! Compute vertical support radius
-if (H33>zero) then
-   rv = gau2gc/sqrt(H33)
-else
-   rv = zero
+   ! Missing values
+   rh = mpl%msv%valr
+   rv = mpl%msv%valr
 end if
 
 ! Probe out
@@ -1481,8 +1663,8 @@ logical :: found
 ! Check data
 if (nbins<=0) call mpl%abort('${subr}$','the number of bins should be positive')
 if (histmax>histmin) then
-   if (minval(list,mask=mpl%msv%isnot(list))<histmin) call mpl%abort('${subr}$','values below histogram minimum')
-   if (maxval(list,mask=mpl%msv%isnot(list))>histmax) call mpl%abort('${subr}$','values over histogram maximum')
+   if (zss_minval(list,mask=mpl%msv%isnot(list))<histmin) call mpl%abort('${subr}$','values below histogram minimum')
+   if (zss_maxval(list,mask=mpl%msv%isnot(list))>histmax) call mpl%abort('${subr}$','values over histogram maximum')
 
    ! Compute bins
    delta = (histmax-histmin)/real(nbins,kind_real)
@@ -1646,5 +1828,324 @@ end if
 @:probe_out()
 
 end function func_cx_to_cxu
+
+!----------------------------------------------------------------------
+! Subroutine: func_convert_i2l_r0
+!> Convert integer to logical
+!----------------------------------------------------------------------
+subroutine func_convert_i2l_r0(mpl,fldi,fldl)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: fldi          !< Integer field
+logical,intent(out) :: fldl         !< Logical field
+
+! Set name
+@:set_name(func_convert_i2l_r0)
+
+! Probe in
+@:probe_in()
+
+if (fldi==0) then
+   fldl = .false.
+elseif (fldi==1) then
+   fldl = .true.
+else
+   call mpl%abort('${subr}$','wrong integer value')
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine func_convert_i2l_r0
+
+#:for rank in ranks_1234
+!----------------------------------------------------------------------
+! Subroutine: func_convert_i2l_r${rank}$
+!> Convert integer to logical
+!----------------------------------------------------------------------
+subroutine func_convert_i2l_r${rank}$(mpl,fldi,fldl)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: fldi(${dim[rank]}$)  !< Integer field
+logical,intent(out) :: fldl(${dim[rank]}$) !< Logical field
+
+! Local variable
+#:for arg_dim in range(1,rank+1)
+integer :: i${arg_dim}$
+#:endfor
+
+! Set name
+@:set_name(func_convert_i2l_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+#:for arg_dim in reversed(range(1,rank+1))
+do i${arg_dim}$=1,size(fldl,${arg_dim}$)
+#:endfor
+   call convert_i2l(mpl,fldi( &
+   #:for arg_dim in range(1,rank)
+ & i${arg_dim}$, &
+   #:endfor
+ & i${rank}$),fldl( &
+   #:for arg_dim in range(1,rank)
+ & i${arg_dim}$, &
+   #:endfor
+ & i${rank}$))
+#:for arg_dim in range(1,rank+1)
+end do
+#:endfor
+
+! Probe out
+@:probe_out()
+
+end subroutine func_convert_i2l_r${rank}$
+#:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: func_convert_l2i_r0
+!> Convert logical to integer
+!----------------------------------------------------------------------
+subroutine func_convert_l2i_r0(fldl,fldi)
+
+implicit none
+
+! Passed variables
+logical,intent(in) :: fldl  !< Logical field
+integer,intent(out) :: fldi !< Integer field
+
+! Set name
+@:set_name(func_convert_l2i_r0)
+
+! Probe in
+@:probe_in()
+
+if (fldl) then
+   fldi = 1
+else
+   fldi = 0
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine func_convert_l2i_r0
+
+#:for rank in ranks_1234
+!----------------------------------------------------------------------
+! Subroutine: func_convert_l2i_r${rank}$
+!> Convert logical to integer
+!----------------------------------------------------------------------
+subroutine func_convert_l2i_r${rank}$(fldl,fldi)
+
+implicit none
+
+! Passed variables
+logical,intent(in) :: fldl(${dim[rank]}$)  !< Logical field
+integer,intent(out) :: fldi(${dim[rank]}$) !< Integer field
+
+! Local variable
+#:for arg_dim in range(1,rank+1)
+integer :: i${arg_dim}$
+#:endfor
+
+! Set name
+@:set_name(func_convert_l2i_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+#:for arg_dim in reversed(range(1,rank+1))
+do i${arg_dim}$=1,size(fldl,${arg_dim}$)
+#:endfor
+   call convert_l2i(fldl( &
+   #:for arg_dim in range(1,rank)
+ & i${arg_dim}$, &
+   #:endfor
+ & i${rank}$),fldi( &
+   #:for arg_dim in range(1,rank)
+ & i${arg_dim}$, &
+   #:endfor
+ & i${rank}$))
+#:for arg_dim in range(1,rank+1)
+end do
+#:endfor
+
+! Probe out
+@:probe_out()
+
+end subroutine func_convert_l2i_r${rank}$
+#:endfor
+
+#:for dtype in dtypes_ir
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Function: func_zss_maxval_${dtype}$_r${rank}$
+!> Zero-size-safe maxval function
+!----------------------------------------------------------------------
+function func_zss_maxval_${dtype}$_r${rank}$(array,mask) result(value)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
+logical,intent(in),optional :: mask(${dim[rank]}$)  !< Mask
+
+! Returned variable
+${ftype[dtype]}$ :: value
+
+! Set name
+@:set_name(func_zss_maxval_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+if (size(array)>0) then
+   if (present(mask)) then
+      if (any(mask)) then
+         value = maxval(array,mask=mask)
+      else
+         value = -${huge[dtype]}$
+      end if
+   else
+      value = maxval(array)
+   end if
+else
+   value = -${huge[dtype]}$
+endif
+
+! Probe out
+@:probe_out()
+
+end function func_zss_maxval_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+
+#:for dtype in dtypes_ir
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Function: func_zss_minval_${dtype}$_r${rank}$
+!> Zero-size-safe minval function
+!----------------------------------------------------------------------
+function func_zss_minval_${dtype}$_r${rank}$(array,mask) result(value)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
+logical,intent(in),optional :: mask(${dim[rank]}$)  !< Mask
+
+! Returned variable
+${ftype[dtype]}$ :: value
+
+! Set name
+@:set_name(func_zss_minval_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+if (size(array)>0) then
+   if (present(mask)) then
+      if (any(mask)) then
+         value = minval(array,mask=mask)
+      else
+         value = ${huge[dtype]}$
+      end if
+   else
+      value = minval(array)
+   end if
+else
+   value = ${huge[dtype]}$
+endif
+
+! Probe out
+@:probe_out()
+
+end function func_zss_minval_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+
+#:for dtype in dtypes_ir
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Function: func_zss_sum_${dtype}$_r${rank}$
+!> Zero-size-safe sum function
+!----------------------------------------------------------------------
+function func_zss_sum_${dtype}$_r${rank}$(array,mask) result(value)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
+logical,intent(in),optional :: mask(${dim[rank]}$)  !< Mask
+
+! Returned variable
+${ftype[dtype]}$ :: value
+
+! Set name
+@:set_name(func_zss_sum_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+if (size(array)>0) then
+   if (present(mask)) then
+      if (any(mask)) then
+         value = sum(array,mask=mask)
+      else
+         value = ${zero[dtype]}$
+      end if
+   else
+      value = sum(array)
+   end if
+else
+   value = ${zero[dtype]}$
+endif
+
+! Probe out
+@:probe_out()
+
+end function func_zss_sum_${dtype}$_r${rank}$
+#:endfor
+#:endfor
+
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Function: func_zss_count_r${rank}$
+!> Zero-size-safe count function
+!----------------------------------------------------------------------
+function func_zss_count_r${rank}$(array) result(value)
+
+implicit none
+
+! Passed variables
+logical,intent(in) :: array(${dim[rank]}$) !< Array
+
+! Returned variable
+integer :: value
+
+! Set name
+@:set_name(func_zss_count_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+if (size(array)>0) then
+   value = count(array)
+else
+   value = 0
+endif
+
+! Probe out
+@:probe_out()
+
+end function func_zss_count_r${rank}$
+#:endfor
 
 end module tools_func

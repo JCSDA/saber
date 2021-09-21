@@ -8,7 +8,6 @@ list(APPEND bump_src_files_list
 tools_fit.fypp
 tools_func.c
 tools_func.fypp
-tools_samp.fypp
 type_avg_blk.fypp
 type_avg.fypp
 type_bpar.fypp
@@ -39,6 +38,7 @@ type_tree.fypp
 type_var.fypp
 type_vbal_blk.fypp
 type_vbal.fypp
+type_wind.fypp
 
 )
 
@@ -46,7 +46,7 @@ if( oops_FOUND )
     list(APPEND bump_src_files_list
 
     type_bump.h
-    type_bump_interface.F90 
+    type_bump_interface.F90
 
     )
 endif()

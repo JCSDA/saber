@@ -24,17 +24,17 @@ def lct_cor(testdata, test, mpi, omp, suffix, testfig):
    # Get _FillValue
    _FillValue = f.__dict__["_FillValue"]
 
-   # Get vertical unit
-   vunit = f["vunit"][:]
-
-   # Get number of levels
-   nl0 = vunit.shape[0]
-
    for group in f.groups:
       # Get lon/lat/levels
       lon = f.groups[group]["lon"][:,:]
       lat = f.groups[group]["lat"][:,:]
       l0rl0_to_l0 = f.groups[group]["l0rl0_to_l0"][:,:]
+
+      # Get vertical unit
+      vunit = f.groups[group]["vunit"][:]
+
+      # Get number of levels
+      nl0 = vunit.shape[0]
 
       for fieldname in ["raw", "fit", "fit_filt"]:
          if fieldname in f.groups[group].variables:

@@ -7,7 +7,7 @@ model: "qg"
 method: "cor"
 strategy: "specific_univariate"
 new_hdiag: 1
-write_cmat: 0
+write_hdiag: 1
 
 # model_param
 nl: 2
@@ -25,9 +25,8 @@ mask_type: "stddev"
 mask_lu: ["upper","upper"]
 mask_th: [8.0e6,8.0e6]
 nc1: 500
-ntry: 30
 nc3: 15
-dc: [400.0e3]
+dc: 400.0e3
 nl0r: 2
 
 # diag_param

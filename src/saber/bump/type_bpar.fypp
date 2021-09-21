@@ -186,7 +186,7 @@ do iv=1,nam%nv
          bpar%B_block(ib) = .false.
          bpar%nicas_block(ib) = .false.
       end select
-      bpar%fit_block(ib) = bpar%diag_block(ib).and.(iv==jv).and.(trim(nam%minim_algo)/='none')
+      bpar%fit_block(ib) = bpar%diag_block(ib).and.(iv==jv)
       if (nam%local_diag) bpar%fit_block(ib) = bpar%fit_block(ib).and.bpar%nicas_block(ib)
 
       ! Blocks information
@@ -251,7 +251,7 @@ if (bpar%nbe>bpar%nb) then
       bpar%B_block(ib) = .false.
       bpar%nicas_block(ib) = .false.
    end select
-   bpar%fit_block(ib) = bpar%diag_block(ib).and.(trim(nam%minim_algo)/='none')
+   bpar%fit_block(ib) = bpar%diag_block(ib)
    if (nam%local_diag) bpar%fit_block(ib) = bpar%fit_block(ib).and.bpar%nicas_block(ib)
 
    ! Blocks information

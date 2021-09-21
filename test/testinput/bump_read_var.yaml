@@ -15,7 +15,6 @@ nv: 2
 variables: ["u","q"]
 
 # ens1_param
-ens1_ne: 50
 
 # ens2_param
 

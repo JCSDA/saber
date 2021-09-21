@@ -14,13 +14,13 @@ def avg(testdata, test, mpi, omp, suffix, testfig):
    # Open file
    f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
-   # Get vertical unit
-   vunit = f["vunit"][:]
-
-   # Get number of levels
-   nl0 = vunit.shape[0]
-
    for group in f.groups:
+      # Get vertical unit
+      vunit = f.groups[group]["vunit"][:]
+
+      # Get number of levels
+      nl0 = vunit.shape[0]
+
       # Get horizontal distance
       disth = f.groups[group]["disth"][:]
 

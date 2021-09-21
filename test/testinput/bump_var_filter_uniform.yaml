@@ -1,0 +1,34 @@
+# general_param
+datadir: "testdata"
+prefix: "bump_var_filter_uniform/test__MPI_-_OMP_"
+model: "qg"
+
+# driver_param
+method: "cor"
+strategy: "specific_univariate"
+new_var: 1
+write_var: 1
+
+# model_param
+nl: 2
+levs: [1,2]
+nv: 2
+variables: ["u","q"]
+
+# ens1_param
+ens1_ne: 50
+
+# ens2_param
+
+# sampling_param
+
+# diag_param
+ne: 50
+var_filter: 1
+
+# fit_param
+
+# nicas_param
+
+# output_param
+

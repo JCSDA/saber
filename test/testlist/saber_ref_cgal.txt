@@ -1,5 +1,0 @@
-bump_hdiag-nicas_use_cgal/test_1-1_diag.nc
-bump_hdiag-nicas_use_cgal/test_1-1_dirac.nc
-bump_hdiag-nicas_use_cgal/test_1-1_local_diag_cor.nc
-bump_hdiag-nicas_use_cgal/test_1-1_local_diag_loc.nc
-bump_hdiag-nicas_use_cgal/test_1-1_nicas_000001-000001.nc

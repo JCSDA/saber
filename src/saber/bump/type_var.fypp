@@ -10,8 +10,11 @@ module type_var
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const, only: zero,half,two,rad2deg,reqkm
+use tools_const, only: zero,half,one,two,three,four,six,rad2deg,reqkm
+use tools_func, only: zss_sum,zss_count
 use tools_kinds, only: kind_real,huge_real
+use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
+use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
@@ -25,17 +28,34 @@ implicit none
 
 ! Variance derived type
 type var_type
-   integer :: ne                                !< Ensemble size
-   real(kind_real),allocatable :: m2(:,:,:)     !< Variance
-   real(kind_real),allocatable :: m4(:,:,:)     !< Fourth-order centered moment
-   real(kind_real),allocatable :: m2flt(:,:,:)  !< Filtered variance
-   real(kind_real),allocatable :: m2sqrt(:,:,:) !< Variance square-root
+   ! Attributes
+   integer :: ne                                 !< Ensemble size
+
+   ! Computational data
+   real(kind_real),allocatable :: m2(:,:,:)      !< Variance
+   real(kind_real),allocatable :: m4(:,:,:)      !< Fourth-order centered moment
+   real(kind_real),allocatable :: m2flt(:,:,:)   !< Filtered variance
+   real(kind_real),allocatable :: m2sqrt(:,:,:)  !< Variance square-root
+
+   ! Sequential update data
+   real(kind_real),allocatable :: seq_m1(:,:,:)  !< Sequentially updated mean
+   real(kind_real),allocatable :: seq_m2(:,:,:)  !< Sequentially updated variance
+   real(kind_real),allocatable :: seq_m3(:,:,:)  !< Sequentially updated third-order centered moment
+   real(kind_real),allocatable :: seq_m4(:,:,:)  !< Sequentially updated fourth-order centered moment
+
+   ! BUMP interface data
+   real(kind_real),allocatable :: bump_m2(:,:,:) !< BUMP interface variance
+   integer :: bump_m2_counter = 0                !< BUMP interface variance counter
+   real(kind_real),allocatable :: bump_m4(:,:,:) !< BUMP interface fourth-order centered moment
+   integer :: bump_m4_counter = 0                !< BUMP interface fourth-order centered moment counter
 contains
    procedure :: alloc => var_alloc
+   procedure :: partial_bump_dealloc => var_partial_bump_dealloc
    procedure :: partial_dealloc => var_partial_dealloc
    procedure :: dealloc => var_dealloc
    procedure :: read => var_read
    procedure :: write => var_write
+   procedure :: update => var_update
    procedure :: run_var => var_run_var
    procedure :: filter => var_filter
    procedure :: apply_sqrt => var_apply_sqrt
@@ -67,17 +87,48 @@ type(geom_type),intent(in) :: geom   !< Geometry
 @:probe_in()
 
 ! Allocation
-if (.not.nam%forced_var) then
-   allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
-   allocate(var%m4(geom%nc0a,geom%nl0,nam%nv))
-   if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv))
-end if
+allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
+allocate(var%m4(geom%nc0a,geom%nl0,nam%nv))
+if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv))
 allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv))
+if (nam%update_var) then
+   allocate(var%seq_m1(geom%nc0a,geom%nl0,nam%nv))
+   allocate(var%seq_m2(geom%nc0a,geom%nl0,nam%nv))
+   allocate(var%seq_m3(geom%nc0a,geom%nl0,nam%nv))
+   allocate(var%seq_m4(geom%nc0a,geom%nl0,nam%nv))
+end if
+
 
 ! Probe out
 @:probe_out()
 
 end subroutine var_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: var_partial_bump_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine var_partial_bump_dealloc(var)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var !< Variance
+
+! Set name
+@:set_name(var_partial_bump_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(var%bump_m2)) deallocate(var%bump_m2)
+if (allocated(var%bump_m4)) deallocate(var%bump_m4)
+
+! Probe out
+@:probe_out()
+
+end subroutine var_partial_bump_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: var_partial_dealloc
@@ -97,9 +148,12 @@ class(var_type),intent(inout) :: var !< Variance
 @:probe_in()
 
 ! Release memory
-if (allocated(var%m2)) deallocate(var%m2)
-if (allocated(var%m4)) deallocate(var%m4)
+call var%partial_bump_dealloc
 if (allocated(var%m2flt)) deallocate(var%m2flt)
+if (allocated(var%seq_m1)) deallocate(var%seq_m1)
+if (allocated(var%seq_m2)) deallocate(var%seq_m2)
+if (allocated(var%seq_m3)) deallocate(var%seq_m3)
+if (allocated(var%seq_m4)) deallocate(var%seq_m4)
 
 ! Probe out
 @:probe_out()
@@ -125,6 +179,8 @@ class(var_type),intent(inout) :: var !< Variance
 
 ! Release memory
 call var%partial_dealloc
+if (allocated(var%m2)) deallocate(var%m2)
+if (allocated(var%m4)) deallocate(var%m4)
 if (allocated(var%m2sqrt)) deallocate(var%m2sqrt)
 
 ! Probe out
@@ -147,8 +203,10 @@ type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Local variables
-integer :: iv
-character(len=1024) :: filename,grpname
+integer :: ncid,grpid,m2sqrt_id
+integer :: isub,iv,ic0a,il0
+real(kind_real) :: m2sqrt(geom%nc0a,geom%nl0,nam%nv),fac_norm
+character(len=1024) :: fname_var,grpname
 
 ! Set name
 @:set_name(var_read)
@@ -160,16 +218,60 @@ character(len=1024) :: filename,grpname
 write(mpl%info,'(a7,a)') '','Read variance'
 call mpl%flush
 
-! Allocation
-call var%alloc(nam,geom)
+! Initialization
+var%m2 = zero
 
-! Set filename
-filename = trim(nam%prefix)//'_var'
+do isub=1,nam%ens1_nsub
+   ! Set file name
+   if ((nam%ens1_nsub==1).and.(.not.nam%fname_var_used))  then
+      fname_var = nam%fname_var(0)
+   else
+      fname_var = nam%fname_var(isub)
+   end if
 
-! Read raw variance, fourth-order moment, filtered variance and standard-deviation
+   ! Open file
+   ncid = open_file(mpl,fname_var)
+
+   do iv=1,nam%nv
+      ! Get group name
+      call nam%io_key_value(nam%variables(iv),grpname)
+
+      ! Inquire group
+      grpid = inquire_grp(mpl,ncid,grpname)
+
+      ! Inquire variable
+      m2sqrt_id = inquire_var(mpl,grpid,'m2sqrt')
+
+      ! Read variable
+      call geom%io%fld_read(mpl,grpid,m2sqrt_id,m2sqrt(:,:,iv))
+   end do
+
+   ! Average variance
+   var%m2 = var%m2+m2sqrt**2
+
+   if (mpl%main) then
+      ! Get ensemble size
+      call get_att(mpl,ncid,'ne',var%ne)
+      var%ne = var%ne*nam%ens1_nsub
+   end if
+   call mpl%f_comm%broadcast(var%ne,mpl%rootproc-1)
+
+   ! Close file
+   call close_file(mpl,ncid)
+end do
+
+! Normalization
+fac_norm = one/real(nam%ens1_nsub,kind_real)
 do iv=1,nam%nv
-   call nam%io_key_value(trim(nam%variables(iv)),grpname)
-   call geom%io%fld_read(mpl,nam,filename,'m2sqrt',var%m2sqrt(:,:,iv),grpname)
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) then
+            var%m2(ic0a,il0,iv) = var%m2(ic0a,il0,iv)*fac_norm
+         else
+            var%m2(ic0a,il0,iv) = mpl%msv%valr
+         end if
+      end do
+   end do
 end do
 
 ! Probe out
@@ -192,8 +294,10 @@ type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Local variables
+integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
+integer :: grpid(nam%nv),m2_id(nam%nv),m4_id(nam%nv),m2flt_id(nam%nv),m2sqrt_id(nam%nv)
 integer :: iv
-character(len=1024) :: filename,grpname
+character(len=1024) :: grpname
 
 ! Set name
 @:set_name(var_write)
@@ -205,24 +309,51 @@ character(len=1024) :: filename,grpname
 write(mpl%info,'(a7,a)') '','Write variance'
 call mpl%flush
 
-! Set filename
-filename = trim(nam%prefix)//'_var'
+! Create file
+ncid = create_file(mpl,nam%fname_var(0))
 
-! Write coordinates
-call geom%io%fld_write(mpl,nam,filename,'lon',geom%lon_c0a*rad2deg,ncunit='degrees_east')
-call geom%io%fld_write(mpl,nam,filename,'lat',geom%lat_c0a*rad2deg,ncunit='degrees_north')
-call geom%io%fld_write(mpl,nam,filename,'vunit',geom%vunit_c0a,geom%gmask_c0a)
+! Define dimensions
+nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
-! Write raw variance, fourth-order moment, filtered variance and standard-deviation
+! Define variables
+lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
 do iv=1,nam%nv
-   call nam%io_key_value(trim(nam%variables(iv)),grpname)
+   ! Get group name
+   call nam%io_key_value(nam%variables(iv),grpname)
+
+   ! Define group
+   grpid(iv) = define_grp(mpl,ncid,grpname)
+
+   ! Define variables
    if (.not.nam%forced_var) then
-      call geom%io%fld_write(mpl,nam,filename,'m2',var%m2(:,:,iv),geom%gmask_c0a,grpname)
-      call geom%io%fld_write(mpl,nam,filename,'m4',var%m4(:,:,iv),geom%gmask_c0a,grpname)
-      if (nam%var_filter) call geom%io%fld_write(mpl,nam,filename,'m2flt',var%m2flt(:,:,iv),geom%gmask_c0a,grpname)
+      m2_id(iv) = define_var(mpl,grpid(iv),'m2','real',(/nc0_id,nl0_id/))
+      m4_id(iv) = define_var(mpl,grpid(iv),'m4','real',(/nc0_id,nl0_id/))
+      if (nam%var_filter) m2flt_id(iv) = define_var(mpl,grpid(iv),'m2flt','real',(/nc0_id,nl0_id/))
    end if
-   call geom%io%fld_write(mpl,nam,filename,'m2sqrt',var%m2sqrt(:,:,iv),geom%gmask_c0a,grpname)
+   m2sqrt_id(iv) = define_var(mpl,grpid(iv),'m2sqrt','real',(/nc0_id,nl0_id/))
 end do
+
+! Put attribute
+call put_att(mpl,ncid,'ne',var%ne)
+
+! Write variables
+call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+do iv=1,nam%nv
+   if (.not.nam%forced_var) then
+      call geom%io%fld_write(mpl,grpid(iv),m2_id(iv),var%m2(:,:,iv),geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(iv),m4_id(iv),var%m4(:,:,iv),geom%gmask_c0a)
+      if (nam%var_filter) call geom%io%fld_write(mpl,grpid(iv),m2flt_id(iv),var%m2flt(:,:,iv),geom%gmask_c0a)
+   end if
+   call geom%io%fld_write(mpl,grpid(iv),m2sqrt_id(iv),var%m2sqrt(:,:,iv),geom%gmask_c0a)
+end do
+
+! Close file
+call close_file(mpl,ncid)
 
 ! Probe out
 @:probe_out()
@@ -230,10 +361,154 @@ end do
 end subroutine var_write
 
 !----------------------------------------------------------------------
+! Subroutine: var_update
+!> Update variance
+!----------------------------------------------------------------------
+subroutine var_update(var,mpl,rng,nam,geom,bpar,fld_c0a,ie)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var                             !< Variance
+type(mpl_type),intent(inout) :: mpl                              !< MPI data
+type(rng_type),intent(inout) :: rng                              !< Random number generator
+type(nam_type),intent(in) :: nam                                 !< Namelist
+type(geom_type),intent(in) :: geom                               !< Geometry
+type(bpar_type),intent(in) :: bpar                               !< Block parameters
+real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field
+integer,intent(in) :: ie                                         !< Member index
+
+! Local variables
+integer :: isub,ie_sub,ic0a,il0,iv
+real(kind_real) :: fac1,fac2,fac3,fac4,fac5,fac_norm_m2,fac_norm_m4
+real(kind_real) :: pert_c0a(geom%nc0a,geom%nl0,nam%nv)
+
+! Set name
+@:set_name(var_update)
+
+! Probe in
+@:probe_in()
+
+! Update variance
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Update variance'
+call mpl%flush
+
+! Indices
+isub = (ie-1)/(nam%ens1_ne/nam%ens1_nsub)+1
+ie_sub = ie-(isub-1)*nam%ens1_ne/nam%ens1_nsub
+
+! Computation factors
+fac1 = one/real(ie_sub,kind_real)
+fac2 = one/real(ie_sub**2,kind_real)
+fac3 = real((ie_sub-1)*(ie_sub**2-3*ie_sub+3),kind_real)/real(ie_sub**3,kind_real)
+fac4 = real((ie_sub-1)*(ie_sub-2),kind_real)/real(ie_sub**2,kind_real)
+fac5 = real(ie_sub-1,kind_real)/real(ie_sub,kind_real)
+
+if (ie==1) then
+   ! Allocation
+   call var%alloc(nam,geom)
+
+   ! Initialization
+   var%ne = nam%ens1_ne
+   var%m2 = zero
+   var%m4 = zero
+end if
+if (ie_sub==1) then
+   ! Initialization
+   var%seq_m1 = zero
+   var%seq_m2 = zero
+   var%seq_m3 = zero
+   var%seq_m4 = zero
+end if
+
+! Remove mean
+pert_c0a = fld_c0a-var%seq_m1
+
+! Update fourth-order centered moment
+var%seq_m4 = var%seq_m4-four*fac1*var%seq_m3*pert_c0a+six*fac2*var%seq_m2*pert_c0a**2+fac3*pert_c0a**4
+
+! Update third-order centered moment
+var%seq_m3 = var%seq_m3-three*fac1*var%seq_m2*pert_c0a+fac4*pert_c0a**3
+
+! Update variance
+var%seq_m2 = var%seq_m2+fac5*pert_c0a**2
+
+! Update mean
+var%seq_m1 = var%seq_m1+fac1*pert_c0a
+
+! Average variance and fourth-order centered moment
+if (ie_sub==nam%ens1_ne/nam%ens1_nsub) then
+   var%m2 = var%m2+var%seq_m2
+   var%m4 = var%m4+var%seq_m4
+end if
+
+if (ie==nam%ens1_ne) then
+   ! Normalization
+   fac_norm_m2 = one/real(nam%ens1_ne-nam%ens1_nsub,kind_real)
+   fac_norm_m4 = one/real(nam%ens1_ne,kind_real)
+   !$omp parallel do schedule(static) private(iv,il0,ic0a)
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) then
+               var%m2(ic0a,il0,iv) = var%m2(ic0a,il0,iv)*fac_norm_m2
+               var%m4(ic0a,il0,iv) = var%m4(ic0a,il0,iv)*fac_norm_m4
+            else
+               var%m2(ic0a,il0,iv) = mpl%msv%valr
+               var%m4(ic0a,il0,iv) = mpl%msv%valr
+            end if
+         end do
+      end do
+   end do
+   !$omp end parallel do
+
+   if (nam%var_filter) then
+      ! Filter variance
+      call var%filter(mpl,rng,nam,geom,bpar)
+
+      ! Take square-root
+      do iv=1,nam%nv
+         do il0=1,geom%nl0
+            do ic0a=1,geom%nc0a
+               if (geom%gmask_c0a(ic0a,il0).and.mpl%msv%isnot(var%m2flt(ic0a,il0,iv))) then
+                  var%m2sqrt(ic0a,il0,iv) = sqrt(var%m2flt(ic0a,il0,iv))
+               else
+                  var%m2sqrt(ic0a,il0,iv) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   else
+      ! Take square-root
+      do iv=1,nam%nv
+         do il0=1,geom%nl0
+            do ic0a=1,geom%nc0a
+               if (geom%gmask_c0a(ic0a,il0).and.mpl%msv%isnot(var%m2(ic0a,il0,iv))) then
+                  var%m2sqrt(ic0a,il0,iv) = sqrt(var%m2(ic0a,il0,iv))
+               else
+                  var%m2sqrt(ic0a,il0,iv) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end if
+
+   ! Write variance
+   if (nam%write_var) call var%write(mpl,nam,geom)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine var_update
+
+!----------------------------------------------------------------------
 ! Subroutine: var_run_var
 !> Compute variance
 !----------------------------------------------------------------------
-subroutine var_run_var(var,mpl,rng,nam,geom,ens)
+subroutine var_run_var(var,mpl,rng,nam,geom,bpar,ens)
 
 implicit none
 
@@ -243,6 +518,7 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 type(rng_type),intent(inout) :: rng  !< Random number generator
 type(nam_type),intent(inout) :: nam  !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
+type(bpar_type),intent(in) :: bpar   !< Block parameters
 type(ens_type), intent(inout) :: ens !< Ensemble
 
 ! Local variables
@@ -255,62 +531,80 @@ integer :: ic0a,il0,iv
 @:probe_in()
 
 ! Allocation
-call var%alloc(nam,geom)
+if (.not.nam%update_var) call var%alloc(nam,geom)
 
 if (nam%forced_var) then
    ! Initialization
    var%ne = 0
 
-   ! Copy standard-deviation
+   ! Copy variance
    do iv=1,nam%nv
       do il0=1,geom%nl0
-         var%m2sqrt(:,il0,iv) = nam%stddev(il0,iv)
+         var%m2(:,il0,iv) = nam%stddev(il0,iv)**2
       end do
    end do
 
-   ! Apply mask
-   do il0=1,geom%nl0
-      do ic0a=1,geom%nc0a
-         if (.not.geom%gmask_c0a(ic0a,il0)) then
-            var%m2sqrt(ic0a,il0,:) = mpl%msv%valr
-         end if
-      end do
-   end do
-else
+   ! Missing fourth-order centered moment
+   var%m4 = mpl%msv%valr
+elseif (nam%new_var) then
+   write(mpl%info,'(a7,a)') '','Compute variance'
+   call mpl%flush
+
    ! Initialization
    var%ne = ens%ne
 
    ! Compute variance
-   write(mpl%info,'(a7,a)') '','Compute variance'
-   call mpl%flush
    call ens%compute_moments(mpl,nam,geom)
    call ens%get_c0(mpl,nam,geom,'m2',0,var%m2)
    call ens%get_c0(mpl,nam,geom,'m4',0,var%m4)
+elseif (nam%load_var) then
+   ! Read variance
+   call var%read(mpl,nam,geom)
+elseif (var%bump_m2_counter>0) then
+   ! Initialization
+   var%ne = nam%ne
 
-   ! Apply mask
-   do il0=1,geom%nl0
-      do ic0a=1,geom%nc0a
-         if (.not.geom%gmask_c0a(ic0a,il0)) then
-            var%m2(ic0a,il0,:) = mpl%msv%valr
-            var%m4(ic0a,il0,:) = mpl%msv%valr
-         end if
+   ! Copy normalized quantities
+   var%m2 = var%bump_m2/real(var%bump_m2_counter,kind_real)
+   if (var%bump_m4_counter>0) var%m4 = var%bump_m4/real(var%bump_m4_counter,kind_real)
+
+   ! Release memory (partial)
+   call var%partial_bump_dealloc
+end if
+
+if (nam%var_filter) then
+   ! Filter variance
+   call var%filter(mpl,rng,nam,geom,bpar)
+
+   ! Take square-root
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0).and.mpl%msv%isnot(var%m2flt(ic0a,il0,iv))) then
+               var%m2sqrt(ic0a,il0,iv) = sqrt(var%m2flt(ic0a,il0,iv))
+            else
+               var%m2sqrt(ic0a,il0,iv) = mpl%msv%valr
+            end if
+         end do
       end do
    end do
-
-   if (nam%var_filter) then
-      ! Filter variance
-      call var%filter(mpl,rng,nam,geom)
-
-      ! Take square-root
-      var%m2sqrt = sqrt(var%m2flt)
-   else
-      ! Take square-root
-      var%m2sqrt = sqrt(var%m2)
-   end if
+else
+   ! Take square-root
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0).and.mpl%msv%isnot(var%m2(ic0a,il0,iv))) then
+               var%m2sqrt(ic0a,il0,iv) = sqrt(var%m2(ic0a,il0,iv))
+            else
+               var%m2sqrt(ic0a,il0,iv) = mpl%msv%valr
+            end if
+         end do
+      end do
+   end do
 end if
 
 ! Write variance
-call var%write(mpl,nam,geom)
+if (nam%write_var) call var%write(mpl,nam,geom)
 
 ! Probe out
 @:probe_out()
@@ -321,7 +615,7 @@ end subroutine var_run_var
 ! Subroutine: var_filter
 !> Filter variance
 !----------------------------------------------------------------------
-subroutine var_filter(var,mpl,rng,nam,geom)
+subroutine var_filter(var,mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -331,10 +625,12 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 type(rng_type),intent(inout) :: rng  !< Random number generator
 type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
+type(bpar_type),intent(in) :: bpar   !< Block parameters
 
 ! Local variables
-integer :: n,iv,il0,iter
-real(kind_real) :: P9,P20,P21,diff,diff_abs_min
+integer :: ib,iv,jv,il0,iter,ipass,ipass_min(geom%nl0)
+real(kind_real) :: P9,P20,P21,diff,diff_abs_min(geom%nl0)
+real(kind_real) :: m2uni(geom%nl0,nam%nv),m2uni_tot(geom%nl0,nam%nv),m2norm(geom%nl0),m2norm_tot(geom%nl0)
 real(kind_real) :: m2sq(geom%nl0),m2sq_tot(geom%nl0),m4(geom%nl0),m4_tot(geom%nl0),m2sqasy(geom%nl0)
 real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2prod_tot(geom%nl0)
 real(kind_real) :: m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
@@ -347,109 +643,237 @@ type(nicas_blk_type) :: nicas_blk
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a7,a)') '','Filter variance'
-call mpl%flush
-
-! Ensemble size-dependent coefficients
-n = var%ne
-P9 = -real(n,kind_real)/real((n-2)*(n-3),kind_real)
-P20 = real((n-1)*(n**2-3*n+3),kind_real)/real(n*(n-2)*(n-3),kind_real)
-P21 = real(n-1,kind_real)/real(n+1,kind_real)
-
-do iv=1,nam%nv
-   write(mpl%info,'(a13,a,a)') '','Variable ',trim(nam%variables(iv))
+if ((nam%var_niter<=0).and.(nam%var_npass<=0)) then
+   ! Uniform averaged variance
+   write(mpl%info,'(a7,a)') '','Uniform averaged variance'
    call mpl%flush
 
-   ! Global sum
-   do il0=1,geom%nl0
-      m2sq(il0) = sum(var%m2(:,il0,iv)**2,mask=geom%gmask_c0a(:,il0))
-      m4(il0) = sum(var%m4(:,il0,iv),mask=geom%gmask_c0a(:,il0))
+   ! Initialization
+   m2uni = zero
+   m2norm = zero
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         if (mpl%msv%isanynot(var%m2(:,il0,iv))) m2uni(il0,iv) = zss_sum(var%m2(:,il0,iv),mask=geom%gmask_c0a(:,il0))
+      end do
    end do
-   call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
-   call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
+   do il0=1,geom%nl0
+      m2norm(il0) = real(zss_count(geom%gmask_c0a(:,il0)),kind_real)
+   end do
 
-   ! Asymptotic statistics
-   if (nam%gau_approx) then
-      ! Gaussian approximation
-      m2sqasy = P21*m2sq_tot
-   else
-      ! General case
-      m2sqasy = P20*m2sq_tot+P9*m4_tot
-   end if
+   ! Communication
+   call mpl%f_comm%allreduce(m2uni,m2uni_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(m2norm,m2norm_tot,fckit_mpi_sum())
 
-   ! Dichotomy initialization
-   m2_ini = var%m2(:,:,iv)
-   convergence = .true.
-   dichotomy = .false.
-   rhflt = nam%var_rhflt
-   drhflt = rhflt
-   diff_abs_min = huge_real
-
-   do iter=1,nam%var_niter
-      ! Copy initial value
-      m2 = m2_ini
-
-      ! Set smoother parameters
-      call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
-
-      ! Apply smoother
-      call nicas_blk%apply(mpl,geom,m2)
-
-      ! Global product
+   ! Averaged variance
+   do iv=1,nam%nv
       do il0=1,geom%nl0
-         m2prod(il0) = sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
-      end do
-      call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
-
-      ! Print results
-      write(mpl%info,'(a16,a,i2)') '','Iteration ',iter
-      call mpl%flush
-      do il0=1,geom%nl0
-         if (m2sqasy(il0)>zero) then
-            write(mpl%info,'(a19,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm,' km, rel. diff. = ', &
- & (m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
-            call mpl%flush
-         end if
-      end do
-
-      ! Update support radius
-      do il0=1,geom%nl0
-         diff = m2prod_tot(il0)-m2sqasy(il0)
-         if (diff>zero) then
-            ! Increase filtering support radius
-            if (dichotomy(il0)) then
-               drhflt(il0) = half*drhflt(il0)
-               rhflt(il0) = rhflt(il0)+drhflt(il0)
-            else
-               convergence(il0) = .false.
-               rhflt(il0) = rhflt(il0)+drhflt(il0)
-               drhflt(il0) = two*drhflt(il0)
-            end if
+         if (m2norm_tot(il0)>zero) then
+            var%m2flt(:,il0,iv) = m2uni_tot(il0,iv)/m2norm_tot(il0)
          else
-            ! Convergence
-            convergence(il0) = .true.
-
-            ! Change dichotomy status
-            if (.not.dichotomy(il0)) then
-               dichotomy(il0) = .true.
-               drhflt(il0) = half*drhflt(il0)
-            end if
-
-            ! Decrease filtering support radius
-            drhflt(il0) = half*drhflt(il0)
-            rhflt(il0) = rhflt(il0)-drhflt(il0)
-         end if
-         if ((abs(diff)<diff_abs_min).or.(nam%var_niter==1)) then
-            ! Copy best result
-            diff_abs_min = abs(diff)
-            var%m2flt(:,:,iv) = m2
+            var%m2flt(:,il0,iv) = zero
          end if
       end do
+   end do
+else
+   ! Filter variance
+   write(mpl%info,'(a7,a)') '','Filter variance'
+   call mpl%flush
 
-      ! Release memory
-      call nicas_blk%dealloc
-    end do
-end do
+   ! Ensemble size-dependent coefficients
+   if (var%ne<3) call mpl%abort('${subr}$','var%ne should be larger than 3')
+   P9 = -real(var%ne,kind_real)/real((var%ne-2)*(var%ne-3),kind_real)
+   P20 = real((var%ne-1)*(var%ne**2-3*var%ne+3),kind_real)/real(var%ne*(var%ne-2)*(var%ne-3),kind_real)
+   P21 = real(var%ne-1,kind_real)/real(var%ne+1,kind_real)
+
+   do ib=1,bpar%nb
+      ! Indices
+      iv = bpar%b_to_v1(ib)
+      jv = bpar%b_to_v2(ib)
+
+      if (iv==jv) then
+         write(mpl%info,'(a10,a,a)') '','Variable ',trim(nam%variables(iv))
+         call mpl%flush
+
+         ! Global sum
+         m2sq = zero
+         m4 = zero
+         do il0=1,geom%nl0
+            if (mpl%msv%isanynot(var%m2(:,il0,iv))) m2sq(il0) = zss_sum(var%m2(:,il0,iv)**2,mask=geom%gmask_c0a(:,il0))
+            if (mpl%msv%isanynot(var%m4(:,il0,iv))) m4(il0) = zss_sum(var%m4(:,il0,iv),mask=geom%gmask_c0a(:,il0))
+         end do
+         call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
+         call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
+
+         ! Asymptotic statistics
+         if (nam%gau_approx) then
+            ! Gaussian approximation
+            m2sqasy = P21*m2sq_tot
+         else
+            ! General case
+            m2sqasy = P20*m2sq_tot+P9*m4_tot
+         end if
+
+         ! Initialization
+         m2_ini = var%m2(:,:,iv)
+
+         if (nam%var_niter>0) then
+            ! Dichotomy initialization
+            convergence = .true.
+            dichotomy = .false.
+            rhflt = nam%var_rhflt(1:geom%nl0,iv)
+            drhflt = rhflt
+            nicas_blk%ib = ib
+
+            ! Global product
+            do il0=1,geom%nl0
+               m2prod(il0) = zss_sum(m2_ini(:,il0)**2,mask=geom%gmask_c0a(:,il0))
+            end do
+            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+
+            ! Save results
+            do il0=1,geom%nl0
+               diff = m2prod_tot(il0)-m2sqasy(il0)
+               diff_abs_min(il0) = abs(diff)
+               var%m2flt(:,il0,iv) = m2(:,il0)
+            end do
+
+            do iter=1,nam%var_niter
+               ! Copy initial value
+               m2 = m2_ini
+
+               ! Set smoother parameters
+               call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
+
+               ! Apply smoother
+               call nicas_blk%apply(mpl,geom,m2)
+
+               ! Global product
+               do il0=1,geom%nl0
+                  m2prod(il0) = zss_sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
+               end do
+               call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+
+               ! Update support radius
+               do il0=1,geom%nl0
+                  diff = m2prod_tot(il0)-m2sqasy(il0)
+                  if ((abs(diff)<diff_abs_min(il0)).or.(nam%var_niter==1)) then
+                     ! Copy best result
+                     diff_abs_min(il0) = abs(diff)
+                     var%m2flt(:,:,iv) = m2
+                  end if
+                  if (iter<nam%var_niter) then
+                     if (diff>zero) then
+                        ! Increase filtering support radius
+                        if (dichotomy(il0)) then
+                           drhflt(il0) = half*drhflt(il0)
+                           rhflt(il0) = rhflt(il0)+drhflt(il0)
+                        else
+                          convergence(il0) = .false.
+                           rhflt(il0) = rhflt(il0)+drhflt(il0)
+                           drhflt(il0) = two*drhflt(il0)
+                       end if
+                     else
+                        ! Convergence
+                        convergence(il0) = .true.
+
+                        ! Change dichotomy status
+                        dichotomy(il0) = .true.
+
+                        ! Decrease filtering support radius
+                        drhflt(il0) = half*drhflt(il0)
+                        rhflt(il0) = rhflt(il0)-drhflt(il0)
+                     end if
+                  end if
+               end do
+
+               ! Release memory
+               call nicas_blk%dealloc
+            end do
+
+            ! Global product
+            do il0=1,geom%nl0
+               m2prod(il0) = zss_sum(var%m2flt(:,il0,iv)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
+            end do
+            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+
+            ! Print results
+            write(mpl%info,'(a13,a)') '','Optimal filtering length-scale:'
+            call mpl%flush
+            do il0=1,geom%nl0
+               if (m2sqasy(il0)>zero) then
+                  write(mpl%info,'(a16,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm, &
+ & ' km, rel. diff. = ',(m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
+                  call mpl%flush
+               end if
+            end do
+         elseif (nam%var_npass>0) then
+            ! Initialization
+            m2 = var%m2(:,:,iv)
+            nicas_blk%ib = ib
+
+            ! Global product
+            do il0=1,geom%nl0
+               m2prod(il0) = zss_sum(m2_ini(:,il0)**2,mask=geom%gmask_c0a(:,il0))
+            end do
+            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+
+            ! Save results
+            do il0=1,geom%nl0
+               diff = m2prod_tot(il0)-m2sqasy(il0)
+               diff_abs_min(il0) = abs(diff)
+               ipass_min(il0) = 0
+               var%m2flt(:,il0,iv) = m2(:,il0)
+            end do
+
+            ! Set unique smoother parameters
+            rhflt = nam%var_rhflt(1:geom%nl0,iv)
+            call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
+
+            ! Apply smoother
+            do ipass=1,nam%var_npass
+               ! Apply smoother
+               call nicas_blk%apply(mpl,geom,m2)
+
+               ! Global product
+               do il0=1,geom%nl0
+                  m2prod(il0) = zss_sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
+               end do
+               call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+
+               ! Save results
+               do il0=1,geom%nl0
+                  diff = m2prod_tot(il0)-m2sqasy(il0)
+                  if (abs(diff)<diff_abs_min(il0)) then
+                     diff_abs_min(il0) = abs(diff)
+                     ipass_min(il0) = ipass
+                     var%m2flt(:,il0,iv) = m2(:,il0)
+                  end if
+               end do
+            end do
+
+            ! Release memory
+            call nicas_blk%dealloc
+
+            ! Global product
+            do il0=1,geom%nl0
+               m2prod(il0) = zss_sum(var%m2flt(:,il0,iv)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
+            end do
+            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+
+            ! Print results
+            write(mpl%info,'(a13,a,i2,a)') '','Optimal number of passes (max. is ',nam%var_npass,')'
+            call mpl%flush
+            do il0=1,geom%nl0
+               if (m2sqasy(il0)>zero) then
+                  write(mpl%info,'(a16,a,i3,a,i2,a,f10.2,a,e12.5)') '','Level ',il0,': ',ipass_min(il0),' x ',rhflt(il0)*reqkm, &
+ & 'km, rel. diff. = ',(m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
+                  call mpl%flush
+               end if
+            end do
+         end if
+      end if
+   end do
+end if
 
 ! Probe out
 @:probe_out()
@@ -460,18 +884,19 @@ end subroutine var_filter
 ! Subroutine: var_apply_sqrt
 !> Apply square-root variance
 !----------------------------------------------------------------------
-subroutine var_apply_sqrt(var,nam,geom,fld)
+subroutine var_apply_sqrt(var,mpl,nam,geom,fld)
 
 implicit none
 
 ! Passed variables
 class(var_type),intent(in) :: var                               !< Variance
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
 type(nam_type),intent(in) :: nam                                !< Namelist
 type(geom_type),intent(in) :: geom                              !< Geometry
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destination vector
 
 ! Local variables
-integer :: ic0a,il0
+integer :: ic0a,il0,iv
 
 ! Set name
 @:set_name(var_apply_sqrt)
@@ -479,10 +904,18 @@ integer :: ic0a,il0
 ! Probe in
 @:probe_in()
 
-! Apply variance
+! Apply variance square-root
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:) = fld(ic0a,il0,:)*var%m2sqrt(ic0a,il0,:)
+      if (geom%gmask_c0a(ic0a,il0)) then
+         do iv=1,nam%nv
+            if (mpl%msv%isnot(fld(ic0a,il0,iv))) then
+               fld(ic0a,il0,iv) = fld(ic0a,il0,iv)*var%m2sqrt(ic0a,il0,iv)
+            else
+               fld(ic0a,il0,iv) = zero
+            end if
+         end do
+      end if
    end do
 end do
 
@@ -495,18 +928,19 @@ end subroutine var_apply_sqrt
 ! Subroutine: var_apply_sqrt_inv
 !> Apply square-root variance inverse
 !----------------------------------------------------------------------
-subroutine var_apply_sqrt_inv(var,nam,geom,fld)
+subroutine var_apply_sqrt_inv(var,mpl,nam,geom,fld)
 
 implicit none
 
 ! Passed variables
 class(var_type),intent(in) :: var                               !< Variance
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
 type(nam_type),intent(in) :: nam                                !< Namelist
 type(geom_type),intent(in) :: geom                              !< Geometry
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destination vector
 
 ! Local variables
-integer :: ic0a,il0
+integer :: ic0a,il0,iv
 
 ! Set name
 @:set_name(var_apply_sqrt_inv)
@@ -514,10 +948,18 @@ integer :: ic0a,il0
 ! Probe in
 @:probe_in()
 
-! Apply inverse variance
+! Apply inverse variance square-root
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
-      if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,:) = fld(ic0a,il0,:)/var%m2sqrt(ic0a,il0,:)
+      if (geom%gmask_c0a(ic0a,il0)) then
+         do iv=1,nam%nv
+            if (mpl%msv%isnot(fld(ic0a,il0,iv))) then
+               fld(ic0a,il0,iv) = fld(ic0a,il0,iv)/var%m2sqrt(ic0a,il0,iv)
+            else
+               fld(ic0a,il0,iv) = zero
+            end if
+         end do
+      end if
    end do
 end do
 

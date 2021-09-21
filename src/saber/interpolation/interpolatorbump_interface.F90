@@ -33,7 +33,7 @@ contains
 ! Subroutine bint_create_c
 !> Create BUMP interpolator (abbreviated as bint)
 !-------------------------------------------------------------------------------
-subroutine bint_create_c(c_key_bint,c_comm,c_fspace1,c_fspace2,c_masks,c_config) bind(c,name='bint_create_f90')
+subroutine bint_create_c(c_key_bint,c_comm,c_fspace1,c_fspace2,c_fieldset,c_config) bind(c,name='bint_create_f90')
 
 implicit none
 
@@ -42,7 +42,7 @@ integer(c_int),intent(inout) :: c_key_bint !< BUMP interpolator
 type(c_ptr),value,intent(in) :: c_comm     !< MPI Communicator
 type(c_ptr),intent(in),value :: c_fspace1  !< Source grid (atlas functionspace)
 type(c_ptr),intent(in),value :: c_fspace2  !< Target grid (atlas functionspace)
-type(c_ptr),intent(in),value :: c_masks    !< Masks and other metadata
+type(c_ptr),intent(in),value :: c_fieldset !< Other metadata
 type(c_ptr),value,intent(in) :: c_config   !< Configuration
 
 ! Local variables
@@ -50,7 +50,7 @@ type(bump_interpolator),pointer :: bint
 type(fckit_mpi_comm) :: f_comm
 type(fckit_configuration) :: f_config
 type(atlas_functionspace) :: fspace1,fspace2
-type(fieldset_type) :: masks
+type(fieldset_type) :: fieldset
 
 ! Interface
 f_comm = fckit_mpi_comm(c_comm)
@@ -60,14 +60,14 @@ call bump_interpolator_registry%add(c_key_bint)
 call bump_interpolator_registry%get(c_key_bint,bint)
 fspace1 = atlas_functionspace(c_fspace1)
 fspace2 = atlas_functionspace(c_fspace2)
-if (c_associated(c_masks)) then
-   masks = atlas_fieldset(c_masks)
+if (c_associated(c_fieldset)) then
+   fieldset = atlas_fieldset(c_fieldset)
 else
-   masks = atlas_fieldset()
-endif
+   fieldset = atlas_fieldset()
+end if
 
 ! Call Fortran
-call bint%init(f_comm,afunctionspace_in=fspace1,afunctionspace_out=fspace2,masks=masks,config=f_config)
+call bint%init(f_comm,afunctionspace_in=fspace1,afunctionspace_out=fspace2,fieldset=fieldset,config=f_config)
 
 end subroutine bint_create_c
 
