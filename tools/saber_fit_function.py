@@ -12,7 +12,7 @@ parser.add_argument("srcdir", help="SABER source directory")
 args = parser.parse_args()
 
 # General parameters
-nc = 51
+nc = 31
 dc = 1.0/float(nc-1)
 c = np.linspace(0, (nc-1)*dc, nc)
 epsabs = 1.0e-1
@@ -22,9 +22,11 @@ f0 = 1.0e-3
 npk = 14
 dpk = 0.5
 pk = np.linspace(0, (npk-1)*dpk, npk)
-rrat = 0.4
-nnld = 18
-dnld = 0.05
+nnlr = 8
+dnlr = 0.1
+nlr = np.linspace(0, (nnlr-1)*dnlr, nnlr)
+nnld = 9
+dnld = 0.1
 nld = np.linspace(0, (nnld-1)*dnld, nnld)
 
 def S_hor(x,y,f0,pk):
@@ -39,11 +41,11 @@ def S_hor(x,y,f0,pk):
       value = 0.0
    return value
 
-def S_ver(z,rrat,nld):
+def S_ver(z,nlr,nld):
    # Vertical value
    value = 0.0
-   if np.abs(z) <= 0.5*(1.0-rrat):
-      value += (1.0+nld)*(1.0-2.0*np.abs(z)/(1.0-rrat))
+   if np.abs(z) <= 0.5*(1.0-nlr):
+      value += (1.0+nld)*(1.0-2.0*np.abs(z)/(1.0-nlr))
    if np.abs(z) <= 0.5:
       value -= nld*(1.0-2.0*np.abs(z))
    return value
@@ -56,10 +58,10 @@ for ic in range(0,nc):
 # 3D case
 f_sqrt_hor = np.zeros((nc,npk))
 f_int_hor = np.zeros((nc,npk))
-f_sqrt_ver = np.zeros((nc,nnld))
-f_int_ver = np.zeros((nc,nnld))
-ver_minval = np.zeros((nnld))
-ver_minarg = np.zeros((nnld))
+f_sqrt_ver = np.zeros((nc,nnld,nnlr))
+f_int_ver = np.zeros((nc,nnld,nnlr))
+ver_minval = np.zeros((nnld,nnlr))
+ver_minarg = np.zeros((nnld,nnlr))
 
 for ipk in range(0, npk):
    for ic in range(0, nc):
@@ -93,42 +95,43 @@ ax[1].plot(axis, f_int_hor)
 plt.savefig("fit_hor.jpg", format="jpg", dpi=300)
 plt.close()
 
-for inld in range(0, nnld):
-   for kc in range(0, nc):
-       print("vertical:   " + str(inld) + " : " + str(kc))
+for inlr in range(0, nnlr):
+   for inld in range(0, nnld):
+      for kc in range(0, nc):
+          print("vertical:   " + str(inlr) + " / " + str(inld) + " : " + str(kc))
 
-       # Square-root function
-       f_sqrt_ver[kc,inld] = S_ver(axis[kc],rrat,nld[inld])/S_ver(0,rrat,nld[inld])
+          # Square-root function
+          f_sqrt_ver[kc,inld,inlr] = S_ver(axis[kc],nlr[inlr],nld[inld])/S_ver(0,nlr[inlr],nld[inld])
 
-       # Vertical integration (1D)
-       f = lambda  z: S_ver(z,rrat,nld[inld])*S_ver(axis[kc]-z,rrat,nld[inld])
-       fint = integrate.quad(f, -0.5, 0.5, epsabs = epsabs)
-       f_int_ver[kc,inld] = fint[0]
-       if kc == 0:
-          norm = f_int_ver[kc,inld]
-       f_int_ver[kc,inld] = f_int_ver[kc,inld]/norm
+          # Vertical integration (1D)
+          f = lambda  z: S_ver(z,nlr[inlr],nld[inld])*S_ver(axis[kc]-z,nlr[inlr],nld[inld])
+          fint = integrate.quad(f, -0.5, 0.5, epsabs = epsabs)
+          f_int_ver[kc,inld,inlr] = fint[0]
+          if kc == 0:
+             norm = f_int_ver[kc,inld,inlr]
+          f_int_ver[kc,inld,inlr] = f_int_ver[kc,inld,inlr]/norm
 
-   # Find vertical minimum (if negative values)
-   if np.any(f_int_ver[:,inld] < 0):
-      ver_minval[inld] = min(f_int_ver[:,inld])
-      ver_minarg[inld] = axis[np.argmin(f_int_ver[:,inld])]
+      # Find vertical minimum (if negative values)
+      if np.any(f_int_ver[:,inld,inlr] < 0):
+         ver_minval[inld,inlr] = min(f_int_ver[:,inld,inlr])
+         ver_minarg[inld,inlr] = axis[np.argmin(f_int_ver[:,inld,inlr])]
 
-# Plot curves
-fig, ax = plt.subplots(ncols=2)
-ax[0].set_xlim([0,1])
-ax[0].set_ylim([-0.5,1.1])
-ax[0].set_title("Square-root function")
-ax[0].axhline(y=0, color="k")
-ax[0].axvline(x=0, color="k")
-ax[0].plot(axis, f_sqrt_ver)
-ax[1].set_xlim([0,1])
-ax[1].set_ylim([-0.5,1.1])
-ax[1].set_title("Convolution function")
-ax[1].axhline(y=0, color="k")
-ax[1].axvline(x=0, color="k")
-ax[1].plot(axis, f_int_ver)
-plt.savefig("fit_ver.jpg", format="jpg", dpi=300)
-plt.close()
+   # Plot curves
+   fig, ax = plt.subplots(ncols=2)
+   ax[0].set_xlim([0,1])
+   ax[0].set_ylim([-0.5,1.1])
+   ax[0].set_title("Square-root function")
+   ax[0].axhline(y=0, color="k")
+   ax[0].axvline(x=0, color="k")
+   ax[0].plot(axis, f_sqrt_ver[:,:,inlr])
+   ax[1].set_xlim([0,1])
+   ax[1].set_ylim([-0.5,1.1])
+   ax[1].set_title("Convolution function")
+   ax[1].axhline(y=0, color="k")
+   ax[1].axvline(x=0, color="k")
+   ax[1].plot(axis, f_int_ver[:,:,inlr])
+   plt.savefig("fit_ver_" + str(inlr) + ".jpg", format="jpg", dpi=300)
+   plt.close()
 
 # Open file
 file = open(args.srcdir + "/src/saber/bump/tools_gc99.fypp", "w")
@@ -160,31 +163,38 @@ file.write("\n")
 file.write("integer,parameter :: nc = " + str(nc) + "\n")
 file.write("integer,parameter :: npk = " + str(npk) + "\n")
 file.write("integer,parameter :: nnld = " + str(nnld) + "\n")
+file.write("integer,parameter :: nnlr = " + str(nnlr) + "\n")
 file.write("real(kind_real),parameter :: f0 = %.8f_kind_real\n" % (f0))
-file.write("real(kind_real),parameter :: rrat = %.8f_kind_real\n" % (rrat))
 file.write("real(kind_real),parameter :: cmin = %.8f_kind_real\n" % (min(c)))
 file.write("real(kind_real),parameter :: cmax = %.8f_kind_real\n" % (max(c)))
 file.write("real(kind_real),parameter :: pkmin = %.8f_kind_real\n" % (min(pk)))
 file.write("real(kind_real),parameter :: pkmax = %.8f_kind_real\n" % (max(pk)))
 file.write("real(kind_real),parameter :: nldmin = %.8f_kind_real\n" % (min(nld)))
 file.write("real(kind_real),parameter :: nldmax = %.8f_kind_real\n" % (max(nld)))
+file.write("real(kind_real),parameter :: nlrmin = %.8f_kind_real\n" % (min(nlr)))
+file.write("real(kind_real),parameter :: nlrmax = %.8f_kind_real\n" % (max(nlr)))
 file.write("real(kind_real),parameter :: dc = %.8f_kind_real\n" % (dc))
 file.write("real(kind_real),parameter :: dpk = %.8f_kind_real\n" % (dpk))
 file.write("real(kind_real),parameter :: dnld = %.8f_kind_real\n" % (dnld))
-file.write("real(kind_real),parameter :: ver_minval(nnld) = (/ &\n")
-for inld in range(0, nnld):
-   if inld != nnld-1:
-      suffix = ", &"
-   else:
-      suffix = "/)"
-   file.write(" & %.8f_kind_real" % (ver_minval[inld]) + suffix + "\n")
-file.write("real(kind_real),parameter :: ver_minarg(nnld) = (/ &\n")
-for inld in range(0, nnld):
-   if inld != nnld-1:
-      suffix = ", &"
-   else:
-      suffix = "/)"
-   file.write(" & %.8f_kind_real" % (ver_minarg[inld]) + suffix + "\n")
+file.write("real(kind_real),parameter :: dnlr = %.8f_kind_real\n" % (dnlr))
+file.write("real(kind_real),parameter :: ver_minval(nnld,nnlr) = reshape((/ &\n")
+for inlr in range(0, nnlr):
+   for inld in range(0, nnld):
+      if inlr != nnlr-1 or inld != nnld-1:
+         suffix = ","
+      else:
+         suffix = "/),"
+      file.write(" & %.8f_kind_real" % (ver_minval[inld,inlr]) + suffix + " &\n")
+file.write(" & (/nnld,nnlr/))\n")
+file.write("real(kind_real),parameter :: ver_minarg(nnld,nnlr) = reshape((/ &\n")
+for inlr in range(0, nnlr):
+   for inld in range(0, nnld):
+      if inlr != nnlr-1 or inld != nnld-1:
+         suffix = ","
+      else:
+         suffix = "/),"
+      file.write(" & %.8f_kind_real" % (ver_minarg[inld,inlr]) + suffix + " &\n")
+file.write(" & (/nnld,nnlr/))\n")
 file.write("real(kind_real),parameter :: func_hor(nc,npk) = reshape((/ &\n")
 for ipk in range(0, npk):
    for ic in range(0, nc):
@@ -194,15 +204,16 @@ for ipk in range(0, npk):
          suffix = "/),"
       file.write(" & %.8f_kind_real" % (f_int_hor[ic,ipk]) + suffix + " &\n")
 file.write(" & (/nc,npk/))\n")
-file.write("real(kind_real),parameter :: func_ver(nc,nnld) = reshape((/ &\n")
-for inld in range(0, nnld):
-   for kc in range(0, nc):
-      if inld != nnld-1 or kc != nc-1:
-         suffix = ","
-      else:
-         suffix = "/),"
-      file.write(" & %.8f_kind_real" % (f_int_ver[kc,inld]) + suffix + " &\n")
-file.write(" & (/nc,nnld/))\n")
+file.write("real(kind_real),parameter :: func_ver(nc,nnld,nnlr) = reshape((/ &\n")
+for inlr in range(0, nnlr):
+   for inld in range(0, nnld):
+      for kc in range(0, nc):
+         if inlr != nnlr-1 or inld != nnld-1 or kc != nc-1:
+            suffix = ","
+         else:
+            suffix = "/),"
+         file.write(" & %.8f_kind_real" % (f_int_ver[kc,inld,inlr]) + suffix + " &\n")
+file.write(" & (/nc,nnld,nnlr/))\n")
 file.write("\n")
 file.write("interface fit_func\n")
 file.write("   module procedure gc99_fit_func\n")
@@ -212,7 +223,7 @@ file.write("   module procedure gc99_fit_func_sqrt\n")
 file.write("end interface\n")
 file.write("\n")
 file.write("private\n")
-file.write("public :: pkmin,pkmax,nldmin,nldmax,dnld\n")
+file.write("public :: pkmin,pkmax,nldmin,nldmax,nlrmin,nlrmax,nnld,dnld,nnlr,dnlr\n")
 file.write("public :: ver_minval,ver_minarg\n")
 file.write("public :: fit_func,fit_func_sqrt\n")
 file.write("\n")
@@ -222,7 +233,7 @@ file.write("!-------------------------------------------------------------------
 file.write("! Function: gc99_fit_func\n")
 file.write("!> Fit function\n")
 file.write("!----------------------------------------------------------------------\n")
-file.write("function gc99_fit_func(mpl,ch,pk,cv,nld) result(value)\n")
+file.write("function gc99_fit_func(mpl,ch,pk,cv,nld,nlr) result(value)\n")
 file.write("\n")
 file.write("! Passed variables\n")
 file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
@@ -230,14 +241,15 @@ file.write("real(kind_real),intent(in) :: ch    !< Horizontal normalized distanc
 file.write("real(kind_real),intent(in) :: pk    !< Horizontal peakness\n")
 file.write("real(kind_real),intent(in) :: cv    !< Vertical normalized distance\n")
 file.write("real(kind_real),intent(in) :: nld   !< Negative lobes depth\n")
+file.write("real(kind_real),intent(in) :: nlr   !< Negative lobes ratio\n")
 file.write("\n")
 file.write("! Returned variable\n")
 file.write("real(kind_real) :: value\n")
 file.write("\n")
 file.write("! Local variables\n")
-file.write("integer :: ichm,ichp,ipkm,ipkp,icvm,icvp,inldm,inldp\n")
-file.write("real(kind_real) :: bch,bpk,bcv,bnld\n")
-file.write("real(kind_real) :: rchm,rchp,rpkm,rpkp,rcvm,rcvp,rnldm,rnldp\n")
+file.write("integer :: ichm,ichp,ipkm,ipkp,icvm,icvp,inldm,inldp,inlrm,inlrp\n")
+file.write("real(kind_real) :: bch,bpk,bcv,bnld,bnlr\n")
+file.write("real(kind_real) :: rchm,rchp,rpkm,rpkp,rcvm,rcvp,rnldm,rnldp,rnlrm,rnlrp\n")
 file.write("real(kind_real) :: valueh,valuev\n")
 file.write("\n")
 file.write("! Set name\n")
@@ -251,6 +263,7 @@ file.write("if (ch<zero) call mpl%abort('${subr}$','negative horizontal normaliz
 file.write("if (pk<zero) call mpl%abort('${subr}$','negative peakness')\n")
 file.write("if (cv<zero) call mpl%abort('${subr}$','negative vertical normalized distance')\n")
 file.write("if (nld<zero) call mpl%abort('${subr}$','negative negative lobes depth')\n")
+file.write("if (nlr<zero) call mpl%abort('${subr}$','negative negative lobes ratio')\n")
 file.write("\n")
 file.write("if (eq(ch,zero).and.eq(cv,zero)) then\n")
 file.write("   ! Normalized origin\n")
@@ -264,6 +277,7 @@ file.write("   bch = max(cmin,min(ch,cmax))\n")
 file.write("   bpk = max(pkmin,min(pk,pkmax))\n")
 file.write("   bcv = max(cmin,min(cv,cmax))\n")
 file.write("   bnld = max(nldmin,min(nld,nldmax))\n")
+file.write("   bnlr = max(nlrmin,min(nlr,nlrmax))\n")
 file.write("\n")
 file.write("   ! Indices\n")
 file.write("   ichm = floor(bch/dc)+1\n")
@@ -274,6 +288,8 @@ file.write("   icvm = floor(bcv/dc)+1\n")
 file.write("   icvp = icvm+1\n")
 file.write("   inldm = floor(bnld/dnld)+1\n")
 file.write("   inldp = inldm+1\n")
+file.write("   inlrm = floor(bnlr/dnlr)+1\n")
+file.write("   inlrp = inlrm+1\n")
 file.write("\n")
 file.write("   ! Coefficients\n")
 file.write("   rchm = real(ichp-1,kind_real)-bch/dc\n")
@@ -284,16 +300,22 @@ file.write("   rcvm = real(icvp-1,kind_real)-bcv/dc\n")
 file.write("   rcvp = (one-rcvm)\n")
 file.write("   rnldm = real(inldp-1,kind_real)-bnld/dnld\n")
 file.write("   rnldp = (one-rnldm)\n")
+file.write("   rnlrm = real(inlrp-1,kind_real)-bnlr/dnlr\n")
+file.write("   rnlrp = (one-rnlrm)\n")
 file.write("\n")
 file.write("   ! Interpolated value\n")
 file.write("   valueh = rchm*rpkm*func_hor(ichm,ipkm) &\n")
 file.write(" & +rchp*rpkm*func_hor(ichp,ipkm) &\n")
 file.write(" & +rchm*rpkp*func_hor(ichm,ipkp) &\n")
 file.write(" & +rchp*rpkp*func_hor(ichp,ipkp)\n")
-file.write("   valuev = rcvm*rnldm*func_ver(icvm,inldm) &\n")
-file.write(" & +rcvp*rnldm*func_ver(icvp,inldm) &\n")
-file.write(" & +rcvm*rnldp*func_ver(icvm,inldp) &\n")
-file.write(" & +rcvp*rnldp*func_ver(icvp,inldp)\n")
+file.write("   valuev = rcvm*rnldm*rnlrm*func_ver(icvm,inldm,inlrm) &\n")
+file.write(" & +rcvp*rnldm*rnlrm*func_ver(icvp,inldm,inlrm) &\n")
+file.write(" & +rcvm*rnldp*rnlrm*func_ver(icvm,inldp,inlrm) &\n")
+file.write(" & +rcvp*rnldp*rnlrm*func_ver(icvp,inldp,inlrm) &\n")
+file.write(" & +rcvm*rnldm*rnlrp*func_ver(icvm,inldm,inlrp) &\n")
+file.write(" & +rcvp*rnldm*rnlrp*func_ver(icvp,inldm,inlrp) &\n")
+file.write(" & +rcvm*rnldp*rnlrp*func_ver(icvm,inldp,inlrp) &\n")
+file.write(" & +rcvp*rnldp*rnlrp*func_ver(icvp,inldp,inlrp)\n")
 file.write("   value = valueh*valuev\n")
 file.write("end if\n")
 file.write("\n")
@@ -306,7 +328,7 @@ file.write("!-------------------------------------------------------------------
 file.write("! Function: gc99_fit_func_sqrt\n")
 file.write("!> Fit function function square-root\n")
 file.write("!----------------------------------------------------------------------\n")
-file.write("function gc99_fit_func_sqrt(mpl,ch,pk,cv,nld) result(value)\n")
+file.write("function gc99_fit_func_sqrt(mpl,ch,pk,cv,nld,nlr) result(value)\n")
 file.write("\n")
 file.write("! Passed variables\n")
 file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
@@ -314,6 +336,7 @@ file.write("real(kind_real),intent(in) :: ch    !< Horizontal normalized distanc
 file.write("real(kind_real),intent(in) :: pk    !< Horizontal peakness\n")
 file.write("real(kind_real),intent(in) :: cv    !< Vertical normalized distance\n")
 file.write("real(kind_real),intent(in) :: nld   !< Negative lobes depth\n")
+file.write("real(kind_real),intent(in) :: nlr   !< Negative lobes ratio\n")
 file.write("\n")
 file.write("! Returned variable\n")
 file.write("real(kind_real) :: value\n")
@@ -350,7 +373,7 @@ file.write("   end if\n")
 file.write("\n")
 file.write("   ! Vertical component\n")
 file.write("   valuev = zero\n")
-file.write("   if (cv<half*(one-rrat)) valuev = valuev+(one+nld)*(one-two*cv/(one-rrat))\n")
+file.write("   if (cv<half*(one-nlr)) valuev = valuev+(one+nld)*(one-two*cv/(one-nlr))\n")
 file.write("   if (cv<half) valuev = valuev-nld*(one-two*cv)\n")
 file.write("\n")
 file.write("   ! Product of components\n")

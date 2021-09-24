@@ -9,7 +9,7 @@
 module tools_fit
 
 use tools_const, only: zero,quarter,half,one
-use tools_gc99, only: dnld,fit_func,ver_minval,ver_minarg
+use tools_gc99, only: nnld,dnld,nnlr,dnlr,fit_func,ver_minval,ver_minarg
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
@@ -88,7 +88,7 @@ if (raw(iz)>zero) then
             thinv = half
             dthinv = quarter
             do iter=1,itermax
-               thtest = fit_func(mpl,thinv,fit_pk,zero,zero)
+               thtest = fit_func(mpl,thinv,fit_pk,zero,zero,zero)
                if (sup(th,thtest)) then
                   thinv = thinv-dthinv
                else
@@ -197,7 +197,7 @@ end subroutine fit_fast_fit_hor
 ! Subroutine: fit_fast_fit_ver
 !> Fast fit length-scale estimation based on the value at mid-height (vertical)
 !----------------------------------------------------------------------
-subroutine fit_fast_fit_ver(mpl,n,iz,dist,raw,fit_r,fit_nld)
+subroutine fit_fast_fit_ver(mpl,n,iz,dist,raw,fit_r,fit_nld,fit_nlr)
 
 implicit none
 
@@ -209,10 +209,12 @@ real(kind_real),intent(in) :: dist(n)  !< Distance
 real(kind_real),intent(in) :: raw(n)   !< Raw data
 real(kind_real),intent(out) :: fit_r   !< Fast fit length-scale
 real(kind_real),intent(out) :: fit_nld !< Fast fit negative lobes depth
+real(kind_real),intent(out) :: fit_nlr !< Fast fit negative lobes ratio
 
 ! Local variables
-integer :: i,tmp(1)
+integer :: i,tmp(1),inlr
 real(kind_real) :: raw_tmp(n),fit_minval_m,fit_minval_p,fit_minval,fit_mindist_m,fit_mindist_p,fit_mindist,ncount
+real(kind_real) :: fit_r_test,fit_nld_test,fit_nlr_test,distnorm,fit(n),cost,cost_min
 
 ! Set name
 @:set_name(fit_fast_fit_ver)
@@ -247,7 +249,7 @@ if (raw(iz)>zero) then
                if (any(raw_tmp(1:iz)<0.05)) then
                   fit_minval_m = minval(raw_tmp(1:iz),mask=mpl%msv%isnot(raw_tmp(1:iz)))
                   tmp = minloc(raw_tmp(1:iz),mask=mpl%msv%isnot(raw_tmp(1:iz)))
-                  fit_mindist_m = dist(tmp(1))
+                  fit_mindist_m = abs(dist(tmp(1))-dist(iz))
                end if
             end if
             if (iz<n) then
@@ -255,7 +257,7 @@ if (raw(iz)>zero) then
                if (any(raw_tmp(iz:n)<0.05)) then
                   fit_minval_p = minval(raw_tmp(iz:n),mask=mpl%msv%isnot(raw_tmp(iz:n)))
                   tmp = minloc(raw_tmp(iz:n),mask=mpl%msv%isnot(raw_tmp(iz:n)))
-                  fit_mindist_p = dist(tmp(1))
+                  fit_mindist_p = abs(dist(tmp(1))-dist(iz))
                end if
             end if
 
@@ -277,17 +279,29 @@ if (raw(iz)>zero) then
                fit_mindist = fit_mindist/ncount
             end if
 
-            ! Find corresponding nld
-            tmp = minloc(abs(fit_minval-ver_minval))
-            fit_nld = (tmp(1)-1)*dnld
+            ! Find optimal nld/nlr
+            cost_min = huge_real
+            do inlr=2,nnlr-1
+               ! Get nld/nlr
+               tmp = 1+minloc(abs(fit_minval-ver_minval(2:nnld-1,inlr)))
+               fit_r_test = fit_mindist/ver_minarg(tmp(1),inlr)
+               fit_nld_test = real(tmp(1)-1,kind_real)*dnld
+               fit_nlr_test = real(inlr-1,kind_real)*dnlr
 
-            if (fit_nld>zero) then
-               ! Find corresponding r
-               fit_r = fit_mindist/ver_minarg(tmp(1))
-            else
-               ! No negative lobes, use horizontal fast fit
-               call fast_fit_hor(mpl,n,iz,dist,raw,zero,fit_r)
-            end if
+               ! Compute cost
+               do i=1,n
+                  distnorm = abs(dist(i)-dist(iz))/fit_r_test
+                  fit(i) = fit_func(mpl,zero,zero,distnorm,fit_nld_test,fit_nlr_test)
+               end do
+               cost = sum((fit-raw)**2,mask=mpl%msv%isnot(raw))
+
+               ! Compare cost
+               if (cost<cost_min) then
+                  fit_r = fit_r_test
+                  fit_nld = fit_nld_test
+                  fit_nlr = fit_nlr_test
+               end if
+            end do
          else
             ! No negative lobes, use horizontal fast fit
             fit_nld = zero
@@ -350,7 +364,7 @@ if (n>1) then
             if (mpl%msv%isnot(profile(i)).and.mpl%msv%isnot(profile(j))) then
                ! Gaspari-Cohn (1999) function
                distnorm = abs(x(j)-x(i))/rv
-               kernel(i,j) = fit_func(mpl,distnorm,zero,zero,zero)
+               kernel(i,j) = fit_func(mpl,distnorm,zero,zero,zero,zero)
             end if
          end do
       end do

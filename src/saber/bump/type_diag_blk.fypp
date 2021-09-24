@@ -12,7 +12,7 @@ module type_diag_blk
 use tools_const, only: zero,hundredth,tenth,half,one,two,three,five,seven,ten
 use tools_fit, only: fast_fit_hor,fast_fit_ver,ver_fill
 use tools_func, only: fit_diag,vert_interp_size,vert_interp_setup,vert_interp
-use tools_gc99, only: pkmin,pkmax,nldmin,nldmax
+use tools_gc99, only: pkmin,pkmax,nldmin,nldmax,nlrmin,nlrmax
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,put_att,define_var,put_var
 use tools_repro, only: inf,sup
@@ -45,6 +45,7 @@ type diag_blk_type
    real(kind_real),allocatable :: fit_pk(:)       !< Peakness
    real(kind_real),allocatable :: fit_rv(:)       !< Vertical fit support radius
    real(kind_real),allocatable :: fit_nld(:)      !< Negative lobes depth
+   real(kind_real),allocatable :: fit_nlr(:)      !< Negative lobes ratio
    real(kind_real),allocatable :: distv(:,:)      !< Reduced vertical distance
 contains
    procedure :: alloc => diag_blk_alloc
@@ -106,6 +107,7 @@ if ((ic2a==0).or.nam%local_diag) then
    allocate(diag_blk%fit_pk(geom%nl0))
    allocate(diag_blk%fit_rv(geom%nl0))
    allocate(diag_blk%fit_nld(geom%nl0))
+   allocate(diag_blk%fit_nlr(geom%nl0))
    allocate(diag_blk%distv(bpar%nl0r(ib),geom%nl0))
 end if
 
@@ -120,6 +122,7 @@ if ((ic2a==0).or.nam%local_diag) then
    diag_blk%fit_pk = mpl%msv%valr
    diag_blk%fit_rv = mpl%msv%valr
    diag_blk%fit_nld = mpl%msv%valr
+   diag_blk%fit_nlr = mpl%msv%valr
 end if
 
 ! Vertical distance
@@ -168,6 +171,7 @@ if (allocated(diag_blk%fit_rh)) deallocate(diag_blk%fit_rh)
 if (allocated(diag_blk%fit_pk)) deallocate(diag_blk%fit_pk)
 if (allocated(diag_blk%fit_rv)) deallocate(diag_blk%fit_rv)
 if (allocated(diag_blk%fit_nld)) deallocate(diag_blk%fit_nld)
+if (allocated(diag_blk%fit_nlr)) deallocate(diag_blk%fit_nlr)
 if (allocated(diag_blk%distv)) deallocate(diag_blk%distv)
 
 ! Probe out
@@ -197,7 +201,7 @@ integer,intent(in) :: nl0_2_id                 !< NetCDF ID
 ! Local variables
 integer :: grpid
 integer :: raw_id,valid_id,coef_ens_id,raw_zs_id,l0rl0_to_l0_id
-integer :: fit_id,fit_zs_id,fit_rh_id,fit_pk_id,fit_rv_id,fit_nld_id
+integer :: fit_id,fit_zs_id,fit_rh_id,fit_pk_id,fit_rv_id,fit_nld_id,fit_nlr_id
 integer :: il0,jl0r,jl0
 
 ! Set name
@@ -227,6 +231,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    fit_pk_id = define_var(mpl,grpid,'fit_pk','real',(/nl0_1_id/))
    fit_rv_id = define_var(mpl,grpid,'fit_rv','real',(/nl0_1_id/))
    fit_nld_id = define_var(mpl,grpid,'fit_nld','real',(/nl0_1_id/))
+   fit_nlr_id = define_var(mpl,grpid,'fit_nlr','real',(/nl0_1_id/))
 end if
 
 ! Write variables
@@ -259,6 +264,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
     call put_var(mpl,grpid,fit_pk_id,diag_blk%fit_pk)
     call put_var(mpl,grpid,fit_rv_id,diag_blk%fit_rv)
     call put_var(mpl,grpid,fit_nld_id,diag_blk%fit_nld)
+    call put_var(mpl,grpid,fit_nlr_id,diag_blk%fit_nlr)
 end if
 
 ! End associate
@@ -329,8 +335,8 @@ integer :: il0,jl0rz,nl0r,ix,il1,nl1,ilev2d
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
 real(kind_real) :: m2(geom%nl0)
 real(kind_real),allocatable :: rawv(:),rinf(:),rsup(:),coef_ens_l1(:)
-real(kind_real),allocatable :: fit_rh_l1(:),fit_pk_l1(:),fit_rv_l1(:),fit_nld_l1(:)
-logical :: var2d,lcoef,lrh,lrv
+real(kind_real),allocatable :: fit_rh_l1(:),fit_pk_l1(:),fit_rv_l1(:),fit_nld_l1(:),fit_nlr_l1(:)
+logical :: var2d,lcoef,lrh,lpk,lrv,lnld,lnlr
 type(minim_type) :: minim
 
 ! Set name
@@ -347,6 +353,7 @@ diag_blk%fit_rh = mpl%msv%valr
 diag_blk%fit_pk = mpl%msv%valr
 diag_blk%fit_rv = mpl%msv%valr
 diag_blk%fit_nld = mpl%msv%valr
+diag_blk%fit_nlr = mpl%msv%valr
 diag_blk%fit = mpl%msv%valr
 
 ! Check for 2D variable
@@ -395,6 +402,7 @@ allocate(fit_rh_l1(nl1))
 allocate(fit_pk_l1(nl1))
 allocate(fit_rv_l1(nl1))
 allocate(fit_nld_l1(nl1))
+allocate(fit_nlr_l1(nl1))
 
 ! Get interpolation levels and weights
 if (var2d) then
@@ -416,6 +424,7 @@ minim%hooke_rho = half
 minim%hooke_tol = 1.0e-4_kind_real
 minim%hooke_itermax = 1
 
+! Horizontal fit
 do il1=1,nl1
    ! Index
    il0 = il0_interp(il1)
@@ -429,135 +438,363 @@ do il1=1,nl1
    ! Horizontal fast fit
    call fast_fit_hor(mpl,nam%nc3,1,geom%disth,diag_blk%raw(:,jl0rz,il0),fit_pk_l1(il1),fit_rh_l1(il1))
 
-   ! Vertical fast fit
-   if (var2d.or.(nl0r==1)) then
-      fit_rv_l1(il1) = zero
-      fit_nld_l1(il1) = zero
-   else
-      rawv = diag_blk%raw(1,:,il0)
-      call fast_fit_ver(mpl,nl0r,jl0rz,diag_blk%distv(:,il0),rawv,fit_rv_l1(il1),fit_nld_l1(il1))
-   end if
-
-   if (mpl%msv%isnot(coef_ens_l1(il1)).and.mpl%msv%isnot(fit_rh_l1(il1)).and.mpl%msv%isnot(fit_rv_l1(il1))) then
-      ! First minimization
-
+   if (mpl%msv%isnot(coef_ens_l1(il1)).and.mpl%msv%isnot(fit_rh_l1(il1)).and.mpl%msv%isnot(fit_pk_l1(il1))) then
       ! Optimization parameters
       lcoef = (coef_ens_l1(il1)>zero)
       if (present(coef)) lcoef = coef
       lrh = (fit_rh_l1(il1)>zero)
-      lrv = (fit_rv_l1(il1)>zero)
+      lpk = lrh.and.(fit_pk_l1(il1)>zero) ! TODO: nam%horizontal_peakness
 
-      ! Allocation
+      ! Sizes
       minim%nx = 0
       if (lcoef) minim%nx = minim%nx+1
-      if (lrh) minim%nx = minim%nx+2
-      if (lrv) minim%nx = minim%nx+2
-      minim%ny = nam%nc3*nl0r
-      allocate(minim%x(minim%nx))
-      allocate(minim%guess(minim%nx))
-      allocate(minim%binf(minim%nx))
-      allocate(minim%bsup(minim%nx))
-      allocate(minim%obs(minim%ny))
-      allocate(minim%disth(nam%nc3))
-      allocate(minim%distv(nl0r))
+      if (lrh) minim%nx = minim%nx+1
+      if (lpk) minim%nx = minim%nx+1
+      minim%ny = nam%nc3
 
-      ! Fill guess and bounds
-      ix = 0
-      if (lcoef) then
-         ix = ix+1
-         minim%guess(ix) = coef_ens_l1(il1)
-         minim%binf(ix) = tenth*minim%guess(ix)
-         minim%bsup(ix) = ten*minim%guess(ix)
-      end if
-      if (lrh) then
-         ix = ix+1
-         minim%guess(ix) = fit_rh_l1(il1)
-         minim%binf(ix) = tenth*minim%guess(ix)
-         minim%bsup(ix) = ten*minim%guess(ix)
-         ix = ix+1
-         minim%guess(ix) = fit_pk_l1(il1)
-         minim%binf(ix) = pkmin
-         minim%bsup(ix) = pkmax
-      end if
-      if (lrv) then
-         ix = ix+1
-         minim%guess(ix) = fit_rv_l1(il1)
-         minim%binf(ix) = tenth*minim%guess(ix)
-         minim%bsup(ix) = ten*minim%guess(ix)
-         ix = ix+1
-         minim%guess(ix) = fit_nld_l1(il1)
-         minim%binf(ix) = nldmin
-         minim%bsup(ix) = nldmax
-      end if
+      if (minim%nx>0) then
+         ! Allocation
+         allocate(minim%x(minim%nx))
+         allocate(minim%guess(minim%nx))
+         allocate(minim%binf(minim%nx))
+         allocate(minim%bsup(minim%nx))
+         allocate(minim%obs(minim%ny))
+         allocate(minim%disth(nam%nc3))
+         allocate(minim%distv(1))
 
-      ! Fill data
-      if (var2d) then
+         ! Fill guess and bounds
+         ix = 0
+         if (lcoef) then
+            ix = ix+1
+            minim%guess(ix) = coef_ens_l1(il1)
+            minim%binf(ix) = tenth*minim%guess(ix)
+            minim%bsup(ix) = ten*minim%guess(ix)
+         end if
+         if (lrh) then
+            ix = ix+1
+            minim%guess(ix) = fit_rh_l1(il1)
+            minim%binf(ix) = tenth*minim%guess(ix)
+            minim%bsup(ix) = ten*minim%guess(ix)
+         end if
+         if (lpk) then
+            ix = ix+1
+            minim%guess(ix) = fit_pk_l1(il1)
+            minim%binf(ix) = pkmin
+            minim%bsup(ix) = pkmax
+         end if
+
+         ! Fill data
          minim%obs = diag_blk%raw(:,bpar%il0rz(il0,ib),il0)
+         minim%cost_function = 'fit_diag'
+         minim%nc3 = nam%nc3
+         minim%nl0r = 1
+         minim%disth = geom%disth
+         minim%distv = diag_blk%distv(bpar%il0rz(il0,ib),il0)
+         minim%lcoef = lcoef
+         minim%lrh = lrh
+         minim%lpk = lpk
+         minim%lrv = .false.
+         minim%lnld = .false.
+         minim%lnlr = .false.
+
+         ! Compute fit
+         call minim%compute(mpl)
+
+         ! Apply bounds
+         minim%x = max(minim%binf,min(minim%x,minim%bsup))
+
+         ! Get parameters
+         ix = 0
+         if (lcoef) then
+            ix = ix+1
+            coef_ens_l1(il1) = minim%x(ix)
+         elseif (.not.present(coef)) then
+            coef_ens_l1(il1) = mpl%msv%valr
+         end if
+         if (lrh) then
+            ix = ix+1
+            fit_rh_l1(il1) = minim%x(ix)
+         else
+            fit_rh_l1(il1) = mpl%msv%valr
+         end if
+         if (lpk) then
+            ix = ix+1
+            fit_pk_l1(il1) = minim%x(ix)
+         else
+            fit_pk_l1(il1) = zero
+         end if
+
+         ! Release memory
+         deallocate(minim%x)
+         deallocate(minim%guess)
+         deallocate(minim%binf)
+         deallocate(minim%bsup)
+         deallocate(minim%obs)
+         deallocate(minim%disth)
+         deallocate(minim%distv)
       else
-         minim%obs = reshape(diag_blk%raw(:,:,il0),(/minim%ny/))
-      end if
-      minim%cost_function = 'fit_diag'
-      minim%nc3 = nam%nc3
-      minim%nl0r = nl0r
-      minim%disth = geom%disth
-      minim%distv = diag_blk%distv(:,il0)
-      minim%lcoef = lcoef
-      minim%lrh = lrh
-      minim%lrv = lrv
-
-      ! Compute fit
-      call minim%compute(mpl)
-
-      ! Apply bounds
-      minim%x = max(minim%binf,min(minim%x,minim%bsup))
-
-      ! Get parameters
-      ix = 0
-      if (lcoef) then
-         ix = ix+1
-         coef_ens_l1(il1) = minim%x(ix)
-      elseif (.not.present(coef)) then
+         ! Set to missing values
          coef_ens_l1(il1) = mpl%msv%valr
-      end if
-      if (lrh) then
-         ix = ix+1
-         fit_rh_l1(il1) = minim%x(ix)
-         ix = ix+1
-         fit_pk_l1(il1) = minim%x(ix)
-      else
          fit_rh_l1(il1) = mpl%msv%valr
          fit_pk_l1(il1) = mpl%msv%valr
       end if
-      if (lrv) then
-         ix = ix+1
-         fit_rv_l1(il1) = minim%x(ix)
-         ix = ix+1
-         fit_nld_l1(il1) = minim%x(ix)
-      elseif (var2d.or.(nl0r==1)) then
-         fit_rv_l1(il1) = zero
-         fit_nld_l1(il1) = zero
-      elseif (.not.(var2d.or.(nl0r==1))) then
-         fit_rv_l1(il1) = mpl%msv%valr
-         fit_nld_l1(il1) = mpl%msv%valr
-      end if
-
-      ! Release memory
-      deallocate(minim%x)
-      deallocate(minim%guess)
-      deallocate(minim%binf)
-      deallocate(minim%bsup)
-      deallocate(minim%obs)
-      deallocate(minim%disth)
-      deallocate(minim%distv)
    else
       ! Set to missing values
       coef_ens_l1(il1) = mpl%msv%valr
       fit_rh_l1(il1) = mpl%msv%valr
       fit_pk_l1(il1) = mpl%msv%valr
-      fit_rv_l1(il1) = mpl%msv%valr
-      fit_nld_l1(il1) = mpl%msv%valr
    end if
 end do
+
+if (nl0r==1) then
+   ! No vertical fit
+   fit_rv_l1(il1) = zero
+   fit_nld_l1(il1) = zero
+   fit_nlr_l1(il1) = zero
+else
+   ! Vertical fit, level by level
+   do il1=1,nl1
+      ! Index
+      il0 = il0_interp(il1)
+
+      ! Get zero separation level and min/max levels
+      jl0rz = bpar%il0rz(il0,ib)
+
+      ! Vertical fast fit
+      rawv = diag_blk%raw(1,:,il0)
+      call fast_fit_ver(mpl,bpar%nl0r(ib),jl0rz,diag_blk%distv(:,il0),rawv,fit_rv_l1(il1),fit_nld_l1(il1),fit_nlr_l1(il1))
+
+      if (mpl%msv%isnot(fit_rv_l1(il1)).and.mpl%msv%isnot(fit_nld_l1(il1)).and.mpl%msv%isnot(fit_nlr_l1(il1))) then
+         ! Optimization parameters
+         lrv = (fit_rv_l1(il1)>zero)
+         lnld = lrv.and.(fit_nld_l1(il1)>zero)
+         lnlr = lrv.and.(fit_nlr_l1(il1)>zero)
+
+         ! Sizes
+         minim%nx = 0
+         if (lrv) minim%nx = minim%nx+1
+         if (lnld) minim%nx = minim%nx+1
+         if (lnlr) minim%nx = minim%nx+1
+         minim%ny = nl0r
+
+         if (minim%nx>0) then
+            ! Allocation
+            allocate(minim%x(minim%nx))
+            allocate(minim%guess(minim%nx))
+            allocate(minim%binf(minim%nx))
+            allocate(minim%bsup(minim%nx))
+            allocate(minim%obs(minim%ny))
+            allocate(minim%disth(1))
+            allocate(minim%distv(nl0r))
+
+            ! Fill guess and bounds
+            ix = 0
+            if (lrv) then
+               ix = ix+1
+               minim%guess(ix) = fit_rv_l1(il1)
+               minim%binf(ix) = tenth*minim%guess(ix)
+               minim%bsup(ix) = ten*minim%guess(ix)
+            end if
+            if (lnld) then
+               ix = ix+1
+               minim%guess(ix) = fit_nld_l1(il1)
+               minim%binf(ix) = nldmin
+               minim%bsup(ix) = nldmax
+            end if
+            if (lnlr) then
+               ix = ix+1
+               minim%guess(ix) = fit_nlr_l1(il1)
+               minim%binf(ix) = nlrmin
+               minim%bsup(ix) = nlrmax
+            end if
+
+            ! Fill data
+            minim%obs = reshape(diag_blk%raw(1,:,il0),(/minim%ny/))
+            minim%cost_function = 'fit_diag'
+            minim%nc3 = 1
+            minim%nl0r = nl0r
+            minim%disth = geom%disth(1)
+            minim%distv = diag_blk%distv(:,il0)
+            minim%lcoef = .false.
+            minim%lrh = .false.
+            minim%lpk = .false.
+            minim%lrv = lrv
+            minim%lnld = lnld
+            minim%lnlr = lnlr
+
+            ! Compute fit
+            call minim%compute(mpl)
+
+            ! Apply bounds
+            minim%x = max(minim%binf,min(minim%x,minim%bsup))
+
+            ! Get parameters
+            ix = 0
+            if (lrv) then
+               ix = ix+1
+               fit_rv_l1(il1) = minim%x(ix)
+            else
+               fit_rv_l1(il1) = mpl%msv%valr
+            end if
+            if (lnld) then
+               ix = ix+1
+               fit_nld_l1(il1) = minim%x(ix)
+            else
+               fit_nld_l1(il1) = mpl%msv%valr
+            end if
+            if (lnlr) then
+               ix = ix+1
+               fit_nlr_l1(il1) = minim%x(ix)
+            else
+               fit_nlr_l1(il1) = mpl%msv%valr
+            end if
+
+            ! Release memory
+            deallocate(minim%x)
+            deallocate(minim%guess)
+            deallocate(minim%binf)
+            deallocate(minim%bsup)
+            deallocate(minim%obs)
+            deallocate(minim%disth)
+            deallocate(minim%distv)
+         else
+            ! Set to missing values
+            fit_rv_l1(il1) = mpl%msv%valr
+            fit_nld_l1(il1) = mpl%msv%valr
+            fit_nlr_l1(il1) = mpl%msv%valr
+         end if
+      else
+         ! Set to missing values
+         fit_rv_l1(il1) = mpl%msv%valr
+         fit_nld_l1(il1) = mpl%msv%valr
+         fit_nlr_l1(il1) = mpl%msv%valr
+      end if
+   end do
+
+if (.false.) then
+   ! Vertical fit, all at once
+   if (mpl%msv%isanynot(fit_rv_l1).and.mpl%msv%isanynot(fit_nld_l1).and.mpl%msv%isanynot(fit_nlr_l1)) then
+      ! Optimization parameters
+      lrv = any(fit_rv_l1>zero)
+      lnld = lrv.and.any(fit_nld_l1>zero)
+      lnlr = lrv.and.any(fit_nlr_l1>zero)
+
+      ! Sizes
+      minim%nx = 0
+      if (lrv) minim%nx = minim%nx+nl1
+      if (lnld) minim%nx = minim%nx+nl1
+      if (lnlr) minim%nx = minim%nx+nl1
+      minim%ny = nl1*nl0r
+
+      if (minim%nx>0) then
+         ! Allocation
+         allocate(minim%x(minim%nx))
+         allocate(minim%guess(minim%nx))
+         allocate(minim%binf(minim%nx))
+         allocate(minim%bsup(minim%nx))
+         allocate(minim%obs(minim%ny))
+         allocate(minim%disth(1))
+         allocate(minim%distv_full(nl0r,nl1))
+         allocate(minim%l0rl0_to_l0(nl0r,nl1))
+
+         ! Fill guess and bounds
+         ix = 0
+         if (lrv) then
+            do il1=1,nl1
+               ix = ix+1
+               minim%guess(ix) = fit_rv_l1(il1)
+               minim%binf(ix) = tenth*minim%guess(ix)
+               minim%bsup(ix) = ten*minim%guess(ix)
+            end do
+         end if
+         if (lnld) then
+            do il1=1,nl1
+               ix = ix+1
+               minim%guess(ix) = fit_nld_l1(il1)
+               minim%binf(ix) = nldmin
+               minim%bsup(ix) = nldmax
+            end do
+         end if
+         if (lnlr) then
+            do il1=1,nl1
+               ix = ix+1
+               minim%guess(ix) = fit_nlr_l1(il1)
+               minim%binf(ix) = nlrmin
+               minim%bsup(ix) = nlrmax
+            end do
+         end if
+
+         ! Fill data
+         minim%obs = reshape(diag_blk%raw(1,:,il0_interp),(/minim%ny/))
+         minim%cost_function = 'fit_diag_full'
+         minim%nc3 = 1
+         minim%nl0r = nl0r
+         minim%nl0 = nl1
+         minim%disth = geom%disth(1)
+         minim%distv_full = diag_blk%distv(:,il0_interp)
+         minim%l0rl0_to_l0 = bpar%l0rl0b_to_l0(:,il0_interp,ib)
+         minim%lcoef = .false.
+         minim%lrh = .false.
+         minim%lpk = .false.
+         minim%lrv = lrv
+         minim%lnld = lnld
+         minim%lnlr = lnlr
+
+         ! Compute fit
+         call minim%compute(mpl)
+
+         ! Apply bounds
+         minim%x = max(minim%binf,min(minim%x,minim%bsup))
+
+         ! Get parameters
+         ix = 0
+         if (lrv) then
+            do il1=1,nl1
+               ix = ix+1
+               fit_rv_l1(il1) = minim%x(ix)
+            end do
+         else
+            fit_rv_l1 = mpl%msv%valr
+         end if
+         if (lnld) then
+            do il1=1,nl1
+               ix = ix+1
+               fit_nld_l1(il1) = minim%x(ix)
+            end do
+         else
+            fit_nld_l1 = mpl%msv%valr
+         end if
+         if (lnlr) then
+            do il1=1,nl1
+               ix = ix+1
+               fit_nlr_l1(il1) = minim%x(ix)
+            end do
+         else
+            fit_nlr_l1 = mpl%msv%valr
+         end if
+
+         ! Release memory
+         deallocate(minim%x)
+         deallocate(minim%guess)
+         deallocate(minim%binf)
+         deallocate(minim%bsup)
+         deallocate(minim%obs)
+         deallocate(minim%disth)
+         deallocate(minim%distv_full)
+      else
+         ! Set to missing values
+         fit_rv_l1 = mpl%msv%valr
+         fit_nld_l1 = mpl%msv%valr
+         fit_nlr_l1 = mpl%msv%valr
+      end if
+   else
+      ! Set to missing values
+      fit_rv_l1 = mpl%msv%valr
+      fit_nld_l1 = mpl%msv%valr
+      fit_nlr_l1 = mpl%msv%valr
+   end if
+end if
+end if
 
 ! Interpolate parameters
 call vert_interp(mpl,nl1,coef_ens_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%coef_ens)
@@ -565,6 +802,7 @@ call vert_interp(mpl,nl1,fit_rh_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit
 call vert_interp(mpl,nl1,fit_pk_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_pk)
 call vert_interp(mpl,nl1,fit_rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_rv)
 call vert_interp(mpl,nl1,fit_nld_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_nld)
+call vert_interp(mpl,nl1,fit_nlr_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_nlr)
 
 ! Release memory
 if (.not.var2d) deallocate(rawv)
@@ -578,6 +816,7 @@ deallocate(fit_rh_l1)
 deallocate(fit_pk_l1)
 deallocate(fit_rv_l1)
 deallocate(fit_nld_l1)
+deallocate(fit_nlr_l1)
 
 ! End associate
 end associate
@@ -678,7 +917,7 @@ if (nam%forced_radii) then
    do il0=1,geom%nl0
       ! Compute fit
       call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%disth,diag_blk%distv(:,il0), &
- & one,nam%rh(il0,iv),nam%pk(il0,iv),nam%rv(il0,iv),zero,diag_blk%raw(:,:,il0))
+ & one,nam%rh(il0,iv),nam%pk(il0,iv),nam%rv(il0,iv),zero,zero,diag_blk%raw(:,:,il0))
    end do
    diag_blk%valid = mpl%msv%valr
 

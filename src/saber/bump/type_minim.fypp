@@ -10,7 +10,7 @@ module type_minim
 
 use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
 use tools_fit, only: ver_smooth
-use tools_func, only: fit_diag,fit_lct
+use tools_func, only: fit_diag,fit_diag_full,fit_lct
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
@@ -21,45 +21,52 @@ implicit none
 ! Minimization data derived type
 type minim_type
    ! Minimizer data
-   real(kind_real) :: hooke_rho               !< Convergence parameter for the Hooke algorithm
-   real(kind_real) :: hooke_tol               !< Tolerance for the Hooke algorithm
-   integer :: hooke_itermax                   !< Maximum number of iteration for the Hooke algorithm
+   real(kind_real) :: hooke_rho                   !< Convergence parameter for the Hooke algorithm
+   real(kind_real) :: hooke_tol                   !< Tolerance for the Hooke algorithm
+   integer :: hooke_itermax                       !< Maximum number of iteration for the Hooke algorithm
 
    ! Generic data
-   integer :: nx                              !< Control vector size
-   integer :: ny                              !< Function output size
-   real(kind_real),allocatable :: x(:)        !< Control vector
-   real(kind_real),allocatable :: guess(:)    !< Control vector guess
-   real(kind_real),allocatable :: binf(:)     !< Control vector lower bound
-   real(kind_real),allocatable :: bsup(:)     !< Control vector upper bound
-   real(kind_real),allocatable :: obs(:)      !< Observation
-   character(len=1024) :: cost_function       !< Cost function
-   real(kind_real) :: f_guess                 !< Guess cost
-   real(kind_real) :: f_min                   !< Minimum cost
+   integer :: nx                                  !< Control vector size
+   integer :: ny                                  !< Function output size
+   real(kind_real),allocatable :: x(:)            !< Control vector
+   real(kind_real),allocatable :: guess(:)        !< Control vector guess
+   real(kind_real),allocatable :: binf(:)         !< Control vector lower bound
+   real(kind_real),allocatable :: bsup(:)         !< Control vector upper bound
+   real(kind_real),allocatable :: obs(:)          !< Observation
+   character(len=1024) :: cost_function           !< Cost function
+   real(kind_real) :: f_guess                     !< Guess cost
+   real(kind_real) :: f_min                       !< Minimum cost
 
    ! Common data
-   integer :: nc3                             !< Number of classes
-   integer :: nl0r                            !< Effective number of levels
+   integer :: nc3                                 !< Number of classes
+   integer :: nl0r                                !< Effective number of levels
+   integer :: nl0                                 !< Number of levels
 
    ! Specific data (fit)
-   real(kind_real),allocatable :: disth(:)    !< Horizontal distance
-   real(kind_real),allocatable :: distv(:)    !< Vertical distance
-   logical :: lcoef                           !< Diagonal coefficient flag
-   logical :: lrh                             !< Horizontal support radius flag
-   logical :: lrv                             !< Vertical support radius flag
+   real(kind_real),allocatable :: disth(:)        !< Horizontal distance
+   real(kind_real),allocatable :: distv(:)        !< Vertical distance
+   real(kind_real),allocatable :: distv_full(:,:) !< Vertical distance (full profile)
+   integer,allocatable :: l0rl0_to_l0(:,:)        !< Effective level to level
+   logical :: lcoef                               !< Diagonal coefficient flag
+   logical :: lrh                                 !< Horizontal support radius flag
+   logical :: lpk                                 !< Peakness flag
+   logical :: lrv                                 !< Vertical support radius flag
+   logical :: lnld                                !< Negative lobes depth flag
+   logical :: lnlr                                !< Negative lobes ratio flag
 
    ! Specific data (LCT)
-   integer :: nscales                         !< Number of LCT scales
-   logical,allocatable :: lct_diag(:)         !< Diagonal LCT flag
-   real(kind_real),allocatable :: dxsq(:,:)   !< Zonal separation squared
-   real(kind_real),allocatable :: dysq(:,:)   !< Meridian separation squared
-   real(kind_real),allocatable :: dxdy(:,:)   !< Zonal x meridional separation product
-   real(kind_real),allocatable :: dzsq(:,:)   !< Vertical separation squared
-   logical,allocatable :: dmask(:,:)          !< Mask
+   integer :: nscales                             !< Number of LCT scales
+   logical,allocatable :: lct_diag(:)             !< Diagonal LCT flag
+   real(kind_real),allocatable :: dxsq(:,:)       !< Zonal separation squared
+   real(kind_real),allocatable :: dysq(:,:)       !< Meridian separation squared
+   real(kind_real),allocatable :: dxdy(:,:)       !< Zonal x meridional separation product
+   real(kind_real),allocatable :: dzsq(:,:)       !< Vertical separation squared
+   logical,allocatable :: dmask(:,:)              !< Mask
 contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
    procedure :: cost_fit_diag => minim_cost_fit_diag
+   procedure :: cost_fit_diag_full => minim_cost_fit_diag_full
    procedure :: cost_fit_lct => minim_cost_fit_lct
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
@@ -140,6 +147,8 @@ real(kind_real),intent(out) :: f          !< Cost function value
 select case (trim(minim%cost_function))
 case ('fit_diag')
    call minim%cost_fit_diag(mpl,x,f)
+case ('fit_diag_full')
+   call minim%cost_fit_diag_full(mpl,x,f)
 case ('fit_lct')
    call minim%cost_fit_lct(mpl,x,f)
 case default
@@ -167,7 +176,7 @@ real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 integer :: ix
-real(kind_real) :: coef,fit_rh,fit_pk,fit_rv,fit_nld
+real(kind_real) :: coef,fit_rh,fit_pk,fit_rv,fit_nld,fit_nlr
 real(kind_real) :: fit(minim%nc3,minim%nl0r)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
@@ -192,24 +201,36 @@ end if
 if (minim%lrh) then
    ix = ix+1
    fit_rh = xtmp(ix)
+else
+   fit_rh = zero
+end if
+if (minim%lpk) then
    ix = ix+1
    fit_pk = xtmp(ix)
 else
-   fit_rh = zero
    fit_pk = zero
 end if
 if (minim%lrv) then
    ix = ix+1
    fit_rv = xtmp(ix)
+else
+   fit_rv = zero
+end if
+if (minim%lnld) then
    ix = ix+1
    fit_nld = xtmp(ix)
 else
-   fit_rv = zero
    fit_nld = zero
+end if
+if (minim%lnlr) then
+   ix = ix+1
+   fit_nlr = xtmp(ix)
+else
+   fit_nlr = zero
 end if
 
 ! Compute function
-call fit_diag(mpl,minim%nc3,minim%nl0r,minim%disth,minim%distv,coef,fit_rh,fit_pk,fit_rv,fit_nld,fit)
+call fit_diag(mpl,minim%nc3,minim%nl0r,minim%disth,minim%distv,coef,fit_rh,fit_pk,fit_rv,fit_nld,fit_nlr,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))
@@ -221,6 +242,102 @@ f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(
 @:probe_out()
 
 end subroutine minim_cost_fit_diag
+
+!----------------------------------------------------------------------
+! Subroutine: minim_cost_fit_diag_full
+!> Diagnosic fit function cost (full profile)
+!----------------------------------------------------------------------
+subroutine minim_cost_fit_diag_full(minim,mpl,x,f)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
+
+! Local variables
+integer :: ix,il0
+real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_pk(minim%nl0),fit_rv(minim%nl0),fit_nld(minim%nl0),fit_nlr(minim%nl0)
+real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
+real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
+
+! Set name
+@:set_name(minim_cost_fit_diag_full)
+
+! Probe in
+@:probe_in()
+
+! Renormalize
+xtmp = x
+call minim%vt_dir(xtmp)
+
+! Get data
+ix = 0
+if (minim%lcoef) then
+   do il0=1,minim%nl0
+      ix = ix+1
+      coef(il0) = xtmp(ix)
+   end do
+else
+   coef = one
+end if
+if (minim%lrh) then
+   do il0=1,minim%nl0
+      ix = ix+1
+      fit_rh(il0) = xtmp(ix)
+   end do
+else
+   fit_rh = zero
+end if
+if (minim%lpk) then
+   do il0=1,minim%nl0
+      ix = ix+1
+      fit_pk(il0) = xtmp(ix)
+   end do
+else
+   fit_pk = zero
+end if
+if (minim%lrv) then
+   do il0=1,minim%nl0
+      ix = ix+1
+      fit_rv(il0) = xtmp(ix)
+   end do
+else
+   fit_rv = zero
+end if
+if (minim%lnld) then
+   do il0=1,minim%nl0
+      ix = ix+1
+      fit_nld(il0) = xtmp(ix)
+   end do
+else
+   fit_nld = zero
+end if
+if (minim%lnlr) then
+   do il0=1,minim%nl0
+      ix = ix+1
+      fit_nlr(il0) = xtmp(ix)
+   end do
+else
+   fit_nlr = zero
+end if
+
+! Compute function
+call fit_diag_full(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv_full,coef,fit_rh,fit_pk,fit_rv, &
+ & fit_nld,fit_nlr,fit)
+
+! Pack
+fit_pack = reshape(fit,(/minim%ny/))
+
+! Observations penalty
+f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_cost_fit_diag_full
 
 !----------------------------------------------------------------------
 ! Function: minim_cost_fit_lct

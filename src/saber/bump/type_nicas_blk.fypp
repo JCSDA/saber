@@ -4073,10 +4073,11 @@ do isb=1,nicas_blk%nsb
          ! Fit function
          if (nicas_blk%anisotropic) then
             S_test(1) = nicas_blk%Hcoef_sb(jl1,isb)%val(jbd)*fit_func_sqrt(mpl,nicas_blk%distnorm_sb(jl1,isb)%val(jbd), &
- & nicas_blk%pk_sb(jl1,isb)%val(jbd),zero,zero)
+ & nicas_blk%pk_sb(jl1,isb)%val(jbd),zero,zero,zero)
          else
-            S_test(1) = 0.0*fit_func_sqrt(mpl,nicas_blk%distnorm_sb(jl1,isb)%val(jbd),nicas_blk%pk_sb(jl1,isb)%val(jbd),zero,zero)
-            S_test(2) = 1.0*fit_func_sqrt(mpl,nicas_blk%distnorm_sb(jl1,isb)%val(jbd),zero,zero,zero)
+            S_test(1) = 0.0*fit_func_sqrt(mpl,nicas_blk%distnorm_sb(jl1,isb)%val(jbd),nicas_blk%pk_sb(jl1,isb)%val(jbd),zero, &
+ & zero,zero)
+            S_test(2) = 1.0*fit_func_sqrt(mpl,nicas_blk%distnorm_sb(jl1,isb)%val(jbd),zero,zero,zero,zero)
          end if
 
          ! Check at least one value is above threshold
