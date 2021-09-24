@@ -784,16 +784,17 @@ end subroutine linop_apply_sym
 ! Subroutine: linop_add_op
 !> Add operation
 !----------------------------------------------------------------------
-subroutine linop_add_op(linop,n_s,row,col,S)
+subroutine linop_add_op(linop,n_s,row,col,S,Svec)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop !< Linear operators
-integer,intent(inout) :: n_s             !< Number of operations
-integer,intent(in) :: row                !< Row index
-integer,intent(in) :: col                !< Column index
-real(kind_real),intent(in) :: S          !< Value
+class(linop_type),intent(inout) :: linop       !< Linear operators
+integer,intent(inout) :: n_s                   !< Number of operations
+integer,intent(in) :: row                      !< Row index
+integer,intent(in) :: col                      !< Column index
+real(kind_real),intent(in),optional :: S       !< Value
+real(kind_real),intent(in),optional :: Svec(linop%nvec) !< Values
 
 ! Local variables
 type(linop_type) :: linop_tmp
@@ -813,12 +814,16 @@ if (n_s>linop%n_s) then
    ! Reallocate larger linear operation
    call linop%dealloc
    linop%n_s = 2*linop_tmp%n_s
-   call linop%alloc
+   call linop%alloc(linop_tmp%nvec)
 
    ! Copy data
    linop%row(1:linop_tmp%n_s) = linop_tmp%row
    linop%col(1:linop_tmp%n_s) = linop_tmp%col
-   linop%S(1:linop_tmp%n_s) = linop_tmp%S
+   if (linop%nvec>0) then
+      linop%Svec(1:linop_tmp%n_s,:) = linop_tmp%Svec
+   else
+      linop%S(1:linop_tmp%n_s) = linop_tmp%S
+   end if
 
    ! Release memory
    call linop_tmp%dealloc
@@ -827,7 +832,11 @@ end if
 ! New operation
 linop%row(n_s) = row
 linop%col(n_s) = col
-linop%S(n_s) = S
+if (linop%nvec>0) then
+   linop%Svec(n_s,:) = Svec
+else
+   linop%S(n_s) = S
+end if
 
 ! Probe out
 @:probe_out()
@@ -862,14 +871,18 @@ if (mpl%nthread>1) then
    linop%n_s = sum(n_s_arr)
 
    ! Allocation
-   call linop%alloc
+   call linop%alloc(linop_arr(1)%nvec)
 
    ! Gather data
    offset = 0
    do ithread=1,mpl%nthread
       linop%row(offset+1:offset+n_s_arr(ithread)) = linop_arr(ithread)%row(1:n_s_arr(ithread))
       linop%col(offset+1:offset+n_s_arr(ithread)) = linop_arr(ithread)%col(1:n_s_arr(ithread))
-      linop%S(offset+1:offset+n_s_arr(ithread)) = linop_arr(ithread)%S(1:n_s_arr(ithread))
+      if (linop%nvec>0) then
+         linop%Svec(offset+1:offset+n_s_arr(ithread),:) = linop_arr(ithread)%Svec(1:n_s_arr(ithread),:)
+      else
+         linop%S(offset+1:offset+n_s_arr(ithread)) = linop_arr(ithread)%S(1:n_s_arr(ithread))
+      end if
       offset = offset+n_s_arr(ithread)
    end do
 else

@@ -475,7 +475,7 @@ integer,intent(out) :: ib(3)        !< Barycentric indices
 ! Local variables
 integer :: i,j,k,knext,nn,l,order(3)
 integer,allocatable :: nn_index(:)
-real(kind_real) :: xyz(3),pi(3),pk(3),pknext(3)
+real(kind_real) :: xyz(3),pi(3),pkh(3),pkhnext(3)
 real(kind_real),allocatable :: nn_dist(:)
 logical :: found,cflag(3),valid
 
@@ -519,11 +519,11 @@ if (mesh%use_cgal) then
 
             ! Compute weights
             pi = (/mesh%x(i),mesh%y(i),mesh%z(i)/)
-            pk = (/mesh%x(k),mesh%y(k),mesh%z(k)/)
-            pknext = (/mesh%x(knext),mesh%y(knext),mesh%z(knext)/)
-            call det(pk,pknext,xyz,b(1),cflag(1))
-            call det(pknext,pi,xyz,b(2),cflag(2))
-            call det(pi,pk,xyz,b(3),cflag(3))
+            pkh = (/mesh%x(k),mesh%y(k),mesh%z(k)/)
+            pkhnext = (/mesh%x(knext),mesh%y(knext),mesh%z(knext)/)
+            call det(pkh,pkhnext,xyz,b(1),cflag(1))
+            call det(pkhnext,pi,xyz,b(2),cflag(2))
+            call det(pi,pkh,xyz,b(3),cflag(3))
 
             ! Check if the points are colinear
             if (count(cflag)>=2) then

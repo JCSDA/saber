@@ -27,6 +27,7 @@ type cmat_blk_type
    real(kind_real),allocatable :: coef_ens(:,:)      !< Ensemble coefficient
    real(kind_real),allocatable :: coef_sta(:,:)      !< Static coefficient
    real(kind_real),allocatable :: rh(:,:)            !< Horizontal fit support radius
+   real(kind_real),allocatable :: pkh(:,:)           !< Horizontal peakness
    real(kind_real),allocatable :: rv(:,:)            !< Vertical fit support radius
    real(kind_real),allocatable :: rhs(:,:)           !< Fit support radius  for sampling
    real(kind_real),allocatable :: rvs(:,:)           !< Fit support radius, for sampling
@@ -36,19 +37,18 @@ type cmat_blk_type
    real(kind_real),allocatable :: H33(:,:)           !< LCT component 33
    real(kind_real),allocatable :: H12(:,:)           !< LCT component 12
    real(kind_real),allocatable :: Hcoef(:,:)         !< LCT scales coefficients
-   real(kind_real),allocatable :: pk(:,:)            !< Peakness
 
    ! BUMP interface data
    real(kind_real),allocatable :: bump_coef_ens(:,:) !< BUMP ensemble coefficient
    real(kind_real),allocatable :: bump_coef_sta(:,:) !< BUMP static coefficient
    real(kind_real),allocatable :: bump_rh(:,:)       !< BUMP horizontal fit support radius
+   real(kind_real),allocatable :: bump_pkh(:,:)      !< BUMP horizontal peakness
    real(kind_real),allocatable :: bump_rv(:,:)       !< BUMP vertical fit support radius
    real(kind_real),allocatable :: bump_D11(:,:)      !< BUMP Daley tensor component 11
    real(kind_real),allocatable :: bump_D22(:,:)      !< BUMP Daley tensor component 22
    real(kind_real),allocatable :: bump_D33(:,:)      !< BUMP Daley tensor component 33
    real(kind_real),allocatable :: bump_D12(:,:)      !< BUMP Daley tensor component 12
    real(kind_real),allocatable :: bump_Dcoef(:,:)    !< BUMP Daley tensor scales coefficients
-   real(kind_real),allocatable :: bump_pk(:,:)       !< BUMP peakness
 contains
    procedure :: alloc => cmat_blk_alloc
    procedure :: init => cmat_blk_init
@@ -99,7 +99,7 @@ if (bpar%diag_block(ib)) then
       allocate(cmat_blk%H12(geom%nc0a,geom%nl0))
       allocate(cmat_blk%Hcoef(geom%nc0a,geom%nl0))
    end if
-   allocate(cmat_blk%pk(geom%nc0a,geom%nl0))
+   allocate(cmat_blk%pkh(geom%nc0a,geom%nl0))
 end if
 
 ! End associate
@@ -147,7 +147,7 @@ if (bpar%diag_block(ib)) then
       cmat_blk%H12 = mpl%msv%valr
       cmat_blk%Hcoef = mpl%msv%valr
    end if
-   cmat_blk%pk = mpl%msv%valr
+   cmat_blk%pkh = mpl%msv%valr
 end if
 
 ! End associate
@@ -185,7 +185,7 @@ if (allocated(cmat_blk%bump_D22)) deallocate(cmat_blk%bump_D22)
 if (allocated(cmat_blk%bump_D33)) deallocate(cmat_blk%bump_D33)
 if (allocated(cmat_blk%bump_D12)) deallocate(cmat_blk%bump_D12)
 if (allocated(cmat_blk%bump_Dcoef)) deallocate(cmat_blk%bump_Dcoef)
-if (allocated(cmat_blk%bump_pk)) deallocate(cmat_blk%bump_pk)
+if (allocated(cmat_blk%bump_pkh)) deallocate(cmat_blk%bump_pkh)
 
 ! Probe out
 @:probe_out()
@@ -247,7 +247,7 @@ if (allocated(cmat_blk%coef_ens)) deallocate(cmat_blk%coef_ens)
 if (allocated(cmat_blk%coef_sta)) deallocate(cmat_blk%coef_sta)
 if (allocated(cmat_blk%rh)) deallocate(cmat_blk%rh)
 if (allocated(cmat_blk%rv)) deallocate(cmat_blk%rv)
-if (allocated(cmat_blk%pk)) deallocate(cmat_blk%pk)
+if (allocated(cmat_blk%pkh)) deallocate(cmat_blk%pkh)
 
 ! Probe out
 @:probe_out()

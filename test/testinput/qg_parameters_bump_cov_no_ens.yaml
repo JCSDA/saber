@@ -9,15 +9,16 @@ bump:
   new_nicas: 1
   new_var: 1
   prefix: qg_parameters_bump_cov_no_ens/test
-  resol: 8.0
+  resol: 12.0
   rh:
-    x: [6.4e6,7.4e6]
+    x: [8.0e6,8.0e6]
   rv:
-    x: [33000.0]
+    x: [0.0]
   pk:
-    x: [3.0]
+    x: [7.0]
   stddev:
-    x: [1.8e7]
+    x: [1.0]
+  nc1max: 30000
   strategy: specific_univariate
   write_nicas_local: 1
   write_var: 1

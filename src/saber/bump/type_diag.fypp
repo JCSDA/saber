@@ -153,7 +153,7 @@ type(samp_type),intent(in) :: samp     !< Sampling
 ! Local variables
 integer :: ib,il0,ic2a
 real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
-real(kind_real),allocatable :: rh_c2a(:,:),rv_c2a(:,:),pk_c2a(:,:)
+real(kind_real),allocatable :: rh_c2a(:,:),pkh_c2a(:,:),rv_c2a(:,:),pkv_c2a(:,:),tau_c2a(:,:)
 
 ! Set name
 @:set_name(diag_filter_fit)
@@ -171,8 +171,10 @@ if (nam%local_diag) then
          ! Allocation
          if (bpar%fit_block(ib)) then
             allocate(rh_c2a(samp%nc2a,geom%nl0))
+            allocate(pkh_c2a(samp%nc2a,geom%nl0))
             allocate(rv_c2a(samp%nc2a,geom%nl0))
-            allocate(pk_c2a(samp%nc2a,geom%nl0))
+            allocate(pkv_c2a(samp%nc2a,geom%nl0))
+            allocate(tau_c2a(samp%nc2a,geom%nl0))
          end if
 
          do il0=1,geom%nl0
@@ -181,8 +183,10 @@ if (nam%local_diag) then
                coef_ens_c2a(ic2a,il0) = diag%blk(ic2a,ib)%coef_ens(il0)
                if (bpar%fit_block(ib)) then
                   rh_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rh(il0)
+                  pkh_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_pkh(il0)
                   rv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rv(il0)
-                  pk_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_pk(il0)
+                  pkv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_pkv(il0)
+                  tau_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_tau(il0)
                end if
 
                ! Apply bounds relatively to the global value
@@ -195,13 +199,21 @@ if (nam%local_diag) then
                      if ((rh_c2a(ic2a,il0)<diag%blk(0,ib)%fit_rh(il0)/bound) &
  & .or.(rh_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rh(il0)*bound)) rh_c2a(ic2a,il0) = mpl%msv%valr
                   end if
+                  if (mpl%msv%isnot(pkh_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_pkh(il0))) then
+                     if ((pkh_c2a(ic2a,il0)<diag%blk(0,ib)%fit_pkh(il0)/bound) &
+ & .or.(pkh_c2a(ic2a,il0)>diag%blk(0,ib)%fit_pkh(il0)*bound)) pkh_c2a(ic2a,il0) = mpl%msv%valr
+                  end if
                   if (mpl%msv%isnot(rv_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_rv(il0))) then
                      if ((rv_c2a(ic2a,il0)<diag%blk(0,ib)%fit_rv(il0)/bound) &
  & .or.(rv_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rv(il0)*bound)) rv_c2a(ic2a,il0) = mpl%msv%valr
                   end if
-                  if (mpl%msv%isnot(pk_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_pk(il0))) then
-                     if ((pk_c2a(ic2a,il0)<diag%blk(0,ib)%fit_pk(il0)/bound) &
- & .or.(pk_c2a(ic2a,il0)>diag%blk(0,ib)%fit_pk(il0)*bound)) pk_c2a(ic2a,il0) = mpl%msv%valr
+                  if (mpl%msv%isnot(pkv_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_pkv(il0))) then
+                     if ((pkv_c2a(ic2a,il0)<diag%blk(0,ib)%fit_pkv(il0)/bound) &
+ & .or.(pkv_c2a(ic2a,il0)>diag%blk(0,ib)%fit_pkv(il0)*bound)) pkv_c2a(ic2a,il0) = mpl%msv%valr
+                  end if
+                  if (mpl%msv%isnot(tau_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_tau(il0))) then
+                     if ((tau_c2a(ic2a,il0)<diag%blk(0,ib)%fit_tau(il0)/bound) &
+ & .or.(tau_c2a(ic2a,il0)>diag%blk(0,ib)%fit_tau(il0)*bound)) tau_c2a(ic2a,il0) = mpl%msv%valr
                   end if
 
                end if
@@ -212,16 +224,20 @@ if (nam%local_diag) then
                call samp%diag_filter(mpl,'median',nam%diag_rhflt,coef_ens_c2a(:,il0))
                if (bpar%fit_block(ib)) then
                   call samp%diag_filter(mpl,'median',nam%diag_rhflt,rh_c2a(:,il0))
+                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,pkh_c2a(:,il0))
                   call samp%diag_filter(mpl,'median',nam%diag_rhflt,rv_c2a(:,il0))
-                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,pk_c2a(:,il0))
+                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,pkv_c2a(:,il0))
+                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,tau_c2a(:,il0))
                end if
 
                ! Average filter to smooth data
                call samp%diag_filter(mpl,'average',nam%diag_rhflt,coef_ens_c2a(:,il0))
                if (bpar%fit_block(ib)) then
                   call samp%diag_filter(mpl,'average',nam%diag_rhflt,rh_c2a(:,il0))
+                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,pkh_c2a(:,il0))
                   call samp%diag_filter(mpl,'average',nam%diag_rhflt,rv_c2a(:,il0))
-                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,pk_c2a(:,il0))
+                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,pkv_c2a(:,il0))
+                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,tau_c2a(:,il0))
                end if
             end if
 
@@ -229,8 +245,10 @@ if (nam%local_diag) then
             call samp%diag_fill(mpl,coef_ens_c2a(:,il0))
             if (bpar%fit_block(ib)) then
                call samp%diag_fill(mpl,rh_c2a(:,il0))
+               call samp%diag_fill(mpl,pkh_c2a(:,il0))
                call samp%diag_fill(mpl,rv_c2a(:,il0))
-               call samp%diag_fill(mpl,pk_c2a(:,il0))
+               call samp%diag_fill(mpl,pkv_c2a(:,il0))
+               call samp%diag_fill(mpl,tau_c2a(:,il0))
             end if
 
             ! Copy data
@@ -238,8 +256,10 @@ if (nam%local_diag) then
                diag%blk(ic2a,ib)%coef_ens(il0) = coef_ens_c2a(ic2a,il0)
                if (bpar%fit_block(ib)) then
                   diag%blk(ic2a,ib)%fit_rh(il0) = rh_c2a(ic2a,il0)
+                  diag%blk(ic2a,ib)%fit_pkh(il0) = pkh_c2a(ic2a,il0)
                   diag%blk(ic2a,ib)%fit_rv(il0) = rv_c2a(ic2a,il0)
-                  diag%blk(ic2a,ib)%fit_pk(il0) = pk_c2a(ic2a,il0)
+                  diag%blk(ic2a,ib)%fit_pkv(il0) = pkv_c2a(ic2a,il0)
+                  diag%blk(ic2a,ib)%fit_tau(il0) = tau_c2a(ic2a,il0)
                end if
             end do
          end do
@@ -247,8 +267,10 @@ if (nam%local_diag) then
          ! Release memory
          if (bpar%fit_block(ib)) then
             deallocate(rh_c2a)
+            deallocate(pkh_c2a)
             deallocate(rv_c2a)
-            deallocate(pk_c2a)
+            deallocate(pkv_c2a)
+            deallocate(tau_c2a)
          end if
       end if
    end do
@@ -266,8 +288,10 @@ if (nam%diag_rvflt>zero) then
             call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%coef_ens)
             if (bpar%fit_block(ib)) then
                call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rh)
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_pkh)
                call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rv)
-               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_pk)
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_pkv)
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_tau)
             end if
          end do
       end if
@@ -311,8 +335,8 @@ do ib=1,bpar%nbe
          do il0=1,geom%nl0
             ! Compute fit
             call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%disth,diag%blk(ic2a,ib)%distv(:,il0), &
- & diag%blk(ic2a,ib)%coef_ens(il0),diag%blk(ic2a,ib)%fit_rh(il0),diag%blk(ic2a,ib)%fit_rv(il0), &
- & diag%blk(ic2a,ib)%fit_pk(il0),diag%blk(ic2a,ib)%fit(:,:,il0))
+ & diag%blk(ic2a,ib)%coef_ens(il0),diag%blk(ic2a,ib)%fit_rh(il0),diag%blk(ic2a,ib)%fit_pkh(il0), &
+ & diag%blk(ic2a,ib)%fit_rv(il0),diag%blk(ic2a,ib)%fit_pkv(il0),diag%blk(ic2a,ib)%fit_tau(il0),diag%blk(ic2a,ib)%fit(:,:,il0))
          end do
       end do
 
@@ -458,14 +482,20 @@ do ib=1,bpar%nbe
  & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
                call mpl%flush
                if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. horizontal: ',trim(mpl%aqua), &
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. hor. support:  ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km'
                   call mpl%flush
-                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. vertical:   ',trim(mpl%aqua), &
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. hor. peakness: ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%fit_pkh(il0),trim(mpl%black)
+                  call mpl%flush
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. ver. support:  ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vertical units'
                   call mpl%flush
-                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. peakness:      ',trim(mpl%aqua), &
- & diag%blk(0,ib)%fit_pk(il0),trim(mpl%black)
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. ver. peakness: ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%fit_pkv(il0),trim(mpl%black)
+                  call mpl%flush
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. neg. lobes:    ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%fit_tau(il0),trim(mpl%black)
                   call mpl%flush
                end if
             end if
@@ -554,9 +584,6 @@ do ib=1,bpar%nbe
                call mpl%flush
                write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. vertical:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vertical units'
-               call mpl%flush
-               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. peakness:      ',trim(mpl%aqua), &
- & diag%blk(0,ib)%fit_pk(il0),trim(mpl%black)
                call mpl%flush
             end if
          end if
@@ -648,9 +675,6 @@ do ib=1,bpar%nbe
                call mpl%flush
                write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. vertical:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vertical units'
-               call mpl%flush
-               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. peakness:      ',trim(mpl%aqua), &
- & diag%blk(0,ib)%fit_pk(il0),trim(mpl%black)
                call mpl%flush
             end if
          end if
@@ -747,9 +771,6 @@ do ib=1,bpar%nbe
                write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. vertical (HR):   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vertical units'
                call mpl%flush
-               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. peakness (HR):   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%fit_pk(il0),trim(mpl%black)
-               call mpl%flush
             end if
          end if
          if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
@@ -764,9 +785,6 @@ do ib=1,bpar%nbe
                call mpl%flush
                write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. vertical (LR):   ',trim(mpl%aqua), &
  & diag_lr%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vertical units'
-               call mpl%flush
-               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. peakness (LR):    ',trim(mpl%aqua), &
- & diag_lr%blk(0,ib)%fit_pk(il0),trim(mpl%black)
                call mpl%flush
             end if
          end if

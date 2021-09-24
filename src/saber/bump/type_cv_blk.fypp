@@ -15,8 +15,10 @@ implicit none
 
 ! Control vector block derived type
 type cv_blk_type
-   integer :: n                            !< Control variable block size
-   real(kind_real),allocatable :: alpha(:) !< Control vector block field
+   integer :: n                              !< Control variable block size
+   integer :: nsa                            !< Subgrid size on halo A
+   integer :: ncomp                          !< Number of components
+   real(kind_real),allocatable :: alpha(:,:) !< Control vector block field
 end type cv_blk_type
 
 private

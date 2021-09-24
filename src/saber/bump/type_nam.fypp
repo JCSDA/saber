@@ -175,10 +175,11 @@ type nam_type
    real(kind_real) :: local_dlat                              !< Local diagnostics calculation latitude band half-width [in degrees]
 
    ! fit_param
-   logical :: estimate_peakness                               !< Estimate peakness
    real(kind_real) :: diag_rhflt                              !< Horizontal filtering suport radius [in meters]
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
+   logical :: horizontal_peakness                             !< Estimate horizontal peakness
+   logical :: negative_lobes                                  !< Estimate negative lobes
    integer :: lct_nscales                                     !< Number of LCT scales
    real(kind_real) :: lct_scale_ratio                         !< Factor between diffusion scales
    real(kind_real) :: lct_cor_min                             !< Minimum relevant correlation for LCT first guess
@@ -196,7 +197,7 @@ type nam_type
    logical :: forced_radii                                    !< Force specific support radii
    real(kind_real) :: rh(nlmax,0:nvmax)                       !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nlmax,0:nvmax)                       !< Forced vertical support radius
-   real(kind_real) :: pk(nlmax,0:nvmax)                       !< Forced peakness
+   real(kind_real) :: pkh(nlmax,0:nvmax)                       !< Forced peakness
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
@@ -434,10 +435,11 @@ nam%local_rad = zero
 nam%local_dlat = zero
 
 ! fit_param default
-nam%estimate_peakness = .true.
 nam%diag_rhflt = zero
 nam%diag_rvflt = zero
 nam%fit_dl0 = 1
+nam%horizontal_peakness = .false.
+nam%negative_lobes = .false.
 nam%lct_nscales = 0
 nam%lct_scale_ratio = ten
 nam%lct_cor_min = half
@@ -455,7 +457,7 @@ nam%network = .false.
 nam%forced_radii = .false.
 nam%rh = -one
 nam%rv = -one
-nam%pk = zero
+nam%pkh = zero
 nam%min_lev = 1
 nam%max_lev = nlmax
 nam%pos_def_test = .false.
@@ -641,8 +643,9 @@ real(kind_real) :: local_rad
 real(kind_real) :: local_dlat
 real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
-logical :: estimate_peakness
 integer :: fit_dl0
+logical :: horizontal_peakness
+logical :: negative_lobes
 integer :: lct_nscales
 real(kind_real) :: lct_scale_ratio
 real(kind_real) :: lct_cor_min
@@ -658,7 +661,7 @@ logical :: network
 logical :: forced_radii
 real(kind_real) :: rh(nlmax,0:nvmax)
 real(kind_real) :: rv(nlmax,0:nvmax)
-real(kind_real) :: pk(nlmax,0:nvmax)
+real(kind_real) :: pkh(nlmax,0:nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
@@ -822,10 +825,11 @@ namelist/diag_param/ &
  & local_rad, &
  & local_dlat
 namelist/fit_param/ &
- & estimate_peakness, &
  & diag_rhflt, &
  & diag_rvflt, &
  & fit_dl0, &
+ & horizontal_peakness, &
+ & negative_lobes, &
  & lct_nscales, &
  & lct_scale_ratio, &
  & lct_cor_min, &
@@ -842,7 +846,7 @@ namelist/nicas_param/ &
  & forced_radii, &
  & rh, &
  & rv, &
- & pk, &
+ & pkh, &
  & min_lev, &
  & max_lev, &
  & pos_def_test, &
@@ -1036,10 +1040,11 @@ if (mpl%main) then
    local_dlat = zero
 
    ! fit_param default
-   estimate_peakness = .true.
    diag_rhflt = zero
    diag_rvflt = zero
    fit_dl0 = 1
+   horizontal_peakness = .false.
+   negative_lobes = .false.
    lct_nscales = 0
    lct_scale_ratio = ten
    lct_cor_min = half
@@ -1057,7 +1062,7 @@ if (mpl%main) then
    forced_radii = .false.
    rh = -one
    rv = -one
-   pk = zero
+   pkh = zero
    min_lev = 1
    max_lev = nlmax
    pos_def_test = .false.
@@ -1256,10 +1261,11 @@ if (mpl%main) then
 
    ! fit_param
    read(lunit,nml=fit_param)
-   nam%estimate_peakness = estimate_peakness
    nam%diag_rhflt = diag_rhflt
    nam%diag_rvflt = diag_rvflt
    nam%fit_dl0 = fit_dl0
+   nam%horizontal_peakness = horizontal_peakness
+   nam%negative_lobes = negative_lobes
    nam%lct_nscales = lct_nscales
    nam%lct_scale_ratio = lct_scale_ratio
    nam%lct_cor_min = lct_cor_min
@@ -1278,7 +1284,7 @@ if (mpl%main) then
    nam%forced_radii = forced_radii
    nam%rh = rh
    nam%rv = rv
-   nam%pk = pk
+   nam%pkh = pkh
    nam%min_lev = min_lev
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
@@ -1480,10 +1486,11 @@ call mpl%f_comm%broadcast(nam%local_rad,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%local_dlat,mpl%rootproc-1)
 
 ! fit_param
-call mpl%f_comm%broadcast(nam%estimate_peakness,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%horizontal_peakness,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%negative_lobes,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_nscales,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_scale_ratio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_cor_min,mpl%rootproc-1)
@@ -1501,7 +1508,7 @@ call mpl%f_comm%broadcast(nam%network,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%pk,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%pkh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
@@ -1888,10 +1895,11 @@ if (conf%has('local_rad')) call conf%get_or_die('local_rad',nam%local_rad)
 if (conf%has('local_dlat')) call conf%get_or_die('local_dlat',nam%local_dlat)
 
 ! fit_param
-if (conf%has('estimate_peakness')) call conf%get_or_die('estimate_peakness',nam%estimate_peakness)
 if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
 if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
 if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
+if (conf%has('horizontal_peakness')) call conf%get_or_die('horizontal_peakness',nam%horizontal_peakness)
+if (conf%has('negative_lobes')) call conf%get_or_die('negative_lobes',nam%negative_lobes)
 if (conf%has('lct_nscales')) call conf%get_or_die('lct_nscales',nam%lct_nscales)
 if (conf%has('lct_scale_ratio')) call conf%get_or_die('lct_scale_ratio',nam%lct_scale_ratio)
 if (conf%has('lct_cor_min')) call conf%get_or_die('lct_cor_min',nam%lct_cor_min)
@@ -1982,34 +1990,34 @@ if (conf%has('rv')) then
       end if
    end do
 end if
-if (conf%has('pk')) then
-   call conf%get_or_die('pk',subconf)
+if (conf%has('pkh')) then
+   call conf%get_or_die('pkh',subconf)
    if (subconf%has('common')) then
       call subconf%get_or_die('common',real_array)
       if (size(real_array)>nlmax) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pk-common size should be smaller than ',nlmax
+         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pkh-common size should be smaller than ',nlmax
          call flush(output_unit)
          call comm%abort(1)
       end if
       if (size(real_array)==1) then
-         nam%pk(:,0) = real_array(1)
+         nam%pkh(:,0) = real_array(1)
       else
-         nam%pk(1:size(real_array),0) = real_array
+         nam%pkh(1:size(real_array),0) = real_array
       end if
    end if
    do iv=1,nam%nv
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
          if (size(real_array)>nlmax) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: pk-',trim(nam%variables(iv)), &
+            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: pkh-',trim(nam%variables(iv)), &
  & ' size should be smaller than ',nlmax
             call flush(output_unit)
             call comm%abort(1)
          end if
          if (size(real_array)==1) then
-            nam%pk(:,iv) = real_array(1)
+            nam%pkh(:,iv) = real_array(1)
          else
-            nam%pk(1:size(real_array),iv) = real_array
+            nam%pkh(1:size(real_array),iv) = real_array
          end if
       end if
    end do
@@ -2410,6 +2418,10 @@ if (nam%load_vbal.and.(.not.(nam%load_samp_local.or.nam%load_samp_global))) &
  & .and.(.not.(nam%write_samp_local.or.nam%write_samp_global))) &
  & call mpl%abort('${subr}$','write_vbal requires write_samp_local/global if load_samp_local/global is not activated')
 if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
+   if (nam%horizontal_peakness.and.(trim(nam%method)/='cor')) &
+ & call mpl%abort('${subr}$','horizontal_peakness requires cor method')
+   if (nam%negative_lobes.and.(trim(nam%method)/='cor')) &
+ & call mpl%abort('${subr}$','negative_lobes requires cor method')
    if (nam%nc3<=0) call mpl%abort('${subr}$','nc3 should be positive')
    if (.not.(nam%dc>zero)) call mpl%abort('${subr}$','dc should be positive')
    if (nam%nl0r<1) call mpl%abort ('${subr}$','nl0r should be positive')
@@ -2536,7 +2548,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          do il=1,nam%nl
             if (nam%rh(il,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
             if (nam%rv(il,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
-            if (nam%pk(il,iv)<zero) call mpl%abort('${subr}$','pk should be non-negative')
+            if (nam%pkh(il,iv)<zero) call mpl%abort('${subr}$','pkh should be non-negative')
          end do
       end do
    end if
@@ -2783,10 +2795,11 @@ call mpl%write('local_dlat',nam%local_dlat*rad2deg)
 ! fit_param
 write(mpl%info,'(a7,a)') '','Fit parameters'
 call mpl%flush
-call mpl%write('estimate_peakness',nam%estimate_peakness)
 call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
+call mpl%write('horizontal_peakness',nam%horizontal_peakness)
+call mpl%write('negative_lobes',nam%negative_lobes)
 call mpl%write('lct_nscales',nam%lct_nscales)
 call mpl%write('lct_scale_ratio',nam%lct_scale_ratio)
 call mpl%write('lct_cor_min',nam%lct_cor_min)
@@ -2808,8 +2821,8 @@ real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%rh(1:nam%nl,0:nam%nv),(/nam%nl*(na
 call mpl%write('rh',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
 real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%rv(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
 call mpl%write('rv',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
-real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%pk(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
-call mpl%write('pk',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
+real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%pkh(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
+call mpl%write('pkh',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)

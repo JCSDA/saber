@@ -9,7 +9,7 @@
 module tools_fit
 
 use tools_const, only: zero,quarter,half,one
-use tools_func, only: fit_func
+use tools_gc99, only: fit_hor
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
@@ -38,7 +38,7 @@ contains
 ! Subroutine: fit_fast_fit
 !> Fast fit length-scale estimation based on the value at mid-height
 !----------------------------------------------------------------------
-subroutine fit_fast_fit(mpl,n,iz,dist,raw,pk,fit_r)
+subroutine fit_fast_fit(mpl,n,iz,dist,raw,fit_r)
 
 implicit none
 
@@ -48,7 +48,6 @@ integer,intent(in) :: n                !< Vector size
 integer,intent(in) :: iz               !< Zero separation index
 real(kind_real),intent(in) :: dist(n)  !< Distance
 real(kind_real),intent(in) :: raw(n)   !< Raw data
-real(kind_real),intent(in) :: pk       !< Peakness
 real(kind_real),intent(out) :: fit_r   !< Fast fit result
 
 ! Local variables
@@ -85,7 +84,7 @@ if (raw(iz)>zero) then
             thinv = half
             dthinv = quarter
             do iter=1,itermax
-               thtest = fit_func(mpl,thinv,pk)
+               thtest = fit_hor(thinv,zero)
                if (sup(th,thtest)) then
                   thinv = thinv-dthinv
                else
@@ -226,7 +225,7 @@ if (n>1) then
             if (mpl%msv%isnot(profile(i)).and.mpl%msv%isnot(profile(j))) then
                ! Gaspari-Cohn (1999) function
                distnorm = abs(x(j)-x(i))/rv
-               kernel(i,j) = fit_func(mpl,distnorm,zero)
+               kernel(i,j) = fit_hor(distnorm,zero)
             end if
          end do
       end do

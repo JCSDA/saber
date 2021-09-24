@@ -1056,14 +1056,16 @@ cv%nbe = bpar%nbe
 do ib=1,bpar%nbe
    if (mpl%msv%isnot(bpar%cv_block(ib))) then
       ! Copy block size
-      cv%blk(ib)%n = nicas%blk(bpar%cv_block(ib))%nsa
+      cv%blk(ib)%nsa = nicas%blk(bpar%cv_block(ib))%nsa
+      cv%blk(ib)%ncomp = nicas%blk(bpar%cv_block(ib))%ncomp
+      cv%blk(ib)%n = cv%blk(ib)%nsa*cv%blk(ib)%ncomp
 
       ! Update total size
-      cv%n = cv%n+nicas%blk(bpar%cv_block(ib))%nsa
+      cv%n = cv%n+cv%blk(ib)%n
 
       if (.not.lgetsizeonly) then
          ! Allocation
-         allocate(cv%blk(ib)%alpha(cv%blk(ib)%n))
+         allocate(cv%blk(ib)%alpha(cv%blk(ib)%nsa,cv%blk(ib)%ncomp))
 
          ! Initialization
          cv%blk(ib)%alpha = mpl%msv%valr
@@ -1097,7 +1099,7 @@ type(cv_type),intent(out) :: cv          !< Control vector
 ! Local variables
 integer :: ib,jb
 integer,allocatable :: order_s(:)
-real(kind_real),allocatable :: alpha(:)
+real(kind_real),allocatable :: alpha(:,:)
 
 ! Set name
 @:set_name(nicas_random_cv)
@@ -1117,10 +1119,10 @@ do ib=1,bpar%nbe
       ! Allocation
       if (mpl%main) then
          allocate(order_s(nicas%blk(jb)%ns))
-         allocate(alpha(nicas%blk(jb)%ns))
+         allocate(alpha(nicas%blk(jb)%ns,nicas%blk(jb)%ncomp))
       else
          allocate(order_s(0))
-         allocate(alpha(0))
+         allocate(alpha(0,0))
       end if
 
       ! Communication
@@ -1131,7 +1133,7 @@ do ib=1,bpar%nbe
          call rng%rand_gau(alpha)
 
          ! Reorder random vector
-         alpha(order_s) = alpha
+         alpha(order_s,:) = alpha
       end if
 
       ! Copy local section
@@ -1707,12 +1709,6 @@ real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
 ! Probe in
 @:probe_in()
 
-! Allocation
-if (allocated(ens%mem)) then
-   allocate(fld1_bens(geom%nc0a,geom%nl0,nam%nv))
-   allocate(fld2_bens(geom%nc0a,geom%nl0,nam%nv))
-end if
-
 ! Generate random field
 call rng%rand(zero,one,fld1_save)
 call rng%rand(zero,one,fld2_save)
@@ -1723,29 +1719,32 @@ fld2_loc = fld2_save
 call nicas%apply(mpl,nam,geom,bpar,fld1_loc)
 call nicas%apply(mpl,nam,geom,bpar,fld2_loc)
 
-if (allocated(ens%mem)) then
-   fld1_bens = fld1_save
-   fld2_bens = fld2_save
-   call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld1_bens)
-   call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld2_bens)
-end if
-
 ! Print result
 call mpl%dot_prod(fld1_loc,fld2_save,sum1)
 call mpl%dot_prod(fld2_loc,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','NICAS adjoint test:                       ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
+
 if (allocated(ens%mem)) then
+   ! Allocation
+   allocate(fld1_bens(geom%nc0a,geom%nl0,nam%nv))
+   allocate(fld2_bens(geom%nc0a,geom%nl0,nam%nv))
+
+   ! Adjoint test
+   fld1_bens = fld1_save
+   fld2_bens = fld2_save
+   call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld1_bens)
+   call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld2_bens)
+
+   ! Print result
    call mpl%dot_prod(fld1_bens,fld2_save,sum1)
    call mpl%dot_prod(fld2_bens,fld1_save,sum2)
    write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Ensemble B adjoint test:                  ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
    call mpl%flush
-end if
 
-! Release memory
-if (allocated(ens%mem)) then
+   ! Release memory
    deallocate(fld1_bens)
    deallocate(fld2_bens)
 end if
