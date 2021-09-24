@@ -46,9 +46,7 @@ type minim_type
    real(kind_real),allocatable :: distv(:)    !< Vertical distance
    logical :: lcoef                           !< Diagonal coefficient flag
    logical :: lrh                             !< Horizontal support radius flag
-   logical :: lpkh                            !< Horizontal peakness flag
    logical :: lrv                             !< Vertical support radius flag
-   logical :: lpkvtau                         !< Vertical peakness / negative lobes depth flag
 
    ! Specific data (LCT)
    integer :: nscales                         !< Number of LCT scales
@@ -62,7 +60,6 @@ contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
    procedure :: cost_fit_diag => minim_cost_fit_diag
-   procedure :: cost_fit_diag_negative_lobes => minim_cost_fit_diag_negative_lobes
    procedure :: cost_fit_lct => minim_cost_fit_lct
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
@@ -170,7 +167,7 @@ real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 integer :: ix
-real(kind_real) :: coef,fit_rh,fit_pkh,fit_rv,fit_pkv,fit_tau
+real(kind_real) :: coef,fit_rh,fit_pk,fit_rv,fit_nld
 real(kind_real) :: fit(minim%nc3,minim%nl0r)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
@@ -195,33 +192,24 @@ end if
 if (minim%lrh) then
    ix = ix+1
    fit_rh = xtmp(ix)
+   ix = ix+1
+   fit_pk = xtmp(ix)
 else
    fit_rh = zero
-end if
-if (minim%lpkh) then
-   ix = ix+1
-   fit_pkh = xtmp(ix)
-else
-   fit_pkh = zero
+   fit_pk = zero
 end if
 if (minim%lrv) then
    ix = ix+1
    fit_rv = xtmp(ix)
+   ix = ix+1
+   fit_nld = xtmp(ix)
 else
    fit_rv = zero
-end if
-if (minim%lpkvtau) then
-   ix = ix+1
-   fit_pkv = xtmp(ix)
-   ix = ix+1
-   fit_tau = xtmp(ix)
-else
-   fit_pkv = zero
-   fit_tau = zero
+   fit_nld = zero
 end if
 
 ! Compute function
-call fit_diag(mpl,minim%nc3,minim%nl0r,minim%disth,minim%distv,coef,fit_rh,fit_pkh,fit_rv,fit_pkv,fit_tau,fit)
+call fit_diag(mpl,minim%nc3,minim%nl0r,minim%disth,minim%distv,coef,fit_rh,fit_pk,fit_rv,fit_nld,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))

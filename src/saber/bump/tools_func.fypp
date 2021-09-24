@@ -13,7 +13,7 @@ use atlas_module, only: atlas_geometry
 use iso_c_binding, only: c_int16_t,c_int32_t
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
-use tools_gc99, only: fit_hor_sqrt,fit_hor,fit_ver_sqrt,fit_ver,pkhmin,pkhmax,pkvmin,pkvmax,taumin,taumax
+use tools_gc99, only: fit_func,pkmin,pkmax,nldmin,nldmax
 use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small,eq
@@ -89,12 +89,6 @@ interface vert_interp
 end interface
 interface fit_diag
    module procedure func_fit_diag
-end interface
-interface fit_diag_negative_lobes
-   module procedure func_fit_diag_negative_lobes
-end interface
-interface fit_func_sqrt
-   module procedure func_fit_func_sqrt
 end interface
 interface fit_lct
    module procedure func_fit_lct
@@ -174,9 +168,8 @@ end interface
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
- & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag,fit_diag_negative_lobes,fit_func_sqrt, &
- & fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i, &
- & zss_maxval,zss_minval,zss_sum,zss_count
+ & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag,fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond, &
+ & cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 
 contains
 
@@ -1023,7 +1016,7 @@ end subroutine func_vert_interp
 ! Subroutine: func_fit_diag
 !> Compute diagnostic fit function
 !----------------------------------------------------------------------
-subroutine func_fit_diag(mpl,nc3,nl0r,disth,distv,coef,rh,pkh,rv,fit)
+subroutine func_fit_diag(mpl,nc3,nl0r,disth,distv,coef,rh,pk,rv,nld,fit)
 
 implicit none
 
@@ -1035,8 +1028,9 @@ real(kind_real),intent(in) :: disth(nc3)     !< Horizontal distance
 real(kind_real),intent(in) :: distv(nl0r)    !< Vertical distance
 real(kind_real),intent(in) :: coef           !< Diagonal coefficient
 real(kind_real),intent(in) :: rh             !< Horizontal support radius
-real(kind_real),intent(in) :: pkh            !< Horizontal peakness
+real(kind_real),intent(in) :: pk             !< Peakness
 real(kind_real),intent(in) :: rv             !< Vertical support radius
+real(kind_real),intent(in) :: nld            !< Negative lobes depth
 real(kind_real),intent(out) :: fit(nc3,nl0r) !< Fit
 
 ! Local variables
@@ -1049,12 +1043,13 @@ real(kind_real) :: distnormh(nc3),distnormv(nl0r)
 ! Probe in
 @:probe_in()
 
-if (mpl%msv%is(coef).or.mpl%msv%is(rh).or.mpl%msv%is(pkh).or.mpl%msv%is(rv)) then
+if (mpl%msv%is(coef).or.mpl%msv%is(rh).or.mpl%msv%is(pk).or.mpl%msv%is(rv).or.mpl%msv%is(nld)) then
    ! Set to missing values if no value available
    fit = mpl%msv%valr
 else
    ! Check bounds
-   if ((pkh<pkhmin).or.(pkh>pkhmax)) call mpl%abort('${subr}$','horizontal peakness out of bounds')
+   if ((pk<pkmin).or.(pk>pkmax)) call mpl%abort('${subr}$','peakness out of bounds')
+   if ((nld<nldmin).or.(nld>nldmax)) call mpl%abort('${subr}$','negative lobes depth out of bounds')
 
    ! Initialization
    fit = zero
@@ -1091,8 +1086,7 @@ else
    ! Unitary fit function
    do jl0r=1,nl0r
       do jc3=1,nc3max
-         distnorm = sqrt(distnormh(jc3)**2+distnormv(jl0r)**2)
-         fit(jc3,jl0r) = fit_hor(distnorm,pkh)
+         fit(jc3,jl0r) = fit_func(mpl,distnormh(jc3),pk,distnormv(jl0r),nld)
       end do
    end do
 
@@ -1104,126 +1098,6 @@ end if
 @:probe_out()
 
 end subroutine func_fit_diag
-
-!----------------------------------------------------------------------
-! Subroutine: func_fit_diag_negative_lobes
-!> Compute vertical diagnostic fit function with negative lobes
-!----------------------------------------------------------------------
-subroutine func_fit_diag_negative_lobes(mpl,nl0r,distv,rv,pkv,tau,fit)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl          !< MPI data
-integer,intent(in) :: nl0r                   !< Effective number of levels
-
-real(kind_real),intent(in) :: distv(nl0r)    !< Vertical distance
-real(kind_real),intent(in) :: coef           !< Diagonal coefficient
-real(kind_real),intent(in) :: rh             !< Horizontal support radius
-real(kind_real),intent(in) :: pkh            !< Horizontal peakness
-real(kind_real),intent(in) :: rv             !< Vertical support radius
-real(kind_real),intent(in) :: pkv            !< Vertical peakness
-real(kind_real),intent(in) :: tau            !< Negative lobes depth
-real(kind_real),intent(out) :: fit(nc3,nl0r) !< Fit
-
-! Local variables
-integer :: jl0r,jc3,nc3max
-real(kind_real) :: distnormh(nc3),distnormv(nl0r)
-
-! Set name
-@:set_name(func_fit_diag)
-
-! Probe in
-@:probe_in()
-
-if (mpl%msv%is(coef).or.mpl%msv%is(rh).or.mpl%msv%is(pkh).or.mpl%msv%is(rv).or.mpl%msv%is(pkv).or.mpl%msv%is(tau)) then
-   ! Set to missing values if no value available
-   fit = mpl%msv%valr
-else
-   ! Check bounds
-   if ((pkh<pkhmin).or.(pkh>pkhmax)) call mpl%abort('${subr}$','horizontal peakness out of bounds')
-   if ((pkv<pkvmin).or.(pkv>pkvmax)) call mpl%abort('${subr}$','vertical peakness out of bounds')
-   if ((tau<taumin).or.(tau>taumax)) call mpl%abort('${subr}$','negative lobes depth out of bounds')
-
-   ! Initialization
-   fit = zero
-
-   ! Find maximum class
-   nc3max = 0
-   do jc3=1,nc3
-      if (disth(jc3)>rh) exit
-      nc3max = jc3
-   end do
-
-   ! Horizontal normalized distance
-   do jc3=1,nc3max
-      if (rh>zero) then
-         distnormh(jc3) = disth(jc3)/rh
-      elseif (disth(jc3)>zero) then
-         distnormh(jc3) = one
-      else
-         distnormh(jc3) = zero
-      end if
-   end do
-
-   ! Vertical normalized distance
-   do jl0r=1,nl0r
-      if (rv>zero) then
-         distnormv(jl0r) = distv(jl0r)/rv
-      elseif (distv(jl0r)>zero) then
-         distnormv(jl0r) = one
-      else
-         distnormv(jl0r) = zero
-      end if
-   end do
-
-   ! Unitary fit function
-   do jl0r=1,nl0r
-      do jc3=1,nc3max
-         fit(jc3,jl0r) = fit_hor(distnormh(jc3),pkh)*fit_ver(distnormv(jl0r),pkv,tau)
-      end do
-   end do
-
-   ! Diagonal coefficient
-   fit = fit*coef
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine func_fit_diag
-
-!----------------------------------------------------------------------
-! Function: func_fit_func_sqrt
-!> Fit function square-root
-!----------------------------------------------------------------------
-function func_fit_func_sqrt(mpl,distnorm,pkh) result(value)
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-real(kind_real),intent(in) :: distnorm !< Normalized distance
-real(kind_real),intent(in) :: pkh      !< Horizontal peakness
-
-! Returned variable
-real(kind_real) :: value
-
-! Set name
-@:set_name(func_fit_func_sqrt)
-
-! Probe in
-@:probe_in()
-
-! Distance check bound
-if (distnorm<zero) call mpl%abort('${subr}$','negative normalized distance')
-if (pkh<zero) call mpl%abort('${subr}$','negative pkh')
-
-! Product function (horizontal x vertical)
-value = fit_hor_sqrt(distnorm,pkh)
-
-! Probe out
-@:probe_out()
-
-end function func_fit_func_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: func_fit_lct
@@ -1290,7 +1164,7 @@ do iscales=1,nscales
             if (M==-1) then
                ! Gaspari-Cohn 1999 function
                distnorm = sqrt(rsq)*gc2gau
-               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*fit_hor(distnorm,zero) ! TODO: non-zero peakness
+               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*fit_func(mpl,distnorm,zero,zero,zero) ! TODO: non-zero peakness
             elseif (M==0) then
                ! Gaussian function
                if (rsq<40.0_kind_real) fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*exp(-half*rsq)

@@ -9,7 +9,7 @@
 module tools_fit
 
 use tools_const, only: zero,quarter,half,one
-use tools_gc99, only: fit_hor
+use tools_gc99, only: dnld,fit_func,ver_minval,ver_minarg
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
@@ -19,8 +19,11 @@ implicit none
 
 integer,parameter :: itermax = 10 !< Maximum number of iteration for the threshold definition
 
-interface fast_fit
-   module procedure fit_fast_fit
+interface fast_fit_hor
+   module procedure fit_fast_fit_hor
+end interface
+interface fast_fit_ver
+   module procedure fit_fast_fit_ver
 end interface
 interface ver_smooth
    module procedure fit_ver_smooth
@@ -30,25 +33,26 @@ interface ver_fill
 end interface
 
 private
-public :: fast_fit,ver_smooth,ver_fill
+public :: fast_fit_hor,fast_fit_ver,ver_smooth,ver_fill
 
 contains
 
 !----------------------------------------------------------------------
-! Subroutine: fit_fast_fit
-!> Fast fit length-scale estimation based on the value at mid-height
+! Subroutine: fit_fast_fit_hor
+!> Fast fit length-scale estimation based on the value at mid-height (horizontal)
 !----------------------------------------------------------------------
-subroutine fit_fast_fit(mpl,n,iz,dist,raw,fit_r)
+subroutine fit_fast_fit_hor(mpl,n,iz,dist,raw,fit_pk,fit_r)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: n                !< Vector size
-integer,intent(in) :: iz               !< Zero separation index
-real(kind_real),intent(in) :: dist(n)  !< Distance
-real(kind_real),intent(in) :: raw(n)   !< Raw data
-real(kind_real),intent(out) :: fit_r   !< Fast fit result
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Vector size
+integer,intent(in) :: iz              !< Zero separation index
+real(kind_real),intent(in) :: dist(n) !< Distance
+real(kind_real),intent(in) :: raw(n)  !< Raw data
+real(kind_real),intent(in) :: fit_pk  !< Default peakness
+real(kind_real),intent(out) :: fit_r  !< Fast fit length-scale
 
 ! Local variables
 integer :: di,i,im,ip,iter
@@ -57,7 +61,7 @@ real(kind_real) :: fit_rm,fit_rp,distmin
 real(kind_real) :: raw_tmp(n)
 
 ! Set name
-@:set_name(fit_fast_fit)
+@:set_name(fit_fast_fit_hor)
 
 ! Probe in
 @:probe_in()
@@ -84,7 +88,7 @@ if (raw(iz)>zero) then
             thinv = half
             dthinv = quarter
             do iter=1,itermax
-               thtest = fit_hor(thinv,zero)
+               thtest = fit_func(mpl,thinv,fit_pk,zero,zero)
                if (sup(th,thtest)) then
                   thinv = thinv-dthinv
                else
@@ -187,7 +191,128 @@ end if
 ! Probe out
 @:probe_out()
 
-end subroutine fit_fast_fit
+end subroutine fit_fast_fit_hor
+
+!----------------------------------------------------------------------
+! Subroutine: fit_fast_fit_ver
+!> Fast fit length-scale estimation based on the value at mid-height (vertical)
+!----------------------------------------------------------------------
+subroutine fit_fast_fit_ver(mpl,n,iz,dist,raw,fit_r,fit_nld)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: n                !< Vector size
+integer,intent(in) :: iz               !< Zero separation index
+real(kind_real),intent(in) :: dist(n)  !< Distance
+real(kind_real),intent(in) :: raw(n)   !< Raw data
+real(kind_real),intent(out) :: fit_r   !< Fast fit length-scale
+real(kind_real),intent(out) :: fit_nld !< Fast fit negative lobes depth
+
+! Local variables
+integer :: i,tmp(1)
+real(kind_real) :: raw_tmp(n),fit_minval_m,fit_minval_p,fit_minval,fit_mindist_m,fit_mindist_p,fit_mindist,ncount
+
+! Set name
+@:set_name(fit_fast_fit_ver)
+
+! Probe in
+@:probe_in()
+
+if (any(dist<zero)) call mpl%abort('${subr}$','negative distance')
+
+if (raw(iz)>zero) then
+   if (n>1) then
+      ! Copy points that are lower than the zero-separation
+      raw_tmp = mpl%msv%valr
+      raw_tmp(iz) = one
+      do i=1,n
+        if (i/=iz) then
+           if (inf(raw(i),raw(iz))) raw_tmp(i) = raw(i)/raw(iz)
+        end if
+      end do
+
+      if (count(mpl%msv%isnot(raw_tmp))>1) then
+         if (any(raw_tmp<0.05)) then
+            ! Initialization
+            fit_minval_m = mpl%msv%valr
+            fit_minval_p = mpl%msv%valr
+            fit_mindist_m = mpl%msv%valr
+            fit_mindist_p = mpl%msv%valr
+
+            ! Look for negative lobes
+            if (iz>1) then
+               ! Lower values
+               if (any(raw_tmp(1:iz)<0.05)) then
+                  fit_minval_m = minval(raw_tmp(1:iz),mask=mpl%msv%isnot(raw_tmp(1:iz)))
+                  tmp = minloc(raw_tmp(1:iz),mask=mpl%msv%isnot(raw_tmp(1:iz)))
+                  fit_mindist_m = dist(tmp(1))
+               end if
+            end if
+            if (iz<n) then
+               ! Upper values
+               if (any(raw_tmp(iz:n)<0.05)) then
+                  fit_minval_p = minval(raw_tmp(iz:n),mask=mpl%msv%isnot(raw_tmp(iz:n)))
+                  tmp = minloc(raw_tmp(iz:n),mask=mpl%msv%isnot(raw_tmp(iz:n)))
+                  fit_mindist_p = dist(tmp(1))
+               end if
+            end if
+
+            ! Gather values
+            fit_minval = zero
+            fit_mindist = zero
+            if (mpl%msv%isnot(fit_minval_m)) then
+               fit_minval = fit_minval+fit_minval_m
+               fit_mindist = fit_mindist+fit_mindist_m
+               ncount = ncount+one
+            end if
+            if (mpl%msv%isnot(fit_minval_p)) then
+               fit_minval = fit_minval+fit_minval_p
+               fit_mindist = fit_mindist+fit_mindist_p
+               ncount = ncount+one
+            end if
+            if (ncount>zero) then
+               fit_minval = fit_minval/ncount
+               fit_mindist = fit_mindist/ncount
+            end if
+
+            ! Find corresponding nld
+            tmp = minloc(abs(fit_minval-ver_minval))
+            fit_nld = (tmp(1)-1)*dnld
+
+            if (fit_nld>zero) then
+               ! Find corresponding r
+               fit_r = fit_mindist/ver_minarg(tmp(1))
+            else
+               ! No negative lobes, use horizontal fast fit
+               call fast_fit_hor(mpl,n,iz,dist,raw,zero,fit_r)
+            end if
+         else
+            ! No negative lobes, use horizontal fast fit
+            fit_nld = zero
+            call fast_fit_hor(mpl,n,iz,dist,raw,zero,fit_r)
+         end if
+      else
+         ! All positive-separation points are missing
+         fit_r = mpl%msv%valr
+         fit_nld = mpl%msv%valr
+      end if
+   else
+      ! Only one point, zero radius
+      fit_r = zero
+      fit_nld = zero
+   end if
+else
+   ! Zero-separation point is negative
+   fit_r = mpl%msv%valr
+   fit_nld = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_fast_fit_ver
 
 !----------------------------------------------------------------------
 ! Subroutine: fit_ver_smooth
@@ -225,7 +350,7 @@ if (n>1) then
             if (mpl%msv%isnot(profile(i)).and.mpl%msv%isnot(profile(j))) then
                ! Gaspari-Cohn (1999) function
                distnorm = abs(x(j)-x(i))/rv
-               kernel(i,j) = fit_hor(distnorm,zero)
+               kernel(i,j) = fit_func(mpl,distnorm,zero,zero,zero)
             end if
          end do
       end do
