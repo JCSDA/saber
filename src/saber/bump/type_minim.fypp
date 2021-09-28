@@ -10,7 +10,7 @@ module type_minim
 
 use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
 use tools_fit, only: ver_smooth
-use tools_func, only: fit_diag,fit_diag_full,fit_lct
+use tools_func, only: fit_diag_hor,fit_diag_ver,fit_lct
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
@@ -40,19 +40,16 @@ type minim_type
    ! Common data
    integer :: nc3                                 !< Number of classes
    integer :: nl0r                                !< Effective number of levels
-   integer :: nl0                                 !< Number of levels
 
    ! Specific data (fit)
    real(kind_real),allocatable :: disth(:)        !< Horizontal distance
    real(kind_real),allocatable :: distv(:)        !< Vertical distance
-   real(kind_real),allocatable :: distv_full(:,:) !< Vertical distance (full profile)
-   integer,allocatable :: l0rl0_to_l0(:,:)        !< Effective level to level
    logical :: lcoef                               !< Diagonal coefficient flag
    logical :: lrh                                 !< Horizontal support radius flag
-   logical :: lpk                                 !< Peakness flag
+   logical :: lpkh                                !< Horizontal peakness flag
    logical :: lrv                                 !< Vertical support radius flag
-   logical :: lnld                                !< Negative lobes depth flag
-   logical :: lnlr                                !< Negative lobes ratio flag
+   logical :: lpkv                                !< Vertcal peakness flag
+   integer :: vfc                                 !< Vertical functions catalog index
 
    ! Specific data (LCT)
    integer :: nscales                             !< Number of LCT scales
@@ -65,8 +62,8 @@ type minim_type
 contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
-   procedure :: cost_fit_diag => minim_cost_fit_diag
-   procedure :: cost_fit_diag_full => minim_cost_fit_diag_full
+   procedure :: cost_fit_diag_hor => minim_cost_fit_diag_hor
+   procedure :: cost_fit_diag_ver => minim_cost_fit_diag_ver
    procedure :: cost_fit_lct => minim_cost_fit_lct
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
@@ -145,10 +142,10 @@ real(kind_real),intent(out) :: f          !< Cost function value
 @:probe_in()
 
 select case (trim(minim%cost_function))
-case ('fit_diag')
-   call minim%cost_fit_diag(mpl,x,f)
-case ('fit_diag_full')
-   call minim%cost_fit_diag_full(mpl,x,f)
+case ('fit_diag_hor')
+   call minim%cost_fit_diag_hor(mpl,x,f)
+case ('fit_diag_ver')
+   call minim%cost_fit_diag_ver(mpl,x,f)
 case ('fit_lct')
    call minim%cost_fit_lct(mpl,x,f)
 case default
@@ -161,10 +158,10 @@ end select
 end subroutine minim_cost
 
 !----------------------------------------------------------------------
-! Subroutine: minim_cost_fit_diag
-!> Diagnosic fit function cost
+! Subroutine: minim_cost_fit_diag_hor
+!> Diagnosic fit function cost, horizontal component
 !----------------------------------------------------------------------
-subroutine minim_cost_fit_diag(minim,mpl,x,f)
+subroutine minim_cost_fit_diag_hor(minim,mpl,x,f)
 
 implicit none
 
@@ -176,12 +173,12 @@ real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 integer :: ix
-real(kind_real) :: coef,fit_rh,fit_pk,fit_rv,fit_nld,fit_nlr
-real(kind_real) :: fit(minim%nc3,minim%nl0r)
+real(kind_real) :: coef,fit_rh,fit_pkh
+real(kind_real) :: fit(minim%nc3)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
 ! Set name
-@:set_name(minim_cost_fit_diag)
+@:set_name(minim_cost_fit_diag_hor)
 
 ! Probe in
 @:probe_in()
@@ -204,33 +201,15 @@ if (minim%lrh) then
 else
    fit_rh = zero
 end if
-if (minim%lpk) then
+if (minim%lpkh) then
    ix = ix+1
-   fit_pk = xtmp(ix)
+   fit_pkh = xtmp(ix)
 else
-   fit_pk = zero
-end if
-if (minim%lrv) then
-   ix = ix+1
-   fit_rv = xtmp(ix)
-else
-   fit_rv = zero
-end if
-if (minim%lnld) then
-   ix = ix+1
-   fit_nld = xtmp(ix)
-else
-   fit_nld = zero
-end if
-if (minim%lnlr) then
-   ix = ix+1
-   fit_nlr = xtmp(ix)
-else
-   fit_nlr = zero
+   fit_pkh = zero
 end if
 
 ! Compute function
-call fit_diag(mpl,minim%nc3,minim%nl0r,minim%disth,minim%distv,coef,fit_rh,fit_pk,fit_rv,fit_nld,fit_nlr,fit)
+call fit_diag_hor(mpl,minim%nc3,minim%disth,coef,fit_rh,fit_pkh,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))
@@ -241,13 +220,13 @@ f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(
 ! Probe out
 @:probe_out()
 
-end subroutine minim_cost_fit_diag
+end subroutine minim_cost_fit_diag_hor
 
 !----------------------------------------------------------------------
-! Subroutine: minim_cost_fit_diag_full
-!> Diagnosic fit function cost (full profile)
+! Subroutine: minim_cost_fit_diag_ver
+!> Diagnosic fit function cost, vertical component
 !----------------------------------------------------------------------
-subroutine minim_cost_fit_diag_full(minim,mpl,x,f)
+subroutine minim_cost_fit_diag_ver(minim,mpl,x,f)
 
 implicit none
 
@@ -258,13 +237,13 @@ real(kind_real),intent(in) :: x(minim%nx) !< Control vector
 real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
-integer :: ix,il0
-real(kind_real) :: coef(minim%nl0),fit_rh(minim%nl0),fit_pk(minim%nl0),fit_rv(minim%nl0),fit_nld(minim%nl0),fit_nlr(minim%nl0)
-real(kind_real) :: fit(minim%nc3,minim%nl0r,minim%nl0)
+integer :: ix
+real(kind_real) :: fit_rv,fit_pkv
+real(kind_real) :: fit(minim%nl0r)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
 ! Set name
-@:set_name(minim_cost_fit_diag_full)
+@:set_name(minim_cost_fit_diag_ver)
 
 ! Probe in
 @:probe_in()
@@ -275,58 +254,21 @@ call minim%vt_dir(xtmp)
 
 ! Get data
 ix = 0
-if (minim%lcoef) then
-   do il0=1,minim%nl0
-      ix = ix+1
-      coef(il0) = xtmp(ix)
-   end do
-else
-   coef = one
-end if
-if (minim%lrh) then
-   do il0=1,minim%nl0
-      ix = ix+1
-      fit_rh(il0) = xtmp(ix)
-   end do
-else
-   fit_rh = zero
-end if
-if (minim%lpk) then
-   do il0=1,minim%nl0
-      ix = ix+1
-      fit_pk(il0) = xtmp(ix)
-   end do
-else
-   fit_pk = zero
-end if
 if (minim%lrv) then
-   do il0=1,minim%nl0
-      ix = ix+1
-      fit_rv(il0) = xtmp(ix)
-   end do
+   ix = ix+1
+   fit_rv = xtmp(ix)
 else
    fit_rv = zero
 end if
-if (minim%lnld) then
-   do il0=1,minim%nl0
-      ix = ix+1
-      fit_nld(il0) = xtmp(ix)
-   end do
+if (minim%lpkv) then
+   ix = ix+1
+   fit_pkv = xtmp(ix)
 else
-   fit_nld = zero
-end if
-if (minim%lnlr) then
-   do il0=1,minim%nl0
-      ix = ix+1
-      fit_nlr(il0) = xtmp(ix)
-   end do
-else
-   fit_nlr = zero
+   fit_pkv = zero
 end if
 
 ! Compute function
-call fit_diag_full(mpl,minim%nc3,minim%nl0r,minim%nl0,minim%l0rl0_to_l0,minim%disth,minim%distv_full,coef,fit_rh,fit_pk,fit_rv, &
- & fit_nld,fit_nlr,fit)
+call fit_diag_ver(mpl,minim%nl0r,minim%distv,fit_rv,minim%vfc,fit_pkv,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))
@@ -337,7 +279,7 @@ f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(
 ! Probe out
 @:probe_out()
 
-end subroutine minim_cost_fit_diag_full
+end subroutine minim_cost_fit_diag_ver
 
 !----------------------------------------------------------------------
 ! Function: minim_cost_fit_lct

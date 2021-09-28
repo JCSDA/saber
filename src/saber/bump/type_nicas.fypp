@@ -11,7 +11,7 @@ module type_nicas
 use atlas_module, only: atlas_fieldset
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_status
 use tools_const, only: zero,one,two,ten,rad2deg,reqkm,pi
-use tools_func, only: fletcher32,sphere_dist,cholesky,fit_diag,zss_sum
+use tools_func, only: fletcher32,sphere_dist,cholesky,zss_sum
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,check_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort
