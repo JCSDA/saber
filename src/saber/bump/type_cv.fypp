@@ -54,7 +54,7 @@ offset = 0
 do ib=1,cv%nbe
    if (cv%blk(ib)%n>0) then
       ! Pack control variable
-      pcv(offset+1:offset+cv%blk(ib)%n) = reshape(cv%blk(ib)%alpha,(/cv%blk(ib)%n/))
+      pcv(offset+1:offset+cv%blk(ib)%n) = cv%blk(ib)%alpha
 
       ! Update
       offset = offset+cv%blk(ib)%n
@@ -91,7 +91,7 @@ offset = 0
 do ib=1,cv%nbe
    if (cv%blk(ib)%n>0) then
       ! Unpack control variable
-      cv%blk(ib)%alpha = reshape(pcv(offset+1:offset+cv%blk(ib)%n),(/cv%blk(ib)%nsa,cv%blk(ib)%ncomp/))
+      cv%blk(ib)%alpha = pcv(offset+1:offset+cv%blk(ib)%n)
 
       ! Update
       offset = offset+cv%blk(ib)%n

@@ -40,6 +40,7 @@ if( MKL_FOUND )
 else()
     find_package( LAPACK REQUIRED )
 endif()
+find_package( FFTW REQUIRED )
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 

@@ -10,17 +10,20 @@
 module tools_func
 
 use atlas_module, only: atlas_geometry
-use iso_c_binding, only: c_int16_t,c_int32_t
+use iso_c_binding
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
-use tools_gc99, only: fit_func_hor,fit_func_ver,fit_func_hor_sqrt,fit_func_ver_sqrt
+use tools_gc99, only: fit_func
 use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small,eq
+use tools_wrfda, only: da_eof_decomposition
 use type_mpl, only: mpl_type
 @:use_probe()
 
 implicit none
+
+include 'fftw3.f03'
 
 real(kind_real),parameter :: gc2gau = 0.28_kind_real  !< GC99 support radius to Gaussian Daley length-scale (empirical)
 real(kind_real),parameter :: gau2gc = one/gc2gau      !< Gaussian Daley length-scale to GC99 support radius (empirical)
@@ -87,11 +90,11 @@ end interface
 interface vert_interp
    module procedure func_vert_interp
 end interface
-interface fit_diag_hor
-   module procedure func_fit_diag_hor
+interface hor_sqrt
+   module procedure func_hor_sqrt
 end interface
-interface fit_diag_ver
-   module procedure func_fit_diag_ver
+interface fit_diag
+   module procedure func_fit_diag
 end interface
 interface fit_diag_full
    module procedure func_fit_diag_full
@@ -174,9 +177,9 @@ end interface
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
- & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag_hor,fit_diag_ver,fit_diag_full,fit_lct, &
- & lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval, &
- & zss_minval,zss_sum,zss_count
+ & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,hor_sqrt,fit_diag,fit_diag_full,fit_lct, &
+ & lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l, &
+ & convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 
 contains
 
@@ -981,20 +984,20 @@ end subroutine func_vert_interp_setup
 ! Subroutine: func_vert_interp
 !> Apply vertical interpolation
 !----------------------------------------------------------------------
-subroutine func_vert_interp(mpl,nl1,var_l1,nl0,il1inf,il1sup,rinf,rsup,var_l0)
+subroutine func_vert_interp(mpl,nl1,data_l1,nl0,il1inf,il1sup,rinf,rsup,data_l0)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl        !< MPI data
-integer,intent(in) :: nl1                  !< Number of interpolation levels
-real(kind_real),intent(in) :: var_l1(nl1)  !< Input variable
-integer,intent(in) :: nl0                  !< Number of levels
-integer,intent(in) :: il1inf(nl0)          !< Inferior interpolation levels
-integer,intent(in) :: il1sup(nl0)          !< Superior interpolation levels
-real(kind_real),intent(in) :: rinf(nl0)    !< Inferior interpolation weights
-real(kind_real),intent(in) :: rsup(nl0)    !< Superior interpolation weights
-real(kind_real),intent(out) :: var_l0(nl0) !< Output variable
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nl1                   !< Number of interpolation levels
+real(kind_real),intent(in) :: data_l1(nl1)  !< Input data
+integer,intent(in) :: nl0                   !< Number of levels
+integer,intent(in) :: il1inf(nl0)           !< Inferior interpolation levels
+integer,intent(in) :: il1sup(nl0)           !< Superior interpolation levels
+real(kind_real),intent(in) :: rinf(nl0)     !< Inferior interpolation weights
+real(kind_real),intent(in) :: rsup(nl0)     !< Superior interpolation weights
+real(kind_real),intent(out) :: data_l0(nl0) !< Output data
 
 ! Local variables
 integer :: il0
@@ -1007,10 +1010,10 @@ integer :: il0
 
 ! Interpolate
 do il0=1,nl0
-   if (mpl%msv%isnot(var_l1(il1inf(il0))).and.mpl%msv%isnot(var_l1(il1sup(il0)))) then
-      var_l0(il0) = rinf(il0)*var_l1(il1inf(il0))+rsup(il0)*var_l1(il1sup(il0))
+   if (mpl%msv%isnot(data_l1(il1inf(il0))).and.mpl%msv%isnot(data_l1(il1sup(il0)))) then
+      data_l0(il0) = rinf(il0)*data_l1(il1inf(il0))+rsup(il0)*data_l1(il1sup(il0))
    else
-      var_l0(il0) = mpl%msv%valr
+      data_l0(il0) = mpl%msv%valr
    end if
 end do
 
@@ -1020,132 +1023,159 @@ end do
 end subroutine func_vert_interp
 
 !----------------------------------------------------------------------
-! Subroutine: func_fit_diag_hor
-!> Compute diagnostic fit function, horizontal component
+! Subroutine: func_hor_sqrt
+!> Compute horizontal square-root using FFT
 !----------------------------------------------------------------------
-subroutine func_fit_diag_hor(mpl,nc3,disth,coef,rh,pkh,fit)
+subroutine func_hor_sqrt(mpl,n,data_full,data_sqrt)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl      !< MPI data
-integer,intent(in) :: nc3                !< Number of classes
-real(kind_real),intent(in) :: disth(nc3) !< Horizontal distance
-real(kind_real),intent(in) :: coef       !< Diagonal coefficient
-real(kind_real),intent(in) :: rh         !< Horizontal support radius
-real(kind_real),intent(in) :: pkh        !< Horizontal peakness
-real(kind_real),intent(out) :: fit(nc3)  !< Fit
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: n                     !< Input data size
+real(kind_real),intent(in) :: data_full(n)  !< Input data
+real(kind_real),intent(out) :: data_sqrt(n) !< Output data
 
 ! Local variables
-integer :: jc3,nc3max
-real(kind_real) :: distnormh(nc3)
+integer :: ngp,i,j,k,ii,jj
+integer(8) :: plan
+real(kind_real) :: k_real,norm
+real(kind_real),allocatable :: gp(:,:),gp_full(:,:)
+complex(kind_real),allocatable :: cp(:,:),cp_full(:,:)
 
 ! Set name
-@:set_name(func_fit_diag_hor)
+@:set_name(func_hor_sqrt)
 
 ! Probe in
 @:probe_in()
 
-if (mpl%msv%is(coef).or.mpl%msv%is(rh).or.mpl%msv%is(pkh)) then
+! Allocation
+ngp = 4*n
+allocate(gp(2*ngp+1,2*ngp+1))
+allocate(cp(ngp+1,2*ngp+1))
+allocate(cp_full(0:ngp,-ngp:ngp))
+allocate(gp_full(0:ngp,-ngp:ngp))
+
+! Full function to isotropic 2D field
+gp = zero
+do j=-n,n
+   jj = j
+   if (jj<0) jj = 2*ngp+1+jj
+   do i=-n,n
+      ii = i
+      if (ii<0) ii = 2*ngp+1+ii
+      k_real = sqrt(real(i**2+j**2,kind_real))+one
+      k = floor(k_real)
+      if ((k==1).or.(k==n)) then
+         gp(1+ii,1+jj) = data_full(k)
+      elseif (k<n) then
+         gp(1+ii,1+jj) = (real(k+1,kind_real)-k_real)*data_full(k)+(k_real-real(k,kind_real))*data_full(k+1)
+      end if
+   end do
+end do
+
+! Grid-point to spectral
+call dfftw_plan_dft_r2c_2d(plan,2*ngp+1,2*ngp+1,gp,cp,fftw_estimate)
+cp = dcmplx(zero,zero)
+call dfftw_execute_dft_r2c(plan,gp,cp)
+cp(1,2:2*ngp+1) = cp(1,2:2*ngp+1)*sqrt(two)
+cp(2:ngp+1,:) = cp(2:ngp+1,:)*sqrt(two)
+norm = one/sqrt(real((2*ngp+1)**2,kind_real))
+cp = cp*norm
+cp_full(0:ngp,0:ngp) = cp(1:ngp+1,1:ngp+1)
+cp_full(1:ngp,-ngp:-1) = cp(2:ngp+1,ngp+2:2*ngp+1)
+cp_full(0,-1:-ngp:-1) = dcmplx(zero,zero)
+call dfftw_destroy_plan(plan)
+
+! Square-root
+gp_full = real(cp_full,kind_real)
+gp_full = sqrt(max(gp_full,zero))
+cp_full = dcmplx(gp_full,zero)
+
+! Spectral to grid-point
+cp(1:ngp+1,1:ngp+1) = cp_full(0:ngp,0:ngp)
+cp(2:ngp+1,ngp+2:2*ngp+1) = cp_full(1:ngp,-ngp:-1)
+cp(1,2:2*ngp+1) = cp(1,2:2*ngp+1)/sqrt(two)
+cp(2:ngp+1,:) = cp(2:ngp+1,:)/sqrt(two)
+call dfftw_plan_dft_c2r_2d(plan,2*ngp+1,2*ngp+1,cp,gp,fftw_estimate)
+gp = zero
+call dfftw_execute_dft_c2r(plan,cp,gp)
+gp = gp*norm
+call dfftw_destroy_plan(plan)
+
+! Isotropic 2D field to square-root function
+data_sqrt = gp(1:n,1)
+
+! Release memory
+deallocate(gp)
+deallocate(cp)
+deallocate(cp_full)
+deallocate(gp_full)
+
+! Probe out
+@:probe_out()
+
+end subroutine func_hor_sqrt
+
+!----------------------------------------------------------------------
+! Subroutine: func_fit_diag
+!> Compute diagnostic fit function
+!----------------------------------------------------------------------
+subroutine func_fit_diag(mpl,n,iz,dist,dir,fit_r,fit_pk,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Vector size
+integer,intent(in) :: iz              !< Zero separation index
+real(kind_real),intent(in) :: dist(n) !< Distance
+character(len=*),intent(in) :: dir    !< Direction
+real(kind_real),intent(in) :: fit_r   !< Support radius
+real(kind_real),intent(in) :: fit_pk  !< Peakness
+real(kind_real),intent(out) :: fit(n) !< Fit
+
+! Local variables
+integer :: i
+real(kind_real) :: nd(n)
+
+! Set name
+@:set_name(func_fit_diag)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%is(fit_r).or.mpl%msv%is(fit_pk)) then
    ! Set to missing values if no value available
    fit = mpl%msv%valr
 else
-   ! Find maximum class
-   nc3max = 0
-   do jc3=1,nc3
-      if (disth(jc3)>rh) exit
-      nc3max = jc3
-   end do
-
-   ! Horizontal normalized distance
-   do jc3=1,nc3max
-      if (rh>zero) then
-         distnormh(jc3) = disth(jc3)/rh
-      elseif (disth(jc3)>zero) then
-         distnormh(jc3) = one
+   ! Normalized distance
+   do i=1,n
+      if (fit_r>zero) then
+         nd(i) = abs(dist(i)-dist(iz))/fit_r
+      elseif (i/=iz) then
+         nd(i) = one
       else
-         distnormh(jc3) = zero
+         nd(i) = zero
       end if
    end do
 
    ! Unitary fit function
-   do jc3=1,nc3max
-      fit(jc3) = fit_func_hor(mpl,distnormh(jc3),pkh)
-   end do
-
-   ! Diagonal coefficient
-   fit = fit*coef
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine func_fit_diag_hor
-
-!----------------------------------------------------------------------
-! Subroutine: func_fit_diag_ver
-!> Compute diagnostic fit function, vertical component
-!----------------------------------------------------------------------
-subroutine func_fit_diag_ver(mpl,nl0r,distv,rv,vfc,pkv,fit)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl       !< MPI data
-integer,intent(in) :: nl0r                !< Effective number of levels
-real(kind_real),intent(in) :: distv(nl0r) !< Vertical distance
-real(kind_real),intent(in) :: rv          !< Vertical support radius
-integer,intent(in) :: vfc                 !< Vertical functions catalog index
-real(kind_real),intent(in) :: pkv         !< Vertical peakness
-real(kind_real),intent(out) :: fit(nl0r)  !< Fit
-
-
-! Local variables
-integer :: jl0r
-real(kind_real) :: distnormv(nl0r)
-
-! Set name
-@:set_name(func_fit_diag_ver)
-
-! Probe in
-@:probe_in()
-
-if (mpl%msv%is(rv).or.mpl%msv%is(pkv).or.mpl%msv%is(vfc)) then
-   ! Set to missing values if no value available
-   fit = mpl%msv%valr
-else
-   ! Vertical normalized distance
-   do jl0r=1,nl0r
-      if (rv>zero) then
-         distnormv(jl0r) = distv(jl0r)/rv
-      elseif (distv(jl0r)>zero) then
-         distnormv(jl0r) = one
-      else
-         distnormv(jl0r) = zero
-      end if
-   end do
-
-   do jl0r=1,nl0r
-      if (vfc>0) then
-         ! Use vertical functions catalog
-         fit(jl0r) = fit_func_ver(mpl,distnormv(jl0r),vfc)
-      else
-         ! Use horizontal procedure
-         fit(jl0r) = fit_func_hor(mpl,distnormv(jl0r),pkv)
-      end if
+   do i=1,n
+      fit(i) = fit_func(mpl,dir,nd(i),fit_pk)
    end do
 end if
 
 ! Probe out
 @:probe_out()
 
-end subroutine func_fit_diag_ver
+end subroutine func_fit_diag
 
 !----------------------------------------------------------------------
 ! Subroutine: func_fit_diag_full
 !> Compute diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine func_fit_diag_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,coef,rh,pkh,rv,pkv,nld,fit)
+subroutine func_fit_diag_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,coef,rh,pkh,rv,pkv,fit)
 
 implicit none
 
@@ -1159,67 +1189,20 @@ real(kind_real),intent(in) :: disth(nc3)         !< Horizontal distance
 real(kind_real),intent(in) :: distv(nl0r,nl0)    !< Vertical distance
 real(kind_real),intent(in) :: coef(nl0)          !< Diagonal coefficient
 real(kind_real),intent(in) :: rh(nl0)            !< Horizontal support radius
-real(kind_real),intent(in) :: pkh(nl0)            !< Peakness
+real(kind_real),intent(in) :: pkh(nl0)           !< Horizontal peakness
 real(kind_real),intent(in) :: rv(nl0)            !< Vertical support radius
 real(kind_real),intent(in) :: pkv(nl0)           !< Vertical peakness
-real(kind_real),intent(in) :: nld(nl0)           !< Negative lobes depth
 real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
 
 ! Local variables
-integer :: il0,jl0r,jl0,ic3
-real(kind_real) :: rh_eff,pkh_eff,rv_eff,pkv_eff,nld_eff,distnormv,distnormh,hor_fit
-real(kind_real) :: ver_sqrt(nl0,nl0),ver_fit(nl0,nl0)
+integer :: il0,jl0r,jl0,jc3
+real(kind_real) :: vnd,hnd,ver_fit,hor_fit,rh_eff,pkh_eff,rv_eff,pkv_eff
 
 ! Set name
 @:set_name(func_fit_diag_full)
 
 ! Probe in
 @:probe_in()
-
-! Vertical matrix square-root
-ver_sqrt = zero
-do il0=1,nl0
-   do jl0r=1,nl0r
-      ! Level index
-      jl0 = l0rl0_to_l0(jl0r,il0)
-
-      ! Averaged vertical support radius
-      if (mpl%msv%isnot(rv(il0)).and.mpl%msv%isnot(rv(jl0))) then
-         rv_eff = half*(rv(il0)+rv(jl0))
-      else
-         rv_eff = zero
-      end if
-
-      ! Averaged negative lobes depth
-      if (mpl%msv%isnot(pkv(il0)).and.mpl%msv%isnot(pkv(jl0))) then
-         pkv_eff = half*(pkv(il0)+pkv(jl0))
-      else
-         pkv_eff = zero
-      end if
-
-      ! Averaged negative lobes depth
-      if (mpl%msv%isnot(nld(il0)).and.mpl%msv%isnot(nld(jl0))) then
-         nld_eff = half*(nld(il0)+nld(jl0))
-      else
-         nld_eff = zero
-      end if
-
-      ! Normalized vertical distance
-      if (rv_eff>zero) then
-         distnormv = abs(distv(jl0r,il0))/rv_eff
-      elseif (il0/=jl0) then
-         distnormv = one
-      else
-         distnormv = zero
-      end if
-
-      ! Vertical component square-root
-      ver_sqrt(il0,jl0) = fit_func_ver_sqrt(mpl,distnormv,pkv_eff,nld_eff)
-   end do
-end do
-
-! Vertical component
-ver_fit = matmul(ver_sqrt,transpose(ver_sqrt))
 
 do il0=1,nl0
    do jl0r=1,nl0r
@@ -1228,33 +1211,59 @@ do il0=1,nl0
 
       ! Averaged horizontal support radius
       if (mpl%msv%isnot(rh(il0)).and.mpl%msv%isnot(rh(jl0))) then
-         rh_eff = half*(rh(il0)+rh(jl0))
+         rh_eff = sqrt(half*(rh(il0)**2+rh(jl0)**2))
       else
          rh_eff = zero
       end if
 
-      ! Averaged peakness
+      ! Averaged horizontal peakness
       if (mpl%msv%isnot(pkh(il0)).and.mpl%msv%isnot(pkh(jl0))) then
          pkh_eff = half*(pkh(il0)+pkh(jl0))
       else
          pkh_eff = zero
       end if
 
-      do ic3=1,nc3
-         ! Normalized horizontal distance
+      ! Averaged vertical support radius
+      if (mpl%msv%isnot(rv(il0)).and.mpl%msv%isnot(rv(jl0))) then
+         rv_eff = sqrt(half*(rv(il0)**2+rv(jl0)**2))
+      else
+         rv_eff = zero
+      end if
+
+      ! Averaged vertical peakness
+      if (mpl%msv%isnot(pkv(il0)).and.mpl%msv%isnot(pkv(jl0))) then
+         pkv_eff = half*(pkv(il0)+pkv(jl0))
+      else
+         pkv_eff = zero
+      end if
+
+      ! Vertical normalized distance
+      if (rv_eff>zero) then
+         vnd = distv(jl0r,il0)/rv_eff
+      elseif (il0/=jl0) then
+         vnd = one
+      else
+         vnd = zero
+      end if
+
+      ! Vertical component
+      ver_fit = fit_func(mpl,'ver',vnd,pkv_eff)
+
+      do jc3=1,nc3
+         ! Horizontal normalized distance
          if (rh_eff>zero) then
-            distnormh = disth(ic3)/rh_eff
-         elseif (ic3/=1) then
-            distnormh = one
+            hnd = disth(jc3)/rh_eff
+         elseif (jc3/=1) then
+            hnd = one
          else
-            distnormh = zero
+            hnd = zero
          end if
 
          ! Horizontal component
-         hor_fit = fit_func_hor(mpl,distnormh,pkh_eff)
+         hor_fit = fit_func(mpl,'hor',hnd,pkh_eff)
 
          ! Fit function
-         fit(ic3,jl0r,il0) = hor_fit*ver_fit(il0,jl0)
+         fit(jc3,jl0r,il0) = hor_fit*ver_fit
       end do
    end do
 end do
@@ -1269,11 +1278,11 @@ end do
 
 ! Set to missing values if no value available
 do il0=1,nl0
-   if (mpl%msv%is(coef(il0)).or.mpl%msv%is(rh(il0)).or.mpl%msv%is(pkh(il0)).or.mpl%msv%is(rv(il0)).or.mpl%msv%is(pkv(il0)) &
- & .or.mpl%msv%is(nld(il0))) fit(:,:,il0) = mpl%msv%valr
+   if (mpl%msv%is(coef(il0)).or.mpl%msv%is(rh(il0)).or.mpl%msv%is(pkh(il0)).or.mpl%msv%is(rv(il0)) &
+ & .or.mpl%msv%is(pkv(il0))) fit(:,:,il0) = mpl%msv%valr
    do jl0r=1,nl0r
       jl0 = l0rl0_to_l0(jl0r,il0)
-      if (mpl%msv%is(coef(jl0)).or.mpl%msv%is(rh(jl0)).or.mpl%msv%is(pkh(jl0)).or.mpl%msv%is(rv(jl0)).or.mpl%msv%is(pkv(jl0)) &
+      if (mpl%msv%is(coef(jl0)).or.mpl%msv%is(rh(jl0)).or.mpl%msv%is(pkh(jl0)).or.mpl%msv%is(rv(jl0)) &
  & .or.mpl%msv%is(pkv(jl0))) fit(:,jl0r,il0) = mpl%msv%valr
    end do
 end do
@@ -1348,7 +1357,7 @@ do iscales=1,nscales
             if (M==-1) then
                ! Gaspari-Cohn 1999 function
                distnorm = sqrt(rsq)*gc2gau
-               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*fit_func_hor(mpl,distnorm,zero) ! TODO: non-zero horizontal peakness
+               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*fit_func(mpl,'hor',distnorm,zero) ! TODO: non-zero horizontal peakness
             elseif (M==0) then
                ! Gaussian function
                if (rsq<40.0_kind_real) fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*exp(-half*rsq)

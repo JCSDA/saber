@@ -11,6 +11,7 @@ module type_cmat
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,one,rad2deg,reqkm,req
 use tools_func, only: lct_d2h,lct_h2r,convert_l2i,convert_i2l,zss_sum
+use tools_gc99, only: pkhdef,pkvdef
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_bpar, only: bpar_type
@@ -237,7 +238,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ncid,grpid,coef_ens_id,coef_sta_id,rh_id,rv_id,rhs_id,rvs_id,H11_id,H22_id,H33_id,H12_id,Hcoef_id
+integer :: ncid,grpid,coef_ens_id,coef_sta_id,rh_id,pkh_id,rv_id,pkv_id,rhs_id,rvs_id,H11_id,H22_id,H33_id,H12_id,Hcoef_id
 integer :: ib,anisotropic(bpar%nbe)
 character(len=1024) :: grpname
 
@@ -294,7 +295,9 @@ do ib=1,bpar%nbe
       coef_ens_id = inquire_var(mpl,grpid,'coef_ens')
       coef_sta_id = inquire_var(mpl,grpid,'coef_sta')
       rh_id = inquire_var(mpl,grpid,'rh')
+      pkh_id = inquire_var(mpl,grpid,'pkh')
       rv_id = inquire_var(mpl,grpid,'rv')
+      pkv_id = inquire_var(mpl,grpid,'pkv')
       rhs_id = inquire_var(mpl,grpid,'rhs')
       rvs_id = inquire_var(mpl,grpid,'rvs')
       if (cmat%blk(ib)%anisotropic) then
@@ -309,7 +312,9 @@ do ib=1,bpar%nbe
       call geom%io%fld_read(mpl,grpid,coef_ens_id,cmat%blk(ib)%coef_ens)
       call geom%io%fld_read(mpl,grpid,coef_sta_id,cmat%blk(ib)%coef_sta)
       call geom%io%fld_read(mpl,grpid,rh_id,cmat%blk(ib)%rh)
+      call geom%io%fld_read(mpl,grpid,pkh_id,cmat%blk(ib)%pkh)
       call geom%io%fld_read(mpl,grpid,rv_id,cmat%blk(ib)%rv)
+      call geom%io%fld_read(mpl,grpid,pkv_id,cmat%blk(ib)%pkv)
       call geom%io%fld_read(mpl,grpid,rhs_id,cmat%blk(ib)%rhs)
       call geom%io%fld_read(mpl,grpid,rvs_id,cmat%blk(ib)%rvs)
       if (cmat%blk(ib)%anisotropic) then
@@ -347,8 +352,9 @@ type(bpar_type),intent(in) :: bpar  !< Block parameters
 
 ! Local variables
 integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
-integer :: grpid(bpar%nbe),coef_ens_id(bpar%nbe),coef_sta_id(bpar%nbe),rh_id(bpar%nbe),rv_id(bpar%nbe),rhs_id(bpar%nbe)
-integer :: rvs_id(bpar%nbe),H11_id(bpar%nbe),H22_id(bpar%nbe),H33_id(bpar%nbe),H12_id(bpar%nbe),Hcoef_id(bpar%nbe)
+integer :: grpid(bpar%nbe),coef_ens_id(bpar%nbe),coef_sta_id(bpar%nbe)
+integer :: rh_id(bpar%nbe),pkh_id(bpar%nbe),rv_id(bpar%nbe),pkv_id(bpar%nbe),rhs_id(bpar%nbe),rvs_id(bpar%nbe)
+integer :: H11_id(bpar%nbe),H22_id(bpar%nbe),H33_id(bpar%nbe),H12_id(bpar%nbe),Hcoef_id(bpar%nbe)
 integer :: ib,anisotropic
 character(len=1024) :: grpname
 
@@ -381,7 +387,9 @@ do ib=1,bpar%nbe
       coef_ens_id(ib) = define_var(mpl,grpid(ib),'coef_ens','real',(/nc0_id,nl0_id/))
       coef_sta_id(ib) = define_var(mpl,grpid(ib),'coef_sta','real',(/nc0_id,nl0_id/))
       rh_id(ib) = define_var(mpl,grpid(ib),'rh','real',(/nc0_id,nl0_id/))
+      pkh_id(ib) = define_var(mpl,grpid(ib),'pkh','real',(/nc0_id,nl0_id/))
       rv_id(ib) = define_var(mpl,grpid(ib),'rv','real',(/nc0_id,nl0_id/))
+      pkv_id(ib) = define_var(mpl,grpid(ib),'pkv','real',(/nc0_id,nl0_id/))
       rhs_id(ib) = define_var(mpl,grpid(ib),'rhs','real',(/nc0_id,nl0_id/))
       rvs_id(ib) = define_var(mpl,grpid(ib),'rvs','real',(/nc0_id,nl0_id/))
       if (cmat%blk(ib)%anisotropic) then
@@ -407,7 +415,9 @@ do ib=1,bpar%nbe
       call geom%io%fld_write(mpl,grpid(ib),coef_ens_id(ib),cmat%blk(ib)%coef_ens,geom%gmask_c0a)
       call geom%io%fld_write(mpl,grpid(ib),coef_sta_id(ib),cmat%blk(ib)%coef_sta,geom%gmask_c0a)
       call geom%io%fld_write(mpl,grpid(ib),rh_id(ib),cmat%blk(ib)%rh,geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(ib),pkh_id(ib),cmat%blk(ib)%pkh,geom%gmask_c0a)
       call geom%io%fld_write(mpl,grpid(ib),rv_id(ib),cmat%blk(ib)%rv,geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(ib),pkv_id(ib),cmat%blk(ib)%pkv,geom%gmask_c0a)
       call geom%io%fld_write(mpl,grpid(ib),rhs_id(ib),cmat%blk(ib)%rhs,geom%gmask_c0a)
       call geom%io%fld_write(mpl,grpid(ib),rvs_id(ib),cmat%blk(ib)%rvs,geom%gmask_c0a)
       if (cmat%blk(ib)%anisotropic) then
@@ -466,9 +476,9 @@ end do
 ! Allocation
 call cmat%alloc(geom,bpar)
 if (nam%local_diag) then
-   allocate(fld_c2a(samp%nc2a,geom%nl0,4))
+   allocate(fld_c2a(samp%nc2a,geom%nl0,6))
    allocate(fld_c2b(samp%nc2b,geom%nl0))
-   allocate(fld_c0a(geom%nc0a,geom%nl0,4))
+   allocate(fld_c0a(geom%nc0a,geom%nl0,6))
 end if
 
 ! Initialization
@@ -484,7 +494,7 @@ do ib=1,bpar%nbe
 
             ! Copy data
             n = 2
-            if (bpar%fit_block(ib)) n = n+2
+            if (bpar%fit_block(ib)) n = n+4
             do ic2a=1,samp%nc2a
                select case (trim(nam%method))
                case ('cor')
@@ -492,21 +502,27 @@ do ib=1,bpar%nbe
                   fld_c2a(ic2a,:,2) = zero
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%cor_1%blk(ic2a,ib)%fit_rh
-                     fld_c2a(ic2a,:,4) = hdiag%cor_1%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,4) = hdiag%cor_1%blk(ic2a,ib)%fit_pkh
+                     fld_c2a(ic2a,:,5) = hdiag%cor_1%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,6) = hdiag%cor_1%blk(ic2a,ib)%fit_pkv
                   end if
                case ('loc')
                   fld_c2a(ic2a,:,1) = hdiag%loc_1%blk(ic2a,ib)%coef_ens
                   fld_c2a(ic2a,:,2) = zero
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%loc_1%blk(ic2a,ib)%fit_rh
-                     fld_c2a(ic2a,:,4) = hdiag%loc_1%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,4) = hdiag%loc_1%blk(ic2a,ib)%fit_pkh
+                     fld_c2a(ic2a,:,5) = hdiag%loc_1%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,6) = hdiag%loc_1%blk(ic2a,ib)%fit_pkv
                   end if
                case ('hyb-avg','hyb-rnd')
                   fld_c2a(ic2a,:,1) = hdiag%loc_2%blk(ic2a,ib)%coef_ens
                   fld_c2a(ic2a,:,2) = hdiag%loc_2%blk(ic2a,ib)%coef_sta
                   if (bpar%fit_block(ib)) then
                      fld_c2a(ic2a,:,3) = hdiag%loc_2%blk(ic2a,ib)%fit_rh
-                     fld_c2a(ic2a,:,4) = hdiag%loc_2%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,4) = hdiag%loc_2%blk(ic2a,ib)%fit_pkh
+                     fld_c2a(ic2a,:,5) = hdiag%loc_2%blk(ic2a,ib)%fit_rv
+                     fld_c2a(ic2a,:,6) = hdiag%loc_2%blk(ic2a,ib)%fit_pkv
                   end if
                case ('dual-ens')
                   call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
@@ -536,7 +552,9 @@ do ib=1,bpar%nbe
             cmat%blk(ib)%coef_sta = fld_c0a(:,:,2)
             if (bpar%fit_block(ib)) then
                cmat%blk(ib)%rh = fld_c0a(:,:,3)
-               cmat%blk(ib)%rv = fld_c0a(:,:,4)
+               cmat%blk(ib)%pkh = fld_c0a(:,:,4)
+               cmat%blk(ib)%rv = fld_c0a(:,:,5)
+               cmat%blk(ib)%pkv = fld_c0a(:,:,6)
             end if
          else
             ! Initialization
@@ -545,7 +563,9 @@ do ib=1,bpar%nbe
             cmat%blk(ib)%coef_sta = mpl%msv%valr
             if (bpar%fit_block(ib)) then
                cmat%blk(ib)%rh = mpl%msv%valr
+               cmat%blk(ib)%pkh = mpl%msv%valr
                cmat%blk(ib)%rv = mpl%msv%valr
+               cmat%blk(ib)%pkv = mpl%msv%valr
             end if
 
             ! Copy to C matrix
@@ -558,7 +578,9 @@ do ib=1,bpar%nbe
                   cmat%blk(ib)%coef_sta(:,il0) = zero
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rh(il0)
+                     cmat%blk(ib)%pkh(:,il0) = hdiag%cor_1%blk(0,ib)%fit_pkh(il0)
                      cmat%blk(ib)%rv(:,il0) = hdiag%cor_1%blk(0,ib)%fit_rv(il0)
+                     cmat%blk(ib)%pkv(:,il0) = hdiag%cor_1%blk(0,ib)%fit_pkv(il0)
                   else
 
                   end if
@@ -568,7 +590,9 @@ do ib=1,bpar%nbe
                   cmat%blk(ib)%coef_sta(:,il0) = zero
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rh(il0)
+                     cmat%blk(ib)%pkh(:,il0) = hdiag%loc_1%blk(0,ib)%fit_pkh(il0)
                      cmat%blk(ib)%rv(:,il0) = hdiag%loc_1%blk(0,ib)%fit_rv(il0)
+                     cmat%blk(ib)%pkv(:,il0) = hdiag%loc_1%blk(0,ib)%fit_pkv(il0)
                   end if
                case ('hyb-avg','hyb-rnd')
                   cmat%blk(ib)%coef_ens(:,il0) = hdiag%loc_2%blk(0,ib)%coef_ens(il0)
@@ -576,7 +600,9 @@ do ib=1,bpar%nbe
                   cmat%blk(ib)%coef_sta(:,il0) = hdiag%loc_2%blk(0,ib)%coef_sta
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rh(il0)
+                     cmat%blk(ib)%pkh(:,il0) = hdiag%loc_2%blk(0,ib)%fit_pkh(il0)
                      cmat%blk(ib)%rv(:,il0) = hdiag%loc_2%blk(0,ib)%fit_rv(il0)
+                     cmat%blk(ib)%pkv(:,il0) = hdiag%loc_2%blk(0,ib)%fit_pkv(il0)
                   end if
                case ('dual-ens')
                   call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
@@ -594,7 +620,9 @@ do ib=1,bpar%nbe
                   cmat%blk(ib)%coef_sta(ic0a,il0) = mpl%msv%valr
                   if (bpar%fit_block(ib)) then
                      cmat%blk(ib)%rh(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%pkh(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%rv(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%pkv(ic0a,il0) = mpl%msv%valr
                   end if
                end if
             end do
@@ -765,7 +793,9 @@ do ib=1,bpar%nbe
       ! Copy support radii
       do il0=1,geom%nl0
          cmat%blk(ib)%rh(:,il0) = nam%rh(il0,iv)
+         cmat%blk(ib)%pkh(:,il0) = nam%pkh(il0,iv)
          cmat%blk(ib)%rv(:,il0) = nam%rv(il0,iv)
+         cmat%blk(ib)%pkv(:,il0) = nam%pkv(il0,iv)
       end do
 
       ! Set coefficients
@@ -864,7 +894,17 @@ do ib=1,bpar%nbe
             call mpl%f_comm%allreduce(zss_sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
+            if (allocated(cmat%blk(ib)%bump_pkh)) then
+               cmat%blk(ib)%pkh = cmat%blk(ib)%bump_pkh
+            else
+               cmat%blk(ib)%pkh = pkhdef
+            end if
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
+            if (allocated(cmat%blk(ib)%bump_pkv)) then
+               cmat%blk(ib)%pkv = cmat%blk(ib)%bump_pkv
+            else
+               cmat%blk(ib)%pkv = pkvdef
+            end if
          end if
          if (import_static(ib)) then
             write(mpl%info,'(a10,a)') '','Static import'
@@ -886,9 +926,13 @@ do ib=1,bpar%nbe
                      ! Copy scale coefficient
                      cmat%blk(ib)%Hcoef(ic0a,il0) = cmat%blk(ib)%bump_Dcoef(ic0a,il0)
 
-                     ! Copy support radii
+                     ! Compute support radii
                      call lct_h2r(mpl,cmat%blk(ib)%H11(ic0a,il0),cmat%blk(ib)%H22(ic0a,il0),cmat%blk(ib)%H33(ic0a,il0), &
  & cmat%blk(ib)%H12(ic0a,il0),cmat%blk(ib)%rh(ic0a,il0),cmat%blk(ib)%rv(ic0a,il0))
+
+                     ! Default peakness
+                     cmat%blk(ib)%pkh = pkhdef
+                     cmat%blk(ib)%pkv = pkvdef
                   else
                      cmat%blk(ib)%H11(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%H22(ic0a,il0) = mpl%msv%valr
@@ -896,7 +940,9 @@ do ib=1,bpar%nbe
                      cmat%blk(ib)%H12(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%Hcoef(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%rh(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%pkh(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%rv(ic0a,il0) = mpl%msv%valr
+                     cmat%blk(ib)%pkv(ic0a,il0) = mpl%msv%valr
                   end if
                end do
             end do
