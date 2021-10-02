@@ -115,7 +115,7 @@ if ((ic2a==0).or.nam%local_diag) then
    if (nam%diag_sqrt) then
       allocate(diag_blk%raw_hor_sqrt(bpar%nc3(ib),geom%nl0))
       allocate(diag_blk%raw_zs_sqrt(bpar%nl0r(ib),geom%nl0))
-      allocate(diag_blk%fit_hor_sqrt(bpar%nl0r(ib),geom%nl0))
+      allocate(diag_blk%fit_hor_sqrt(bpar%nc3(ib),geom%nl0))
       allocate(diag_blk%fit_zs_sqrt(bpar%nl0r(ib),geom%nl0))
    end if
 end if

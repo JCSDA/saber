@@ -1391,14 +1391,30 @@ else
 
    ! Indices
    indm = floor(bnd/dnd)+1
-   indp = indm+1
+   if (indm==nnd) then
+      indp = indm
+   else
+      indp = indm+1
+   end if
    ipkm = floor((bpk-pkmin)/dpk)+1
-   ipkp = ipkm+1
+   if (ipkm==npk) then
+      ipkp = ipkm
+   else
+      ipkp = ipkm+1
+   end if
 
    ! Coefficients
-   rndm = real(indp-1,kind_real)-bnd/dnd
+   if (indm==nnd) then
+      rndm = one
+   else
+      rndm = real(indp-1,kind_real)-bnd/dnd
+   end if
    rndp = (one-rndm)
-   rpkm = real(ipkp-1,kind_real)-(bpk-pkmin)/dpk
+   if (ipkm==npk) then
+      rpkm = real(ipkp-1,kind_real)-(bpk-pkmin)/dpk
+   else
+      rpkm = one
+   end if
    rpkp = (one-rpkm)
 
    ! Interpolated value
