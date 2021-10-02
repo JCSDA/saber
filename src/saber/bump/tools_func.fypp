@@ -13,7 +13,7 @@ use atlas_module, only: atlas_geometry
 use iso_c_binding
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
-use tools_gc99, only: fit_func
+use tools_gc99, only: fit_func,fit_func_sqrt
 use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small,eq
@@ -22,8 +22,6 @@ use type_mpl, only: mpl_type
 @:use_probe()
 
 implicit none
-
-include 'fftw3.f03'
 
 real(kind_real),parameter :: gc2gau = 0.28_kind_real  !< GC99 support radius to Gaussian Daley length-scale (empirical)
 real(kind_real),parameter :: gau2gc = one/gc2gau      !< Gaussian Daley length-scale to GC99 support radius (empirical)
@@ -90,8 +88,8 @@ end interface
 interface vert_interp
    module procedure func_vert_interp
 end interface
-interface hor_sqrt
-   module procedure func_hor_sqrt
+interface fit_diag_sqrt
+   module procedure func_fit_diag_sqrt
 end interface
 interface fit_diag
    module procedure func_fit_diag
@@ -177,7 +175,7 @@ end interface
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
- & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,hor_sqrt,fit_diag,fit_diag_full,fit_lct, &
+ & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag_sqrt,fit_diag,fit_diag_full,fit_lct, &
  & lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l, &
  & convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 
@@ -1023,99 +1021,57 @@ end do
 end subroutine func_vert_interp
 
 !----------------------------------------------------------------------
-! Subroutine: func_hor_sqrt
-!> Compute horizontal square-root using FFT
+! Subroutine: func_fit_diag_sqrt
+!> Compute diagnostic fit function square-root
 !----------------------------------------------------------------------
-subroutine func_hor_sqrt(mpl,n,data_full,data_sqrt)
+subroutine func_fit_diag_sqrt(mpl,n,iz,dist,fit_r,fit_pk,fit)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl         !< MPI data
-integer,intent(in) :: n                     !< Input data size
-real(kind_real),intent(in) :: data_full(n)  !< Input data
-real(kind_real),intent(out) :: data_sqrt(n) !< Output data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Vector size
+integer,intent(in) :: iz              !< Zero separation index
+real(kind_real),intent(in) :: dist(n) !< Distance
+real(kind_real),intent(in) :: fit_r   !< Support radius
+real(kind_real),intent(in) :: fit_pk  !< Peakness
+real(kind_real),intent(out) :: fit(n) !< Fit
 
 ! Local variables
-integer :: ngp,i,j,k,ii,jj
-integer(8) :: plan
-real(kind_real) :: k_real,norm
-real(kind_real),allocatable :: gp(:,:),gp_full(:,:)
-complex(kind_real),allocatable :: cp(:,:),cp_full(:,:)
+integer :: i
+real(kind_real) :: nd(n)
 
 ! Set name
-@:set_name(func_hor_sqrt)
+@:set_name(func_fit_diag_sqrt)
 
 ! Probe in
 @:probe_in()
 
-! Allocation
-ngp = 4*n
-allocate(gp(2*ngp+1,2*ngp+1))
-allocate(cp(ngp+1,2*ngp+1))
-allocate(cp_full(0:ngp,-ngp:ngp))
-allocate(gp_full(0:ngp,-ngp:ngp))
-
-! Full function to isotropic 2D field
-gp = zero
-do j=-n,n
-   jj = j
-   if (jj<0) jj = 2*ngp+1+jj
-   do i=-n,n
-      ii = i
-      if (ii<0) ii = 2*ngp+1+ii
-      k_real = sqrt(real(i**2+j**2,kind_real))+one
-      k = floor(k_real)
-      if ((k==1).or.(k==n)) then
-         gp(1+ii,1+jj) = data_full(k)
-      elseif (k<n) then
-         gp(1+ii,1+jj) = (real(k+1,kind_real)-k_real)*data_full(k)+(k_real-real(k,kind_real))*data_full(k+1)
+if (mpl%msv%is(fit_r).or.mpl%msv%is(fit_pk)) then
+   ! Set to missing values if no value available
+   fit = mpl%msv%valr
+else
+   ! Normalized distance
+   do i=1,n
+      if (fit_r>zero) then
+         nd(i) = abs(dist(i)-dist(iz))/fit_r
+      elseif (i/=iz) then
+         nd(i) = one
+      else
+         nd(i) = zero
       end if
    end do
-end do
 
-! Grid-point to spectral
-call dfftw_plan_dft_r2c_2d(plan,2*ngp+1,2*ngp+1,gp,cp,fftw_estimate)
-cp = dcmplx(zero,zero)
-call dfftw_execute_dft_r2c(plan,gp,cp)
-cp(1,2:2*ngp+1) = cp(1,2:2*ngp+1)*sqrt(two)
-cp(2:ngp+1,:) = cp(2:ngp+1,:)*sqrt(two)
-norm = one/sqrt(real((2*ngp+1)**2,kind_real))
-cp = cp*norm
-cp_full(0:ngp,0:ngp) = cp(1:ngp+1,1:ngp+1)
-cp_full(1:ngp,-ngp:-1) = cp(2:ngp+1,ngp+2:2*ngp+1)
-cp_full(0,-1:-ngp:-1) = dcmplx(zero,zero)
-call dfftw_destroy_plan(plan)
-
-! Square-root
-gp_full = real(cp_full,kind_real)
-gp_full = sqrt(max(gp_full,zero))
-cp_full = dcmplx(gp_full,zero)
-
-! Spectral to grid-point
-cp(1:ngp+1,1:ngp+1) = cp_full(0:ngp,0:ngp)
-cp(2:ngp+1,ngp+2:2*ngp+1) = cp_full(1:ngp,-ngp:-1)
-cp(1,2:2*ngp+1) = cp(1,2:2*ngp+1)/sqrt(two)
-cp(2:ngp+1,:) = cp(2:ngp+1,:)/sqrt(two)
-call dfftw_plan_dft_c2r_2d(plan,2*ngp+1,2*ngp+1,cp,gp,fftw_estimate)
-gp = zero
-call dfftw_execute_dft_c2r(plan,cp,gp)
-gp = gp*norm
-call dfftw_destroy_plan(plan)
-
-! Isotropic 2D field to square-root function
-data_sqrt = gp(1:n,1)
-
-! Release memory
-deallocate(gp)
-deallocate(cp)
-deallocate(cp_full)
-deallocate(gp_full)
+   ! Unitary fit function
+   do i=1,n
+      fit(i) = fit_func_sqrt(mpl,nd(i),fit_pk)
+   end do
+end if
 
 ! Probe out
 @:probe_out()
 
-end subroutine func_hor_sqrt
+end subroutine func_fit_diag_sqrt
 
 !----------------------------------------------------------------------
 ! Subroutine: func_fit_diag

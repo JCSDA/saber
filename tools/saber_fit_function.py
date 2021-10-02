@@ -19,10 +19,16 @@ nd = np.linspace(0, (nnd-1)*dnd, nnd)
 epsabs = 1.0e-1
 
 # Parameters
+newfunc = False
 f0 = 1.0e-3
-pkmin = -6.0
-pkmax = 4.0
-dpk = 0.4
+if newfunc:
+   pkmin = -6.0
+   pkmax = 4.0
+   dpk = 0.4
+else:
+   pkmin = 0.0
+   pkmax = 4.0
+   dpk = 0.2
 npk = int((pkmax-pkmin)/dpk)+1
 pk = np.linspace(pkmin, pkmax, npk)
 
@@ -38,9 +44,15 @@ for ind in range(0,nnd):
 def S(r,f0,pk):
    if np.abs(r) <= 0.5:
       if pk > 0.0:
-         return np.exp(np.log(f0+np.exp(-pk))*np.sqrt(2.0*np.abs(r)))-np.exp(-pk)
+         if newfunc:
+            return np.exp(np.log(f0+np.exp(-pk))*np.sqrt(2.0*np.abs(r)))-np.exp(-pk)
+         else:
+            return (1.0/(1.0+(pk+pk**4)*2.0*np.abs(r))-1.0/(1.0+(pk+pk**4)))/(1.0-1.0/(1.0+(pk+pk**4)))
       else:
-         return 1.0-np.sqrt(2.0*np.abs(r))**(1+pk**2)
+         if newfunc:
+            return 1.0-np.sqrt(2.0*np.abs(r))**(1+pk**2)
+         else:
+            return 1.0-(2.0*np.abs(r))
    else:
       return 0.0
 
@@ -191,7 +203,8 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("integer,parameter :: nnd = " + str(nnd) + "\n")
    file.write("integer,parameter :: npk = " + str(npk) + "\n")
-   file.write("real(kind_real),parameter :: f0 = %.8f_kind_real\n" % (f0))
+   if newfunc:
+      file.write("real(kind_real),parameter :: f0 = %.8f_kind_real\n" % (f0))
    file.write("real(kind_real),parameter :: ndmin = %.8f_kind_real\n" % (min(nd)))
    file.write("real(kind_real),parameter :: ndmax = %.8f_kind_real\n" % (max(nd)))
    file.write("real(kind_real),parameter :: pkmin = %.8f_kind_real\n" % (pkmin))
@@ -336,9 +349,15 @@ if run_horizontal and run_vertical:
    file.write("   value = zero\n")
    file.write("else\n")
    file.write("   if (pk>zero) then\n")
-   file.write("      value = exp(log(f0+exp(-pk))*sqrt(two*nd))-exp(-pk)\n")
+   if newfunc:
+      file.write("      value = exp(log(f0+exp(-pk))*sqrt(two*nd))-exp(-pk)\n")
+   else:
+      file.write("      value = (one/(one+pk**4*two*nd)-one/(one+pk**4))/(one-one/(one+pk**4))\n")
    file.write("   else\n")
-   file.write("      value = one-sqrt(two*nd)**(1+pk**2)\n")
+   if newfunc:
+      file.write("      value = one-sqrt(two*nd)**(one+pk**2)\n")
+   else:
+      file.write("      value = one-(two*nd)**(one+pk**2)\n")
    file.write("   end if\n")
    file.write("end if\n")
    file.write("\n")

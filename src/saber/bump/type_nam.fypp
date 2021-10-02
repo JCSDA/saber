@@ -180,7 +180,7 @@ type nam_type
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
    logical :: peakness                                        !< Estimate peakness
-   logical :: use_eof                                         !< Use EOFs for vertical functions
+   logical :: diag_sqrt                                       !< Diagnostic of square-root functions
    integer :: lct_nscales                                     !< Number of LCT scales
    real(kind_real) :: lct_scale_ratio                         !< Factor between diffusion scales
    real(kind_real) :: lct_cor_min                             !< Minimum relevant correlation for LCT first guess
@@ -441,7 +441,7 @@ nam%diag_rhflt = zero
 nam%diag_rvflt = zero
 nam%fit_dl0 = 1
 nam%peakness = .false.
-nam%use_eof = .false.
+nam%diag_sqrt = .false.
 nam%lct_nscales = 0
 nam%lct_scale_ratio = ten
 nam%lct_cor_min = half
@@ -648,7 +648,7 @@ real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
 integer :: fit_dl0
 logical :: peakness
-logical :: use_eof
+logical :: diag_sqrt
 integer :: lct_nscales
 real(kind_real) :: lct_scale_ratio
 real(kind_real) :: lct_cor_min
@@ -833,7 +833,7 @@ namelist/fit_param/ &
  & diag_rvflt, &
  & fit_dl0, &
  & peakness, &
- & use_eof, &
+ & diag_sqrt, &
  & lct_nscales, &
  & lct_scale_ratio, &
  & lct_cor_min, &
@@ -1049,7 +1049,7 @@ if (mpl%main) then
    diag_rvflt = zero
    fit_dl0 = 1
    peakness = .false.
-   use_eof = .false.
+   diag_sqrt = .false.
    lct_nscales = 0
    lct_scale_ratio = ten
    lct_cor_min = half
@@ -1271,7 +1271,7 @@ if (mpl%main) then
    nam%diag_rvflt = diag_rvflt
    nam%fit_dl0 = fit_dl0
    nam%peakness = peakness
-   nam%use_eof = use_eof
+   nam%diag_sqrt = diag_sqrt
    nam%lct_nscales = lct_nscales
    nam%lct_scale_ratio = lct_scale_ratio
    nam%lct_cor_min = lct_cor_min
@@ -1497,7 +1497,7 @@ call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%peakness,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%use_eof,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%diag_sqrt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_nscales,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_scale_ratio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_cor_min,mpl%rootproc-1)
@@ -1907,7 +1907,7 @@ if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
 if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
 if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
 if (conf%has('peakness')) call conf%get_or_die('peakness',nam%peakness)
-if (conf%has('use_eof')) call conf%get_or_die('use_eof',nam%use_eof)
+if (conf%has('diag_sqrt')) call conf%get_or_die('diag_sqrt',nam%diag_sqrt)
 if (conf%has('lct_nscales')) call conf%get_or_die('lct_nscales',nam%lct_nscales)
 if (conf%has('lct_scale_ratio')) call conf%get_or_die('lct_scale_ratio',nam%lct_scale_ratio)
 if (conf%has('lct_cor_min')) call conf%get_or_die('lct_cor_min',nam%lct_cor_min)
@@ -2458,10 +2458,6 @@ if (nam%load_vbal.and.(.not.(nam%load_samp_local.or.nam%load_samp_global))) &
  & .and.(.not.(nam%write_samp_local.or.nam%write_samp_global))) &
  & call mpl%abort('${subr}$','write_vbal requires write_samp_local/global if load_samp_local/global is not activated')
 if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
-   if (nam%peakness.and.(trim(nam%method)/='cor')) &
- & call mpl%abort('${subr}$','peakness requires cor method')
-   if (nam%use_eof.and.(trim(nam%method)/='cor')) &
- & call mpl%abort('${subr}$','use_eof requires cor method')
    if (nam%nc3<=0) call mpl%abort('${subr}$','nc3 should be positive')
    if (.not.(nam%dc>zero)) call mpl%abort('${subr}$','dc should be positive')
    if (nam%nl0r<1) call mpl%abort ('${subr}$','nl0r should be positive')
@@ -2840,7 +2836,7 @@ call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
 call mpl%write('peakness',nam%peakness)
-call mpl%write('use_eof',nam%use_eof)
+call mpl%write('diag_sqrt',nam%diag_sqrt)
 call mpl%write('lct_nscales',nam%lct_nscales)
 call mpl%write('lct_scale_ratio',nam%lct_scale_ratio)
 call mpl%write('lct_cor_min',nam%lct_cor_min)

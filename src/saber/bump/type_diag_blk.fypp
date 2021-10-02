@@ -11,7 +11,8 @@ module type_diag_blk
 !$ use omp_lib
 use tools_const, only: zero,hundredth,tenth,half,one,two,three,five,seven,ten
 use tools_fit, only: fast_fit,fast_fit_neg,ver_fill
-use tools_func, only: fit_diag_full,vert_interp_size,vert_interp_setup,vert_interp,hor_sqrt
+use tools_fftw, only: hor_sqrt
+use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,fit_diag_sqrt,fit_diag_full
 use tools_gc99, only: pkmin,pkmax,pkhdef,pkvdef
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,put_att,define_var,put_var
@@ -30,23 +31,26 @@ implicit none
 
 ! Diagnostic block derived type
 type diag_blk_type
-   integer :: ic2a                             !< Local index
-   integer :: ib                               !< Block index
-   character(len=1024) :: prefix               !< Prefix
+   integer :: ic2a                                  !< Local index
+   integer :: ib                                    !< Block index
+   character(len=1024) :: prefix                    !< Prefix
 
-   real(kind_real),allocatable :: raw(:,:,:)     !< Raw diagnostic
-   real(kind_real),allocatable :: raw_hor_sqrt(:,:)   !< Raw diagnostic horizontal square-root
-   real(kind_real),allocatable :: raw_zs_sqrt(:,:)   !< Raw diagnostic at zero separation square-root
-   real(kind_real),allocatable :: valid(:,:,:) !< Number of valid couples
-   real(kind_real),allocatable :: coef_ens(:)  !< Ensemble coefficient
-   real(kind_real) :: coef_sta                 !< Static coefficient
-   real(kind_real),allocatable :: fit(:,:,:)   !< Fit
-   real(kind_real),allocatable :: fit_zs_sqrt(:,:)   !< Fit at zero separation square-root
-   real(kind_real),allocatable :: fit_rh(:)    !< Horizontal support radius
-   real(kind_real),allocatable :: fit_pkh(:)   !< Horizontal peakness
-   real(kind_real),allocatable :: fit_rv(:)    !< Vertical support radius
-   real(kind_real),allocatable :: fit_pkv(:)   !< Vertical peakness
-   real(kind_real),allocatable :: distv(:,:)   !< Reduced vertical distance
+   real(kind_real),allocatable :: raw(:,:,:)        !< Raw diagnostic
+   real(kind_real),allocatable :: valid(:,:,:)      !< Number of valid couples
+   real(kind_real),allocatable :: coef_ens(:)       !< Ensemble coefficient
+   real(kind_real) :: coef_sta                      !< Static coefficient
+
+   real(kind_real),allocatable :: fit(:,:,:)        !< Fit
+   real(kind_real),allocatable :: fit_rh(:)         !< Horizontal support radius
+   real(kind_real),allocatable :: fit_pkh(:)        !< Horizontal peakness
+   real(kind_real),allocatable :: fit_rv(:)         !< Vertical support radius
+   real(kind_real),allocatable :: fit_pkv(:)        !< Vertical peakness
+   real(kind_real),allocatable :: distv(:,:)        !< Reduced vertical distance
+
+   real(kind_real),allocatable :: raw_hor_sqrt(:,:) !< Raw diagnostic horizontal square-root
+   real(kind_real),allocatable :: raw_zs_sqrt(:,:)  !< Raw diagnostic at zero separation square-root
+   real(kind_real),allocatable :: fit_hor_sqrt(:,:) !< Fit horizontal square-root
+   real(kind_real),allocatable :: fit_zs_sqrt(:,:)  !< Fit at zero separation square-root
 contains
    procedure :: alloc => diag_blk_alloc
    procedure :: dealloc => diag_blk_dealloc
@@ -100,33 +104,39 @@ diag_blk%prefix = prefix
 ! Allocation
 if ((ic2a==0).or.nam%local_diag) then
    allocate(diag_blk%raw(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
-   allocate(diag_blk%raw_hor_sqrt(bpar%nc3(ib),geom%nl0))
-   allocate(diag_blk%raw_zs_sqrt(bpar%nl0r(ib),geom%nl0))
    allocate(diag_blk%valid(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
    allocate(diag_blk%coef_ens(geom%nl0))
    allocate(diag_blk%fit(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
-   allocate(diag_blk%fit_zs_sqrt(bpar%nl0r(ib),geom%nl0))
    allocate(diag_blk%fit_rh(geom%nl0))
    allocate(diag_blk%fit_pkh(geom%nl0))
    allocate(diag_blk%fit_rv(geom%nl0))
-   if (.not.nam%use_eof) allocate(diag_blk%fit_pkv(geom%nl0))
+   allocate(diag_blk%fit_pkv(geom%nl0))
    allocate(diag_blk%distv(bpar%nl0r(ib),geom%nl0))
+   if (nam%diag_sqrt) then
+      allocate(diag_blk%raw_hor_sqrt(bpar%nc3(ib),geom%nl0))
+      allocate(diag_blk%raw_zs_sqrt(bpar%nl0r(ib),geom%nl0))
+      allocate(diag_blk%fit_hor_sqrt(bpar%nl0r(ib),geom%nl0))
+      allocate(diag_blk%fit_zs_sqrt(bpar%nl0r(ib),geom%nl0))
+   end if
 end if
 
 ! Initialization
-diag_blk%coef_sta = mpl%msv%valr
 if ((ic2a==0).or.nam%local_diag) then
    diag_blk%raw = mpl%msv%valr
-   diag_blk%raw_hor_sqrt = mpl%msv%valr
-   diag_blk%raw_zs_sqrt = mpl%msv%valr
    diag_blk%valid = mpl%msv%valr
    diag_blk%coef_ens = mpl%msv%valr
+   diag_blk%coef_sta = mpl%msv%valr
    diag_blk%fit = mpl%msv%valr
-   diag_blk%fit_zs_sqrt = mpl%msv%valr
    diag_blk%fit_rh = mpl%msv%valr
    diag_blk%fit_pkh = mpl%msv%valr
    diag_blk%fit_rv = mpl%msv%valr
-   if (.not.nam%use_eof) diag_blk%fit_pkv = mpl%msv%valr
+   diag_blk%fit_pkv = mpl%msv%valr
+   if (nam%diag_sqrt) then
+      diag_blk%raw_hor_sqrt = mpl%msv%valr
+      diag_blk%raw_zs_sqrt = mpl%msv%valr
+      diag_blk%fit_hor_sqrt = mpl%msv%valr
+      diag_blk%fit_zs_sqrt = mpl%msv%valr
+   end if
 end if
 
 ! Vertical distance
@@ -168,17 +178,18 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 
 ! Release memory
 if (allocated(diag_blk%raw)) deallocate(diag_blk%raw)
-if (allocated(diag_blk%raw_hor_sqrt)) deallocate(diag_blk%raw_hor_sqrt)
-if (allocated(diag_blk%raw_zs_sqrt)) deallocate(diag_blk%raw_zs_sqrt)
 if (allocated(diag_blk%valid)) deallocate(diag_blk%valid)
 if (allocated(diag_blk%coef_ens)) deallocate(diag_blk%coef_ens)
 if (allocated(diag_blk%fit)) deallocate(diag_blk%fit)
-if (allocated(diag_blk%fit_zs_sqrt)) deallocate(diag_blk%fit_zs_sqrt)
 if (allocated(diag_blk%fit_rh)) deallocate(diag_blk%fit_rh)
 if (allocated(diag_blk%fit_pkh)) deallocate(diag_blk%fit_pkh)
 if (allocated(diag_blk%fit_rv)) deallocate(diag_blk%fit_rv)
 if (allocated(diag_blk%fit_pkv)) deallocate(diag_blk%fit_pkv)
 if (allocated(diag_blk%distv)) deallocate(diag_blk%distv)
+if (allocated(diag_blk%raw_hor_sqrt)) deallocate(diag_blk%raw_hor_sqrt)
+if (allocated(diag_blk%raw_zs_sqrt)) deallocate(diag_blk%raw_zs_sqrt)
+if (allocated(diag_blk%fit_hor_sqrt)) deallocate(diag_blk%fit_hor_sqrt)
+if (allocated(diag_blk%fit_zs_sqrt)) deallocate(diag_blk%fit_zs_sqrt)
 
 ! Probe out
 @:probe_out()
@@ -207,8 +218,9 @@ integer,intent(in) :: nl0_2_id                 !< NetCDF ID
 
 ! Local variables
 integer :: grpid
-integer :: raw_id,valid_id,coef_ens_id,raw_zs_id,raw_hor_sqrt_id,raw_zs_sqrt_id,l0rl0_to_l0_id
-integer :: fit_id,fit_zs_id,fit_zs_sqrt_id,fit_rh_id,fit_pkh_id,fit_rv_id,fit_pkv_id
+integer :: raw_id,valid_id,coef_ens_id,raw_zs_id,l0rl0_to_l0_id
+integer :: fit_id,fit_zs_id,fit_rh_id,fit_pkh_id,fit_rv_id,fit_pkv_id
+integer :: raw_hor_sqrt_id,raw_zs_sqrt_id,fit_hor_sqrt_id,fit_zs_sqrt_id
 integer :: il0,jl0r,jl0
 
 ! Set name
@@ -228,34 +240,46 @@ if (mpl%msv%isanynot(diag_blk%raw)) then
    raw_id = define_var(mpl,grpid,'raw','real',(/nc3_id,nl0r_id,nl0_1_id/))
    valid_id = define_var(mpl,grpid,'valid','real',(/nc3_id,nl0r_id,nl0_1_id/))
    raw_zs_id = define_var(mpl,grpid,'raw_zs','real',(/nl0_2_id,nl0_1_id/))
-   raw_hor_sqrt_id = define_var(mpl,grpid,'raw_hor_sqrt','real',(/nc3_id,nl0_1_id/))
-   raw_zs_sqrt_id = define_var(mpl,grpid,'raw_zs_sqrt','real',(/nl0_2_id,nl0_1_id/))
    l0rl0_to_l0_id = define_var(mpl,grpid,'l0rl0_to_l0','int',(/nl0r_id,nl0_1_id/))
+   if (nam%diag_sqrt) then
+      raw_hor_sqrt_id = define_var(mpl,grpid,'raw_hor_sqrt','real',(/nc3_id,nl0_1_id/))
+      raw_zs_sqrt_id = define_var(mpl,grpid,'raw_zs_sqrt','real',(/nl0_2_id,nl0_1_id/))
+   end if
 end if
 if (mpl%msv%isanynot(diag_blk%coef_ens)) coef_ens_id = define_var(mpl,grpid,'coef_ens','real',(/nl0_1_id/))
 if (mpl%msv%isanynot(diag_blk%fit)) then
    fit_id = define_var(mpl,grpid,'fit','real',(/nc3_id,nl0r_id,nl0_1_id/))
    fit_zs_id = define_var(mpl,grpid,'fit_zs','real',(/nl0_2_id,nl0_1_id/))
-   fit_zs_sqrt_id = define_var(mpl,grpid,'fit_zs_sqrt','real',(/nl0_2_id,nl0_1_id/))
    fit_rh_id = define_var(mpl,grpid,'fit_rh','real',(/nl0_1_id/))
    fit_pkh_id = define_var(mpl,grpid,'fit_pkh','real',(/nl0_1_id/))
    fit_rv_id = define_var(mpl,grpid,'fit_rv','real',(/nl0_1_id/))
-   if (.not.nam%use_eof) fit_pkv_id = define_var(mpl,grpid,'fit_pkv','real',(/nl0_1_id/))
+   fit_pkv_id = define_var(mpl,grpid,'fit_pkv','real',(/nl0_1_id/))
+   if (nam%diag_sqrt) then
+      fit_hor_sqrt_id = define_var(mpl,grpid,'fit_hor_sqrt','real',(/nc3_id,nl0_1_id/))
+      fit_zs_sqrt_id = define_var(mpl,grpid,'fit_zs_sqrt','real',(/nl0_2_id,nl0_1_id/))
+   end if
 end if
 
 ! Write variables
 if (mpl%msv%isanynot(diag_blk%raw)) then
    call put_var(mpl,grpid,raw_id,diag_blk%raw)
    call put_var(mpl,grpid,valid_id,diag_blk%valid)
-   call put_var(mpl,grpid,raw_hor_sqrt_id,diag_blk%raw_hor_sqrt)
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0rmax
          jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
          call put_var(mpl,grpid,raw_zs_id,diag_blk%raw(1,jl0r,il0),(/jl0,il0/))
-         call put_var(mpl,grpid,raw_zs_sqrt_id,diag_blk%raw_zs_sqrt(jl0r,il0),(/jl0,il0/))
       end do
    end do
    call put_var(mpl,grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib))
+   if (nam%diag_sqrt) then
+      call put_var(mpl,grpid,raw_hor_sqrt_id,diag_blk%raw_hor_sqrt)
+      do il0=1,geom%nl0
+         do jl0r=1,bpar%nl0rmax
+            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+            call put_var(mpl,grpid,raw_zs_sqrt_id,diag_blk%raw_zs_sqrt(jl0r,il0),(/jl0,il0/))
+         end do
+      end do
+   end if
 end if
 if (mpl%msv%isanynot(diag_blk%coef_ens)) call put_var(mpl,grpid,coef_ens_id,diag_blk%coef_ens)
 if (mpl%msv%isnot(diag_blk%coef_sta)) call put_att(mpl,grpid,'coef_sta',diag_blk%coef_sta)
@@ -265,13 +289,21 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       do jl0r=1,bpar%nl0rmax
          jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
          call put_var(mpl,grpid,fit_zs_id,diag_blk%fit(1,jl0r,il0),(/jl0,il0/))
-         call put_var(mpl,grpid,fit_zs_sqrt_id,diag_blk%fit_zs_sqrt(jl0r,il0),(/jl0,il0/))
       end do
    end do
    call put_var(mpl,grpid,fit_rh_id,diag_blk%fit_rh)
    call put_var(mpl,grpid,fit_pkh_id,diag_blk%fit_pkh)
    call put_var(mpl,grpid,fit_rv_id,diag_blk%fit_rv)
-   if (.not.nam%use_eof) call put_var(mpl,grpid,fit_pkv_id,diag_blk%fit_pkv)
+   call put_var(mpl,grpid,fit_pkv_id,diag_blk%fit_pkv)
+   if (nam%diag_sqrt) then
+      call put_var(mpl,grpid,fit_hor_sqrt_id,diag_blk%fit_hor_sqrt)
+      do il0=1,geom%nl0
+         do jl0r=1,bpar%nl0rmax
+            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+            call put_var(mpl,grpid,fit_zs_sqrt_id,diag_blk%fit_zs_sqrt(jl0r,il0),(/jl0,il0/))
+         end do
+      end do
+   end if
 end if
 
 ! End associate
@@ -337,9 +369,9 @@ type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Local variables
-integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jl0r,jl0,nnmax
+integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jl0r,jl0,jc3,nnmax
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
-real(kind_real) :: m2(geom%nl0)
+real(kind_real) :: m2(geom%nl0),fit_rv,fit_pkv
 real(kind_real),allocatable :: rawv(:),rinf(:),rsup(:)
 real(kind_real),allocatable :: fit_rh_l1(:),fit_pkh_l1(:),fit_rv_l1(:),fit_pkv_l1(:)
 real(kind_real),allocatable :: rawv_full(:,:),evec(:,:),eval(:)
@@ -367,12 +399,12 @@ if ((count(m2>zero)==1).and.(trim(nam%lev2d)=='first').and.(m2(1)>zero)) then
    var2d = .true.
    ilev2d = 1
    diag_blk%fit_rv(ilev2d) = zero
-   if (.not.nam%use_eof) diag_blk%fit_pkv(ilev2d) = zero
+   diag_blk%fit_pkv(ilev2d) = zero
 elseif ((count(m2>zero)==1).and.(trim(nam%lev2d)=='last').and.(m2(geom%nl0)>zero)) then
    var2d = .true.
    ilev2d = geom%nl0
    diag_blk%fit_rv(ilev2d) = zero
-   if (.not.nam%use_eof) diag_blk%fit_pkv(ilev2d) = zero
+   diag_blk%fit_pkv(ilev2d) = zero
 else
    var2d = .false.
 end if
@@ -427,9 +459,6 @@ do il1=1,nl1
 
    ! Get zero separation level and min/max levels
    jl0rz = bpar%il0rz(il0,ib)
-
-   ! Compute raw function square-root
-   call hor_sqrt(mpl,bpar%nc3(ib),diag_blk%raw(:,jl0rz,il0),diag_blk%raw_hor_sqrt(:,il0))
 
    ! Initialize horizontal peakness
    fit_pkh_l1(il1) = pkhdef
@@ -497,164 +526,89 @@ call vert_interp(mpl,nl1,fit_pkh_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fi
 deallocate(fit_rh_l1)
 deallocate(fit_pkh_l1)
 
-! Allocation
-allocate(rawv_full(geom%nl0,geom%nl0))
-allocate(evec(geom%nl0,geom%nl0))
-allocate(eval(geom%nl0))
-
-! Full raw vertical matrix
-rawv_full = zero
-do il0=1,geom%nl0
-   do jl0r=1,nl0r
-      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-      rawv_full(jl0,il0) = diag_blk%raw(1,jl0r,il0)
-      rawv_full(il0,jl0) = diag_blk%raw(1,jl0r,il0)
-   end do
-end do
-
-! EOF decomposition
-call da_eof_decomposition(mpl,geom%nl0,rawv_full,evec,eval)
-
-! Find dominant mode
-nnmax = da_eof_dominant_mode(geom%nl0,eval,0.1_kind_real) ! TODO: nam parameter
-
-! Eigenvalues square-root
-eval = sqrt(eval)
-
-! Full raw vertical matrix square-root
-call da_eof_recomposition(geom%nl0,geom%nl0,evec,eval,rawv_full)
-
-! Reduced raw vertical matrix square-root
-do il0=1,geom%nl0
-   do jl0r=1,nl0r
-      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-      diag_blk%raw_zs_sqrt(jl0r,il0) = rawv_full(jl0,il0)
-   end do
-end do
-
-! Full raw vertical matrix square-root
-call da_eof_recomposition(geom%nl0,nnmax,evec,eval,rawv_full)
-
-if (nam%use_eof) then
-   if (nl0r==1) then
-      ! No vertical fit
-      diag_blk%fit_rv = zero
-   else
-      ! Reduced fit vertical matrix square-root
-      do il0=1,geom%nl0
-         do jl0r=1,nl0r
-            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-            diag_blk%fit_zs_sqrt(jl0r,il0) = rawv_full(jl0,il0)
-         end do
-      end do
-
-      ! Allocation
-      allocate(fit_rv_l1(nl1))
-
-      ! Vertical fit, level by level
-      do il1=1,nl1
-         ! Index
-         il0 = il0_interp(il1)
-
-         ! Get zero separation level and min/max levels
-         jl0rz = bpar%il0rz(il0,ib)
-
-         ! Fast fit
-         rawv = diag_blk%raw(1,:,il0)
-         call fast_fit_neg(mpl,bpar%nl0r(ib),jl0rz,diag_blk%distv(:,il0),rawv,fit_rv_l1(il1))
-      end do
-
-      ! Interpolate vertical parameters
-      call vert_interp(mpl,nl1,fit_rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_rv)
-
-      ! Release memory
-      deallocate(fit_rv_l1)
-   end if
+if (nl0r==1) then
+   ! No vertical fit
+   diag_blk%fit_rv = zero
+   diag_blk%fit_pkv = zero
 else
-   if (nl0r==1) then
-      ! No vertical fit
-      diag_blk%fit_rv = zero
-      diag_blk%fit_pkv = zero
-   else
-      ! Allocation
-      allocate(fit_rv_l1(nl1))
-      allocate(fit_pkv_l1(nl1))
+   ! Allocation
+   allocate(fit_rv_l1(nl1))
+   allocate(fit_pkv_l1(nl1))
 
-      ! Vertical fit, level by level
-      do il1=1,nl1
-         ! Index
-         il0 = il0_interp(il1)
+   ! Vertical fit, level by level
+   do il1=1,nl1
+      ! Index
+      il0 = il0_interp(il1)
 
-         ! Get zero separation level and min/max levels
-         jl0rz = bpar%il0rz(il0,ib)
+      ! Get zero separation level and min/max levels
+      jl0rz = bpar%il0rz(il0,ib)
 
-         ! Initialize vertical peakness
-         fit_pkv_l1(il1) = pkvdef
+      ! Initialize vertical peakness
+      fit_pkv_l1(il1) = pkvdef
 
-         ! Fast fit
-         rawv = diag_blk%raw(1,:,il0)
-         call fast_fit(mpl,bpar%nl0r(ib),jl0rz,diag_blk%distv(:,il0),'ver',rawv,fit_pkv_l1(il1),fit_rv_l1(il1))
+      ! Fast fit
+      rawv = diag_blk%raw(1,:,il0)
+      call fast_fit(mpl,bpar%nl0r(ib),jl0rz,diag_blk%distv(:,il0),'ver',rawv,fit_pkv_l1(il1),fit_rv_l1(il1))
 
-         if (mpl%msv%isnot(fit_rv_l1(il1)).and.(fit_rv_l1(il1)>zero)) then
-            ! Sizes
-            minim%nx = 1
-            if (nam%peakness) minim%nx = minim%nx+1
-            minim%ny = nl0r
+      if (mpl%msv%isnot(fit_rv_l1(il1)).and.(fit_rv_l1(il1)>zero)) then
+         ! Sizes
+         minim%nx = 1
+         if (nam%peakness) minim%nx = minim%nx+1
+         minim%ny = nl0r
 
-            ! Allocation
-            allocate(minim%x(minim%nx))
-            allocate(minim%guess(minim%nx))
-            allocate(minim%binf(minim%nx))
-            allocate(minim%bsup(minim%nx))
-            allocate(minim%obs(minim%ny))
-            allocate(minim%dist(nl0r))
+         ! Allocation
+         allocate(minim%x(minim%nx))
+         allocate(minim%guess(minim%nx))
+         allocate(minim%binf(minim%nx))
+         allocate(minim%bsup(minim%nx))
+         allocate(minim%obs(minim%ny))
+         allocate(minim%dist(nl0r))
 
-            ! Fill guess and bounds
-            minim%guess(1) = fit_rv_l1(il1)
-            minim%binf(1) = tenth*minim%guess(1)
-            minim%bsup(1) = ten*minim%guess(1)
-            if (nam%peakness) then
-               minim%guess(2) = fit_pkv_l1(il1)
-               minim%binf(2) = pkmin
-               minim%bsup(2) = pkmax
-            end if
- 
-            ! Fill data
-            minim%obs = diag_blk%raw(1,:,il0)/diag_blk%raw(1,jl0rz,il0)
-            minim%cost_function = 'fit_diag'
-            minim%n = nl0r
-            minim%iz = jl0rz
-            minim%dist = diag_blk%distv(:,il0)
-            minim%dir = 'ver'
-
-            ! Compute fit
-            call minim%compute(mpl)
-
-            ! Apply bounds
-            minim%x = max(minim%binf,min(minim%x,minim%bsup))
-
-            ! Get parameters
-            fit_rv_l1(il1) = minim%x(1)
-            if (nam%peakness) fit_pkv_l1(il1) = minim%x(2)
-
-            ! Release memory
-            deallocate(minim%x)
-            deallocate(minim%guess)
-            deallocate(minim%binf)
-            deallocate(minim%bsup)
-            deallocate(minim%obs)
-            deallocate(minim%dist)
+         ! Fill guess and bounds
+         minim%guess(1) = fit_rv_l1(il1)
+         minim%binf(1) = tenth*minim%guess(1)
+         minim%bsup(1) = ten*minim%guess(1)
+         if (nam%peakness) then
+            minim%guess(2) = fit_pkv_l1(il1)
+            minim%binf(2) = pkmin
+            minim%bsup(2) = pkmax
          end if
-      end do
+ 
+         ! Fill data
+         minim%obs = diag_blk%raw(1,:,il0)/diag_blk%raw(1,jl0rz,il0)
+         minim%cost_function = 'fit_diag'
+         minim%n = nl0r
+         minim%iz = jl0rz
+         minim%dist = diag_blk%distv(:,il0)
+         minim%dir = 'ver'
 
-      ! Interpolate vertical parameters
-      call vert_interp(mpl,nl1,fit_rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_rv)
-      call vert_interp(mpl,nl1,fit_pkv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_pkv)
+         ! Compute fit
+         call minim%compute(mpl)
 
-      ! Release memory
-      deallocate(fit_rv_l1)
-      deallocate(fit_pkv_l1)
-   end if
+         ! Apply bounds
+         minim%x = max(minim%binf,min(minim%x,minim%bsup))
+
+         ! Get parameters
+         fit_rv_l1(il1) = minim%x(1)
+         if (nam%peakness) fit_pkv_l1(il1) = minim%x(2)
+
+         ! Release memory
+         deallocate(minim%x)
+         deallocate(minim%guess)
+         deallocate(minim%binf)
+         deallocate(minim%bsup)
+         deallocate(minim%obs)
+         deallocate(minim%dist)
+      end if
+   end do
+
+   ! Interpolate vertical parameters
+   call vert_interp(mpl,nl1,fit_rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_rv)
+   call vert_interp(mpl,nl1,fit_pkv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_pkv)
+
+   ! Release memory
+   deallocate(fit_rv_l1)
+   deallocate(fit_pkv_l1)
 end if
 
 ! Release memory
@@ -664,6 +618,63 @@ deallocate(il1inf)
 deallocate(il1sup)
 deallocate(rinf)
 deallocate(rsup)
+
+if (nam%diag_sqrt) then
+   ! Compute horizontal square-roots
+   do il0=1,geom%nl0
+      ! Get zero separation level and min/max levels
+      jl0rz = bpar%il0rz(il0,ib)
+
+      ! Raw
+      call hor_sqrt(mpl,bpar%nc3(ib),diag_blk%raw(:,jl0rz,il0),diag_blk%raw_hor_sqrt(:,il0))
+
+      ! Fit
+      call fit_diag_sqrt(mpl,bpar%nc3(ib),1,geom%disth(1:bpar%nc3(ib)),diag_blk%fit_rh(il0),diag_blk%fit_pkh(il0), &
+ & diag_blk%fit_hor_sqrt(:,il0))
+   end do
+
+   ! Allocation
+   allocate(rawv_full(geom%nl0,geom%nl0))
+   allocate(evec(geom%nl0,geom%nl0))
+   allocate(eval(geom%nl0))
+
+   ! Full raw vertical matrix
+   rawv_full = zero
+   do il0=1,geom%nl0
+      do jl0r=1,nl0r
+         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+         rawv_full(jl0,il0) = diag_blk%raw(1,jl0r,il0)
+         rawv_full(il0,jl0) = diag_blk%raw(1,jl0r,il0)
+      end do
+   end do
+
+   ! EOF decomposition
+   call da_eof_decomposition(mpl,geom%nl0,rawv_full,evec,eval)
+
+   ! Eigenvalues square-root
+   eval = sqrt(eval)
+
+   ! Full raw vertical matrix square-root
+   call da_eof_recomposition(geom%nl0,geom%nl0,evec,eval,rawv_full)
+
+   do il0=1,geom%nl0
+      ! Get zero separation level and min/max levels
+      jl0rz = bpar%il0rz(il0,ib)
+
+      do jl0r=1,nl0r
+         ! Index
+         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+
+         ! Raw
+         diag_blk%raw_zs_sqrt(jl0r,il0) = rawv_full(jl0,il0)
+
+         ! Fit
+         fit_rv = sqrt(half*(diag_blk%fit_rv(il0)**2+diag_blk%fit_rv(jl0)**2))
+         fit_pkv = sqrt(half*(diag_blk%fit_pkv(il0)**2+diag_blk%fit_pkv(jl0)**2))
+         call fit_diag_sqrt(mpl,nl0r,jl0rz,diag_blk%distv(:,il0),fit_rv,fit_pkv,diag_blk%fit_zs_sqrt(:,il0))
+      end do
+   end do
+end if
 
 ! End associate
 end associate

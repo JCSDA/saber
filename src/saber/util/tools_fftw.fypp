@@ -1,0 +1,126 @@
+#:include '../instrumentation.fypp'
+#:include '../generics.fypp'
+!----------------------------------------------------------------------
+! Module: tools_fftw
+!> FFTW-based functions
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_fftw
+
+use iso_c_binding
+use tools_const, only: zero,one,two
+use tools_kinds, only: kind_real
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+include 'fftw3.f03'
+
+interface hor_sqrt
+   module procedure fftw_hor_sqrt
+end interface
+
+private
+public :: hor_sqrt
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: fftw_hor_sqrt
+!> Compute horizontal square-root using FFT
+!----------------------------------------------------------------------
+subroutine fftw_hor_sqrt(mpl,n,data_full,data_sqrt)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: n                     !< Input data size
+real(kind_real),intent(in) :: data_full(n)  !< Input data
+real(kind_real),intent(out) :: data_sqrt(n) !< Output data
+
+! Local variables
+integer :: ngp,i,j,k,ii,jj
+integer(8) :: plan
+real(kind_real) :: k_real,norm
+real(kind_real),allocatable :: gp(:,:),gp_full(:,:)
+complex(kind_real),allocatable :: cp(:,:),cp_full(:,:)
+
+! Set name
+@:set_name(fftw_hor_sqrt)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+ngp = 4*n
+allocate(gp(2*ngp+1,2*ngp+1))
+allocate(cp(ngp+1,2*ngp+1))
+allocate(cp_full(0:ngp,-ngp:ngp))
+allocate(gp_full(0:ngp,-ngp:ngp))
+
+! Full function to isotropic 2D field
+gp = zero
+do j=-n,n
+   jj = j
+   if (jj<0) jj = 2*ngp+1+jj
+   do i=-n,n
+      ii = i
+      if (ii<0) ii = 2*ngp+1+ii
+      k_real = sqrt(real(i**2+j**2,kind_real))+one
+      k = floor(k_real)
+      if ((k==1).or.(k==n)) then
+         gp(1+ii,1+jj) = data_full(k)
+      elseif (k<n) then
+         gp(1+ii,1+jj) = (real(k+1,kind_real)-k_real)*data_full(k)+(k_real-real(k,kind_real))*data_full(k+1)
+      end if
+   end do
+end do
+
+! Grid-point to spectral
+call dfftw_plan_dft_r2c_2d(plan,2*ngp+1,2*ngp+1,gp,cp,fftw_estimate)
+cp = dcmplx(zero,zero)
+call dfftw_execute_dft_r2c(plan,gp,cp)
+cp(1,2:2*ngp+1) = cp(1,2:2*ngp+1)*sqrt(two)
+cp(2:ngp+1,:) = cp(2:ngp+1,:)*sqrt(two)
+norm = one/sqrt(real((2*ngp+1)**2,kind_real))
+cp = cp*norm
+cp_full(0:ngp,0:ngp) = cp(1:ngp+1,1:ngp+1)
+cp_full(1:ngp,-ngp:-1) = cp(2:ngp+1,ngp+2:2*ngp+1)
+cp_full(0,-1:-ngp:-1) = dcmplx(zero,zero)
+call dfftw_destroy_plan(plan)
+
+! Square-root
+gp_full = real(cp_full,kind_real)
+gp_full = sqrt(max(gp_full,zero))
+cp_full = dcmplx(gp_full,zero)
+
+! Spectral to grid-point
+cp(1:ngp+1,1:ngp+1) = cp_full(0:ngp,0:ngp)
+cp(2:ngp+1,ngp+2:2*ngp+1) = cp_full(1:ngp,-ngp:-1)
+cp(1,2:2*ngp+1) = cp(1,2:2*ngp+1)/sqrt(two)
+cp(2:ngp+1,:) = cp(2:ngp+1,:)/sqrt(two)
+call dfftw_plan_dft_c2r_2d(plan,2*ngp+1,2*ngp+1,cp,gp,fftw_estimate)
+gp = zero
+call dfftw_execute_dft_c2r(plan,cp,gp)
+gp = gp*norm
+call dfftw_destroy_plan(plan)
+
+! Isotropic 2D field to square-root function
+data_sqrt = gp(1:n,1)
+
+! Release memory
+deallocate(gp)
+deallocate(cp)
+deallocate(cp_full)
+deallocate(gp_full)
+
+! Probe out
+@:probe_out()
+
+end subroutine fftw_hor_sqrt
+
+end module tools_fftw
