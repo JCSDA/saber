@@ -9,7 +9,8 @@
 module tools_fit
 
 use tools_const, only: zero,half,one
-use tools_gc99, only: fit_func
+use tools_func, only: fit_diag
+use tools_gc99, only: npk,nscaleth,scaleth,scalethmin,pkhdef,pkvdef,pkmin,dpk,scaleh,scalev,scalehdef,scalevdef,fit_func
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
@@ -17,13 +18,8 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: itermax = 10 !< Maximum number of iteration for the threshold definition
-
 interface fast_fit
    module procedure fit_fast_fit
-end interface
-interface fast_fit_neg
-   module procedure fit_fast_fit_neg
 end interface
 interface ver_smooth
    module procedure fit_ver_smooth
@@ -33,7 +29,7 @@ interface ver_fill
 end interface
 
 private
-public :: fast_fit,fast_fit_neg,ver_smooth,ver_fill
+public :: fast_fit,ver_smooth,ver_fill
 
 contains
 
@@ -41,23 +37,24 @@ contains
 ! Subroutine: fit_fast_fit
 !> Fast fit length-scale estimation based on the value at mid-height
 !----------------------------------------------------------------------
-subroutine fit_fast_fit(mpl,n,iz,dist,dir,raw,fit_pk,fit_r)
+subroutine fit_fast_fit(mpl,n,iz,dist,dir,raw,fit_r,fit_pk)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl   !< MPI data
-integer,intent(in) :: n               !< Vector size
-integer,intent(in) :: iz              !< Zero separation index
-real(kind_real),intent(in) :: dist(n) !< Distance
-character(len=*),intent(in) :: dir    !< Direction
-real(kind_real),intent(in) :: raw(n)  !< Raw data
-real(kind_real),intent(in) :: fit_pk  !< Default peakness
-real(kind_real),intent(out) :: fit_r  !< Support radius
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: n                        !< Vector size
+integer,intent(in) :: iz                       !< Zero separation index
+real(kind_real),intent(in) :: dist(n)          !< Distance
+character(len=*),intent(in) :: dir             !< Direction
+real(kind_real),intent(in) :: raw(n)           !< Raw data
+real(kind_real),intent(out) :: fit_r           !< Support radius
+real(kind_real),intent(out),optional :: fit_pk !< Default peakness
 
 ! Local variables
-integer :: di,i,im,ip,iter
-real(kind_real) :: raw_tmp(n),distmin,th,thinv,dthinv,thtest,fit_r_m,fit_r_p
+integer :: iscaleth,di,i,im,ip,ipk
+real(kind_real) :: raw_tmp(n),fit_r_m,fit_r_p
+real(kind_real) :: cost,cost_min,fit_r_test,fit_pk_test,fit_r_min,fit_pk_min,fit(n)
 
 ! Set name
 @:set_name(fit_fast_fit)
@@ -79,104 +76,134 @@ if (raw(iz)>zero) then
       end do
 
       if (count(mpl%msv%isnot(raw_tmp))>1) then
-         if (count(raw_tmp>zero)>1) then
-            ! Curve-dependent threshold
-            th = half*(one+minval(raw_tmp,mask=(raw_tmp>zero)))
+         ! Check minimum value
+         if (minval(raw_tmp)>scalethmin) then
+            if (dir=='hor') then
+               call mpl%abort('${subr}$','minimum horizontal diagnostic value is too high, increase nc3')
+            elseif (dir=='ver') then
+               call mpl%abort('${subr}$','minimum vertical diagnostic value is too high, increase nl0r')
+            end if
+         end if
+ 
+         ! Initialization
+         cost_min = huge_real
 
-            ! Find inverse threshold with a dichotomy
-            thinv = half
-            dthinv = half*dthinv
-            do iter=1,itermax
-               thtest = fit_func(mpl,dir,thinv,fit_pk)
-               if (sup(th,thtest)) then
-                  thinv = thinv-dthinv
-               else
-                  thinv = thinv+dthinv
-               end if
-               dthinv = half*dthinv
-            end do
-
+         ! Loop over thresholds
+         do iscaleth=1,nscaleth
             ! Find support radius, lower value
             fit_r_m = mpl%msv%valr
-            ip = iz
-            do di=1,n
-               ! Check whether fit value has been found
-               if (mpl%msv%is(fit_r_m)) then
-                  ! Index
-                  im = iz-di
+            if (iz>1) then
+               ip = iz
+               do di=1,n
+                  ! Check whether fit value has been found
+                  if (mpl%msv%is(fit_r_m)) then
+                     ! Index
+                     im = iz-di
 
-                  ! Check index validity
-                  if (im>=1) then
-                     ! Check raw value validity
-                     if (raw_tmp(im)>zero) then
-                        ! Check whether threshold has been crossed
-                        if (inf(raw_tmp(im),th)) then
-                           ! Set fit value
-                           fit_r_m = dist(im)+(dist(ip)-dist(im))*(th-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
-                        else
-                           ! Update index
-                           ip = im
+                     ! Check index validity
+                     if (im>=1) then
+                        ! Check raw value validity
+                        if (raw_tmp(im)>zero) then
+                           ! Check whether threshold has been crossed
+                           if (inf(raw_tmp(im),scaleth(iscaleth))) then
+                              ! Set fit value
+                              fit_r_m = dist(im)+(dist(ip)-dist(im))*(scaleth(iscaleth)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
+                           else
+                              ! Update index
+                              ip = im
+                           end if
                         end if
                      end if
                   end if
-               end if
-            end do
+               end do
+            end if
 
             ! Find support radius, upper value
             fit_r_p = mpl%msv%valr
-            im = iz
-            do di=1,n
-               ! Check whether fit value has been found
-               if (mpl%msv%is(fit_r_p)) then
-                  ! Index
-                  ip = iz+di
+            if (iz<n) then
+               im = iz
+               do di=1,n
+                  ! Check whether fit value has been found
+                  if (mpl%msv%is(fit_r_p)) then
+                     ! Index
+                     ip = iz+di
 
-                  ! Check index validity
-                  if (ip<=n) then
-                     ! Check raw value validity
-                     if (raw_tmp(ip)>zero) then
-                        ! Check whether threshold has been crossed
-                        if (inf(raw_tmp(ip),th)) then
-                           ! Set fit value
-                           fit_r_p = dist(im)+(dist(ip)-dist(im))*(th-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
-                        else
-                           ! Update index
-                           im = ip
+                     ! Check index validity
+                     if (ip<=n) then
+                        ! Check raw value validity
+                        if (raw_tmp(ip)>zero) then
+                           ! Check whether threshold has been crossed
+                           if (inf(raw_tmp(ip),scaleth(iscaleth))) then
+                              ! Set fit value
+                              fit_r_p = dist(im)+(dist(ip)-dist(im))*(scaleth(iscaleth)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
+                           else
+                              ! Update index
+                              im = ip
+                           end if
                         end if
                      end if
                   end if
-               end if
-            end do
+               end do
+            end if
 
             ! Gather values
             if (mpl%msv%isnot(fit_r_m).and.mpl%msv%isnot(fit_r_p)) then
-               fit_r = half*(fit_r_m+fit_r_p)
+               fit_r = min(fit_r_m,fit_r_p)
             elseif (mpl%msv%isnot(fit_r_m)) then
                fit_r = fit_r_m
             elseif (mpl%msv%isnot(fit_r_p)) then
                fit_r = fit_r_p
+            else
+               fit_r = mpl%msv%valr
+               if (present(fit_pk)) fit_pk = mpl%msv%valr
             end if
-
-            ! Normalize
-            if (mpl%msv%isnot(fit_r)) fit_r = fit_r/thinv
-
+            
             ! Check positivity
             if (inf(fit_r,zero)) fit_r = mpl%msv%valr
-         else
-            ! All positive-separation points are negative
-            fit_r = zero
-         end if
+
+            if (mpl%msv%isnot(fit_r)) then
+               if (present(fit_pk)) then
+                  ! Optimize peakness (brute-force)
+                  do ipk=1,npk
+                     if (dir=='hor') then
+                        fit_r_test = fit_r/scaleh(iscaleth,ipk)
+                     elseif (dir=='ver') then
+                        fit_r_test = fit_r/scalev(iscaleth,ipk)
+                     end if
+                     fit_pk_test = pkmin+(ipk-1)*dpk
+                     call fit_diag(mpl,n,dist,dir,fit_r_test,fit_pk_test,fit)
+                     cost = sum((fit-raw)**2)
+                     if (inf(cost,cost_min)) then
+                        cost_min = cost
+                        fit_r_min = fit_r_test
+                        fit_pk_min = fit_pk_test
+                     end if
+                  end do
+               else
+                  ! Use default peakness
+                  if (dir=='hor') then
+                     fit_r_test = fit_r/scalehdef(iscaleth)
+                     fit_pk_test = pkhdef
+                  elseif (dir=='ver') then
+                     fit_r_test = fit_r/scalevdef(iscaleth)
+                     fit_pk_test = pkvdef
+                  end if
+                  call fit_diag(mpl,n,dist,dir,fit_r_test,fit_pk_test,fit)
+                  cost = sum((fit-raw)**2)
+                  if (inf(cost,cost_min)) then
+                     cost_min = cost
+                     fit_r_min = fit_r_test
+                  end if
+               end if
+            end if
+         end do
+
+         ! Set final support radius and peakness
+         fit_r = fit_r_min
+         if (present(fit_pk)) fit_pk = fit_pk_min
       else
          ! All positive-separation points are missing
          fit_r = mpl%msv%valr
-      end if
-
-      ! Set minimum distance
-      if (mpl%msv%isnot(fit_r)) then
-         distmin = huge_real
-         if (iz>1) distmin = min(distmin,1.0e-6_kind_real*dist(iz-1))
-         if (iz<n) distmin = min(distmin,1.0e-6_kind_real*dist(iz+1))
-         fit_r = max(fit_r,distmin)
       end if
    else
       ! Only one point, zero radius
@@ -191,104 +218,6 @@ end if
 @:probe_out()
 
 end subroutine fit_fast_fit
-
-!----------------------------------------------------------------------
-! Subroutine: fit_fast_fit_neg
-!> Fast fit length-scale estimation for functions with negative lobes
-!----------------------------------------------------------------------
-subroutine fit_fast_fit_neg(mpl,n,iz,dist,raw,fit_rv)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl   !< MPI data
-integer,intent(in) :: n               !< Vector size
-integer,intent(in) :: iz              !< Zero separation index
-real(kind_real),intent(in) :: dist(n) !< Distance
-real(kind_real),intent(in) :: raw(n)  !< Raw data
-real(kind_real),intent(out) :: fit_rv !< Vertical radius
-
-! Local variables
-integer :: i,ir
-real(kind_real) :: raw_tmp(n),distmin,fit_rv_m,fit_rv_p
-
-! Set name
-@:set_name(fit_fast_fit_neg)
-
-! Probe in
-@:probe_in()
-
-if (any(dist<zero)) call mpl%abort('${subr}$','negative distance')
-
-if (raw(iz)>zero) then
-   if (n>1) then
-      ! Copy points that are lower than the zero-separation
-      raw_tmp = mpl%msv%valr
-      raw_tmp(iz) = one
-      do i=1,n
-        if (i/=iz) then
-           if (inf(raw(i),raw(iz))) raw_tmp(i) = raw(i)/raw(iz)
-        end if
-      end do
-
-      if (count(mpl%msv%isnot(raw_tmp))>1) then
-         ! Initialization
-         fit_rv_m = mpl%msv%valr
-         fit_rv_p = mpl%msv%valr
-
-         if (iz>1) then
-            ! Lower values
-            do i=1,iz-1
-               ir = i
-               if ((abs(raw_tmp(i))<0.01_kind_real).and.(abs(raw_tmp(i+1))>0.01_kind_real)) exit
-            end do
-            fit_rv_m = dist(ir)
-         end if
-         if (iz<n) then
-            ! Upper values
-            do i=n,iz+1,-1
-               ir = i
-               if ((abs(raw_tmp(i))<0.01_kind_real).and.(abs(raw_tmp(i-1))>0.01_kind_real)) exit
-            end do
-            fit_rv_p = dist(ir)
-         end if
-
-         ! Gather values
-         if (mpl%msv%isnot(fit_rv_m).and.mpl%msv%isnot(fit_rv_p)) then
-            fit_rv = half*(fit_rv_m+fit_rv_p)
-         elseif (mpl%msv%isnot(fit_rv_m)) then
-            fit_rv = fit_rv_m
-         elseif (mpl%msv%isnot(fit_rv_p)) then
-            fit_rv = fit_rv_p
-         end if
-
-         ! Check positivity
-         if (inf(fit_rv,zero)) fit_rv = mpl%msv%valr
-      else
-         ! All positive-separation points are missing
-         fit_rv = mpl%msv%valr
-      end if
-
-      ! Set minimum distance
-      if (mpl%msv%isnot(fit_rv)) then
-         distmin = huge_real
-         if (iz>1) distmin = min(distmin,1.0e-6_kind_real*dist(iz-1))
-         if (iz<n) distmin = min(distmin,1.0e-6_kind_real*dist(iz+1))
-         fit_rv = max(fit_rv,distmin)
-      end if
-   else
-      ! Only one point, zero radius
-      fit_rv = zero
-   end if
-else
-   ! Zero-separation point is negative
-   fit_rv = mpl%msv%valr
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine fit_fast_fit_neg
 
 !----------------------------------------------------------------------
 ! Subroutine: fit_ver_smooth

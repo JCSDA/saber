@@ -38,10 +38,7 @@ type minim_type
    real(kind_real) :: f_guess                     !< Guess cost
    real(kind_real) :: f_min                       !< Minimum cost
 
-
    ! Specific data (fit)
-   integer :: n                                   !< Vector size
-   integer :: iz                                  !< Zero separation index
    real(kind_real),allocatable :: dist(:)         !< Distance
    character(len=3) :: dir                        !< Direction
 
@@ -166,8 +163,8 @@ real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 real(kind_real) :: fit_r,fit_pk
-real(kind_real) :: fit(minim%n)
-real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
+real(kind_real) :: fit(minim%ny)
+real(kind_real) :: xtmp(minim%nx)
 
 ! Set name
 @:set_name(minim_cost_fit_diag)
@@ -186,19 +183,18 @@ if (minim%nx==2) then
 else
    if (minim%dir=='hor') then
       fit_pk = pkhdef
-   elseif (minim%dir=='hor') then
+   elseif (minim%dir=='ver') then
       fit_pk = pkvdef
+   else
+      call mpl%abort('${subr}$','wrong direction')
    end if
 end if
 
 ! Compute function
-call fit_diag(mpl,minim%n,minim%iz,minim%dist,minim%dir,fit_r,fit_pk,fit)
-
-! Pack
-fit_pack = reshape(fit,(/minim%ny/))
+call fit_diag(mpl,minim%ny,minim%dist,minim%dir,fit_r,fit_pk,fit)
 
 ! Observations penalty
-f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
+f = sum((fit-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit))
 
 ! Probe out
 @:probe_out()

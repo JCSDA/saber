@@ -13,7 +13,7 @@ use atlas_module, only: atlas_geometry
 use iso_c_binding
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
-use tools_gc99, only: fit_func,fit_func_sqrt
+use tools_gc99, only: fit_func,fit_func_sqrt,pkhdef
 use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small,eq
@@ -93,6 +93,9 @@ interface fit_diag_sqrt
 end interface
 interface fit_diag
    module procedure func_fit_diag
+end interface
+interface fit_diag_ver
+   module procedure func_fit_diag_ver
 end interface
 interface fit_diag_full
    module procedure func_fit_diag_full
@@ -175,8 +178,8 @@ end interface
 private
 public :: gc2gau,gau2gc,Dmin,M
 public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
- & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag_sqrt,fit_diag,fit_diag_full,fit_lct, &
- & lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l, &
+ & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag_sqrt,fit_diag,fit_diag_ver,fit_diag_full, &
+ & fit_lct,lct_d2h,lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l, &
  & convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 
 contains
@@ -1024,14 +1027,13 @@ end subroutine func_vert_interp
 ! Subroutine: func_fit_diag_sqrt
 !> Compute diagnostic fit function square-root
 !----------------------------------------------------------------------
-subroutine func_fit_diag_sqrt(mpl,n,iz,dist,fit_r,fit_pk,fit)
+subroutine func_fit_diag_sqrt(mpl,n,dist,fit_r,fit_pk,fit)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl   !< MPI data
 integer,intent(in) :: n               !< Vector size
-integer,intent(in) :: iz              !< Zero separation index
 real(kind_real),intent(in) :: dist(n) !< Distance
 real(kind_real),intent(in) :: fit_r   !< Support radius
 real(kind_real),intent(in) :: fit_pk  !< Peakness
@@ -1039,7 +1041,7 @@ real(kind_real),intent(out) :: fit(n) !< Fit
 
 ! Local variables
 integer :: i
-real(kind_real) :: nd(n)
+real(kind_real) :: nd
 
 ! Set name
 @:set_name(func_fit_diag_sqrt)
@@ -1051,20 +1053,18 @@ if (mpl%msv%is(fit_r).or.mpl%msv%is(fit_pk)) then
    ! Set to missing values if no value available
    fit = mpl%msv%valr
 else
-   ! Normalized distance
    do i=1,n
+      ! Normalized distance
       if (fit_r>zero) then
-         nd(i) = abs(dist(i)-dist(iz))/fit_r
-      elseif (i/=iz) then
-         nd(i) = one
+         nd = dist(i)/fit_r
+      elseif (dist(i)>zero) then
+         nd = one
       else
-         nd(i) = zero
+         nd = zero
       end if
-   end do
 
-   ! Unitary fit function
-   do i=1,n
-      fit(i) = fit_func_sqrt(mpl,nd(i),fit_pk)
+      ! Unitary fit function
+      fit(i) = fit_func_sqrt(mpl,nd,fit_pk)
    end do
 end if
 
@@ -1077,14 +1077,13 @@ end subroutine func_fit_diag_sqrt
 ! Subroutine: func_fit_diag
 !> Compute diagnostic fit function
 !----------------------------------------------------------------------
-subroutine func_fit_diag(mpl,n,iz,dist,dir,fit_r,fit_pk,fit)
+subroutine func_fit_diag(mpl,n,dist,dir,fit_r,fit_pk,fit)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl   !< MPI data
 integer,intent(in) :: n               !< Vector size
-integer,intent(in) :: iz              !< Zero separation index
 real(kind_real),intent(in) :: dist(n) !< Distance
 character(len=*),intent(in) :: dir    !< Direction
 real(kind_real),intent(in) :: fit_r   !< Support radius
@@ -1093,7 +1092,7 @@ real(kind_real),intent(out) :: fit(n) !< Fit
 
 ! Local variables
 integer :: i
-real(kind_real) :: nd(n)
+real(kind_real) :: nd
 
 ! Set name
 @:set_name(func_fit_diag)
@@ -1105,20 +1104,18 @@ if (mpl%msv%is(fit_r).or.mpl%msv%is(fit_pk)) then
    ! Set to missing values if no value available
    fit = mpl%msv%valr
 else
-   ! Normalized distance
    do i=1,n
+      ! Normalized distance
       if (fit_r>zero) then
-         nd(i) = abs(dist(i)-dist(iz))/fit_r
-      elseif (i/=iz) then
-         nd(i) = one
+         nd = dist(i)/fit_r
+      elseif (dist(i)>zero) then
+         nd = one
       else
-         nd(i) = zero
+         nd = zero
       end if
-   end do
 
-   ! Unitary fit function
-   do i=1,n
-      fit(i) = fit_func(mpl,dir,nd(i),fit_pk)
+      ! Unitary fit function
+      fit(i) = fit_func(mpl,dir,nd,fit_pk)
    end do
 end if
 
@@ -1126,6 +1123,94 @@ end if
 @:probe_out()
 
 end subroutine func_fit_diag
+
+!----------------------------------------------------------------------
+! Subroutine: func_fit_diag_ver
+!> Compute vertical diagnostic fit function
+!----------------------------------------------------------------------
+subroutine func_fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,distv,rv,pkv,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: nl0r                    !< Effective number of levels
+integer,intent(in) :: nl0                     !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)   !< Effective level to level
+real(kind_real),intent(in) :: distv(nl0r,nl0) !< Vertical distance
+real(kind_real),intent(in) :: rv(nl0)         !< Vertical support radius
+real(kind_real),intent(in) :: pkv(nl0)        !< Vertical peakness
+real(kind_real),intent(out) :: fit(nl0r,nl0)  !< Fit
+
+! Local variables
+integer :: il0,jl0r,jl0,kl0,kl0m,kl0p
+real(kind_real) :: rv_eff,pkv_eff,vnd
+real(kind_real) :: ver_sqrt(nl0,nl0),ver_full(nl0,nl0),ver_full_norm(nl0)
+
+! Set name
+@:set_name(func_fit_diag_ver)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ver_sqrt = zero
+
+do il0=1,nl0
+   do jl0r=1,nl0r
+      ! Level index
+      jl0 = l0rl0_to_l0(jl0r,il0)
+
+      ! Parameters at mid-point
+      if (mod(il0+jl0,2)==0) then
+         kl0 = (il0+jl0)/2
+         rv_eff = rv(kl0)
+         pkv_eff = pkv(kl0)
+      else
+         kl0m = (il0+jl0)/2
+         kl0p = kl0m+1
+         rv_eff = half*(rv(kl0m)+rv(kl0p))
+         pkv_eff = half*(pkv(kl0m)+pkv(kl0p))
+      end if
+
+      ! Normalized distance
+      if (rv_eff>zero) then
+         vnd = distv(jl0r,il0)/rv_eff
+      elseif (il0/=jl0) then
+         vnd = one
+      else
+         vnd = zero
+      end if
+
+      ! Unitary fit function
+      ver_sqrt(jl0,il0) = fit_func_sqrt(mpl,vnd,pkv_eff)
+      ver_sqrt(il0,jl0) = ver_sqrt(jl0,il0)
+   end do
+end do
+
+! Product
+ver_full = matmul(ver_sqrt,transpose(ver_sqrt))
+
+! Normalization
+do il0=1,nl0
+   ver_full_norm(il0) = one/sqrt(ver_full(il0,il0))
+end do
+
+! Reduced matrix
+do il0=1,nl0
+   do jl0r=1,nl0r
+      ! Level index
+      jl0 = l0rl0_to_l0(jl0r,il0)
+
+      ! Fit
+      fit(jl0r,il0) = ver_full(jl0,il0)*ver_full_norm(il0)*ver_full_norm(jl0)
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine func_fit_diag_ver
 
 !----------------------------------------------------------------------
 ! Subroutine: func_fit_diag_full
@@ -1152,13 +1237,17 @@ real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
 
 ! Local variables
 integer :: il0,jl0r,jl0,jc3
-real(kind_real) :: vnd,hnd,ver_fit,hor_fit,rh_eff,pkh_eff,rv_eff,pkv_eff
+real(kind_real) :: rh_eff,pkh_eff,hnd
+real(kind_real) :: hor_fit(nc3),ver_fit(nl0r,nl0)
 
 ! Set name
 @:set_name(func_fit_diag_full)
 
 ! Probe in
 @:probe_in()
+
+! Vertical component
+call fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,distv,rv,pkv,ver_fit)
 
 do il0=1,nl0
    do jl0r=1,nl0r
@@ -1167,7 +1256,7 @@ do il0=1,nl0
 
       ! Averaged horizontal support radius
       if (mpl%msv%isnot(rh(il0)).and.mpl%msv%isnot(rh(jl0))) then
-         rh_eff = sqrt(half*(rh(il0)**2+rh(jl0)**2))
+         rh_eff = half*(rh(il0)+rh(jl0))
       else
          rh_eff = zero
       end if
@@ -1176,50 +1265,15 @@ do il0=1,nl0
       if (mpl%msv%isnot(pkh(il0)).and.mpl%msv%isnot(pkh(jl0))) then
          pkh_eff = half*(pkh(il0)+pkh(jl0))
       else
-         pkh_eff = zero
+         pkh_eff = pkhdef
       end if
 
-      ! Averaged vertical support radius
-      if (mpl%msv%isnot(rv(il0)).and.mpl%msv%isnot(rv(jl0))) then
-         rv_eff = sqrt(half*(rv(il0)**2+rv(jl0)**2))
-      else
-         rv_eff = zero
-      end if
-
-      ! Averaged vertical peakness
-      if (mpl%msv%isnot(pkv(il0)).and.mpl%msv%isnot(pkv(jl0))) then
-         pkv_eff = half*(pkv(il0)+pkv(jl0))
-      else
-         pkv_eff = zero
-      end if
-
-      ! Vertical normalized distance
-      if (rv_eff>zero) then
-         vnd = distv(jl0r,il0)/rv_eff
-      elseif (il0/=jl0) then
-         vnd = one
-      else
-         vnd = zero
-      end if
-
-      ! Vertical component
-      ver_fit = fit_func(mpl,'ver',vnd,pkv_eff)
+      ! Horizontal component
+      call fit_diag(mpl,nc3,disth,'hor',rh_eff,pkh_eff,hor_fit)
 
       do jc3=1,nc3
-         ! Horizontal normalized distance
-         if (rh_eff>zero) then
-            hnd = disth(jc3)/rh_eff
-         elseif (jc3/=1) then
-            hnd = one
-         else
-            hnd = zero
-         end if
-
-         ! Horizontal component
-         hor_fit = fit_func(mpl,'hor',hnd,pkh_eff)
-
          ! Fit function
-         fit(jc3,jl0r,il0) = hor_fit*ver_fit
+         fit(jc3,jl0r,il0) = hor_fit(jc3)*ver_fit(jl0r,il0)
       end do
    end do
 end do

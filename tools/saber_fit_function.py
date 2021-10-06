@@ -16,19 +16,18 @@ args = parser.parse_args()
 nnd = 31
 dnd = 1.0/float(nnd-1)
 nd = np.linspace(0, (nnd-1)*dnd, nnd)
-epsabs = 1.0e-1
+epsabs = 1.0e-3
 
 # Parameters
-newfunc = False
-f0 = 1.0e-3
-if newfunc:
-   pkmin = -6.0
-   pkmax = 4.0
-   dpk = 0.4
-else:
-   pkmin = 0.0
-   pkmax = 4.0
-   dpk = 0.2
+scalethmin = 0.2
+scalethmax = 0.8
+dscaleth = 0.1
+nscaleth = int((scalethmax-scalethmin)/dscaleth)+1
+scaleth = np.linspace(scalethmin, scalethmax, nscaleth)
+
+pkmin = -2.0
+pkmax = 4.0
+dpk = 0.2
 npk = int((pkmax-pkmin)/dpk)+1
 pk = np.linspace(pkmin, pkmax, npk)
 
@@ -41,27 +40,21 @@ for ind in range(0,nnd):
    axis[ind] = float(ind)/float(nnd-1)
 
 # Functions
-def S(r,f0,pk):
+def S(r,pk):
    if np.abs(r) <= 0.5:
       if pk > 0.0:
-         if newfunc:
-            return np.exp(np.log(f0+np.exp(-pk))*np.sqrt(2.0*np.abs(r)))-np.exp(-pk)
-         else:
-            return (1.0/(1.0+(pk+pk**4)*2.0*np.abs(r))-1.0/(1.0+(pk+pk**4)))/(1.0-1.0/(1.0+(pk+pk**4)))
+         return 1.0/(1.0+(pk+pk**4)*2.0*np.abs(r))-1.0/(1.0+(pk+pk**4))
       else:
-         if newfunc:
-            return 1.0-np.sqrt(2.0*np.abs(r))**(1+pk**2)
-         else:
-            return 1.0-(2.0*np.abs(r))
+         return 1.0-(2.0*np.abs(r))**(1.0+pk**2)
    else:
       return 0.0
 
-def S_hor(x,y,f0,pk):
+def S_hor(x,y,pk):
    r = np.sqrt(x**2+y**2)
-   return S(r,f0,pk)
+   return S(r,pk)
 
-def S_ver(z,f0,pk):
-   return S(z,f0,pk)
+def S_ver(z,pk):
+   return S(z,pk)
 
 def GC99(r):
    if r<0.5:
@@ -85,11 +78,16 @@ def GC99(r):
 # Initialize arrays
 f_sqrt_hor = np.zeros((nnd,npk))
 f_int_hor = np.zeros((nnd,npk))
+scaleh = np.zeros((nscaleth,npk))
+scalehdef = np.zeros(nscaleth)
+cost_hor = np.zeros(npk)
 f_sqrt_ver = np.zeros((nnd,npk))
 f_int_ver = np.zeros((nnd,npk))
-f_gc99 = np.zeros((nnd))
-cost_hor = np.zeros((npk))
-cost_ver = np.zeros((npk))
+scalev = np.zeros((nscaleth,npk))
+scalevdef = np.zeros(nscaleth)
+cost_ver = np.zeros(npk)
+f_gc99 = np.zeros(nnd)
+scaled_axis = np.zeros((nnd,npk))
 
 # GC99 function
 for ind in range(0, nnd):
@@ -101,10 +99,10 @@ if run_horizontal:
          print("horizontal: " + str(ipk) + " : " + str(ind))
 
          # Square-root function
-         f_sqrt_hor[ind,ipk] = S(axis[ind],f0,pk[ipk])/S(0,f0,pk[ipk])
+         f_sqrt_hor[ind,ipk] = S(axis[ind],pk[ipk])/S(0,pk[ipk])
 
          # Horizontal integration (2D)
-         f = lambda  y, x: S_hor(x,y,f0,pk[ipk])*S_hor(axis[ind]-x,y,f0,pk[ipk])
+         f = lambda  y, x: S_hor(x,y,pk[ipk])*S_hor(axis[ind]-x,y,pk[ipk])
          fint = integrate.dblquad(f, -0.5, 0.5, lambda x: -0.5, lambda x: 0.5, epsabs = epsabs)
          f_int_hor[ind,ipk] = fint[0]
          if ind == 0:
@@ -114,16 +112,26 @@ if run_horizontal:
       # Cost
       cost_hor[ipk] = sum((f_int_hor[:,ipk]-f_gc99)**2)
 
+      # Scale at scaleth
+      for iscaleth in range(0, nscaleth):
+         scaleh[iscaleth,ipk] = 1.0
+         for ind in range(0, nnd-1):
+            if f_int_hor[ind,ipk]>scaleth[iscaleth] and f_int_hor[ind+1,ipk]<scaleth[iscaleth]:
+               A = (f_int_hor[ind,ipk]-f_int_hor[ind+1,ipk])/(axis[ind]-axis[ind+1])
+               B = f_int_hor[ind,ipk]-A*axis[ind]
+               scaleh[iscaleth,ipk] = (scaleth[iscaleth]-B)/A
+               break
+
    if True:
       # Plot curves
-      fig, ax = plt.subplots(ncols=2)
-      ax[0].set_xlim([0,1])
+      fig, ax = plt.subplots(ncols=2, figsize=(14,7))
+      ax[0].set_xlim([0,1.0])
       ax[0].set_ylim([0,1.1])
       ax[0].set_title("Square-root function")
       ax[0].axhline(y=0, color="k")
       ax[0].axvline(x=0, color="k")
       ax[0].plot(axis, f_sqrt_hor)
-      ax[1].set_xlim([0,1])
+      ax[1].set_xlim([0,1.0])
       ax[1].set_ylim([0,1.1])
       ax[1].set_title("Convolution function")
       ax[1].axhline(y=0, color="k")
@@ -132,16 +140,29 @@ if run_horizontal:
       plt.savefig("fit_hor.jpg", format="jpg", dpi=300)
       plt.close()
 
+      for iscaleth in range(0, nscaleth):
+         for ipk in range(0, npk):
+            scaled_axis[:,ipk] = axis/scaleh[iscaleth,ipk]
+         fig, ax = plt.subplots()
+         ax.set_xlim([0,1.0/min(scaleh[iscaleth,:])])
+         ax.set_ylim([0,1.1])
+         ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
+         ax.axhline(y=0, color="k")
+         ax.axvline(x=0, color="k")
+         ax.plot(scaled_axis, f_int_hor)
+         plt.savefig("fit_hor_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
+         plt.close()
+
 if run_vertical:
    for ipk in range(0, npk):
       for ind in range(0, nnd):  
          print("vertical: " + str(ipk) + " : " + str(ind))
 
          # Square-root function
-         f_sqrt_ver[ind,ipk] = S_ver(axis[ind],f0,pk[ipk])/S_ver(0,f0,pk[ipk])
+         f_sqrt_ver[ind,ipk] = S_ver(axis[ind],pk[ipk])/S_ver(0,pk[ipk])
 
           # Vertical integration (1D)
-         f = lambda  z: S_ver(z,f0,pk[ipk])*S_ver(axis[ind]-z,f0,pk[ipk])
+         f = lambda  z: S_ver(z,pk[ipk])*S_ver(axis[ind]-z,pk[ipk])
          fint = integrate.quad(f, -0.5, 0.5, epsabs = epsabs)
          f_int_ver[ind,ipk] = fint[0]
          if ind == 0:
@@ -151,16 +172,26 @@ if run_vertical:
       # Cost
       cost_ver[ipk] = sum((f_int_ver[:,ipk]-f_gc99)**2)
 
+      # Scale at scaleth
+      for iscaleth in range(0, nscaleth):
+         scalev[iscaleth,ipk] = 1.0
+         for ind in range(0, nnd-1):
+            if f_int_ver[ind,ipk]>scaleth[iscaleth] and f_int_ver[ind+1,ipk]<scaleth[iscaleth]:
+               A = (f_int_ver[ind,ipk]-f_int_ver[ind+1,ipk])/(axis[ind]-axis[ind+1])
+               B = f_int_ver[ind,ipk]-A*axis[ind]
+               scalev[iscaleth,ipk] = (scaleth[iscaleth]-B)/A
+               break
+
    if True:
       # Plot curves
-      fig, ax = plt.subplots(ncols=2)
-      ax[0].set_xlim([0,1])
+      fig, ax = plt.subplots(ncols=2, figsize=(14,7))
+      ax[0].set_xlim([0,1.0])
       ax[0].set_ylim([0,1.1])
       ax[0].set_title("Square-root function")
       ax[0].axhline(y=0, color="k")
       ax[0].axvline(x=0, color="k")
       ax[0].plot(axis, f_sqrt_ver)
-      ax[1].set_xlim([0,1])
+      ax[1].set_xlim([0,1.0])
       ax[1].set_ylim([0,1.1])
       ax[1].set_title("Convolution function")
       ax[1].axhline(y=0, color="k")
@@ -169,9 +200,25 @@ if run_vertical:
       plt.savefig("fit_ver.jpg", format="jpg", dpi=300)
       plt.close()
 
+      for iscaleth in range(0, nscaleth):
+         for ipk in range(0, npk):
+            scaled_axis[:,ipk] = axis/scalev[iscaleth,ipk]
+         fig, ax = plt.subplots()
+         ax.set_xlim([0,1.0/min(scalev[iscaleth,:])])
+         ax.set_ylim([0,1.1])
+         ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
+         ax.axhline(y=0, color="k")
+         ax.axvline(x=0, color="k")
+         ax.plot(scaled_axis, f_int_ver)
+         plt.savefig("fit_ver_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
+         plt.close()
+
 # Get default peaknesses
 pkhdef = pk[np.argmin(cost_hor)]
 pkvdef = pk[np.argmin(cost_ver)]
+for iscaleth in range(0, nscaleth):
+   scalehdef[iscaleth] = scaleh[iscaleth,np.argmin(cost_hor)]
+   scalevdef[iscaleth] = scalev[iscaleth,np.argmin(cost_ver)]
 
 if run_horizontal and run_vertical:
    # Open file
@@ -203,8 +250,7 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("integer,parameter :: nnd = " + str(nnd) + "\n")
    file.write("integer,parameter :: npk = " + str(npk) + "\n")
-   if newfunc:
-      file.write("real(kind_real),parameter :: f0 = %.8f_kind_real\n" % (f0))
+   file.write("integer,parameter :: nscaleth = " + str(nscaleth) + "\n")
    file.write("real(kind_real),parameter :: ndmin = %.8f_kind_real\n" % (min(nd)))
    file.write("real(kind_real),parameter :: ndmax = %.8f_kind_real\n" % (max(nd)))
    file.write("real(kind_real),parameter :: pkmin = %.8f_kind_real\n" % (pkmin))
@@ -213,6 +259,31 @@ if run_horizontal and run_vertical:
    file.write("real(kind_real),parameter :: dpk = %.8f_kind_real\n" % (dpk))
    file.write("real(kind_real),parameter :: pkhdef = %.8f_kind_real\n" % (pkhdef))
    file.write("real(kind_real),parameter :: pkvdef = %.8f_kind_real\n" % (pkvdef))
+   file.write("real(kind_real),parameter :: scalethmin = %.8f_kind_real\n" % (scalethmin))
+   file.write("real(kind_real),parameter :: scalethmax = %.8f_kind_real\n" % (scalethmax))
+   file.write("real(kind_real),parameter :: scaleth(nscaleth) = (/ &\n")
+   for iscaleth in range(0, nscaleth):
+      if iscaleth != nscaleth-1:
+         suffix = ", &"
+      else:
+         suffix = "/)"
+      file.write(" & %.8f_kind_real" % (scaleth[iscaleth]) + suffix + "\n")
+   file.write("real(kind_real),parameter :: scaleh(nscaleth,npk) = reshape((/ &\n")
+   for ipk in range(0, npk):
+      for iscaleth in range(0, nscaleth):
+         if ipk != npk-1 or iscaleth != nscaleth-1:
+            suffix = ","
+         else:
+            suffix = "/),"
+         file.write(" & %.8f_kind_real" % (scaleh[iscaleth,ipk]) + suffix + " &\n")
+   file.write(" & (/nscaleth,npk/))\n")
+   file.write("real(kind_real),parameter :: scalehdef(nscaleth) = (/ &\n")
+   for iscaleth in range(0, nscaleth):
+      if iscaleth != nscaleth-1:
+         suffix = ", &"
+      else:
+         suffix = "/)"
+      file.write(" & %.8f_kind_real" % (scalehdef[iscaleth]) + suffix + "\n")
    file.write("real(kind_real),parameter :: func_hor(nnd,npk) = reshape((/ &\n")
    for ipk in range(0, npk):
       for ind in range(0, nnd):
@@ -222,6 +293,22 @@ if run_horizontal and run_vertical:
             suffix = "/),"
          file.write(" & %.8f_kind_real" % (f_int_hor[ind,ipk]) + suffix + " &\n")
    file.write(" & (/nnd,npk/))\n")
+   file.write("real(kind_real),parameter :: scalev(nscaleth,npk) = reshape((/ &\n")
+   for ipk in range(0, npk):
+      for iscaleth in range(0, nscaleth):
+         if ipk != npk-1 or iscaleth != nscaleth-1:
+            suffix = ","
+         else:
+            suffix = "/),"
+         file.write(" & %.8f_kind_real" % (scalev[iscaleth,ipk]) + suffix + " &\n")
+   file.write(" & (/nscaleth,npk/))\n")
+   file.write("real(kind_real),parameter :: scalevdef(nscaleth) = (/ &\n")
+   for iscaleth in range(0, nscaleth):
+      if iscaleth != nscaleth-1:
+         suffix = ", &"
+      else:
+         suffix = "/)"
+      file.write(" & %.8f_kind_real" % (scalevdef[iscaleth]) + suffix + "\n")
    file.write("real(kind_real),parameter :: func_ver(nnd,npk) = reshape((/ &\n")
    for ipk in range(0, npk):
       for ind in range(0, nnd):
@@ -305,9 +392,9 @@ if run_horizontal and run_vertical:
    file.write("   end if\n")
    file.write("   rndp = (one-rndm)\n")
    file.write("   if (ipkm==npk) then\n")
-   file.write("      rpkm = real(ipkp-1,kind_real)-(bpk-pkmin)/dpk\n")
-   file.write("   else\n")
    file.write("      rpkm = one\n")
+   file.write("   else\n")
+   file.write("      rpkm = real(ipkp-1,kind_real)-(bpk-pkmin)/dpk\n")
    file.write("   end if\n")
    file.write("   rpkp = (one-rpkm)\n")
    file.write("\n")
@@ -365,15 +452,9 @@ if run_horizontal and run_vertical:
    file.write("   value = zero\n")
    file.write("else\n")
    file.write("   if (pk>zero) then\n")
-   if newfunc:
-      file.write("      value = exp(log(f0+exp(-pk))*sqrt(two*nd))-exp(-pk)\n")
-   else:
-      file.write("      value = (one/(one+pk**4*two*nd)-one/(one+pk**4))/(one-one/(one+pk**4))\n")
+   file.write("      value = (one/(one+pk**4*two*nd)-one/(one+pk**4))/(one-one/(one+pk**4))\n")
    file.write("   else\n")
-   if newfunc:
-      file.write("      value = one-sqrt(two*nd)**(one+pk**2)\n")
-   else:
-      file.write("      value = one-(two*nd)**(one+pk**2)\n")
+   file.write("      value = one-(two*nd)**(one+pk**2)\n")
    file.write("   end if\n")
    file.write("end if\n")
    file.write("\n")

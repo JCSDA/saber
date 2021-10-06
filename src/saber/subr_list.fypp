@@ -11,7 +11,6 @@
 ! Subroutines/functions list
 #:set subr_list = []
 #:set subr_list = subr_list + ["fit_fast_fit"]
-#:set subr_list = subr_list + ["fit_fast_fit_neg"]
 #:set subr_list = subr_list + ["fit_ver_smooth"]
 #:set subr_list = subr_list + ["fit_ver_fill"]
 #:set subr_list = subr_list + ["func_fletcher32"]
@@ -33,6 +32,7 @@
 #:set subr_list = subr_list + ["func_vert_interp"]
 #:set subr_list = subr_list + ["func_fit_diag_sqrt"]
 #:set subr_list = subr_list + ["func_fit_diag"]
+#:set subr_list = subr_list + ["func_fit_diag_ver"]
 #:set subr_list = subr_list + ["func_fit_diag_full"]
 #:set subr_list = subr_list + ["func_fit_lct"]
 #:set subr_list = subr_list + ["func_lct_d2h"]
