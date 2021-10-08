@@ -16,7 +16,9 @@ args = parser.parse_args()
 nnd = 31
 dnd = 1.0/float(nnd-1)
 nd = np.linspace(0, (nnd-1)*dnd, nnd)
-epsabs = 1.0e-3
+#epsabs = 1.0e-3
+epsabs = 1.0e-1
+support_th = 1.0e-2
 
 # Parameters
 scalethmin = 0.2
@@ -30,6 +32,12 @@ pkmax = 4.0
 dpk = 0.2
 npk = int((pkmax-pkmin)/dpk)+1
 pk = np.linspace(pkmin, pkmax, npk)
+
+nlmin = 0.0
+nlmax = 5.0
+dnl = 1.0
+nnl = int((nlmax-nlmin)/dnl)+1
+nl = np.linspace(nlmin, nlmax, nnl)
 
 run_horizontal = True
 run_vertical = True
@@ -53,8 +61,12 @@ def S_hor(x,y,pk):
    r = np.sqrt(x**2+y**2)
    return S(r,pk)
 
-def S_ver(z,pk):
-   return S(z,pk)
+def S_ver(z,pk,nl):
+   if nl > 0.0:
+      envelop = (-2.0*(2.0*np.abs(z)*nl)**2*np.exp(-(2.0*np.abs(z)*nl)**2)+np.exp(-(2.0*np.abs(z)*nl)**2))
+   else:
+      envelop = 1.0
+   return S(z,pk)*envelop
 
 def GC99(r):
    if r<0.5:
@@ -80,12 +92,17 @@ f_sqrt_hor = np.zeros((nnd,npk))
 f_int_hor = np.zeros((nnd,npk))
 scaleh = np.zeros((nscaleth,npk))
 scalehdef = np.zeros(nscaleth)
+support_hor = np.zeros(npk)
 cost_hor = np.zeros(npk)
-f_sqrt_ver = np.zeros((nnd,npk))
-f_int_ver = np.zeros((nnd,npk))
-scalev = np.zeros((nscaleth,npk))
+f_sqrt_ver = np.zeros((nnd,npk,nnl))
+f_int_ver = np.zeros((nnd,npk,nnl))
+valid_ver = np.zeros((npk,nnl), dtype=bool)
+scalev = np.zeros((nscaleth,npk,nnl))
 scalevdef = np.zeros(nscaleth)
+support_ver = np.zeros((npk,nnl))
 cost_ver = np.zeros(npk)
+f_sqrt_ver_plot = np.zeros((nnd,npk,nnl))
+f_int_ver_plot = np.zeros((nnd,npk,nnl))
 f_gc99 = np.zeros(nnd)
 scaled_axis = np.zeros((nnd,npk))
 
@@ -109,6 +126,12 @@ if run_horizontal:
             norm = f_int_hor[ind,ipk]
          f_int_hor[ind,ipk] = f_int_hor[ind,ipk]/norm
 
+      # Real support radius
+      for ind in range(0,nnd):
+         if all(np.abs(f_int_hor[ind:,ipk]) < support_th):
+            support_hor[ipk] = axis[ind]
+            break
+
       # Cost
       cost_hor[ipk] = sum((f_int_hor[:,ipk]-f_gc99)**2)
 
@@ -121,6 +144,8 @@ if run_horizontal:
                B = f_int_hor[ind,ipk]-A*axis[ind]
                scaleh[iscaleth,ipk] = (scaleth[iscaleth]-B)/A
                break
+
+   print('support_hor: ' + str(support_hor))
 
    if True:
       # Plot curves
@@ -154,71 +179,98 @@ if run_horizontal:
          plt.close()
 
 if run_vertical:
-   for ipk in range(0, npk):
-      for ind in range(0, nnd):  
-         print("vertical: " + str(ipk) + " : " + str(ind))
+   for inl in range(0, nnl):
+      for ipk in range(0, npk):
+         for ind in range(0, nnd):  
+            print("vertical: " + str(inl) + " / " + str(ipk) + " : " + str(ind))
 
-         # Square-root function
-         f_sqrt_ver[ind,ipk] = S_ver(axis[ind],pk[ipk])/S_ver(0,pk[ipk])
+            # Square-root function
+            f_sqrt_ver[ind,ipk,inl] = S_ver(axis[ind],pk[ipk],nl[inl])/S_ver(0,pk[ipk],nl[inl])
 
-          # Vertical integration (1D)
-         f = lambda  z: S_ver(z,pk[ipk])*S_ver(axis[ind]-z,pk[ipk])
-         fint = integrate.quad(f, -0.5, 0.5, epsabs = epsabs)
-         f_int_ver[ind,ipk] = fint[0]
-         if ind == 0:
-            norm = f_int_ver[ind,ipk]
-         f_int_ver[ind,ipk] = f_int_ver[ind,ipk]/norm
+            # Vertical integration (1D)
+            f = lambda  z: S_ver(z,pk[ipk],nl[inl])*S_ver(axis[ind]-z,pk[ipk],nl[inl])
+            fint = integrate.quad(f, -0.5, 0.5, epsabs = epsabs)
+            f_int_ver[ind,ipk,inl] = fint[0]
+            if ind == 0:
+               norm = f_int_ver[ind,ipk,inl]
+            f_int_ver[ind,ipk,inl] = f_int_ver[ind,ipk,inl]/norm
 
-      # Cost
-      cost_ver[ipk] = sum((f_int_ver[:,ipk]-f_gc99)**2)
+         # Check conditions
+         if inl == 0:
+            # No envelop
+            valid_ver[ipk,inl] = True
+         else:
+            # Should have significant negative values
+            imin = np.argmin(f_int_ver[:,ipk,inl])
+            if f_int_ver[imin,ipk,inl]<-0.01:
+               # Should have small second maximum
+               if max(f_int_ver[imin:,ipk,inl])<0.05:
+                  valid_ver[ipk,inl] = True
 
-      # Scale at scaleth
-      for iscaleth in range(0, nscaleth):
-         scalev[iscaleth,ipk] = 1.0
-         for ind in range(0, nnd-1):
-            if f_int_ver[ind,ipk]>scaleth[iscaleth] and f_int_ver[ind+1,ipk]<scaleth[iscaleth]:
-               A = (f_int_ver[ind,ipk]-f_int_ver[ind+1,ipk])/(axis[ind]-axis[ind+1])
-               B = f_int_ver[ind,ipk]-A*axis[ind]
-               scalev[iscaleth,ipk] = (scaleth[iscaleth]-B)/A
+         # Real support radius
+         for ind in range(0,nnd):
+            if all(np.abs(f_int_ver[ind:,ipk,inl]) < support_th):
+               support_ver[ipk,inl] = axis[ind]
                break
 
-   if True:
-      # Plot curves
-      fig, ax = plt.subplots(ncols=2, figsize=(14,7))
-      ax[0].set_xlim([0,1.0])
-      ax[0].set_ylim([0,1.1])
-      ax[0].set_title("Square-root function")
-      ax[0].axhline(y=0, color="k")
-      ax[0].axvline(x=0, color="k")
-      ax[0].plot(axis, f_sqrt_ver)
-      ax[1].set_xlim([0,1.0])
-      ax[1].set_ylim([0,1.1])
-      ax[1].set_title("Convolution function")
-      ax[1].axhline(y=0, color="k")
-      ax[1].axvline(x=0, color="k")
-      ax[1].plot(axis, f_int_ver)
-      plt.savefig("fit_ver.jpg", format="jpg", dpi=300)
-      plt.close()
+         # Cost
+         if inl == 0:
+            cost_ver[ipk] = sum((f_int_ver[:,ipk,inl]-f_gc99)**2)
 
-      for iscaleth in range(0, nscaleth):
-         for ipk in range(0, npk):
-            scaled_axis[:,ipk] = axis/scalev[iscaleth,ipk]
-         fig, ax = plt.subplots()
-         ax.set_xlim([0,1.0/min(scalev[iscaleth,:])])
-         ax.set_ylim([0,1.1])
-         ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
-         ax.axhline(y=0, color="k")
-         ax.axvline(x=0, color="k")
-         ax.plot(scaled_axis, f_int_ver)
-         plt.savefig("fit_ver_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
+         # Scale at scaleth
+         for iscaleth in range(0, nscaleth):
+            scalev[iscaleth,ipk,inl] = 1.0
+            for ind in range(0, nnd-1):
+               if f_int_ver[ind,ipk,inl]>scaleth[iscaleth] and f_int_ver[ind+1,ipk,inl]<scaleth[iscaleth]:
+                  A = (f_int_ver[ind,ipk,inl]-f_int_ver[ind+1,ipk,inl])/(axis[ind]-axis[ind+1])
+                  B = f_int_ver[ind,ipk,inl]-A*axis[ind]
+                  scalev[iscaleth,ipk,inl] = (scaleth[iscaleth]-B)/A
+                  break
+
+      print('support_ver: ' + str(support_ver[:,inl]))
+
+      if True:
+         # Remove invalid curves
+         if valid_ver[ipk,inl]:
+            f_sqrt_ver_plot[:,ipk,inl] = f_sqrt_ver[:,ipk,inl]
+            f_int_ver_plot[:,ipk,inl] = f_int_ver[:,ipk,inl]
+         else:
+            f_sqrt_ver_plot[:,ipk,inl] = np.nan
+            f_int_ver_plot[:,ipk,inl] = np.nan
+
+         # Plot curves
+         fig, ax = plt.subplots(ncols=2, figsize=(14,7))
+         ax[0].set_xlim([0,1.0])
+         ax[0].set_ylim([-0.5,1.1])
+         ax[0].set_title("Square-root function")
+         ax[0].axhline(y=0, color="k")
+         ax[0].axvline(x=0, color="k")
+         ax[0].plot(axis, f_sqrt_ver_plot[:,:,inl])
+         ax[1].set_xlim([0,1.0])
+         ax[1].set_ylim([-0.5,1.1])
+         ax[1].set_title("Convolution function")
+         ax[1].axhline(y=0, color="k")
+         ax[1].axvline(x=0, color="k")
+         ax[1].plot(axis, f_int_ver_plot[:,:,inl])
+         plt.savefig("fit_ver_" + str(inl) + ".jpg", format="jpg", dpi=300)
          plt.close()
 
+         for iscaleth in range(0, nscaleth):
+            for ipk in range(0, npk):
+               scaled_axis[:,ipk] = axis/scalev[iscaleth,ipk,inl]
+            fig, ax = plt.subplots()
+            ax.set_xlim([0,1.0/min(scalev[iscaleth,:,inl])])
+            ax.set_ylim([-0.5,1.1])
+            ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
+            ax.axhline(y=0, color="k")
+            ax.axvline(x=0, color="k")
+            ax.plot(scaled_axis, f_int_ver_plot[:,:,inl])
+            plt.savefig("fit_ver_" + str(inl) + "_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
+            plt.close()
+
 # Get default peaknesses
-pkhdef = pk[np.argmin(cost_hor)]
-pkvdef = pk[np.argmin(cost_ver)]
-for iscaleth in range(0, nscaleth):
-   scalehdef[iscaleth] = scaleh[iscaleth,np.argmin(cost_hor)]
-   scalevdef[iscaleth] = scalev[iscaleth,np.argmin(cost_ver)]
+ipkhdef = np.argmin(cost_hor)
+ipkvdef = np.argmin(cost_ver)
 
 if run_horizontal and run_vertical:
    # Open file
@@ -240,7 +292,7 @@ if run_horizontal and run_vertical:
    file.write("!----------------------------------------------------------------------\n")
    file.write("module tools_gc99\n")
    file.write("\n")
-   file.write("use tools_const, only: zero,half,one,two\n")
+   file.write("use tools_const, only: zero,half,one,two,four,eight\n")
    file.write("use tools_kinds, only: kind_real\n")
    file.write("use tools_repro, only: rth,eq,inf,sup\n")
    file.write("use type_mpl, only: mpl_type\n")
@@ -250,17 +302,36 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("integer,parameter :: nnd = " + str(nnd) + "\n")
    file.write("integer,parameter :: npk = " + str(npk) + "\n")
+   file.write("integer,parameter :: nnl = " + str(nnl) + "\n")
    file.write("integer,parameter :: nscaleth = " + str(nscaleth) + "\n")
+   file.write("integer,parameter :: ipkhdef = " + str(np.argmin(cost_hor)+1) + "\n")
+   file.write("integer,parameter :: ipkvdef = " + str(np.argmin(cost_ver)+1) + "\n")
+   file.write("integer,parameter :: inldef = 1\n")
    file.write("real(kind_real),parameter :: ndmin = %.8f_kind_real\n" % (min(nd)))
    file.write("real(kind_real),parameter :: ndmax = %.8f_kind_real\n" % (max(nd)))
    file.write("real(kind_real),parameter :: pkmin = %.8f_kind_real\n" % (pkmin))
    file.write("real(kind_real),parameter :: pkmax = %.8f_kind_real\n" % (pkmax))
+   file.write("real(kind_real),parameter :: nlmin = %.8f_kind_real\n" % (nlmin))
+   file.write("real(kind_real),parameter :: nlmax = %.8f_kind_real\n" % (nlmax))
    file.write("real(kind_real),parameter :: dnd = %.8f_kind_real\n" % (dnd))
    file.write("real(kind_real),parameter :: dpk = %.8f_kind_real\n" % (dpk))
-   file.write("real(kind_real),parameter :: pkhdef = %.8f_kind_real\n" % (pkhdef))
-   file.write("real(kind_real),parameter :: pkvdef = %.8f_kind_real\n" % (pkvdef))
+   file.write("real(kind_real),parameter :: dnl = %.8f_kind_real\n" % (dnl))
    file.write("real(kind_real),parameter :: scalethmin = %.8f_kind_real\n" % (scalethmin))
    file.write("real(kind_real),parameter :: scalethmax = %.8f_kind_real\n" % (scalethmax))
+   file.write("real(kind_real),parameter :: pk(npk) = (/ &\n")
+   for ipk in range(0, npk):
+      if ipk != npk-1:
+         suffix = ", &"
+      else:
+         suffix = "/)"
+      file.write(" & %.8f_kind_real" % (pk[ipk]) + suffix + "\n")
+   file.write("real(kind_real),parameter :: nl(nnl) = (/ &\n")
+   for inl in range(0, nnl):
+      if inl != nnl-1:
+         suffix = ", &"
+      else:
+         suffix = "/)"
+      file.write(" & %.8f_kind_real" % (nl[inl]) + suffix + "\n")
    file.write("real(kind_real),parameter :: scaleth(nscaleth) = (/ &\n")
    for iscaleth in range(0, nscaleth):
       if iscaleth != nscaleth-1:
@@ -277,13 +348,6 @@ if run_horizontal and run_vertical:
             suffix = "/),"
          file.write(" & %.8f_kind_real" % (scaleh[iscaleth,ipk]) + suffix + " &\n")
    file.write(" & (/nscaleth,npk/))\n")
-   file.write("real(kind_real),parameter :: scalehdef(nscaleth) = (/ &\n")
-   for iscaleth in range(0, nscaleth):
-      if iscaleth != nscaleth-1:
-         suffix = ", &"
-      else:
-         suffix = "/)"
-      file.write(" & %.8f_kind_real" % (scalehdef[iscaleth]) + suffix + "\n")
    file.write("real(kind_real),parameter :: func_hor(nnd,npk) = reshape((/ &\n")
    for ipk in range(0, npk):
       for ind in range(0, nnd):
@@ -293,31 +357,54 @@ if run_horizontal and run_vertical:
             suffix = "/),"
          file.write(" & %.8f_kind_real" % (f_int_hor[ind,ipk]) + suffix + " &\n")
    file.write(" & (/nnd,npk/))\n")
-   file.write("real(kind_real),parameter :: scalev(nscaleth,npk) = reshape((/ &\n")
+   file.write("real(kind_real),parameter :: support_hor(npk) = (/ &\n")
    for ipk in range(0, npk):
-      for iscaleth in range(0, nscaleth):
-         if ipk != npk-1 or iscaleth != nscaleth-1:
-            suffix = ","
-         else:
-            suffix = "/),"
-         file.write(" & %.8f_kind_real" % (scalev[iscaleth,ipk]) + suffix + " &\n")
-   file.write(" & (/nscaleth,npk/))\n")
-   file.write("real(kind_real),parameter :: scalevdef(nscaleth) = (/ &\n")
-   for iscaleth in range(0, nscaleth):
-      if iscaleth != nscaleth-1:
+      if ipk != npk-1:
          suffix = ", &"
       else:
          suffix = "/)"
-      file.write(" & %.8f_kind_real" % (scalevdef[iscaleth]) + suffix + "\n")
-   file.write("real(kind_real),parameter :: func_ver(nnd,npk) = reshape((/ &\n")
-   for ipk in range(0, npk):
-      for ind in range(0, nnd):
-         if ipk != npk-1 or ind != nnd-1:
+      file.write(" & %.8f_kind_real" % (support_hor[ipk]) + suffix + "\n")
+   file.write("real(kind_real),parameter :: scalev(nscaleth,npk,nnl) = reshape((/ &\n")
+   for inl in range(0, nnl):
+      for ipk in range(0, npk):
+         for iscaleth in range(0, nscaleth):
+            if inl != nnl-1 or ipk != npk-1 or iscaleth != nscaleth-1:
+               suffix = ","
+            else:
+               suffix = "/),"
+            file.write(" & %.8f_kind_real" % (scalev[iscaleth,ipk,inl]) + suffix + " &\n")
+   file.write(" & (/nscaleth,npk,nnl/))\n")
+   file.write("real(kind_real),parameter :: func_ver(nnd,npk,nnl) = reshape((/ &\n")
+   for inl in range(0, nnl):
+      for ipk in range(0, npk):
+         for ind in range(0, nnd):
+            if inl != nnl-1 or ipk != npk-1 or ind != nnd-1:
+               suffix = ","
+            else:
+               suffix = "/),"
+            file.write(" & %.8f_kind_real" % (f_int_ver[ind,ipk,inl]) + suffix + " &\n")
+   file.write(" & (/nnd,npk,nnl/))\n")
+   file.write("real(kind_real),parameter :: support_ver(npk,nnl) = reshape((/ &\n")
+   for inl in range(0, nnl):
+      for ipk in range(0, npk):
+         if inl != nnl-1 or ipk != npk-1:
             suffix = ","
          else:
             suffix = "/),"
-         file.write(" & %.8f_kind_real" % (f_int_ver[ind,ipk]) + suffix + " &\n")
-   file.write(" & (/nnd,npk/))\n")
+         file.write(" & %.8f_kind_real" % (support_ver[ipk,inl]) + suffix + " &\n")
+   file.write(" & (/npk,nnl/))\n")
+   file.write("logical,parameter :: valid_ver(npk,nnl) = reshape((/ &\n")
+   for inl in range(0, nnl):
+      for ipk in range(0, npk):
+         if inl != nnl-1 or ipk != npk-1:
+            suffix = ","
+         else:
+            suffix = "/),"
+         if valid_ver[ipk,inl]:
+            file.write(" & .true." + suffix + " &\n")
+         else:
+            file.write(" & .false." + suffix + " &\n")
+   file.write(" & (/npk,nnl/))\n")
    file.write("\n")
    file.write("interface fit_func\n")
    file.write("   module procedure gc99_fit_func\n")
@@ -334,20 +421,21 @@ if run_horizontal and run_vertical:
    file.write("! Function: gc99_fit_func\n")
    file.write("!> Fit function\n")
    file.write("!----------------------------------------------------------------------\n")
-   file.write("function gc99_fit_func(mpl,dir,nd,pk) result(value)\n")
+   file.write("function gc99_fit_func(mpl,dir,nd,pk,nl) result(value)\n")
    file.write("\n")
    file.write("! Passed variables\n")
    file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
    file.write("character(len=*),intent(in) :: dir  !< Direction\n")
    file.write("real(kind_real),intent(in) :: nd    !< Normalized distance\n")
    file.write("real(kind_real),intent(in) :: pk    !< Peakness\n")
+   file.write("real(kind_real),intent(in) :: nl    !< Negative lobe parameter\n")
    file.write("\n")
    file.write("! Returned variable\n")
    file.write("real(kind_real) :: value\n")
    file.write("\n")
    file.write("! Local variables\n")
-   file.write("integer :: indm,indp,ipkm,ipkp\n")
-   file.write("real(kind_real) :: bnd,bpk,rndm,rndp,rpkm,rpkp\n")
+   file.write("integer :: indm,indp,ipkm,ipkp,inlm,inlp\n")
+   file.write("real(kind_real) :: bnd,bpk,bnl,rndm,rndp,rpkm,rpkp,rnlm,rnlp\n")
    file.write("\n")
    file.write("! Set name\n")
    file.write("@:set_name(gc99_fit_func)\n")
@@ -356,8 +444,9 @@ if run_horizontal and run_vertical:
    file.write("@:probe_in()\n")
    file.write("\n")
    file.write("! Check bounds\n")
-   file.write("if (nd<zero) call mpl%abort('${subr}$','negative normalized distance')\n")
-   file.write("if ((pk<pkmin).or.(pk>pkmax)) call mpl%abort('${subr}$','peakness out of bounds')\n")
+   file.write("if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')\n")
+   file.write("if (inf(pk,pkmin).or.sup(pk,pkmax)) call mpl%abort('${subr}$','peakness out of bounds')\n")
+   file.write("if (inf(nl,nlmin).or.sup(nl,nlmax)) call mpl%abort('${subr}$','negative lobe out of bounds')\n")
    file.write("\n")
    file.write("if (eq(nd,zero)) then\n")
    file.write("   ! Origin\n")
@@ -369,6 +458,7 @@ if run_horizontal and run_vertical:
    file.write("   ! Bounded values\n")
    file.write("   bnd = max(ndmin,min(nd,ndmax))\n")
    file.write("   bpk = max(pkmin,min(pk,pkmax))\n")
+   file.write("   bnl = max(nlmin,min(nl,nlmax))\n")
    file.write("\n")
    file.write("   ! Indices\n")
    file.write("   indm = floor(bnd/dnd)+1\n")
@@ -382,6 +472,12 @@ if run_horizontal and run_vertical:
    file.write("      ipkp = ipkm\n")
    file.write("   else\n")
    file.write("      ipkp = ipkm+1\n")
+   file.write("   end if\n")
+   file.write("   inlm = floor((bnl-nlmin)/dnl)+1\n")
+   file.write("   if (inlm==nnl) then\n")
+   file.write("      inlp = inlm\n")
+   file.write("   else\n")
+   file.write("      inlp = inlm+1\n")
    file.write("   end if\n")
    file.write("\n")
    file.write("   ! Coefficients\n")
@@ -397,6 +493,12 @@ if run_horizontal and run_vertical:
    file.write("      rpkm = real(ipkp-1,kind_real)-(bpk-pkmin)/dpk\n")
    file.write("   end if\n")
    file.write("   rpkp = (one-rpkm)\n")
+   file.write("   if (inlm==nnl) then\n")
+   file.write("      rnlm = one\n")
+   file.write("   else\n")
+   file.write("      rnlm = real(inlp-1,kind_real)-(bnl-nlmin)/dnl\n")
+   file.write("   end if\n")
+   file.write("   rnlp = (one-rnlm)\n")
    file.write("\n")
    file.write("   ! Interpolated value\n")
    file.write("   if (dir=='hor') then\n")
@@ -407,10 +509,14 @@ if run_horizontal and run_vertical:
    file.write(" & +rndp*rpkp*func_hor(indp,ipkp)\n")
    file.write("   elseif (dir=='ver') then\n")
    file.write("      ! Vertical fit function\n")
-   file.write("      value = rndm*rpkm*func_ver(indm,ipkm) &\n")
-   file.write(" & +rndp*rpkm*func_ver(indp,ipkm) &\n")
-   file.write(" & +rndm*rpkp*func_ver(indm,ipkp) &\n")
-   file.write(" & +rndp*rpkp*func_ver(indp,ipkp)\n")
+   file.write("      value = rndm*rpkm*rnlm*func_ver(indm,ipkm,inlm) &\n")
+   file.write(" & +rndp*rpkm*rnlm*func_ver(indp,ipkm,inlm) &\n")
+   file.write(" & +rndm*rpkp*rnlm*func_ver(indm,ipkp,inlm) &\n")
+   file.write(" & +rndp*rpkp*rnlm*func_ver(indp,ipkp,inlm) &\n")
+   file.write(" & +rndm*rpkm*rnlp*func_ver(indm,ipkm,inlp) &\n")
+   file.write(" & +rndp*rpkm*rnlp*func_ver(indp,ipkm,inlp) &\n")
+   file.write(" & +rndm*rpkp*rnlp*func_ver(indm,ipkp,inlp) &\n")
+   file.write(" & +rndp*rpkp*rnlp*func_ver(indp,ipkp,inlp)\n")
    file.write("   else\n")
    file.write("      call mpl%abort('${subr}$','wrong direction: '//dir)\n")
    file.write("   end if\n")
@@ -425,12 +531,13 @@ if run_horizontal and run_vertical:
    file.write("! Function: gc99_fit_func_sqrt\n")
    file.write("!> Fit function function square-root\n")
    file.write("!----------------------------------------------------------------------\n")
-   file.write("function gc99_fit_func_sqrt(mpl,nd,pk) result(value)\n")
+   file.write("function gc99_fit_func_sqrt(mpl,nd,pk,nl) result(value)\n")
    file.write("\n")
    file.write("! Passed variables\n")
    file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
    file.write("real(kind_real),intent(in) :: nd    !< Normalized distance\n")
    file.write("real(kind_real),intent(in) :: pk    !< Peakness\n")
+   file.write("real(kind_real),intent(in) :: nl    !< Negative lobe parameter\n")
    file.write("\n")
    file.write("! Returned variable\n")
    file.write("real(kind_real) :: value\n")
@@ -442,7 +549,7 @@ if run_horizontal and run_vertical:
    file.write("@:probe_in()\n")
    file.write("\n")
    file.write("! Check bounds\n")
-   file.write("if (nd<zero) call mpl%abort('${subr}$','negative normalized distance')\n")
+   file.write("if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')\n")
    file.write("\n")
    file.write("if (eq(nd,zero)) then\n")
    file.write("   ! Origin\n")
@@ -456,6 +563,7 @@ if run_horizontal and run_vertical:
    file.write("   else\n")
    file.write("      value = one-(two*nd)**(one+pk**2)\n")
    file.write("   end if\n")
+   file.write("   if (sup(nl,zero)) value = value*(-eight*(nd*nl)**2*exp(-four*(nd*nl)**2)+exp(-four*(nd*nl)**2))\n")
    file.write("end if\n")
    file.write("\n")
    file.write("! Probe out\n")

@@ -338,7 +338,7 @@ do ib=1,bpar%nbe
          ! Compute full fit
          call fit_diag_full(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag%blk(ic2a,ib)%distv, &
  & diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_pkh,diag%blk(ic2a,ib)%fit_rv, &
- & diag%blk(ic2a,ib)%fit_pkv,diag%blk(ic2a,ib)%fit)
+ & diag%blk(ic2a,ib)%fit_pkv,diag%blk(ic2a,ib)%fit_nlv,diag%blk(ic2a,ib)%fit)
       end do
 
       ! Compute RMSE

@@ -10,7 +10,8 @@ module tools_fit
 
 use tools_const, only: zero,half,one
 use tools_func, only: fit_diag
-use tools_gc99, only: npk,nscaleth,scaleth,scalethmin,pkhdef,pkvdef,pkmin,dpk,scaleh,scalev,scalehdef,scalevdef,fit_func
+use tools_gc99, only: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,inldef,valid_ver,scalethmax,pk,nl,scaleh,scalev,fit_func, &
+ & support_hor,support_ver
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
@@ -37,24 +38,28 @@ contains
 ! Subroutine: fit_fast_fit
 !> Fast fit length-scale estimation based on the value at mid-height
 !----------------------------------------------------------------------
-subroutine fit_fast_fit(mpl,n,iz,dist,dir,raw,fit_r,fit_pk)
+subroutine fit_fast_fit(mpl,n,iz,dist,dir,raw,peakness,negative_lobe,fit_r,fit_pk,fit_nl)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl            !< MPI data
-integer,intent(in) :: n                        !< Vector size
-integer,intent(in) :: iz                       !< Zero separation index
-real(kind_real),intent(in) :: dist(n)          !< Distance
-character(len=*),intent(in) :: dir             !< Direction
-real(kind_real),intent(in) :: raw(n)           !< Raw data
-real(kind_real),intent(out) :: fit_r           !< Support radius
-real(kind_real),intent(out),optional :: fit_pk !< Default peakness
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Vector size
+integer,intent(in) :: iz              !< Zero separation index
+real(kind_real),intent(in) :: dist(n) !< Distance
+character(len=*),intent(in) :: dir    !< Direction
+real(kind_real),intent(in) :: raw(n)  !< Raw data
+logical,intent(in) :: peakness        !< Peakness optimization flag
+logical,intent(in) :: negative_lobe   !< Negative lobe optimization flag
+real(kind_real),intent(out) :: fit_r  !< Support radius
+real(kind_real),intent(out) :: fit_pk !< Peakness
+real(kind_real),intent(out) :: fit_nl !< Negative lobe parameter
 
 ! Local variables
-integer :: iscaleth,di,i,im,ip,ipk
+integer :: iscaleth,di,i,im,ip,ipk,inl
 real(kind_real) :: raw_tmp(n),fit_r_m,fit_r_p
-real(kind_real) :: cost,cost_min,fit_r_test,fit_pk_test,fit_r_min,fit_pk_min,fit(n)
+real(kind_real) :: cost,cost_min,fit_r_test,fit_pk_test,fit_nl_test,fit_r_min,fit_pk_min,fit_nl_min,fit(n)
+logical :: valid(npk,nnl)
 
 ! Set name
 @:set_name(fit_fast_fit)
@@ -71,13 +76,13 @@ if (raw(iz)>zero) then
       raw_tmp(iz) = one
       do i=1,n
         if (i/=iz) then
-           if (inf(raw(i),raw(iz))) raw_tmp(i) = raw(i)/raw(iz)
+           if (mpl%msv%isnot(raw(i)).and.inf(raw(i),raw(iz))) raw_tmp(i) = raw(i)/raw(iz)
         end if
       end do
 
       if (count(mpl%msv%isnot(raw_tmp))>1) then
          ! Check minimum value
-         if (minval(raw_tmp)>scalethmin) then
+         if (minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp))>scalethmax) then
             if (dir=='hor') then
                call mpl%abort('${subr}$','minimum horizontal diagnostic value is too high, increase nc3')
             elseif (dir=='ver') then
@@ -87,6 +92,9 @@ if (raw(iz)>zero) then
  
          ! Initialization
          cost_min = huge_real
+         fit_r_min = mpl%msv%valr
+         fit_pk_min = mpl%msv%valr
+         fit_nl_min = mpl%msv%valr
 
          ! Loop over thresholds
          do iscaleth=1,nscaleth
@@ -102,16 +110,13 @@ if (raw(iz)>zero) then
 
                      ! Check index validity
                      if (im>=1) then
-                        ! Check raw value validity
-                        if (raw_tmp(im)>zero) then
-                           ! Check whether threshold has been crossed
-                           if (inf(raw_tmp(im),scaleth(iscaleth))) then
-                              ! Set fit value
-                              fit_r_m = dist(im)+(dist(ip)-dist(im))*(scaleth(iscaleth)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
-                           else
-                              ! Update index
-                              ip = im
-                           end if
+                        ! Check whether threshold has been crossed
+                        if (mpl%msv%isnot(raw_tmp(im)).and.inf(raw_tmp(im),scaleth(iscaleth))) then
+                           ! Set fit value
+                           fit_r_m = dist(im)+(dist(ip)-dist(im))*(scaleth(iscaleth)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
+                        else
+                           ! Update index
+                           ip = im
                         end if
                      end if
                   end if
@@ -130,16 +135,13 @@ if (raw(iz)>zero) then
 
                      ! Check index validity
                      if (ip<=n) then
-                        ! Check raw value validity
-                        if (raw_tmp(ip)>zero) then
-                           ! Check whether threshold has been crossed
-                           if (inf(raw_tmp(ip),scaleth(iscaleth))) then
-                              ! Set fit value
-                              fit_r_p = dist(im)+(dist(ip)-dist(im))*(scaleth(iscaleth)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
-                           else
-                              ! Update index
-                              im = ip
-                           end if
+                        ! Check whether threshold has been crossed
+                        if (mpl%msv%isnot(raw_tmp(ip)).and.inf(raw_tmp(ip),scaleth(iscaleth))) then
+                           ! Set fit value
+                           fit_r_p = dist(im)+(dist(ip)-dist(im))*(scaleth(iscaleth)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
+                        else
+                           ! Update index
+                           im = ip
                         end if
                      end if
                   end if
@@ -155,63 +157,80 @@ if (raw(iz)>zero) then
                fit_r = fit_r_p
             else
                fit_r = mpl%msv%valr
-               if (present(fit_pk)) fit_pk = mpl%msv%valr
             end if
             
-            ! Check positivity
-            if (inf(fit_r,zero)) fit_r = mpl%msv%valr
-
+            ! Check validity and positivity
             if (mpl%msv%isnot(fit_r)) then
-               if (present(fit_pk)) then
-                  ! Optimize peakness (brute-force)
-                  do ipk=1,npk
-                     if (dir=='hor') then
-                        fit_r_test = fit_r/scaleh(iscaleth,ipk)
-                     elseif (dir=='ver') then
-                        fit_r_test = fit_r/scalev(iscaleth,ipk)
+               ! Prepare optimization mask
+               if (dir=='hor') then
+                  valid = .false.
+                  valid(ipkhdef,inldef) = .true.
+                  if (peakness) valid(:,inldef) = .true.
+               elseif (dir=='ver') then
+                  valid = .false.
+                  valid(ipkvdef,inldef) = .true.
+                  if (peakness) then
+                     if (negative_lobe) then
+                        valid = .true.
+                     else
+                        valid(:,inldef) = .true.
                      end if
-                     fit_pk_test = pkmin+(ipk-1)*dpk
-                     call fit_diag(mpl,n,dist,dir,fit_r_test,fit_pk_test,fit)
-                     cost = sum((fit-raw)**2)
-                     if (inf(cost,cost_min)) then
-                        cost_min = cost
-                        fit_r_min = fit_r_test
-                        fit_pk_min = fit_pk_test
+                  else
+                     if (negative_lobe) valid(ipkvdef,:) = .true.
+                  end if
+                  valid = valid.and.valid_ver
+               end if
+
+               ! Optimize peakness and negative lobe (brute-force)
+               do inl=1,nnl
+                  do ipk=1,npk
+                     if (valid(ipk,inl)) then
+                        if (dir=='hor') then
+                           fit_r_test = fit_r/scaleh(iscaleth,ipk)
+                        elseif (dir=='ver') then
+                           fit_r_test = fit_r/scalev(iscaleth,ipk,inl)
+                        end if
+                        fit_pk_test = pk(ipk)
+                        fit_nl_test = nl(inl)
+                        call fit_diag(mpl,n,dist,dir,fit_r_test,fit_pk_test,fit_nl_test,fit)
+                        cost = sum((fit-raw_tmp)**2)
+                        if (inf(cost,cost_min)) then
+                           cost_min = cost
+                           fit_r_min = fit_r_test
+                           fit_pk_min = fit_pk_test
+                           fit_nl_min = fit_nl_test
+                        end if
                      end if
                   end do
-               else
-                  ! Use default peakness
-                  if (dir=='hor') then
-                     fit_r_test = fit_r/scalehdef(iscaleth)
-                     fit_pk_test = pkhdef
-                  elseif (dir=='ver') then
-                     fit_r_test = fit_r/scalevdef(iscaleth)
-                     fit_pk_test = pkvdef
-                  end if
-                  call fit_diag(mpl,n,dist,dir,fit_r_test,fit_pk_test,fit)
-                  cost = sum((fit-raw)**2)
-                  if (inf(cost,cost_min)) then
-                     cost_min = cost
-                     fit_r_min = fit_r_test
-                  end if
-               end if
+               end do
             end if
          end do
 
          ! Set final support radius and peakness
          fit_r = fit_r_min
-         if (present(fit_pk)) fit_pk = fit_pk_min
+         fit_pk = fit_pk_min
+         fit_nl = fit_nl_min
       else
          ! All positive-separation points are missing
          fit_r = mpl%msv%valr
+         fit_pk = mpl%msv%valr
+         fit_nl = mpl%msv%valr
       end if
    else
-      ! Only one point, zero radius
+      ! Only one point, zero radius and default peakness
       fit_r = zero
+      if (dir=='hor') then
+         fit_pk = pk(ipkhdef)
+      elseif (dir=='ver') then
+         fit_pk = pk(ipkvdef)
+      end if
+      fit_nl = nl(inldef)
    end if
 else
    ! Zero-separation point is negative
    fit_r = mpl%msv%valr
+   fit_pk = mpl%msv%valr
+   fit_nl = mpl%msv%valr
 end if
 
 ! Probe out
@@ -255,7 +274,7 @@ if (n>1) then
             if (mpl%msv%isnot(profile(i)).and.mpl%msv%isnot(profile(j))) then
                ! Gaspari-Cohn (1999) function
                distnorm = abs(x(j)-x(i))/rv
-               kernel(i,j) = fit_func(mpl,'ver',distnorm,zero)
+               kernel(i,j) = fit_func(mpl,'ver',distnorm,pk(ipkvdef),nl(inldef))
             end if
          end do
       end do

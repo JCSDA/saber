@@ -10,10 +10,10 @@ module type_diag_blk
 
 !$ use omp_lib
 use tools_const, only: zero,hundredth,tenth,half,one,two,three,five,seven,ten
-use tools_fit, only: fast_fit,ver_fill
+use tools_fit, only: fast_fit
 use tools_fftw, only: hor_sqrt
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,fit_diag_sqrt,fit_diag,fit_diag_full
-use tools_gc99, only: pkmin,pkmax,pkhdef,pkvdef
+use tools_gc99, only: nl,inldef
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,put_att,define_var,put_var
 use tools_repro, only: inf,sup
@@ -21,7 +21,6 @@ use tools_wrfda
 use type_avg_blk, only: avg_blk_type
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
-use type_minim, only: minim_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
@@ -29,8 +28,8 @@ use type_samp, only: samp_type
 
 implicit none
 
-
-real(kind_real),parameter :: raw_min_th = 0.3_kind_real !< Minimum threshold to optimize vertical fit
+integer,parameter :: ad_n = 5                      !< Minimum number of points to optimize anti-diagonal vertical fit
+real(kind_real),parameter :: ad_th = 0.3_kind_real !< Threshold to optimize anti-diagonal vertical fit
 
 ! Diagnostic block derived type
 type diag_blk_type
@@ -48,7 +47,8 @@ type diag_blk_type
    real(kind_real),allocatable :: fit_pkh(:)           !< Horizontal peakness
    real(kind_real),allocatable :: fit_rv(:)            !< Vertical support radius
    real(kind_real),allocatable :: fit_pkv(:)           !< Vertical peakness
-   real(kind_real),allocatable :: fit_zs_ns(:,:)       !< Fit at zero separation, non-symmetric
+   real(kind_real),allocatable :: fit_nlv(:)           !< Vertical negative lobe parameter
+   real(kind_real),allocatable :: vunit(:)             !< Vertical unit
    real(kind_real),allocatable :: distv(:,:)           !< Reduced vertical distance
 
    real(kind_real),allocatable :: raw_hor_sqrt(:,:)    !< Raw diagnostic horizontal square-root
@@ -94,7 +94,6 @@ character(len=*),intent(in) :: prefix          !< Block prefix
 
 ! Local variables
 integer :: il0,jl0r,jl0
-real(kind_real) :: vunit(geom%nl0)
 
 ! Set name
 @:set_name(diag_blk_alloc)
@@ -117,7 +116,8 @@ if ((ic2a==0).or.nam%local_diag) then
    allocate(diag_blk%fit_pkh(geom%nl0))
    allocate(diag_blk%fit_rv(geom%nl0))
    allocate(diag_blk%fit_pkv(geom%nl0))
-   allocate(diag_blk%fit_zs_ns(bpar%nl0r(ib),geom%nl0))
+   allocate(diag_blk%fit_nlv(geom%nl0))
+   allocate(diag_blk%vunit(geom%nl0))
    allocate(diag_blk%distv(bpar%nl0r(ib),geom%nl0))
    if (nam%diag_sqrt) then
       allocate(diag_blk%raw_hor_sqrt(bpar%nc3(ib),geom%nl0))
@@ -140,7 +140,7 @@ if ((ic2a==0).or.nam%local_diag) then
    diag_blk%fit_pkh = mpl%msv%valr
    diag_blk%fit_rv = mpl%msv%valr
    diag_blk%fit_pkv = mpl%msv%valr
-   diag_blk%fit_zs_ns = mpl%msv%valr
+   diag_blk%fit_nlv = mpl%msv%valr
    if (nam%diag_sqrt) then
       diag_blk%raw_hor_sqrt = mpl%msv%valr
       diag_blk%raw_hor_sqrt_norm = mpl%msv%valr
@@ -151,17 +151,17 @@ if ((ic2a==0).or.nam%local_diag) then
    end if
 end if
 
-! Vertical distance
+! Vertical unit and distance
 if ((ic2a==0).or.nam%local_diag) then
    if (ic2a==0) then
-      vunit = geom%vunitavg
+      diag_blk%vunit = geom%vunitavg
    else
-      vunit = samp%vunit_c2a(ic2a,:)
+      diag_blk%vunit = samp%vunit_c2a(ic2a,:)
    end if
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0r(ib)
          jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-         diag_blk%distv(jl0r,il0) = abs(vunit(il0)-vunit(jl0))
+         diag_blk%distv(jl0r,il0) = abs(diag_blk%vunit(il0)-diag_blk%vunit(jl0))
       end do
    end do
 end if
@@ -197,7 +197,8 @@ if (allocated(diag_blk%fit_rh)) deallocate(diag_blk%fit_rh)
 if (allocated(diag_blk%fit_pkh)) deallocate(diag_blk%fit_pkh)
 if (allocated(diag_blk%fit_rv)) deallocate(diag_blk%fit_rv)
 if (allocated(diag_blk%fit_pkv)) deallocate(diag_blk%fit_pkv)
-if (allocated(diag_blk%fit_zs_ns)) deallocate(diag_blk%fit_zs_ns)
+if (allocated(diag_blk%fit_nlv)) deallocate(diag_blk%fit_nlv)
+if (allocated(diag_blk%vunit)) deallocate(diag_blk%vunit)
 if (allocated(diag_blk%distv)) deallocate(diag_blk%distv)
 if (allocated(diag_blk%raw_hor_sqrt)) deallocate(diag_blk%raw_hor_sqrt)
 if (allocated(diag_blk%raw_hor_sqrt_norm)) deallocate(diag_blk%raw_hor_sqrt_norm)
@@ -234,7 +235,7 @@ integer,intent(in) :: nl0_2_id                 !< NetCDF ID
 ! Local variables
 integer :: grpid
 integer :: raw_id,raw_hor_id,raw_zs_id,valid_id,coef_ens_id,l0rl0_to_l0_id
-integer :: fit_id,fit_hor_id,fit_zs_ns_id,fit_zs_id,fit_rh_id,fit_pkh_id,fit_rv_id,fit_pkv_id
+integer :: fit_id,fit_hor_id,fit_zs_id,fit_rh_id,fit_pkh_id,fit_rv_id,fit_pkv_id,fit_nlv_id
 integer :: raw_hor_sqrt_id,raw_hor_sqrt_norm_id,raw_zs_sqrt_id,raw_zs_sqrt_norm_id,fit_hor_sqrt_id,fit_zs_sqrt_id
 integer :: il0,jl0r,jl0,jl0rz
 
@@ -268,12 +269,12 @@ if (mpl%msv%isanynot(diag_blk%coef_ens)) coef_ens_id = define_var(mpl,grpid,'coe
 if (mpl%msv%isanynot(diag_blk%fit)) then
    fit_id = define_var(mpl,grpid,'fit','real',(/nc3_id,nl0r_id,nl0_1_id/))
    fit_hor_id = define_var(mpl,grpid,'fit_hor','real',(/nc3_id,nl0_1_id/))
-   fit_zs_ns_id = define_var(mpl,grpid,'fit_zs_ns','real',(/nl0_2_id,nl0_1_id/))
    fit_zs_id = define_var(mpl,grpid,'fit_zs','real',(/nl0_2_id,nl0_1_id/))
    fit_rh_id = define_var(mpl,grpid,'fit_rh','real',(/nl0_1_id/))
    fit_pkh_id = define_var(mpl,grpid,'fit_pkh','real',(/nl0_1_id/))
    fit_rv_id = define_var(mpl,grpid,'fit_rv','real',(/nl0_1_id/))
    fit_pkv_id = define_var(mpl,grpid,'fit_pkv','real',(/nl0_1_id/))
+   fit_nlv_id = define_var(mpl,grpid,'fit_nlv','real',(/nl0_1_id/))
    if (nam%diag_sqrt) then
       fit_hor_sqrt_id = define_var(mpl,grpid,'fit_hor_sqrt','real',(/nc3_id,nl0_1_id/))
       fit_zs_sqrt_id = define_var(mpl,grpid,'fit_zs_sqrt','real',(/nl0_2_id,nl0_1_id/))
@@ -318,7 +319,6 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    do il0=1,geom%nl0
       do jl0r=1,bpar%nl0rmax
          jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-         call put_var(mpl,grpid,fit_zs_ns_id,diag_blk%fit_zs_ns(jl0r,il0),(/jl0,il0/))
          call put_var(mpl,grpid,fit_zs_id,diag_blk%fit(1,jl0r,il0),(/jl0,il0/))
       end do
    end do
@@ -326,6 +326,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    call put_var(mpl,grpid,fit_pkh_id,diag_blk%fit_pkh)
    call put_var(mpl,grpid,fit_rv_id,diag_blk%fit_rv)
    call put_var(mpl,grpid,fit_pkv_id,diag_blk%fit_pkv)
+   call put_var(mpl,grpid,fit_nlv_id,diag_blk%fit_nlv)
    if (nam%diag_sqrt) then
       call put_var(mpl,grpid,fit_hor_sqrt_id,diag_blk%fit_hor_sqrt)
       do il0=1,geom%nl0
@@ -400,14 +401,14 @@ type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Local variables
-integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jl0r,jl0,jc3,ix,iy,nnmax,dil0
+integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jl0r,jl0,jc3,nl0ad,il0ad,nnmax,dil0,tmp(1),il0adz
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
-real(kind_real) :: m2(geom%nl0),fit_rv,fit_pkv
-real(kind_real),allocatable :: rawv(:),rinf(:),rsup(:)
-real(kind_real),allocatable :: fit_rh_l1(:),fit_pkh_l1(:),fit_rv_l1(:),fit_pkv_l1(:)
+real(kind_real) :: m2(geom%nl0),fit_rv,fit_pkv,fit_nlv,dummy
+real(kind_real),allocatable :: rawv(:),distv(:),rinf(:),rsup(:)
+real(kind_real),allocatable :: fit_rh_l1(:),fit_pkh_l1(:),fit_rv_l1(:),fit_pkv_l1(:),fit_nlv_l1(:)
 real(kind_real),allocatable :: rawv_full(:,:),evec(:,:),eval(:)
 logical :: var2d
-type(minim_type) :: minim
+logical,allocatable :: filled(:)
 
 ! Set name
 @:set_name(diag_blk_fitting)
@@ -431,11 +432,13 @@ if ((count(m2>zero)==1).and.(trim(nam%lev2d)=='first').and.(m2(1)>zero)) then
    ilev2d = 1
    diag_blk%fit_rv(ilev2d) = zero
    diag_blk%fit_pkv(ilev2d) = zero
+   diag_blk%fit_nlv(ilev2d) = zero
 elseif ((count(m2>zero)==1).and.(trim(nam%lev2d)=='last').and.(m2(geom%nl0)>zero)) then
    var2d = .true.
    ilev2d = geom%nl0
    diag_blk%fit_rv(ilev2d) = zero
    diag_blk%fit_pkv(ilev2d) = zero
+   diag_blk%fit_nlv(ilev2d) = zero
 else
    var2d = .false.
 end if
@@ -455,7 +458,6 @@ else
 end if
 
 ! Allocation
-if (.not.var2d) allocate(rawv(nl0r))
 allocate(il0_interp(nl1))
 allocate(il1inf(geom%nl0))
 allocate(il1sup(geom%nl0))
@@ -474,11 +476,6 @@ else
    call vert_interp_setup(geom%nl0,nam%fit_dl0,nl1,il0_interp,il1inf,il1sup,rinf,rsup)
 end if
 
-! Hooke parameters
-minim%hooke_rho = half
-minim%hooke_tol = 1.0e-4_kind_real
-minim%hooke_itermax = 1
-
 ! Allocation
 allocate(fit_rh_l1(nl1))
 allocate(fit_pkh_l1(nl1))
@@ -492,12 +489,8 @@ do il1=1,nl1
    jl0rz = bpar%il0rz(il0,ib)
 
    ! Fast fit
-   if (nam%peakness) then
-      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',diag_blk%raw(:,jl0rz,il0),fit_rh_l1(il1),fit_pkh_l1(il1))
-   else
-      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',diag_blk%raw(:,jl0rz,il0),fit_rh_l1(il1))
-      fit_pkh_l1(il1) = pkhdef
-   end if
+   call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',diag_blk%raw(:,jl0rz,il0),nam%peakness,.false.,fit_rh_l1(il1), &
+ & fit_pkh_l1(il1),dummy)
 end do
 
 ! Interpolate horizontal parameters
@@ -512,10 +505,13 @@ if (nl0r==1) then
    ! No vertical fit
    diag_blk%fit_rv = zero
    diag_blk%fit_pkv = zero
+   diag_blk%fit_nlv = zero
 else
    ! Allocation
    allocate(fit_rv_l1(nl1))
    allocate(fit_pkv_l1(nl1))
+   allocate(fit_nlv_l1(nl1))
+   allocate(filled(nl1))
 
    ! Vertical fit, level by level
    do il1=1,nl1
@@ -525,99 +521,72 @@ else
       ! Get zero separation level and min/max levels
       jl0rz = bpar%il0rz(il0,ib)
 
-      ! Fast fit
-      rawv = diag_blk%raw(1,:,il0)
-      if (nam%peakness) then
-         call fast_fit(mpl,bpar%nl0r(ib),jl0rz,diag_blk%distv(:,il0),'ver',rawv,fit_rv_l1(il1),fit_pkv_l1(il1))
+      ! Anti-diagonal raw diagnostic size
+      nl0ad = 0
+      do dil0=-geom%nl0,geom%nl0
+         if ((il0+dil0>=1).and.(il0+dil0<=geom%nl0).and.(il0-dil0>=1).and.(il0-dil0<=geom%nl0)) then
+            if (any(bpar%l0rl0b_to_l0(:,il0+dil0,ib)==il0-dil0)) nl0ad = nl0ad+1
+         end if
+      end do
+
+      ! Allocation
+      allocate(rawv(nl0ad))
+      allocate(distv(nl0ad))
+
+      ! Fill anti-diagonal raw diagnostic and distance
+      il0ad = 0
+      do dil0=-geom%nl0,geom%nl0
+         if ((il0+dil0>=1).and.(il0+dil0<=geom%nl0).and.(il0-dil0>=1).and.(il0-dil0<=geom%nl0)) then
+            do jl0r=1,nl0r
+               if (bpar%l0rl0b_to_l0(jl0r,il0+dil0,ib)==il0-dil0) then
+                  il0ad = il0ad+1
+                  rawv(il0ad) = diag_blk%raw(1,jl0r,il0+dil0)
+                  distv(il0ad) = diag_blk%distv(jl0r,il0+dil0)
+                  if (dil0==0) il0adz = il0ad
+               end if
+            end do
+         end if
+      end do
+
+      ! Threshold on anti-diagonal raw diagnostic minimum
+      if ((nl0ad>ad_n).and.(minval(rawv)<ad_th)) then
+         call fast_fit(mpl,nl0ad,il0adz,distv,'ver',rawv,nam%peakness,.true.,fit_rv_l1(il1),fit_pkv_l1(il1), &
+ & fit_nlv_l1(il1))
+         filled(il1) = .true.
       else
-         call fast_fit(mpl,bpar%nl0r(ib),jl0rz,diag_blk%distv(:,il0),'ver',rawv,fit_rv_l1(il1))
-         fit_pkv_l1(il1) = pkvdef
+         ! Level to fill with its nearest neighbor
+         filled(il1) = .false.
       end if
 
-      if (mpl%msv%isnot(fit_rv_l1(il1)).and.(fit_rv_l1(il1)>zero).and..false.) then
-         ! Sizes
-         minim%nx = 1
-         if (nam%peakness) minim%nx = minim%nx+1
-         minim%ny = 0
-         do dil0=-geom%nl0,geom%nl0
-            if ((il0+dil0>=1).and.(il0+dil0<=geom%nl0).and.(il0-dil0>=1).and.(il0-dil0<=geom%nl0)) then
-               if (any(bpar%l0rl0b_to_l0(:,il0+dil0,ib)==il0-dil0)) minim%ny = minim%ny+1
-            end if
-         end do
+      ! Release memory
+      deallocate(rawv)
+      deallocate(distv)
+   end do
 
-         ! Allocation
-         allocate(minim%x(minim%nx))
-         allocate(minim%guess(minim%nx))
-         allocate(minim%binf(minim%nx))
-         allocate(minim%bsup(minim%nx))
-         allocate(minim%obs(minim%ny))
-         allocate(minim%dist(minim%ny))
-
-         ! Fill guess and bounds
-         minim%guess(1) = fit_rv_l1(il1)
-         minim%binf(1) = tenth*minim%guess(1)
-         minim%bsup(1) = ten*minim%guess(1)
-         if (nam%peakness) then
-            minim%guess(2) = fit_pkv_l1(il1)
-            minim%binf(2) = pkmin
-            minim%bsup(2) = pkmax
-         end if
-
-         ! Fill data
-         iy = 0
-         do dil0=-geom%nl0,geom%nl0
-            if ((il0+dil0>=1).and.(il0+dil0<=geom%nl0).and.(il0-dil0>=1).and.(il0-dil0<=geom%nl0)) then
-               do jl0r=1,nl0r
-                  if (bpar%l0rl0b_to_l0(jl0r,il0+dil0,ib)==il0-dil0) then
-                     iy = iy+1
-                     minim%obs(iy) = diag_blk%raw(1,jl0r,il0+dil0)
-                     minim%dist(iy) = diag_blk%distv(jl0r,il0+dil0)
-                  end if
-               end do
-            end if
-         end do
-         minim%cost_function = 'fit_diag'
-         minim%dir = 'ver'
-
-         ! Threshold on raw minimum
-         if (minval(minim%obs)<raw_min_th) then
-            ! Compute fit
-            call minim%compute(mpl)
-
-            ! Apply bounds
-            minim%x = max(minim%binf,min(minim%x,minim%bsup))
-
-            ! Get parameters
-            fit_rv_l1(il1) = minim%x(1)
-            if (nam%peakness) fit_pkv_l1(il1) = minim%x(2)
-         end if
-
-         ! Release memory
-         deallocate(minim%x)
-         deallocate(minim%guess)
-         deallocate(minim%binf)
-         deallocate(minim%bsup)
-         deallocate(minim%obs)
-         deallocate(minim%dist)
+   ! Fill border values with nearest neighbor
+   if (.not.any(filled)) call mpl%abort('${subr}$','no level was filled correctly')
+   do il1=1,nl1
+      if (.not.filled(il1)) then
+         tmp = minloc(abs(diag_blk%vunit(il0_interp)-diag_blk%vunit(il0_interp(il1))),mask=filled)
+         fit_rv_l1(il1) = fit_rv_l1(tmp(1))
+         fit_pkv_l1(il1) = fit_pkv_l1(tmp(1))
+         fit_nlv_l1(il1) = fit_nlv_l1(tmp(1))
       end if
    end do
 
    ! Interpolate vertical parameters
    call vert_interp(mpl,nl1,fit_rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_rv)
    call vert_interp(mpl,nl1,fit_pkv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_pkv)
-
-   ! Non-symmetric vertical fit
-   do il0=1,geom%nl0
-      call fit_diag(mpl,nl0r,diag_blk%distv(:,il0),'ver',diag_blk%fit_rv(il0),diag_blk%fit_pkv(il0),diag_blk%fit_zs_ns(:,il0))
-   end do
+   call vert_interp(mpl,nl1,fit_nlv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_nlv)
 
    ! Release memory
    deallocate(fit_rv_l1)
    deallocate(fit_pkv_l1)
+   deallocate(fit_nlv_l1)
+   deallocate(filled)
 end if
 
 ! Release memory
-if (.not.var2d) deallocate(rawv)
 deallocate(il0_interp)
 deallocate(il1inf)
 deallocate(il1sup)
@@ -639,7 +608,7 @@ if (nam%diag_sqrt) then
 
       ! Fit
       call fit_diag_sqrt(mpl,bpar%nc3(ib),geom%disth(1:bpar%nc3(ib)),diag_blk%fit_rh(il0),diag_blk%fit_pkh(il0), &
- & diag_blk%fit_hor_sqrt(:,il0))
+ & nl(inldef),diag_blk%fit_hor_sqrt(:,il0))
    end do
 
    ! Allocation
@@ -773,7 +742,7 @@ type(avg_blk_type),intent(in) :: avg_blk       !< Averaged statistics block
 ! Local variables
 integer :: il0,jl0r,jl0,jc3,iv
 real(kind_real) :: wgt,a,bc,d,e,f,num_ens,num_sta,num,den
-real(kind_real) :: nam_coef(geom%nl0),nam_pkv(geom%nl0)
+real(kind_real) :: nam_coef(geom%nl0),nam_nlv(geom%nl0)
 
 ! Set name
 @:set_name(diag_blk_hybridization)
@@ -788,9 +757,10 @@ if (nam%forced_radii) then
    ! Compute forced localization function
    iv = bpar%b_to_v1(ib)
    nam_coef = one
-   nam_pkv = zero
+   nam_nlv = nl(inldef)
    call fit_diag_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib), &
- & geom%disth,diag_blk%distv,nam_coef,nam%rh(1:geom%nl0,iv),nam%pkh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),nam_pkv,diag_blk%raw)
+ & geom%disth,diag_blk%distv,nam_coef,nam%rh(1:geom%nl0,iv),nam%pkh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),nam%pkv(1:geom%nl0,iv), &
+ & nam_nlv,diag_blk%raw)
    diag_blk%valid = mpl%msv%valr
 
    ! Compute hybrid weights

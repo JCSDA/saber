@@ -9,9 +9,7 @@
 module type_minim
 
 use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
-use tools_fit, only: ver_smooth
-use tools_func, only: fit_diag,fit_lct
-use tools_gc99, only: pkhdef,pkvdef
+use tools_func, only: fit_lct
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
@@ -38,11 +36,7 @@ type minim_type
    real(kind_real) :: f_guess                     !< Guess cost
    real(kind_real) :: f_min                       !< Minimum cost
 
-   ! Specific data (fit)
-   real(kind_real),allocatable :: dist(:)         !< Distance
-   character(len=3) :: dir                        !< Direction
-
-   ! Specific data (LCT)
+   ! LCT data
    integer :: nc3                                 !< Number of classes
    integer :: nl0r                                !< Effective number of levels
    integer :: nscales                             !< Number of LCT scales
@@ -55,7 +49,6 @@ type minim_type
 contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
-   procedure :: cost_fit_diag => minim_cost_fit_diag
    procedure :: cost_fit_lct => minim_cost_fit_lct
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
@@ -134,8 +127,6 @@ real(kind_real),intent(out) :: f          !< Cost function value
 @:probe_in()
 
 select case (trim(minim%cost_function))
-case ('fit_diag')
-   call minim%cost_fit_diag(mpl,x,f)
 case ('fit_lct')
    call minim%cost_fit_lct(mpl,x,f)
 case default
@@ -146,60 +137,6 @@ end select
 @:probe_out()
 
 end subroutine minim_cost
-
-!----------------------------------------------------------------------
-! Subroutine: minim_cost_fit_diag
-!> Diagnosic fit function cost
-!----------------------------------------------------------------------
-subroutine minim_cost_fit_diag(minim,mpl,x,f)
-
-implicit none
-
-! Passed variables
-class(minim_type),intent(in) :: minim     !< Minimization data
-type(mpl_type),intent(inout) :: mpl       !< MPI data
-real(kind_real),intent(in) :: x(minim%nx) !< Control vector
-real(kind_real),intent(out) :: f          !< Cost function value
-
-! Local variables
-real(kind_real) :: fit_r,fit_pk
-real(kind_real) :: fit(minim%ny)
-real(kind_real) :: xtmp(minim%nx)
-
-! Set name
-@:set_name(minim_cost_fit_diag)
-
-! Probe in
-@:probe_in()
-
-! Renormalize
-xtmp = x
-call minim%vt_dir(xtmp)
-
-! Get data
-fit_r = xtmp(1)
-if (minim%nx==2) then
-   fit_pk = xtmp(2)
-else
-   if (minim%dir=='hor') then
-      fit_pk = pkhdef
-   elseif (minim%dir=='ver') then
-      fit_pk = pkvdef
-   else
-      call mpl%abort('${subr}$','wrong direction')
-   end if
-end if
-
-! Compute function
-call fit_diag(mpl,minim%ny,minim%dist,minim%dir,fit_r,fit_pk,fit)
-
-! Observations penalty
-f = sum((fit-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit))
-
-! Probe out
-@:probe_out()
-
-end subroutine minim_cost_fit_diag
 
 !----------------------------------------------------------------------
 ! Function: minim_cost_fit_lct

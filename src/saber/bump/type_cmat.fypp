@@ -11,7 +11,7 @@ module type_cmat
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,one,rad2deg,reqkm,req
 use tools_func, only: lct_d2h,lct_h2r,convert_l2i,convert_i2l,zss_sum
-use tools_gc99, only: pkhdef,pkvdef
+use tools_gc99, only: pk,ipkhdef,ipkvdef
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_bpar, only: bpar_type
@@ -897,13 +897,13 @@ do ib=1,bpar%nbe
             if (allocated(cmat%blk(ib)%bump_pkh)) then
                cmat%blk(ib)%pkh = cmat%blk(ib)%bump_pkh
             else
-               cmat%blk(ib)%pkh = pkhdef
+               cmat%blk(ib)%pkh = pk(ipkhdef)
             end if
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
             if (allocated(cmat%blk(ib)%bump_pkv)) then
                cmat%blk(ib)%pkv = cmat%blk(ib)%bump_pkv
             else
-               cmat%blk(ib)%pkv = pkvdef
+               cmat%blk(ib)%pkv = pk(ipkvdef)
             end if
          end if
          if (import_static(ib)) then
@@ -931,8 +931,8 @@ do ib=1,bpar%nbe
  & cmat%blk(ib)%H12(ic0a,il0),cmat%blk(ib)%rh(ic0a,il0),cmat%blk(ib)%rv(ic0a,il0))
 
                      ! Default peakness
-                     cmat%blk(ib)%pkh = pkhdef
-                     cmat%blk(ib)%pkv = pkvdef
+                     cmat%blk(ib)%pkh = pk(ipkhdef)
+                     cmat%blk(ib)%pkv = pk(ipkvdef)
                   else
                      cmat%blk(ib)%H11(ic0a,il0) = mpl%msv%valr
                      cmat%blk(ib)%H22(ic0a,il0) = mpl%msv%valr

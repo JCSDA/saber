@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
 use tools_func, only: gc2gau,lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
-use tools_gc99, only: pkhdef,pkvdef,fit_func_sqrt
+use tools_gc99, only: pk,nl,ipkhdef,ipkvdef,inldef,fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
  & inquire_var_presence,put_var,get_var
@@ -2405,9 +2405,9 @@ nicas_blk%anisotropic = .false.
 do il0=1,geom%nl0
    nicas_blk%rh(:,il0) = rhflt(il0)
 end do
-nicas_blk%pkh = pkhdef
+nicas_blk%pkh = pk(ipkhdef)
 nicas_blk%rv = zero
-nicas_blk%pkv = pkvdef
+nicas_blk%pkv = pk(ipkvdef)
 nicas_blk%rhs = nicas_blk%rh
 nicas_blk%rvs = zero
 nicas_blk%wgt = one
@@ -4000,8 +4000,8 @@ do isb=1,nicas_blk%nsb
          jsu = nicas_blk%hor(jl1)%c1u_to_su(jc1u)
 
          ! Fit function
-         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),zero) &
- & *fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),zero)
+         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),nicas_blk%ball(jl1,isb)%pkh(jbd),nl(inldef)) &
+ & *fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ball(jl1,isb)%pkv(jbd),nl(inldef))
          if (nicas_blk%anisotropic) S = S*nicas_blk%ball(jl1,isb)%Hcoef(jbd)
 
          if (sup(S,S_inf)) then
