@@ -10,7 +10,7 @@ module tools_fit
 
 use tools_const, only: zero,half,one
 use tools_func, only: fit_diag
-use tools_gc99, only: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,inldef,valid_ver,scalethmax,pk,nl,scaleh,scalev,fit_func, &
+use tools_gc99, only: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,inldef,scalethmax,pk,nl,scaleh,scalev,fit_func, &
  & support_hor,support_ver
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
@@ -178,7 +178,6 @@ if (raw(iz)>zero) then
                   else
                      if (negative_lobe) valid(ipkvdef,:) = .true.
                   end if
-                  valid = valid.and.valid_ver
                end if
 
                ! Optimize peakness and negative lobe (brute-force)

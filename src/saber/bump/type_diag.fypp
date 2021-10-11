@@ -153,7 +153,7 @@ type(samp_type),intent(in) :: samp     !< Sampling
 ! Local variables
 integer :: ib,il0,ic2a,tmp(1)
 real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
-real(kind_real),allocatable :: rh_c2a(:,:),pkh_c2a(:,:),rv_c2a(:,:),pkv_c2a(:,:),zerodist_c2a(:,:),mindist_c2a(:,:),minval_c2a(:,:)
+real(kind_real),allocatable :: rh_c2a(:,:),pkh_c2a(:,:),rv_c2a(:,:),pkv_c2a(:,:),nlv_c2a(:,:)
 
 ! Set name
 @:set_name(diag_filter_fit)
@@ -173,10 +173,8 @@ if (nam%local_diag) then
             allocate(rh_c2a(samp%nc2a,geom%nl0))
             allocate(pkh_c2a(samp%nc2a,geom%nl0))
             allocate(rv_c2a(samp%nc2a,geom%nl0))
-            if (.false.) then
-               allocate(pkv_c2a(samp%nc2a,geom%nl0))
-            else
-            end if
+            allocate(pkv_c2a(samp%nc2a,geom%nl0))
+            allocate(nlv_c2a(samp%nc2a,geom%nl0))
          end if
 
          do il0=1,geom%nl0
@@ -187,9 +185,8 @@ if (nam%local_diag) then
                   rh_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rh(il0)
                   pkh_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_pkh(il0)
                   rv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rv(il0)
-                  if (.false.) then
-                  else
-                  end if
+                  pkv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_pkv(il0)
+                  nlv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_nlv(il0)
                end if
 
                ! Apply bounds relatively to the global value
@@ -210,8 +207,13 @@ if (nam%local_diag) then
                      if ((rv_c2a(ic2a,il0)<diag%blk(0,ib)%fit_rv(il0)/bound) &
  & .or.(rv_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rv(il0)*bound)) rv_c2a(ic2a,il0) = mpl%msv%valr
                   end if
-                  if (.false.) then
-                  else
+                  if (mpl%msv%isnot(pkv_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_pkv(il0))) then
+                     if ((pkv_c2a(ic2a,il0)<diag%blk(0,ib)%fit_pkv(il0)/bound) &
+ & .or.(pkv_c2a(ic2a,il0)>diag%blk(0,ib)%fit_pkv(il0)*bound)) pkv_c2a(ic2a,il0) = mpl%msv%valr
+                  end if
+                  if (mpl%msv%isnot(nlv_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_nlv(il0))) then
+                     if ((nlv_c2a(ic2a,il0)<diag%blk(0,ib)%fit_nlv(il0)/bound) &
+ & .or.(nlv_c2a(ic2a,il0)>diag%blk(0,ib)%fit_nlv(il0)*bound)) nlv_c2a(ic2a,il0) = mpl%msv%valr
                   end if
                end if
             end do
@@ -223,9 +225,8 @@ if (nam%local_diag) then
                   call samp%diag_filter(mpl,'median',nam%diag_rhflt,rh_c2a(:,il0))
                   call samp%diag_filter(mpl,'median',nam%diag_rhflt,pkh_c2a(:,il0))
                   call samp%diag_filter(mpl,'median',nam%diag_rhflt,rv_c2a(:,il0))
-                  if (.false.) then
-                  else
-                  end if
+                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,pkv_c2a(:,il0))
+                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,nlv_c2a(:,il0))
                end if
 
                ! Average filter to smooth data
@@ -234,9 +235,8 @@ if (nam%local_diag) then
                   call samp%diag_filter(mpl,'average',nam%diag_rhflt,rh_c2a(:,il0))
                   call samp%diag_filter(mpl,'average',nam%diag_rhflt,pkh_c2a(:,il0))
                   call samp%diag_filter(mpl,'average',nam%diag_rhflt,rv_c2a(:,il0))
-                  if (.false.) then
-                  else
-                  end if
+                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,pkv_c2a(:,il0))
+                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,nlv_c2a(:,il0))
                end if
             end if
 
@@ -246,9 +246,8 @@ if (nam%local_diag) then
                call samp%diag_fill(mpl,rh_c2a(:,il0))
                call samp%diag_fill(mpl,pkh_c2a(:,il0))
                call samp%diag_fill(mpl,rv_c2a(:,il0))
-               if (.false.) then
-               else
-               end if
+               call samp%diag_fill(mpl,pkv_c2a(:,il0))
+               call samp%diag_fill(mpl,nlv_c2a(:,il0))
             end if
 
             ! Copy data
@@ -258,9 +257,8 @@ if (nam%local_diag) then
                   diag%blk(ic2a,ib)%fit_rh(il0) = rh_c2a(ic2a,il0)
                   diag%blk(ic2a,ib)%fit_pkh(il0) = pkh_c2a(ic2a,il0)
                   diag%blk(ic2a,ib)%fit_rv(il0) = rv_c2a(ic2a,il0)
-                  if (.false.) then
-                  else
-                  end if
+                  diag%blk(ic2a,ib)%fit_pkv(il0) = pkv_c2a(ic2a,il0)
+                  diag%blk(ic2a,ib)%fit_nlv(il0) = nlv_c2a(ic2a,il0)
                end if
             end do
          end do
@@ -270,9 +268,8 @@ if (nam%local_diag) then
             deallocate(rh_c2a)
             deallocate(pkh_c2a)
             deallocate(rv_c2a)
-            if (.false.) then
-            else
-            end if
+            deallocate(pkv_c2a)
+            deallocate(nlv_c2a)
          end if
       end if
    end do
@@ -292,9 +289,8 @@ if (nam%diag_rvflt>zero) then
                call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rh)
                call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_pkh)
                call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rv)
-               if (.false.) then
-               else
-               end if
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_pkv)
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_nlv)
             end if
          end do
       end if

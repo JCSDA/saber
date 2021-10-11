@@ -180,6 +180,7 @@ type nam_type
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
    logical :: peakness                                        !< Estimate peakness
+   logical :: negative_lobe                                   !< Estimate vertical negative lobe
    logical :: diag_sqrt                                       !< Diagnostic of square-root functions
    integer :: lct_nscales                                     !< Number of LCT scales
    real(kind_real) :: lct_scale_ratio                         !< Factor between diffusion scales
@@ -441,6 +442,7 @@ nam%diag_rhflt = zero
 nam%diag_rvflt = zero
 nam%fit_dl0 = 1
 nam%peakness = .false.
+nam%negative_lobe = .false.
 nam%diag_sqrt = .false.
 nam%lct_nscales = 0
 nam%lct_scale_ratio = ten
@@ -648,6 +650,7 @@ real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
 integer :: fit_dl0
 logical :: peakness
+logical :: negative_lobe
 logical :: diag_sqrt
 integer :: lct_nscales
 real(kind_real) :: lct_scale_ratio
@@ -833,6 +836,7 @@ namelist/fit_param/ &
  & diag_rvflt, &
  & fit_dl0, &
  & peakness, &
+ & negative_lobe, &
  & diag_sqrt, &
  & lct_nscales, &
  & lct_scale_ratio, &
@@ -1049,6 +1053,7 @@ if (mpl%main) then
    diag_rvflt = zero
    fit_dl0 = 1
    peakness = .false.
+   negative_lobe = .false.
    diag_sqrt = .false.
    lct_nscales = 0
    lct_scale_ratio = ten
@@ -1271,6 +1276,7 @@ if (mpl%main) then
    nam%diag_rvflt = diag_rvflt
    nam%fit_dl0 = fit_dl0
    nam%peakness = peakness
+   nam%negative_lobe = negative_lobe
    nam%diag_sqrt = diag_sqrt
    nam%lct_nscales = lct_nscales
    nam%lct_scale_ratio = lct_scale_ratio
@@ -1497,6 +1503,7 @@ call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%peakness,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%negative_lobe,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_sqrt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_nscales,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lct_scale_ratio,mpl%rootproc-1)
@@ -1907,6 +1914,7 @@ if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
 if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
 if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
 if (conf%has('peakness')) call conf%get_or_die('peakness',nam%peakness)
+if (conf%has('negative_lobe')) call conf%get_or_die('negative_lobe',nam%negative_lobe)
 if (conf%has('diag_sqrt')) call conf%get_or_die('diag_sqrt',nam%diag_sqrt)
 if (conf%has('lct_nscales')) call conf%get_or_die('lct_nscales',nam%lct_nscales)
 if (conf%has('lct_scale_ratio')) call conf%get_or_die('lct_scale_ratio',nam%lct_scale_ratio)
@@ -2836,6 +2844,7 @@ call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
 call mpl%write('peakness',nam%peakness)
+call mpl%write('negative_lobe',nam%negative_lobe)
 call mpl%write('diag_sqrt',nam%diag_sqrt)
 call mpl%write('lct_nscales',nam%lct_nscales)
 call mpl%write('lct_scale_ratio',nam%lct_scale_ratio)

@@ -550,7 +550,7 @@ else
 
       ! Threshold on anti-diagonal raw diagnostic minimum
       if ((nl0ad>ad_n).and.(minval(rawv)<ad_th)) then
-         call fast_fit(mpl,nl0ad,il0adz,distv,'ver',rawv,nam%peakness,.true.,fit_rv_l1(il1),fit_pkv_l1(il1), &
+         call fast_fit(mpl,nl0ad,il0adz,distv,'ver',rawv,nam%peakness,nam%negative_lobe,fit_rv_l1(il1),fit_pkv_l1(il1), &
  & fit_nlv_l1(il1))
          filled(il1) = .true.
       else

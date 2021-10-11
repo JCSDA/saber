@@ -13,11 +13,11 @@ parser.add_argument("srcdir", help="SABER source directory")
 args = parser.parse_args()
 
 # General parameters
-nnd = 31
+nnd = 51
 dnd = 1.0/float(nnd-1)
 nd = np.linspace(0, (nnd-1)*dnd, nnd)
-#epsabs = 1.0e-3
-epsabs = 1.0e-1
+epsabs_hor = 1.0e-2
+epsabs_ver = 1.0e-4
 support_th = 1.0e-2
 
 # Parameters
@@ -34,7 +34,7 @@ npk = int((pkmax-pkmin)/dpk)+1
 pk = np.linspace(pkmin, pkmax, npk)
 
 nlmin = 0.0
-nlmax = 5.0
+nlmax = 6.0
 dnl = 1.0
 nnl = int((nlmax-nlmin)/dnl)+1
 nl = np.linspace(nlmin, nlmax, nnl)
@@ -51,7 +51,7 @@ for ind in range(0,nnd):
 def S(r,pk):
    if np.abs(r) <= 0.5:
       if pk > 0.0:
-         return 1.0/(1.0+(pk+pk**4)*2.0*np.abs(r))-1.0/(1.0+(pk+pk**4))
+         return (1.0-2.0*np.abs(r))/(1.0+2.0*np.abs(r)*(pk+pk**4))
       else:
          return 1.0-(2.0*np.abs(r))**(1.0+pk**2)
    else:
@@ -62,11 +62,7 @@ def S_hor(x,y,pk):
    return S(r,pk)
 
 def S_ver(z,pk,nl):
-   if nl > 0.0:
-      envelop = (-2.0*(2.0*np.abs(z)*nl)**2*np.exp(-(2.0*np.abs(z)*nl)**2)+np.exp(-(2.0*np.abs(z)*nl)**2))
-   else:
-      envelop = 1.0
-   return S(z,pk)*envelop
+   return S(z,pk)*(1.0-(2.0*np.abs(z)*nl)**2)*(1.0-2.0*np.abs(z))
 
 def GC99(r):
    if r<0.5:
@@ -116,11 +112,11 @@ if run_horizontal:
          print("horizontal: " + str(ipk) + " : " + str(ind))
 
          # Square-root function
-         f_sqrt_hor[ind,ipk] = S(axis[ind],pk[ipk])/S(0,pk[ipk])
+         f_sqrt_hor[ind,ipk] = S(axis[ind],pk[ipk])
 
          # Horizontal integration (2D)
          f = lambda  y, x: S_hor(x,y,pk[ipk])*S_hor(axis[ind]-x,y,pk[ipk])
-         fint = integrate.dblquad(f, -0.5, 0.5, lambda x: -0.5, lambda x: 0.5, epsabs = epsabs)
+         fint = integrate.dblquad(f, -0.5, 0.5, lambda x: -0.5, lambda x: 0.5, epsabs = epsabs_hor)
          f_int_hor[ind,ipk] = fint[0]
          if ind == 0:
             norm = f_int_hor[ind,ipk]
@@ -189,7 +185,7 @@ if run_vertical:
 
             # Vertical integration (1D)
             f = lambda  z: S_ver(z,pk[ipk],nl[inl])*S_ver(axis[ind]-z,pk[ipk],nl[inl])
-            fint = integrate.quad(f, -0.5, 0.5, epsabs = epsabs)
+            fint = integrate.quad(f, -0.5, 0.5, epsabs = epsabs_ver)
             f_int_ver[ind,ipk,inl] = fint[0]
             if ind == 0:
                norm = f_int_ver[ind,ipk,inl]
@@ -202,9 +198,9 @@ if run_vertical:
          else:
             # Should have significant negative values
             imin = np.argmin(f_int_ver[:,ipk,inl])
-            if f_int_ver[imin,ipk,inl]<-0.01:
+            if f_int_ver[imin,ipk,inl]<0.0:
                # Should have small second maximum
-               if max(f_int_ver[imin:,ipk,inl])<0.05:
+               if max(f_int_ver[imin:,ipk,inl])<0.1:
                   valid_ver[ipk,inl] = True
 
          # Real support radius
@@ -230,13 +226,14 @@ if run_vertical:
       print('support_ver: ' + str(support_ver[:,inl]))
 
       if True:
-         # Remove invalid curves
-         if valid_ver[ipk,inl]:
-            f_sqrt_ver_plot[:,ipk,inl] = f_sqrt_ver[:,ipk,inl]
-            f_int_ver_plot[:,ipk,inl] = f_int_ver[:,ipk,inl]
-         else:
-            f_sqrt_ver_plot[:,ipk,inl] = np.nan
-            f_int_ver_plot[:,ipk,inl] = np.nan
+         for ipk in range(0, npk):
+            # Remove invalid curves
+            if valid_ver[ipk,inl]:
+               f_sqrt_ver_plot[:,ipk,inl] = f_sqrt_ver[:,ipk,inl]
+               f_int_ver_plot[:,ipk,inl] = f_int_ver[:,ipk,inl]
+            else:
+               f_sqrt_ver_plot[:,ipk,inl] = np.nan
+               f_int_ver_plot[:,ipk,inl] = np.nan
 
          # Plot curves
          fig, ax = plt.subplots(ncols=2, figsize=(14,7))
@@ -255,18 +252,19 @@ if run_vertical:
          plt.savefig("fit_ver_" + str(inl) + ".jpg", format="jpg", dpi=300)
          plt.close()
 
-         for iscaleth in range(0, nscaleth):
-            for ipk in range(0, npk):
-               scaled_axis[:,ipk] = axis/scalev[iscaleth,ipk,inl]
-            fig, ax = plt.subplots()
-            ax.set_xlim([0,1.0/min(scalev[iscaleth,:,inl])])
-            ax.set_ylim([-0.5,1.1])
-            ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
-            ax.axhline(y=0, color="k")
-            ax.axvline(x=0, color="k")
-            ax.plot(scaled_axis, f_int_ver_plot[:,:,inl])
-            plt.savefig("fit_ver_" + str(inl) + "_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
-            plt.close()
+         if False:
+            for iscaleth in range(0, nscaleth):
+               for ipk in range(0, npk):
+                  scaled_axis[:,ipk] = axis/scalev[iscaleth,ipk,inl]
+               fig, ax = plt.subplots()
+               ax.set_xlim([0,1.0/min(scalev[iscaleth,:,inl])])
+               ax.set_ylim([-0.5,1.1])
+               ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
+               ax.axhline(y=0, color="k")
+               ax.axvline(x=0, color="k")
+               ax.plot(scaled_axis, f_int_ver_plot[:,:,inl])
+               plt.savefig("fit_ver_" + str(inl) + "_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
+               plt.close()
 
 # Get default peaknesses
 ipkhdef = np.argmin(cost_hor)
@@ -392,18 +390,6 @@ if run_horizontal and run_vertical:
          else:
             suffix = "/),"
          file.write(" & %.8f_kind_real" % (support_ver[ipk,inl]) + suffix + " &\n")
-   file.write(" & (/npk,nnl/))\n")
-   file.write("logical,parameter :: valid_ver(npk,nnl) = reshape((/ &\n")
-   for inl in range(0, nnl):
-      for ipk in range(0, npk):
-         if inl != nnl-1 or ipk != npk-1:
-            suffix = ","
-         else:
-            suffix = "/),"
-         if valid_ver[ipk,inl]:
-            file.write(" & .true." + suffix + " &\n")
-         else:
-            file.write(" & .false." + suffix + " &\n")
    file.write(" & (/npk,nnl/))\n")
    file.write("\n")
    file.write("interface fit_func\n")
@@ -559,11 +545,11 @@ if run_horizontal and run_vertical:
    file.write("   value = zero\n")
    file.write("else\n")
    file.write("   if (pk>zero) then\n")
-   file.write("      value = (one/(one+pk**4*two*nd)-one/(one+pk**4))/(one-one/(one+pk**4))\n")
+   file.write("      value = (one-two*nd)/(one+two*nd*(pk+pk**4))\n")
    file.write("   else\n")
    file.write("      value = one-(two*nd)**(one+pk**2)\n")
    file.write("   end if\n")
-   file.write("   if (sup(nl,zero)) value = value*(-eight*(nd*nl)**2*exp(-four*(nd*nl)**2)+exp(-four*(nd*nl)**2))\n")
+   file.write("   if (sup(nl,zero)) value = value*(one-(two*nd*nl)**2)*(one-two*nd)\n")
    file.write("end if\n")
    file.write("\n")
    file.write("! Probe out\n")
