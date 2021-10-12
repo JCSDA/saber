@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_comm
 use iso_fortran_env, only: output_unit
 use tools_const, only: zero,hundredth,half,one,ten,hundred,pi,req,deg2rad,rad2deg
 use tools_kinds,only: kind_real,huge_real
-use tools_gc99, only: pkmin,pkmax,pk,ipkhdef,ipkvdef
+use tools_gc99, only: pkmin,pkmax,nlmin,nlmax,pk,ipkhdef,ipkvdef
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -21,7 +21,7 @@ implicit none
 
 integer,parameter :: nsubmax = 99                 !< Maximum number of sub-ensembles
 integer,parameter :: nvmax = 20                   !< Maximum number of variables
-integer,parameter :: nlmax = 300                  !< Maximum number of levels
+integer,parameter :: nl0max = 300                 !< Maximum number of levels
 integer,parameter :: nc3max = 100                 !< Maximum number of classes
 integer,parameter :: nscalesmax = 5               !< Maximum number of scales
 integer,parameter :: ndirmax = 99                 !< Maximum number of diracs
@@ -109,8 +109,8 @@ type nam_type
    character(len=1024) :: fname_wind                          !< Wind transform file
 
    ! model_param
-   integer :: nl                                              !< Number of levels
-   integer :: levs(nlmax)                                     !< Levels
+   integer :: nl0                                             !< Number of levels
+   integer :: levs(nl0max)                                    !< Levels
    character(len=1024) :: lev2d                               !< Level for 2D variables ('first' or 'last')
    logical :: logpres                                         !< Use pressure logarithm as vertical coordinate (model level if .false.)
    integer :: nv                                              !< Number of variables
@@ -166,11 +166,11 @@ type nam_type
    integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
    real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
    logical :: forced_var                                      !< Force specific variance
-   real(kind_real) :: stddev(nlmax,nvmax)                     !< Forced standard-deviation
+   real(kind_real) :: stddev(nl0max,nvmax)                    !< Forced standard-deviation
    logical :: var_filter                                      !< Filter variance
    integer :: var_niter                                       !< Number of iterations for the variance filtering (0 for uniform variance)
    integer :: var_npass                                       !< Number of passes for the variance filtering (0 for uniform variance)
-   real(kind_real) :: var_rhflt(nlmax,nvmax)                  !< Variance initial filtering support radius [in meters]
+   real(kind_real) :: var_rhflt(nl0max,nvmax)                 !< Variance initial filtering support radius [in meters]
    logical :: local_diag                                      !< Activate local diagnostics
    real(kind_real) :: local_rad                               !< Local diagnostics calculation radius [in meters]
    real(kind_real) :: local_dlat                              !< Local diagnostics calculation latitude band half-width [in degrees]
@@ -197,10 +197,11 @@ type nam_type
    character(len=1024) :: nicas_draw_type                     !< Subsampling draw type ('random_uniform','random_coast' or 'octahedral')
    logical :: network                                         !< Network-base convolution calculation (distance-based if false)
    logical :: forced_radii                                    !< Force specific support radii
-   real(kind_real) :: rh(nlmax,0:nvmax)                       !< Forced horizontal support radius [in meters]
-   real(kind_real) :: pkh(nlmax,0:nvmax)                      !< Forced horizontal peakness
-   real(kind_real) :: rv(nlmax,0:nvmax)                       !< Forced vertical support radius
-   real(kind_real) :: pkv(nlmax,0:nvmax)                      !< Forced vertical peakness
+   real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
+   real(kind_real) :: pkh(nl0max,0:nvmax)                     !< Forced horizontal peakness
+   real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
+   real(kind_real) :: pkv(nl0max,0:nvmax)                     !< Forced vertical peakness
+   real(kind_real) :: nlv(nl0max,0:nvmax)                     !< Forced vertical negative lobe parameter
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
@@ -247,7 +248,7 @@ contains
 end type nam_type
 
 private
-public :: nvmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
+public :: nvmax,nl0max,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
 public :: nam_type
 
 contains
@@ -265,7 +266,7 @@ class(nam_type),intent(out) :: nam !< Namelist
 integer,intent(in) :: nproc        !< Number of MPI task
 
 ! Local variable
-integer :: isub,il,iv,i,ildwv
+integer :: isub,il0,iv,i,ildwv
 
 ! Set name
 @:set_name(nam_init)
@@ -357,9 +358,9 @@ nam%fname_nicas = ''
 nam%fname_wind = ''
 
 ! model_param default
-nam%nl = 0
-do il=1,nlmax
-   nam%levs(il) = il
+nam%nl0 = 0
+do il0=1,nl0max
+   nam%levs(il0) = il0
 end do
 nam%lev2d = 'first'
 nam%logpres = .false.
@@ -463,8 +464,9 @@ nam%rh = -one
 nam%pkh = pk(ipkhdef)
 nam%rv = -one
 nam%pkv = pk(ipkvdef)
+nam%nlv = zero
 nam%min_lev = 1
-nam%max_lev = nlmax
+nam%max_lev = nl0max
 nam%pos_def_test = .false.
 nam%write_nicas_c0 = .true.
 nam%write_nicas_grids = .false.
@@ -515,7 +517,7 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 character(len=*),intent(in) :: namelname !< Namelist name
 
 ! Local variables
-integer :: isub,il,iv,i,ildwv,lunit
+integer :: isub,il0,iv,i,ildwv,lunit
 
 ! Namelist variables
 character(len=1024) :: datadir
@@ -589,8 +591,8 @@ character(len=1024),dimension(0:nsubmax) :: fname_mom
 character(len=1024) :: fname_cmat
 character(len=1024) :: fname_nicas
 character(len=1024) :: fname_wind
-integer :: nl
-integer :: levs(nlmax)
+integer :: nl0
+integer :: levs(nl0max)
 character(len=1024) :: lev2d
 logical :: logpres
 integer :: nv
@@ -638,11 +640,11 @@ logical :: vbal_pseudo_inv
 integer :: vbal_pseudo_inv_mmax
 real(kind_real) :: vbal_pseudo_inv_var_th
 logical :: forced_var
-real(kind_real) :: stddev(nlmax,nvmax)
+real(kind_real) :: stddev(nl0max,nvmax)
 logical :: var_filter
 integer :: var_niter
 integer :: var_npass
-real(kind_real) :: var_rhflt(nlmax,nvmax)
+real(kind_real) :: var_rhflt(nl0max,nvmax)
 logical :: local_diag
 real(kind_real) :: local_rad
 real(kind_real) :: local_dlat
@@ -665,10 +667,11 @@ integer :: nc1max
 character(len=1024) :: nicas_draw_type
 logical :: network
 logical :: forced_radii
-real(kind_real) :: rh(nlmax,0:nvmax)
-real(kind_real) :: pkh(nlmax,0:nvmax)
-real(kind_real) :: rv(nlmax,0:nvmax)
-real(kind_real) :: pkv(nlmax,0:nvmax)
+real(kind_real) :: rh(nl0max,0:nvmax)
+real(kind_real) :: pkh(nl0max,0:nvmax)
+real(kind_real) :: rv(nl0max,0:nvmax)
+real(kind_real) :: pkv(nl0max,0:nvmax)
+real(kind_real) :: nlv(nl0max,0:nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
@@ -770,7 +773,7 @@ namelist/files_param/ &
  & fname_nicas, &
  & fname_wind
 namelist/model_param/ &
- & nl, &
+ & nl0, &
  & levs, &
  & lev2d, &
  & logpres, &
@@ -856,6 +859,7 @@ namelist/nicas_param/ &
  & pkh, &
  & rv, &
  & pkv, &
+ & nlv, &
  & min_lev, &
  & max_lev, &
  & pos_def_test, &
@@ -968,9 +972,9 @@ if (mpl%main) then
    fname_wind = ''
 
    ! model_param default
-   nl = 0
-   do il=1,nlmax
-      levs(il) = il
+   nl0 = 0
+   do il0=1,nl0max
+      levs(il0) = il0
    end do
    lev2d = 'first'
    logpres = .false.
@@ -1074,8 +1078,9 @@ if (mpl%main) then
    pkh = pk(ipkhdef)
    rv = -one
    pkv = pk(ipkvdef)
+   nlv = zero
    min_lev = 1
-   max_lev = nlmax
+   max_lev = nl0max
    pos_def_test = .false.
    write_nicas_c0 = .true.
    write_nicas_grids = .false.
@@ -1108,7 +1113,7 @@ if (mpl%main) then
    wind_inflation = one
 
    ! Check maximum sizes
-   if (nam%nl>nlmax) call mpl%abort('${subr}$','nl is too large')
+   if (nam%nl0>nl0max) call mpl%abort('${subr}$','nl0 is too large')
    if (nam%nv>nvmax) call mpl%abort('${subr}$','nv is too large')
    if (nam%nc3>nc3max) call mpl%abort('${subr}$','nc3 is too large')
    if (nam%lct_nscales>nscalesmax) call mpl%abort('${subr}$','lct_nscales is too large')
@@ -1200,7 +1205,7 @@ if (mpl%main) then
 
    ! model_param
    read(lunit,nml=model_param)
-   nam%nl = nl
+   nam%nl0 = nl0
    nam%levs = levs
    nam%lev2d = lev2d
    nam%logpres = logpres
@@ -1298,6 +1303,7 @@ if (mpl%main) then
    nam%pkh = pkh
    nam%rv = rv
    nam%pkv = pkv
+   nam%nlv = nlv
    nam%min_lev = min_lev
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
@@ -1432,7 +1438,7 @@ call mpl%f_comm%broadcast(nam%fname_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fname_wind,mpl%rootproc-1)
 
 ! model_param
-call mpl%f_comm%broadcast(nam%nl,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%nl0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%levs,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lev2d,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%logpres,mpl%rootproc-1)
@@ -1524,6 +1530,7 @@ call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pkh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pkv,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%nlv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
@@ -1723,11 +1730,11 @@ if (conf%has('fname_wind')) then
 end if
 
 ! model_param
-if (conf%has('nl')) call conf%get_or_die('nl',nam%nl)
+if (conf%has('nl0')) call conf%get_or_die('nl0',nam%nl0)
 if (conf%has('levs')) then
    call conf%get_or_die('levs',integer_array)
-   if (size(integer_array)>nlmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: levs size should be smaller than ',nlmax
+   if (size(integer_array)>nl0max) then
+      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: levs size should be smaller than ',nl0max
       call flush(output_unit)
       call comm%abort(1)
    end if
@@ -1869,9 +1876,9 @@ if (conf%has('stddev')) then
    do iv=1,nam%nv
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nlmax) then
+         if (size(real_array)>nl0max) then
             write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: stddev-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nlmax
+ & ' size should be smaller than ',nl0max
             call flush(output_unit)
             call comm%abort(1)
          end if
@@ -1891,9 +1898,9 @@ if (conf%has('var_rhflt')) then
    do iv=1,nam%nv
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nlmax) then
+         if (size(real_array)>nl0max) then
             write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: var_rhflt-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nlmax
+ & ' size should be smaller than ',nl0max
             call flush(output_unit)
             call comm%abort(1)
          end if
@@ -1946,8 +1953,8 @@ if (conf%has('rh')) then
    call conf%get_or_die('rh',subconf)
    if (subconf%has('common')) then
       call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nlmax) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: rh-common size should be smaller than ',nlmax
+      if (size(real_array)>nl0max) then
+         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: rh-common size should be smaller than ',nl0max
          call flush(output_unit)
          call comm%abort(1)
       end if
@@ -1960,9 +1967,9 @@ if (conf%has('rh')) then
    do iv=1,nam%nv
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nlmax) then
+         if (size(real_array)>nl0max) then
             write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: rh-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nlmax
+ & ' size should be smaller than ',nl0max
             call flush(output_unit)
             call comm%abort(1)
          end if
@@ -1978,8 +1985,8 @@ if (conf%has('pkh')) then
    call conf%get_or_die('pkh',subconf)
    if (subconf%has('common')) then
       call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nlmax) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pkh-common size should be smaller than ',nlmax
+      if (size(real_array)>nl0max) then
+         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pkh-common size should be smaller than ',nl0max
          call flush(output_unit)
          call comm%abort(1)
       end if
@@ -1992,9 +1999,9 @@ if (conf%has('pkh')) then
    do iv=1,nam%nv
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nlmax) then
+         if (size(real_array)>nl0max) then
             write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: pkh-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nlmax
+ & ' size should be smaller than ',nl0max
             call flush(output_unit)
             call comm%abort(1)
          end if
@@ -2010,8 +2017,8 @@ if (conf%has('rv')) then
    call conf%get_or_die('rv',subconf)
    if (subconf%has('common')) then
       call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nlmax) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: rv-common size should be smaller than ',nlmax
+      if (size(real_array)>nl0max) then
+         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: rv-common size should be smaller than ',nl0max
          call flush(output_unit)
          call comm%abort(1)
       end if
@@ -2024,9 +2031,9 @@ if (conf%has('rv')) then
    do iv=1,nam%nv
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nlmax) then
+         if (size(real_array)>nl0max) then
             write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: rv-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nlmax
+ & ' size should be smaller than ',nl0max
             call flush(output_unit)
             call comm%abort(1)
          end if
@@ -2042,8 +2049,8 @@ if (conf%has('pkv')) then
    call conf%get_or_die('pkv',subconf)
    if (subconf%has('common')) then
       call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nlmax) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pkv-common size should be smaller than ',nlmax
+      if (size(real_array)>nl0max) then
+         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pkv-common size should be smaller than ',nl0max
          call flush(output_unit)
          call comm%abort(1)
       end if
@@ -2056,9 +2063,9 @@ if (conf%has('pkv')) then
    do iv=1,nam%nv
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nlmax) then
+         if (size(real_array)>nl0max) then
             write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: pkv-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nlmax
+ & ' size should be smaller than ',nl0max
             call flush(output_unit)
             call comm%abort(1)
          end if
@@ -2066,6 +2073,38 @@ if (conf%has('pkv')) then
             nam%pkv(:,iv) = real_array(1)
          else
             nam%pkv(1:size(real_array),iv) = real_array
+         end if
+      end if
+   end do
+end if
+if (conf%has('nlv')) then
+   call conf%get_or_die('nlv',subconf)
+   if (subconf%has('common')) then
+      call subconf%get_or_die('common',real_array)
+      if (size(real_array)>nl0max) then
+         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: nlv-common size should be smaller than ',nl0max
+         call flush(output_unit)
+         call comm%abort(1)
+      end if
+      if (size(real_array)==1) then
+         nam%nlv(:,0) = real_array(1)
+      else
+         nam%nlv(1:size(real_array),0) = real_array
+      end if
+   end if
+   do iv=1,nam%nv
+      if (subconf%has(nam%variables(iv))) then
+         call subconf%get_or_die(nam%variables(iv),real_array)
+         if (size(real_array)>nl0max) then
+            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: nlv-',trim(nam%variables(iv)), &
+ & ' size should be smaller than ',nl0max
+            call flush(output_unit)
+            call comm%abort(1)
+         end if
+         if (size(real_array)==1) then
+            nam%nlv(:,iv) = real_array(1)
+         else
+            nam%nlv(1:size(real_array),iv) = real_array
          end if
       end if
    end do
@@ -2207,7 +2246,7 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: isub,iv,ivmin,ivmax,i,il,idir,ildwv
+integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv
 character(len=2) :: ivchar,ildwvchar
 
 ! Set name
@@ -2217,7 +2256,7 @@ character(len=2) :: ivchar,ildwvchar
 @:probe_in()
 
 ! Check maximum sizes
-if (nam%nl>nlmax) call mpl%abort('${subr}$','nl is too large')
+if (nam%nl0>nl0max) call mpl%abort('${subr}$','nl0 is too large')
 if (nam%nv>nvmax) call mpl%abort('${subr}$','nv is too large')
 if (nam%ens1_nsub>nsubmax) call mpl%abort('${subr}$','ens1_nsub is too large')
 if (nam%ens2_nsub>nsubmax) call mpl%abort('${subr}$','ens2_nsub is too large')
@@ -2366,10 +2405,10 @@ if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'_nicas'
 if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'_wind'
 
 ! Check model_param
-if (nam%nl<=0) call mpl%abort('${subr}$','nl should be positive')
-do il=1,nam%nl
-   if (nam%levs(il)<=0) call mpl%abort('${subr}$','levs should be positive')
-   if (count(nam%levs(1:nam%nl)==nam%levs(il))>1) call mpl%abort('${subr}$','redundant levels')
+if (nam%nl0<=0) call mpl%abort('${subr}$','nl0 should be positive')
+do il0=1,nam%nl0
+   if (nam%levs(il0)<=0) call mpl%abort('${subr}$','levs should be positive')
+   if (count(nam%levs(1:nam%nl0)==nam%levs(il0))>1) call mpl%abort('${subr}$','redundant levels')
 end do
 if ((trim(nam%lev2d)/='first').and.(trim(nam%lev2d)/='last')) call mpl%abort('${subr}$','wrong lev2d value')
 if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%update_var.or.nam%load_var.or. &
@@ -2495,8 +2534,8 @@ end if
 if (nam%new_var) then
    if (nam%forced_var) then
       do iv=1,nam%nv
-         do il=1,nam%nl
-            if (.not.(nam%stddev(il,iv)>zero)) call mpl%abort('${subr}$','stddev should be positive')
+         do il0=1,nam%nl0
+            if (.not.(nam%stddev(il0,iv)>zero)) call mpl%abort('${subr}$','stddev should be positive')
          end do
       end do
       if (nam%var_filter) call mpl%abort('${subr}$','var_filter forbidden for forced_var')
@@ -2507,8 +2546,8 @@ if (nam%new_var) then
  & call mpl%abort('${subr}$','var_niter or var_npass should not be positive at te same time')
       if ((nam%var_niter>0).or.(nam%var_npass>0)) then
          do iv=1,nam%nv
-            do il=1,nam%nl
-               if (.not.(nam%var_rhflt(il,iv)>zero)) call mpl%abort('${subr}$','var_rhflt should be positive')
+            do il0=1,nam%nl0
+               if (.not.(nam%var_rhflt(il0,iv)>zero)) call mpl%abort('${subr}$','var_rhflt should be positive')
             end do
          end do
       end if
@@ -2589,11 +2628,12 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          ivmax = nam%nv
       end if
       do iv=ivmin,ivmax
-         do il=1,nam%nl
-            if (nam%rh(il,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
-            if ((nam%pkh(il,iv)<pkmin).or.(nam%pkh(il,iv)>pkmax)) call mpl%abort('${subr}$','pkh is out of bounds')
-            if (nam%rv(il,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
-            if ((nam%pkv(il,iv)<pkmin).or.(nam%pkv(il,iv)>pkmax)) call mpl%abort('${subr}$','pkv is out of bounds')
+         do il0=1,nam%nl0
+            if (nam%rh(il0,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
+            if ((nam%pkh(il0,iv)<pkmin).or.(nam%pkh(il0,iv)>pkmax)) call mpl%abort('${subr}$','pkh is out of bounds')
+            if (nam%rv(il0,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
+            if ((nam%pkv(il0,iv)<pkmin).or.(nam%pkv(il0,iv)>pkmax)) call mpl%abort('${subr}$','pkv is out of bounds')
+            if ((nam%nlv(il0,iv)<nlmin).or.(nam%nlv(il0,iv)>nlmax)) call mpl%abort('${subr}$','nlv is out of bounds')
          end do
       end do
    end if
@@ -2619,7 +2659,7 @@ if (nam%check_dirac) then
    do idir=1,nam%ndir
       if ((nam%londir(idir)<-pi).or.(nam%londir(idir)>pi)) call mpl%abort('${subr}$','londir should lie between -180 and 180')
       if ((nam%latdir(idir)<-half*pi).or.(nam%latdir(idir)>half*pi)) call mpl%abort('${subr}$','latdir should lie between -90 and 90')
-      if (.not.any(nam%levs(1:nam%nl)==nam%levdir(idir))) call mpl%abort('${subr}$','wrong level for a Dirac')
+      if (.not.any(nam%levs(1:nam%nl0)==nam%levdir(idir))) call mpl%abort('${subr}$','wrong level for a Dirac')
       if ((nam%ivdir(idir)<1).or.(nam%ivdir(idir)>nam%nv)) call mpl%abort('${subr}$','wrong variable for a Dirac')
    end do
 end if
@@ -2668,7 +2708,7 @@ class(nam_type),intent(in) :: nam   !< Namelist
 type(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Local variables
-real(kind_real) :: real_array(nam%nl*(nam%nv+1))
+real(kind_real) :: real_array(nam%nl0*(nam%nv+1))
 real(kind_real),allocatable :: londir(:),latdir(:),lon_ldwv(:),lat_ldwv(:)
 
 ! Set name
@@ -2761,8 +2801,8 @@ call mpl%write('fname_wind',nam%fname_wind)
 ! model_param
 write(mpl%info,'(a7,a)') '','Model parameters'
 call mpl%flush
-call mpl%write('nl',nam%nl)
-call mpl%write('levs',nam%nl,nam%levs(1:nam%nl))
+call mpl%write('nl0',nam%nl0)
+call mpl%write('levs',nam%nl0,nam%levs(1:nam%nl0))
 call mpl%write('lev2d',nam%lev2d)
 call mpl%write('logpres',nam%logpres)
 call mpl%write('nv',nam%nv)
@@ -2826,13 +2866,13 @@ call mpl%write('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 call mpl%write('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 call mpl%write('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
 call mpl%write('forced_var',nam%forced_var)
-real_array(1:nam%nl*nam%nv) = reshape(nam%stddev(1:nam%nl,1:nam%nv),(/nam%nl*nam%nv/))
-call mpl%write('stddev',nam%nl*nam%nv,real_array(1:nam%nl*nam%nv))
+real_array(1:nam%nl0*nam%nv) = reshape(nam%stddev(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
+call mpl%write('stddev',nam%nl0*nam%nv,real_array(1:nam%nl0*nam%nv))
 call mpl%write('var_filter',nam%var_filter)
 call mpl%write('var_niter',nam%var_niter)
 call mpl%write('var_npass',nam%var_npass)
-real_array(1:nam%nl*nam%nv) = reshape(nam%var_rhflt(1:nam%nl,1:nam%nv),(/nam%nl*nam%nv/))
-call mpl%write('var_rhflt',nam%nl*nam%nv,real_array)
+real_array(1:nam%nl0*nam%nv) = reshape(nam%var_rhflt(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
+call mpl%write('var_rhflt',nam%nl0*nam%nv,real_array)
 call mpl%write('local_diag',nam%local_diag)
 call mpl%write('local_rad',nam%local_rad*req)
 call mpl%write('local_dlat',nam%local_dlat*rad2deg)
@@ -2863,14 +2903,16 @@ call mpl%write('nc1max',nam%nc1max)
 call mpl%write('nicas_draw_type',nam%nicas_draw_type)
 call mpl%write('network',nam%network)
 call mpl%write('forced_radii',nam%forced_radii)
-real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%rh(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
-call mpl%write('rh',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
-real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%pkh(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
-call mpl%write('pkh',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
-real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%rv(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
-call mpl%write('rv',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
-real_array(1:nam%nl*(nam%nv+1)) = reshape(nam%pkv(1:nam%nl,0:nam%nv),(/nam%nl*(nam%nv+1)/))
-call mpl%write('pkv',nam%nl*(nam%nv+1),real_array(1:nam%nl*(nam%nv+1)))
+real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
+call mpl%write('rh',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
+real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%pkh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
+call mpl%write('pkh',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
+real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
+call mpl%write('rv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
+real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%pkv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
+call mpl%write('pkv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
+real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%nlv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
+call mpl%write('nlv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)

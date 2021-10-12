@@ -69,14 +69,14 @@ do img=1,model%nmg
       ilon = model%mg_to_lon(img)
       ilat = model%mg_to_lat(img)
       P0 = sum(delp(ilon,ilat,:))
-      do il0=1,nam%nl
+      do il0=1,nam%nl0
          if (nam%levs(il0)==model%nlev) then
             model%vunit(img,il0) = log(P0-half*delp(ilon,ilat,model%nlev))
          else
             model%vunit(img,il0) = log(P0-sum(delp(ilon,ilat,nam%levs(il0)+1:model%nlev))-half*delp(ilon,ilat,nam%levs(il0)))
          end if
       end do
-      if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(P0)
+      if (model%nl0>nam%nl0) model%vunit(img,model%nl0) = log(P0)
    else
       model%vunit(img,:) = real(nam%levs(1:model%nl0),kind_real)
    end if
@@ -147,7 +147,7 @@ do iv=1,nam%nv
          end if
       case (4)
          ! 3D data
-         do il0=1,nam%nl
+         do il0=1,nam%nl0
             call get_var(mpl,ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/),(/model%nlon,model%nlat,1,1/))
          end do
       case default

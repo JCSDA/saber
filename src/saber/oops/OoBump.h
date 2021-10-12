@@ -149,12 +149,12 @@ OoBump<MODEL>::OoBump(const Geometry_ & resol,
     grids[jgrid].set("nv", vars_str.size());
 
     // Get the required number of levels add it to the grid configuration
-    int nl = 0;
+    int nl0 = 0;
     for (size_t jvar = 0; jvar < vars_str.size(); ++jvar) {
       atlas::Field atlasField = atlasFieldSet->field(vars_str[jvar]);
-      nl = std::max(nl, std::max(atlasField.levels(), 1));
+      nl0 = std::max(nl0, std::max(atlasField.levels(), 1));
     }
-    grids[jgrid].set("nl", nl);
+    grids[jgrid].set("nl0", nl0);
 
     // Add level index for 2D fields (first or last, first by default)
     if (!grids[jgrid].has("lev2d")) {

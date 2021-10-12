@@ -346,7 +346,7 @@ logical :: ioc0
 geom%nproc = mpl%nproc
 
 ! Number of levels
-geom%nl0 = nam%nl
+geom%nl0 = nam%nl0
 
 ! Copy function space pointer
 geom%afunctionspace_mg = atlas_functionspace(afunctionspace%c_ptr())

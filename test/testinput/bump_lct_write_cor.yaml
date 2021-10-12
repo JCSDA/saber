@@ -10,7 +10,7 @@ new_lct: 1
 write_lct: 1
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]

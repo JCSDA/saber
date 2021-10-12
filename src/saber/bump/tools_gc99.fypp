@@ -27,7 +27,6 @@ integer,parameter :: nnl = 7
 integer,parameter :: nscaleth = 7
 integer,parameter :: ipkhdef = 13
 integer,parameter :: ipkvdef = 1
-integer,parameter :: inldef = 1
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real
 real(kind_real),parameter :: ndmax = 1.00000000_kind_real
 real(kind_real),parameter :: pkmin = -2.00000000_kind_real
@@ -14738,7 +14737,9 @@ interface fit_func_sqrt
    module procedure gc99_fit_func_sqrt
 end interface
 
-public ! TODO: make useless public stuff private
+private
+public :: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,pkmin,pkmax,nlmin,nlmax,scalethmax,pk,nl,scaleh,scalev,support_hor,support_ver
+public :: fit_func,fit_func_sqrt
 
 contains
 

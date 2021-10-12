@@ -15,7 +15,7 @@ check_dirac: 1
 check_set_param_hyb: 1
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]

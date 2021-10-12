@@ -8,7 +8,7 @@ new_vbal: 1
 write_vbal: 1
 
 # model_param
-nl: 4
+nl0: 4
 levs: [1,2,3,4]
 nv: 3
 variables: ["u","q","cosu_plus_q2"]

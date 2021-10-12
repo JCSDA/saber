@@ -417,8 +417,6 @@ if (bump%nam%ens1_ne>0) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Initialize ensemble 1'
    call bump%mpl%flush
-   call bump%ens1%alloc(bump%nam%ens1_ne,bump%nam%ens1_nsub)
-else
    call bump%ens1%set_att(bump%nam%ens1_ne,bump%nam%ens1_nsub)
 end if
 
@@ -428,8 +426,6 @@ if (bump%nam%ens2_ne>0) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Initialize ensemble 2'
    call bump%mpl%flush
-   call bump%ens2%alloc(bump%nam%ens2_ne,bump%nam%ens2_nsub)
-else
    call bump%ens2%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
 end if
 
@@ -465,6 +461,7 @@ integer,intent(in) :: iens                 !< Ensemble number
 if ((iens/=1).and.(iens/=2)) call bump%mpl%abort('${subr}$','wrong ensemble number')
 
 if (iens==1) then
+   if (.not.bump%ens1%loaded) call bump%ens1%alloc(bump%nam%ens1_ne,bump%nam%ens1_nsub)
    if (copy_ensemble) then
       ! Copy ATLAS fields
       call bump%ens1%mem(ie)%init(bump%mpl,fieldset,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
@@ -481,6 +478,7 @@ if (iens==1) then
 !   call bump%mpl%flush
 !   call bump%ens1%mem(ie)%print(bump%mpl)
 elseif (iens==2) then
+   if (.not.bump%ens2%loaded) call bump%ens2%alloc(bump%nam%ens2_ne,bump%nam%ens2_nsub)
    if (copy_ensemble) then
       ! Copy ATLAS fields
       call bump%ens2%mem(ie)%init(bump%mpl,fieldset,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
@@ -1673,7 +1671,7 @@ fld_mga = bump%mpl%msv%valr
 
 ! Get parameter
 select case (trim(param))
-case ('cor_rh','cor_pkh','cor_rv','cor_pkv','loc_coef','loc_rh','loc_pkh','loc_rv','loc_pkv','hyb_coef', &
+case ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_pkh','loc_rv','loc_nlv','hyb_coef', &
  & 'loc_D11','loc_D22','loc_D33','loc_D12','loc_Dcoef','loc_DLh','loc_DLv','nicas_norm')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
@@ -1843,6 +1841,10 @@ case ('cor_rv')
 case ('cor_pkv')
    if (.not.allocated(bump%cmat%blk(ib)%pkv)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%pkv,fld_mga)
+   found = .true.
+case ('cor_nlv')
+   if (.not.allocated(bump%cmat%blk(ib)%nlv)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%nlv,fld_mga)
    found = .true.
 case ('loc_coef')
    if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort('${subr}$', &
@@ -2239,8 +2241,8 @@ found = .false.
 ! Check allocation / parameter existence
 select case (trim(param))
 case ('stddev','var','m4')
-case ('cor_rh','cor_pkh','cor_rv','cor_pkv','loc_coef','loc_rh','loc_pkh','loc_rv','loc_pkv','hyb_coef','D11','D22','D33','D12', &
- & 'Dcoef')
+case ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_pkh','loc_rv','loc_pkv','hyb_coef','D11','D22', &
+ & 'D33','D12','Dcoef')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 case ('nicas_norm')
    if (.not.allocated(bump%nicas%blk)) allocate(bump%nicas%blk(bump%bpar%nbe))
@@ -2298,6 +2300,10 @@ case ('cor_rv')
 case ('cor_pkv')
    if (.not.allocated(bump%cmat%blk(ib)%bump_pkv)) allocate(bump%cmat%blk(ib)%bump_pkv(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_pkv)
+   found = .true.
+case ('cor_nlv')
+   if (.not.allocated(bump%cmat%blk(ib)%bump_nlv)) allocate(bump%cmat%blk(ib)%bump_nlv(bump%geom%nc0a,bump%geom%nl0))
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_nlv)
    found = .true.
 case ('loc_coef')
    if (.not.allocated(bump%cmat%blk(ib)%bump_coef_ens)) allocate(bump%cmat%blk(ib)%bump_coef_ens(bump%geom%nc0a,bump%geom%nl0))

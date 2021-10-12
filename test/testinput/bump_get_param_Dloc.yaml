@@ -11,7 +11,7 @@ write_hdiag: 1
 check_get_param_Dloc: 1
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]

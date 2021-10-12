@@ -147,7 +147,7 @@ logical,intent(in),optional :: copy                  !< Copy fields data
 logical,intent(in),optional :: pass                  !< Pass fields pointers
 
 ! Local variables
-integer :: nmga,nl0,nv,iv,nl
+integer :: nmga,nl0,nv,iv,nl0in
 real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:)
 real(kind_real),pointer :: ptr_1_out(:),ptr_2_out(:,:)
 logical :: lcopy,lpass
@@ -226,10 +226,10 @@ do iv=1,nv
          afunctionspace = afield_in%functionspace()
 
          ! Get number of levels
-         nl = afield_in%levels()
+         nl0in = afield_in%levels()
 
          ! Create output field
-         afield_out = afunctionspace%create_field(name=fieldset_out%variables(iv),kind=atlas_real(kind_real),levels=nl)
+         afield_out = afunctionspace%create_field(name=fieldset_out%variables(iv),kind=atlas_real(kind_real),levels=nl0in)
 
          ! Add field
          call fieldset_out%add(afield_out)

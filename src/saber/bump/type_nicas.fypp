@@ -8,7 +8,6 @@
 !----------------------------------------------------------------------
 module type_nicas
 
-use atlas_module, only: atlas_fieldset
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_status
 use tools_const, only: zero,one,two,ten,rad2deg,reqkm,pi
 use tools_func, only: fletcher32,sphere_dist,cholesky,fit_diag,zss_sum
@@ -1965,7 +1964,8 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
 integer :: ib,il0,iv
-real(kind_real) :: rh_diag(geom%nl0,bpar%nbe),pkh_diag(geom%nl0,bpar%nbe),rv_diag(geom%nl0,bpar%nbe),pkv_diag(geom%nl0,bpar%nbe)
+real(kind_real) :: rh_diag(geom%nl0,bpar%nbe),pkh_diag(geom%nl0,bpar%nbe)
+real(kind_real) :: rv_diag(geom%nl0,bpar%nbe),pkv_diag(geom%nl0,bpar%nbe),nlv_diag(geom%nl0,bpar%nbe)
 logical :: new_mom,new_hdiag
 type(ens_type) :: ens
 type(hdiag_type) :: hdiag
@@ -2013,6 +2013,8 @@ do ib=1,bpar%nbe
  & rv_diag(il0,ib) = hdiag%cor_1%blk(0,ib)%fit_rv(il0)/nam%rv(il0,iv)
          if ((hdiag%cor_1%blk(0,ib)%fit_pkv(il0)>zero).and.(nam%pkv(il0,iv)>zero)) &
  & pkv_diag(il0,ib) = hdiag%cor_1%blk(0,ib)%fit_pkv(il0)/nam%pkv(il0,iv)
+         if ((hdiag%cor_1%blk(0,ib)%fit_nlv(il0)>zero).and.(nam%nlv(il0,iv)>zero)) &
+ & nlv_diag(il0,ib) = hdiag%cor_1%blk(0,ib)%fit_nlv(il0)/nam%nlv(il0,iv)
       end do
    end if
 end do
@@ -2036,6 +2038,10 @@ do ib=1,bpar%nbe
          end if
          if (mpl%msv%isnot(pkv_diag(il0,ib))) then
             write(mpl%info,'(a,f5.3)') ' / ',pkv_diag(il0,ib)
+            call mpl%flush(.false.)
+         end if
+         if (mpl%msv%isnot(nlv_diag(il0,ib))) then
+            write(mpl%info,'(a,f5.3)') ' / ',nlv_diag(il0,ib)
             call mpl%flush(.false.)
          end if
          write(mpl%info,'(a)') ''
@@ -2220,7 +2226,7 @@ do ifac=-nfac_opt,nfac_opt
                rh_sum = zss_sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rh(:,il0)))
                call mpl%f_comm%allreduce(rh_sum,rh_tot,fckit_mpi_sum())
                loc_opt%blk(0,ib)%fit_rh = rh_tot/real(geom%nc0_gmask(il0),kind_real)
-               if ((nam%nl>1).and.(nam%rv(il0,iv)>zero)) then
+               if ((geom%nl0>1).and.(nam%rv(il0,iv)>zero)) then
                   rv_sum = zss_sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rv(:,il0)))
                   call mpl%f_comm%allreduce(rv_sum,rv_tot,fckit_mpi_sum())
                   loc_opt%blk(0,ib)%fit_rv = rv_tot/real(geom%nc0_gmask(il0),kind_real)

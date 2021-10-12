@@ -10,7 +10,7 @@ module tools_fit
 
 use tools_const, only: zero,half,one
 use tools_func, only: fit_diag
-use tools_gc99, only: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,inldef,scalethmax,pk,nl,scaleh,scalev,fit_func, &
+use tools_gc99, only: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,scalethmax,pk,nl,scaleh,scalev,fit_func, &
  & support_hor,support_ver
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
@@ -164,16 +164,16 @@ if (raw(iz)>zero) then
                ! Prepare optimization mask
                if (dir=='hor') then
                   valid = .false.
-                  valid(ipkhdef,inldef) = .true.
-                  if (peakness) valid(:,inldef) = .true.
+                  valid(ipkhdef,1) = .true.
+                  if (peakness) valid(:,1) = .true.
                elseif (dir=='ver') then
                   valid = .false.
-                  valid(ipkvdef,inldef) = .true.
+                  valid(ipkvdef,1) = .true.
                   if (peakness) then
                      if (negative_lobe) then
                         valid = .true.
                      else
-                        valid(:,inldef) = .true.
+                        valid(:,1) = .true.
                      end if
                   else
                      if (negative_lobe) valid(ipkvdef,:) = .true.
@@ -223,7 +223,7 @@ if (raw(iz)>zero) then
       elseif (dir=='ver') then
          fit_pk = pk(ipkvdef)
       end if
-      fit_nl = nl(inldef)
+      fit_nl = zero
    end if
 else
    ! Zero-separation point is negative
@@ -273,7 +273,7 @@ if (n>1) then
             if (mpl%msv%isnot(profile(i)).and.mpl%msv%isnot(profile(j))) then
                ! Gaspari-Cohn (1999) function
                distnorm = abs(x(j)-x(i))/rv
-               kernel(i,j) = fit_func(mpl,'ver',distnorm,pk(ipkvdef),nl(inldef))
+               kernel(i,j) = fit_func(mpl,'ver',distnorm,pk(ipkvdef),zero)
             end if
          end do
       end do

@@ -13,7 +13,7 @@ use atlas_module, only: atlas_geometry
 use iso_c_binding
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
-use tools_gc99, only: nl,inldef,fit_func,fit_func_sqrt,pk,ipkhdef
+use tools_gc99, only: fit_func,fit_func_sqrt,pk,ipkhdef
 use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small,eq
@@ -1287,7 +1287,7 @@ do il0=1,nl0
          pkh_eff = half*(pkh(il0)+pkh(jl0))
 
          ! Horizontal component
-         call fit_diag(mpl,nc3,disth,'hor',rh_eff,pkh_eff,nl(inldef),hor_fit)
+         call fit_diag(mpl,nc3,disth,'hor',rh_eff,pkh_eff,zero,hor_fit)
 
          do jc3=1,nc3
             ! Fit function
@@ -1372,7 +1372,7 @@ do iscales=1,nscales
             if (M==-1) then
                ! Gaspari-Cohn 1999 function
                distnorm = sqrt(rsq)*gc2gau
-               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*fit_func(mpl,'hor',distnorm,pk(ipkhdef),nl(inldef)) ! TODO: non-zero horizontal peakness
+               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*fit_func(mpl,'hor',distnorm,pk(ipkhdef),zero) ! TODO: non-zero horizontal peakness
             elseif (M==0) then
                ! Gaussian function
                if (rsq<40.0_kind_real) fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*exp(-half*rsq)

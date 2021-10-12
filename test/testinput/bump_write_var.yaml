@@ -10,7 +10,7 @@ new_var: 1
 write_var: 1
 
 # model_param
-nl: 4
+nl0: 4
 levs: [1,2,3,4]
 nv: 2
 variables: ["u","q"]

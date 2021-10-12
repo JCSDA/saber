@@ -177,7 +177,7 @@ do iv=1,nam%nv
             end if
          case (3)
             ! 3D data
-            do il0=1,nam%nl
+            do il0=1,nam%nl0
                call get_var(mpl,ncid,fld_id,fld_tmp(1:model%nlon-1,:,il0),(/1,1,nam%levs(il0)/),(/model%nlon-1,model%nlat,1/))
                fld_tmp(model%nlon,:,il0) = fld_tmp(1,:,il0)
             end do

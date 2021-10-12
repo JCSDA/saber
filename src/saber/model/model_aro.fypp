@@ -100,7 +100,7 @@ case ("hyd")
    ncid = open_file(mpl,trim(nam%prefix)//'_hyd',0)
 
    ! Read mask
-   do il0=1,nam%nl
+   do il0=1,nam%nl0
       ! Get id
       write(ilchar,'(i3.3)') nam%levs(il0)
       mask_id = inquire_var(mpl,ncid,'S'//ilchar//'MASK')
@@ -135,14 +135,14 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
    mask_counter = 0
    select case (trim(nam%mask_type))
    case("lwc_fog")
-      il0_bot = nam%nl
-      il0_top = nam%nl-2
+      il0_bot = nam%nl0
+      il0_top = nam%nl0-2
    case("lwc_clear")
-      il0_bot = nam%nl
+      il0_bot = nam%nl0
       il0_top = 1
    case("lwc_stratus")
-      il0_bot = nam%nl-30
-      il0_top = nam%nl-66
+      il0_bot = nam%nl0-30
+      il0_top = nam%nl0-66
    end select
 
    ! Setup mask
@@ -154,7 +154,7 @@ case ("lwc_fog","lwc_clear","lwc_stratus")
       ncid = open_file(mpl,filename,0)
 
       ! Read LWC
-      do il0=1,nam%nl
+      do il0=1,nam%nl0
          ! Get id
          write(ilchar,'(i3.3)') nam%levs(il0)
          fld_id = inquire_var(mpl,ncid,'S'//ilchar//'CLOUD_WATER')
@@ -201,9 +201,9 @@ end select
 ! Vertical unit
 do img=1,model%nmg
    if (nam%logpres) then
-      model%vunit(img,1:nam%nl) = log(half*(a(nam%levs(1:nam%nl))+a(nam%levs(1:nam%nl)+1)) &
- & +half*(b(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl)+1))*ps)
-      if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(ps)
+      model%vunit(img,1:nam%nl0) = log(half*(a(nam%levs(1:nam%nl0))+a(nam%levs(1:nam%nl0)+1)) &
+ & +half*(b(nam%levs(1:nam%nl0))+b(nam%levs(1:nam%nl0)+1))*ps)
+      if (model%nl0>nam%nl0) model%vunit(img,model%nl0) = log(ps)
    else
       model%vunit(img,:) = real(nam%levs(1:model%nl0),kind_real)
    end if
@@ -259,7 +259,7 @@ end if
 
 do iv=1,nam%nv
    if (mpl%main) then
-      do il0=1,nam%nl
+      do il0=1,nam%nl0
          ! Get id
          write(ilchar,'(i3.3)') nam%levs(il0)
          fld_id = inquire_var(mpl,ncid,'S'//ilchar//trim(nam%variables(iv)))

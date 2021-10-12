@@ -11,7 +11,7 @@ new_nicas: 1
 check_optimality: 1
 
 # model_param
-nl: 1
+nl0: 1
 levs: [1]
 nv: 1
 variables: ["q"]
