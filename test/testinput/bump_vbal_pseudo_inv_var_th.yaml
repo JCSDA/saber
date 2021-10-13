@@ -42,7 +42,6 @@ londir: [-85.0]
 latdir: [65.0]
 levdir: [1]
 ivdir: [1]
-itsdir: [1]
 
 # output_param
 
