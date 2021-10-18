@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
 use tools_func, only: gc2gau,lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
-use tools_gc99, only: pk,ipkhdef,ipkvdef,fit_func_sqrt
+use tools_gc99, only: pkmin,pkmax,nlmin,nlmax,dpk,dnl,pk,scaleh,scalev,scalethmin,ipkhdef,ipkvdef,fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
  & inquire_var_presence,put_var,get_var
@@ -2551,9 +2551,9 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: il0,il0first,il0last,il0_prev,il1,ic0a,il0inf,il0sup,jl0,jl1
+integer :: il0,il0first,il0last,il0_prev,il1,ic0a,il0inf,il0sup,jl0,jl1,ipk,inl
 integer :: npos(geom%nl0),nmis(geom%nl0),npostot(geom%nl0),nmistot(geom%nl0),l0_to_l1(geom%nl0)
-real(kind_real) :: distnormmin,distnorm(geom%nc0a),rv
+real(kind_real) :: distnormmin,distnorm(geom%nc0a),rv,pkv,bpk,nlv,bnl
 logical :: slev(geom%nl0)
 
 ! Set name
@@ -2613,8 +2613,14 @@ else
             distnorm = huge_real
             do ic0a=1,geom%nc0a
                if (geom%gmask_c0a(ic0a,il0)) then
-                  rv = sqrt(half*(nicas_blk%rvs(ic0a,il0)**2+nicas_blk%rvs(ic0a,il0_prev)**2))
-                  if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/rv
+                  rv = half*(nicas_blk%rvs(ic0a,il0)+nicas_blk%rvs(ic0a,il0_prev))
+                  pkv = half*(nicas_blk%pkv(ic0a,il0)+nicas_blk%pkv(ic0a,il0_prev))
+                  bpk = max(pkmin,min(pkv,pkmax))
+                  ipk = floor((bpk-pkmin)/dpk)+1
+                  nlv = half*(nicas_blk%nlv(ic0a,il0)+nicas_blk%nlv(ic0a,il0_prev))
+                  bnl = max(nlmin,min(nlv,nlmax))
+                  inl = floor((bnl-nlmin)/dnl)+1
+                  if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/(rv*scalev(1,ipk,inl))
                end if
             end do
             call mpl%f_comm%allreduce(zss_minval(distnorm),distnormmin,fckit_mpi_min())
@@ -2734,14 +2740,14 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: il1,il0,ic1,ic0,iproc,ic1a,n,ix,iy,ic0u,ic0a,ic1u,ifmt,i_s,jc1,jproc,jc1u,ic1b,jc1b,jc0u,ic0b,nc0own,ic0own,jc0b
+integer :: il1,il0,ic1,ic0,iproc,ic1a,n,ix,iy,ic0u,ic0a,ic1u,ifmt,i_s,jc1,jproc,jc1u,ic1b,jc1b,jc0u,ic0b,nc0own,ic0own,jc0b,ipk
 integer :: is,isu,isa,isb
 integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:)
-real(kind_real) :: nc1_real
-real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_sum(geom%nl0)
-real(kind_real) :: rhs_min_tot(geom%nl0),rhs_max_tot(geom%nl0),rhs_avg(geom%nl0),lonlat(2)
+real(kind_real) :: nc1_real,bpk
+real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_sum(geom%nl0),scale_sum(geom%nl0)
+real(kind_real) :: rhs_min_tot(geom%nl0),rhs_max_tot(geom%nl0),rhs_avg(geom%nl0),scale_avg(geom%nl0),lonlat(2)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 logical :: valid
 logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
@@ -2771,11 +2777,21 @@ if (.not.nam%load_nicas_global) then
       rhs_min(il0) = zss_minval(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
       rhs_max(il0) = zss_maxval(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
       rhs_sum(il0) = zss_sum(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
+      scale_sum(il0) = zero
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) then
+            bpk = max(pkmin,min(nicas_blk%pkh(ic0a,il0),pkmax))
+            ipk = floor((bpk-pkmin)/dpk)+1
+            scale_sum(il0) = scale_sum(il0)+nicas_blk%rhs(ic0a,il0)*scaleh(1,ipk)
+         end if
+      end do
    end do
    call mpl%f_comm%allreduce(rhs_min,rhs_min_tot,fckit_mpi_min())
    call mpl%f_comm%allreduce(rhs_max,rhs_max_tot,fckit_mpi_max())
    call mpl%f_comm%allreduce(rhs_sum,rhs_avg,fckit_mpi_sum())
    rhs_avg = rhs_avg/real(geom%nc0_gmask(1:geom%nl0),kind_real)
+   call mpl%f_comm%allreduce(scale_sum,scale_avg,fckit_mpi_sum())
+   scale_avg = scale_avg/real(geom%nc0_gmask(1:geom%nl0),kind_real)
 
    ! Mask initialization
    mask_hor_c0a = geom%gmask_hor_c0a
@@ -2796,7 +2812,9 @@ do il1=1,nicas_blk%nl1
       write(mpl%info,'(a16,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
  & rhs_min_tot(il0)*reqkm,' km - ',rhs_max_tot(il0)*reqkm,' km)'
       if (nicas_blk%verbosity) call mpl%flush
-      nc1_real = two*geom%area_ver_c0(il0)*nam%resol**2/(sqrt(three)*rhs_avg(il0)**2)
+      write(mpl%info,'(a16,a,f3.1,a,f10.2,a)') '','Horizontal scale at ',scalethmin,': ',scale_avg(il0)*reqkm,' km'
+      if (nicas_blk%verbosity) call mpl%flush
+      nc1_real = two*geom%area_ver_c0(il0)*(2.0*nam%resol)**2/(sqrt(three)*scale_avg(il0)**2)
       if (nc1_real>real(huge_int,kind_real)) call mpl%abort('${subr}$','estimated nc1 is too large for an integer')
       nicas_blk%hor(il1)%nc1 = floor(nc1_real)
       write(mpl%info,'(a16,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_blk%hor(il1)%nc1
@@ -2810,7 +2828,7 @@ do il1=1,nicas_blk%nl1
       write(mpl%info,'(a16,a,i8)') '','Final nc1: ',nicas_blk%hor(il1)%nc1
       if (nicas_blk%verbosity) call mpl%flush
       write(mpl%info,'(a10,a,f5.2)') '','Effective horizontal resolution: ', &
- & sqrt(real(nicas_blk%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
+ & sqrt(real(nicas_blk%hor(il1)%nc1,kind_real)*sqrt(three)*scale_avg(il0)**2/(two*geom%area_ver_c0(il0)))
 
       select case (trim(nam%nicas_draw_type))
       case ('random_uniform','random_coast')
@@ -3795,9 +3813,9 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: isu,ic1u,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
-real(kind_real) :: min_minus_max,max_minus_min,rv_max,rr,distv,rh,rv
+real(kind_real) :: min_minus_max,max_minus_min,rv_th,rr,distv,rh,rv
 real(kind_real) :: dx,dy,dz,H11,H22,H33,H12
-real(kind_real) :: rvsq_max(geom%nl0),rvsq_max_tot(geom%nl0),rhsq_max(geom%nl0),rhsq_max_tot(geom%nl0)
+real(kind_real) :: rv_max(geom%nl0),rv_max_tot(geom%nl0),rh_max(geom%nl0),rh_max_tot(geom%nl0)
 real(kind_real) :: vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distv_min(nicas_blk%nl1,nicas_blk%nl1)
 real(kind_real),allocatable :: hnd(:),vnd(:),Hcoef(:),pkh(:),pkv(:),nlv(:),nn_dist(:)
 logical :: valid
@@ -3810,11 +3828,11 @@ logical :: valid
 
 ! Find largest possible radius
 do il0=1,geom%nl0
-   rhsq_max(il0) = zss_maxval((half*nicas_blk%rh(:,il0))**2,mask=mpl%msv%isnot(nicas_blk%rh(:,il0)))
-   rvsq_max(il0) = zss_maxval((half*nicas_blk%rv(:,il0))**2,mask=mpl%msv%isnot(nicas_blk%rv(:,il0)))
+   rh_max(il0) = zss_maxval(nicas_blk%rh(:,il0),mask=mpl%msv%isnot(nicas_blk%rh(:,il0)))
+   rv_max(il0) = zss_maxval(nicas_blk%rv(:,il0),mask=mpl%msv%isnot(nicas_blk%rv(:,il0)))
 end do
-call mpl%f_comm%allreduce(rhsq_max,rhsq_max_tot,fckit_mpi_max())
-call mpl%f_comm%allreduce(rvsq_max,rvsq_max_tot,fckit_mpi_max())
+call mpl%f_comm%allreduce(rh_max,rh_max_tot,fckit_mpi_max())
+call mpl%f_comm%allreduce(rv_max,rv_max_tot,fckit_mpi_max())
 
 ! Find smallest possible vertical distance
 do il1=1,nicas_blk%nl1
@@ -3835,7 +3853,7 @@ end do
 write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distances: '
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
-!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_max,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12,H33), &
+!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_th,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12,H33), &
 !$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd)
 do isb=1,nicas_blk%nsb
    ! Indices
@@ -3864,12 +3882,16 @@ do isb=1,nicas_blk%nsb
       pkv = mpl%msv%valr
       nlv = mpl%msv%valr
 
-      ! Check vertical radius
-      rv_max = sqrt(half*(rvsq_max(il0)+rvsq_max(jl0)))
-      if (infeq(distv_min(il1,jl1),rv_max)) then
-         ! Research radius
-         rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rhsq_max_tot(jl0)))
+      ! Vertical radius / research radius
+      if (nicas_blk%anisotropic) then
+         rv_th = sqrt(half*(rv_max(il0)**2+rv_max(jl0))**2)
+         rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rh_max_tot(jl0)**2))
+      else
+         rv_th = half*(rv_max(il0)+rv_max(jl0))
+         rr = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)+rh_max_tot(jl0))
+      end if
 
+      if (infeq(distv_min(il1,jl1),rv_th)) then
          ! Count nearest neighbors
          call nicas_blk%hor(jl1)%tree_c1u%count_nearest_neighbors(nicas_blk%hor(il1)%lon_c1u(ic1u), &
  & nicas_blk%hor(il1)%lat_c1u(ic1u),rr,nn)
@@ -3923,11 +3945,13 @@ do isb=1,nicas_blk%nsb
                      if (il0/=jl0) vnd(jc1u) = huge_real
                   else
                      distv = (nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))**2
-                     rv = sqrt(half*(nicas_blk%hor(il1)%rv_c1u(ic1u)**2+nicas_blk%hor(jl1)%rv_c1u(jc1u)**2))
+                     rv = half*(nicas_blk%hor(il1)%rv_c1u(ic1u)+nicas_blk%hor(jl1)%rv_c1u(jc1u))
                      if (rv>zero) then
                         vnd(jc1u) = distv/rv
                      elseif (distv>zero) then
                         vnd(jc1u) = huge_real
+                     else
+                        vnd(jc1u) = zero
                      end if
                   end if
                   Hcoef(jc1u) = one
@@ -4033,10 +4057,10 @@ do isb=1,nicas_blk%nsb
 
          ! Fit function
          S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),nicas_blk%ball(jl1,isb)%pkh(jbd),zero) &
- & *fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ball(jl1,isb)%pkv(jbd),zero)
+ & *fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ball(jl1,isb)%pkv(jbd),nicas_blk%ball(jl1,isb)%nlv(jbd))
          if (nicas_blk%anisotropic) S = S*nicas_blk%ball(jl1,isb)%Hcoef(jbd)
 
-         if (sup(S,S_inf)) then
+         if (sup(abs(S),S_inf)) then
             if (nicas_blk%smoother) then
                ! Store coefficient for convolution
                call c(ithread)%add_op(c_n_s(ithread),isu,jsu,S)

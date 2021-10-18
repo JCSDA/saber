@@ -9,7 +9,7 @@
 module type_diag_blk
 
 !$ use omp_lib
-use tools_const, only: zero,hundredth,tenth,half,one,two,three,five,seven,ten
+use tools_const, only: zero,one
 use tools_fit, only: fast_fit
 use tools_fftw, only: hor_sqrt
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,fit_diag_sqrt,fit_diag,fit_diag_full

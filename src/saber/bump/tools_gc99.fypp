@@ -14738,7 +14738,8 @@ interface fit_func_sqrt
 end interface
 
 private
-public :: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,pkmin,pkmax,nlmin,nlmax,scalethmax,pk,nl,scaleh,scalev,support_hor,support_ver
+public :: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,pkmin,pkmax,nlmin,nlmax,scalethmin,scalethmax,dpk,dnl,pk,nl,scaleh,scalev, &
+ & support_hor,support_ver
 public :: fit_func,fit_func_sqrt
 
 contains

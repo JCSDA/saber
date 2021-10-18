@@ -2572,6 +2572,8 @@ if (nam%new_hdiag.or.nam%new_lct.or.nam%check_consistency.or.nam%check_optimalit
    if (nam%diag_rhflt<zero) call mpl%abort('${subr}$','diag_rhflt should be non-negative')
    if (nam%diag_rvflt<zero) call mpl%abort('${subr}$','diag_rvflt should be non-negative')
    if (nam%fit_dl0<=0) call mpl%abort('${subr}$','fit_dl0 should be postive')
+   if (nam%peakness.and.(.not.(trim(nam%method)=='cor'))) call mpl%abort('${subr}$','peakness for correlation only')
+   if (nam%negative_lobe.and.(.not.(trim(nam%method)=='cor'))) call mpl%abort('${subr}$','negative lobe for correlation only')
 end if
 if (nam%new_lct) then
    if (nam%lct_nscales<=0) call mpl%abort('${subr}$','lct_nscales should be postive')

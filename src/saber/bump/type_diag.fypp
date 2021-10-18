@@ -475,18 +475,23 @@ do ib=1,bpar%nbe
       do il0=1,geom%nl0
          if (bpar%fit_block(ib)) then
             if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
-               write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero: ', &
+               write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
  & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
                call mpl%flush
                if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. hor. support:  ',trim(mpl%aqua), &
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. hor. support:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km'
                   call mpl%flush
-                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. peakness:      ',trim(mpl%aqua), &
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. hor. peakness:  ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_pkh(il0),trim(mpl%black)
                   call mpl%flush
-                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. ver. support:  ',trim(mpl%aqua), &
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. ver. support:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%fit_rv(il0),trim(mpl%black)//' vertical units'
+                  call mpl%flush
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. ver. peakness:  ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%fit_pkv(il0),trim(mpl%black)
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. neg. lobe par.: ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%fit_nlv(il0),trim(mpl%black)
                   call mpl%flush
                end if
             end if
