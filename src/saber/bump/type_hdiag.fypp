@@ -98,7 +98,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(samp_type),intent(in) :: samp       !< Sampling
 
 ! Local variables
-integer :: ncid,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,vunit_id
+integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vunit_id
 integer :: ildwv,ic2a,ib
 character(len=1024) :: filename,grpname
 
@@ -133,48 +133,51 @@ do ildwv=0,nam%nldwv
 
             ! Define dimensions
             nc3_id = define_dim(mpl,grpid,'nc3',bpar%nc3(ib))
+            nc4_id = define_dim(mpl,grpid,'nc4',bpar%nc4(ib))
             nl0r_id = define_dim(mpl,grpid,'nl0r',bpar%nl0r(ib))
             nl0_1_id = define_dim(mpl,grpid,'nl0_1',geom%nl0)
             nl0_2_id = define_dim(mpl,grpid,'nl0_2',geom%nl0)
 
             ! Define coordinates
             disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
+            as_id = define_var(mpl,grpid,'as','real',(/nc4_id/))
             vunit_id = define_var(mpl,grpid,'vunit','real',(/nl0_1_id/))
 
             ! Write coordinates
             call put_var(mpl,grpid,disth_id,geom%disth(1:bpar%nc3(ib)))
+            call put_var(mpl,grpid,as_id,geom%as(1:bpar%nc4(ib)))
             call put_var(mpl,grpid,vunit_id,geom%vunitavg)
 
             ! Write ensemble 1 correlation
-            call hdiag%cor_1%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+            call hdiag%cor_1%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
 
             select case (trim(nam%method))
             case ('hyb-avg','hyb-rnd','dual-ens')
                ! Write ensemble 2 correlation
                select case (trim(nam%method))
                case ('hyb-avg','hyb-rnd')
-                  call hdiag%cor_2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+                  call hdiag%cor_2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
                case ('dual-ens')
-                  call hdiag%cor_2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+                  call hdiag%cor_2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
                end select
             end select
 
             select case (trim(nam%method))
             case ('loc','hyb-avg','hyb-rnd','dual-ens')
                ! Write localization
-               call hdiag%loc_1%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc_1%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end select
 
             select case (trim(nam%method))
             case ('hyb-avg','hyb-rnd')
                ! Write static hybridization
-               call hdiag%loc_2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc_2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end select
 
             if (trim(nam%method)=='dual-ens') then
                ! Write dual-ensemble hybridization
-               call hdiag%loc_2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
-               call hdiag%loc_3%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc_2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc_3%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end if
          end if
       end do

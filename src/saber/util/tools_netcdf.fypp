@@ -94,7 +94,7 @@ interface put_var
    #:for dtype in dtypes_irl
       module procedure netcdf_put_var_${dtype}$_r0
    #:endfor
-   #:for rank in ranks_1234
+   #:for rank in ranks_123456
       #:for dtype in dtypes_irl
          module procedure netcdf_put_var_${dtype}$_r${rank}$
       #:endfor
@@ -104,7 +104,7 @@ interface get_var
    #:for dtype in dtypes_bifrl
       module procedure netcdf_get_var_${dtype}$_r0
    #:endfor
-   #:for rank in ranks_1234
+   #:for rank in ranks_123456
       #:for dtype in dtypes_bifrl
          module procedure netcdf_get_var_${dtype}$_r${rank}$
       #:endfor
@@ -389,7 +389,7 @@ if (present(iproc)) then
    end if
 
    ! Create file
-   call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname))
+   call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname)) 
 else
    ! Global I/O
    if (mpl%pioproc(mpl%myproc)) then
@@ -408,6 +408,9 @@ end if
 
 ! Save ID in registry
 if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
+
+! Set global missing value
+call put_att(mpl,ncid,'_FillValue',mpl%msv%valr)
 
 ! Probe out
 @:probe_out()
@@ -1144,7 +1147,7 @@ end if
 end subroutine netcdf_put_var_${dtype}$_r0
 #:endfor
 
-#:for rank in ranks_1234
+#:for rank in ranks_123456
    #:for dtype in dtypes_irl
 !----------------------------------------------------------------------
 ! Subroutine: netcdf_put_var_${dtype}$_r${rank}$
@@ -1266,7 +1269,7 @@ end if
 end subroutine netcdf_get_var_${dtype}$_r0
 #:endfor
 
-#:for rank in ranks_1234
+#:for rank in ranks_123456
    #:for dtype in dtypes_bifrl
 !----------------------------------------------------------------------
 ! Subroutine: netcdf_get_var_${dtype}$_r${rank}$

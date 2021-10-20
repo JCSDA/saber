@@ -126,6 +126,8 @@ type geom_type
    ! Other fields
    real(kind_real),allocatable :: vunitavg(:)     !< Averaged vertical unit
    real(kind_real),allocatable :: disth(:)        !< Horizontal distance
+   real(kind_real),allocatable :: as(:)           !< Angular sectors
+   real(kind_real) :: das                         !< Angular sector width
 
    ! Tree
    type(tree_type) :: tree_c0u                    !< Tree on subset Sc0, universe
@@ -258,6 +260,7 @@ if (allocated(geom%l0i_to_l0)) deallocate(geom%l0i_to_l0)
 if (allocated(geom%area_ver_c0)) deallocate(geom%area_ver_c0)
 if (allocated(geom%vunitavg)) deallocate(geom%vunitavg)
 if (allocated(geom%disth)) deallocate(geom%disth)
+if (allocated(geom%as)) deallocate(geom%as)
 call geom%tree_c0u%dealloc
 call geom%mesh_c0u%dealloc
 if (allocated(geom%londir)) deallocate(geom%londir)
@@ -331,7 +334,7 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing geometry elements
 
 ! Local variables
-integer :: jc3,il0,iproc
+integer :: jc3,jc4,il0,iproc
 integer,allocatable :: order_c0(:),order_c0a(:)
 real(kind_real),allocatable :: lon_c0(:),lat_c0(:)
 logical :: ioc0
@@ -398,6 +401,15 @@ do jc3=1,nam%nc3
 end do
 if (maxval(geom%disth)>nam%universe_rad) call mpl%abort('${subr}$','horizontal distance larger than universe radius')
 
+! Setup angular sector
+write(mpl%info,'(a7,a)') '','Setup angular sector'
+call mpl%flush
+allocate(geom%as(nam%nc4))
+geom%das = pi/real(nam%nc4,kind_real)
+do jc4=1,nam%nc4
+   geom%as(jc4) = -pi*half+real(jc4-1,kind_real)*geom%das
+end do
+
 ! Setup dirac points
 call geom%setup_dirac(mpl,nam)
 
@@ -412,7 +424,6 @@ end if
 ioc0 = .false.
 ioc0 = ioc0.or.nam%new_normality
 ioc0 = ioc0.or.(nam%write_hdiag.and.nam%local_diag)
-ioc0 = ioc0.or.(nam%new_lct.and.nam%write_lct)
 ioc0 = ioc0.or.(nam%load_cmat.or.nam%write_cmat)
 ioc0 = ioc0.or.((nam%new_nicas.or.nam%load_nicas_local).and.nam%check_dirac)
 ioc0 = ioc0.or.nam%load_nicas_global

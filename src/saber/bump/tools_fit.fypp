@@ -9,7 +9,7 @@
 module tools_fit
 
 use tools_const, only: zero,half,one
-use tools_func, only: fit_diag
+use tools_func, only: fit_diag_iso
 use tools_gc99, only: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,scalethmax,pk,nl,scaleh,scalev,fit_func, &
  & support_hor,support_ver
 use tools_kinds, only: kind_real,huge_real
@@ -191,7 +191,7 @@ if (raw(iz)>zero) then
                         end if
                         fit_pk_test = pk(ipk)
                         fit_nl_test = nl(inl)
-                        call fit_diag(mpl,n,dist,dir,fit_r_test,fit_pk_test,fit_nl_test,fit)
+                        call fit_diag_iso(mpl,n,dist,dir,fit_r_test,fit_pk_test,fit_nl_test,fit)
                         cost = sum((fit-raw_tmp)**2)
                         if (inf(cost,cost_min)) then
                            cost_min = cost

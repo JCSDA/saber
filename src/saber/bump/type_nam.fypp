@@ -22,7 +22,8 @@ implicit none
 integer,parameter :: nsubmax = 99                 !< Maximum number of sub-ensembles
 integer,parameter :: nvmax = 20                   !< Maximum number of variables
 integer,parameter :: nl0max = 300                 !< Maximum number of levels
-integer,parameter :: nc3max = 100                 !< Maximum number of classes
+integer,parameter :: nc3max = 100                 !< Maximum number of distance classes
+integer,parameter :: nc4max = 24                  !< Maximum number of angular sectors
 integer,parameter :: nscalesmax = 5               !< Maximum number of scales
 integer,parameter :: ndirmax = 99                 !< Maximum number of diracs
 integer,parameter :: nldwvmax = 20                !< Maximum number of local diagnostic profiles
@@ -147,7 +148,8 @@ type nam_type
    real(kind_real) :: rcoast                                  !< Minimum value to increase sampling density along coasts
    integer :: nc1                                             !< Number of sampling points
    integer :: nc2                                             !< Number of diagnostic points
-   integer :: nc3                                             !< Number of classes
+   integer :: nc3                                             !< Number of horizontal classes
+   integer :: nc4                                             !< Number of angular sectors
    real(kind_real) :: dc                                      !< Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
    integer :: nl0r                                            !< Reduced number of levels for diagnostics
    integer :: irmax                                           !< Maximum number of random number draws
@@ -248,7 +250,7 @@ contains
 end type nam_type
 
 private
-public :: nvmax,nl0max,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
+public :: nvmax,nl0max,nc3max,nc4max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
 public :: nam_type
 
 contains
@@ -405,6 +407,7 @@ nam%rcoast = zero
 nam%nc1 = 0
 nam%nc2 = 0
 nam%nc3 = 0
+nam%nc4 = 1
 nam%dc = zero
 nam%nl0r = 0
 nam%irmax = 10000
@@ -624,6 +627,7 @@ real(kind_real) :: rcoast
 integer :: nc1
 integer :: nc2
 integer :: nc3
+integer :: nc4
 real(kind_real) :: dc
 integer :: nl0r
 integer :: irmax
@@ -808,6 +812,7 @@ namelist/sampling_param/ &
  & rcoast, &
  & nc1, &
  & nc2, &
+ & nc3, &
  & nc3, &
  & dc, &
  & nl0r, &
@@ -1019,6 +1024,7 @@ if (mpl%main) then
    nc1 = 0
    nc2 = 0
    nc3 = 0
+   nc4 = 1
    dc = zero
    nl0r = 0
    irmax = 10000
@@ -1116,6 +1122,7 @@ if (mpl%main) then
    if (nam%nl0>nl0max) call mpl%abort('${subr}$','nl0 is too large')
    if (nam%nv>nvmax) call mpl%abort('${subr}$','nv is too large')
    if (nam%nc3>nc3max) call mpl%abort('${subr}$','nc3 is too large')
+   if (nam%nc4>nc4max) call mpl%abort('${subr}$','nc4 is too large')
    if (nam%lct_nscales>nscalesmax) call mpl%abort('${subr}$','lct_nscales is too large')
    if (nam%ndir>ndirmax) call mpl%abort('${subr}$','ndir is too large')
    if (nam%nldwv>nldwvmax) call mpl%abort('${subr}$','nldwv is too large')
@@ -1247,6 +1254,7 @@ if (mpl%main) then
    nam%nc1 = nc1
    nam%nc2 = nc2
    nam%nc3 = nc3
+   nam%nc4 = nc4
    nam%dc = dc
    nam%nl0r = nl0r
    nam%irmax = irmax
@@ -1477,6 +1485,7 @@ call mpl%f_comm%broadcast(nam%rcoast,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nc1,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nc2,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nc3,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%nc4,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%dc,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nl0r,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%irmax,mpl%rootproc-1)
@@ -1829,6 +1838,7 @@ if (conf%has('rcoast')) call conf%get_or_die('rcoast',nam%rcoast)
 if (conf%has('nc1')) call conf%get_or_die('nc1',nam%nc1)
 if (conf%has('nc2')) call conf%get_or_die('nc2',nam%nc2)
 if (conf%has('nc3')) call conf%get_or_die('nc3',nam%nc3)
+if (conf%has('nc4')) call conf%get_or_die('nc4',nam%nc4)
 if (conf%has('dc')) call conf%get_or_die('dc',nam%dc)
 if (conf%has('nl0r')) call conf%get_or_die('nl0r',nam%nl0r)
 if (conf%has('irmax')) call conf%get_or_die('irmax',nam%irmax)
@@ -2261,6 +2271,7 @@ if (nam%nv>nvmax) call mpl%abort('${subr}$','nv is too large')
 if (nam%ens1_nsub>nsubmax) call mpl%abort('${subr}$','ens1_nsub is too large')
 if (nam%ens2_nsub>nsubmax) call mpl%abort('${subr}$','ens2_nsub is too large')
 if (nam%nc3>nc3max) call mpl%abort('${subr}$','nc3 is too large')
+if (nam%nc4>nc4max) call mpl%abort('${subr}$','nc4 is too large')
 if (nam%lct_nscales>nscalesmax) call mpl%abort('${subr}$','lct_nscales is too large')
 if (nam%ndir>ndirmax) call mpl%abort('${subr}$','ndir is too large')
 if (nam%nldwv>nldwvmax) call mpl%abort('${subr}$','nldwv is too large')
@@ -2506,6 +2517,8 @@ if (nam%load_vbal.and.(.not.(nam%load_samp_local.or.nam%load_samp_global))) &
  & call mpl%abort('${subr}$','write_vbal requires write_samp_local/global if load_samp_local/global is not activated')
 if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%nc3<=0) call mpl%abort('${subr}$','nc3 should be positive')
+   if (nam%nc4<=0) call mpl%abort('${subr}$','nc4 should be positive')
+   if ((nam%nc4>1).and.(mod(nam%nc4,2)==1)) call mpl%abort('${subr}$','nc4 should be even')
    if (.not.(nam%dc>zero)) call mpl%abort('${subr}$','dc should be positive')
    if (nam%nl0r<1) call mpl%abort ('${subr}$','nl0r should be positive')
    if (.not.(nam%load_samp_local.or.nam%load_samp_global)) then
@@ -2848,6 +2861,7 @@ call mpl%write('rcoast',nam%rcoast)
 call mpl%write('nc1',nam%nc1)
 call mpl%write('nc2',nam%nc2)
 call mpl%write('nc3',nam%nc3)
+call mpl%write('nc4',nam%nc4)
 call mpl%write('dc',nam%dc*req)
 call mpl%write('nl0r',nam%nl0r)
 call mpl%write('irmax',nam%irmax)

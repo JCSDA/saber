@@ -11,7 +11,7 @@ module type_diag
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,one,five,reqkm,rad2deg,pi
 use tools_fit, only: ver_smooth
-use tools_func, only: fit_diag_full
+use tools_func, only: fit_diag_iso_full,fit_diag_tensor_full
 use tools_kinds, only: kind_real
 use type_avg, only: avg_type
 use type_bpar, only: bpar_type
@@ -318,7 +318,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,ic2a,il0,jl0r,jc3
+integer :: ib,ic2a,il0,jl0r
 real(kind_real) :: rmse,norm,rmse_tot,norm_tot
 
 ! Set name
@@ -332,9 +332,16 @@ do ib=1,bpar%nbe
       ! Build fit
       do ic2a=0,diag%nc2a
          ! Compute full fit
-         call fit_diag_full(mpl,nam%nc3,bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag%blk(ic2a,ib)%distv, &
- & diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_pkh,diag%blk(ic2a,ib)%fit_rv, &
- & diag%blk(ic2a,ib)%fit_pkv,diag%blk(ic2a,ib)%fit_nlv,diag%blk(ic2a,ib)%fit)
+         if (bpar%nc4(ib)==1) then
+           call fit_diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+ & diag%blk(ic2a,ib)%distv,diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_pkh, &
+ & diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit_pkv,diag%blk(ic2a,ib)%fit_nlv,diag%blk(ic2a,ib)%fit(:,1,:,:))
+         else
+           call fit_diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+ & geom%as,diag%blk(ic2a,ib)%distv,diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_D11,diag%blk(ic2a,ib)%fit_D22, &
+ & diag%blk(ic2a,ib)%fit_D12,diag%blk(ic2a,ib)%fit_pkh,diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit_pkv, &
+ & diag%blk(ic2a,ib)%fit_nlv,diag%blk(ic2a,ib)%fit)
+         end if
       end do
 
       ! Compute RMSE
@@ -402,9 +409,9 @@ do ib=1,bpar%nb
 
       ! Print results
       do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0))) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
             write(mpl%info,'(a13,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
- & diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
+ & diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
       end do
@@ -460,7 +467,7 @@ do ib=1,bpar%nbe
 
          ! Set diagonal coefficient
          do il0=1,geom%nl0
-            diag%blk(ic2a,ib)%coef_ens(il0) = diag%blk(ic2a,ib)%raw(1,bpar%il0rz(il0,ib),il0)
+            diag%blk(ic2a,ib)%coef_ens(il0) = diag%blk(ic2a,ib)%raw(1,1,bpar%il0rz(il0,ib),il0)
          end do
 
          ! Fitting

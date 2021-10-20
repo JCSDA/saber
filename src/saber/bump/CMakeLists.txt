@@ -24,8 +24,6 @@ type_ens.fypp
 type_geom.fypp
 type_hdiag.fypp
 type_io.fypp
-type_lct_blk.fypp
-type_lct.fypp
 type_linop.fypp
 type_mesh.fypp
 type_minim.fypp
