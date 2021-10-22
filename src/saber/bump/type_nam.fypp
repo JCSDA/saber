@@ -69,8 +69,6 @@ type nam_type
    logical :: write_hdiag                                     !< Write HDIAG diagnostics
    logical :: new_lct                                         !< Compute new LCT
    logical :: write_lct                                       !< Write LCT
-   logical :: load_cmat                                       !< Load C matrix
-   logical :: write_cmat                                      !< Write C matrix
    logical :: new_nicas                                       !< Compute new NICAS parameters
    logical :: load_nicas_local                                !< Load local NICAS parameters
    logical :: load_nicas_global                               !< Load global NICAS parameters
@@ -313,8 +311,6 @@ nam%new_hdiag = .false.
 nam%write_hdiag = .false.
 nam%new_lct = .false.
 nam%write_lct = .false.
-nam%load_cmat = .false.
-nam%write_cmat = .false.
 nam%new_nicas = .false.
 nam%load_nicas_local = .false.
 nam%load_nicas_global = .false.
@@ -557,8 +553,6 @@ logical :: new_hdiag
 logical :: write_hdiag
 logical :: new_lct
 logical :: write_lct
-logical :: load_cmat
-logical :: write_cmat
 logical :: new_nicas
 logical :: load_nicas_local
 logical :: load_nicas_global
@@ -738,8 +732,6 @@ namelist/driver_param/ &
  & write_hdiag, &
  & new_lct, &
  & write_lct, &
- & load_cmat, &
- & write_cmat, &
  & new_nicas, &
  & load_nicas_local, &
  & load_nicas_global, &
@@ -930,8 +922,6 @@ if (mpl%main) then
    write_hdiag = .false.
    new_lct = .false.
    write_lct = .false.
-   load_cmat = .false.
-   write_cmat = .false.
    new_nicas = .false.
    load_nicas_local = .false.
    load_nicas_global = .false.
@@ -1170,8 +1160,6 @@ if (mpl%main) then
    nam%write_hdiag = write_hdiag
    nam%new_lct = new_lct
    nam%write_lct = write_lct
-   nam%load_cmat = load_cmat
-   nam%write_cmat = write_cmat
    nam%new_nicas = new_nicas
    nam%load_nicas_local = load_nicas_local
    nam%load_nicas_global = load_nicas_global
@@ -1405,8 +1393,6 @@ call mpl%f_comm%broadcast(nam%new_hdiag,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_hdiag,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_lct,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_lct,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%load_cmat,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%write_cmat,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_nicas_local,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_nicas_global,mpl%rootproc-1)
@@ -1659,8 +1645,6 @@ if (conf%has('new_hdiag')) call conf%get_or_die('new_hdiag',nam%new_hdiag)
 if (conf%has('write_hdiag')) call conf%get_or_die('write_hdiag',nam%write_hdiag)
 if (conf%has('new_lct')) call conf%get_or_die('new_lct',nam%new_lct)
 if (conf%has('write_lct')) call conf%get_or_die('write_lct',nam%write_lct)
-if (conf%has('load_cmat')) call conf%get_or_die('load_cmat',nam%load_cmat)
-if (conf%has('write_cmat')) call conf%get_or_die('write_cmat',nam%write_cmat)
 if (conf%has('new_nicas')) call conf%get_or_die('new_nicas',nam%new_nicas)
 if (conf%has('load_nicas_local')) call conf%get_or_die('load_nicas_local',nam%load_nicas_local)
 if (conf%has('load_nicas_global')) call conf%get_or_die('load_nicas_global',nam%load_nicas_global)
@@ -2329,7 +2313,7 @@ end if
 if (nam%new_lct) then
    if (trim(nam%method)/='cor') call mpl%abort('${subr}$','cor method required for new_lct')
 end if
-if (nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
+if (nam%new_hdiag.or.nam%new_lct.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    select case (trim(nam%strategy))
    case ('diag_all','common','common_weighted','specific_univariate','specific_multivariate')
    case default
@@ -2350,7 +2334,6 @@ if (nam%new_mom.and.nam%update_mom) call mpl%abort('${subr}$','new_mom and updat
 if (nam%new_mom.and.nam%load_mom) call mpl%abort('${subr}$','new_mom and load_mom are exclusive')
 if (nam%load_mom.and.nam%update_mom) call mpl%abort('${subr}$','load_mom and update_mom are exclusive')
 if (nam%new_hdiag.and.nam%new_lct) call mpl%abort('${subr}$','new_hdiag and new_lct are exclusive')
-if ((nam%new_hdiag.or.nam%new_lct).and.nam%load_cmat) call mpl%abort('${subr}$','new_hdiag or new_lct and load_cmat are exclusive')
 if (nam%new_nicas.and.(nam%load_nicas_local.or.nam%load_nicas_global)) &
  & call mpl%abort('${subr}$','new_nicas and load_nicas_local/load_nicas_global are exclusive')
 if (nam%check_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
@@ -2423,7 +2406,7 @@ do il0=1,nam%nl0
 end do
 if ((trim(nam%lev2d)/='first').and.(trim(nam%lev2d)/='last')) call mpl%abort('${subr}$','wrong lev2d value')
 if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%update_var.or.nam%load_var.or. &
- & nam%new_hdiag.or.nam%new_lct.or.nam%load_cmat.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
+ & nam%new_hdiag.or.nam%new_lct.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    if (nam%nv<=0) call mpl%abort('${subr}$','nv should be positive')
    do iv=1,nam%nv
       write(ivchar,'(i2.2)') iv
@@ -2634,7 +2617,6 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
            call mpl%abort('${subr}$','new_diag forbidden for forced_radii (except for static hybridization)')
          end select
       end if
-      if (nam%new_lct.or.nam%load_cmat) call mpl%abort('${subr}$','new_lct and load_cmat forbidden for forced_radii')
       if ((trim(nam%strategy)=='common').or.(trim(nam%strategy)=='common_weighted')) then
          ivmin = 0
          ivmax = 0
@@ -2773,8 +2755,6 @@ call mpl%write('new_hdiag',nam%new_hdiag)
 call mpl%write('write_hdiag',nam%write_hdiag)
 call mpl%write('new_lct',nam%new_lct)
 call mpl%write('write_lct',nam%write_lct)
-call mpl%write('load_cmat',nam%load_cmat)
-call mpl%write('write_cmat',nam%write_cmat)
 call mpl%write('new_nicas',nam%new_nicas)
 call mpl%write('load_nicas_local',nam%load_nicas_local)
 call mpl%write('load_nicas_global',nam%load_nicas_global)
