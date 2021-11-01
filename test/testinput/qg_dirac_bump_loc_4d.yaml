@@ -186,17 +186,9 @@ initial condition:
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT5H.nc
   - date: 2010-01-01T06:00:00Z
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT6H.nc
-model:
-  tstep: PT1H
-output B:
+output dirac:
   datadir: testdata/qg_dirac_bump_loc_4d
-  date: 2010-01-01T00:00:00Z
-  exp: B
-  type: an
-output localization:
-  datadir: testdata/qg_dirac_bump_loc_4d
-  date: 2010-01-01T00:00:00Z
-  exp: localization
+  exp: %id%
   type: an
 
 test:
