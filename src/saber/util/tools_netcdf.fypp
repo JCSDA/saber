@@ -20,7 +20,7 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: nidmax = 1000   !< Maximum number of simultaneous file and group ids
+integer,parameter :: nidmax = 10000  !< Maximum number of simultaneous file and group ids
 integer,parameter :: ncharmax = 1024 !< Maximum number of characters to store file and group names
 
 type registry_type

@@ -3,7 +3,7 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-list(APPEND bump_src_files_list
+set( bump_src_files
 
 tools_fit.fypp
 tools_func.c
@@ -13,6 +13,8 @@ type_avg_blk.fypp
 type_avg.fypp
 type_bpar.fypp
 type_bump.fypp
+type_bump.h
+type_bump_interface.F90
 type_cmat_blk.fypp
 type_cmat.fypp
 type_com.fypp
@@ -38,21 +40,6 @@ type_var.fypp
 type_vbal_blk.fypp
 type_vbal.fypp
 type_wind.fypp
-
-)
-
-if( oops_FOUND )
-    list(APPEND bump_src_files_list
-
-    type_bump.h
-    type_bump_interface.F90
-
-    )
-endif()
-
-set( bump_src_files
-
-${bump_src_files_list}
 
 PARENT_SCOPE
 )

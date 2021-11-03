@@ -19,16 +19,19 @@ implicit none
 private
 
 ! BUMP registry
+#define LIST_KEY_TYPE c_int
 #define LISTED_TYPE bump_type
-#include "oops/util/linkedList_i.f"
-type(registry_t) :: bump_registry
+#include "saber/external/tools_linkedlist_interface.fypp"
+type(registry_type) :: bump_registry
+
+public :: bump_registry
 
 contains
 
 !----------------------------------------------------------------------
 ! Linked list implementation
 !----------------------------------------------------------------------
-#include "oops/util/linkedList_c.f"
+#include "saber/external/tools_linkedlist_implementation.fypp"
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create_c

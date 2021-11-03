@@ -2400,8 +2400,8 @@ else
 
          ! Shape ratio
          lat_mid = half*(geom%lat_min+geom%lat_max)
-         call sphere_dist(geom%lon_min,geom%lon_max,lat_mid,lat_mid,dx)
-         call sphere_dist(zero,zero,geom%lat_min,geom%lat_max,dy)
+         call sphere_dist(geom%lon_min,lat_mid,geom%lon_max,lat_mid,dx)
+         call sphere_dist(zero,geom%lat_min,zero,geom%lat_max,dy)
          alpha = dy/dx
          nx = ceiling(sqrt(real(nss,kind_real)/alpha))
          ny = ceiling(alpha*real(nx,kind_real))

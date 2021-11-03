@@ -56,17 +56,9 @@ geometry:
 initial condition:
   date: 2010-01-01T12:00:00Z
   filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
-model:
-  tstep: PT1H
-output B:
+output dirac:
   datadir: testdata/qg_dirac_bump_hyb_value
-  date: 2010-01-01T12:00:00Z
-  exp: B
-  type: an
-output localization:
-  datadir: testdata/qg_dirac_bump_hyb_value
-  date: 2010-01-01T12:00:00Z
-  exp: localization
+  exp: %id%
   type: an
 
 test:
