@@ -625,11 +625,11 @@ subroutine func_det(v1,v2,v3,p,cflag)
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: v1(3) !< First vector
-real(kind_real),intent(in) :: v2(3) !< Second vector
-real(kind_real),intent(in) :: v3(3) !< Third vector
-real(kind_real),intent(out) :: p    !< Determinant
-logical,intent(out) :: cflag        !< Confidence flag
+real(kind_real),intent(in) :: v1(3)   !< First vector
+real(kind_real),intent(in) :: v2(3)   !< Second vector
+real(kind_real),intent(in) :: v3(3)   !< Third vector
+real(kind_real),intent(out) :: p      !< Determinant
+logical,intent(out),optional :: cflag !< Confidence flag
 
 ! Local variable
 integer :: i
@@ -652,11 +652,13 @@ terms(6) = -v1(2)*v2(1)*v3(3)
 ! Sum
 p = sum(terms)
 
-! Confidence flag
-cflag = .true.
-do i=1,6
-   if ((abs(terms(i))>zero).and.small(p,terms(i))) cflag = .false.
-end do
+if (present(cflag)) then
+   ! Confidence flag
+   cflag = .true.
+   do i=1,6
+      if ((abs(terms(i))>zero).and.small(p,terms(i))) cflag = .false.
+   end do
+end if
 
 ! Probe out
 @:probe_out()

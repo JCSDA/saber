@@ -3873,8 +3873,12 @@ do isb=1,nicas_blk%nsb
 
             ! Check arc validity
             valid = .true.
-            if (nam%mask_check) call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
- & nicas_blk%hor(il1)%lat_c1u(ic1u),il0,nicas_blk%hor(jl1)%lon_c1u(jc1u),nicas_blk%hor(jl1)%lat_c1u(jc1u),jl0,valid)
+            if (nam%mask_check) then
+               call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
+ & nicas_blk%hor(il1)%lat_c1u(ic1u),nicas_blk%hor(jl1)%lon_c1u(jc1u),nicas_blk%hor(jl1)%lat_c1u(jc1u),il0,valid)
+               if (il0/=jl0) call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
+ & nicas_blk%hor(il1)%lat_c1u(ic1u),nicas_blk%hor(jl1)%lon_c1u(jc1u),nicas_blk%hor(jl1)%lat_c1u(jc1u),jl0,valid)
+            end if
 
             if (valid) then
                ! Normalized distance
@@ -3923,7 +3927,7 @@ do isb=1,nicas_blk%nsb
 
          ! Upper bound
          do jc1u=1,nicas_blk%hor(jl1)%nc1u
-             if (supeq(distnorm(jc1u),one)) distnorm(jc1u) = mpl%msv%valr
+            if (supeq(distnorm(jc1u),one)) distnorm(jc1u) = mpl%msv%valr
          end do
 
          ! Release memory

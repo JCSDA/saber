@@ -715,7 +715,7 @@ end subroutine mesh_get_bnda
 ! Subroutine: mesh_check_arc
 !> Check if an arc is crossing mask boundaries
 !----------------------------------------------------------------------
-subroutine mesh_check_arc(mesh,mpl,lon_s,lat_s,il0,lon_e,lat_e,jl0,valid)
+subroutine mesh_check_arc(mesh,mpl,lon_s,lat_s,lon_e,lat_e,il0,valid)
 
 implicit none
 
@@ -724,16 +724,14 @@ class(mesh_type),intent(in) :: mesh !< Mesh
 type(mpl_type),intent(inout) :: mpl !< MPI data
 real(kind_real),intent(in) :: lon_s !< First point longitude
 real(kind_real),intent(in) :: lat_s !< First point latitude
-integer,intent(in) :: il0           !< First point level
 real(kind_real),intent(in) :: lon_e !< Second point longitude
 real(kind_real),intent(in) :: lat_e !< Second point latitude
-integer,intent(in) :: jl0           !< Second point level
-logical,intent(out) :: valid        !< True for valid arcs
+integer,intent(in) :: il0           !< Level
+logical,intent(inout) :: valid      !< True for valid arcs
 
 ! Local variables
 integer :: ibnda
 real(kind_real) :: v1(3),v2(3),va(3),vp(3),t(4)
-logical :: cflag(4)
 
 ! Set name
 @:set_name(mesh_check_arc)
@@ -741,44 +739,28 @@ logical :: cflag(4)
 ! Probe in
 @:probe_in()
 
-! Initialization
-valid = .true.
+if (valid) then
+   ! Transform to cartesian coordinates
+   call lonlat2xyz(mpl,lon_s,lat_s,v1(1),v1(2),v1(3))
+   call lonlat2xyz(mpl,lon_e,lat_e,v2(1),v2(2),v2(3))
 
-! Transform to cartesian coordinates
-call lonlat2xyz(mpl,lon_s,lat_s,v1(1),v1(2),v1(3))
-call lonlat2xyz(mpl,lon_e,lat_e,v2(1),v2(2),v2(3))
+   ! Compute arc orthogonal vector
+   call vector_product(v1,v2,va)
 
-! Compute arc orthogonal vector
-call vector_product(v1,v2,va)
-
-! Check if arc is crossing boundary arcs
-do ibnda=1,mesh%nbnda(il0)
-   call vector_product(va,mesh%vabnda(:,ibnda,il0),vp)
-   call det(v1,va,vp,t(1),cflag(1))
-   call det(v2,va,vp,t(2),cflag(2))
-   call det(mesh%v1bnda(:,ibnda,il0),mesh%vabnda(:,ibnda,il0),vp,t(3),cflag(3))
-   call det(mesh%v2bnda(:,ibnda,il0),mesh%vabnda(:,ibnda,il0),vp,t(4),cflag(4))
-   t(1) = -t(1)
-   t(3) = -t(3)
-   if ((all(t>zero).or.all(t<zero)).or.any(.not.cflag)) then
-      valid = .false.
-      exit
-   end if
-end do
-
-if (jl0/=il0) then
    ! Check if arc is crossing boundary arcs
-   do ibnda=1,mesh%nbnda(jl0)
-      call vector_product(va,mesh%vabnda(:,ibnda,jl0),vp)
-      call det(v1,va,vp,t(1),cflag(1))
-      call det(v2,va,vp,t(2),cflag(2))
-      call det(mesh%v1bnda(:,ibnda,jl0),mesh%vabnda(:,ibnda,jl0),vp,t(3),cflag(3))
-      call det(mesh%v2bnda(:,ibnda,jl0),mesh%vabnda(:,ibnda,jl0),vp,t(4),cflag(4))
-      t(1) = -t(1)
-      t(3) = -t(3)
-      if ((all(t>zero).or.all(t<zero)).or.any(.not.cflag)) then
-         valid = .false.
-         exit
+   do ibnda=1,mesh%nbnda(il0)
+      if (valid) then
+         ! Compute factors
+         call vector_product(va,mesh%vabnda(:,ibnda,il0),vp)
+         call det(v1,va,vp,t(1))
+         call det(v2,va,vp,t(2))
+         call det(mesh%v1bnda(:,ibnda,il0),mesh%vabnda(:,ibnda,il0),vp,t(3))
+         call det(mesh%v2bnda(:,ibnda,il0),mesh%vabnda(:,ibnda,il0),vp,t(4))
+         t(1) = -t(1)
+         t(3) = -t(3)
+
+         ! Check factors sign
+         valid = .not.(all(t>zero).or.all(t<zero))
       end if
    end do
 end if
