@@ -1451,7 +1451,7 @@ if (nam%mask_check) then
    allocate(geom%mesh_c0u%v2bnda(3,nbndamax,0:geom%nl0))
    allocate(geom%mesh_c0u%vabnda(3,nbndamax,0:geom%nl0))
 
-   do il0=1,geom%nl0
+   do il0=0,geom%nl0
       ! Get boundary arcs
       if (il0==0) then
          call geom%mesh_c0u%get_bnda(geom%gmask_hor_c0u,geom%mesh_c0u%nbnda(il0),bnda_to_c0u)

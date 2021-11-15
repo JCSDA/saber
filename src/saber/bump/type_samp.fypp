@@ -1953,7 +1953,7 @@ do ic1a=1,samp%nc1a
  & samp%smask_c3a(ic1a,jc3,jc4,il0)
 
                ! Check mask boundaries
-               if (valid.and.nam%mask_check) call geom%mesh_c0u%check_arc(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),il0, &
+               if (nam%mask_check) call geom%mesh_c0u%check_arc(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a), &
  & samp%lon_c3a(ic1a,jc3,jc4),samp%lat_c3a(ic1a,jc3,jc4),il0,valid)
 
                ! Copy validity
