@@ -3948,7 +3948,7 @@ do isb=1,nicas_blk%nsb
                   if (nicas_blk%horizontal) then
                      if (il0/=jl0) vnd(jc1u) = huge_real
                   else
-                     distv = (nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))**2
+                     distv = abs(nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))
                      rv = half*(nicas_blk%hor(il1)%rv_c1u(ic1u)+nicas_blk%hor(jl1)%rv_c1u(jc1u))
                      if (rv>zero) then
                         vnd(jc1u) = distv/rv

@@ -19,6 +19,8 @@ use type_mpl, only: mpl_type
 
 implicit none
 
+real(kind_real),parameter :: negative_lobe_weight = 1.0e2_kind_real !< Specific weight in the cost for negative lobe
+
 interface fast_fit
    module procedure fit_fast_fit
 end interface
@@ -56,7 +58,7 @@ real(kind_real),intent(out) :: fit_pk !< Peakness
 real(kind_real),intent(out) :: fit_nl !< Negative lobe parameter
 
 ! Local variables
-integer :: iscaleth,di,i,im,ip,ipk,inl
+integer :: ntmp,iscaleth,di,i,im,ip,ipk,inl,imin(1)
 real(kind_real) :: raw_tmp(n),fit_r_m,fit_r_p
 real(kind_real) :: cost,cost_min,fit_r_test,fit_pk_test,fit_nl_test,fit_r_min,fit_pk_min,fit_nl_min,fit(n)
 logical :: valid(npk,nnl)
@@ -79,8 +81,9 @@ if (raw(iz)>zero) then
            if (mpl%msv%isnot(raw(i)).and.inf(raw(i),raw(iz))) raw_tmp(i) = raw(i)/raw(iz)
         end if
       end do
+      ntmp = count(mpl%msv%isnot(raw_tmp))
 
-      if (count(mpl%msv%isnot(raw_tmp))>1) then
+      if (ntmp>1) then
          ! Check minimum value
          if (minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp))>scalethmax) then
             if (dir=='hor') then
@@ -91,6 +94,7 @@ if (raw(iz)>zero) then
          end if
  
          ! Initialization
+         imin = minloc(raw_tmp,mask=mpl%msv%isnot(raw_tmp))
          cost_min = huge_real
          fit_r_min = mpl%msv%valr
          fit_pk_min = mpl%msv%valr
@@ -150,7 +154,7 @@ if (raw(iz)>zero) then
 
             ! Gather values
             if (mpl%msv%isnot(fit_r_m).and.mpl%msv%isnot(fit_r_p)) then
-               fit_r = min(fit_r_m,fit_r_p)
+               fit_r = half*(fit_r_m+fit_r_p)
             elseif (mpl%msv%isnot(fit_r_m)) then
                fit_r = fit_r_m
             elseif (mpl%msv%isnot(fit_r_p)) then
@@ -192,7 +196,9 @@ if (raw(iz)>zero) then
                         fit_pk_test = pk(ipk)
                         fit_nl_test = nl(inl)
                         call fit_diag_iso(mpl,n,dist,dir,fit_r_test,fit_pk_test,fit_nl_test,fit)
-                        cost = sum((fit-raw_tmp)**2)
+                        cost = sum((fit-raw_tmp)**2)/real(ntmp,kind_real)
+                        if ((dir=='ver').and.negative_lobe.and.(raw_tmp(imin(1))<zero)) cost = cost+negative_lobe_weight &
+ & *(fit(imin(1))-raw_tmp(imin(1)))**2
                         if (inf(cost,cost_min)) then
                            cost_min = cost
                            fit_r_min = fit_r_test

@@ -586,7 +586,6 @@ else
          diag_blk%fit_rh(il0) = mpl%msv%valr
       end if
    end do
-   print*, 'OK for block ',ib,diag_blk%fit_rh
 end if
 call vert_interp(mpl,nl1,fit_pkh_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%fit_pkh)
 
