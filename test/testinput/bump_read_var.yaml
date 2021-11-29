@@ -6,7 +6,7 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-load_var: 1
+load_var: true
 
 # model_param
 nl: 4

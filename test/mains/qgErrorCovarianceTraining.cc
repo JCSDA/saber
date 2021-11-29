@@ -11,11 +11,11 @@
 #include "oops/qg/instantiateQgChangeVarFactory.h"
 #include "oops/qg/QgTraits.h"
 #include "oops/runs/Run.h"
-#include "saber/oops/EstimateParams.h"
+#include "saber/oops/ErrorCovarianceTraining.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   qg::instantiateQgChangeVarFactory();
-  saber::EstimateParams<qg::QgTraits> dir;
+  saber::ErrorCovarianceTraining<qg::QgTraits> dir;
   return run.execute(dir);
 }

@@ -6,12 +6,12 @@ model: "qg"
 # driver_param
 method: "loc"
 strategy: "common"
-new_hdiag: 1
-write_hdiag: 1
-new_nicas: 1
-write_nicas_global: 1
-check_adjoints: 1
-check_dirac: 1
+new_hdiag: true
+write_hdiag: true
+new_nicas: true
+write_nicas_global: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl: 2
@@ -36,7 +36,7 @@ ne: 50
 # fit_param
 
 # nicas_param
-nonunit_diag: 1
+nonunit_diag: true
 resol: 8.0
 
 # dirac_param

@@ -4,10 +4,10 @@ prefix: "bump_read_vbal_global/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
-load_vbal: 1
-check_vbal: 1
-check_adjoints: 1
-check_dirac: 1
+load_vbal: true
+check_vbal: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl: 4
@@ -20,7 +20,7 @@ variables: ["u","q","cosu_plus_q2"]
 # ens2_param
 
 # sampling_param
-load_samp_global: 1
+load_samp_global: true
 
 # diag_param
 vbal_block: [1,1,1]

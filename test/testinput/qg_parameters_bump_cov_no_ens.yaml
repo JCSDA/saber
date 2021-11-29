@@ -3,11 +3,11 @@ background:
   filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
   datadir: testdata
-  forced_radii: 1
-  forced_var: 1
+  forced_radii: true
+  forced_var: true
   method: cor
-  new_nicas: 1
-  new_var: 1
+  new_nicas: true
+  new_var: true
   prefix: qg_parameters_bump_cov_no_ens/test
   resol: 8.0
   rh:
@@ -17,34 +17,34 @@ bump:
   stddev:
     x: [1.8e7]
   strategy: specific_univariate
-  write_nicas_local: 1
-  write_var: 1
+  write_nicas_local: true
+  write_var: true
+  output:
+  - datadir: testdata/qg_parameters_bump_cov_no_ens
+    date: 2010-01-01T12:00:00Z
+    exp: stddev
+    parameter: stddev
+    type: an
+  - datadir: testdata/qg_parameters_bump_cov_no_ens
+    date: 2010-01-01T12:00:00Z
+    exp: cor_rh
+    parameter: cor_rh
+    type: an
+  - datadir: testdata/qg_parameters_bump_cov_no_ens
+    date: 2010-01-01T12:00:00Z
+    exp: cor_rv
+    parameter: cor_rv
+    type: an
+  - datadir: testdata/qg_parameters_bump_cov_no_ens
+    date: 2010-01-01T12:00:00Z
+    exp: nicas_norm
+    parameter: nicas_norm
+    type: an
 geometry:
   nx: 40
   ny: 20
   depths: [4500.0, 5500.0]
 input variables: [x]
-output:
-- datadir: testdata/qg_parameters_bump_cov_no_ens
-  date: 2010-01-01T12:00:00Z
-  exp: stddev
-  parameter: stddev
-  type: an
-- datadir: testdata/qg_parameters_bump_cov_no_ens
-  date: 2010-01-01T12:00:00Z
-  exp: cor_rh
-  parameter: cor_rh
-  type: an
-- datadir: testdata/qg_parameters_bump_cov_no_ens
-  date: 2010-01-01T12:00:00Z
-  exp: cor_rv
-  parameter: cor_rv
-  type: an
-- datadir: testdata/qg_parameters_bump_cov_no_ens
-  date: 2010-01-01T12:00:00Z
-  exp: nicas_norm
-  parameter: nicas_norm
-  type: an
 
 test:
   reference filename: testref/qg_parameters_bump_cov_no_ens/test.log.out

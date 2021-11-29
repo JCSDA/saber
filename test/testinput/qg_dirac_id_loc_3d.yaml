@@ -1,7 +1,11 @@
 background error:
   covariance model: ensemble
   localization:
-    localization method: ID
+    localization method: SABER
+    saber block:
+      saber block name: ID
+      input variables: [x]
+      output variables: [x]
   members:
   - date: 2010-01-01T12:00:00Z
     filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc

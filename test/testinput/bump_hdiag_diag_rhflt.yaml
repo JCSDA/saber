@@ -6,8 +6,8 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_hdiag: 1
-write_hdiag: 1
+new_hdiag: true
+write_hdiag: true
 
 # model_param
 nl: 2
@@ -29,7 +29,7 @@ nl0r: 2
 
 # diag_param
 ne: 50
-local_diag: 1
+local_diag: true
 local_rad: 1000.0e3
 
 # fit_param

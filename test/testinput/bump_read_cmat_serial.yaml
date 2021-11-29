@@ -2,16 +2,16 @@
 datadir: "testdata"
 prefix: "bump_read_cmat_serial/test__MPI_-_OMP_"
 model: "qg"
-parallel_io: 0
+parallel_io: false
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-load_cmat: 1
-new_nicas: 1
-write_nicas_global: 1
-check_adjoints: 1
-check_dirac: 1
+load_cmat: true
+new_nicas: true
+write_nicas_global: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl: 2

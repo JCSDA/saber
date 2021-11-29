@@ -6,8 +6,9 @@
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
-subroutine bump_main(n1,arg1,n2,arg2) bind (c,name='bump_main_f90')
+subroutine bump_main(c_conf,n2,arg2) bind (c,name='bump_main_f90')
 
+use iso_c_binding, only: c_ptr
 use fckit_configuration_module, only: fckit_configuration,fckit_yamlconfiguration
 use fckit_mpi_module, only: fckit_mpi_comm
 use fckit_pathname_module, only: fckit_pathname
@@ -22,15 +23,14 @@ use type_mpl, only: mpl_type
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: n1          !< First argument size
-character(c_char),intent(in) :: arg1(n1) !< First argument
-integer(c_int),intent(in) :: n2          !< Second argument size
-character(c_char),intent(in) :: arg2(n2) !< Second argument
+type(c_ptr),intent(in),value :: c_conf   !< FCKIT configuration
+integer(c_int),intent(in) :: n2          !< Output filename size
+character(c_char),intent(in) :: arg2(n2) !< Output filename
 
 ! Local variables
-integer :: i,ppos,iproc,ie,ifileunit
-character(len=1024) :: inputfile,logdir,ext,filename
-type(fckit_configuration) :: conf
+integer :: i,iproc,ie,ifileunit
+character(len=1024) :: logdir,filename
+type(fckit_configuration) :: f_conf
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
 type(model_type) :: model
@@ -39,11 +39,10 @@ type(mpl_type) :: mpl
 ! Initialize MPI
 f_comm = fckit_mpi_comm()
 
-! Copy inputfile and logdir
-inputfile = ''
-do i=1,n1
-   inputfile(i:i) = arg1(i)
-end do
+! Configuration file
+f_conf = fckit_configuration(c_conf)
+
+! Copy logdir
 logdir = ''
 do i=1,n2
    logdir(i:i) = arg2(i)
@@ -62,28 +61,8 @@ call mpl%init(f_comm)
 ! Initialize namelist
 call bump%nam%init(mpl%nproc)
 
-! Find whether input file is a namelist (xxx.nam) or a yaml (xxxx.yaml) and read it
-ppos = scan(inputfile,".",back=.true.)
-ext = inputfile(ppos+1:)
-select case (trim(ext))
-case ('nam')
-   ! Namelist
-   call bump%nam%read(mpl,inputfile)
-case ('yaml')
-   ! YAML file
-   if (mpl%main) then
-      ! Set fckit configuration from input file
-      conf = fckit_yamlconfiguration(fckit_pathname(inputfile))
-
-      ! Convert fckit configuration to namelist
-      call bump%nam%from_conf(f_comm,conf)
-   end if
-case default
-   ! Wrong extension
-   write(output_unit,'(a)') 'Error: input file has a wrong extension (should be .nam or .yaml)'
-   call flush(output_unit)
-   error stop 3
-end select
+! Convert fckit configuration to namelist
+call bump%nam%from_conf(f_comm,f_conf)
 
 ! Broadcast namelist
 call bump%nam%bcast(mpl)

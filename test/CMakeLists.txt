@@ -253,8 +253,8 @@ if ( SABER_TEST_OOPS OR SABER_TEST_INTERPOLATION )
     set( QG_LIBS saber ${oops_qg_LIBRARIES} )
 endif()
 if( SABER_TEST_OOPS )
-    ecbuild_add_executable( TARGET  saber_qg_estimate_parameters.x
-                            SOURCES mains/qgEstimateParams.cc
+    ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
+                            SOURCES mains/qgErrorCovarianceTraining.cc
                             LIBS    ${QG_LIBS} )
 
     ecbuild_add_executable( TARGET  saber_qg_dirac.x
@@ -544,9 +544,9 @@ if( SABER_TEST_OOPS )
             ecbuild_add_test( TARGET test_${test}
                               MPI ${mpi}
                               OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_estimate_parameters.x
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_error_covariance_training.x
                               ARGS testinput/${test}.yaml
-                              DEPENDS saber_qg_estimate_parameters.x )
+                              DEPENDS saber_qg_error_covariance_training.x )
         endif()
     endforeach()
 

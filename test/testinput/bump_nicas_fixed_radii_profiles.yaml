@@ -6,10 +6,10 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_nicas: 1
-write_nicas_global: 1
-check_adjoints: 1
-check_dirac: 1
+new_nicas: true
+write_nicas_global: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl: 2
@@ -30,7 +30,7 @@ ens1_ne: 50
 
 # nicas_param
 resol: 8.0
-forced_radii: 1
+forced_radii: true
 rh:
   u: [4000.0e3,2000.0e3]
   q: [3000.0e3,1500.0e3]

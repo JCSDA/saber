@@ -6,19 +6,19 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_hdiag: 1
-write_hdiag: 1
-new_nicas: 1
-write_nicas_global: 1
-write_nicas_local: 1
-check_adjoints: 1
-check_dirac: 1
-check_no_point_mpi: 1
+new_hdiag: true
+write_hdiag: true
+new_nicas: true
+write_nicas_global: true
+write_nicas_local: true
+check_adjoints: true
+check_dirac: true
+check_no_point_mpi: true
 
 # model_param
 nl: 2
 levs: [1,2]
-nv: 1
+nv: true
 variables: ["u"]
 
 # ens1_param

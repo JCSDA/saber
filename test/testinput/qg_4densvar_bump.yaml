@@ -23,14 +23,17 @@ cost function:
   background error:
     covariance model: ensemble
     localization:
-      bump:
-        datadir: testdata
-        fname_nicas: qg_parameters_bump_loc/test_nicas
-        load_nicas_local: 1
-        prefix: qg_4densvar_bump/test
-        strategy: common
-      localization method: BUMP
-      localization variables: [x]
+      localization method: SABER
+      saber block:
+        saber block name: BUMP_NICAS
+        input variables: [x]
+        output variables: [x]
+        bump:
+          datadir: testdata
+          fname_nicas: qg_parameters_bump_loc/test_nicas
+          load_nicas_local: true
+          prefix: qg_4densvar_bump/test
+          strategy: common
     members:
     - states:
       - date: 2010-01-01T00:00:00Z

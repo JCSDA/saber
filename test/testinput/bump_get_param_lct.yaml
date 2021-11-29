@@ -6,9 +6,9 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_lct: 1
-write_lct: 1
-check_get_param_lct: 1
+new_lct: true
+write_lct: true
+check_get_param_lct: true
 
 # model_param
 nl: 2

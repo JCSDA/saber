@@ -6,9 +6,9 @@ model: "qg"
 # driver_param
 method: "loc"
 strategy: "common"
-new_hdiag: 1
-write_hdiag: 1
-check_get_param_Dloc: 1
+new_hdiag: true
+write_hdiag: true
+check_get_param_Dloc: true
 
 # model_param
 nl: 2

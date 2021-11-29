@@ -4,24 +4,65 @@ background:
 bump:
   datadir: testdata
   lct_nscales: 1
-  lct_diag: [0]
+  lct_diag: [false]
   method: cor
   nc1: 500
   nc3: 50
-  new_lct: 1
-  new_nicas: 1
-  new_var: 1
+  new_lct: true
+  new_nicas: true
+  new_var: true
   nl0r: 2
   prefix: qg_parameters_bump_lct/test
   resol: 8.0
   strategy: specific_univariate
-  var_filter: 1
+  var_filter: true
   var_niter: 5
   var_rhflt:
     x: [3000.0e3]
-  write_lct: 1
-  write_nicas_local: 1
-  write_var: 1
+  write_lct: true
+  write_nicas_local: true
+  write_var: true
+  output:
+  - datadir: testdata/qg_parameters_bump_lct
+    date: 2010-01-01T12:00:00Z
+    exp: stddev
+    parameter: stddev
+    type: an
+  - datadir: testdata/qg_parameters_bump_lct
+    date: 2010-01-01T12:00:00Z
+    exp: D11_1
+    parameter: D11_1
+    type: an
+  - datadir: testdata/qg_parameters_bump_lct
+    date: 2010-01-01T12:00:00Z
+    exp: D22_1
+    parameter: D22_1
+    type: an
+  - datadir: testdata/qg_parameters_bump_lct
+    date: 2010-01-01T12:00:00Z
+    exp: D33_1
+    parameter: D33_1
+    type: an
+  - datadir: testdata/qg_parameters_bump_lct
+    date: 2010-01-01T12:00:00Z
+    exp: D12_1
+    parameter: D12_1
+    type: an
+  - datadir: testdata/qg_parameters_bump_lct
+    date: 2010-01-01T12:00:00Z
+    exp: Dcoef_1
+    parameter: Dcoef_1
+    type: an
+  - datadir: testdata/qg_parameters_bump_lct
+    date: 2010-01-01T12:00:00Z
+    exp: DLh_1
+    parameter: DLh_1
+    type: an
+  - datadir: testdata/qg_parameters_bump_lct
+    date: 2010-01-01T12:00:00Z
+    exp: nicas_norm
+    parameter: nicas_norm
+    type: an
 ensemble:
   members:
   - date: 2010-01-01T12:00:00Z
@@ -49,47 +90,6 @@ geometry:
   ny: 20
   depths: [4500.0, 5500.0]
 input variables: [x]
-output:
-- datadir: testdata/qg_parameters_bump_lct
-  date: 2010-01-01T12:00:00Z
-  exp: stddev
-  parameter: stddev
-  type: an
-- datadir: testdata/qg_parameters_bump_lct
-  date: 2010-01-01T12:00:00Z
-  exp: D11_1
-  parameter: D11_1
-  type: an
-- datadir: testdata/qg_parameters_bump_lct
-  date: 2010-01-01T12:00:00Z
-  exp: D22_1
-  parameter: D22_1
-  type: an
-- datadir: testdata/qg_parameters_bump_lct
-  date: 2010-01-01T12:00:00Z
-  exp: D33_1
-  parameter: D33_1
-  type: an
-- datadir: testdata/qg_parameters_bump_lct
-  date: 2010-01-01T12:00:00Z
-  exp: D12_1
-  parameter: D12_1
-  type: an
-- datadir: testdata/qg_parameters_bump_lct
-  date: 2010-01-01T12:00:00Z
-  exp: Dcoef_1
-  parameter: Dcoef_1
-  type: an
-- datadir: testdata/qg_parameters_bump_lct
-  date: 2010-01-01T12:00:00Z
-  exp: DLh_1
-  parameter: DLh_1
-  type: an
-- datadir: testdata/qg_parameters_bump_lct
-  date: 2010-01-01T12:00:00Z
-  exp: nicas_norm
-  parameter: nicas_norm
-  type: an
 
 test:
   reference filename: testref/qg_parameters_bump_lct/test.log.out

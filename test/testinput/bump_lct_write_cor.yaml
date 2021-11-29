@@ -6,8 +6,8 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_lct: 1
-write_lct: 1
+new_lct: true
+write_lct: true
 
 # model_param
 nl: 2
@@ -31,7 +31,7 @@ ne: 50
 
 # fit_param
 lct_nscales: 1
-lct_write_cor: 1
+lct_write_cor: true
 
 # nicas_param
 

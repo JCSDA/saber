@@ -6,8 +6,8 @@ model: "qg"
 # driver_param
 method: "loc"
 strategy: "common"
-new_hdiag: 1
-write_hdiag: 1
+new_hdiag: true
+write_hdiag: true
 
 # model_param
 nl: 2
@@ -28,7 +28,7 @@ nl0r: 2
 
 # diag_param
 ne: 50
-gau_approx: 1
+gau_approx: true
 
 # fit_param
 
