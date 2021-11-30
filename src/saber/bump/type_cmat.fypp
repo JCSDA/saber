@@ -55,12 +55,13 @@ contains
 ! Subroutine: cmat_alloc
 !> C matrix allocation
 !----------------------------------------------------------------------
-subroutine cmat_alloc(cmat,bpar)
+subroutine cmat_alloc(cmat,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(cmat_type),intent(inout) :: cmat !< C matrix
+type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Set name
@@ -71,35 +72,6 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Allocation
 if (.not.allocated(cmat%blk)) allocate(cmat%blk(bpar%nbe))
-
-! Probe out
-@:probe_out()
-
-end subroutine cmat_alloc
-
-!----------------------------------------------------------------------
-! Subroutine: cmat_alloc_blk
-!> Allocation
-!----------------------------------------------------------------------
-subroutine cmat_alloc_blk(cmat,geom,bpar)
-
-implicit none
-
-! Passed variables
-class(cmat_type),intent(inout) :: cmat !< C matrix
-type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
-
-! Local variables
-integer :: ib
-
-! Set name
-@:set_name(cmat_alloc_blk)
-
-! Probe in
-@:probe_in()
-
-! Allocation
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
       cmat%blk(ib)%ib = ib
@@ -113,7 +85,7 @@ cmat%allocated = .true.
 ! Probe out
 @:probe_out()
 
-end subroutine cmat_alloc_blk
+end subroutine cmat_alloc
 
 !----------------------------------------------------------------------
 ! Subroutine: cmat_init
@@ -237,8 +209,8 @@ type(hdiag_type),intent(in) :: hdiag   !< Hybrid diagnostics
 
 ! Local variables
 integer :: ib,n,i,il0,il0i,ic2a,ic0a
-real(kind_real),allocatable :: fld_c2a(:,:,:),fld_c2b(:,:),fld_c0a(:,:,:)
-
+real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
+type(type_diag),pointer :: diag
 ! Set name
 @:set_name(cmat_from_hdiag)
 
@@ -246,18 +218,24 @@ real(kind_real),allocatable :: fld_c2a(:,:,:),fld_c2b(:,:),fld_c0a(:,:,:)
 @:probe_in()
 
 ! Allocation
-call cmat%alloc(bpar)
-
-! Copy attributes
-do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat%blk(ib)%anisotropic = .false.
-end do
-
-! Allocation
 call cmat%alloc(geom,bpar)
 
 ! Initialization
 call cmat%init(mpl,bpar)
+
+! Diagnostic to copy
+select case (trim(nam%method))
+case ('cor')
+   diag_blk => hdiag%cor_1
+case ('loc')
+   diag_blk => hdiag%loc_1
+case ('hyb-avg','hyb-rnd')
+   diag_blk => hdiag%loc_2
+case ('dual-ens')
+    call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
+case default
+   call mpl%abort('${subr}$','cmat not implemented yet for this method')
+end select
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -266,80 +244,90 @@ do ib=1,bpar%nbe
          if (nam%local_diag) then
             ! Allocation
             n = 2
-            if (bpar%fit_block(ib)) n = n+5
-            allocate(fld_c2a(samp%nc2a,geom%nl0,n))
+            if (bpar%fit_block(ib)) then
+               n = n+5
+               if (bpar%nc4(ib)>1) n = n+3
+            end if
+            allocate(fld_c2a(samp%nc2a,geom%nl0))
             allocate(fld_c2b(samp%nc2b,geom%nl0))
-            allocate(fld_c0a(geom%nc0a,geom%nl0,n))
-
-            ! Initialization
-            fld_c2a = mpl%msv%valr
-
-            ! Copy data
-            do ic2a=1,samp%nc2a
-               select case (trim(nam%method))
-               case ('cor')
-                  fld_c2a(ic2a,:,1) = hdiag%cor_1%blk(ic2a,ib)%coef_ens
-                  fld_c2a(ic2a,:,2) = zero
-                  if (bpar%fit_block(ib)) then
-                     fld_c2a(ic2a,:,3) = hdiag%cor_1%blk(ic2a,ib)%fit_rh
-                     fld_c2a(ic2a,:,4) = hdiag%cor_1%blk(ic2a,ib)%fit_pkh
-                     fld_c2a(ic2a,:,5) = hdiag%cor_1%blk(ic2a,ib)%fit_rv
-                     fld_c2a(ic2a,:,6) = hdiag%cor_1%blk(ic2a,ib)%fit_pkv
-                     fld_c2a(ic2a,:,7) = hdiag%cor_1%blk(ic2a,ib)%fit_nlv
-                  end if
-               case ('loc')
-                  fld_c2a(ic2a,:,1) = hdiag%loc_1%blk(ic2a,ib)%coef_ens
-                  fld_c2a(ic2a,:,2) = zero
-                  if (bpar%fit_block(ib)) then
-                     fld_c2a(ic2a,:,3) = hdiag%loc_1%blk(ic2a,ib)%fit_rh
-                     fld_c2a(ic2a,:,4) = hdiag%loc_1%blk(ic2a,ib)%fit_pkh
-                     fld_c2a(ic2a,:,5) = hdiag%loc_1%blk(ic2a,ib)%fit_rv
-                     fld_c2a(ic2a,:,6) = hdiag%loc_1%blk(ic2a,ib)%fit_pkv
-                     fld_c2a(ic2a,:,7) = hdiag%loc_1%blk(ic2a,ib)%fit_nlv
-                  end if
-               case ('hyb-avg','hyb-rnd')
-                  fld_c2a(ic2a,:,1) = hdiag%loc_2%blk(ic2a,ib)%coef_ens
-                  fld_c2a(ic2a,:,2) = hdiag%loc_2%blk(ic2a,ib)%coef_sta
-                  if (bpar%fit_block(ib)) then
-                     fld_c2a(ic2a,:,3) = hdiag%loc_2%blk(ic2a,ib)%fit_rh
-                     fld_c2a(ic2a,:,4) = hdiag%loc_2%blk(ic2a,ib)%fit_pkh
-                     fld_c2a(ic2a,:,5) = hdiag%loc_2%blk(ic2a,ib)%fit_rv
-                     fld_c2a(ic2a,:,6) = hdiag%loc_2%blk(ic2a,ib)%fit_pkv
-                     fld_c2a(ic2a,:,7) = hdiag%loc_2%blk(ic2a,ib)%fit_nlv
-                  end if
-               case ('dual-ens')
-                  call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
-               case default
-                  call mpl%abort('${subr}$','cmat not implemented yet for this method')
-               end select
-            end do
+            allocate(fld_c0a(geom%nc0a,geom%nl0))
 
             do i=1,n
+               ! Copy field
+               do ic2a=1,samp%nc2a
+                  select case (i)
+                  case (1)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%coef_ens
+                  case (2)
+                     if ((trim(nam%method)=='hyb-avg').or.(trim(nam%method)=='hyb-rnd')) then
+                        fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%coef_sta
+                     else
+                        fld_c2a(ic2a,:) = zero
+                     end if
+                  case (3)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%rh
+                  case (4)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%pkh
+                  case (5)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%rv
+                  case (6)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%pkv
+                  case (7)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%nlv
+                  case (8)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%D11
+                  case (9)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%D22
+                  case (10)
+                     fld_c2a(ic2a,:) = diag%blk(ic1a,ib)%D12
+                  case default
+                     call mpl%abort('${subr}$','field index out of bound')
+                  end select
+               end do
+
                ! Fill missing values
                do il0=1,geom%nl0
-                  call samp%diag_fill(mpl,fld_c2a(:,il0,i))
+                  call samp%diag_fill(mpl,fld_c2a(:,il0))
                end do
 
                ! Interpolate
-               call samp%com_c2_AB%ext(mpl,fld_c2a(:,:,i),fld_c2b)
+               call samp%com_c2_AB%ext(mpl,fld_c2a,fld_c2b)
                do il0=1,geom%nl0
                   il0i = min(il0,geom%nl0i)
-                  call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0,i))
+                  call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0))
                end do
+
+               ! Copy to C matrix
+               select case (i)
+               case (1)
+                  cmat%blk(ib)%coef_ens = fld_c0a
+                  call mpl%f_comm%allreduce(zss_sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
+                  cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
+               case (2)
+                  cmat%blk(ib)%coef_sta = fld_c0a
+               case (3)
+                  cmat%blk(ib)%rh = fld_c0a
+               case (4)
+                  cmat%blk(ib)%pkh = fld_c0a
+               case (5)
+                  cmat%blk(ib)%rv = fld_c0a
+               case (6)
+                  cmat%blk(ib)%pkv = fld_c0a
+               case (7)
+                  cmat%blk(ib)%nlv = fld_c0a
+               case (8)
+                  cmat%blk(ib)%D11 = fld_c0a
+               case (9)
+                  cmat%blk(ib)%D22 = fld_c0a
+               case (10)
+                  cmat%blk(ib)%D12 = fld_c0a
+               case default
+                  call mpl%abort('${subr}$','field index out of bound')
+               end select
             end do
 
-            ! Copy to C matrix
-            cmat%blk(ib)%coef_ens = fld_c0a(:,:,1)
-            call mpl%f_comm%allreduce(zss_sum(cmat%blk(ib)%coef_ens,mask=geom%gmask_c0a),cmat%blk(ib)%wgt,fckit_mpi_sum())
-            cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
-            cmat%blk(ib)%coef_sta = fld_c0a(:,:,2)
-            if (bpar%fit_block(ib)) then
-               cmat%blk(ib)%rh = fld_c0a(:,:,3)
-               cmat%blk(ib)%pkh = fld_c0a(:,:,4)
-               cmat%blk(ib)%rv = fld_c0a(:,:,5)
-               cmat%blk(ib)%pkv = fld_c0a(:,:,6)
-               cmat%blk(ib)%nlv = fld_c0a(:,:,7)
-            end if
+
+
 
             ! Release memory
             deallocate(fld_c2a)

@@ -170,7 +170,6 @@
 #:set subr_list = subr_list + ["cmat_blk_partial_dealloc"]
 #:set subr_list = subr_list + ["cmat_blk_dealloc"]
 #:set subr_list = subr_list + ["cmat_alloc"]
-#:set subr_list = subr_list + ["cmat_alloc_blk"]
 #:set subr_list = subr_list + ["cmat_init"]
 #:set subr_list = subr_list + ["cmat_partial_dealloc"]
 #:set subr_list = subr_list + ["cmat_dealloc"]

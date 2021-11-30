@@ -3854,7 +3854,7 @@ write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distance
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
 !$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_th,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12,H33), &
-!$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd)
+!$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd,Hcoef,pkh,pkv,nlv)
 do isb=1,nicas_blk%nsb
    ! Indices
    isu = nicas_blk%sb_to_su(isb)
@@ -3961,8 +3961,13 @@ do isb=1,nicas_blk%nsb
                   Hcoef(jc1u) = one
                end if
                pkh(jc1u) = half*(nicas_blk%hor(il1)%pkh_c1u(ic1u)+nicas_blk%hor(jl1)%pkh_c1u(jc1u))
-               pkv(jc1u) = half*(nicas_blk%hor(il1)%pkv_c1u(ic1u)+nicas_blk%hor(jl1)%pkv_c1u(jc1u))
-               nlv(jc1u) = half*(nicas_blk%hor(il1)%nlv_c1u(ic1u)+nicas_blk%hor(jl1)%nlv_c1u(jc1u))
+               if (nicas_blk%horizontal) then
+                  pkv(jc1u) = huge_real
+                  nlv(jc1u) = huge_real
+               else
+                  pkv(jc1u) = half*(nicas_blk%hor(il1)%pkv_c1u(ic1u)+nicas_blk%hor(jl1)%pkv_c1u(jc1u))
+                  nlv(jc1u) = half*(nicas_blk%hor(il1)%nlv_c1u(ic1u)+nicas_blk%hor(jl1)%nlv_c1u(jc1u))
+               end if
             end if
          end do
 
@@ -4052,16 +4057,20 @@ do isb=1,nicas_blk%nsb
    isu = nicas_blk%sb_to_su(isb)
    ithread = 1
 !$ ithread = omp_get_thread_num()+1
-
    do jl1=1,nicas_blk%nl1
       do jbd=1,nicas_blk%ball(jl1,isb)%nbd
          ! Indices
          jc1u = nicas_blk%ball(jl1,isb)%bd_to_c1u(jbd)
          jsu = nicas_blk%hor(jl1)%c1u_to_su(jc1u)
 
-         ! Fit function
-         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),nicas_blk%ball(jl1,isb)%pkh(jbd),zero) &
- & *fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ball(jl1,isb)%pkv(jbd),nicas_blk%ball(jl1,isb)%nlv(jbd))
+         ! Horizontal component
+         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),nicas_blk%ball(jl1,isb)%pkh(jbd),zero)
+
+         ! Vertical component
+         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ball(jl1,isb)%pkv(jbd), &
+ & nicas_blk%ball(jl1,isb)%nlv(jbd))
+
+         ! Coefficient
          if (nicas_blk%anisotropic) S = S*nicas_blk%ball(jl1,isb)%Hcoef(jbd)
 
          if (sup(abs(S),S_inf)) then

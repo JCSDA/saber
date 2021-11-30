@@ -3,13 +3,12 @@ background:
   filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
   datadir: testdata
-  lct_nscales: 1
-  lct_diag: [0]
   method: cor
   nc1: 500
   nc3: 50
-  new_lct: 1
-  new_nicas: 1
+  nc4: 8
+  new_hdiag: 1
+  new_nicas: 0
   new_var: 1
   nl0r: 2
   prefix: qg_parameters_bump_lct/test
@@ -19,7 +18,7 @@ bump:
   var_niter: 5
   var_rhflt:
     x: [3000.0e3]
-  write_lct: 1
+  write_hdiag: 1
   write_nicas_local: 1
   write_var: 1
 ensemble:

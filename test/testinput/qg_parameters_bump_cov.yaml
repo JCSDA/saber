@@ -12,6 +12,7 @@ bump:
   new_nicas: 1
   new_var: 1
   nl0r: 2
+  peakness: true
   prefix: qg_parameters_bump_cov/test
   resol: 8.0
   strategy: specific_univariate
@@ -68,7 +69,7 @@ output:
 - datadir: testdata/qg_parameters_bump_cov
   date: 2010-01-01T12:00:00Z
   exp: cor_pk
-  parameter: cor_pk
+  parameter: cor_pkh
   type: an
 - datadir: testdata/qg_parameters_bump_cov
   date: 2010-01-01T12:00:00Z

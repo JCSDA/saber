@@ -557,7 +557,6 @@ do il1=1,nl1
       fit_D12_l1(il1) = max(minim%binf(3),min(minim%x(3),minim%bsup(3)))
 
       ! Check tensor conditioning
-      print*, 'toto',fit_D11_l1(il1),fit_D22_l1(il1),fit_D12_l1(il1)
       call check_cond(fit_D11_l1(il1),fit_D22_l1(il1),fit_D12_l1(il1),valid)
       if (.not.valid) then
          fit_D11_l1(il1) = mpl%msv%valr
@@ -579,7 +578,6 @@ else
  & .and.mpl%msv%isnot(diag_blk%fit_D12(il0))) then
          ! Major semi-axis
          call tensor_d2h(mpl,diag_blk%fit_D11(il0),diag_blk%fit_D22(il0),diag_blk%fit_D12(il0),H11,H22,H12)
-         print*, diag_blk%fit_D11(il0)*diag_blk%fit_D22(il0)*(1.0-diag_blk%fit_D12(il0)**2),H11,H22,H12,H11*H22-H12**2
          diag_blk%fit_rh(il0) = sqrt((two*(H11*H22-H12**2))/((H12**2-four*H11*H22)*(sqrt((H11-H22)**2+four*H12**2)-(H11+H22))))
       else
          ! Missing value
@@ -1030,7 +1028,7 @@ do il0=1,geom%nl0
                   diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
                   diag_lr_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
                   diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
-                 diag_lr_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                  diag_lr_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
                end if
             end if
          end do
