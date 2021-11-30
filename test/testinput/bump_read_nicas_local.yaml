@@ -6,16 +6,16 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-load_nicas_local: 1
-check_adjoints: 1
-check_dirac: 1
+load_nicas_local: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
-nomask: 1
+nomask: true
 
 # ens1_param
 ens1_ne: 50

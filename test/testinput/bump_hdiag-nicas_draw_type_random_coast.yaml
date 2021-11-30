@@ -6,12 +6,12 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_hdiag: 1
-write_hdiag: 1
-new_nicas: 1
-write_nicas_global: 1
-check_adjoints: 1
-check_dirac: 1
+new_hdiag: true
+write_hdiag: true
+new_nicas: true
+write_nicas_global: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl0: 2
@@ -25,7 +25,7 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-write_samp_global: 1
+write_samp_global: true
 diag_draw_type: "random_coast"
 Lcoast: 1000.0e3
 rcoast: 0.2
@@ -42,7 +42,7 @@ ne: 50
 # nicas_param
 resol: 8.0
 nicas_draw_type: "random_coast"
-write_nicas_grids: 1
+write_nicas_grids: true
 
 # dirac_param
 ndir: 1

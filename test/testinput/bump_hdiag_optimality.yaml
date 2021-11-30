@@ -6,14 +6,14 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-write_hdiag: 1
-new_nicas: 1
-check_optimality: 1
+write_hdiag: true
+new_nicas: true
+check_optimality: true
 
 # model_param
 nl0: 1
 levs: [1]
-nv: 1
+nv: true
 variables: ["q"]
 
 # ens1_param
@@ -25,7 +25,7 @@ ens1_ne: 50
 nc1: 1500
 nc3: 15
 dc: 400.0e3
-nl0r: 1
+nl0r: true
 
 # diag_param
 ne: 50
@@ -34,7 +34,7 @@ ne: 50
 
 # nicas_param
 resol: 8.0
-forced_radii: 1
+forced_radii: true
 rh:
   q: [4000.0e3]
 rv:

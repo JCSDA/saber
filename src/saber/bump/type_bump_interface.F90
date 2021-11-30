@@ -481,26 +481,24 @@ end subroutine bump_randomize_c
 ! Subroutine: bump_psichi_to_uv_c
 !> psi/chi to u/v transform
 !----------------------------------------------------------------------
-subroutine bump_psichi_to_uv_c(key_bump,c_afieldset_in,c_afieldset_out) bind(c,name='bump_psichi_to_uv_f90')
+subroutine bump_psichi_to_uv_c(key_bump,c_afieldset) bind(c,name='bump_psichi_to_uv_f90')
 
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: key_bump           !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset_in  !< ATLAS fieldset pointer (input)
-type(c_ptr),intent(in),value :: c_afieldset_out !< ATLAS fieldset pointer (output)
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset_in,f_fieldset_out
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_fieldset_in = atlas_fieldset(c_afieldset_in)
-f_fieldset_out = atlas_fieldset(c_afieldset_out)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%psichi_to_uv(f_fieldset_in,f_fieldset_out)
+call bump%psichi_to_uv(f_fieldset)
 
 end subroutine bump_psichi_to_uv_c
 
@@ -508,26 +506,24 @@ end subroutine bump_psichi_to_uv_c
 ! Subroutine: bump_psichi_to_uv_ad_c
 !> psi/chi to u/v transform, adjoint
 !----------------------------------------------------------------------
-subroutine bump_psichi_to_uv_ad_c(key_bump,c_afieldset_in,c_afieldset_out) bind(c,name='bump_psichi_to_uv_ad_f90')
+subroutine bump_psichi_to_uv_ad_c(key_bump,c_afieldset) bind(c,name='bump_psichi_to_uv_ad_f90')
 
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: key_bump           !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset_in  !< ATLAS fieldset pointer (input)
-type(c_ptr),intent(in),value :: c_afieldset_out !< ATLAS fieldset pointer (output)
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset_in,f_fieldset_out
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_fieldset_in = atlas_fieldset(c_afieldset_in)
-f_fieldset_out = atlas_fieldset(c_afieldset_out)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%psichi_to_uv_ad(f_fieldset_in,f_fieldset_out)
+call bump%psichi_to_uv_ad(f_fieldset)
 
 end subroutine bump_psichi_to_uv_ad_c
 

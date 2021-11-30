@@ -4,11 +4,11 @@ prefix: "bump_vbal/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
-new_vbal: 1
-write_vbal: 1
-check_vbal: 1
-check_adjoints: 1
-check_dirac: 1
+new_vbal: true
+write_vbal: true
+check_vbal: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl0: 4
@@ -22,7 +22,7 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-write_samp_global: 1
+write_samp_global: true
 nc1: 500
 nc2: 250
 

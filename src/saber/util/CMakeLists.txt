@@ -5,6 +5,8 @@
 
 list(APPEND util_src_files_list
 
+atlasFieldSet.h
+
 tools_atlas.fypp
 tools_const.fypp
 tools_kinds.fypp

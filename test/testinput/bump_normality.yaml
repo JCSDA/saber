@@ -6,7 +6,7 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_normality: 1
+new_normality: true
 
 # model_param
 nl0: 2

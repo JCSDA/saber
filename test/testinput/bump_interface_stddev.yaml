@@ -6,9 +6,9 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_var: 1
-write_var: 1
-check_apply_stddev: 1
+new_var: true
+write_var: true
+check_apply_stddev: true
 
 # model_param
 nl0: 2

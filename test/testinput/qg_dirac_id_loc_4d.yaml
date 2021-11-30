@@ -1,7 +1,11 @@
 background error:
   covariance model: ensemble
   localization:
-    localization method: ID
+    localization method: SABER
+    saber block:
+      saber block name: ID
+      input variables: [x]
+      output variables: [x]
   members:
   - states:
     - date: 2010-01-01T00:00:00Z

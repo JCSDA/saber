@@ -352,7 +352,6 @@ geom%nproc = mpl%nproc
 geom%nl0 = nam%nl0
 
 ! Copy function space pointer
-geom%afunctionspace_mg = atlas_functionspace(afunctionspace%c_ptr())
 if (present(fieldset)) then
    call geom%from_atlas(mpl,afunctionspace,fieldset)
 else
@@ -534,6 +533,10 @@ type(atlas_structuredgrid) :: asgrid
 ! Probe in
 @:probe_in()
 
+! Copy function space
+geom%afunctionspace_mg = atlas_functionspace(afunctionspace%c_ptr())
+
+! Get size and lon/lat
 select case (afunctionspace%name())
 case ('NodeColumns')
    ! Get node columns function space

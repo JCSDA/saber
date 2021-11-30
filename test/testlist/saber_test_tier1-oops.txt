@@ -11,6 +11,7 @@ qg_dirac_bump_hyb_value
 qg_dirac_bump_lct
 qg_dirac_bump_loc_3d
 qg_dirac_bump_loc_4d
+qg_dirac_gsirf_cov
 qg_dirac_id_cov
 qg_dirac_id_loc_3d
 qg_dirac_id_loc_4d
@@ -26,3 +27,4 @@ qg_parameters_bump_lct
 qg_parameters_bump_loc
 qg_parameters_bump_vbal_new
 qg_parameters_bump_vbal_update
+qg_parameters_gsirf_cov

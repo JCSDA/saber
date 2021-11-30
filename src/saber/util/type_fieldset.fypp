@@ -1,7 +1,7 @@
 #:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
-! Module: tools_atlas
-!> Random numbers generator derived type
+! Module: type_fieldset
+!> Fieldset derived type (extension of ATLAS fieldset)
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT

@@ -6,8 +6,8 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_lct: 1
-write_lct: 1
+new_lct: true
+write_lct: true
 
 # model_param
 nl0: 2
@@ -21,8 +21,8 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-write_samp_local: 1
-write_samp_grids: 1
+write_samp_local: true
+write_samp_grids: true
 nc1: 100
 nc2: 100
 nc3: 50

@@ -1162,15 +1162,6 @@ call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 ! Apply NICAS
 call bump%nicas%apply(bump%mpl,bump%nam,bump%geom,bump%bpar,fld_c0a)
 
-! Set missing unmasked values to zero
-do iv=1,bump%nam%nv
-   do il0=1,bump%geom%nl0
-      do ic0a=1,bump%geom%nc0a
-         if (bump%mpl%msv%is(fld_c0a(ic0a,il0,iv)).and.(.not.bump%geom%gmask_c0a(ic0a,il0))) fld_c0a(ic0a,il0,iv) = zero
-      end do
-   end do
-end do
-
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 
@@ -1440,20 +1431,17 @@ end subroutine bump_randomize
 ! Subroutine: bump_psichi_to_uv
 !> psi/chi to u/v transform
 !----------------------------------------------------------------------
-subroutine bump_psichi_to_uv(bump,fieldset_in,fieldset_out)
+subroutine bump_psichi_to_uv(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump            !< BUMP
-type(fieldset_type),intent(inout) :: fieldset_in  !< Fieldset (input)
-type(fieldset_type),intent(inout) :: fieldset_out !< Fieldset (output)
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 integer :: iv,iv_psi,iv_chi,iv_ua,iv_va
-real(kind_real) :: fld_in_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
-real(kind_real) :: fld_out_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
-character(len=1024) :: variables_out(bump%nam%nv)
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 type(atlas_field) :: afield
 
 ! Set name
@@ -1465,52 +1453,34 @@ type(atlas_field) :: afield
 ! Probe in
 @:probe_in()
 
-! Check wind variables names
-if (trim(bump%nam%wind_streamfunction)=='') call bump%mpl%abort('${subr}$','wind_streamfunction should be specified')
-if (trim(bump%nam%wind_velocity_potential)=='') call bump%mpl%abort('${subr}$','wind_velocity_potential should be specified')
-if (trim(bump%nam%wind_zonal)=='') call bump%mpl%abort('${subr}$','wind_zonal should be specified')
-if (trim(bump%nam%wind_meridional)=='') call bump%mpl%abort('${subr}$','wind_meridional should be specified')
-
-! Set output variables
-do iv=1,bump%nam%nv
-   if (bump%nam%variables(iv)==bump%nam%wind_streamfunction) then
-      variables_out(iv) = bump%nam%wind_zonal
-   elseif (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) then
-      variables_out(iv) = bump%nam%wind_meridional
-   else
-      variables_out(iv) = bump%nam%variables(iv)
-   end if
-end do
-
-! Pass unused fields
-do iv=1,fieldset_in%size()
-   afield = fieldset_in%field(iv)
-   if ((afield%name()/=bump%nam%wind_streamfunction).and.(afield%name()/=bump%nam%wind_velocity_potential)) &
- & call fieldset_out%add(afield)
-end do
+! Add u/v variables in fieldset
+afield = bump%geom%afunctionspace_mg%create_field(name=bump%nam%wind_zonal,kind=atlas_real(kind_real), &
+ & levels=bump%geom%nl0)
+call fieldset%add(afield)
+afield = bump%geom%afunctionspace_mg%create_field(name=bump%nam%wind_meridional,kind=atlas_real(kind_real), &
+ & levels=bump%geom%nl0)
+call fieldset%add(afield)
 
 ! Set fieldsets metadata
-call fieldset_in%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
-call fieldset_out%set_metadata(bump%mpl,bump%geom%gmask_mga,variables_out,bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
 
 ! Fieldset to Fortran on subset Sc0
-call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset_in,fld_in_c0a)
-call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset_out,fld_out_c0a)
+call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
 do iv=1,bump%nam%nv
    if (bump%nam%variables(iv)==bump%nam%wind_streamfunction) iv_psi = iv
    if (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) iv_chi = iv
-   if (variables_out(iv)==bump%nam%wind_zonal) iv_ua = iv
-   if (variables_out(iv)==bump%nam%wind_meridional) iv_va = iv
+   if (bump%nam%variables(iv)==bump%nam%wind_zonal) iv_ua = iv
+   if (bump%nam%variables(iv)==bump%nam%wind_meridional) iv_va = iv
 end do
 
 ! Transform psi/chi to u/v
-call bump%wind%psichi_to_uv(bump%mpl,bump%geom,fld_in_c0a(:,:,iv_psi),fld_in_c0a(:,:,iv_chi), &
- & fld_out_c0a(:,:,iv_ua),fld_out_c0a(:,:,iv_va))
+call bump%wind%psichi_to_uv(bump%mpl,bump%geom,fld_c0a(:,:,iv_psi),fld_c0a(:,:,iv_chi), &
+ & fld_c0a(:,:,iv_ua),fld_c0a(:,:,iv_va))
 
 ! Fortran array on subset Sc0 to fieldset
-call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_out_c0a,fieldset_out)
+call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 
 ! Probe out
 @:probe_out()
@@ -1521,20 +1491,17 @@ end subroutine bump_psichi_to_uv
 ! Subroutine: bump_psichi_to_uv_ad
 !> psi/chi to u/v transform, adjoint
 !----------------------------------------------------------------------
-subroutine bump_psichi_to_uv_ad(bump,fieldset_in,fieldset_out)
+subroutine bump_psichi_to_uv_ad(bump,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump            !< BUMP
-type(fieldset_type),intent(inout) :: fieldset_in  !< Fieldset (input)
-type(fieldset_type),intent(inout) :: fieldset_out !< Fieldset (output)
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
 integer :: iv,iv_psi,iv_chi,iv_ua,iv_va
-real(kind_real) :: fld_in_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
-real(kind_real) :: fld_out_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
-character(len=1024) :: variables_in(bump%nam%nv)
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 type(atlas_field) :: afield
 
 ! Set name
@@ -1546,51 +1513,34 @@ type(atlas_field) :: afield
 ! Probe in
 @:probe_in()
 
-! Check wind variables names
-if (trim(bump%nam%wind_streamfunction)=='') call bump%mpl%abort('${subr}$','wind_streamfunction should be specified')
-if (trim(bump%nam%wind_velocity_potential)=='') call bump%mpl%abort('${subr}$','wind_velocity_potential should be specified')
-if (trim(bump%nam%wind_zonal)=='') call bump%mpl%abort('${subr}$','wind_zonal should be specified')
-if (trim(bump%nam%wind_meridional)=='') call bump%mpl%abort('${subr}$','wind_meridional should be specified')
-
-! Set output variables
-do iv=1,bump%nam%nv
-   if (bump%nam%variables(iv)==bump%nam%wind_streamfunction) then
-      variables_in(iv) = bump%nam%wind_zonal
-   elseif (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) then
-      variables_in(iv) = bump%nam%wind_meridional
-   else
-      variables_in(iv) = bump%nam%variables(iv)
-   end if
-end do
-
-! Pass unused fields
-do iv=1,fieldset_in%size()
-   afield = fieldset_in%field(iv)
-   if ((afield%name()/=bump%nam%wind_zonal).and.(afield%name()/=bump%nam%wind_meridional)) call fieldset_out%add(afield)
-end do
+! Add u/v variables in fieldset
+afield = bump%geom%afunctionspace_mg%create_field(name=bump%nam%wind_streamfunction,kind=atlas_real(kind_real), &
+ & levels=bump%geom%nl0)
+call fieldset%add(afield)
+afield = bump%geom%afunctionspace_mg%create_field(name=bump%nam%wind_velocity_potential,kind=atlas_real(kind_real), &
+ & levels=bump%geom%nl0)
+call fieldset%add(afield)
 
 ! Set fieldsets metadata
-call fieldset_in%set_metadata(bump%mpl,bump%geom%gmask_mga,variables_in,bump%nam%lev2d)
-call fieldset_out%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
 
 ! Fieldset to Fortran on subset Sc0
-call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset_in,fld_in_c0a)
-call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset_out,fld_out_c0a)
+call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
 do iv=1,bump%nam%nv
-   if (variables_in(iv)==bump%nam%wind_zonal) iv_ua = iv
-   if (variables_in(iv)==bump%nam%wind_meridional) iv_va = iv
+   if (bump%nam%variables(iv)==bump%nam%wind_zonal) iv_ua = iv
+   if (bump%nam%variables(iv)==bump%nam%wind_meridional) iv_va = iv
    if (bump%nam%variables(iv)==bump%nam%wind_streamfunction) iv_psi = iv
    if (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) iv_chi = iv
 end do
 
 ! Transform psi/chi to u/v adjoint
-call bump%wind%psichi_to_uv_ad(bump%mpl,bump%geom,fld_in_c0a(:,:,iv_ua),fld_in_c0a(:,:,iv_va), &
- & fld_out_c0a(:,:,iv_psi),fld_out_c0a(:,:,iv_chi))
+call bump%wind%psichi_to_uv_ad(bump%mpl,bump%geom,fld_c0a(:,:,iv_ua),fld_c0a(:,:,iv_va), &
+ & fld_c0a(:,:,iv_psi),fld_c0a(:,:,iv_chi))
 
 ! Fortran array on subset Sc0 to fieldset
-call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_out_c0a,fieldset_out)
+call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 
 ! Probe out
 @:probe_out()

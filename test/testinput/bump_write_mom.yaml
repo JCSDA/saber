@@ -6,9 +6,9 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-write_mom: 1
-new_hdiag: 1
-write_hdiag: 1
+write_mom: true
+new_hdiag: true
+write_hdiag: true
 
 # model_param
 nl0: 2

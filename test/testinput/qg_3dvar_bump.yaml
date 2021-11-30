@@ -11,22 +11,24 @@ cost function:
     date: 2010-01-01T12:00:00Z
     filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
   background error:
-    bump:
-      datadir: testdata
-      fname_nicas: qg_parameters_bump_cov/test_nicas
-      load_nicas_local: 1
-      prefix: qg_3dvar_bump/test
-      strategy: specific_univariate
-    covariance model: BUMP
-    variable changes:
-    - variable change: StdDev
+    covariance model: SABER
+    saber blocks:
+    - saber block name: BUMP_NICAS
+      saber central block: true
+      iterative inverse: true
       input variables: [x]
       output variables: [x]
       bump:
         datadir: testdata
-        fname_var: [qg_parameters_bump_cov/test_var]
-        load_var: 1
+        fname_nicas: qg_parameters_bump_cov/test_nicas
+        load_nicas_local: true
         prefix: qg_3dvar_bump/test
+        strategy: specific_univariate
+    - saber block name: StdDev
+      input variables: [x]
+      output variables: [x]
+      file:
+        filename: testdata/qg_parameters_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc
   observations:
   - obs error:
       covariance model: diagonal

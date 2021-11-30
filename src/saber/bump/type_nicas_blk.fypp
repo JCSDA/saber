@@ -4920,11 +4920,7 @@ do ic0a=1,geom%nc0a
 
    ! Copy data
    do il0=1,geom%nl0
-      if (nicas_blk%vlev(il0)) then
-         fld(ic0a,il0) = fld_tmp(il0)
-      else
-         fld(ic0a,il0) = mpl%msv%valr
-      end if
+      if (nicas_blk%vlev(il0)) fld(ic0a,il0) = fld_tmp(il0)
    end do
 
    ! Release memory

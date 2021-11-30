@@ -4,20 +4,20 @@ prefix: "bump_write_vbal_cov_global/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
-new_vbal_cov: 1
-write_vbal_cov: 1
-new_vbal: 1
-write_vbal: 1
-check_vbal: 1
-check_adjoints: 1
-check_dirac: 1
+new_vbal_cov: true
+write_vbal_cov: true
+new_vbal: true
+write_vbal: true
+check_vbal: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl0: 4
 levs: [1,2,3,4]
 nv: 3
 variables: ["u","q","cosu_plus_q2"]
-nomask: 1
+nomask: true
 
 # ens1_param
 ens1_ne: 50
@@ -26,7 +26,7 @@ ens1_nsub: 2
 # ens2_param
 
 # sampling_param
-write_samp_global: 1
+write_samp_global: true
 nc1: 500
 nc2: 250
 

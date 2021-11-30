@@ -4,27 +4,26 @@ prefix: "bump_read_vbal_cov_local/test__MPI_-_OMP_"
 model: "qg"
 
 # driver_param
-load_vbal_cov: 1
-new_vbal: 1
-write_vbal: 1
-check_vbal: 1
-check_adjoints: 1
-check_dirac: 1
+load_vbal_cov: true
+new_vbal: true
+write_vbal: true
+check_vbal: true
+check_adjoints: true
+check_dirac: true
 
 # model_param
 nl0: 4
 levs: [1,2,3,4]
 nv: 3
 variables: ["u","q","cosu_plus_q2"]
-nomask: 1
+nomask: true
 
 # ens1_param
-ens1_nsub: 1
 
 # ens2_param
 
 # sampling_param
-load_samp_local: 1
+load_samp_local: true
 
 # diag_param
 vbal_block: [1,1,1]

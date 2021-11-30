@@ -6,14 +6,14 @@ bump:
   datadir: testdata
   nc1: 500
   nc2: 250
-  new_vbal: 1
-  new_vbal_cov: 1
+  new_vbal: true
+  new_vbal_cov: true
   prefix: qg_parameters_bump_vbal_new/test
   vbal_rad: 2000.0e3
-  write_samp_local: 1
-  write_samp_global: 1
-  write_vbal: 1
-  write_vbal_cov: 1
+  write_samp_local: true
+  write_samp_global: true
+  write_vbal: true
+  write_vbal_cov: true
 ensemble:
   members:
   - date: 2010-01-01T12:00:00Z

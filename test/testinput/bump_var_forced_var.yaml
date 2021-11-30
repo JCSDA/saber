@@ -6,8 +6,8 @@ model: "qg"
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_var: 1
-write_var: 1
+new_var: true
+write_var: true
 
 # model_param
 nl0: 2
@@ -23,7 +23,7 @@ ens1_ne: 50
 # sampling_param
 
 # diag_param
-forced_var: 1
+forced_var: true
 stddev:
   u: [2.0,1.0]
   q: [1.0,0.5]
