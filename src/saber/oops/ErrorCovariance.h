@@ -172,6 +172,7 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
 
   // Increment_ to ATLAS fieldset
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
+  dx.setAtlas(atlasFieldSet.get());
   dx.toAtlas(atlasFieldSet.get());
 
   // Randomization done flag
