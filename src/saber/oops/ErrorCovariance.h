@@ -68,13 +68,9 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
   typedef typename SaberBlockVec_::const_iterator         icst_;
   typedef typename SaberBlockVec_::const_reverse_iterator ircst_;
   typedef oops::State<MODEL>                              State_;
-  typedef typename MODEL::Covariance Covariance_;
 
  public:
-  /// Defined as Covariance_::Parameters_ if Covariance_ defines a Parameters_ type; otherwise as
-  /// ErrorCovarianceParameters<MODEL>.
-  typedef oops::TParameters_IfAvailableElseFallbackType_t<
-    Covariance_, ErrorCovarianceParameters<MODEL>> Parameters_;
+  typedef ErrorCovarianceParameters<MODEL> Parameters_;
 
   static const std::string classname() {return "saber::ErrorCovariance";}
 
