@@ -1093,19 +1093,29 @@ if (mpl%msv%is(fit_r).or.mpl%msv%is(fit_pk).or.mpl%msv%is(fit_nl)) then
    ! Set to missing values if no value available
    fit = mpl%msv%valr
 else
-   do i=1,n
-      ! Normalized distance
-      if (fit_r>zero) then
-         nd = dist(i)/fit_r
-      elseif (dist(i)>zero) then
-         nd = one
-      else
-         nd = zero
-      end if
+   if (n==1) then
+      ! No meaning for fit_r => zero normalized distance
+      nd = zero
 
       ! Unitary fit function
-      fit(i) = fit_func_sqrt(mpl,nd,fit_pk,fit_nl)
-   end do
+      fit(1) = fit_func_sqrt(mpl,nd,fit_pk,fit_nl)
+   else
+      do i=1,n
+         if (fit_r>zero) then
+            ! Positive fit_r => normalized distance as a ratio
+            nd = dist(i)/fit_r
+         elseif (dist(i)>zero) then
+            ! Zero fit_r, positive distance => infinite normalized distance
+            nd = one
+         else
+            ! Zero fit_r, zero distance => zero normalized distance
+            nd = zero
+         end if
+   
+        ! Unitary fit function
+        fit(i) = fit_func_sqrt(mpl,nd,fit_pk,fit_nl)
+      end do
+   end if
 end if
 
 ! Probe out
