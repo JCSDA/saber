@@ -9,7 +9,7 @@
 module type_minim
 
 use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
-use tools_func, only: fit_diag_tensor
+use tools_fit, only: diag_tensor
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
@@ -45,7 +45,7 @@ type minim_type
 contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
-   procedure :: cost_fit_diag_tensor => minim_cost_fit_diag_tensor
+   procedure :: cost_tensor => minim_cost_tensor
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
    procedure :: vt_dir => minim_vt_dir
@@ -123,8 +123,8 @@ real(kind_real),intent(out) :: f          !< Cost function value
 @:probe_in()
 
 select case (trim(minim%cost_function))
-case ('fit_diag_tensor')
-   call minim%cost_fit_diag_tensor(mpl,x,f)
+case ('tensor')
+   call minim%cost_tensor(mpl,x,f)
 case default
    call mpl%abort('${subr}$','wrong cost function')
 end select
@@ -135,10 +135,10 @@ end select
 end subroutine minim_cost
 
 !----------------------------------------------------------------------
-! Function: minim_cost_fit_diag_tensor
+! Function: minim_cost_tensor
 !> Horizontal tensor fit function cost
 !----------------------------------------------------------------------
-subroutine minim_cost_fit_diag_tensor(minim,mpl,x,f)
+subroutine minim_cost_tensor(minim,mpl,x,f)
 
 implicit none
 
@@ -153,7 +153,7 @@ real(kind_real) :: D11,D22,D12,fit(minim%nc3,minim%nc4)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
 
 ! Set name
-@:set_name(minim_cost_fit_diag_tensor)
+@:set_name(minim_cost_tensor)
 
 ! Probe in
 @:probe_in()
@@ -166,7 +166,7 @@ call minim%vt_dir(xtmp)
 D11 = xtmp(1)
 D22 = xtmp(2)
 D12 = xtmp(3)
-call fit_diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,minim%pkh,fit)
+call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,minim%pkh,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))
@@ -177,7 +177,7 @@ f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(
 ! Probe out
 @:probe_out()
 
-end subroutine minim_cost_fit_diag_tensor
+end subroutine minim_cost_tensor
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_hooke

@@ -103,7 +103,6 @@ type nam_type
    character(len=1024),dimension(0:nsubmax) :: fname_vbal_cov !< Vertical covariance files
    character(len=1024) :: fname_vbal                          !< Vertical balance file
    character(len=1024),dimension(0:nsubmax) :: fname_mom      !< Moments files
-   character(len=1024) :: fname_cmat                          !< C matrix file
    character(len=1024) :: fname_nicas                         !< NICAS file
    character(len=1024) :: fname_wind                          !< Wind transform file
 
@@ -351,7 +350,6 @@ nam%fname_vbal = ''
 do isub=0,nsubmax
    nam%fname_mom(isub) = ''
 end do
-nam%fname_cmat = ''
 nam%fname_nicas = ''
 nam%fname_wind = ''
 
@@ -585,7 +583,6 @@ character(len=1024) :: fname_samp
 character(len=1024),dimension(0:nsubmax) :: fname_vbal_cov
 character(len=1024) :: fname_vbal
 character(len=1024),dimension(0:nsubmax) :: fname_mom
-character(len=1024) :: fname_cmat
 character(len=1024) :: fname_nicas
 character(len=1024) :: fname_wind
 integer :: nl0
@@ -765,7 +762,6 @@ namelist/files_param/ &
  & fname_vbal_cov, &
  & fname_vbal, &
  & fname_mom, &
- & fname_cmat, &
  & fname_nicas, &
  & fname_wind
 namelist/model_param/ &
@@ -962,7 +958,6 @@ if (mpl%main) then
    do isub=0,nsubmax
       fname_mom(isub) = ''
    end do
-   fname_cmat = ''
    fname_nicas = ''
    fname_wind = ''
 
@@ -1194,7 +1189,6 @@ if (mpl%main) then
    nam%fname_vbal_cov = fname_vbal_cov
    nam%fname_vbal = fname_vbal
    nam%fname_mom = fname_mom
-   nam%fname_cmat = fname_cmat
    nam%fname_nicas = fname_nicas
    nam%fname_wind = fname_wind
 
@@ -1427,7 +1421,6 @@ call mpl%f_comm%broadcast(nam%fname_samp,mpl%rootproc-1)
 call mpl%broadcast(nam%fname_vbal_cov,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fname_vbal,mpl%rootproc-1)
 call mpl%broadcast(nam%fname_mom,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%fname_cmat,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fname_nicas,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fname_wind,mpl%rootproc-1)
 
@@ -1708,10 +1701,6 @@ if (conf%has('fname_mom')) then
       call comm%abort(1)
    end if
    nam%fname_mom(1:size(str_array)) = str_array
-end if
-if (conf%has('fname_cmat')) then
-   call conf%get_or_die('fname_cmat',str)
-   nam%fname_cmat = str
 end if
 if (conf%has('fname_nicas')) then
    call conf%get_or_die('fname_nicas',str)
@@ -2394,7 +2383,6 @@ nam%fname_mom(0) = trim(nam%prefix)//'_mom'
 do isub=1,nsubmax
    if (nam%fname_mom(isub)=='') write(nam%fname_mom(isub),'(a,a,i6.6)') trim(nam%fname_mom(0)),'_',isub
 end do
-if (nam%fname_cmat=='') nam%fname_cmat = trim(nam%prefix)//'_cmat'
 if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'_nicas'
 if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'_wind'
 
@@ -2789,7 +2777,6 @@ call mpl%write('fname_samp',nam%fname_samp)
 call mpl%write('fname_vbal_cov',count(nam%fname_vbal_cov/=''),nam%fname_vbal_cov(0:count(nam%fname_vbal_cov/='')-1))
 call mpl%write('fname_vbal',nam%fname_vbal)
 call mpl%write('fname_mom',count(nam%fname_mom/=''),nam%fname_mom(0:count(nam%fname_mom/='')-1))
-call mpl%write('fname_cmat',nam%fname_cmat)
 call mpl%write('fname_nicas',nam%fname_nicas)
 call mpl%write('fname_wind',nam%fname_wind)
 

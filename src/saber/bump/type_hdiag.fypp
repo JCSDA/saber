@@ -8,6 +8,7 @@
 !----------------------------------------------------------------------
 module type_hdiag
 
+use tools_const, only: zero
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,define_grp,define_dim,define_var,put_var,close_file
 use type_avg, only: avg_type
@@ -39,6 +40,7 @@ type hdiag_type
 contains
    procedure :: dealloc => hdiag_dealloc
    procedure :: write => hdiag_write
+   procedure :: get_value => hdiag_get_value
    procedure :: run_hdiag => hdiag_run_hdiag
 end type hdiag_type
 
@@ -194,6 +196,134 @@ end do
 @:probe_out()
 
 end subroutine hdiag_write
+
+!----------------------------------------------------------------------
+! Function: hdiag_get_value
+!> Get value
+!----------------------------------------------------------------------
+function hdiag_get_value(hdiag,mpl,diag,field,ic2a,ib,il0) result(value)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(in) :: hdiag !< Hybrid diagnostics
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: diag   !< Diagnostic
+character(len=*),intent(in) :: field  !< Field name
+integer,intent(in) :: ic2a            !< Grid-point index
+integer,intent(in) :: ib              !< Block index
+integer,intent(in) :: il0             !< Level
+
+! Returned variable
+real(kind_real) :: value
+
+! Local variables
+
+! Set name
+@:set_name(hdiag_get_value)
+
+! Probe in
+@:probe_in()
+
+select case (trim(field))
+case ('coef_ens')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%coef_ens(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%coef_ens(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%coef_ens(il0)
+   end select
+case ('coef_sta')
+   select case(trim(diag))
+   case('cor_1')
+      value = zero
+   case('loc_1')
+      value = zero
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%coef_sta
+   end select
+case ('fit_rh')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%fit_rh(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%fit_rh(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%fit_rh(il0)
+   end select
+case ('fit_pkh')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%fit_pkh(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%fit_pkh(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%fit_pkh(il0)
+   end select
+case ('fit_rv')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%fit_rv(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%fit_rv(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%fit_rv(il0)
+   end select
+case ('fit_pkv')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%fit_pkv(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%fit_pkv(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%fit_pkv(il0)
+   end select
+case ('fit_nlv')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%fit_nlv(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%fit_nlv(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%fit_nlv(il0)
+   end select
+case ('D11')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%fit_D11(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%fit_D11(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%fit_D11(il0)
+   end select
+case ('D22')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%fit_D22(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%fit_D22(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%fit_D22(il0)
+   end select
+case ('D12')
+   select case(trim(diag))
+   case('cor_1')
+      value = hdiag%cor_1%blk(ic2a,ib)%fit_D12(il0)
+   case('loc_1')
+      value = hdiag%loc_1%blk(ic2a,ib)%fit_D12(il0)
+   case('loc_2')
+      value = hdiag%loc_2%blk(ic2a,ib)%fit_D12(il0)
+   end select
+case default
+   call mpl%abort('${subr}$','wrong field')
+end select
+
+! Probe out
+@:probe_out()
+
+end function hdiag_get_value
 
 !----------------------------------------------------------------------
 ! Subroutine: hdiag_run_hdiag

@@ -12,7 +12,8 @@ use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
-use tools_func, only: gc2gau,lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
+use tools_fit, only: gc2gau,tensor_d2h
+use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: pkmin,pkmax,nlmin,nlmax,dpk,dnl,pk,scaleh,scalev,scalethmin,ipkhdef,ipkvdef,fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
@@ -2454,7 +2455,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
-integer :: iv,il0
+integer :: iv,ic0a,il0
 real(kind_real) :: rhs_max
 character(len=1024) :: message
 
@@ -2468,7 +2469,7 @@ character(len=1024) :: message
 associate(ib=>nicas_blk%ib)
 
 ! Set anisotropic parameter
-nicas_blk%anisotropic = cmat_blk%anisotropic
+nicas_blk%anisotropic = allocated(cmat_blk%D11).and.allocated(cmat_blk%D22).and.allocated(cmat_blk%D12)
 
 ! Allocation
 if (allocated(cmat_blk%rh)) allocate(nicas_blk%rh(geom%nc0a,geom%nl0))
@@ -2478,11 +2479,11 @@ if (allocated(cmat_blk%pkv)) allocate(nicas_blk%pkv(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%nlv)) allocate(nicas_blk%nlv(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%rhs)) allocate(nicas_blk%rhs(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%rvs)) allocate(nicas_blk%rvs(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%H11)) allocate(nicas_blk%H11(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%H22)) allocate(nicas_blk%H22(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%H33)) allocate(nicas_blk%H33(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%H12)) allocate(nicas_blk%H12(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%Hcoef)) allocate(nicas_blk%Hcoef(geom%nc0a,geom%nl0))
+if (nicas_blk%anisotropic) then
+   allocate(nicas_blk%H11(geom%nc0a,geom%nl0))
+   allocate(nicas_blk%H22(geom%nc0a,geom%nl0))
+   allocate(nicas_blk%H12(geom%nc0a,geom%nl0))
+end if
 
 ! Initialization
 if (allocated(cmat_blk%rh)) nicas_blk%rh = mpl%msv%valr
@@ -2492,11 +2493,11 @@ if (allocated(cmat_blk%pkv)) nicas_blk%pkv = mpl%msv%valr
 if (allocated(cmat_blk%nlv)) nicas_blk%nlv = mpl%msv%valr
 if (allocated(cmat_blk%rhs)) nicas_blk%rhs = mpl%msv%valr
 if (allocated(cmat_blk%rvs)) nicas_blk%rvs = mpl%msv%valr
-if (allocated(cmat_blk%H11)) nicas_blk%H11 = mpl%msv%valr
-if (allocated(cmat_blk%H22)) nicas_blk%H22 = mpl%msv%valr
-if (allocated(cmat_blk%H33)) nicas_blk%H33 = mpl%msv%valr
-if (allocated(cmat_blk%H12)) nicas_blk%H12 = mpl%msv%valr
-if (allocated(cmat_blk%Hcoef)) nicas_blk%Hcoef = mpl%msv%valr
+if (nicas_blk%anisotropic) then
+   nicas_blk%H11 = mpl%msv%valr
+   nicas_blk%H22 = mpl%msv%valr
+   nicas_blk%H12 = mpl%msv%valr
+end if
 
 ! Copy C matrix fields from min_lev to max_lev
 iv = bpar%b_to_v1(ib)
@@ -2509,11 +2510,12 @@ do il0=1,geom%nl0
       if (allocated(cmat_blk%nlv)) nicas_blk%nlv(:,il0) = cmat_blk%nlv(:,il0)
       if (allocated(cmat_blk%rhs)) nicas_blk%rhs(:,il0) = cmat_blk%rhs(:,il0)
       if (allocated(cmat_blk%rvs)) nicas_blk%rvs(:,il0) = cmat_blk%rvs(:,il0)
-      if (allocated(cmat_blk%H11)) nicas_blk%H11(:,il0) = cmat_blk%H11(:,il0)
-      if (allocated(cmat_blk%H22)) nicas_blk%H22(:,il0) = cmat_blk%H22(:,il0)
-      if (allocated(cmat_blk%H33)) nicas_blk%H33(:,il0) = cmat_blk%H33(:,il0)
-      if (allocated(cmat_blk%H12)) nicas_blk%H12(:,il0) = cmat_blk%H12(:,il0)
-      if (allocated(cmat_blk%Hcoef)) nicas_blk%Hcoef(:,il0) = cmat_blk%Hcoef(:,il0)
+      if (nicas_blk%anisotropic) then
+         do ic0a=1,geom%nc0a
+            call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0),cmat_blk%D22(ic0a,il0),cmat_blk%D12(ic0a,il0), &
+ & nicas_blk%H11(ic0a,il0),nicas_blk%H22(ic0a,il0),nicas_blk%H12(ic0a,il0))
+         end do
+      end if
    end if
 end do
 
@@ -2620,7 +2622,7 @@ else
                   nlv = half*(nicas_blk%nlv(ic0a,il0)+nicas_blk%nlv(ic0a,il0_prev))
                   bnl = max(nlmin,min(nlv,nlmax))
                   inl = floor((bnl-nlmin)/dnl)+1
-                  if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/(rv*scalev(1,ipk,inl))
+                  if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/(rv*scalev(inl,ipk,1))
                end if
             end do
             call mpl%f_comm%allreduce(zss_minval(distnorm),distnormmin,fckit_mpi_min())
@@ -2782,7 +2784,7 @@ if (.not.nam%load_nicas_global) then
          if (geom%gmask_c0a(ic0a,il0)) then
             bpk = max(pkmin,min(nicas_blk%pkh(ic0a,il0),pkmax))
             ipk = floor((bpk-pkmin)/dpk)+1
-            scale_sum(il0) = scale_sum(il0)+nicas_blk%rhs(ic0a,il0)*scaleh(1,ipk)
+            scale_sum(il0) = scale_sum(il0)+nicas_blk%rhs(ic0a,il0)*scaleh(ipk,1)
          end if
       end do
    end do

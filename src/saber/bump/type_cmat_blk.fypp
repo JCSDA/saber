@@ -8,6 +8,8 @@
 !----------------------------------------------------------------------
 module type_cmat_blk
 
+use fckit_mpi_module, only: fckit_mpi_sum
+use tools_func, only: zss_sum
 use tools_kinds, only: kind_real
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
@@ -60,6 +62,7 @@ contains
    procedure :: partial_bump_dealloc => cmat_blk_partial_bump_dealloc
    procedure :: partial_dealloc => cmat_blk_partial_dealloc
    procedure :: dealloc => cmat_blk_dealloc
+   procedure :: set_field => cmat_blk_set_field
 end type cmat_blk_type
 
 private
@@ -258,5 +261,59 @@ if (allocated(cmat_blk%nlv)) deallocate(cmat_blk%nlv)
 @:probe_out()
 
 end subroutine cmat_blk_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: set_field
+!> Set field
+!----------------------------------------------------------------------
+subroutine cmat_blk_set_field(cmat_blk,mpl,geom,field,fld_c0a)
+
+implicit none
+
+! Passed variables
+class(cmat_blk_type),intent(inout) :: cmat_blk            !< C matrix data block
+type(mpl_type),intent(inout) :: mpl                       !< MPI data
+type(geom_type),intent(in) :: geom                        !< Geometry
+character(len=*),intent(in) :: field                      !< Field name
+real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0) !< Field
+
+! Set name
+@:set_name(cmat_blk_set_field)
+
+! Probe in
+@:probe_in()
+
+! Copy field
+select case (trim(field))
+case ('coef_ens')
+   cmat_blk%coef_ens = fld_c0a
+   call mpl%f_comm%allreduce(zss_sum(cmat_blk%coef_ens,mask=geom%gmask_c0a),cmat_blk%wgt,fckit_mpi_sum())
+   cmat_blk%wgt = cmat_blk%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
+case ('coef_sta')
+   cmat_blk%coef_sta = fld_c0a
+case ('fit_rh')
+   cmat_blk%rh = fld_c0a
+case ('fit_pkh')
+   cmat_blk%pkh = fld_c0a
+case ('fit_rv')
+   cmat_blk%rv = fld_c0a
+case ('fit_pkv')
+   cmat_blk%pkv = fld_c0a
+case ('fit_nlv')
+   cmat_blk%nlv = fld_c0a
+case ('D11')
+   cmat_blk%D11 = fld_c0a
+case ('D22')
+   cmat_blk%D22 = fld_c0a
+case ('D12')
+   cmat_blk%D12 = fld_c0a
+case default
+   call mpl%abort('${subr}$','wrong field')
+end select
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_blk_set_field
 
 end module type_cmat_blk

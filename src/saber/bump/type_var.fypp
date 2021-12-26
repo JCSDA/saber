@@ -15,7 +15,6 @@ use tools_func, only: zss_sum,zss_count
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_bpar, only: bpar_type
-use type_cmat_blk, only: cmat_blk_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type

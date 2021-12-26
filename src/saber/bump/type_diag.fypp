@@ -10,8 +10,7 @@ module type_diag
 
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,one,five,reqkm,rad2deg,pi
-use tools_fit, only: ver_smooth
-use tools_func, only: fit_diag_iso_full,fit_diag_tensor_full
+use tools_fit, only: diag_iso_full,diag_tensor_full,ver_smooth
 use tools_kinds, only: kind_real
 use type_avg, only: avg_type
 use type_bpar, only: bpar_type
@@ -333,11 +332,11 @@ do ib=1,bpar%nbe
       do ic2a=0,diag%nc2a
          ! Compute full fit
          if (bpar%nc4(ib)==1) then
-           call fit_diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+           call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
  & diag%blk(ic2a,ib)%distv,diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_rh,diag%blk(ic2a,ib)%fit_pkh, &
  & diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit_pkv,diag%blk(ic2a,ib)%fit_nlv,diag%blk(ic2a,ib)%fit(:,1,:,:))
          else
-           call fit_diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+           call diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
  & geom%as,diag%blk(ic2a,ib)%distv,diag%blk(ic2a,ib)%coef_ens,diag%blk(ic2a,ib)%fit_D11,diag%blk(ic2a,ib)%fit_D22, &
  & diag%blk(ic2a,ib)%fit_D12,diag%blk(ic2a,ib)%fit_pkh,diag%blk(ic2a,ib)%fit_rv,diag%blk(ic2a,ib)%fit_pkv, &
  & diag%blk(ic2a,ib)%fit_nlv,diag%blk(ic2a,ib)%fit)

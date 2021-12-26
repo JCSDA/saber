@@ -11,7 +11,8 @@ module type_lct_blk
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 !$ use omp_lib
 use tools_const, only: zero,tenth,half,one,two,reqkm,rad2deg
-use tools_func, only: gau2gc,lonlatmod,fit_lct,lct_d2h,lct_h2r,check_cond,Dmin,vert_interp_size,vert_interp_setup,vert_interp, &
+use tools_fit, only: gau2gc,Dmin,tensor_check_cond
+use tools_func, only: lonlatmod,fit_lct,lct_d2h,lct_h2r,vert_interp_size,vert_interp_setup,vert_interp, &
  & zss_sum,zss_count
 use tools_kinds, only: kind_real
 use tools_netcdf, only: define_grp,put_att,define_dim,define_var,put_var
@@ -773,7 +774,7 @@ do il1=1,nl1
          ! Check tensor validity
          do iscales=1,lct_blk%nscales
             if (smask_c1a(ic1a,il1)) then
-               call check_cond(D_l1(1,iscales,ic1a,il1),D_l1(2,iscales,ic1a,il1),D_l1(4,iscales,ic1a,il1),smask_c1a(ic1a,il1))
+               call tensor_check_cond(D_l1(1,iscales,ic1a,il1),D_l1(2,iscales,ic1a,il1),D_l1(4,iscales,ic1a,il1),smask_c1a(ic1a,il1))
                if (bpar%nl0r(ib)>1) smask_c1a(ic1a,il1) = smask_c1a(ic1a,il1).and.(D_l1(3,iscales,ic1a,il1)>zero)
                smask_c1a(ic1a,il1) = smask_c1a(ic1a,il1).and.(coef_l1(iscales,ic1a,il1)>zero)
                if (lct_blk%nscales>1) smask_c1a(ic1a,il1) = smask_c1a(ic1a,il1).and.(inf(coef_l1(iscales,ic1a,il1),one))
@@ -966,7 +967,7 @@ if (nam%diag_rhflt>zero) then
             valid = .true.
             do iscales=1,lct_blk%nscales
                if (valid) then
-                  call check_cond(lct_blk%D_filt(1,iscales,ic1a,il0),lct_blk%D_filt(2,iscales,ic1a,il0), &
+                  call tensor_check_cond(lct_blk%D_filt(1,iscales,ic1a,il0),lct_blk%D_filt(2,iscales,ic1a,il0), &
  & lct_blk%D_filt(4,iscales,ic1a,il0),valid)
                   if (bpar%nl0r(ib)>1) valid = valid.and.(lct_blk%D_filt(3,iscales,ic1a,il0)>zero)
                   valid = valid.and.(lct_blk%coef_filt(iscales,ic1a,il0)>zero)

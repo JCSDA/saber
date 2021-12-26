@@ -8,10 +8,8 @@
 !----------------------------------------------------------------------
 module tools_fit
 
-use tools_const, only: zero,half,one
-use tools_func, only: fit_diag_iso
-use tools_gc99, only: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,scalethmax,pk,nl,scaleh,scalev,fit_func, &
- & support_hor,support_ver
+use tools_const, only: zero,quarter,half,one,two,thousand
+use tools_gc99, only: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,scalethmax,pk,nl,scaleh,scalev,fit_func,fit_func_sqrt
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup
 use type_mpl, only: mpl_type
@@ -19,8 +17,35 @@ use type_mpl, only: mpl_type
 
 implicit none
 
+real(kind_real),parameter :: gc2gau = 0.28_kind_real                !< GC99 support radius to Gaussian Daley length-scale (empirical)
+real(kind_real),parameter :: gau2gc = one/gc2gau                    !< Gaussian Daley length-scale to GC99 support radius (empirical) ! TODO: remove that ?
+real(kind_real),parameter :: condmax = thousand                     !< Maximum tensor conditioning number
 real(kind_real),parameter :: negative_lobe_weight = 1.0e2_kind_real !< Specific weight in the cost for negative lobe
 
+interface diag_sqrt
+   module procedure fit_diag_sqrt
+end interface
+interface diag_iso
+   module procedure fit_diag_iso
+end interface
+interface diag_tensor
+   module procedure fit_diag_tensor
+end interface
+interface diag_ver
+   module procedure fit_diag_ver
+end interface
+interface diag_iso_full
+   module procedure fit_diag_iso_full
+end interface
+interface diag_tensor_full
+   module procedure fit_diag_tensor_full
+end interface
+interface tensor_d2h
+   module procedure fit_tensor_d2h
+end interface
+interface tensor_check_cond
+   module procedure fit_tensor_check_cond
+end interface
 interface fast_fit
    module procedure fit_fast_fit
 end interface
@@ -32,9 +57,540 @@ interface ver_fill
 end interface
 
 private
-public :: fast_fit,ver_smooth,ver_fill
+public :: gc2gau,gau2gc
+public :: diag_sqrt,diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_check_cond,fast_fit,ver_smooth, &
+ & ver_fill
 
 contains
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_sqrt
+!> Compute diagnostic fit function square-root
+!----------------------------------------------------------------------
+subroutine fit_diag_sqrt(mpl,n,dist,fit_r,fit_pk,fit_nl,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Vector size
+real(kind_real),intent(in) :: dist(n) !< Distance
+real(kind_real),intent(in) :: fit_r   !< Support radius
+real(kind_real),intent(in) :: fit_pk  !< Peakness parameter
+real(kind_real),intent(in) :: fit_nl  !< Negative lobe parameter
+real(kind_real),intent(out) :: fit(n) !< Fit
+
+! Local variables
+integer :: i
+real(kind_real) :: nd
+
+! Set name
+@:set_name(fit_diag_sqrt)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%is(fit_r).or.mpl%msv%is(fit_pk).or.mpl%msv%is(fit_nl)) then
+   ! Set to missing values if no value available
+   fit = mpl%msv%valr
+else
+   if (n==1) then
+      ! No meaning for fit_r => zero normalized distance
+      nd = zero
+
+      ! Unitary fit function
+      fit(1) = fit_func_sqrt(mpl,nd,fit_pk,fit_nl)
+   else
+      do i=1,n
+         if (fit_r>zero) then
+            ! Positive fit_r => normalized distance as a ratio
+            nd = dist(i)/fit_r
+         elseif (dist(i)>zero) then
+            ! Zero fit_r, positive distance => infinite normalized distance
+            nd = one
+         else
+            ! Zero fit_r, zero distance => zero normalized distance
+            nd = zero
+         end if
+   
+        ! Unitary fit function
+        fit(i) = fit_func_sqrt(mpl,nd,fit_pk,fit_nl)
+      end do
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_sqrt
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_iso
+!> Compute isotropic diagnostic fit function
+!----------------------------------------------------------------------
+subroutine fit_diag_iso(mpl,n,dist,dir,fit_r,fit_pk,fit_nl,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Vector size
+real(kind_real),intent(in) :: dist(n) !< Distance
+character(len=*),intent(in) :: dir    !< Direction
+real(kind_real),intent(in) :: fit_r   !< Support radius
+real(kind_real),intent(in) :: fit_pk  !< Peakness parameter
+real(kind_real),intent(in) :: fit_nl  !< Negative lobe parameter
+real(kind_real),intent(out) :: fit(n) !< Fit
+
+! Local variables
+integer :: i
+real(kind_real) :: nd
+
+! Set name
+@:set_name(fit_diag_iso)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%is(fit_r).or.mpl%msv%is(fit_pk).or.mpl%msv%is(fit_nl)) then
+   ! Set to missing values if no value available
+   fit = mpl%msv%valr
+else
+   do i=1,n
+      ! Normalized distance
+      if (fit_r>zero) then
+         nd = dist(i)/fit_r
+      elseif (dist(i)>zero) then
+         nd = one
+      else
+         nd = zero
+      end if
+
+      ! Unitary fit function
+      fit(i) = fit_func(mpl,dir,nd,fit_pk,fit_nl)
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_iso
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_tensor
+!> Compute anisotropic diagnostic fit function
+!----------------------------------------------------------------------
+subroutine fit_diag_tensor(mpl,nc3,nc4,disth,as,fit_D11,fit_D22,fit_D12,fit_pkh,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nc3                   !< Number of horizontal distance classes
+integer,intent(in) :: nc4                   !< Number of angular sectors
+real(kind_real),intent(in) :: disth(nc3)    !< Horizontal distance
+real(kind_real),intent(in) :: as(nc4)       !< Angular sectors
+real(kind_real),intent(in) :: fit_D11       !< Tensor component 11
+real(kind_real),intent(in) :: fit_D22       !< Tensor component 22
+real(kind_real),intent(in) :: fit_D12       !< Tensor component 12 (normalized)
+real(kind_real),intent(in) :: fit_pkh       !< Horizontal peakness
+real(kind_real),intent(out) :: fit(nc3,nc4) !< Fit
+
+! Local variables
+integer :: jc3,jc4
+real(kind_real) :: H11,H22,H12,dx,dy,nd
+
+! Set name
+@:set_name(fit_diag_tensor)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+fit = mpl%msv%valr
+
+! Inverse D to get H
+call tensor_d2h(mpl,fit_D11,fit_D22,fit_D12,H11,H22,H12)
+
+! Homogeneous anisotropic approximation
+do jc4=1,nc4
+   do jc3=1,nc3
+      ! Normalized distance
+      dx = disth(jc3)*cos(as(jc4))
+      dy = disth(jc3)*sin(as(jc4))
+      nd = sqrt(H11*dx**2+H22*dy**2+two*H12*dx*dy)
+
+      ! Unitary fit function
+      fit(jc3,jc4) = fit_func(mpl,'hor',nd,fit_pkh,zero)
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_tensor
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_ver
+!> Compute vertical diagnostic fit function
+!----------------------------------------------------------------------
+subroutine fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,distv,rv,pkv,nlv,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: nl0r                    !< Effective number of levels
+integer,intent(in) :: nl0                     !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)   !< Effective level to level
+real(kind_real),intent(in) :: distv(nl0r,nl0) !< Vertical distance
+real(kind_real),intent(in) :: rv(nl0)         !< Vertical support radius
+real(kind_real),intent(in) :: pkv(nl0)        !< Vertical peakness
+real(kind_real),intent(in) :: nlv(nl0)        !< Vertical negative lobe parameter
+real(kind_real),intent(out) :: fit(nl0r,nl0)  !< Fit
+
+! Local variables
+integer :: il0,jl0r,jl0,kl0m,kl0p
+real(kind_real) :: rv_eff,pkv_eff,nlv_eff,vnd
+real(kind_real) :: ver_sqrt(nl0,nl0),ver_full(nl0,nl0),ver_full_norm(nl0)
+
+! Set name
+@:set_name(fit_diag_ver)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ver_sqrt = zero
+
+do il0=1,nl0
+   do jl0r=1,nl0r
+      ! Level index
+      jl0 = l0rl0_to_l0(jl0r,il0)
+
+      ! Initialization
+      rv_eff = mpl%msv%valr
+      pkv_eff = mpl%msv%valr
+      nlv_eff = mpl%msv%valr
+
+      ! Parameters at mid-point
+      if (mod(il0+jl0,2)==0) then
+         kl0m = (il0+jl0)/2
+         kl0p = kl0m
+      else
+         kl0m = (il0+jl0)/2
+         kl0p = kl0m+1
+      end if
+ 
+      if (mpl%msv%isnot(rv(kl0m)).and.mpl%msv%isnot(pkv(kl0m)).and.mpl%msv%isnot(nlv(kl0m)).and. &
+ & mpl%msv%isnot(rv(kl0p)).and.mpl%msv%isnot(pkv(kl0p)).and.mpl%msv%isnot(nlv(kl0p))) then
+         ! Effective parameters
+         rv_eff = half*(rv(kl0m)+rv(kl0p))
+         pkv_eff = half*(pkv(kl0m)+pkv(kl0p))
+         nlv_eff = half*(nlv(kl0m)+nlv(kl0p))
+
+         ! Normalized distance
+         if (rv_eff>zero) then
+            vnd = distv(jl0r,il0)/rv_eff
+         elseif (il0/=jl0) then
+            vnd = one
+         else
+            vnd = zero
+         end if
+
+         ! Unitary fit function
+         ver_sqrt(jl0,il0) = fit_func_sqrt(mpl,vnd,pkv_eff,nlv_eff)
+      else
+         ver_sqrt(jl0,il0) = zero
+      end if
+
+      ! Transposed value
+      ver_sqrt(il0,jl0) = ver_sqrt(jl0,il0)
+   end do
+end do
+
+! Product
+ver_full = matmul(ver_sqrt,transpose(ver_sqrt))
+
+! Normalization
+do il0=1,nl0
+   if (ver_full(il0,il0)>zero) then
+      ver_full_norm(il0) = one/sqrt(ver_full(il0,il0))
+   else
+      ver_full_norm(il0) = mpl%msv%valr
+   end if
+end do
+
+! Reduced matrix
+do il0=1,nl0
+   do jl0r=1,nl0r
+      ! Level index
+      jl0 = l0rl0_to_l0(jl0r,il0)
+
+      ! Fit
+      if (mpl%msv%isnot(ver_full(jl0,il0)).and.mpl%msv%isnot(ver_full_norm(il0)).and.mpl%msv%isnot(ver_full_norm(jl0))) then
+         fit(jl0r,il0) = ver_full(jl0,il0)*ver_full_norm(il0)*ver_full_norm(jl0)
+      else
+         fit(jl0r,il0) = mpl%msv%valr
+      end if
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_ver
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_iso_full
+!> Compute isotropic diagnostic fit function, full profile
+!----------------------------------------------------------------------
+subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,coef,rh,pkh,rv,pkv,nlv,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+integer,intent(in) :: nc3                        !< Number of horizontal distance classes
+integer,intent(in) :: nl0r                       !< Effective number of levels
+integer,intent(in) :: nl0                        !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      !< Effective level to level
+real(kind_real),intent(in) :: disth(nc3)         !< Horizontal distance
+real(kind_real),intent(in) :: distv(nl0r,nl0)    !< Vertical distance
+real(kind_real),intent(in) :: coef(nl0)          !< Diagonal coefficient
+real(kind_real),intent(in) :: rh(nl0)            !< Horizontal support radius
+real(kind_real),intent(in) :: pkh(nl0)           !< Horizontal peakness
+real(kind_real),intent(in) :: rv(nl0)            !< Vertical support radius
+real(kind_real),intent(in) :: pkv(nl0)           !< Vertical peakness
+real(kind_real),intent(in) :: nlv(nl0)           !< Vertical negative lobe parameter
+real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
+
+! Local variables
+integer :: il0,jl0r,jl0,jc3
+real(kind_real) :: rh_eff,pkh_eff
+real(kind_real) :: hor_fit(nc3),ver_fit(nl0r,nl0)
+
+! Set name
+@:set_name(fit_diag_iso_full)
+
+! Probe in
+@:probe_in()
+
+! Vertical component
+call fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,distv,rv,pkv,nlv,ver_fit)
+
+do il0=1,nl0
+   do jl0r=1,nl0r
+      ! Level index
+      jl0 = l0rl0_to_l0(jl0r,il0)
+
+      if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(rh(il0)).and.mpl%msv%isnot(pkh(il0)) &
+ & .and.mpl%msv%isnot(pkh(jl0)).and.mpl%msv%isnot(coef(il0)).and.mpl%msv%isnot(coef(jl0))) then
+         ! Averaged horizontal support radius and peakness
+         rh_eff = half*(rh(il0)+rh(jl0))
+         pkh_eff = half*(pkh(il0)+pkh(jl0))
+
+         ! Horizontal component
+         call fit_diag_iso(mpl,nc3,disth,'hor',rh_eff,pkh_eff,zero,hor_fit)
+
+         do jc3=1,nc3
+            ! Fit function
+            fit(jc3,jl0r,il0) = hor_fit(jc3)*ver_fit(jl0r,il0)
+         end do
+
+         ! Diagonal coefficient
+         fit(:,jl0r,il0) = fit(:,jl0r,il0)*sqrt(coef(il0)*coef(jl0))
+      else
+         fit(:,jl0r,il0) = mpl%msv%valr
+      end if
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_iso_full
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_tensor_full
+!> Compute anistropic diagnostic fit function, full profile
+!----------------------------------------------------------------------
+subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,distv,coef,D11,D22,D12,pkh,rv,pkv,nlv,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl                  !< MPI data
+integer,intent(in) :: nc3                            !< Number of horizontal distance classes
+integer,intent(in) :: nc4                            !< Number of angular sectos
+integer,intent(in) :: nl0r                           !< Effective number of levels
+integer,intent(in) :: nl0                            !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)          !< Effective level to level
+real(kind_real),intent(in) :: disth(nc3)             !< Horizontal distance
+real(kind_real),intent(in) :: as(nc4)                !< Angular sectors
+real(kind_real),intent(in) :: distv(nl0r,nl0)        !< Vertical distance
+real(kind_real),intent(in) :: coef(nl0)              !< Diagonal coefficient
+real(kind_real),intent(in) :: D11(nl0)               !< Horizontal tensor component 11
+real(kind_real),intent(in) :: D22(nl0)               !< Horizontal tensor component 22
+real(kind_real),intent(in) :: D12(nl0)               !< Horizontal tensor component 12 (normalized)
+real(kind_real),intent(in) :: pkh(nl0)               !< Horizontal peakness
+real(kind_real),intent(in) :: rv(nl0)                !< Vertical support radius
+real(kind_real),intent(in) :: pkv(nl0)               !< Vertical peakness
+real(kind_real),intent(in) :: nlv(nl0)               !< Vertical negative lobe parameter
+real(kind_real),intent(out) :: fit(nc3,nc4,nl0r,nl0) !< Fit
+
+! Local variables
+integer :: il0,jl0r,jl0,jc3,jc4
+real(kind_real) :: D11_eff,D22_eff,D12_eff,pkh_eff
+real(kind_real) :: hor_fit(nc3,nc4),ver_fit(nl0r,nl0)
+
+! Set name
+@:set_name(fit_diag_tensor_full)
+
+! Probe in
+@:probe_in()
+
+! Vertical component
+call fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,distv,rv,pkv,nlv,ver_fit)
+
+do il0=1,nl0
+   do jl0r=1,nl0r
+      ! Level index
+      jl0 = l0rl0_to_l0(jl0r,il0)
+
+      if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(D11(il0)).and.mpl%msv%isnot(D22(il0)).and.mpl%msv%isnot(D12(jl0)) &
+ & .and.mpl%msv%isnot(pkh(il0)).and.mpl%msv%isnot(pkh(jl0)).and.mpl%msv%isnot(coef(il0)).and.mpl%msv%isnot(coef(jl0))) then
+         ! Averaged horizontal support radius and peakness
+         D11_eff = half*(D11(il0)+D11(jl0))
+         D22_eff = half*(D22(il0)+D22(jl0))
+         D12_eff = half*(D12(il0)+D12(jl0))
+         pkh_eff = half*(pkh(il0)+pkh(jl0))
+
+         ! Horizontal component
+         call fit_diag_tensor(mpl,nc3,nc4,disth,as,D11_eff,D22_eff,D12_eff,pkh_eff,hor_fit)
+
+         do jc4=1,nc4
+            do jc3=1,nc3
+               ! Fit function
+               fit(jc3,jc4,jl0r,il0) = hor_fit(jc3,jc4)*ver_fit(jl0r,il0)
+            end do
+         end do
+
+         ! Diagonal coefficient
+         fit(:,:,jl0r,il0) = fit(:,:,jl0r,il0)*sqrt(coef(il0)*coef(jl0))
+      else
+         fit(:,:,jl0r,il0) = mpl%msv%valr
+      end if
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_tensor_full
+
+!----------------------------------------------------------------------
+! Subroutine: fit_tensor_d2h
+!> From D (Daley tensor) to H (local tensor used to compute the normalized distance)
+!----------------------------------------------------------------------
+subroutine fit_tensor_d2h(mpl,D11,D22,D12,H11,H22,H12)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl!< MPI data
+real(kind_real),intent(in) :: D11  !< Daley tensor component 11
+real(kind_real),intent(in) :: D22  !< Daley tensor component 22
+real(kind_real),intent(in) :: D12  !< Daley tensor component 12 (normalized)
+real(kind_real),intent(out) :: H11 !< Local tensor component 11
+real(kind_real),intent(out) :: H22 !< Local tensor component 22
+real(kind_real),intent(out) :: H12 !< Local tensor component 12
+
+! Local variables
+real(kind_real) :: det,D12sq
+
+! Set name
+@:set_name(fit_tensor_d2h)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D12)) then
+   ! Full D12 component
+   D12sq = D11*D22*D12**2
+
+   ! Compute horizontal determinant
+   det = D11*D22-D12sq
+
+   ! Inverse D to get H
+   if (det>zero) then
+      H11 = D22/det
+      H22 = D11/det
+      H12 = -sqrt(D12sq)/det
+   else
+      call mpl%abort('${subr}$','non-invertible tensor')
+   end if
+else
+   ! Missing values
+   H11 = mpl%msv%valr
+   H22 = mpl%msv%valr
+   H12 = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_tensor_d2h
+
+!----------------------------------------------------------------------
+! Subroutine: fit_tensor_check_cond
+!> Check tensor conditioning
+!----------------------------------------------------------------------
+subroutine fit_tensor_check_cond(D11,D22,D12,valid)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: D11 !< Daley tensor component 11
+real(kind_real),intent(in) :: D22 !< Daley tensor component 22
+real(kind_real),intent(in) :: D12 !< Daley tensor component 12 (normalized)
+logical,intent(out) :: valid      !< Conditioning validity
+
+! Local variables
+real(kind_real) :: det,tr,diff,ev1,ev2
+
+! Set name
+@:set_name(fit_tensor_check_cond)
+
+! Probe in
+@:probe_in()
+
+! Compute trace and determinant
+tr = D11+D22
+det = D11*D22*(one-D12**2)
+diff = quarter*(D11-D22)**2+D11*D22*D12**2
+
+if ((det>zero).and..not.(diff<zero)) then
+   ! Compute eigenvalues
+   ev1 = half*tr+sqrt(diff)
+   ev2 = half*tr-sqrt(diff)
+
+   if (ev2>zero) then
+      ! Check conditioning
+      valid = inf(ev1,condmax*ev2)
+   else
+      ! Lowest negative eigenvalue is negative
+      valid = .false.
+   end if
+else
+   ! Non-positive definite tensor
+   valid = .false.
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_tensor_check_cond
 
 !----------------------------------------------------------------------
 ! Subroutine: fit_fast_fit

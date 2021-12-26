@@ -10,9 +10,9 @@ module type_diag_blk
 
 !$ use omp_lib
 use tools_const, only: zero,tenth,half,one,two,four,ten
-use tools_fit, only: fast_fit
+use tools_fit, only: diag_sqrt,diag_iso_full,tensor_d2h,tensor_check_cond,fast_fit
 use tools_fftw, only: hor_sqrt
-use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,fit_diag_sqrt,fit_diag_iso_full,check_cond,tensor_d2h
+use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,put_att,define_var,put_var
 use tools_repro, only: inf,sup
@@ -37,8 +37,8 @@ type diag_blk_type
    integer :: ib                                       !< Block index
    character(len=1024) :: prefix                       !< Prefix
 
-   real(kind_real),allocatable :: raw(:,:,:,:)           !< Raw diagnostic
-   real(kind_real),allocatable :: valid(:,:,:,:)         !< Number of valid couples
+   real(kind_real),allocatable :: raw(:,:,:,:)         !< Raw diagnostic
+   real(kind_real),allocatable :: valid(:,:,:,:)       !< Number of valid couples
    real(kind_real),allocatable :: coef_ens(:)          !< Ensemble coefficient
    real(kind_real) :: coef_sta                         !< Static coefficient
 
@@ -545,7 +545,7 @@ do il1=1,nl1
       minim%binf = (/tenth*fit_rh_l1(il1)**2,tenth*fit_rh_l1(il1)**2,-one/)
       minim%bsup = (/ten*fit_rh_l1(il1)**2,ten*fit_rh_l1(il1)**2,one/)
       minim%obs = reshape(diag_blk%raw(:,:,jl0rz,il0),(/minim%ny/))
-      minim%cost_function = 'fit_diag_tensor'
+      minim%cost_function = 'tensor'
       minim%pkh = fit_pkh_l1(il1)
 
       ! Compute fit
@@ -557,7 +557,7 @@ do il1=1,nl1
       fit_D12_l1(il1) = max(minim%binf(3),min(minim%x(3),minim%bsup(3)))
 
       ! Check tensor conditioning
-      call check_cond(fit_D11_l1(il1),fit_D22_l1(il1),fit_D12_l1(il1),valid)
+      call tensor_check_cond(fit_D11_l1(il1),fit_D22_l1(il1),fit_D12_l1(il1),valid)
       if (.not.valid) then
          fit_D11_l1(il1) = mpl%msv%valr
          fit_D22_l1(il1) = mpl%msv%valr
@@ -859,7 +859,7 @@ if (nam%forced_radii) then
    nam_coef = one
    nam_nlv = zero
    do jc4=1,bpar%nc4(ib)
-      call fit_diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib), &
+      call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib), &
  & geom%disth,diag_blk%distv,nam_coef,nam%rh(1:geom%nl0,iv),nam%pkh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),nam%pkv(1:geom%nl0,iv), &
  & nam_nlv,diag_blk%raw(:,jc4,:,:))
    end do

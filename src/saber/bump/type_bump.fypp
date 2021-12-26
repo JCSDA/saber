@@ -13,6 +13,7 @@ use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_const, only: zero,one,thousand,req,reqkm,deg2rad,rad2deg
 use tools_func, only: fletcher32,sphere_dist,zss_maxval,zss_minval
+use tools_gc99, only: fit_setup,fit_dealloc
 use tools_kinds,only: kind_real
 use tools_netcdf, only: registry
 use tools_repro,only: repro,rth
@@ -2323,6 +2324,7 @@ class(bump_type),intent(inout) :: bump !< BUMP
 @:probe_in()
 
 ! Release memory
+call fit_dealloc
 call bump%cmat%partial_dealloc
 call bump%ens1%dealloc
 call bump%ens1u%dealloc
