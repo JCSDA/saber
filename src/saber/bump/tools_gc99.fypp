@@ -91,26 +91,33 @@ if (.not.fit_allocated) then
    if (mpl%main) then
       ! Get file name
       filename = '${_FILE_}$.nc'
-      write(mpl%info,'(a4,a)') 'Reading file ',filename
 
       ! Open file
-      ncid = open_file(mpl,trim(filename))
+      ncid = open_file(mpl,filename,0,.true.)
 
       ! Get dimensions
       nnd = inquire_dim_size(mpl,ncid,'nnd',0)
       npk = inquire_dim_size(mpl,ncid,'npk',0)
       nnl = inquire_dim_size(mpl,ncid,'nnl',0)
       nscaleth = inquire_dim_size(mpl,ncid,'nscaleth',0)
+   end if
 
-      ! Allocation
-      allocate(pk(npk))
-      allocate(nl(nnl))
-      allocate(scaleth(nscaleth))
-      allocate(scaleh(npk,nscaleth))
-      allocate(func_hor(npk,nnd))
-      allocate(scalev(nnl,npk,nscaleth))
-      allocate(func_ver(nnl,npk,nnd))
+   ! Broadcast dimensions
+   call mpl%f_comm%broadcast(nnd,mpl%rootproc-1)
+   call mpl%f_comm%broadcast(npk,mpl%rootproc-1)
+   call mpl%f_comm%broadcast(nnl,mpl%rootproc-1)
+   call mpl%f_comm%broadcast(nscaleth,mpl%rootproc-1)
 
+   ! Allocation
+   allocate(pk(npk))
+   allocate(nl(nnl))
+   allocate(scaleth(nscaleth))
+   allocate(scaleh(npk,nscaleth))
+   allocate(func_hor(npk,nnd))
+   allocate(scalev(nnl,npk,nscaleth))
+   allocate(func_ver(nnl,npk,nnd))
+
+   if (mpl%main) then
       ! Read attributes
       call get_att(mpl,ncid,'ipkhdef',ipkhdef)
       call get_att(mpl,ncid,'ipkvdef',ipkvdef)
@@ -148,7 +155,7 @@ if (.not.fit_allocated) then
       call close_file(mpl,ncid)
    end if
 
-   ! Broadcast parameters
+   ! Broadcast variables
    call mpl%f_comm%broadcast(pk,mpl%rootproc-1)
    call mpl%f_comm%broadcast(nl,mpl%rootproc-1)
    call mpl%f_comm%broadcast(scaleth,mpl%rootproc-1)

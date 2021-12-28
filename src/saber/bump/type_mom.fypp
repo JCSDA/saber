@@ -28,16 +28,18 @@ implicit none
 ! Moments derived type
 type mom_type
    ! Moments data
-   integer :: ne                            !< Ensemble size
-   integer :: nsub                          !< Number of sub-ensembles
-   character(len=1024) :: prefix            !< Prefix
-   type(mom_blk_type),allocatable :: blk(:) !< Moments blocks
+   integer :: ne                                 !< Ensemble size
+   integer :: nsub                               !< Number of sub-ensembles
+   character(len=1024) :: prefix                 !< Prefix
+   type(mom_blk_type),allocatable :: blk(:)      !< Moments blocks
+   real(kind_real),allocatable :: ens_dir(:,:,:) !< Raw ensemble dirac field
 contains
    procedure :: alloc => mom_alloc
    procedure :: init => mom_init
    procedure :: dealloc => mom_dealloc
    procedure :: read => mom_read
    procedure :: write => mom_write
+   procedure :: dirac => mom_dirac
    procedure :: update => mom_update
    procedure :: compute => mom_compute
 end type mom_type
@@ -81,7 +83,6 @@ mom%prefix = prefix
 
 ! Allocation
 allocate(mom%blk(bpar%nb))
-
 do ib=1,bpar%nb
    ! Attribute
    mom%blk(ib)%ib = ib
@@ -89,6 +90,7 @@ do ib=1,bpar%nb
    ! Allocation
    call mom%blk(ib)%alloc(samp%nc1a,geom,bpar,ne,nsub,nam%update_mom)
 end do
+if (nam%check_dirac) allocate(mom%ens_dir(geom%nc0a,geom%nl0,nam%nv))
 
 ! Probe out
 @:probe_out()
@@ -171,6 +173,7 @@ if (allocated(mom%blk)) then
    end do
    deallocate(mom%blk)
 end if
+if (allocated(mom%ens_dir)) deallocate(mom%ens_dir)
 
 ! Probe out
 @:probe_out()
@@ -336,6 +339,98 @@ end do
 @:probe_out()
 
 end subroutine mom_write
+
+!----------------------------------------------------------------------
+! Subroutine: mom_dirac
+!> Compute raw ensemble dirac test
+!----------------------------------------------------------------------
+subroutine mom_dirac(mom,mpl,nam,geom,bpar,ens)
+
+implicit none
+
+! Passed variables
+class(mom_type),intent(inout) :: mom  !< Moments
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(nam_type),intent(in) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+type(ens_type), intent(inout) :: ens  !< Ensemble
+
+! Local variables
+integer :: idir,isub,ie_sub,ie,ic0a,il0,iv
+real(kind_real) :: fac_norm_cov,wgt(ens%ne)
+real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_c0a(geom%nc0a,geom%nl0,nam%nv),m2(geom%nc0a,geom%nl0,nam%nv)
+
+! Set name
+@:set_name(mom_compute)
+
+! Probe in
+@:probe_in()
+
+! Get ensemble variance
+call ens%compute_moments(mpl,nam,geom)
+call ens%get_c0(mpl,nam,geom,'m2',0,m2)
+
+! Generate dirac field
+fld = zero
+do idir=1,geom%ndir
+   if ((geom%iprocdir(idir)==mpl%myproc).and.(m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))>zero)) &
+ &  fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one/sqrt(m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)))
+end do
+
+! First loop
+do isub=1,ens%nsub
+   do ie_sub=1,ens%ne/ens%nsub
+      ! Full ensemble index
+      ie = ie_sub+(isub-1)*ens%ne/ens%nsub
+
+      ! Get perturbation on subset Sc0
+      call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
+
+      ! Compute weight
+      call mpl%dot_prod(fld_c0a,fld,wgt(ie))
+   end do
+end do
+
+! Initialize output field
+mom%ens_dir = zero
+
+! Second loop
+do isub=1,ens%nsub
+   do ie_sub=1,ens%ne/ens%nsub
+      ! Full ensemble index
+      ie = ie_sub+(isub-1)*ens%ne/ens%nsub
+
+      ! Get perturbation on subset Sc0
+      call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
+
+      ! Compute weight
+      mom%ens_dir = mom%ens_dir+wgt(ie)*fld_c0a
+   end do
+end do
+
+! Normalization
+fac_norm_cov = real(mom%nsub,kind_real)/real(mom%ne-mom%nsub,kind_real)
+do il0=1,geom%nl0
+   do ic0a=1,geom%nc0a
+      if (geom%gmask_c0a(ic0a,il0)) then
+         do iv=1,nam%nv
+            if (m2(ic0a,il0,iv)>zero) then
+               mom%ens_dir(ic0a,il0,iv) = mom%ens_dir(ic0a,il0,iv)*fac_norm_cov/sqrt(m2(ic0a,il0,iv))
+            else
+               mom%ens_dir(ic0a,il0,iv) = mpl%msv%valr
+            end if
+         end do
+      else
+         mom%ens_dir(ic0a,il0,:) = mpl%msv%valr
+      end if
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine mom_dirac
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_update
@@ -584,7 +679,7 @@ type(nam_type),intent(in) :: nam      !< Namelist
 type(geom_type),intent(in) :: geom    !< Geometry
 type(bpar_type),intent(in) :: bpar    !< Block parameters
 type(samp_type),intent(in) :: samp    !< Sampling
-type(ens_type), intent(in) :: ens     !< Ensemble
+type(ens_type), intent(inout) :: ens  !< Ensemble
 character(len=*),intent(in) :: prefix !< Prefix
 
 ! Local variables
@@ -740,6 +835,13 @@ if (nam%write_mom) then
    write(mpl%info,'(a10,a)') '','Write sample moments'
    call mpl%flush
    call mom%write(mpl,nam,geom,bpar,samp)
+end if
+
+! Compute raw ensemble dirac test
+if (nam%check_dirac) then
+   write(mpl%info,'(a10,a)') '','Compute raw ensemble dirac test'
+   call mpl%flush
+   call mom%dirac(mpl,nam,geom,bpar,ens)
 end if
 
 ! Probe out

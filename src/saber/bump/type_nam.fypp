@@ -2329,8 +2329,8 @@ if (nam%check_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
  & call mpl%abort('${subr}$','new_vbal or load_vbal required for check_vbal')
 if ((nam%new_hdiag.or.nam%new_lct).and.(.not.(nam%new_mom.or.nam%update_mom.or.nam%load_mom))) &
  & call mpl%abort('${subr}$','new_mom, update_mom or load_mom required for new_hdiag and new_lct')
-if (nam%check_dirac.and..not.(nam%new_vbal.or.nam%load_vbal.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global)) &
- & call mpl%abort('${subr}$','new or load for vbal or nicas required for check_dirac')
+if (nam%check_dirac.and..not.(nam%new_vbal.or.nam%load_vbal.or.(nam%new_hdiag.and.nam%write_hdiag).or.nam%new_nicas &
+ & .or.nam%load_nicas_local.or.nam%load_nicas_global)) call mpl%abort('${subr}$','check_dirac not available')
 if (nam%check_randomization) then
    if (trim(nam%method)/='cor') call mpl%abort('${subr}$','cor method required for check_randomization')
    if (.not.nam%new_nicas) call mpl%abort('${subr}$','new_nicas required for check_randomization')

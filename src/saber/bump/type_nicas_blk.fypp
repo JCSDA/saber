@@ -5254,7 +5254,7 @@ end subroutine nicas_blk_test_adjoint
 ! Subroutine: nicas_blk_test_dirac
 !> Apply NICAS to diracs
 !----------------------------------------------------------------------
-subroutine nicas_blk_test_dirac(nicas_blk,mpl,nam,geom)
+subroutine nicas_blk_test_dirac(nicas_blk,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -5263,9 +5263,10 @@ class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(nam_type),intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom            !< Geometry
+type(bpar_type),intent(in) :: bpar            !< Block parameters
 
 ! Local variables
-integer :: il0,idir
+integer :: il0,idir,iv,jv
 real(kind_real) :: val,valmin_tot,valmax_tot
 real(kind_real) :: fld(geom%nc0a,geom%nl0)
 
@@ -5281,7 +5282,9 @@ associate(ib=>nicas_blk%ib)
 ! Generate dirac field
 fld = zero
 do idir=1,geom%ndir
-   if (geom%iprocdir(idir)==mpl%myproc) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+   iv = bpar%b_to_v1(ib)
+   jv = bpar%b_to_v2(ib)
+   if ((geom%iprocdir(idir)==mpl%myproc).and.(iv==jv).and.(iv==geom%ivdir(idir))) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
 end do
 
 ! Apply NICAS method

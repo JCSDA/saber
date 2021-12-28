@@ -373,7 +373,7 @@ end subroutine ens_normalize
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_get_c0_single
-!> Get ensemble field on subset Sc0, single field
+!> Get ensemble field on subset Sc0, single variable
 !----------------------------------------------------------------------
 subroutine ens_get_c0_single(ens,mpl,iv,geom,fieldtype,i,fld_c0a)
 
@@ -473,7 +473,7 @@ end subroutine ens_get_c0_single
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_get_c0_all
-!> Get ensemble field on subset Sc0, all field
+!> Get ensemble field on subset Sc0, all variables
 !----------------------------------------------------------------------
 subroutine ens_get_c0_all(ens,mpl,nam,geom,fieldtype,i,fld_c0a)
 
@@ -509,7 +509,7 @@ end subroutine ens_get_c0_all
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_set_c0_single
-!> Set ensemble member on subset Sc0, single field
+!> Set ensemble field on subset Sc0, single variable
 !----------------------------------------------------------------------
 subroutine ens_set_c0_single(ens,mpl,iv,geom,fieldtype,i,fld_c0a)
 
@@ -610,7 +610,7 @@ end subroutine ens_set_c0_single
 
 !----------------------------------------------------------------------
 ! Subroutine: ens_set_c0_all
-!> Get ensemble member or perturbation on subset Sc0, all field
+!> Set ensemble field on subset Sc0, all variables
 !----------------------------------------------------------------------
 subroutine ens_set_c0_all(ens,mpl,nam,geom,fieldtype,i,fld_c0a)
 

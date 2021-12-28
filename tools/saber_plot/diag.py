@@ -79,39 +79,59 @@ def diag(testdata, test, mpi, omp, suffix, testfig):
          # Angular sector
          as_full = f.groups[group]["as"][:]
          nc4 = len(as_full)
-         as_full = np.append(as_full, as_full+math.pi)
-         as_full = np.append(as_full, as_full[0]+2*math.pi)
-         print(as_full)
+         if nc4 > 1:
+            as_full = np.append(as_full, as_full+math.pi)
+            as_full = np.append(as_full, as_full[0]+2*math.pi)
 
-         # Cylindrical coordinates
-         r, theta = np.meshgrid(disth, as_full)
+            # Cylindrical coordinates
+            r, theta = np.meshgrid(disth, as_full)
 
          for subgroup in f.groups[group].groups:
             # One horizontal plot per level
             for il0 in range(0, nl0):
                # Raw data
-               raw_hor = np.zeros((2*nc4+1,nc3))
-               raw_hor[0:nc4,:] = f.groups[group].groups[subgroup].variables["raw_hor"][il0,:,:]
-               raw_hor[nc4:2*nc4,:] = raw_hor[0:nc4,:]
-               raw_hor[2*nc4,:] = raw_hor[0,:]
+               if nc4 == 1:
+                  raw_hor = np.zeros((nc3))
+                  raw_hor = f.groups[group].groups[subgroup].variables["raw_hor"][il0,0,:]
+               else:
+                  raw_hor = np.zeros((2*nc4+1,nc3))
+                  raw_hor[0:nc4,:] = f.groups[group].groups[subgroup].variables["raw_hor"][il0,:,:]
+                  raw_hor[nc4:2*nc4,:] = raw_hor[0:nc4,:]
+                  raw_hor[2*nc4,:] = raw_hor[0,:]
 
                # Fit data
-               fit_hor = np.zeros((2*nc4+1,nc3))
-               fit_hor[0:nc4,:] = f.groups[group].groups[subgroup].variables["fit_hor"][il0,:,:]
-               fit_hor[nc4:2*nc4,:] = fit_hor[0:nc4,:]
-               fit_hor[2*nc4,:] = fit_hor[0,:]
+               if nc4 == 1:
+                  fit_hor = np.zeros((nc3))
+                  if "fit_hor" in f.groups[group].groups[subgroup].variables:
+                     fit_hor = f.groups[group].groups[subgroup].variables["fit_hor"][il0,0,:]
+               else:
+                  fit_hor = np.zeros((2*nc4+1,nc3))
+                  if "fit_hor" in f.groups[group].groups[subgroup].variables:
+                     fit_hor[0:nc4,:] = f.groups[group].groups[subgroup].variables["fit_hor"][il0,:,:]
+                     fit_hor[nc4:2*nc4,:] = fit_hor[0:nc4,:]
+                     fit_hor[2*nc4,:] = fit_hor[0,:]
 
                # Polar plot
-               fig, ax = plt.subplots(ncols=2, subplot_kw=dict(projection='polar'))
+               if nc4 == 1:
+                  fig, ax = plt.subplots(ncols=2)
+               else:
+                  fig, ax = plt.subplots(ncols=2, subplot_kw=dict(projection='polar'))
                fig.subplots_adjust(wspace=0.4, right=0.8)
                ax[0].set_title("Raw")
-               ax[0].contourf(theta, r, raw_hor, levels=levels, cmap="bwr")
+               if nc4 == 1:
+                  ax[0].plot(disth, raw_hor)
+               else:
+                  ax[0].contourf(theta, r, raw_hor, levels=levels, cmap="bwr")
                ax[1].set_title("Fit")
-               im = ax[1].contourf(theta, r, fit_hor, levels=levels, cmap="bwr")
+               if nc4 == 1:
+                  ax[1].plot(disth, fit_hor)
+               else:
+                  im = ax[1].contourf(theta, r, fit_hor, levels=levels, cmap="bwr")
 
-               # Colorbar
-               cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-               fig.colorbar(im, cax=cbar_ax)
+               if nc4 > 1:
+                  # Colorbar
+                  cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+                  fig.colorbar(im, cax=cbar_ax)
 
                # Save and close figure
                plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + group + "_" + subgroup + "_" + str(il0) + ".jpg", format="jpg", dpi=300)
@@ -123,7 +143,9 @@ def diag(testdata, test, mpi, omp, suffix, testfig):
             raw_zs = f.groups[group].groups[subgroup].variables["raw_zs"][:,:]
 
             # Fit data
-            fit_zs = f.groups[group].groups[subgroup].variables["fit_zs"][:,:]
+            fit_zs = np.zeros((nl0, nl0))
+            if "fit_zs" in f.groups[group].groups[subgroup].variables:
+               fit_zs = f.groups[group].groups[subgroup].variables["fit_zs"][:,:]
 
             # Plot
             fig, ax = plt.subplots(ncols=2)

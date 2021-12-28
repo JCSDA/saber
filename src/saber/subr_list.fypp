@@ -372,6 +372,7 @@
 #:set subr_list = subr_list + ["mom_dealloc"]
 #:set subr_list = subr_list + ["mom_read"]
 #:set subr_list = subr_list + ["mom_write"]
+#:set subr_list = subr_list + ["mom_dirac"]
 #:set subr_list = subr_list + ["mom_update"]
 #:set subr_list = subr_list + ["mom_compute"]
 #:set subr_list = subr_list + ["nam_init"]

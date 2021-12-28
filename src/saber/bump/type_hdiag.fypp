@@ -8,7 +8,7 @@
 !----------------------------------------------------------------------
 module type_hdiag
 
-use tools_const, only: zero
+use tools_const, only: zero,rad2deg
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,define_grp,define_dim,define_var,put_var,close_file
 use type_avg, only: avg_type
@@ -87,7 +87,7 @@ end subroutine hdiag_dealloc
 ! Subroutine: hdiag_write
 !> Write diagnostics
 !----------------------------------------------------------------------
-subroutine hdiag_write(hdiag,mpl,nam,geom,bpar,samp)
+subroutine hdiag_write(hdiag,mpl,nam,geom,bpar,samp,mom1)
 
 implicit none
 
@@ -98,10 +98,12 @@ type(nam_type),intent(inout) :: nam      !< Namelist
 type(geom_type),intent(in) :: geom       !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(samp_type),intent(in) :: samp       !< Sampling
+type(mom_type),intent(in) :: mom1        !< Moments, first ensemble
 
 ! Local variables
-integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vunit_id
-integer :: ildwv,ic2a,ib
+integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vunit_id,nc0_id,nl0_id,lon_id,lat_id
+integer :: fld_id(nam%nv),var_id(nam%nv)
+integer :: ildwv,ic2a,ib,iv
 character(len=1024) :: filename,grpname
 
 ! Set name
@@ -122,7 +124,7 @@ do ildwv=0,nam%nldwv
    end if
 
    if (mpl%msv%isnot(ic2a)) then
-      ! Create file
+      ! Open file
       ncid = create_file(mpl,filename,0)
 
       do ib=1,bpar%nbe
@@ -191,6 +193,37 @@ do ildwv=0,nam%nldwv
       call close_file(mpl,ncid)
    end if
 end do
+
+! Write dirac test
+if (nam%check_dirac) then
+   ! Open file
+   filename = trim(nam%prefix)//'_diag_dirac'
+   ncid = create_file(mpl,filename)
+
+   ! Define dimensions
+   nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+   nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
+
+   ! Define variables
+   lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+   lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+   vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
+   do iv=1,nam%nv
+      ! Define group
+      fld_id(iv) = define_grp(mpl,ncid,nam%variables(iv))
+
+      ! Define variable
+      var_id(iv) = define_var(mpl,fld_id(iv),'diag','real',(/nc0_id,nl0_id/))
+   end do
+
+   ! Write variables
+   call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+   call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+   call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+   do iv=1,nam%nv
+      call geom%io%fld_write(mpl,fld_id(iv),var_id(iv),mom1%ens_dir(:,:,iv),geom%gmask_c0a)
+   end do
+end if
 
 ! Probe out
 @:probe_out()
@@ -508,7 +541,7 @@ if (nam%write_hdiag) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Write diagnostics'
    call mpl%flush
-   call hdiag%write(mpl,nam,geom,bpar,samp)
+   call hdiag%write(mpl,nam,geom,bpar,samp,mom1)
 end if
 
 ! Probe out

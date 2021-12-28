@@ -14,6 +14,7 @@ use fckit_mpi_module, only: fckit_mpi_comm
 use fckit_pathname_module, only: fckit_pathname
 use iso_c_binding, only: c_int,c_char
 use iso_fortran_env, only: output_unit
+use tools_gc99, only: fit_setup
 use tools_kinds, only: kind_real
 use type_bump, only: bump_type
 use type_model, only: model_type
@@ -57,6 +58,9 @@ mpl%msv%valr = -999.0_kind_real
 
 ! Initialize MPL
 call mpl%init(f_comm)
+
+! Initialize fitting parameters
+call fit_setup(mpl)
 
 ! Initialize namelist
 call bump%nam%init(mpl%nproc)

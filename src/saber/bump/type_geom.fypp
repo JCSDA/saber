@@ -422,7 +422,7 @@ end if
 ! Check if Sc0 fields I/O is required
 ioc0 = .false.
 ioc0 = ioc0.or.nam%new_normality
-ioc0 = ioc0.or.(nam%write_hdiag.and.nam%local_diag)
+ioc0 = ioc0.or.(nam%write_hdiag.and.(nam%check_dirac.or.nam%local_diag))
 ioc0 = ioc0.or.((nam%new_nicas.or.nam%load_nicas_local).and.nam%check_dirac)
 ioc0 = ioc0.or.nam%load_nicas_global
 ioc0 = ioc0.or.(nam%new_nicas.and.nam%write_nicas_global.and.nam%write_nicas_c0)

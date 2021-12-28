@@ -140,6 +140,9 @@ real(kind_real) :: lmsvalr
 ! Probe in
 @:probe_in()
 
+! Initialize fit parameters
+call fit_setup(bump%mpl)
+
 ! Initialize namelist
 call bump%nam%init(comm%size())
 
