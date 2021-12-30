@@ -28,12 +28,12 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
-
+template <typename MODEL>
 class BUMP_StdDevParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(BUMP_StdDevParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMP_Parameters> bumpParams{"bump", this};
+  oops::RequiredParameter<BUMP_Parameters<MODEL>> bumpParams{"bump", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class BUMP_StdDev : public SaberBlockBase<MODEL> {
  public:
   static const std::string classname() {return "saber::BUMP_StdDev";}
 
-  typedef BUMP_StdDevParameters Parameters_;
+  typedef BUMP_StdDevParameters<MODEL> Parameters_;
 
   BUMP_StdDev(const Geometry_ &, const Parameters_ &);
   virtual ~BUMP_StdDev();

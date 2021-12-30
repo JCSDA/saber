@@ -19,6 +19,7 @@
 
 #include "eckit/config/Configuration.h"
 
+#include "oops/base/Increment.h"
 #include "oops/base/IncrementEnsemble.h"
 #include "oops/base/Variables.h"
 #include "oops/interface/Increment.h"
@@ -42,8 +43,40 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
+/// Parameters describing BUMP parameters input (from model Increment files).
+template <typename MODEL> class BUMPInputParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BUMPInputParameters, oops::Parameters)
+  typedef typename oops::Increment<MODEL>::ReadParameters_ ReadParameters_;
 
-class BUMP_Parameters : public oops::Parameters {
+ public:
+  /// Parameters used for reading Increment.
+  ReadParameters_ incread{this};
+  /// Date of the Increment to read.
+  oops::RequiredParameter<util::DateTime> date{"date", this};
+  /// Parameter name.
+  /// Note: if there is a list of acceptable names, this parameter can be
+  /// changed to enum parameter.
+  oops::RequiredParameter<std::string> param{"parameter", this};
+};
+
+// -----------------------------------------------------------------------------
+/// Parameters describing BUMP parameters output (to model Increment files)
+template <typename MODEL> class BUMPOutputParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BUMPOutputParameters, oops::Parameters)
+  typedef typename oops::Increment<MODEL>::WriteParameters_ WriteParameters_;
+
+ public:
+  /// Parameters used for writing Increment.
+  WriteParameters_ incwrite{this};
+  /// Date of the Increment to write.
+  oops::RequiredParameter<util::DateTime> date{"date", this};
+  /// Parameter name.
+  /// Note: if there is a list of acceptable names, this parameter can be
+  /// changed to enum parameter.
+  oops::RequiredParameter<std::string> param{"parameter", this};
+};
+
+template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(BUMP_Parameters, oops::Parameters)
 
  public:
@@ -52,7 +85,7 @@ class BUMP_Parameters : public oops::Parameters {
   // Universe radius (increment)
   oops::OptionalParameter<eckit::LocalConfiguration> universeRadius{"universe radius", this};
   // Input parameters
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> input{"input", this};
+  oops::OptionalParameter<std::vector<BUMPInputParameters<MODEL>>> input{"input", this};
   // Ensemble parameters
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
   // Missing value (real)
@@ -60,7 +93,7 @@ class BUMP_Parameters : public oops::Parameters {
   // Grids
   oops::OptionalParameter<eckit::LocalConfiguration> grids{"grids", this};
   // Output parameters
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> output{"output", this};
+  oops::OptionalParameter<std::vector<BUMPOutputParameters<MODEL>>> output{"output", this};
   // Operators application
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
     this};
@@ -461,7 +494,7 @@ template<typename MODEL> class BUMP {
   // Constructors
   BUMP(const Geometry_ &,
        const oops::Variables &,
-       const BUMP_Parameters &,
+       const BUMP_Parameters<MODEL> &,
        const EnsemblePtr_ ens1 = NULL,
        const EnsemblePtr_ ens2 = NULL);
 
@@ -503,7 +536,7 @@ template<typename MODEL> class BUMP {
  private:
   const Geometry_ resol_;
   const oops::Variables activeVars_;
-  BUMP_Parameters params_;
+  BUMP_Parameters<MODEL> params_;
   std::vector<int> keyBUMP_;
 };
 
@@ -512,7 +545,7 @@ template<typename MODEL> class BUMP {
 template<typename MODEL>
 BUMP<MODEL>::BUMP(const Geometry_ & resol,
                   const oops::Variables & activeVars,
-                  const BUMP_Parameters & params,
+                  const BUMP_Parameters<MODEL> & params,
                   const EnsemblePtr_ ens1,
                   const EnsemblePtr_ ens2)
   : resol_(resol), activeVars_(activeVars), params_(params), keyBUMP_() {
@@ -666,19 +699,18 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 
   // Read data from files
   oops::Log::info() << "    Read data from files" << std::endl;
-  const boost::optional<std::vector<eckit::LocalConfiguration>> &input = params_.input.value();
-  if (input != boost::none) {
+  if (params_.input.value() != boost::none) {
     // Set BUMP input parameters
-    for (const auto & inputConf : *input) {
+    for (const auto & inputparam : *params_.input.value()) {
       // Get date
-      const util::DateTime date(inputConf.getString("date"));
+      const util::DateTime & date = inputparam.date;
 
       // Setup increment
       Increment_ dx(resol_, activeVars_, date);
-      dx.read(inputConf);
+      dx.read(inputparam.incread);
 
       // Set parameter to BUMP
-      std::string param = inputConf.getString("parameter");
+      const std::string & param = inputparam.param;
       this->setParameter(param, dx);
       oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
                         << std::setprecision(3) << dx.norm() << std::endl;
@@ -770,11 +802,10 @@ void BUMP<MODEL>::write() const {
   "-------------------------------------------------------------------" << std::endl;
   oops::Log::info() << "--- Write parameters" << std::endl;
 
-  const boost::optional<std::vector<eckit::LocalConfiguration>> &output = params_.output.value();
-  if (output != boost::none) {
-    for (const auto & outputConf : *output) {
+  if (params_.output.value() != boost::none) {
+    for (const auto & outputparam : *params_.output.value()) {
       // Get date
-      const util::DateTime date(outputConf.getString("date"));
+      const util::DateTime & date = outputparam.date;
 
       // Setup increment
       Increment_ dx(resol_, activeVars_, date);
@@ -783,11 +814,11 @@ void BUMP<MODEL>::write() const {
       dx.zero();
 
       // Get parameter from BUMP
-      std::string param = outputConf.getString("parameter");
+      const std::string & param = outputparam.param;
       this->getParameter(param, dx);
 
       // Write parameter
-      dx.write(outputConf);
+      dx.write(outputparam.incwrite);
       oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
                         << std::setprecision(3) << dx.norm() << std::endl;
     }
