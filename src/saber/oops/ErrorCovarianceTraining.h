@@ -75,7 +75,7 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
   oops::RequiredParameter<oops::Variables> inputVariables{"input variables", this};
 
   /// BUMP training parameters
-  oops::OptionalParameter<BUMP_Parameters> bumpParams{"bump", this};
+  oops::OptionalParameter<BUMP_Parameters<MODEL>> bumpParams{"bump", this};
 
   /// GSI training parameters
   oops::OptionalParameter<GSI_Parameters> gsiParams{"gsi", this};
@@ -181,7 +181,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     // Select SABER library training
 
     // BUMP
-    const boost::optional<BUMP_Parameters> &bumpParams = params.bumpParams.value();
+    const boost::optional<BUMP_Parameters<MODEL>> &bumpParams = params.bumpParams.value();
     if (bumpParams != boost::none) {
       // Do training
       BUMP_ bump(resol, inputVars, *bumpParams, ens1, ens2);

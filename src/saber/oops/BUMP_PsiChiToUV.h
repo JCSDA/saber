@@ -29,12 +29,12 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
-
+template <typename MODEL>
 class BUMP_PsiChiToUVParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(BUMP_PsiChiToUVParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMP_Parameters> bumpParams{"bump", this};
+  oops::RequiredParameter<BUMP_Parameters<MODEL>> bumpParams{"bump", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class BUMP_PsiChiToUV : public SaberBlockBase<MODEL> {
  public:
   static const std::string classname() {return "saber::BUMP_PsiChiToUV";}
 
-  typedef BUMP_PsiChiToUVParameters Parameters_;
+  typedef BUMP_PsiChiToUVParameters<MODEL> Parameters_;
 
   BUMP_PsiChiToUV(const Geometry_ &, const Parameters_ & params);
   virtual ~BUMP_PsiChiToUV();

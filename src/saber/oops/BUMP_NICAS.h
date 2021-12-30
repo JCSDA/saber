@@ -29,12 +29,12 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
-
+template <typename MODEL>
 class BUMP_NICASParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(BUMP_NICASParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMP_Parameters> bumpParams{"bump", this};
+  oops::RequiredParameter<BUMP_Parameters<MODEL>> bumpParams{"bump", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class BUMP_NICAS : public SaberBlockBase<MODEL> {
  public:
   static const std::string classname() {return "saber::BUMP_NICAS";}
 
-  typedef BUMP_NICASParameters Parameters_;
+  typedef BUMP_NICASParameters<MODEL> Parameters_;
 
   BUMP_NICAS(const Geometry_ &, const Parameters_ &);
   virtual ~BUMP_NICAS();

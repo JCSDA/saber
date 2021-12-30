@@ -200,6 +200,7 @@ integer :: nmga,nnodes,nl0,nl2d,il0
 integer :: shp(${rank}$)
 ${ftype[dtype]}$,pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
+type(atlas_functionspace) :: afunctionspace
 
 ! Set name
 @:set_name(atlas_field_from_array_${dtype}$_r${rank}$)
@@ -250,6 +251,10 @@ else
       #{if rank == 3}# ptr_2(il0,:) = reshape(array(:,:,il0),(/product(shp(1:2))/)) #{endif}#
    end do
 end if
+
+! Halo exchange
+afunctionspace = afield%functionspace()
+call afunctionspace%halo_exchange(afield)
 
 ! Probe out
 @:probe_out()
