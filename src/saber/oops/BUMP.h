@@ -329,8 +329,10 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<int> nc1{"nc1", this};
   // Number of diagnostic points
   oops::OptionalParameter<int> nc2{"nc2", this};
-  // Number of classes
+  // Number of horizontal classes
   oops::OptionalParameter<int> nc3{"nc3", this};
+  // Number of angular sectors
+  oops::OptionalParameter<int> nc4{"nc4", this};
   // Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
   oops::OptionalParameter<double> dc{"dc", this};
   // Reduced number of levels for diagnostics
@@ -391,6 +393,12 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> diag_rvflt{"diag_rvflt", this};
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
+  // Estimate peakness
+  oops::OptionalParameter<bool> peakness{"peakness", this};
+  // Estimate vertical negative lobe
+  oops::OptionalParameter<bool> negative_lobe{"negative_lobe", this};
+  // Diagnostic of square-root functions
+  oops::OptionalParameter<bool> diag_sqrt{"diag_sqrt", this};
   // Number of LCT scales
   oops::OptionalParameter<int> lct_nscales{"lct_nscales", this};
   // Factor between diffusion scales

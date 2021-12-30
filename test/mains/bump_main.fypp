@@ -18,7 +18,6 @@ use tools_gc99, only: fit_setup
 use tools_kinds, only: kind_real
 use type_bump, only: bump_type
 use type_model, only: model_type
-use type_mpl, only: mpl_type
 @:use_probe()
 
 implicit none
@@ -35,7 +34,6 @@ type(fckit_configuration) :: f_conf
 type(bump_type) :: bump
 type(fckit_mpi_comm) :: f_comm
 type(model_type) :: model
-type(mpl_type) :: mpl
 
 ! Initialize MPI
 f_comm = fckit_mpi_comm()
@@ -50,100 +48,100 @@ do i=1,n2
 end do
 
 ! Set missing values
-mpl%msv%vali = -999
-mpl%msv%valr = -999.0_kind_real
+bump%mpl%msv%vali = -999
+bump%mpl%msv%valr = -999.0_kind_real
 
 ! Get main instance index
 @:get_instance(main)
 
-! Initialize MPL
-call mpl%init(f_comm)
+! Initialize bump%mpl
+call bump%mpl%init(f_comm)
 
 ! Initialize fitting parameters
-call fit_setup(mpl)
+call fit_setup(bump%mpl)
 
 ! Initialize namelist
-call bump%nam%init(mpl%nproc)
+call bump%nam%init(bump%mpl%nproc)
 
 ! Convert fckit configuration to namelist
 call bump%nam%from_conf(f_comm,f_conf)
 
 ! Broadcast namelist
-call bump%nam%bcast(mpl)
+call bump%nam%bcast(bump%mpl)
 
 ! Define info unit and open file
-do iproc=1,mpl%nproc
-   if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and.(iproc==mpl%rootproc))) then
-      if (iproc==mpl%myproc) then
+do iproc=1,bump%mpl%nproc
+   if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and.(iproc==bump%mpl%rootproc))) then
+      if (iproc==bump%mpl%myproc) then
          ! Find a free unit
-         call mpl%newunit(mpl%lunit)
+         call bump%mpl%newunit(bump%mpl%lunit)
 
          ! Open listing file
-         write(filename,'(a,i6.6,a)') trim(bump%nam%prefix)//'.',mpl%myproc-1,'.out'
+         write(filename,'(a,i6.6,a)') trim(bump%nam%prefix)//'.',bump%mpl%myproc-1,'.out'
          inquire(file=filename,number=ifileunit)
          if (ifileunit<0) then
-            open(unit=mpl%lunit,file=trim(logdir)//'/'//trim(filename),action='write',status='replace')
+            open(unit=bump%mpl%lunit,file=trim(logdir)//'/'//trim(filename),action='write',status='replace')
          else
             close(ifileunit)
-            open(unit=mpl%lunit,file=trim(logdir)//'/'//trim(filename),action='write',status='replace')
+            open(unit=bump%mpl%lunit,file=trim(logdir)//'/'//trim(filename),action='write',status='replace')
          end if
       end if
-      call mpl%f_comm%barrier
+      call bump%mpl%f_comm%barrier
    end if
 end do
 
 ! Header
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- You are running the BUMP main program -------------------------'
-call mpl%flush
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- You are running the BUMP main program -------------------------'
+call bump%mpl%flush
 
 ! Model setup
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Setup model'
-call mpl%flush
-call model%setup(mpl,bump%nam)
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- Setup model'
+call bump%mpl%flush
+call model%setup(bump%mpl,bump%nam)
 
 ! Load ensembles
 if (bump%nam%ens1_ne>0) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Load ensemble 1'
-   call mpl%flush
-   call model%load_ens(mpl,bump%nam,'ens1')
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Load ensemble 1'
+   call bump%mpl%flush
+   call model%load_ens(bump%mpl,bump%nam,'ens1')
 end if
 if (bump%nam%ens2_ne>0) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Load ensemble 2'
-   call mpl%flush
-   call model%load_ens(mpl,bump%nam,'ens2')
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Load ensemble 2'
+   call bump%mpl%flush
+   call model%load_ens(bump%mpl,bump%nam,'ens2')
 end if
 
 ! BUMP setup
-call bump%setup(f_comm,model%afunctionspace,model%fieldset,lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
+call bump%setup(model%afunctionspace,model%fieldset)
 
 ! Add members
 if (bump%nam%ens1_ne>0) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Add members of ensemble 1'
-   call mpl%flush
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Add members of ensemble 1'
+   call bump%mpl%flush
    do ie=1,bump%nam%ens1_ne
-      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens1_ne
-      call mpl%flush
+      write(bump%mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens1_ne
+      call bump%mpl%flush
       call bump%add_member(model%ens1(ie),ie,1)
    end do
 end if
 if (bump%nam%ens2_ne>0) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Add members of ensemble 2'
-   call mpl%flush
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Add members of ensemble 2'
+   call bump%mpl%flush
    do ie=1,bump%nam%ens2_ne
-      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens2_ne
-      call mpl%flush
+      write(bump%mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens2_ne
+      call bump%mpl%flush
       call bump%add_member(model%ens2(ie),ie,2)
    end do
 end if
@@ -155,14 +153,14 @@ if (bump%nam%check_set_param_cor.or.bump%nam%check_set_param_hyb.or.bump%nam%che
    write(bump%mpl%info,'(a)') '--- Test set_parameters interfaces'
    call bump%mpl%flush()
    call bump%test_set_parameter
-   if (bump%nam%default_seed) call bump%rng%reseed(mpl)
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
 ! Run drivers
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Run drivers'
-call mpl%flush
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- Run drivers'
+call bump%mpl%flush
 call bump%run_drivers
 
 ! Test get_parameter interfaces
@@ -173,21 +171,21 @@ if (bump%nam%check_get_param_cor.or.bump%nam%check_get_param_hyb.or.bump%nam%che
    write(bump%mpl%info,'(a)') '--- Test get_parameter interfaces'
    call bump%mpl%flush()
    call bump%test_get_parameter
-   if (bump%nam%default_seed) call bump%rng%reseed(mpl)
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
 ! Release memory (partial)
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Release memory (partial)'
-call mpl%flush
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- Release memory (partial)'
+call bump%mpl%flush
 call bump%partial_dealloc
 
 ! Test interfaces
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Test apply interfaces'
-call mpl%flush
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- Test apply interfaces'
+call bump%mpl%flush
 call bump%test_apply_interfaces
 
 ! Release memory
@@ -202,19 +200,19 @@ call model%dealloc
 ! Execution stats
 @:execution_stats()
 
-if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and.mpl%main)) then
+if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and.bump%mpl%main)) then
    ! Close listings
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Close listings'
-   call mpl%flush
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   close(unit=mpl%lunit)
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Close listings'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   close(unit=bump%mpl%lunit)
 end if
 
-! Finalize MPL
-call mpl%final
+! Finalize bump%mpl
+call bump%mpl%final
 
 ! Release probe instance
 @:probe_dealloc()
