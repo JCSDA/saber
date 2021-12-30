@@ -192,7 +192,7 @@ do isub=1,mom_blk_out%nsub
    end do
 end do
 
-! Communication
+! Halo extension
 call samp%com_c1_AD%ext(mpl,sbuf,rbuf)
 
 ! Unpack

@@ -118,7 +118,7 @@ real(kind_real),intent(in),optional :: lat_cxa(ncxa) !< Latitudes on halo A
 
 ! Local variables
 integer :: nres,nprocio,iprocio,delta,icxio,icx,icxa,icx_s,icx_e,jcx,ncxown,icxown,iproc,jproc
-integer :: list_proc(mpl%nproc),list_proc_tot(mpl%nproc)
+integer :: list_proc(mpl%nproc)
 integer :: lorder_cxa(ncxa),order_proc(mpl%nproc)
 integer,allocatable :: procio_to_ncxio(:),procio_to_proc(:),cxown_to_cx(:),order_cx(:),order_inv_cx(:)
 real(kind_real),allocatable :: lon_cx(:),lat_cx(:)
@@ -208,8 +208,8 @@ do iprocio=1,nprocio
          list_proc(jproc) = list_proc(jproc)+1
       end if
    end do
-   call mpl%f_comm%allreduce(list_proc,list_proc_tot,fckit_mpi_sum())
-   call qsort(mpl%nproc,list_proc_tot,order_proc)
+   call mpl%f_comm%allreduce(list_proc,fckit_mpi_sum())
+   call qsort(mpl%nproc,list_proc,order_proc)
 
    ! Select I/O processor for this chunk
    do iproc=mpl%nproc,1,-1

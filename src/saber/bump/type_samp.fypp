@@ -911,7 +911,7 @@ type(nam_type),intent(in) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom  !< Geometry
 
 ! Local variables
-integer :: il0,jc3,jc4,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,j,nc1max,nc1max_tot
+integer :: il0,jc3,jc4,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,j,nc1max
 integer :: ncid,nc0a_id,nl0_id,nc1a_id,nc3_id,nc4_id,nc2a_id,nc2b_id,nc1max_id
 integer :: lon_c0a_id,lat_c0a_id,gmask_c0a_id
 integer :: lon_id,lat_id,lon_local_id,lat_local_id,lon_vbal_id,lat_vbal_id
@@ -945,9 +945,9 @@ if (nam%new_hdiag.and.nam%local_diag) then
    do ic2a=1,samp%nc2a
       nc1max = max(zss_count(samp%local_mask(:,ic2a)),nc1max)
    end do
-   call mpl%f_comm%allreduce(nc1max,nc1max_tot,fckit_mpi_sum())
-   nc1max_tot = nc1max_tot+1
-   nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max_tot)
+   call mpl%f_comm%allreduce(nc1max,fckit_mpi_sum())
+   nc1max = nc1max+1
+   nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max)
    nc2a_id = define_dim(mpl,ncid,'nc2a',samp%nc2a)
 end if
 if (nam%new_vbal) then
@@ -955,9 +955,9 @@ if (nam%new_vbal) then
    do ic2b=1,samp%nc2b
       nc1max = max(zss_count(samp%vbal_mask(:,ic2b)),nc1max)
    end do
-   call mpl%f_comm%allreduce(nc1max,nc1max_tot,fckit_mpi_sum())
-   nc1max_tot = nc1max_tot+1
-   nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max_tot)
+   call mpl%f_comm%allreduce(nc1max,fckit_mpi_sum())
+   nc1max = nc1max+1
+   nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max)
    nc2b_id = define_dim(mpl,ncid,'nc2b',samp%nc2b)
 end if
 
@@ -1012,8 +1012,8 @@ if (samp%sc3) then
 end if
 if (nam%new_hdiag.and.nam%local_diag) then
    ! Allocation
-   allocate(lon_local(nc1max_tot,samp%nc2a,geom%nl0))
-   allocate(lat_local(nc1max_tot,samp%nc2a,geom%nl0))
+   allocate(lon_local(nc1max,samp%nc2a,geom%nl0))
+   allocate(lat_local(nc1max,samp%nc2a,geom%nl0))
 
    ! Initialization
    lon_local = mpl%msv%valr
@@ -1040,8 +1040,8 @@ if (nam%new_hdiag.and.nam%local_diag) then
 end if
 if (nam%new_vbal) then
    ! Allocation
-   allocate(lon_vbal(nc1max_tot,samp%nc2b,geom%nl0))
-   allocate(lat_vbal(nc1max_tot,samp%nc2b,geom%nl0))
+   allocate(lon_vbal(nc1max,samp%nc2b,geom%nl0))
+   allocate(lat_vbal(nc1max,samp%nc2b,geom%nl0))
 
    ! Initialization
    lon_vbal = mpl%msv%valr
@@ -1293,7 +1293,8 @@ if (samp%sc3) then
          write(mpl%info,'(a13,a,i3,a4)') '','Angular sector ',jc4,' ~> '
          call mpl%flush(.false.)
          do jc3=1,nam%nc3
-            call mpl%f_comm%allreduce(zss_count(samp%smask_c3a(:,jc3,jc4,il0)),nc1_valid,fckit_mpi_sum())
+            nc1_valid = zss_count(samp%smask_c3a(:,jc3,jc4,il0))
+            call mpl%f_comm%allreduce(nc1_valid,fckit_mpi_sum())
             ival = int(hundred*real(nc1_valid,kind_real)/real(samp%nc1,kind_real))
             if (ival==100) then
                ivalformat = '(a,i3,a)'
@@ -1381,8 +1382,7 @@ type(geom_type),intent(in) :: geom           !< Geometry
 type(ens_type),intent(inout),optional :: ens !< Ensemble
 
 ! Local variables
-integer :: nsmask,nsmask_tot,ic0a,il0,ildwv,iv,ncontig,ncontigmax,latmin,latmax
-integer :: nc0_smask(0:geom%nl0)
+integer :: nsmask,ic0a,il0,ildwv,iv,ncontig,ncontigmax,latmin,latmax
 real(kind_real) :: dist
 real(kind_real),allocatable :: m2(:,:,:)
 logical :: valid
@@ -1402,9 +1402,9 @@ allocate(samp%nc0_smask(0:geom%nl0))
 
 ! Count extra masked points in sampling
 nsmask = zss_count(geom%gmask_c0a.and..not.geom%smask_c0a)
-call mpl%f_comm%allreduce(nsmask,nsmask_tot,fckit_mpi_sum())
+call mpl%f_comm%allreduce(nsmask,fckit_mpi_sum())
 
-if ((nsmask_tot>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
+if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
    ! Compute sampling mask
    write(mpl%info,'(a7,a)') '','Compute sampling mask'
    call mpl%flush
@@ -1498,17 +1498,17 @@ else
    samp%smask_c0a = geom%gmask_c0a
 end if
 
-! Commnication
+! Halo extension
 call geom%com_AU%ext(mpl,samp%smask_c0a,samp%smask_c0u)
 
 ! Related masks
 if (geom%nc0a>0) samp%smask_hor_c0a = any(samp%smask_c0a,dim=2)
 if (geom%nc0u>0) samp%smask_hor_c0u = any(samp%smask_c0u,dim=2)
-nc0_smask(0) = zss_count(samp%smask_hor_c0a)
+samp%nc0_smask(0) = zss_count(samp%smask_hor_c0a)
 do il0=1,geom%nl0
-   nc0_smask(il0) = zss_count(samp%smask_c0a(:,il0))
+   samp%nc0_smask(il0) = zss_count(samp%smask_c0a(:,il0))
 end do
-call mpl%f_comm%allreduce(nc0_smask,samp%nc0_smask,fckit_mpi_sum())
+call mpl%f_comm%allreduce(samp%nc0_smask,fckit_mpi_sum())
 
 ! Check mask size
 if (samp%nc0_smask(0)==0) call mpl%abort('${subr}$','no more points in the sampling mask')
@@ -2038,8 +2038,10 @@ else
          end if
       else
          ! Latitude bounds
-         call mpl%f_comm%allreduce(zss_minval(geom%lat_c0a),latmin,fckit_mpi_min())
-         call mpl%f_comm%allreduce(zss_maxval(geom%lat_c0a),latmax,fckit_mpi_max())
+         latmin = zss_minval(geom%lat_c0a)
+         latmax = zss_maxval(geom%lat_c0a)
+         call mpl%f_comm%allreduce(latmin,fckit_mpi_min())
+         call mpl%f_comm%allreduce(latmax,fckit_mpi_max())
 
          ! Regularly spaced points along zero meridian
          if (mpl%main) then
@@ -2936,7 +2938,7 @@ do il0=1,geom%nl0
    end do
 end do
 
-! Communication
+! Halo extension
 call samp%com_c1_AD%ext(mpl,sbuf,rbuf)
 
 ! Unpack
@@ -3156,7 +3158,7 @@ if (rflt>zero) then
    allocate(diag_c2f(nc2f))
    if (present(val_c2a)) allocate(val_c2f(nc2f))
 
-   ! Communication
+   ! Halo extension
    call com_c2_AF%ext(mpl,diag_c2a,diag_c2f)
    if (present(val_c2a)) call com_c2_AF%ext(mpl,val_c2a,val_c2f)
 
@@ -3272,7 +3274,7 @@ type(mpl_type),intent(inout) :: mpl                  !< MPI data
 real(kind_real),intent(inout) :: diag_c2a(samp%nc2a) !< Filtered diagnostic
 
 ! Local variables
-integer :: nmsr,nmsr_tot,ic2a,jc2u,kc2u
+integer :: nmsr,ic2a,jc2u,kc2u
 real(kind_real),allocatable :: diag_c2u(:)
 
 ! Set name
@@ -3287,15 +3289,15 @@ if (samp%nc2a>0) then
 else
    nmsr = 0
 end if
-call mpl%f_comm%allreduce(nmsr,nmsr_tot,fckit_mpi_sum())
+call mpl%f_comm%allreduce(nmsr,fckit_mpi_sum())
 
-if (nmsr_tot==samp%nc2) then
+if (nmsr==samp%nc2) then
    ! All points are missing, do nothing
-elseif (nmsr_tot>0) then
+elseif (nmsr>0) then
    ! Allocation
    allocate(diag_c2u(samp%nc2u))
 
-   ! Communication
+   ! Halo extension
    call samp%com_c2_AU%ext(mpl,diag_c2a,diag_c2u)
 
    ! Fill points

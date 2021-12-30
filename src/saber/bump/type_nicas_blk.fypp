@@ -43,7 +43,6 @@ type balldata_type
    integer,allocatable :: bd_to_c1u(:)     !< Ball data index to subset Sc1 in universe
    real(kind_real),allocatable :: hnd(:)   !< Horizontal normalized distance
    real(kind_real),allocatable :: vnd(:)   !< Vertical normalized distance
-   real(kind_real),allocatable :: Hcoef(:) !< LCT scales coefficients
    real(kind_real),allocatable :: pkh(:)   !< Horizontal peakness
    real(kind_real),allocatable :: pkv(:)   !< Vertical peakness
    real(kind_real),allocatable :: nlv(:)   !< Vertical negative lobe parameter
@@ -67,22 +66,20 @@ type hor_type
    integer,allocatable :: proc_to_c1_offset(:)          !< Processor to offset on subset Sc1
    real(kind_real),allocatable :: lon_c1a(:)            !< Longitudes on subset Sc1, halo A
    real(kind_real),allocatable :: lat_c1a(:)            !< Latitudes on subset Sc1, halo A
-   real(kind_real),allocatable :: vunit_c1a(:)        !< Latitudes on subset Sc1, halo 1
+   real(kind_real),allocatable :: vunit_c1a(:)          !< Latitudes on subset Sc1, halo 1
    integer,allocatable :: order_c1a(:)                  !< Subset Sc1 order for halo A
    integer,allocatable :: order_inv_c1a(:)              !< Subset Sc1 inverse order for halo A
    real(kind_real),allocatable :: lon_c1u(:)            !< Longitudes on subset Sc1, universe
    real(kind_real),allocatable :: lat_c1u(:)            !< Latitudes on subset Sc1, universe
-   real(kind_real),allocatable :: vunit_c1u(:)        !< Latitudes on subset Sc1, universe
-   real(kind_real),allocatable :: rh_c1u(:)           !< Horizontal support radius on subset Sc1, universe
-   real(kind_real),allocatable :: pkh_c1u(:)           !< Horizontal peakness on subset Sc1, universe
-   real(kind_real),allocatable :: rv_c1u(:)           !< Vertical support radius on subset Sc1, universe
-   real(kind_real),allocatable :: pkv_c1u(:)           !< Vertical peakness on subset Sc1, universe
-   real(kind_real),allocatable :: nlv_c1u(:)           !< Vertical negative lobe parameter on subset Sc1, universe
-   real(kind_real),allocatable :: H11_c1u(:)          !< Local correlation tensor, component 11, on subset Sc1, universe
-   real(kind_real),allocatable :: H22_c1u(:)          !< Local correlation tensor, component 22, on subset Sc1, universe
-   real(kind_real),allocatable :: H33_c1u(:)          !< Local correlation tensor, component 33, on subset Sc1, universe
-   real(kind_real),allocatable :: H12_c1u(:)          !< Local correlation tensor, component 12, on subset Sc1, universe
-   real(kind_real),allocatable :: Hcoef_c1u(:)        !< Local correlation tensor, coefficient, on subset Sc1, universe
+   real(kind_real),allocatable :: vunit_c1u(:)          !< Latitudes on subset Sc1, universe
+   real(kind_real),allocatable :: rh_c1u(:)             !< Horizontal support radius on subset Sc1, universe
+   real(kind_real),allocatable :: pkh_c1u(:)            !< Horizontal peakness on subset Sc1, universe
+   real(kind_real),allocatable :: rv_c1u(:)             !< Vertical support radius on subset Sc1, universe
+   real(kind_real),allocatable :: pkv_c1u(:)            !< Vertical peakness on subset Sc1, universe
+   real(kind_real),allocatable :: nlv_c1u(:)            !< Vertical negative lobe parameter on subset Sc1, universe
+   real(kind_real),allocatable :: H11_c1u(:)            !< Local correlation tensor, component 11, on subset Sc1, universe
+   real(kind_real),allocatable :: H22_c1u(:)            !< Local correlation tensor, component 22, on subset Sc1, universe
+   real(kind_real),allocatable :: H12_c1u(:)            !< Local correlation tensor, component 12, on subset Sc1, universe
 
    type(tree_type) :: tree_c1u                          !< Tree on subset Sc1, universe
 
@@ -93,7 +90,7 @@ type hor_type
    integer,allocatable :: c1u_to_c1a(:)                 !< Subset Sc1, universe to halo A
    integer,allocatable :: c1u_to_c1(:)                  !< Subset Sc1, universe to global
 
-   integer,allocatable :: c1b_to_c1(:)                 !< Subset Sc1, halo B to global
+   integer,allocatable :: c1b_to_c1(:)                  !< Subset Sc1, halo B to global
    integer,allocatable :: c1b_to_c1u(:)                 !< Subset Sc1, halo B to universe
    integer,allocatable :: c1u_to_c1b(:)                 !< Subset Sc1, universe to halo B
 
@@ -174,17 +171,15 @@ type nicas_blk_type
 
    ! C matrix data
    real(kind_real),allocatable :: rh(:,:)               !< Horizontal fit support radius
-   real(kind_real),allocatable :: pkh(:,:)               !< Horizontal fit peakness
+   real(kind_real),allocatable :: pkh(:,:)              !< Horizontal fit peakness
    real(kind_real),allocatable :: rv(:,:)               !< Vertical fit support radius
-   real(kind_real),allocatable :: pkv(:,:)               !< Vertical fit peakness
-   real(kind_real),allocatable :: nlv(:,:)               !< Vertical fit negative lobe parameter
+   real(kind_real),allocatable :: pkv(:,:)              !< Vertical fit peakness
+   real(kind_real),allocatable :: nlv(:,:)              !< Vertical fit negative lobe parameter
    real(kind_real),allocatable :: rhs(:,:)              !< Fit support radius  for sampling
    real(kind_real),allocatable :: rvs(:,:)              !< Fit support radius, for sampling
    real(kind_real),allocatable :: H11(:,:)              !< LCT component 11
    real(kind_real),allocatable :: H22(:,:)              !< LCT component 22
-   real(kind_real),allocatable :: H33(:,:)              !< LCT component 33
    real(kind_real),allocatable :: H12(:,:)              !< LCT component 12
-   real(kind_real),allocatable :: Hcoef(:,:)            !< LCT scales coefficients
    type(com_type) :: com_s_AB                           !< Communication between halos A and B on subgrid
    type(com_type) :: com_s_AC                           !< Communication between halos A and C on subgrid
    type(com_type) :: com_s_AU                           !< Communication between halo A and universe on subgrid
@@ -304,7 +299,6 @@ class(balldata_type),intent(inout) :: balldata !< Ball data
 allocate(balldata%bd_to_c1u(balldata%nbd))
 allocate(balldata%hnd(balldata%nbd))
 allocate(balldata%vnd(balldata%nbd))
-allocate(balldata%Hcoef(balldata%nbd))
 allocate(balldata%pkh(balldata%nbd))
 allocate(balldata%pkv(balldata%nbd))
 allocate(balldata%nlv(balldata%nbd))
@@ -335,7 +329,6 @@ class(balldata_type),intent(inout) :: balldata !< Ball data
 if (allocated(balldata%bd_to_c1u)) deallocate(balldata%bd_to_c1u)
 if (allocated(balldata%hnd)) deallocate(balldata%hnd)
 if (allocated(balldata%vnd)) deallocate(balldata%vnd)
-if (allocated(balldata%Hcoef)) deallocate(balldata%Hcoef)
 if (allocated(balldata%pkh)) deallocate(balldata%pkh)
 if (allocated(balldata%pkv)) deallocate(balldata%pkv)
 if (allocated(balldata%nlv)) deallocate(balldata%nlv)
@@ -349,7 +342,7 @@ end subroutine balldata_dealloc
 ! Subroutine: balldata_pack
 !> Pack data into balldata object
 !----------------------------------------------------------------------
-subroutine balldata_pack(balldata,mpl,nc1u,hnd,vnd,Hcoef,pkh,pkv,nlv)
+subroutine balldata_pack(balldata,mpl,nc1u,hnd,vnd,pkh,pkv,nlv)
 
 implicit none
 
@@ -359,7 +352,6 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 integer,intent(in) :: nc1u                     !< Horizontal box size
 real(kind_real),intent(in) :: hnd(nc1u)        !< Horizontal normalized distance
 real(kind_real),intent(in) :: vnd(nc1u)        !< Vertical normalized distance
-real(kind_real),intent(in) :: Hcoef(nc1u)      !< LCT scales coefficients
 real(kind_real),intent(in) :: pkh(nc1u)        !< Horizontal peakness
 real(kind_real),intent(in) :: pkv(nc1u)        !< Vertical peakness
 real(kind_real),intent(in) :: nlv(nc1u)        !< Vertical negative lobe parameter
@@ -388,7 +380,6 @@ if (nc1u>0) then
          balldata%bd_to_c1u(ibd) = ic1u
          balldata%hnd(ibd) = hnd(ic1u)
          balldata%vnd(ibd) = vnd(ic1u)
-         balldata%Hcoef(ibd) = Hcoef(ic1u)
          balldata%pkh(ibd) = pkh(ic1u)
          balldata%pkv(ibd) = pkv(ic1u)
          balldata%nlv(ibd) = nlv(ic1u)
@@ -442,9 +433,7 @@ if (allocated(hor%pkv_c1u)) deallocate(hor%pkv_c1u)
 if (allocated(hor%nlv_c1u)) deallocate(hor%nlv_c1u)
 if (allocated(hor%H11_c1u)) deallocate(hor%H11_c1u)
 if (allocated(hor%H22_c1u)) deallocate(hor%H22_c1u)
-if (allocated(hor%H33_c1u)) deallocate(hor%H33_c1u)
 if (allocated(hor%H12_c1u)) deallocate(hor%H12_c1u)
-if (allocated(hor%Hcoef_c1u)) deallocate(hor%Hcoef_c1u)
 call hor%tree_c1u%dealloc
 if (allocated(hor%lcheck_c1a)) deallocate(hor%lcheck_c1a)
 if (allocated(hor%lcheck_c1b)) deallocate(hor%lcheck_c1b)
@@ -568,9 +557,7 @@ if (allocated(nicas_blk%rhs)) deallocate(nicas_blk%rhs)
 if (allocated(nicas_blk%rvs)) deallocate(nicas_blk%rvs)
 if (allocated(nicas_blk%H11)) deallocate(nicas_blk%H11)
 if (allocated(nicas_blk%H22)) deallocate(nicas_blk%H22)
-if (allocated(nicas_blk%H33)) deallocate(nicas_blk%H33)
 if (allocated(nicas_blk%H12)) deallocate(nicas_blk%H12)
-if (allocated(nicas_blk%Hcoef)) deallocate(nicas_blk%Hcoef)
 call nicas_blk%com_s_AU%dealloc
 if (allocated(nicas_blk%ball)) then
    do isb=1,size(nicas_blk%ball,2)
@@ -1826,7 +1813,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 integer :: nl1_id,nc1_id,ns_id,c_nopmax_id
 integer :: il1,i_s,isu,jsu,js,isa,isc,jproc,jsa,jsc
 integer,allocatable :: c_nop(:)
-real(kind_real) :: coef_ens_min,coef_ens_max,coef_ens_min_tot,coef_ens_max_tot
+real(kind_real) :: coef_ens_min,coef_ens_max
 character(len=1024) :: grpname
 
 ! Set name
@@ -1863,9 +1850,9 @@ if (bpar%nicas_block(ib)) then
          coef_ens_min = one
          coef_ens_max = one
       end if
-      call mpl%f_comm%allreduce(coef_ens_min,coef_ens_min_tot,fckit_mpi_min())
-      call mpl%f_comm%allreduce(coef_ens_max,coef_ens_max_tot,fckit_mpi_max())
-      nicas_blk%write_coef_ens = .not.(indist(coef_ens_min_tot,one).and.indist(coef_ens_max_tot,one))
+      call mpl%f_comm%allreduce(coef_ens_min,fckit_mpi_min())
+      call mpl%f_comm%allreduce(coef_ens_max,fckit_mpi_max())
+      nicas_blk%write_coef_ens = .not.(indist(coef_ens_min,one).and.indist(coef_ens_max,one))
 
       ! Define variables
       nicas_blk%norm_id = define_var(mpl,nicas_blk%grpid,'norm','real',(/nicas_blk%nc0_id,nicas_blk%nl0_id/))
@@ -1928,7 +1915,8 @@ if (bpar%nicas_block(ib)) then
          if (nicas_blk%order_inv_sa(isa)/=nicas_blk%order_inv_sa(jsa)) c_nop(jsa) = c_nop(jsa)+1
       end if
    end do
-   call mpl%f_comm%allreduce(zss_maxval(c_nop),nicas_blk%c_nopmax,fckit_mpi_max())
+   nicas_blk%c_nopmax = zss_maxval(c_nop)
+   call mpl%f_comm%allreduce(nicas_blk%c_nopmax,fckit_mpi_max())
 
    ! Define dimensions
    ns_id = define_dim(mpl,nicas_blk%grpid,'ns',nicas_blk%ns)
@@ -2474,30 +2462,30 @@ nicas_blk%anisotropic = allocated(cmat_blk%D11).and.allocated(cmat_blk%D22).and.
 ! Allocation
 if (allocated(cmat_blk%rh)) allocate(nicas_blk%rh(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%pkh)) allocate(nicas_blk%pkh(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%rv)) allocate(nicas_blk%rv(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%pkv)) allocate(nicas_blk%pkv(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%nlv)) allocate(nicas_blk%nlv(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%rhs)) allocate(nicas_blk%rhs(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%rvs)) allocate(nicas_blk%rvs(geom%nc0a,geom%nl0))
 if (nicas_blk%anisotropic) then
    allocate(nicas_blk%H11(geom%nc0a,geom%nl0))
    allocate(nicas_blk%H22(geom%nc0a,geom%nl0))
    allocate(nicas_blk%H12(geom%nc0a,geom%nl0))
 end if
+if (allocated(cmat_blk%rv)) allocate(nicas_blk%rv(geom%nc0a,geom%nl0))
+if (allocated(cmat_blk%pkv)) allocate(nicas_blk%pkv(geom%nc0a,geom%nl0))
+if (allocated(cmat_blk%nlv)) allocate(nicas_blk%nlv(geom%nc0a,geom%nl0))
+if (allocated(cmat_blk%rhs)) allocate(nicas_blk%rhs(geom%nc0a,geom%nl0))
+if (allocated(cmat_blk%rvs)) allocate(nicas_blk%rvs(geom%nc0a,geom%nl0))
 
 ! Initialization
 if (allocated(cmat_blk%rh)) nicas_blk%rh = mpl%msv%valr
 if (allocated(cmat_blk%pkh)) nicas_blk%pkh = mpl%msv%valr
-if (allocated(cmat_blk%rv)) nicas_blk%rv = mpl%msv%valr
-if (allocated(cmat_blk%pkv)) nicas_blk%pkv = mpl%msv%valr
-if (allocated(cmat_blk%nlv)) nicas_blk%nlv = mpl%msv%valr
-if (allocated(cmat_blk%rhs)) nicas_blk%rhs = mpl%msv%valr
-if (allocated(cmat_blk%rvs)) nicas_blk%rvs = mpl%msv%valr
 if (nicas_blk%anisotropic) then
    nicas_blk%H11 = mpl%msv%valr
    nicas_blk%H22 = mpl%msv%valr
    nicas_blk%H12 = mpl%msv%valr
 end if
+if (allocated(cmat_blk%rv)) nicas_blk%rv = mpl%msv%valr
+if (allocated(cmat_blk%pkv)) nicas_blk%pkv = mpl%msv%valr
+if (allocated(cmat_blk%nlv)) nicas_blk%nlv = mpl%msv%valr
+if (allocated(cmat_blk%rhs)) nicas_blk%rhs = mpl%msv%valr
+if (allocated(cmat_blk%rvs)) nicas_blk%rvs = mpl%msv%valr
 
 ! Copy C matrix fields from min_lev to max_lev
 iv = bpar%b_to_v1(ib)
@@ -2505,17 +2493,17 @@ do il0=1,geom%nl0
    if ((nam%min_lev(iv)<=il0).and.(il0<=nam%max_lev(iv))) then
       if (allocated(cmat_blk%rh)) nicas_blk%rh(:,il0) = cmat_blk%rh(:,il0)
       if (allocated(cmat_blk%pkh)) nicas_blk%pkh(:,il0) = cmat_blk%pkh(:,il0)
-      if (allocated(cmat_blk%rv)) nicas_blk%rv(:,il0) = cmat_blk%rv(:,il0)
-      if (allocated(cmat_blk%pkv)) nicas_blk%pkv(:,il0) = cmat_blk%pkv(:,il0)
-      if (allocated(cmat_blk%nlv)) nicas_blk%nlv(:,il0) = cmat_blk%nlv(:,il0)
-      if (allocated(cmat_blk%rhs)) nicas_blk%rhs(:,il0) = cmat_blk%rhs(:,il0)
-      if (allocated(cmat_blk%rvs)) nicas_blk%rvs(:,il0) = cmat_blk%rvs(:,il0)
       if (nicas_blk%anisotropic) then
          do ic0a=1,geom%nc0a
             call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0),cmat_blk%D22(ic0a,il0),cmat_blk%D12(ic0a,il0), &
  & nicas_blk%H11(ic0a,il0),nicas_blk%H22(ic0a,il0),nicas_blk%H12(ic0a,il0))
          end do
       end if
+      if (allocated(cmat_blk%rv)) nicas_blk%rv(:,il0) = cmat_blk%rv(:,il0)
+      if (allocated(cmat_blk%pkv)) nicas_blk%pkv(:,il0) = cmat_blk%pkv(:,il0)
+      if (allocated(cmat_blk%nlv)) nicas_blk%nlv(:,il0) = cmat_blk%nlv(:,il0)
+      if (allocated(cmat_blk%rhs)) nicas_blk%rhs(:,il0) = cmat_blk%rhs(:,il0)
+      if (allocated(cmat_blk%rvs)) nicas_blk%rvs(:,il0) = cmat_blk%rvs(:,il0)
    end if
 end do
 
@@ -2554,7 +2542,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il0,il0first,il0last,il0_prev,il1,ic0a,il0inf,il0sup,jl0,jl1,ipk,inl
-integer :: npos(geom%nl0),nmis(geom%nl0),npostot(geom%nl0),nmistot(geom%nl0),l0_to_l1(geom%nl0)
+integer :: npos(geom%nl0),nmis(geom%nl0),l0_to_l1(geom%nl0)
 real(kind_real) :: distnormmin,distnorm(geom%nc0a),rv,pkv,bpk,nlv,bnl
 logical :: slev(geom%nl0)
 
@@ -2577,9 +2565,9 @@ if (.not.nam%load_nicas_global) then
       npos(il0) = zss_count(((nicas_blk%rhs(:,il0)>zero).or.(nicas_blk%rvs(:,il0)>zero)).and.geom%gmask_c0a(:,il0))
       nmis(il0) = zss_count((mpl%msv%is(nicas_blk%rhs(:,il0)).or.mpl%msv%is(nicas_blk%rvs(:,il0))).and.geom%gmask_c0a(:,il0))
    end do
-   call mpl%f_comm%allreduce(npos,npostot,fckit_mpi_sum())
-   call mpl%f_comm%allreduce(nmis,nmistot,fckit_mpi_sum())
-   nicas_blk%vlev = (npostot>0).and.(nmistot==0)
+   call mpl%f_comm%allreduce(npos,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(nmis,fckit_mpi_sum())
+   nicas_blk%vlev = (npos>0).and.(nmis==0)
 end if
 if (count(nicas_blk%vlev)==0) call mpl%abort('${subr}$','no valid level')
 
@@ -2625,7 +2613,8 @@ else
                   if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/(rv*scalev(inl,ipk,1))
                end if
             end do
-            call mpl%f_comm%allreduce(zss_minval(distnorm),distnormmin,fckit_mpi_min())
+            distnormmin = zss_minval(distnorm)
+            call mpl%f_comm%allreduce(distnormmin,fckit_mpi_min())
             slev(il0) = distnormmin>one/nam%resol
          end if
 
@@ -2748,8 +2737,7 @@ integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:)
 real(kind_real) :: nc1_real,bpk
-real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_sum(geom%nl0),scale_sum(geom%nl0)
-real(kind_real) :: rhs_min_tot(geom%nl0),rhs_max_tot(geom%nl0),rhs_avg(geom%nl0),scale_avg(geom%nl0),lonlat(2)
+real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),scale_avg(geom%nl0),lonlat(2)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 logical :: valid
 logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
@@ -2778,21 +2766,21 @@ if (.not.nam%load_nicas_global) then
    do il0=1,geom%nl0
       rhs_min(il0) = zss_minval(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
       rhs_max(il0) = zss_maxval(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
-      rhs_sum(il0) = zss_sum(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
-      scale_sum(il0) = zero
+      rhs_avg(il0) = zss_sum(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
+      scale_avg(il0) = zero
       do ic0a=1,geom%nc0a
          if (geom%gmask_c0a(ic0a,il0)) then
             bpk = max(pkmin,min(nicas_blk%pkh(ic0a,il0),pkmax))
             ipk = floor((bpk-pkmin)/dpk)+1
-            scale_sum(il0) = scale_sum(il0)+nicas_blk%rhs(ic0a,il0)*scaleh(ipk,1)
+            scale_avg(il0) = scale_avg(il0)+nicas_blk%rhs(ic0a,il0)*scaleh(ipk,1)
          end if
       end do
    end do
-   call mpl%f_comm%allreduce(rhs_min,rhs_min_tot,fckit_mpi_min())
-   call mpl%f_comm%allreduce(rhs_max,rhs_max_tot,fckit_mpi_max())
-   call mpl%f_comm%allreduce(rhs_sum,rhs_avg,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(rhs_min,fckit_mpi_min())
+   call mpl%f_comm%allreduce(rhs_max,fckit_mpi_max())
+   call mpl%f_comm%allreduce(rhs_avg,fckit_mpi_sum())
    rhs_avg = rhs_avg/real(geom%nc0_gmask(1:geom%nl0),kind_real)
-   call mpl%f_comm%allreduce(scale_sum,scale_avg,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(scale_avg,fckit_mpi_sum())
    scale_avg = scale_avg/real(geom%nc0_gmask(1:geom%nl0),kind_real)
 
    ! Mask initialization
@@ -2812,7 +2800,7 @@ do il1=1,nicas_blk%nl1
    if (.not.nam%load_nicas_global) then
       ! Compute nc1
       write(mpl%info,'(a16,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
- & rhs_min_tot(il0)*reqkm,' km - ',rhs_max_tot(il0)*reqkm,' km)'
+ & rhs_min(il0)*reqkm,' km - ',rhs_max(il0)*reqkm,' km)'
       if (nicas_blk%verbosity) call mpl%flush
       write(mpl%info,'(a16,a,f3.1,a,f10.2,a)') '','Horizontal scale at ',scalethmin,': ',scale_avg(il0)*reqkm,' km'
       if (nicas_blk%verbosity) call mpl%flush
@@ -3470,11 +3458,8 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: isu,ic1u,jc1u,il1,il0,isa,isb,isc,ic1a,jbd,jl1,i_s,is,jsu,js
 integer,allocatable :: su_to_sc(:)
-real(kind_real),allocatable :: rh_c0b(:),pkh_c0b(:),rv_c0b(:),pkv_c0b(:),nlv_c0b(:)
-real(kind_real),allocatable :: rh_c1a(:),pkh_c1a(:),rv_c1a(:),pkv_c1a(:),nlv_c1a(:)
-real(kind_real),allocatable :: H11_c0b(:),H22_c0b(:),H33_c0b(:),H12_c0b(:),Hcoef_c0b(:)
-real(kind_real),allocatable :: H11_c1a(:),H22_c1a(:),H33_c1a(:),H12_c1a(:),Hcoef_c1a(:)
-real(kind_real),allocatable :: Hcoef(:)
+real(kind_real),allocatable :: rh_c0b(:),pkh_c0b(:),H11_c0b(:),H22_c0b(:),H12_c0b(:),rv_c0b(:),pkv_c0b(:),nlv_c0b(:)
+real(kind_real),allocatable :: rh_c1a(:),pkh_c1a(:),H11_c1a(:),H22_c1a(:),H12_c1a(:),rv_c1a(:),pkv_c1a(:),nlv_c1a(:)
 logical,allocatable :: lcheck_sc(:)
 
 ! Set name
@@ -3523,17 +3508,9 @@ if (.not.nam%load_nicas_global) then
          allocate(H22_c0b(nicas_blk%hor(il1)%nc0b))
          allocate(H22_c1a(nicas_blk%hor(il1)%nc1a))
          allocate(nicas_blk%hor(il1)%H22_c1u(nicas_blk%hor(il1)%nc1u))
-         if (.not.nicas_blk%horizontal) then
-            allocate(H33_c0b(nicas_blk%hor(il1)%nc0b))
-            allocate(H33_c1a(nicas_blk%hor(il1)%nc1a))
-            allocate(nicas_blk%hor(il1)%H33_c1u(nicas_blk%hor(il1)%nc1u))
-         end if
          allocate(H12_c0b(nicas_blk%hor(il1)%nc0b))
          allocate(H12_c1a(nicas_blk%hor(il1)%nc1a))
          allocate(nicas_blk%hor(il1)%H12_c1u(nicas_blk%hor(il1)%nc1u))
-         allocate(Hcoef_c0b(nicas_blk%hor(il1)%nc0b))
-         allocate(Hcoef_c1a(nicas_blk%hor(il1)%nc1a))
-         allocate(nicas_blk%hor(il1)%Hcoef_c1u(nicas_blk%hor(il1)%nc1u))
       end if
 
       ! Interpolate and rescale
@@ -3551,9 +3528,7 @@ if (.not.nam%load_nicas_global) then
       if (nicas_blk%anisotropic) then
          call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%H11(:,il0),H11_c0b)
          call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%H22(:,il0),H22_c0b)
-         if (.not.nicas_blk%horizontal) call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%H33(:,il0),H33_c0b)
          call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%H12(:,il0),H12_c0b)
-         call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%Hcoef(:,il0),Hcoef_c0b)
       end if
 
       ! Interpolate fields
@@ -3567,9 +3542,7 @@ if (.not.nam%load_nicas_global) then
       if (nicas_blk%anisotropic) then
          call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,H11_c0b,H11_c1a)
          call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,H22_c0b,H22_c1a)
-         if (.not.nicas_blk%horizontal) call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,H33_c0b,H33_c1a)
          call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,H12_c0b,H12_c1a)
-         call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,Hcoef_c0b,Hcoef_c1a)
       end if
 
       ! Communication
@@ -3585,9 +3558,7 @@ if (.not.nam%load_nicas_global) then
       if (nicas_blk%anisotropic) then
          call nicas_blk%com_c1_AU(il1)%ext(mpl,H11_c1a,nicas_blk%hor(il1)%H11_c1u)
          call nicas_blk%com_c1_AU(il1)%ext(mpl,H22_c1a,nicas_blk%hor(il1)%H22_c1u)
-         if (.not.nicas_blk%horizontal) call nicas_blk%com_c1_AU(il1)%ext(mpl,H33_c1a,nicas_blk%hor(il1)%H33_c1u)
          call nicas_blk%com_c1_AU(il1)%ext(mpl,H12_c1a,nicas_blk%hor(il1)%H12_c1u)
-         call nicas_blk%com_c1_AU(il1)%ext(mpl,Hcoef_c1a,nicas_blk%hor(il1)%Hcoef_c1u)
       end if
 
       ! Release memory
@@ -3608,14 +3579,8 @@ if (.not.nam%load_nicas_global) then
          deallocate(H11_c1a)
          deallocate(H22_c0b)
          deallocate(H22_c1a)
-         if (.not.nicas_blk%horizontal) then
-            deallocate(H33_c0b)
-            deallocate(H33_c1a)
-         end if
          deallocate(H12_c0b)
          deallocate(H12_c1a)
-         deallocate(Hcoef_c0b)
-         deallocate(Hcoef_c1a)
       end if
    end do
 
@@ -3641,7 +3606,6 @@ if (.not.nam%load_nicas_global) then
       if (nicas_blk%anisotropic) then
          deallocate(nicas_blk%hor(il1)%H11_c1u)
          deallocate(nicas_blk%hor(il1)%H22_c1u)
-         if (.not.nicas_blk%horizontal) deallocate(nicas_blk%hor(il1)%H33_c1u)
          deallocate(nicas_blk%hor(il1)%H12_c1u)
       end if
    end do
@@ -3816,10 +3780,10 @@ type(geom_type),intent(in) :: geom               !< Geometry
 integer :: isu,ic1u,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
 real(kind_real) :: min_minus_max,max_minus_min,rv_th,rr,distv,rh,rv
-real(kind_real) :: dx,dy,dz,H11,H22,H33,H12
-real(kind_real) :: rv_max(geom%nl0),rv_max_tot(geom%nl0),rh_max(geom%nl0),rh_max_tot(geom%nl0)
+real(kind_real) :: dx,dy,dz,H11,H22,H12
+real(kind_real) :: rh_max(geom%nl0),rv_max(geom%nl0)
 real(kind_real) :: vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distv_min(nicas_blk%nl1,nicas_blk%nl1)
-real(kind_real),allocatable :: hnd(:),vnd(:),Hcoef(:),pkh(:),pkv(:),nlv(:),nn_dist(:)
+real(kind_real),allocatable :: hnd(:),vnd(:),pkh(:),pkv(:),nlv(:),nn_dist(:)
 logical :: valid
 
 ! Set name
@@ -3833,8 +3797,8 @@ do il0=1,geom%nl0
    rh_max(il0) = zss_maxval(nicas_blk%rh(:,il0),mask=mpl%msv%isnot(nicas_blk%rh(:,il0)))
    rv_max(il0) = zss_maxval(nicas_blk%rv(:,il0),mask=mpl%msv%isnot(nicas_blk%rv(:,il0)))
 end do
-call mpl%f_comm%allreduce(rh_max,rh_max_tot,fckit_mpi_max())
-call mpl%f_comm%allreduce(rv_max,rv_max_tot,fckit_mpi_max())
+call mpl%f_comm%allreduce(rh_max,fckit_mpi_max())
+call mpl%f_comm%allreduce(rv_max,fckit_mpi_max())
 
 ! Find smallest possible vertical distance
 do il1=1,nicas_blk%nl1
@@ -3855,8 +3819,8 @@ end do
 write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distances: '
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
-!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_th,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12,H33), &
-!$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd,Hcoef,pkh,pkv,nlv)
+!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_th,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12), &
+!$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd,pkh,pkv,nlv)
 do isb=1,nicas_blk%nsb
    ! Indices
    isu = nicas_blk%sb_to_su(isb)
@@ -3871,7 +3835,6 @@ do isb=1,nicas_blk%nsb
       ! Allocation
       allocate(hnd(nicas_blk%hor(jl1)%nc1u))
       allocate(vnd(nicas_blk%hor(jl1)%nc1u))
-      allocate(Hcoef(nicas_blk%hor(jl1)%nc1u))
       allocate(pkh(nicas_blk%hor(jl1)%nc1u))
       allocate(pkv(nicas_blk%hor(jl1)%nc1u))
       allocate(nlv(nicas_blk%hor(jl1)%nc1u))
@@ -3879,7 +3842,6 @@ do isb=1,nicas_blk%nsb
       ! Initialization
       hnd = mpl%msv%valr
       vnd = mpl%msv%valr
-      Hcoef = mpl%msv%valr
       pkh = mpl%msv%valr
       pkv = mpl%msv%valr
       nlv = mpl%msv%valr
@@ -3887,10 +3849,10 @@ do isb=1,nicas_blk%nsb
       ! Vertical radius / research radius
       if (nicas_blk%anisotropic) then
          rv_th = sqrt(half*(rv_max(il0)**2+rv_max(jl0))**2)
-         rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rh_max_tot(jl0)**2))
+         rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rh_max(jl0)**2))
       else
          rv_th = half*(rv_max(il0)+rv_max(jl0))
-         rr = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)+rh_max_tot(jl0))
+         rr = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)+rh_max(jl0))
       end if
 
       if (infeq(distv_min(il1,jl1),rv_th)) then
@@ -3930,14 +3892,6 @@ do isb=1,nicas_blk%nsb
                   H22 = half*(nicas_blk%hor(il1)%H22_c1u(ic1u)+nicas_blk%hor(jl1)%H22_c1u(jc1u))
                   H12 = half*(nicas_blk%hor(il1)%H12_c1u(ic1u)+nicas_blk%hor(jl1)%H12_c1u(jc1u))
                   hnd(jc1u) = sqrt(H11*dx**2+H22*dy**2+two*H12*dx*dy)
-                  if (nicas_blk%horizontal) then
-                     if (il0/=jl0) vnd(jc1u) = huge_real
-                  else
-                     dz = nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u)
-                     H33 = half*(nicas_blk%hor(il1)%H33_c1u(ic1u)+nicas_blk%hor(jl1)%H33_c1u(jc1u))
-                     vnd(jc1u) = H33*abs(dz)
-                  end if
-                  Hcoef(jc1u) = sqrt(nicas_blk%hor(il1)%Hcoef_c1u(ic1u)*nicas_blk%hor(jl1)%Hcoef_c1u(jc1u))
                else
                   rh = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)+nicas_blk%hor(jl1)%rh_c1u(jc1u))
                   if (rh>zero) then
@@ -3947,20 +3901,19 @@ do isb=1,nicas_blk%nsb
                   else
                      hnd(jc1u) = zero
                   end if
-                  if (nicas_blk%horizontal) then
-                     if (il0/=jl0) vnd(jc1u) = huge_real
+               end if
+               if (nicas_blk%horizontal) then
+                  if (il0/=jl0) vnd(jc1u) = huge_real
+               else
+                  distv = abs(nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))
+                  rv = half*(nicas_blk%hor(il1)%rv_c1u(ic1u)+nicas_blk%hor(jl1)%rv_c1u(jc1u))
+                  if (rv>zero) then
+                     vnd(jc1u) = distv/rv
+                  elseif (distv>zero) then
+                     vnd(jc1u) = huge_real
                   else
-                     distv = abs(nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))
-                     rv = half*(nicas_blk%hor(il1)%rv_c1u(ic1u)+nicas_blk%hor(jl1)%rv_c1u(jc1u))
-                     if (rv>zero) then
-                        vnd(jc1u) = distv/rv
-                     elseif (distv>zero) then
-                        vnd(jc1u) = huge_real
-                     else
-                        vnd(jc1u) = zero
-                     end if
+                     vnd(jc1u) = zero
                   end if
-                  Hcoef(jc1u) = one
                end if
                pkh(jc1u) = half*(nicas_blk%hor(il1)%pkh_c1u(ic1u)+nicas_blk%hor(jl1)%pkh_c1u(jc1u))
                if (nicas_blk%horizontal) then
@@ -3978,7 +3931,6 @@ do isb=1,nicas_blk%nsb
              if (supeq(hnd(jc1u),one).or.supeq(vnd(jc1u),one)) then
                 hnd(jc1u) = mpl%msv%valr
                 vnd(jc1u) = mpl%msv%valr
-                Hcoef(jc1u) = mpl%msv%valr
                 pkh(jc1u) = mpl%msv%valr
                 pkv(jc1u) = mpl%msv%valr
                 nlv(jc1u) = mpl%msv%valr
@@ -3991,12 +3943,11 @@ do isb=1,nicas_blk%nsb
       end if
 
       ! Pack data
-      call nicas_blk%ball(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,hnd,vnd,Hcoef,pkh,pkv,nlv)
+      call nicas_blk%ball(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,hnd,vnd,pkh,pkv,nlv)
 
       ! Release memory
       deallocate(hnd)
       deallocate(vnd)
-      deallocate(Hcoef)
       deallocate(pkh)
       deallocate(pkv)
       deallocate(nlv)
@@ -4071,9 +4022,6 @@ do isb=1,nicas_blk%nsb
          ! Vertical component
          if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ball(jl1,isb)%pkv(jbd), &
  & nicas_blk%ball(jl1,isb)%nlv(jbd))
-
-         ! Coefficient
-         if (nicas_blk%anisotropic) S = S*nicas_blk%ball(jl1,isb)%Hcoef(jbd)
 
          if (sup(abs(S),S_inf)) then
             if (nicas_blk%smoother) then
@@ -4547,7 +4495,7 @@ real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
 
 ! Local variables
 integer :: il0
-real(kind_real) :: sums(geom%nl0),sums_tot(geom%nl0),sume(geom%nl0),sume_tot(geom%nl0)
+real(kind_real) :: sums(geom%nl0),sume(geom%nl0)
 real(kind_real) :: alpha_a(nicas_blk%nsa),alpha_b(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
 
 ! Set name
@@ -4561,7 +4509,7 @@ if (nicas_blk%smoother) then
    do il0=1,geom%nl0
       sums(il0) = zss_sum(fld(:,il0),mask=geom%gmask_c0a(:,il0))
    end do
-   call mpl%f_comm%allreduce(sums,sums_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(sums,fckit_mpi_sum())
 
    ! Adjoint interpolation
    call nicas_blk%apply_interp_ad(mpl,geom,fld,alpha_b)
@@ -4588,9 +4536,9 @@ if (nicas_blk%smoother) then
    do il0=1,geom%nl0
       sume(il0) = zss_sum(fld(:,il0),mask=geom%gmask_c0a(:,il0))
    end do
-   call mpl%f_comm%allreduce(sume,sume_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(sume,fckit_mpi_sum())
    do il0=1,geom%nl0
-      fld(:,il0) = fld(:,il0)*sums_tot(il0)/sume_tot(il0)
+      fld(:,il0) = fld(:,il0)*sums(il0)/sume(il0)
    end do
 else
    ! Apply square-root adjoint
@@ -5267,7 +5215,7 @@ type(bpar_type),intent(in) :: bpar            !< Block parameters
 
 ! Local variables
 integer :: il0,idir,iv,jv
-real(kind_real) :: val,valmin_tot,valmax_tot
+real(kind_real) :: val,valmin,valmax
 real(kind_real) :: fld(geom%nc0a,geom%nl0)
 
 ! Set name
@@ -5310,10 +5258,12 @@ end do
 write(mpl%info,'(a7,a)') '','Min - max: '
 if (nicas_blk%verbosity) call mpl%flush
 do il0=1,geom%nl0
-   call mpl%f_comm%allreduce(zss_minval(fld(:,il0),mask=geom%gmask_c0a(:,il0)),valmin_tot,fckit_mpi_min())
-   call mpl%f_comm%allreduce(zss_maxval(fld(:,il0),mask=geom%gmask_c0a(:,il0)),valmax_tot,fckit_mpi_max())
-   if (mpl%msv%isnot(valmin_tot).or.mpl%msv%isnot(valmax_tot)) then
-      write(mpl%info,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',nam%levs(il0),': ',valmin_tot,' - ',valmax_tot
+   valmin = zss_minval(fld(:,il0),mask=geom%gmask_c0a(:,il0))
+   valmax = zss_maxval(fld(:,il0),mask=geom%gmask_c0a(:,il0))
+   call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
+   call mpl%f_comm%allreduce(valmax,fckit_mpi_max())
+   if (mpl%msv%isnot(valmin).or.mpl%msv%isnot(valmax)) then
+      write(mpl%info,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',nam%levs(il0),': ',valmin,' - ',valmax
       if (nicas_blk%verbosity) call mpl%flush
    else
       write(mpl%info,'(a10,a,i3,a)') '','Level ',nam%levs(il0),': missing values'

@@ -158,7 +158,7 @@ do iv=1,nam%nv
       case ('diag_all')
          bpar%diag_block(ib) = .true.
          bpar%avg_block(ib) = .false.
-         bpar%B_block(ib) = .false.
+         bpar%B_block(ib) = (iv==jv)
          bpar%nicas_block(ib) = .false.
       case ('common')
          bpar%diag_block(ib) = (iv==jv)

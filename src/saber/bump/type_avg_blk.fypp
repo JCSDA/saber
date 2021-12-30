@@ -360,8 +360,6 @@ type(mom_blk_type),intent(in) :: mom_blk     !< Moments
 integer :: iv,jv,il0,jl0,jl0r,jc3,jc4,isub,jsub,ic1a,nc1a,nc1a_cor,n1,n2,npack,offset
 real(kind_real) :: m2_1,m2_2
 real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
-real(kind_real) :: min_m11_tot,max_m11_tot,min_m11m11_tot,max_m11m11_tot,min_m2m2_tot,max_m2m2_tot,min_m22_tot,max_m22_tot
-real(kind_real) :: min_cor_tot,max_cor_tot
 real(kind_real) :: norm,den,gen_kurt
 real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
 real(kind_real),allocatable :: list1(:),list2(:)
@@ -526,30 +524,30 @@ do il0=1,geom%nl0
                end if
 
                ! Gather min/max values
-               call mpl%f_comm%allreduce(min_m11,min_m11_tot,fckit_mpi_min())
-               call mpl%f_comm%allreduce(max_m11,max_m11_tot,fckit_mpi_max())
-               call mpl%f_comm%allreduce(min_m11m11,min_m11m11_tot,fckit_mpi_min())
-               call mpl%f_comm%allreduce(max_m11m11,max_m11m11_tot,fckit_mpi_max())
-               call mpl%f_comm%allreduce(min_m2m2,min_m2m2_tot,fckit_mpi_min())
-               call mpl%f_comm%allreduce(max_m2m2,max_m2m2_tot,fckit_mpi_max())
-               call mpl%f_comm%allreduce(min_m22,min_m22_tot,fckit_mpi_min())
-               call mpl%f_comm%allreduce(max_m22,max_m22_tot,fckit_mpi_max())
-               call mpl%f_comm%allreduce(min_cor,min_cor_tot,fckit_mpi_min())
-               call mpl%f_comm%allreduce(max_cor,max_cor_tot,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_m11,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m11,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_m11m11,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m11m11,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_m2m2,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m2m2,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_m22,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m22,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_cor,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_cor,fckit_mpi_max())
 
                ! Compute histograms on each task
-               call histogram(mpl,samp%nc1a,list_m11,nam%avg_nbins,min_m11_tot,max_m11_tot,avg_blk%m11_bins(:,jc3,jc4,jl0r,il0), &
+               call histogram(mpl,samp%nc1a,list_m11,nam%avg_nbins,min_m11,max_m11,avg_blk%m11_bins(:,jc3,jc4,jl0r,il0), &
  & avg_blk%m11_hist(:,jc3,jc4,jl0r,il0))
                list2 = reshape(list_m11m11,(/n2/))
-               call histogram(mpl,n2,list2,nam%avg_nbins,min_m11m11_tot,max_m11m11_tot,avg_blk%m11m11_bins(:,jc3,jc4,jl0r,il0), &
+               call histogram(mpl,n2,list2,nam%avg_nbins,min_m11m11,max_m11m11,avg_blk%m11m11_bins(:,jc3,jc4,jl0r,il0), &
  & avg_blk%m11m11_hist(:,jc3,jc4,jl0r,il0))
                list2 = reshape(list_m2m2,(/n2/))
-               call histogram(mpl,n2,list2,nam%avg_nbins,min_m2m2_tot,max_m2m2_tot,avg_blk%m2m2_bins(:,jc3,jc4,jl0r,il0), &
+               call histogram(mpl,n2,list2,nam%avg_nbins,min_m2m2,max_m2m2,avg_blk%m2m2_bins(:,jc3,jc4,jl0r,il0), &
  & avg_blk%m2m2_hist(:,jc3,jc4,jl0r,il0))
                list1 = reshape(list_m22,(/n1/))
-               call histogram(mpl,n1,list1,nam%avg_nbins,min_m22_tot,max_m22_tot,avg_blk%m22_bins(:,jc3,jc4,jl0r,il0), &
+               call histogram(mpl,n1,list1,nam%avg_nbins,min_m22,max_m22,avg_blk%m22_bins(:,jc3,jc4,jl0r,il0), &
  & avg_blk%m22_hist(:,jc3,jc4,jl0r,il0))
-               call histogram(mpl,samp%nc1a,list_cor,nam%avg_nbins,min_cor_tot,max_cor_tot,avg_blk%cor_bins(:,jc3,jc4,jl0r,il0), &
+               call histogram(mpl,samp%nc1a,list_cor,nam%avg_nbins,min_cor,max_cor,avg_blk%cor_bins(:,jc3,jc4,jl0r,il0), &
  & avg_blk%cor_hist(:,jc3,jc4,jl0r,il0))
 
                ! Release memory

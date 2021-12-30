@@ -357,9 +357,10 @@ type(bpar_type),intent(in) :: bpar    !< Block parameters
 type(ens_type), intent(inout) :: ens  !< Ensemble
 
 ! Local variables
-integer :: idir,isub,ie_sub,ie,ic0a,il0,iv
+integer :: idir,isub,ie_sub,ie,ic0a,il0,iv,jc0a
+real(kind_real) :: dir_norm
 real(kind_real) :: fac_norm_cov,wgt(ens%ne)
-real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_c0a(geom%nc0a,geom%nl0,nam%nv),m2(geom%nc0a,geom%nl0,nam%nv)
+real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv),fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
 @:set_name(mom_compute)
@@ -371,41 +372,42 @@ real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_c0a(geom%nc0a,geom%nl0,nam
 call ens%compute_moments(mpl,nam,geom)
 call ens%get_c0(mpl,nam,geom,'m2',0,m2)
 
-! Generate dirac field
-fld = zero
-do idir=1,geom%ndir
-   if ((geom%iprocdir(idir)==mpl%myproc).and.(m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))>zero)) &
- &  fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one/sqrt(m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)))
-end do
-
-! First loop
-do isub=1,ens%nsub
-   do ie_sub=1,ens%ne/ens%nsub
-      ! Full ensemble index
-      ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-
-      ! Get perturbation on subset Sc0
-      call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
-
-      ! Compute weight
-      call mpl%dot_prod(fld_c0a,fld,wgt(ie))
-   end do
-end do
-
 ! Initialize output field
 mom%ens_dir = zero
 
-! Second loop
-do isub=1,ens%nsub
-   do ie_sub=1,ens%ne/ens%nsub
-      ! Full ensemble index
-      ie = ie_sub+(isub-1)*ens%ne/ens%nsub
+do idir=1,geom%ndir
+   ! Normalized dirac value
+   dir_norm = one/sqrt(m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)))
 
-      ! Get perturbation on subset Sc0
-      call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
+   ! First loop on ensemble member
+   do isub=1,ens%nsub
+      do ie_sub=1,ens%ne/ens%nsub
+         ! Full ensemble index
+         ie = ie_sub+(isub-1)*ens%ne/ens%nsub
 
-      ! Compute weight
-      mom%ens_dir = mom%ens_dir+wgt(ie)*fld_c0a
+         ! Get perturbation on subset Sc0
+         call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
+
+         ! Get weight
+         wgt(ie) = dir_norm*fld_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))
+      end do
+   end do
+
+   ! Second loop on ensemble member
+   do isub=1,ens%nsub
+      do ie_sub=1,ens%ne/ens%nsub
+         ! Full ensemble index
+         ie = ie_sub+(isub-1)*ens%ne/ens%nsub
+
+         ! Get perturbation on subset Sc0
+         call ens%get_c0(mpl,nam,geom,'pert',ie,fld_c0a)
+
+         ! Weighted perturbation
+         do jc0a=1,geom%nc0a
+            if (geom%dirac_mask(jc0a,idir)) mom%ens_dir(jc0a,:,geom%ivdir(idir)) = mom%ens_dir(jc0a,:,geom%ivdir(idir)) &
+ & +wgt(ie)*fld_c0a(jc0a,:,geom%ivdir(idir))
+         end do
+      end do
    end do
 end do
 

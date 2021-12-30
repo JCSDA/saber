@@ -336,7 +336,7 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 
 ! Local variables
 integer :: iv
-real(kind_real) :: norm,norm_tot
+real(kind_real) :: norm
 real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 type(atlas_field) :: afield
 
@@ -365,10 +365,10 @@ do iv=1,size(fieldset%variables)
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-   call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
 
    ! Print norm
-   write(mpl%info,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm_tot
+   write(mpl%info,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm
    call mpl%flush
 
    ! Release pointer

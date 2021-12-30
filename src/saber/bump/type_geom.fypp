@@ -143,6 +143,7 @@ type geom_type
    integer,allocatable :: ic0adir(:)              !< Dirac gridpoint
    integer,allocatable :: il0dir(:)               !< Dirac level
    integer,allocatable :: ivdir(:)                !< Dirac variable
+   logical,allocatable :: dirac_mask(:,:)         !< Dirac patches mask
 
    ! I/O
    type(io_type) :: io                             !< I/O
@@ -269,6 +270,7 @@ if (allocated(geom%iprocdir)) deallocate(geom%iprocdir)
 if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
 if (allocated(geom%il0dir)) deallocate(geom%il0dir)
 if (allocated(geom%ivdir)) deallocate(geom%ivdir)
+if (allocated(geom%dirac_mask)) deallocate(geom%dirac_mask)
 if (allocated(geom%smoother)) then
    do il0=1,size(geom%smoother)
       call geom%smoother(il0)%dealloc
@@ -607,10 +609,14 @@ do imga=1,geom%nmga
 end do
 
 ! Get min/max lon/lat
-call mpl%f_comm%allreduce(zss_minval(geom%lon_mga),geom%lon_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(zss_maxval(geom%lon_mga),geom%lon_max,fckit_mpi_max())
-call mpl%f_comm%allreduce(zss_minval(geom%lat_mga),geom%lat_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(zss_maxval(geom%lat_mga),geom%lat_max,fckit_mpi_max())
+geom%lon_min = zss_minval(geom%lon_mga)
+geom%lon_max = zss_maxval(geom%lon_mga)
+geom%lat_min = zss_minval(geom%lat_mga)
+geom%lat_max = zss_maxval(geom%lat_mga)
+call mpl%f_comm%allreduce(geom%lon_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(geom%lon_max,fckit_mpi_max())
+call mpl%f_comm%allreduce(geom%lat_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(geom%lat_max,fckit_mpi_max())
 geom%sin_lat_min = sin(geom%lat_min)
 geom%sin_lat_max = sin(geom%lat_max)
 
@@ -833,12 +839,10 @@ class(geom_type),intent(inout) :: geom !< Geometry
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 
 ! Local variables
-integer :: nmgu,iproc,img,jmg,imga,imgu,imgu_s,imgu_e,imgu_min,ic0a,jc0a,ic0u,ic0,diff_grid,diff_grid_tot,il0,nr,nra,ir,ira,notempty
-integer :: nc0_gmask(0:geom%nl0)
+integer :: nmgu,iproc,img,jmg,imga,imgu,imgu_s,imgu_e,imgu_min,ic0a,jc0a,ic0u,ic0,diff_grid,il0,nr,nra,ir,ira,notempty
 integer,allocatable :: mgu_to_mg(:),mgu_to_proc(:),redundant(:),order(:),mga_to_c0(:),mga_to_mgu(:),proc_to_nra(:)
-integer,allocatable :: c0a_to_mg(:),ra_to_r(:),r_to_mg(:),r_to_mg_tot(:),r_to_c0(:),r_to_c0_tot(:)
+integer,allocatable :: c0a_to_mg(:),ra_to_r(:),r_to_mg(:),r_to_c0(:)
 real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se
-real(kind_real) :: area_max_c0a,area_ver_c0a(geom%nl0),vunit_hor_c0a(geom%nl0),norm_c0a(geom%nl0)
 real(kind_real) :: norm_c0u,norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
 real(kind_real),allocatable :: lon_mgu(:),lat_mgu(:),area_c0u(:)
 logical :: diff,chain
@@ -981,8 +985,8 @@ if (geom%nc0a==geom%nmga) then
 else
    diff_grid = 1
 end if
-call mpl%f_comm%allreduce(diff_grid,diff_grid_tot,fckit_mpi_sum())
-geom%same_grid = (diff_grid_tot==0)
+call mpl%f_comm%allreduce(diff_grid,fckit_mpi_sum())
+geom%same_grid = (diff_grid==0)
 
 ! Communication
 call mpl%f_comm%allgather(geom%nc0a,geom%proc_to_nc0a)
@@ -1080,9 +1084,7 @@ else
    ! Allocation
    allocate(ra_to_r(nra))
    allocate(r_to_mg(nr))
-   allocate(r_to_mg_tot(nr))
    allocate(r_to_c0(nr))
-   allocate(r_to_c0_tot(nr))
    allocate(mga_to_c0(geom%nmga))
 
    ! Conversion
@@ -1107,13 +1109,13 @@ else
    end do
 
    ! Communication
-   call mpl%f_comm%allreduce(r_to_mg,r_to_mg_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(r_to_mg,fckit_mpi_sum())
 
    ! Find Sc0 point for each redundant point
    r_to_c0 = 0
    ic0a = 0
    do ir=1,nr
-      img = r_to_mg_tot(ir)
+      img = r_to_mg(ir)
       iproc = geom%mg_to_proc(img)
       if (iproc==mpl%myproc) then
          jc0a = 1
@@ -1129,7 +1131,7 @@ else
    end do
 
    ! Communication
-   call mpl%f_comm%allreduce(r_to_c0,r_to_c0_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(r_to_c0,fckit_mpi_sum())
 
    ! Conversion
    ic0a = 0
@@ -1144,7 +1146,7 @@ else
          ! Redundant point
          ira = ira+1
          ir = ra_to_r(ira)
-         ic0 = r_to_c0_tot(ir)
+         ic0 = r_to_c0(ir)
       end if
       mga_to_c0(imga) = ic0
    end do
@@ -1166,9 +1168,7 @@ else
    deallocate(proc_to_nra)
    deallocate(ra_to_r)
    deallocate(r_to_mg)
-   deallocate(r_to_mg_tot)
    deallocate(r_to_c0)
-   deallocate(r_to_c0_tot)
    deallocate(mga_to_c0)
    deallocate(mga_to_mgu)
 end if
@@ -1182,30 +1182,30 @@ deallocate(geom%smask_mga)
 
 ! Related fields
 if (geom%nc0a>0) geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
-nc0_gmask(0) = zss_count(geom%gmask_hor_c0a)
+geom%nc0_gmask(0) = zss_count(geom%gmask_hor_c0a)
 do il0=1,geom%nl0
-   nc0_gmask(il0) = zss_count(geom%gmask_c0a(:,il0))
+   geom%nc0_gmask(il0) = zss_count(geom%gmask_c0a(:,il0))
 end do
-call mpl%f_comm%allreduce(nc0_gmask,geom%nc0_gmask,fckit_mpi_sum())
+call mpl%f_comm%allreduce(geom%nc0_gmask,fckit_mpi_sum())
 if (zss_count(geom%gmask_hor_c0a)>0) then
-   area_max_c0a = zss_sum(geom%area_c0a,mask=geom%gmask_hor_c0a)
+   geom%area_max_c0 = zss_sum(geom%area_c0a,mask=geom%gmask_hor_c0a)
 else
-   area_max_c0a = zero
+   geom%area_max_c0 = zero
 end if
 do il0=1,geom%nl0
-   norm_c0a(il0) = zss_count(geom%gmask_c0a(:,il0))
-   if (norm_c0a(il0)>0) then
-      area_ver_c0a(il0) = zss_sum(geom%area_c0a,mask=geom%gmask_c0a(:,il0))
-      vunit_hor_c0a(il0) = zss_sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
+   norm_c0(il0) = zss_count(geom%gmask_c0a(:,il0))
+   if (norm_c0(il0)>0) then
+      geom%area_ver_c0(il0) = zss_sum(geom%area_c0a,mask=geom%gmask_c0a(:,il0))
+      vunit_hor_c0(il0) = zss_sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
    else
-      area_ver_c0a(il0) = zero
-      vunit_hor_c0a(il0) = zero
+      geom%area_ver_c0(il0) = zero
+      vunit_hor_c0(il0) = zero
    end if
 end do
-call mpl%f_comm%allreduce(norm_c0a,norm_c0,fckit_mpi_sum())
-call mpl%f_comm%allreduce(area_max_c0a,geom%area_max_c0,fckit_mpi_sum())
-call mpl%f_comm%allreduce(area_ver_c0a,geom%area_ver_c0,fckit_mpi_sum())
-call mpl%f_comm%allreduce(vunit_hor_c0a,vunit_hor_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(norm_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(geom%area_max_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(geom%area_ver_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(vunit_hor_c0,fckit_mpi_sum())
 do il0=1,geom%nl0
    if (norm_c0(il0)>0) then
       geom%vunitavg(il0) = vunit_hor_c0(il0)/real(norm_c0(il0),kind_real)
@@ -1587,7 +1587,7 @@ integer,intent(out) :: ic0a(n)       !< Local indices
 logical,intent(out) :: gmask(n)      !< Local mask
 
 ! Local variables
-integer :: i,nn_index(n),ic0,nn_proc(n),proc_to_nn_proc(n,mpl%nproc),jproc,ic0u,ic0a_tmp(n),imask_tmp(n),imask(n)
+integer :: i,nn_index(n),ic0,nn_proc(n),proc_to_nn_proc(n,mpl%nproc),jproc,ic0u,imask(n)
 real(kind_real) :: nn_dist(n),proc_to_nn_dist(n,mpl%nproc),distmin
 logical :: valid(n)
 
@@ -1618,8 +1618,8 @@ call mpl%allgather(nn_proc,proc_to_nn_proc)
 
 ! Initialization
 iproc = mpl%msv%vali
-ic0a_tmp = 0
-imask_tmp = 0
+ic0a = 0
+imask = 0
 
 do i=1,n
    if (mpl%msv%isanynot(proc_to_nn_proc(i,:))) then
@@ -1636,21 +1636,21 @@ do i=1,n
 
          ! Local index
          ic0u = nn_index(i)
-         ic0a_tmp(i) = geom%c0u_to_c0a(ic0u)
+         ic0a(i) = geom%c0u_to_c0a(ic0u)
 
          ! Check mask
          if (il0(i)==0) then
-            call convert_l2i(geom%gmask_hor_c0a(ic0a_tmp(i)),imask_tmp(i))
+            call convert_l2i(geom%gmask_hor_c0a(ic0a(i)),imask(i))
          else
-            call convert_l2i(geom%gmask_c0a(ic0a_tmp(i),il0(i)),imask_tmp(i))
+            call convert_l2i(geom%gmask_c0a(ic0a(i),il0(i)),imask(i))
          end if
       end if
    end if
 end do
 
 ! Communication
-call mpl%f_comm%allreduce(ic0a_tmp,ic0a,fckit_mpi_sum())
-call mpl%f_comm%allreduce(imask_tmp,imask,fckit_mpi_sum())
+call mpl%f_comm%allreduce(ic0a,fckit_mpi_sum())
+call mpl%f_comm%allreduce(imask,fckit_mpi_sum())
 
 ! Final values
 do i=1,n
@@ -1677,7 +1677,8 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
-integer :: idir,il0,il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir)
+integer :: idir,il0,jc0a,il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir)
+real(kind_real) :: disth
 logical :: valid(nam%ndir)
 
 ! Set name
@@ -1689,17 +1690,6 @@ logical :: valid(nam%ndir)
 if (nam%check_dirac.and.(nam%ndir>0)) then
    write(mpl%info,'(a7,a)') '','Setup Dirac parameters'
    call mpl%flush
-
-   ! Allocation
-   allocate(geom%londir(nam%ndir))
-   allocate(geom%latdir(nam%ndir))
-   allocate(geom%iprocdir(nam%ndir))
-   allocate(geom%ic0adir(nam%ndir))
-   allocate(geom%il0dir(nam%ndir))
-   allocate(geom%ivdir(nam%ndir))
-
-   ! Initialization
-   geom%ndir = 0
 
    ! Find level
    do idir=1,nam%ndir
@@ -1713,18 +1703,55 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    ! Index from lon/lat/level
    call geom%index_from_lonlat(mpl,nam%ndir,nam%londir,nam%latdir,il0dir,iprocdir,ic0adir,valid)
 
+   ! Allocation
+   geom%ndir = count(valid)
+   allocate(geom%londir(geom%ndir))
+   allocate(geom%latdir(geom%ndir))
+   allocate(geom%iprocdir(geom%ndir))
+   allocate(geom%ic0adir(geom%ndir))
+   allocate(geom%il0dir(geom%ndir))
+   allocate(geom%ivdir(geom%ndir))
+
    ! Add valid dirac points
+   geom%ndir = 0
    do idir=1,nam%ndir
       if (valid(idir)) then
          geom%ndir = geom%ndir+1
-         geom%londir(geom%ndir) = nam%londir(idir)
-         geom%latdir(geom%ndir) = nam%latdir(idir)
          geom%iprocdir(geom%ndir) = iprocdir(idir)
          geom%ic0adir(geom%ndir) = ic0adir(idir)
          geom%il0dir(geom%ndir) = il0dir(idir)
          geom%ivdir(geom%ndir) = nam%ivdir(idir)
       end if
    end do
+
+   ! Get exact coordinates
+   do idir=1,geom%ndir
+      if (geom%iprocdir(idir)==mpl%myproc) then
+         geom%londir(idir) = geom%lon_c0a(geom%ic0adir(idir))
+         geom%latdir(idir) = geom%lat_c0a(geom%ic0adir(idir))
+      else
+         geom%londir(idir) = zero
+         geom%latdir(idir) = zero
+      end if
+   end do
+   call mpl%f_comm%allreduce(geom%londir,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(geom%latdir,fckit_mpi_sum())
+
+   ! Define Dirac mask for separate patches
+   if (nam%new_hdiag) then
+      ! Allocation
+      allocate(geom%dirac_mask(geom%nc0a,geom%ndir))
+
+      do idir=1,geom%ndir
+         do jc0a=1,geom%nc0a
+            ! Compute distance to Dirac point
+            call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(idir),geom%latdir(idir),disth)
+
+            ! Set mask
+            geom%dirac_mask(jc0a,idir) = (disth<0.15)
+         end do
+      end do
+   end if
 end if
 
 ! Probe out
@@ -2264,9 +2291,9 @@ integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global
 ! Local variables
 integer :: ncxa_eff,ncx_eff,offset,isa,icxa,is,icx,nfac,nssa,nss,nx,ny,issa,n,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode
 integer :: s_to_cxa(ns),nn_index(1)
-integer,allocatable :: proc_to_ncxa_eff(:),proc_to_icxmin(:),s_to_cx_tmp(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
+integer,allocatable :: proc_to_ncxa_eff(:),proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
-real(kind_real) :: nss_real,lat_mid,dx,dy,alpha,lonlat(2),valmin,valmin_tot,xmin,ymin,zmin,chmin,dist
+real(kind_real) :: nss_real,lat_mid,dx,dy,alpha,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
 real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 logical :: retry,valid
@@ -2299,7 +2326,6 @@ elseif (ncx_eff==ns) then
 
    ! Allocation
    allocate(proc_to_ncxa_eff(mpl%nproc))
-   allocate(s_to_cx_tmp(ns))
 
    ! Communication
    call mpl%f_comm%allgather(ncxa_eff,proc_to_ncxa_eff)
@@ -2311,7 +2337,7 @@ elseif (ncx_eff==ns) then
       offset = sum(proc_to_ncxa_eff(1:mpl%myproc-1))
    end if
    s_to_cxa = mpl%msv%vali
-   s_to_cx_tmp = 0
+   s_to_cx = 0
 
    ! Use all valid points
    isa = 0
@@ -2321,14 +2347,13 @@ elseif (ncx_eff==ns) then
          is = offset+isa
          icx = cxa_to_cx(icxa)
          s_to_cxa(is) = icxa
-         s_to_cx_tmp(is) = icx
+         s_to_cx(is) = icx
       end if
    end do
-   call mpl%f_comm%allreduce(s_to_cx_tmp,s_to_cx,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(s_to_cx,fckit_mpi_sum())
 
    ! Release memory
    deallocate(proc_to_ncxa_eff)
-   deallocate(s_to_cx_tmp)
 else
    ! Too many valid points: subsampling
 
@@ -2517,11 +2542,11 @@ else
 
    ! Find minimum distance globally
    valmin = zss_minval(potential)
-   call mpl%f_comm%allreduce(valmin,valmin_tot,fckit_mpi_min())
+   call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
 
    ! Check if minimum is indistinguishable
    do issa=1,nssa
-      indist_ssa(issa) = indist(potential(issa),valmin_tot)
+      indist_ssa(issa) = indist(potential(issa),valmin)
    end do
    nodemin = mpl%msv%vali
    xmin = mpl%msv%valr
@@ -2584,12 +2609,12 @@ else
       if (nssa>0) then
          if (any(lmask_ssa)) valmin = zss_minval(potential,mask=lmask_ssa)
       end if
-      call mpl%f_comm%allreduce(valmin,valmin_tot,fckit_mpi_min())
+      call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
 
       ! Check if minimum is indistinguishable
       indist_ssa = .false.
       do issa=1,nssa
-         if (lmask_ssa(issa)) indist_ssa(issa) = indist(potential(issa),valmin_tot)
+         if (lmask_ssa(issa)) indist_ssa(issa) = indist(potential(issa),valmin)
       end do
       nodemin = mpl%msv%vali
       xmin = mpl%msv%valr

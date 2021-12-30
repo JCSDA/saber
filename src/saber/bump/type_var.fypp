@@ -629,10 +629,8 @@ type(bpar_type),intent(in) :: bpar   !< Block parameters
 ! Local variables
 integer :: ib,iv,jv,il0,iter,ipass,ipass_min(geom%nl0)
 real(kind_real) :: P9,P20,P21,diff,diff_abs_min(geom%nl0)
-real(kind_real) :: m2uni(geom%nl0,nam%nv),m2uni_tot(geom%nl0,nam%nv),m2norm(geom%nl0),m2norm_tot(geom%nl0)
-real(kind_real) :: m2sq(geom%nl0),m2sq_tot(geom%nl0),m4(geom%nl0),m4_tot(geom%nl0),m2sqasy(geom%nl0)
-real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2prod_tot(geom%nl0)
-real(kind_real) :: m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
+real(kind_real) :: m2uni(geom%nl0,nam%nv),m2norm(geom%nl0),m2sq(geom%nl0),m4(geom%nl0),m2sqasy(geom%nl0)
+real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
 logical :: dichotomy(geom%nl0),convergence(geom%nl0)
 type(nicas_blk_type) :: nicas_blk
 
@@ -660,14 +658,14 @@ if ((nam%var_niter<=0).and.(nam%var_npass<=0)) then
    end do
 
    ! Communication
-   call mpl%f_comm%allreduce(m2uni,m2uni_tot,fckit_mpi_sum())
-   call mpl%f_comm%allreduce(m2norm,m2norm_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(m2uni,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(m2norm,fckit_mpi_sum())
 
    ! Averaged variance
    do iv=1,nam%nv
       do il0=1,geom%nl0
-         if (m2norm_tot(il0)>zero) then
-            var%m2flt(:,il0,iv) = m2uni_tot(il0,iv)/m2norm_tot(il0)
+         if (m2norm(il0)>zero) then
+            var%m2flt(:,il0,iv) = m2uni(il0,iv)/m2norm(il0)
          else
             var%m2flt(:,il0,iv) = zero
          end if
@@ -700,16 +698,16 @@ else
             if (mpl%msv%isanynot(var%m2(:,il0,iv))) m2sq(il0) = zss_sum(var%m2(:,il0,iv)**2,mask=geom%gmask_c0a(:,il0))
             if (mpl%msv%isanynot(var%m4(:,il0,iv))) m4(il0) = zss_sum(var%m4(:,il0,iv),mask=geom%gmask_c0a(:,il0))
          end do
-         call mpl%f_comm%allreduce(m2sq,m2sq_tot,fckit_mpi_sum())
-         call mpl%f_comm%allreduce(m4,m4_tot,fckit_mpi_sum())
+         call mpl%f_comm%allreduce(m2sq,fckit_mpi_sum())
+         call mpl%f_comm%allreduce(m4,fckit_mpi_sum())
 
          ! Asymptotic statistics
          if (nam%gau_approx) then
             ! Gaussian approximation
-            m2sqasy = P21*m2sq_tot
+            m2sqasy = P21*m2sq
          else
             ! General case
-            m2sqasy = P20*m2sq_tot+P9*m4_tot
+            m2sqasy = P20*m2sq+P9*m4
          end if
 
          ! Initialization
@@ -727,11 +725,11 @@ else
             do il0=1,geom%nl0
                m2prod(il0) = zss_sum(m2_ini(:,il0)**2,mask=geom%gmask_c0a(:,il0))
             end do
-            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
 
             ! Save results
             do il0=1,geom%nl0
-               diff = m2prod_tot(il0)-m2sqasy(il0)
+               diff = m2prod(il0)-m2sqasy(il0)
                diff_abs_min(il0) = abs(diff)
                var%m2flt(:,il0,iv) = m2(:,il0)
             end do
@@ -750,11 +748,11 @@ else
                do il0=1,geom%nl0
                   m2prod(il0) = zss_sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
                end do
-               call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+               call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
 
                ! Update support radius
                do il0=1,geom%nl0
-                  diff = m2prod_tot(il0)-m2sqasy(il0)
+                  diff = m2prod(il0)-m2sqasy(il0)
                   if ((abs(diff)<diff_abs_min(il0)).or.(nam%var_niter==1)) then
                      ! Copy best result
                      diff_abs_min(il0) = abs(diff)
@@ -793,7 +791,7 @@ else
             do il0=1,geom%nl0
                m2prod(il0) = zss_sum(var%m2flt(:,il0,iv)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
             end do
-            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
 
             ! Print results
             write(mpl%info,'(a13,a)') '','Optimal filtering length-scale:'
@@ -801,7 +799,7 @@ else
             do il0=1,geom%nl0
                if (m2sqasy(il0)>zero) then
                   write(mpl%info,'(a16,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm, &
- & ' km, rel. diff. = ',(m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
+ & ' km, rel. diff. = ',(m2prod(il0)-m2sqasy(il0))/m2sqasy(il0)
                   call mpl%flush
                end if
             end do
@@ -814,11 +812,11 @@ else
             do il0=1,geom%nl0
                m2prod(il0) = zss_sum(m2_ini(:,il0)**2,mask=geom%gmask_c0a(:,il0))
             end do
-            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
 
             ! Save results
             do il0=1,geom%nl0
-               diff = m2prod_tot(il0)-m2sqasy(il0)
+               diff = m2prod(il0)-m2sqasy(il0)
                diff_abs_min(il0) = abs(diff)
                ipass_min(il0) = 0
                var%m2flt(:,il0,iv) = m2(:,il0)
@@ -837,11 +835,11 @@ else
                do il0=1,geom%nl0
                   m2prod(il0) = zss_sum(m2(:,il0)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
                end do
-               call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+               call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
 
                ! Save results
                do il0=1,geom%nl0
-                  diff = m2prod_tot(il0)-m2sqasy(il0)
+                  diff = m2prod(il0)-m2sqasy(il0)
                   if (abs(diff)<diff_abs_min(il0)) then
                      diff_abs_min(il0) = abs(diff)
                      ipass_min(il0) = ipass
@@ -857,7 +855,7 @@ else
             do il0=1,geom%nl0
                m2prod(il0) = zss_sum(var%m2flt(:,il0,iv)*m2_ini(:,il0),mask=geom%gmask_c0a(:,il0))
             end do
-            call mpl%f_comm%allreduce(m2prod,m2prod_tot,fckit_mpi_sum())
+            call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
 
             ! Print results
             write(mpl%info,'(a13,a,i2,a)') '','Optimal number of passes (max. is ',nam%var_npass,')'
@@ -865,7 +863,7 @@ else
             do il0=1,geom%nl0
                if (m2sqasy(il0)>zero) then
                   write(mpl%info,'(a16,a,i3,a,i2,a,f10.2,a,e12.5)') '','Level ',il0,': ',ipass_min(il0),' x ',rhflt(il0)*reqkm, &
- & 'km, rel. diff. = ',(m2prod_tot(il0)-m2sqasy(il0))/m2sqasy(il0)
+ & 'km, rel. diff. = ',(m2prod(il0)-m2sqasy(il0))/m2sqasy(il0)
                   call mpl%flush
                end if
             end do

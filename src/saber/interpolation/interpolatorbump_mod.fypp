@@ -482,7 +482,8 @@ end if
 
 ! Compute scores
 if (nout_eff > 0) then
-   call mpl%f_comm%allreduce(real(bint%com%nhalo,kind_real),C_max,fckit_mpi_max())
+   C_max = real(bint%com%nhalo,kind_real)
+   call mpl%f_comm%allreduce(C_max,fckit_mpi_max())
    C_max = C_max/(three*real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
    N_max = real(maxval(proc_to_nouta_eff),kind_real)/(real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
 

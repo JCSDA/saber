@@ -22,7 +22,7 @@ def diag(testdata, test, mpi, omp, suffix, testfig):
    levels = np.linspace(-1.0, 1.0, 101)
 
    # Fit profiles list
-   diag_list = ["coef_ens","fit_rh","fit_D11","fit_D22","fit_D12","fit_pkh","fit_rv","fit_pkv","fit_nlv"]
+   diag_list = ["coef_ens_l0","coef_sta_l0","rh_l0","pkh_l0","D11_l0","D22_l0","D12_l0","rv_l0","pkv_l0","nlv_l0"]
 
    # Fit profiles
    for diag in diag_list:

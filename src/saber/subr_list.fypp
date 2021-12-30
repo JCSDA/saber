@@ -227,6 +227,8 @@
 #:set subr_list = subr_list + ["diag_dealloc"]
 #:set subr_list = subr_list + ["diag_filter_fit"]
 #:set subr_list = subr_list + ["diag_build_fit"]
+#:set subr_list = subr_list + ["diag_interp_fit"]
+#:set subr_list = subr_list + ["diag_dirac"]
 #:set subr_list = subr_list + ["diag_covariance"]
 #:set subr_list = subr_list + ["diag_correlation"]
 #:set subr_list = subr_list + ["diag_localization"]

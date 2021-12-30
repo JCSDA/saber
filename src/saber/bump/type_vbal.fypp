@@ -672,7 +672,7 @@ do iv=1,nam%nv
          ! Read variable
          call get_var(mpl,grpid,reg_c2a_id,reg_c2a)
 
-         ! Local values, first dimension
+         ! Halo extension
          call samp%com_c2_AB%ext(mpl,reg_c2a,reg_c2b)
 
          ! Horizontal index as last dimension
@@ -915,7 +915,7 @@ do iv=1,nam%nv
          ! Read variable
          call samp%io_c2%fld_read(mpl,grpid,reg_c2_id,reg_c2a)
 
-         ! Local values, first dimension
+         ! Halo extension
          call samp%com_c2_AB%ext(mpl,reg_c2a,reg_c2b)
 
          ! Horizontal index as first dimension
@@ -1532,7 +1532,7 @@ type(geom_type),intent(in) :: geom  !< Geometry
 type(bpar_type),intent(in) :: bpar  !< Block parameters
 
 ! Local variables
-real(kind_real) :: norm,norm_tot,mse,mse_tot
+real(kind_real) :: norm,mse
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
@@ -1544,15 +1544,15 @@ real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),fld_save(geom%nc0a,geom%nl0,na
 ! Generate random field
 call rng%rand(zero,one,fld_save)
 norm = zss_sum(fld_save**2)
-call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
+call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
 
 ! Direct / inverse
 fld = fld_save
 call vbal%apply(nam,geom,bpar,fld)
 call vbal%apply_inv(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
-call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse_tot/norm_tot
+call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse/norm
 call mpl%flush
 
 ! Inverse / direct
@@ -1560,8 +1560,8 @@ fld = fld_save
 call vbal%apply_inv(nam,geom,bpar,fld)
 call vbal%apply(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
-call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse_tot/norm_tot
+call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse/norm
 call mpl%flush
 
 ! Direct / inverse, adjoint
@@ -1569,8 +1569,8 @@ fld = fld_save
 call vbal%apply_ad(nam,geom,bpar,fld)
 call vbal%apply_inv_ad(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
-call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse_tot/norm_tot
+call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse/norm
 call mpl%flush
 
 ! Inverse / direct
@@ -1578,8 +1578,8 @@ fld = fld_save
 call vbal%apply_inv_ad(nam,geom,bpar,fld)
 call vbal%apply_ad(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
-call mpl%f_comm%allreduce(mse,mse_tot,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse_tot/norm_tot
+call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse/norm
 call mpl%flush
 
 ! Probe out
