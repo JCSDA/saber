@@ -1748,7 +1748,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
             call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(idir),geom%latdir(idir),disth)
 
             ! Set mask
-            geom%dirac_mask(jc0a,idir) = (disth<0.15)
+            geom%dirac_mask(jc0a,idir) = (disth<0.4)
          end do
       end do
    end if

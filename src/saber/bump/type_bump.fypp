@@ -140,12 +140,6 @@ real(kind_real) :: lmsvalr
 ! Probe in
 @:probe_in()
 
-! Initialize MPL
-call bump%mpl%init(comm)
-
-! Initialize fit parameters
-call fit_setup(bump%mpl)
-
 ! Initialize namelist
 call bump%nam%init(comm%size())
 
@@ -156,22 +150,20 @@ call bump%nam%from_conf(comm,grid)
 call bump%nam%from_conf(comm,conf)
 
 ! Set missing values
-bump%mpl%msv%vali = dmsvali
-bump%mpl%msv%valr = dmsvalr
-if (conf%has('msvali')) call conf%get_or_die('msvali',bump%mpl%msv%vali)
-if (conf%has('msvalr')) call conf%get_or_die('msvalr',bump%mpl%msv%valr)
+lmsvali = dmsvali
+lmsvalr = dmsvalr
+if (conf%has('msvali')) call conf%get_or_die('msvali',lmsvali)
+if (conf%has('msvalr')) call conf%get_or_die('msvalr',lmsvalr)
 
-! Initialize listing
-bump%mpl%lunit = bump%mpl%msv%vali
-if (conf%has('lunit')) call conf%get_or_die('lunit',bump%mpl%lunit)
-if ((.not.bump%mpl%main).and.bump%mpl%msv%is(bump%mpl%lunit)) bump%mpl%lunit = 10+bump%mpl%myproc
-bump%mpl%verbosity = bump%nam%verbosity
+! Set log unit
+llunit = lmsvali
+if (conf%has('lunit')) call conf%get_or_die('lunit',llunit)
 
 ! Setup BUMP
 if (present(universe_rad)) then
-   call bump%setup(afunctionspace,fieldset,universe_rad=universe_rad)
+   call bump%setup(comm,afunctionspace,fieldset,lunit=llunit,msvali=lmsvali,msvalr=lmsvalr,universe_rad=universe_rad)
 else
-   call bump%setup(afunctionspace,fieldset)
+   call bump%setup(comm,afunctionspace,fieldset,lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
 end if
 
 ! Probe out
@@ -227,14 +219,18 @@ end subroutine bump_create_deprecated_atlas
 ! Subroutine: bump_setup
 !> Setup
 !----------------------------------------------------------------------
-subroutine bump_setup(bump,afunctionspace,fieldset,universe_rad)
+subroutine bump_setup(bump,f_comm,afunctionspace,fieldset,lunit,msvali,msvalr,universe_rad)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump                  !< BUMP
+type(fckit_mpi_comm),intent(in) :: f_comm               !< FCKIT MPI communicator wrapper
 type(atlas_functionspace),intent(in) :: afunctionspace  !< ATLAS functionspace
 type(fieldset_type),intent(in),optional :: fieldset     !< Fieldset containing geometry elements
+integer,intent(in),optional :: lunit                    !< Listing unit
+integer,intent(in),optional :: msvali                   !< Missing value for integers
+real(kind_real),intent(in),optional :: msvalr           !< Missing value for reals
 type(fieldset_type),intent(in),optional :: universe_rad !< Fieldset optionally containing universe radius
 
 ! Local variables
@@ -251,6 +247,38 @@ type(atlas_field) :: afield
 
 ! Probe in
 @:probe_in()
+
+! Initialize MPL
+call bump%mpl%init(f_comm)
+
+! Set missing values
+bump%mpl%msv%vali = dmsvali
+bump%mpl%msv%valr = dmsvalr
+if (present(msvali)) bump%mpl%msv%vali = msvali
+if (present(msvalr)) bump%mpl%msv%valr = msvalr
+
+! Initialize listing
+bump%mpl%lunit = bump%mpl%msv%vali
+if (present(lunit)) bump%mpl%lunit = lunit
+if ((.not.bump%mpl%main).and.bump%mpl%msv%is(bump%mpl%lunit)) bump%mpl%lunit = 10+bump%mpl%myproc
+bump%mpl%verbosity = bump%nam%verbosity
+if (bump%nam%colorlog) then
+   bump%mpl%black = char(27)//'[0;0m'
+   bump%mpl%green = char(27)//'[0;32m'
+   bump%mpl%peach = char(27)//'[1;91m'
+   bump%mpl%aqua = char(27)//'[1;36m'
+   bump%mpl%purple = char(27)//'[1;35m'
+   bump%mpl%err = char(27)//'[0;37;41;1m'
+   bump%mpl%wng = char(27)//'[0;37;42;1m'
+else
+   bump%mpl%black = ' '
+   bump%mpl%green = ' '
+   bump%mpl%peach = ' '
+   bump%mpl%aqua = ' '
+   bump%mpl%purple = ' '
+   bump%mpl%err = ' '
+   bump%mpl%wng = ' '
+end if
 
 ! Header
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -379,6 +407,13 @@ write(bump%mpl%info,'(a)') '--- Initialize block parameters'
 call bump%mpl%flush
 call bump%bpar%alloc(bump%nam,bump%geom)
 call bump%bpar%init(bump%mpl,bump%nam,bump%geom)
+
+! Initialize fit functions
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- Initialize fit functions'
+call bump%mpl%flush
+call fit_setup(bump%mpl)
 
 if (bump%nam%ens1_ne>0) then
    ! Initialize ensemble 1
@@ -782,7 +817,7 @@ if (bump%nam%new_hdiag) then
    call bump%cmat%from_hdiag(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%hdiag)
 
    ! Release memory
-   call bump%hdiag%dealloc
+!   call bump%hdiag%dealloc
 end if
 
 if (bump%nam%forced_radii) then
@@ -1553,7 +1588,8 @@ fld_mga = bump%mpl%msv%valr
 
 ! Get parameter
 select case (trim(param))
-case ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm')
+case  ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm', &
+ & 'dirac_diag_ens','dirac_diag_cor')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do ib=1,bump%bpar%nb
@@ -1697,6 +1733,24 @@ case ('m4')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%var%m4)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%var%m4(:,:,iv),fld_mga)
+   found = .true.
+end select
+
+! Select parameter from mom
+select case (trim(param))
+case ('dirac_diag_mom')
+   iv = bump%bpar%b_to_v1(ib)
+   if (.not.allocated(bump%mom_1%ens_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%mom_1%ens_dir(:,:,iv),fld_mga)
+   found = .true.
+end select
+
+! Select parameter from hdiag
+select case (trim(param))
+case ('dirac_diag_cor')
+   iv = bump%bpar%b_to_v1(ib)
+   if (.not.allocated(bump%hdiag%cor_1%diag_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor_1%diag_dir(:,:,iv),fld_mga)
    found = .true.
 end select
 
@@ -2303,7 +2357,7 @@ call bump%ens1%dealloc
 call bump%ens1u%dealloc
 call bump%ens2%dealloc
 call bump%geom%partial_dealloc
-call bump%hdiag%dealloc
+!call bump%hdiag%dealloc
 call bump%mom1%dealloc
 call bump%mom2%dealloc
 call bump%nicas%partial_dealloc

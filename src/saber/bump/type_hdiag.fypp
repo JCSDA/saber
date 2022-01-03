@@ -194,7 +194,7 @@ do ildwv=0,nam%nldwv
 end do
 
 ! Write dirac test
-if (nam%check_dirac) then
+if (nam%check_dirac.and..false.) then
    ! Open file
    filename = trim(nam%prefix)//'_diag_dirac'
    ncid = create_file(mpl,filename)

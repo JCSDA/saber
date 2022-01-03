@@ -357,7 +357,7 @@ type(samp_type),intent(in) :: samp           !< Sampling
 type(mom_blk_type),intent(in) :: mom_blk     !< Moments
 
 ! Local variables
-integer :: iv,jv,il0,jl0,jl0r,jc3,jc4,isub,jsub,ic1a,nc1a,nc1a_cor,n1,n2,npack,offset
+integer :: iv,jv,il0,jl0,jl0r,jc3,jc4,isub,jsub,ic1a,nc1a,nc1a_cor,n1,n2,npack,offset,ntmp
 real(kind_real) :: m2_1,m2_2
 real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
 real(kind_real) :: norm,den,gen_kurt
@@ -522,7 +522,7 @@ do il0=1,geom%nl0
                   min_m11 = huge_real
                   max_cor = -huge_real
                end if
-
+if (mpl%main) print*, 'toto',9,il0,jl0,jc4,jc3,ic1a
                ! Gather min/max values
                call mpl%f_comm%allreduce(min_m11,fckit_mpi_min())
                call mpl%f_comm%allreduce(max_m11,fckit_mpi_max())
@@ -534,7 +534,7 @@ do il0=1,geom%nl0
                call mpl%f_comm%allreduce(max_m22,fckit_mpi_max())
                call mpl%f_comm%allreduce(min_cor,fckit_mpi_min())
                call mpl%f_comm%allreduce(max_cor,fckit_mpi_max())
-
+if (mpl%main) print*, 'toto',10,il0,jl0,jc4,jc3,ic1a
                ! Compute histograms on each task
                call histogram(mpl,samp%nc1a,list_m11,nam%avg_nbins,min_m11,max_m11,avg_blk%m11_bins(:,jc3,jc4,jl0r,il0), &
  & avg_blk%m11_hist(:,jc3,jc4,jl0r,il0))
@@ -568,8 +568,9 @@ deallocate(list_cor)
 
 if (mpl%nproc>1) then
    ! Get packing size
-   npack = (4+avg_blk%nsub+2*avg_blk%nsub**2)*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-   if (nam%avg_nbins>0) npack = npack+5*nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   ntmp = bpar%nc3(ib)*bpar%nc4(ib)*bpar%nl0r(ib)*geom%nl0
+   npack = (4+avg_blk%nsub+2*avg_blk%nsub**2)*ntmp
+   if (nam%avg_nbins>0) npack = npack+5*nam%avg_nbins*ntmp
 
    ! Allocation
    allocate(sbuf(npack))
@@ -578,39 +579,31 @@ if (mpl%nproc>1) then
    ! Pack data
    offset = 0
    sbuf = zero
-   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%nc1a,(/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%m11,(/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2) = reshape(avg_blk%m11m11, &
- & (/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
-   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2) = reshape(avg_blk%m2m2, &
- & (/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
-   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub) = reshape(avg_blk%m22, &
- & (/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub
-   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%nc1a_cor,(/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-   sbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%cor,(/bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   sbuf(offset+1:offset+ntmp) = reshape(avg_blk%nc1a,(/ntmp/))
+   offset = offset+ntmp
+   sbuf(offset+1:offset+ntmp) = reshape(avg_blk%m11,(/ntmp/))
+   offset = offset+ntmp
+   sbuf(offset+1:offset+ntmp*avg_blk%nsub**2) = reshape(avg_blk%m11m11,(/ntmp*avg_blk%nsub**2/))
+   offset = offset+ntmp*avg_blk%nsub**2
+   sbuf(offset+1:offset+ntmp*avg_blk%nsub**2) = reshape(avg_blk%m2m2,(/ntmp*avg_blk%nsub**2/))
+   offset = offset+ntmp*avg_blk%nsub**2
+   sbuf(offset+1:offset+ntmp*avg_blk%nsub) = reshape(avg_blk%m22,(/ntmp*avg_blk%nsub/))
+   offset = offset+ntmp*avg_blk%nsub
+   sbuf(offset+1:offset+ntmp) = reshape(avg_blk%nc1a_cor,(/ntmp/))
+   offset = offset+ntmp
+   sbuf(offset+1:offset+ntmp) = reshape(avg_blk%cor,(/ntmp/))
+   offset = offset+ntmp
    if (nam%avg_nbins>0) then
-      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%m11_hist, &
- & (/nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%m11m11_hist, &
- & (/nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%m2m2_hist, &
- & (/nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%m22_hist, &
- & (/nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-      sbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0) = reshape(avg_blk%cor_hist, &
- & (/nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_blk%m11_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_blk%m11m11_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_blk%m2m2_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_blk%m22_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_blk%cor_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
    end if
 
    ! Reduce data
@@ -618,43 +611,39 @@ if (mpl%nproc>1) then
 
    ! Unpack data
    offset = 0
-   avg_blk%nc1a = reshape(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),(/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib), &
- & geom%nl0/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-   avg_blk%m11 = reshape(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),(/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib), &
- & geom%nl0/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-   avg_blk%m11m11 = reshape(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2), &
+   avg_blk%nc1a = reshape(rbuf(offset+1:offset+ntmp),(/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
+   offset = offset+ntmp
+   avg_blk%m11 = reshape(rbuf(offset+1:offset+ntmp),(/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
+   offset = offset+ntmp
+   avg_blk%m11m11 = reshape(rbuf(offset+1:offset+ntmp*avg_blk%nsub**2), &
  & (/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub,avg_blk%nsub/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
-   avg_blk%m2m2 = reshape(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2), &
+   offset = offset+ntmp*avg_blk%nsub**2
+   avg_blk%m2m2 = reshape(rbuf(offset+1:offset+ntmp*avg_blk%nsub**2), &
  & (/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub,avg_blk%nsub/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
-   avg_blk%m22 = reshape(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub), &
+   offset = offset+ntmp*avg_blk%nsub**2
+   avg_blk%m22 = reshape(rbuf(offset+1:offset+ntmp*avg_blk%nsub), &
  & (/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,avg_blk%nsub/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub
-   avg_blk%nc1a_cor = reshape(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),(/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib), &
- & geom%nl0/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-   avg_blk%cor = reshape(rbuf(offset+1:offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0),(/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib), &
- & geom%nl0/))
-   offset = offset+bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+   offset = offset+ntmp*avg_blk%nsub
+   avg_blk%nc1a_cor = reshape(rbuf(offset+1:offset+ntmp),(/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
+   offset = offset+ntmp
+   avg_blk%cor = reshape(rbuf(offset+1:offset+ntmp),(/bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
+   offset = offset+ntmp
    if (nam%avg_nbins>0) then
-      avg_blk%m11_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0), &
+      avg_blk%m11_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-      avg_blk%m11m11_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0), &
+      offset = offset+nam%avg_nbins*ntmp
+      avg_blk%m11m11_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-      avg_blk%m2m2_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0), &
+      offset = offset+nam%avg_nbins*ntmp
+      avg_blk%m2m2_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-      avg_blk%m22_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0), &
+      offset = offset+nam%avg_nbins*ntmp
+      avg_blk%m22_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
-      avg_blk%cor_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0), &
+      offset = offset+nam%avg_nbins*ntmp
+      avg_blk%cor_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
  & (/nam%avg_nbins,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0/))
-      offset = offset+nam%avg_nbins*bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0
+      offset = offset+nam%avg_nbins*ntmp
    end if
 
    ! Release memory
@@ -1231,7 +1220,7 @@ end do
 
 if (mpl%nproc>1) then
    ! Get packing size
-   npack = bpar%nc3(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
+   npack = bpar%nc3(ib)*bpar%nc4(ib)*bpar%nl0r(ib)*geom%nl0*avg_blk%nsub**2
 
    ! Allocation
    allocate(sbuf(npack))

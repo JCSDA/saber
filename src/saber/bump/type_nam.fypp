@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_comm
 use iso_fortran_env, only: output_unit
 use tools_const, only: zero,hundredth,half,one,ten,hundred,pi,req,deg2rad,rad2deg
 use tools_kinds,only: kind_real,huge_real
-use tools_gc99, only: pkmin,pkmax,nlmin,nlmax,pk,ipkhdef,ipkvdef
+use tools_gc99, only: pkmin,pkmax,pkhdef,pkvdef,nlmin,nlmax
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -458,9 +458,9 @@ nam%nicas_draw_type = 'random_uniform'
 nam%network = .false.
 nam%forced_radii = .false.
 nam%rh = -one
-nam%pkh = pk(ipkhdef)
+nam%pkh = pkhdef
 nam%rv = -one
-nam%pkv = pk(ipkvdef)
+nam%pkv = pkvdef
 nam%nlv = zero
 nam%min_lev = 1
 nam%max_lev = nl0max
@@ -1066,9 +1066,9 @@ if (mpl%main) then
    network = .false.
    forced_radii = .false.
    rh = -one
-   pkh = pk(ipkhdef)
+   pkh = pkhdef
    rv = -one
-   pkv = pk(ipkvdef)
+   pkv = pkvdef
    nlv = zero
    min_lev = 1
    max_lev = nl0max

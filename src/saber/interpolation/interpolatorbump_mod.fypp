@@ -157,7 +157,8 @@ type(fieldset_type),intent(in),optional :: fieldset                 !< Metadata 
 type(fckit_configuration),intent(in),optional :: config             !< Configuration
 
 ! Local variables
-integer :: inode,ilon,ilat
+integer :: msvali,inode,ilon,ilat
+real(kind_real) :: msvalr
 real(kind_real),allocatable :: lon(:),lat(:)
 logical :: unique_points
 type(fckit_configuration) :: bump_config
@@ -190,8 +191,8 @@ bint%bump%nam%nv = 1
 bint%bump%nam%variables(1) = 'var'
 
 ! Default missing values for integers and reals
-bint%bump%mpl%msv%vali = -999
-bint%bump%mpl%msv%valr = -999.0_kind_real
+msvali = -999
+msvalr = -999.0_kind_real
 
 ! By default, input grid contains unique points only
 unique_points = .true.
@@ -207,10 +208,8 @@ if (present(config)) then
    if (config%has('nlevels')) call config%get_or_die('nlevels',bint%bump%nam%nl0)
 
    ! Optionally set missing values for integers and reals
-   if (config%has('missingvalue_int')) call config%get_or_die('missingvalue_int', &
- & bint%bump%mpl%msv%vali)
-   if (config%has('missingvalue_real')) call config%get_or_die('missingvalue_real', &
- & bint%bump%mpl%msv%valr)
+   if (config%has('missingvalue_int')) call config%get_or_die('missingvalue_int',msvali)
+   if (config%has('missingvalue_real')) call config%get_or_die('missingvalue_real',msvalr)
 
    ! Optionnaly set unique_points flag
    if (config%has('unique_points')) call config%get_or_die('unique_points',unique_points)
@@ -295,7 +294,7 @@ call ametadata%set('unique_points',unique_points)
 call bint%delete
 
 ! BUMP setup
-call bint%bump%setup(bint%afunctionspace_in,lfieldset)
+call bint%bump%setup(comm,bint%afunctionspace_in,lfieldset,msvali=msvali,msvalr=msvalr)
 
 ! Initialize output grid
 if (bint%bump%mpl%main) then

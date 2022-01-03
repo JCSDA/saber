@@ -235,7 +235,6 @@ mpl%purple = ' '
 mpl%err = ' '
 mpl%wng = ' '
 mpl%verbosity = 'all'
-mpl%lunit = mpl%msv%vali
 
 ! Probe out
 @:probe_out()

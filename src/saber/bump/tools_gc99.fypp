@@ -24,23 +24,25 @@ implicit none
 
 ! Public parameters
 logical :: fit_allocated = .false.
-integer :: nnd
-integer :: npk
-integer :: nnl
-integer :: nscaleth
-integer :: ipkhdef
-integer :: ipkvdef
-real(kind_real) :: ndmin
-real(kind_real) :: ndmax
-real(kind_real) :: pkmin
-real(kind_real) :: pkmax
-real(kind_real) :: nlmin
-real(kind_real) :: nlmax
-real(kind_real) :: dnd
-real(kind_real) :: dpk
-real(kind_real) :: dnl
-real(kind_real) :: scalethmin
-real(kind_real) :: scalethmax
+integer,parameter :: nnd = 51
+integer,parameter :: npk = 31
+integer,parameter :: nnl = 7
+integer,parameter :: nscaleth = 7
+integer,parameter :: ipkhdef = 13
+integer,parameter :: ipkvdef = 1
+real(kind_real),parameter :: ndmin = 0.00000000_kind_real
+real(kind_real),parameter :: ndmax = 1.00000000_kind_real
+real(kind_real),parameter :: pkmin = -2.00000000_kind_real
+real(kind_real),parameter :: pkmax = 4.00000000_kind_real
+real(kind_real),parameter :: pkhdef = 0.40000000_kind_real
+real(kind_real),parameter :: pkvdef = -2.00000000_kind_real
+real(kind_real),parameter :: nlmin = 0.00000000_kind_real
+real(kind_real),parameter :: nlmax = 6.00000000_kind_real
+real(kind_real),parameter :: dnd = 0.02000000_kind_real
+real(kind_real),parameter :: dpk = 0.20000000_kind_real
+real(kind_real),parameter :: dnl = 1.00000000_kind_real
+real(kind_real),parameter :: scalethmin = 0.20000000_kind_real
+real(kind_real),parameter :: scalethmax = 0.80000000_kind_real
 real(kind_real),allocatable :: pk(:)
 real(kind_real),allocatable :: nl(:)
 real(kind_real),allocatable :: scaleth(:)
@@ -63,7 +65,8 @@ interface fit_func_sqrt
 end interface
 
 private
-public :: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,pkmin,pkmax,nlmin,nlmax,scalethmin,scalethmax,dpk,dnl,pk,nl,scaleh,scalev
+public :: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,pkmin,pkmax,pkhdef,pkvdef,nlmin,nlmax,scalethmin,scalethmax,dpk,dnl
+public :: pk,nl,scaleh,scalev
 public :: fit_setup,fit_dealloc,fit_func,fit_func_sqrt
 
 contains
@@ -94,19 +97,7 @@ if (.not.fit_allocated) then
 
       ! Open file
       ncid = open_file(mpl,filename,0,.true.)
-
-      ! Get dimensions
-      nnd = inquire_dim_size(mpl,ncid,'nnd',0)
-      npk = inquire_dim_size(mpl,ncid,'npk',0)
-      nnl = inquire_dim_size(mpl,ncid,'nnl',0)
-      nscaleth = inquire_dim_size(mpl,ncid,'nscaleth',0)
    end if
-
-   ! Broadcast dimensions
-   call mpl%f_comm%broadcast(nnd,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(npk,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(nnl,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(nscaleth,mpl%rootproc-1)
 
    ! Allocation
    allocate(pk(npk))
@@ -118,21 +109,6 @@ if (.not.fit_allocated) then
    allocate(func_ver(nnl,npk,nnd))
 
    if (mpl%main) then
-      ! Read attributes
-      call get_att(mpl,ncid,'ipkhdef',ipkhdef)
-      call get_att(mpl,ncid,'ipkvdef',ipkvdef)
-      call get_att(mpl,ncid,'ndmin',ndmin)
-      call get_att(mpl,ncid,'ndmax',ndmax)
-      call get_att(mpl,ncid,'pkmin',pkmin)
-      call get_att(mpl,ncid,'pkmax',pkmax)
-      call get_att(mpl,ncid,'nlmin',nlmin)
-      call get_att(mpl,ncid,'nlmax',nlmax)
-      call get_att(mpl,ncid,'dnd',dnd)
-      call get_att(mpl,ncid,'dpk',dpk)
-      call get_att(mpl,ncid,'dnl',dnl)
-      call get_att(mpl,ncid,'scalethmin',scalethmin)
-      call get_att(mpl,ncid,'scalethmax',scalethmax)
-
       ! Inquire variable
       pk_id = inquire_var(mpl,ncid,'pk')
       nl_id = inquire_var(mpl,ncid,'nl')
