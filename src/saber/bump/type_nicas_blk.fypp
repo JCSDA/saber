@@ -5230,9 +5230,7 @@ associate(ib=>nicas_blk%ib)
 ! Generate dirac field
 fld = zero
 do idir=1,geom%ndir
-   iv = bpar%b_to_v1(ib)
-   jv = bpar%b_to_v2(ib)
-   if ((geom%iprocdir(idir)==mpl%myproc).and.(iv==jv).and.(iv==geom%ivdir(idir))) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+   if ((ib==bpar%v_to_b(geom%ivdir(idir))).and.(geom%iprocdir(idir)==mpl%myproc)) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
 end do
 
 ! Apply NICAS method

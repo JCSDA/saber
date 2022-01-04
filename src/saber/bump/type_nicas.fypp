@@ -2005,16 +2005,16 @@ do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) then
       iv = bpar%b_to_v1(ib)
       do il0=1,geom%nl0
-         if ((hdiag%cor_1%blk(0,ib)%rh_l0(il0)>zero).and.(nam%rh(il0,iv)>zero)) &
- & rh_diag(il0,ib) = hdiag%cor_1%blk(0,ib)%rh_l0(il0)/nam%rh(il0,iv)
-         if ((hdiag%cor_1%blk(0,ib)%pkh_l0(il0)>zero).and.(nam%pkh(il0,iv)>zero)) &
- & pkh_diag(il0,ib) = hdiag%cor_1%blk(0,ib)%pkh_l0(il0)/nam%pkh(il0,iv)
-         if ((hdiag%cor_1%blk(0,ib)%rv_l0(il0)>zero).and.(nam%rv(il0,iv)>zero)) &
- & rv_diag(il0,ib) = hdiag%cor_1%blk(0,ib)%rv_l0(il0)/nam%rv(il0,iv)
-         if ((hdiag%cor_1%blk(0,ib)%pkv_l0(il0)>zero).and.(nam%pkv(il0,iv)>zero)) &
- & pkv_diag(il0,ib) = hdiag%cor_1%blk(0,ib)%pkv_l0(il0)/nam%pkv(il0,iv)
-         if ((hdiag%cor_1%blk(0,ib)%nlv_l0(il0)>zero).and.(nam%nlv(il0,iv)>zero)) &
- & nlv_diag(il0,ib) = hdiag%cor_1%blk(0,ib)%nlv_l0(il0)/nam%nlv(il0,iv)
+         if ((hdiag%cor1%blk(0,ib)%rh_l0(il0)>zero).and.(nam%rh(il0,iv)>zero)) &
+ & rh_diag(il0,ib) = hdiag%cor1%blk(0,ib)%rh_l0(il0)/nam%rh(il0,iv)
+         if ((hdiag%cor1%blk(0,ib)%pkh_l0(il0)>zero).and.(nam%pkh(il0,iv)>zero)) &
+ & pkh_diag(il0,ib) = hdiag%cor1%blk(0,ib)%pkh_l0(il0)/nam%pkh(il0,iv)
+         if ((hdiag%cor1%blk(0,ib)%rv_l0(il0)>zero).and.(nam%rv(il0,iv)>zero)) &
+ & rv_diag(il0,ib) = hdiag%cor1%blk(0,ib)%rv_l0(il0)/nam%rv(il0,iv)
+         if ((hdiag%cor1%blk(0,ib)%pkv_l0(il0)>zero).and.(nam%pkv(il0,iv)>zero)) &
+ & pkv_diag(il0,ib) = hdiag%cor1%blk(0,ib)%pkv_l0(il0)/nam%pkv(il0,iv)
+         if ((hdiag%cor1%blk(0,ib)%nlv_l0(il0)>zero).and.(nam%nlv(il0,iv)>zero)) &
+ & nlv_diag(il0,ib) = hdiag%cor1%blk(0,ib)%nlv_l0(il0)/nam%nlv(il0,iv)
       end do
    end if
 end do

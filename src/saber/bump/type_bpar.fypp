@@ -36,6 +36,7 @@ type bpar_type
    character(len=1024),allocatable :: blockname(:) !< Block name
    integer,allocatable :: b_to_v1(:)               !< Block to first variable
    integer,allocatable :: b_to_v2(:)               !< Block to second variable
+   integer,allocatable :: v_to_b(:)                !< Variable to diagonal block
 contains
    procedure :: alloc => bpar_alloc
    procedure :: init => bpar_init
@@ -91,6 +92,7 @@ allocate(bpar%cv_block(bpar%nbe))
 allocate(bpar%blockname(bpar%nbe))
 allocate(bpar%b_to_v1(bpar%nbe))
 allocate(bpar%b_to_v2(bpar%nbe))
+allocate(bpar%v_to_b(0:nam%nv))
 
 ! Probe out
 @:probe_out()
@@ -197,6 +199,7 @@ do iv=1,nam%nv
       bpar%blockname(ib) = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
       bpar%b_to_v1(ib) = iv
       bpar%b_to_v2(ib) = jv
+      if (iv==jv) bpar%v_to_b(iv) = ib
 
       ! Update block index
       ib = ib+1
@@ -263,6 +266,9 @@ if (bpar%nbe>bpar%nb) then
    bpar%blockname(ib) = 'common'
    bpar%b_to_v1(ib) = 0
    bpar%b_to_v2(ib) = 0
+   bpar%v_to_b(0) = ib
+else
+   bpar%v_to_b(0) = 0
 end if
 
 ! Print summary
@@ -338,6 +344,7 @@ if (allocated(bpar%cv_block)) deallocate(bpar%cv_block)
 if (allocated(bpar%blockname)) deallocate(bpar%blockname)
 if (allocated(bpar%b_to_v1)) deallocate(bpar%b_to_v1)
 if (allocated(bpar%b_to_v2)) deallocate(bpar%b_to_v2)
+if (allocated(bpar%v_to_b)) deallocate(bpar%v_to_b)
 
 ! Probe out
 @:probe_out()

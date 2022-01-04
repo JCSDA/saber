@@ -232,42 +232,42 @@ do ib=1,bpar%nbe
          case ('cor')
             cmat%blk(ib)%coef_ens = one
             cmat%blk(ib)%coef_sta = zero
-            cmat%blk(ib)%rh = hdiag%cor_1%blk(0,ib)%rh_c0a
-            cmat%blk(ib)%pkh = hdiag%cor_1%blk(0,ib)%pkh_c0a
+            cmat%blk(ib)%rh = hdiag%cor1%blk(0,ib)%rh_c0a
+            cmat%blk(ib)%pkh = hdiag%cor1%blk(0,ib)%pkh_c0a
             if (bpar%nc4(ib)>1) then
-               cmat%blk(ib)%D11 = hdiag%cor_1%blk(0,ib)%D11_c0a
-               cmat%blk(ib)%D22 = hdiag%cor_1%blk(0,ib)%D22_c0a
-               cmat%blk(ib)%D12 = hdiag%cor_1%blk(0,ib)%D12_c0a
+               cmat%blk(ib)%D11 = hdiag%cor1%blk(0,ib)%D11_c0a
+               cmat%blk(ib)%D22 = hdiag%cor1%blk(0,ib)%D22_c0a
+               cmat%blk(ib)%D12 = hdiag%cor1%blk(0,ib)%D12_c0a
             end if
-            cmat%blk(ib)%rv = hdiag%cor_1%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%pkv = hdiag%cor_1%blk(0,ib)%pkv_c0a
-            cmat%blk(ib)%nlv = hdiag%cor_1%blk(0,ib)%nlv_c0a
+            cmat%blk(ib)%rv = hdiag%cor1%blk(0,ib)%rv_c0a
+            cmat%blk(ib)%pkv = hdiag%cor1%blk(0,ib)%pkv_c0a
+            cmat%blk(ib)%nlv = hdiag%cor1%blk(0,ib)%nlv_c0a
          case ('loc')
-            cmat%blk(ib)%coef_ens = hdiag%loc_1%blk(0,ib)%coef_ens_c0a
+            cmat%blk(ib)%coef_ens = hdiag%loc1%blk(0,ib)%coef_ens_c0a
             cmat%blk(ib)%coef_sta = zero
-            cmat%blk(ib)%rh = hdiag%loc_1%blk(0,ib)%rh_c0a
-            cmat%blk(ib)%pkh = hdiag%loc_1%blk(0,ib)%pkh_c0a
+            cmat%blk(ib)%rh = hdiag%loc1%blk(0,ib)%rh_c0a
+            cmat%blk(ib)%pkh = hdiag%loc1%blk(0,ib)%pkh_c0a
             if (bpar%nc4(ib)>1) then
-               cmat%blk(ib)%D11 = hdiag%loc_1%blk(0,ib)%D11_c0a
-               cmat%blk(ib)%D22 = hdiag%loc_1%blk(0,ib)%D22_c0a
-               cmat%blk(ib)%D12 = hdiag%loc_1%blk(0,ib)%D12_c0a
+               cmat%blk(ib)%D11 = hdiag%loc1%blk(0,ib)%D11_c0a
+               cmat%blk(ib)%D22 = hdiag%loc1%blk(0,ib)%D22_c0a
+               cmat%blk(ib)%D12 = hdiag%loc1%blk(0,ib)%D12_c0a
             end if
-            cmat%blk(ib)%rv = hdiag%loc_1%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%pkv = hdiag%loc_1%blk(0,ib)%pkv_c0a
-            cmat%blk(ib)%nlv = hdiag%loc_1%blk(0,ib)%nlv_c0a
+            cmat%blk(ib)%rv = hdiag%loc1%blk(0,ib)%rv_c0a
+            cmat%blk(ib)%pkv = hdiag%loc1%blk(0,ib)%pkv_c0a
+            cmat%blk(ib)%nlv = hdiag%loc1%blk(0,ib)%nlv_c0a
          case ('hyb-avg','hyb-rnd')
-            cmat%blk(ib)%coef_ens = hdiag%loc_2%blk(0,ib)%coef_ens_c0a
-            cmat%blk(ib)%coef_sta = hdiag%loc_2%blk(0,ib)%coef_sta_c0a
-            cmat%blk(ib)%rh = hdiag%loc_2%blk(0,ib)%rh_c0a
-            cmat%blk(ib)%pkh = hdiag%loc_2%blk(0,ib)%pkh_c0a
+            cmat%blk(ib)%coef_ens = hdiag%loc2%blk(0,ib)%coef_ens_c0a
+            cmat%blk(ib)%coef_sta = hdiag%loc2%blk(0,ib)%coef_sta_c0a
+            cmat%blk(ib)%rh = hdiag%loc2%blk(0,ib)%rh_c0a
+            cmat%blk(ib)%pkh = hdiag%loc2%blk(0,ib)%pkh_c0a
             if (bpar%nc4(ib)>1) then
-               cmat%blk(ib)%D11 = hdiag%loc_2%blk(0,ib)%D11_c0a
-               cmat%blk(ib)%D22 = hdiag%loc_2%blk(0,ib)%D22_c0a
-               cmat%blk(ib)%D12 = hdiag%loc_2%blk(0,ib)%D12_c0a
+               cmat%blk(ib)%D11 = hdiag%loc2%blk(0,ib)%D11_c0a
+               cmat%blk(ib)%D22 = hdiag%loc2%blk(0,ib)%D22_c0a
+               cmat%blk(ib)%D12 = hdiag%loc2%blk(0,ib)%D12_c0a
             end if
-            cmat%blk(ib)%rv = hdiag%loc_2%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%pkv = hdiag%loc_2%blk(0,ib)%pkv_c0a
-            cmat%blk(ib)%nlv = hdiag%loc_2%blk(0,ib)%nlv_c0a
+            cmat%blk(ib)%rv = hdiag%loc2%blk(0,ib)%rv_c0a
+            cmat%blk(ib)%pkv = hdiag%loc2%blk(0,ib)%pkv_c0a
+            cmat%blk(ib)%nlv = hdiag%loc2%blk(0,ib)%nlv_c0a
          case ('dual-ens')
             call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
          case default
@@ -280,9 +280,9 @@ do ib=1,bpar%nbe
       case ('cor')
          cmat%blk(ib)%wgt = one
       case ('loc')
-         cmat%blk(ib)%wgt = sum(hdiag%loc_1%blk(0,ib)%coef_ens_l0)/real(geom%nl0,kind_real)
+         cmat%blk(ib)%wgt = sum(hdiag%loc1%blk(0,ib)%coef_ens_l0)/real(geom%nl0,kind_real)
       case ('hyb-avg','hyb-rnd')
-         cmat%blk(ib)%wgt = sum(hdiag%loc_2%blk(0,ib)%coef_ens_l0)/real(geom%nl0,kind_real)
+         cmat%blk(ib)%wgt = sum(hdiag%loc2%blk(0,ib)%coef_ens_l0)/real(geom%nl0,kind_real)
       case ('dual-ens')
          call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
       case default
@@ -334,26 +334,24 @@ if (.not.cmat%allocated) then
 end if
 
 ! Convolution parameters
-do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-      ! Indices
-      iv = bpar%b_to_v1(ib)
-      jv = bpar%b_to_v2(ib)
-      if (iv/=jv) call mpl%abort('${subr}$','only diagonal blocks for cmat_from_nam')
+do iv=0,nam%nv
+   ib = bpar%v_to_b(iv)
+   if (ib>0) then
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+         ! Copy support radii
+         do il0=1,geom%nl0
+            cmat%blk(ib)%rh(:,il0) = nam%rh(il0,iv)
+            cmat%blk(ib)%pkh(:,il0) = nam%pkh(il0,iv)
+            cmat%blk(ib)%rv(:,il0) = nam%rv(il0,iv)
+            cmat%blk(ib)%pkv(:,il0) = nam%pkv(il0,iv)
+            cmat%blk(ib)%nlv(:,il0) = nam%nlv(il0,iv)
+         end do
 
-      ! Copy support radii
-      do il0=1,geom%nl0
-         cmat%blk(ib)%rh(:,il0) = nam%rh(il0,iv)
-         cmat%blk(ib)%pkh(:,il0) = nam%pkh(il0,iv)
-         cmat%blk(ib)%rv(:,il0) = nam%rv(il0,iv)
-         cmat%blk(ib)%pkv(:,il0) = nam%pkv(il0,iv)
-         cmat%blk(ib)%nlv(:,il0) = nam%nlv(il0,iv)
-      end do
-
-      ! Set coefficients
-      cmat%blk(ib)%coef_ens = one
-      cmat%blk(ib)%coef_sta = zero
-      cmat%blk(ib)%wgt = one
+         ! Set coefficients
+         cmat%blk(ib)%coef_ens = one
+         cmat%blk(ib)%coef_sta = zero
+         cmat%blk(ib)%wgt = one
+      end if
    end if
 end do
 

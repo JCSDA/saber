@@ -636,7 +636,7 @@ call fieldset%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bum
 call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Update moments
-call bump%mom1%update(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,'mom_1',fld_c0a,ie)
+call bump%mom1%update(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,'mom1',fld_c0a,ie)
 
 ! Probe out
 @:probe_out()
@@ -771,14 +771,14 @@ if (bump%nam%new_mom) then
    ! Compute ensemble 1 sample moments
    write(bump%mpl%info,'(a7,a)') '','Ensemble 1:'
    call bump%mpl%flush
-   call bump%mom1%compute(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens1,'mom_1')
+   call bump%mom1%compute(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens1,'mom1')
 
    select case(trim(bump%nam%method))
    case ('hyb-rnd','dual-ens')
       ! Compute ensemble 2 sample moments
       write(bump%mpl%info,'(a7,a)') '','Ensemble 2:'
       call bump%mpl%flush
-      call bump%mom2%compute(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens2,'mom_2')
+      call bump%mom2%compute(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens2,'mom2')
    end select
 elseif (bump%nam%load_mom) then
    ! Load sample moments
@@ -790,14 +790,14 @@ elseif (bump%nam%load_mom) then
    ! Load ensemble 1 sample moments
    write(bump%mpl%info,'(a7,a)') '','Ensemble 1'
    call bump%mpl%flush
-   call bump%mom1%read(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens1,'mom_1')
+   call bump%mom1%read(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens1,'mom1')
 
    select case(trim(bump%nam%method))
    case ('hyb-rnd','dual-ens')
       ! Load ensemble 2 sample moments
       write(bump%mpl%info,'(a7,a)') '','Ensemble 2'
       call bump%mpl%flush
-      call bump%mom2%read(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens2,'mom_2')
+      call bump%mom2%read(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens2,'mom2')
    end select
 end if
 
@@ -1592,13 +1592,12 @@ case  ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_
  & 'dirac_diag_ens','dirac_diag_cor')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
-      do ib=1,bump%bpar%nb
-         ! Get indices
-         iv = bump%bpar%b_to_v1(ib)
-         jv = bump%bpar%b_to_v2(ib)
-
+      do iv=0,bump%nam%nv
+         ! Block index
+         ib = bump%bpar%v_to_b(iv)
+ 
          ! Copy to field
-         if (iv==jv) call bump%copy_to_field(param,ib,fld_mga(:,:,iv))
+         call bump%copy_to_field(param,ib,fld_mga(:,:,iv))
       end do
    case ('common','common_weighted')
       ! Set common index
@@ -1610,13 +1609,12 @@ case  ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_
       end do
    end select
 case default
-   do ib=1,bump%bpar%nb
-      ! Get indices
-      iv = bump%bpar%b_to_v1(ib)
-      jv = bump%bpar%b_to_v2(ib)
-
+   do iv=0,bump%nam%nv
+      ! Block index
+      ib = bump%bpar%v_to_b(iv)
+ 
       ! Copy to field
-      if (iv==jv) call bump%copy_to_field(param,ib,fld_mga(:,:,iv))
+      call bump%copy_to_field(param,ib,fld_mga(:,:,iv))
    end do
 end select
 
@@ -1740,8 +1738,8 @@ end select
 select case (trim(param))
 case ('dirac_diag_mom')
    iv = bump%bpar%b_to_v1(ib)
-   if (.not.allocated(bump%mom_1%ens_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%mom_1%ens_dir(:,:,iv),fld_mga)
+   if (.not.allocated(bump%mom1%ens_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%mom1%ens_dir(:,:,iv),fld_mga)
    found = .true.
 end select
 
@@ -1749,8 +1747,8 @@ end select
 select case (trim(param))
 case ('dirac_diag_cor')
    iv = bump%bpar%b_to_v1(ib)
-   if (.not.allocated(bump%hdiag%cor_1%diag_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor_1%diag_dir(:,:,iv),fld_mga)
+   if (.not.allocated(bump%hdiag%cor1%diag_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%diag_dir(:,:,iv),fld_mga)
    found = .true.
 end select
 

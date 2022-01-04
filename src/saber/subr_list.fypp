@@ -367,6 +367,7 @@
 #:set subr_list = subr_list + ["minim_vt_dir"]
 #:set subr_list = subr_list + ["minim_vt_inv"]
 #:set subr_list = subr_list + ["mom_blk_alloc"]
+#:set subr_list = subr_list + ["mom_blk_init"]
 #:set subr_list = subr_list + ["mom_blk_dealloc"]
 #:set subr_list = subr_list + ["mom_blk_ext"]
 #:set subr_list = subr_list + ["mom_alloc"]

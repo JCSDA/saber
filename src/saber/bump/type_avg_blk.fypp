@@ -522,7 +522,7 @@ do il0=1,geom%nl0
                   min_m11 = huge_real
                   max_cor = -huge_real
                end if
-if (mpl%main) print*, 'toto',9,il0,jl0,jc4,jc3,ic1a
+
                ! Gather min/max values
                call mpl%f_comm%allreduce(min_m11,fckit_mpi_min())
                call mpl%f_comm%allreduce(max_m11,fckit_mpi_max())
@@ -534,7 +534,7 @@ if (mpl%main) print*, 'toto',9,il0,jl0,jc4,jc3,ic1a
                call mpl%f_comm%allreduce(max_m22,fckit_mpi_max())
                call mpl%f_comm%allreduce(min_cor,fckit_mpi_min())
                call mpl%f_comm%allreduce(max_cor,fckit_mpi_max())
-if (mpl%main) print*, 'toto',10,il0,jl0,jc4,jc3,ic1a
+
                ! Compute histograms on each task
                call histogram(mpl,samp%nc1a,list_m11,nam%avg_nbins,min_m11,max_m11,avg_blk%m11_bins(:,jc3,jc4,jl0r,il0), &
  & avg_blk%m11_hist(:,jc3,jc4,jl0r,il0))

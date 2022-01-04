@@ -120,7 +120,8 @@ end if
 ! BUMP setup
 call bump%setup(f_comm,model%afunctionspace,model%fieldset,lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
-! Add members
+
+! Load members one by one
 if (bump%nam%ens1_ne>0) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
@@ -128,8 +129,17 @@ if (bump%nam%ens1_ne>0) then
    call mpl%flush
    do ie=1,bump%nam%ens1_ne
       write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens1_ne
-      call mpl%flush
-      call bump%add_member(model%ens1(ie),ie,1)
+      call mpl%flush  
+      if (bump%nam%update_vbal_cov) then
+         call bump%update_vbal_cov(model%ens1(ie),ie)
+      elseif (bump%nam%update_var) then
+         call bump%update_var(model%ens1(ie),ie)
+      elseif (bump%nam%update_mom) then
+         call bump%update_mom(model%ens1(ie),ie)
+      else
+         ! Add member
+         call bump%add_member(model%ens1(ie),ie,1)
+      end if
    end do
 end if
 if (bump%nam%ens2_ne>0) then

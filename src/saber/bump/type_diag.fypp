@@ -404,7 +404,7 @@ call mpl%flush
 
 do ib=1,bpar%nbe
    if (bpar%B_block(ib)) then
-      if (bpar%b_to_v1(ib)==bpar%b_to_v2(ib)) then
+      if (bpar%fit_block(ib)) then
          ! Allocation
          n = 7
          if (bpar%nc4(ib)>1) n = n+3
@@ -597,20 +597,17 @@ if (nam%check_dirac) then
 
       ! Set dirac value locally
       if (geom%iprocdir(idir)==mpl%myproc) then
-         do ib=1,bpar%nb
-            if ((bpar%b_to_v1(ib)==geom%ivdir(idir)).and.(bpar%b_to_v2(ib)==geom%ivdir(idir))) then
-               rh_dir(idir) = diag%blk(0,ib)%rh_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-               pkh_dir(idir) = diag%blk(0,ib)%pkh_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-               if (nam%nc4>1) then
-                  D11_dir(idir) = diag%blk(0,ib)%D11_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-                  D22_dir(idir) = diag%blk(0,ib)%D22_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-                  D12_dir(idir) = diag%blk(0,ib)%D12_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-               end if
-               rv_dir(idir) = diag%blk(0,ib)%rv_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-               pkv_dir(idir) = diag%blk(0,ib)%pkv_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-               nlv_dir(idir) = diag%blk(0,ib)%nlv_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-            end if
-         end do
+         ib = bpar%v_to_b(geom%ivdir(idir))
+         rh_dir(idir) = diag%blk(0,ib)%rh_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+         pkh_dir(idir) = diag%blk(0,ib)%pkh_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+         if (nam%nc4>1) then
+            D11_dir(idir) = diag%blk(0,ib)%D11_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            D22_dir(idir) = diag%blk(0,ib)%D22_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            D12_dir(idir) = diag%blk(0,ib)%D12_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+         end if
+         rv_dir(idir) = diag%blk(0,ib)%rv_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+         pkv_dir(idir) = diag%blk(0,ib)%pkv_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+         nlv_dir(idir) = diag%blk(0,ib)%nlv_c0a(geom%ic0adir(idir),geom%il0dir(idir))
       end if
    end do
 

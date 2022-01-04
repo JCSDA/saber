@@ -745,9 +745,9 @@ if (raw(iz)>zero) then
                   do ipk=1,npk
                      if (valid(ipk,inl)) then
                         if (dir=='hor') then
-                           fit_r_test = fit_r/scaleh(iscaleth,ipk)
+                           fit_r_test = fit_r/scaleh(ipk,iscaleth)
                         elseif (dir=='ver') then
-                           fit_r_test = fit_r/scalev(iscaleth,ipk,inl)
+                           fit_r_test = fit_r/scalev(inl,ipk,iscaleth)
                         end if
                         fit_pk_test = pk(ipk)
                         fit_nl_test = nl(inl)

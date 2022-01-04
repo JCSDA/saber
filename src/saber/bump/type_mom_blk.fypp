@@ -8,6 +8,7 @@
 !----------------------------------------------------------------------
 module type_mom_blk
 
+use tools_const, only: zero
 use tools_kinds, only: kind_real
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
@@ -33,6 +34,7 @@ type mom_blk_type
    real(kind_real),allocatable :: m22(:,:,:,:,:,:)  !< Fourth-order centered moment
 contains
    procedure :: alloc => mom_blk_alloc
+   procedure :: init => mom_blk_init
    procedure :: dealloc => mom_blk_dealloc
    procedure :: ext => mom_blk_ext
 end type mom_blk_type
@@ -76,15 +78,11 @@ mom_blk%ne = ne
 mom_blk%nsub = nsub
 
 ! Allocation
-if (update_mom) then
-   iv = bpar%b_to_v1(ib)
-   jv = bpar%b_to_v2(ib)
-   if (iv==jv) then
+if (bpar%diag_block(ib)) then
+   if (update_mom) then
       allocate(mom_blk%m1_1(nc1x,geom%nl0,nsub))
       allocate(mom_blk%m1_2(nc1x,bpar%nc3(ib),bpar%nc4(ib),geom%nl0,nsub))
    end if
-end if
-if (bpar%diag_block(ib)) then
    allocate(mom_blk%m2_1(nc1x,geom%nl0,nsub))
    allocate(mom_blk%m2_2(nc1x,bpar%nc3(ib),bpar%nc4(ib),geom%nl0,nsub))
    allocate(mom_blk%m11(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
@@ -102,6 +100,55 @@ end associate
 @:probe_out()
 
 end subroutine mom_blk_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: mom_blk_init
+!> Initialization
+!----------------------------------------------------------------------
+subroutine mom_blk_init(mom_blk,bpar,update_mom)
+
+implicit none
+
+! Passed variables
+class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+logical,intent(in) :: update_mom             !< Update moments sequentially
+
+! Local variables
+integer :: iv,jv
+
+! Set name
+@:set_name(mom_blk_init)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ib=>mom_blk%ib)
+
+! Initialization
+if (bpar%diag_block(ib)) then
+   if (update_mom) then
+      mom_blk%m1_1 = zero
+      mom_blk%m1_2 = zero
+   end if
+   mom_blk%m2_1 = zero
+   mom_blk%m2_2 = zero
+   mom_blk%m11 = zero
+   if (update_mom) then
+      mom_blk%m12 = zero
+      mom_blk%m21 = zero
+   end if
+   mom_blk%m22 = zero
+end if
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine mom_blk_init
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_blk_dealloc
