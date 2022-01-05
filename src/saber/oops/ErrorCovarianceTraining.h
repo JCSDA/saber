@@ -65,8 +65,9 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
 
   /// Ensemble base parameters
   oops::OptionalParameter<StateEnsembleParameters_> ensembleBase{"ensemble base", this};
-  /// Ensemble state parameters to subtract from base
-  oops::OptionalParameter<StateEnsembleParameters_> ensembleSubtract{"ensemble subtract", this};
+  /// Ensemble state parameters for the ensemble pairs that would be subtracted from the base
+  /// ensemble
+  oops::OptionalParameter<StateEnsembleParameters_> ensemblePairs{"ensemble pairs", this};
 
   /// Background error covariance model
   oops::OptionalParameter<CovarianceParameters_> backgroundError{"background error", this};
@@ -136,12 +137,12 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       oops::Log::info() << "Increment ensemble from increments on disk" << std::endl;
       ens1.reset(new Ensemble_(resol, inputVars, *params.ensemblePert.value()));
     } else if ((params.ensembleBase.value() != boost::none) &&
-               (params.ensembleSubtract.value() != boost::none)) {
+               (params.ensemblePairs.value() != boost::none)) {
       // Increment ensemble from difference of two state ensembles
        oops::Log::info() << "Increment ensemble from difference of two state ensembles"
                          << std::endl;
        ens1.reset(new Ensemble_(resol, inputVars, *params.ensembleBase.value(),
-                                                  *params.ensembleSubtract.value()));
+                                                  *params.ensemblePairs.value()));
     }
     if (ens1) {
       for (size_t ie = 0; ie < ens1->size(); ++ie) {

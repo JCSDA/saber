@@ -65,7 +65,7 @@ ensemble base:
     filename: testdata/ensmean.an.2010-01-01T12:00:00Z.nc
   - date: 2010-01-01T12:00:00Z
     filename: testdata/ensmean.an.2010-01-01T12:00:00Z.nc
-ensemble subtract:
+ensemble pairs:
   members:
   - date: 2010-01-01T12:00:00Z
     filename: testdata/recenter.ens.1.2010-01-01T12:00:00Z.PT0S.nc
