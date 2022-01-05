@@ -1595,9 +1595,9 @@ case  ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_
       do iv=0,bump%nam%nv
          ! Block index
          ib = bump%bpar%v_to_b(iv)
- 
+
          ! Copy to field
-         call bump%copy_to_field(param,ib,fld_mga(:,:,iv))
+         if (ib>0) call bump%copy_to_field(param,ib,fld_mga(:,:,iv))
       end do
    case ('common','common_weighted')
       ! Set common index
@@ -1612,9 +1612,9 @@ case default
    do iv=0,bump%nam%nv
       ! Block index
       ib = bump%bpar%v_to_b(iv)
- 
+
       ! Copy to field
-      call bump%copy_to_field(param,ib,fld_mga(:,:,iv))
+      if (ib>0) call bump%copy_to_field(param,ib,fld_mga(:,:,iv))
    end do
 end select
 
@@ -1926,13 +1926,12 @@ select case (trim(param))
 case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
-      do ib=1,bump%bpar%nb
-         ! Get indices
-         iv = bump%bpar%b_to_v1(ib)
-         jv = bump%bpar%b_to_v2(ib)
+      do iv=0,bump%nam%nv
+         ! Block index
+         ib = bump%bpar%v_to_b(iv)
 
          ! Copy to field
-         if (iv==jv) call bump%copy_from_field(param,ib,fld_mga(:,:,iv))
+         if (ib>0) call bump%copy_from_field(param,ib,fld_mga(:,:,iv))
       end do
    case ('common','common_weighted')
       ! Set common index
@@ -1944,13 +1943,12 @@ case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm')
       end do
    end select
 case default
-   do ib=1,bump%bpar%nb
-      ! Get indices
-      iv = bump%bpar%b_to_v1(ib)
-      jv = bump%bpar%b_to_v2(ib)
+   do iv=0,bump%nam%nv
+      ! Block index
+      ib = bump%bpar%v_to_b(iv)
 
       ! Copy to field
-      if (iv==jv) call bump%copy_from_field(param,ib,fld_mga(:,:,iv))
+      if (ib>0) call bump%copy_from_field(param,ib,fld_mga(:,:,iv))
    end do
 end select
 
@@ -2355,9 +2353,9 @@ call bump%ens1%dealloc
 call bump%ens1u%dealloc
 call bump%ens2%dealloc
 call bump%geom%partial_dealloc
-!call bump%hdiag%dealloc
-call bump%mom1%dealloc
-call bump%mom2%dealloc
+call bump%hdiag%partial_dealloc
+call bump%mom1%partial_dealloc
+call bump%mom2%partial_dealloc
 call bump%nicas%partial_dealloc
 call bump%samp%dealloc
 call bump%var%partial_dealloc

@@ -201,7 +201,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Initialization
 samp%nproc = mpl%nproc
-samp%sc2 = nam%new_vbal.or.nam%load_vbal.or.(nam%new_hdiag.and.nam%local_diag).or.nam%new_lct
+samp%sc2 = nam%new_vbal.or.nam%load_vbal.or.(nam%new_hdiag.and.nam%local_diag)
 samp%sc3 = nam%new_mom.or.nam%update_mom.or.nam%load_mom
 samp%lat_bands = (nam%new_vbal.and.(nam%vbal_dlat>zero)).or.(nam%new_hdiag.and.(nam%local_dlat>zero))
 samp%compute_c2b_to_c1a = nam%new_vbal.and.(nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov)
@@ -2006,112 +2006,99 @@ logical,allocatable :: smask_hor_c1a(:)
 ! Copy size
 samp%nc2 = min(nam%nc2,samp%nc1)
 
-if (nam%new_lct) then
-   ! Copy subset Sc1 size
-   samp%nc2a = samp%nc1a
+if (samp%lat_bands) then
+   ! All points on root processor
+   if (mpl%main) then
+      samp%nc2a = nam%nc2
+   else
+      samp%nc2a = 0
+   end if
 
    ! Allocation
    allocate(samp%lon_c2a(samp%nc2a))
    allocate(samp%lat_c2a(samp%nc2a))
 
-   ! Copy subset Sc1 lon/lat
-   samp%lon_c2a = samp%lon_c1a
-   samp%lat_c2a = samp%lat_c1a
-else
-   if (samp%lat_bands) then
-      ! All points on root processor
+   if (samp%nc2==1) then
+      ! Single point
       if (mpl%main) then
-         samp%nc2a = nam%nc2
-      else
-         samp%nc2a = 0
-      end if
-
-      ! Allocation
-      allocate(samp%lon_c2a(samp%nc2a))
-      allocate(samp%lat_c2a(samp%nc2a))
-
-      if (samp%nc2==1) then
-         ! Single point
-         if (mpl%main) then
-            samp%lon_c2a(1) = zero
-            samp%lat_c2a(1) = zero
-         end if
-      else
-         ! Latitude bounds
-         latmin = zss_minval(geom%lat_c0a)
-         latmax = zss_maxval(geom%lat_c0a)
-         call mpl%f_comm%allreduce(latmin,fckit_mpi_min())
-         call mpl%f_comm%allreduce(latmax,fckit_mpi_max())
-
-         ! Regularly spaced points along zero meridian
-         if (mpl%main) then
-            do ic2a=1,samp%nc2a
-               samp%lon_c2a(ic2a) = zero
-               samp%lat_c2a(ic2a) = latmin+real(ic2a-1,kind_real)/real(samp%nc2a-1,kind_real)*(latmax-latmin)
-            end do
-         end if
+         samp%lon_c2a(1) = zero
+         samp%lat_c2a(1) = zero
       end if
    else
-      ! Allocation
-      allocate(rh_c1a(samp%nc1a))
-      allocate(smask_hor_c1a(samp%nc1a))
-      allocate(c2_to_c1(samp%nc2))
+      ! Latitude bounds
+      latmin = zss_minval(geom%lat_c0a)
+      latmax = zss_maxval(geom%lat_c0a)
+      call mpl%f_comm%allreduce(latmin,fckit_mpi_min())
+      call mpl%f_comm%allreduce(latmax,fckit_mpi_max())
 
-      ! Initialization
-      smask_hor_c1a = .true.
-      rh_c1a = one
+      ! Regularly spaced points along zero meridian
+      if (mpl%main) then
+         do ic2a=1,samp%nc2a
+            samp%lon_c2a(ic2a) = zero
+            samp%lat_c2a(ic2a) = latmin+real(ic2a-1,kind_real)/real(samp%nc2a-1,kind_real)*(latmax-latmin)
+         end do
+      end if
+   end if
+else
+   ! Allocation
+   allocate(rh_c1a(samp%nc1a))
+   allocate(smask_hor_c1a(samp%nc1a))
+   allocate(c2_to_c1(samp%nc2))
 
-      ! Insert local diagnostic points
-      ic1a = samp%nc1a+1
-      do ildwv=1,nam%nldwv
-         iproc = samp%ldwv_to_proc(ildwv)
-         if (mpl%msv%isnot(iproc)) then
-            if (iproc==mpl%myproc) then
-               ic1a = ic1a-1
-               smask_hor_c1a(ic1a) = .false.
-               ic1 = samp%c1a_to_c1(ic1a)
-            end if
-            call mpl%f_comm%broadcast(ic1,iproc-1)
-            c2_to_c1(ildwv) = ic1
+   ! Initialization
+   smask_hor_c1a = .true.
+   rh_c1a = one
+
+   ! Insert local diagnostic points
+   ic1a = samp%nc1a+1
+   do ildwv=1,nam%nldwv
+      iproc = samp%ldwv_to_proc(ildwv)
+      if (mpl%msv%isnot(iproc)) then
+         if (iproc==mpl%myproc) then
+            ic1a = ic1a-1
+            smask_hor_c1a(ic1a) = .false.
+            ic1 = samp%c1a_to_c1(ic1a)
          end if
-      end do
+         call mpl%f_comm%broadcast(ic1,iproc-1)
+         c2_to_c1(ildwv) = ic1
+      end if
+   end do
 
-      ! Initialize subsampling
-      write(mpl%info,'(a7,a)') '','Compute horizontal subset Sc2:'
-      call mpl%flush
-      call geom%initialize_sampling(mpl,samp%nc1a,samp%lon_c1a,samp%lat_c1a,smask_hor_c1a,rh_c1a,samp%c1a_to_c1, &
+   ! Initialize subsampling
+   write(mpl%info,'(a7,a)') '','Compute horizontal subset Sc2:'
+   call mpl%flush
+   call geom%initialize_sampling(mpl,samp%nc1a,samp%lon_c1a,samp%lat_c1a,smask_hor_c1a,rh_c1a,samp%c1a_to_c1, &
  & samp%nc1u,samp%c1u_to_c1a,samp%tree_c1u,samp%mesh_c1u,.true.,7,samp%nc2-nam%nldwv,c2_to_c1(nam%nldwv+1:samp%nc2))
 
-      ! Get subset Sc2 size on halo A
-      samp%nc2a = 0
-      do ic2=1,samp%nc2
-         ic1 = c2_to_c1(ic2)
-         iproc = samp%c1_to_proc(ic1)
-         if (iproc==mpl%myproc) samp%nc2a = samp%nc2a+1
-      end do
+   ! Get subset Sc2 size on halo A
+   samp%nc2a = 0
+   do ic2=1,samp%nc2
+      ic1 = c2_to_c1(ic2)
+      iproc = samp%c1_to_proc(ic1)
+      if (iproc==mpl%myproc) samp%nc2a = samp%nc2a+1
+   end do
 
-      ! Allocation
-      allocate(samp%lon_c2a(samp%nc2a))
-      allocate(samp%lat_c2a(samp%nc2a))
+   ! Allocation
+   allocate(samp%lon_c2a(samp%nc2a))
+   allocate(samp%lat_c2a(samp%nc2a))
 
-      ! Define Sc2 lon/lat
-      ic2a = 0
-      do ic2=1,samp%nc2
-         ic1 = c2_to_c1(ic2)
-         iproc = samp%c1_to_proc(ic1)
-         if (iproc==mpl%myproc) then
-            ic2a = ic2a+1
-            ic1a = samp%c1_to_c1a(ic1)
-            samp%lon_c2a(ic2a) = samp%lon_c1a(ic1a)
-            samp%lat_c2a(ic2a) = samp%lat_c1a(ic1a)
-         end if
-      end do
+   ! Define Sc2 lon/lat
+   ic2a = 0
+   do ic2=1,samp%nc2
+      ic1 = c2_to_c1(ic2)
+      iproc = samp%c1_to_proc(ic1)
+      if (iproc==mpl%myproc) then
+         ic2a = ic2a+1
+         ic1a = samp%c1_to_c1a(ic1)
+         samp%lon_c2a(ic2a) = samp%lon_c1a(ic1a)
+         samp%lat_c2a(ic2a) = samp%lat_c1a(ic1a)
+      end if
+   end do
 
-      ! Release memory
-      deallocate(rh_c1a)
-      deallocate(smask_hor_c1a)
-      deallocate(c2_to_c1)
-   end if
+   ! Release memory
+   deallocate(rh_c1a)
+   deallocate(smask_hor_c1a)
+   deallocate(c2_to_c1)
 end if
 
 ! Communication

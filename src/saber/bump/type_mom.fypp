@@ -39,6 +39,7 @@ type mom_type
 contains
    procedure :: alloc => mom_alloc
    procedure :: init => mom_init
+   procedure :: partial_dealloc => mom_partial_dealloc
    procedure :: dealloc => mom_dealloc
    procedure :: read => mom_read
    procedure :: write => mom_write
@@ -141,6 +142,39 @@ end if
 end subroutine mom_init
 
 !----------------------------------------------------------------------
+! Subroutine: mom_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine mom_partial_dealloc(mom)
+
+implicit none
+
+! Passed variables
+class(mom_type),intent(inout) :: mom !< Moments
+
+! Local variables
+integer :: ib
+
+! Set name
+@:set_name(mom_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(mom%blk)) then
+   do ib=1,size(mom%blk)
+      call mom%blk(ib)%dealloc
+   end do
+   deallocate(mom%blk)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine mom_partial_dealloc
+
+!----------------------------------------------------------------------
 ! Subroutine: mom_dealloc
 !> Release memory
 !----------------------------------------------------------------------
@@ -161,12 +195,7 @@ integer :: ib
 @:probe_in()
 
 ! Release memory
-if (allocated(mom%blk)) then
-   do ib=1,size(mom%blk)
-      call mom%blk(ib)%dealloc
-   end do
-   deallocate(mom%blk)
-end if
+call mom%partial_dealloc
 if (allocated(mom%m1)) deallocate(mom%m1)
 if (allocated(mom%m2)) deallocate(mom%m2)
 if (allocated(mom%ens_dir)) deallocate(mom%ens_dir)
@@ -487,7 +516,7 @@ if (nam%check_dirac) then
    ! Get weight
    wgt_dir = zero
    do idir=1,geom%ndir
-      wgt_dir(idir) = pert_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))
+      if (geom%iprocdir(idir)==mpl%myproc) wgt_dir(idir) = pert_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))
    end do
 
    ! Communication
@@ -555,12 +584,24 @@ if (ie==nam%ens1_ne) then
 
    ! Normalize raw ensemble dirac test
    if (nam%check_dirac) then
+      ! Allocation
+      allocate(wgt_dir(geom%ndir))
+
+      ! Variance at dirac points
+      wgt_dir = zero
+      do idir=1,geom%ndir
+         if (geom%iprocdir(idir)==mpl%myproc) wgt_dir(idir) = mom%m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))
+      end do
+
+      ! Communication
+      call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
+
       do il0=1,geom%nl0
          do ic0a=1,geom%nc0a
             if (geom%gmask_c0a(ic0a,il0)) then
                do idir=1,geom%ndir
                   if (geom%dirac_mask(ic0a,idir)) then
-                     cor_norm = mom%m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))*mom%m2(ic0a,il0,geom%ivdir(idir))
+                     cor_norm = wgt_dir(idir)*mom%m2(ic0a,il0,geom%ivdir(idir))
                      if (cor_norm>zero) then
                         mom%ens_dir(ic0a,il0,geom%ivdir(idir)) = mom%ens_dir(ic0a,il0,geom%ivdir(idir))/sqrt(cor_norm)
                      else
@@ -573,6 +614,9 @@ if (ie==nam%ens1_ne) then
             end if
          end do
       end do
+
+      ! Release memory
+      deallocate(wgt_dir)
    end if
 
    ! Write sample moments

@@ -171,10 +171,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> new_hdiag{"new_hdiag", this};
   // Write HDIAG diagnostics
   oops::OptionalParameter<bool> write_hdiag{"write_hdiag", this};
-  // Compute new LCT
-  oops::OptionalParameter<bool> new_lct{"new_lct", this};
-  // Write LCT
-  oops::OptionalParameter<bool> write_lct{"write_lct", this};
   // Load C matrix
   oops::OptionalParameter<bool> load_cmat{"load_cmat", this};
   // Write C matrix
@@ -215,8 +211,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_set_param_cor{"check_set_param_cor", this};
   // Test set_parameter interface for hybrid case
   oops::OptionalParameter<bool> check_set_param_hyb{"check_set_param_hyb", this};
-  // Test set_parameter interface for LCT
-  oops::OptionalParameter<bool> check_set_param_lct{"check_set_param_lct", this};
   // Test get_parameter interface for standard-deviation
   oops::OptionalParameter<bool> check_get_param_stddev{"check_get_param_stddev", this};
   // Test get_parameter interface for correlation
@@ -225,8 +219,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_get_param_hyb{"check_get_param_hyb", this};
   // Test get_parameter interface for anisotropic localization
   oops::OptionalParameter<bool> check_get_param_Dloc{"check_get_param_Dloc", this};
-  // Test get_parameter interface for LCT
-  oops::OptionalParameter<bool> check_get_param_lct{"check_get_param_lct", this};
   // Test apply_vbal interfaces
   oops::OptionalParameter<bool> check_apply_vbal{"check_apply_vbal", this};
   // Test apply_stddev interfaces
@@ -399,20 +391,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> negative_lobe{"negative_lobe", this};
   // Diagnostic of square-root functions
   oops::OptionalParameter<bool> diag_sqrt{"diag_sqrt", this};
-  // Number of LCT scales
-  oops::OptionalParameter<int> lct_nscales{"lct_nscales", this};
-  // Factor between diffusion scales
-  oops::OptionalParameter<double> lct_scale_ratio{"lct_scale_ratio", this};
-  // Minimum relevant correlation for LCT first guess
-  oops::OptionalParameter<double> lct_cor_min{"lct_cor_min", this};
-  // Diagnostic of diagonal LCT components only
-  oops::OptionalParameter<std::vector<bool>> lct_diag{"lct_diag", this};
-  // LCT quality control threshold
-  oops::OptionalParameter<double> lct_qc_th{"lct_qc_th", this};
-  // LCT quality control maximum
-  oops::OptionalParameter<double> lct_qc_max{"lct_qc_max", this};
-  // Write full correlations
-  oops::OptionalParameter<bool> lct_write_cor{"lct_write_cor", this};
 
   // nicas_param
 
@@ -455,6 +433,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<int>> levdir{"levdir", this};
   // Diracs variable indices
   oops::OptionalParameter<std::vector<int>> ivdir{"ivdir", this};
+  // Radius for diagnostic diracs [in meters]
+  oops::OptionalParameter<double> dirac_rad{"dirac_rad", this};
 
   // output_param
 

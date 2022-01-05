@@ -226,7 +226,7 @@ call cmat%init(mpl,bpar)
 ! Convolution parameters
 do ib=1,bpar%nbe
    if (bpar%B_block(ib)) then
-      if (bpar%nicas_block(ib)) then
+      if (bpar%fit_block(ib)) then
          ! Copy fields
          select case (trim(nam%method))
          case ('cor')

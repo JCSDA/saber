@@ -91,7 +91,7 @@ type(bpar_type),intent(in) :: bpar             !< Block parameters
 ! Associate
 associate(ib=>cmat_blk%ib)
 
-if (bpar%diag_block(ib)) then
+if (bpar%fit_block(ib)) then
    ! Allocation
    allocate(cmat_blk%coef_ens(geom%nc0a,geom%nl0))
    allocate(cmat_blk%coef_sta(geom%nc0a,geom%nl0))
@@ -139,7 +139,7 @@ type(bpar_type),intent(in) :: bpar             !< Block parameters
 ! Associate
 associate(ib=>cmat_blk%ib)
 
-if (bpar%diag_block(ib)) then
+if (bpar%fit_block(ib)) then
    ! Initialization
    cmat_blk%coef_ens = mpl%msv%valr
    cmat_blk%coef_sta = mpl%msv%valr

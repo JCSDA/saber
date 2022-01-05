@@ -38,6 +38,7 @@ type hdiag_type
    type(diag_type) :: loc2  !< Localization, second ensemble
    type(diag_type) :: loc3  !< Localization, low-resolution ensemble
 contains
+   procedure :: partial_dealloc => hdiag_partial_dealloc
    procedure :: dealloc => hdiag_dealloc
    procedure :: write => hdiag_write
    procedure :: run_hdiag => hdiag_run_hdiag
@@ -47,6 +48,40 @@ private
 public :: hdiag_type
 
 contains
+
+!----------------------------------------------------------------------
+! Subroutine: hdiag_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine hdiag_partial_dealloc(hdiag)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
+
+! Set name
+@:set_name(hdiag_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call hdiag%avg1%dealloc
+call hdiag%avg2%dealloc
+call hdiag%avg_wgt%dealloc
+call hdiag%cov1%partial_dealloc
+call hdiag%cov2%partial_dealloc
+call hdiag%cor1%partial_dealloc
+call hdiag%cor2%partial_dealloc
+call hdiag%loc1%partial_dealloc
+call hdiag%loc2%partial_dealloc
+call hdiag%loc3%partial_dealloc
+
+! Probe out
+@:probe_out()
+
+end subroutine hdiag_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: hdiag_dealloc

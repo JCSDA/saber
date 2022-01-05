@@ -35,6 +35,7 @@ type diag_type
    real(kind_real),allocatable :: diag_dir(:,:,:) !< Diagonstic dirac field
 contains
    procedure :: alloc => diag_alloc
+   procedure :: partial_dealloc => diag_partial_dealloc
    procedure :: dealloc => diag_dealloc
    procedure :: filter_fit => diag_filter_fit
    procedure :: build_fit => diag_build_fit
@@ -105,6 +106,41 @@ if (nam%check_dirac) allocate(diag%diag_dir(geom%nc0a,geom%nl0,nam%nv))
 end subroutine diag_alloc
 
 !----------------------------------------------------------------------
+! Subroutine: diag_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine diag_partial_dealloc(diag)
+
+implicit none
+
+! Passed variables
+class(diag_type),intent(inout) :: diag !< Diagnostic
+
+! Local variables
+integer :: ib,ic2a
+
+! Set name
+@:set_name(diag_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(diag%blk)) then
+   do ib=1,size(diag%blk,2)
+     do ic2a=0,size(diag%blk,1)-1
+       call diag%blk(ic2a,ib)%dealloc
+     end do
+   end do
+   deallocate(diag%blk)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine diag_partial_dealloc
+
+!----------------------------------------------------------------------
 ! Subroutine: diag_dealloc
 !> Release memory
 !----------------------------------------------------------------------
@@ -125,14 +161,7 @@ integer :: ib,ic2a
 @:probe_in()
 
 ! Release memory
-if (allocated(diag%blk)) then
-   do ib=1,size(diag%blk,2)
-     do ic2a=0,size(diag%blk,1)-1
-       call diag%blk(ic2a,ib)%dealloc
-     end do
-   end do
-   deallocate(diag%blk)
-end if
+call diag%partial_dealloc
 if (allocated(diag%diag_dir)) deallocate(diag%diag_dir)
 
 ! Probe out
