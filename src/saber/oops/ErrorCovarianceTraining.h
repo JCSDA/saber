@@ -52,6 +52,7 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
   typedef oops::ModelSpaceCovarianceParametersWrapper<MODEL> CovarianceParameters_;
   typedef typename oops::Geometry<MODEL>::Parameters_        GeometryParameters_;
   typedef typename oops::State<MODEL>::Parameters_           StateParameters_;
+  typedef oops::IncrementEnsembleFromStatesParameters<MODEL> IncrementEnsembleParameters_;
 
   /// Geometry parameters
   oops::RequiredParameter<GeometryParameters_> geometry{"geometry", this};
@@ -60,7 +61,7 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
   oops::RequiredParameter<StateParameters_> background{"background", this};
 
   /// Ensemble parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
+  oops::OptionalParameter<IncrementEnsembleParameters_> ensemble{"ensemble", this};
 
   /// Ensemble perturbations parameters
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
@@ -127,11 +128,10 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
     // Setup ensemble 1
     EnsemblePtr_ ens1 = NULL;
-    const boost::optional<eckit::LocalConfiguration> &ensembleConfig = params.ensemble.value();
-    if (ensembleConfig != boost::none) {
+    if (params.ensemble.value() != boost::none) {
       // Ensemble of state, compute perturbation using the mean
       oops::Log::info() << "Ensemble of state, compute perturbation using the mean" << std::endl;
-      ens1.reset(new Ensemble_(*ensembleConfig, xx, xx, resol, inputVars));
+      ens1.reset(new Ensemble_(*params.ensemble.value(), xx, xx, resol, inputVars));
     } else {
       const boost::optional<eckit::LocalConfiguration>
         &ensemblePertConfig = params.ensemblePert.value();
