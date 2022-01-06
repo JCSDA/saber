@@ -855,7 +855,7 @@ deallocate(list_cor)
 !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4,isub,jsub,norm) shared(geom,bpar,avg_blk)
 do il0=1,geom%nl0
    do jl0r=1,bpar%nl0r(ib)
-      do jc4=1,bpar%nc3(ib)
+      do jc4=1,bpar%nc4(ib)
          do jc3=1,bpar%nc3(ib)
             if (avg_blk%nc1a(jc3,jc4,jl0r,il0)>zero) then
                norm = one/avg_blk%nc1a(jc3,jc4,jl0r,il0)

@@ -61,9 +61,6 @@ integer,intent(in) :: ne                     !< Ensemble size
 integer,intent(in) :: nsub                   !< Number of sub-ensembles
 logical,intent(in) :: update_mom             !< Update moments sequentially
 
-! Local variables
-integer :: iv,jv
-
 ! Set name
 @:set_name(mom_blk_alloc)
 
@@ -113,9 +110,6 @@ implicit none
 class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
 type(bpar_type),intent(in) :: bpar           !< Block parameters
 logical,intent(in) :: update_mom             !< Update moments sequentially
-
-! Local variables
-integer :: iv,jv
 
 ! Set name
 @:set_name(mom_blk_init)

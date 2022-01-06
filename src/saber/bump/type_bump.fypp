@@ -814,7 +814,7 @@ if (bump%nam%new_hdiag) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Copy HDIAG into C matrix'
    call bump%mpl%flush
-   call bump%cmat%from_hdiag(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%hdiag)
+   call bump%cmat%from_hdiag(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%hdiag)
 
    ! Release memory
 !   call bump%hdiag%dealloc
@@ -1148,7 +1148,6 @@ class(bump_type),intent(inout) :: bump        !< BUMP
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variable
-integer :: ic0a,il0,iv
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
@@ -1568,7 +1567,7 @@ character(len=*),intent(in) :: param          !< Parameter
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
-integer :: ib,iv,jv
+integer :: ib,iv
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
@@ -1588,7 +1587,7 @@ fld_mga = bump%mpl%msv%valr
 
 ! Get parameter
 select case (trim(param))
-case  ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm', &
+case  ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm', &
  & 'dirac_diag_ens','dirac_diag_cor','dirac_nicas','dirac_nicas_ens')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
@@ -1644,8 +1643,7 @@ integer,intent(in) :: ib                                             !< Block in
 real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0) !< Field
 
 ! Local variables
-integer :: iscales,ie,imga,il0,iv
-real(kind_real) :: tmp
+integer :: ie,imga,il0,iv
 real(kind_real),allocatable :: real_array(:,:)
 logical :: found
 
@@ -1763,21 +1761,9 @@ case ('cor_rh')
       end do
    end do
    found = .true.
-case ('cor_pkh')
-   if (.not.allocated(bump%cmat%blk(ib)%pkh)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%pkh,fld_mga)
-   found = .true.
 case ('cor_rv')
    if (.not.allocated(bump%cmat%blk(ib)%rv)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%rv,fld_mga)
-   found = .true.
-case ('cor_pkv')
-   if (.not.allocated(bump%cmat%blk(ib)%pkv)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%pkv,fld_mga)
-   found = .true.
-case ('cor_nlv')
-   if (.not.allocated(bump%cmat%blk(ib)%nlv)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%nlv,fld_mga)
    found = .true.
 case ('loc_coef')
    if (.not.allocated(bump%cmat%blk(ib)%coef_ens)) call bump%mpl%abort('${subr}$', &
@@ -1902,7 +1888,7 @@ character(len=*),intent(in) :: param          !< Parameter
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
-integer :: ib,iv,jv
+integer :: ib,iv
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
@@ -2037,7 +2023,7 @@ found = .false.
 ! Check allocation / parameter existence
 select case (trim(param))
 case ('stddev','var','m4')
-case ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_rv','hyb_coef')
+case ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 case ('nicas_norm')
    if (.not.allocated(bump%nicas%blk)) allocate(bump%nicas%blk(bump%bpar%nbe))
@@ -2084,21 +2070,9 @@ case ('cor_rh')
       end do
    end do
    found = .true.
-case ('cor_pkh')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_pkh)) allocate(bump%cmat%blk(ib)%bump_pkh(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_pkh)
-   found = .true.
 case ('cor_rv')
    if (.not.allocated(bump%cmat%blk(ib)%bump_rv)) allocate(bump%cmat%blk(ib)%bump_rv(bump%geom%nc0a,bump%geom%nl0))
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rv)
-   found = .true.
-case ('cor_pkv')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_pkv)) allocate(bump%cmat%blk(ib)%bump_pkv(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_pkv)
-   found = .true.
-case ('cor_nlv')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_nlv)) allocate(bump%cmat%blk(ib)%bump_nlv(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_nlv)
    found = .true.
 case ('loc_coef')
    if (.not.allocated(bump%cmat%blk(ib)%bump_coef_ens)) allocate(bump%cmat%blk(ib)%bump_coef_ens(bump%geom%nc0a,bump%geom%nl0))

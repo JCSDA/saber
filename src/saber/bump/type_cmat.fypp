@@ -11,7 +11,6 @@ module type_cmat
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,one,rad2deg,reqkm,req
 use tools_func, only: convert_l2i,convert_i2l,zss_sum
-use tools_gc99, only: pk,ipkhdef,ipkvdef
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_bpar, only: bpar_type
@@ -74,7 +73,7 @@ integer :: ib
 ! Allocation
 if (.not.allocated(cmat%blk)) allocate(cmat%blk(bpar%nbe))
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+   if (bpar%B_block(ib).and.bpar%fit_block(ib)) then
       cmat%blk(ib)%ib = ib
       call cmat%blk(ib)%alloc(geom,bpar)
    end if
@@ -112,7 +111,7 @@ integer :: ib
 
 ! Initialize blocks
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) call cmat%blk(ib)%init(mpl,bpar)
+   if (bpar%B_block(ib).and.bpar%fit_block(ib)) call cmat%blk(ib)%init(mpl,bpar)
 end do
 
 ! Probe out
@@ -195,7 +194,7 @@ end subroutine cmat_dealloc
 ! Subroutine: cmat_from_hdiag
 !> Import HDIAG into C matrix
 !----------------------------------------------------------------------
-subroutine cmat_from_hdiag(cmat,mpl,nam,geom,bpar,samp,hdiag)
+subroutine cmat_from_hdiag(cmat,mpl,nam,geom,bpar,hdiag)
 
 implicit none
 
@@ -205,7 +204,6 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(samp_type),intent(in) :: samp     !< Sampling
 type(hdiag_type),intent(in) :: hdiag   !< Hybrid diagnostics
 
 ! Local variables
@@ -233,41 +231,32 @@ do ib=1,bpar%nbe
             cmat%blk(ib)%coef_ens = one
             cmat%blk(ib)%coef_sta = zero
             cmat%blk(ib)%rh = hdiag%cor1%blk(0,ib)%rh_c0a
-            cmat%blk(ib)%pkh = hdiag%cor1%blk(0,ib)%pkh_c0a
             if (bpar%nc4(ib)>1) then
                cmat%blk(ib)%D11 = hdiag%cor1%blk(0,ib)%D11_c0a
                cmat%blk(ib)%D22 = hdiag%cor1%blk(0,ib)%D22_c0a
                cmat%blk(ib)%D12 = hdiag%cor1%blk(0,ib)%D12_c0a
             end if
             cmat%blk(ib)%rv = hdiag%cor1%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%pkv = hdiag%cor1%blk(0,ib)%pkv_c0a
-            cmat%blk(ib)%nlv = hdiag%cor1%blk(0,ib)%nlv_c0a
          case ('loc')
             cmat%blk(ib)%coef_ens = hdiag%loc1%blk(0,ib)%coef_ens_c0a
             cmat%blk(ib)%coef_sta = zero
             cmat%blk(ib)%rh = hdiag%loc1%blk(0,ib)%rh_c0a
-            cmat%blk(ib)%pkh = hdiag%loc1%blk(0,ib)%pkh_c0a
             if (bpar%nc4(ib)>1) then
                cmat%blk(ib)%D11 = hdiag%loc1%blk(0,ib)%D11_c0a
                cmat%blk(ib)%D22 = hdiag%loc1%blk(0,ib)%D22_c0a
                cmat%blk(ib)%D12 = hdiag%loc1%blk(0,ib)%D12_c0a
             end if
             cmat%blk(ib)%rv = hdiag%loc1%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%pkv = hdiag%loc1%blk(0,ib)%pkv_c0a
-            cmat%blk(ib)%nlv = hdiag%loc1%blk(0,ib)%nlv_c0a
          case ('hyb-avg','hyb-rnd')
             cmat%blk(ib)%coef_ens = hdiag%loc2%blk(0,ib)%coef_ens_c0a
             cmat%blk(ib)%coef_sta = hdiag%loc2%blk(0,ib)%coef_sta_c0a
             cmat%blk(ib)%rh = hdiag%loc2%blk(0,ib)%rh_c0a
-            cmat%blk(ib)%pkh = hdiag%loc2%blk(0,ib)%pkh_c0a
             if (bpar%nc4(ib)>1) then
                cmat%blk(ib)%D11 = hdiag%loc2%blk(0,ib)%D11_c0a
                cmat%blk(ib)%D22 = hdiag%loc2%blk(0,ib)%D22_c0a
                cmat%blk(ib)%D12 = hdiag%loc2%blk(0,ib)%D12_c0a
             end if
             cmat%blk(ib)%rv = hdiag%loc2%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%pkv = hdiag%loc2%blk(0,ib)%pkv_c0a
-            cmat%blk(ib)%nlv = hdiag%loc2%blk(0,ib)%nlv_c0a
          case ('dual-ens')
             call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
          case default
@@ -312,7 +301,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,iv,jv,il0
+integer :: ib,iv,il0
 
 ! Set name
 @:set_name(cmat_from_nam)
@@ -341,10 +330,7 @@ do iv=0,nam%nv
          ! Copy support radii
          do il0=1,geom%nl0
             cmat%blk(ib)%rh(:,il0) = nam%rh(il0,iv)
-            cmat%blk(ib)%pkh(:,il0) = nam%pkh(il0,iv)
             cmat%blk(ib)%rv(:,il0) = nam%rv(il0,iv)
-            cmat%blk(ib)%pkv(:,il0) = nam%pkv(il0,iv)
-            cmat%blk(ib)%nlv(:,il0) = nam%nlv(il0,iv)
          end do
 
          ! Set coefficients
@@ -375,7 +361,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,il0,ic0a
+integer :: ib
 logical :: cmat_allocated,import_standard(bpar%nbe),import_static(bpar%nbe)
 
 ! Set name
@@ -431,22 +417,7 @@ do ib=1,bpar%nbe
             call mpl%f_comm%allreduce(cmat%blk(ib)%wgt,fckit_mpi_sum())
             cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
             cmat%blk(ib)%rh = cmat%blk(ib)%bump_rh
-            if (allocated(cmat%blk(ib)%bump_pkh)) then
-               cmat%blk(ib)%pkh = cmat%blk(ib)%bump_pkh
-            else
-               cmat%blk(ib)%pkh = pk(ipkhdef)
-            end if
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
-            if (allocated(cmat%blk(ib)%bump_pkv)) then
-               cmat%blk(ib)%pkv = cmat%blk(ib)%bump_pkv
-            else
-               cmat%blk(ib)%pkv = pk(ipkvdef)
-            end if
-            if (allocated(cmat%blk(ib)%bump_nlv)) then
-               cmat%blk(ib)%nlv = cmat%blk(ib)%bump_nlv
-            else
-               cmat%blk(ib)%nlv = zero
-            end if
          end if
          if (import_static(ib)) then
             write(mpl%info,'(a10,a)') '','Static import'

@@ -25,31 +25,17 @@ implicit none
 ! Public parameters
 logical :: fit_allocated = .false.
 integer,parameter :: nnd = 51
-integer,parameter :: npk = 31
-integer,parameter :: nnl = 7
-integer,parameter :: nscaleth = 7
-integer,parameter :: ipkhdef = 13
-integer,parameter :: ipkvdef = 1
+integer,parameter :: nscaleth = 9
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real
 real(kind_real),parameter :: ndmax = 1.00000000_kind_real
-real(kind_real),parameter :: pkmin = -2.00000000_kind_real
-real(kind_real),parameter :: pkmax = 4.00000000_kind_real
-real(kind_real),parameter :: pkhdef = 0.40000000_kind_real
-real(kind_real),parameter :: pkvdef = -2.00000000_kind_real
-real(kind_real),parameter :: nlmin = 0.00000000_kind_real
-real(kind_real),parameter :: nlmax = 6.00000000_kind_real
 real(kind_real),parameter :: dnd = 0.02000000_kind_real
-real(kind_real),parameter :: dpk = 0.20000000_kind_real
-real(kind_real),parameter :: dnl = 1.00000000_kind_real
-real(kind_real),parameter :: scalethmin = 0.20000000_kind_real
-real(kind_real),parameter :: scalethmax = 0.80000000_kind_real
-real(kind_real),allocatable :: pk(:)
-real(kind_real),allocatable :: nl(:)
+real(kind_real),parameter :: scalethmin = 0.10000000_kind_real
+real(kind_real),parameter :: scalethmax = 0.90000000_kind_real
 real(kind_real),allocatable :: scaleth(:)
-real(kind_real),allocatable :: scaleh(:,:)
-real(kind_real),allocatable :: func_hor(:,:)
-real(kind_real),allocatable :: scalev(:,:,:)
-real(kind_real),allocatable :: func_ver(:,:,:)
+real(kind_real),allocatable :: scaleh(:)
+real(kind_real),allocatable :: func_hor(:)
+real(kind_real),allocatable :: scalev(:)
+real(kind_real),allocatable :: func_ver(:)
 
 interface fit_setup
    module procedure gc99_fit_setup
@@ -65,8 +51,8 @@ interface fit_func_sqrt
 end interface
 
 private
-public :: npk,nnl,nscaleth,scaleth,ipkhdef,ipkvdef,pkmin,pkmax,pkhdef,pkvdef,nlmin,nlmax,scalethmin,scalethmax,dpk,dnl
-public :: pk,nl,scaleh,scalev
+public :: nscaleth,scaleth,scalethmin,scalethmax
+public :: scaleh,scalev
 public :: fit_setup,fit_dealloc,fit_func,fit_func_sqrt
 
 contains
@@ -81,7 +67,7 @@ subroutine gc99_fit_setup(mpl)
 type(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Local variables
-integer :: ncid,pk_id,nl_id,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id
+integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id
 character(len=1024) :: filename 
 
 ! Set name
@@ -100,18 +86,14 @@ if (.not.fit_allocated) then
    end if
 
    ! Allocation
-   allocate(pk(npk))
-   allocate(nl(nnl))
    allocate(scaleth(nscaleth))
-   allocate(scaleh(npk,nscaleth))
-   allocate(func_hor(npk,nnd))
-   allocate(scalev(nnl,npk,nscaleth))
-   allocate(func_ver(nnl,npk,nnd))
+   allocate(scaleh(nscaleth))
+   allocate(func_hor(nnd))
+   allocate(scalev(nscaleth))
+   allocate(func_ver(nnd))
 
    if (mpl%main) then
       ! Inquire variable
-      pk_id = inquire_var(mpl,ncid,'pk')
-      nl_id = inquire_var(mpl,ncid,'nl')
       scaleth_id = inquire_var(mpl,ncid,'scaleth')
       scaleh_id = inquire_var(mpl,ncid,'scaleh')
       func_hor_id = inquire_var(mpl,ncid,'func_hor')
@@ -119,8 +101,6 @@ if (.not.fit_allocated) then
       func_ver_id = inquire_var(mpl,ncid,'func_ver')
 
       ! Read variable
-      call get_var(mpl,ncid,pk_id,pk)
-      call get_var(mpl,ncid,nl_id,nl)
       call get_var(mpl,ncid,scaleth_id,scaleth)
       call get_var(mpl,ncid,scaleh_id,scaleh)
       call get_var(mpl,ncid,func_hor_id,func_hor)
@@ -132,8 +112,6 @@ if (.not.fit_allocated) then
    end if
 
    ! Broadcast variables
-   call mpl%f_comm%broadcast(pk,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(nl,mpl%rootproc-1)
    call mpl%f_comm%broadcast(scaleth,mpl%rootproc-1)
    call mpl%f_comm%broadcast(scaleh,mpl%rootproc-1)
    call mpl%f_comm%broadcast(func_hor,mpl%rootproc-1)
@@ -162,8 +140,6 @@ subroutine gc99_fit_dealloc()
 @:probe_in()
 
 ! Release memory
-if (allocated(pk)) deallocate(pk)
-if (allocated(nl)) deallocate(nl)
 if (allocated(scaleth)) deallocate(scaleth)
 if (allocated(scaleh)) deallocate(scaleh)
 if (allocated(func_hor)) deallocate(func_hor)
@@ -182,21 +158,19 @@ end subroutine gc99_fit_dealloc
 ! Function: gc99_fit_func
 !> Fit function
 !----------------------------------------------------------------------
-function gc99_fit_func(mpl,dir,nd,pk,nl) result(value)
+function gc99_fit_func(mpl,dir,nd) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 character(len=*),intent(in) :: dir  !< Direction
 real(kind_real),intent(in) :: nd    !< Normalized distance
-real(kind_real),intent(in) :: pk    !< Peakness
-real(kind_real),intent(in) :: nl    !< Negative lobe parameter
 
 ! Returned variable
 real(kind_real) :: value
 
 ! Local variables
-integer :: indm,indp,ipkm,ipkp,inlm,inlp
-real(kind_real) :: bnd,bpk,bnl,rndm,rndp,rpkm,rpkp,rnlm,rnlp
+integer :: indm,indp
+real(kind_real) :: bnd,rndm,rndp
 
 ! Set name
 @:set_name(gc99_fit_func)
@@ -206,8 +180,6 @@ real(kind_real) :: bnd,bpk,bnl,rndm,rndp,rpkm,rpkp,rnlm,rnlp
 
 ! Check bounds
 if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
-if (inf(pk,pkmin).or.sup(pk,pkmax)) call mpl%abort('${subr}$','peakness out of bounds')
-if (inf(nl,nlmin).or.sup(nl,nlmax)) call mpl%abort('${subr}$','negative lobe out of bounds')
 
 if (eq(nd,zero)) then
    ! Origin
@@ -218,8 +190,6 @@ elseif (sup(nd,one)) then
 else
    ! Bounded values
    bnd = max(ndmin,min(nd,ndmax))
-   bpk = max(pkmin,min(pk,pkmax))
-   bnl = max(nlmin,min(nl,nlmax))
 
    ! Indices
    indm = floor(bnd/dnd)+1
@@ -227,18 +197,6 @@ else
       indp = indm
    else
       indp = indm+1
-   end if
-   ipkm = floor((bpk-pkmin)/dpk)+1
-   if (ipkm==npk) then
-      ipkp = ipkm
-   else
-      ipkp = ipkm+1
-   end if
-   inlm = floor((bnl-nlmin)/dnl)+1
-   if (inlm==nnl) then
-      inlp = inlm
-   else
-      inlp = inlm+1
    end if
 
    ! Coefficients
@@ -248,36 +206,14 @@ else
       rndm = real(indp-1,kind_real)-bnd/dnd
    end if
    rndp = (one-rndm)
-   if (ipkm==npk) then
-      rpkm = one
-   else
-      rpkm = real(ipkp-1,kind_real)-(bpk-pkmin)/dpk
-   end if
-   rpkp = (one-rpkm)
-   if (inlm==nnl) then
-      rnlm = one
-   else
-      rnlm = real(inlp-1,kind_real)-(bnl-nlmin)/dnl
-   end if
-   rnlp = (one-rnlm)
 
    ! Interpolated value
    if (dir=='hor') then
       ! Horizontal fit function
-      value = rndm*rpkm*func_hor(ipkm,indm) &
- & +rndp*rpkm*func_hor(ipkm,indp) &
- & +rndm*rpkp*func_hor(ipkp,indm) &
- & +rndp*rpkp*func_hor(ipkp,indp)
+      value = rndm*func_hor(indm)+rndp*func_hor(indp)
    elseif (dir=='ver') then
       ! Vertical fit function
-      value = rndm*rpkm*rnlm*func_ver(inlm,ipkm,indm) &
- & +rndp*rpkm*rnlm*func_ver(inlm,ipkm,indp) &
- & +rndm*rpkp*rnlm*func_ver(inlm,ipkp,indm) &
- & +rndp*rpkp*rnlm*func_ver(inlm,ipkp,indp) &
- & +rndm*rpkm*rnlp*func_ver(inlp,ipkm,indm) &
- & +rndp*rpkm*rnlp*func_ver(inlp,ipkm,indp) &
- & +rndm*rpkp*rnlp*func_ver(inlp,ipkp,indm) &
- & +rndp*rpkp*rnlp*func_ver(inlp,ipkp,indp)
+      value = rndm*func_ver(indm)+rndp*func_ver(indp)
    else
       call mpl%abort('${subr}$','wrong direction: '//dir)
    end if
@@ -292,13 +228,11 @@ end function gc99_fit_func
 ! Function: gc99_fit_func_sqrt
 !> Fit function function square-root
 !----------------------------------------------------------------------
-function gc99_fit_func_sqrt(mpl,nd,pk,nl) result(value)
+function gc99_fit_func_sqrt(mpl,nd) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 real(kind_real),intent(in) :: nd    !< Normalized distance
-real(kind_real),intent(in) :: pk    !< Peakness
-real(kind_real),intent(in) :: nl    !< Negative lobe parameter
 
 ! Returned variable
 real(kind_real) :: value
@@ -319,12 +253,7 @@ elseif (sup(nd,half)) then
    ! Out of support
    value = zero
 else
-   if (pk>zero) then
-      value = (one-two*nd)/(one+two*nd*(pk+pk**4))
-   else
-      value = one-(two*nd)**(one+pk**2)
-   end if
-   if (sup(nl,zero)) value = value*(one-(two*nd*nl)**2)*(one-two*nd)
+   value = one-(two*nd)
 end if
 
 ! Probe out

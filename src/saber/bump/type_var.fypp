@@ -627,7 +627,7 @@ type(geom_type),intent(in) :: geom   !< Geometry
 type(bpar_type),intent(in) :: bpar   !< Block parameters
 
 ! Local variables
-integer :: ib,iv,jv,il0,iter,ipass,ipass_min(geom%nl0)
+integer :: ib,iv,il0,iter,ipass,ipass_min(geom%nl0)
 real(kind_real) :: P9,P20,P21,diff,diff_abs_min(geom%nl0)
 real(kind_real) :: m2uni(geom%nl0,nam%nv),m2norm(geom%nl0),m2sq(geom%nl0),m4(geom%nl0),m2sqasy(geom%nl0)
 real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)

@@ -41,7 +41,6 @@ type minim_type
    integer :: nc4                                 !< Number of angular sectors
    real(kind_real),allocatable :: disth(:)        !< Horizontal distance
    real(kind_real),allocatable :: as(:)           !< Angular sectors
-   real(kind_real) :: pkh                         !< Horizontal peakness
 contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
@@ -166,7 +165,7 @@ call minim%vt_dir(xtmp)
 D11 = xtmp(1)
 D22 = xtmp(2)
 D12 = xtmp(3)
-call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,minim%pkh,fit)
+call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))

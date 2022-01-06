@@ -13,7 +13,6 @@ use fckit_mpi_module, only: fckit_mpi_comm
 use iso_fortran_env, only: output_unit
 use tools_const, only: zero,hundredth,half,one,ten,hundred,pi,req,deg2rad,rad2deg
 use tools_kinds,only: kind_real,huge_real
-use tools_gc99, only: pkmin,pkmax,pkhdef,pkvdef,nlmin,nlmax
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -174,8 +173,6 @@ type nam_type
    real(kind_real) :: diag_rhflt                              !< Horizontal filtering suport radius [in meters]
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
-   logical :: peakness                                        !< Estimate peakness
-   logical :: negative_lobe                                   !< Estimate vertical negative lobe
    logical :: diag_sqrt                                       !< Diagnostic of square-root functions
 
    ! nicas_param
@@ -186,10 +183,7 @@ type nam_type
    logical :: network                                         !< Network-base convolution calculation (distance-based if false)
    logical :: forced_radii                                    !< Force specific support radii
    real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
-   real(kind_real) :: pkh(nl0max,0:nvmax)                     !< Forced horizontal peakness
    real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
-   real(kind_real) :: pkv(nl0max,0:nvmax)                     !< Forced vertical peakness
-   real(kind_real) :: nlv(nl0max,0:nvmax)                     !< Forced vertical negative lobe parameter
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
@@ -425,8 +419,6 @@ nam%local_dlat = zero
 nam%diag_rhflt = zero
 nam%diag_rvflt = zero
 nam%fit_dl0 = 1
-nam%peakness = .false.
-nam%negative_lobe = .false.
 nam%diag_sqrt = .false.
 
 ! nicas_param default
@@ -437,10 +429,7 @@ nam%nicas_draw_type = 'random_uniform'
 nam%network = .false.
 nam%forced_radii = .false.
 nam%rh = -one
-nam%pkh = pkhdef
 nam%rv = -one
-nam%pkv = pkvdef
-nam%nlv = zero
 nam%min_lev = 1
 nam%max_lev = nl0max
 nam%pos_def_test = .false.
@@ -622,8 +611,6 @@ real(kind_real) :: local_dlat
 real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
 integer :: fit_dl0
-logical :: peakness
-logical :: negative_lobe
 logical :: diag_sqrt
 logical :: nonunit_diag
 real(kind_real) :: resol
@@ -632,10 +619,7 @@ character(len=1024) :: nicas_draw_type
 logical :: network
 logical :: forced_radii
 real(kind_real) :: rh(nl0max,0:nvmax)
-real(kind_real) :: pkh(nl0max,0:nvmax)
 real(kind_real) :: rv(nl0max,0:nvmax)
-real(kind_real) :: pkv(nl0max,0:nvmax)
-real(kind_real) :: nlv(nl0max,0:nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
@@ -797,8 +781,6 @@ namelist/fit_param/ &
  & diag_rhflt, &
  & diag_rvflt, &
  & fit_dl0, &
- & peakness, &
- & negative_lobe, &
  & diag_sqrt
 namelist/nicas_param/ &
  & nonunit_diag, &
@@ -808,10 +790,7 @@ namelist/nicas_param/ &
  & network, &
  & forced_radii, &
  & rh, &
- & pkh, &
  & rv, &
- & pkv, &
- & nlv, &
  & min_lev, &
  & max_lev, &
  & pos_def_test, &
@@ -1003,8 +982,6 @@ if (mpl%main) then
    diag_rhflt = zero
    diag_rvflt = zero
    fit_dl0 = 1
-   peakness = .false.
-   negative_lobe = .false.
    diag_sqrt = .false.
 
    ! nicas_param default
@@ -1015,10 +992,7 @@ if (mpl%main) then
    network = .false.
    forced_radii = .false.
    rh = -one
-   pkh = pkhdef
    rv = -one
-   pkv = pkvdef
-   nlv = zero
    min_lev = 1
    max_lev = nl0max
    pos_def_test = .false.
@@ -1215,8 +1189,6 @@ if (mpl%main) then
    nam%diag_rhflt = diag_rhflt
    nam%diag_rvflt = diag_rvflt
    nam%fit_dl0 = fit_dl0
-   nam%peakness = peakness
-   nam%negative_lobe = negative_lobe
    nam%diag_sqrt = diag_sqrt
 
    ! nicas_param
@@ -1228,10 +1200,7 @@ if (mpl%main) then
    nam%network = network
    nam%forced_radii = forced_radii
    nam%rh = rh
-   nam%pkh = pkh
    nam%rv = rv
-   nam%pkv = pkv
-   nam%nlv = nlv
    nam%min_lev = min_lev
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
@@ -1431,8 +1400,6 @@ call mpl%f_comm%broadcast(nam%local_dlat,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%peakness,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%negative_lobe,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_sqrt,mpl%rootproc-1)
 
 ! nicas_param
@@ -1443,10 +1410,7 @@ call mpl%f_comm%broadcast(nam%nicas_draw_type,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%network,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%pkh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%pkv,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%nlv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
@@ -1828,8 +1792,6 @@ if (conf%has('local_dlat')) call conf%get_or_die('local_dlat',nam%local_dlat)
 if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
 if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
 if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
-if (conf%has('peakness')) call conf%get_or_die('peakness',nam%peakness)
-if (conf%has('negative_lobe')) call conf%get_or_die('negative_lobe',nam%negative_lobe)
 if (conf%has('diag_sqrt')) call conf%get_or_die('diag_sqrt',nam%diag_sqrt)
 
 ! nicas_param
@@ -1874,38 +1836,6 @@ if (conf%has('rh')) then
       end if
    end do
 end if
-if (conf%has('pkh')) then
-   call conf%get_or_die('pkh',subconf)
-   if (subconf%has('common')) then
-      call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nl0max) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pkh-common size should be smaller than ',nl0max
-         call flush(output_unit)
-         call comm%abort(1)
-      end if
-      if (size(real_array)==1) then
-         nam%pkh(:,0) = real_array(1)
-      else
-         nam%pkh(1:size(real_array),0) = real_array
-      end if
-   end if
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-         call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nl0max) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: pkh-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nl0max
-            call flush(output_unit)
-            call comm%abort(1)
-         end if
-         if (size(real_array)==1) then
-            nam%pkh(:,iv) = real_array(1)
-         else
-            nam%pkh(1:size(real_array),iv) = real_array
-         end if
-      end if
-   end do
-end if
 if (conf%has('rv')) then
    call conf%get_or_die('rv',subconf)
    if (subconf%has('common')) then
@@ -1934,70 +1864,6 @@ if (conf%has('rv')) then
             nam%rv(:,iv) = real_array(1)
          else
             nam%rv(1:size(real_array),iv) = real_array
-         end if
-      end if
-   end do
-end if
-if (conf%has('pkv')) then
-   call conf%get_or_die('pkv',subconf)
-   if (subconf%has('common')) then
-      call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nl0max) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: pkv-common size should be smaller than ',nl0max
-         call flush(output_unit)
-         call comm%abort(1)
-      end if
-      if (size(real_array)==1) then
-         nam%pkv(:,0) = real_array(1)
-      else
-         nam%pkv(1:size(real_array),0) = real_array
-      end if
-   end if
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-         call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nl0max) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: pkv-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nl0max
-            call flush(output_unit)
-            call comm%abort(1)
-         end if
-         if (size(real_array)==1) then
-            nam%pkv(:,iv) = real_array(1)
-         else
-            nam%pkv(1:size(real_array),iv) = real_array
-         end if
-      end if
-   end do
-end if
-if (conf%has('nlv')) then
-   call conf%get_or_die('nlv',subconf)
-   if (subconf%has('common')) then
-      call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nl0max) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: nlv-common size should be smaller than ',nl0max
-         call flush(output_unit)
-         call comm%abort(1)
-      end if
-      if (size(real_array)==1) then
-         nam%nlv(:,0) = real_array(1)
-      else
-         nam%nlv(1:size(real_array),0) = real_array
-      end if
-   end if
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-         call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nl0max) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: nlv-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nl0max
-            call flush(output_unit)
-            call comm%abort(1)
-         end if
-         if (size(real_array)==1) then
-            nam%nlv(:,iv) = real_array(1)
-         else
-            nam%nlv(1:size(real_array),iv) = real_array
          end if
       end if
    end do
@@ -2447,8 +2313,6 @@ if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%diag_rhflt<zero) call mpl%abort('${subr}$','diag_rhflt should be non-negative')
    if (nam%diag_rvflt<zero) call mpl%abort('${subr}$','diag_rvflt should be non-negative')
    if (nam%fit_dl0<=0) call mpl%abort('${subr}$','fit_dl0 should be postive')
-   if (nam%peakness.and.(.not.(trim(nam%method)=='cor'))) call mpl%abort('${subr}$','peakness for correlation only')
-   if (nam%negative_lobe.and.(.not.(trim(nam%method)=='cor'))) call mpl%abort('${subr}$','negative lobe for correlation only')
 end if
 
 ! Check ensemble sizes
@@ -2499,10 +2363,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       do iv=ivmin,ivmax
          do il0=1,nam%nl0
             if (nam%rh(il0,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
-            if ((nam%pkh(il0,iv)<pkmin).or.(nam%pkh(il0,iv)>pkmax)) call mpl%abort('${subr}$','pkh is out of bounds')
             if (nam%rv(il0,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
-            if ((nam%pkv(il0,iv)<pkmin).or.(nam%pkv(il0,iv)>pkmax)) call mpl%abort('${subr}$','pkv is out of bounds')
-            if ((nam%nlv(il0,iv)<nlmin).or.(nam%nlv(il0,iv)>nlmax)) call mpl%abort('${subr}$','nlv is out of bounds')
          end do
       end do
    end if
@@ -2747,8 +2608,6 @@ call mpl%flush
 call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
-call mpl%write('peakness',nam%peakness)
-call mpl%write('negative_lobe',nam%negative_lobe)
 call mpl%write('diag_sqrt',nam%diag_sqrt)
 
 ! nicas_param
@@ -2762,14 +2621,8 @@ call mpl%write('network',nam%network)
 call mpl%write('forced_radii',nam%forced_radii)
 real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
 call mpl%write('rh',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
-real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%pkh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
-call mpl%write('pkh',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
 real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
 call mpl%write('rv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
-real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%pkv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
-call mpl%write('pkv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
-real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%nlv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
-call mpl%write('nlv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)

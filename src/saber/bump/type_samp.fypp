@@ -14,7 +14,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 use tools_const, only: zero,quarter,half,one,four,hundred,pi,req,reqkm,deg2rad,rad2deg
 use tools_func, only: lonlatmod,gridhash,independent_levels,sphere_bearing,sphere_dist,inside,cx_to_cxa,cx_to_proc,cx_to_cxu, &
  & convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
-use tools_gc99, only: pk,ipkhdef,fit_func
+use tools_gc99, only: fit_func
 use tools_kinds, only: kind_int,kind_real
 use tools_netcdf, only: create_file,open_file,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var, &
  & close_file
@@ -1798,9 +1798,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: jc3,jc4,ic1a,ir,irtmp,jc0a,jc0u,jc0,il0,iproc
-integer,allocatable :: nn_index(:)
 real(kind_real) :: a,d
-logical :: done,found,proc_to_done(mpl%nproc),valid
+logical :: done,proc_to_done(mpl%nproc),valid
 logical,allocatable :: c3a_free(:,:,:)
 
 ! Set name
@@ -3198,7 +3197,7 @@ if (rflt>zero) then
             norm = zero
             do ic2eff=1,nc2eff
                distnorm = diag_eff_dist(ic2eff)/rflt
-               wgt = fit_func(mpl,'hor',distnorm,pk(ipkhdef),zero)
+               wgt = fit_func(mpl,'hor',distnorm)
                diag_c2a(ic2a) = diag_c2a(ic2a)+wgt*diag_eff(ic2eff)
                norm = norm+wgt
             end do

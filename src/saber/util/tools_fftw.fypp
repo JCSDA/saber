@@ -32,12 +32,11 @@ contains
 ! Subroutine: fftw_hor_sqrt
 !> Compute horizontal square-root using FFT
 !----------------------------------------------------------------------
-subroutine fftw_hor_sqrt(mpl,n,data_full,data_sqrt)
+subroutine fftw_hor_sqrt(n,data_full,data_sqrt)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl         !< MPI data
 integer,intent(in) :: n                     !< Input data size
 real(kind_real),intent(in) :: data_full(n)  !< Input data
 real(kind_real),intent(out) :: data_sqrt(n) !< Output data

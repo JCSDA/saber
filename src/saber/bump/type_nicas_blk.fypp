@@ -14,7 +14,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
 use tools_fit, only: tensor_d2h
 use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
-use tools_gc99, only: pkmin,pkmax,nlmin,nlmax,dpk,dnl,pk,scaleh,scalev,scalethmin,ipkhdef,ipkvdef,fit_func_sqrt
+use tools_gc99, only: fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
  & inquire_var_presence,put_var,get_var
@@ -43,9 +43,6 @@ type balldata_type
    integer,allocatable :: bd_to_c1u(:)     !< Ball data index to subset Sc1 in universe
    real(kind_real),allocatable :: hnd(:)   !< Horizontal normalized distance
    real(kind_real),allocatable :: vnd(:)   !< Vertical normalized distance
-   real(kind_real),allocatable :: pkh(:)   !< Horizontal peakness
-   real(kind_real),allocatable :: pkv(:)   !< Vertical peakness
-   real(kind_real),allocatable :: nlv(:)   !< Vertical negative lobe parameter
 contains
    procedure :: alloc => balldata_alloc
    procedure :: dealloc => balldata_dealloc
@@ -73,10 +70,7 @@ type hor_type
    real(kind_real),allocatable :: lat_c1u(:)            !< Latitudes on subset Sc1, universe
    real(kind_real),allocatable :: vunit_c1u(:)          !< Latitudes on subset Sc1, universe
    real(kind_real),allocatable :: rh_c1u(:)             !< Horizontal support radius on subset Sc1, universe
-   real(kind_real),allocatable :: pkh_c1u(:)            !< Horizontal peakness on subset Sc1, universe
    real(kind_real),allocatable :: rv_c1u(:)             !< Vertical support radius on subset Sc1, universe
-   real(kind_real),allocatable :: pkv_c1u(:)            !< Vertical peakness on subset Sc1, universe
-   real(kind_real),allocatable :: nlv_c1u(:)            !< Vertical negative lobe parameter on subset Sc1, universe
    real(kind_real),allocatable :: H11_c1u(:)            !< Local correlation tensor, component 11, on subset Sc1, universe
    real(kind_real),allocatable :: H22_c1u(:)            !< Local correlation tensor, component 22, on subset Sc1, universe
    real(kind_real),allocatable :: H12_c1u(:)            !< Local correlation tensor, component 12, on subset Sc1, universe
@@ -171,10 +165,7 @@ type nicas_blk_type
 
    ! C matrix data
    real(kind_real),allocatable :: rh(:,:)               !< Horizontal fit support radius
-   real(kind_real),allocatable :: pkh(:,:)              !< Horizontal fit peakness
    real(kind_real),allocatable :: rv(:,:)               !< Vertical fit support radius
-   real(kind_real),allocatable :: pkv(:,:)              !< Vertical fit peakness
-   real(kind_real),allocatable :: nlv(:,:)              !< Vertical fit negative lobe parameter
    real(kind_real),allocatable :: rhs(:,:)              !< Fit support radius  for sampling
    real(kind_real),allocatable :: rvs(:,:)              !< Fit support radius, for sampling
    real(kind_real),allocatable :: H11(:,:)              !< LCT component 11
@@ -299,9 +290,6 @@ class(balldata_type),intent(inout) :: balldata !< Ball data
 allocate(balldata%bd_to_c1u(balldata%nbd))
 allocate(balldata%hnd(balldata%nbd))
 allocate(balldata%vnd(balldata%nbd))
-allocate(balldata%pkh(balldata%nbd))
-allocate(balldata%pkv(balldata%nbd))
-allocate(balldata%nlv(balldata%nbd))
 
 ! Probe out
 @:probe_out()
@@ -329,9 +317,6 @@ class(balldata_type),intent(inout) :: balldata !< Ball data
 if (allocated(balldata%bd_to_c1u)) deallocate(balldata%bd_to_c1u)
 if (allocated(balldata%hnd)) deallocate(balldata%hnd)
 if (allocated(balldata%vnd)) deallocate(balldata%vnd)
-if (allocated(balldata%pkh)) deallocate(balldata%pkh)
-if (allocated(balldata%pkv)) deallocate(balldata%pkv)
-if (allocated(balldata%nlv)) deallocate(balldata%nlv)
 
 ! Probe out
 @:probe_out()
@@ -342,7 +327,7 @@ end subroutine balldata_dealloc
 ! Subroutine: balldata_pack
 !> Pack data into balldata object
 !----------------------------------------------------------------------
-subroutine balldata_pack(balldata,mpl,nc1u,hnd,vnd,pkh,pkv,nlv)
+subroutine balldata_pack(balldata,mpl,nc1u,hnd,vnd)
 
 implicit none
 
@@ -352,9 +337,6 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 integer,intent(in) :: nc1u                     !< Horizontal box size
 real(kind_real),intent(in) :: hnd(nc1u)        !< Horizontal normalized distance
 real(kind_real),intent(in) :: vnd(nc1u)        !< Vertical normalized distance
-real(kind_real),intent(in) :: pkh(nc1u)        !< Horizontal peakness
-real(kind_real),intent(in) :: pkv(nc1u)        !< Vertical peakness
-real(kind_real),intent(in) :: nlv(nc1u)        !< Vertical negative lobe parameter
 
 ! Local variables
 integer :: ibd,ic1u
@@ -380,9 +362,6 @@ if (nc1u>0) then
          balldata%bd_to_c1u(ibd) = ic1u
          balldata%hnd(ibd) = hnd(ic1u)
          balldata%vnd(ibd) = vnd(ic1u)
-         balldata%pkh(ibd) = pkh(ic1u)
-         balldata%pkv(ibd) = pkv(ic1u)
-         balldata%nlv(ibd) = nlv(ic1u)
       end if
    end do
 else
@@ -427,10 +406,7 @@ if (allocated(hor%lon_c1u)) deallocate(hor%lon_c1u)
 if (allocated(hor%lat_c1u)) deallocate(hor%lat_c1u)
 if (allocated(hor%vunit_c1u)) deallocate(hor%vunit_c1u)
 if (allocated(hor%rh_c1u)) deallocate(hor%rh_c1u)
-if (allocated(hor%pkh_c1u)) deallocate(hor%pkh_c1u)
 if (allocated(hor%rv_c1u)) deallocate(hor%rv_c1u)
-if (allocated(hor%pkv_c1u)) deallocate(hor%pkv_c1u)
-if (allocated(hor%nlv_c1u)) deallocate(hor%nlv_c1u)
 if (allocated(hor%H11_c1u)) deallocate(hor%H11_c1u)
 if (allocated(hor%H22_c1u)) deallocate(hor%H22_c1u)
 if (allocated(hor%H12_c1u)) deallocate(hor%H12_c1u)
@@ -549,10 +525,7 @@ if (allocated(nicas_blk%sc_to_s)) deallocate(nicas_blk%sc_to_s)
 if (allocated(nicas_blk%sc_to_su)) deallocate(nicas_blk%sc_to_su)
 if (allocated(nicas_blk%sb_to_sc)) deallocate(nicas_blk%sb_to_sc)
 if (allocated(nicas_blk%rh)) deallocate(nicas_blk%rh)
-if (allocated(nicas_blk%pkh)) deallocate(nicas_blk%pkh)
 if (allocated(nicas_blk%rv)) deallocate(nicas_blk%rv)
-if (allocated(nicas_blk%pkv)) deallocate(nicas_blk%pkv)
-if (allocated(nicas_blk%nlv)) deallocate(nicas_blk%nlv)
 if (allocated(nicas_blk%rhs)) deallocate(nicas_blk%rhs)
 if (allocated(nicas_blk%rvs)) deallocate(nicas_blk%rvs)
 if (allocated(nicas_blk%H11)) deallocate(nicas_blk%H11)
@@ -2392,10 +2365,7 @@ end if
 
 ! Allocation
 allocate(nicas_blk%rh(geom%nc0a,geom%nl0))
-allocate(nicas_blk%pkh(geom%nc0a,geom%nl0))
 allocate(nicas_blk%rv(geom%nc0a,geom%nl0))
-allocate(nicas_blk%pkv(geom%nc0a,geom%nl0))
-allocate(nicas_blk%nlv(geom%nc0a,geom%nl0))
 allocate(nicas_blk%rhs(geom%nc0a,geom%nl0))
 allocate(nicas_blk%rvs(geom%nc0a,geom%nl0))
 
@@ -2404,10 +2374,7 @@ nicas_blk%anisotropic = .false.
 do il0=1,geom%nl0
    nicas_blk%rh(:,il0) = rhflt(il0)
 end do
-nicas_blk%pkh = pk(ipkhdef)
 nicas_blk%rv = zero
-nicas_blk%pkv = pk(ipkvdef)
-nicas_blk%nlv = zero
 nicas_blk%rhs = nicas_blk%rh
 nicas_blk%rvs = zero
 nicas_blk%wgt = one
@@ -2461,29 +2428,23 @@ nicas_blk%anisotropic = allocated(cmat_blk%D11).and.allocated(cmat_blk%D22).and.
 
 ! Allocation
 if (allocated(cmat_blk%rh)) allocate(nicas_blk%rh(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%pkh)) allocate(nicas_blk%pkh(geom%nc0a,geom%nl0))
 if (nicas_blk%anisotropic) then
    allocate(nicas_blk%H11(geom%nc0a,geom%nl0))
    allocate(nicas_blk%H22(geom%nc0a,geom%nl0))
    allocate(nicas_blk%H12(geom%nc0a,geom%nl0))
 end if
 if (allocated(cmat_blk%rv)) allocate(nicas_blk%rv(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%pkv)) allocate(nicas_blk%pkv(geom%nc0a,geom%nl0))
-if (allocated(cmat_blk%nlv)) allocate(nicas_blk%nlv(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%rhs)) allocate(nicas_blk%rhs(geom%nc0a,geom%nl0))
 if (allocated(cmat_blk%rvs)) allocate(nicas_blk%rvs(geom%nc0a,geom%nl0))
 
 ! Initialization
 if (allocated(cmat_blk%rh)) nicas_blk%rh = mpl%msv%valr
-if (allocated(cmat_blk%pkh)) nicas_blk%pkh = mpl%msv%valr
 if (nicas_blk%anisotropic) then
    nicas_blk%H11 = mpl%msv%valr
    nicas_blk%H22 = mpl%msv%valr
    nicas_blk%H12 = mpl%msv%valr
 end if
 if (allocated(cmat_blk%rv)) nicas_blk%rv = mpl%msv%valr
-if (allocated(cmat_blk%pkv)) nicas_blk%pkv = mpl%msv%valr
-if (allocated(cmat_blk%nlv)) nicas_blk%nlv = mpl%msv%valr
 if (allocated(cmat_blk%rhs)) nicas_blk%rhs = mpl%msv%valr
 if (allocated(cmat_blk%rvs)) nicas_blk%rvs = mpl%msv%valr
 
@@ -2492,7 +2453,6 @@ iv = bpar%b_to_v1(ib)
 do il0=1,geom%nl0
    if ((nam%min_lev(iv)<=il0).and.(il0<=nam%max_lev(iv))) then
       if (allocated(cmat_blk%rh)) nicas_blk%rh(:,il0) = cmat_blk%rh(:,il0)
-      if (allocated(cmat_blk%pkh)) nicas_blk%pkh(:,il0) = cmat_blk%pkh(:,il0)
       if (nicas_blk%anisotropic) then
          do ic0a=1,geom%nc0a
             call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0),cmat_blk%D22(ic0a,il0),cmat_blk%D12(ic0a,il0), &
@@ -2500,8 +2460,6 @@ do il0=1,geom%nl0
          end do
       end if
       if (allocated(cmat_blk%rv)) nicas_blk%rv(:,il0) = cmat_blk%rv(:,il0)
-      if (allocated(cmat_blk%pkv)) nicas_blk%pkv(:,il0) = cmat_blk%pkv(:,il0)
-      if (allocated(cmat_blk%nlv)) nicas_blk%nlv(:,il0) = cmat_blk%nlv(:,il0)
       if (allocated(cmat_blk%rhs)) nicas_blk%rhs(:,il0) = cmat_blk%rhs(:,il0)
       if (allocated(cmat_blk%rvs)) nicas_blk%rvs(:,il0) = cmat_blk%rvs(:,il0)
    end if
@@ -2541,9 +2499,9 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: il0,il0first,il0last,il0_prev,il1,ic0a,il0inf,il0sup,jl0,jl1,ipk,inl
+integer :: il0,il0first,il0last,il0_prev,il1,ic0a,il0inf,il0sup,jl0,jl1
 integer :: npos(geom%nl0),nmis(geom%nl0),l0_to_l1(geom%nl0)
-real(kind_real) :: distnormmin,distnorm(geom%nc0a),rv,pkv,bpk,nlv,bnl
+real(kind_real) :: distnormmin,distnorm(geom%nc0a),rv
 logical :: slev(geom%nl0)
 
 ! Set name
@@ -2604,13 +2562,7 @@ else
             do ic0a=1,geom%nc0a
                if (geom%gmask_c0a(ic0a,il0)) then
                   rv = half*(nicas_blk%rvs(ic0a,il0)+nicas_blk%rvs(ic0a,il0_prev))
-                  pkv = half*(nicas_blk%pkv(ic0a,il0)+nicas_blk%pkv(ic0a,il0_prev))
-                  bpk = max(pkmin,min(pkv,pkmax))
-                  ipk = floor((bpk-pkmin)/dpk)+1
-                  nlv = half*(nicas_blk%nlv(ic0a,il0)+nicas_blk%nlv(ic0a,il0_prev))
-                  bnl = max(nlmin,min(nlv,nlmax))
-                  inl = floor((bnl-nlmin)/dnl)+1
-                  if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/(rv*scalev(inl,ipk,1))
+                  if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/rv
                end if
             end do
             distnormmin = zss_minval(distnorm)
@@ -2731,13 +2683,13 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: il1,il0,ic1,ic0,iproc,ic1a,n,ix,iy,ic0u,ic0a,ic1u,ifmt,i_s,jc1,jproc,jc1u,ic1b,jc1b,jc0u,ic0b,nc0own,ic0own,jc0b,ipk
+integer :: il1,il0,ic1,ic0,iproc,ic1a,n,ix,iy,ic0u,ic0a,ic1u,ifmt,i_s,jc1,jproc,jc1u,ic1b,jc1b,jc0u,ic0b,nc0own,ic0own,jc0b
 integer :: is,isu,isa,isb
 integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:)
-real(kind_real) :: nc1_real,bpk
-real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),scale_avg(geom%nl0),lonlat(2)
+real(kind_real) :: nc1_real
+real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 logical :: valid
 logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
@@ -2767,21 +2719,11 @@ if (.not.nam%load_nicas_global) then
       rhs_min(il0) = zss_minval(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
       rhs_max(il0) = zss_maxval(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
       rhs_avg(il0) = zss_sum(nicas_blk%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
-      scale_avg(il0) = zero
-      do ic0a=1,geom%nc0a
-         if (geom%gmask_c0a(ic0a,il0)) then
-            bpk = max(pkmin,min(nicas_blk%pkh(ic0a,il0),pkmax))
-            ipk = floor((bpk-pkmin)/dpk)+1
-            scale_avg(il0) = scale_avg(il0)+nicas_blk%rhs(ic0a,il0)*scaleh(ipk,1)
-         end if
-      end do
    end do
    call mpl%f_comm%allreduce(rhs_min,fckit_mpi_min())
    call mpl%f_comm%allreduce(rhs_max,fckit_mpi_max())
    call mpl%f_comm%allreduce(rhs_avg,fckit_mpi_sum())
    rhs_avg = rhs_avg/real(geom%nc0_gmask(1:geom%nl0),kind_real)
-   call mpl%f_comm%allreduce(scale_avg,fckit_mpi_sum())
-   scale_avg = scale_avg/real(geom%nc0_gmask(1:geom%nl0),kind_real)
 
    ! Mask initialization
    mask_hor_c0a = geom%gmask_hor_c0a
@@ -2802,9 +2744,7 @@ do il1=1,nicas_blk%nl1
       write(mpl%info,'(a16,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
  & rhs_min(il0)*reqkm,' km - ',rhs_max(il0)*reqkm,' km)'
       if (nicas_blk%verbosity) call mpl%flush
-      write(mpl%info,'(a16,a,f3.1,a,f10.2,a)') '','Horizontal scale at ',scalethmin,': ',scale_avg(il0)*reqkm,' km'
-      if (nicas_blk%verbosity) call mpl%flush
-      nc1_real = two*geom%area_ver_c0(il0)*(2.0*nam%resol)**2/(sqrt(three)*scale_avg(il0)**2)
+      nc1_real = two*geom%area_ver_c0(il0)*(2.0*nam%resol)**2/(sqrt(three)*rhs_avg(il0)**2)
       if (nc1_real>real(huge_int,kind_real)) call mpl%abort('${subr}$','estimated nc1 is too large for an integer')
       nicas_blk%hor(il1)%nc1 = floor(nc1_real)
       write(mpl%info,'(a16,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_blk%hor(il1)%nc1
@@ -2818,7 +2758,7 @@ do il1=1,nicas_blk%nl1
       write(mpl%info,'(a16,a,i8)') '','Final nc1: ',nicas_blk%hor(il1)%nc1
       if (nicas_blk%verbosity) call mpl%flush
       write(mpl%info,'(a10,a,f5.2)') '','Effective horizontal resolution: ', &
- & sqrt(real(nicas_blk%hor(il1)%nc1,kind_real)*sqrt(three)*scale_avg(il0)**2/(two*geom%area_ver_c0(il0)))
+ & sqrt(real(nicas_blk%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
 
       select case (trim(nam%nicas_draw_type))
       case ('random_uniform','random_coast')
@@ -3456,10 +3396,10 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: isu,ic1u,jc1u,il1,il0,isa,isb,isc,ic1a,jbd,jl1,i_s,is,jsu,js
+integer :: isu,il1,il0,isa,isb,isc,jl1,i_s,is,jsu,js
 integer,allocatable :: su_to_sc(:)
-real(kind_real),allocatable :: rh_c0b(:),pkh_c0b(:),H11_c0b(:),H22_c0b(:),H12_c0b(:),rv_c0b(:),pkv_c0b(:),nlv_c0b(:)
-real(kind_real),allocatable :: rh_c1a(:),pkh_c1a(:),H11_c1a(:),H22_c1a(:),H12_c1a(:),rv_c1a(:),pkv_c1a(:),nlv_c1a(:)
+real(kind_real),allocatable :: rh_c0b(:),H11_c0b(:),H22_c0b(:),H12_c0b(:),rv_c0b(:)
+real(kind_real),allocatable :: rh_c1a(:),H11_c1a(:),H22_c1a(:),H12_c1a(:),rv_c1a(:)
 logical,allocatable :: lcheck_sc(:)
 
 ! Set name
@@ -3487,19 +3427,10 @@ if (.not.nam%load_nicas_global) then
       allocate(rh_c0b(nicas_blk%hor(il1)%nc0b))
       allocate(rh_c1a(nicas_blk%hor(il1)%nc1a))
       allocate(nicas_blk%hor(il1)%rh_c1u(nicas_blk%hor(il1)%nc1u))
-      allocate(pkh_c0b(nicas_blk%hor(il1)%nc0b))
-      allocate(pkh_c1a(nicas_blk%hor(il1)%nc1a))
-      allocate(nicas_blk%hor(il1)%pkh_c1u(nicas_blk%hor(il1)%nc1u))
       if (.not.nicas_blk%horizontal) then
          allocate(rv_c0b(nicas_blk%hor(il1)%nc0b))
          allocate(rv_c1a(nicas_blk%hor(il1)%nc1a))
          allocate(nicas_blk%hor(il1)%rv_c1u(nicas_blk%hor(il1)%nc1u))
-         allocate(pkv_c0b(nicas_blk%hor(il1)%nc0b))
-         allocate(pkv_c1a(nicas_blk%hor(il1)%nc1a))
-         allocate(nicas_blk%hor(il1)%pkv_c1u(nicas_blk%hor(il1)%nc1u))
-         allocate(nlv_c0b(nicas_blk%hor(il1)%nc0b))
-         allocate(nlv_c1a(nicas_blk%hor(il1)%nc1a))
-         allocate(nicas_blk%hor(il1)%nlv_c1u(nicas_blk%hor(il1)%nc1u))
       end if
       if (nicas_blk%anisotropic) then
          allocate(H11_c0b(nicas_blk%hor(il1)%nc0b))
@@ -3519,11 +3450,8 @@ if (.not.nam%load_nicas_global) then
 
       ! Halo extension
       call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%rh(:,il0),rh_c0b)
-      call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%pkh(:,il0),pkh_c0b)
       if (.not.nicas_blk%horizontal) then
          call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%rv(:,il0),rv_c0b)
-         call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%pkv(:,il0),pkv_c0b)
-         call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%nlv(:,il0),nlv_c0b)
       end if
       if (nicas_blk%anisotropic) then
          call nicas_blk%com_c0_AB(il1)%ext(mpl,nicas_blk%H11(:,il0),H11_c0b)
@@ -3533,11 +3461,8 @@ if (.not.nam%load_nicas_global) then
 
       ! Interpolate fields
       call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,rh_c0b,rh_c1a)
-      call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,pkh_c0b,pkh_c1a)
       if (.not.nicas_blk%horizontal) then
          call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,rv_c0b,rv_c1a)
-         call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,pkv_c0b,pkv_c1a)
-         call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,nlv_c0b,nlv_c1a)
       end if
       if (nicas_blk%anisotropic) then
          call nicas_blk%interp_c0b_to_c1a(il1)%apply(mpl,H11_c0b,H11_c1a)
@@ -3549,11 +3474,8 @@ if (.not.nam%load_nicas_global) then
       write(mpl%info,'(a16,a)') '','Communication'
       if (nicas_blk%verbosity) call mpl%flush
       call nicas_blk%com_c1_AU(il1)%ext(mpl,rh_c1a,nicas_blk%hor(il1)%rh_c1u)
-      call nicas_blk%com_c1_AU(il1)%ext(mpl,pkh_c1a,nicas_blk%hor(il1)%pkh_c1u)
       if (.not.nicas_blk%horizontal) then
          call nicas_blk%com_c1_AU(il1)%ext(mpl,rv_c1a,nicas_blk%hor(il1)%rv_c1u)
-         call nicas_blk%com_c1_AU(il1)%ext(mpl,pkv_c1a,nicas_blk%hor(il1)%pkv_c1u)
-         call nicas_blk%com_c1_AU(il1)%ext(mpl,nlv_c1a,nicas_blk%hor(il1)%nlv_c1u)
       end if
       if (nicas_blk%anisotropic) then
          call nicas_blk%com_c1_AU(il1)%ext(mpl,H11_c1a,nicas_blk%hor(il1)%H11_c1u)
@@ -3564,15 +3486,9 @@ if (.not.nam%load_nicas_global) then
       ! Release memory
       deallocate(rh_c0b)
       deallocate(rh_c1a)
-      deallocate(pkh_c0b)
-      deallocate(pkh_c1a)
       if (.not.nicas_blk%horizontal) then
          deallocate(rv_c0b)
          deallocate(rv_c1a)
-         deallocate(pkv_c0b)
-         deallocate(pkv_c1a)
-         deallocate(nlv_c0b)
-         deallocate(nlv_c1a)
       end if
       if (nicas_blk%anisotropic) then
          deallocate(H11_c0b)
@@ -3597,11 +3513,8 @@ if (.not.nam%load_nicas_global) then
    ! Release memory
    do il1=1,nicas_blk%nl1
       deallocate(nicas_blk%hor(il1)%rh_c1u)
-      deallocate(nicas_blk%hor(il1)%pkh_c1u)
       if (.not.nicas_blk%horizontal) then
          deallocate(nicas_blk%hor(il1)%rv_c1u)
-         deallocate(nicas_blk%hor(il1)%pkv_c1u)
-         deallocate(nicas_blk%hor(il1)%nlv_c1u)
       end if
       if (nicas_blk%anisotropic) then
          deallocate(nicas_blk%hor(il1)%H11_c1u)
@@ -3783,7 +3696,7 @@ real(kind_real) :: min_minus_max,max_minus_min,rv_th,rr,distv,rh,rv
 real(kind_real) :: dx,dy,dz,H11,H22,H12
 real(kind_real) :: rh_max(geom%nl0),rv_max(geom%nl0)
 real(kind_real) :: vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distv_min(nicas_blk%nl1,nicas_blk%nl1)
-real(kind_real),allocatable :: hnd(:),vnd(:),pkh(:),pkv(:),nlv(:),nn_dist(:)
+real(kind_real),allocatable :: hnd(:),vnd(:),nn_dist(:)
 logical :: valid
 
 ! Set name
@@ -3820,7 +3733,7 @@ write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distance
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
 !$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_th,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12), &
-!$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd,pkh,pkv,nlv)
+!$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd)
 do isb=1,nicas_blk%nsb
    ! Indices
    isu = nicas_blk%sb_to_su(isb)
@@ -3835,16 +3748,10 @@ do isb=1,nicas_blk%nsb
       ! Allocation
       allocate(hnd(nicas_blk%hor(jl1)%nc1u))
       allocate(vnd(nicas_blk%hor(jl1)%nc1u))
-      allocate(pkh(nicas_blk%hor(jl1)%nc1u))
-      allocate(pkv(nicas_blk%hor(jl1)%nc1u))
-      allocate(nlv(nicas_blk%hor(jl1)%nc1u))
 
       ! Initialization
       hnd = mpl%msv%valr
       vnd = mpl%msv%valr
-      pkh = mpl%msv%valr
-      pkv = mpl%msv%valr
-      nlv = mpl%msv%valr
 
       ! Vertical radius / research radius
       if (nicas_blk%anisotropic) then
@@ -3915,14 +3822,6 @@ do isb=1,nicas_blk%nsb
                      vnd(jc1u) = zero
                   end if
                end if
-               pkh(jc1u) = half*(nicas_blk%hor(il1)%pkh_c1u(ic1u)+nicas_blk%hor(jl1)%pkh_c1u(jc1u))
-               if (nicas_blk%horizontal) then
-                  pkv(jc1u) = huge_real
-                  nlv(jc1u) = huge_real
-               else
-                  pkv(jc1u) = half*(nicas_blk%hor(il1)%pkv_c1u(ic1u)+nicas_blk%hor(jl1)%pkv_c1u(jc1u))
-                  nlv(jc1u) = half*(nicas_blk%hor(il1)%nlv_c1u(ic1u)+nicas_blk%hor(jl1)%nlv_c1u(jc1u))
-               end if
             end if
          end do
 
@@ -3931,9 +3830,6 @@ do isb=1,nicas_blk%nsb
              if (supeq(hnd(jc1u),one).or.supeq(vnd(jc1u),one)) then
                 hnd(jc1u) = mpl%msv%valr
                 vnd(jc1u) = mpl%msv%valr
-                pkh(jc1u) = mpl%msv%valr
-                pkv(jc1u) = mpl%msv%valr
-                nlv(jc1u) = mpl%msv%valr
              end if
          end do
 
@@ -3943,14 +3839,11 @@ do isb=1,nicas_blk%nsb
       end if
 
       ! Pack data
-      call nicas_blk%ball(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,hnd,vnd,pkh,pkv,nlv)
+      call nicas_blk%ball(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,hnd,vnd)
 
       ! Release memory
       deallocate(hnd)
       deallocate(vnd)
-      deallocate(pkh)
-      deallocate(pkv)
-      deallocate(nlv)
    end do
 
    ! Update
@@ -4017,11 +3910,10 @@ do isb=1,nicas_blk%nsb
          jsu = nicas_blk%hor(jl1)%c1u_to_su(jc1u)
 
          ! Horizontal component
-         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),nicas_blk%ball(jl1,isb)%pkh(jbd),zero)
+         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd))
 
          ! Vertical component
-         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ball(jl1,isb)%pkv(jbd), &
- & nicas_blk%ball(jl1,isb)%nlv(jbd))
+         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd))
 
          if (sup(abs(S),S_inf)) then
             if (nicas_blk%smoother) then
@@ -5231,7 +5123,7 @@ type(geom_type),intent(in) :: geom            !< Geometry
 type(bpar_type),intent(in) :: bpar            !< Block parameters
 
 ! Local variables
-integer :: il0,idir,iv,jv
+integer :: il0,idir
 real(kind_real) :: val,valmin,valmax
 real(kind_real) :: fld(geom%nc0a,geom%nl0)
 

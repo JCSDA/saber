@@ -27,35 +27,23 @@ type cmat_blk_type
    ! Computational data
    real(kind_real),allocatable :: coef_ens(:,:)      !< Ensemble coefficient
    real(kind_real),allocatable :: coef_sta(:,:)      !< Static coefficient
-
    real(kind_real),allocatable :: rh(:,:)            !< Horizontal support radius
-   real(kind_real),allocatable :: pkh(:,:)           !< Horizontal peakness
    real(kind_real),allocatable :: D11(:,:)           !< Horizontal Daley tensor, component 11
    real(kind_real),allocatable :: D22(:,:)           !< Horizontal Daley tensor, component 22
    real(kind_real),allocatable :: D12(:,:)           !< Horizontal Daley tensor, component 12 (normalized)
-
    real(kind_real),allocatable :: rv(:,:)            !< Vertical support radius
-   real(kind_real),allocatable :: pkv(:,:)           !< Vertical peakness
-   real(kind_real),allocatable :: nlv(:,:)           !< Vertical negative lobe parameter
-
    real(kind_real),allocatable :: rhs(:,:)           !< Fit support radius  for sampling
    real(kind_real),allocatable :: rvs(:,:)           !< Fit support radius, for sampling
-
    real(kind_real) :: wgt                            !< Block weight
 
    ! BUMP interface data
    real(kind_real),allocatable :: bump_coef_ens(:,:) !< BUMP ensemble coefficient
    real(kind_real),allocatable :: bump_coef_sta(:,:) !< BUMP static coefficient
-
    real(kind_real),allocatable :: bump_rh(:,:)       !< Horizontal support radius
-   real(kind_real),allocatable :: bump_pkh(:,:)      !< Horizontal peakness
    real(kind_real),allocatable :: bump_D11(:,:)      !< Horizontal Daley tensor, component 11
    real(kind_real),allocatable :: bump_D22(:,:)      !< Horizontal Daley tensor, component 22
    real(kind_real),allocatable :: bump_D12(:,:)      !< Horizontal Daley tensor, component 12 (normalized)
-
    real(kind_real),allocatable :: bump_rv(:,:)       !< Vertical support radius
-   real(kind_real),allocatable :: bump_pkv(:,:)      !< Vertical peakness
-   real(kind_real),allocatable :: bump_nlv(:,:)      !< Vertical negative lobe parameter
 contains
    procedure :: alloc => cmat_blk_alloc
    procedure :: init => cmat_blk_init
@@ -96,15 +84,12 @@ if (bpar%fit_block(ib)) then
    allocate(cmat_blk%coef_ens(geom%nc0a,geom%nl0))
    allocate(cmat_blk%coef_sta(geom%nc0a,geom%nl0))
    allocate(cmat_blk%rh(geom%nc0a,geom%nl0))
-   allocate(cmat_blk%pkh(geom%nc0a,geom%nl0))
    if (bpar%nc4(ib)>1) then
       allocate(cmat_blk%D11(geom%nc0a,geom%nl0))
       allocate(cmat_blk%D22(geom%nc0a,geom%nl0))
       allocate(cmat_blk%D12(geom%nc0a,geom%nl0))
    end if
    allocate(cmat_blk%rv(geom%nc0a,geom%nl0))
-   allocate(cmat_blk%pkv(geom%nc0a,geom%nl0))
-   allocate(cmat_blk%nlv(geom%nc0a,geom%nl0))
    allocate(cmat_blk%rhs(geom%nc0a,geom%nl0))
    allocate(cmat_blk%rvs(geom%nc0a,geom%nl0))
 end if
@@ -144,15 +129,12 @@ if (bpar%fit_block(ib)) then
    cmat_blk%coef_ens = mpl%msv%valr
    cmat_blk%coef_sta = mpl%msv%valr
    cmat_blk%rh = mpl%msv%valr
-   cmat_blk%pkh = mpl%msv%valr
    if (bpar%nc4(ib)>1) then
       cmat_blk%D11 = mpl%msv%valr
       cmat_blk%D22 = mpl%msv%valr
       cmat_blk%D12 = mpl%msv%valr
    end if
    cmat_blk%rv = mpl%msv%valr
-   cmat_blk%pkv = mpl%msv%valr
-   cmat_blk%nlv = mpl%msv%valr
    cmat_blk%rhs = mpl%msv%valr
    cmat_blk%rvs = mpl%msv%valr
 end if
@@ -186,13 +168,10 @@ class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 if (allocated(cmat_blk%bump_coef_ens)) deallocate(cmat_blk%bump_coef_ens)
 if (allocated(cmat_blk%bump_coef_sta)) deallocate(cmat_blk%bump_coef_sta)
 if (allocated(cmat_blk%bump_rh)) deallocate(cmat_blk%bump_rh)
-if (allocated(cmat_blk%bump_pkh)) deallocate(cmat_blk%bump_pkh)
 if (allocated(cmat_blk%bump_D11)) deallocate(cmat_blk%bump_D11)
 if (allocated(cmat_blk%bump_D22)) deallocate(cmat_blk%bump_D22)
 if (allocated(cmat_blk%bump_D12)) deallocate(cmat_blk%bump_D12)
 if (allocated(cmat_blk%bump_rv)) deallocate(cmat_blk%bump_rv)
-if (allocated(cmat_blk%bump_pkv)) deallocate(cmat_blk%bump_pkv)
-if (allocated(cmat_blk%bump_nlv)) deallocate(cmat_blk%bump_nlv)
 
 ! Probe out
 @:probe_out()
@@ -248,13 +227,10 @@ call cmat_blk%partial_dealloc
 if (allocated(cmat_blk%coef_ens)) deallocate(cmat_blk%coef_ens)
 if (allocated(cmat_blk%coef_sta)) deallocate(cmat_blk%coef_sta)
 if (allocated(cmat_blk%rh)) deallocate(cmat_blk%rh)
-if (allocated(cmat_blk%pkh)) deallocate(cmat_blk%pkh)
 if (allocated(cmat_blk%D11)) deallocate(cmat_blk%D11)
 if (allocated(cmat_blk%D22)) deallocate(cmat_blk%D22)
 if (allocated(cmat_blk%D12)) deallocate(cmat_blk%D12)
 if (allocated(cmat_blk%rv)) deallocate(cmat_blk%rv)
-if (allocated(cmat_blk%pkv)) deallocate(cmat_blk%pkv)
-if (allocated(cmat_blk%nlv)) deallocate(cmat_blk%nlv)
 
 ! Probe out
 @:probe_out()

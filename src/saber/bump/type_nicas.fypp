@@ -1777,8 +1777,6 @@ type(ens_type),intent(in) :: ens         !< Ensemble
 
 ! Local variables
 integer :: idir,iv
-real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real),allocatable :: fld_bens(:,:,:)
 logical :: lbens
 
 ! Set name
@@ -1972,8 +1970,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
 integer :: ib,il0,iv
-real(kind_real) :: rh_diag(geom%nl0,bpar%nbe),pkh_diag(geom%nl0,bpar%nbe)
-real(kind_real) :: rv_diag(geom%nl0,bpar%nbe),pkv_diag(geom%nl0,bpar%nbe),nlv_diag(geom%nl0,bpar%nbe)
+real(kind_real) :: rh_diag(geom%nl0,bpar%nbe),rv_diag(geom%nl0,bpar%nbe)
 logical :: new_mom,new_hdiag
 type(ens_type) :: ens
 type(hdiag_type) :: hdiag
@@ -2015,14 +2012,8 @@ do ib=1,bpar%nbe
       do il0=1,geom%nl0
          if ((hdiag%cor1%blk(0,ib)%rh_l0(il0)>zero).and.(nam%rh(il0,iv)>zero)) &
  & rh_diag(il0,ib) = hdiag%cor1%blk(0,ib)%rh_l0(il0)/nam%rh(il0,iv)
-         if ((hdiag%cor1%blk(0,ib)%pkh_l0(il0)>zero).and.(nam%pkh(il0,iv)>zero)) &
- & pkh_diag(il0,ib) = hdiag%cor1%blk(0,ib)%pkh_l0(il0)/nam%pkh(il0,iv)
          if ((hdiag%cor1%blk(0,ib)%rv_l0(il0)>zero).and.(nam%rv(il0,iv)>zero)) &
  & rv_diag(il0,ib) = hdiag%cor1%blk(0,ib)%rv_l0(il0)/nam%rv(il0,iv)
-         if ((hdiag%cor1%blk(0,ib)%pkv_l0(il0)>zero).and.(nam%pkv(il0,iv)>zero)) &
- & pkv_diag(il0,ib) = hdiag%cor1%blk(0,ib)%pkv_l0(il0)/nam%pkv(il0,iv)
-         if ((hdiag%cor1%blk(0,ib)%nlv_l0(il0)>zero).and.(nam%nlv(il0,iv)>zero)) &
- & nlv_diag(il0,ib) = hdiag%cor1%blk(0,ib)%nlv_l0(il0)/nam%nlv(il0,iv)
       end do
    end if
 end do
@@ -2041,20 +2032,8 @@ do ib=1,bpar%nbe
             write(mpl%info,'(a10,a,i3,a,f5.3)') '','Level ',nam%levs(il0),' ~> ',rh_diag(il0,ib)
             call mpl%flush(.false.)
          end if
-         if (mpl%msv%isnot(pkh_diag(il0,ib))) then
-            write(mpl%info,'(a,f5.3)') ' / ',pkh_diag(il0,ib)
-            call mpl%flush(.false.)
-         end if
          if (mpl%msv%isnot(rv_diag(il0,ib))) then
             write(mpl%info,'(a,f5.3)') ' / ',rv_diag(il0,ib)
-            call mpl%flush(.false.)
-         end if
-         if (mpl%msv%isnot(pkv_diag(il0,ib))) then
-            write(mpl%info,'(a,f5.3)') ' / ',pkv_diag(il0,ib)
-            call mpl%flush(.false.)
-         end if
-         if (mpl%msv%isnot(nlv_diag(il0,ib))) then
-            write(mpl%info,'(a,f5.3)') ' / ',nlv_diag(il0,ib)
             call mpl%flush(.false.)
          end if
          write(mpl%info,'(a)') ''
@@ -2173,7 +2152,7 @@ mse_max = huge_real
 
 do ifac=-nfac_opt,nfac_opt
    ! Copy HDIAG into C matrix
-   call cmat%from_hdiag(mpl,nam,geom,bpar,samp,hdiag)
+   call cmat%from_hdiag(mpl,nam,geom,bpar,hdiag)
 
    ! Setup C matrix sampling
    call cmat%setup_sampling(mpl,nam,geom,bpar)
