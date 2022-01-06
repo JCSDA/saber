@@ -8,7 +8,7 @@
 
 # Parameters
 if test "$#" = "0" ; then
-   datadir=${HOME}/build/gnu_9.3.0/bundle_RelWithDebInfo/saber/test/testdata
+   datadir=${HOME}/build/gnu_10.3.0/bundle_RelWithDebInfo/saber/test/testdata
    listdir=${HOME}/code/bundle/saber/test/testlist
 else
    datadir=$1

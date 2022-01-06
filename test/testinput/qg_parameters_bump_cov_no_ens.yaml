@@ -14,8 +14,6 @@ bump:
     x: [8.0e6,8.0e6]
   rv:
     x: [0.0]
-  pk:
-    x: [7.0]
   stddev:
     x: [1.0]
   nc1max: 30000
@@ -32,11 +30,6 @@ bump:
     date: 2010-01-01T12:00:00Z
     exp: cor_rh
     parameter: cor_rh
-    type: an
-  - datadir: testdata/qg_parameters_bump_cov_no_ens
-    date: 2010-01-01T12:00:00Z
-    exp: cor_pkh
-    parameter: cor_pkh
     type: an
   - datadir: testdata/qg_parameters_bump_cov_no_ens
     date: 2010-01-01T12:00:00Z

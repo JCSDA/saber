@@ -626,7 +626,12 @@ if (raw(iz)>zero) then
             end do
          else
             ! Minimum value is larger than scalethmax
-            fit_r = mpl%msv%valr
+print*, 'ok',minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp)),scalethmax
+            if (dir=='hor') then
+               call mpl%abort('${subr}$','minimum horizontal diagnostic value is too high, increase nc3')
+            elseif (dir=='ver') then
+               call mpl%abort('${subr}$','minimum vertical diagnostic value is too high, increase nl0r')
+            end if
          end if
       else
          ! All positive-separation points are missing

@@ -29,8 +29,8 @@ integer,parameter :: nscaleth = 9
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real
 real(kind_real),parameter :: ndmax = 1.00000000_kind_real
 real(kind_real),parameter :: dnd = 0.02000000_kind_real
-real(kind_real),parameter :: scalethmin = 0.10000000_kind_real
-real(kind_real),parameter :: scalethmax = 0.90000000_kind_real
+real(kind_real),parameter :: scalethmin = 0.20000000_kind_real
+real(kind_real),parameter :: scalethmax = 0.99900000_kind_real
 real(kind_real),allocatable :: scaleth(:)
 real(kind_real),allocatable :: scaleh(:)
 real(kind_real),allocatable :: func_hor(:)

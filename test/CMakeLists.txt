@@ -424,8 +424,6 @@ endif()
 # Post-comparisons (between tests)
 
 # Compare read and write tests
-list( APPEND read-write_test cmat )
-list( APPEND read-write_test cmat_serial )
 list( APPEND read-write_test mom )
 list( APPEND read-write_test nicas_global )
 list( APPEND read-write_test nicas_local )
@@ -484,22 +482,6 @@ foreach( test ${read-write_test} )
         endforeach()
     endif()
 endforeach()
-
-# Compare parallel and serial cmat read
-ecbuild_add_test( TARGET       test_bump_read_cmat_parallel-serial_post
-                  TYPE SCRIPT
-                  COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                  ARGS         bump_read_cmat bump_read_cmat_serial 2-1
-                  TEST_DEPENDS test_bump_read_cmat_2-1_run
-                               test_bump_read_cmat_serial_2-1_run )
-
-# Compare parallel and serial cmat write
-ecbuild_add_test( TARGET       test_bump_write_cmat_parallel-serial_post
-                  TYPE SCRIPT
-                  COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
-                  ARGS         bump_write_cmat bump_write_cmat_serial 2-1
-                  TEST_DEPENDS test_bump_write_cmat_2-1_run
-                               test_bump_write_cmat_serial_2-1_run )
 
 if( SABER_TEST_TIER GREATER 1 )
     # Compare ensemble-based and covariance-based vertical balance

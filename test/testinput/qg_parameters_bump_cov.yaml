@@ -12,7 +12,6 @@ bump:
   new_nicas: true
   new_var: true
   nl0r: 2
-  peakness: true
   prefix: qg_parameters_bump_cov/test
   resol: 8.0
   strategy: specific_univariate

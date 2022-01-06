@@ -5,7 +5,7 @@ background error:
   covariance model: QgError
   horizontal_length_scale: 2.2e6
   maximum_condition_number: 1.0e6
-  pseudoens_size: 30
+  randomization size: 30
   standard_deviation: 1.8e7
   vertical_length_scale: 10000.0
 bump:
@@ -33,11 +33,6 @@ bump:
     date: 2010-01-01T12:00:00Z
     exp: loc_rh
     parameter: loc_rh
-    type: an
-  - datadir: testdata/qg_parameters_bump_hyb
-    date: 2010-01-01T12:00:00Z
-    exp: loc_pkh
-    parameter: loc_pkh
     type: an
   - datadir: testdata/qg_parameters_bump_hyb
     date: 2010-01-01T12:00:00Z

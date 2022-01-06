@@ -171,10 +171,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> new_hdiag{"new_hdiag", this};
   // Write HDIAG diagnostics
   oops::OptionalParameter<bool> write_hdiag{"write_hdiag", this};
-  // Load C matrix
-  oops::OptionalParameter<bool> load_cmat{"load_cmat", this};
-  // Write C matrix
-  oops::OptionalParameter<bool> write_cmat{"write_cmat", this};
   // Compute new NICAS parameters
   oops::OptionalParameter<bool> new_nicas{"new_nicas", this};
   // Load local NICAS parameters
@@ -238,8 +234,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<std::string> fname_vbal{"fname_vbal", this};
   // Moments files
   oops::OptionalParameter<std::vector<std::string>> fname_mom{"fname_mom", this};
-  // C matrix file
-  oops::OptionalParameter<std::string> fname_cmat{"fname_cmat", this};
   // NICAS file
   oops::OptionalParameter<std::string> fname_nicas{"fname_nicas", this};
   // Wind transform file

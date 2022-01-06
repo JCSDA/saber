@@ -325,7 +325,7 @@ if (mpl%msv%isanynot(diag_blk%raw)) then
       call put_var(mpl,grpid,raw_hor_id,diag_blk%raw(:,:,jl0rz,il0),(/1,1,il0/))
    end do
    do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0rmax
+      do jl0r=1,bpar%nl0r(ib)
          jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
          call put_var(mpl,grpid,raw_zs_id,diag_blk%raw(1,1,jl0r,il0),(/jl0,il0/))
       end do
