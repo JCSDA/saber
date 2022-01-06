@@ -12,7 +12,7 @@ use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
-use tools_fit, only: gc2gau,tensor_d2h
+use tools_fit, only: tensor_d2h
 use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: pkmin,pkmax,nlmin,nlmax,dpk,dnl,pk,scaleh,scalev,scalethmin,ipkhdef,ipkvdef,fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
@@ -4983,7 +4983,7 @@ end subroutine nicas_blk_apply_convol
 ! Subroutine: nicas_blk_test_adjoint
 !> Test NICAS adjoint accuracy
 !----------------------------------------------------------------------
-subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,geom)
+subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -4991,9 +4991,12 @@ implicit none
 class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(rng_type),intent(inout) :: rng           !< Random number generator
+type(nam_type),intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom            !< Geometry
+type(bpar_type),intent(in) :: bpar            !< Block parameters
 
 ! Local variables
+integer :: iv,il0
 real(kind_real) :: sum1,sum2
 real(kind_real) :: alpha(nicas_blk%nsb),alpha_save(nicas_blk%nsb),alpha_c(nicas_blk%nsc)
 real(kind_real) :: gamma(geom%nc0a,nicas_blk%nl1),gamma_save(geom%nc0a,nicas_blk%nl1)
@@ -5008,6 +5011,12 @@ real(kind_real),allocatable :: alpha1(:),alpha1_save(:),alpha2(:),alpha2_save(:)
 ! Probe in
 @:probe_in()
 
+! Associate
+associate(ib=>nicas_blk%ib)
+
+! Variable index
+iv = bpar%b_to_v1(ib)
+
 ! Interpolation (horizontal)
 
 ! Initialization
@@ -5017,7 +5026,6 @@ call rng%rand(zero,one,gamma_save)
 ! Adjoint test
 call nicas_blk%apply_interp_horizontal(mpl,geom,alpha_save,gamma)
 call nicas_blk%apply_interp_horizontal_ad(mpl,geom,gamma_save,alpha)
-
 
 ! Print result
 call mpl%dot_prod(alpha,alpha_save,sum1)
@@ -5031,6 +5039,9 @@ if (nicas_blk%verbosity) call mpl%flush
 ! Initialization
 call rng%rand(zero,one,gamma_save)
 call rng%rand(zero,one,fld_save)
+do il0=1,geom%nl0
+   if ((il0<nam%min_lev(iv)).or.(nam%max_lev(iv)<il0)) fld_save(:,il0) = mpl%msv%valr
+end do
 
 ! Adjoint test
 call nicas_blk%apply_interp_vertical(mpl,geom,gamma_save,fld)
@@ -5048,6 +5059,9 @@ if (nicas_blk%verbosity) call mpl%flush
 ! Initialization
 call rng%rand(zero,one,alpha_save)
 call rng%rand(zero,one,fld_save)
+do il0=1,geom%nl0
+   if ((il0<nam%min_lev(iv)).or.(nam%max_lev(iv)<il0)) fld_save(:,il0) = mpl%msv%valr
+end do
 
 ! Adjoint test
 call nicas_blk%apply_interp(mpl,geom,alpha_save,fld)
@@ -5193,6 +5207,9 @@ deallocate(alpha1_save)
 deallocate(alpha2)
 deallocate(alpha2_save)
 
+! End associate
+end associate
+
 ! Probe out
 @:probe_out()
 
@@ -5237,7 +5254,7 @@ end do
 call nicas_blk%apply(mpl,geom,fld)
 
 ! Write field
-call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%dirac_id,fld,geom%gmask_c0a)
+if (.false.) call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%dirac_id,fld,geom%gmask_c0a) ! TODO: nam%write_dirac
 
 ! Print results
 write(mpl%info,'(a7,a)') '','Values at dirac points:'

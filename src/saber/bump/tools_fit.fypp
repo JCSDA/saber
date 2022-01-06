@@ -17,8 +17,6 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-real(kind_real),parameter :: gc2gau = 0.28_kind_real                !< GC99 support radius to Gaussian Daley length-scale (empirical)
-real(kind_real),parameter :: gau2gc = one/gc2gau                    !< Gaussian Daley length-scale to GC99 support radius (empirical) ! TODO: remove that ?
 real(kind_real),parameter :: condmax = thousand                     !< Maximum tensor conditioning number
 real(kind_real),parameter :: negative_lobe_weight = 1.0e2_kind_real !< Specific weight in the cost for negative lobe
 
@@ -57,7 +55,6 @@ interface ver_fill
 end interface
 
 private
-public :: gc2gau,gau2gc
 public :: diag_sqrt,diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_check_cond,fast_fit,ver_smooth, &
  & ver_fill
 

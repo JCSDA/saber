@@ -2317,7 +2317,7 @@ if (nam%qg_regional.and.nam%qg_urban) call mpl%abort('${subr}$','qg_regional and
 ! Check ens1_param
 if (nam%new_normality.or.nam%new_vbal_cov.or.nam%update_vbal_cov.or.(nam%new_vbal.and.(.not.nam%load_vbal_cov)) &
  & .or.(nam%new_var.and.(.not.nam%forced_var)).or.nam%update_var.or.nam%new_mom.or.nam%update_mom &
- & .or.nam%check_randomization.or.nam%check_consistency.or.nam%check_optimality) then
+ & .or.nam%check_randomization.or.nam%check_optimality) then
    if (nam%ens1_nsub<1) call mpl%abort('${subr}$','ens1_nsub should be positive')
    if (mod(nam%ens1_ne,nam%ens1_nsub)/=0) call mpl%abort('${subr}$','ens1_nsub should be a divider of ens1_ne')
    if (nam%ens1_ne/nam%ens1_nsub<=3) call mpl%abort('${subr}$','ens1_ne/ens1_nsub should be larger than 3')

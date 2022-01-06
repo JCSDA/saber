@@ -39,12 +39,14 @@ integer,parameter :: ntest = 50   !< Number of tests
 
 ! NICAS derived type
 type nicas_type
-   character(len=1024) :: prefix              !< Prefix
-   type(nicas_blk_type),allocatable :: blk(:) !< NICAS data blocks
-   logical :: allocated                       !< Allocation flag
-   integer,allocatable :: grpid(:)            !< group ID
-   integer,allocatable :: dirac_id(:)         !< dirac ID
-   integer,allocatable :: bens_id(:)          !< bens ID
+   character(len=1024) :: prefix                       !< Prefix
+   type(nicas_blk_type),allocatable :: blk(:)          !< NICAS data blocks
+   logical :: allocated                                !< Allocation flag
+   integer,allocatable :: grpid(:)                     !< group ID
+   integer,allocatable :: dirac_id(:)                  !< dirac ID
+   integer,allocatable :: bens_id(:)                   !< bens ID
+   real(kind_real),allocatable :: nicas_dir(:,:,:)     !< NICAS dirac
+   real(kind_real),allocatable :: nicas_ens_dir(:,:,:) !< NICAS as ensemble localization dirac
 contains
    procedure :: alloc => nicas_alloc
    procedure :: partial_dealloc => nicas_partial_dealloc
@@ -186,6 +188,8 @@ if (allocated(nicas%blk)) then
    end do
    deallocate(nicas%blk)
 end if
+if (allocated(nicas%nicas_dir)) deallocate(nicas%nicas_dir)
+if (allocated(nicas%nicas_ens_dir)) deallocate(nicas%nicas_ens_dir)
 
 ! Update allocation flag
 nicas%allocated = .false.
@@ -895,7 +899,7 @@ if (nam%check_adjoints) then
          call mpl%flush
          write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
-         call nicas%blk(ib)%test_adjoint(mpl,rng,geom)
+         call nicas%blk(ib)%test_adjoint(mpl,rng,nam,geom,bpar)
       end if
    end do
 
@@ -1694,9 +1698,10 @@ type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
 real(kind_real) :: sum1,sum2
-real(kind_real) :: fld1_loc(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real) :: fld2_loc(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
+real(kind_real) :: fld1(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
+real(kind_real) :: fld2(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
+logical :: lbens
 
 ! Set name
 @:set_name(nicas_test_adjoint)
@@ -1704,8 +1709,11 @@ real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
 ! Probe in
 @:probe_in()
 
+! Initialization
+lbens = (allocated(ens%mem).and.(trim(nam%method)/='cor'))
+
 ! Allocation
-if (allocated(ens%mem)) then
+if (lbens) then
    allocate(fld1_bens(geom%nc0a,geom%nl0,nam%nv))
    allocate(fld2_bens(geom%nc0a,geom%nl0,nam%nv))
 end if
@@ -1715,12 +1723,11 @@ call rng%rand(zero,one,fld1_save)
 call rng%rand(zero,one,fld2_save)
 
 ! Adjoint test
-fld1_loc = fld1_save
-fld2_loc = fld2_save
-call nicas%apply(mpl,nam,geom,bpar,fld1_loc)
-call nicas%apply(mpl,nam,geom,bpar,fld2_loc)
-
-if (allocated(ens%mem)) then
+fld1 = fld1_save
+fld2 = fld2_save
+call nicas%apply(mpl,nam,geom,bpar,fld1)
+call nicas%apply(mpl,nam,geom,bpar,fld2)
+if (lbens) then
    fld1_bens = fld1_save
    fld2_bens = fld2_save
    call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld1_bens)
@@ -1728,12 +1735,12 @@ if (allocated(ens%mem)) then
 end if
 
 ! Print result
-call mpl%dot_prod(fld1_loc,fld2_save,sum1)
-call mpl%dot_prod(fld2_loc,fld1_save,sum2)
+call mpl%dot_prod(fld1,fld2_save,sum1)
+call mpl%dot_prod(fld2,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','NICAS adjoint test:                       ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
-if (allocated(ens%mem)) then
+if (lbens) then
    call mpl%dot_prod(fld1_bens,fld2_save,sum1)
    call mpl%dot_prod(fld2_bens,fld1_save,sum2)
    write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Ensemble B adjoint test:                  ', &
@@ -1742,7 +1749,7 @@ if (allocated(ens%mem)) then
 end if
 
 ! Release memory
-if (allocated(ens%mem)) then
+if (lbens) then
    deallocate(fld1_bens)
    deallocate(fld2_bens)
 end if
@@ -1761,17 +1768,18 @@ subroutine nicas_test_dirac(nicas,mpl,nam,geom,bpar,ens)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas     !< NICAS data
-type(mpl_type),intent(inout) :: mpl       !< MPI data
-type(nam_type),intent(in) :: nam          !< Namelist
-type(geom_type),intent(in) :: geom        !< Geometry
-type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(ens_type),intent(in) :: ens          !< Ensemble
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
+type(bpar_type),intent(in) :: bpar       !< Block parameters
+type(ens_type),intent(in) :: ens         !< Ensemble
 
 ! Local variables
 integer :: idir,iv
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: fld_bens(:,:,:)
+logical :: lbens
 
 ! Set name
 @:set_name(nicas_test_dirac)
@@ -1779,33 +1787,33 @@ real(kind_real),allocatable :: fld_bens(:,:,:)
 ! Probe in
 @:probe_in()
 
-! Generate dirac field
-fld = zero
-do idir=1,geom%ndir
-   if (geom%iprocdir(idir)==mpl%myproc) fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
-end do
+! Initialization
+lbens = (allocated(ens%mem).and.(trim(nam%method)/='cor'))
 
-! Allocation and initialization
-if (allocated(ens%mem).and.(trim(nam%method)/='cor')) then
-   allocate(fld_bens(geom%nc0a,geom%nl0,nam%nv))
-   fld_bens = fld
-end if
+! Allocation
+allocate(nicas%nicas_dir(geom%nc0a,geom%nl0,nam%nv))
+if (lbens) allocate(nicas%nicas_ens_dir(geom%nc0a,geom%nl0,nam%nv))
+
+! Generate dirac field
+nicas%nicas_dir = zero
+do idir=1,geom%ndir
+   if (geom%iprocdir(idir)==mpl%myproc) nicas%nicas_dir(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
+end do
+if (lbens) nicas%nicas_ens_dir = nicas%nicas_dir
 
 ! Apply NICAS to dirac
-call nicas%apply(mpl,nam,geom,bpar,fld)
+call nicas%apply(mpl,nam,geom,bpar,nicas%nicas_dir)
 
 ! Apply localized ensemble covariance
-if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
+if (lbens) call nicas%apply_bens(mpl,nam,geom,bpar,ens,nicas%nicas_ens_dir)
 
-! Write variable
-do iv=1,nam%nv
-   call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%dirac_id(iv),fld(:,:,iv),geom%gmask_c0a)
-   if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%bens_id(iv), &
- & fld_bens(:,:,iv),geom%gmask_c0a)
-end do
-
-! Release memory
-if (allocated(ens%mem).and.(trim(nam%method)/='cor')) deallocate(fld_bens)
+if (.false.) then ! TODO: nam%write_dirac
+   ! Write fields
+   do iv=1,nam%nv
+      call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%dirac_id(iv),nicas%nicas_dir(:,:,iv),geom%gmask_c0a)
+      if (lbens) call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%bens_id(iv),nicas%nicas_ens_dir(:,:,iv),geom%gmask_c0a)
+   end do
+end if
 
 ! Probe out
 @:probe_out()
@@ -1987,7 +1995,7 @@ nam%new_mom = .true.
 nam%new_hdiag = .true.
 
 ! Randomize ensemble
-call nicas%gen_ens_pert(mpl,rng,nam,geom,bpar,nam%ens1_ne,ens)
+call nicas%gen_ens_pert(mpl,rng,nam,geom,bpar,1000,ens)
 if (nam%default_seed) call rng%reseed(mpl)
 
 ! Setup sampling
@@ -2020,12 +2028,17 @@ do ib=1,bpar%nbe
 end do
 
 ! Print factors
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Consistency results'
+call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) then
-      write(mpl%info,'(a10,a)') '','Block: '//trim(bpar%blockname(ib))
+      write(mpl%info,'(a7,a)') '','Block: '//trim(bpar%blockname(ib))
+      call mpl%flush
       do il0=1,geom%nl0
          if (mpl%msv%isnot(rh_diag(il0,ib))) then
-            write(mpl%info,'(a13,a,i3,a,f5.3)') '','Level ',nam%levs(il0),' ~> ',rh_diag(il0,ib)
+            write(mpl%info,'(a10,a,i3,a,f5.3)') '','Level ',nam%levs(il0),' ~> ',rh_diag(il0,ib)
             call mpl%flush(.false.)
          end if
          if (mpl%msv%isnot(pkh_diag(il0,ib))) then

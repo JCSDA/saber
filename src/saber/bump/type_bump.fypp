@@ -1589,7 +1589,7 @@ fld_mga = bump%mpl%msv%valr
 ! Get parameter
 select case (trim(param))
 case  ('cor_rh','cor_pkh','cor_rv','cor_pkv','cor_nlv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm', &
- & 'dirac_diag_ens','dirac_diag_cor')
+ & 'dirac_diag_ens','dirac_diag_cor','dirac_nicas','dirac_nicas_ens')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do iv=0,bump%nam%nv
@@ -1818,6 +1818,16 @@ select case (trim(param))
 case ('nicas_norm')
    if (.not.allocated(bump%nicas%blk(ib)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%norm,fld_mga)
+   found = .true.
+case ('dirac_nicas')
+   iv = bump%bpar%b_to_v1(ib)
+   if (.not.allocated(bump%nicas%nicas_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%nicas_dir(:,:,iv),fld_mga)
+   found = .true.
+case ('dirac_nicas_ens')
+   iv = bump%bpar%b_to_v1(ib)
+   if (.not.allocated(bump%nicas%nicas_ens_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%nicas_ens_dir(:,:,iv),fld_mga)
    found = .true.
 end select
 
