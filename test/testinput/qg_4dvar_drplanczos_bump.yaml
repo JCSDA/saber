@@ -65,7 +65,7 @@ cost function:
   geometry:
     nx: 40
     ny: 20
-    depths: [4500.0, 5500.0]
+    depths: [2500.0, 2500.0, 2500.0, 2500.0]
   model:
     name: QG
     tstep: PT1H
@@ -80,7 +80,7 @@ variational:
     geometry:
       nx: 40
       ny: 20
-      depths: [4500.0, 5500.0]
+      depths: [2500.0, 2500.0, 2500.0, 2500.0]
     linear model:
       name: QgTLM
       trajectory:
@@ -95,7 +95,7 @@ variational:
     geometry:
       nx: 40
       ny: 20
-      depths: [4500.0, 5500.0]
+      depths: [2500.0, 2500.0, 2500.0, 2500.0]
     linear model:
       name: QgTLM
       trajectory:

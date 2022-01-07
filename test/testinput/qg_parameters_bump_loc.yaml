@@ -10,7 +10,7 @@ bump:
   ne: 10
   new_hdiag: true
   new_nicas: true
-  nl0r: 2
+  nl0r: 4
   prefix: qg_parameters_bump_loc/test
   resol: 8.0
   strategy: common
@@ -62,7 +62,7 @@ ensemble:
 geometry:
   nx: 40
   ny: 20
-  depths: [4500.0, 5500.0]
+  depths: [2500.0, 2500.0, 2500.0, 2500.0]
 input variables: [x]
 
 test:

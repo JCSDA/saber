@@ -65,6 +65,11 @@ if ( oops_qg_FOUND )
         set( SABER_TEST_INTERPOLATION $ENV{SABER_TEST_INTERPOLATION} )
     endif()
 endif()
+if( SABER_TEST_OOPS )
+    if( DEFINED ENV{SABER_TEST_OOPS_GEN} )
+        set( SABER_TEST_OOPS_GEN $ENV{SABER_TEST_OOPS_GEN} )
+    endif()
+endif()
 
 # Summary
 message( STATUS "SABER variables:" )
@@ -493,6 +498,7 @@ if( SABER_TEST_TIER GREATER 1 )
                                    bump_vbal_no_mask_cov_1-1_run )
 endif()
 
+
 # OOPS tests
 if( SABER_TEST_OOPS )
     # Link to yaml files
@@ -502,9 +508,51 @@ if( SABER_TEST_OOPS )
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
     endforeach()
 
-    # Ens recenter test
+    # Most OOPS tests: 1 MPI task and 2 OpenMP threads
     set( mpi 1 )
     set( omp 2 )
+
+    # Truth
+    ecbuild_add_test( TARGET test_qg_truth_saber
+                      MPI ${mpi}
+                      OMP ${omp}
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_forecast.x
+                      ARGS testinput/qg_truth.yaml)
+
+    # Forecast
+    ecbuild_add_test( TARGET test_qg_forecast_saber
+                      MPI ${mpi}
+                      OMP ${omp}
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_forecast.x
+                      ARGS testinput/qg_forecast.yaml )
+
+    # Ensemble generation
+    ecbuild_add_test( TARGET test_qg_gen_ens_pert_B_saber
+                      MPI ${mpi}
+                      OMP ${omp}
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_gen_ens_pert_B.x
+                      ARGS testinput/qg_gen_ens_pert_B.yaml )
+
+    # Make observations
+    ecbuild_add_test( TARGET test_qg_make_obs_3d_saber
+                      MPI ${mpi}
+                      OMP ${omp}
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_hofx.x
+                      ARGS testinput/qg_make_obs_3d.yaml )
+
+    ecbuild_add_test( TARGET test_qg_make_obs_4d_12h_saber
+                      MPI ${mpi}
+                      OMP ${omp}
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_hofx.x
+                      ARGS testinput/qg_make_obs_4d_12h.yaml )
+
+    ecbuild_add_test( TARGET test_qg_make_obs_4d_24h_saber
+                      MPI ${mpi}
+                      OMP ${omp}
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_hofx.x
+                      ARGS testinput/qg_make_obs_4d_24h.yaml )
+
+    # Ens recenter test
     foreach( test ${saber_test_oops} )
         string( FIND ${test} "qg_ens_recenter" qg_ens_recenter )
         if( qg_ens_recenter MATCHES 0 )
@@ -518,8 +566,6 @@ if( SABER_TEST_OOPS )
     endforeach()
 
     # Parameters tests
-    set( mpi 1 )
-    set( omp 2 )
     foreach( test ${saber_test_oops} )
         string( FIND ${test} "qg_parameters" qg_parameters )
         if( qg_parameters MATCHES 0 )

@@ -9,8 +9,8 @@ strategy: "specific_univariate"
 new_normality: true
 
 # model_param
-nl0: 2
-levs: [1,2]
+nl0: 4
+levs: [1,2,3,4]
 nv: 2
 variables: ["u","q"]
 

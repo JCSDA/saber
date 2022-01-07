@@ -626,7 +626,7 @@ if (raw(iz)>zero) then
             end do
          else
             ! Minimum value is larger than scalethmax
-print*, 'ok',minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp)),scalethmax
+print*, raw_tmp
             if (dir=='hor') then
                call mpl%abort('${subr}$','minimum horizontal diagnostic value is too high, increase nc3')
             elseif (dir=='ver') then

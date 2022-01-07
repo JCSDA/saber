@@ -15,6 +15,11 @@ qg_dirac_id_cov
 qg_dirac_id_loc_3d
 qg_dirac_id_loc_4d
 qg_ens_recenter
+qg_forecast
+qg_gen_ens_pert_B
+qg_make_obs_3d
+qg_make_obs_4d_12h
+qg_make_obs_4d_24h
 qg_parameters_bump_cov
 qg_parameters_bump_cov_pairs
 qg_parameters_bump_cov_incens
@@ -26,3 +31,4 @@ qg_parameters_bump_loc
 qg_parameters_bump_vbal_new
 qg_parameters_bump_vbal_update
 qg_parameters_gsirf_cov
+qg_truth

@@ -10,8 +10,8 @@ new_hdiag: true
 write_hdiag: true
 
 # model_param
-nl0: 2
-levs: [1,2]
+nl0: 4
+levs: [1,2,3,4]
 nv: 2
 variables: ["u","q"]
 
@@ -27,7 +27,7 @@ ncontig_th: 2
 nc1: 500
 nc3: 15
 dc: 400.0e3
-nl0r: 2
+nl0r: 4
 
 # diag_param
 ne: 50

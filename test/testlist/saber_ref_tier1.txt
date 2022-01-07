@@ -524,6 +524,11 @@ qg_dirac_id_cov/test.log.out
 qg_dirac_id_loc_3d/test.log.out
 qg_dirac_id_loc_4d/test.log.out
 qg_ens_recenter/test.log.out
+qg_forecast/test.log.out
+qg_gen_ens_pert_B/test.log.out
+qg_make_obs_3d/test.log.out
+qg_make_obs_4d_12h/test.log.out
+qg_make_obs_4d_24h/test.log.out
 qg_parameters_bump_cov/test.log.out
 qg_parameters_bump_cov_pairs/test.log.out
 qg_parameters_bump_cov_incens/test.log.out
@@ -535,3 +540,4 @@ qg_parameters_bump_loc/test.log.out
 qg_parameters_bump_vbal_new/test.log.out
 qg_parameters_bump_vbal_update/test.log.out
 qg_parameters_gsirf_cov/test.log.out
+qg_truth/test.log.out

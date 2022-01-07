@@ -29,7 +29,7 @@ recenter variables: [x]
 geometry:
   nx: 40
   ny: 20
-  depths: [4500.0, 5500.0]
+  depths: [2500.0, 2500.0, 2500.0, 2500.0]
 
 recentered output:
   datadir: testdata

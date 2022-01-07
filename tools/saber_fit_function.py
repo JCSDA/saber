@@ -28,7 +28,7 @@ nscaleth = int((scalethmax-scalethmin)/dscaleth+1.0e-6)+1
 scaleth = np.linspace(scalethmin, scalethmax, nscaleth)
 scaleth = np.append(scaleth, 0.99)
 nscaleth += 1
-scalethmax = 0.999
+scalethmax = 0.99
 run_horizontal = True
 run_vertical = True
 
