@@ -11,7 +11,7 @@ bump:
   new_hdiag: true
   new_nicas: true
   new_var: true
-  nl0r: 4
+  nl0r: 2
   prefix: qg_parameters_bump_cov/test
   resol: 8.0
   strategy: specific_univariate
@@ -68,7 +68,7 @@ ensemble:
 geometry:
   nx: 40
   ny: 20
-  depths: [2500.0, 2500.0, 2500.0, 2500.0]
+  depths: [4500.0, 5500.0]
 input variables: [x]
 
 test:

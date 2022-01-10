@@ -12,8 +12,8 @@ check_adjoints: true
 check_dirac: true
 
 # model_param
-nl0: 4
-levs: [1,2,3,4]
+nl0: 2
+levs: [1,2]
 nv: 2
 variables: ["u","q"]
 
@@ -32,11 +32,11 @@ ens1_ne: 50
 resol: 8.0
 forced_radii: true
 rh:
-  u: [4000.0e3,2000.0e3,2000.0e3,4000.0e3]
-  q: [3000.0e3,1500.0e3,1500.0e3,3000.0e3]
+  u: [4000.0e3,2000.0e3]
+  q: [3000.0e3,1500.0e3]
 rv:
-  u: [10000.0,8000.0,8000.0,10000.0]
-  q: [8000.0,12000.0,12000.0,8000.0]
+  u: [10000.0,8000.0]
+  q: [8000.0,12000.0]
 
 # dirac_param
 ndir: 1

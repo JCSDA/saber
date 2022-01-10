@@ -11,8 +11,8 @@ write_var: true
 check_apply_stddev: true
 
 # model_param
-nl0: 4
-levs: [1,2,3,4]
+nl0: 2
+levs: [1,2]
 nv: 2
 variables: ["u","q"]
 

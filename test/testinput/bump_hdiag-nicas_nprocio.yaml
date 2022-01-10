@@ -15,8 +15,8 @@ check_adjoints: true
 check_dirac: true
 
 # model_param
-nl0: 4
-levs: [1,2,3,4]
+nl0: 2
+levs: [1,2]
 nv: 2
 variables: ["u","q"]
 
@@ -29,7 +29,7 @@ ens1_ne: 50
 nc1: 500
 nc3: 15
 dc: 400.0e3
-nl0r: 4
+nl0r: 2
 
 # diag_param
 ne: 50

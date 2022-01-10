@@ -9,14 +9,13 @@ bump:
   new_nicas: true
   new_var: true
   prefix: qg_parameters_bump_cov_no_ens/test
-  resol: 12.0
+  resol: 8.0
   rh:
-    x: [8.0e6]
+    x: [6.4e6,7.4e6]
   rv:
-    x: [0.0]
+    x: [33000.0]
   stddev:
-    x: [1.0]
-  nc1max: 30000
+    x: [1.8e7]
   strategy: specific_univariate
   write_nicas_local: true
   write_var: true
@@ -44,7 +43,7 @@ bump:
 geometry:
   nx: 40
   ny: 20
-  depths: [2500.0, 2500.0, 2500.0, 2500.0]
+  depths: [4500.0, 5500.0]
 input variables: [x]
 
 test:

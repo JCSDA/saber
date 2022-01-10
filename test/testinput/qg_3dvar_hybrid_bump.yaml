@@ -78,7 +78,7 @@ cost function:
   geometry:
     nx: 40
     ny: 20
-    depths: [2500.0, 2500.0, 2500.0, 2500.0]
+    depths: [4500.0, 5500.0]
 variational:
   minimizer:
     algorithm: DRIPCG
@@ -88,7 +88,7 @@ variational:
     geometry:
       nx: 40
       ny: 20
-      depths: [2500.0, 2500.0, 2500.0, 2500.0]
+      depths: [4500.0, 5500.0]
     linear model:
       name: QgIdTLM
       trajectory:
@@ -103,7 +103,7 @@ variational:
     geometry:
       nx: 40
       ny: 20
-      depths: [2500.0, 2500.0, 2500.0, 2500.0]
+      depths: [4500.0, 5500.0]
     linear model:
       name: QgIdTLM
       trajectory:

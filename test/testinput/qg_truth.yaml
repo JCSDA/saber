@@ -2,7 +2,7 @@ forecast length: P18D
 geometry:
   nx: 40
   ny: 20
-  depths: [2500.0, 2500.0, 2500.0, 2500.0]
+  depths: [4500.0, 5500.0]
 initial condition:
   date: 2009-12-15T00:00:00Z
   read_from_file: 0

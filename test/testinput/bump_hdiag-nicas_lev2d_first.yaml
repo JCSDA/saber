@@ -29,7 +29,7 @@ ens1_ne: 50
 nc1: 500
 nc3: 15
 dc: 400.0e3
-nl0r: 4
+nl0r: 2
 
 # diag_param
 ne: 50
