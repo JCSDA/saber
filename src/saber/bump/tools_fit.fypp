@@ -523,8 +523,10 @@ real(kind_real),intent(in) :: raw(n)  !< Raw data
 real(kind_real),intent(out) :: fit_r  !< Support radius
 
 ! Local variables
-integer :: ntmp,iscaleth,di,i,im,ip,imin(1)
-real(kind_real) :: raw_tmp(n),fit_r_m,fit_r_p
+integer,parameter :: itermax = 10
+integer :: ntmp,iscaleth,di,i,im,ip,imin(1),ntest,itest,iter
+real(kind_real) :: raw_tmp(n),fit_r_m,fit_r_p,raw_min,dscale,thtest
+real(kind_real),allocatable :: scaletest(:),scalethtest(:)
 
 ! Set name
 @:set_name(fit_fast_fit)
@@ -547,92 +549,117 @@ if (raw(iz)>zero) then
       ntmp = count(mpl%msv%isnot(raw_tmp))
 
       if (ntmp>1) then
-         ! Check minimum value
-         if (infeq(minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp)),scalethmax)) then
-            ! Initialization
-            imin = minloc(raw_tmp,mask=mpl%msv%isnot(raw_tmp))
-   
-            ! Loop over thresholds
+         ! Initialization
+         ntest = 0
+         raw_min = minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp))
+         imin = minloc(raw_tmp,mask=mpl%msv%isnot(raw_tmp))
+
+         ! Count number of scales to test
+         do iscaleth=1,nscaleth
+            if (infeq(raw_min,scaleth(iscaleth))) ntest = ntest+1
+         end do
+
+         if (ntest>0) then
+            ! Save scales to test
+            allocate(scaletest(ntest))
+            allocate(scalethtest(ntest))
+            itest = 0
             do iscaleth=1,nscaleth
-               ! Find support radius, lower value
-               fit_r_m = mpl%msv%valr
-               if (iz>1) then
-                  ip = iz
-                  do di=1,n
-                     ! Check whether fit value has been found
-                     if (mpl%msv%is(fit_r_m)) then
-                        ! Index
-                        im = iz-di
-   
-                        ! Check index validity
-                        if (im>=1) then
-                           ! Check whether threshold has been crossed
-                           if (mpl%msv%isnot(raw_tmp(im)).and.inf(raw_tmp(im),scaleth(iscaleth))) then
-                              ! Set fit value
-                              fit_r_m = dist(im)+(dist(ip)-dist(im))*(scaleth(iscaleth)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
-                           else
-                              ! Update index
-                              ip = im
-                           end if
-                        end if
-                     end if
-                  end do
-               end if
-   
-               ! Find support radius, upper value
-               fit_r_p = mpl%msv%valr
-               if (iz<n) then
-                  im = iz
-                  do di=1,n
-                     ! Check whether fit value has been found
-                     if (mpl%msv%is(fit_r_p)) then
-                        ! Index
-                        ip = iz+di
-   
-                        ! Check index validity
-                        if (ip<=n) then
-                           ! Check whether threshold has been crossed
-                           if (mpl%msv%isnot(raw_tmp(ip)).and.inf(raw_tmp(ip),scaleth(iscaleth))) then
-                              ! Set fit value
-                              fit_r_p = dist(im)+(dist(ip)-dist(im))*(scaleth(iscaleth)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
-                           else
-                              ! Update index
-                              im = ip
-                           end if
-                        end if
-                     end if
-                  end do
-               end if
-   
-               ! Gather values
-               if (mpl%msv%isnot(fit_r_m).and.mpl%msv%isnot(fit_r_p)) then
-                  fit_r = half*(fit_r_m+fit_r_p)
-               elseif (mpl%msv%isnot(fit_r_m)) then
-                  fit_r = fit_r_m
-               elseif (mpl%msv%isnot(fit_r_p)) then
-                  fit_r = fit_r_p
-               else
-                  fit_r = mpl%msv%valr
-               end if
-               
-               ! Scale normalization
-               if (mpl%msv%isnot(fit_r)) then
+               if (infeq(raw_min,scaleth(iscaleth))) then
+                  itest = itest+1
                   if (dir=='hor') then
-                     fit_r = fit_r/scaleh(iscaleth)
+                     scaletest(itest) = scaleh(iscaleth)
                   elseif (dir=='ver') then
-                     fit_r = fit_r/scalev(iscaleth)
+                     scaletest(itest) = scalev(iscaleth)
                   end if
+                  scalethtest(itest) = scaleth(iscaleth)
                end if
             end do
          else
-            ! Minimum value is larger than scalethmax
-print*, raw_tmp
-            if (dir=='hor') then
-               call mpl%abort('${subr}$','minimum horizontal diagnostic value is too high, increase nc3')
-            elseif (dir=='ver') then
-               call mpl%abort('${subr}$','minimum vertical diagnostic value is too high, increase nl0r')
-            end if
+            ! Unique data-based scale
+            ntest = 1
+            allocate(scalethtest(ntest))
+            allocate(scaletest(ntest))
+            scalethtest(1) = raw_min
+            scaletest(1) = half
+            dscale = quarter
+            do iter=1,itermax
+               thtest = fit_func(mpl,dir,scaletest(1))
+               if (sup(scalethtest(1),thtest)) then
+                  scaletest(1) = scaletest(1)-dscale
+               else
+                  scaletest(1) = scaletest(1)+dscale
+               end if
+               dscale = half*dscale
+            end do
          end if
+
+        ! Loop over thresholds
+         do itest=1,ntest
+            ! Find support radius, lower value
+            fit_r_m = mpl%msv%valr
+            if (iz>1) then
+               ip = iz
+               do di=1,n
+                  ! Check whether fit value has been found
+                  if (mpl%msv%is(fit_r_m)) then
+                     ! Index
+                     im = iz-di
+   
+                     ! Check index validity
+                     if (im>=1) then
+                        ! Check whether threshold has been crossed
+                        if (mpl%msv%isnot(raw_tmp(im)).and.inf(raw_tmp(im),scalethtest(itest))) then
+                           ! Set fit value
+                           fit_r_m = dist(im)+(dist(ip)-dist(im))*(scalethtest(itest)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
+                        else
+                           ! Update index
+                           ip = im
+                        end if
+                     end if
+                  end if
+               end do
+            end if
+   
+            ! Find support radius, upper value
+            fit_r_p = mpl%msv%valr
+            if (iz<n) then
+               im = iz
+               do di=1,n
+                  ! Check whether fit value has been found
+                  if (mpl%msv%is(fit_r_p)) then
+                     ! Index
+                     ip = iz+di
+   
+                     ! Check index validity
+                     if (ip<=n) then
+                        ! Check whether threshold has been crossed
+                        if (mpl%msv%isnot(raw_tmp(ip)).and.inf(raw_tmp(ip),scalethtest(itest))) then
+                           ! Set fit value
+                           fit_r_p = dist(im)+(dist(ip)-dist(im))*(scalethtest(itest)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
+                        else
+                           ! Update index
+                           im = ip
+                        end if
+                     end if
+                  end if
+               end do
+            end if
+   
+            ! Gather values
+            if (mpl%msv%isnot(fit_r_m).and.mpl%msv%isnot(fit_r_p)) then
+               fit_r = half*(fit_r_m+fit_r_p)
+            elseif (mpl%msv%isnot(fit_r_m)) then
+               fit_r = fit_r_m
+            elseif (mpl%msv%isnot(fit_r_p)) then
+               fit_r = fit_r_p
+            else
+               fit_r = mpl%msv%valr
+            end if
+               
+            ! Scale normalization
+            if (mpl%msv%isnot(fit_r)) fit_r = fit_r/scaletest(itest)
+         end do
       else
          ! All positive-separation points are missing
          fit_r = mpl%msv%valr
