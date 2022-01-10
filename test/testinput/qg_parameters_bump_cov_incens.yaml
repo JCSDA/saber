@@ -45,27 +45,12 @@ bump:
     type: an
 ensemble pert:
   date: 2010-01-01T12:00:00Z
-  members:
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.1.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.2.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.3.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.4.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.5.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.6.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.7.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.8.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.9.2010-01-01T12:00:00Z.PT0S.nc
-  - date: 2010-01-01T12:00:00Z
-    filename: testdata/recenter.ens.10.2010-01-01T12:00:00Z.PT0S.nc
+  members template:
+    template:
+      date: 2010-01-01T12:00:00Z
+      filename: testdata/recenter.ens.%mem%.2010-01-01T12:00:00Z.PT0S.nc
+    pattern: %mem%
+    values: [1,2,3,4,5,6,7,8,9,10]
 geometry:
   nx: 40
   ny: 20
