@@ -24,6 +24,7 @@
 #include "oops/base/Variables.h"
 #include "oops/interface/Increment.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/ConfigFunctions.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
@@ -538,10 +539,35 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
   int ens1_ne = 0;
   if (ens1) ens1_ne = ens1->size();
   const boost::optional<eckit::LocalConfiguration> &ensembleConfig = params.ensemble.value();
+  std::vector<eckit::LocalConfiguration> membersConfig;
   if (ensembleConfig != boost::none) {
-    std::vector<eckit::LocalConfiguration> memberConfig;
-    (*ensembleConfig).get("members", memberConfig);
-    ens1_ne = memberConfig.size();
+    if (ensembleConfig->has("members")) {
+      // Explicit members
+      ensembleConfig->get("members", membersConfig);
+      ens1_ne = membersConfig.size();
+    } else {
+      // Templated members
+      eckit::LocalConfiguration templateConfig;
+      ensembleConfig->get("members template", templateConfig);
+      eckit::LocalConfiguration membersTemplate;
+      templateConfig.get("template", membersTemplate);
+      std::string pattern;
+      templateConfig.get("pattern", pattern);
+      templateConfig.get("nmembers", ens1_ne);
+      int zpad;
+      templateConfig.get("zero padding", zpad);
+      for (int ie=0; ie < ens1_ne; ++ie) {
+        eckit::LocalConfiguration memberConfig(membersTemplate);
+        std::string rs = std::to_string(ie+1);
+        if (zpad > 0) {
+          std::stringstream ss;
+          ss << std::setw(zpad) << std::setfill('0') << rs;
+          rs = ss.str();
+        }
+        util::seekAndReplace(memberConfig, pattern, rs);
+        membersConfig.push_back(memberConfig);
+      }
+    }
   }
 
   // Get ensemble 2 size if ensemble 2 is available
@@ -701,10 +727,6 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 
   // Load ensemble members sequentially
   if (ensembleConfig != boost::none) {
-    // Get ensemble and members configurations
-    std::vector<eckit::LocalConfiguration> memberConfig;
-    (*ensembleConfig).get("members", memberConfig);
-
     // Check what needs to be updated
     const boost::optional<bool> &update_vbal_cov = params_.update_vbal_cov.value();
     const boost::optional<bool> &update_var = params_.update_var.value();
@@ -713,7 +735,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     // Loop over all ensemble members
     for (int ie = 0; ie < ens1_ne; ++ie) {
       // Get date
-      const util::DateTime date(memberConfig[ie].getString("date"));
+      const util::DateTime date(membersConfig[ie].getString("date"));
 
       // Define increment
       Increment_ incr(resol, activeVars_, date);
@@ -722,7 +744,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       oops::Log::info() <<
       "-------------------------------------------------------------------" << std::endl;
       oops::Log::info() << "--- Load member " << ie+1 << " / " << ens1_ne << std::endl;
-      incr.read(memberConfig[ie]);
+      incr.read(membersConfig[ie]);
 
       if (update_vbal_cov != boost::none) {
         if (*update_vbal_cov) {
