@@ -562,6 +562,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     if (ensembleConfig->has("members")) {
       // Explicit members
       ensembleConfig->get("members", membersConfig);
+      ens1_ne = membersConfig.size();
     } else {
       // Templated members
       eckit::LocalConfiguration templateConfig;
@@ -570,15 +571,21 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       templateConfig.get("template", membersTemplate);
       std::string pattern;
       templateConfig.get("pattern", pattern);
-      std::vector<std::string> values;
-      templateConfig.get("values", values);
-      for (size_t ie=0; ie < values.size(); ++ie) {
+      templateConfig.get("nmembers", ens1_ne);
+      int zpad;
+      templateConfig.get("zero padding", zpad);
+      for (int ie=0; ie < ens1_ne; ++ie) {
         eckit::LocalConfiguration memberConfig(membersTemplate);
-        util::seekAndReplace(memberConfig, pattern, values[ie]);
+        std::string rs = std::to_string(ie+1);
+        if (zpad > 0) {
+          std::stringstream ss;
+          ss << std::setw(zpad) << std::setfill('0') << rs;
+          rs = ss.str();
+        }
+        util::seekAndReplace(memberConfig, pattern, rs);
         membersConfig.push_back(memberConfig);
       }
     }
-    ens1_ne = membersConfig.size();
   }
 
   // Get ensemble 2 size if ensemble 2 is available

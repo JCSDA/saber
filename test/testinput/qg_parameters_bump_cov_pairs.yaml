@@ -49,14 +49,14 @@ ensemble base:
       date: 2010-01-01T12:00:00Z
       filename: testdata/ensmean.an.2010-01-01T12:00:00Z.nc
     pattern: ""
-    values: [1,2,3,4,5,6,7,8,9,10]
+    nmembers: 10
 ensemble pairs:
   members template:
     template:
       date: 2010-01-01T12:00:00Z
       filename: testdata/recenter.ens.%mem%.2010-01-01T12:00:00Z.PT0S.nc
     pattern: %mem%
-    values: [1,2,3,4,5,6,7,8,9,10]
+    nmembers: 10
 geometry:
   nx: 40
   ny: 20
