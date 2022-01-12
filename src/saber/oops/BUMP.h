@@ -545,7 +545,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       // Explicit members
       ensembleConfig->get("members", membersConfig);
       ens1_ne = membersConfig.size();
-    } else {
+    } else if (ensembleConfig->has("members template")) {
       // Templated members
       eckit::LocalConfiguration templateConfig;
       ensembleConfig->get("members template", templateConfig);
@@ -567,6 +567,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
         util::seekAndReplace(memberConfig, pattern, rs);
         membersConfig.push_back(memberConfig);
       }
+    } else {
+      ABORT("BUMP: ensemble not specified");
     }
   }
 
