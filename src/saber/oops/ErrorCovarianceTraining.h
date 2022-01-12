@@ -9,12 +9,7 @@
 #define SABER_OOPS_ERRORCOVARIANCETRAINING_H_
 
 #include <memory>
-#include <sstream>
 #include <string>
-#include <utility>
-#include <vector>
-
-#include "eckit/config/Configuration.h"
 
 #include "oops/base/IncrementEnsemble.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
@@ -52,7 +47,9 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
   typedef oops::ModelSpaceCovarianceParametersWrapper<MODEL> CovarianceParameters_;
   typedef typename oops::Geometry<MODEL>::Parameters_        GeometryParameters_;
   typedef typename oops::State<MODEL>::Parameters_           StateParameters_;
-  typedef oops::IncrementEnsembleFromStatesParameters<MODEL> IncrementEnsembleParameters_;
+  typedef oops::StateEnsembleParameters<MODEL>               StateEnsembleParameters_;
+  typedef oops::IncrementEnsembleFromStatesParameters<MODEL> IncrementEnsembleFromStatesParameters_;
+  typedef oops::IncrementEnsembleParameters<MODEL>           IncrementEnsembleParameters_;
 
   /// Geometry parameters
   oops::RequiredParameter<GeometryParameters_> geometry{"geometry", this};
@@ -61,13 +58,16 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
   oops::RequiredParameter<StateParameters_> background{"background", this};
 
   /// Ensemble parameters
-  oops::OptionalParameter<IncrementEnsembleParameters_> ensemble{"ensemble", this};
+  oops::OptionalParameter<IncrementEnsembleFromStatesParameters_> ensemble{"ensemble", this};
 
   /// Ensemble perturbations parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
+  oops::OptionalParameter<IncrementEnsembleParameters_> ensemblePert{"ensemble pert", this};
 
   /// Ensemble base parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};
+  oops::OptionalParameter<StateEnsembleParameters_> ensembleBase{"ensemble base", this};
+  /// Ensemble state parameters for the ensemble pairs that would be subtracted from the base
+  /// ensemble
+  oops::OptionalParameter<StateEnsembleParameters_> ensemblePairs{"ensemble pairs", this};
 
   /// Background error covariance model
   oops::OptionalParameter<CovarianceParameters_> backgroundError{"background error", this};
@@ -132,23 +132,17 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       // Ensemble of state, compute perturbation using the mean
       oops::Log::info() << "Ensemble of state, compute perturbation using the mean" << std::endl;
       ens1.reset(new Ensemble_(*params.ensemble.value(), xx, xx, resol, inputVars));
-    } else {
-      const boost::optional<eckit::LocalConfiguration>
-        &ensemblePertConfig = params.ensemblePert.value();
-      if (ensemblePertConfig != boost::none) {
-        const boost::optional<eckit::LocalConfiguration>
-          &ensembleBaseConfig = params.ensembleBase.value();
-        if (ensembleBaseConfig != boost::none) {
-          // Increment ensemble from difference of two state ensembles
-          oops::Log::info() << "Increment ensemble from difference of two state ensembles"
-                            << std::endl;
-          ens1.reset(new Ensemble_(resol, inputVars, *ensembleBaseConfig, *ensemblePertConfig));
-        } else {
-          // Increment ensemble from increments on disk
-          oops::Log::info() << "Increment ensemble from increments on disk" << std::endl;
-          ens1.reset(new Ensemble_(resol, inputVars, *ensemblePertConfig));
-        }
-      }
+    } else if (params.ensemblePert.value() != boost::none) {
+      // Increment ensemble from increments on disk
+      oops::Log::info() << "Increment ensemble from increments on disk" << std::endl;
+      ens1.reset(new Ensemble_(resol, inputVars, *params.ensemblePert.value()));
+    } else if ((params.ensembleBase.value() != boost::none) &&
+               (params.ensemblePairs.value() != boost::none)) {
+      // Increment ensemble from difference of two state ensembles
+       oops::Log::info() << "Increment ensemble from difference of two state ensembles"
+                         << std::endl;
+       ens1.reset(new Ensemble_(resol, inputVars, *params.ensembleBase.value(),
+                                                  *params.ensemblePairs.value()));
     }
     if (ens1) {
       for (size_t ie = 0; ie < ens1->size(); ++ie) {
