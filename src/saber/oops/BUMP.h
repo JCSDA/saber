@@ -552,7 +552,6 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
   : resol_(resol), activeVars_(activeVars), params_(params), keyBUMP_() {
   oops::Log::trace() << "BUMP<MODEL>::BUMP construction starting" << std::endl;
 
-
   // Get ensemble 1 size if ensemble 1 is available
   int ens1_ne = 0;
   if (ens1) ens1_ne = ens1->size();
@@ -572,8 +571,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       std::string pattern;
       templateConfig.get("pattern", pattern);
       templateConfig.get("nmembers", ens1_ne);
-      int zpad;
-      templateConfig.get("zero padding", zpad);
+      int zpad = 0;
+      if (templateConfig.has("zero padding")) {
+        templateConfig.get("zero padding", zpad);
+      }
       for (int ie=0; ie < ens1_ne; ++ie) {
         eckit::LocalConfiguration memberConfig(membersTemplate);
         std::string rs = std::to_string(ie+1);
