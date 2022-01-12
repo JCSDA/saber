@@ -1,6 +1,6 @@
 background:
   date: 2010-01-01T12:00:00Z
-  filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+  filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
   datadir: testdata
   forced_radii: true
@@ -8,7 +8,7 @@ bump:
   method: cor
   new_nicas: true
   new_var: true
-  prefix: qg_parameters_bump_cov_no_ens/test
+  prefix: qg_error_covariance_training_bump_cov_no_ens/test
   resol: 8.0
   rh:
     x: [6.4e6,7.4e6]
@@ -20,22 +20,22 @@ bump:
   write_nicas_local: true
   write_var: true
   output:
-  - datadir: testdata/qg_parameters_bump_cov_no_ens
+  - datadir: testdata/qg_error_covariance_training_bump_cov_no_ens
     date: 2010-01-01T12:00:00Z
     exp: stddev
     parameter: stddev
     type: an
-  - datadir: testdata/qg_parameters_bump_cov_no_ens
+  - datadir: testdata/qg_error_covariance_training_bump_cov_no_ens
     date: 2010-01-01T12:00:00Z
     exp: cor_rh
     parameter: cor_rh
     type: an
-  - datadir: testdata/qg_parameters_bump_cov_no_ens
+  - datadir: testdata/qg_error_covariance_training_bump_cov_no_ens
     date: 2010-01-01T12:00:00Z
     exp: cor_rv
     parameter: cor_rv
     type: an
-  - datadir: testdata/qg_parameters_bump_cov_no_ens
+  - datadir: testdata/qg_error_covariance_training_bump_cov_no_ens
     date: 2010-01-01T12:00:00Z
     exp: nicas_norm
     parameter: nicas_norm
@@ -47,5 +47,5 @@ geometry:
 input variables: [x]
 
 test:
-  reference filename: testref/qg_parameters_bump_cov_no_ens/test.log.out
-  test output filename: testoutput/qg_parameters_bump_cov_no_ens/test.log.out
+  reference filename: testref/qg_error_covariance_training_bump_cov_no_ens/test.log.out
+  test output filename: testoutput/qg_error_covariance_training_bump_cov_no_ens/test.log.out

@@ -4,7 +4,7 @@ geometry:
   depths: [4500.0, 5500.0]
 initial condition:
   date: 2010-01-01T00:00:00Z
-  filename: testdata/truth.fc.2009-12-15T00:00:00Z.P17D.nc
+  filename: testdata/qg_truth/truth.fc.2009-12-15T00:00:00Z.P17D.nc
 model:
   name: QG
   tstep: PT1H
@@ -16,7 +16,7 @@ observations:
     obs type: Stream
   obs space:
     obsdataout:
-      obsfile: testdata/truth.obs4d_24h.nc
+      obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
     obs type: Stream
     generate:
       begin: PT3H
@@ -26,12 +26,12 @@ observations:
       obs_period: PT3H
   obs filters:
   - filter: GOMsaver
-    filename: testdata/truth.obs4d_24h.stream.gom
+    filename: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.stream.gom
 - obs operator:
     obs type: Wind
   obs space:
     obsdataout:
-      obsfile: testdata/truth.obs4d_24h.nc
+      obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
     obs type: Wind
     generate:
       begin: PT6H
@@ -41,12 +41,12 @@ observations:
       obs_period: PT6H
   obs filters:
   - filter: GOMsaver
-    filename: testdata/truth.obs4d_24h.wind.gom
+    filename: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.wind.gom
 - obs operator:
     obs type: WSpeed
   obs space:
     obsdataout:
-      obsfile: testdata/truth.obs4d_24h.nc
+      obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
     obs type: WSpeed
     generate:
       begin: PT3H
@@ -56,7 +56,7 @@ observations:
       obs_period: PT6H
   obs filters:
   - filter: GOMsaver
-    filename: testdata/truth.obs4d_24h.wspeed.gom
+    filename: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.wspeed.gom
 make obs: true
 prints:
   frequency: PT3H

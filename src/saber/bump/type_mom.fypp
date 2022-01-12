@@ -508,7 +508,11 @@ if (nam%check_dirac) then
    allocate(pert_c0a(geom%nc0a,geom%nl0,nam%nv))
 
    ! Get perturbation
-   pert_c0a = fld_c0a-mom%m1
+   do jc0a=1,geom%nc0a
+      do jl0=1,geom%nl0
+         if (geom%gmask_c0a(jc0a,il0)) pert_c0a(jc0a,jl0,:) = fld_c0a(jc0a,jl0,:)-mom%m1(jc0a,jl0,:)
+      end do
+   end do
 
    ! Get weight
    wgt_dir = zero
@@ -519,19 +523,24 @@ if (nam%check_dirac) then
    ! Communication
    call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
 
-   ! Update covariance
-   do idir=1,geom%ndir
-      do jc0a=1,geom%nc0a
-         if (geom%dirac_mask(jc0a,idir)) mom%ens_dir(jc0a,:,geom%ivdir(idir)) = mom%ens_dir(jc0a,:,geom%ivdir(idir)) &
- & +fac5*wgt_dir(idir)*pert_c0a(jc0a,:,geom%ivdir(idir))
+   do jc0a=1,geom%nc0a
+      ! Dirac sector
+      idir = geom%dirac_mask(jc0a)
+
+      do jl0=1,geom%nl0
+         if (geom%gmask_c0a(jc0a,il0)) then
+            ! Update covariance
+            mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) &
+ & +fac5*wgt_dir(idir)*pert_c0a(jc0a,jl0,geom%ivdir(idir))
+
+            ! Update variance
+            mom%m2(jc0a,jl0,:) = mom%m2(jc0a,jl0,:)+fac5*pert_c0a(jc0a,jl0,:)**2
+
+            ! Update mean
+            mom%m1(jc0a,jl0,:) = mom%m1(jc0a,jl0,:)+fac1*pert_c0a(jc0a,jl0,:)
+         end if
       end do
    end do
-
-   ! Update variance
-   mom%m2 = mom%m2+fac5*pert_c0a**2
-
-   ! Update mean
-   mom%m1 = mom%m1+fac1*pert_c0a
 
    ! Release memory
    deallocate(wgt_dir)
@@ -593,21 +602,16 @@ if (ie==nam%ens1_ne) then
       ! Communication
       call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
 
-      do il0=1,geom%nl0
-         do ic0a=1,geom%nc0a
-            if (geom%gmask_c0a(ic0a,il0)) then
-               do idir=1,geom%ndir
-                  if (geom%dirac_mask(ic0a,idir)) then
-                     cor_norm = wgt_dir(idir)*mom%m2(ic0a,il0,geom%ivdir(idir))
-                     if (cor_norm>zero) then
-                        mom%ens_dir(ic0a,il0,geom%ivdir(idir)) = mom%ens_dir(ic0a,il0,geom%ivdir(idir))/sqrt(cor_norm)
-                     else
-                        mom%ens_dir(ic0a,il0,geom%ivdir(idir)) = mpl%msv%valr
-                     end if
-                  end if
-               end do
-            else
-               mom%ens_dir(ic0a,il0,:) = mpl%msv%valr
+      do jc0a=1,geom%nc0a
+         idir = geom%dirac_mask(jc0a)
+         do jl0=1,geom%nl0
+            if (geom%gmask_c0a(jc0a,jl0)) then
+               cor_norm = wgt_dir(idir)*mom%m2(jc0a,jl0,geom%ivdir(idir))
+               if (cor_norm>zero) then
+                  mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mom%ens_dir(jc0a,jl0,geom%ivdir(idir))/sqrt(cor_norm)
+               else
+                  mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mpl%msv%valr
+               end if
             end if
          end do
       end do
@@ -767,10 +771,11 @@ do isub=1,ens%nsub
          call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
 
          ! Covariance
-         do idir=1,geom%ndir
-            do jc0a=1,geom%nc0a
-              if (geom%dirac_mask(jc0a,idir)) mom%ens_dir(jc0a,:,geom%ivdir(idir)) = mom%ens_dir(jc0a,:,geom%ivdir(idir)) &
- & +wgt_dir(idir)*fld_c0a(jc0a,:,geom%ivdir(idir))
+         do jc0a=1,geom%nc0a
+            idir = geom%dirac_mask(jc0a)
+            do jl0=1,geom%nl0
+              if (geom%gmask_c0a(jc0a,jl0)) mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) &
+ & +wgt_dir(idir)*fld_c0a(jc0a,jl0,geom%ivdir(idir))
             end do
          end do
       end if
@@ -825,20 +830,25 @@ if (nam%check_dirac) then
    call ens%compute_moments(mpl,nam,geom)
    call ens%get_c0(mpl,nam,geom,'m2',0,m2)
 
-   ! Normalization
-   do il0=1,geom%nl0
-      do ic0a=1,geom%nc0a
-         if (geom%gmask_c0a(ic0a,il0)) then
-            do idir=1,geom%ndir
-               if (geom%dirac_mask(ic0a,idir)) then
-                  cor_norm = m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))*m2(ic0a,il0,geom%ivdir(idir))
-                  if (cor_norm>zero) then
-                     mom%ens_dir(ic0a,il0,geom%ivdir(idir)) = mom%ens_dir(ic0a,il0,geom%ivdir(idir))*fac_norm_cov/sqrt(cor_norm)
-                  else
-                     mom%ens_dir(ic0a,il0,geom%ivdir(idir)) = mpl%msv%valr
-                  end if
-               end if
-            end do
+   ! Variance at dirac points
+   wgt_dir = zero
+   do idir=1,geom%ndir
+      if (geom%iprocdir(idir)==mpl%myproc) wgt_dir(idir) = m2(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir))
+   end do
+
+   ! Communication
+   call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
+
+   do jc0a=1,geom%nc0a
+      idir = geom%dirac_mask(jc0a)
+      do jl0=1,geom%nl0
+         if (geom%gmask_c0a(jc0a,jl0)) then
+            cor_norm = wgt_dir(idir)*m2(jc0a,jl0,geom%ivdir(idir))
+            if (cor_norm>zero) then
+                mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mom%ens_dir(jc0a,jl0,geom%ivdir(idir))/sqrt(cor_norm)
+            else
+                mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mpl%msv%valr
+            end if
          else
             mom%ens_dir(ic0a,il0,:) = mpl%msv%valr
          end if

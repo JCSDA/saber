@@ -14,7 +14,7 @@ cost function:
     tstep: PT1H
   background:
     date: 2010-01-01T00:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
   background error:
     covariance model: hybrid
     components:
@@ -28,7 +28,7 @@ cost function:
             output variables: [x]
             bump:
               datadir: testdata
-              fname_nicas: qg_parameters_bump_loc/test_nicas
+              fname_nicas: qg_error_covariance_training_bump_loc/test_nicas
               io_keys:
               - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
               io_values:
@@ -39,7 +39,7 @@ cost function:
         members template:
           template:
             date: 2010-01-01T00:00:00Z
-            filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1D.nc
+            filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1D.nc
           pattern: %mem%
           nmembers: 10
       weight:
@@ -59,9 +59,9 @@ cost function:
       obs type: Stream
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
+        obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: Stream
   - obs error:
       covariance model: diagonal
@@ -69,9 +69,9 @@ cost function:
       obs type: Wind
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
+        obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: Wind
   - obs error:
       covariance model: diagonal
@@ -79,9 +79,9 @@ cost function:
       obs type: WSpeed
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
+        obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
       obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
       obs type: WSpeed
   constraints:
   - jcdfi:

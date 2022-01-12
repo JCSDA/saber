@@ -1,7 +1,7 @@
-forecast length: P18D
+forecast length: P17D
 geometry:
-  nx: 40
-  ny: 20
+  nx: 160
+  ny: 80
   depths: [4500.0, 5500.0]
 initial condition:
   date: 2009-12-15T00:00:00Z
@@ -10,14 +10,15 @@ model:
   name: QG
   tstep: PT10M
 output:
-  datadir: testdata/qg_truth
+  datadir: testdata/qg_hr_truth
   date: 2009-12-15T00:00:00Z
   exp: truth
-  frequency: PT6H
+  frequency: P1D
+  first: P16D
   type: fc
 prints:
   frequency: PT3H
 
 test:
-  reference filename: testref/qg_truth/test.log.out
-  test output filename: testoutput/qg_truth/test.log.out
+  reference filename: testref/qg_hr_truth/test.log.out
+  test output filename: testoutput/qg_hr_truth/test.log.out

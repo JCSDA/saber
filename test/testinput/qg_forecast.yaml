@@ -5,12 +5,12 @@ geometry:
   depths: [4500.0, 5500.0]
 initial condition:
   date: 2009-12-31T00:00:00Z
-  filename: testdata/truth.fc.2009-12-15T00:00:00Z.P16D.nc
+  filename: testdata/qg_truth/truth.fc.2009-12-15T00:00:00Z.P16D.nc
 model:
   name: QG
   tstep: PT1H
 output:
-  datadir: testdata
+  datadir: testdata/qg_forecast
   date: 2009-12-31T00:00:00Z
   exp: forecast
   frequency: PT1H

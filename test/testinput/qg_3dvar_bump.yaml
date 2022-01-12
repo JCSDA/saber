@@ -9,7 +9,7 @@ cost function:
     depths: [4500.0, 5500.0]
   background:
     date: 2010-01-01T12:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
   background error:
     covariance model: SABER
     saber blocks:
@@ -20,7 +20,7 @@ cost function:
       output variables: [x]
       bump:
         datadir: testdata
-        fname_nicas: qg_parameters_bump_cov/test_nicas
+        fname_nicas: qg_error_covariance_training_bump_cov/test_nicas
         load_nicas_local: true
         prefix: qg_3dvar_bump/test
         strategy: specific_univariate
@@ -28,7 +28,7 @@ cost function:
       input variables: [x]
       output variables: [x]
       file:
-        filename: testdata/qg_parameters_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc
+        filename: testdata/qg_error_covariance_training_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc
   observations:
   - obs error:
       covariance model: diagonal
@@ -36,9 +36,9 @@ cost function:
       obs type: Stream
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d.nc
+        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3dvar_bump.obs3d.nc
+        obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
       obs type: Stream
   - obs error:
       covariance model: diagonal
@@ -46,9 +46,9 @@ cost function:
       obs type: Wind
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d.nc
+        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3dvar_bump.obs3d.nc
+        obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
       obs type: Wind
   - obs error:
       covariance model: diagonal
@@ -56,9 +56,9 @@ cost function:
       obs type: WSpeed
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d.nc
+        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3dvar_bump.obs3d.nc
+        obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
       obs type: WSpeed
 variational:
   minimizer:

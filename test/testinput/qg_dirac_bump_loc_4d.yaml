@@ -8,7 +8,7 @@ background error:
       output variables: [x]
       bump:
         datadir: testdata
-        fname_nicas: qg_parameters_bump_loc/test_nicas
+        fname_nicas: qg_error_covariance_training_bump_loc/test_nicas
         load_nicas_local: true
         prefix: qg_dirac_bump_loc_4d/test
         strategy: common
@@ -16,19 +16,19 @@ background error:
     template:
       states:
       - date: 2010-01-01T00:00:00Z
-        filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1D.nc
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1D.nc
       - date: 2010-01-01T01:00:00Z
-        filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT1H.nc
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT1H.nc
       - date: 2010-01-01T02:00:00Z
-        filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT2H.nc
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT2H.nc
       - date: 2010-01-01T03:00:00Z
-        filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT3H.nc
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT3H.nc
       - date: 2010-01-01T04:00:00Z
-        filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT4H.nc
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT4H.nc
       - date: 2010-01-01T05:00:00Z
-        filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT5H.nc
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT5H.nc
       - date: 2010-01-01T06:00:00Z
-        filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT6H.nc
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT6H.nc
     pattern: %mem%
     nmembers: 10
 dirac:
@@ -44,19 +44,19 @@ geometry:
 initial condition:
   states:
   - date: 2010-01-01T00:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
   - date: 2010-01-01T01:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT1H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT1H.nc
   - date: 2010-01-01T02:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT2H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT2H.nc
   - date: 2010-01-01T03:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT3H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT3H.nc
   - date: 2010-01-01T04:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT4H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT4H.nc
   - date: 2010-01-01T05:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT5H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT5H.nc
   - date: 2010-01-01T06:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT6H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT6H.nc
 output dirac:
   datadir: testdata/qg_dirac_bump_loc_4d
   exp: %id%

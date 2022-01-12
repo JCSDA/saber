@@ -1734,7 +1734,7 @@ end select
 
 ! Select parameter from mom
 select case (trim(param))
-case ('dirac_diag_mom')
+case ('dirac_diag_ens')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%mom1%ens_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%mom1%ens_dir(:,:,iv),fld_mga)

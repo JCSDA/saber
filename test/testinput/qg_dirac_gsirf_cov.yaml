@@ -10,7 +10,7 @@ background error:
     input variables: [x]
     output variables: [x]
     file:
-      filename: testdata/qg_parameters_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc
+      filename: testdata/qg_error_covariance_training_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc
 dirac:
   date: 2010-01-01T12:00:00Z
   ixdir: [20]
@@ -23,7 +23,7 @@ geometry:
   depths: [4500.0, 5500.0]
 initial condition:
   date: 2010-01-01T12:00:00Z
-  filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+  filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 output dirac:
   datadir: testdata/qg_dirac_gsirf_cov
   exp: %id%

@@ -8,24 +8,24 @@ background error:
 forecast length: P1DT12H
 initial condition:
   date: 2009-12-31T00:00:00Z
-  filename: testdata/qg_truth/truth.fc.2009-12-15T00:00:00Z.P16D.nc
-members: 50
+  filename: testdata/qg_hr_truth/truth.fc.2009-12-15T00:00:00Z.P16D.nc
+members: 200
 model:
   name: QG
   tstep: PT1H
 output:
-  datadir: testdata/qg_gen_ens_pert_B
+  datadir: testdata/qg_hr_gen_ens_pert_B
   date: 2009-12-31T00:00:00Z
   exp: forecast
   first: P1D
   frequency: PT1H
   type: ens
 geometry:
-  nx: 40
-  ny: 20
+  nx: 160
+  ny: 80
   depths: [4500.0, 5500.0]
 perturbed variables: [x]
 
 test:
-  reference filename: testref/qg_gen_ens_pert_B/test.log.out
-  test output filename: testoutput/qg_gen_ens_pert_B/test.log.out
+  reference filename: testref/qg_hr_gen_ens_pert_B/test.log.out
+  test output filename: testoutput/qg_hr_gen_ens_pert_B/test.log.out

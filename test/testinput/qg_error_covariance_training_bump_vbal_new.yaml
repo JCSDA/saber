@@ -1,6 +1,6 @@
 background:
   date: 2010-01-01T12:00:00Z
-  filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+  filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
   ens1_nsub: 2
   datadir: testdata
@@ -8,7 +8,7 @@ bump:
   nc2: 250
   new_vbal: true
   new_vbal_cov: true
-  prefix: qg_parameters_bump_vbal_new/test
+  prefix: qg_error_covariance_training_bump_vbal_new/test
   vbal_rad: 2000.0e3
   write_samp_local: true
   write_samp_global: true
@@ -18,7 +18,7 @@ ensemble:
   members template:
     template:
       date: 2010-01-01T12:00:00Z
-      filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
+      filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
     pattern: %mem%
     nmembers: 10
 geometry:
@@ -28,5 +28,5 @@ geometry:
 input variables: [x]
 
 test:
-  reference filename: testref/qg_parameters_bump_vbal_new/test.log.out
-  test output filename: testoutput/qg_parameters_bump_vbal_new/test.log.out
+  reference filename: testref/qg_error_covariance_training_bump_vbal_new/test.log.out
+  test output filename: testoutput/qg_error_covariance_training_bump_vbal_new/test.log.out

@@ -595,49 +595,52 @@ if (nam%check_dirac) then
       end do
    end do
 
-   do idir=1,geom%ndir
+   if (nam%nc4>1) then
       ! Inverse tensor
-      if (nam%nc4>1) call tensor_d2h(mpl,D11_dir(idir),D22_dir(idir),D12_dir(idir),H11,H22,H12)
-
-      ! Loop over grid-points
-      do jc0a=1,geom%nc0a
-         if (geom%gmask_hor_c0a(jc0a).and.geom%dirac_mask(jc0a,idir)) then
-            ! Horizontal component
-            if (nam%nc4>1) then
-               dx = geom%lon_c0a(jc0a)-geom%londir(idir)
-               dy = geom%lat_c0a(jc0a)-geom%latdir(idir)
-               call lonlatmod(dx,dy)
-               dx = dx*cos(half*(geom%lat_c0a(jc0a)+geom%latdir(idir)))
-               hnd = sqrt(H11*dx**2+H22*dy**2+two*H12*dx*dy)
-            else
-               call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(idir),geom%latdir(idir),disth)
-               if (rh_dir(idir)>zero) then
-                  hnd = disth/rh_dir(idir)
-               elseif (disth>zero) then
-                  hnd = half*huge_real
-               else
-                  hnd = zero
-               end if
-            end if
-            hor_dir = fit_func(mpl,'hor',hnd)
-
-            do jl0=1,geom%nl0
-               if (geom%gmask_c0a(jc0a,jl0)) then
-                  ! Vertical component
-                  distv = abs(geom%vunitavg(jl0)-geom%vunitavg(geom%il0dir(idir)))
-                  if (rv_dir(idir)>zero) then
-                     vnd = distv/rv_dir(idir)
-                  elseif (distv>zero) then
-                     vnd = huge_real
-                  else
-                     vnd = zero
-                  end if
-                  diag%diag_dir(jc0a,jl0,geom%ivdir(idir)) = diag%diag_dir(jc0a,jl0,geom%ivdir(idir)) &
- & +hor_dir*fit_func(mpl,'ver',vnd)
-               end if
-            end do
-         end if
+      do idir=1,geom%ndir
+         call tensor_d2h(mpl,D11_dir(idir),D22_dir(idir),D12_dir(idir),H11,H22,H12)
       end do
+   end if
+
+   ! Loop over grid-points
+   do jc0a=1,geom%nc0a
+      idir = geom%dirac_mask(jc0a)
+      if (geom%gmask_hor_c0a(jc0a)) then
+         ! Horizontal component
+         if (nam%nc4>1) then
+            dx = geom%lon_c0a(jc0a)-geom%londir(idir)
+            dy = geom%lat_c0a(jc0a)-geom%latdir(idir)
+            call lonlatmod(dx,dy)
+            dx = dx*cos(half*(geom%lat_c0a(jc0a)+geom%latdir(idir)))
+            hnd = sqrt(H11*dx**2+H22*dy**2+two*H12*dx*dy)
+         else
+            call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(idir),geom%latdir(idir),disth)
+            if (rh_dir(idir)>zero) then
+               hnd = disth/rh_dir(idir)
+            elseif (disth>zero) then
+               hnd = half*huge_real
+            else
+               hnd = zero
+            end if
+         end if
+         hor_dir = fit_func(mpl,'hor',hnd)
+
+         do jl0=1,geom%nl0
+            if (geom%gmask_c0a(jc0a,jl0)) then
+               ! Vertical component
+               distv = abs(geom%vunitavg(jl0)-geom%vunitavg(geom%il0dir(idir)))
+               if (rv_dir(idir)>zero) then
+                  vnd = distv/rv_dir(idir)
+               elseif (distv>zero) then
+                  vnd = huge_real
+               else
+                  vnd = zero
+               end if
+               diag%diag_dir(jc0a,jl0,geom%ivdir(idir)) = diag%diag_dir(jc0a,jl0,geom%ivdir(idir)) &
+ & +hor_dir*fit_func(mpl,'ver',vnd)
+            end if
+         end do
+      end if
    end do
 
    ! Release memory

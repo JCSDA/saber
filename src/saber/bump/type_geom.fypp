@@ -19,7 +19,7 @@ use tools_func, only: fletcher32,lonlatmod,gridhash,independent_levels,sphere_di
  & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup,eq,indist
+use tools_repro, only: inf,sup,eq,infeq,indist
 use tools_stripack, only: area
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
@@ -143,7 +143,7 @@ type geom_type
    integer,allocatable :: ic0adir(:)              !< Dirac gridpoint
    integer,allocatable :: il0dir(:)               !< Dirac level
    integer,allocatable :: ivdir(:)                !< Dirac variable
-   logical,allocatable :: dirac_mask(:,:)         !< Dirac patches mask
+   integer,allocatable :: dirac_mask(:)           !< Dirac patches mask
 
    ! I/O
    type(io_type) :: io                             !< I/O
@@ -1677,9 +1677,10 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
-integer :: idir,il0,jc0a,il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir)
+integer :: idir,il0,ic0a,il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir),nn_index(1)
 real(kind_real) :: disth
 logical :: valid(nam%ndir)
+type(tree_type) :: tree_dirac
 
 ! Set name
 @:set_name(geom_setup_dirac)
@@ -1705,6 +1706,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
 
    ! Allocation
    geom%ndir = count(valid)
+   if (geom%ndir==0) call mpl%abort('${subr}$','no valid dirac point')
    allocate(geom%londir(geom%ndir))
    allocate(geom%latdir(geom%ndir))
    allocate(geom%iprocdir(geom%ndir))
@@ -1740,17 +1742,20 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    ! Define Dirac mask for separate patches
    if (nam%new_hdiag) then
       ! Allocation
-      allocate(geom%dirac_mask(geom%nc0a,geom%ndir))
+      allocate(geom%dirac_mask(geom%nc0a))
 
-      do idir=1,geom%ndir
-         do jc0a=1,geom%nc0a
-            ! Compute distance to Dirac point
-            call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(idir),geom%latdir(idir),disth)
+      ! Create tree
+      call tree_dirac%alloc(mpl,geom%ndir)
+      call tree_dirac%init(geom%londir,geom%latdir)
 
-            ! Set mask
-            geom%dirac_mask(jc0a,idir) = (disth<nam%dirac_rad)
-         end do
+      ! Affect each horizontal point to a dirac point
+      do ic0a=1,geom%nc0a
+         call tree_dirac%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),1,nn_index)
+         geom%dirac_mask(ic0a) = nn_index(1)
       end do
+
+      ! Release memory
+      call tree_dirac%dealloc
    end if
 end if
 

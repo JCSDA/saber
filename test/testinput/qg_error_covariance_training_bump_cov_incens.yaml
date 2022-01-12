@@ -1,6 +1,6 @@
 background:
   date: 2010-01-01T12:00:00Z
-  filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+  filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
   datadir: testdata
   dc: 500.0e3
@@ -12,7 +12,7 @@ bump:
   new_nicas: true
   new_var: true
   nl0r: 2
-  prefix: qg_parameters_bump_cov/test
+  prefix: qg_error_covariance_training_bump_cov/test
   resol: 8.0
   strategy: specific_univariate
   var_filter: true
@@ -23,38 +23,32 @@ bump:
   write_nicas_local: true
   write_var: true
   output:
-  - datadir: testdata/qg_parameters_bump_cov_pairs
+  - datadir: testdata/qg_error_covariance_training_bump_cov_incens
     date: 2010-01-01T12:00:00Z
     exp: stddev
     parameter: stddev
     type: an
-  - datadir: testdata/qg_parameters_bump_cov_pairs
+  - datadir: testdata/qg_error_covariance_training_bump_cov_incens
     date: 2010-01-01T12:00:00Z
     exp: cor_rh
     parameter: cor_rh
     type: an
-  - datadir: testdata/qg_parameters_bump_cov_pairs
+  - datadir: testdata/qg_error_covariance_training_bump_cov_incens
     date: 2010-01-01T12:00:00Z
     exp: cor_rv
     parameter: cor_rv
     type: an
-  - datadir: testdata/qg_parameters_bump_cov_pairs
+  - datadir: testdata/qg_error_covariance_training_bump_cov_incens
     date: 2010-01-01T12:00:00Z
     exp: nicas_norm
     parameter: nicas_norm
     type: an
-ensemble base:
+ensemble pert:
+  date: 2010-01-01T12:00:00Z
   members template:
     template:
       date: 2010-01-01T12:00:00Z
-      filename: testdata/ensmean.an.2010-01-01T12:00:00Z.nc
-    pattern: ""
-    nmembers: 10
-ensemble pairs:
-  members template:
-    template:
-      date: 2010-01-01T12:00:00Z
-      filename: testdata/recenter.ens.%mem%.2010-01-01T12:00:00Z.PT0S.nc
+      filename: testdata/qg_ens_recenter/recenter.ens.%mem%.2010-01-01T12:00:00Z.PT0S.nc
     pattern: %mem%
     nmembers: 10
 geometry:
@@ -64,5 +58,5 @@ geometry:
 input variables: [x]
 
 test:
-  reference filename: testref/qg_parameters_bump_cov/test.log.out
-  test output filename: testoutput/qg_parameters_bump_cov_pairs/test.log.out
+  reference filename: testref/qg_error_covariance_training_bump_cov/test.log.out
+  test output filename: testoutput/qg_error_covariance_training_bump_cov_incens/test.log.out
