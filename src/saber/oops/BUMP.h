@@ -587,6 +587,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       }
     } else {
       ABORT("BUMP: ensemble not specified");
+    }
   }
 
   // Get ensemble 2 size if ensemble 2 is available
