@@ -845,7 +845,7 @@ if (nam%check_dirac) then
          if (geom%gmask_c0a(jc0a,jl0)) then
             cor_norm = wgt_dir(idir)*m2(jc0a,jl0,geom%ivdir(idir))
             if (cor_norm>zero) then
-                mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mom%ens_dir(jc0a,jl0,geom%ivdir(idir))/sqrt(cor_norm)
+                mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mom%ens_dir(jc0a,jl0,geom%ivdir(idir))*fac_norm_cov/sqrt(cor_norm)
             else
                 mom%ens_dir(jc0a,jl0,geom%ivdir(idir)) = mpl%msv%valr
             end if

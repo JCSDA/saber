@@ -1587,7 +1587,7 @@ fld_mga = bump%mpl%msv%valr
 
 ! Get parameter
 select case (trim(param))
-case  ('cor_rh','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm', &
+case  ('cor_rh','cor_D11','cor_D22','cor_D12','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm', &
  & 'dirac_diag_ens','dirac_diag_cor','dirac_nicas','dirac_nicas_ens')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
@@ -1758,6 +1758,33 @@ case ('cor_rh')
    do il0=1,bump%geom%nl0
       do imga=1,bump%geom%nmga
          if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+      end do
+   end do
+   found = .true.
+case ('cor_D11')
+   if (.not.allocated(bump%cmat%blk(ib)%D11)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%D11,fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+      end do
+   end do
+   found = .true.
+case ('cor_D22')
+   if (.not.allocated(bump%cmat%blk(ib)%D22)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%D22,fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
+      end do
+   end do
+   found = .true.
+case ('cor_D12')
+   if (.not.allocated(bump%cmat%blk(ib)%D12)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%cmat%blk(ib)%D12,fld_mga)
+   do il0=1,bump%geom%nl0
+      do imga=1,bump%geom%nmga
+         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
       end do
    end do
    found = .true.

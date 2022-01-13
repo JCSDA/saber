@@ -529,8 +529,8 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: idir,ib,jc0a,jl0
-real(kind_real) :: H11,H22,H12,disth,dx,dy,hnd,hor_dir,distv,vnd
-real(kind_real),allocatable :: rh_dir(:),D11_dir(:),D22_dir(:),D12_dir(:)
+real(kind_real) :: D11,D22,D12,disth,dx,dy,hnd,hor_dir,distv,vnd
+real(kind_real),allocatable :: rh_dir(:),H11_dir(:),H22_dir(:),H12_dir(:)
 real(kind_real),allocatable :: rv_dir(:)
 
 ! Set name
@@ -546,30 +546,31 @@ if (nam%check_dirac) then
    ! Allocation
    allocate(rh_dir(geom%ndir))
    if (nam%nc4>1) then
-      allocate(D11_dir(geom%ndir))
-      allocate(D22_dir(geom%ndir))
-      allocate(D12_dir(geom%ndir))
+      allocate(H11_dir(geom%ndir))
+      allocate(H22_dir(geom%ndir))
+      allocate(H12_dir(geom%ndir))
    end if
    allocate(rv_dir(geom%ndir))
 
-   do idir=1,geom%ndir
-      ! Initialization
-      rh_dir(idir) = zero
-      if (nam%nc4>1) then
-         D11_dir(idir) = zero
-         D22_dir(idir) = zero
-         D12_dir(idir) = zero
-      end if
-      rv_dir(idir) = zero
+   ! Initialization
+   rh_dir = zero
+   if (nam%nc4>1) then
+      H11_dir = zero
+      H22_dir = zero
+      H12_dir = zero
+   end if
+   rv_dir = zero
 
-      ! Set dirac value locally
+   ! Set dirac value locally
+   do idir=1,geom%ndir
       if (geom%iprocdir(idir)==mpl%myproc) then
          ib = bpar%v_to_b(geom%ivdir(idir))
          rh_dir(idir) = diag%blk(0,ib)%rh_c0a(geom%ic0adir(idir),geom%il0dir(idir))
          if (nam%nc4>1) then
-            D11_dir(idir) = diag%blk(0,ib)%D11_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-            D22_dir(idir) = diag%blk(0,ib)%D22_c0a(geom%ic0adir(idir),geom%il0dir(idir))
-            D12_dir(idir) = diag%blk(0,ib)%D12_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            D11 = diag%blk(0,ib)%D11_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            D22 = diag%blk(0,ib)%D22_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            D12 = diag%blk(0,ib)%D12_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            call tensor_d2h(mpl,D11,D22,D12,H11_dir(idir),H22_dir(idir),H12_dir(idir))
          end if
          rv_dir(idir) = diag%blk(0,ib)%rv_c0a(geom%ic0adir(idir),geom%il0dir(idir))
       end if
@@ -578,9 +579,9 @@ if (nam%check_dirac) then
    ! Communication
    call mpl%f_comm%allreduce(rh_dir,fckit_mpi_sum())
    if (nam%nc4>1) then
-      call mpl%f_comm%allreduce(D11_dir,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(D22_dir,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(D12_dir,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(H11_dir,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(H22_dir,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(H12_dir,fckit_mpi_sum())
    end if
    call mpl%f_comm%allreduce(rv_dir,fckit_mpi_sum())
 
@@ -595,13 +596,6 @@ if (nam%check_dirac) then
       end do
    end do
 
-   if (nam%nc4>1) then
-      ! Inverse tensor
-      do idir=1,geom%ndir
-         call tensor_d2h(mpl,D11_dir(idir),D22_dir(idir),D12_dir(idir),H11,H22,H12)
-      end do
-   end if
-
    ! Loop over grid-points
    do jc0a=1,geom%nc0a
       idir = geom%dirac_mask(jc0a)
@@ -612,7 +606,7 @@ if (nam%check_dirac) then
             dy = geom%lat_c0a(jc0a)-geom%latdir(idir)
             call lonlatmod(dx,dy)
             dx = dx*cos(half*(geom%lat_c0a(jc0a)+geom%latdir(idir)))
-            hnd = sqrt(H11*dx**2+H22*dy**2+two*H12*dx*dy)
+            hnd = sqrt(H11_dir(idir)*dx**2+H22_dir(idir)*dy**2+two*H12_dir(idir)*dx*dy)
          else
             call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(idir),geom%latdir(idir),disth)
             if (rh_dir(idir)>zero) then
@@ -646,9 +640,9 @@ if (nam%check_dirac) then
    ! Release memory
    deallocate(rh_dir)
    if (nam%nc4>1) then
-      deallocate(D11_dir)
-      deallocate(D22_dir)
-      deallocate(D12_dir)
+      deallocate(H11_dir)
+      deallocate(H22_dir)
+      deallocate(H12_dir)
    end if
    deallocate(rv_dir)
 end if

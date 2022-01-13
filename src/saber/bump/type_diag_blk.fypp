@@ -9,8 +9,8 @@
 module type_diag_blk
 
 !$ use omp_lib
-use tools_const, only: zero,tenth,half,one,two,four,ten
-use tools_fit, only: diag_iso_full,tensor_d2h,tensor_check_cond,fast_fit
+use tools_const, only: zero,half,one,two,four
+use tools_fit, only: condmax,diag_iso_full,tensor_d2h,tensor_check_cond,fast_fit
 use tools_fftw, only: hor_sqrt
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp
 use tools_kinds, only: kind_real,huge_real
@@ -551,8 +551,8 @@ do il1=1,nl1
       minim%nc3 = bpar%nc3(ib)
       minim%nc4 = bpar%nc4(ib)
       minim%guess = (/rh_l1(il1)**2,rh_l1(il1)**2,zero/)
-      minim%binf = (/tenth*rh_l1(il1)**2,tenth*rh_l1(il1)**2,-one/)
-      minim%bsup = (/ten*rh_l1(il1)**2,ten*rh_l1(il1)**2,one/)
+      minim%binf = (/rh_l1(il1)**2/sqrt(condmax),rh_l1(il1)**2/sqrt(condmax),-one/)
+      minim%bsup = (/rh_l1(il1)**2*sqrt(condmax),rh_l1(il1)**2*sqrt(condmax),one/)
       minim%obs = reshape(diag_blk%raw(:,:,jl0rz,il0),(/minim%ny/))
       minim%cost_function = 'tensor'
 

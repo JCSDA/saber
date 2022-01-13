@@ -1776,7 +1776,8 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(ens_type),intent(in) :: ens         !< Ensemble
 
 ! Local variables
-integer :: idir,iv
+integer :: ic0a,idir,iv
+real(kind_real),allocatable :: fld_c0a(:,:,:),fld_ens_c0a(:,:,:)
 logical :: lbens
 
 ! Set name
@@ -1789,21 +1790,33 @@ logical :: lbens
 lbens = (allocated(ens%mem).and.(trim(nam%method)/='cor'))
 
 ! Allocation
+allocate(fld_c0a(geom%nc0a,geom%nl0,nam%nv))
 allocate(nicas%nicas_dir(geom%nc0a,geom%nl0,nam%nv))
-if (lbens) allocate(nicas%nicas_ens_dir(geom%nc0a,geom%nl0,nam%nv))
+if (lbens) then
+   allocate(fld_ens_c0a(geom%nc0a,geom%nl0,nam%nv))
+   allocate(nicas%nicas_ens_dir(geom%nc0a,geom%nl0,nam%nv))
+end if
 
-! Generate dirac field
-nicas%nicas_dir = zero
 do idir=1,geom%ndir
-   if (geom%iprocdir(idir)==mpl%myproc) nicas%nicas_dir(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
+   ! Generate dirac field
+   fld_c0a = zero
+   if (geom%iprocdir(idir)==mpl%myproc) fld_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
+   if (lbens) fld_ens_c0a = fld_c0a
+
+   ! Apply NICAS to dirac
+   call nicas%apply(mpl,nam,geom,bpar,fld_c0a)
+
+   ! Apply localized ensemble covariance
+   if (lbens) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_ens_c0a)
+
+   ! Copy points
+   do ic0a=1,geom%nc0a
+      if (idir==geom%dirac_mask(ic0a)) then
+         nicas%nicas_dir(ic0a,:,:) = fld_c0a(ic0a,:,:)
+         if (lbens) nicas%nicas_ens_dir(ic0a,:,:) = fld_ens_c0a(ic0a,:,:)
+      end if
+   end do
 end do
-if (lbens) nicas%nicas_ens_dir = nicas%nicas_dir
-
-! Apply NICAS to dirac
-call nicas%apply(mpl,nam,geom,bpar,nicas%nicas_dir)
-
-! Apply localized ensemble covariance
-if (lbens) call nicas%apply_bens(mpl,nam,geom,bpar,ens,nicas%nicas_ens_dir)
 
 if (.false.) then ! TODO: nam%write_dirac
    ! Write fields

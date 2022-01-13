@@ -3693,7 +3693,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 integer :: isu,ic1u,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
 real(kind_real) :: min_minus_max,max_minus_min,rv_th,rr,distv,rh,rv
-real(kind_real) :: dx,dy,dz,H11,H22,H12
+real(kind_real) :: dx,dy,H11,H22,H12
 real(kind_real) :: rh_max(geom%nl0),rv_max(geom%nl0)
 real(kind_real) :: vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distv_min(nicas_blk%nl1,nicas_blk%nl1)
 real(kind_real),allocatable :: hnd(:),vnd(:),nn_dist(:)
@@ -3732,7 +3732,7 @@ end do
 write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distances: '
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
-!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_th,rr,nn,j,jc1u,valid,dx,dy,dz,H11,H22,H12), &
+!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_th,rr,nn,j,jc1u,valid,dx,dy,H11,H22,H12), &
 !$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd)
 do isb=1,nicas_blk%nsb
    ! Indices
@@ -5123,9 +5123,9 @@ type(geom_type),intent(in) :: geom            !< Geometry
 type(bpar_type),intent(in) :: bpar            !< Block parameters
 
 ! Local variables
-integer :: il0,idir
+integer :: ic0a,il0,idir
 real(kind_real) :: val,valmin,valmax
-real(kind_real) :: fld(geom%nc0a,geom%nl0)
+real(kind_real) :: fld(geom%nc0a,geom%nl0),fld_tot(geom%nc0a,geom%nl0)
 
 ! Set name
 @:set_name(nicas_blk_test_dirac)
@@ -5136,23 +5136,28 @@ real(kind_real) :: fld(geom%nc0a,geom%nl0)
 ! Associate
 associate(ib=>nicas_blk%ib)
 
-! Generate dirac field
-fld = zero
 do idir=1,geom%ndir
+   ! Generate dirac field
+   fld = zero
    if ((ib==bpar%v_to_b(geom%ivdir(idir))).and.(geom%iprocdir(idir)==mpl%myproc)) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+
+   ! Apply NICAS method
+   call nicas_blk%apply(mpl,geom,fld)
+
+   ! Copy points
+   do ic0a=1,geom%nc0a
+      if (idir==geom%dirac_mask(ic0a)) fld_tot(ic0a,:) = fld(ic0a,:)
+   end do
 end do
 
-! Apply NICAS method
-call nicas_blk%apply(mpl,geom,fld)
-
 ! Write field
-if (.false.) call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%dirac_id,fld,geom%gmask_c0a) ! TODO: nam%write_dirac
+if (.false.) call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%dirac_id,fld_tot,geom%gmask_c0a) ! TODO: nam%write_dirac
 
 ! Print results
 write(mpl%info,'(a7,a)') '','Values at dirac points:'
 if (nicas_blk%verbosity) call mpl%flush
 do idir=1,geom%ndir
-   if (geom%iprocdir(idir)==mpl%myproc) val = fld(geom%ic0adir(idir),geom%il0dir(idir))
+   if (geom%iprocdir(idir)==mpl%myproc) val = fld_tot(geom%ic0adir(idir),geom%il0dir(idir))
    call mpl%f_comm%broadcast(val,geom%iprocdir(idir)-1)
    if (mpl%msv%isnot(val)) then
       write(mpl%info,'(a10,f6.1,a,f6.1,a,f10.7)') '',geom%londir(idir)*rad2deg,' / ',geom%latdir(idir)*rad2deg,': ',val
@@ -5165,8 +5170,8 @@ end do
 write(mpl%info,'(a7,a)') '','Min - max: '
 if (nicas_blk%verbosity) call mpl%flush
 do il0=1,geom%nl0
-   valmin = zss_minval(fld(:,il0),mask=geom%gmask_c0a(:,il0))
-   valmax = zss_maxval(fld(:,il0),mask=geom%gmask_c0a(:,il0))
+   valmin = zss_minval(fld_tot(:,il0),mask=geom%gmask_c0a(:,il0))
+   valmax = zss_maxval(fld_tot(:,il0),mask=geom%gmask_c0a(:,il0))
    call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
    call mpl%f_comm%allreduce(valmax,fckit_mpi_max())
    if (mpl%msv%isnot(valmin).or.mpl%msv%isnot(valmax)) then

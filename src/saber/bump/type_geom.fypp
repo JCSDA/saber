@@ -1713,6 +1713,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    allocate(geom%ic0adir(geom%ndir))
    allocate(geom%il0dir(geom%ndir))
    allocate(geom%ivdir(geom%ndir))
+   allocate(geom%dirac_mask(geom%nc0a))
 
    ! Add valid dirac points
    geom%ndir = 0
@@ -1739,24 +1740,18 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    call mpl%f_comm%allreduce(geom%londir,fckit_mpi_sum())
    call mpl%f_comm%allreduce(geom%latdir,fckit_mpi_sum())
 
-   ! Define Dirac mask for separate patches
-   if (nam%new_hdiag) then
-      ! Allocation
-      allocate(geom%dirac_mask(geom%nc0a))
+   ! Create tree
+   call tree_dirac%alloc(mpl,geom%ndir)
+   call tree_dirac%init(geom%londir,geom%latdir)
 
-      ! Create tree
-      call tree_dirac%alloc(mpl,geom%ndir)
-      call tree_dirac%init(geom%londir,geom%latdir)
+   ! Affect each horizontal point to a dirac point
+   do ic0a=1,geom%nc0a
+      call tree_dirac%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),1,nn_index)
+      geom%dirac_mask(ic0a) = nn_index(1)
+   end do
 
-      ! Affect each horizontal point to a dirac point
-      do ic0a=1,geom%nc0a
-         call tree_dirac%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),1,nn_index)
-         geom%dirac_mask(ic0a) = nn_index(1)
-      end do
-
-      ! Release memory
-      call tree_dirac%dealloc
-   end if
+   ! Release memory
+   call tree_dirac%dealloc
 end if
 
 ! Probe out

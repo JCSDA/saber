@@ -625,7 +625,7 @@ if( SABER_TEST_OOPS )
     if( SABER_TEST_TIER GREATER 1 )
         # Most OOPS tests: 1 MPI task and 2 OpenMP threads
         set( mpi 1 )
-        set( omp 2 )
+        set( omp 8 )
 
         # Truth
         ecbuild_add_test( TARGET saber_test_qg_hr_truth

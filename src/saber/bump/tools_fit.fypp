@@ -51,6 +51,7 @@ interface ver_fill
 end interface
 
 private
+public :: condmax
 public :: diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_check_cond,fast_fit,ver_smooth,ver_fill
 
 contains
@@ -524,8 +525,9 @@ real(kind_real),intent(out) :: fit_r  !< Support radius
 
 ! Local variables
 integer,parameter :: itermax = 10
-integer :: ntmp,iscaleth,di,i,im,ip,imin(1),ntest,itest,iter
+integer :: ntmp,iscaleth,di,i,im,ip,ntest,itest,iter
 real(kind_real) :: raw_tmp(n),fit_r_m,fit_r_p,raw_min,dscale,thtest
+real(kind_real) :: cost,cost_min,fit_r_min,fit(n)
 real(kind_real),allocatable :: scaletest(:),scalethtest(:)
 
 ! Set name
@@ -552,13 +554,11 @@ if (raw(iz)>zero) then
          ! Initialization
          ntest = 0
          raw_min = minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp))
-         imin = minloc(raw_tmp,mask=mpl%msv%isnot(raw_tmp))
 
          ! Count number of scales to test
          do iscaleth=1,nscaleth
             if (infeq(raw_min,scaleth(iscaleth))) ntest = ntest+1
          end do
-
          if (ntest>0) then
             ! Save scales to test
             allocate(scaletest(ntest))
@@ -596,6 +596,10 @@ if (raw(iz)>zero) then
 
         ! Loop over thresholds
          do itest=1,ntest
+            ! Initialization
+            cost_min = huge_real
+            fit_r_min = mpl%msv%valr
+
             ! Find support radius, lower value
             fit_r_m = mpl%msv%valr
             if (iz>1) then
@@ -656,10 +660,23 @@ if (raw(iz)>zero) then
             else
                fit_r = mpl%msv%valr
             end if
-               
-            ! Scale normalization
-            if (mpl%msv%isnot(fit_r)) fit_r = fit_r/scaletest(itest)
+
+            if (mpl%msv%isnot(fit_r)) then
+               ! Scale normalization
+               fit_r = fit_r/scaletest(itest)
+
+               ! Compute fitness
+               call fit_diag_iso(mpl,n,dist,dir,fit_r,fit)
+               cost = sum((fit-raw_tmp)**2)/real(ntmp,kind_real)
+               if (inf(cost,cost_min)) then
+                  cost_min = cost
+                  fit_r_min = fit_r
+               end if
+            end if
          end do
+
+         ! Set best support radius
+         fit_r = fit_r_min
       else
          ! All positive-separation points are missing
          fit_r = mpl%msv%valr

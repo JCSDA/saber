@@ -1286,11 +1286,13 @@ if (samp%sc3) then
    ! Print results
    write(mpl%info,'(a7,a)') '','Sampling efficiency (%):'
    call mpl%flush
+   write(mpl%info,'(a10,a,a,f10.2,a)') '','Class size: ',trim(mpl%aqua),nam%dc*reqkm,trim(mpl%black)//' km'
+   call mpl%flush
    do il0=1,geom%nl0
       write(mpl%info,'(a10,a,i3,a)') '','Level ',nam%levs(il0),':'
       call mpl%flush
       do jc4=1,nam%nc4
-         write(mpl%info,'(a13,a,i3,a4)') '','Angular sector ',jc4,' ~> '
+         write(mpl%info,'(a13,f6.2,a10)') '',geom%as(jc4)*rad2deg,' deg.  ~> '
          call mpl%flush(.false.)
          do jc3=1,nam%nc3
             nc1_valid = zss_count(samp%smask_c3a(:,jc3,jc4,il0))
@@ -1799,6 +1801,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Local variables
 integer :: jc3,jc4,ic1a,ir,irtmp,jc0a,jc0u,jc0,il0,iproc
 real(kind_real) :: a,d
+real(kind_real) :: dxp,dyp,dxc,dyc
 logical :: done,proc_to_done(mpl%nproc),valid
 logical,allocatable :: c3a_free(:,:,:)
 
@@ -1869,10 +1872,8 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
                ! Compute the bearing
                call sphere_bearing(samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),geom%lon_c0u(jc0u),geom%lat_c0u(jc0u),a)
 
-               ! Use west-east line as reference
-               a = a+half*pi
-
                ! Reset bearing between -pi/2 and pi/2
+               if (a<=-half*pi) a = a+pi
                if (a>=half*pi) a = a-pi
 
                ! Find the angular sector

@@ -150,5 +150,8 @@ bump_set_param_hyb/test_1-1_dirac.nc
 bump_set_param_hyb/test_1-1_nicas.nc
 qg_hr_forecast/test.log.out
 qg_hr_gen_ens_pert_B/test.log.out
-qg_hr_error_covariance_training_bump_cov/test.log.out
+qg_hr_error_covariance_training_bump_cov_homo-aniso/test.log.out
+qg_hr_error_covariance_training_bump_cov_homo-iso/test.log.out
+qg_hr_error_covariance_training_bump_cov_inhomo-aniso/test.log.out
+qg_hr_error_covariance_training_bump_cov_inhomo-iso/test.log.out
 qg_hr_truth/test.log.out
