@@ -3,6 +3,7 @@ datadir: "testdata"
 prefix: "bump_hdiag-nicas_use_cgal/test__MPI_-_OMP_"
 model: "qg"
 use_cgal: true
+write_c0: true
 
 # driver_param
 method: "loc"

@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_get_param_hyb/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "hyb-avg"

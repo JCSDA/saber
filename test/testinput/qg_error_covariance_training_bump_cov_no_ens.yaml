@@ -18,7 +18,6 @@ bump:
     x: [1.8e7]
   strategy: specific_univariate
   write_nicas_local: true
-  write_var: true
   output:
   - datadir: testdata/qg_error_covariance_training_bump_cov_no_ens
     date: 2010-01-01T12:00:00Z

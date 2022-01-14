@@ -8,7 +8,7 @@
 !----------------------------------------------------------------------
 module tools_fit
 
-use tools_const, only: zero,quarter,half,one,two,thousand
+use tools_const, only: zero,tenth,quarter,half,one,two,thousand
 use tools_gc99, only: nscaleth,scaleth,scalethmax,scaleh,scalev,fit_func,fit_func_sqrt
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup,infeq
@@ -554,6 +554,8 @@ if (raw(iz)>zero) then
          ! Initialization
          ntest = 0
          raw_min = minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp))
+         cost_min = huge_real
+         fit_r_min = mpl%msv%valr
 
          ! Count number of scales to test
          do iscaleth=1,nscaleth
@@ -580,7 +582,7 @@ if (raw(iz)>zero) then
             ntest = 1
             allocate(scalethtest(ntest))
             allocate(scaletest(ntest))
-            scalethtest(1) = raw_min
+            scalethtest(1) = raw_min+tenth*(one-raw_min)
             scaletest(1) = half
             dscale = quarter
             do iter=1,itermax
@@ -594,12 +596,8 @@ if (raw(iz)>zero) then
             end do
          end if
 
-        ! Loop over thresholds
+         ! Loop over thresholds
          do itest=1,ntest
-            ! Initialization
-            cost_min = huge_real
-            fit_r_min = mpl%msv%valr
-
             ! Find support radius, lower value
             fit_r_m = mpl%msv%valr
             if (iz>1) then
@@ -669,6 +667,7 @@ if (raw(iz)>zero) then
                call fit_diag_iso(mpl,n,dist,dir,fit_r,fit)
                cost = sum((fit-raw_tmp)**2)/real(ntmp,kind_real)
                if (inf(cost,cost_min)) then
+                  ! Better fit
                   cost_min = cost
                   fit_r_min = fit_r
                end if

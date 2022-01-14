@@ -1,6 +1,6 @@
 forecast length: P17D
 geometry:
-  nx: 160
+  nx: 320
   ny: 80
   depths: [4500.0, 5500.0]
 initial condition:

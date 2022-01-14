@@ -21,7 +21,6 @@ bump:
     x: [3000.0e3]
   write_hdiag: true
   write_nicas_local: true
-  write_var: true
   output:
   - datadir: testdata/qg_error_covariance_training_bump_cov
     date: 2010-01-01T12:00:00Z

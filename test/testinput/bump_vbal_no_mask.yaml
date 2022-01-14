@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_vbal_no_mask/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 new_vbal: true

@@ -382,7 +382,7 @@ real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer,intent(in) :: ie                                         !< Member index
 
 ! Local variables
-integer :: isub,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,jc3,jc4,ic1a,ib,iv,jv,jc0a,idir
+integer :: isub,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,jc3,jc4,ic1a,ib,iv,jv,ic0a,jc0a,idir
 real(kind_real) :: fac1,fac2,fac3,fac4,fac5,fac_norm_cov,fac_norm_m22,cor_norm
 real(kind_real) :: fld_c0b(samp%nc0b,geom%nl0,nam%nv),fld_c0c(samp%nc0c,geom%nl0,nam%nv)
 real(kind_real) :: fld_c1a(samp%nc1a,geom%nl0)

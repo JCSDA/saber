@@ -1,6 +1,6 @@
 forecast length: P1DT12H
 geometry:
-  nx: 160
+  nx: 320
   ny: 80
   depths: [4500.0, 5500.0]
 initial condition:

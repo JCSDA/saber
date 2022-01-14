@@ -105,7 +105,7 @@ final:
   diagnostics:
     departures: oman
 output:
-  datadir: testdata
+  datadir: testdata/qg_3densvar
   exp: 3densvar
   frequency: PT6H
   type: an

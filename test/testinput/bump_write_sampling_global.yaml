@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_write_sampling_global/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"

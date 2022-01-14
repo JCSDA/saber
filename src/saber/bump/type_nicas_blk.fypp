@@ -3772,13 +3772,8 @@ do isb=1,nicas_blk%nsb
       vnd = mpl%msv%valr
 
       ! Vertical radius / research radius
-      if (nicas_blk%anisotropic) then
-         rv_th = sqrt(half*(rv_max(il0)**2+rv_max(jl0))**2)
-         rr = sqrt(half*(nicas_blk%hor(il1)%rh_c1u(ic1u)**2+rh_max(jl0)**2))
-      else
-         rv_th = half*(rv_max(il0)+rv_max(jl0))
-         rr = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)+rh_max(jl0))
-      end if
+      rv_th = half*(rv_max(il0)+rv_max(jl0))
+      rr = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)+rh_max(jl0))
 
       if (infeq(distv_min(il1,jl1),rv_th)) then
          ! Count nearest neighbors

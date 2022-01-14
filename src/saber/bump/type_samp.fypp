@@ -1801,6 +1801,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Local variables
 integer :: jc3,jc4,ic1a,ir,irtmp,jc0a,jc0u,jc0,il0,iproc
 real(kind_real) :: a,d
+real(kind_real) :: dxp,dyp,dxc,dyc
 logical :: done,proc_to_done(mpl%nproc),valid
 logical,allocatable :: c3a_free(:,:,:)
 

@@ -22,7 +22,6 @@ bump:
     x: [3000.0e3]
   write_hdiag: true
   write_nicas_local: true
-  write_var: true
   ensemble:
     members template:
       template:

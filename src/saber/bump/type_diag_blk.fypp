@@ -432,7 +432,7 @@ type(bpar_type),intent(in) :: bpar             !< Block parameters
 ! Local variables
 integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jl0r,jl0,jc4,nl0ad,il0ad,dil0,tmp(1),il0adz
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
-real(kind_real) :: m2(geom%nl0),H11,H22,H12
+real(kind_real) :: det,m2(geom%nl0)
 real(kind_real),allocatable :: rawv(:),distv(:),rinf(:),rsup(:),rh_tmp(:)
 real(kind_real),allocatable :: rh_l1(:),D11_l1(:),D22_l1(:),D12_l1(:),rv_l1(:)
 real(kind_real),allocatable :: rawv_full(:,:),evec(:,:),eval(:)
@@ -544,7 +544,7 @@ do il1=1,nl1
    end do
 
    ! Average values
-   rh_l1(il1) = sum(rh_tmp)/real(bpar%nc4(ib),kind_real)
+   rh_l1(il1) = sqrt(sum(rh_tmp**2)/real(bpar%nc4(ib),kind_real))
 
    if (bpar%nc4(ib)>1) then
       ! Initialization
@@ -585,10 +585,22 @@ else
       if (mpl%msv%isnot(diag_blk%D11_l0(il0)).and.mpl%msv%isnot(diag_blk%D22_l0(il0)) &
  & .and.mpl%msv%isnot(diag_blk%D12_l0(il0))) then
          ! Major semi-axis
-         call tensor_d2h(mpl,diag_blk%D11_l0(il0),diag_blk%D22_l0(il0),diag_blk%D12_l0(il0),H11,H22,H12)
-         diag_blk%rh_l0(il0) = sqrt((two*(H11*H22-H12**2))/((H12**2-four*H11*H22)*(sqrt((H11-H22)**2+four*H12**2)-(H11+H22))))
+         det = diag_blk%D11_l0(il0)*diag_blk%D22_l0(il0)*(one-diag_blk%D12_l0(il0))
+         if (det>zero) then
+            ! Same ellipsis area
+            diag_blk%rh_l0(il0) = sqrt(sqrt(det))
+         else
+            ! Missing value
+            diag_blk%D11_l0(il0) = mpl%msv%valr
+            diag_blk%D22_l0(il0) = mpl%msv%valr
+            diag_blk%D12_l0(il0) = mpl%msv%valr
+            diag_blk%rh_l0(il0) = mpl%msv%valr
+         end if
       else
          ! Missing value
+         diag_blk%D11_l0(il0) = mpl%msv%valr
+         diag_blk%D22_l0(il0) = mpl%msv%valr
+         diag_blk%D12_l0(il0) = mpl%msv%valr
          diag_blk%rh_l0(il0) = mpl%msv%valr
       end if
    end do

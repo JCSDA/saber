@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_hdiag-nicas_loc_specific_univariate/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "loc"

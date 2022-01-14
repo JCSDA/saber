@@ -14,15 +14,15 @@ bump:
   new_nicas: true
   nl0r: 2
   prefix: qg_hr_error_covariance_training_bump_cov_homo-iso/test
-  resol: 8.0
+  resol: 4.0
   strategy: specific_univariate
   write_hdiag: true
   write_nicas_local: true
-  ndir: 8
-  londir: [-120.0,0.0,120.0,-60.0,60.0,-120.0,0.0,120.0]
-  latdir: [15.0,15.0,15.0,45.0,45.0,75.0,75.0,75.0]
-  levdir: [1,1,1,1,1,1,1,1]
-  ivdir: [1,1,1,1,1,1,1,1]
+  ndir: 14
+  londir: [-120.0,-60.0,0.0,60.0,120.0,-150.0,-90.0,-30.0,30.0,90.0,150.0,-120.0,0.0,120.0]
+  latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
+  levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   nomask: true
   output:
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_homo-iso
@@ -37,8 +37,8 @@ bump:
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_homo-iso
     date: 2010-01-01T12:00:00Z
-    exp: dirac_diag_ens
-    parameter: dirac_diag_ens
+    exp: dirac_mom
+    parameter: dirac_mom
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_homo-iso
     date: 2010-01-01T12:00:00Z
@@ -62,9 +62,9 @@ ensemble:
       filename: testdata/qg_hr_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
       state variables: [q]
     pattern: %mem%
-    nmembers: 200
+    nmembers: 150
 geometry:
-  nx: 160
+  nx: 320
   ny: 80
   depths: [4500.0, 5500.0]
 input variables: [q]
