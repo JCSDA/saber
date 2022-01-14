@@ -571,13 +571,17 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       std::string pattern;
       templateConfig.get("pattern", pattern);
       templateConfig.get("nmembers", ens1_ne);
+      int start = 1;
+      if (templateConfig.has("start")) {
+        templateConfig.get("start", start);
+      }
       int zpad = 0;
       if (templateConfig.has("zero padding")) {
         templateConfig.get("zero padding", zpad);
       }
       for (int ie=0; ie < ens1_ne; ++ie) {
         eckit::LocalConfiguration memberConfig(membersTemplate);
-        std::string rs = std::to_string(ie+1);
+        std::string rs = std::to_string(ie+start);
         if (zpad > 0) {
           std::stringstream ss;
           ss << std::setw(zpad) << std::setfill('0') << rs;
