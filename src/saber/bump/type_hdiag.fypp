@@ -229,9 +229,9 @@ do ildwv=0,nam%nldwv
 end do
 
 ! Write dirac test
-if (nam%check_dirac) then
+if (nam%check_dirac.and.nam%write_c0) then
    ! Open file
-   filename = trim(nam%prefix)//'_diag_dirac'
+   filename = trim(nam%prefix)//'_dirac'
    ncid = create_file(mpl,filename)
 
    ! Define dimensions
@@ -256,8 +256,8 @@ if (nam%check_dirac) then
    call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
    call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
    do iv=1,nam%nv
-      call geom%io%fld_write(mpl,fld_id(iv),ens_id(iv),mom1%ens_dir(:,:,iv),geom%gmask_c0a)
-      call geom%io%fld_write(mpl,fld_id(iv),cor_id(iv),hdiag%cor1%diag_dir(:,:,iv),geom%gmask_c0a)
+      call geom%io%fld_write(mpl,fld_id(iv),ens_id(iv),mom1%dirac(:,:,iv),geom%gmask_c0a)
+      call geom%io%fld_write(mpl,fld_id(iv),cor_id(iv),hdiag%cor1%dirac(:,:,iv),geom%gmask_c0a)
    end do
 end if
 

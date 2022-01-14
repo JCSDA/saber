@@ -1587,8 +1587,8 @@ fld_mga = bump%mpl%msv%valr
 
 ! Get parameter
 select case (trim(param))
-case  ('cor_rh','cor_D11','cor_D22','cor_D12','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef','nicas_norm', &
- & 'dirac_diag_ens','dirac_diag_cor','dirac_nicas','dirac_nicas_ens')
+case  ('norm_m2','norm_m4','norm_kurt','cor_rh','cor_D11','cor_D22','cor_D12','cor_rv','loc_coef','loc_rh','loc_rv','hyb_coef', &
+ & 'nicas_norm','dirac_vbal','dirac_mom','dirac_diag_cor','dirac_nicas','dirac_nicas_bens')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do iv=0,bump%nam%nv
@@ -1713,6 +1713,34 @@ case ('vunit')
    found = .true.
 end select
 
+! Select parameter from ens
+select case (trim(param))
+case ('norm_m2')
+   iv = bump%bpar%b_to_v1(ib)
+   if (.not.allocated(bump%ens1%norm_m2)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1%norm_m2(:,:,iv),fld_mga)
+   found = .true.
+case ('norm_m4')
+   iv = bump%bpar%b_to_v1(ib)
+   if (.not.allocated(bump%ens1%norm_m4)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1%norm_m4(:,:,iv),fld_mga)
+   found = .true.
+case ('norm_kurt')
+   iv = bump%bpar%b_to_v1(ib)
+   if (.not.allocated(bump%ens1%norm_kurt)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1%norm_kurt(:,:,iv),fld_mga)
+   found = .true.
+end select
+
+! Select parameter from vbal
+select case (trim(param))
+case ('vbal')
+   iv = bump%bpar%b_to_v1(ib)
+   if (.not.allocated(bump%vbal%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%vbal%dirac(:,:,iv),fld_mga)
+   found = .true.
+end select
+
 ! Select parameter from var
 select case (trim(param))
 case ('stddev')
@@ -1734,10 +1762,10 @@ end select
 
 ! Select parameter from mom
 select case (trim(param))
-case ('dirac_diag_ens')
+case ('dirac_mom')
    iv = bump%bpar%b_to_v1(ib)
-   if (.not.allocated(bump%mom1%ens_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%mom1%ens_dir(:,:,iv),fld_mga)
+   if (.not.allocated(bump%mom1%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%mom1%dirac(:,:,iv),fld_mga)
    found = .true.
 end select
 
@@ -1745,8 +1773,8 @@ end select
 select case (trim(param))
 case ('dirac_diag_cor')
    iv = bump%bpar%b_to_v1(ib)
-   if (.not.allocated(bump%hdiag%cor1%diag_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%diag_dir(:,:,iv),fld_mga)
+   if (.not.allocated(bump%hdiag%cor1%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%dirac(:,:,iv),fld_mga)
    found = .true.
 end select
 
@@ -1834,13 +1862,13 @@ case ('nicas_norm')
    found = .true.
 case ('dirac_nicas')
    iv = bump%bpar%b_to_v1(ib)
-   if (.not.allocated(bump%nicas%nicas_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%nicas_dir(:,:,iv),fld_mga)
+   if (.not.allocated(bump%nicas%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%dirac(:,:,iv),fld_mga)
    found = .true.
-case ('dirac_nicas_ens')
+case ('dirac_nicas_bens')
    iv = bump%bpar%b_to_v1(ib)
-   if (.not.allocated(bump%nicas%nicas_ens_dir)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%nicas_ens_dir(:,:,iv),fld_mga)
+   if (.not.allocated(bump%nicas%dirac_bens)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%dirac_bens(:,:,iv),fld_mga)
    found = .true.
 end select
 
@@ -2360,9 +2388,9 @@ class(bump_type),intent(inout) :: bump !< BUMP
 ! Release memory
 call fit_dealloc
 call bump%cmat%partial_dealloc
-call bump%ens1%dealloc
-call bump%ens1u%dealloc
-call bump%ens2%dealloc
+call bump%ens1%partial_dealloc
+call bump%ens1u%partial_dealloc
+call bump%ens2%partial_dealloc
 call bump%geom%partial_dealloc
 call bump%hdiag%partial_dealloc
 call bump%mom1%partial_dealloc

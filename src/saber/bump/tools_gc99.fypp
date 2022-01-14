@@ -68,7 +68,7 @@ type(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Local variables
 integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id
-character(len=1024) :: filename 
+character(len=1024) :: filename
 
 ! Set name
 @:set_name(gc99_fit_setup)

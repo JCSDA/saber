@@ -29,10 +29,10 @@ real(kind_real),parameter :: bound = five !< Restriction bound applied on local 
 
 ! Diagnostic derived type
 type diag_type
-   character(len=1024) :: prefix                  !< Prefix
-   integer :: nc2a                                !< Number of local points
-   type(diag_blk_type),allocatable :: blk(:,:)    !< Diagnostic blocks
-   real(kind_real),allocatable :: diag_dir(:,:,:) !< Diagonstic dirac field
+   character(len=1024) :: prefix               !< Prefix
+   integer :: nc2a                             !< Number of local points
+   type(diag_blk_type),allocatable :: blk(:,:) !< Diagnostic blocks
+   real(kind_real),allocatable :: dirac(:,:,:) !< Dirac field
 contains
    procedure :: alloc => diag_alloc
    procedure :: partial_dealloc => diag_partial_dealloc
@@ -40,7 +40,7 @@ contains
    procedure :: filter_fit => diag_filter_fit
    procedure :: build_fit => diag_build_fit
    procedure :: interp_fit => diag_interp_fit
-   procedure :: dirac => diag_dirac
+   procedure :: test_dirac => diag_test_dirac
    procedure :: covariance => diag_covariance
    procedure :: correlation => diag_correlation
    procedure :: localization => diag_localization
@@ -98,7 +98,7 @@ do ib=1,bpar%nbe
       end do
    end if
 end do
-if (nam%check_dirac) allocate(diag%diag_dir(geom%nc0a,geom%nl0,nam%nv))
+if (nam%check_dirac) allocate(diag%dirac(geom%nc0a,geom%nl0,nam%nv))
 
 ! Probe out
 @:probe_out()
@@ -159,7 +159,7 @@ class(diag_type),intent(inout) :: diag !< Diagnostic
 
 ! Release memory
 call diag%partial_dealloc
-if (allocated(diag%diag_dir)) deallocate(diag%diag_dir)
+if (allocated(diag%dirac)) deallocate(diag%dirac)
 
 ! Probe out
 @:probe_out()
@@ -513,10 +513,10 @@ end do
 end subroutine diag_interp_fit
 
 !----------------------------------------------------------------------
-! Subroutine: diag_dirac
+! Subroutine: diag_test_dirac
 !> Compute diagnostics dirac test
 !----------------------------------------------------------------------
-subroutine diag_dirac(diag,mpl,nam,geom,bpar)
+subroutine diag_test_dirac(diag,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -534,7 +534,7 @@ real(kind_real),allocatable :: rh_dir(:),H11_dir(:),H22_dir(:),H12_dir(:)
 real(kind_real),allocatable :: rv_dir(:)
 
 ! Set name
-@:set_name(diag_dirac)
+@:set_name(diag_test_dirac)
 
 ! Probe in
 @:probe_in()
@@ -589,16 +589,16 @@ if (nam%check_dirac) then
    do jl0=1,geom%nl0
       do jc0a=1,geom%nc0a
          if (geom%gmask_c0a(jc0a,jl0)) then
-            diag%diag_dir(jc0a,jl0,:) = zero
+            diag%dirac(jc0a,jl0,:) = zero
          else
-            diag%diag_dir(jc0a,jl0,:) = mpl%msv%valr
+            diag%dirac(jc0a,jl0,:) = mpl%msv%valr
          end if
       end do
    end do
 
    ! Loop over grid-points
    do jc0a=1,geom%nc0a
-      idir = geom%dirac_mask(jc0a)
+      idir = geom%dirac_index(jc0a)
       if (geom%gmask_hor_c0a(jc0a)) then
          ! Horizontal component
          if (nam%nc4>1) then
@@ -630,7 +630,7 @@ if (nam%check_dirac) then
                else
                   vnd = zero
                end if
-               diag%diag_dir(jc0a,jl0,geom%ivdir(idir)) = diag%diag_dir(jc0a,jl0,geom%ivdir(idir)) &
+               diag%dirac(jc0a,jl0,geom%ivdir(idir)) = diag%dirac(jc0a,jl0,geom%ivdir(idir)) &
  & +hor_dir*fit_func(mpl,'ver',vnd)
             end if
          end do
@@ -650,7 +650,7 @@ end if
 ! Probe out
 @:probe_out()
 
-end subroutine diag_dirac
+end subroutine diag_test_dirac
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_covariance
@@ -796,7 +796,7 @@ call diag%build_fit(mpl,geom,bpar)
 call diag%interp_fit(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
-call diag%dirac(mpl,nam,geom,bpar)
+call diag%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()
@@ -889,7 +889,7 @@ call diag%build_fit(mpl,geom,bpar)
 call diag%interp_fit(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
-call diag%dirac(mpl,nam,geom,bpar)
+call diag%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()
@@ -989,7 +989,7 @@ call diag%build_fit(mpl,geom,bpar)
 call diag%interp_fit(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
-call diag%dirac(mpl,nam,geom,bpar)
+call diag%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()
@@ -1105,8 +1105,8 @@ call diag%interp_fit(mpl,nam,geom,bpar,samp)
 call diag_lr%interp_fit(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
-call diag%dirac(mpl,nam,geom,bpar)
-call diag_lr%dirac(mpl,nam,geom,bpar)
+call diag%test_dirac(mpl,nam,geom,bpar)
+call diag_lr%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()

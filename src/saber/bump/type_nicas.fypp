@@ -39,14 +39,14 @@ integer,parameter :: ntest = 50   !< Number of tests
 
 ! NICAS derived type
 type nicas_type
-   character(len=1024) :: prefix                       !< Prefix
-   type(nicas_blk_type),allocatable :: blk(:)          !< NICAS data blocks
-   logical :: allocated                                !< Allocation flag
-   integer,allocatable :: grpid(:)                     !< group ID
-   integer,allocatable :: dirac_id(:)                  !< dirac ID
-   integer,allocatable :: bens_id(:)                   !< bens ID
-   real(kind_real),allocatable :: nicas_dir(:,:,:)     !< NICAS dirac
-   real(kind_real),allocatable :: nicas_ens_dir(:,:,:) !< NICAS as ensemble localization dirac
+   character(len=1024) :: prefix                    !< Prefix
+   type(nicas_blk_type),allocatable :: blk(:)       !< NICAS data blocks
+   logical :: allocated                             !< Allocation flag
+   integer,allocatable :: grpid(:)                  !< group ID
+   integer,allocatable :: dirac_id(:)               !< dirac ID
+   integer,allocatable :: bens_id(:)                !< bens ID
+   real(kind_real),allocatable :: dirac(:,:,:)      !< Dirac field
+   real(kind_real),allocatable :: dirac_bens(:,:,:) !< Dirac field for localized ensemble application
 contains
    procedure :: alloc => nicas_alloc
    procedure :: partial_dealloc => nicas_partial_dealloc
@@ -188,8 +188,8 @@ if (allocated(nicas%blk)) then
    end do
    deallocate(nicas%blk)
 end if
-if (allocated(nicas%nicas_dir)) deallocate(nicas%nicas_dir)
-if (allocated(nicas%nicas_ens_dir)) deallocate(nicas%nicas_ens_dir)
+if (allocated(nicas%dirac)) deallocate(nicas%dirac)
+if (allocated(nicas%dirac_bens)) deallocate(nicas%dirac_bens)
 
 ! Update allocation flag
 nicas%allocated = .false.
@@ -923,46 +923,48 @@ if (nam%check_dirac) then
    allocate(nicas%dirac_id(nam%nv))
    if (allocated(ens%mem).and.(trim(nam%method)/='cor')) allocate(nicas%bens_id(nam%nv))
 
-   ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
+   if (nam%write_c0) then
+      ! Create file
+      ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
 
-   ! Define dimensions
-   nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-   nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
-
-   ! Define variables
-   lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
-   lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
-   vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
-   do ib=1,bpar%nbe
-      if (bpar%nicas_block(ib)) then
-         ! Get group name
-         call nam%io_key_value(bpar%blockname(ib),grpname)
-
-         ! Define group
-         nicas%blk(ib)%grpid = define_grp(mpl,ncid,grpname)
-
-         ! Define variable
-         nicas%blk(ib)%dirac_id = define_var(mpl,nicas%blk(ib)%grpid,'nicas_blk','real',(/nc0_id,nl0_id/))
-      end if
-   end do
-   do iv=1,nam%nv
-      ! Get group name
-      call nam%io_key_value(nam%variables(iv),grpname)
-
-      ! Define group
-      nicas%grpid(iv) = define_grp(mpl,ncid,grpname)
+      ! Define dimensions
+      nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+      nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
       ! Define variables
-      nicas%dirac_id(iv) = define_var(mpl,nicas%grpid(iv),'nicas','real',(/nc0_id,nl0_id/))
-      if (allocated(ens%mem).and.(trim(nam%method)/='cor')) nicas%bens_id(iv) = define_var(mpl,nicas%grpid(iv),'Bens','real', &
- & (/nc0_id,nl0_id/))
-   end do
+      lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+      lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+      vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
+      do ib=1,bpar%nbe
+         if (bpar%nicas_block(ib)) then
+            ! Get group name
+            call nam%io_key_value(bpar%blockname(ib),grpname)
 
-   ! Write variables
-   call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
-   call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
-   call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+            ! Define group
+            nicas%blk(ib)%grpid = define_grp(mpl,ncid,grpname)
+
+            ! Define variable
+            nicas%blk(ib)%dirac_id = define_var(mpl,nicas%blk(ib)%grpid,'nicas_blk','real',(/nc0_id,nl0_id/))
+         end if
+      end do
+      do iv=1,nam%nv
+         ! Get group name
+         call nam%io_key_value(nam%variables(iv),grpname)
+
+         ! Define group
+         nicas%grpid(iv) = define_grp(mpl,ncid,grpname)
+
+         ! Define variables
+         nicas%dirac_id(iv) = define_var(mpl,nicas%grpid(iv),'nicas','real',(/nc0_id,nl0_id/))
+         if (allocated(ens%mem).and.(trim(nam%method)/='cor')) nicas%bens_id(iv) = define_var(mpl,nicas%grpid(iv),'Bens','real', &
+ & (/nc0_id,nl0_id/))
+      end do
+
+      ! Write variables
+      call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+      call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+      call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+   end if
 
    ! Apply NICAS block to diracs
    do ib=1,bpar%nbe
@@ -982,8 +984,10 @@ if (nam%check_dirac) then
    call mpl%flush
    call nicas%test_dirac(mpl,nam,geom,bpar,ens)
 
-   ! Close file
-   call close_file(mpl,ncid)
+   if (nam%write_c0) then
+      ! Close file
+      call close_file(mpl,ncid)
+   end if
 end if
 
 if (nam%check_randomization) then
@@ -1791,10 +1795,10 @@ lbens = (allocated(ens%mem).and.(trim(nam%method)/='cor'))
 
 ! Allocation
 allocate(fld_c0a(geom%nc0a,geom%nl0,nam%nv))
-allocate(nicas%nicas_dir(geom%nc0a,geom%nl0,nam%nv))
+allocate(nicas%dirac(geom%nc0a,geom%nl0,nam%nv))
 if (lbens) then
    allocate(fld_ens_c0a(geom%nc0a,geom%nl0,nam%nv))
-   allocate(nicas%nicas_ens_dir(geom%nc0a,geom%nl0,nam%nv))
+   allocate(nicas%dirac_bens(geom%nc0a,geom%nl0,nam%nv))
 end if
 
 do idir=1,geom%ndir
@@ -1811,18 +1815,18 @@ do idir=1,geom%ndir
 
    ! Copy points
    do ic0a=1,geom%nc0a
-      if (idir==geom%dirac_mask(ic0a)) then
-         nicas%nicas_dir(ic0a,:,:) = fld_c0a(ic0a,:,:)
-         if (lbens) nicas%nicas_ens_dir(ic0a,:,:) = fld_ens_c0a(ic0a,:,:)
+      if (idir==geom%dirac_index(ic0a)) then
+         nicas%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
+         if (lbens) nicas%dirac_bens(ic0a,:,:) = fld_ens_c0a(ic0a,:,:)
       end if
    end do
 end do
 
-if (.false.) then ! TODO: nam%write_dirac
+if (nam%write_c0) then
    ! Write fields
    do iv=1,nam%nv
-      call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%dirac_id(iv),nicas%nicas_dir(:,:,iv),geom%gmask_c0a)
-      if (lbens) call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%bens_id(iv),nicas%nicas_ens_dir(:,:,iv),geom%gmask_c0a)
+      call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%dirac_id(iv),nicas%dirac(:,:,iv),geom%gmask_c0a)
+      if (lbens) call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%bens_id(iv),nicas%dirac_bens(:,:,iv),geom%gmask_c0a)
    end do
 end if
 

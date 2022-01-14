@@ -27,18 +27,24 @@ implicit none
 ! Ensemble derived type
 type ens_type
    ! Attributes
-   integer :: ne                              !< Ensemble size
-   integer :: nsub                            !< Number of sub-ensembles
-   logical :: loaded                          !< True if members are loaded
+   integer :: ne                                   !< Ensemble size
+   integer :: nsub                                 !< Number of sub-ensembles
+   logical :: loaded                               !< True if members are loaded
 
    ! Data
-   type(fieldset_type),allocatable :: mem(:)  !< Members
-   type(fieldset_type),allocatable :: mean(:) !< Ensemble mean
-   type(fieldset_type) :: m2                  !< Variance
-   type(fieldset_type) :: m4                  !< Fourth-order centered moment
+   type(fieldset_type),allocatable :: mem(:)       !< Members
+   type(fieldset_type),allocatable :: mean(:)      !< Ensemble mean
+   type(fieldset_type) :: m2                       !< Variance
+   type(fieldset_type) :: m4                       !< Fourth-order centered moment
+
+   ! Normality test
+   real(kind_real),allocatable :: norm_m2(:,:,:)   !< Variance (normality test)
+   real(kind_real),allocatable :: norm_m4(:,:,:)   !< Fourth-order centered moment (normality test)
+   real(kind_real),allocatable :: norm_kurt(:,:,:) !< Kurtosis (normality test)
 contains
    procedure :: set_att => ens_set_att
    procedure :: alloc => ens_alloc
+   procedure :: partial_dealloc => ens_partial_dealloc
    procedure :: dealloc => ens_dealloc
    procedure :: copy => ens_copy
    procedure :: compute_mean => ens_compute_mean
@@ -123,10 +129,10 @@ end if
 end subroutine ens_alloc
 
 !----------------------------------------------------------------------
-! Subroutine: ens_dealloc
-!> Release memory
+! Subroutine: ens_partial_dealloc
+!> Release memory (partial)
 !----------------------------------------------------------------------
-subroutine ens_dealloc(ens)
+subroutine ens_partial_dealloc(ens)
 
 implicit none
 
@@ -137,7 +143,7 @@ class(ens_type),intent(inout) :: ens !< Ensemble
 integer :: ie,isub
 
 ! Set name
-@:set_name(ens_dealloc)
+@:set_name(ens_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -158,6 +164,34 @@ end if
 call ens%m2%final()
 call ens%m4%final()
 ens%loaded = .false.
+
+! Probe out
+@:probe_out()
+
+end subroutine ens_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: ens_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine ens_dealloc(ens)
+
+implicit none
+
+! Passed variables
+class(ens_type),intent(inout) :: ens !< Ensemble
+
+! Set name
+@:set_name(ens_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call ens%partial_dealloc
+if (allocated(ens%norm_m2)) deallocate(ens%norm_m2)
+if (allocated(ens%norm_m4)) deallocate(ens%norm_m4)
+if (allocated(ens%norm_kurt)) deallocate(ens%norm_kurt)
 
 ! Probe out
 @:probe_out()
@@ -794,9 +828,6 @@ integer :: iv,il0,ic0a,ie,nloc,iloc,nglb
 integer,allocatable :: ic0a_loc(:),il0_loc(:),iv_loc(:),order(:,:)
 real(kind_real) :: norm
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,ens%ne)
-real(kind_real) :: m2(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real) :: m4(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real) :: kurt(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
 character(len=1024) :: grpname
 
@@ -806,60 +837,67 @@ character(len=1024) :: grpname
 ! Probe in
 @:probe_in()
 
-! Create file
-ncid = create_file(mpl,trim(nam%prefix)//'_umf')
+! Allocation
+allocate(ens%norm_m2(geom%nc0a,geom%nl0,nam%nv))
+allocate(ens%norm_m4(geom%nc0a,geom%nl0,nam%nv))
+allocate(ens%norm_kurt(geom%nc0a,geom%nl0,nam%nv))
 
 ! Compute variance and kurtosis
 write(mpl%info,'(a7,a)') '','Compute variance and kurtosis'
 call mpl%flush
 call ens%compute_moments(mpl,nam,geom)
-call ens%get_c0(mpl,nam,geom,'m2',0,m2)
-call ens%get_c0(mpl,nam,geom,'m4',0,m4)
-kurt = mpl%msv%valr
+call ens%get_c0(mpl,nam,geom,'m2',0,ens%norm_m2)
+call ens%get_c0(mpl,nam,geom,'m4',0,ens%norm_m4)
+ens%norm_kurt = mpl%msv%valr
 do iv=1,nam%nv
    do il0=1,geom%nl0
       do ic0a=1,geom%nc0a
-         if (m2(ic0a,il0,iv)>zero) kurt(ic0a,il0,iv) = m4(ic0a,il0,iv)/m2(ic0a,il0,iv)**2
+         if (ens%norm_m2(ic0a,il0,iv)>zero) ens%norm_kurt(ic0a,il0,iv) = ens%norm_m4(ic0a,il0,iv)/ens%norm_m2(ic0a,il0,iv)**2
       end do
    end do
 end do
 
-! Define dimensions
-nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
+if (nam%write_c0) then
+   ! Create file
+   ncid = create_file(mpl,trim(nam%prefix)//'_umf')
 
-! Define variables
-lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
-lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
-vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
-do iv=1,nam%nv
-   ! Get group name
-   call nam%io_key_value(nam%variables(iv),grpname)
-
-   ! Define group
-   grpid(iv) = define_grp(mpl,ncid,grpname)
+   ! Define dimensions
+   nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+   nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
    ! Define variables
-   m2_id(iv) = define_var(mpl,grpid(iv),'m2','real',(/nc0_id,nl0_id/))
-   m4_id(iv) = define_var(mpl,grpid(iv),'m4','real',(/nc0_id,nl0_id/))
-   kurt_id(iv) = define_var(mpl,grpid(iv),'kurt','real',(/nc0_id,nl0_id/))
-end do
+   lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+   lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+   vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
+   do iv=1,nam%nv
+      ! Get group name
+      call nam%io_key_value(nam%variables(iv),grpname)
 
-! Write variables
-call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
-call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
-call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
-do iv=1,nam%nv
-   call geom%io%fld_write(mpl,grpid(iv),m2_id(iv),m2(:,:,iv),geom%gmask_c0a)
-   call geom%io%fld_write(mpl,grpid(iv),m4_id(iv),m4(:,:,iv),geom%gmask_c0a)
-   call geom%io%fld_write(mpl,grpid(iv),kurt_id(iv),kurt(:,:,iv),geom%gmask_c0a)
-end do
+      ! Define group
+      grpid(iv) = define_grp(mpl,ncid,grpname)
 
-! Close file
-call close_file(mpl,ncid)
+      ! Define variables
+      m2_id(iv) = define_var(mpl,grpid(iv),'m2','real',(/nc0_id,nl0_id/))
+      m4_id(iv) = define_var(mpl,grpid(iv),'m4','real',(/nc0_id,nl0_id/))
+      kurt_id(iv) = define_var(mpl,grpid(iv),'kurt','real',(/nc0_id,nl0_id/))
+   end do
+
+   ! Write variables
+   call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+   call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+   call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+   do iv=1,nam%nv
+      call geom%io%fld_write(mpl,grpid(iv),m2_id(iv),ens%norm_m2(:,:,iv),geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(iv),m4_id(iv),ens%norm_m4(:,:,iv),geom%gmask_c0a)
+      call geom%io%fld_write(mpl,grpid(iv),kurt_id(iv),ens%norm_kurt(:,:,iv),geom%gmask_c0a)
+   end do
+
+   ! Close file
+   call close_file(mpl,ncid)
+end if
 
 ! Allocation
-nloc = zss_count(mpl%msv%isnot(kurt).and.(kurt>nam%gen_kurt_th))
+nloc = zss_count(mpl%msv%isnot(ens%norm_kurt).and.(ens%norm_kurt>nam%gen_kurt_th))
 allocate(ic0a_loc(nloc))
 allocate(il0_loc(nloc))
 allocate(iv_loc(nloc))
@@ -881,7 +919,7 @@ do iv=1,nam%nv
 
    do il0=1,geom%nl0
       do ic0a=1,geom%nc0a
-         if (mpl%msv%isnot(kurt(ic0a,il0,iv)).and.(kurt(ic0a,il0,iv)>nam%gen_kurt_th)) then
+         if (mpl%msv%isnot(ens%norm_kurt(ic0a,il0,iv)).and.(ens%norm_kurt(ic0a,il0,iv)>nam%gen_kurt_th)) then
             ! Update index
             iloc = iloc+1
 

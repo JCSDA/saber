@@ -35,6 +35,7 @@ type vbal_type
    integer,allocatable :: h_c2b(:,:,:)         !< Index of neighbors for the horizontal interpolation
    real(kind_real),allocatable :: h_S(:,:,:)   !< Weight of neighbors for the horizontal interpolation
    type(vbal_blk_type),allocatable :: blk(:,:) !< Vertical balance blocks
+   real(kind_real),allocatable :: dirac(:,:,:) !< Dirac field
 contains
    procedure :: alloc => vbal_alloc
    procedure :: partial_dealloc => vbal_partial_dealloc
@@ -179,6 +180,7 @@ if (allocated(vbal%blk)) then
    end do
    deallocate(vbal%blk)
 end if
+if (allocated(vbal%dirac)) deallocate(vbal%dirac)
 
 ! Probe out
 @:probe_out()
@@ -1307,20 +1309,14 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 ! Probe in
 @:probe_in()
 
-if (nam%check_vbal) then
-   ! Test inverse
-   call vbal%test_inverse(mpl,rng,nam,geom,bpar)
-end if
+! Test inverse
+if (nam%check_vbal) call vbal%test_inverse(mpl,rng,nam,geom,bpar)
 
-if (nam%check_adjoints) then
-   ! Test adjoint
-   call vbal%test_adjoint(mpl,rng,nam,geom,bpar)
-end if
+! Test adjoint
+if (nam%check_adjoints) call vbal%test_adjoint(mpl,rng,nam,geom,bpar)
 
-if (nam%check_dirac) then
-   ! Test dirac
-   call vbal%test_dirac(mpl,nam,geom,bpar)
-end if
+! Test dirac
+if (nam%check_dirac) call vbal%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()
@@ -1672,17 +1668,17 @@ subroutine vbal_test_dirac(vbal,mpl,nam,geom,bpar)
 implicit none
 
 ! Passed variables
-class(vbal_type),intent(in) :: vbal !< Vertical balance
-type(mpl_type),intent(inout) :: mpl !< MPI data
-type(nam_type),intent(in) :: nam    !< Namelist
-type(geom_type),intent(in) :: geom  !< Geometry
-type(bpar_type),intent(in) :: bpar  !< Block parameters
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
 integer :: grpid(nam%nv),vbal_id(nam%nv)
-integer :: idir,iv
-real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
+integer :: idir,iv,ic0a
+real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 character(len=1024) :: grpname
 
 ! Set name
@@ -1691,47 +1687,59 @@ character(len=1024) :: grpname
 ! Probe in
 @:probe_in()
 
-! Generate dirac field
-fld = zero
+! Allocation
+allocate(vbal%dirac(geom%nc0a,geom%nl0,nam%nv))
+
 do idir=1,geom%ndir
-   if (geom%iprocdir(idir)==mpl%myproc) fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
+   ! Generate dirac field
+   fld_c0a = zero
+   if (geom%iprocdir(idir)==mpl%myproc) fld_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
+
+   ! Apply vertical balance to dirac
+   call vbal%apply(nam,geom,bpar,vbal%dirac)
+
+   ! Copy points
+   do ic0a=1,geom%nc0a
+      if (idir==geom%dirac_index(ic0a)) then
+         vbal%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
+      end if
+   end do
 end do
 
-! Apply vertical balance to dirac
-call vbal%apply(nam,geom,bpar,fld)
+if (nam%write_c0) then
+   ! Create file
+   ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
 
-! Create file
-ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
+   ! Define dimensions
+   nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+   nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
-! Define dimensions
-nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
+   ! Define variables
+   lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+   lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+   vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
+   do iv=1,nam%nv
+      ! Get group name
+      call nam%io_key_value(nam%variables(iv),grpname)
 
-! Define variables
-lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
-lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
-vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
-do iv=1,nam%nv
-   ! Get group name
-   call nam%io_key_value(nam%variables(iv),grpname)
+      ! Define group
+      grpid(iv) = define_grp(mpl,ncid,grpname)
 
-   ! Define group
-   grpid(iv) = define_grp(mpl,ncid,grpname)
+      ! Write variable
+      vbal_id(iv) = define_var(mpl,grpid(iv),'vbal','real',(/nc0_id,nl0_id/))
+   end do
 
-   ! Write variable
-   vbal_id(iv) = define_var(mpl,grpid(iv),'vbal','real',(/nc0_id,nl0_id/))
-end do
+   ! Write variables
+   call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+   call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+   call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+   do iv=1,nam%nv
+      call geom%io%fld_write(mpl,grpid(iv),vbal_id(iv),vbal%dirac(:,:,iv),geom%gmask_c0a)
+   end do
 
-! Write variables
-call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
-call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
-call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
-do iv=1,nam%nv
-   call geom%io%fld_write(mpl,grpid(iv),vbal_id(iv),fld(:,:,iv),geom%gmask_c0a)
-end do
-
-! Close file
-call close_file(mpl,ncid)
+   ! Close file
+   call close_file(mpl,ncid)
+end if
 
 ! Probe out
 @:probe_out()

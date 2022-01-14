@@ -206,7 +206,7 @@ do il0=1,nl0
          kl0m = (il0+jl0)/2
          kl0p = kl0m+1
       end if
- 
+
       if (mpl%msv%isnot(rv(kl0m)).and.mpl%msv%isnot(rv(kl0p))) then
          ! Effective parameters
          rv_eff = half*(rv(kl0m)+rv(kl0p))
@@ -609,7 +609,7 @@ if (raw(iz)>zero) then
                   if (mpl%msv%is(fit_r_m)) then
                      ! Index
                      im = iz-di
-   
+
                      ! Check index validity
                      if (im>=1) then
                         ! Check whether threshold has been crossed
@@ -624,7 +624,7 @@ if (raw(iz)>zero) then
                   end if
                end do
             end if
-   
+
             ! Find support radius, upper value
             fit_r_p = mpl%msv%valr
             if (iz<n) then
@@ -634,7 +634,7 @@ if (raw(iz)>zero) then
                   if (mpl%msv%is(fit_r_p)) then
                      ! Index
                      ip = iz+di
-   
+
                      ! Check index validity
                      if (ip<=n) then
                         ! Check whether threshold has been crossed
@@ -649,7 +649,7 @@ if (raw(iz)>zero) then
                   end if
                end do
             end if
-   
+
             ! Gather values
             if (mpl%msv%isnot(fit_r_m).and.mpl%msv%isnot(fit_r_p)) then
                fit_r = half*(fit_r_m+fit_r_p)

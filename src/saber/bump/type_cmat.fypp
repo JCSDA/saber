@@ -261,7 +261,7 @@ do ib=1,bpar%nbe
             call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
          case default
             call mpl%abort('${subr}$','cmat not implemented yet for this method')
-         end select      
+         end select
       end if
 
       ! Copy weight

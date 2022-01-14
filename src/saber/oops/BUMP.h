@@ -128,6 +128,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> universe_rad{"universe_rad", this};
   // Use CGAL for mesh generation (or STRIPACK instead)
   oops::OptionalParameter<bool> use_cgal{"use_cgal", this};
+  // Write subset Sc0 fields (full grid) using BUMP I/O
+  oops::OptionalParameter<bool> write_c0{"write_c0", this};
 
   // driver_param
 
@@ -411,8 +413,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> max_lev{"max_lev", this};
   // Positive-definiteness test
   oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
-  // Write NICAS fields on model grid (should be written via OOPS if .false.)
-  oops::OptionalParameter<bool> write_nicas_c0{"write_nicas_c0", this};
   // Write NICAS grids
   oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
 
@@ -428,8 +428,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<int>> levdir{"levdir", this};
   // Diracs variable indices
   oops::OptionalParameter<std::vector<int>> ivdir{"ivdir", this};
-  // Radius for diagnostic diracs [in meters]
-  oops::OptionalParameter<double> dirac_rad{"dirac_rad", this};
 
   // output_param
 
@@ -553,13 +551,17 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       std::string pattern;
       templateConfig.get("pattern", pattern);
       templateConfig.get("nmembers", ens1_ne);
+      int start = 1;
+      if (templateConfig.has("start")) {
+        templateConfig.get("start", start);
+      }
       int zpad = 0;
       if (templateConfig.has("zero padding")) {
         templateConfig.get("zero padding", zpad);
       }
       for (int ie=0; ie < ens1_ne; ++ie) {
         eckit::LocalConfiguration memberConfig(membersTemplate);
-        std::string rs = std::to_string(ie+1);
+        std::string rs = std::to_string(ie+start);
         if (zpad > 0) {
           std::stringstream ss;
           ss << std::setw(zpad) << std::setfill('0') << rs;

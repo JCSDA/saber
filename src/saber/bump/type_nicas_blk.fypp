@@ -216,7 +216,8 @@ type nicas_blk_type
    integer :: lat_sc_id                                 !< lat_sc ID
    integer :: lev_sc_id                                 !< lev_sc ID
    integer :: dirac_id                                  !< dirac ID
-   logical :: write_coef_ens                            !< Valid ensemble coefficient to write (different from one)
+   logical :: write_norm                                !< Norm writing flag
+   logical :: write_coef_ens                            !< Ensemble coefficent flag
    integer :: c_nopmax                                  !< Maximum number of operations for convolution
 contains
    procedure :: partial_dealloc => nicas_blk_partial_dealloc
@@ -1810,27 +1811,41 @@ nicas_blk%grpid = define_grp(mpl,nicas_blk%ncid,grpname)
 call put_att(mpl,nicas_blk%grpid,'wgt',nicas_blk%wgt)
 
 if (bpar%nicas_block(ib)) then
-   if (nam%write_nicas_c0) then
-      ! Define norm and coef_ens
-      write(mpl%info,'(a13,a)') '','Define norm and coef_ens'
-      call mpl%flush
-
-      ! Check if coef_ens should be written
-      if ((geom%nc0a>0).and.(zss_count(geom%gmask_c0a)>0)) then
-         coef_ens_min = zss_minval(nicas_blk%coef_ens,mask=geom%gmask_c0a)
-         coef_ens_max = zss_maxval(nicas_blk%coef_ens,mask=geom%gmask_c0a)
+   ! Define write_norm and write_coef_ens flags
+   if (nam%write_c0) then
+      if (nam%output_nicas_coef_ens) then
+         nicas_blk%write_coef_ens = .false.
       else
-         coef_ens_min = one
-         coef_ens_max = one
+         ! Check if coef_ens should be written
+         if ((geom%nc0a>0).and.(zss_count(geom%gmask_c0a)>0)) then
+            coef_ens_min = zss_minval(nicas_blk%coef_ens,mask=geom%gmask_c0a)
+            coef_ens_max = zss_maxval(nicas_blk%coef_ens,mask=geom%gmask_c0a)
+         else
+            coef_ens_min = one
+            coef_ens_max = one
+         end if
+         call mpl%f_comm%allreduce(coef_ens_min,fckit_mpi_min())
+         call mpl%f_comm%allreduce(coef_ens_max,fckit_mpi_max())
+         nicas_blk%write_coef_ens = .not.(indist(coef_ens_min,one).and.indist(coef_ens_max,one))
       end if
-      call mpl%f_comm%allreduce(coef_ens_min,fckit_mpi_min())
-      call mpl%f_comm%allreduce(coef_ens_max,fckit_mpi_max())
-      nicas_blk%write_coef_ens = .not.(indist(coef_ens_min,one).and.indist(coef_ens_max,one))
+      nicas_blk%write_norm = .not.nam%output_nicas_norm
+   else
+      nicas_blk%write_norm = .false.
+      nicas_blk%write_coef_ens = .false.
+   end if
 
-      ! Define variables
+   if (nicas_blk%write_coef_ens) then
+      ! Define coef_ens
+      write(mpl%info,'(a13,a)') '','Define coef_ens'
+      call mpl%flush
+      nicas_blk%coef_ens_id = define_var(mpl,nicas_blk%grpid,'coef_ens','real',(/nicas_blk%nc0_id,nicas_blk%nl0_id/))
+   end if
+
+   if (nicas_blk%write_norm) then
+      ! Define norm
+      write(mpl%info,'(a13,a)') '','Define norm'
+      call mpl%flush
       nicas_blk%norm_id = define_var(mpl,nicas_blk%grpid,'norm','real',(/nicas_blk%nc0_id,nicas_blk%nl0_id/))
-      if (nicas_blk%write_coef_ens) nicas_blk%coef_ens_id = define_var(mpl,nicas_blk%grpid,'coef_ens','real', &
- & (/nicas_blk%nc0_id,nicas_blk%nl0_id/))
    end if
 
    ! Define vertical sampling
@@ -1947,15 +1962,18 @@ write(mpl%info,'(a10,a)') '','Group '//trim(grpname)//':'
 call mpl%flush
 
 if (bpar%nicas_block(ib)) then
-   if (nam%write_nicas_c0) then
-      ! Write norm and coef_ens
-      write(mpl%info,'(a13,a)') '','Write norm and coef_ens'
+   if (nicas_blk%write_coef_ens) then
+      ! Write coef_ens
+      write(mpl%info,'(a13,a)') '','Write coef_ens'
       call mpl%flush
+      call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%coef_ens_id,nicas_blk%coef_ens,geom%gmask_c0a)
+   end if
 
-      ! Write variables
+   if (nicas_blk%write_norm) then
+      ! Write norm
+      write(mpl%info,'(a13,a)') '','Write norm'
+      call mpl%flush
       call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%norm_id,nicas_blk%norm,geom%gmask_c0a)
-      if (nicas_blk%write_coef_ens) call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%coef_ens_id, &
- & nicas_blk%coef_ens,geom%gmask_c0a)
    end if
 
    ! Write vertical sampling
@@ -5146,12 +5164,12 @@ do idir=1,geom%ndir
 
    ! Copy points
    do ic0a=1,geom%nc0a
-      if (idir==geom%dirac_mask(ic0a)) fld_tot(ic0a,:) = fld(ic0a,:)
+      if (idir==geom%dirac_index(ic0a)) fld_tot(ic0a,:) = fld(ic0a,:)
    end do
 end do
 
 ! Write field
-if (.false.) call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%dirac_id,fld_tot,geom%gmask_c0a) ! TODO: nam%write_dirac
+if (nam%write_c0) call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%dirac_id,fld_tot,geom%gmask_c0a)
 
 ! Print results
 write(mpl%info,'(a7,a)') '','Values at dirac points:'

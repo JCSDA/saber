@@ -495,7 +495,7 @@ if (ie==nam%ens1_ne) then
    end if
 
    ! Write variance
-   if (nam%write_var) call var%write(mpl,nam,geom)
+   if (nam%write_var.and.nam%write_c0) call var%write(mpl,nam,geom)
 end if
 
 ! Probe out

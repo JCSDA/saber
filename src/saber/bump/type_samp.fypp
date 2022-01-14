@@ -1801,7 +1801,6 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Local variables
 integer :: jc3,jc4,ic1a,ir,irtmp,jc0a,jc0u,jc0,il0,iproc
 real(kind_real) :: a,d
-real(kind_real) :: dxp,dyp,dxc,dyc
 logical :: done,proc_to_done(mpl%nproc),valid
 logical,allocatable :: c3a_free(:,:,:)
 
@@ -1888,14 +1887,14 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
             if (any(c3a_free(ic1a,:,jc4))) then
                ! Compute the distance
                call sphere_dist(samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),geom%lon_c0u(jc0u),geom%lat_c0u(jc0u),d)
-  
+
                ! Find the horizontal distance class
                if (d>half*nam%dc) then
                   ! Horizontal class distance index
                   jc3 = floor((d-half*nam%dc)/nam%dc)+2
                   if ((jc3<1).or.(jc4>nam%nc3)) call mpl%abort('${subr}$','jc3 out of bounds')
 
-                  if (jc3<=nam%nc3) then               
+                  if (jc3<=nam%nc3) then
                      ! Find if this class has not been already filled
                      if (c3a_free(ic1a,jc3,jc4)) then
                         samp%lon_c3a(ic1a,jc3,jc4) = geom%lon_c0u(jc0u)
@@ -1905,7 +1904,7 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
                         mpl%done((ic1a-1)*nam%nc3*nam%nc4+(jc3-1)*nam%nc4+jc4) = .true.
                      end if
                   end if
-               end if 
+               end if
             end if
          end do
          !$omp end parallel do

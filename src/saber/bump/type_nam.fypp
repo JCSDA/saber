@@ -43,7 +43,8 @@ type nam_type
    logical :: parallel_io                                     !< Parallel NetCDF I/O
    integer :: nprocio                                         !< Number of I/O processors
    real(kind_real) :: universe_rad                            !< Universe radius [in meters]
-   logical:: use_cgal                                         !< Use CGAL for mesh generation (or STRIPACK instead)
+   logical :: use_cgal                                        !< Use CGAL for mesh generation (or STRIPACK instead)
+   logical :: write_c0                                        !< Write subset Sc0 fields (full grid) using BUMP I/O
 
    ! driver_param
    character(len=1024) :: method                              !< Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
@@ -187,7 +188,6 @@ type nam_type
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
-   logical :: write_nicas_c0                                  !< Write NICAS fields on model grid (should be written via OOPS if .false.)
    logical :: write_nicas_grids                               !< Write NICAS grids
 
    ! dirac_param
@@ -196,7 +196,6 @@ type nam_type
    real(kind_real) :: latdir(ndirmax)                         !< Diracs latitudes [in degrees]
    integer :: levdir(ndirmax)                                 !< Diracs level
    integer :: ivdir(ndirmax)                                  !< Diracs variable indices
-   real(kind_real) :: dirac_rad                               !< Radius for diagnostic diracs [in meters]
 
    ! output_param
    integer :: full_grid_smoother_nn                           !< Number of neighbors for the full grid smoother
@@ -220,6 +219,9 @@ type nam_type
    logical :: fname_var_used                                  !< Flag activated if a variance file is specified
    logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
    logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
+   logical :: input_nicas_norm                                !< Input section includes the nicas_norm parameter
+   logical :: output_nicas_coef_ens                           !< Output section includes the coef_ens parameter
+   logical :: output_nicas_norm                               !< Output section includes the nicas_norm parameter
 contains
    procedure :: init => nam_init
    procedure :: read => nam_read
@@ -270,6 +272,7 @@ nam%parallel_io = .true.
 nam%nprocio = min(nproc,nprociomax)
 nam%universe_rad = pi*req
 nam%use_cgal = .false.
+nam%write_c0 = .false.
 
 ! driver_param default
 nam%method = ''
@@ -433,7 +436,6 @@ nam%rv = -one
 nam%min_lev = 1
 nam%max_lev = nl0max
 nam%pos_def_test = .false.
-nam%write_nicas_c0 = .true.
 nam%write_nicas_grids = .false.
 
 ! dirac_param default
@@ -442,7 +444,6 @@ nam%londir = zero
 nam%latdir = zero
 nam%levdir = 0
 nam%ivdir = 0
-nam%dirac_rad = huge_real
 
 ! output_param default
 nam%full_grid_smoother_nn = 0
@@ -463,6 +464,14 @@ nam%wind_nlon = 0
 nam%wind_nlat = 0
 nam%wind_nsg = 0
 nam%wind_inflation = one
+
+! helpers
+nam%fname_var_used = .false.
+nam%fname_vbal_cov_used = .false.
+nam%fname_mom_used = .false.
+nam%input_nicas_norm = .false.
+nam%output_nicas_coef_ens = .false.
+nam%output_nicas_norm = .false.
 
 ! Probe out
 @:probe_out()
@@ -498,6 +507,7 @@ logical :: parallel_io
 integer :: nprocio
 real(kind_real) :: universe_rad
 logical :: use_cgal
+logical :: write_c0
 character(len=1024) :: method
 character(len=1024) :: strategy
 logical :: new_normality
@@ -623,14 +633,12 @@ real(kind_real) :: rv(nl0max,0:nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
-logical :: write_nicas_c0
 logical :: write_nicas_grids
 integer :: ndir
 real(kind_real) :: londir(ndirmax)
 real(kind_real) :: latdir(ndirmax)
 integer :: levdir(ndirmax)
 integer :: ivdir(ndirmax)
-real(kind_real) :: dirac_rad
 integer :: full_grid_smoother_nn
 integer :: nldwv
 integer :: img_ldwv(nldwvmax)
@@ -659,7 +667,8 @@ namelist/general_param/ &
  & parallel_io, &
  & nprocio, &
  & universe_rad, &
- & use_cgal
+ & use_cgal, &
+ & write_c0
 namelist/driver_param/ &
  & method, &
  & strategy, &
@@ -794,14 +803,12 @@ namelist/nicas_param/ &
  & min_lev, &
  & max_lev, &
  & pos_def_test, &
- & write_nicas_c0, &
  & write_nicas_grids, &
  & ndir, &
  & londir, &
  & latdir, &
  & levdir, &
- & ivdir, &
- & dirac_rad
+ & ivdir
 namelist/output_param/ &
  & full_grid_smoother_nn, &
  & nldwv, &
@@ -833,6 +840,7 @@ if (mpl%main) then
    nprocio = min(mpl%nproc,nprociomax)
    universe_rad = pi*req
    use_cgal = .false.
+   write_c0 = .false.
 
    ! driver_param default
    method = ''
@@ -996,7 +1004,6 @@ if (mpl%main) then
    min_lev = 1
    max_lev = nl0max
    pos_def_test = .false.
-   write_nicas_c0 = .true.
    write_nicas_grids = .false.
 
    ! dirac_param default
@@ -1005,7 +1012,6 @@ if (mpl%main) then
    latdir = zero
    levdir = 0
    ivdir = 0
-   dirac_rad = huge_real
 
    ! output_param default
    full_grid_smoother_nn = 0
@@ -1053,6 +1059,7 @@ if (mpl%main) then
    nam%nprocio = nprocio
    nam%universe_rad = universe_rad
    nam%use_cgal = use_cgal
+   nam%write_c0 = write_c0
 
    ! driver_param
    read(lunit,nml=driver_param)
@@ -1204,7 +1211,6 @@ if (mpl%main) then
    nam%min_lev = min_lev
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
-   nam%write_nicas_c0 = write_nicas_c0
    nam%write_nicas_grids = write_nicas_grids
 
    ! dirac_param
@@ -1213,7 +1219,6 @@ if (mpl%main) then
    nam%latdir = latdir
    nam%levdir = levdir
    nam%ivdir = ivdir
-   nam%dirac_rad = dirac_rad
 
    ! output_param
    read(lunit,nml=output_param)
@@ -1271,6 +1276,7 @@ call mpl%f_comm%broadcast(nam%parallel_io,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%use_cgal,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%write_c0,mpl%rootproc-1)
 
 ! driver_param
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
@@ -1414,7 +1420,6 @@ call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%write_nicas_c0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_nicas_grids,mpl%rootproc-1)
 
 ! dirac_param
@@ -1423,7 +1428,6 @@ call mpl%f_comm%broadcast(nam%londir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%latdir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%levdir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%ivdir,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%dirac_rad,mpl%rootproc-1)
 
 ! output_param
 call mpl%f_comm%broadcast(nam%full_grid_smoother_nn,mpl%rootproc-1)
@@ -1462,13 +1466,15 @@ type(fckit_mpi_comm),intent(in) :: comm      !< FCKIT MPI communicator wrapper
 type(fckit_configuration),intent(in) :: conf !< Configuration
 
 ! Local variables
-integer :: iv
+integer :: iv,iconf
 integer,allocatable :: integer_array(:)
 real(kind_real),allocatable :: real_array(:)
 logical,allocatable :: logical_array(:)
+character(len=1024) :: parameter
 character(len=:),allocatable :: str
 character(len=:),allocatable :: str_array(:)
 type(fckit_configuration) :: subconf
+type(fckit_configuration),allocatable :: confs(:)
 
 ! Set name
 @:set_name(nam_from_conf)
@@ -1501,6 +1507,7 @@ if (conf%has('parallel_io')) call conf%get_or_die('parallel_io',nam%parallel_io)
 if (conf%has('nprocio')) call conf%get_or_die('nprocio',nam%nprocio)
 if (conf%has('universe_rad')) call conf%get_or_die('universe_rad',nam%universe_rad)
 if (conf%has('use_cgal')) call conf%get_or_die('use_cgal',nam%use_cgal)
+if (conf%has('write_c0')) call conf%get_or_die('write_c0',nam%write_c0)
 
 ! driver_param
 if (conf%has('method')) then
@@ -1883,7 +1890,6 @@ if (conf%has('max_lev')) then
    end do
 end if
 if (conf%has('pos_def_test')) call conf%get_or_die('pos_def_test',nam%pos_def_test)
-if (conf%has('write_nicas_c0')) call conf%get_or_die('write_nicas_c0',nam%write_nicas_c0)
 if (conf%has('write_nicas_grids')) call conf%get_or_die('write_nicas_grids',nam%write_nicas_grids)
 
 ! dirac_param
@@ -1924,7 +1930,6 @@ if (conf%has('ivdir')) then
    end if
    nam%ivdir(1:size(integer_array)) = integer_array
 end if
-if (conf%has('dirac_rad')) call conf%get_or_die('dirac_rad',nam%dirac_rad)
 
 ! output_param
 if (conf%has('full_grid_smoother_nn')) call conf%get_or_die('full_grid_smoother_nn',nam%full_grid_smoother_nn)
@@ -1988,6 +1993,25 @@ if (conf%has('wind_nlat')) call conf%get_or_die('wind_nlat',nam%wind_nlat)
 if (conf%has('wind_nsg')) call conf%get_or_die('wind_nsg',nam%wind_nsg)
 if (conf%has('wind_inflation')) call conf%get_or_die('wind_inflation',nam%wind_inflation)
 
+! helpers
+if (conf%has('input')) then
+   call conf%get_or_die('input',confs)
+   do iconf=1,size(confs)
+      call confs(iconf)%get_or_die('parameter',str)
+      parameter = str
+      if (trim(parameter)=='nicas_norm') nam%input_nicas_norm = .true.
+   end do
+end if
+if (conf%has('output')) then
+   call conf%get_or_die('output',confs)
+   do iconf=1,size(confs)
+      call confs(iconf)%get_or_die('parameter',str)
+      parameter = str
+      if (trim(parameter)=='nicas_coef_ens') nam%output_nicas_coef_ens = .true.
+      if (trim(parameter)=='nicas_norm') nam%output_nicas_norm = .true.
+   end do
+end if
+
 ! Probe out
 @:probe_out()
 
@@ -2040,7 +2064,6 @@ if (nam%ndir>0) nam%londir(1:nam%ndir) = nam%londir(1:nam%ndir)*deg2rad
 if (nam%ndir>0) nam%latdir(1:nam%ndir) = nam%latdir(1:nam%ndir)*deg2rad
 if (nam%nldwv>0) nam%lon_ldwv(1:nam%nldwv) = nam%lon_ldwv(1:nam%nldwv)*deg2rad
 if (nam%nldwv>0) nam%lat_ldwv(1:nam%nldwv) = nam%lat_ldwv(1:nam%nldwv)*deg2rad
-nam%dirac_rad = nam%dirac_rad/req
 
 ! Forced parameters for backward compatibility
 if (nam%new_hdiag.and.(.not.(nam%update_mom.or.nam%load_mom))) nam%new_mom = .true.
@@ -2092,6 +2115,7 @@ if (nam%new_vbal.and.nam%load_vbal) call mpl%abort('${subr}$','new_vbal and load
 if (nam%new_var.and.nam%update_var) call mpl%abort('${subr}$','new_var and update_var are exclusive')
 if (nam%new_var.and.nam%load_var) call mpl%abort('${subr}$','new_var and load_var are exclusive')
 if (nam%load_var.and.nam%update_var) call mpl%abort('${subr}$','load_var and update_var are exclusive')
+if (nam%write_var.and.(.not.nam%write_c0)) call mpl%abort('${subr}$','write_var requires write_c0')
 if (nam%new_mom.and.nam%update_mom) call mpl%abort('${subr}$','new_mom and update_mom are exclusive')
 if (nam%new_mom.and.nam%load_mom) call mpl%abort('${subr}$','new_mom and load_mom are exclusive')
 if (nam%load_mom.and.nam%update_mom) call mpl%abort('${subr}$','load_mom and update_mom are exclusive')
@@ -2392,7 +2416,6 @@ if (nam%check_dirac) then
       if (.not.any(nam%levs(1:nam%nl0)==nam%levdir(idir))) call mpl%abort('${subr}$','wrong level for a Dirac')
       if ((nam%ivdir(idir)<1).or.(nam%ivdir(idir)>nam%nv)) call mpl%abort('${subr}$','wrong variable for a Dirac')
    end do
-   if (.not.(nam%dirac_rad>zero)) call mpl%abort('${subr}$','Dirac radius should be positive')
 end if
 
 ! Check output_param
@@ -2463,6 +2486,7 @@ call mpl%write('parallel_io',nam%parallel_io)
 call mpl%write('nprocio',nam%nprocio)
 call mpl%write('universe_rad',nam%universe_rad*req)
 call mpl%write('use_cgal',nam%use_cgal)
+call mpl%write('write_c0',nam%write_c0)
 
 ! driver_param
 write(mpl%info,'(a7,a)') '','Driver parameters'
@@ -2626,7 +2650,6 @@ call mpl%write('rv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)
-call mpl%write('write_nicas_c0',nam%write_nicas_c0)
 call mpl%write('write_nicas_grids',nam%write_nicas_grids)
 
 ! dirac_param
@@ -2643,7 +2666,6 @@ call mpl%write('londir',nam%ndir,londir)
 call mpl%write('latdir',nam%ndir,latdir)
 call mpl%write('levdir',nam%ndir,nam%levdir(1:nam%ndir))
 call mpl%write('ivdir',nam%ndir,nam%ivdir(1:nam%ndir))
-call mpl%write('dirac_rad',nam%dirac_rad)
 
 ! output_param
 write(mpl%info,'(a7,a)') '','Output parameters'

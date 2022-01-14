@@ -139,7 +139,7 @@ if run_horizontal:
          plt.close()
 
 if run_vertical:
-   for ind in range(0, nnd):  
+   for ind in range(0, nnd):
       print("vertical: " + str(ind))
 
       # Square-root function
@@ -197,7 +197,7 @@ if True:
 if run_horizontal and run_vertical:
    # Open file
    file = open(args.srcdir + "/src/saber/bump/tools_gc99.fypp", "w")
-   
+
    # Write file
    file.write("#:include '../instrumentation.fypp'\n")
    file.write("#:include '../generics.fypp'\n")
@@ -463,12 +463,12 @@ if run_horizontal and run_vertical:
    file.write("end function gc99_fit_func_sqrt\n")
    file.write("\n")
    file.write("end module tools_gc99")
-   
+
    # Close file
    file.close()
 
    # Create NetCDF file
-   ncfile = Dataset(args.srcdir + "/src/saber/bump/tools_gc99.fypp.nc",mode="w",format='NETCDF4_CLASSIC') 
+   ncfile = Dataset(args.srcdir + "/src/saber/bump/tools_gc99.fypp.nc",mode="w",format='NETCDF4_CLASSIC')
 
    # Create dimensions
    nnd_id = ncfile.createDimension('nnd', nnd)
