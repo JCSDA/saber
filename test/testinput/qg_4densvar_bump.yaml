@@ -34,7 +34,7 @@ cost function:
           load_nicas_local: true
           prefix: qg_4densvar_bump/test
           strategy: common
-    members template:
+    members from template:
       template:
         states:
         - date: 2010-01-01T00:00:00Z

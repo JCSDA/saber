@@ -12,7 +12,7 @@ background error:
         load_nicas_local: true
         prefix: qg_dirac_bump_loc_3d/test
         strategy: common
-  members template:
+  members from template:
     template:
       date: 2010-01-01T12:00:00Z
       filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc

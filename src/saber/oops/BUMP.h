@@ -558,14 +558,18 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
   const boost::optional<eckit::LocalConfiguration> &ensembleConfig = params.ensemble.value();
   std::vector<eckit::LocalConfiguration> membersConfig;
   if (ensembleConfig != boost::none) {
+    // Abort if both "members" and "members from template" are specified
+    if (ensembleConfig->has("members") && ensembleConfig->has("members from template"))
+      ABORT("BUMP: both members and members from template are specified");
+
     if (ensembleConfig->has("members")) {
       // Explicit members
       ensembleConfig->get("members", membersConfig);
       ens1_ne = membersConfig.size();
-    } else if (ensembleConfig->has("members template")) {
+    } else if (ensembleConfig->has("members from template")) {
       // Templated members
       eckit::LocalConfiguration templateConfig;
-      ensembleConfig->get("members template", templateConfig);
+      ensembleConfig->get("members from template", templateConfig);
       eckit::LocalConfiguration membersTemplate;
       templateConfig.get("template", membersTemplate);
       std::string pattern;
@@ -581,13 +585,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       }
       for (int ie=0; ie < ens1_ne; ++ie) {
         eckit::LocalConfiguration memberConfig(membersTemplate);
-        std::string rs = std::to_string(ie+start);
-        if (zpad > 0) {
-          std::stringstream ss;
-          ss << std::setw(zpad) << std::setfill('0') << rs;
-          rs = ss.str();
-        }
-        util::seekAndReplace(memberConfig, pattern, rs);
+        util::seekAndReplace(memberConfig, pattern, ie+start, zpad);
         membersConfig.push_back(memberConfig);
       }
     } else {

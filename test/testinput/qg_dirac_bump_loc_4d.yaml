@@ -12,7 +12,7 @@ background error:
         load_nicas_local: true
         prefix: qg_dirac_bump_loc_4d/test
         strategy: common
-  members template:
+  members from template:
     template:
       states:
       - date: 2010-01-01T00:00:00Z

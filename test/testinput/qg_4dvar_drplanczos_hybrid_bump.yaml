@@ -36,7 +36,7 @@ cost function:
               load_nicas_local: true
               prefix: qg_4dvar_drplanczos_hybrid_bump/test
               strategy: common
-        members template:
+        members from template:
           template:
             date: 2010-01-01T00:00:00Z
             filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1D.nc

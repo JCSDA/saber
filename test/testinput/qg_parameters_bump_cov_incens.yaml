@@ -45,7 +45,7 @@ bump:
     type: an
 ensemble pert:
   date: 2010-01-01T12:00:00Z
-  members template:
+  members from template:
     template:
       date: 2010-01-01T12:00:00Z
       filename: testdata/recenter.ens.%mem%.2010-01-01T12:00:00Z.PT0S.nc

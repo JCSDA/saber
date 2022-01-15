@@ -6,7 +6,7 @@ background error:
       saber block name: ID
       input variables: [x]
       output variables: [x]
-  members template:
+  members from template:
     template:
       states:
       - date: 2010-01-01T00:00:00Z

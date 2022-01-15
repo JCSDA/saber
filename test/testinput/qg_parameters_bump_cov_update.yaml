@@ -24,7 +24,7 @@ bump:
   write_nicas_local: true
   write_var: true
   ensemble:
-    members template:
+    members from template:
       template:
         date: 2010-01-01T12:00:00Z
         filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
