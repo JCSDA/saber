@@ -11,7 +11,6 @@ module type_diag_blk
 !$ use omp_lib
 use tools_const, only: zero,half,one,two,four
 use tools_fit, only: condmax,diag_iso_full,tensor_d2h,tensor_check_cond,fast_fit
-use tools_fftw, only: hor_sqrt
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,put_att,define_var,put_var
@@ -51,11 +50,6 @@ type diag_blk_type
    real(kind_real),allocatable :: D22_l0(:)           !< Horizontal Daley tensor, component 22, profile
    real(kind_real),allocatable :: D12_l0(:)           !< Horizontal Daley tensor, component 12 (normalized), profile
    real(kind_real),allocatable :: rv_l0(:)            !< Vertical support radius, profile
-
-   real(kind_real),allocatable :: raw_hor_sqrt(:,:,:)  !< Raw diagnostic horizontal square-root
-   real(kind_real),allocatable :: raw_hor_sqrt_norm(:) !< Raw diagnostic horizontal square-root normalization
-   real(kind_real),allocatable :: raw_zs_sqrt(:,:)     !< Raw diagnostic at zero separation square-root
-   real(kind_real),allocatable :: raw_zs_sqrt_norm(:)  !< Raw diagnostic at zero separation square-root normalization
 
    real(kind_real),allocatable :: coef_ens_c0a(:,:)    !< Ensemble coefficient, subset Sc0, halo A
    real(kind_real),allocatable :: coef_sta_c0a(:,:)    !< Static coefficient, subset Sc0, halo A
@@ -129,12 +123,6 @@ if ((ic2a==0).or.nam%local_diag) then
       allocate(diag_blk%D12_l0(geom%nl0))
    end if
    allocate(diag_blk%rv_l0(geom%nl0))
-   if (nam%diag_sqrt) then
-      allocate(diag_blk%raw_hor_sqrt(bpar%nc3(ib),bpar%nc4(ib),geom%nl0))
-      allocate(diag_blk%raw_hor_sqrt_norm(geom%nl0))
-      allocate(diag_blk%raw_zs_sqrt(bpar%nl0r(ib),geom%nl0))
-      allocate(diag_blk%raw_zs_sqrt_norm(geom%nl0))
-   end if
 end if
 if (ic2a==0) then
    allocate(diag_blk%coef_ens_c0a(geom%nc0a,geom%nl0))
@@ -162,12 +150,6 @@ if ((ic2a==0).or.nam%local_diag) then
       diag_blk%D12_l0 = mpl%msv%valr
    end if
    diag_blk%rv_l0 = mpl%msv%valr
-   if (nam%diag_sqrt) then
-      diag_blk%raw_hor_sqrt = mpl%msv%valr
-      diag_blk%raw_hor_sqrt_norm = mpl%msv%valr
-      diag_blk%raw_zs_sqrt = mpl%msv%valr
-      diag_blk%raw_zs_sqrt_norm = mpl%msv%valr
-   end if
 end if
 if (ic2a==0) then
    diag_blk%coef_ens_c0a = mpl%msv%valr
@@ -232,10 +214,6 @@ if (allocated(diag_blk%D12_l0)) deallocate(diag_blk%D12_l0)
 if (allocated(diag_blk%rv_l0)) deallocate(diag_blk%rv_l0)
 if (allocated(diag_blk%vunit)) deallocate(diag_blk%vunit)
 if (allocated(diag_blk%distv)) deallocate(diag_blk%distv)
-if (allocated(diag_blk%raw_hor_sqrt)) deallocate(diag_blk%raw_hor_sqrt)
-if (allocated(diag_blk%raw_hor_sqrt_norm)) deallocate(diag_blk%raw_hor_sqrt_norm)
-if (allocated(diag_blk%raw_zs_sqrt)) deallocate(diag_blk%raw_zs_sqrt)
-if (allocated(diag_blk%raw_zs_sqrt_norm)) deallocate(diag_blk%raw_zs_sqrt_norm)
 if (allocated(diag_blk%coef_ens_c0a)) deallocate(diag_blk%coef_ens_c0a)
 if (allocated(diag_blk%coef_sta_c0a)) deallocate(diag_blk%coef_sta_c0a)
 if (allocated(diag_blk%rh_c0a)) deallocate(diag_blk%rh_c0a)
@@ -274,7 +252,6 @@ integer,intent(in) :: nl0_2_id                 !< NetCDF ID
 integer :: grpid
 integer :: raw_id,raw_hor_id,raw_zs_id,valid_id,coef_ens_l0_id,l0rl0_to_l0_id
 integer :: fit_id,fit_hor_id,fit_zs_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id
-integer :: raw_hor_sqrt_id,raw_hor_sqrt_norm_id,raw_zs_sqrt_id,raw_zs_sqrt_norm_id
 integer :: il0,jl0r,jl0,jl0rz
 
 ! Set name
@@ -296,12 +273,6 @@ if (mpl%msv%isanynot(diag_blk%raw)) then
    raw_zs_id = define_var(mpl,grpid,'raw_zs','real',(/nl0_2_id,nl0_1_id/))
    valid_id = define_var(mpl,grpid,'valid','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
    l0rl0_to_l0_id = define_var(mpl,grpid,'l0rl0_to_l0','int',(/nl0r_id,nl0_1_id/))
-   if (nam%diag_sqrt) then
-      raw_hor_sqrt_id = define_var(mpl,grpid,'raw_hor_sqrt','real',(/nc3_id,nc4_id,nl0_1_id/))
-      raw_hor_sqrt_norm_id = define_var(mpl,grpid,'raw_hor_sqrt_norm','real',(/nl0_1_id/))
-      raw_zs_sqrt_id = define_var(mpl,grpid,'raw_zs_sqrt','real',(/nl0_2_id,nl0_1_id/))
-      raw_zs_sqrt_norm_id = define_var(mpl,grpid,'raw_zs_sqrt_norm','real',(/nl0_1_id/))
-   end if
 end if
 if (mpl%msv%isanynot(diag_blk%coef_ens_l0)) coef_ens_l0_id = define_var(mpl,grpid,'coef_ens_l0','real',(/nl0_1_id/))
 if (mpl%msv%isanynot(diag_blk%fit)) then
@@ -332,17 +303,6 @@ if (mpl%msv%isanynot(diag_blk%raw)) then
    end do
    call put_var(mpl,grpid,valid_id,diag_blk%valid)
    call put_var(mpl,grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib))
-   if (nam%diag_sqrt) then
-      call put_var(mpl,grpid,raw_hor_sqrt_id,diag_blk%raw_hor_sqrt)
-      call put_var(mpl,grpid,raw_hor_sqrt_norm_id,diag_blk%raw_hor_sqrt_norm)
-      do il0=1,geom%nl0
-         do jl0r=1,bpar%nl0rmax
-            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-            call put_var(mpl,grpid,raw_zs_sqrt_id,diag_blk%raw_zs_sqrt(jl0r,il0),(/jl0,il0/))
-         end do
-      end do
-      call put_var(mpl,grpid,raw_zs_sqrt_norm_id,diag_blk%raw_zs_sqrt_norm)
-   end if
 end if
 if (mpl%msv%isanynot(diag_blk%coef_ens_l0)) call put_var(mpl,grpid,coef_ens_l0_id,diag_blk%coef_ens_l0)
 if (mpl%msv%isnot(diag_blk%coef_sta)) call put_att(mpl,grpid,'coef_sta',diag_blk%coef_sta)
@@ -723,65 +683,6 @@ deallocate(il1inf)
 deallocate(il1sup)
 deallocate(rinf)
 deallocate(rsup)
-
-if (nam%diag_sqrt) then
-   ! Compute horizontal square-roots
-   do il0=1,geom%nl0
-      ! Get zero separation level and min/max levels
-      jl0rz = bpar%il0rz(il0,ib)
-
-      ! Raw
-      do jc4=1,bpar%nc4(ib)
-         call hor_sqrt(bpar%nc3(ib),diag_blk%raw(:,jc4,jl0rz,il0),diag_blk%raw_hor_sqrt(:,jc4,il0))
-      end do
-
-      ! Normalize
-      diag_blk%raw_hor_sqrt_norm(il0) = diag_blk%raw_hor_sqrt(1,1,il0)
-      diag_blk%raw_hor_sqrt(:,:,il0) = diag_blk%raw_hor_sqrt(:,:,il0)/diag_blk%raw_hor_sqrt_norm(il0)
-   end do
-
-   ! Allocation
-   allocate(rawv_full(geom%nl0,geom%nl0))
-   allocate(evec(geom%nl0,geom%nl0))
-   allocate(eval(geom%nl0))
-
-   ! Full raw vertical matrix
-   rawv_full = zero
-   do il0=1,geom%nl0
-      do jl0r=1,nl0r
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-         rawv_full(jl0,il0) = diag_blk%raw(1,1,jl0r,il0)
-         rawv_full(il0,jl0) = diag_blk%raw(1,1,jl0r,il0)
-      end do
-   end do
-
-   ! EOF decomposition
-   call da_eof_decomposition(mpl,geom%nl0,rawv_full,evec,eval)
-
-   ! Eigenvalues square-root
-   eval = max(eval,zero)
-   eval = sqrt(eval)
-
-   ! Full raw vertical matrix square-root
-   call da_eof_recomposition(geom%nl0,geom%nl0,evec,eval,rawv_full)
-
-   do il0=1,geom%nl0
-      ! Get zero separation level and min/max levels
-      jl0rz = bpar%il0rz(il0,ib)
-
-      do jl0r=1,nl0r
-         ! Index
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-
-         ! Raw
-         diag_blk%raw_zs_sqrt(jl0r,il0) = rawv_full(jl0,il0)
-      end do
-
-      ! Normalization
-      diag_blk%raw_zs_sqrt_norm(il0) = diag_blk%raw_zs_sqrt(jl0rz,il0)
-      diag_blk%raw_zs_sqrt(:,il0) = diag_blk%raw_zs_sqrt(:,il0)/diag_blk%raw_zs_sqrt_norm(il0)
-   end do
-end if
 
 ! End associate
 end associate

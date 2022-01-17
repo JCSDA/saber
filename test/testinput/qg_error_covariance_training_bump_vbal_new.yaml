@@ -2,6 +2,8 @@ background:
   date: 2010-01-01T12:00:00Z
   filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
+  check_adjoints: true
+  check_dirac: true
   ens1_nsub: 2
   datadir: testdata
   nc1: 500
@@ -14,6 +16,17 @@ bump:
   write_samp_global: true
   write_vbal: true
   write_vbal_cov: true
+  ndir: 14
+  londir: [-120.0,-60.0,0.0,60.0,120.0,-150.0,-90.0,-30.0,30.0,90.0,150.0,-120.0,0.0,120.0]
+  latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
+  levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  output:
+  - datadir: testdata/qg_error_covariance_training_bump_vbal_new
+    date: 2010-01-01T12:00:00Z
+    exp: dirac_vbal
+    parameter: dirac_vbal
+    type: an
 ensemble:
   members from template:
     template:

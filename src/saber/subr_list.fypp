@@ -676,7 +676,6 @@
 #:set subr_list = subr_list + ["atlas_field_from_array_logical_r3"]
 #:set subr_list = subr_list + ["atlas_create_atlas_function_space"]
 #:set subr_list = subr_list + ["atlas_get_atlas_field_size"]
-#:set subr_list = subr_list + ["fftw_hor_sqrt"]
 #:set subr_list = subr_list + ["registry_report"]
 #:set subr_list = subr_list + ["registry_save"]
 #:set subr_list = subr_list + ["registry_get_root_id"]

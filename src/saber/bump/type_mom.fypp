@@ -94,8 +94,10 @@ do ib=1,bpar%nb
    call mom%blk(ib)%alloc(samp%nc1a,geom,bpar,ne,nsub,nam%update_mom)
 end do
 if (nam%check_dirac) then
-   allocate(mom%m1(geom%nc0a,geom%nl0,nam%nv))
-   allocate(mom%m2(geom%nc0a,geom%nl0,nam%nv))
+   if (nam%update_mom) then
+      allocate(mom%m1(geom%nc0a,geom%nl0,nam%nv))
+      allocate(mom%m2(geom%nc0a,geom%nl0,nam%nv))
+   end if
    allocate(mom%dirac(geom%nc0a,geom%nl0,nam%nv))
 end if
 
@@ -131,8 +133,10 @@ do ib=1,bpar%nb
    call mom%blk(ib)%init(bpar,nam%update_mom)
 end do
 if (nam%check_dirac) then
-   mom%m1 = zero
-   mom%m2 = zero
+   if (nam%update_mom) then
+      mom%m1 = zero
+      mom%m2 = zero
+   end if
    mom%dirac = zero
 end if
 
@@ -168,6 +172,8 @@ if (allocated(mom%blk)) then
    end do
    deallocate(mom%blk)
 end if
+if (allocated(mom%m1)) deallocate(mom%m1)
+if (allocated(mom%m2)) deallocate(mom%m2)
 
 ! Probe out
 @:probe_out()
@@ -193,8 +199,6 @@ class(mom_type),intent(inout) :: mom !< Moments
 
 ! Release memory
 call mom%partial_dealloc
-if (allocated(mom%m1)) deallocate(mom%m1)
-if (allocated(mom%m2)) deallocate(mom%m2)
 if (allocated(mom%dirac)) deallocate(mom%dirac)
 
 ! Probe out
@@ -510,7 +514,7 @@ if (nam%check_dirac) then
    ! Get perturbation
    do jc0a=1,geom%nc0a
       do jl0=1,geom%nl0
-         if (geom%gmask_c0a(jc0a,il0)) pert_c0a(jc0a,jl0,:) = fld_c0a(jc0a,jl0,:)-mom%m1(jc0a,jl0,:)
+         if (geom%gmask_c0a(jc0a,jl0)) pert_c0a(jc0a,jl0,:) = fld_c0a(jc0a,jl0,:)-mom%m1(jc0a,jl0,:)
       end do
    end do
 
@@ -528,10 +532,9 @@ if (nam%check_dirac) then
       idir = geom%dirac_index(jc0a)
 
       do jl0=1,geom%nl0
-         if (geom%gmask_c0a(jc0a,il0)) then
+         if (geom%gmask_c0a(jc0a,jl0)) then
             ! Update covariance
-            mom%dirac(jc0a,jl0,geom%ivdir(idir)) = mom%dirac(jc0a,jl0,geom%ivdir(idir)) &
- & +fac5*wgt_dir(idir)*pert_c0a(jc0a,jl0,geom%ivdir(idir))
+            mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+fac5*wgt_dir(idir)*pert_c0a(jc0a,jl0,:)
 
             ! Update variance
             mom%m2(jc0a,jl0,:) = mom%m2(jc0a,jl0,:)+fac5*pert_c0a(jc0a,jl0,:)**2
@@ -607,12 +610,17 @@ if (ie==nam%ens1_ne) then
          idir = geom%dirac_index(jc0a)
          do jl0=1,geom%nl0
             if (geom%gmask_c0a(jc0a,jl0)) then
-               cor_norm = wgt_dir(idir)*mom%m2(jc0a,jl0,geom%ivdir(idir))
-               if (cor_norm>zero) then
-                  mom%dirac(jc0a,jl0,geom%ivdir(idir)) = mom%dirac(jc0a,jl0,geom%ivdir(idir))/sqrt(cor_norm)
-               else
-                  mom%dirac(jc0a,jl0,geom%ivdir(idir)) = mpl%msv%valr
-               end if
+               do iv=1,nam%nv
+                  cor_norm = wgt_dir(idir)*mom%m2(jc0a,jl0,iv)
+print*, jc0a,jl0,iv,cor_norm,mom%dirac(jc0a,jl0,iv)
+                  if (cor_norm>zero) then
+                     mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)/sqrt(cor_norm)
+                  else
+                     mom%dirac(jc0a,jl0,iv) = mpl%msv%valr
+                  end if
+               end do
+            else
+               mom%dirac(jc0a,jl0,:) = mpl%msv%valr
             end if
          end do
       end do
@@ -674,7 +682,6 @@ end if
 
 ! Initialization
 call mom%init(nam,bpar)
-if (nam%check_dirac) mom%dirac = zero
 
 ! Loop on sub-ensembles
 do isub=1,ens%nsub
@@ -775,8 +782,7 @@ do isub=1,ens%nsub
          do jc0a=1,geom%nc0a
             idir = geom%dirac_index(jc0a)
             do jl0=1,geom%nl0
-              if (geom%gmask_c0a(jc0a,jl0)) mom%dirac(jc0a,jl0,geom%ivdir(idir)) = mom%dirac(jc0a,jl0,geom%ivdir(idir)) &
- & +wgt_dir(idir)*fld_c0a(jc0a,jl0,geom%ivdir(idir))
+              if (geom%gmask_c0a(jc0a,jl0)) mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+wgt_dir(idir)*fld_c0a(jc0a,jl0,:)
             end do
          end do
       end if
@@ -845,14 +851,16 @@ if (nam%check_dirac) then
       idir = geom%dirac_index(jc0a)
       do jl0=1,geom%nl0
          if (geom%gmask_c0a(jc0a,jl0)) then
-            cor_norm = wgt_dir(idir)*m2(jc0a,jl0,geom%ivdir(idir))
-            if (cor_norm>zero) then
-                mom%dirac(jc0a,jl0,geom%ivdir(idir)) = mom%dirac(jc0a,jl0,geom%ivdir(idir))*fac_norm_cov/sqrt(cor_norm)
-            else
-                mom%dirac(jc0a,jl0,geom%ivdir(idir)) = mpl%msv%valr
-            end if
+            do iv=1,nam%nv
+               cor_norm = wgt_dir(idir)*m2(jc0a,jl0,iv)
+               if (cor_norm>zero) then
+                  mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)*fac_norm_cov/sqrt(cor_norm)
+               else
+                  mom%dirac(jc0a,jl0,iv) = mpl%msv%valr
+               end if
+           end do
          else
-            mom%dirac(ic0a,il0,:) = mpl%msv%valr
+            mom%dirac(jc0a,jl0,:) = mpl%msv%valr
          end if
       end do
    end do

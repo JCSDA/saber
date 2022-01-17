@@ -43,7 +43,6 @@ endif()
 
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
-find_package( FFTW )
 
 ## SABER instrumentation
 set( ENABLE_SABER_INSTRUMENTATION 0 )

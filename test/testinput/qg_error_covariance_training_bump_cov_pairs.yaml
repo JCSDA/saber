@@ -2,6 +2,8 @@ background:
   date: 2010-01-01T12:00:00Z
   filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
+  check_adjoints: true
+  check_dirac: true
   datadir: testdata
   dc: 500.0e3
   method: cor
@@ -21,6 +23,11 @@ bump:
     x: [3000.0e3]
   write_hdiag: true
   write_nicas_local: true
+  ndir: 14
+  londir: [-120.0,-60.0,0.0,60.0,120.0,-150.0,-90.0,-30.0,30.0,90.0,150.0,-120.0,0.0,120.0]
+  latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
+  levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   output:
   - datadir: testdata/qg_error_covariance_training_bump_cov_pairs
     date: 2010-01-01T12:00:00Z
@@ -36,6 +43,21 @@ bump:
     date: 2010-01-01T12:00:00Z
     exp: cor_rv
     parameter: cor_rv
+    type: an
+  - datadir: testdata/qg_error_covariance_training_bump_cov_pairs
+    date: 2010-01-01T12:00:00Z
+    exp: dirac_mom
+    parameter: dirac_mom
+    type: an
+  - datadir: testdata/qg_error_covariance_training_bump_cov_pairs
+    date: 2010-01-01T12:00:00Z
+    exp: dirac_diag_cor
+    parameter: dirac_diag_cor
+    type: an
+  - datadir: testdata/qg_error_covariance_training_bump_cov_pairs
+    date: 2010-01-01T12:00:00Z
+    exp: dirac_nicas
+    parameter: dirac_nicas
     type: an
   - datadir: testdata/qg_error_covariance_training_bump_cov_pairs
     date: 2010-01-01T12:00:00Z

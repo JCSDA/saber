@@ -44,7 +44,7 @@ resol: 8.0
 # dirac_param
 ndir: 1
 londir: [-85.0]
-latdir: [65.0]
+latdir: [15.0]
 levdir: [1]
 ivdir: [1]
 

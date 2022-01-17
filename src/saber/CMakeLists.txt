@@ -31,10 +31,6 @@ target_link_libraries( ${PROJECT_NAME} PUBLIC atlas_f )
 if( oops_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
 endif()
-if( FFTW_FOUND )
-    target_link_libraries( ${PROJECT_NAME} PUBLIC ${FFTW_LIBRARIES} )
-    include_directories( ${FFTW_INCLUDE_DIRS} )
-endif()
 
 # Enable including of local header Fortran file templates
 target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> )
