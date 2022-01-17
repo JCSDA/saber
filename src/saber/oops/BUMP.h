@@ -382,12 +382,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> diag_rvflt{"diag_rvflt", this};
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
-  // Estimate peakness
-  oops::OptionalParameter<bool> peakness{"peakness", this};
-  // Estimate vertical negative lobe
-  oops::OptionalParameter<bool> negative_lobe{"negative_lobe", this};
-  // Diagnostic of square-root functions
-  oops::OptionalParameter<bool> diag_sqrt{"diag_sqrt", this};
 
   // nicas_param
 
@@ -538,14 +532,18 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
   const boost::optional<eckit::LocalConfiguration> &ensembleConfig = params.ensemble.value();
   std::vector<eckit::LocalConfiguration> membersConfig;
   if (ensembleConfig != boost::none) {
+    // Abort if both "members" and "members from template" are specified
+    if (ensembleConfig->has("members") && ensembleConfig->has("members from template"))
+      ABORT("BUMP: both members and members from template are specified");
+
     if (ensembleConfig->has("members")) {
       // Explicit members
       ensembleConfig->get("members", membersConfig);
       ens1_ne = membersConfig.size();
-    } else if (ensembleConfig->has("members template")) {
+    } else if (ensembleConfig->has("members from template")) {
       // Templated members
       eckit::LocalConfiguration templateConfig;
-      ensembleConfig->get("members template", templateConfig);
+      ensembleConfig->get("members from template", templateConfig);
       eckit::LocalConfiguration membersTemplate;
       templateConfig.get("template", membersTemplate);
       std::string pattern;
@@ -555,20 +553,23 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       if (templateConfig.has("start")) {
         templateConfig.get("start", start);
       }
+      std::vector<int> except;
+      if (templateConfig.has("except")) {
+        templateConfig.get("except", except);
+      }
       int zpad = 0;
       if (templateConfig.has("zero padding")) {
         templateConfig.get("zero padding", zpad);
       }
+      int count = start;
       for (int ie=0; ie < ens1_ne; ++ie) {
-        eckit::LocalConfiguration memberConfig(membersTemplate);
-        std::string rs = std::to_string(ie+start);
-        if (zpad > 0) {
-          std::stringstream ss;
-          ss << std::setw(zpad) << std::setfill('0') << rs;
-          rs = ss.str();
+        while (std::count(except.begin(), except.end(), count)) {
+          count += 1;
         }
-        util::seekAndReplace(memberConfig, pattern, rs);
+        eckit::LocalConfiguration memberConfig(membersTemplate);
+        util::seekAndReplace(memberConfig, pattern, count, zpad);
         membersConfig.push_back(memberConfig);
+        count += 1;
       }
     } else {
       ABORT("BUMP: ensemble not specified");

@@ -23,7 +23,7 @@ bump:
   write_hdiag: true
   write_nicas_local: true
   ensemble:
-    members template:
+    members from template:
       template:
         date: 2010-01-01T12:00:00Z
         filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc

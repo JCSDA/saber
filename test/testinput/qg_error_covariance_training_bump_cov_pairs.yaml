@@ -43,14 +43,14 @@ bump:
     parameter: nicas_norm
     type: an
 ensemble base:
-  members template:
+  members from template:
     template:
       date: 2010-01-01T12:00:00Z
       filename: testdata/qg_ens_recenter/ensmean.an.2010-01-01T12:00:00Z.nc
     pattern: ""
     nmembers: 10
 ensemble pairs:
-  members template:
+  members from template:
     template:
       date: 2010-01-01T12:00:00Z
       filename: testdata/qg_ens_recenter/recenter.ens.%mem%.2010-01-01T12:00:00Z.PT0S.nc
