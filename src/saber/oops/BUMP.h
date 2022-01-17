@@ -579,14 +579,23 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       if (templateConfig.has("start")) {
         templateConfig.get("start", start);
       }
+      std::vector<int> except;
+      if (templateConfig.has("except")) {
+        templateConfig.get("except", except);
+      }
       int zpad = 0;
       if (templateConfig.has("zero padding")) {
         templateConfig.get("zero padding", zpad);
       }
+      int count = start;
       for (int ie=0; ie < ens1_ne; ++ie) {
+        while (std::count(except.begin(), except.end(), count)) {
+          count += 1;
+        }
         eckit::LocalConfiguration memberConfig(membersTemplate);
-        util::seekAndReplace(memberConfig, pattern, ie+start, zpad);
+        util::seekAndReplace(memberConfig, pattern, count, zpad);
         membersConfig.push_back(memberConfig);
+        count += 1;
       }
     } else {
       ABORT("BUMP: ensemble not specified");
