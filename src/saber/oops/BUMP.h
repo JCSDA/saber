@@ -596,8 +596,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 
   // Add ensemble sizes
   eckit::LocalConfiguration conf(params.toConfiguration());
-  conf.set("ens1_ne", ens1_ne);
-  conf.set("ens2_ne", ens2_ne);
+  if (!conf.has("ens1_ne")) conf.set("ens1_ne", ens1_ne);
+  if (!conf.has("ens2_ne")) conf.set("ens2_ne", ens2_ne);
 
   // Add missing value
   const double msvalr = util::missingValue(double());

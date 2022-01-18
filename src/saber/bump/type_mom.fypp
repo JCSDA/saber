@@ -236,6 +236,7 @@ character(len=1024) :: fname_mom,grpname
 @:probe_in()
 
 ! Allocation
+if (ens%ne==0) call mpl%abort('${subr}$','ensemble size is zero')
 call mom%alloc(nam,geom,bpar,samp,ens%ne,ens%nsub,prefix)
 
 ! Initialization
