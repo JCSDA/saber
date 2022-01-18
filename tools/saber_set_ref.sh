@@ -81,10 +81,14 @@ do
    done
 done < ${listdir}/saber_test_tier1-multi.txt
 
-# Tier 1 OOPS-specific tests
+# Tier 1 and 2 OOPS-specific tests
 
 # Loop over tests
 while IFS= read -r oops_test
 do
    echo ${oops_test}/"test.log.out" >> ${listdir}/saber_ref_tier1.txt
 done < ${listdir}/saber_test_tier1-oops.txt
+while IFS= read -r oops_test
+do
+   echo ${oops_test}/"test.log.out" >> ${listdir}/saber_ref_tier2.txt
+done < ${listdir}/saber_test_tier2-oops.txt
