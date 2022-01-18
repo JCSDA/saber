@@ -776,6 +776,8 @@ do ib=1,bpar%nbe
                   write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. hor. support:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%rh_l0(il0)*reqkm,trim(mpl%black)//' km'
                   call mpl%flush
+               end if
+               if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0))) then
                   write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. ver. support:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%rv_l0(il0),trim(mpl%black)//' vertical units'
                   call mpl%flush

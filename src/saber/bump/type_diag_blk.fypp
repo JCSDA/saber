@@ -503,34 +503,39 @@ do il1=1,nl1
       call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',diag_blk%raw(:,jc4,jl0rz,il0),rh_tmp(jc4))
    end do
 
-   ! Average values
-   rh_l1(il1) = sqrt(sum(rh_tmp**2)/real(bpar%nc4(ib),kind_real))
 
-   if (bpar%nc4(ib)>1) then
-      ! Initialization
-      minim%nc3 = bpar%nc3(ib)
-      minim%nc4 = bpar%nc4(ib)
-      minim%guess = (/rh_l1(il1)**2,rh_l1(il1)**2,zero/)
-      minim%binf = (/rh_l1(il1)**2/sqrt(condmax),rh_l1(il1)**2/sqrt(condmax),-one/)
-      minim%bsup = (/rh_l1(il1)**2*sqrt(condmax),rh_l1(il1)**2*sqrt(condmax),one/)
-      minim%obs = reshape(diag_blk%raw(:,:,jl0rz,il0),(/minim%ny/))
-      minim%cost_function = 'tensor'
+   if (mpl%msv%isallnot(rh_tmp)) then
+      ! Average values
+      rh_l1(il1) = sqrt(sum(rh_tmp**2)/real(bpar%nc4(ib),kind_real))
 
-      ! Compute fit
-      call minim%compute(mpl)
+      if (bpar%nc4(ib)>1) then
+         ! Initialization
+         minim%nc3 = bpar%nc3(ib)
+         minim%nc4 = bpar%nc4(ib)
+         minim%guess = (/rh_l1(il1)**2,rh_l1(il1)**2,zero/)
+         minim%binf = (/rh_l1(il1)**2/sqrt(condmax),rh_l1(il1)**2/sqrt(condmax),-one/)
+         minim%bsup = (/rh_l1(il1)**2*sqrt(condmax),rh_l1(il1)**2*sqrt(condmax),one/)
+         minim%obs = reshape(diag_blk%raw(:,:,jl0rz,il0),(/minim%ny/))
+         minim%cost_function = 'tensor'
 
-      ! Get parameters, apply bounds
-      D11_l1(il1) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
-      D22_l1(il1) = max(minim%binf(2),min(minim%x(2),minim%bsup(2)))
-      D12_l1(il1) = max(minim%binf(3),min(minim%x(3),minim%bsup(3)))
+         ! Compute fit
+         call minim%compute(mpl)
 
-      ! Check tensor conditioning
-      call tensor_check_cond(D11_l1(il1),D22_l1(il1),D12_l1(il1),valid)
-      if (.not.valid) then
-         D11_l1(il1) = mpl%msv%valr
-         D22_l1(il1) = mpl%msv%valr
-         D12_l1(il1) = mpl%msv%valr
+         ! Get parameters, apply bounds
+         D11_l1(il1) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
+         D22_l1(il1) = max(minim%binf(2),min(minim%x(2),minim%bsup(2)))
+         D12_l1(il1) = max(minim%binf(3),min(minim%x(3),minim%bsup(3)))
+
+         ! Check tensor conditioning
+         call tensor_check_cond(D11_l1(il1),D22_l1(il1),D12_l1(il1),valid)
+         if (.not.valid) then
+            D11_l1(il1) = mpl%msv%valr
+            D22_l1(il1) = mpl%msv%valr
+            D12_l1(il1) = mpl%msv%valr
+         end if
       end if
+   else
+      rh_l1(il1) = mpl%msv%valr
    end if
 end do
 

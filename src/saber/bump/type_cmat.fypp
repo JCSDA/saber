@@ -215,11 +215,13 @@ integer :: ib
 ! Probe in
 @:probe_in()
 
-! Allocation
-call cmat%alloc(geom,bpar)
+if (.not.cmat%allocated) then
+   ! Allocation
+   call cmat%alloc(geom,bpar)
 
-! Initialization
-call cmat%init(mpl,bpar)
+   ! Initialization
+   call cmat%init(mpl,bpar)
+end if
 
 ! Convolution parameters
 do ib=1,bpar%nbe
@@ -362,7 +364,7 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: ib
-logical :: cmat_allocated,import_standard(bpar%nbe),import_static(bpar%nbe)
+logical :: import_standard(bpar%nbe),import_static(bpar%nbe)
 
 ! Set name
 @:set_name(cmat_from_bump)
@@ -370,11 +372,13 @@ logical :: cmat_allocated,import_standard(bpar%nbe),import_static(bpar%nbe)
 ! Probe in
 @:probe_in()
 
-! Check allocation
-cmat_allocated = cmat%allocated
+if (.not.cmat%allocated) then
+   ! Allocation
+   call cmat%alloc(geom,bpar)
 
-! Initial allocation
-if (.not.cmat_allocated) call cmat%alloc(geom,bpar)
+   ! Initialization
+   call cmat%init(mpl,bpar)
+end if
 
 ! Check BUMP import
 do ib=1,bpar%nbe
@@ -388,15 +392,6 @@ do ib=1,bpar%nbe
       import_static(ib) = allocated(cmat%blk(ib)%bump_coef_sta)
    end if
 end do
-
-! Final allocation
-if (.not.cmat_allocated) then
-   ! Allocation
-   call cmat%alloc(geom,bpar)
-
-   ! Initialization
-   call cmat%init(mpl,bpar)
-end if
 
 do ib=1,bpar%nbe
    if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
