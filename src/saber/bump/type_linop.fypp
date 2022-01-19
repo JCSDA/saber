@@ -789,11 +789,11 @@ subroutine linop_add_op(linop,n_s,row,col,S,Svec)
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop       !< Linear operators
-integer,intent(inout) :: n_s                   !< Number of operations
-integer,intent(in) :: row                      !< Row index
-integer,intent(in) :: col                      !< Column index
-real(kind_real),intent(in),optional :: S       !< Value
+class(linop_type),intent(inout) :: linop                !< Linear operators
+integer,intent(inout) :: n_s                            !< Number of operations
+integer,intent(in) :: row                               !< Row index
+integer,intent(in) :: col                               !< Column index
+real(kind_real),intent(in),optional :: S                !< Value
 real(kind_real),intent(in),optional :: Svec(linop%nvec) !< Values
 
 ! Local variables

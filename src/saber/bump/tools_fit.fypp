@@ -412,13 +412,13 @@ subroutine fit_tensor_d2h(mpl,D11,D22,D12,H11,H22,H12)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl!< MPI data
-real(kind_real),intent(in) :: D11  !< Daley tensor component 11
-real(kind_real),intent(in) :: D22  !< Daley tensor component 22
-real(kind_real),intent(in) :: D12  !< Daley tensor component 12 (normalized)
-real(kind_real),intent(out) :: H11 !< Local tensor component 11
-real(kind_real),intent(out) :: H22 !< Local tensor component 22
-real(kind_real),intent(out) :: H12 !< Local tensor component 12
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: D11   !< Daley tensor component 11
+real(kind_real),intent(in) :: D22   !< Daley tensor component 22
+real(kind_real),intent(in) :: D12   !< Daley tensor component 12 (normalized)
+real(kind_real),intent(out) :: H11  !< Local tensor component 11
+real(kind_real),intent(out) :: H22  !< Local tensor component 22
+real(kind_real),intent(out) :: H12  !< Local tensor component 12
 
 ! Local variables
 real(kind_real) :: det,D12sq

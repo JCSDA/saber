@@ -613,7 +613,6 @@ if (ie==nam%ens1_ne) then
             if (geom%gmask_c0a(jc0a,jl0)) then
                do iv=1,nam%nv
                   cor_norm = wgt_dir(idir)*mom%m2(jc0a,jl0,iv)
-print*, jc0a,jl0,iv,cor_norm,mom%dirac(jc0a,jl0,iv)
                   if (cor_norm>zero) then
                      mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)/sqrt(cor_norm)
                   else
