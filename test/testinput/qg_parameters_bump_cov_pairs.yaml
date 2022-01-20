@@ -48,7 +48,7 @@ ensemble base:
     template:
       date: 2010-01-01T12:00:00Z
       filename: testdata/ensmean.an.2010-01-01T12:00:00Z.nc
-    pattern: ""
+    pattern: %%
     nmembers: 10
 ensemble pairs:
   members from template:
