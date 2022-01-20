@@ -264,8 +264,8 @@ if( SABER_TEST_OOPS OR SABER_TEST_INTERPOLATION )
     set( QG_LIBS saber ${oops_qg_LIBRARIES} )
 endif()
 if( SABER_TEST_OOPS )
-    ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
-                            SOURCES mains/qgErrorCovarianceTraining.cc
+    ecbuild_add_executable( TARGET  saber_qg_4dvar.x
+                            SOURCES mains/qg4DVar.cc
                             LIBS    ${QG_LIBS} )
 
     ecbuild_add_executable( TARGET  saber_qg_dirac.x
@@ -276,8 +276,20 @@ if( SABER_TEST_OOPS )
                             SOURCES mains/qgEnsRecenter.cc
                             LIBS    ${QG_LIBS} )
 
-    ecbuild_add_executable( TARGET  saber_qg_4dvar.x
-                            SOURCES mains/qg4DVar.cc
+    ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
+                            SOURCES mains/qgErrorCovarianceTraining.cc
+                            LIBS    ${QG_LIBS} )
+
+    ecbuild_add_executable( TARGET  saber_qg_forecast.x
+                            SOURCES mains/qgForecast.cc
+                            LIBS    ${QG_LIBS} )
+
+    ecbuild_add_executable( TARGET  saber_qg_gen_ens_pert_B.x
+                            SOURCES mains/qgGenEnsPertB.cc
+                            LIBS    ${QG_LIBS} )
+
+    ecbuild_add_executable( TARGET  saber_qg_hofx.x
+                            SOURCES mains/qgHofX.cc
                             LIBS    ${QG_LIBS} )
 
 endif()
@@ -522,41 +534,47 @@ if( SABER_TEST_OOPS )
     ecbuild_add_test( TARGET saber_test_qg_truth
                       MPI ${mpi}
                       OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_forecast.x
-                      ARGS testinput/qg_truth.yaml)
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
+                      ARGS testinput/qg_truth.yaml
+                      DEPENDS saber_qg_forecast.x )
 
     # Forecast
     ecbuild_add_test( TARGET saber_test_qg_forecast
                       MPI ${mpi}
                       OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_forecast.x
-                      ARGS testinput/qg_forecast.yaml )
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
+                      ARGS testinput/qg_forecast.yaml
+                      DEPENDS saber_qg_forecast.x )
 
     # Ensemble generation
     ecbuild_add_test( TARGET saber_test_qg_gen_ens_pert_B
                       MPI ${mpi}
                       OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_gen_ens_pert_B.x
-                      ARGS testinput/qg_gen_ens_pert_B.yaml )
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
+                      ARGS testinput/qg_gen_ens_pert_B.yaml
+                      DEPENDS saber_qg_gen_ens_pert_B.x )
 
     # Make observations
     ecbuild_add_test( TARGET saber_test_qg_make_obs_3d
                       MPI ${mpi}
                       OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_hofx.x
-                      ARGS testinput/qg_make_obs_3d.yaml )
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
+                      ARGS testinput/qg_make_obs_3d.yaml
+                      DEPENDS saber_qg_hofx.x )
 
     ecbuild_add_test( TARGET saber_test_qg_make_obs_4d_12h
                       MPI ${mpi}
                       OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_hofx.x
-                      ARGS testinput/qg_make_obs_4d_12h.yaml )
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
+                      ARGS testinput/qg_make_obs_4d_12h.yaml
+                      DEPENDS saber_qg_hofx.x )
 
     ecbuild_add_test( TARGET saber_test_qg_make_obs_4d_24h
                       MPI ${mpi}
                       OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/qg_hofx.x
-                      ARGS testinput/qg_make_obs_4d_24h.yaml )
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
+                      ARGS testinput/qg_make_obs_4d_24h.yaml
+                      DEPENDS saber_qg_hofx.x )
 
     # Ens recenter test
     foreach( test ${saber_test_oops} )
@@ -631,22 +649,25 @@ if( SABER_TEST_OOPS )
         ecbuild_add_test( TARGET saber_test_qg_hr_truth
                           MPI ${mpi}
                           OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/qg_forecast.x
-                          ARGS testinput/qg_hr_truth.yaml)
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
+                          ARGS testinput/qg_hr_truth.yaml
+                          DEPENDS saber_qg_forecast.x )
 
         # Forecast
         ecbuild_add_test( TARGET saber_test_qg_hr_forecast
                           MPI ${mpi}
                           OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/qg_forecast.x
-                          ARGS testinput/qg_hr_forecast.yaml )
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
+                          ARGS testinput/qg_hr_forecast.yaml
+                          DEPENDS saber_qg_forecast.x )
 
         # Ensemble generation
         ecbuild_add_test( TARGET saber_test_qg_hr_gen_ens_pert_B
                           MPI ${mpi}
                           OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/qg_gen_ens_pert_B.x
-                          ARGS testinput/qg_hr_gen_ens_pert_B.yaml )
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
+                          ARGS testinput/qg_hr_gen_ens_pert_B.yaml
+                          DEPENDS saber_qg_gen_ens_pert_B.x )
 
         # Error covariance training tests
         foreach( test ${saber_test_oops} )
