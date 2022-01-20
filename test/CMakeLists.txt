@@ -260,43 +260,44 @@ ecbuild_add_executable( TARGET  saber_bump.x
 # Process fypp files
 fckit_target_preprocess_fypp( saber_bump.x )
 
-if( SABER_TEST_OOPS OR SABER_TEST_INTERPOLATION )
-    set( QG_LIBS saber ${oops_qg_LIBRARIES} )
-endif()
 if( SABER_TEST_OOPS )
     ecbuild_add_executable( TARGET  saber_qg_4dvar.x
                             SOURCES mains/qg4DVar.cc
-                            LIBS    ${QG_LIBS} )
+                            LIBS    ${oops_qg_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_qg_dirac.x
                             SOURCES mains/qgDirac.cc
-                            LIBS    ${QG_LIBS} )
+                            LIBS    ${oops_qg_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
                             SOURCES mains/qgEnsRecenter.cc
-                            LIBS    ${QG_LIBS} )
+                            LIBS    ${oops_qg_LIBRARIES} )
 
     ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
                             SOURCES mains/qgErrorCovarianceTraining.cc
-                            LIBS    ${QG_LIBS} )
+                            LIBS    ${oops_qg_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_qg_forecast.x
                             SOURCES mains/qgForecast.cc
-                            LIBS    ${QG_LIBS} )
+                            LIBS    ${oops_qg_LIBRARIES} )
 
     ecbuild_add_executable( TARGET  saber_qg_gen_ens_pert_B.x
                             SOURCES mains/qgGenEnsPertB.cc
-                            LIBS    ${QG_LIBS} )
+                            LIBS    ${oops_qg_LIBRARIES} )
 
     ecbuild_add_executable( TARGET  saber_qg_hofx.x
                             SOURCES mains/qgHofX.cc
-                            LIBS    ${QG_LIBS} )
+                            LIBS    ${oops_qg_LIBRARIES} )
 
 endif()
 if( SABER_TEST_INTERPOLATION )
     ecbuild_add_executable( TARGET  saber_interpolation_bump.x
                             SOURCES mains/InterpolationBump.cc
-                            LIBS    ${QG_LIBS} )
+                            LIBS    ${oops_qg_LIBRARIES}
+                                    saber )
 endif()
 
 # Mono-core tests

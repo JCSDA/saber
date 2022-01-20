@@ -8,7 +8,7 @@
  * does it submit to any jurisdiction.
  */
 
-#include "oops/qg/QgTraits.h"
+#include "model/QgTraits.h"
 #include "oops/runs/Run.h"
 #include "saber/oops/ErrorCovarianceTraining.h"
 

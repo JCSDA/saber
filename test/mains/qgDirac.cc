@@ -8,7 +8,7 @@
  * does it submit to any jurisdiction.
  */
 
-#include "oops/qg/model/QgTraits.h"
+#include "model/QgTraits.h"
 #include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
 #include "saber/oops/instantiateCovarFactory.h"
