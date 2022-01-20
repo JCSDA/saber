@@ -18,7 +18,7 @@ bump:
   new_nicas: true
   nl0r: 2
   prefix: qg_hr_error_covariance_training_bump_cov_inhomo-aniso/test
-  resol: 4.0
+  resol: 8.0
   strategy: specific_univariate
   write_hdiag: true
   write_nicas_local: true

@@ -2762,7 +2762,7 @@ do il1=1,nicas_blk%nl1
       write(mpl%info,'(a16,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
  & rhs_min(il0)*reqkm,' km - ',rhs_max(il0)*reqkm,' km)'
       if (nicas_blk%verbosity) call mpl%flush
-      nc1_real = two*geom%area_ver_c0(il0)*(2.0*nam%resol)**2/(sqrt(three)*rhs_avg(il0)**2)
+      nc1_real = two*geom%area_ver_c0(il0)*nam%resol**2/(sqrt(three)*rhs_avg(il0)**2)
       if (nc1_real>real(huge_int,kind_real)) call mpl%abort('${subr}$','estimated nc1 is too large for an integer')
       nicas_blk%hor(il1)%nc1 = floor(nc1_real)
       write(mpl%info,'(a16,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_blk%hor(il1)%nc1

@@ -17,7 +17,7 @@ output:
   datadir: testdata/qg_hr_gen_ens_pert_B
   date: 2009-12-31T00:00:00Z
   exp: forecast
-  first: P1D
+  first: P1DT12H
   frequency: PT1H
   type: ens
 geometry:
