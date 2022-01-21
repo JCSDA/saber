@@ -165,7 +165,7 @@ call minim%vt_dir(xtmp)
 D11 = xtmp(1)
 D22 = xtmp(2)
 D12 = xtmp(3)
-call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,fit)
+call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,1,fit) ! TODO: more components
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))

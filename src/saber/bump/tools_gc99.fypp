@@ -16,7 +16,7 @@ module tools_gc99
 use tools_const, only: zero,half,one,two
 use tools_kinds, only: kind_real
 use tools_netcdf, only: open_file,inquire_dim_size,get_att,inquire_var,get_var,close_file
-use tools_repro, only: rth,eq,inf,sup
+use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -25,6 +25,7 @@ implicit none
 ! Public parameters
 logical :: fit_allocated = .false.
 integer,parameter :: nnd = 51
+integer,parameter :: nncomp = 5
 integer,parameter :: nscaleth = 8
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real
 real(kind_real),parameter :: ndmax = 1.00000000_kind_real
@@ -32,7 +33,7 @@ real(kind_real),parameter :: dnd = 0.02000000_kind_real
 real(kind_real),parameter :: scalethmin = 0.20000000_kind_real
 real(kind_real),parameter :: scalethmax = 0.90000000_kind_real
 real(kind_real),allocatable :: scaleth(:)
-real(kind_real),allocatable :: scaleh(:)
+real(kind_real),allocatable :: scaleh(:,:)
 real(kind_real),allocatable :: func_hor(:)
 real(kind_real),allocatable :: scalev(:)
 real(kind_real),allocatable :: func_ver(:)
@@ -87,7 +88,7 @@ if (.not.fit_allocated) then
 
    ! Allocation
    allocate(scaleth(nscaleth))
-   allocate(scaleh(nscaleth))
+   allocate(scaleh(nscaleth,nncomp))
    allocate(func_hor(nnd))
    allocate(scalev(nscaleth))
    allocate(func_ver(nnd))
@@ -158,19 +159,20 @@ end subroutine gc99_fit_dealloc
 ! Function: gc99_fit_func
 !> Fit function
 !----------------------------------------------------------------------
-function gc99_fit_func(mpl,dir,nd) result(value)
+function gc99_fit_func(mpl,dir,nd,ncomp) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 character(len=*),intent(in) :: dir  !< Direction
 real(kind_real),intent(in) :: nd    !< Normalized distance
+integer,intent(in) :: ncomp         !< Number of components
 
 ! Returned variable
 real(kind_real) :: value
 
 ! Local variables
-integer :: indm,indp
-real(kind_real) :: bnd,rndm,rndp
+integer :: icomp,indm,indp
+real(kind_real) :: lnd,bnd,rndm,rndp
 
 ! Set name
 @:set_name(gc99_fit_func)
@@ -181,43 +183,48 @@ real(kind_real) :: bnd,rndm,rndp
 ! Check bounds
 if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
 
-if (eq(nd,zero)) then
-   ! Origin
-   value = one
-elseif (sup(nd,one)) then
-   ! Out of support
-   value = zero
-else
-   ! Bounded values
-   bnd = max(ndmin,min(nd,ndmax))
+! Initialization
+value = zero
 
-   ! Indices
-   indm = floor(bnd/dnd)+1
-   if (indm==nnd) then
-      indp = indm
-   else
-      indp = indm+1
-   end if
+do icomp=1,ncomp
+   ! Local normalized distance
+   lnd = real(2**(icomp-1),kind_real)*nd
 
-   ! Coefficients
-   if (indm==nnd) then
-      rndm = one
-   else
-      rndm = real(indp-1,kind_real)-bnd/dnd
-   end if
-   rndp = (one-rndm)
+   if (eq(lnd,zero)) then
+      ! Origin
+      value = value+one
+   elseif (infeq(lnd,one)) then
+      ! Indices
+      indm = floor(lnd/dnd)+1
+      if (indm==nnd) then
+         indp = indm
+      else
+         indp = indm+1
+      end if
 
-   ! Interpolated value
-   if (dir=='hor') then
-      ! Horizontal fit function
-      value = rndm*func_hor(indm)+rndp*func_hor(indp)
-   elseif (dir=='ver') then
-      ! Vertical fit function
-      value = rndm*func_ver(indm)+rndp*func_ver(indp)
-   else
-      call mpl%abort('${subr}$','wrong direction: '//dir)
+      ! Coefficients
+      if (indm==nnd) then
+         rndm = one
+      else
+         rndm = real(indp-1,kind_real)-lnd/dnd
+      end if
+      rndp = (one-rndm)
+
+      ! Interpolated value
+      if (dir=='hor') then
+         ! Horizontal fit function
+         value = value+rndm*func_hor(indm)+rndp*func_hor(indp)
+      elseif (dir=='ver') then
+         ! Vertical fit function
+         value = value+rndm*func_ver(indm)+rndp*func_ver(indp)
+      else
+         call mpl%abort('${subr}$','wrong direction: '//dir)
+      end if
    end if
-end if
+end do
+
+! Normalization
+value = value/real(ncomp,kind_real)
 
 ! Probe out
 @:probe_out()

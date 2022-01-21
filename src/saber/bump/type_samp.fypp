@@ -3198,7 +3198,7 @@ if (rflt>zero) then
             norm = zero
             do ic2eff=1,nc2eff
                distnorm = diag_eff_dist(ic2eff)/rflt
-               wgt = fit_func(mpl,'hor',distnorm)
+               wgt = fit_func(mpl,'hor',distnorm,1)
                diag_c2a(ic2a) = diag_c2a(ic2a)+wgt*diag_eff(ic2eff)
                norm = norm+wgt
             end do

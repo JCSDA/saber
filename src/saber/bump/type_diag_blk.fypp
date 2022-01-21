@@ -32,38 +32,40 @@ real(kind_real),parameter :: ad_th = 0.3_kind_real !< Threshold to optimize anti
 
 ! Diagnostic block derived type
 type diag_blk_type
-   integer :: ic2a                                     !< Local index
-   integer :: ib                                       !< Block index
-   character(len=1024) :: prefix                       !< Prefix
+   integer :: ic2a                                  !< Local index
+   integer :: ib                                    !< Block index
+   character(len=1024) :: prefix                    !< Prefix
 
-   real(kind_real),allocatable :: raw(:,:,:,:)         !< Raw diagnostic
-   real(kind_real),allocatable :: valid(:,:,:,:)       !< Number of valid couples
-   real(kind_real),allocatable :: coef_ens_l0(:)       !< Ensemble coefficient, profile
-   real(kind_real) :: coef_sta                         !< Static coefficient
+   real(kind_real),allocatable :: raw(:,:,:,:)      !< Raw diagnostic
+   real(kind_real),allocatable :: valid(:,:,:,:)    !< Number of valid couples
+   real(kind_real),allocatable :: coef_ens_l0(:)    !< Ensemble coefficient, profile
+   real(kind_real) :: coef_sta                      !< Static coefficient
 
-   real(kind_real),allocatable :: vunit(:)             !< Vertical unit
-   real(kind_real),allocatable :: distv(:,:)           !< Reduced vertical distance
-   real(kind_real),allocatable :: fit(:,:,:,:)         !< Fit
+   real(kind_real),allocatable :: vunit(:)          !< Vertical unit
+   real(kind_real),allocatable :: distv(:,:)        !< Reduced vertical distance
+   real(kind_real),allocatable :: fit(:,:,:,:)      !< Fit
 
-   real(kind_real),allocatable :: rh_l0(:)            !< Horizontal support radius, profile
-   real(kind_real),allocatable :: D11_l0(:)           !< Horizontal Daley tensor, component 11, profile
-   real(kind_real),allocatable :: D22_l0(:)           !< Horizontal Daley tensor, component 22, profile
-   real(kind_real),allocatable :: D12_l0(:)           !< Horizontal Daley tensor, component 12 (normalized), profile
-   real(kind_real),allocatable :: rv_l0(:)            !< Vertical support radius, profile
+   real(kind_real),allocatable :: rh_l0(:)          !< Horizontal support radius, profile
+   real(kind_real),allocatable :: D11_l0(:)         !< Horizontal Daley tensor, component 11, profile
+   real(kind_real),allocatable :: D22_l0(:)         !< Horizontal Daley tensor, component 22, profile
+   real(kind_real),allocatable :: D12_l0(:)         !< Horizontal Daley tensor, component 12 (normalized), profile
+   real(kind_real),allocatable :: rv_l0(:)          !< Vertical support radius, profile
+   integer,allocatable :: ncomp                     !< Number of components
 
-   real(kind_real),allocatable :: coef_ens_c0a(:,:)    !< Ensemble coefficient, subset Sc0, halo A
-   real(kind_real),allocatable :: coef_sta_c0a(:,:)    !< Static coefficient, subset Sc0, halo A
-   real(kind_real),allocatable :: rh_c0a(:,:)          !< Horizontal support radius, subset Sc0, halo A
-   real(kind_real),allocatable :: D11_c0a(:,:)         !< Horizontal Daley tensor, component 11, subset Sc0, halo A
-   real(kind_real),allocatable :: D22_c0a(:,:)         !< Horizontal Daley tensor, component 22, subset Sc0, halo A
-   real(kind_real),allocatable :: D12_c0a(:,:)         !< Horizontal Daley tensor, component 12 (normalized), subset Sc0, halo A
-   real(kind_real),allocatable :: rv_c0a(:,:)          !< Vertical support radius, subset Sc0, halo A
-   real(kind_real) :: wgt                              !< Weight
+   real(kind_real),allocatable :: coef_ens_c0a(:,:) !< Ensemble coefficient, subset Sc0, halo A
+   real(kind_real),allocatable :: coef_sta_c0a(:,:) !< Static coefficient, subset Sc0, halo A
+   real(kind_real),allocatable :: rh_c0a(:,:)       !< Horizontal support radius, subset Sc0, halo A
+   real(kind_real),allocatable :: D11_c0a(:,:)      !< Horizontal Daley tensor, component 11, subset Sc0, halo A
+   real(kind_real),allocatable :: D22_c0a(:,:)      !< Horizontal Daley tensor, component 22, subset Sc0, halo A
+   real(kind_real),allocatable :: D12_c0a(:,:)      !< Horizontal Daley tensor, component 12 (normalized), subset Sc0, halo A
+   real(kind_real),allocatable :: rv_c0a(:,:)       !< Vertical support radius, subset Sc0, halo A
+   real(kind_real) :: wgt                           !< Weight
 contains
    procedure :: alloc => diag_blk_alloc
    procedure :: dealloc => diag_blk_dealloc
    procedure :: write => diag_blk_write
    procedure :: normalization => diag_blk_normalization
+   procedure :: scales => diag_blk_scales
    procedure :: fitting => diag_blk_fitting
    procedure :: localization => diag_blk_localization
    procedure :: hybridization => diag_blk_hybridization
@@ -375,6 +377,36 @@ end associate
 end subroutine diag_blk_normalization
 
 !----------------------------------------------------------------------
+! Subroutine: diag_blk_scales
+!> Estimate number of scales for the fit
+!----------------------------------------------------------------------
+subroutine diag_blk_scales(diag_blk,mpl,nam,geom,bpar)
+
+implicit none
+
+! Passed variables
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
+
+! Local variables
+
+! Set name
+@:set_name(diag_blk_scales)
+
+! Probe in
+@:probe_in()
+
+diag_blk%ncomp = 4
+
+! Probe out
+@:probe_out()
+
+end subroutine diag_blk_scales
+
+!----------------------------------------------------------------------
 ! Subroutine: diag_blk_fitting
 !> Compute a fit of a raw function
 !----------------------------------------------------------------------
@@ -407,7 +439,7 @@ type(minim_type) :: minim
 @:probe_in()
 
 ! Associate
-associate(ic2a=>diag_blk%ic2a,ib=>diag_blk%ib)
+associate(ib=>diag_blk%ib)
 
 ! Check for 2D variable
 do il0=1,geom%nl0
@@ -500,9 +532,8 @@ do il1=1,nl1
 
    ! Fast fit for each angular sector
    do jc4=1,bpar%nc4(ib)
-      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',diag_blk%raw(:,jc4,jl0rz,il0),rh_tmp(jc4))
+      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',diag_blk%ncomp,diag_blk%raw(:,jc4,jl0rz,il0),rh_tmp(jc4))
    end do
-
 
    if (mpl%msv%isallnot(rh_tmp)) then
       ! Average values
@@ -633,7 +664,7 @@ else
       ! Threshold on anti-diagonal raw diagnostic minimum
       if ((nl0ad>ad_n).and.(minval(rawv)<ad_th)) then
          ! Fast fit
-         call fast_fit(mpl,nl0ad,il0adz,distv,'ver',rawv,rv_l1(il1))
+         call fast_fit(mpl,nl0ad,il0adz,distv,'ver',1,rawv,rv_l1(il1))
          filled(il1) = .true.
       else
          ! Level to fill with its nearest neighbor
@@ -670,7 +701,7 @@ else
          distv = diag_blk%distv(:,il0)
 
          ! Fast fit (old method)
-         call fast_fit(mpl,nl0r,jl0rz,distv,'ver',rawv,rv_l1(il1))
+         call fast_fit(mpl,nl0r,jl0rz,distv,'ver',1,rawv,rv_l1(il1))
       end do
    end if
 
@@ -792,7 +823,7 @@ if (nam%forced_radii) then
    nam_nlv = zero
    do jc4=1,bpar%nc4(ib)
       call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib), &
- & geom%disth,diag_blk%distv,nam_coef,nam%rh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),diag_blk%raw(:,jc4,:,:))
+ & geom%disth,diag_blk%distv,nam_coef,nam%rh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),diag_blk%ncomp,diag_blk%raw(:,jc4,:,:))
    end do
    diag_blk%valid = mpl%msv%valr
 
