@@ -9,6 +9,7 @@
 #define SABER_OOPS_BUMP_H_
 
 #include <algorithm>
+#include <fstream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -52,6 +53,10 @@ template <typename MODEL> class BUMPInputParameters : public oops::Parameters {
  public:
   /// Parameters used for reading Increment.
   ReadParameters_ incread{this};
+  /// Optional flag for a single value per variable
+  oops::Parameter<bool> singleValueFlag{"single value", false, this};
+  /// Optional file path for a single value per variable
+  oops::OptionalParameter<std::string> filepath{"filepath", this};
   /// Date of the Increment to read.
   oops::RequiredParameter<util::DateTime> date{"date", this};
   /// Parameter name.
@@ -69,6 +74,10 @@ template <typename MODEL> class BUMPOutputParameters : public oops::Parameters {
  public:
   /// Parameters used for writing Increment.
   WriteParameters_ incwrite{this};
+  /// Optional flag for a single value per variable
+  oops::Parameter<bool> singleValueFlag{"single value", false, this};
+  /// Optional file path for a single value per variable
+  oops::OptionalParameter<std::string> filepath{"filepath", this};
   /// Date of the Increment to write.
   oops::RequiredParameter<util::DateTime> date{"date", this};
   /// Parameter name.
@@ -505,7 +514,9 @@ template<typename MODEL> class BUMP {
   void multiplyPsiChiToUV(atlas::FieldSet *) const;
   void multiplyPsiChiToUVAd(atlas::FieldSet *) const;
   void getParameter(const std::string &, Increment_ &) const;
+  void getParameter(const std::string &, const std::string &, double &) const;
   void setParameter(const std::string &, const Increment_ &) const;
+  void setParameter(const std::string &, const std::string &, const double &) const;
   void partialDealloc() const;
 
  private:
@@ -719,15 +730,53 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       // Get date
       const util::DateTime & date = inputparam.date;
 
-      // Setup increment
-      Increment_ dx(resol_, activeVars_, date);
-      dx.read(inputparam.incread);
+      if (inputparam.singleValueFlag) {
+        // Set parameter to BUMP
+        const std::string & param = inputparam.param;
 
-      // Set parameter to BUMP
-      const std::string & param = inputparam.param;
-      this->setParameter(param, dx);
-      oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
-                        << std::setprecision(3) << dx.norm() << std::endl;
+        // Open file
+        if (inputparam.filepath.value() == boost::none) {
+          ABORT("BUMP::BUMP: file path missing for parameter " + param);
+        }
+        std::ifstream infile;
+        infile.open(inputparam.filepath.value()->c_str());
+
+        if (infile.is_open()) {
+          // Read file
+          std::string line;
+          size_t i=0;
+          while (std::getline(infile, line)) {
+            if (i == 0) {
+              // Check date
+              ASSERT(date.toString() == line);
+            } else {
+              // Split string
+              std::istringstream iss(line);
+              std::vector<std::string> split(std::istream_iterator<std::string>{iss},
+                                             std::istream_iterator<std::string>());
+              const std::string variable(split[0]);
+              const double value = std::stod(split[1]);
+              this->setParameter(param, variable, value);
+            }
+            ++i;
+          }
+
+          // Close file
+          infile.close();
+        } else {
+          ABORT("BUMP::BUMP: cannot open file for parameter " + param);
+        }
+      } else {
+        // Read increment
+        Increment_ dx(resol_, activeVars_, date);
+        dx.read(inputparam.incread);
+
+        // Set parameter to BUMP
+        const std::string & param = inputparam.param;
+        this->setParameter(param, dx);
+        oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
+                          << std::setprecision(3) << dx.norm() << std::endl;
+      }
     }
   }
 
@@ -817,20 +866,54 @@ void BUMP<MODEL>::write() const {
       // Get date
       const util::DateTime & date = outputparam.date;
 
-      // Setup increment
-      Increment_ dx(resol_, activeVars_, date);
+      if (outputparam.singleValueFlag) {
+        // Get parameter from BUMP
+        const std::string & param = outputparam.param;
 
-      // Set increment to zero
-      dx.zero();
+        // Open file
+        if (outputparam.filepath.value() == boost::none) {
+          ABORT("BUMP::write: file path missing for parameter " + param);
+        }
+        std::ofstream outfile;
+        outfile.open(outputparam.filepath.value()->c_str());
 
-      // Get parameter from BUMP
-      const std::string & param = outputparam.param;
-      this->getParameter(param, dx);
+        if (outfile.is_open()) {
+          oops::Log::info() << "Write parameter " << param << " at " << date
+                            <<  " in file " << *outputparam.filepath.value() << std::endl;
 
-      // Write parameter
-      dx.write(outputparam.incwrite);
-      oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
-                        << std::setprecision(3) << dx.norm() << std::endl;
+          // Write date
+          outfile << date.toString() << std::endl;
+
+          // Write parameter
+          for (size_t jj=0; jj < activeVars_.size();++jj) {
+             double value;
+             this->getParameter(param, activeVars_[jj], value);
+             outfile << activeVars_[jj] << ' ' << std::scientific
+                     << std::setprecision(3) << value << std::endl;
+             oops::Log::test() << activeVars_[jj] << " : " << value << std::endl;
+          }
+
+          // Close file
+          outfile.close();
+        } else {
+          ABORT("BUMP::write: cannot open file for parameter " + param);
+        }
+      } else {
+        // Setup increment
+        Increment_ dx(resol_, activeVars_, date);
+
+        // Set increment to zero
+        dx.zero();
+
+        // Get parameter from BUMP
+        const std::string & param = outputparam.param;
+        this->getParameter(param, dx);
+
+        // Write parameter
+        dx.write(outputparam.incwrite);
+        oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
+                          << std::setprecision(3) << dx.norm() << std::endl;
+      }
     }
   } else {
     oops::Log::test() << "No output configuration" << std::endl;
@@ -1061,12 +1144,12 @@ void BUMP<MODEL>::multiplyPsiChiToUVAd(atlas::FieldSet * atlasFieldSet) const {
 
 template<typename MODEL>
 void BUMP<MODEL>::getParameter(const std::string & param, Increment_ & dx) const {
-  const int nstr = param.size();
-  const char *cstr = param.c_str();
+  const int npar = param.size();
+  const char *cpar = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
   dx.setAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_get_parameter_f90(keyBUMP_[jgrid], nstr, cstr, atlasFieldSet->get());
+    bump_get_parameter_field_f90(keyBUMP_[jgrid], npar, cpar, atlasFieldSet->get());
   }
   dx.fromAtlas(atlasFieldSet.get());
 }
@@ -1074,14 +1157,42 @@ void BUMP<MODEL>::getParameter(const std::string & param, Increment_ & dx) const
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
+void BUMP<MODEL>::getParameter(const std::string & param, const std::string & variable,
+  double & value) const {
+  const int npar = param.size();
+  const char *cpar = param.c_str();
+  const int nvar = variable.size();
+  const char *cvar = variable.c_str();
+  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    bump_get_parameter_value_f90(keyBUMP_[jgrid], npar, cpar, nvar, cvar, value);
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
 void BUMP<MODEL>::setParameter(const std::string & param, const Increment_ & dx) const {
-  const int nstr = param.size();
-  const char *cstr = param.c_str();
+  const int npar = param.size();
+  const char *cpar = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
   dx.setAtlas(atlasFieldSet.get());
   dx.toAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_set_parameter_f90(keyBUMP_[jgrid], nstr, cstr, atlasFieldSet->get());
+    bump_set_parameter_field_f90(keyBUMP_[jgrid], npar, cpar, atlasFieldSet->get());
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+void BUMP<MODEL>::setParameter(const std::string & param, const std::string & variable,
+  const double & value) const {
+  const int npar = param.size();
+  const char *cpar = param.c_str();
+  const int nvar = variable.size();
+  const char *cvar = variable.c_str();
+  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    bump_set_parameter_value_f90(keyBUMP_[jgrid], npar, cpar, nvar, cvar, value);
   }
 }
 

@@ -10,7 +10,7 @@ module type_diag_blk
 
 !$ use omp_lib
 use tools_const, only: zero,half,one,two,four
-use tools_fit, only: condmax,diag_iso_full,tensor_d2h,tensor_check_cond,fast_fit
+use tools_fit, only: condmax,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_check_cond,fast_fit
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,put_att,define_var,put_var
@@ -62,10 +62,11 @@ type diag_blk_type
    real(kind_real) :: wgt                           !< Weight
 contains
    procedure :: alloc => diag_blk_alloc
+   procedure :: partial_dealloc => diag_blk_partial_dealloc
    procedure :: dealloc => diag_blk_dealloc
    procedure :: write => diag_blk_write
    procedure :: normalization => diag_blk_normalization
-   procedure :: scales => diag_blk_scales
+   procedure :: optimization => diag_blk_optimization
    procedure :: fitting => diag_blk_fitting
    procedure :: localization => diag_blk_localization
    procedure :: hybridization => diag_blk_hybridization
@@ -152,6 +153,7 @@ if ((ic2a==0).or.nam%local_diag) then
       diag_blk%D12_l0 = mpl%msv%valr
    end if
    diag_blk%rv_l0 = mpl%msv%valr
+   diag_blk%ncomp = mpl%msv%vali
 end if
 if (ic2a==0) then
    diag_blk%coef_ens_c0a = mpl%msv%valr
@@ -186,10 +188,10 @@ end if
 end subroutine diag_blk_alloc
 
 !----------------------------------------------------------------------
-! Subroutine: diag_blk_dealloc
-!> Release memory
+! Subroutine: diag_blk_partial_dealloc
+!> Release memory (partial)
 !----------------------------------------------------------------------
-subroutine diag_blk_dealloc(diag_blk)
+subroutine diag_blk_partial_dealloc(diag_blk)
 
 implicit none
 
@@ -197,7 +199,7 @@ implicit none
 class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 
 ! Set name
-@:set_name(diag_blk_dealloc)
+@:set_name(diag_blk_partial_dealloc)
 
 ! Probe in
 @:probe_in()
@@ -216,6 +218,31 @@ if (allocated(diag_blk%D12_l0)) deallocate(diag_blk%D12_l0)
 if (allocated(diag_blk%rv_l0)) deallocate(diag_blk%rv_l0)
 if (allocated(diag_blk%vunit)) deallocate(diag_blk%vunit)
 if (allocated(diag_blk%distv)) deallocate(diag_blk%distv)
+
+! Probe out
+@:probe_out()
+
+end subroutine diag_blk_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: diag_blk_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine diag_blk_dealloc(diag_blk)
+
+implicit none
+
+! Passed variables
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
+
+! Set name
+@:set_name(diag_blk_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call diag_blk%partial_dealloc
 if (allocated(diag_blk%coef_ens_c0a)) deallocate(diag_blk%coef_ens_c0a)
 if (allocated(diag_blk%coef_sta_c0a)) deallocate(diag_blk%coef_sta_c0a)
 if (allocated(diag_blk%rh_c0a)) deallocate(diag_blk%rh_c0a)
@@ -288,6 +315,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id/))
    end if
    rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id/))
+   call put_att(mpl,grpid,'ncomp',diag_blk%ncomp)
 end if
 
 ! Write variables
@@ -377,10 +405,10 @@ end associate
 end subroutine diag_blk_normalization
 
 !----------------------------------------------------------------------
-! Subroutine: diag_blk_scales
-!> Estimate number of scales for the fit
+! Subroutine: diag_blk_optimization
+!> Optimize number of components for the fit
 !----------------------------------------------------------------------
-subroutine diag_blk_scales(diag_blk,mpl,nam,geom,bpar)
+subroutine diag_blk_optimization(diag_blk,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -392,43 +420,55 @@ type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Local variables
+integer :: incomp
+real(kind_real) :: rmse_min
 
 ! Set name
-@:set_name(diag_blk_scales)
+@:set_name(diag_blk_optimization)
 
 ! Probe in
 @:probe_in()
 
-diag_blk%ncomp = 4
+! Initialization
+diag_blk%ncomp = 1
+rmse_min = huge_real
+
+! Loop over number of components
+do incomp=1,nam%fit_ncompmax
+   call diag_blk%fitting(mpl,nam,geom,bpar,incomp,rmse_min)
+end do
 
 ! Probe out
 @:probe_out()
 
-end subroutine diag_blk_scales
+end subroutine diag_blk_optimization
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_fitting
 !> Compute a fit of a raw function
 !----------------------------------------------------------------------
-subroutine diag_blk_fitting(diag_blk,mpl,nam,geom,bpar)
+subroutine diag_blk_fitting(diag_blk,mpl,nam,geom,bpar,ncomp,rmse_min)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
-type(mpl_type),intent(inout) :: mpl            !< MPI data
-type(nam_type),intent(in) :: nam               !< Namelist
-type(geom_type),intent(in) :: geom             !< Geometry
-type(bpar_type),intent(in) :: bpar             !< Block parameters
+class(diag_blk_type),intent(inout) :: diag_blk     !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl                !< MPI data
+type(nam_type),intent(in) :: nam                   !< Namelist
+type(geom_type),intent(in) :: geom                 !< Geometry
+type(bpar_type),intent(in) :: bpar                 !< Block parameters
+integer,intent(in),optional :: ncomp               !< Number of components
+real(kind_real),intent(inout),optional :: rmse_min !< Minimum RMSE
 
 ! Local variables
-integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jl0r,jl0,jc4,nl0ad,il0ad,dil0,tmp(1),il0adz
+integer :: lncomp,il0,jl0rz,nl0r,il1,nl1,ilev2d,jl0r,jl0,jc4,nl0ad,il0ad,dil0,tmp(1),il0adz
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
-real(kind_real) :: det,m2(geom%nl0)
+real(kind_real) :: det,m2(geom%nl0),rmse
 real(kind_real),allocatable :: rawv(:),distv(:),rinf(:),rsup(:),rh_tmp(:)
+real(kind_real),allocatable :: rh_l0(:),D11_l0(:),D22_l0(:),D12_l0(:),rv_l0(:)
 real(kind_real),allocatable :: rh_l1(:),D11_l1(:),D22_l1(:),D12_l1(:),rv_l1(:)
-real(kind_real),allocatable :: rawv_full(:,:),evec(:,:),eval(:)
-logical :: var2d,valid
+real(kind_real),allocatable :: rawv_full(:,:),evec(:,:),eval(:),fit(:,:,:,:)
+logical :: var2d,valid,copy_parameters
 logical,allocatable :: filled(:)
 type(minim_type) :: minim
 
@@ -440,6 +480,14 @@ type(minim_type) :: minim
 
 ! Associate
 associate(ib=>diag_blk%ib)
+
+! Check consistency
+if ((present(ncomp).and.(.not.present(rmse_min))).or.((.not.present(ncomp)).and.present(rmse_min))) call mpl%abort('${subr}$', &
+ & 'inconsistent arguments')
+
+! Default number of components
+lncomp = diag_blk%ncomp
+if (present(ncomp)) lncomp = ncomp
 
 ! Check for 2D variable
 do il0=1,geom%nl0
@@ -495,10 +543,14 @@ else
 end if
 
 ! Allocation
-allocate(rh_tmp(bpar%nc4(ib)))
+allocate(rh_l0(geom%nl0))
 allocate(rh_l1(nl1))
+allocate(rh_tmp(bpar%nc4(ib)))
 if (bpar%nc4(ib)>1) then
    ! Allocation
+   allocate(D11_l0(geom%nl0))
+   allocate(D22_l0(geom%nl0))
+   allocate(D12_l0(geom%nl0))
    allocate(D11_l1(nl1))
    allocate(D22_l1(nl1))
    allocate(D12_l1(nl1))
@@ -532,7 +584,7 @@ do il1=1,nl1
 
    ! Fast fit for each angular sector
    do jc4=1,bpar%nc4(ib)
-      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',diag_blk%ncomp,diag_blk%raw(:,jc4,jl0rz,il0),rh_tmp(jc4))
+      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',lncomp,diag_blk%raw(:,jc4,jl0rz,il0),rh_tmp(jc4))
    end do
 
    if (mpl%msv%isallnot(rh_tmp)) then
@@ -572,32 +624,32 @@ end do
 
 ! Interpolate horizontal parameters
 if (bpar%nc4(ib)==1) then
-   call vert_interp(mpl,nl1,rh_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rh_l0)
+   call vert_interp(mpl,nl1,rh_l1,geom%nl0,il1inf,il1sup,rinf,rsup,rh_l0)
 else
-   call vert_interp(mpl,nl1,D11_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D11_l0)
-   call vert_interp(mpl,nl1,D22_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D22_l0)
-   call vert_interp(mpl,nl1,D12_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D12_l0)
+   call vert_interp(mpl,nl1,D11_l1,geom%nl0,il1inf,il1sup,rinf,rsup,D11_l0)
+   call vert_interp(mpl,nl1,D22_l1,geom%nl0,il1inf,il1sup,rinf,rsup,D22_l0)
+   call vert_interp(mpl,nl1,D12_l1,geom%nl0,il1inf,il1sup,rinf,rsup,D12_l0)
    do il0=1,geom%nl0
-      if (mpl%msv%isnot(diag_blk%D11_l0(il0)).and.mpl%msv%isnot(diag_blk%D22_l0(il0)) &
- & .and.mpl%msv%isnot(diag_blk%D12_l0(il0))) then
+      if (mpl%msv%isnot(D11_l0(il0)).and.mpl%msv%isnot(D22_l0(il0)) &
+ & .and.mpl%msv%isnot(D12_l0(il0))) then
          ! Major semi-axis
-         det = diag_blk%D11_l0(il0)*diag_blk%D22_l0(il0)*(one-diag_blk%D12_l0(il0))
+         det = D11_l0(il0)*D22_l0(il0)*(one-D12_l0(il0))
          if (det>zero) then
             ! Same ellipsis area
-            diag_blk%rh_l0(il0) = sqrt(sqrt(det))
+            rh_l0(il0) = sqrt(sqrt(det))
          else
             ! Missing value
-            diag_blk%D11_l0(il0) = mpl%msv%valr
-            diag_blk%D22_l0(il0) = mpl%msv%valr
-            diag_blk%D12_l0(il0) = mpl%msv%valr
-            diag_blk%rh_l0(il0) = mpl%msv%valr
+            D11_l0(il0) = mpl%msv%valr
+            D22_l0(il0) = mpl%msv%valr
+            D12_l0(il0) = mpl%msv%valr
+            rh_l0(il0) = mpl%msv%valr
          end if
       else
          ! Missing value
-         diag_blk%D11_l0(il0) = mpl%msv%valr
-         diag_blk%D22_l0(il0) = mpl%msv%valr
-         diag_blk%D12_l0(il0) = mpl%msv%valr
-         diag_blk%rh_l0(il0) = mpl%msv%valr
+         D11_l0(il0) = mpl%msv%valr
+         D22_l0(il0) = mpl%msv%valr
+         D12_l0(il0) = mpl%msv%valr
+         rh_l0(il0) = mpl%msv%valr
       end if
    end do
 end if
@@ -618,9 +670,12 @@ if (bpar%nc4(ib)>1) then
    deallocate(minim%as)
 end if
 
+! Allocation
+allocate(rv_l0(geom%nl0))
+
 if (nl0r==1) then
    ! No vertical fit
-   diag_blk%rv_l0 = zero
+   rv_l0 = zero
 else
    ! Allocation
    allocate(rv_l1(nl1))
@@ -664,7 +719,7 @@ else
       ! Threshold on anti-diagonal raw diagnostic minimum
       if ((nl0ad>ad_n).and.(minval(rawv)<ad_th)) then
          ! Fast fit
-         call fast_fit(mpl,nl0ad,il0adz,distv,'ver',1,rawv,rv_l1(il1))
+         call fast_fit(mpl,nl0ad,il0adz,distv,'ver',diag_blk%ncomp,rawv,rv_l1(il1))
          filled(il1) = .true.
       else
          ! Level to fill with its nearest neighbor
@@ -701,19 +756,67 @@ else
          distv = diag_blk%distv(:,il0)
 
          ! Fast fit (old method)
-         call fast_fit(mpl,nl0r,jl0rz,distv,'ver',1,rawv,rv_l1(il1))
+         call fast_fit(mpl,nl0r,jl0rz,distv,'ver',diag_blk%ncomp,rawv,rv_l1(il1))
       end do
    end if
 
    ! Interpolate vertical parameters
-   call vert_interp(mpl,nl1,rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rv_l0)
+   call vert_interp(mpl,nl1,rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,rv_l0)
 
    ! Release memory
    deallocate(rv_l1)
    deallocate(filled)
 end if
 
+! Optimization of the number of components
+copy_parameters = .true.
+if (present(rmse_min)) then
+   ! Allocation
+   allocate(fit(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
+
+   ! Build fit
+   if (bpar%nc4(ib)==1) then
+     call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
+ & diag_blk%coef_ens_l0,rh_l0,rv_l0,lncomp,fit(:,1,:,:))
+   else
+      call diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+ & geom%as,diag_blk%distv,diag_blk%coef_ens_l0,D11_l0,D22_l0,D12_l0,rv_l0,lncomp,fit)
+   end if
+
+   ! Compute RMSE
+   rmse = sum(abs(fit-diag_blk%raw),mask=mpl%msv%isnot(diag_blk%raw))
+  
+   if (rmse<rmse_min) then
+      ! Save best estimation
+      rmse_min = rmse
+      diag_blk%ncomp = lncomp
+   else
+      copy_parameters = .false.
+   end if
+
+   ! Release memory
+   deallocate(fit)
+end if
+
+! Copy parameters
+if (copy_parameters) then
+   diag_blk%rh_l0 = rh_l0
+   if (bpar%nc4(ib)>1) then
+      diag_blk%D11_l0 = D11_l0
+      diag_blk%D22_l0 = D22_l0
+      diag_blk%D12_l0 = D12_l0
+   end if
+   diag_blk%rv_l0 = rv_l0
+end if
+
 ! Release memory
+deallocate(rh_l0)
+if (bpar%nc4(ib)>1) then
+   deallocate(D11_l0)
+   deallocate(D22_l0)
+   deallocate(D12_l0)
+end if
+deallocate(rv_l0)
 deallocate(il0_interp)
 deallocate(il1inf)
 deallocate(il1sup)

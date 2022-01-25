@@ -21,7 +21,7 @@ epsabs_hor = 1.0e-2
 epsabs_ver = 1.0e-4
 
 # Parameters
-nncomp = 5
+nncomp = 7
 scalethmin = 0.2
 scalethmax = 0.9
 dscaleth = 0.1
@@ -102,14 +102,20 @@ if run_horizontal:
    # Loop over nncomp
    for incomp in range(0, nncomp):
       # Composed functions
+      f_sqrt_hor_comp_detail = np.zeros((nnd,incomp+1))
       for ind in range(0, nnd-1):
          f_sqrt_hor_comp[ind] = 0.0
+         f_sqrt_hor_comp_detail[ind,:] = 0.0
          f_int_hor_comp[ind] = 0.0
          for icomp in range(0, incomp+1):
             if (2**icomp*ind < nnd):
                f_sqrt_hor_comp[ind] = f_sqrt_hor_comp[ind]+f_sqrt_hor[2**icomp*ind]
+               for jcomp in range(0, incomp+1):
+                  if (jcomp >= icomp):
+                     f_sqrt_hor_comp_detail[ind,jcomp] = f_sqrt_hor_comp_detail[ind,jcomp]+f_sqrt_hor[2**icomp*ind]
                f_int_hor_comp[ind] = f_int_hor_comp[ind]+f_int_hor[2**icomp*ind]
          f_sqrt_hor_comp[ind] = f_sqrt_hor_comp[ind]/(incomp+1)
+         f_sqrt_hor_comp_detail[ind,:] = f_sqrt_hor_comp_detail[ind,:]/(incomp+1)
          f_int_hor_comp[ind] = f_int_hor_comp[ind]/(incomp+1)
 
       # Scale at scaleth
@@ -130,7 +136,8 @@ if run_horizontal:
          ax[0].set_title("Square-root function")
          ax[0].axhline(y=0, color="k")
          ax[0].axvline(x=0, color="k")
-         ax[0].plot(axis, f_sqrt_hor_comp)
+         ax[0].plot(axis, f_sqrt_hor_comp_detail)
+         ax[0].plot(axis, f_sqrt_hor_comp, 'k')
          ax[1].set_xlim([0,1.0])
          ax[1].set_ylim([0,1.1])
          ax[1].set_title("Convolution function")
@@ -255,7 +262,7 @@ if run_horizontal and run_vertical:
    file.write("end interface\n")
    file.write("\n")
    file.write("private\n")
-   file.write("public :: nscaleth,scaleth,scalethmin,scalethmax\n")
+   file.write("public :: nncomp,nscaleth,scaleth,scalethmin,scalethmax\n")
    file.write("public :: scaleh,scalev\n")
    file.write("public :: fit_setup,fit_dealloc,fit_func,fit_func_sqrt\n")
    file.write("\n")

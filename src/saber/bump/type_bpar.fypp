@@ -193,7 +193,6 @@ do iv=1,nam%nv
          bpar%nicas_block(ib) = .false.
       end select
       bpar%fit_block(ib) = bpar%diag_block(ib).and.(iv==jv)
-      if (nam%local_diag) bpar%fit_block(ib) = bpar%fit_block(ib).and.bpar%nicas_block(ib)
 
       ! Blocks information
       bpar%blockname(ib) = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
@@ -260,7 +259,6 @@ if (bpar%nbe>bpar%nb) then
       bpar%nicas_block(ib) = .false.
    end select
    bpar%fit_block(ib) = bpar%diag_block(ib)
-   if (nam%local_diag) bpar%fit_block(ib) = bpar%fit_block(ib).and.bpar%nicas_block(ib)
 
    ! Blocks information
    bpar%blockname(ib) = 'common'

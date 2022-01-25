@@ -129,10 +129,9 @@ integer :: ib,ic2a
 if (allocated(diag%blk)) then
    do ib=1,size(diag%blk,2)
      do ic2a=0,size(diag%blk,1)-1
-       call diag%blk(ic2a,ib)%dealloc
+       call diag%blk(ic2a,ib)%partial_dealloc
      end do
    end do
-   deallocate(diag%blk)
 end if
 
 ! Probe out
@@ -151,6 +150,9 @@ implicit none
 ! Passed variables
 class(diag_type),intent(inout) :: diag !< Diagnostic
 
+! Local variables
+integer :: ib,ic2a
+
 ! Set name
 @:set_name(diag_dealloc)
 
@@ -159,6 +161,14 @@ class(diag_type),intent(inout) :: diag !< Diagnostic
 
 ! Release memory
 call diag%partial_dealloc
+if (allocated(diag%blk)) then
+   do ib=1,size(diag%blk,2)
+     do ic2a=0,size(diag%blk,1)-1
+       call diag%blk(ic2a,ib)%dealloc
+     end do
+   end do
+   deallocate(diag%blk)
+end if
 if (allocated(diag%dirac)) deallocate(diag%dirac)
 
 ! Probe out
@@ -632,7 +642,7 @@ if (nam%check_dirac) then
                   vnd = zero
                end if
                diag%dirac(jc0a,jl0,geom%ivdir(idir)) = diag%dirac(jc0a,jl0,geom%ivdir(idir)) &
- & +hor_dir*fit_func(mpl,'ver',vnd,1)
+ & +hor_dir*fit_func(mpl,'ver',vnd,diag%blk(0,ib)%ncomp)
             end if
          end do
       end if
@@ -760,15 +770,15 @@ do ib=1,bpar%nbe
 
          if (bpar%fit_block(ib)) then
             if (ic2a==0) then
-               ! Estimate number of components
-               call diag%blk(ic2a,ib)%scales(mpl,nam,geom,bpar)
+               ! Optimize number of components
+               call diag%blk(ic2a,ib)%optimization(mpl,nam,geom,bpar)
             else
                ! Copy number of components
                diag%blk(ic2a,ib)%ncomp = diag%blk(0,ib)%ncomp
-            end if
 
-            ! Fitting
-            call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+               ! Fitting
+               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+            end if
          end if
 
          ! Update
@@ -777,8 +787,12 @@ do ib=1,bpar%nbe
       call mpl%prog_final
 
       ! Print results
-      do il0=1,geom%nl0
-         if (bpar%fit_block(ib)) then
+      if (bpar%fit_block(ib)) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%ncomp)) then
+            write(mpl%info,'(a10,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncomp,trim(mpl%black)
+            call mpl%flush
+         end if
+         do il0=1,geom%nl0
             if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
                write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
  & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
@@ -794,8 +808,8 @@ do ib=1,bpar%nbe
                   call mpl%flush
                end if
             end if
-         end if
-      end do
+         end do
+      end if
    end if
 end do
 

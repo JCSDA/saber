@@ -44,16 +44,17 @@ extern "C" {
   void bump_apply_stddev_inv_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_nicas_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_get_cv_size_f90(const int &, int &);
-  void bump_apply_nicas_sqrt_f90(const int &, const double *, const atlas::field::FieldSetImpl *);
-  void bump_apply_nicas_sqrt_ad_f90(const int &, const atlas::field::FieldSetImpl *,
-                                    const double *);
   void bump_randomize_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_psichi_to_uv_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_psichi_to_uv_ad_f90(const int &, const atlas::field::FieldSetImpl *);
-  void bump_get_parameter_f90(const int &, const int &, const char *,
-                              const atlas::field::FieldSetImpl *);
-  void bump_set_parameter_f90(const int &, const int &, const char *,
-                              const atlas::field::FieldSetImpl *);
+  void bump_get_parameter_field_f90(const int &, const int &, const char *,
+                                    const atlas::field::FieldSetImpl *);
+  void bump_get_parameter_value_f90(const int &, const int &, const char *, const int &,
+                                    const char *, const double &);
+  void bump_set_parameter_field_f90(const int &, const int &, const char *,
+                                    const atlas::field::FieldSetImpl *);
+  void bump_set_parameter_value_f90(const int &, const int &, const char *, const int &,
+                                    const char *, const double &);
   void bump_partial_dealloc_f90(const int &);
   void bump_dealloc_f90(const int &);
 }

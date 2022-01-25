@@ -25,7 +25,7 @@ implicit none
 ! Public parameters
 logical :: fit_allocated = .false.
 integer,parameter :: nnd = 51
-integer,parameter :: nncomp = 5
+integer,parameter :: nncomp = 7
 integer,parameter :: nscaleth = 8
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real
 real(kind_real),parameter :: ndmax = 1.00000000_kind_real
@@ -52,7 +52,7 @@ interface fit_func_sqrt
 end interface
 
 private
-public :: nscaleth,scaleth,scalethmin,scalethmax
+public :: nncomp,nscaleth,scaleth,scalethmin,scalethmax
 public :: scaleh,scalev
 public :: fit_setup,fit_dealloc,fit_func,fit_func_sqrt
 
