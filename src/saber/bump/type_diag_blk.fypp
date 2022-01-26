@@ -423,91 +423,98 @@ do il1=1,nl1
       lrh = (fit_rh_l1(il1)>zero)
       lrv = (fit_rv_l1(il1)>zero)
 
-      ! Allocation
-      minim%nx = 0
-      if (lcoef) minim%nx = minim%nx+1
-      if (lrh) minim%nx = minim%nx+1
-      if (lrv) minim%nx = minim%nx+1
-      minim%ny = nam%nc3*nl0r
-      allocate(minim%x(minim%nx))
-      allocate(minim%guess(minim%nx))
-      allocate(minim%binf(minim%nx))
-      allocate(minim%bsup(minim%nx))
-      allocate(minim%obs(minim%ny))
-      allocate(minim%disth(nam%nc3))
-      allocate(minim%distv(nl0r))
+      if (lcoef.or.lrh.or.lrv) then
+         ! Allocation
+         minim%nx = 0
+         if (lcoef) minim%nx = minim%nx+1
+         if (lrh) minim%nx = minim%nx+1
+         if (lrv) minim%nx = minim%nx+1
+         minim%ny = nam%nc3*nl0r
+         allocate(minim%x(minim%nx))
+         allocate(minim%guess(minim%nx))
+         allocate(minim%binf(minim%nx))
+         allocate(minim%bsup(minim%nx))
+         allocate(minim%obs(minim%ny))
+         allocate(minim%disth(nam%nc3))
+         allocate(minim%distv(nl0r))
 
-      ! Fill guess and bounds
-      ix = 0
-      if (lcoef) then
-         ix = ix+1
-         minim%guess(ix) = coef_ens_l1(il1)
-         minim%binf(ix) = tenth*minim%guess(ix)
-         minim%bsup(ix) = ten*minim%guess(ix)
-      end if
-      if (lrh) then
-         ix = ix+1
-         minim%guess(ix) = fit_rh_l1(il1)
-         minim%binf(ix) = tenth*minim%guess(ix)
-         minim%bsup(ix) = ten*minim%guess(ix)
-      end if
-      if (lrv) then
-         ix = ix+1
-         minim%guess(ix) = fit_rv_l1(il1)
-         minim%binf(ix) = tenth*minim%guess(ix)
-         minim%bsup(ix) = ten*minim%guess(ix)
-      end if
+         ! Fill guess and bounds
+         ix = 0
+         if (lcoef) then
+            ix = ix+1
+            minim%guess(ix) = coef_ens_l1(il1)
+            minim%binf(ix) = tenth*minim%guess(ix)
+            minim%bsup(ix) = ten*minim%guess(ix)
+         end if
+         if (lrh) then
+            ix = ix+1
+            minim%guess(ix) = fit_rh_l1(il1)
+            minim%binf(ix) = tenth*minim%guess(ix)
+            minim%bsup(ix) = ten*minim%guess(ix)
+         end if
+         if (lrv) then
+            ix = ix+1
+            minim%guess(ix) = fit_rv_l1(il1)
+            minim%binf(ix) = tenth*minim%guess(ix)
+            minim%bsup(ix) = ten*minim%guess(ix)
+         end if
 
-      ! Fill obs
-      if (var2d) then
-         minim%obs = diag_blk%raw(:,bpar%il0rz(il0,ib),il0)
+         ! Fill obs
+         if (var2d) then
+            minim%obs = diag_blk%raw(:,bpar%il0rz(il0,ib),il0)
+         else
+            minim%obs = reshape(diag_blk%raw(:,:,il0),(/minim%ny/))
+         end if
+         minim%cost_function = 'fit_diag'
+         minim%nc3 = nam%nc3
+         minim%nl0r = nl0r
+         minim%disth = geom%disth
+         minim%distv = diag_blk%distv(:,il0)
+         minim%lcoef = lcoef
+         minim%lrh = lrh
+         minim%lrv = lrv
+
+         ! Compute fit
+         call minim%compute(mpl)
+
+         ! Apply bounds
+         minim%x = max(minim%binf,min(minim%x,minim%bsup))
+
+         ! Get parameters
+         ix = 0
+         if (lcoef) then
+            ix = ix+1
+            coef_ens_l1(il1) = minim%x(ix)
+         elseif (.not.present(coef)) then
+            coef_ens_l1(il1) = mpl%msv%valr
+         end if
+         if (lrh) then
+            ix = ix+1
+            fit_rh_l1(il1) = minim%x(ix)
+         else
+            fit_rh_l1(il1) = mpl%msv%valr
+         end if
+         if (lrv) then
+            ix = ix+1
+            fit_rv_l1(il1) = minim%x(ix)
+         elseif (.not.(var2d.or.(nl0r==1))) then
+            fit_rv_l1(il1) = mpl%msv%valr
+         end if
+
+         ! Release memory
+         deallocate(minim%x)
+         deallocate(minim%guess)
+         deallocate(minim%binf)
+         deallocate(minim%bsup)
+         deallocate(minim%obs)
+         deallocate(minim%disth)
+         deallocate(minim%distv)
       else
-         minim%obs = reshape(diag_blk%raw(:,:,il0),(/minim%ny/))
-      end if
-      minim%cost_function = 'fit_diag'
-      minim%nc3 = nam%nc3
-      minim%nl0r = nl0r
-      minim%disth = geom%disth
-      minim%distv = diag_blk%distv(:,il0)
-      minim%lcoef = lcoef
-      minim%lrh = lrh
-      minim%lrv = lrv
-
-      ! Compute fit
-      call minim%compute(mpl)
-
-      ! Apply bounds
-      minim%x = max(minim%binf,min(minim%x,minim%bsup))
-
-      ! Get parameters
-      ix = 0
-      if (lcoef) then
-         ix = ix+1
-         coef_ens_l1(il1) = minim%x(ix)
-      elseif (.not.present(coef)) then
+         ! Set to missing values
          coef_ens_l1(il1) = mpl%msv%valr
-      end if
-      if (lrh) then
-         ix = ix+1
-         fit_rh_l1(il1) = minim%x(ix)
-      else
          fit_rh_l1(il1) = mpl%msv%valr
-      end if
-      if (lrv) then
-         ix = ix+1
-         fit_rv_l1(il1) = minim%x(ix)
-      elseif (.not.(var2d.or.(nl0r==1))) then
          fit_rv_l1(il1) = mpl%msv%valr
       end if
-
-      ! Release memory
-      deallocate(minim%x)
-      deallocate(minim%guess)
-      deallocate(minim%binf)
-      deallocate(minim%bsup)
-      deallocate(minim%obs)
-      deallocate(minim%disth)
-      deallocate(minim%distv)
    else
       ! Set to missing values
       coef_ens_l1(il1) = mpl%msv%valr

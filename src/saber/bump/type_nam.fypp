@@ -28,12 +28,13 @@ integer,parameter :: nldwvmax = 20                !< Maximum number of local dia
 integer,parameter :: nprociomax = 20              !< Maximum number of I/O tasks
 integer,parameter :: niokvmax = 99                !< Maximum number of I/O key-values
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2 !< Maximum number of vertical balance blocks
+integer,parameter :: ncompmax = 10                !< Maximum number of model components
 
 type nam_type
    ! general_param
    character(len=1024) :: datadir                             !< Data directory
    character(len=1024) :: prefix                              !< Files prefix
-   character(len=1024) :: model                               !< Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
+   character(len=1024) :: model                               !< Model name ('aro', 'arp', 'cartg', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
    character(len=1024) :: verbosity                           !< Verbosity level ('all', 'main' or 'none')
    logical :: colorlog                                        !< Add colors to the log (for display on terminal)
    logical :: default_seed                                    !< Default seed for random numbers
@@ -121,6 +122,7 @@ type nam_type
    logical :: qg_redundant                                    !< Redundant points configuration for the QG model
    logical :: qg_regional                                     !< Regional domain configuration for the QG model
    logical :: qg_urban                                        !< Urban domain configuration for the QG model
+   character(len=1024),dimension(ncompmax) :: model_comp      !< Model components (for 'cartg': 'atm' or 'ocn')
 
    ! ens1_param
    integer :: ens1_ne                                         !< Ensemble 1 size
@@ -241,7 +243,7 @@ contains
 end type nam_type
 
 private
-public :: nvmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
+public :: nvmax,nlmax,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax,ncompmax
 public :: nam_type
 
 contains
@@ -259,7 +261,7 @@ class(nam_type),intent(out) :: nam !< Namelist
 integer,intent(in) :: nproc        !< Number of MPI task
 
 ! Local variable
-integer :: isub,il,iv,i,ildwv
+integer :: isub,il,iv,i,ildwv,icomp
 
 ! Set name
 @:set_name(nam_init)
@@ -370,6 +372,9 @@ end do
 nam%qg_redundant = .false.
 nam%qg_regional = .false.
 nam%qg_urban = .false.
+do icomp=1,ncompmax
+   nam%model_comp(icomp) = ''
+end do
 
 ! ens1_param default
 nam%ens1_ne = 0
@@ -504,7 +509,7 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 character(len=*),intent(in) :: namelname !< Namelist name
 
 ! Local variables
-integer :: isub,il,iv,i,ildwv,lunit
+integer :: isub,il,iv,i,ildwv,icomp,lunit
 
 ! Namelist variables
 character(len=1024) :: datadir
@@ -591,6 +596,7 @@ character(len=1024),dimension(niokvmax) :: io_values
 logical :: qg_redundant
 logical :: qg_regional
 logical :: qg_urban
+character(len=1024),dimension(ncompmax) :: model_comp
 integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
@@ -766,7 +772,8 @@ namelist/model_param/ &
  & io_values, &
  & qg_redundant, &
  & qg_regional, &
- & qg_urban
+ & qg_urban, &
+ & model_comp
 namelist/ens1_param/ &
  & ens1_ne, &
  & ens1_nsub
@@ -966,6 +973,9 @@ if (mpl%main) then
    qg_redundant = .false.
    qg_regional = .false.
    qg_urban = .false.
+   do icomp=1,ncompmax
+      model_comp(icomp) = ''
+   end do
 
    ! ens1_param default
    ens1_ne = 0
@@ -1187,6 +1197,7 @@ if (mpl%main) then
    nam%qg_redundant = qg_redundant
    nam%qg_regional = qg_regional
    nam%qg_urban = qg_urban
+   nam%model_comp = model_comp
 
    ! ens1_param
    read(lunit,nml=ens1_param)
@@ -1414,6 +1425,7 @@ call mpl%broadcast(nam%io_values,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%qg_redundant,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%qg_regional,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%qg_urban,mpl%rootproc-1)
+call mpl%broadcast(nam%model_comp,mpl%rootproc-1)
 
 ! ens1_param
 call mpl%f_comm%broadcast(nam%ens1_ne,mpl%rootproc-1)
@@ -1738,6 +1750,15 @@ end if
 if (conf%has('qg_redundant')) call conf%get_or_die('qg_redundant',nam%qg_redundant)
 if (conf%has('qg_regional')) call conf%get_or_die('qg_regional',nam%qg_regional)
 if (conf%has('qg_urban')) call conf%get_or_die('qg_urban',nam%qg_urban)
+if (conf%has('model_comp')) then
+   call conf%get_or_die('model_comp',str_array)
+   if (size(str_array)>ncompmax) then
+      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: model_comp size should be smaller than ',ncompmax
+      call flush(output_unit)
+      call comm%abort(1)
+   end if
+   nam%model_comp(1:size(str_array)) = str_array
+end if
 
 ! ens1_param
 if (conf%has('ens1_ne')) call conf%get_or_die('ens1_ne',nam%ens1_ne)
@@ -2147,7 +2168,7 @@ if (nam%new_lct) nam%local_rad = 1.0e-12_kind_real
 if (trim(nam%datadir)=='') call mpl%abort('${subr}$','datadir not specified')
 if (trim(nam%prefix)=='') call mpl%abort('${subr}$','prefix not specified')
 select case (trim(nam%model))
-case ('aro','arp','fv3','gem','geos','gfs','ifs','mpas','nemo','norcpm','online','qg','res','wrf')
+case ('aro','arp','fv3','gem','geos','gfs','ifs','cartg','mpas','nemo','norcpm','online','qg','res','wrf')
 case default
    call mpl%abort('${subr}$','wrong model')
 end select
@@ -2669,6 +2690,7 @@ call mpl%write('io_values',count(nam%io_values/=''),nam%io_values(1:count(nam%io
 call mpl%write('qg_redundant',nam%qg_redundant)
 call mpl%write('qg_regional',nam%qg_regional)
 call mpl%write('qg_urban',nam%qg_urban)
+call mpl%write('model_comp',count(nam%model_comp/=''),nam%model_comp(1:count(nam%model_comp/='')))
 
 ! ens1_param
 write(mpl%info,'(a7,a)') '','Ensemble 1 parameters'

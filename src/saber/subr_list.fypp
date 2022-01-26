@@ -648,6 +648,8 @@
 #:set subr_list = subr_list + ["model_gfs_read"]
 #:set subr_list = subr_list + ["model_ifs_coord"]
 #:set subr_list = subr_list + ["model_ifs_read"]
+#:set subr_list = subr_list + ["model_cartg_coord"]
+#:set subr_list = subr_list + ["model_cartg_read"]
 #:set subr_list = subr_list + ["model_mpas_coord"]
 #:set subr_list = subr_list + ["model_mpas_read"]
 #:set subr_list = subr_list + ["model_nemo_coord"]

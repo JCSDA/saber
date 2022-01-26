@@ -5,6 +5,7 @@
 #:include 'model_geos.fypp'
 #:include 'model_gfs.fypp'
 #:include 'model_ifs.fypp'
+#:include 'model_cartg.fypp'
 #:include 'model_mpas.fypp'
 #:include 'model_nemo.fypp'
 #:include 'model_norcpm.fypp'
@@ -31,7 +32,7 @@ use tools_netcdf, only: open_file,get_att,inquire_dim,inquire_dim_size,inquire_v
 use tools_repro, only: inf
 use type_fieldset, only: fieldset_type
 use type_mpl, only: mpl_type
-use type_nam, only: nam_type,nvmax
+use type_nam, only: nam_type,nvmax,ncompmax
 @:use_probe()
 use type_rng, only: rng_type
 use type_tree, only: tree_type
@@ -86,6 +87,11 @@ type model_type
    ! Ensembles
    type(fieldset_type),allocatable :: ens1(:)  !< Ensemble 1 members
    type(fieldset_type),allocatable :: ens2(:)  !< Ensemble 2 members
+
+   ! Model-specific parameters
+   integer :: ncomp                            !< Number of components
+   integer,allocatable  :: nlev_comp(:)        !< Number of levels for each component in files
+   integer,allocatable  :: nl0_comp(:)         !< Number of levels for each component actually used
 contains
    ! Model specific procedures
    procedure :: aro_coord => model_aro_coord
@@ -102,6 +108,8 @@ contains
    procedure :: gfs_read => model_gfs_read
    procedure :: ifs_coord => model_ifs_coord
    procedure :: ifs_read => model_ifs_read
+   procedure :: cartg_coord => model_cartg_coord
+   procedure :: cartg_read => model_cartg_read
    procedure :: mpas_coord => model_mpas_coord
    procedure :: mpas_read => model_mpas_read
    procedure :: nemo_coord => model_nemo_coord
@@ -137,6 +145,7 @@ contains
 @:include_geos()
 @:include_gfs()
 @:include_ifs()
+@:include_cartg()
 @:include_mpas()
 @:include_nemo()
 @:include_norcpm()
@@ -222,6 +231,8 @@ if (allocated(model%ens2)) then
 end if
 call model%afunctionspace%final()
 call model%fieldset%final()
+if (allocated(model%nlev_comp)) deallocate(model%nlev_comp)
+if (allocated(model%nl0_comp)) deallocate(model%nl0_comp)
 
 ! Probe out
 @:probe_out()
@@ -278,6 +289,7 @@ if (trim(nam%model)=='gem') call model%gem_coord(mpl,nam)
 if (trim(nam%model)=='geos') call model%geos_coord(mpl,nam)
 if (trim(nam%model)=='gfs') call model%gfs_coord(mpl,nam)
 if (trim(nam%model)=='ifs') call model%ifs_coord(mpl,nam)
+if (nam%model(1:5)=='cartg') call model%cartg_coord(mpl,nam)
 if (trim(nam%model)=='mpas') call model%mpas_coord(mpl,nam)
 if (trim(nam%model)=='nemo') call model%nemo_coord(mpl,nam)
 if (trim(nam%model)=='norcpm') call model%norcpm_coord(mpl,nam)
@@ -873,6 +885,7 @@ if (trim(nam%model)=='gem') call model%gem_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='geos') call model%geos_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='gfs') call model%gfs_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='ifs') call model%ifs_read(mpl,nam,filename,fld_mga)
+if (nam%model(1:5)=='cartg') call model%cartg_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='mpas') call model%mpas_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='nemo') call model%nemo_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='norcpm') call model%norcpm_read(mpl,nam,filename,fld_mga)
