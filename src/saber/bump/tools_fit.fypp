@@ -191,29 +191,14 @@ real(kind_real) :: ver_sqrt(nl0,nl0),ver_full(nl0,nl0),ver_full_norm(nl0)
 ver_sqrt = zero
 
 do il0=1,nl0
-   do jl0r=1,nl0r
-      ! Level index
-      jl0 = l0rl0_to_l0(jl0r,il0)
-
-      ! Initialization
-      rv_eff = mpl%msv%valr
-
-      ! Parameters at mid-point
-      if (mod(il0+jl0,2)==0) then
-         kl0m = (il0+jl0)/2
-         kl0p = kl0m
-      else
-         kl0m = (il0+jl0)/2
-         kl0p = kl0m+1
-      end if
-
-      if (mpl%msv%isnot(rv(kl0m)).and.mpl%msv%isnot(rv(kl0p))) then
-         ! Effective parameters
-         rv_eff = half*(rv(kl0m)+rv(kl0p))
+   if (mpl%msv%isnot(rv(il0))) then
+      do jl0r=1,nl0r
+         ! Level index
+         jl0 = l0rl0_to_l0(jl0r,il0)
 
          ! Normalized distance
-         if (rv_eff>zero) then
-            vnd = distv(jl0r,il0)/rv_eff
+         if (rv(il0)>zero) then
+            vnd = distv(jl0r,il0)/rv(il0)
          elseif (il0/=jl0) then
             vnd = one
          else
@@ -222,13 +207,8 @@ do il0=1,nl0
 
          ! Unitary fit function
          ver_sqrt(jl0,il0) = fit_func_sqrt(mpl,vnd)
-      else
-         ver_sqrt(jl0,il0) = zero
-      end if
-
-      ! Transposed value
-      ver_sqrt(il0,jl0) = ver_sqrt(jl0,il0)
-   end do
+      end do
+   end if
 end do
 
 ! Product

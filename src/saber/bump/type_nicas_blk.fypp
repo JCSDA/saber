@@ -42,7 +42,7 @@ type balldata_type
    integer :: nbd                          !< Number of values
    integer,allocatable :: bd_to_c1u(:)     !< Ball data index to subset Sc1 in universe
    real(kind_real),allocatable :: hnd(:)   !< Horizontal normalized distance
-   real(kind_real),allocatable :: vnd(:)   !< Vertical normalized distance
+   real(kind_real) :: vnd                  !< Vertical normalized distance
 contains
    procedure :: alloc => balldata_alloc
    procedure :: dealloc => balldata_dealloc
@@ -290,7 +290,6 @@ class(balldata_type),intent(inout) :: balldata !< Ball data
 ! Allocation
 allocate(balldata%bd_to_c1u(balldata%nbd))
 allocate(balldata%hnd(balldata%nbd))
-allocate(balldata%vnd(balldata%nbd))
 
 ! Probe out
 @:probe_out()
@@ -317,7 +316,6 @@ class(balldata_type),intent(inout) :: balldata !< Ball data
 ! Release memory
 if (allocated(balldata%bd_to_c1u)) deallocate(balldata%bd_to_c1u)
 if (allocated(balldata%hnd)) deallocate(balldata%hnd)
-if (allocated(balldata%vnd)) deallocate(balldata%vnd)
 
 ! Probe out
 @:probe_out()
@@ -337,7 +335,7 @@ class(balldata_type),intent(inout) :: balldata !< Ball data
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 integer,intent(in) :: nc1u                     !< Horizontal box size
 real(kind_real),intent(in) :: hnd(nc1u)        !< Horizontal normalized distance
-real(kind_real),intent(in) :: vnd(nc1u)        !< Vertical normalized distance
+real(kind_real),intent(in) :: vnd              !< Vertical normalized distance
 
 ! Local variables
 integer :: ibd,ic1u
@@ -362,7 +360,7 @@ if (nc1u>0) then
          ibd = ibd+1
          balldata%bd_to_c1u(ibd) = ic1u
          balldata%hnd(ibd) = hnd(ic1u)
-         balldata%vnd(ibd) = vnd(ic1u)
+         balldata%vnd = vnd
       end if
    end do
 else
@@ -3710,12 +3708,9 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: isu,ic1u,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
-real(kind_real) :: min_minus_max,max_minus_min,rv_th,rr,distv,rh,rv
-real(kind_real) :: dx,dy,H11,H22,H12
-real(kind_real) :: rh_max(geom%nl0),rv_max(geom%nl0)
-real(kind_real) :: vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distv_min(nicas_blk%nl1,nicas_blk%nl1)
-real(kind_real),allocatable :: hnd(:),vnd(:),nn_dist(:)
-logical :: valid
+real(kind_real) :: distv,vnd,dx,dy
+real(kind_real),allocatable :: hnd(:),nn_dist(:)
+logical :: valid,compute_hor
 
 ! Set name
 @:set_name(nicas_blk_compute_convol_distance)
@@ -3723,35 +3718,12 @@ logical :: valid
 ! Probe in
 @:probe_in()
 
-! Find largest possible radius
-do il0=1,geom%nl0
-   rh_max(il0) = zss_maxval(nicas_blk%rh(:,il0),mask=mpl%msv%isnot(nicas_blk%rh(:,il0)))
-   rv_max(il0) = zss_maxval(nicas_blk%rv(:,il0),mask=mpl%msv%isnot(nicas_blk%rv(:,il0)))
-end do
-call mpl%f_comm%allreduce(rh_max,fckit_mpi_max())
-call mpl%f_comm%allreduce(rv_max,fckit_mpi_max())
-
-! Find smallest possible vertical distance
-do il1=1,nicas_blk%nl1
-   vunit_min(il1) = zss_minval(nicas_blk%hor(il1)%vunit_c1u)
-   vunit_max(il1) = zss_maxval(nicas_blk%hor(il1)%vunit_c1u)
-end do
-distv_min = zero
-do il1=1,nicas_blk%nl1
-   do jl1=1,il1
-      min_minus_max = abs(vunit_min(il1)-vunit_max(jl1))
-      max_minus_min = abs(vunit_max(il1)-vunit_min(jl1))
-      distv_min(il1,jl1) = min(min_minus_max,max_minus_min)
-      distv_min(jl1,il1) = distv_min(il1,jl1)
-   end do
-end do
-
 ! Count and find nearest neighbors
 write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distances: '
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
-!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,rv_th,rr,nn,j,jc1u,valid,dx,dy,H11,H22,H12), &
-!$omp&                             private(rh,distv,rv) firstprivate(nn_index,nn_dist,hnd,vnd)
+!$omp parallel do schedule(static) private(isb,isu,ic1u,il1,il0,jl1,jl0,vnd,nn,j,jc1u,valid,dx,dy), &
+!$omp&                             private(distv) firstprivate(nn_index,nn_dist,hnd)
 do isb=1,nicas_blk%nsb
    ! Indices
    isu = nicas_blk%sb_to_su(isb)
@@ -3765,20 +3737,40 @@ do isb=1,nicas_blk%nsb
 
       ! Allocation
       allocate(hnd(nicas_blk%hor(jl1)%nc1u))
-      allocate(vnd(nicas_blk%hor(jl1)%nc1u))
 
       ! Initialization
       hnd = mpl%msv%valr
-      vnd = mpl%msv%valr
 
-      ! Vertical radius / research radius
-      rv_th = half*(rv_max(il0)+rv_max(jl0))
-      rr = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)+rh_max(jl0))
+      ! Vertical component
+      if (il0/=jl0) then
+         ! Different levels
+         if (nicas_blk%horizontal) then
+            ! Missing value
+            vnd = mpl%msv%valr
+         else
+            ! Vertical distance
+            distv = abs(nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(ic1u)) ! Todo: vunit_c1b / rv_c1b
 
-      if (infeq(distv_min(il1,jl1),rv_th)) then
+            if (nicas_blk%hor(il1)%rv_c1u(ic1u)>zero) then
+               ! Positive radius
+               vnd = distv/nicas_blk%hor(il1)%rv_c1u(ic1u)
+
+               ! Check normalized vertical distance
+               if (sup(vnd,one)) vnd = mpl%msv%valr
+            else
+               ! Zero radius
+               vnd = mpl%msv%valr
+            end if
+         end if
+      else
+         ! Same level
+         vnd = zero
+      end if
+
+      if (mpl%msv%isnot(vnd)) then
          ! Count nearest neighbors
          call nicas_blk%hor(jl1)%tree_c1u%count_nearest_neighbors(nicas_blk%hor(il1)%lon_c1u(ic1u), &
- & nicas_blk%hor(il1)%lat_c1u(ic1u),rr,nn)
+ & nicas_blk%hor(il1)%lat_c1u(ic1u),nicas_blk%hor(il1)%rh_c1u(ic1u),nn)
 
          ! Allocation
          allocate(nn_index(nn))
@@ -3792,58 +3784,41 @@ do isb=1,nicas_blk%nsb
          do j=1,nn
             jc1u = nn_index(j)
 
-            ! Check arc validity
-            valid = .true.
-            if (nam%mask_check) then
-               call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
+            if (nn_dist(j)>zero) then
+               ! Check arc validity
+               valid = .true.
+               if (nam%mask_check) then
+                  call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
  & nicas_blk%hor(il1)%lat_c1u(ic1u),nicas_blk%hor(jl1)%lon_c1u(jc1u),nicas_blk%hor(jl1)%lat_c1u(jc1u),il0,valid)
-               if (il0/=jl0) call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
+                  if (il0/=jl0) call geom%mesh_c0u%check_arc(mpl,nicas_blk%hor(il1)%lon_c1u(ic1u), &
  & nicas_blk%hor(il1)%lat_c1u(ic1u),nicas_blk%hor(jl1)%lon_c1u(jc1u),nicas_blk%hor(jl1)%lat_c1u(jc1u),jl0,valid)
-            end if
+               end if
 
-            if (valid) then
-               ! Horizontal and vertical normalized distance, anisotropic coefficient
-               if (nicas_blk%anisotropic) then
-                  dx = nicas_blk%hor(jl1)%lon_c1u(jc1u)-nicas_blk%hor(il1)%lon_c1u(ic1u)
-                  dy = nicas_blk%hor(jl1)%lat_c1u(jc1u)-nicas_blk%hor(il1)%lat_c1u(ic1u)
-                  call lonlatmod(dx,dy)
-                  dx = dx*cos(half*(nicas_blk%hor(il1)%lat_c1u(ic1u)+nicas_blk%hor(jl1)%lat_c1u(jc1u)))
-                  H11 = half*(nicas_blk%hor(il1)%H11_c1u(ic1u)+nicas_blk%hor(jl1)%H11_c1u(jc1u))
-                  H22 = half*(nicas_blk%hor(il1)%H22_c1u(ic1u)+nicas_blk%hor(jl1)%H22_c1u(jc1u))
-                  H12 = half*(nicas_blk%hor(il1)%H12_c1u(ic1u)+nicas_blk%hor(jl1)%H12_c1u(jc1u))
-                  hnd(jc1u) = sqrt(H11*dx**2+H22*dy**2+two*H12*dx*dy)
-               else
-                  rh = half*(nicas_blk%hor(il1)%rh_c1u(ic1u)+nicas_blk%hor(jl1)%rh_c1u(jc1u))
-                  if (rh>zero) then
-                     hnd(jc1u) = nn_dist(j)/rh
-                  elseif (nn_dist(j)>zero) then
-                     hnd(jc1u) = half*huge_real
+               if (valid) then
+                  ! Horizontal and vertical normalized distance, anisotropic coefficient
+                  if (nicas_blk%anisotropic) then
+                     dx = nicas_blk%hor(jl1)%lon_c1u(jc1u)-nicas_blk%hor(il1)%lon_c1u(ic1u)
+                     dy = nicas_blk%hor(jl1)%lat_c1u(jc1u)-nicas_blk%hor(il1)%lat_c1u(ic1u)
+                     call lonlatmod(dx,dy)
+                     dx = dx*cos(nicas_blk%hor(il1)%lat_c1u(ic1u))
+                     hnd(jc1u) = sqrt(nicas_blk%hor(il1)%H11_c1u(ic1u)*dx**2+nicas_blk%hor(il1)%H22_c1u(ic1u)*dy**2 &
+ & +two*nicas_blk%hor(il1)%H12_c1u(ic1u)*dx*dy)
                   else
-                     hnd(jc1u) = zero
+                     if (nicas_blk%hor(il1)%rh_c1u(ic1u)>zero) then
+                        ! Positive radius
+                        hnd(jc1u) = nn_dist(j)/nicas_blk%hor(il1)%rh_c1u(ic1u)
+
+                        ! Check normalized vertical distance
+                        if (sup(hnd(jc1u),one)) hnd(jc1u) = mpl%msv%valr
+                     else
+                        hnd(jc1u) = huge_real
+                     end if
                   end if
                end if
-               if (nicas_blk%horizontal) then
-                  if (il0/=jl0) vnd(jc1u) = huge_real
-               else
-                  distv = abs(nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))
-                  rv = half*(nicas_blk%hor(il1)%rv_c1u(ic1u)+nicas_blk%hor(jl1)%rv_c1u(jc1u))
-                  if (rv>zero) then
-                     vnd(jc1u) = distv/rv
-                  elseif (distv>zero) then
-                     vnd(jc1u) = huge_real
-                  else
-                     vnd(jc1u) = zero
-                  end if
-               end if
+            else
+               ! Same point
+               hnd(jc1u) = zero
             end if
-         end do
-
-         ! Upper bound
-         do jc1u=1,nicas_blk%hor(jl1)%nc1u
-             if (supeq(hnd(jc1u),one).or.supeq(vnd(jc1u),one)) then
-                hnd(jc1u) = mpl%msv%valr
-                vnd(jc1u) = mpl%msv%valr
-             end if
          end do
 
          ! Release memory
@@ -3851,12 +3826,12 @@ do isb=1,nicas_blk%nsb
          deallocate(nn_dist)
       end if
 
+
       ! Pack data
       call nicas_blk%ball(jl1,isb)%pack(mpl,nicas_blk%hor(jl1)%nc1u,hnd,vnd)
 
       ! Release memory
       deallocate(hnd)
-      deallocate(vnd)
    end do
 
    ! Update
@@ -3926,7 +3901,7 @@ do isb=1,nicas_blk%nsb
          S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd))
 
          ! Vertical component
-         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd))
+         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd)
 
          if (sup(abs(S),S_inf)) then
             if (nicas_blk%smoother) then

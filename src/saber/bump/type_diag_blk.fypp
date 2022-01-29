@@ -27,9 +27,6 @@ use type_samp, only: samp_type
 
 implicit none
 
-integer,parameter :: ad_n = 5                      !< Minimum number of points to optimize anti-diagonal vertical fit
-real(kind_real),parameter :: ad_th = 0.3_kind_real !< Threshold to optimize anti-diagonal vertical fit
-
 ! Diagnostic block derived type
 type diag_blk_type
    integer :: ic2a                                     !< Local index
@@ -603,76 +600,21 @@ else
       ! Get zero separation level and min/max levels
       jl0rz = bpar%il0rz(il0,ib)
 
-      ! Anti-diagonal raw diagnostic size
-      nl0ad = 0
-      do dil0=-geom%nl0,geom%nl0
-         if ((il0+dil0>=1).and.(il0+dil0<=geom%nl0).and.(il0-dil0>=1).and.(il0-dil0<=geom%nl0)) then
-            if (any(bpar%l0rl0b_to_l0(:,il0+dil0,ib)==il0-dil0)) nl0ad = nl0ad+1
-         end if
-      end do
-
       ! Allocation
-      allocate(rawv(nl0ad))
-      allocate(distv(nl0ad))
+      allocate(rawv(nl0r))
 
-      ! Fill anti-diagonal raw diagnostic and distance
-      il0ad = 0
-      do dil0=-geom%nl0,geom%nl0
-         if ((il0+dil0>=1).and.(il0+dil0<=geom%nl0).and.(il0-dil0>=1).and.(il0-dil0<=geom%nl0)) then
-            do jl0r=1,nl0r
-               if (bpar%l0rl0b_to_l0(jl0r,il0+dil0,ib)==il0-dil0) then
-                  il0ad = il0ad+1
-                  rawv(il0ad) = diag_blk%raw(1,1,jl0r,il0+dil0)
-                  distv(il0ad) = diag_blk%distv(jl0r,il0+dil0)
-                  if (dil0==0) il0adz = il0ad
-               end if
-            end do
-         end if
-      end do
+      ! Average over angular sector
+      rawv = diag_blk%raw(1,1,:,il0)
 
-      ! Threshold on anti-diagonal raw diagnostic minimum
-      if ((nl0ad>ad_n).and.(minval(rawv)<ad_th)) then
-         ! Fast fit
-         call fast_fit(mpl,nl0ad,il0adz,distv,'ver',rawv,rv_l1(il1))
-         filled(il1) = .true.
-      else
-         ! Level to fill with its nearest neighbor
-         filled(il1) = .false.
-      end if
+      ! Fast fit
+      call fast_fit(mpl,nl0r,jl0rz,diag_blk%distv(:,il0),'ver',rawv,rv_l1(il1))
 
       ! Release memory
       deallocate(rawv)
-      deallocate(distv)
    end do
 
-   if (any(filled)) then
-      ! Fill border values with nearest neighbor
-      do il1=1,nl1
-         if (.not.filled(il1)) then
-            tmp = minloc(abs(diag_blk%vunit(il0_interp)-diag_blk%vunit(il0_interp(il1))),mask=filled)
-            rv_l1(il1) = rv_l1(tmp(1))
-         end if
-      end do
-   else
-      ! Allocation
-      allocate(rawv(nl0r))
-      allocate(distv(nl0r))
 
-      do il1=1,nl1
-         ! Index
-         il0 = il0_interp(il1)
 
-         ! Get zero separation level and min/max levels
-         jl0rz = bpar%il0rz(il0,ib)
-
-         ! Fill raw diagnostic
-         rawv = diag_blk%raw(1,1,:,il0)
-         distv = diag_blk%distv(:,il0)
-
-         ! Fast fit (old method)
-         call fast_fit(mpl,nl0r,jl0rz,distv,'ver',rawv,rv_l1(il1))
-      end do
-   end if
 
    ! Interpolate vertical parameters
    call vert_interp(mpl,nl1,rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rv_l0)
