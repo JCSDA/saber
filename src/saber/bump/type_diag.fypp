@@ -874,8 +874,18 @@ do ib=1,bpar%nbe
          ! Normalization
          call diag%blk(ic2a,ib)%normalization(geom,bpar)
 
-         ! Fitting
-         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+         if (bpar%fit_block(ib)) then
+            if (ic2a==0) then
+               ! Optimize number of components
+               call diag%blk(ic2a,ib)%optimization(mpl,nam,geom,bpar)
+            else
+               ! Copy number of components
+               diag%blk(ic2a,ib)%ncomp = diag%blk(0,ib)%ncomp
+
+               ! Fitting
+               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+            end if
+         end if
 
          ! Update
          call mpl%prog_print(ic2a+1)
@@ -973,8 +983,18 @@ do ib=1,bpar%nbe
             ! Normalization
             call diag%blk(ic2a,ib)%normalization(geom,bpar)
 
-            ! Fitting
-            if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+            if (bpar%fit_block(ib)) then
+               if (ic2a==0) then
+                  ! Optimize number of components
+                  call diag%blk(ic2a,ib)%optimization(mpl,nam,geom,bpar)
+               else
+                  ! Copy number of components
+                  diag%blk(ic2a,ib)%ncomp = diag%blk(0,ib)%ncomp
+
+                  ! Fitting
+                  call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+               end if
+            end if
          end if
 
          ! Update
@@ -1072,10 +1092,20 @@ do ib=1,bpar%nbe
          call diag%blk(ic2a,ib)%normalization(geom,bpar)
          call diag_lr%blk(ic2a,ib)%normalization(geom,bpar)
 
-         ! Fitting
          if (bpar%fit_block(ib)) then
-            call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
-            call diag_lr%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+            if (ic2a==0) then
+               ! Optimize number of components
+               call diag%blk(ic2a,ib)%optimization(mpl,nam,geom,bpar)
+               call diag_lr%blk(ic2a,ib)%optimization(mpl,nam,geom,bpar)
+            else
+               ! Copy number of components
+               diag%blk(ic2a,ib)%ncomp = diag%blk(0,ib)%ncomp
+               diag_lr%blk(ic2a,ib)%ncomp = diag%blk(0,ib)%ncomp
+
+               ! Fitting
+               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+               call diag_lr%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+            end if
          end if
 
          ! Update

@@ -1827,15 +1827,24 @@ end select
 ! Select parameter from hdiag
 select case (trim(param))
 case ('cor_rh')
-   if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%rh_c0a,fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+   if (bump%nam%forced_radii) then
+      iv = bump%bpar%b_to_v1(ib)
+      do il0=1,bump%geom%nl0
+         fld_mga(:,il0) = bump%nam%rh(il0,iv)*req
       end do
-   end do
+   else
+      if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%rh_c0a,fld_mga)
+      do il0=1,bump%geom%nl0
+         do imga=1,bump%geom%nmga
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         end do
+      end do
+   end if
    found = .true.
 case ('cor_D11')
+   if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%D11_c0a,fld_mga)
    do il0=1,bump%geom%nl0
@@ -1845,6 +1854,7 @@ case ('cor_D11')
    end do
    found = .true.
 case ('cor_D22')
+   if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%D22_c0a,fld_mga)
    do il0=1,bump%geom%nl0
@@ -1854,28 +1864,47 @@ case ('cor_D22')
    end do
    found = .true.
 case ('cor_D12')
+   if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%D12_c0a,fld_mga)
    found = .true.
 case ('cor_rv')
-   if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%rv_c0a,fld_mga)
+   if (bump%nam%forced_radii) then
+      iv = bump%bpar%b_to_v1(ib)
+      do il0=1,bump%geom%nl0
+         fld_mga(:,il0) = bump%nam%rv(il0,iv)
+      end do
+   else
+      if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%rv_c0a,fld_mga)
+   end if
    found = .true.
 case ('loc_coef')
+   if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%coef_ens_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%coef_ens_c0a,fld_mga)
    found = .true.
 case ('loc_rh')
-   if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%rh_c0a,fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+   if (bump%nam%forced_radii) then
+      iv = bump%bpar%b_to_v1(ib)
+      do il0=1,bump%geom%nl0
+         fld_mga(:,il0) = bump%nam%rh(il0,iv)*req
       end do
-   end do
+   else
+      if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%rh_c0a,fld_mga)
+      do il0=1,bump%geom%nl0
+         do imga=1,bump%geom%nmga
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         end do
+      end do
+   end if
    found = .true.
 case ('loc_D11')
+   if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%D11_c0a,fld_mga)
    do il0=1,bump%geom%nl0
@@ -1885,6 +1914,7 @@ case ('loc_D11')
    end do
    found = .true.
 case ('loc_D22')
+   if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%D22_c0a,fld_mga)
    do il0=1,bump%geom%nl0
@@ -1894,28 +1924,47 @@ case ('loc_D22')
    end do
    found = .true.
 case ('loc_D12')
+   if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%D12_c0a,fld_mga)
    found = .true.
 case ('loc_rv')
-   if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%rv_c0a,fld_mga)
+   if (bump%nam%forced_radii) then
+      iv = bump%bpar%b_to_v1(ib)
+      do il0=1,bump%geom%nl0
+         fld_mga(:,il0) = bump%nam%rv(il0,iv)
+      end do
+   else
+      if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%rv_c0a,fld_mga)
+   end if
    found = .true.
 case ('loc_hyb_coef')
+   if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%coef_ens_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%coef_ens_c0a,fld_mga)
    found = .true.
 case ('loc_hyb_rh')
-   if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%rh_c0a,fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+   if (bump%nam%forced_radii) then
+      iv = bump%bpar%b_to_v1(ib)
+      do il0=1,bump%geom%nl0
+         fld_mga(:,il0) = bump%nam%rh(il0,iv)*req
       end do
-   end do
+   else
+      if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%rh_c0a,fld_mga)
+      do il0=1,bump%geom%nl0
+         do imga=1,bump%geom%nmga
+            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         end do
+      end do
+   end if
    found = .true.
 case ('loc_hyb_D11')
+   if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%D11_c0a,fld_mga)
    do il0=1,bump%geom%nl0
@@ -1925,6 +1974,7 @@ case ('loc_hyb_D11')
    end do
    found = .true.
 case ('loc_hyb_D22')
+   if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%D22_c0a,fld_mga)
    do il0=1,bump%geom%nl0
@@ -1934,14 +1984,24 @@ case ('loc_hyb_D22')
    end do
    found = .true.
 case ('loc_hyb_D12')
+   if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%D12_c0a,fld_mga)
    found = .true.
 case ('loc_hyb_rv')
-   if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%rv_c0a,fld_mga)
+   if (bump%nam%forced_radii) then
+      iv = bump%bpar%b_to_v1(ib)
+      do il0=1,bump%geom%nl0
+         fld_mga(:,il0) = bump%nam%rv(il0,iv)
+      end do
+   else
+      if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%rv_c0a,fld_mga)
+   end if
    found = .true.
 case ('sta_hyb_coef')
+   if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%coef_sta_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%coef_sta_c0a,fld_mga)
@@ -1965,6 +2025,7 @@ end if
 ! Select parameter from nicas
 select case (trim(param))
 case ('nicas_norm')
+   if (.not.allocated(bump%nicas%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%nicas%blk(ib)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%norm,fld_mga)
    found = .true.

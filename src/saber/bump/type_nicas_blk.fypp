@@ -75,19 +75,20 @@ type hor_type
    real(kind_real),allocatable :: H22_c1u(:)            !< Local correlation tensor, component 22, on subset Sc1, universe
    real(kind_real),allocatable :: H12_c1u(:)            !< Local correlation tensor, component 12, on subset Sc1, universe
 
+   ! Tree
    type(tree_type) :: tree_c1u                          !< Tree on subset Sc1, universe
 
+   ! Halo detection
    logical,allocatable :: lcheck_c1a(:)                 !< Detection of halo A on subset Sc1
    logical,allocatable :: lcheck_c1b(:)                 !< Detection of halo B on subset Sc1
 
+   ! Conversions
    integer,allocatable :: c1a_to_c1(:)                  !< Subset Sc1, halo A to global
    integer,allocatable :: c1u_to_c1a(:)                 !< Subset Sc1, universe to halo A
    integer,allocatable :: c1u_to_c1(:)                  !< Subset Sc1, universe to global
-
    integer,allocatable :: c1b_to_c1(:)                  !< Subset Sc1, halo B to global
    integer,allocatable :: c1b_to_c1u(:)                 !< Subset Sc1, halo B to universe
    integer,allocatable :: c1u_to_c1b(:)                 !< Subset Sc1, universe to halo B
-
    integer,allocatable :: c1u_to_su(:)                  !< Subset Sc1, universe to subgrid, universe
    integer,allocatable :: c1a_to_sa(:)                  !< Subset Sc1, halo B to subgrid, halo B
    integer,allocatable :: c1b_to_sb(:)                  !< Subset Sc1, halo A to subgrid, halo B
@@ -116,6 +117,9 @@ type nicas_blk_type
 
    ! Number of processors
    integer :: nproc                                     !< Number of processors
+
+   ! Number of components
+   integer :: ncomp                                     !< Number of components
 
    ! Universe
    logical,allocatable :: myuniverse(:)                 !< MPI tasks in the universe of the local task
@@ -2393,6 +2397,7 @@ do il0=1,geom%nl0
    nicas_blk%rh(:,il0) = rhflt(il0)
 end do
 nicas_blk%rv = zero
+nicas_blk%ncomp = 1
 nicas_blk%rhs = nicas_blk%rh
 nicas_blk%rvs = zero
 nicas_blk%wgt = one
@@ -2465,6 +2470,9 @@ end if
 if (allocated(cmat_blk%rv)) nicas_blk%rv = mpl%msv%valr
 if (allocated(cmat_blk%rhs)) nicas_blk%rhs = mpl%msv%valr
 if (allocated(cmat_blk%rvs)) nicas_blk%rvs = mpl%msv%valr
+
+! Copy number of components
+nicas_blk%ncomp = cmat_blk%ncomp
 
 ! Copy C matrix fields from min_lev to max_lev
 iv = bpar%b_to_v1(ib)
@@ -3923,10 +3931,10 @@ do isb=1,nicas_blk%nsb
          jsu = nicas_blk%hor(jl1)%c1u_to_su(jc1u)
 
          ! Horizontal component
-         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd))
+         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),nicas_blk%ncomp)
 
          ! Vertical component
-         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd))
+         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ncomp)
 
          if (sup(abs(S),S_inf)) then
             if (nicas_blk%smoother) then
