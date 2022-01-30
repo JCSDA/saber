@@ -29,12 +29,13 @@ integer,parameter :: nldwvmax = 20                !< Maximum number of local dia
 integer,parameter :: nprociomax = 20              !< Maximum number of I/O tasks
 integer,parameter :: niokvmax = 99                !< Maximum number of I/O key-values
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2 !< Maximum number of vertical balance blocks
+integer,parameter :: ncompmax = 10                !< Maximum number of model components
 
 type nam_type
    ! general_param
    character(len=1024) :: datadir                             !< Data directory
    character(len=1024) :: prefix                              !< Files prefix
-   character(len=1024) :: model                               !< Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
+   character(len=1024) :: model                               !< Model name ('aro', 'arp', 'cartg', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
    character(len=1024) :: verbosity                           !< Verbosity level ('all', 'main' or 'none')
    logical :: colorlog                                        !< Add colors to the log (for display on terminal)
    logical :: default_seed                                    !< Default seed for random numbers
@@ -116,6 +117,7 @@ type nam_type
    logical :: qg_redundant                                    !< Redundant points configuration for the QG model
    logical :: qg_regional                                     !< Regional domain configuration for the QG model
    logical :: qg_urban                                        !< Urban domain configuration for the QG model
+   character(len=1024),dimension(ncompmax) :: model_comp      !< Model components (for 'cartg': 'atm' or 'ocn')
 
    ! ens1_param
    integer :: ens1_ne                                         !< Ensemble 1 size
@@ -174,7 +176,6 @@ type nam_type
    real(kind_real) :: diag_rhflt                              !< Horizontal filtering suport radius [in meters]
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
-   logical :: diag_sqrt                                       !< Diagnostic of square-root functions
 
    ! nicas_param
    logical :: nonunit_diag                                    !< Non-unit diagonal for the NICAS application
@@ -233,7 +234,7 @@ contains
 end type nam_type
 
 private
-public :: nvmax,nl0max,nc3max,nc4max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
+public :: nvmax,nl0max,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax,ncompmax
 public :: nam_type
 
 contains
@@ -251,7 +252,7 @@ class(nam_type),intent(out) :: nam !< Namelist
 integer,intent(in) :: nproc        !< Number of MPI task
 
 ! Local variable
-integer :: isub,il0,iv,i,ildwv
+integer :: isub,il0,iv,i,ildwv,icomp
 
 ! Set name
 @:set_name(nam_init)
@@ -356,6 +357,9 @@ end do
 nam%qg_redundant = .false.
 nam%qg_regional = .false.
 nam%qg_urban = .false.
+do icomp=1,ncompmax
+   nam%model_comp(icomp) = ''
+end do
 
 ! ens1_param default
 nam%ens1_ne = 0
@@ -422,7 +426,6 @@ nam%local_dlat = zero
 nam%diag_rhflt = zero
 nam%diag_rvflt = zero
 nam%fit_dl0 = 1
-nam%diag_sqrt = .false.
 
 ! nicas_param default
 nam%nonunit_diag = .false.
@@ -492,7 +495,7 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 character(len=*),intent(in) :: namelname !< Namelist name
 
 ! Local variables
-integer :: isub,il0,iv,i,ildwv,lunit
+integer :: isub,il0,iv,i,ildwv,icomp,lunit
 
 ! Namelist variables
 character(len=1024) :: datadir
@@ -573,6 +576,7 @@ character(len=1024),dimension(niokvmax) :: io_values
 logical :: qg_redundant
 logical :: qg_regional
 logical :: qg_urban
+character(len=1024),dimension(ncompmax) :: model_comp
 integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
@@ -621,7 +625,6 @@ real(kind_real) :: local_dlat
 real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
 integer :: fit_dl0
-logical :: diag_sqrt
 logical :: nonunit_diag
 real(kind_real) :: resol
 integer :: nc1max
@@ -789,8 +792,7 @@ namelist/diag_param/ &
 namelist/fit_param/ &
  & diag_rhflt, &
  & diag_rvflt, &
- & fit_dl0, &
- & diag_sqrt
+ & fit_dl0
 namelist/nicas_param/ &
  & nonunit_diag, &
  & resol, &
@@ -924,6 +926,9 @@ if (mpl%main) then
    qg_redundant = .false.
    qg_regional = .false.
    qg_urban = .false.
+   do icomp=1,ncompmax
+      model_comp(icomp) = ''
+   end do
 
    ! ens1_param default
    ens1_ne = 0
@@ -990,7 +995,6 @@ if (mpl%main) then
    diag_rhflt = zero
    diag_rvflt = zero
    fit_dl0 = 1
-   diag_sqrt = .false.
 
    ! nicas_param default
    nonunit_diag = .false.
@@ -1196,7 +1200,6 @@ if (mpl%main) then
    nam%diag_rhflt = diag_rhflt
    nam%diag_rvflt = diag_rvflt
    nam%fit_dl0 = fit_dl0
-   nam%diag_sqrt = diag_sqrt
 
    ! nicas_param
    read(lunit,nml=nicas_param)
@@ -1406,7 +1409,6 @@ call mpl%f_comm%broadcast(nam%local_dlat,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%diag_sqrt,mpl%rootproc-1)
 
 ! nicas_param
 call mpl%f_comm%broadcast(nam%nonunit_diag,mpl%rootproc-1)
@@ -1659,6 +1661,15 @@ end if
 if (conf%has('qg_redundant')) call conf%get_or_die('qg_redundant',nam%qg_redundant)
 if (conf%has('qg_regional')) call conf%get_or_die('qg_regional',nam%qg_regional)
 if (conf%has('qg_urban')) call conf%get_or_die('qg_urban',nam%qg_urban)
+if (conf%has('model_comp')) then
+   call conf%get_or_die('model_comp',str_array)
+   if (size(str_array)>ncompmax) then
+      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: model_comp size should be smaller than ',ncompmax
+      call flush(output_unit)
+      call comm%abort(1)
+   end if
+   nam%model_comp(1:size(str_array)) = str_array
+end if
 
 ! ens1_param
 if (conf%has('ens1_ne')) call conf%get_or_die('ens1_ne',nam%ens1_ne)
@@ -1799,7 +1810,6 @@ if (conf%has('local_dlat')) call conf%get_or_die('local_dlat',nam%local_dlat)
 if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
 if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
 if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
-if (conf%has('diag_sqrt')) call conf%get_or_die('diag_sqrt',nam%diag_sqrt)
 
 ! nicas_param
 if (conf%has('nonunit_diag')) call conf%get_or_die('nonunit_diag',nam%nonunit_diag)
@@ -2632,7 +2642,6 @@ call mpl%flush
 call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
-call mpl%write('diag_sqrt',nam%diag_sqrt)
 
 ! nicas_param
 write(mpl%info,'(a7,a)') '','NICAS parameters'

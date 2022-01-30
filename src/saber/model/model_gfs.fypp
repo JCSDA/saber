@@ -107,7 +107,7 @@ character(len=*),intent(in) :: filename                         !< File name
 real(kind_real),intent(out) :: fld(model%nmga,model%nl0,nam%nv) !< Field
 
 ! Local variables
-integer :: iv,il0,img,ilon,ilat,ndims
+integer :: iv,il0,img,ilon,ilat,rank
 integer :: ncid,fld_id
 real(kind_real) :: fld_mg(model%nmg,model%nl0)
 real(kind_real),allocatable :: fld_tmp(:,:,:)
@@ -128,12 +128,14 @@ end if
 
 do iv=1,nam%nv
    if (mpl%main) then
-      ! Get variable id
+      ! Get variable ID
       fld_id = inquire_var(mpl,ncid,nam%variables(iv))
 
+      ! Get variable rank
+      rank = inquire_var_rank(mpl,ncid,nam%variables(iv))
 
       ! Read data
-      select case (ndims)
+      select case (rank)
       case (2)
          ! 2D data
          fld_tmp = mpl%msv%valr
