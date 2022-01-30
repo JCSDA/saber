@@ -14,7 +14,7 @@ bump:
   new_nicas: true
   new_var: true
   nl0r: 2
-  prefix: qg_error_covariance_training_bump_cov/test
+  prefix: qg_error_covariance_training_bump_cov_incens/test
   resol: 8.0
   strategy: specific_univariate
   var_filter: true
