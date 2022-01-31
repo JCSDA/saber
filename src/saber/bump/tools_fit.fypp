@@ -177,8 +177,8 @@ real(kind_real),intent(in) :: rv(nl0)         !< Vertical support radius
 real(kind_real),intent(out) :: fit(nl0r,nl0)  !< Fit
 
 ! Local variables
-integer :: il0,jl0r,jl0,kl0m,kl0p
-real(kind_real) :: rv_eff,vnd
+integer :: il0,jl0r,jl0
+real(kind_real) :: vnd
 real(kind_real) :: ver_sqrt(nl0,nl0),ver_full(nl0,nl0),ver_full_norm(nl0)
 
 ! Set name

@@ -1640,7 +1640,6 @@ type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
 integer :: idir,il0,ic0a,il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir),nn_index(1)
-real(kind_real) :: disth
 logical :: valid(nam%ndir)
 type(tree_type) :: tree_dirac
 

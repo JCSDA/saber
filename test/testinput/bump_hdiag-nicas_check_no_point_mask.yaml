@@ -13,6 +13,7 @@ new_nicas: true
 write_nicas_global: true
 write_nicas_local: true
 check_adjoints: true
+check_normalization: 10
 check_dirac: true
 check_no_point_mask: true
 

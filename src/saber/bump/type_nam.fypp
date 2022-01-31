@@ -78,6 +78,7 @@ type nam_type
    logical :: write_wind_local                                !< Write local wind transform
    logical :: check_vbal                                      !< Test vertical balance inverse and adjoint
    logical :: check_adjoints                                  !< Test NICAS adjoints
+   integer :: check_normalization                             !< Test NICAS normalization (number of tests)
    logical :: check_dirac                                     !< Test NICAS application on diracs
    logical :: check_randomization                             !< Test NICAS randomization
    logical :: check_consistency                               !< Test HDIAG-NICAS consistency
@@ -306,6 +307,7 @@ nam%load_wind_local = .false.
 nam%write_wind_local = .false.
 nam%check_vbal = .false.
 nam%check_adjoints = .false.
+nam%check_normalization = 0
 nam%check_dirac = .false.
 nam%check_randomization = .false.
 nam%check_consistency = .false.
@@ -541,6 +543,7 @@ logical :: load_wind_local
 logical :: write_wind_local
 logical :: check_vbal
 logical :: check_adjoints
+integer :: check_normalization
 logical :: check_dirac
 logical :: check_randomization
 logical :: check_consistency
@@ -703,6 +706,7 @@ namelist/driver_param/ &
  & write_wind_local, &
  & check_vbal, &
  & check_adjoints, &
+ & check_normalization, &
  & check_dirac, &
  & check_randomization, &
  & check_consistency, &
@@ -875,6 +879,7 @@ if (mpl%main) then
    write_wind_local = .false.
    check_vbal = .false.
    check_adjoints = .false.
+   check_normalization = 0
    check_dirac = .false.
    check_randomization = .false.
    check_consistency = .false.
@@ -1097,6 +1102,7 @@ if (mpl%main) then
    nam%write_wind_local = write_wind_local
    nam%check_vbal = check_vbal
    nam%check_adjoints = check_adjoints
+   nam%check_normalization = check_normalization
    nam%check_dirac = check_dirac
    nam%check_randomization = check_randomization
    nam%check_consistency = check_consistency
@@ -1312,6 +1318,7 @@ call mpl%f_comm%broadcast(nam%load_wind_local,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_wind_local,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_adjoints,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%check_normalization,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_dirac,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_randomization,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_consistency,mpl%rootproc-1)
@@ -1548,6 +1555,7 @@ if (conf%has('load_wind_local')) call conf%get_or_die('load_wind_local',nam%load
 if (conf%has('write_wind_local')) call conf%get_or_die('write_wind_local',nam%write_wind_local)
 if (conf%has('check_vbal')) call conf%get_or_die('check_vbal',nam%check_vbal)
 if (conf%has('check_adjoints')) call conf%get_or_die('check_adjoints',nam%check_adjoints)
+if (conf%has('check_normalization')) call conf%get_or_die('check_normalization',nam%check_normalization)
 if (conf%has('check_dirac')) call conf%get_or_die('check_dirac',nam%check_dirac)
 if (conf%has('check_randomization')) call conf%get_or_die('check_randomization',nam%check_randomization)
 if (conf%has('check_consistency')) call conf%get_or_die('check_consistency',nam%check_consistency)
@@ -2531,6 +2539,7 @@ call mpl%write('load_wind_local',nam%load_wind_local)
 call mpl%write('write_wind_local',nam%write_wind_local)
 call mpl%write('check_vbal',nam%check_vbal)
 call mpl%write('check_adjoints',nam%check_adjoints)
+call mpl%write('check_normalization',nam%check_normalization)
 call mpl%write('check_dirac',nam%check_dirac)
 call mpl%write('check_randomization',nam%check_randomization)
 call mpl%write('check_consistency',nam%check_consistency)

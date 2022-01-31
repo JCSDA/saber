@@ -10,6 +10,7 @@ new_vbal: true
 write_vbal: true
 check_vbal: true
 check_adjoints: true
+check_normalization: 10
 check_dirac: true
 
 # model_param

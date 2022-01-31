@@ -228,14 +228,13 @@ end subroutine diag_blk_dealloc
 ! Subroutine: diag_blk_write
 !> Write
 !----------------------------------------------------------------------
-subroutine diag_blk_write(diag_blk,mpl,nam,geom,bpar,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+subroutine diag_blk_write(diag_blk,mpl,geom,bpar,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
 
 implicit none
 
 ! Passed variables
 class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 type(mpl_type),intent(inout) :: mpl            !< MPI data
-type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 integer,intent(in) :: ncid                     !< NetCDF ID
@@ -387,12 +386,11 @@ type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Local variables
-integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jl0r,jl0,jc4,nl0ad,il0ad,dil0,tmp(1),il0adz
+integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jc4
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
 real(kind_real) :: det,m2(geom%nl0)
-real(kind_real),allocatable :: rawv(:),distv(:),rinf(:),rsup(:),rh_tmp(:)
+real(kind_real),allocatable :: rawv(:),rinf(:),rsup(:),rh_tmp(:)
 real(kind_real),allocatable :: rh_l1(:),D11_l1(:),D22_l1(:),D12_l1(:),rv_l1(:)
-real(kind_real),allocatable :: rawv_full(:,:),evec(:,:),eval(:)
 logical :: var2d,valid
 logical,allocatable :: filled(:)
 type(minim_type) :: minim

@@ -194,6 +194,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_vbal{"check_vbal", this};
   // Test NICAS adjoints
   oops::OptionalParameter<bool> check_adjoints{"check_adjoints", this};
+  // Test NICAS normalization (number of tests)
+  oops::OptionalParameter<int> check_normalization{"check_normalization", this};
   // Test NICAS application on diracs
   oops::OptionalParameter<bool> check_dirac{"check_dirac", this};
   // Test NICAS randomization
