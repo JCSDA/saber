@@ -1496,7 +1496,7 @@ if (mpl%msv%isanynot(proc_to_nn_proc)) then
    do jproc=1,mpl%nproc
       if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_nn_dist(jproc),distmin)) iproc = jproc
    end do
-   if (mpl%msv%is(iproc)) call mpl%abort('${subr}$','cannot find root processor')
+   if (mpl%msv%is(iproc)) call mpl%abort('${subr}$','cannot find root processor: did you make sure rng is synchronized?')
 
    if (iproc==mpl%myproc) then
       ! Check whether the location is in the hull
