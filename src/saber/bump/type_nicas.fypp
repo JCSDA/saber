@@ -911,6 +911,24 @@ if (nam%check_adjoints) then
    call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
 end if
 
+if (nam%check_normalization>0) then
+   ! Test normalization
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Test NICAS normalization'
+   call mpl%flush
+
+   do ib=1,bpar%nbe
+      if (bpar%nicas_block(ib)) then
+         write(mpl%info,'(a)') '-------------------------------------------------------------------'
+         call mpl%flush
+         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
+         call mpl%flush
+         call nicas%blk(ib)%test_normalization(mpl,rng,nam,geom)
+      end if
+   end do
+end if
+
 if (nam%check_dirac) then
    ! Apply NICAS to diracs
    write(mpl%info,'(a)') '-------------------------------------------------------------------'

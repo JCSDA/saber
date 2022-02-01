@@ -4,6 +4,7 @@ background:
 bump:
   check_adjoints: true
   check_dirac: true
+  check_normalization: 10
   datadir: testdata
   forced_radii: true
   forced_var: true

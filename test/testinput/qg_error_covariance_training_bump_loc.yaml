@@ -2,6 +2,8 @@ background:
   date: 2010-01-01T12:00:00Z
   filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 bump:
+  check_adjoints: true
+  check_normalization: 10
   datadir: testdata
   dc: 500.0e3
   method: loc

@@ -187,35 +187,35 @@ do ildwv=0,nam%nldwv
             call put_var(mpl,grpid,vunit_id,geom%vunitavg)
 
             ! Write ensemble 1 correlation
-            call hdiag%cor1%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+            call hdiag%cor1%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
 
             select case (trim(nam%method))
             case ('hyb-avg','hyb-rnd','dual-ens')
                ! Write ensemble 2 correlation
                select case (trim(nam%method))
                case ('hyb-avg','hyb-rnd')
-                  call hdiag%cor2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+                  call hdiag%cor2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
                case ('dual-ens')
-                  call hdiag%cor2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+                  call hdiag%cor2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
                end select
             end select
 
             select case (trim(nam%method))
             case ('loc','hyb-avg','hyb-rnd','dual-ens')
                ! Write localization
-               call hdiag%loc1%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc1%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end select
 
             select case (trim(nam%method))
             case ('hyb-avg','hyb-rnd')
                ! Write static hybridization
-               call hdiag%loc2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end select
 
             if (trim(nam%method)=='dual-ens') then
                ! Write dual-ensemble hybridization
-               call hdiag%loc2%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
-               call hdiag%loc3%blk(ic2a,ib)%write(mpl,nam,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc3%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end if
          end if
       end do

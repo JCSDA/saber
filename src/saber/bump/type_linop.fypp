@@ -60,7 +60,6 @@ contains
    procedure :: deserialize => linop_deserialize
    procedure :: apply => linop_apply
    procedure :: apply_ad => linop_apply_ad
-   procedure :: apply_sym => linop_apply_sym
    procedure :: add_op => linop_add_op
    procedure :: gather => linop_gather
    procedure :: linop_interp
@@ -697,88 +696,6 @@ end if
 @:probe_out()
 
 end subroutine linop_apply_ad
-
-!----------------------------------------------------------------------
-! Subroutine: linop_apply_sym
-!> Apply linear operator, symmetric
-!----------------------------------------------------------------------
-subroutine linop_apply_sym(linop,mpl,fld,ivec)
-
-implicit none
-
-! Passed variables
-class(linop_type),intent(in) :: linop             !< Linear operator
-type(mpl_type),intent(inout) :: mpl               !< MPI data
-real(kind_real),intent(inout) :: fld(linop%n_src) !< Source/destination vector
-integer,intent(in),optional :: ivec               !< Index of the vector of linear operators with similar row and col
-
-! Local variables
-integer :: i_s,ithread
-real(kind_real) :: fld_arr(linop%n_dst,mpl%nthread)
-
-! Set name
-@:set_name(linop_apply_sym)
-
-! Probe in
-@:probe_in()
-
-if (check_data) then
-   ! Check linear operation
-   if (zss_minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for symmetric linear operation '//trim(linop%prefix))
-   if (zss_maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for symmetric linear operation '//trim(linop%prefix))
-   if (zss_minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for symmetric linear operation '//trim(linop%prefix))
-   if (zss_maxval(linop%row)>linop%n_src) call mpl%abort('${subr}$','row>n_dst for symmetric linear operation '//trim(linop%prefix))
-   if (linop%n_s>0) then
-      if (present(ivec)) then
-         if (any(ieee_is_nan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for symmetric linear operation '//trim(linop%prefix))
-      else
-         if (any(ieee_is_nan(linop%S))) call mpl%abort('${subr}$','NaN in S for symmetric linear operation '//trim(linop%prefix))
-      end if
-   end if
-
-   ! Check input
-   if (linop%n_src>0) then
-      if (any(fld>huge_real)) call mpl%abort('${subr}$', &
- & 'Overflowing number in fld for symmetric linear operation '//trim(linop%prefix))
-      if (any(ieee_is_nan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
-   end if
-end if
-
-! Apply weights
-fld_arr = zero
-!$omp parallel do schedule(static) private(i_s,ithread)
-do i_s=1,linop%n_s
-   ithread = 1
-!$ ithread = omp_get_thread_num()+1
-   if (present(ivec)) then
-      fld_arr(linop%row(i_s),ithread) = fld_arr(linop%row(i_s),ithread)+linop%Svec(i_s,ivec)*fld(linop%col(i_s))
-      if (linop%col(i_s)/=linop%row(i_s)) fld_arr(linop%col(i_s),ithread) = fld_arr(linop%col(i_s),ithread) &
- & +linop%Svec(i_s,ivec)*fld(linop%row(i_s))
-   else
-      fld_arr(linop%row(i_s),ithread) = fld_arr(linop%row(i_s),ithread)+linop%S(i_s)*fld(linop%col(i_s))
-      if (linop%col(i_s)/=linop%row(i_s)) fld_arr(linop%col(i_s),ithread) = fld_arr(linop%col(i_s),ithread) &
- & +linop%S(i_s)*fld(linop%row(i_s))
-   end if
-end do
-!$omp end parallel do
-
-! Sum over threads
-fld = zero
-do ithread=1,mpl%nthread
-   fld = fld+fld_arr(:,ithread)
-end do
-
-if (check_data) then
-   ! Check output
-   if (linop%n_src>0) then
-      if (any(ieee_is_nan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
-   end if
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine linop_apply_sym
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_add_op

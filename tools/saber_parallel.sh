@@ -65,6 +65,16 @@ if [[ ${mpirun_path} == *"intel"* ]]; then
    list_command="-genv I_MPI_PIN_PROCESSOR_LIST="
 fi
 if test "${list_command}" = "" ; then
+   mpirun_alternative=`ls -l /etc/alternatives/mpirun`
+   if [[ ${mpirun_alternative} == *"openmpi" ]]; then
+      list_command="-cpu-list "
+   fi
+   if [[ ${mpirun_alternative} == *"mpich" ]]; then
+     echo "Not implemented yet for mpich"
+     exit 1
+   fi
+fi
+if test "${list_command}" = "" ; then
    echo "Cannot find what compiler is used for mpirun"
    exit 1
 fi
@@ -80,13 +90,13 @@ echo "Tests start at ${initial_time}" > saber_ctest_log/execution.log
 
 # List tests
 list_get=`ctest -N | grep ": get_" | awk '{print $(NF)}'`
-list_run=`ctest -N | grep ": test_bump" | grep _run | awk '{print $(NF)}'`
-list_compare=`ctest -N | grep ": test_bump" | grep _compare | awk '{print $(NF)}'`
-list_post=`ctest -N | grep ": test_bump" | grep _post | awk '{print $(NF)}'`
-list_plot=`ctest -N | grep ": test_bump" | grep _plot | awk '{print $(NF)}'`
-list_valgrind=`ctest -N | grep ": test_bump" | grep _valgrind | awk '{print $(NF)}'`
-list_qg=`ctest -N | grep ": test_qg" | awk '{print $(NF)}'`
-list_interpolation=`ctest -N | grep ": test_interpolation" | awk '{print $(NF)}'`
+list_run=`ctest -N | grep ": saber_test_bump" | grep _run | awk '{print $(NF)}'`
+list_compare=`ctest -N | grep ": saber_test_bump" | grep _compare | awk '{print $(NF)}'`
+list_post=`ctest -N | grep ": saber_test_bump" | grep _post | awk '{print $(NF)}'`
+list_plot=`ctest -N | grep ": saber_test_bump" | grep _plot | awk '{print $(NF)}'`
+list_valgrind=`ctest -N | grep ": saber_test_bump" | grep _valgrind | awk '{print $(NF)}'`
+list_qg=`ctest -N | grep ": saber_test_qg" | awk '{print $(NF)}'`
+list_interpolation=`ctest -N | grep ": saber_test_interpolation" | awk '{print $(NF)}'`
 
 # Tests variables
 list_get_array=(${list_get})

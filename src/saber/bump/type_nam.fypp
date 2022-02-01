@@ -30,12 +30,13 @@ integer,parameter :: nldwvmax = 20                !< Maximum number of local dia
 integer,parameter :: nprociomax = 20              !< Maximum number of I/O tasks
 integer,parameter :: niokvmax = 99                !< Maximum number of I/O key-values
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2 !< Maximum number of vertical balance blocks
+integer,parameter :: ncompmax = 10                !< Maximum number of model components
 
 type nam_type
    ! general_param
    character(len=1024) :: datadir                             !< Data directory
    character(len=1024) :: prefix                              !< Files prefix
-   character(len=1024) :: model                               !< Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
+   character(len=1024) :: model                               !< Model name ('aro', 'arp', 'cartg', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
    character(len=1024) :: verbosity                           !< Verbosity level ('all', 'main' or 'none')
    logical :: colorlog                                        !< Add colors to the log (for display on terminal)
    logical :: default_seed                                    !< Default seed for random numbers
@@ -78,6 +79,7 @@ type nam_type
    logical :: write_wind_local                                !< Write local wind transform
    logical :: check_vbal                                      !< Test vertical balance inverse and adjoint
    logical :: check_adjoints                                  !< Test NICAS adjoints
+   integer :: check_normalization                             !< Test NICAS normalization (number of tests)
    logical :: check_dirac                                     !< Test NICAS application on diracs
    logical :: check_randomization                             !< Test NICAS randomization
    logical :: check_consistency                               !< Test HDIAG-NICAS consistency
@@ -117,6 +119,7 @@ type nam_type
    logical :: qg_redundant                                    !< Redundant points configuration for the QG model
    logical :: qg_regional                                     !< Regional domain configuration for the QG model
    logical :: qg_urban                                        !< Urban domain configuration for the QG model
+   character(len=1024),dimension(ncompmax) :: model_comp      !< Model components (for 'cartg': 'atm' or 'ocn')
 
    ! ens1_param
    integer :: ens1_ne                                         !< Ensemble 1 size
@@ -235,7 +238,7 @@ contains
 end type nam_type
 
 private
-public :: nvmax,nl0max,nc3max,nc4max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
+public :: nvmax,nl0max,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax,ncompmax
 public :: nam_type
 
 contains
@@ -253,7 +256,7 @@ class(nam_type),intent(out) :: nam !< Namelist
 integer,intent(in) :: nproc        !< Number of MPI task
 
 ! Local variable
-integer :: isub,il0,iv,i,ildwv
+integer :: isub,il0,iv,i,ildwv,icomp
 
 ! Set name
 @:set_name(nam_init)
@@ -307,6 +310,7 @@ nam%load_wind_local = .false.
 nam%write_wind_local = .false.
 nam%check_vbal = .false.
 nam%check_adjoints = .false.
+nam%check_normalization = 0
 nam%check_dirac = .false.
 nam%check_randomization = .false.
 nam%check_consistency = .false.
@@ -358,6 +362,9 @@ end do
 nam%qg_redundant = .false.
 nam%qg_regional = .false.
 nam%qg_urban = .false.
+do icomp=1,ncompmax
+   nam%model_comp(icomp) = ''
+end do
 
 ! ens1_param default
 nam%ens1_ne = 0
@@ -495,7 +502,7 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 character(len=*),intent(in) :: namelname !< Namelist name
 
 ! Local variables
-integer :: isub,il0,iv,i,ildwv,lunit
+integer :: isub,il0,iv,i,ildwv,icomp,lunit
 
 ! Namelist variables
 character(len=1024) :: datadir
@@ -541,6 +548,7 @@ logical :: load_wind_local
 logical :: write_wind_local
 logical :: check_vbal
 logical :: check_adjoints
+integer :: check_normalization
 logical :: check_dirac
 logical :: check_randomization
 logical :: check_consistency
@@ -576,6 +584,7 @@ character(len=1024),dimension(niokvmax) :: io_values
 logical :: qg_redundant
 logical :: qg_regional
 logical :: qg_urban
+character(len=1024),dimension(ncompmax) :: model_comp
 integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
@@ -704,6 +713,7 @@ namelist/driver_param/ &
  & write_wind_local, &
  & check_vbal, &
  & check_adjoints, &
+ & check_normalization, &
  & check_dirac, &
  & check_randomization, &
  & check_consistency, &
@@ -878,6 +888,7 @@ if (mpl%main) then
    write_wind_local = .false.
    check_vbal = .false.
    check_adjoints = .false.
+   check_normalization = 0
    check_dirac = .false.
    check_randomization = .false.
    check_consistency = .false.
@@ -929,6 +940,9 @@ if (mpl%main) then
    qg_redundant = .false.
    qg_regional = .false.
    qg_urban = .false.
+   do icomp=1,ncompmax
+      model_comp(icomp) = ''
+   end do
 
    ! ens1_param default
    ens1_ne = 0
@@ -1099,6 +1113,7 @@ if (mpl%main) then
    nam%write_wind_local = write_wind_local
    nam%check_vbal = check_vbal
    nam%check_adjoints = check_adjoints
+   nam%check_normalization = check_normalization
    nam%check_dirac = check_dirac
    nam%check_randomization = check_randomization
    nam%check_consistency = check_consistency
@@ -1316,6 +1331,7 @@ call mpl%f_comm%broadcast(nam%load_wind_local,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_wind_local,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_adjoints,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%check_normalization,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_dirac,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_randomization,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_consistency,mpl%rootproc-1)
@@ -1554,6 +1570,7 @@ if (conf%has('load_wind_local')) call conf%get_or_die('load_wind_local',nam%load
 if (conf%has('write_wind_local')) call conf%get_or_die('write_wind_local',nam%write_wind_local)
 if (conf%has('check_vbal')) call conf%get_or_die('check_vbal',nam%check_vbal)
 if (conf%has('check_adjoints')) call conf%get_or_die('check_adjoints',nam%check_adjoints)
+if (conf%has('check_normalization')) call conf%get_or_die('check_normalization',nam%check_normalization)
 if (conf%has('check_dirac')) call conf%get_or_die('check_dirac',nam%check_dirac)
 if (conf%has('check_randomization')) call conf%get_or_die('check_randomization',nam%check_randomization)
 if (conf%has('check_consistency')) call conf%get_or_die('check_consistency',nam%check_consistency)
@@ -1667,6 +1684,15 @@ end if
 if (conf%has('qg_redundant')) call conf%get_or_die('qg_redundant',nam%qg_redundant)
 if (conf%has('qg_regional')) call conf%get_or_die('qg_regional',nam%qg_regional)
 if (conf%has('qg_urban')) call conf%get_or_die('qg_urban',nam%qg_urban)
+if (conf%has('model_comp')) then
+   call conf%get_or_die('model_comp',str_array)
+   if (size(str_array)>ncompmax) then
+      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: model_comp size should be smaller than ',ncompmax
+      call flush(output_unit)
+      call comm%abort(1)
+   end if
+   nam%model_comp(1:size(str_array)) = str_array
+end if
 
 ! ens1_param
 if (conf%has('ens1_ne')) call conf%get_or_die('ens1_ne',nam%ens1_ne)
@@ -2542,6 +2568,7 @@ call mpl%write('load_wind_local',nam%load_wind_local)
 call mpl%write('write_wind_local',nam%write_wind_local)
 call mpl%write('check_vbal',nam%check_vbal)
 call mpl%write('check_adjoints',nam%check_adjoints)
+call mpl%write('check_normalization',nam%check_normalization)
 call mpl%write('check_dirac',nam%check_dirac)
 call mpl%write('check_randomization',nam%check_randomization)
 call mpl%write('check_consistency',nam%check_consistency)
@@ -2668,6 +2695,7 @@ real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*
 call mpl%write('rh',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
 real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
 call mpl%write('rv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
+call mpl%write('ncomp',nam%nv+1,real_array(1:nam%nv+1))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)
