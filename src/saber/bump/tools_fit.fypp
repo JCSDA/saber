@@ -163,7 +163,7 @@ end subroutine fit_diag_tensor
 ! Subroutine: fit_diag_ver
 !> Compute vertical diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,distv,rv,fit)
+subroutine fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,fit)
 
 implicit none
 
@@ -172,7 +172,7 @@ type(mpl_type),intent(inout) :: mpl           !< MPI data
 integer,intent(in) :: nl0r                    !< Effective number of levels
 integer,intent(in) :: nl0                     !< Number of levels
 integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)   !< Effective level to level
-real(kind_real),intent(in) :: distv(nl0r,nl0) !< Vertical distance
+real(kind_real),intent(in) :: vunit(nl0)      !< Vertical unit
 real(kind_real),intent(in) :: rv(nl0)         !< Vertical support radius
 real(kind_real),intent(out) :: fit(nl0r,nl0)  !< Fit
 
@@ -192,13 +192,10 @@ ver_sqrt = zero
 
 do il0=1,nl0
    if (mpl%msv%isnot(rv(il0))) then
-      do jl0r=1,nl0r
-         ! Level index
-         jl0 = l0rl0_to_l0(jl0r,il0)
-
+      do jl0=1,nl0
          ! Normalized distance
          if (rv(il0)>zero) then
-            vnd = distv(jl0r,il0)/rv(il0)
+            vnd = abs(vunit(jl0)-vunit(il0))/rv(il0)
          elseif (il0/=jl0) then
             vnd = one
          else
@@ -247,7 +244,7 @@ end subroutine fit_diag_ver
 ! Subroutine: fit_diag_iso_full
 !> Compute isotropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,distv,coef,rh,rv,fit)
+subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,coef,rh,rv,fit)
 
 implicit none
 
@@ -258,7 +255,7 @@ integer,intent(in) :: nl0r                       !< Effective number of levels
 integer,intent(in) :: nl0                        !< Number of levels
 integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      !< Effective level to level
 real(kind_real),intent(in) :: disth(nc3)         !< Horizontal distance
-real(kind_real),intent(in) :: distv(nl0r,nl0)    !< Vertical distance
+real(kind_real),intent(in) :: vunit(nl0)         !< Vertical unit
 real(kind_real),intent(in) :: coef(nl0)          !< Diagonal coefficient
 real(kind_real),intent(in) :: rh(nl0)            !< Horizontal support radius
 real(kind_real),intent(in) :: rv(nl0)            !< Vertical support radius
@@ -276,7 +273,7 @@ real(kind_real) :: hor_fit(nc3),ver_fit(nl0r,nl0)
 @:probe_in()
 
 ! Vertical component
-call fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,distv,rv,ver_fit)
+call fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ver_fit)
 
 do il0=1,nl0
    do jl0r=1,nl0r
@@ -313,7 +310,7 @@ end subroutine fit_diag_iso_full
 ! Subroutine: fit_diag_tensor_full
 !> Compute anistropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,distv,coef,D11,D22,D12,rv,fit)
+subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,coef,D11,D22,D12,rv,fit)
 
 implicit none
 
@@ -326,7 +323,7 @@ integer,intent(in) :: nl0                            !< Number of levels
 integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)          !< Effective level to level
 real(kind_real),intent(in) :: disth(nc3)             !< Horizontal distance
 real(kind_real),intent(in) :: as(nc4)                !< Angular sectors
-real(kind_real),intent(in) :: distv(nl0r,nl0)        !< Vertical distance
+real(kind_real),intent(in) :: vunit(nl0)             !< Vertical unit
 real(kind_real),intent(in) :: coef(nl0)              !< Diagonal coefficient
 real(kind_real),intent(in) :: D11(nl0)               !< Horizontal tensor component 11
 real(kind_real),intent(in) :: D22(nl0)               !< Horizontal tensor component 22
@@ -346,7 +343,7 @@ real(kind_real) :: hor_fit(nc3,nc4),ver_fit(nl0r,nl0)
 @:probe_in()
 
 ! Vertical component
-call fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,distv,rv,ver_fit)
+call fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ver_fit)
 
 do il0=1,nl0
    do jl0r=1,nl0r

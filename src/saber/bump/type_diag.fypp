@@ -329,11 +329,11 @@ do ib=1,bpar%nbe
          ! Compute full fit
          if (bpar%nc4(ib)==1) then
            call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
- & diag%blk(ic2a,ib)%distv,diag%blk(ic2a,ib)%coef_ens_l0,diag%blk(ic2a,ib)%rh_l0,diag%blk(ic2a,ib)%rv_l0, &
+ & diag%blk(ic2a,ib)%vunit,diag%blk(ic2a,ib)%coef_ens_l0,diag%blk(ic2a,ib)%rh_l0,diag%blk(ic2a,ib)%rv_l0, &
  & diag%blk(ic2a,ib)%fit(:,1,:,:))
          else
            call diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
- & geom%as,diag%blk(ic2a,ib)%distv,diag%blk(ic2a,ib)%coef_ens_l0,diag%blk(ic2a,ib)%D11_l0,diag%blk(ic2a,ib)%D22_l0, &
+ & geom%as,diag%blk(ic2a,ib)%vunit,diag%blk(ic2a,ib)%coef_ens_l0,diag%blk(ic2a,ib)%D11_l0,diag%blk(ic2a,ib)%D22_l0, &
  & diag%blk(ic2a,ib)%D12_l0,diag%blk(ic2a,ib)%rv_l0,diag%blk(ic2a,ib)%fit)
          end if
       end do
