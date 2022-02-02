@@ -39,7 +39,6 @@ type diag_blk_type
    real(kind_real) :: coef_sta                      !< Static coefficient
 
    real(kind_real),allocatable :: vunit(:)          !< Vertical unit
-   real(kind_real),allocatable :: distv(:,:)        !< Reduced vertical distance
    real(kind_real),allocatable :: fit(:,:,:,:)      !< Fit
 
    real(kind_real),allocatable :: rh_l0(:)          !< Horizontal support radius, profile
@@ -114,7 +113,6 @@ if ((ic2a==0).or.nam%local_diag) then
    allocate(diag_blk%valid(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
    allocate(diag_blk%coef_ens_l0(geom%nl0))
    allocate(diag_blk%vunit(geom%nl0))
-   allocate(diag_blk%distv(bpar%nl0r(ib),geom%nl0))
    allocate(diag_blk%fit(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
    allocate(diag_blk%rh_l0(geom%nl0))
    if (bpar%nc4(ib)>1) then
@@ -171,12 +169,6 @@ if ((ic2a==0).or.nam%local_diag) then
    else
       diag_blk%vunit = samp%vunit_c2a(ic2a,:)
    end if
-   do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0r(ib)
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-         diag_blk%distv(jl0r,il0) = abs(diag_blk%vunit(il0)-diag_blk%vunit(jl0))
-      end do
-   end do
 end if
 
 ! Probe out
@@ -206,15 +198,12 @@ if (allocated(diag_blk%raw)) deallocate(diag_blk%raw)
 if (allocated(diag_blk%valid)) deallocate(diag_blk%valid)
 if (allocated(diag_blk%coef_ens_l0)) deallocate(diag_blk%coef_ens_l0)
 if (allocated(diag_blk%vunit)) deallocate(diag_blk%vunit)
-if (allocated(diag_blk%distv)) deallocate(diag_blk%distv)
 if (allocated(diag_blk%fit)) deallocate(diag_blk%fit)
 if (allocated(diag_blk%rh_l0)) deallocate(diag_blk%rh_l0)
 if (allocated(diag_blk%D11_l0)) deallocate(diag_blk%D11_l0)
 if (allocated(diag_blk%D22_l0)) deallocate(diag_blk%D22_l0)
 if (allocated(diag_blk%D12_l0)) deallocate(diag_blk%D12_l0)
 if (allocated(diag_blk%rv_l0)) deallocate(diag_blk%rv_l0)
-if (allocated(diag_blk%vunit)) deallocate(diag_blk%vunit)
-if (allocated(diag_blk%distv)) deallocate(diag_blk%distv)
 
 ! Probe out
 @:probe_out()
@@ -457,10 +446,10 @@ integer,intent(in),optional :: ncomp               !< Number of components
 real(kind_real),intent(inout),optional :: rmse_min !< Minimum RMSE
 
 ! Local variables
-integer :: il0,jl0rz,nl0r,il1,nl1,ilev2d,jc4,lncomp
+integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc4,lncomp
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
 real(kind_real) :: det,m2(geom%nl0),rmse
-real(kind_real),allocatable :: rawv(:),rinf(:),rsup(:),rh_tmp(:),fit(:,:,:,:)
+real(kind_real),allocatable :: rawv(:),distv(:),rinf(:),rsup(:),rh_tmp(:),fit(:,:,:,:)
 real(kind_real),allocatable :: rh_l0(:),D11_l0(:),D22_l0(:),D12_l0(:),rv_l0(:)
 real(kind_real),allocatable :: rh_l1(:),D11_l1(:),D22_l1(:),D12_l1(:),rv_l1(:)
 logical :: var2d,valid,copy_parameters
@@ -675,6 +664,8 @@ else
    ! Allocation
    allocate(rv_l1(nl1))
    allocate(filled(nl1))
+   allocate(rawv(nl0r))
+   allocate(distv(nl0r))
 
    ! Vertical fit, level by level
    do il1=1,nl1
@@ -684,17 +675,17 @@ else
       ! Get zero separation level and min/max levels
       jl0rz = bpar%il0rz(il0,ib)
 
-      ! Allocation
-      allocate(rawv(nl0r))
-
       ! Average over angular sector
       rawv = diag_blk%raw(1,1,:,il0)
 
-      ! Fast fit
-      call fast_fit(mpl,nl0r,jl0rz,diag_blk%distv(:,il0),'ver',diag_blk%ncomp,rawv,rv_l1(il1))
+      ! Vertical distance
+      do jl0r=1,nl0r
+         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+         distv(jl0r) = abs(diag_blk%vunit(il0)-diag_blk%vunit(jl0))
+      end do
 
-      ! Release memory
-      deallocate(rawv)
+      ! Fast fit
+      call fast_fit(mpl,nl0r,jl0rz,distv,'ver',diag_blk%ncomp,rawv,rv_l1(il1))
    end do
 
    ! Interpolate vertical parameters
@@ -703,6 +694,8 @@ else
    ! Release memory
    deallocate(rv_l1)
    deallocate(filled)
+   deallocate(rawv)
+   deallocate(distv)
 end if
 
 ! Optimization of the number of components
@@ -713,11 +706,11 @@ if (present(rmse_min)) then
 
    ! Build fit
    if (bpar%nc4(ib)==1) then
-     call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%distv, &
+     call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%vunit, &
  & diag_blk%coef_ens_l0,rh_l0,rv_l0,lncomp,fit(:,1,:,:))
    else
       call diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
- & geom%as,diag_blk%distv,diag_blk%coef_ens_l0,D11_l0,D22_l0,D12_l0,rv_l0,lncomp,fit)
+ & geom%as,diag_blk%vunit,diag_blk%coef_ens_l0,D11_l0,D22_l0,D12_l0,rv_l0,lncomp,fit)
    end if
 
    ! Compute RMSE
@@ -863,7 +856,7 @@ if (nam%forced_radii) then
    nam_nlv = zero
    do jc4=1,bpar%nc4(ib)
       call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib), &
- & geom%disth,diag_blk%distv,nam_coef,nam%rh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),diag_blk%ncomp,diag_blk%raw(:,jc4,:,:))
+ & geom%disth,diag_blk%vunit,nam_coef,nam%rh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),diag_blk%ncomp,diag_blk%raw(:,jc4,:,:))
    end do
    diag_blk%valid = mpl%msv%valr
 
@@ -880,7 +873,7 @@ if (nam%forced_radii) then
             do jc3=1,bpar%nc3(ib)
                if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jc4,jl0r,il0))) then
-                  wgt = geom%disth(jc3)*diag_blk%distv(jl0,il0)/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real) ! TODO ?
+                  wgt = geom%disth(jc3)*abs(diag_blk%vunit(jl0)-diag_blk%vunit(il0))/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real) ! TODO ?
                   a = a+wgt*diag_blk%raw(jc3,jc4,jl0r,il0)**2*avg_blk%m11sq(jc3,jc4,jl0r,il0)
                   bc = bc+wgt*diag_blk%raw(jc3,jc4,jl0r,il0)*avg_blk%m11sta(jc3,jc4,jl0r,il0)
                   d = d+wgt*avg_blk%stasq(jc3,jc4,jl0r,il0)
@@ -914,7 +907,7 @@ else
             do jc3=1,bpar%nc3(ib)
                if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jc4,jl0r,il0))) then
-                  wgt = geom%disth(jc3)*diag_blk%distv(jl0,il0)/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real) ! TODO ?
+                  wgt = geom%disth(jc3)*abs(diag_blk%vunit(jl0)-diag_blk%vunit(il0))/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real) ! TODO ?
                   num = num+wgt*(one-avg_blk%m11asysq(jc3,jc4,jl0r,il0)/avg_blk%m11sq(jc3,jc4,jl0r,il0)) &
  & *avg_blk%m11sta(jc3,jc4,jl0r,il0)
                   den = den+wgt*(avg_blk%stasq(jc3,jc4,jl0r,il0)-avg_blk%m11sta(jc3,jc4,jl0r,il0)**2 &

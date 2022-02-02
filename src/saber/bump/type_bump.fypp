@@ -1966,7 +1966,10 @@ elseif (bump%nam%check_get_param_hyb) then
    call bump%get_parameter('loc_coef',fieldset)
    call bump%get_parameter('loc_rh',fieldset)
    call bump%get_parameter('loc_rv',fieldset)
-   call bump%get_parameter('hyb_coef',fieldset)
+   call bump%get_parameter('loc_hyb_coef',fieldset)
+   call bump%get_parameter('loc_hyb_rh',fieldset)
+   call bump%get_parameter('loc_hyb_rv',fieldset)
+   call bump%get_parameter('sta_hyb_coef',fieldset)
 end if
 
 ! Release memory
@@ -2302,13 +2305,12 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,((one+fld_c0a)*(maxval(bump%geom
 
 ! Set parameter
 if (bump%nam%check_set_param_cor) then
-   call bump%set_parameter('cor_rh',fieldset_req)
-   call bump%set_parameter('cor_rv',fieldset_vert)
+   call bump%set_parameter('rh',fieldset_req)
+   call bump%set_parameter('rv',fieldset_vert)
 elseif (bump%nam%check_set_param_hyb) then
-   call bump%set_parameter('loc_coef',fieldset)
-   call bump%set_parameter('loc_rh',fieldset_req)
-   call bump%set_parameter('loc_rv',fieldset_vert)
-   call bump%set_parameter('hyb_coef',fieldset)
+   call bump%set_parameter('coef',fieldset)
+   call bump%set_parameter('rh',fieldset_req)
+   call bump%set_parameter('rv',fieldset_vert)
 end if
 
 ! Release memory
