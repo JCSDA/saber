@@ -65,9 +65,7 @@ type bump_type
    ! Dummy variable
    logical :: dummy_logical  !< Dummy variable
 contains
-   procedure :: bump_create
-   procedure :: bump_create_deprecated_atlas
-   generic :: create => bump_create,bump_create_deprecated_atlas
+   procedure :: create => bump_create
    procedure :: setup => bump_setup
    procedure :: add_member => bump_add_member
    procedure :: update_vbal_cov => bump_update_vbal_cov
@@ -80,13 +78,9 @@ contains
    procedure :: apply_vbal_inv_ad => bump_apply_vbal_inv_ad
    procedure :: apply_stddev => bump_apply_stddev
    procedure :: apply_stddev_inv => bump_apply_stddev_inv
-   procedure :: bump_apply_nicas
-   procedure :: bump_apply_nicas_deprecated_atlas
-   generic :: apply_nicas => bump_apply_nicas,bump_apply_nicas_deprecated_atlas
+   procedure :: apply_nicas => bump_apply_nicas
    procedure :: get_cv_size => bump_get_cv_size
-   procedure :: bump_apply_nicas_sqrt
-   procedure :: bump_apply_nicas_sqrt_deprecated_atlas
-   generic :: apply_nicas_sqrt => bump_apply_nicas_sqrt,bump_apply_nicas_sqrt_deprecated_atlas
+   procedure :: apply_nicas_sqrt => bump_apply_nicas_sqrt
    procedure :: apply_nicas_sqrt_ad => bump_apply_nicas_sqrt_ad
    procedure :: randomize => bump_randomize
    procedure :: psichi_to_uv => bump_psichi_to_uv
@@ -172,50 +166,6 @@ end if
 @:probe_out()
 
 end subroutine bump_create
-
-!----------------------------------------------------------------------
-! Subroutine: bump_create_deprecated_atlas
-!> Create (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_create_deprecated_atlas(bump,comm,afunctionspace,afieldset,conf,grid,universe_rad)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump                  !< BUMP
-type(fckit_mpi_comm),intent(in) :: comm                 !< FCKIT MPI communicator wrapper
-type(atlas_functionspace),intent(in) :: afunctionspace  !< ATLAS function space
-type(atlas_fieldset),intent(in) :: afieldset            !< ATLAS fieldset containing geometry elements
-type(fckit_configuration),intent(in) :: conf            !< FCKIT configuration
-type(fckit_configuration),intent(in) :: grid            !< FCKIT grid configuration
-type(fieldset_type),intent(in),optional :: universe_rad !< Fieldset optionally containing universe radius
-
-! Local variables
-type(fieldset_type) :: fieldset
-
-! Set name
-@:set_name(bump_create_deprecated_atlas)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! ATLAS fieldset to fieldset
-fieldset = atlas_fieldset(afieldset%c_ptr())
-
-! Call fieldset interface
-if (present(universe_rad)) then
-   call bump%create(comm,afunctionspace,fieldset,conf,grid,universe_rad=universe_rad)
-else
-   call bump%create(comm,afunctionspace,fieldset,conf,grid)
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_create_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_setup
@@ -1176,41 +1126,6 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 end subroutine bump_apply_nicas
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_nicas_deprecated_atlas
-!> NICAS application (deprecated
-!----------------------------------------------------------------------
-subroutine bump_apply_nicas_deprecated_atlas(bump,afieldset)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump          !< BUMP
-type(atlas_fieldset),intent(inout) :: afieldset !< ATLAS fieldset
-
-! Local variables
-type(fieldset_type) :: fieldset
-
-! Set name
-@:set_name(bump_apply_nicas_deprecated_atlas)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! ATLAS fieldset to fieldset
-fieldset = atlas_fieldset(afieldset%c_ptr())
-
-! Call fieldset interface
-call bump%apply_nicas(fieldset)
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_apply_nicas_deprecated_atlas
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_get_cv_size
 !> Get control variable size
 !----------------------------------------------------------------------
@@ -1305,42 +1220,6 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 @:probe_out()
 
 end subroutine bump_apply_nicas_sqrt
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_nicas_sqrt_deprecated_atlas
-!> NICAS square-root application (deprecated)
-!----------------------------------------------------------------------
-subroutine bump_apply_nicas_sqrt_deprecated_atlas(bump,pcv,afieldset)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump          !< BUMP
-real(kind_real),intent(in) :: pcv(:)            !< Packed control variable
-type(atlas_fieldset),intent(inout) :: afieldset !< ATLAS Fieldset
-
-! Local variables
-type(fieldset_type) :: fieldset
-
-! Set name
-@:set_name(bump_apply_nicas_sqrt_deprecated_atlas)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! ATLAS fieldset to fieldset
-fieldset = atlas_fieldset(afieldset%c_ptr())
-
-! Call fieldset interface
-call bump%apply_nicas_sqrt(pcv,fieldset)
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_apply_nicas_sqrt_deprecated_atlas
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_sqrt_ad
