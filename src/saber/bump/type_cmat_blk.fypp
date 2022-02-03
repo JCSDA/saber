@@ -142,6 +142,7 @@ if (bpar%fit_block(ib)) then
    cmat_blk%rhs = mpl%msv%valr
    cmat_blk%rvs = mpl%msv%valr
 end if
+if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat_blk%bump_ncomp = 1
 
 ! End associate
 end associate

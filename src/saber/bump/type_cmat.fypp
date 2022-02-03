@@ -394,7 +394,6 @@ do ib=1,bpar%nbe
       from_bump(ib) = .true.
       from_bump(ib) = from_bump(ib).and.(allocated(cmat%blk(ib)%bump_rh).or.anisotropic(ib))
       from_bump(ib) = from_bump(ib).and.allocated(cmat%blk(ib)%bump_rv)
-      from_bump(ib) = from_bump(ib).and.(cmat%blk(ib)%bump_ncomp>0)
    end if
 end do
 
