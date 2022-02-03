@@ -746,7 +746,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
         if (infile.is_open()) {
           // Read file
           std::string line;
-          size_t i=0;
+          size_t i = 0;
           while (std::getline(infile, line)) {
             if (i == 0) {
               // Check date
@@ -887,7 +887,7 @@ void BUMP<MODEL>::write() const {
           outfile << date.toString() << std::endl;
 
           // Write parameter
-          for (size_t jj=0; jj < activeVars_.size();++jj) {
+          for (size_t jj=0; jj < activeVars_.size(); ++jj) {
              double value;
              this->getParameter(param, activeVars_[jj], value);
              outfile << activeVars_[jj] << ' ' << std::scientific
