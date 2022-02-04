@@ -90,7 +90,7 @@ phases:
       # configure and build
       - cd /build_container
       - ls
-      - ecbuild /jcsda/saber-bundle/ -Wno-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE
+      - ecbuild /jcsda/saber-bundle/ -Wno-dev -DCDASH_OVERRIDE_SITE=CodeBuild -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE
       - cd saber
       - cp ../DartConfiguration.tcl .
       - sed -i 's/saber-bundle/saber-bundle\/saber/' DartConfiguration.tcl
