@@ -206,8 +206,9 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
 
   // Increment_ to ATLAS fieldset
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxo.setAtlas(atlasFieldSet.get());
+  dxi.setAtlas(atlasFieldSet.get());
   dxi.toAtlas(atlasFieldSet.get());
+  dxo.setAtlas(atlasFieldSet.get());
 
   // K_1^T K_2^T .. K_N^T
   for (ircst_ it = saberBlocks_.rbegin(); it != saberBlocks_.rend(); ++it) {
@@ -240,8 +241,9 @@ void ErrorCovariance<MODEL>::doInverseMultiply(const Increment_ & dxi,
 
   // Increment_ to ATLAS fieldset
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxo.setAtlas(atlasFieldSet.get());
+  dxi.setAtlas(atlasFieldSet.get());
   dxi.toAtlas(atlasFieldSet.get());
+  dxo.setAtlas(atlasFieldSet.get());
 
   // K_1^{-1} K_2^{-1} .. K_N^{-1}
   for (ircst_ it = saberBlocks_.rbegin(); it != saberBlocks_.rend(); ++it) {
@@ -291,8 +293,9 @@ void ErrorCovariance<MODEL>::multiply(const Increment_ & dxi,
 
   // Increment_ to ATLAS fieldset
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxo.setAtlas(atlasFieldSet.get());
+  dxi.setAtlas(atlasFieldSet.get());
   dxi.toAtlas(atlasFieldSet.get());
+  dxo.setAtlas(atlasFieldSet.get());
 
   // Central block multiplication
   if (saberCentralBlock_) {

@@ -599,11 +599,12 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
   const boost::optional<eckit::LocalConfiguration> &universeRadius = params.universeRadius.value();
   if (universeRadius != boost::none) {
     // Setup increment
-    util::DateTime time(1977, 5, 25, 0, 0, 0);
+    const util::DateTime time(1977, 5, 25, 0, 0, 0);
     Increment_ dx(resol_, activeVars_, time);
     dx.read(*universeRadius);
 
     // Get ATLAS fieldset
+    dx.setAtlas(universe_rad.get());
     dx.toAtlas(universe_rad.get());
   }
 
@@ -648,7 +649,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     }
 
     // Dummy date
-    util::DateTime date(1977, 5, 25, 0, 0, 0);
+    const util::DateTime date(1977, 5, 25, 0, 0, 0);
 
     // Get ATLAS variable names
     Increment_ dx(resol, activeVars_, date);
@@ -954,8 +955,9 @@ void BUMP<MODEL>::apply() const {
 
         // ATLAS transfer
         std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-        dxo.setAtlas(atlasFieldSet.get());
+        dxi.setAtlas(atlasFieldSet.get());
         dxi.toAtlas(atlasFieldSet.get());
+        dxo.setAtlas(atlasFieldSet.get());
 
         // Apply BUMP operator
         std::vector<std::string> bumpOperators;
