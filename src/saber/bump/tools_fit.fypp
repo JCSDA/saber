@@ -37,6 +37,9 @@ end interface
 interface tensor_d2h
    module procedure fit_tensor_d2h
 end interface
+interface tensor_d2r
+   module procedure fit_tensor_d2r
+end interface
 interface tensor_check_cond
    module procedure fit_tensor_check_cond
 end interface
@@ -52,7 +55,8 @@ end interface
 
 private
 public :: condmax
-public :: diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_check_cond,fast_fit,ver_smooth,ver_fill
+public :: diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,tensor_check_cond
+public :: fast_fit,ver_smooth,ver_fill
 
 contains
 
@@ -247,7 +251,7 @@ end subroutine fit_diag_ver
 ! Subroutine: fit_diag_iso_full
 !> Compute isotropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,coef,rh,rv,ncomp,fit)
+subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,coef,rh,rv,ncomph,ncompv,fit)
 
 implicit none
 
@@ -262,7 +266,8 @@ real(kind_real),intent(in) :: vunit(nl0)         !< Vertical unit
 real(kind_real),intent(in) :: coef(nl0)          !< Diagonal coefficient
 real(kind_real),intent(in) :: rh(nl0)            !< Horizontal support radius
 real(kind_real),intent(in) :: rv(nl0)            !< Vertical support radius
-integer,intent(in) :: ncomp                      !< Number of components
+integer,intent(in) :: ncomph                     !< Number of components (horizontal)
+integer,intent(in) :: ncompv                     !< Number of components (vertical)
 real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
 
 ! Local variables
@@ -277,7 +282,7 @@ real(kind_real) :: hor_fit(nc3),ver_fit(nl0r,nl0)
 @:probe_in()
 
 ! Vertical component
-call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncomp,ver_fit)
+call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncompv,ver_fit)
 
 do il0=1,nl0
    do jl0r=1,nl0r
@@ -290,7 +295,7 @@ do il0=1,nl0
          rh_eff = half*(rh(il0)+rh(jl0))
 
          ! Horizontal component
-         call diag_iso(mpl,nc3,disth,'hor',rh_eff,ncomp,hor_fit)
+         call diag_iso(mpl,nc3,disth,'hor',rh_eff,ncomph,hor_fit)
 
          do jc3=1,nc3
             ! Fit function
@@ -314,7 +319,7 @@ end subroutine fit_diag_iso_full
 ! Subroutine: fit_diag_tensor_full
 !> Compute anistropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,coef,D11,D22,D12,rv,ncomp,fit)
+subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,coef,D11,D22,D12,rv,ncomph,ncompv,fit)
 
 implicit none
 
@@ -333,7 +338,8 @@ real(kind_real),intent(in) :: D11(nl0)               !< Horizontal tensor compon
 real(kind_real),intent(in) :: D22(nl0)               !< Horizontal tensor component 22
 real(kind_real),intent(in) :: D12(nl0)               !< Horizontal tensor component 12 (normalized)
 real(kind_real),intent(in) :: rv(nl0)                !< Vertical support radius
-integer,intent(in) :: ncomp                          !< Number of components
+integer,intent(in) :: ncomph                     !< Number of components (horizontal)
+integer,intent(in) :: ncompv                     !< Number of components (vertical)
 real(kind_real),intent(out) :: fit(nc3,nc4,nl0r,nl0) !< Fit
 
 ! Local variables
@@ -348,7 +354,7 @@ real(kind_real) :: hor_fit(nc3,nc4),ver_fit(nl0r,nl0)
 @:probe_in()
 
 ! Vertical component
-call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncomp,ver_fit)
+call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncompv,ver_fit)
 
 do il0=1,nl0
    do jl0r=1,nl0r
@@ -363,7 +369,7 @@ do il0=1,nl0
          D12_eff = half*(D12(il0)+D12(jl0))
 
          ! Horizontal component
-         call diag_tensor(mpl,nc3,nc4,disth,as,D11_eff,D22_eff,D12_eff,ncomp,hor_fit)
+         call diag_tensor(mpl,nc3,nc4,disth,as,D11_eff,D22_eff,D12_eff,ncomph,hor_fit)
 
          do jc4=1,nc4
             do jc3=1,nc3
@@ -387,7 +393,7 @@ end subroutine fit_diag_tensor_full
 
 !----------------------------------------------------------------------
 ! Subroutine: fit_tensor_d2h
-!> From D (Daley tensor) to H (local tensor used to compute the normalized distance)
+!> From D (tensor) to H (local tensor used to compute the normalized distance)
 !----------------------------------------------------------------------
 subroutine fit_tensor_d2h(mpl,D11,D22,D12,H11,H22,H12)
 
@@ -395,12 +401,12 @@ implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
-real(kind_real),intent(in) :: D11   !< Daley tensor component 11
-real(kind_real),intent(in) :: D22   !< Daley tensor component 22
-real(kind_real),intent(in) :: D12   !< Daley tensor component 12 (normalized)
-real(kind_real),intent(out) :: H11  !< Local tensor component 11
-real(kind_real),intent(out) :: H22  !< Local tensor component 22
-real(kind_real),intent(out) :: H12  !< Local tensor component 12
+real(kind_real),intent(in) :: D11   !< Direct tensor component 11
+real(kind_real),intent(in) :: D22   !< Direct tensor component 22
+real(kind_real),intent(in) :: D12   !< Direct tensor component 12 (normalized)
+real(kind_real),intent(out) :: H11  !< Inverse tensor component 11
+real(kind_real),intent(out) :: H22  !< Inverse tensor component 22
+real(kind_real),intent(out) :: H12  !< Inverse tensor component 12
 
 ! Local variables
 real(kind_real) :: det,D12sq
@@ -439,6 +445,53 @@ end if
 end subroutine fit_tensor_d2h
 
 !----------------------------------------------------------------------
+! Subroutine: fit_tensor_d2r
+!> From D (tensor) to support radius
+!----------------------------------------------------------------------
+subroutine fit_tensor_d2r(mpl,D11,D22,D12,rh)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: D11   !< Direct tensor component 11
+real(kind_real),intent(in) :: D22   !< Direct tensor component 22
+real(kind_real),intent(in) :: D12   !< Direct tensor component 12 (normalized)
+real(kind_real),intent(out) :: rh   !< Support radius
+
+! Local variables
+real(kind_real) :: det,D12sq
+
+! Set name
+@:set_name(fit_tensor_d2r)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D12)) then
+   ! Full D12 component
+   D12sq = D11*D22*D12**2
+
+   ! Compute horizontal determinant
+   det = D11*D22-D12sq
+
+   ! Take square-root twice
+   if (det>zero) then
+      rh = sqrt(sqrt(det))
+   else
+      call mpl%abort('${subr}$','non-invertible tensor')
+   end if
+else
+   ! Missing values
+   rh = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_tensor_d2r
+
+!----------------------------------------------------------------------
 ! Subroutine: fit_tensor_check_cond
 !> Check tensor conditioning
 !----------------------------------------------------------------------
@@ -447,9 +500,9 @@ subroutine fit_tensor_check_cond(D11,D22,D12,valid)
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: D11 !< Daley tensor component 11
-real(kind_real),intent(in) :: D22 !< Daley tensor component 22
-real(kind_real),intent(in) :: D12 !< Daley tensor component 12 (normalized)
+real(kind_real),intent(in) :: D11 !< Direct tensor component 11
+real(kind_real),intent(in) :: D22 !< Direct tensor component 22
+real(kind_real),intent(in) :: D12 !< Direct tensor component 12 (normalized)
 logical,intent(out) :: valid      !< Conditioning validity
 
 ! Local variables
@@ -555,7 +608,7 @@ if (raw(iz)>zero) then
                   if (dir=='hor') then
                      scaletest(itest) = scaleh(iscaleth,ncomp)
                   elseif (dir=='ver') then
-                     scaletest(itest) = scalev(iscaleth)
+                     scaletest(itest) = scalev(iscaleth,ncomp)
                   end if
                   scalethtest(itest) = scaleth(iscaleth)
                end if

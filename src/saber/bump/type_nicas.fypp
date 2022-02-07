@@ -119,7 +119,7 @@ do ib=1,bpar%nbe
    nicas%blk(ib)%horizontal = .false.
 
    ! Initialize norm computation flag
-   nicas%blk(ib)%compute_norm = .true.
+   nicas%blk(ib)%compute_norm = (.not.allocated(nicas%blk(ib)%norm))
 end do
 
 ! Update allocation flag

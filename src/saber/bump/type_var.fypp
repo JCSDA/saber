@@ -89,7 +89,7 @@ type(geom_type),intent(in) :: geom   !< Geometry
 allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
 allocate(var%m4(geom%nc0a,geom%nl0,nam%nv))
 if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv))
-allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv))
+if (.not.allocated(var%m2sqrt)) allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv))
 if (nam%update_var) then
    allocate(var%seq_m1(geom%nc0a,geom%nl0,nam%nv))
    allocate(var%seq_m2(geom%nc0a,geom%nl0,nam%nv))

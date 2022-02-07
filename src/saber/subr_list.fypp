@@ -17,6 +17,7 @@
 #:set subr_list = subr_list + ["fit_diag_iso_full"]
 #:set subr_list = subr_list + ["fit_diag_tensor_full"]
 #:set subr_list = subr_list + ["fit_tensor_d2h"]
+#:set subr_list = subr_list + ["fit_tensor_d2r"]
 #:set subr_list = subr_list + ["fit_tensor_check_cond"]
 #:set subr_list = subr_list + ["fit_fast_fit"]
 #:set subr_list = subr_list + ["fit_ver_smooth"]

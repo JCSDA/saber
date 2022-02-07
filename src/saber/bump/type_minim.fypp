@@ -36,9 +36,10 @@ type minim_type
    real(kind_real) :: f_guess                     !< Guess cost
    real(kind_real) :: f_min                       !< Minimum cost
 
-   ! Tensor-specific data
+   ! Specific data
    integer :: nc3                                 !< Number of horizontal distance classes
    integer :: nc4                                 !< Number of angular sectors
+   integer :: ncomp                               !< Number of components
    real(kind_real),allocatable :: disth(:)        !< Horizontal distance
    real(kind_real),allocatable :: as(:)           !< Angular sectors
 contains
@@ -165,7 +166,7 @@ call minim%vt_dir(xtmp)
 D11 = xtmp(1)
 D22 = xtmp(2)
 D12 = xtmp(3)
-call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,1,fit) ! TODO: more components
+call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,minim%ncomp,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))

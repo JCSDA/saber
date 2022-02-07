@@ -86,12 +86,8 @@ type nam_type
    logical :: check_optimality                                !< Test HDIAG optimality
    logical :: check_no_point_mpi                              !< Test BUMP with no grid point on the last MPI task
    logical :: check_no_point_mask                             !< Test BUMP with all grid points masked on half of the domain
-   logical :: check_set_param_cor                             !< Test set_parameter interface for correlation
-   logical :: check_set_param_hyb                             !< Test set_parameter interface for hybrid case
-   logical :: check_get_param_stddev                          !< Test get_parameter interface for standard-deviation
-   logical :: check_get_param_cor                             !< Test get_parameter interface for correlation
-   logical :: check_get_param_hyb                             !< Test get_parameter interface for hybrid case
-   logical :: check_get_param_Dloc                            !< Test get_parameter interface for anisotropic localization
+   logical :: check_set_param                                 !< Test set_parameter interface
+   logical :: check_get_param                                 !< Test get_parameter interface
    logical :: check_apply_vbal                                !< Test apply_vbal interfaces
    logical :: check_apply_stddev                              !< Test apply_stddev interfaces
    logical :: check_apply_nicas                               !< Test apply_nicas interfaces
@@ -317,12 +313,8 @@ nam%check_consistency = .false.
 nam%check_optimality = .false.
 nam%check_no_point_mpi = .false.
 nam%check_no_point_mask = .false.
-nam%check_set_param_cor = .false.
-nam%check_set_param_hyb = .false.
-nam%check_get_param_stddev = .false.
-nam%check_get_param_cor = .false.
-nam%check_get_param_hyb = .false.
-nam%check_get_param_Dloc = .false.
+nam%check_set_param = .false.
+nam%check_get_param = .false.
 nam%check_apply_vbal = .false.
 nam%check_apply_stddev = .false.
 nam%check_apply_nicas = .false.
@@ -555,12 +547,8 @@ logical :: check_consistency
 logical :: check_optimality
 logical :: check_no_point_mpi
 logical :: check_no_point_mask
-logical :: check_set_param_cor
-logical :: check_set_param_hyb
-logical :: check_get_param_stddev
-logical :: check_get_param_cor
-logical :: check_get_param_hyb
-logical :: check_get_param_Dloc
+logical :: check_set_param
+logical :: check_get_param
 logical :: check_apply_vbal
 logical :: check_apply_stddev
 logical :: check_apply_nicas
@@ -720,12 +708,8 @@ namelist/driver_param/ &
  & check_optimality, &
  & check_no_point_mpi, &
  & check_no_point_mask, &
- & check_set_param_cor, &
- & check_set_param_hyb, &
- & check_get_param_stddev, &
- & check_get_param_cor, &
- & check_get_param_hyb, &
- & check_get_param_Dloc, &
+ & check_set_param, &
+ & check_get_param, &
  & check_apply_vbal, &
  & check_apply_stddev, &
  & check_apply_nicas
@@ -895,12 +879,8 @@ if (mpl%main) then
    check_optimality = .false.
    check_no_point_mpi = .false.
    check_no_point_mask = .false.
-   check_set_param_cor = .false.
-   check_set_param_hyb = .false.
-   check_get_param_stddev = .false.
-   check_get_param_cor = .false.
-   check_get_param_hyb = .false.
-   check_get_param_Dloc = .false.
+   check_set_param = .false.
+   check_get_param = .false.
    check_apply_vbal = .false.
    check_apply_stddev = .false.
    check_apply_nicas = .false.
@@ -1120,12 +1100,8 @@ if (mpl%main) then
    nam%check_optimality = check_optimality
    nam%check_no_point_mpi = check_no_point_mpi
    nam%check_no_point_mask = check_no_point_mask
-   nam%check_set_param_cor = check_set_param_cor
-   nam%check_set_param_hyb = check_set_param_hyb
-   nam%check_get_param_stddev = check_get_param_stddev
-   nam%check_get_param_cor = check_get_param_cor
-   nam%check_get_param_hyb = check_get_param_hyb
-   nam%check_get_param_Dloc = check_get_param_Dloc
+   nam%check_set_param = check_set_param
+   nam%check_get_param = check_get_param
    nam%check_apply_vbal = check_apply_vbal
    nam%check_apply_stddev = check_apply_stddev
    nam%check_apply_nicas = check_apply_nicas
@@ -1338,12 +1314,8 @@ call mpl%f_comm%broadcast(nam%check_consistency,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_optimality,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_no_point_mpi,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_no_point_mask,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_set_param_cor,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_set_param_hyb,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_get_param_stddev,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_get_param_cor,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_get_param_hyb,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%check_get_param_Dloc,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%check_set_param,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%check_get_param,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_stddev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%check_apply_nicas,mpl%rootproc-1)
@@ -1577,12 +1549,8 @@ if (conf%has('check_consistency')) call conf%get_or_die('check_consistency',nam%
 if (conf%has('check_optimality')) call conf%get_or_die('check_optimality',nam%check_optimality)
 if (conf%has('check_no_point_mpi')) call conf%get_or_die('check_no_point_mpi',nam%check_no_point_mpi)
 if (conf%has('check_no_point_mask')) call conf%get_or_die('check_no_point_mask',nam%check_no_point_mask)
-if (conf%has('check_set_param_cor')) call conf%get_or_die('check_set_param_cor',nam%check_set_param_cor)
-if (conf%has('check_set_param_hyb')) call conf%get_or_die('check_set_param_hyb',nam%check_set_param_hyb)
-if (conf%has('check_get_param_stddev')) call conf%get_or_die('check_get_param_stddev',nam%check_get_param_stddev)
-if (conf%has('check_get_param_cor')) call conf%get_or_die('check_get_param_cor',nam%check_get_param_cor)
-if (conf%has('check_get_param_hyb')) call conf%get_or_die('check_get_param_hyb',nam%check_get_param_hyb)
-if (conf%has('check_get_param_Dloc')) call conf%get_or_die('check_get_param_Dloc',nam%check_get_param_Dloc)
+if (conf%has('check_set_param')) call conf%get_or_die('check_set_param',nam%check_set_param)
+if (conf%has('check_get_param')) call conf%get_or_die('check_get_param',nam%check_get_param)
 if (conf%has('check_apply_vbal')) call conf%get_or_die('check_apply_vbal',nam%check_apply_vbal)
 if (conf%has('check_apply_stddev')) call conf%get_or_die('check_apply_stddev',nam%check_apply_stddev)
 if (conf%has('check_apply_nicas')) call conf%get_or_die('check_apply_nicas',nam%check_apply_nicas)
@@ -2187,16 +2155,9 @@ if (nam%check_optimality) then
 end if
 if (nam%check_no_point_mpi.and.nam%check_no_point_mask) &
  & call mpl%abort('${subr}$','check_no_point_mpi and check_no_point_mask are exclusive')
-if ((nam%check_set_param_cor.or.nam%check_set_param_cor.or.nam%check_set_param_cor).and..not.nam%new_nicas) &
- & call mpl%abort('${subr}$','new_nicas required for check_set_param_[...]')
-if (nam%check_get_param_stddev.and..not.(nam%new_var.or.nam%update_var)) &
- & call mpl%abort('${subr}$','new_var or update_var required for check_get_param_stddev')
-if (nam%check_get_param_cor.and..not.(nam%new_hdiag.and.(trim(nam%method)=='cor'))) &
- & call mpl%abort('${subr}$','new_hdiag and cor method required for check_get_param_cor')
-if (nam%check_get_param_hyb.and..not.(nam%new_hdiag.and.(trim(nam%method)=='hyb-avg'))) &
- & call mpl%abort('${subr}$','new_hdiag and hyb-avg method required for check_get_param_hyb')
-if (nam%check_get_param_Dloc.and..not.(nam%new_hdiag.and.(trim(nam%method)=='loc'))) &
- & call mpl%abort('${subr}$','new_hdiag and loc method required for check_get_param_Dloc')
+if (nam%check_set_param.and.(.not.nam%new_nicas)) call mpl%abort('${subr}$','new_nicas required for check_set_param')
+if (nam%check_get_param.and.(.not.(nam%new_hdiag.and.(trim(nam%method)=='hyb-avg')))) &
+ & call mpl%abort('${subr}$','new_var or update_var, and new_hdiag, and hyb-avg method required for check_get_param')
 if (nam%check_apply_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
  & call mpl%abort('${subr}$','new_vbal or load_vbal required for check_apply_vbal')
 if (nam%check_apply_stddev.and..not.(nam%new_var.or.nam%update_var.or.nam%load_var)) &
@@ -2575,12 +2536,8 @@ call mpl%write('check_consistency',nam%check_consistency)
 call mpl%write('check_optimality',nam%check_optimality)
 call mpl%write('check_no_point_mpi',nam%check_no_point_mpi)
 call mpl%write('check_no_point_mask',nam%check_no_point_mask)
-call mpl%write('check_set_param_cor',nam%check_set_param_cor)
-call mpl%write('check_set_param_hyb',nam%check_set_param_hyb)
-call mpl%write('check_get_param_stddev',nam%check_get_param_stddev)
-call mpl%write('check_get_param_cor',nam%check_get_param_cor)
-call mpl%write('check_get_param_hyb',nam%check_get_param_hyb)
-call mpl%write('check_get_param_Dloc',nam%check_get_param_Dloc)
+call mpl%write('check_set_param',nam%check_set_param)
+call mpl%write('check_get_param',nam%check_get_param)
 call mpl%write('check_apply_vbal',nam%check_apply_vbal)
 call mpl%write('check_apply_stddev',nam%check_apply_stddev)
 call mpl%write('check_apply_nicas',nam%check_apply_nicas)

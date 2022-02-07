@@ -217,18 +217,10 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_no_point_mpi{"check_no_point_mpi", this};
   // Test BUMP with all grid points masked on half of the domain
   oops::OptionalParameter<bool> check_no_point_mask{"check_no_point_mask", this};
-  // Test set_parameter interface for correlation
-  oops::OptionalParameter<bool> check_set_param_cor{"check_set_param_cor", this};
-  // Test set_parameter interface for hybrid case
-  oops::OptionalParameter<bool> check_set_param_hyb{"check_set_param_hyb", this};
-  // Test get_parameter interface for standard-deviation
-  oops::OptionalParameter<bool> check_get_param_stddev{"check_get_param_stddev", this};
-  // Test get_parameter interface for correlation
-  oops::OptionalParameter<bool> check_get_param_cor{"check_get_param_cor", this};
-  // Test get_parameter interface for hybrid case
-  oops::OptionalParameter<bool> check_get_param_hyb{"check_get_param_hyb", this};
-  // Test get_parameter interface for anisotropic localization
-  oops::OptionalParameter<bool> check_get_param_Dloc{"check_get_param_Dloc", this};
+  // Test set_parameter interface
+  oops::OptionalParameter<bool> check_set_param{"check_set_param", this};
+  // Test get_parameter interface
+  oops::OptionalParameter<bool> check_get_param{"check_get_param", this};
   // Test apply_vbal interfaces
   oops::OptionalParameter<bool> check_apply_vbal{"check_apply_vbal", this};
   // Test apply_stddev interfaces
@@ -393,6 +385,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> diag_rvflt{"diag_rvflt", this};
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
+  // Maximum number of components in the fit function
+  oops::OptionalParameter<int> fit_ncompmax{"fit_ncompmax", this};
 
   // nicas_param
 
@@ -893,7 +887,8 @@ void BUMP<MODEL>::write() const {
              this->getParameter(param, activeVars_[jj], value);
              outfile << activeVars_[jj] << ' ' << std::scientific
                      << std::setprecision(3) << value << std::endl;
-             oops::Log::test() << activeVars_[jj] << " : " << value << std::endl;
+             oops::Log::test() << "Value of " << param << " at " << date << " for "
+                               << activeVars_[jj] << " : " << value << std::endl;
           }
 
           // Close file

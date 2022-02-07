@@ -27,6 +27,8 @@ scalethmax = 0.9
 dscaleth = 0.1
 nscaleth = int((scalethmax-scalethmin)/dscaleth+1.0e-6)+1
 scaleth = np.linspace(scalethmin, scalethmax, nscaleth)
+dsf = 0.01
+nsf = int(1.0/dsf+1.0e-6)
 run_horizontal = True
 run_vertical = True
 
@@ -75,19 +77,16 @@ f_int_hor = np.zeros((nnd))
 f_int_hor_comp = np.zeros((nnd))
 scaleh = np.zeros((nncomp,nscaleth))
 f_sqrt_ver = np.zeros((nnd))
+f_sqrt_ver_comp = np.zeros((nnd))
 f_int_ver = np.zeros((nnd))
-scalev = np.zeros((nscaleth))
-f_gc99 = np.zeros(nnd)
+f_int_ver_comp = np.zeros((nnd))
+scalev = np.zeros((nncomp,nscaleth))
 scaled_axis = np.zeros((nnd))
-
-# GC99 function
-for ind in range(0, nnd):
-   f_gc99[ind] = GC99(axis[ind])
+support_factor = np.zeros((nncomp))
+f_gc99 = np.zeros((nnd))
 
 if run_horizontal:
    for ind in range(0, nnd):
-      print("horizontal: " + str(ind))
-
       # Square-root function
       f_sqrt_hor[ind] = S(axis[ind])
 
@@ -128,6 +127,21 @@ if run_horizontal:
                scaleh[incomp,iscaleth] = (scaleth[iscaleth]-B)/A
                break
 
+      # Support factor for the best GC99 fit
+      err_min = 1.0e12
+      support_factor[incomp] = -1.0
+      for isf in range(0, nsf):
+         sf = (isf+1)*dsf
+         err = 0.0
+         for ind in range(0, nnd-1):
+            err = err+(f_int_hor_comp[ind]-GC99(axis[ind]/sf))**2
+         if (err < err_min):
+            err_min = err
+            support_factor[incomp] = sf
+      for ind in range(0, nnd):
+         f_gc99[ind] = GC99(axis[ind]/support_factor[incomp])
+      print("For " + str(incomp+1) + " component(s), support factor is: " + str(support_factor[incomp]) + " and smallest component is " + str(1.0/2**icomp))
+
       if True:
          # Plot curves
          fig, ax = plt.subplots(ncols=2, figsize=(14,7))
@@ -143,14 +157,12 @@ if run_horizontal:
          ax[1].set_title("Convolution function")
          ax[1].axhline(y=0, color="k")
          ax[1].axvline(x=0, color="k")
-         ax[1].plot(axis, f_int_hor_comp)
+         ax[1].plot(axis, f_int_hor_comp, 'b', axis, f_gc99, 'r')
          plt.savefig("fit_hor_" + str(incomp+1) + ".jpg", format="jpg", dpi=300)
          plt.close()
 
 if run_vertical:
    for ind in range(0, nnd):
-      print("vertical: " + str(ind))
-
       # Square-root function
       f_sqrt_ver[ind] = S_ver(axis[ind])/S_ver(0)
 
@@ -162,45 +174,67 @@ if run_vertical:
          norm = f_int_ver[ind]
       f_int_ver[ind] = f_int_ver[ind]/norm
 
-   # Scale at scaleth
-   for iscaleth in range(0, nscaleth):
-      scalev[iscaleth] = 1.0
+   # Loop over nncomp
+   for incomp in range(0, nncomp):
+      # Composed functions
+      f_sqrt_ver_comp_detail = np.zeros((nnd,incomp+1))
       for ind in range(0, nnd-1):
-         if f_int_ver[ind]>scaleth[iscaleth] and f_int_ver[ind+1]<scaleth[iscaleth]:
-            A = (f_int_ver[ind]-f_int_ver[ind+1])/(axis[ind]-axis[ind+1])
-            B = f_int_ver[ind]-A*axis[ind]
-            scalev[iscaleth] = (scaleth[iscaleth]-B)/A
-            break
+         f_sqrt_ver_comp[ind] = 0.0
+         f_sqrt_ver_comp_detail[ind,:] = 0.0
+         f_int_ver_comp[ind] = 0.0
+         for icomp in range(0, incomp+1):
+            if (2**icomp*ind < nnd):
+               f_sqrt_ver_comp[ind] = f_sqrt_ver_comp[ind]+f_sqrt_ver[2**icomp*ind]
+               for jcomp in range(0, incomp+1):
+                  if (jcomp >= icomp):
+                     f_sqrt_ver_comp_detail[ind,jcomp] = f_sqrt_ver_comp_detail[ind,jcomp]+f_sqrt_ver[2**icomp*ind]
+               f_int_ver_comp[ind] = f_int_ver_comp[ind]+f_int_ver[2**icomp*ind]
+         f_sqrt_ver_comp[ind] = f_sqrt_ver_comp[ind]/(incomp+1)
+         f_sqrt_ver_comp_detail[ind,:] = f_sqrt_ver_comp_detail[ind,:]/(incomp+1)
+         f_int_ver_comp[ind] = f_int_ver_comp[ind]/(incomp+1)
 
-if True:
-   # Plot curves
-   fig, ax = plt.subplots(ncols=2, figsize=(14,7))
-   ax[0].set_xlim([0,1.0])
-   ax[0].set_ylim([-0.5,1.1])
-   ax[0].set_title("Square-root function")
-   ax[0].axhline(y=0, color="k")
-   ax[0].axvline(x=0, color="k")
-   ax[0].plot(axis, f_sqrt_ver)
-   ax[1].set_xlim([0,1.0])
-   ax[1].set_ylim([-0.5,1.1])
-   ax[1].set_title("Convolution function")
-   ax[1].axhline(y=0, color="k")
-   ax[1].axvline(x=0, color="k")
-   ax[1].plot(axis, f_int_ver)
-   plt.savefig("fit_ver.jpg", format="jpg", dpi=300)
-   plt.close()
-
-   if False:
+      # Scale at scaleth
       for iscaleth in range(0, nscaleth):
-         scaled_axis = axis/scalev[iscaleth]
-         fig, ax = plt.subplots()
-         ax.set_xlim([0,1.0/scalev[iscaleth]])
-         ax.set_ylim([-0.5,1.1])
-         ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
-         ax.axhline(y=0, color="k")
-         ax.axvline(x=0, color="k")
-         ax.plot(scaled_axis, f_int_ver)
-         plt.savefig("fit_ver_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
+         scalev[incomp,iscaleth] = 1.0
+         for ind in range(0, nnd-1):
+            if f_int_ver_comp[ind]>scaleth[iscaleth] and f_int_ver_comp[ind+1]<scaleth[iscaleth]:
+               A = (f_int_ver_comp[ind]-f_int_ver_comp[ind+1])/(axis[ind]-axis[ind+1])
+               B = f_int_ver_comp[ind]-A*axis[ind]
+               scalev[incomp,iscaleth] = (scaleth[iscaleth]-B)/A
+               break
+
+      # Support factor for the best GC99 fit
+      err_min = 1.0e12
+      support_factor[incomp] = -1.0
+      for isf in range(0, nsf):
+         sf = (isf+1)*dsf
+         err = 0.0
+         for ind in range(0, nnd-1):
+            err = err+(f_int_ver_comp[ind]-GC99(axis[ind]/sf))**2
+         if (err < err_min):
+            err_min = err
+            support_factor[incomp] = sf
+      for ind in range(0, nnd):
+         f_gc99[ind] = GC99(axis[ind]/support_factor[incomp])
+      print("For " + str(incomp+1) + " component(s), support factor is: " + str(support_factor[incomp]) + " and smallest component is " + str(1.0/2**icomp))
+
+      if True:
+         # Plot curves
+         fig, ax = plt.subplots(ncols=2, figsize=(14,7))
+         ax[0].set_xlim([0,1.0])
+         ax[0].set_ylim([0,1.1])
+         ax[0].set_title("Square-root function")
+         ax[0].axhline(y=0, color="k")
+         ax[0].axvline(x=0, color="k")
+         ax[0].plot(axis, f_sqrt_ver_comp_detail)
+         ax[0].plot(axis, f_sqrt_ver_comp, 'k')
+         ax[1].set_xlim([0,1.0])
+         ax[1].set_ylim([0,1.1])
+         ax[1].set_title("Convolution function")
+         ax[1].axhline(y=0, color="k")
+         ax[1].axvline(x=0, color="k")
+         ax[1].plot(axis, f_int_ver_comp, 'b', axis, f_gc99, 'r')
+         plt.savefig("fit_ver_" + str(incomp+1) + ".jpg", format="jpg", dpi=300)
          plt.close()
 
 if run_horizontal and run_vertical:
@@ -245,8 +279,9 @@ if run_horizontal and run_vertical:
    file.write("real(kind_real),allocatable :: scaleth(:)\n")
    file.write("real(kind_real),allocatable :: scaleh(:,:)\n")
    file.write("real(kind_real),allocatable :: func_hor(:)\n")
-   file.write("real(kind_real),allocatable :: scalev(:)\n")
+   file.write("real(kind_real),allocatable :: scalev(:,:)\n")
    file.write("real(kind_real),allocatable :: func_ver(:)\n")
+   file.write("real(kind_real),allocatable :: support_factor(:)\n")
    file.write("\n")
    file.write("interface fit_setup\n")
    file.write("   module procedure gc99_fit_setup\n")
@@ -263,7 +298,7 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("private\n")
    file.write("public :: nncomp,nscaleth,scaleth,scalethmin,scalethmax\n")
-   file.write("public :: scaleh,scalev\n")
+   file.write("public :: scaleh,scalev,support_factor\n")
    file.write("public :: fit_setup,fit_dealloc,fit_func,fit_func_sqrt\n")
    file.write("\n")
    file.write("contains\n")
@@ -278,7 +313,7 @@ if run_horizontal and run_vertical:
    file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
    file.write("\n")
    file.write("! Local variables\n")
-   file.write("integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id\n")
+   file.write("integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id,support_factor_id\n")
    file.write("character(len=1024) :: filename\n")
    file.write("\n")
    file.write("! Set name\n")
@@ -300,8 +335,9 @@ if run_horizontal and run_vertical:
    file.write("   allocate(scaleth(nscaleth))\n")
    file.write("   allocate(scaleh(nscaleth,nncomp))\n")
    file.write("   allocate(func_hor(nnd))\n")
-   file.write("   allocate(scalev(nscaleth))\n")
+   file.write("   allocate(scalev(nscaleth,nncomp))\n")
    file.write("   allocate(func_ver(nnd))\n")
+   file.write("   allocate(support_factor(nncomp))\n")
    file.write("\n")
    file.write("   if (mpl%main) then\n")
    file.write("      ! Inquire variable\n")
@@ -310,6 +346,7 @@ if run_horizontal and run_vertical:
    file.write("      func_hor_id = inquire_var(mpl,ncid,'func_hor')\n")
    file.write("      scalev_id = inquire_var(mpl,ncid,'scalev')\n")
    file.write("      func_ver_id = inquire_var(mpl,ncid,'func_ver')\n")
+   file.write("      support_factor_id = inquire_var(mpl,ncid,'support_factor')\n")
    file.write("\n")
    file.write("      ! Read variable\n")
    file.write("      call get_var(mpl,ncid,scaleth_id,scaleth)\n")
@@ -317,6 +354,7 @@ if run_horizontal and run_vertical:
    file.write("      call get_var(mpl,ncid,func_hor_id,func_hor)\n")
    file.write("      call get_var(mpl,ncid,scalev_id,scalev)\n")
    file.write("      call get_var(mpl,ncid,func_ver_id,func_ver)\n")
+   file.write("      call get_var(mpl,ncid,support_factor_id,support_factor)\n")
    file.write("\n")
    file.write("      ! Close file\n")
    file.write("      call close_file(mpl,ncid)\n")
@@ -328,6 +366,7 @@ if run_horizontal and run_vertical:
    file.write("   call mpl%f_comm%broadcast(func_hor,mpl%rootproc-1)\n")
    file.write("   call mpl%f_comm%broadcast(scalev,mpl%rootproc-1)\n")
    file.write("   call mpl%f_comm%broadcast(func_ver,mpl%rootproc-1)\n")
+   file.write("   call mpl%f_comm%broadcast(support_factor,mpl%rootproc-1)\n")
    file.write("\n")
    file.write("   ! Set flag\n")
    file.write("   fit_allocated = .true.\n")
@@ -356,6 +395,7 @@ if run_horizontal and run_vertical:
    file.write("if (allocated(func_hor)) deallocate(func_hor)\n")
    file.write("if (allocated(scalev)) deallocate(scalev)\n")
    file.write("if (allocated(func_ver)) deallocate(func_ver)\n")
+   file.write("if (allocated(support_factor)) deallocate(support_factor)\n")
    file.write("\n")
    file.write("! Reset flag\n")
    file.write("fit_allocated = .false.\n")
@@ -445,14 +485,19 @@ if run_horizontal and run_vertical:
    file.write("! Function: gc99_fit_func_sqrt\n")
    file.write("!> Fit function function square-root\n")
    file.write("!----------------------------------------------------------------------\n")
-   file.write("function gc99_fit_func_sqrt(mpl,nd) result(value)\n")
+   file.write("function gc99_fit_func_sqrt(mpl,nd,ncomp) result(value)\n")
    file.write("\n")
    file.write("! Passed variables\n")
    file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
    file.write("real(kind_real),intent(in) :: nd    !< Normalized distance\n")
+   file.write("integer,intent(in) :: ncomp         !< Number of components\n")
    file.write("\n")
    file.write("! Returned variable\n")
    file.write("real(kind_real) :: value\n")
+   file.write("\n")
+   file.write("! Local variables\n")
+   file.write("integer :: icomp\n")
+   file.write("real(kind_real) :: lnd\n")
    file.write("\n")
    file.write("! Set name\n")
    file.write("@:set_name(gc99_fit_func_sqrt)\n")
@@ -463,15 +508,24 @@ if run_horizontal and run_vertical:
    file.write("! Check bounds\n")
    file.write("if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')\n")
    file.write("\n")
-   file.write("if (eq(nd,zero)) then\n")
-   file.write("   ! Origin\n")
-   file.write("   value = one\n")
-   file.write("elseif (sup(nd,half)) then\n")
-   file.write("   ! Out of support\n")
-   file.write("   value = zero\n")
-   file.write("else\n")
-   file.write("   value = one-(two*nd)\n")
-   file.write("end if\n")
+   file.write("! Initialization\n")
+   file.write("value = zero\n")
+   file.write("\n")
+   file.write("do icomp=1,ncomp\n")
+   file.write("   ! Local normalized distance\n")
+   file.write("   lnd = real(2**(icomp-1),kind_real)*nd\n")
+   file.write("\n")
+   file.write("   if (eq(lnd,zero)) then\n")
+   file.write("      ! Origin\n")
+   file.write("      value = value+one\n")
+   file.write("   elseif (infeq(lnd,half)) then\n")
+   file.write("      ! Out of support\n")
+   file.write("      value = value+one-(two*lnd)\n")
+   file.write("   end if\n")
+   file.write("end do\n")
+   file.write("\n")
+   file.write("! Normalization\n")
+   file.write("value = value/real(ncomp,kind_real)\n")
    file.write("\n")
    file.write("! Probe out\n")
    file.write("@:probe_out()\n")
@@ -495,15 +549,17 @@ if run_horizontal and run_vertical:
    scaleth_id = ncfile.createVariable('scaleth', np.float64, ('nscaleth'))
    scaleh_id = ncfile.createVariable('scaleh', np.float64, ('nncomp','nscaleth'))
    func_hor_id = ncfile.createVariable('func_hor', np.float64, ('nnd'))
-   scalev_id = ncfile.createVariable('scalev', np.float64, ('nscaleth'))
+   scalev_id = ncfile.createVariable('scalev', np.float64, ('nncomp','nscaleth'))
    func_ver_id = ncfile.createVariable('func_ver', np.float64, ('nnd'))
+   support_factor_id = ncfile.createVariable('support_factor', np.float64, ('nncomp'))
 
    # Write variables
    scaleth_id[:] = scaleth
    scaleh_id[:,:] = scaleh
    func_hor_id[:] = f_int_hor
-   scalev_id[:] = scalev
+   scalev_id[:,:] = scalev
    func_ver_id[:] = f_int_ver
+   support_factor_id[:] = support_factor
 
    # Close file
    ncfile.close()

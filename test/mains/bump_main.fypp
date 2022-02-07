@@ -154,11 +154,11 @@ if (bump%nam%ens2_ne>0) then
    end do
 end if
 
-! Test set_parameters interfaces
-if (bump%nam%check_set_param_cor.or.bump%nam%check_set_param_hyb) then
+! Test set_parameter interfaces
+if (bump%nam%check_set_param) then
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Test set_parameters interfaces'
+   write(bump%mpl%info,'(a)') '--- Test set_parameter interfaces'
    call bump%mpl%flush()
    call bump%test_set_parameter
    if (bump%nam%default_seed) call bump%rng%reseed(mpl)
@@ -172,7 +172,7 @@ call mpl%flush
 call bump%run_drivers
 
 ! Test get_parameter interfaces
-if (bump%nam%check_get_param_cor.or.bump%nam%check_get_param_hyb.or.bump%nam%check_get_param_Dloc) then
+if (bump%nam%check_get_param) then
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Test get_parameter interfaces'

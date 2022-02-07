@@ -1,6 +1,5 @@
-bump_get_param_cor
-bump_get_param_Dloc
-bump_get_param_hyb
+bump_get_param
+bump_get_param_aniso
 bump_hdiag_diag_rhflt
 bump_hdiag_diag_rvflt
 bump_hdiag_fit_dl0
@@ -46,5 +45,5 @@ bump_vbal_pseudo_inv_mmax
 bump_vbal_pseudo_inv_var_th
 bump_vbal_uniform
 bump_vbal_write_grids
-bump_set_param_cor
-bump_set_param_hyb
+bump_set_param
+bump_set_param_aniso

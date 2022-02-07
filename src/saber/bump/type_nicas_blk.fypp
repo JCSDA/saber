@@ -119,7 +119,8 @@ type nicas_blk_type
    integer :: nproc                                     !< Number of processors
 
    ! Number of components
-   integer :: ncomp                                     !< Number of components
+   integer :: ncomph                                    !< Number of components (horizontal)
+   integer :: ncompv                                    !< Number of components (vertical)
 
    ! Universe
    logical,allocatable :: myuniverse(:)                 !< MPI tasks in the universe of the local task
@@ -2339,7 +2340,8 @@ do il0=1,geom%nl0
    nicas_blk%rh(:,il0) = rhflt(il0)
 end do
 nicas_blk%rv = zero
-nicas_blk%ncomp = 1
+nicas_blk%ncomph = 1
+nicas_blk%ncompv = 1
 nicas_blk%rhs = nicas_blk%rh
 nicas_blk%rvs = zero
 nicas_blk%wgt = one
@@ -2414,7 +2416,8 @@ if (allocated(cmat_blk%rhs)) nicas_blk%rhs = mpl%msv%valr
 if (allocated(cmat_blk%rvs)) nicas_blk%rvs = mpl%msv%valr
 
 ! Copy number of components
-nicas_blk%ncomp = cmat_blk%ncomp
+nicas_blk%ncomph = cmat_blk%ncomph
+nicas_blk%ncompv = cmat_blk%ncompv
 
 ! Copy C matrix fields from min_lev to max_lev
 iv = bpar%b_to_v1(ib)
@@ -3751,7 +3754,7 @@ do isb=1,nicas_blk%nsb
                else
                   if (nicas_blk%hor(il1)%rh_c1b(ic1b)>zero) then
                      hnd(jc1u) = nn_dist(j)/nicas_blk%hor(il1)%rh_c1b(ic1b)
-                     if (supeq(hnd(jc1u),one)) hnd(jc1u) = mpl%msv%valr
+                     if (supeq(hnd(jc1u),half)) hnd(jc1u) = mpl%msv%valr
                   elseif (nn_dist(j)>zero) then
                      hnd(jc1u) = mpl%msv%valr
                   else
@@ -3764,7 +3767,7 @@ do isb=1,nicas_blk%nsb
                   distv = abs(nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))
                   if (nicas_blk%hor(il1)%rv_c1b(ic1b)>zero) then
                      vnd(jc1u) = distv/nicas_blk%hor(il1)%rv_c1b(ic1b)
-                     if (supeq(vnd(jc1u),one)) vnd(jc1u) = mpl%msv%valr
+                     if (supeq(vnd(jc1u),half)) vnd(jc1u) = mpl%msv%valr
                   elseif (distv>zero) then
                      vnd(jc1u) = mpl%msv%valr
                   else
@@ -3851,10 +3854,10 @@ do isb=1,nicas_blk%nsb
          jsu = nicas_blk%hor(jl1)%c1u_to_su(jc1u)
 
          ! Horizontal component
-         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),nicas_blk%ncomp)
+         S = fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%hnd(jbd),nicas_blk%ncomph)
 
          ! Vertical component
-         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ncomp)
+         if (.not.nicas_blk%horizontal) S = S*fit_func_sqrt(mpl,nicas_blk%ball(jl1,isb)%vnd(jbd),nicas_blk%ncompv)
 
          if (sup(abs(S),S_inf)) then
             if (nicas_blk%smoother) then
@@ -3992,6 +3995,10 @@ real(kind_real),allocatable :: list(:),S_list_interp(:),S_list_convol(:)
 ! Probe in
 @:probe_in()
 
+! Allocation
+allocate(nicas_blk%norm(geom%nc0a,geom%nl0))
+nicas_blk%norm = mpl%msv%valr
+
 ! Compute vertical interpolation inverse mapping
 allocate(inev(geom%nl0))
 inev = 0
@@ -4127,10 +4134,6 @@ do isb=1,nicas_blk%nsb
       deallocate(list)
    end if
 end do
-
-! Allocation
-allocate(nicas_blk%norm(geom%nc0a,geom%nl0))
-nicas_blk%norm = mpl%msv%valr
 
 ! Compute normalization weights
 do il0=1,geom%nl0
