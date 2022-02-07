@@ -40,15 +40,19 @@ class GSI_RFParameters : public SaberBlockParametersBase {
 
 template <typename MODEL>
 class GSI_RF : public SaberBlockBase<MODEL> {
-  typedef oops::Geometry<MODEL> Geometry_;
-  typedef GSI<MODEL>            GSI_;
+  typedef oops::Geometry<MODEL>  Geometry_;
+  typedef oops::State<MODEL>     State_;
+  typedef GSI<MODEL>             GSI_;
 
  public:
   static const std::string classname() {return "saber::GSI_RF";}
 
   typedef GSI_RFParameters Parameters_;
 
-  GSI_RF(const Geometry_ &, const Parameters_ &);
+  GSI_RF(const Geometry_ &,
+         const Parameters_ &,
+         const State_ &,
+         const State_ &);
   virtual ~GSI_RF();
 
   void randomize(atlas::FieldSet *) const override;
@@ -65,7 +69,10 @@ class GSI_RF : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-GSI_RF<MODEL>::GSI_RF(const Geometry_ & resol, const Parameters_ & params)
+GSI_RF<MODEL>::GSI_RF(const Geometry_ & resol,
+                      const Parameters_ & params,
+                      const State_ & xb,
+                      const State_ & fg)
   : SaberBlockBase<MODEL>(params)
 {
   oops::Log::trace() << classname() << "::GSI_RF starting" << std::endl;

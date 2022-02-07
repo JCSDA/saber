@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
 
 #include "eckit/config/Configuration.h"
 
@@ -489,13 +490,17 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
 template<typename MODEL> class BUMP {
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
+  typedef BUMP_Parameters<MODEL>                          BUMP_Parameters_;
+  typedef oops::State<MODEL>                              State_;
   typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
 
  public:
   // Constructors
   BUMP(const Geometry_ &,
        const oops::Variables &,
-       const BUMP_Parameters<MODEL> &,
+       const BUMP_Parameters_ &,
+       const State_ &,
+       const State_ &,
        const EnsemblePtr_ ens1 = NULL,
        const EnsemblePtr_ ens2 = NULL);
 
@@ -537,7 +542,7 @@ template<typename MODEL> class BUMP {
  private:
   const Geometry_ resol_;
   const oops::Variables activeVars_;
-  BUMP_Parameters<MODEL> params_;
+  BUMP_Parameters_ params_;
   std::vector<int> keyBUMP_;
 };
 
@@ -546,7 +551,9 @@ template<typename MODEL> class BUMP {
 template<typename MODEL>
 BUMP<MODEL>::BUMP(const Geometry_ & resol,
                   const oops::Variables & activeVars,
-                  const BUMP_Parameters<MODEL> & params,
+                  const BUMP_Parameters_ & params,
+                  const State_ & xb,
+                  const State_ & fg,
                   const EnsemblePtr_ ens1,
                   const EnsemblePtr_ ens2)
   : resol_(resol), activeVars_(activeVars), params_(params), keyBUMP_() {
@@ -612,8 +619,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
   const boost::optional<eckit::LocalConfiguration> &universeRadius = params.universeRadius.value();
   if (universeRadius != boost::none) {
     // Setup increment
-    util::DateTime time(1977, 5, 25, 0, 0, 0);
-    Increment_ dx(resol_, activeVars_, time);
+    Increment_ dx(resol_, activeVars_, xb.validTime());
     dx.read(*universeRadius);
 
     // Get ATLAS fieldset
@@ -651,6 +657,9 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     grids.push_back(emptyConf);
   }
 
+  // Check grids number
+  ASSERT(grids.size() > 0);
+
   // Loop over grids
   for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
     // Add prefix
@@ -660,11 +669,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       grids[jgrid].set("prefix", prefix + "_" + ss.str());
     }
 
-    // Dummy date
-    util::DateTime date(1977, 5, 25, 0, 0, 0);
-
     // Get ATLAS variable names
-    Increment_ dx(resol, activeVars_, date);
+    Increment_ dx(resol, activeVars_, xb.validTime());
     std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
     dx.setAtlas(atlasFieldSet.get());
     std::vector<std::string> vars_atlas;
@@ -695,17 +701,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     if (!grids[jgrid].has("lev2d")) {
       grids[jgrid].set("lev2d", "first");
     }
-  }
 
-  // Check grids number
-  ASSERT(grids.size() > 0);
-
-  // Print configuration
-  oops::Log::info() << "Configuration: " << conf << std::endl;
-
-  for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
     // Print configuration for this grid
     oops::Log::info() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
+
 
     // Create BUMP instance
     int keyBUMP = 0;
@@ -759,6 +758,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 
   // Load ensemble members sequentially
   if (ensembleConfig != boost::none) {
+    // Get ensemble and members configurations
+    std::vector<eckit::LocalConfiguration> memberConfig;
+    (*ensembleConfig).get("members", memberConfig);
+
     // Check what needs to be updated
     const boost::optional<bool> &update_vbal_cov = params_.update_vbal_cov.value();
     const boost::optional<bool> &update_var = params_.update_var.value();
@@ -766,11 +769,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 
     // Loop over all ensemble members
     for (int ie = 0; ie < ens1_ne; ++ie) {
-      // Get date
-      const util::DateTime date(membersConfig[ie].getString("date"));
-
       // Define increment
-      Increment_ incr(resol, activeVars_, date);
+      Increment_ incr(resol, activeVars_, xb.validTime());
 
       // Read member
       oops::Log::info() <<

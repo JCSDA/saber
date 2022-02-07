@@ -17,6 +17,7 @@
 
 #include "oops/base/Geometry.h"
 #include "oops/base/Variables.h"
+#include "oops/interface/State.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/Logger.h"
@@ -35,8 +36,6 @@ namespace saber {
 
 template <typename MODEL>
 class SaberBlockBase : public util::Printable, private boost::noncopyable {
-  typedef oops::Geometry<MODEL> Geometry_;
-
  public:
   explicit SaberBlockBase(const SaberBlockParametersBase & params);
   virtual ~SaberBlockBase() {}
@@ -79,11 +78,14 @@ class SaberBlockParametersWrapper : public oops::Parameters {
 
 template <typename MODEL>
 class SaberBlockFactory {
-  typedef oops::Geometry<MODEL>   Geometry_;
+  typedef oops::Geometry<MODEL> Geometry_;
+  typedef oops::State<MODEL>    State_;
 
  public:
   static SaberBlockBase<MODEL> * create(const Geometry_ &,
-                                        const SaberBlockParametersBase & parameters);
+                                        const SaberBlockParametersBase &,
+                                        const State_ & xb,
+                                        const State_ & fg);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -97,7 +99,10 @@ class SaberBlockFactory {
   explicit SaberBlockFactory(const std::string &name);
 
  private:
-  virtual SaberBlockBase<MODEL> * make(const Geometry_ &, const SaberBlockParametersBase &) = 0;
+  virtual SaberBlockBase<MODEL> * make(const Geometry_ &,
+                                       const SaberBlockParametersBase &,
+                                       const State_ &,
+                                       const State_ &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -113,10 +118,13 @@ template<class MODEL, class T>
 class SaberBlockMaker : public SaberBlockFactory<MODEL> {
   typedef typename T::Parameters_ Parameters_;
   typedef oops::Geometry<MODEL>   Geometry_;
+  typedef oops::State<MODEL>      State_;
 
   SaberBlockBase<MODEL> * make(const Geometry_ & geom,
-                               const SaberBlockParametersBase& params) override {
-    return new T(geom, dynamic_cast<const Parameters_&>(params));
+                               const SaberBlockParametersBase & params,
+                               const State_ & xb,
+                               const State_ & fg) override {
+    return new T(geom, dynamic_cast<const Parameters_&>(params), xb, fg);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {
@@ -142,7 +150,9 @@ SaberBlockFactory<MODEL>::SaberBlockFactory(const std::string & name) {
 
 template <typename MODEL>
 SaberBlockBase<MODEL> * SaberBlockFactory<MODEL>::create(const Geometry_ & geom,
-                                                         const SaberBlockParametersBase & params) {
+                                                         const SaberBlockParametersBase & params,
+                                                         const State_& xb,
+                                                         const State_ & fg) {
   oops::Log::trace() << "SaberBlockBase<MODEL>::create starting" << std::endl;
   const std::string &id = params.saberBlockName.value().value();
   typename std::map<std::string, SaberBlockFactory<MODEL>*>::iterator jsb = getMakers().find(id);
@@ -150,7 +160,7 @@ SaberBlockBase<MODEL> * SaberBlockFactory<MODEL>::create(const Geometry_ & geom,
     oops::Log::error() << id << " does not exist in saber::SaberBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberBlockFactory.");
   }
-  SaberBlockBase<MODEL> * ptr = jsb->second->make(geom, params);
+  SaberBlockBase<MODEL> * ptr = jsb->second->make(geom, params, xb, fg);
   oops::Log::trace() << "SaberBlockBase<MODEL>::create done" << std::endl;
   return ptr;
 }
