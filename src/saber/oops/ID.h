@@ -35,13 +35,17 @@ class IDParameters : public SaberBlockParametersBase {
 template <typename MODEL>
 class ID : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL>  Geometry_;
+  typedef oops::State<MODEL>     State_;
 
  public:
   static const std::string classname() {return "saber::ID";}
 
   typedef IDParameters Parameters_;
 
-  ID(const Geometry_ &, const Parameters_ &);
+  ID(const Geometry_ &,
+     const Parameters_ &,
+     const State_ &,
+     const State_ &);
   virtual ~ID();
 
   void randomize(atlas::FieldSet *) const override;
@@ -57,7 +61,10 @@ class ID : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-ID<MODEL>::ID(const Geometry_ & resol, const Parameters_ & params)
+ID<MODEL>::ID(const Geometry_ & resol,
+              const Parameters_ & params,
+              const State_ & xb,
+              const State_ & fg)
   : SaberBlockBase<MODEL>(params)
 {
   oops::Log::trace() << classname() << "::ID starting" << std::endl;

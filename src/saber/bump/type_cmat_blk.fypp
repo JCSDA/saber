@@ -23,14 +23,15 @@ implicit none
 type cmat_blk_type
    ! Attributes
    integer :: ib                                     !< Block index
+   logical :: anisotropic                            !< Anisotropy flag
 
    ! Computational data
    real(kind_real),allocatable :: coef_ens(:,:)      !< Ensemble coefficient
    real(kind_real),allocatable :: coef_sta(:,:)      !< Static coefficient
    real(kind_real),allocatable :: rh(:,:)            !< Horizontal support radius
-   real(kind_real),allocatable :: D11(:,:)           !< Horizontal Daley tensor, component 11
-   real(kind_real),allocatable :: D22(:,:)           !< Horizontal Daley tensor, component 22
-   real(kind_real),allocatable :: D12(:,:)           !< Horizontal Daley tensor, component 12 (normalized)
+   real(kind_real),allocatable :: D11(:,:)           !< Horizontal direct tensor, component 11
+   real(kind_real),allocatable :: D22(:,:)           !< Horizontal direct tensor, component 22
+   real(kind_real),allocatable :: D12(:,:)           !< Horizontal direct tensor, component 12 (normalized)
    real(kind_real),allocatable :: rv(:,:)            !< Vertical support radius
    real(kind_real),allocatable :: rhs(:,:)           !< Fit support radius  for sampling
    real(kind_real),allocatable :: rvs(:,:)           !< Fit support radius, for sampling
@@ -40,9 +41,9 @@ type cmat_blk_type
    real(kind_real),allocatable :: bump_coef_ens(:,:) !< BUMP ensemble coefficient
    real(kind_real),allocatable :: bump_coef_sta(:,:) !< BUMP static coefficient
    real(kind_real),allocatable :: bump_rh(:,:)       !< Horizontal support radius
-   real(kind_real),allocatable :: bump_D11(:,:)      !< Horizontal Daley tensor, component 11
-   real(kind_real),allocatable :: bump_D22(:,:)      !< Horizontal Daley tensor, component 22
-   real(kind_real),allocatable :: bump_D12(:,:)      !< Horizontal Daley tensor, component 12 (normalized)
+   real(kind_real),allocatable :: bump_D11(:,:)      !< Horizontal direct tensor, component 11
+   real(kind_real),allocatable :: bump_D22(:,:)      !< Horizontal direct tensor, component 22
+   real(kind_real),allocatable :: bump_D12(:,:)      !< Horizontal direct tensor, component 12 (normalized)
    real(kind_real),allocatable :: bump_rv(:,:)       !< Vertical support radius
 contains
    procedure :: alloc => cmat_blk_alloc
@@ -84,7 +85,7 @@ if (bpar%fit_block(ib)) then
    allocate(cmat_blk%coef_ens(geom%nc0a,geom%nl0))
    allocate(cmat_blk%coef_sta(geom%nc0a,geom%nl0))
    allocate(cmat_blk%rh(geom%nc0a,geom%nl0))
-   if (bpar%nc4(ib)>1) then
+   if (cmat_blk%anisotropic) then
       allocate(cmat_blk%D11(geom%nc0a,geom%nl0))
       allocate(cmat_blk%D22(geom%nc0a,geom%nl0))
       allocate(cmat_blk%D12(geom%nc0a,geom%nl0))
@@ -129,7 +130,7 @@ if (bpar%fit_block(ib)) then
    cmat_blk%coef_ens = mpl%msv%valr
    cmat_blk%coef_sta = mpl%msv%valr
    cmat_blk%rh = mpl%msv%valr
-   if (bpar%nc4(ib)>1) then
+   if (cmat_blk%anisotropic) then
       cmat_blk%D11 = mpl%msv%valr
       cmat_blk%D22 = mpl%msv%valr
       cmat_blk%D12 = mpl%msv%valr

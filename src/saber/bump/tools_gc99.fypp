@@ -16,7 +16,7 @@ module tools_gc99
 use tools_const, only: zero,half,one,two
 use tools_kinds, only: kind_real
 use tools_netcdf, only: open_file,inquire_dim_size,get_att,inquire_var,get_var,close_file
-use tools_repro, only: rth,eq,inf,sup
+use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -170,7 +170,7 @@ real(kind_real) :: value
 
 ! Local variables
 integer :: indm,indp
-real(kind_real) :: bnd,rndm,rndp
+real(kind_real) :: rndm,rndp
 
 ! Set name
 @:set_name(gc99_fit_func)
@@ -181,18 +181,15 @@ real(kind_real) :: bnd,rndm,rndp
 ! Check bounds
 if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
 
+! Initialization
+value = zero
+
 if (eq(nd,zero)) then
    ! Origin
    value = one
-elseif (sup(nd,one)) then
-   ! Out of support
-   value = zero
-else
-   ! Bounded values
-   bnd = max(ndmin,min(nd,ndmax))
-
+elseif (infeq(nd,one)) then
    ! Indices
-   indm = floor(bnd/dnd)+1
+   indm = floor(nd/dnd)+1
    if (indm==nnd) then
       indp = indm
    else
@@ -203,7 +200,7 @@ else
    if (indm==nnd) then
       rndm = one
    else
-      rndm = real(indp-1,kind_real)-bnd/dnd
+      rndm = real(indp-1,kind_real)-nd/dnd
    end if
    rndp = (one-rndm)
 
@@ -246,13 +243,13 @@ real(kind_real) :: value
 ! Check bounds
 if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
 
+! Initialization
+value = zero
+
 if (eq(nd,zero)) then
    ! Origin
    value = one
-elseif (sup(nd,half)) then
-   ! Out of support
-   value = zero
-else
+elseif (infeq(nd,half)) then
    value = one-(two*nd)
 end if
 

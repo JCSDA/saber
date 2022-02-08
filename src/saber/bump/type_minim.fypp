@@ -36,7 +36,7 @@ type minim_type
    real(kind_real) :: f_guess                     !< Guess cost
    real(kind_real) :: f_min                       !< Minimum cost
 
-   ! Tensor-specific data
+   ! Specific data
    integer :: nc3                                 !< Number of horizontal distance classes
    integer :: nc4                                 !< Number of angular sectors
    real(kind_real),allocatable :: disth(:)        !< Horizontal distance

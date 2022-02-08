@@ -1,6 +1,4 @@
-bump_get_param_cor/test_1-1_diag.nc
-bump_get_param_Dloc/test_1-1_diag.nc
-bump_get_param_hyb/test_1-1_diag.nc
+bump_get_param/test_1-1_diag.nc
 bump_hdiag_diag_rhflt/test_1-1_diag.nc
 bump_hdiag_diag_rvflt/test_1-1_diag.nc
 bump_hdiag_fit_dl0/test_1-1_diag.nc
@@ -127,12 +125,9 @@ bump_vbal_write_grids/test_2-1_sampling_grids_local_000002-000001.nc
 bump_vbal_write_grids/test_2-1_sampling_grids_local_000002-000002.nc
 bump_vbal_write_grids/test_2-1_vbal_local_000002-000001.nc
 bump_vbal_write_grids/test_2-1_vbal_local_000002-000002.nc
-bump_set_param_cor/test_1-1_diag.nc
-bump_set_param_cor/test_1-1_dirac.nc
-bump_set_param_cor/test_1-1_nicas.nc
-bump_set_param_hyb/test_1-1_diag.nc
-bump_set_param_hyb/test_1-1_dirac.nc
-bump_set_param_hyb/test_1-1_nicas.nc
+bump_set_param/test_1-1_diag.nc
+bump_set_param/test_1-1_dirac.nc
+bump_set_param/test_1-1_nicas.nc
 qg_hr_forecast/test.log.out
 qg_hr_gen_ens_pert_B/test.log.out
 qg_hr_error_covariance_training_bump_cov_homo-iso/test.log.out

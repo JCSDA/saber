@@ -75,19 +75,20 @@ type hor_type
    real(kind_real),allocatable :: H22_c1b(:)            !< Local correlation tensor, component 22, on subset Sc1, halo B
    real(kind_real),allocatable :: H12_c1b(:)            !< Local correlation tensor, component 12, on subset Sc1, halo B
 
+   ! Tree
    type(tree_type) :: tree_c1u                          !< Tree on subset Sc1, universe
 
+   ! Halo detection
    logical,allocatable :: lcheck_c1a(:)                 !< Detection of halo A on subset Sc1
    logical,allocatable :: lcheck_c1b(:)                 !< Detection of halo B on subset Sc1
 
+   ! Conversions
    integer,allocatable :: c1a_to_c1(:)                  !< Subset Sc1, halo A to global
    integer,allocatable :: c1u_to_c1a(:)                 !< Subset Sc1, universe to halo A
    integer,allocatable :: c1u_to_c1(:)                  !< Subset Sc1, universe to global
-
    integer,allocatable :: c1b_to_c1(:)                  !< Subset Sc1, halo B to global
    integer,allocatable :: c1b_to_c1u(:)                 !< Subset Sc1, halo B to universe
    integer,allocatable :: c1u_to_c1b(:)                 !< Subset Sc1, universe to halo B
-
    integer,allocatable :: c1u_to_su(:)                  !< Subset Sc1, universe to subgrid, universe
    integer,allocatable :: c1a_to_sa(:)                  !< Subset Sc1, halo B to subgrid, halo B
    integer,allocatable :: c1b_to_sb(:)                  !< Subset Sc1, halo A to subgrid, halo B
@@ -3743,7 +3744,7 @@ do isb=1,nicas_blk%nsb
                else
                   if (nicas_blk%hor(il1)%rh_c1b(ic1b)>zero) then
                      hnd(jc1u) = nn_dist(j)/nicas_blk%hor(il1)%rh_c1b(ic1b)
-                     if (supeq(hnd(jc1u),one)) hnd(jc1u) = mpl%msv%valr
+                     if (supeq(hnd(jc1u),half)) hnd(jc1u) = mpl%msv%valr
                   elseif (nn_dist(j)>zero) then
                      hnd(jc1u) = mpl%msv%valr
                   else
@@ -3756,7 +3757,7 @@ do isb=1,nicas_blk%nsb
                   distv = abs(nicas_blk%hor(il1)%vunit_c1u(ic1u)-nicas_blk%hor(jl1)%vunit_c1u(jc1u))
                   if (nicas_blk%hor(il1)%rv_c1b(ic1b)>zero) then
                      vnd(jc1u) = distv/nicas_blk%hor(il1)%rv_c1b(ic1b)
-                     if (supeq(vnd(jc1u),one)) vnd(jc1u) = mpl%msv%valr
+                     if (supeq(vnd(jc1u),half)) vnd(jc1u) = mpl%msv%valr
                   elseif (distv>zero) then
                      vnd(jc1u) = mpl%msv%valr
                   else

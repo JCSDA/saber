@@ -17,6 +17,7 @@
 #include "oops/base/Variables.h"
 #include "oops/interface/Geometry.h"
 #include "oops/interface/Increment.h"
+#include "oops/interface/State.h"
 
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
@@ -43,13 +44,17 @@ template <typename MODEL>
 class StdDev : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL>             Geometry_;
   typedef oops::interface::Increment<MODEL> Increment_;
+  typedef oops::State<MODEL>                State_;
 
  public:
   static const std::string classname() {return "saber::StdDev";}
 
   typedef StdDevParameters Parameters_;
 
-  StdDev(const Geometry_ &, const Parameters_ &);
+  StdDev(const Geometry_ &,
+         const Parameters_ &,
+         const State_ &,
+         const State_ &);
   virtual ~StdDev();
 
   void randomize(atlas::FieldSet *) const override;
@@ -66,7 +71,10 @@ class StdDev : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-StdDev<MODEL>::StdDev(const Geometry_ & resol, const StdDevParameters & params)
+StdDev<MODEL>::StdDev(const Geometry_ & resol,
+                      const StdDevParameters & params,
+                      const State_ & xb,
+                      const State_ & fg)
   : SaberBlockBase<MODEL>(params)
 {
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
@@ -95,6 +103,7 @@ StdDev<MODEL>::StdDev(const Geometry_ & resol, const StdDevParameters & params)
 
   // Increment_ to ATLAS fieldset
   stdDevFieldSet_.reset(new atlas::FieldSet());
+  stdDev.setAtlas(stdDevFieldSet_.get());
   stdDev.toAtlas(stdDevFieldSet_.get());
 
   oops::Log::trace() << classname() << "::StdDev done" << std::endl;

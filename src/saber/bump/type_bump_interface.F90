@@ -531,27 +531,27 @@ end subroutine bump_psichi_to_uv_ad_c
 ! Subroutine: bump_get_parameter_c
 !> Get a parameter
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_c(key_bump,nstr,cstr,c_afieldset) bind(c,name='bump_get_parameter_f90')
+subroutine bump_get_parameter_c(key_bump,npar,cpar,c_afieldset) bind(c,name='bump_get_parameter_f90')
 
 implicit none
 
 ! Passed variables
 integer(c_int),intent(in) :: key_bump       !< BUMP
-integer(c_int),intent(in) :: nstr           !< Parameter name size
-character(c_char),intent(in) :: cstr(nstr)  !< Parameter name
+integer(c_int),intent(in) :: npar           !< Parameter name size
+character(c_char),intent(in) :: cpar(npar)  !< Parameter name
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
 integer :: istr
-character(len=nstr) :: param
+character(len=npar) :: param
 type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
 param = ''
-do istr=1,nstr
-  param = trim(param)//cstr(istr)
+do istr=1,npar
+  param = trim(param)//cpar(istr)
 end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
@@ -564,27 +564,27 @@ end subroutine bump_get_parameter_c
 ! Subroutine: bump_set_parameter_c
 !> Set a parameter
 !----------------------------------------------------------------------
-subroutine bump_set_parameter_c(key_bump,nstr,cstr,c_afieldset) bind(c,name='bump_set_parameter_f90')
+subroutine bump_set_parameter_c(key_bump,npar,cpar,c_afieldset) bind(c,name='bump_set_parameter_f90')
 
 implicit none
 
 ! Passed variables
 integer(c_int),intent(in) :: key_bump       !< BUMP
-integer(c_int),intent(in) :: nstr           !< Parameter name size
-character(c_char),intent(in) :: cstr(nstr)  !< Parameter name
+integer(c_int),intent(in) :: npar           !< Parameter name size
+character(c_char),intent(in) :: cpar(npar)  !< Parameter name
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
 integer :: istr
-character(len=nstr) :: param
+character(len=npar) :: param
 type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
 param = ''
-do istr=1,nstr
-  param = trim(param)//cstr(istr)
+do istr=1,npar
+  param = trim(param)//cpar(istr)
 end do
 f_fieldset = atlas_fieldset(c_afieldset)
 

@@ -48,25 +48,6 @@ def S_hor(x,y,):
 def S_ver(z):
    return S(z)
 
-def GC99(r):
-   if r<0.5:
-      value = 1.0-r
-      value = 1.0+8.0/5.0*r*value
-      value = 1.0-3.0/4.0*r*value
-      value = 1.0-20.0/3.0*r**2*value
-   else:
-      if r<1.0:
-         value = 1.0-r/3.0
-         value = 1.0-8.0/5.0*r*value
-         value = 1.0+3.0/4.0*r*value
-         value = 1.0-2.0/3.0*r*value
-         value = 1.0-5.0/2.0*r*value
-         value = 1.0-12.0*r*value
-         value = -value/(3.0*r)
-      else:
-        value = 0.0
-   return value
-
 # Initialize arrays
 f_sqrt_hor = np.zeros((nnd))
 f_int_hor = np.zeros((nnd))
@@ -75,18 +56,10 @@ scalehdef = np.zeros(nscaleth)
 f_sqrt_ver = np.zeros((nnd))
 f_int_ver = np.zeros((nnd))
 scalev = np.zeros((nscaleth))
-scalevdef = np.zeros(nscaleth)
-f_gc99 = np.zeros(nnd)
 scaled_axis = np.zeros((nnd))
-
-# GC99 function
-for ind in range(0, nnd):
-   f_gc99[ind] = GC99(axis[ind])
 
 if run_horizontal:
    for ind in range(0, nnd):
-      print("horizontal: " + str(ind))
-
       # Square-root function
       f_sqrt_hor[ind] = S(axis[ind])
 
@@ -126,22 +99,8 @@ if run_horizontal:
       plt.savefig("fit_hor.jpg", format="jpg", dpi=300)
       plt.close()
 
-      for iscaleth in range(0, nscaleth):
-         scaled_axis = axis/scaleh[iscaleth]
-         fig, ax = plt.subplots()
-         ax.set_xlim([0,1.0/scaleh[iscaleth]])
-         ax.set_ylim([0,1.1])
-         ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
-         ax.axhline(y=0, color="k")
-         ax.axvline(x=0, color="k")
-         ax.plot(scaled_axis, f_int_hor)
-         plt.savefig("fit_hor_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
-         plt.close()
-
 if run_vertical:
    for ind in range(0, nnd):
-      print("vertical: " + str(ind))
-
       # Square-root function
       f_sqrt_ver[ind] = S_ver(axis[ind])/S_ver(0)
 
@@ -181,19 +140,6 @@ if True:
    plt.savefig("fit_ver.jpg", format="jpg", dpi=300)
    plt.close()
 
-   if False:
-      for iscaleth in range(0, nscaleth):
-         scaled_axis = axis/scalev[iscaleth]
-         fig, ax = plt.subplots()
-         ax.set_xlim([0,1.0/scalev[iscaleth]])
-         ax.set_ylim([-0.5,1.1])
-         ax.set_title("Scaled convolution function: " + str(scaleth[iscaleth]))
-         ax.axhline(y=0, color="k")
-         ax.axvline(x=0, color="k")
-         ax.plot(scaled_axis, f_int_ver)
-         plt.savefig("fit_ver_" + str(iscaleth) + ".jpg", format="jpg", dpi=300)
-         plt.close()
-
 if run_horizontal and run_vertical:
    # Open file
    file = open(args.srcdir + "/src/saber/bump/tools_gc99.fypp", "w")
@@ -217,7 +163,7 @@ if run_horizontal and run_vertical:
    file.write("use tools_const, only: zero,half,one,two\n")
    file.write("use tools_kinds, only: kind_real\n")
    file.write("use tools_netcdf, only: open_file,inquire_dim_size,get_att,inquire_var,get_var,close_file\n")
-   file.write("use tools_repro, only: rth,eq,inf,sup\n")
+   file.write("use tools_repro, only: rth,eq,inf,infeq,sup\n")
    file.write("use type_mpl, only: mpl_type\n")
    file.write("@:use_probe()\n")
    file.write("\n")
@@ -269,7 +215,7 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("! Local variables\n")
    file.write("integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id\n")
-   file.write("character(len=1024) :: filename \n")
+   file.write("character(len=1024) :: filename\n")
    file.write("\n")
    file.write("! Set name\n")
    file.write("@:set_name(gc99_fit_setup)\n")
@@ -371,7 +317,7 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("! Local variables\n")
    file.write("integer :: indm,indp\n")
-   file.write("real(kind_real) :: bnd,rndm,rndp\n")
+   file.write("real(kind_real) :: rndm,rndp\n")
    file.write("\n")
    file.write("! Set name\n")
    file.write("@:set_name(gc99_fit_func)\n")
@@ -382,18 +328,15 @@ if run_horizontal and run_vertical:
    file.write("! Check bounds\n")
    file.write("if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')\n")
    file.write("\n")
+   file.write("! Initialization\n")
+   file.write("value = zero\n")
+   file.write("\n")
    file.write("if (eq(nd,zero)) then\n")
    file.write("   ! Origin\n")
    file.write("   value = one\n")
-   file.write("elseif (sup(nd,one)) then\n")
-   file.write("   ! Out of support\n")
-   file.write("   value = zero\n")
-   file.write("else\n")
-   file.write("   ! Bounded values\n")
-   file.write("   bnd = max(ndmin,min(nd,ndmax))\n")
-   file.write("\n")
+   file.write("elseif (infeq(nd,one)) then\n")
    file.write("   ! Indices\n")
-   file.write("   indm = floor(bnd/dnd)+1\n")
+   file.write("   indm = floor(nd/dnd)+1\n")
    file.write("   if (indm==nnd) then\n")
    file.write("      indp = indm\n")
    file.write("   else\n")
@@ -404,7 +347,7 @@ if run_horizontal and run_vertical:
    file.write("   if (indm==nnd) then\n")
    file.write("      rndm = one\n")
    file.write("   else\n")
-   file.write("      rndm = real(indp-1,kind_real)-bnd/dnd\n")
+   file.write("      rndm = real(indp-1,kind_real)-nd/dnd\n")
    file.write("   end if\n")
    file.write("   rndp = (one-rndm)\n")
    file.write("\n")
@@ -447,13 +390,13 @@ if run_horizontal and run_vertical:
    file.write("! Check bounds\n")
    file.write("if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')\n")
    file.write("\n")
+   file.write("! Initialization\n")
+   file.write("value = zero\n")
+   file.write("\n")
    file.write("if (eq(nd,zero)) then\n")
    file.write("   ! Origin\n")
    file.write("   value = one\n")
-   file.write("elseif (sup(nd,half)) then\n")
-   file.write("   ! Out of support\n")
-   file.write("   value = zero\n")
-   file.write("else\n")
+   file.write("elseif (infeq(nd,half)) then\n")
    file.write("   value = one-(two*nd)\n")
    file.write("end if\n")
    file.write("\n")
@@ -462,7 +405,7 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("end function gc99_fit_func_sqrt\n")
    file.write("\n")
-   file.write("end module tools_gc99")
+   file.write("end module tools_gc99\n")
 
    # Close file
    file.close()

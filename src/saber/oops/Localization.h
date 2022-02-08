@@ -43,6 +43,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
   typedef oops::Increment<MODEL>              Increment_;
   typedef SaberBlockBase<MODEL>               SaberBlockBase_;
   typedef SaberBlockParametersWrapper<MODEL>  SaberBlockParametersWrapper_;
+  typedef oops::State<MODEL>                  State_;
 
  public:
   Localization(const Geometry_ &, const eckit::Configuration &);
@@ -53,7 +54,6 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-
   std::unique_ptr<SaberBlockBase_> saberBlock_;
 };
 
@@ -68,10 +68,19 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
 
   size_t myslot = resol.timeComm().rank();
   if (myslot == 0) {
+    // Get parameters from configuration
     const eckit::LocalConfiguration saberBlock(conf, "saber block");
     SaberBlockParametersWrapper_ parameters;
     parameters.validateAndDeserialize(saberBlock);
-    saberBlock_.reset(SaberBlockFactory<MODEL>::create(resol, parameters.saberBlockParameters));
+
+    // Create dummy state
+    const oops::Variables inputVars(saberBlock, "input variables");
+    util::DateTime time(1977, 5, 25, 0, 0, 0);
+    State_ dummyState(resol, inputVars, time);
+
+    // Create SABER block
+    saberBlock_.reset(SaberBlockFactory<MODEL>::create(resol, parameters.saberBlockParameters,
+      dummyState, dummyState));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
@@ -116,8 +125,9 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   // Increment_ to ATLAS fieldset
   Increment_ dxtmp(dx);
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dx.setAtlas(atlasFieldSet.get());
+  dxtmp.setAtlas(atlasFieldSet.get());
   dxtmp.toAtlas(atlasFieldSet.get());
+  dx.setAtlas(atlasFieldSet.get());
 
   // Central block multiplication
   saberBlock_->multiply(atlasFieldSet.get());

@@ -157,7 +157,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       // Covariance matrix
       const CovarianceParametersBase_ &covarParamsBase = (*covarParams).covarianceParameters;
       std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
-                                       covarParamsBase, resol, inputVars, xx, xx));
+                                       resol, inputVars, covarParamsBase, xx, xx));
 
       // Randomize ensemble
       int ens2_ne = covarParamsBase.randomizationSize.value();
@@ -178,7 +178,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     const boost::optional<BUMP_Parameters<MODEL>> &bumpParams = params.bumpParams.value();
     if (bumpParams != boost::none) {
       // Do training
-      BUMP_ bump(resol, inputVars, *bumpParams, ens1, ens2);
+      BUMP_ bump(resol, inputVars, *bumpParams, xx, xx, ens1, ens2);
 
       // Write training parameters
       bump.write();

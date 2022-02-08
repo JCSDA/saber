@@ -42,6 +42,7 @@ class BUMP_PsiChiToUVParameters : public SaberBlockParametersBase {
 template <typename MODEL>
 class BUMP_PsiChiToUV : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL> Geometry_;
+  typedef oops::State<MODEL>    State_;
   typedef BUMP<MODEL>           BUMP_;
 
  public:
@@ -49,7 +50,10 @@ class BUMP_PsiChiToUV : public SaberBlockBase<MODEL> {
 
   typedef BUMP_PsiChiToUVParameters<MODEL> Parameters_;
 
-  BUMP_PsiChiToUV(const Geometry_ &, const Parameters_ & params);
+  BUMP_PsiChiToUV(const Geometry_ &,
+                  const Parameters_ & params,
+                  const State_ &,
+                  const State_ &);
   virtual ~BUMP_PsiChiToUV();
 
   void randomize(atlas::FieldSet *) const override;
@@ -66,7 +70,10 @@ class BUMP_PsiChiToUV : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_PsiChiToUV<MODEL>::BUMP_PsiChiToUV(const Geometry_ & resol, const Parameters_ & params)
+BUMP_PsiChiToUV<MODEL>::BUMP_PsiChiToUV(const Geometry_ & resol,
+                                        const Parameters_ & params,
+                                        const State_ & xb,
+                                        const State_ & fg)
   : SaberBlockBase<MODEL>(params), bump_()
 {
   oops::Log::trace() << classname() << "::BUMP_PsiChiToUV starting" << std::endl;
@@ -99,7 +106,7 @@ BUMP_PsiChiToUV<MODEL>::BUMP_PsiChiToUV(const Geometry_ & resol, const Parameter
   }
 
   // Initialize BUMP
-  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value()));
+  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value(), xb, fg));
 
   oops::Log::trace() << classname() << "::BUMP_PsiChiToUV done" << std::endl;
 }

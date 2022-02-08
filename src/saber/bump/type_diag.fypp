@@ -129,10 +129,9 @@ integer :: ib,ic2a
 if (allocated(diag%blk)) then
    do ib=1,size(diag%blk,2)
      do ic2a=0,size(diag%blk,1)-1
-       call diag%blk(ic2a,ib)%dealloc
+       call diag%blk(ic2a,ib)%partial_dealloc
      end do
    end do
-   deallocate(diag%blk)
 end if
 
 ! Probe out
@@ -151,6 +150,9 @@ implicit none
 ! Passed variables
 class(diag_type),intent(inout) :: diag !< Diagnostic
 
+! Local variables
+integer :: ib,ic2a
+
 ! Set name
 @:set_name(diag_dealloc)
 
@@ -159,6 +161,14 @@ class(diag_type),intent(inout) :: diag !< Diagnostic
 
 ! Release memory
 call diag%partial_dealloc
+if (allocated(diag%blk)) then
+   do ib=1,size(diag%blk,2)
+     do ic2a=0,size(diag%blk,1)-1
+       call diag%blk(ic2a,ib)%dealloc
+     end do
+   end do
+   deallocate(diag%blk)
+end if
 if (allocated(diag%dirac)) deallocate(diag%dirac)
 
 ! Probe out

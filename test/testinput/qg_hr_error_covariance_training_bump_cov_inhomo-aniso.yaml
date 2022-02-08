@@ -37,18 +37,18 @@ bump:
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-aniso
     date: 2010-01-01T12:00:00Z
-    exp: cor_D11
-    parameter: cor_D11
+    exp: cor_rh1
+    parameter: cor_rh1
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-aniso
     date: 2010-01-01T12:00:00Z
-    exp: cor_D22
-    parameter: cor_D22
+    exp: cor_rh2
+    parameter: cor_rh2
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-aniso
     date: 2010-01-01T12:00:00Z
-    exp: cor_D12
-    parameter: cor_D12
+    exp: cor_rhc
+    parameter: cor_rhc
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-aniso
     date: 2010-01-01T12:00:00Z
