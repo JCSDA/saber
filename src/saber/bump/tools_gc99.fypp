@@ -23,7 +23,6 @@ use type_mpl, only: mpl_type
 implicit none
 
 ! Public parameters
-logical :: fit_allocated = .false.
 integer,parameter :: nnd = 51
 integer,parameter :: nscaleth = 8
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real

@@ -170,7 +170,6 @@ if run_horizontal and run_vertical:
    file.write("implicit none\n")
    file.write("\n")
    file.write("! Public parameters\n")
-   file.write("logical :: fit_allocated = .false.\n")
    file.write("integer,parameter :: nnd = " + str(nnd) + "\n")
    file.write("integer,parameter :: nscaleth = " + str(nscaleth) + "\n")
    file.write("real(kind_real),parameter :: ndmin = %.8f_kind_real\n" % (min(nd)))
