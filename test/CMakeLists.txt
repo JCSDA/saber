@@ -278,12 +278,20 @@ if( NOT DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
     # Download saber data
     foreach( saber_data_tar_name ${saber_data_tar} )
 
-        list( APPEND SABER_DATA_DOWNLOADER_ARGS
-              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
-              ${SABER_TESTFILES_PATH}/testdata
-              ${saber_data_tar_name}
-              ${checksum} )
+        if( DEFINED GIT_TAG_FUNC )
+          list( APPEND SABER_DATA_DOWNLOADER_ARGS
+                ${ECBUILD_DOWNLOAD_BASE_URL}
+                ${SABER_TESTFILES_PATH}/testdata
+                ${saber_data_tar_name}
+                ${checksum} )
 
+        else()
+            list( APPEND SABER_DATA_DOWNLOADER_ARGS
+                  ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
+                  ${SABER_TESTFILES_PATH}/testdata
+                  ${saber_data_tar_name}
+                  ${checksum} )
+        endif()
         # add test for downloading data
         ecbuild_add_test( TARGET    get_data_${saber_data_tar_name}
                           TYPE      SCRIPT
@@ -311,11 +319,20 @@ if( NOT DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} )
     message( STATUS "  Reference: " ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME} )
 
    foreach( saber_ref_tar_name ${saber_ref_tar} )
-        list( APPEND SABER_DATA_DOWNLOADER_ARGS
-              ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
-              ${SABER_TESTFILES_PATH}/testref
-              ${saber_ref_tar_name}
-              ${checksum} )
+     if( DEFINED GIT_TAG_FUNC )
+       list( APPEND SABER_DATA_DOWNLOADER_ARGS
+             ${ECBUILD_DOWNLOAD_BASE_URL}
+             ${SABER_TESTFILES_PATH}/testref
+             ${saber_ref_tar_name}
+             ${checksum} )
+
+     else()
+         list( APPEND SABER_DATA_DOWNLOADER_ARGS
+               ${ECBUILD_DOWNLOAD_BASE_URL}/${DIRNAME}
+               ${SABER_TESTFILES_PATH}/testref
+               ${saber_ref_tar_name}
+               ${checksum} )
+     endif()
 
         # add test for downloading data
         ecbuild_add_test( TARGET    get_data_${saber_ref_tar_name}
