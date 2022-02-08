@@ -674,6 +674,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     // Print configuration for this grid
     oops::Log::info() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
 
+
     // Create BUMP instance
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, &resol.getComm(),
