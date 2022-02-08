@@ -93,9 +93,6 @@ integer,intent(in) :: ic2a                     !< Local index
 integer,intent(in) :: ib                       !< Block index
 character(len=*),intent(in) :: prefix          !< Block prefix
 
-! Local variables
-integer :: il0,jl0r,jl0
-
 ! Set name
 @:set_name(diag_blk_alloc)
 

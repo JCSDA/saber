@@ -4958,7 +4958,6 @@ type(geom_type),intent(in) :: geom            !< Geometry
 integer :: itest,isa
 integer :: il0(nam%check_normalization),iproc(nam%check_normalization),ic0a(nam%check_normalization)
 real(kind_real) :: alpha(nicas_blk%nsa),fld(geom%nc0a,geom%nl0),norm,val(nam%check_normalization)
-logical :: found
 
 ! Set name
 @:set_name(nicas_blk_test_normalization)
