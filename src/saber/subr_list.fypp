@@ -104,8 +104,6 @@
 #:set subr_list = subr_list + ["func_zss_count_r4"]
 #:set subr_list = subr_list + ["func_zss_count_r5"]
 #:set subr_list = subr_list + ["func_zss_count_r6"]
-#:set subr_list = subr_list + ["gc99_fit_setup"]
-#:set subr_list = subr_list + ["gc99_fit_dealloc"]
 #:set subr_list = subr_list + ["gc99_fit_func"]
 #:set subr_list = subr_list + ["gc99_fit_func_sqrt"]
 #:set subr_list = subr_list + ["avg_blk_alloc"]
