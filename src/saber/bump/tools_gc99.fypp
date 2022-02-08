@@ -37,7 +37,6 @@ real(kind_real),allocatable :: scaleh(:,:)
 real(kind_real),allocatable :: func_hor(:)
 real(kind_real),allocatable :: scalev(:,:)
 real(kind_real),allocatable :: func_ver(:)
-real(kind_real),allocatable :: support_factor(:)
 
 interface fit_setup
    module procedure gc99_fit_setup
@@ -54,7 +53,7 @@ end interface
 
 private
 public :: nncomp,nscaleth,scaleth,scalethmin,scalethmax
-public :: scaleh,scalev,support_factor
+public :: scaleh,scalev
 public :: fit_setup,fit_dealloc,fit_func,fit_func_sqrt
 
 contains
@@ -69,7 +68,7 @@ subroutine gc99_fit_setup(mpl)
 type(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Local variables
-integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id,support_factor_id
+integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id
 character(len=1024) :: filename
 
 ! Set name
@@ -93,7 +92,6 @@ if (.not.fit_allocated) then
    allocate(func_hor(nnd))
    allocate(scalev(nscaleth,nncomp))
    allocate(func_ver(nnd))
-   allocate(support_factor(nncomp))
 
    if (mpl%main) then
       ! Inquire variable
@@ -102,7 +100,6 @@ if (.not.fit_allocated) then
       func_hor_id = inquire_var(mpl,ncid,'func_hor')
       scalev_id = inquire_var(mpl,ncid,'scalev')
       func_ver_id = inquire_var(mpl,ncid,'func_ver')
-      support_factor_id = inquire_var(mpl,ncid,'support_factor')
 
       ! Read variable
       call get_var(mpl,ncid,scaleth_id,scaleth)
@@ -110,7 +107,6 @@ if (.not.fit_allocated) then
       call get_var(mpl,ncid,func_hor_id,func_hor)
       call get_var(mpl,ncid,scalev_id,scalev)
       call get_var(mpl,ncid,func_ver_id,func_ver)
-      call get_var(mpl,ncid,support_factor_id,support_factor)
 
       ! Close file
       call close_file(mpl,ncid)
@@ -122,7 +118,6 @@ if (.not.fit_allocated) then
    call mpl%f_comm%broadcast(func_hor,mpl%rootproc-1)
    call mpl%f_comm%broadcast(scalev,mpl%rootproc-1)
    call mpl%f_comm%broadcast(func_ver,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(support_factor,mpl%rootproc-1)
 
    ! Set flag
    fit_allocated = .true.
@@ -151,7 +146,6 @@ if (allocated(scaleh)) deallocate(scaleh)
 if (allocated(func_hor)) deallocate(func_hor)
 if (allocated(scalev)) deallocate(scalev)
 if (allocated(func_ver)) deallocate(func_ver)
-if (allocated(support_factor)) deallocate(support_factor)
 
 ! Reset flag
 fit_allocated = .false.
@@ -178,7 +172,7 @@ real(kind_real) :: value
 
 ! Local variables
 integer :: icomp,indm,indp
-real(kind_real) :: lnd,bnd,rndm,rndp
+real(kind_real) :: lnd,rndm,rndp
 
 ! Set name
 @:set_name(gc99_fit_func)
@@ -194,7 +188,7 @@ value = zero
 
 do icomp=1,ncomp
    ! Local normalized distance
-   lnd = real(2**(icomp-1),kind_real)*nd
+   lnd = real(icomp,kind_real)*nd
 
    if (eq(lnd,zero)) then
       ! Origin
@@ -269,7 +263,7 @@ value = zero
 
 do icomp=1,ncomp
    ! Local normalized distance
-   lnd = real(2**(icomp-1),kind_real)*nd
+   lnd = real(icomp,kind_real)*nd
 
    if (eq(lnd,zero)) then
       ! Origin

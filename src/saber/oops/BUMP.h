@@ -954,6 +954,7 @@ void BUMP<MODEL>::apply() const {
         dxi.toAtlas(atlasFieldSet.get());
         dxo.setAtlas(atlasFieldSet.get());
 
+
         // Apply BUMP operator
         std::vector<std::string> bumpOperators;
         appConf.get("bump operators", bumpOperators);

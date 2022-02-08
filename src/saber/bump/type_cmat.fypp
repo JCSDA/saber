@@ -12,7 +12,6 @@ use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,one,rad2deg,reqkm,req
 use tools_fit, only: tensor_d2r
 use tools_func, only: convert_l2i,convert_i2l,zss_sum
-use tools_gc99, only: support_factor
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_bpar, only: bpar_type
@@ -563,13 +562,13 @@ case ('random_coast')
    deallocate(rh_c0a)
 end select
 
-! Support factor depending on the number of components
+! Sampling support depending on the number of components
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
       do ib=1,bpar%nb
          if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-            cmat%blk(ib)%rhs(ic0a,il0) = cmat%blk(ib)%rhs(ic0a,il0)*support_factor(cmat%blk(ib)%ncomph)
-            cmat%blk(ib)%rvs(ic0a,il0) = cmat%blk(ib)%rvs(ic0a,il0)*support_factor(cmat%blk(ib)%ncompv)
+            cmat%blk(ib)%rhs(ic0a,il0) = cmat%blk(ib)%rhs(ic0a,il0)/real(cmat%blk(ib)%ncomph,kind_real)
+            cmat%blk(ib)%rvs(ic0a,il0) = cmat%blk(ib)%rvs(ic0a,il0)/real(cmat%blk(ib)%ncompv,kind_real)
          end if
       end do
    end do

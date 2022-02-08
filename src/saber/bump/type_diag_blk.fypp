@@ -94,9 +94,6 @@ integer,intent(in) :: ic2a                     !< Local index
 integer,intent(in) :: ib                       !< Block index
 character(len=*),intent(in) :: prefix          !< Block prefix
 
-! Local variables
-integer :: il0,jl0r,jl0
-
 ! Set name
 @:set_name(diag_blk_alloc)
 
@@ -590,6 +587,7 @@ do il1=1,nl1
    if (mpl%msv%isallnot(rh_tmp)) then
       ! Average values
       rh_l1(il1) = sqrt(sum(rh_tmp**2)/real(bpar%nc4(ib),kind_real))
+
       if (bpar%nc4(ib)>1) then
          ! Initialization
          minim%nc3 = bpar%nc3(ib)
@@ -705,7 +703,7 @@ end if
 end if
 
 if ((trim(dir)=='ver').or.(trim(dir)=='all')) then
-
+print*, 'ok',nl0r
 ! Allocation
 allocate(rv_l0(geom%nl0))
 
@@ -764,7 +762,7 @@ if (present(rmse_min)) then
    do jc4=1,bpar%nc4(ib)
       rmse = rmse+sum((fit-diag_blk%raw(1,jc4,:,:))**2,mask=mpl%msv%isnot(diag_blk%raw(1,jc4,:,:)))
    end do
-
+   print*, rmse,rmse_min
    if (rmse<rmse_min) then
       ! Save best estimation
       rmse_min = rmse

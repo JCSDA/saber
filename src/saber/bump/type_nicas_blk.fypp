@@ -3995,10 +3995,6 @@ real(kind_real),allocatable :: list(:),S_list_interp(:),S_list_convol(:)
 ! Probe in
 @:probe_in()
 
-! Allocation
-allocate(nicas_blk%norm(geom%nc0a,geom%nl0))
-nicas_blk%norm = mpl%msv%valr
-
 ! Compute vertical interpolation inverse mapping
 allocate(inev(geom%nl0))
 inev = 0
@@ -4134,6 +4130,10 @@ do isb=1,nicas_blk%nsb
       deallocate(list)
    end if
 end do
+
+! Allocation
+allocate(nicas_blk%norm(geom%nc0a,geom%nl0))
+nicas_blk%norm = mpl%msv%valr
 
 ! Compute normalization weights
 do il0=1,geom%nl0
@@ -4968,7 +4968,6 @@ type(geom_type),intent(in) :: geom            !< Geometry
 integer :: itest,isa
 integer :: il0(nam%check_normalization),iproc(nam%check_normalization),ic0a(nam%check_normalization)
 real(kind_real) :: alpha(nicas_blk%nsa),fld(geom%nc0a,geom%nl0),norm,val(nam%check_normalization)
-logical :: found
 
 ! Set name
 @:set_name(nicas_blk_test_normalization)
