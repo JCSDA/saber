@@ -347,7 +347,7 @@ real(kind_real) :: hor_fit(nc3,nc4),ver_fit(nl0r,nl0)
 @:probe_in()
 
 ! Vertical component
-call fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ver_fit)
+call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ver_fit)
 
 do il0=1,nl0
    do jl0r=1,nl0r
@@ -692,7 +692,7 @@ if (raw(iz)>zero) then
                fit_r = fit_r/scaletest(itest)
 
                ! Compute fitness
-               call fit_diag_iso(mpl,n,dist,dir,fit_r,fit)
+               call diag_iso(mpl,n,dist,dir,fit_r,fit)
                cost = sum((fit-raw_tmp)**2)/real(ntmp,kind_real)
                if (inf(cost,cost_min)) then
                   ! Better fit
