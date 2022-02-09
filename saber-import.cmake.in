@@ -7,7 +7,7 @@ if(@jedicmake_FOUND@ AND NOT jedicmake_FOUND)
     find_dependency(jedicmake REQUIRED)
 endif()
 
-if(NOT OpenMP_Fortran_FOUND)
+if(@OPENMP@)
     find_dependency(OpenMP REQUIRED COMPONENTS Fortran)
 endif()
 

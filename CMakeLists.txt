@@ -26,7 +26,9 @@ include( ${PROJECT_NAME}_compiler_flags )
 ## Dependencies
 # Required
 find_package( jedicmake REQUIRED )  # Prefer find modules from jedi-cmake
-find_package( OpenMP REQUIRED COMPONENTS Fortran )
+if(OPENMP)
+  find_package( OpenMP REQUIRED COMPONENTS Fortran )
+endif()
 find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS Fortran )
 find_package( eckit 1.11.6 REQUIRED COMPONENTS MPI )

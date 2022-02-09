@@ -21,7 +21,9 @@ ecbuild_add_library( TARGET ${PROJECT_NAME}
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
                      LINKER_LANGUAGE CXX )
 
-target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran )
+if(OpenMP_Fortran_FOUND)
+  target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran )
+endif()
 target_link_libraries( ${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran )
 target_link_libraries( ${PROJECT_NAME} PUBLIC MPI::MPI_Fortran )
 target_link_libraries( ${PROJECT_NAME} PUBLIC ${LAPACK_LIBRARIES} )
