@@ -42,6 +42,7 @@ class BUMP_StdDevParameters : public SaberBlockParametersBase {
 template <typename MODEL>
 class BUMP_StdDev : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL> Geometry_;
+  typedef oops::State<MODEL>    State_;
   typedef BUMP<MODEL>           BUMP_;
 
  public:
@@ -49,7 +50,10 @@ class BUMP_StdDev : public SaberBlockBase<MODEL> {
 
   typedef BUMP_StdDevParameters<MODEL> Parameters_;
 
-  BUMP_StdDev(const Geometry_ &, const Parameters_ &);
+  BUMP_StdDev(const Geometry_ &,
+              const Parameters_ &,
+              const State_ &,
+              const State_ &);
   virtual ~BUMP_StdDev();
 
   void randomize(atlas::FieldSet *) const override;
@@ -66,7 +70,10 @@ class BUMP_StdDev : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_StdDev<MODEL>::BUMP_StdDev(const Geometry_ & resol, const Parameters_ & params)
+BUMP_StdDev<MODEL>::BUMP_StdDev(const Geometry_ & resol,
+                                const Parameters_ & params,
+                                const State_ & xb,
+                                const State_ & fg)
   : SaberBlockBase<MODEL>(params), bump_()
 {
   oops::Log::trace() << classname() << "::BUMP_StdDev starting" << std::endl;
@@ -87,7 +94,7 @@ BUMP_StdDev<MODEL>::BUMP_StdDev(const Geometry_ & resol, const Parameters_ & par
   }
 
   // Initialize BUMP
-  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value()));
+  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value(), xb, fg));
 
   oops::Log::trace() << classname() << "::BUMP_StdDev done" << std::endl;
 }

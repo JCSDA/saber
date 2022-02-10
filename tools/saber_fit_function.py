@@ -42,12 +42,16 @@ def S(r):
    else:
       return 0.0
 
-def S_hor(x,y,):
+def S_hor(x,y):
    r = np.sqrt(x**2+y**2)
    return S(r)
 
 def S_ver(z):
    return S(z)
+
+def factor(icomp,ncomp,ind):
+   ind_new = (icomp+1)*ind
+   return ind_new
 
 # Initialize arrays
 f_sqrt_hor = np.zeros((nnd))
@@ -84,12 +88,12 @@ if run_horizontal:
          f_sqrt_hor_comp_detail[ind,:] = 0.0
          f_int_hor_comp[ind] = 0.0
          for icomp in range(0, incomp+1):
-            if ((icomp+1)*ind < nnd):
-               f_sqrt_hor_comp[ind] = f_sqrt_hor_comp[ind]+f_sqrt_hor[(icomp+1)*ind]
+            if (factor(icomp,incomp,ind) < nnd):
+               f_sqrt_hor_comp[ind] = f_sqrt_hor_comp[ind]+f_sqrt_hor[factor(icomp,incomp,ind)]
                for jcomp in range(0, incomp+1):
                   if (jcomp >= icomp):
-                     f_sqrt_hor_comp_detail[ind,jcomp] = f_sqrt_hor_comp_detail[ind,jcomp]+f_sqrt_hor[(icomp+1)*ind]
-               f_int_hor_comp[ind] = f_int_hor_comp[ind]+f_int_hor[(icomp+1)*ind]
+                     f_sqrt_hor_comp_detail[ind,jcomp] = f_sqrt_hor_comp_detail[ind,jcomp]+f_sqrt_hor[factor(icomp,incomp,ind)]
+               f_int_hor_comp[ind] = f_int_hor_comp[ind]+f_int_hor[factor(icomp,incomp,ind)]
          f_sqrt_hor_comp[ind] = f_sqrt_hor_comp[ind]/(incomp+1)
          f_sqrt_hor_comp_detail[ind,:] = f_sqrt_hor_comp_detail[ind,:]/(incomp+1)
          f_int_hor_comp[ind] = f_int_hor_comp[ind]/(incomp+1)
@@ -145,12 +149,12 @@ if run_vertical:
          f_sqrt_ver_comp_detail[ind,:] = 0.0
          f_int_ver_comp[ind] = 0.0
          for icomp in range(0, incomp+1):
-            if ((icomp+1)*ind < nnd):
-               f_sqrt_ver_comp[ind] = f_sqrt_ver_comp[ind]+f_sqrt_ver[(icomp+1)*ind]
+            if (factor(icomp,incomp,ind) < nnd):
+               f_sqrt_ver_comp[ind] = f_sqrt_ver_comp[ind]+f_sqrt_ver[factor(icomp,incomp,ind)]
                for jcomp in range(0, incomp+1):
                   if (jcomp >= icomp):
-                     f_sqrt_ver_comp_detail[ind,jcomp] = f_sqrt_ver_comp_detail[ind,jcomp]+f_sqrt_ver[(icomp+1)*ind]
-               f_int_ver_comp[ind] = f_int_ver_comp[ind]+f_int_ver[(icomp+1)*ind]
+                     f_sqrt_ver_comp_detail[ind,jcomp] = f_sqrt_ver_comp_detail[ind,jcomp]+f_sqrt_ver[factor(icomp,incomp,ind)]
+               f_int_ver_comp[ind] = f_int_ver_comp[ind]+f_int_ver[factor(icomp,incomp,ind)]
          f_sqrt_ver_comp[ind] = f_sqrt_ver_comp[ind]/(incomp+1)
          f_sqrt_ver_comp_detail[ind,:] = f_sqrt_ver_comp_detail[ind,:]/(incomp+1)
          f_int_ver_comp[ind] = f_int_ver_comp[ind]/(incomp+1)
@@ -214,7 +218,6 @@ if run_horizontal and run_vertical:
    file.write("implicit none\n")
    file.write("\n")
    file.write("! Public parameters\n")
-   file.write("logical :: fit_allocated = .false.\n")
    file.write("integer,parameter :: nnd = " + str(nnd) + "\n")
    file.write("integer,parameter :: nncomp = " + str(nncomp) + "\n")
    file.write("integer,parameter :: nscaleth = " + str(nscaleth) + "\n")
@@ -223,18 +226,46 @@ if run_horizontal and run_vertical:
    file.write("real(kind_real),parameter :: dnd = %.8f_kind_real\n" % (dnd))
    file.write("real(kind_real),parameter :: scalethmin = %.8f_kind_real\n" % (scalethmin))
    file.write("real(kind_real),parameter :: scalethmax = %.8f_kind_real\n" % (scalethmax))
-   file.write("real(kind_real),allocatable :: scaleth(:)\n")
-   file.write("real(kind_real),allocatable :: scaleh(:,:)\n")
-   file.write("real(kind_real),allocatable :: func_hor(:)\n")
-   file.write("real(kind_real),allocatable :: scalev(:,:)\n")
-   file.write("real(kind_real),allocatable :: func_ver(:)\n")
+   file.write("real(kind_real),parameter :: scaleth(nscaleth) = (/ &\n")
+   for iscaleth in range(0, nscaleth):
+      if iscaleth != nscaleth-1:
+         suffix = ", &"
+      else:
+         suffix = "/)"
+      file.write(" & %.8f_kind_real" % (scaleth[iscaleth]) + suffix + "\n")
+   file.write("real(kind_real),parameter :: scaleh(nscaleth,nncomp) = reshape((/ &\n")
+   for incomp in range(0, nncomp):
+      for iscaleth in range(0, nscaleth):
+         if iscaleth != nscaleth-1 or incomp != nncomp-1:
+            suffix = ","
+         else:
+            suffix = "/),"
+         file.write(" & %.8f_kind_real" % (scaleh[incomp,iscaleth]) + suffix + " &\n")
+   file.write(" & (/nscaleth,nncomp/))\n")
+   file.write("real(kind_real),parameter :: func_hor(nnd) = (/ &\n")
+   for ind in range(0, nnd):
+      if ind != nnd-1:
+         suffix = ", &"
+      else:
+         suffix = "/)"
+      file.write(" & %.8f_kind_real" % (f_int_hor[ind]) + suffix + "\n")
+   file.write("real(kind_real),parameter :: scalev(nscaleth,nncomp) = reshape((/ &\n")
+   for incomp in range(0, nncomp):
+      for iscaleth in range(0, nscaleth):
+         if iscaleth != nscaleth-1 or incomp != nncomp-1:
+            suffix = ","
+         else:
+            suffix = "/),"
+         file.write(" & %.8f_kind_real" % (scalev[incomp,iscaleth]) + suffix + " &\n")
+   file.write(" & (/nscaleth,nncomp/))\n")
+   file.write("real(kind_real),parameter :: func_ver(nnd) = (/ &\n")
+   for ind in range(0, nnd):
+      if ind != nnd-1:
+         suffix = ", &"
+      else:
+         suffix = "/)"
+      file.write(" & %.8f_kind_real" % (f_int_ver[ind]) + suffix + "\n")
    file.write("\n")
-   file.write("interface fit_setup\n")
-   file.write("   module procedure gc99_fit_setup\n")
-   file.write("end interface\n")
-   file.write("interface fit_dealloc\n")
-   file.write("   module procedure gc99_fit_dealloc\n")
-   file.write("end interface\n")
    file.write("interface fit_func\n")
    file.write("   module procedure gc99_fit_func\n")
    file.write("end interface\n")
@@ -245,106 +276,9 @@ if run_horizontal and run_vertical:
    file.write("private\n")
    file.write("public :: nncomp,nscaleth,scaleth,scalethmin,scalethmax\n")
    file.write("public :: scaleh,scalev\n")
-   file.write("public :: fit_setup,fit_dealloc,fit_func,fit_func_sqrt\n")
+   file.write("public :: fit_func,fit_func_sqrt\n")
    file.write("\n")
    file.write("contains\n")
-   file.write("\n")
-   file.write("!----------------------------------------------------------------------\n")
-   file.write("! Subroutine: gc99_fit_setup\n")
-   file.write("!> Fit setup\n")
-   file.write("!----------------------------------------------------------------------\n")
-   file.write("subroutine gc99_fit_setup(mpl)\n")
-   file.write("\n")
-   file.write("! Passed variables\n")
-   file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
-   file.write("\n")
-   file.write("! Local variables\n")
-   file.write("integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id\n")
-   file.write("character(len=1024) :: filename\n")
-   file.write("\n")
-   file.write("! Set name\n")
-   file.write("@:set_name(gc99_fit_setup)\n")
-   file.write("\n")
-   file.write("! Probe in\n")
-   file.write("@:probe_in()\n")
-   file.write("\n")
-   file.write("if (.not.fit_allocated) then\n")
-   file.write("   if (mpl%main) then\n")
-   file.write("      ! Get file name\n")
-   file.write("      filename = '${_FILE_}$.nc'\n")
-   file.write("\n")
-   file.write("      ! Open file\n")
-   file.write("      ncid = open_file(mpl,filename,0,.true.)\n")
-   file.write("   end if\n")
-   file.write("\n")
-   file.write("   ! Allocation\n")
-   file.write("   allocate(scaleth(nscaleth))\n")
-   file.write("   allocate(scaleh(nscaleth,nncomp))\n")
-   file.write("   allocate(func_hor(nnd))\n")
-   file.write("   allocate(scalev(nscaleth,nncomp))\n")
-   file.write("   allocate(func_ver(nnd))\n")
-   file.write("\n")
-   file.write("   if (mpl%main) then\n")
-   file.write("      ! Inquire variable\n")
-   file.write("      scaleth_id = inquire_var(mpl,ncid,'scaleth')\n")
-   file.write("      scaleh_id = inquire_var(mpl,ncid,'scaleh')\n")
-   file.write("      func_hor_id = inquire_var(mpl,ncid,'func_hor')\n")
-   file.write("      scalev_id = inquire_var(mpl,ncid,'scalev')\n")
-   file.write("      func_ver_id = inquire_var(mpl,ncid,'func_ver')\n")
-   file.write("\n")
-   file.write("      ! Read variable\n")
-   file.write("      call get_var(mpl,ncid,scaleth_id,scaleth)\n")
-   file.write("      call get_var(mpl,ncid,scaleh_id,scaleh)\n")
-   file.write("      call get_var(mpl,ncid,func_hor_id,func_hor)\n")
-   file.write("      call get_var(mpl,ncid,scalev_id,scalev)\n")
-   file.write("      call get_var(mpl,ncid,func_ver_id,func_ver)\n")
-   file.write("\n")
-   file.write("      ! Close file\n")
-   file.write("      call close_file(mpl,ncid)\n")
-   file.write("   end if\n")
-   file.write("\n")
-   file.write("   ! Broadcast variables\n")
-   file.write("   call mpl%f_comm%broadcast(scaleth,mpl%rootproc-1)\n")
-   file.write("   call mpl%f_comm%broadcast(scaleh,mpl%rootproc-1)\n")
-   file.write("   call mpl%f_comm%broadcast(func_hor,mpl%rootproc-1)\n")
-   file.write("   call mpl%f_comm%broadcast(scalev,mpl%rootproc-1)\n")
-   file.write("   call mpl%f_comm%broadcast(func_ver,mpl%rootproc-1)\n")
-   file.write("\n")
-   file.write("   ! Set flag\n")
-   file.write("   fit_allocated = .true.\n")
-   file.write("end if\n")
-   file.write("\n")
-   file.write("! Probe out\n")
-   file.write("@:probe_out()\n")
-   file.write("\n")
-   file.write("end subroutine gc99_fit_setup\n")
-   file.write("\n")
-   file.write("!----------------------------------------------------------------------\n")
-   file.write("! Subroutine: gc99_fit_dealloc\n")
-   file.write("!> Fit setup\n")
-   file.write("!----------------------------------------------------------------------\n")
-   file.write("subroutine gc99_fit_dealloc()\n")
-   file.write("\n")
-   file.write("! Set name\n")
-   file.write("@:set_name(gc99_fit_dealloc)\n")
-   file.write("\n")
-   file.write("! Probe in\n")
-   file.write("@:probe_in()\n")
-   file.write("\n")
-   file.write("! Release memory\n")
-   file.write("if (allocated(scaleth)) deallocate(scaleth)\n")
-   file.write("if (allocated(scaleh)) deallocate(scaleh)\n")
-   file.write("if (allocated(func_hor)) deallocate(func_hor)\n")
-   file.write("if (allocated(scalev)) deallocate(scalev)\n")
-   file.write("if (allocated(func_ver)) deallocate(func_ver)\n")
-   file.write("\n")
-   file.write("! Reset flag\n")
-   file.write("fit_allocated = .false.\n")
-   file.write("\n")
-   file.write("! Probe out\n")
-   file.write("@:probe_out()\n")
-   file.write("\n")
-   file.write("end subroutine gc99_fit_dealloc\n")
    file.write("\n")
    file.write("!----------------------------------------------------------------------\n")
    file.write("! Function: gc99_fit_func\n")
@@ -477,28 +411,3 @@ if run_horizontal and run_vertical:
 
    # Close file
    file.close()
-
-   # Create NetCDF file
-   ncfile = Dataset(args.srcdir + "/src/saber/bump/tools_gc99.fypp.nc",mode="w",format='NETCDF4_CLASSIC')
-
-   # Create dimensions
-   nnd_id = ncfile.createDimension('nnd', nnd)
-   nncomp_id = ncfile.createDimension('nncomp', nncomp)
-   nscaleth_id = ncfile.createDimension('nscaleth', nscaleth)
-
-   # Create variables
-   scaleth_id = ncfile.createVariable('scaleth', np.float64, ('nscaleth'))
-   scaleh_id = ncfile.createVariable('scaleh', np.float64, ('nncomp','nscaleth'))
-   func_hor_id = ncfile.createVariable('func_hor', np.float64, ('nnd'))
-   scalev_id = ncfile.createVariable('scalev', np.float64, ('nncomp','nscaleth'))
-   func_ver_id = ncfile.createVariable('func_ver', np.float64, ('nnd'))
-
-   # Write variables
-   scaleth_id[:] = scaleth
-   scaleh_id[:,:] = scaleh
-   func_hor_id[:] = f_int_hor
-   scalev_id[:,:] = scalev
-   func_ver_id[:] = f_int_ver
-
-   # Close file
-   ncfile.close()

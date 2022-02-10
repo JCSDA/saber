@@ -42,6 +42,7 @@ class BUMP_NICASParameters : public SaberBlockParametersBase {
 template <typename MODEL>
 class BUMP_NICAS : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL> Geometry_;
+  typedef oops::State<MODEL>    State_;
   typedef BUMP<MODEL>           BUMP_;
 
  public:
@@ -49,7 +50,10 @@ class BUMP_NICAS : public SaberBlockBase<MODEL> {
 
   typedef BUMP_NICASParameters<MODEL> Parameters_;
 
-  BUMP_NICAS(const Geometry_ &, const Parameters_ &);
+  BUMP_NICAS(const Geometry_ &,
+             const Parameters_ &,
+             const State_ &,
+             const State_ &);
   virtual ~BUMP_NICAS();
 
   void randomize(atlas::FieldSet *) const override;
@@ -66,7 +70,10 @@ class BUMP_NICAS : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_NICAS<MODEL>::BUMP_NICAS(const Geometry_ & resol, const Parameters_ & params)
+BUMP_NICAS<MODEL>::BUMP_NICAS(const Geometry_ & resol,
+                              const Parameters_ & params,
+                              const State_ & xb,
+                              const State_ & fg)
   : SaberBlockBase<MODEL>(params), bump_()
 {
   oops::Log::trace() << classname() << "::BUMP_NICAS starting" << std::endl;
@@ -87,7 +94,7 @@ BUMP_NICAS<MODEL>::BUMP_NICAS(const Geometry_ & resol, const Parameters_ & param
   }
 
   // Initialize BUMP
-  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value()));
+  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value(), xb, fg));
 
   oops::Log::trace() << classname() << "::BUMP_NICAS done" << std::endl;
 }

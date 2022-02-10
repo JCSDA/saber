@@ -300,6 +300,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info(mpl%info)
+            call fckit_log%flush
          else
             write(mpl%lunit,'(a)') trim(mpl%info)
             call flush(mpl%lunit)
@@ -307,6 +308,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info(mpl%info,newl=.false.)
+            call fckit_log%flush
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%info)
             call flush(mpl%lunit)
@@ -323,6 +325,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('OOPS_TRACE: '//trim(mpl%trace))
+            call fckit_log%flush
          else
             write(mpl%lunit,'(a)') 'OOPS_TRACE: '//trim(mpl%trace)
             call flush(mpl%lunit)
@@ -330,6 +333,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('OOPS_TRACE: '//trim(mpl%trace),newl=.false.)
+            call fckit_log%flush
          else
             write(mpl%lunit,'(a)',advance='no') 'OOPS_TRACE: '//trim(mpl%trace)
             call flush(mpl%lunit)
@@ -346,6 +350,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('OOPS_STATS: '//trim(mpl%stats))
+            call fckit_log%flush
          else
             write(mpl%lunit,'(a)') 'OOPS_STATS: '//trim(mpl%stats)
             call flush(mpl%lunit)
@@ -353,6 +358,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('OOPS_STATS: '//trim(mpl%stats),newl=.false.)
+            call fckit_log%flush
          else
             write(mpl%lunit,'(a)',advance='no') 'OOPS_STATS: '//trim(mpl%stats)
             call flush(mpl%lunit)
@@ -369,6 +375,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('Test     : '//trim(mpl%test))
+            call fckit_log%flush
          else
             write(mpl%lunit,'(a)') 'Test     : '//trim(mpl%test)
             call flush(mpl%lunit)
@@ -376,6 +383,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info('Test     : '//trim(mpl%test),newl=.false.)
+            call fckit_log%flush
          else
             write(mpl%lunit,'(a)',advance='no') 'Test     : '//trim(mpl%test)
             call flush(mpl%lunit)

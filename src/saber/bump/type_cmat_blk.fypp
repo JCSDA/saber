@@ -33,8 +33,7 @@ type cmat_blk_type
    real(kind_real),allocatable :: D22(:,:)           !< Horizontal direct tensor, component 22
    real(kind_real),allocatable :: D12(:,:)           !< Horizontal direct tensor, component 12 (normalized)
    real(kind_real),allocatable :: rv(:,:)            !< Vertical support radius
-   integer :: ncomph                                 !< Number of components (horizontal)
-   integer :: ncompv                                 !< Number of components (vertical)
+   integer :: ncomp                                  !< Number of components
    real(kind_real),allocatable :: rhs(:,:)           !< Fit support radius  for sampling
    real(kind_real),allocatable :: rvs(:,:)           !< Fit support radius, for sampling
    real(kind_real) :: wgt                            !< Block weight
@@ -47,8 +46,7 @@ type cmat_blk_type
    real(kind_real),allocatable :: bump_D22(:,:)      !< Horizontal direct tensor, component 22
    real(kind_real),allocatable :: bump_D12(:,:)      !< Horizontal direct tensor, component 12 (normalized)
    real(kind_real),allocatable :: bump_rv(:,:)       !< Vertical support radius
-   integer :: bump_ncomph                            !< Number of components (horizontal)
-   integer :: bump_ncompv                            !< Number of components (vertical)
+   integer :: bump_ncomp                             !< Number of components
 contains
    procedure :: alloc => cmat_blk_alloc
    procedure :: init => cmat_blk_init
@@ -140,15 +138,11 @@ if (bpar%fit_block(ib)) then
       cmat_blk%D12 = mpl%msv%valr
    end if
    cmat_blk%rv = mpl%msv%valr
-   cmat_blk%ncomph = mpl%msv%vali
-   cmat_blk%ncompv = mpl%msv%vali
+   cmat_blk%ncomp = mpl%msv%vali
    cmat_blk%rhs = mpl%msv%valr
    cmat_blk%rvs = mpl%msv%valr
 end if
-if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-   cmat_blk%bump_ncomph = 1
-   cmat_blk%bump_ncompv = 1
-end if
+if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat_blk%bump_ncomp = 1
 
 ! End associate
 end associate

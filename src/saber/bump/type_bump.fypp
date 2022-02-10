@@ -13,7 +13,6 @@ use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_const, only: zero,half,one,thousand,req,reqkm,deg2rad,rad2deg
 use tools_func, only: fletcher32,sphere_dist,zss_maxval,zss_minval
-use tools_gc99, only: fit_setup,fit_dealloc
 use tools_kinds,only: kind_real
 use tools_netcdf, only: registry
 use tools_repro,only: repro,rth
@@ -359,13 +358,6 @@ write(bump%mpl%info,'(a)') '--- Initialize block parameters'
 call bump%mpl%flush
 call bump%bpar%alloc(bump%nam,bump%geom)
 call bump%bpar%init(bump%mpl,bump%nam,bump%geom)
-
-! Initialize fit functions
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Initialize fit functions'
-call bump%mpl%flush
-call fit_setup(bump%mpl)
 
 if (bump%nam%ens1_ne>0) then
    ! Initialize ensemble 1
@@ -1544,22 +1536,25 @@ do iv=1,bump%nam%nv
       end select
 
       ! Copy
-      select case (trim(param))
-      case ('cor_ncomph')
-         value = real(bump%hdiag%cor1%blk(0,ib)%ncomph,kind_real)
-      case ('cor_ncompv')
-         value = real(bump%hdiag%cor1%blk(0,ib)%ncompv,kind_real)
-      case ('loc_ncomph')
-         value = real(bump%hdiag%loc1%blk(0,ib)%ncomph,kind_real)
-      case ('loc_ncompv')
-         value = real(bump%hdiag%loc1%blk(0,ib)%ncompv,kind_real)
-      case ('loc_hyb_ncomph')
-         value = real(bump%hdiag%loc2%blk(0,ib)%ncomph,kind_real)
-      case ('loc_hyb_ncompv')
-         value = real(bump%hdiag%loc2%blk(0,ib)%ncompv,kind_real)
-      case default
-         call bump%mpl%abort('${subr}$','wrong parameter')
-      end select
+      if (bump%nam%forced_radii) then
+         select case (trim(param))
+         case ('cor_ncomp','loc_ncomp','loc_hyb_ncomp')
+            value = bump%nam%ncomp(iv)
+         case default
+            call bump%mpl%abort('${subr}$','wrong parameter')
+         end select
+      else
+         select case (trim(param))
+         case ('cor_ncomp')
+            value = real(bump%hdiag%cor1%blk(0,ib)%ncomp,kind_real)
+         case ('loc_ncomp')
+            value = real(bump%hdiag%loc1%blk(0,ib)%ncomp,kind_real)
+         case ('loc_hyb_ncomp')
+            value = real(bump%hdiag%loc2%blk(0,ib)%ncomp,kind_real)
+         case default
+            call bump%mpl%abort('${subr}$','wrong parameter')
+         end select
+      end if
    end if
 end do
 
@@ -2118,7 +2113,7 @@ integer :: iv,ib
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('ncomph','ncompv')
+case ('ncomp')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 end select
 
@@ -2134,10 +2129,8 @@ do iv=1,bump%nam%nv
 
       ! Copy
       select case (trim(param))
-      case ('ncomph')
-         bump%cmat%blk(ib)%ncomph = int(value)
-      case ('ncompv')
-         bump%cmat%blk(ib)%ncompv = int(value)
+      case ('ncomp')
+         bump%cmat%blk(ib)%ncomp = int(value)
       case default
          call bump%mpl%abort('${subr}$','wrong parameter')
       end select
@@ -2500,7 +2493,6 @@ class(bump_type),intent(inout) :: bump !< BUMP
 @:probe_in()
 
 ! Release memory
-call fit_dealloc
 call bump%cmat%partial_dealloc
 call bump%ens1%partial_dealloc
 call bump%ens1u%partial_dealloc

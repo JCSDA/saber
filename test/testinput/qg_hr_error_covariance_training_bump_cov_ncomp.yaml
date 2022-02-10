@@ -1,0 +1,67 @@
+background:
+  date: 2010-01-01T12:00:00Z
+  filename: testdata/qg_hr_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+  state variables: [q]
+bump:
+  check_adjoints: true
+  check_dirac: true
+  check_normalization: 10
+  datadir: testdata
+  method: cor
+  new_nicas: true
+  forced_radii: true
+  rh:
+    q: [10000.0e3]
+  rv:
+    q: [0.0]
+  ncomp:
+    q: [7]
+  prefix: qg_hr_error_covariance_training_bump_cov_ncomp/test
+  resol: 8.0
+  strategy: specific_univariate
+  write_hdiag: true
+  write_nicas_local: true
+  ndir: 1
+  londir: [0.0]
+  latdir: [45.0]
+  levdir: [1]
+  ivdir: [1]
+  nomask: true
+  output:
+  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncomp
+    date: 2010-01-01T12:00:00Z
+    exp: cor_rh
+    parameter: cor_rh
+    type: an
+  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncomp
+    date: 2010-01-01T12:00:00Z
+    exp: cor_rv
+    parameter: cor_rv
+    type: an
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncomp/cor_ncomph
+    parameter: cor_ncomph
+    single value: true
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncomp/cor_ncompv
+    parameter: cor_ncompv
+    single value: true
+  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncomp
+    date: 2010-01-01T12:00:00Z
+    exp: dirac_nicas
+    parameter: dirac_nicas
+    type: an
+  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncomp
+    date: 2010-01-01T12:00:00Z
+    exp: nicas_norm
+    parameter: nicas_norm
+    type: an
+geometry:
+  nx: 320
+  ny: 80
+  depths: [4500.0, 5500.0]
+input variables: [q]
+
+test:
+  reference filename: testref/qg_hr_error_covariance_training_bump_cov_ncomp/test.log.out
+  test output filename: testoutput/qg_hr_error_covariance_training_bump_cov_ncomp/test.log.out

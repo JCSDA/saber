@@ -251,7 +251,7 @@ end subroutine fit_diag_ver
 ! Subroutine: fit_diag_iso_full
 !> Compute isotropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,coef,rh,rv,ncomph,ncompv,fit)
+subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,coef,rh,rv,ncomp,fit)
 
 implicit none
 
@@ -266,8 +266,7 @@ real(kind_real),intent(in) :: vunit(nl0)         !< Vertical unit
 real(kind_real),intent(in) :: coef(nl0)          !< Diagonal coefficient
 real(kind_real),intent(in) :: rh(nl0)            !< Horizontal support radius
 real(kind_real),intent(in) :: rv(nl0)            !< Vertical support radius
-integer,intent(in) :: ncomph                     !< Number of components (horizontal)
-integer,intent(in) :: ncompv                     !< Number of components (vertical)
+integer,intent(in) :: ncomp                      !< Number of components
 real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
 
 ! Local variables
@@ -295,7 +294,7 @@ do il0=1,nl0
          rh_eff = half*(rh(il0)+rh(jl0))
 
          ! Horizontal component
-         call diag_iso(mpl,nc3,disth,'hor',rh_eff,ncomph,hor_fit)
+         call diag_iso(mpl,nc3,disth,'hor',rh_eff,ncomp,hor_fit)
 
          do jc3=1,nc3
             ! Fit function
@@ -319,7 +318,7 @@ end subroutine fit_diag_iso_full
 ! Subroutine: fit_diag_tensor_full
 !> Compute anistropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,coef,D11,D22,D12,rv,ncomph,ncompv,fit)
+subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,coef,D11,D22,D12,rv,ncomp,fit)
 
 implicit none
 
@@ -338,8 +337,7 @@ real(kind_real),intent(in) :: D11(nl0)               !< Horizontal tensor compon
 real(kind_real),intent(in) :: D22(nl0)               !< Horizontal tensor component 22
 real(kind_real),intent(in) :: D12(nl0)               !< Horizontal tensor component 12 (normalized)
 real(kind_real),intent(in) :: rv(nl0)                !< Vertical support radius
-integer,intent(in) :: ncomph                     !< Number of components (horizontal)
-integer,intent(in) :: ncompv                     !< Number of components (vertical)
+integer,intent(in) :: ncomp                          !< Number of components
 real(kind_real),intent(out) :: fit(nc3,nc4,nl0r,nl0) !< Fit
 
 ! Local variables
@@ -369,7 +367,7 @@ do il0=1,nl0
          D12_eff = half*(D12(il0)+D12(jl0))
 
          ! Horizontal component
-         call diag_tensor(mpl,nc3,nc4,disth,as,D11_eff,D22_eff,D12_eff,ncomph,hor_fit)
+         call diag_tensor(mpl,nc3,nc4,disth,as,D11_eff,D22_eff,D12_eff,ncomp,hor_fit)
 
          do jc4=1,nc4
             do jc3=1,nc3

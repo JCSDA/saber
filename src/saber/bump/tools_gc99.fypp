@@ -23,7 +23,6 @@ use type_mpl, only: mpl_type
 implicit none
 
 ! Public parameters
-logical :: fit_allocated = .false.
 integer,parameter :: nnd = 51
 integer,parameter :: nncomp = 7
 integer,parameter :: nscaleth = 8
@@ -32,18 +31,236 @@ real(kind_real),parameter :: ndmax = 1.00000000_kind_real
 real(kind_real),parameter :: dnd = 0.02000000_kind_real
 real(kind_real),parameter :: scalethmin = 0.20000000_kind_real
 real(kind_real),parameter :: scalethmax = 0.90000000_kind_real
-real(kind_real),allocatable :: scaleth(:)
-real(kind_real),allocatable :: scaleh(:,:)
-real(kind_real),allocatable :: func_hor(:)
-real(kind_real),allocatable :: scalev(:,:)
-real(kind_real),allocatable :: func_ver(:)
+real(kind_real),parameter :: scaleth(nscaleth) = (/ &
+ & 0.20000000_kind_real, &
+ & 0.30000000_kind_real, &
+ & 0.40000000_kind_real, &
+ & 0.50000000_kind_real, &
+ & 0.60000000_kind_real, &
+ & 0.70000000_kind_real, &
+ & 0.80000000_kind_real, &
+ & 0.90000000_kind_real/)
+real(kind_real),parameter :: scaleh(nscaleth,nncomp) = reshape((/ &
+ & 0.52493537_kind_real, &
+ & 0.45867618_kind_real, &
+ & 0.40328526_kind_real, &
+ & 0.35260315_kind_real, &
+ & 0.30349756_kind_real, &
+ & 0.25363138_kind_real, &
+ & 0.20023294_kind_real, &
+ & 0.13645909_kind_real, &
+ & 0.40790697_kind_real, &
+ & 0.33395241_kind_real, &
+ & 0.28083303_kind_real, &
+ & 0.23839582_kind_real, &
+ & 0.20120478_kind_real, &
+ & 0.16574407_kind_real, &
+ & 0.12914878_kind_real, &
+ & 0.08715670_kind_real, &
+ & 0.33395621_kind_real, &
+ & 0.26187103_kind_real, &
+ & 0.21535218_kind_real, &
+ & 0.17993388_kind_real, &
+ & 0.15041977_kind_real, &
+ & 0.12298675_kind_real, &
+ & 0.09533284_kind_real, &
+ & 0.06396260_kind_real, &
+ & 0.28199358_kind_real, &
+ & 0.21583454_kind_real, &
+ & 0.17458869_kind_real, &
+ & 0.14464638_kind_real, &
+ & 0.11989883_kind_real, &
+ & 0.09771909_kind_real, &
+ & 0.07547093_kind_real, &
+ & 0.05016529_kind_real, &
+ & 0.24449716_kind_real, &
+ & 0.18345574_kind_real, &
+ & 0.14689016_kind_real, &
+ & 0.12063705_kind_real, &
+ & 0.09973537_kind_real, &
+ & 0.08110176_kind_real, &
+ & 0.06255641_kind_real, &
+ & 0.04182471_kind_real, &
+ & 0.21583454_kind_real, &
+ & 0.15932840_kind_real, &
+ & 0.12683641_kind_real, &
+ & 0.10383969_kind_real, &
+ & 0.08566548_kind_real, &
+ & 0.06932369_kind_real, &
+ & 0.05312621_kind_real, &
+ & 0.03507077_kind_real, &
+ & 0.19332154_kind_real, &
+ & 0.14098209_kind_real, &
+ & 0.11173458_kind_real, &
+ & 0.09127144_kind_real, &
+ & 0.07486425_kind_real, &
+ & 0.06046185_kind_real, &
+ & 0.04638044_kind_real, &
+ & 0.03014139_kind_real/), &
+ & (/nscaleth,nncomp/))
+real(kind_real),parameter :: func_hor(nnd) = (/ &
+ & 1.00000000_kind_real, &
+ & 0.99763095_kind_real, &
+ & 0.99066350_kind_real, &
+ & 0.97930394_kind_real, &
+ & 0.96444048_kind_real, &
+ & 0.94459916_kind_real, &
+ & 0.92155595_kind_real, &
+ & 0.89536258_kind_real, &
+ & 0.86619744_kind_real, &
+ & 0.83444272_kind_real, &
+ & 0.80041852_kind_real, &
+ & 0.76448545_kind_real, &
+ & 0.72648585_kind_real, &
+ & 0.68762573_kind_real, &
+ & 0.64765586_kind_real, &
+ & 0.60715551_kind_real, &
+ & 0.56623840_kind_real, &
+ & 0.52546185_kind_real, &
+ & 0.48505631_kind_real, &
+ & 0.44508100_kind_real, &
+ & 0.40620171_kind_real, &
+ & 0.36844690_kind_real, &
+ & 0.33223519_kind_real, &
+ & 0.29771507_kind_real, &
+ & 0.26507979_kind_real, &
+ & 0.23452434_kind_real, &
+ & 0.20660278_kind_real, &
+ & 0.17984581_kind_real, &
+ & 0.15574377_kind_real, &
+ & 0.13377315_kind_real, &
+ & 0.11462341_kind_real, &
+ & 0.09637051_kind_real, &
+ & 0.08039710_kind_real, &
+ & 0.06657327_kind_real, &
+ & 0.05432425_kind_real, &
+ & 0.04369898_kind_real, &
+ & 0.03466290_kind_real, &
+ & 0.02722834_kind_real, &
+ & 0.02058214_kind_real, &
+ & 0.01520998_kind_real, &
+ & 0.01106331_kind_real, &
+ & 0.00762670_kind_real, &
+ & 0.00514772_kind_real, &
+ & 0.00320818_kind_real, &
+ & 0.00190125_kind_real, &
+ & 0.00101978_kind_real, &
+ & 0.00045321_kind_real, &
+ & 0.00016843_kind_real, &
+ & 0.00004210_kind_real, &
+ & 0.00000335_kind_real, &
+ & 0.00000000_kind_real/)
+real(kind_real),parameter :: scalev(nscaleth,nncomp) = reshape((/ &
+ & 0.53598040_kind_real, &
+ & 0.46866120_kind_real, &
+ & 0.41267433_kind_real, &
+ & 0.36118279_kind_real, &
+ & 0.31105744_kind_real, &
+ & 0.25992387_kind_real, &
+ & 0.20463576_kind_real, &
+ & 0.13909325_kind_real, &
+ & 0.41751322_kind_real, &
+ & 0.34252283_kind_real, &
+ & 0.28775711_kind_real, &
+ & 0.24379519_kind_real, &
+ & 0.20587106_kind_real, &
+ & 0.16964729_kind_real, &
+ & 0.13212430_kind_real, &
+ & 0.08873042_kind_real, &
+ & 0.34252283_kind_real, &
+ & 0.26826425_kind_real, &
+ & 0.22022988_kind_real, &
+ & 0.18423402_kind_real, &
+ & 0.15380401_kind_real, &
+ & 0.12585677_kind_real, &
+ & 0.09756310_kind_real, &
+ & 0.06516762_kind_real, &
+ & 0.28907505_kind_real, &
+ & 0.22070949_kind_real, &
+ & 0.17849694_kind_real, &
+ & 0.14807331_kind_real, &
+ & 0.12273035_kind_real, &
+ & 0.09999994_kind_real, &
+ & 0.07725423_kind_real, &
+ & 0.05119031_kind_real, &
+ & 0.25040537_kind_real, &
+ & 0.18804831_kind_real, &
+ & 0.15043773_kind_real, &
+ & 0.12362053_kind_real, &
+ & 0.10209550_kind_real, &
+ & 0.08299280_kind_real, &
+ & 0.06395101_kind_real, &
+ & 0.04256805_kind_real, &
+ & 0.22070949_kind_real, &
+ & 0.16336406_kind_real, &
+ & 0.12989863_kind_real, &
+ & 0.10634240_kind_real, &
+ & 0.08763072_kind_real, &
+ & 0.07088881_kind_real, &
+ & 0.05437331_kind_real, &
+ & 0.03588746_kind_real, &
+ & 0.19768681_kind_real, &
+ & 0.14470779_kind_real, &
+ & 0.11423139_kind_real, &
+ & 0.09328912_kind_real, &
+ & 0.07647798_kind_real, &
+ & 0.06191524_kind_real, &
+ & 0.04740012_kind_real, &
+ & 0.03078818_kind_real/), &
+ & (/nscaleth,nncomp/))
+real(kind_real),parameter :: func_ver(nnd) = (/ &
+ & 1.00000000_kind_real, &
+ & 0.99765451_kind_real, &
+ & 0.99079426_kind_real, &
+ & 0.97969549_kind_real, &
+ & 0.96466052_kind_real, &
+ & 0.94599971_kind_real, &
+ & 0.92396748_kind_real, &
+ & 0.89886177_kind_real, &
+ & 0.87097591_kind_real, &
+ & 0.84059109_kind_real, &
+ & 0.80799930_kind_real, &
+ & 0.77348800_kind_real, &
+ & 0.73734335_kind_real, &
+ & 0.69985731_kind_real, &
+ & 0.66131200_kind_real, &
+ & 0.62199983_kind_real, &
+ & 0.58220794_kind_real, &
+ & 0.54222400_kind_real, &
+ & 0.50233620_kind_real, &
+ & 0.46283295_kind_real, &
+ & 0.42400018_kind_real, &
+ & 0.38612807_kind_real, &
+ & 0.34950399_kind_real, &
+ & 0.31440030_kind_real, &
+ & 0.28114786_kind_real, &
+ & 0.25000000_kind_real, &
+ & 0.22118847_kind_real, &
+ & 0.19467039_kind_real, &
+ & 0.17036798_kind_real, &
+ & 0.14818225_kind_real, &
+ & 0.12800035_kind_real, &
+ & 0.10974394_kind_real, &
+ & 0.09331200_kind_real, &
+ & 0.07860806_kind_real, &
+ & 0.06553623_kind_real, &
+ & 0.05400056_kind_real, &
+ & 0.04390400_kind_real, &
+ & 0.03515189_kind_real, &
+ & 0.02765020_kind_real, &
+ & 0.02129600_kind_real, &
+ & 0.01600068_kind_real, &
+ & 0.01166412_kind_real, &
+ & 0.00819203_kind_real, &
+ & 0.00548883_kind_real, &
+ & 0.00345597_kind_real, &
+ & 0.00200009_kind_real, &
+ & 0.00102297_kind_real, &
+ & 0.00043200_kind_real, &
+ & 0.00013504_kind_real, &
+ & 0.00001659_kind_real, &
+ & 0.00000000_kind_real/)
 
-interface fit_setup
-   module procedure gc99_fit_setup
-end interface
-interface fit_dealloc
-   module procedure gc99_fit_dealloc
-end interface
 interface fit_func
    module procedure gc99_fit_func
 end interface
@@ -54,106 +271,9 @@ end interface
 private
 public :: nncomp,nscaleth,scaleth,scalethmin,scalethmax
 public :: scaleh,scalev
-public :: fit_setup,fit_dealloc,fit_func,fit_func_sqrt
+public :: fit_func,fit_func_sqrt
 
 contains
-
-!----------------------------------------------------------------------
-! Subroutine: gc99_fit_setup
-!> Fit setup
-!----------------------------------------------------------------------
-subroutine gc99_fit_setup(mpl)
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl !< MPI data
-
-! Local variables
-integer :: ncid,scaleth_id,scaleh_id,func_hor_id,scalev_id,func_ver_id
-character(len=1024) :: filename
-
-! Set name
-@:set_name(gc99_fit_setup)
-
-! Probe in
-@:probe_in()
-
-if (.not.fit_allocated) then
-   if (mpl%main) then
-      ! Get file name
-      filename = '${_FILE_}$.nc'
-
-      ! Open file
-      ncid = open_file(mpl,filename,0,.true.)
-   end if
-
-   ! Allocation
-   allocate(scaleth(nscaleth))
-   allocate(scaleh(nscaleth,nncomp))
-   allocate(func_hor(nnd))
-   allocate(scalev(nscaleth,nncomp))
-   allocate(func_ver(nnd))
-
-   if (mpl%main) then
-      ! Inquire variable
-      scaleth_id = inquire_var(mpl,ncid,'scaleth')
-      scaleh_id = inquire_var(mpl,ncid,'scaleh')
-      func_hor_id = inquire_var(mpl,ncid,'func_hor')
-      scalev_id = inquire_var(mpl,ncid,'scalev')
-      func_ver_id = inquire_var(mpl,ncid,'func_ver')
-
-      ! Read variable
-      call get_var(mpl,ncid,scaleth_id,scaleth)
-      call get_var(mpl,ncid,scaleh_id,scaleh)
-      call get_var(mpl,ncid,func_hor_id,func_hor)
-      call get_var(mpl,ncid,scalev_id,scalev)
-      call get_var(mpl,ncid,func_ver_id,func_ver)
-
-      ! Close file
-      call close_file(mpl,ncid)
-   end if
-
-   ! Broadcast variables
-   call mpl%f_comm%broadcast(scaleth,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(scaleh,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(func_hor,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(scalev,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(func_ver,mpl%rootproc-1)
-
-   ! Set flag
-   fit_allocated = .true.
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine gc99_fit_setup
-
-!----------------------------------------------------------------------
-! Subroutine: gc99_fit_dealloc
-!> Fit setup
-!----------------------------------------------------------------------
-subroutine gc99_fit_dealloc()
-
-! Set name
-@:set_name(gc99_fit_dealloc)
-
-! Probe in
-@:probe_in()
-
-! Release memory
-if (allocated(scaleth)) deallocate(scaleth)
-if (allocated(scaleh)) deallocate(scaleh)
-if (allocated(func_hor)) deallocate(func_hor)
-if (allocated(scalev)) deallocate(scalev)
-if (allocated(func_ver)) deallocate(func_ver)
-
-! Reset flag
-fit_allocated = .false.
-
-! Probe out
-@:probe_out()
-
-end subroutine gc99_fit_dealloc
 
 !----------------------------------------------------------------------
 ! Function: gc99_fit_func
