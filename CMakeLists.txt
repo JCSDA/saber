@@ -11,6 +11,8 @@ cmake_minimum_required( VERSION 3.12 )
 
 project( saber VERSION 1.2.0 LANGUAGES CXX Fortran )
 
+option(OPENMP "Build saber with OpenMP support" ON)
+
 ## Ecbuild integration
 find_package( ecbuild QUIET )
 include( ecbuild_system NO_POLICY_SCOPE )
