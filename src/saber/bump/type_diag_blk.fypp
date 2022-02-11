@@ -10,7 +10,7 @@ module type_diag_blk
 
 !$ use omp_lib
 use tools_const, only: zero,half,one,two,four
-use tools_fit, only: condmax,diag_iso,diag_tensor,diag_ver,diag_iso_full,tensor_d2h,tensor_d2r,tensor_check_cond,fast_fit
+use tools_fit, only: condmax,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,tensor_check_cond,fast_fit
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,put_att,define_var,put_var
@@ -46,7 +46,7 @@ type diag_blk_type
    real(kind_real),allocatable :: D22_l0(:)         !< Horizontal direct tensor, component 22, profile
    real(kind_real),allocatable :: D12_l0(:)         !< Horizontal direct tensor, component 12 (normalized), profile
    real(kind_real),allocatable :: rv_l0(:)          !< Vertical support radius, profile
-   integer,allocatable :: ncomp                     !< Number of components
+   integer,allocatable :: ncmp                      !< Number of components
 
    real(kind_real),allocatable :: coef_ens_c0a(:,:) !< Ensemble coefficient, subset Sc0, halo A
    real(kind_real),allocatable :: coef_sta_c0a(:,:) !< Static coefficient, subset Sc0, halo A
@@ -145,7 +145,7 @@ if ((ic2a==0).or.nam%local_diag) then
       diag_blk%D12_l0 = mpl%msv%valr
    end if
    diag_blk%rv_l0 = mpl%msv%valr
-   diag_blk%ncomp = mpl%msv%vali
+   diag_blk%ncmp = mpl%msv%vali
 end if
 if (ic2a==0) then
    diag_blk%coef_ens_c0a = mpl%msv%valr
@@ -297,7 +297,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id/))
    end if
    rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id/))
-   call put_att(mpl,grpid,'ncomp',diag_blk%ncomp)
+   call put_att(mpl,grpid,'ncmp',diag_blk%ncmp)
 end if
 
 ! Write variables
@@ -402,7 +402,7 @@ type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Local variables
-integer :: incomp
+integer :: incmp
 real(kind_real) :: rmse_min
 
 ! Set name
@@ -412,12 +412,12 @@ real(kind_real) :: rmse_min
 @:probe_in()
 
 ! Initialization
-diag_blk%ncomp = 1
+diag_blk%ncmp = 1
 rmse_min = huge_real
 
 ! Brute force optimization of number of components
-do incomp=1,nam%fit_ncompmax
-   call diag_blk%fitting(mpl,nam,geom,bpar,incomp,rmse_min)
+do incmp=1,nam%fit_ncmpmax
+   call diag_blk%fitting(mpl,nam,geom,bpar,incmp,rmse_min)
 end do
 
 ! Probe out
@@ -429,7 +429,7 @@ end subroutine diag_blk_optimization
 ! Subroutine: diag_blk_fitting
 !> Compute a fit of a raw function
 !----------------------------------------------------------------------
-subroutine diag_blk_fitting(diag_blk,mpl,nam,geom,bpar,ncomp,rmse_min)
+subroutine diag_blk_fitting(diag_blk,mpl,nam,geom,bpar,ncmp,rmse_min)
 
 implicit none
 
@@ -439,14 +439,14 @@ type(mpl_type),intent(inout) :: mpl                !< MPI data
 type(nam_type),intent(in) :: nam                   !< Namelist
 type(geom_type),intent(in) :: geom                 !< Geometry
 type(bpar_type),intent(in) :: bpar                 !< Block parameters
-integer,intent(in),optional :: ncomp               !< Number of components
+integer,intent(in),optional :: ncmp                !< Number of components
 real(kind_real),intent(inout),optional :: rmse_min !< Minimum RMSE
 
 ! Local variables
-integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc4,lncomp
+integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc4,lncmp
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
 real(kind_real) :: m2(geom%nl0),rmse
-real(kind_real),allocatable :: rawv(:),distv(:),rinf(:),rsup(:),rh_tmp(:),fit(:,:)
+real(kind_real),allocatable :: rawv(:),distv(:),rinf(:),rsup(:),rh_tmp(:),fit(:,:,:,:)
 real(kind_real),allocatable :: rh_l0(:),D11_l0(:),D22_l0(:),D12_l0(:),rv_l0(:)
 real(kind_real),allocatable :: rh_l1(:),D11_l1(:),D22_l1(:),D12_l1(:),rv_l1(:)
 logical :: var2d,valid,copy_parameters
@@ -462,12 +462,12 @@ type(minim_type) :: minim
 associate(ib=>diag_blk%ib)
 
 ! Check consistency
-if ((present(ncomp).and.(.not.present(rmse_min))).or.((.not.present(ncomp)).and.present(rmse_min))) call mpl%abort('${subr}$', &
+if ((present(ncmp).and.(.not.present(rmse_min))).or.((.not.present(ncmp)).and.present(rmse_min))) call mpl%abort('${subr}$', &
  & 'inconsistent arguments')
 
 ! Default number of components
-lncomp = diag_blk%ncomp
-if (present(ncomp)) lncomp = ncomp
+lncmp = diag_blk%ncmp
+if (present(ncmp)) lncmp = ncmp
 
 ! Check for 2D variable
 do il0=1,geom%nl0
@@ -565,7 +565,7 @@ do il1=1,nl1
 
    ! Fast fit for each angular sector
    do jc4=1,bpar%nc4(ib)
-      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',lncomp,diag_blk%raw(:,jc4,jl0rz,il0),rh_tmp(jc4))
+      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',lncmp,diag_blk%raw(:,jc4,jl0rz,il0),rh_tmp(jc4))
    end do
 
    if (mpl%msv%isallnot(rh_tmp)) then
@@ -576,7 +576,7 @@ do il1=1,nl1
          ! Initialization
          minim%nc3 = bpar%nc3(ib)
          minim%nc4 = bpar%nc4(ib)
-         minim%ncomp = lncomp
+         minim%ncmp = lncmp
          minim%guess = (/rh_l1(il1)**2,rh_l1(il1)**2,zero/)
          minim%binf = (/rh_l1(il1)**2/sqrt(condmax),rh_l1(il1)**2/sqrt(condmax),-one/)
          minim%bsup = (/rh_l1(il1)**2*sqrt(condmax),rh_l1(il1)**2*sqrt(condmax),one/)
@@ -664,7 +664,7 @@ else
       end do
 
       ! Fast fit
-      call fast_fit(mpl,nl0r,jl0rz,distv,'ver',lncomp,rawv,rv_l1(il1))
+      call fast_fit(mpl,nl0r,jl0rz,distv,'ver',lncmp,rawv,rv_l1(il1))
    end do
 
    ! Interpolate vertical parameters
@@ -685,10 +685,10 @@ if (present(rmse_min)) then
    ! Build fit
    if (bpar%nc4(ib)==1) then
      call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%vunit, &
- & diag_blk%coef_ens_l0,rh_l0,rv_l0,lncomp,fit(:,1,:,:))
+ & diag_blk%coef_ens_l0,rh_l0,rv_l0,lncmp,fit(:,1,:,:))
    else
       call diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
- & geom%as,diag_blk%vunit,diag_blk%coef_ens_l0,D11_l0,D22_l0,D12_l0,rv_l0,lncomp,fit)
+ & geom%as,diag_blk%vunit,diag_blk%coef_ens_l0,D11_l0,D22_l0,D12_l0,rv_l0,lncmp,fit)
    end if
 
    ! Compute RMSE
@@ -697,7 +697,7 @@ if (present(rmse_min)) then
    if (rmse<rmse_min) then
       ! Save best estimation
       rmse_min = rmse
-      diag_blk%ncomp = lncomp
+      diag_blk%ncmp = lncmp
    else
       copy_parameters = .false.
    end if
@@ -834,7 +834,7 @@ if (nam%forced_radii) then
    nam_nlv = zero
    do jc4=1,bpar%nc4(ib)
       call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%vunit,nam_coef, &
- & nam%rh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),diag_blk%ncomp,diag_blk%raw(:,jc4,:,:))
+ & nam%rh(1:geom%nl0,iv),nam%rv(1:geom%nl0,iv),diag_blk%ncmp,diag_blk%raw(:,jc4,:,:))
    end do
    diag_blk%valid = mpl%msv%valr
 

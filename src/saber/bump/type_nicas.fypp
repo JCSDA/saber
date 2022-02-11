@@ -107,7 +107,10 @@ if (.not.allocated(nicas%blk)) allocate(nicas%blk(bpar%nbe))
 
 do ib=1,bpar%nbe
    ! Set block index
-   nicas_blk%cmp(icmp)%ib = ib
+   nicas%blk(ib)%ib = ib
+
+   ! Set verbosity
+   nicas%blk(ib)%verbosity = .true.
 end do
 
 ! Update allocation flag
@@ -203,7 +206,7 @@ type(geom_type),intent(in) :: geom       !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
-integer :: ib,iproc,iprocio,ncid,is,isa
+integer :: ib,icmp,iproc,iprocio,ncid,is,isa
 type(nicas_type) :: nicas_tmp
 
 ! Set name
@@ -301,7 +304,7 @@ do ib=1,bpar%nbe
          ! Subset Sc1 offset for halo A
          nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(1) = 0
          do iproc=2,mpl%nproc
-            nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(iproc) = nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(iproc-1)
+            nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(iproc) = nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(iproc-1) &
  & +nicas%blk(ib)%cmp(icmp)%proc_to_nsa(iproc-1)
          end do
 
@@ -342,7 +345,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
 integer :: ncid,nc0a_id,nl0_id
-integer :: ib,iproc,iprocio
+integer :: ib,icmp,iproc,iprocio
 type(nicas_type) :: nicas_tmp
 
 ! Set name
@@ -405,8 +408,10 @@ do iproc=1,mpl%nproc
             if (bpar%B_block(ib)) then
                ! Copy global IDs
                nicas_tmp%blk(ib)%ncid = ncid
-               nicas_tmp%blk(ib)%nc0a_id = nc0a_id
-               nicas_tmp%blk(ib)%nl0_id = nl0_id
+               do icmp=1,nicas%blk(ib)%ncmp
+                  nicas_tmp%blk(ib)%cmp(icmp)%nc0a_id = nc0a_id
+                  nicas_tmp%blk(ib)%cmp(icmp)%nl0_id = nl0_id
+               end do
 
                ! Write data (definition mode)
                call nicas_tmp%blk(ib)%write_local_def(mpl,nam,bpar)
@@ -502,7 +507,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variable
 integer :: ncid,nc0_id,nl0_id
-integer :: ib
+integer :: ib,icmp
 
 ! Set name
 @:set_name(nicas_write_global)
@@ -880,6 +885,7 @@ if (nam%check_adjoints) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Test NICAS adjoint'
    call mpl%flush
+   call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
@@ -888,15 +894,14 @@ if (nam%check_adjoints) then
          write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
          call nicas%blk(ib)%test_adjoint(mpl,rng,nam,geom,bpar)
+
+         do icmp=1,nicas%blk(ib)%ncmp
+            write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
+            call mpl%flush
+            call nicas%blk(ib)%cmp(icmp)%test_adjoint(mpl,rng,nam,geom,bpar)
+         end do
       end if
    end do
-
-   ! Test NICAS adjoint
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Test NICAS adjoint'
-   call mpl%flush
-   call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
 end if
 
 if (nam%check_normalization>0) then
@@ -976,6 +981,13 @@ if (nam%check_dirac) then
       call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
    end if
 
+   ! Apply NICAS to diracs
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Apply NICAS to diracs'
+   call mpl%flush
+   call nicas%test_dirac(mpl,nam,geom,bpar,ens)
+
    ! Apply NICAS block to diracs
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
@@ -986,13 +998,6 @@ if (nam%check_dirac) then
          call nicas%blk(ib)%test_dirac(mpl,nam,geom,bpar)
       end if
    end do
-
-   ! Apply NICAS to diracs
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Apply NICAS to diracs'
-   call mpl%flush
-   call nicas%test_dirac(mpl,nam,geom,bpar,ens)
 
    if (nam%write_c0) then
       ! Close file
@@ -1048,7 +1053,7 @@ type(cv_type),intent(inout) :: cv          !< Control vector
 logical,intent(in),optional :: getsizeonly !< Flag to get the control variable size only (no allocation)
 
 ! Local variables
-integer :: ib,icmp
+integer :: ib,jb,icmp
 logical :: lgetsizeonly
 
 ! Set name
@@ -1069,26 +1074,26 @@ cv%n = 0
 cv%nbe = bpar%nbe
 
 do ib=1,bpar%nbe
-   if (mpl%msv%isnot(bpar%cv_block(ib))) then
-      ! Compute block size
-      cv%blk(ib)%n = 0
-      do icmp=1,nicas%blk(bpar%cv_block(ib))%ncmp
-         cv%blk(ib)%n = cv%blk(ib)%n+nicas%blk(bpar%cv_block(ib))%cmp(icmp)%nsa
+   ! CV block
+   jb = bpar%cv_block(ib)
+
+   if (mpl%msv%isnot(jb)) then
+      ! Copy number of components
+      cv%blk(ib)%ncmp = nicas%blk(jb)%ncmp
+
+      ! Allocation
+      allocate(cv%blk(ib)%cmp(cv%blk(ib)%ncmp))
+
+      do icmp=1,cv%blk(ib)%ncmp
+         ! Allocation and initialization
+         if (.not.lgetsizeonly) call cv%blk(ib)%cmp(icmp)%alloc(mpl,nicas%blk(jb)%cmp(icmp)%nsa)
+
+         ! Update total size
+         cv%n = cv%n+nicas%blk(jb)%cmp(icmp)%nsa
       end do
-
-      ! Update total size
-      cv%n = cv%n+cv%blk(ib)%n
-
-      if (.not.lgetsizeonly) then
-         ! Allocation
-         allocate(cv%blk(ib)%alpha(cv%blk(ib)%n))
-
-         ! Initialization
-         cv%blk(ib)%alpha = mpl%msv%valr
-      end if
    else
       ! Set zero size
-      cv%blk(ib)%n = 0
+      cv%blk(ib)%ncmp = 0
    end if
 end do
 
@@ -1113,7 +1118,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(cv_type),intent(out) :: cv          !< Control vector
 
 ! Local variables
-integer :: ib,jb,jcmp
+integer :: ib,jb,icmp
 integer,allocatable :: order_s(:)
 real(kind_real),allocatable :: alpha(:)
 
@@ -1132,19 +1137,19 @@ do ib=1,bpar%nbe
    jb = bpar%cv_block(ib)
 
    if (mpl%msv%isnot(jb)) then
-      do jcmp=1,nicas%blk(jb)%ncmp
+      do icmp=1,cv%blk(ib)%ncmp
          ! Allocation
          if (mpl%main) then
-            allocate(order_s(nicas%blk(jb)%cmp(jcmp)%ns))
-            allocate(alpha(nicas%blk(jb)%cmp(jcmp)%ns))
+            allocate(order_s(nicas%blk(jb)%cmp(icmp)%ns))
+            allocate(alpha(nicas%blk(jb)%cmp(icmp)%ns))
          else
             allocate(order_s(0))
             allocate(alpha(0))
          end if
 
          ! Communication
-         call mpl%loc_to_glb(nicas%blk(jb)%cmp(jcmp)%nsa,nicas%blk(jb)%cmp(jcmp)%ns,nicas%blk(jb)%cmp(jcmp)%sa_to_s, &
- & nicas%blk(jb)%cmp(jcmp)%order_sa,order_s)
+         call mpl%loc_to_glb(nicas%blk(jb)%cmp(icmp)%nsa,nicas%blk(jb)%cmp(icmp)%ns,nicas%blk(jb)%cmp(icmp)%sa_to_s, &
+ & nicas%blk(jb)%cmp(icmp)%order_sa,order_s)
 
          if (mpl%main) then
             ! Random vector
@@ -1155,7 +1160,8 @@ do ib=1,bpar%nbe
          end if
 
          ! Copy local section
-         call mpl%glb_to_loc(nicas%blk(jb)%cmp(jcmp)%nsa,nicas%blk(jb)%cmp(jcmp)%ns,nicas%blk(jb)%cmp(jcmp)%sa_to_s,alpha,cv%blk(ib)%alpha)
+         call mpl%glb_to_loc(nicas%blk(jb)%cmp(icmp)%nsa,nicas%blk(jb)%cmp(icmp)%ns,nicas%blk(jb)%cmp(icmp)%sa_to_s,alpha, &
+ & cv%blk(ib)%cmp(icmp)%alpha)
 
          ! Release memory
          deallocate(order_s)
@@ -1257,7 +1263,7 @@ case ('common')
    allocate(fld_3d(geom%nc0a,geom%nl0))
 
    ! Apply common NICAS
-   call nicas%blk(bpar%nbe)%apply_sqrt(mpl,geom,cv%blk(bpar%nbe)%alpha,fld_3d)
+   call nicas%blk(bpar%nbe)%apply_sqrt(mpl,geom,cv%blk(bpar%nbe),fld_3d)
 
    ! Build final vector
    do iv=1,nam%nv
@@ -1302,7 +1308,7 @@ case ('common_weighted')
          iv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(bpar%nbe)%apply_sqrt(mpl,geom,cv%blk(ib)%alpha,fld_tmp(:,:,iv))
+         call nicas%blk(bpar%nbe)%apply_sqrt(mpl,geom,cv%blk(ib),fld_tmp(:,:,iv))
       end if
    end do
 
@@ -1326,7 +1332,7 @@ case ('specific_univariate')
          iv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply_sqrt(mpl,geom,cv%blk(ib)%alpha,fld(:,:,iv))
+         call nicas%blk(ib)%apply_sqrt(mpl,geom,cv%blk(ib),fld(:,:,iv))
       end if
    end do
 case ('specific_multivariate')
@@ -1336,7 +1342,7 @@ case ('specific_multivariate')
          iv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply_sqrt(mpl,geom,cv%blk(1)%alpha,fld(:,:,iv))
+         call nicas%blk(ib)%apply_sqrt(mpl,geom,cv%blk(1),fld(:,:,iv))
       end if
    end do
 end select
@@ -1364,7 +1370,7 @@ real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 type(cv_type),intent(out) :: cv                              !< Control variable
 
 ! Local variable
-integer :: ib,iv,jv,ic0a,il0
+integer :: ib,iv,jv,ic0a,il0,icmp
 real(kind_real),allocatable :: fld_3d(:,:),fld_tmp(:,:,:)
 real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
 type(cv_type) :: cv_tmp
@@ -1390,7 +1396,7 @@ case ('common')
    end do
 
    ! Apply common NICAS
-   call nicas%blk(bpar%nbe)%apply_sqrt_ad(mpl,geom,fld_3d,cv%blk(bpar%nbe)%alpha)
+   call nicas%blk(bpar%nbe)%apply_sqrt_ad(mpl,geom,fld_3d,cv%blk(bpar%nbe))
 
    ! Release memory
    deallocate(fld_3d)
@@ -1438,7 +1444,7 @@ case ('common_weighted')
          iv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(bpar%nbe)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv%blk(ib)%alpha)
+         call nicas%blk(bpar%nbe)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv%blk(ib))
       end if
    end do
 
@@ -1453,7 +1459,9 @@ case ('specific_univariate')
 
    ! Initialization
    fld_tmp = fld
-   cv%blk(1)%alpha = zero
+   do icmp=1,cv%blk(1)%ncmp
+      cv%blk(1)%cmp(icmp)%alpha = zero
+   end do
 
    do ib=1,bpar%nb
       if (bpar%nicas_block(ib)) then
@@ -1461,7 +1469,7 @@ case ('specific_univariate')
          iv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv%blk(ib)%alpha)
+         call nicas%blk(ib)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv%blk(ib))
       end if
    end do
 
@@ -1474,7 +1482,9 @@ case ('specific_multivariate')
 
    ! Initialization
    fld_tmp = fld
-   cv%blk(1)%alpha = zero
+   do icmp=1,cv%blk(1)%ncmp
+      cv%blk(1)%cmp(icmp)%alpha = zero
+   end do
 
    do ib=1,bpar%nb
       if (bpar%nicas_block(ib)) then
@@ -1482,10 +1492,12 @@ case ('specific_multivariate')
          iv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv_tmp%blk(1)%alpha)
+         call nicas%blk(ib)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv_tmp%blk(1))
 
          ! Sum control variable
-         cv%blk(1)%alpha = cv%blk(1)%alpha+cv_tmp%blk(1)%alpha
+         do icmp=1,cv%blk(1)%ncmp
+            cv%blk(1)%cmp(icmp)%alpha = cv%blk(1)%cmp(icmp)%alpha+cv_tmp%blk(1)%cmp(icmp)%alpha
+         end do
       end if
    end do
 
@@ -1665,7 +1677,7 @@ end if
 ! Print result
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','NICAS adjoint test:                       ', &
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Full NICAS adjoint test:                       ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 if (lbens) then
@@ -2126,7 +2138,6 @@ do ifac=-nfac_opt,nfac_opt
 
       ! Copy weights
       if (bpar%B_block(ib)) nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
-      end if
    end do
 
    write(mpl%info,'(a)') '-------------------------------------------------------------------'

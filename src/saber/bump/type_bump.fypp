@@ -1538,19 +1538,19 @@ do iv=1,bump%nam%nv
       ! Copy
       if (bump%nam%forced_radii) then
          select case (trim(param))
-         case ('cor_ncomp','loc_ncomp','loc_hyb_ncomp')
-            value = bump%nam%ncomp(iv)
+         case ('cor_ncmp','loc_ncmp','loc_hyb_ncmp')
+            value = bump%nam%ncmp(iv)
          case default
             call bump%mpl%abort('${subr}$','wrong parameter')
          end select
       else
          select case (trim(param))
-         case ('cor_ncomp')
-            value = real(bump%hdiag%cor1%blk(0,ib)%ncomp,kind_real)
-         case ('loc_ncomp')
-            value = real(bump%hdiag%loc1%blk(0,ib)%ncomp,kind_real)
-         case ('loc_hyb_ncomp')
-            value = real(bump%hdiag%loc2%blk(0,ib)%ncomp,kind_real)
+         case ('cor_ncmp')
+            value = real(bump%hdiag%cor1%blk(0,ib)%ncmp,kind_real)
+         case ('loc_ncmp')
+            value = real(bump%hdiag%loc1%blk(0,ib)%ncmp,kind_real)
+         case ('loc_hyb_ncmp')
+            value = real(bump%hdiag%loc2%blk(0,ib)%ncmp,kind_real)
          case default
             call bump%mpl%abort('${subr}$','wrong parameter')
          end select
@@ -1905,9 +1905,10 @@ end if
 ! Select parameter from nicas
 select case (trim(param))
 case ('nicas_norm')
-   if (.not.allocated(bump%nicas%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   if (.not.allocated(bump%nicas%blk(ib)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%norm,fld_mga)
+   if (.not.allocated(bump%nicas%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
+   if (.not.allocated(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
+   if (.not.allocated(bump%nicas%blk(ib)%cmp(1)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated') ! TODO: write other components
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%cmp(1)%norm,fld_mga)
    found = .true.
 case ('dirac_nicas')
    iv = bump%bpar%b_to_v1(ib)
@@ -2113,7 +2114,7 @@ integer :: iv,ib
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('ncomp')
+case ('ncmp')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 end select
 
@@ -2129,8 +2130,8 @@ do iv=1,bump%nam%nv
 
       ! Copy
       select case (trim(param))
-      case ('ncomp')
-         bump%cmat%blk(ib)%ncomp = int(value)
+      case ('ncmp')
+         bump%cmat%blk(ib)%ncmp = int(value)
       case default
          call bump%mpl%abort('${subr}$','wrong parameter')
       end select
@@ -2180,6 +2181,12 @@ case ('coef','rh','rh1','rh2','rhc','rv')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 case ('nicas_norm')
    if (.not.allocated(bump%nicas%blk)) allocate(bump%nicas%blk(bump%bpar%nbe))
+   if (bump%bpar%nicas_block(ib)) then
+     if (.not.allocated(bump%nicas%blk(ib)%cmp)) then
+         bump%nicas%blk(ib)%ncmp = 1
+         allocate(bump%nicas%blk(ib)%cmp(bump%nicas%blk(ib)%ncmp))
+      end if
+   end if
 case default
    call bump%mpl%abort('${subr}$','parameter '//trim(param)//' not yet implemented, available input parameters are:'// &
  & 'stddev, var, m4, coef, rh, rh1, rh2, rhc, rv, nicas_norm')
@@ -2261,8 +2268,8 @@ end select
 ! Select parameter from nicas
 select case (trim(param))
 case ('nicas_norm')
-   if (.not.allocated(bump%nicas%blk(ib)%norm)) allocate(bump%nicas%blk(ib)%norm(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%nicas%blk(ib)%norm)
+   if (.not.allocated(bump%nicas%blk(ib)%cmp(1)%norm)) allocate(bump%nicas%blk(ib)%cmp(1)%norm(bump%geom%nc0a,bump%geom%nl0))
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%nicas%blk(ib)%cmp(1)%norm)
    found = .true.
 end select
 

@@ -21,7 +21,7 @@ epsabs_hor = 1.0e-2
 epsabs_ver = 1.0e-4
 
 # Parameters
-nncomp = 7
+nncmp = 7
 scalethmin = 0.2
 scalethmax = 0.9
 dscaleth = 0.1
@@ -49,21 +49,21 @@ def S_hor(x,y):
 def S_ver(z):
    return S(z)
 
-def factor(icomp,ncomp,ind):
-   ind_new = (icomp+1)*ind
+def factor(icmp,ncmp,ind):
+   ind_new = (icmp+1)*ind
    return ind_new
 
 # Initialize arrays
 f_sqrt_hor = np.zeros((nnd))
-f_sqrt_hor_comp = np.zeros((nnd))
+f_sqrt_hor_cmp = np.zeros((nnd))
 f_int_hor = np.zeros((nnd))
-f_int_hor_comp = np.zeros((nnd))
-scaleh = np.zeros((nncomp,nscaleth))
+f_int_hor_cmp = np.zeros((nnd))
+scaleh = np.zeros((nncmp,nscaleth))
 f_sqrt_ver = np.zeros((nnd))
-f_sqrt_ver_comp = np.zeros((nnd))
+f_sqrt_ver_cmp = np.zeros((nnd))
 f_int_ver = np.zeros((nnd))
-f_int_ver_comp = np.zeros((nnd))
-scalev = np.zeros((nncomp,nscaleth))
+f_int_ver_cmp = np.zeros((nnd))
+scalev = np.zeros((nncmp,nscaleth))
 scaled_axis = np.zeros((nnd))
 
 if run_horizontal:
@@ -79,33 +79,33 @@ if run_horizontal:
          norm = f_int_hor[ind]
       f_int_hor[ind] = f_int_hor[ind]/norm
 
-   # Loop over nncomp
-   for incomp in range(0, nncomp):
+   # Loop over nncmp
+   for incmp in range(0, nncmp):
       # Composed functions
-      f_sqrt_hor_comp_detail = np.zeros((nnd,incomp+1))
+      f_sqrt_hor_cmp_detail = np.zeros((nnd,incmp+1))
       for ind in range(0, nnd-1):
-         f_sqrt_hor_comp[ind] = 0.0
-         f_sqrt_hor_comp_detail[ind,:] = 0.0
-         f_int_hor_comp[ind] = 0.0
-         for icomp in range(0, incomp+1):
-            if (factor(icomp,incomp,ind) < nnd):
-               f_sqrt_hor_comp[ind] = f_sqrt_hor_comp[ind]+f_sqrt_hor[factor(icomp,incomp,ind)]
-               for jcomp in range(0, incomp+1):
-                  if (jcomp >= icomp):
-                     f_sqrt_hor_comp_detail[ind,jcomp] = f_sqrt_hor_comp_detail[ind,jcomp]+f_sqrt_hor[factor(icomp,incomp,ind)]
-               f_int_hor_comp[ind] = f_int_hor_comp[ind]+f_int_hor[factor(icomp,incomp,ind)]
-         f_sqrt_hor_comp[ind] = f_sqrt_hor_comp[ind]/(incomp+1)
-         f_sqrt_hor_comp_detail[ind,:] = f_sqrt_hor_comp_detail[ind,:]/(incomp+1)
-         f_int_hor_comp[ind] = f_int_hor_comp[ind]/(incomp+1)
+         f_sqrt_hor_cmp[ind] = 0.0
+         f_sqrt_hor_cmp_detail[ind,:] = 0.0
+         f_int_hor_cmp[ind] = 0.0
+         for icmp in range(0, incmp+1):
+            if (factor(icmp,incmp,ind) < nnd):
+               f_sqrt_hor_cmp[ind] = f_sqrt_hor_cmp[ind]+f_sqrt_hor[factor(icmp,incmp,ind)]
+               for jcmp in range(0, incmp+1):
+                  if (jcmp >= icmp):
+                     f_sqrt_hor_cmp_detail[ind,jcmp] = f_sqrt_hor_cmp_detail[ind,jcmp]+f_sqrt_hor[factor(icmp,incmp,ind)]
+               f_int_hor_cmp[ind] = f_int_hor_cmp[ind]+f_int_hor[factor(icmp,incmp,ind)]
+         f_sqrt_hor_cmp[ind] = f_sqrt_hor_cmp[ind]/(incmp+1)
+         f_sqrt_hor_cmp_detail[ind,:] = f_sqrt_hor_cmp_detail[ind,:]/(incmp+1)
+         f_int_hor_cmp[ind] = f_int_hor_cmp[ind]/(incmp+1)
 
       # Scale at scaleth
       for iscaleth in range(0, nscaleth):
-         scaleh[incomp,iscaleth] = 1.0
+         scaleh[incmp,iscaleth] = 1.0
          for ind in range(0, nnd-1):
-            if f_int_hor_comp[ind]>scaleth[iscaleth] and f_int_hor_comp[ind+1]<scaleth[iscaleth]:
-               A = (f_int_hor_comp[ind]-f_int_hor_comp[ind+1])/(axis[ind]-axis[ind+1])
-               B = f_int_hor_comp[ind]-A*axis[ind]
-               scaleh[incomp,iscaleth] = (scaleth[iscaleth]-B)/A
+            if f_int_hor_cmp[ind]>scaleth[iscaleth] and f_int_hor_cmp[ind+1]<scaleth[iscaleth]:
+               A = (f_int_hor_cmp[ind]-f_int_hor_cmp[ind+1])/(axis[ind]-axis[ind+1])
+               B = f_int_hor_cmp[ind]-A*axis[ind]
+               scaleh[incmp,iscaleth] = (scaleth[iscaleth]-B)/A
                break
 
       if True:
@@ -116,15 +116,15 @@ if run_horizontal:
          ax[0].set_title("Square-root function")
          ax[0].axhline(y=0, color="k")
          ax[0].axvline(x=0, color="k")
-         ax[0].plot(axis, f_sqrt_hor_comp_detail)
-         ax[0].plot(axis, f_sqrt_hor_comp, 'k')
+         ax[0].plot(axis, f_sqrt_hor_cmp_detail)
+         ax[0].plot(axis, f_sqrt_hor_cmp, 'k')
          ax[1].set_xlim([0,1.0])
          ax[1].set_ylim([0,1.1])
          ax[1].set_title("Convolution function")
          ax[1].axhline(y=0, color="k")
          ax[1].axvline(x=0, color="k")
-         ax[1].plot(axis, f_int_hor_comp)
-         plt.savefig("fit_hor_" + str(incomp+1) + ".jpg", format="jpg", dpi=300)
+         ax[1].plot(axis, f_int_hor_cmp)
+         plt.savefig("fit_hor_" + str(incmp+1) + ".jpg", format="jpg", dpi=300)
          plt.close()
 
 if run_vertical:
@@ -140,33 +140,33 @@ if run_vertical:
          norm = f_int_ver[ind]
       f_int_ver[ind] = f_int_ver[ind]/norm
 
-   # Loop over nncomp
-   for incomp in range(0, nncomp):
+   # Loop over nncmp
+   for incmp in range(0, nncmp):
       # Composed functions
-      f_sqrt_ver_comp_detail = np.zeros((nnd,incomp+1))
+      f_sqrt_ver_cmp_detail = np.zeros((nnd,incmp+1))
       for ind in range(0, nnd-1):
-         f_sqrt_ver_comp[ind] = 0.0
-         f_sqrt_ver_comp_detail[ind,:] = 0.0
-         f_int_ver_comp[ind] = 0.0
-         for icomp in range(0, incomp+1):
-            if (factor(icomp,incomp,ind) < nnd):
-               f_sqrt_ver_comp[ind] = f_sqrt_ver_comp[ind]+f_sqrt_ver[factor(icomp,incomp,ind)]
-               for jcomp in range(0, incomp+1):
-                  if (jcomp >= icomp):
-                     f_sqrt_ver_comp_detail[ind,jcomp] = f_sqrt_ver_comp_detail[ind,jcomp]+f_sqrt_ver[factor(icomp,incomp,ind)]
-               f_int_ver_comp[ind] = f_int_ver_comp[ind]+f_int_ver[factor(icomp,incomp,ind)]
-         f_sqrt_ver_comp[ind] = f_sqrt_ver_comp[ind]/(incomp+1)
-         f_sqrt_ver_comp_detail[ind,:] = f_sqrt_ver_comp_detail[ind,:]/(incomp+1)
-         f_int_ver_comp[ind] = f_int_ver_comp[ind]/(incomp+1)
+         f_sqrt_ver_cmp[ind] = 0.0
+         f_sqrt_ver_cmp_detail[ind,:] = 0.0
+         f_int_ver_cmp[ind] = 0.0
+         for icmp in range(0, incmp+1):
+            if (factor(icmp,incmp,ind) < nnd):
+               f_sqrt_ver_cmp[ind] = f_sqrt_ver_cmp[ind]+f_sqrt_ver[factor(icmp,incmp,ind)]
+               for jcmp in range(0, incmp+1):
+                  if (jcmp >= icmp):
+                     f_sqrt_ver_cmp_detail[ind,jcmp] = f_sqrt_ver_cmp_detail[ind,jcmp]+f_sqrt_ver[factor(icmp,incmp,ind)]
+               f_int_ver_cmp[ind] = f_int_ver_cmp[ind]+f_int_ver[factor(icmp,incmp,ind)]
+         f_sqrt_ver_cmp[ind] = f_sqrt_ver_cmp[ind]/(incmp+1)
+         f_sqrt_ver_cmp_detail[ind,:] = f_sqrt_ver_cmp_detail[ind,:]/(incmp+1)
+         f_int_ver_cmp[ind] = f_int_ver_cmp[ind]/(incmp+1)
 
       # Scale at scaleth
       for iscaleth in range(0, nscaleth):
-         scalev[incomp,iscaleth] = 1.0
+         scalev[incmp,iscaleth] = 1.0
          for ind in range(0, nnd-1):
-            if f_int_ver_comp[ind]>scaleth[iscaleth] and f_int_ver_comp[ind+1]<scaleth[iscaleth]:
-               A = (f_int_ver_comp[ind]-f_int_ver_comp[ind+1])/(axis[ind]-axis[ind+1])
-               B = f_int_ver_comp[ind]-A*axis[ind]
-               scalev[incomp,iscaleth] = (scaleth[iscaleth]-B)/A
+            if f_int_ver_cmp[ind]>scaleth[iscaleth] and f_int_ver_cmp[ind+1]<scaleth[iscaleth]:
+               A = (f_int_ver_cmp[ind]-f_int_ver_cmp[ind+1])/(axis[ind]-axis[ind+1])
+               B = f_int_ver_cmp[ind]-A*axis[ind]
+               scalev[incmp,iscaleth] = (scaleth[iscaleth]-B)/A
                break
 
       if True:
@@ -177,15 +177,15 @@ if run_vertical:
          ax[0].set_title("Square-root function")
          ax[0].axhline(y=0, color="k")
          ax[0].axvline(x=0, color="k")
-         ax[0].plot(axis, f_sqrt_ver_comp_detail)
-         ax[0].plot(axis, f_sqrt_ver_comp, 'k')
+         ax[0].plot(axis, f_sqrt_ver_cmp_detail)
+         ax[0].plot(axis, f_sqrt_ver_cmp, 'k')
          ax[1].set_xlim([0,1.0])
          ax[1].set_ylim([0,1.1])
          ax[1].set_title("Convolution function")
          ax[1].axhline(y=0, color="k")
          ax[1].axvline(x=0, color="k")
-         ax[1].plot(axis, f_int_ver_comp)
-         plt.savefig("fit_ver_" + str(incomp+1) + ".jpg", format="jpg", dpi=300)
+         ax[1].plot(axis, f_int_ver_cmp)
+         plt.savefig("fit_ver_" + str(incmp+1) + ".jpg", format="jpg", dpi=300)
          plt.close()
 
 if run_horizontal and run_vertical:
@@ -219,7 +219,7 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("! Public parameters\n")
    file.write("integer,parameter :: nnd = " + str(nnd) + "\n")
-   file.write("integer,parameter :: nncomp = " + str(nncomp) + "\n")
+   file.write("integer,parameter :: nncmp = " + str(nncmp) + "\n")
    file.write("integer,parameter :: nscaleth = " + str(nscaleth) + "\n")
    file.write("real(kind_real),parameter :: ndmin = %.8f_kind_real\n" % (min(nd)))
    file.write("real(kind_real),parameter :: ndmax = %.8f_kind_real\n" % (max(nd)))
@@ -233,15 +233,15 @@ if run_horizontal and run_vertical:
       else:
          suffix = "/)"
       file.write(" & %.8f_kind_real" % (scaleth[iscaleth]) + suffix + "\n")
-   file.write("real(kind_real),parameter :: scaleh(nscaleth,nncomp) = reshape((/ &\n")
-   for incomp in range(0, nncomp):
+   file.write("real(kind_real),parameter :: scaleh(nscaleth,nncmp) = reshape((/ &\n")
+   for incmp in range(0, nncmp):
       for iscaleth in range(0, nscaleth):
-         if iscaleth != nscaleth-1 or incomp != nncomp-1:
+         if iscaleth != nscaleth-1 or incmp != nncmp-1:
             suffix = ","
          else:
             suffix = "/),"
-         file.write(" & %.8f_kind_real" % (scaleh[incomp,iscaleth]) + suffix + " &\n")
-   file.write(" & (/nscaleth,nncomp/))\n")
+         file.write(" & %.8f_kind_real" % (scaleh[incmp,iscaleth]) + suffix + " &\n")
+   file.write(" & (/nscaleth,nncmp/))\n")
    file.write("real(kind_real),parameter :: func_hor(nnd) = (/ &\n")
    for ind in range(0, nnd):
       if ind != nnd-1:
@@ -249,15 +249,15 @@ if run_horizontal and run_vertical:
       else:
          suffix = "/)"
       file.write(" & %.8f_kind_real" % (f_int_hor[ind]) + suffix + "\n")
-   file.write("real(kind_real),parameter :: scalev(nscaleth,nncomp) = reshape((/ &\n")
-   for incomp in range(0, nncomp):
+   file.write("real(kind_real),parameter :: scalev(nscaleth,nncmp) = reshape((/ &\n")
+   for incmp in range(0, nncmp):
       for iscaleth in range(0, nscaleth):
-         if iscaleth != nscaleth-1 or incomp != nncomp-1:
+         if iscaleth != nscaleth-1 or incmp != nncmp-1:
             suffix = ","
          else:
             suffix = "/),"
-         file.write(" & %.8f_kind_real" % (scalev[incomp,iscaleth]) + suffix + " &\n")
-   file.write(" & (/nscaleth,nncomp/))\n")
+         file.write(" & %.8f_kind_real" % (scalev[incmp,iscaleth]) + suffix + " &\n")
+   file.write(" & (/nscaleth,nncmp/))\n")
    file.write("real(kind_real),parameter :: func_ver(nnd) = (/ &\n")
    for ind in range(0, nnd):
       if ind != nnd-1:
@@ -274,7 +274,7 @@ if run_horizontal and run_vertical:
    file.write("end interface\n")
    file.write("\n")
    file.write("private\n")
-   file.write("public :: nncomp,nscaleth,scaleth,scalethmin,scalethmax\n")
+   file.write("public :: nncmp,nscaleth,scaleth,scalethmin,scalethmax\n")
    file.write("public :: scaleh,scalev\n")
    file.write("public :: fit_func,fit_func_sqrt\n")
    file.write("\n")
@@ -284,19 +284,19 @@ if run_horizontal and run_vertical:
    file.write("! Function: gc99_fit_func\n")
    file.write("!> Fit function\n")
    file.write("!----------------------------------------------------------------------\n")
-   file.write("function gc99_fit_func(mpl,dir,nd,ncomp) result(value)\n")
+   file.write("function gc99_fit_func(mpl,dir,nd,ncmp) result(value)\n")
    file.write("\n")
    file.write("! Passed variables\n")
    file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
    file.write("character(len=*),intent(in) :: dir  !< Direction\n")
    file.write("real(kind_real),intent(in) :: nd    !< Normalized distance\n")
-   file.write("integer,intent(in) :: ncomp         !< Number of components\n")
+   file.write("integer,intent(in) :: ncmp          !< Number of components\n")
    file.write("\n")
    file.write("! Returned variable\n")
    file.write("real(kind_real) :: value\n")
    file.write("\n")
    file.write("! Local variables\n")
-   file.write("integer :: icomp,indm,indp\n")
+   file.write("integer :: icmp,indm,indp\n")
    file.write("real(kind_real) :: lnd,rndm,rndp\n")
    file.write("\n")
    file.write("! Set name\n")
@@ -311,9 +311,9 @@ if run_horizontal and run_vertical:
    file.write("! Initialization\n")
    file.write("value = zero\n")
    file.write("\n")
-   file.write("do icomp=1,ncomp\n")
+   file.write("do icmp=1,ncmp\n")
    file.write("   ! Local normalized distance\n")
-   file.write("   lnd = real(icomp,kind_real)*nd\n")
+   file.write("   lnd = real(icmp,kind_real)*nd\n")
    file.write("\n")
    file.write("   if (eq(lnd,zero)) then\n")
    file.write("      ! Origin\n")
@@ -349,7 +349,7 @@ if run_horizontal and run_vertical:
    file.write("end do\n")
    file.write("\n")
    file.write("! Normalization\n")
-   file.write("value = value/real(ncomp,kind_real)\n")
+   file.write("value = value/real(ncmp,kind_real)\n")
    file.write("\n")
    file.write("! Probe out\n")
    file.write("@:probe_out()\n")
@@ -360,18 +360,18 @@ if run_horizontal and run_vertical:
    file.write("! Function: gc99_fit_func_sqrt\n")
    file.write("!> Fit function function square-root\n")
    file.write("!----------------------------------------------------------------------\n")
-   file.write("function gc99_fit_func_sqrt(mpl,nd,ncomp) result(value)\n")
+   file.write("function gc99_fit_func_sqrt(mpl,nd,ncmp) result(value)\n")
    file.write("\n")
    file.write("! Passed variables\n")
    file.write("type(mpl_type),intent(inout) :: mpl !< MPI data\n")
    file.write("real(kind_real),intent(in) :: nd    !< Normalized distance\n")
-   file.write("integer,intent(in) :: ncomp         !< Number of components\n")
+   file.write("integer,intent(in) :: ncmp          !< Number of components\n")
    file.write("\n")
    file.write("! Returned variable\n")
    file.write("real(kind_real) :: value\n")
    file.write("\n")
    file.write("! Local variables\n")
-   file.write("integer :: icomp\n")
+   file.write("integer :: icmp\n")
    file.write("real(kind_real) :: lnd\n")
    file.write("\n")
    file.write("! Set name\n")
@@ -386,9 +386,9 @@ if run_horizontal and run_vertical:
    file.write("! Initialization\n")
    file.write("value = zero\n")
    file.write("\n")
-   file.write("do icomp=1,ncomp\n")
+   file.write("do icmp=1,ncmp\n")
    file.write("   ! Local normalized distance\n")
-   file.write("   lnd = real(icomp,kind_real)*nd\n")
+   file.write("   lnd = real(icmp,kind_real)*nd\n")
    file.write("\n")
    file.write("   if (eq(lnd,zero)) then\n")
    file.write("      ! Origin\n")
@@ -400,7 +400,7 @@ if run_horizontal and run_vertical:
    file.write("end do\n")
    file.write("\n")
    file.write("! Normalization\n")
-   file.write("value = value/real(ncomp,kind_real)\n")
+   file.write("value = value/real(ncmp,kind_real)\n")
    file.write("\n")
    file.write("! Probe out\n")
    file.write("@:probe_out()\n")

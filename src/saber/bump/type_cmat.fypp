@@ -244,9 +244,13 @@ do ib=1,bpar%nbe
                cmat%blk(ib)%D12 = hdiag%cor1%blk(0,ib)%D12_c0a
             end if
             cmat%blk(ib)%rv = hdiag%cor1%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%ncomp = hdiag%cor1%blk(0,ib)%ncomp
+            cmat%blk(ib)%ncmp = hdiag%cor1%blk(0,ib)%ncmp
          case ('loc')
-            cmat%blk(ib)%coef_ens = hdiag%loc1%blk(0,ib)%coef_ens_c0a
+            if (nam%nonunit_diag) then
+               cmat%blk(ib)%coef_ens = hdiag%loc1%blk(0,ib)%coef_ens_c0a
+            else
+               cmat%blk(ib)%coef_ens = one
+            end if
             cmat%blk(ib)%coef_sta = zero
             cmat%blk(ib)%rh = hdiag%loc1%blk(0,ib)%rh_c0a
             if (bpar%nc4(ib)>1) then
@@ -255,9 +259,13 @@ do ib=1,bpar%nbe
                cmat%blk(ib)%D12 = hdiag%loc1%blk(0,ib)%D12_c0a
             end if
             cmat%blk(ib)%rv = hdiag%loc1%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%ncomp = hdiag%loc1%blk(0,ib)%ncomp
+            cmat%blk(ib)%ncmp = hdiag%loc1%blk(0,ib)%ncmp
          case ('hyb-avg','hyb-rnd')
-            cmat%blk(ib)%coef_ens = hdiag%loc2%blk(0,ib)%coef_ens_c0a
+            if (nam%nonunit_diag) then
+               cmat%blk(ib)%coef_ens = hdiag%loc2%blk(0,ib)%coef_ens_c0a
+            else
+               cmat%blk(ib)%coef_ens = one
+            end if
             cmat%blk(ib)%coef_sta = hdiag%loc2%blk(0,ib)%coef_sta_c0a
             cmat%blk(ib)%rh = hdiag%loc2%blk(0,ib)%rh_c0a
             if (bpar%nc4(ib)>1) then
@@ -266,7 +274,7 @@ do ib=1,bpar%nbe
                cmat%blk(ib)%D12 = hdiag%loc2%blk(0,ib)%D12_c0a
             end if
             cmat%blk(ib)%rv = hdiag%loc2%blk(0,ib)%rv_c0a
-            cmat%blk(ib)%ncomp = hdiag%loc2%blk(0,ib)%ncomp
+            cmat%blk(ib)%ncmp = hdiag%loc2%blk(0,ib)%ncmp
          case ('dual-ens')
             call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')
          case default
@@ -342,7 +350,7 @@ do iv=0,nam%nv
             cmat%blk(ib)%rh(:,il0) = nam%rh(il0,iv)
             cmat%blk(ib)%rv(:,il0) = nam%rv(il0,iv)
          end do
-         cmat%blk(ib)%ncomp = nam%ncomp(iv)
+         cmat%blk(ib)%ncmp = nam%ncmp(iv)
 
          ! Set coefficients
          cmat%blk(ib)%coef_ens = one
@@ -446,7 +454,7 @@ do ib=1,bpar%nbe
             cmat%blk(ib)%rv = cmat%blk(ib)%bump_rv
 
             ! Number of components
-            cmat%blk(ib)%ncomp = cmat%blk(ib)%bump_ncomp
+            cmat%blk(ib)%ncmp = cmat%blk(ib)%bump_ncmp
          end if
       end if
    end if

@@ -24,7 +24,7 @@ implicit none
 
 ! Public parameters
 integer,parameter :: nnd = 51
-integer,parameter :: nncomp = 7
+integer,parameter :: nncmp = 7
 integer,parameter :: nscaleth = 8
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real
 real(kind_real),parameter :: ndmax = 1.00000000_kind_real
@@ -40,7 +40,7 @@ real(kind_real),parameter :: scaleth(nscaleth) = (/ &
  & 0.70000000_kind_real, &
  & 0.80000000_kind_real, &
  & 0.90000000_kind_real/)
-real(kind_real),parameter :: scaleh(nscaleth,nncomp) = reshape((/ &
+real(kind_real),parameter :: scaleh(nscaleth,nncmp) = reshape((/ &
  & 0.52493537_kind_real, &
  & 0.45867618_kind_real, &
  & 0.40328526_kind_real, &
@@ -97,7 +97,7 @@ real(kind_real),parameter :: scaleh(nscaleth,nncomp) = reshape((/ &
  & 0.06046185_kind_real, &
  & 0.04638044_kind_real, &
  & 0.03014139_kind_real/), &
- & (/nscaleth,nncomp/))
+ & (/nscaleth,nncmp/))
 real(kind_real),parameter :: func_hor(nnd) = (/ &
  & 1.00000000_kind_real, &
  & 0.99763095_kind_real, &
@@ -150,7 +150,7 @@ real(kind_real),parameter :: func_hor(nnd) = (/ &
  & 0.00004210_kind_real, &
  & 0.00000335_kind_real, &
  & 0.00000000_kind_real/)
-real(kind_real),parameter :: scalev(nscaleth,nncomp) = reshape((/ &
+real(kind_real),parameter :: scalev(nscaleth,nncmp) = reshape((/ &
  & 0.53598040_kind_real, &
  & 0.46866120_kind_real, &
  & 0.41267433_kind_real, &
@@ -207,7 +207,7 @@ real(kind_real),parameter :: scalev(nscaleth,nncomp) = reshape((/ &
  & 0.06191524_kind_real, &
  & 0.04740012_kind_real, &
  & 0.03078818_kind_real/), &
- & (/nscaleth,nncomp/))
+ & (/nscaleth,nncmp/))
 real(kind_real),parameter :: func_ver(nnd) = (/ &
  & 1.00000000_kind_real, &
  & 0.99765451_kind_real, &
@@ -269,7 +269,7 @@ interface fit_func_sqrt
 end interface
 
 private
-public :: nncomp,nscaleth,scaleth,scalethmin,scalethmax
+public :: nncmp,nscaleth,scaleth,scalethmin,scalethmax
 public :: scaleh,scalev
 public :: fit_func,fit_func_sqrt
 
@@ -279,19 +279,19 @@ contains
 ! Function: gc99_fit_func
 !> Fit function
 !----------------------------------------------------------------------
-function gc99_fit_func(mpl,dir,nd,ncomp) result(value)
+function gc99_fit_func(mpl,dir,nd,ncmp) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 character(len=*),intent(in) :: dir  !< Direction
 real(kind_real),intent(in) :: nd    !< Normalized distance
-integer,intent(in) :: ncomp         !< Number of components
+integer,intent(in) :: ncmp          !< Number of components
 
 ! Returned variable
 real(kind_real) :: value
 
 ! Local variables
-integer :: icomp,indm,indp
+integer :: icmp,indm,indp
 real(kind_real) :: lnd,rndm,rndp
 
 ! Set name
@@ -306,9 +306,9 @@ if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
 ! Initialization
 value = zero
 
-do icomp=1,ncomp
+do icmp=1,ncmp
    ! Local normalized distance
-   lnd = real(icomp,kind_real)*nd
+   lnd = real(icmp,kind_real)*nd
 
    if (eq(lnd,zero)) then
       ! Origin
@@ -344,7 +344,7 @@ do icomp=1,ncomp
 end do
 
 ! Normalization
-value = value/real(ncomp,kind_real)
+value = value/real(ncmp,kind_real)
 
 ! Probe out
 @:probe_out()
@@ -355,18 +355,18 @@ end function gc99_fit_func
 ! Function: gc99_fit_func_sqrt
 !> Fit function function square-root
 !----------------------------------------------------------------------
-function gc99_fit_func_sqrt(mpl,nd,ncomp) result(value)
+function gc99_fit_func_sqrt(mpl,nd,ncmp) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 real(kind_real),intent(in) :: nd    !< Normalized distance
-integer,intent(in) :: ncomp         !< Number of components
+integer,intent(in) :: ncmp          !< Number of components
 
 ! Returned variable
 real(kind_real) :: value
 
 ! Local variables
-integer :: icomp
+integer :: icmp
 real(kind_real) :: lnd
 
 ! Set name
@@ -381,9 +381,9 @@ if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
 ! Initialization
 value = zero
 
-do icomp=1,ncomp
+do icmp=1,ncmp
    ! Local normalized distance
-   lnd = real(icomp,kind_real)*nd
+   lnd = real(icmp,kind_real)*nd
 
    if (eq(lnd,zero)) then
       ! Origin
@@ -395,7 +395,7 @@ do icomp=1,ncomp
 end do
 
 ! Normalization
-value = value/real(ncomp,kind_real)
+value = value/real(ncmp,kind_real)
 
 ! Probe out
 @:probe_out()

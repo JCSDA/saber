@@ -64,7 +64,7 @@ contains
 ! Subroutine: fit_diag_iso
 !> Compute isotropic diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag_iso(mpl,n,dist,dir,fit_r,ncomp,fit)
+subroutine fit_diag_iso(mpl,n,dist,dir,fit_r,ncmp,fit)
 
 implicit none
 
@@ -74,7 +74,7 @@ integer,intent(in) :: n               !< Vector size
 real(kind_real),intent(in) :: dist(n) !< Distance
 character(len=*),intent(in) :: dir    !< Direction
 real(kind_real),intent(in) :: fit_r   !< Support radius
-integer,intent(in) :: ncomp           !< Number of components
+integer,intent(in) :: ncmp            !< Number of components
 real(kind_real),intent(out) :: fit(n) !< Fit
 
 ! Local variables
@@ -102,7 +102,7 @@ else
       end if
 
       ! Unitary fit function
-      fit(i) = fit_func(mpl,dir,nd,ncomp)
+      fit(i) = fit_func(mpl,dir,nd,ncmp)
    end do
 end if
 
@@ -115,7 +115,7 @@ end subroutine fit_diag_iso
 ! Subroutine: fit_diag_tensor
 !> Compute anisotropic diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag_tensor(mpl,nc3,nc4,disth,as,fit_D11,fit_D22,fit_D12,ncomp,fit)
+subroutine fit_diag_tensor(mpl,nc3,nc4,disth,as,fit_D11,fit_D22,fit_D12,ncmp,fit)
 
 implicit none
 
@@ -128,7 +128,7 @@ real(kind_real),intent(in) :: as(nc4)       !< Angular sectors
 real(kind_real),intent(in) :: fit_D11       !< Tensor component 11
 real(kind_real),intent(in) :: fit_D22       !< Tensor component 22
 real(kind_real),intent(in) :: fit_D12       !< Tensor component 12 (normalized)
-integer,intent(in) :: ncomp                 !< Number of components
+integer,intent(in) :: ncmp                  !< Number of components
 real(kind_real),intent(out) :: fit(nc3,nc4) !< Fit
 
 ! Local variables
@@ -156,7 +156,7 @@ do jc4=1,nc4
       nd = sqrt(H11*dx**2+H22*dy**2+two*H12*dx*dy)
 
       ! Unitary fit function
-      fit(jc3,jc4) = fit_func(mpl,'hor',nd,ncomp)
+      fit(jc3,jc4) = fit_func(mpl,'hor',nd,ncmp)
    end do
 end do
 
@@ -169,7 +169,7 @@ end subroutine fit_diag_tensor
 ! Subroutine: fit_diag_ver
 !> Compute vertical diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncomp,fit)
+subroutine fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncmp,fit)
 
 implicit none
 
@@ -180,7 +180,7 @@ integer,intent(in) :: nl0                     !< Number of levels
 integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)   !< Effective level to level
 real(kind_real),intent(in) :: vunit(nl0)      !< Vertical unit
 real(kind_real),intent(in) :: rv(nl0)         !< Vertical support radius
-integer,intent(in) :: ncomp                   !< Number of components
+integer,intent(in) :: ncmp                    !< Number of components
 real(kind_real),intent(out) :: fit(nl0r,nl0)  !< Fit
 
 ! Local variables
@@ -210,7 +210,7 @@ do il0=1,nl0
          end if
 
          ! Unitary fit function
-         ver_sqrt(jl0,il0) = fit_func_sqrt(mpl,vnd,ncomp)
+         ver_sqrt(jl0,il0) = fit_func_sqrt(mpl,vnd,ncmp)
       end do
    end if
 end do
@@ -251,7 +251,7 @@ end subroutine fit_diag_ver
 ! Subroutine: fit_diag_iso_full
 !> Compute isotropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,coef,rh,rv,ncomp,fit)
+subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,coef,rh,rv,ncmp,fit)
 
 implicit none
 
@@ -266,7 +266,7 @@ real(kind_real),intent(in) :: vunit(nl0)         !< Vertical unit
 real(kind_real),intent(in) :: coef(nl0)          !< Diagonal coefficient
 real(kind_real),intent(in) :: rh(nl0)            !< Horizontal support radius
 real(kind_real),intent(in) :: rv(nl0)            !< Vertical support radius
-integer,intent(in) :: ncomp                      !< Number of components
+integer,intent(in) :: ncmp                       !< Number of components
 real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
 
 ! Local variables
@@ -281,7 +281,7 @@ real(kind_real) :: hor_fit(nc3),ver_fit(nl0r,nl0)
 @:probe_in()
 
 ! Vertical component
-call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncompv,ver_fit)
+call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncmp,ver_fit)
 
 do il0=1,nl0
    do jl0r=1,nl0r
@@ -294,7 +294,7 @@ do il0=1,nl0
          rh_eff = half*(rh(il0)+rh(jl0))
 
          ! Horizontal component
-         call diag_iso(mpl,nc3,disth,'hor',rh_eff,ncomp,hor_fit)
+         call diag_iso(mpl,nc3,disth,'hor',rh_eff,ncmp,hor_fit)
 
          do jc3=1,nc3
             ! Fit function
@@ -318,7 +318,7 @@ end subroutine fit_diag_iso_full
 ! Subroutine: fit_diag_tensor_full
 !> Compute anistropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,coef,D11,D22,D12,rv,ncomp,fit)
+subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,coef,D11,D22,D12,rv,ncmp,fit)
 
 implicit none
 
@@ -337,7 +337,7 @@ real(kind_real),intent(in) :: D11(nl0)               !< Horizontal tensor compon
 real(kind_real),intent(in) :: D22(nl0)               !< Horizontal tensor component 22
 real(kind_real),intent(in) :: D12(nl0)               !< Horizontal tensor component 12 (normalized)
 real(kind_real),intent(in) :: rv(nl0)                !< Vertical support radius
-integer,intent(in) :: ncomp                          !< Number of components
+integer,intent(in) :: ncmp                           !< Number of components
 real(kind_real),intent(out) :: fit(nc3,nc4,nl0r,nl0) !< Fit
 
 ! Local variables
@@ -352,7 +352,7 @@ real(kind_real) :: hor_fit(nc3,nc4),ver_fit(nl0r,nl0)
 @:probe_in()
 
 ! Vertical component
-call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncompv,ver_fit)
+call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,ncmp,ver_fit)
 
 do il0=1,nl0
    do jl0r=1,nl0r
@@ -367,7 +367,7 @@ do il0=1,nl0
          D12_eff = half*(D12(il0)+D12(jl0))
 
          ! Horizontal component
-         call diag_tensor(mpl,nc3,nc4,disth,as,D11_eff,D22_eff,D12_eff,ncomp,hor_fit)
+         call diag_tensor(mpl,nc3,nc4,disth,as,D11_eff,D22_eff,D12_eff,ncmp,hor_fit)
 
          do jc4=1,nc4
             do jc3=1,nc3
@@ -543,7 +543,7 @@ end subroutine fit_tensor_check_cond
 ! Subroutine: fit_fast_fit
 !> Fast fit length-scale estimation based on the value at mid-height
 !----------------------------------------------------------------------
-subroutine fit_fast_fit(mpl,n,iz,dist,dir,ncomp,raw,fit_r)
+subroutine fit_fast_fit(mpl,n,iz,dist,dir,ncmp,raw,fit_r)
 
 implicit none
 
@@ -553,7 +553,7 @@ integer,intent(in) :: n               !< Vector size
 integer,intent(in) :: iz              !< Zero separation index
 real(kind_real),intent(in) :: dist(n) !< Distance
 character(len=*),intent(in) :: dir    !< Direction
-integer,intent(in) :: ncomp           !< Number of components
+integer,intent(in) :: ncmp            !< Number of components
 real(kind_real),intent(in) :: raw(n)  !< Raw data
 real(kind_real),intent(out) :: fit_r  !< Support radius
 
@@ -604,9 +604,9 @@ if (raw(iz)>zero) then
                if (infeq(raw_min,scaleth(iscaleth))) then
                   itest = itest+1
                   if (dir=='hor') then
-                     scaletest(itest) = scaleh(iscaleth,ncomp)
+                     scaletest(itest) = scaleh(iscaleth,ncmp)
                   elseif (dir=='ver') then
-                     scaletest(itest) = scalev(iscaleth,ncomp)
+                     scaletest(itest) = scalev(iscaleth,ncmp)
                   end if
                   scalethtest(itest) = scaleth(iscaleth)
                end if
@@ -620,7 +620,7 @@ if (raw(iz)>zero) then
             scaletest(1) = half
             dscale = quarter
             do iter=1,itermax
-               thtest = fit_func(mpl,dir,scaletest(1),ncomp)
+               thtest = fit_func(mpl,dir,scaletest(1),ncmp)
                if (sup(scalethtest(1),thtest)) then
                   scaletest(1) = scaletest(1)-dscale
                else
@@ -698,7 +698,7 @@ if (raw(iz)>zero) then
                fit_r = fit_r/scaletest(itest)
 
                ! Compute fitness
-               call diag_iso(mpl,n,dist,dir,fit_r,ncomp,fit)
+               call diag_iso(mpl,n,dist,dir,fit_r,ncmp,fit)
                cost = sum((fit-raw_tmp)**2)/real(ntmp,kind_real)
                if (inf(cost,cost_min)) then
                   ! Better fit
