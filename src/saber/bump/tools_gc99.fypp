@@ -360,13 +360,13 @@ function gc99_fit_func_sqrt(mpl,nd,ncmp) result(value)
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 real(kind_real),intent(in) :: nd    !< Normalized distance
-integer,intent(in) :: ncmp          !< Number of components
+integer,intent(in),optional :: ncmp !< Number of components
 
 ! Returned variable
 real(kind_real) :: value
 
 ! Local variables
-integer :: icmp
+integer :: lncmp,icmp
 real(kind_real) :: lnd
 
 ! Set name
@@ -375,13 +375,17 @@ real(kind_real) :: lnd
 ! Probe in
 @:probe_in()
 
+! Local number of components
+lncmp = 1
+if (present(ncmp)) lncmp = ncmp
+
 ! Check bounds
 if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
 
 ! Initialization
 value = zero
 
-do icmp=1,ncmp
+do icmp=1,lncmp
    ! Local normalized distance
    lnd = real(icmp,kind_real)*nd
 
@@ -395,7 +399,7 @@ do icmp=1,ncmp
 end do
 
 ! Normalization
-value = value/real(ncmp,kind_real)
+value = value/real(lncmp,kind_real)
 
 ! Probe out
 @:probe_out()

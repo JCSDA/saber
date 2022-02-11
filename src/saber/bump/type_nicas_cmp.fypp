@@ -94,7 +94,7 @@ type hor_type
    integer,allocatable :: c1b_to_sb(:)                  !< Subset Sc1, halo A to subgrid, halo B
 
    ! I/O IDs
-   integer :: grpid                                     !< group ID
+   integer :: levid                                     !< level ID
    integer :: c1b_to_sb_id                              !< c1b_to_sb ID
    integer :: lon_c1_id                                 !< lon_c1 ID
    integer :: lat_c1_id                                 !< lat_c1 ID
@@ -107,6 +107,7 @@ end type hor_type
 type nicas_cmp_type
    ! General parameters
    integer :: ib                                        !< Block index
+   integer :: ncmp                                      !< Number of components in the same block
    logical :: anisotropic                               !< Anisotropic tensor flag
    logical :: verbosity                                 !< Verbosity flag
    logical :: smoother                                  !< Smoother flag
@@ -611,7 +612,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 integer :: il1
 integer :: vlev_id,norm_id,coef_ens_id,order_sa_id,sa_to_sc_id,inorm_id
 integer :: vlev_int(geom%nl0)
-character(len=1024) :: grpname
+character(len=1024) :: levname
 
 ! Set name
 @:set_name(nicas_cmp_read_local)
@@ -636,9 +637,9 @@ if (bpar%nicas_block(ib)) then
 
    ! Get vertically dependent dimension
    do il1=1,nicas_cmp%nl1
-      write(grpname,'(a,i3.3)') 'sublevel_',il1
-      nicas_cmp%hor(il1)%grpid = inquire_grp(mpl,nicas_cmp%cmpid,grpname)
-      nicas_cmp%hor(il1)%nc1b = inquire_dim_size(mpl,nicas_cmp%hor(il1)%grpid,'nc1b',0)
+      write(levname,'(a,i3.3)') 'sublevel_',il1
+      nicas_cmp%hor(il1)%levid = inquire_grp(mpl,nicas_cmp%cmpid,levname)
+      nicas_cmp%hor(il1)%nc1b = inquire_dim_size(mpl,nicas_cmp%hor(il1)%levid,'nc1b',0)
    end do
 
    ! Allocation
@@ -662,7 +663,7 @@ if (bpar%nicas_block(ib)) then
       coef_ens_id = inquire_var(mpl,nicas_cmp%cmpid,'coef_ens')
    end if
    do il1=1,nicas_cmp%nl1
-      if (nicas_cmp%hor(il1)%nc1b>0) nicas_cmp%hor(il1)%c1b_to_sb_id = inquire_var(mpl,nicas_cmp%hor(il1)%grpid,'c1b_to_sb')
+      if (nicas_cmp%hor(il1)%nc1b>0) nicas_cmp%hor(il1)%c1b_to_sb_id = inquire_var(mpl,nicas_cmp%hor(il1)%levid,'c1b_to_sb')
    end do
    if (nicas_cmp%nsa>0) then
       order_sa_id = inquire_var(mpl,nicas_cmp%cmpid,'order_sa')
@@ -677,7 +678,7 @@ if (bpar%nicas_block(ib)) then
       call get_var(mpl,nicas_cmp%cmpid,coef_ens_id,nicas_cmp%coef_ens)
    end if
    do il1=1,nicas_cmp%nl1
-      if (nicas_cmp%hor(il1)%nc1b>0) call get_var(mpl,nicas_cmp%hor(il1)%grpid,nicas_cmp%hor(il1)%c1b_to_sb_id, &
+      if (nicas_cmp%hor(il1)%nc1b>0) call get_var(mpl,nicas_cmp%hor(il1)%levid,nicas_cmp%hor(il1)%c1b_to_sb_id, &
  & nicas_cmp%hor(il1)%c1b_to_sb)
    end do
    if (nicas_cmp%nsa>0) then
@@ -727,7 +728,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 ! Local variables
 integer :: il1
 integer :: nc1b_id(nicas_cmp%nl1),nsa_id,nsc_id
-character(len=1024) :: grpname
+character(len=1024) :: levname
 
 ! Set name
 @:set_name(nicas_cmp_write_local_def)
@@ -742,9 +743,9 @@ if (bpar%nicas_block(ib)) then
    ! Define dimensions
    call put_att(mpl,nicas_cmp%cmpid,'nl1',nicas_cmp%nl1)
    do il1=1,nicas_cmp%nl1
-      write(grpname,'(a,i3.3)') 'sublevel_',il1
-      nicas_cmp%hor(il1)%grpid = define_grp(mpl,nicas_cmp%cmpid,grpname)
-      if (nicas_cmp%hor(il1)%nc1b>0) nc1b_id(il1) = define_dim(mpl,nicas_cmp%hor(il1)%grpid,'nc1b',nicas_cmp%hor(il1)%nc1b)
+      write(levname,'(a,i3.3)') 'sublevel_',il1
+      nicas_cmp%hor(il1)%levid = define_grp(mpl,nicas_cmp%cmpid,levname)
+      if (nicas_cmp%hor(il1)%nc1b>0) nc1b_id(il1) = define_dim(mpl,nicas_cmp%hor(il1)%levid,'nc1b',nicas_cmp%hor(il1)%nc1b)
    end do
    if (nicas_cmp%nsa>0) nsa_id = define_dim(mpl,nicas_cmp%cmpid,'nsa',nicas_cmp%nsa)
    call put_att(mpl,nicas_cmp%cmpid,'nsb',nicas_cmp%nsb)
@@ -758,7 +759,7 @@ if (bpar%nicas_block(ib)) then
       nicas_cmp%coef_ens_id = define_var(mpl,nicas_cmp%cmpid,'coef_ens','real',(/nicas_cmp%nc0a_id,nicas_cmp%nl0_id/))
    end if
    do il1=1,nicas_cmp%nl1
-      if (nicas_cmp%hor(il1)%nc1b>0) nicas_cmp%hor(il1)%c1b_to_sb_id = define_var(mpl,nicas_cmp%hor(il1)%grpid,'c1b_to_sb','int', &
+      if (nicas_cmp%hor(il1)%nc1b>0) nicas_cmp%hor(il1)%c1b_to_sb_id = define_var(mpl,nicas_cmp%hor(il1)%levid,'c1b_to_sb','int', &
  & (/nc1b_id(il1)/))
    end do
    if (nicas_cmp%nsa>0) then
@@ -821,7 +822,7 @@ if (bpar%nicas_block(ib)) then
       call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%coef_ens_id,nicas_cmp%coef_ens)
    end if
    do il1=1,nicas_cmp%nl1
-      if (nicas_cmp%hor(il1)%nc1b>0) call put_var(mpl,nicas_cmp%hor(il1)%grpid,nicas_cmp%hor(il1)%c1b_to_sb_id, &
+      if (nicas_cmp%hor(il1)%nc1b>0) call put_var(mpl,nicas_cmp%hor(il1)%levid,nicas_cmp%hor(il1)%c1b_to_sb_id, &
  & nicas_cmp%hor(il1)%c1b_to_sb)
    end do
    if (nicas_cmp%nsa>0) then
@@ -1254,7 +1255,7 @@ integer,allocatable :: lev_c1(:),c1_to_proc(:),c1_to_c0a(:),order_s(:),order_inv
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),c_S_sa(:,:)
 logical :: read_norm,read_coef_ens
 logical,allocatable :: gmask_c1(:)
-character(len=1024) :: grpname
+character(len=1024) :: levname
 type(io_type) :: io_s
 
 ! Set name
@@ -1282,7 +1283,7 @@ if (bpar%nicas_block(ib)) then
    nicas_cmp%horizontal = .false.
 
    ! Read norm
-   write(mpl%info,'(a13,a)') '','Read norm'
+   write(mpl%info,'(a16,a)') '','Read norm'
    call mpl%flush
    if (allocated(nicas_cmp%norm)) then
       ! Normalization already loaded from BUMP interface
@@ -1322,7 +1323,7 @@ if (bpar%nicas_block(ib)) then
    end if
 
    ! Read coef_ens
-   write(mpl%info,'(a13,a)') '','Read coef_ens'
+   write(mpl%info,'(a16,a)') '','Read coef_ens'
    call mpl%flush
    if (.not.allocated(nicas_cmp%coef_ens)) then
       ! Allocation
@@ -1347,13 +1348,13 @@ if (bpar%nicas_block(ib)) then
          ! Read variable
          call geom%io%fld_read(mpl,nicas_cmp%cmpid,coef_ens_id,nicas_cmp%coef_ens)
       else
-         ! Ensemble coefficient set to one
-         nicas_cmp%coef_ens = one
+         ! Ensemble coefficient set to one divided by the number of components
+         nicas_cmp%coef_ens = sqrt(one/real(nicas_cmp%ncmp))
       end if
    end if
 
    ! Read vertical sampling
-   write(mpl%info,'(a13,a)') '','Read vertical sampling'
+   write(mpl%info,'(a16,a)') '','Read vertical sampling'
    call mpl%flush
 
    ! Get dimension
@@ -1384,7 +1385,7 @@ if (bpar%nicas_block(ib)) then
    call mpl%f_comm%broadcast(nicas_cmp%l1_to_l0,mpl%rootproc-1)
 
    ! Read horizontal sampling
-   write(mpl%info,'(a13,a)') '','Read horizontal sampling:'
+   write(mpl%info,'(a16,a)') '','Read horizontal sampling:'
    call mpl%flush
 
    ! Allocation
@@ -1392,16 +1393,16 @@ if (bpar%nicas_block(ib)) then
 
    do il1=1,nicas_cmp%nl1
       ! Get group name
-      write(grpname,'(a,i3.3)') 'sublevel_',il1
-      write(mpl%info,'(a16,a)') '','Group '//trim(grpname)
+      write(levname,'(a,i3.3)') 'sublevel_',il1
+      write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
       call mpl%flush
 
       if (mpl%main) then
          ! Get group
-         nicas_cmp%hor(il1)%grpid = inquire_grp(mpl,nicas_cmp%cmpid,grpname)
+         nicas_cmp%hor(il1)%levid = inquire_grp(mpl,nicas_cmp%cmpid,levname)
 
          ! Get dimension
-         nicas_cmp%hor(il1)%nc1 = inquire_dim_size(mpl,nicas_cmp%hor(il1)%grpid,'nc1')
+         nicas_cmp%hor(il1)%nc1 = inquire_dim_size(mpl,nicas_cmp%hor(il1)%levid,'nc1')
       end if
 
       ! Broadcast dimension
@@ -1413,12 +1414,12 @@ if (bpar%nicas_block(ib)) then
 
       if (mpl%main) then
          ! Get variables
-         lon_c1_id = inquire_var(mpl,nicas_cmp%hor(il1)%grpid,'lon_c1')
-         lat_c1_id = inquire_var(mpl,nicas_cmp%hor(il1)%grpid,'lat_c1')
+         lon_c1_id = inquire_var(mpl,nicas_cmp%hor(il1)%levid,'lon_c1')
+         lat_c1_id = inquire_var(mpl,nicas_cmp%hor(il1)%levid,'lat_c1')
 
          ! Read variables
-         call get_var(mpl,nicas_cmp%hor(il1)%grpid,lon_c1_id,lon_c1)
-         call get_var(mpl,nicas_cmp%hor(il1)%grpid,lat_c1_id,lat_c1)
+         call get_var(mpl,nicas_cmp%hor(il1)%levid,lon_c1_id,lon_c1)
+         call get_var(mpl,nicas_cmp%hor(il1)%levid,lat_c1_id,lat_c1)
       end if
 
       ! Broadcast variables
@@ -1481,7 +1482,7 @@ if (bpar%nicas_block(ib)) then
    end do
 
    ! Define subgrid
-   write(mpl%info,'(a13,a)') '','Define subgrid'
+   write(mpl%info,'(a16,a)') '','Define subgrid'
    call mpl%flush
 
    ! Count subgrid points on halo A
@@ -1590,7 +1591,7 @@ if (bpar%nicas_block(ib)) then
    deallocate(order_inv_sa)
 
    ! Read convolution
-   write(mpl%info,'(a13,a)') '','Read convolution'
+   write(mpl%info,'(a16,a)') '','Read convolution'
    call mpl%flush
 
    ! Get dimension
@@ -1676,7 +1677,7 @@ integer :: nl1_id,nc1_id,ns_id,c_nopmax_id
 integer :: il1,i_s,isa
 integer,allocatable :: c_nop(:)
 real(kind_real) :: coef_ens_min,coef_ens_max
-character(len=1024) :: grpname
+character(len=1024) :: levname
 
 ! Set name
 @:set_name(nicas_cmp_write_global_def)
@@ -1713,20 +1714,20 @@ if (bpar%nicas_block(ib)) then
 
    if (nicas_cmp%write_coef_ens) then
       ! Define coef_ens
-      write(mpl%info,'(a13,a)') '','Define coef_ens'
+      write(mpl%info,'(a16,a)') '','Define coef_ens'
       call mpl%flush
       nicas_cmp%coef_ens_id = define_var(mpl,nicas_cmp%cmpid,'coef_ens','real',(/nicas_cmp%nc0_id,nicas_cmp%nl0_id/))
    end if
 
    if (nicas_cmp%write_norm) then
       ! Define norm
-      write(mpl%info,'(a13,a)') '','Define norm'
+      write(mpl%info,'(a16,a)') '','Define norm'
       call mpl%flush
       nicas_cmp%norm_id = define_var(mpl,nicas_cmp%cmpid,'norm','real',(/nicas_cmp%nc0_id,nicas_cmp%nl0_id/))
    end if
 
    ! Define vertical sampling
-   write(mpl%info,'(a13,a)') '','Define vertical sampling'
+   write(mpl%info,'(a16,a)') '','Define vertical sampling'
    call mpl%flush
 
    ! Define dimension
@@ -1737,28 +1738,28 @@ if (bpar%nicas_block(ib)) then
    nicas_cmp%l1_to_l0_id = define_var(mpl,nicas_cmp%cmpid,'l1_to_l0','int',(/nl1_id/))
 
    ! Define horizontal sampling
-   write(mpl%info,'(a13,a)') '','Define horizontal sampling'
+   write(mpl%info,'(a16,a)') '','Define horizontal sampling'
    call mpl%flush
 
    do il1=1,nicas_cmp%nl1
       ! Get group name
-      write(grpname,'(a,i3.3)') 'sublevel_',il1
-      write(mpl%info,'(a16,a)') '','Group '//trim(grpname)
+      write(levname,'(a,i3.3)') 'sublevel_',il1
+      write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
       call mpl%flush
 
       ! Define group
-      nicas_cmp%hor(il1)%grpid = define_grp(mpl,nicas_cmp%cmpid,grpname)
+      nicas_cmp%hor(il1)%levid = define_grp(mpl,nicas_cmp%cmpid,levname)
 
       ! Define dimension
-      nc1_id = define_dim(mpl,nicas_cmp%hor(il1)%grpid,'nc1',nicas_cmp%hor(il1)%nc1)
+      nc1_id = define_dim(mpl,nicas_cmp%hor(il1)%levid,'nc1',nicas_cmp%hor(il1)%nc1)
 
       ! Define variables
-      nicas_cmp%hor(il1)%lon_c1_id = define_var(mpl,nicas_cmp%hor(il1)%grpid,'lon_c1','real',(/nc1_id/))
-      nicas_cmp%hor(il1)%lat_c1_id = define_var(mpl,nicas_cmp%hor(il1)%grpid,'lat_c1','real',(/nc1_id/))
+      nicas_cmp%hor(il1)%lon_c1_id = define_var(mpl,nicas_cmp%hor(il1)%levid,'lon_c1','real',(/nc1_id/))
+      nicas_cmp%hor(il1)%lat_c1_id = define_var(mpl,nicas_cmp%hor(il1)%levid,'lat_c1','real',(/nc1_id/))
    end do
 
    ! Define convolution
-   write(mpl%info,'(a13,a)') '','Define convolution'
+   write(mpl%info,'(a16,a)') '','Define convolution'
    call mpl%flush
 
    ! Allocation
@@ -1811,7 +1812,7 @@ integer :: il1,i_s,jsu,isa,jsc
 integer :: vlev_int(geom%nl0)
 integer,allocatable :: c_col_sa(:,:),c_nop(:),list(:),order(:)
 real(kind_real),allocatable :: c_S_sa(:,:)
-character(len=1024) :: grpname
+character(len=1024) :: levname
 type(io_type) :: io_c1,io_s
 
 ! Set name
@@ -1826,20 +1827,20 @@ associate(ib=>nicas_cmp%ib)
 if (bpar%nicas_block(ib)) then
    if (nicas_cmp%write_coef_ens) then
       ! Write coef_ens
-      write(mpl%info,'(a13,a)') '','Write coef_ens'
+      write(mpl%info,'(a16,a)') '','Write coef_ens'
       call mpl%flush
       call geom%io%fld_write(mpl,nicas_cmp%cmpid,nicas_cmp%coef_ens_id,nicas_cmp%coef_ens,geom%gmask_c0a)
    end if
 
    if (nicas_cmp%write_norm) then
       ! Write norm
-      write(mpl%info,'(a13,a)') '','Write norm'
+      write(mpl%info,'(a16,a)') '','Write norm'
       call mpl%flush
       call geom%io%fld_write(mpl,nicas_cmp%cmpid,nicas_cmp%norm_id,nicas_cmp%norm,geom%gmask_c0a)
    end if
 
    ! Write vertical sampling
-   write(mpl%info,'(a13,a)') '','Write vertical sampling'
+   write(mpl%info,'(a16,a)') '','Write vertical sampling'
    call mpl%flush
 
    ! Convert logical to integer
@@ -1850,13 +1851,13 @@ if (bpar%nicas_block(ib)) then
    call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%l1_to_l0_id,nicas_cmp%l1_to_l0)
 
    ! Write horizontal sampling
-   write(mpl%info,'(a13,a)') '','Write horizontal sampling'
+   write(mpl%info,'(a16,a)') '','Write horizontal sampling'
    call mpl%flush
 
    do il1=1,nicas_cmp%nl1
       ! Get group name
-      write(grpname,'(a,i3.3)') 'sublevel_',il1
-      write(mpl%info,'(a16,a)') '','Group '//trim(grpname)
+      write(levname,'(a,i3.3)') 'sublevel_',il1
+      write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
       call mpl%flush
 
       ! Setup fields output
@@ -1864,15 +1865,15 @@ if (bpar%nicas_block(ib)) then
  & nicas_cmp%hor(il1)%proc_to_c1_offset,nicas_cmp%hor(il1)%order_c1a)
 
       ! Write variables
-      call io_c1%fld_write(mpl,nicas_cmp%hor(il1)%grpid,nicas_cmp%hor(il1)%lon_c1_id,nicas_cmp%hor(il1)%lon_c1a)
-      call io_c1%fld_write(mpl,nicas_cmp%hor(il1)%grpid,nicas_cmp%hor(il1)%lat_c1_id,nicas_cmp%hor(il1)%lat_c1a)
+      call io_c1%fld_write(mpl,nicas_cmp%hor(il1)%levid,nicas_cmp%hor(il1)%lon_c1_id,nicas_cmp%hor(il1)%lon_c1a)
+      call io_c1%fld_write(mpl,nicas_cmp%hor(il1)%levid,nicas_cmp%hor(il1)%lat_c1_id,nicas_cmp%hor(il1)%lat_c1a)
 
       ! Release memory
       call io_c1%dealloc
    end do
 
    ! Write convolution
-   write(mpl%info,'(a13,a)') '','Write convolution'
+   write(mpl%info,'(a16,a)') '','Write convolution'
    call mpl%flush
 
    ! Setup fields output
@@ -2113,63 +2114,63 @@ if (.not.nam%load_nicas_global) then
 end if
 
 ! Compute adaptive sampling, vertical
-write(mpl%info,'(a7,a)') '','Compute adaptive sampling, vertical'
+write(mpl%info,'(a10,a)') '','Compute adaptive sampling, vertical'
 if (nicas_cmp%verbosity) call mpl%flush
 call nicas_cmp%compute_vertical(mpl,nam,geom)
 
 ! Compute adaptive sampling, horizontal
-write(mpl%info,'(a7,a)') '','Compute adaptive sampling, horizontal'
+write(mpl%info,'(a10,a)') '','Compute adaptive sampling, horizontal'
 if (nicas_cmp%verbosity) call mpl%flush
 call nicas_cmp%compute_horizontal(mpl,rng,nam,geom)
 
 ! Compute convolution data
-write(mpl%info,'(a7,a)') '','Compute convolution data'
+write(mpl%info,'(a10,a)') '','Compute convolution data'
 if (nicas_cmp%verbosity) call mpl%flush
 call nicas_cmp%compute_convol(mpl,rng,nam,geom)
 
 if (.not.nicas_cmp%smoother) then
    ! Compute internal normalization
-   write(mpl%info,'(a7,a)') '','Compute internal normalization'
+   write(mpl%info,'(a10,a)') '','Compute internal normalization'
    if (nicas_cmp%verbosity) call mpl%flush
    call nicas_cmp%compute_internal_normalization(mpl,nam)
 
    if (nicas_cmp%compute_norm) then
       ! Compute normalization
-      write(mpl%info,'(a7,a)') '','Compute normalization'
+      write(mpl%info,'(a10,a)') '','Compute normalization'
       if (nicas_cmp%verbosity) call mpl%flush
       call nicas_cmp%compute_normalization(mpl,nam,geom)
    end if
 end if
 
 ! Print results
-write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
+write(mpl%info,'(a10,a,i6)') '','Parameters for processor #',mpl%myproc
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','nc0 =        ',geom%nc0
+write(mpl%info,'(a13,a,i8)') '','nc0 =        ',geom%nc0
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','nc0a =       ',geom%nc0a
+write(mpl%info,'(a13,a,i8)') '','nc0a =       ',geom%nc0a
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','nl0 =        ',geom%nl0
+write(mpl%info,'(a13,a,i8)') '','nl0 =        ',geom%nl0
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','nl1 =        ',nicas_cmp%nl1
+write(mpl%info,'(a13,a,i8)') '','nl1 =        ',nicas_cmp%nl1
 do il1=1,nicas_cmp%nl1
-   write(mpl%info,'(a10,a,i3,a,i8)') '','nc1(',il1,') =   ',nicas_cmp%hor(il1)%nc1
+   write(mpl%info,'(a13,a,i3,a,i8)') '','nc1(',il1,') =   ',nicas_cmp%hor(il1)%nc1
    if (nicas_cmp%verbosity) call mpl%flush
 end do
-write(mpl%info,'(a10,a,i8)') '','ns =         ',nicas_cmp%ns
+write(mpl%info,'(a13,a,i8)') '','ns =         ',nicas_cmp%ns
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','nsa =        ',nicas_cmp%nsa
+write(mpl%info,'(a13,a,i8)') '','nsa =        ',nicas_cmp%nsa
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','nsb =        ',nicas_cmp%nsb
+write(mpl%info,'(a13,a,i8)') '','nsb =        ',nicas_cmp%nsb
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','nsc =        ',nicas_cmp%nsc
+write(mpl%info,'(a13,a,i8)') '','nsc =        ',nicas_cmp%nsc
 if (nicas_cmp%verbosity) call mpl%flush
 do il1=1,nicas_cmp%nl1
-   write(mpl%info,'(a10,a,i3,a,i8)') '','interp_c1b_to_c0a(',il1,')%n_s = ',nicas_cmp%interp_c1b_to_c0a(il1)%n_s
+   write(mpl%info,'(a13,a,i3,a,i8)') '','interp_c1b_to_c0a(',il1,')%n_s = ',nicas_cmp%interp_c1b_to_c0a(il1)%n_s
    if (nicas_cmp%verbosity) call mpl%flush
 end do
-write(mpl%info,'(a10,a,i8)') '','v%n_s =      ',nicas_cmp%v%n_s
+write(mpl%info,'(a13,a,i8)') '','v%n_s =      ',nicas_cmp%v%n_s
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%info,'(a10,a,i9)') '','c%n_s =     ',nicas_cmp%c%n_s
+write(mpl%info,'(a13,a,i9)') '','c%n_s =     ',nicas_cmp%c%n_s
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Probe out
@@ -2271,7 +2272,7 @@ logical :: slev(geom%nl0)
 
 if (.not.nam%load_nicas_global) then
    ! Vertical sampling
-   write(mpl%info,'(a10,a)') '','Compute vertical subset L1'
+   write(mpl%info,'(a13,a)') '','Compute vertical subset L1'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2337,7 +2338,7 @@ else
    ! Count effective levels
    nicas_cmp%nl1 = count(slev)
    allocate(nicas_cmp%l1_to_l0(nicas_cmp%nl1))
-   write(mpl%info,'(a10,a)') '','Effective levels: '
+   write(mpl%info,'(a13,a)') '','Effective levels: '
    if (nicas_cmp%verbosity) call mpl%flush(.false.)
    il1 = 0
    do il0=1,geom%nl0
@@ -2489,24 +2490,24 @@ if (.not.nam%load_nicas_global) then
 end if
 
 ! Vertically dependent horizontal subsampling
-write(mpl%info,'(a10,a)') '','Compute vertically dependent horizontal subsampling: '
+write(mpl%info,'(a13,a)') '','Compute vertically dependent horizontal subsampling: '
 if (nicas_cmp%verbosity) call mpl%flush
 do il1=1,nicas_cmp%nl1
    ! Index
    il0 = nicas_cmp%l1_to_l0(il1)
 
-   write(mpl%info,'(a13,a,i3,a,i3,a,i3,a)') '','Sublevel ',il1,'/',nicas_cmp%nl1,' (level ',il0,'):'
+   write(mpl%info,'(a16,a,i3,a,i3,a,i3,a)') '','Sublevel ',il1,'/',nicas_cmp%nl1,' (level ',il0,'):'
    if (nicas_cmp%verbosity) call mpl%flush
 
    if (.not.nam%load_nicas_global) then
       ! Compute nc1
-      write(mpl%info,'(a16,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
+      write(mpl%info,'(a19,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
  & rhs_min(il0)*reqkm,' km - ',rhs_max(il0)*reqkm,' km)'
       if (nicas_cmp%verbosity) call mpl%flush
       nc1_real = two*geom%area_ver_c0(il0)*nam%resol**2/(sqrt(three)*rhs_avg(il0)**2)
       if (nc1_real>real(huge_int,kind_real)) call mpl%abort('${subr}$','estimated nc1 is too large for an integer')
       nicas_cmp%hor(il1)%nc1 = floor(nc1_real)
-      write(mpl%info,'(a16,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_cmp%hor(il1)%nc1
+      write(mpl%info,'(a19,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_cmp%hor(il1)%nc1
       if (nicas_cmp%verbosity) call mpl%flush
       if (nicas_cmp%hor(il1)%nc1>nam%nc1max) then
          if (nicas_cmp%verbosity) call mpl%warning('${subr}$','required nc1 larger than nc1max, resetting to nc1max')
@@ -2514,9 +2515,9 @@ do il1=1,nicas_cmp%nl1
       end if
       if (nicas_cmp%hor(il1)%nc1<3) call mpl%abort('${subr}$','nicas_cmp%nc1 lower than 3')
       nicas_cmp%hor(il1)%nc1 = min(nicas_cmp%hor(il1)%nc1,geom%nc0_gmask(il0))
-      write(mpl%info,'(a16,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
+      write(mpl%info,'(a19,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
       if (nicas_cmp%verbosity) call mpl%flush
-      write(mpl%info,'(a10,a,f5.2)') '','Effective horizontal resolution: ', &
+      write(mpl%info,'(a13,a,f5.2)') '','Effective horizontal resolution: ', &
  & sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
 
       select case (trim(nam%nicas_draw_type))
@@ -2528,7 +2529,7 @@ do il1=1,nicas_cmp%nl1
          c1_to_c0 = mpl%msv%vali
 
          ! Compute sampling
-         write(mpl%info,'(a16,a)') '','Compute horizontal subset Sc1:'
+         write(mpl%info,'(a19,a)') '','Compute horizontal subset Sc1:'
          if (nicas_cmp%verbosity) call mpl%flush
          call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,nicas_cmp%rhs(:,il0),geom%c0a_to_c0, &
  & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,nicas_cmp%verbosity,16,nicas_cmp%hor(il1)%nc1,c1_to_c0)
@@ -2564,7 +2565,7 @@ do il1=1,nicas_cmp%nl1
          deallocate(c1_to_c0)
       case ('octahedral')
          ! Use an octahedral grid
-         write(mpl%info,'(a16,a)') '','Use an octahedral grid for subset Sc1 '
+         write(mpl%info,'(a19,a)') '','Use an octahedral grid for subset Sc1 '
          call mpl%flush
 
          ! Octahedral grid
@@ -2662,7 +2663,7 @@ do il1=1,nicas_cmp%nl1
    end if
 
    ! Compute halo A and universe conversions and communication for subset Sc1
-   write(mpl%info,'(a16,a)') '','Compute halo A and universe conversions and communication for subset Sc1'
+   write(mpl%info,'(a19,a)') '','Compute halo A and universe conversions and communication for subset Sc1'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Get subset Sc1 size on universe
@@ -2701,7 +2702,7 @@ do il1=1,nicas_cmp%nl1
    call nicas_cmp%com_c1_AU(il1)%ext(mpl,nicas_cmp%hor(il1)%vunit_c1a,nicas_cmp%hor(il1)%vunit_c1u)
 
    ! Get global lon/lat
-   write(mpl%info,'(a16,a)') '','Get global lon/lat'
+   write(mpl%info,'(a19,a)') '','Get global lon/lat'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2715,7 +2716,7 @@ do il1=1,nicas_cmp%nl1
  & lat_c1,.true.)
 
    ! Get global order
-   write(mpl%info,'(a16,a)') '','Get global order'
+   write(mpl%info,'(a19,a)') '','Get global order'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2744,7 +2745,7 @@ do il1=1,nicas_cmp%nl1
    deallocate(order_inv_c1)
 
    ! Initialize universe tree
-   write(mpl%info,'(a16,a)') '','Initialize universe tree'
+   write(mpl%info,'(a19,a)') '','Initialize universe tree'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2754,7 +2755,7 @@ do il1=1,nicas_cmp%nl1
    call nicas_cmp%hor(il1)%tree_c1u%init(nicas_cmp%hor(il1)%lon_c1u,nicas_cmp%hor(il1)%lat_c1u)
 
    ! Compute interpolation from subset Sc1 to subset Sc0
-   write(mpl%info,'(a16,a)') '','Compute interpolation from subset Sc1 to subset Sc0'
+   write(mpl%info,'(a19,a)') '','Compute interpolation from subset Sc1 to subset Sc0'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2783,7 +2784,7 @@ do il1=1,nicas_cmp%nl1
    call tree_c1%dealloc
 
    ! Compute interpolation from subset Sc0 to subset Sc1
-   write(mpl%info,'(a16,a)') '','Compute interpolation from subset Sc0 to subset Sc1'
+   write(mpl%info,'(a19,a)') '','Compute interpolation from subset Sc0 to subset Sc1'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2803,7 +2804,7 @@ do il1=1,nicas_cmp%nl1
    deallocate(gmask_c1a)
 
    ! Define halo B, compute conversions and communications for subset Sc1
-   write(mpl%info,'(a16,a)') '','Define halo B, compute conversions and communications for subset Sc1'
+   write(mpl%info,'(a19,a)') '','Define halo B, compute conversions and communications for subset Sc1'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2871,7 +2872,7 @@ do il1=1,nicas_cmp%nl1
  & nicas_cmp%hor(il1)%c1a_to_c1,nicas_cmp%hor(il1)%c1b_to_c1)
 
    ! Define halo B, compute conversions and communications for subset Sc0'
-   write(mpl%info,'(a16,a)') '','Define halo B, compute conversions and communications for subset Sc0'
+   write(mpl%info,'(a19,a)') '','Define halo B, compute conversions and communications for subset Sc0'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Define halo B (including halo A) for subset Sc0
@@ -2945,7 +2946,7 @@ do il1=1,nicas_cmp%nl1
 end do
 
 ! Define subgrid and conversions
-write(mpl%info,'(a13,a)') '','Define subgrid, conversions and communication'
+write(mpl%info,'(a16,a)') '','Define subgrid, conversions and communication'
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Count subgrid points
@@ -3173,11 +3174,11 @@ associate(ib=>nicas_cmp%ib)
 
 if (.not.nam%load_nicas_global) then
    ! Compute horizontal and vertical parameters
-   write(mpl%info,'(a10,a)') '','Compute horizontal and vertical parameters'
+   write(mpl%info,'(a13,a)') '','Compute horizontal and vertical parameters'
    if (nicas_cmp%verbosity) call mpl%flush
 
    do il1=1,nicas_cmp%nl1
-      write(mpl%info,'(a13,a,i3,a)') '','Level ',il1,':'
+      write(mpl%info,'(a16,a,i3,a)') '','Level ',il1,':'
       if (nicas_cmp%verbosity) call mpl%flush
 
       ! Index
@@ -3205,7 +3206,7 @@ if (.not.nam%load_nicas_global) then
       end if
 
       ! Interpolate
-      write(mpl%info,'(a16,a)') '','Interpolate'
+      write(mpl%info,'(a19,a)') '','Interpolate'
       if (nicas_cmp%verbosity) call mpl%flush
 
       ! Halo extension
@@ -3231,7 +3232,7 @@ if (.not.nam%load_nicas_global) then
       end if
 
       ! Communication
-      write(mpl%info,'(a16,a)') '','Communication'
+      write(mpl%info,'(a19,a)') '','Communication'
       if (nicas_cmp%verbosity) call mpl%flush
       call nicas_cmp%com_c1_AB(il1)%ext(mpl,rh_c1a,nicas_cmp%hor(il1)%rh_c1b)
       if (.not.nicas_cmp%horizontal) then
@@ -3479,7 +3480,7 @@ do il1=1,nicas_cmp%nl1
 end do
 
 ! Count and find nearest neighbors
-write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distances: '
+write(mpl%info,'(a13,a)') '','Count and find nearest neighbors, compute distances: '
 if (nicas_cmp%verbosity) call mpl%flush(.false.)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
 !$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il0,jl1,jl0,rv_th,nn,j,jc1u,valid,dx,dy,distv), &
@@ -3622,7 +3623,7 @@ do ithread=1,mpl%nthread
 end do
 
 ! Initialization
-write(mpl%info,'(a10,a)') '','Compute weights: '
+write(mpl%info,'(a13,a)') '','Compute weights: '
 if (nicas_cmp%verbosity) call mpl%flush(.false.)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
 c_n_s = 0
@@ -3642,10 +3643,10 @@ do isb=1,nicas_cmp%nsb
          jsu = nicas_cmp%hor(jl1)%c1u_to_su(jc1u)
 
          ! Horizontal component
-         S = fit_func_sqrt(mpl,nicas_cmp%ball(jl1,isb)%hnd(jbd),1)
+         S = fit_func_sqrt(mpl,nicas_cmp%ball(jl1,isb)%hnd(jbd))
 
          ! Vertical component
-         if (.not.nicas_cmp%horizontal) S = S*fit_func_sqrt(mpl,nicas_cmp%ball(jl1,isb)%vnd(jbd),1)
+         if (.not.nicas_cmp%horizontal) S = S*fit_func_sqrt(mpl,nicas_cmp%ball(jl1,isb)%vnd(jbd))
          if (sup(abs(S),S_inf)) then
             if (nicas_cmp%smoother) then
                ! Store coefficient for convolution
@@ -3926,7 +3927,7 @@ nicas_cmp%norm = mpl%msv%valr
 do il0=1,geom%nl0
    if (nicas_cmp%vlev(il0)) then
       il0i = geom%l0_to_l0i(il0)
-      write(mpl%info,'(a10,a,i3,a)') '','Level ',nam%levs(il0),': '
+      write(mpl%info,'(a13,a,i3,a)') '','Level ',nam%levs(il0),': '
       if (nicas_cmp%verbosity) call mpl%flush(.false.)
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
 
@@ -4083,7 +4084,7 @@ end subroutine nicas_cmp_apply_smoother
 ! Subroutine: nicas_cmp_apply_sqrt
 !> Apply NICAS method square-root
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_sqrt(nicas_cmp,mpl,geom,cv_cmp,fld)
+subroutine nicas_cmp_apply_sqrt(nicas_cmp,mpl,geom,cv_cmp,fld,nonunit_diag)
 
 implicit none
 
@@ -4093,16 +4094,22 @@ type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(geom_type),intent(in) :: geom                     !< Geometry
 type(cv_cmp_type),intent(in) :: cv_cmp                 !< Control vector component
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
+logical,optional,intent(in) :: nonunit_diag            !< If true (default), apply coef_ens factor
 
 ! Local variable
 integer :: ic0a,il0
 real(kind_real) :: alpha_a(nicas_cmp%nsa),alpha_b(nicas_cmp%nsb)
+logical :: lnonunit_diag
 
 ! Set name
 @:set_name(nicas_cmp_apply_sqrt)
 
 ! Probe in
 @:probe_in()
+
+! Local flag
+lnonunit_diag = .true.
+if (present(nonunit_diag)) lnonunit_diag = nonunit_diag
 
 ! Check dimension
 if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
@@ -4127,7 +4134,7 @@ do il0=1,geom%nl0
          fld(ic0a,il0) = fld(ic0a,il0)*nicas_cmp%norm(ic0a,il0)
 
          ! Apply ensemble coefficient square-root
-         fld(ic0a,il0) = fld(ic0a,il0)*sqrt(nicas_cmp%coef_ens(ic0a,il0)) ! TODO: square-root of the coef stored
+         if (lnonunit_diag) fld(ic0a,il0) = fld(ic0a,il0)*nicas_cmp%coef_ens(ic0a,il0)
       end if
    end do
 end do
@@ -4142,7 +4149,7 @@ end subroutine nicas_cmp_apply_sqrt
 ! Subroutine: nicas_cmp_apply_sqrt_ad
 !> Apply NICAS method square-root adjoint
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_sqrt_ad(nicas_cmp,mpl,geom,fld,cv_cmp)
+subroutine nicas_cmp_apply_sqrt_ad(nicas_cmp,mpl,geom,fld,cv_cmp,nonunit_diag)
 
 implicit none
 
@@ -4152,16 +4159,22 @@ type(mpl_type),intent(inout) :: mpl                   !< MPI data
 type(geom_type),intent(in) :: geom                    !< Geometry
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
 type(cv_cmp_type),intent(inout) :: cv_cmp             !< Control vector component
+logical,optional,intent(in) :: nonunit_diag           !< If true (default), apply coef_ens factor
 
 ! Local variable
 integer :: ic0a,il0
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_cmp%nsb)
+logical :: lnonunit_diag
 
 ! Set name
 @:set_name(nicas_cmp_apply_sqrt_ad)
 
 ! Probe in
 @:probe_in()
+
+! Local flag
+lnonunit_diag = .true.
+if (present(nonunit_diag)) lnonunit_diag = nonunit_diag
 
 ! Check dimension
 if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
@@ -4174,7 +4187,7 @@ do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
       if (geom%gmask_c0a(ic0a,il0)) then
          ! Apply ensemble coefficient square-root
-         fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*sqrt(nicas_cmp%coef_ens(ic0a,il0)) ! TODO: square-root of the coef stored
+         if (lnonunit_diag) fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*nicas_cmp%coef_ens(ic0a,il0)
 
          ! Normalization
          fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*nicas_cmp%norm(ic0a,il0)
@@ -4739,7 +4752,7 @@ call nicas_cmp%apply_sqrt_ad(mpl,geom,fld2,cv_cmp2)
 ! Print result
 call mpl%dot_prod(cv_cmp1%alpha,cv_cmp2%alpha,sum1)
 call mpl%dot_prod(fld1,fld2,sum2)
-write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Component NICAS adjoint test:                       ', &
+write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Component NICAS adjoint test:             ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 if (nicas_cmp%verbosity) call mpl%flush
 
@@ -4817,7 +4830,7 @@ if (nicas_cmp%smoother) then
       call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
       val(itest) = norm
    end do
-   write(mpl%info,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+   write(mpl%info,'(a16,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
  & nam%check_normalization,' tests'
    if (nicas_cmp%verbosity) call mpl%flush
 else
@@ -4844,7 +4857,7 @@ else
       call mpl%f_comm%broadcast(norm,iproc(itest)-1)
       val(itest) = norm
    end do
-   write(mpl%info,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+   write(mpl%info,'(a16,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
  & nam%check_normalization,' tests'
    if (nicas_cmp%verbosity) call mpl%flush
 
@@ -4860,17 +4873,17 @@ else
       if (mpl%myproc==iproc(itest)) fld(ic0a(itest),il0(itest)) = one
 
       ! Apply NICAS square-root adjoint
-      call nicas_cmp%apply_sqrt_ad(mpl,geom,fld,cv_cmp)
+      call nicas_cmp%apply_sqrt_ad(mpl,geom,fld,cv_cmp,.false.)
 
       ! Apply NICAS square-root 
-      call nicas_cmp%apply_sqrt(mpl,geom,cv_cmp,fld)
+      call nicas_cmp%apply_sqrt(mpl,geom,cv_cmp,fld,.false.)
 
       ! Broadcast normalization value
       if (mpl%myproc==iproc(itest)) norm = fld(ic0a(itest),il0(itest))
       call mpl%f_comm%broadcast(norm,iproc(itest)-1)
       val(itest) = norm
    end do
-   write(mpl%info,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+   write(mpl%info,'(a16,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
  & nam%check_normalization,' tests'
    if (nicas_cmp%verbosity) call mpl%flush
 end if

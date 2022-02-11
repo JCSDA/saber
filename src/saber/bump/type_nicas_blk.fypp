@@ -40,20 +40,20 @@ implicit none
 ! NICAS block derived type
 type nicas_blk_type
    ! General parameters
-   integer :: ib                                        !< Block index
-   logical :: verbosity                                 !< Verbosity flag
+   integer :: ib                              !< Block index
+   logical :: verbosity                       !< Verbosity flag
 
    ! I/O IDs
-   integer :: ncid                                      !< main ID
-   integer :: grpid                                     !< group ID
-   integer :: dirac_id                                  !< dirac ID
+   integer :: ncid                            !< main ID
+   integer :: blkid                           !< block ID
+   integer :: dirac_id                        !< dirac ID
 
    ! Block weight
-   real(kind_real) :: wgt                               !< Main weight
+   real(kind_real) :: wgt                     !< Main weight
 
    ! NICAS components
-   integer :: ncmp                                      !< Number of components
-   type(nicas_cmp_type),allocatable :: cmp(:)           ! Components
+   integer :: ncmp                            !< Number of components
+   type(nicas_cmp_type),allocatable :: cmp(:) ! Components
 contains
    procedure :: partial_dealloc => nicas_blk_partial_dealloc
    procedure :: dealloc => nicas_blk_dealloc
@@ -166,7 +166,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
 integer :: icmp
-character(len=1024) :: grpname,cmpname
+character(len=1024) :: blkname,cmpname
 
 ! Set name
 @:set_name(nicas_blk_read_local)
@@ -178,18 +178,18 @@ character(len=1024) :: grpname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),grpname)
-write(mpl%info,'(a13,a)') '','Group '//trim(grpname)
+call nam%io_key_value(bpar%blockname(ib),blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Get group
-nicas_blk%grpid = inquire_grp(mpl,nicas_blk%ncid,grpname)
+nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Read main weight
-call get_att(mpl,nicas_blk%grpid,'wgt',nicas_blk%wgt)
+call get_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
 
 ! Get number of components
-call get_att(mpl,nicas_blk%grpid,'ncmp',nicas_blk%ncmp)
+call get_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
 
 ! Allocation
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
@@ -197,6 +197,7 @@ if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 do icmp=1,nicas_blk%ncmp
    ! Set attributes
    nicas_blk%cmp(icmp)%ib = ib
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%horizontal = .false.
@@ -207,11 +208,11 @@ do icmp=1,nicas_blk%ncmp
 
    ! Get component name
    write(cmpname,'(a,i1)') 'cmp_',icmp
-   write(mpl%info,'(a16,a)') '','Component '//trim(cmpname)
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    ! Get group
-   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%grpid,cmpname)
+   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Component work
    call nicas_blk%cmp(icmp)%read_local(mpl,nam,geom,bpar)
@@ -241,7 +242,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
 integer :: icmp
-character(len=1024) :: grpname,cmpname
+character(len=1024) :: blkname,cmpname
 
 ! Set name
 @:set_name(nicas_blk_write_local_def)
@@ -253,27 +254,27 @@ character(len=1024) :: grpname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),grpname)
-write(mpl%info,'(a13,a)') '','Group '//trim(grpname)
+call nam%io_key_value(bpar%blockname(ib),blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Define group
-nicas_blk%grpid = define_grp(mpl,nicas_blk%ncid,grpname)
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Write main weight
-call put_att(mpl,nicas_blk%grpid,'wgt',nicas_blk%wgt)
+call put_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
 
 ! Write number of components
-call put_att(mpl,nicas_blk%grpid,'ncmp',nicas_blk%ncmp)
+call put_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component name
    write(cmpname,'(a,i1)') 'cmp_',icmp
-   write(mpl%info,'(a16,a)') '','Component '//trim(cmpname)
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    ! Define component
-   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%grpid,cmpname)
+   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_local_def(mpl,nam,bpar)
@@ -489,6 +490,7 @@ if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 do icmp=1,nicas_blk%ncmp
    ! Set attributes
    nicas_blk%cmp(icmp)%ib = ib
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%horizontal = .false.
@@ -537,7 +539,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
 integer :: icmp
-character(len=1024) :: grpname,cmpname
+character(len=1024) :: blkname,cmpname
 
 ! Set name
 @:set_name(nicas_blk_read_global)
@@ -549,21 +551,21 @@ character(len=1024) :: grpname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),grpname)
-write(mpl%info,'(a13,a)') '','Group '//trim(grpname)
+call nam%io_key_value(bpar%blockname(ib),blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Get group
-nicas_blk%grpid = inquire_grp(mpl,nicas_blk%ncid,grpname)
+nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Read main weight
-if (mpl%main) call get_att(mpl,nicas_blk%grpid,'wgt',nicas_blk%wgt)
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
 
 ! Broadcast main weight
 call mpl%f_comm%broadcast(nicas_blk%wgt,mpl%rootproc-1)
 
 ! Get number of components
-if (mpl%main) call get_att(mpl,nicas_blk%grpid,'ncmp',nicas_blk%ncmp)
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
 
 ! Broadcast number of components
 call mpl%f_comm%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
@@ -574,6 +576,7 @@ if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 do icmp=1,nicas_blk%ncmp
    ! Set attributes
    nicas_blk%cmp(icmp)%ib = ib
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%horizontal = .false.
@@ -584,11 +587,11 @@ do icmp=1,nicas_blk%ncmp
 
    ! Get component name
    write(cmpname,'(a,i1)') 'cmp_',icmp
-   write(mpl%info,'(a16,a)') '','Component '//trim(cmpname)
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    ! Get group
-   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%grpid,cmpname)
+   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Component work
    call nicas_blk%cmp(icmp)%read_global(mpl,nam,geom,bpar)
@@ -619,7 +622,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
 integer :: icmp
-character(len=1024) :: grpname,cmpname
+character(len=1024) :: blkname,cmpname
 
 ! Set name
 @:set_name(nicas_blk_write_global_def)
@@ -631,27 +634,27 @@ character(len=1024) :: grpname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),grpname)
-write(mpl%info,'(a10,a)') '','Group '//trim(grpname)//':'
+call nam%io_key_value(bpar%blockname(ib),blkname)
+write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Define group
-nicas_blk%grpid = define_grp(mpl,nicas_blk%ncid,grpname)
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Write main weight
-call put_att(mpl,nicas_blk%grpid,'wgt',nicas_blk%wgt)
+call put_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
 
 ! Write number of components
-call put_att(mpl,nicas_blk%grpid,'ncmp',nicas_blk%ncmp)
+call put_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component name
    write(cmpname,'(a,i1)') 'cmp_',icmp
-   write(mpl%info,'(a16,a)') '','Component '//trim(cmpname)
+   write(mpl%info,'(a13,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    ! Define component
-   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%grpid,cmpname)
+   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_global_def(mpl,nam,geom,bpar)
@@ -721,7 +724,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
 integer :: icmp
-character(len=1024) :: grpname,cmpname
+character(len=1024) :: blkname,cmpname
 
 ! Set name
 @:set_name(nicas_blk_write_grids_def)
@@ -733,21 +736,21 @@ character(len=1024) :: grpname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),grpname)
-write(mpl%info,'(a10,a)') '','Group '//trim(grpname)//':'
+call nam%io_key_value(bpar%blockname(ib),blkname)
+write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Define group
-nicas_blk%grpid = define_grp(mpl,nicas_blk%ncid,grpname)
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component name
    write(cmpname,'(a,i1)') 'cmp_',icmp
-   write(mpl%info,'(a16,a)') '','Component '//trim(cmpname)
+   write(mpl%info,'(a13,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    ! Define component
-   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%grpid,cmpname)
+   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_grids_def(mpl,nam,bpar)
@@ -824,8 +827,12 @@ associate(ib=>nicas_blk%ib)
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
 do icmp=1,nicas_blk%ncmp
+   write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
+   call mpl%flush
+ 
    ! Set attributes
    nicas_blk%cmp(icmp)%ib = ib
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%horizontal = .false.
@@ -877,6 +884,7 @@ allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
 ! Set attributes
 nicas_blk%cmp(icmp)%ib = ib
+nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
 nicas_blk%wgt = one
 
 ! Component work
@@ -908,7 +916,7 @@ type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
 integer :: iv,ic0a,il0,icmp
-real(kind_real) :: rhs_max
+real(kind_real) :: factor_ens,factor_r,factor_h,rhs_max
 character(len=1024) :: message
 
 ! Set name
@@ -925,8 +933,6 @@ nicas_blk%ncmp = cmat_blk%ncmp
 
 ! Allocation
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
-
-! TODO: correct length-scales depending on icomp
 
 do icmp=1,nicas_blk%ncmp
    ! Set anisotropic parameter
@@ -958,19 +964,27 @@ do icmp=1,nicas_blk%ncmp
 
    ! Copy C matrix fields from min_lev to max_lev
    iv = bpar%b_to_v1(ib)
+   factor_ens = one/real(nicas_blk%ncmp,kind_real)
+   factor_r = one/real(icmp,kind_real)
+   factor_h = one/factor_r**2
    do il0=1,geom%nl0
       if ((nam%min_lev(iv)<=il0).and.(il0<=nam%max_lev(iv))) then
-         nicas_blk%cmp(icmp)%coef_ens(:,il0) = cmat_blk%coef_ens(:,il0)
-         nicas_blk%cmp(icmp)%rh(:,il0) = cmat_blk%rh(:,il0)
-         if (nicas_blk%cmp(icmp)%anisotropic) then
-            do ic0a=1,geom%nc0a
-               call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0),cmat_blk%D22(ic0a,il0),cmat_blk%D12(ic0a,il0), &
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) then
+               nicas_blk%cmp(icmp)%coef_ens(ic0a,il0) = sqrt(cmat_blk%coef_ens(ic0a,il0)*factor_ens)
+               nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0)*factor_r
+               if (nicas_blk%cmp(icmp)%anisotropic) then
+                  call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0),cmat_blk%D22(ic0a,il0),cmat_blk%D12(ic0a,il0), &
  & nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0),nicas_blk%cmp(icmp)%H12(ic0a,il0))
-            end do
-         end if
-         nicas_blk%cmp(icmp)%rv(:,il0) = cmat_blk%rv(:,il0)
-         nicas_blk%cmp(icmp)%rhs(:,il0) = cmat_blk%rhs(:,il0)
-         nicas_blk%cmp(icmp)%rvs(:,il0) = cmat_blk%rvs(:,il0)
+                  nicas_blk%cmp(icmp)%H11(ic0a,il0) = nicas_blk%cmp(icmp)%H11(ic0a,il0)/factor_h
+                  nicas_blk%cmp(icmp)%H22(ic0a,il0) = nicas_blk%cmp(icmp)%H22(ic0a,il0)/factor_h
+                  nicas_blk%cmp(icmp)%H12(ic0a,il0) = nicas_blk%cmp(icmp)%H12(ic0a,il0)/factor_h
+               end if
+               nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0)*factor_r
+               nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0)*factor_r
+               nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0)*factor_r
+            end if
+         end do
       end if
    end do
 
@@ -1101,6 +1115,8 @@ type(cv_blk_type) :: cv_blk1,cv_blk2
 associate(ib=>nicas_blk%ib)
 
 ! Allocation
+cv_blk1%ncmp = nicas_blk%ncmp
+cv_blk2%ncmp = nicas_blk%ncmp
 allocate(cv_blk1%cmp(nicas_blk%ncmp))
 allocate(cv_blk2%cmp(nicas_blk%ncmp))
 do icmp=1,nicas_blk%ncmp
@@ -1125,7 +1141,7 @@ do icmp=1,nicas_blk%ncmp
    sum1 = sum1+sum1_tmp
 end do
 call mpl%dot_prod(fld1,fld2,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Block NICAS adjoint test:                       ', &
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Block NICAS adjoint test:                    ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 if (nicas_blk%verbosity) call mpl%flush
 
@@ -1204,7 +1220,7 @@ do idir=1,geom%ndir
 end do
 
 ! Write field
-if (nam%write_c0) call geom%io%fld_write(mpl,nicas_blk%grpid,nicas_blk%dirac_id,fld_tot,geom%gmask_c0a)
+if (nam%write_c0) call geom%io%fld_write(mpl,nicas_blk%blkid,nicas_blk%dirac_id,fld_tot,geom%gmask_c0a)
 
 ! Print results
 write(mpl%info,'(a7,a)') '','Values at dirac points:'

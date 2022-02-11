@@ -42,7 +42,7 @@ type nicas_type
    character(len=1024) :: prefix                    !< Prefix
    type(nicas_blk_type),allocatable :: blk(:)       !< NICAS data blocks
    logical :: allocated                             !< Allocation flag
-   integer,allocatable :: grpid(:)                  !< group ID
+   integer,allocatable :: blkid(:)                  !< block ID
    integer,allocatable :: dirac_id(:)               !< dirac ID
    integer,allocatable :: bens_id(:)                !< bens ID
    real(kind_real),allocatable :: dirac(:,:,:)      !< Dirac field
@@ -145,7 +145,7 @@ if (allocated(nicas%blk)) then
       call nicas%blk(ib)%partial_dealloc
    end do
 end if
-if (allocated(nicas%grpid)) deallocate(nicas%grpid)
+if (allocated(nicas%blkid)) deallocate(nicas%blkid)
 if (allocated(nicas%dirac_id)) deallocate(nicas%dirac_id)
 if (allocated(nicas%bens_id)) deallocate(nicas%bens_id)
 
@@ -811,8 +811,6 @@ call mpl%flush
 
 do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) then
-      write(mpl%info,'(a)') '-------------------------------------------------------------------'
-      call mpl%flush
       write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
       call mpl%flush
    end if
@@ -889,8 +887,6 @@ if (nam%check_adjoints) then
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
-         write(mpl%info,'(a)') '-------------------------------------------------------------------'
-         call mpl%flush
          write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
          call nicas%blk(ib)%test_adjoint(mpl,rng,nam,geom,bpar)
@@ -913,8 +909,6 @@ if (nam%check_normalization>0) then
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
-         write(mpl%info,'(a)') '-------------------------------------------------------------------'
-         call mpl%flush
          write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
          do icmp=1,nicas%blk(ib)%ncmp
@@ -934,7 +928,7 @@ if (nam%check_dirac) then
    call mpl%flush
 
    ! Allocation
-   allocate(nicas%grpid(nam%nv))
+   allocate(nicas%blkid(nam%nv))
    allocate(nicas%dirac_id(nam%nv))
    if (allocated(ens%mem).and.(trim(nam%method)/='cor')) allocate(nicas%bens_id(nam%nv))
 
@@ -956,10 +950,10 @@ if (nam%check_dirac) then
             call nam%io_key_value(bpar%blockname(ib),grpname)
 
             ! Define group
-            nicas%blk(ib)%grpid = define_grp(mpl,ncid,grpname)
+            nicas%blk(ib)%blkid = define_grp(mpl,ncid,grpname)
 
             ! Define variable
-            nicas%blk(ib)%dirac_id = define_var(mpl,nicas%blk(ib)%grpid,'nicas_blk','real',(/nc0_id,nl0_id/))
+            nicas%blk(ib)%dirac_id = define_var(mpl,nicas%blk(ib)%blkid,'nicas_blk','real',(/nc0_id,nl0_id/))
          end if
       end do
       do iv=1,nam%nv
@@ -967,11 +961,11 @@ if (nam%check_dirac) then
          call nam%io_key_value(nam%variables(iv),grpname)
 
          ! Define group
-         nicas%grpid(iv) = define_grp(mpl,ncid,grpname)
+         nicas%blkid(iv) = define_grp(mpl,ncid,grpname)
 
          ! Define variables
-         nicas%dirac_id(iv) = define_var(mpl,nicas%grpid(iv),'nicas','real',(/nc0_id,nl0_id/))
-         if (allocated(ens%mem).and.(trim(nam%method)/='cor')) nicas%bens_id(iv) = define_var(mpl,nicas%grpid(iv),'Bens','real', &
+         nicas%dirac_id(iv) = define_var(mpl,nicas%blkid(iv),'nicas','real',(/nc0_id,nl0_id/))
+         if (allocated(ens%mem).and.(trim(nam%method)/='cor')) nicas%bens_id(iv) = define_var(mpl,nicas%blkid(iv),'Bens','real', &
  & (/nc0_id,nl0_id/))
       end do
 
@@ -1677,13 +1671,13 @@ end if
 ! Print result
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Full NICAS adjoint test:                       ', &
+write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Full NICAS adjoint test:                       ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 if (lbens) then
    call mpl%dot_prod(fld1_bens,fld2_save,sum1)
    call mpl%dot_prod(fld2_bens,fld1_save,sum2)
-   write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Ensemble B adjoint test:                  ', &
+   write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Ensemble B adjoint test:                  ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
    call mpl%flush
 end if
@@ -1761,8 +1755,8 @@ end do
 if (nam%write_c0) then
    ! Write fields
    do iv=1,nam%nv
-      call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%dirac_id(iv),nicas%dirac(:,:,iv),geom%gmask_c0a)
-      if (lbens) call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%bens_id(iv),nicas%dirac_bens(:,:,iv),geom%gmask_c0a)
+      call geom%io%fld_write(mpl,nicas%blkid(iv),nicas%dirac_id(iv),nicas%dirac(:,:,iv),geom%gmask_c0a)
+      if (lbens) call geom%io%fld_write(mpl,nicas%blkid(iv),nicas%bens_id(iv),nicas%dirac_bens(:,:,iv),geom%gmask_c0a)
    end do
 end if
 

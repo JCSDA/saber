@@ -387,7 +387,7 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
   // Maximum number of components in the fit function
-  oops::OptionalParameter<int> fit_ncompmax{"fit_ncompmax", this};
+  oops::OptionalParameter<int> fit_ncmpmax{"fit_ncmpmax", this};
 
   // nicas_param
 
@@ -408,7 +408,7 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   // Forced vertical support radius
   oops::OptionalParameter<eckit::LocalConfiguration> rv{"rv", this};
   // Forced number of components
-  oops::OptionalParameter<eckit::LocalConfiguration> ncomp{"ncomp", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ncmp{"ncmp", this};
   // Minimum level
   oops::OptionalParameter<eckit::LocalConfiguration> min_lev{"min_lev", this};
   // Maximum level
