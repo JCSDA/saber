@@ -531,7 +531,7 @@ end subroutine bump_psichi_to_uv_ad_c
 ! Subroutine: bump_get_parameter_field_c
 !> Get a parameter as field
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_field_c(key_bump,npar,cpar,c_afieldset) bind(c,name='bump_get_parameter_field_f90')
+subroutine bump_get_parameter_field_c(key_bump,npar,cpar,icmp,c_afieldset) bind(c,name='bump_get_parameter_field_f90')
 
 implicit none
 
@@ -539,6 +539,7 @@ implicit none
 integer(c_int),intent(in) :: key_bump       !< BUMP
 integer(c_int),intent(in) :: npar           !< Parameter name size
 character(c_char),intent(in) :: cpar(npar)  !< Parameter name
+integer(c_int),intent(in) :: icmp           !< Component index
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
@@ -556,7 +557,7 @@ end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%get_parameter(param,f_fieldset)
+call bump%get_parameter(param,icmp,f_fieldset)
 
 end subroutine bump_get_parameter_field_c
 
@@ -602,7 +603,7 @@ end subroutine bump_get_parameter_value_c
 ! Subroutine: bump_set_parameter_field_c
 !> Set a parameter as field
 !----------------------------------------------------------------------
-subroutine bump_set_parameter_field_c(key_bump,npar,cpar,c_afieldset) bind(c,name='bump_set_parameter_field_f90')
+subroutine bump_set_parameter_field_c(key_bump,npar,cpar,icmp,c_afieldset) bind(c,name='bump_set_parameter_field_f90')
 
 implicit none
 
@@ -610,6 +611,7 @@ implicit none
 integer(c_int),intent(in) :: key_bump       !< BUMP
 integer(c_int),intent(in) :: npar           !< Parameter name size
 character(c_char),intent(in) :: cpar(npar)  !< Parameter name
+integer(c_int),intent(in) :: icmp           !< Component index
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
@@ -627,7 +629,7 @@ end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%set_parameter(param,f_fieldset)
+call bump%set_parameter(param,icmp,f_fieldset)
 
 end subroutine bump_set_parameter_field_c
 

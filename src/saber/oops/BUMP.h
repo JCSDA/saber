@@ -61,9 +61,9 @@ template <typename MODEL> class BUMPInputParameters : public oops::Parameters {
   /// Date of the Increment to read.
   oops::RequiredParameter<util::DateTime> date{"date", this};
   /// Parameter name.
-  /// Note: if there is a list of acceptable names, this parameter can be
-  /// changed to enum parameter.
   oops::RequiredParameter<std::string> param{"parameter", this};
+  /// Component index
+  oops::Parameter<int> component{"component", 1, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -82,9 +82,9 @@ template <typename MODEL> class BUMPOutputParameters : public oops::Parameters {
   /// Date of the Increment to write.
   oops::RequiredParameter<util::DateTime> date{"date", this};
   /// Parameter name.
-  /// Note: if there is a list of acceptable names, this parameter can be
-  /// changed to enum parameter.
   oops::RequiredParameter<std::string> param{"parameter", this};
+  /// Component index
+  oops::Parameter<int> component{"component", 1, this};
 };
 
 template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
@@ -516,9 +516,9 @@ template<typename MODEL> class BUMP {
   void multiplyNicas(atlas::FieldSet *) const;
   void multiplyPsiChiToUV(atlas::FieldSet *) const;
   void multiplyPsiChiToUVAd(atlas::FieldSet *) const;
-  void getParameter(const std::string &, Increment_ &) const;
+  void getParameter(const std::string &, const int &, Increment_ &) const;
   void getParameter(const std::string &, const std::string &, double &) const;
-  void setParameter(const std::string &, const Increment_ &) const;
+  void setParameter(const std::string &, const int &, const Increment_ &) const;
   void setParameter(const std::string &, const std::string &, const double &) const;
   void partialDealloc() const;
 
@@ -770,9 +770,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 
         // Set parameter to BUMP
         const std::string & param = inputparam.param;
-        this->setParameter(param, dx);
-        oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
-                          << std::setprecision(3) << dx.norm() << std::endl;
+        const int & component = inputparam.component;
+        this->setParameter(param, component, dx);
+        oops::Log::test() << "Norm of " << param << " - " << component << " at " << date << ": "
+                          << std::scientific << std::setprecision(3) << dx.norm() << std::endl;
       }
     }
   }
@@ -906,12 +907,13 @@ void BUMP<MODEL>::write() const {
 
         // Get parameter from BUMP
         const std::string & param = outputparam.param;
-        this->getParameter(param, dx);
+        const int & component = outputparam.component;
+        this->getParameter(param, component, dx);
 
         // Write parameter
         dx.write(outputparam.incwrite);
-        oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
-                          << std::setprecision(3) << dx.norm() << std::endl;
+        oops::Log::test() << "Norm of " << param << " - " << component << " at " << date << ": "
+                          << std::scientific << std::setprecision(3) << dx.norm() << std::endl;
       }
     }
   } else {
@@ -1143,13 +1145,14 @@ void BUMP<MODEL>::multiplyPsiChiToUVAd(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP<MODEL>::getParameter(const std::string & param, Increment_ & dx) const {
+void BUMP<MODEL>::getParameter(const std::string & param, const int & icmp,
+  Increment_ & dx) const {
   const int npar = param.size();
   const char *cpar = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
   dx.setAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_get_parameter_field_f90(keyBUMP_[jgrid], npar, cpar, atlasFieldSet->get());
+    bump_get_parameter_field_f90(keyBUMP_[jgrid], npar, cpar, icmp, atlasFieldSet->get());
   }
   dx.fromAtlas(atlasFieldSet.get());
 }
@@ -1171,14 +1174,15 @@ void BUMP<MODEL>::getParameter(const std::string & param, const std::string & va
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP<MODEL>::setParameter(const std::string & param, const Increment_ & dx) const {
+void BUMP<MODEL>::setParameter(const std::string & param, const int & icmp,
+  const Increment_ & dx) const {
   const int npar = param.size();
   const char *cpar = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
   dx.setAtlas(atlasFieldSet.get());
   dx.toAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_set_parameter_field_f90(keyBUMP_[jgrid], npar, cpar, atlasFieldSet->get());
+    bump_set_parameter_field_f90(keyBUMP_[jgrid], npar, cpar, icmp, atlasFieldSet->get());
   }
 }
 

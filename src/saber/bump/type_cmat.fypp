@@ -237,13 +237,13 @@ do ib=1,bpar%nbe
          case ('cor')
             cmat%blk(ib)%coef_ens = one
             cmat%blk(ib)%coef_sta = zero
-            cmat%blk(ib)%rh = hdiag%cor1%blk(0,ib)%rh_c0a
+            cmat%blk(ib)%rh = hdiag%cor1%blk(0,ib)%rh_c0a(:,:,1)
             if (bpar%nc4(ib)>1) then
-               cmat%blk(ib)%D11 = hdiag%cor1%blk(0,ib)%D11_c0a
-               cmat%blk(ib)%D22 = hdiag%cor1%blk(0,ib)%D22_c0a
-               cmat%blk(ib)%D12 = hdiag%cor1%blk(0,ib)%D12_c0a
+               cmat%blk(ib)%D11 = hdiag%cor1%blk(0,ib)%D11_c0a(:,:,1)
+               cmat%blk(ib)%D22 = hdiag%cor1%blk(0,ib)%D22_c0a(:,:,1)
+               cmat%blk(ib)%D12 = hdiag%cor1%blk(0,ib)%D12_c0a(:,:,1)
             end if
-            cmat%blk(ib)%rv = hdiag%cor1%blk(0,ib)%rv_c0a
+            cmat%blk(ib)%rv = hdiag%cor1%blk(0,ib)%rv_c0a(:,:,1)
             cmat%blk(ib)%ncmp = hdiag%cor1%blk(0,ib)%ncmp
          case ('loc')
             if (nam%nonunit_diag) then
@@ -252,13 +252,13 @@ do ib=1,bpar%nbe
                cmat%blk(ib)%coef_ens = one
             end if
             cmat%blk(ib)%coef_sta = zero
-            cmat%blk(ib)%rh = hdiag%loc1%blk(0,ib)%rh_c0a
+            cmat%blk(ib)%rh = hdiag%loc1%blk(0,ib)%rh_c0a(:,:,1)
             if (bpar%nc4(ib)>1) then
-               cmat%blk(ib)%D11 = hdiag%loc1%blk(0,ib)%D11_c0a
-               cmat%blk(ib)%D22 = hdiag%loc1%blk(0,ib)%D22_c0a
-               cmat%blk(ib)%D12 = hdiag%loc1%blk(0,ib)%D12_c0a
+               cmat%blk(ib)%D11 = hdiag%loc1%blk(0,ib)%D11_c0a(:,:,1)
+               cmat%blk(ib)%D22 = hdiag%loc1%blk(0,ib)%D22_c0a(:,:,1)
+               cmat%blk(ib)%D12 = hdiag%loc1%blk(0,ib)%D12_c0a(:,:,1)
             end if
-            cmat%blk(ib)%rv = hdiag%loc1%blk(0,ib)%rv_c0a
+            cmat%blk(ib)%rv = hdiag%loc1%blk(0,ib)%rv_c0a(:,:,1)
             cmat%blk(ib)%ncmp = hdiag%loc1%blk(0,ib)%ncmp
          case ('hyb-avg','hyb-rnd')
             if (nam%nonunit_diag) then
@@ -267,13 +267,13 @@ do ib=1,bpar%nbe
                cmat%blk(ib)%coef_ens = one
             end if
             cmat%blk(ib)%coef_sta = hdiag%loc2%blk(0,ib)%coef_sta_c0a
-            cmat%blk(ib)%rh = hdiag%loc2%blk(0,ib)%rh_c0a
+            cmat%blk(ib)%rh = hdiag%loc2%blk(0,ib)%rh_c0a(:,:,1)
             if (bpar%nc4(ib)>1) then
-               cmat%blk(ib)%D11 = hdiag%loc2%blk(0,ib)%D11_c0a
-               cmat%blk(ib)%D22 = hdiag%loc2%blk(0,ib)%D22_c0a
-               cmat%blk(ib)%D12 = hdiag%loc2%blk(0,ib)%D12_c0a
+               cmat%blk(ib)%D11 = hdiag%loc2%blk(0,ib)%D11_c0a(:,:,1)
+               cmat%blk(ib)%D22 = hdiag%loc2%blk(0,ib)%D22_c0a(:,:,1)
+               cmat%blk(ib)%D12 = hdiag%loc2%blk(0,ib)%D12_c0a(:,:,1)
             end if
-            cmat%blk(ib)%rv = hdiag%loc2%blk(0,ib)%rv_c0a
+            cmat%blk(ib)%rv = hdiag%loc2%blk(0,ib)%rv_c0a(:,:,1)
             cmat%blk(ib)%ncmp = hdiag%loc2%blk(0,ib)%ncmp
          case ('dual-ens')
             call mpl%abort('${subr}$','dual-ens not ready yet for C matrix')

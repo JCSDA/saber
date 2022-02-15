@@ -24,14 +24,13 @@ implicit none
 
 ! Public parameters
 integer,parameter :: nnd = 51
-integer,parameter :: nncmp = 7
-integer,parameter :: nscaleth = 8
+integer,parameter :: naxis_inv = 8
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real
 real(kind_real),parameter :: ndmax = 1.00000000_kind_real
 real(kind_real),parameter :: dnd = 0.02000000_kind_real
-real(kind_real),parameter :: scalethmin = 0.20000000_kind_real
-real(kind_real),parameter :: scalethmax = 0.90000000_kind_real
-real(kind_real),parameter :: scaleth(nscaleth) = (/ &
+real(kind_real),parameter :: axis_invmin = 0.20000000_kind_real
+real(kind_real),parameter :: axis_invmax = 0.90000000_kind_real
+real(kind_real),parameter :: axis_inv(naxis_inv) = (/ &
  & 0.20000000_kind_real, &
  & 0.30000000_kind_real, &
  & 0.40000000_kind_real, &
@@ -40,7 +39,7 @@ real(kind_real),parameter :: scaleth(nscaleth) = (/ &
  & 0.70000000_kind_real, &
  & 0.80000000_kind_real, &
  & 0.90000000_kind_real/)
-real(kind_real),parameter :: scaleh(nscaleth,nncmp) = reshape((/ &
+real(kind_real),parameter :: func_inv_hor(naxis_inv) = (/ &
  & 0.52493537_kind_real, &
  & 0.45867618_kind_real, &
  & 0.40328526_kind_real, &
@@ -48,56 +47,7 @@ real(kind_real),parameter :: scaleh(nscaleth,nncmp) = reshape((/ &
  & 0.30349756_kind_real, &
  & 0.25363138_kind_real, &
  & 0.20023294_kind_real, &
- & 0.13645909_kind_real, &
- & 0.40790697_kind_real, &
- & 0.33395241_kind_real, &
- & 0.28083303_kind_real, &
- & 0.23839582_kind_real, &
- & 0.20120478_kind_real, &
- & 0.16574407_kind_real, &
- & 0.12914878_kind_real, &
- & 0.08715670_kind_real, &
- & 0.33395621_kind_real, &
- & 0.26187103_kind_real, &
- & 0.21535218_kind_real, &
- & 0.17993388_kind_real, &
- & 0.15041977_kind_real, &
- & 0.12298675_kind_real, &
- & 0.09533284_kind_real, &
- & 0.06396260_kind_real, &
- & 0.28199358_kind_real, &
- & 0.21583454_kind_real, &
- & 0.17458869_kind_real, &
- & 0.14464638_kind_real, &
- & 0.11989883_kind_real, &
- & 0.09771909_kind_real, &
- & 0.07547093_kind_real, &
- & 0.05016529_kind_real, &
- & 0.24449716_kind_real, &
- & 0.18345574_kind_real, &
- & 0.14689016_kind_real, &
- & 0.12063705_kind_real, &
- & 0.09973537_kind_real, &
- & 0.08110176_kind_real, &
- & 0.06255641_kind_real, &
- & 0.04182471_kind_real, &
- & 0.21583454_kind_real, &
- & 0.15932840_kind_real, &
- & 0.12683641_kind_real, &
- & 0.10383969_kind_real, &
- & 0.08566548_kind_real, &
- & 0.06932369_kind_real, &
- & 0.05312621_kind_real, &
- & 0.03507077_kind_real, &
- & 0.19332154_kind_real, &
- & 0.14098209_kind_real, &
- & 0.11173458_kind_real, &
- & 0.09127144_kind_real, &
- & 0.07486425_kind_real, &
- & 0.06046185_kind_real, &
- & 0.04638044_kind_real, &
- & 0.03014139_kind_real/), &
- & (/nscaleth,nncmp/))
+ & 0.13645909_kind_real/)
 real(kind_real),parameter :: func_hor(nnd) = (/ &
  & 1.00000000_kind_real, &
  & 0.99763095_kind_real, &
@@ -150,7 +100,7 @@ real(kind_real),parameter :: func_hor(nnd) = (/ &
  & 0.00004210_kind_real, &
  & 0.00000335_kind_real, &
  & 0.00000000_kind_real/)
-real(kind_real),parameter :: scalev(nscaleth,nncmp) = reshape((/ &
+real(kind_real),parameter :: func_inv_ver(naxis_inv) = (/ &
  & 0.53598040_kind_real, &
  & 0.46866120_kind_real, &
  & 0.41267433_kind_real, &
@@ -158,56 +108,7 @@ real(kind_real),parameter :: scalev(nscaleth,nncmp) = reshape((/ &
  & 0.31105744_kind_real, &
  & 0.25992387_kind_real, &
  & 0.20463576_kind_real, &
- & 0.13909325_kind_real, &
- & 0.41751322_kind_real, &
- & 0.34252283_kind_real, &
- & 0.28775711_kind_real, &
- & 0.24379519_kind_real, &
- & 0.20587106_kind_real, &
- & 0.16964729_kind_real, &
- & 0.13212430_kind_real, &
- & 0.08873042_kind_real, &
- & 0.34252283_kind_real, &
- & 0.26826425_kind_real, &
- & 0.22022988_kind_real, &
- & 0.18423402_kind_real, &
- & 0.15380401_kind_real, &
- & 0.12585677_kind_real, &
- & 0.09756310_kind_real, &
- & 0.06516762_kind_real, &
- & 0.28907505_kind_real, &
- & 0.22070949_kind_real, &
- & 0.17849694_kind_real, &
- & 0.14807331_kind_real, &
- & 0.12273035_kind_real, &
- & 0.09999994_kind_real, &
- & 0.07725423_kind_real, &
- & 0.05119031_kind_real, &
- & 0.25040537_kind_real, &
- & 0.18804831_kind_real, &
- & 0.15043773_kind_real, &
- & 0.12362053_kind_real, &
- & 0.10209550_kind_real, &
- & 0.08299280_kind_real, &
- & 0.06395101_kind_real, &
- & 0.04256805_kind_real, &
- & 0.22070949_kind_real, &
- & 0.16336406_kind_real, &
- & 0.12989863_kind_real, &
- & 0.10634240_kind_real, &
- & 0.08763072_kind_real, &
- & 0.07088881_kind_real, &
- & 0.05437331_kind_real, &
- & 0.03588746_kind_real, &
- & 0.19768681_kind_real, &
- & 0.14470779_kind_real, &
- & 0.11423139_kind_real, &
- & 0.09328912_kind_real, &
- & 0.07647798_kind_real, &
- & 0.06191524_kind_real, &
- & 0.04740012_kind_real, &
- & 0.03078818_kind_real/), &
- & (/nscaleth,nncmp/))
+ & 0.13909325_kind_real/)
 real(kind_real),parameter :: func_ver(nnd) = (/ &
  & 1.00000000_kind_real, &
  & 0.99765451_kind_real, &
@@ -269,8 +170,8 @@ interface fit_func_sqrt
 end interface
 
 private
-public :: nncmp,nscaleth,scaleth,scalethmin,scalethmax
-public :: scaleh,scalev
+public :: naxis_inv,axis_inv,axis_invmin,axis_invmax
+public :: func_inv_hor,func_inv_ver
 public :: fit_func,fit_func_sqrt
 
 contains
@@ -279,20 +180,19 @@ contains
 ! Function: gc99_fit_func
 !> Fit function
 !----------------------------------------------------------------------
-function gc99_fit_func(mpl,dir,nd,ncmp) result(value)
+function gc99_fit_func(mpl,dir,nd) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 character(len=*),intent(in) :: dir  !< Direction
 real(kind_real),intent(in) :: nd    !< Normalized distance
-integer,intent(in) :: ncmp          !< Number of components
 
 ! Returned variable
 real(kind_real) :: value
 
 ! Local variables
-integer :: icmp,indm,indp
-real(kind_real) :: lnd,rndm,rndp
+integer :: indm,indp
+real(kind_real) :: rndm,rndp
 
 ! Set name
 @:set_name(gc99_fit_func)
@@ -306,45 +206,39 @@ if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
 ! Initialization
 value = zero
 
-do icmp=1,ncmp
-   ! Local normalized distance
-   lnd = real(icmp,kind_real)*nd
+if (eq(nd,zero)) then
+   ! Origin
+   value = one
+elseif (infeq(nd,one)) then
+   ! Inside support
 
-   if (eq(lnd,zero)) then
-      ! Origin
-      value = value+one
-   elseif (infeq(lnd,one)) then
-      ! Indices
-      indm = floor(lnd/dnd)+1
-      if (indm==nnd) then
-         indp = indm
-      else
-         indp = indm+1
-      end if
-
-      ! Coefficients
-      if (indm==nnd) then
-         rndm = one
-      else
-         rndm = real(indp-1,kind_real)-lnd/dnd
-      end if
-      rndp = (one-rndm)
-
-      ! Interpolated value
-      if (dir=='hor') then
-         ! Horizontal fit function
-         value = value+rndm*func_hor(indm)+rndp*func_hor(indp)
-      elseif (dir=='ver') then
-         ! Vertical fit function
-         value = value+rndm*func_ver(indm)+rndp*func_ver(indp)
-      else
-         call mpl%abort('${subr}$','wrong direction: '//dir)
-      end if
+   ! Indices
+   indm = floor(nd/dnd)+1
+   if (indm==nnd) then
+      indp = indm
+   else
+      indp = indm+1
    end if
-end do
 
-! Normalization
-value = value/real(ncmp,kind_real)
+   ! Coefficients
+   if (indm==nnd) then
+      rndm = one
+   else
+      rndm = real(indp-1,kind_real)-nd/dnd
+   end if
+   rndp = (one-rndm)
+
+   ! Interpolated value
+   if (dir=='hor') then
+      ! Horizontal fit function
+      value = rndm*func_hor(indm)+rndp*func_hor(indp)
+   elseif (dir=='ver') then
+      ! Vertical fit function
+      value = rndm*func_ver(indm)+rndp*func_ver(indp)
+   else
+      call mpl%abort('${subr}$','wrong direction: '//dir)
+   end if
+end if
 
 ! Probe out
 @:probe_out()
@@ -355,19 +249,17 @@ end function gc99_fit_func
 ! Function: gc99_fit_func_sqrt
 !> Fit function function square-root
 !----------------------------------------------------------------------
-function gc99_fit_func_sqrt(mpl,nd,ncmp) result(value)
+function gc99_fit_func_sqrt(mpl,nd) result(value)
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 real(kind_real),intent(in) :: nd    !< Normalized distance
-integer,intent(in),optional :: ncmp !< Number of components
 
 ! Returned variable
 real(kind_real) :: value
 
 ! Local variables
-integer :: lncmp,icmp
-real(kind_real) :: lnd
+integer :: icmp
 
 ! Set name
 @:set_name(gc99_fit_func_sqrt)
@@ -375,31 +267,19 @@ real(kind_real) :: lnd
 ! Probe in
 @:probe_in()
 
-! Local number of components
-lncmp = 1
-if (present(ncmp)) lncmp = ncmp
-
 ! Check bounds
 if (inf(nd,zero)) call mpl%abort('${subr}$','negative normalized distance')
 
 ! Initialization
 value = zero
 
-do icmp=1,lncmp
-   ! Local normalized distance
-   lnd = real(icmp,kind_real)*nd
-
-   if (eq(lnd,zero)) then
-      ! Origin
-      value = value+one
-   elseif (infeq(lnd,half)) then
-      ! Out of support
-      value = value+one-(two*lnd)
-   end if
-end do
-
-! Normalization
-value = value/real(lncmp,kind_real)
+if (eq(nd,zero)) then
+   ! Origin
+   value = one
+elseif (infeq(nd,half)) then
+   ! Inside support
+   value = one-(two*nd)
+end if
 
 ! Probe out
 @:probe_out()

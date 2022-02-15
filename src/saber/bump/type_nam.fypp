@@ -12,7 +12,6 @@ use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_fortran_env, only: output_unit
 use tools_const, only: zero,hundredth,half,one,ten,hundred,pi,req,deg2rad,rad2deg
-use tools_gc99, only: nncmp
 use tools_kinds,only: kind_real,huge_real
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -2344,7 +2343,6 @@ if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%diag_rvflt<zero) call mpl%abort('${subr}$','diag_rvflt should be non-negative')
    if (nam%fit_dl0<=0) call mpl%abort('${subr}$','fit_dl0 should be postive')
    if (nam%fit_ncmpmax<=0) call mpl%abort('${subr}$','fit_ncmpmax should be postive')
-   if (nam%fit_ncmpmax>nncmp) call mpl%abort('${subr}$','fit_ncmpmax should be lower than nncmp')
 end if
 
 ! Check ensemble sizes

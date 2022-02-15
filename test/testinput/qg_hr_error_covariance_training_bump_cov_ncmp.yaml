@@ -7,15 +7,22 @@ bump:
   check_dirac: true
   check_normalization: 10
   datadir: testdata
+  dc: 200.0e3
+  fit_ncmpmax: 2
   method: cor
-  new_nicas: true
-  forced_radii: true
-  rh:
-    q: [10000.0e3]
-  rv:
-    q: [0.0]
-  ncmp:
-    q: [7]
+  nc1: 350
+  nc2: 50
+  nc3: 15
+  new_hdiag: true
+  new_nicas: false
+  nl0r: 2
+#  forced_radii: true
+#  rh:
+#    q: [10000.0e3]
+#  rv:
+#    q: [0.0]
+#  ncomp:
+#    q: [7]
   prefix: qg_hr_error_covariance_training_bump_cov_ncmp/test
   resol: 8.0
   strategy: specific_univariate
@@ -52,6 +59,14 @@ bump:
     exp: nicas_norm
     parameter: nicas_norm
     type: an
+ensemble:
+  members from template:
+    template:
+      date: 2010-01-01T12:00:00Z
+      filename: testdata/qg_hr_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
+      state variables: [q]
+    pattern: %mem%
+    nmembers: 15
 geometry:
   nx: 320
   ny: 80

@@ -9,7 +9,7 @@
 module type_minim
 
 use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
-use tools_fit, only: diag_tensor
+use tools_fit, only: diag_tensor,diag_iso
 use tools_kinds, only: kind_real
 use tools_repro, only: rth,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
@@ -39,13 +39,15 @@ type minim_type
    ! Specific data
    integer :: nc3                                 !< Number of horizontal distance classes
    integer :: nc4                                 !< Number of angular sectors
-   integer :: ncmp                                !< Number of components
+   integer :: nl0r                                !< Effective number of levels
    real(kind_real),allocatable :: disth(:)        !< Horizontal distance
    real(kind_real),allocatable :: as(:)           !< Angular sectors
+   real(kind_real),allocatable :: distv(:)        !< Vertical distance
 contains
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
    procedure :: cost_tensor => minim_cost_tensor
+   procedure :: cost_scale => minim_cost_scale
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
    procedure :: vt_dir => minim_vt_dir
@@ -125,6 +127,8 @@ real(kind_real),intent(out) :: f          !< Cost function value
 select case (trim(minim%cost_function))
 case ('tensor')
    call minim%cost_tensor(mpl,x,f)
+case ('scale')
+   call minim%cost_scale(mpl,x,f)
 case default
    call mpl%abort('${subr}$','wrong cost function')
 end select
@@ -136,7 +140,7 @@ end subroutine minim_cost
 
 !----------------------------------------------------------------------
 ! Function: minim_cost_tensor
-!> Horizontal tensor fit function cost
+!> Horizontal tensor optimization cost function
 !----------------------------------------------------------------------
 subroutine minim_cost_tensor(minim,mpl,x,f)
 
@@ -166,7 +170,7 @@ call minim%vt_dir(xtmp)
 D11 = xtmp(1)
 D22 = xtmp(2)
 D12 = xtmp(3)
-call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,minim%ncmp,fit)
+call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))
@@ -178,6 +182,72 @@ f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(
 @:probe_out()
 
 end subroutine minim_cost_tensor
+
+!----------------------------------------------------------------------
+! Function: minim_cost_scale
+!> Scale optimization cost function
+!----------------------------------------------------------------------
+subroutine minim_cost_scale(minim,mpl,x,f)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
+
+! Local variables
+integer :: ix,jc4
+real(kind_real) :: amp,rh(minim%nc4),rv,fit_hor(minim%nc3,minim%nc4),fit_ver(minim%nl0r)
+real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
+
+! Set name
+@:set_name(minim_cost_scale)
+
+! Probe in
+@:probe_in()
+
+! Renormalize
+xtmp = x
+call minim%vt_dir(xtmp)
+
+! Parameters
+ix = 0
+if (minim%nx==2+minim%nc4) then
+   ix = ix+1
+   amp = xtmp(ix)
+else
+   amp = fit_hor(1,1)
+end if
+do jc4=1,minim%nc4
+   ix = ix+1
+   rh(jc4) = xtmp(ix)
+end do
+ix = ix+1
+rv = xtmp(ix)
+
+! Compute horizontal fit for each angular sector
+do jc4=1,minim%nc4
+   call diag_iso(mpl,minim%nc3,minim%disth,'hor',rh(jc4),fit_hor(:,jc4))
+end do
+fit_hor = amp*fit_hor
+
+! Compute vertical fit
+call diag_iso(mpl,minim%nl0r,minim%distv,'ver',rv,fit_ver)
+fit_ver = amp*fit_ver
+
+! Pack
+fit_pack(1:minim%nc3*minim%nc4) = reshape(fit_hor,(/minim%nc3*minim%nc4/))
+fit_pack(minim%nc3*minim%nc4+1:minim%ny) = fit_ver
+
+! Observations penalty
+f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_cost_scale
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_hooke
