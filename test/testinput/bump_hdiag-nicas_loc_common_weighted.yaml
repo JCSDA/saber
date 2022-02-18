@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_hdiag-nicas_loc_common_weighted/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "loc"
@@ -11,10 +12,11 @@ write_hdiag: true
 new_nicas: true
 write_nicas_global: true
 check_adjoints: true
+check_normalization: 10
 check_dirac: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]

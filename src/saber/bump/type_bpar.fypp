@@ -24,7 +24,8 @@ type bpar_type
    integer,allocatable :: nl0r(:)                  !< Effective number of levels
    integer,allocatable :: l0rl0b_to_l0(:,:,:)      !< Effective level to level
    integer,allocatable :: il0rz(:,:)               !< Effective zero separation level
-   integer,allocatable :: nc3(:)                   !< Maximum class
+   integer,allocatable :: nc3(:)                   !< Maximum horizontal class
+   integer,allocatable :: nc4(:)                   !< Maximum angular sector
    logical,allocatable :: vbal_block(:,:)          !< Vertical balance block
    logical,allocatable :: diag_block(:)            !< HDIAG block
    logical,allocatable :: avg_block(:)             !< Averaging block
@@ -35,6 +36,7 @@ type bpar_type
    character(len=1024),allocatable :: blockname(:) !< Block name
    integer,allocatable :: b_to_v1(:)               !< Block to first variable
    integer,allocatable :: b_to_v2(:)               !< Block to second variable
+   integer,allocatable :: v_to_b(:)                !< Variable to diagonal block
 contains
    procedure :: alloc => bpar_alloc
    procedure :: init => bpar_init
@@ -79,6 +81,7 @@ allocate(bpar%l0rl0b_to_l0(bpar%nl0rmax,geom%nl0,bpar%nbe))
 allocate(bpar%il0rz(geom%nl0,bpar%nbe))
 allocate(bpar%nl0r(bpar%nbe))
 allocate(bpar%nc3(bpar%nbe))
+allocate(bpar%nc4(bpar%nbe))
 allocate(bpar%vbal_block(0:nam%nv,0:nam%nv))
 allocate(bpar%diag_block(bpar%nbe))
 allocate(bpar%avg_block(bpar%nbe))
@@ -89,6 +92,7 @@ allocate(bpar%cv_block(bpar%nbe))
 allocate(bpar%blockname(bpar%nbe))
 allocate(bpar%b_to_v1(bpar%nbe))
 allocate(bpar%b_to_v2(bpar%nbe))
+allocate(bpar%v_to_b(0:nam%nv))
 
 ! Probe out
 @:probe_out()
@@ -138,6 +142,7 @@ do iv=1,nam%nv
             end do
          end do
          bpar%nc3(ib) = nam%nc3
+         bpar%nc4(ib) = nam%nc4
       else
          do il0=1,geom%nl0
             bpar%l0rl0b_to_l0(:,il0,ib) = il0
@@ -145,6 +150,7 @@ do iv=1,nam%nv
          bpar%il0rz(:,ib) = 1
          bpar%nl0r(ib) = 1
          bpar%nc3(ib) = 1
+         bpar%nc4(ib) = 1
       end if
 
       ! Select blocks
@@ -154,7 +160,7 @@ do iv=1,nam%nv
       case ('diag_all')
          bpar%diag_block(ib) = .true.
          bpar%avg_block(ib) = .false.
-         bpar%B_block(ib) = .false.
+         bpar%B_block(ib) = (iv==jv)
          bpar%nicas_block(ib) = .false.
       case ('common')
          bpar%diag_block(ib) = (iv==jv)
@@ -187,12 +193,12 @@ do iv=1,nam%nv
          bpar%nicas_block(ib) = .false.
       end select
       bpar%fit_block(ib) = bpar%diag_block(ib).and.(iv==jv)
-      if (nam%local_diag) bpar%fit_block(ib) = bpar%fit_block(ib).and.bpar%nicas_block(ib)
 
       ! Blocks information
       bpar%blockname(ib) = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
       bpar%b_to_v1(ib) = iv
       bpar%b_to_v2(ib) = jv
+      if (iv==jv) bpar%v_to_b(iv) = ib
 
       ! Update block index
       ib = ib+1
@@ -215,6 +221,7 @@ if (bpar%nbe>bpar%nb) then
       end do
    end do
    bpar%nc3(ib) = nam%nc3
+   bpar%nc4(ib) = nam%nc4
 
    ! Select blocks
    bpar%cv_block(ib) = mpl%msv%vali
@@ -252,12 +259,14 @@ if (bpar%nbe>bpar%nb) then
       bpar%nicas_block(ib) = .false.
    end select
    bpar%fit_block(ib) = bpar%diag_block(ib)
-   if (nam%local_diag) bpar%fit_block(ib) = bpar%fit_block(ib).and.bpar%nicas_block(ib)
 
    ! Blocks information
    bpar%blockname(ib) = 'common'
    bpar%b_to_v1(ib) = 0
    bpar%b_to_v2(ib) = 0
+   bpar%v_to_b(0) = ib
+else
+   bpar%v_to_b(0) = 0
 end if
 
 ! Print summary
@@ -270,7 +279,9 @@ do ib=1,bpar%nbe
       call mpl%flush
       write(mpl%info,'(a10,a,i3)') '','Effective number of levels:    ',bpar%nl0r(ib)
       call mpl%flush
-      write(mpl%info,'(a10,a,i3)') '','Maximum class:                 ',bpar%nc3(ib)
+      write(mpl%info,'(a10,a,i3)') '','Maximum horizontal class:      ',bpar%nc3(ib)
+      call mpl%flush
+      write(mpl%info,'(a10,a,i3)') '','Maximum angular sector:        ',bpar%nc4(ib)
       call mpl%flush
       if ((iv>0).and.(jv>0)) then
          write(mpl%info,'(a10,a,l1)') '','Vertical balance block:          ',bpar%vbal_block(iv,jv)
@@ -320,6 +331,7 @@ if (allocated(bpar%nl0r)) deallocate(bpar%nl0r)
 if (allocated(bpar%l0rl0b_to_l0)) deallocate(bpar%l0rl0b_to_l0)
 if (allocated(bpar%il0rz)) deallocate(bpar%il0rz)
 if (allocated(bpar%nc3)) deallocate(bpar%nc3)
+if (allocated(bpar%nc4)) deallocate(bpar%nc4)
 if (allocated(bpar%vbal_block)) deallocate(bpar%vbal_block)
 if (allocated(bpar%diag_block)) deallocate(bpar%diag_block)
 if (allocated(bpar%avg_block)) deallocate(bpar%avg_block)
@@ -330,6 +342,7 @@ if (allocated(bpar%cv_block)) deallocate(bpar%cv_block)
 if (allocated(bpar%blockname)) deallocate(bpar%blockname)
 if (allocated(bpar%b_to_v1)) deallocate(bpar%b_to_v1)
 if (allocated(bpar%b_to_v2)) deallocate(bpar%b_to_v2)
+if (allocated(bpar%v_to_b)) deallocate(bpar%v_to_b)
 
 ! Probe out
 @:probe_out()

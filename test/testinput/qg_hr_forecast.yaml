@@ -1,0 +1,24 @@
+forecast length: P1DT12H
+geometry:
+  nx: 320
+  ny: 80
+  depths: [4500.0, 5500.0]
+initial condition:
+  date: 2009-12-31T00:00:00Z
+  filename: testdata/qg_hr_truth/truth.fc.2009-12-15T00:00:00Z.P16D.nc
+model:
+  name: QG
+  tstep: PT1H
+output:
+  datadir: testdata/qg_hr_forecast
+  date: 2009-12-31T00:00:00Z
+  exp: forecast
+  frequency: PT1H
+  first: P1D
+  type: fc
+prints:
+  frequency: PT3H
+
+test:
+  reference filename: testref/qg_hr_forecast/test.log.out
+  test output filename: testoutput/qg_hr_forecast/test.log.out

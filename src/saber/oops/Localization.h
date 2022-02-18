@@ -125,8 +125,9 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   // Increment_ to ATLAS fieldset
   Increment_ dxtmp(dx);
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dx.setAtlas(atlasFieldSet.get());
+  dxtmp.setAtlas(atlasFieldSet.get());
   dxtmp.toAtlas(atlasFieldSet.get());
+  dx.setAtlas(atlasFieldSet.get());
 
   // Central block multiplication
   saberBlock_->multiply(atlasFieldSet.get());

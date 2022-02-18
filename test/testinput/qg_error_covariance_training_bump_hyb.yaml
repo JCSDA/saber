@@ -1,0 +1,69 @@
+background:
+  date: 2010-01-01T12:00:00Z
+  filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+background error:
+  covariance model: QgError
+  horizontal_length_scale: 2.2e6
+  maximum_condition_number: 1.0e6
+  randomization size: 30
+  standard_deviation: 1.8e7
+  vertical_length_scale: 10000.0
+bump:
+  check_adjoints: true
+  check_normalization: 10
+  datadir: testdata
+  dc: 500.0e3
+  method: hyb-rnd
+  nc1: 500
+  nc3: 20
+  ne: 10
+  new_hdiag: true
+  new_nicas: true
+  nl0r: 2
+  prefix: qg_error_covariance_training_bump_hyb/test
+  resol: 8.0
+  strategy: common
+  write_hdiag: true
+  write_nicas_local: true
+  output:
+  - datadir: testdata/qg_error_covariance_training_bump_hyb
+    date: 2010-01-01T12:00:00Z
+    exp: loc_hyb_coef
+    parameter: loc_hyb_coef
+    type: an
+  - datadir: testdata/qg_error_covariance_training_bump_hyb
+    date: 2010-01-01T12:00:00Z
+    exp: loc_hyb_rh
+    parameter: loc_hyb_rh
+    type: an
+  - datadir: testdata/qg_error_covariance_training_bump_hyb
+    date: 2010-01-01T12:00:00Z
+    exp: loc_hyb_rv
+    parameter: loc_hyb_rv
+    type: an
+  - datadir: testdata/qg_error_covariance_training_bump_hyb
+    date: 2010-01-01T12:00:00Z
+    exp: sta_hyb_coef
+    parameter: sta_hyb_coef
+    type: an
+  - datadir: testdata/qg_error_covariance_training_bump_hyb
+    date: 2010-01-01T12:00:00Z
+    exp: nicas_norm
+    parameter: nicas_norm
+    type: an
+ensemble:
+  members from template:
+    template:
+      date: 2010-01-01T12:00:00Z
+      filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
+    pattern: %mem%
+    nmembers: 10
+geometry:
+  nx: 40
+  ny: 20
+  depths: [4500.0, 5500.0]
+input variables: [x]
+
+test:
+  reference filename: testref/qg_error_covariance_training_bump_hyb/test.log.out
+  test output filename: testoutput/qg_error_covariance_training_bump_hyb/test.log.out

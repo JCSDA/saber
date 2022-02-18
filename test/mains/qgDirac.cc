@@ -8,15 +8,13 @@
  * does it submit to any jurisdiction.
  */
 
-#include "oops/qg/instantiateQgLocalizationFactory.h"
-#include "oops/qg/QgTraits.h"
+#include "model/QgTraits.h"
 #include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
 #include "saber/oops/instantiateCovarFactory.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  qg::instantiateQgLocalizationFactory();
   saber::instantiateCovarFactory<qg::QgTraits>();
   oops::Dirac<qg::QgTraits> dir;
   return run.execute(dir);

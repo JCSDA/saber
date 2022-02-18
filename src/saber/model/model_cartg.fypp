@@ -117,14 +117,14 @@ do img=1,model%nmg
    if (nam%logpres) then
       call mpl%abort('${subr}$','cartg does not use logpres')
    else
-      model%vunit(img,:) = lev(nam%levs(1:nam%nl))
+      model%vunit(img,:) = lev(nam%levs(1:nam%nl0))
    end if
 end do
 
 ! Used levels
 offset_lev = 0
 do icomp=1,model%ncomp
-   model%nl0_comp(icomp) = count((nam%levs(1:nam%nl)>=offset_lev+1).and.(nam%levs(1:nam%nl)<=offset_lev+model%nlev_comp(icomp)))
+   model%nl0_comp(icomp) = count((nam%levs(1:nam%nl0)>=offset_lev+1).and.(nam%levs(1:nam%nl0)<=offset_lev+model%nlev_comp(icomp)))
    offset_lev = offset_lev+model%nlev_comp(icomp)
 end do
 

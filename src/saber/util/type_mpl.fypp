@@ -235,7 +235,6 @@ mpl%purple = ' '
 mpl%err = ' '
 mpl%wng = ' '
 mpl%verbosity = 'all'
-mpl%lunit = mpl%msv%vali
 
 ! Probe out
 @:probe_out()
@@ -715,7 +714,7 @@ real(kind_real),intent(in) :: fld2(${dim[rank]}$) !< Field 2
 real(kind_real),intent(out) :: dp                 !< Global dot product
 
 ! Local variable
-real(kind_real) :: dp_loc(1),dp_out(1)
+real(kind_real) :: dp_loc(1)
 
 ! Set name
 @:set_name(mpl_dot_prod_r${rank}$)
@@ -733,8 +732,8 @@ dp_loc(1) = zero
 if (size(fld1)>0) dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
 
 ! Allreduce
-call mpl%f_comm%allreduce(dp_loc,dp_out,fckit_mpi_sum())
-dp = dp_out(1)
+call mpl%f_comm%allreduce(dp_loc,fckit_mpi_sum())
+dp = dp_loc(1)
 
 ! Broadcast
 call mpl%f_comm%broadcast(dp,mpl%rootproc-1)

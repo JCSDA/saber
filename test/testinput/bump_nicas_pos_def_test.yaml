@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_nicas_pos_def_test/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
@@ -10,7 +11,7 @@ new_nicas: true
 write_nicas_global: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]

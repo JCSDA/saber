@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_interface_vbal/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 new_vbal: true
@@ -9,7 +10,7 @@ write_vbal: true
 check_apply_vbal: true
 
 # model_param
-nl: 4
+nl0: 4
 levs: [1,2,3,4]
 nv: 2
 variables: ["u","q"]

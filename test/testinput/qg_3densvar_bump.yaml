@@ -11,7 +11,7 @@ cost function:
     - 5500.0
   background:
     date: 2010-01-01T12:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
   background error:
     covariance model: ensemble
     localization:
@@ -22,14 +22,14 @@ cost function:
         output variables: [x]
         bump:
           datadir: testdata
-          fname_nicas: qg_parameters_bump_loc/test_nicas
+          fname_nicas: qg_error_covariance_training_bump_loc/test_nicas
           load_nicas_local: true
           prefix: qg_3densvar_bump/test
           strategy: common
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
       pattern: %mem%
       nmembers: 10
   observations:
@@ -39,9 +39,9 @@ cost function:
       obs type: Stream
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d.nc
+        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3densvar.obs3d.nc
+        obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
       obs type: Stream
   - obs error:
       covariance model: diagonal
@@ -49,9 +49,9 @@ cost function:
       obs type: Wind
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d.nc
+        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3densvar.obs3d.nc
+        obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
       obs type: Wind
   - obs error:
       covariance model: diagonal
@@ -59,9 +59,9 @@ cost function:
       obs type: WSpeed
     obs space:
       obsdatain:
-        obsfile: testdata/truth.obs3d.nc
+        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
       obsdataout:
-        obsfile: testdata/3densvar.obs3d.nc
+        obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
       obs type: WSpeed
 variational:
   minimizer:
@@ -105,7 +105,7 @@ final:
   diagnostics:
     departures: oman
 output:
-  datadir: testdata
+  datadir: testdata/qg_3densvar_bump
   exp: 3densvar
   frequency: PT6H
   type: an

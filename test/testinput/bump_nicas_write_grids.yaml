@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_nicas_write_grids/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
@@ -9,10 +10,11 @@ strategy: "specific_univariate"
 new_nicas: true
 write_nicas_global: true
 check_adjoints: true
+check_normalization: 10
 check_dirac: true
 
 # model_param
-nl: 4
+nl0: 4
 levs: [1,2,3,4]
 nv: 2
 variables: ["u","q"]

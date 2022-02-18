@@ -8,6 +8,7 @@
 !----------------------------------------------------------------------
 module type_mom_blk
 
+use tools_const, only: zero
 use tools_kinds, only: kind_real
 use type_bpar, only: bpar_type
 use type_geom, only: geom_type
@@ -20,19 +21,20 @@ implicit none
 
 ! Moments block derived type
 type mom_blk_type
-   integer :: ib                                  !< Block index
-   integer :: ne                                  !< Ensemble size
-   integer :: nsub                                !< Number of sub-ensembles
-   real(kind_real),allocatable :: m1_1(:,:,:)     !< Mean for variable 1
-   real(kind_real),allocatable :: m1_2(:,:,:,:)   !< Mean for variable 2
-   real(kind_real),allocatable :: m2_1(:,:,:)     !< Variance for variable 1
-   real(kind_real),allocatable :: m2_2(:,:,:,:)   !< Variance for variable 2
-   real(kind_real),allocatable :: m11(:,:,:,:,:)  !< Covariance
-   real(kind_real),allocatable :: m12(:,:,:,:,:)  !< Third-order centered moment 1-2
-   real(kind_real),allocatable :: m21(:,:,:,:,:)  !< Third-order centered moment 2-1
-   real(kind_real),allocatable :: m22(:,:,:,:,:)  !< Fourth-order centered moment
+   integer :: ib                                   !< Block index
+   integer :: ne                                   !< Ensemble size
+   integer :: nsub                                 !< Number of sub-ensembles
+   real(kind_real),allocatable :: m1_1(:,:,:)      !< Mean for variable 1
+   real(kind_real),allocatable :: m1_2(:,:,:,:,:)  !< Mean for variable 2
+   real(kind_real),allocatable :: m2_1(:,:,:)      !< Variance for variable 1
+   real(kind_real),allocatable :: m2_2(:,:,:,:,:)  !< Variance for variable 2
+   real(kind_real),allocatable :: m11(:,:,:,:,:,:) !< Covariance
+   real(kind_real),allocatable :: m12(:,:,:,:,:,:) !< Third-order centered moment 1-2
+   real(kind_real),allocatable :: m21(:,:,:,:,:,:) !< Third-order centered moment 2-1
+   real(kind_real),allocatable :: m22(:,:,:,:,:,:) !< Fourth-order centered moment
 contains
    procedure :: alloc => mom_blk_alloc
+   procedure :: init => mom_blk_init
    procedure :: dealloc => mom_blk_dealloc
    procedure :: ext => mom_blk_ext
 end type mom_blk_type
@@ -59,9 +61,6 @@ integer,intent(in) :: ne                     !< Ensemble size
 integer,intent(in) :: nsub                   !< Number of sub-ensembles
 logical,intent(in) :: update_mom             !< Update moments sequentially
 
-! Local variables
-integer :: iv,jv
-
 ! Set name
 @:set_name(mom_blk_alloc)
 
@@ -76,23 +75,19 @@ mom_blk%ne = ne
 mom_blk%nsub = nsub
 
 ! Allocation
-if (update_mom) then
-   iv = bpar%b_to_v1(ib)
-   jv = bpar%b_to_v2(ib)
-   if (iv==jv) then
-      allocate(mom_blk%m1_1(nc1x,geom%nl0,nsub))
-      allocate(mom_blk%m1_2(nc1x,bpar%nc3(ib),geom%nl0,nsub))
-   end if
-end if
 if (bpar%diag_block(ib)) then
-   allocate(mom_blk%m2_1(nc1x,geom%nl0,nsub))
-   allocate(mom_blk%m2_2(nc1x,bpar%nc3(ib),geom%nl0,nsub))
-   allocate(mom_blk%m11(nc1x,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,nsub))
    if (update_mom) then
-      allocate(mom_blk%m12(nc1x,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,nsub))
-      allocate(mom_blk%m21(nc1x,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,nsub))
+      allocate(mom_blk%m1_1(nc1x,geom%nl0,nsub))
+      allocate(mom_blk%m1_2(nc1x,bpar%nc3(ib),bpar%nc4(ib),geom%nl0,nsub))
    end if
-   allocate(mom_blk%m22(nc1x,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,nsub))
+   allocate(mom_blk%m2_1(nc1x,geom%nl0,nsub))
+   allocate(mom_blk%m2_2(nc1x,bpar%nc3(ib),bpar%nc4(ib),geom%nl0,nsub))
+   allocate(mom_blk%m11(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
+   if (update_mom) then
+      allocate(mom_blk%m12(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
+      allocate(mom_blk%m21(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
+   end if
+   allocate(mom_blk%m22(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
 end if
 
 ! End associate
@@ -102,6 +97,52 @@ end associate
 @:probe_out()
 
 end subroutine mom_blk_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: mom_blk_init
+!> Initialization
+!----------------------------------------------------------------------
+subroutine mom_blk_init(mom_blk,bpar,update_mom)
+
+implicit none
+
+! Passed variables
+class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
+type(bpar_type),intent(in) :: bpar           !< Block parameters
+logical,intent(in) :: update_mom             !< Update moments sequentially
+
+! Set name
+@:set_name(mom_blk_init)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ib=>mom_blk%ib)
+
+! Initialization
+if (bpar%diag_block(ib)) then
+   if (update_mom) then
+      mom_blk%m1_1 = zero
+      mom_blk%m1_2 = zero
+   end if
+   mom_blk%m2_1 = zero
+   mom_blk%m2_2 = zero
+   mom_blk%m11 = zero
+   if (update_mom) then
+      mom_blk%m12 = zero
+      mom_blk%m21 = zero
+   end if
+   mom_blk%m22 = zero
+end if
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine mom_blk_init
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_blk_dealloc
@@ -152,7 +193,7 @@ type(samp_type),intent(in) :: samp               !< Sampling
 type(mom_blk_type),intent(in) :: mom_blk_in      !< Reduced moments block
 
 ! Local variables
-integer :: npack,ipack,isub,il0,jc3,jl0r
+integer :: npack,ipack,isub,il0,jc3,jc4,jl0r
 real(kind_real),allocatable :: sbuf(:,:),rbuf(:,:)
 
 ! Set name
@@ -167,7 +208,7 @@ associate(ib=>mom_blk_in%ib)
 ! Allocation
 mom_blk_out%ib = ib
 call mom_blk_out%alloc(samp%nc1d,geom,bpar,mom_blk_in%ne,mom_blk_in%nsub,.false.)
-npack = (1+bpar%nc3(ib)*(1+2*bpar%nl0r(ib)))*geom%nl0*mom_blk_out%nsub
+npack = (1+bpar%nc3(ib)*bpar%nc4(ib)*(1+2*bpar%nl0r(ib)))*geom%nl0*mom_blk_out%nsub
 allocate(sbuf(samp%nc1a,npack))
 allocate(rbuf(samp%nc1d,npack))
 
@@ -177,20 +218,22 @@ do isub=1,mom_blk_out%nsub
    do il0=1,geom%nl0
       ipack = ipack+1
       sbuf(:,ipack) = mom_blk_in%m2_1(:,il0,isub)
-      do jc3=1,bpar%nc3(ib)
-         ipack = ipack+1
-         sbuf(:,ipack) = mom_blk_in%m2_2(:,jc3,il0,isub)
-         do jl0r=1,bpar%nl0r(ib)
+      do jc4=1,bpar%nc4(ib)
+         do jc3=1,bpar%nc3(ib)
             ipack = ipack+1
-            sbuf(:,ipack) = mom_blk_in%m11(:,jc3,jl0r,il0,isub)
-            ipack = ipack+1
-            sbuf(:,ipack) = mom_blk_in%m22(:,jc3,jl0r,il0,isub)
+            sbuf(:,ipack) = mom_blk_in%m2_2(:,jc3,jc4,il0,isub)
+            do jl0r=1,bpar%nl0r(ib)
+               ipack = ipack+1
+               sbuf(:,ipack) = mom_blk_in%m11(:,jc3,jc4,jl0r,il0,isub)
+               ipack = ipack+1
+               sbuf(:,ipack) = mom_blk_in%m22(:,jc3,jc4,jl0r,il0,isub)
+            end do
          end do
       end do
    end do
 end do
 
-! Communication
+! Halo extension
 call samp%com_c1_AD%ext(mpl,sbuf,rbuf)
 
 ! Unpack
@@ -199,14 +242,16 @@ do isub=1,mom_blk_out%nsub
    do il0=1,geom%nl0
       ipack = ipack+1
       mom_blk_out%m2_1(:,il0,isub) = rbuf(:,ipack)
-      do jc3=1,bpar%nc3(ib)
-         ipack = ipack+1
-         mom_blk_out%m2_2(:,jc3,il0,isub) = rbuf(:,ipack)
-         do jl0r=1,bpar%nl0r(ib)
+      do jc4=1,bpar%nc4(ib)
+         do jc3=1,bpar%nc3(ib)
             ipack = ipack+1
-            mom_blk_out%m11(:,jc3,jl0r,il0,isub) = rbuf(:,ipack)
-            ipack = ipack+1
-            mom_blk_out%m22(:,jc3,jl0r,il0,isub) = rbuf(:,ipack)
+            mom_blk_out%m2_2(:,jc3,jc4,il0,isub) = rbuf(:,ipack)
+            do jl0r=1,bpar%nl0r(ib)
+               ipack = ipack+1
+               mom_blk_out%m11(:,jc3,jc4,jl0r,il0,isub) = rbuf(:,ipack)
+               ipack = ipack+1
+               mom_blk_out%m22(:,jc3,jc4,jl0r,il0,isub) = rbuf(:,ipack)
+            end do
          end do
       end do
    end do

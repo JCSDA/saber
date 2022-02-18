@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_write_mom/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
@@ -11,7 +12,7 @@ new_hdiag: true
 write_hdiag: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]

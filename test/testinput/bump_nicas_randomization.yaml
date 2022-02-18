@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_nicas_randomization/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
@@ -11,7 +12,7 @@ write_nicas_global: true
 check_randomization: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]

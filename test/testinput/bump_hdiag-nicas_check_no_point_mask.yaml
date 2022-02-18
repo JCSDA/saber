@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_hdiag-nicas_check_no_point_mask/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
@@ -12,11 +13,12 @@ new_nicas: true
 write_nicas_global: true
 write_nicas_local: true
 check_adjoints: true
+check_normalization: 10
 check_dirac: true
 check_no_point_mask: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: true
 variables: ["u"]
@@ -43,7 +45,7 @@ resol: 8.0
 # dirac_param
 ndir: 1
 londir: [-85.0]
-latdir: [65.0]
+latdir: [15.0]
 levdir: [1]
 ivdir: [1]
 

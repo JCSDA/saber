@@ -1,7 +1,5 @@
-bump_get_param_cor
-bump_get_param_Dloc
-bump_get_param_hyb
-bump_get_param_lct
+bump_get_param
+bump_get_param_aniso
 bump_hdiag_diag_rhflt
 bump_hdiag_diag_rvflt
 bump_hdiag_fit_dl0
@@ -32,12 +30,6 @@ bump_hdiag-nicas_universe_rad
 bump_interface_nicas
 bump_interface_stddev
 bump_interface_vbal
-bump_lct-nicas_diagonal
-bump_lct-nicas_mask_check
-bump_lct_qc
-bump_lct_two_scales
-bump_lct_write_cor
-bump_lct_write_grids
 bump_nicas_fixed_radii_profiles
 bump_nicas_pos_def_test
 bump_nicas_write_grids
@@ -53,6 +45,5 @@ bump_vbal_pseudo_inv_mmax
 bump_vbal_pseudo_inv_var_th
 bump_vbal_uniform
 bump_vbal_write_grids
-bump_set_param_cor
-bump_set_param_hyb
-bump_set_param_lct
+bump_set_param
+bump_set_param_aniso

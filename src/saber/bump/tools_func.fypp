@@ -10,22 +10,17 @@
 module tools_func
 
 use atlas_module, only: atlas_geometry
-use iso_c_binding, only: c_int16_t,c_int32_t
+use iso_c_binding
 use tools_asa007, only: cholesky,syminv
-use tools_const, only: zero,hundredth,tenth,half,quarter,one,two,three,four,five,eight,ten,thousand,pi,deg2rad,rad2deg
+use tools_const, only: zero,hundredth,tenth,half,one,two,three,four,five,eight,ten,pi,deg2rad,rad2deg
 use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
 use tools_qsort, only: qsort
-use tools_repro, only: rth,inf,sup,infeq,small
+use tools_repro, only: rth,inf,sup,infeq,small,eq
+use tools_wrfda, only: da_eof_decomposition
 use type_mpl, only: mpl_type
 @:use_probe()
 
 implicit none
-
-real(kind_real),parameter :: gc2gau = 0.28_kind_real  !< GC99 support radius to Gaussian Daley length-scale (empirical)
-real(kind_real),parameter :: gau2gc = one/gc2gau      !< Gaussian Daley length-scale to GC99 support radius (empirical)
-real(kind_real),parameter :: Dmin = 1.0e-12_kind_real !< Minimum tensor diagonal value
-real(kind_real),parameter :: condmax = thousand       !< Maximum tensor conditioning number
-integer,parameter :: M = 0                            !< Number of implicit iteration for the Matern function (-1: GC99, 0: Gaussian, >0: Matern)
 
 interface
    function c_fletcher32(n,var) bind(c,name='fletcher32') result(hash)
@@ -46,6 +41,9 @@ interface gridhash
 end interface
 interface independent_levels
    module procedure func_independent_levels
+end interface
+interface sphere_bearing
+   module procedure func_sphere_bearing
 end interface
 interface sphere_dist
    module procedure func_sphere_dist
@@ -86,33 +84,6 @@ end interface
 interface vert_interp
    module procedure func_vert_interp
 end interface
-interface fit_diag
-   module procedure func_fit_diag
-end interface
-interface gc99
-   module procedure func_gc99
-end interface
-interface fit_func
-   module procedure func_fit_func
-end interface
-interface fit_lct
-   module procedure func_fit_lct
-end interface
-interface lct_d2h
-   module procedure func_lct_d2h
-end interface
-interface lct_h2r
-   module procedure func_lct_h2r
-end interface
-interface lct_r2d
-   module procedure func_lct_r2d
-end interface
-interface check_cond
-   module procedure func_check_cond
-end interface
-interface matern
-   module procedure func_matern
-end interface
 interface cholesky
    module procedure func_cholesky
 end interface
@@ -133,13 +104,13 @@ interface cx_to_cxu
 end interface
 interface convert_i2l
    module procedure func_convert_i2l_r0
-#:for rank in ranks_1234
+#:for rank in ranks_123456
    module procedure func_convert_i2l_r${rank}$
 #:endfor
 end interface
 interface convert_l2i
    module procedure func_convert_l2i_r0
-#:for rank in ranks_1234
+#:for rank in ranks_123456
    module procedure func_convert_l2i_r${rank}$
 #:endfor
 end interface
@@ -171,11 +142,9 @@ interface zss_count
 end interface
 
 private
-public :: gc2gau,gau2gc,Dmin,M
-public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat,vector_product,det, &
- & inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,fit_diag,fit_func,fit_lct,lct_d2h, &
- & lct_h2r,lct_r2d,check_cond,cholesky,syminv,histogram,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i, &
- & zss_maxval,zss_minval,zss_sum,zss_count
+public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
+ & vector_product,det,inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
+ & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 
 contains
 
@@ -447,6 +416,48 @@ dist = sqrt((x_f-x_i)**2+(y_f-y_i)**2+(z_f-z_i)**2)
 @:probe_out()
 
 end subroutine func_cart_dist
+
+!----------------------------------------------------------------------
+! Subroutine: func_sphere_bearing
+!> Compute the bearing between two points
+!----------------------------------------------------------------------
+subroutine func_sphere_bearing(lon_i,lat_i,lon_f,lat_f,bearing)
+
+implicit none
+
+! Passed variable
+real(kind_real),intent(in) :: lon_i    !< Initial point longitude [radians]
+real(kind_real),intent(in) :: lat_i    !< Initial point latitude [radians]
+real(kind_real),intent(in) :: lon_f    !< Final point longitude [radians]
+real(kind_real),intent(in) :: lat_f    !< Final point latitude [radians]
+real(kind_real),intent(out) :: bearing !< Bearing [radians]
+
+! Local variables
+real(kind_real) :: cosdlon,sindlon,coslat_i,coslat_f,sinlat_i,sinlat_f,x,y
+
+! Set name
+@:set_name(func_sphere_bearing)
+
+! Probe in
+@:probe_in()
+
+! Trigonometry
+cosdlon = cos(lon_f-lon_i)
+sindlon = sin(lon_f-lon_i)
+coslat_i = cos(lat_i)
+coslat_f = cos(lat_f)
+sinlat_i = sin(lat_i)
+sinlat_f = sin(lat_f)
+
+! Compute bearing
+x = coslat_f*sindlon
+y = coslat_i*sinlat_f-sinlat_i*coslat_f*cosdlon
+bearing = atan2(y,x)
+
+! Probe out
+@:probe_out()
+
+end subroutine func_sphere_bearing
 
 !----------------------------------------------------------------------
 ! Subroutine: func_sphere_dist
@@ -982,20 +993,20 @@ end subroutine func_vert_interp_setup
 ! Subroutine: func_vert_interp
 !> Apply vertical interpolation
 !----------------------------------------------------------------------
-subroutine func_vert_interp(mpl,nl1,var_l1,nl0,il1inf,il1sup,rinf,rsup,var_l0)
+subroutine func_vert_interp(mpl,nl1,data_l1,nl0,il1inf,il1sup,rinf,rsup,data_l0)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl        !< MPI data
-integer,intent(in) :: nl1                  !< Number of interpolation levels
-real(kind_real),intent(in) :: var_l1(nl1)  !< Input variable
-integer,intent(in) :: nl0                  !< Number of levels
-integer,intent(in) :: il1inf(nl0)          !< Inferior interpolation levels
-integer,intent(in) :: il1sup(nl0)          !< Superior interpolation levels
-real(kind_real),intent(in) :: rinf(nl0)    !< Inferior interpolation weights
-real(kind_real),intent(in) :: rsup(nl0)    !< Superior interpolation weights
-real(kind_real),intent(out) :: var_l0(nl0) !< Output variable
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nl1                   !< Number of interpolation levels
+real(kind_real),intent(in) :: data_l1(nl1)  !< Input data
+integer,intent(in) :: nl0                   !< Number of levels
+integer,intent(in) :: il1inf(nl0)           !< Inferior interpolation levels
+integer,intent(in) :: il1sup(nl0)           !< Superior interpolation levels
+real(kind_real),intent(in) :: rinf(nl0)     !< Inferior interpolation weights
+real(kind_real),intent(in) :: rsup(nl0)     !< Superior interpolation weights
+real(kind_real),intent(out) :: data_l0(nl0) !< Output data
 
 ! Local variables
 integer :: il0
@@ -1008,10 +1019,10 @@ integer :: il0
 
 ! Interpolate
 do il0=1,nl0
-   if (mpl%msv%isnot(var_l1(il1inf(il0))).and.mpl%msv%isnot(var_l1(il1sup(il0)))) then
-      var_l0(il0) = rinf(il0)*var_l1(il1inf(il0))+rsup(il0)*var_l1(il1sup(il0))
+   if (mpl%msv%isnot(data_l1(il1inf(il0))).and.mpl%msv%isnot(data_l1(il1sup(il0)))) then
+      data_l0(il0) = rinf(il0)*data_l1(il1inf(il0))+rsup(il0)*data_l1(il1sup(il0))
    else
-      var_l0(il0) = mpl%msv%valr
+      data_l0(il0) = mpl%msv%valr
    end if
 end do
 
@@ -1019,501 +1030,6 @@ end do
 @:probe_out()
 
 end subroutine func_vert_interp
-
-!----------------------------------------------------------------------
-! Subroutine: func_fit_diag
-!> Compute diagnostic fit function
-!----------------------------------------------------------------------
-subroutine func_fit_diag(mpl,nc3,nl0r,disth,distv,coef,rh,rv,fit)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl          !< MPI data
-integer,intent(in) :: nc3                    !< Number of classes
-integer,intent(in) :: nl0r                   !< Effective number of levels
-real(kind_real),intent(in) :: disth(nc3)     !< Horizontal distance
-real(kind_real),intent(in) :: distv(nl0r)    !< Vertical distance
-real(kind_real),intent(in) :: coef           !< Diagonal coefficient
-real(kind_real),intent(in) :: rh             !< Horizontal support radius
-real(kind_real),intent(in) :: rv             !< Vertical support radius
-real(kind_real),intent(out) :: fit(nc3,nl0r) !< Fit
-
-! Local variables
-integer :: jl0r,jc3,nc3max
-real(kind_real) :: disthsq(nc3),distvsq(nl0r),distnorm
-
-! Set name
-@:set_name(func_fit_diag)
-
-! Probe in
-@:probe_in()
-
-if (mpl%msv%is(coef).or.mpl%msv%is(rh).or.mpl%msv%is(rv)) then
-   ! Set to missing values if no value available
-   fit = mpl%msv%valr
-else
-   ! Initialization
-   fit = zero
-
-   ! Find maximum class
-   nc3max = 0
-   do jc3=1,nc3
-      if (disth(jc3)>rh) exit
-      nc3max = jc3
-   end do
-
-   ! Squared normalized horizontal distance
-   do jc3=1,nc3max
-      if (rh>zero) then
-         disthsq(jc3) = (disth(jc3)/rh)**2
-      elseif ((nc3max==1).or.(disth(jc3)>zero)) then
-         disthsq(jc3) = zero
-      else
-         disthsq(jc3) = one
-      end if
-   end do
-
-   ! Squared normalized vertical distance
-   do jl0r=1,nl0r
-      if (rv>zero) then
-         distvsq(jl0r) = (distv(jl0r)/rv)**2
-      elseif ((nl0r==1).or.(distv(jl0r)>zero)) then
-         distvsq(jl0r) = zero
-      else
-         distvsq(jl0r) = one
-      end if
-   end do
-
-   ! Unitary fit function
-   do jl0r=1,nl0r
-      do jc3=1,nc3max
-         distnorm = sqrt(disthsq(jc3)+distvsq(jl0r))
-         fit(jc3,jl0r) = fit_func(mpl,distnorm)
-      end do
-   end do
-
-   ! Diagonal coefficient
-   fit = fit*coef
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine func_fit_diag
-
-!----------------------------------------------------------------------
-! Function: func_gc99
-!> Gaspari and Cohn (1999) function, with the support radius as a parameter
-!----------------------------------------------------------------------
-function func_gc99(distnorm) result(value)
-
-! Passed variables
-real(kind_real),intent(in) :: distnorm !< Normalized distance
-
-! Returned variable
-real(kind_real) :: value
-
-! Set name
-@:set_name(func_gc99)
-
-! Probe in
-@:probe_in()
-
-! Gaspari and Cohn (1999) function
-if (distnorm<half) then
-   value = one-distnorm
-   value = one+eight/five*distnorm*value
-   value = one-three/four*distnorm*value
-   value = one-20.0_kind_real/three*distnorm**2*value
-elseif (distnorm<one) then
-   value = one-distnorm/three
-   value = one-eight/five*distnorm*value
-   value = one+three/four*distnorm*value
-   value = one-two/three*distnorm*value
-   value = one-five/two*distnorm*value
-   value = one-12.0_kind_real*distnorm*value
-   value = -value/(three*distnorm)
-else
-   value = zero
-end if
-
-! Set small values to zero (bad conditioning)
-if (inf(value,sqrt(rth))) value = zero
-
-! Probe out
-@:probe_out()
-
-end function func_gc99
-
-!----------------------------------------------------------------------
-! Function: func_fit_func
-!> Fit_function
-!----------------------------------------------------------------------
-function func_fit_func(mpl,distnorm) result(value)
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-real(kind_real),intent(in) :: distnorm !< Normalized distance
-
-! Returned variable
-real(kind_real) :: value
-
-! Set name
-@:set_name(func_fit_func)
-
-! Probe in
-@:probe_in()
-
-! Distance check bound
-if (distnorm<zero) call mpl%abort('${subr}$','negative normalized distance')
-
-! Gaspari and Cohn (1999) function
-value = gc99(distnorm)
-
-! Enforce positivity
-value = max(value,zero)
-
-! Probe out
-@:probe_out()
-
-end function func_fit_func
-
-!----------------------------------------------------------------------
-! Subroutine: func_fit_lct
-!> LCT fit
-!----------------------------------------------------------------------
-subroutine func_fit_lct(mpl,nc3,nl0r,dxsq,dysq,dxdy,dzsq,dmask,nscales,D,coef,fit)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-integer,intent(in) :: nc3                     !< Number of classes
-integer,intent(in) :: nl0r                    !< Number of levels
-real(kind_real),intent(in) :: dxsq(nc3,nl0r)  !< Zonal separation squared
-real(kind_real),intent(in) :: dysq(nc3,nl0r)  !< Meridian separation squared
-real(kind_real),intent(in) :: dxdy(nc3,nl0r)  !< Zonal x meridian separations product
-real(kind_real),intent(in) :: dzsq(nc3,nl0r)  !< Vertical separation squared
-logical,intent(in) :: dmask(nc3,nl0r)         !< Mask
-integer,intent(in) :: nscales                 !< Number of LCT scales
-real(kind_real),intent(in) :: D(4,nscales)    !< LCT components
-real(kind_real),intent(in) :: coef(nscales)   !< LCT coefficients
-real(kind_real),intent(out) :: fit(nc3,nl0r)  !< Fit
-
-! Local variables
-integer :: jl0r,jc3,iscales
-real(kind_real) :: Dcoef(nscales),D11,D22,D33,D12,H11,H22,H33,H12,rsq,distnorm
-
-! Set name
-@:set_name(func_fit_lct)
-
-! Probe in
-@:probe_in()
-
-! Initialization
-fit = mpl%msv%valr
-
-! Coefficients
-Dcoef = max(Dmin,min(coef,one))
-Dcoef = Dcoef/sum(Dcoef)
-do iscales=1,nscales
-   ! Ensure positive-definiteness of D
-   D11 = max(Dmin,D(1,iscales))
-   D22 = max(Dmin,D(2,iscales))
-   if (nl0r>1) then
-      D33 = D(3,iscales)
-   else
-      D33 = zero
-   end if
-   D12 = sqrt(D11*D22)*max(-one+Dmin,min(D(4,iscales),one-Dmin))
-
-   ! Inverse D to get H
-   call lct_d2h(mpl,D11,D22,D33,D12,H11,H22,H33,H12)
-
-   ! Homogeneous anisotropic approximation
-   do jl0r=1,nl0r
-      do jc3=1,nc3
-         if (dmask(jc3,jl0r)) then
-            ! Initialization
-            if (iscales==1) fit(jc3,jl0r) = zero
-
-            ! Squared distance
-            rsq = H11*dxsq(jc3,jl0r)+H22*dysq(jc3,jl0r)+H33*dzsq(jc3,jl0r)+two*H12*dxdy(jc3,jl0r)
-
-            if (M==-1) then
-               ! Gaspari-Cohn 1999 function
-               distnorm = sqrt(rsq)*gc2gau
-               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*gc99(distnorm)
-            elseif (M==0) then
-               ! Gaussian function
-               if (rsq<40.0_kind_real) fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*exp(-half*rsq)
-            else
-               ! Matern function
-               fit(jc3,jl0r) = fit(jc3,jl0r)+Dcoef(iscales)*matern(mpl,M,sqrt(rsq))
-            end if
-         end if
-      end do
-   end do
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine func_fit_lct
-
-!----------------------------------------------------------------------
-! Subroutine: func_lct_d2h
-!> From D (Daley tensor) to H (local correlation tensor)
-!----------------------------------------------------------------------
-subroutine func_lct_d2h(mpl,D11,D22,D33,D12,H11,H22,H33,H12)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl!< MPI data
-real(kind_real),intent(in) :: D11  !< Daley tensor component 11
-real(kind_real),intent(in) :: D22  !< Daley tensor component 22
-real(kind_real),intent(in) :: D33  !< Daley tensor component 33
-real(kind_real),intent(in) :: D12  !< Daley tensor component 12
-real(kind_real),intent(out) :: H11 !< Local correlation tensor component 11
-real(kind_real),intent(out) :: H22 !< Local correlation tensor component 22
-real(kind_real),intent(out) :: H33 !< Local correlation tensor component 33
-real(kind_real),intent(out) :: H12 !< Local correlation tensor component 12
-
-! Local variables
-real(kind_real) :: det
-
-! Set name
-@:set_name(func_lct_d2h)
-
-! Probe in
-@:probe_in()
-
-if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D33).and.mpl%msv%isnot(D12)) then
-   ! Compute horizontal determinant
-   det = D11*D22-D12**2
-
-   ! Inverse D to get H
-   if (det>zero) then
-      H11 = D22/det
-      H22 = D11/det
-      H12 = -D12/det
-   else
-      call mpl%abort('${subr}$','non-invertible tensor')
-   end if
-   if (D33>zero) then
-      H33 = one/D33
-   else
-      H33 = zero
-   end if
-else
-   ! Missing values
-   H11 = mpl%msv%valr
-   H22 = mpl%msv%valr
-   H33 = mpl%msv%valr
-   H12 = mpl%msv%valr
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine func_lct_d2h
-
-!----------------------------------------------------------------------
-! Subroutine: func_lct_h2r
-!> From H (local correlation tensor) to support radii
-!----------------------------------------------------------------------
-subroutine func_lct_h2r(mpl,H11,H22,H33,H12,rh,rv)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl !< MPI data
-real(kind_real),intent(in) :: H11   !< Local correlation tensor component 11
-real(kind_real),intent(in) :: H22   !< Local correlation tensor component 22
-real(kind_real),intent(in) :: H33   !< Local correlation tensor component 33
-real(kind_real),intent(in) :: H12   !< Local correlation tensor component 12
-real(kind_real),intent(out) :: rh   !< Horizontal support radius
-real(kind_real),intent(out) :: rv   !< Vertical support radius
-
-! Local variables
-real(kind_real) :: tr,det,diff
-
-! Set name
-@:set_name(func_lct_h2r)
-
-! Probe in
-@:probe_in()
-
-if (mpl%msv%isnot(H11).and.mpl%msv%isnot(H22).and.mpl%msv%isnot(H33).and.mpl%msv%isnot(H12)) then
-   ! Check diagonal positivity
-   if ((H11<zero).or.(H22<zero)) call mpl%abort('${subr}$','negative diagonal LCT coefficients')
-
-   ! Compute horizontal trace
-   tr = H11+H22
-
-   ! Compute horizontal determinant
-   det = H11*H22-H12**2
-
-   ! Compute horizontal support radius
-   diff = quarter*(H11-H22)**2+H12**2
-   if ((det>zero).and..not.(diff<zero)) then
-      if (sup(half*tr,sqrt(diff))) then
-         rh = gau2gc/sqrt(half*tr-sqrt(diff))
-      else
-         call mpl%abort('${subr}$','non positive-definite LCT (eigenvalue)')
-      end if
-   else
-      call mpl%abort('${subr}$','non positive-definite LCT (determinant)')
-   end if
-
-   ! Compute vertical support radius
-   if (H33>zero) then
-      rv = gau2gc/sqrt(H33)
-   else
-      rv = zero
-   end if
-else
-   ! Missing values
-   rh = mpl%msv%valr
-   rv = mpl%msv%valr
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine func_lct_h2r
-
-!----------------------------------------------------------------------
-! Subroutine: func_lct_r2d
-!> From support radius to Daley tensor diagonal element
-!----------------------------------------------------------------------
-subroutine func_lct_r2d(r,D)
-
-implicit none
-
-! Passed variables
-real(kind_real),intent(in) :: r  !< Support radius
-real(kind_real),intent(out) :: D !< Daley tensor diagonal element
-
-! Set name
-@:set_name(func_lct_r2d)
-
-! Probe in
-@:probe_in()
-
-! Convert from support radius to Daley length-scale and square
-D = (gc2gau*r)**2
-
-! Probe out
-@:probe_out()
-
-end subroutine func_lct_r2d
-
-!----------------------------------------------------------------------
-! Subroutine: func_check_cond
-!> Check tensor conditioning
-!----------------------------------------------------------------------
-subroutine func_check_cond(d1,d2,nod,valid)
-
-implicit none
-
-! Passed variables
-real(kind_real),intent(in) :: d1  !< First diagonal coefficient
-real(kind_real),intent(in) :: d2  !< Second diagonal coefficient
-real(kind_real),intent(in) :: nod !< Normalized off-diagonal coefficient
-logical,intent(out) :: valid      !< Conditioning validity
-
-! Local variables
-real(kind_real) :: det,tr,diff,ev1,ev2
-
-! Set name
-@:set_name(func_check_cond)
-
-! Probe in
-@:probe_in()
-
-! Compute trace and determinant
-tr = d1+d2
-det = d1*d2*(one-nod**2)
-diff = quarter*(d1-d2)**2+d1*d2*nod**2
-
-if ((det>zero).and..not.(diff<zero)) then
-   ! Compute eigenvalues
-   ev1 = half*tr+sqrt(diff)
-   ev2 = half*tr-sqrt(diff)
-
-   if (ev2>zero) then
-      ! Check conditioning
-      valid = inf(ev1,condmax*ev2)
-   else
-      ! Lowest negative eigenvalue is negative
-      valid = .false.
-   end if
-else
-   ! Non-positive definite tensor
-   valid = .false.
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine func_check_cond
-
-!----------------------------------------------------------------------
-! Function: func_matern
-!> Compute the normalized diffusion function from eq. (55) of Mirouze and Weaver (2013), for the 3d case (d = 3)
-!----------------------------------------------------------------------
-function func_matern(mpl,M,x) result(value)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl !< MPI data
-integer,intent(in) :: M             !< Matern function order
-real(kind_real),intent(in) :: x     !< Argument
-
-! Returned variable
-real(kind_real) :: value
-
-! Local variables
-integer :: j
-real(kind_real) :: xtmp,beta
-
-! Set name
-@:set_name(func_matern)
-
-! Probe in
-@:probe_in()
-
-! Check
-if (M<2) call mpl%abort('${subr}$','M should be larger than 2')
-if (mod(M,2)>0) call mpl%abort('${subr}$','M should be even')
-
-! Initialization
-value = zero
-beta = one
-xtmp = x*sqrt(real(2*M-5,kind_real))
-
-do j=0,M-3
-   ! Update sum
-   value = value+beta*(xtmp)**(M-2-j)
-
-   ! Update beta
-   beta = beta*real((j+1+M-2)*(-j+M-2),kind_real)/real(2*(j+1),kind_real)
-end do
-
-! Last term and normalization
-value = value/beta+one
-
-! Exponential factor
-value = value*exp(-xtmp)
-
-! Probe out
-@:probe_out()
-
-end function func_matern
 
 !----------------------------------------------------------------------
 ! Subroutine: func_cholesky
@@ -1867,7 +1383,7 @@ end if
 
 end subroutine func_convert_i2l_r0
 
-#:for rank in ranks_1234
+#:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Subroutine: func_convert_i2l_r${rank}$
 !> Convert integer to logical
@@ -1943,7 +1459,7 @@ end if
 
 end subroutine func_convert_l2i_r0
 
-#:for rank in ranks_1234
+#:for rank in ranks_123456
 !----------------------------------------------------------------------
 ! Subroutine: func_convert_l2i_r${rank}$
 !> Convert logical to integer

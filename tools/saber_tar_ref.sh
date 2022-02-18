@@ -7,7 +7,7 @@
 #----------------------------------------------------------------------
 
 # Default parameters
-datadir=${HOME}/build/gnu_9.3.0/bundle_RelWithDebInfo/saber/test/testdata
+datadir=${HOME}/build/gnu_10.3.0/bundle_RelWithDebInfo/saber/test/testdata
 listdir=${HOME}/code/bundle/saber/test/testlist
 branch=`git rev-parse --abbrev-ref HEAD`
 upload_on_s3=0

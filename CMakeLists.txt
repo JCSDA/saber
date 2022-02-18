@@ -44,6 +44,7 @@ if( MKL_FOUND )
 else()
     find_package( LAPACK REQUIRED )
 endif()
+
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 

@@ -72,7 +72,7 @@ model%mask = .true.
 
 ! Vertical unit
 do il0=1,model%nl0
-   if (il0<nam%nl) then
+   if (il0<nam%nl0) then
       sigmaup = a(nam%levs(il0)+1)/ps+b(nam%levs(il0)+1)
       sigmadn = a(nam%levs(il0))/ps+b(nam%levs(il0))
       sigma = half*(sigmaup+sigmadn)
@@ -81,7 +81,7 @@ do il0=1,model%nl0
    end if
    if (nam%logpres) then
       model%vunit(:,il0) = log(sigma*ps)
-      if (model%nl0>nam%nl) model%vunit(:,model%nl0) = log(ps)
+      if (model%nl0>nam%nl0) model%vunit(:,model%nl0) = log(ps)
    else
       model%vunit(:,il0) = sigma
    end if
@@ -154,7 +154,7 @@ do iv=1,nam%nv
          end if
       else
          ! 3D data
-         do il0=1,nam%nl
+         do il0=1,nam%nl0
             call get_var(mpl,ncid,fld_id,fld_tmp(:,:,il0),(/1,1,nam%levs(il0),1/),(/model%nlon,model%nlat,1,1/))
          end do
       end if

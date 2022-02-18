@@ -135,7 +135,7 @@ subroutine bint_init(bint,comm, &
                    & lon1d_out,lat1d_out, &
                    & lon_out,lat_out, &
                    & afunctionspace_out, &
-                   & nl,fieldset,config)
+                   & nl0,fieldset,config)
 
 implicit none
 
@@ -152,7 +152,7 @@ real(kind_real),intent(in),optional :: lat1d_out(:)                 !< Output la
 real(kind_real),intent(in),optional :: lon_out(:)                   !< Output longitudes [in degrees]
 real(kind_real),intent(in),optional :: lat_out(:)                   !< Output latitudes [in degrees]
 type(atlas_functionspace),intent(in),optional :: afunctionspace_out !< Output ATLAS functionspace
-integer,intent(in),optional :: nl                                   !< Number of levels
+integer,intent(in),optional :: nl0                                  !< Number of levels
 type(fieldset_type),intent(in),optional :: fieldset                 !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit), gmask (geometry mask) and smask (sampling mask). Each of these named fields is optional, if omitted default values will be provided
 type(fckit_configuration),intent(in),optional :: config             !< Configuration
 
@@ -182,10 +182,10 @@ call bint%bump%nam%init(comm%size())
 bint%bump%nam%prefix = 'bump_interpolator'
 bint%bump%nam%datadir = 'testdata'
 bint%bump%nam%verbosity = 'none'
-if (present(nl)) then
-   bint%bump%nam%nl = nl
+if (present(nl0)) then
+   bint%bump%nam%nl0 = nl0
 else
-   bint%bump%nam%nl = 1
+   bint%bump%nam%nl0 = 1
 end if
 bint%bump%nam%nv = 1
 bint%bump%nam%variables(1) = 'var'
@@ -205,7 +205,7 @@ if (present(config)) then
    end if
 
    ! Optionally set levels
-   if (config%has('nlevels')) call config%get_or_die('nlevels',bint%bump%nam%nl)
+   if (config%has('nlevels')) call config%get_or_die('nlevels',bint%bump%nam%nl0)
 
    ! Optionally set missing values for integers and reals
    if (config%has('missingvalue_int')) call config%get_or_die('missingvalue_int',msvali)
@@ -303,7 +303,7 @@ if (bint%bump%mpl%main) then
 end if
 
 ! Unpack output grid from output functionspace
-bint%geom_out%nl0 = bint%bump%nam%nl
+bint%geom_out%nl0 = bint%bump%nam%nl0
 call bint%geom_out%from_atlas(bint%bump%mpl,bint%afunctionspace_out)
 bint%nouta = size(bint%geom_out%lon_mga)
 
@@ -482,7 +482,8 @@ end if
 
 ! Compute scores
 if (nout_eff > 0) then
-   call mpl%f_comm%allreduce(real(bint%com%nhalo,kind_real),C_max,fckit_mpi_max())
+   C_max = real(bint%com%nhalo,kind_real)
+   call mpl%f_comm%allreduce(C_max,fckit_mpi_max())
    C_max = C_max/(three*real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
    N_max = real(maxval(proc_to_nouta_eff),kind_real)/(real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
 

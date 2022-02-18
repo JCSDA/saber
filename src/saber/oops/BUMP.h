@@ -129,6 +129,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> universe_rad{"universe_rad", this};
   // Use CGAL for mesh generation (or STRIPACK instead)
   oops::OptionalParameter<bool> use_cgal{"use_cgal", this};
+  // Write subset Sc0 fields (full grid) using BUMP I/O
+  oops::OptionalParameter<bool> write_c0{"write_c0", this};
 
   // driver_param
 
@@ -173,14 +175,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> new_hdiag{"new_hdiag", this};
   // Write HDIAG diagnostics
   oops::OptionalParameter<bool> write_hdiag{"write_hdiag", this};
-  // Compute new LCT
-  oops::OptionalParameter<bool> new_lct{"new_lct", this};
-  // Write LCT
-  oops::OptionalParameter<bool> write_lct{"write_lct", this};
-  // Load C matrix
-  oops::OptionalParameter<bool> load_cmat{"load_cmat", this};
-  // Write C matrix
-  oops::OptionalParameter<bool> write_cmat{"write_cmat", this};
   // Compute new NICAS parameters
   oops::OptionalParameter<bool> new_nicas{"new_nicas", this};
   // Load local NICAS parameters
@@ -201,6 +195,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_vbal{"check_vbal", this};
   // Test NICAS adjoints
   oops::OptionalParameter<bool> check_adjoints{"check_adjoints", this};
+  // Test NICAS normalization (number of tests)
+  oops::OptionalParameter<int> check_normalization{"check_normalization", this};
   // Test NICAS application on diracs
   oops::OptionalParameter<bool> check_dirac{"check_dirac", this};
   // Test NICAS randomization
@@ -213,22 +209,10 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_no_point_mpi{"check_no_point_mpi", this};
   // Test BUMP with all grid points masked on half of the domain
   oops::OptionalParameter<bool> check_no_point_mask{"check_no_point_mask", this};
-  // Test set_parameter interface for correlation
-  oops::OptionalParameter<bool> check_set_param_cor{"check_set_param_cor", this};
-  // Test set_parameter interface for hybrid case
-  oops::OptionalParameter<bool> check_set_param_hyb{"check_set_param_hyb", this};
-  // Test set_parameter interface for LCT
-  oops::OptionalParameter<bool> check_set_param_lct{"check_set_param_lct", this};
-  // Test get_parameter interface for standard-deviation
-  oops::OptionalParameter<bool> check_get_param_stddev{"check_get_param_stddev", this};
-  // Test get_parameter interface for correlation
-  oops::OptionalParameter<bool> check_get_param_cor{"check_get_param_cor", this};
-  // Test get_parameter interface for hybrid case
-  oops::OptionalParameter<bool> check_get_param_hyb{"check_get_param_hyb", this};
-  // Test get_parameter interface for anisotropic localization
-  oops::OptionalParameter<bool> check_get_param_Dloc{"check_get_param_Dloc", this};
-  // Test get_parameter interface for LCT
-  oops::OptionalParameter<bool> check_get_param_lct{"check_get_param_lct", this};
+  // Test set_parameter interface
+  oops::OptionalParameter<bool> check_set_param{"check_set_param", this};
+  // Test get_parameter interface
+  oops::OptionalParameter<bool> check_get_param{"check_get_param", this};
   // Test apply_vbal interfaces
   oops::OptionalParameter<bool> check_apply_vbal{"check_apply_vbal", this};
   // Test apply_stddev interfaces
@@ -248,8 +232,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<std::string> fname_vbal{"fname_vbal", this};
   // Moments files
   oops::OptionalParameter<std::vector<std::string>> fname_mom{"fname_mom", this};
-  // C matrix file
-  oops::OptionalParameter<std::string> fname_cmat{"fname_cmat", this};
   // NICAS file
   oops::OptionalParameter<std::string> fname_nicas{"fname_nicas", this};
   // Wind transform file
@@ -258,7 +240,7 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   // model_param
 
   // Number of levels
-  oops::OptionalParameter<int> nl{"nl", this};
+  oops::OptionalParameter<int> nl0{"nl0", this};
   // Levels
   oops::OptionalParameter<std::vector<int>> levs{"levs", this};
   // Level for 2D variables ('first' or 'last')
@@ -331,8 +313,10 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<int> nc1{"nc1", this};
   // Number of diagnostic points
   oops::OptionalParameter<int> nc2{"nc2", this};
-  // Number of classes
+  // Number of horizontal classes
   oops::OptionalParameter<int> nc3{"nc3", this};
+  // Number of angular sectors
+  oops::OptionalParameter<int> nc4{"nc4", this};
   // Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
   oops::OptionalParameter<double> dc{"dc", this};
   // Reduced number of levels for diagnostics
@@ -393,20 +377,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> diag_rvflt{"diag_rvflt", this};
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
-  // Number of LCT scales
-  oops::OptionalParameter<int> lct_nscales{"lct_nscales", this};
-  // Factor between diffusion scales
-  oops::OptionalParameter<double> lct_scale_ratio{"lct_scale_ratio", this};
-  // Minimum relevant correlation for LCT first guess
-  oops::OptionalParameter<double> lct_cor_min{"lct_cor_min", this};
-  // Diagnostic of diagonal LCT components only
-  oops::OptionalParameter<std::vector<bool>> lct_diag{"lct_diag", this};
-  // LCT quality control threshold
-  oops::OptionalParameter<double> lct_qc_th{"lct_qc_th", this};
-  // LCT quality control maximum
-  oops::OptionalParameter<double> lct_qc_max{"lct_qc_max", this};
-  // Write full correlations
-  oops::OptionalParameter<bool> lct_write_cor{"lct_write_cor", this};
 
   // nicas_param
 
@@ -432,8 +402,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> max_lev{"max_lev", this};
   // Positive-definiteness test
   oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
-  // Write NICAS fields on model grid (should be written via OOPS if .false.)
-  oops::OptionalParameter<bool> write_nicas_c0{"write_nicas_c0", this};
   // Write NICAS grids
   oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
 
@@ -623,6 +591,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     dx.read(*universeRadius);
 
     // Get ATLAS fieldset
+    dx.setAtlas(universe_rad.get());
     dx.toAtlas(universe_rad.get());
   }
 
@@ -690,12 +659,12 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     grids[jgrid].set("nv", vars_str.size());
 
     // Get the required number of levels add it to the grid configuration
-    int nl = 0;
+    int nl0 = 0;
     for (size_t jvar = 0; jvar < vars_str.size(); ++jvar) {
       atlas::Field atlasField = atlasFieldSet->field(vars_str[jvar]);
-      nl = std::max(nl, std::max(atlasField.levels(), 1));
+      nl0 = std::max(nl0, std::max(atlasField.levels(), 1));
     }
-    grids[jgrid].set("nl", nl);
+    grids[jgrid].set("nl0", nl0);
 
     // Add level index for 2D fields (first or last, first by default)
     if (!grids[jgrid].has("lev2d")) {
@@ -895,8 +864,9 @@ void BUMP<MODEL>::apply() const {
 
         // ATLAS transfer
         std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-        dxo.setAtlas(atlasFieldSet.get());
+        dxi.setAtlas(atlasFieldSet.get());
         dxi.toAtlas(atlasFieldSet.get());
+        dxo.setAtlas(atlasFieldSet.get());
 
         // Apply BUMP operator
         std::vector<std::string> bumpOperators;
@@ -1087,12 +1057,12 @@ void BUMP<MODEL>::multiplyPsiChiToUVAd(atlas::FieldSet * atlasFieldSet) const {
 
 template<typename MODEL>
 void BUMP<MODEL>::getParameter(const std::string & param, Increment_ & dx) const {
-  const int nstr = param.size();
-  const char *cstr = param.c_str();
+  const int npar = param.size();
+  const char *cpar = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
   dx.setAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_get_parameter_f90(keyBUMP_[jgrid], nstr, cstr, atlasFieldSet->get());
+    bump_get_parameter_f90(keyBUMP_[jgrid], npar, cpar, atlasFieldSet->get());
   }
   dx.fromAtlas(atlasFieldSet.get());
 }
@@ -1101,13 +1071,13 @@ void BUMP<MODEL>::getParameter(const std::string & param, Increment_ & dx) const
 
 template<typename MODEL>
 void BUMP<MODEL>::setParameter(const std::string & param, const Increment_ & dx) const {
-  const int nstr = param.size();
-  const char *cstr = param.c_str();
+  const int npar = param.size();
+  const char *cpar = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
   dx.setAtlas(atlasFieldSet.get());
   dx.toAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_set_parameter_f90(keyBUMP_[jgrid], nstr, cstr, atlasFieldSet->get());
+    bump_set_parameter_f90(keyBUMP_[jgrid], npar, cpar, atlasFieldSet->get());
   }
 }
 

@@ -1140,7 +1140,7 @@ real(kind_real) :: u_llb(wind%nllb,geom%nl0),v_llb(wind%nllb,geom%nl0)
 ! Probe in
 @:probe_in()
 
-! Communication
+! Halo extension
 call wind%com_c0_AB%ext(mpl,psi,psi_c0b)
 call wind%com_c0_AB%ext(mpl,chi,chi_c0b)
 
@@ -1164,7 +1164,7 @@ do il0=1,geom%nl0
    v_lla(:,il0) = uv_lla(wind%nlla+1:2*wind%nlla)
 end do
 
-! Communication
+! Halo extension
 call wind%com_ll_AB%ext(mpl,u_lla,u_llb)
 call wind%com_ll_AB%ext(mpl,v_lla,v_llb)
 

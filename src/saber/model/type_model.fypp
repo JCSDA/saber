@@ -279,7 +279,7 @@ type(fieldset_type) :: fieldset
 mpl%datadir = nam%datadir
 
 ! Number of levels
-model%nl0 = nam%nl
+model%nl0 = nam%nl0
 
 ! Select model
 if (trim(nam%model)=='aro') call model%aro_coord(mpl,nam)

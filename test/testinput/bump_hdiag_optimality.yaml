@@ -2,6 +2,7 @@
 datadir: "testdata"
 prefix: "bump_hdiag_optimality/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
@@ -11,7 +12,7 @@ new_nicas: true
 check_optimality: true
 
 # model_param
-nl: true
+nl0: true
 levs: [1]
 nv: true
 variables: ["q"]

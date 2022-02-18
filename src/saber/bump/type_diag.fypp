@@ -9,10 +9,11 @@
 module type_diag
 
 use fckit_mpi_module, only: fckit_mpi_sum
-use tools_const, only: zero,one,five,reqkm,rad2deg,pi
-use tools_fit, only: ver_smooth
-use tools_func, only: fit_diag
-use tools_kinds, only: kind_real
+use tools_const, only: zero,half,one,two,five,reqkm,rad2deg,pi
+use tools_fit, only: diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,ver_smooth
+use tools_func, only: lonlatmod,sphere_dist
+use tools_gc99, only: fit_func
+use tools_kinds, only: kind_real,huge_real
 use type_avg, only: avg_type
 use type_bpar, only: bpar_type
 use type_diag_blk, only: diag_blk_type
@@ -31,11 +32,15 @@ type diag_type
    character(len=1024) :: prefix               !< Prefix
    integer :: nc2a                             !< Number of local points
    type(diag_blk_type),allocatable :: blk(:,:) !< Diagnostic blocks
+   real(kind_real),allocatable :: dirac(:,:,:) !< Dirac field
 contains
    procedure :: alloc => diag_alloc
+   procedure :: partial_dealloc => diag_partial_dealloc
    procedure :: dealloc => diag_dealloc
    procedure :: filter_fit => diag_filter_fit
    procedure :: build_fit => diag_build_fit
+   procedure :: interp_fit => diag_interp_fit
+   procedure :: test_dirac => diag_test_dirac
    procedure :: covariance => diag_covariance
    procedure :: correlation => diag_correlation
    procedure :: localization => diag_localization
@@ -93,11 +98,46 @@ do ib=1,bpar%nbe
       end do
    end if
 end do
+if (nam%check_dirac) allocate(diag%dirac(geom%nc0a,geom%nl0,nam%nv))
 
 ! Probe out
 @:probe_out()
 
 end subroutine diag_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: diag_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine diag_partial_dealloc(diag)
+
+implicit none
+
+! Passed variables
+class(diag_type),intent(inout) :: diag !< Diagnostic
+
+! Local variables
+integer :: ib,ic2a
+
+! Set name
+@:set_name(diag_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(diag%blk)) then
+   do ib=1,size(diag%blk,2)
+     do ic2a=0,size(diag%blk,1)-1
+       call diag%blk(ic2a,ib)%partial_dealloc
+     end do
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine diag_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_dealloc
@@ -120,6 +160,7 @@ integer :: ib,ic2a
 @:probe_in()
 
 ! Release memory
+call diag%partial_dealloc
 if (allocated(diag%blk)) then
    do ib=1,size(diag%blk,2)
      do ic2a=0,size(diag%blk,1)-1
@@ -128,6 +169,7 @@ if (allocated(diag%blk)) then
    end do
    deallocate(diag%blk)
 end if
+if (allocated(diag%dirac)) deallocate(diag%dirac)
 
 ! Probe out
 @:probe_out()
@@ -153,7 +195,7 @@ type(samp_type),intent(in) :: samp     !< Sampling
 ! Local variables
 integer :: ib,il0,ic2a
 real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
-real(kind_real),allocatable :: rh_c2a(:,:),rv_c2a(:,:)
+real(kind_real),allocatable :: rh_c2a(:,:),D11_c2a(:,:),D22_c2a(:,:),D12_c2a(:,:),rv_c2a(:,:)
 
 ! Set name
 @:set_name(diag_filter_fit)
@@ -170,32 +212,59 @@ if (nam%local_diag) then
       if (bpar%diag_block(ib)) then
          ! Allocation
          if (bpar%fit_block(ib)) then
-            allocate(rh_c2a(samp%nc2a,geom%nl0))
+            if (bpar%nc4(ib)==1) then
+               allocate(rh_c2a(samp%nc2a,geom%nl0))
+            else
+               allocate(D11_c2a(samp%nc2a,geom%nl0))
+               allocate(D22_c2a(samp%nc2a,geom%nl0))
+               allocate(D12_c2a(samp%nc2a,geom%nl0))
+            end if
             allocate(rv_c2a(samp%nc2a,geom%nl0))
          end if
 
          do il0=1,geom%nl0
             do ic2a=1,samp%nc2a
                ! Copy data
-               coef_ens_c2a(ic2a,il0) = diag%blk(ic2a,ib)%coef_ens(il0)
+               coef_ens_c2a(ic2a,il0) = diag%blk(ic2a,ib)%coef_ens_l0(il0)
                if (bpar%fit_block(ib)) then
-                  rh_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rh(il0)
-                  rv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%fit_rv(il0)
+                  if (bpar%nc4(ib)==1) then
+                     rh_c2a(ic2a,il0) = diag%blk(ic2a,ib)%rh_l0(il0)
+                  else
+                     D11_c2a(ic2a,il0) = diag%blk(ic2a,ib)%D11_l0(il0)
+                     D22_c2a(ic2a,il0) = diag%blk(ic2a,ib)%D22_l0(il0)
+                     D12_c2a(ic2a,il0) = diag%blk(ic2a,ib)%D12_l0(il0)
+                  end if
+                  rv_c2a(ic2a,il0) = diag%blk(ic2a,ib)%rv_l0(il0)
                end if
 
                ! Apply bounds relatively to the global value
-               if (mpl%msv%isnot(coef_ens_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
-                  if ((coef_ens_c2a(ic2a,il0)<diag%blk(0,ib)%coef_ens(il0)/bound) &
- & .or.(coef_ens_c2a(ic2a,il0)>diag%blk(0,ib)%coef_ens(il0)*bound)) coef_ens_c2a(ic2a,il0) = mpl%msv%valr
+               if (mpl%msv%isnot(coef_ens_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
+                  if ((coef_ens_c2a(ic2a,il0)<diag%blk(0,ib)%coef_ens_l0(il0)/bound) &
+ & .or.(coef_ens_c2a(ic2a,il0)>diag%blk(0,ib)%coef_ens_l0(il0)*bound)) coef_ens_c2a(ic2a,il0) = mpl%msv%valr
                end if
                if (bpar%fit_block(ib)) then
-                  if (mpl%msv%isnot(rh_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-                     if ((rh_c2a(ic2a,il0)<diag%blk(0,ib)%fit_rh(il0)/bound) &
- & .or.(rh_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rh(il0)*bound)) rh_c2a(ic2a,il0) = mpl%msv%valr
+                  if (bpar%nc4(ib)==1) then
+                     if (mpl%msv%isnot(rh_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0))) then
+                        if ((rh_c2a(ic2a,il0)<diag%blk(0,ib)%rh_l0(il0)/bound) &
+ & .or.(rh_c2a(ic2a,il0)>diag%blk(0,ib)%rh_l0(il0)*bound)) rh_c2a(ic2a,il0) = mpl%msv%valr
+                     end if
+                  else
+                     if (mpl%msv%isnot(D11_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%D11_l0(il0))) then
+                        if ((D11_c2a(ic2a,il0)<diag%blk(0,ib)%D11_l0(il0)/bound) &
+ & .or.(D11_c2a(ic2a,il0)>diag%blk(0,ib)%D11_l0(il0)*bound)) D11_c2a(ic2a,il0) = mpl%msv%valr
+                     end if
+                     if (mpl%msv%isnot(D22_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%D22_l0(il0))) then
+                        if ((D22_c2a(ic2a,il0)<diag%blk(0,ib)%D22_l0(il0)/bound) &
+ & .or.(D22_c2a(ic2a,il0)>diag%blk(0,ib)%D22_l0(il0)*bound)) D22_c2a(ic2a,il0) = mpl%msv%valr
+                     end if
+                     if (mpl%msv%isnot(D12_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%D12_l0(il0))) then
+                        if ((D12_c2a(ic2a,il0)<diag%blk(0,ib)%D12_l0(il0)/bound) &
+ & .or.(D12_c2a(ic2a,il0)>diag%blk(0,ib)%D12_l0(il0)*bound)) D12_c2a(ic2a,il0) = mpl%msv%valr
+                     end if
                   end if
-                  if (mpl%msv%isnot(rv_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%fit_rv(il0))) then
-                     if ((rv_c2a(ic2a,il0)<diag%blk(0,ib)%fit_rv(il0)/bound) &
- & .or.(rv_c2a(ic2a,il0)>diag%blk(0,ib)%fit_rv(il0)*bound)) rv_c2a(ic2a,il0) = mpl%msv%valr
+                  if (mpl%msv%isnot(rv_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0))) then
+                     if ((rv_c2a(ic2a,il0)<diag%blk(0,ib)%rv_l0(il0)/bound) &
+ & .or.(rv_c2a(ic2a,il0)>diag%blk(0,ib)%rv_l0(il0)*bound)) rv_c2a(ic2a,il0) = mpl%msv%valr
                   end if
                end if
             end do
@@ -204,14 +273,26 @@ if (nam%local_diag) then
                ! Median filter to remove extreme values
                call samp%diag_filter(mpl,'median',nam%diag_rhflt,coef_ens_c2a(:,il0))
                if (bpar%fit_block(ib)) then
-                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,rh_c2a(:,il0))
+                  if (bpar%nc4(ib)==1) then
+                     call samp%diag_filter(mpl,'median',nam%diag_rhflt,rh_c2a(:,il0))
+                  else
+                     call samp%diag_filter(mpl,'median',nam%diag_rhflt,D11_c2a(:,il0))
+                     call samp%diag_filter(mpl,'median',nam%diag_rhflt,D22_c2a(:,il0))
+                     call samp%diag_filter(mpl,'median',nam%diag_rhflt,D12_c2a(:,il0))
+                  end if
                   call samp%diag_filter(mpl,'median',nam%diag_rhflt,rv_c2a(:,il0))
                end if
 
                ! Average filter to smooth data
                call samp%diag_filter(mpl,'average',nam%diag_rhflt,coef_ens_c2a(:,il0))
                if (bpar%fit_block(ib)) then
-                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,rh_c2a(:,il0))
+                  if (bpar%nc4(ib)==1) then
+                     call samp%diag_filter(mpl,'average',nam%diag_rhflt,rh_c2a(:,il0))
+                  else
+                     call samp%diag_filter(mpl,'average',nam%diag_rhflt,D11_c2a(:,il0))
+                     call samp%diag_filter(mpl,'average',nam%diag_rhflt,D22_c2a(:,il0))
+                     call samp%diag_filter(mpl,'average',nam%diag_rhflt,D12_c2a(:,il0))
+                  end if
                   call samp%diag_filter(mpl,'average',nam%diag_rhflt,rv_c2a(:,il0))
                end if
             end if
@@ -219,23 +300,43 @@ if (nam%local_diag) then
             ! Fill missing values
             call samp%diag_fill(mpl,coef_ens_c2a(:,il0))
             if (bpar%fit_block(ib)) then
-               call samp%diag_fill(mpl,rh_c2a(:,il0))
+               if (bpar%nc4(ib)==1) then
+                  call samp%diag_fill(mpl,rh_c2a(:,il0))
+               else
+                  call samp%diag_fill(mpl,D11_c2a(:,il0))
+                  call samp%diag_fill(mpl,D22_c2a(:,il0))
+                  call samp%diag_fill(mpl,D12_c2a(:,il0))
+               end if
                call samp%diag_fill(mpl,rv_c2a(:,il0))
             end if
 
             ! Copy data
             do ic2a=1,samp%nc2a
-               diag%blk(ic2a,ib)%coef_ens(il0) = coef_ens_c2a(ic2a,il0)
+               diag%blk(ic2a,ib)%coef_ens_l0(il0) = coef_ens_c2a(ic2a,il0)
                if (bpar%fit_block(ib)) then
-                  diag%blk(ic2a,ib)%fit_rh(il0) = rh_c2a(ic2a,il0)
-                  diag%blk(ic2a,ib)%fit_rv(il0) = rv_c2a(ic2a,il0)
+                  if (bpar%nc4(ib)==1) then
+                     diag%blk(ic2a,ib)%rh_l0(il0) = rh_c2a(ic2a,il0)
+                  else
+                     diag%blk(ic2a,ib)%D11_l0(il0) = D11_c2a(ic2a,il0)
+                     diag%blk(ic2a,ib)%D22_l0(il0) = D22_c2a(ic2a,il0)
+                     diag%blk(ic2a,ib)%D12_l0(il0) = D12_c2a(ic2a,il0)
+                     call tensor_d2r(mpl,diag%blk(ic2a,ib)%D11_l0(il0),diag%blk(ic2a,ib)%D22_l0(il0), &
+ & diag%blk(ic2a,ib)%D12_l0(il0),diag%blk(ic2a,ib)%rh_l0(il0))
+                  end if
+                  diag%blk(ic2a,ib)%rv_l0(il0) = rv_c2a(ic2a,il0)
                end if
             end do
          end do
 
          ! Release memory
          if (bpar%fit_block(ib)) then
-            deallocate(rh_c2a)
+            if (bpar%nc4(ib)==1) then
+               deallocate(rh_c2a)
+            else
+               deallocate(D11_c2a)
+               deallocate(D22_c2a)
+               deallocate(D12_c2a)
+            end if
             deallocate(rv_c2a)
          end if
       end if
@@ -251,10 +352,15 @@ if (nam%diag_rvflt>zero) then
       if (bpar%diag_block(ib)) then
          ! Vertical filtering
          do ic2a=0,diag%nc2a
-            call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%coef_ens)
+            call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%coef_ens_l0)
             if (bpar%fit_block(ib)) then
-               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rh)
-               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%fit_rv)
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%rh_l0)
+               if (bpar%nc4(ib)>1) then
+                  call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%D11_l0)
+                  call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%D22_l0)
+                  call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%D12_l0)
+               end if
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%rv_l0)
             end if
          end do
       end if
@@ -270,20 +376,19 @@ end subroutine diag_filter_fit
 ! Subroutine: diag_build_fit
 !> Build fit function
 !----------------------------------------------------------------------
-subroutine diag_build_fit(diag,mpl,nam,geom,bpar)
+subroutine diag_build_fit(diag,mpl,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(diag_type),intent(inout) :: diag !< Diagnostic
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,ic2a,il0
-real(kind_real) :: rmse,norm,rmse_tot,norm_tot
+integer :: ib,ic2a
+real(kind_real) :: rmse,norm
 
 ! Set name
 @:set_name(diag_build_fit)
@@ -295,11 +400,16 @@ do ib=1,bpar%nbe
    if (bpar%diag_block(ib).and.bpar%fit_block(ib)) then
       ! Build fit
       do ic2a=0,diag%nc2a
-         do il0=1,geom%nl0
-            ! Compute fit
-            call fit_diag(mpl,nam%nc3,bpar%nl0r(ib),geom%disth,diag%blk(ic2a,ib)%distv(:,il0), &
- & diag%blk(ic2a,ib)%coef_ens(il0),diag%blk(ic2a,ib)%fit_rh(il0),diag%blk(ic2a,ib)%fit_rv(il0),diag%blk(ic2a,ib)%fit(:,:,il0))
-         end do
+         ! Compute full fit
+         if (bpar%nc4(ib)==1) then
+           call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+ & diag%blk(ic2a,ib)%vunit,diag%blk(ic2a,ib)%coef_ens_l0,diag%blk(ic2a,ib)%rh_l0,diag%blk(ic2a,ib)%rv_l0, &
+ & diag%blk(ic2a,ib)%fit(:,1,:,:))
+         else
+           call diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
+ & geom%as,diag%blk(ic2a,ib)%vunit,diag%blk(ic2a,ib)%coef_ens_l0,diag%blk(ic2a,ib)%D11_l0,diag%blk(ic2a,ib)%D22_l0, &
+ & diag%blk(ic2a,ib)%D12_l0,diag%blk(ic2a,ib)%rv_l0,diag%blk(ic2a,ib)%fit)
+         end if
       end do
 
       ! Compute RMSE
@@ -309,11 +419,11 @@ do ib=1,bpar%nbe
          rmse = rmse+sum(abs(diag%blk(ic2a,ib)%fit-diag%blk(ic2a,ib)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
          norm = norm+real(count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw)),kind_real)
       end do
-      call mpl%f_comm%allreduce(rmse,rmse_tot,fckit_mpi_sum())
-      call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
-      if (norm_tot>zero) rmse_tot = sqrt(rmse_tot/norm_tot)
-      write(mpl%info,'(a10,a,a,a,e15.8,a,i8,a)') '','Fit RMSE for block ',trim(bpar%blockname(ib)),': ',rmse_tot, &
- & ' for ',int(norm_tot),' diagnostic points'
+      call mpl%f_comm%allreduce(rmse,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
+      if (norm>zero) rmse = sqrt(rmse/norm)
+      write(mpl%info,'(a10,a,a,a,e15.8,a,i8,a)') '','Fit RMSE for block ',trim(bpar%blockname(ib)),': ',rmse, &
+ & ' for ',int(norm),' diagnostic points'
       call mpl%flush
    end if
 end do
@@ -322,6 +432,299 @@ end do
 @:probe_out()
 
 end subroutine diag_build_fit
+
+!----------------------------------------------------------------------
+! Subroutine: diag_interp_fit
+!> Interpolate fit diagnostics
+!----------------------------------------------------------------------
+subroutine diag_interp_fit(diag,mpl,nam,geom,bpar,samp)
+
+implicit none
+
+! Passed variables
+class(diag_type),intent(inout) :: diag !< Diagnostic
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+type(samp_type),intent(in) :: samp     !< Sampling
+
+! Local variables
+integer :: ib,n,i,il0,il0i,ic2amin,ic2amax,ic2a,ic0a
+real(kind_real) :: profile(geom%nl0)
+real(kind_real),allocatable :: fld_c2a(:,:),fld_c2b(:,:),fld_c0a(:,:)
+character(len=1024),allocatable :: field(:)
+
+! Set name
+@:set_name(diag_interp_fit)
+
+! Probe in
+@:probe_in()
+
+write(mpl%info,'(a10,a)') '','Interpolate fit diagnostics'
+call mpl%flush
+
+do ib=1,bpar%nbe
+   if (bpar%B_block(ib)) then
+      if (bpar%fit_block(ib)) then
+         ! Allocation
+         n = 4
+         if (bpar%nc4(ib)>1) n = n+3
+         allocate(field(n))
+         if (nam%local_diag) then
+            allocate(fld_c2a(samp%nc2a,geom%nl0))
+            allocate(fld_c2b(samp%nc2b,geom%nl0))
+         end if
+         allocate(fld_c0a(geom%nc0a,geom%nl0))
+
+         ! Initialization
+         field(1) = 'coef_ens'
+         field(2) = 'coef_sta'
+         field(3) = 'rh'
+         field(4) = 'rv'
+         if (n>4) then
+            field(5) = 'D11'
+            field(6) = 'D22'
+            field(7) = 'D12'
+         end if
+         if (nam%local_diag) then
+            ic2amin = 1
+            ic2amax = samp%nc2a
+         else
+            ic2amin = 0
+            ic2amax = 0
+         end if
+         fld_c0a = mpl%msv%valr
+
+         do i=1,n
+            do ic2a=ic2amin,ic2amax
+               ! Select profile
+               select case (trim(field(i)))
+               case ('coef_ens')
+                  profile = diag%blk(ic2a,ib)%coef_ens_l0
+               case ('coef_sta')
+                  profile = diag%blk(ic2a,ib)%coef_sta
+               case ('rh')
+                  profile = diag%blk(ic2a,ib)%rh_l0
+               case ('rv')
+                  profile = diag%blk(ic2a,ib)%rv_l0
+               case ('D11')
+                  profile = diag%blk(ic2a,ib)%D11_l0
+               case ('D22')
+                  profile = diag%blk(ic2a,ib)%D22_l0
+               case ('D12')
+                  profile = diag%blk(ic2a,ib)%D12_l0
+               case default
+                  call mpl%abort('${subr}$','wrong field: '//trim(field(i)))
+               end select
+
+               ! Copy profile
+               if (nam%local_diag) then
+                  fld_c2a(ic2a,:) = profile
+               else
+                  do il0=1,geom%nl0
+                     do ic0a=1,geom%nc0a
+                        if (geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = profile(il0)
+                     end do
+                  end do
+               end if
+            end do
+
+            if (nam%local_diag) then
+               ! Fill missing values
+               do il0=1,geom%nl0
+                  call samp%diag_fill(mpl,fld_c2a(:,il0))
+               end do
+
+               ! Halo extension
+               call samp%com_c2_AB%ext(mpl,fld_c2a,fld_c2b)
+
+               ! Interpolation
+               do il0=1,geom%nl0
+                  il0i = min(il0,geom%nl0i)
+                  call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0),fld_c0a(:,il0))
+               end do
+            end if
+
+            ! Copy field
+            select case (trim(field(i)))
+            case ('coef_ens')
+               diag%blk(0,ib)%coef_ens_c0a = fld_c0a
+            case ('coef_sta')
+               diag%blk(0,ib)%coef_sta_c0a = fld_c0a
+            case ('rh')
+               diag%blk(0,ib)%rh_c0a = fld_c0a
+            case ('rv')
+               diag%blk(0,ib)%rv_c0a = fld_c0a
+            case ('D11')
+               diag%blk(0,ib)%D11_c0a = fld_c0a
+            case ('D22')
+               diag%blk(0,ib)%D22_c0a = fld_c0a
+            case ('D12')
+               diag%blk(0,ib)%D12_c0a = fld_c0a
+            case default
+               call mpl%abort('${subr}$','wrong field')
+            end select
+         end do
+
+         ! Release memory
+         deallocate(field)
+         if (nam%local_diag) then
+            deallocate(fld_c2a)
+            deallocate(fld_c2b)
+         end if
+         deallocate(fld_c0a)
+      end if
+
+      ! Compute global weight
+      diag%blk(0,ib)%wgt = sum(diag%blk(0,ib)%coef_ens_l0)/real(geom%nl0,kind_real)
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine diag_interp_fit
+
+!----------------------------------------------------------------------
+! Subroutine: diag_test_dirac
+!> Compute diagnostics dirac test
+!----------------------------------------------------------------------
+subroutine diag_test_dirac(diag,mpl,nam,geom,bpar)
+
+implicit none
+
+! Passed variables
+class(diag_type),intent(inout) :: diag !< Diagnostic
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(bpar_type),intent(in) :: bpar     !< Block parameters
+
+! Local variables
+integer :: idir,ib,jc0a,jl0
+real(kind_real) :: D11,D22,D12,disth,dx,dy,hnd,hor_dir,distv,vnd
+real(kind_real),allocatable :: rh_dir(:),H11_dir(:),H22_dir(:),H12_dir(:)
+real(kind_real),allocatable :: rv_dir(:)
+
+! Set name
+@:set_name(diag_test_dirac)
+
+! Probe in
+@:probe_in()
+
+if (nam%check_dirac) then
+   write(mpl%info,'(a10,a)') '','Compute diagnostics dirac test'
+   call mpl%flush
+
+   ! Allocation
+   allocate(rh_dir(geom%ndir))
+   if (nam%nc4>1) then
+      allocate(H11_dir(geom%ndir))
+      allocate(H22_dir(geom%ndir))
+      allocate(H12_dir(geom%ndir))
+   end if
+   allocate(rv_dir(geom%ndir))
+
+   ! Initialization
+   rh_dir = zero
+   if (nam%nc4>1) then
+      H11_dir = zero
+      H22_dir = zero
+      H12_dir = zero
+   end if
+   rv_dir = zero
+
+   ! Set dirac value locally
+   do idir=1,geom%ndir
+      if (geom%iprocdir(idir)==mpl%myproc) then
+         ib = bpar%v_to_b(geom%ivdir(idir))
+         rh_dir(idir) = diag%blk(0,ib)%rh_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+         if (nam%nc4>1) then
+            D11 = diag%blk(0,ib)%D11_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            D22 = diag%blk(0,ib)%D22_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            D12 = diag%blk(0,ib)%D12_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+            call tensor_d2h(mpl,D11,D22,D12,H11_dir(idir),H22_dir(idir),H12_dir(idir))
+         end if
+         rv_dir(idir) = diag%blk(0,ib)%rv_c0a(geom%ic0adir(idir),geom%il0dir(idir))
+      end if
+   end do
+
+   ! Communication
+   call mpl%f_comm%allreduce(rh_dir,fckit_mpi_sum())
+   if (nam%nc4>1) then
+      call mpl%f_comm%allreduce(H11_dir,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(H22_dir,fckit_mpi_sum())
+      call mpl%f_comm%allreduce(H12_dir,fckit_mpi_sum())
+   end if
+   call mpl%f_comm%allreduce(rv_dir,fckit_mpi_sum())
+
+   ! Dirac field initialization
+   do jl0=1,geom%nl0
+      do jc0a=1,geom%nc0a
+         if (geom%gmask_c0a(jc0a,jl0)) then
+            diag%dirac(jc0a,jl0,:) = zero
+         else
+            diag%dirac(jc0a,jl0,:) = mpl%msv%valr
+         end if
+      end do
+   end do
+
+   ! Loop over grid-points
+   do jc0a=1,geom%nc0a
+      idir = geom%dirac_index(jc0a)
+      if (geom%gmask_hor_c0a(jc0a)) then
+         ! Horizontal component
+         if (nam%nc4>1) then
+            dx = geom%lon_c0a(jc0a)-geom%londir(idir)
+            dy = geom%lat_c0a(jc0a)-geom%latdir(idir)
+            call lonlatmod(dx,dy)
+            dx = dx*cos(half*(geom%lat_c0a(jc0a)+geom%latdir(idir)))
+            hnd = sqrt(H11_dir(idir)*dx**2+H22_dir(idir)*dy**2+two*H12_dir(idir)*dx*dy)
+         else
+            call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(idir),geom%latdir(idir),disth)
+            if (rh_dir(idir)>zero) then
+               hnd = disth/rh_dir(idir)
+            elseif (disth>zero) then
+               hnd = half*huge_real
+            else
+               hnd = zero
+            end if
+         end if
+         hor_dir = fit_func(mpl,'hor',hnd)
+
+         do jl0=1,geom%nl0
+            if (geom%gmask_c0a(jc0a,jl0)) then
+               ! Vertical component
+               distv = abs(geom%vunitavg(jl0)-geom%vunitavg(geom%il0dir(idir)))
+               if (rv_dir(idir)>zero) then
+                  vnd = distv/rv_dir(idir)
+               elseif (distv>zero) then
+                  vnd = huge_real
+               else
+                  vnd = zero
+               end if
+               diag%dirac(jc0a,jl0,geom%ivdir(idir)) = diag%dirac(jc0a,jl0,geom%ivdir(idir)) &
+ & +hor_dir*fit_func(mpl,'ver',vnd)
+            end if
+         end do
+      end if
+   end do
+
+   ! Release memory
+   deallocate(rh_dir)
+   if (nam%nc4>1) then
+      deallocate(H11_dir)
+      deallocate(H22_dir)
+      deallocate(H12_dir)
+   end if
+   deallocate(rv_dir)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine diag_test_dirac
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_covariance
@@ -360,16 +763,16 @@ do ib=1,bpar%nb
 
       ! Copy covariance
       do ic2a=0,diag%nc2a
-         diag%blk(ic2a,ib)%coef_ens = mpl%msv%valr
+         diag%blk(ic2a,ib)%coef_ens_l0 = mpl%msv%valr
          diag%blk(ic2a,ib)%raw = avg%blk(ic2a,ib)%m11
          diag%blk(ic2a,ib)%valid = avg%blk(ic2a,ib)%nc1a
       end do
 
       ! Print results
       do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0))) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
             write(mpl%info,'(a13,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
- & diag%blk(0,ib)%raw(1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
+ & diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
       end do
@@ -425,11 +828,11 @@ do ib=1,bpar%nbe
 
          ! Set diagonal coefficient
          do il0=1,geom%nl0
-            diag%blk(ic2a,ib)%coef_ens(il0) = diag%blk(ic2a,ib)%raw(1,bpar%il0rz(il0,ib),il0)
+            diag%blk(ic2a,ib)%coef_ens_l0(il0) = diag%blk(ic2a,ib)%raw(1,1,bpar%il0rz(il0,ib),il0)
          end do
 
          ! Fitting
-         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,.false.)
+         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
 
          ! Update
          call mpl%prog_print(ic2a+1)
@@ -439,14 +842,18 @@ do ib=1,bpar%nbe
       ! Print results
       do il0=1,geom%nl0
          if (bpar%fit_block(ib)) then
-            if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
-               write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero: ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+            if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
+               write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
                call mpl%flush
-               if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-                  write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','cor. support radii: ',trim(mpl%aqua), &
- & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
- & trim(mpl%black)//' vert. unit'
+               if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0))) then
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. hor. support:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rh_l0(il0)*reqkm,trim(mpl%black)//' km'
+                  call mpl%flush
+               end if
+               if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0))) then
+                  write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. ver. support:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rv_l0(il0),trim(mpl%black)//' vertical units'
                   call mpl%flush
                end if
             end if
@@ -459,7 +866,13 @@ end do
 call diag%filter_fit(mpl,nam,geom,bpar,samp)
 
 ! Build fit
-call diag%build_fit(mpl,nam,geom,bpar)
+call diag%build_fit(mpl,geom,bpar)
+
+! Interpolate fit values
+call diag%interp_fit(mpl,nam,geom,bpar,samp)
+
+! Dirac test
+call diag%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()
@@ -522,17 +935,19 @@ do ib=1,bpar%nbe
       do il0=1,geom%nl0
          select case (trim(nam%method))
          case ('loc','hyb-avg','hyb-rnd','dual-ens')
-            if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
+            if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
                write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
                call mpl%flush
             end if
          end select
          if (bpar%fit_block(ib)) then
-            if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-               write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii: ',trim(mpl%aqua), &
- & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
- & trim(mpl%black)//' vert. unit'
+            if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0))) then
+               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. horizontal: ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rh_l0(il0)*reqkm,trim(mpl%black)//' km'
+               call mpl%flush
+               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. vertical:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rv_l0(il0),trim(mpl%black)//' vertical units'
                call mpl%flush
             end if
          end if
@@ -544,7 +959,13 @@ end do
 call diag%filter_fit(mpl,nam,geom,bpar,samp)
 
 ! Build fit
-call diag%build_fit(mpl,nam,geom,bpar)
+call diag%build_fit(mpl,geom,bpar)
+
+! Interpolate fit values
+call diag%interp_fit(mpl,nam,geom,bpar,samp)
+
+! Dirac test
+call diag%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()
@@ -595,8 +1016,8 @@ do ib=1,bpar%nbe
          if (nam%forced_radii) then
             ! No normalization/fitting, use forced radii
             iv = bpar%b_to_v1(ib)
-            diag%blk(ic2a,ib)%fit_rh = nam%rh(1:geom%nl0,iv)
-            diag%blk(ic2a,ib)%fit_rv = nam%rv(1:geom%nl0,iv)
+            diag%blk(ic2a,ib)%rh_l0 = nam%rh(1:geom%nl0,iv)
+            diag%blk(ic2a,ib)%rv_l0 = nam%rv(1:geom%nl0,iv)
          else
             ! Normalization
             call diag%blk(ic2a,ib)%normalization(geom,bpar)
@@ -612,16 +1033,18 @@ do ib=1,bpar%nbe
 
       ! Print results
       do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
             write(mpl%info,'(a13,a,i3,a4,a20,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> ','loc. at class zero: ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
             call mpl%flush
          end if
          if (bpar%fit_block(ib)) then
-            if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-               write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii: ',trim(mpl%aqua), &
- & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
- & trim(mpl%black)//' vert. unit'
+            if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0))) then
+               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. horizontal: ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rh_l0(il0)*reqkm,trim(mpl%black)//' km'
+               call mpl%flush
+               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. vertical:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rv_l0(il0),trim(mpl%black)//' vertical units'
                call mpl%flush
             end if
          end if
@@ -636,7 +1059,13 @@ end do
 call diag%filter_fit(mpl,nam,geom,bpar,samp)
 
 ! Build fit
-call diag%build_fit(mpl,nam,geom,bpar)
+call diag%build_fit(mpl,geom,bpar)
+
+! Interpolate fit values
+call diag%interp_fit(mpl,nam,geom,bpar,samp)
+
+! Dirac test
+call diag%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()
@@ -705,27 +1134,33 @@ do ib=1,bpar%nbe
 
       ! Print results
       do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
             write(mpl%info,'(a13,a,i3,a4,a21,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> ','loc. at class zero (HR): ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens(il0),trim(mpl%black)
-            call mpl%flush
-         end if
-         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens(il0))) then
-            write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. at class zero (LR): ',trim(mpl%peach), &
- & diag_lr%blk(0,ib)%coef_ens(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
             call mpl%flush
          end if
          if (bpar%fit_block(ib)) then
-            if (mpl%msv%isnot(diag%blk(0,ib)%fit_rh(il0))) then
-               write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii (HR): ',trim(mpl%aqua), &
- & diag%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag%blk(0,ib)%fit_rv(il0), &
- & trim(mpl%black)//' vert. unit'
+            if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0))) then
+               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. horizontal (HR): ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rh_l0(il0)*reqkm,trim(mpl%black)//' km'
+               call mpl%flush
+               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. vertical (HR):   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rv_l0(il0),trim(mpl%black)//' vertical units'
                call mpl%flush
             end if
-            if (mpl%msv%isnot(diag_lr%blk(0,ib)%fit_rh(il0))) then
-               write(mpl%info,'(a27,a,a,f10.2,a,f10.2,a)') '','loc. support radii (LR): ',trim(mpl%aqua), &
- & diag_lr%blk(0,ib)%fit_rh(il0)*reqkm,trim(mpl%black)//' km  / '//trim(mpl%aqua),diag_lr%blk(0,ib)%fit_rv(il0), &
- & trim(mpl%black)//' vert. unit'
+         end if
+         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
+            write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. at class zero (LR): ',trim(mpl%peach), &
+ & diag_lr%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
+            call mpl%flush
+         end if
+         if (bpar%fit_block(ib)) then
+            if (mpl%msv%isnot(diag_lr%blk(0,ib)%rh_l0(il0))) then
+               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. horizontal (LR): ',trim(mpl%aqua), &
+ & diag_lr%blk(0,ib)%rh_l0(il0)*reqkm,trim(mpl%black)//' km'
+               call mpl%flush
+               write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. vertical (LR):   ',trim(mpl%aqua), &
+ & diag_lr%blk(0,ib)%rv_l0(il0),trim(mpl%black)//' vertical units'
                call mpl%flush
             end if
          end if
@@ -738,8 +1173,16 @@ call diag%filter_fit(mpl,nam,geom,bpar,samp)
 call diag_lr%filter_fit(mpl,nam,geom,bpar,samp)
 
 ! Build fit
-call diag%build_fit(mpl,nam,geom,bpar)
-call diag_lr%build_fit(mpl,nam,geom,bpar)
+call diag%build_fit(mpl,geom,bpar)
+call diag_lr%build_fit(mpl,geom,bpar)
+
+! Interpolate fit values
+call diag%interp_fit(mpl,nam,geom,bpar,samp)
+call diag_lr%interp_fit(mpl,nam,geom,bpar,samp)
+
+! Dirac test
+call diag%test_dirac(mpl,nam,geom,bpar)
+call diag_lr%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()

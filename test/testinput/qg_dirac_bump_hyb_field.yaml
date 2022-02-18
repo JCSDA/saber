@@ -11,19 +11,19 @@ background error:
           output variables: [x]
           bump:
             datadir: testdata
-            fname_nicas: qg_parameters_bump_loc/test_nicas
+            fname_nicas: qg_error_covariance_training_bump_loc/test_nicas
             load_nicas_local: true
-            prefix: qg_dirac_bump_hyb_value/test
+            prefix: qg_dirac_bump_hyb_field/test
             strategy: common
       members from template:
         template:
           date: 2010-01-01T12:00:00Z
-          filename: testdata/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
+          filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
         pattern: %mem%
         nmembers: 10
     weight:
       date: 2010-01-01T12:00:00Z
-      filename: testdata/qg_parameters_bump_hyb/loc_coef.an.2010-01-01T12:00:00Z.nc
+      filename: testdata/qg_error_covariance_training_bump_hyb/loc_hyb_coef.an.2010-01-01T12:00:00Z.nc
   - covariance:
       covariance model: QgError
       horizontal_length_scale: 2.2e6
@@ -32,7 +32,7 @@ background error:
       vertical_length_scale: 15000.0
     weight:
       date: 2010-01-01T12:00:00Z
-      filename: testdata/qg_parameters_bump_hyb/hyb_coef.an.2010-01-01T12:00:00Z.nc
+      filename: testdata/qg_error_covariance_training_bump_hyb/sta_hyb_coef.an.2010-01-01T12:00:00Z.nc
 dirac:
   date: 2010-01-01T12:00:00Z
   ixdir: [20]
@@ -45,7 +45,7 @@ geometry:
   depths: [4500.0, 5500.0]
 initial condition:
   date: 2010-01-01T12:00:00Z
-  filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+  filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 output dirac:
   datadir: testdata/qg_dirac_bump_hyb_field
   exp: %id%

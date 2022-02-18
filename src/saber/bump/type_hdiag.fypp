@@ -8,6 +8,7 @@
 !----------------------------------------------------------------------
 module type_hdiag
 
+use tools_const, only: zero,rad2deg
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,define_grp,define_dim,define_var,put_var,close_file
 use type_avg, only: avg_type
@@ -26,17 +27,18 @@ implicit none
 
 ! Hybrid diagnostics derived type
 type hdiag_type
-   type(avg_type) :: avg_1   !< Averaged statistics, first ensemble
-   type(avg_type) :: avg_2   !< Averaged statistics, second ensemble
+   type(avg_type) :: avg1   !< Averaged statistics, first ensemble
+   type(avg_type) :: avg2   !< Averaged statistics, second ensemble
    type(avg_type) :: avg_wgt !< Averaged statistics weights
-   type(diag_type) :: cov_1  !< Covariance, first ensemble
-   type(diag_type) :: cov_2  !< Covariance, second ensemble
-   type(diag_type) :: cor_1  !< Correlation, first ensemble
-   type(diag_type) :: cor_2  !< Correlation, second ensemble
-   type(diag_type) :: loc_1  !< Localization, first ensemble
-   type(diag_type) :: loc_2  !< Localization, second ensemble
-   type(diag_type) :: loc_3  !< Localization, low-resolution ensemble
+   type(diag_type) :: cov1  !< Covariance, first ensemble
+   type(diag_type) :: cov2  !< Covariance, second ensemble
+   type(diag_type) :: cor1  !< Correlation, first ensemble
+   type(diag_type) :: cor2  !< Correlation, second ensemble
+   type(diag_type) :: loc1  !< Localization, first ensemble
+   type(diag_type) :: loc2  !< Localization, second ensemble
+   type(diag_type) :: loc3  !< Localization, low-resolution ensemble
 contains
+   procedure :: partial_dealloc => hdiag_partial_dealloc
    procedure :: dealloc => hdiag_dealloc
    procedure :: write => hdiag_write
    procedure :: run_hdiag => hdiag_run_hdiag
@@ -46,6 +48,40 @@ private
 public :: hdiag_type
 
 contains
+
+!----------------------------------------------------------------------
+! Subroutine: hdiag_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine hdiag_partial_dealloc(hdiag)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
+
+! Set name
+@:set_name(hdiag_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call hdiag%avg1%dealloc
+call hdiag%avg2%dealloc
+call hdiag%avg_wgt%dealloc
+call hdiag%cov1%partial_dealloc
+call hdiag%cov2%partial_dealloc
+call hdiag%cor1%partial_dealloc
+call hdiag%cor2%partial_dealloc
+call hdiag%loc1%partial_dealloc
+call hdiag%loc2%partial_dealloc
+call hdiag%loc3%partial_dealloc
+
+! Probe out
+@:probe_out()
+
+end subroutine hdiag_partial_dealloc
 
 !----------------------------------------------------------------------
 ! Subroutine: hdiag_dealloc
@@ -65,16 +101,16 @@ class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
 @:probe_in()
 
 ! Release memory
-call hdiag%avg_1%dealloc
-call hdiag%avg_2%dealloc
+call hdiag%avg1%dealloc
+call hdiag%avg2%dealloc
 call hdiag%avg_wgt%dealloc
-call hdiag%cov_1%dealloc
-call hdiag%cov_2%dealloc
-call hdiag%cor_1%dealloc
-call hdiag%cor_2%dealloc
-call hdiag%loc_1%dealloc
-call hdiag%loc_2%dealloc
-call hdiag%loc_3%dealloc
+call hdiag%cov1%dealloc
+call hdiag%cov2%dealloc
+call hdiag%cor1%dealloc
+call hdiag%cor2%dealloc
+call hdiag%loc1%dealloc
+call hdiag%loc2%dealloc
+call hdiag%loc3%dealloc
 
 ! Probe out
 @:probe_out()
@@ -85,7 +121,7 @@ end subroutine hdiag_dealloc
 ! Subroutine: hdiag_write
 !> Write diagnostics
 !----------------------------------------------------------------------
-subroutine hdiag_write(hdiag,mpl,nam,geom,bpar,samp)
+subroutine hdiag_write(hdiag,mpl,nam,geom,bpar,samp,mom1)
 
 implicit none
 
@@ -96,10 +132,12 @@ type(nam_type),intent(inout) :: nam      !< Namelist
 type(geom_type),intent(in) :: geom       !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(samp_type),intent(in) :: samp       !< Sampling
+type(mom_type),intent(in) :: mom1        !< Moments, first ensemble
 
 ! Local variables
-integer :: ncid,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,vunit_id
-integer :: ildwv,ic2a,ib
+integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vunit_id,nc0_id,nl0_id,lon_id,lat_id
+integer :: fld_id(nam%nv),ens_id(nam%nv),cor_id(nam%nv)
+integer :: ildwv,ic2a,ib,iv
 character(len=1024) :: filename,grpname
 
 ! Set name
@@ -120,7 +158,7 @@ do ildwv=0,nam%nldwv
    end if
 
    if (mpl%msv%isnot(ic2a)) then
-      ! Create file
+      ! Open file
       ncid = create_file(mpl,filename,0)
 
       do ib=1,bpar%nbe
@@ -133,59 +171,95 @@ do ildwv=0,nam%nldwv
 
             ! Define dimensions
             nc3_id = define_dim(mpl,grpid,'nc3',bpar%nc3(ib))
+            nc4_id = define_dim(mpl,grpid,'nc4',bpar%nc4(ib))
             nl0r_id = define_dim(mpl,grpid,'nl0r',bpar%nl0r(ib))
             nl0_1_id = define_dim(mpl,grpid,'nl0_1',geom%nl0)
             nl0_2_id = define_dim(mpl,grpid,'nl0_2',geom%nl0)
 
             ! Define coordinates
             disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
+            as_id = define_var(mpl,grpid,'as','real',(/nc4_id/))
             vunit_id = define_var(mpl,grpid,'vunit','real',(/nl0_1_id/))
 
             ! Write coordinates
             call put_var(mpl,grpid,disth_id,geom%disth(1:bpar%nc3(ib)))
+            call put_var(mpl,grpid,as_id,geom%as(1:bpar%nc4(ib)))
             call put_var(mpl,grpid,vunit_id,geom%vunitavg)
 
             ! Write ensemble 1 correlation
-            call hdiag%cor_1%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+            call hdiag%cor1%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
 
             select case (trim(nam%method))
             case ('hyb-avg','hyb-rnd','dual-ens')
                ! Write ensemble 2 correlation
                select case (trim(nam%method))
                case ('hyb-avg','hyb-rnd')
-                  call hdiag%cor_2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+                  call hdiag%cor2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
                case ('dual-ens')
-                  call hdiag%cor_2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+                  call hdiag%cor2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
                end select
             end select
 
             select case (trim(nam%method))
             case ('loc','hyb-avg','hyb-rnd','dual-ens')
                ! Write localization
-               call hdiag%loc_1%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc1%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end select
 
             select case (trim(nam%method))
             case ('hyb-avg','hyb-rnd')
                ! Write static hybridization
-               call hdiag%loc_2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end select
 
             if (trim(nam%method)=='dual-ens') then
                ! Write dual-ensemble hybridization
-               call hdiag%loc_2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
-               call hdiag%loc_3%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc2%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+               call hdiag%loc3%blk(ic2a,ib)%write(mpl,geom,bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
             end if
          end if
       end do
 
       ! Compute and write full vertical covariance
-      if (trim(nam%strategy)=='diag_all') call hdiag%avg_1%full_vertical_covariance(mpl,nam,geom,bpar,ncid)
+      if (trim(nam%strategy)=='diag_all') call hdiag%avg1%full_vertical_covariance(mpl,nam,geom,bpar,ncid)
 
       ! Close file
       call close_file(mpl,ncid)
    end if
 end do
+
+! Write dirac test
+if (nam%check_dirac.and.nam%write_c0) then
+   ! Open file
+   filename = trim(nam%prefix)//'_dirac'
+   ncid = create_file(mpl,filename)
+
+   ! Define dimensions
+   nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+   nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
+
+   ! Define variables
+   lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+   lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+   vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
+   do iv=1,nam%nv
+      ! Define group
+      fld_id(iv) = define_grp(mpl,ncid,nam%variables(iv))
+
+      ! Define variable
+      ens_id(iv) = define_var(mpl,fld_id(iv),'ens','real',(/nc0_id,nl0_id/))
+      cor_id(iv) = define_var(mpl,fld_id(iv),'cor','real',(/nc0_id,nl0_id/))
+   end do
+
+   ! Write variables
+   call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+   call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+   call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+   do iv=1,nam%nv
+      call geom%io%fld_write(mpl,fld_id(iv),ens_id(iv),mom1%dirac(:,:,iv),geom%gmask_c0a)
+      call geom%io%fld_write(mpl,fld_id(iv),cor_id(iv),hdiag%cor1%dirac(:,:,iv),geom%gmask_c0a)
+   end do
+end if
 
 ! Probe out
 @:probe_out()
@@ -225,18 +299,18 @@ call mpl%flush
 ! Compute ensemble 1 statistics
 write(mpl%info,'(a7,a)') '','Ensemble 1:'
 call mpl%flush
-call hdiag%avg_1%compute(mpl,nam,geom,bpar,samp,mom1,nam%ne,'avg_1')
+call hdiag%avg1%compute(mpl,nam,geom,bpar,samp,mom1,nam%ne,'avg1')
 
 select case(trim(nam%method))
 case ('hyb-rnd','dual-ens')
    ! Compute ensemble 2 statistics
    write(mpl%info,'(a7,a)') '','Ensemble 2:'
    call mpl%flush
-   call hdiag%avg_2%compute(mpl,nam,geom,bpar,samp,mom2,nam%ens2_ne,'avg_2')
+   call hdiag%avg2%compute(mpl,nam,geom,bpar,samp,mom2,nam%ens2_ne,'avg2')
 case ('hyb-avg')
    ! Copy ensemble 1 statistics
-   call hdiag%avg_2%alloc(nam,geom,bpar,samp,nam%ens2_ne,nam%ens2_nsub,'avg_2')
-   call hdiag%avg_2%copy(hdiag%avg_1)
+   call hdiag%avg2%alloc(nam,geom,bpar,samp,nam%ens2_ne,nam%ens2_nsub,'avg2')
+   call hdiag%avg2%copy(hdiag%avg1)
 end select
 
 select case (trim(nam%method))
@@ -246,9 +320,9 @@ case ('hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    select case (trim(nam%method))
    case ('hyb-avg','hyb-rnd')
-      call hdiag%avg_1%compute_hyb(mpl,nam,geom,bpar,samp,hdiag%avg_2)
+      call hdiag%avg1%compute_hyb(mpl,nam,geom,bpar,samp,hdiag%avg2)
    case ('dual-ens')
-      call hdiag%avg_1%compute_deh(mpl,nam,geom,bpar,samp,mom1,mom2)
+      call hdiag%avg1%compute_deh(mpl,nam,geom,bpar,samp,mom1,mom2)
    end select
 end select
 
@@ -262,28 +336,28 @@ if ((bpar%nbe>bpar%nb).and.bpar%diag_block(bpar%nbe)) then
    ! Copy weight
    write(mpl%info,'(a7,a)') '','Copy weight'
    call mpl%flush
-   call hdiag%avg_wgt%copy_wgt(geom,bpar,hdiag%avg_1)
+   call hdiag%avg_wgt%copy_wgt(geom,bpar,hdiag%avg1)
 
    ! Compute ensemble 1 block-averaged statistics
    write(mpl%info,'(a7,a)') '','Ensemble 1:'
    call mpl%flush
-   call hdiag%avg_1%compute_bwavg(mpl,nam,geom,bpar,samp,hdiag%avg_wgt)
+   call hdiag%avg1%compute_bwavg(mpl,nam,geom,bpar,samp,hdiag%avg_wgt)
 
    select case (trim(nam%method))
    case ('hyb-avg','hyb-rnd','dual-ens')
       ! Compute ensemble 2 block-averaged statistics
       write(mpl%info,'(a7,a)') '','Ensemble 2:'
       call mpl%flush
-      call hdiag%avg_2%compute_bwavg(mpl,nam,geom,bpar,samp,hdiag%avg_wgt)
+      call hdiag%avg2%compute_bwavg(mpl,nam,geom,bpar,samp,hdiag%avg_wgt)
 
       ! Compute cross-ensembles block-averaged statistics
       write(mpl%info,'(a7,a)') '','Cross-ensembles:'
       call mpl%flush
       select case (trim(nam%method))
       case ('hyb-avg','hyb-rnd')
-         call hdiag%avg_1%compute_bwavg_hyb(mpl,nam,geom,bpar,samp,hdiag%avg_wgt)
+         call hdiag%avg1%compute_bwavg_hyb(mpl,nam,geom,bpar,samp,hdiag%avg_wgt)
       case ('dual-ens')
-         call hdiag%avg_1%compute_bwavg_deh(mpl,nam,geom,bpar,samp,hdiag%avg_wgt)
+         call hdiag%avg1%compute_bwavg_deh(mpl,nam,geom,bpar,samp,hdiag%avg_wgt)
       end select
    end select
 end if
@@ -296,7 +370,7 @@ call mpl%flush
 ! Compute ensemble 1 covariance
 write(mpl%info,'(a7,a)') '','Ensemble 1:'
 call mpl%flush
-call hdiag%cov_1%covariance(mpl,nam,geom,bpar,samp,hdiag%avg_1,'cov')
+call hdiag%cov1%covariance(mpl,nam,geom,bpar,samp,hdiag%avg1,'cov')
 
 select case (trim(nam%method))
 case ('hyb-avg','hyb-rnd','dual-ens')
@@ -305,9 +379,9 @@ case ('hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    select case (trim(nam%method))
    case ('hyb-avg','hyb-rnd')
-      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,samp,hdiag%avg_2,'cov_sta')
+      call hdiag%cov2%covariance(mpl,nam,geom,bpar,samp,hdiag%avg2,'cov_sta')
    case ('dual-ens')
-      call hdiag%cov_2%covariance(mpl,nam,geom,bpar,samp,hdiag%avg_2,'cov_lr')
+      call hdiag%cov2%covariance(mpl,nam,geom,bpar,samp,hdiag%avg2,'cov_lr')
    end select
 end select
 
@@ -319,7 +393,7 @@ call mpl%flush
 ! Compute ensemble 1 correlation
 write(mpl%info,'(a7,a)') '','Ensemble 1:'
 call mpl%flush
-call hdiag%cor_1%correlation(mpl,nam,geom,bpar,samp,hdiag%avg_1,'cor')
+call hdiag%cor1%correlation(mpl,nam,geom,bpar,samp,hdiag%avg1,'cor')
 
 select case (trim(nam%method))
 case ('hyb-avg','hyb-rnd','dual-ens')
@@ -328,9 +402,9 @@ case ('hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    select case (trim(nam%method))
    case ('hyb-avg','hyb-rnd')
-      call hdiag%cor_2%correlation(mpl,nam,geom,bpar,samp,hdiag%avg_2,'cor_sta')
+      call hdiag%cor2%correlation(mpl,nam,geom,bpar,samp,hdiag%avg2,'cor_sta')
    case ('dual-ens')
-      call hdiag%cor_2%correlation(mpl,nam,geom,bpar,samp,hdiag%avg_2,'cor_lr')
+      call hdiag%cor2%correlation(mpl,nam,geom,bpar,samp,hdiag%avg2,'cor_lr')
    end select
 end select
 
@@ -343,7 +417,7 @@ case ('loc','hyb-avg','hyb-rnd','dual-ens')
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensemble 1:'
    call mpl%flush
-   call hdiag%loc_1%localization(mpl,nam,geom,bpar,samp,hdiag%avg_1,'loc')
+   call hdiag%loc1%localization(mpl,nam,geom,bpar,samp,hdiag%avg1,'loc')
 end select
 
 select case (trim(nam%method))
@@ -355,7 +429,7 @@ case ('hyb-avg','hyb-rnd')
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensemble 1 and 2:'
    call mpl%flush
-   call hdiag%loc_2%hybridization(mpl,nam,geom,bpar,samp,hdiag%avg_1,'loc_hyb')
+   call hdiag%loc2%hybridization(mpl,nam,geom,bpar,samp,hdiag%avg1,'loc_hyb')
 end select
 
 if (trim(nam%method)=='dual-ens') then
@@ -366,7 +440,7 @@ if (trim(nam%method)=='dual-ens') then
    call mpl%flush
    write(mpl%info,'(a7,a)') '','Ensembles 1 and 2:'
    call mpl%flush
-   call hdiag%loc_2%dualens(mpl,nam,geom,bpar,samp,hdiag%avg_1,hdiag%avg_2,hdiag%loc_3,'loc_deh','loc_deh_lr')
+   call hdiag%loc2%dualens(mpl,nam,geom,bpar,samp,hdiag%avg1,hdiag%avg2,hdiag%loc3,'loc_deh','loc_deh_lr')
 end if
 
 ! Write diagnostics
@@ -375,7 +449,7 @@ if (nam%write_hdiag) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Write diagnostics'
    call mpl%flush
-   call hdiag%write(mpl,nam,geom,bpar,samp)
+   call hdiag%write(mpl,nam,geom,bpar,samp,mom1)
 end if
 
 ! Probe out

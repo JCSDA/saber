@@ -103,6 +103,7 @@ StdDev<MODEL>::StdDev(const Geometry_ & resol,
 
   // Increment_ to ATLAS fieldset
   stdDevFieldSet_.reset(new atlas::FieldSet());
+  stdDev.setAtlas(stdDevFieldSet_.get());
   stdDev.toAtlas(stdDevFieldSet_.get());
 
   oops::Log::trace() << classname() << "::StdDev done" << std::endl;
