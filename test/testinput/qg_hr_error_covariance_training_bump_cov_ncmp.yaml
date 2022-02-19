@@ -3,12 +3,12 @@ background:
   filename: testdata/qg_hr_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
   state variables: [q]
 bump:
-  check_adjoints: true
-  check_dirac: true
-  check_normalization: 10
+#  check_adjoints: true
+#  check_dirac: true
+#  check_normalization: 10
   datadir: testdata
   dc: 200.0e3
-  fit_ncmpmax: 2
+  fit_ncmpmax: 3
   method: cor
   nc1: 350
   nc2: 50
@@ -35,30 +35,69 @@ bump:
   ivdir: [1]
   nomask: true
   output:
-  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
-    date: 2010-01-01T12:00:00Z
-    exp: cor_rh
-    parameter: cor_rh
-    type: an
-  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
-    date: 2010-01-01T12:00:00Z
-    exp: cor_rv
-    parameter: cor_rv
-    type: an
   - date: 2010-01-01T12:00:00Z
     filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_ncmp
     parameter: cor_ncmp
     single value: true
-  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+  - component: 1
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
     date: 2010-01-01T12:00:00Z
-    exp: dirac_nicas
-    parameter: dirac_nicas
+    exp: cor_rh_1
+    parameter: cor_rh
     type: an
-  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+  - component: 2
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
     date: 2010-01-01T12:00:00Z
-    exp: nicas_norm
-    parameter: nicas_norm
+    exp: cor_rh_2
+    parameter: cor_rh
     type: an
+  - component: 3
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+    date: 2010-01-01T12:00:00Z
+    exp: cor_rh_3
+    parameter: cor_rh
+    type: an
+  - component: 1
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+    date: 2010-01-01T12:00:00Z
+    exp: cor_rv_1
+    parameter: cor_rv
+    type: an
+  - component: 2
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+    date: 2010-01-01T12:00:00Z
+    exp: cor_rv_2
+    parameter: cor_rv
+    type: an
+  - component: 3
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+    date: 2010-01-01T12:00:00Z
+    exp: cor_rv_3
+    parameter: cor_rv
+    type: an
+#  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+#    date: 2010-01-01T12:00:00Z
+#    exp: dirac_nicas
+#    parameter: dirac_nicas
+#    type: an
+#  - component: 1
+#    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+#    date: 2010-01-01T12:00:00Z
+#    exp: nicas_norm_1
+#    parameter: nicas_norm
+#    type: an
+#  - component: 2
+#    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+#    date: 2010-01-01T12:00:00Z
+#    exp: nicas_norm_2
+#    parameter: nicas_norm
+#    type: an
+#  - component: 3
+#    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+#    date: 2010-01-01T12:00:00Z
+#    exp: nicas_norm_3
+#    parameter: nicas_norm
+#    type: an
 ensemble:
   members from template:
     template:

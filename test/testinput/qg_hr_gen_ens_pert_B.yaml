@@ -9,7 +9,7 @@ forecast length: P1DT12H
 initial condition:
   date: 2009-12-31T00:00:00Z
   filename: testdata/qg_hr_truth/truth.fc.2009-12-15T00:00:00Z.P16D.nc
-members: 150
+members: 15 #0
 model:
   name: QG
   tstep: PT1H

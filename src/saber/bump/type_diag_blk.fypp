@@ -519,6 +519,9 @@ do il1=1,nl1
          if (mpl%msv%isallnot(rh_c4l1(:,il1,icmp-1)).and.mpl%msv%isnot(rv_l1(il1,icmp-1))) then
             ! Remove previous components from raw functions
             raw_hor = diag_blk%raw(:,:,jl0rz,il0)
+print*
+print*, 'raw_hor full',raw_hor
+print*
             raw_ver = sum(diag_blk%raw(1,:,:,il0),dim=1)/real(bpar%nc4(ib),kind_real)
             do jcmp=1,icmp-1
                do jc4=1,bpar%nc4(ib)
@@ -528,27 +531,13 @@ do il1=1,nl1
                call diag_iso(mpl,nl0r,distv,'ver',rv_l1(il1,jcmp),fit_ver)
                raw_ver = raw_ver-a_l1(il1,jcmp)*fit_ver
             end do
-  
-            ! Keep the tails only
-            do jc4=1,bpar%nc4(ib)
-               do jc3=1,bpar%nc3(ib)
-                  if (geom%disth(jc3)<tailfac*rh_c4l1(jc4,il1,icmp-1)) raw_hor(jc3,jc4) = mpl%msv%valr
-               end do
-            end do
-            do jl0r=1,nl0r
-               jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-               if (distv(jl0r)<tailfac*rv_l1(il1,icmp-1)) raw_ver(jl0r) = mpl%msv%valr
-            end do
-
+print*, 'raw_hor_icmp',raw_hor
+print*
             ! Allocation
             minim%nx = bpar%nc4(ib)+1
             if (icmp<ncmp) minim%nx = minim%nx+1
             minim%ny = bpar%nc3(ib)*bpar%nc4(ib)+nl0r
-            allocate(minim%x(minim%nx))
-            allocate(minim%guess(minim%nx))
-            allocate(minim%binf(minim%nx))
-            allocate(minim%bsup(minim%nx))
-            allocate(minim%obs(minim%ny))
+            call minim%alloc(mpl)
 
             ! Vertical distance
             minim%distv = distv
@@ -607,6 +596,8 @@ do il1=1,nl1
             if (icmp<ncmp) then
                ix = ix+1
                a_l1(il1,icmp) = max(minim%binf(ix),min(minim%x(ix),minim%bsup(ix)))
+            else
+               a_l1(il1,icmp) = a
             end if
             do jc4=1,bpar%nc4(ib)
                ix = ix+1
@@ -614,10 +605,15 @@ do il1=1,nl1
             end do
             ix = ix+1
             rv_l1(il1,icmp) = max(minim%binf(ix),min(minim%x(ix),minim%bsup(ix)))
+
+            ! Release memory
+            call minim%partial_dealloc
          end if
       end do
    end if
-
+print*, 'rh_c4l1',rh_c4l1(:,1,:)
+print*
+   ! Post-processing
    do icmp=1,ncmp
       if (mpl%msv%isnot(a_l1(il1,icmp)).and.mpl%msv%isallnot(rh_c4l1(:,il1,icmp)).and.mpl%msv%isnot(rv_l1(il1,icmp))) then
          ! Average values
@@ -627,11 +623,7 @@ do il1=1,nl1
             ! Allocation
             minim%nx = 3
             minim%ny = bpar%nc3(ib)*bpar%nc4(ib)
-            allocate(minim%x(minim%nx))
-            allocate(minim%guess(minim%nx))
-            allocate(minim%binf(minim%nx))
-            allocate(minim%bsup(minim%nx))
-            allocate(minim%obs(minim%ny))
+            call minim%alloc(mpl)
 
             ! Initialization
             minim%guess = (/rh_l1(il1,icmp)**2,rh_l1(il1,icmp)**2,zero/)
@@ -657,11 +649,7 @@ do il1=1,nl1
             end if
 
             ! Release memory
-            deallocate(minim%x)
-            deallocate(minim%guess)
-            deallocate(minim%binf)
-            deallocate(minim%bsup)
-            deallocate(minim%obs)
+            call minim%partial_dealloc
          end if
       else
          a_l1(il1,icmp) = mpl%msv%valr
@@ -732,6 +720,7 @@ end if
 deallocate(raw_hor)
 deallocate(raw_ver)
 deallocate(distv)
+call minim%dealloc
 
 ! End associate
 end associate

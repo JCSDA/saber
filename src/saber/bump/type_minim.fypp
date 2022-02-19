@@ -44,6 +44,9 @@ type minim_type
    real(kind_real),allocatable :: as(:)           !< Angular sectors
    real(kind_real),allocatable :: distv(:)        !< Vertical distance
 contains
+   procedure :: alloc => minim_alloc
+   procedure :: partial_dealloc => minim_partial_dealloc
+   procedure :: dealloc => minim_dealloc
    procedure :: compute => minim_compute
    procedure :: cost => minim_cost
    procedure :: cost_tensor => minim_cost_tensor
@@ -58,6 +61,97 @@ private
 public :: minim_type
 
 contains
+
+!----------------------------------------------------------------------
+! subroutine: minim_alloc
+!> Allocation
+!----------------------------------------------------------------------
+subroutine minim_alloc(minim,mpl)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim !< Minimization data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+
+! Set name
+@:set_name(minim_alloc)
+
+! Probe in
+@:probe_in()
+
+! Check
+if (minim%nx<=0) call mpl%abort('${subr}$','nx should be positive to allocate')
+if (minim%ny<=0) call mpl%abort('${subr}$','nx should be positive to allocate')
+
+! Allocation
+allocate(minim%x(minim%nx))
+allocate(minim%guess(minim%nx))
+allocate(minim%binf(minim%nx))
+allocate(minim%bsup(minim%nx))
+allocate(minim%obs(minim%ny))
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_alloc
+
+!----------------------------------------------------------------------
+! subroutine: minim_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine minim_partial_dealloc(minim)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim !< Minimization data
+
+! Set name
+@:set_name(minim_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(minim%x)) deallocate(minim%x)
+if (allocated(minim%guess)) deallocate(minim%guess)
+if (allocated(minim%binf)) deallocate(minim%binf)
+if (allocated(minim%bsup)) deallocate(minim%bsup)
+if (allocated(minim%obs)) deallocate(minim%obs)
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_partial_dealloc
+
+!----------------------------------------------------------------------
+! subroutine: minim_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine minim_dealloc(minim)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim !< Minimization data
+
+! Set name
+@:set_name(minim_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call minim%partial_dealloc
+if (allocated(minim%disth)) deallocate(minim%disth)
+if (allocated(minim%as)) deallocate(minim%as)
+if (allocated(minim%distv)) deallocate(minim%distv)
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_dealloc
 
 !----------------------------------------------------------------------
 ! subroutine: minim_compute
@@ -76,10 +170,6 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 
 ! Probe in
 @:probe_in()
-
-! Check
-if (minim%nx<=0) call mpl%abort('${subr}$','nx should be positive to minimize')
-if (minim%ny<=0) call mpl%abort('${subr}$','nx should be positive to minimize')
 
 ! Initialization
 call minim%vt_inv(mpl,minim%guess)
@@ -198,9 +288,10 @@ real(kind_real),intent(in) :: x(minim%nx) !< Control vector
 real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
-integer :: ix,jc4
+integer :: ix,iy,jc4
 real(kind_real) :: amp,rh(minim%nc4),rv,fit_hor(minim%nc3,minim%nc4),fit_ver(minim%nl0r)
-real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
+real(kind_real) :: wgt_hor(minim%nc3,minim%nc4),wgt_ver(minim%nl0r)
+real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny),wgt_pack(minim%ny)
 
 ! Set name
 @:set_name(minim_cost_scale)
@@ -230,19 +321,34 @@ rv = xtmp(ix)
 ! Compute horizontal fit for each angular sector
 do jc4=1,minim%nc4
    call diag_iso(mpl,minim%nc3,minim%disth,'hor',rh(jc4),fit_hor(:,jc4))
+   wgt_hor(:,jc4) = minim%disth
 end do
 fit_hor = amp*fit_hor
 
 ! Compute vertical fit
 call diag_iso(mpl,minim%nl0r,minim%distv,'ver',rv,fit_ver)
 fit_ver = amp*fit_ver
+wgt_ver = minim%distv
 
 ! Pack
 fit_pack(1:minim%nc3*minim%nc4) = reshape(fit_hor,(/minim%nc3*minim%nc4/))
 fit_pack(minim%nc3*minim%nc4+1:minim%ny) = fit_ver
+wgt_pack(1:minim%nc3*minim%nc4) = reshape(wgt_hor,(/minim%nc3*minim%nc4/))
+wgt_pack(minim%nc3*minim%nc4+1:minim%ny) = wgt_ver
 
 ! Observations penalty
-f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
+f = zero
+do iy=1,minim%ny
+   if (mpl%msv%isnot(minim%obs(iy)).and.mpl%msv%isnot(fit_pack(iy))) then
+      if (fit_pack(iy)>minim%obs(iy)) then
+         ! Fit value is too large: large penalty
+         f = f+10.0*wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2
+      else
+         ! Fit value is too small: normal penalty
+         f = f+wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2
+      end if
+   end if
+end do
 
 ! Probe out
 @:probe_out()
