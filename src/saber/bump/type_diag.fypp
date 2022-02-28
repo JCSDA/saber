@@ -632,7 +632,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: idir,ib,jc0a,jl0,icmp
+integer :: idir,ib,jc0a,jl0,icmp,ncmpmax
 real(kind_real) :: D11,D22,D12,disth,dx,dy,hnd,hor_dir,distv,vnd
 real(kind_real),allocatable :: a_dir(:,:),rh_dir(:,:),H11_dir(:,:),H22_dir(:,:),H12_dir(:,:),rv_dir(:,:)
 
@@ -646,15 +646,21 @@ if (nam%check_dirac) then
    write(mpl%info,'(a10,a)') '','Compute diagnostics dirac test'
    call mpl%flush
 
+   ! Maximum number of components
+   ncmpmax = 0
+   do ib=1,bpar%nbe
+      if (bpar%fit_block(ib)) ncmpmax = max(diag%blk(0,ib)%ncmp,ncmpmax)
+   end do
+
    ! Allocation
-   allocate(a_dir(geom%ndir,diag%blk(0,ib)%ncmp))
-   allocate(rh_dir(geom%ndir,diag%blk(0,ib)%ncmp))
+   allocate(a_dir(geom%ndir,ncmpmax))
+   allocate(rh_dir(geom%ndir,ncmpmax))
    if (nam%nc4>1) then
-      allocate(H11_dir(geom%ndir,diag%blk(0,ib)%ncmp))
-      allocate(H22_dir(geom%ndir,diag%blk(0,ib)%ncmp))
-      allocate(H12_dir(geom%ndir,diag%blk(0,ib)%ncmp))
+      allocate(H11_dir(geom%ndir,ncmpmax))
+      allocate(H22_dir(geom%ndir,ncmpmax))
+      allocate(H12_dir(geom%ndir,ncmpmax))
    end if
-   allocate(rv_dir(geom%ndir,diag%blk(0,ib)%ncmp))
+   allocate(rv_dir(geom%ndir,ncmpmax))
 
    ! Initialization
    a_dir = zero
