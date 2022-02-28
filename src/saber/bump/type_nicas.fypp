@@ -927,12 +927,12 @@ if (nam%check_dirac) then
    write(mpl%info,'(a)') '--- Apply NICAS blocks to diracs'
    call mpl%flush
 
-   ! Allocation
-   allocate(nicas%blkid(nam%nv))
-   allocate(nicas%dirac_id(nam%nv))
-   if (allocated(ens%mem).and.(trim(nam%method)/='cor')) allocate(nicas%bens_id(nam%nv))
-
    if (nam%write_c0) then
+      ! Allocation
+      allocate(nicas%blkid(nam%nv))
+      allocate(nicas%dirac_id(nam%nv))
+      if (allocated(ens%mem).and.(trim(nam%method)/='cor')) allocate(nicas%bens_id(nam%nv))
+
       ! Create file
       ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
 
@@ -996,6 +996,11 @@ if (nam%check_dirac) then
    if (nam%write_c0) then
       ! Close file
       call close_file(mpl,ncid)
+
+      ! Release memory
+      deallocate(nicas%blkid)
+      deallocate(nicas%dirac_id)
+      if (allocated(ens%mem).and.(trim(nam%method)/='cor')) deallocate(nicas%bens_id)
    end if
 end if
 
@@ -1730,6 +1735,10 @@ if (lbens) then
    allocate(fld_ens_c0a(geom%nc0a,geom%nl0,nam%nv))
    allocate(nicas%dirac_bens(geom%nc0a,geom%nl0,nam%nv))
 end if
+
+! Initialization
+nicas%dirac = zero
+if (lbens) nicas%dirac_bens = zero
 
 do idir=1,geom%ndir
    ! Generate dirac field

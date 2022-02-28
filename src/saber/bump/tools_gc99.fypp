@@ -258,9 +258,6 @@ real(kind_real),intent(in) :: nd    !< Normalized distance
 ! Returned variable
 real(kind_real) :: value
 
-! Local variables
-integer :: icmp
-
 ! Set name
 @:set_name(gc99_fit_func_sqrt)
 

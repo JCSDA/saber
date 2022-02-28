@@ -259,6 +259,9 @@ if (nam%check_dirac.and.nam%write_c0) then
       call geom%io%fld_write(mpl,fld_id(iv),ens_id(iv),mom1%dirac(:,:,iv),geom%gmask_c0a)
       call geom%io%fld_write(mpl,fld_id(iv),cor_id(iv),hdiag%cor1%dirac(:,:,iv),geom%gmask_c0a)
    end do
+
+   ! Close file
+   call close_file(mpl,ncid)
 end if
 
 ! Probe out

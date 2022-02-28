@@ -53,7 +53,7 @@ if test "${test%%_*}" = "bump" ; then
       fi
 
       for file in `ls testdata/${test}/test_${mpi}-${omp}_*.nc 2>/dev/null` ; do
-         if test -e ${file}; then
+         if test ! -h ${file}; then
             # Get suffix
             tmp=${file#testdata/${test}/test_${mpi}-${omp}_}
             suffix=${tmp%.nc}

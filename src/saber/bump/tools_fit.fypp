@@ -62,7 +62,7 @@ contains
 
 !----------------------------------------------------------------------
 ! Subroutine: fit_diag_iso
-!> Compute isotropic diagnostic fit function (single component)
+!> Compute isotropic diagnostic fit function
 !----------------------------------------------------------------------
 subroutine fit_diag_iso(mpl,n,dist,dir,r,fit)
 
