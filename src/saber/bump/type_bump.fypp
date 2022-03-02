@@ -215,16 +215,16 @@ if (bump%nam%colorlog) then
    bump%mpl%peach = char(27)//'[1;91m'
    bump%mpl%aqua = char(27)//'[1;36m'
    bump%mpl%purple = char(27)//'[1;35m'
-   bump%mpl%err = char(27)//'[0;37;41;1m'
-   bump%mpl%wng = char(27)//'[0;37;42;1m'
+   bump%mpl%err_color = char(27)//'[0;37;41;1m'
+   bump%mpl%wng_color = char(27)//'[0;37;42;1m'
 else
    bump%mpl%black = ' '
    bump%mpl%green = ' '
    bump%mpl%peach = ' '
    bump%mpl%aqua = ' '
    bump%mpl%purple = ' '
-   bump%mpl%err = ' '
-   bump%mpl%wng = ' '
+   bump%mpl%err_color = ' '
+   bump%mpl%wng_color = ' '
 end if
 
 ! Header
