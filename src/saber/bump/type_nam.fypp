@@ -173,7 +173,7 @@ type nam_type
    real(kind_real) :: diag_rhflt                              !< Horizontal filtering suport radius [in meters]
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
-   integer :: fit_ncmpmax                                     !< Maximum number of cmponents in the fit function
+   integer :: fit_ncmpmax(0:nvmax)                            !< Maximum number of cmponents in the fit function
 
    ! nicas_param
    logical :: nonunit_diag                                    !< Non-unit diagonal for the NICAS application
@@ -620,7 +620,7 @@ real(kind_real) :: local_dlat
 real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
 integer :: fit_dl0
-integer :: fit_ncmpmax
+integer :: fit_ncmpmax(0:nvmax)
 logical :: nonunit_diag
 real(kind_real) :: resol
 integer :: nc1max
@@ -1800,7 +1800,13 @@ if (conf%has('local_dlat')) call conf%get_or_die('local_dlat',nam%local_dlat)
 if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
 if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
 if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
-if (conf%has('fit_ncmpmax')) call conf%get_or_die('fit_ncmpmax',nam%fit_ncmpmax)
+if (conf%has('fit_ncmpmax')) then
+   call conf%get_or_die('fit_ncmpmax',subconf)
+   if (subconf%has('common')) call subconf%get_or_die('common',nam%fit_ncmpmax(0))
+   do iv=1,nam%nv
+      if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%fit_ncmpmax(iv))
+   end do
+end if
 
 ! nicas_param
 if (conf%has('nonunit_diag')) call conf%get_or_die('nonunit_diag',nam%nonunit_diag)
@@ -2342,7 +2348,9 @@ if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%diag_rhflt<zero) call mpl%abort('${subr}$','diag_rhflt should be non-negative')
    if (nam%diag_rvflt<zero) call mpl%abort('${subr}$','diag_rvflt should be non-negative')
    if (nam%fit_dl0<=0) call mpl%abort('${subr}$','fit_dl0 should be postive')
-   if (nam%fit_ncmpmax<=0) call mpl%abort('${subr}$','fit_ncmpmax should be postive')
+   do iv=1,nam%nv
+      if (nam%fit_ncmpmax(iv)<=0) call mpl%abort('${subr}$','fit_ncmpmax should be postive')
+   end do
 end if
 
 ! Check ensemble sizes
@@ -2635,7 +2643,7 @@ call mpl%flush
 call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
-call mpl%write('fit_ncmpmax',nam%fit_ncmpmax)
+call mpl%write('fit_ncmpmax',nam%nv+1,nam%fit_ncmpmax(0:nam%nv))
 
 ! nicas_param
 write(mpl%info,'(a7,a)') '','NICAS parameters'

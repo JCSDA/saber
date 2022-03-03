@@ -206,13 +206,16 @@ do icmp=1,nicas_blk%ncmp
    ! Copy file ID
    nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
 
-   ! Get component name
-   write(cmpname,'(a,i1)') 'cmp_',icmp
+   ! Get component
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   ! Get group
-   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
 
    ! Component work
    call nicas_blk%cmp(icmp)%read_local(mpl,nam,geom,bpar)
@@ -268,13 +271,16 @@ call put_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
 call put_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
 
 do icmp=1,nicas_blk%ncmp
-   ! Get component name
-   write(cmpname,'(a,i1)') 'cmp_',icmp
+   ! Get component
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   ! Define component
-   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_local_def(mpl,nam,bpar)
@@ -585,13 +591,16 @@ do icmp=1,nicas_blk%ncmp
    ! Copy file ID
    nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
 
-   ! Get component name
-   write(cmpname,'(a,i1)') 'cmp_',icmp
+   ! Get component
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   ! Get group
-   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
 
    ! Component work
    call nicas_blk%cmp(icmp)%read_global(mpl,nam,geom,bpar)
@@ -648,13 +657,16 @@ call put_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
 call put_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
 
 do icmp=1,nicas_blk%ncmp
-   ! Get component name
-   write(cmpname,'(a,i1)') 'cmp_',icmp
-   write(mpl%info,'(a13,a,i1)') '','Component: ',icmp
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   ! Define component
-   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_global_def(mpl,nam,geom,bpar)
@@ -744,13 +756,16 @@ call mpl%flush
 nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
 do icmp=1,nicas_blk%ncmp
-   ! Get component name
-   write(cmpname,'(a,i1)') 'cmp_',icmp
-   write(mpl%info,'(a13,a,i1)') '','Component: ',icmp
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   ! Define component
-   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_grids_def(mpl,nam,bpar)

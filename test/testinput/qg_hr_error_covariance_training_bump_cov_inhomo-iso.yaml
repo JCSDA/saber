@@ -27,7 +27,6 @@ bump:
   latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
   levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-  nomask: true
   output:
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-iso
     date: 2010-01-01T12:00:00Z

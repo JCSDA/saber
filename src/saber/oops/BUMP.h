@@ -387,7 +387,7 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
   // Maximum number of components in the fit function
-  oops::OptionalParameter<int> fit_ncmpmax{"fit_ncmpmax", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> fit_ncmpmax{"fit_ncmpmax", this};
 
   // nicas_param
 

@@ -29,35 +29,36 @@ implicit none
 
 ! Diagnostic block derived type
 type diag_blk_type
-   integer :: ic2a                                  !< Local index
-   integer :: ib                                    !< Block index
-   character(len=1024) :: prefix                    !< Prefix
+   integer :: ic2a                                      !< Local index
+   integer :: ib                                        !< Block index
+   character(len=1024) :: prefix                        !< Prefix
 
-   real(kind_real),allocatable :: raw(:,:,:,:)      !< Raw diagnostic
-   real(kind_real),allocatable :: valid(:,:,:,:)    !< Number of valid couples
-   real(kind_real),allocatable :: coef_ens_l0(:)    !< Ensemble coefficient, profile
-   real(kind_real) :: coef_sta                      !< Static coefficient
+   real(kind_real),allocatable :: raw(:,:,:,:)          !< Raw diagnostic
+   real(kind_real),allocatable :: valid(:,:,:,:)        !< Number of valid couples
+   real(kind_real),allocatable :: coef_ens_l0(:)        !< Ensemble coefficient, profile
+   real(kind_real) :: coef_sta                          !< Static coefficient
 
-   real(kind_real),allocatable :: vunit(:)          !< Vertical unit
-   real(kind_real),allocatable :: fit(:,:,:,:)      !< Fit
+   real(kind_real),allocatable :: vunit(:)              !< Vertical unit
+   real(kind_real),allocatable :: fit(:,:,:,:)          !< Fit
+   real(kind_real),allocatable :: fit_detail(:,:,:,:,:) !< Multi-components fit detail
 
-   integer,allocatable :: ncmp                      !< Number of components
-   real(kind_real),allocatable :: a_l0(:,:)         !< Amplitude, profiles
-   real(kind_real),allocatable :: rh_l0(:,:)        !< Horizontal support radius, profiles
-   real(kind_real),allocatable :: D11_l0(:,:)       !< Horizontal direct tensor, coefficient 11, profiles
-   real(kind_real),allocatable :: D22_l0(:,:)       !< Horizontal direct tensor, coefficient 22, profiles
-   real(kind_real),allocatable :: D12_l0(:,:)       !< Horizontal direct tensor, coefficient 12 (normalized), profiles
-   real(kind_real),allocatable :: rv_l0(:,:)        !< Vertical support radius, profiles
+   integer,allocatable :: ncmp                          !< Number of components
+   real(kind_real),allocatable :: a_l0(:,:)             !< Amplitude, profiles
+   real(kind_real),allocatable :: rh_l0(:,:)            !< Horizontal support radius, profiles
+   real(kind_real),allocatable :: D11_l0(:,:)           !< Horizontal direct tensor, coefficient 11, profiles
+   real(kind_real),allocatable :: D22_l0(:,:)           !< Horizontal direct tensor, coefficient 22, profiles
+   real(kind_real),allocatable :: D12_l0(:,:)           !< Horizontal direct tensor, coefficient 12 (normalized), profiles
+   real(kind_real),allocatable :: rv_l0(:,:)            !< Vertical support radius, profiles
 
-   real(kind_real),allocatable :: coef_ens_c0a(:,:) !< Ensemble coefficient, subset Sc0, halo A
-   real(kind_real),allocatable :: coef_sta_c0a(:,:) !< Static coefficient, subset Sc0, halo A
-   real(kind_real),allocatable :: a_c0a(:,:,:)      !< Amplitudes, subset Sc0, halo A
-   real(kind_real),allocatable :: rh_c0a(:,:,:)     !< Horizontal support radius, subset Sc0, halo A
-   real(kind_real),allocatable :: D11_c0a(:,:,:)    !< Horizontal direct tensor, component 11, subset Sc0, halo A
-   real(kind_real),allocatable :: D22_c0a(:,:,:)    !< Horizontal direct tensor, component 22, subset Sc0, halo A
-   real(kind_real),allocatable :: D12_c0a(:,:,:)    !< Horizontal direct tensor, component 12 (normalized), subset Sc0, halo A
-   real(kind_real),allocatable :: rv_c0a(:,:,:)     !< Vertical support radius, subset Sc0, halo A
-   real(kind_real) :: wgt                           !< Weight
+   real(kind_real),allocatable :: coef_ens_c0a(:,:)     !< Ensemble coefficient, subset Sc0, halo A
+   real(kind_real),allocatable :: coef_sta_c0a(:,:)     !< Static coefficient, subset Sc0, halo A
+   real(kind_real),allocatable :: a_c0a(:,:,:)          !< Amplitudes, subset Sc0, halo A
+   real(kind_real),allocatable :: rh_c0a(:,:,:)         !< Horizontal support radius, subset Sc0, halo A
+   real(kind_real),allocatable :: D11_c0a(:,:,:)        !< Horizontal direct tensor, component 11, subset Sc0, halo A
+   real(kind_real),allocatable :: D22_c0a(:,:,:)        !< Horizontal direct tensor, component 22, subset Sc0, halo A
+   real(kind_real),allocatable :: D12_c0a(:,:,:)        !< Horizontal direct tensor, component 12 (normalized), subset Sc0, halo A
+   real(kind_real),allocatable :: rv_c0a(:,:,:)         !< Vertical support radius, subset Sc0, halo A
+   real(kind_real) :: wgt                               !< Weight
 contains
    procedure :: alloc => diag_blk_alloc
    procedure :: partial_dealloc => diag_blk_partial_dealloc
@@ -160,6 +161,7 @@ if (allocated(diag_blk%valid)) deallocate(diag_blk%valid)
 if (allocated(diag_blk%coef_ens_l0)) deallocate(diag_blk%coef_ens_l0)
 if (allocated(diag_blk%vunit)) deallocate(diag_blk%vunit)
 if (allocated(diag_blk%fit)) deallocate(diag_blk%fit)
+if (allocated(diag_blk%fit_detail)) deallocate(diag_blk%fit_detail)
 if (allocated(diag_blk%rh_l0)) deallocate(diag_blk%rh_l0)
 if (allocated(diag_blk%D11_l0)) deallocate(diag_blk%D11_l0)
 if (allocated(diag_blk%D22_l0)) deallocate(diag_blk%D22_l0)
@@ -207,7 +209,7 @@ end subroutine diag_blk_dealloc
 ! Subroutine: diag_blk_write
 !> Write
 !----------------------------------------------------------------------
-subroutine diag_blk_write(diag_blk,mpl,geom,bpar,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+subroutine diag_blk_write(diag_blk,mpl,geom,bpar,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
 
 implicit none
 
@@ -222,12 +224,13 @@ integer,intent(in) :: nc4_id                   !< NetCDF ID
 integer,intent(in) :: nl0r_id                  !< NetCDF ID
 integer,intent(in) :: nl0_1_id                 !< NetCDF ID
 integer,intent(in) :: nl0_2_id                 !< NetCDF ID
+integer,intent(in) :: ncmp_id                  !< NetCDF ID
 
 ! Local variables
-integer :: grpid
-integer :: raw_id,raw_hor_id,raw_zs_id,valid_id,coef_ens_l0_id,l0rl0_to_l0_id
-integer :: fit_id,fit_hor_id,fit_zs_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id
-integer :: il0,jl0r,jl0,jl0rz
+integer :: grpid,raw_id,raw_hor_id,raw_zs_id,valid_id,coef_ens_l0_id,l0rl0_to_l0_id
+integer :: fit_id,fit_hor_id,fit_zs_id,fit_detail_id,fit_detail_hor_id,fit_detail_zs_id
+integer :: rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id
+integer :: il0,jl0r,jl0,jl0rz,icmp
 
 ! Set name
 @:set_name(diag_blk_write)
@@ -254,6 +257,11 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    fit_id = define_var(mpl,grpid,'fit','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
    fit_hor_id = define_var(mpl,grpid,'fit_hor','real',(/nc3_id,nc4_id,nl0_1_id/))
    fit_zs_id = define_var(mpl,grpid,'fit_zs','real',(/nl0_2_id,nl0_1_id/))
+   if (.true.) then ! TODO
+      fit_detail_id = define_var(mpl,grpid,'fit_detail','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id,ncmp_id/))
+      fit_detail_hor_id = define_var(mpl,grpid,'fit_detail_hor','real',(/nc3_id,nc4_id,nl0_1_id,ncmp_id/))
+      fit_detail_zs_id = define_var(mpl,grpid,'fit_detail_zs','real',(/nl0_2_id,nl0_1_id,ncmp_id/))
+   end if
    rh_l0_id = define_var(mpl,grpid,'rh_l0','real',(/nl0_1_id/))
    if (bpar%nc4(ib)>1) then
       D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id/))
@@ -294,6 +302,21 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
          call put_var(mpl,grpid,fit_zs_id,diag_blk%fit(1,1,jl0r,il0),(/jl0,il0/))
       end do
    end do
+   if (.true.) then ! TODO
+      call put_var(mpl,grpid,fit_detail_id,diag_blk%fit_detail)
+      do icmp=1,diag_blk%ncmp
+         do il0=1,geom%nl0
+            jl0rz = bpar%il0rz(il0,ib)
+            call put_var(mpl,grpid,fit_detail_hor_id,diag_blk%fit_detail(:,:,jl0rz,il0,icmp),(/1,1,il0,icmp/))
+         end do
+         do il0=1,geom%nl0
+            do jl0r=1,bpar%nl0rmax
+               jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+               call put_var(mpl,grpid,fit_detail_zs_id,diag_blk%fit_detail(1,1,jl0r,il0,icmp),(/jl0,il0,icmp/))
+            end do
+         end do
+      end do
+   end if
    call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0)
    if (bpar%nc4(ib)>1) then
       call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0)
@@ -519,9 +542,6 @@ do il1=1,nl1
          if (mpl%msv%isallnot(rh_c4l1(:,il1,icmp-1)).and.mpl%msv%isnot(rv_l1(il1,icmp-1))) then
             ! Remove previous components from raw functions
             raw_hor = diag_blk%raw(:,:,jl0rz,il0)
-print*
-print*, 'raw_hor full',raw_hor
-print*
             raw_ver = sum(diag_blk%raw(1,:,:,il0),dim=1)/real(bpar%nc4(ib),kind_real)
             do jcmp=1,icmp-1
                do jc4=1,bpar%nc4(ib)
@@ -531,8 +551,7 @@ print*
                call diag_iso(mpl,nl0r,distv,'ver',rv_l1(il1,jcmp),fit_ver)
                raw_ver = raw_ver-a_l1(il1,jcmp)*fit_ver
             end do
-print*, 'raw_hor_icmp',raw_hor
-print*
+
             ! Allocation
             minim%nx = bpar%nc4(ib)+1
             if (icmp<ncmp) minim%nx = minim%nx+1
@@ -590,7 +609,7 @@ print*
 
             ! Compute fit
             call minim%compute(mpl)
-         
+
             ! Get parameters, apply bounds
             ix = 0
             if (icmp<ncmp) then
@@ -611,14 +630,12 @@ print*
          end if
       end do
    end if
-print*, 'rh_c4l1',rh_c4l1(:,1,:)
-print*
+
    ! Post-processing
    do icmp=1,ncmp
       if (mpl%msv%isnot(a_l1(il1,icmp)).and.mpl%msv%isallnot(rh_c4l1(:,il1,icmp)).and.mpl%msv%isnot(rv_l1(il1,icmp))) then
          ! Average values
          rh_l1(il1,icmp) = sqrt(sum(rh_c4l1(:,il1,icmp)**2)/real(bpar%nc4(ib),kind_real))
-
          if (bpar%nc4(ib)>1) then
             ! Allocation
             minim%nx = 3
