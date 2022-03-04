@@ -427,11 +427,11 @@ do ib=1,bpar%nbe
       anisotropic(ib) = (allocated(cmat%blk(ib)%bump_D11).and.allocated(cmat%blk(ib)%bump_D22).and.allocated(cmat%blk(ib)%bump_D12))
 
       ! Define import configuration
-      from_bump(ib) = mpl%msv%isnot(cmat%blk(ib)%bump_ncmp).and.allocated(cmat%blk(ib)%bump_a) &
+      from_bump(ib) = (allocated(cmat%blk(ib)%bump_a).or.(cmat%blk(ib)%ncmp==1)) &
  & .and.(allocated(cmat%blk(ib)%bump_rh).or.anisotropic(ib)).and.allocated(cmat%blk(ib)%bump_rv)
 
       ! Number of components
-      if (from_bump(ib)) ncmp(ib) = cmat%blk(ib)%bump_ncmp
+      if (from_bump(ib)) ncmp(ib) = cmat%blk(ib)%ncmp
    end if
 end do
 
@@ -450,7 +450,7 @@ do ib=1,bpar%nbe
          call mpl%flush
 
          ! Copy values
-         write(mpl%info,'(a10,a)') '','BUMP import:'
+         write(mpl%info,'(a10,a,i3,a)') '','BUMP import for ',cmat%blk(ib)%ncmp,' components'
          call mpl%flush
 
          ! Coefficient and weight

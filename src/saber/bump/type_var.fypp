@@ -250,7 +250,7 @@ do isub=1,nam%ens1_nsub
 
    if (mpl%main) then
       ! Get ensemble size
-      call get_att(mpl,ncid,'ne',var%ne)
+      call get_att(mpl,ncid,0,'ne',var%ne)
       var%ne = var%ne*nam%ens1_nsub
    end if
    call mpl%f_comm%broadcast(var%ne,mpl%rootproc-1)
@@ -336,7 +336,7 @@ do iv=1,nam%nv
 end do
 
 ! Put attribute
-call put_att(mpl,ncid,'ne',var%ne)
+call put_att(mpl,ncid,0,'ne',var%ne)
 
 ! Write variables
 call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)

@@ -98,5 +98,5 @@ geometry:
 input variables: [q]
 
 test:
-  reference filename: testref/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas/test.log.out
-  test output filename: testoutput/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas/test.log.out
+  reference filename: testref/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor/test.log.out
+  test output filename: testoutput/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor/test.log.out

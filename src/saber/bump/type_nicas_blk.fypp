@@ -186,10 +186,10 @@ call mpl%flush
 nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Read main weight
-call get_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
+call get_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
 
 ! Get number of components
-call get_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
+call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 
 ! Allocation
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
@@ -265,10 +265,10 @@ call mpl%flush
 nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Write main weight
-call put_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
+call put_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
 
 ! Write number of components
-call put_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
+call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
@@ -565,13 +565,13 @@ call mpl%flush
 nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Read main weight
-if (mpl%main) call get_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
 
 ! Broadcast main weight
 call mpl%f_comm%broadcast(nicas_blk%wgt,mpl%rootproc-1)
 
 ! Get number of components
-if (mpl%main) call get_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 
 ! Broadcast number of components
 call mpl%f_comm%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
@@ -651,10 +651,10 @@ call mpl%flush
 nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Write main weight
-call put_att(mpl,nicas_blk%blkid,'wgt',nicas_blk%wgt)
+call put_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
 
 ! Write number of components
-call put_att(mpl,nicas_blk%blkid,'ncmp',nicas_blk%ncmp)
+call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component

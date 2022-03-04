@@ -209,13 +209,14 @@ end subroutine diag_blk_dealloc
 ! Subroutine: diag_blk_write
 !> Write
 !----------------------------------------------------------------------
-subroutine diag_blk_write(diag_blk,mpl,geom,bpar,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+subroutine diag_blk_write(diag_blk,mpl,nam,geom,bpar,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
 
 implicit none
 
 ! Passed variables
 class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
 integer,intent(in) :: ncid                     !< NetCDF ID
@@ -269,7 +270,6 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id/))
    end if
    rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id/))
-   call put_att(mpl,grpid,'ncmp',diag_blk%ncmp)
 end if
 
 ! Write variables
@@ -289,7 +289,7 @@ if (mpl%msv%isanynot(diag_blk%raw)) then
    call put_var(mpl,grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib))
 end if
 if (mpl%msv%isanynot(diag_blk%coef_ens_l0)) call put_var(mpl,grpid,coef_ens_l0_id,diag_blk%coef_ens_l0)
-if (mpl%msv%isnot(diag_blk%coef_sta)) call put_att(mpl,grpid,'coef_sta',diag_blk%coef_sta)
+if (mpl%msv%isnot(diag_blk%coef_sta)) call put_att(mpl,grpid,0,'coef_sta',diag_blk%coef_sta)
 if (mpl%msv%isanynot(diag_blk%fit)) then
    call put_var(mpl,grpid,fit_id,diag_blk%fit)
    do il0=1,geom%nl0

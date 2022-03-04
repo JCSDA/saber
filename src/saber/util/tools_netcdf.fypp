@@ -410,7 +410,7 @@ end if
 if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
 
 ! Set global missing value
-call put_att(mpl,ncid,'_FillValue',mpl%msv%valr)
+call put_att(mpl,ncid,0,'_FillValue',mpl%msv%valr)
 
 ! Probe out
 @:probe_out()
@@ -592,19 +592,19 @@ end function netcdf_inquire_grp
 ! Subroutine: netcdf_put_att_${dtype}$
 !> Put attribute
 !----------------------------------------------------------------------
-subroutine netcdf_put_att_${dtype}$(mpl,ncid,attname,att,varid)
+subroutine netcdf_put_att_${dtype}$(mpl,ncid,varid,attname,att)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer,intent(in) :: ncid             !< File ID
+integer,intent(in) :: varid            !< Variable ID
 character(len=*),intent(in) :: attname !< Attribute name
 ${ftype[dtype]}$,intent(in) :: att     !< Attribute
-integer,intent(in),optional :: varid   !< Variable ID
 
 ! Local variable
-integer :: rid,lvarid
+integer :: rid,lvarid,info
 #{if dtype == 'logical'}# integer :: attint #{endif}#
 
 ! Set name
@@ -618,8 +618,11 @@ rid = registry%get_root_id(mpl,ncid)
 
 if (mpl%msv%isnot(rid)) then
    ! Local variable ID
-   lvarid = nf90_global
-   if (present(varid)) lvarid = varid
+   if (varid==0) then
+      lvarid = nf90_global
+   else
+      lvarid = varid
+   end if
 
    ! Put attribute
    #:if dtype == 'logical'
@@ -641,19 +644,20 @@ end subroutine netcdf_put_att_${dtype}$
 ! Subroutine: netcdf_get_att_${dtype}$
 !> Get attribute
 !----------------------------------------------------------------------
-subroutine netcdf_get_att_${dtype}$(mpl,ncid,attname,att,varid)
+subroutine netcdf_get_att_${dtype}$(mpl,ncid,varid,attname,att,defval)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: attname !< Attribute name
-${ftype[dtype]}$,intent(out) :: att    !< Attribute
-integer,intent(in),optional :: varid   !< Variable ID
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: ncid                     !< File ID
+integer,intent(in) :: varid                    !< Variable ID
+character(len=*),intent(in) :: attname         !< Attribute name
+${ftype[dtype]}$,intent(out) :: att            !< Attribute
+${ftype[dtype]}$,intent(in),optional :: defval !< Default value
 
 ! Local variable
-integer :: rid,lvarid
+integer :: rid,lvarid,info
 #{if dtype == 'logical'}# integer :: attint #{endif}#
 
 ! Set name
@@ -667,15 +671,33 @@ rid = registry%get_root_id(mpl,ncid)
 
 if (mpl%msv%isnot(rid)) then
    ! Local variable ID
-   lvarid = nf90_global
-   if (present(varid)) lvarid = varid
+   if (varid==0) then
+      lvarid = nf90_global
+   else
+      lvarid = varid
+   end if
 
    ! Get attribute
    #:if dtype == 'logical'
-      call strerror(mpl,'${subr}$',ncid,nf90_get_att(ncid,lvarid,attname,attint),'attribute '//trim(attname))
-      call convert_i2l(mpl,attint,att)
+      info = nf90_get_att(ncid,lvarid,attname,attint)
+      if (info/=nf90_noerr) then
+         if (present(defval)) then
+            att = defval
+         else
+            call strerror(mpl,'${subr}$',ncid,info,'attribute '//trim(attname))
+         end if
+      else
+         call convert_i2l(mpl,attint,att)
+      end if
    #:else
-      call strerror(mpl,'${subr}$',ncid,nf90_get_att(ncid,lvarid,attname,att),'attribute '//trim(attname))
+      info = nf90_get_att(ncid,lvarid,attname,att)
+      if (info/=nf90_noerr) then
+         if (present(defval)) then
+            att = defval
+         else
+            call strerror(mpl,'${subr}$',ncid,info,'attribute '//trim(attname))
+         end if
+      end if
    #:endif
 end if
 
@@ -904,19 +926,19 @@ if (mpl%msv%isnot(rid)) then
       call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_int,varshape,varid),'variable '//trim(varname))
 
       ! Set missing value attribute
-      call put_att(mpl,ncid,'_FillValue',mpl%msv%vali,varid)
+      call put_att(mpl,ncid,varid,'_FillValue',mpl%msv%vali)
    elseif (trim(varkind)=='real') then
       ! Define variable
       call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_real,varshape,varid),'variable '//trim(varname))
 
       ! Set missing value attribute
-      call put_att(mpl,ncid,'_FillValue',mpl%msv%valr,varid)
+      call put_att(mpl,ncid,varid,'_FillValue',mpl%msv%valr)
    else
       call mpl%abort('${subr}$','wrong variable kind')
    end if
 
    ! Set unit
-   if (present(unitname)) call put_att(mpl,ncid,'unit',unitname,varid)
+   if (present(unitname)) call put_att(mpl,ncid,varid,'unit',unitname)
 end if
 
 ! Probe out

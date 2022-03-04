@@ -626,11 +626,11 @@ associate(ib=>nicas_cmp%ib)
 if (bpar%nicas_block(ib)) then
    ! Get dimensions
    nicas_cmp%nc0a = inquire_dim_size(mpl,nicas_cmp%ncid,'nc0a',0)
-   call get_att(mpl,nicas_cmp%cmpid,'nl1',nicas_cmp%nl1)
+   call get_att(mpl,nicas_cmp%cmpid,0,'nl1',nicas_cmp%nl1)
    nicas_cmp%nsa = inquire_dim_size(mpl,nicas_cmp%cmpid,'nsa',0)
-   call get_att(mpl,nicas_cmp%cmpid,'nsb',nicas_cmp%nsb)
+   call get_att(mpl,nicas_cmp%cmpid,0,'nsb',nicas_cmp%nsb)
    nicas_cmp%nsc = inquire_dim_size(mpl,nicas_cmp%cmpid,'nsc',0)
-   call get_att(mpl,nicas_cmp%cmpid,'ns',nicas_cmp%ns)
+   call get_att(mpl,nicas_cmp%cmpid,0,'ns',nicas_cmp%ns)
 
    ! Allocation
    allocate(nicas_cmp%hor(nicas_cmp%nl1))
@@ -644,7 +644,7 @@ if (bpar%nicas_block(ib)) then
 
    ! Allocation
    allocate(nicas_cmp%vlev(geom%nl0))
-   allocate(nicas_cmp%norm(nicas_cmp%nc0a,geom%nl0))
+   if (.not.allocated(nicas_cmp%norm)) allocate(nicas_cmp%norm(nicas_cmp%nc0a,geom%nl0))
    allocate(nicas_cmp%coef_ens(nicas_cmp%nc0a,geom%nl0))
    do il1=1,nicas_cmp%nl1
       allocate(nicas_cmp%hor(il1)%c1b_to_sb(nicas_cmp%hor(il1)%nc1b))
@@ -741,16 +741,16 @@ associate(ib=>nicas_cmp%ib)
 
 if (bpar%nicas_block(ib)) then
    ! Define dimensions
-   call put_att(mpl,nicas_cmp%cmpid,'nl1',nicas_cmp%nl1)
+   call put_att(mpl,nicas_cmp%cmpid,0,'nl1',nicas_cmp%nl1)
    do il1=1,nicas_cmp%nl1
       write(levname,'(a,i3.3)') 'sublevel_',il1
       nicas_cmp%hor(il1)%levid = define_grp(mpl,nicas_cmp%cmpid,levname)
       if (nicas_cmp%hor(il1)%nc1b>0) nc1b_id(il1) = define_dim(mpl,nicas_cmp%hor(il1)%levid,'nc1b',nicas_cmp%hor(il1)%nc1b)
    end do
    if (nicas_cmp%nsa>0) nsa_id = define_dim(mpl,nicas_cmp%cmpid,'nsa',nicas_cmp%nsa)
-   call put_att(mpl,nicas_cmp%cmpid,'nsb',nicas_cmp%nsb)
+   call put_att(mpl,nicas_cmp%cmpid,0,'nsb',nicas_cmp%nsb)
    if (nicas_cmp%nsc>0) nsc_id = define_dim(mpl,nicas_cmp%cmpid,'nsc',nicas_cmp%nsc)
-   call put_att(mpl,nicas_cmp%cmpid,'ns',nicas_cmp%ns)
+   call put_att(mpl,nicas_cmp%cmpid,0,'ns',nicas_cmp%ns)
 
    ! Define variables
    nicas_cmp%vlev_id = define_var(mpl,nicas_cmp%cmpid,'vlev','int',(/nicas_cmp%nl0_id/))

@@ -218,9 +218,9 @@ linop%grpid = inquire_grp(mpl,ncid,linop%prefix)
 
 ! Get dimensions
 linop%n_s = inquire_dim_size(mpl,linop%grpid,'n_s',0)
-call get_att(mpl,linop%grpid,'n_src',linop%n_src)
-call get_att(mpl,linop%grpid,'n_dst',linop%n_dst)
-call get_att(mpl,linop%grpid,'nvec',nvec)
+call get_att(mpl,linop%grpid,0,'n_src',linop%n_src)
+call get_att(mpl,linop%grpid,0,'n_dst',linop%n_dst)
+call get_att(mpl,linop%grpid,0,'nvec',nvec)
 
 ! Allocation
 call linop%alloc(nvec)
@@ -276,9 +276,9 @@ integer :: n_s_id,nvec_id
 linop%grpid = define_grp(mpl,ncid,linop%prefix)
 
 ! Define dimensions
-call put_att(mpl,linop%grpid,'n_src',linop%n_src)
-call put_att(mpl,linop%grpid,'n_dst',linop%n_dst)
-call put_att(mpl,linop%grpid,'nvec',linop%nvec)
+call put_att(mpl,linop%grpid,0,'n_src',linop%n_src)
+call put_att(mpl,linop%grpid,0,'n_dst',linop%n_dst)
+call put_att(mpl,linop%grpid,0,'nvec',linop%nvec)
 
 if (linop%n_s>0) then
    ! Define dimensions

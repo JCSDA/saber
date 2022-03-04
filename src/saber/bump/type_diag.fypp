@@ -393,13 +393,14 @@ end subroutine diag_filter_fit
 ! Subroutine: diag_build_fit
 !> Build fit function
 !----------------------------------------------------------------------
-subroutine diag_build_fit(diag,mpl,geom,bpar)
+subroutine diag_build_fit(diag,mpl,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(diag_type),intent(inout) :: diag !< Diagnostic
 type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
@@ -518,6 +519,7 @@ do ib=1,bpar%nbe
       allocate(diag%blk(0,ib)%coef_ens_c0a(geom%nc0a,geom%nl0))
       allocate(diag%blk(0,ib)%coef_sta_c0a(geom%nc0a,geom%nl0))
       if (bpar%fit_block(ib)) then
+print*, 'toto',ib,diag%blk(0,ib)%ncmp
          allocate(diag%blk(0,ib)%a_c0a(geom%nc0a,geom%nl0,diag%blk(0,ib)%ncmp))
          allocate(diag%blk(0,ib)%rh_c0a(geom%nc0a,geom%nl0,diag%blk(0,ib)%ncmp))
          if (bpar%nc4(ib)>1) then
@@ -697,9 +699,14 @@ if (nam%check_dirac) then
    ! Set dirac value locally
    do idir=1,geom%ndir
       if (geom%iprocdir(idir)==mpl%myproc) then
-         ib = bpar%v_to_b(geom%ivdir(idir))
+         select case (trim(nam%strategy))
+         case ('common','common_weighted')
+            ib = bpar%nbe
+         case default
+            ib = bpar%v_to_b(geom%ivdir(idir))
+         end select
          do icmp=1,diag%blk(0,ib)%ncmp
-            a_dir(idir,icmp) = diag%blk(0,ib)%rh_c0a(geom%ic0adir(idir),geom%il0dir(idir),icmp)
+            a_dir(idir,icmp) = diag%blk(0,ib)%a_c0a(geom%ic0adir(idir),geom%il0dir(idir),icmp)
             rh_dir(idir,icmp) = diag%blk(0,ib)%rh_c0a(geom%ic0adir(idir),geom%il0dir(idir),icmp)
             if (nam%nc4>1) then
                D11 = diag%blk(0,ib)%D11_c0a(geom%ic0adir(idir),geom%il0dir(idir),icmp)
@@ -736,7 +743,12 @@ if (nam%check_dirac) then
    ! Loop over grid-points
    do jc0a=1,geom%nc0a
       idir = geom%dirac_index(jc0a)
-      ib = bpar%v_to_b(geom%ivdir(idir))
+      select case (trim(nam%strategy))
+      case ('common','common_weighted')
+         ib = bpar%nbe
+      case default
+         ib = bpar%v_to_b(geom%ivdir(idir))
+      end select
       if (geom%gmask_hor_c0a(jc0a)) then
          do icmp=1,diag%blk(0,ib)%ncmp
             ! Horizontal component
@@ -955,7 +967,7 @@ end do
 call diag%filter_fit(mpl,nam,geom,bpar,samp)
 
 ! Build fit
-call diag%build_fit(mpl,geom,bpar)
+call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Interpolate fit values
 call diag%interp_fit(mpl,nam,geom,bpar,samp)
@@ -1070,7 +1082,7 @@ end do
 call diag%filter_fit(mpl,nam,geom,bpar,samp)
 
 ! Build fit
-call diag%build_fit(mpl,geom,bpar)
+call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Interpolate fit values
 call diag%interp_fit(mpl,nam,geom,bpar,samp)
@@ -1203,7 +1215,7 @@ end do
 call diag%filter_fit(mpl,nam,geom,bpar,samp)
 
 ! Build fit
-call diag%build_fit(mpl,geom,bpar)
+call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Interpolate fit values
 call diag%interp_fit(mpl,nam,geom,bpar,samp)
@@ -1360,8 +1372,8 @@ call diag%filter_fit(mpl,nam,geom,bpar,samp)
 call diag_lr%filter_fit(mpl,nam,geom,bpar,samp)
 
 ! Build fit
-call diag%build_fit(mpl,geom,bpar)
-call diag_lr%build_fit(mpl,geom,bpar)
+call diag%build_fit(mpl,nam,geom,bpar)
+call diag_lr%build_fit(mpl,nam,geom,bpar)
 
 ! Interpolate fit values
 call diag%interp_fit(mpl,nam,geom,bpar,samp)

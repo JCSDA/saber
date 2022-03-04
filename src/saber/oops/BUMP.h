@@ -754,6 +754,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
               const std::string variable(split[0]);
               const double value = std::stod(split[1]);
               this->setParameter(param, variable, value);
+              oops::Log::test() << "Value of " << param << " at " << date << " for "
+                                << variable << " : " << value << std::endl;
             }
             ++i;
           }

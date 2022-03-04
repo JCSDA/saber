@@ -7,7 +7,7 @@ bump:
   check_dirac: true
   check_normalization: 10
   datadir: testdata
-  fname_nicas: qg_hr_error_covariance_training_bump_cov_ncmp/test
+  fname_nicas: qg_hr_error_covariance_training_bump_cov_ncmp/test_nicas
   load_nicas_local: true
   method: cor
   prefix: qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas/test
@@ -55,5 +55,5 @@ geometry:
 input variables: [q]
 
 test:
-  reference filename: testref/qg_hr_error_covariance_training_bump_cov_ncmp/test.log.out
-  test output filename: testoutput/qg_hr_error_covariance_training_bump_cov_ncmp/test.log.out
+  reference filename: testref/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas/test.log.out
+  test output filename: testoutput/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas/test.log.out
