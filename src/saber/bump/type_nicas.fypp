@@ -2031,13 +2031,12 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
 integer :: ib,ifac,itest,il0,iv
-real(kind_real) :: fac(-nfac_opt:nfac_opt),mse(ntest,-nfac_opt:nfac_opt),mse_max,rh_sum,rv_sum
+real(kind_real) :: fac(-nfac_opt:nfac_opt),mse(ntest,-nfac_opt:nfac_opt),rh_sum,rv_sum
 real(kind_real) :: fld_ref(geom%nc0a,geom%nl0,nam%nv,ntest),fld_save(geom%nc0a,geom%nl0,nam%nv,ntest)
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
 logical :: new_mom,new_hdiag
 character(len=1024) :: method
 type(cmat_type) :: cmat
-type(diag_type) :: loc_opt
 type(hdiag_type) :: hdiag
 type(ens_type) :: ens_loc,ens_test
 type(mom_type) :: mom
@@ -2100,12 +2099,6 @@ call mpl%flush
 call nicas%gen_ens_pert(mpl,rng,nam,geom,bpar,nam%ne,ens_test)
 if (nam%default_seed) call rng%reseed(mpl)
 
-! Allocation
-call loc_opt%alloc(mpl,nam,geom,bpar,samp,'loc_opt')
-
-! Initialization
-mse_max = huge_real
-
 do ifac=-nfac_opt,nfac_opt
    ! Copy HDIAG into C matrix
    call cmat%from_hdiag(mpl,nam,geom,bpar,hdiag)
@@ -2157,26 +2150,6 @@ do ifac=-nfac_opt,nfac_opt
       mse(itest,ifac) = zss_sum((fld-fld_ref(:,:,:,itest))**2,mask=mpl%msv%isnot(fld_ref(:,:,:,itest)))
       call mpl%f_comm%allreduce(mse(itest,ifac),fckit_mpi_sum())
    end do
-
-   ! Test score
-   if (sum(mse(:,ifac))<mse_max) then
-      mse_max = sum(mse(:,ifac))
-      do ib=1,bpar%nbe
-         if (bpar%nicas_block(ib)) then
-            iv = bpar%b_to_v1(ib)
-            do il0=1,geom%nl0
-               rh_sum = zss_sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rh(:,il0)))
-               call mpl%f_comm%allreduce(rh_sum,fckit_mpi_sum())
-               loc_opt%blk(0,ib)%rh_l0 = rh_sum/real(geom%nc0_gmask(il0),kind_real)
-               if ((geom%nl0>1).and.(nam%rv(il0,iv)>zero)) then
-                  rv_sum = zss_sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rv(:,il0)))
-                  call mpl%f_comm%allreduce(rv_sum,fckit_mpi_sum())
-                  loc_opt%blk(0,ib)%rv_l0 = rv_sum/real(geom%nc0_gmask(il0),kind_real)
-               end if
-            end do
-         end if
-      end do
-   end if
 
    ! Print scores
    write(mpl%info,'(a)') '-------------------------------------------------------------------'

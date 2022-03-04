@@ -28,26 +28,26 @@ type cmat_blk_type
    ! Computational data
    real(kind_real),allocatable :: coef_ens(:,:)      !< Ensemble coefficient
    real(kind_real),allocatable :: coef_sta(:,:)      !< Static coefficient
-   real(kind_real),allocatable :: a(:,:)             !< Amplitudes
-   real(kind_real),allocatable :: rh(:,:)            !< Horizontal support radius
-   real(kind_real),allocatable :: D11(:,:)           !< Horizontal direct tensor, component 11
-   real(kind_real),allocatable :: D22(:,:)           !< Horizontal direct tensor, component 22
-   real(kind_real),allocatable :: D12(:,:)           !< Horizontal direct tensor, component 12 (normalized)
-   real(kind_real),allocatable :: rv(:,:)            !< Vertical support radius
+   real(kind_real),allocatable :: a(:,:,:)           !< Amplitudes
+   real(kind_real),allocatable :: rh(:,:,:)          !< Horizontal support radius
+   real(kind_real),allocatable :: D11(:,:,:)         !< Horizontal direct tensor, component 11
+   real(kind_real),allocatable :: D22(:,:,:)         !< Horizontal direct tensor, component 22
+   real(kind_real),allocatable :: D12(:,:,:)         !< Horizontal direct tensor, component 12 (normalized)
+   real(kind_real),allocatable :: rv(:,:,:)          !< Vertical support radius
    integer :: ncmp                                   !< Number of components
-   real(kind_real),allocatable :: rhs(:,:)           !< Fit support radius  for sampling
-   real(kind_real),allocatable :: rvs(:,:)           !< Fit support radius, for sampling
+   real(kind_real),allocatable :: rhs(:,:,:)         !< Fit support radius  for sampling
+   real(kind_real),allocatable :: rvs(:,:,:)         !< Fit support radius, for sampling
    real(kind_real) :: wgt                            !< Block weight
 
    ! BUMP interface data
    real(kind_real),allocatable :: bump_coef_ens(:,:) !< BUMP ensemble coefficient
    real(kind_real),allocatable :: bump_coef_sta(:,:) !< BUMP static coefficient
-   real(kind_real),allocatable :: bump_a(:,:)        !< Amplitudes
-   real(kind_real),allocatable :: bump_rh(:,:)       !< Horizontal support radius
-   real(kind_real),allocatable :: bump_D11(:,:)      !< Horizontal direct tensor, component 11
-   real(kind_real),allocatable :: bump_D22(:,:)      !< Horizontal direct tensor, component 22
-   real(kind_real),allocatable :: bump_D12(:,:)      !< Horizontal direct tensor, component 12 (normalized)
-   real(kind_real),allocatable :: bump_rv(:,:)       !< Vertical support radius
+   real(kind_real),allocatable :: bump_a(:,:,:)      !< Amplitudes
+   real(kind_real),allocatable :: bump_rh(:,:,:)     !< Horizontal support radius
+   real(kind_real),allocatable :: bump_D11(:,:,:)    !< Horizontal direct tensor, component 11
+   real(kind_real),allocatable :: bump_D22(:,:,:)    !< Horizontal direct tensor, component 22
+   real(kind_real),allocatable :: bump_D12(:,:,:)    !< Horizontal direct tensor, component 12 (normalized)
+   real(kind_real),allocatable :: bump_rv(:,:,:)     !< Vertical support radius
    integer :: bump_ncmp                              !< Number of components
 contains
    procedure :: alloc => cmat_blk_alloc
@@ -88,15 +88,16 @@ if (bpar%fit_block(ib)) then
    ! Allocation
    allocate(cmat_blk%coef_ens(geom%nc0a,geom%nl0))
    allocate(cmat_blk%coef_sta(geom%nc0a,geom%nl0))
-   allocate(cmat_blk%rh(geom%nc0a,geom%nl0))
+   allocate(cmat_blk%a(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+   allocate(cmat_blk%rh(geom%nc0a,geom%nl0,cmat_blk%ncmp))
    if (cmat_blk%anisotropic) then
-      allocate(cmat_blk%D11(geom%nc0a,geom%nl0))
-      allocate(cmat_blk%D22(geom%nc0a,geom%nl0))
-      allocate(cmat_blk%D12(geom%nc0a,geom%nl0))
+      allocate(cmat_blk%D11(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+      allocate(cmat_blk%D22(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+      allocate(cmat_blk%D12(geom%nc0a,geom%nl0,cmat_blk%ncmp))
    end if
-   allocate(cmat_blk%rv(geom%nc0a,geom%nl0))
-   allocate(cmat_blk%rhs(geom%nc0a,geom%nl0))
-   allocate(cmat_blk%rvs(geom%nc0a,geom%nl0))
+   allocate(cmat_blk%rv(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+   allocate(cmat_blk%rhs(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+   allocate(cmat_blk%rvs(geom%nc0a,geom%nl0,cmat_blk%ncmp))
 end if
 
 ! End associate
@@ -133,6 +134,7 @@ if (bpar%fit_block(ib)) then
    ! Initialization
    cmat_blk%coef_ens = mpl%msv%valr
    cmat_blk%coef_sta = mpl%msv%valr
+   cmat_blk%a = mpl%msv%valr
    cmat_blk%rh = mpl%msv%valr
    if (cmat_blk%anisotropic) then
       cmat_blk%D11 = mpl%msv%valr
@@ -140,11 +142,10 @@ if (bpar%fit_block(ib)) then
       cmat_blk%D12 = mpl%msv%valr
    end if
    cmat_blk%rv = mpl%msv%valr
-   cmat_blk%ncmp = mpl%msv%vali
    cmat_blk%rhs = mpl%msv%valr
    cmat_blk%rvs = mpl%msv%valr
 end if
-if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat_blk%bump_ncmp = 1
+if (bpar%B_block(ib).and.bpar%nicas_block(ib)) cmat_blk%bump_ncmp = mpl%msv%vali
 
 ! End associate
 end associate
@@ -174,6 +175,7 @@ class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 ! Release memory
 if (allocated(cmat_blk%bump_coef_ens)) deallocate(cmat_blk%bump_coef_ens)
 if (allocated(cmat_blk%bump_coef_sta)) deallocate(cmat_blk%bump_coef_sta)
+if (allocated(cmat_blk%bump_a)) deallocate(cmat_blk%bump_a)
 if (allocated(cmat_blk%bump_rh)) deallocate(cmat_blk%bump_rh)
 if (allocated(cmat_blk%bump_D11)) deallocate(cmat_blk%bump_D11)
 if (allocated(cmat_blk%bump_D22)) deallocate(cmat_blk%bump_D22)
@@ -233,6 +235,7 @@ class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 call cmat_blk%partial_dealloc
 if (allocated(cmat_blk%coef_ens)) deallocate(cmat_blk%coef_ens)
 if (allocated(cmat_blk%coef_sta)) deallocate(cmat_blk%coef_sta)
+if (allocated(cmat_blk%a)) deallocate(cmat_blk%a)
 if (allocated(cmat_blk%rh)) deallocate(cmat_blk%rh)
 if (allocated(cmat_blk%D11)) deallocate(cmat_blk%D11)
 if (allocated(cmat_blk%D22)) deallocate(cmat_blk%D22)

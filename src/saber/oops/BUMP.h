@@ -388,6 +388,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
   // Maximum number of components in the fit function
   oops::OptionalParameter<eckit::LocalConfiguration> fit_ncmpmax{"fit_ncmpmax", this};
+  // Write HDIAG components detail
+  oops::OptionalParameter<bool> write_hdiag_detail{"write_hdiag_detail", this};
 
   // nicas_param
 
@@ -407,8 +409,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> rh{"rh", this};
   // Forced vertical support radius
   oops::OptionalParameter<eckit::LocalConfiguration> rv{"rv", this};
-  // Forced number of components
-  oops::OptionalParameter<eckit::LocalConfiguration> ncmp{"ncmp", this};
   // Minimum level
   oops::OptionalParameter<eckit::LocalConfiguration> min_lev{"min_lev", this};
   // Maximum level

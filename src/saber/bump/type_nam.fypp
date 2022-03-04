@@ -174,6 +174,7 @@ type nam_type
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
    integer :: fit_ncmpmax(0:nvmax)                            !< Maximum number of cmponents in the fit function
+   logical :: write_hdiag_detail                              !< Write HDIAG components detail
 
    ! nicas_param
    logical :: nonunit_diag                                    !< Non-unit diagonal for the NICAS application
@@ -184,7 +185,6 @@ type nam_type
    logical :: forced_radii                                    !< Force specific support radii
    real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
-   integer :: ncmp(0:nvmax)                                   !< Forced number of components
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
@@ -423,6 +423,7 @@ nam%diag_rhflt = zero
 nam%diag_rvflt = zero
 nam%fit_dl0 = 1
 nam%fit_ncmpmax = 1
+nam%write_hdiag_detail = .false.
 
 ! nicas_param default
 nam%nonunit_diag = .false.
@@ -433,7 +434,6 @@ nam%network = .false.
 nam%forced_radii = .false.
 nam%rh = -one
 nam%rv = -one
-nam%ncmp = 1
 nam%min_lev = 1
 nam%max_lev = nl0max
 nam%pos_def_test = .false.
@@ -621,6 +621,7 @@ real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
 integer :: fit_dl0
 integer :: fit_ncmpmax(0:nvmax)
+logical :: write_hdiag_detail
 logical :: nonunit_diag
 real(kind_real) :: resol
 integer :: nc1max
@@ -629,7 +630,6 @@ logical :: network
 logical :: forced_radii
 real(kind_real) :: rh(nl0max,0:nvmax)
 real(kind_real) :: rv(nl0max,0:nvmax)
-integer :: ncmp(0:nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
@@ -787,7 +787,8 @@ namelist/fit_param/ &
  & diag_rhflt, &
  & diag_rvflt, &
  & fit_dl0, &
- & fit_ncmpmax
+ & fit_ncmpmax, &
+ & write_hdiag_detail
 namelist/nicas_param/ &
  & nonunit_diag, &
  & resol, &
@@ -797,7 +798,6 @@ namelist/nicas_param/ &
  & forced_radii, &
  & rh, &
  & rv, &
- & ncmp, &
  & min_lev, &
  & max_lev, &
  & pos_def_test, &
@@ -989,6 +989,7 @@ if (mpl%main) then
    diag_rvflt = zero
    fit_dl0 = 1
    fit_ncmpmax = 1
+   write_hdiag_detail = .false.
 
    ! nicas_param default
    nonunit_diag = .false.
@@ -999,7 +1000,6 @@ if (mpl%main) then
    forced_radii = .false.
    rh = -one
    rv = -one
-   ncmp = 1
    min_lev = 1
    max_lev = nl0max
    pos_def_test = .false.
@@ -1193,6 +1193,7 @@ if (mpl%main) then
    nam%diag_rvflt = diag_rvflt
    nam%fit_dl0 = fit_dl0
    nam%fit_ncmpmax = fit_ncmpmax
+   nam%write_hdiag_detail = write_hdiag_detail
 
    ! nicas_param
    read(lunit,nml=nicas_param)
@@ -1204,7 +1205,6 @@ if (mpl%main) then
    nam%forced_radii = forced_radii
    nam%rh = rh
    nam%rv = rv
-   nam%ncmp = ncmp
    nam%min_lev = min_lev
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
@@ -1401,6 +1401,7 @@ call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_ncmpmax,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%write_hdiag_detail,mpl%rootproc-1)
 
 ! nicas_param
 call mpl%f_comm%broadcast(nam%nonunit_diag,mpl%rootproc-1)
@@ -1411,7 +1412,6 @@ call mpl%f_comm%broadcast(nam%network,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%ncmp,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
@@ -1807,6 +1807,7 @@ if (conf%has('fit_ncmpmax')) then
       if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%fit_ncmpmax(iv))
    end do
 end if
+if (conf%has('write_hdiag_detail')) call conf%get_or_die('write_hdiag_detail',nam%write_hdiag_detail)
 
 ! nicas_param
 if (conf%has('nonunit_diag')) call conf%get_or_die('nonunit_diag',nam%nonunit_diag)
@@ -1879,17 +1880,6 @@ if (conf%has('rv')) then
          else
             nam%rv(1:size(real_array),iv) = real_array
          end if
-      end if
-   end do
-end if
-if (conf%has('ncmp')) then
-   call conf%get_or_die('ncmp',subconf)
-   if (subconf%has('common')) then
-      call subconf%get_or_die('common',nam%ncmp(0))
-   end if
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-         call subconf%get_or_die(nam%variables(iv),nam%ncmp(iv))
       end if
    end do
 end if
@@ -2367,8 +2357,7 @@ end if
 ! Check nicas_param
 if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    if (nam%nonunit_diag) then
-      if (nam%method=='cor') call mpl%abort('${subr}$', &
- & 'nonunit_diag is inconsistent with correlation, use variance operator instead')
+      if (nam%method=='cor') call mpl%abort('${subr}$','nonunit_diag is inconsistent with correlation')
    end if
    if (nam%check_randomization) then
       if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for check_randomization')
@@ -2644,6 +2633,7 @@ call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
 call mpl%write('fit_ncmpmax',nam%nv+1,nam%fit_ncmpmax(0:nam%nv))
+call mpl%write('write_hdiag_detail',nam%write_hdiag_detail)
 
 ! nicas_param
 write(mpl%info,'(a7,a)') '','NICAS parameters'
@@ -2658,7 +2648,6 @@ real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*
 call mpl%write('rh',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
 real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
 call mpl%write('rv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
-call mpl%write('ncmp',nam%nv+1,real_array(1:nam%nv+1))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)

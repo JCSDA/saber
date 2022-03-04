@@ -20,26 +20,20 @@ bump:
   input:
   - date: 2010-01-01T12:00:00Z
     filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_ncmp
-    parameter: nicas_ncmp
+    parameter: ncmp
     single value: true
   - component: 1
-    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
     date: 2010-01-01T12:00:00Z
-    exp: nicas_norm_1
+    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_1.an.2010-01-01T12:00:00Z.nc
     parameter: nicas_norm
-    type: an
   - component: 2
-    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
     date: 2010-01-01T12:00:00Z
-    exp: nicas_norm_2
+    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_2.an.2010-01-01T12:00:00Z.nc
     parameter: nicas_norm
-    type: an
   - component: 3
-    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
     date: 2010-01-01T12:00:00Z
-    exp: nicas_norm_3
+    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_3.an.2010-01-01T12:00:00Z.nc
     parameter: nicas_norm
-    type: an
   output:
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas
     date: 2010-01-01T12:00:00Z

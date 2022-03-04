@@ -1540,7 +1540,7 @@ do iv=1,bump%nam%nv
       if (bump%nam%forced_radii) then
          select case (trim(param))
          case ('cor_ncmp','loc_ncmp','loc_hyb_ncmp')
-            value = bump%nam%ncmp(iv)
+            value = 1
          case default
             call bump%mpl%abort('${subr}$','wrong parameter')
          end select
@@ -1944,7 +1944,7 @@ case ('nicas_norm')
    if (.not.allocated(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
    if (icmp>size(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
    if (.not.allocated(bump%nicas%blk(ib)%cmp(icmp)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%cmp(1)%norm,fld_mga)
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%cmp(icmp)%norm,fld_mga)
    found = .true.
 case ('dirac_nicas')
    iv = bump%bpar%b_to_v1(ib)
@@ -2154,10 +2154,9 @@ integer :: iv,ib
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('cmat_ncmp')
+case ('ncmp')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
-case ('nicas_ncmp')
-   if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
+   if (.not.allocated(bump%nicas%blk)) allocate(bump%nicas%blk(bump%bpar%nbe))
 end select
 
 do iv=1,bump%nam%nv
@@ -2172,9 +2171,8 @@ do iv=1,bump%nam%nv
 
       ! Copy
       select case (trim(param))
-      case ('cmat_ncmp')
+      case ('ncmp')
          bump%cmat%blk(ib)%ncmp = int(value)
-      case ('nicas_ncmp')
          bump%nicas%blk(ib)%ncmp = int(value)
       case default
          call bump%mpl%abort('${subr}$','wrong parameter')
@@ -2268,46 +2266,52 @@ case ('coef')
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_coef_ens)
    found = .true.
 case ('a')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_a)) allocate(bump%cmat%blk(ib)%bump_a(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_a)
+   if (.not.allocated(bump%cmat%blk(ib)%bump_a)) allocate(bump%cmat%blk(ib)%bump_a(bump%geom%nc0a,bump%geom%nl0, &
+ & bump%cmat%blk(ib)%ncmp))
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_a(:,:,icmp))
    found = .true.
 case ('rh')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_rh)) allocate(bump%cmat%blk(ib)%bump_rh(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rh)
+   if (.not.allocated(bump%cmat%blk(ib)%bump_rh)) allocate(bump%cmat%blk(ib)%bump_rh(bump%geom%nc0a,bump%geom%nl0, &
+ & bump%cmat%blk(ib)%ncmp))
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rh(:,:,icmp))
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
-         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_rh(ic0a,il0))) &
- & bump%cmat%blk(ib)%bump_rh(ic0a,il0) = bump%cmat%blk(ib)%bump_rh(ic0a,il0)/req
+         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_rh(ic0a,il0,icmp))) &
+ & bump%cmat%blk(ib)%bump_rh(ic0a,il0,icmp) = bump%cmat%blk(ib)%bump_rh(ic0a,il0,icmp)/req
       end do
    end do
    found = .true.
 case ('rh1')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_D11)) allocate(bump%cmat%blk(ib)%bump_D11(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D11)
+   if (.not.allocated(bump%cmat%blk(ib)%bump_D11)) allocate(bump%cmat%blk(ib)%bump_D11(bump%geom%nc0a,bump%geom%nl0, &
+ & bump%cmat%blk(ib)%ncmp))
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D11(:,:,icmp))
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
-         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D11(ic0a,il0))) &
- & bump%cmat%blk(ib)%bump_D11(ic0a,il0) = (bump%cmat%blk(ib)%bump_D11(ic0a,il0)/req)**2
+         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D11(ic0a,il0,icmp))) &
+ & bump%cmat%blk(ib)%bump_D11(ic0a,il0,icmp) = (bump%cmat%blk(ib)%bump_D11(ic0a,il0,icmp)/req)**2
       end do
    end do
    found = .true.
 case ('rh2')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_D22)) allocate(bump%cmat%blk(ib)%bump_D22(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D22)
+   if (.not.allocated(bump%cmat%blk(ib)%bump_D22)) allocate(bump%cmat%blk(ib)%bump_D22(bump%geom%nc0a,bump%geom%nl0, &
+ & bump%cmat%blk(ib)%ncmp))
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D22(:,:,icmp))
    do il0=1,bump%geom%nl0
       do ic0a=1,bump%geom%nc0a
-         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D22(ic0a,il0))) &
- & bump%cmat%blk(ib)%bump_D22(ic0a,il0) = (bump%cmat%blk(ib)%bump_D22(ic0a,il0)/req)**2
+         if (bump%mpl%msv%isnot(bump%cmat%blk(ib)%bump_D22(ic0a,il0,icmp))) &
+ & bump%cmat%blk(ib)%bump_D22(ic0a,il0,icmp) = (bump%cmat%blk(ib)%bump_D22(ic0a,il0,icmp)/req)**2
       end do
    end do
    found = .true.
 case ('rhc')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_D12)) allocate(bump%cmat%blk(ib)%bump_D12(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D12)
+   if (.not.allocated(bump%cmat%blk(ib)%bump_D12)) allocate(bump%cmat%blk(ib)%bump_D12(bump%geom%nc0a,bump%geom%nl0, &
+ & bump%cmat%blk(ib)%ncmp))
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_D12(:,:,icmp))
    found = .true.
 case ('rv')
-   if (.not.allocated(bump%cmat%blk(ib)%bump_rv)) allocate(bump%cmat%blk(ib)%bump_rv(bump%geom%nc0a,bump%geom%nl0))
-   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rv)
+   if (.not.allocated(bump%cmat%blk(ib)%bump_rv)) allocate(bump%cmat%blk(ib)%bump_rv(bump%geom%nc0a,bump%geom%nl0, &
+ & bump%cmat%blk(ib)%ncmp))
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%cmat%blk(ib)%bump_rv(:,:,icmp))
    found = .true.
 end select
 

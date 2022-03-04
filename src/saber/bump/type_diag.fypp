@@ -444,8 +444,8 @@ do ib=1,bpar%nbe
       call mpl%flush
 
       ! Detail for multi-component case
-      do ic2a=0,diag%nc2a
-         if (.true.) then ! TODO
+      if (nam%write_hdiag_detail) then
+         do ic2a=0,diag%nc2a
             ! Allocation
             allocate(diag%blk(ic2a,ib)%fit_detail(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,diag%blk(ic2a,ib)%ncmp))
 
@@ -462,8 +462,8 @@ do ib=1,bpar%nbe
  & diag%blk(ic2a,ib)%fit_detail(:,:,:,:,icmp))
                end if
             end do
-         end if
-      end do
+         end do
+      end if
    end if
 end do
 

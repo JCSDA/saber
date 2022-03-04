@@ -257,7 +257,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    fit_id = define_var(mpl,grpid,'fit','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
    fit_hor_id = define_var(mpl,grpid,'fit_hor','real',(/nc3_id,nc4_id,nl0_1_id/))
    fit_zs_id = define_var(mpl,grpid,'fit_zs','real',(/nl0_2_id,nl0_1_id/))
-   if (.true.) then ! TODO
+   if (nam%write_hdiag_detail) then
       fit_detail_id = define_var(mpl,grpid,'fit_detail','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id,ncmp_id/))
       fit_detail_hor_id = define_var(mpl,grpid,'fit_detail_hor','real',(/nc3_id,nc4_id,nl0_1_id,ncmp_id/))
       fit_detail_zs_id = define_var(mpl,grpid,'fit_detail_zs','real',(/nl0_2_id,nl0_1_id,ncmp_id/))
@@ -302,7 +302,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
          call put_var(mpl,grpid,fit_zs_id,diag_blk%fit(1,1,jl0r,il0),(/jl0,il0/))
       end do
    end do
-   if (.true.) then ! TODO
+   if (nam%write_hdiag_detail) then
       call put_var(mpl,grpid,fit_detail_id,diag_blk%fit_detail)
       do icmp=1,diag_blk%ncmp
          do il0=1,geom%nl0

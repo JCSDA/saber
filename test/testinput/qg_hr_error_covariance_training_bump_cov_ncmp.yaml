@@ -35,6 +35,24 @@ bump:
   - component: 1
     datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
     date: 2010-01-01T12:00:00Z
+    exp: cor_a_1
+    parameter: cor_a
+    type: an
+  - component: 2
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+    date: 2010-01-01T12:00:00Z
+    exp: cor_a_2
+    parameter: cor_a
+    type: an
+  - component: 3
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+    date: 2010-01-01T12:00:00Z
+    exp: cor_a_3
+    parameter: cor_a
+    type: an
+  - component: 1
+    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
+    date: 2010-01-01T12:00:00Z
     exp: cor_rh_1
     parameter: cor_rh
     type: an

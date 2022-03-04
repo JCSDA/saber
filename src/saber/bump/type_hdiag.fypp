@@ -175,7 +175,7 @@ do ildwv=0,nam%nldwv
             nl0r_id = define_dim(mpl,grpid,'nl0r',bpar%nl0r(ib))
             nl0_1_id = define_dim(mpl,grpid,'nl0_1',geom%nl0)
             nl0_2_id = define_dim(mpl,grpid,'nl0_2',geom%nl0)
-            if (.true.) then
+            if (nam%write_hdiag_detail) then
                iv = bpar%b_to_v1(ib)
                ncmp_id = define_dim(mpl,grpid,'ncmp',nam%fit_ncmpmax(iv))
             end if

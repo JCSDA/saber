@@ -931,7 +931,7 @@ type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
 integer :: iv,ic0a,il0,icmp
-real(kind_real) :: factor_ens,factor_r,factor_h,rhs_max
+real(kind_real) :: rhs_max
 character(len=1024) :: message
 
 ! Set name
@@ -979,25 +979,18 @@ do icmp=1,nicas_blk%ncmp
 
    ! Copy C matrix fields from min_lev to max_lev
    iv = bpar%b_to_v1(ib)
-   factor_ens = one/real(nicas_blk%ncmp,kind_real)
-   factor_r = one/real(icmp,kind_real)
-   factor_h = one/factor_r**2
    do il0=1,geom%nl0
       if ((nam%min_lev(iv)<=il0).and.(il0<=nam%max_lev(iv))) then
          do ic0a=1,geom%nc0a
             if (geom%gmask_c0a(ic0a,il0)) then
-               nicas_blk%cmp(icmp)%coef_ens(ic0a,il0) = sqrt(cmat_blk%coef_ens(ic0a,il0)*factor_ens)
-               nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0)*factor_r
-               if (nicas_blk%cmp(icmp)%anisotropic) then
-                  call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0),cmat_blk%D22(ic0a,il0),cmat_blk%D12(ic0a,il0), &
- & nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0),nicas_blk%cmp(icmp)%H12(ic0a,il0))
-                  nicas_blk%cmp(icmp)%H11(ic0a,il0) = nicas_blk%cmp(icmp)%H11(ic0a,il0)/factor_h
-                  nicas_blk%cmp(icmp)%H22(ic0a,il0) = nicas_blk%cmp(icmp)%H22(ic0a,il0)/factor_h
-                  nicas_blk%cmp(icmp)%H12(ic0a,il0) = nicas_blk%cmp(icmp)%H12(ic0a,il0)/factor_h
-               end if
-               nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0)*factor_r
-               nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0)*factor_r
-               nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0)*factor_r
+               nicas_blk%cmp(icmp)%coef_ens(ic0a,il0) = sqrt(cmat_blk%coef_ens(ic0a,il0)*cmat_blk%a(ic0a,il0,icmp))
+               nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0,icmp)
+               if (nicas_blk%cmp(icmp)%anisotropic) call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0,icmp),cmat_blk%D22(ic0a,il0,icmp), &
+ & cmat_blk%D12(ic0a,il0,icmp),nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0), &
+ & nicas_blk%cmp(icmp)%H12(ic0a,il0))
+               nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0,icmp)
+               nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0,icmp)
+               nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0,icmp)
             end if
          end do
       end if
