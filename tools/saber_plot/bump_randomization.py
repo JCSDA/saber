@@ -8,11 +8,11 @@ import numpy as np
 import numpy.ma as ma
 import os
 
-def randomization(testdata, test, mpi, omp, suffix, testfig):
+def bump_randomization(args, suffix):
    """! Plot script for the "randomization" files produced by BUMP"""
 
    # Open file
-   f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
+   f = Dataset(args.testdata + "/" + args.test + "/test_" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
    # Get factors
    nefac = f["nefac"][:]
@@ -45,5 +45,6 @@ def randomization(testdata, test, mpi, omp, suffix, testfig):
    ax.plot(x, mse_mean[1,:]+mse_std[1,:], 'r--')
 
    # Save and close figure
-   plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + ".jpg", format="jpg", dpi=300)
+   plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + ".jpg"
+   plt.savefig(plotpath, format="jpg", dpi=300)
    plt.close()

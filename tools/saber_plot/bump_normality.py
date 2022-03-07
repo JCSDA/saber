@@ -8,14 +8,14 @@ import numpy as np
 import numpy.ma as ma
 import os
 
-def normality(testdata, test, mpi, omp, suffix, testfig):
+def bump_normality(args, suffix):
    """! Plot script for the "normality" files produced by BUMP"""
 
    # Loop over files
    first = True
-   for impi in range(0, int(mpi)):
+   for impi in range(0, int(args.mpi)):
       # Open file
-      f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc", "r", format="NETCDF4")
+      f = Dataset(args.testdata + "/" + args.test + "/test_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + args.mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc", "r", format="NETCDF4")
 
       # Get data
       if "ens_norm" in f.variables:
@@ -48,5 +48,6 @@ def normality(testdata, test, mpi, omp, suffix, testfig):
    ax[1].plot(x_step, ens_step[0,:])
 
    # Save and close figure
-   plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + ".jpg", format="jpg", dpi=300)
+   plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + ".jpg"
+   plt.savefig(plotpath, format="jpg", dpi=300)
    plt.close()

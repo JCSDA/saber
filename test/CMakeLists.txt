@@ -3,6 +3,10 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
+if( oops_FOUND )
+    add_subdirectory( quench )
+endif()
+
 # Use find_branch function in jedi-cmake
 include( git_functions )
 
@@ -32,7 +36,6 @@ else()
 endif()
 
 # Default test selection variables (TIER-independent)
-set( SABER_TEST_PLOT 0 )
 set( SABER_TEST_VALGRIND 0 )
 set( SABER_TEST_OOPS 0 )
 set( SABER_TEST_INTERPOLATION 0 )
@@ -51,18 +54,12 @@ endif()
 if( DEFINED ENV{SABER_TEST_MULTI} )
     set( SABER_TEST_MULTI $ENV{SABER_TEST_MULTI} )
 endif()
-if( DEFINED ENV{SABER_TEST_PLOT} )
-    set( SABER_TEST_PLOT $ENV{SABER_TEST_PLOT} )
-endif()
 if( DEFINED ENV{SABER_TEST_VALGRIND} )
     set( SABER_TEST_VALGRIND $ENV{SABER_TEST_VALGRIND} )
 endif()
 if( oops_qg_FOUND )
     if( DEFINED ENV{SABER_TEST_OOPS} )
         set( SABER_TEST_OOPS $ENV{SABER_TEST_OOPS} )
-    endif()
-    if( DEFINED ENV{SABER_TEST_INTERPOLATION} )
-        set( SABER_TEST_INTERPOLATION $ENV{SABER_TEST_INTERPOLATION} )
     endif()
 endif()
 if( SABER_TEST_OOPS )
@@ -77,10 +74,8 @@ message( STATUS "  - SABER_TEST_TIER:          ${SABER_TEST_TIER}" )
 message( STATUS "  - SABER_TEST_MPI:           ${SABER_TEST_MPI}" )
 message( STATUS "  - SABER_TEST_OMP:           ${SABER_TEST_OMP}" )
 message( STATUS "  - SABER_TEST_MULTI:         ${SABER_TEST_MULTI}" )
-message( STATUS "  - SABER_TEST_PLOT:          ${SABER_TEST_PLOT}" )
 message( STATUS "  - SABER_TEST_VALGRIND:      ${SABER_TEST_VALGRIND}" )
 message( STATUS "  - SABER_TEST_OOPS:          ${SABER_TEST_OOPS}" )
-message( STATUS "  - SABER_TEST_INTERPOLATION: ${SABER_TEST_INTERPOLATION}" )
 
 # Tests
 message( STATUS "SABER tests activated:" )
@@ -224,7 +219,6 @@ else( DEFINED GIT_TAG_FUNC )
                        COMMAND chmod +x ${DEST_FILE}
                        DEPENDS ${DEST_FILE} )
 
-
     # Add test for downloading data
     ecbuild_add_test( TARGET    get_saber_test_data
                       TYPE      SCRIPT
@@ -292,11 +286,14 @@ if( SABER_TEST_OOPS )
                             SOURCES mains/qgHofX.cc
                             LIBS    ${oops_qg_LIBRARIES} )
 
-endif()
-if( SABER_TEST_INTERPOLATION )
     ecbuild_add_executable( TARGET  saber_interpolation_bump.x
                             SOURCES mains/InterpolationBump.cc
                             LIBS    ${oops_qg_LIBRARIES}
+                                    saber )
+
+    ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
+                            SOURCES mains/quenchSaberBlockTest.cc
+                            LIBS    quench
                                     saber )
 endif()
 
@@ -322,14 +319,6 @@ foreach( test ${saber_test} )
                       ARGS         ${test} ${mpi} ${omp}
                       TEST_DEPENDS get_saber_ref
                                    saber_test_${test}_${mpi}-${omp}_run )
-
-    if( SABER_TEST_PLOT )
-        ecbuild_add_test( TARGET       saber_test_${test}_${mpi}-${omp}_plot
-                          TYPE SCRIPT
-                          COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-                          ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-                          TEST_DEPENDS saber_test_${test}_${mpi}-${omp}_run )
-    endif()
 
     if( SABER_TEST_VALGRIND )
         ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}_valgrind
@@ -365,14 +354,6 @@ if( SABER_TEST_MPI )
                           ARGS         ${test} ${mpi} ${omp}
                           TEST_DEPENDS get_saber_ref
                                        saber_test_${test}_${mpi}-${omp}_run )
-
-        if( SABER_TEST_PLOT )
-            ecbuild_add_test( TARGET       saber_test_${test}_${mpi}-${omp}_plot
-                              TYPE SCRIPT
-                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-                              TEST_DEPENDS saber_test_${test}_${mpi}-${omp}_run )
-        endif()
     endforeach()
 endif()
 
@@ -399,14 +380,6 @@ if( SABER_TEST_OMP )
                           ARGS         ${test} ${mpi} ${omp}
                           TEST_DEPENDS get_saber_ref
                                        saber_test_${test}_${mpi}-${omp}_run )
-
-        if( SABER_TEST_PLOT )
-            ecbuild_add_test( TARGET       saber_test_${test}_${mpi}-${omp}_plot
-                              TYPE SCRIPT
-                              COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-                              ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-                              TEST_DEPENDS saber_test_${test}_${mpi}-${omp}_run )
-        endif()
     endforeach()
 endif()
 
@@ -433,14 +406,6 @@ if( SABER_TEST_MULTI )
                               ARGS         ${test} ${mpi} ${omp}
                               TEST_DEPENDS get_saber_ref
                                            saber_test_${test}_${mpi}-${omp}_run )
-
-            if( SABER_TEST_PLOT )
-                ecbuild_add_test( TARGET       saber_test_${test}_${mpi}-${omp}_plot
-                                  TYPE SCRIPT
-                                  COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_plot.py
-                                  ARGS         ${CMAKE_BINARY_DIR}/bin ${CMAKE_CURRENT_BINARY_DIR}/testdata ${test} ${mpi} ${omp}
-                                  TEST_DEPENDS saber_test_${test}_${mpi}-${omp}_run )
-            endif()
         endforeach()
     endforeach()
 endif()
@@ -516,7 +481,6 @@ if( SABER_TEST_TIER GREATER 1 )
                       TEST_DEPENDS saber_test_bump_vbal_no_mask_1-1_run
                                    saber_test_bump_vbal_no_mask_cov_1-1_run )
 endif()
-
 
 # OOPS tests
 if( SABER_TEST_OOPS )
@@ -640,7 +604,6 @@ if( SABER_TEST_OOPS )
         endif()
     endforeach()
 
-
     if( SABER_TEST_TIER GREATER 1 )
         # High-resolution OOPS tests: 1 MPI task and 4 OpenMP threads
         set( mpi 1 )
@@ -683,19 +646,8 @@ if( SABER_TEST_OOPS )
             endif()
         endforeach()
     endif()
-endif()
 
-# Interpolation tests
-if( SABER_TEST_INTERPOLATION )
-    # Link to yaml files
-    list( APPEND saber_test_interpolation interpolation_bump )
-    foreach( test ${saber_test_interpolation} )
-        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
-                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
-    endforeach()
-
-    # Add tests
+    # Interpolation tests
     set( mpi 4 )
     set( omp 1 )
     ecbuild_add_test( TARGET saber_test_interpolation_bump
@@ -704,4 +656,19 @@ if( SABER_TEST_INTERPOLATION )
                       COMMAND ${CMAKE_BINARY_DIR}/bin/saber_interpolation_bump.x
                       ARGS    testinput/interpolation_bump.yaml
                       DEPENDS saber_interpolation_bump.x )
+
+    # QUENCH tests
+    set( mpi 1 )
+    set( omp 2 )
+    foreach( test ${saber_test_oops} )
+        string( FIND ${test} "quench" quench )
+        if( quench MATCHES 0 )
+            ecbuild_add_test( TARGET test_${test}
+                              MPI ${mpi}
+                              OMP ${omp}
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
+                              ARGS testinput/${test}.yaml
+                              DEPENDS saber_quench_saber_block_test.x )
+        endif()
+    endforeach()
 endif()

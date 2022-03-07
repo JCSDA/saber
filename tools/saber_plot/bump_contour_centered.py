@@ -10,14 +10,11 @@ import numpy as np
 import numpy.ma as ma
 import os
 
-def contour_centered(testdata, test, mpi, omp, suffix, testfig):
+def bump_contour_centered(args, suffix):
    """! Plot script for the "centered countour" files produced by BUMP"""
 
    # Open file
-   f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + ".nc", "r", format="NETCDF4")
-
-   # Get _FillValue
-   _FillValue = f.__dict__["_FillValue"]
+   f = Dataset(args.testdata + "/" + args.test + "/test_" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
    # Get lon/lat
    lon = f["lon"][:]
@@ -26,10 +23,10 @@ def contour_centered(testdata, test, mpi, omp, suffix, testfig):
    # Get vertical unit
    vunit = f["vunit"][:,:]
 
-   for group in f.groups:
-      # Get number of levels
-      nl0 = vunit.shape[0]
+   # Get number of levels
+   nl0 = vunit.shape[0]
 
+   for group in f.groups:
       for var in f.groups[group].variables:
          # Read variable
          field = f.groups[group][var][:,:]
@@ -55,7 +52,8 @@ def contour_centered(testdata, test, mpi, omp, suffix, testfig):
          fig.colorbar(im, cax=cbar_ax)
 
          # Save and close figure
-         plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + group + "_" + var + ".jpg", format="jpg", dpi=300)
+         plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + var + ".jpg"
+         plt.savefig(plotpath, format="jpg", dpi=300)
          plt.close()
 
       for subgroup in f.groups[group].groups:
@@ -82,5 +80,6 @@ def contour_centered(testdata, test, mpi, omp, suffix, testfig):
             fig.colorbar(im, cax=cbar_ax)
 
             # Save and close figure
-            plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + group + "_" + subgroup + "_" + var + ".jpg", format="jpg", dpi=300)
+            plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + subgroup + "_" + var + ".jpg"
+            plt.savefig(plotpath, format="jpg", dpi=300)
             plt.close()
