@@ -76,7 +76,7 @@ integer :: ib
 ! Allocation
 if (.not.allocated(cmat%blk)) allocate(cmat%blk(bpar%nbe))
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%fit_block(ib)) then
+   if (bpar%B_block(ib)) then
       ! Anisotropy flag
       cmat%blk(ib)%ib = ib
       cmat%blk(ib)%ncmp = ncmp(ib)
@@ -118,7 +118,7 @@ integer :: ib
 
 ! Initialize blocks
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib).and.bpar%fit_block(ib)) call cmat%blk(ib)%init(mpl,bpar)
+   if (bpar%B_block(ib)) call cmat%blk(ib)%init(mpl,bpar)
 end do
 
 ! Probe out
@@ -297,14 +297,25 @@ do ib=1,bpar%nbe
          end if
          cmat%blk(ib)%coef_sta = hdiag%loc2%blk(0,ib)%coef_sta_c0a
          if (bpar%fit_block(ib)) then
-            cmat%blk(ib)%a = hdiag%loc2%blk(0,ib)%a_c0a
-            cmat%blk(ib)%rh = hdiag%loc2%blk(0,ib)%rh_c0a
-            if (bpar%nc4(ib)>1) then
-               cmat%blk(ib)%D11 = hdiag%loc2%blk(0,ib)%D11_c0a
-               cmat%blk(ib)%D22 = hdiag%loc2%blk(0,ib)%D22_c0a
-               cmat%blk(ib)%D12 = hdiag%loc2%blk(0,ib)%D12_c0a
+            if (nam%no_hybrid_loc_update) then
+               cmat%blk(ib)%a = hdiag%loc1%blk(0,ib)%a_c0a
+               cmat%blk(ib)%rh = hdiag%loc1%blk(0,ib)%rh_c0a
+               if (bpar%nc4(ib)>1) then
+                  cmat%blk(ib)%D11 = hdiag%loc1%blk(0,ib)%D11_c0a
+                  cmat%blk(ib)%D22 = hdiag%loc1%blk(0,ib)%D22_c0a
+                  cmat%blk(ib)%D12 = hdiag%loc1%blk(0,ib)%D12_c0a
+               end if
+               cmat%blk(ib)%rv = hdiag%loc1%blk(0,ib)%rv_c0a
+            else
+               cmat%blk(ib)%a = hdiag%loc2%blk(0,ib)%a_c0a
+               cmat%blk(ib)%rh = hdiag%loc2%blk(0,ib)%rh_c0a
+               if (bpar%nc4(ib)>1) then
+                  cmat%blk(ib)%D11 = hdiag%loc2%blk(0,ib)%D11_c0a
+                  cmat%blk(ib)%D22 = hdiag%loc2%blk(0,ib)%D22_c0a
+                  cmat%blk(ib)%D12 = hdiag%loc2%blk(0,ib)%D12_c0a
+               end if
+               cmat%blk(ib)%rv = hdiag%loc2%blk(0,ib)%rv_c0a
             end if
-            cmat%blk(ib)%rv = hdiag%loc2%blk(0,ib)%rv_c0a
          end if
          cmat%blk(ib)%wgt = sum(hdiag%loc2%blk(0,ib)%coef_ens_l0)/real(geom%nl0,kind_real)
       case ('dual-ens')
@@ -464,7 +475,12 @@ do ib=1,bpar%nbe
          cmat%blk(ib)%wgt = cmat%blk(ib)%wgt/real(sum(geom%nc0_gmask(1:geom%nl0)),kind_real)
 
          ! Amplitudes
-         cmat%blk(ib)%a = cmat%blk(ib)%bump_a
+         if (allocated(cmat%blk(ib)%bump_a)) then
+            cmat%blk(ib)%a = cmat%blk(ib)%bump_a
+         else
+            if (cmat%blk(ib)%ncmp>1) call mpl%abort('${subr}$','amplitude should be provided as input')
+            cmat%blk(ib)%a = one
+         end if
 
          ! Horizontal
          if (cmat%blk(ib)%anisotropic) then

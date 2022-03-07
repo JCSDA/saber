@@ -218,7 +218,7 @@ do icmp=1,nicas_blk%ncmp
    end if
 
    ! Component work
-   call nicas_blk%cmp(icmp)%read_local(mpl,nam,geom,bpar)
+   call nicas_blk%cmp(icmp)%read_local(mpl,geom,bpar)
 end do
 
 ! End associate
@@ -283,7 +283,7 @@ do icmp=1,nicas_blk%ncmp
    end if
 
    ! Component work
-   call nicas_blk%cmp(icmp)%write_local_def(mpl,nam,bpar)
+   call nicas_blk%cmp(icmp)%write_local_def(mpl,bpar)
 end do
 
 ! End associate
@@ -345,7 +345,7 @@ integer,intent(out) :: nbufr                  !< Buffer size (real)
 integer,intent(out) :: nbufl                  !< Buffer size (logical)
 
 ! Local variables
-integer :: nnbufi,nnbufr,icmp
+integer :: icmp
 
 ! Set name
 @:set_name(nicas_blk_buffer_size)
@@ -401,7 +401,7 @@ real(kind_real),intent(out) :: bufr(nbufr)    !< Buffer (real)
 logical,intent(out) :: bufl(nbufl)            !< Buffer (logical)
 
 ! Local variables
-integer :: ibufi,ibufr,ibufl,nnbufi,nnbufr,icmp
+integer :: ibufi,ibufr,ibufl,icmp
 
 ! Set name
 @:set_name(nicas_blk_serialize)
@@ -470,7 +470,7 @@ real(kind_real),intent(in) :: bufr(nbufr)        !< Buffer (real)
 logical,intent(in) :: bufl(nbufl)                !< Buffer (logical)
 
 ! Local variables
-integer :: ibufi,ibufr,ibufl,nnbufi,nnbufr,icmp
+integer :: ibufi,ibufr,ibufl,icmp
 
 ! Set name
 @:set_name(nicas_blk_deserialize)
@@ -603,7 +603,7 @@ do icmp=1,nicas_blk%ncmp
    end if
 
    ! Component work
-   call nicas_blk%cmp(icmp)%read_global(mpl,nam,geom,bpar)
+   call nicas_blk%cmp(icmp)%read_global(mpl,geom,bpar)
 end do
 
 ! End associate
@@ -653,24 +653,26 @@ nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 ! Write main weight
 call put_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
 
-! Write number of components
-call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
+if (bpar%nicas_block(ib)) then
+   ! Write number of components
+   call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
-do icmp=1,nicas_blk%ncmp
-   ! Get component
-   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
-   call mpl%flush
+   do icmp=1,nicas_blk%ncmp
+      ! Get component
+      write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+      call mpl%flush
 
-   if (nicas_blk%ncmp==1) then
-      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
-   else
-      write(cmpname,'(a,i1)') 'cmp_',icmp
-      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
-   end if
+      if (nicas_blk%ncmp==1) then
+         nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+      else
+         write(cmpname,'(a,i1)') 'cmp_',icmp
+         nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+      end if
 
-   ! Component work
-   call nicas_blk%cmp(icmp)%write_global_def(mpl,nam,geom,bpar)
-end do
+      ! Component work
+      call nicas_blk%cmp(icmp)%write_global_def(mpl,nam,geom)
+   end do
+end if
 
 ! End associate
 end associate
@@ -684,14 +686,13 @@ end subroutine nicas_blk_write_global_def
 ! Subroutine: nicas_blk_write_global_data
 !> Write data for global I/O, data mode
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_global_data(nicas_blk,mpl,nam,geom,bpar)
+subroutine nicas_blk_write_global_data(nicas_blk,mpl,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 
@@ -709,7 +710,7 @@ associate(ib=>nicas_blk%ib)
 
 do icmp=1,nicas_blk%ncmp
    ! Component work
-   call nicas_blk%cmp(icmp)%write_global_data(mpl,nam,geom,bpar)
+   call nicas_blk%cmp(icmp)%write_global_data(mpl,geom,bpar)
 end do
 
 ! End associate
@@ -768,7 +769,7 @@ do icmp=1,nicas_blk%ncmp
    end if
 
    ! Component work
-   call nicas_blk%cmp(icmp)%write_grids_def(mpl,nam,bpar)
+   call nicas_blk%cmp(icmp)%write_grids_def(mpl)
 end do
 
 ! End associate
@@ -1095,7 +1096,7 @@ end subroutine nicas_blk_apply_sqrt_ad
 ! Subroutine: nicas_blk_test_adjoint
 !> Test NICAS adjoint accuracy
 !----------------------------------------------------------------------
-subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,nam,geom,bpar)
+subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,geom)
 
 implicit none
 
@@ -1103,9 +1104,7 @@ implicit none
 class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(rng_type),intent(inout) :: rng           !< Random number generator
-type(nam_type),intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom            !< Geometry
-type(bpar_type),intent(in) :: bpar            !< Block parameters
 
 ! Local variables
 integer :: icmp

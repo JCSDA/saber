@@ -1526,6 +1526,9 @@ integer :: iv,ib
 ! Probe in
 @:probe_in()
 
+write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
+call bump%mpl%flush
+
 do iv=1,bump%nam%nv
    if (trim(bump%nam%variables(iv))==trim(variable)) then
       ! Set block index
@@ -2073,14 +2076,14 @@ real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 ! Probe in
 @:probe_in()
 
+write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
+call bump%mpl%flush
+
 ! Set fieldset metadata
 call fieldset%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
 
 ! Fieldset to Fortran array
 call fieldset%to_array(bump%mpl,fld_mga)
-
-write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
-call bump%mpl%flush
 
 ! Counter
 select case (trim(param))
@@ -2151,6 +2154,9 @@ integer :: iv,ib
 
 ! Probe in
 @:probe_in()
+
+write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
+call bump%mpl%flush
 
 ! Check allocation / parameter existence
 select case (trim(param))
@@ -2386,7 +2392,10 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a*req,fieldset_req)
 call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,(one+fld_c0a)*(maxval(bump%geom%vunitavg)-minval(bump%geom%vunitavg)),fieldset_vert)
 
 ! Set parameters
-if (trim(bump%nam%strategy)=='specific_multivariate') then
+do iv=1,bump%nam%nv
+   call bump%set_parameter('ncmp',bump%nam%variables(iv),one)
+end do
+if (trim(bump%nam%strategy)=='specific_univariate') then
    call bump%set_parameter('stddev',1,fieldset)
    call bump%set_parameter('var',1,fieldset)
    call bump%set_parameter('m4',1,fieldset)

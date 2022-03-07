@@ -597,14 +597,13 @@ end subroutine nicas_cmp_dealloc
 ! Subroutine: nicas_cmp_read_local
 !> Read local for global I/O
 !----------------------------------------------------------------------
-subroutine nicas_cmp_read_local(nicas_cmp,mpl,nam,geom,bpar)
+subroutine nicas_cmp_read_local(nicas_cmp,mpl,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 
@@ -715,14 +714,13 @@ end subroutine nicas_cmp_read_local
 ! Subroutine: nicas_cmp_write_local_def
 !> Write data for local I/O, definition mode
 !----------------------------------------------------------------------
-subroutine nicas_cmp_write_local_def(nicas_cmp,mpl,nam,bpar)
+subroutine nicas_cmp_write_local_def(nicas_cmp,mpl,bpar)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
@@ -1236,14 +1234,13 @@ end subroutine nicas_cmp_deserialize
 ! Subroutine: nicas_cmp_read_global
 !> Read data for global I/O
 !----------------------------------------------------------------------
-subroutine nicas_cmp_read_global(nicas_cmp,mpl,nam,geom,bpar)
+subroutine nicas_cmp_read_global(nicas_cmp,mpl,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 
@@ -1661,7 +1658,7 @@ end subroutine nicas_cmp_read_global
 ! Subroutine: nicas_cmp_write_global_def
 !> Write data for global I/O, definition mode
 !----------------------------------------------------------------------
-subroutine nicas_cmp_write_global_def(nicas_cmp,mpl,nam,geom,bpar)
+subroutine nicas_cmp_write_global_def(nicas_cmp,mpl,nam,geom)
 
 implicit none
 
@@ -1670,7 +1667,6 @@ class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
-type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
 integer :: nl1_id,nc1_id,ns_id,c_nopmax_id
@@ -1688,101 +1684,100 @@ character(len=1024) :: levname
 ! Associate
 associate(ib=>nicas_cmp%ib)
 
-if (bpar%nicas_block(ib)) then
-   ! Define write_norm and write_coef_ens flags
-   if (nam%write_c0) then
-      if (nam%output_nicas_coef_ens) then
-         nicas_cmp%write_coef_ens = .false.
-      else
-         ! Check if coef_ens should be written
-         if ((geom%nc0a>0).and.(zss_count(geom%gmask_c0a)>0)) then
-            coef_ens_min = zss_minval(nicas_cmp%coef_ens,mask=geom%gmask_c0a)
-            coef_ens_max = zss_maxval(nicas_cmp%coef_ens,mask=geom%gmask_c0a)
-         else
-            coef_ens_min = one
-            coef_ens_max = one
-         end if
-         call mpl%f_comm%allreduce(coef_ens_min,fckit_mpi_min())
-         call mpl%f_comm%allreduce(coef_ens_max,fckit_mpi_max())
-         nicas_cmp%write_coef_ens = .not.(indist(coef_ens_min,one).and.indist(coef_ens_max,one))
-      end if
-      nicas_cmp%write_norm = .not.nam%output_nicas_norm
-   else
-      nicas_cmp%write_norm = .false.
+
+! Define write_norm and write_coef_ens flags
+if (nam%write_c0) then
+   if (nam%output_nicas_coef_ens) then
       nicas_cmp%write_coef_ens = .false.
+   else
+      ! Check if coef_ens should be written
+      if ((geom%nc0a>0).and.(zss_count(geom%gmask_c0a)>0)) then
+         coef_ens_min = zss_minval(nicas_cmp%coef_ens,mask=geom%gmask_c0a)
+         coef_ens_max = zss_maxval(nicas_cmp%coef_ens,mask=geom%gmask_c0a)
+      else
+         coef_ens_min = one
+         coef_ens_max = one
+      end if
+      call mpl%f_comm%allreduce(coef_ens_min,fckit_mpi_min())
+      call mpl%f_comm%allreduce(coef_ens_max,fckit_mpi_max())
+      nicas_cmp%write_coef_ens = .not.(indist(coef_ens_min,one).and.indist(coef_ens_max,one))
    end if
+   nicas_cmp%write_norm = .not.nam%output_nicas_norm
+else
+   nicas_cmp%write_norm = .false.
+   nicas_cmp%write_coef_ens = .false.
+end if
 
-   if (nicas_cmp%write_coef_ens) then
-      ! Define coef_ens
-      write(mpl%info,'(a16,a)') '','Define coef_ens'
-      call mpl%flush
-      nicas_cmp%coef_ens_id = define_var(mpl,nicas_cmp%cmpid,'coef_ens','real',(/nicas_cmp%nc0_id,nicas_cmp%nl0_id/))
-   end if
-
-   if (nicas_cmp%write_norm) then
-      ! Define norm
-      write(mpl%info,'(a16,a)') '','Define norm'
-      call mpl%flush
-      nicas_cmp%norm_id = define_var(mpl,nicas_cmp%cmpid,'norm','real',(/nicas_cmp%nc0_id,nicas_cmp%nl0_id/))
-   end if
-
-   ! Define vertical sampling
-   write(mpl%info,'(a16,a)') '','Define vertical sampling'
+if (nicas_cmp%write_coef_ens) then
+   ! Define coef_ens
+   write(mpl%info,'(a16,a)') '','Define coef_ens'
    call mpl%flush
+   nicas_cmp%coef_ens_id = define_var(mpl,nicas_cmp%cmpid,'coef_ens','real',(/nicas_cmp%nc0_id,nicas_cmp%nl0_id/))
+end if
+
+if (nicas_cmp%write_norm) then
+   ! Define norm
+   write(mpl%info,'(a16,a)') '','Define norm'
+   call mpl%flush
+   nicas_cmp%norm_id = define_var(mpl,nicas_cmp%cmpid,'norm','real',(/nicas_cmp%nc0_id,nicas_cmp%nl0_id/))
+end if
+
+! Define vertical sampling
+write(mpl%info,'(a16,a)') '','Define vertical sampling'
+call mpl%flush
+
+! Define dimension
+nl1_id = define_dim(mpl,nicas_cmp%cmpid,'nl1',nicas_cmp%nl1)
+
+! Define variables
+nicas_cmp%vlev_id = define_var(mpl,nicas_cmp%cmpid,'vlev','int',(/nicas_cmp%nl0_id/))
+nicas_cmp%l1_to_l0_id = define_var(mpl,nicas_cmp%cmpid,'l1_to_l0','int',(/nl1_id/))
+
+! Define horizontal sampling
+write(mpl%info,'(a16,a)') '','Define horizontal sampling'
+call mpl%flush
+
+do il1=1,nicas_cmp%nl1
+   ! Get group name
+   write(levname,'(a,i3.3)') 'sublevel_',il1
+   write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
+   call mpl%flush
+
+   ! Define group
+   nicas_cmp%hor(il1)%levid = define_grp(mpl,nicas_cmp%cmpid,levname)
 
    ! Define dimension
-   nl1_id = define_dim(mpl,nicas_cmp%cmpid,'nl1',nicas_cmp%nl1)
+   nc1_id = define_dim(mpl,nicas_cmp%hor(il1)%levid,'nc1',nicas_cmp%hor(il1)%nc1)
 
    ! Define variables
-   nicas_cmp%vlev_id = define_var(mpl,nicas_cmp%cmpid,'vlev','int',(/nicas_cmp%nl0_id/))
-   nicas_cmp%l1_to_l0_id = define_var(mpl,nicas_cmp%cmpid,'l1_to_l0','int',(/nl1_id/))
+   nicas_cmp%hor(il1)%lon_c1_id = define_var(mpl,nicas_cmp%hor(il1)%levid,'lon_c1','real',(/nc1_id/))
+   nicas_cmp%hor(il1)%lat_c1_id = define_var(mpl,nicas_cmp%hor(il1)%levid,'lat_c1','real',(/nc1_id/))
+end do
 
-   ! Define horizontal sampling
-   write(mpl%info,'(a16,a)') '','Define horizontal sampling'
-   call mpl%flush
+! Define convolution
+write(mpl%info,'(a16,a)') '','Define convolution'
+call mpl%flush
 
-   do il1=1,nicas_cmp%nl1
-      ! Get group name
-      write(levname,'(a,i3.3)') 'sublevel_',il1
-      write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
-      call mpl%flush
+! Allocation
+allocate(c_nop(nicas_cmp%nsa))
 
-      ! Define group
-      nicas_cmp%hor(il1)%levid = define_grp(mpl,nicas_cmp%cmpid,levname)
+! Count convolution operations
+c_nop = 0
+do i_s=1,nicas_cmp%c%n_s
+   isa = nicas_cmp%c%row(i_s)
+   c_nop(isa) = c_nop(isa)+1
+end do
+nicas_cmp%c_nopmax = zss_maxval(c_nop)
+call mpl%f_comm%allreduce(nicas_cmp%c_nopmax,fckit_mpi_max())
 
-      ! Define dimension
-      nc1_id = define_dim(mpl,nicas_cmp%hor(il1)%levid,'nc1',nicas_cmp%hor(il1)%nc1)
+! Define dimensions
+ns_id = define_dim(mpl,nicas_cmp%cmpid,'ns',nicas_cmp%ns)
+c_nopmax_id = define_dim(mpl,nicas_cmp%cmpid,'c_nopmax',nicas_cmp%c_nopmax)
 
-      ! Define variables
-      nicas_cmp%hor(il1)%lon_c1_id = define_var(mpl,nicas_cmp%hor(il1)%levid,'lon_c1','real',(/nc1_id/))
-      nicas_cmp%hor(il1)%lat_c1_id = define_var(mpl,nicas_cmp%hor(il1)%levid,'lat_c1','real',(/nc1_id/))
-   end do
-
-   ! Define convolution
-   write(mpl%info,'(a16,a)') '','Define convolution'
-   call mpl%flush
-
-   ! Allocation
-   allocate(c_nop(nicas_cmp%nsa))
-
-   ! Count convolution operations
-   c_nop = 0
-   do i_s=1,nicas_cmp%c%n_s
-      isa = nicas_cmp%c%row(i_s)
-      c_nop(isa) = c_nop(isa)+1
-   end do
-   nicas_cmp%c_nopmax = zss_maxval(c_nop)
-   call mpl%f_comm%allreduce(nicas_cmp%c_nopmax,fckit_mpi_max())
-
-   ! Define dimensions
-   ns_id = define_dim(mpl,nicas_cmp%cmpid,'ns',nicas_cmp%ns)
-   c_nopmax_id = define_dim(mpl,nicas_cmp%cmpid,'c_nopmax',nicas_cmp%c_nopmax)
-
-   ! Define variables
-   nicas_cmp%c_col_s_id = define_var(mpl,nicas_cmp%cmpid,'c_col_s','int',(/ns_id,c_nopmax_id/))
-   nicas_cmp%c_S_s_id = define_var(mpl,nicas_cmp%cmpid,'c_S_s','real',(/ns_id,c_nopmax_id/))
-   nicas_cmp%inorm_s_id = define_var(mpl,nicas_cmp%cmpid,'inorm_s','real',(/ns_id/))
-end if
+! Define variables
+nicas_cmp%c_col_s_id = define_var(mpl,nicas_cmp%cmpid,'c_col_s','int',(/ns_id,c_nopmax_id/))
+nicas_cmp%c_S_s_id = define_var(mpl,nicas_cmp%cmpid,'c_S_s','real',(/ns_id,c_nopmax_id/))
+nicas_cmp%inorm_s_id = define_var(mpl,nicas_cmp%cmpid,'inorm_s','real',(/ns_id/))
 
 ! End associate
 end associate
@@ -1796,14 +1791,13 @@ end subroutine nicas_cmp_write_global_def
 ! Subroutine: nicas_cmp_write_global_data
 !> Write data for global I/O, data mode
 !----------------------------------------------------------------------
-subroutine nicas_cmp_write_global_data(nicas_cmp,mpl,nam,geom,bpar)
+subroutine nicas_cmp_write_global_data(nicas_cmp,mpl,geom,bpar)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 
@@ -1939,15 +1933,13 @@ end subroutine nicas_cmp_write_global_data
 ! Subroutine: nicas_cmp_write_grids_def
 !> Write NICAS grids, definition mode
 !----------------------------------------------------------------------
-subroutine nicas_cmp_write_grids_def(nicas_cmp,mpl,nam,bpar)
+subroutine nicas_cmp_write_grids_def(nicas_cmp,mpl)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
-type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
 integer :: nsa_id,nsb_id,nsc_id
@@ -2389,6 +2381,7 @@ do jl1=1,nicas_cmp%nl1
    do ic0a=1,geom%nc0a
       nicas_cmp%v%Svec(jl1,ic0a) = one
    end do
+   if (geom%nc0a==0) nicas_cmp%v%S(jl1) = zero
 end do
 nicas_cmp%v%n_s = nicas_cmp%nl1
 
@@ -2413,6 +2406,7 @@ do jl0=1,geom%nl0
                nicas_cmp%v%Svec(nicas_cmp%v%n_s,ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0inf)) &
  & /abs(geom%vunit_c0a(ic0a,il0sup)-geom%vunit_c0a(ic0a,il0inf))
             end do
+            if (geom%nc0a==0) nicas_cmp%v%S(nicas_cmp%v%n_s) = zero
          end if
       end do
       il0inf = jl0
@@ -4475,6 +4469,9 @@ real(kind_real),allocatable :: gamma_tmp(:),fld_tmp(:)
 ! Probe in
 @:probe_in()
 
+! Initialization
+fld = zero
+
 ! Vertical interpolation
 !$omp parallel do schedule(static) private(ic0a,il0) firstprivate(gamma_tmp,fld_tmp)
 do ic0a=1,geom%nc0a
@@ -4578,8 +4575,7 @@ real(kind_real) :: sum1,sum2
 real(kind_real) :: alpha(nicas_cmp%nsb),alpha_save(nicas_cmp%nsb),alpha_c(nicas_cmp%nsc)
 real(kind_real) :: gamma(geom%nc0a,nicas_cmp%nl1),gamma_save(geom%nc0a,nicas_cmp%nl1)
 real(kind_real) :: fld(geom%nc0a,geom%nl0),fld_save(geom%nc0a,geom%nl0)
-real(kind_real) :: fld1(geom%nc0a,geom%nl0),fld1_save(geom%nc0a,geom%nl0)
-real(kind_real) :: fld2(geom%nc0a,geom%nl0),fld2_save(geom%nc0a,geom%nl0)
+real(kind_real) :: fld1(geom%nc0a,geom%nl0),fld2(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: alpha1(:),alpha1_save(:),alpha2(:),alpha2_save(:)
 type(cv_cmp_type) :: cv_cmp1,cv_cmp2
 

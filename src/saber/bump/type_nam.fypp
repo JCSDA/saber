@@ -175,6 +175,7 @@ type nam_type
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
    integer :: fit_ncmpmax(0:nvmax)                            !< Maximum number of cmponents in the fit function
    logical :: write_hdiag_detail                              !< Write HDIAG components detail
+   logical :: no_hybrid_loc_update                            !< Use localization computed without hybridization
 
    ! nicas_param
    logical :: nonunit_diag                                    !< Non-unit diagonal for the NICAS application
@@ -424,6 +425,7 @@ nam%diag_rvflt = zero
 nam%fit_dl0 = 1
 nam%fit_ncmpmax = 1
 nam%write_hdiag_detail = .false.
+nam%no_hybrid_loc_update = .false.
 
 ! nicas_param default
 nam%nonunit_diag = .false.
@@ -622,6 +624,7 @@ real(kind_real) :: diag_rvflt
 integer :: fit_dl0
 integer :: fit_ncmpmax(0:nvmax)
 logical :: write_hdiag_detail
+logical :: no_hybrid_loc_update
 logical :: nonunit_diag
 real(kind_real) :: resol
 integer :: nc1max
@@ -788,7 +791,8 @@ namelist/fit_param/ &
  & diag_rvflt, &
  & fit_dl0, &
  & fit_ncmpmax, &
- & write_hdiag_detail
+ & write_hdiag_detail, &
+ & no_hybrid_loc_update
 namelist/nicas_param/ &
  & nonunit_diag, &
  & resol, &
@@ -990,6 +994,7 @@ if (mpl%main) then
    fit_dl0 = 1
    fit_ncmpmax = 1
    write_hdiag_detail = .false.
+   no_hybrid_loc_update = .false.
 
    ! nicas_param default
    nonunit_diag = .false.
@@ -1194,6 +1199,7 @@ if (mpl%main) then
    nam%fit_dl0 = fit_dl0
    nam%fit_ncmpmax = fit_ncmpmax
    nam%write_hdiag_detail = write_hdiag_detail
+   nam%no_hybrid_loc_update = no_hybrid_loc_update
 
    ! nicas_param
    read(lunit,nml=nicas_param)
@@ -1402,6 +1408,7 @@ call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_ncmpmax,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_hdiag_detail,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%no_hybrid_loc_update,mpl%rootproc-1)
 
 ! nicas_param
 call mpl%f_comm%broadcast(nam%nonunit_diag,mpl%rootproc-1)
@@ -1808,6 +1815,7 @@ if (conf%has('fit_ncmpmax')) then
    end do
 end if
 if (conf%has('write_hdiag_detail')) call conf%get_or_die('write_hdiag_detail',nam%write_hdiag_detail)
+if (conf%has('no_hybrid_loc_update')) call conf%get_or_die('no_hybrid_loc_update',nam%no_hybrid_loc_update)
 
 ! nicas_param
 if (conf%has('nonunit_diag')) call conf%get_or_die('nonunit_diag',nam%nonunit_diag)
@@ -2634,6 +2642,7 @@ call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
 call mpl%write('fit_ncmpmax',nam%nv+1,nam%fit_ncmpmax(0:nam%nv))
 call mpl%write('write_hdiag_detail',nam%write_hdiag_detail)
+call mpl%write('no_hybrid_loc_update',nam%no_hybrid_loc_update)
 
 ! nicas_param
 write(mpl%info,'(a7,a)') '','NICAS parameters'

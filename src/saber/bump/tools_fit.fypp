@@ -275,7 +275,7 @@ real(kind_real),intent(in) :: rv(nl0,ncmp)       !< Vertical support radii
 real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
 
 ! Local variables
-integer :: icmp,il0,jl0r,jl0,jc3
+integer :: icmp,il0,jl0r,jc3
 real(kind_real) :: hor_fit(nc3),ver_fit(nl0r,nl0)
 
 ! Set name
@@ -293,9 +293,6 @@ do icmp=1,ncmp
 
    do il0=1,nl0
       do jl0r=1,nl0r
-         ! Level index
-         jl0 = l0rl0_to_l0(jl0r,il0)
-
          if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(rh(il0,icmp))) then
             ! Horizontal component
             call diag_iso(mpl,nc3,disth,'hor',rh(il0,icmp),hor_fit)
@@ -344,7 +341,7 @@ real(kind_real),intent(in) :: rv(nl0,ncmp)           !< Vertical support radii
 real(kind_real),intent(out) :: fit(nc3,nc4,nl0r,nl0) !< Fit
 
 ! Local variables
-integer :: icmp,il0,jl0r,jl0,jc3,jc4
+integer :: icmp,il0,jl0r,jc3,jc4
 real(kind_real) :: hor_fit(nc3,nc4),ver_fit(nl0r,nl0)
 
 ! Set name
@@ -353,20 +350,19 @@ real(kind_real) :: hor_fit(nc3,nc4),ver_fit(nl0r,nl0)
 ! Probe in
 @:probe_in()
 
+! Initialization
+fit = zero
+
 do icmp=1,ncmp
    ! Vertical component
    call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv(:,icmp),ver_fit)
 
    do il0=1,nl0
       do jl0r=1,nl0r
-         ! Level index
-         jl0 = l0rl0_to_l0(jl0r,il0)
-
          if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(D11(il0,icmp)).and.mpl%msv%isnot(D22(il0,icmp)) &
- & .and.mpl%msv%isnot(D12(jl0,icmp))) then
+ & .and.mpl%msv%isnot(D12(il0,icmp))) then
             ! Horizontal component
             call diag_tensor(mpl,nc3,nc4,disth,as,D11(il0,icmp),D22(il0,icmp),D12(il0,icmp),hor_fit)
-
             do jc4=1,nc4
                do jc3=1,nc3
                   ! Fit function

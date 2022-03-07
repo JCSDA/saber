@@ -39,14 +39,10 @@ vbal_rad: 2000.0e3
 ne: 50
 
 # fit_param
+no_hybrid_loc_update: true
 
 # nicas_param
 resol: 8.0
-forced_radii: true
-rh:
-  common: [4000.0e3]
-rv:
-  common: [6000.0]
 
 # dirac_param
 ndir: 1

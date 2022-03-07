@@ -390,15 +390,13 @@ type(bpar_type),intent(in) :: bpar             !< Block parameters
 integer,intent(in) :: ncmp                     !< Number of components
 
 ! Local variables
-integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc3,jc4,ix,icmp,jcmp
+integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc4,ix,icmp,jcmp
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
 real(kind_real) :: a,m2(geom%nl0)
-real(kind_real),allocatable :: raw_hor(:,:),raw_ver(:),distv(:),rinf(:),rsup(:),rh_c4l1(:,:,:),fit(:,:,:,:),fit_hor(:),fit_ver(:)
+real(kind_real),allocatable :: raw_hor(:,:),raw_ver(:),distv(:),rinf(:),rsup(:),rh_c4l1(:,:,:),fit_hor(:),fit_ver(:)
 real(kind_real),allocatable :: rh_l1(:,:),D11_l1(:,:),D22_l1(:,:),D12_l1(:,:),rv_l1(:,:),a_l1(:,:)
 logical :: var2d,valid
 type(minim_type) :: minim
-
-real(kind_real),parameter :: tailfac = 0.5
 
 ! Set name
 @:set_name(diag_blk_fitting)
@@ -420,11 +418,9 @@ end do
 if ((count(m2>zero)==1).and.(trim(nam%lev2d)=='first').and.(m2(1)>zero)) then
    var2d = .true.
    ilev2d = 1
-   diag_blk%rv_l0(ilev2d,:) = zero
 elseif ((count(m2>zero)==1).and.(trim(nam%lev2d)=='last').and.(m2(geom%nl0)>zero)) then
    var2d = .true.
    ilev2d = geom%nl0
-   diag_blk%rv_l0(ilev2d,:) = zero
 else
    var2d = .false.
 end if
@@ -702,6 +698,7 @@ if (bpar%nc4(ib)>1) then
    diag_blk%D12_l0 = mpl%msv%valr
 end if
 diag_blk%rv_l0 = mpl%msv%valr
+if (var2d) diag_blk%rv_l0(ilev2d,:) = zero
 
 ! Interpolate horizontal parameters
 do icmp=1,ncmp

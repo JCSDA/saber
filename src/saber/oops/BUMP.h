@@ -390,6 +390,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> fit_ncmpmax{"fit_ncmpmax", this};
   // Write HDIAG components detail
   oops::OptionalParameter<bool> write_hdiag_detail{"write_hdiag_detail", this};
+  // Use localization computed without hybridization
+  oops::OptionalParameter<bool> no_hybrid_loc_update{"no_hybrid_loc_update", this};
 
   // nicas_param
 
@@ -774,7 +776,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
         const std::string & param = inputparam.param;
         const int & component = inputparam.component;
         this->setParameter(param, component, dx);
-        oops::Log::test() << "Norm of " << param << " - " << component << " at " << date << ": "
+        oops::Log::test() << "Norm of " << param << " at " << date << ": "
                           << std::scientific << std::setprecision(3) << dx.norm() << std::endl;
       }
     }
@@ -914,7 +916,7 @@ void BUMP<MODEL>::write() const {
 
         // Write parameter
         dx.write(outputparam.incwrite);
-        oops::Log::test() << "Norm of " << param << " - " << component << " at " << date << ": "
+        oops::Log::test() << "Norm of " << param << " at " << date << ": "
                           << std::scientific << std::setprecision(3) << dx.norm() << std::endl;
       }
     }

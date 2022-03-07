@@ -519,7 +519,6 @@ do ib=1,bpar%nbe
       allocate(diag%blk(0,ib)%coef_ens_c0a(geom%nc0a,geom%nl0))
       allocate(diag%blk(0,ib)%coef_sta_c0a(geom%nc0a,geom%nl0))
       if (bpar%fit_block(ib)) then
-print*, 'toto',ib,diag%blk(0,ib)%ncmp
          allocate(diag%blk(0,ib)%a_c0a(geom%nc0a,geom%nl0,diag%blk(0,ib)%ncmp))
          allocate(diag%blk(0,ib)%rh_c0a(geom%nc0a,geom%nl0,diag%blk(0,ib)%ncmp))
          if (bpar%nc4(ib)>1) then
