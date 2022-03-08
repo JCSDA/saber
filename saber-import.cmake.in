@@ -16,7 +16,11 @@ if(NOT MPI_Fortran_FOUND)
 endif()
 
 if(NOT NetCDF_Fortran_FOUND)
-    find_dependency(NetCDF REQUIRED COMPONENTS Fortran CXX)
+    find_dependency(NetCDF REQUIRED COMPONENTS Fortran)
+endif()
+
+if(NOT NetCDF_CXX_FOUND)
+    find_dependency(NetCDF REQUIRED COMPONENTS CXX)
 endif()
 
 if(NOT eckit_FOUND)
