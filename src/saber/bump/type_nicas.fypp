@@ -394,8 +394,8 @@ do iproc=1,mpl%nproc
          end do
 
          do ib=1,bpar%nbe
-            ! Write data (definition mode)
-            if (bpar%B_block(ib)) call nicas%blk(ib)%write_local_data(mpl,geom,bpar)
+            ! Write data (data mode)
+            if (bpar%nicas_block(ib)) call nicas%blk(ib)%write_local_data(mpl,geom)
          end do
       else
          ! Allocation
@@ -419,8 +419,8 @@ do iproc=1,mpl%nproc
          end do
 
          do ib=1,bpar%nbe
-            ! Write data (definition mode)
-            if (bpar%B_block(ib)) call nicas_tmp%blk(ib)%write_local_data(mpl,geom,bpar)
+            ! Write data (data mode)
+            if (bpar%nicas_block(ib)) call nicas_tmp%blk(ib)%write_local_data(mpl,geom)
          end do
 
          ! Release memory
@@ -535,13 +535,13 @@ do ib=1,bpar%nbe
       end do
 
       ! Write global data (definition mode)
-      if (bpar%nicas_block(ib)) call nicas%blk(ib)%write_global_def(mpl,nam,geom,bpar)
+      if (bpar%B_block(ib)) call nicas%blk(ib)%write_global_def(mpl,nam,geom,bpar)
    end if
 end do
 
 do ib=1,bpar%nbe
    ! Write global data (data mode)
-   if (bpar%B_block(ib)) call nicas%blk(ib)%write_global_data(mpl,geom,bpar)
+   if (bpar%nicas_block(ib)) call nicas%blk(ib)%write_global_data(mpl,geom)
 end do
 
 ! Close file
