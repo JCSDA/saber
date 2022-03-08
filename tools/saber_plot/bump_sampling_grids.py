@@ -10,7 +10,7 @@ import numpy as np
 import numpy.ma as ma
 import os
 
-def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
+def bump_sampling_grids(args, suffix):
    """! Plot script for the "sampling grids" files produced by BUMP"""
 
    # c3 plot
@@ -21,9 +21,9 @@ def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
 
    # Loop over files
    first = True
-   for impi in range(0, int(mpi)):
+   for impi in range(0, int(args.mpi)):
       # Open file
-      f = Dataset(testdata + "/" + test + "/test_" + mpi + "-" + omp + "_" + suffix + "_" + mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc", "r", format="NETCDF4")
+      f = Dataset(args.testdata + "/" + args.test + "/test_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + args.mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc", "r", format="NETCDF4")
 
       # Get _FillValue
       _FillValue = f.__dict__["_FillValue"]
@@ -126,7 +126,8 @@ def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
                      ax[il0].plot([lon[ic1,il0,0], lon[ic1,il0,ic3]], [lat[ic1,il0,0], lat[ic1,il0,ic3]], marker="o", color="black", ms=0.2)
 
          # Save and close figure
-         plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_c3_" + str(ic3) + ".jpg", format="jpg", dpi=300)
+         plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_c3_" + str(ic3) + ".jpg"
+         plt.savefig(plotpath, format="jpg", dpi=300)
          plt.close()
 
    if sc3 and (local or vbal):
@@ -152,7 +153,8 @@ def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
                   ax[il0].plot(lon_vbal[ic2,il0,0], lat_vbal[ic2,il0,0], marker="o", color="red", ms=0.2)
 
       # Save and close figure
-      plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_c2_in_c1.jpg", format="jpg", dpi=300)
+      plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_c2_in_c1.jpg"
+      plt.savefig(plotpath, format="jpg", dpi=300)
       plt.close()
 
    if local:
@@ -171,7 +173,8 @@ def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
                      ax[il0].plot([lon_local[ic2,il0,0], lon_local[ic2,il0,ic1]], [lat_local[ic2,il0,0], lat_local[ic2,il0,ic1]], marker="o", color="black", ms=0.2)
 
          # Save and close figure
-         plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_c2_" + str(ic2) + ".jpg", format="jpg", dpi=300)
+         plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_c2_" + str(ic2) + ".jpg"
+         plt.savefig(plotpath, format="jpg", dpi=300)
          plt.close()
 
    if vbal:
@@ -190,5 +193,6 @@ def sampling_grids(testdata, test, mpi, omp, suffix, testfig):
                      ax[il0].plot([lon_vbal[ic2,il0,0], lon_vbal[ic2,il0,ic1]], [lat_vbal[ic2,il0,0], lat_vbal[ic2,il0,ic1]], marker="o", color="black", ms=0.2)
 
          # Save and close figure
-         plt.savefig(testfig + "/test_" + mpi + "-" + omp + "_" + suffix + "_c2_" + str(ic2) + ".jpg", format="jpg", dpi=300)
+         plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_c2_" + str(ic2) + ".jpg"
+         plt.savefig(plotpath, format="jpg", dpi=300)
          plt.close()

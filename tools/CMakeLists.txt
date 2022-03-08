@@ -7,15 +7,16 @@ list( APPEND test_files
     saber_links.ksh
     saber_parallel.sh
     saber_plot.py
-    saber_plot/avg.py
-    saber_plot/contour_centered.py
-    saber_plot/contour_positive.py
-    saber_plot/diag.py
-    saber_plot/lct_cor.py
-    saber_plot/normality.py
-    saber_plot/randomization.py
-    saber_plot/sampling_grids.py
-    saber_plot/umf.py
+    saber_plot/bump_avg.py
+    saber_plot/bump_contour_centered.py
+    saber_plot/bump_contour_positive.py
+    saber_plot/bump_diag.py
+    saber_plot/bump_lct_cor.py
+    saber_plot/bump_normality.py
+    saber_plot/bump_randomization.py
+    saber_plot/bump_sampling_grids.py
+    saber_plot/bump_umf.py
+    saber_plot/quench.py
     saber_set_ref.sh
     saber_setup.sh
     saber_tar_data.sh

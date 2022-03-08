@@ -35,6 +35,7 @@ instantiateSaberBlockFactory.h
 ErrorCovariance.h
 ErrorCovarianceTraining.h
 Localization.h
+SaberBlockTest.h
 
 PARENT_SCOPE
 )
