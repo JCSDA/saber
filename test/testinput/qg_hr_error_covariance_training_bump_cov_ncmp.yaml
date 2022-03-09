@@ -11,9 +11,8 @@ bump:
   fit_ncmpmax:
     q: 3
   method: cor
-  nc1: 350
-  nc2: 50
-  nc3: 15
+  nc1: 3500
+  nc3: 20
   new_hdiag: true
   new_nicas: true
   nl0r: 2
@@ -22,6 +21,7 @@ bump:
   strategy: specific_univariate
   write_hdiag: true
   write_nicas_local: true
+  write_hdiag_detail: true
   ndir: 14
   londir: [-120.0,-60.0,0.0,60.0,120.0,-150.0,-90.0,-30.0,30.0,90.0,150.0,-120.0,0.0,120.0]
   latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]

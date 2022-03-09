@@ -10,3 +10,7 @@ test_interpolation_interface:
     prefix: interpolation_bump/test
     datadir: testdata
     verbosity: main
+
+test:
+  reference filename: testref/interpolation_bump/test.log.out
+  test output filename: testoutput/interpolation_bump/test.log.out

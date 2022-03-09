@@ -530,4 +530,5 @@ qg_error_covariance_training_bump_vbal_new/test.log.out
 qg_error_covariance_training_bump_vbal_update/test.log.out
 qg_error_covariance_training_gsirf_cov/test.log.out
 qg_truth/test.log.out
+interpolation_bump/test.log.out
 quench_bump_nicas/test.log.out

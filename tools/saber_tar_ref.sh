@@ -31,7 +31,7 @@ if test ${upload_on_s3} == "1"; then
       while IFS= read -r line
       do
          # OOPS-specific tests
-         if test ${line#qg_} != ${line}; then
+         if test ${line#qg_} != ${line} || test ${line#interpolation_} != ${line} || test ${line#quench_} != ${line}; then
             ln -sf ${datadir}/../testoutput/${line} ${datadir}/${line}
          fi
 
@@ -62,7 +62,7 @@ else
       while IFS= read -r line
       do
          # OOPS-specific tests
-         if test ${line#qg_} != ${line}; then
+         if test ${line#qg_} != ${line} || test ${line#interpolation_} != ${line} || test ${line#quench_} != ${line}; then
             ln -sf ${datadir}/../testoutput/${line} ${datadir}/${line}
          fi
 

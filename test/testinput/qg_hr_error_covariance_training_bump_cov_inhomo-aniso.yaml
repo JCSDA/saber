@@ -13,7 +13,7 @@ bump:
   method: cor
   nc1: 3500
   nc2: 500
-  nc3: 15
+  nc3: 20
   nc4: 8
   new_hdiag: true
   new_nicas: true

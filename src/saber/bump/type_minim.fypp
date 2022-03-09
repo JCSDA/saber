@@ -37,12 +37,16 @@ type minim_type
    real(kind_real) :: f_min                       !< Minimum cost
 
    ! Specific data
+   logical :: la                                  !< Activate amplitude optimization 
+   logical :: lrh                                 !< Activate rh optimization
+   logical :: lrv                                 !< Activate rv optimization
    integer :: nc3                                 !< Number of horizontal distance classes
    integer :: nc4                                 !< Number of angular sectors
    integer :: nl0r                                !< Effective number of levels
    real(kind_real),allocatable :: disth(:)        !< Horizontal distance
    real(kind_real),allocatable :: as(:)           !< Angular sectors
    real(kind_real),allocatable :: distv(:)        !< Vertical distance
+   real(kind_real) :: a                           !< Forced amplitude (if la = .false.)
 contains
    procedure :: alloc => minim_alloc
    procedure :: partial_dealloc => minim_partial_dealloc
@@ -80,16 +84,14 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 ! Probe in
 @:probe_in()
 
-! Check
-if (minim%nx<=0) call mpl%abort('${subr}$','nx should be positive to allocate')
-if (minim%ny<=0) call mpl%abort('${subr}$','nx should be positive to allocate')
-
 ! Allocation
-allocate(minim%x(minim%nx))
-allocate(minim%guess(minim%nx))
-allocate(minim%binf(minim%nx))
-allocate(minim%bsup(minim%nx))
-allocate(minim%obs(minim%ny))
+if (minim%nx>0) then
+   allocate(minim%x(minim%nx))
+   allocate(minim%guess(minim%nx))
+   allocate(minim%binf(minim%nx))
+   allocate(minim%bsup(minim%nx))
+end if
+if (minim%ny>0) allocate(minim%obs(minim%ny))
 
 ! Probe out
 @:probe_out()
@@ -289,8 +291,7 @@ real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 integer :: ix,iy,jc4
-real(kind_real) :: amp,rh(minim%nc4),rv,fit_hor(minim%nc3,minim%nc4),fit_ver(minim%nl0r)
-real(kind_real) :: wgt_hor(minim%nc3,minim%nc4),wgt_ver(minim%nl0r)
+real(kind_real) :: a,rh(minim%nc4),rv,fit_hor(minim%nc3,minim%nc4),fit_ver(minim%nl0r),wgt_hor(minim%nc3,minim%nc4)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny),wgt_pack(minim%ny)
 
 ! Set name
@@ -305,44 +306,56 @@ call minim%vt_dir(xtmp)
 
 ! Parameters
 ix = 0
-if (minim%nx==2+minim%nc4) then
+if (minim%la) then
    ix = ix+1
-   amp = xtmp(ix)
+   a = xtmp(ix)
 else
-   amp = fit_hor(1,1)
+   a = minim%a
 end if
-do jc4=1,minim%nc4
+if (minim%lrh) then
+   do jc4=1,minim%nc4
+      ix = ix+1
+      rh(jc4) = xtmp(ix)
+   end do
+else
+   rh = zero
+end if
+if (minim%lrv) then
    ix = ix+1
-   rh(jc4) = xtmp(ix)
-end do
-ix = ix+1
-rv = xtmp(ix)
+   rv = xtmp(ix)
+else
+   rv = zero
+end if
 
 ! Compute horizontal fit for each angular sector
 do jc4=1,minim%nc4
    call diag_iso(mpl,minim%nc3,minim%disth,'hor',rh(jc4),fit_hor(:,jc4))
-   wgt_hor(:,jc4) = minim%disth
 end do
-fit_hor = amp*fit_hor
+fit_hor = a*fit_hor
 
 ! Compute vertical fit
 call diag_iso(mpl,minim%nl0r,minim%distv,'ver',rv,fit_ver)
-fit_ver = amp*fit_ver
-wgt_ver = minim%distv
+fit_ver = a*fit_ver
 
 ! Pack
 fit_pack(1:minim%nc3*minim%nc4) = reshape(fit_hor,(/minim%nc3*minim%nc4/))
 fit_pack(minim%nc3*minim%nc4+1:minim%ny) = fit_ver
+
+! Compute weight
+do jc4=1,minim%nc4
+   wgt_hor(:,jc4) = minim%disth
+end do
 wgt_pack(1:minim%nc3*minim%nc4) = reshape(wgt_hor,(/minim%nc3*minim%nc4/))
-wgt_pack(minim%nc3*minim%nc4+1:minim%ny) = wgt_ver
+wgt_pack(minim%nc3*minim%nc4+1:minim%ny) = minim%distv
+wgt_pack = wgt_pack**2
 
 ! Observations penalty
 f = zero
 do iy=1,minim%ny
    if (mpl%msv%isnot(minim%obs(iy)).and.mpl%msv%isnot(fit_pack(iy))) then
-      if (fit_pack(iy)>minim%obs(iy)) then
+      if ((fit_pack(iy)>minim%obs(iy)).and.minim%la) then
          ! Fit value is too large: large penalty
-         f = f+10.0*wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2
+         f = f+ten*wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2
       else
          ! Fit value is too small: normal penalty
          f = f+wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2

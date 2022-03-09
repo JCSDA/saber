@@ -10,7 +10,7 @@ bump:
   dc: 200.0e3
   method: cor
   nc1: 3500
-  nc3: 15
+  nc3: 20
   new_hdiag: true
   new_nicas: true
   nl0r: 2
