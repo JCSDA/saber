@@ -16,7 +16,7 @@ State.cc
 
 ecbuild_add_library( TARGET   quench
                      SOURCES  ${saber_quench_src_files}
-                     PUBLIC_LIBS  NetCDF::NetCDF_CXX oops
+                     PUBLIC_LIBS  oops
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/quench
                      INSTALL_HEADERS LISTED
                      LINKER_LANGUAGE CXX )

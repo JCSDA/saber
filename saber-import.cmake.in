@@ -19,10 +19,6 @@ if(NOT NetCDF_Fortran_FOUND)
     find_dependency(NetCDF REQUIRED COMPONENTS Fortran)
 endif()
 
-if(NOT NetCDF_CXX_FOUND)
-    find_dependency(NetCDF REQUIRED COMPONENTS CXX)
-endif()
-
 if(NOT eckit_FOUND)
     find_dependency(eckit REQUIRED)
 endif()

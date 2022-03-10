@@ -27,7 +27,7 @@ saber blocks:
       var: [10]
     strategy: specific_univariate
 output:
-  filepath: testdata/quench_bump_nicas/dirac.nc
+  filepath: testdata/quench_bump_nicas/dirac
 
 test:
   reference filename: testref/quench_bump_nicas/test.log.out

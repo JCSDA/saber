@@ -7,9 +7,9 @@
 
 #include "quench/Fields.h"
 
-#include <netcdf>
-
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -155,7 +155,7 @@ void Fields::read(const eckit::Configuration & config) {
 // -----------------------------------------------------------------------------
 void Fields::write(const eckit::Configuration & config) const {
   // Get file path
-  std::string filepath = config.getString("filepath");
+  const std::string filepath = config.getString("filepath");
 
   if (geom_->atlasFunctionSpace()->type() == "StructuredColumns") {
     atlas::functionspace::StructuredColumns fs(*(geom_->atlasFunctionSpace()));
@@ -198,56 +198,42 @@ void Fields::write(const eckit::Configuration & config) const {
     fs.gather(*atlasFieldSet_, globalData);
 
     if (geom_->getComm().rank() == 0) {
-      // Create NetCDF file
-      netCDF::NcFile dataFile(filepath, netCDF::NcFile::replace);
-
-      // Copy coordinates
+      // Write longitudes
       atlas::Field lonGlobal = globalCoordinates.field("lon");
-      atlas::Field latGlobal = globalCoordinates.field("lat");
       auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
-      auto latView = atlas::array::make_view<double, 1>(latGlobal);
-      double zlon[lonGlobal.shape(0)][1];
-      double zlat[latGlobal.shape(0)][1];
-      for (atlas::idx_t jnode = 0; jnode < lonGlobal.shape(0); ++jnode) {
-        zlon[jnode][0] = lonView(jnode);
-        zlat[jnode][0] = latView(jnode);
+      std::string filepath_lon = filepath + "_lon";
+      std::ofstream outfile_lon(filepath_lon.c_str());
+      if (outfile_lon.is_open()) {
+        lonView.dump(outfile_lon);
+        outfile_lon.close();
+      } else {
+        ABORT("Fields::write: cannot open file for longitudes");
       }
 
-      // Create dimensions
-      netCDF::NcDim nodes = dataFile.addDim("nodes", lonGlobal.shape(0));
-      std::vector<netCDF::NcDim> dims_coord;
-      dims_coord.push_back(nodes);
-
-      // Define coordinates
-      netCDF::NcVar lon = dataFile.addVar("lon", netCDF::ncDouble, dims_coord);
-      netCDF::NcVar lat = dataFile.addVar("lat", netCDF::ncDouble, dims_coord);
-
-      // Write coorinates
-      lon.putVar(zlon);
-      lat.putVar(zlat);
+      // Write latitudes
+      atlas::Field latGlobal = globalCoordinates.field("lat");
+      auto latView = atlas::array::make_view<double, 1>(latGlobal);
+      std::string filepath_lat = filepath + "_lat";
+      std::ofstream outfile_lat(filepath_lat.c_str());
+      if (outfile_lat.is_open()) {
+        latView.dump(outfile_lat);
+        outfile_lat.close();
+      } else {
+        ABORT("Fields::write: cannot open file for latitudes");
+      }
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        // Copy data
+        // Write variable
         atlas::Field field = globalData.field(vars_[jvar]);
-        auto view = atlas::array::make_view<double, 2>(field);
-        double zdata[field.shape(0)][field.shape(1)];
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            zdata[jnode][jlevel] = view(jnode, jlevel);
-          }
+        auto varView = atlas::array::make_view<double, 2>(field);
+        std::string filepath_var = filepath + "_" + vars_[jvar];
+        std::ofstream outfile_var(filepath_var.c_str());
+        if (outfile_var.is_open()) {
+          varView.dump(outfile_var);
+          outfile_var.close();
+        } else {
+          ABORT("Fields::write: cannot open file for variable" + vars_[jvar]);
         }
-
-        // Define dimension
-        netCDF::NcDim levels = dataFile.addDim("levels_" + vars_[jvar], field.shape(1));
-        std::vector<netCDF::NcDim> dims;
-        dims.push_back(nodes);
-        dims.push_back(levels);
-
-        // Define variable
-        netCDF::NcVar data = dataFile.addVar(vars_[jvar], netCDF::ncDouble, dims);
-
-        // Write data
-        data.putVar(zdata);
       }
     }
   } else {
