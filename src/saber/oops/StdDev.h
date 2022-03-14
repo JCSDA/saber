@@ -95,8 +95,7 @@ StdDev<MODEL>::StdDev(const Geometry_ & resol,
   }
 
   // Setup increment
-  util::DateTime time(1977, 5, 25, 0, 0, 0);
-  Increment_ stdDev(resol, activeVars, time);
+  Increment_ stdDev(resol, activeVars, xb.validTime());
   stdDev.read(params.fileConfig.value());
   oops::Log::test() << "Norm of stddev: " << std::scientific
                     << std::setprecision(3) << stdDev.norm() << std::endl;

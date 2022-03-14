@@ -644,7 +644,7 @@ if (bpar%nicas_block(ib)) then
    call get_att(mpl,nicas_blk%grpid,'nl1',nicas_blk%nl1)
    nicas_blk%nsa = inquire_dim_size(mpl,nicas_blk%grpid,'nsa',0)
    call get_att(mpl,nicas_blk%grpid,'nsb',nicas_blk%nsb)
-   nicas_blk%nsc = inquire_dim_size(mpl,nicas_blk%grpid,'nsc',0)
+   call get_att(mpl,nicas_blk%grpid,'nsc',nicas_blk%nsc)
    call get_att(mpl,nicas_blk%grpid,'ns',nicas_blk%ns)
 
    ! Allocation
@@ -683,8 +683,8 @@ if (bpar%nicas_block(ib)) then
    if (nicas_blk%nsa>0) then
       order_sa_id = inquire_var(mpl,nicas_blk%grpid,'order_sa')
       sa_to_sc_id = inquire_var(mpl,nicas_blk%grpid,'sa_to_sc')
+      inorm_id = inquire_var(mpl,nicas_blk%grpid,'inorm')
    end if
-   if (nicas_blk%nsc>0) inorm_id = inquire_var(mpl,nicas_blk%grpid,'inorm')
 
    ! Read data
    call get_var(mpl,nicas_blk%grpid,vlev_id,vlev_int)
@@ -742,7 +742,7 @@ type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
 integer :: il1
-integer :: nc1b_id(nicas_blk%nl1),nsa_id,nsc_id
+integer :: nc1b_id(nicas_blk%nl1),nsa_id
 character(len=1024) :: grpname
 
 ! Set name
@@ -775,7 +775,7 @@ if (bpar%nicas_block(ib)) then
    end do
    if (nicas_blk%nsa>0) nsa_id = define_dim(mpl,nicas_blk%grpid,'nsa',nicas_blk%nsa)
    call put_att(mpl,nicas_blk%grpid,'nsb',nicas_blk%nsb)
-   if (nicas_blk%nsc>0) nsc_id = define_dim(mpl,nicas_blk%grpid,'nsc',nicas_blk%nsc)
+   call put_att(mpl,nicas_blk%grpid,'nsc',nicas_blk%nsc)
    call put_att(mpl,nicas_blk%grpid,'ns',nicas_blk%ns)
 
    ! Define variables

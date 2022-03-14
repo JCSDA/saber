@@ -75,8 +75,8 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
 
     // Create dummy state
     const oops::Variables inputVars(saberBlock, "input variables");
-    util::DateTime time(1977, 5, 25, 0, 0, 0);
-    State_ dummyState(resol, inputVars, time);
+    util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
+    State_ dummyState(resol, inputVars, dummyTime);
 
     // Create SABER block
     saberBlock_.reset(SaberBlockFactory<MODEL>::create(resol, parameters.saberBlockParameters,
