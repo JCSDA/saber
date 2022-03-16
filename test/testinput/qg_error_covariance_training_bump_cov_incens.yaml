@@ -71,7 +71,7 @@ ensemble pert:
     template:
       date: 2010-01-01T12:00:00Z
       filename: testdata/qg_ens_recenter/recenter.ens.%mem%.2010-01-01T12:00:00Z.PT0S.nc
-    pattern: %mem%
+    pattern: '%mem%'
     nmembers: 10
 geometry:
   nx: 40

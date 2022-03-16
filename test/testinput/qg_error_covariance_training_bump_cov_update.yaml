@@ -30,7 +30,7 @@ bump:
       template:
         date: 2010-01-01T12:00:00Z
         filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
-      pattern: %mem%
+      pattern: '%mem%'
       nmembers: 10
   ndir: 14
   londir: [-120.0,-60.0,0.0,60.0,120.0,-150.0,-90.0,-30.0,30.0,90.0,150.0,-120.0,0.0,120.0]

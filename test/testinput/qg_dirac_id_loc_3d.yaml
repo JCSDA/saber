@@ -10,7 +10,7 @@ background error:
     template:
       date: 2010-01-01T12:00:00Z
       filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
-    pattern: %mem%
+    pattern: '%mem%'
     nmembers: 10
 dirac:
   date: 2010-01-01T12:00:00Z
@@ -27,7 +27,7 @@ initial condition:
   filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 output dirac:
   datadir: testdata/qg_dirac_id_loc_3d
-  exp: %id%
+  exp: '%id%'
   type: an
 
 test:
