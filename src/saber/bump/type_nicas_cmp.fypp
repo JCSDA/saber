@@ -623,7 +623,7 @@ nicas_cmp%nc0a = inquire_dim_size(mpl,nicas_cmp%ncid,'nc0a',0)
 call get_att(mpl,nicas_cmp%cmpid,0,'nl1',nicas_cmp%nl1)
 nicas_cmp%nsa = inquire_dim_size(mpl,nicas_cmp%cmpid,'nsa',0)
 call get_att(mpl,nicas_cmp%cmpid,0,'nsb',nicas_cmp%nsb)
-nicas_cmp%nsc = inquire_dim_size(mpl,nicas_cmp%cmpid,'nsc',0)
+call get_att(mpl,nicas_cmp%cmpid,0,'nsc',nicas_cmp%nsc)
 call get_att(mpl,nicas_cmp%cmpid,0,'ns',nicas_cmp%ns)
 
 ! Allocation
@@ -662,8 +662,8 @@ end do
 if (nicas_cmp%nsa>0) then
    order_sa_id = inquire_var(mpl,nicas_cmp%cmpid,'order_sa')
    sa_to_sc_id = inquire_var(mpl,nicas_cmp%cmpid,'sa_to_sc')
+   inorm_id = inquire_var(mpl,nicas_cmp%cmpid,'inorm')
 end if
-if (nicas_cmp%nsc>0) inorm_id = inquire_var(mpl,nicas_cmp%cmpid,'inorm')
 
 ! Read data
 call get_var(mpl,nicas_cmp%cmpid,vlev_id,vlev_int)
@@ -715,7 +715,7 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 
 ! Local variables
 integer :: il1
-integer :: nc1b_id(nicas_cmp%nl1),nsa_id,nsc_id
+integer :: nc1b_id(nicas_cmp%nl1),nsa_id
 character(len=1024) :: levname
 
 ! Set name
@@ -733,7 +733,7 @@ do il1=1,nicas_cmp%nl1
 end do
 if (nicas_cmp%nsa>0) nsa_id = define_dim(mpl,nicas_cmp%cmpid,'nsa',nicas_cmp%nsa)
 call put_att(mpl,nicas_cmp%cmpid,0,'nsb',nicas_cmp%nsb)
-if (nicas_cmp%nsc>0) nsc_id = define_dim(mpl,nicas_cmp%cmpid,'nsc',nicas_cmp%nsc)
+call put_att(mpl,nicas_cmp%cmpid,0,'nsc',nicas_cmp%nsc)
 call put_att(mpl,nicas_cmp%cmpid,0,'ns',nicas_cmp%ns)
 
 ! Define variables

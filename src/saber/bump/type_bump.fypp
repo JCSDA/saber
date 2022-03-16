@@ -2207,7 +2207,7 @@ integer,intent(in) :: ib                                            !< Block ind
 real(kind_real),intent(in) :: fld_mga(bump%geom%nmga,bump%geom%nl0) !< Field
 
 ! Local variables
-integer :: ic0a,il0,iv
+integer :: ic0a,il0,iv,jb
 real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 logical :: found
 
@@ -2229,10 +2229,15 @@ case ('stddev','var','m4')
 case ('coef','a','rh','rh1','rh2','rhc','rv')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 case ('nicas_norm')
-   if (.not.allocated(bump%nicas%blk)) allocate(bump%nicas%blk(bump%bpar%nbe))
-   if (bump%bpar%nicas_block(ib)) then
-      if (.not.allocated(bump%nicas%blk(ib)%cmp)) allocate(bump%nicas%blk(ib)%cmp(bump%nicas%blk(ib)%ncmp))
+   if (.not.allocated(bump%nicas%blk)) then
+      ! Not allocated yet: allocate and set the number of components to one
+      allocate(bump%nicas%blk(bump%bpar%nbe))
+      do jb=1,bump%bpar%nbe
+         if (bump%bpar%nicas_block(ib)) bump%nicas%blk(jb)%ncmp = 1
+      end do
    end if
+   if (bump%bpar%nicas_block(ib).and.(.not.allocated(bump%nicas%blk(ib)%cmp))) &
+ & allocate(bump%nicas%blk(ib)%cmp(bump%nicas%blk(ib)%ncmp))
 case default
    call bump%mpl%abort('${subr}$','parameter '//trim(param)//' not yet implemented, available input parameters are:'// &
  & 'stddev, var, m4, coef, a, rh, rh1, rh2, rhc, rv, nicas_norm')
