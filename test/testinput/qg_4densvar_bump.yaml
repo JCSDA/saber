@@ -51,7 +51,7 @@ cost function:
           filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT5H.nc
         - date: 2010-01-01T06:00:00Z
           filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT6H.nc
-      pattern: %mem%
+      pattern: '%mem%'
       nmembers: 10
   observations:
   - obs error:

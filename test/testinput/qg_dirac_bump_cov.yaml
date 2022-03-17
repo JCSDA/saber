@@ -31,7 +31,7 @@ initial condition:
   filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
 output dirac:
   datadir: testdata/qg_dirac_bump_cov
-  exp: %id%
+  exp: '%id%'
   type: an
 
 test:
