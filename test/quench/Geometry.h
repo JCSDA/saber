@@ -21,6 +21,7 @@
 #include "oops/mpi/mpi.h"
 
 #include "oops/util/ObjectCounter.h"
+#include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
@@ -47,6 +48,9 @@ class GeometryParameters : public oops::Parameters {
 
   /// Number of levels
   oops::Parameter<size_t> levels{"levels", 1, this};
+
+  /// Vertical unit
+  oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -69,6 +73,7 @@ class Geometry : public util::Printable,
     {return atlasFunctionSpace_.get();}
   atlas::FieldSet * atlasFieldSet() const {return atlasFieldSet_.get();}
   size_t levels() const {return levels_;}
+  std::vector<double> vunit() const {return vunit_;}
 
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
 
@@ -80,6 +85,7 @@ class Geometry : public util::Printable,
   std::unique_ptr<atlas::FunctionSpace> atlasFunctionSpace_;
   std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   size_t levels_;
+  std::vector<double> vunit_;
 };
 // -----------------------------------------------------------------------------
 

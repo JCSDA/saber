@@ -38,6 +38,8 @@ class State : public util::Printable,
 
 /// Constructor, destructor
   State(const Geometry &, const oops::Variables &, const util::DateTime &);
+  State(const Geometry &, const eckit::Configuration &);
+  State(const State &);
 
 /// I/O and diagnostics
   void write(const eckit::Configuration &) const;
@@ -57,6 +59,7 @@ class State : public util::Printable,
 
 /// Other
   void zero();
+  void accumul(const double &, const State &);
 
  private:
   void print(std::ostream &) const;

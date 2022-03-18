@@ -97,6 +97,7 @@ list_plot=`ctest -N | grep ": saber_test_bump" | grep _plot | awk '{print $(NF)}
 list_valgrind=`ctest -N | grep ": saber_test_bump" | grep _valgrind | awk '{print $(NF)}'`
 list_qg=`ctest -N | grep ": saber_test_qg" | awk '{print $(NF)}'`
 list_interpolation=`ctest -N | grep ": saber_test_interpolation" | awk '{print $(NF)}'`
+list_quench=`ctest -N | grep ": saber_test_quench" | awk '{print $(NF)}'`
 
 # Tests variables
 list_get_array=(${list_get})
@@ -131,7 +132,11 @@ list_interpolation_array=(${list_interpolation})
 ntest_interpolation=${#list_interpolation_array[@]}
 stest_interpolation=0
 ftest_interpolation=0
-ntest=$((ntest_run+ntest_compare+ntest_post+ntest_plot+ntest_valgrind+ntest_qg+ntest_interpolation))
+list_quench_array=(${list_quench})
+ntest_quench=${#list_quench_array[@]}
+stest_quench=0
+ftest_quench=0
+ntest=$((ntest_run+ntest_compare+ntest_post+ntest_plot+ntest_valgrind+ntest_qg+ntest_interpolation+ntest_quench))
 itest=0
 if test ${ntest} = 0; then
    echo "No test detected, this script should be run from \${build_directory}/saber/test"
@@ -880,6 +885,29 @@ for interpolation in ${list_interpolation}; do
    ProgressBar ${itest} ${ntest} ${interpolation}
 done
 
+# QUENCH tests
+for quench in ${list_quench}; do
+   echo "Handling process ${quench}" >> saber_ctest_log/execution.log
+
+   # Get command and arguments
+   ctest -VV -R ${quench}\$ > saber_ctest_log/${quench}.log 2> saber_ctest_log/${quench}.err
+
+   # Check if this process passed
+   err=`wc -l saber_ctest_log/${quench}.err | awk '{print $1}'`
+   itest=$((itest+1))
+   if test "${err}" = "0"; then
+      # QUENCH passed
+      echo "${quench} passed" >> saber_ctest_log/execution.log
+      stest_quench=$((stest_quench+1))
+   else
+      # QUENCH failed
+      echo "${quench} failed" >> saber_ctest_log/execution.log
+      ftest_quench=$((ftest_quench+1))
+      PrintFailed ${quench}
+   fi
+   ProgressBar ${itest} ${ntest} ${quench}
+done
+
 # Final time
 final_time=`date`
 final_time_sec=`date +%s`
@@ -949,6 +977,13 @@ if test "${ntest_interpolation}" -gt "0"; then
    stest=`printf "%03d" $((stest_interpolation))`
    ftest=`printf "%03d" $((ftest_interpolation))`
    echo -e "  Interpolation: \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+fi
+
+if test "${ntest_quench}" -gt "0"; then
+   # QUENCH tests
+   stest=`printf "%03d" $((stest_quench))`
+   ftest=`printf "%03d" $((ftest_quench))`
+   echo -e "  QUENCH: \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 exit 0

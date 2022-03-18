@@ -8,10 +8,10 @@
 #ifndef SABER_OOPS_INSTANTIATESABERBLOCKFACTORY_H_
 #define SABER_OOPS_INSTANTIATESABERBLOCKFACTORY_H_
 
-#include "saber/oops/BUMP_NICAS.h"
-#include "saber/oops/BUMP_PsiChiToUV.h"
-#include "saber/oops/BUMP_StdDev.h"
-#include "saber/oops/BUMP_VerticalBalance.h"
+#include "saber/bump/BUMP_NICAS.h"
+#include "saber/bump/BUMP_PsiChiToUV.h"
+#include "saber/bump/BUMP_StdDev.h"
+#include "saber/bump/BUMP_VerticalBalance.h"
 #include "saber/oops/GSI_RF.h"
 #include "saber/oops/ID.h"
 #include "saber/oops/StdDev.h"

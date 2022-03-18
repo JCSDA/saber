@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_BUMP_NICAS_H_
-#define SABER_OOPS_BUMP_NICAS_H_
+#ifndef SABER_BUMP_BUMP_PSICHITOUV_H_
+#define SABER_BUMP_BUMP_PSICHITOUV_H_
 
 #include <memory>
 #include <string>
@@ -18,7 +18,7 @@
 #include "oops/interface/Geometry.h"
 #include "oops/util/abor1_cpp.h"
 
-#include "saber/oops/BUMP.h"
+#include "saber/bump/BUMP.h"
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 
@@ -30,8 +30,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 template <typename MODEL>
-class BUMP_NICASParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BUMP_NICASParameters, SaberBlockParametersBase)
+class BUMP_PsiChiToUVParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BUMP_PsiChiToUVParameters, SaberBlockParametersBase)
 
  public:
   oops::RequiredParameter<BUMP_Parameters<MODEL>> bumpParams{"bump", this};
@@ -40,21 +40,21 @@ class BUMP_NICASParameters : public SaberBlockParametersBase {
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-class BUMP_NICAS : public SaberBlockBase<MODEL> {
+class BUMP_PsiChiToUV : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL> Geometry_;
   typedef oops::State<MODEL>    State_;
   typedef BUMP<MODEL>           BUMP_;
 
  public:
-  static const std::string classname() {return "saber::BUMP_NICAS";}
+  static const std::string classname() {return "saber::BUMP_PsiChiToUV";}
 
-  typedef BUMP_NICASParameters<MODEL> Parameters_;
+  typedef BUMP_PsiChiToUVParameters<MODEL> Parameters_;
 
-  BUMP_NICAS(const Geometry_ &,
-             const Parameters_ &,
-             const State_ &,
-             const State_ &);
-  virtual ~BUMP_NICAS();
+  BUMP_PsiChiToUV(const Geometry_ &,
+                  const Parameters_ & params,
+                  const State_ &,
+                  const State_ &);
+  virtual ~BUMP_PsiChiToUV();
 
   void randomize(atlas::FieldSet *) const override;
   void multiply(atlas::FieldSet *) const override;
@@ -70,93 +70,107 @@ class BUMP_NICAS : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_NICAS<MODEL>::BUMP_NICAS(const Geometry_ & resol,
-                              const Parameters_ & params,
-                              const State_ & xb,
-                              const State_ & fg)
+BUMP_PsiChiToUV<MODEL>::BUMP_PsiChiToUV(const Geometry_ & resol,
+                                        const Parameters_ & params,
+                                        const State_ & xb,
+                                        const State_ & fg)
   : SaberBlockBase<MODEL>(params), bump_()
 {
-  oops::Log::trace() << classname() << "::BUMP_NICAS starting" << std::endl;
+  oops::Log::trace() << classname() << "::BUMP_PsiChiToUV starting" << std::endl;
 
-  // Setup and check input/ouput variables
+  // Setup and check input/ouput variables (only two variables should be different)
   const oops::Variables inputVars = params.inputVars.value();
   const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
+  size_t sameVarsInput = 0;
+  for (size_t jvar = 0; jvar < inputVars.size(); ++jvar) {
+    if (outputVars.has(inputVars[jvar])) sameVarsInput += 1;
+  }
+  ASSERT(sameVarsInput == inputVars.size()-2);
+  size_t sameVarsOutput = 0;
+  for (size_t jvar = 0; jvar < outputVars.size(); ++jvar) {
+    if (inputVars.has(outputVars[jvar])) sameVarsOutput += 1;
+  }
+  ASSERT(sameVarsOutput == outputVars.size()-2);
 
   // Active variables
+  oops::Variables allVars;
+  allVars += inputVars;
+  allVars += outputVars;
   const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
   oops::Variables activeVars;
   if (activeVarsPtr != boost::none) {
     activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
+    ASSERT(activeVars <= allVars);
   } else {
-    activeVars += inputVars;
+    activeVars += allVars;
   }
 
   // Initialize BUMP
   bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value(), xb, fg));
 
-  oops::Log::trace() << classname() << "::BUMP_NICAS done" << std::endl;
+  oops::Log::trace() << classname() << "::BUMP_PsiChiToUV done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_NICAS<MODEL>::~BUMP_NICAS() {
-  oops::Log::trace() << classname() << "::~BUMP_NICAS starting" << std::endl;
-  util::Timer timer(classname(), "~BUMP_NICAS");
-  oops::Log::trace() << classname() << "::~BUMP_NICAS done" << std::endl;
+BUMP_PsiChiToUV<MODEL>::~BUMP_PsiChiToUV() {
+  oops::Log::trace() << classname() << "::~BUMP_PsiChiToUV starting" << std::endl;
+  util::Timer timer(classname(), "~BUMP_PsiChiToUV");
+  oops::Log::trace() << classname() << "::~BUMP_PsiChiToUV done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_PsiChiToUV<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  bump_->randomizeNicas(atlasFieldSet);
+  this->multiply(atlasFieldSet);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_PsiChiToUV<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  bump_->multiplyNicas(atlasFieldSet);
+  bump_->multiplyPsiChiToUV(atlasFieldSet);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_PsiChiToUV<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet)
+  const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  ABORT("BUMP_NICAS<MODEL>::inverseMultiply: not implemented");
+  ABORT("BUMP_PsiChiToUV<MODEL>::inverseMultiply: not implemented");
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_PsiChiToUV<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  ABORT("BUMP_NICAS<MODEL>::multiplyAD: not implemented");
+  bump_->multiplyPsiChiToUVAd(atlasFieldSet);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_PsiChiToUV<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet)
+  const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  ABORT("BUMP_NICAS<MODEL>::inverseMultiplyAD: not implemented");
+  ABORT("BUMP_PsiChiToUV<MODEL>::inverseMultiplyAD: not implemented");
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::print(std::ostream & os) const {
+void BUMP_PsiChiToUV<MODEL>::print(std::ostream & os) const {
   os << classname();
 }
 
@@ -164,4 +178,4 @@ void BUMP_NICAS<MODEL>::print(std::ostream & os) const {
 
 }  // namespace saber
 
-#endif  // SABER_OOPS_BUMP_NICAS_H_
+#endif  // SABER_BUMP_BUMP_PSICHITOUV_H_

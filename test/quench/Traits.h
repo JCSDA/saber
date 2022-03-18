@@ -8,8 +8,10 @@
 #ifndef QUENCH_TRAITS_H_
 #define QUENCH_TRAITS_H_
 
+#include "quench/Covariance.h"
 #include "quench/Geometry.h"
 #include "quench/Increment.h"
+#include "quench/LinearVarChange.h"
 #include "quench/State.h"
 #include "quench/TraitsFwd.h"
 

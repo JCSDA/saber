@@ -3,7 +3,7 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-set( bump_src_files
+list(APPEND bump_src_files_list
 
 tools_fit.fypp
 tools_func.c
@@ -42,6 +42,24 @@ type_var.fypp
 type_vbal.fypp
 type_vbal_blk.fypp
 type_wind.fypp
+
+)
+
+if( oops_FOUND )
+    list(APPEND bump_src_files_list
+
+    BUMP.h
+    BUMP_NICAS.h
+    BUMP_PsiChiToUV.h
+    BUMP_StdDev.h
+    BUMP_VerticalBalance.h
+
+    )
+endif()
+
+set( bump_src_files
+
+${bump_src_files_list}
 
 PARENT_SCOPE
 )

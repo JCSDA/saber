@@ -206,11 +206,13 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply starting" << std::endl;
   util::Timer timer(classname(), "doMultiply");
 
+  // Copy input
+  dxo = dxi;
+
   // Increment_ to ATLAS fieldset
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxi.setAtlas(atlasFieldSet.get());
-  dxi.toAtlas(atlasFieldSet.get());
   dxo.setAtlas(atlasFieldSet.get());
+  dxo.toAtlas(atlasFieldSet.get());
 
   // K_1^T K_2^T .. K_N^T
   for (ircst_ it = saberBlocks_.rbegin(); it != saberBlocks_.rend(); ++it) {
@@ -229,7 +231,6 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
 
   // ATLAS fieldset to Increment_
   dxo.fromAtlas(atlasFieldSet.get());
-
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply done" << std::endl;
 }
 
@@ -241,11 +242,13 @@ void ErrorCovariance<MODEL>::doInverseMultiply(const Increment_ & dxi,
   oops::Log::trace() << "ErrorCovariance<MODEL>::doInverseMultiply starting" << std::endl;
   util::Timer timer(classname(), "doInverseMultiply");
 
+  // Copy input
+  dxo = dxi;
+
   // Increment_ to ATLAS fieldset
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxi.setAtlas(atlasFieldSet.get());
-  dxi.toAtlas(atlasFieldSet.get());
   dxo.setAtlas(atlasFieldSet.get());
+  dxo.toAtlas(atlasFieldSet.get());
 
   // K_1^{-1} K_2^{-1} .. K_N^{-1}
   for (ircst_ it = saberBlocks_.rbegin(); it != saberBlocks_.rend(); ++it) {
@@ -256,7 +259,7 @@ void ErrorCovariance<MODEL>::doInverseMultiply(const Increment_ & dxi,
   if (saberCentralBlock_) {
     if (saberCentralBlock_->iterativeInverse()) {
       // Temporary increment
-      Increment_ dxtmp(dxi);
+      Increment_ dxtmp(dxo);
 
       // ATLAS fieldset to Increment_
       dxtmp.fromAtlas(atlasFieldSet.get());
@@ -293,11 +296,13 @@ void ErrorCovariance<MODEL>::multiply(const Increment_ & dxi,
   oops::Log::trace() << "ErrorCovariance<MODEL>::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
 
+  // Copy input
+  dxo = dxi;
+
   // Increment_ to ATLAS fieldset
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxi.setAtlas(atlasFieldSet.get());
-  dxi.toAtlas(atlasFieldSet.get());
   dxo.setAtlas(atlasFieldSet.get());
+  dxo.toAtlas(atlasFieldSet.get());
 
   // Central block multiplication
   if (saberCentralBlock_) {

@@ -28,8 +28,67 @@ Increment::Increment(const Geometry & resol, const oops::Variables & vars,
   oops::Log::trace() << "Increment constructed." << std::endl;
 }
 // -----------------------------------------------------------------------------
+Increment::Increment(const Increment & other, const bool copy)
+  : fields_(new Fields(*other.fields_, copy))
+{
+  oops::Log::trace() << "Increment copy-created." << std::endl;
+}
+// -----------------------------------------------------------------------------
+/// Basic operators
+// -----------------------------------------------------------------------------
+void Increment::diff(const State & x1, const State & x2) {
+  ASSERT(this->validTime() == x1.validTime());
+  ASSERT(this->validTime() == x2.validTime());
+  fields_->diff(x1.fields(), x2.fields());
+}
+// -----------------------------------------------------------------------------
+Increment & Increment::operator=(const Increment & rhs) {
+  *fields_ = *rhs.fields_;
+  return *this;
+}
+// -----------------------------------------------------------------------------
+Increment & Increment::operator+=(const Increment & dx) {
+  ASSERT(this->validTime() == dx.validTime());
+  *fields_ += *dx.fields_;
+  return *this;
+}
+// -----------------------------------------------------------------------------
+Increment & Increment::operator-=(const Increment & dx) {
+  ASSERT(this->validTime() == dx.validTime());
+  *fields_ -= *dx.fields_;
+  return *this;
+}
+// -----------------------------------------------------------------------------
+Increment & Increment::operator*=(const double & zz) {
+  *fields_ *= zz;
+  return *this;
+}
+
+// -----------------------------------------------------------------------------
 void Increment::zero() {
   fields_->zero();
+}
+// -----------------------------------------------------------------------------
+void Increment::axpy(const double & zz, const Increment & dx,
+                       const bool check) {
+  ASSERT(!check || this->validTime() == dx.validTime());
+  fields_->axpy(zz, *dx.fields_);
+}
+// -----------------------------------------------------------------------------
+void Increment::accumul(const double & zz, const State & xx) {
+  fields_->axpy(zz, xx.fields());
+}
+// -----------------------------------------------------------------------------
+void Increment::schur_product_with(const Increment & dx) {
+  fields_->schur_product_with(*dx.fields_);
+}
+// -----------------------------------------------------------------------------
+double Increment::dot_product_with(const Increment & other) const {
+  return fields_->dot_product_with(*other.fields_);
+}
+// -----------------------------------------------------------------------------
+void Increment::random() {
+  fields_->random();
 }
 // -----------------------------------------------------------------------------
 void Increment::dirac(const eckit::Configuration & config) {
@@ -76,7 +135,7 @@ void Increment::deserialize(const std::vector<double> & vect, size_t & index) {
 }
 // -----------------------------------------------------------------------------
 void Increment::print(std::ostream & os) const {
-  os << std::endl << "Valid time:" << validTime();
+  os << std::endl << "Valid time:" << this->validTime();
   os << *fields_;
 }
 // -----------------------------------------------------------------------------

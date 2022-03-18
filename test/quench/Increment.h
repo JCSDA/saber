@@ -20,6 +20,7 @@
 #include "oops/util/Serializable.h"
 
 #include "quench/Fields.h"
+#include "quench/State.h"
 
 namespace eckit {
   class Configuration;
@@ -49,16 +50,27 @@ class Increment : public util::Printable,
 
 /// Constructor, destructor
   Increment(const Geometry &, const oops::Variables &, const util::DateTime &);
+  Increment(const Increment &, const bool);
 
 /// Basic operators
+  void diff(const State &, const State &);
   void zero();
   void dirac(const eckit::Configuration &);
+  Increment & operator =(const Increment &);
+  Increment & operator+=(const Increment &);
+  Increment & operator-=(const Increment &);
+  Increment & operator*=(const double &);
+  void axpy(const double &, const Increment &, const bool check = true);
+  double dot_product_with(const Increment &) const;
+  void schur_product_with(const Increment &);
+  void random();
 
 /// I/O and diagnostics
   void read(const eckit::Configuration &);
   void write(const eckit::Configuration &) const;
   double norm() const {return fields_->norm();}
   const util::DateTime & validTime() const {return fields_->time();}
+  void updateTime(const util::Duration & dt) {fields_->time() += dt;}
 
 /// ATLAS FieldSet
   void setAtlas(atlas::FieldSet *) const;
@@ -71,6 +83,7 @@ class Increment : public util::Printable,
   std::shared_ptr<const Geometry> geometry() const {return fields_->geometry();}
 
 /// Other
+  void accumul(const double &, const State &);
   const oops::Variables & variables() const {return fields_->variables();}
 
 /// Serialization
