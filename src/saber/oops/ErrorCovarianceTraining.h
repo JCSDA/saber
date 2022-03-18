@@ -24,7 +24,6 @@
 #include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/bump/BUMP.h"
-#include "saber/oops/GSI.h"
 #include "saber/oops/instantiateCovarFactory.h"
 
 namespace eckit {
@@ -77,9 +76,6 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
 
   /// BUMP training parameters
   oops::OptionalParameter<BUMP_Parameters<MODEL>> bumpParams{"bump", this};
-
-  /// GSI training parameters
-  oops::OptionalParameter<GSI_Parameters> gsiParams{"gsi", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -96,7 +92,6 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
   typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>>    EnsemblePtr_;
   typedef ErrorCovarianceTrainingParameters<MODEL>           ErrorCovarianceTrainingParameters_;
   typedef BUMP<MODEL>                                        BUMP_;
-  typedef GSI<MODEL>                                         GSI_;
 
  public:
   static const std::string classname() {return "saber::ErrorCovarianceTraining";}
@@ -185,13 +180,6 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
       // Apply training operators
       bump.apply();
-    }
-
-    // GSI
-    const boost::optional<GSI_Parameters> &gsiParams = params.gsiParams.value();
-    if (gsiParams != boost::none) {
-      // Do training
-      GSI_ gsi(resol, inputVars, *gsiParams);
     }
 
     return 0;

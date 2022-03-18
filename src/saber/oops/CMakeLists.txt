@@ -10,10 +10,6 @@ if( oops_FOUND )
     SaberBlockBase.h
     SaberBlockParametersBase.h
 
-    # GSI block
-    GSI.h
-    GSI_RF.h
-
     # ID block
     ID.h
 

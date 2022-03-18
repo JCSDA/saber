@@ -12,7 +12,8 @@
 #include "saber/bump/BUMP_PsiChiToUV.h"
 #include "saber/bump/BUMP_StdDev.h"
 #include "saber/bump/BUMP_VerticalBalance.h"
-#include "saber/oops/GSI_RF.h"
+#include "saber/gsi/covariance/GSI_Covariance.h"
+#include "saber/gsi/interpolation/GSI_Interpolation.h"
 #include "saber/oops/ID.h"
 #include "saber/oops/StdDev.h"
 
@@ -32,9 +33,11 @@ void instantiateSaberBlockFactory() {
   static SaberBlockMaker<MODEL, BUMP_VerticalBalance<MODEL> >
               makerBUMP_VerticalBalance_("BUMP_VerticalBalance");
 
-  // GSI_RF
-  static SaberBlockMaker<MODEL, GSI_RF<MODEL> >
-              makerGSI_RF_("GSI_RF");
+  // GSI operators
+  static SaberBlockMaker<MODEL, gsi::Covariance<MODEL>>
+         makerGSI_Covariance_("gsi covariance");
+  static SaberBlockMaker<MODEL, gsi::Interpolation<MODEL>>
+         makerGSI_Interpolation_("gsi interpolation to model grid");
 
   // Identity
   static SaberBlockMaker<MODEL, ID<MODEL> >
