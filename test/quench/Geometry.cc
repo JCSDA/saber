@@ -45,6 +45,16 @@ Geometry::Geometry(const Parameters_ & params,
     // Number of levels
     levels_ = params.levels.value();
 
+    // Vertical unit
+    const boost::optional<std::vector<double>> &vunit = params.vunit.value();
+    for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
+      if (vunit != boost::none) {
+        vunit_.push_back((*vunit)[jlevel]);
+      } else {
+        vunit_.push_back(static_cast<double>(jlevel+1));
+      }
+    }
+
     // Setup function space
     atlasFunctionSpace_.reset(new atlas::functionspace::StructuredColumns(*atlasGrid_,
                               distribution));
@@ -57,9 +67,19 @@ Geometry::Geometry(const Parameters_ & params,
 
   // Fill ATLAS fieldset
   atlasFieldSet_.reset(new atlas::FieldSet());
+  atlas::Field vunit = atlasFunctionSpace_->createField<double>(
+    atlas::option::name("vunit") | atlas::option::levels(levels_));
+  auto view = atlas::array::make_view<double, 2>(vunit);
+  for (atlas::idx_t jnode = 0; jnode < vunit.shape(0); ++jnode) {
+    for (atlas::idx_t jlevel = 0; jlevel < vunit.shape(1); ++jlevel) {
+       view(jnode, jlevel) = vunit_[jlevel];
+    }
+  }
+  atlasFieldSet_->add(vunit);
 }
 // -----------------------------------------------------------------------------
-Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.levels_) {
+Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.levels_),
+  vunit_(other.vunit_) {
   // Copy ATLAS grid
   gridConfig_ = other.gridConfig_;
   atlasGrid_.reset(new atlas::Grid(gridConfig_));
@@ -74,6 +94,8 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
 
   // Copy ATLAS fieldset
   atlasFieldSet_.reset(new atlas::FieldSet());
+  atlas::Field vunit = other.atlasFieldSet()->field("vunit");
+  atlasFieldSet_->add(vunit);
 }
 // -------------------------------------------------------------------------------------------------
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
@@ -88,6 +110,9 @@ void Geometry::print(std::ostream & os) const {
   os << "Function space:" << std::endl;
   os << "- type: " << atlasFunctionSpace_->type() << std::endl;
   os << "- size: " << atlasFunctionSpace_->size() << std::endl;
+  os << "Vertical levels: " << std::endl;
+  os << "- number: " << levels_ << std::endl;
+  os << "- vunit: " << vunit_ << std::endl;
 }
 // -----------------------------------------------------------------------------
 }  // namespace quench

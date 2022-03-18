@@ -23,7 +23,7 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/oops/BUMP.h"
+#include "saber/bump/BUMP.h"
 #include "saber/oops/GSI.h"
 #include "saber/oops/instantiateCovarFactory.h"
 

@@ -33,4 +33,5 @@ qg_error_covariance_training_bump_vbal_update
 qg_error_covariance_training_gsirf_cov
 qg_truth
 interpolation_bump
-quench_bump_nicas
+quench_dirac_bump_nicas
+quench_error_covariance_training_bump_nicas

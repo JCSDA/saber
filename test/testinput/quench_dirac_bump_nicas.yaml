@@ -1,0 +1,32 @@
+background error:
+  covariance model: SABER
+  saber blocks:
+  - saber block name: BUMP_NICAS
+    saber central block: true
+    input variables: &vars [var]
+    output variables: *vars
+    bump:
+      datadir: testdata
+      fname_nicas: quench_error_covariance_training_bump_nicas/test_nicas
+      load_nicas_local: true
+      prefix: quench_dirac_bump_nicas/test
+      strategy: specific_univariate
+dirac:
+  index: [1000]
+  level: [1]
+  variable: *vars
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 15
+  levels: 10
+initial condition:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+output dirac:
+  filepath: testdata/quench_dirac_bump_nicas/dirac_%id%
+
+test:
+  reference filename: testref/quench_dirac_bump_nicas/test.log.out
+  test output filename: testoutput/quench_dirac_bump_nicas/test.log.out

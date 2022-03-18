@@ -4,10 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set(_subdirs bump external gaugrid interpolation model util)
-if( oops_FOUND )
-    list(APPEND _subdirs oops)
-endif()
+set(_subdirs bump external gaugrid interpolation model oops util)
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )

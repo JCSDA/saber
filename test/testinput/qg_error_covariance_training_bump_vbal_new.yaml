@@ -4,7 +4,6 @@ background:
 bump:
   check_adjoints: true
   check_dirac: true
-  check_normalization: 10
   ens1_nsub: 2
   datadir: testdata
   nc1: 500

@@ -32,16 +32,29 @@ namespace quench {
 // -----------------------------------------------------------------------------
 /// Class to represent a Fields for the  model
 class Fields : public util::Printable,
-                 public util::Serializable,
-                 private util::ObjectCounter<Fields> {
+               public util::Serializable,
+               private util::ObjectCounter<Fields> {
  public:
   static const std::string classname() {return "quench::Fields";}
 
-// Constructors and basic operators
+// Constructors
   Fields(const Geometry &, const oops::Variables &, const util::DateTime &);
+  Fields(const Fields &, const bool);
+  Fields(const Fields &);
+  ~Fields() {}
 
+// Basic operators
   void zero();
+  Fields & operator=(const Fields &);
+  Fields & operator+=(const Fields &);
+  Fields & operator-=(const Fields &);
+  Fields & operator*=(const double &);
+  void axpy(const double &, const Fields &);
+  double dot_product_with(const Fields &) const;
+  void schur_product_with(const Fields &);
   void dirac(const eckit::Configuration &);
+  void random();
+  void diff(const Fields &, const Fields &);
 
 // ATLAS FieldSet
   void setAtlas(atlas::FieldSet *) const;
@@ -54,8 +67,9 @@ class Fields : public util::Printable,
   double norm() const;
   std::shared_ptr<const Geometry> geometry() const {return geom_;}
   const oops::Variables & variables() const {return vars_;}
-
   const util::DateTime & time() const {return time_;}
+  util::DateTime & time() {return time_;}
+  void updateTime(const util::Duration & dt) {time_ += dt;}
 
 /// Serialization
   size_t serialSize() const override;

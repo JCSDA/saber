@@ -25,6 +25,25 @@ State::State(const Geometry & resol, const oops::Variables & vars,
   oops::Log::trace() << "State::State created." << std::endl;
 }
 // -----------------------------------------------------------------------------
+State::State(const Geometry & resol, const eckit::Configuration & file)
+  : fields_()
+{
+  oops::Variables vars = oops::Variables(file, "state variables");
+  fields_.reset(new Fields(resol, vars, util::DateTime()));
+  fields_->zero();
+  const util::DateTime vt(file.getString("date"));
+  fields_->time() = vt;
+  oops::Log::trace() << "State::State created." << std::endl;
+}
+// -----------------------------------------------------------------------------
+State::State(const State & other)
+  : fields_(new Fields(*other.fields_))
+{
+  oops::Log::trace() << "State::State copied." << std::endl;
+}
+// -----------------------------------------------------------------------------
+/// I/O and diagnostics
+// -----------------------------------------------------------------------------
 void State::write(const eckit::Configuration & files) const {
   fields_->write(files);
 }
@@ -45,7 +64,7 @@ void State::deserialize(const std::vector<double> & vect, size_t & index) {
 }
 // -----------------------------------------------------------------------------
 void State::print(std::ostream & os) const {
-  os << std::endl << "  Valid time: " << validTime();
+  os << std::endl << "  Valid time: " << this->validTime();
   os << *fields_;
 }
 // -----------------------------------------------------------------------------
@@ -53,6 +72,10 @@ void State::print(std::ostream & os) const {
 // -----------------------------------------------------------------------------
 void State::zero() {
   fields_->zero();
+}
+// -----------------------------------------------------------------------------
+void State::accumul(const double & zz, const State & xx) {
+  fields_->axpy(zz, *xx.fields_);
 }
 // -----------------------------------------------------------------------------
 

@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_BUMP_VERTICALBALANCE_H_
-#define SABER_OOPS_BUMP_VERTICALBALANCE_H_
+#ifndef SABER_BUMP_BUMP_STDDEV_H_
+#define SABER_BUMP_BUMP_STDDEV_H_
 
 #include <memory>
 #include <string>
@@ -17,7 +17,7 @@
 #include "oops/base/Variables.h"
 #include "oops/interface/Geometry.h"
 
-#include "saber/oops/BUMP.h"
+#include "saber/bump/BUMP.h"
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 
@@ -29,8 +29,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 template <typename MODEL>
-class BUMP_VerticalBalanceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BUMP_VerticalBalanceParameters, SaberBlockParametersBase)
+class BUMP_StdDevParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BUMP_StdDevParameters, SaberBlockParametersBase)
 
  public:
   oops::RequiredParameter<BUMP_Parameters<MODEL>> bumpParams{"bump", this};
@@ -38,22 +38,23 @@ class BUMP_VerticalBalanceParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
+
 template <typename MODEL>
-class BUMP_VerticalBalance : public SaberBlockBase<MODEL> {
+class BUMP_StdDev : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL> Geometry_;
   typedef oops::State<MODEL>    State_;
   typedef BUMP<MODEL>           BUMP_;
 
  public:
-  static const std::string classname() {return "saber::BUMP_VerticalBalance";}
+  static const std::string classname() {return "saber::BUMP_StdDev";}
 
-  typedef BUMP_VerticalBalanceParameters<MODEL> Parameters_;
+  typedef BUMP_StdDevParameters<MODEL> Parameters_;
 
-  BUMP_VerticalBalance(const Geometry_ &,
-                       const Parameters_ & params,
-                       const State_ &,
-                       const State_ &);
-  virtual ~BUMP_VerticalBalance();
+  BUMP_StdDev(const Geometry_ &,
+              const Parameters_ &,
+              const State_ &,
+              const State_ &);
+  virtual ~BUMP_StdDev();
 
   void randomize(atlas::FieldSet *) const override;
   void multiply(atlas::FieldSet *) const override;
@@ -69,14 +70,13 @@ class BUMP_VerticalBalance : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_VerticalBalance<MODEL>::BUMP_VerticalBalance(const Geometry_ & resol,
-                                                  const Parameters_ & params,
-                                                  const State_ & xb,
-                                                  const State_ & fg)
+BUMP_StdDev<MODEL>::BUMP_StdDev(const Geometry_ & resol,
+                                const Parameters_ & params,
+                                const State_ & xb,
+                                const State_ & fg)
   : SaberBlockBase<MODEL>(params), bump_()
 {
-  oops::Log::trace() << classname() << "::BUMP_VerticalBalance starting"
-                     << std::endl;
+  oops::Log::trace() << classname() << "::BUMP_StdDev starting" << std::endl;
 
   // Setup and check input/ouput variables
   const oops::Variables inputVars = params.inputVars.value();
@@ -96,22 +96,22 @@ BUMP_VerticalBalance<MODEL>::BUMP_VerticalBalance(const Geometry_ & resol,
   // Initialize BUMP
   bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value(), xb, fg));
 
-  oops::Log::trace() << classname() << "::BUMP_VerticalBalance done" << std::endl;
+  oops::Log::trace() << classname() << "::BUMP_StdDev done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_VerticalBalance<MODEL>::~BUMP_VerticalBalance() {
-  oops::Log::trace() << classname() << "::~BUMP_VerticalBalance starting" << std::endl;
-  util::Timer timer(classname(), "~BUMP_VerticalBalance");
-  oops::Log::trace() << classname() << "::~BUMP_VerticalBalance done" << std::endl;
+BUMP_StdDev<MODEL>::~BUMP_StdDev() {
+  oops::Log::trace() << classname() << "::~BUMP_StdDev starting" << std::endl;
+  util::Timer timer(classname(), "~BUMP_StdDev");
+  oops::Log::trace() << classname() << "::~BUMP_StdDev done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   this->multiply(atlasFieldSet);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
@@ -120,43 +120,43 @@ void BUMP_VerticalBalance<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) con
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  bump_->multiplyVbal(atlasFieldSet);
+  bump_->multiplyStdDev(atlasFieldSet);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  bump_->inverseMultiplyVbal(atlasFieldSet);
+  bump_->inverseMultiplyStdDev(atlasFieldSet);
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  bump_->multiplyVbalAd(atlasFieldSet);
+  this->multiply(atlasFieldSet);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  bump_->inverseMultiplyVbalAd(atlasFieldSet);
+  this->inverseMultiply(atlasFieldSet);
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::print(std::ostream & os) const {
+void BUMP_StdDev<MODEL>::print(std::ostream & os) const {
   os << classname();
 }
 
@@ -164,4 +164,4 @@ void BUMP_VerticalBalance<MODEL>::print(std::ostream & os) const {
 
 }  // namespace saber
 
-#endif  // SABER_OOPS_BUMP_VERTICALBALANCE_H_
+#endif  // SABER_BUMP_BUMP_STDDEV_H_

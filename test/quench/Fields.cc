@@ -20,6 +20,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
+#include "oops/util/Random.h"
 
 #include "quench/Geometry.h"
 
@@ -39,29 +40,296 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
       atlas::option::name(vars_[jvar]) | atlas::option::levels(geom_->levels()));
     atlasFieldSet_->add(field);
   }
+
+  // Set fields to zero
+  this->zero();
 }
 // -----------------------------------------------------------------------------
-void Fields::zero() {
-  if (geom_->atlasFunctionSpace()->type() == "StructuredColumns") {
-    atlas::functionspace::StructuredColumns fs(*(geom_->atlasFunctionSpace()));
+Fields::Fields(const Fields & other, const bool copy)
+  : geom_(other.geom_), vars_(other.vars_), time_(other.time_)
+{
+  // Reset ATLAS fieldset
+  atlasFieldSet_.reset(new atlas::FieldSet());
+
+  // Create fields
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = geom_->atlasFunctionSpace()->createField<double>(
+      atlas::option::name(vars_[jvar]) | atlas::option::levels(geom_->levels()));
+    atlasFieldSet_->add(field);
+  }
+
+  // Set fields to zero
+  this->zero();
+
+  // Copy if necessary
+  if (copy) {
     for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
       atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+      atlas::Field fieldOther = other.atlasFieldSet_->field(vars_[jvar]);
       if (field.rank() == 1) {
         auto view = atlas::array::make_view<double, 1>(field);
+        auto viewOther = atlas::array::make_view<double, 1>(fieldOther);
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          view(jnode) = 0.0;
+          view(jnode) = viewOther(jnode);
         }
       } else if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
+        auto viewOther = atlas::array::make_view<double, 2>(fieldOther);
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            view(jnode, jlevel) = 0.0;
+            view(jnode, jlevel) = viewOther(jnode, jlevel);
           }
         }
       }
     }
-  } else {
-    ABORT(geom_->atlasFunctionSpace()->type() + " function space not implemented yet");
+  }
+}
+
+// -----------------------------------------------------------------------------
+Fields::Fields(const Fields & other):
+  geom_(other.geom_), vars_(other.vars_), time_(other.time_)
+{
+  // Reset ATLAS fieldset
+  atlasFieldSet_.reset(new atlas::FieldSet());
+
+  // Create fields and copy data
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = geom_->atlasFunctionSpace()->createField<double>(
+      atlas::option::name(vars_[jvar]) | atlas::option::levels(geom_->levels()));
+    atlas::Field fieldOther = other.atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      auto viewOther = atlas::array::make_view<double, 1>(fieldOther);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = viewOther(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      auto viewOther = atlas::array::make_view<double, 2>(fieldOther);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = viewOther(jnode, jlevel);
+        }
+      }
+    }
+    atlasFieldSet_->add(field);
+  }
+}
+// -----------------------------------------------------------------------------
+void Fields::zero() {
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = 0.0;
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = 0.0;
+        }
+      }
+    }
+  }
+}
+// -----------------------------------------------------------------------------
+Fields & Fields::operator=(const Fields & rhs) {
+  // Get fields and copy data
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    atlas::Field fieldRhs = rhs.atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      auto viewRhs = atlas::array::make_view<double, 1>(fieldRhs);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = viewRhs(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = viewRhs(jnode, jlevel);
+        }
+      }
+    }
+  }
+  time_ = rhs.time_;
+  return *this;
+}
+// -----------------------------------------------------------------------------
+Fields & Fields::operator+=(const Fields & rhs) {
+  // Get fields and add data
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    atlas::Field fieldRhs = rhs.atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      auto viewRhs = atlas::array::make_view<double, 1>(fieldRhs);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = view(jnode)+viewRhs(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = view(jnode, jlevel)+viewRhs(jnode, jlevel);
+        }
+      }
+    }
+  }
+  return *this;
+}
+// -----------------------------------------------------------------------------
+Fields & Fields::operator-=(const Fields & rhs) {
+  // Get fields and subtract data
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    atlas::Field fieldRhs = rhs.atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      auto viewRhs = atlas::array::make_view<double, 1>(fieldRhs);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = view(jnode)-viewRhs(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = view(jnode, jlevel)-viewRhs(jnode, jlevel);
+        }
+      }
+    }
+  }
+  return *this;
+}
+// -----------------------------------------------------------------------------
+Fields & Fields::operator*=(const double & zz) {
+  // Get fields and add data
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = view(jnode)*zz;
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = view(jnode, jlevel)*zz;
+        }
+      }
+    }
+  }
+  return *this;
+}
+// -----------------------------------------------------------------------------
+void Fields::axpy(const double & zz, const Fields & rhs) {
+  // Get fields and add data
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    atlas::Field fieldRhs = rhs.atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      auto viewRhs = atlas::array::make_view<double, 1>(fieldRhs);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = zz*view(jnode)+viewRhs(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = zz*view(jnode, jlevel)+viewRhs(jnode, jlevel);
+        }
+      }
+    }
+  }
+}
+// -----------------------------------------------------------------------------
+double Fields::dot_product_with(const Fields & fld2) const {
+  double zz = 0;
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        zz += view(jnode)*view(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+        zz += view(jnode, jlevel)*view(jnode, jlevel);
+        }
+      }
+    }
+  }
+  return zz;
+}
+// -----------------------------------------------------------------------------
+void Fields::schur_product_with(const Fields & dx) {
+  // Get fields and add data
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    atlas::Field fieldDx = dx.atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      auto viewDx = atlas::array::make_view<double, 1>(fieldDx);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = view(jnode)*viewDx(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      auto viewDx = atlas::array::make_view<double, 2>(fieldDx);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = view(jnode, jlevel)*viewDx(jnode, jlevel);
+        }
+      }
+    }
+  }
+}
+// -----------------------------------------------------------------------------
+void Fields::random() {
+  // Total size
+  size_t n = 0;
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      n += field.shape(0);
+    } else if (field.rank() == 2) {
+      n += field.shape(0)*field.shape(1);
+    }
+  }
+
+  // Random vector
+  util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
+
+  // Copy random values
+  n = 0;
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = rand_vec[n];
+        n += 1;
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = rand_vec[n];
+          n += 1;
+        }
+      }
+    }
   }
 }
 // -----------------------------------------------------------------------------
@@ -108,6 +376,32 @@ void Fields::dirac(const eckit::Configuration & config) {
       }
     } else {
       ABORT(geom_->atlasFunctionSpace()->type() + " function space not implemented yet");
+    }
+  }
+}
+// -----------------------------------------------------------------------------
+void Fields::diff(const Fields & x1, const Fields & x2) {
+  // Get fields and subtract data
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    atlas::Field fieldx1 = x1.atlasFieldSet_->field(vars_[jvar]);
+    atlas::Field fieldx2 = x2.atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      auto viewx1 = atlas::array::make_view<double, 1>(fieldx1);
+      auto viewx2 = atlas::array::make_view<double, 1>(fieldx2);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = viewx1(jnode)-viewx2(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      auto viewx1 = atlas::array::make_view<double, 2>(fieldx1);
+      auto viewx2 = atlas::array::make_view<double, 2>(fieldx2);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = viewx1(jnode, jlevel)-viewx2(jnode, jlevel);
+        }
+      }
     }
   }
 }
@@ -242,28 +536,7 @@ void Fields::write(const eckit::Configuration & config) const {
 }
 // -----------------------------------------------------------------------------
 double Fields::norm() const {
-  double zz = 0.0;
-  if (geom_->atlasFunctionSpace()->type() == "StructuredColumns") {
-    atlas::functionspace::StructuredColumns fs(*(geom_->atlasFunctionSpace()));
-    for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-      atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
-      if (field.rank() == 1) {
-        auto view = atlas::array::make_view<double, 1>(field);
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          zz += view(jnode)*view(jnode);
-        }
-      } else if (field.rank() == 2) {
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          zz += view(jnode, jlevel)*view(jnode, jlevel);
-          }
-        }
-      }
-    }
-  } else {
-    ABORT(geom_->atlasFunctionSpace()->type() + " function space not implemented yet");
-  }
+  double zz = this->dot_product_with(*this);
   zz = sqrt(zz);
   return zz;
 }
@@ -272,29 +545,24 @@ void Fields::print(std::ostream & os) const {
   os << std::endl;
   os << *geom_;
   os << "Fields:" << std::endl;
-  if (geom_->atlasFunctionSpace()->type() == "StructuredColumns") {
-    atlas::functionspace::StructuredColumns fs(*(geom_->atlasFunctionSpace()));
-    for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-      double zz = 0.0;
-      atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
-      if (field.rank() == 1) {
-        auto view = atlas::array::make_view<double, 1>(field);
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          zz += view(jnode)*view(jnode);
-        }
-      } else if (field.rank() == 2) {
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          zz += view(jnode, jlevel)*view(jnode, jlevel);
-          }
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    double zz = 0.0;
+    atlas::Field field = atlasFieldSet_->field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        zz += view(jnode)*view(jnode);
+      }
+    } else if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+        zz += view(jnode, jlevel)*view(jnode, jlevel);
         }
       }
-      zz = sqrt(zz);
-      os << "  " << vars_[jvar] << ": " << zz << std::endl;
     }
-  } else {
-    ABORT(geom_->atlasFunctionSpace()->type() + " function space not implemented yet");
+    zz = sqrt(zz);
+    os << "  " << vars_[jvar] << ": " << zz << std::endl;
   }
 }
 // -----------------------------------------------------------------------------

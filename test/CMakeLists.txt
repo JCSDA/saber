@@ -291,8 +291,13 @@ if( SABER_TEST_OOPS )
                             LIBS    ${oops_qg_LIBRARIES}
                                     saber )
 
-    ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
-                            SOURCES mains/quenchSaberBlockTest.cc
+    ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
+                            SOURCES mains/quenchErrorCovarianceTraining.cc
+                            LIBS    quench
+                                    saber )
+
+    ecbuild_add_executable( TARGET  saber_quench_dirac.x
+                            SOURCES mains/quenchDirac.cc
                             LIBS    quench
                                     saber )
 endif()
@@ -660,15 +665,30 @@ if( SABER_TEST_OOPS )
     # QUENCH tests
     set( mpi 1 )
     set( omp 2 )
+
+    # Error covariance training tests
     foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench" quench )
+        string( FIND ${test} "quench_error_covariance_training" quench )
         if( quench MATCHES 0 )
-            ecbuild_add_test( TARGET test_${test}
+            ecbuild_add_test( TARGET saber_test_${test}
                               MPI ${mpi}
                               OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
                               ARGS testinput/${test}.yaml
-                              DEPENDS saber_quench_saber_block_test.x )
+                              DEPENDS saber_quench_error_covariance_training.x )
+        endif()
+    endforeach()
+
+    # Dirac tests
+    foreach( test ${saber_test_oops} )
+        string( FIND ${test} "quench_dirac" quench )
+        if( quench MATCHES 0 )
+            ecbuild_add_test( TARGET saber_test_${test}
+                              MPI ${mpi}
+                              OMP ${omp}
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                              ARGS testinput/${test}.yaml
+                              DEPENDS saber_quench_dirac.x )
         endif()
     endforeach()
 endif()

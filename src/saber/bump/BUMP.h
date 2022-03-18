@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_BUMP_H_
-#define SABER_OOPS_BUMP_H_
+#ifndef SABER_BUMP_BUMP_H_
+#define SABER_BUMP_BUMP_H_
 
 #include <algorithm>
 #include <memory>
@@ -1094,4 +1094,4 @@ void BUMP<MODEL>::partialDealloc() const {
 
 }  // namespace saber
 
-#endif  // SABER_OOPS_BUMP_H_
+#endif  // SABER_BUMP_BUMP_H_

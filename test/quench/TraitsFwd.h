@@ -12,16 +12,21 @@
 
 namespace quench {
 
+class Covariance;
 class Geometry;
 class Increment;
+class LinearVariableChange;
 class State;
 
 struct Traits {
   static std::string name() {return "quench";}
+  static std::string nameCovar() {return "quenchCovariance";}
 
-  typedef quench::Geometry         Geometry;
-  typedef quench::Increment        Increment;
-  typedef quench::State            State;
+  typedef quench::Covariance      Covariance;
+  typedef quench::Geometry        Geometry;
+  typedef quench::Increment       Increment;
+  typedef quench::LinearVarChange LinearVariableChange;
+  typedef quench::State           State;
 };
 
 }  // namespace quench
