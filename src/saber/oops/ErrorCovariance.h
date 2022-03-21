@@ -119,7 +119,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
     if (!(vars_in == vars_out)) {
       const boost::optional<std::string> &saberBlockName = saberBlockParams.saberBlockName.value();
       if (saberBlockName != boost::none) {
-        oops::Log::error() << "In SABER block " << *saberBlockName << std::endl;
+        oops::Log::error() << "In SABER block \'" << *saberBlockName << "\'" << std::endl;
       } else {
         oops::Log::error() << "In SABER block with no name" << std::endl;
       }

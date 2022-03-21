@@ -47,7 +47,6 @@ class SaberBlockBase : public util::Printable, private boost::noncopyable {
   virtual void inverseMultiplyAD(atlas::FieldSet *) const = 0;
 
   bool iterativeInverse() const {return iterativeInverse_;}
-
  private:
   virtual void print(std::ostream &) const = 0;
   bool iterativeInverse_;
