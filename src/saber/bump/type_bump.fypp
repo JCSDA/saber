@@ -1504,18 +1504,18 @@ end subroutine bump_get_parameter_field
 ! Subroutine: bump_get_parameter_value
 !> Get a parameter as value
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_value(bump,param,variable,value)
+subroutine bump_get_parameter_value(bump,param,iv,value)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump  !< BUMP
-character(len=*),intent(in) :: param    !< Parameter
-character(len=*),intent(in) :: variable !< Variable
-real(kind_real),intent(inout) :: value  !< Value
+class(bump_type),intent(inout) :: bump !< BUMP
+character(len=*),intent(in) :: param   !< Parameter
+integer,intent(in) :: iv               !< Variable index
+real(kind_real),intent(inout) :: value !< Value
 
 ! Local variables
-integer :: iv,ib
+integer :: ib
 
 ! Set name
 @:set_name(bump_get_parameter_value)
@@ -1529,38 +1529,37 @@ integer :: iv,ib
 write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
 call bump%mpl%flush
 
-do iv=1,bump%nam%nv
-   if (trim(bump%nam%variables(iv))==trim(variable)) then
-      ! Set block index
-      select case (trim(bump%nam%strategy))
-      case ('specific_univariate','specific_multivariate')
-         ib = bump%bpar%v_to_b(iv)
-      case ('common','common_weighted')
-         ib = bump%bpar%nbe      
-      end select
+! Check variable index
+if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
 
-      ! Copy
-      if (bump%nam%forced_radii) then
-         select case (trim(param))
-         case ('cor_ncmp','loc_ncmp','loc_hyb_ncmp')
-            value = 1
-         case default
-            call bump%mpl%abort('${subr}$','wrong parameter')
-         end select
-      else
-         select case (trim(param))
-         case ('cor_ncmp')
-            value = real(bump%hdiag%cor1%blk(0,ib)%ncmp,kind_real)
-         case ('loc_ncmp')
-            value = real(bump%hdiag%loc1%blk(0,ib)%ncmp,kind_real)
-         case ('loc_hyb_ncmp')
-            value = real(bump%hdiag%loc2%blk(0,ib)%ncmp,kind_real)
-         case default
-            call bump%mpl%abort('${subr}$','wrong parameter')
-         end select
-      end if
-   end if
-end do
+! Set block index
+select case (trim(bump%nam%strategy))
+case ('specific_univariate','specific_multivariate')
+   ib = bump%bpar%v_to_b(iv)
+case ('common','common_weighted')
+   ib = bump%bpar%nbe
+end select
+
+! Copy
+if (bump%nam%forced_radii) then
+   select case (trim(param))
+   case ('cor_ncmp','loc_ncmp','loc_hyb_ncmp')
+      value = one
+   case default
+      call bump%mpl%abort('${subr}$','wrong parameter')
+   end select
+else
+   select case (trim(param))
+   case ('cor_ncmp')
+      value = real(bump%hdiag%cor1%blk(0,ib)%ncmp,kind_real)
+   case ('loc_ncmp')
+      value = real(bump%hdiag%loc1%blk(0,ib)%ncmp,kind_real)
+   case ('loc_hyb_ncmp')
+      value = real(bump%hdiag%loc2%blk(0,ib)%ncmp,kind_real)
+   case default
+      call bump%mpl%abort('${subr}$','wrong parameter')
+   end select
+end if
 
 ! Probe out
 @:probe_out()
@@ -2133,18 +2132,18 @@ end subroutine bump_set_parameter_field
 ! Subroutine: bump_set_parameter_value
 !> Set a parameter as value
 !----------------------------------------------------------------------
-subroutine bump_set_parameter_value(bump,param,variable,value)
+subroutine bump_set_parameter_value(bump,param,iv,value)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump  !< BUMP
 character(len=*),intent(in) :: param    !< Parameter
-character(len=*),intent(in) :: variable !< Variable
+integer,intent(in) :: iv                !< Variable index
 real(kind_real),intent(in) :: value     !< Value
 
 ! Local variables
-integer :: iv,ib
+integer :: ib
 
 ! Set name
 @:set_name(bump_set_parameter_value)
@@ -2158,6 +2157,9 @@ integer :: iv,ib
 write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush
 
+! Check variable index
+if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
+
 ! Check allocation / parameter existence
 select case (trim(param))
 case ('ncmp')
@@ -2165,26 +2167,22 @@ case ('ncmp')
    if (.not.allocated(bump%nicas%blk)) allocate(bump%nicas%blk(bump%bpar%nbe))
 end select
 
-do iv=1,bump%nam%nv
-   if (trim(bump%nam%variables(iv))==trim(variable)) then
-      ! Set block index
-      select case (trim(bump%nam%strategy))
-      case ('specific_univariate','specific_multivariate')
-         ib = bump%bpar%v_to_b(iv)
-      case ('common','common_weighted')
-         ib = bump%bpar%nbe      
-      end select
+! Set block index
+select case (trim(bump%nam%strategy))
+case ('specific_univariate','specific_multivariate')
+   ib = bump%bpar%v_to_b(iv)
+case ('common','common_weighted')
+   ib = bump%bpar%nbe
+end select
 
-      ! Copy
-      select case (trim(param))
-      case ('ncmp')
-         bump%cmat%blk(ib)%ncmp = int(value)
-         bump%nicas%blk(ib)%ncmp = int(value)
-      case default
-         call bump%mpl%abort('${subr}$','wrong parameter')
-      end select
-   end if
-end do
+! Copy
+select case (trim(param))
+case ('ncmp')
+   bump%cmat%blk(ib)%ncmp = int(value)
+   bump%nicas%blk(ib)%ncmp = int(value)
+case default
+   call bump%mpl%abort('${subr}$','wrong parameter')
+end select
 
 ! Probe out
 @:probe_out()
@@ -2398,7 +2396,7 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,(one+fld_c0a)*(maxval(bump%geom%
 
 ! Set parameters
 do iv=1,bump%nam%nv
-   call bump%set_parameter('ncmp',bump%nam%variables(iv),one)
+   call bump%set_parameter('ncmp',iv,one)
 end do
 if (trim(bump%nam%strategy)=='specific_univariate') then
    call bump%set_parameter('stddev',1,fieldset)

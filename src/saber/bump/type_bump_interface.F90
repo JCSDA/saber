@@ -565,7 +565,7 @@ end subroutine bump_get_parameter_field_c
 ! Subroutine: bump_get_parameter_value_c
 !> Get a parameter as value
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_value_c(key_bump,npar,cpar,nvar,cvar,c_value) bind(c,name='bump_get_parameter_value_f90')
+subroutine bump_get_parameter_value_c(key_bump,npar,cpar,iv,c_value) bind(c,name='bump_get_parameter_value_f90')
 
 implicit none
 
@@ -573,15 +573,13 @@ implicit none
 integer(c_int),intent(in) :: key_bump      !< BUMP
 integer(c_int),intent(in) :: npar          !< Parameter name size
 character(c_char),intent(in) :: cpar(npar) !< Parameter name
-integer(c_int),intent(in) :: nvar          !< Variable name size
-character(c_char),intent(in) :: cvar(npar) !< Variable name
+integer(c_int),intent(in) :: iv            !< Variable index
 real(c_double),intent(inout) :: c_value    !< Value
 
 ! Local variables
 type(bump_type),pointer :: bump
 integer :: istr
 character(len=npar) :: param
-character(len=nvar) :: variable
 
 ! Interface
 call bump_registry%get(key_bump,bump)
@@ -589,13 +587,9 @@ param = ''
 do istr=1,npar
   param = trim(param)//cpar(istr)
 end do
-variable = ''
-do istr=1,nvar
-  variable = trim(variable)//cvar(istr)
-end do
 
 ! Call Fortran
-call bump%get_parameter(param,variable,c_value)
+call bump%get_parameter(param,iv+1,c_value)
 
 end subroutine bump_get_parameter_value_c
 
@@ -637,7 +631,7 @@ end subroutine bump_set_parameter_field_c
 ! Subroutine: bump_set_parameter_value_c
 !> Set a parameter as value
 !----------------------------------------------------------------------
-subroutine bump_set_parameter_value_c(key_bump,npar,cpar,nvar,cvar,c_value) bind(c,name='bump_set_parameter_value_f90')
+subroutine bump_set_parameter_value_c(key_bump,npar,cpar,iv,c_value) bind(c,name='bump_set_parameter_value_f90')
 
 implicit none
 
@@ -645,15 +639,13 @@ implicit none
 integer(c_int),intent(in) :: key_bump      !< BUMP
 integer(c_int),intent(in) :: npar          !< Parameter name size
 character(c_char),intent(in) :: cpar(npar) !< Parameter name
-integer(c_int),intent(in) :: nvar          !< Variable name size
-character(c_char),intent(in) :: cvar(npar) !< Variable name
+integer(c_int),intent(in) :: iv            !< Variable index
 real(c_double),intent(out) :: c_value      !< Value
 
 ! Local variables
 type(bump_type),pointer :: bump
 integer :: istr
 character(len=npar) :: param
-character(len=nvar) :: variable
 
 ! Interface
 call bump_registry%get(key_bump,bump)
@@ -661,13 +653,9 @@ param = ''
 do istr=1,npar
   param = trim(param)//cpar(istr)
 end do
-variable = ''
-do istr=1,nvar
-  variable = trim(variable)//cvar(istr)
-end do
 
 ! Call Fortran
-call bump%set_parameter(param,variable,c_value)
+call bump%set_parameter(param,iv+1,c_value)
 
 end subroutine bump_set_parameter_value_c
 

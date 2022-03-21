@@ -230,7 +230,7 @@ integer,intent(in) :: ncmp_id                  !< NetCDF ID
 ! Local variables
 integer :: grpid,raw_id,raw_hor_id,raw_zs_id,valid_id,coef_ens_l0_id,l0rl0_to_l0_id
 integer :: fit_id,fit_hor_id,fit_zs_id,fit_detail_id,fit_detail_hor_id,fit_detail_zs_id
-integer :: rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id
+integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id
 integer :: il0,jl0r,jl0,jl0rz,icmp
 
 ! Set name
@@ -263,13 +263,24 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       fit_detail_hor_id = define_var(mpl,grpid,'fit_detail_hor','real',(/nc3_id,nc4_id,nl0_1_id,ncmp_id/))
       fit_detail_zs_id = define_var(mpl,grpid,'fit_detail_zs','real',(/nl0_2_id,nl0_1_id,ncmp_id/))
    end if
-   rh_l0_id = define_var(mpl,grpid,'rh_l0','real',(/nl0_1_id/))
-   if (bpar%nc4(ib)>1) then
-      D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id/))
-      D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id/))
-      D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id/))
+   if (diag_blk%ncmp==1) then
+      rh_l0_id = define_var(mpl,grpid,'rh_l0','real',(/nl0_1_id/))
+      if (bpar%nc4(ib)>1) then
+         D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id/))
+         D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id/))
+         D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id/))
+      end if
+      rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id/))
+   else
+      a_l0_id = define_var(mpl,grpid,'a_l0','real',(/nl0_1_id,ncmp_id/))
+      rh_l0_id = define_var(mpl,grpid,'rh_l0','real',(/nl0_1_id,ncmp_id/))
+      if (bpar%nc4(ib)>1) then
+         D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id,ncmp_id/))
+         D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id,ncmp_id/))
+         D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id,ncmp_id/))
+      end if
+      rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id,ncmp_id/))
    end if
-   rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id/))
 end if
 
 ! Write variables
@@ -317,13 +328,28 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
          end do
       end do
    end if
-   call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0)
-   if (bpar%nc4(ib)>1) then
-      call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0)
-      call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0)
-      call put_var(mpl,grpid,D12_l0_id,diag_blk%D12_l0)
+   if (diag_blk%ncmp==1) then
+print*, 'ok'
+      call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0(:,1))
+print*, 'ok'
+      if (bpar%nc4(ib)>1) then
+         call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0(:,1))
+         call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0(:,1))
+         call put_var(mpl,grpid,D12_l0_id,diag_blk%D12_l0(:,1))
+      end if
+print*, 'ok'
+      call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0(:,1))
+print*, 'ok'
+   else
+      call put_var(mpl,grpid,a_l0_id,diag_blk%a_l0)
+      call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0)
+      if (bpar%nc4(ib)>1) then
+         call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0)
+         call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0)
+         call put_var(mpl,grpid,D12_l0_id,diag_blk%D12_l0)
+      end if
+      call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0)
    end if
-   call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0)
 end if
 
 ! End associate
@@ -529,7 +555,7 @@ do il1=1,nl1
    do icmp=1,ncmp
       ! Horizontal and vertical raw functions
       raw_hor = diag_blk%raw(:,:,jl0rz,il0)
-      raw_ver = sum(diag_blk%raw(1,:,:,il0),dim=1)/real(bpar%nc4(ib),kind_real)
+      raw_ver = sum(diag_blk%raw(1,:,1:nl0r,il0),dim=1)/real(bpar%nc4(ib),kind_real)
 
       if (icmp>1) then
          if (mpl%msv%isallnot(rh_c4l1(:,il1,icmp-1)).and.mpl%msv%isnot(rv_l1(il1,icmp-1))) then
@@ -574,7 +600,7 @@ do il1=1,nl1
          minim%bsup(ix) = a
       else
          minim%a = a
-      end if            
+      end if
 
       ! Horizontal
       if (minim%lrh) then

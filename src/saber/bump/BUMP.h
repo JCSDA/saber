@@ -493,11 +493,6 @@ template<typename MODEL> class BUMP {
   // Destructor
   ~BUMP();
 
-  // C++ interfaces
-  size_t getSize() {return keyBUMP_.size();}
-  int getKey(int igrid) const {return keyBUMP_[igrid];}
-  void clearKey() {keyBUMP_.clear();}
-
   // Write / apply operators
   void write() const;
   void apply() const;
@@ -519,9 +514,9 @@ template<typename MODEL> class BUMP {
   void multiplyPsiChiToUV(atlas::FieldSet *) const;
   void multiplyPsiChiToUVAd(atlas::FieldSet *) const;
   void getParameter(const std::string &, const int &, Increment_ &) const;
-  void getParameter(const std::string &, const std::string &, double &) const;
+  void getParameter(const std::string &, const int &, const int &, double &) const;
   void setParameter(const std::string &, const int &, const Increment_ &) const;
-  void setParameter(const std::string &, const std::string &, const double &) const;
+  void setParameter(const std::string &, const int &, const int &, const double &) const;
   void partialDealloc() const;
 
  private:
@@ -529,6 +524,7 @@ template<typename MODEL> class BUMP {
   const oops::Variables activeVars_;
   BUMP_Parameters_ params_;
   std::vector<int> keyBUMP_;
+  std::vector<oops::Variables> activeVarsPerGrid_;
 };
 
 // -----------------------------------------------------------------------------
@@ -541,7 +537,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
                   const State_ & fg,
                   const EnsemblePtr_ ens1,
                   const EnsemblePtr_ ens2)
-  : resol_(resol), activeVars_(activeVars), params_(params), keyBUMP_() {
+  : resol_(resol), activeVars_(activeVars), params_(params), keyBUMP_(), activeVarsPerGrid_() {
   oops::Log::trace() << "BUMP<MODEL>::BUMP construction starting" << std::endl;
 
   // Get ensemble 1 size if ensemble 1 is available
@@ -675,6 +671,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     }
     grids[jgrid].set("nv", vars_str.size());
 
+    // Save variables for each grid
+    const oops::Variables gridVars(vars_str);
+    activeVarsPerGrid_.push_back(gridVars);
+
     // Get the required number of levels add it to the grid configuration
     int nl0 = 0;
     for (size_t jvar = 0; jvar < vars_str.size(); ++jvar) {
@@ -755,7 +755,25 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
                                              std::istream_iterator<std::string>());
               const std::string variable(split[0]);
               const double value = std::stod(split[1]);
-              this->setParameter(param, variable, value);
+
+              // Get grid and variable index
+              int igrid = -1;
+              int ivar = -1;
+              for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+                for (size_t jvar=0; jvar < activeVarsPerGrid_[jgrid].size(); ++jvar) {
+                  if (activeVarsPerGrid_[jgrid][jvar] == variable) {
+                    igrid = jgrid;
+                    ivar = jvar;
+                    break;
+                  }
+                }
+              }
+              if (igrid == -1 || ivar == -1) {
+                 ABORT("BUMP::BUMP: cannot find indices for variable " + variable);
+              }
+
+              // Set parameter
+              this->setParameter(param, igrid, ivar, value);
               oops::Log::test() << "Value of " << param << " at " << date << " for "
                                 << variable << " : " << value << std::endl;
             }
@@ -837,11 +855,13 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP<MODEL>::BUMP(BUMP & other) : keyBUMP_() {
-  for (unsigned int jgrid = 0; jgrid < other.getSize(); ++jgrid) {
-    keyBUMP_.push_back(other.getKey(jgrid));
+BUMP<MODEL>::BUMP(BUMP & other) : keyBUMP_(), activeVarsPerGrid_() {
+  for (unsigned int jgrid = 0; jgrid < other.keyBump_.size(); ++jgrid) {
+    keyBUMP_.push_back(other.keyBUMP_[jgrid]);
+    activeVarsPerGrid_.push_back(other.activeVarsPerGrid_[jgrid]);
   }
-  other.clearKey();
+  other.keyBUMP_.clear();
+  other.activeVarsPerGrid_.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -888,13 +908,15 @@ void BUMP<MODEL>::write() const {
           outfile << date.toString() << std::endl;
 
           // Write parameter
-          for (size_t jj=0; jj < activeVars_.size(); ++jj) {
-             double value;
-             this->getParameter(param, activeVars_[jj], value);
-             outfile << activeVars_[jj] << ' ' << std::scientific
-                     << std::setprecision(3) << value << std::endl;
-             oops::Log::test() << "Value of " << param << " at " << date << " for "
-                               << activeVars_[jj] << " : " << value << std::endl;
+          for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+            for (size_t jvar=0; jvar < activeVarsPerGrid_[jgrid].size(); ++jvar) {
+              double value;
+              this->getParameter(param, jgrid, jvar, value);
+              outfile << activeVarsPerGrid_[jgrid][jvar] << ' ' << std::scientific
+                      << std::setprecision(3) << value << std::endl;
+              oops::Log::test() << "Value of " << param << " at " << date << " for "
+                                << activeVarsPerGrid_[jgrid][jvar] << " : " << value << std::endl;
+            }
           }
 
           // Close file
@@ -1164,15 +1186,11 @@ void BUMP<MODEL>::getParameter(const std::string & param, const int & icmp,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP<MODEL>::getParameter(const std::string & param, const std::string & variable,
+void BUMP<MODEL>::getParameter(const std::string & param, const int & jgrid, const int & jvar,
   double & value) const {
   const int npar = param.size();
   const char *cpar = param.c_str();
-  const int nvar = variable.size();
-  const char *cvar = variable.c_str();
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_get_parameter_value_f90(keyBUMP_[jgrid], npar, cpar, nvar, cvar, value);
-  }
+  bump_get_parameter_value_f90(keyBUMP_[jgrid], npar, cpar, jvar, value);
 }
 
 // -----------------------------------------------------------------------------
@@ -1193,15 +1211,11 @@ void BUMP<MODEL>::setParameter(const std::string & param, const int & icmp,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP<MODEL>::setParameter(const std::string & param, const std::string & variable,
+void BUMP<MODEL>::setParameter(const std::string & param, const int & jgrid, const int & jvar,
   const double & value) const {
   const int npar = param.size();
   const char *cpar = param.c_str();
-  const int nvar = variable.size();
-  const char *cvar = variable.c_str();
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_set_parameter_value_f90(keyBUMP_[jgrid], npar, cpar, nvar, cvar, value);
-  }
+  bump_set_parameter_value_f90(keyBUMP_[jgrid], npar, cpar, jvar, value);
 }
 
 // -----------------------------------------------------------------------------
