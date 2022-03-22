@@ -23,6 +23,10 @@ phases:
       - echo $CODEBUILD_WEBHOOK_TRIGGER
       - echo $CODEBUILD_WEBHOOK_BASE_REF
 
+      # read cdash url from s3
+      - wget https://ci-test-cdash-url.s3.amazonaws.com/cdash_url.txt
+      - CDASH_URL=$(cat cdash_url.txt)
+
       # Codebuild only runs on PUSH events if HEAD_REF
       # is refs/heads/develop (merge to develop). In this
       # case CODEBUILD_GIT_BRANCH="develop"
@@ -74,6 +78,7 @@ phases:
       - cp CMakeLists.txt /jcsda/saber-bundle
       - cp -r cmake /jcsda/saber-bundle/
       - cp /jcsda/saber-bundle/cmake/CTestConfig.cmake /jcsda/saber-bundle
+      - sed -i "s@CDASH_URL@$CDASH_URL@g" /jcsda/saber-bundle/CTestConfig.cmake
 
       # print list
       - cd /jcsda/saber-bundle
@@ -120,8 +125,7 @@ phases:
       # upload find cdash url and upload it as CodeBuild artifact to S3
       - if [ "$BUILD_STATUS" = "1" ];
         then echo "Build & tests passed, find cdash url";
-        bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /build_container/saber/Testing;
-        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /build_container/saber/Testing);
+        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /build_container/saber/Testing $CDASH_URL);
         echo $url;
         echo ${url} > /jcsda/artifacts/cdash-url.txt;
         cat /jcsda/artifacts/cdash-url.txt;
