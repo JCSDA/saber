@@ -55,6 +55,10 @@ phases:
       - cd CI
       - . /etc/profile.d/intel.sh
 
+      # read cdash url from s3
+      - wget https://ci-test-cdash-url.s3.amazonaws.com/cdash_url.txt
+      - CDASH_URL=$(cat cdash_url.txt)
+
       # jedi-cmake
       - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/jedi-cmake $CODEBUILD_GIT_BRANCH jedicmake /jcsda/saber-bundle develop
 
@@ -73,6 +77,7 @@ phases:
 
       # cdash upload setup
       - cp /jcsda/saber-bundle/cmake/CTestConfig.cmake /jcsda/saber-bundle/
+      - sed -i "s@CDASH_URL@$CDASH_URL@g" /jcsda/saber-bundle/CTestConfig.cmake
       - chmod 777 -R /jcsda/saber-bundle
 
       # print list
@@ -142,8 +147,7 @@ phases:
       # upload find cdash url and upload it as CodeBuild artifact to S3
       - if [ "$BUILD_STATUS" = "1" ];
         then echo "Build & tests passed, find cdash url";
-        bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /home/jedi/saber/Testing;
-        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /home/jedi/saber/Testing);
+        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /home/jedi/saber/Testing  $CDASH_URL);
         echo $url;
         echo ${url} > /jcsda/artifacts/cdash-url.txt;
         cat /jcsda/artifacts/cdash-url.txt;
