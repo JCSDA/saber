@@ -367,7 +367,10 @@ nbufr = nbufr+1
 
 if (bpar%nicas_block(ib)) then
    ! Total dimensions
-   nbufi = nbufi+4
+   nbufi = nbufi+3
+
+   ! Number of components
+   nbufi = nbufi+1
 
    do icmp=1,nicas_blk%ncmp
       ! Component work
@@ -426,13 +429,15 @@ ibufr = ibufr+1
 
 if (bpar%nicas_block(ib)) then
    ! Total dimensions
-   bufi(ibufi+1) = nicas_blk%ncmp
-   ibufi = ibufi+1
    bufi(ibufi+1) = nbufi
    ibufi = ibufi+1
    bufi(ibufi+1) = nbufr
    ibufi = ibufi+1
    bufi(ibufi+1) = nbufl
+   ibufi = ibufi+1
+
+   ! Number of components
+   bufi(ibufi+1) = nicas_blk%ncmp
    ibufi = ibufi+1
 
    do icmp=1,nicas_blk%ncmp
@@ -496,7 +501,15 @@ nicas_blk%wgt = bufr(ibufr+1)
 ibufr = ibufr+1
 
 if (bpar%nicas_block(ib)) then
-   ! Get number of components
+   ! Check total dimensions
+   if (bufi(ibufi+1)/=nbufi) call mpl%abort('${subr}$','inconsistent initial value/buffer size (integer)')
+   ibufi = ibufi+1
+   if (bufi(ibufi+1)/=nbufr) call mpl%abort('${subr}$','inconsistent initial value/buffer size (real)')
+   ibufi = ibufi+1
+   if (bufi(ibufi+1)/=nbufl) call mpl%abort('${subr}$','inconsistent initial value/buffer size (logical)')
+   ibufi = ibufi+1
+
+   ! Number of components
    nicas_blk%ncmp = bufi(ibufi+1)
    ibufi = ibufi+1
 
@@ -511,17 +524,7 @@ if (bpar%nicas_block(ib)) then
       nicas_blk%cmp(icmp)%smoother = .false.
       nicas_blk%cmp(icmp)%horizontal = .false.
       nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
-   end do
 
-   ! Check sizes
-   if (bufi(ibufi+1)/=nbufi) call mpl%abort('${subr}$','inconsistent initial value/buffer size (integer)')
-   ibufi = ibufi+1
-   if (bufi(ibufi+1)/=nbufr) call mpl%abort('${subr}$','inconsistent initial value/buffer size (real)')
-   ibufi = ibufi+1
-   if (bufi(ibufi+1)/=nbufl) call mpl%abort('${subr}$','inconsistent initial value/buffer size (logical)')
-   ibufi = ibufi+1
-
-   do icmp=1,nicas_blk%ncmp
       ! Component work
       call nicas_blk%cmp(icmp)%deserialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
    end do
