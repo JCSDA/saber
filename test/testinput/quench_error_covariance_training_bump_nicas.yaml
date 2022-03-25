@@ -4,6 +4,7 @@ background:
 bump:
   datadir: testdata
   forced_radii: true
+  interp_test: true
   method: cor
   new_nicas: true
   prefix: quench_error_covariance_training_bump_nicas/test
@@ -20,6 +21,12 @@ bump:
   - date: 2010-01-01T12:00:00Z
     filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rv
     parameter: cor_rv
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/quench_error_covariance_training_bump_nicas/nicas_interp_test
+    parameter: nicas_interp_test
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/quench_error_covariance_training_bump_nicas/nicas_interp_ref
+    parameter: nicas_interp_ref
   write_nicas_local: true
 geometry:
   function space: StructuredColumns

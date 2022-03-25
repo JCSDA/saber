@@ -663,7 +663,7 @@ if( SABER_TEST_OOPS )
                       DEPENDS saber_interpolation_bump.x )
 
     # QUENCH tests
-    set( mpi 1 )
+    set( mpi 2 )
     set( omp 2 )
 
     # Error covariance training tests

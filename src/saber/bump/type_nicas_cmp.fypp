@@ -212,9 +212,14 @@ type nicas_cmp_type
    integer :: lon_sc_id                                 !< lon_sc ID
    integer :: lat_sc_id                                 !< lat_sc ID
    integer :: lev_sc_id                                 !< lev_sc ID
-   logical :: write_norm                                !< Norm writing flag
    logical :: write_coef_ens                            !< Ensemble coefficent flag
+   logical :: write_norm                                !< Norm writing flag
    integer :: c_nopmax                                  !< Maximum number of operations for convolution
+
+   ! Interpolation test
+   logical :: interp_test                               !< Interpolation test flag
+   real(kind_real),allocatable :: fld_int(:,:)          !< Interpolated field
+   real(kind_real),allocatable :: fld_ref(:,:)          !< Reference field
 contains
    procedure :: partial_dealloc => nicas_cmp_partial_dealloc
    procedure :: dealloc => nicas_cmp_dealloc
@@ -587,6 +592,8 @@ if (allocated(nicas_cmp%interp_c1b_to_c0a)) then
    deallocate(nicas_cmp%interp_c1b_to_c0a)
 end if
 call nicas_cmp%c%dealloc
+if (allocated(nicas_cmp%fld_int)) deallocate(nicas_cmp%fld_int)
+if (allocated(nicas_cmp%fld_ref)) deallocate(nicas_cmp%fld_ref)
 
 ! Probe out
 @:probe_out()
@@ -1220,6 +1227,37 @@ nicas_cmp%verbosity = .true.
 nicas_cmp%smoother = .false.
 nicas_cmp%horizontal = .false.
 
+! Read coef_ens
+write(mpl%info,'(a16,a)') '','Read coef_ens'
+call mpl%flush
+if (.not.allocated(nicas_cmp%coef_ens)) then
+   ! Allocation
+   allocate(nicas_cmp%coef_ens(geom%nc0a,geom%nl0))
+
+   ! Check whether coef_ens is available in file
+   if (mpl%main) then
+      ! Check whether norm is present
+      read_coef_ens = inquire_var_presence(mpl,nicas_cmp%cmpid,'coef_ens')
+
+      ! Check nc0
+      if (read_coef_ens) read_coef_ens = check_dim(mpl,nicas_cmp%cmpid,'nc0',geom%nc0)
+   end if
+
+   ! Broadcast dimension
+   call mpl%f_comm%broadcast(read_coef_ens,mpl%rootproc-1)
+
+   if (read_coef_ens) then
+      ! Inquire variable
+      coef_ens_id = inquire_var(mpl,nicas_cmp%cmpid,'coef_ens')
+
+      ! Read variable
+      call geom%io%fld_read(mpl,nicas_cmp%cmpid,coef_ens_id,nicas_cmp%coef_ens)
+   else
+      ! Ensemble coefficient set to one divided by the number of components
+      nicas_cmp%coef_ens = sqrt(one/real(nicas_cmp%ncmp))
+   end if
+end if
+
 ! Read norm
 write(mpl%info,'(a16,a)') '','Read norm'
 call mpl%flush
@@ -1257,37 +1295,6 @@ else
    else
       ! Recompute normalization
       nicas_cmp%compute_norm = .true.
-   end if
-end if
-
-! Read coef_ens
-write(mpl%info,'(a16,a)') '','Read coef_ens'
-call mpl%flush
-if (.not.allocated(nicas_cmp%coef_ens)) then
-   ! Allocation
-   allocate(nicas_cmp%coef_ens(geom%nc0a,geom%nl0))
-
-   ! Check whether coef_ens is available in file
-   if (mpl%main) then
-      ! Check whether norm is present
-      read_coef_ens = inquire_var_presence(mpl,nicas_cmp%cmpid,'coef_ens')
-
-      ! Check nc0
-      if (read_coef_ens) read_coef_ens = check_dim(mpl,nicas_cmp%cmpid,'nc0',geom%nc0)
-   end if
-
-   ! Broadcast dimension
-   call mpl%f_comm%broadcast(read_coef_ens,mpl%rootproc-1)
-
-   if (read_coef_ens) then
-      ! Inquire variable
-      coef_ens_id = inquire_var(mpl,nicas_cmp%cmpid,'coef_ens')
-
-      ! Read variable
-      call geom%io%fld_read(mpl,nicas_cmp%cmpid,coef_ens_id,nicas_cmp%coef_ens)
-   else
-      ! Ensemble coefficient set to one divided by the number of components
-      nicas_cmp%coef_ens = sqrt(one/real(nicas_cmp%ncmp))
    end if
 end if
 
@@ -1616,7 +1623,7 @@ character(len=1024) :: levname
 ! Probe in
 @:probe_in()
 
-! Define write_norm and write_coef_ens flags
+! Define write_coef_ens and write_norm flags
 if (nam%write_c0) then
    if (nam%output_nicas_coef_ens) then
       nicas_cmp%write_coef_ens = .false.
@@ -1635,8 +1642,8 @@ if (nam%write_c0) then
    end if
    nicas_cmp%write_norm = .not.nam%output_nicas_norm
 else
-   nicas_cmp%write_norm = .false.
    nicas_cmp%write_coef_ens = .false.
+   nicas_cmp%write_norm = .false.
 end if
 
 if (nicas_cmp%write_coef_ens) then
@@ -2355,9 +2362,9 @@ integer :: is,isu,isa,isb
 integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:),order_inv_sa(:)
-real(kind_real) :: nc1_real
+real(kind_real) :: nc1_real,lon,lat
 real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
+real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),fld_src(:)
 logical :: valid
 logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
 logical,allocatable :: gmask_c1(:),gmask_c1a(:)
@@ -2851,6 +2858,52 @@ do il1=1,nicas_cmp%nl1
    deallocate(c0b_to_c0)
    deallocate(c0own_to_c0)
 end do
+
+if (nam%interp_test) then
+   write(mpl%info,'(a19,a)') '','Horizontal interpolation test:'
+   if (nicas_cmp%verbosity) call mpl%flush
+
+   ! Allocation
+   allocate(nicas_cmp%fld_int(geom%nc0a,geom%nl0))
+   allocate(nicas_cmp%fld_ref(geom%nc0a,geom%nl0))
+
+   ! Initialization
+   nicas_cmp%fld_int = zero
+   nicas_cmp%fld_ref = zero
+
+   ! Interpolation test
+   do il1=1,nicas_cmp%nl1
+      ! Level
+      il0 = nicas_cmp%l1_to_l0(il1)
+
+      ! Allocation
+      allocate(fld_src(nicas_cmp%hor(il1)%nc1b))
+
+      ! Define source and reference destination with an analytical function
+      do ic1b=1,nicas_cmp%hor(il1)%nc1b
+         ic1u = nicas_cmp%hor(il1)%c1b_to_c1u(ic1b)
+         lon = nicas_cmp%hor(il1)%lon_c1u(ic1u)
+         lat = nicas_cmp%hor(il1)%lat_c1u(ic1u)
+         fld_src(ic1b) = cos(3.0_kind_real*lon)*sin(3.0_kind_real*lat)
+      end do
+      do ic0a=1,geom%nc0a
+         lon = geom%lon_c0a(ic0a)
+         lat = geom%lat_c0a(ic0a)
+         nicas_cmp%fld_ref(ic0a,il0) = cos(3.0_kind_real*lon)*sin(3.0_kind_real*lat)
+      end do
+
+      ! Apply interpolation
+      call nicas_cmp%interp_c1b_to_c0a(il1)%apply(mpl,fld_src,nicas_cmp%fld_int(:,il0))
+
+      ! Print results
+print*, il1,minval(fld_src),maxval(fld_src),minval(nicas_cmp%fld_ref(:,il0)),maxval(nicas_cmp%fld_ref(:,il0))
+      write(mpl%info,'(a22,a,i3,a)') '','Level ',il1,':'
+      if (nicas_cmp%verbosity) call mpl%flush
+
+      ! Release memory
+      deallocate(fld_src)
+   end do
+end if
 
 ! Define subgrid and conversions
 write(mpl%info,'(a16,a)') '','Define subgrid, conversions and communication'

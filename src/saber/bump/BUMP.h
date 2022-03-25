@@ -419,6 +419,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
   // Write NICAS grids
   oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
+  // Horizontal NICAS interpolation test
+  oops::OptionalParameter<bool> interp_test{"interp_test", this};
 
   // dirac_param
 

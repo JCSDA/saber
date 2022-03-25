@@ -16,6 +16,7 @@
 #include "atlas/field.h"
 
 #include "eckit/config/Configuration.h"
+#include "eckit/mpi/Comm.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
@@ -23,6 +24,7 @@
 #include "oops/util/Random.h"
 
 #include "quench/Geometry.h"
+#include "quench/Interface.h"
 
 // -----------------------------------------------------------------------------
 namespace quench {
@@ -270,6 +272,7 @@ double Fields::dot_product_with(const Fields & fld2) const {
       }
     }
   }
+  this->geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
   return zz;
 }
 // -----------------------------------------------------------------------------
@@ -492,41 +495,49 @@ void Fields::write(const eckit::Configuration & config) const {
     fs.gather(*atlasFieldSet_, globalData);
 
     if (geom_->getComm().rank() == 0) {
-      // Write longitudes
-      atlas::Field lonGlobal = globalCoordinates.field("lon");
-      auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
-      std::string filepath_lon = filepath + "_lon";
-      std::ofstream outfile_lon(filepath_lon.c_str());
-      if (outfile_lon.is_open()) {
-        lonView.dump(outfile_lon);
-        outfile_lon.close();
+      if (netcdfOutput_) {
+        // Call Fortran for NetCDF output
+        fields_write_structuredcolumns_f90(config, vars_, globalCoordinates.get(), globalData.get());
       } else {
-        ABORT("Fields::write: cannot open file for longitudes");
-      }
+        // Get file path
+        const std::string filepath = config.getString("filepath");
 
-      // Write latitudes
-      atlas::Field latGlobal = globalCoordinates.field("lat");
-      auto latView = atlas::array::make_view<double, 1>(latGlobal);
-      std::string filepath_lat = filepath + "_lat";
-      std::ofstream outfile_lat(filepath_lat.c_str());
-      if (outfile_lat.is_open()) {
-        latView.dump(outfile_lat);
-        outfile_lat.close();
-      } else {
-        ABORT("Fields::write: cannot open file for latitudes");
-      }
-
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        // Write variable
-        atlas::Field field = globalData.field(vars_[jvar]);
-        auto varView = atlas::array::make_view<double, 2>(field);
-        std::string filepath_var = filepath + "_" + vars_[jvar];
-        std::ofstream outfile_var(filepath_var.c_str());
-        if (outfile_var.is_open()) {
-          varView.dump(outfile_var);
-          outfile_var.close();
+        // Write longitudes
+        atlas::Field lonGlobal = globalCoordinates.field("lon");
+        auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
+        std::string filepath_lon = filepath + "_lon";
+        std::ofstream outfile_lon(filepath_lon.c_str());
+        if (outfile_lon.is_open()) {
+          lonView.dump(outfile_lon);
+          outfile_lon.close();
         } else {
-          ABORT("Fields::write: cannot open file for variable" + vars_[jvar]);
+          ABORT("Fields::write: cannot open file for longitudes");
+        }
+
+        // Write latitudes
+        atlas::Field latGlobal = globalCoordinates.field("lat");
+        auto latView = atlas::array::make_view<double, 1>(latGlobal);
+        std::string filepath_lat = filepath + "_lat";
+        std::ofstream outfile_lat(filepath_lat.c_str());
+        if (outfile_lat.is_open()) {
+          latView.dump(outfile_lat);
+          outfile_lat.close();
+        } else {
+          ABORT("Fields::write: cannot open file for latitudes");
+        }
+
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          // Write variable
+          atlas::Field field = globalData.field(vars_[jvar]);
+          auto varView = atlas::array::make_view<double, 2>(field);
+          std::string filepath_var = filepath + "_" + vars_[jvar];
+          std::ofstream outfile_var(filepath_var.c_str());
+          if (outfile_var.is_open()) {
+            varView.dump(outfile_var);
+            outfile_var.close();
+          } else {
+            ABORT("Fields::write: cannot open file for variable" + vars_[jvar]);
+          }
         }
       }
     }

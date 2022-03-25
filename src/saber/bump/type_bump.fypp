@@ -1460,7 +1460,8 @@ fld_mga = bump%mpl%msv%valr
 select case (trim(param))
 case  ('norm_m2','norm_m4','norm_kurt','cor_a','cor_rh','cor_rh1','cor_rh2','cor_rhc','cor_rv','loc_coef','loc_a','loc_rh', &
  & 'loc_rh1','loc_rh2','loc_rhc','loc_rv','loc_hyb_coef','loc_hyb_a','loc_hyb_rh','loc_hyb_rh1','loc_hyb_rh2','loc_hyb_rhc', &
- & 'loc_hyb_rv','sta_hyb_coef','nicas_norm','dirac_vbal','dirac_mom','dirac_diag_cor','dirac_nicas','dirac_nicas_bens')
+ & 'loc_hyb_rv','sta_hyb_coef','nicas_norm','nicas_interp_test','nicas_interp_ref','dirac_vbal','dirac_mom','dirac_diag_cor', &
+ & 'dirac_nicas','dirac_nicas_bens')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do iv=0,bump%nam%nv
@@ -1947,6 +1948,20 @@ case ('nicas_norm')
    if (icmp>size(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
    if (.not.allocated(bump%nicas%blk(ib)%cmp(icmp)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%cmp(icmp)%norm,fld_mga)
+   found = .true.
+case ('nicas_interp_test')
+   if (.not.allocated(bump%nicas%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
+   if (.not.allocated(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
+   if (icmp>size(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+   if (.not.allocated(bump%nicas%blk(ib)%cmp(icmp)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%cmp(icmp)%fld_int,fld_mga)
+   found = .true.
+case ('nicas_interp_ref')
+   if (.not.allocated(bump%nicas%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
+   if (.not.allocated(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
+   if (icmp>size(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+   if (.not.allocated(bump%nicas%blk(ib)%cmp(icmp)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%cmp(icmp)%fld_ref,fld_mga)
    found = .true.
 case ('dirac_nicas')
    iv = bump%bpar%b_to_v1(ib)

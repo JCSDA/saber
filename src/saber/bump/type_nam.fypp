@@ -190,6 +190,7 @@ type nam_type
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: write_nicas_grids                               !< Write NICAS grids
+   logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
    ! dirac_param
    integer :: ndir                                            !< Number of Diracs
@@ -440,6 +441,7 @@ nam%min_lev = 1
 nam%max_lev = nl0max
 nam%pos_def_test = .false.
 nam%write_nicas_grids = .false.
+nam%interp_test = .false.
 
 ! dirac_param default
 nam%ndir = 0
@@ -637,6 +639,7 @@ integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
 logical :: write_nicas_grids
+logical :: interp_test
 integer :: ndir
 real(kind_real) :: londir(ndirmax)
 real(kind_real) :: latdir(ndirmax)
@@ -806,6 +809,7 @@ namelist/nicas_param/ &
  & max_lev, &
  & pos_def_test, &
  & write_nicas_grids, &
+ & interp_test, &
  & ndir, &
  & londir, &
  & latdir, &
@@ -1009,6 +1013,7 @@ if (mpl%main) then
    max_lev = nl0max
    pos_def_test = .false.
    write_nicas_grids = .false.
+   interp_test = .false.
 
    ! dirac_param default
    ndir = 0
@@ -1215,6 +1220,7 @@ if (mpl%main) then
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
    nam%write_nicas_grids = write_nicas_grids
+   nam%interp_test = interp_test
 
    ! dirac_param
    nam%ndir = ndir
@@ -1423,6 +1429,7 @@ call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_nicas_grids,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%interp_test,mpl%rootproc-1)
 
 ! dirac_param
 call mpl%f_comm%broadcast(nam%ndir,mpl%rootproc-1)
@@ -1907,6 +1914,7 @@ if (conf%has('max_lev')) then
 end if
 if (conf%has('pos_def_test')) call conf%get_or_die('pos_def_test',nam%pos_def_test)
 if (conf%has('write_nicas_grids')) call conf%get_or_die('write_nicas_grids',nam%write_nicas_grids)
+if (conf%has('interp_test')) call conf%get_or_die('interp_test',nam%interp_test)
 
 ! dirac_param
 if (conf%has('ndir')) call conf%get_or_die('ndir',nam%ndir)
@@ -2415,6 +2423,8 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
 end if
 if (nam%write_nicas_grids.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for write_nicas_grids')
+if (nam%interp_test.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
+ & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for interp_test')
 if (nam%load_nicas_local.and.nam%write_nicas_global) &
  & call mpl%abort('${subr}$','load_nicas_local and write_nicas_global are exclusive')
 
@@ -2661,6 +2671,7 @@ call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)
 call mpl%write('write_nicas_grids',nam%write_nicas_grids)
+call mpl%write('interp_test',nam%interp_test)
 
 ! dirac_param
 write(mpl%info,'(a7,a)') '','Dirac parameters'

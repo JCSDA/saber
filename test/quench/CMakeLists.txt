@@ -4,16 +4,20 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 list( APPEND saber_quench_src_files
+
 Covariance.h
 Fields.h
 Fields.cc
+Fields.F90
 Geometry.h
 Geometry.cc
 Increment.h
 Increment.cc
+Interface.h
 LinearVarChange.h
 State.h
 State.cc
+
 )
 
 ecbuild_add_library( TARGET   quench
