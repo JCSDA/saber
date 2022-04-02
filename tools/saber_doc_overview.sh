@@ -78,7 +78,7 @@ for dir1 in ${lev1}; do
             fi
             lev5=`ls -d */ 2> /dev/null`
             for dir5 in ${lev5}; do
-               cd ${dir4}
+               cd ${dir5}
                desc=`cat .description 2> /dev/null`
                echo -e " *         - **"${dir5%?}"**: "${desc} >> ${docdir}/mainpage.h
                list=`ls ${languages} 2> /dev/null`
@@ -86,6 +86,7 @@ for dir1 in ${lev1}; do
                   dir+=("${dir1%?}/${dir2%?}/${dir3%?}/${dir4%?}/${dir5%?}")
                   name+=("${dir1%?}_${dir2%?}_${dir3%?}_${dir4%?}_${dir5%?}")
                fi
+               cd ..
             done
             cd ..
          done
