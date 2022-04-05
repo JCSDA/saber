@@ -16,9 +16,9 @@
 #include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
 
-#include "oops/base/InterpolatorBase.h"
 #include "oops/mpi/mpi.h"
 #include "oops/util/ObjectCounter.h"
+#include "oops/util/Printable.h"
 
 namespace saber {
 
@@ -28,7 +28,7 @@ namespace saber {
  *
  */
 
-class InterpolatorBump : public oops::InterpolatorBase,
+class InterpolatorBump : public util::Printable,
                          private util::ObjectCounter<InterpolatorBump> {
  public:
   static const std::string classname() {return "saber::InterpolatorBump";}
@@ -41,9 +41,9 @@ class InterpolatorBump : public oops::InterpolatorBase,
 
   ~InterpolatorBump();
 
-  void apply(const atlas::FieldSet &, atlas::FieldSet &) override;
-  void apply(const atlas::Field &, atlas::Field &) override;
-  void apply_ad(const atlas::FieldSet &, atlas::FieldSet &) override;
+  void apply(const atlas::FieldSet &, atlas::FieldSet &);
+  void apply(const atlas::Field &, atlas::Field &);
+  void apply_ad(const atlas::FieldSet &, atlas::FieldSet &);
 
  private:
   int keyBumpInterpolator_;
@@ -51,10 +51,6 @@ class InterpolatorBump : public oops::InterpolatorBase,
 };
 
 // -----------------------------------------------------------------------------
-
-
-// gnu compilers want the Bump interpolator factory to be defined here.
-static oops::InterpolatorMaker<InterpolatorBump> makerBumpInterpolator_("bump");
 
 }  // namespace saber
 

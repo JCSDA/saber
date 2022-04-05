@@ -286,10 +286,10 @@ if( SABER_TEST_OOPS )
                             SOURCES mains/qgHofX.cc
                             LIBS    ${oops_qg_LIBRARIES} )
 
-    ecbuild_add_executable( TARGET  saber_interpolation_bump.x
-                            SOURCES mains/InterpolationBump.cc
-                            LIBS    ${oops_qg_LIBRARIES}
-                                    saber )
+#    ecbuild_add_executable( TARGET  saber_interpolation_bump.x
+#                            SOURCES mains/InterpolationBump.cc
+#                            LIBS    ${oops_qg_LIBRARIES}
+#                                    saber )
 
     ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
                             SOURCES mains/quenchErrorCovarianceTraining.cc
@@ -652,15 +652,15 @@ if( SABER_TEST_OOPS )
         endforeach()
     endif()
 
-    # Interpolation tests
-    set( mpi 4 )
-    set( omp 1 )
-    ecbuild_add_test( TARGET saber_test_interpolation_bump
-                      MPI ${mpi}
-                      OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_interpolation_bump.x
-                      ARGS    testinput/interpolation_bump.yaml
-                      DEPENDS saber_interpolation_bump.x )
+#    # Interpolation tests
+#    set( mpi 4 )
+#    set( omp 1 )
+#    ecbuild_add_test( TARGET saber_test_interpolation_bump
+#                      MPI ${mpi}
+#                      OMP ${omp}
+#                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_interpolation_bump.x
+#                      ARGS    testinput/interpolation_bump.yaml
+#                      DEPENDS saber_interpolation_bump.x )
 
     # QUENCH tests
     set( mpi 1 )
