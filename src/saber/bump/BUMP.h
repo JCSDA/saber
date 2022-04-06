@@ -23,7 +23,6 @@
 #include "oops/base/Increment.h"
 #include "oops/base/IncrementEnsemble.h"
 #include "oops/base/Variables.h"
-#include "oops/interface/Increment.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/DateTime.h"
@@ -508,7 +507,7 @@ template<typename MODEL> class BUMP {
   void partialDealloc() const;
 
  private:
-  const Geometry_ resol_;
+  const Geometry_ & resol_;
   const oops::Variables activeVars_;
   BUMP_Parameters_ params_;
   std::vector<int> keyBUMP_;

@@ -14,8 +14,8 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/Geometry.h"
 #include "oops/base/Variables.h"
-#include "oops/interface/Geometry.h"
 
 #include "saber/bump/BUMP.h"
 #include "saber/oops/SaberBlockBase.h"
