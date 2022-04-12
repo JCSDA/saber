@@ -3648,8 +3648,8 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: isu,ic1u,ic1b,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
-real(kind_real) :: min_minus_max,max_minus_min,rv_th,distv,dx,dy
-real(kind_real) :: rv_max(geom%nl0),vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distv_min(nicas_blk%nl1,nicas_blk%nl1)
+real(kind_real) :: rv_th,distv,dx,dy
+real(kind_real) :: rv_max(geom%nl0),vunit_min(nicas_blk%nl1),vunit_max(nicas_blk%nl1),distv_min
 real(kind_real),allocatable :: hnd(:),vnd(:),nn_dist(:)
 logical :: valid
 
@@ -3665,19 +3665,10 @@ do il0=1,geom%nl0
 end do
 call mpl%f_comm%allreduce(rv_max,fckit_mpi_max())
 
-! Find smallest possible vertical distance
+! Prepare vunit min/max to find smallest possible vertical distance
 do il1=1,nicas_blk%nl1
    vunit_min(il1) = zss_minval(nicas_blk%hor(il1)%vunit_c1u)
    vunit_max(il1) = zss_maxval(nicas_blk%hor(il1)%vunit_c1u)
-end do
-distv_min = zero
-do il1=1,nicas_blk%nl1
-   do jl1=1,il1
-      min_minus_max = abs(vunit_min(il1)-vunit_max(jl1))
-      max_minus_min = abs(vunit_max(il1)-vunit_min(jl1))
-      distv_min(il1,jl1) = min(min_minus_max,max_minus_min)
-      distv_min(jl1,il1) = distv_min(il1,jl1)
-   end do
 end do
 
 ! Count and find nearest neighbors
@@ -3706,7 +3697,14 @@ do isb=1,nicas_blk%nsb
       hnd = mpl%msv%valr
       vnd = mpl%msv%valr
 
-      if (infeq(distv_min(il1,jl1),rv_max(il0))) then
+      ! Find smallest possible vertical distance
+      if (geom%vunitavg(il1)>geom%vunitavg(jl1)) then
+         distv_min = max(vunit_min(il1)-vunit_max(jl1),zero)
+      else
+         distv_min = max(vunit_min(jl1)-vunit_max(il1),zero)
+      end if
+
+      if (infeq(distv_min,rv_max(il0)).or.(all(.not.(rv_max>zero)))) then
          ! Count nearest neighbors
          call nicas_blk%hor(jl1)%tree_c1u%count_nearest_neighbors(nicas_blk%hor(il1)%lon_c1u(ic1u), &
  & nicas_blk%hor(il1)%lat_c1u(ic1u),nicas_blk%hor(il1)%rh_c1b(ic1b),nn)
@@ -3937,7 +3935,11 @@ if (.not.nam%load_nicas_global) then
       nicas_blk%inorm(isa) = zss_sum(c_S(1:inec(isa),isa)**2)
 
       ! Normalization factor
-      nicas_blk%inorm(isa) = one/sqrt(nicas_blk%inorm(isa))
+      if (nicas_blk%inorm(isa)>zero) then
+         nicas_blk%inorm(isa) = one/sqrt(nicas_blk%inorm(isa))
+      else
+         call mpl%abort('${subr}$','missing convolution points')
+      end if
    end do
 
    ! Release memory
