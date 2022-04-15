@@ -29,4 +29,4 @@ output dirac:
 
 test:
   reference filename: testref/quench_dirac_bump_nicas/test.log.out
-  test output filename: testoutput/quench_dirac_bump_nicas/test.log.out
+  output precision: 6

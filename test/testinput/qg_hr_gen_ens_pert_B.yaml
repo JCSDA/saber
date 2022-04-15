@@ -28,4 +28,4 @@ perturbed variables: [x]
 
 test:
   reference filename: testref/qg_hr_gen_ens_pert_B/test.log.out
-  test output filename: testoutput/qg_hr_gen_ens_pert_B/test.log.out
+  output precision: 6
