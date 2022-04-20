@@ -37,14 +37,13 @@ phases:
         else export CODEBUILD_GIT_BRANCH=${CODEBUILD_WEBHOOK_HEAD_REF#refs/heads/};
         fi
 
+      # Determine the git base branch. This is the branch we are merging into.
+      # It can be develop or another branch. It will be used as a fall back branch in clone.sh
+      - export GIT_BASE_BRANCH=${CODEBUILD_WEBHOOK_BASE_REF#refs/heads/}
+
+      - echo "GIT_BASE_BRANCH=${GIT_BASE_BRANCH}"
       - echo "CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH}"
       - echo "CODEBUILD_SOURCE_VERSION=${CODEBUILD_SOURCE_VERSION}"
-
-      - if [ "$CODEBUILD_GIT_BRANCH" = "develop" ];
-        then export CODEBUILD_GIT_BRANCH_FORK="release-stable";
-        else export CODEBUILD_GIT_BRANCH_FORK=${CODEBUILD_GIT_BRANCH};
-        echo "CODEBUILD_GIT_BRANCH_FORK=${CODEBUILD_GIT_BRANCH_FORK}";
-        fi
 
       # Upload branch name and commit sha as CodeBuild artifact to S3
       - mkdir -p /jcsda/artifacts
@@ -59,17 +58,25 @@ phases:
       - wget https://ci-test-cdash-url.s3.amazonaws.com/cdash_url.txt
       - CDASH_URL=$(cat cdash_url.txt)
 
+      #  Setting git credentials
+      - sed -i '/ssh/d' ~/.gitconfig
+      - sed '/instead/d' ~/.gitconfig
+      - git config --global credential.helper store
+      - touch ~/.git-credentials
+      - chmod 0700 ~/.git-credentials
+      - echo "https://${GIT_USER}:${GIT_PASS}@github.com" >~/.git-credentials
+
       # jedi-cmake
-      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/jedi-cmake $CODEBUILD_GIT_BRANCH jedicmake /jcsda/saber-bundle develop
+      - ./clone.sh jcsda-internal/jedi-cmake $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle jedicmake ${GIT_BASE_BRANCH} develop
 
       # oops
-      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/oops $CODEBUILD_GIT_BRANCH oops /jcsda/saber-bundle develop
+      - ./clone.sh jcsda-internal/oops $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle oops ${GIT_BASE_BRANCH} develop
 
       # saber
-      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/saber $CODEBUILD_GIT_BRANCH saber /jcsda/saber-bundle develop
+      - ./clone.sh jcsda-internal/saber $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle saber ${GIT_BASE_BRANCH} develop
 
       # saber-data
-      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/saber-data $CODEBUILD_GIT_BRANCH saber-data /jcsda/saber-bundle develop
+      - ./clone.sh jcsda-internal/saber-data $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle saber-data ${GIT_BASE_BRANCH} develop
 
       # move CMakeLists.txt from saber/CI to bundle directory
       - cp CMakeLists.txt /jcsda/saber-bundle
