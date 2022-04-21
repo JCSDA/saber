@@ -3675,7 +3675,7 @@ end do
 write(mpl%info,'(a10,a)') '','Count and find nearest neighbors, compute distances: '
 if (nicas_blk%verbosity) call mpl%flush(.false.)
 if (nicas_blk%verbosity) call mpl%prog_init(nicas_blk%nsb)
-!$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il0,jl1,jl0,rv_th,nn,j,jc1u,valid,dx,dy,distv), &
+!$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il0,jl1,jl0,rv_th,nn,j,jc1u,valid,dx,dy,distv,distv_min), &
 !$omp&                             firstprivate(nn_index,nn_dist,hnd,vnd)
 do isb=1,nicas_blk%nsb
    ! Indices
@@ -3698,7 +3698,7 @@ do isb=1,nicas_blk%nsb
       vnd = mpl%msv%valr
 
       ! Find smallest possible vertical distance
-      if (geom%vunitavg(il1)>geom%vunitavg(jl1)) then
+      if (sup(geom%vunitavg(il1),geom%vunitavg(jl1))) then
          distv_min = max(vunit_min(il1)-vunit_max(jl1),zero)
       else
          distv_min = max(vunit_min(jl1)-vunit_max(il1),zero)
