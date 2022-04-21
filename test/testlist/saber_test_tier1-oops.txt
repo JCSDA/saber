@@ -33,4 +33,5 @@ qg_truth
 interpolation_bump
 quench_dirac_bump_nicas
 quench_dirac_gsi_global
+quench_dirac_gsi_gmao_global
 quench_error_covariance_training_bump_nicas

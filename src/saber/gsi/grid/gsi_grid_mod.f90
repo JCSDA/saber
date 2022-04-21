@@ -83,13 +83,13 @@ if (comm%rank() == 0) then
   call nccheck(nf90_open(trim(self%filename), NF90_NOWRITE, ncid), "nf90_open "//trim(self%filename))
 
   ! Get grid dimension from file
-  call nccheck(nf90_inq_dimid(ncid, "nlon", dimid(1)), "nf90_inq_dimid nlon")
-  call nccheck(nf90_inq_dimid(ncid, "nlat", dimid(2)), "nf90_inq_dimid nlat")
-  call nccheck(nf90_inq_dimid(ncid, "nlev", dimid(3)), "nf90_inq_dimid nlev")
+  call nccheck(nf90_inq_dimid(ncid, "lon", dimid(1)), "nf90_inq_dimid lon")
+  call nccheck(nf90_inq_dimid(ncid, "lat", dimid(2)), "nf90_inq_dimid lat")
+  call nccheck(nf90_inq_dimid(ncid, "lev", dimid(3)), "nf90_inq_dimid lev")
 
-  call nccheck(nf90_inquire_dimension(ncid, dimid(1), len=self%npx), "nf90_inquire_dimension nlon" )
-  call nccheck(nf90_inquire_dimension(ncid, dimid(2), len=self%npy), "nf90_inquire_dimension nlat" )
-  call nccheck(nf90_inquire_dimension(ncid, dimid(3), len=self%npz), "nf90_inquire_dimension nlev" )
+  call nccheck(nf90_inquire_dimension(ncid, dimid(1), len=self%npx), "nf90_inquire_dimension lon" )
+  call nccheck(nf90_inquire_dimension(ncid, dimid(2), len=self%npy), "nf90_inquire_dimension lat" )
+  call nccheck(nf90_inquire_dimension(ncid, dimid(3), len=self%npz), "nf90_inquire_dimension lev" )
 
 endif
 
@@ -111,11 +111,11 @@ allocate(self%lats(self%npy))
 ! -------------------------------
 if (comm%rank() == 0) then
 
-  call nccheck(nf90_inq_varid(ncid, "lons", varid(1)), "nf90_inq_varid lons")
-  call nccheck(nf90_inq_varid(ncid, "lats", varid(2)), "nf90_inq_varid lats")
+  call nccheck(nf90_inq_varid(ncid, "lon", varid(1)), "nf90_inq_varid lon")
+  call nccheck(nf90_inq_varid(ncid, "lat", varid(2)), "nf90_inq_varid lat")
 
-  call nccheck(nf90_get_var(ncid, varid(1), self%lons), "nf90_get_var lons" )
-  call nccheck(nf90_get_var(ncid, varid(2), self%lats), "nf90_get_var lats" )
+  call nccheck(nf90_get_var(ncid, varid(1), self%lons), "nf90_get_var lon" )
+  call nccheck(nf90_get_var(ncid, varid(2), self%lats), "nf90_get_var lat" )
 
   ! Close NetCDF
   call nccheck(nf90_close(ncid), "nf90_close")
