@@ -9,6 +9,7 @@
 #define SABER_BUMP_BUMP_H_
 
 #include <algorithm>
+#include <fstream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -44,20 +45,44 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
+/// Parameters describing BUMP components input (from generic text files).
+class BUMPInputNcmpParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BUMPInputNcmpParameters, oops::Parameters)
+
+ public:
+  /// Date of the components to read.
+  oops::RequiredParameter<util::DateTime> date{"date", this};
+  /// File path
+  oops::RequiredParameter<std::string> filepath{"filepath", this};
+};
+
+// -----------------------------------------------------------------------------
 /// Parameters describing BUMP parameters input (from model Increment files).
 template <typename MODEL> class BUMPInputParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(BUMPInputParameters, oops::Parameters)
   typedef typename oops::Increment<MODEL>::ReadParameters_ ReadParameters_;
 
  public:
-  /// Parameters used for reading Increment.
-  ReadParameters_ incread{this};
+  /// Parameter name.
+  oops::RequiredParameter<std::string> param{"parameter", this};
+  /// Component index
+  oops::Parameter<int> component{"component", 1, this};
   /// Date of the Increment to read.
   oops::RequiredParameter<util::DateTime> date{"date", this};
-  /// Parameter name.
-  /// Note: if there is a list of acceptable names, this parameter can be
-  /// changed to enum parameter.
-  oops::RequiredParameter<std::string> param{"parameter", this};
+  /// Parameters used for reading Increment.
+  ReadParameters_ incread{this};
+};
+
+// -----------------------------------------------------------------------------
+/// Parameters describing BUMP components output (to generic text files)
+class BUMPOutputNcmpParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BUMPOutputNcmpParameters, oops::Parameters)
+
+ public:
+  /// Date of the components to read.
+  oops::RequiredParameter<util::DateTime> date{"date", this};
+  /// File path
+  oops::RequiredParameter<std::string> filepath{"filepath", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -67,14 +92,14 @@ template <typename MODEL> class BUMPOutputParameters : public oops::Parameters {
   typedef typename oops::Increment<MODEL>::WriteParameters_ WriteParameters_;
 
  public:
-  /// Parameters used for writing Increment.
-  WriteParameters_ incwrite{this};
+  /// Parameter name.
+  oops::RequiredParameter<std::string> param{"parameter", this};
+  /// Component index
+  oops::Parameter<int> component{"component", 1, this};
   /// Date of the Increment to write.
   oops::RequiredParameter<util::DateTime> date{"date", this};
-  /// Parameter name.
-  /// Note: if there is a list of acceptable names, this parameter can be
-  /// changed to enum parameter.
-  oops::RequiredParameter<std::string> param{"parameter", this};
+  /// Parameters used for writing Increment.
+  WriteParameters_ incwrite{this};
 };
 
 template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
@@ -85,6 +110,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
 
   // Universe radius (increment)
   oops::OptionalParameter<eckit::LocalConfiguration> universeRadius{"universe radius", this};
+  // Components input parameters
+  oops::OptionalParameter<BUMPInputNcmpParameters> inputNcmp{"input number of components", this};
   // Input parameters
   oops::OptionalParameter<std::vector<BUMPInputParameters<MODEL>>> input{"input", this};
   // Ensemble parameters
@@ -93,6 +120,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> msvalr{"msvalr", this};
   // Grids
   oops::OptionalParameter<eckit::LocalConfiguration> grids{"grids", this};
+  // Output number of components
+  oops::OptionalParameter<BUMPOutputNcmpParameters> outputNcmp{"output number of components", this};
   // Output parameters
   oops::OptionalParameter<std::vector<BUMPOutputParameters<MODEL>>> output{"output", this};
   // Operators application
@@ -376,6 +405,12 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> diag_rvflt{"diag_rvflt", this};
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
+  // Number of components in the fit function
+  oops::OptionalParameter<eckit::LocalConfiguration> fit_ncmp{"fit_ncmp", this};
+  // Write HDIAG components detail
+  oops::OptionalParameter<bool> write_hdiag_detail{"write_hdiag_detail", this};
+  // Update localization for hybridization
+  oops::OptionalParameter<bool> hybrid_loc_update{"hybrid_loc_update", this};
 
   // nicas_param
 
@@ -477,11 +512,6 @@ template<typename MODEL> class BUMP {
   // Destructor
   ~BUMP();
 
-  // C++ interfaces
-  size_t getSize() {return keyBUMP_.size();}
-  int getKey(int igrid) const {return keyBUMP_[igrid];}
-  void clearKey() {keyBUMP_.clear();}
-
   // Write / apply operators
   void write() const;
   void apply() const;
@@ -502,8 +532,10 @@ template<typename MODEL> class BUMP {
   void multiplyNicas(atlas::FieldSet *) const;
   void multiplyPsiChiToUV(atlas::FieldSet *) const;
   void multiplyPsiChiToUVAd(atlas::FieldSet *) const;
-  void getParameter(const std::string &, Increment_ &) const;
-  void setParameter(const std::string &, const Increment_ &) const;
+  void getNcmp(const int &, const int &, int &) const;
+  void getParameter(const std::string &, const int &, Increment_ &) const;
+  void setNcmp(const int &, const int &, const int &) const;
+  void setParameter(const std::string &, const int &, const Increment_ &) const;
   void partialDealloc() const;
 
  private:
@@ -511,6 +543,7 @@ template<typename MODEL> class BUMP {
   const oops::Variables activeVars_;
   BUMP_Parameters_ params_;
   std::vector<int> keyBUMP_;
+  std::vector<oops::Variables> activeVarsPerGrid_;
 };
 
 // -----------------------------------------------------------------------------
@@ -523,7 +556,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
                   const State_ & fg,
                   const EnsemblePtr_ ens1,
                   const EnsemblePtr_ ens2)
-  : resol_(resol), activeVars_(activeVars), params_(params), keyBUMP_() {
+  : resol_(resol), activeVars_(activeVars), params_(params), keyBUMP_(), activeVarsPerGrid_() {
   oops::Log::trace() << "BUMP<MODEL>::BUMP construction starting" << std::endl;
 
   // Get ensemble 1 size if ensemble 1 is available
@@ -657,6 +690,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
     }
     grids[jgrid].set("nv", vars_str.size());
 
+    // Save variables for each grid
+    const oops::Variables gridVars(vars_str);
+    activeVarsPerGrid_.push_back(gridVars);
+
     // Get the required number of levels add it to the grid configuration
     int nl0 = 0;
     for (size_t jvar = 0; jvar < vars_str.size(); ++jvar) {
@@ -672,7 +709,6 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 
     // Print configuration for this grid
     oops::Log::info() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
-
 
     // Create BUMP instance
     int keyBUMP = 0;
@@ -704,23 +740,83 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
   // Reset parameters
   params_.validateAndDeserialize(conf);
 
+  // Read number of components from files
+  oops::Log::info() << "    Read number of components" << std::endl;
+  const boost::optional<BUMPInputNcmpParameters> &inputNcmp = params_.inputNcmp.value();
+  if (inputNcmp != boost::none) {
+    // Get date
+    const util::DateTime & date = inputNcmp->date.value();
+
+    // Open file
+    std::ifstream infile;
+    infile.open(inputNcmp->filepath.value().c_str());
+
+    if (infile.is_open()) {
+      // Read file
+      std::string line;
+      size_t i = 0;
+      while (std::getline(infile, line)) {
+        if (i == 0) {
+          // Check date
+          ASSERT(date.toString() == line);
+        } else {
+          // Split string
+          std::istringstream iss(line);
+          std::vector<std::string> split(std::istream_iterator<std::string>{iss},
+                                         std::istream_iterator<std::string>());
+          const std::string variable(split[0]);
+          const int ncmp = std::stoi(split[1]);
+
+          // Get grid and variable index
+          int igrid = -1;
+          int ivar = -1;
+          for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+            for (size_t jvar=0; jvar < activeVarsPerGrid_[jgrid].size(); ++jvar) {
+              if (activeVarsPerGrid_[jgrid][jvar] == variable) {
+                igrid = jgrid;
+                ivar = jvar;
+                break;
+              }
+            }
+          }
+          if (igrid == -1 || ivar == -1) {
+             ABORT("BUMP::BUMP: cannot find indices for variable " + variable);
+          }
+
+          // Set parameter
+          this->setNcmp(igrid, ivar, ncmp);
+          oops::Log::test() << "Number of components for " << variable
+                            << " at " << date << " : " << ncmp << std::endl;
+        }
+        ++i;
+      }
+
+      // Close file
+      infile.close();
+    } else {
+      ABORT("BUMP::BUMP: cannot open file");
+    }
+  }
+
   // Read data from files
   oops::Log::info() << "    Read data from files" << std::endl;
-  if (params_.input.value() != boost::none) {
+  const boost::optional<std::vector<BUMPInputParameters<MODEL>>> &input = params_.input.value();
+  if (input != boost::none) {
     // Set BUMP input parameters
-    for (const auto & inputparam : *params_.input.value()) {
+    for (const auto & inputParam : *input) {
       // Get date
-      const util::DateTime & date = inputparam.date;
+      const util::DateTime & date = inputParam.date;
 
-      // Setup increment
+      // Read increment
       Increment_ dx(resol_, activeVars_, date);
-      dx.read(inputparam.incread);
+      dx.read(inputParam.incread);
 
       // Set parameter to BUMP
-      const std::string & param = inputparam.param;
-      this->setParameter(param, dx);
-      oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
-                        << std::setprecision(3) << dx.norm() << std::endl;
+      const std::string & param = inputParam.param;
+      const int & component = inputParam.component;
+      this->setParameter(param, component, dx);
+      oops::Log::test() << "Norm of " << param << " - " << component << " at " << date << ": "
+                        << std::scientific << std::setprecision(3) << dx.norm() << std::endl;
     }
   }
 
@@ -779,11 +875,13 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP<MODEL>::BUMP(BUMP & other) : keyBUMP_() {
-  for (unsigned int jgrid = 0; jgrid < other.getSize(); ++jgrid) {
-    keyBUMP_.push_back(other.getKey(jgrid));
+BUMP<MODEL>::BUMP(BUMP & other) : keyBUMP_(), activeVarsPerGrid_() {
+  for (unsigned int jgrid = 0; jgrid < other.keyBump_.size(); ++jgrid) {
+    keyBUMP_.push_back(other.keyBUMP_[jgrid]);
+    activeVarsPerGrid_.push_back(other.activeVarsPerGrid_[jgrid]);
   }
-  other.clearKey();
+  other.keyBUMP_.clear();
+  other.activeVarsPerGrid_.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -806,10 +904,46 @@ void BUMP<MODEL>::write() const {
   "-------------------------------------------------------------------" << std::endl;
   oops::Log::info() << "--- Write parameters" << std::endl;
 
-  if (params_.output.value() != boost::none) {
-    for (const auto & outputparam : *params_.output.value()) {
+  const boost::optional<BUMPOutputNcmpParameters> &outputNcmp = params_.outputNcmp.value();
+  if (outputNcmp != boost::none) {
+    // Get date
+    const util::DateTime & date = outputNcmp->date.value();
+
+    // Open file
+    std::ofstream outfile;
+    outfile.open(outputNcmp->filepath.value().c_str());
+
+    if (outfile.is_open()) {
+      oops::Log::info() << "Write number of components at " << date
+                        <<  " in file " << outputNcmp->filepath.value() << std::endl;
+
+      // Write date
+      outfile << date.toString() << std::endl;
+
+      // Write parameter
+      for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+        for (size_t jvar=0; jvar < activeVarsPerGrid_[jgrid].size(); ++jvar) {
+          int ncmp;
+          this->getNcmp(jgrid, jvar, ncmp);
+          outfile << activeVarsPerGrid_[jgrid][jvar] << ' ' << std::scientific
+                  << std::setprecision(3) << ncmp << std::endl;
+          oops::Log::test() << "Number of components for " << activeVarsPerGrid_[jgrid][jvar]
+                            << " at " << date << " : " << ncmp << std::endl;
+        }
+      }
+
+      // Close file
+      outfile.close();
+    } else {
+      ABORT("BUMP::write: cannot open file");
+    }
+  }
+
+  const boost::optional<std::vector<BUMPOutputParameters<MODEL>>> &output = params_.output.value();
+  if (output != boost::none) {
+    for (const auto & outputParam : *output) {
       // Get date
-      const util::DateTime & date = outputparam.date;
+      const util::DateTime & date = outputParam.date;
 
       // Setup increment
       Increment_ dx(resol_, activeVars_, date);
@@ -818,13 +952,14 @@ void BUMP<MODEL>::write() const {
       dx.zero();
 
       // Get parameter from BUMP
-      const std::string & param = outputparam.param;
-      this->getParameter(param, dx);
+      const std::string & param = outputParam.param;
+      const int & component = outputParam.component;
+      this->getParameter(param, component, dx);
 
       // Write parameter
-      dx.write(outputparam.incwrite);
-      oops::Log::test() << "Norm of " << param << " at " << date << ": " << std::scientific
-                        << std::setprecision(3) << dx.norm() << std::endl;
+      dx.write(outputParam.incwrite);
+      oops::Log::test() << "Norm of " << param << " - " << component << " at " << date << ": "
+                        << std::scientific << std::setprecision(3) << dx.norm() << std::endl;
     }
   } else {
     oops::Log::test() << "No output configuration" << std::endl;
@@ -1055,13 +1190,21 @@ void BUMP<MODEL>::multiplyPsiChiToUVAd(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP<MODEL>::getParameter(const std::string & param, Increment_ & dx) const {
+void BUMP<MODEL>::getNcmp(const int & jgrid, const int & jvar, int & ncmp) const {
+  bump_get_ncmp_f90(keyBUMP_[jgrid], jvar, ncmp);
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+void BUMP<MODEL>::getParameter(const std::string & param, const int & icmp,
+  Increment_ & dx) const {
   const int npar = param.size();
   const char *cpar = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
   dx.setAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_get_parameter_f90(keyBUMP_[jgrid], npar, cpar, atlasFieldSet->get());
+    bump_get_parameter_f90(keyBUMP_[jgrid], npar, cpar, icmp, atlasFieldSet->get());
   }
   dx.fromAtlas(atlasFieldSet.get());
 }
@@ -1069,14 +1212,22 @@ void BUMP<MODEL>::getParameter(const std::string & param, Increment_ & dx) const
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP<MODEL>::setParameter(const std::string & param, const Increment_ & dx) const {
+void BUMP<MODEL>::setNcmp(const int & jgrid, const int & jvar, const int & ncmp) const {
+  bump_set_ncmp_f90(keyBUMP_[jgrid], jvar, ncmp);
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+void BUMP<MODEL>::setParameter(const std::string & param, const int & icmp,
+  const Increment_ & dx) const {
   const int npar = param.size();
   const char *cpar = param.c_str();
   std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
   dx.setAtlas(atlasFieldSet.get());
   dx.toAtlas(atlasFieldSet.get());
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_set_parameter_f90(keyBUMP_[jgrid], npar, cpar, atlasFieldSet->get());
+    bump_set_parameter_f90(keyBUMP_[jgrid], npar, cpar, icmp, atlasFieldSet->get());
   }
 }
 

@@ -137,8 +137,8 @@ do iv=1,nam%nv
       rank = inquire_var_rank(mpl,ncid,nam%variables(iv))
 
       ! Get offset and factor
-      call get_att(mpl,ncid,'add_offset',add_offset,fld_id)
-      call get_att(mpl,ncid,'scale_factor',scale_factor,fld_id)
+      call get_att(mpl,ncid,fld_id,'add_offset',add_offset)
+      call get_att(mpl,ncid,fld_id,'scale_factor',scale_factor)
 
       ! Read data
       select case (rank)

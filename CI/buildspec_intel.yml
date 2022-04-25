@@ -99,7 +99,8 @@ phases:
       - export BUILD_STATUS="0"
       - echo $BUILD_STATUS
 
-      - su - jedi -c "export CC=mpiicc
+      - su - jedi -c "export SABER_TEST_TIER=2
+        && export CC=mpiicc
         && export FC=mpiifort
         && export CXX=mpiicpc
         && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
@@ -107,7 +108,8 @@ phases:
         && cd /home/jedi
         && ecbuild /jcsda/saber-bundle/ -Wno-dev -DCDASH_OVERRIDE_SITE=CodeBuild -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE"
 
-      - su - jedi -c "export CC=mpiicc
+      - su - jedi -c "export SABER_TEST_TIER=2
+        && export CC=mpiicc
         && export FC=mpiifort
         && export CXX=mpiicpc
         && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH

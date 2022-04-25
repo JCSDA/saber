@@ -64,7 +64,7 @@ type(fckit_mpi_comm),      intent(in)    :: comm
 ! Locals
 integer :: ncid, dimid(3), varid(2)
 character(len=:), allocatable :: str
-integer :: posx, posy, i, j, jj, npx_per_proc, npy_per_proc
+integer :: posx, posy, i, j, npx_per_proc, npy_per_proc
 logical :: cv
 
 ! Create copy of comm

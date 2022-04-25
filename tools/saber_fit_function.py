@@ -21,11 +21,11 @@ epsabs_hor = 1.0e-2
 epsabs_ver = 1.0e-4
 
 # Parameters
-scalethmin = 0.2
-scalethmax = 0.9
-dscaleth = 0.1
-nscaleth = int((scalethmax-scalethmin)/dscaleth+1.0e-6)+1
-scaleth = np.linspace(scalethmin, scalethmax, nscaleth)
+axis_invmin = 0.2
+axis_invmax = 0.9
+daxis_inv = 0.1
+naxis_inv = int((axis_invmax-axis_invmin)/daxis_inv+1.0e-6)+1
+axis_inv = np.linspace(axis_invmin, axis_invmax, naxis_inv)
 run_horizontal = True
 run_vertical = True
 
@@ -41,7 +41,7 @@ def S(r):
    else:
       return 0.0
 
-def S_hor(x,y,):
+def S_hor(x,y):
    r = np.sqrt(x**2+y**2)
    return S(r)
 
@@ -49,36 +49,35 @@ def S_ver(z):
    return S(z)
 
 # Initialize arrays
-f_sqrt_hor = np.zeros((nnd))
-f_int_hor = np.zeros((nnd))
-scaleh = np.zeros((nscaleth))
-scalehdef = np.zeros(nscaleth)
-f_sqrt_ver = np.zeros((nnd))
-f_int_ver = np.zeros((nnd))
-scalev = np.zeros((nscaleth))
+func_sqrt_hor = np.zeros((nnd))
+func_hor = np.zeros((nnd))
+func_inv_hor = np.zeros((naxis_inv))
+func_sqrt_ver = np.zeros((nnd))
+func_ver = np.zeros((nnd))
+func_inv_ver = np.zeros((naxis_inv))
 scaled_axis = np.zeros((nnd))
 
 if run_horizontal:
    for ind in range(0, nnd):
       # Square-root function
-      f_sqrt_hor[ind] = S(axis[ind])
+      func_sqrt_hor[ind] = S(axis[ind])
 
       # Horizontal integration (2D)
       f = lambda  y, x: S_hor(x,y)*S_hor(axis[ind]-x,y)
       fint = integrate.dblquad(f, -0.5, 0.5, lambda x: -0.5, lambda x: 0.5, epsabs = epsabs_hor)
-      f_int_hor[ind] = fint[0]
+      func_hor[ind] = fint[0]
       if ind == 0:
-         norm = f_int_hor[ind]
-      f_int_hor[ind] = f_int_hor[ind]/norm
+         norm = func_hor[ind]
+      func_hor[ind] = func_hor[ind]/norm
 
-   # Scale at scaleth
-   for iscaleth in range(0, nscaleth):
-      scaleh[iscaleth] = 1.0
+   # Inverse function
+   for iaxis_inv in range(0, naxis_inv):
+      func_inv_hor[iaxis_inv] = 1.0
       for ind in range(0, nnd-1):
-         if f_int_hor[ind]>scaleth[iscaleth] and f_int_hor[ind+1]<scaleth[iscaleth]:
-            A = (f_int_hor[ind]-f_int_hor[ind+1])/(axis[ind]-axis[ind+1])
-            B = f_int_hor[ind]-A*axis[ind]
-            scaleh[iscaleth] = (scaleth[iscaleth]-B)/A
+         if func_hor[ind]>axis_inv[iaxis_inv] and func_hor[ind+1]<axis_inv[iaxis_inv]:
+            A = (func_hor[ind]-func_hor[ind+1])/(axis[ind]-axis[ind+1])
+            B = func_hor[ind]-A*axis[ind]
+            func_inv_hor[iaxis_inv] = (axis_inv[iaxis_inv]-B)/A
             break
 
    if True:
@@ -89,56 +88,56 @@ if run_horizontal:
       ax[0].set_title("Square-root function")
       ax[0].axhline(y=0, color="k")
       ax[0].axvline(x=0, color="k")
-      ax[0].plot(axis, f_sqrt_hor)
+      ax[0].plot(axis, func_sqrt_hor, 'k')
       ax[1].set_xlim([0,1.0])
       ax[1].set_ylim([0,1.1])
       ax[1].set_title("Convolution function")
       ax[1].axhline(y=0, color="k")
       ax[1].axvline(x=0, color="k")
-      ax[1].plot(axis, f_int_hor)
+      ax[1].plot(axis, func_hor)
       plt.savefig("fit_hor.jpg", format="jpg", dpi=300)
       plt.close()
 
 if run_vertical:
    for ind in range(0, nnd):
       # Square-root function
-      f_sqrt_ver[ind] = S_ver(axis[ind])/S_ver(0)
+      func_sqrt_ver[ind] = S_ver(axis[ind])/S_ver(0)
 
       # Vertical integration (1D)
       f = lambda  z: S_ver(z)*S_ver(axis[ind]-z)
       fint = integrate.quad(f, -0.5, 0.5, epsabs = epsabs_ver)
-      f_int_ver[ind] = fint[0]
+      func_ver[ind] = fint[0]
       if ind == 0:
-         norm = f_int_ver[ind]
-      f_int_ver[ind] = f_int_ver[ind]/norm
+         norm = func_ver[ind]
+      func_ver[ind] = func_ver[ind]/norm
 
-   # Scale at scaleth
-   for iscaleth in range(0, nscaleth):
-      scalev[iscaleth] = 1.0
+   # Inverse function
+   for iaxis_inv in range(0, naxis_inv):
+      func_inv_ver[iaxis_inv] = 1.0
       for ind in range(0, nnd-1):
-         if f_int_ver[ind]>scaleth[iscaleth] and f_int_ver[ind+1]<scaleth[iscaleth]:
-            A = (f_int_ver[ind]-f_int_ver[ind+1])/(axis[ind]-axis[ind+1])
-            B = f_int_ver[ind]-A*axis[ind]
-            scalev[iscaleth] = (scaleth[iscaleth]-B)/A
+         if func_ver[ind]>axis_inv[iaxis_inv] and func_ver[ind+1]<axis_inv[iaxis_inv]:
+            A = (func_ver[ind]-func_ver[ind+1])/(axis[ind]-axis[ind+1])
+            B = func_ver[ind]-A*axis[ind]
+            func_inv_ver[iaxis_inv] = (axis_inv[iaxis_inv]-B)/A
             break
 
-if True:
-   # Plot curves
-   fig, ax = plt.subplots(ncols=2, figsize=(14,7))
-   ax[0].set_xlim([0,1.0])
-   ax[0].set_ylim([-0.5,1.1])
-   ax[0].set_title("Square-root function")
-   ax[0].axhline(y=0, color="k")
-   ax[0].axvline(x=0, color="k")
-   ax[0].plot(axis, f_sqrt_ver)
-   ax[1].set_xlim([0,1.0])
-   ax[1].set_ylim([-0.5,1.1])
-   ax[1].set_title("Convolution function")
-   ax[1].axhline(y=0, color="k")
-   ax[1].axvline(x=0, color="k")
-   ax[1].plot(axis, f_int_ver)
-   plt.savefig("fit_ver.jpg", format="jpg", dpi=300)
-   plt.close()
+   if True:
+      # Plot curves
+      fig, ax = plt.subplots(ncols=2, figsize=(14,7))
+      ax[0].set_xlim([0,1.0])
+      ax[0].set_ylim([0,1.1])
+      ax[0].set_title("Square-root function")
+      ax[0].axhline(y=0, color="k")
+      ax[0].axvline(x=0, color="k")
+      ax[0].plot(axis, func_sqrt_ver, 'k')
+      ax[1].set_xlim([0,1.0])
+      ax[1].set_ylim([0,1.1])
+      ax[1].set_title("Convolution function")
+      ax[1].axhline(y=0, color="k")
+      ax[1].axvline(x=0, color="k")
+      ax[1].plot(axis, func_ver)
+      plt.savefig("fit_ver.jpg", format="jpg", dpi=300)
+      plt.close()
 
 if run_horizontal and run_vertical:
    # Open file
@@ -171,47 +170,47 @@ if run_horizontal and run_vertical:
    file.write("\n")
    file.write("! Public parameters\n")
    file.write("integer,parameter :: nnd = " + str(nnd) + "\n")
-   file.write("integer,parameter :: nscaleth = " + str(nscaleth) + "\n")
+   file.write("integer,parameter :: naxis_inv = " + str(naxis_inv) + "\n")
    file.write("real(kind_real),parameter :: ndmin = %.8f_kind_real\n" % (min(nd)))
    file.write("real(kind_real),parameter :: ndmax = %.8f_kind_real\n" % (max(nd)))
    file.write("real(kind_real),parameter :: dnd = %.8f_kind_real\n" % (dnd))
-   file.write("real(kind_real),parameter :: scalethmin = %.8f_kind_real\n" % (scalethmin))
-   file.write("real(kind_real),parameter :: scalethmax = %.8f_kind_real\n" % (scalethmax))
-   file.write("real(kind_real),parameter :: scaleth(nscaleth) = (/ &\n")
-   for iscaleth in range(0, nscaleth):
-      if iscaleth != nscaleth-1:
+   file.write("real(kind_real),parameter :: axis_invmin = %.8f_kind_real\n" % (axis_invmin))
+   file.write("real(kind_real),parameter :: axis_invmax = %.8f_kind_real\n" % (axis_invmax))
+   file.write("real(kind_real),parameter :: axis_inv(naxis_inv) = (/ &\n")
+   for iaxis_inv in range(0, naxis_inv):
+      if iaxis_inv != naxis_inv-1:
          suffix = ", &"
       else:
          suffix = "/)"
-      file.write(" & %.8f_kind_real" % (scaleth[iscaleth]) + suffix + "\n")
-   file.write("real(kind_real),parameter :: scaleh(nscaleth) = (/ &\n")
-   for iscaleth in range(0, nscaleth):
-      if iscaleth != nscaleth-1:
+      file.write(" & %.8f_kind_real" % (axis_inv[iaxis_inv]) + suffix + "\n")
+   file.write("real(kind_real),parameter :: func_inv_hor(naxis_inv) = (/ &\n")
+   for iaxis_inv in range(0, naxis_inv):
+      if iaxis_inv != naxis_inv-1:
          suffix = ", &"
       else:
          suffix = "/)"
-      file.write(" & %.8f_kind_real" % (scaleh[iscaleth]) + suffix + "\n")
+      file.write(" & %.8f_kind_real" % (func_inv_hor[iaxis_inv]) + suffix + "\n")
    file.write("real(kind_real),parameter :: func_hor(nnd) = (/ &\n")
    for ind in range(0, nnd):
       if ind != nnd-1:
          suffix = ", &"
       else:
          suffix = "/)"
-      file.write(" & %.8f_kind_real" % (f_int_hor[ind]) + suffix + "\n")
-   file.write("real(kind_real),parameter :: scalev(nscaleth) = (/ &\n")
-   for iscaleth in range(0, nscaleth):
-      if iscaleth != nscaleth-1:
+      file.write(" & %.8f_kind_real" % (func_hor[ind]) + suffix + "\n")
+   file.write("real(kind_real),parameter :: func_inv_ver(naxis_inv) = (/ &\n")
+   for iaxis_inv in range(0, naxis_inv):
+      if iaxis_inv != naxis_inv-1:
          suffix = ", &"
       else:
          suffix = "/)"
-      file.write(" & %.8f_kind_real" % (scalev[iscaleth]) + suffix + "\n")
+      file.write(" & %.8f_kind_real" % (func_inv_ver[iaxis_inv]) + suffix + "\n")
    file.write("real(kind_real),parameter :: func_ver(nnd) = (/ &\n")
    for ind in range(0, nnd):
       if ind != nnd-1:
          suffix = ", &"
       else:
          suffix = "/)"
-      file.write(" & %.8f_kind_real" % (f_int_ver[ind]) + suffix + "\n")
+      file.write(" & %.8f_kind_real" % (func_ver[ind]) + suffix + "\n")
    file.write("\n")
    file.write("interface fit_func\n")
    file.write("   module procedure gc99_fit_func\n")
@@ -221,8 +220,8 @@ if run_horizontal and run_vertical:
    file.write("end interface\n")
    file.write("\n")
    file.write("private\n")
-   file.write("public :: nscaleth,scaleth,scalethmin,scalethmax\n")
-   file.write("public :: scaleh,scalev\n")
+   file.write("public :: naxis_inv,axis_inv,axis_invmin,axis_invmax\n")
+   file.write("public :: func_inv_hor,func_inv_ver\n")
    file.write("public :: fit_func,fit_func_sqrt\n")
    file.write("\n")
    file.write("contains\n")
@@ -261,6 +260,8 @@ if run_horizontal and run_vertical:
    file.write("   ! Origin\n")
    file.write("   value = one\n")
    file.write("elseif (infeq(nd,one)) then\n")
+   file.write("   ! Inside support\n")
+   file.write("\n")
    file.write("   ! Indices\n")
    file.write("   indm = floor(nd/dnd)+1\n")
    file.write("   if (indm==nnd) then\n")
@@ -323,6 +324,7 @@ if run_horizontal and run_vertical:
    file.write("   ! Origin\n")
    file.write("   value = one\n")
    file.write("elseif (infeq(nd,half)) then\n")
+   file.write("   ! Inside support\n")
    file.write("   value = one-(two*nd)\n")
    file.write("end if\n")
    file.write("\n")

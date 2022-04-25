@@ -983,7 +983,7 @@ if test "${ntest_quench}" -gt "0"; then
    # QUENCH tests
    stest=`printf "%03d" $((stest_quench))`
    ftest=`printf "%03d" $((ftest_quench))`
-   echo -e "  QUENCH: \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
+   echo -e "  QUENCH:        \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 exit 0

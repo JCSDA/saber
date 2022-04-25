@@ -29,7 +29,7 @@ integer,parameter :: nldwvmax = 20                !< Maximum number of local dia
 integer,parameter :: nprociomax = 20              !< Maximum number of I/O tasks
 integer,parameter :: niokvmax = 99                !< Maximum number of I/O key-values
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2 !< Maximum number of vertical balance blocks
-integer,parameter :: ncompmax = 10                !< Maximum number of model components
+integer,parameter :: ncompmax = 10                !< Maximum number of model components (for the cartg model)
 
 type nam_type
    ! general_param
@@ -173,6 +173,9 @@ type nam_type
    real(kind_real) :: diag_rhflt                              !< Horizontal filtering suport radius [in meters]
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
+   integer :: fit_ncmp(0:nvmax)                               !< Number of components in the fit function
+   logical :: write_hdiag_detail                              !< Write HDIAG components detail
+   logical :: hybrid_loc_update                               !< Update localization for hybridization
 
    ! nicas_param
    logical :: nonunit_diag                                    !< Non-unit diagonal for the NICAS application
@@ -420,6 +423,9 @@ nam%local_dlat = zero
 nam%diag_rhflt = zero
 nam%diag_rvflt = zero
 nam%fit_dl0 = 1
+nam%fit_ncmp = 1
+nam%write_hdiag_detail = .false.
+nam%hybrid_loc_update = .true.
 
 ! nicas_param default
 nam%nonunit_diag = .false.
@@ -616,6 +622,9 @@ real(kind_real) :: local_dlat
 real(kind_real) :: diag_rhflt
 real(kind_real) :: diag_rvflt
 integer :: fit_dl0
+integer :: fit_ncmp(0:nvmax)
+logical :: write_hdiag_detail
+logical :: hybrid_loc_update
 logical :: nonunit_diag
 real(kind_real) :: resol
 integer :: nc1max
@@ -780,7 +789,10 @@ namelist/diag_param/ &
 namelist/fit_param/ &
  & diag_rhflt, &
  & diag_rvflt, &
- & fit_dl0
+ & fit_dl0, &
+ & fit_ncmp, &
+ & write_hdiag_detail, &
+ & hybrid_loc_update
 namelist/nicas_param/ &
  & nonunit_diag, &
  & resol, &
@@ -980,6 +992,9 @@ if (mpl%main) then
    diag_rhflt = zero
    diag_rvflt = zero
    fit_dl0 = 1
+   fit_ncmp = 1
+   write_hdiag_detail = .false.
+   hybrid_loc_update = .true.
 
    ! nicas_param default
    nonunit_diag = .false.
@@ -1182,6 +1197,9 @@ if (mpl%main) then
    nam%diag_rhflt = diag_rhflt
    nam%diag_rvflt = diag_rvflt
    nam%fit_dl0 = fit_dl0
+   nam%fit_ncmp = fit_ncmp
+   nam%write_hdiag_detail = write_hdiag_detail
+   nam%hybrid_loc_update = hybrid_loc_update
 
    ! nicas_param
    read(lunit,nml=nicas_param)
@@ -1388,6 +1406,9 @@ call mpl%f_comm%broadcast(nam%local_dlat,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rhflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%fit_ncmp,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%write_hdiag_detail,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%hybrid_loc_update,mpl%rootproc-1)
 
 ! nicas_param
 call mpl%f_comm%broadcast(nam%nonunit_diag,mpl%rootproc-1)
@@ -1786,6 +1807,15 @@ if (conf%has('local_dlat')) call conf%get_or_die('local_dlat',nam%local_dlat)
 if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
 if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
 if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
+if (conf%has('fit_ncmp')) then
+   call conf%get_or_die('fit_ncmp',subconf)
+   if (subconf%has('common')) call subconf%get_or_die('common',nam%fit_ncmp(0))
+   do iv=1,nam%nv
+      if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%fit_ncmp(iv))
+   end do
+end if
+if (conf%has('write_hdiag_detail')) call conf%get_or_die('write_hdiag_detail',nam%write_hdiag_detail)
+if (conf%has('hybrid_loc_update')) call conf%get_or_die('hybrid_loc_update',nam%hybrid_loc_update)
 
 ! nicas_param
 if (conf%has('nonunit_diag')) call conf%get_or_die('nonunit_diag',nam%nonunit_diag)
@@ -2316,6 +2346,9 @@ if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
    if (nam%diag_rhflt<zero) call mpl%abort('${subr}$','diag_rhflt should be non-negative')
    if (nam%diag_rvflt<zero) call mpl%abort('${subr}$','diag_rvflt should be non-negative')
    if (nam%fit_dl0<=0) call mpl%abort('${subr}$','fit_dl0 should be postive')
+   do iv=1,nam%nv
+      if (nam%fit_ncmp(iv)<=0) call mpl%abort('${subr}$','fit_ncmp should be postive')
+   end do
 end if
 
 ! Check ensemble sizes
@@ -2332,8 +2365,7 @@ end if
 ! Check nicas_param
 if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    if (nam%nonunit_diag) then
-      if (nam%method=='cor') call mpl%abort('${subr}$', &
- & 'nonunit_diag is inconsistent with correlation, use variance operator instead')
+      if (nam%method=='cor') call mpl%abort('${subr}$','nonunit_diag is inconsistent with correlation')
    end if
    if (nam%check_randomization) then
       if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for check_randomization')
@@ -2608,6 +2640,9 @@ call mpl%flush
 call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
+call mpl%write('fit_ncmp',nam%nv+1,nam%fit_ncmp(0:nam%nv))
+call mpl%write('write_hdiag_detail',nam%write_hdiag_detail)
+call mpl%write('hybrid_loc_update',nam%hybrid_loc_update)
 
 ! nicas_param
 write(mpl%info,'(a7,a)') '','NICAS parameters'

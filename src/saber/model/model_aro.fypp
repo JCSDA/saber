@@ -56,8 +56,8 @@ call get_var(mpl,ncid,lat_id,lat)
 call get_var(mpl,ncid,cmask_id,cmask)
 call get_var(mpl,ncid,a_id,a)
 call get_var(mpl,ncid,b_id,b)
-call get_att(mpl,ncid,'x_resolution',dx,pp_id)
-call get_att(mpl,ncid,'y_resolution',dy,pp_id)
+call get_att(mpl,ncid,pp_id,'x_resolution',dx)
+call get_att(mpl,ncid,pp_id,'y_resolution',dy)
 call close_file(mpl,ncid)
 
 ! Convert to radian

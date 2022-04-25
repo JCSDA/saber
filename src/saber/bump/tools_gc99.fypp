@@ -24,13 +24,13 @@ implicit none
 
 ! Public parameters
 integer,parameter :: nnd = 51
-integer,parameter :: nscaleth = 8
+integer,parameter :: naxis_inv = 8
 real(kind_real),parameter :: ndmin = 0.00000000_kind_real
 real(kind_real),parameter :: ndmax = 1.00000000_kind_real
 real(kind_real),parameter :: dnd = 0.02000000_kind_real
-real(kind_real),parameter :: scalethmin = 0.20000000_kind_real
-real(kind_real),parameter :: scalethmax = 0.90000000_kind_real
-real(kind_real),parameter :: scaleth(nscaleth) = (/ &
+real(kind_real),parameter :: axis_invmin = 0.20000000_kind_real
+real(kind_real),parameter :: axis_invmax = 0.90000000_kind_real
+real(kind_real),parameter :: axis_inv(naxis_inv) = (/ &
  & 0.20000000_kind_real, &
  & 0.30000000_kind_real, &
  & 0.40000000_kind_real, &
@@ -39,7 +39,7 @@ real(kind_real),parameter :: scaleth(nscaleth) = (/ &
  & 0.70000000_kind_real, &
  & 0.80000000_kind_real, &
  & 0.90000000_kind_real/)
-real(kind_real),parameter :: scaleh(nscaleth) = (/ &
+real(kind_real),parameter :: func_inv_hor(naxis_inv) = (/ &
  & 0.52493537_kind_real, &
  & 0.45867618_kind_real, &
  & 0.40328526_kind_real, &
@@ -100,7 +100,7 @@ real(kind_real),parameter :: func_hor(nnd) = (/ &
  & 0.00004210_kind_real, &
  & 0.00000335_kind_real, &
  & 0.00000000_kind_real/)
-real(kind_real),parameter :: scalev(nscaleth) = (/ &
+real(kind_real),parameter :: func_inv_ver(naxis_inv) = (/ &
  & 0.53598040_kind_real, &
  & 0.46866120_kind_real, &
  & 0.41267433_kind_real, &
@@ -170,8 +170,8 @@ interface fit_func_sqrt
 end interface
 
 private
-public :: nscaleth,scaleth,scalethmin,scalethmax
-public :: scaleh,scalev
+public :: naxis_inv,axis_inv,axis_invmin,axis_invmax
+public :: func_inv_hor,func_inv_ver
 public :: fit_func,fit_func_sqrt
 
 contains
@@ -210,6 +210,8 @@ if (eq(nd,zero)) then
    ! Origin
    value = one
 elseif (infeq(nd,one)) then
+   ! Inside support
+
    ! Indices
    indm = floor(nd/dnd)+1
    if (indm==nnd) then
@@ -272,6 +274,7 @@ if (eq(nd,zero)) then
    ! Origin
    value = one
 elseif (infeq(nd,half)) then
+   ! Inside support
    value = one-(two*nd)
 end if
 

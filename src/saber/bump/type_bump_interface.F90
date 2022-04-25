@@ -528,10 +528,34 @@ call bump%psichi_to_uv_ad(f_fieldset)
 end subroutine bump_psichi_to_uv_ad_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_get_parameter_c
-!> Get a parameter
+! Subroutine: bump_get_ncmp_c
+!> Get number of components
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_c(key_bump,npar,cpar,c_afieldset) bind(c,name='bump_get_parameter_f90')
+subroutine bump_get_ncmp_c(key_bump,iv,c_ncmp) bind(c,name='bump_get_ncmp_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump  !< BUMP
+integer(c_int),intent(in) :: iv        !< Variable index
+integer(c_int),intent(inout) :: c_ncmp !< Number of components
+
+! Local variables
+type(bump_type),pointer :: bump
+
+! Interface
+call bump_registry%get(key_bump,bump)
+
+! Call Fortran
+call bump%get_ncmp(iv+1,c_ncmp)
+
+end subroutine bump_get_ncmp_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_get_parameter_c
+!> Get a parameter as field
+!----------------------------------------------------------------------
+subroutine bump_get_parameter_c(key_bump,npar,cpar,icmp,c_afieldset) bind(c,name='bump_get_parameter_f90')
 
 implicit none
 
@@ -539,6 +563,7 @@ implicit none
 integer(c_int),intent(in) :: key_bump       !< BUMP
 integer(c_int),intent(in) :: npar           !< Parameter name size
 character(c_char),intent(in) :: cpar(npar)  !< Parameter name
+integer(c_int),intent(in) :: icmp           !< Component index
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
@@ -556,15 +581,39 @@ end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%get_parameter(param,f_fieldset)
+call bump%get_parameter(param,icmp,f_fieldset)
 
 end subroutine bump_get_parameter_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_set_parameter_c
-!> Set a parameter
+! Subroutine: bump_set_ncmp_c
+!> Set number of components
 !----------------------------------------------------------------------
-subroutine bump_set_parameter_c(key_bump,npar,cpar,c_afieldset) bind(c,name='bump_set_parameter_f90')
+subroutine bump_set_ncmp_c(key_bump,iv,c_ncmp) bind(c,name='bump_set_ncmp_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump !< BUMP
+integer(c_int),intent(in) :: iv       !< Variable index
+integer(c_int),intent(out) :: c_ncmp  !< Number of components
+
+! Local variables
+type(bump_type),pointer :: bump
+
+! Interface
+call bump_registry%get(key_bump,bump)
+
+! Call Fortran
+call bump%set_ncmp(iv+1,c_ncmp)
+
+end subroutine bump_set_ncmp_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_set_parameter_c
+!> Set parameter
+!----------------------------------------------------------------------
+subroutine bump_set_parameter_c(key_bump,npar,cpar,icmp,c_afieldset) bind(c,name='bump_set_parameter_f90')
 
 implicit none
 
@@ -572,6 +621,7 @@ implicit none
 integer(c_int),intent(in) :: key_bump       !< BUMP
 integer(c_int),intent(in) :: npar           !< Parameter name size
 character(c_char),intent(in) :: cpar(npar)  !< Parameter name
+integer(c_int),intent(in) :: icmp           !< Component index
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
@@ -589,7 +639,7 @@ end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%set_parameter(param,f_fieldset)
+call bump%set_parameter(param,icmp,f_fieldset)
 
 end subroutine bump_set_parameter_c
 

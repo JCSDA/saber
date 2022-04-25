@@ -47,10 +47,12 @@ extern "C" {
   void bump_randomize_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_psichi_to_uv_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_psichi_to_uv_ad_f90(const int &, const atlas::field::FieldSetImpl *);
+  void bump_get_ncmp_f90(const int &, const int &, const int &);
   void bump_get_parameter_f90(const int &, const int &, const char *,
-                              const atlas::field::FieldSetImpl *);
+                              const int &, const atlas::field::FieldSetImpl *);
+  void bump_set_ncmp_f90(const int &, const int &, const int &);
   void bump_set_parameter_f90(const int &, const int &, const char *,
-                              const atlas::field::FieldSetImpl *);
+                              const int &, const atlas::field::FieldSetImpl *);
   void bump_partial_dealloc_f90(const int &);
   void bump_dealloc_f90(const int &);
 }

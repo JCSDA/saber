@@ -46,8 +46,8 @@ pres_id = inquire_var(mpl,ncid,'PB')
 call get_var(mpl,ncid,lon_id,lon,(/1,1,1/),(/model%nlon,model%nlat,1/))
 call get_var(mpl,ncid,lat_id,lat,(/1,1,1/),(/model%nlon,model%nlat,1/))
 call get_var(mpl,ncid,pres_id,pres)
-call get_att(mpl,ncid,'DX',dx)
-call get_att(mpl,ncid,'DY',dy)
+call get_att(mpl,ncid,0,'DX',dx)
+call get_att(mpl,ncid,0,'DY',dy)
 call close_file(mpl,ncid)
 
 ! Convert to radian

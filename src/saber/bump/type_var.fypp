@@ -19,7 +19,7 @@ use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_nicas_blk, only: nicas_blk_type
+use type_nicas_cmp, only: nicas_cmp_type
 @:use_probe()
 use type_rng, only: rng_type
 
@@ -250,7 +250,7 @@ do isub=1,nam%ens1_nsub
 
    if (mpl%main) then
       ! Get ensemble size
-      call get_att(mpl,ncid,'ne',var%ne)
+      call get_att(mpl,ncid,0,'ne',var%ne)
       var%ne = var%ne*nam%ens1_nsub
    end if
    call mpl%f_comm%broadcast(var%ne,mpl%rootproc-1)
@@ -336,7 +336,7 @@ do iv=1,nam%nv
 end do
 
 ! Put attribute
-call put_att(mpl,ncid,'ne',var%ne)
+call put_att(mpl,ncid,0,'ne',var%ne)
 
 ! Write variables
 call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
@@ -632,7 +632,7 @@ real(kind_real) :: P9,P20,P21,diff,diff_abs_min(geom%nl0)
 real(kind_real) :: m2uni(geom%nl0,nam%nv),m2norm(geom%nl0),m2sq(geom%nl0),m4(geom%nl0),m2sqasy(geom%nl0)
 real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
 logical :: dichotomy(geom%nl0),convergence(geom%nl0)
-type(nicas_blk_type) :: nicas_blk
+type(nicas_cmp_type) :: nicas_cmp
 
 ! Set name
 @:set_name(var_filter)
@@ -716,7 +716,7 @@ else
          dichotomy = .false.
          rhflt = nam%var_rhflt(1:geom%nl0,iv)
          drhflt = rhflt
-         nicas_blk%ib = ib
+         nicas_cmp%ib = ib
 
          ! Global product
          do il0=1,geom%nl0
@@ -736,10 +736,10 @@ else
             m2 = m2_ini
 
             ! Set smoother parameters
-            call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
+            call nicas_cmp%compute_parameters(mpl,rng,nam,geom,rhflt)
 
             ! Apply smoother
-            call nicas_blk%apply(mpl,geom,m2)
+            call nicas_cmp%apply_smoother(mpl,geom,m2)
 
             ! Global product
             do il0=1,geom%nl0
@@ -781,7 +781,7 @@ else
             end do
 
             ! Release memory
-            call nicas_blk%dealloc
+            call nicas_cmp%dealloc
          end do
 
          ! Global product
@@ -803,7 +803,7 @@ else
       elseif (nam%var_npass>0) then
          ! Initialization
          m2 = var%m2(:,:,iv)
-         nicas_blk%ib = ib
+         nicas_cmp%ib = ib
 
          ! Global product
          do il0=1,geom%nl0
@@ -821,12 +821,12 @@ else
 
          ! Set unique smoother parameters
          rhflt = nam%var_rhflt(1:geom%nl0,iv)
-         call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
+         call nicas_cmp%compute_parameters(mpl,rng,nam,geom,rhflt)
 
          ! Apply smoother
          do ipass=1,nam%var_npass
             ! Apply smoother
-            call nicas_blk%apply(mpl,geom,m2)
+            call nicas_cmp%apply_smoother(mpl,geom,m2)
 
             ! Global product
             do il0=1,geom%nl0
@@ -846,7 +846,7 @@ else
          end do
 
          ! Release memory
-         call nicas_blk%dealloc
+         call nicas_cmp%dealloc
 
          ! Global product
          do il0=1,geom%nl0

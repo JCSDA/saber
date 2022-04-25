@@ -145,8 +145,8 @@ integer,intent(in) :: ncid            !< NetCDF file
 com%grpid = inquire_grp(mpl,ncid,com%prefix)
 
 ! Get dimensions
-call get_att(mpl,com%grpid,'nred',com%nred)
-call get_att(mpl,com%grpid,'next',com%next)
+call get_att(mpl,com%grpid,0,'nred',com%nred)
+call get_att(mpl,com%grpid,0,'next',com%next)
 com%nown = inquire_dim_size(mpl,com%grpid,'nown',0)
 com%nhalo = inquire_dim_size(mpl,com%grpid,'nhalo',0)
 com%nexcl = inquire_dim_size(mpl,com%grpid,'nexcl',0)
@@ -213,8 +213,8 @@ com%grpid = define_grp(mpl,ncid,com%prefix)
 
 ! Define dimensions
 nproc_id = define_dim(mpl,com%grpid,'nproc',mpl%nproc)
-call put_att(mpl,com%grpid,'nred',com%nred)
-call put_att(mpl,com%grpid,'next',com%next)
+call put_att(mpl,com%grpid,0,'nred',com%nred)
+call put_att(mpl,com%grpid,0,'next',com%next)
 if (com%nown>0) nown_id = define_dim(mpl,com%grpid,'nown',com%nown)
 if (com%nhalo>0) nhalo_id = define_dim(mpl,com%grpid,'nhalo',com%nhalo)
 if (com%nexcl>0) nexcl_id = define_dim(mpl,com%grpid,'nexcl',com%nexcl)

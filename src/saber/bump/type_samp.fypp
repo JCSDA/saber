@@ -425,7 +425,7 @@ if (samp%sc2) then
    samp%nc2a = inquire_dim_size(mpl,ncid,'nc2a',0)
 
    ! Get attribute
-   call get_att(mpl,ncid,'lat_bands',lat_bands_int)
+   call get_att(mpl,ncid,0,'lat_bands',lat_bands_int)
    call convert_i2l(mpl,lat_bands_int,samp%lat_bands)
 
    ! Allocation
@@ -535,7 +535,7 @@ end if
 ! Put attributes
 if (samp%sc2) then
    call convert_l2i(samp%lat_bands,lat_bands_int)
-   call put_att(mpl,ncid,'lat_bands',lat_bands_int)
+   call put_att(mpl,ncid,0,'lat_bands',lat_bands_int)
 end if
 
 ! Write variables
@@ -715,7 +715,7 @@ if (samp%sc2) then
 
    if (mpl%main) then
       ! Get attribute
-      call get_att(mpl,ncid,'lat_bands',lat_bands_int)
+      call get_att(mpl,ncid,0,'lat_bands',lat_bands_int)
       call convert_i2l(mpl,lat_bands_int,samp%lat_bands)
 
       ! Inquire variables
@@ -868,7 +868,7 @@ end if
 ! Put attributes
 if (samp%sc2) then
    call convert_l2i(samp%lat_bands,lat_bands_int)
-   call put_att(mpl,ncid,'lat_bands',lat_bands_int)
+   call put_att(mpl,ncid,0,'lat_bands',lat_bands_int)
 end if
 
 ! Write variables

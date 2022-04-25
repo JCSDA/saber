@@ -143,4 +143,7 @@ qg_hr_gen_ens_pert_B/test.log.out
 qg_hr_error_covariance_training_bump_cov_homo-iso/test.log.out
 qg_hr_error_covariance_training_bump_cov_inhomo-aniso/test.log.out
 qg_hr_error_covariance_training_bump_cov_inhomo-iso/test.log.out
+qg_hr_error_covariance_training_bump_cov_ncmp/test.log.out
+qg_hr_error_covariance_training_bump_cov_ncmp_load_cor/test.log.out
+qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas/test.log.out
 qg_hr_truth/test.log.out

@@ -175,14 +175,5 @@ if test "${test%%_*}" = "bump" ; then
    fi
 fi
 
-# QG tests
-if test "${test%%_*}" = "qg" ; then
-   # Grep
-   grep 'Test     : ' testoutput/${test}/test.log.out > testdata/${test}/test.log.out
-
-   # Diff
-   diff -s testref/${test}/test.log.out testdata/${test}/test.log.out
-fi
-
 # Exit
 exit ${status}
