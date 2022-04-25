@@ -44,6 +44,11 @@ if( oops_qg_FOUND )
     set( SABER_TEST_INTERPOLATION 1 )
 endif()
 
+set( SABER_TEST_GSI 0 )
+if( gsibclim_FOUND AND oops_qg_FOUND)
+    set( SABER_TEST_GSI 1 )
+endif()
+
 # Override test selection variables using environment variables
 if( DEFINED ENV{SABER_TEST_MPI} )
     set( SABER_TEST_MPI $ENV{SABER_TEST_MPI} )
@@ -67,6 +72,16 @@ if( SABER_TEST_OOPS )
         set( SABER_TEST_OOPS_GEN $ENV{SABER_TEST_OOPS_GEN} )
     endif()
 endif()
+if( gsibclim_FOUND AND oops_qg_FOUND )
+    if( DEFINED ENV{SABER_TEST_GSI} )
+        set( SABER_TEST_GSI $ENV{SABER_TEST_GSI} )
+    endif()
+endif()
+if( SABER_TEST_GSI )
+    if( DEFINED ENV{SABER_TEST_GSI_GEN} )
+        set( SABER_TEST_GSI_GEN $ENV{SABER_TEST_GSI_GEN} )
+    endif()
+endif()
 
 # Summary
 message( STATUS "SABER variables:" )
@@ -76,6 +91,7 @@ message( STATUS "  - SABER_TEST_OMP:           ${SABER_TEST_OMP}" )
 message( STATUS "  - SABER_TEST_MULTI:         ${SABER_TEST_MULTI}" )
 message( STATUS "  - SABER_TEST_VALGRIND:      ${SABER_TEST_VALGRIND}" )
 message( STATUS "  - SABER_TEST_OOPS:          ${SABER_TEST_OOPS}" )
+message( STATUS "  - SABER_TEST_GSI:           ${SABER_TEST_GSI}" )
 
 # Tests
 message( STATUS "SABER tests activated:" )
@@ -107,6 +123,12 @@ list( APPEND saber_test_full ${saber_test_oops_tmp} )
 if( SABER_TEST_OOPS )
     message( STATUS "  - TIER 1 OOPS-specific" )
     list( APPEND saber_test_oops ${saber_test_oops_tmp} )
+endif()
+file( STRINGS testlist/saber_test_tier1-gsi.txt saber_test_gsi_tmp )
+list( APPEND saber_test_full ${saber_test_gsi_tmp} )
+if( SABER_TEST_GSI )
+    message( STATUS "  - TIER 1 GSI-specific" )
+    list( APPEND saber_test_gsi ${saber_test_gsi_tmp} )
 endif()
 file( STRINGS testlist/saber_ref_tier1.txt saber_ref_tmp )
 list( APPEND saber_ref ${saber_ref_tmp} )
@@ -691,4 +713,34 @@ if( SABER_TEST_OOPS )
                               DEPENDS saber_quench_dirac.x )
         endif()
     endforeach()
+endif()
+
+# Tests depending on GSI B Climatology
+
+if( SABER_TEST_GSI )
+
+  # Link to yaml files
+  foreach( test ${saber_test_gsi} )
+      execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
+  endforeach()
+
+  # QUENCH tests
+  set( mpi 1 )
+  set( omp 2 )
+
+  # Dirac tests
+  foreach( test ${saber_test_gsi} )
+      string( FIND ${test} "quench_dirac" quench )
+      if( quench MATCHES 0 )
+          ecbuild_add_test( TARGET saber_test_${test}
+                            MPI ${mpi}
+                            OMP ${omp}
+                            COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                            ARGS testinput/${test}.yaml
+                            DEPENDS saber_quench_dirac.x )
+      endif()
+  endforeach()
+
 endif()

@@ -45,6 +45,11 @@ if(@oops_FOUND@) # oops_FOUND
     set(saber_oops_FOUND True) #COMPONENT 'oops'
 endif()
 
+if(@gsiblcim_FOUND@) # gsiblcim_FOUND
+    find_dependency(gsiblcim)
+    set(saber_gsiblcim_FOUND True) #COMPONENT 'gsiblcim'
+endif()
+
 #Export Fortran compiler version for checking module compatibility
 set(@PROJECT_NAME@_MODULES_Fortran_COMPILER_ID @CMAKE_Fortran_COMPILER_ID@)
 set(@PROJECT_NAME@_MODULES_Fortran_COMPILER_VERSION @CMAKE_Fortran_COMPILER_VERSION@)

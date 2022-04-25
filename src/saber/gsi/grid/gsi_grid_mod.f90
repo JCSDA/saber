@@ -22,6 +22,9 @@ use kinds,                          only: kind_real
 ! saber
 use gsi_utils_mod,                  only: nccheck
 
+! gsibclim
+use m_gsibclim,                     only: gsibclim_init
+
 implicit none
 private
 public gsi_grid
@@ -62,6 +65,7 @@ type(fckit_mpi_comm),      intent(in)    :: comm
 integer :: ncid, dimid(3), varid(2)
 character(len=:), allocatable :: str
 integer :: posx, posy, i, j, jj, npx_per_proc, npy_per_proc
+logical :: cv
 
 ! Create copy of comm
 ! -------------------
@@ -170,6 +174,10 @@ enddo
 do j = self%jsc, self%jec
   self%grid_lats(:,j) = self%lats(j)
 enddo
+
+! This is a test
+print*, "Hello gsiblim"
+call gsibclim_init(cv)
 
 end subroutine create
 
