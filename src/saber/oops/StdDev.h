@@ -14,10 +14,10 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/Geometry.h"
+#include "oops/base/Increment.h"
+#include "oops/base/State.h"
 #include "oops/base/Variables.h"
-#include "oops/interface/Geometry.h"
-#include "oops/interface/Increment.h"
-#include "oops/interface/State.h"
 
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
@@ -43,7 +43,7 @@ class StdDevParameters : public SaberBlockParametersBase {
 template <typename MODEL>
 class StdDev : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL>             Geometry_;
-  typedef oops::interface::Increment<MODEL> Increment_;
+  typedef oops::Increment<MODEL>            Increment_;
   typedef oops::State<MODEL>                State_;
 
  public:

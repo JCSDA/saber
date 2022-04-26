@@ -82,7 +82,7 @@ class Fields : public util::Printable,
   const oops::Variables vars_;
   util::DateTime time_;
   std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
-  const bool netcdfOutput_ = true;
+  bool useNetcdfOutput_;
 };
 // -----------------------------------------------------------------------------
 

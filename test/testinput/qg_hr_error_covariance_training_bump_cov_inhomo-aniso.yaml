@@ -90,4 +90,4 @@ input variables: [q]
 
 test:
   reference filename: testref/qg_hr_error_covariance_training_bump_cov_inhomo-aniso/test.log.out
-  test output filename: testoutput/qg_hr_error_covariance_training_bump_cov_inhomo-aniso/test.log.out
+  output precision: 6

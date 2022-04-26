@@ -205,11 +205,14 @@ real(kind_real),allocatable :: a_c2a(:,:,:),rh_c2a(:,:,:),D11_c2a(:,:,:),D22_c2a
 
 if (nam%local_diag) then
    ! Horizontal filtering
-   write(mpl%info,'(a7,a)') '','Horizontal filtering'
+   write(mpl%info,'(a10,a)') '','Horizontal filtering:'
    call mpl%flush
 
    do ib=1,bpar%nbe
       if (bpar%diag_block(ib)) then
+         write(mpl%info,'(a13,a,a)') '','Block ',trim(bpar%blockname(ib))
+         call mpl%flush
+
          ! Allocation
          if (bpar%fit_block(ib)) then
             allocate(a_c2a(samp%nc2a,geom%nl0,diag%blk(0,ib)%ncmp))
@@ -359,7 +362,7 @@ end if
 
 if (nam%diag_rvflt>zero) then
    ! Vertical filtering
-   write(mpl%info,'(a7,a)') '','Vertical filtering'
+   write(mpl%info,'(a10,a)') '','Vertical filtering'
    call mpl%flush
 
    do ib=1,bpar%nbe
@@ -414,6 +417,9 @@ real(kind_real) :: rmse,norm
 ! Probe in
 @:probe_in()
 
+write(mpl%info,'(a10,a)') '','Fit RMSE:'
+call mpl%flush
+
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib).and.bpar%fit_block(ib)) then
       ! Build fit
@@ -440,7 +446,7 @@ do ib=1,bpar%nbe
       call mpl%f_comm%allreduce(rmse,fckit_mpi_sum())
       call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
       if (norm>zero) rmse = sqrt(rmse/norm)
-      write(mpl%info,'(a10,a,a,a,e15.8,a,i8,a)') '','Fit RMSE for block ',trim(bpar%blockname(ib)),': ',rmse, &
+      write(mpl%info,'(a13,a,a,a,e15.8,a,i8,a)') '','Block ',trim(bpar%blockname(ib)),': ',rmse, &
  & ' for ',int(norm),' diagnostic points'
       call mpl%flush
 
@@ -499,11 +505,14 @@ real(kind_real),allocatable :: profile(:,:),fld_c2a(:,:,:),fld_c2b(:,:,:),fld_c0
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a10,a)') '','Interpolate fit diagnostics'
+write(mpl%info,'(a10,a)') '','Interpolate fit diagnostics:'
 call mpl%flush
 
 do ib=1,bpar%nbe
    if (bpar%B_block(ib)) then
+      write(mpl%info,'(a13,a,a)') '','Block ',trim(bpar%blockname(ib))
+      call mpl%flush
+
       ! Allocation
       n = 2
       if (bpar%fit_block(ib)) then
@@ -833,9 +842,11 @@ integer :: ib,ic2a,il0
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
+write(mpl%info,'(a10,a)') '','Copy covariance:'
+call mpl%flush
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(ib))
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib))
       call mpl%flush
 
       ! Copy covariance
@@ -844,11 +855,19 @@ do ib=1,bpar%nb
          diag%blk(ic2a,ib)%raw = avg%blk(ic2a,ib)%m11
          diag%blk(ic2a,ib)%valid = avg%blk(ic2a,ib)%nc1a
       end do
+   end if
+end do
 
-      ! Print results
+! Print results
+write(mpl%info,'(a10,a)') '','Results:'
+call mpl%flush
+do ib=1,bpar%nb
+   if (bpar%diag_block(ib)) then
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib))
+      call mpl%flush
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
-            write(mpl%info,'(a13,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
+            write(mpl%info,'(a16,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
  & diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
@@ -891,11 +910,14 @@ integer :: ib,iv,ic2a,icmp,il0
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
+write(mpl%info,'(a10,a)') '','Copy and fit correlation:'
+call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      ! Initialization
-      write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush(.false.)
+
+      ! Initialization
       call mpl%prog_init(diag%nc2a+1)
       iv = bpar%b_to_v1(ib)
 
@@ -909,56 +931,13 @@ do ib=1,bpar%nbe
             diag%blk(ic2a,ib)%coef_ens_l0(il0) = diag%blk(ic2a,ib)%raw(1,1,bpar%il0rz(il0,ib),il0)
          end do
 
-         if (bpar%fit_block(ib)) then
-            if (ic2a==0) then
-               ! Optimize number of components
-               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,nam%fit_ncmpmax(iv))
-            else
-               ! Specific number of components
-               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,diag%blk(0,ib)%ncmp)
-            end if
-         end if
+         ! Fitting
+         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
 
          ! Update
          call mpl%prog_print(ic2a+1)
       end do
       call mpl%prog_final
-
-      ! Print results
-      do il0=1,geom%nl0
-          if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
-              write(mpl%info,'(a10,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
-              call mpl%flush
-          end if
-      end do
-      if (bpar%fit_block(ib)) then
-         if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
-            write(mpl%info,'(a10,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
-            call mpl%flush
-            do icmp=1,diag%blk(0,ib)%ncmp
-               write(mpl%info,'(a10,a,i1)') '','Component : ',icmp
-               call mpl%flush
-               do il0=1,geom%nl0
-                  if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
- & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
-                     call mpl%flush
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. hor. support:   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
-                        call mpl%flush
-                     end if
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','cor. ver. support:   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
-                        call mpl%flush
-                     end if
-                  end if
-               end do
-            end do
-         end if
-      end if
    end if
 end do
 
@@ -973,6 +952,51 @@ call diag%interp_fit(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
 call diag%test_dirac(mpl,nam,geom,bpar)
+
+! Print results
+write(mpl%info,'(a10,a)') '','Results:'
+call mpl%flush
+do ib=1,bpar%nbe
+   if (bpar%diag_block(ib)) then
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      call mpl%flush
+
+      do il0=1,geom%nl0
+          if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
+              write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
+              call mpl%flush
+          end if
+      end do
+      if (bpar%fit_block(ib)) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
+            write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
+            call mpl%flush
+            do icmp=1,diag%blk(0,ib)%ncmp
+               write(mpl%info,'(a16,a,i1)') '','Component : ',icmp
+               call mpl%flush
+               do il0=1,geom%nl0
+                  if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
+                     write(mpl%info,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
+ & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
+                     call mpl%flush
+                     if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','cor. hor. support:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
+                        call mpl%flush
+                     end if
+                     if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','cor. ver. support:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
+                        call mpl%flush
+                     end if
+                  end if
+               end do
+            end do
+         end if
+      end if
+   end if
+end do
 
 ! Probe out
 @:probe_out()
@@ -1009,11 +1033,14 @@ integer :: ib,iv,ic2a,icmp,il0
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
+write(mpl%info,'(a10,a)') '','Compute and fit localization:'
+call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      ! Initialization
-      write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush(.false.)
+
+      ! Initialization
       call mpl%prog_init(diag%nc2a+1)
       iv = bpar%b_to_v1(ib)
 
@@ -1024,56 +1051,13 @@ do ib=1,bpar%nbe
          ! Normalization
          call diag%blk(ic2a,ib)%normalization(geom,bpar)
 
-         if (bpar%fit_block(ib)) then
-            if (ic2a==0) then
-               ! Optimize number of components
-               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,nam%fit_ncmpmax(iv))
-            else
-               ! Specific number of components
-               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,diag%blk(0,ib)%ncmp)
-            end if
-         end if
+         ! Fitting
+         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
 
          ! Update
          call mpl%prog_print(ic2a+1)
       end do
       call mpl%prog_final
-
-      ! Print results
-      do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
-            write(mpl%info,'(a10,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
-            call mpl%flush
-         end if
-      end do
-      if (bpar%fit_block(ib)) then
-         if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
-            write(mpl%info,'(a10,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
-            call mpl%flush
-            do icmp=1,diag%blk(0,ib)%ncmp
-               write(mpl%info,'(a10,a,i1)') '','Component : ',icmp
-               call mpl%flush
-               do il0=1,geom%nl0
-                  if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
- & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
-                     call mpl%flush
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. hor. support:   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
-                        call mpl%flush
-                     end if
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. ver. support:   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
-                        call mpl%flush
-                     end if
-                  end if
-               end do
-            end do
-         end if
-      end if
    end if
 end do
 
@@ -1088,6 +1072,51 @@ call diag%interp_fit(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
 call diag%test_dirac(mpl,nam,geom,bpar)
+
+! Print results
+write(mpl%info,'(a10,a)') '','Results:'
+call mpl%flush
+do ib=1,bpar%nbe
+   if (bpar%diag_block(ib)) then
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      call mpl%flush
+
+      do il0=1,geom%nl0
+         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
+            write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
+            call mpl%flush
+         end if
+      end do
+      if (bpar%fit_block(ib)) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
+            write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
+            call mpl%flush
+            do icmp=1,diag%blk(0,ib)%ncmp
+               write(mpl%info,'(a16,a,i1)') '','Component : ',icmp
+               call mpl%flush
+               do il0=1,geom%nl0
+                  if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
+                     write(mpl%info,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
+ & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
+                     call mpl%flush
+                     if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. hor. support:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
+                        call mpl%flush
+                     end if
+                     if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. ver. support:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
+                        call mpl%flush
+                     end if
+                  end if
+               end do
+            end do
+         end if
+      end if
+   end if
+end do
 
 ! Probe out
 @:probe_out()
@@ -1124,11 +1153,14 @@ integer :: ib,iv,ic2a,icmp,il0
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
+write(mpl%info,'(a10,a)') '','Compute and fit hybridization:'
+call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      ! Initialization
-      write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush(.false.)
+
+      ! Initialization
       call mpl%prog_init(diag%nc2a+1)
       iv = bpar%b_to_v1(ib)
 
@@ -1153,60 +1185,14 @@ do ib=1,bpar%nbe
             ! Normalization
             call diag%blk(ic2a,ib)%normalization(geom,bpar)
 
-            if (bpar%fit_block(ib)) then
-               if (ic2a==0) then
-                   ! Optimize number of components
-                  call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,nam%fit_ncmpmax(iv))
-               else
-                  ! Specific number of components
-                  call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,diag%blk(0,ib)%ncmp)
-               end if
-            end if
+            ! Fitting
+            if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
          end if
 
          ! Update
          call mpl%prog_print(ic2a+1)
       end do
       call mpl%prog_final
-
-      ! Print results
-      do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
-            write(mpl%info,'(a10,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
-            call mpl%flush
-         end if
-      end do
-      if (bpar%fit_block(ib)) then
-         if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
-            write(mpl%info,'(a10,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
-            call mpl%flush
-            do icmp=1,diag%blk(0,ib)%ncmp
-               write(mpl%info,'(a10,a,i1)') '','Component : ',icmp
-               call mpl%flush
-               do il0=1,geom%nl0
-                  if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
- & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
-                     call mpl%flush
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. hor. support:   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
-                        call mpl%flush
-                     end if
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. ver. support:   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
-                        call mpl%flush
-                     end if
-                  end if
-               end do
-            end do
-         end if
-      end if
-      if (mpl%msv%isnot(diag%blk(0,ib)%coef_sta)) write(mpl%info,'(a13,a,a,f4.2,a)') '', &
- & 'Static coeff.:                          ',trim(mpl%purple),diag%blk(0,ib)%coef_sta,trim(mpl%black)
-      call mpl%flush
    end if
 end do
 
@@ -1221,6 +1207,54 @@ call diag%interp_fit(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
 call diag%test_dirac(mpl,nam,geom,bpar)
+
+! Print results
+write(mpl%info,'(a10,a)') '','Results:'
+call mpl%flush
+do ib=1,bpar%nbe
+   if (bpar%diag_block(ib)) then
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      call mpl%flush
+
+      do il0=1,geom%nl0
+         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
+            write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
+ & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
+            call mpl%flush
+         end if
+      end do
+      if (bpar%fit_block(ib)) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
+            write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
+            call mpl%flush
+            do icmp=1,diag%blk(0,ib)%ncmp
+               write(mpl%info,'(a16,a,i1)') '','Component : ',icmp
+               call mpl%flush
+               do il0=1,geom%nl0
+                  if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
+                     write(mpl%info,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
+ & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
+                     call mpl%flush
+                     if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. hor. support:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
+                        call mpl%flush
+                     end if
+                     if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. ver. support:   ',trim(mpl%aqua), &
+ & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
+                        call mpl%flush
+                     end if
+                  end if
+               end do
+            end do
+         end if
+      end if
+      if (mpl%msv%isnot(diag%blk(0,ib)%coef_sta)) write(mpl%info,'(a13,a,a,f4.2,a)') '', &
+ & 'Static coeff.:                          ',trim(mpl%purple),diag%blk(0,ib)%coef_sta,trim(mpl%black)
+      call mpl%flush
+   end if
+end do
 
 ! Probe out
 @:probe_out()
@@ -1261,11 +1295,14 @@ integer :: ib,iv,ic2a,icmp,il0
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 call diag_lr%alloc(mpl,nam,geom,bpar,samp,prefix_lr)
 
+write(mpl%info,'(a10,a)') '','Compute and fit dual-ensemble hybridization:'
+call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      ! Initialization
-      write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush(.false.)
+
+      ! Initialization
       call mpl%prog_init(diag%nc2a+1)
       iv = bpar%b_to_v1(ib)
 
@@ -1277,50 +1314,69 @@ do ib=1,bpar%nbe
          call diag%blk(ic2a,ib)%normalization(geom,bpar)
          call diag_lr%blk(ic2a,ib)%normalization(geom,bpar)
 
+         ! Fitting
          if (bpar%fit_block(ib)) then
-            if (ic2a==0) then
-               ! Optimize number of components
-               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,nam%fit_ncmpmax(iv))
-               call diag_lr%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,nam%fit_ncmpmax(iv))
-            else
-               ! Specific number of components
-               call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,diag%blk(0,ib)%ncmp)
-               call diag_lr%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar,diag%blk(0,ib)%ncmp)
-            end if
+            call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+            call diag_lr%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
          end if
 
          ! Update
          call mpl%prog_print(ic2a+1)
       end do
       call mpl%prog_final
+   end if
+end do
 
-      ! Print results
+! Filter fit
+call diag%filter_fit(mpl,nam,geom,bpar,samp)
+call diag_lr%filter_fit(mpl,nam,geom,bpar,samp)
+
+! Build fit
+call diag%build_fit(mpl,nam,geom,bpar)
+call diag_lr%build_fit(mpl,nam,geom,bpar)
+
+! Interpolate fit values
+call diag%interp_fit(mpl,nam,geom,bpar,samp)
+call diag_lr%interp_fit(mpl,nam,geom,bpar,samp)
+
+! Dirac test
+call diag%test_dirac(mpl,nam,geom,bpar)
+call diag_lr%test_dirac(mpl,nam,geom,bpar)
+
+! Print results
+write(mpl%info,'(a10,a)') '','Results:'
+call mpl%flush
+do ib=1,bpar%nbe
+   if (bpar%diag_block(ib)) then
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      call mpl%flush
+
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
-            write(mpl%info,'(a10,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero (HR): ', &
+            write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero (HR): ', &
  & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
             call mpl%flush
          end if
       end do
       if (bpar%fit_block(ib)) then
          if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
-            write(mpl%info,'(a10,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
+            write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
             call mpl%flush
             do icmp=1,diag%blk(0,ib)%ncmp
-               write(mpl%info,'(a10,a,i1)') '','Component : ',icmp
+               write(mpl%info,'(a16,a,i1)') '','Component : ',icmp
                call mpl%flush
                do il0=1,geom%nl0
                   if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude (HR):  ', &
+                     write(mpl%info,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude (HR):  ', &
  & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
                      call mpl%flush
                      if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. hor. support (HR):   ',trim(mpl%aqua), &
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. hor. support (HR):   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
                         call mpl%flush
                      end if
                      if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. ver. support (HR):   ',trim(mpl%aqua), &
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. ver. support (HR):   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
                         call mpl%flush
                      end if
@@ -1349,12 +1405,12 @@ do ib=1,bpar%nbe
  & trim(mpl%peach),diag_lr%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
                      call mpl%flush
                      if (mpl%msv%isnot(diag_lr%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. hor. support (LR):   ',trim(mpl%aqua), &
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. hor. support (LR):   ',trim(mpl%aqua), &
  & diag_lr%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
                         call mpl%flush
                      end if
                      if (mpl%msv%isnot(diag_lr%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a27,a,a,f10.2,a)') '','loc. ver. support (LR):   ',trim(mpl%aqua), &
+                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. ver. support (LR):   ',trim(mpl%aqua), &
  & diag_lr%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
                         call mpl%flush
                      end if
@@ -1365,22 +1421,6 @@ do ib=1,bpar%nbe
       end if
    end if
 end do
-
-! Filter fit
-call diag%filter_fit(mpl,nam,geom,bpar,samp)
-call diag_lr%filter_fit(mpl,nam,geom,bpar,samp)
-
-! Build fit
-call diag%build_fit(mpl,nam,geom,bpar)
-call diag_lr%build_fit(mpl,nam,geom,bpar)
-
-! Interpolate fit values
-call diag%interp_fit(mpl,nam,geom,bpar,samp)
-call diag_lr%interp_fit(mpl,nam,geom,bpar,samp)
-
-! Dirac test
-call diag%test_dirac(mpl,nam,geom,bpar)
-call diag_lr%test_dirac(mpl,nam,geom,bpar)
 
 ! Probe out
 @:probe_out()

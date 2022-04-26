@@ -105,4 +105,4 @@ output:
 
 test:
   reference filename: testref/qg_3dvar_bump/test.log.out
-  test output filename: testoutput/qg_3dvar_bump/test.log.out
+  output precision: 6

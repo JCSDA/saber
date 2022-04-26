@@ -5,7 +5,7 @@ background error:
   - saber block name: gsi covariance
     input variables: [stream_function,velocity_potential,air_temperature]
     output variables: [stream_function,velocity_potential,air_temperature]
-    gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
+    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
     procesor layout x direction: 1
     procesor layout y direction: 1
     debugging mode: false
@@ -13,7 +13,7 @@ background error:
   - saber block name: gsi interpolation to model grid
     input variables: [stream_function,velocity_potential,air_temperature]
     output variables: [stream_function,velocity_potential,air_temperature]
-    gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
+    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
     procesor layout x direction: 1
     procesor layout y direction: 1
     debugging mode: false
@@ -26,13 +26,13 @@ geometry:
   grid:
     type : regular_gaussian
     N : 15
-  levels: 127
+  levels: 72
 initial condition:
   date: 2010-01-01T12:00:00Z
   state variables: [stream_function,velocity_potential,air_temperature]
 output dirac:
-  filepath: testdata/quench_dirac_gsi_global/dirac_%id%
+  filepath: testdata/quench_dirac_gsi_gmao_global/dirac_%id%
 
 test:
-  reference filename: testref/quench_dirac_gsi_global/test.log.out
+  reference filename: testref/quench_dirac_gsi_gmao_global/test.log.out
   output precision: 6

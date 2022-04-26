@@ -76,6 +76,7 @@ class Geometry : public util::Printable,
   std::vector<double> vunit() const {return vunit_;}
 
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
+  void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
 
  private:
   void print(std::ostream &) const;

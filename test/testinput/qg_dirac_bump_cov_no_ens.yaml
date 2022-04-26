@@ -36,4 +36,4 @@ output dirac:
 
 test:
   reference filename: testref/qg_dirac_bump_cov_no_ens/test.log.out
-  test output filename: testoutput/qg_dirac_bump_cov_no_ens/test.log.out
+  output precision: 6

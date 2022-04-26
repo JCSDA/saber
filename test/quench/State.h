@@ -39,6 +39,7 @@ class State : public util::Printable,
 /// Constructor, destructor
   State(const Geometry &, const oops::Variables &, const util::DateTime &);
   State(const Geometry &, const eckit::Configuration &);
+  State(const Geometry &, const State &);
   State(const State &);
 
 /// I/O and diagnostics

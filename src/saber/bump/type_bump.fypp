@@ -84,14 +84,12 @@ contains
    procedure :: randomize => bump_randomize
    procedure :: psichi_to_uv => bump_psichi_to_uv
    procedure :: psichi_to_uv_ad => bump_psichi_to_uv_ad
-   procedure :: bump_get_parameter_field
-   procedure :: bump_get_parameter_value
-   generic :: get_parameter => bump_get_parameter_field,bump_get_parameter_value
+   procedure :: get_ncmp => bump_get_ncmp
+   procedure :: get_parameter => bump_get_parameter
    procedure :: copy_to_field => bump_copy_to_field
    procedure :: test_get_parameter => bump_test_get_parameter
-   procedure :: bump_set_parameter_field
-   procedure :: bump_set_parameter_value
-   generic :: set_parameter => bump_set_parameter_field,bump_set_parameter_value
+   procedure :: set_ncmp => bump_set_ncmp
+   procedure :: set_parameter => bump_set_parameter
    procedure :: copy_from_field => bump_copy_from_field
    procedure :: test_set_parameter => bump_test_set_parameter
    procedure :: test_apply_interfaces => bump_test_apply_interfaces
@@ -1424,10 +1422,50 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 end subroutine bump_psichi_to_uv_ad
 
 !----------------------------------------------------------------------
-! Subroutine: bump_get_parameter_field
-!> Get a parameter as field
+! Subroutine: bump_get_ncmp
+!> Get number of components
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_field(bump,param,icmp,fieldset)
+subroutine bump_get_ncmp(bump,iv,ncmp)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump !< BUMP
+integer,intent(in) :: iv               !< Variable index
+integer,intent(inout) :: ncmp          !< Number of components
+
+! Set name
+@:set_name(bump_get_ncmp)
+
+! Get instance
+@:get_instance(bump)
+
+! Probe in
+@:probe_in()
+
+write(bump%mpl%info,'(a7,a)') '','Get number of components'
+call bump%mpl%flush
+
+! Check variable index
+if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
+
+! Copy
+if (bump%nam%forced_radii) then
+   ncmp = one
+else
+   ncmp = bump%nam%fit_ncmp(iv)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine bump_get_ncmp
+
+!----------------------------------------------------------------------
+! Subroutine: bump_get_parameter
+!> Get parameter
+!----------------------------------------------------------------------
+subroutine bump_get_parameter(bump,param,icmp,fieldset)
 
 implicit none
 
@@ -1442,7 +1480,7 @@ integer :: ib,iv
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-@:set_name(bump_get_parameter_field)
+@:set_name(bump_get_parameter)
 
 ! Get instance
 @:get_instance(bump)
@@ -1460,8 +1498,7 @@ fld_mga = bump%mpl%msv%valr
 select case (trim(param))
 case  ('norm_m2','norm_m4','norm_kurt','cor_a','cor_rh','cor_rh1','cor_rh2','cor_rhc','cor_rv','loc_coef','loc_a','loc_rh', &
  & 'loc_rh1','loc_rh2','loc_rhc','loc_rv','loc_hyb_coef','loc_hyb_a','loc_hyb_rh','loc_hyb_rh1','loc_hyb_rh2','loc_hyb_rhc', &
- & 'loc_hyb_rv','sta_hyb_coef','nicas_norm','nicas_interp_test','nicas_interp_ref','dirac_vbal','dirac_mom','dirac_diag_cor', &
- & 'dirac_nicas','dirac_nicas_bens')
+ & 'loc_hyb_rv','sta_hyb_coef','nicas_norm','dirac_vbal','dirac_mom','dirac_diag_cor','dirac_nicas','dirac_nicas_bens')
    select case (trim(bump%nam%strategy))
    case ('specific_univariate','specific_multivariate')
       do iv=0,bump%nam%nv
@@ -1499,73 +1536,7 @@ call fieldset%from_array(bump%mpl,fld_mga)
 ! Probe out
 @:probe_out()
 
-end subroutine bump_get_parameter_field
-
-!----------------------------------------------------------------------
-! Subroutine: bump_get_parameter_value
-!> Get a parameter as value
-!----------------------------------------------------------------------
-subroutine bump_get_parameter_value(bump,param,iv,value)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump !< BUMP
-character(len=*),intent(in) :: param   !< Parameter
-integer,intent(in) :: iv               !< Variable index
-real(kind_real),intent(inout) :: value !< Value
-
-! Local variables
-integer :: ib
-
-! Set name
-@:set_name(bump_get_parameter_value)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
-call bump%mpl%flush
-
-! Check variable index
-if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
-
-! Set block index
-select case (trim(bump%nam%strategy))
-case ('specific_univariate','specific_multivariate')
-   ib = bump%bpar%v_to_b(iv)
-case ('common','common_weighted')
-   ib = bump%bpar%nbe
-end select
-
-! Copy
-if (bump%nam%forced_radii) then
-   select case (trim(param))
-   case ('cor_ncmp','loc_ncmp','loc_hyb_ncmp')
-      value = one
-   case default
-      call bump%mpl%abort('${subr}$','wrong parameter')
-   end select
-else
-   select case (trim(param))
-   case ('cor_ncmp')
-      value = real(bump%hdiag%cor1%blk(0,ib)%ncmp,kind_real)
-   case ('loc_ncmp')
-      value = real(bump%hdiag%loc1%blk(0,ib)%ncmp,kind_real)
-   case ('loc_hyb_ncmp')
-      value = real(bump%hdiag%loc2%blk(0,ib)%ncmp,kind_real)
-   case default
-      call bump%mpl%abort('${subr}$','wrong parameter')
-   end select
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_get_parameter_value
+end subroutine bump_get_parameter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_copy_to_field
@@ -2064,10 +2035,62 @@ call fieldset%final()
 end subroutine bump_test_get_parameter
 
 !----------------------------------------------------------------------
-! Subroutine: bump_set_parameter_field
-!> Set a parameter as field
+! Subroutine: bump_set_ncmp
+!> Set number of components
 !----------------------------------------------------------------------
-subroutine bump_set_parameter_field(bump,param,icmp,fieldset)
+subroutine bump_set_ncmp(bump,iv,ncmp)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump !< BUMP
+integer,intent(in) :: iv               !< Variable index
+integer,intent(in) :: ncmp             !< Number of components
+
+! Local variables
+integer :: ib
+
+! Set name
+@:set_name(bump_set_ncmp)
+
+! Get instance
+@:get_instance(bump)
+
+! Probe in
+@:probe_in()
+
+write(bump%mpl%info,'(a7,a)') '','Set number of components'
+call bump%mpl%flush
+
+! Check variable index
+if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
+
+! Check allocation
+if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
+if (.not.allocated(bump%nicas%blk)) allocate(bump%nicas%blk(bump%bpar%nbe))
+
+! Set block index
+select case (trim(bump%nam%strategy))
+case ('specific_univariate','specific_multivariate')
+   ib = bump%bpar%v_to_b(iv)
+case ('common','common_weighted')
+   ib = bump%bpar%nbe
+end select
+
+! Copy
+bump%cmat%blk(ib)%ncmp = ncmp
+bump%nicas%blk(ib)%ncmp = ncmp
+
+! Probe out
+@:probe_out()
+
+end subroutine bump_set_ncmp
+
+!----------------------------------------------------------------------
+! Subroutine: bump_set_parameter
+!> Set parameter
+!----------------------------------------------------------------------
+subroutine bump_set_parameter(bump,param,icmp,fieldset)
 
 implicit none
 
@@ -2082,7 +2105,7 @@ integer :: ib,iv
 real(kind_real) :: fld_mga(bump%geom%nmga,bump%geom%nl0,bump%nam%nv)
 
 ! Set name
-@:set_name(bump_set_parameter_field)
+@:set_name(bump_set_parameter)
 
 ! Get instance
 @:get_instance(bump)
@@ -2141,68 +2164,7 @@ end select
 ! Probe out
 @:probe_out()
 
-end subroutine bump_set_parameter_field
-
-!----------------------------------------------------------------------
-! Subroutine: bump_set_parameter_value
-!> Set a parameter as value
-!----------------------------------------------------------------------
-subroutine bump_set_parameter_value(bump,param,iv,value)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump  !< BUMP
-character(len=*),intent(in) :: param    !< Parameter
-integer,intent(in) :: iv                !< Variable index
-real(kind_real),intent(in) :: value     !< Value
-
-! Local variables
-integer :: ib
-
-! Set name
-@:set_name(bump_set_parameter_value)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
-call bump%mpl%flush
-
-! Check variable index
-if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
-
-! Check allocation / parameter existence
-select case (trim(param))
-case ('ncmp')
-   if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
-   if (.not.allocated(bump%nicas%blk)) allocate(bump%nicas%blk(bump%bpar%nbe))
-end select
-
-! Set block index
-select case (trim(bump%nam%strategy))
-case ('specific_univariate','specific_multivariate')
-   ib = bump%bpar%v_to_b(iv)
-case ('common','common_weighted')
-   ib = bump%bpar%nbe
-end select
-
-! Copy
-select case (trim(param))
-case ('ncmp')
-   bump%cmat%blk(ib)%ncmp = int(value)
-   bump%nicas%blk(ib)%ncmp = int(value)
-case default
-   call bump%mpl%abort('${subr}$','wrong parameter')
-end select
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_set_parameter_value
+end subroutine bump_set_parameter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_copy_from_field
@@ -2411,7 +2373,7 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,(one+fld_c0a)*(maxval(bump%geom%
 
 ! Set parameters
 do iv=1,bump%nam%nv
-   call bump%set_parameter('ncmp',iv,one)
+   call bump%set_ncmp(iv,1)
 end do
 if (trim(bump%nam%strategy)=='specific_univariate') then
    call bump%set_parameter('stddev',1,fieldset)

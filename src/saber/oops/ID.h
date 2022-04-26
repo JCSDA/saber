@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
+#include "oops/base/Geometry.h"
 #include "oops/base/Variables.h"
-#include "oops/interface/Geometry.h"
 
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"

@@ -4,6 +4,7 @@ import argparse
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
+from netCDF4 import Dataset
 import numpy as np
 import os
 import cartopy.crs as ccrs
@@ -11,43 +12,58 @@ import cartopy.crs as ccrs
 def func(args):
    """! Plot script for the files produced by QUENCH"""
 
-   # Open longitudes
-   with open(args.filepath + "_lon") as f:
-      data = f.read()
-      nodes = int(data.split(",", 1)[0].replace("size: ", ""))
-      lonstring = data.split(",", 1)[1].replace("values: [ ", "").replace(" ]", "")
-      lon = np.zeros((nodes))
-      inode = 0
-      for item in lonstring.split():
-         lon[inode] = float(item)
-         inode += 1
+   if (args.netcdf == True):
+      # Open file
+      f = Dataset(args.filepath + ".nc", "r", format="NETCDF4")
 
-   # Open latitudes
-   with open(args.filepath + "_lat") as f:
-      data = f.read()
-      nodes = int(data.split(",", 1)[0].replace("size: ", ""))
-      latstring = data.split(",", 1)[1].replace("values: [ ", "").replace(" ]", "")
-      lat = np.zeros((nodes))
-      inode = 0
-      for item in latstring.split():
-         lat[inode] = float(item)
-         inode += 1
+      # Get lon/lat
+      lon = f["lon"][:,:]
+      lat = f["lat"][:,:]
 
-   # Open variable
-   with open(args.filepath + "_" + args.variable) as f:
-      data = f.read()
-      n = int(data.split(",", 1)[0].replace("size: ", ""))
-      levels = int(n/nodes)
-      varstring = data.split(",", 1)[1].replace("values: [ ", "").replace(" ]", "")
-      field = np.zeros((nodes,levels))
-      inode = 0
-      ilevel = 0
-      for item in varstring.split():
-         field[inode,ilevel] = float(item)
-         ilevel += 1
-         if ilevel == levels:
-            ilevel = 0
-            inode +=1
+      # Read variable
+      field = f[args.variable][:,:,:]
+      field = np.append(field, field[0:0,:,:], axis=0)
+
+      # Number of levels
+      levels = field.shape[2]
+   else:
+      # Open longitudes
+      with open(args.filepath + "_lon") as f:
+         data = f.read()
+         nodes = int(data.split(",", 1)[0].replace("size: ", ""))
+         lonstring = data.split(",", 1)[1].replace("values: [ ", "").replace(" ]", "")
+         lon = np.zeros((nodes))
+         inode = 0
+         for item in lonstring.split():
+            lon[inode] = float(item)
+            inode += 1
+
+      # Open latitudes
+      with open(args.filepath + "_lat") as f:
+         data = f.read()
+         nodes = int(data.split(",", 1)[0].replace("size: ", ""))
+         latstring = data.split(",", 1)[1].replace("values: [ ", "").replace(" ]", "")
+         lat = np.zeros((nodes))
+         inode = 0
+         for item in latstring.split():
+            lat[inode] = float(item)
+            inode += 1
+
+      # Open variable
+      with open(args.filepath + "_" + args.variable) as f:
+         data = f.read()
+         n = int(data.split(",", 1)[0].replace("size: ", ""))
+         levels = int(n/nodes)
+         varstring = data.split(",", 1)[1].replace("values: [ ", "").replace(" ]", "")
+         field = np.zeros((nodes,levels))
+         inode = 0
+         ilevel = 0
+         for item in varstring.split():
+            field[inode,ilevel] = float(item)
+            ilevel += 1
+            if ilevel == levels:
+               ilevel = 0
+               inode +=1
 
    # Color map
    cmap = matplotlib.cm.get_cmap('coolwarm')
@@ -70,29 +86,55 @@ def func(args):
    else:
       levels_step = int(args.levels_step)
 
-   # Min/max values
-   vmax = np.max(np.abs(field[:, levels_min:levels_max]))
-   vmin = -vmax
+   if (args.netcdf == True):
+      # Min/max values
+      vmax = np.max(np.abs(field[:,:,levels_min:levels_max]))
+      vmin = -vmax
 
-   for jlev in range(max(0,levels_min), min(levels_max, levels), levels_step):
-      # Create figure
-      fig,ax = plt.subplots(subplot_kw=dict(projection=ccrs.InterruptedGoodeHomolosine()))
-      ax.set_global()
-      ax.coastlines(resolution='110m')
-      for jnode in range(0, nodes):
-         col = cmap((field[jnode, jlev]-vmin)/(vmax-vmin))
-         ax.plot(lon[jnode], lat[jnode], color=col, marker='.', markersize=1.0, transform=ccrs.PlateCarree())
+      for jlev in range(max(0,levels_min), min(levels_max, levels), levels_step):
+         # Create figure
+         fig,ax = plt.subplots(subplot_kw=dict(projection=ccrs.InterruptedGoodeHomolosine()))
+         ax.set_global()
+         ax.coastlines(resolution='110m')
+         ax.pcolormesh(np.transpose(lon), np.transpose(lat), np.transpose(field[:,:,jlev]), transform=ccrs.PlateCarree(), cmap=cmap, vmin=vmin, vmax=vmax);
 
-      # Set title
-      jlevp1 = str(jlev+1)
-      lvmax = np.max(np.abs(field[:, jlev]))
-      ax.set_title(args.variable + " @ level " + jlevp1 + "\n Global amplitude: " + format(vmax, "5.2e") + " \n Level amplitude: " + format(lvmax, "5.2e"))
+         # Set title
+         jlevp1 = str(jlev+1)
+         lvmax = np.max(np.abs(field[:,:,jlev]))
+         ax.set_title(args.variable + " @ level " + jlevp1 + "\n Global amplitude: " + format(vmax, "5.2e") + " \n Level amplitude: " + format(lvmax, "5.2e"))
 
-      # Save and close figure
-      if args.output is None:
-         plotpath = os.path.splitext(os.path.basename(args.filepath))[0] + "_" + args.variable + "_" + jlevp1.zfill(3) + ".jpg"
-      else:
-         plotpath = args.output + "_" + args.variable + "_" + jlevp1.zfill(3) + ".jpg"
-      plt.savefig(str(plotpath), format="jpg", dpi=300)
-      plt.close()
-      print(" -> plot produced: " + plotpath)
+         # Save and close figure
+         if args.output is None:
+            plotpath = os.path.splitext(os.path.basename(args.filepath))[0] + "_" + args.variable + "_" + jlevp1.zfill(3) + ".jpg"
+         else:
+            plotpath = args.output + "_" + args.variable + "_" + jlevp1.zfill(3) + ".jpg"
+         plt.savefig(str(plotpath), format="jpg", dpi=300)
+         plt.close()
+         print(" -> plot produced: " + plotpath)
+   else:
+      # Min/max values
+      vmax = np.max(np.abs(field[:,levels_min:levels_max]))
+      vmin = -vmax
+
+      for jlev in range(max(0,levels_min), min(levels_max, levels), levels_step):
+         # Create figure
+         fig,ax = plt.subplots(subplot_kw=dict(projection=ccrs.InterruptedGoodeHomolosine()))
+         ax.set_global()
+         ax.coastlines(resolution='110m')
+         for jnode in range(0, nodes):
+            col = cmap((field[jnode, jlev]-vmin)/(vmax-vmin))
+            ax.plot(lon[jnode], lat[jnode], color=col, marker='.', markersize=1.0, transform=ccrs.PlateCarree())
+
+         # Set title
+         jlevp1 = str(jlev+1)
+         lvmax = np.max(np.abs(field[:,jlev]))
+         ax.set_title(args.variable + " @ level " + jlevp1 + "\n Global amplitude: " + format(vmax, "5.2e") + " \n Level amplitude: " + format(lvmax, "5.2e"))
+
+         # Save and close figure
+         if args.output is None:
+            plotpath = os.path.splitext(os.path.basename(args.filepath))[0] + "_" + args.variable + "_" + jlevp1.zfill(3) + ".jpg"
+         else:
+            plotpath = args.output + "_" + args.variable + "_" + jlevp1.zfill(3) + ".jpg"
+         plt.savefig(str(plotpath), format="jpg", dpi=300)
+         plt.close()
+         print(" -> plot produced: " + plotpath)

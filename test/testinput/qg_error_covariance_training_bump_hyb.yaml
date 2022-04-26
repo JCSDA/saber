@@ -66,4 +66,4 @@ input variables: [x]
 
 test:
   reference filename: testref/qg_error_covariance_training_bump_hyb/test.log.out
-  test output filename: testoutput/qg_error_covariance_training_bump_hyb/test.log.out
+  output precision: 6

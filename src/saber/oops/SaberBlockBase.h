@@ -16,8 +16,8 @@
 #include <boost/noncopyable.hpp>
 
 #include "oops/base/Geometry.h"
+#include "oops/base/State.h"
 #include "oops/base/Variables.h"
-#include "oops/interface/State.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/Logger.h"

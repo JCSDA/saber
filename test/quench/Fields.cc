@@ -7,6 +7,8 @@
 
 #include "quench/Fields.h"
 
+#include <netcdf.h>
+
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -24,14 +26,15 @@
 #include "oops/util/Random.h"
 
 #include "quench/Geometry.h"
-#include "quench/Interface.h"
+
+#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); exit(1);}
 
 // -----------------------------------------------------------------------------
 namespace quench {
 // -----------------------------------------------------------------------------
 Fields::Fields(const Geometry & geom, const oops::Variables & vars,
                const util::DateTime & time):
-  geom_(new Geometry(geom)), vars_(vars), time_(time)
+  geom_(new Geometry(geom)), vars_(vars), time_(time), useNetcdfOutput_(true)
 {
   // Reset ATLAS fieldset
   atlasFieldSet_.reset(new atlas::FieldSet());
@@ -47,8 +50,9 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
   this->zero();
 }
 // -----------------------------------------------------------------------------
-Fields::Fields(const Fields & other, const bool copy)
-  : geom_(other.geom_), vars_(other.vars_), time_(other.time_)
+Fields::Fields(const Fields & other, const bool copy):
+  geom_(other.geom_), vars_(other.vars_), time_(other.time_),
+  useNetcdfOutput_(other.useNetcdfOutput_)
 {
   // Reset ATLAS fieldset
   atlasFieldSet_.reset(new atlas::FieldSet());
@@ -89,7 +93,8 @@ Fields::Fields(const Fields & other, const bool copy)
 
 // -----------------------------------------------------------------------------
 Fields::Fields(const Fields & other):
-  geom_(other.geom_), vars_(other.vars_), time_(other.time_)
+  geom_(other.geom_), vars_(other.vars_), time_(other.time_),
+  useNetcdfOutput_(other.useNetcdfOutput_)
 {
   // Reset ATLAS fieldset
   atlasFieldSet_.reset(new atlas::FieldSet());
@@ -159,6 +164,7 @@ Fields & Fields::operator=(const Fields & rhs) {
     }
   }
   time_ = rhs.time_;
+  useNetcdfOutput_ = rhs.useNetcdfOutput_;
   return *this;
 }
 // -----------------------------------------------------------------------------
@@ -451,9 +457,6 @@ void Fields::read(const eckit::Configuration & config) {
 }
 // -----------------------------------------------------------------------------
 void Fields::write(const eckit::Configuration & config) const {
-  // Get file path
-  const std::string filepath = config.getString("filepath");
-
   if (geom_->atlasFunctionSpace()->type() == "StructuredColumns") {
     atlas::functionspace::StructuredColumns fs(*(geom_->atlasFunctionSpace()));
 
@@ -495,16 +498,93 @@ void Fields::write(const eckit::Configuration & config) const {
     fs.gather(*atlasFieldSet_, globalData);
 
     if (geom_->getComm().rank() == 0) {
-      if (netcdfOutput_) {
-        // Call Fortran for NetCDF output
-        fields_write_structuredcolumns_f90(config, vars_, globalCoordinates.get(), globalData.get());
+      if (useNetcdfOutput_) {
+        // Get grid
+        atlas::StructuredGrid grid = fs.grid();
+
+        // Get first field
+        atlas::Field field = globalData.field(0);
+
+        // Get sizes
+        atlas::idx_t nx = grid.nxmax();
+        atlas::idx_t ny = grid.ny();
+        atlas::idx_t nz = field.levels();
+
+        // NetCDF IDs
+        int ncid, retval, nx_id, ny_id, nz_id, d2D_id[2], d3D_id[3],
+          lon_id, lat_id, var_id[vars_.size()];
+
+        // Get file path
+        const std::string filepath = config.getString("filepath") + ".nc";
+
+        // Create NetCDF file
+        if ((retval = nc_create(filepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
+
+        // Create dimensions
+        if ((retval = nc_def_dim(ncid, "nx", nx, &nx_id))) ERR(retval);
+        if ((retval = nc_def_dim(ncid, "ny", ny, &ny_id))) ERR(retval);
+        if ((retval = nc_def_dim(ncid, "nz", nz, &nz_id))) ERR(retval);
+
+        // Define coordinates
+        d2D_id[0] = nx_id;
+        d2D_id[1] = ny_id;
+        if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 2, d2D_id, &lon_id))) ERR(retval);
+        if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 2, d2D_id, &lat_id))) ERR(retval);
+
+        // Define variables
+        d3D_id[0] = nx_id;
+        d3D_id[1] = ny_id;
+        d3D_id[2] = nz_id;
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 3, d3D_id,
+            &var_id[jvar]))) ERR(retval);
+        }
+
+        // End definition mode
+        if ((retval = nc_enddef(ncid))) ERR(retval);
+
+        // Copy coordinates
+        double zlon[nx][ny];
+        double zlat[nx][ny];
+        for (atlas::idx_t iy = 0; iy < ny; ++iy) {
+          for (atlas::idx_t ix = 0; ix < grid.nx(iy); ++ix) {
+            atlas::gidx_t gidx = grid.index(ix, iy);
+            zlon[ix][iy] = lonView(gidx);
+            zlat[ix][iy] = latView(gidx);
+          }
+        }
+
+        // Write coordinates
+        if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
+        if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
+
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          // Copy coordinates
+          atlas::Field field = globalData.field(vars_[jvar]);
+          auto varView = atlas::array::make_view<double, 2>(field);
+          double zvar[nx][ny][nz];
+          for (atlas::idx_t iz = 0; iz < nz; ++iz) {
+            for (atlas::idx_t iy = 0; iy < ny; ++iy) {
+              for (atlas::idx_t ix = 0; ix < grid.nx(iy); ++ix) {
+                atlas::gidx_t gidx = grid.index(ix, iy);
+                zvar[ix][iy][iz] = varView(gidx, iz);
+              }
+            }
+          }
+
+          // Write data
+          if ((retval = nc_put_var_double(ncid, var_id[jvar], &zvar[0][0][0]))) ERR(retval);
+        }
+
+        // Close file
+        if ((retval = nc_close(ncid))) ERR(retval);
       } else {
+        // Call C++ text output
+
         // Get file path
         const std::string filepath = config.getString("filepath");
 
         // Write longitudes
-        atlas::Field lonGlobal = globalCoordinates.field("lon");
-        auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
         std::string filepath_lon = filepath + "_lon";
         std::ofstream outfile_lon(filepath_lon.c_str());
         if (outfile_lon.is_open()) {
@@ -515,8 +595,6 @@ void Fields::write(const eckit::Configuration & config) const {
         }
 
         // Write latitudes
-        atlas::Field latGlobal = globalCoordinates.field("lat");
-        auto latView = atlas::array::make_view<double, 1>(latGlobal);
         std::string filepath_lat = filepath + "_lat";
         std::ofstream outfile_lat(filepath_lat.c_str());
         if (outfile_lat.is_open()) {

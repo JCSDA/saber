@@ -38,4 +38,4 @@ output dirac:
 
 test:
   reference filename: testref/qg_dirac_bump_loc_3d/test.log.out
-  test output filename: testoutput/qg_dirac_bump_loc_3d/test.log.out
+  output precision: 6

@@ -839,7 +839,6 @@ do il0=1,geom%nl0
              else
                avg_blk%cor(jc3,jc4,jl0r,il0) = zero
             end if
-if (mpl%main) print*, "avg_blk%cor(jc3,jc4,jl0r,il0)",avg_blk%cor(jc3,jc4,jl0r,il0)
          end do
       end do
    end do

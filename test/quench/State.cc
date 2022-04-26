@@ -8,6 +8,8 @@
 
 #include <vector>
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/util/Logger.h"
 
 #include "quench/Fields.h"
@@ -34,6 +36,10 @@ State::State(const Geometry & resol, const eckit::Configuration & file)
   const util::DateTime vt(file.getString("date"));
   fields_->time() = vt;
   oops::Log::trace() << "State::State created." << std::endl;
+}
+// -----------------------------------------------------------------------------
+State::State(const Geometry &, const State &) : fields_() {
+  throw eckit::NotImplemented("State constructor", Here());
 }
 // -----------------------------------------------------------------------------
 State::State(const State & other)

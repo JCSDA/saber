@@ -297,16 +297,7 @@ do ib=1,bpar%nbe
          end if
          cmat%blk(ib)%coef_sta = hdiag%loc2%blk(0,ib)%coef_sta_c0a
          if (bpar%fit_block(ib)) then
-            if (nam%no_hybrid_loc_update) then
-               cmat%blk(ib)%a = hdiag%loc1%blk(0,ib)%a_c0a
-               cmat%blk(ib)%rh = hdiag%loc1%blk(0,ib)%rh_c0a
-               if (bpar%nc4(ib)>1) then
-                  cmat%blk(ib)%D11 = hdiag%loc1%blk(0,ib)%D11_c0a
-                  cmat%blk(ib)%D22 = hdiag%loc1%blk(0,ib)%D22_c0a
-                  cmat%blk(ib)%D12 = hdiag%loc1%blk(0,ib)%D12_c0a
-               end if
-               cmat%blk(ib)%rv = hdiag%loc1%blk(0,ib)%rv_c0a
-            else
+            if (nam%hybrid_loc_update) then
                cmat%blk(ib)%a = hdiag%loc2%blk(0,ib)%a_c0a
                cmat%blk(ib)%rh = hdiag%loc2%blk(0,ib)%rh_c0a
                if (bpar%nc4(ib)>1) then
@@ -315,6 +306,15 @@ do ib=1,bpar%nbe
                   cmat%blk(ib)%D12 = hdiag%loc2%blk(0,ib)%D12_c0a
                end if
                cmat%blk(ib)%rv = hdiag%loc2%blk(0,ib)%rv_c0a
+            else
+               cmat%blk(ib)%a = hdiag%loc1%blk(0,ib)%a_c0a
+               cmat%blk(ib)%rh = hdiag%loc1%blk(0,ib)%rh_c0a
+               if (bpar%nc4(ib)>1) then
+                  cmat%blk(ib)%D11 = hdiag%loc1%blk(0,ib)%D11_c0a
+                  cmat%blk(ib)%D22 = hdiag%loc1%blk(0,ib)%D22_c0a
+                  cmat%blk(ib)%D12 = hdiag%loc1%blk(0,ib)%D12_c0a
+               end if
+               cmat%blk(ib)%rv = hdiag%loc1%blk(0,ib)%rv_c0a
             end if
          end if
          cmat%blk(ib)%wgt = sum(hdiag%loc2%blk(0,ib)%coef_ens_l0)/real(geom%nl0,kind_real)

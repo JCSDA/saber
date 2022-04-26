@@ -30,6 +30,9 @@ target_link_libraries( ${PROJECT_NAME} PUBLIC atlas_f )
 if( oops_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
 endif()
+if( gsibclim_FOUND )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC gsibclim)
+endif()
 
 # Enable including of local header Fortran file templates
 target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> )

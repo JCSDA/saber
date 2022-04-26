@@ -38,4 +38,4 @@ input variables: *vars
 
 test:
   reference filename: testref/quench_error_covariance_training_bump_nicas/test.log.out
-  test output filename: testoutput/quench_error_covariance_training_bump_nicas/test.log.out
+  output precision: 6

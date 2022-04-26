@@ -21,4 +21,4 @@ prints:
 
 test:
   reference filename: testref/qg_hr_forecast/test.log.out
-  test output filename: testoutput/qg_hr_forecast/test.log.out
+  output precision: 6

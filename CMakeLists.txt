@@ -32,7 +32,7 @@ if(OPENMP)
   find_package( OpenMP REQUIRED COMPONENTS Fortran )
 endif()
 find_package( MPI REQUIRED COMPONENTS Fortran )
-find_package( NetCDF REQUIRED COMPONENTS Fortran )
+find_package( NetCDF REQUIRED COMPONENTS C Fortran )
 find_package( eckit 1.11.6 REQUIRED COMPONENTS MPI )
 find_package( fckit 0.7.0  REQUIRED )
 find_package( atlas 0.20.2 REQUIRED COMPONENTS OMP_Fortran )
@@ -47,6 +47,7 @@ endif()
 
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
+find_package( gsibclim QUIET )
 
 ## SABER instrumentation
 set( ENABLE_SABER_INSTRUMENTATION 0 )

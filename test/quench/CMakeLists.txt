@@ -8,12 +8,10 @@ list( APPEND saber_quench_src_files
 Covariance.h
 Fields.h
 Fields.cc
-Fields.F90
 Geometry.h
 Geometry.cc
 Increment.h
 Increment.cc
-Interface.h
 LinearVarChange.h
 State.h
 State.cc
@@ -35,8 +33,3 @@ add_dependencies(quench quench_headers)
 target_include_directories(quench PUBLIC $<BUILD_INTERFACE:${QUENCH_BUILD_DIR_INCLUDE_PATH}>
                                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
                                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../..>)
-
-ecbuild_add_test( TARGET saber_quench_coding_norms
-                  TYPE SCRIPT
-                  COMMAND ${CMAKE_BINARY_DIR}/bin/oops_cpplint.py
-                  ARGS --quiet --recursive ${CMAKE_CURRENT_SOURCE_DIR} )

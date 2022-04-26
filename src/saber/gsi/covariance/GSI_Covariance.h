@@ -18,10 +18,9 @@
 #include "atlas/library.h"
 #include "atlas/runtime/Log.h"
 
+#include "oops/base/Geometry.h"
 #include "oops/base/State.h"
 #include "oops/base/Variables.h"
-#include "oops/generic/InterpolatorUnstructured.h"
-#include "oops/interface/Geometry.h"
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/gsi/covariance/GSI_Covariance.interface.h"

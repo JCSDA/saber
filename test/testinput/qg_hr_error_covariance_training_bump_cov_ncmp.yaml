@@ -8,7 +8,7 @@ bump:
   check_normalization: 10
   datadir: testdata
   dc: 200.0e3
-  fit_ncmpmax:
+  fit_ncmp:
     q: 3
   method: cor
   nc1: 3500
@@ -27,11 +27,10 @@ bump:
   latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
   levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  output number of components:
+    date: 2010-01-01T12:00:00Z
+    filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/ncmp
   output:
-  - date: 2010-01-01T12:00:00Z
-    filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_ncmp
-    parameter: cor_ncmp
-    single value: true
   - component: 1
     datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp
     date: 2010-01-01T12:00:00Z

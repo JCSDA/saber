@@ -39,7 +39,7 @@ vbal_rad: 2000.0e3
 ne: 50
 
 # fit_param
-no_hybrid_loc_update: true
+hybrid_loc_update: false
 
 # nicas_param
 resol: 8.0

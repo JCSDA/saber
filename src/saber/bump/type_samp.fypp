@@ -926,9 +926,6 @@ real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a7,a)') '','Write sampling grids'
-call mpl%flush
-
 ! Open file
 ncid = create_file(mpl,trim(nam%prefix)//'_sampling_grids',mpl%myproc)
 

@@ -18,15 +18,14 @@
 #include "atlas/library.h"
 #include "atlas/runtime/Log.h"
 
+#include "oops/base/Geometry.h"
 #include "oops/base/State.h"
 #include "oops/base/Variables.h"
-#include "oops/interface/Geometry.h"
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/gsi/grid/GSI_Grid.h"
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
 #include "saber/oops/SaberBlockBase.h"
-
 
 using atlas::option::levels;
 using atlas::option::name;
@@ -37,7 +36,6 @@ namespace oops {
 
 namespace saber {
 namespace gsi {
-
 
 // -------------------------------------------------------------------------------------------------
 
@@ -72,8 +70,6 @@ class Interpolation : public SaberBlockBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  // Pointer to Geom
-  std::unique_ptr<Geometry_> geom_;
   // Pointer to Params
   std::unique_ptr<Parameters_> params_;
   // Interpolation object
@@ -93,8 +89,8 @@ class Interpolation : public SaberBlockBase<MODEL> {
 
 template<typename MODEL>
 Interpolation<MODEL>::Interpolation(const Geometry_ & geom, const Parameters_ & params,
-                                            const State_ & xb, const State_ & fg)
-  : SaberBlockBase<MODEL>(params), geom_(new Geometry_(geom)), params_(new Parameters_(params)),
+                                    const State_ & xb, const State_ & fg)
+  : SaberBlockBase<MODEL>(params), params_(new Parameters_(params)),
     interpolator_(), gsiGridFuncSpace_(), modGridFuncSpace_(), variables_(),
     grid_(geom.getComm(), params)
 {
