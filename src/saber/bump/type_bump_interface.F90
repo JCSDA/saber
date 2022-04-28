@@ -596,7 +596,7 @@ implicit none
 ! Passed variables
 integer(c_int),intent(in) :: key_bump !< BUMP
 integer(c_int),intent(in) :: iv       !< Variable index
-integer(c_int),intent(out) :: c_ncmp  !< Number of components
+integer(c_int),intent(in) :: c_ncmp   !< Number of components
 
 ! Local variables
 type(bump_type),pointer :: bump
