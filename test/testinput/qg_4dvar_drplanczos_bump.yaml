@@ -118,6 +118,4 @@ output:
   type: an
 
 test:
-  float relative tolerance: 4.e-6
   reference filename: testref/qg_4dvar_drplanczos_bump/test.log.out
-  output precision: 6

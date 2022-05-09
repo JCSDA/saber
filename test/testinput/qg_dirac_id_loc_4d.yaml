@@ -58,4 +58,3 @@ output dirac:
 
 test:
   reference filename: testref/qg_dirac_id_loc_4d/test.log.out
-  output precision: 6

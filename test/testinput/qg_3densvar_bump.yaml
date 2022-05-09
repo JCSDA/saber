@@ -112,4 +112,3 @@ output:
 
 test:
   reference filename: testref/qg_3densvar_bump/test.log.out
-  output precision: 6

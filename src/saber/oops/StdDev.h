@@ -97,8 +97,7 @@ StdDev<MODEL>::StdDev(const Geometry_ & resol,
   // Setup increment
   Increment_ stdDev(resol, activeVars, xb.validTime());
   stdDev.read(params.fileConfig.value());
-  oops::Log::test() << "Norm of stddev: " << std::scientific
-                    << std::setprecision(3) << stdDev.norm() << std::endl;
+  oops::Log::test() << "Norm of stddev: " << stdDev.norm() << std::endl;
 
   // Increment_ to ATLAS fieldset
   stdDevFieldSet_.reset(new atlas::FieldSet());

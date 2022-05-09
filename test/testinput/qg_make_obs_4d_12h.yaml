@@ -53,6 +53,4 @@ prints:
   frequency: PT3H
 
 test:
-test:
   reference filename: testref/qg_make_obs_4d_12h/test.log.out
-  output precision: 6

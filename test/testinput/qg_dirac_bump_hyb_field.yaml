@@ -53,4 +53,3 @@ output dirac:
 
 test:
   reference filename: testref/qg_dirac_bump_hyb_field/test.log.out
-  output precision: 6

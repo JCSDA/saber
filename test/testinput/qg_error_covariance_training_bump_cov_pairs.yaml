@@ -87,4 +87,3 @@ input variables: [x]
 
 test:
   reference filename: testref/qg_error_covariance_training_bump_cov/test.log.out
-  output precision: 6

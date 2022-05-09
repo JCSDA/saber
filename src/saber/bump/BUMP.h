@@ -816,7 +816,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & resol,
       const int & component = inputParam.component;
       this->setParameter(param, component, dx);
       oops::Log::test() << "Norm of " << param << " - " << component << " at " << date << ": "
-                        << std::scientific << std::setprecision(3) << dx.norm() << std::endl;
+                        << dx.norm() << std::endl;
     }
   }
 
@@ -959,7 +959,7 @@ void BUMP<MODEL>::write() const {
       // Write parameter
       dx.write(outputParam.incwrite);
       oops::Log::test() << "Norm of " << param << " - " << component << " at " << date << ": "
-                        << std::scientific << std::setprecision(3) << dx.norm() << std::endl;
+                        << dx.norm() << std::endl;
     }
   } else {
     oops::Log::test() << "No output configuration" << std::endl;

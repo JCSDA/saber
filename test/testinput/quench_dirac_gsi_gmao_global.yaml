@@ -35,4 +35,3 @@ output dirac:
 
 test:
   reference filename: testref/quench_dirac_gsi_gmao_global/test.log.out
-  output precision: 6
