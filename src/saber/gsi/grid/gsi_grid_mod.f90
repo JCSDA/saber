@@ -22,9 +22,6 @@ use kinds,                          only: kind_real
 ! saber
 use gsi_utils_mod,                  only: nccheck
 
-! gsibclim
-use m_gsibclim,                     only: gsibclim_init
-
 implicit none
 private
 public gsi_grid
@@ -36,6 +33,7 @@ type :: gsi_grid
   integer :: npx, npy, npz          ! Grid points in global grid
   integer :: layout(2)              ! Number of processors in x (index 1) and y (index 2) directions
   integer :: isc, iec, jsc, jec     ! Start and ending grid points for each processor
+  logical :: vflip                  ! Flip vertical grid (gsi k=1=top)
   real(kind=kind_real), allocatable :: lats(:), lons(:)
   real(kind=kind_real), allocatable :: grid_lats(:,:), grid_lons(:,:)
   integer :: ngrid ! Number of grid points for each processor
@@ -64,8 +62,7 @@ type(fckit_mpi_comm),      intent(in)    :: comm
 ! Locals
 integer :: ncid, dimid(3), varid(2)
 character(len=:), allocatable :: str
-integer :: posx, posy, i, j, npx_per_proc, npy_per_proc
-logical :: cv
+integer :: posx, posy, i, j, jj, npx_per_proc, npy_per_proc
 
 ! Create copy of comm
 ! -------------------
@@ -96,7 +93,6 @@ if (comm%rank() == 0) then
   call nccheck(nf90_inquire_dimension(ncid, dimid(3), len=self%npz), "nf90_inquire_dimension lev" )
 
 endif
-
 
 ! Broadcast the dimensions
 ! ------------------------
@@ -132,6 +128,9 @@ end if
 call comm%broadcast(self%lons, 0)
 call comm%broadcast(self%lats, 0)
 
+! Handle vertical grid opt
+! ------------------------
+call conf%get_or_die("flip vertical grid", self%vflip)
 
 ! Domain decomposition
 ! --------------------
@@ -175,9 +174,12 @@ do j = self%jsc, self%jec
   self%grid_lats(:,j) = self%lats(j)
 enddo
 
-! This is a test
-print*, "Hello gsiblim"
-call gsibclim_init(cv)
+if ( self%debug ) then
+  do j=1,self%layout(1)*self%layout(2)
+     if(self%comm%rank() == 0) &
+     write(6,'(a,4(i5,1x))') 'grid dist indexes: task, is,ie, js,je ', self%isc, self%iec, self%jsc,self%jec
+  enddo
+endif
 
 end subroutine create
 

@@ -30,6 +30,10 @@ class GridParameters : public SaberBlockParametersBase {
  public:
   // File containing grid and coefficients
   oops::RequiredParameter<std::string> GSIFile{"gsi error covariance file", this};
+  oops::RequiredParameter<std::string> GSINML{"gsi berror namelist file", this};
+
+  // Handle vertical top-2-bottom and vice-verse wrt to GSI
+  oops::Parameter<bool> vflip{"flip vertical grid", true, this};
 
   // Processor layout
   oops::Parameter<size_t> layoutx{"procesor layout x direction", 1, this};
@@ -37,6 +41,8 @@ class GridParameters : public SaberBlockParametersBase {
 
   // Debugging mode
   oops::Parameter<bool> debugMode{"debugging mode", false, this};
+  oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
+  oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
 };
 
 // -------------------------------------------------------------------------------------------------

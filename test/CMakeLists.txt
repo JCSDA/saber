@@ -726,6 +726,13 @@ if( SABER_TEST_GSI )
                        ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
   endforeach()
 
+  # Link to nml files
+  foreach( test ${saber_test_gsi} )
+      execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.nml
+                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.nml )
+  endforeach()
+
   # QUENCH tests
   set( mpi 1 )
   set( omp 2 )
