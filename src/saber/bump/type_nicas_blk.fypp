@@ -188,38 +188,43 @@ nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 ! Read main weight
 call get_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
 
-! Get number of components
-call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
+if (bpar%nicas_block(ib)) then
+   ! Get number of components
+   call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 
-! Allocation
-if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
+   ! Allocation
+   if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
-do icmp=1,nicas_blk%ncmp
-   ! Set attributes
-   nicas_blk%cmp(icmp)%ib = ib
-   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
-   nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
-   nicas_blk%cmp(icmp)%smoother = .false.
-   nicas_blk%cmp(icmp)%horizontal = .false.
-   nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
+   do icmp=1,nicas_blk%ncmp
+      ! Set attributes
+      nicas_blk%cmp(icmp)%ib = ib
+      nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+      nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+      nicas_blk%cmp(icmp)%smoother = .false.
+      nicas_blk%cmp(icmp)%horizontal = .false.
+      nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
-   ! Copy file ID
-   nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
+      ! Copy file ID
+      nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
 
-   ! Get component
-   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
-   call mpl%flush
+      ! Get component
+      write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+      call mpl%flush
 
-   if (nicas_blk%ncmp==1) then
-      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
-   else
-      write(cmpname,'(a,i1)') 'cmp_',icmp
-      nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
-   end if
+      if (nicas_blk%ncmp==1) then
+         nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+      else
+         write(cmpname,'(a,i1)') 'cmp_',icmp
+         nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+      end if
 
-   ! Component work
-   call nicas_blk%cmp(icmp)%read_local(mpl,geom)
-end do
+      ! Component work
+      call nicas_blk%cmp(icmp)%read_local(mpl,geom)
+   end do
+else
+   ! No component
+   nicas_blk%ncmp = 0
+end if
 
 ! End associate
 end associate
@@ -616,6 +621,9 @@ if (bpar%nicas_block(ib)) then
       ! Component work
       call nicas_blk%cmp(icmp)%read_global(mpl,geom)
    end do
+else
+   ! No component
+   nicas_blk%ncmp = 0
 end if
 
 ! End associate
@@ -1223,7 +1231,14 @@ end do
 do idir=1,geom%ndir
    ! Generate dirac field
    fld = zero
-   if ((ib==bpar%v_to_b(geom%ivdir(idir))).and.(geom%iprocdir(idir)==mpl%myproc)) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+   if (geom%iprocdir(idir)==mpl%myproc) then
+      select case (trim(nam%strategy))
+      case ('common','common_weighted')
+         fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+      case default
+         if (ib==bpar%v_to_b(geom%ivdir(idir))) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+      end select
+   end if
 
    ! Apply NICAS square-root adjoint
    call nicas_blk%apply_sqrt_ad(mpl,geom,fld,cv_blk)

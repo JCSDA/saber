@@ -91,6 +91,9 @@ bump_interface_vbal/test_1-1_sampling.nc
 bump_interface_vbal/test_1-1_vbal.nc
 bump_nicas_fixed_radii_profiles/test_1-1_dirac.nc
 bump_nicas_fixed_radii_profiles/test_1-1_nicas.nc
+bump_nicas_loc_common_weighted/test_1-1_diag.nc
+bump_nicas_loc_common_weighted/test_1-1_dirac.nc
+bump_nicas_loc_common_weighted/test_1-1_nicas.nc
 bump_nicas_pos_def_test/test_1-1_nicas.nc
 bump_nicas_write_grids/test_1-1_dirac.nc
 bump_nicas_write_grids/test_1-1_nicas_grids_local_000001-000001.nc

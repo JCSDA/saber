@@ -430,6 +430,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> rh{"rh", this};
   // Forced vertical support radius
   oops::OptionalParameter<eckit::LocalConfiguration> rv{"rv", this};
+  // Forced localization weights
+  oops::OptionalParameter<eckit::LocalConfiguration> loc_wgt{"loc_wgt", this};
   // Minimum level
   oops::OptionalParameter<eckit::LocalConfiguration> min_lev{"min_lev", this};
   // Maximum level

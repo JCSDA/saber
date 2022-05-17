@@ -186,6 +186,7 @@ type nam_type
    logical :: forced_radii                                    !< Force specific support radii
    real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
+   real(kind_real) :: loc_wgt(nvmax,nvmax)                    !< Forced localization weights
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
@@ -436,6 +437,7 @@ nam%network = .false.
 nam%forced_radii = .false.
 nam%rh = -one
 nam%rv = -one
+nam%loc_wgt = -one
 nam%min_lev = 1
 nam%max_lev = nl0max
 nam%pos_def_test = .false.
@@ -633,6 +635,7 @@ logical :: network
 logical :: forced_radii
 real(kind_real) :: rh(nl0max,0:nvmax)
 real(kind_real) :: rv(nl0max,0:nvmax)
+real(kind_real) :: loc_wgt(nvmax,nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
@@ -802,6 +805,7 @@ namelist/nicas_param/ &
  & forced_radii, &
  & rh, &
  & rv, &
+ & loc_wgt, &
  & min_lev, &
  & max_lev, &
  & pos_def_test, &
@@ -1005,6 +1009,7 @@ if (mpl%main) then
    forced_radii = .false.
    rh = -one
    rv = -one
+   loc_wgt = -one
    min_lev = 1
    max_lev = nl0max
    pos_def_test = .false.
@@ -1211,6 +1216,7 @@ if (mpl%main) then
    nam%forced_radii = forced_radii
    nam%rh = rh
    nam%rv = rv
+   nam%loc_wgt = loc_wgt
    nam%min_lev = min_lev
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
@@ -1419,6 +1425,7 @@ call mpl%f_comm%broadcast(nam%network,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%loc_wgt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
@@ -1468,11 +1475,11 @@ type(fckit_mpi_comm),intent(in) :: comm      !< FCKIT MPI communicator wrapper
 type(fckit_configuration),intent(in) :: conf !< Configuration
 
 ! Local variables
-integer :: iv,iconf
+integer :: iv,jv,iconf
 integer,allocatable :: integer_array(:)
 real(kind_real),allocatable :: real_array(:)
 logical,allocatable :: logical_array(:)
-character(len=1024) :: parameter
+character(len=1024) :: parameter,blockname
 character(len=:),allocatable :: str
 character(len=:),allocatable :: str_array(:)
 type(fckit_configuration) :: subconf
@@ -1891,6 +1898,19 @@ if (conf%has('rv')) then
       end if
    end do
 end if
+if (conf%has('loc_wgt')) then
+   call conf%get_or_die('loc_wgt',subconf)
+   do jv=1,nam%nv
+      do iv=1,nam%nv
+         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
+         if (subconf%has(blockname)) then
+            call subconf%get_or_die(blockname,nam%loc_wgt(iv,jv))
+            nam%loc_wgt(jv,iv) = nam%loc_wgt(iv,jv)
+         end if
+      end do
+   end do
+end if
+
 if (conf%has('min_lev')) then
    call conf%get_or_die('min_lev',subconf)
    if (subconf%has('common')) call subconf%get_or_die('common',nam%min_lev(0))
@@ -2046,7 +2066,7 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv
+integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv,jv
 character(len=2) :: ivchar,ildwvchar
 
 ! Set name
@@ -2473,7 +2493,7 @@ class(nam_type),intent(in) :: nam   !< Namelist
 type(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Local variables
-real(kind_real) :: real_array(nam%nl0*(nam%nv+1))
+real(kind_real) :: profiles(nam%nl0*(nam%nv+1)),loc_wgt(nam%nv**2)
 real(kind_real),allocatable :: londir(:),latdir(:),lon_ldwv(:),lat_ldwv(:)
 
 ! Set name
@@ -2623,13 +2643,13 @@ call mpl%write('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 call mpl%write('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 call mpl%write('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
 call mpl%write('forced_var',nam%forced_var)
-real_array(1:nam%nl0*nam%nv) = reshape(nam%stddev(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
-call mpl%write('stddev',nam%nl0*nam%nv,real_array(1:nam%nl0*nam%nv))
+profiles(1:nam%nl0*nam%nv) = reshape(nam%stddev(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
+call mpl%write('stddev',nam%nl0*nam%nv,profiles(1:nam%nl0*nam%nv))
 call mpl%write('var_filter',nam%var_filter)
 call mpl%write('var_niter',nam%var_niter)
 call mpl%write('var_npass',nam%var_npass)
-real_array(1:nam%nl0*nam%nv) = reshape(nam%var_rhflt(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
-call mpl%write('var_rhflt',nam%nl0*nam%nv,real_array)
+profiles(1:nam%nl0*nam%nv) = reshape(nam%var_rhflt(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
+call mpl%write('var_rhflt',nam%nl0*nam%nv,profiles)
 call mpl%write('local_diag',nam%local_diag)
 call mpl%write('local_rad',nam%local_rad*req)
 call mpl%write('local_dlat',nam%local_dlat*rad2deg)
@@ -2653,10 +2673,12 @@ call mpl%write('nc1max',nam%nc1max)
 call mpl%write('nicas_draw_type',nam%nicas_draw_type)
 call mpl%write('network',nam%network)
 call mpl%write('forced_radii',nam%forced_radii)
-real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
-call mpl%write('rh',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
-real_array(1:nam%nl0*(nam%nv+1)) = reshape(nam%rv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
-call mpl%write('rv',nam%nl0*(nam%nv+1),real_array(1:nam%nl0*(nam%nv+1)))
+profiles(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
+call mpl%write('rh',nam%nl0*(nam%nv+1),profiles(1:nam%nl0*(nam%nv+1)))
+profiles(1:nam%nl0*(nam%nv+1)) = reshape(nam%rv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
+call mpl%write('rv',nam%nl0*(nam%nv+1),profiles(1:nam%nl0*(nam%nv+1)))
+loc_wgt(1:nam%nv**2) = reshape(nam%loc_wgt(1:nam%nv,1:nam%nv),(/nam%nv**2/))
+call mpl%write('loc_wgt',nam%nv**2,loc_wgt(1:nam%nv**2))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)

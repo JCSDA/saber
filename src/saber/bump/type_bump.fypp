@@ -759,14 +759,12 @@ if (bump%nam%new_hdiag) then
    call bump%cmat%from_hdiag(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%hdiag)
 end if
 
-if (bump%nam%forced_radii) then
-   ! Copy namelist support radii into C matrix
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Copy namelist support radii into C matrix'
-   call bump%mpl%flush
-   call bump%cmat%from_nam(bump%mpl,bump%nam,bump%geom,bump%bpar)
-end if
+! Copy namelist support radii into C matrix
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- Copy namelist support radii into C matrix'
+call bump%mpl%flush
+call bump%cmat%from_nam(bump%mpl,bump%nam,bump%geom,bump%bpar)
 
 if (bump%cmat%allocated.or.bump%nam%new_nicas) then
    ! Get C matrix from BUMP interface

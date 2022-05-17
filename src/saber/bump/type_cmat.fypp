@@ -14,6 +14,7 @@ use tools_fit, only: tensor_d2r
 use tools_func, only: convert_l2i,convert_i2l,zss_sum
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
+use tools_repro, only: supeq
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_diag, only: diag_type
@@ -347,7 +348,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,iv,il0
+integer :: ib,iv,il0,jv
 integer :: ncmp(bpar%nbe)
 
 ! Set name
@@ -356,46 +357,68 @@ integer :: ncmp(bpar%nbe)
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Copy namelist radii into C matrix'
-call mpl%flush
+if (nam%forced_radii.or.(.not.all(nam%loc_wgt<zero))) then
+   do ib=1,bpar%nbe
+      ! Initialization
+      ncmp(ib) = 0
 
-do ib=1,bpar%nbe
-   ! Initialization
-   ncmp(ib) = 0
+      ! Number of components
+      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) ncmp(ib) = 1
+   end do
 
-   ! Number of components
-   if (bpar%B_block(ib).and.bpar%nicas_block(ib)) ncmp(ib) = 1
-end do
+   if (.not.cmat%allocated) then
+      ! Allocation
+      call cmat%alloc(geom,bpar,ncmp)
 
-if (.not.cmat%allocated) then
-   ! Allocation
-   call cmat%alloc(geom,bpar,ncmp)
+      ! Initialization
+      call cmat%init(mpl,bpar)
+   end if
 
-   ! Initialization
-   call cmat%init(mpl,bpar)
+   ! Convolution parameters
+   if (nam%forced_radii) then
+      write(mpl%info,'(a7,a)') '','Copy namelist radii into C matrix'
+      call mpl%flush
+
+      do iv=0,nam%nv
+         ib = bpar%v_to_b(iv)
+         if (ib>0) then
+            if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
+               ! Copy support radii and number of components
+               do il0=1,geom%nl0
+                  cmat%blk(ib)%a(:,il0,1) = one
+                  cmat%blk(ib)%rh(:,il0,1) = nam%rh(il0,iv)
+                  cmat%blk(ib)%rv(:,il0,1) = nam%rv(il0,iv)
+               end do
+
+               ! Set coefficients
+               cmat%blk(ib)%coef_ens = one
+               cmat%blk(ib)%coef_sta = zero
+               cmat%blk(ib)%wgt = one
+            end if
+         end if
+      end do
+   end if
+
+   ! Localization weights
+   if (.not.all(nam%loc_wgt<zero)) then
+      write(mpl%info,'(a7,a)') '','Copy namelist localization weights into C matrix'
+      call mpl%flush
+
+      do ib=1,bpar%nb
+         ! Indices
+         iv = bpar%b_to_v1(ib)
+         jv = bpar%b_to_v2(ib)
+
+         ! Copy weight
+         if (supeq(nam%loc_wgt(iv,jv),zero)) then
+            cmat%blk(ib)%wgt = nam%loc_wgt(iv,jv)
+         else
+            cmat%blk(ib)%wgt = one
+         end if
+      end do
+   end if
 end if
 
-! Convolution parameters
-do iv=0,nam%nv
-   ib = bpar%v_to_b(iv)
-   if (ib>0) then
-      if (bpar%B_block(ib).and.bpar%nicas_block(ib)) then
-         ! Copy support radii and number of components
-         do il0=1,geom%nl0
-            cmat%blk(ib)%a(:,il0,1) = one
-            cmat%blk(ib)%rh(:,il0,1) = nam%rh(il0,iv)
-            cmat%blk(ib)%rv(:,il0,1) = nam%rv(il0,iv)
-         end do
-
-         ! Set coefficients
-         cmat%blk(ib)%coef_ens = one
-         cmat%blk(ib)%coef_sta = zero
-         cmat%blk(ib)%wgt = one
-      end if
-   end if
-end do
 
 ! Probe out
 @:probe_out()

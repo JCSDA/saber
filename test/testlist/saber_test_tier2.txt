@@ -31,6 +31,7 @@ bump_interface_nicas
 bump_interface_stddev
 bump_interface_vbal
 bump_nicas_fixed_radii_profiles
+bump_nicas_loc_common_weighted
 bump_nicas_pos_def_test
 bump_nicas_write_grids
 bump_var_filter_iter

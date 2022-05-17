@@ -9,6 +9,7 @@
 module type_cmat_blk
 
 use fckit_mpi_module, only: fckit_mpi_sum
+use tools_const, only: one
 use tools_func, only: zss_sum
 use tools_kinds, only: kind_real
 use type_bpar, only: bpar_type
@@ -98,6 +99,7 @@ if (bpar%fit_block(ib)) then
    allocate(cmat_blk%rhs(geom%nc0a,geom%nl0,cmat_blk%ncmp))
    allocate(cmat_blk%rvs(geom%nc0a,geom%nl0,cmat_blk%ncmp))
 end if
+cmat_blk%wgt = one
 
 ! End associate
 end associate

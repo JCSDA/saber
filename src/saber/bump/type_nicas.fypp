@@ -810,7 +810,7 @@ write(mpl%info,'(a)') '--- Compute NICAS parameters'
 call mpl%flush
 
 do ib=1,bpar%nbe
-   if (bpar%nicas_block(ib)) then
+   if (bpar%nicas_block(ib).or.(bpar%B_block(ib).and.(.not.nam%load_nicas_global))) then
       write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
       call mpl%flush
    end if
@@ -818,9 +818,11 @@ do ib=1,bpar%nbe
    ! NICAS parameters
    if (bpar%nicas_block(ib)) call nicas%blk(ib)%compute_parameters(mpl,rng,nam,geom)
 
-   if (.not.nam%load_nicas_global) then
-      ! Copy weights
-      if (bpar%B_block(ib)) nicas%blk(ib)%wgt = cmat%blk(ib)%wgt
+   ! Copy weights
+   if (bpar%B_block(ib).and.(.not.nam%load_nicas_global)) then
+      nicas%blk(ib)%wgt = cmat%blk(ib)%wgt
+      write(mpl%info,'(a7,a,f5.2)') '','Block weight: ',nicas%blk(ib)%wgt
+      if (nicas%blk(ib)%verbosity) call mpl%flush
    end if
 end do
 
@@ -2118,6 +2120,11 @@ do ifac=-nfac_opt,nfac_opt
    call nicas_test%alloc(bpar)
 
    do ib=1,bpar%nbe
+      if (bpar%nicas_block(ib).or.bpar%B_block(ib)) then
+         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
+         call mpl%flush
+      end if
+
       if (bpar%nicas_block(ib)) then
          ! Length-scales multiplication
          cmat%blk(ib)%rhs = fac(ifac)*cmat%blk(ib)%rhs
@@ -2133,7 +2140,11 @@ do ifac=-nfac_opt,nfac_opt
       end if
 
       ! Copy weights
-      if (bpar%B_block(ib)) nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
+      if (bpar%B_block(ib)) then
+         nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
+         write(mpl%info,'(a7,a,f5.2)') '','Block weight: ',nicas_test%blk(ib)%wgt
+         if (nicas%blk(ib)%verbosity) call mpl%flush
+      end if
    end do
 
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
