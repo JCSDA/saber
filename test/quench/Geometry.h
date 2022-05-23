@@ -15,6 +15,7 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
+#include "atlas/grid.h"
 
 #include "eckit/mpi/Comm.h"
 
@@ -57,7 +58,7 @@ class GeometryParameters : public oops::Parameters {
 /// Geometry handles geometry for  model.
 
 class Geometry : public util::Printable,
-                   private util::ObjectCounter<Geometry> {
+                 private util::ObjectCounter<Geometry> {
  public:
   typedef GeometryParameters Parameters_;
 
@@ -69,7 +70,7 @@ class Geometry : public util::Printable,
 
   const eckit::mpi::Comm & getComm() const {return comm_;}
   atlas::Grid * atlasGrid() const {return atlasGrid_.get();}
-  atlas::FunctionSpace * atlasFunctionSpace(std::string name = "", bool includeHalo = false) const
+  atlas::FunctionSpace * atlasFunctionSpace() const
     {return atlasFunctionSpace_.get();}
   atlas::FieldSet * atlasFieldSet() const {return atlasFieldSet_.get();}
   size_t levels() const {return levels_;}
@@ -83,6 +84,7 @@ class Geometry : public util::Printable,
   const eckit::mpi::Comm & comm_;
   eckit::LocalConfiguration gridConfig_;
   std::unique_ptr<atlas::Grid> atlasGrid_;
+  atlas::Mesh atlasMesh_;
   std::unique_ptr<atlas::FunctionSpace> atlasFunctionSpace_;
   std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
   size_t levels_;

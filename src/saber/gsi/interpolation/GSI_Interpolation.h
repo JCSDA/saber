@@ -108,7 +108,8 @@ Interpolation<MODEL>::Interpolation(const Geometry_ & geom, const Parameters_ & 
   gsiGridFuncSpace_.reset(new atlas::functionspace::PointCloud(grid_.functionSpace()->get()));
 
   // Function space for the model grid
-  modGridFuncSpace_.reset(new atlas::functionspace::PointCloud(geom.atlasFunctionSpace()->get()));
+  modGridFuncSpace_.reset(new
+    atlas::functionspace::PointCloud(geom.atlasFunctionSpace()->get()));
 
   // Create the interpolator
   interpolator_.reset(new UnstructuredInterpolation(params.toConfiguration(),

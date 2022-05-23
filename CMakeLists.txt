@@ -49,7 +49,23 @@ endif()
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 find_package( gsibclim QUIET )
 
-## SABER instrumentation
+# Optional SABER blocks
+if( gsibclim_FOUND )
+    message( STATUS "SABER block GSI is enabled" )
+    add_definitions(-Dgsibclim_FOUND=1)
+else()
+    message( STATUS "SABER block GSI is not enabled" )
+    add_definitions(-Dgsibclim_FOUND=0)
+endif()
+if( atlas_TRANS_FOUND )
+    message( STATUS "SABER block SPECTRALB is enabled" )
+    add_definitions(-Datlas_TRANS_FOUND=1)
+else()
+    message( STATUS "SABER block SPECTRALB is not enabled" )
+    add_definitions(-Datlas_TRANS_FOUND=0)
+endif()
+
+## SABER instrumentation
 set( ENABLE_SABER_INSTRUMENTATION 0 )
 if( DEFINED ENV{ENABLE_SABER_INSTRUMENTATION} )
     set( ENABLE_SABER_INSTRUMENTATION $ENV{ENABLE_SABER_INSTRUMENTATION} )

@@ -43,10 +43,13 @@ if( oops_qg_FOUND )
     set( SABER_TEST_OOPS 1 )
     set( SABER_TEST_INTERPOLATION 1 )
 endif()
-
 set( SABER_TEST_GSI 0 )
 if( gsibclim_FOUND AND oops_qg_FOUND)
     set( SABER_TEST_GSI 1 )
+endif()
+set( SABER_TEST_SPECTRALB 0 )
+if( atlas_TRANS_FOUND AND oops_qg_FOUND)
+    set( SABER_TEST_SPECTRALB 1 )
 endif()
 
 # Override test selection variables using environment variables
@@ -68,8 +71,8 @@ if( oops_qg_FOUND )
     endif()
 endif()
 if( SABER_TEST_OOPS )
-    if( DEFINED ENV{SABER_TEST_OOPS_GEN} )
-        set( SABER_TEST_OOPS_GEN $ENV{SABER_TEST_OOPS_GEN} )
+    if( DEFINED ENV{SABER_TEST_OOPS} )
+        set( SABER_TEST_OOPS $ENV{SABER_TEST_OOPS} )
     endif()
 endif()
 if( gsibclim_FOUND AND oops_qg_FOUND )
@@ -78,8 +81,18 @@ if( gsibclim_FOUND AND oops_qg_FOUND )
     endif()
 endif()
 if( SABER_TEST_GSI )
-    if( DEFINED ENV{SABER_TEST_GSI_GEN} )
-        set( SABER_TEST_GSI_GEN $ENV{SABER_TEST_GSI_GEN} )
+    if( DEFINED ENV{SABER_TEST_GSI} )
+        set( SABER_TEST_GSI $ENV{SABER_TEST_GSI} )
+    endif()
+endif()
+if( atlas_TRANS_FOUND AND oops_qg_FOUND)
+    if( DEFINED ENV{SABER_TEST_SPECTRALB} )
+        set( SABER_TEST_SPECTRALB $ENV{SABER_TEST_SPECTRALB} )
+    endif()
+endif()
+if( SABER_TEST_SPECTRALB )
+    if( DEFINED ENV{SABER_TEST_SPECTRALB} )
+        set( SABER_TEST_SPECTRALB $ENV{SABER_TEST_SPECTRALB} )
     endif()
 endif()
 
@@ -92,6 +105,7 @@ message( STATUS "  - SABER_TEST_MULTI:         ${SABER_TEST_MULTI}" )
 message( STATUS "  - SABER_TEST_VALGRIND:      ${SABER_TEST_VALGRIND}" )
 message( STATUS "  - SABER_TEST_OOPS:          ${SABER_TEST_OOPS}" )
 message( STATUS "  - SABER_TEST_GSI:           ${SABER_TEST_GSI}" )
+message( STATUS "  - SABER_TEST_SPECTRALB:     ${SABER_TEST_SPECTRALB}" )
 
 # Tests
 message( STATUS "SABER tests activated:" )
@@ -129,6 +143,12 @@ list( APPEND saber_test_full ${saber_test_gsi_tmp} )
 if( SABER_TEST_GSI )
     message( STATUS "  - TIER 1 GSI-specific" )
     list( APPEND saber_test_gsi ${saber_test_gsi_tmp} )
+endif()
+file( STRINGS testlist/saber_test_tier1-spectralb.txt saber_test_spectralb_tmp )
+list( APPEND saber_test_full ${saber_test_spectralb_tmp} )
+if( SABER_TEST_SPECTRALB )
+    message( STATUS "  - TIER 1 SPECTRALB-specific" )
+    list( APPEND saber_test_spectralb ${saber_test_spectralb_tmp} )
 endif()
 file( STRINGS testlist/saber_ref_tier1.txt saber_ref_tmp )
 list( APPEND saber_ref ${saber_ref_tmp} )
@@ -716,9 +736,7 @@ if( SABER_TEST_OOPS )
 endif()
 
 # Tests depending on GSI B Climatology
-
 if( SABER_TEST_GSI )
-
   # Link to yaml files
   foreach( test ${saber_test_gsi} )
       execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
@@ -749,5 +767,31 @@ if( SABER_TEST_GSI )
                             DEPENDS saber_quench_dirac.x )
       endif()
   endforeach()
+endif()
 
+# Tests depending on spectral transforms
+if( SABER_TEST_SPECTRALB )
+  # Link to yaml files
+  foreach( test ${saber_test_spectralb} )
+      execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
+  endforeach()
+
+  # QUENCH tests
+  set( mpi 1 )
+  set( omp 1 )
+
+  # Dirac tests
+  foreach( test ${saber_test_spectralb} )
+      string( FIND ${test} "quench_dirac" quench )
+      if( quench MATCHES 0 )
+          ecbuild_add_test( TARGET saber_test_${test}
+                            MPI ${mpi}
+                            OMP ${omp}
+                            COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                            ARGS testinput/${test}.yaml
+                            DEPENDS saber_quench_dirac.x )
+      endif()
+  endforeach()
 endif()

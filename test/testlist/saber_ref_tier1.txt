@@ -532,4 +532,7 @@ interpolation_bump/test.log.out
 quench_dirac_bump_nicas/test.log.out
 quench_dirac_gsi_global/test.log.out
 quench_dirac_gsi_gmao_global/test.log.out
+quench_dirac_spectralb/test.log.out
+quench_dirac_spectralb_from_L15/test.log.out
+quench_dirac_spectralb_from_CS/test.log.out
 quench_error_covariance_training_bump_nicas/test.log.out

@@ -15,7 +15,18 @@
 #include <string>
 #include <vector>
 
+
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
+#include "atlas/grid/detail/partitioner/CubedSpherePartitioner.h"
+#include "atlas/grid/Distribution.h"
+#include "atlas/grid/Partitioner.h"
+#include "atlas/mesh/Mesh.h"
+#include "atlas/meshgenerator.h"
+#include "atlas/meshgenerator/detail/CubedSphereDualMeshGenerator.h"
+#include "atlas/meshgenerator/detail/CubedSphereMeshGenerator.h"
+#include "atlas/output/Gmsh.h"
+#include "atlas/util/Config.h"
 
 #include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
@@ -383,6 +394,54 @@ void Fields::dirac(const eckit::Configuration & config) {
           }
         }
       }
+    } else if (geom_->atlasFunctionSpace()->type() == "NodeColumns") {
+      if (geom_->atlasGrid()->name().substr(0, 2).compare("CS") == 0) {
+        atlas::functionspace::CubedSphereNodeColumns fs(*(geom_->atlasFunctionSpace()));
+        atlas::Field field_gi = fs.global_index();
+        auto view_gi = atlas::array::make_view<atlas::gidx_t, 1>(field_gi);
+        atlas::Field field_var = atlasFieldSet_->field(variable[jdir]);
+        if (field_var.rank() == 1) {
+          auto view_var = atlas::array::make_view<double, 1>(field_var);
+          for (atlas::idx_t jnode = 0; jnode < field_var.shape(0); ++jnode) {
+            if (index[jdir] == view_gi(jnode)) {
+              view_var(jnode) = 1.0;
+            }
+          }
+        } else if (field_var.rank() == 2) {
+          if (level[jdir] <= 0 || level[jdir] > field_var.shape(1)) {
+            ABORT("dirac level is too large");
+          }
+          auto view_var = atlas::array::make_view<double, 2>(field_var);
+          for (atlas::idx_t jnode = 0; jnode < field_var.shape(0); ++jnode) {
+            if (index[jdir] == view_gi(jnode)) {
+              view_var(jnode, level[jdir]-1) = 1.0;
+            }
+          }
+        }
+      } else {
+        atlas::functionspace::NodeColumns fs(*(geom_->atlasFunctionSpace()));
+        atlas::Field field_gi = fs.global_index();
+        auto view_gi = atlas::array::make_view<atlas::gidx_t, 1>(field_gi);
+        atlas::Field field_var = atlasFieldSet_->field(variable[jdir]);
+        if (field_var.rank() == 1) {
+          auto view_var = atlas::array::make_view<double, 1>(field_var);
+          for (atlas::idx_t jnode = 0; jnode < field_var.shape(0); ++jnode) {
+            if (index[jdir] == view_gi(jnode)) {
+              view_var(jnode) = 1.0;
+            }
+          }
+        } else if (field_var.rank() == 2) {
+          if (level[jdir] <= 0 || level[jdir] > field_var.shape(1)) {
+            ABORT("dirac level is too large");
+          }
+          auto view_var = atlas::array::make_view<double, 2>(field_var);
+          for (atlas::idx_t jnode = 0; jnode < field_var.shape(0); ++jnode) {
+            if (index[jdir] == view_gi(jnode)) {
+              view_var(jnode, level[jdir]-1) = 1.0;
+            }
+          }
+        }
+      }
     } else {
       ABORT(geom_->atlasFunctionSpace()->type() + " function space not implemented yet");
     }
@@ -417,7 +476,7 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
 // -----------------------------------------------------------------------------
 void Fields::setAtlas(atlas::FieldSet * afieldset) const {
   for (auto var : vars_.variables()) {
-    if (atlasFieldSet_->has_field(var)) {
+    if (atlasFieldSet_->has(var)) {
       afieldset->add(atlasFieldSet_->field(var));
     } else {
       ABORT("Variable " + var + " not in increment");
@@ -427,8 +486,8 @@ void Fields::setAtlas(atlas::FieldSet * afieldset) const {
 // -----------------------------------------------------------------------------
 void Fields::toAtlas(atlas::FieldSet * afieldset) const {
   for (auto var : vars_.variables()) {
-    if (atlasFieldSet_->has_field(var)) {
-      if (afieldset->has_field(var)) {
+    if (atlasFieldSet_->has(var)) {
+      if (afieldset->has(var)) {
         atlas::Field field_input = atlasFieldSet_->field(var);
         atlas::Field field_local = afieldset->field(var);
         if (field_input != field_local) {
@@ -619,6 +678,97 @@ void Fields::write(const eckit::Configuration & config) const {
         }
       }
     }
+  } else if (geom_->atlasFunctionSpace()->type() == "NodeColumns") {
+    if ((geom_->getComm().size() == 1) &&
+        (geom_->atlasGrid()->name().substr(0, 2).compare("CS") == 0)) {
+      atlas::functionspace::CubedSphereNodeColumns
+        fs(*(geom_->atlasFunctionSpace()));
+
+      atlas::FieldSet globalCoordinates;
+      atlas::Field lonGlobal = fs.createField<double>(atlas::option::name("lon")
+        | atlas::option::global());
+      globalCoordinates.add(lonGlobal);
+      atlas::Field latGlobal = fs.createField<double>(atlas::option::name("lat")
+        | atlas::option::global());
+      globalCoordinates.add(latGlobal);
+
+      auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+      auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
+      auto latView = atlas::array::make_view<double, 1>(latGlobal);
+      for (atlas::idx_t jnode = 0; jnode < fs.sizeOwned(); ++jnode) {
+         lonView(jnode) = lonlatView(jnode, 0);
+         latView(jnode) = lonlatView(jnode, 1);
+      }
+
+      atlas::FieldSet globalData;
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+          | atlas::option::levels(geom_->levels()) | atlas::option::global());
+
+        (*atlasFieldSet_)[vars_[jvar]].haloExchange();
+        // copy atlas fieldset without ghost or halo points
+        auto atlasView = atlas::array::make_view<double, 2>((*atlasFieldSet_)[vars_[jvar]]);
+        auto fieldView = atlas::array::make_view<double, 2>(field);
+        fieldView.assign(0.0);
+        for (atlas::idx_t jn = 0; jn < fs.sizeOwned(); ++jn) {
+          for (atlas::idx_t k = 0; k < field.shape(1); ++k) {
+            fieldView(jn, k) = atlasView(jn, k);
+          }
+        }
+        globalData.add(field);
+      }
+
+      // Call C++ text output
+
+      // Get file path
+      const std::string filepath = config.getString("filepath");
+
+      // Write longitudes
+      std::string filepath_lon = filepath + "_lon";
+      std::ofstream outfile_lon(filepath_lon.c_str());
+      if (outfile_lon.is_open()) {
+        lonView.dump(outfile_lon);
+        outfile_lon.close();
+      } else {
+        ABORT("Fields::write: cannot open file for longitudes");
+      }
+
+      // Write latitudes
+      std::string filepath_lat = filepath + "_lat";
+      std::ofstream outfile_lat(filepath_lat.c_str());
+      if (outfile_lat.is_open()) {
+        latView.dump(outfile_lat);
+        outfile_lat.close();
+      } else {
+        ABORT("Fields::write: cannot open file for latitudes");
+      }
+
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        // Write variable
+        atlas::Field field = globalData.field(vars_[jvar]);
+        auto varView = atlas::array::make_view<double, 2>(field);
+        std::string filepath_var = filepath + "_" + vars_[jvar];
+        std::ofstream outfile_var(filepath_var.c_str());
+        if (outfile_var.is_open()) {
+          varView.dump(outfile_var);
+          outfile_var.close();
+        } else {
+          ABORT("Fields::write: cannot open file for variable" + vars_[jvar]);
+        }
+      }
+
+      // writing out gmsh output.
+      const auto gmshConfig =
+        atlas::util::Config("coordinates", "xyz") | atlas::util::Config("ghost", true) |
+        atlas::util::Config("info", true);
+      atlas::output::Gmsh gmsh(filepath + "_mesh.msh", gmshConfig);
+
+      const auto meshConfig = atlas::util::Config("partitioner", "cubedsphere");
+      const auto meshGen = atlas::MeshGenerator("cubedsphere_dual", meshConfig);
+      const auto mesh = atlas::Mesh(meshGen.generate(*(geom_->atlasGrid())));
+      gmsh.write(mesh);
+      gmsh.write(*atlasFieldSet_, (*atlasFieldSet_)[0].functionspace());
+    }
   } else {
     ABORT(geom_->atlasFunctionSpace()->type() + " function space not implemented yet");
   }
@@ -656,11 +806,7 @@ void Fields::print(std::ostream & os) const {
 }
 // -----------------------------------------------------------------------------
 size_t Fields::serialSize() const {
-  size_t nn = 0;
-  if (geom_->atlasFunctionSpace()->type() == "StructuredColumns") {
-    nn = geom_->atlasFunctionSpace()->size();
-  }
-  return nn;
+  return geom_->atlasFunctionSpace()->size();
 }
 // -----------------------------------------------------------------------------
 void Fields::serialize(std::vector<double> & vect)  const {

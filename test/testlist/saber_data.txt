@@ -469,3 +469,4 @@ ens2_000010.nc
 grid.nc
 gsi-coeffs-global-l127x64y32.nc4
 gsi-coeffs-gmao-global-l72x72y46.nc4
+CovStats.nc
