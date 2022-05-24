@@ -83,8 +83,11 @@ Geometry::Geometry(const Parameters_ & params,
       }
       std::string gridName = gridConfig_.getString("name");
       if (gridName.substr(0, 2).compare("CS") == 0) {
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
         atlasMesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(*atlasGrid_);
         atlasFunctionSpace_.reset(new atlas::functionspace::CubedSphereNodeColumns(atlasMesh_));
+#endif
       } else {
         // Setup function space
         atlasFunctionSpace_.reset(new atlas::functionspace::NodeColumns(*atlasGrid_));
@@ -127,8 +130,11 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
                               other.atlasFunctionSpace_)));
   } else if (other.atlasFunctionSpace_->type() == "NodeColumns") {
     if (gridName.substr(0, 2).compare("CS") == 0) {
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
       atlasFunctionSpace_.reset(new atlas::functionspace::CubedSphereNodeColumns(*(
                                 other.atlasFunctionSpace_)));
+#endif
     } else {
       atlasFunctionSpace_.reset(new atlas::functionspace::NodeColumns(*(
                                 other.atlasFunctionSpace_)));

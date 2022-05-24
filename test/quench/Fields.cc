@@ -23,8 +23,11 @@
 #include "atlas/grid/Partitioner.h"
 #include "atlas/mesh/Mesh.h"
 #include "atlas/meshgenerator.h"
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
 #include "atlas/meshgenerator/detail/CubedSphereDualMeshGenerator.h"
 #include "atlas/meshgenerator/detail/CubedSphereMeshGenerator.h"
+#endif
 #include "atlas/output/Gmsh.h"
 #include "atlas/util/Config.h"
 
@@ -395,6 +398,8 @@ void Fields::dirac(const eckit::Configuration & config) {
         }
       }
     } else if (geom_->atlasFunctionSpace()->type() == "NodeColumns") {
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
       if (geom_->atlasGrid()->name().substr(0, 2).compare("CS") == 0) {
         atlas::functionspace::CubedSphereNodeColumns fs(*(geom_->atlasFunctionSpace()));
         atlas::Field field_gi = fs.global_index();
@@ -442,6 +447,7 @@ void Fields::dirac(const eckit::Configuration & config) {
           }
         }
       }
+#endif
     } else {
       ABORT(geom_->atlasFunctionSpace()->type() + " function space not implemented yet");
     }
@@ -476,7 +482,7 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
 // -----------------------------------------------------------------------------
 void Fields::setAtlas(atlas::FieldSet * afieldset) const {
   for (auto var : vars_.variables()) {
-    if (atlasFieldSet_->has(var)) {
+    if (atlasFieldSet_->has_field(var)) {
       afieldset->add(atlasFieldSet_->field(var));
     } else {
       ABORT("Variable " + var + " not in increment");
@@ -486,8 +492,8 @@ void Fields::setAtlas(atlas::FieldSet * afieldset) const {
 // -----------------------------------------------------------------------------
 void Fields::toAtlas(atlas::FieldSet * afieldset) const {
   for (auto var : vars_.variables()) {
-    if (atlasFieldSet_->has(var)) {
-      if (afieldset->has(var)) {
+    if (atlasFieldSet_->has_field(var)) {
+      if (afieldset->has_field(var)) {
         atlas::Field field_input = atlasFieldSet_->field(var);
         atlas::Field field_local = afieldset->field(var);
         if (field_input != field_local) {
@@ -681,6 +687,8 @@ void Fields::write(const eckit::Configuration & config) const {
   } else if (geom_->atlasFunctionSpace()->type() == "NodeColumns") {
     if ((geom_->getComm().size() == 1) &&
         (geom_->atlasGrid()->name().substr(0, 2).compare("CS") == 0)) {
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
       atlas::functionspace::CubedSphereNodeColumns
         fs(*(geom_->atlasFunctionSpace()));
 
@@ -768,6 +776,7 @@ void Fields::write(const eckit::Configuration & config) const {
       const auto mesh = atlas::Mesh(meshGen.generate(*(geom_->atlasGrid())));
       gmsh.write(mesh);
       gmsh.write(*atlasFieldSet_, (*atlasFieldSet_)[0].functionspace());
+#endif
     }
   } else {
     ABORT(geom_->atlasFunctionSpace()->type() + " function space not implemented yet");
