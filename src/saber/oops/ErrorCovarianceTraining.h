@@ -102,12 +102,13 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
   virtual ~ErrorCovarianceTraining() {}
 
-  int execute(const eckit::Configuration & fullConfig) const {
+  int execute(const eckit::Configuration & fullConfig, bool validate) const override {
     util::Timer timer(classname(), "write");
 
     // Deserialize parameters
     ErrorCovarianceTrainingParameters_ params;
-    params.validateAndDeserialize(fullConfig);
+    if (validate) params.validate(fullConfig);
+    params.deserialize(fullConfig);
 
     //  Setup resolution
     const Geometry_ resol(params.geometry, this->getComm());
