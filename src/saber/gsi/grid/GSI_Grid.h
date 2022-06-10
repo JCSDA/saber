@@ -36,8 +36,8 @@ class GridParameters : public SaberBlockParametersBase {
   oops::Parameter<bool> vflip{"flip vertical grid", true, this};
 
   // Processor layout
-  oops::Parameter<size_t> layoutx{"procesor layout x direction", 1, this};
-  oops::Parameter<size_t> layouty{"procesor layout y direction", 1, this};
+  oops::Parameter<size_t> layoutx{"processor layout x direction", 1, this};
+  oops::Parameter<size_t> layouty{"processor layout y direction", 1, this};
 
   // Debugging mode
   oops::Parameter<bool> debugMode{"debugging mode", false, this};

@@ -134,8 +134,8 @@ call conf%get_or_die("flip vertical grid", self%vflip)
 
 ! Domain decomposition
 ! --------------------
-call conf%get_or_die("procesor layout x direction", self%layout(1))
-call conf%get_or_die("procesor layout y direction", self%layout(2))
+call conf%get_or_die("processor layout x direction", self%layout(1))
+call conf%get_or_die("processor layout y direction", self%layout(2))
 
 ! Check that user choices match comm size
 if (.not. self%layout(1)*self%layout(2) == comm%size()) &

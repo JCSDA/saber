@@ -8,8 +8,8 @@ background error:
     output variables: [stream_function,velocity_potential,air_temperature]
     gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
     gsi berror namelist file: testinput/quench_dirac_gsi_gmao_global.nml
-    procesor layout x direction: 2
-    procesor layout y direction: 2
+    processor layout x direction: 2
+    processor layout y direction: 2
     flip vertical grid: false
     debugging mode: false
   # Interpolation to model grid
@@ -18,8 +18,8 @@ background error:
     output variables: [stream_function,velocity_potential,air_temperature]
     gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
     gsi berror namelist file: testinput/quench_dirac_gsi_gmao_global.nml
-    procesor layout x direction: 2
-    procesor layout y direction: 2
+    processor layout x direction: 2
+    processor layout y direction: 2
     debugging mode: false
 dirac:
   index: [1000]
