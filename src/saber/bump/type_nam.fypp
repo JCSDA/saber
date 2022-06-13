@@ -111,7 +111,6 @@ type nam_type
    logical :: nomask                                          !< Do not use geometry mask
    character(len=1024),dimension(niokvmax) :: io_keys         !< I/O keys
    character(len=1024),dimension(niokvmax) :: io_values       !< I/O values
-   logical :: qg_redundant                                    !< Redundant points configuration for the QG model
    logical :: qg_regional                                     !< Regional domain configuration for the QG model
    logical :: qg_urban                                        !< Urban domain configuration for the QG model
    character(len=1024),dimension(ncompmax) :: model_comp      !< Model components (for 'cartg': 'atm' or 'ocn')
@@ -352,7 +351,6 @@ do i=1,niokvmax
    nam%io_keys(i) = ''
    nam%io_values(i) = ''
 end do
-nam%qg_redundant = .false.
 nam%qg_regional = .false.
 nam%qg_urban = .false.
 do icomp=1,ncompmax
@@ -572,7 +570,6 @@ character(len=1024) :: variable_change
 logical :: nomask
 character(len=1024),dimension(niokvmax) :: io_keys
 character(len=1024),dimension(niokvmax) :: io_values
-logical :: qg_redundant
 logical :: qg_regional
 logical :: qg_urban
 character(len=1024),dimension(ncompmax) :: model_comp
@@ -737,7 +734,6 @@ namelist/model_param/ &
  & nomask, &
  & io_keys, &
  & io_values, &
- & qg_redundant, &
  & qg_regional, &
  & qg_urban
 namelist/ens1_param/ &
@@ -924,7 +920,6 @@ if (mpl%main) then
       io_keys(i) = ''
       io_values(i) = ''
    end do
-   qg_redundant = .false.
    qg_regional = .false.
    qg_urban = .false.
    do icomp=1,ncompmax
@@ -1136,7 +1131,6 @@ if (mpl%main) then
    nam%nomask = nomask
    nam%io_keys = io_keys
    nam%io_values = io_values
-   nam%qg_redundant = qg_redundant
    nam%qg_regional = qg_regional
    nam%qg_urban = qg_urban
 
@@ -1351,7 +1345,6 @@ call mpl%f_comm%broadcast(nam%variable_change,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nomask,mpl%rootproc-1)
 call mpl%broadcast(nam%io_keys,mpl%rootproc-1)
 call mpl%broadcast(nam%io_values,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%qg_redundant,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%qg_regional,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%qg_urban,mpl%rootproc-1)
 
@@ -1662,7 +1655,6 @@ if (conf%has('io_values')) then
    end if
    nam%io_values(1:size(str_array)) = str_array
 end if
-if (conf%has('qg_redundant')) call conf%get_or_die('qg_redundant',nam%qg_redundant)
 if (conf%has('qg_regional')) call conf%get_or_die('qg_regional',nam%qg_regional)
 if (conf%has('qg_urban')) call conf%get_or_die('qg_urban',nam%qg_urban)
 if (conf%has('model_comp')) then
@@ -2066,7 +2058,7 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv,jv
+integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv
 character(len=2) :: ivchar,ildwvchar
 
 ! Set name
@@ -2213,7 +2205,7 @@ if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'_wind'
 if (nam%nl0<=0) call mpl%abort('${subr}$','nl0 should be positive')
 do il0=1,nam%nl0
    if (nam%levs(il0)<=0) call mpl%abort('${subr}$','levs should be positive')
-   if (count(nam%levs(1:nam%nl0)==nam%levs(il0))>1) call mpl%abort('${subr}$','redundant levels')
+   if (count(nam%levs(1:nam%nl0)==nam%levs(il0))>1) call mpl%abort('${subr}$','duplicated levels')
 end do
 if ((trim(nam%lev2d)/='first').and.(trim(nam%lev2d)/='last')) call mpl%abort('${subr}$','wrong lev2d value')
 if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%update_var.or.nam%load_var.or. &
@@ -2229,8 +2221,6 @@ if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.na
  & call mpl%abort('${subr}$','io_keys and io_values are not consistent')
    end do
 end if
-if (nam%qg_redundant.and.nam%qg_regional) call mpl%abort('${subr}$','qg_redundant and qg_regional are exclusive')
-if (nam%qg_redundant.and.nam%qg_urban) call mpl%abort('${subr}$','qg_redundant and qg_urban are exclusive')
 if (nam%qg_regional.and.nam%qg_urban) call mpl%abort('${subr}$','qg_regional and qg_urban are exclusive')
 
 ! Check ens1_param
@@ -2587,7 +2577,6 @@ call mpl%write('variable_change',nam%variable_change)
 call mpl%write('nomask',nam%nomask)
 call mpl%write('io_keys',count(nam%io_keys/=''),nam%io_keys(1:count(nam%io_keys/='')))
 call mpl%write('io_values',count(nam%io_values/=''),nam%io_values(1:count(nam%io_values/='')))
-call mpl%write('qg_redundant',nam%qg_redundant)
 call mpl%write('qg_regional',nam%qg_regional)
 call mpl%write('qg_urban',nam%qg_urban)
 

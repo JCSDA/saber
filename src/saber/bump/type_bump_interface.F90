@@ -44,8 +44,8 @@ implicit none
 ! Passed variables
 integer(c_int),intent(inout) :: key_bump         !< BUMP
 type(c_ptr),intent(in),value :: c_comm           !< FCKIT MPI communicator wrapper
-type(c_ptr),intent(in),value :: c_afunctionspace !< ATLAS function space
-type(c_ptr),intent(in),value :: c_afieldset      !< ATLAS fieldset containing geometry elements
+type(c_ptr),intent(in),value :: c_afunctionspace !< Function space
+type(c_ptr),intent(in),value :: c_afieldset      !< SABER geometry fields
 type(c_ptr),intent(in),value :: c_conf           !< FCKIT configuration
 type(c_ptr),intent(in),value :: c_grid           !< FCKIT grid configuration
 type(c_ptr),intent(in),value :: c_universe_rad   !< ATLAS fieldset optionally containing universe radius

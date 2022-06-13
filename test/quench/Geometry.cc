@@ -35,13 +35,13 @@ Geometry::Geometry(const Parameters_ & params,
     // Setup grid
     gridConfig_ = params.grid.value();
     oops::Log::info() << "Grid config: " << gridConfig_ << std::endl;
-    atlasGrid_.reset(new atlas::Grid(gridConfig_));
+    grid_ = atlas::Grid(gridConfig_);
 
     // Setup partitioner
     const atlas::grid::Partitioner partitioner(params.partitioner.value());
 
     // Setup distribution
-    const atlas::grid::Distribution distribution(*atlasGrid_, partitioner);
+    const atlas::grid::Distribution distribution(grid_, partitioner);
 
     // Number of levels
     levels_ = params.levels.value();
@@ -56,9 +56,17 @@ Geometry::Geometry(const Parameters_ & params,
       }
     }
 
+    // Halo
+    const boost::optional<size_t> &halo = params.halo.value();
+    if (halo != boost::none) {
+      halo_ = *halo;
+    } else {
+      halo_ = 0;
+    }
+
     // Setup function space
-    atlasFunctionSpace_.reset(new atlas::functionspace::StructuredColumns(*atlasGrid_,
-                              distribution));
+    functionSpace_ = atlas::functionspace::StructuredColumns(grid_, distribution,
+                     atlas::option::halo(halo_));
 
     // Print summary
     this->print(oops::Log::info());
@@ -67,7 +75,7 @@ Geometry::Geometry(const Parameters_ & params,
       // Setup grid
       gridConfig_ = params.grid.value();
       oops::Log::info() << "Grid config: " << gridConfig_ << std::endl;
-      atlasGrid_.reset(new atlas::Grid(gridConfig_));
+      grid_ = atlas::Grid(gridConfig_);
 
       // Number of levels
       levels_ = params.levels.value();
@@ -85,14 +93,13 @@ Geometry::Geometry(const Parameters_ & params,
       if (gridName.substr(0, 2).compare("CS") == 0) {
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
-        atlasMesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(*atlasGrid_);
-        atlasFunctionSpace_.reset(new atlas::functionspace::CubedSphereNodeColumns(atlasMesh_));
+        mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
+        functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
 #endif
       } else {
-        // Setup function space
-        atlasFunctionSpace_.reset(new atlas::functionspace::NodeColumns(*atlasGrid_));
+        mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
+        functionSpace_ = atlas::functionspace::NodeColumns(mesh_);
       }
-
     } else {
       ABORT(params.functionSpace.value() + " function space on multiple PEs not implemented yet");
     }
@@ -100,9 +107,9 @@ Geometry::Geometry(const Parameters_ & params,
     ABORT(params.functionSpace.value() + " function space not implemented yet");
   }
 
-  // Fill ATLAS fieldset
-  atlasFieldSet_.reset(new atlas::FieldSet());
-  atlas::Field vunit = atlasFunctionSpace_->createField<double>(
+  //  Fill extra geometry fields
+  extraFields_ = atlas::FieldSet();
+  atlas::Field vunit = functionSpace_.createField<double>(
     atlas::option::name("vunit") | atlas::option::levels(levels_));
   auto view = atlas::array::make_view<double, 2>(vunit);
   for (atlas::idx_t jnode = 0; jnode < vunit.shape(0); ++jnode) {
@@ -110,48 +117,41 @@ Geometry::Geometry(const Parameters_ & params,
        view(jnode, jlevel) = vunit_[jlevel];
     }
   }
-  atlasFieldSet_->add(vunit);
+  extraFields_->add(vunit);
 }
-
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.levels_),
-    vunit_(other.vunit_) {
-  // Copy ATLAS grid
+  vunit_(other.vunit_), halo_(other.halo_) {
+  // Copy grid
   gridConfig_ = other.gridConfig_;
-  atlasGrid_.reset(new atlas::Grid(gridConfig_));
+  grid_ = atlas::Grid(gridConfig_);
 
+  // Grid name
   std::string gridName;
   if (gridConfig_.has("name"))
     gridName = gridConfig_.getString("name");
 
-  // Copy ATLAS function space
-  if (other.atlasFunctionSpace_->type() == "StructuredColumns") {
-    atlasFunctionSpace_.reset(new atlas::functionspace::StructuredColumns(*(
-                              other.atlasFunctionSpace_)));
-  } else if (other.atlasFunctionSpace_->type() == "NodeColumns") {
+  // Copy function space
+  if (other.functionSpace_.type() == "StructuredColumns") {
+    functionSpace_ = atlas::functionspace::StructuredColumns(other.functionSpace_);
+  } else if (other.functionSpace_.type() == "NodeColumns") {
     if (gridName.substr(0, 2).compare("CS") == 0) {
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
-      atlasFunctionSpace_.reset(new atlas::functionspace::CubedSphereNodeColumns(*(
-                                other.atlasFunctionSpace_)));
+      functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(other.functionSpace_);
 #endif
     } else {
-      atlasFunctionSpace_.reset(new atlas::functionspace::NodeColumns(*(
-                                other.atlasFunctionSpace_)));
+      functionSpace_ = atlas::functionspace::NodeColumns(other.functionSpace_);
     }
-  } else if (other.atlasFunctionSpace_->type() == "PointCloud") {
-    atlasFunctionSpace_.reset(new atlas::functionspace::PointCloud(*(
-                              other.atlasFunctionSpace_)));
   } else {
-    ABORT(other.atlasFunctionSpace_->type() + " function space not implemented yet");
+    ABORT(other.functionSpace_.type() + " function space not implemented yet");
   }
 
-  // Copy ATLAS fieldset
-  atlasFieldSet_.reset(new atlas::FieldSet());
-  atlas::Field vunit = other.atlasFieldSet()->field("vunit");
-  atlasFieldSet_->add(vunit);
+  // Copy extra fields
+  extraFields_ = atlas::FieldSet();
+  atlas::Field vunit = other.extraFields()->field("vunit");
+  extraFields_->add(vunit);
 }
-
 // -------------------------------------------------------------------------------------------------
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
   std::vector<size_t> sizes(vars.size(), levels_);
@@ -160,11 +160,13 @@ std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const 
 // -----------------------------------------------------------------------------
 void Geometry::print(std::ostream & os) const {
   os << "Quench geometry grid:" << std::endl;
-  os << "- name: " << atlasGrid_->name() << std::endl;
-  os << "- size: " << atlasGrid_->size() << std::endl;
+  os << "- name: " << grid_.name() << std::endl;
+  os << "- size: " << grid_.size() << std::endl;
   os << "Function space:" << std::endl;
-  os << "- type: " << atlasFunctionSpace_->type() << std::endl;
-  os << "- size: " << atlasFunctionSpace_->size() << std::endl;
+  os << "- type: " << functionSpace_.type() << std::endl;
+  os << "- size: " << functionSpace_.size() << std::endl;
+  os << "- nb_partitions: " << functionSpace_.nb_partitions() << std::endl;
+  os << "- halo: " << halo_ << std::endl;
   os << "Vertical levels: " << std::endl;
   os << "- number: " << levels_ << std::endl;
   os << "- vunit: " << vunit_ << std::endl;

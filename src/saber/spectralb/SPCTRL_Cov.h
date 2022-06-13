@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_SPCTRL_COV_H_
-#define SABER_OOPS_SPCTRL_COV_H_
+#ifndef SABER_SPECTRALB_SPCTRL_COV_H_
+#define SABER_SPECTRALB_SPCTRL_COV_H_
 
 #include <memory>
 #include <string>
@@ -57,11 +57,11 @@ class SPCTRL_COV : public SaberBlockBase<MODEL> {
                   const State_ &);
   virtual ~SPCTRL_COV();
 
-  void randomize(atlas::FieldSet *) const override;
-  void multiply(atlas::FieldSet *) const override;
-  void inverseMultiply(atlas::FieldSet *) const override;
-  void multiplyAD(atlas::FieldSet *) const override;
-  void inverseMultiplyAD(atlas::FieldSet *) const override;
+  void randomize(atlas::FieldSet &) const override;
+  void multiply(atlas::FieldSet &) const override;
+  void inverseMultiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -110,7 +110,7 @@ SPCTRL_COV<MODEL>::~SPCTRL_COV() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SPCTRL_COV<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
+void SPCTRL_COV<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   ABORT("SPCTRL_COV<MODEL>::randomize: not implemented");
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
@@ -119,16 +119,16 @@ void SPCTRL_COV<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SPCTRL_COV<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
+void SPCTRL_COV<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  spectralb_->multiply_InterpAndCov(atlasFieldSet);
+  spectralb_->multiply_InterpAndCov(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SPCTRL_COV<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
+void SPCTRL_COV<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
   ABORT("SPCTRL_COV<MODEL>::inverseMultiply: not implemented");
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
@@ -137,7 +137,7 @@ void SPCTRL_COV<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SPCTRL_COV<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void SPCTRL_COV<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   ABORT("SPCTRL_COV<MODEL>::multiplyAD: not implemented");
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -146,7 +146,7 @@ void SPCTRL_COV<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SPCTRL_COV<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void SPCTRL_COV<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
   ABORT("SPCTRL_COV<MODEL>::inverseMultiplyAD: not implemented");
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
@@ -164,4 +164,4 @@ void SPCTRL_COV<MODEL>::print(std::ostream & os) const {
 }  // namespace spectralb
 }  // namespace saber
 
-#endif  // SABER_OOPS_SPCTRL_COV_H_
+#endif  // SABER_SPECTRALB_SPCTRL_COV_H_

@@ -48,11 +48,11 @@ class ID : public SaberBlockBase<MODEL> {
      const State_ &);
   virtual ~ID();
 
-  void randomize(atlas::FieldSet *) const override;
-  void multiply(atlas::FieldSet *) const override;
-  void inverseMultiply(atlas::FieldSet *) const override;
-  void multiplyAD(atlas::FieldSet *) const override;
-  void inverseMultiplyAD(atlas::FieldSet *) const override;
+  void randomize(atlas::FieldSet &) const override;
+  void multiply(atlas::FieldSet &) const override;
+  void inverseMultiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -83,7 +83,7 @@ ID<MODEL>::~ID() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ID<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
+void ID<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
@@ -91,7 +91,7 @@ void ID<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ID<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
+void ID<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -99,7 +99,7 @@ void ID<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ID<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
+void ID<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
@@ -107,7 +107,7 @@ void ID<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ID<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void ID<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
@@ -115,7 +115,7 @@ void ID<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ID<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void ID<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }

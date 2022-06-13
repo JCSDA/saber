@@ -95,18 +95,18 @@ void Increment::dirac(const eckit::Configuration & config) {
   fields_->dirac(config);
 }
 // -----------------------------------------------------------------------------
-/// ATLAS FieldSet
+/// ATLAS FieldSet accessor
 // -----------------------------------------------------------------------------
-void Increment::setAtlas(atlas::FieldSet * afieldset) const {
-  fields_->setAtlas(afieldset);
+void Increment::toFieldSet(atlas::FieldSet & fset) const {
+  fields_->toFieldSet(fset);
 }
 // -----------------------------------------------------------------------------
-void Increment::toAtlas(atlas::FieldSet * afieldset) const {
-  fields_->toAtlas(afieldset);
+void Increment::toFieldSetAD(const atlas::FieldSet & fset) {
+  fields_->toFieldSetAD(fset);
 }
 // -----------------------------------------------------------------------------
-void Increment::fromAtlas(atlas::FieldSet * afieldset) {
-  fields_->fromAtlas(afieldset);
+void Increment::fromFieldSet(const atlas::FieldSet & fset) {
+  fields_->fromFieldSet(fset);
 }
 // -----------------------------------------------------------------------------
 /// I/O and diagnostics

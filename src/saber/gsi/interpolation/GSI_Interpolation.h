@@ -62,11 +62,11 @@ class Interpolation : public SaberBlockBase<MODEL> {
   Interpolation(const Geometry_ &, const Parameters_ &, const State_ &, const State_ &);
   virtual ~Interpolation();
 
-  void randomize(atlas::FieldSet *) const override;
-  void multiply(atlas::FieldSet *) const override;
-  void inverseMultiply(atlas::FieldSet *) const override;
-  void multiplyAD(atlas::FieldSet *) const override;
-  void inverseMultiplyAD(atlas::FieldSet *) const override;
+  void randomize(atlas::FieldSet &) const override;
+  void multiply(atlas::FieldSet &) const override;
+  void inverseMultiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -75,8 +75,8 @@ class Interpolation : public SaberBlockBase<MODEL> {
   // Interpolation object
   std::unique_ptr<UnstructuredInterpolation> interpolator_;
   // Function spaces
-  std::unique_ptr<atlas::functionspace::PointCloud> gsiGridFuncSpace_;
-  std::unique_ptr<atlas::functionspace::PointCloud> modGridFuncSpace_;
+  atlas::FunctionSpace gsiGridFuncSpace_;
+  atlas::FunctionSpace modGridFuncSpace_;
   // Variables
   std::vector<std::string> variables_;
   // Expected number of levels in GSI grid
@@ -91,8 +91,7 @@ template<typename MODEL>
 Interpolation<MODEL>::Interpolation(const Geometry_ & geom, const Parameters_ & params,
                                     const State_ & xb, const State_ & fg)
   : SaberBlockBase<MODEL>(params), params_(new Parameters_(params)),
-    interpolator_(), gsiGridFuncSpace_(), modGridFuncSpace_(), variables_(),
-    grid_(geom.getComm(), params)
+    interpolator_(), variables_(), grid_(geom.getComm(), params)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
   util::Timer timer(classname(), "Interpolation");
@@ -105,16 +104,15 @@ Interpolation<MODEL>::Interpolation(const Geometry_ & geom, const Parameters_ & 
   gsiLevels_ = grid_.levels();
 
   // Get functionspace for the GSI grid
-  gsiGridFuncSpace_.reset(new atlas::functionspace::PointCloud(grid_.functionSpace()->get()));
+  gsiGridFuncSpace_ = atlas::functionspace::PointCloud(grid_.functionSpace());
 
   // Function space for the model grid
-  modGridFuncSpace_.reset(new
-    atlas::functionspace::PointCloud(geom.atlasFunctionSpace()->get()));
+  modGridFuncSpace_ = atlas::functionspace::PointCloud(geom.functionSpace());
 
   // Create the interpolator
   interpolator_.reset(new UnstructuredInterpolation(params.toConfiguration(),
-                                                    *gsiGridFuncSpace_,
-                                                    geom.atlasFunctionSpace()->get(),
+                                                    gsiGridFuncSpace_,
+                                                    geom.functionSpace().get(),
                                                     nullptr, geom.getComm()));
 
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
@@ -132,14 +130,14 @@ Interpolation<MODEL>::~Interpolation() {
 // -------------------------------------------------------------------------------------------------
 
 template<typename MODEL>
-void Interpolation<MODEL>::randomize(atlas::FieldSet * saberFields) const {
+void Interpolation<MODEL>::randomize(atlas::FieldSet & fset) const {
   ABORT(classname() + "randomize: not implemented");
 }
 
 // -------------------------------------------------------------------------------------------------
 
 template<typename MODEL>
-void Interpolation<MODEL>::multiply(atlas::FieldSet * saberFields) const {
+void Interpolation<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
 
@@ -147,7 +145,7 @@ void Interpolation<MODEL>::multiply(atlas::FieldSet * saberFields) const {
   atlas::FieldSet modFields = atlas::FieldSet();
 
   // Loop over saber (gsi) fields and create corresponding model fields
-  for (auto sabField : *saberFields) {
+  for (auto sabField : fset) {
       // Get the name
       const auto fieldName = name(sabField.name());
 
@@ -158,14 +156,14 @@ void Interpolation<MODEL>::multiply(atlas::FieldSet * saberFields) const {
       }
 
       // Create the model field and add to Fieldset
-      modFields.add(modGridFuncSpace_->createField<double>(fieldName | levels(sabField.levels())));
+      modFields.add(modGridFuncSpace_.createField<double>(fieldName | levels(sabField.levels())));
   }
 
   // Do the interpolation from GSI grid to model grid
-  interpolator_->apply(*saberFields, modFields);
+  interpolator_->apply(fset, modFields);
 
   // Replace the saber (model) fields with the GSI fields
-  *saberFields = modFields;
+  fset = modFields;
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -173,14 +171,14 @@ void Interpolation<MODEL>::multiply(atlas::FieldSet * saberFields) const {
 // -------------------------------------------------------------------------------------------------
 
 template<typename MODEL>
-void Interpolation<MODEL>::inverseMultiply(atlas::FieldSet * saberFields) const {
+void Interpolation<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   ABORT(classname() + "inverseMultiply: not implemented");
 }
 
 // -------------------------------------------------------------------------------------------------
 
 template<typename MODEL>
-void Interpolation<MODEL>::multiplyAD(atlas::FieldSet * saberFields) const {
+void Interpolation<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   util::Timer timer(classname(), "multiplyAD");
 
@@ -188,7 +186,7 @@ void Interpolation<MODEL>::multiplyAD(atlas::FieldSet * saberFields) const {
   atlas::FieldSet gsiFields = atlas::FieldSet();
 
   // Loop over saber (model) fields and create corresponding GSI fields
-  for (auto sabField : *saberFields) {
+  for (auto sabField : fset) {
       // Get the name
       const auto fieldName = name(sabField.name());
 
@@ -204,14 +202,14 @@ void Interpolation<MODEL>::multiplyAD(atlas::FieldSet * saberFields) const {
       }
 
       // Create the field and add to Fieldset
-      gsiFields.add(gsiGridFuncSpace_->createField<double>(fieldName | levels(sabField.levels())));
+      gsiFields.add(gsiGridFuncSpace_.createField<double>(fieldName | levels(sabField.levels())));
   }
 
   // Do the adjoint of interpolation from GSI grid to model grid
-  interpolator_->apply_ad(*saberFields, gsiFields);
+  interpolator_->apply_ad(fset, gsiFields);
 
   // Replace the saber (model) fields with the GSI fields
-  *saberFields = gsiFields;
+  fset = gsiFields;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
@@ -219,7 +217,7 @@ void Interpolation<MODEL>::multiplyAD(atlas::FieldSet * saberFields) const {
 // -------------------------------------------------------------------------------------------------
 
 template<typename MODEL>
-void Interpolation<MODEL>::inverseMultiplyAD(atlas::FieldSet * saberFields) const {
+void Interpolation<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
   ABORT(classname() + "inverseMultiplyAD: not implemented");
 }
 

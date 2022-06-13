@@ -15,6 +15,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/util/abor1_cpp.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 #include "oops/util/Serializable.h"
@@ -72,10 +73,10 @@ class Increment : public util::Printable,
   const util::DateTime & validTime() const {return fields_->time();}
   void updateTime(const util::Duration & dt) {fields_->time() += dt;}
 
-/// ATLAS FieldSet
-  void setAtlas(atlas::FieldSet *) const;
-  void toAtlas(atlas::FieldSet *) const;
-  void fromAtlas(atlas::FieldSet *);
+/// ATLAS FieldSet accessor
+  void toFieldSet(atlas::FieldSet &) const;
+  void toFieldSetAD(const atlas::FieldSet &);
+  void fromFieldSet(const atlas::FieldSet &);
 
 /// Access to fields
   Fields & fields() {return *fields_;}

@@ -168,32 +168,27 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
   // Random output vector (necessary for some SABER blocks)
   dx.random();
 
-  // Increment_ to ATLAS fieldset
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dx.setAtlas(atlasFieldSet.get());
-  dx.toAtlas(atlasFieldSet.get());
-
   // Randomization done flag
   bool randDone(false);
 
   // Central block randomization
   if (saberCentralBlock_) {
-    saberCentralBlock_->randomize(atlasFieldSet.get());
+    saberCentralBlock_->randomize(dx.fieldSet());
     randDone = true;
   }
 
   // K_N K_N-1 ... K_1
   for (icst_ it = saberBlocks_.begin(); it != saberBlocks_.end(); ++it) {
     if (!randDone) {
-      it->randomize(atlasFieldSet.get());
+      it->randomize(dx.fieldSet());
       randDone = true;
     } else {
-      it->multiply(atlasFieldSet.get());
+      it->multiply(dx.fieldSet());
     }
   }
 
   // ATLAS fieldset to Increment_
-  dx.fromAtlas(atlasFieldSet.get());
+  dx.synchronizeFields();
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize done" << std::endl;
 }
@@ -209,28 +204,24 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
   // Copy input
   dxo = dxi;
 
-  // Increment_ to ATLAS fieldset
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxo.setAtlas(atlasFieldSet.get());
-  dxo.toAtlas(atlasFieldSet.get());
-
   // K_1^T K_2^T .. K_N^T
   for (ircst_ it = saberBlocks_.rbegin(); it != saberBlocks_.rend(); ++it) {
-    it->multiplyAD(atlasFieldSet.get());
+    it->multiplyAD(dxo.fieldSet());
   }
 
   // Central block multiplication
   if (saberCentralBlock_) {
-    saberCentralBlock_->multiply(atlasFieldSet.get());
+    saberCentralBlock_->multiply(dxo.fieldSet());
   }
 
   // K_N K_N-1 ... K_1
   for (icst_ it = saberBlocks_.begin(); it != saberBlocks_.end(); ++it) {
-    it->multiply(atlasFieldSet.get());
+    it->multiply(dxo.fieldSet());
   }
 
   // ATLAS fieldset to Increment_
-  dxo.fromAtlas(atlasFieldSet.get());
+  dxo.synchronizeFields();
+
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply done" << std::endl;
 }
 
@@ -245,45 +236,46 @@ void ErrorCovariance<MODEL>::doInverseMultiply(const Increment_ & dxi,
   // Copy input
   dxo = dxi;
 
-  // Increment_ to ATLAS fieldset
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxo.setAtlas(atlasFieldSet.get());
-  dxo.toAtlas(atlasFieldSet.get());
-
   // K_1^{-1} K_2^{-1} .. K_N^{-1}
   for (ircst_ it = saberBlocks_.rbegin(); it != saberBlocks_.rend(); ++it) {
-    it->inverseMultiply(atlasFieldSet.get());
+    it->inverseMultiply(dxo.fieldSet());
   }
+
+  // Synchronization flag
+  bool syncNeeded(true);
 
   // Central block inverse multiplication
   if (saberCentralBlock_) {
     if (saberCentralBlock_->iterativeInverse()) {
+      if (saberBlocks_.size() > 0) {
+        // ATLAS fieldset to Increment_
+        dxo.synchronizeFields();
+      } else {
+        syncNeeded = false;
+      }
+
       // Temporary increment
       Increment_ dxtmp(dxo);
-
-      // ATLAS fieldset to Increment_
-      dxtmp.fromAtlas(atlasFieldSet.get());
 
       // Iterative inverse
       oops::IdentityMatrix<Increment_> Id;
       dxo.zero();
       GMRESR(dxo, dxtmp, *this, Id, 10, 1.0e-3);
-
-      // Increment_ to ATLAS fieldset
-      dxo.toAtlas(atlasFieldSet.get());
     } else {
       // Block-specific inverse
-      saberCentralBlock_->inverseMultiply(atlasFieldSet.get());
+      saberCentralBlock_->inverseMultiply(dxo.fieldSet());
     }
   }
 
   // K_N^T^{-1} K_N-1^T^{-1} ... K_1^T^{-1}
   for (icst_ it = saberBlocks_.begin(); it != saberBlocks_.end(); ++it) {
-    it->inverseMultiplyAD(atlasFieldSet.get());
+    it->inverseMultiplyAD(dxo.fieldSet());
   }
 
   // ATLAS fieldset to Increment_
-  dxo.fromAtlas(atlasFieldSet.get());
+  if (syncNeeded) {
+    dxo.synchronizeFields();
+  }
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doInverseMultiply done" << std::endl;
 }
@@ -299,20 +291,15 @@ void ErrorCovariance<MODEL>::multiply(const Increment_ & dxi,
   // Copy input
   dxo = dxi;
 
-  // Increment_ to ATLAS fieldset
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxo.setAtlas(atlasFieldSet.get());
-  dxo.toAtlas(atlasFieldSet.get());
-
   // Central block multiplication
   if (saberCentralBlock_) {
-    saberCentralBlock_->multiply(atlasFieldSet.get());
+    saberCentralBlock_->multiply(dxo.fieldSet());
   } else {
     ABORT("iterative inverse for central blocks only");
   }
 
   // ATLAS fieldset to Increment_
-  dxo.fromAtlas(atlasFieldSet.get());
+  dxo.synchronizeFields();
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::multiply done" << std::endl;
 }

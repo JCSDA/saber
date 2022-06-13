@@ -59,14 +59,15 @@ class Grid {
 
   // Accessor functions
   int levels() {return gsiLevels_;}
-  atlas::FunctionSpace * functionSpace() const {return gsiGridFuncSpace_.get();}
+  const atlas::FunctionSpace & functionSpace() const {return gsiGridFuncSpace_;}
+  atlas::FunctionSpace & functionSpace() {return gsiGridFuncSpace_;}
 
  private:
   void print(std::ostream &) const;
   // Fortran LinkedList key
   GridKey keySelf_;
   // Function spaces
-  std::unique_ptr<atlas::functionspace::PointCloud> gsiGridFuncSpace_;
+  atlas::FunctionSpace gsiGridFuncSpace_;
   // Number of levels
   int gsiLevels_;
 };
@@ -74,7 +75,6 @@ class Grid {
 // -------------------------------------------------------------------------------------------------
 
 Grid::Grid(const eckit::mpi::Comm & comm, const Parameters_ & params)
-  : gsiGridFuncSpace_()
 {
   oops::Log::trace() << classname() << "::Grid starting" << std::endl;
   util::Timer timer(classname(), "Grid");
@@ -89,7 +89,7 @@ Grid::Grid(const eckit::mpi::Comm & comm, const Parameters_ & params)
   atlas::FieldSet gsiGridFieldSet = atlas::FieldSet();
   gsi_grid_set_atlas_lonlat_f90(keySelf_, gsiGridFieldSet.get());
   atlas::Field lonlat = gsiGridFieldSet.field("lonlat");
-  gsiGridFuncSpace_.reset(new atlas::functionspace::PointCloud(lonlat));
+  gsiGridFuncSpace_ = atlas::functionspace::PointCloud(lonlat);
 
   oops::Log::trace() << classname() << "::Grid done" << std::endl;
 }

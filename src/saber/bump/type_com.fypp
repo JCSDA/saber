@@ -1040,7 +1040,7 @@ if (lnosum) then
             end do
             #:endfor
          #:endif
-         if (.not.all(valid)) call mpl%abort('${subr}$','both redundant values are different')
+         if (.not.all(valid)) call mpl%abort('${subr}$','colocated values are different')
       else
          ! Copy value
          #:if rank == 1

@@ -107,7 +107,7 @@ class SpectralB {
   ~SpectralB();
 
   void linearize(const State_ &, const Geometry_ &);
-  void multiply_InterpAndCov(atlas::FieldSet *) const;
+  void multiply_InterpAndCov(atlas::FieldSet &) const;
   void inverseMultiply(const Increment_ &, Increment_ &) const;
   void randomize(Increment_ &) const;
   static atlas::FieldSet createFieldsSpace(const Geometry_ &, const oops::Variables & vars);
@@ -165,31 +165,28 @@ void SpectralB<MODEL>::linearize(const State_ &,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SpectralB<MODEL>::multiply_InterpAndCov(atlas::FieldSet * modelGridFieldSet) const {
+void SpectralB<MODEL>::multiply_InterpAndCov(atlas::FieldSet & modelGridFieldSet) const {
   oops::Log::trace() << "SpectralB<MODEL> multiply_InterpAndCov start" << std::endl;
 
   auto N = atlas::GaussianGrid(gaussGrid_).N();
 
   // assuming that all fields in modelGridFieldSet have the same number of levels
   atlas::functionspace::Spectral specFS(2*N-1,
-                                        atlas::option::levels((*modelGridFieldSet)[0].levels()));
+                                        atlas::option::levels(modelGridFieldSet[0].levels()));
   atlas::trans::Trans transIFS(gaussFS_, specFS);
 
-  interp_.executeAdjoint(*gaussFieldSet_,
-                         *modelGridFieldSet);
+  interp_.executeAdjoint(*gaussFieldSet_, modelGridFieldSet);
 
   // Spectral B
   if (variance_opt_) {
-    applySpectralB(cs_->getSpectralVerticalCovariances(), specFS, transIFS,
-                 *gaussFieldSet_);
+    applySpectralB(cs_->getSpectralVerticalCovariances(), specFS, transIFS, *gaussFieldSet_);
   } else {
-    applySpectralB(cs_->getSpectralVerticalCorrelations(), specFS, transIFS,
-                 *gaussFieldSet_);
+    applySpectralB(cs_->getSpectralVerticalCorrelations(), specFS, transIFS, *gaussFieldSet_);
   }
 
   gaussFieldSet_->haloExchange();
 
-  interp_.execute(*gaussFieldSet_, *modelGridFieldSet);
+  interp_.execute(*gaussFieldSet_, modelGridFieldSet);
 
   oops::Log::trace() << "SpectralB<MODEL> multiply_InterpAndCov end"
                      << std::endl;
@@ -237,7 +234,7 @@ atlas::FieldSet SpectralB<MODEL>::createFieldsSpace(const Geometry_ & geom,
   std::vector<size_t> sizes = geom.variableSizes(vars);
 
   for (unsigned int i = 0; i < vars.size(); ++i) {
-    atlas::FunctionSpace nodesFs = *geom.atlasFunctionSpace();
+    atlas::FunctionSpace nodesFs = geom.functionSpace();
 
     atlas::Field tempField =
       nodesFs.createField<double>(atlas::option::name(vars[i]) |

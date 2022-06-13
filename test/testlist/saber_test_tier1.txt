@@ -8,7 +8,6 @@ bump_hdiag-nicas_local_dlat
 bump_hdiag-nicas_local_rad
 bump_hdiag-nicas_loc_common
 bump_hdiag-nicas_mask_check
-bump_hdiag-nicas_redundant
 bump_hdiag-nicas_regional
 bump_hdiag-nicas_urban
 bump_read_mom

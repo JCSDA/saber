@@ -27,6 +27,7 @@ geometry:
     type : regular_gaussian
     N : 15
   levels: 10
+  halo: 3
 input variables: *vars
 
 test:

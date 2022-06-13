@@ -56,11 +56,11 @@ class BUMP_NICAS : public SaberBlockBase<MODEL> {
              const State_ &);
   virtual ~BUMP_NICAS();
 
-  void randomize(atlas::FieldSet *) const override;
-  void multiply(atlas::FieldSet *) const override;
-  void inverseMultiply(atlas::FieldSet *) const override;
-  void multiplyAD(atlas::FieldSet *) const override;
-  void inverseMultiplyAD(atlas::FieldSet *) const override;
+  void randomize(atlas::FieldSet &) const override;
+  void multiply(atlas::FieldSet &) const override;
+  void inverseMultiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -111,25 +111,25 @@ BUMP_NICAS<MODEL>::~BUMP_NICAS() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_NICAS<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  bump_->randomizeNicas(atlasFieldSet);
+  bump_->randomizeNicas(fset);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_NICAS<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  bump_->multiplyNicas(atlasFieldSet);
+  bump_->multiplyNicas(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_NICAS<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
   ABORT("BUMP_NICAS<MODEL>::inverseMultiply: not implemented");
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
@@ -138,7 +138,7 @@ void BUMP_NICAS<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_NICAS<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   ABORT("BUMP_NICAS<MODEL>::multiplyAD: not implemented");
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -147,7 +147,7 @@ void BUMP_NICAS<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_NICAS<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_NICAS<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
   ABORT("BUMP_NICAS<MODEL>::inverseMultiplyAD: not implemented");
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;

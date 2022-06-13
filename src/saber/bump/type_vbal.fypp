@@ -1078,7 +1078,7 @@ end subroutine vbal_write_global
 ! Subroutine: vbal_run_vbal
 !> Compute vertical balance
 !----------------------------------------------------------------------
-subroutine vbal_run_vbal(vbal,mpl,nam,geom,bpar,samp,ens,ensu)
+subroutine vbal_run_vbal(vbal,mpl,nam,geom,bpar,samp,ens)
 
 implicit none
 
@@ -1090,11 +1090,11 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 type(ens_type), intent(inout) :: ens   !< Ensemble
-type(ens_type),intent(inout) :: ensu   !< Unbalanced ensemble
 
 ! Local variables
 integer :: il0,il0i,i_s,ic0a,ic1a,iv,jv,kv,lv,ie
 real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
+type(ens_type) :: ensu
 
 ! Set name
 @:set_name(vbal_run_vbal)
@@ -1281,6 +1281,9 @@ if (nam%write_vbal) then
    if (nam%load_samp_local.or.nam%write_samp_local) call vbal%write_local(mpl,nam,geom,bpar,samp)
    if (nam%load_samp_global.or.nam%write_samp_global) call vbal%write_global(mpl,nam,geom,bpar,samp)
 end if
+
+! Release memory
+call ensu%dealloc
 
 ! Probe out
 @:probe_out()

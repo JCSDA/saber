@@ -13,9 +13,6 @@ if( oops_FOUND )
     # ID block
     ID.h
 
-    # SPECTRAL B blocks (LFRic and structured grids for now)
-    SPCTRL_Cov.h
-
     # StdDev block
     StdDev.h
 

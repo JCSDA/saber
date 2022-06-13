@@ -29,7 +29,6 @@ model%ntile = 1
 ncid = open_file(mpl,'grid',0)
 model%nlon = inquire_dim_size(mpl,ncid,'nx')
 model%nlat = inquire_dim_size(mpl,ncid,'ny')
-if (nam%qg_redundant) model%nlon = model%nlon+1
 model%nmg = model%nlon*model%nlat
 model%nlev = inquire_dim_size(mpl,ncid,'nz')
 
@@ -47,27 +46,12 @@ lat_id = inquire_var(mpl,ncid,'lat')
 z_id = inquire_var(mpl,ncid,'z')
 area_id = inquire_var(mpl,ncid,'area')
 lmask_id = inquire_var(mpl,ncid,'lmask')
-if (nam%qg_redundant) then
-   call get_var(mpl,ncid,lon_id,lon(1:model%nlon-1,:))
-   call get_var(mpl,ncid,lat_id,lat(1:model%nlon-1,:))
-   call get_var(mpl,ncid,area_id,area(1:model%nlon-1,:))
-   call get_var(mpl,ncid,lmask_id,lmask(1:model%nlon-1,:,:))
-else
-   call get_var(mpl,ncid,lon_id,lon)
-   call get_var(mpl,ncid,lat_id,lat)
-   call get_var(mpl,ncid,area_id,area)
-   call get_var(mpl,ncid,lmask_id,lmask)
-end if
+call get_var(mpl,ncid,lon_id,lon)
+call get_var(mpl,ncid,lat_id,lat)
+call get_var(mpl,ncid,area_id,area)
+call get_var(mpl,ncid,lmask_id,lmask)
 call get_var(mpl,ncid,z_id,z)
 call close_file(mpl,ncid)
-
-if (nam%qg_redundant) then
-   ! Add redundant longitude for tests
-   lon(model%nlon,:) = lon(1,:)
-   lat(model%nlon,:) = lat(1,:)
-   area(model%nlon,:) = area(1,:)
-   lmask(model%nlon,:,:) = lmask(1,:,:)
-end if
 
 ! Convert to radian
 lon = lon*deg2rad

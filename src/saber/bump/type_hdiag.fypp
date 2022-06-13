@@ -20,7 +20,6 @@ use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
-use type_rng, only: rng_type
 use type_samp, only: samp_type
 
 implicit none

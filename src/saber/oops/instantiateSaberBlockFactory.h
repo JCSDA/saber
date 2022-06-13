@@ -17,10 +17,10 @@
 #include "saber/gsi/interpolation/GSI_Interpolation.h"
 #endif
 #include "saber/oops/ID.h"
-#if atlas_TRANS_FOUND
-#include "saber/oops/SPCTRL_Cov.h"
-#endif
 #include "saber/oops/StdDev.h"
+#if atlas_TRANS_FOUND
+#include "saber/spectralb/SPCTRL_Cov.h"
+#endif
 
 namespace saber {
 
@@ -38,7 +38,7 @@ void instantiateSaberBlockFactory() {
   static SaberBlockMaker<MODEL, BUMP_VerticalBalance<MODEL> >
               makerBUMP_VerticalBalance_("BUMP_VerticalBalance");
 
-#if gsibclim_FOUND == 1
+#if gsibclim_FOUND
   // GSI operators
   static SaberBlockMaker<MODEL, gsi::Covariance<MODEL>>
          makerGSI_Covariance_("gsi covariance");
@@ -50,7 +50,7 @@ void instantiateSaberBlockFactory() {
   static SaberBlockMaker<MODEL, ID<MODEL> >
               makerID_("ID");
 
-#if atlas_TRANS_FOUND == 1
+#if atlas_TRANS_FOUND
   // Spectral B
   static SaberBlockMaker<MODEL, spectralb::SPCTRL_COV<MODEL> >
               makerSPCTRL_COV_("SPCTRL_COV");

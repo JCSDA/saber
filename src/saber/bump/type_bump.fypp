@@ -46,7 +46,6 @@ type bump_type
    type(bpar_type) :: bpar   !< Block parameters
    type(cmat_type) :: cmat   !< C matrix
    type(ens_type) :: ens1    !< First ensemble
-   type(ens_type) :: ens1u   !< First ensemble, unbalanced
    type(ens_type) :: ens2    !< Second ensemble
    type(geom_type) :: geom   !< Geometry
    type(hdiag_type) :: hdiag !< Hybrid diagnostics
@@ -114,8 +113,8 @@ implicit none
 ! Passed variables
 class(bump_type),intent(inout) :: bump                  !< BUMP
 type(fckit_mpi_comm),intent(in) :: comm                 !< FCKIT MPI communicator wrapper
-type(atlas_functionspace),intent(in) :: afunctionspace  !< ATLAS function space
-type(fieldset_type),intent(in) :: fieldset              !< Fieldset containing geometry elements
+type(atlas_functionspace),intent(in) :: afunctionspace  !< Function space
+type(fieldset_type),intent(in) :: fieldset              !< SABER geometry fields
 type(fckit_configuration),intent(in) :: conf            !< FCKIT configuration
 type(fckit_configuration),intent(in) :: grid            !< FCKIT grid configuration
 type(fieldset_type),intent(in),optional :: universe_rad !< Fieldset optionally containing universe radius
@@ -175,8 +174,8 @@ implicit none
 ! Passed variables
 class(bump_type),intent(inout) :: bump                  !< BUMP
 type(fckit_mpi_comm),intent(in) :: f_comm               !< FCKIT MPI communicator wrapper
-type(atlas_functionspace),intent(in) :: afunctionspace  !< ATLAS functionspace
-type(fieldset_type),intent(in),optional :: fieldset     !< Fieldset containing geometry elements
+type(atlas_functionspace),intent(in) :: afunctionspace  !< Functionspace
+type(fieldset_type),intent(in),optional :: fieldset     !< SABER geometry fields
 integer,intent(in),optional :: lunit                    !< Listing unit
 integer,intent(in),optional :: msvali                   !< Missing value for integers
 real(kind_real),intent(in),optional :: msvalr           !< Missing value for reals
@@ -409,11 +408,11 @@ if ((iens/=1).and.(iens/=2)) call bump%mpl%abort('${subr}$','wrong ensemble numb
 if (iens==1) then
    if (.not.bump%ens1%loaded) call bump%ens1%alloc(bump%nam%ens1_ne,bump%nam%ens1_nsub)
    if (copy_ensemble) then
-      ! Copy ATLAS fields
+      ! Copy fields
       call bump%ens1%mem(ie)%init(bump%mpl,fieldset,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
     & copy=.true.)
    else
-      ! Pass ATLAS fields
+      ! Pass fields
       call bump%ens1%mem(ie)%init(bump%mpl,fieldset,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
     & pass=.true.)
    end if
@@ -426,11 +425,11 @@ if (iens==1) then
 elseif (iens==2) then
    if (.not.bump%ens2%loaded) call bump%ens2%alloc(bump%nam%ens2_ne,bump%nam%ens2_nsub)
    if (copy_ensemble) then
-      ! Copy ATLAS fields
+      ! Copy fields
       call bump%ens2%mem(ie)%init(bump%mpl,fieldset,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
     & copy=.true.)
    else
-      ! Pass ATLAS fields
+      ! Pass fields
       call bump%ens2%mem(ie)%init(bump%mpl,fieldset,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
     & pass=.true.)
    end if
@@ -669,7 +668,7 @@ if (bump%nam%new_vbal) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run vertical balance driver'
    call bump%mpl%flush
-   call bump%vbal%run_vbal(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens1,bump%ens1u)
+   call bump%vbal%run_vbal(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%ens1)
 elseif (bump%nam%load_vbal) then
    ! Read vertical balance
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -1553,8 +1552,8 @@ integer,intent(in) :: ib                                             !< Block in
 real(kind_real),intent(out) :: fld_mga(bump%geom%nmga,bump%geom%nl0) !< Field
 
 ! Local variables
-integer :: ie,imga,il0,iv
-real(kind_real),allocatable :: real_array(:,:)
+integer :: ic0a,il0,iv
+real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0)
 logical :: found
 
 ! Set name
@@ -1574,52 +1573,28 @@ select case (trim(param))
 case ('lon')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%geom%lon_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   allocate(real_array(bump%geom%nc0a,bump%geom%nl0))
    do il0=1,bump%geom%nl0
-      real_array(:,il0) = bump%geom%lon_c0a
+      fld_c0a(:,il0) = bump%geom%lon_c0a*rad2deg
    end do
-   call bump%geom%copy_c0a_to_mga(bump%mpl,real_array,fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*rad2deg
-      end do
-   end do
-   deallocate(real_array)
    found = .true.
 case ('lat')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%geom%lat_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   allocate(real_array(bump%geom%nc0a,bump%geom%nl0))
    do il0=1,bump%geom%nl0
-      real_array(:,il0) = bump%geom%lat_c0a
+      fld_c0a(:,il0) = bump%geom%lat_c0a*rad2deg
    end do
-   call bump%geom%copy_c0a_to_mga(bump%mpl,real_array,fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*rad2deg
-      end do
-   end do
-   deallocate(real_array)
    found = .true.
 case ('area')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%geom%area_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   allocate(real_array(bump%geom%nc0a,bump%geom%nl0))
    do il0=1,bump%geom%nl0
-      real_array(:,il0) = bump%geom%area_c0a
+      fld_c0a(:,il0) = bump%geom%area_c0a*req**2
    end do
-   call bump%geom%copy_c0a_to_mga(bump%mpl,real_array,fld_mga)
-   do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req**2
-      end do
-   end do
-   deallocate(real_array)
    found = .true.
 case ('vunit')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%geom%vunit_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%geom%vunit_c0a,fld_mga)
+   fld_c0a = bump%geom%vunit_c0a
    found = .true.
 end select
 
@@ -1628,17 +1603,17 @@ select case (trim(param))
 case ('norm_m2')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%ens1%norm_m2)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1%norm_m2(:,:,iv),fld_mga)
+   fld_c0a = bump%ens1%norm_m2(:,:,iv)
    found = .true.
 case ('norm_m4')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%ens1%norm_m4)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1%norm_m4(:,:,iv),fld_mga)
+   fld_c0a = bump%ens1%norm_m4(:,:,iv)
    found = .true.
 case ('norm_kurt')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%ens1%norm_kurt)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%ens1%norm_kurt(:,:,iv),fld_mga)
+   fld_c0a = bump%ens1%norm_kurt(:,:,iv)
    found = .true.
 end select
 
@@ -1647,7 +1622,7 @@ select case (trim(param))
 case ('dirac_vbal')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%vbal%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%vbal%dirac(:,:,iv),fld_mga)
+   fld_c0a = bump%vbal%dirac(:,:,iv)
    found = .true.
 end select
 
@@ -1656,17 +1631,17 @@ select case (trim(param))
 case ('stddev')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%var%m2sqrt)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%var%m2sqrt(:,:,iv),fld_mga)
+   fld_c0a = bump%var%m2sqrt(:,:,iv)
    found = .true.
 case ('var')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%var%m2)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%var%m2(:,:,iv),fld_mga)
+   fld_c0a = bump%var%m2(:,:,iv)
    found = .true.
 case ('m4')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%var%m4)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%var%m4(:,:,iv),fld_mga)
+   fld_c0a = bump%var%m4(:,:,iv)
    found = .true.
 end select
 
@@ -1675,7 +1650,7 @@ select case (trim(param))
 case ('dirac_mom')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%mom1%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%mom1%dirac(:,:,iv),fld_mga)
+   fld_c0a = bump%mom1%dirac(:,:,iv)
    found = .true.
 end select
 
@@ -1685,22 +1660,22 @@ case ('cor_a')
    if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%cor1%blk(0,ib)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%a_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%cor1%blk(0,ib)%a_c0a(:,:,icmp)
    found = .true.
 case ('cor_rh')
    if (bump%nam%forced_radii) then
       iv = bump%bpar%b_to_v1(ib)
       do il0=1,bump%geom%nl0
-         fld_mga(:,il0) = bump%nam%rh(il0,iv)*req
+         fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
       end do
    else
       if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (icmp>size(bump%hdiag%cor1%blk(0,ib)%rh_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%rh_c0a(:,:,icmp),fld_mga)
+      fld_c0a = bump%hdiag%cor1%blk(0,ib)%rh_c0a(:,:,icmp)
       do il0=1,bump%geom%nl0
-         do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         do ic0a=1,bump%geom%nc0a
+            if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*req
          end do
       end do
    end if
@@ -1709,10 +1684,10 @@ case ('cor_rh1')
    if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%cor1%blk(0,ib)%D11_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%D11_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%cor1%blk(0,ib)%D11_c0a(:,:,icmp)
    do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = sqrt(fld_mga(imga,il0))*req
+      do ic0a=1,bump%geom%nc0a
+         if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
       end do
    end do
    found = .true.
@@ -1720,10 +1695,10 @@ case ('cor_rh2')
    if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%cor1%blk(0,ib)%D22_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%D22_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%cor1%blk(0,ib)%D22_c0a(:,:,icmp)
    do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = sqrt(fld_mga(imga,il0))*req
+      do ic0a=1,bump%geom%nc0a
+         if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
       end do
    end do
    found = .true.
@@ -1731,47 +1706,47 @@ case ('cor_rhc')
    if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%cor1%blk(0,ib)%D12_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%D12_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%cor1%blk(0,ib)%D12_c0a(:,:,icmp)
    found = .true.
 case ('cor_rv')
    if (bump%nam%forced_radii) then
       iv = bump%bpar%b_to_v1(ib)
       do il0=1,bump%geom%nl0
-         fld_mga(:,il0) = bump%nam%rv(il0,iv)
+         fld_c0a(:,il0) = bump%nam%rv(il0,iv)
       end do
    else
       if (.not.allocated(bump%hdiag%cor1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%cor1%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (icmp>size(bump%hdiag%cor1%blk(0,ib)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%blk(0,ib)%rv_c0a(:,:,icmp),fld_mga)
+      fld_c0a = bump%hdiag%cor1%blk(0,ib)%rv_c0a(:,:,icmp)
    end if
    found = .true.
 case ('loc_coef')
    if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%coef_ens_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%coef_ens_c0a,fld_mga)
+   fld_c0a = bump%hdiag%loc1%blk(0,ib)%coef_ens_c0a
    found = .true.
 case ('loc_a')
    if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%loc1%blk(0,ib)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%a_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%loc1%blk(0,ib)%a_c0a(:,:,icmp)
    found = .true.
 case ('loc_rh')
    if (bump%nam%forced_radii) then
       iv = bump%bpar%b_to_v1(ib)
       do il0=1,bump%geom%nl0
-         fld_mga(:,il0) = bump%nam%rh(il0,iv)*req
+         fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
       end do
    else
       if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (icmp>size(bump%hdiag%loc1%blk(0,ib)%rh_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%rh_c0a(:,:,icmp),fld_mga)
+      fld_c0a = bump%hdiag%loc1%blk(0,ib)%rh_c0a(:,:,icmp)
       do il0=1,bump%geom%nl0
-         do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         do ic0a=1,bump%geom%nc0a
+            if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*req
          end do
       end do
    end if
@@ -1780,10 +1755,10 @@ case ('loc_rh1')
    if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%loc1%blk(0,ib)%D11_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%D11_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%loc1%blk(0,ib)%D11_c0a(:,:,icmp)
    do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = sqrt(fld_mga(imga,il0))*req
+      do ic0a=1,bump%geom%nc0a
+         if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
       end do
    end do
    found = .true.
@@ -1791,10 +1766,10 @@ case ('loc_rh2')
    if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%loc1%blk(0,ib)%D22_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%D22_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%loc1%blk(0,ib)%D22_c0a(:,:,icmp)
    do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = sqrt(fld_mga(imga,il0))*req
+      do ic0a=1,bump%geom%nc0a
+         if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
       end do
    end do
    found = .true.
@@ -1802,47 +1777,47 @@ case ('loc_rhc')
    if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%loc1%blk(0,ib)%D12_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%D12_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%loc1%blk(0,ib)%D12_c0a(:,:,icmp)
    found = .true.
 case ('loc_rv')
    if (bump%nam%forced_radii) then
       iv = bump%bpar%b_to_v1(ib)
       do il0=1,bump%geom%nl0
-         fld_mga(:,il0) = bump%nam%rv(il0,iv)
+         fld_c0a(:,il0) = bump%nam%rv(il0,iv)
       end do
    else
       if (.not.allocated(bump%hdiag%loc1%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%loc1%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (icmp>size(bump%hdiag%loc1%blk(0,ib)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc1%blk(0,ib)%rv_c0a(:,:,icmp),fld_mga)
+      fld_c0a = bump%hdiag%loc1%blk(0,ib)%rv_c0a(:,:,icmp)
    end if
    found = .true.
 case ('loc_hyb_coef')
    if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%coef_ens_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%coef_ens_c0a,fld_mga)
+   fld_c0a = bump%hdiag%loc2%blk(0,ib)%coef_ens_c0a
    found = .true.
 case ('loc_hyb_a')
    if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%loc2%blk(0,ib)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%a_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%loc2%blk(0,ib)%a_c0a(:,:,icmp)
    found = .true.
 case ('loc_hyb_rh')
    if (bump%nam%forced_radii) then
       iv = bump%bpar%b_to_v1(ib)
       do il0=1,bump%geom%nl0
-         fld_mga(:,il0) = bump%nam%rh(il0,iv)*req
+         fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
       end do
    else
       if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (icmp>size(bump%hdiag%loc2%blk(0,ib)%rh_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%rh_c0a(:,:,icmp),fld_mga)
+      fld_c0a = bump%hdiag%loc2%blk(0,ib)%rh_c0a(:,:,icmp)
       do il0=1,bump%geom%nl0
-         do imga=1,bump%geom%nmga
-            if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = fld_mga(imga,il0)*req
+         do ic0a=1,bump%geom%nc0a
+            if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*req
          end do
       end do
    end if
@@ -1851,10 +1826,10 @@ case ('loc_hyb_rh1')
    if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%loc2%blk(0,ib)%D11_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%D11_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%loc2%blk(0,ib)%D11_c0a(:,:,icmp)
    do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = sqrt(fld_mga(imga,il0))*req
+      do ic0a=1,bump%geom%nc0a
+         if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
       end do
    end do
    found = .true.
@@ -1862,10 +1837,10 @@ case ('loc_hyb_rh2')
    if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%loc2%blk(0,ib)%D22_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%D22_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%loc2%blk(0,ib)%D22_c0a(:,:,icmp)
    do il0=1,bump%geom%nl0
-      do imga=1,bump%geom%nmga
-         if (bump%mpl%msv%isnot(fld_mga(imga,il0))) fld_mga(imga,il0) = sqrt(fld_mga(imga,il0))*req
+      do ic0a=1,bump%geom%nc0a
+         if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
       end do
    end do
    found = .true.
@@ -1873,42 +1848,33 @@ case ('loc_hyb_rhc')
    if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (icmp>size(bump%hdiag%loc2%blk(0,ib)%D12_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%D12_c0a(:,:,icmp),fld_mga)
+   fld_c0a = bump%hdiag%loc2%blk(0,ib)%D12_c0a(:,:,icmp)
    found = .true.
 case ('loc_hyb_rv')
    if (bump%nam%forced_radii) then
       iv = bump%bpar%b_to_v1(ib)
       do il0=1,bump%geom%nl0
-         fld_mga(:,il0) = bump%nam%rv(il0,iv)
+         fld_c0a(:,il0) = bump%nam%rv(il0,iv)
       end do
    else
       if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (icmp>size(bump%hdiag%loc2%blk(0,ib)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%rv_c0a(:,:,icmp),fld_mga)
+      fld_c0a = bump%hdiag%loc2%blk(0,ib)%rv_c0a(:,:,icmp)
    end if
    found = .true.
 case ('sta_hyb_coef')
    if (.not.allocated(bump%hdiag%loc2%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
    if (.not.allocated(bump%hdiag%loc2%blk(0,ib)%coef_sta_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%loc2%blk(0,ib)%coef_sta_c0a,fld_mga)
+   fld_c0a = bump%hdiag%loc2%blk(0,ib)%coef_sta_c0a
    found = .true.
 case ('dirac_diag_cor')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%hdiag%cor1%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%hdiag%cor1%dirac(:,:,iv),fld_mga)
+   fld_c0a = bump%hdiag%cor1%dirac(:,:,iv)
    found = .true.
 end select
-
-! Select parameter from ens1u
-if (param(1:min(6,len(param)))=='ens1u_') then
-   read(param(7:12),'(i6.6)') ie
-   if (ie>size(bump%ens1u%mem)) call bump%mpl%abort('${subr}$',trim(param)//' has fewer members')
-   iv = bump%bpar%b_to_v1(ib)
-   call bump%ens1u%mem(ie)%to_array(bump%mpl,iv,fld_mga)
-   found = .true.
-end if
 
 ! Select parameter from nicas
 select case (trim(param))
@@ -1917,19 +1883,22 @@ case ('nicas_norm')
    if (.not.allocated(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
    if (icmp>size(bump%nicas%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
    if (.not.allocated(bump%nicas%blk(ib)%cmp(icmp)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%blk(ib)%cmp(icmp)%norm,fld_mga)
+   fld_c0a = bump%nicas%blk(ib)%cmp(icmp)%norm
    found = .true.
 case ('dirac_nicas')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%nicas%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%dirac(:,:,iv),fld_mga)
+   fld_c0a = bump%nicas%dirac(:,:,iv)
    found = .true.
 case ('dirac_nicas_bens')
    iv = bump%bpar%b_to_v1(ib)
    if (.not.allocated(bump%nicas%dirac_bens)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-   call bump%geom%copy_c0a_to_mga(bump%mpl,bump%nicas%dirac_bens(:,:,iv),fld_mga)
+   fld_c0a = bump%nicas%dirac_bens(:,:,iv)
    found = .true.
 end select
+
+! Copy to model grid
+call bump%geom%copy_c0a_to_mga(bump%mpl,fld_c0a,fld_mga)
 
 ! Check that parameters was found
 if (.not.found) call bump%mpl%abort('${subr}$','parameter '//trim(param)//' not found')
@@ -2185,7 +2154,7 @@ found = .false.
 
 ! Check allocation / parameter existence
 select case (trim(param))
-case ('stddev','var','m4')
+case ('stddev','var','m4','sampling_mask_field')
 case ('coef','a','rh','rh1','rh2','rhc','rv')
    if (.not.allocated(bump%cmat%blk)) allocate(bump%cmat%blk(bump%bpar%nbe))
 case ('nicas_norm')
@@ -2227,6 +2196,15 @@ case ('m4')
    iv = bump%bpar%b_to_v1(ib)
    call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,fld_c0a)
    bump%var%bump_m4(:,:,iv) = bump%var%bump_m4(:,:,iv)+fld_c0a
+   found = .true.
+end select
+
+! Select parameter from samp
+select case (trim(param))
+case ('sampling_mask_field')
+   if (.not.allocated(bump%samp%smask_input_c0a)) allocate(bump%samp%smask_input_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv))
+   iv = bump%bpar%b_to_v1(ib)
+   call bump%geom%copy_mga_to_c0a(bump%mpl,fld_mga,bump%samp%smask_input_c0a(:,:,iv))
    found = .true.
 end select
 
@@ -2527,7 +2505,6 @@ class(bump_type),intent(inout) :: bump !< BUMP
 ! Release memory
 call bump%cmat%partial_dealloc
 call bump%ens1%partial_dealloc
-call bump%ens1u%partial_dealloc
 call bump%ens2%partial_dealloc
 call bump%geom%partial_dealloc
 call bump%hdiag%partial_dealloc
@@ -2574,7 +2551,6 @@ call registry%report(bump%mpl)
 call bump%bpar%dealloc
 call bump%cmat%dealloc
 call bump%ens1%dealloc
-call bump%ens1u%dealloc
 call bump%ens2%dealloc
 call bump%geom%dealloc
 call bump%hdiag%dealloc

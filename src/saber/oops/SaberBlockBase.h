@@ -40,11 +40,11 @@ class SaberBlockBase : public util::Printable, private boost::noncopyable {
   explicit SaberBlockBase(const SaberBlockParametersBase & params);
   virtual ~SaberBlockBase() {}
 
-  virtual void randomize(atlas::FieldSet *) const = 0;
-  virtual void multiply(atlas::FieldSet *) const = 0;
-  virtual void inverseMultiply(atlas::FieldSet *) const = 0;
-  virtual void multiplyAD(atlas::FieldSet *) const = 0;
-  virtual void inverseMultiplyAD(atlas::FieldSet *) const = 0;
+  virtual void randomize(atlas::FieldSet &) const = 0;
+  virtual void multiply(atlas::FieldSet &) const = 0;
+  virtual void inverseMultiply(atlas::FieldSet &) const = 0;
+  virtual void multiplyAD(atlas::FieldSet &) const = 0;
+  virtual void inverseMultiplyAD(atlas::FieldSet &) const = 0;
 
   bool iterativeInverse() const {return iterativeInverse_;}
  private:

@@ -21,6 +21,7 @@ geometry:
     type : regular_gaussian
     N : 15
   levels: 10
+  halo: 3
 initial condition:
   date: 2010-01-01T12:00:00Z
   state variables: *vars

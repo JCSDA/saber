@@ -55,11 +55,11 @@ class BUMP_VerticalBalance : public SaberBlockBase<MODEL> {
                        const State_ &);
   virtual ~BUMP_VerticalBalance();
 
-  void randomize(atlas::FieldSet *) const override;
-  void multiply(atlas::FieldSet *) const override;
-  void inverseMultiply(atlas::FieldSet *) const override;
-  void multiplyAD(atlas::FieldSet *) const override;
-  void inverseMultiplyAD(atlas::FieldSet *) const override;
+  void randomize(atlas::FieldSet &) const override;
+  void multiply(atlas::FieldSet &) const override;
+  void inverseMultiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -111,45 +111,45 @@ BUMP_VerticalBalance<MODEL>::~BUMP_VerticalBalance() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_VerticalBalance<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  this->multiply(atlasFieldSet);
+  this->multiply(fset);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_VerticalBalance<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  bump_->multiplyVbal(atlasFieldSet);
+  bump_->multiplyVbal(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_VerticalBalance<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  bump_->inverseMultiplyVbal(atlasFieldSet);
+  bump_->inverseMultiplyVbal(fset);
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_VerticalBalance<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  bump_->multiplyVbalAd(atlasFieldSet);
+  bump_->multiplyVbalAd(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_VerticalBalance<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_VerticalBalance<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  bump_->inverseMultiplyVbalAd(atlasFieldSet);
+  bump_->inverseMultiplyVbalAd(fset);
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 

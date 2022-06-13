@@ -103,7 +103,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
   virtual ~ErrorCovarianceTraining() {}
 
   int execute(const eckit::Configuration & fullConfig, bool validate) const override {
-    util::Timer timer(classname(), "write");
+    util::Timer timer(classname(), "execute");
 
     // Deserialize parameters
     ErrorCovarianceTrainingParameters_ params;
@@ -140,11 +140,6 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
        ens1.reset(new Ensemble_(resol, inputVars, *params.ensembleBase.value(),
                                                   *params.ensemblePairs.value()));
     }
-    if (ens1) {
-      for (size_t ie = 0; ie < ens1->size(); ++ie) {
-        (*ens1)[ie].toAtlas();
-      }
-    }
 
     // Setup ensemble 2
     EnsemblePtr_ ens2 = NULL;
@@ -164,7 +159,6 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
         Increment_ incr(resol, inputVars, time);
         Bmat->randomize(incr);
         (*ens2)[ie] = incr;
-        (*ens2)[ie].toAtlas();
       }
     }
 

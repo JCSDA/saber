@@ -153,7 +153,7 @@ real(kind_real),intent(in),optional :: lon_out(:)                   !< Output lo
 real(kind_real),intent(in),optional :: lat_out(:)                   !< Output latitudes [in degrees]
 type(atlas_functionspace),intent(in),optional :: afunctionspace_out !< Output ATLAS functionspace
 integer,intent(in),optional :: nl0                                  !< Number of levels
-type(fieldset_type),intent(in),optional :: fieldset                 !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit), gmask (geometry mask) and smask (sampling mask). Each of these named fields is optional, if omitted default values will be provided
+type(fieldset_type),intent(in),optional :: fieldset                 !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit) and gmask (geometry mask). Each of these named fields is optional, if omitted default values will be provided
 type(fckit_configuration),intent(in),optional :: config             !< Configuration
 
 ! Local variables

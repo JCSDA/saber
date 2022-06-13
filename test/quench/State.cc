@@ -74,6 +74,16 @@ void State::print(std::ostream & os) const {
   os << *fields_;
 }
 // -----------------------------------------------------------------------------
+/// ATLAS FieldSet accessor
+// -----------------------------------------------------------------------------
+void State::toFieldSet(atlas::FieldSet & fset) const {
+  fields_->toFieldSet(fset);
+}
+// -----------------------------------------------------------------------------
+void State::fromFieldSet(const atlas::FieldSet & fset) {
+  fields_->fromFieldSet(fset);
+}
+// -----------------------------------------------------------------------------
 /// For accumulator
 // -----------------------------------------------------------------------------
 void State::zero() {

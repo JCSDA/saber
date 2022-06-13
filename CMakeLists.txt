@@ -35,7 +35,7 @@ find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS C Fortran )
 find_package( eckit 1.11.6 REQUIRED COMPONENTS MPI )
 find_package( fckit 0.7.0  REQUIRED )
-find_package( atlas 0.20.2 REQUIRED COMPONENTS OMP_Fortran )
+find_package( atlas 0.27.0 REQUIRED COMPONENTS OMP_Fortran )
 
 if( ENABLE_MKL )
     find_package( MKL )
