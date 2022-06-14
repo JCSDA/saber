@@ -81,7 +81,7 @@ class Covariance : public SaberBlockBase<MODEL> {
 
 template<typename MODEL>
 Covariance<MODEL>::Covariance(const Geometry_ & geom, const Parameters_ & params,
-                                      const State_ & xbg, const State_ & xfg)
+                              const State_ & xbg, const State_ & xfg)
   : SaberBlockBase<MODEL>(params), variables_(), grid_(geom.getComm(), params)
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
@@ -97,7 +97,8 @@ Covariance<MODEL>::Covariance(const Geometry_ & geom, const Parameters_ & params
   // Need to convert background and first guess to Atlas and GSI grid.
 
   // Create covariance module
-  gsi_covariance_create_f90(keySelf_, geom.getComm(), params.toConfiguration());
+  gsi_covariance_create_f90(keySelf_, geom.getComm(), params.toConfiguration(),
+                            xbg.fieldSet().get(), xfg.fieldSet().get());
 
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }

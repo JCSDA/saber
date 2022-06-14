@@ -68,20 +68,23 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine create(self, comm, config)
+subroutine create(self, comm, config, background, firstguess)
 
 ! Arguments
 class(gsi_covariance),     intent(inout) :: self
 type(fckit_mpi_comm),      intent(in)    :: comm
 type(fckit_configuration), intent(in)    :: config
-!type(atlas_fieldset),      intent(in)    :: background   ! Uncomment once background available as Atlas fieldset
-!type(atlas_fieldset),      intent(in)    :: first_guess
+type(atlas_fieldset),      intent(in)    :: background
+type(atlas_fieldset),      intent(in)    :: firstguess
 
 ! Locals
 character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: nml,bef
 logical :: central
 integer :: layout(2)
+
+type(atlas_field) :: afield
+real(kind=kind_real), pointer :: t(:,:)
 
 ! Hold communicator
 ! -----------------
@@ -109,8 +112,12 @@ if (.not. self%noGSI) then
 ! --------------------------------
   layout=self%grid%layout
 ! layout=-1
-  call gsibclim_init(self%cv,self%lat2,self%lon2,nmlfile=nml,befile=bef,layout=layout,comm=comm%communicator())
+  call gsibclim_init(self%cv)
 endif
+
+! Get background (temporary test of the functionality)
+afield = background%field('air_temperature')
+call afield%data(t)
 
 end subroutine create
 
@@ -217,8 +224,8 @@ if (self%noGSI) return
 !   gsi-surface: k=1
 !   quench-surface: k=1
 !   fv3-surface: k=km
-isc=self%grid%isc 
-iec=self%grid%iec 
+isc=self%grid%isc
+iec=self%grid%iec
 jsc=self%grid%jsc
 jec=self%grid%jec
 npz=self%grid%npz
@@ -278,9 +285,9 @@ enddo
 ! Apply GSI B-error operator
 ! --------------------------
 if (self%cv) then
-   call gsibclim_cv_space(gsicv,internalcv=.false.,bypassbe=self%bypassGSIbe)
+   call gsibclim_cv_space()
 else
-   call gsibclim_sv_space(gsisv,internalsv=.false.,bypassbe=self%bypassGSIbe)
+   call gsibclim_sv_space()
 endif
 
 ! Convert back to Atlas Fields
