@@ -70,7 +70,7 @@ class BUMP_NICAS : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_NICAS<MODEL>::BUMP_NICAS(const Geometry_ & resol,
+BUMP_NICAS<MODEL>::BUMP_NICAS(const Geometry_ & geom,
                               const Parameters_ & params,
                               const State_ & xb,
                               const State_ & fg)
@@ -94,7 +94,7 @@ BUMP_NICAS<MODEL>::BUMP_NICAS(const Geometry_ & resol,
   }
 
   // Initialize BUMP
-  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value(), xb, fg));
+  bump_.reset(new BUMP_(geom, geom, activeVars, params.bumpParams.value(), xb, fg));
 
   oops::Log::trace() << classname() << "::BUMP_NICAS done" << std::endl;
 }

@@ -32,14 +32,23 @@ State::State(const Geometry & resol, const eckit::Configuration & file)
 {
   oops::Variables vars = oops::Variables(file, "state variables");
   fields_.reset(new Fields(resol, vars, util::DateTime()));
-  fields_->zero();
+  if (file.has("filepath")) {
+    oops::Log::info() << "Create state from file" << std::endl;
+    fields_->read(file);
+  } else {
+    oops::Log::info() << "Create empty state" << std::endl;
+    fields_->zero();
+  }
   const util::DateTime vt(file.getString("date"));
   fields_->time() = vt;
   oops::Log::trace() << "State::State created." << std::endl;
 }
 // -----------------------------------------------------------------------------
-State::State(const Geometry &, const State &) : fields_() {
-  throw eckit::NotImplemented("State constructor", Here());
+State::State(const Geometry & resol, const State & other)
+  : fields_(new Fields(*other.fields_, resol))
+{
+  ASSERT(fields_);
+  oops::Log::trace() << "State::State created by interpolation." << std::endl;
 }
 // -----------------------------------------------------------------------------
 State::State(const State & other)
@@ -48,7 +57,20 @@ State::State(const State & other)
   oops::Log::trace() << "State::State copied." << std::endl;
 }
 // -----------------------------------------------------------------------------
+/// Interactions with Increments
+// -----------------------------------------------------------------------------
+State & State::operator+=(const Increment & dx) {
+  ASSERT(this->validTime() == dx.validTime());
+  ASSERT(fields_);
+  *fields_+=dx.fields();
+  return *this;
+}
+// -----------------------------------------------------------------------------
 /// I/O and diagnostics
+// -----------------------------------------------------------------------------
+void State::read(const eckit::Configuration & files) {
+  fields_->read(files);
+}
 // -----------------------------------------------------------------------------
 void State::write(const eckit::Configuration & files) const {
   fields_->write(files);

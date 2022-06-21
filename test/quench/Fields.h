@@ -40,6 +40,7 @@ class Fields : public util::Printable,
 
 // Constructors
   Fields(const Geometry &, const oops::Variables &, const util::DateTime &);
+  Fields(const Fields &, const Geometry &);
   Fields(const Fields &, const bool);
   Fields(const Fields &);
   ~Fields() {}

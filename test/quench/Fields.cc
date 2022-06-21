@@ -63,6 +63,41 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
   this->zero();
 }
 // -----------------------------------------------------------------------------
+Fields::Fields(const Fields & other, const Geometry & geom):
+  geom_(new Geometry(geom)), vars_(other.vars_), time_(other.time_)
+{
+  // Reset ATLAS fieldset
+  fset_ = atlas::FieldSet();
+
+  // Create fields
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = geom_->functionSpace().createField<double>(
+      atlas::option::name(vars_[jvar]) | atlas::option::levels(geom_->levels()));
+    fset_.add(field);
+  }
+
+  // Copy - TODO(Benjamin): interpolate
+  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    atlas::Field field = fset_.field(vars_[jvar]);
+    atlas::Field fieldOther = other.fset_.field(vars_[jvar]);
+    if (field.rank() == 1) {
+      auto view = atlas::array::make_view<double, 1>(field);
+      auto viewOther = atlas::array::make_view<double, 1>(fieldOther);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        view(jnode) = viewOther(jnode);
+      }
+    } else if (field.rank() == 2) {
+     auto view = atlas::array::make_view<double, 2>(field);
+     auto viewOther = atlas::array::make_view<double, 2>(fieldOther);
+     for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+       for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+         view(jnode, jlevel) = viewOther(jnode, jlevel);
+       }
+      }
+    }
+  }
+}
+// -----------------------------------------------------------------------------
 Fields::Fields(const Fields & other, const bool copy):
   geom_(other.geom_), vars_(other.vars_), time_(other.time_)
 {
@@ -102,7 +137,6 @@ Fields::Fields(const Fields & other, const bool copy):
     }
   }
 }
-
 // -----------------------------------------------------------------------------
 Fields::Fields(const Fields & other):
   geom_(other.geom_), vars_(other.vars_), time_(other.time_)
@@ -516,10 +550,92 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
 }
 // -----------------------------------------------------------------------------
 void Fields::read(const eckit::Configuration & config) {
-  ABORT("not implemented yet");
+  // Filepath
+  std::string filepath = config.getString("filepath");
+  if (config.has("member")) {
+    std::ostringstream out;
+    out << std::setfill('0') << std::setw(6) << config.getInt("member");
+    filepath.append("_");
+    filepath.append(out.str());
+  }
+
+  // NetCDF input
+  if (geom_->functionSpace().type() == "StructuredColumns") {
+    atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
+
+    // Create global data fieldset
+    atlas::FieldSet globalData;
+    for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+      atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+        | atlas::option::levels(geom_->levels()) | atlas::option::global());
+      globalData.add(field);
+    }
+
+    if (geom_->getComm().rank() == 0) {
+      // Get grid
+      atlas::StructuredGrid grid = fs.grid();
+
+      // Get first field
+      atlas::Field field = globalData.field(0);
+
+      // Get sizes
+      atlas::idx_t nx = grid.nxmax();
+      atlas::idx_t ny = grid.ny();
+      atlas::idx_t nz = field.levels();
+
+      // NetCDF IDs
+      int ncid, retval, var_id[vars_.size()];
+
+      // NetCDF file path
+      std::string ncfilepath = filepath;
+      ncfilepath.append(".nc");
+      oops::Log::info() << "Reading file: " << ncfilepath << std::endl;
+
+      // Open NetCDF file
+      if ((retval = nc_open(ncfilepath.c_str(), NC_NOWRITE, &ncid))) ERR(retval);
+
+      // Get variables
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        if ((retval = nc_inq_varid(ncid, vars_[jvar].c_str(), &var_id[jvar]))) ERR(retval);
+      }
+
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        // Read data
+        double zvar[nx][ny][nz];
+        if ((retval = nc_get_var_double(ncid, var_id[jvar], &zvar[0][0][0]))) ERR(retval);
+
+        // Copy data
+        atlas::Field field = globalData.field(vars_[jvar]);
+        auto varView = atlas::array::make_view<double, 2>(field);
+        for (atlas::idx_t iz = 0; iz < nz; ++iz) {
+          for (atlas::idx_t iy = 0; iy < ny; ++iy) {
+            for (atlas::idx_t ix = 0; ix < grid.nx(iy); ++ix) {
+              atlas::gidx_t gidx = grid.index(ix, iy);
+              varView(gidx, iz) = zvar[ix][iy][iz];
+            }
+          }
+        }
+      }
+
+      // Close file
+      if ((retval = nc_close(ncid))) ERR(retval);
+    }
+
+    // Scatter data from main processor
+    fs.scatter(globalData, fset_);
+  }
 }
 // -----------------------------------------------------------------------------
 void Fields::write(const eckit::Configuration & config) const {
+  // Filepath
+  std::string filepath = config.getString("filepath");
+  if (config.has("member")) {
+    std::ostringstream out;
+    out << std::setfill('0') << std::setw(6) << config.getInt("member");
+    filepath.append("_");
+    filepath.append(out.str());
+  }
+
   // NetCDF output
   if (geom_->functionSpace().type() == "StructuredColumns") {
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
@@ -577,11 +693,13 @@ void Fields::write(const eckit::Configuration & config) const {
       int ncid, retval, nx_id, ny_id, nz_id, d2D_id[2], d3D_id[3],
         lon_id, lat_id, var_id[vars_.size()];
 
-      // Get file path
-      const std::string filepath = config.getString("filepath") + ".nc";
+      // NetCDF file path
+      std::string ncfilepath = filepath;
+      ncfilepath.append(".nc");
+      oops::Log::info() << "Writing file: " << ncfilepath << std::endl;
 
       // Create NetCDF file
-      if ((retval = nc_create(filepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
+      if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
 
       // Create dimensions
       if ((retval = nc_def_dim(ncid, "nx", nx, &nx_id))) ERR(retval);
@@ -624,7 +742,7 @@ void Fields::write(const eckit::Configuration & config) const {
       if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        // Copy coordinates
+        // Copy data
         atlas::Field field = globalData.field(vars_[jvar]);
         auto varView = atlas::array::make_view<double, 2>(field);
         double zvar[nx][ny][nz];
@@ -646,12 +764,16 @@ void Fields::write(const eckit::Configuration & config) const {
     }
   }
 
-  // GMSH output
-  const std::string filepath = config.getString("filepath");
+  // GMSH file path
+  std::string gmshfilepath = filepath;
+  gmshfilepath.append(".msh");
+  oops::Log::info() << "Writing file: " << gmshfilepath << std::endl;
+
+  // GMSH configuration
   const auto gmshConfig =
   atlas::util::Config("coordinates", "xyz") | atlas::util::Config("ghost", true) |
   atlas::util::Config("info", true);
-  atlas::output::Gmsh gmsh(filepath + "_mesh.msh", gmshConfig);
+  atlas::output::Gmsh gmsh(gmshfilepath, gmshConfig);
 
   if (geom_->functionSpace().type() == "StructuredColumns") {
     const auto meshGen = atlas::MeshGenerator("structured");

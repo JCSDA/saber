@@ -163,6 +163,7 @@ type nicas_cmp_type
    integer,allocatable :: sb_to_sc(:)                   !< Subgrid, halo B to halo C
 
    ! C matrix data
+   real(kind_real),allocatable :: a(:,:)                !< Amplitude
    real(kind_real),allocatable :: rh(:,:)               !< Horizontal fit support radius
    real(kind_real),allocatable :: rv(:,:)               !< Vertical fit support radius
    real(kind_real),allocatable :: rhs(:,:)              !< Fit support radius  for sampling
@@ -184,9 +185,6 @@ type nicas_cmp_type
    real(kind_real),allocatable :: inorm_sb(:)           !< Internal normalization factor on halo B
    real(kind_real),allocatable :: smoother_norm(:)      !< Smoother normalization
 
-   ! Block weights
-   real(kind_real),allocatable :: coef_ens(:,:)         !< Ensemble coefficient square-root
-
    ! I/O IDs
    integer :: ncid                                      !< main ID
    integer :: cmpid                                     !< component ID
@@ -197,7 +195,7 @@ type nicas_cmp_type
    integer :: nc0_id                                    !< nc0 ID
    integer :: nl0_id                                    !< nl0 ID
    integer :: norm_id                                   !< norm ID
-   integer :: coef_ens_id                               !< coef_ens ID
+   integer :: a_id                                      !< a ID
    integer :: vlev_id                                   !< vlev ID
    integer :: l1_to_l0_id                               !< l1_to_l0 ID
    integer :: c_col_s_id                                !< c_col_s ID
@@ -212,8 +210,6 @@ type nicas_cmp_type
    integer :: lon_sc_id                                 !< lon_sc ID
    integer :: lat_sc_id                                 !< lat_sc ID
    integer :: lev_sc_id                                 !< lev_sc ID
-   logical :: write_norm                                !< Norm writing flag
-   logical :: write_coef_ens                            !< Ensemble coefficent flag
    integer :: c_nopmax                                  !< Maximum number of operations for convolution
 contains
    procedure :: partial_dealloc => nicas_cmp_partial_dealloc
@@ -567,7 +563,7 @@ call nicas_cmp%partial_dealloc
 if (allocated(nicas_cmp%sa_to_s)) deallocate(nicas_cmp%sa_to_s)
 if (allocated(nicas_cmp%vlev)) deallocate(nicas_cmp%vlev)
 if (allocated(nicas_cmp%norm)) deallocate(nicas_cmp%norm)
-if (allocated(nicas_cmp%coef_ens)) deallocate(nicas_cmp%coef_ens)
+if (allocated(nicas_cmp%a)) deallocate(nicas_cmp%a)
 call nicas_cmp%v%dealloc
 if (allocated(nicas_cmp%hor)) then
    do il1=1,size(nicas_cmp%hor)
@@ -608,7 +604,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il1
-integer :: vlev_id,norm_id,coef_ens_id,order_sa_id,sa_to_sc_id,inorm_id
+integer :: vlev_id,norm_id,a_id,order_sa_id,sa_to_sc_id,inorm_id
 integer :: vlev_int(geom%nl0)
 character(len=1024) :: levname
 
@@ -639,7 +635,7 @@ end do
 ! Allocation
 allocate(nicas_cmp%vlev(geom%nl0))
 if (.not.allocated(nicas_cmp%norm)) allocate(nicas_cmp%norm(nicas_cmp%nc0a,geom%nl0))
-allocate(nicas_cmp%coef_ens(nicas_cmp%nc0a,geom%nl0))
+allocate(nicas_cmp%a(nicas_cmp%nc0a,geom%nl0))
 do il1=1,nicas_cmp%nl1
    allocate(nicas_cmp%hor(il1)%c1b_to_sb(nicas_cmp%hor(il1)%nc1b))
 end do
@@ -654,7 +650,7 @@ allocate(nicas_cmp%interp_c1b_to_c0a(nicas_cmp%nl1))
 vlev_id = inquire_var(mpl,nicas_cmp%cmpid,'vlev')
 if (nicas_cmp%nc0a>0) then
    norm_id = inquire_var(mpl,nicas_cmp%cmpid,'norm')
-   coef_ens_id = inquire_var(mpl,nicas_cmp%cmpid,'coef_ens')
+   if (nicas_cmp%ncmp>1) a_id = inquire_var(mpl,nicas_cmp%cmpid,'a')
 end if
 do il1=1,nicas_cmp%nl1
    if (nicas_cmp%hor(il1)%nc1b>0) nicas_cmp%hor(il1)%c1b_to_sb_id = inquire_var(mpl,nicas_cmp%hor(il1)%levid,'c1b_to_sb')
@@ -669,7 +665,11 @@ end if
 call get_var(mpl,nicas_cmp%cmpid,vlev_id,vlev_int)
 if (nicas_cmp%nc0a>0) then
    call get_var(mpl,nicas_cmp%cmpid,norm_id,nicas_cmp%norm)
-   call get_var(mpl,nicas_cmp%cmpid,coef_ens_id,nicas_cmp%coef_ens)
+   if (nicas_cmp%ncmp>1) then
+      call get_var(mpl,nicas_cmp%cmpid,a_id,nicas_cmp%a)
+   else
+       nicas_cmp%a = one
+   end if
 end if
 do il1=1,nicas_cmp%nl1
    if (nicas_cmp%hor(il1)%nc1b>0) call get_var(mpl,nicas_cmp%hor(il1)%levid,nicas_cmp%hor(il1)%c1b_to_sb_id, &
@@ -740,7 +740,7 @@ call put_att(mpl,nicas_cmp%cmpid,0,'ns',nicas_cmp%ns)
 nicas_cmp%vlev_id = define_var(mpl,nicas_cmp%cmpid,'vlev','int',(/nicas_cmp%nl0_id/))
 if (nicas_cmp%nc0a>0) then
    nicas_cmp%norm_id = define_var(mpl,nicas_cmp%cmpid,'norm','real',(/nicas_cmp%nc0a_id,nicas_cmp%nl0_id/))
-   nicas_cmp%coef_ens_id = define_var(mpl,nicas_cmp%cmpid,'coef_ens','real',(/nicas_cmp%nc0a_id,nicas_cmp%nl0_id/))
+   nicas_cmp%a_id = define_var(mpl,nicas_cmp%cmpid,'a','real',(/nicas_cmp%nc0a_id,nicas_cmp%nl0_id/))
 end if
 do il1=1,nicas_cmp%nl1
    if (nicas_cmp%hor(il1)%nc1b>0) nicas_cmp%hor(il1)%c1b_to_sb_id = define_var(mpl,nicas_cmp%hor(il1)%levid,'c1b_to_sb','int', &
@@ -794,7 +794,7 @@ call convert_l2i(nicas_cmp%vlev,vlev_int)
 call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%vlev_id,vlev_int)
 if (nicas_cmp%nc0a>0) then
    call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%norm_id,nicas_cmp%norm)
-   call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%coef_ens_id,nicas_cmp%coef_ens)
+   call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%a_id,nicas_cmp%a)
 end if
 do il1=1,nicas_cmp%nl1
    if (nicas_cmp%hor(il1)%nc1b>0) call put_var(mpl,nicas_cmp%hor(il1)%levid,nicas_cmp%hor(il1)%c1b_to_sb_id, &
@@ -850,7 +850,7 @@ nbufi = nbufi+5+nicas_cmp%nl1
 ! vlev
 nbufl = nbufl+geom%nl0
 
-! norm and coef_ens
+! norm and a
 nbufr = nbufr+2*nicas_cmp%nc0a*geom%nl0
 
 ! c1b_to_sb
@@ -959,11 +959,11 @@ ibufi = ibufi+1
 bufl(ibufl+1:ibufl+geom%nl0) = nicas_cmp%vlev
 ibufl = ibufl+geom%nl0
 
-! norm and coef_ens
+! norm and a
 if (nicas_cmp%nc0a>0) then
    bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0) = reshape(nicas_cmp%norm,(/nicas_cmp%nc0a*geom%nl0/))
    ibufr = ibufr+nicas_cmp%nc0a*geom%nl0
-   bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0) = reshape(nicas_cmp%coef_ens,(/nicas_cmp%nc0a*geom%nl0/))
+   bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0) = reshape(nicas_cmp%a,(/nicas_cmp%nc0a*geom%nl0/))
    ibufr = ibufr+nicas_cmp%nc0a*geom%nl0
 end if
 
@@ -1088,7 +1088,7 @@ ibufi = ibufi+1
 ! Allocation
 allocate(nicas_cmp%vlev(geom%nl0))
 allocate(nicas_cmp%norm(nicas_cmp%nc0a,geom%nl0))
-allocate(nicas_cmp%coef_ens(nicas_cmp%nc0a,geom%nl0))
+allocate(nicas_cmp%a(nicas_cmp%nc0a,geom%nl0))
 do il1=1,nicas_cmp%nl1
    allocate(nicas_cmp%hor(il1)%c1b_to_sb(nicas_cmp%hor(il1)%nc1b))
 end do
@@ -1103,11 +1103,11 @@ allocate(nicas_cmp%interp_c1b_to_c0a(nicas_cmp%nl1))
 nicas_cmp%vlev = bufl(ibufl+1:ibufl+geom%nl0)
 ibufl = ibufl+geom%nl0
 
-! norm and coef_ens
+! norm and a
 if (nicas_cmp%nc0a>0) then
    nicas_cmp%norm = reshape(bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0),(/nicas_cmp%nc0a,geom%nl0/))
    ibufr = ibufr+nicas_cmp%nc0a*geom%nl0
-   nicas_cmp%coef_ens = reshape(bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0),(/nicas_cmp%nc0a,geom%nl0/))
+   nicas_cmp%a = reshape(bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0),(/nicas_cmp%nc0a,geom%nl0/))
    ibufr = ibufr+nicas_cmp%nc0a*geom%nl0
 end if
 
@@ -1190,12 +1190,11 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: norm_id,coef_ens_id,vlev_id,l1_to_l0_id,lon_c1_id,lat_c1_id,c_col_s_id,c_S_s_id,inorm_s_id
+integer :: vlev_id,l1_to_l0_id,lon_c1_id,lat_c1_id,c_col_s_id,c_S_s_id,inorm_s_id
 integer :: il0,il1,ic1,ic1a,ic0a,iproc,is,isa,jsu,c_nopmax,nop,js,i_s,iop
 integer :: vlev_int(geom%nl0)
 integer,allocatable :: lev_c1(:),c1_to_proc(:),c1_to_c0a(:),order_s(:),order_inv_s(:),order_inv_sa(:),c_col_sa(:,:)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),c_S_sa(:,:)
-logical :: read_norm,read_coef_ens
 logical,allocatable :: gmask_c1(:)
 character(len=1024) :: levname
 type(io_type) :: io_s
@@ -1220,74 +1219,21 @@ nicas_cmp%verbosity = .true.
 nicas_cmp%smoother = .false.
 nicas_cmp%horizontal = .false.
 
-! Read norm
-write(mpl%info,'(a16,a)') '','Read norm'
-call mpl%flush
-if (allocated(nicas_cmp%norm)) then
-   ! Normalization already loaded from BUMP interface
-   nicas_cmp%compute_norm = .false.
-else
-   ! Check whether norm is available in file
-   if (mpl%main) then
-      ! Initialization
-      read_norm = .false.
+! Check norm input
+nicas_cmp%compute_norm = .not.allocated(nicas_cmp%norm)
+if (nicas_cmp%compute_norm) call mpl%warning('${subr}$','norm is recomputed, make sure it is relevant')
 
-      ! Check whether norm is present
-      norm_id = inquire_var(mpl,nicas_cmp%cmpid,'norm')
-
-      ! Check nc0
-      if (mpl%msv%isnot(norm_id)) read_norm = check_dim(mpl,nicas_cmp%cmpid,'nc0',geom%nc0)
-   end if
-
-   ! Broadcast dimension
-   call mpl%f_comm%broadcast(read_norm,mpl%rootproc-1)
-
-   if (read_norm) then
+! Check amplitude input
+if (.not.allocated(nicas_cmp%a)) then
+   if (nicas_cmp%ncmp==1) then
       ! Allocation
-      allocate(nicas_cmp%norm(geom%nc0a,geom%nl0))
+      allocate(nicas_cmp%a(geom%nc0a,geom%nl0))
 
-      ! Inquire variable
-      norm_id = inquire_var(mpl,nicas_cmp%cmpid,'norm')
-
-      ! Read variable
-      call geom%io%fld_read(mpl,nicas_cmp%cmpid,norm_id,nicas_cmp%norm)
-
-      ! Do not recompute normalization
-      nicas_cmp%compute_norm = .false.
+      ! Amplitude square-root set to one
+      nicas_cmp%a = one      
    else
-      ! Recompute normalization
-      nicas_cmp%compute_norm = .true.
-   end if
-end if
-
-! Read coef_ens
-write(mpl%info,'(a16,a)') '','Read coef_ens'
-call mpl%flush
-if (.not.allocated(nicas_cmp%coef_ens)) then
-   ! Allocation
-   allocate(nicas_cmp%coef_ens(geom%nc0a,geom%nl0))
-
-   ! Check whether coef_ens is available in file
-   if (mpl%main) then
-      ! Check whether norm is present
-      read_coef_ens = inquire_var_presence(mpl,nicas_cmp%cmpid,'coef_ens')
-
-      ! Check nc0
-      if (read_coef_ens) read_coef_ens = check_dim(mpl,nicas_cmp%cmpid,'nc0',geom%nc0)
-   end if
-
-   ! Broadcast dimension
-   call mpl%f_comm%broadcast(read_coef_ens,mpl%rootproc-1)
-
-   if (read_coef_ens) then
-      ! Inquire variable
-      coef_ens_id = inquire_var(mpl,nicas_cmp%cmpid,'coef_ens')
-
-      ! Read variable
-      call geom%io%fld_read(mpl,nicas_cmp%cmpid,coef_ens_id,nicas_cmp%coef_ens)
-   else
-      ! Ensemble coefficient set to one divided by the number of components
-      nicas_cmp%coef_ens = sqrt(one/real(nicas_cmp%ncmp))
+      ! Amplitude should loaded from the BUMP interface
+      call mpl%abort('${subr}$','amplitude should be loaded from the BUMP interface')
    end if
 end if
 
@@ -1593,7 +1539,7 @@ end subroutine nicas_cmp_read_global
 ! Subroutine: nicas_cmp_write_global_def
 !> Write data for global I/O, definition mode
 !----------------------------------------------------------------------
-subroutine nicas_cmp_write_global_def(nicas_cmp,mpl,nam,geom)
+subroutine nicas_cmp_write_global_def(nicas_cmp,mpl,nam)
 
 implicit none
 
@@ -1601,13 +1547,11 @@ implicit none
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
-type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: nl1_id,nc1_id,ns_id,c_nopmax_id
 integer :: il1,i_s,isa
 integer,allocatable :: c_nop(:)
-real(kind_real) :: coef_ens_min,coef_ens_max
 character(len=1024) :: levname
 
 ! Set name
@@ -1616,42 +1560,9 @@ character(len=1024) :: levname
 ! Probe in
 @:probe_in()
 
-! Define write_norm and write_coef_ens flags
-if (nam%write_c0) then
-   if (nam%output_nicas_coef_ens) then
-      nicas_cmp%write_coef_ens = .false.
-   else
-      ! Check if coef_ens should be written
-      if ((geom%nc0a>0).and.(zss_count(geom%gmask_c0a)>0)) then
-         coef_ens_min = zss_minval(nicas_cmp%coef_ens,mask=geom%gmask_c0a)
-         coef_ens_max = zss_maxval(nicas_cmp%coef_ens,mask=geom%gmask_c0a)
-      else
-         coef_ens_min = one
-         coef_ens_max = one
-      end if
-      call mpl%f_comm%allreduce(coef_ens_min,fckit_mpi_min())
-      call mpl%f_comm%allreduce(coef_ens_max,fckit_mpi_max())
-      nicas_cmp%write_coef_ens = .not.(indist(coef_ens_min,one).and.indist(coef_ens_max,one))
-   end if
-   nicas_cmp%write_norm = .not.nam%output_nicas_norm
-else
-   nicas_cmp%write_norm = .false.
-   nicas_cmp%write_coef_ens = .false.
-end if
-
-if (nicas_cmp%write_coef_ens) then
-   ! Define coef_ens
-   write(mpl%info,'(a16,a)') '','Define coef_ens'
-   call mpl%flush
-   nicas_cmp%coef_ens_id = define_var(mpl,nicas_cmp%cmpid,'coef_ens','real',(/nicas_cmp%nc0_id,nicas_cmp%nl0_id/))
-end if
-
-if (nicas_cmp%write_norm) then
-   ! Define norm
-   write(mpl%info,'(a16,a)') '','Define norm'
-   call mpl%flush
-   nicas_cmp%norm_id = define_var(mpl,nicas_cmp%cmpid,'norm','real',(/nicas_cmp%nc0_id,nicas_cmp%nl0_id/))
-end if
+! Check that norm and amplitude are written
+if (.not.nam%output_nicas_norm) call mpl%warning('${subr}$','norm is not written, make sure it is relevant')
+if (.not.nam%output_nicas_a) call mpl%warning('${subr}$','amplitude is not written, make sure it is relevant')
 
 ! Define vertical sampling
 write(mpl%info,'(a16,a)') '','Define vertical sampling'
@@ -1741,20 +1652,6 @@ type(io_type) :: io_c1,io_s
 
 ! Probe in
 @:probe_in()
-
-if (nicas_cmp%write_coef_ens) then
-   ! Write coef_ens
-   write(mpl%info,'(a16,a)') '','Write coef_ens'
-   call mpl%flush
-   call geom%io%fld_write(mpl,nicas_cmp%cmpid,nicas_cmp%coef_ens_id,nicas_cmp%coef_ens,geom%gmask_c0a)
-end if
-
-if (nicas_cmp%write_norm) then
-   ! Write norm
-   write(mpl%info,'(a16,a)') '','Write norm'
-   call mpl%flush
-   call geom%io%fld_write(mpl,nicas_cmp%cmpid,nicas_cmp%norm_id,nicas_cmp%norm,geom%gmask_c0a)
-end if
 
 ! Write vertical sampling
 write(mpl%info,'(a16,a)') '','Write vertical sampling'
@@ -3993,7 +3890,7 @@ end subroutine nicas_cmp_apply_smoother
 ! Subroutine: nicas_cmp_apply_sqrt
 !> Apply NICAS method square-root
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_sqrt(nicas_cmp,mpl,geom,cv_cmp,fld,nonunit_diag)
+subroutine nicas_cmp_apply_sqrt(nicas_cmp,mpl,geom,cv_cmp,fld)
 
 implicit none
 
@@ -4003,22 +3900,16 @@ type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(geom_type),intent(in) :: geom                     !< Geometry
 type(cv_cmp_type),intent(in) :: cv_cmp                 !< Control vector component
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
-logical,optional,intent(in) :: nonunit_diag            !< If true (default), apply coef_ens factor
 
 ! Local variable
 integer :: ic0a,il0
 real(kind_real) :: alpha_a(nicas_cmp%nsa),alpha_b(nicas_cmp%nsb)
-logical :: lnonunit_diag
 
 ! Set name
 @:set_name(nicas_cmp_apply_sqrt)
 
 ! Probe in
 @:probe_in()
-
-! Local flag
-lnonunit_diag = .true.
-if (present(nonunit_diag)) lnonunit_diag = nonunit_diag
 
 ! Check dimension
 if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
@@ -4039,11 +3930,11 @@ call nicas_cmp%apply_interp(mpl,geom,alpha_b,fld)
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
       if (geom%gmask_c0a(ic0a,il0)) then
-         ! Normalization
+         ! Apply normalization
          fld(ic0a,il0) = fld(ic0a,il0)*nicas_cmp%norm(ic0a,il0)
 
-         ! Apply ensemble coefficient square-root
-         if (lnonunit_diag) fld(ic0a,il0) = fld(ic0a,il0)*nicas_cmp%coef_ens(ic0a,il0)
+         ! Apply amplitude square-root
+         fld(ic0a,il0) = fld(ic0a,il0)*sqrt(nicas_cmp%a(ic0a,il0))
       end if
    end do
 end do
@@ -4058,7 +3949,7 @@ end subroutine nicas_cmp_apply_sqrt
 ! Subroutine: nicas_cmp_apply_sqrt_ad
 !> Apply NICAS method square-root adjoint
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_sqrt_ad(nicas_cmp,mpl,geom,fld,cv_cmp,nonunit_diag)
+subroutine nicas_cmp_apply_sqrt_ad(nicas_cmp,mpl,geom,fld,cv_cmp)
 
 implicit none
 
@@ -4068,22 +3959,16 @@ type(mpl_type),intent(inout) :: mpl                   !< MPI data
 type(geom_type),intent(in) :: geom                    !< Geometry
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
 type(cv_cmp_type),intent(inout) :: cv_cmp             !< Control vector component
-logical,optional,intent(in) :: nonunit_diag           !< If true (default), apply coef_ens factor
 
 ! Local variable
 integer :: ic0a,il0
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_cmp%nsb)
-logical :: lnonunit_diag
 
 ! Set name
 @:set_name(nicas_cmp_apply_sqrt_ad)
 
 ! Probe in
 @:probe_in()
-
-! Local flag
-lnonunit_diag = .true.
-if (present(nonunit_diag)) lnonunit_diag = nonunit_diag
 
 ! Check dimension
 if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
@@ -4095,10 +3980,10 @@ fld_tmp = fld
 do il0=1,geom%nl0
    do ic0a=1,geom%nc0a
       if (geom%gmask_c0a(ic0a,il0)) then
-         ! Apply ensemble coefficient square-root
-         if (lnonunit_diag) fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*nicas_cmp%coef_ens(ic0a,il0)
+         ! Apply amplitude square-root
+         fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*sqrt(nicas_cmp%a(ic0a,il0))
 
-         ! Normalization
+         ! Apply normalization
          fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*nicas_cmp%norm(ic0a,il0)
       end if
    end do
@@ -4784,10 +4669,10 @@ else
       if (mpl%myproc==iproc(itest)) fld(ic0a(itest),il0(itest)) = one
 
       ! Apply NICAS square-root adjoint
-      call nicas_cmp%apply_sqrt_ad(mpl,geom,fld,cv_cmp,.false.)
+      call nicas_cmp%apply_sqrt_ad(mpl,geom,fld,cv_cmp)
 
       ! Apply NICAS square-root 
-      call nicas_cmp%apply_sqrt(mpl,geom,cv_cmp,fld,.false.)
+      call nicas_cmp%apply_sqrt(mpl,geom,cv_cmp,fld)
 
       ! Broadcast normalization value
       if (mpl%myproc==iproc(itest)) norm = fld(ic0a(itest),il0(itest))

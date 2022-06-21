@@ -23,7 +23,7 @@ background error:
         nmembers: 10
     weight:
       date: 2010-01-01T12:00:00Z
-      filename: testdata/qg_error_covariance_training_bump_hyb/loc_hyb_coef.an.2010-01-01T12:00:00Z.nc
+      filename: testdata/qg_error_covariance_training_bump_hyb/hyb_coef_ens.an.2010-01-01T12:00:00Z.nc
   - covariance:
       covariance model: QgError
       horizontal_length_scale: 2.2e6
@@ -32,7 +32,7 @@ background error:
       vertical_length_scale: 15000.0
     weight:
       date: 2010-01-01T12:00:00Z
-      filename: testdata/qg_error_covariance_training_bump_hyb/sta_hyb_coef.an.2010-01-01T12:00:00Z.nc
+      filename: testdata/qg_error_covariance_training_bump_hyb/hyb_coef_sta.an.2010-01-01T12:00:00Z.nc
 dirac:
   date: 2010-01-01T12:00:00Z
   ixdir: [20]

@@ -1,0 +1,71 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 20
+  levels: 10
+  halo: 3
+lowres geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 10
+  levels: 10
+  halo: 3
+input variables: &vars [var]
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+ensemble:
+  members from template:
+    template:
+      date: 2010-01-01T12:00:00Z
+      filepath: testdata/quench_randomization_bump_nicas_F20/member_%mem%
+      state variables: *vars
+    pattern: '%mem%'
+    nmembers: 50
+    zero padding: 6
+background error:
+  covariance model: SABER
+  saber blocks:
+  - saber block name: BUMP_NICAS
+    saber central block: true
+    input variables: *vars
+    output variables: *vars
+    bump:
+      datadir: testdata
+      forced_radii: true
+      method: cor
+      new_nicas: true
+      prefix: quench_error_covariance_training_bump_hdiag_hyb-rnd/test
+      resol: 8.0
+      rh:
+        var: [10.0e6]
+      rv:
+        var: [10]
+      strategy: specific_univariate
+  randomization size: 30
+bump:
+  datadir: testdata
+  dc: 500.0e3
+  method: hyb-rnd
+  nc1: 500
+  nc3: 15
+  ne: 50
+  new_hdiag: true
+  nl0r: 10
+  prefix: quench_error_covariance_training_bump_hdiag_hyb-rnd/test
+  strategy: specific_univariate
+  write_hdiag: true
+  output:
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rh
+    parameter: loc_rh
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rv
+    parameter: loc_rv
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_ens
+    parameter: hyb_coef_ens
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_sta
+    parameter: hyb_coef_sta
+
+test:
+  reference filename: testref/quench_error_covariance_training_bump_hdiag_hyb-rnd/test.log.out

@@ -11,6 +11,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 
 #include "quench/Fields.h"
@@ -26,6 +27,13 @@ Increment::Increment(const Geometry & resol, const oops::Variables & vars,
 {
   fields_->zero();
   oops::Log::trace() << "Increment constructed." << std::endl;
+}
+// -----------------------------------------------------------------------------
+Increment::Increment(const Geometry & resol, const Increment & other)
+  : fields_()
+{
+  ABORT("Increment interpolator not implemented yet");
+  oops::Log::trace() << "Increment constructed from other." << std::endl;
 }
 // -----------------------------------------------------------------------------
 Increment::Increment(const Increment & other, const bool copy)
@@ -63,10 +71,14 @@ Increment & Increment::operator*=(const double & zz) {
   *fields_ *= zz;
   return *this;
 }
-
 // -----------------------------------------------------------------------------
 void Increment::zero() {
   fields_->zero();
+}
+// -----------------------------------------------------------------------------
+void Increment::zero(const util::DateTime & vt) {
+  fields_->zero();
+  fields_->time() = vt;
 }
 // -----------------------------------------------------------------------------
 void Increment::axpy(const double & zz, const Increment & dx,

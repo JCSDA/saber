@@ -23,8 +23,11 @@ if( oops_FOUND )
 
     # Drivers
     ErrorCovariance.h
-    ErrorCovarianceTraining.h
     Localization.h
+
+    # Applications
+    ErrorCovarianceTraining.h
+    Randomization.h
 
     )
 endif()

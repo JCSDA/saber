@@ -33,6 +33,7 @@ namespace oops {
 
 namespace quench {
   class Geometry;
+  class State;
 
 /// Increment Class: Difference between two states
 /*!
@@ -51,11 +52,13 @@ class Increment : public util::Printable,
 
 /// Constructor, destructor
   Increment(const Geometry &, const oops::Variables &, const util::DateTime &);
+  Increment(const Geometry &, const Increment &);
   Increment(const Increment &, const bool);
 
 /// Basic operators
   void diff(const State &, const State &);
   void zero();
+  void zero(const util::DateTime &);
   void dirac(const eckit::Configuration &);
   Increment & operator =(const Increment &);
   Increment & operator+=(const Increment &);

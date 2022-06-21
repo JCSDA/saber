@@ -29,6 +29,14 @@ Geometry::Geometry(const Parameters_ & params,
   // Initialize eckit communicator for ATLAS
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
+  // Halo
+  const boost::optional<size_t> &halo = params.halo.value();
+  if (halo != boost::none) {
+    halo_ = *halo;
+  } else {
+    halo_ = 0;
+  }
+
   if (params.functionSpace.value() == "StructuredColumns") {
     // StructuredColumns function space
 
@@ -43,52 +51,15 @@ Geometry::Geometry(const Parameters_ & params,
     // Setup distribution
     const atlas::grid::Distribution distribution(grid_, partitioner);
 
-    // Number of levels
-    levels_ = params.levels.value();
-
-    // Vertical unit
-    const boost::optional<std::vector<double>> &vunit = params.vunit.value();
-    for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-      if (vunit != boost::none) {
-        vunit_.push_back((*vunit)[jlevel]);
-      } else {
-        vunit_.push_back(static_cast<double>(jlevel+1));
-      }
-    }
-
-    // Halo
-    const boost::optional<size_t> &halo = params.halo.value();
-    if (halo != boost::none) {
-      halo_ = *halo;
-    } else {
-      halo_ = 0;
-    }
-
     // Setup function space
     functionSpace_ = atlas::functionspace::StructuredColumns(grid_, distribution,
                      atlas::option::halo(halo_));
-
-    // Print summary
-    this->print(oops::Log::info());
   } else if (params.functionSpace.value() == "NodeColumns") {
     if (comm_.size() == 1) {
       // Setup grid
       gridConfig_ = params.grid.value();
       oops::Log::info() << "Grid config: " << gridConfig_ << std::endl;
       grid_ = atlas::Grid(gridConfig_);
-
-      // Number of levels
-      levels_ = params.levels.value();
-
-      // Vertical unit
-      const boost::optional<std::vector<double>> &vunit = params.vunit.value();
-      for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-        if (vunit != boost::none) {
-          vunit_.push_back((*vunit)[jlevel]);
-        } else {
-          vunit_.push_back(static_cast<double>(jlevel+1));
-        }
-      }
       std::string gridName = gridConfig_.getString("name");
       if (gridName.substr(0, 2).compare("CS") == 0) {
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
@@ -107,7 +78,20 @@ Geometry::Geometry(const Parameters_ & params,
     ABORT(params.functionSpace.value() + " function space not implemented yet");
   }
 
-  //  Fill extra geometry fields
+  // Number of levels
+  levels_ = params.levels.value();
+
+  // Vertical unit
+  const boost::optional<std::vector<double>> &vunitParams = params.vunit.value();
+  for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
+    if (vunitParams != boost::none) {
+      vunit_.push_back((*vunitParams)[jlevel]);
+    } else {
+      vunit_.push_back(static_cast<double>(jlevel+1));
+    }
+  }
+
+  // Fill extra geometry fields
   extraFields_ = atlas::FieldSet();
   atlas::Field vunit = functionSpace_.createField<double>(
     atlas::option::name("vunit") | atlas::option::levels(levels_));
@@ -118,6 +102,9 @@ Geometry::Geometry(const Parameters_ & params,
     }
   }
   extraFields_->add(vunit);
+
+  // Print summary
+  this->print(oops::Log::info());
 }
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.levels_),

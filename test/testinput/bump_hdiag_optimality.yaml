@@ -2,23 +2,22 @@
 datadir: "testdata"
 prefix: "bump_hdiag_optimality/test__MPI_-_OMP_"
 model: "qg"
-write_c0: true
 
 # driver_param
-method: "cor"
+method: "loc"
 strategy: "specific_univariate"
+new_hdiag: true
 write_hdiag: true
-new_nicas: true
 check_optimality: true
 
 # model_param
-nl0: true
+nl0: 1
 levs: [1]
-nv: true
+nv: 1
 variables: ["q"]
 
 # ens1_param
-ens1_ne: 50
+ens1_ne: 1000
 
 # ens2_param
 
@@ -26,7 +25,7 @@ ens1_ne: 50
 nc1: 1500
 nc3: 15
 dc: 400.0e3
-nl0r: true
+nl0r: 1
 
 # diag_param
 ne: 50
@@ -34,8 +33,10 @@ ne: 50
 # fit_param
 
 # nicas_param
-resol: 8.0
+resol: 12.0
 forced_radii: true
+ncmp:
+  q: 3
 rh:
   q: [4000.0e3]
 rv:

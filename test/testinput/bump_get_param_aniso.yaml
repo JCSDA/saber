@@ -5,7 +5,7 @@ model: "qg"
 write_c0: true
 
 # driver_param
-method: "hyb-avg"
+method: "hyb-rnd"
 strategy: "common"
 new_normality: true
 new_vbal: true
@@ -24,6 +24,7 @@ variables: ["u","q"]
 ens1_ne: 50
 
 # ens2_param
+ens2_ne: 10
 
 # sampling_param
 nc1: 500
@@ -39,7 +40,6 @@ vbal_rad: 2000.0e3
 ne: 50
 
 # fit_param
-hybrid_loc_update: false
 
 # nicas_param
 resol: 8.0

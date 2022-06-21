@@ -1,0 +1,21 @@
+input geometry:
+  nx: 320
+  ny: 80
+  depths: [4500.0, 5500.0]
+output geometry:
+  nx: 80
+  ny: 20
+  depths: [4500.0, 5500.0]
+states:
+- input:
+    date: 2009-12-31T00:00:00Z
+    filename: testdata/qg_hr_truth/truth.fc.2009-12-15T00:00:00Z.P16D.nc
+    state variables: [x]
+  output:
+    date: 2009-12-31T00:00:00Z
+    datadir: testdata/qg_lr_truth
+    exp: truth
+    type: fc
+
+test:
+  reference filename: testref/qg_lr_truth/test.log.out

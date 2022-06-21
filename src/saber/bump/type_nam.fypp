@@ -12,7 +12,9 @@ use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm
 use iso_fortran_env, only: output_unit
 use tools_const, only: zero,hundredth,half,one,ten,hundred,pi,req,deg2rad,rad2deg
-use tools_kinds,only: kind_real,huge_real
+use tools_kinds, only: kind_real,huge_real
+use tools_func, only: cholesky
+use tools_repro, only: eq
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -48,7 +50,7 @@ type nam_type
    logical :: write_c0                                        !< Write subset Sc0 fields (full grid) using BUMP I/O
 
    ! driver_param
-   character(len=1024) :: method                              !< Localization/hybridization to compute ('cor', 'loc', 'hyb-avg', 'hyb-rnd' or 'dual-ens')
+   character(len=1024) :: method                              !< Localization/hybridization to compute ('cor', 'loc', 'hyb-rnd' or 'hyb-ens')
    character(len=1024) :: strategy                            !< Localization strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
    logical :: new_normality                                   !< New normality test
    logical :: new_vbal_cov                                    !< New vertical covariance
@@ -147,6 +149,7 @@ type nam_type
 
    ! diag_param
    integer :: ne                                              !< Ensemble size
+   integer :: ne_lr                                           !< Ensemble size of the low-resolution term (ensemble 2)
    real(kind_real) :: gen_kurt_th                             !< Threshold on generalized kurtosis (3.0 = Gaussian distribution)
    logical :: gau_approx                                      !< Gaussian approximation for asymptotic quantities
    integer :: avg_nbins                                       !< Number of bins for averaged statistics histograms
@@ -174,15 +177,14 @@ type nam_type
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
    integer :: fit_ncmp(0:nvmax)                               !< Number of components in the fit function
    logical :: write_hdiag_detail                              !< Write HDIAG components detail
-   logical :: hybrid_loc_update                               !< Update localization for hybridization
 
    ! nicas_param
-   logical :: nonunit_diag                                    !< Non-unit diagonal for the NICAS application
    real(kind_real) :: resol                                   !< Resolution
    integer :: nc1max                                          !< Maximum size of the Sc1 subset
    character(len=1024) :: nicas_draw_type                     !< Subsampling draw type ('random_uniform','random_coast' or 'octahedral')
    logical :: network                                         !< Network-base convolution calculation (distance-based if false)
    logical :: forced_radii                                    !< Force specific support radii
+   integer :: ncmp(0:nvmax)                                   !< Forced number of components
    real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
    real(kind_real) :: loc_wgt(nvmax,nvmax)                    !< Forced localization weights
@@ -220,9 +222,9 @@ type nam_type
    logical :: fname_var_used                                  !< Flag activated if a variance file is specified
    logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
    logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
-   logical :: input_nicas_norm                                !< Input section includes the nicas_norm parameter
-   logical :: output_nicas_coef_ens                           !< Output section includes the coef_ens parameter
    logical :: output_nicas_norm                               !< Output section includes the nicas_norm parameter
+   logical :: output_nicas_a                                  !< Output section includes the a parameter
+   real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'common_weighted' strategy
 contains
    procedure :: init => nam_init
    procedure :: read => nam_read
@@ -391,6 +393,7 @@ nam%irmax = 10000
 
 ! diag_param default
 nam%ne = 0
+nam%ne_lr = 0
 nam%gen_kurt_th = huge_real
 nam%gau_approx = .false.
 nam%avg_nbins = 0
@@ -424,15 +427,14 @@ nam%diag_rvflt = zero
 nam%fit_dl0 = 1
 nam%fit_ncmp = 1
 nam%write_hdiag_detail = .false.
-nam%hybrid_loc_update = .true.
 
 ! nicas_param default
-nam%nonunit_diag = .false.
 nam%resol = zero
 nam%nc1max = 15000
 nam%nicas_draw_type = 'random_uniform'
 nam%network = .false.
 nam%forced_radii = .false.
+nam%ncmp = 1
 nam%rh = -one
 nam%rv = -one
 nam%loc_wgt = -one
@@ -472,9 +474,8 @@ nam%wind_inflation = one
 nam%fname_var_used = .false.
 nam%fname_vbal_cov_used = .false.
 nam%fname_mom_used = .false.
-nam%input_nicas_norm = .false.
-nam%output_nicas_coef_ens = .false.
 nam%output_nicas_norm = .false.
+nam%output_nicas_a = .false.
 
 ! Probe out
 @:probe_out()
@@ -598,6 +599,7 @@ real(kind_real) :: dc
 integer :: nl0r
 integer :: irmax
 integer :: ne
+integer :: ne_lr
 real(kind_real) :: gen_kurt_th
 logical :: gau_approx
 integer :: avg_nbins
@@ -623,13 +625,12 @@ real(kind_real) :: diag_rvflt
 integer :: fit_dl0
 integer :: fit_ncmp(0:nvmax)
 logical :: write_hdiag_detail
-logical :: hybrid_loc_update
-logical :: nonunit_diag
 real(kind_real) :: resol
 integer :: nc1max
 character(len=1024) :: nicas_draw_type
 logical :: network
 logical :: forced_radii
+integer :: ncmp
 real(kind_real) :: rh(nl0max,0:nvmax)
 real(kind_real) :: rv(nl0max,0:nvmax)
 real(kind_real) :: loc_wgt(nvmax,nvmax)
@@ -765,6 +766,7 @@ namelist/sampling_param/ &
  & irmax
 namelist/diag_param/ &
  & ne, &
+ & ne_lr, &
  & gen_kurt_th, &
  & gau_approx, &
  & avg_nbins, &
@@ -790,15 +792,14 @@ namelist/fit_param/ &
  & diag_rvflt, &
  & fit_dl0, &
  & fit_ncmp, &
- & write_hdiag_detail, &
- & hybrid_loc_update
+ & write_hdiag_detail
 namelist/nicas_param/ &
- & nonunit_diag, &
  & resol, &
  & nc1max, &
  & nicas_draw_type, &
  & network, &
  & forced_radii, &
+ & ncmp, &
  & rh, &
  & rv, &
  & loc_wgt, &
@@ -960,6 +961,7 @@ if (mpl%main) then
 
    ! diag_param default
    ne = 0
+   ne_lr = 0
    gen_kurt_th = huge_real
    gau_approx = .false.
    avg_nbins = 0
@@ -993,15 +995,14 @@ if (mpl%main) then
    fit_dl0 = 1
    fit_ncmp = 1
    write_hdiag_detail = .false.
-   hybrid_loc_update = .true.
 
    ! nicas_param default
-   nonunit_diag = .false.
    resol = zero
    nc1max = 15000
    nicas_draw_type = 'random_uniform'
    network = .false.
    forced_radii = .false.
+   ncmp = 1
    rh = -one
    rv = -one
    loc_wgt = -one
@@ -1170,6 +1171,7 @@ if (mpl%main) then
    ! diag_param
    read(lunit,nml=diag_param)
    nam%ne = ne
+   nam%ne_lr = ne_lr
    nam%gen_kurt_th = gen_kurt_th
    nam%gau_approx = gau_approx
    nam%avg_nbins = avg_nbins
@@ -1198,16 +1200,15 @@ if (mpl%main) then
    nam%fit_dl0 = fit_dl0
    nam%fit_ncmp = fit_ncmp
    nam%write_hdiag_detail = write_hdiag_detail
-   nam%hybrid_loc_update = hybrid_loc_update
 
    ! nicas_param
    read(lunit,nml=nicas_param)
-   nam%nonunit_diag = nonunit_diag
    nam%resol = resol
    nam%nc1max = nc1max
    nam%nicas_draw_type = nicas_draw_type
    nam%network = network
    nam%forced_radii = forced_radii
+   nam%ncmp = ncmp
    nam%rh = rh
    nam%rv = rv
    nam%loc_wgt = loc_wgt
@@ -1380,6 +1381,7 @@ call mpl%f_comm%broadcast(nam%irmax,mpl%rootproc-1)
 
 ! diag_param
 call mpl%f_comm%broadcast(nam%ne,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%ne_lr,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%gen_kurt_th,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%gau_approx,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%avg_nbins,mpl%rootproc-1)
@@ -1407,15 +1409,14 @@ call mpl%f_comm%broadcast(nam%diag_rvflt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_dl0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%fit_ncmp,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_hdiag_detail,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%hybrid_loc_update,mpl%rootproc-1)
 
 ! nicas_param
-call mpl%f_comm%broadcast(nam%nonunit_diag,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%resol,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nc1max,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nicas_draw_type,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%network,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_radii,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%ncmp,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%loc_wgt,mpl%rootproc-1)
@@ -1721,6 +1722,7 @@ if (conf%has('irmax')) call conf%get_or_die('irmax',nam%irmax)
 
 ! diag_param
 if (conf%has('ne')) call conf%get_or_die('ne',nam%ne)
+if (conf%has('ne_lr')) call conf%get_or_die('ne_lr',nam%ne_lr)
 if (conf%has('gen_kurt_th')) call conf%get_or_die('gen_kurt_th',nam%gen_kurt_th)
 if (conf%has('gau_approx')) call conf%get_or_die('gau_approx',nam%gau_approx)
 if (conf%has('avg_nbins')) call conf%get_or_die('avg_nbins',nam%avg_nbins)
@@ -1814,10 +1816,8 @@ if (conf%has('fit_ncmp')) then
    end do
 end if
 if (conf%has('write_hdiag_detail')) call conf%get_or_die('write_hdiag_detail',nam%write_hdiag_detail)
-if (conf%has('hybrid_loc_update')) call conf%get_or_die('hybrid_loc_update',nam%hybrid_loc_update)
 
 ! nicas_param
-if (conf%has('nonunit_diag')) call conf%get_or_die('nonunit_diag',nam%nonunit_diag)
 if (conf%has('resol')) call conf%get_or_die('resol',nam%resol)
 if (conf%has('nc1max')) call conf%get_or_die('nc1max',nam%nc1max)
 if (conf%has('nicas_draw_type')) then
@@ -1826,6 +1826,13 @@ if (conf%has('nicas_draw_type')) then
 end if
 if (conf%has('network')) call conf%get_or_die('network',nam%network)
 if (conf%has('forced_radii')) call conf%get_or_die('forced_radii',nam%forced_radii)
+if (conf%has('ncmp')) then
+   call conf%get_or_die('ncmp',subconf)
+   if (subconf%has('common')) call subconf%get_or_die('common',nam%ncmp(0))
+   do iv=1,nam%nv
+      if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%ncmp(iv))
+   end do
+end if
 if (conf%has('rh')) then
    call conf%get_or_die('rh',subconf)
    if (subconf%has('common')) then
@@ -2022,21 +2029,13 @@ if (conf%has('wind_nsg')) call conf%get_or_die('wind_nsg',nam%wind_nsg)
 if (conf%has('wind_inflation')) call conf%get_or_die('wind_inflation',nam%wind_inflation)
 
 ! helpers
-if (conf%has('input')) then
-   call conf%get_or_die('input',confs)
-   do iconf=1,size(confs)
-      call confs(iconf)%get_or_die('parameter',str)
-      parameter = str
-      if (trim(parameter)=='nicas_norm') nam%input_nicas_norm = .true.
-   end do
-end if
 if (conf%has('output')) then
    call conf%get_or_die('output',confs)
    do iconf=1,size(confs)
       call confs(iconf)%get_or_die('parameter',str)
       parameter = str
-      if (trim(parameter)=='nicas_coef_ens') nam%output_nicas_coef_ens = .true.
       if (trim(parameter)=='nicas_norm') nam%output_nicas_norm = .true.
+      if (trim(parameter)=='nicas_a') nam%output_nicas_a = .true.
    end do
 end if
 
@@ -2058,7 +2057,8 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv
+integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv,jv
+real(kind_real),allocatable :: loc_wgt(:,:)
 character(len=2) :: ivchar,ildwvchar
 
 ! Set name
@@ -2121,7 +2121,7 @@ end if
 ! Check driver_param
 if (nam%new_hdiag.or.nam%check_optimality) then
    select case (trim(nam%method))
-   case ('cor','loc','hyb-avg','hyb-rnd','dual-ens')
+   case ('cor','loc','hyb-rnd','hyb-ens')
    case default
       call mpl%abort('${subr}$','wrong method')
    end select
@@ -2161,18 +2161,19 @@ if (nam%check_randomization) then
 end if
 if (nam%check_consistency) then
    if (trim(nam%method)/='cor') call mpl%abort('${subr}$','cor method required for check_consistency')
-   if (.not.nam%new_nicas) call mpl%abort('${subr}$','new_nicas required for check_consistency')
+   if (.not.nam%new_hdiag) call mpl%abort('${subr}$','new_hdiag required for check_consistency')
+   if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_consistency')
 end if
 if (nam%check_optimality) then
-   if (trim(nam%method)/='cor') call mpl%abort('${subr}$','cor method required for check_optimality')
-   if (.not.nam%new_nicas) call mpl%abort('${subr}$','new_nicas required for check_optimality')
-   if (.not.nam%write_hdiag) call mpl%abort('${subr}$','write_hdiag required for check_optimality')
+   if (trim(nam%method)/='loc') call mpl%abort('${subr}$','loc method required for check_optimality')
+   if (.not.nam%new_hdiag) call mpl%abort('${subr}$','new_hdiag required for check_optimality')
+   if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_optimality')
 end if
 if (nam%check_no_point_mpi.and.nam%check_no_point_mask) &
  & call mpl%abort('${subr}$','check_no_point_mpi and check_no_point_mask are exclusive')
 if (nam%check_set_param.and.(.not.nam%new_nicas)) call mpl%abort('${subr}$','new_nicas required for check_set_param')
-if (nam%check_get_param.and.(.not.(nam%new_hdiag.and.(trim(nam%method)=='hyb-avg')))) &
- & call mpl%abort('${subr}$','new_var or update_var, and new_hdiag, and hyb-avg method required for check_get_param')
+if (nam%check_get_param.and.(.not.(nam%new_hdiag.and.(trim(nam%method)=='hyb-rnd')))) &
+ & call mpl%abort('${subr}$','new_var or update_var, and new_hdiag, and hyb-rnd method required for check_get_param')
 if (nam%check_apply_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
  & call mpl%abort('${subr}$','new_vbal or load_vbal required for check_apply_vbal')
 if (nam%check_apply_stddev.and..not.(nam%new_var.or.nam%update_var.or.nam%load_var)) &
@@ -2233,14 +2234,14 @@ if (nam%new_normality.or.nam%new_vbal_cov.or.nam%update_vbal_cov.or.(nam%new_vba
 end if
 
 ! Check ens2_param
-if ((nam%new_mom.or.nam%update_mom).and.((trim(nam%method)=='hyb-rnd').or.(trim(nam%method)=='dual-ens'))) then
+if ((nam%new_mom.or.nam%update_mom).and.((trim(nam%method)=='hyb-rnd').or.(trim(nam%method)=='hyb-ens'))) then
    if (nam%ens2_nsub<1) call mpl%abort('${subr}$','ens2_nsub should be non-negative')
    if (mod(nam%ens2_ne,nam%ens2_nsub)/=0) call mpl%abort('${subr}$','ens2_nsub should be a divider of ens2_ne')
    if (nam%ens2_ne/nam%ens2_nsub<=3) call mpl%abort('${subr}$','ens2_ne/ens2_nsub should be larger than 3')
 end if
 
 ! Check sampling_param
-if (nam%new_vbal_cov.or.nam%new_vbal.or.nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
+if (nam%new_vbal_cov.or.nam%new_vbal.or.nam%new_hdiag.or.nam%check_optimality) then
    if (nam%load_samp_local.and.nam%load_samp_global) call mpl%abort('${subr}$','load_samp_local and load_samp_global are exclusive')
    if (nam%load_samp_local.and.nam%write_samp_local) &
  & call mpl%abort('${subr}$','load_samp_local and write_samp_local are exclusive')
@@ -2280,8 +2281,7 @@ if (nam%new_vbal_cov.or.nam%new_vbal.or.nam%new_hdiag.or.nam%check_consistency.o
       end if
    end if
 else
-   if (nam%write_samp_grids) call mpl%abort('${subr}$','new_vbal_cov, new_vbal, new_hdiag, check_consistency or '// &
- & 'check_optimality required for write_samp_grids')
+   if (nam%write_samp_grids) call mpl%abort('${subr}$','new_vbal_cov, new_vbal or new_hdiag required for write_samp_grids')
 end if
 if (nam%load_vbal_cov.and.(.not.(nam%load_samp_local.or.nam%load_samp_global))) &
  & call mpl%abort('${subr}$','load_vbal_cov requires load_samp_local/global')
@@ -2293,7 +2293,7 @@ if (nam%load_vbal.and.(.not.(nam%load_samp_local.or.nam%load_samp_global))) &
  if (nam%write_vbal.and.(.not.(nam%load_samp_local.or.nam%load_samp_global)) &
  & .and.(.not.(nam%write_samp_local.or.nam%write_samp_global))) &
  & call mpl%abort('${subr}$','write_vbal requires write_samp_local/global if load_samp_local/global is not activated')
-if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
+if (nam%new_hdiag.or.nam%check_optimality) then
    if (nam%nc3<=0) call mpl%abort('${subr}$','nc3 should be positive')
    if (nam%nc4<=0) call mpl%abort('${subr}$','nc4 should be positive')
    if ((nam%nc4>1).and.(mod(nam%nc4,2)==1)) call mpl%abort('${subr}$','nc4 should be even')
@@ -2337,10 +2337,14 @@ if (nam%new_var) then
       end if
    end if
 end if
-if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
+if (nam%new_hdiag.or.nam%check_optimality) then
    select case (trim(nam%method))
-   case ('loc','hyb-avg','hyb-rnd','dual-ens')
+   case ('loc','hyb-rnd','hyb-ens')
       if (nam%ne<=3) call mpl%abort('${subr}$','ne should be larger than 3')
+   end select
+   select case (trim(nam%method))
+   case ('hyb-ens')
+      if (nam%ne_lr<=3) call mpl%abort('${subr}$','ne_lr should be larger than 3')
    end select
    if (.not.(nam%gen_kurt_th>zero)) call mpl%abort('${subr}$','gen_kurt_th should be positive')
    if (nam%local_diag) then
@@ -2352,7 +2356,7 @@ if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
 end if
 
 ! Check fit_param
-if (nam%new_hdiag.or.nam%check_consistency.or.nam%check_optimality) then
+if (nam%new_hdiag.or.nam%check_optimality) then
    if (nam%diag_rhflt<zero) call mpl%abort('${subr}$','diag_rhflt should be non-negative')
    if (nam%diag_rvflt<zero) call mpl%abort('${subr}$','diag_rvflt should be non-negative')
    if (nam%fit_dl0<=0) call mpl%abort('${subr}$','fit_dl0 should be postive')
@@ -2366,17 +2370,15 @@ if (nam%new_hdiag) then
    if (trim(nam%method)/='cor') then
       if (nam%ne>nam%ens1_ne) call mpl%warning('${subr}$','ensemble size larger than ens1_ne (might enhance sampling noise)')
       select case (trim(nam%method))
-      case ('hyb-avg','hyb-rnd','dual-ens')
-         if (nam%ne>nam%ens2_ne) call mpl%warning('${subr}$','ensemble size larger than ens2_ne (might enhance sampling noise)')
+      case ('hyb-ens')
+         if (nam%ne_lr>nam%ens2_ne) call mpl%warning('${subr}$', &
+ & 'hybrid ensemble size larger than ens2_ne (might enhance sampling noise)')
       end select
    end if
 end if
 
 ! Check nicas_param
 if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
-   if (nam%nonunit_diag) then
-      if (nam%method=='cor') call mpl%abort('${subr}$','nonunit_diag is inconsistent with correlation')
-   end if
    if (nam%check_randomization) then
       if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for check_randomization')
    end if
@@ -2391,11 +2393,11 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       if (nam%nc1max<=0) call mpl%abort('${subr}$','nc1max should be positive')
    end if
    if (nam%forced_radii) then
-      if (nam%new_hdiag) then
+      if (nam%new_hdiag.and.(.not.(nam%check_consistency.or.nam%check_optimality))) then
          select case (trim(nam%method))
-         case ('hyb-avg','hyb-rnd')
+         case ('hyb-rnd')
          case default
-           call mpl%abort('${subr}$','new_diag forbidden for forced_radii (except for static hybridization)')
+           call mpl%abort('${subr}$','new_hdiag forbidden for forced_radii in this case')
          end select
       end if
       if ((trim(nam%strategy)=='common').or.(trim(nam%strategy)=='common_weighted')) then
@@ -2406,11 +2408,35 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          ivmax = nam%nv
       end if
       do iv=ivmin,ivmax
+         if (nam%ncmp(iv)<1) call mpl%abort('${subr}$','ncmp should be positive')
          do il0=1,nam%nl0
             if (nam%rh(il0,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
             if (nam%rv(il0,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
          end do
       end do
+   end if
+   if (trim(nam%strategy)=='common_weighted') then
+      if (all(nam%loc_wgt<zero)) then
+         call mpl%abort('${subr}$','loc_wgt should be specified and non-negative for the common_weighted strategy')
+      else
+         ! Allocation
+         allocate(loc_wgt(nam%nv,nam%nv))
+         allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
+
+         ! Copy positive weights and set non-specified values to one
+         loc_wgt = nam%loc_wgt(1:nam%nv,1:nam%nv)
+         do iv=1,nam%nv
+            do jv=1,nam%nv
+               if (eq(nam%loc_wgt(iv,jv),-one)) loc_wgt(iv,jv) = one
+            end do
+         end do
+
+         ! Cholesky decomposition
+         call cholesky(mpl,nam%nv,loc_wgt,nam%loc_wgt_sqrt)
+
+         ! Release memory
+         deallocate(loc_wgt)
+      end if
    end if
    select case (trim(nam%nicas_draw_type))
    case ('random_uniform')
@@ -2620,6 +2646,7 @@ call mpl%write('irmax',nam%irmax)
 write(mpl%info,'(a7,a)') '','Diagnostics parameters'
 call mpl%flush
 call mpl%write('ne',nam%ne)
+call mpl%write('ne_lr',nam%ne_lr)
 call mpl%write('gen_kurt_th',nam%gen_kurt_th)
 call mpl%write('gau_approx',nam%gau_approx)
 call mpl%write('avg_nbins',nam%avg_nbins)
@@ -2651,16 +2678,15 @@ call mpl%write('diag_rvflt',nam%diag_rvflt)
 call mpl%write('fit_dl0',nam%fit_dl0)
 call mpl%write('fit_ncmp',nam%nv+1,nam%fit_ncmp(0:nam%nv))
 call mpl%write('write_hdiag_detail',nam%write_hdiag_detail)
-call mpl%write('hybrid_loc_update',nam%hybrid_loc_update)
 
 ! nicas_param
 write(mpl%info,'(a7,a)') '','NICAS parameters'
 call mpl%flush
-call mpl%write('nonunit_diag',nam%nonunit_diag)
 call mpl%write('resol',nam%resol)
 call mpl%write('nc1max',nam%nc1max)
 call mpl%write('nicas_draw_type',nam%nicas_draw_type)
 call mpl%write('network',nam%network)
+call mpl%write('ncmp',nam%nv+1,nam%ncmp(0:nam%nv))
 call mpl%write('forced_radii',nam%forced_radii)
 profiles(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
 call mpl%write('rh',nam%nl0*(nam%nv+1),profiles(1:nam%nl0*(nam%nv+1)))

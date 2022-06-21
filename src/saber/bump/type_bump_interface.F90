@@ -76,6 +76,34 @@ call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf,f_grid,f_universe_rad
 end subroutine bump_create_c
 
 !----------------------------------------------------------------------
+! Subroutine: bump_second_geometry_c
+!> Second geometry
+!----------------------------------------------------------------------
+subroutine bump_second_geometry_c(key_bump,c_afunctionspace,c_afieldset) bind(c,name='bump_second_geometry_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(inout) :: key_bump         !< BUMP
+type(c_ptr),intent(in),value :: c_afunctionspace !< ATLAS function space
+type(c_ptr),intent(in),value :: c_afieldset      !< ATLAS fieldset containing geometry elements
+
+! Local variables
+type(bump_type),pointer :: bump
+type(atlas_functionspace) :: f_afunctionspace
+type(fieldset_type) :: f_fieldset
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_afunctionspace = atlas_functionspace(c_afunctionspace)
+f_fieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call bump%second_geometry(f_afunctionspace,f_fieldset)
+
+end subroutine bump_second_geometry_c
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_add_member_c
 !> Add member into bump%ens[1,2]
 !----------------------------------------------------------------------
@@ -158,7 +186,7 @@ end subroutine bump_update_var_c
 ! Subroutine: bump_update_mom_c
 !> Update moments, one member at a time
 !----------------------------------------------------------------------
-subroutine bump_update_mom_c(key_bump,c_afieldset,ie) bind(c,name='bump_update_mom_f90')
+subroutine bump_update_mom_c(key_bump,c_afieldset,ie,iens) bind(c,name='bump_update_mom_f90')
 
 implicit none
 
@@ -166,6 +194,7 @@ implicit none
 integer(c_int),intent(in) :: key_bump       !< BUMP
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 integer(c_int),intent(in) :: ie             !< Member index
+integer(c_int),intent(in) :: iens           !< Ensemble index
 
 ! Local variables
 type(bump_type),pointer :: bump
@@ -176,7 +205,7 @@ call bump_registry%get(key_bump,bump)
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%update_mom(f_fieldset,ie)
+call bump%update_mom(f_fieldset,ie,iens)
 
 end subroutine bump_update_mom_c
 
@@ -555,7 +584,7 @@ end subroutine bump_get_ncmp_c
 ! Subroutine: bump_get_parameter_c
 !> Get a parameter as field
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_c(key_bump,npar,cpar,icmp,c_afieldset) bind(c,name='bump_get_parameter_f90')
+subroutine bump_get_parameter_c(key_bump,npar,cpar,icmp,igeom,c_afieldset) bind(c,name='bump_get_parameter_f90')
 
 implicit none
 
@@ -564,6 +593,7 @@ integer(c_int),intent(in) :: key_bump       !< BUMP
 integer(c_int),intent(in) :: npar           !< Parameter name size
 character(c_char),intent(in) :: cpar(npar)  !< Parameter name
 integer(c_int),intent(in) :: icmp           !< Component index
+integer(c_int),intent(in) :: igeom          !< Geometry index
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
@@ -581,7 +611,7 @@ end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%get_parameter(param,icmp,f_fieldset)
+call bump%get_parameter(param,icmp,igeom,f_fieldset)
 
 end subroutine bump_get_parameter_c
 

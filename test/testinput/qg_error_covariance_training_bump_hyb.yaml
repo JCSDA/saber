@@ -27,27 +27,22 @@ bump:
   write_nicas_local: true
   output:
   - datadir: testdata/qg_error_covariance_training_bump_hyb
-    date: 2010-01-01T12:00:00Z
-    exp: loc_hyb_coef
-    parameter: loc_hyb_coef
+    exp: loc_rh
+    parameter: loc_rh
     type: an
   - datadir: testdata/qg_error_covariance_training_bump_hyb
-    date: 2010-01-01T12:00:00Z
-    exp: loc_hyb_rh
-    parameter: loc_hyb_rh
+    exp: loc_rv
+    parameter: loc_rv
     type: an
   - datadir: testdata/qg_error_covariance_training_bump_hyb
-    date: 2010-01-01T12:00:00Z
-    exp: loc_hyb_rv
-    parameter: loc_hyb_rv
+    exp: hyb_coef_ens
+    parameter: hyb_coef_ens
     type: an
   - datadir: testdata/qg_error_covariance_training_bump_hyb
-    date: 2010-01-01T12:00:00Z
-    exp: sta_hyb_coef
-    parameter: sta_hyb_coef
+    exp: hyb_coef_sta
+    parameter: hyb_coef_sta
     type: an
   - datadir: testdata/qg_error_covariance_training_bump_hyb
-    date: 2010-01-01T12:00:00Z
     exp: nicas_norm
     parameter: nicas_norm
     type: an

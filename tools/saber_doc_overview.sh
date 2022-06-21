@@ -32,7 +32,6 @@ cat<<EOF > ${docdir}/mainpage.h
 EOF
 
 # Directory structure
-echo "## Directory structure"
 echo -e " * The SABER repository is organized as follows:" >> ${docdir}/mainpage.h
 dir=()
 name=()
@@ -106,7 +105,6 @@ if type "cloc" > /dev/null ; then
    done
 
    # Code size and characteristics
-   echo "## Code size and characteristics"
    echo -e " * \section CLOC Code size and characteristics" >> ${docdir}/mainpage.h
    echo -e " * Code report obtained with [CLOC](https://github.com/AlDanial/cloc).\n" >> ${docdir}/mainpage.h
    OLDIFS=$IFS
@@ -134,7 +132,7 @@ if type "cloc" > /dev/null ; then
       rm -f cloc_${name[$index]}.csv
    done
 else
-   echo "cloc not found: no cloc report"
+   echo "WARNING: cloc not found: no cloc report"
 fi
 
 echo -e "*/" >> ${docdir}/mainpage.h

@@ -532,4 +532,9 @@ quench_dirac_gsi_gmao_global/test.log.out
 quench_dirac_spectralb/test.log.out
 quench_dirac_spectralb_from_L15/test.log.out
 quench_dirac_spectralb_from_CS/test.log.out
+quench_error_covariance_training_bump_hdiag_hyb-rnd/test.log.out
+quench_error_covariance_training_bump_hdiag_hyb-ens/test.log.out
+quench_error_covariance_training_bump_hdiag_hyb-ens_update/test.log.out
 quench_error_covariance_training_bump_nicas/test.log.out
+quench_randomization_bump_nicas_F10/test.log.out
+quench_randomization_bump_nicas_F20/test.log.out

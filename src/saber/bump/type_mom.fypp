@@ -371,7 +371,7 @@ end subroutine mom_write
 ! Subroutine: mom_update
 !> Update centered moments
 !----------------------------------------------------------------------
-subroutine mom_update(mom,mpl,nam,geom,bpar,samp,prefix,fld_c0a,ie)
+subroutine mom_update(mom,mpl,nam,geom,bpar,samp,prefix,fld_c0a,ie,iens)
 
 implicit none
 
@@ -385,9 +385,10 @@ type(samp_type),intent(in) :: samp                               !< Sampling
 character(len=*),intent(in) :: prefix                            !< Prefix
 real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer,intent(in) :: ie                                         !< Member index
+integer,intent(in) :: iens                                       !< Ensemble index
 
 ! Local variables
-integer :: isub,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,jc3,jc4,ic1a,ib,iv,jv,jc0a,idir
+integer :: ens_ne,ens_nsub,isub,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,jc3,jc4,ic1a,ib,iv,jv,jc0a,idir
 real(kind_real) :: fac1,fac2,fac3,fac4,fac5,fac_norm_cov,fac_norm_m22,cor_norm
 real(kind_real) :: fld_c0b(samp%nc0b,geom%nl0,nam%nv),fld_c0c(samp%nc0c,geom%nl0,nam%nv)
 real(kind_real) :: fld_c1a(samp%nc1a,geom%nl0)
@@ -406,8 +407,15 @@ write(mpl%info,'(a)') '--- Update moments'
 call mpl%flush
 
 ! Indices
-isub = (ie-1)/(nam%ens1_ne/nam%ens1_nsub)+1
-ie_sub = ie-(isub-1)*nam%ens1_ne/nam%ens1_nsub
+if (iens==1) then
+   ens_ne = nam%ens1_ne
+   ens_nsub = nam%ens1_nsub
+elseif (iens==2) then
+   ens_ne = nam%ens2_ne
+   ens_nsub = nam%ens2_nsub
+end if
+isub = (ie-1)/(ens_ne/ens_nsub)+1
+ie_sub = ie-(isub-1)*ens_ne/ens_nsub
 
 ! Computation factors
 fac1 = one/real(ie_sub,kind_real)
@@ -418,7 +426,7 @@ fac5 = real(ie_sub-1,kind_real)/real(ie_sub,kind_real)
 
 if (ie==1) then
    ! Allocation
-   call mom%alloc(nam,geom,bpar,samp,nam%ens1_ne,nam%ens1_nsub,prefix)
+   call mom%alloc(nam,geom,bpar,samp,ens_ne,ens_nsub,prefix)
 
    ! Initialization
    call mom%init(nam,bpar)
@@ -551,7 +559,7 @@ if (nam%check_dirac) then
    deallocate(pert_c0a)
 end if
 
-if (ie==nam%ens1_ne) then
+if (ie==mom%ne) then
    ! Normalize moments or set missing values
    fac_norm_cov = real(mom%nsub,kind_real)/real(mom%ne-mom%nsub,kind_real)
    fac_norm_m22 = real(mom%nsub,kind_real)/real(mom%ne,kind_real)

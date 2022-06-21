@@ -146,6 +146,9 @@ type geom_type
    integer :: nc0s                                 !< Halo S size
    type(linop_type),allocatable :: smoother(:)     !< Full grid smoother
    type(com_type) :: com_c0_AS                     !< Communication between halos A and S on subset Sc0
+
+   ! Allocation flag
+   logical :: allocated                            !< Allocation flag
 contains
    procedure :: partial_dealloc => geom_partial_dealloc
    procedure :: dealloc => geom_dealloc
@@ -186,6 +189,7 @@ contains
    procedure :: apply_smoother => geom_apply_smoother
    procedure :: apply_smoother_ad => geom_apply_smoother_ad
    procedure :: initialize_sampling => geom_initialize_sampling
+   procedure :: define_test_vectors => geom_define_test_vectors
    procedure :: c0_to_c0a => geom_c0_to_c0a
    procedure :: c0_to_proc => geom_c0_to_proc
    procedure :: c0_to_c0u => geom_c0_to_c0u
@@ -300,6 +304,7 @@ if (allocated(geom%vunit_c0a)) deallocate(geom%vunit_c0a)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
 if (allocated(geom%l0_to_l0i)) deallocate(geom%l0_to_l0i)
 call geom%io%dealloc
+geom%allocated = .false.
 
 ! Probe out
 @:probe_out()
@@ -404,6 +409,9 @@ if (nam%full_grid_smoother_nn>0) then
    call mpl%flush
    call geom%compute_smoother(mpl,nam)
 end if
+
+! Set allocation flag
+geom%allocated = .true.
 
 ! Print summary
 write(mpl%info,'(a7,a)') '','Geometry summary:'
@@ -1482,9 +1490,6 @@ ioc0 = .false.
 ! Loading variance
 ioc0 = ioc0.or.nam%load_var
 
-! Loading NICAS norm
-if (.not.nam%input_nicas_norm) ioc0 = ioc0.or.nam%load_nicas_global
-
 if (nam%write_c0) then
    ! Writing normality diagnostics
    ioc0 = ioc0.or.nam%new_normality
@@ -1502,9 +1507,7 @@ if (nam%write_c0) then
    ! Writing NICAS dirac
    ioc0 = ioc0.or.(nam%new_nicas.and.nam%check_dirac)
    ioc0 = ioc0.or.(nam%load_nicas_local.and.nam%check_dirac)
-
-   ! Writing NICAS norm
-   ioc0 = ioc0.or.(nam%new_nicas.and.nam%write_nicas_global.and.(.not.nam%output_nicas_norm))
+   ioc0 = ioc0.or.(nam%load_nicas_global.and.nam%check_dirac)
 end if
 
 if (ioc0) then
@@ -2537,6 +2540,51 @@ deallocate(order_s)
 @:probe_out()
 
 end subroutine geom_initialize_sampling
+
+!----------------------------------------------------------------------
+! Subroutine: geom_define_test_vectors
+!> Define test vectors
+!----------------------------------------------------------------------
+subroutine geom_define_test_vectors(geom,mpl,rng,nam,ntest,fld)
+
+! Passed variables
+class(geom_type),intent(in) :: geom                                 !< Geometry
+type(mpl_type),intent(inout) :: mpl                                 !< MPI data
+type(rng_type),intent(inout) :: rng                                 !< Random number generator
+type(nam_type),intent(in) :: nam                                    !< Namelist
+integer,intent(in) :: ntest                                         !< Number of vectors
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,ntest) !< Field
+
+! Local variables
+integer :: itest
+integer :: il0dir,iprocdir,ic0adir
+
+! Set name
+@:set_name(geom_define_test_vectors)
+
+! Probe in
+@:probe_in()
+
+! Resynchronize random number generator
+call rng%resync(mpl)
+
+do itest=1,ntest
+   ! Define random dirac location
+   call rng%rand(1,geom%nl0,il0dir)
+   call geom%rand_point(mpl,rng,il0dir,iprocdir,ic0adir)
+
+   ! Define test vector
+   fld(:,:,:,itest) = zero
+   if (iprocdir==mpl%myproc) fld(ic0adir,il0dir,1,itest) = one
+end do
+
+! Desynchronize random number generator
+call rng%desync(mpl)
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_define_test_vectors
 
 !----------------------------------------------------------------------
 ! Function: geom_c0_to_c0a

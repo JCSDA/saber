@@ -37,15 +37,14 @@ contains
    procedure :: alloc => diag_alloc
    procedure :: partial_dealloc => diag_partial_dealloc
    procedure :: dealloc => diag_dealloc
-   procedure :: filter_fit => diag_filter_fit
+   procedure :: filter => diag_filter
    procedure :: build_fit => diag_build_fit
-   procedure :: interp_fit => diag_interp_fit
+   procedure :: interp => diag_interp
    procedure :: test_dirac => diag_test_dirac
    procedure :: covariance => diag_covariance
    procedure :: correlation => diag_correlation
    procedure :: localization => diag_localization
    procedure :: hybridization => diag_hybridization
-   procedure :: dualens => diag_dualens
 end type diag_type
 
 private
@@ -90,15 +89,17 @@ end if
 diag%prefix = prefix
 
 ! Allocation
-allocate(diag%blk(0:diag%nc2a,bpar%nbe))
-do ib=1,bpar%nbe
-   if (bpar%diag_block(ib)) then
-      do ic2a=0,diag%nc2a
-         call diag%blk(ic2a,ib)%alloc(mpl,nam,geom,bpar,samp,ic2a,ib,prefix)
-      end do
-   end if
-end do
-if (nam%check_dirac) allocate(diag%dirac(geom%nc0a,geom%nl0,nam%nv))
+if (.not.allocated(diag%blk)) then
+   allocate(diag%blk(0:diag%nc2a,bpar%nbe))
+   do ib=1,bpar%nbe
+      if (bpar%diag_block(ib)) then
+         do ic2a=0,diag%nc2a
+            call diag%blk(ic2a,ib)%alloc(mpl,nam,geom,bpar,samp,ic2a,ib,prefix)
+         end do
+      end if
+   end do
+   if (nam%check_dirac) allocate(diag%dirac(geom%nc0a,geom%nl0,nam%nv))
+end if
 
 ! Probe out
 @:probe_out()
@@ -177,31 +178,37 @@ if (allocated(diag%dirac)) deallocate(diag%dirac)
 end subroutine diag_dealloc
 
 !----------------------------------------------------------------------
-! Subroutine: diag_filter_fit
-!> Filter fit diagnostics
+! Subroutine: diag_filter
+!> Filter fit parameters or hybridization coefficients
 !----------------------------------------------------------------------
-subroutine diag_filter_fit(diag,mpl,nam,geom,bpar,samp)
+subroutine diag_filter(diag,mpl,nam,geom,bpar,samp,hyb_coef_only)
 
 implicit none
 
 ! Passed variables
-class(diag_type),intent(inout) :: diag !< Diagnostic
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(samp_type),intent(in) :: samp     !< Sampling
+class(diag_type),intent(inout) :: diag         !< Diagnostic
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
+type(samp_type),intent(in) :: samp             !< Sampling
+logical,intent(in),optional :: hyb_coef_only   !< Interpolate hybridization coefficient only
 
 ! Local variables
 integer :: ib,il0,ic2a,icmp
-real(kind_real) :: coef_ens_c2a(samp%nc2a,geom%nl0)
 real(kind_real),allocatable :: a_c2a(:,:,:),rh_c2a(:,:,:),D11_c2a(:,:,:),D22_c2a(:,:,:),D12_c2a(:,:,:),rv_c2a(:,:,:)
+real(kind_real),allocatable :: hyb_coef_c2a(:,:)
+logical :: lhyb_coef_only
 
 ! Set name
-@:set_name(diag_filter_fit)
+@:set_name(diag_filter)
 
 ! Probe in
 @:probe_in()
+
+! Local flag
+lhyb_coef_only = .false.
+if (present(hyb_coef_only)) lhyb_coef_only = hyb_coef_only
 
 if (nam%local_diag) then
    ! Horizontal filtering
@@ -209,12 +216,14 @@ if (nam%local_diag) then
    call mpl%flush
 
    do ib=1,bpar%nbe
-      if (bpar%diag_block(ib)) then
+      if (bpar%fit_block(ib)) then
          write(mpl%info,'(a13,a,a)') '','Block ',trim(bpar%blockname(ib))
          call mpl%flush
 
          ! Allocation
-         if (bpar%fit_block(ib)) then
+         if (lhyb_coef_only) then
+            allocate(hyb_coef_c2a(samp%nc2a,geom%nl0))
+         else
             allocate(a_c2a(samp%nc2a,geom%nl0,diag%blk(0,ib)%ncmp))
             if (bpar%nc4(ib)==1) then
                allocate(rh_c2a(samp%nc2a,geom%nl0,diag%blk(0,ib)%ncmp))
@@ -225,12 +234,12 @@ if (nam%local_diag) then
             end if
             allocate(rv_c2a(samp%nc2a,geom%nl0,diag%blk(0,ib)%ncmp))
          end if
-
          do il0=1,geom%nl0
             do ic2a=1,samp%nc2a
                ! Copy data
-               coef_ens_c2a(ic2a,il0) = diag%blk(ic2a,ib)%coef_ens_l0(il0)
-               if (bpar%fit_block(ib)) then
+               if (lhyb_coef_only) then
+                  hyb_coef_c2a(ic2a,il0) = diag%blk(ic2a,ib)%hyb_coef(il0)
+               else
                   do icmp=1,diag%blk(0,ib)%ncmp
                      a_c2a(ic2a,il0,icmp) = diag%blk(ic2a,ib)%a_l0(il0,icmp)
                      if (bpar%nc4(ib)==1) then
@@ -243,13 +252,14 @@ if (nam%local_diag) then
                      rv_c2a(ic2a,il0,icmp) = diag%blk(ic2a,ib)%rv_l0(il0,icmp)
                   end do
                end if
-   
-               ! Apply bounds relatively to the global value
-               if (mpl%msv%isnot(coef_ens_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
-                  if ((coef_ens_c2a(ic2a,il0)<diag%blk(0,ib)%coef_ens_l0(il0)/bound) &
- & .or.(coef_ens_c2a(ic2a,il0)>diag%blk(0,ib)%coef_ens_l0(il0)*bound)) coef_ens_c2a(ic2a,il0) = mpl%msv%valr
-               end if
-               if (bpar%fit_block(ib)) then
+
+               ! Apply global bounds
+               if (lhyb_coef_only) then
+                  if (mpl%msv%isnot(hyb_coef_c2a(ic2a,il0)).and.mpl%msv%isnot(diag%blk(0,ib)%hyb_coef(il0))) then
+                     if ((hyb_coef_c2a(ic2a,il0)<diag%blk(0,ib)%hyb_coef(il0)/bound) &
+ & .or.(hyb_coef_c2a(ic2a,il0)>diag%blk(0,ib)%hyb_coef(il0)*bound)) hyb_coef_c2a(ic2a,il0) = mpl%msv%valr
+                  end if
+               else
                   do icmp=1,diag%blk(0,ib)%ncmp
                      if (mpl%msv%isnot(a_c2a(ic2a,il0,icmp)).and.mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
                         if ((a_c2a(ic2a,il0,icmp)<diag%blk(0,ib)%a_l0(il0,icmp)/bound) &
@@ -269,10 +279,6 @@ if (nam%local_diag) then
                            if ((D22_c2a(ic2a,il0,icmp)<diag%blk(0,ib)%D22_l0(il0,icmp)/bound) &
  & .or.(D22_c2a(ic2a,il0,icmp)>diag%blk(0,ib)%D22_l0(il0,icmp)*bound)) D22_c2a(ic2a,il0,icmp) = mpl%msv%valr
                         end if
-                        if (mpl%msv%isnot(D12_c2a(ic2a,il0,icmp)).and.mpl%msv%isnot(diag%blk(0,ib)%D12_l0(il0,icmp))) then
-                           if ((D12_c2a(ic2a,il0,icmp)<diag%blk(0,ib)%D12_l0(il0,icmp)/bound) &
- & .or.(D12_c2a(ic2a,il0,icmp)>diag%blk(0,ib)%D12_l0(il0,icmp)*bound)) D12_c2a(ic2a,il0,icmp) = mpl%msv%valr
-                        end if
                      end if
                      if (mpl%msv%isnot(rv_c2a(ic2a,il0,icmp)).and.mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
                         if ((rv_c2a(ic2a,il0,icmp)<diag%blk(0,ib)%rv_l0(il0,icmp)/bound) &
@@ -284,10 +290,11 @@ if (nam%local_diag) then
 
             if (nam%diag_rhflt>zero) then
                ! Median filter to remove extreme values, average filter to smooth data
-               call samp%diag_filter(mpl,'median',nam%diag_rhflt,coef_ens_c2a(:,il0))
-               call samp%diag_filter(mpl,'average',nam%diag_rhflt,coef_ens_c2a(:,il0))
-               do icmp=1,diag%blk(0,ib)%ncmp
-                  if (bpar%fit_block(ib)) then
+               if (lhyb_coef_only) then
+                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,hyb_coef_c2a(:,il0))
+                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,hyb_coef_c2a(:,il0))
+               else
+                  do icmp=1,diag%blk(0,ib)%ncmp
                      call samp%diag_filter(mpl,'median',nam%diag_rhflt,a_c2a(:,il0,icmp))
                      call samp%diag_filter(mpl,'average',nam%diag_rhflt,a_c2a(:,il0,icmp))
                      if (bpar%nc4(ib)==1) then
@@ -303,13 +310,14 @@ if (nam%local_diag) then
                      end if
                      call samp%diag_filter(mpl,'median',nam%diag_rhflt,rv_c2a(:,il0,icmp))
                      call samp%diag_filter(mpl,'average',nam%diag_rhflt,rv_c2a(:,il0,icmp))
-                  end if
-               end do
+                  end do
+               end if
             end if
-   
+
             ! Fill missing values
-            call samp%diag_fill(mpl,coef_ens_c2a(:,il0))
-            if (bpar%fit_block(ib)) then
+            if (lhyb_coef_only) then
+               call samp%diag_fill(mpl,hyb_coef_c2a(:,il0))
+            else
                do icmp=1,diag%blk(0,ib)%ncmp
                   call samp%diag_fill(mpl,a_c2a(:,il0,icmp))
                   if (bpar%nc4(ib)==1) then
@@ -322,11 +330,12 @@ if (nam%local_diag) then
                   call samp%diag_fill(mpl,rv_c2a(:,il0,icmp))
                end do
             end if
-   
+
             ! Copy data
             do ic2a=1,samp%nc2a
-               diag%blk(ic2a,ib)%coef_ens_l0(il0) = coef_ens_c2a(ic2a,il0)
-               if (bpar%fit_block(ib)) then
+               if (lhyb_coef_only) then
+                  diag%blk(ic2a,ib)%hyb_coef(il0) = hyb_coef_c2a(ic2a,il0)
+               else
                   do icmp=1,diag%blk(0,ib)%ncmp
                      diag%blk(ic2a,ib)%a_l0(il0,icmp) = a_c2a(ic2a,il0,icmp)
                      if (bpar%nc4(ib)==1) then
@@ -336,7 +345,7 @@ if (nam%local_diag) then
                         diag%blk(ic2a,ib)%D22_l0(il0,icmp) = D22_c2a(ic2a,il0,icmp)
                         diag%blk(ic2a,ib)%D12_l0(il0,icmp) = D12_c2a(ic2a,il0,icmp)
                         call tensor_d2r(mpl,diag%blk(ic2a,ib)%D11_l0(il0,icmp),diag%blk(ic2a,ib)%D22_l0(il0,icmp), &
-    & diag%blk(ic2a,ib)%D12_l0(il0,icmp),diag%blk(ic2a,ib)%rh_l0(il0,icmp))
+ & diag%blk(ic2a,ib)%D12_l0(il0,icmp),diag%blk(ic2a,ib)%rh_l0(il0,icmp))
                      end if
                      diag%blk(ic2a,ib)%rv_l0(il0,icmp) = rv_c2a(ic2a,il0,icmp)
                   end do
@@ -345,7 +354,9 @@ if (nam%local_diag) then
          end do
 
          ! Release memory
-         if (bpar%fit_block(ib)) then
+         if (lhyb_coef_only) then
+            deallocate(hyb_coef_c2a)
+         else
             deallocate(a_c2a)
             if (bpar%nc4(ib)==1) then
                deallocate(rh_c2a)
@@ -366,11 +377,12 @@ if (nam%diag_rvflt>zero) then
    call mpl%flush
 
    do ib=1,bpar%nbe
-      if (bpar%diag_block(ib)) then
+      if (bpar%fit_block(ib)) then
          ! Vertical filtering
          do ic2a=0,diag%nc2a
-            call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%coef_ens_l0)
-            if (bpar%fit_block(ib)) then
+            if (lhyb_coef_only) then
+               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%hyb_coef)
+            else
                do icmp=1,diag%blk(0,ib)%ncmp
                   call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%a_l0(:,icmp))
                   call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ib)%rh_l0(:,icmp))
@@ -390,7 +402,7 @@ end if
 ! Probe out
 @:probe_out()
 
-end subroutine diag_filter_fit
+end subroutine diag_filter
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_build_fit
@@ -421,7 +433,7 @@ write(mpl%info,'(a10,a)') '','Fit RMSE:'
 call mpl%flush
 
 do ib=1,bpar%nbe
-   if (bpar%diag_block(ib).and.bpar%fit_block(ib)) then
+   if (bpar%fit_block(ib)) then
       ! Build fit
       do ic2a=0,diag%nc2a
          ! Compute full fit
@@ -480,43 +492,52 @@ end do
 end subroutine diag_build_fit
 
 !----------------------------------------------------------------------
-! Subroutine: diag_interp_fit
-!> Interpolate fit diagnostics
+! Subroutine: diag_interp
+!> Interpolate fit parameters or hybridization coefficients
 !----------------------------------------------------------------------
-subroutine diag_interp_fit(diag,mpl,nam,geom,bpar,samp)
+subroutine diag_interp(diag,mpl,nam,geom,bpar,samp,hyb_coef_only)
 
 implicit none
 
 ! Passed variables
-class(diag_type),intent(inout) :: diag !< Diagnostic
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
-type(samp_type),intent(in) :: samp     !< Sampling
+class(diag_type),intent(inout) :: diag         !< Diagnostic
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(bpar_type),intent(in) :: bpar             !< Block parameters
+type(samp_type),intent(in) :: samp             !< Sampling
+logical,intent(in),optional :: hyb_coef_only   !< Interpolate hybridization coefficient only
 
 ! Local variables
 integer :: ib,n,i,il0,il0i,ic2amin,ic2amax,ic2a,ic0a,icmp
 real(kind_real),allocatable :: profile(:,:),fld_c2a(:,:,:),fld_c2b(:,:,:),fld_c0a(:,:,:)
+logical :: lhyb_coef_only
 
 ! Set name
-@:set_name(diag_interp_fit)
+@:set_name(diag_interp)
 
 ! Probe in
 @:probe_in()
+
+! Local flag
+lhyb_coef_only = .false.
+if (present(hyb_coef_only)) lhyb_coef_only = hyb_coef_only
 
 write(mpl%info,'(a10,a)') '','Interpolate fit diagnostics:'
 call mpl%flush
 
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib)) then
+   if (bpar%fit_block(ib)) then
       write(mpl%info,'(a13,a,a)') '','Block ',trim(bpar%blockname(ib))
       call mpl%flush
 
       ! Allocation
-      n = 2
-      if (bpar%fit_block(ib)) then
-         n = n+3*diag%blk(0,ib)%ncmp
+      if (lhyb_coef_only) then
+         ! Interpolate hybridization coeffient
+         n = 1
+      else
+         ! Interpolate fit parameters
+         n = 3*diag%blk(0,ib)%ncmp
          if (bpar%nc4(ib)>1) n = n+3*diag%blk(0,ib)%ncmp
       end if
       allocate(profile(geom%nl0,n))
@@ -525,9 +546,9 @@ do ib=1,bpar%nbe
          allocate(fld_c2b(samp%nc2b,geom%nl0,n))
       end if
       allocate(fld_c0a(geom%nc0a,geom%nl0,n))
-      allocate(diag%blk(0,ib)%coef_ens_c0a(geom%nc0a,geom%nl0))
-      allocate(diag%blk(0,ib)%coef_sta_c0a(geom%nc0a,geom%nl0))
-      if (bpar%fit_block(ib)) then
+      if (lhyb_coef_only) then
+         allocate(diag%blk(0,ib)%hyb_coef_c0a(geom%nc0a,geom%nl0))
+      else
          allocate(diag%blk(0,ib)%a_c0a(geom%nc0a,geom%nl0,diag%blk(0,ib)%ncmp))
          allocate(diag%blk(0,ib)%rh_c0a(geom%nc0a,geom%nl0,diag%blk(0,ib)%ncmp))
          if (bpar%nc4(ib)>1) then
@@ -549,11 +570,10 @@ do ib=1,bpar%nbe
 
       do ic2a=ic2amin,ic2amax
          ! Select profile
-         i = 1
-         profile(:,i) = diag%blk(ic2a,ib)%coef_ens_l0
-         i = i+1
-         profile(:,i) = diag%blk(ic2a,ib)%coef_sta
-         if (bpar%fit_block(ib)) then
+         if (lhyb_coef_only) then
+            profile(:,1) = diag%blk(ic2a,ib)%hyb_coef
+         else
+            i = 0
             do icmp=1,diag%blk(0,ib)%ncmp
                i = i+1
                profile(:,i) = diag%blk(ic2a,ib)%a_l0(:,icmp)
@@ -607,11 +627,10 @@ do ib=1,bpar%nbe
       end if
 
       ! Copy field
-      i = 1
-      diag%blk(0,ib)%coef_ens_c0a = fld_c0a(:,:,i)
-      i = i+1
-      diag%blk(0,ib)%coef_sta_c0a = fld_c0a(:,:,i)
-      if (bpar%fit_block(ib)) then
+      if (lhyb_coef_only) then
+         diag%blk(0,ib)%hyb_coef_c0a = fld_c0a(:,:,1)
+      else
+         i = 0
          do icmp=1,diag%blk(0,ib)%ncmp
             i = i+1
             diag%blk(0,ib)%a_c0a(:,:,icmp) = fld_c0a(:,:,i)
@@ -637,16 +656,13 @@ do ib=1,bpar%nbe
          deallocate(fld_c2b)
       end if
       deallocate(fld_c0a)
-
-      ! Compute global weight
-      diag%blk(0,ib)%wgt = sum(diag%blk(0,ib)%coef_ens_l0)/real(geom%nl0,kind_real)
    end if
 end do
 
 ! Probe out
 @:probe_out()
 
-end subroutine diag_interp_fit
+end subroutine diag_interp
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_test_dirac
@@ -851,7 +867,6 @@ do ib=1,bpar%nb
 
       ! Copy covariance
       do ic2a=0,diag%nc2a
-         diag%blk(ic2a,ib)%coef_ens_l0 = mpl%msv%valr
          diag%blk(ic2a,ib)%raw = avg%blk(ic2a,ib)%m11
          diag%blk(ic2a,ib)%valid = avg%blk(ic2a,ib)%nc1a
       end do
@@ -926,11 +941,6 @@ do ib=1,bpar%nbe
          diag%blk(ic2a,ib)%raw = avg%blk(ic2a,ib)%cor
          diag%blk(ic2a,ib)%valid = avg%blk(ic2a,ib)%nc1a_cor
 
-         ! Set diagonal coefficient
-         do il0=1,geom%nl0
-            diag%blk(ic2a,ib)%coef_ens_l0(il0) = diag%blk(ic2a,ib)%raw(1,1,bpar%il0rz(il0,ib),il0)
-         end do
-
          ! Fitting
          if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
 
@@ -942,13 +952,13 @@ do ib=1,bpar%nbe
 end do
 
 ! Filter fit
-call diag%filter_fit(mpl,nam,geom,bpar,samp)
+call diag%filter(mpl,nam,geom,bpar,samp)
 
 ! Build fit
 call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Interpolate fit values
-call diag%interp_fit(mpl,nam,geom,bpar,samp)
+call diag%interp(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
 call diag%test_dirac(mpl,nam,geom,bpar)
@@ -962,9 +972,9 @@ do ib=1,bpar%nbe
       call mpl%flush
 
       do il0=1,geom%nl0
-          if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
+          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
               write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
               call mpl%flush
           end if
       end do
@@ -1033,42 +1043,83 @@ integer :: ib,iv,ic2a,icmp,il0
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
-write(mpl%info,'(a10,a)') '','Compute and fit localization:'
-call mpl%flush
-do ib=1,bpar%nbe
-   if (bpar%diag_block(ib)) then
-      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush(.false.)
+if (nam%forced_radii.and.(.not.nam%check_optimality)) then
+   ! Compute forced localization function
+   write(mpl%info,'(a10,a)') '','Compute forced localization function'
+   call mpl%flush
+   do ib=1,bpar%nbe
+      if (bpar%diag_block(ib)) then
+         do ic2a=0,diag%nc2a
+            ! Raw function
+            diag%blk(ic2a,ib)%raw = mpl%msv%valr
+            diag%blk(ic2a,ib)%valid = mpl%msv%valr
 
-      ! Initialization
-      call mpl%prog_init(diag%nc2a+1)
-      iv = bpar%b_to_v1(ib)
+            ! Initialization
+            iv = bpar%b_to_v1(ib)
 
-      do ic2a=0,diag%nc2a
-         ! Compute localization
-         call diag%blk(ic2a,ib)%localization(mpl,geom,bpar,avg%blk(ic2a,ib))
+            ! Allocation
+            allocate(diag%blk(ic2a,ib)%a_l0(geom%nl0,diag%blk(ic2a,ib)%ncmp))
+            allocate(diag%blk(ic2a,ib)%rh_l0(geom%nl0,diag%blk(ic2a,ib)%ncmp))
+            if (bpar%nc4(ib)>1) then
+               allocate(diag%blk(ic2a,ib)%D11_l0(geom%nl0,diag%blk(ic2a,ib)%ncmp))
+               allocate(diag%blk(ic2a,ib)%D22_l0(geom%nl0,diag%blk(ic2a,ib)%ncmp))
+               allocate(diag%blk(ic2a,ib)%D12_l0(geom%nl0,diag%blk(ic2a,ib)%ncmp))
+            end if
+            allocate(diag%blk(ic2a,ib)%rv_l0(geom%nl0,diag%blk(ic2a,ib)%ncmp))
 
-         ! Normalization
-         call diag%blk(ic2a,ib)%normalization(geom,bpar)
+            ! Copy parameters
+            do icmp=1,diag%blk(ic2a,ib)%ncmp
+               if (icmp==1) then
+                  diag%blk(ic2a,ib)%a_l0(:,icmp) = one
+               else
+                  diag%blk(ic2a,ib)%a_l0(:,icmp) = zero
+               end if
+               diag%blk(ic2a,ib)%rh_l0(:,icmp) = nam%rh(1:geom%nl0,iv)
+               if (bpar%nc4(ib)>1) then
+                  diag%blk(ic2a,ib)%D11_l0(:,icmp) = nam%rh(1:geom%nl0,iv)
+                  diag%blk(ic2a,ib)%D22_l0(:,icmp) = nam%rh(1:geom%nl0,iv)
+                  diag%blk(ic2a,ib)%D12_l0(:,icmp) = nam%rh(1:geom%nl0,iv)
+               end if
+               diag%blk(ic2a,ib)%rv_l0(:,icmp) = nam%rv(1:geom%nl0,iv)
+            end do
+         end do
+      end if
+   end do
+else
+   write(mpl%info,'(a10,a)') '','Compute and fit localization:'
+   call mpl%flush
+   do ib=1,bpar%nbe
+      if (bpar%diag_block(ib)) then
+         write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+         call mpl%flush(.false.)
 
-         ! Fitting
-         if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+         ! Initialization
+         call mpl%prog_init(diag%nc2a+1)
+         iv = bpar%b_to_v1(ib)
 
-         ! Update
-         call mpl%prog_print(ic2a+1)
-      end do
-      call mpl%prog_final
-   end if
-end do
+         do ic2a=0,diag%nc2a
+            ! Compute localization
+            call diag%blk(ic2a,ib)%localization(mpl,geom,bpar,avg%blk(ic2a,ib))
 
-! Filter fit
-call diag%filter_fit(mpl,nam,geom,bpar,samp)
+            ! Fitting
+            if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
+
+            ! Update
+            call mpl%prog_print(ic2a+1)
+         end do
+         call mpl%prog_final
+      end if
+   end do
+
+   ! Filter fit
+   call diag%filter(mpl,nam,geom,bpar,samp)
+end if
 
 ! Build fit
 call diag%build_fit(mpl,nam,geom,bpar)
 
 ! Interpolate fit values
-call diag%interp_fit(mpl,nam,geom,bpar,samp)
+call diag%interp(mpl,nam,geom,bpar,samp)
 
 ! Dirac test
 call diag%test_dirac(mpl,nam,geom,bpar)
@@ -1082,9 +1133,9 @@ do ib=1,bpar%nbe
       call mpl%flush
 
       do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
+         if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
             write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
+ & trim(mpl%peach),diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
       end do
@@ -1127,22 +1178,23 @@ end subroutine diag_localization
 ! Subroutine: diag_hybridization
 !> Compute diagnostic hybridization
 !----------------------------------------------------------------------
-subroutine diag_hybridization(diag,mpl,nam,geom,bpar,samp,avg,prefix)
+subroutine diag_hybridization(diag,mpl,nam,geom,bpar,samp,avg,loc1,prefix)
 
 implicit none
 
 ! Passed variables
-class(diag_type),intent(inout) :: diag !< Diagnostic (localization)
+class(diag_type),intent(inout) :: diag !< Diagnostic (hybridization)
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
-type(geom_type),intent(in) :: geom     !< Geometry
+type(geom_type),intent(in) :: geom(2)  !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
-type(avg_type),intent(in) :: avg       !< Averaged statistics
+type(avg_type),intent(in) :: avg(2)    !< Averaged statistics
+type(diag_type),intent(inout) :: loc1  !< Localization of ensemble 1
 character(len=*),intent(in) :: prefix  !< Diagnostic prefix
 
 ! Local variables
-integer :: ib,iv,ic2a,icmp,il0
+integer :: ib,iv,ic2a,il0
 
 ! Set name
 @:set_name(diag_hybridization)
@@ -1151,7 +1203,7 @@ integer :: ib,iv,ic2a,icmp,il0
 @:probe_in()
 
 ! Allocation
-call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
+call diag%alloc(mpl,nam,geom(2),bpar,samp,prefix)
 
 write(mpl%info,'(a10,a)') '','Compute and fit hybridization:'
 call mpl%flush
@@ -1166,28 +1218,7 @@ do ib=1,bpar%nbe
 
       do ic2a=0,diag%nc2a
          ! Compute hybridization
-         call diag%blk(ic2a,ib)%hybridization(mpl,nam,geom,bpar,avg%blk(ic2a,ib))
-
-         if (nam%forced_radii) then
-            ! No normalization/fitting, use forced radii
-            diag%blk(ic2a,ib)%ncmp = 1
-
-            ! Allocation
-            allocate(diag%blk(ic2a,ib)%a_l0(geom%nl0,1))
-            allocate(diag%blk(ic2a,ib)%rh_l0(geom%nl0,1))
-            allocate(diag%blk(ic2a,ib)%rv_l0(geom%nl0,1))
-
-            ! Initialization
-            diag%blk(ic2a,ib)%a_l0 = one
-            diag%blk(ic2a,ib)%rh_l0(:,1) = nam%rh(1:geom%nl0,iv)
-            diag%blk(ic2a,ib)%rv_l0(:,1) = nam%rv(1:geom%nl0,iv)
-         else
-            ! Normalization
-            call diag%blk(ic2a,ib)%normalization(geom,bpar)
-
-            ! Fitting
-            if (bpar%fit_block(ib)) call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
-         end if
+         call diag%blk(ic2a,ib)%hybridization(mpl,nam,geom,bpar,avg(1)%blk(ic2a,ib),avg(2)%blk(ic2a,ib),loc1%blk(ic2a,ib))
 
          ! Update
          call mpl%prog_print(ic2a+1)
@@ -1196,17 +1227,13 @@ do ib=1,bpar%nbe
    end if
 end do
 
-! Filter fit
-call diag%filter_fit(mpl,nam,geom,bpar,samp)
+! Filter hybridization weights
+call loc1%filter(mpl,nam,geom(1),bpar,samp,.true.)
+call diag%filter(mpl,nam,geom(2),bpar,samp,.true.)
 
-! Build fit
-call diag%build_fit(mpl,nam,geom,bpar)
-
-! Interpolate fit values
-call diag%interp_fit(mpl,nam,geom,bpar,samp)
-
-! Dirac test
-call diag%test_dirac(mpl,nam,geom,bpar)
+! Interpolate hybridization weights (at ensemble 1 resolution)
+call loc1%interp(mpl,nam,geom(1),bpar,samp,.true.)
+call diag%interp(mpl,nam,geom(1),bpar,samp,.true.)
 
 ! Print results
 write(mpl%info,'(a10,a)') '','Results:'
@@ -1216,43 +1243,13 @@ do ib=1,bpar%nbe
       write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
 
-      do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
-            write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
+      do il0=1,geom(2)%nl0
+         if (mpl%msv%isnot(loc1%blk(0,ib)%hyb_coef(il0)).and.mpl%msv%isnot(diag%blk(0,ib)%hyb_coef(il0))) then
+            write(mpl%info,'(a16,a,i3,a,a,f4.2,a,f4.2,a)') '','Level: ',nam%levs(il0),' ~> hybrid coefficients: ', &
+ & trim(mpl%peach),loc1%blk(0,ib)%hyb_coef(il0),trim(mpl%black)//' / '//trim(mpl%peach),diag%blk(0,ib)%hyb_coef(il0),trim(mpl%black)
             call mpl%flush
          end if
       end do
-      if (bpar%fit_block(ib)) then
-         if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
-            write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
-            call mpl%flush
-            do icmp=1,diag%blk(0,ib)%ncmp
-               write(mpl%info,'(a16,a,i1)') '','Component : ',icmp
-               call mpl%flush
-               do il0=1,geom%nl0
-                  if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
- & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
-                     call mpl%flush
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. hor. support:   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
-                        call mpl%flush
-                     end if
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. ver. support:   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
-                        call mpl%flush
-                     end if
-                  end if
-               end do
-            end do
-         end if
-      end if
-      if (mpl%msv%isnot(diag%blk(0,ib)%coef_sta)) write(mpl%info,'(a13,a,a,f4.2,a)') '', &
- & 'Static coeff.:                          ',trim(mpl%purple),diag%blk(0,ib)%coef_sta,trim(mpl%black)
-      call mpl%flush
    end if
 end do
 
@@ -1260,171 +1257,5 @@ end do
 @:probe_out()
 
 end subroutine diag_hybridization
-
-!----------------------------------------------------------------------
-! Subroutine: diag_dualens
-!> Compute diagnostic dualens
-!----------------------------------------------------------------------
-subroutine diag_dualens(diag,mpl,nam,geom,bpar,samp,avg,avg_lr,diag_lr,prefix,prefix_lr)
-
-implicit none
-
-! Passed variables
-class(diag_type),intent(inout) :: diag   !< Diagnostic (localization)
-type(mpl_type),intent(inout) :: mpl      !< MPI data
-type(nam_type),intent(in) :: nam         !< Namelist
-type(geom_type),intent(in) :: geom       !< Geometry
-type(bpar_type),intent(in) :: bpar       !< Block parameters
-type(samp_type),intent(in) :: samp       !< Sampling
-type(avg_type),intent(in) :: avg         !< Averaged statistics
-type(avg_type),intent(in) :: avg_lr      !< LR averaged statistics
-type(diag_type),intent(inout) :: diag_lr !< Diagnostic (LR localization)
-character(len=*),intent(in) :: prefix    !< Diagnostic prefix
-character(len=*),intent(in) :: prefix_lr !< LR diagnostic prefix
-
-! Local variables
-integer :: ib,iv,ic2a,icmp,il0
-
-! Set name
-@:set_name(diag_dualens)
-
-! Probe in
-@:probe_in()
-
-! Allocation
-call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
-call diag_lr%alloc(mpl,nam,geom,bpar,samp,prefix_lr)
-
-write(mpl%info,'(a10,a)') '','Compute and fit dual-ensemble hybridization:'
-call mpl%flush
-do ib=1,bpar%nbe
-   if (bpar%diag_block(ib)) then
-      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush(.false.)
-
-      ! Initialization
-      call mpl%prog_init(diag%nc2a+1)
-      iv = bpar%b_to_v1(ib)
-
-      do ic2a=0,diag%nc2a
-         ! Compute dualens
-         call diag%blk(ic2a,ib)%dualens(mpl,geom,bpar,avg%blk(ic2a,ib),avg_lr%blk(ic2a,ib),diag_lr%blk(ic2a,ib))
-
-         ! Normalization
-         call diag%blk(ic2a,ib)%normalization(geom,bpar)
-         call diag_lr%blk(ic2a,ib)%normalization(geom,bpar)
-
-         ! Fitting
-         if (bpar%fit_block(ib)) then
-            call diag%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
-            call diag_lr%blk(ic2a,ib)%fitting(mpl,nam,geom,bpar)
-         end if
-
-         ! Update
-         call mpl%prog_print(ic2a+1)
-      end do
-      call mpl%prog_final
-   end if
-end do
-
-! Filter fit
-call diag%filter_fit(mpl,nam,geom,bpar,samp)
-call diag_lr%filter_fit(mpl,nam,geom,bpar,samp)
-
-! Build fit
-call diag%build_fit(mpl,nam,geom,bpar)
-call diag_lr%build_fit(mpl,nam,geom,bpar)
-
-! Interpolate fit values
-call diag%interp_fit(mpl,nam,geom,bpar,samp)
-call diag_lr%interp_fit(mpl,nam,geom,bpar,samp)
-
-! Dirac test
-call diag%test_dirac(mpl,nam,geom,bpar)
-call diag_lr%test_dirac(mpl,nam,geom,bpar)
-
-! Print results
-write(mpl%info,'(a10,a)') '','Results:'
-call mpl%flush
-do ib=1,bpar%nbe
-   if (bpar%diag_block(ib)) then
-      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush
-
-      do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag%blk(0,ib)%coef_ens_l0(il0))) then
-            write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero (HR): ', &
- & trim(mpl%peach),diag%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
-            call mpl%flush
-         end if
-      end do
-      if (bpar%fit_block(ib)) then
-         if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
-            write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
-            call mpl%flush
-            do icmp=1,diag%blk(0,ib)%ncmp
-               write(mpl%info,'(a16,a,i1)') '','Component : ',icmp
-               call mpl%flush
-               do il0=1,geom%nl0
-                  if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude (HR):  ', &
- & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
-                     call mpl%flush
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. hor. support (HR):   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
-                        call mpl%flush
-                     end if
-                     if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. ver. support (HR):   ',trim(mpl%aqua), &
- & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
-                        call mpl%flush
-                     end if
-                  end if
-               end do
-            end do
-         end if
-      end if
-      do il0=1,geom%nl0
-         if (mpl%msv%isnot(diag_lr%blk(0,ib)%coef_ens_l0(il0))) then
-            write(mpl%info,'(a10,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero (LR): ', &
- & trim(mpl%peach),diag_lr%blk(0,ib)%coef_ens_l0(il0),trim(mpl%black)
-            call mpl%flush
-         end if
-      end do
-      if (bpar%fit_block(ib)) then
-         if (mpl%msv%isnot(diag_lr%blk(0,ib)%ncmp)) then
-            write(mpl%info,'(a10,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag_lr%blk(0,ib)%ncmp,trim(mpl%black)
-            call mpl%flush
-            do icmp=1,diag_lr%blk(0,ib)%ncmp
-               write(mpl%info,'(a10,a,i1)') '','Component : ',icmp
-               call mpl%flush
-               do il0=1,geom%nl0
-                  if (mpl%msv%isnot(diag_lr%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a13,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude (LR):  ', &
- & trim(mpl%peach),diag_lr%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
-                     call mpl%flush
-                     if (mpl%msv%isnot(diag_lr%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. hor. support (LR):   ',trim(mpl%aqua), &
- & diag_lr%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
-                        call mpl%flush
-                     end if
-                     if (mpl%msv%isnot(diag_lr%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. ver. support (LR):   ',trim(mpl%aqua), &
- & diag_lr%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
-                        call mpl%flush
-                     end if
-                  end if
-               end do
-            end do
-         end if
-      end if
-   end if
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine diag_dualens
 
 end module type_diag
