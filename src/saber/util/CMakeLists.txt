@@ -5,8 +5,6 @@
 
 set( util_src_files
 
-atlasFieldSet.h
-
 tools_atlas.fypp
 tools_const.fypp
 tools_kinds.fypp
