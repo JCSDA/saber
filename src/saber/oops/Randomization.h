@@ -127,7 +127,7 @@ template <typename MODEL> class Randomization : public oops::Application {
   }
 
  private:
-  std::string appname() const {
+  std::string appname() const override {
     return "saber::Randomization<" + MODEL::name() + ">";
   }
 };
