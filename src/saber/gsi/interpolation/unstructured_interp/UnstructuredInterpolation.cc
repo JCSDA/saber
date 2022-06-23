@@ -61,13 +61,13 @@ void UnstructuredInterpolation::apply(const atlas::FieldSet & infields,
                                      atlas::FieldSet & outfields) {
   // Allocate space for the output fields if the caller has not already done so
   for (int ifield = 0; ifield < infields.size(); ++ifield) {
-    std::string fname = infields.field(ifield).name();
+    std::string fname = infields[ifield].name();
     if (!outfields.has_field(fname)) {
       atlas::Field outfield = out_fspace_->createField<double>(atlas::option::name(fname) |
-                              atlas::option::levels(infields.field(ifield).levels()));
+                              atlas::option::levels(infields[ifield].levels()));
       outfields.add(outfield);
     }
-    this->apply(infields.field(fname), outfields.field(fname));
+    this->apply(infields[fname], outfields[fname]);
   }
 }
 
@@ -76,13 +76,13 @@ void UnstructuredInterpolation::apply_ad(const atlas::FieldSet & fields_grid2,
                                         atlas::FieldSet & fields_grid1) {
   // Allocate space for the output fields if the caller has not already done so
   for (int ifield = 0; ifield < fields_grid2.size(); ++ifield) {
-    std::string fname = fields_grid2.field(ifield).name();
+    std::string fname = fields_grid2[ifield].name();
     if (!fields_grid1.has_field(fname)) {
       atlas::Field field1 = in_fspace_->createField<double>(atlas::option::name(fname) |
-                            atlas::option::levels(fields_grid2.field(ifield).levels()));
+                            atlas::option::levels(fields_grid2[ifield].levels()));
       fields_grid1.add(field1);
     }
-    this->apply_ad(fields_grid2.field(fname), fields_grid1.field(fname));
+    this->apply_ad(fields_grid2[fname], fields_grid1[fname]);
   }
 }
 

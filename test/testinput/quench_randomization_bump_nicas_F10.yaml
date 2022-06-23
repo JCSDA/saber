@@ -26,7 +26,7 @@ background error:
       rh:
         var: [7.0e6]
       rv:
-       var: [10]
+        var: [10]
       strategy: specific_univariate
   randomization size: 50
 output:

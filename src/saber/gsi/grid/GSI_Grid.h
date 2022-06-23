@@ -88,7 +88,7 @@ Grid::Grid(const eckit::mpi::Comm & comm, const Parameters_ & params)
   // Create a functionspace for the GSI grid
   atlas::FieldSet gsiGridFieldSet = atlas::FieldSet();
   gsi_grid_set_atlas_lonlat_f90(keySelf_, gsiGridFieldSet.get());
-  atlas::Field lonlat = gsiGridFieldSet.field("lonlat");
+  atlas::Field lonlat = gsiGridFieldSet["lonlat"];
   gsiGridFuncSpace_ = atlas::functionspace::PointCloud(lonlat);
 
   oops::Log::trace() << classname() << "::Grid done" << std::endl;

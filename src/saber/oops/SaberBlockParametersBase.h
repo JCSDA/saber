@@ -25,7 +25,7 @@ class SaberBlockParametersBase : public oops::Parameters {
   OOPS_ABSTRACT_PARAMETERS(SaberBlockParametersBase, Parameters)
  public:
   /// Common parameters.
-  oops::OptionalParameter<std::string> saberBlockName{"saber block name", this};
+  oops::RequiredParameter<std::string> saberBlockName{"saber block name", this};
   oops::Parameter<bool> saberCentralBlock{"saber central block", false, this};
   oops::Parameter<bool> iterativeInverse{"iterative inverse", false, this};
   oops::RequiredParameter<oops::Variables> inputVars{"input variables", this};
