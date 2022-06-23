@@ -16,6 +16,7 @@ use tools_func, only: fletcher32,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,ins
 use tools_kinds, only: kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf
+use tools_ssrfpack, only: gradl,fval
 use tools_stripack, only: trfind,trmesh,bnodes
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -68,6 +69,7 @@ contains
    procedure :: init => mesh_init
    procedure :: dealloc => mesh_dealloc
    procedure :: barycentric => mesh_barycentric
+   procedure :: interp_c1 => mesh_interp_c1
    procedure :: count_bnda => mesh_count_bnda
    procedure :: get_bnda => mesh_get_bnda
    procedure :: check_arc => mesh_check_arc
@@ -606,6 +608,67 @@ end if
 @:probe_out()
 
 end subroutine mesh_barycentric
+
+!----------------------------------------------------------------------
+! Subroutine: mesh_interp_c1
+!> Compute C1 interpolation
+!----------------------------------------------------------------------
+subroutine mesh_interp_c1(mesh,mpl,lon,lat,tree,field,val)
+
+implicit none
+
+! Passed variables
+class(mesh_type),intent(in) :: mesh !< Mesh
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: lon   !< Longitude
+real(kind_real),intent(in) :: lat   !< Latitude
+type(tree_type),intent(in) :: tree  !< Tree
+real(kind_real),intent(in) :: field(mesh%n) !< Field
+real(kind_real),intent(out) :: val  !< Value
+
+! Local variables
+integer :: nn_index(1),ib(3),ierr
+real(kind_real) :: xyz(3),b(3),p1(3),p2(3),p3(3),f(mesh%n),g1(3),g2(3),g3(3)
+
+! Set name
+@:set_name(mesh_interp_c1)
+
+! Probe in
+@:probe_in()
+
+! Transform to cartesian coordinates
+call lonlat2xyz(mpl,lon,lat,xyz(1),xyz(2),xyz(3))
+
+! Find the next nearest neighbor
+call tree%find_nearest_neighbors(lon,lat,1,nn_index)
+
+! Compute barycentric coordinates
+b = zero
+ib = 0
+call trfind(nn_index(1),xyz,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
+
+p1 = (/mesh%x(ib(1)),mesh%y(ib(1)),mesh%z(ib(1))/)
+p2 = (/mesh%x(ib(2)),mesh%y(ib(2)),mesh%z(ib(2))/)
+p3 = (/mesh%x(ib(3)),mesh%y(ib(3)),mesh%z(ib(3))/)
+
+! Transform field
+f = field(mesh%order)
+
+! Compute gradient estimates at the vertices
+call gradl(mesh%n,ib(1),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g1,ierr)
+call gradl(mesh%n,ib(2),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g2,ierr)
+call gradl(mesh%n,ib(3),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g3,ierr)
+
+! Normalize the coordinates
+b = b/sum(b)
+
+! Get interpolated value
+val = fval(b(1),b(2),b(3),p1,p2,p3,f(ib(1)),f(ib(2)),f(ib(3)),g1,g2,g3)
+
+! Probe out
+@:probe_out()
+
+end subroutine mesh_interp_c1
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_count_bnda

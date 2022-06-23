@@ -27,7 +27,6 @@ use type_cv_blk, only: cv_blk_type
 use type_geom, only: geom_type
 use type_io, only: io_type
 use type_linop, only: linop_type
-use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas_cmp, only: nicas_cmp_type

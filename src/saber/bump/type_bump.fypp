@@ -1689,13 +1689,21 @@ type(atlas_field) :: afield
 ! Probe in
 @:probe_in()
 
-! Add u/v variables in fieldset
-afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_zonal,kind=atlas_real(kind_real), &
- & levels=bump%geom(1)%nl0)
-call fieldset%add(afield)
-afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_meridional,kind=atlas_real(kind_real), &
- & levels=bump%geom(1)%nl0)
-call fieldset%add(afield)
+! Get u/v variables in fieldset or create and add them
+if (fieldset%has_field(bump%nam%wind_zonal)) then
+   afield = fieldset%field(bump%nam%wind_zonal)
+else
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_zonal,kind=atlas_real(kind_real), &
+    & levels=bump%geom(1)%nl0)
+   call fieldset%add(afield)
+end if
+if (fieldset%has_field(bump%nam%wind_meridional)) then
+   afield = fieldset%field(bump%nam%wind_meridional)
+else
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_meridional,kind=atlas_real(kind_real), &
+    & levels=bump%geom(1)%nl0)
+   call fieldset%add(afield)
+end if
 
 ! Set fieldsets metadata
 call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
@@ -1749,13 +1757,21 @@ type(atlas_field) :: afield
 ! Probe in
 @:probe_in()
 
-! Add u/v variables in fieldset
-afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_streamfunction,kind=atlas_real(kind_real), &
- & levels=bump%geom(1)%nl0)
-call fieldset%add(afield)
-afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_velocity_potential,kind=atlas_real(kind_real), &
- & levels=bump%geom(1)%nl0)
-call fieldset%add(afield)
+! Get psi/chi variables in fieldset or create and add them
+if (fieldset%has_field(bump%nam%wind_streamfunction)) then
+   afield = fieldset%field(bump%nam%wind_streamfunction)
+else
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_streamfunction,kind=atlas_real(kind_real), &
+    & levels=bump%geom(1)%nl0)
+   call fieldset%add(afield)
+end if
+if (fieldset%has_field(bump%nam%wind_velocity_potential)) then
+   afield = fieldset%field(bump%nam%wind_velocity_potential)
+else
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_velocity_potential,kind=atlas_real(kind_real), &
+    & levels=bump%geom(1)%nl0)
+   call fieldset%add(afield)
+end if
 
 ! Set fieldsets metadata
 call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
@@ -1771,9 +1787,15 @@ do iv=1,bump%nam%nv
    if (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) iv_chi = iv
 end do
 
-! Transform psi/chi to u/v adjoint
-call bump%wind%psichi_to_uv_ad(bump%mpl,bump%geom(1),fld_c0a(:,:,iv_ua),fld_c0a(:,:,iv_va), &
- & fld_c0a(:,:,iv_psi),fld_c0a(:,:,iv_chi))
+if (.false.) then
+   ! Copy fields
+   fld_c0a(:,:,iv_psi) = fld_c0a(:,:,iv_ua)
+   fld_c0a(:,:,iv_chi) = fld_c0a(:,:,iv_va)
+else
+   ! Transform psi/chi to u/v adjoint
+   call bump%wind%psichi_to_uv_ad(bump%mpl,bump%geom(1),fld_c0a(:,:,iv_ua),fld_c0a(:,:,iv_va), &
+    & fld_c0a(:,:,iv_psi),fld_c0a(:,:,iv_chi))
+end if
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)

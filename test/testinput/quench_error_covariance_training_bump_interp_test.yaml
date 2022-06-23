@@ -1,0 +1,35 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 20
+  levels: 1
+  halo: 3
+input variables: &vars [var]
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+bump:
+  datadir: testdata
+  forced_radii: true
+  interp_test: true
+  method: cor
+  new_nicas: true
+  prefix: quench_error_covariance_training_bump_interp_test/test
+  resol: 8.0
+  rh:
+    var: [10.0e6]
+  rv:
+    var: [10]
+  strategy: specific_univariate
+  output:
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/quench_error_covariance_training_bump_interp_test/nicas_interp_test
+    parameter: nicas_interp_test
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/quench_error_covariance_training_bump_interp_test/nicas_interp_ref
+    parameter: nicas_interp_ref
+  write_nicas_local: true
+
+test:
+  reference filename: testref/quench_error_covariance_training_bump_interp_test/test.log.out
