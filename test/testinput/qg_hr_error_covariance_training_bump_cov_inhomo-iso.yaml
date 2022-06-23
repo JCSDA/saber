@@ -29,32 +29,26 @@ bump:
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   output:
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-iso
-    date: 2010-01-01T12:00:00Z
     exp: cor_rh
     parameter: cor_rh
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-iso
-    date: 2010-01-01T12:00:00Z
     exp: cor_rv
     parameter: cor_rv
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-iso
-    date: 2010-01-01T12:00:00Z
     exp: dirac_mom
     parameter: dirac_mom
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-iso
-    date: 2010-01-01T12:00:00Z
     exp: dirac_diag_cor
     parameter: dirac_diag_cor
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-iso
-    date: 2010-01-01T12:00:00Z
     exp: dirac_nicas
     parameter: dirac_nicas
     type: an
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_inhomo-iso
-    date: 2010-01-01T12:00:00Z
     exp: nicas_norm
     parameter: nicas_norm
     type: an
@@ -74,4 +68,3 @@ input variables: [q]
 
 test:
   reference filename: testref/qg_hr_error_covariance_training_bump_cov_inhomo-iso/test.log.out
-  output precision: 6

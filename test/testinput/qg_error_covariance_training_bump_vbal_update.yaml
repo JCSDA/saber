@@ -23,7 +23,6 @@ bump:
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   output:
   - datadir: testdata/qg_error_covariance_training_bump_vbal_update
-    date: 2010-01-01T12:00:00Z
     exp: dirac_vbal
     parameter: dirac_vbal
     type: an
@@ -42,4 +41,3 @@ input variables: [x]
 
 test:
   reference filename: testref/qg_error_covariance_training_bump_vbal_update/test.log.out
-  output precision: 6

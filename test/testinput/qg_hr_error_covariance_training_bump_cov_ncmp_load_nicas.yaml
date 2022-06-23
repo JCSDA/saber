@@ -18,24 +18,19 @@ bump:
   levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   input number of components:
-    date: 2010-01-01T12:00:00Z
     filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/ncmp
   input:
   - component: 1
-    date: 2010-01-01T12:00:00Z
     filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_1.an.2010-01-01T12:00:00Z.nc
     parameter: nicas_norm
   - component: 2
-    date: 2010-01-01T12:00:00Z
     filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_2.an.2010-01-01T12:00:00Z.nc
     parameter: nicas_norm
   - component: 3
-    date: 2010-01-01T12:00:00Z
     filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_3.an.2010-01-01T12:00:00Z.nc
     parameter: nicas_norm
   output:
   - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas
-    date: 2010-01-01T12:00:00Z
     exp: dirac_nicas
     parameter: dirac_nicas
     type: an
@@ -55,4 +50,3 @@ input variables: [q]
 
 test:
   reference filename: testref/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas/test.log.out
-  test output filename: testoutput/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas/test.log.out

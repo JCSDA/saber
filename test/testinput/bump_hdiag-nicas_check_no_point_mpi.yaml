@@ -20,7 +20,7 @@ check_no_point_mpi: true
 # model_param
 nl0: 2
 levs: [1,2]
-nv: true
+nv: 1
 variables: ["u"]
 
 # ens1_param

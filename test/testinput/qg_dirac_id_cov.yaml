@@ -29,4 +29,3 @@ output dirac:
 
 test:
   reference filename: testref/qg_dirac_id_cov/test.log.out
-  output precision: 6

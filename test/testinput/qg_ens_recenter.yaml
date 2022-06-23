@@ -46,6 +46,4 @@ ensemble mean output:
   date: 2010-01-01T12:00:00Z
 
 test:
-  float relative tolerance: 5.e-7
   reference filename: testref/qg_ens_recenter/test.log.out
-  output precision: 6

@@ -56,11 +56,11 @@ class BUMP_StdDev : public SaberBlockBase<MODEL> {
               const State_ &);
   virtual ~BUMP_StdDev();
 
-  void randomize(atlas::FieldSet *) const override;
-  void multiply(atlas::FieldSet *) const override;
-  void inverseMultiply(atlas::FieldSet *) const override;
-  void multiplyAD(atlas::FieldSet *) const override;
-  void inverseMultiplyAD(atlas::FieldSet *) const override;
+  void randomize(atlas::FieldSet &) const override;
+  void multiply(atlas::FieldSet &) const override;
+  void inverseMultiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -70,7 +70,7 @@ class BUMP_StdDev : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_StdDev<MODEL>::BUMP_StdDev(const Geometry_ & resol,
+BUMP_StdDev<MODEL>::BUMP_StdDev(const Geometry_ & geom,
                                 const Parameters_ & params,
                                 const State_ & xb,
                                 const State_ & fg)
@@ -94,7 +94,7 @@ BUMP_StdDev<MODEL>::BUMP_StdDev(const Geometry_ & resol,
   }
 
   // Initialize BUMP
-  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value(), xb, fg));
+  bump_.reset(new BUMP_(geom, geom, activeVars, params.bumpParams.value(), xb, fg));
 
   oops::Log::trace() << classname() << "::BUMP_StdDev done" << std::endl;
 }
@@ -111,45 +111,45 @@ BUMP_StdDev<MODEL>::~BUMP_StdDev() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_StdDev<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  this->multiply(atlasFieldSet);
+  this->multiply(fset);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_StdDev<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  bump_->multiplyStdDev(atlasFieldSet);
+  bump_->multiplyStdDev(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_StdDev<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  bump_->inverseMultiplyStdDev(atlasFieldSet);
+  bump_->inverseMultiplyStdDev(fset);
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_StdDev<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  this->multiply(atlasFieldSet);
+  this->multiply(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_StdDev<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_StdDev<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  this->inverseMultiply(atlasFieldSet);
+  this->inverseMultiply(fset);
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 

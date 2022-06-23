@@ -35,8 +35,6 @@ type diag_blk_type
 
    real(kind_real),allocatable :: raw(:,:,:,:)          !< Raw diagnostic
    real(kind_real),allocatable :: valid(:,:,:,:)        !< Number of valid couples
-   real(kind_real),allocatable :: coef_ens_l0(:)        !< Ensemble coefficient, profile
-   real(kind_real) :: coef_sta                          !< Static coefficient
 
    real(kind_real),allocatable :: vunit(:)              !< Vertical unit
    real(kind_real),allocatable :: fit(:,:,:,:)          !< Fit
@@ -49,26 +47,24 @@ type diag_blk_type
    real(kind_real),allocatable :: D22_l0(:,:)           !< Horizontal direct tensor, coefficient 22, profiles
    real(kind_real),allocatable :: D12_l0(:,:)           !< Horizontal direct tensor, coefficient 12 (normalized), profiles
    real(kind_real),allocatable :: rv_l0(:,:)            !< Vertical support radius, profiles
+   real(kind_real),allocatable :: hyb_coef_raw(:)       !< Raw hybrid coefficient
+   real(kind_real),allocatable :: hyb_coef(:)           !< Hybrid coefficient
 
-   real(kind_real),allocatable :: coef_ens_c0a(:,:)     !< Ensemble coefficient, subset Sc0, halo A
-   real(kind_real),allocatable :: coef_sta_c0a(:,:)     !< Static coefficient, subset Sc0, halo A
    real(kind_real),allocatable :: a_c0a(:,:,:)          !< Amplitudes, subset Sc0, halo A
    real(kind_real),allocatable :: rh_c0a(:,:,:)         !< Horizontal support radius, subset Sc0, halo A
    real(kind_real),allocatable :: D11_c0a(:,:,:)        !< Horizontal direct tensor, component 11, subset Sc0, halo A
    real(kind_real),allocatable :: D22_c0a(:,:,:)        !< Horizontal direct tensor, component 22, subset Sc0, halo A
    real(kind_real),allocatable :: D12_c0a(:,:,:)        !< Horizontal direct tensor, component 12 (normalized), subset Sc0, halo A
    real(kind_real),allocatable :: rv_c0a(:,:,:)         !< Vertical support radius, subset Sc0, halo A
-   real(kind_real) :: wgt                               !< Weight
+   real(kind_real),allocatable :: hyb_coef_c0a(:,:)     !< Hybrid coefficient, subset Sc0, halo A
 contains
    procedure :: alloc => diag_blk_alloc
    procedure :: partial_dealloc => diag_blk_partial_dealloc
    procedure :: dealloc => diag_blk_dealloc
    procedure :: write => diag_blk_write
-   procedure :: normalization => diag_blk_normalization
    procedure :: fitting => diag_blk_fitting
    procedure :: localization => diag_blk_localization
    procedure :: hybridization => diag_blk_hybridization
-   procedure :: dualens => diag_blk_dualens
 end type diag_blk_type
 
 private
@@ -117,18 +113,19 @@ diag_blk%ncmp = nam%fit_ncmp(iv)
 if ((ic2a==0).or.nam%local_diag) then
    allocate(diag_blk%raw(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
    allocate(diag_blk%valid(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
-   allocate(diag_blk%coef_ens_l0(geom%nl0))
    allocate(diag_blk%vunit(geom%nl0))
    allocate(diag_blk%fit(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
+   allocate(diag_blk%hyb_coef_raw(geom%nl0))
+   allocate(diag_blk%hyb_coef(geom%nl0))
 end if
 
 ! Initialization
 if ((ic2a==0).or.nam%local_diag) then
    diag_blk%raw = mpl%msv%valr
    diag_blk%valid = mpl%msv%valr
-   diag_blk%coef_ens_l0 = mpl%msv%valr
-   diag_blk%coef_sta = mpl%msv%valr
    diag_blk%fit = mpl%msv%valr
+   diag_blk%hyb_coef_raw = mpl%msv%valr
+   diag_blk%hyb_coef = mpl%msv%valr
 end if
 
 ! Vertical unit and distance
@@ -165,7 +162,6 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 ! Release memory
 if (allocated(diag_blk%raw)) deallocate(diag_blk%raw)
 if (allocated(diag_blk%valid)) deallocate(diag_blk%valid)
-if (allocated(diag_blk%coef_ens_l0)) deallocate(diag_blk%coef_ens_l0)
 if (allocated(diag_blk%vunit)) deallocate(diag_blk%vunit)
 if (allocated(diag_blk%fit)) deallocate(diag_blk%fit)
 if (allocated(diag_blk%fit_detail)) deallocate(diag_blk%fit_detail)
@@ -174,6 +170,8 @@ if (allocated(diag_blk%D11_l0)) deallocate(diag_blk%D11_l0)
 if (allocated(diag_blk%D22_l0)) deallocate(diag_blk%D22_l0)
 if (allocated(diag_blk%D12_l0)) deallocate(diag_blk%D12_l0)
 if (allocated(diag_blk%rv_l0)) deallocate(diag_blk%rv_l0)
+if (allocated(diag_blk%hyb_coef_raw)) deallocate(diag_blk%hyb_coef_raw)
+if (allocated(diag_blk%hyb_coef)) deallocate(diag_blk%hyb_coef)
 
 ! Probe out
 @:probe_out()
@@ -199,13 +197,12 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 
 ! Release memory
 call diag_blk%partial_dealloc
-if (allocated(diag_blk%coef_ens_c0a)) deallocate(diag_blk%coef_ens_c0a)
-if (allocated(diag_blk%coef_sta_c0a)) deallocate(diag_blk%coef_sta_c0a)
 if (allocated(diag_blk%rh_c0a)) deallocate(diag_blk%rh_c0a)
 if (allocated(diag_blk%D11_c0a)) deallocate(diag_blk%D11_c0a)
 if (allocated(diag_blk%D22_c0a)) deallocate(diag_blk%D22_c0a)
 if (allocated(diag_blk%D12_c0a)) deallocate(diag_blk%D12_c0a)
 if (allocated(diag_blk%rv_c0a)) deallocate(diag_blk%rv_c0a)
+if (allocated(diag_blk%hyb_coef_c0a)) deallocate(diag_blk%hyb_coef_c0a)
 
 ! Probe out
 @:probe_out()
@@ -235,9 +232,9 @@ integer,intent(in) :: nl0_2_id                 !< NetCDF ID
 integer,intent(in) :: ncmp_id                  !< NetCDF ID
 
 ! Local variables
-integer :: grpid,raw_id,raw_hor_id,raw_zs_id,valid_id,coef_ens_l0_id,l0rl0_to_l0_id
+integer :: grpid,raw_id,raw_hor_id,raw_zs_id,valid_id,l0rl0_to_l0_id
 integer :: fit_id,fit_hor_id,fit_zs_id,fit_detail_id,fit_detail_hor_id,fit_detail_zs_id
-integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id
+integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id,hyb_coef_raw_id,hyb_coef_id
 integer :: il0,jl0r,jl0,jl0rz,icmp
 
 ! Set name
@@ -260,7 +257,6 @@ if (mpl%msv%isanynot(diag_blk%raw)) then
    valid_id = define_var(mpl,grpid,'valid','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
    l0rl0_to_l0_id = define_var(mpl,grpid,'l0rl0_to_l0','int',(/nl0r_id,nl0_1_id/))
 end if
-if (mpl%msv%isanynot(diag_blk%coef_ens_l0)) coef_ens_l0_id = define_var(mpl,grpid,'coef_ens_l0','real',(/nl0_1_id/))
 if (mpl%msv%isanynot(diag_blk%fit)) then
    fit_id = define_var(mpl,grpid,'fit','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
    fit_hor_id = define_var(mpl,grpid,'fit_hor','real',(/nc3_id,nc4_id,nl0_1_id/))
@@ -289,6 +285,8 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id,ncmp_id/))
    end if
 end if
+if (mpl%msv%isanynot(diag_blk%hyb_coef_raw)) hyb_coef_raw_id = define_var(mpl,grpid,'hyb_coef_raw','real',(/nl0_1_id/))
+if (mpl%msv%isanynot(diag_blk%hyb_coef)) hyb_coef_id = define_var(mpl,grpid,'hyb_coef','real',(/nl0_1_id/))
 
 ! Write variables
 if (mpl%msv%isanynot(diag_blk%raw)) then
@@ -306,8 +304,6 @@ if (mpl%msv%isanynot(diag_blk%raw)) then
    call put_var(mpl,grpid,valid_id,diag_blk%valid)
    call put_var(mpl,grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib))
 end if
-if (mpl%msv%isanynot(diag_blk%coef_ens_l0)) call put_var(mpl,grpid,coef_ens_l0_id,diag_blk%coef_ens_l0)
-if (mpl%msv%isnot(diag_blk%coef_sta)) call put_att(mpl,grpid,0,'coef_sta',diag_blk%coef_sta)
 if (mpl%msv%isanynot(diag_blk%fit)) then
    call put_var(mpl,grpid,fit_id,diag_blk%fit)
    do il0=1,geom%nl0
@@ -354,6 +350,8 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0)
    end if
 end if
+if (mpl%msv%isanynot(diag_blk%hyb_coef_raw)) call put_var(mpl,grpid,hyb_coef_raw_id,diag_blk%hyb_coef_raw)
+if (mpl%msv%isanynot(diag_blk%hyb_coef)) call put_var(mpl,grpid,hyb_coef_id,diag_blk%hyb_coef)
 
 ! End associate
 end associate
@@ -362,45 +360,6 @@ end associate
 @:probe_out()
 
 end subroutine diag_blk_write
-
-!----------------------------------------------------------------------
-! Subroutine: diag_blk_normalization
-!> Compute diagnostic block normalization
-!----------------------------------------------------------------------
-subroutine diag_blk_normalization(diag_blk,geom,bpar)
-
-implicit none
-
-! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
-type(geom_type),intent(in) :: geom             !< Geometry
-type(bpar_type),intent(in) :: bpar             !< Block parameters
-
-! Local variables
-integer :: il0,jl0rz
-
-! Set name
-@:set_name(diag_blk_normalization)
-
-! Probe in
-@:probe_in()
-
-! Associate
-associate(ib=>diag_blk%ib)
-
-! Get diagonal values
-do il0=1,geom%nl0
-   jl0rz = bpar%il0rz(il0,ib)
-   diag_blk%coef_ens_l0(il0) = diag_blk%raw(1,1,jl0rz,il0)
-end do
-
-! End associate
-end associate
-
-! Probe out
-@:probe_out()
-
-end subroutine diag_blk_normalization
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_fitting
@@ -855,7 +814,7 @@ end if
 diag_blk%rv_l0 = mpl%msv%valr
 if (var2d) diag_blk%rv_l0(ilev2d,:) = zero
 
-! Interpolate horizontal parameters
+! Interpolate parameters
 do icmp=1,diag_blk%ncmp
    call vert_interp(mpl,nl1,a_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%a_l0(:,icmp))
    if (bpar%nc4(ib)==1) then
@@ -947,7 +906,7 @@ end do
 !$omp end parallel do
 
 ! Hybrid weight
-diag_blk%coef_sta = mpl%msv%valr
+diag_blk%hyb_coef = mpl%msv%valr
 
 ! End associate
 end associate
@@ -961,22 +920,23 @@ end subroutine diag_blk_localization
 ! Subroutine: diag_blk_hybridization
 !> Diag_blk hybridization
 !----------------------------------------------------------------------
-subroutine diag_blk_hybridization(diag_blk,mpl,nam,geom,bpar,avg_blk)
+subroutine diag_blk_hybridization(diag_blk,mpl,nam,geom,bpar,avg1_blk,avg2_blk,loc1_blk)
 
 implicit none
 
 ! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (localization)
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (hybridization)
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type),intent(in) :: nam               !< Namelist
-type(geom_type),intent(in) :: geom             !< Geometry
+type(geom_type),intent(in) :: geom(2)          !< Geometry
 type(bpar_type),intent(in) :: bpar             !< Block parameters
-type(avg_blk_type),intent(in) :: avg_blk       !< Averaged statistics block
+type(avg_blk_type),intent(in) :: avg1_blk      !< Averaged statistics block for ensemble 1
+type(avg_blk_type),intent(in) :: avg2_blk      !< Averaged statistics block for ensemble 2
+type(diag_blk_type),intent(inout) :: loc1_blk  !< Localization block for ensemble 1
 
 ! Local variables
-integer :: il0,jl0r,jl0,jc3,jc4,iv
-real(kind_real) :: wgt,a,bc,d,e,f,num_ens,num_sta,num,den
-real(kind_real) :: nam_a(geom%nl0,1),nam_rh(geom%nl0,1),nam_rv(geom%nl0,1)
+integer :: il0,jl0r,jl0,jc3,jc4
+real(kind_real) :: wgt,a,bc,d,e,f,num,num_1,num_2,den
 
 ! Set name
 @:set_name(diag_blk_hybridization)
@@ -987,112 +947,67 @@ real(kind_real) :: nam_a(geom%nl0,1),nam_rh(geom%nl0,1),nam_rv(geom%nl0,1)
 ! Associate
 associate(ib=>diag_blk%ib)
 
-if (nam%forced_radii) then
-   ! Compute forced localization function
-   iv = bpar%b_to_v1(ib)
-   nam_a(:,1) = one
-   nam_rh(:,1) = nam%rh(1:geom%nl0,iv)
-   nam_rv(:,1) = nam%rv(1:geom%nl0,iv)
-   do jc4=1,bpar%nc4(ib)
-      call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth,diag_blk%vunit,1,nam_a, &
- & nam_rh,nam_rv,diag_blk%raw(:,jc4,:,:))
-   end do
-   diag_blk%valid = mpl%msv%valr
-
-   ! Compute hybrid weights
+do il0=1,geom(2)%nl0
+   ! Compute hybrid weights terms
    a = zero
    bc = zero
    d = zero
    e = zero
    f = zero
-   do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0r(ib)
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-         do jc4=1,bpar%nc4(ib)
-            do jc3=1,bpar%nc3(ib)
-               if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0)) &
- & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jc4,jl0r,il0))) then
-                  wgt = geom%disth(jc3)*abs(diag_blk%vunit(jl0)-diag_blk%vunit(il0))/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real) ! TODO ?
-                  a = a+wgt*diag_blk%raw(jc3,jc4,jl0r,il0)**2*avg_blk%m11sq(jc3,jc4,jl0r,il0)
-                  bc = bc+wgt*diag_blk%raw(jc3,jc4,jl0r,il0)*avg_blk%m11sta(jc3,jc4,jl0r,il0)
-                  d = d+wgt*avg_blk%stasq(jc3,jc4,jl0r,il0)
-                  e = e+wgt*diag_blk%raw(jc3,jc4,jl0r,il0)*avg_blk%m11asysq(jc3,jc4,jl0r,il0)
-                  f = f+wgt*avg_blk%m11sta(jc3,jc4,jl0r,il0)
-               end if
-            end do
+   do jl0r=1,bpar%nl0r(ib)
+      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+      do jc4=1,bpar%nc4(ib)
+         do jc3=1,bpar%nc3(ib)
+            if (mpl%msv%isnot(loc1_blk%fit(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11sq(jc3,jc4,jl0r,il0)) &
+ & .and.mpl%msv%isnot(avg1_blk%m11(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg2_blk%m11(jc3,jc4,jl0r,il0)) &
+ & .and.mpl%msv%isnot(avg2_blk%m11sq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11asysq(jc3,jc4,jl0r,il0))) then
+               wgt = one ! TODO: test different kinds of weights
+               a = a+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)**2*avg1_blk%m11sq(jc3,jc4,jl0r,il0)
+               bc = bc+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11(jc3,jc4,jl0r,il0)*avg2_blk%m11(jc3,jc4,jl0r,il0)
+               select case (trim(nam%method))
+               case ('hyb-rnd')
+                  d = d+wgt*avg2_blk%m11(jc3,jc4,jl0r,il0)**2
+               case ('hyb-ens')
+                  d = d+wgt*avg2_blk%m11sq(jc3,jc4,jl0r,il0)
+               end select
+               e = e+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11asysq(jc3,jc4,jl0r,il0)
+               f = f+wgt*avg1_blk%m11(jc3,jc4,jl0r,il0)*avg2_blk%m11(jc3,jc4,jl0r,il0)
+            end if
          end do
       end do
    end do
-   num_ens = e*d-bc*f
-   num_sta = a*f-e*bc
+
+   ! Compute hybrid weights
+   num_1 = e*d-bc*f
+   num_2 = a*f-e*bc
    den = a*d-bc**2
-   if ((num_ens>zero).and.(num_sta>zero).and.(den>zero)) then
-      ! Valid numerators and denominator
-      diag_blk%coef_ens_l0 = num_ens/den
-      diag_blk%coef_sta = num_sta/den
+
+   if (den>zero) then
+      ! Raw hybrid weights
+      loc1_blk%hyb_coef_raw(il0) = num_1/den
+      diag_blk%hyb_coef_raw(il0) = num_2/den
+
+      ! Normalization (to keep a correct variance)
+      num = avg1_blk%m11(1,1,bpar%il0rz(il0,ib),il0)
+      den = loc1_blk%hyb_coef_raw(il0)*avg1_blk%m11(1,1,bpar%il0rz(il0,ib),il0) &
+ & +diag_blk%hyb_coef_raw(il0)*avg2_blk%m11(1,1,bpar%il0rz(il0,ib),il0)
+      if (den>zero) then
+         ! Hybrid weights
+         loc1_blk%hyb_coef(il0) = loc1_blk%hyb_coef_raw(il0)*num/den
+         diag_blk%hyb_coef(il0) = diag_blk%hyb_coef_raw(il0)*num/den
+      else
+         ! Missing values
+         loc1_blk%hyb_coef(il0) = mpl%msv%valr
+         diag_blk%hyb_coef(il0) = mpl%msv%valr
+      end if
    else
       ! Missing values
-      diag_blk%coef_ens_l0 = mpl%msv%valr
-      diag_blk%coef_sta = mpl%msv%valr
+      loc1_blk%hyb_coef_raw(il0) = mpl%msv%valr
+      diag_blk%hyb_coef_raw(il0) = mpl%msv%valr
+      loc1_blk%hyb_coef(il0) = mpl%msv%valr
+      diag_blk%hyb_coef(il0) = mpl%msv%valr
    end if
-else
-   ! Compute raw hybridization
-   num = zero
-   den = zero
-   do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0r(ib)
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-         do jc4=1,bpar%nc4(ib)
-            do jc3=1,bpar%nc3(ib)
-               if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0)) &
- & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%stasq(jc3,jc4,jl0r,il0))) then
-                  wgt = geom%disth(jc3)*abs(diag_blk%vunit(jl0)-diag_blk%vunit(il0))/real(bpar%nl0r(ib)+bpar%nc3(ib),kind_real) ! TODO ?
-                  num = num+wgt*(one-avg_blk%m11asysq(jc3,jc4,jl0r,il0)/avg_blk%m11sq(jc3,jc4,jl0r,il0)) &
- & *avg_blk%m11sta(jc3,jc4,jl0r,il0)
-                  den = den+wgt*(avg_blk%stasq(jc3,jc4,jl0r,il0)-avg_blk%m11sta(jc3,jc4,jl0r,il0)**2 &
- & /avg_blk%m11sq(jc3,jc4,jl0r,il0))
-               end if
-            end do
-         end do
-      end do
-   end do
-   if ((num>zero).and.(den>zero)) then
-      ! Valid numerator and denominator
-      diag_blk%coef_sta = num/den
-
-      !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,bpar,diag_blk)
-      do il0=1,geom%nl0
-         do jl0r=1,bpar%nl0r(ib)
-            do jc4=1,bpar%nc4(ib)
-               do jc3=1,bpar%nc3(ib)
-                  if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(diag_blk%coef_sta) &
- & .and.mpl%msv%isnot(avg_blk%m11sta(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0))) then
-                     ! Compute localization
-                     diag_blk%raw(jc3,jc4,jl0r,il0) = (avg_blk%m11asysq(jc3,jc4,jl0r,il0)-diag_blk%coef_sta &
- & *avg_blk%m11sta(jc3,jc4,jl0r,il0))/avg_blk%m11sq(jc3,jc4,jl0r,il0)
-                     diag_blk%valid(jc3,jc4,jl0r,il0) = avg_blk%nc1a(jc3,jc4,jl0r,il0)
-
-                     ! Lower bound
-                     if (diag_blk%raw(jc3,jc4,jl0r,il0)<zero) then
-                        diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
-                        diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
-                     end if
-                  else
-                     ! Missing value
-                     diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
-                     diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
-                  end if
-               end do
-            end do
-         end do
-      end do
-      !$omp end parallel do
-   else
-      ! Missing values
-      diag_blk%coef_sta = mpl%msv%valr
-      diag_blk%raw = mpl%msv%valr
-   end if
-end if
+end do
 
 ! End associate
 end associate
@@ -1101,89 +1016,5 @@ end associate
 @:probe_out()
 
 end subroutine diag_blk_hybridization
-
-!----------------------------------------------------------------------
-! Subroutine: diag_blk_dualens
-!> Diag_blk dualens
-!----------------------------------------------------------------------
-subroutine diag_blk_dualens(diag_blk,mpl,geom,bpar,avg_blk,avg_lr_blk,diag_lr_blk)
-
-implicit none
-
-! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk   !< Diagnostic block (localization)
-type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(geom_type),intent(in) :: geom               !< Geometry
-type(bpar_type),intent(in) :: bpar               !< Block parameters
-type(avg_blk_type),intent(in) :: avg_blk         !< Averaged statistics block
-type(avg_blk_type),intent(in) :: avg_lr_blk      !< LR averaged statistics block
-type(diag_blk_type),intent(inout) :: diag_lr_blk !< Diagnostic block (LR localization)
-
-! Local variables
-integer :: il0,jl0r,jc3,jc4
-real(kind_real),allocatable :: num(:,:),num_lr(:,:),den(:,:)
-
-! Set name
-@:set_name(diag_blk_dualens)
-
-! Probe in
-@:probe_in()
-
-! Associate
-associate(ib=>diag_blk%ib)
-
-! Allocation
-allocate(num(bpar%nc3(ib),bpar%nc4(ib)))
-allocate(num_lr(bpar%nc3(ib),bpar%nc4(ib)))
-allocate(den(bpar%nc3(ib),bpar%nc4(ib)))
-
-! Compute raw dual-ensemble hybridization
-do il0=1,geom%nl0
-   do jl0r=1,bpar%nl0r(ib)
-      do jc4=1,bpar%nc4(ib)
-         do jc3=1,bpar%nc3(ib)
-            if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0)) &
- & .and.mpl%msv%isnot(avg_blk%m11lrm11asy(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11lrm11(jc3,jc4,jl0r,il0)) &
- & .and.mpl%msv%isnot(avg_lr_blk%m11sq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11lrm11asy(jc3,jc4,jl0r,il0))) then
-               num(jc3,jc4) = avg_blk%m11asysq(jc3,jc4,jl0r,il0)*avg_lr_blk%m11sq(jc3,jc4,jl0r,il0) &
- & -avg_blk%m11lrm11asy(jc3,jc4,jl0r,il0)*avg_blk%m11lrm11(jc3,jc4,jl0r,il0)
-               num_lr(jc3,jc4) = avg_blk%m11lrm11asy(jc3,jc4,jl0r,il0)*avg_blk%m11sq(jc3,jc4,jl0r,il0) &
- & -avg_blk%m11asysq(jc3,jc4,jl0r,il0)*avg_blk%m11lrm11(jc3,jc4,jl0r,il0)
-               den(jc3,jc4) = avg_blk%m11sq(jc3,jc4,jl0r,il0)*avg_lr_blk%m11sq(jc3,jc4,jl0r,il0) &
- & -avg_blk%m11lrm11(jc3,jc4,jl0r,il0)**2
-               if ((num(jc3,jc4)>zero).and.(den(jc3,jc4)>zero)) then
-                  ! Compute localization
-                  diag_blk%raw(jc3,jc4,jl0r,il0) = num(jc3,jc4)/den(jc3,jc4)
-                  diag_lr_blk%raw(jc3,jc4,jl0r,il0) = num_lr(jc3,jc4)/den(jc3,jc4)
-                  diag_blk%valid(jc3,jc4,jl0r,il0) = avg_blk%nc1a(jc3,jc4,jl0r,il0)
-                  diag_lr_blk%valid(jc3,jc4,jl0r,il0) = avg_blk%nc1a(jc3,jc4,jl0r,il0)
-               else
-                  ! Missing value
-                  diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
-                  diag_lr_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
-                  diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
-                  diag_lr_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
-               end if
-            end if
-         end do
-      end do
-   end do
-end do
-
-! Hybrid weight
-diag_blk%coef_sta = mpl%msv%valr
-
-! Release memory
-deallocate(num)
-deallocate(num_lr)
-deallocate(den)
-
-! End associate
-end associate
-
-! Probe out
-@:probe_out()
-
-end subroutine diag_blk_dualens
 
 end module type_diag_blk

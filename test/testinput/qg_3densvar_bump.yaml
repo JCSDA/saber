@@ -33,36 +33,37 @@ cost function:
       pattern: '%mem%'
       nmembers: 10
   observations:
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: Stream
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
-      obs type: Stream
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: Wind
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
-      obs type: Wind
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: WSpeed
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
-      obs type: WSpeed
+    observers:
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: Stream
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
+        obs type: Stream
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: Wind
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
+        obs type: Wind
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: WSpeed
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3densvar_bump/3densvar_bump.obs3d.nc
+        obs type: WSpeed
 variational:
   minimizer:
     algorithm: DRIPCG
@@ -112,4 +113,3 @@ output:
 
 test:
   reference filename: testref/qg_3densvar_bump/test.log.out
-  output precision: 6

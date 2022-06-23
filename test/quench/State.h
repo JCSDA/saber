@@ -17,6 +17,7 @@
 #include "oops/util/Printable.h"
 
 #include "quench/Fields.h"
+#include "quench/Increment.h"
 
 namespace eckit {
   class Configuration;
@@ -28,6 +29,7 @@ namespace oops {
 
 namespace quench {
   class Geometry;
+  class Increment;
 
 /// State class
 // -----------------------------------------------------------------------------
@@ -42,7 +44,11 @@ class State : public util::Printable,
   State(const Geometry &, const State &);
   State(const State &);
 
+/// Interactions with Increment
+  State & operator+=(const Increment &);
+
 /// I/O and diagnostics
+  void read(const eckit::Configuration &);
   void write(const eckit::Configuration &) const;
   double norm() const {return fields_->norm();}
   const util::DateTime & validTime() const {return fields_->time();}
@@ -57,6 +63,10 @@ class State : public util::Printable,
   size_t serialSize() const;;
   void serialize(std::vector<double> &) const;
   void deserialize(const std::vector<double> &, size_t &);
+
+/// ATLAS FieldSet accessor
+  void toFieldSet(atlas::FieldSet &) const;
+  void fromFieldSet(const atlas::FieldSet &);
 
 /// Other
   void zero();

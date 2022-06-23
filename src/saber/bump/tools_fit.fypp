@@ -421,6 +421,9 @@ if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D12)) then
       H22 = D11/det
       H12 = -sqrt(D12sq)/det
    else
+      write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8)') 'Tensor values (D11,D22,D12,D11*D12,D12sq,det): ', &
+ & D11,',',D22,',',D12,',',D11*D12,',',D12sq,',',det
+      call mpl%flush
       call mpl%abort('${subr}$','non-invertible tensor')
    end if
 else

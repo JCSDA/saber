@@ -16,37 +16,37 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-void multiplyAtlasFieldSet(atlas::FieldSet * fieldSet, atlas::FieldSet * multiplier) {
+void multiplyAtlasFieldSet(atlas::FieldSet & fset, const atlas::FieldSet & mulFset) {
   oops::Log::trace() << "multiplyAtlasFieldSet starting" << std::endl;
   // Loop over multiplier fields
-  for (atlas::FieldSet::iterator it = multiplier->begin(); it != multiplier->end(); ++it) {
+  for (auto mulField : mulFset) {
     // Get increment field with the same name
-    atlas::Field field = fieldSet->field(it->name());
+    atlas::Field field = fset.field(mulField.name());
 
     // Get data and multiply
-    if (it->rank() == 1) {
-      const auto multiplierView = atlas::array::make_view<double, 1>(*it);
+    if (mulField.rank() == 1) {
+      const auto mulView = atlas::array::make_view<double, 1>(mulField);
       auto view = atlas::array::make_view<double, 1>(field);
-      for (int j0 = 0; j0 < it->shape(0); ++j0) {
-        view(j0) = view(j0)*multiplierView(j0);
+      for (int j0 = 0; j0 < mulField.shape(0); ++j0) {
+        view(j0) = view(j0)*mulView(j0);
       }
     }
-    if (it->rank() == 2) {
-      const auto multiplierView = atlas::array::make_view<double, 2>(*it);
+    if (mulField.rank() == 2) {
+      const auto mulView = atlas::array::make_view<double, 2>(mulField);
       auto view = atlas::array::make_view<double, 2>(field);
-      for (int j0 = 0; j0 < it->shape(0); ++j0) {
-        for (int j1 = 0; j1 < it->shape(1); ++j1) {
-          view(j0, j1) = view(j0, j1)*multiplierView(j0, j1);
+      for (int j0 = 0; j0 < mulField.shape(0); ++j0) {
+        for (int j1 = 0; j1 < mulField.shape(1); ++j1) {
+          view(j0, j1) = view(j0, j1)*mulView(j0, j1);
         }
       }
     }
-    if (it->rank() == 3) {
-      const auto multiplierView = atlas::array::make_view<double, 3>(*it);
+    if (mulField.rank() == 3) {
+      const auto mulView = atlas::array::make_view<double, 3>(mulField);
       auto view = atlas::array::make_view<double, 3>(field);
-      for (int j0 = 0; j0 < it->shape(0); ++j0) {
-        for (int j1 = 0; j1 < it->shape(1); ++j1) {
-          for (int j2 = 0; j2 < it->shape(2); ++j2) {
-            view(j0, j1, j2) = view(j0, j1, j2)*multiplierView(j0, j1, j2);
+      for (int j0 = 0; j0 < mulField.shape(0); ++j0) {
+        for (int j1 = 0; j1 < mulField.shape(1); ++j1) {
+          for (int j2 = 0; j2 < mulField.shape(2); ++j2) {
+            view(j0, j1, j2) = view(j0, j1, j2)*mulView(j0, j1, j2);
           }
         }
       }
@@ -57,37 +57,37 @@ void multiplyAtlasFieldSet(atlas::FieldSet * fieldSet, atlas::FieldSet * multipl
 
 // -----------------------------------------------------------------------------
 
-void divideAtlasFieldSet(atlas::FieldSet * fieldSet, atlas::FieldSet * divider) {
+void divideAtlasFieldSet(atlas::FieldSet & fset, const  atlas::FieldSet & divFset) {
   oops::Log::trace() << "divideAtlasFieldSet starting" << std::endl;
   // Loop over divider fields
-  for (atlas::FieldSet::iterator it = divider->begin(); it != divider->end(); ++it) {
+  for (auto divField : divFset) {
     // Get increment field with the same name
-    atlas::Field field = fieldSet->field(it->name());
+    atlas::Field field = fset.field(divField.name());
 
     // Get data and divide
-    if (it->rank() == 1) {
-      const auto dividerView = atlas::array::make_view<double, 1>(*it);
+    if (divField.rank() == 1) {
+      const auto divView = atlas::array::make_view<double, 1>(divField);
       auto view = atlas::array::make_view<double, 1>(field);
-      for (int j0 = 0; j0 < it->shape(0); ++j0) {
-        view(j0) = view(j0)/dividerView(j0);
+      for (int j0 = 0; j0 < divField.shape(0); ++j0) {
+        view(j0) = view(j0)/divView(j0);
       }
     }
-    if (it->rank() == 2) {
-      const auto dividerView = atlas::array::make_view<double, 2>(*it);
+    if (divField.rank() == 2) {
+      const auto divView = atlas::array::make_view<double, 2>(divField);
       auto view = atlas::array::make_view<double, 2>(field);
-      for (int j0 = 0; j0 < it->shape(0); ++j0) {
-        for (int j1 = 0; j1 < it->shape(1); ++j1) {
-          view(j0, j1) = view(j0, j1)/dividerView(j0, j1);
+      for (int j0 = 0; j0 < divField.shape(0); ++j0) {
+        for (int j1 = 0; j1 < divField.shape(1); ++j1) {
+          view(j0, j1) = view(j0, j1)/divView(j0, j1);
         }
       }
     }
-    if (it->rank() == 3) {
-      const auto dividerView = atlas::array::make_view<double, 3>(*it);
+    if (divField.rank() == 3) {
+      const auto divView = atlas::array::make_view<double, 3>(divField);
       auto view = atlas::array::make_view<double, 3>(field);
-      for (int j0 = 0; j0 < it->shape(0); ++j0) {
-        for (int j1 = 0; j1 < it->shape(1); ++j1) {
-          for (int j2 = 0; j2 < it->shape(2); ++j2) {
-            view(j0, j1, j2) = view(j0, j1, j2)/dividerView(j0, j1, j2);
+      for (int j0 = 0; j0 < divField.shape(0); ++j0) {
+        for (int j1 = 0; j1 < divField.shape(1); ++j1) {
+          for (int j2 = 0; j2 < divField.shape(2); ++j2) {
+            view(j0, j1, j2) = view(j0, j1, j2)/divView(j0, j1, j2);
           }
         }
       }

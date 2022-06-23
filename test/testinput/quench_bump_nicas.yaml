@@ -31,4 +31,3 @@ output:
 
 test:
   reference filename: testref/quench_bump_nicas/test.log.out
-  output precision: 6

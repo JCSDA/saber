@@ -10,6 +10,7 @@
 module tools_func
 
 use atlas_module, only: atlas_geometry
+use fckit_mpi_module, only: fckit_mpi_sum
 use iso_c_binding
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,one,two,three,four,five,eight,ten,pi,deg2rad,rad2deg
@@ -140,11 +141,16 @@ interface zss_count
       module procedure func_zss_count_r${rank}$
    #:endfor
 end interface
+interface global_average
+   #:for rank in ranks_1234
+      module procedure func_global_average_r${rank}$
+   #:endfor
+end interface
 
 private
 public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
  & vector_product,det,inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
- & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
+ & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count,global_average
 
 contains
 
@@ -1668,6 +1674,74 @@ endif
 @:probe_out()
 
 end function func_zss_count_r${rank}$
+#:endfor
+
+#:for rank in ranks_1234
+!----------------------------------------------------------------------
+! Function: func_global_average_r${rank}$
+!> Global average of an array
+!----------------------------------------------------------------------
+function func_global_average_r${rank}$(mpl,array,gmask) result(value)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl                 !< MPI data
+real(kind_real),intent(in) :: array(${dim[rank]}$)  !< Array
+logical,intent(in),optional :: gmask(${dim[rank]}$) !< Mask
+
+! Returned variable
+real(kind_real) :: value
+
+! Local variables
+integer :: shp(${rank}$)
+real(kind_real) :: norm
+logical,allocatable :: lgmask(${dim[rank]}$)
+
+! Set name
+@:set_name(func_global_average_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Array shape
+shp = shape(array)
+
+! Allocation
+#{if rank == 1}# allocate(lgmask(shp(1))) #{endif}#
+#{if rank == 2}# allocate(lgmask(shp(1),shp(2))) #{endif}#
+#{if rank == 3}# allocate(lgmask(shp(1),shp(2),shp(3))) #{endif}#
+#{if rank == 4}# allocate(lgmask(shp(1),shp(2),shp(3),shp(4))) #{endif}#
+
+! Initialization
+value = zero
+norm = zero
+if (present(gmask)) then
+   lgmask = gmask
+else
+   lgmask = .true.
+end if
+
+! Exclude missing values
+lgmask = lgmask.and.mpl%msv%isnot(array)
+
+! Sum of valid points
+value = zss_sum(array,mask=lgmask)
+
+! Count valid points
+norm = real(zss_count(lgmask),kind_real)
+
+! Communication
+call mpl%f_comm%allreduce(value,fckit_mpi_sum())
+call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
+
+! Average
+if (norm>zero) value = value/norm
+
+! Probe out
+@:probe_out()
+
+end function func_global_average_r${rank}$
 #:endfor
 
 end module tools_func

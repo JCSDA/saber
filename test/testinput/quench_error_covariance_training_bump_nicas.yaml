@@ -15,11 +15,9 @@ bump:
     var: [10]
   strategy: specific_univariate
   output:
-  - date: 2010-01-01T12:00:00Z
-    filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rh
+  - filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rh
     parameter: cor_rh
-  - date: 2010-01-01T12:00:00Z
-    filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rv
+  - filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rv
     parameter: cor_rv
   - date: 2010-01-01T12:00:00Z
     filepath: testdata/quench_error_covariance_training_bump_nicas/nicas_interp_test
@@ -34,8 +32,8 @@ geometry:
     type : regular_gaussian
     N : 15
   levels: 10
+  halo: 3
 input variables: *vars
 
 test:
   reference filename: testref/quench_error_covariance_training_bump_nicas/test.log.out
-  output precision: 6

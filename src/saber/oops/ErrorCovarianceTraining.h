@@ -71,6 +71,30 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
   /// Background error covariance model
   oops::OptionalParameter<CovarianceParameters_> backgroundError{"background error", this};
 
+  /// Randomized ensemble output
+  oops::OptionalParameter<eckit::LocalConfiguration>
+    randomizedEnsembleOutput{"randomized ensemble output", this};
+
+  /// Geometry parameters for ensemble 2
+  oops::OptionalParameter<GeometryParameters_> geometry2{"lowres geometry", this};
+
+  /// Ensemble 2 parameters
+  oops::OptionalParameter<IncrementEnsembleFromStatesParameters_> ensemble2{"lowres ensemble",
+    this};
+
+  /// Ensemble 2 perturbations parameters
+  oops::OptionalParameter<IncrementEnsembleParameters_> ensemble2Pert{"lowres ensemble pert",
+    this};
+
+  /// Ensemble 2 base parameters
+  oops::OptionalParameter<StateEnsembleParameters_> ensemble2Base{"lowres ensemble base",
+    this};
+
+  /// Ensemble 2 state parameters for the ensemble pairs that would be subtracted from
+  /// the base ensemble
+  oops::OptionalParameter<StateEnsembleParameters_> ensemble2Pairs{"lowres ensemble pairs",
+    this};
+
   /// Input variables
   oops::RequiredParameter<oops::Variables> inputVariables{"input variables", this};
 
@@ -85,11 +109,15 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
   typedef oops::ModelSpaceCovarianceBase<MODEL>              CovarianceBase_;
   typedef oops::CovarianceFactory<MODEL>                     CovarianceFactory_;
   typedef oops::ModelSpaceCovarianceParametersBase<MODEL>    CovarianceParametersBase_;
+  typedef oops::StateEnsembleParameters<MODEL>               StateEnsembleParameters_;
+  typedef oops::IncrementEnsembleFromStatesParameters<MODEL> IncrementEnsembleFromStatesParameters_;
+  typedef oops::IncrementEnsembleParameters<MODEL>           IncrementEnsembleParameters_;
+  typedef typename oops::Geometry<MODEL>::Parameters_        GeometryParameters_;
   typedef oops::Geometry<MODEL>                              Geometry_;
   typedef oops::Increment<MODEL>                             Increment_;
   typedef oops::State<MODEL>                                 State_;
   typedef oops::IncrementEnsemble<MODEL>                     Ensemble_;
-  typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>>    EnsemblePtr_;
+  typedef std::shared_ptr<Ensemble_>                         EnsemblePtr_;
   typedef ErrorCovarianceTrainingParameters<MODEL>           ErrorCovarianceTrainingParameters_;
   typedef BUMP<MODEL>                                        BUMP_;
 
@@ -102,68 +130,119 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
   virtual ~ErrorCovarianceTraining() {}
 
-  int execute(const eckit::Configuration & fullConfig) const {
-    util::Timer timer(classname(), "write");
+  int execute(const eckit::Configuration & fullConfig, bool validate) const override {
+    util::Timer timer(classname(), "execute");
 
     // Deserialize parameters
     ErrorCovarianceTrainingParameters_ params;
-    params.validateAndDeserialize(fullConfig);
+    if (validate) params.validate(fullConfig);
+    params.deserialize(fullConfig);
 
-    //  Setup resolution
-    const Geometry_ resol(params.geometry, this->getComm());
+    // Setup geometry
+    const Geometry_ geom1(params.geometry, this->getComm());
 
     // Setup variables
     const oops::Variables inputVars(params.inputVariables);
 
     // Setup background state
-    const State_ xx(resol, params.background);
+    const State_ xx(geom1, params.background);
 
     // Setup time
     const util::DateTime time = xx.validTime();
 
     // Setup ensemble 1
     EnsemblePtr_ ens1 = NULL;
-    if (params.ensemble.value() != boost::none) {
-      // Ensemble of state, compute perturbation using the mean
-      oops::Log::info() << "Ensemble of state, compute perturbation using the mean" << std::endl;
-      ens1.reset(new Ensemble_(*params.ensemble.value(), xx, xx, resol, inputVars));
-    } else if (params.ensemblePert.value() != boost::none) {
+    const boost::optional<IncrementEnsembleFromStatesParameters_>
+      &ensemble = params.ensemble.value();
+    const boost::optional<IncrementEnsembleParameters_> &ensemblePert = params.ensemblePert.value();
+    const boost::optional<StateEnsembleParameters_> &ensembleBase = params.ensembleBase.value();
+    const boost::optional<StateEnsembleParameters_> &ensemblePairs = params.ensemblePairs.value();
+    if (ensemble != boost::none) {
+      // Ensemble of states, perturbation using the mean
+      oops::Log::info() << "Ensemble of states, perturbation using the mean" << std::endl;
+      ens1.reset(new Ensemble_(*ensemble, xx, xx, geom1, inputVars));
+    } else if (ensemblePert) {
       // Increment ensemble from increments on disk
       oops::Log::info() << "Increment ensemble from increments on disk" << std::endl;
-      ens1.reset(new Ensemble_(resol, inputVars, *params.ensemblePert.value()));
-    } else if ((params.ensembleBase.value() != boost::none) &&
-               (params.ensemblePairs.value() != boost::none)) {
-      // Increment ensemble from difference of two state ensembles
-       oops::Log::info() << "Increment ensemble from difference of two state ensembles"
+      ens1.reset(new Ensemble_(geom1, inputVars, *ensemblePert));
+    } else if ((ensembleBase != boost::none) &&
+               (ensemblePairs != boost::none)) {
+      // Increment ensemble from difference of two states
+       oops::Log::info() << "Increment ensemble from difference of two states"
                          << std::endl;
-       ens1.reset(new Ensemble_(resol, inputVars, *params.ensembleBase.value(),
-                                                  *params.ensemblePairs.value()));
+       ens1.reset(new Ensemble_(geom1, inputVars, *ensembleBase, *ensemblePairs));
     }
-    if (ens1) {
-      for (size_t ie = 0; ie < ens1->size(); ++ie) {
-        (*ens1)[ie].toAtlas();
-      }
+
+    // Setup ensemble 2 geometry pointer
+    const Geometry_ * geom2 = &geom1;
+    const boost::optional<GeometryParameters_> &geom2Params = params.geometry2.value();
+    if (geom2Params != boost::none) {
+      geom2 = new Geometry_(*geom2Params, geom1.getComm());
     }
 
     // Setup ensemble 2
     EnsemblePtr_ ens2 = NULL;
-    const boost::optional<CovarianceParameters_> &covarParams = params.backgroundError.value();
-    if (covarParams != boost::none) {
-      // Covariance matrix
-      const CovarianceParametersBase_ &covarParamsBase = (*covarParams).covarianceParameters;
-      std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
-                                       resol, inputVars, covarParamsBase, xx, xx));
+    const boost::optional<CovarianceParameters_>
+      &backgroundError = params.backgroundError.value();
+    const boost::optional<IncrementEnsembleFromStatesParameters_>
+      &ensemble2 = params.ensemble2.value();
+    const boost::optional<IncrementEnsembleParameters_>
+      &ensemble2Pert = params.ensemble2Pert.value();
+    const boost::optional<StateEnsembleParameters_> &ensemble2Base = params.ensemble2Base.value();
+    const boost::optional<StateEnsembleParameters_> &ensemble2Pairs = params.ensemble2Pairs.value();
 
-      // Randomize ensemble
-      int ens2_ne = covarParamsBase.randomizationSize.value();
-      ens2.reset(new Ensemble_(resol, inputVars, time, ens2_ne));
+    if (backgroundError != boost::none) {
+      // Covariance matrix
+      const CovarianceParametersBase_ &covarParamsBase = (*backgroundError).covarianceParameters;
+      std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
+                                       *geom2, inputVars, covarParamsBase, xx, xx));
+
+      // Randomize ensemble and remove mean
+      const int ens2_ne = covarParamsBase.randomizationSize.value();
+      ens2.reset(new Ensemble_(*geom2, inputVars, time, ens2_ne));
+      Increment_ mean(*geom2, inputVars, time);
+      mean.zero();
       for (int ie = 0; ie < ens2_ne; ++ie) {
         oops::Log::info() << "Generate randomized ensemble member " << ie+1 << " / "
                           << ens2_ne << std::endl;
-        Increment_ incr(resol, inputVars, time);
+        Increment_ incr(*geom2, inputVars, time);
         Bmat->randomize(incr);
         (*ens2)[ie] = incr;
-        (*ens2)[ie].toAtlas();
+        mean += incr;
+      }
+      const double rr = 1.0/static_cast<double>(ens2_ne);
+      mean *= rr;
+      for (int ie = 0; ie < ens2_ne; ++ie) {
+        (*ens2)[ie] -= mean;
+      }
+
+      // Optionally write randomized ensemble
+      const boost::optional<eckit::LocalConfiguration>
+        &randomizedEnsembleOutput = params.randomizedEnsembleOutput.value();
+      if (randomizedEnsembleOutput != boost::none) {
+        ens2->write(*randomizedEnsembleOutput);
+      }
+    } else if ((ensemble2 != boost::none) || (ensemble2Pert != boost::none)
+     || ((ensemble2Base != boost::none) && (ensemble2Pairs != boost::none))) {
+      // Setup low resolution background state
+      const State_ xx2(*geom2, xx);
+
+      // Low resolution ensemble
+      if (ensemble2 != boost::none) {
+        // Low resolution ensemble of states, perturbation using the mean
+        oops::Log::info() << "Low resolution ensemble of states, perturbation using the mean"
+          << std::endl;
+        ens2.reset(new Ensemble_(*ensemble2, xx2, xx2, *geom2, inputVars));
+      } else if (ensemble2Pert != boost::none) {
+        // Low resolution increment ensemble from increments on disk
+        oops::Log::info() << "Low resolution increment ensemble from increments on disk"
+          << std::endl;
+        ens2.reset(new Ensemble_(*geom2, inputVars, *ensemble2Pert));
+      } else if ((ensemble2Base != boost::none) && (ensemble2Pairs != boost::none)) {
+        // Low resolution increment ensemble from difference of two states
+         oops::Log::info() << "Low resolution increment ensemble from difference of two states"
+           << std::endl;
+         ens2.reset(new Ensemble_(*geom2, inputVars, *ensemble2Base, *ensemble2Pairs));
       }
     }
 
@@ -173,13 +252,12 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     const boost::optional<BUMP_Parameters<MODEL>> &bumpParams = params.bumpParams.value();
     if (bumpParams != boost::none) {
       // Do training
-      BUMP_ bump(resol, inputVars, *bumpParams, xx, xx, ens1, ens2);
+      BUMP_ bump(geom1, *geom2, inputVars, *bumpParams, xx, xx, ens1, ens2);
+    }
 
-      // Write training parameters
-      bump.write();
-
-      // Apply training operators
-      bump.apply();
+    // Delete pointer
+    if (geom2Params != boost::none) {
+      delete geom2;
     }
 
     return 0;

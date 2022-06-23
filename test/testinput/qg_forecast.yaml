@@ -20,4 +20,3 @@ prints:
 
 test:
   reference filename: testref/qg_forecast/test.log.out
-  output precision: 6

@@ -53,36 +53,37 @@ cost function:
       weight:
         value: 0.5
   observations:
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: Stream
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: Stream
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: Wind
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: Wind
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: WSpeed
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: WSpeed
+    observers:
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: Stream
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: Stream
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: Wind
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: Wind
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: WSpeed
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: WSpeed
   constraints:
   - jcdfi:
       filtered variables: [x]
@@ -140,6 +141,5 @@ output:
   type: an
 
 test:
-  float relative tolerance: 4.e-6
   reference filename: testref/qg_4dvar_drplanczos_hybrid_bump/test.log.out
-  output precision: 6
+  float relative tolerance: 4e-6

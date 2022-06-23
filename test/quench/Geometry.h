@@ -15,6 +15,7 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
+#include "atlas/grid.h"
 
 #include "eckit/mpi/Comm.h"
 
@@ -51,13 +52,16 @@ class GeometryParameters : public oops::Parameters {
 
   /// Vertical unit
   oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
+
+  /// Halo size
+  oops::OptionalParameter<size_t> halo{"halo", this};
 };
 
 // -----------------------------------------------------------------------------
 /// Geometry handles geometry for  model.
 
 class Geometry : public util::Printable,
-                   private util::ObjectCounter<Geometry> {
+                 private util::ObjectCounter<Geometry> {
  public:
   typedef GeometryParameters Parameters_;
 
@@ -68,12 +72,14 @@ class Geometry : public util::Printable,
   Geometry(const Geometry &);
 
   const eckit::mpi::Comm & getComm() const {return comm_;}
-  atlas::Grid * atlasGrid() const {return atlasGrid_.get();}
-  atlas::FunctionSpace * atlasFunctionSpace(std::string name = "", bool includeHalo = false) const
-    {return atlasFunctionSpace_.get();}
-  atlas::FieldSet * atlasFieldSet() const {return atlasFieldSet_.get();}
+  atlas::Grid grid() const {return grid_;}
+  const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
+  atlas::FunctionSpace & functionSpace() {return functionSpace_;}
+  const atlas::FieldSet & extraFields() const {return extraFields_;}
+  atlas::FieldSet & extraFields() {return extraFields_;}
   size_t levels() const {return levels_;}
   std::vector<double> vunit() const {return vunit_;}
+  size_t halo() const {return halo_;}
 
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
@@ -82,11 +88,13 @@ class Geometry : public util::Printable,
   void print(std::ostream &) const;
   const eckit::mpi::Comm & comm_;
   eckit::LocalConfiguration gridConfig_;
-  std::unique_ptr<atlas::Grid> atlasGrid_;
-  std::unique_ptr<atlas::FunctionSpace> atlasFunctionSpace_;
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
+  atlas::Grid grid_;
+  atlas::Mesh mesh_;
+  atlas::FunctionSpace functionSpace_;
+  atlas::FieldSet extraFields_;
   size_t levels_;
   std::vector<double> vunit_;
+  size_t halo_;
 };
 // -----------------------------------------------------------------------------
 

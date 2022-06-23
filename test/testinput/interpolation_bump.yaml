@@ -13,4 +13,3 @@ test_interpolation_interface:
 
 test:
   reference filename: testref/interpolation_bump/test.log.out
-  test output filename: testoutput/interpolation_bump/test.log.out

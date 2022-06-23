@@ -102,16 +102,11 @@ void Localization<MODEL>::randomize(Increment_ & dx) const {
   // Random output vector (necessary for some SABER blocks)
   dx.random();
 
-  // Increment_ to ATLAS fieldset
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dx.setAtlas(atlasFieldSet.get());
-  dx.toAtlas(atlasFieldSet.get());
-
   // Central block randomization
-  saberBlock_->randomize(atlasFieldSet.get());
+  saberBlock_->randomize(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
-  dx.fromAtlas(atlasFieldSet.get());
+  dx.synchronizeFields();
 
   oops::Log::trace() << "Localization:randomize done" << std::endl;
 }
@@ -122,18 +117,11 @@ template<typename MODEL>
 void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
-  // Increment_ to ATLAS fieldset
-  Increment_ dxtmp(dx);
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet(new atlas::FieldSet());
-  dxtmp.setAtlas(atlasFieldSet.get());
-  dxtmp.toAtlas(atlasFieldSet.get());
-  dx.setAtlas(atlasFieldSet.get());
-
   // Central block multiplication
-  saberBlock_->multiply(atlasFieldSet.get());
+  saberBlock_->multiply(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
-  dx.fromAtlas(atlasFieldSet.get());
+  dx.synchronizeFields();
 
   oops::Log::trace() << "Localization:multiply done" << std::endl;
 }

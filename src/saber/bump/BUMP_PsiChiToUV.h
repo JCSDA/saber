@@ -56,11 +56,11 @@ class BUMP_PsiChiToUV : public SaberBlockBase<MODEL> {
                   const State_ &);
   virtual ~BUMP_PsiChiToUV();
 
-  void randomize(atlas::FieldSet *) const override;
-  void multiply(atlas::FieldSet *) const override;
-  void inverseMultiply(atlas::FieldSet *) const override;
-  void multiplyAD(atlas::FieldSet *) const override;
-  void inverseMultiplyAD(atlas::FieldSet *) const override;
+  void randomize(atlas::FieldSet &) const override;
+  void multiply(atlas::FieldSet &) const override;
+  void inverseMultiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -70,7 +70,7 @@ class BUMP_PsiChiToUV : public SaberBlockBase<MODEL> {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-BUMP_PsiChiToUV<MODEL>::BUMP_PsiChiToUV(const Geometry_ & resol,
+BUMP_PsiChiToUV<MODEL>::BUMP_PsiChiToUV(const Geometry_ & geom,
                                         const Parameters_ & params,
                                         const State_ & xb,
                                         const State_ & fg)
@@ -106,7 +106,7 @@ BUMP_PsiChiToUV<MODEL>::BUMP_PsiChiToUV(const Geometry_ & resol,
   }
 
   // Initialize BUMP
-  bump_.reset(new BUMP_(resol, activeVars, params.bumpParams.value(), xb, fg));
+  bump_.reset(new BUMP_(geom, geom, activeVars, params.bumpParams.value(), xb, fg));
 
   oops::Log::trace() << classname() << "::BUMP_PsiChiToUV done" << std::endl;
 }
@@ -123,25 +123,25 @@ BUMP_PsiChiToUV<MODEL>::~BUMP_PsiChiToUV() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_PsiChiToUV<MODEL>::randomize(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_PsiChiToUV<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  this->multiply(atlasFieldSet);
+  this->multiply(fset);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_PsiChiToUV<MODEL>::multiply(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_PsiChiToUV<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  bump_->multiplyPsiChiToUV(atlasFieldSet);
+  bump_->multiplyPsiChiToUV(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_PsiChiToUV<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet)
+void BUMP_PsiChiToUV<MODEL>::inverseMultiply(atlas::FieldSet & fset)
   const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
   ABORT("BUMP_PsiChiToUV<MODEL>::inverseMultiply: not implemented");
@@ -151,16 +151,16 @@ void BUMP_PsiChiToUV<MODEL>::inverseMultiply(atlas::FieldSet * atlasFieldSet)
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_PsiChiToUV<MODEL>::multiplyAD(atlas::FieldSet * atlasFieldSet) const {
+void BUMP_PsiChiToUV<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  bump_->multiplyPsiChiToUVAd(atlasFieldSet);
+  bump_->multiplyPsiChiToUVAd(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void BUMP_PsiChiToUV<MODEL>::inverseMultiplyAD(atlas::FieldSet * atlasFieldSet)
+void BUMP_PsiChiToUV<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset)
   const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
   ABORT("BUMP_PsiChiToUV<MODEL>::inverseMultiplyAD: not implemented");

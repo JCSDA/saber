@@ -57,10 +57,11 @@ type samp_type
    integer,allocatable :: l0ic3_to_l0(:,:,:)              !< Independent levels to level in Sl0, subset Sc1 and Sc3
 
    ! Subset Sc0
-   logical,allocatable :: smask_c0u(:,:)                  !< Mask on subset Sc0, universe
-   logical,allocatable :: smask_hor_c0u(:)                !< Union of horizontal masks on subset Sc0, universe
+   real(kind_real),allocatable :: smask_input_c0a(:,:,:)  !< Mask input field on subset Sc0, halo A
    logical,allocatable :: smask_c0a(:,:)                  !< Mask on subset Sc0, halo A
    logical,allocatable :: smask_hor_c0a(:)                !< Union of horizontal masks on subset Sc0, halo A
+   logical,allocatable :: smask_c0u(:,:)                  !< Mask on subset Sc0, universe
+   logical,allocatable :: smask_hor_c0u(:)                !< Union of horizontal masks on subset Sc0, universe
    integer,allocatable :: nc0_smask(:)                    !< Horizontal mask size on subset Sc0
    integer :: nc0b                                        !< Number of points in subset Sc0, halo B
    integer :: nc0c                                        !< Number of points in subset Sc0, halo C
@@ -1108,7 +1109,7 @@ end subroutine samp_write_grids
 ! Subroutine: samp_setup
 !> Setup sampling
 !----------------------------------------------------------------------
-subroutine samp_setup(samp,mpl,rng,nam,geom,ens)
+subroutine samp_setup(samp,mpl,rng,nam,geom,ens,other)
 
 implicit none
 
@@ -1119,6 +1120,7 @@ type(rng_type),intent(inout) :: rng          !< Random number generator
 type(nam_type),intent(inout) :: nam          !< Namelist
 type(geom_type),intent(in) :: geom           !< Geometry
 type(ens_type),intent(inout),optional :: ens !< Ensemble
+type(samp_type),intent(in),optional :: other !< Other sampling
 
 ! Local variables
 integer :: il0,jc3,jc4,ildwv,jldwv,ival,nc1_valid
@@ -1164,60 +1166,86 @@ else
       call samp%compute_mask(mpl,nam,geom)
    end if
 
-   ! Compute nearest neighbors for local diagnostics output
-   if (nam%nldwv>0) then
-      write(mpl%info,'(a7,a)') '','Compute local diagnostics locations:'
+   if (present(other)) then
+      ! Copy sampling, subset Sc1
+      write(mpl%info,'(a7,a,i5,a)') '','Copy sampling, subset Sc1 (nc1 = ',nam%nc1,')'
       call mpl%flush
 
+      ! Copy dimensions
+      samp%nc1 = other%nc1
+      samp%nc1a = other%nc1a
+
       ! Allocation
-      allocate(samp%ldwv_to_proc(nam%nldwv))
-      allocate(samp%ldwv_to_c0a(nam%nldwv))
-      allocate(ldwv_to_lon(nam%nldwv))
-      allocate(ldwv_to_lat(nam%nldwv))
+      allocate(samp%lon_c1a(samp%nc1a))
+      allocate(samp%lat_c1a(samp%nc1a))
+      allocate(samp%vunit_c1a(samp%nc1a,geom%nl0))
+      allocate(samp%smask_c1a(samp%nc1a,geom%nl0))
+      allocate(samp%c1a_to_c1(samp%nc1a))
 
-      ! Initialization
-      ldwv_to_lon = zero
-      ldwv_to_lat = zero
+      ! Copy data
+      samp%lon_c1a = other%lon_c1a
+      samp%lat_c1a = other%lat_c1a
+      samp%proc_to_nc1a = other%proc_to_nc1a
+      samp%proc_to_c1_offset = other%proc_to_c1_offset
+      samp%vunit_c1a = other%vunit_c1a
+      samp%smask_c1a = other%smask_c1a
+      samp%c1a_to_c1 = other%c1a_to_c1
+   else
+      ! Compute nearest neighbors for local diagnostics output
+      if (nam%nldwv>0) then
+         write(mpl%info,'(a7,a)') '','Compute local diagnostics locations:'
+         call mpl%flush
 
-      do ildwv=1,nam%nldwv
-         ! Get index from lon/lat
-         call geom%index_from_lonlat(mpl,nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),0,samp%ldwv_to_proc(ildwv), &
+         ! Allocation
+         allocate(samp%ldwv_to_proc(nam%nldwv))
+         allocate(samp%ldwv_to_c0a(nam%nldwv))
+         allocate(ldwv_to_lon(nam%nldwv))
+         allocate(ldwv_to_lat(nam%nldwv))
+
+         ! Initialization
+         ldwv_to_lon = zero
+         ldwv_to_lat = zero
+
+         do ildwv=1,nam%nldwv
+            ! Get index from lon/lat
+            call geom%index_from_lonlat(mpl,nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),0,samp%ldwv_to_proc(ildwv), &
  & samp%ldwv_to_c0a(ildwv),valid)
-         if (valid) then
-            if (samp%ldwv_to_proc(ildwv)==mpl%myproc) then
-               ldwv_to_lon(ildwv) = geom%lon_c0a(samp%ldwv_to_c0a(ildwv))
-               ldwv_to_lat(ildwv) = geom%lat_c0a(samp%ldwv_to_c0a(ildwv))
+            if (valid) then
+               if (samp%ldwv_to_proc(ildwv)==mpl%myproc) then
+                  ldwv_to_lon(ildwv) = geom%lon_c0a(samp%ldwv_to_c0a(ildwv))
+                  ldwv_to_lat(ildwv) = geom%lat_c0a(samp%ldwv_to_c0a(ildwv))
+               end if
+               call mpl%f_comm%broadcast(ldwv_to_lon(ildwv),samp%ldwv_to_proc(ildwv)-1)
+               call mpl%f_comm%broadcast(ldwv_to_lat(ildwv),samp%ldwv_to_proc(ildwv)-1)
+            else
+               call mpl%abort('${subr}$','profile '//trim(nam%name_ldwv(ildwv))//' is masked or out of the domain')
             end if
-            call mpl%f_comm%broadcast(ldwv_to_lon(ildwv),samp%ldwv_to_proc(ildwv)-1)
-            call mpl%f_comm%broadcast(ldwv_to_lat(ildwv),samp%ldwv_to_proc(ildwv)-1)
-         else
-            call mpl%abort('${subr}$','profile '//trim(nam%name_ldwv(ildwv))//' is masked or out of the domain')
-         end if
-      end do
-
-      do ildwv=1,nam%nldwv
-         ! Check redundancy
-         do jldwv=1,ildwv-1
-            if (eq(ldwv_to_lon(ildwv),ldwv_to_lon(jldwv)).and.eq(ldwv_to_lat(ildwv),ldwv_to_lat(jldwv))) &
-    & call mpl%abort('${subr}$','profiles'//trim(nam%name_ldwv(ildwv))//' and '//trim(nam%name_ldwv(jldwv))// &
-    & 'are located grid point')
          end do
 
-         ! Print results
-         write(mpl%info,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
-    & ldwv_to_lon(ildwv)*rad2deg,' / ',ldwv_to_lat(ildwv)*rad2deg
-         call mpl%flush
-      end do
+         do ildwv=1,nam%nldwv
+            ! Check redundancy
+            do jldwv=1,ildwv-1
+               if (eq(ldwv_to_lon(ildwv),ldwv_to_lon(jldwv)).and.eq(ldwv_to_lat(ildwv),ldwv_to_lat(jldwv))) &
+ & call mpl%abort('${subr}$','profiles'//trim(nam%name_ldwv(ildwv))//' and '//trim(nam%name_ldwv(jldwv))// &
+ & 'are located grid point')
+            end do
 
-      ! Release memory
-      deallocate(ldwv_to_lon)
-      deallocate(ldwv_to_lat)
+            ! Print results
+            write(mpl%info,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
+ & ldwv_to_lon(ildwv)*rad2deg,' / ',ldwv_to_lat(ildwv)*rad2deg
+            call mpl%flush
+         end do
+
+         ! Release memory
+         deallocate(ldwv_to_lon)
+         deallocate(ldwv_to_lat)
+      end if
+
+      ! Compute sampling, subset Sc1
+      write(mpl%info,'(a7,a,i5,a)') '','Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
+      call mpl%flush
+      call samp%compute_c1(mpl,nam,geom)
    end if
-
-   ! Compute sampling, subset Sc1
-   write(mpl%info,'(a7,a,i5,a)') '','Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
-   call mpl%flush
-   call samp%compute_c1(mpl,nam,geom)
 
    ! Compute MPI distribution, subset Sc1, halo A and universe
    write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
@@ -1225,17 +1253,59 @@ else
    call samp%compute_mpi_c1au(mpl,rng,nam,geom)
 
    if (samp%sc3) then
-      ! Compute sampling, subset Sc3
-      write(mpl%info,'(a7,a,i5,a,i5,a)') '','Compute sampling, subset Sc3 (nc3 = ',nam%nc3,' / nc4 = ',nam%nc4,')'
-      call mpl%flush
-      call samp%compute_c3(mpl,rng,nam,geom)
+      if (present(other)) then
+         ! Copy sampling, subset Sc3
+         write(mpl%info,'(a7,a,i5,a,i5,a)') '','Copy sampling, subset Sc3 (nc3 = ',nam%nc3,' / nc4 = ',nam%nc4,')'
+         call mpl%flush
+
+         ! Allocation
+         allocate(samp%lon_c3a(samp%nc1a,nam%nc3,nam%nc4))
+         allocate(samp%lat_c3a(samp%nc1a,nam%nc3,nam%nc4))
+         allocate(samp%smask_c3a(samp%nc1a,nam%nc3,nam%nc4,geom%nl0))
+
+         ! Copy data
+         samp%lon_c3a = other%lon_c3a
+         samp%lat_c3a = other%lat_c3a
+         samp%smask_c3a = other%smask_c3a
+      else
+         ! Compute sampling, subset Sc3
+         write(mpl%info,'(a7,a,i5,a,i5,a)') '','Compute sampling, subset Sc3 (nc3 = ',nam%nc3,' / nc4 = ',nam%nc4,')'
+         call mpl%flush
+         call samp%compute_c3(mpl,rng,nam,geom)
+      end if
    end if
 
    if (samp%sc2) then
-      ! Compute sampling, subset Sc2
-      write(mpl%info,'(a7,a,i5,a)') '','Compute sampling, subset Sc2 (nc2 = ',nam%nc2,')'
-      call mpl%flush
-      call samp%compute_c2(mpl,nam,geom)
+      if (present(other)) then
+         ! Copy sampling, subset Sc2
+         write(mpl%info,'(a7,a,i5,a)') '','Copy sampling, subset Sc2 (nc2 = ',nam%nc2,')'
+         call mpl%flush
+
+         ! Copy dimensions
+         samp%nc2 = other%nc2
+         samp%nc2a = other%nc2a
+
+         ! Allocation
+         allocate(samp%lon_c2a(samp%nc2a))
+         allocate(samp%lat_c2a(samp%nc2a))
+         allocate(samp%vunit_c2a(samp%nc2a,geom%nl0))
+         allocate(samp%smask_c2a(samp%nc2a,geom%nl0))
+         allocate(samp%c2a_to_c2(samp%nc2a))
+
+         ! Copy data
+         samp%lon_c2a = other%lon_c2a
+         samp%lat_c2a = other%lat_c2a
+         samp%proc_to_nc2a = other%proc_to_nc2a
+         samp%proc_to_c2_offset = other%proc_to_c2_offset
+         samp%vunit_c2a = other%vunit_c2a
+         samp%smask_c2a = other%smask_c2a
+         samp%c2a_to_c2 = other%c2a_to_c2
+      else
+         ! Compute sampling, subset Sc2
+         write(mpl%info,'(a7,a,i5,a)') '','Compute sampling, subset Sc2 (nc2 = ',nam%nc2,')'
+         call mpl%flush
+         call samp%compute_c2(mpl,nam,geom)
+      end if
    else
       samp%nc2a = 0
    end if
@@ -1393,24 +1463,25 @@ logical :: valid
 @:probe_in()
 
 ! Allocation
-allocate(samp%smask_c0u(geom%nc0u,geom%nl0))
 allocate(samp%smask_c0a(geom%nc0a,geom%nl0))
+allocate(samp%smask_c0u(geom%nc0u,geom%nl0))
 allocate(samp%smask_hor_c0u(geom%nc0u))
 allocate(samp%smask_hor_c0a(geom%nc0a))
 allocate(samp%nc0_smask(0:geom%nl0))
 
+! Copy geometry mask
+write(mpl%info,'(a7,a)') '','Copy geometry mask'
+call mpl%flush
+samp%smask_c0a = geom%gmask_c0a
+
 ! Count extra masked points in sampling
-nsmask = zss_count(geom%gmask_c0a.and..not.geom%smask_c0a)
+nsmask = zss_count(geom%gmask_c0a.and..not.samp%smask_c0a)
 call mpl%f_comm%allreduce(nsmask,fckit_mpi_sum())
 
 if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
    ! Compute sampling mask
    write(mpl%info,'(a7,a)') '','Compute sampling mask'
    call mpl%flush
-
-   ! Copy geometry mask
-   samp%smask_c0a = geom%gmask_c0a
-   if (allocated(geom%smask_c0a)) samp%smask_c0a = samp%smask_c0a.and.geom%smask_c0a
 
    ! Mask restriction
    if (nam%mask_type(1:3)=='lat') then
@@ -1467,8 +1538,24 @@ if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
 
       ! Release memory
       deallocate(m2)
+   elseif (trim(nam%mask_type)=='input') then
+      ! Input field threshold
+      if (.not.allocated(samp%smask_input_c0a)) call mpl%abort('${subr}$', &
+ & 'input parameter sampling_mask_field should be set for this mask_type')
+
+      ! Check input field value
+      do iv=1,nam%nv
+         write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
+ & //' bound for standard-deviation'
+         call mpl%flush
+         if (trim(nam%mask_lu(iv))=='lower') then
+            samp%smask_c0a = samp%smask_c0a.and.(samp%smask_input_c0a(:,:,iv)>nam%mask_th(iv))
+         elseif (trim(nam%mask_lu(iv))=='upper') then
+            samp%smask_c0a = samp%smask_c0a.and.(samp%smask_input_c0a(:,:,iv)<nam%mask_th(iv))
+         end if
+      end do
    else
-      if (.not.allocated(geom%smask_c0a)) call mpl%abort('${subr}$','mask_type not recognized')
+      call mpl%abort('${subr}$','mask_type not recognized')
    end if
 
    ! Check vertically contiguous points
@@ -1490,11 +1577,6 @@ if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
          samp%smask_c0a(ic0a,:) = samp%smask_c0a(ic0a,:).and.(ncontigmax>=min(nam%ncontig_th,geom%nl0))
       end do
    end if
-else
-   ! Copy geometry mask
-   write(mpl%info,'(a7,a)') '','Copy geometry mask'
-   call mpl%flush
-   samp%smask_c0a = geom%gmask_c0a
 end if
 
 ! Halo extension

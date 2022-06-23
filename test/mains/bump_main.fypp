@@ -102,7 +102,7 @@ call mpl%flush
 call model%setup(mpl,bump%nam)
 
 ! Load ensembles
-if (bump%nam%ens1_ne>0) then
+if ((bump%nam%ens1_ne>0).and.(.not.(bump%nam%check_consistency.or.bump%nam%check_optimality))) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
    write(mpl%info,'(a)') '--- Load ensemble 1'
@@ -120,9 +120,11 @@ end if
 ! BUMP setup
 call bump%setup(f_comm,model%afunctionspace,model%fieldset,lunit=mpl%lunit,msvali=mpl%msv%vali,msvalr=mpl%msv%valr)
 
+! Initialize second geometry
+if (bump%nam%ens2_ne>0) call bump%second_geometry(model%afunctionspace,model%fieldset)
 
 ! Load members one by one
-if (bump%nam%ens1_ne>0) then
+if ((bump%nam%ens1_ne>0).and.(.not.(bump%nam%check_consistency.or.bump%nam%check_optimality))) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
    write(mpl%info,'(a)') '--- Add members of ensemble 1'
@@ -135,7 +137,7 @@ if (bump%nam%ens1_ne>0) then
       elseif (bump%nam%update_var) then
          call bump%update_var(model%ens1(ie),ie)
       elseif (bump%nam%update_mom) then
-         call bump%update_mom(model%ens1(ie),ie)
+         call bump%update_mom(model%ens1(ie),ie,1)
       else
          ! Add member
          call bump%add_member(model%ens1(ie),ie,1)
@@ -150,18 +152,13 @@ if (bump%nam%ens2_ne>0) then
    do ie=1,bump%nam%ens2_ne
       write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens2_ne
       call mpl%flush
-      call bump%add_member(model%ens2(ie),ie,2)
+      if (bump%nam%update_mom) then
+         call bump%update_mom(model%ens2(ie),ie,2)
+      else
+         ! Add member
+         call bump%add_member(model%ens2(ie),ie,2)
+      end if
    end do
-end if
-
-! Test set_parameter interfaces
-if (bump%nam%check_set_param) then
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Test set_parameter interfaces'
-   call bump%mpl%flush()
-   call bump%test_set_parameter
-   if (bump%nam%default_seed) call bump%rng%reseed(mpl)
 end if
 
 ! Run drivers

@@ -15,6 +15,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/util/abor1_cpp.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 #include "oops/util/Serializable.h"
@@ -32,6 +33,7 @@ namespace oops {
 
 namespace quench {
   class Geometry;
+  class State;
 
 /// Increment Class: Difference between two states
 /*!
@@ -50,11 +52,13 @@ class Increment : public util::Printable,
 
 /// Constructor, destructor
   Increment(const Geometry &, const oops::Variables &, const util::DateTime &);
+  Increment(const Geometry &, const Increment &);
   Increment(const Increment &, const bool);
 
 /// Basic operators
   void diff(const State &, const State &);
   void zero();
+  void zero(const util::DateTime &);
   void dirac(const eckit::Configuration &);
   Increment & operator =(const Increment &);
   Increment & operator+=(const Increment &);
@@ -72,10 +76,10 @@ class Increment : public util::Printable,
   const util::DateTime & validTime() const {return fields_->time();}
   void updateTime(const util::Duration & dt) {fields_->time() += dt;}
 
-/// ATLAS FieldSet
-  void setAtlas(atlas::FieldSet *) const;
-  void toAtlas(atlas::FieldSet *) const;
-  void fromAtlas(atlas::FieldSet *);
+/// ATLAS FieldSet accessor
+  void toFieldSet(atlas::FieldSet &) const;
+  void toFieldSetAD(const atlas::FieldSet &);
+  void fromFieldSet(const atlas::FieldSet &);
 
 /// Access to fields
   Fields & fields() {return *fields_;}

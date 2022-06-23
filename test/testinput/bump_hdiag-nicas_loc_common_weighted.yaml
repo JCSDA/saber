@@ -39,6 +39,8 @@ ne: 50
 
 # nicas_param
 resol: 8.0
+loc_wgt:
+  u-q: 0.6
 
 # dirac_param
 ndir: 1

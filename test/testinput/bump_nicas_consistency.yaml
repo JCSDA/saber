@@ -2,23 +2,22 @@
 datadir: "testdata"
 prefix: "bump_nicas_consistency/test__MPI_-_OMP_"
 model: "qg"
-write_c0: true
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_nicas: true
-write_nicas_global: true
+new_hdiag: true
+write_hdiag: true
 check_consistency: true
 
 # model_param
-nl0: 2
-levs: [1,2]
-nv: true
+nl0: 1
+levs: [1]
+nv: 1
 variables: ["q"]
 
 # ens1_param
-ens1_ne: 50
+ens1_ne: 1000
 
 # ens2_param
 
@@ -26,10 +25,10 @@ ens1_ne: 50
 nc1: 1500
 nc3: 15
 dc: 400.0e3
-nl0r: 2
+nl0r: 1
 
 # diag_param
-ne: 50
+ne: 1000
 
 # fit_param
 

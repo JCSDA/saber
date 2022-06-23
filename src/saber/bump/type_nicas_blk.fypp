@@ -48,9 +48,6 @@ type nicas_blk_type
    integer :: blkid                           !< block ID
    integer :: dirac_id                        !< dirac ID
 
-   ! Block weight
-   real(kind_real) :: wgt                     !< Main weight
-
    ! NICAS components
    integer :: ncmp                            !< Number of components
    type(nicas_cmp_type),allocatable :: cmp(:) ! Components
@@ -185,9 +182,6 @@ call mpl%flush
 ! Get group
 nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
-! Read main weight
-call get_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
-
 ! Get number of components
 call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 
@@ -264,29 +258,24 @@ call mpl%flush
 ! Define group
 nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
-! Write main weight
-call put_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
+! Write number of components
+call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
-if (bpar%nicas_block(ib)) then
-   ! Write number of components
-   call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
+do icmp=1,nicas_blk%ncmp
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
 
-   do icmp=1,nicas_blk%ncmp
-      ! Get component
-      write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
-      call mpl%flush
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
 
-      if (nicas_blk%ncmp==1) then
-         nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
-      else
-         write(cmpname,'(a,i1)') 'cmp_',icmp
-         nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
-      end if
-
-      ! Component work
-      call nicas_blk%cmp(icmp)%write_local_def(mpl)
-   end do
-end if
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_local_def(mpl)
+end do
 
 ! End associate
 end associate
@@ -332,7 +321,7 @@ end subroutine nicas_blk_write_local_data
 ! Subroutine: nicas_blk_buffer_size
 !> Buffer size
 !----------------------------------------------------------------------
-subroutine nicas_blk_buffer_size(nicas_blk,mpl,geom,bpar,nbufi,nbufr,nbufl)
+subroutine nicas_blk_buffer_size(nicas_blk,mpl,geom,nbufi,nbufr,nbufl)
 
 implicit none
 
@@ -340,7 +329,6 @@ implicit none
 class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(geom_type),intent(in) :: geom            !< Geometry
-type(bpar_type),intent(in) :: bpar            !< Block parameters
 integer,intent(out) :: nbufi                  !< Buffer size (integer)
 integer,intent(out) :: nbufr                  !< Buffer size (real)
 integer,intent(out) :: nbufl                  !< Buffer size (logical)
@@ -362,21 +350,16 @@ nbufi = 0
 nbufr = 0
 nbufl = 0
 
-! wgt
-nbufr = nbufr+1
+! Total dimensions
+nbufi = nbufi+3
 
-if (bpar%nicas_block(ib)) then
-   ! Total dimensions
-   nbufi = nbufi+3
+! Number of components
+nbufi = nbufi+1
 
-   ! Number of components
-   nbufi = nbufi+1
-
-   do icmp=1,nicas_blk%ncmp
-      ! Component work
-      call nicas_blk%cmp(icmp)%buffer_size(mpl,geom,nbufi,nbufr,nbufl)
-   end do
-end if
+do icmp=1,nicas_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%buffer_size(mpl,geom,nbufi,nbufr,nbufl)
+end do
 
 ! End associate
 end associate
@@ -390,7 +373,7 @@ end subroutine nicas_blk_buffer_size
 ! Subroutine: nicas_blk_serialize
 !> Serialize
 !----------------------------------------------------------------------
-subroutine nicas_blk_serialize(nicas_blk,mpl,geom,bpar,nbufi,nbufr,nbufl,bufi,bufr,bufl)
+subroutine nicas_blk_serialize(nicas_blk,mpl,geom,nbufi,nbufr,nbufl,bufi,bufr,bufl)
 
 implicit none
 
@@ -398,7 +381,6 @@ implicit none
 class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(geom_type),intent(in) :: geom            !< Geometry
-type(bpar_type),intent(in) :: bpar            !< Block parameters
 integer,intent(in) :: nbufi                   !< Buffer size (integer)
 integer,intent(in) :: nbufr                   !< Buffer size (real)
 integer,intent(in) :: nbufl                   !< Buffer size (logical)
@@ -423,28 +405,22 @@ ibufi = 0
 ibufr = 0
 ibufl = 0
 
-! wgt
-bufr(ibufr+1) = nicas_blk%wgt
-ibufr = ibufr+1
+! Total dimensions
+bufi(ibufi+1) = nbufi
+ibufi = ibufi+1
+bufi(ibufi+1) = nbufr
+ibufi = ibufi+1
+bufi(ibufi+1) = nbufl
+ibufi = ibufi+1
 
-if (bpar%nicas_block(ib)) then
-   ! Total dimensions
-   bufi(ibufi+1) = nbufi
-   ibufi = ibufi+1
-   bufi(ibufi+1) = nbufr
-   ibufi = ibufi+1
-   bufi(ibufi+1) = nbufl
-   ibufi = ibufi+1
+! Number of components
+bufi(ibufi+1) = nicas_blk%ncmp
+ibufi = ibufi+1
 
-   ! Number of components
-   bufi(ibufi+1) = nicas_blk%ncmp
-   ibufi = ibufi+1
-
-   do icmp=1,nicas_blk%ncmp
-      ! Component work
-      call nicas_blk%cmp(icmp)%serialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
-   end do
-end if
+do icmp=1,nicas_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%serialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
+end do
 
 ! Check sizes
 if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
@@ -463,7 +439,7 @@ end subroutine nicas_blk_serialize
 ! Subroutine: nicas_blk_deserialize
 !> Deserialize
 !----------------------------------------------------------------------
-subroutine nicas_blk_deserialize(nicas_blk,mpl,geom,bpar,nbufi,nbufr,nbufl,bufi,bufr,bufl)
+subroutine nicas_blk_deserialize(nicas_blk,mpl,geom,nbufi,nbufr,nbufl,bufi,bufr,bufl)
 
 implicit none
 
@@ -471,7 +447,6 @@ implicit none
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(geom_type),intent(in) :: geom               !< Geometry
-type(bpar_type),intent(in) :: bpar               !< Block parameters
 integer,intent(in) :: nbufi                      !< Buffer size (integer)
 integer,intent(in) :: nbufr                      !< Buffer size (real)
 integer,intent(in) :: nbufl                      !< Buffer size (logical)
@@ -496,39 +471,33 @@ ibufi = 0
 ibufr = 0
 ibufl = 0
 
-! wgt
-nicas_blk%wgt = bufr(ibufr+1)
-ibufr = ibufr+1
+! Check total dimensions
+if (bufi(ibufi+1)/=nbufi) call mpl%abort('${subr}$','inconsistent initial value/buffer size (integer)')
+ibufi = ibufi+1
+if (bufi(ibufi+1)/=nbufr) call mpl%abort('${subr}$','inconsistent initial value/buffer size (real)')
+ibufi = ibufi+1
+if (bufi(ibufi+1)/=nbufl) call mpl%abort('${subr}$','inconsistent initial value/buffer size (logical)')
+ibufi = ibufi+1
 
-if (bpar%nicas_block(ib)) then
-   ! Check total dimensions
-   if (bufi(ibufi+1)/=nbufi) call mpl%abort('${subr}$','inconsistent initial value/buffer size (integer)')
-   ibufi = ibufi+1
-   if (bufi(ibufi+1)/=nbufr) call mpl%abort('${subr}$','inconsistent initial value/buffer size (real)')
-   ibufi = ibufi+1
-   if (bufi(ibufi+1)/=nbufl) call mpl%abort('${subr}$','inconsistent initial value/buffer size (logical)')
-   ibufi = ibufi+1
+! Number of components
+nicas_blk%ncmp = bufi(ibufi+1)
+ibufi = ibufi+1
 
-   ! Number of components
-   nicas_blk%ncmp = bufi(ibufi+1)
-   ibufi = ibufi+1
+! Allocation
+if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
-   ! Allocation
-   if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
+do icmp=1,nicas_blk%ncmp
+   ! Set attributes
+   nicas_blk%cmp(icmp)%ib = ib
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+   nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%smoother = .false.
+   nicas_blk%cmp(icmp)%horizontal = .false.
+   nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
-   do icmp=1,nicas_blk%ncmp
-      ! Set attributes
-      nicas_blk%cmp(icmp)%ib = ib
-      nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
-      nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
-      nicas_blk%cmp(icmp)%smoother = .false.
-      nicas_blk%cmp(icmp)%horizontal = .false.
-      nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
-
-      ! Component work
-      call nicas_blk%cmp(icmp)%deserialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
-   end do
-end if
+   ! Component work
+   call nicas_blk%cmp(icmp)%deserialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
+end do
 
 ! End associate
 end associate
@@ -574,49 +543,41 @@ call mpl%flush
 ! Get group
 nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
-! Read main weight
-if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
+! Get number of components
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 
-! Broadcast main weight
-call mpl%f_comm%broadcast(nicas_blk%wgt,mpl%rootproc-1)
+! Broadcast number of components
+call mpl%f_comm%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
 
-if (bpar%nicas_block(ib)) then
-   ! Get number of components
-   if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
+! Allocation
+if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
-   ! Broadcast number of components
-   call mpl%f_comm%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
+do icmp=1,nicas_blk%ncmp
+   ! Set attributes
+   nicas_blk%cmp(icmp)%ib = ib
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+   nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%smoother = .false.
+   nicas_blk%cmp(icmp)%horizontal = .false.
+   nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
-   ! Allocation
-   if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
+   ! Copy file ID
+   nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
 
-   do icmp=1,nicas_blk%ncmp
-      ! Set attributes
-      nicas_blk%cmp(icmp)%ib = ib
-      nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
-      nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
-      nicas_blk%cmp(icmp)%smoother = .false.
-      nicas_blk%cmp(icmp)%horizontal = .false.
-      nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
 
-      ! Copy file ID
-      nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
 
-      ! Get component
-      write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
-      call mpl%flush
-
-      if (nicas_blk%ncmp==1) then
-         nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
-      else
-         write(cmpname,'(a,i1)') 'cmp_',icmp
-         nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
-      end if
-
-      ! Component work
-      call nicas_blk%cmp(icmp)%read_global(mpl,geom)
-   end do
-end if
+   ! Component work
+   call nicas_blk%cmp(icmp)%read_global(mpl,geom)
+end do
 
 ! End associate
 end associate
@@ -630,7 +591,7 @@ end subroutine nicas_blk_read_global
 ! Subroutine: nicas_blk_write_global_def
 !> Write data for global I/O, definition mode
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_global_def(nicas_blk,mpl,nam,geom,bpar)
+subroutine nicas_blk_write_global_def(nicas_blk,mpl,nam,bpar)
 
 implicit none
 
@@ -638,7 +599,6 @@ implicit none
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
-type(geom_type),intent(in) :: geom               !< Geometry
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
@@ -662,29 +622,24 @@ call mpl%flush
 ! Define group
 nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
-! Write main weight
-call put_att(mpl,nicas_blk%blkid,0,'wgt',nicas_blk%wgt)
+! Write number of components
+call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
-if (bpar%nicas_block(ib)) then
-   ! Write number of components
-   call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
+do icmp=1,nicas_blk%ncmp
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
 
-   do icmp=1,nicas_blk%ncmp
-      ! Get component
-      write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
-      call mpl%flush
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
 
-      if (nicas_blk%ncmp==1) then
-         nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
-      else
-         write(cmpname,'(a,i1)') 'cmp_',icmp
-         nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
-      end if
-
-      ! Component work
-      call nicas_blk%cmp(icmp)%write_global_def(mpl,nam,geom)
-   end do
-end if
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_global_def(mpl,nam)
+end do
 
 ! End associate
 end associate
@@ -912,7 +867,6 @@ allocate(nicas_blk%cmp(nicas_blk%ncmp))
 ! Set attributes
 nicas_blk%cmp(icmp)%ib = ib
 nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
-nicas_blk%wgt = one
 
 ! Component work
 call nicas_blk%cmp(icmp)%compute_parameters(mpl,rng,nam,geom,rhflt)
@@ -966,7 +920,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%anisotropic = allocated(cmat_blk%D11).and.allocated(cmat_blk%D22).and.allocated(cmat_blk%D12)
 
    ! Allocation
-   allocate(nicas_blk%cmp(icmp)%coef_ens(geom%nc0a,geom%nl0))
+   allocate(nicas_blk%cmp(icmp)%a(geom%nc0a,geom%nl0))
    allocate(nicas_blk%cmp(icmp)%rh(geom%nc0a,geom%nl0))
    if (nicas_blk%cmp(icmp)%anisotropic) then
       allocate(nicas_blk%cmp(icmp)%H11(geom%nc0a,geom%nl0))
@@ -978,7 +932,7 @@ do icmp=1,nicas_blk%ncmp
    allocate(nicas_blk%cmp(icmp)%rvs(geom%nc0a,geom%nl0))
 
    ! Initialization
-   nicas_blk%cmp(icmp)%coef_ens = mpl%msv%valr
+   nicas_blk%cmp(icmp)%a = mpl%msv%valr
    nicas_blk%cmp(icmp)%rh = mpl%msv%valr
    if (nicas_blk%cmp(icmp)%anisotropic) then
       nicas_blk%cmp(icmp)%H11 = mpl%msv%valr
@@ -995,7 +949,7 @@ do icmp=1,nicas_blk%ncmp
       if ((nam%min_lev(iv)<=il0).and.(il0<=nam%max_lev(iv))) then
          do ic0a=1,geom%nc0a
             if (geom%gmask_c0a(ic0a,il0)) then
-               nicas_blk%cmp(icmp)%coef_ens(ic0a,il0) = sqrt(cmat_blk%coef_ens(ic0a,il0)*cmat_blk%a(ic0a,il0,icmp))
+               nicas_blk%cmp(icmp)%a(ic0a,il0) = cmat_blk%a(ic0a,il0,icmp)
                nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0,icmp)
                if (nicas_blk%cmp(icmp)%anisotropic) call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0,icmp),cmat_blk%D22(ic0a,il0,icmp), &
  & cmat_blk%D12(ic0a,il0,icmp),nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0), &
@@ -1223,7 +1177,14 @@ end do
 do idir=1,geom%ndir
    ! Generate dirac field
    fld = zero
-   if ((ib==bpar%v_to_b(geom%ivdir(idir))).and.(geom%iprocdir(idir)==mpl%myproc)) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+   if (geom%iprocdir(idir)==mpl%myproc) then
+      select case (trim(nam%strategy))
+      case ('common','common_weighted')
+         fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+      case default
+         if (ib==bpar%v_to_b(geom%ivdir(idir))) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+      end select
+   end if
 
    ! Apply NICAS square-root adjoint
    call nicas_blk%apply_sqrt_ad(mpl,geom,fld,cv_blk)

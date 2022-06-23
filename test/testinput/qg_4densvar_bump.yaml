@@ -54,36 +54,37 @@ cost function:
       pattern: '%mem%'
       nmembers: 10
   observations:
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: Stream
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_4d_12h/truth.obs4d_12h.nc
-      obsdataout:
-        obsfile: testdata/qg_4densvar_bump/qg_4densvar_bump.obs4d_12h.nc
-      obs type: Stream
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: Wind
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_4d_12h/truth.obs4d_12h.nc
-      obsdataout:
-        obsfile: testdata/qg_4densvar_bump/qg_4densvar_bump.obs4d_12h.nc
-      obs type: Wind
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: WSpeed
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_4d_12h/truth.obs4d_12h.nc
-      obsdataout:
-        obsfile: testdata/qg_4densvar_bump/qg_4densvar_bump.obs4d_12h.nc
-      obs type: WSpeed
+    observers:
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: Stream
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_12h/truth.obs4d_12h.nc
+        obsdataout:
+          obsfile: testdata/qg_4densvar_bump/qg_4densvar_bump.obs4d_12h.nc
+        obs type: Stream
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: Wind
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_12h/truth.obs4d_12h.nc
+        obsdataout:
+          obsfile: testdata/qg_4densvar_bump/qg_4densvar_bump.obs4d_12h.nc
+        obs type: Wind
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: WSpeed
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_12h/truth.obs4d_12h.nc
+        obsdataout:
+          obsfile: testdata/qg_4densvar_bump/qg_4densvar_bump.obs4d_12h.nc
+        obs type: WSpeed
 #  constraints:
 #  - jcdfi:
 #      alpha: 1.0e-13
@@ -139,6 +140,4 @@ output:
   type: an
 
 test:
-  float relative tolerance: 4.e-6
   reference filename: testref/qg_4densvar_bump/test.log.out
-  output precision: 6

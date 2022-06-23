@@ -1,11 +1,11 @@
 # general_param
 datadir: "testdata"
-prefix: "bump_hdiag_hyb-avg_common/test__MPI_-_OMP_"
+prefix: "bump_hdiag_hyb-ens_common/test__MPI_-_OMP_"
 model: "qg"
 write_c0: true
 
 # driver_param
-method: "hyb-avg"
+method: "hyb-ens"
 strategy: "common"
 new_hdiag: true
 write_hdiag: true
@@ -20,6 +20,7 @@ variables: ["u","q"]
 ens1_ne: 50
 
 # ens2_param
+ens2_ne: 10
 
 # sampling_param
 nc1: 500
@@ -29,6 +30,7 @@ nl0r: 2
 
 # diag_param
 ne: 50
+ne_lr: 10
 
 # fit_param
 

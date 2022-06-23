@@ -16,6 +16,7 @@
 #include "atlas/field.h"
 
 #include "oops/base/Variables.h"
+#include "oops/util/abor1_cpp.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
@@ -39,6 +40,7 @@ class Fields : public util::Printable,
 
 // Constructors
   Fields(const Geometry &, const oops::Variables &, const util::DateTime &);
+  Fields(const Fields &, const Geometry &);
   Fields(const Fields &, const bool);
   Fields(const Fields &);
   ~Fields() {}
@@ -57,9 +59,10 @@ class Fields : public util::Printable,
   void diff(const Fields &, const Fields &);
 
 // ATLAS FieldSet
-  void setAtlas(atlas::FieldSet *) const;
-  void toAtlas(atlas::FieldSet *) const;
-  void fromAtlas(atlas::FieldSet *);
+  void toFieldSet(atlas::FieldSet &) const;
+  void toFieldSetAD(const atlas::FieldSet &)
+    {ABORT("toFieldSetAD not implemented");}
+  void fromFieldSet(const atlas::FieldSet &);
 
 // Utilities
   void read(const eckit::Configuration &);
@@ -81,8 +84,7 @@ class Fields : public util::Printable,
   std::shared_ptr<const Geometry> geom_;
   const oops::Variables vars_;
   util::DateTime time_;
-  std::unique_ptr<atlas::FieldSet> atlasFieldSet_;
-  bool useNetcdfOutput_;
+  atlas::FieldSet fset_;
 };
 // -----------------------------------------------------------------------------
 

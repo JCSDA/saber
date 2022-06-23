@@ -57,15 +57,15 @@ class StdDev : public SaberBlockBase<MODEL> {
          const State_ &);
   virtual ~StdDev();
 
-  void randomize(atlas::FieldSet *) const override;
-  void multiply(atlas::FieldSet *) const override;
-  void inverseMultiply(atlas::FieldSet *) const override;
-  void multiplyAD(atlas::FieldSet *) const override;
-  void inverseMultiplyAD(atlas::FieldSet *) const override;
+  void randomize(atlas::FieldSet &) const override;
+  void multiply(atlas::FieldSet &) const override;
+  void inverseMultiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<atlas::FieldSet> stdDevFieldSet_;
+  atlas::FieldSet stdDevFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
@@ -75,7 +75,7 @@ StdDev<MODEL>::StdDev(const Geometry_ & resol,
                       const StdDevParameters & params,
                       const State_ & xb,
                       const State_ & fg)
-  : SaberBlockBase<MODEL>(params)
+  : SaberBlockBase<MODEL>(params), stdDevFieldSet_()
 {
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
 
@@ -97,13 +97,13 @@ StdDev<MODEL>::StdDev(const Geometry_ & resol,
   // Setup increment
   Increment_ stdDev(resol, activeVars, xb.validTime());
   stdDev.read(params.fileConfig.value());
-  oops::Log::test() << "Norm of stddev: " << std::scientific
-                    << std::setprecision(3) << stdDev.norm() << std::endl;
+  oops::Log::test() << "Norm of stddev: " << stdDev.norm() << std::endl;
 
   // Increment_ to ATLAS fieldset
-  stdDevFieldSet_.reset(new atlas::FieldSet());
-  stdDev.setAtlas(stdDevFieldSet_.get());
-  stdDev.toAtlas(stdDevFieldSet_.get());
+  stdDevFieldSet_.clear();
+  for (const auto & field : stdDev.fieldSet()) {
+      stdDevFieldSet_.add(field);
+  }
 
   oops::Log::trace() << classname() << "::StdDev done" << std::endl;
 }
@@ -120,45 +120,45 @@ StdDev<MODEL>::~StdDev() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void StdDev<MODEL>::randomize(atlas::FieldSet * incFieldSet) const {
+void StdDev<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  this->multiply(incFieldSet);
+  ABORT("StdDev<MODEL>::randomize: not implemented");
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void StdDev<MODEL>::multiply(atlas::FieldSet * incFieldSet) const {
+void StdDev<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  multiplyAtlasFieldSet(incFieldSet, stdDevFieldSet_.get());
+  multiplyAtlasFieldSet(fset, stdDevFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void StdDev<MODEL>::inverseMultiply(atlas::FieldSet * incFieldSet) const {
+void StdDev<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  divideAtlasFieldSet(incFieldSet, stdDevFieldSet_.get());
+  divideAtlasFieldSet(fset, stdDevFieldSet_);
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void StdDev<MODEL>::multiplyAD(atlas::FieldSet * incFieldSet) const {
+void StdDev<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  this->multiply(incFieldSet);
+  this->multiply(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void StdDev<MODEL>::inverseMultiplyAD(atlas::FieldSet * incFieldSet) const {
+void StdDev<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  this->inverseMultiply(incFieldSet);
+  this->inverseMultiply(fset);
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 

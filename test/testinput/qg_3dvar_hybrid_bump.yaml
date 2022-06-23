@@ -40,36 +40,37 @@ cost function:
       weight:
         value: 0.5
   observations:
-  - obs operator:
-      obs type: Stream
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
-      obs type: Stream
-    obs error:
-      covariance model: diagonal
-  - obs operator:
-      obs type: Wind
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
-      obs type: Wind
-    obs error:
-      covariance model: diagonal
-  - obs operator:
-      obs type: WSpeed
-    obs space:
-      obsdatain:
-        obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
-      obs type: WSpeed
-    obs error:
-      covariance model: diagonal
+    observers:
+    - obs operator:
+        obs type: Stream
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
+        obs type: Stream
+      obs error:
+        covariance model: diagonal
+    - obs operator:
+        obs type: Wind
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
+        obs type: Wind
+      obs error:
+        covariance model: diagonal
+    - obs operator:
+        obs type: WSpeed
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
+        obs type: WSpeed
+      obs error:
+        covariance model: diagonal
   geometry:
     nx: 40
     ny: 20
@@ -119,4 +120,3 @@ output:
 
 test:
   reference filename: testref/qg_3dvar_hybrid_bump/test.log.out
-  output precision: 6

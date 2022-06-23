@@ -30,7 +30,6 @@ type bpar_type
    logical,allocatable :: diag_block(:)            !< HDIAG block
    logical,allocatable :: avg_block(:)             !< Averaging block
    logical,allocatable :: fit_block(:)             !< Fit block
-   logical,allocatable :: B_block(:)               !< B-involved block
    logical,allocatable :: nicas_block(:)           !< NICAS block
    integer,allocatable :: cv_block(:)              !< Control variable block index
    character(len=1024),allocatable :: blockname(:) !< Block name
@@ -86,7 +85,6 @@ allocate(bpar%vbal_block(0:nam%nv,0:nam%nv))
 allocate(bpar%diag_block(bpar%nbe))
 allocate(bpar%avg_block(bpar%nbe))
 allocate(bpar%fit_block(bpar%nbe))
-allocate(bpar%B_block(bpar%nbe))
 allocate(bpar%nicas_block(bpar%nbe))
 allocate(bpar%cv_block(bpar%nbe))
 allocate(bpar%blockname(bpar%nbe))
@@ -160,36 +158,30 @@ do iv=1,nam%nv
       case ('diag_all')
          bpar%diag_block(ib) = .true.
          bpar%avg_block(ib) = .false.
-         bpar%B_block(ib) = (iv==jv)
          bpar%nicas_block(ib) = .false.
       case ('common')
          bpar%diag_block(ib) = (iv==jv)
          bpar%avg_block(ib) = (iv==jv)
-         bpar%B_block(ib) = (ib==bpar%nbe)
          bpar%nicas_block(ib) = (ib==bpar%nbe)
          if (ib==bpar%nbe) bpar%cv_block(ib) = bpar%nbe
       case ('common_weighted')
          bpar%diag_block(ib) = .true.
          bpar%avg_block(ib) = (iv==jv)
-         bpar%B_block(ib) = .true.
          bpar%nicas_block(ib) = (bpar%nbe==bpar%nb)
          if (iv==jv) bpar%cv_block(ib) = bpar%nbe
       case ('specific_univariate')
          bpar%diag_block(ib) = (iv==jv)
          bpar%avg_block(ib) = .false.
-         bpar%B_block(ib) = (iv==jv)
          bpar%nicas_block(ib) = (iv==jv)
          if (iv==jv) bpar%cv_block(ib) = ib
       case ('specific_multivariate')
          bpar%diag_block(ib) = (iv==jv)
          bpar%avg_block(ib) = .false.
-         bpar%B_block(ib) = (iv==jv)
          bpar%nicas_block(ib) = (iv==jv)
          if (ib==1) bpar%cv_block(ib) = 1
       case default
          bpar%diag_block(ib) = .false.
          bpar%avg_block(ib) = .false.
-         bpar%B_block(ib) = .false.
          bpar%nicas_block(ib) = .false.
       end select
       bpar%fit_block(ib) = bpar%diag_block(ib).and.(iv==jv)
@@ -229,33 +221,27 @@ if (bpar%nbe>bpar%nb) then
    case ('diag_all')
       bpar%diag_block(ib) = .true.
       bpar%avg_block(ib) = .false.
-      bpar%B_block(ib) = .false.
       bpar%nicas_block(ib) = .false.
    case ('common')
       bpar%diag_block(ib) = .true.
       bpar%avg_block(ib) = .false.
-      bpar%B_block(ib) = .true.
       bpar%nicas_block(ib) = .true.
       bpar%cv_block(ib) = ib
    case ('common_weighted')
       bpar%diag_block(ib) = .true.
       bpar%avg_block(ib) = .false.
-      bpar%B_block(ib) = .true.
       bpar%nicas_block(ib) = .true.
    case ('specific_univariate')
       bpar%diag_block(ib) = .false.
       bpar%avg_block(ib) = .false.
-      bpar%B_block(ib) = .false.
       bpar%nicas_block(ib) = .false.
    case ('specific_multivariate')
       bpar%diag_block(ib) = .false.
       bpar%avg_block(ib) = .false.
-      bpar%B_block(ib) = .false.
       bpar%nicas_block(ib) = .false.
    case default
       bpar%diag_block(ib) = .false.
       bpar%avg_block(ib) = .false.
-      bpar%B_block(ib) = .false.
       bpar%nicas_block(ib) = .false.
    end select
    bpar%fit_block(ib) = bpar%diag_block(ib)
@@ -273,7 +259,7 @@ end if
 do ib=1,bpar%nbe
    iv = bpar%b_to_v1(ib)
    jv = bpar%b_to_v2(ib)
-   if (bpar%vbal_block(iv,jv).or.bpar%diag_block(ib).or.bpar%avg_block(ib).or.bpar%fit_block(ib).or.bpar%B_block(ib) &
+   if (bpar%vbal_block(iv,jv).or.bpar%diag_block(ib).or.bpar%avg_block(ib).or.bpar%fit_block(ib) &
  & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib))) then
       write(mpl%info,'(a7,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
@@ -292,8 +278,6 @@ do ib=1,bpar%nbe
       write(mpl%info,'(a10,a,l1)') '','Averaging block:                 ',bpar%avg_block(ib)
       call mpl%flush
       write(mpl%info,'(a10,a,l1)') '','Fit block:                       ',bpar%fit_block(ib)
-      call mpl%flush
-      write(mpl%info,'(a10,a,l1)') '','B-involved block:                ',bpar%B_block(ib)
       call mpl%flush
       write(mpl%info,'(a10,a,l1)') '','NICAS block:                     ',bpar%nicas_block(ib)
       call mpl%flush
@@ -336,7 +320,6 @@ if (allocated(bpar%vbal_block)) deallocate(bpar%vbal_block)
 if (allocated(bpar%diag_block)) deallocate(bpar%diag_block)
 if (allocated(bpar%avg_block)) deallocate(bpar%avg_block)
 if (allocated(bpar%fit_block)) deallocate(bpar%fit_block)
-if (allocated(bpar%B_block)) deallocate(bpar%B_block)
 if (allocated(bpar%nicas_block)) deallocate(bpar%nicas_block)
 if (allocated(bpar%cv_block)) deallocate(bpar%cv_block)
 if (allocated(bpar%blockname)) deallocate(bpar%blockname)

@@ -30,13 +30,19 @@ class GridParameters : public SaberBlockParametersBase {
  public:
   // File containing grid and coefficients
   oops::RequiredParameter<std::string> GSIFile{"gsi error covariance file", this};
+  oops::RequiredParameter<std::string> GSINML{"gsi berror namelist file", this};
+
+  // Handle vertical top-2-bottom and vice-verse wrt to GSI
+  oops::Parameter<bool> vflip{"flip vertical grid", true, this};
 
   // Processor layout
-  oops::Parameter<size_t> layoutx{"procesor layout x direction", 1, this};
-  oops::Parameter<size_t> layouty{"procesor layout y direction", 1, this};
+  oops::Parameter<size_t> layoutx{"processor layout x direction", 1, this};
+  oops::Parameter<size_t> layouty{"processor layout y direction", 1, this};
 
   // Debugging mode
   oops::Parameter<bool> debugMode{"debugging mode", false, this};
+  oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
+  oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -53,14 +59,15 @@ class Grid {
 
   // Accessor functions
   int levels() {return gsiLevels_;}
-  atlas::FunctionSpace * functionSpace() const {return gsiGridFuncSpace_.get();}
+  const atlas::FunctionSpace & functionSpace() const {return gsiGridFuncSpace_;}
+  atlas::FunctionSpace & functionSpace() {return gsiGridFuncSpace_;}
 
  private:
   void print(std::ostream &) const;
   // Fortran LinkedList key
   GridKey keySelf_;
   // Function spaces
-  std::unique_ptr<atlas::functionspace::PointCloud> gsiGridFuncSpace_;
+  atlas::FunctionSpace gsiGridFuncSpace_;
   // Number of levels
   int gsiLevels_;
 };
@@ -68,7 +75,6 @@ class Grid {
 // -------------------------------------------------------------------------------------------------
 
 Grid::Grid(const eckit::mpi::Comm & comm, const Parameters_ & params)
-  : gsiGridFuncSpace_()
 {
   oops::Log::trace() << classname() << "::Grid starting" << std::endl;
   util::Timer timer(classname(), "Grid");
@@ -83,7 +89,7 @@ Grid::Grid(const eckit::mpi::Comm & comm, const Parameters_ & params)
   atlas::FieldSet gsiGridFieldSet = atlas::FieldSet();
   gsi_grid_set_atlas_lonlat_f90(keySelf_, gsiGridFieldSet.get());
   atlas::Field lonlat = gsiGridFieldSet.field("lonlat");
-  gsiGridFuncSpace_.reset(new atlas::functionspace::PointCloud(lonlat));
+  gsiGridFuncSpace_ = atlas::functionspace::PointCloud(lonlat);
 
   oops::Log::trace() << classname() << "::Grid done" << std::endl;
 }

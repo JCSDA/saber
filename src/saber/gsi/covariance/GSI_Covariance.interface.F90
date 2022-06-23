@@ -46,22 +46,22 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine gsi_covariance_create_cpp(c_self, c_comm, c_conf) &
+subroutine gsi_covariance_create_cpp(c_self, c_comm, c_conf, c_bg, c_fg) &
            bind(c, name='gsi_covariance_create_f90')
 
 ! Arguments
 integer(c_int),     intent(inout) :: c_self
 type(c_ptr), value, intent(in)    :: c_conf
 type(c_ptr), value, intent(in)    :: c_comm
-!type(c_ptr), value, intent(in)    :: c_bg  ! Uncomment once background available as Atlas fieldset
-!type(c_ptr), value, intent(in)    :: c_fg
+type(c_ptr), value, intent(in)    :: c_bg
+type(c_ptr), value, intent(in)    :: c_fg
 
 ! Locals
 type(gsi_covariance), pointer :: f_self
 type(fckit_mpi_comm)          :: f_comm
 type(fckit_configuration)     :: f_conf
-!type(atlas_fieldset)          :: f_bg  ! Uncomment once background available as Atlas fieldset
-!type(atlas_fieldset)          :: f_fg
+type(atlas_fieldset)          :: f_bg
+type(atlas_fieldset)          :: f_fg
 
 ! LinkedList
 ! ----------
@@ -73,12 +73,12 @@ call gsi_covariance_registry%get(c_self, f_self)
 ! ------------
 f_conf = fckit_configuration(c_conf)
 f_comm = fckit_mpi_comm(c_comm)
-!f_bg = atlas_fieldset(c_bg)  ! Uncomment once background available as Atlas fieldset
-!f_fg = atlas_fieldset(c_fg)
+f_bg = atlas_fieldset(c_bg)
+f_fg = atlas_fieldset(c_fg)
 
 ! Call implementation
 ! -------------------
-call f_self%create(f_comm, f_conf)
+call f_self%create(f_comm, f_conf, f_bg, f_fg)
 
 end subroutine gsi_covariance_create_cpp
 
@@ -88,7 +88,7 @@ subroutine gsi_covariance_delete_cpp(c_self) &
            bind(c, name='gsi_covariance_delete_f90')
 
 ! Arguments
-integer(c_int), intent(inout) :: c_self
+integer(c_int), intent(inout)  :: c_self
 
 ! Locals
 type(gsi_covariance), pointer :: f_self
