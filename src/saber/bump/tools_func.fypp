@@ -1025,10 +1025,11 @@ integer :: il0
 
 ! Interpolate
 do il0=1,nl0
-   if (mpl%msv%isnot(data_l1(il1inf(il0))).and.mpl%msv%isnot(data_l1(il1sup(il0)))) then
-      data_l0(il0) = rinf(il0)*data_l1(il1inf(il0))+rsup(il0)*data_l1(il1sup(il0))
-   else
+   if ((mpl%msv%is(data_l1(il1inf(il0))).and.(rinf(il0)>zero)) &
+ & .or.(mpl%msv%is(data_l1(il1sup(il0))).and.(rsup(il0)>zero))) then
       data_l0(il0) = mpl%msv%valr
+   else
+      data_l0(il0) = rinf(il0)*data_l1(il1inf(il0))+rsup(il0)*data_l1(il1sup(il0))
    end if
 end do
 
