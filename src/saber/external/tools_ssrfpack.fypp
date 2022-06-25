@@ -54,9 +54,8 @@ interface setup
    module procedure ssrfpack_setup
 end interface
 
-private
-
-public :: gradl,fval
+!private TODO
+public !:: gradl,fval TODO
 
 contains
 

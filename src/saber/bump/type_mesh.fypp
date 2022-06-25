@@ -16,7 +16,7 @@ use tools_func, only: fletcher32,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,ins
 use tools_kinds, only: kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf
-use tools_ssrfpack, only: gradl,fval
+use tools_ssrfpack ! TODO
 use tools_stripack, only: trfind,trmesh,bnodes
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -627,8 +627,11 @@ real(kind_real),intent(in) :: field(mesh%n) !< Field
 real(kind_real),intent(out) :: val  !< Value
 
 ! Local variables
-integer :: nn_index(1),ib(3),ierr
+integer :: nn_index(1),ib(3),ierr,i,j,knext
+integer,allocatable :: k(:)
+real(kind_real) :: cx,sx,cy,sy,xc,yc,zc,alpha,beta,gamma,gx,gy,wgt,gx_sum,gy_sum,wgt_sum,gx_avg,gy_avg
 real(kind_real) :: xyz(3),b(3),p1(3),p2(3),p3(3),f(mesh%n),g1(3),g2(3),g3(3)
+real(kind_real),allocatable :: xp(:),yp(:),zp(:)
 
 ! Set name
 @:set_name(mesh_interp_c1)
@@ -656,6 +659,83 @@ f = field(mesh%order)
 
 ! Compute gradient estimates at the vertices
 call gradl(mesh%n,ib(1),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g1,ierr)
+
+! START LOOP HERE
+i = ib(1)
+
+! Construct the rotation
+call constr(mesh%x(i),mesh%y(i),mesh%z(i),cx,sx,cy,sy)
+
+! Get rotated coordinates
+call aplyr(mesh%x(i),mesh%y(i),mesh%z(i),cx,sx,cy,sy,xc,yc,zc)
+
+! Allocation
+allocate(k(mesh%rows(i)%cols))
+allocate(xp(mesh%rows(i)%cols))
+allocate(yp(mesh%rows(i)%cols))
+allocate(zp(mesh%rows(i)%cols))
+
+! Loop over neigbors
+do j=1,mesh%rows(i)%cols
+   ! Get index
+   k(j) = mesh%rows(i)%nodes(j)
+
+   ! Get rotated coordinates
+   call aplyr(mesh%x(k(j)),mesh%y(k(j)),mesh%z(k(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
+end do
+
+! Initialization
+gx_sum = zero
+gy_sum = zero
+wgt_sum = zero
+
+! Loop over triangles
+do j=1,mesh%rows(i)%cols
+   ! Get next neighbor
+   if (j<mesh%rows(i)%cols) then
+      knext = k(j+1)
+   else
+      knext = k(1)
+   end if
+
+   ! Compute plane's normal vector components (see Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3)
+   alpha = (mesh%y(k(j))-mesh%y(i))*(f(knext)-f(i))-(mesh%y(knext)-mesh%y(i))*(f(k(j))-f(i))
+   beta = (mesh%y(knext)-mesh%y(i))*(f(k(j))-f(i))-(mesh%x(k(j))-mesh%x(i))*(f(knext)-f(i))
+   gamma = (mesh%x(k(j))-mesh%x(i))*(mesh%y(knext)-mesh%y(i))-(mesh%x(knext)-mesh%x(i))*(mesh%y(k(j))-mesh%y(i))
+
+   ! TODO check abs(gamma)>0
+
+   ! Gradient components in rotated coordinates for this triangle
+   gx = -alpha/gamma
+   gy = -beta/gamma
+
+   ! Weight
+   wgt = two/abs(gamma)
+
+   ! Sum of gradient components in rotated coordinates
+   gx_sum = gx_sum+wgt*gx
+   gy_sum = gy_sum+wgt*gy
+   wgt_sum = wgt_sum+wgt
+
+   ! 
+end do
+
+! Averaged gradient components
+gx_avg = gx_sum/wgt_sum
+gy_avg = gy_sum/wgt_sum
+
+
+
+! Release memory
+deallocate(k)
+deallocate(xp)
+deallocate(yp)
+deallocate(zp)
+
+
+call mpl%abort('ok','ok')
+
+
 call gradl(mesh%n,ib(2),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g2,ierr)
 call gradl(mesh%n,ib(3),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g3,ierr)
 
