@@ -62,7 +62,7 @@ end subroutine c_covSpectralBins
 
 subroutine c_covSpectralUMatrix(c_conf, &
  & varname_length, c_netcdfvarname, &
- & model_level, bins, values_size, values) &
+ & bins, values_size, values) &
  & bind(c,name='covSpectralUMatrix_f90')
 
 use iso_c_binding, only : c_ptr, c_int, c_float, c_char
@@ -78,7 +78,6 @@ implicit none
 type(c_ptr), value, intent(in) :: c_conf
 integer(c_int),     intent(in) :: varname_length
 character(kind=c_char, len=1), intent(in) :: c_netcdfvarname(varname_length+1)
-integer(c_int),     intent(in) :: model_level
 integer(c_int),     intent(in) :: bins
 integer(c_int),     intent(in) :: values_size
 real(c_float),   intent(inout) :: values(values_size)

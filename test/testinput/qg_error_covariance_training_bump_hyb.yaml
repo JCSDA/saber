@@ -17,6 +17,7 @@ bump:
   nc1: 500
   nc3: 20
   ne: 10
+  ne_lr: 30
   new_hdiag: true
   new_nicas: true
   nl0r: 2

@@ -38,6 +38,7 @@ vbal_rad: 2000.0e3
 
 # diag_param
 ne: 50
+ne_lr: 10
 
 # fit_param
 

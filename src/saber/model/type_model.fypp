@@ -253,20 +253,16 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 type(nam_type),intent(inout) :: nam      !< Namelist variables
 
 ! Local variables
-integer :: img,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,itile,ilon,ilat,ilonsub,ilatsub,imgt
+integer :: img,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,itile,ilon,ilat,ilonsub,ilatsub,imgt
 integer :: deltalon,deltalat,nprocpertile,nreslon,nreslat,nxmax
 integer,allocatable :: nx(:),nlatsub(:),nlonsub(:,:),lonlattile_to_proc(:,:,:),imga_arr(:)
 integer(kind_int),pointer :: gmask_ptr(:,:)
 real(kind_real) :: dlat,dlon
 real(kind_real),allocatable :: lon_mga(:),lat_mga(:)
 real(kind_real),allocatable :: lon_inf(:),lon_sup(:),lat_inf(:),lat_sup(:)
-real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:),real_ptr(:,:)
-logical :: maskval
+real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:)
 logical :: found
-character(len=1024) :: variables,filename
-character(len=1024),dimension(nvmax) :: variables_save
-type(atlas_field) :: afield,afield_area,afield_vunit,afield_gmask
-type(fieldset_type) :: fieldset
+type(atlas_field) :: afield_area,afield_vunit,afield_gmask
 
 ! Set name
 @:set_name(model_setup)
@@ -760,7 +756,7 @@ character(len=*),intent(in) :: filename       !< File name
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
-integer :: iv
+integer :: imga,il0,iv
 real(kind_real) :: fld_mga(model%nmga,model%nl0,nam%nv)
 real(kind_real),pointer :: real_ptr(:,:)
 type(atlas_field) :: afield
@@ -797,7 +793,11 @@ do iv=1,nam%nv
 
    ! Copy data
    call afield%data(real_ptr)
-   real_ptr = transpose(fld_mga(:,:,iv))
+   do il0=1,model%nl0
+      do imga=1,model%nmga
+         real_ptr(il0,imga) = fld_mga(imga,il0,iv)
+      end do
+   end do
 end do
 
 ! Probe out

@@ -2343,7 +2343,7 @@ if (nam%new_hdiag.or.nam%check_optimality) then
       if (nam%ne<=3) call mpl%abort('${subr}$','ne should be larger than 3')
    end select
    select case (trim(nam%method))
-   case ('hyb-ens')
+   case ('hyb-rnd','hyb-ens')
       if (nam%ne_lr<=3) call mpl%abort('${subr}$','ne_lr should be larger than 3')
    end select
    if (.not.(nam%gen_kurt_th>zero)) call mpl%abort('${subr}$','gen_kurt_th should be positive')
@@ -2370,7 +2370,7 @@ if (nam%new_hdiag) then
    if (trim(nam%method)/='cor') then
       if (nam%ne>nam%ens1_ne) call mpl%warning('${subr}$','ensemble size larger than ens1_ne (might enhance sampling noise)')
       select case (trim(nam%method))
-      case ('hyb-ens')
+      case ('hyb-rnd','hyb-ens')
          if (nam%ne_lr>nam%ens2_ne) call mpl%warning('${subr}$', &
  & 'hybrid ensemble size larger than ens2_ne (might enhance sampling noise)')
       end select
@@ -2453,6 +2453,9 @@ if (nam%write_nicas_grids.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for write_nicas_grids')
 if (nam%load_nicas_local.and.nam%write_nicas_global) &
  & call mpl%abort('${subr}$','load_nicas_local and write_nicas_global are exclusive')
+if (nam%new_nicas) then
+   if (nam%network) call mpl%abort('${subr}$','network method not re-implemented yet')
+end if
 
 ! Check dirac_param
 if (nam%check_dirac) then

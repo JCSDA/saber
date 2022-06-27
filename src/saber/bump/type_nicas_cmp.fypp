@@ -231,7 +231,6 @@ contains
    procedure :: compute_vertical => nicas_cmp_compute_vertical
    procedure :: compute_horizontal => nicas_cmp_compute_horizontal
    procedure :: compute_convol => nicas_cmp_compute_convol
-   procedure :: compute_convol_network => nicas_cmp_compute_convol_network
    procedure :: compute_convol_distance => nicas_cmp_compute_convol_distance
    procedure :: compute_convol_weights => nicas_cmp_compute_convol_weights
    procedure :: compute_internal_normalization => nicas_cmp_compute_internal_normalization
@@ -1928,7 +1927,7 @@ call nicas_cmp%compute_horizontal(mpl,rng,nam,geom)
 ! Compute convolution data
 write(mpl%info,'(a10,a)') '','Compute convolution data'
 if (nicas_cmp%verbosity) call mpl%flush
-call nicas_cmp%compute_convol(mpl,rng,nam,geom)
+call nicas_cmp%compute_convol(mpl,nam,geom)
 
 if (.not.nicas_cmp%smoother) then
    ! Compute internal normalization
@@ -2949,14 +2948,13 @@ end subroutine nicas_cmp_compute_horizontal
 ! Subroutine: nicas_cmp_compute_convol
 !> Compute convolution
 !----------------------------------------------------------------------
-subroutine nicas_cmp_compute_convol(nicas_cmp,mpl,rng,nam,geom)
+subroutine nicas_cmp_compute_convol(nicas_cmp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(rng_type),intent(inout) :: rng              !< Random number generator
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
@@ -3069,11 +3067,7 @@ if (.not.nam%load_nicas_global) then
    allocate(nicas_cmp%ball(nicas_cmp%nl1,nicas_cmp%nsb))
 
    ! Compute distances
-   if (nam%network) then
-      call nicas_cmp%compute_convol_network(mpl,rng,nam,geom)
-   else
-      call nicas_cmp%compute_convol_distance(mpl,nam,geom)
-   end if
+   call nicas_cmp%compute_convol_distance(mpl,nam,geom)
 
    ! Release memory
    do il1=1,nicas_cmp%nl1
@@ -3202,37 +3196,6 @@ end associate
 @:probe_out()
 
 end subroutine nicas_cmp_compute_convol
-
-!----------------------------------------------------------------------
-! Subroutine: nicas_cmp_compute_convol_network
-!> Compute convolution with a network approach
-!----------------------------------------------------------------------
-subroutine nicas_cmp_compute_convol_network(nicas_cmp,mpl,rng,nam,geom)
-
-implicit none
-
-! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
-type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(rng_type),intent(inout) :: rng              !< Random number generator
-type(nam_type),intent(in) :: nam                 !< Namelist
-type(geom_type),intent(in) :: geom               !< Geometry
-
-! Local variables
-
-! Set name
-@:set_name(nicas_cmp_compute_convol_network)
-
-! Probe in
-@:probe_in()
-
-! Not re-implemented yet
-call mpl%abort('${subr}$','network method not re-implemented yet')
-
-! Probe out
-@:probe_out()
-
-end subroutine nicas_cmp_compute_convol_network
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_cmp_compute_convol_distance

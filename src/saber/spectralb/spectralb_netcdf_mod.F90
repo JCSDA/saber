@@ -39,6 +39,7 @@ character(len=*),             intent(in) :: tag   !character string description
 ! Local declarations:
 character(len=*), PARAMETER    ::    RoutineName="cvt_nc_err_rpt"
 character(len=500)             ::    message
+external                       ::    abor1_ftn
 
 !-------------------------------------------------------------------------------
 

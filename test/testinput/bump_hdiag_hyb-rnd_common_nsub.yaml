@@ -32,6 +32,7 @@ nl0r: 2
 
 # diag_param
 ne: 50
+ne_lr: 10
 
 # fit_param
 

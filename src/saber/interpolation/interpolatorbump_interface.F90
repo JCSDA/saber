@@ -56,7 +56,7 @@ type(fieldset_type) :: fieldset
 ! Interface
 f_comm = fckit_mpi_comm(c_comm)
 f_config = fckit_configuration(c_config)
-call bump_interpolator_registry%init()
+call bump_interpolator_registry%init(f_comm)
 call bump_interpolator_registry%add(c_key_bint)
 call bump_interpolator_registry%get(c_key_bint,bint)
 fspace1 = atlas_functionspace(c_fspace1)
