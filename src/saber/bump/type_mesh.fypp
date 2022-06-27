@@ -658,27 +658,21 @@ p3 = (/mesh%x(ib(3)),mesh%y(ib(3)),mesh%z(ib(3))/)
 f = field(mesh%order)
 
 ! Compute gradient estimates at the vertices
-if (.false.) then
-   call gradl(mesh%n,ib(1),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g1,ierr)
-   call gradl(mesh%n,ib(2),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g2,ierr)
-   call gradl(mesh%n,ib(3),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g3,ierr)
-else
-   call mesh%compute_grad(mpl,ib(1),n_s1,col1,Svec1)
-   g1 = zero
-   do i_s=1,n_s1
-      g1 = g1+Svec1(i_s,:)*field(col1(i_s))
-   end do
-   call mesh%compute_grad(mpl,ib(2),n_s2,col2,Svec2)
-   g2 = zero
-   do i_s=1,n_s2
-      g2 = g2+Svec2(i_s,:)*field(col2(i_s))
-   end do
-   call mesh%compute_grad(mpl,ib(3),n_s3,col3,Svec3)
-   g3 = zero
-   do i_s=1,n_s3
-      g3 = g3+Svec3(i_s,:)*field(col3(i_s))
-   end do
-end if
+call mesh%compute_grad(mpl,ib(1),n_s1,col1,Svec1)
+g1 = zero
+do i_s=1,n_s1
+   g1 = g1+Svec1(i_s,:)*field(col1(i_s))
+end do
+call mesh%compute_grad(mpl,ib(2),n_s2,col2,Svec2)
+g2 = zero
+do i_s=1,n_s2
+   g2 = g2+Svec2(i_s,:)*field(col2(i_s))
+end do
+call mesh%compute_grad(mpl,ib(3),n_s3,col3,Svec3)
+g3 = zero
+do i_s=1,n_s3
+   g3 = g3+Svec3(i_s,:)*field(col3(i_s))
+end do
 
 ! Normalize the coordinates
 b = b/sum(b)
