@@ -41,17 +41,8 @@ end interface
 interface fval_ori
    module procedure ssrfpack_fval_ori
 end interface
-interface givens
-   module procedure ssrfpack_givens
-end interface
 interface hval
    module procedure ssrfpack_hval
-end interface
-interface rotate
-   module procedure ssrfpack_rotate
-end interface
-interface setup
-   module procedure ssrfpack_setup
 end interface
 
 !private TODO
@@ -341,14 +332,8 @@ END subroutine ssrfpack_constr
 
 
 
-
-
-
-
-real(kind_real) FUNCTION ssrfpack_fval (B1,B2,B3,V1,V2,V3,F1,F2,F3,G1,G2, &
-    &                     G3)
-real(kind_real) ::  B1, B2, B3, V1(3), V2(3), V3(3), F1, F2, F3, &
-    &      G1(3), G2(3), G3(3)
+SUBROUTINE ssrfpack_fval (B1,B2,B3,V1,V2,V3,AF,AG)
+real(kind_real) ::  B1, B2, B3, V1(3), V2(3), V3(3), AF(3), AG(3,3)
 !
 !***********************************************************
 !
@@ -417,7 +402,7 @@ real(kind_real) ::  B1, B2, B3, V1(3), V2(3), V3(3), F1, F2, F3, &
 INTEGER I
 real(kind_real) ::     C1, C2, C3, DUM, G(3), &
     &         Q1(3), Q2(3), Q3(3), SIG, CSUM, S1, S2, S3, &
-    &         U1(3), U2(3), U3(3), U1N, U2N, U3N, VAL, A,AL,BB1,BB2,UN(3),UNORM,v
+    &         U1(3), U2(3), U3(3), U1N, U2N, U3N, VAL, A(3), AL(3), BB1(3), BB2(3), UN(3,3), UNORM(3), v
 
 C1 = B2*B3
 C2 = B3*B1
@@ -427,7 +412,8 @@ IF (CSUM .LE. 0.) THEN
 !
 ! P coincides with a vertex.
 !
-  ssrfpack_fval = B1*F1 + B2*F2 + B3*F3
+  AF = (/B1,B2,B3/)
+  AG = 0.0
   RETURN
 ENDIF
 !
@@ -469,153 +455,188 @@ ENDDO
 ! Compute interpolated value (VAL) at P by looping on
 !   triangle sides.
 !
-v = 0.
-
-CALL ARCINT (Q1,V2,V3,A,AL,BB1,BB2,UN,UNORM)
-
-G = 0.
+CALL ARCINT (Q1,V2,V3,A(1),AL(1),BB1(1),BB2(1),UN(:,1),UNORM(1))
+CALL ARCINT (Q2,V3,V1,A(2),AL(2),BB1(2),BB2(2),UN(:,2),UNORM(2))
+CALL ARCINT (Q3,V1,V2,A(3),AL(3),BB1(3),BB2(3),UN(:,3),UNORM(3))
 
 
-
-
-!
-!   Add in the contribution.
-!
-v = v+C1*(1.-B1)**2*(1.+2.*B1)*(1.-AL/A*BB2*(1.+2.*BB1))*F2
-v = v+C1*(1.-B1)**2*(1.+2.*B1)*AL/A*BB2*(1.+2.*BB1)*F3
-v = v+C1*(1.-B1)**2*(1.+2.*B1)*AL*(1.-BB2*(1.+BB1))*V3(1)/UNORM*G2(1)
-v = v+C1*(1.-B1)**2*(1.+2.*B1)*AL*(1.-BB2*(1.+BB1))*V3(2)/UNORM*G2(2)
-v = v+C1*(1.-B1)**2*(1.+2.*B1)*AL*(1.-BB2*(1.+BB1))*V3(3)/UNORM*G2(3)
-v = v+C1*(1.-B1)**2*(1.+2.*B1)*AL*BB2*BB1*V2(1)/UNORM*G3(1)
-v = v+C1*(1.-B1)**2*(1.+2.*B1)*AL*BB2*BB1*V2(2)/UNORM*G3(2)
-v = v+C1*(1.-B1)**2*(1.+2.*B1)*AL*BB2*BB1*V2(3)/UNORM*G3(3)
-v = v+C1*B1**2*(3.-2.*B1)*F1
-v = v+C1*(1.-B1)*B1**2*U1(1)*G1(1)
-v = v+C1*(1.-B1)*B1**2*U1(2)*G1(2)
-v = v+C1*(1.-B1)*B1**2*U1(3)*G1(3)
-v = v-C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(2)*Q1(3)-UN(3)*Q1(2))*6.*BB1*BB2/A*F2
-v = v+C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(2)*Q1(3)-UN(3)*Q1(2))*6.*BB1*BB2/A*F3
-v = v+C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1)*BB1*UN(1)+(UN(2)*Q1(3)-UN(3)*Q1(2))*(1.0-BB2-3.*BB1*BB2)*V3(1)/UNORM)*G2(1)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1)*BB1*UN(2)+(UN(2)*Q1(3)-UN(3)*Q1(2))*(1.0-BB2-3.*BB1*BB2)*V3(2)/UNORM)*G2(2)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1)*BB1*UN(3)+(UN(2)*Q1(3)-UN(3)*Q1(2))*(1.0-BB2-3.*BB1*BB2)*V3(3)/UNORM)*G2(3)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1)*BB2*UN(1)+(UN(2)*Q1(3)-UN(3)*Q1(2))*(3.*BB2*BB1-BB2)*V2(1)/UNORM)*G3(1)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1)*BB2*UN(2)+(UN(2)*Q1(3)-UN(3)*Q1(2))*(3.*BB2*BB1-BB2)*V2(2)/UNORM)*G3(2)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1)*BB2*UN(3)+(UN(2)*Q1(3)-UN(3)*Q1(2))*(3.*BB2*BB1-BB2)*V2(3)/UNORM)*G3(3)
-v = v-C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(3)*Q1(1)-UN(1)*Q1(3))*6.*BB1*BB2/A*F2
-v = v+C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(3)*Q1(1)-UN(1)*Q1(3))*6.*BB1*BB2/A*F3
-v = v+C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2)*BB1*UN(1)+(UN(3)*Q1(1)-UN(1)*Q1(3))*(1.0-BB2-3.*BB1*BB2)*V3(1)/UNORM)*G2(1)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2)*BB1*UN(2)+(UN(3)*Q1(1)-UN(1)*Q1(3))*(1.0-BB2-3.*BB1*BB2)*V3(2)/UNORM)*G2(2)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2)*BB1*UN(3)+(UN(3)*Q1(1)-UN(1)*Q1(3))*(1.0-BB2-3.*BB1*BB2)*V3(3)/UNORM)*G2(3)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2)*BB2*UN(1)+(UN(3)*Q1(1)-UN(1)*Q1(3))*(3.*BB2*BB1-BB2)*V2(1)/UNORM)*G3(1)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2)*BB2*UN(2)+(UN(3)*Q1(1)-UN(1)*Q1(3))*(3.*BB2*BB1-BB2)*V2(2)/UNORM)*G3(2)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2)*BB2*UN(3)+(UN(3)*Q1(1)-UN(1)*Q1(3))*(3.*BB2*BB1-BB2)*V2(3)/UNORM)*G3(3)
-v = v-C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(1)*Q1(2)-UN(2)*Q1(1))*6.*BB1*BB2/A*F2
-v = v+C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(1)*Q1(2)-UN(2)*Q1(1))*6.*BB1*BB2/A*F3
-v = v+C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3)*BB1*UN(1)+(UN(1)*Q1(2)-UN(2)*Q1(1))*(1.0-BB2-3.*BB1*BB2)*V3(1)/UNORM)*G2(1)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3)*BB1*UN(2)+(UN(1)*Q1(2)-UN(2)*Q1(1))*(1.0-BB2-3.*BB1*BB2)*V3(2)/UNORM)*G2(2)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3)*BB1*UN(3)+(UN(1)*Q1(2)-UN(2)*Q1(1))*(1.0-BB2-3.*BB1*BB2)*V3(3)/UNORM)*G2(3)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3)*BB2*UN(1)+(UN(1)*Q1(2)-UN(2)*Q1(1))*(3.*BB2*BB1-BB2)*V2(1)/UNORM)*G3(1)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3)*BB2*UN(2)+(UN(1)*Q1(2)-UN(2)*Q1(1))*(3.*BB2*BB1-BB2)*V2(2)/UNORM)*G3(2)
-v = v+C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3)*BB2*UN(3)+(UN(1)*Q1(2)-UN(2)*Q1(1))*(3.*BB2*BB1-BB2)*V2(3)/UNORM)*G3(3)
-
-!
-! Contribution from side opposite V2:
-!
-!   Compute value and gradient at Q2 by interpolating
-!     between V3 and V1.
-!
-CALL ARCINT (Q2,V3,V1,A,AL,BB1,BB2,UN,UNORM)
-!
-!   Add in the contribution.
-!
-v = v+C2*(1.-B2)**2*(1.+2.*B2)*(1.-AL/A*BB2*(1.+2.*BB1))*F3
-v = v+C2*(1.-B2)**2*(1.+2.*B2)*AL/A*BB2*(1.+2.*BB1)*F1
-v = v+C2*(1.-B2)**2*(1.+2.*B2)*AL*(1.-BB2*(1.+BB1))*V1(1)/UNORM*G3(1)
-v = v+C2*(1.-B2)**2*(1.+2.*B2)*AL*(1.-BB2*(1.+BB1))*V1(2)/UNORM*G3(2)
-v = v+C2*(1.-B2)**2*(1.+2.*B2)*AL*(1.-BB2*(1.+BB1))*V1(3)/UNORM*G3(3)
-v = v+C2*(1.-B2)**2*(1.+2.*B2)*AL*BB2*BB1*V3(1)/UNORM*G1(1)
-v = v+C2*(1.-B2)**2*(1.+2.*B2)*AL*BB2*BB1*V3(2)/UNORM*G1(2)
-v = v+C2*(1.-B2)**2*(1.+2.*B2)*AL*BB2*BB1*V3(3)/UNORM*G1(3)
-v = v+C2*B2**2*(3.-2.*B2)*F2
-v = v+C2*(1.-B2)*B2**2*U2(1)*G2(1)
-v = v+C2*(1.-B2)*B2**2*U2(2)*G2(2)
-v = v+C2*(1.-B2)*B2**2*U2(3)*G2(3)
-v = v-C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(2)*Q2(3)-UN(3)*Q2(2))*6.*BB1*BB2/A*F3
-v = v+C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(2)*Q2(3)-UN(3)*Q2(2))*6.*BB1*BB2/A*F1
-v = v+C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1)*BB1*UN(1)+(UN(2)*Q2(3)-UN(3)*Q2(2))*(1.0-BB2-3.*BB1*BB2)*V1(1)/UNORM)*G3(1)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1)*BB1*UN(2)+(UN(2)*Q2(3)-UN(3)*Q2(2))*(1.0-BB2-3.*BB1*BB2)*V1(2)/UNORM)*G3(2)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1)*BB1*UN(3)+(UN(2)*Q2(3)-UN(3)*Q2(2))*(1.0-BB2-3.*BB1*BB2)*V1(3)/UNORM)*G3(3)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1)*BB2*UN(1)+(UN(2)*Q2(3)-UN(3)*Q2(2))*(3.*BB2*BB1-BB2)*V3(1)/UNORM)*G1(1)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1)*BB2*UN(2)+(UN(2)*Q2(3)-UN(3)*Q2(2))*(3.*BB2*BB1-BB2)*V3(2)/UNORM)*G1(2)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1)*BB2*UN(3)+(UN(2)*Q2(3)-UN(3)*Q2(2))*(3.*BB2*BB1-BB2)*V3(3)/UNORM)*G1(3)
-v = v-C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(3)*Q2(1)-UN(1)*Q2(3))*6.*BB1*BB2/A*F3
-v = v+C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(3)*Q2(1)-UN(1)*Q2(3))*6.*BB1*BB2/A*F1
-v = v+C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2)*BB1*UN(1)+(UN(3)*Q2(1)-UN(1)*Q2(3))*(1.0-BB2-3.*BB1*BB2)*V1(1)/UNORM)*G3(1)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2)*BB1*UN(2)+(UN(3)*Q2(1)-UN(1)*Q2(3))*(1.0-BB2-3.*BB1*BB2)*V1(2)/UNORM)*G3(2)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2)*BB1*UN(3)+(UN(3)*Q2(1)-UN(1)*Q2(3))*(1.0-BB2-3.*BB1*BB2)*V1(3)/UNORM)*G3(3)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2)*BB2*UN(1)+(UN(3)*Q2(1)-UN(1)*Q2(3))*(3.*BB2*BB1-BB2)*V3(1)/UNORM)*G1(1)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2)*BB2*UN(2)+(UN(3)*Q2(1)-UN(1)*Q2(3))*(3.*BB2*BB1-BB2)*V3(2)/UNORM)*G1(2)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2)*BB2*UN(3)+(UN(3)*Q2(1)-UN(1)*Q2(3))*(3.*BB2*BB1-BB2)*V3(3)/UNORM)*G1(3)
-v = v-C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(1)*Q2(2)-UN(2)*Q2(1))*6.*BB1*BB2/A*F3
-v = v+C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(1)*Q2(2)-UN(2)*Q2(1))*6.*BB1*BB2/A*F1
-v = v+C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3)*BB1*UN(1)+(UN(1)*Q2(2)-UN(2)*Q2(1))*(1.0-BB2-3.*BB1*BB2)*V1(1)/UNORM)*G3(1)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3)*BB1*UN(2)+(UN(1)*Q2(2)-UN(2)*Q2(1))*(1.0-BB2-3.*BB1*BB2)*V1(2)/UNORM)*G3(2)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3)*BB1*UN(3)+(UN(1)*Q2(2)-UN(2)*Q2(1))*(1.0-BB2-3.*BB1*BB2)*V1(3)/UNORM)*G3(3)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3)*BB2*UN(1)+(UN(1)*Q2(2)-UN(2)*Q2(1))*(3.*BB2*BB1-BB2)*V3(1)/UNORM)*G1(1)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3)*BB2*UN(2)+(UN(1)*Q2(2)-UN(2)*Q2(1))*(3.*BB2*BB1-BB2)*V3(2)/UNORM)*G1(2)
-v = v+C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3)*BB2*UN(3)+(UN(1)*Q2(2)-UN(2)*Q2(1))*(3.*BB2*BB1-BB2)*V3(3)/UNORM)*G1(3)
-
-!
-! Contribution from side opposite V3:
-!
-!   Compute interpolated value and gradient at Q3
-!     by interpolating between V1 and V2.
-!
-CALL ARCINT (Q3,V1,V2,A,AL,BB1,BB2,UN,UNORM)
-!
-!   Add in the final contribution.
-!
-v = v+C3*(1.-B3)**2*(1.+2.*B3)*(1.-AL/A*BB2*(1.+2.*BB1))*F1
-v = v+C3*(1.-B3)**2*(1.+2.*B3)*AL/A*BB2*(1.+2.*BB1)*F2
-v = v+C3*(1.-B3)**2*(1.+2.*B3)*AL*(1.-BB2*(1.+BB1))*V2(1)/UNORM*G1(1)
-v = v+C3*(1.-B3)**2*(1.+2.*B3)*AL*(1.-BB2*(1.+BB1))*V2(2)/UNORM*G1(2)
-v = v+C3*(1.-B3)**2*(1.+2.*B3)*AL*(1.-BB2*(1.+BB1))*V2(3)/UNORM*G1(3)
-v = v+C3*(1.-B3)**2*(1.+2.*B3)*AL*BB2*BB1*V1(1)/UNORM*G2(1)
-v = v+C3*(1.-B3)**2*(1.+2.*B3)*AL*BB2*BB1*V1(2)/UNORM*G2(2)
-v = v+C3*(1.-B3)**2*(1.+2.*B3)*AL*BB2*BB1*V1(3)/UNORM*G2(3)
-v = v+C3*B3**2*(3.-2.*B3)*F3
-v = v+C3*(1.-B3)*B3**2*U3(1)*G3(1)
-v = v+C3*(1.-B3)*B3**2*U3(2)*G3(2)
-v = v+C3*(1.-B3)*B3**2*U3(3)*G3(3)
-v = v-C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(2)*Q3(3)-UN(3)*Q3(2))*6.*BB1*BB2/A*F1
-v = v+C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(2)*Q3(3)-UN(3)*Q3(2))*6.*BB1*BB2/A*F2
-v = v+C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1)*BB1*UN(1)+(UN(2)*Q3(3)-UN(3)*Q3(2))*(1.0-BB2-3.*BB1*BB2)*V2(1)/UNORM)*G1(1)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1)*BB1*UN(2)+(UN(2)*Q3(3)-UN(3)*Q3(2))*(1.0-BB2-3.*BB1*BB2)*V2(2)/UNORM)*G1(2)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1)*BB1*UN(3)+(UN(2)*Q3(3)-UN(3)*Q3(2))*(1.0-BB2-3.*BB1*BB2)*V2(3)/UNORM)*G1(3)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1)*BB2*UN(1)+(UN(2)*Q3(3)-UN(3)*Q3(2))*(3.*BB2*BB1-BB2)*V1(1)/UNORM)*G2(1)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1)*BB2*UN(2)+(UN(2)*Q3(3)-UN(3)*Q3(2))*(3.*BB2*BB1-BB2)*V1(2)/UNORM)*G2(2)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1)*BB2*UN(3)+(UN(2)*Q3(3)-UN(3)*Q3(2))*(3.*BB2*BB1-BB2)*V1(3)/UNORM)*G2(3)
-v = v-C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(3)*Q3(1)-UN(1)*Q3(3))*6.*BB1*BB2/A*F1
-v = v+C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(3)*Q3(1)-UN(1)*Q3(3))*6.*BB1*BB2/A*F2
-v = v+C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2)*BB1*UN(1)+(UN(3)*Q3(1)-UN(1)*Q3(3))*(1.0-BB2-3.*BB1*BB2)*V2(1)/UNORM)*G1(1)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2)*BB1*UN(2)+(UN(3)*Q3(1)-UN(1)*Q3(3))*(1.0-BB2-3.*BB1*BB2)*V2(2)/UNORM)*G1(2)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2)*BB1*UN(3)+(UN(3)*Q3(1)-UN(1)*Q3(3))*(1.0-BB2-3.*BB1*BB2)*V2(3)/UNORM)*G1(3)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2)*BB2*UN(1)+(UN(3)*Q3(1)-UN(1)*Q3(3))*(3.*BB2*BB1-BB2)*V1(1)/UNORM)*G2(1)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2)*BB2*UN(2)+(UN(3)*Q3(1)-UN(1)*Q3(3))*(3.*BB2*BB1-BB2)*V1(2)/UNORM)*G2(2)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2)*BB2*UN(3)+(UN(3)*Q3(1)-UN(1)*Q3(3))*(3.*BB2*BB1-BB2)*V1(3)/UNORM)*G2(3)
-v = v-C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(1)*Q3(2)-UN(2)*Q3(1))*6.*BB1*BB2/A*F1
-v = v+C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(1)*Q3(2)-UN(2)*Q3(1))*6.*BB1*BB2/A*F2
-v = v+C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3)*BB1*UN(1)+(UN(1)*Q3(2)-UN(2)*Q3(1))*(1.0-BB2-3.*BB1*BB2)*V2(1)/UNORM)*G1(1)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3)*BB1*UN(2)+(UN(1)*Q3(2)-UN(2)*Q3(1))*(1.0-BB2-3.*BB1*BB2)*V2(2)/UNORM)*G1(2)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3)*BB1*UN(3)+(UN(1)*Q3(2)-UN(2)*Q3(1))*(1.0-BB2-3.*BB1*BB2)*V2(3)/UNORM)*G1(3)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3)*BB2*UN(1)+(UN(1)*Q3(2)-UN(2)*Q3(1))*(3.*BB2*BB1-BB2)*V1(1)/UNORM)*G2(1)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3)*BB2*UN(2)+(UN(1)*Q3(2)-UN(2)*Q3(1))*(3.*BB2*BB1-BB2)*V1(2)/UNORM)*G2(2)
-v = v+C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3)*BB2*UN(3)+(UN(1)*Q3(2)-UN(2)*Q3(1))*(3.*BB2*BB1-BB2)*V1(3)/UNORM)*G2(3)
-
-ssrfpack_fval = v
+AF(1) = &
+ & +C1*B1**2*(3.-2.*B1) &
+ & +C2*(1.-B2)**2*(1.+2.*B2)*AL(2)/A(2)*BB2(2)*(1.+2.*BB1(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(2,2)*Q2(3)-UN(3,2)*Q2(2))*6.*BB1(2)*BB2(2)/A(2) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(3,2)*Q2(1)-UN(1,2)*Q2(3))*6.*BB1(2)*BB2(2)/A(2) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(1,2)*Q2(2)-UN(2,2)*Q2(1))*6.*BB1(2)*BB2(2)/A(2) &
+ & +C3*(1.-B3)**2*(1.+2.*B3)*(1.-AL(3)/A(3)*BB2(3)*(1.+2.*BB1(3))) &
+ & -C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(2,3)*Q3(3)-UN(3,3)*Q3(2))*6.*BB1(3)*BB2(3)/A(3) &
+ & -C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(3,3)*Q3(1)-UN(1,3)*Q3(3))*6.*BB1(3)*BB2(3)/A(3) &
+ & -C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(1,3)*Q3(2)-UN(2,3)*Q3(1))*6.*BB1(3)*BB2(3)/A(3)
+AF(2) = &
+ & +C1*(1.-B1)**2*(1.+2.*B1)*(1.-AL(1)/A(1)*BB2(1)*(1.+2.*BB1(1))) &
+ & -C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(2,1)*Q1(3)-UN(3,1)*Q1(2))*6.*BB1(1)*BB2(1)/A(1) &
+ & -C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(3,1)*Q1(1)-UN(1,1)*Q1(3))*6.*BB1(1)*BB2(1)/A(1) &
+ & -C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(1,1)*Q1(2)-UN(2,1)*Q1(1))*6.*BB1(1)*BB2(1)/A(1) &
+ & +C2*B2**2*(3.-2.*B2) &
+ & +C3*(1.-B3)**2*(1.+2.*B3)*AL(3)/A(3)*BB2(3)*(1.+2.*BB1(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(2,3)*Q3(3)-UN(3,3)*Q3(2))*6.*BB1(3)*BB2(3)/A(3) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(3,3)*Q3(1)-UN(1,3)*Q3(3))*6.*BB1(3)*BB2(3)/A(3) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(1,3)*Q3(2)-UN(2,3)*Q3(1))*6.*BB1(3)*BB2(3)/A(3)
+AF(3) = &
+ & +C1*(1.-B1)**2*(1.+2.*B1)*AL(1)/A(1)*BB2(1)*(1.+2.*BB1(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(2,1)*Q1(3)-UN(3,1)*Q1(2))*6.*BB1(1)*BB2(1)/A(1) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(3,1)*Q1(1)-UN(1,1)*Q1(3))*6.*BB1(1)*BB2(1)/A(1) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(1,1)*Q1(2)-UN(2,1)*Q1(1))*6.*BB1(1)*BB2(1)/A(1) &
+ & +C2*(1.-B2)**2*(1.+2.*B2)*(1.-AL(2)/A(2)*BB2(2)*(1.+2.*BB1(2))) &
+ & -C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(2,2)*Q2(3)-UN(3,2)*Q2(2))*6.*BB1(2)*BB2(2)/A(2) &
+ & -C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(3,2)*Q2(1)-UN(1,2)*Q2(3))*6.*BB1(2)*BB2(2)/A(2) &
+ & -C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(1,2)*Q2(2)-UN(2,2)*Q2(1))*6.*BB1(2)*BB2(2)/A(2) &
+ & +C3*B3**2*(3.-2.*B3)
+AG(1,1) = &
+ & +C1*(1.-B1)*B1**2*U1(1) &
+ & +C2*(1.-B2)**2*(1.+2.*B2)*AL(2)*BB2(2)*BB1(2)*V3(1)/UNORM(2) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1,2)*BB2(2)*UN(1,2)+(UN(2,2)*Q2(3) &
+ & -UN(3,2)*Q2(2))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(1)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2,2)*BB2(2)*UN(1,2)+(UN(3,2)*Q2(1) &
+ & -UN(1,2)*Q2(3))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(1)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3,2)*BB2(2)*UN(1,2)+(UN(1,2)*Q2(2) &
+ & -UN(2,2)*Q2(1))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(1)/UNORM(2)) &
+ & +C3*(1.-B3)**2*(1.+2.*B3)*AL(3)*(1.-BB2(3)*(1.+BB1(3)))*V2(1)/UNORM(3) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1,3)*BB1(3)*UN(1,3)+(UN(2,3)*Q3(3) &
+ & -UN(3,3)*Q3(2))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(1)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2,3)*BB1(3)*UN(1,3)+(UN(3,3)*Q3(1) &
+ & -UN(1,3)*Q3(3))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(1)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3,3)*BB1(3)*UN(1,3)+(UN(1,3)*Q3(2) &
+ & -UN(2,3)*Q3(1))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(1)/UNORM(3))
+AG(2,1) = &
+ & +C1*(1.-B1)*B1**2*U1(2) &
+ & +C2*(1.-B2)**2*(1.+2.*B2)*AL(2)*BB2(2)*BB1(2)*V3(2)/UNORM(2) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1,2)*BB2(2)*UN(2,2)+(UN(2,2)*Q2(3) &
+ & -UN(3,2)*Q2(2))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(2)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2,2)*BB2(2)*UN(2,2)+(UN(3,2)*Q2(1) &
+ & -UN(1,2)*Q2(3))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(2)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3,2)*BB2(2)*UN(2,2)+(UN(1,2)*Q2(2) &
+ & -UN(2,2)*Q2(1))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(2)/UNORM(2)) &
+ & +C3*(1.-B3)**2*(1.+2.*B3)*AL(3)*(1.-BB2(3)*(1.+BB1(3)))*V2(2)/UNORM(3) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1,3)*BB1(3)*UN(2,3)+(UN(2,3)*Q3(3) &
+ & -UN(3,3)*Q3(2))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(2)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2,3)*BB1(3)*UN(2,3)+(UN(3,3)*Q3(1) &
+ & -UN(1,3)*Q3(3))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(2)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3,3)*BB1(3)*UN(2,3)+(UN(1,3)*Q3(2) &
+ & -UN(2,3)*Q3(1))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(2)/UNORM(3))
+AG(3,1) = &
+ & +C1*(1.-B1)*B1**2*U1(3) &
+ & +C2*(1.-B2)**2*(1.+2.*B2)*AL(2)*BB2(2)*BB1(2)*V3(3)/UNORM(2) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1,2)*BB2(2)*UN(3,2)+(UN(2,2)*Q2(3) &
+ & -UN(3,2)*Q2(2))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(3)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2,2)*BB2(2)*UN(3,2)+(UN(3,2)*Q2(1) &
+ & -UN(1,2)*Q2(3))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(3)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3,2)*BB2(2)*UN(3,2)+(UN(1,2)*Q2(2) &
+ & -UN(2,2)*Q2(1))*(3.*BB2(2)*BB1(2)-BB2(2))*V3(3)/UNORM(2)) &
+ & +C3*(1.-B3)**2*(1.+2.*B3)*AL(3)*(1.-BB2(3)*(1.+BB1(3)))*V2(3)/UNORM(3) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1,3)*BB1(3)*UN(3,3)+(UN(2,3)*Q3(3) &
+ & -UN(3,3)*Q3(2))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(3)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2,3)*BB1(3)*UN(3,3)+(UN(3,3)*Q3(1) &
+ & -UN(1,3)*Q3(3))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(3)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3,3)*BB1(3)*UN(3,3)+(UN(1,3)*Q3(2) &
+ & -UN(2,3)*Q3(1))*(1.0-BB2(3)-3.*BB1(3)*BB2(3))*V2(3)/UNORM(3))
+AG(1,2) = &
+ & +C1*(1.-B1)**2*(1.+2.*B1)*AL(1)*(1.-BB2(1)*(1.+BB1(1)))*V3(1)/UNORM(1) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1,1)*BB1(1)*UN(1,1)+(UN(2,1)*Q1(3) &
+ & -UN(3,1)*Q1(2))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(1)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2,1)*BB1(1)*UN(1,1)+(UN(3,1)*Q1(1) &
+ & -UN(1,1)*Q1(3))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(1)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3,1)*BB1(1)*UN(1,1)+(UN(1,1)*Q1(2) &
+ & -UN(2,1)*Q1(1))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(1)/UNORM(1)) &
+ & +C2*(1.-B2)*B2**2*U2(1) &
+ & +C3*(1.-B3)**2*(1.+2.*B3)*AL(3)*BB2(3)*BB1(3)*V1(1)/UNORM(3) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1,3)*BB2(3)*UN(1,3)+(UN(2,3)*Q3(3) &
+ & -UN(3,3)*Q3(2))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(1)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2,3)*BB2(3)*UN(1,3)+(UN(3,3)*Q3(1) &
+ & -UN(1,3)*Q3(3))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(1)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3,3)*BB2(3)*UN(1,3)+(UN(1,3)*Q3(2) &
+ & -UN(2,3)*Q3(1))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(1)/UNORM(3))
+AG(2,2) = &
+ & +C1*(1.-B1)**2*(1.+2.*B1)*AL(1)*(1.-BB2(1)*(1.+BB1(1)))*V3(2)/UNORM(1) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1,1)*BB1(1)*UN(2,1)+(UN(2,1)*Q1(3) &
+ & -UN(3,1)*Q1(2))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(2)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2,1)*BB1(1)*UN(2,1)+(UN(3,1)*Q1(1) &
+ & -UN(1,1)*Q1(3))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(2)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3,1)*BB1(1)*UN(2,1)+(UN(1,1)*Q1(2) &
+ & -UN(2,1)*Q1(1))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(2)/UNORM(1)) &
+ & +C2*(1.-B2)*B2**2*U2(2) &
+ & +C3*(1.-B3)**2*(1.+2.*B3)*AL(3)*BB2(3)*BB1(3)*V1(2)/UNORM(3) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1,3)*BB2(3)*UN(2,3)+(UN(2,3)*Q3(3) &
+ & -UN(3,3)*Q3(2))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(2)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2,3)*BB2(3)*UN(2,3)+(UN(3,3)*Q3(1) &
+ & -UN(1,3)*Q3(3))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(2)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3,3)*BB2(3)*UN(2,3)+(UN(1,3)*Q3(2) &
+ & -UN(2,3)*Q3(1))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(2)/UNORM(3))
+AG(3,2) = &
+ & +C1*(1.-B1)**2*(1.+2.*B1)*AL(1)*(1.-BB2(1)*(1.+BB1(1)))*V3(3)/UNORM(1) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1,1)*BB1(1)*UN(3,1)+(UN(2,1)*Q1(3) &
+ & -UN(3,1)*Q1(2))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(3)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2,1)*BB1(1)*UN(3,1)+(UN(3,1)*Q1(1) &
+ & -UN(1,1)*Q1(3))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(3)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3,1)*BB1(1)*UN(3,1)+(UN(1,1)*Q1(2) &
+ & -UN(2,1)*Q1(1))*(1.0-BB2(1)-3.*BB1(1)*BB2(1))*V3(3)/UNORM(1)) &
+ & +C2*(1.-B2)*B2**2*U2(3) &
+ & +C3*(1.-B3)**2*(1.+2.*B3)*AL(3)*BB2(3)*BB1(3)*V1(3)/UNORM(3) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(1)*(UN(1,3)*BB2(3)*UN(3,3)+(UN(2,3)*Q3(3) &
+ & -UN(3,3)*Q3(2))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(3)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(2)*(UN(2,3)*BB2(3)*UN(3,3)+(UN(3,3)*Q3(1) &
+ & -UN(1,3)*Q3(3))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(3)/UNORM(3)) &
+ & +C3*(1.-B3)**2*B3/U3N*V3(3)*(UN(3,3)*BB2(3)*UN(3,3)+(UN(1,3)*Q3(2) &
+ & -UN(2,3)*Q3(1))*(3.*BB2(3)*BB1(3)-BB2(3))*V1(3)/UNORM(3))
+AG(1,3) = &
+ & +C1*(1.-B1)**2*(1.+2.*B1)*AL(1)*BB2(1)*BB1(1)*V2(1)/UNORM(1) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1,1)*BB2(1)*UN(1,1)+(UN(2,1)*Q1(3) &
+ & -UN(3,1)*Q1(2))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(1)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2,1)*BB2(1)*UN(1,1)+(UN(3,1)*Q1(1) &
+ & -UN(1,1)*Q1(3))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(1)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3,1)*BB2(1)*UN(1,1)+(UN(1,1)*Q1(2) &
+ & -UN(2,1)*Q1(1))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(1)/UNORM(1)) &
+ & +C2*(1.-B2)**2*(1.+2.*B2)*AL(2)*(1.-BB2(2)*(1.+BB1(2)))*V1(1)/UNORM(2) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1,2)*BB1(2)*UN(1,2)+(UN(2,2)*Q2(3) &
+ & -UN(3,2)*Q2(2))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(1)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2,2)*BB1(2)*UN(1,2)+(UN(3,2)*Q2(1) &
+ & -UN(1,2)*Q2(3))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(1)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3,2)*BB1(2)*UN(1,2)+(UN(1,2)*Q2(2) &
+ & -UN(2,2)*Q2(1))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(1)/UNORM(2)) &
+ & +C3*(1.-B3)*B3**2*U3(1)
+AG(2,3) = &
+ & +C1*(1.-B1)**2*(1.+2.*B1)*AL(1)*BB2(1)*BB1(1)*V2(2)/UNORM(1) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1,1)*BB2(1)*UN(2,1)+(UN(2,1)*Q1(3) &
+ & -UN(3,1)*Q1(2))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(2)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2,1)*BB2(1)*UN(2,1)+(UN(3,1)*Q1(1) &
+ & -UN(1,1)*Q1(3))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(2)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3,1)*BB2(1)*UN(2,1)+(UN(1,1)*Q1(2) &
+ & -UN(2,1)*Q1(1))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(2)/UNORM(1)) &
+ & +C2*(1.-B2)**2*(1.+2.*B2)*AL(2)*(1.-BB2(2)*(1.+BB1(2)))*V1(2)/UNORM(2) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1,2)*BB1(2)*UN(2,2)+(UN(2,2)*Q2(3) &
+ & -UN(3,2)*Q2(2))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(2)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2,2)*BB1(2)*UN(2,2)+(UN(3,2)*Q2(1) &
+ & -UN(1,2)*Q2(3))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(2)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3,2)*BB1(2)*UN(2,2)+(UN(1,2)*Q2(2) &
+ & -UN(2,2)*Q2(1))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(2)/UNORM(2)) &
+ & +C3*(1.-B3)*B3**2*U3(2)
+AG(3,3) = &
+ & +C1*(1.-B1)**2*(1.+2.*B1)*AL(1)*BB2(1)*BB1(1)*V2(3)/UNORM(1) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(1)*(UN(1,1)*BB2(1)*UN(3,1)+(UN(2,1)*Q1(3) &
+ & -UN(3,1)*Q1(2))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(3)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(2)*(UN(2,1)*BB2(1)*UN(3,1)+(UN(3,1)*Q1(1) &
+ & -UN(1,1)*Q1(3))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(3)/UNORM(1)) &
+ & +C1*(1.-B1)**2*B1/U1N*V1(3)*(UN(3,1)*BB2(1)*UN(3,1)+(UN(1,1)*Q1(2) &
+ & -UN(2,1)*Q1(1))*(3.*BB2(1)*BB1(1)-BB2(1))*V2(3)/UNORM(1)) &
+ & +C2*(1.-B2)**2*(1.+2.*B2)*AL(2)*(1.-BB2(2)*(1.+BB1(2)))*V1(3)/UNORM(2) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(1)*(UN(1,2)*BB1(2)*UN(3,2)+(UN(2,2)*Q2(3) &
+ & -UN(3,2)*Q2(2))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(3)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(2)*(UN(2,2)*BB1(2)*UN(3,2)+(UN(3,2)*Q2(1) &
+ & -UN(1,2)*Q2(3))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(3)/UNORM(2)) &
+ & +C2*(1.-B2)**2*B2/U2N*V2(3)*(UN(3,2)*BB1(2)*UN(3,2)+(UN(1,2)*Q2(2) &
+ & -UN(2,2)*Q2(1))*(1.0-BB2(2)-3.*BB1(2)*BB2(2))*V1(3)/UNORM(2)) &
+ & +C3*(1.-B3)*B3**2*U3(3)
 
 RETURN
-END function ssrfpack_fval
+END subroutine ssrfpack_fval
 
 real(kind_real) FUNCTION ssrfpack_fval_ori (B1,B2,B3,V1,V2,V3,F1,F2,F3,G1,G2, &
     &                     G3)
@@ -821,109 +842,6 @@ ssrfpack_fval_ori = VAL + C3*HVAL(B3,F3,F,DV,DS)
 RETURN
 END function ssrfpack_fval_ori
 
-SUBROUTINE ssrfpack_GIVENS ( A,B, C,S)
-real(kind_real) ::  A, B, C, S
-!
-!***********************************************************
-!
-!                                              From SSRFPACK
-!                                            Robert J. Renka
-!                                  Dept. of Computer Science
-!                                       Univ. of North Texas
-!                                           renka@cs.unt.edu
-!                                                   05/09/92
-!
-!   This subroutine constructs the Givens plane rotation,
-!
-!           ( C  S)
-!       G = (     ) , where C*C + S*S = 1,
-!           (-S  C)
-!
-! which zeros the second component of the vector (A,B)**T
-! (transposed).  Subroutine ROTATE may be called to apply
-! the transformation to a 2 by N matrix.
-!
-!   This routine is identical to Subroutine SROTG from the
-! LINPACK BLAS (Basic Linear Algebra Subroutines).
-!
-! On input:
-!
-!       A,B = Components of the vector defining the rota-
-!             tion.  These are overwritten by values R
-!             and Z (described below) which define C and S.
-!
-! On output:
-!
-!       A = Signed Euclidean norm R of the input vector:
-!           R = +/-SQRT(A*A + B*B)
-!
-!       B = Value Z such that:
-!             C = SQRT(1-Z*Z) and S=Z if ABS(Z) .LE. 1, and
-!             C = 1/Z and S = SQRT(1-C*C) if ABS(Z) > 1.
-!
-!       C = +/-(A/R) or 1 if R = 0.
-!
-!       S = +/-(B/R) or 0 if R = 0.
-!
-! Modules required by GIVENS:  None
-!
-! Intrinsic functions called by GIVENS:  ABS, SQRT
-!
-!***********************************************************
-!
-real(kind_real) ::  AA, BB, R, U, V
-!
-! Local parameters:
-!
-! AA,BB = Local copies of A and B
-! R =     C*A + S*B = +/-SQRT(A*A+B*B)
-! U,V =   Variables used to scale A and B for computing R
-!
-AA = A
-BB = B
-IF (ABS(AA) .GT. ABS(BB)) THEN
-!
-! ABS(A) > ABS(B).
-!
-  U = AA + AA
-  V = BB/U
-  R = SQRT(.25 + V*V) * U
-  C = AA/R
-  S = V * (C + C)
-!
-! Note that R has the sign of A, C > 0, and S has
-!   SIGN(A)*SIGN(B).
-!
-  B = S
-  A = R
-ELSEIF (BB .NE. 0.) THEN
-!
-! ABS(A) .LE. ABS(B).
-!
-  U = BB + BB
-  V = AA/U
-!
-! Store R in A.
-!
-  A = SQRT(.25 + V*V) * U
-  S = BB/A
-  C = V * (S + S)
-!
-! Note that R has the sign of B, S > 0, and C has
-!   SIGN(A)*SIGN(B).
-!
-  B = 1.
-  IF (C .NE. 0.) B = 1./C
-ELSE
-!
-! A = B = 0.
-!
-  C = 1.
-  S = 0.
-ENDIF
-RETURN
-END subroutine ssrfpack_givens
-
 real(kind_real) FUNCTION ssrfpack_hval (B,H1,H2,HP1,HP2)
 real(kind_real) ::  B, H1, H2, HP1, HP2
 !
@@ -986,125 +904,5 @@ D2 = HP2 - S
   ssrfpack_hval = H1 + B2*(HP1 + B2*(D1 + B1*(D1 - D2)))
 RETURN
 END function ssrfpack_hval
-
-SUBROUTINE ssrfpack_rotate (N,C,S, X,Y )
-INTEGER N
-real(kind_real) ::     C, S, X(N), Y(N)
-!
-!***********************************************************
-!
-!                                              From SSRFPACK
-!                                            Robert J. Renka
-!                                  Dept. of Computer Science
-!                                       Univ. of North Texas
-!                                           renka@cs.unt.edu
-!                                                   09/01/88
-!
-!                                                ( C  S)
-!   This subroutine applies the Givens rotation  (     )  to
-!                                                (-S  C)
-!                    (X(1) ... X(N))
-! the 2 by N matrix  (             ) .
-!                    (Y(1) ... Y(N))
-!
-!   This routine is identical to Subroutine SROT from the
-! LINPACK BLAS (Basic Linear Algebra Subroutines).
-!
-! On input:
-!
-!       N = Number of columns to be rotated.
-!
-!       C,S = Elements of the Givens rotation.  Refer to
-!             Subroutine GIVENS.
-!
-! The above parameters are not altered by this routine.
-!
-!       X,Y = Arrays of length .GE. N containing the compo-
-!             nents of the vectors to be rotated.
-!
-! On output:
-!
-!       X,Y = Arrays containing the rotated vectors (not
-!             altered if N < 1).
-!
-! Modules required by ROTATE:  None
-!
-!***********************************************************
-!
-INTEGER I
-real(kind_real) ::     XI, YI
-!
-DO 1 I = 1,N
-  XI = X(I)
-  YI = Y(I)
-  X(I) = C*XI + S*YI
-  Y(I) = -S*XI + C*YI
-    1   CONTINUE
-RETURN
-END subroutine ssrfpack_rotate
-
-
-SUBROUTINE ssrfpack_setup (XI,YI,WI,WK,S1,S2,WT, ROW)
-real(kind_real) ::  XI, YI, WI, WK, S1, S2, WT, ROW(6)
-!
-!***********************************************************
-!
-!                                              From SSRFPACK
-!                                            Robert J. Renka
-!                                  Dept. of Computer Science
-!                                       Univ. of North Texas
-!                                           renka@cs.unt.edu
-!                                                   05/09/92
-!
-!   This subroutine sets up the I-th row of an augmented
-! regression matrix for a weighted least squares fit of a
-! quadratic function Q(X,Y) to a set of data values Wi,
-! where Q(0,0) = Wk.  The first 3 columns (quadratic terms)
-! are scaled by 1/S2 and the fourth and fifth columns (lin-
-! ear terms) are scaled by 1/S1.
-!
-! On input:
-!
-!       XI,YI = Coordinates of node I.
-!
-!       WI = Data value at node I.
-!
-!       WK = Data value interpolated by Q at the origin.
-!
-!       S1,S2 = Inverse scale factors.
-!
-!       WT = Weight factor corresponding to the I-th
-!            equation.
-!
-!       ROW = Array of length 6.
-!
-! Input parameters are not altered by this routine.
-!
-! On output:
-!
-!       ROW = Array containing a row of the augmented re-
-!             gression matrix.
-!
-! Modules required by SETUP:  None
-!
-!***********************************************************
-!
-real(kind_real) ::  W1, W2
-!
-! Local parameters:
-!
-! W1 = Weighted scale factor for the linear terms
-! W2 = Weighted scale factor for the quadratic terms
-!
-W1 = WT/S1
-W2 = WT/S2
-ROW(1) = XI*XI*W2
-ROW(2) = XI*YI*W2
-ROW(3) = YI*YI*W2
-ROW(4) = XI*W1
-ROW(5) = YI*W1
-ROW(6) = (WI-WK)*WT
-RETURN
-END subroutine ssrfpack_setup
 
 end module tools_ssrfpack
