@@ -70,6 +70,7 @@ contains
    procedure :: dealloc => mesh_dealloc
    procedure :: barycentric => mesh_barycentric
    procedure :: interp_c1 => mesh_interp_c1
+   procedure :: compute_grad => mesh_compute_grad
    procedure :: count_bnda => mesh_count_bnda
    procedure :: get_bnda => mesh_get_bnda
    procedure :: check_arc => mesh_check_arc
@@ -627,11 +628,10 @@ real(kind_real),intent(in) :: field(mesh%n) !< Field
 real(kind_real),intent(out) :: val  !< Value
 
 ! Local variables
-integer :: nn_index(1),ib(3),ierr,i,j,knext
-integer,allocatable :: k(:)
-real(kind_real) :: cx,sx,cy,sy,xc,yc,zc,alpha,beta,gamma,gx,gy,wgt,gx_sum,gy_sum,wgt_sum,gx_avg,gy_avg
-real(kind_real) :: xyz(3),b(3),p1(3),p2(3),p3(3),f(mesh%n),g1(3),g2(3),g3(3)
-real(kind_real),allocatable :: xp(:),yp(:),zp(:)
+integer :: nn_index(1),ib(3),ierr,i_s,n_s1,n_s2,n_s3
+real(kind_real) :: xyz(3),b(3),p1(3),p2(3),p3(3),f(mesh%n),g1(3),g2(3),g3(3),val_ori
+integer,allocatable :: col1(:),col2(:),col3(:)
+real(kind_real),allocatable :: Svec1(:,:),Svec2(:,:),Svec3(:,:)
 
 ! Set name
 @:set_name(mesh_interp_c1)
@@ -658,10 +658,69 @@ p3 = (/mesh%x(ib(3)),mesh%y(ib(3)),mesh%z(ib(3))/)
 f = field(mesh%order)
 
 ! Compute gradient estimates at the vertices
-call gradl(mesh%n,ib(1),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g1,ierr)
+if (.false.) then
+   call gradl(mesh%n,ib(1),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g1,ierr)
+   call gradl(mesh%n,ib(2),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g2,ierr)
+   call gradl(mesh%n,ib(3),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g3,ierr)
+else
+   call mesh%compute_grad(mpl,ib(1),n_s1,col1,Svec1)
+   g1 = zero
+   do i_s=1,n_s1
+      g1 = g1+Svec1(i_s,:)*field(col1(i_s))
+   end do
+   call mesh%compute_grad(mpl,ib(2),n_s2,col2,Svec2)
+   g2 = zero
+   do i_s=1,n_s2
+      g2 = g2+Svec2(i_s,:)*field(col2(i_s))
+   end do
+   call mesh%compute_grad(mpl,ib(3),n_s3,col3,Svec3)
+   g3 = zero
+   do i_s=1,n_s3
+      g3 = g3+Svec3(i_s,:)*field(col3(i_s))
+   end do
+end if
 
-! START LOOP HERE
-i = ib(1)
+! Normalize the coordinates
+b = b/sum(b)
+
+! Get interpolated value
+val = fval(b(1),b(2),b(3),p1,p2,p3,f(ib(1)),f(ib(2)),f(ib(3)),g1,g2,g3)
+val_ori = fval_ori(b(1),b(2),b(3),p1,p2,p3,f(ib(1)),f(ib(2)),f(ib(3)),g1,g2,g3)
+print*, "val_ori",val-val_ori
+
+! Probe out
+@:probe_out()
+
+end subroutine mesh_interp_c1
+
+!----------------------------------------------------------------------
+! Subroutine: mesh_compute_grad
+!> Compute gradient
+!----------------------------------------------------------------------
+subroutine mesh_compute_grad(mesh,mpl,i,n_s,col,Svec_tot)
+
+implicit none
+
+! Passed variables
+class(mesh_type),intent(in) :: mesh     !< Mesh
+type(mpl_type),intent(inout) :: mpl     !< MPI data
+integer,intent(in) :: i                 !< Index
+integer,intent(out) :: n_s
+integer,allocatable,intent(inout) :: col(:)
+real(kind_real),allocatable,intent(inout) :: Svec_tot(:,:)
+
+! Local variables
+integer :: j,jnext,knext,i_s
+integer,allocatable :: k(:)
+real(kind_real) :: cx,sx,cy,sy,xc,yc,zc,gamma,wgt,wgt_sum
+real(kind_real),allocatable :: xp(:),yp(:),zp(:)
+real(kind_real),allocatable :: Svec(:,:),Svectmp(:,:)
+
+! Set name
+@:set_name(mesh_compute_grad)
+
+! Probe in
+@:probe_in()
 
 ! Construct the rotation
 call constr(mesh%x(i),mesh%y(i),mesh%z(i),cx,sx,cy,sy)
@@ -674,6 +733,11 @@ allocate(k(mesh%rows(i)%cols))
 allocate(xp(mesh%rows(i)%cols))
 allocate(yp(mesh%rows(i)%cols))
 allocate(zp(mesh%rows(i)%cols))
+n_s = mesh%rows(i)%cols+1
+allocate(col(n_s))
+allocate(Svec(n_s,2))
+allocate(Svectmp(n_s,2))
+allocate(Svec_tot(n_s,3))
 
 ! Loop over neigbors
 do j=1,mesh%rows(i)%cols
@@ -685,46 +749,76 @@ do j=1,mesh%rows(i)%cols
 end do
 
 ! Initialization
-gx_sum = zero
-gy_sum = zero
+
 wgt_sum = zero
+
+! Initialize row/col
+i_s = 1
+Svec = zero
+
+! First component of the gradient
+col(i_s) = i
+i_s = i_s+1
+do j=1,mesh%rows(i)%cols
+   col(i_s) = k(j)
+   i_s = i_s+1
+end do
 
 ! Loop over triangles
 do j=1,mesh%rows(i)%cols
    ! Get next neighbor
    if (j<mesh%rows(i)%cols) then
-      knext = k(j+1)
+      jnext = j+1
    else
-      knext = k(1)
+      jnext = 1
    end if
+   knext = k(jnext)
 
-   ! Compute plane's normal vector components (see Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3)
-   alpha = (mesh%y(k(j))-mesh%y(i))*(f(knext)-f(i))-(mesh%y(knext)-mesh%y(i))*(f(k(j))-f(i))
-   beta = (mesh%y(knext)-mesh%y(i))*(f(k(j))-f(i))-(mesh%x(k(j))-mesh%x(i))*(f(knext)-f(i))
-   gamma = (mesh%x(k(j))-mesh%x(i))*(mesh%y(knext)-mesh%y(i))-(mesh%x(knext)-mesh%x(i))*(mesh%y(k(j))-mesh%y(i))
+   ! Compute plane's normal vector components 
+   ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
+   ! Warning: in second equation of (8) for beta, "y"s should be "x"s
+   gamma = (xp(j)-xc)*(yp(jnext)-yc)-(xp(jnext)-xc)*(yp(j)-yc)
+   if (abs(gamma)>zero) then
+      Svectmp = zero
+      do i_s=1,n_s
+         if (col(i_s)==i) then
+            Svectmp(i_s,1) = Svectmp(i_s,1)+(yp(j)-yc)+(yc-yp(jnext))
+            Svectmp(i_s,2) = Svectmp(i_s,2)+(xp(jnext)-xc)+(xc-xp(j))
+         end if
+         if (col(i_s)==k(j)) then
+            Svectmp(i_s,1) = Svectmp(i_s,1)+(yp(jnext)-yc)
+            Svectmp(i_s,2) = Svectmp(i_s,2)+(xc-xp(jnext))
+         end if
+         if (col(i_s)==knext) then
+            Svectmp(i_s,1) = Svectmp(i_s,1)+(yc-yp(j))
+            Svectmp(i_s,2) = Svectmp(i_s,2)+(xp(j)-xc)
+         end if
+      end do
+      Svectmp = Svectmp/gamma
 
-   ! TODO check abs(gamma)>0
-
-   ! Gradient components in rotated coordinates for this triangle
-   gx = -alpha/gamma
-   gy = -beta/gamma
-
-   ! Weight
-   wgt = two/abs(gamma)
-
-   ! Sum of gradient components in rotated coordinates
-   gx_sum = gx_sum+wgt*gx
-   gy_sum = gy_sum+wgt*gy
-   wgt_sum = wgt_sum+wgt
-
-   ! 
+      ! Weighted sum
+      wgt = two/abs(gamma)
+      do i_s=1,n_s
+         Svec(i_s,:) = Svec(i_s,:)+wgt*Svectmp(i_s,:)
+      end do
+      wgt_sum = wgt_sum+wgt
+   else
+      call mpl%abort('${subr}$','gamma should not be zero')
+   end if
 end do
 
 ! Averaged gradient components
-gx_avg = gx_sum/wgt_sum
-gy_avg = gy_sum/wgt_sum
+Svec = Svec/wgt_sum
 
+! Columns
+do i_s=1,n_s
+   col(i_s) = mesh%order(col(i_s))
+end do
 
+! Apply rotation
+Svec_tot(:,1) = cy*Svec(:,1)
+Svec_tot(:,2) = cx*Svec(:,2)-sx*sy*Svec(:,1)
+Svec_tot(:,3) = -sx*Svec(:,2)-cx*sy*Svec(:,1)
 
 ! Release memory
 deallocate(k)
@@ -732,23 +826,10 @@ deallocate(xp)
 deallocate(yp)
 deallocate(zp)
 
-
-call mpl%abort('ok','ok')
-
-
-call gradl(mesh%n,ib(2),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g2,ierr)
-call gradl(mesh%n,ib(3),mesh%x,mesh%y,mesh%z,f,mesh%list,mesh%lptr,mesh%lend,g3,ierr)
-
-! Normalize the coordinates
-b = b/sum(b)
-
-! Get interpolated value
-val = fval(b(1),b(2),b(3),p1,p2,p3,f(ib(1)),f(ib(2)),f(ib(3)),g1,g2,g3)
-
 ! Probe out
 @:probe_out()
 
-end subroutine mesh_interp_c1
+end subroutine mesh_compute_grad
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_count_bnda

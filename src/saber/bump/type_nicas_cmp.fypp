@@ -2787,11 +2787,10 @@ if (nam%interp_test) then
       else
          call mpl%loc_to_glb(nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%nc1,nicas_cmp%hor(il1)%c1a_to_c1,fld_src_c1a,fld_src_c1, &
  & .true.)
-!         do ic0a=1,geom%nc0a
-ic0a = geom%nc0a/3
+         do ic0a=1,geom%nc0a
             call nicas_cmp%hor(il1)%mesh_c1%interp_c1(mpl,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),nicas_cmp%hor(il1)%tree_c1, &
 &  fld_src_c1,nicas_cmp%fld_int(ic0a,il0))
-!         end do
+         end do
       end if
 
       ! Print results

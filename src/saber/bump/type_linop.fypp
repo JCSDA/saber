@@ -10,12 +10,13 @@ module type_linop
 
 use ieee_arithmetic
 !$ use omp_lib
-use tools_const, only: zero,one,rad2deg
+use tools_const, only: zero,one,two,rad2deg
 use tools_func, only: sphere_dist,zss_maxval,zss_minval
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,eq,infeq,sup
+use tools_ssrfpack, only: aplyr,constr
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -62,10 +63,10 @@ contains
    procedure :: apply_ad => linop_apply_ad
    procedure :: add_op => linop_add_op
    procedure :: gather => linop_gather
-   procedure :: linop_interp
+   procedure :: linop_interp_c0
    procedure :: linop_interp_lat
    procedure :: linop_interp_nn
-   generic :: interp => linop_interp,linop_interp_lat,linop_interp_nn
+   generic :: interp => linop_interp_c0,linop_interp_lat,linop_interp_nn
 end type linop_type
 
 private
@@ -813,10 +814,10 @@ end if
 end subroutine linop_gather
 
 !----------------------------------------------------------------------
-! Subroutine: linop_interp
-!> Compute horizontal interpolation
+! Subroutine: linop_interp_c0
+!> Compute horizontal interpolation (C0)
 !----------------------------------------------------------------------
-subroutine linop_interp(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
+subroutine linop_interp_c0(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
  & n_dst,lon_dst,lat_dst,mask_dst,mesh_mask,ifmt)
 
 implicit none
@@ -848,7 +849,7 @@ logical :: valid,found,missing(n_dst)
 character(len=7) :: cfmt
 
 ! Set name
-@:set_name(linop_interp)
+@:set_name(linop_interp_c0)
 
 ! Probe in
 @:probe_in()
@@ -976,7 +977,7 @@ linop%S = S(1:linop%n_s)
 ! Probe out
 @:probe_out()
 
-end subroutine linop_interp
+end subroutine linop_interp_c0
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_interp_lat
@@ -1194,5 +1195,154 @@ linop%S = S(1:linop%n_s)
 @:probe_out()
 
 end subroutine linop_interp_nn
+
+!----------------------------------------------------------------------
+! Subroutine: linop_grad
+!> Compute gradient in cartesian coordinates
+!----------------------------------------------------------------------
+subroutine linop_grad(linop,mpl,n_src,mask_src,mesh_src)
+
+implicit none
+
+! Passed variables
+class(linop_type),intent(inout) :: linop !< Linear operator
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: n_src              !< Source size
+logical,intent(in) :: mask_src(n_src)    !< Source mask
+type(mesh_type),intent(in) :: mesh_src   !< Mesh
+
+! Local variables
+integer :: i,j,jnext,knext,i_s,n_stmp,i_stmp,i_src
+integer,allocatable :: k(:),col(:)
+real(kind_real) :: cx,sx,cy,sy,gamma,wgt,wgt_sum
+real(kind_real),allocatable :: xp(:),yp(:),zp(:)
+real(kind_real),allocatable :: Svectmp(:,:),Svec(:,:)
+
+! Set name
+@:set_name(linop_grad)
+
+! Probe in
+@:probe_in()
+
+! Count maximum number of operations
+linop%n_s = 0
+do i=1,mesh_src%n
+   linop%n_s = linop%n_s+1
+   do j=1,mesh_src%rows(i)%cols
+      linop%n_s = linop%n_s+1
+   end do
+end do
+
+! Allocation
+call linop%alloc(3)
+
+! Initialization
+i_s = 0
+do i_src=1,n_src
+   if (mask_src(i_src)) then
+      ! Index in the mesh
+      i = mesh_src%order_inv(i_src)
+
+      ! Allocation
+      allocate(k(mesh_src%rows(i)%cols))
+      allocate(xp(mesh_src%rows(i)%cols))
+      allocate(yp(mesh_src%rows(i)%cols))
+      allocate(zp(mesh_src%rows(i)%cols))
+      n_stmp = mesh_src%rows(i)%cols+1
+      allocate(col(n_stmp))
+      allocate(Svectmp(n_stmp,2))
+      allocate(Svec(n_stmp,2))
+
+      ! Initialization
+      col(1) = i
+      do j=1,mesh_src%rows(i)%cols
+         col(j+1) = k(j)
+      end do
+      Svec = zero
+      wgt_sum = zero
+
+      ! Construct the rotation
+      call constr(mesh_src%x(i),mesh_src%y(i),mesh_src%z(i),cx,sx,cy,sy)
+
+      ! Loop over neigbors
+      do j=1,mesh_src%rows(i)%cols
+         ! Get index
+         k(j) = mesh_src%rows(i)%nodes(j)
+
+         ! Get rotated coordinates
+         call aplyr(mesh_src%x(k(j)),mesh_src%y(k(j)),mesh_src%z(k(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
+      end do
+
+      ! Loop over triangles
+      do j=1,mesh_src%rows(i)%cols
+         ! Get next neighbor
+         if (j<mesh_src%rows(i)%cols) then
+            jnext = j+1
+         else
+            jnext = 1
+         end if
+         knext = k(jnext)
+
+         ! Compute plane's normal vector components 
+         ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
+         ! Warning: in second equation of (8) for beta, "y"s should be "x"s
+         gamma = xp(j)*yp(jnext)-xp(jnext)*yp(j)
+         if (abs(gamma)>zero) then
+            Svectmp = zero
+            do i_stmp=1,n_stmp
+               if (col(i_stmp)==i) then
+                  Svectmp(i_stmp,1) = Svectmp(i_stmp,1)+yp(j)-yp(jnext)
+                  Svectmp(i_stmp,2) = Svectmp(i_stmp,2)+xp(jnext)-xp(j)
+               end if
+               if (col(i_stmp)==k(j)) then
+                  Svectmp(i_stmp,1) = Svectmp(i_stmp,1)+yp(jnext)
+                  Svectmp(i_stmp,2) = Svectmp(i_stmp,2)-xp(jnext)
+               end if
+               if (col(i_stmp)==knext) then
+                  Svectmp(i_stmp,1) = Svectmp(i_stmp,1)-yp(j)
+                  Svectmp(i_stmp,2) = Svectmp(i_stmp,2)+xp(j)
+               end if
+            end do
+            Svectmp = Svectmp/gamma
+
+            ! Weighted sum
+            wgt = two/abs(gamma)
+            do i_stmp=1,n_stmp
+               Svec(i_stmp,:) = Svec(i_stmp,:)+wgt*Svectmp(i_stmp,:)
+            end do
+            wgt_sum = wgt_sum+wgt
+         else
+            call mpl%abort('${subr}$','gamma should not be zero')
+         end if
+      end do
+
+      ! Averaged gradient components
+      Svec = Svec/wgt_sum
+
+      ! Copy to linop structure
+      do i_stmp=1,n_stmp
+         i_s = i_s+1
+         linop%row(i_s) = i_src
+         linop%col(i_s) = mesh_src%order(col(i_stmp))
+         linop%Svec(i_s,1) = cy*Svec(i_stmp,1)
+         linop%Svec(i_s,2) = cx*Svec(i_stmp,2)-sx*sy*Svec(i_stmp,1)
+         linop%Svec(i_s,2) = -sx*Svec(i_stmp,2)-cx*sy*Svec(i_stmp,1)
+      end do
+
+      ! Release memory
+      deallocate(k)
+      deallocate(xp)
+      deallocate(yp)
+      deallocate(zp)
+      deallocate(col)
+      deallocate(Svectmp)
+      deallocate(Svec)
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine linop_grad
 
 end module type_linop
