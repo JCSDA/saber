@@ -16,7 +16,7 @@ use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,eq,infeq,sup
-use tools_ssrfpack, only: aplyr,constr
+use tools_ssrfpack, only: fval
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -846,7 +846,7 @@ integer :: nn_index(1),ib(3),n_s1,n_s2,n_s3,n_s_tmp
 integer,allocatable :: row(:),col(:),nn_index_ext(:),col1(:),col2(:),col3(:),col_ind(:),col_tmp(:)
 real(kind_real) :: nn_dist(1),b(3),p1(3),p2(3),p3(3),af(3),ag(3,3)
 real(kind_real),allocatable :: S(:),Svec1(:,:),Svec2(:,:),Svec3(:,:),S_tmp(:)
-logical :: valid,positive,found,missing(n_dst)
+logical :: valid,found,missing(n_dst)
 character(len=7) :: cfmt
 
 logical,parameter :: c1 = .true.
@@ -868,6 +868,7 @@ end if
 ! Allocation
 if (c1) then
    ! C1 function
+   allocate(col_ind(3*(1+mesh_src%maxcols)))
    allocate(row(3*n_dst*(1+mesh_src%maxcols)))
    allocate(col(3*n_dst*(1+mesh_src%maxcols)))
    allocate(S(3*n_dst*(1+mesh_src%maxcols)))
@@ -888,7 +889,7 @@ do i_dst=1,n_dst
          ! Compute barycentric coordinates
          call mesh_src%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),tree_src,b,ib)
          valid = mpl%msv%isallnot(ib)
-         positive = .false.
+         found = .false.
 
          ! Check mask
          if (valid) then
@@ -904,121 +905,135 @@ do i_dst=1,n_dst
             end do
          end if
 
-         if (c1) then
-            ! C1 function
+         if (valid) then
+            if (c1) then
+               ! C1 function
 
-            ! Normalize coordinates
-            b = b/sum(b)
+               ! Normalize coordinates
+               b = b/sum(b)
 
-            ! Vertices coordinates
-            p1 = (/mesh_src%x(ib(1)),mesh_src%y(ib(1)),mesh_src%z(ib(1))/)
-            p2 = (/mesh_src%x(ib(2)),mesh_src%y(ib(2)),mesh_src%z(ib(2))/)
-            p3 = (/mesh_src%x(ib(3)),mesh_src%y(ib(3)),mesh_src%z(ib(3))/)
+               ! Vertices coordinates
+               p1 = (/mesh_src%x(mesh_src%order_inv(ib(1))),mesh_src%y(mesh_src%order_inv(ib(1))), &
+ & mesh_src%z(mesh_src%order_inv(ib(1)))/)
+               p2 = (/mesh_src%x(mesh_src%order_inv(ib(2))),mesh_src%y(mesh_src%order_inv(ib(2))), &
+ & mesh_src%z(mesh_src%order_inv(ib(2)))/)
+               p3 = (/mesh_src%x(mesh_src%order_inv(ib(3))),mesh_src%y(mesh_src%order_inv(ib(3))), &
+ & mesh_src%z(mesh_src%order_inv(ib(3)))/)
 
-            ! Compute coefficients
-            call mesh_src%compute_grad(mpl,ib(1),n_s1,col1,Svec1)
-            call mesh_src%compute_grad(mpl,ib(2),n_s2,col2,Svec2)
-            call mesh_src%compute_grad(mpl,ib(3),n_s3,col3,Svec3)
-            call fval(b(1),b(2),b(3),p1,p2,p3,af,ag)
+               ! Compute coefficients
+               call mesh_src%compute_grad(mpl,mesh_src%order_inv(ib(1)),n_s1,col1,Svec1)
+               call mesh_src%compute_grad(mpl,mesh_src%order_inv(ib(2)),n_s2,col2,Svec2)
+               call mesh_src%compute_grad(mpl,mesh_src%order_inv(ib(3)),n_s3,col3,Svec3)
+               call fval(b(1),b(2),b(3),p1,p2,p3,af,ag)
 
-            ! Count number of different column indices
-            allocate(col_ind(3*(1+mesh_src%maxcols)))
-            n_s_tmp = 0
-            do i=1,3
-               n_s_tmp = n_s_tmp+1
-               col_ind(n_s_tmp) = mesh_src%order(ib(i))
-            end do
-            do i_sg=1,n_s1
-               if (all(col_ind(1:n_s_tmp)/=col1(i_sg))) then
-                  n_s_tmp = n_s_tmp+1
-                  col_ind(n_s_tmp) = col1(i_sg)
-               end if
-            end do
-            do i_sg=1,n_s2
-               if (all(col_ind(1:n_s_tmp)/=col2(i_sg))) then
-                  n_s_tmp = n_s_tmp+1
-                  col_ind(n_s_tmp) = col2(i_sg)
-               end if
-            end do
-            do i_sg=1,n_s3
-               if (all(col_ind(1:n_s_tmp)/=col3(i_sg))) then
-                  n_s_tmp = n_s_tmp+1
-                  col_ind(n_s_tmp) = col3(i_sg)
-               end if
-            end do
-
-            ! Allocation
-            allocate(col_tmp(n_s_tmp))
-            allocate(S_tmp(n_s_tmp))
-
-            ! Initialization
-            S_tmp = zero
-
-            ! Copy 
-            do i_s=1,n_s_tmp
-               col_tmp(i_s) = col_ind(i_s)
+               ! Count number of different column indices
+               n_s_tmp = 0
                do i=1,3
-                  if (col_tmp(i_s)==mesh_src%order(ib(i))) S_tmp(i_s) = S_tmp(i_s)+af(i)
-                  do i_sg=1,n_s1
-                     if (col_tmp(i_s)==col1(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec1(i_sg,i)*ag(i,1)
-                  end do
-                  do i_sg=1,n_s2
-                     if (col_tmp(i_s)==col2(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec2(i_sg,i)*ag(i,2)
-                  end do
-                  do i_sg=1,n_s3
-                     if (col_tmp(i_s)==col3(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec3(i_sg,i)*ag(i,3)
+                  n_s_tmp = n_s_tmp+1
+                  col_ind(n_s_tmp) = ib(i)
+               end do
+               do i_sg=1,n_s1
+                  if (all(col_ind(1:n_s_tmp)/=col1(i_sg))) then
+                     n_s_tmp = n_s_tmp+1
+                     col_ind(n_s_tmp) = col1(i_sg)
+                  end if
+               end do
+               do i_sg=1,n_s2
+                  if (all(col_ind(1:n_s_tmp)/=col2(i_sg))) then
+                     n_s_tmp = n_s_tmp+1
+                     col_ind(n_s_tmp) = col2(i_sg)
+                  end if
+               end do
+               do i_sg=1,n_s3
+                  if (all(col_ind(1:n_s_tmp)/=col3(i_sg))) then
+                     n_s_tmp = n_s_tmp+1
+                     col_ind(n_s_tmp) = col3(i_sg)
+                  end if
+               end do
+
+               ! Allocation
+               allocate(col_tmp(n_s_tmp))
+               allocate(S_tmp(n_s_tmp))
+
+               ! Initialization
+               S_tmp = zero
+
+               ! Copy 
+               do i_s=1,n_s_tmp
+                  col_tmp(i_s) = col_ind(i_s)
+                  do i=1,3
+                     if (col_tmp(i_s)==ib(i)) S_tmp(i_s) = S_tmp(i_s)+af(i)
+                     do i_sg=1,n_s1
+                        if (col_tmp(i_s)==col1(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec1(i_sg,i)*ag(i,1)
+                     end do
+                     do i_sg=1,n_s2
+                        if (col_tmp(i_s)==col2(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec2(i_sg,i)*ag(i,2)
+                     end do
+                     do i_sg=1,n_s3
+                        if (col_tmp(i_s)==col3(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec3(i_sg,i)*ag(i,3)
+                     end do
                   end do
                end do
-            end do
 
-            ! Normalize weights
-            if (sum(S_tmp)>zero) S_tmp = S_tmp/sum(S_tmp)
-
-            ! Apply threshold
-            do i_s=1,n_s_tmp
-               if (inf(S_tmp(i_s),S_inf)) S_tmp(i_s) = zero
-            end do            
-
-            ! Copy into row/col/S if positive weights
-            positive = (sum(S_tmp)>zero)
-            if (positive) then
                ! Normalize weights
-               if (sum(S_tmp)>zero) S_tmp = S_tmp/sum(S_tmp)
+               if (sum(S_tmp)>zero) then
+                  S_tmp = S_tmp/sum(S_tmp)
+               else
+                  S_tmp = zero
+               end if
 
-               ! Copy
+               ! Apply threshold
                do i_s=1,n_s_tmp
-                  if (S_tmp(i_s)>zero) then
+                  if (inf(abs(S_tmp(i_s)),S_inf)) S_tmp(i_s) = zero
+               end do
+
+               ! Normalize weights
+               if (sum(S_tmp)>zero) then
+                  S_tmp = S_tmp/sum(S_tmp)
+               else
+                  S_tmp = zero
+               end if
+
+               ! Copy into row/col/S
+               do i_s=1,n_s_tmp
+                  if (abs(S_tmp(i_s))>zero) then
+                     found = .true.
                      n_s = n_s+1
                      row(n_s) = i_dst
                      col(n_s) = col_tmp(i_s)
                      S(n_s) = S_tmp(i_s)
                   end if
                end do
-            end if
-         else
-            ! C0 interpolation
-            if (valid) then
+
+               ! Release memory
+               deallocate(col_tmp)
+               deallocate(S_tmp)
+            else
+               ! C0 interpolation
+
                ! Normalize weights
-               if (sum(b)>zero) b = b/sum(b)
+               if (sum(b)>zero) then
+                  b = b/sum(b)
+               else
+                  b = zero
+               end if
 
                ! Apply threshold
                do i=1,3
                   if (inf(b(i),S_inf)) b(i) = zero
                end do
-            else
-               ! Set weights at zero
-               b = zero
-            end if
 
-            ! Copy into row/col/S if positive weights
-            positive = (sum(b)>zero)
-            if (positive) then
                ! Normalize weights
-               b = b/sum(b)
+               if (sum(b)>zero) then
+                  b = b/sum(b)
+               else
+                  b = zero
+               end if
 
-               ! Copy
+               ! Copy into row/col/S
                do i=1,3
                   if (b(i)>zero) then
+                     found = .true.
                      n_s = n_s+1
                      row(n_s) = i_dst
                      col(n_s) = ib(i)
@@ -1028,9 +1043,8 @@ do i_dst=1,n_dst
             end if
          end if
 
-         if (valid.and.(.not.positive)) then
+         if (valid.and.(.not.found)) then
             ! Find nearest valid neighbor
-            found = .false.
             next = 1
             do while (.not.found)
                ! Allocation

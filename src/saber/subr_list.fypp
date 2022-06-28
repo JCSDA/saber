@@ -359,7 +359,6 @@
 #:set subr_list = subr_list + ["mesh_init"]
 #:set subr_list = subr_list + ["mesh_dealloc"]
 #:set subr_list = subr_list + ["mesh_barycentric"]
-#:set subr_list = subr_list + ["mesh_interp_c1"]
 #:set subr_list = subr_list + ["mesh_compute_grad"]
 #:set subr_list = subr_list + ["mesh_count_bnda"]
 #:set subr_list = subr_list + ["mesh_get_bnda"]

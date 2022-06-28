@@ -26,9 +26,6 @@ end interface
 interface arcint
    module procedure ssrfpack_arcint
 end interface
-interface arcint_ori
-   module procedure ssrfpack_arcint_ori
-end interface
 interface arclen
    module procedure ssrfpack_arclen
 end interface
@@ -37,12 +34,6 @@ interface constr
 end interface
 interface fval
    module procedure ssrfpack_fval
-end interface
-interface fval_ori
-   module procedure ssrfpack_fval_ori
-end interface
-interface hval
-   module procedure ssrfpack_hval
 end interface
 
 !private TODO
@@ -140,76 +131,6 @@ BB1 = 1. - BB2
 
 END SUBROUTINE ssrfpack_arcint
 
-
-
-SUBROUTINE ssrfpack_arcint_ori (P,P1,P2,F1,F2,G1,G2, F,G,GN)
-real(kind_real) ::     P(3), P1(3), P2(3), F1, F2, G1(3), G2(3), &
-    &         F, G(3), GN
-INTEGER I, LUN
-real(kind_real) ::     A, AL, B1, B2, CM, CMM, CM2, DUMMY, D1, D2, E, &
-    &         EMS, E1, E2, GT, S, SB1, SB2, SIG, SINH, &
-    &         SINH2, SM, SM2, TAU1, TAU2, TM, TM1, TM2, TP1, &
-    &         TP2, TS, UN(3), UNORM
-DATA    LUN/6/
-UN(1) = P1(2)*P2(3) - P1(3)*P2(2)
-UN(2) = P1(3)*P2(1) - P1(1)*P2(3)
-UN(3) = P1(1)*P2(2) - P1(2)*P2(1)
-UNORM = SQRT(UN(1)*UN(1) + UN(2)*UN(2) + UN(3)*UN(3))
-IF (UNORM .EQ. 0.) GO TO 2
-!
-! Normalize UN.
-!
-DO 1 I = 1,3
-  UN(I) = UN(I)/UNORM
-    1   CONTINUE
-!
-! Compute tangential derivatives at the endpoints:
-!   TAU1 = (G1,UN X P1) = (G1,P2)/UNORM and
-!   TAU2 = (G2,UN X P2) = -(G2,P1)/UNORM.
-!
-TAU1 = (G1(1)*P2(1) + G1(2)*P2(2) + G1(3)*P2(3))/UNORM
-TAU2 =-(G2(1)*P1(1) + G2(2)*P1(2) + G2(3)*P1(3))/UNORM
-!
-! Compute arc-lengths A, AL.
-!
-A = ARCLEN(P1,P2)
-IF (A .EQ. 0.) GO TO 2
-AL = ARCLEN(P1,P)
-!
-! Compute local coordinates, slope, and second differences.
-!
-B2 = AL/A
-B1 = 1. - B2
-S = (F2-F1)/A
-D1 = S - TAU1
-D2 = TAU2 - S
-!
-! Hermite cubic interpolation.
-!
-  F = F1 + AL*(TAU1 + B2*(D1 + B1*(D1 - D2)))
-  GT = TAU1 + B2*(D1 + D2 + 3.*B1*(D1 - D2))
-!
-! Compute GN.
-!
-GN = B1*(UN(1)*G1(1) + UN(2)*G1(2) + UN(3)*G1(3)) + &
-    &      B2*(UN(1)*G2(1) + UN(2)*G2(2) + UN(3)*G2(3))
-!
-! Compute G = GT*(UN X P) + GN*UN.
-!
-G(1) = GT*(UN(2)*P(3) - UN(3)*P(2)) + GN*UN(1)
-G(2) = GT*(UN(3)*P(1) - UN(1)*P(3)) + GN*UN(2)
-G(3) = GT*(UN(1)*P(2) - UN(2)*P(1)) + GN*UN(3)
-RETURN
-!
-! P1 X P2 = 0.  Print an error message and terminate
-!   processing.
-!
-    2 WRITE (LUN,100) (P1(I),I=1,3), (P2(I),I=1,3)
-  100 FORMAT ('1','ERROR IN ARCINT -- P1 = ',2(F9.6,',  '), &
-    &         F9.6/1X,19X,'P2 = ',2(F9.6,',  '),F9.6)
-STOP
-END SUBROUTINE ssrfpack_arcint_ori
-
 real(kind_real) FUNCTION ssrfpack_arclen(P,Q)
 real(kind_real) ::  P(3), Q(3)
 !
@@ -272,10 +193,6 @@ ENDIF
 RETURN
 END function ssrfpack_arclen
 
-
-
-
-
 SUBROUTINE ssrfpack_constr (XK,YK,ZK, CX,SX,CY,SY)
 real(kind_real) ::  XK, YK, ZK, CX, SX, CY, SY
 !
@@ -329,8 +246,6 @@ ELSE
 ENDIF
 RETURN
 END subroutine ssrfpack_constr
-
-
 
 SUBROUTINE ssrfpack_fval (B1,B2,B3,V1,V2,V3,AF,AG)
 real(kind_real) ::  B1, B2, B3, V1(3), V2(3), V3(3), AF(3), AG(3,3)
@@ -637,272 +552,5 @@ AG(3,3) = &
 
 RETURN
 END subroutine ssrfpack_fval
-
-real(kind_real) FUNCTION ssrfpack_fval_ori (B1,B2,B3,V1,V2,V3,F1,F2,F3,G1,G2, &
-    &                     G3)
-real(kind_real) ::  B1, B2, B3, V1(3), V2(3), V3(3), F1, F2, F3, &
-    &      G1(3), G2(3), G3(3)
-!
-!***********************************************************
-!
-!                                              From SSRFPACK
-!                                            Robert J. Renka
-!                                  Dept. of Computer Science
-!                                       Univ. of North Texas
-!                                           renka@cs.unt.edu
-!                                                   05/09/92
-!
-!   Given data values and gradients at the three vertices of
-! a spherical triangle containing a point P, this routine
-! computes the value of F at P where F interpolates the ver-
-! tex data.  Along the triangle sides, the interpolatory
-! function F is the Hermite interpolatory tension spline
-! defined by the values and tangential gradient components
-! at the endpoints, and the gradient component normal to the
-! triangle side varies linearly with respect to arc-length
-! between the normal gradient components at the endpoints.
-! A first-order C-1 blending method is used on the underly-
-! ing planar triangle.  Since values and gradients on an arc
-! depend only on the vertex data, the method results in C-1
-! continuity when used to interpolate over a triangulation.
-!
-!   The blending method consists of taking F(P) to be a
-! weighted sum of the values at PP of three univariate Her-
-! mite interpolatory tension splines defined on the line
-! segments which join the vertices to the opposite sides and
-! pass through PP:  the central projection of P onto the
-! underlying planar triangle.  The tension factors for these
-! splines are obtained by linear interpolation between the
-! pair of tension factors associated with the triangle sides
-! which join at the appropriate vertex.
-!
-! On input:
-!
-!       B1,B2,B3 = Barycentric coordinates of PP with re-
-!                  spect to the (planar) underlying triangle
-!                  (V1,V2,V3), where PP is the central
-!                  projection of P onto this triangle.
-!
-!       V1,V2,V3 = Cartesian coordinates of the vertices of
-!                  a spherical triangle containing P.  V3
-!                  Left V1->V2.
-!
-!       F1,F2,F3 = Data values associated with the vertices.
-!
-!       G1,G2,G3 = Gradients associated with the vertices.
-!                  Gi is orthogonal to Vi for i = 1,2,3.
-!
-! Input parameters are not altered by this function.
-!
-! On output:
-!
-!       FVAL = Interpolated value at P.
-!
-! Each vector V above contains X, Y, and Z components in
-!   V(1), V(2), and V(3), respectively.
-!
-! SSRFPACK modules required by FVAL:  ARCINT, ARCLEN, HVAL
-!
-! Intrinsic function called by FVAL:  SQRT
-!
-!***********************************************************
-!
-INTEGER I
-real(kind_real) ::     C1, C2, C3, DS, DUM, DV, F, G(3), &
-    &         Q1(3), Q2(3), Q3(3), SIG, SUM, S1, S2, S3, &
-    &         U1(3), U2(3), U3(3), U1N, U2N, U3N, VAL
-!
-! Local parameters:
-!
-! C1,C2,C3 =    Coefficients (weight functions) of partial
-!                 interpolants.  C1 = 1 on the edge opposite
-!                 V1 and C1 = 0 on the other edges.  Simi-
-!                 larly for C2 and C3.  C1+C2+C3 = 1.
-! DS =          Directional derivative (scaled by distnace)
-!                 at U1, U2, or U3:  DS = (G,U1-V1)/U1N =
-!                 -(G,V1)/U1N on side opposite V1, where G/
-!                 U1N (plus an orthogonal component) is the
-!                 projection of G onto the planar triangle
-! DUM =         Dummy variable for calls to ARCINT
-! DV =          Directional derivatives (scaled by distance)
-!                 at a vertex:  D1 = (G1,U1-V1) = (G1,U1)
-! F,G =         Value and gradient at Q1 Q2, or Q3 obtained
-!                 by interpolation along one of the arcs of
-!                 the spherical triangle
-! I =           DO-loop index
-! Q1,Q2,Q3 =    Central projections of U1, U2, and U3 onto
-!                 the sphere and thus lying on an arc of the
-!                 spherical triangle
-! SIG =         Tension factor for a side-vertex (partial)
-!                 interpolant:  obtained by linear interpo-
-!                 lation applied to triangle side tensions
-! SUM =         Quantity used to normalize C1, C2, and C3
-! S1,S2,S3 =    Sums of pairs of barycentric coordinates:
-!                 used to compute U1, U2, U3, and SIG
-! U1,U2,U3 =    Points on the boundary of the planar trian-
-!                 gle and lying on the lines containing PP
-!                 and the vertices.  U1 is opposite V1, etc.
-! U1N,U2N,U3N = Quantities used to compute Q1, Q2, and Q3
-!                 (magnitudes of U1, U2, and U3)
-! VAL =         Local variable used to accumulate the con-
-!                 tributions to FVAL
-!
-!
-! Compute weight functions C1, C2, and C3.
-!
-C1 = B2*B3
-C2 = B3*B1
-C3 = B1*B2
-SUM = C1 + C2 + C3
-IF (SUM .LE. 0.) THEN
-!
-! P coincides with a vertex.
-!
-  ssrfpack_fval_ori = B1*F1 + B2*F2 + B3*F3
-  RETURN
-ENDIF
-!
-! Normalize C1, C2, and C3.
-!
-C1 = C1/SUM
-C2 = C2/SUM
-C3 = C3/SUM
-!
-! Compute (S1,S2,S3), (U1,U2,U3) and (U1N,U2N,U3N).
-!
-S1 = B2 + B3
-S2 = B3 + B1
-S3 = B1 + B2
-U1N = 0.
-U2N = 0.
-U3N = 0.
-DO 1 I = 1,3
-  U1(I) = (B2*V2(I) + B3*V3(I))/S1
-  U2(I) = (B3*V3(I) + B1*V1(I))/S2
-  U3(I) = (B1*V1(I) + B2*V2(I))/S3
-  U1N = U1N + U1(I)*U1(I)
-  U2N = U2N + U2(I)*U2(I)
-  U3N = U3N + U3(I)*U3(I)
-    1   CONTINUE
-!
-! Compute Q1, Q2, and Q3.
-!
-U1N = SQRT(U1N)
-U2N = SQRT(U2N)
-U3N = SQRT(U3N)
-DO 2 I = 1,3
-  Q1(I) = U1(I)/U1N
-  Q2(I) = U2(I)/U2N
-  Q3(I) = U3(I)/U3N
-    2   CONTINUE
-!
-! Compute interpolated value (VAL) at P by looping on
-!   triangle sides.
-!
-VAL = 0.
-!
-! Contribution from side opposite V1:
-!
-!   Compute value and gradient at Q1 by interpolating
-!     between V2 and V3.
-!
-CALL ARCINT_ori (Q1,V2,V3,F2,F3,G2,G3, F,G,DUM)
-!
-!   Add in the contribution.
-!
-DV = G1(1)*U1(1) + G1(2)*U1(2) + G1(3)*U1(3)
-DS = -(G(1)*V1(1) + G(2)*V1(2) + G(3)*V1(3))/U1N
-VAL = VAL + C1*HVAL(B1,F1,F,DV,DS)
-!
-! Contribution from side opposite V2:
-!
-!   Compute value and gradient at Q2 by interpolating
-!     between V3 and V1.
-!
-CALL ARCINT_ori (Q2,V3,V1,F3,F1,G3,G1, F,G,DUM)
-!
-!   Add in the contribution.
-!
-DV = G2(1)*U2(1) + G2(2)*U2(2) + G2(3)*U2(3)
-DS = -(G(1)*V2(1) + G(2)*V2(2) + G(3)*V2(3))/U2N
-VAL = VAL + C2*HVAL(B2,F2,F,DV,DS)
-!
-! Contribution from side opposite V3:
-!
-!   Compute interpolated value and gradient at Q3
-!     by interpolating between V1 and V2.
-!
-CALL ARCINT_ori (Q3,V1,V2,F1,F2,G1,G2, F,G,DUM)
-!
-!   Add in the final contribution.
-!
-DV = G3(1)*U3(1) + G3(2)*U3(2) + G3(3)*U3(3)
-DS = -(G(1)*V3(1) + G(2)*V3(2) + G(3)*V3(3))/U3N
-ssrfpack_fval_ori = VAL + C3*HVAL(B3,F3,F,DV,DS)
-RETURN
-END function ssrfpack_fval_ori
-
-real(kind_real) FUNCTION ssrfpack_hval (B,H1,H2,HP1,HP2)
-real(kind_real) ::  B, H1, H2, HP1, HP2
-!
-!***********************************************************
-!
-!                                              From SSRFPACK
-!                                            Robert J. Renka
-!                                  Dept. of Computer Science
-!                                       Univ. of North Texas
-!                                           renka@cs.unt.edu
-!                                                   11/21/96
-!
-!   Given a line segment P1-P2 containing a point P, along
-! with values and derivatives at the endpoints, this func-
-! tion returns the value H(P), where H is the Hermite inter-
-! polatory tension spline defined by the endpoint data.
-!
-! On input:
-!
-!       B = Local coordinate of P with respect to P1-P2:
-!           P = B*P1 + (1-B)*P2, and thus B = d(P,P2)/
-!           d(P1,P2), where d(P1,P2) is the distance between
-!           P1 and P2.  B < 0 or B > 1 results in extrapola-
-!           tion.
-!
-!       H1,H2 = Values interpolated at P1 and P2, respec-
-!               tively.
-!
-!       HP1,HP2 = Products of d(P1,P2) with first order der-
-!                 ivatives at P1 and P2, respectively.  HP1
-!                 may, for example, be the scalar product of
-!                 P2-P1 with a gradient at P1.
-!
-! Input parameters are not altered by this function.
-!
-! On output:
-!
-!       HVAL = Interpolated value H(P).
-!
-! SSRFPACK module required by HVAL:  SNHCSH
-!
-! Intrinsic functions called by HVAL:  ABS, EXP
-!
-!***********************************************************
-!
-real(kind_real) ::  B1, B2, CM, CM2, CMM, D1, D2, DUMMY, E, E1, E2, &
-    &      EMS, S, SB1, SB2, SM, SM2, TM, TM1, TM2, TS
-B1 = B
-B2 = 1. - B1
-!
-! Compute slope S and second differences D1 and D2 scaled
-!   by the separation between P1 and P2.
-!
-S = H2 - H1
-D1 = S - HP1
-D2 = HP2 - S
-!
-! Hermite cubic interpolation:
-!
-  ssrfpack_hval = H1 + B2*(HP1 + B2*(D1 + B1*(D1 - D2)))
-RETURN
-END function ssrfpack_hval
 
 end module tools_ssrfpack
