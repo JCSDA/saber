@@ -60,10 +60,10 @@ type(fckit_configuration) :: f_grid
 type(fieldset_type) :: f_universe_rad
 
 ! Interface
-call bump_registry%init()
+f_comm = fckit_mpi_comm(c_comm)
+call bump_registry%init(f_comm)
 call bump_registry%add(key_bump)
 call bump_registry%get(key_bump,bump)
-f_comm = fckit_mpi_comm(c_comm)
 f_afunctionspace = atlas_functionspace(c_afunctionspace)
 f_fieldset = atlas_fieldset(c_afieldset)
 f_conf = fckit_configuration(c_conf)

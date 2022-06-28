@@ -23,7 +23,7 @@ geometry:
   function space: StructuredColumns
   grid:
     type : regular_gaussian
-    N : 15
+    N : 20
   levels: 10
   halo: 3
 input variables: *vars

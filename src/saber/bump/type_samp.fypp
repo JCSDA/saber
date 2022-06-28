@@ -2012,7 +2012,7 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
 
    ! Release memory
    deallocate(c3a_free)
-endif
+end if
 
 ! Check sampling mask
 write(mpl%info,'(a7,a)') '','Check sampling mask: '

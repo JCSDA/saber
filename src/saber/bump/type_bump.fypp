@@ -596,7 +596,7 @@ implicit none
 class(bump_type),intent(inout) :: bump        !< BUMP
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 integer,intent(in) :: ie                      !< Member index
-integer,intent(in) :: iens                 !< Ensemble number
+integer,intent(in) :: iens                    !< Ensemble number
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom(iens)%nc0a,bump%geom(iens)%nl0,bump%nam%nv)
@@ -1705,7 +1705,7 @@ else
    call fieldset%add(afield)
 end if
 
-! Set fieldsets metadata
+! Set fieldset metadata
 call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
 
 ! Fieldset to Fortran on subset Sc0
@@ -1773,7 +1773,7 @@ else
    call fieldset%add(afield)
 end if
 
-! Set fieldsets metadata
+! Set fieldset metadata
 call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
 
 ! Fieldset to Fortran on subset Sc0
@@ -2511,6 +2511,9 @@ class(bump_type),intent(inout) :: bump !< BUMP
 integer :: ic0a,il0,iv
 real(kind_real) :: fld_min,fld_max
 real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
+real(kind_real) :: fld_c0a_sym(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
+real(kind_real) :: fld_c0a_req(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
+real(kind_real) :: fld_c0a_vert(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 type(fieldset_type) :: fieldset,fieldset_sym,fieldset_req,fieldset_vert
 
 ! Set name
@@ -2536,6 +2539,9 @@ fld_max = zss_maxval(fld_c0a)
 call bump%mpl%f_comm%allreduce(fld_min,fckit_mpi_min())
 call bump%mpl%f_comm%allreduce(fld_max,fckit_mpi_max())
 fld_c0a = fld_c0a/abs(fld_max-fld_min)
+fld_c0a_sym = fld_c0a-half
+fld_c0a_req = fld_c0a*req
+fld_c0a_vert = (one+fld_c0a)*(maxval(bump%geom(1)%vunitavg)-minval(bump%geom(1)%vunitavg))
 
 ! Create fieldset
 call fieldset%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
@@ -2548,10 +2554,9 @@ call fieldset_vert%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gma
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a-half,fieldset_sym)
-call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a*req,fieldset_req)
-call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,(one+fld_c0a)*(maxval(bump%geom(1)%vunitavg)-minval(bump%geom(1)%vunitavg)), &
- & fieldset_vert)
+call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a_sym,fieldset_sym)
+call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a_req,fieldset_req)
+call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a_vert,fieldset_vert)
 
 ! Set parameters
 do iv=1,bump%nam%nv

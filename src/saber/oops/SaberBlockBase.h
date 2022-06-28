@@ -47,16 +47,18 @@ class SaberBlockBase : public util::Printable, private boost::noncopyable {
   virtual void inverseMultiplyAD(atlas::FieldSet &) const = 0;
 
   bool iterativeInverse() const {return iterativeInverse_;}
+  const std::string name() const {return name_;}
  private:
   virtual void print(std::ostream &) const = 0;
   bool iterativeInverse_;
+  std::string name_;
 };
 
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
 SaberBlockBase<MODEL>::SaberBlockBase(const SaberBlockParametersBase & params)
-  : iterativeInverse_(params.iterativeInverse.value()) {}
+  : iterativeInverse_(params.iterativeInverse.value()), name_(params.saberBlockName.value()) {}
 
 // =============================================================================
 
@@ -153,7 +155,7 @@ SaberBlockBase<MODEL> * SaberBlockFactory<MODEL>::create(const Geometry_ & geom,
                                                          const State_& xb,
                                                          const State_ & fg) {
   oops::Log::trace() << "SaberBlockBase<MODEL>::create starting" << std::endl;
-  const std::string &id = params.saberBlockName.value().value();
+  const std::string id = params.saberBlockName.value();
   typename std::map<std::string, SaberBlockFactory<MODEL>*>::iterator jsb = getMakers().find(id);
   if (jsb == getMakers().end()) {
     oops::Log::error() << id << " does not exist in saber::SaberBlockFactory." << std::endl;

@@ -28,6 +28,7 @@ if( oops_FOUND )
     # Applications
     ErrorCovarianceTraining.h
     Randomization.h
+    SaberBlockTest.h
 
     )
 endif()

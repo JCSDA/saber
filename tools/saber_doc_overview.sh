@@ -11,7 +11,8 @@ rootdir=$1/..
 docdir=$2
 
 # Languages
-languages="*.cc *.fypp *.F90 *.h"
+lang=("*.c *.cc *.fypp *.F90 *.h" "*.txt" " *.py *.sh *.ksh" "*.yaml" "*.md")
+category=("Source" "Build" "Scripts" "Tests" "Miscellanous")
 
 cat<<EOF > ${docdir}/mainpage.h
 #ifndef DOCS_MAINPAGE_H_
@@ -34,57 +35,42 @@ EOF
 # Directory structure
 echo -e " * The SABER repository is organized as follows:" >> ${docdir}/mainpage.h
 dir=()
-name=()
+dirname=()
 cd ${rootdir}
 lev1=`ls -d */ 2> /dev/null`
 for dir1 in ${lev1}; do
    cd ${dir1}
    desc=`cat .description 2> /dev/null`
    echo -e " * - **"${dir1%?}"**: "${desc} >> ${docdir}/mainpage.h
-   list=`ls ${languages} 2> /dev/null`
-   if test -n "${list}"; then
-      name+=("${dir1%?}")
-   fi
+   dirname+=("${dir1%?}")
    lev2=`ls -d */ 2> /dev/null`
    for dir2 in ${lev2}; do
       cd ${dir2}
       desc=`cat .description 2> /dev/null`
       echo -e " *   - **"${dir2%?}"**: "${desc} >> ${docdir}/mainpage.h
-      list=`ls ${languages} 2> /dev/null`
-      if test -n "${list}"; then
-         dir+=("${dir1%?}/${dir2%?}")
-         name+=("${dir1%?}_${dir2%?}")
-      fi
+      dir+=("${dir1%?}/${dir2%?}")
+      dirname+=("${dir1%?}_${dir2%?}")
       lev3=`ls -d */ 2> /dev/null`
       for dir3 in ${lev3}; do
          cd ${dir3}
          desc=`cat .description 2> /dev/null`
          echo -e " *     - **"${dir3%?}"**: "${desc} >> ${docdir}/mainpage.h
-         list=`ls ${languages} 2> /dev/null`
-         if test -n "${list}"; then
-            dir+=("${dir1%?}/${dir2%?}/${dir3%?}")
-            name+=("${dir1%?}_${dir2%?}_${dir3%?}")
-         fi
+         dir+=("${dir1%?}/${dir2%?}/${dir3%?}")
+         dirname+=("${dir1%?}_${dir2%?}_${dir3%?}")
          lev4=`ls -d */ 2> /dev/null`
          for dir4 in ${lev4}; do
             cd ${dir4}
             desc=`cat .description 2> /dev/null`
             echo -e " *       - **"${dir4%?}"**: "${desc} >> ${docdir}/mainpage.h
-            list=`ls ${languages} 2> /dev/null`
-            if test -n "${list}"; then
-               dir+=("${dir1%?}/${dir2%?}/${dir3%?}/${dir4%?}")
-               name+=("${dir1%?}_${dir2%?}_${dir3%?}_${dir4%?}")
-            fi
+            dir+=("${dir1%?}/${dir2%?}/${dir3%?}/${dir4%?}")
+            dirname+=("${dir1%?}_${dir2%?}_${dir3%?}_${dir4%?}")
             lev5=`ls -d */ 2> /dev/null`
             for dir5 in ${lev5}; do
                cd ${dir5}
                desc=`cat .description 2> /dev/null`
                echo -e " *         - **"${dir5%?}"**: "${desc} >> ${docdir}/mainpage.h
-               list=`ls ${languages} 2> /dev/null`
-               if test -n "${list}"; then
-                  dir+=("${dir1%?}/${dir2%?}/${dir3%?}/${dir4%?}/${dir5%?}")
-                  name+=("${dir1%?}_${dir2%?}_${dir3%?}_${dir4%?}_${dir5%?}")
-               fi
+               dir+=("${dir1%?}/${dir2%?}/${dir3%?}/${dir4%?}/${dir5%?}")
+               dirname+=("${dir1%?}_${dir2%?}_${dir3%?}_${dir4%?}_${dir5%?}")
                cd ..
             done
             cd ..
@@ -97,20 +83,43 @@ for dir1 in ${lev1}; do
 done
 
 if type "cloc" > /dev/null ; then
-   echo -e " *" >> ${docdir}/mainpage.h
-
-   # Cloc report
-   for index in ${!dir[*]}; do
-      cloc --force-lang="Fortran 90",fypp --quiet --csv --exclude-lang=CMake --out=cloc_${name[$index]}.csv ${rootdir}/${dir[$index]}
-   done
-
    # Code size and characteristics
+   echo -e " *" >> ${docdir}/mainpage.h
    echo -e " * \section CLOC Code size and characteristics" >> ${docdir}/mainpage.h
    echo -e " * Code report obtained with [CLOC](https://github.com/AlDanial/cloc).\n" >> ${docdir}/mainpage.h
+
+   # Cloc reports
+   for index in ${!category[*]}; do
+      files=()
+      for language in ${lang[$index]}; do
+         new_files=`find ${rootdir} -name ${language}`
+         files+=("${new_files}")
+      done
+      cloc --force-lang="Fortran 90",fypp --unix --skip-uniqueness --quiet --csv --out=cloc_${category[$index]}.csv ${files[@]}
+   done
+   for index in ${!dir[*]}; do
+      files=()
+      for language in ${lang[0]}; do
+         list=`ls ${rootdir}/${dir[$index]}/${language} 2> /dev/null`
+         if test -n "${list}"; then
+            for file in ${list}; do
+               files+=("${file}")
+            done
+         fi
+      done
+      if test ${#files[@]} -gt 0; then
+         cloc --force-lang="Fortran 90",fypp --unix --skip-uniqueness --quiet --csv --out=cloc_${dirname[$index]}.csv ${files[@]}
+      fi
+   done
+
+   # Save IFS
    OLDIFS=$IFS
    IFS=,
-   for index in ${!dir[*]}; do
-      echo -e " * \subsection dir_${index} ${dir[$index]}" >> ${docdir}/mainpage.h
+
+   # Category report
+   echo -e " * \subsection categories By category" >> ${docdir}/mainpage.h
+   for index in ${!category[*]}; do
+      echo -e " * \subsubsection category_${index} ${category[$index]}" >> ${docdir}/mainpage.h
       i=0
       while read files language blank comment code dum ; do
          if test $i == 0 ; then
@@ -124,17 +133,55 @@ if type "cloc" > /dev/null ; then
             echo -e " * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|" >> ${docdir}/mainpage.h
          fi
          let i=i+1
-      done < cloc_${name[$index]}.csv
+      done < cloc_${category[$index]}.csv
       echo -e " *" >> ${docdir}/mainpage.h
+      if test "${index}" == "0"; then
+         echo -e " * Evolution of the number of lines of code for Fortran (red), C++ (blue) and Python (green)." >> ${docdir}/mainpage.h
+         echo -e " * \image html history.jpg" >> ${docdir}/mainpage.h
+         echo -e " *" >> ${docdir}/mainpage.h
+      fi
    done
-   IFS=$OLDIFS
+
+   # Directory report
+   echo -e " * \subsection detail By directory for source files" >> ${docdir}/mainpage.h
    for index in ${!dir[*]}; do
-      rm -f cloc_${name[$index]}.csv
+      if [ -e cloc_${dirname[$index]}.csv ] ; then
+         echo -e " * \subsubsection dir_${index} ${dir[$index]}" >> ${docdir}/mainpage.h
+         i=0
+         while read files language blank comment code dum ; do
+            if test $i == 0 ; then
+               ratio="${comment}/${code} ratio"
+            else
+               let ratio=100*comment/code
+               ratio="${ratio} %"
+            fi
+            echo -e " * | ${language} | ${files} | ${blank} | ${comment} | ${code} | ${ratio} |" >> ${docdir}/mainpage.h
+            if test $i == 0 ; then
+               echo -e " * |:--------:|:--------:|:--------:|:--------:|:--------:|:--------:|" >> ${docdir}/mainpage.h
+            fi
+            let i=i+1
+         done < cloc_${dirname[$index]}.csv
+         echo -e " *" >> ${docdir}/mainpage.h
+      fi
    done
+
+   # Remove reports
+   for index in ${!category[*]}; do
+      rm -f cloc_${category[$index]}.csv
+   done
+   for index in ${!dir[*]}; do
+      rm -f cloc_${dirname[$index]}.csv
+   done
+
+   # Reset IFS
+   IFS=$OLDIFS
 else
-   echo "WARNING: cloc not found: no cloc report"
+   echo "cloc not found: no cloc report"
 fi
 
 echo -e "*/" >> ${docdir}/mainpage.h
 echo -e "" >> ${docdir}/mainpage.h
 echo -e "#endif  // DOCS_MAINPAGE_H_" >> ${docdir}/mainpage.h
+
+# Copy image
+cp -f ${rootdir}/docs/history/history.jpg ${docdir}

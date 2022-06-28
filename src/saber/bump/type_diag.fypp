@@ -422,6 +422,7 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 ! Local variables
 integer :: ib,ic2a,icmp
 real(kind_real) :: rmse,norm
+real(kind_real),allocatable :: fit_iso(:,:,:)
 
 ! Set name
 @:set_name(diag_build_fit)
@@ -434,13 +435,16 @@ call mpl%flush
 
 do ib=1,bpar%nbe
    if (bpar%fit_block(ib)) then
+      ! Allocation
+      if (bpar%nc4(ib)==1) allocate(fit_iso(bpar%nc3(ib),bpar%nl0r(ib),geom%nl0))
+
       ! Build fit
       do ic2a=0,diag%nc2a
          ! Compute full fit
          if (bpar%nc4(ib)==1) then
             call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
- & diag%blk(ic2a,ib)%vunit,diag%blk(ic2a,ib)%ncmp,diag%blk(ic2a,ib)%a_l0,diag%blk(ic2a,ib)%rh_l0,diag%blk(ic2a,ib)%rv_l0, &
- & diag%blk(ic2a,ib)%fit(:,1,:,:))
+ & diag%blk(ic2a,ib)%vunit,diag%blk(ic2a,ib)%ncmp,diag%blk(ic2a,ib)%a_l0,diag%blk(ic2a,ib)%rh_l0,diag%blk(ic2a,ib)%rv_l0,fit_iso)
+            diag%blk(ic2a,ib)%fit(:,1,:,:) = fit_iso
          else
             call diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
  & geom%as,diag%blk(ic2a,ib)%vunit,diag%blk(ic2a,ib)%ncmp,diag%blk(ic2a,ib)%a_l0,diag%blk(ic2a,ib)%D11_l0, &
@@ -473,7 +477,8 @@ do ib=1,bpar%nbe
                if (bpar%nc4(ib)==1) then
                   call diag_iso_full(mpl,bpar%nc3(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib),geom%disth, &
  & diag%blk(ic2a,ib)%vunit,icmp,diag%blk(ic2a,ib)%a_l0(:,1:icmp),diag%blk(ic2a,ib)%rh_l0(:,1:icmp), &
- & diag%blk(ic2a,ib)%rv_l0(:,1:icmp),diag%blk(ic2a,ib)%fit_detail(:,1,:,:,icmp))
+ & diag%blk(ic2a,ib)%rv_l0(:,1:icmp),fit_iso)
+                  diag%blk(ic2a,ib)%fit_detail(:,1,:,:,icmp) = fit_iso
                else
                   call diag_tensor_full(mpl,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,bpar%l0rl0b_to_l0(:,:,ib), &
  & geom%disth,geom%as,diag%blk(ic2a,ib)%vunit,icmp,diag%blk(ic2a,ib)%a_l0(:,1:icmp),diag%blk(ic2a,ib)%D11_l0(:,1:icmp), &
@@ -483,6 +488,9 @@ do ib=1,bpar%nbe
             end do
          end do
       end if
+
+      ! Release memory
+      if (bpar%nc4(ib)==1) deallocate(fit_iso)
    end if
 end do
 

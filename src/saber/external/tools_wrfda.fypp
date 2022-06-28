@@ -114,6 +114,7 @@ real(kind_real),intent(out) :: eval(n)   !< Eigenvalues
 ! Local variables
 integer :: work,ierr,i
 real(kind_real) :: work_array(3*n-1),evec_copy(n,n),eval_copy(n)
+external :: dsyev
 
 ! Set name
 @:set_name(wrfda_da_eof_decomposition)

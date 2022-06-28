@@ -1199,24 +1199,26 @@ real(kind_real) :: prog
 ! Probe in
 @:probe_in()
 
-! Update progression array
-if (present(i)) mpl%done(i) = .true.
+if (mpl%nprog>0) then
+   ! Update progression array
+   if (present(i)) mpl%done(i) = .true.
 
-! Print message
-prog = hundred*real(count(mpl%done),kind_real)/real(mpl%nprog,kind_real)
-ithread = 0
-!$ ithread = omp_get_thread_num()
-do while ((int(prog)>mpl%progint).and.(ithread==0))
-   if (mpl%progint<100) then
-      if (mpl%progint<10) then
-         write(mpl%info,'(i2,a)') mpl%progint,'% '
-      else
-         write(mpl%info,'(i3,a)') mpl%progint,'% '
+   ! Print message
+   prog = hundred*real(count(mpl%done),kind_real)/real(mpl%nprog,kind_real)
+   ithread = 0
+   !$ ithread = omp_get_thread_num()
+   do while ((int(prog)>mpl%progint).and.(ithread==0))
+      if (mpl%progint<100) then
+         if (mpl%progint<10) then
+            write(mpl%info,'(i2,a)') mpl%progint,'% '
+         else
+            write(mpl%info,'(i3,a)') mpl%progint,'% '
+         end if
+         call mpl%flush(.false.)
       end if
-      call mpl%flush(.false.)
-   end if
-   mpl%progint = mpl%progint+ddis
-end do
+      mpl%progint = mpl%progint+ddis
+   end do
+end if
 
 ! Probe out
 @:probe_out()

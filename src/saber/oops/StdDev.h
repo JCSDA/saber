@@ -18,10 +18,10 @@
 #include "oops/base/Increment.h"
 #include "oops/base/State.h"
 #include "oops/base/Variables.h"
+#include "oops/util/FieldSetOperations.h"
 
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/util/atlasFieldSet.h"
 
 namespace oops {
   class Variables;
@@ -131,7 +131,7 @@ void StdDev<MODEL>::randomize(atlas::FieldSet & fset) const {
 template<typename MODEL>
 void StdDev<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  multiplyAtlasFieldSet(fset, stdDevFieldSet_);
+  util::FieldSetMultiply(fset, stdDevFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -140,7 +140,7 @@ void StdDev<MODEL>::multiply(atlas::FieldSet & fset) const {
 template<typename MODEL>
 void StdDev<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  divideAtlasFieldSet(fset, stdDevFieldSet_);
+  util::FieldSetDivide(fset, stdDevFieldSet_);
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 

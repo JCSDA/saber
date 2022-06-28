@@ -264,7 +264,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
   }
 
  private:
-  std::string appname() const {
+  std::string appname() const override {
     return "saber::ErrorCovarianceTraining<" + MODEL::name() + ">";
   }
 };

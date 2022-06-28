@@ -52,6 +52,7 @@ bump:
   nc1: 500
   nc3: 15
   ne: 50
+  ne_lr: 30
   new_hdiag: true
   nl0r: 10
   prefix: quench_error_covariance_training_bump_hdiag_hyb-rnd/test

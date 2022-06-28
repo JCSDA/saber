@@ -1,5 +1,7 @@
 # Link scripts
 list( APPEND test_files
+    saber_code_history.py
+    saber_code_history.sh
     saber_compare.sh
     saber_cpplint.py
     saber_doc_overview.sh

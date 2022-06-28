@@ -12,12 +12,16 @@
 ! Subroutine: tools_linkedlist_implementation_init
 !> Initialize the linked list
 !----------------------------------------------------------------------
-subroutine tools_linkedlist_implementation_init(self)
+subroutine tools_linkedlist_implementation_init(self,f_comm)
 
 implicit none
 
 ! Passed variable
-class(registry_type),intent(inout) :: self !< Registry
+class(registry_type),intent(inout) :: self       !< Registry
+type(fckit_mpi_comm),intent(in),target :: f_comm !< FCKIT MPI communicator wrapper
+
+! Get own FCKIT MPI communicator wrapper
+self%f_comm = f_comm
 
 ! Set count to zero and allocate the head of the list
 if ((.not.self%l_init).or.(.not.associated(self%head))) then
@@ -110,6 +114,8 @@ end function tools_linkedlist_implementation_has
 !----------------------------------------------------------------------
 function tools_linkedlist_implementation_get_key(self,index) result(key)
 
+use iso_fortran_env, only: output_unit
+
 implicit none
 
 ! Passed variables
@@ -124,8 +130,11 @@ integer :: i
 type(node_type),pointer :: next
 
 ! Check required index
-if (index<1) call abort
-if (index>self%count) call abort
+if ((index<1).or.(index>self%count)) then
+   write(output_unit,'(a)') '!!! ABORT in tools_linkedlist_implementation_get_key: index out of bounds'
+   call flush(output_unit)
+   call self%f_comm%abort(1)
+end if
 
 ! Note that the list starts from self%head%next
 next => self%head
@@ -148,6 +157,8 @@ end function tools_linkedlist_implementation_get_key
 !> Fetch element of the linked list by key
 !----------------------------------------------------------------------
 subroutine tools_linkedlist_implementation_get(self,key,ptr)
+
+use iso_fortran_env, only: output_unit
 
 implicit none
 
@@ -173,7 +184,11 @@ do while(associated(next))
 end do
 
 ! Abort if pointer is not found
-if (.not.associated(ptr)) call abort
+if (.not.associated(ptr)) then
+   write(output_unit,'(a)') '!!! ABORT in tools_linkedlist_implementation_get: pointer not found'
+   call flush(output_unit)
+   call self%f_comm%abort(1)
+end if
 
 end subroutine tools_linkedlist_implementation_get
 

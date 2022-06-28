@@ -81,7 +81,6 @@ createUMatrices(const oops::Variables & activeVars,
     covSpectralUMatrix_f90(params.toConfiguration(),
                            static_cast<int>(netCDFVar.size()),
                            netCDFVar.c_str(),
-                           static_cast<int>(modelLevels),
                            static_cast<int>(netCDFSpectralBins[i]),
                            sizeVec,
                            spectralUMatrix1D[0]);

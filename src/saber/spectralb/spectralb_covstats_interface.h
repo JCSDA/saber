@@ -30,7 +30,6 @@ void covSpectralUMatrix_f90(
   const char *,
   const int &,
   const int &,
-  const int &,
   float &);
 
 }  // extern "C"

@@ -331,6 +331,11 @@ if( SABER_TEST_OOPS )
                             LIBS    quench
                                     saber )
 
+    ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
+                            SOURCES mains/quenchSaberBlockTest.cc
+                            LIBS    quench
+                                    saber )
+
     ecbuild_add_executable( TARGET  saber_quench_dirac.x
                             SOURCES mains/quenchDirac.cc
                             LIBS    quench
@@ -746,6 +751,19 @@ if( SABER_TEST_OOPS )
         endif()
     endforeach()
 
+    # Adjoint/inverse tests
+    foreach( test ${saber_test_oops} )
+        string( FIND ${test} "quench_saber_block_test" quench )
+        if( quench MATCHES 0 )
+            ecbuild_add_test( TARGET saber_test_${test}
+                              MPI ${mpi}
+                              OMP ${omp}
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
+                              ARGS testinput/${test}.yaml
+                              DEPENDS saber_quench_saber_block_test.x )
+        endif()
+    endforeach()
+
     # Dirac tests
     foreach( test ${saber_test_oops} )
         string( FIND ${test} "quench_dirac" quench )
@@ -806,6 +824,19 @@ if( SABER_TEST_SPECTRALB )
   # QUENCH tests
   set( mpi 1 )
   set( omp 1 )
+
+  # Adjoint/inverse tests
+  foreach( test ${saber_test_spectralb} )
+      string( FIND ${test} "quench_saber_block_test" quench )
+      if( quench MATCHES 0 )
+          ecbuild_add_test( TARGET saber_test_${test}
+                            MPI ${mpi}
+                            OMP ${omp}
+                            COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
+                            ARGS testinput/${test}.yaml
+                            DEPENDS saber_quench_saber_block_test.x )
+      endif()
+  endforeach()
 
   # Dirac tests
   foreach( test ${saber_test_spectralb} )

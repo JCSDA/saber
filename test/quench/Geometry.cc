@@ -136,7 +136,7 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
 
   // Copy extra fields
   extraFields_ = atlas::FieldSet();
-  atlas::Field vunit = other.extraFields()->field("vunit");
+  atlas::Field vunit = (*other.extraFields())["vunit"];
   extraFields_->add(vunit);
 }
 // -------------------------------------------------------------------------------------------------
