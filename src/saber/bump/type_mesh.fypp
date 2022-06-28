@@ -628,10 +628,10 @@ real(kind_real),intent(in) :: field(mesh%n) !< Field
 real(kind_real),intent(out) :: val  !< Value
 
 ! Local variables
-integer :: nn_index(1),ib(3),ierr,i_s,n_s1,n_s2,n_s3,i,j
-real(kind_real) :: xyz(3),b(3),p1(3),p2(3),p3(3),f(mesh%n),g(3,3),val_ori,af(3),ag(3,3)
-integer,allocatable :: col1(:),col2(:),col3(:)
-real(kind_real),allocatable :: Svec1(:,:),Svec2(:,:),Svec3(:,:)
+integer :: nn_index(1),ib(3),ierr,i_s,i_sg,n_s1,n_s2,n_s3,i,j,n_s
+real(kind_real) :: xyz(3),b(3),p1(3),p2(3),p3(3),g(3,3),val_ori,af(3),ag(3,3)
+integer,allocatable :: col1(:),col2(:),col3(:),col(:),col_ind(:)
+real(kind_real),allocatable :: Svec1(:,:),Svec2(:,:),Svec3(:,:),S(:)
 
 ! Set name
 @:set_name(mesh_interp_c1)
@@ -657,48 +657,63 @@ p1 = (/mesh%x(ib(1)),mesh%y(ib(1)),mesh%z(ib(1))/)
 p2 = (/mesh%x(ib(2)),mesh%y(ib(2)),mesh%z(ib(2))/)
 p3 = (/mesh%x(ib(3)),mesh%y(ib(3)),mesh%z(ib(3))/)
 
-! Transform field
-f = field(mesh%order)
-
-! Compute gradient estimates at the vertices
+! Compute coefficients
 call mesh%compute_grad(mpl,ib(1),n_s1,col1,Svec1)
-g(:,1) = zero
-do i_s=1,n_s1
-   g(:,1) = g(:,1)+Svec1(i_s,:)*field(col1(i_s))
-end do
 call mesh%compute_grad(mpl,ib(2),n_s2,col2,Svec2)
-g(:,2) = zero
-do i_s=1,n_s2
-   g(:,2) = g(:,2)+Svec2(i_s,:)*field(col2(i_s))
-end do
 call mesh%compute_grad(mpl,ib(3),n_s3,col3,Svec3)
-g(:,3) = zero
-do i_s=1,n_s3
-   g(:,3) = g(:,3)+Svec3(i_s,:)*field(col3(i_s))
+call fval(b(1),b(2),b(3),p1,p2,p3,af,ag)
+
+! Count number of different column indices
+allocate(col_ind(3*(1+mesh%maxcols)))
+n_s = 0
+do i=1,3
+   n_s = n_s+1
+   col_ind(n_s) = mesh%order(ib(i))
+end do
+do i_sg=1,n_s1
+   if (all(col_ind(1:n_s)/=col1(i_sg))) then
+      n_s = n_s+1
+      col_ind(n_s) = col1(i_sg)
+   end if
+end do
+do i_sg=1,n_s2
+   if (all(col_ind(1:n_s)/=col2(i_sg))) then
+      n_s = n_s+1
+      col_ind(n_s) = col2(i_sg)
+   end if
+end do
+do i_sg=1,n_s3
+   if (all(col_ind(1:n_s)/=col3(i_sg))) then
+      n_s = n_s+1
+      col_ind(n_s) = col3(i_sg)
+   end if
 end do
 
+allocate(col(n_s))
+allocate(S(n_s))
 
+S = zero
 
-call fval(b(1),b(2),b(3),p1,p2,p3,af,ag)
-val = zero
-
-i_s = 0
-do i=1,3
-   i_s = i_s+1
-   col(i_s) = mesh%order_inv(ib(i))
-   S(i_s) = af(i)
-   do j=1,3
-      i_s = i_s+1
-      ! TODO: HERE 
-      val = val+ag(j,i)*g(j,i)
+do i_s=1,n_s
+   col(i_s) = col_ind(i_s)
+   do i=1,3
+      if (col(i_s)==mesh%order(ib(i))) S(i_s) = S(i_s)+af(i)
+      do i_sg=1,n_s1
+         if (col(i_s)==col1(i_sg)) S(i_s) = S(i_s)+Svec1(i_sg,i)*ag(i,1)
+      end do
+      do i_sg=1,n_s2
+         if (col(i_s)==col2(i_sg)) S(i_s) = S(i_s)+Svec2(i_sg,i)*ag(i,2)
+      end do
+      do i_sg=1,n_s3
+         if (col(i_s)==col3(i_sg)) S(i_s) = S(i_s)+Svec3(i_sg,i)*ag(i,3)
+      end do
    end do
 end do
 
-
-! Get interpolated value
-val_ori = fval_ori(b(1),b(2),b(3),p1,p2,p3,f(ib(1)),f(ib(2)),f(ib(3)),g(:,1),g(:,2),g(:,3))
-
-print*, "val_ori",val-val_ori
+val = zero
+do i_s=1,n_s
+   val = val+S(i_s)*field(col(i_s))
+end do
 
 ! Probe out
 @:probe_out()
@@ -714,17 +729,17 @@ subroutine mesh_compute_grad(mesh,mpl,i,n_s,col,Svec_tot)
 implicit none
 
 ! Passed variables
-class(mesh_type),intent(in) :: mesh     !< Mesh
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-integer,intent(in) :: i                 !< Index
-integer,intent(out) :: n_s
-integer,allocatable,intent(inout) :: col(:)
-real(kind_real),allocatable,intent(inout) :: Svec_tot(:,:)
+class(mesh_type),intent(in) :: mesh                        !< Mesh
+type(mpl_type),intent(inout) :: mpl                        !< MPI data
+integer,intent(in) :: i                                    !< Index
+integer,intent(out) :: n_s                                 !< Operator size
+integer,allocatable,intent(inout) :: col(:)                !< Input indices
+real(kind_real),allocatable,intent(inout) :: Svec_tot(:,:) !< Coefficients
 
 ! Local variables
 integer :: j,jnext,knext,i_s
 integer,allocatable :: k(:)
-real(kind_real) :: cx,sx,cy,sy,xc,yc,zc,gamma,wgt,wgt_sum
+real(kind_real) :: cx,sx,cy,sy,gamma,wgt,wgt_sum
 real(kind_real),allocatable :: xp(:),yp(:),zp(:)
 real(kind_real),allocatable :: Svec(:,:),Svectmp(:,:)
 
@@ -736,9 +751,6 @@ real(kind_real),allocatable :: Svec(:,:),Svectmp(:,:)
 
 ! Construct the rotation
 call constr(mesh%x(i),mesh%y(i),mesh%z(i),cx,sx,cy,sy)
-
-! Get rotated coordinates
-call aplyr(mesh%x(i),mesh%y(i),mesh%z(i),cx,sx,cy,sy,xc,yc,zc)
 
 ! Allocation
 allocate(k(mesh%rows(i)%cols))
@@ -761,7 +773,6 @@ do j=1,mesh%rows(i)%cols
 end do
 
 ! Initialization
-
 wgt_sum = zero
 
 ! Initialize row/col
@@ -789,21 +800,21 @@ do j=1,mesh%rows(i)%cols
    ! Compute plane's normal vector components 
    ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
    ! Warning: in second equation of (8) for beta, "y"s should be "x"s
-   gamma = (xp(j)-xc)*(yp(jnext)-yc)-(xp(jnext)-xc)*(yp(j)-yc)
+   gamma = xp(j)*yp(jnext)-xp(jnext)*yp(j)
    if (abs(gamma)>zero) then
       Svectmp = zero
       do i_s=1,n_s
          if (col(i_s)==i) then
-            Svectmp(i_s,1) = Svectmp(i_s,1)+(yp(j)-yc)+(yc-yp(jnext))
-            Svectmp(i_s,2) = Svectmp(i_s,2)+(xp(jnext)-xc)+(xc-xp(j))
+            Svectmp(i_s,1) = Svectmp(i_s,1)+yp(j)-yp(jnext)
+            Svectmp(i_s,2) = Svectmp(i_s,2)+xp(jnext)-xp(j)
          end if
          if (col(i_s)==k(j)) then
-            Svectmp(i_s,1) = Svectmp(i_s,1)+(yp(jnext)-yc)
-            Svectmp(i_s,2) = Svectmp(i_s,2)+(xc-xp(jnext))
+            Svectmp(i_s,1) = Svectmp(i_s,1)+yp(jnext)
+            Svectmp(i_s,2) = Svectmp(i_s,2)-xp(jnext)
          end if
          if (col(i_s)==knext) then
-            Svectmp(i_s,1) = Svectmp(i_s,1)+(yc-yp(j))
-            Svectmp(i_s,2) = Svectmp(i_s,2)+(xp(j)-xc)
+            Svectmp(i_s,1) = Svectmp(i_s,1)-yp(j)
+            Svectmp(i_s,2) = Svectmp(i_s,2)+xp(j)
          end if
       end do
       Svectmp = Svectmp/gamma
@@ -822,7 +833,7 @@ end do
 ! Averaged gradient components
 Svec = Svec/wgt_sum
 
-! Columns
+! Grid indices
 do i_s=1,n_s
    col(i_s) = mesh%order(col(i_s))
 end do
@@ -837,6 +848,8 @@ deallocate(k)
 deallocate(xp)
 deallocate(yp)
 deallocate(zp)
+deallocate(Svec)
+deallocate(Svectmp)
 
 ! Probe out
 @:probe_out()

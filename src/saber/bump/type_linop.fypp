@@ -63,10 +63,10 @@ contains
    procedure :: apply_ad => linop_apply_ad
    procedure :: add_op => linop_add_op
    procedure :: gather => linop_gather
-   procedure :: linop_interp_c0
+   procedure :: linop_interp
    procedure :: linop_interp_lat
    procedure :: linop_interp_nn
-   generic :: interp => linop_interp_c0,linop_interp_lat,linop_interp_nn
+   generic :: interp => linop_interp,linop_interp_lat,linop_interp_nn
 end type linop_type
 
 private
@@ -814,10 +814,10 @@ end if
 end subroutine linop_gather
 
 !----------------------------------------------------------------------
-! Subroutine: linop_interp_c0
-!> Compute horizontal interpolation (C0)
+! Subroutine: linop_interp
+!> Compute horizontal interpolation
 !----------------------------------------------------------------------
-subroutine linop_interp_c0(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
+subroutine linop_interp(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
  & n_dst,lon_dst,lat_dst,mask_dst,mesh_mask,ifmt)
 
 implicit none
@@ -841,15 +841,18 @@ type(mesh_type),intent(in) :: mesh_mask      !< Mask checking mesh
 integer,intent(in) :: ifmt                   !< Format indentation
 
 ! Local variables
-integer :: i_dst,i,n_s,i_s,next
-integer :: nn_index(1),ib(3),row(3*n_dst),col(3*n_dst)
-integer,allocatable :: nn_index_ext(:)
-real(kind_real) :: nn_dist(1),b(3),S(3*n_dst)
-logical :: valid,found,missing(n_dst)
+integer :: i_dst,i,n_s,i_s,next,i_sg
+integer :: nn_index(1),ib(3),n_s1,n_s2,n_s3,n_s_tmp
+integer,allocatable :: row(:),col(:),nn_index_ext(:),col1(:),col2(:),col3(:),col_ind(:),col_tmp(:)
+real(kind_real) :: nn_dist(1),b(3),p1(3),p2(3),p3(3),af(3),ag(3,3)
+real(kind_real),allocatable :: S(:),Svec1(:,:),Svec2(:,:),Svec3(:,:),S_tmp(:)
+logical :: valid,positive,found,missing(n_dst)
 character(len=7) :: cfmt
 
+logical,parameter :: c1 = .true.
+
 ! Set name
-@:set_name(linop_interp_c0)
+@:set_name(linop_interp)
 
 ! Probe in
 @:probe_in()
@@ -861,6 +864,20 @@ if (ifmt>0) then
    call mpl%flush(.false.)
    call mpl%prog_init(n_dst)
 end if
+
+! Allocation
+if (c1) then
+   ! C1 function
+   allocate(row(3*n_dst*(1+mesh_src%maxcols)))
+   allocate(col(3*n_dst*(1+mesh_src%maxcols)))
+   allocate(S(3*n_dst*(1+mesh_src%maxcols)))
+else
+   ! C0 function
+   allocate(row(3*n_dst))
+   allocate(col(3*n_dst))
+   allocate(S(3*n_dst))
+end if
+
 n_s = 0
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
@@ -871,6 +888,7 @@ do i_dst=1,n_dst
          ! Compute barycentric coordinates
          call mesh_src%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),tree_src,b,ib)
          valid = mpl%msv%isallnot(ib)
+         positive = .false.
 
          ! Check mask
          if (valid) then
@@ -886,29 +904,131 @@ do i_dst=1,n_dst
             end do
          end if
 
-         ! Compute barycentric weight
-         if (valid) then
-            ! Bilinear interpolation
-            if (sum(b)>zero) b = b/sum(b)
-            do i=1,3
-               if (inf(b(i),S_inf)) b(i) = zero
-            end do
-         else
-            b = zero
-         end if
+         if (c1) then
+            ! C1 function
 
-         ! Copy into row/col/S
-         if (sum(b)>zero) then
+            ! Normalize coordinates
             b = b/sum(b)
+
+            ! Vertices coordinates
+            p1 = (/mesh_src%x(ib(1)),mesh_src%y(ib(1)),mesh_src%z(ib(1))/)
+            p2 = (/mesh_src%x(ib(2)),mesh_src%y(ib(2)),mesh_src%z(ib(2))/)
+            p3 = (/mesh_src%x(ib(3)),mesh_src%y(ib(3)),mesh_src%z(ib(3))/)
+
+            ! Compute coefficients
+            call mesh_src%compute_grad(mpl,ib(1),n_s1,col1,Svec1)
+            call mesh_src%compute_grad(mpl,ib(2),n_s2,col2,Svec2)
+            call mesh_src%compute_grad(mpl,ib(3),n_s3,col3,Svec3)
+            call fval(b(1),b(2),b(3),p1,p2,p3,af,ag)
+
+            ! Count number of different column indices
+            allocate(col_ind(3*(1+mesh_src%maxcols)))
+            n_s_tmp = 0
             do i=1,3
-               if (b(i)>zero) then
-                  n_s = n_s+1
-                  row(n_s) = i_dst
-                  col(n_s) = ib(i)
-                  S(n_s) = b(i)
+               n_s_tmp = n_s_tmp+1
+               col_ind(n_s_tmp) = mesh_src%order(ib(i))
+            end do
+            do i_sg=1,n_s1
+               if (all(col_ind(1:n_s_tmp)/=col1(i_sg))) then
+                  n_s_tmp = n_s_tmp+1
+                  col_ind(n_s_tmp) = col1(i_sg)
                end if
             end do
+            do i_sg=1,n_s2
+               if (all(col_ind(1:n_s_tmp)/=col2(i_sg))) then
+                  n_s_tmp = n_s_tmp+1
+                  col_ind(n_s_tmp) = col2(i_sg)
+               end if
+            end do
+            do i_sg=1,n_s3
+               if (all(col_ind(1:n_s_tmp)/=col3(i_sg))) then
+                  n_s_tmp = n_s_tmp+1
+                  col_ind(n_s_tmp) = col3(i_sg)
+               end if
+            end do
+
+            ! Allocation
+            allocate(col_tmp(n_s_tmp))
+            allocate(S_tmp(n_s_tmp))
+
+            ! Initialization
+            S_tmp = zero
+
+            ! Copy 
+            do i_s=1,n_s_tmp
+               col_tmp(i_s) = col_ind(i_s)
+               do i=1,3
+                  if (col_tmp(i_s)==mesh_src%order(ib(i))) S_tmp(i_s) = S_tmp(i_s)+af(i)
+                  do i_sg=1,n_s1
+                     if (col_tmp(i_s)==col1(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec1(i_sg,i)*ag(i,1)
+                  end do
+                  do i_sg=1,n_s2
+                     if (col_tmp(i_s)==col2(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec2(i_sg,i)*ag(i,2)
+                  end do
+                  do i_sg=1,n_s3
+                     if (col_tmp(i_s)==col3(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec3(i_sg,i)*ag(i,3)
+                  end do
+               end do
+            end do
+
+            ! Normalize weights
+            if (sum(S_tmp)>zero) S_tmp = S_tmp/sum(S_tmp)
+
+            ! Apply threshold
+            do i_s=1,n_s_tmp
+               if (inf(S_tmp(i_s),S_inf)) S_tmp(i_s) = zero
+            end do            
+
+            ! Copy into row/col/S if positive weights
+            positive = (sum(S_tmp)>zero)
+            if (positive) then
+               ! Normalize weights
+               if (sum(S_tmp)>zero) S_tmp = S_tmp/sum(S_tmp)
+
+               ! Copy
+               do i_s=1,n_s_tmp
+                  if (S_tmp(i_s)>zero) then
+                     n_s = n_s+1
+                     row(n_s) = i_dst
+                     col(n_s) = col_tmp(i_s)
+                     S(n_s) = S_tmp(i_s)
+                  end if
+               end do
+            end if
          else
+            ! C0 interpolation
+            if (valid) then
+               ! Normalize weights
+               if (sum(b)>zero) b = b/sum(b)
+
+               ! Apply threshold
+               do i=1,3
+                  if (inf(b(i),S_inf)) b(i) = zero
+               end do
+            else
+               ! Set weights at zero
+               b = zero
+            end if
+
+            ! Copy into row/col/S if positive weights
+            positive = (sum(b)>zero)
+            if (positive) then
+               ! Normalize weights
+               b = b/sum(b)
+
+               ! Copy
+               do i=1,3
+                  if (b(i)>zero) then
+                     n_s = n_s+1
+                     row(n_s) = i_dst
+                     col(n_s) = ib(i)
+                     S(n_s) = b(i)
+                  end if
+               end do
+            end if
+         end if
+
+         if (valid.and.(.not.positive)) then
             ! Find nearest valid neighbor
             found = .false.
             next = 1
@@ -977,7 +1097,7 @@ linop%S = S(1:linop%n_s)
 ! Probe out
 @:probe_out()
 
-end subroutine linop_interp_c0
+end subroutine linop_interp
 
 !----------------------------------------------------------------------
 ! Subroutine: linop_interp_lat
@@ -1195,154 +1315,5 @@ linop%S = S(1:linop%n_s)
 @:probe_out()
 
 end subroutine linop_interp_nn
-
-!----------------------------------------------------------------------
-! Subroutine: linop_grad
-!> Compute gradient in cartesian coordinates
-!----------------------------------------------------------------------
-subroutine linop_grad(linop,mpl,n_src,mask_src,mesh_src)
-
-implicit none
-
-! Passed variables
-class(linop_type),intent(inout) :: linop !< Linear operator
-type(mpl_type),intent(inout) :: mpl      !< MPI data
-integer,intent(in) :: n_src              !< Source size
-logical,intent(in) :: mask_src(n_src)    !< Source mask
-type(mesh_type),intent(in) :: mesh_src   !< Mesh
-
-! Local variables
-integer :: i,j,jnext,knext,i_s,n_stmp,i_stmp,i_src
-integer,allocatable :: k(:),col(:)
-real(kind_real) :: cx,sx,cy,sy,gamma,wgt,wgt_sum
-real(kind_real),allocatable :: xp(:),yp(:),zp(:)
-real(kind_real),allocatable :: Svectmp(:,:),Svec(:,:)
-
-! Set name
-@:set_name(linop_grad)
-
-! Probe in
-@:probe_in()
-
-! Count maximum number of operations
-linop%n_s = 0
-do i=1,mesh_src%n
-   linop%n_s = linop%n_s+1
-   do j=1,mesh_src%rows(i)%cols
-      linop%n_s = linop%n_s+1
-   end do
-end do
-
-! Allocation
-call linop%alloc(3)
-
-! Initialization
-i_s = 0
-do i_src=1,n_src
-   if (mask_src(i_src)) then
-      ! Index in the mesh
-      i = mesh_src%order_inv(i_src)
-
-      ! Allocation
-      allocate(k(mesh_src%rows(i)%cols))
-      allocate(xp(mesh_src%rows(i)%cols))
-      allocate(yp(mesh_src%rows(i)%cols))
-      allocate(zp(mesh_src%rows(i)%cols))
-      n_stmp = mesh_src%rows(i)%cols+1
-      allocate(col(n_stmp))
-      allocate(Svectmp(n_stmp,2))
-      allocate(Svec(n_stmp,2))
-
-      ! Initialization
-      col(1) = i
-      do j=1,mesh_src%rows(i)%cols
-         col(j+1) = k(j)
-      end do
-      Svec = zero
-      wgt_sum = zero
-
-      ! Construct the rotation
-      call constr(mesh_src%x(i),mesh_src%y(i),mesh_src%z(i),cx,sx,cy,sy)
-
-      ! Loop over neigbors
-      do j=1,mesh_src%rows(i)%cols
-         ! Get index
-         k(j) = mesh_src%rows(i)%nodes(j)
-
-         ! Get rotated coordinates
-         call aplyr(mesh_src%x(k(j)),mesh_src%y(k(j)),mesh_src%z(k(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
-      end do
-
-      ! Loop over triangles
-      do j=1,mesh_src%rows(i)%cols
-         ! Get next neighbor
-         if (j<mesh_src%rows(i)%cols) then
-            jnext = j+1
-         else
-            jnext = 1
-         end if
-         knext = k(jnext)
-
-         ! Compute plane's normal vector components 
-         ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
-         ! Warning: in second equation of (8) for beta, "y"s should be "x"s
-         gamma = xp(j)*yp(jnext)-xp(jnext)*yp(j)
-         if (abs(gamma)>zero) then
-            Svectmp = zero
-            do i_stmp=1,n_stmp
-               if (col(i_stmp)==i) then
-                  Svectmp(i_stmp,1) = Svectmp(i_stmp,1)+yp(j)-yp(jnext)
-                  Svectmp(i_stmp,2) = Svectmp(i_stmp,2)+xp(jnext)-xp(j)
-               end if
-               if (col(i_stmp)==k(j)) then
-                  Svectmp(i_stmp,1) = Svectmp(i_stmp,1)+yp(jnext)
-                  Svectmp(i_stmp,2) = Svectmp(i_stmp,2)-xp(jnext)
-               end if
-               if (col(i_stmp)==knext) then
-                  Svectmp(i_stmp,1) = Svectmp(i_stmp,1)-yp(j)
-                  Svectmp(i_stmp,2) = Svectmp(i_stmp,2)+xp(j)
-               end if
-            end do
-            Svectmp = Svectmp/gamma
-
-            ! Weighted sum
-            wgt = two/abs(gamma)
-            do i_stmp=1,n_stmp
-               Svec(i_stmp,:) = Svec(i_stmp,:)+wgt*Svectmp(i_stmp,:)
-            end do
-            wgt_sum = wgt_sum+wgt
-         else
-            call mpl%abort('${subr}$','gamma should not be zero')
-         end if
-      end do
-
-      ! Averaged gradient components
-      Svec = Svec/wgt_sum
-
-      ! Copy to linop structure
-      do i_stmp=1,n_stmp
-         i_s = i_s+1
-         linop%row(i_s) = i_src
-         linop%col(i_s) = mesh_src%order(col(i_stmp))
-         linop%Svec(i_s,1) = cy*Svec(i_stmp,1)
-         linop%Svec(i_s,2) = cx*Svec(i_stmp,2)-sx*sy*Svec(i_stmp,1)
-         linop%Svec(i_s,2) = -sx*Svec(i_stmp,2)-cx*sy*Svec(i_stmp,1)
-      end do
-
-      ! Release memory
-      deallocate(k)
-      deallocate(xp)
-      deallocate(yp)
-      deallocate(zp)
-      deallocate(col)
-      deallocate(Svectmp)
-      deallocate(Svec)
-   end if
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine linop_grad
 
 end module type_linop
