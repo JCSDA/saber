@@ -16,7 +16,6 @@ use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,eq,infeq,sup
-use tools_ssrfpack, only: fval
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -841,15 +840,15 @@ type(mesh_type),intent(in) :: mesh_mask      !< Mask checking mesh
 integer,intent(in) :: ifmt                   !< Format indentation
 
 ! Local variables
-integer :: i_dst,i,n_s,i_s,next,i_sg
-integer :: nn_index(1),ib(3),n_s1,n_s2,n_s3,n_s_tmp
-integer,allocatable :: row(:),col(:),nn_index_ext(:),col1(:),col2(:),col3(:),col_ind(:),col_tmp(:)
-real(kind_real) :: nn_dist(1),b(3),p1(3),p2(3),p3(3),af(3),ag(3,3)
-real(kind_real),allocatable :: S(:),Svec1(:,:),Svec2(:,:),Svec3(:,:),S_tmp(:)
+integer :: i_dst,i,j,n_s,i_s,next,i_s_grad,i_src
+integer :: nn_index(1),ib(3),n_s_tmp
+integer,allocatable :: n_s_grad(:),col_grad(:,:),row(:),col(:),nn_index_ext(:),col_ind(:),col_tmp(:)
+real(kind_real) :: nn_dist(1),b(3),af(3),ag(3,3)
+real(kind_real),allocatable :: Svec_grad(:,:,:),S(:),S_tmp(:)
 logical :: valid,found,missing(n_dst)
 character(len=7) :: cfmt
 
-logical,parameter :: c1 = .true.
+logical,parameter :: c1 = .true. ! TODO: specific key for different interpolations
 
 ! Set name
 @:set_name(linop_interp)
@@ -868,6 +867,9 @@ end if
 ! Allocation
 if (c1) then
    ! C1 function
+   allocate(n_s_grad(n_src))
+   allocate(col_grad(1+mesh_src%maxcols,n_src))
+   allocate(Svec_grad(1+mesh_src%maxcols,3,n_src))
    allocate(col_ind(3*(1+mesh_src%maxcols)))
    allocate(row(3*n_dst*(1+mesh_src%maxcols)))
    allocate(col(3*n_dst*(1+mesh_src%maxcols)))
@@ -877,6 +879,17 @@ else
    allocate(row(3*n_dst))
    allocate(col(3*n_dst))
    allocate(S(3*n_dst))
+end if
+
+if (c1) then
+   ! Compute gradient coefficients
+   do i_src=1,n_src
+      if (mask_src(i_src)) then
+         call mesh_src%compute_grad(mpl,i_src,n_s_grad(i_src),col_grad(:,i_src),Svec_grad(:,:,i_src))
+      else
+         call mpl%abort('${subr}$','source mask not implemented for C1 interpolation')
+      end if
+   end do
 end if
 
 n_s = 0
@@ -910,21 +923,14 @@ do i_dst=1,n_dst
                ! C1 function
 
                ! Normalize coordinates
-               b = b/sum(b)
+               if (sum(b)>zero) then
+                  b = b/sum(b)
+               else
+                  b = zero
+               end if
 
-               ! Vertices coordinates
-               p1 = (/mesh_src%x(mesh_src%order_inv(ib(1))),mesh_src%y(mesh_src%order_inv(ib(1))), &
- & mesh_src%z(mesh_src%order_inv(ib(1)))/)
-               p2 = (/mesh_src%x(mesh_src%order_inv(ib(2))),mesh_src%y(mesh_src%order_inv(ib(2))), &
- & mesh_src%z(mesh_src%order_inv(ib(2)))/)
-               p3 = (/mesh_src%x(mesh_src%order_inv(ib(3))),mesh_src%y(mesh_src%order_inv(ib(3))), &
- & mesh_src%z(mesh_src%order_inv(ib(3)))/)
-
-               ! Compute coefficients
-               call mesh_src%compute_grad(mpl,mesh_src%order_inv(ib(1)),n_s1,col1,Svec1)
-               call mesh_src%compute_grad(mpl,mesh_src%order_inv(ib(2)),n_s2,col2,Svec2)
-               call mesh_src%compute_grad(mpl,mesh_src%order_inv(ib(3)),n_s3,col3,Svec3)
-               call fval(b(1),b(2),b(3),p1,p2,p3,af,ag)
+               ! Compute C1 interpolation coefficients
+               call mesh_src%compute_c1_coef(mpl,b,ib,af,ag)
 
                ! Count number of different column indices
                n_s_tmp = 0
@@ -932,23 +938,13 @@ do i_dst=1,n_dst
                   n_s_tmp = n_s_tmp+1
                   col_ind(n_s_tmp) = ib(i)
                end do
-               do i_sg=1,n_s1
-                  if (all(col_ind(1:n_s_tmp)/=col1(i_sg))) then
-                     n_s_tmp = n_s_tmp+1
-                     col_ind(n_s_tmp) = col1(i_sg)
-                  end if
-               end do
-               do i_sg=1,n_s2
-                  if (all(col_ind(1:n_s_tmp)/=col2(i_sg))) then
-                     n_s_tmp = n_s_tmp+1
-                     col_ind(n_s_tmp) = col2(i_sg)
-                  end if
-               end do
-               do i_sg=1,n_s3
-                  if (all(col_ind(1:n_s_tmp)/=col3(i_sg))) then
-                     n_s_tmp = n_s_tmp+1
-                     col_ind(n_s_tmp) = col3(i_sg)
-                  end if
+               do i=1,3
+                  do i_s_grad=1,n_s_grad(ib(i))
+                     if (all(col_ind(1:n_s_tmp)/=col_grad(i_s_grad,ib(i)))) then
+                        n_s_tmp = n_s_tmp+1
+                        col_ind(n_s_tmp) = col_grad(i_s_grad,ib(i))
+                     end if
+                  end do
                end do
 
                ! Allocation
@@ -963,14 +959,10 @@ do i_dst=1,n_dst
                   col_tmp(i_s) = col_ind(i_s)
                   do i=1,3
                      if (col_tmp(i_s)==ib(i)) S_tmp(i_s) = S_tmp(i_s)+af(i)
-                     do i_sg=1,n_s1
-                        if (col_tmp(i_s)==col1(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec1(i_sg,i)*ag(i,1)
-                     end do
-                     do i_sg=1,n_s2
-                        if (col_tmp(i_s)==col2(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec2(i_sg,i)*ag(i,2)
-                     end do
-                     do i_sg=1,n_s3
-                        if (col_tmp(i_s)==col3(i_sg)) S_tmp(i_s) = S_tmp(i_s)+Svec3(i_sg,i)*ag(i,3)
+                     do j=1,3
+                        do i_s_grad=1,n_s_grad(ib(j))
+                           if (col_tmp(i_s)==col_grad(i_s_grad,ib(j))) S_tmp(i_s) = S_tmp(i_s)+Svec_grad(i_s_grad,i,ib(j))*ag(i,j)
+                        end do
                      end do
                   end do
                end do
@@ -1107,6 +1099,17 @@ call linop%alloc
 linop%row = row(1:linop%n_s)
 linop%col = col(1:linop%n_s)
 linop%S = S(1:linop%n_s)
+
+! Release memory
+if (c1) then
+   deallocate(n_s_grad)
+   deallocate(col_grad)
+   deallocate(Svec_grad)
+   deallocate(col_ind)
+end if
+deallocate(row)
+deallocate(col)
+deallocate(S)
 
 ! Probe out
 @:probe_out()
