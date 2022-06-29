@@ -2,11 +2,12 @@ background:
   date: 2010-01-01T12:00:00Z
   state variables: &vars [var]
 bump:
+  c1_interp: true
   datadir: testdata
   forced_radii: true
   method: cor
   new_nicas: true
-  prefix: quench_error_covariance_training_bump_nicas/test
+  prefix: quench_error_covariance_training_bump_nicas_c1/test
   resol: 5.0
   rh:
     var: [4.0e6]
@@ -14,9 +15,9 @@ bump:
     var: [10]
   strategy: specific_univariate
   output:
-  - filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rh
+  - filepath: testdata/quench_error_covariance_training_bump_nicas_c1/cor_rh
     parameter: cor_rh
-  - filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rv
+  - filepath: testdata/quench_error_covariance_training_bump_nicas_c1/cor_rv
     parameter: cor_rv
   write_nicas_local: true
 geometry:
@@ -29,4 +30,4 @@ geometry:
 input variables: *vars
 
 test:
-  reference filename: testref/quench_error_covariance_training_bump_nicas/test.log.out
+  reference filename: testref/quench_error_covariance_training_bump_nicas_c1/test.log.out

@@ -745,8 +745,6 @@ if (nam%new_wind) then
    ! Nearest neighbor interpolation from subset Sc0 to regular grid
    write(mpl%info,'(a7,a)') '','Nearest neighbor interpolation from subset Sc0 to regular grid'
    call mpl%flush
-
-   ! Nearest neighbor interpolation from subset Sc0 to regular grid
    wind%interp_c0b_to_llw%prefix = 'interp_c0b_to_llw'
    call wind%interp_c0b_to_llw%interp(mpl,geom%nc0u,geom%gmask_hor_c0u,geom%tree_c0u,wind%nllw,lon_llw,lat_llw,gmask_llw,7)
 

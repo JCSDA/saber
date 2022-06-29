@@ -153,6 +153,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<bool> use_cgal{"use_cgal", this};
   // Write subset Sc0 fields (full grid) using BUMP I/O
   oops::OptionalParameter<bool> write_c0{"write_c0", this};
+  // C1 interpolation when the destination is the model grid
+  oops::OptionalParameter<bool> c1_interp{"c1_interp", this};
 
   // driver_param
 

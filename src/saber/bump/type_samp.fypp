@@ -2493,10 +2493,10 @@ do il0i=1,geom%nl0i
    il0 = geom%l0i_to_l0(il0i)
    write(samp%interp_c2b_to_c0a(il0i)%prefix,'(a,i3.3)') 'interp_c2b_to_c0a_',il0i
    if (samp%lat_bands) then
-      call samp%interp_c2b_to_c0a(il0i)%interp(mpl,samp%nc2,lat_c2,geom%nc0a,geom%lat_c0a,geom%gmask_c0a(:,il0),7)
+      call samp%interp_c2b_to_c0a(il0i)%interp(mpl,samp%nc2,lat_c2,geom%nc0a,geom%lat_c0a,geom%gmask_c0a(:,il0),7,nam%c1_interp)
    else
       call samp%interp_c2b_to_c0a(il0i)%interp(mpl,nam,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
- & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7)
+ & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7,nam%c1_interp)
    end if
 end do
 

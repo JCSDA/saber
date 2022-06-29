@@ -817,7 +817,7 @@ end subroutine linop_gather
 !> Compute horizontal interpolation
 !----------------------------------------------------------------------
 subroutine linop_interp(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
- & n_dst,lon_dst,lat_dst,mask_dst,mesh_mask,ifmt)
+ & n_dst,lon_dst,lat_dst,mask_dst,mesh_mask,ifmt,c1)
 
 implicit none
 
@@ -838,6 +838,7 @@ real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
 type(mesh_type),intent(in) :: mesh_mask      !< Mask checking mesh
 integer,intent(in) :: ifmt                   !< Format indentation
+logical,intent(in),optional :: c1            !< C1 interpolation
 
 ! Local variables
 integer :: i_dst,i,j,n_s,i_s,next,i_s_grad,i_src
@@ -845,16 +846,18 @@ integer :: nn_index(1),ib(3),n_s_tmp
 integer,allocatable :: n_s_grad(:),col_grad(:,:),row(:),col(:),nn_index_ext(:),col_ind(:),col_tmp(:)
 real(kind_real) :: nn_dist(1),b(3),af(3),ag(3,3)
 real(kind_real),allocatable :: Svec_grad(:,:,:),S(:),S_tmp(:)
-logical :: valid,found,missing(n_dst)
+logical :: lc1,valid,found,missing(n_dst)
 character(len=7) :: cfmt
-
-logical,parameter :: c1 = .true. ! TODO: specific key for different interpolations
 
 ! Set name
 @:set_name(linop_interp)
 
 ! Probe in
 @:probe_in()
+
+! Local flag
+lc1 = .false.
+if (present(c1)) lc1 = c1
 
 ! Compute interpolation
 if (ifmt>0) then
@@ -865,7 +868,7 @@ if (ifmt>0) then
 end if
 
 ! Allocation
-if (c1) then
+if (lc1) then
    ! C1 function
    allocate(n_s_grad(n_src))
    allocate(col_grad(1+mesh_src%maxcols,n_src))
@@ -881,7 +884,7 @@ else
    allocate(S(3*n_dst))
 end if
 
-if (c1) then
+if (lc1) then
    ! Compute gradient coefficients
    do i_src=1,n_src
       if (mask_src(i_src)) then
@@ -919,7 +922,7 @@ do i_dst=1,n_dst
          end if
 
          if (valid) then
-            if (c1) then
+            if (lc1) then
                ! C1 function
 
                ! Normalize coordinates
@@ -1101,7 +1104,7 @@ linop%col = col(1:linop%n_s)
 linop%S = S(1:linop%n_s)
 
 ! Release memory
-if (c1) then
+if (lc1) then
    deallocate(n_s_grad)
    deallocate(col_grad)
    deallocate(Svec_grad)
@@ -1120,7 +1123,7 @@ end subroutine linop_interp
 ! Subroutine: linop_interp_lat
 !> Compute horizontal interpolation (latitude bands)
 !----------------------------------------------------------------------
-subroutine linop_interp_lat(linop,mpl,n_src,lat_src,n_dst,lat_dst,mask_dst,ifmt)
+subroutine linop_interp_lat(linop,mpl,n_src,lat_src,n_dst,lat_dst,mask_dst,ifmt,c1)
 
 implicit none
 
@@ -1133,12 +1136,14 @@ integer,intent(in) :: n_dst                  !< Destination size
 real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
 integer,intent(in) :: ifmt                   !< Format indentation
+logical,intent(in),optional :: c1            !< C1 interpolation
 
 ! Local variables
 integer :: i_src,i_dst,n_s
 integer :: order(n_src)
 integer :: row(2*n_dst),col(2*n_dst)
 real(kind_real) :: lat_src_tmp(n_src),S(2*n_dst)
+logical :: lc1
 character(len=7) :: cfmt
 
 ! Set name
@@ -1146,6 +1151,11 @@ character(len=7) :: cfmt
 
 ! Probe in
 @:probe_in()
+
+! Local flag
+lc1 = .false.
+if (present(c1)) lc1 = c1
+if (lc1) call mpl%abort('${subr}$','C1 interpolation not implemented for latitude bands yet')
 
 ! Order source points
 lat_src_tmp = lat_src

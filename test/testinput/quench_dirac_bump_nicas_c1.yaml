@@ -7,9 +7,9 @@ background error:
     output variables: *vars
     bump:
       datadir: testdata
-      fname_nicas: quench_error_covariance_training_bump_nicas/test_nicas
+      fname_nicas: quench_error_covariance_training_bump_nicas_c1/test_nicas
       load_nicas_local: true
-      prefix: quench_dirac_bump_nicas/test
+      prefix: quench_dirac_bump_nicas_c1/test
       strategy: specific_univariate
 dirac:
   index: [500,1000,1500,2000]
@@ -26,7 +26,7 @@ initial condition:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
 output dirac:
-  filepath: testdata/quench_dirac_bump_nicas/dirac_%id%
+  filepath: testdata/quench_dirac_bump_nicas_c1/dirac_%id%
 
 test:
-  reference filename: testref/quench_dirac_bump_nicas/test.log.out
+  reference filename: testref/quench_dirac_bump_nicas_c1/test.log.out
