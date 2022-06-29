@@ -162,6 +162,8 @@ type nam_type
    logical :: vbal_pseudo_inv                                 !< Pseudo-inverse for auto-covariance
    integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
    real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
+   logical :: vbal_id                                         !< Identity vertical balance for tests
+   real(kind_real) :: vbal_id_coef(nvbalmax)                  !< Scalar coefficients for identity vertical balance
    logical :: forced_var                                      !< Force specific variance
    real(kind_real) :: stddev(nl0max,nvmax)                    !< Forced standard-deviation
    logical :: var_filter                                      !< Filter variance
@@ -414,6 +416,8 @@ end do
 nam%vbal_pseudo_inv = .false.
 nam%vbal_pseudo_inv_mmax = 0
 nam%vbal_pseudo_inv_var_th = zero
+nam%vbal_id = .false.
+nam%vbal_id_coef = one
 nam%forced_var = .false.
 nam%stddev = zero
 nam%var_filter = .false.
@@ -616,6 +620,8 @@ logical :: vbal_diag_reg(nvbalmax)
 logical :: vbal_pseudo_inv
 integer :: vbal_pseudo_inv_mmax
 real(kind_real) :: vbal_pseudo_inv_var_th
+logical :: vbal_id
+real(kind_real) :: vbal_id_coef(nvbalmax)
 logical :: forced_var
 real(kind_real) :: stddev(nl0max,nvmax)
 logical :: var_filter
@@ -785,6 +791,8 @@ namelist/diag_param/ &
  & vbal_pseudo_inv, &
  & vbal_pseudo_inv_mmax, &
  & vbal_pseudo_inv_var_th, &
+ & vbal_id, &
+ & vbal_id_coef, &
  & forced_var, &
  & stddev, &
  & var_filter, &
@@ -988,6 +996,8 @@ if (mpl%main) then
    vbal_pseudo_inv = .false.
    vbal_pseudo_inv_mmax = 0
    vbal_pseudo_inv_var_th = zero
+   vbal_id = .false.
+   vbal_id_coef = one
    forced_var = .false.
    stddev = zero
    var_filter = .false.
@@ -1194,6 +1204,8 @@ if (mpl%main) then
    nam%vbal_pseudo_inv = vbal_pseudo_inv
    nam%vbal_pseudo_inv_mmax = vbal_pseudo_inv_mmax
    nam%vbal_pseudo_inv_var_th = vbal_pseudo_inv_var_th
+   nam%vbal_id = vbal_id
+   nam%vbal_id_coef = vbal_id_coef
    nam%forced_var = forced_var
    nam%stddev = stddev
    nam%var_filter = var_filter
@@ -1406,6 +1418,8 @@ call mpl%f_comm%broadcast(nam%vbal_diag_reg,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_pseudo_inv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_pseudo_inv_mmax,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_pseudo_inv_var_th,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_id,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_id_coef,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_var,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%stddev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_filter,mpl%rootproc-1)
@@ -1773,6 +1787,16 @@ end if
 if (conf%has('vbal_pseudo_inv')) call conf%get_or_die('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 if (conf%has('vbal_pseudo_inv_mmax')) call conf%get_or_die('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 if (conf%has('vbal_pseudo_inv_var_th')) call conf%get_or_die('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
+if (conf%has('vbal_id')) call conf%get_or_die('vbal_id',nam%vbal_id)
+if (conf%has('vbal_id_coef')) then
+   call conf%get_or_die('vbal_id_coef',real_array)
+   if (size(real_array)>nvbalmax) then
+      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: vbal_id_coef size should be smaller than ',nvbalmax
+      call flush(output_unit)
+      call comm%abort(1)
+   end if
+   nam%vbal_id_coef(1:size(real_array)) = real_array
+end if
 if (conf%has('forced_var')) call conf%get_or_die('forced_var',nam%forced_var)
 if (conf%has('stddev')) then
    call conf%get_or_die('stddev',subconf)
@@ -2680,6 +2704,8 @@ call mpl%write('vbal_diag_reg',nam%nv*(nam%nv-1)/2,nam%vbal_diag_reg(1:nam%nv*(n
 call mpl%write('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 call mpl%write('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 call mpl%write('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
+call mpl%write('vbal_id',nam%vbal_id)
+call mpl%write('vbal_id_coef',nam%nv*(nam%nv-1)/2,nam%vbal_id_coef(1:nam%nv*(nam%nv-1)/2))
 call mpl%write('forced_var',nam%forced_var)
 profiles(1:nam%nl0*nam%nv) = reshape(nam%stddev(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
 call mpl%write('stddev',nam%nl0*nam%nv,profiles(1:nam%nl0*nam%nv))

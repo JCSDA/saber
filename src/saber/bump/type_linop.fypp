@@ -893,6 +893,9 @@ if (lc1) then
          call mpl%abort('${subr}$','source mask not implemented for C1 interpolation')
       end if
    end do
+
+   ! Average gradient coefficients
+   ! TODO
 end if
 
 n_s = 0
@@ -968,18 +971,6 @@ do i_dst=1,n_dst
                         end do
                      end do
                   end do
-               end do
-
-               ! Normalize weights
-               if (sum(S_tmp)>zero) then
-                  S_tmp = S_tmp/sum(S_tmp)
-               else
-                  S_tmp = zero
-               end if
-
-               ! Apply threshold
-               do i_s=1,n_s_tmp
-                  if (inf(abs(S_tmp(i_s)),S_inf)) S_tmp(i_s) = zero
                end do
 
                ! Normalize weights

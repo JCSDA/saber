@@ -374,6 +374,10 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<int> vbal_pseudo_inv_mmax{"vbal_pseudo_inv_mmax", this};
   // Variance threshold to compute the dominant mode for pseudo-inverse
   oops::OptionalParameter<double> vbal_pseudo_inv_var_th{"vbal_pseudo_inv_var_th", this};
+  // Identity vertical balance for tests
+  oops::OptionalParameter<bool> vbal_id{"vbal_id", this};
+  // Scalar coefficients for identity vertical balance
+  oops::OptionalParameter<std::vector<double>> vbal_id_coef{"vbal_id_coef", this};
   // Force specific variance
   oops::OptionalParameter<bool> forced_var{"forced_var", this};
   // Forced standard-deviation

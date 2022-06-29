@@ -1805,7 +1805,6 @@ call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 
 end subroutine bump_psichi_to_uv_ad
 
-
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_ncmp
 !> Get number of components
