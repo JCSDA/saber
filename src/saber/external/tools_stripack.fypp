@@ -37,6 +37,9 @@ end interface
 interface det
    module procedure stripack_det
 end interface
+interface getnp
+   module procedure stripack_getnp
+end interface
 interface insert
    module procedure stripack_insert
 end interface
@@ -66,7 +69,7 @@ interface trmesh
 end interface
 
 private
-public :: area,bnodes,trfind,trmesh
+public :: area,bnodes,getnp,trfind,trmesh
 
 contains
 
@@ -511,6 +514,178 @@ if (small(output,t1).or.small(output,t2).or.small(output,t3)) output = zero
 @:probe_out()
 
 end subroutine stripack_det
+
+subroutine stripack_getnp ( x, y, z, list, lptr, lend, l, npts, df, ier )
+! TODO: cleaning
+!*****************************************************************************80
+!
+!! GETNP gets the next nearest node to a given node.
+!
+!  Discussion:
+!
+!    Given a Delaunay triangulation of N nodes on the unit
+!    sphere and an array NPTS containing the indexes of L-1
+!    nodes ordered by angular distance from NPTS(1), this
+!    routine sets NPTS(L) to the index of the next node in the
+!    sequence -- the node, other than NPTS(1),...,NPTS(L-1),
+!    that is closest to NPTS(1).  Thus, the ordered sequence
+!    of K closest nodes to N1 (including N1) may be determined
+!    by K-1 calls to GETNP with NPTS(1) = N1 and L = 2,3,...,K
+!    for K >= 2.
+!
+!    The algorithm uses the property of a Delaunay triangula-
+!    tion that the K-th closest node to N1 is a neighbor of one
+!    of the K-1 closest nodes to N1.
+!
+!  Modified:
+!
+!    16 June 2007
+!
+!  Author:
+!
+!    Robert Renka
+!
+!  Reference:
+!
+!    Robert Renka,
+!    Algorithm 772: STRIPACK,
+!    Delaunay Triangulation and Voronoi Diagram on the Surface of a Sphere,
+!    ACM Transactions on Mathematical Software,
+!    Volume 23, Number 3, September 1997, pages 416-434.
+!
+!  Parameters:
+!
+!    Input, real ( kind = 8 ) X(N), Y(N), Z(N), the coordinates of the nodes.
+!
+!    Input, integer ( kind = 4 ) LIST(6*(N-2)), LPTR(6*(N-2)), LEND(N), the
+!    triangulation data structure, created by TRMESH.
+!
+!    Input, integer ( kind = 4 ) L, the number of nodes in the sequence on
+!    output.  2 <= L <= N.
+!
+!    Input/output, integer ( kind = 4 ) NPTS(L).  On input, the indexes of
+!    the L-1 closest nodes to NPTS(1) in the first L-1 locations.  On output,
+!    updated with the index of the L-th closest node to NPTS(1) in
+!    position L unless IER = 1.
+!
+!    Output, real ( kind = 8 ) DF, value of an increasing function (negative
+!    cosine) of the angular distance between NPTS(1) and NPTS(L) unless IER = 1.
+!
+!    Output, integer ( kind = 4 ) IER, error indicator:
+!    0, if no errors were encountered.
+!    1, if L < 2.
+!
+!  Local parameters:
+!
+!    DNB,DNP =  Negative cosines of the angular distances from
+!               N1 to NB and to NP, respectively
+!    I =        NPTS index and DO-loop index
+!    LM1 =      L-1
+!    LP =       LIST pointer of a neighbor of NI
+!    LPL =      Pointer to the last neighbor of NI
+!    N1 =       NPTS(1)
+!    NB =       Neighbor of NI and candidate for NP
+!    NI =       NPTS(I)
+!    NP =       Candidate for NPTS(L)
+!    X1,Y1,Z1 = Coordinates of N1
+!
+  implicit none
+
+  integer ( kind = 4 ) l
+
+  real ( kind = 8 ) df
+  real ( kind = 8 ) dnb
+  real ( kind = 8 ) dnp
+  integer ( kind = 4 ) i
+  integer ( kind = 4 ) ier
+  integer ( kind = 4 ) lend(*)
+  integer ( kind = 4 ) list(*)
+  integer ( kind = 4 ) lp
+  integer ( kind = 4 ) lpl
+  integer ( kind = 4 ) lptr(*)
+  integer ( kind = 4 ) n1
+  integer ( kind = 4 ) nb
+  integer ( kind = 4 ) ni
+  integer ( kind = 4 ) np
+  integer ( kind = 4 ) npts(l)
+  real ( kind = 8 ) x(*)
+  real ( kind = 8 ) x1
+  real ( kind = 8 ) y(*)
+  real ( kind = 8 ) y1
+  real ( kind = 8 ) z(*)
+  real ( kind = 8 ) z1
+
+  if ( l < 2 ) then
+    ier = 1
+    return
+  end if
+
+  ier = 0
+!
+!  Store N1 = NPTS(1) and mark the elements of NPTS.
+!
+  n1 = npts(1)
+  x1 = x(n1)
+  y1 = y(n1)
+  z1 = z(n1)
+
+  do i = 1, l-1
+    ni = npts(i)
+    lend(ni) = -lend(ni)
+  end do
+!
+!  Candidates for NP = NPTS(L) are the unmarked neighbors
+!  of nodes in NPTS.  DNP is initially greater than -cos(PI)
+!  (the maximum distance).
+!
+  dnp = 2.0D+00
+!
+!  Loop on nodes NI in NPTS.
+!
+  do i = 1, l-1
+
+    ni = npts(i)
+    lpl = -lend(ni)
+    lp = lpl
+!
+!  Loop on neighbors NB of NI.
+!
+    do
+
+      nb = abs ( list(lp) )
+!
+!  NB is an unmarked neighbor of NI.  Replace NP if NB is closer to N1.
+!
+      if ( 0 <= lend(nb) ) then
+        dnb = - ( x(nb) * x1 + y(nb) * y1 + z(nb) * z1 )
+        if ( dnb < dnp ) then
+          np = nb
+          dnp = dnb
+        end if
+      end if
+
+      lp = lptr(lp)
+
+      if ( lp == lpl ) then
+        exit
+      end if
+
+    end do
+
+  end do
+
+  npts(l) = np
+  df = dnp
+!
+!  Unmark the elements of NPTS.
+!
+  do i = 1, l-1
+    ni = npts(i)
+    lend(ni) = -lend(ni)
+  end do
+
+  return
+end subroutine stripack_getnp
 
 !----------------------------------------------------------------------
 ! Subroutine: stripack_insert

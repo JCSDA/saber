@@ -14,6 +14,7 @@ module tools_ssrfpack
 use tools_const, only: zero,one,two,three,four,six,pi
 use tools_kinds, only: kind_real
 use tools_repro, only: supeq
+use tools_stripack, only: getnp
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -21,6 +22,9 @@ implicit none
 
 interface aplyr
    module procedure ssrfpack_aplyr
+end interface
+interface aplyrt
+   module procedure ssrfpack_aplyrt
 end interface
 interface arcint
    module procedure ssrfpack_arcint
@@ -34,9 +38,21 @@ end interface
 interface fval
    module procedure ssrfpack_fval
 end interface
+interface givens
+   module procedure ssrfpack_givens
+end interface
+interface gradl
+   module procedure ssrfpack_gradl
+end interface
+interface rotate
+   module procedure ssrfpack_rotate
+end interface
+interface setup
+   module procedure ssrfpack_setup
+end interface
 
 private
-public :: aplyr,constr,fval
+public :: aplyr,constr,fval,gradl
 
 contains
 
@@ -83,6 +99,43 @@ if (zp<zero) call mpl%abort('${subr}$','rotated point under the equator')
 @:probe_out()
 
 end subroutine ssrfpack_aplyr
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_aplyrt
+!> Apply the inverse rotation R defined by CONSTR to a unit vector
+!----------------------------------------------------------------------
+subroutine ssrfpack_aplyrt(g1p,g2p,cx,sx,cy,sy,g)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: g1p   !< X-coordinate of the vector
+real(kind_real),intent(in) :: g2p   !< Y-coordinate of the vector
+real(kind_real),intent(in) :: cx    !< Element of the rotation matrix
+real(kind_real),intent(in) :: sx    !< Element of the rotation matrix
+real(kind_real),intent(in) :: cy    !< Element of the rotation matrix
+real(kind_real),intent(in) :: sy    !< Element of the rotation matrix
+real(kind_real),intent(out) :: g(3) !< Coordinates of the inverse rotated vector
+
+! Local variables
+real(kind_real) :: t
+
+! Set name
+@:set_name(ssrfpack_aplyrt)
+
+! Probe in
+@:probe_in()
+
+! Apply inverse rotation
+t = sy*g1p
+g(1) = cy*g1p
+g(2) = cx*g2p-sx*t
+g(3) = -sx*g2p-cx*t
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_aplyrt
 
 !----------------------------------------------------------------------
 ! Subroutine: stripack_arcint
@@ -220,7 +273,7 @@ end subroutine ssrfpack_constr
 
 !----------------------------------------------------------------------
 ! Subroutine: ssrfpack_fval
-!> Compute the C1 interpolation weights
+!> Compute the C1 interpolation operator (indices and weights)
 !----------------------------------------------------------------------
 subroutine ssrfpack_fval(mpl,b1,b2,b3,v1,v2,v3,af,ag)
 
@@ -477,6 +530,403 @@ end if
 ! Probe out
 @:probe_out()
 
-END subroutine ssrfpack_fval
+end subroutine ssrfpack_fval
+
+
+
+
+SUBROUTINE ssrfpack_GIVENS ( A,B, C,S)
+real(kind_real) ::  A, B, C, S
+!
+!***********************************************************
+!
+!                                              From SSRFPACK
+!                                            Robert J. Renka
+!                                  Dept. of Computer Science
+!                                       Univ. of North Texas
+!                                           renka@cs.unt.edu
+!                                                   05/09/92
+!
+!   This subroutine constructs the Givens plane rotation,
+!
+!           ( C  S)
+!       G = (     ) , where C*C + S*S = 1,
+!           (-S  C)
+!
+! which zeros the second component of the vector (A,B)**T
+! (transposed).  Subroutine ROTATE may be called to apply
+! the transformation to a 2 by N matrix.
+!
+!   This routine is identical to Subroutine SROTG from the
+! LINPACK BLAS (Basic Linear Algebra Subroutines).
+!
+! On input:
+!
+!       A,B = Components of the vector defining the rota-
+!             tion.  These are overwritten by values R
+!             and Z (described below) which define C and S.
+!
+! On output:
+!
+!       A = Signed Euclidean norm R of the input vector:
+!           R = +/-SQRT(A*A + B*B)
+!
+!       B = Value Z such that:
+!             C = SQRT(1-Z*Z) and S=Z if ABS(Z) .LE. 1, and
+!             C = 1/Z and S = SQRT(1-C*C) if ABS(Z) > 1.
+!
+!       C = +/-(A/R) or 1 if R = 0.
+!
+!       S = +/-(B/R) or 0 if R = 0.
+!
+! Modules required by GIVENS:  None
+!
+! Intrinsic functions called by GIVENS:  ABS, SQRT
+!
+!***********************************************************
+!
+real(kind_real) ::  AA, BB, R, U, V
+!
+! Local parameters:
+!
+! AA,BB = Local copies of A and B
+! R =     C*A + S*B = +/-SQRT(A*A+B*B)
+! U,V =   Variables used to scale A and B for computing R
+!
+AA = A
+BB = B
+IF (ABS(AA) .GT. ABS(BB)) THEN
+!
+! ABS(A) > ABS(B).
+!
+  U = AA + AA
+  V = BB/U
+  R = SQRT(.25 + V*V) * U
+  C = AA/R
+  S = V * (C + C)
+!
+! Note that R has the sign of A, C > 0, and S has
+!   SIGN(A)*SIGN(B).
+!
+  B = S
+  A = R
+ELSEIF (BB .NE. 0.) THEN
+!
+! ABS(A) .LE. ABS(B).
+!
+  U = BB + BB
+  V = AA/U
+!
+! Store R in A.
+!
+  A = SQRT(.25 + V*V) * U
+  S = BB/A
+  C = V * (S + S)
+!
+! Note that R has the sign of B, S > 0, and C has
+!   SIGN(A)*SIGN(B).
+!
+  B = 1.
+  IF (C .NE. 0.) B = 1./C
+ELSE
+!
+! A = B = 0.
+!
+  C = 1.
+  S = 0.
+ENDIF
+RETURN
+END subroutine ssrfpack_givens
+
+
+SUBROUTINE ssrfpack_gradl (mpl,N,K,X,Y,Z,W,LIST,LPTR,LEND,G)
+
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+
+INTEGER N, K, LIST(*), LPTR(*), LEND(N), IER
+real(kind_real) ::     X(N), Y(N), Z(N), W(N), G(3)
+
+
+
+INTEGER   LMN, LMX
+PARAMETER (LMN=10,  LMX=30)
+INTEGER I, IERR, IM1, IP1, J, JP1, KK, L, LM1, LMAX, &
+    &         LMIN, LNP, NN, NP, NPTS(LMX)
+real(kind_real) ::     A(6,6), AV, AVSQ, C, CX, CY, DF, DMIN, DTOL, &
+    &         DX, DY, RF, RIN, RTOL, S, SF, SUM, SX, SY, &
+    &         WK, WT, XP, YP, ZP
+!
+DATA    RTOL/1.E-6/, DTOL/.01/, SF/1./
+
+NN = N
+KK = K
+WK = W(KK)
+!
+! Check for errors and initialize LMIN, LMAX.
+!
+IF (NN .LT. 7  .OR.  KK .LT. 1  .OR.  KK .GT. NN) &
+    &    GO TO 13
+LMIN = MIN(LMN,NN)
+LMAX = MIN(LMX,NN)
+!
+! Compute NPTS, LNP, AVSQ, AV, and R.
+!   Set NPTS to the closest LMIN-1 nodes to K.  DF contains
+!   the negative Z component (in the rotated coordinate
+!   system) of the new node on return from GETNP.
+!
+SUM = 0.
+NPTS(1) = KK
+LM1 = LMIN - 1
+DO 1 LNP = 2,LM1
+  CALL GETNP (X,Y,Z,LIST,LPTR,LEND,LNP, NPTS, DF,IERR)
+  SUM = SUM + 1. - DF*DF
+    1   CONTINUE
+!
+!   Add additional nodes to NPTS until the increase in
+!     R = 1+RF is at least RTOL.
+!
+DO 2 LNP = LMIN,LMAX
+  CALL GETNP (X,Y,Z,LIST,LPTR,LEND,LNP, NPTS, RF,IERR)
+  IF (RF-DF .GE. RTOL) GO TO 3
+  SUM = SUM + 1. - RF*RF
+    2   CONTINUE
+!
+!   Use all LMAX nodes in the least squares fit.  R is
+!     arbitrarily increased by 5 percent.
+!
+RF = 1.05*RF + .05
+LNP = LMAX + 1
+!
+!   There are LNP-2 equations corresponding to nodes
+!     NPTS(2),...,NPTS(LNP-1).
+!
+    3 AVSQ = SUM/REAL(LNP-2,kind_real)
+AV = SQRT(AVSQ)
+RIN = 1./(1.+RF)
+!
+! Construct the rotation.
+!
+CALL CONSTR (X(KK),Y(KK),Z(KK), CX,SX,CY,SY)
+!
+! Set up the first 5 equations of the augmented regression
+!   matrix (transposed) as the columns of A, and zero out
+!   the lower triangle (upper triangle of A) with Givens
+!   rotations.
+!
+DO 5 I = 1,5
+  NP = NPTS(I+1)
+  CALL APLYR (mpl,X(NP),Y(NP),Z(NP),CX,SX,CY,SY, XP,YP,ZP)
+  WT = 1./(1.-ZP) - RIN
+  CALL SETUP (XP,YP,W(NP),WK,AV,AVSQ,WT, A(:,I))
+  IF (I .EQ. 1) GO TO 5
+  IM1 = I - 1
+  DO 4 J = 1,IM1
+    JP1 = J + 1
+    L = 6 - J
+    CALL GIVENS ( A(J,J),A(J,I), C,S)
+    CALL ROTATE (L,C,S, A(JP1:JP1+L-1,J),A(JP1:JP1+L-1,I) )
+    4     CONTINUE
+    5   CONTINUE
+!
+! Add the additional equations to the system using
+!   the last column of A.  I .LE. LNP.
+!
+I = 7
+    6   IF (I .EQ. LNP) GO TO 8
+  NP = NPTS(I)
+  CALL APLYR (mpl,X(NP),Y(NP),Z(NP),CX,SX,CY,SY, XP,YP,ZP)
+  WT = 1./(1.-ZP) - RIN
+  CALL SETUP (XP,YP,W(NP),WK,AV,AVSQ,WT, A(:,6))
+  DO 7 J = 1,5
+    JP1 = J + 1
+    L = 6 - J
+    CALL GIVENS ( A(J,J),A(J,6), C,S)
+    CALL ROTATE (L,C,S, A(JP1:JP1+L-1,J),A(JP1:JP1+L-1,6) )
+    7     CONTINUE
+  I = I + 1
+  GO TO 6
+!
+! Test the system for ill-conditioning.
+!
+    8 DMIN = MIN( ABS(A(1,1)),ABS(A(2,2)),ABS(A(3,3)), &
+    &             ABS(A(4,4)),ABS(A(5,5)) )
+IF (DMIN .GE. DTOL) GO TO 12
+IF (LNP .LE. LMAX) THEN
+!
+! Add another node to the system and increase R.
+!   I = LNP.
+!
+  LNP = LNP + 1
+  IF (LNP .LE. LMAX) CALL GETNP (X,Y,Z,LIST,LPTR,LEND, &
+    &                                  LNP,NPTS, RF,IERR)
+  RIN = 1./(1.05*(1.+RF))
+  GO TO 6
+ENDIF
+!
+! Stabilize the system by damping second partials.  Add
+!   multiples of the first three unit vectors to the first
+!   three equations.
+!
+DO 11 I = 1,3
+  A(I,6) = SF
+  IP1 = I + 1
+  DO 9 J = IP1,6
+    A(J,6) = 0.
+    9     CONTINUE
+  DO 10 J = I,5
+    JP1 = J + 1
+    L = 6 - J
+    CALL GIVENS ( A(J,J),A(J,6), C,S)
+    CALL ROTATE (L,C,S, A(JP1:JP1+L-1,J),A(JP1:JP1+L-1,6) )
+   10     CONTINUE
+   11   CONTINUE
+!
+! Test the linear portion of the stabilized system for
+!   ill-conditioning.
+!
+DMIN = MIN( ABS(A(4,4)),ABS(A(5,5)) )
+IF (DMIN .LT. DTOL) GO TO 14
+!
+! Solve the 2 by 2 triangular system for the estimated
+!   partial derivatives.
+!
+   12 DY = A(6,5)/A(5,5)
+DX = (A(6,4) - A(5,4)*DY)/A(4,4)/AV
+DY = DY/AV
+!
+! Rotate the gradient (DX,DY,0) back into the original
+!   coordinate system.
+!
+CALL APLYRT (DX,DY,CX,SX,CY,SY,G)
+return
+   13 call mpl%abort('${subr}$','N or K is outside its valid range')
+return
+   14 call mpl%abort('${subr}$','No unique solution due to collinear nodes')
+return
+END subroutine ssrfpack_gradl
+
+SUBROUTINE ssrfpack_rotate (N,C,S, X,Y )
+INTEGER N
+real(kind_real) ::     C, S, X(N), Y(N)
+!
+!***********************************************************
+!
+!                                              From SSRFPACK
+!                                            Robert J. Renka
+!                                  Dept. of Computer Science
+!                                       Univ. of North Texas
+!                                           renka@cs.unt.edu
+!                                                   09/01/88
+!
+!                                                ( C  S)
+!   This subroutine applies the Givens rotation  (     )  to
+!                                                (-S  C)
+!                    (X(1) ... X(N))
+! the 2 by N matrix  (             ) .
+!                    (Y(1) ... Y(N))
+!
+!   This routine is identical to Subroutine SROT from the
+! LINPACK BLAS (Basic Linear Algebra Subroutines).
+!
+! On input:
+!
+!       N = Number of columns to be rotated.
+!
+!       C,S = Elements of the Givens rotation.  Refer to
+!             Subroutine GIVENS.
+!
+! The above parameters are not altered by this routine.
+!
+!       X,Y = Arrays of length .GE. N containing the compo-
+!             nents of the vectors to be rotated.
+!
+! On output:
+!
+!       X,Y = Arrays containing the rotated vectors (not
+!             altered if N < 1).
+!
+! Modules required by ROTATE:  None
+!
+!***********************************************************
+!
+INTEGER I
+real(kind_real) ::     XI, YI
+!
+DO 1 I = 1,N
+  XI = X(I)
+  YI = Y(I)
+  X(I) = C*XI + S*YI
+  Y(I) = -S*XI + C*YI
+    1   CONTINUE
+RETURN
+END subroutine ssrfpack_rotate
+
+
+SUBROUTINE ssrfpack_setup (XI,YI,WI,WK,S1,S2,WT, ROW)
+real(kind_real) ::  XI, YI, WI, WK, S1, S2, WT, ROW(6)
+!
+!***********************************************************
+!
+!                                              From SSRFPACK
+!                                            Robert J. Renka
+!                                  Dept. of Computer Science
+!                                       Univ. of North Texas
+!                                           renka@cs.unt.edu
+!                                                   05/09/92
+!
+!   This subroutine sets up the I-th row of an augmented
+! regression matrix for a weighted least squares fit of a
+! quadratic function Q(X,Y) to a set of data values Wi,
+! where Q(0,0) = Wk.  The first 3 columns (quadratic terms)
+! are scaled by 1/S2 and the fourth and fifth columns (lin-
+! ear terms) are scaled by 1/S1.
+!
+! On input:
+!
+!       XI,YI = Coordinates of node I.
+!
+!       WI = Data value at node I.
+!
+!       WK = Data value interpolated by Q at the origin.
+!
+!       S1,S2 = Inverse scale factors.
+!
+!       WT = Weight factor corresponding to the I-th
+!            equation.
+!
+!       ROW = Array of length 6.
+!
+! Input parameters are not altered by this routine.
+!
+! On output:
+!
+!       ROW = Array containing a row of the augmented re-
+!             gression matrix.
+!
+! Modules required by SETUP:  None
+!
+!***********************************************************
+!
+real(kind_real) ::  W1, W2
+!
+! Local parameters:
+!
+! W1 = Weighted scale factor for the linear terms
+! W2 = Weighted scale factor for the quadratic terms
+!
+W1 = WT/S1
+W2 = WT/S2
+ROW(1) = XI*XI*W2
+ROW(2) = XI*YI*W2
+ROW(3) = YI*YI*W2
+ROW(4) = XI*W1
+ROW(5) = YI*W1
+ROW(6) = (WI-WK)*WT
+RETURN
+END subroutine ssrfpack_setup
+
+
+
+
 
 end module tools_ssrfpack

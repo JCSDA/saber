@@ -16,7 +16,7 @@ use tools_func, only: fletcher32,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,ins
 use tools_kinds, only: kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf
-use tools_ssrfpack, only: aplyr,constr,fval
+use tools_ssrfpack, only: aplyr,constr,fval,gradl
 use tools_stripack, only: trfind,trmesh,bnodes
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -70,7 +70,9 @@ contains
    procedure :: dealloc => mesh_dealloc
    procedure :: barycentric => mesh_barycentric
    procedure :: compute_grad => mesh_compute_grad
-   procedure :: compute_c1_coef => mesh_compute_c1_coef
+   procedure :: compute_grad_op => mesh_compute_grad_op
+   procedure :: filter_grad_op => mesh_filter_grad_op
+   procedure :: compute_c1_interp_op => mesh_compute_c1_interp_op
    procedure :: count_bnda => mesh_count_bnda
    procedure :: get_bnda => mesh_get_bnda
    procedure :: check_arc => mesh_check_arc
@@ -614,7 +616,7 @@ end subroutine mesh_barycentric
 ! Subroutine: mesh_compute_grad
 !> Compute gradient
 !----------------------------------------------------------------------
-subroutine mesh_compute_grad(mesh,mpl,i,n_s,col,Svec_tot)
+subroutine mesh_compute_grad(mesh,mpl,i,field,g)
 
 implicit none
 
@@ -622,19 +624,58 @@ implicit none
 class(mesh_type),intent(in) :: mesh                       !< Mesh
 type(mpl_type),intent(inout) :: mpl                       !< MPI data
 integer,intent(in) :: i                                   !< Index
-integer,intent(out) :: n_s                                !< Operator size
-integer,intent(out) :: col(1+mesh%maxcols)                !< Input indices
-real(kind_real),intent(out) :: Svec_tot(1+mesh%maxcols,3) !< Coefficients
+real(kind_real),intent(in) :: field(mesh%n)               !< Field
+real(kind_real),intent(in) :: g(3)                        !< Gradient
+
+! Local variables
+integer :: ieff
+real(kind_real) :: field_eff(mesh%n)
+
+! Set name
+@:set_name(mesh_compute_grad)
+
+! Probe in
+@:probe_in()
+
+! Inverse order
+ieff = mesh%order_inv(i)
+
+! Transform field
+field_eff = field(mesh%order)
+
+! Compute gradient
+call gradl(mpl,mesh%n,ieff,mesh%x,mesh%y,mesh%z,field_eff,mesh%list,mesh%lptr,mesh%lend,g)
+
+! Probe out
+@:probe_out()
+
+end subroutine mesh_compute_grad
+
+!----------------------------------------------------------------------
+! Subroutine: mesh_compute_grad_op
+!> Compute gradient operator (indices and weights)
+!----------------------------------------------------------------------
+subroutine mesh_compute_grad_op(mesh,mpl,i,n_s,col,Svec)
+
+implicit none
+
+! Passed variables
+class(mesh_type),intent(in) :: mesh                   !< Mesh
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+integer,intent(in) :: i                               !< Index
+integer,intent(out) :: n_s                            !< Operator size
+integer,intent(out) :: col(1+mesh%maxcols)            !< Input indices
+real(kind_real),intent(out) :: Svec(1+mesh%maxcols,3) !< Coefficients
 
 ! Local variables
 integer :: j,jnext,knext,i_s,ieff
 integer,allocatable :: k(:)
 real(kind_real) :: cx,sx,cy,sy,gamma,wgt,wgt_sum
 real(kind_real),allocatable :: xp(:),yp(:),zp(:)
-real(kind_real),allocatable :: Svec(:,:),Svectmp(:,:)
+real(kind_real),allocatable :: Svec_tmp_1(:,:),Svec_tmp_2(:,:)
 
 ! Set name
-@:set_name(mesh_compute_grad)
+@:set_name(mesh_compute_grad_op)
 
 ! Probe in
 @:probe_in()
@@ -647,8 +688,8 @@ call constr(mesh%x(ieff),mesh%y(ieff),mesh%z(ieff),cx,sx,cy,sy)
 
 ! Allocation
 n_s = mesh%rows(ieff)%cols+1
-allocate(Svec(n_s,2))
-allocate(Svectmp(n_s,2))
+allocate(Svec_tmp_1(n_s,2))
+allocate(Svec_tmp_2(n_s,2))
 allocate(k(mesh%rows(ieff)%cols))
 allocate(xp(mesh%rows(ieff)%cols))
 allocate(yp(mesh%rows(ieff)%cols))
@@ -666,14 +707,14 @@ end do
 ! Initialization
 wgt_sum = zero
 
-! Initialize col/Svec
+! Initialize col and Svec_tmp_2
 i_s = 1
 col(i_s) = ieff
 do j=1,mesh%rows(ieff)%cols
    i_s = i_s+1
    col(i_s) = k(j)
 end do
-Svec = zero
+Svec_tmp_2 = zero
 
 ! Loop over triangles
 do j=1,mesh%rows(ieff)%cols
@@ -685,32 +726,32 @@ do j=1,mesh%rows(ieff)%cols
    end if
    knext = k(jnext)
 
-   ! Compute plane's normal vector components 
+   ! Compute plane's normal vector components
    ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
    ! Warning: in second equation of (8) for beta, "y"s should be "x"s
    gamma = xp(j)*yp(jnext)-xp(jnext)*yp(j)
    if (abs(gamma)>zero) then
-      Svectmp = zero
+      Svec_tmp_1 = zero
       do i_s=1,n_s
          if (col(i_s)==ieff) then
-            Svectmp(i_s,1) = Svectmp(i_s,1)+yp(j)-yp(jnext)
-            Svectmp(i_s,2) = Svectmp(i_s,2)+xp(jnext)-xp(j)
+            Svec_tmp_1(i_s,1) = Svec_tmp_1(i_s,1)+yp(j)-yp(jnext)
+            Svec_tmp_1(i_s,2) = Svec_tmp_1(i_s,2)+xp(jnext)-xp(j)
          end if
          if (col(i_s)==k(j)) then
-            Svectmp(i_s,1) = Svectmp(i_s,1)+yp(jnext)
-            Svectmp(i_s,2) = Svectmp(i_s,2)-xp(jnext)
+            Svec_tmp_1(i_s,1) = Svec_tmp_1(i_s,1)+yp(jnext)
+            Svec_tmp_1(i_s,2) = Svec_tmp_1(i_s,2)-xp(jnext)
          end if
          if (col(i_s)==knext) then
-            Svectmp(i_s,1) = Svectmp(i_s,1)-yp(j)
-            Svectmp(i_s,2) = Svectmp(i_s,2)+xp(j)
+            Svec_tmp_1(i_s,1) = Svec_tmp_1(i_s,1)-yp(j)
+            Svec_tmp_1(i_s,2) = Svec_tmp_1(i_s,2)+xp(j)
          end if
       end do
-      Svectmp = Svectmp/gamma
+      Svec_tmp_1 = Svec_tmp_1/gamma
 
       ! Weighted sum
       wgt = two/abs(gamma)
       do i_s=1,n_s
-         Svec(i_s,:) = Svec(i_s,:)+wgt*Svectmp(i_s,:)
+         Svec_tmp_2(i_s,:) = Svec_tmp_2(i_s,:)+wgt*Svec_tmp_1(i_s,:)
       end do
       wgt_sum = wgt_sum+wgt
    else
@@ -719,21 +760,21 @@ do j=1,mesh%rows(ieff)%cols
 end do
 
 ! Averaged gradient components
-Svec = Svec/wgt_sum
+Svec_tmp_2 = Svec_tmp_2/wgt_sum
 
 ! Grid indices
 do i_s=1,n_s
    col(i_s) = mesh%order(col(i_s))
 end do
 
-! Apply rotation
-Svec_tot(1:n_s,1) = cy*Svec(:,1)
-Svec_tot(1:n_s,2) = cx*Svec(:,2)-sx*sy*Svec(:,1)
-Svec_tot(1:n_s,3) = -sx*Svec(:,2)-cx*sy*Svec(:,1)
+! Apply inverse rotation
+Svec(1:n_s,1) = cy*Svec_tmp_2(:,1)
+Svec(1:n_s,2) = cx*Svec_tmp_2(:,2)-sx*sy*Svec_tmp_2(:,1)
+Svec(1:n_s,3) = -sx*Svec_tmp_2(:,2)-cx*sy*Svec_tmp_2(:,1)
 
 ! Release memory
-deallocate(Svec)
-deallocate(Svectmp)
+deallocate(Svec_tmp_1)
+deallocate(Svec_tmp_2)
 deallocate(k)
 deallocate(xp)
 deallocate(yp)
@@ -742,13 +783,74 @@ deallocate(zp)
 ! Probe out
 @:probe_out()
 
-end subroutine mesh_compute_grad
+end subroutine mesh_compute_grad_op
 
 !----------------------------------------------------------------------
-! Subroutine: mesh_compute_c1_coef
-!> Compute gradient
+! Subroutine: mesh_filter_grad_op
+!> Filter gradient operator (indices and weights)
 !----------------------------------------------------------------------
-subroutine mesh_compute_c1_coef(mesh,mpl,b,ib,af,ag)
+subroutine mesh_filter_grad_op(mesh,mpl,i,n_s,col,Svec,n_s_filt,col_filt,Svec_filt)
+
+implicit none
+
+! Passed variables
+class(mesh_type),intent(in) :: mesh                       !< Mesh
+type(mpl_type),intent(inout) :: mpl                       !< MPI data
+integer,intent(in) :: i                                   !< Index
+integer,intent(in) :: n_s(mesh%n)                         !< Operator size
+integer,intent(in) :: col(1+mesh%maxcols,mesh%n)          !< Input indices
+real(kind_real),intent(in) :: Svec(1+mesh%maxcols,3,mesh%n) !< Coefficients
+integer,intent(out) :: n_s_filt                                !< Operator size
+integer,intent(out) :: col_filt((1+mesh%maxcols)**2)             !< Input indices
+real(kind_real),intent(out) :: Svec_filt((1+mesh%maxcols)**2,3) !< Coefficients
+
+! Local variables
+integer :: j,k,ieff,keff
+
+! Set name
+@:set_name(mesh_filter_grad_op)
+
+! Probe in
+@:probe_in()
+
+! Inverse order
+ieff = mesh%order_inv(i)
+
+! Initialization
+n_s_filt = 0
+col_filt = 0
+Svec_filt = zero
+
+! Central point
+col_filt(n_s_filt+1:n_s_filt+n_s(i)) = col(1:n_s(i),i)
+Svec_filt(n_s_filt+1:n_s_filt+n_s(i),:) = Svec(1:n_s(i),:,i)
+n_s_filt = n_s_filt+n_s(i)
+
+! Neighbors
+do j=1,mesh%rows(ieff)%cols
+   ! Get indices
+   keff = mesh%rows(ieff)%nodes(j)
+   k = mesh%order(keff)
+
+   ! Add indices and weights
+   col_filt(n_s_filt+1:n_s_filt+n_s(k)) = col(1:n_s(k),k)
+   Svec_filt(n_s_filt+1:n_s_filt+n_s(k),:) = Svec(1:n_s(k),:,k)
+   n_s_filt = n_s_filt+n_s(k)
+end do
+
+! Normalize
+Svec_filt = Svec_filt/real(1+mesh%rows(ieff)%cols,kind_real)
+
+! Probe out
+@:probe_out()
+
+end subroutine mesh_filter_grad_op
+
+!----------------------------------------------------------------------
+! Subroutine: mesh_compute_c1_interp_op
+!> Compute C1 interpolation operator (indices and weights)
+!----------------------------------------------------------------------
+subroutine mesh_compute_c1_interp_op(mesh,mpl,b,ib,af,ag)
 
 implicit none
 
@@ -764,7 +866,7 @@ real(kind_real),intent(out) :: ag(3,3) !< Gradient weights
 real(kind_real) :: p1(3),p2(3),p3(3)
 
 ! Set name
-@:set_name(mesh_compute_grad)
+@:set_name(mesh_compute_c1_interp_op)
 
 ! Probe in
 @:probe_in()
@@ -780,7 +882,7 @@ call fval(mpl,b(1),b(2),b(3),p1,p2,p3,af,ag)
 ! Probe out
 @:probe_out()
 
-end subroutine mesh_compute_c1_coef
+end subroutine mesh_compute_c1_interp_op
 
 !----------------------------------------------------------------------
 ! Subroutine: mesh_count_bnda

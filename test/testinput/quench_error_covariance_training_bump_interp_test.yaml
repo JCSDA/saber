@@ -10,6 +10,7 @@ background:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
 bump:
+  c1_interp: true
   datadir: testdata
   forced_radii: true
   interp_test: true

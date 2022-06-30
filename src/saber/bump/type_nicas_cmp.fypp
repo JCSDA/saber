@@ -1239,7 +1239,7 @@ if (.not.allocated(nicas_cmp%a)) then
       allocate(nicas_cmp%a(geom%nc0a,geom%nl0))
 
       ! Amplitude square-root set to one
-      nicas_cmp%a = one      
+      nicas_cmp%a = one
    else
       ! Amplitude should loaded from the BUMP interface
       call mpl%abort('${subr}$','amplitude should be loaded from the BUMP interface')
@@ -2257,13 +2257,15 @@ type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il1,il0,ic1,ic0,iproc,ic1a,n,ix,iy,ic0u,ic0a,ic1u,ifmt,i_s,jc1,jproc,jc1u,ic1b,jc1b,jc0u,ic0b,nc0own,ic0own,jc0b
-integer :: is,isu,isa,isb
+integer :: is,isu,isa,isb,icomp
 integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:),order_inv_sa(:)
+integer,allocatable :: n_s_grad(:),col_grad(:,:),n_s_filt(:),col_filt(:,:)
 real(kind_real) :: nc1_real,lon,lat
-real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),fld_src_c1a(:),fld_src_c1b(:),fld_src_c1(:)
+real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2),g(3)
+real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),Svec_grad(:,:,:),Svec_filt(:,:,:)
+real(kind_real),allocatable :: fld_src_c1a(:),fld_src_c1b(:),fld_src_c1(:),fld_grad_c1a(:)
 logical :: valid
 logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
 logical,allocatable :: gmask_c1(:),gmask_c1a(:)
@@ -2766,6 +2768,13 @@ if (nam%interp_test) then
       allocate(fld_src_c1a(nicas_cmp%hor(il1)%nc1a))
       allocate(fld_src_c1b(nicas_cmp%hor(il1)%nc1b))
       allocate(fld_src_c1(nicas_cmp%hor(il1)%nc1))
+      allocate(fld_grad_c1a(nicas_cmp%hor(il1)%nc1a))
+      allocate(n_s_grad(nicas_cmp%hor(il1)%nc1))
+      allocate(col_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,nicas_cmp%hor(il1)%nc1))
+      allocate(Svec_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,3,nicas_cmp%hor(il1)%nc1))
+      allocate(n_s_filt(nicas_cmp%hor(il1)%nc1))
+      allocate(col_filt((1+nicas_cmp%hor(il1)%mesh_c1%maxcols)**2,nicas_cmp%hor(il1)%nc1))
+      allocate(Svec_filt((1+nicas_cmp%hor(il1)%mesh_c1%maxcols)**2,3,nicas_cmp%hor(il1)%nc1))
 
       ! Define source and reference destination with an analytical function
       do ic1a=1,nicas_cmp%hor(il1)%nc1a
@@ -2778,6 +2787,42 @@ if (nam%interp_test) then
          lat = geom%lat_c0a(ic0a)
          nicas_cmp%fld_ref(ic0a,il0) = cos(3.0_kind_real*lon)*cos(3.0_kind_real*lat)
       end do
+
+      if (.false.) then
+         ! Compute gradient
+         icomp = 3
+         call mpl%loc_to_glb(nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%nc1,nicas_cmp%hor(il1)%c1a_to_c1,fld_src_c1a, &
+ & fld_src_c1,.true.)
+         if (.false.) then
+            ! Compute gradient operator
+            do ic1=1,nicas_cmp%hor(il1)%nc1
+               call nicas_cmp%hor(il1)%mesh_c1%compute_grad_op(mpl,ic1,n_s_grad(ic1),col_grad(:,ic1),Svec_grad(:,:,ic1))
+            end do
+
+            ! Filter gradient operator
+            do ic1=1,nicas_cmp%hor(il1)%nc1
+               call nicas_cmp%hor(il1)%mesh_c1%filter_grad_op(mpl,ic1,n_s_grad,col_grad,Svec_grad, &
+ & n_s_filt(ic1),col_filt(:,ic1),Svec_filt(:,:,ic1))
+            end do
+
+            ! Apply operator
+            do ic1a=1,nicas_cmp%hor(il1)%nc1a
+               fld_grad_c1a(ic1a) = zero
+               ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
+               do i_s=1,n_s_filt(ic1)
+                  fld_grad_c1a(ic1a) = fld_grad_c1a(ic1a)+Svec_filt(i_s,icomp,ic1)*fld_src_c1(col_filt(i_s,ic1))
+               end do
+            end do
+            fld_src_c1a = fld_grad_c1a
+         else
+            ! Nonlinear estimation
+            do ic1a=1,nicas_cmp%hor(il1)%nc1a
+               ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
+               call nicas_cmp%hor(il1)%mesh_c1%compute_grad(mpl,ic1,fld_src_c1,g)
+               fld_src_c1a(ic1a) = g(icomp)
+            end do
+         end if
+      end if
 
       ! Apply interpolation
       call nicas_cmp%com_c1_AB(il1)%ext(mpl,fld_src_c1a,fld_src_c1b)
@@ -2793,6 +2838,10 @@ if (nam%interp_test) then
       deallocate(fld_src_c1a)
       deallocate(fld_src_c1b)
       deallocate(fld_src_c1)
+      deallocate(fld_grad_c1a)
+      deallocate(n_s_grad)
+      deallocate(col_grad)
+      deallocate(Svec_grad)
    end do
 end if
 
@@ -4683,7 +4732,7 @@ else
       ! Apply NICAS square-root adjoint
       call nicas_cmp%apply_sqrt_ad(mpl,geom,fld,cv_cmp)
 
-      ! Apply NICAS square-root 
+      ! Apply NICAS square-root
       call nicas_cmp%apply_sqrt(mpl,geom,cv_cmp,fld)
 
       ! Broadcast normalization value

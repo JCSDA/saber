@@ -843,9 +843,9 @@ logical,intent(in),optional :: c1            !< C1 interpolation
 ! Local variables
 integer :: i_dst,i,j,n_s,i_s,next,i_s_grad,i_src
 integer :: nn_index(1),ib(3),n_s_tmp
-integer,allocatable :: n_s_grad(:),col_grad(:,:),row(:),col(:),nn_index_ext(:),col_ind(:),col_tmp(:)
+integer,allocatable :: n_s_filt(:),n_s_grad(:),col_grad(:,:),col_filt(:,:),row(:),col(:),nn_index_ext(:),col_ind(:),col_tmp(:)
 real(kind_real) :: nn_dist(1),b(3),af(3),ag(3,3)
-real(kind_real),allocatable :: Svec_grad(:,:,:),S(:),S_tmp(:)
+real(kind_real),allocatable :: Svec_grad(:,:,:),Svec_filt(:,:,:),S(:),S_tmp(:)
 logical :: lc1,valid,found,missing(n_dst)
 character(len=7) :: cfmt
 
@@ -873,6 +873,9 @@ if (lc1) then
    allocate(n_s_grad(n_src))
    allocate(col_grad(1+mesh_src%maxcols,n_src))
    allocate(Svec_grad(1+mesh_src%maxcols,3,n_src))
+   allocate(n_s_filt(n_src))
+   allocate(col_filt((1+mesh_src%maxcols)**2,n_src))
+   allocate(Svec_filt((1+mesh_src%maxcols)**2,3,n_src))
    allocate(col_ind(3*(1+mesh_src%maxcols)))
    allocate(row(3*n_dst*(1+mesh_src%maxcols)))
    allocate(col(3*n_dst*(1+mesh_src%maxcols)))
@@ -885,17 +888,20 @@ else
 end if
 
 if (lc1) then
-   ! Compute gradient coefficients
+   ! Compute gradient operator
    do i_src=1,n_src
       if (mask_src(i_src)) then
-         call mesh_src%compute_grad(mpl,i_src,n_s_grad(i_src),col_grad(:,i_src),Svec_grad(:,:,i_src))
+         call mesh_src%compute_grad_op(mpl,i_src,n_s_grad(i_src),col_grad(:,i_src),Svec_grad(:,:,i_src))
       else
          call mpl%abort('${subr}$','source mask not implemented for C1 interpolation')
       end if
    end do
 
-   ! Average gradient coefficients
-   ! TODO
+   ! Filter gradient operator
+   do i_src=1,n_src
+      call mesh_src%filter_grad_op(mpl,i_src,n_s_grad,col_grad,Svec_grad, &
+ & n_s_filt(i_src),col_filt(:,i_src),Svec_filt(:,:,i_src))
+   end do
 end if
 
 n_s = 0
@@ -936,7 +942,7 @@ do i_dst=1,n_dst
                end if
 
                ! Compute C1 interpolation coefficients
-               call mesh_src%compute_c1_coef(mpl,b,ib,af,ag)
+               call mesh_src%compute_c1_interp_op(mpl,b,ib,af,ag)
 
                ! Count number of different column indices
                n_s_tmp = 0
@@ -960,7 +966,7 @@ do i_dst=1,n_dst
                ! Initialization
                S_tmp = zero
 
-               ! Copy 
+               ! Copy
                do i_s=1,n_s_tmp
                   col_tmp(i_s) = col_ind(i_s)
                   do i=1,3
