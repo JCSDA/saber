@@ -2261,7 +2261,7 @@ integer :: is,isu,isa,isb,icomp
 integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:),order_inv_sa(:)
-integer,allocatable :: n_s_grad(:),col_grad(:,:),n_s_filt(:),col_filt(:,:)
+integer,allocatable :: n_s_grad(:),col_grad(:,:)
 real(kind_real) :: nc1_real,lon,lat
 real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2),g(3)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),Svec_grad(:,:,:),Svec_filt(:,:,:)
@@ -2769,12 +2769,9 @@ if (nam%interp_test) then
       allocate(fld_src_c1b(nicas_cmp%hor(il1)%nc1b))
       allocate(fld_src_c1(nicas_cmp%hor(il1)%nc1))
       allocate(fld_grad_c1a(nicas_cmp%hor(il1)%nc1a))
-      allocate(n_s_grad(nicas_cmp%hor(il1)%nc1))
-      allocate(col_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,nicas_cmp%hor(il1)%nc1))
-      allocate(Svec_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,3,nicas_cmp%hor(il1)%nc1))
-      allocate(n_s_filt(nicas_cmp%hor(il1)%nc1))
-      allocate(col_filt((1+nicas_cmp%hor(il1)%mesh_c1%maxcols)**2,nicas_cmp%hor(il1)%nc1))
-      allocate(Svec_filt((1+nicas_cmp%hor(il1)%mesh_c1%maxcols)**2,3,nicas_cmp%hor(il1)%nc1))
+      allocate(n_s_grad(nicas_cmp%hor(il1)%nc1a))
+      allocate(col_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,nicas_cmp%hor(il1)%nc1a))
+      allocate(Svec_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,3,nicas_cmp%hor(il1)%nc1a))
 
       ! Define source and reference destination with an analytical function
       do ic1a=1,nicas_cmp%hor(il1)%nc1a
@@ -2795,22 +2792,16 @@ if (nam%interp_test) then
  & fld_src_c1,.true.)
          if (.false.) then
             ! Compute gradient operator
-            do ic1=1,nicas_cmp%hor(il1)%nc1
-               call nicas_cmp%hor(il1)%mesh_c1%compute_grad_op(mpl,ic1,n_s_grad(ic1),col_grad(:,ic1),Svec_grad(:,:,ic1))
-            end do
-
-            ! Filter gradient operator
-            do ic1=1,nicas_cmp%hor(il1)%nc1
-               call nicas_cmp%hor(il1)%mesh_c1%filter_grad_op(mpl,ic1,n_s_grad,col_grad,Svec_grad, &
- & n_s_filt(ic1),col_filt(:,ic1),Svec_filt(:,:,ic1))
+            do ic1a=1,nicas_cmp%hor(il1)%nc1
+               ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
+               call nicas_cmp%hor(il1)%mesh_c1%compute_grad_op(mpl,ic1,n_s_grad(ic1a),col_grad(:,ic1a),Svec_grad(:,:,ic1a))
             end do
 
             ! Apply operator
             do ic1a=1,nicas_cmp%hor(il1)%nc1a
                fld_grad_c1a(ic1a) = zero
-               ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
-               do i_s=1,n_s_filt(ic1)
-                  fld_grad_c1a(ic1a) = fld_grad_c1a(ic1a)+Svec_filt(i_s,icomp,ic1)*fld_src_c1(col_filt(i_s,ic1))
+               do i_s=1,n_s_grad(ic1a)
+                  fld_grad_c1a(ic1a) = fld_grad_c1a(ic1a)+Svec_grad(i_s,icomp,ic1a)*fld_src_c1(col_grad(i_s,ic1a))
                end do
             end do
             fld_src_c1a = fld_grad_c1a
