@@ -2135,19 +2135,33 @@ do iv=1,bump%nam%nv
       if (.not.allocated(bump%nicas(igeom)%dirac_bens)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       fld_c0a = bump%nicas(igeom)%dirac_bens(:,:,iv)
       found = .true.
-   case ('nicas_interp_test')
-      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
-      if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_int)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_int
-      found = .true.
    case ('nicas_interp_ref')
       if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
       if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
       if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
       if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ref)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ref
+      found = .true.
+   case ('nicas_interp_ssrf')
+      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
+      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
+      if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ssrf)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ssrf
+      found = .true.
+   case ('nicas_interp_op')
+      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
+      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
+      if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_op)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_op
+      found = .true.
+   case ('nicas_interp_ssrf_from_op')
+      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
+      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
+      if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ssrf_from_op)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ssrf_from_op
       found = .true.
    end select
 

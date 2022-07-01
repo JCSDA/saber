@@ -25,11 +25,17 @@ bump:
   strategy: specific_univariate
   output:
   - date: 2010-01-01T12:00:00Z
-    filepath: testdata/quench_error_covariance_training_bump_interp_test/nicas_interp_test
-    parameter: nicas_interp_test
-  - date: 2010-01-01T12:00:00Z
     filepath: testdata/quench_error_covariance_training_bump_interp_test/nicas_interp_ref
     parameter: nicas_interp_ref
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/quench_error_covariance_training_bump_interp_test/nicas_interp_ssrf
+    parameter: nicas_interp_ssrf
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/quench_error_covariance_training_bump_interp_test/nicas_interp_op
+    parameter: nicas_interp_op
+  - date: 2010-01-01T12:00:00Z
+    filepath: testdata/quench_error_covariance_training_bump_interp_test/nicas_interp_ssrf_from_op
+    parameter: nicas_interp_ssrf_from_op
   write_nicas_local: true
 
 test:

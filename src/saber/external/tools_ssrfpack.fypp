@@ -11,7 +11,7 @@
 !----------------------------------------------------------------------
 module tools_ssrfpack
 
-use tools_const, only: zero,one,two,three,four,six,pi
+use tools_const, only: zero,quarter,one,two,three,four,six,pi
 use tools_kinds, only: kind_real
 use tools_repro, only: supeq
 use tools_stripack, only: getnp
@@ -29,6 +29,9 @@ end interface
 interface arcint
    module procedure ssrfpack_arcint
 end interface
+interface arcint_op
+   module procedure ssrfpack_arcint_op
+end interface
 interface arclen
    module procedure ssrfpack_arclen
 end interface
@@ -38,11 +41,17 @@ end interface
 interface fval
    module procedure ssrfpack_fval
 end interface
+interface fval_op
+   module procedure ssrfpack_fval_op
+end interface
 interface givens
    module procedure ssrfpack_givens
 end interface
 interface gradl
    module procedure ssrfpack_gradl
+end interface
+interface hval
+   module procedure ssrfpack_hval
 end interface
 interface rotate
    module procedure ssrfpack_rotate
@@ -52,7 +61,7 @@ interface setup
 end interface
 
 private
-public :: aplyr,constr,fval,gradl
+public :: aplyr,constr,fval,fval_op,gradl
 
 contains
 
@@ -138,10 +147,10 @@ g(3) = -sx*g2p-cx*t
 end subroutine ssrfpack_aplyrt
 
 !----------------------------------------------------------------------
-! Subroutine: stripack_arcint
-!> Compute weights to interpolate value f and gradient vector g at p, between p1 and p2
+! Subroutine: ssrfpack_arcint_op
+!> Compute operator to interpolate value f and gradient vector g at p, between p1 and p2
 !----------------------------------------------------------------------
-subroutine ssrfpack_arcint(mpl,p,p1,p2,a,al,bb1,bb2,un,unorm)
+subroutine ssrfpack_arcint_op(mpl,p,p1,p2,a,al,bb1,bb2,un,unorm)
 
 implicit none
 
@@ -158,7 +167,7 @@ real(kind_real),intent(out) :: un(3) !< Interpolation coefficient
 real(kind_real),intent(out) :: unorm !< Interpolation coefficient
 
 ! Set name
-@:set_name(ssrfpack_arcint)
+@:set_name(ssrfpack_arcint_op)
 
 ! Probe in
 @:probe_in()
@@ -189,7 +198,77 @@ bb1 = one-bb2
 ! Probe out
 @:probe_out()
 
-end subroutine ssrfpack_arcint
+end subroutine ssrfpack_arcint_op
+
+
+SUBROUTINE ssrfpack_arcint(P,P1,P2,F1,F2,G1,G2, F,G,GN)
+real(kind_real) ::     P(3), P1(3), P2(3), F1, F2, G1(3), G2(3), &
+    &         F, G(3), GN
+INTEGER I, LUN
+real(kind_real) ::     A, AL, B1, B2, CM, CMM, CM2, DUMMY, D1, D2, E, &
+    &         EMS, E1, E2, GT, S, SB1, SB2, SIG, SINH, &
+    &         SINH2, SM, SM2, TAU1, TAU2, TM, TM1, TM2, TP1, &
+    &         TP2, TS, UN(3), UNORM
+DATA    LUN/6/
+UN(1) = P1(2)*P2(3) - P1(3)*P2(2)
+UN(2) = P1(3)*P2(1) - P1(1)*P2(3)
+UN(3) = P1(1)*P2(2) - P1(2)*P2(1)
+UNORM = SQRT(UN(1)*UN(1) + UN(2)*UN(2) + UN(3)*UN(3))
+IF (UNORM .EQ. 0.) GO TO 2
+!
+! Normalize UN.
+!
+DO 1 I = 1,3
+  UN(I) = UN(I)/UNORM
+    1   CONTINUE
+!
+! Compute tangential derivatives at the endpoints:
+!   TAU1 = (G1,UN X P1) = (G1,P2)/UNORM and
+!   TAU2 = (G2,UN X P2) = -(G2,P1)/UNORM.
+!
+TAU1 = (G1(1)*P2(1) + G1(2)*P2(2) + G1(3)*P2(3))/UNORM
+TAU2 =-(G2(1)*P1(1) + G2(2)*P1(2) + G2(3)*P1(3))/UNORM
+!
+! Compute arc-lengths A, AL.
+!
+A = ARCLEN(P1,P2)
+IF (A .EQ. 0.) GO TO 2
+AL = ARCLEN(P1,P)
+!
+! Compute local coordinates, slope, and second differences.
+!
+B2 = AL/A
+B1 = 1. - B2
+S = (F2-F1)/A
+D1 = S - TAU1
+D2 = TAU2 - S
+!
+! Hermite cubic interpolation.
+!
+  F = F1 + AL*(TAU1 + B2*(D1 + B1*(D1 - D2)))
+  GT = TAU1 + B2*(D1 + D2 + 3.*B1*(D1 - D2))
+!
+! Compute GN.
+!
+GN = B1*(UN(1)*G1(1) + UN(2)*G1(2) + UN(3)*G1(3)) + &
+    &      B2*(UN(1)*G2(1) + UN(2)*G2(2) + UN(3)*G2(3))
+!
+! Compute G = GT*(UN X P) + GN*UN.
+!
+G(1) = GT*(UN(2)*P(3) - UN(3)*P(2)) + GN*UN(1)
+G(2) = GT*(UN(3)*P(1) - UN(1)*P(3)) + GN*UN(2)
+G(3) = GT*(UN(1)*P(2) - UN(2)*P(1)) + GN*UN(3)
+RETURN
+!
+! P1 X P2 = 0.  Print an error message and terminate
+!   processing.
+!
+    2 WRITE (LUN,100) (P1(I),I=1,3), (P2(I),I=1,3)
+  100 FORMAT ('1','ERROR IN ARCINT -- P1 = ',2(F9.6,',  '), &
+    &         F9.6/1X,19X,'P2 = ',2(F9.6,',  '),F9.6)
+STOP
+END SUBROUTINE ssrfpack_arcint
+
 
 !----------------------------------------------------------------------
 ! Subroutine: ssrfpack_arclen
@@ -272,10 +351,10 @@ end if
 end subroutine ssrfpack_constr
 
 !----------------------------------------------------------------------
-! Subroutine: ssrfpack_fval
+! Subroutine: ssrfpack_fval_op
 !> Compute the C1 interpolation operator (indices and weights)
 !----------------------------------------------------------------------
-subroutine ssrfpack_fval(mpl,b1,b2,b3,v1,v2,v3,af,ag)
+subroutine ssrfpack_fval_op(mpl,b1,b2,b3,v1,v2,v3,af,ag)
 
 implicit none
 
@@ -296,7 +375,7 @@ real(kind_real) :: c1,c2,c3,csum,s1,s2,s3,u1n,u2n,u3n
 real(kind_real) :: a(3),al(3),bb1(3),bb2(3),q1(3),q2(3),q3(3),u1(3),u2(3),u3(3),un(3,3),unorm(3)
 
 ! Set name
-@:set_name(ssrfpack_aplyr)
+@:set_name(ssrfpack_fval_op)
 
 ! Probe in
 @:probe_in()
@@ -343,10 +422,10 @@ else
       q3(i) = u3(i)/u3n
    end do
 
-   ! Compute arc interpolation weights
-   call arcint(mpl,q1,v2,v3,a(1),al(1),bb1(1),bb2(1),un(:,1),unorm(1))
-   call arcint(mpl,q2,v3,v1,a(2),al(2),bb1(2),bb2(2),un(:,2),unorm(2))
-   call arcint(mpl,q3,v1,v2,a(3),al(3),bb1(3),bb2(3),un(:,3),unorm(3))
+   ! Compute arc interpolation operator
+   call arcint_op(mpl,q1,v2,v3,a(1),al(1),bb1(1),bb2(1),un(:,1),unorm(1))
+   call arcint_op(mpl,q2,v3,v1,a(2),al(2),bb1(2),bb2(2),un(:,2),unorm(2))
+   call arcint_op(mpl,q3,v1,v2,a(3),al(3),bb1(3),bb2(3),un(:,3),unorm(3))
 
    ! Compute function weights
    af(1) = &
@@ -530,13 +609,12 @@ end if
 ! Probe out
 @:probe_out()
 
-end subroutine ssrfpack_fval
+end subroutine ssrfpack_fval_op
 
-
-
-
-SUBROUTINE ssrfpack_GIVENS ( A,B, C,S)
-real(kind_real) ::  A, B, C, S
+real(kind_real) FUNCTION ssrfpack_fval (B1,B2,B3,V1,V2,V3,F1,F2,F3,G1,G2, &
+    &                     G3)
+real(kind_real) ::  B1, B2, B3, V1(3), V2(3), V3(3), F1, F2, F3, &
+    &      G1(3), G2(3), G3(3)
 !
 !***********************************************************
 !
@@ -547,323 +625,384 @@ real(kind_real) ::  A, B, C, S
 !                                           renka@cs.unt.edu
 !                                                   05/09/92
 !
-!   This subroutine constructs the Givens plane rotation,
+!   Given data values and gradients at the three vertices of
+! a spherical triangle containing a point P, this routine
+! computes the value of F at P where F interpolates the ver-
+! tex data.  Along the triangle sides, the interpolatory
+! function F is the Hermite interpolatory tension spline
+! defined by the values and tangential gradient components
+! at the endpoints, and the gradient component normal to the
+! triangle side varies linearly with respect to arc-length
+! between the normal gradient components at the endpoints.
+! A first-order C-1 blending method is used on the underly-
+! ing planar triangle.  Since values and gradients on an arc
+! depend only on the vertex data, the method results in C-1
+! continuity when used to interpolate over a triangulation.
 !
-!           ( C  S)
-!       G = (     ) , where C*C + S*S = 1,
-!           (-S  C)
-!
-! which zeros the second component of the vector (A,B)**T
-! (transposed).  Subroutine ROTATE may be called to apply
-! the transformation to a 2 by N matrix.
-!
-!   This routine is identical to Subroutine SROTG from the
-! LINPACK BLAS (Basic Linear Algebra Subroutines).
-!
-! On input:
-!
-!       A,B = Components of the vector defining the rota-
-!             tion.  These are overwritten by values R
-!             and Z (described below) which define C and S.
-!
-! On output:
-!
-!       A = Signed Euclidean norm R of the input vector:
-!           R = +/-SQRT(A*A + B*B)
-!
-!       B = Value Z such that:
-!             C = SQRT(1-Z*Z) and S=Z if ABS(Z) .LE. 1, and
-!             C = 1/Z and S = SQRT(1-C*C) if ABS(Z) > 1.
-!
-!       C = +/-(A/R) or 1 if R = 0.
-!
-!       S = +/-(B/R) or 0 if R = 0.
-!
-! Modules required by GIVENS:  None
-!
-! Intrinsic functions called by GIVENS:  ABS, SQRT
-!
-!***********************************************************
-!
-real(kind_real) ::  AA, BB, R, U, V
-!
-! Local parameters:
-!
-! AA,BB = Local copies of A and B
-! R =     C*A + S*B = +/-SQRT(A*A+B*B)
-! U,V =   Variables used to scale A and B for computing R
-!
-AA = A
-BB = B
-IF (ABS(AA) .GT. ABS(BB)) THEN
-!
-! ABS(A) > ABS(B).
-!
-  U = AA + AA
-  V = BB/U
-  R = SQRT(.25 + V*V) * U
-  C = AA/R
-  S = V * (C + C)
-!
-! Note that R has the sign of A, C > 0, and S has
-!   SIGN(A)*SIGN(B).
-!
-  B = S
-  A = R
-ELSEIF (BB .NE. 0.) THEN
-!
-! ABS(A) .LE. ABS(B).
-!
-  U = BB + BB
-  V = AA/U
-!
-! Store R in A.
-!
-  A = SQRT(.25 + V*V) * U
-  S = BB/A
-  C = V * (S + S)
-!
-! Note that R has the sign of B, S > 0, and C has
-!   SIGN(A)*SIGN(B).
-!
-  B = 1.
-  IF (C .NE. 0.) B = 1./C
-ELSE
-!
-! A = B = 0.
-!
-  C = 1.
-  S = 0.
-ENDIF
-RETURN
-END subroutine ssrfpack_givens
-
-
-SUBROUTINE ssrfpack_gradl (mpl,N,K,X,Y,Z,W,LIST,LPTR,LEND,G)
-
-type(mpl_type),intent(inout) :: mpl  !< MPI data
-
-INTEGER N, K, LIST(*), LPTR(*), LEND(N), IER
-real(kind_real) ::     X(N), Y(N), Z(N), W(N), G(3)
-
-
-
-INTEGER   LMN, LMX
-PARAMETER (LMN=10,  LMX=30)
-INTEGER I, IERR, IM1, IP1, J, JP1, KK, L, LM1, LMAX, &
-    &         LMIN, LNP, NN, NP, NPTS(LMX)
-real(kind_real) ::     A(6,6), AV, AVSQ, C, CX, CY, DF, DMIN, DTOL, &
-    &         DX, DY, RF, RIN, RTOL, S, SF, SUM, SX, SY, &
-    &         WK, WT, XP, YP, ZP
-!
-DATA    RTOL/1.E-6/, DTOL/.01/, SF/1./
-
-NN = N
-KK = K
-WK = W(KK)
-!
-! Check for errors and initialize LMIN, LMAX.
-!
-IF (NN .LT. 7  .OR.  KK .LT. 1  .OR.  KK .GT. NN) &
-    &    GO TO 13
-LMIN = MIN(LMN,NN)
-LMAX = MIN(LMX,NN)
-!
-! Compute NPTS, LNP, AVSQ, AV, and R.
-!   Set NPTS to the closest LMIN-1 nodes to K.  DF contains
-!   the negative Z component (in the rotated coordinate
-!   system) of the new node on return from GETNP.
-!
-SUM = 0.
-NPTS(1) = KK
-LM1 = LMIN - 1
-DO 1 LNP = 2,LM1
-  CALL GETNP (X,Y,Z,LIST,LPTR,LEND,LNP, NPTS, DF,IERR)
-  SUM = SUM + 1. - DF*DF
-    1   CONTINUE
-!
-!   Add additional nodes to NPTS until the increase in
-!     R = 1+RF is at least RTOL.
-!
-DO 2 LNP = LMIN,LMAX
-  CALL GETNP (X,Y,Z,LIST,LPTR,LEND,LNP, NPTS, RF,IERR)
-  IF (RF-DF .GE. RTOL) GO TO 3
-  SUM = SUM + 1. - RF*RF
-    2   CONTINUE
-!
-!   Use all LMAX nodes in the least squares fit.  R is
-!     arbitrarily increased by 5 percent.
-!
-RF = 1.05*RF + .05
-LNP = LMAX + 1
-!
-!   There are LNP-2 equations corresponding to nodes
-!     NPTS(2),...,NPTS(LNP-1).
-!
-    3 AVSQ = SUM/REAL(LNP-2,kind_real)
-AV = SQRT(AVSQ)
-RIN = 1./(1.+RF)
-!
-! Construct the rotation.
-!
-CALL CONSTR (X(KK),Y(KK),Z(KK), CX,SX,CY,SY)
-!
-! Set up the first 5 equations of the augmented regression
-!   matrix (transposed) as the columns of A, and zero out
-!   the lower triangle (upper triangle of A) with Givens
-!   rotations.
-!
-DO 5 I = 1,5
-  NP = NPTS(I+1)
-  CALL APLYR (mpl,X(NP),Y(NP),Z(NP),CX,SX,CY,SY, XP,YP,ZP)
-  WT = 1./(1.-ZP) - RIN
-  CALL SETUP (XP,YP,W(NP),WK,AV,AVSQ,WT, A(:,I))
-  IF (I .EQ. 1) GO TO 5
-  IM1 = I - 1
-  DO 4 J = 1,IM1
-    JP1 = J + 1
-    L = 6 - J
-    CALL GIVENS ( A(J,J),A(J,I), C,S)
-    CALL ROTATE (L,C,S, A(JP1:JP1+L-1,J),A(JP1:JP1+L-1,I) )
-    4     CONTINUE
-    5   CONTINUE
-!
-! Add the additional equations to the system using
-!   the last column of A.  I .LE. LNP.
-!
-I = 7
-    6   IF (I .EQ. LNP) GO TO 8
-  NP = NPTS(I)
-  CALL APLYR (mpl,X(NP),Y(NP),Z(NP),CX,SX,CY,SY, XP,YP,ZP)
-  WT = 1./(1.-ZP) - RIN
-  CALL SETUP (XP,YP,W(NP),WK,AV,AVSQ,WT, A(:,6))
-  DO 7 J = 1,5
-    JP1 = J + 1
-    L = 6 - J
-    CALL GIVENS ( A(J,J),A(J,6), C,S)
-    CALL ROTATE (L,C,S, A(JP1:JP1+L-1,J),A(JP1:JP1+L-1,6) )
-    7     CONTINUE
-  I = I + 1
-  GO TO 6
-!
-! Test the system for ill-conditioning.
-!
-    8 DMIN = MIN( ABS(A(1,1)),ABS(A(2,2)),ABS(A(3,3)), &
-    &             ABS(A(4,4)),ABS(A(5,5)) )
-IF (DMIN .GE. DTOL) GO TO 12
-IF (LNP .LE. LMAX) THEN
-!
-! Add another node to the system and increase R.
-!   I = LNP.
-!
-  LNP = LNP + 1
-  IF (LNP .LE. LMAX) CALL GETNP (X,Y,Z,LIST,LPTR,LEND, &
-    &                                  LNP,NPTS, RF,IERR)
-  RIN = 1./(1.05*(1.+RF))
-  GO TO 6
-ENDIF
-!
-! Stabilize the system by damping second partials.  Add
-!   multiples of the first three unit vectors to the first
-!   three equations.
-!
-DO 11 I = 1,3
-  A(I,6) = SF
-  IP1 = I + 1
-  DO 9 J = IP1,6
-    A(J,6) = 0.
-    9     CONTINUE
-  DO 10 J = I,5
-    JP1 = J + 1
-    L = 6 - J
-    CALL GIVENS ( A(J,J),A(J,6), C,S)
-    CALL ROTATE (L,C,S, A(JP1:JP1+L-1,J),A(JP1:JP1+L-1,6) )
-   10     CONTINUE
-   11   CONTINUE
-!
-! Test the linear portion of the stabilized system for
-!   ill-conditioning.
-!
-DMIN = MIN( ABS(A(4,4)),ABS(A(5,5)) )
-IF (DMIN .LT. DTOL) GO TO 14
-!
-! Solve the 2 by 2 triangular system for the estimated
-!   partial derivatives.
-!
-   12 DY = A(6,5)/A(5,5)
-DX = (A(6,4) - A(5,4)*DY)/A(4,4)/AV
-DY = DY/AV
-!
-! Rotate the gradient (DX,DY,0) back into the original
-!   coordinate system.
-!
-CALL APLYRT (DX,DY,CX,SX,CY,SY,G)
-return
-   13 call mpl%abort('${subr}$','N or K is outside its valid range')
-return
-   14 call mpl%abort('${subr}$','No unique solution due to collinear nodes')
-return
-END subroutine ssrfpack_gradl
-
-SUBROUTINE ssrfpack_rotate (N,C,S, X,Y )
-INTEGER N
-real(kind_real) ::     C, S, X(N), Y(N)
-!
-!***********************************************************
-!
-!                                              From SSRFPACK
-!                                            Robert J. Renka
-!                                  Dept. of Computer Science
-!                                       Univ. of North Texas
-!                                           renka@cs.unt.edu
-!                                                   09/01/88
-!
-!                                                ( C  S)
-!   This subroutine applies the Givens rotation  (     )  to
-!                                                (-S  C)
-!                    (X(1) ... X(N))
-! the 2 by N matrix  (             ) .
-!                    (Y(1) ... Y(N))
-!
-!   This routine is identical to Subroutine SROT from the
-! LINPACK BLAS (Basic Linear Algebra Subroutines).
+!   The blending method consists of taking F(P) to be a
+! weighted sum of the values at PP of three univariate Her-
+! mite interpolatory tension splines defined on the line
+! segments which join the vertices to the opposite sides and
+! pass through PP:  the central projection of P onto the
+! underlying planar triangle.  The tension factors for these
+! splines are obtained by linear interpolation between the
+! pair of tension factors associated with the triangle sides
+! which join at the appropriate vertex.
 !
 ! On input:
 !
-!       N = Number of columns to be rotated.
+!       B1,B2,B3 = Barycentric coordinates of PP with re-
+!                  spect to the (planar) underlying triangle
+!                  (V1,V2,V3), where PP is the central
+!                  projection of P onto this triangle.
 !
-!       C,S = Elements of the Givens rotation.  Refer to
-!             Subroutine GIVENS.
+!       V1,V2,V3 = Cartesian coordinates of the vertices of
+!                  a spherical triangle containing P.  V3
+!                  Left V1->V2.
 !
-! The above parameters are not altered by this routine.
+!       F1,F2,F3 = Data values associated with the vertices.
 !
-!       X,Y = Arrays of length .GE. N containing the compo-
-!             nents of the vectors to be rotated.
+!       G1,G2,G3 = Gradients associated with the vertices.
+!                  Gi is orthogonal to Vi for i = 1,2,3.
+!
+! Input parameters are not altered by this function.
 !
 ! On output:
 !
-!       X,Y = Arrays containing the rotated vectors (not
-!             altered if N < 1).
+!       FVAL = Interpolated value at P.
 !
-! Modules required by ROTATE:  None
+! Each vector V above contains X, Y, and Z components in
+!   V(1), V(2), and V(3), respectively.
+!
+! SSRFPACK modules required by FVAL:  ARCINT, ARCLEN, HVAL
+!
+! Intrinsic function called by FVAL:  SQRT
 !
 !***********************************************************
 !
 INTEGER I
-real(kind_real) ::     XI, YI
+real(kind_real) ::     C1, C2, C3, DS, DUM, DV, F, G(3), &
+    &         Q1(3), Q2(3), Q3(3), SIG, SUM, S1, S2, S3, &
+    &         U1(3), U2(3), U3(3), U1N, U2N, U3N, VAL
 !
-DO 1 I = 1,N
-  XI = X(I)
-  YI = Y(I)
-  X(I) = C*XI + S*YI
-  Y(I) = -S*XI + C*YI
+! Local parameters:
+!
+! C1,C2,C3 =    Coefficients (weight functions) of partial
+!                 interpolants.  C1 = 1 on the edge opposite
+!                 V1 and C1 = 0 on the other edges.  Simi-
+!                 larly for C2 and C3.  C1+C2+C3 = 1.
+! DS =          Directional derivative (scaled by distnace)
+!                 at U1, U2, or U3:  DS = (G,U1-V1)/U1N =
+!                 -(G,V1)/U1N on side opposite V1, where G/
+!                 U1N (plus an orthogonal component) is the
+!                 projection of G onto the planar triangle
+! DUM =         Dummy variable for calls to ARCINT
+! DV =          Directional derivatives (scaled by distance)
+!                 at a vertex:  D1 = (G1,U1-V1) = (G1,U1)
+! F,G =         Value and gradient at Q1 Q2, or Q3 obtained
+!                 by interpolation along one of the arcs of
+!                 the spherical triangle
+! I =           DO-loop index
+! Q1,Q2,Q3 =    Central projections of U1, U2, and U3 onto
+!                 the sphere and thus lying on an arc of the
+!                 spherical triangle
+! SIG =         Tension factor for a side-vertex (partial)
+!                 interpolant:  obtained by linear interpo-
+!                 lation applied to triangle side tensions
+! SUM =         Quantity used to normalize C1, C2, and C3
+! S1,S2,S3 =    Sums of pairs of barycentric coordinates:
+!                 used to compute U1, U2, U3, and SIG
+! U1,U2,U3 =    Points on the boundary of the planar trian-
+!                 gle and lying on the lines containing PP
+!                 and the vertices.  U1 is opposite V1, etc.
+! U1N,U2N,U3N = Quantities used to compute Q1, Q2, and Q3
+!                 (magnitudes of U1, U2, and U3)
+! VAL =         Local variable used to accumulate the con-
+!                 tributions to FVAL
+!
+!
+! Compute weight functions C1, C2, and C3.
+!
+C1 = B2*B3
+C2 = B3*B1
+C3 = B1*B2
+SUM = C1 + C2 + C3
+IF (SUM .LE. 0.) THEN
+!
+! P coincides with a vertex.
+!
+  ssrfpack_fval = B1*F1 + B2*F2 + B3*F3
+  RETURN
+ENDIF
+!
+! Normalize C1, C2, and C3.
+!
+C1 = C1/SUM
+C2 = C2/SUM
+C3 = C3/SUM
+!
+! Compute (S1,S2,S3), (U1,U2,U3) and (U1N,U2N,U3N).
+!
+S1 = B2 + B3
+S2 = B3 + B1
+S3 = B1 + B2
+U1N = 0.
+U2N = 0.
+U3N = 0.
+DO 1 I = 1,3
+  U1(I) = (B2*V2(I) + B3*V3(I))/S1
+  U2(I) = (B3*V3(I) + B1*V1(I))/S2
+  U3(I) = (B1*V1(I) + B2*V2(I))/S3
+  U1N = U1N + U1(I)*U1(I)
+  U2N = U2N + U2(I)*U2(I)
+  U3N = U3N + U3(I)*U3(I)
     1   CONTINUE
+!
+! Compute Q1, Q2, and Q3.
+!
+U1N = SQRT(U1N)
+U2N = SQRT(U2N)
+U3N = SQRT(U3N)
+DO 2 I = 1,3
+  Q1(I) = U1(I)/U1N
+  Q2(I) = U2(I)/U2N
+  Q3(I) = U3(I)/U3N
+    2   CONTINUE
+!
+! Compute interpolated value (VAL) at P by looping on
+!   triangle sides.
+!
+VAL = 0.
+!
+! Contribution from side opposite V1:
+!
+!   Compute value and gradient at Q1 by interpolating
+!     between V2 and V3.
+!
+CALL ARCINT (Q1,V2,V3,F2,F3,G2,G3, F,G,DUM)
+!
+!   Add in the contribution.
+!
+DV = G1(1)*U1(1) + G1(2)*U1(2) + G1(3)*U1(3)
+DS = -(G(1)*V1(1) + G(2)*V1(2) + G(3)*V1(3))/U1N
+VAL = VAL + C1*HVAL(B1,F1,F,DV,DS)
+!
+! Contribution from side opposite V2:
+!
+!   Compute value and gradient at Q2 by interpolating
+!     between V3 and V1.
+!
+CALL ARCINT (Q2,V3,V1,F3,F1,G3,G1, F,G,DUM)
+!
+!   Add in the contribution.
+!
+DV = G2(1)*U2(1) + G2(2)*U2(2) + G2(3)*U2(3)
+DS = -(G(1)*V2(1) + G(2)*V2(2) + G(3)*V2(3))/U2N
+VAL = VAL + C2*HVAL(B2,F2,F,DV,DS)
+!
+! Contribution from side opposite V3:
+!
+!   Compute interpolated value and gradient at Q3
+!     by interpolating between V1 and V2.
+!
+CALL ARCINT (Q3,V1,V2,F1,F2,G1,G2, F,G,DUM)
+!
+!   Add in the final contribution.
+!
+DV = G3(1)*U3(1) + G3(2)*U3(2) + G3(3)*U3(3)
+DS = -(G(1)*V3(1) + G(2)*V3(2) + G(3)*V3(3))/U3N
+ssrfpack_fval = VAL + C3*HVAL(B3,F3,F,DV,DS)
 RETURN
-END subroutine ssrfpack_rotate
+END function ssrfpack_fval
 
+!----------------------------------------------------------------------
+! Subroutine: ssrf_givens
+!> Construct the Givens plane rotation
+!----------------------------------------------------------------------
+subroutine ssrfpack_givens(a,b,c,s)
 
-SUBROUTINE ssrfpack_setup (XI,YI,WI,WK,S1,S2,WT, ROW)
-real(kind_real) ::  XI, YI, WI, WK, S1, S2, WT, ROW(6)
+implicit none
+
+! Passed variables
+real(kind_real),intent(inout) :: a !< Component of the vector defining the rotation
+real(kind_real),intent(inout) :: b !< Component of the vector defining the rotation
+real(kind_real),intent(out) :: c   !< Plus or minus a/r, or 1 if r = 0
+real(kind_real),intent(out) :: s   !< Plus or minus b/r, or 1 if r = 0
+
+! Local variables
+real(kind_real) :: aa,bb,r,u,v
+
+! Copy
+aa = a
+bb = b
+
+if (abs(aa)>abs(bb)) then
+   ! abs(a) > abs(b)
+   u = two*aa
+   u = aa + aa
+   v = bb/u
+   r = sqrt(quarter+v**2)*u
+   c = aa/r
+   s = two*v*c
+   b = s
+   a = r
+elseif  (abs(bb)>zero) then
+   ! abs(a) <= abs(b)
+   u = bb + bb
+   v = aa/u
+   a = sqrt(quarter+v**2)*u
+   s = bb/a
+   c = two*v*s
+   b = one
+   if (abs(c)>zero) b = one/c
+else
+   ! a = b = 0
+   c = one
+   s = zero
+end if
+
+END subroutine ssrfpack_givens
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_givens
+!> Construct the Givens plane rotation
+!----------------------------------------------------------------------
+subroutine ssrfpack_gradl(mpl,n,k,x,y,z,w,list,lptr,lend,g)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: n             !< Number of nodes
+integer,intent(in) :: k             !< Node at which the gradient is sought
+real(kind_real),intent(in) :: x(n)  !< X-coordinates of the nodes
+real(kind_real),intent(in) :: y(n)  !< Y-coordinates of the nodes
+real(kind_real),intent(in) :: z(n)  !< Z-coordinates of the nodes
+real(kind_real),intent(in) :: w(n)  !< Values associated with the nodes
+integer,intent(in) :: list(*)       !< On input, the data structure associated with the triangulation of nodes 1 to K-1. On output, the data has been updated to include node K. The array lengths are assumed to be large enough to add node K. Refer to TRMESH.
+integer,intent(in) :: lptr(*)       !< cf. list
+integer,intent(in) :: lend(n)       !< cf. list
+real(kind_real),intent(out) :: g(3) !< Gradient
+
+! Local variables
+integer,parameter :: lmn = 10
+integer,parameter :: lmx = 30
+real(kind_real),parameter :: rtol = 1.0e-6_kind_real
+real(kind_real),parameter :: dtol = 1.0e-2_kind_real
+real(kind_real),parameter :: sf = one
+integer :: i,im1,ip1,j,jp1,l,lm1,lmax,lmin,lnp,np,npts(lmx)
+real(kind_real) :: a(6,6),av,avsq,c,cx,cy,df,dmin,dsum,dx,dy,rf,rin,s,sx,sy,wt,xp,yp,zp
+
+! Check for errors
+if ((n<7).or.(k<1).or.(k>n)) call mpl%abort('${subr}$','n or k is outside its valid range')
+
+! Initialize lmin, lmax
+lmin = min(lmn,n)
+lmax = min(lmx,n)
+
+! Compute npts, lnp, avsq, av, and r. Set npts to the closest lmin-1 nodes to K. df contains the negative Z component (in the rotated coordinate system) of the new node on return from getnp.
+dsum = zero
+npts(1) = k
+lm1 = lmin-1
+do lnp=2,lm1
+   call getnp(mpl,n,x,y,z,list,lptr,lend,lnp,npts,df)
+   dsum = dsum+one-df**2
+end do
+
+! Add additional nodes to npts until the increase in r = 1+rf is at least rtol
+do lnp=lmin,lmax
+   call getnp(mpl,n,x,y,z,list,lptr,lend,lnp,npts,rf)
+   if (rf-df>=rtol) go to 3
+   dsum = dsum+one-rf**2
+end do
+
+! Use all lmax nodes in the least squares fit. r is arbitrarily increased by 5 percent.
+rf = 1.05_kind_real*rf+0.05_kind_real
+lnp = lmax+1
+
+! There are lnp-2 equations corresponding to nodes npts(2),...,npts(lnp-1).
+3 avsq = dsum/real(lnp-2,kind_real)
+av = sqrt(avsq)
+rin = one/(one+rf)
+
+! Construct the rotation
+call constr(x(k),y(k),z(k),cx,sx,cy,sy)
+
+! Set up the first 5 equations of the augmented regression matrix (transposed) as the columns of a, and zero out the lower triangle (upper triangle of a) with Givens rotations.
+DO i=1,5
+   np = npts(i+1)
+   call aplyr(mpl,x(np),y(np),z(np),cx,sx,cy,sy,xp,yp,zp)
+   wt = one/(one-zp)-rin
+   call setup(xp,yp,w(np),w(k),av,avsq,wt,a(:,i))
+   if (i>1) then
+      im1 = i-1
+      do j=1,im1
+         jp1 = j+1
+         l = 6-j
+         call givens(a(j,j),a(j,i),c,s)
+         call rotate(l,c,s,a(jp1:jp1+l-1,j),a(jp1:jp1+l-1,i))
+      end do
+   end if
+end do
+
+! Add the additional equations to the system using the last column of a. i<=lnp.
+i = 7
+6 if (i==lnp) go to 8
+np = npts(i)
+call aplyr(mpl,x(np),y(np),z(np),cx,sx,cy,sy,xp,yp,zp)
+wt = one/(one-zp)-rin
+call setup(xp,yp,w(np),w(k),av,avsq,wt,a(:,6))
+DO j=1,5
+   jp1 = j+1
+   l = 6-j
+   call givens(a(j,j),a(j,6),c,s)
+   call rotate(l,c,s,a(jp1:jp1+l-1,j),a(jp1:jp1+l-1,6))
+end do
+i = i+1
+go to 6
+
+! Test the system for ill-conditioning
+8 dmin = min(abs(a(1,1)),abs(a(2,2)),abs(a(3,3)),abs(a(4,4)),abs(a(5,5)))
+if (dmin>=dtol) go to 12
+if (lnp<=lmax) then
+   ! Add another node to the system and increase r. i = lnp.
+   lnp = lnp+1
+   if (lnp<=lmax) call getnp(mpl,n,x,y,z,list,lptr,lend,lnp,npts,rf)
+   rin = one/(1.05_kind_real*(one+rf))
+   go to 6
+end if
+
+! Stabilize the system by damping second partials.  Add multiples of the first three unit vectors to the first three equations.
+do i=1,3
+   a(i,6) = sf
+   ip1 = i+1
+   do j=ip1,6
+      a(j,6) = zero
+   end do
+   do j=i,5
+      jp1 = j+1
+      l = 6-j
+      call givens(a(j,j),a(j,6),c,s)
+      call rotate(l,c,s,a(jp1:jp1+l-1,j),a(jp1:jp1+l-1,6))
+   end do
+end do
+
+! Test the linear portion of the stabilized system for ill-conditioning
+dmin = min(abs(a(4,4)),abs(a(5,5)) )
+IF (dmin<dtol) call mpl%abort('${subr}$','No unique solution due to collinear nodes')
+
+! Solve the 2 by 2 triangular system for the estimated partial derivatives
+12 dy = a(6,5)/a(5,5)
+dx = (a(6,4)-a(5,4)*dy)/a(4,4)/av
+dy = dy/av
+
+! Rotate the gradient (dx,dy,0) back into the original coordinate system
+call aplyrt(dx,dy,cx,sx,cy,sy,g)
+
+end subroutine ssrfpack_gradl
+
+real(kind_real) FUNCTION ssrfpack_hval (B,H1,H2,HP1,HP2)
+real(kind_real) ::  B, H1, H2, HP1, HP2
 !
 !***********************************************************
 !
@@ -872,61 +1011,118 @@ real(kind_real) ::  XI, YI, WI, WK, S1, S2, WT, ROW(6)
 !                                  Dept. of Computer Science
 !                                       Univ. of North Texas
 !                                           renka@cs.unt.edu
-!                                                   05/09/92
+!                                                   11/21/96
 !
-!   This subroutine sets up the I-th row of an augmented
-! regression matrix for a weighted least squares fit of a
-! quadratic function Q(X,Y) to a set of data values Wi,
-! where Q(0,0) = Wk.  The first 3 columns (quadratic terms)
-! are scaled by 1/S2 and the fourth and fifth columns (lin-
-! ear terms) are scaled by 1/S1.
+!   Given a line segment P1-P2 containing a point P, along
+! with values and derivatives at the endpoints, this func-
+! tion returns the value H(P), where H is the Hermite inter-
+! polatory tension spline defined by the endpoint data.
 !
 ! On input:
 !
-!       XI,YI = Coordinates of node I.
+!       B = Local coordinate of P with respect to P1-P2:
+!           P = B*P1 + (1-B)*P2, and thus B = d(P,P2)/
+!           d(P1,P2), where d(P1,P2) is the distance between
+!           P1 and P2.  B < 0 or B > 1 results in extrapola-
+!           tion.
 !
-!       WI = Data value at node I.
+!       H1,H2 = Values interpolated at P1 and P2, respec-
+!               tively.
 !
-!       WK = Data value interpolated by Q at the origin.
+!       HP1,HP2 = Products of d(P1,P2) with first order der-
+!                 ivatives at P1 and P2, respectively.  HP1
+!                 may, for example, be the scalar product of
+!                 P2-P1 with a gradient at P1.
 !
-!       S1,S2 = Inverse scale factors.
-!
-!       WT = Weight factor corresponding to the I-th
-!            equation.
-!
-!       ROW = Array of length 6.
-!
-! Input parameters are not altered by this routine.
+! Input parameters are not altered by this function.
 !
 ! On output:
 !
-!       ROW = Array containing a row of the augmented re-
-!             gression matrix.
+!       HVAL = Interpolated value H(P).
 !
-! Modules required by SETUP:  None
+! SSRFPACK module required by HVAL:  SNHCSH
+!
+! Intrinsic functions called by HVAL:  ABS, EXP
 !
 !***********************************************************
 !
-real(kind_real) ::  W1, W2
+real(kind_real) ::  B1, B2, CM, CM2, CMM, D1, D2, DUMMY, E, E1, E2, &
+    &      EMS, S, SB1, SB2, SM, SM2, TM, TM1, TM2, TS
+B1 = B
+B2 = 1. - B1
 !
-! Local parameters:
+! Compute slope S and second differences D1 and D2 scaled
+!   by the separation between P1 and P2.
 !
-! W1 = Weighted scale factor for the linear terms
-! W2 = Weighted scale factor for the quadratic terms
+S = H2 - H1
+D1 = S - HP1
+D2 = HP2 - S
 !
-W1 = WT/S1
-W2 = WT/S2
-ROW(1) = XI*XI*W2
-ROW(2) = XI*YI*W2
-ROW(3) = YI*YI*W2
-ROW(4) = XI*W1
-ROW(5) = YI*W1
-ROW(6) = (WI-WK)*WT
+! Hermite cubic interpolation:
+!
+  ssrfpack_hval = H1 + B2*(HP1 + B2*(D1 + B1*(D1 - D2)))
 RETURN
-END subroutine ssrfpack_setup
+END function ssrfpack_hval
 
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_rotate
+!> Applies the Givens plane rotation
+!----------------------------------------------------------------------
+subroutine ssrfpack_rotate(n,c,s,x,y)
 
+implicit none
 
+! Passed variables
+integer,intent(in) :: n               !< Number of columns to be rotated
+real(kind_real),intent(in) :: c       !< Elements of the Givens rotation
+real(kind_real),intent(in) :: s       !< Elements of the Givens rotation
+real(kind_real),intent(inout) :: x(n) !< X-components of the vectors to be rotated
+real(kind_real),intent(inout) :: y(n) !< Y-components of the vectors to be rotated
 
+! Local variables
+integer :: i
+real(kind_real) :: xi,yi
+
+do i=1,n
+  xi = x(i)
+  yi = y(i)
+  x(i) = c*xi+s*yi
+  y(i) = -s*xi+c*yi
+end do
+
+end subroutine ssrfpack_rotate
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_setup
+!> Applies the Givens plane rotation
+!----------------------------------------------------------------------
+subroutine ssrfpack_setup(xi,yi,wi,wk,s1,s2,wt,row)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: xi        !< X-coordinate of node i
+real(kind_real),intent(in) :: yi        !< Y-coordinate of node i
+real(kind_real),intent(in) :: wi        !< Data value at node i
+real(kind_real),intent(in) :: wk        !< Data value interpolated by Q at the origin
+real(kind_real),intent(in) :: s1        !< First inverse scale factors
+real(kind_real),intent(in) :: s2        !< Second inverse scale factors
+real(kind_real),intent(in) :: wt        !< Weight factor corresponding to the i-th equation
+real(kind_real),intent(inout) :: row(6) !< Array containing a row of the augmented regression matrix
+
+! Local variables
+real(kind_real) :: w1,w2
+
+! Setup
+w1 = wt/s1
+w2 = wt/s2
+row(1) = xi**2*w2
+row(2) = xi*yi*w2
+row(3) = yi**2*w2
+row(4) = xi*w1
+row(5) = yi*w1
+row(6) = (wi-wk)*wt
+
+end subroutine ssrfpack_setup
 
 end module tools_ssrfpack

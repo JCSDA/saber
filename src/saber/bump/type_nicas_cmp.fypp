@@ -216,8 +216,10 @@ type nicas_cmp_type
    integer :: c_nopmax                                  !< Maximum number of operations for convolution
 
    ! Interpolation test
-   real(kind_real),allocatable :: fld_int(:,:)          !< Interpolated field
    real(kind_real),allocatable :: fld_ref(:,:)          !< Reference field
+   real(kind_real),allocatable :: fld_ssrf(:,:)         !< SSRF-based interpolated field
+   real(kind_real),allocatable :: fld_op(:,:)           !< Operator-based interpolated field
+   real(kind_real),allocatable :: fld_ssrf_from_op(:,:) !< SSRF-based interpolated field, operator-based gradient
 contains
    procedure :: partial_dealloc => nicas_cmp_partial_dealloc
    procedure :: dealloc => nicas_cmp_dealloc
@@ -590,8 +592,10 @@ if (allocated(nicas_cmp%interp_c1b_to_c0a)) then
    deallocate(nicas_cmp%interp_c1b_to_c0a)
 end if
 call nicas_cmp%c%dealloc
-if (allocated(nicas_cmp%fld_int)) deallocate(nicas_cmp%fld_int)
 if (allocated(nicas_cmp%fld_ref)) deallocate(nicas_cmp%fld_ref)
+if (allocated(nicas_cmp%fld_ssrf)) deallocate(nicas_cmp%fld_ssrf)
+if (allocated(nicas_cmp%fld_op)) deallocate(nicas_cmp%fld_op)
+if (allocated(nicas_cmp%fld_ssrf_from_op)) deallocate(nicas_cmp%fld_ssrf_from_op)
 
 ! Probe out
 @:probe_out()
@@ -2257,15 +2261,16 @@ type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il1,il0,ic1,ic0,iproc,ic1a,n,ix,iy,ic0u,ic0a,ic1u,ifmt,i_s,jc1,jproc,jc1u,ic1b,jc1b,jc0u,ic0b,nc0own,ic0own,jc0b
-integer :: is,isu,isa,isb,icomp
+integer :: is,isu,isa,isb
 integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:),order_inv_sa(:)
 integer,allocatable :: n_s_grad(:),col_grad(:,:)
-real(kind_real) :: nc1_real,lon,lat
+real(kind_real) :: nc1_real,lon,lat,alon,alat
 real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2),g(3)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),Svec_grad(:,:,:),Svec_filt(:,:,:)
-real(kind_real),allocatable :: fld_src_c1a(:),fld_src_c1b(:),fld_src_c1(:),fld_grad_c1a(:)
+real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),Svec_grad(:,:,:)
+real(kind_real),allocatable :: fld_src_c1a(:),fld_src_c1b(:),fld_src_c1(:)
+real(kind_real),allocatable :: grad_ref_c1a(:,:),grad_ssrf_c1a(:,:),grad_op_c1a(:,:),grad_op_c1(:,:)
 logical :: valid
 logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
 logical,allocatable :: gmask_c1(:),gmask_c1a(:)
@@ -2752,12 +2757,15 @@ if (nam%interp_test) then
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
-   allocate(nicas_cmp%fld_int(geom%nc0a,geom%nl0))
    allocate(nicas_cmp%fld_ref(geom%nc0a,geom%nl0))
+   allocate(nicas_cmp%fld_ssrf(geom%nc0a,geom%nl0))
+   allocate(nicas_cmp%fld_op(geom%nc0a,geom%nl0))
+   allocate(nicas_cmp%fld_ssrf_from_op(geom%nc0a,geom%nl0))
 
    ! Initialization
-   nicas_cmp%fld_int = zero
    nicas_cmp%fld_ref = zero
+   nicas_cmp%fld_ssrf = zero
+   nicas_cmp%fld_op = zero
 
    ! Interpolation test
    do il1=1,nicas_cmp%nl1
@@ -2768,68 +2776,111 @@ if (nam%interp_test) then
       allocate(fld_src_c1a(nicas_cmp%hor(il1)%nc1a))
       allocate(fld_src_c1b(nicas_cmp%hor(il1)%nc1b))
       allocate(fld_src_c1(nicas_cmp%hor(il1)%nc1))
-      allocate(fld_grad_c1a(nicas_cmp%hor(il1)%nc1a))
+      allocate(grad_ref_c1a(nicas_cmp%hor(il1)%nc1a,3))
+      allocate(grad_ssrf_c1a(nicas_cmp%hor(il1)%nc1a,3))
+      allocate(grad_op_c1a(nicas_cmp%hor(il1)%nc1a,3))
+      allocate(grad_op_c1(nicas_cmp%hor(il1)%nc1,3))
       allocate(n_s_grad(nicas_cmp%hor(il1)%nc1a))
       allocate(col_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,nicas_cmp%hor(il1)%nc1a))
       allocate(Svec_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,3,nicas_cmp%hor(il1)%nc1a))
 
-      ! Define source and reference destination with an analytical function
+      ! Function parameters
+      alon = 3.0_kind_real
+      alat = 3.0_kind_real
+
+      ! Define source function and its derivatives
       do ic1a=1,nicas_cmp%hor(il1)%nc1a
          lon = nicas_cmp%hor(il1)%lon_c1a(ic1a)
          lat = nicas_cmp%hor(il1)%lat_c1a(ic1a)
-         fld_src_c1a(ic1a) = cos(3.0_kind_real*lon)*cos(3.0_kind_real*lat)
+
+         ! Function
+         fld_src_c1a(ic1a) = cos(alon*lon)*cos(alat*lat)
+
+         ! X-derivative
+         grad_ref_c1a(ic1a,1) = sin(alon*lon)*alon*cos(alat*lat)*sin(lon)+cos(alon*lon)*sin(alat*lat)*alat*sin(lat)*cos(lon)
+
+         ! Y-derivative
+         grad_ref_c1a(ic1a,2) = -sin(alon*lon)*alon*cos(alat*lat)*cos(lon)+cos(alon*lon)*sin(alat*lat)*alat*sin(lat)*sin(lon)
+
+         ! Z-derivative
+         grad_ref_c1a(ic1a,3) = -cos(alon*lon)*sin(alat*lat)*alat*cos(lat)
       end do
+
+      ! Define reference destination function
       do ic0a=1,geom%nc0a
          lon = geom%lon_c0a(ic0a)
          lat = geom%lat_c0a(ic0a)
-         nicas_cmp%fld_ref(ic0a,il0) = cos(3.0_kind_real*lon)*cos(3.0_kind_real*lat)
+         nicas_cmp%fld_ref(ic0a,il0) = cos(alon*lon)*cos(alat*lat)
       end do
 
-      if (.false.) then
-         ! Compute gradient
-         icomp = 3
-         call mpl%loc_to_glb(nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%nc1,nicas_cmp%hor(il1)%c1a_to_c1,fld_src_c1a, &
+      ! Compute gradient
+      call mpl%loc_to_glb(nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%nc1,nicas_cmp%hor(il1)%c1a_to_c1,fld_src_c1a, &
  & fld_src_c1,.true.)
-         if (.false.) then
-            ! Compute gradient operator
-            do ic1a=1,nicas_cmp%hor(il1)%nc1
-               ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
-               call nicas_cmp%hor(il1)%mesh_c1%compute_grad_op(mpl,ic1,n_s_grad(ic1a),col_grad(:,ic1a),Svec_grad(:,:,ic1a))
-            end do
+      
+      ! SSRF gradient estimation
+      do ic1a=1,nicas_cmp%hor(il1)%nc1a
+         ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
+         call nicas_cmp%hor(il1)%mesh_c1%compute_grad(mpl,ic1,fld_src_c1,g)
+         grad_ssrf_c1a(ic1a,:) = g
+      end do
 
-            ! Apply operator
-            do ic1a=1,nicas_cmp%hor(il1)%nc1a
-               fld_grad_c1a(ic1a) = zero
-               do i_s=1,n_s_grad(ic1a)
-                  fld_grad_c1a(ic1a) = fld_grad_c1a(ic1a)+Svec_grad(i_s,icomp,ic1a)*fld_src_c1(col_grad(i_s,ic1a))
-               end do
-            end do
-            fld_src_c1a = fld_grad_c1a
-         else
-            ! Nonlinear estimation
-            do ic1a=1,nicas_cmp%hor(il1)%nc1a
-               ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
-               call nicas_cmp%hor(il1)%mesh_c1%compute_grad(mpl,ic1,fld_src_c1,g)
-               fld_src_c1a(ic1a) = g(icomp)
-            end do
-         end if
-      end if
+      ! Compute gradient operator
+      do ic1a=1,nicas_cmp%hor(il1)%nc1a
+         ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
+         call nicas_cmp%hor(il1)%mesh_c1%compute_grad_op(mpl,ic1,n_s_grad(ic1a),col_grad(:,ic1a),Svec_grad(:,:,ic1a))
+      end do
 
-      ! Apply interpolation
+      ! Apply operator
+      do ic1a=1,nicas_cmp%hor(il1)%nc1a
+         grad_op_c1a(ic1a,:) = zero
+         do i_s=1,n_s_grad(ic1a)
+            grad_op_c1a(ic1a,:) = grad_op_c1a(ic1a,:)+Svec_grad(i_s,:,ic1a)*fld_src_c1(col_grad(i_s,ic1a))
+         end do
+      end do
+
+      ! SSRF C1 estimation
+      call nicas_cmp%hor(il1)%mesh_c1%compute_c1_interp(mpl,nicas_cmp%hor(il1)%tree_c1,fld_src_c1, &
+ & geom%nc0a,geom%lon_c0a,geom%lat_c0a,nicas_cmp%fld_ssrf(:,il0))
+
+      ! Interpolation operator
       call nicas_cmp%com_c1_AB(il1)%ext(mpl,fld_src_c1a,fld_src_c1b)
-      call nicas_cmp%interp_c1b_to_c0a(il1)%apply(mpl,fld_src_c1b,nicas_cmp%fld_int(:,il0))
+      call nicas_cmp%interp_c1b_to_c0a(il1)%apply(mpl,fld_src_c1b,nicas_cmp%fld_op(:,il0))
+
+      ! SSRF C1 estimation using gradient operator
+      call mpl%loc_to_glb(nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%nc1,nicas_cmp%hor(il1)%c1a_to_c1,grad_op_c1a, &
+ & grad_op_c1,.true.)
+      call nicas_cmp%hor(il1)%mesh_c1%compute_c1_interp(mpl,nicas_cmp%hor(il1)%tree_c1,fld_src_c1, &
+ & geom%nc0a,geom%lon_c0a,geom%lat_c0a,nicas_cmp%fld_ssrf_from_op(:,il0),grad_op_c1)
 
       ! Print results
-      write(mpl%info,'(a22,a,i3,a,e15.8,a,e15.8,a)') '','Level ',il1,':', &
- & maxval(abs(nicas_cmp%fld_int(:,il0)-nicas_cmp%fld_ref(:,il0))),' (max) / ', &
- & sum(abs(nicas_cmp%fld_int(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (avg)'
+      write(mpl%info,'(a22,a,i3,a)') '','Level ',il1,': '
+      if (nicas_cmp%verbosity) call mpl%flush
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-X: ', &
+ & sum(abs(grad_ssrf_c1a(:,1)-grad_ref_c1a(:,1)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
+ & sum(abs(grad_op_c1a(:,1)-grad_ref_c1a(:,1)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
+      if (nicas_cmp%verbosity) call mpl%flush
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-Y: ', &
+ & sum(abs(grad_ssrf_c1a(:,2)-grad_ref_c1a(:,2)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
+ & sum(abs(grad_op_c1a(:,2)-grad_ref_c1a(:,2)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
+      if (nicas_cmp%verbosity) call mpl%flush
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-Z: ', &
+ & sum(abs(grad_ssrf_c1a(:,3)-grad_ref_c1a(:,3)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
+ & sum(abs(grad_op_c1a(:,3)-grad_ref_c1a(:,3)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
+      if (nicas_cmp%verbosity) call mpl%flush
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a,e15.8,a)') '','Function:   ', &
+ & sum(abs(nicas_cmp%fld_ssrf(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (SSRF) / ', &
+ & sum(abs(nicas_cmp%fld_op(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (operator) / ', &
+ & sum(abs(nicas_cmp%fld_ssrf_from_op(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (SSRF from operator)'
       if (nicas_cmp%verbosity) call mpl%flush
 
       ! Release memory
       deallocate(fld_src_c1a)
       deallocate(fld_src_c1b)
       deallocate(fld_src_c1)
-      deallocate(fld_grad_c1a)
+      deallocate(grad_ref_c1a)
+      deallocate(grad_ssrf_c1a)
+      deallocate(grad_op_c1a)
+      deallocate(grad_op_c1)
       deallocate(n_s_grad)
       deallocate(col_grad)
       deallocate(Svec_grad)
@@ -3376,45 +3427,47 @@ do isb=1,nicas_cmp%nsb
             jc1 = nn_index(j)
             jc1u = nicas_cmp%c1_to_c1u(jc1,jl1)
 
-            ! Check arc validity
-            valid = .true.
-            if (nam%mask_check) then
-               call geom%mesh_c0u%check_arc(mpl,nicas_cmp%hor(il1)%lon_c1u(ic1u), &
+            if (jc1u>0) then
+               ! Check arc validity
+               valid = .true.
+               if (nam%mask_check) then
+                  call geom%mesh_c0u%check_arc(mpl,nicas_cmp%hor(il1)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1)%lat_c1u(ic1u),nicas_cmp%hor(jl1)%lon_c1u(jc1u),nicas_cmp%hor(jl1)%lat_c1u(jc1u),il0,valid)
-               if (il0/=jl0) call geom%mesh_c0u%check_arc(mpl,nicas_cmp%hor(il1)%lon_c1u(ic1u), &
+                  if (il0/=jl0) call geom%mesh_c0u%check_arc(mpl,nicas_cmp%hor(il1)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1)%lat_c1u(ic1u),nicas_cmp%hor(jl1)%lon_c1u(jc1u),nicas_cmp%hor(jl1)%lat_c1u(jc1u),jl0,valid)
-            end if
-
-            if (valid) then
-               ! Horizontal and vertical normalized distance, anisotropic coefficient
-               if (nicas_cmp%anisotropic) then
-                  dx = nicas_cmp%hor(jl1)%lon_c1u(jc1u)-nicas_cmp%hor(il1)%lon_c1u(ic1u)
-                  dy = nicas_cmp%hor(jl1)%lat_c1u(jc1u)-nicas_cmp%hor(il1)%lat_c1u(ic1u)
-                  call lonlatmod(dx,dy)
-                  dx = dx*cos(nicas_cmp%hor(il1)%lat_c1u(ic1u))
-                  hnd(jc1u) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2+nicas_cmp%hor(il1)%H22_c1b(ic1b)*dy**2 &
- & +two*nicas_cmp%hor(il1)%H12_c1b(ic1b)*dx*dy)
-               else
-                  if (nicas_cmp%hor(il1)%rh_c1b(ic1b)>zero) then
-                     hnd(jc1u) = nn_dist(j)/nicas_cmp%hor(il1)%rh_c1b(ic1b)
-                     if (supeq(hnd(jc1u),half)) hnd(jc1u) = mpl%msv%valr
-                  elseif (nn_dist(j)>zero) then
-                     hnd(jc1u) = mpl%msv%valr
-                  else
-                     hnd(jc1u) = zero
-                  end if
                end if
-               if (nicas_cmp%horizontal) then
-                  if (il0==jl0) vnd(jc1u) = zero
-               else
-                  distv = abs(nicas_cmp%hor(il1)%vunit_c1u(ic1u)-nicas_cmp%hor(jl1)%vunit_c1u(jc1u))
-                  if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
-                     vnd(jc1u) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
-                     if (supeq(vnd(jc1u),half)) vnd(jc1u) = mpl%msv%valr
-                  elseif (distv>zero) then
-                     vnd(jc1u) = mpl%msv%valr
+
+               if (valid) then
+                  ! Horizontal and vertical normalized distance, anisotropic coefficient
+                  if (nicas_cmp%anisotropic) then
+                     dx = nicas_cmp%hor(jl1)%lon_c1u(jc1u)-nicas_cmp%hor(il1)%lon_c1u(ic1u)
+                     dy = nicas_cmp%hor(jl1)%lat_c1u(jc1u)-nicas_cmp%hor(il1)%lat_c1u(ic1u)
+                     call lonlatmod(dx,dy)
+                     dx = dx*cos(nicas_cmp%hor(il1)%lat_c1u(ic1u))
+                     hnd(jc1u) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2+nicas_cmp%hor(il1)%H22_c1b(ic1b)*dy**2 &
+ & +two*nicas_cmp%hor(il1)%H12_c1b(ic1b)*dx*dy)
                   else
-                     vnd(jc1u) = zero
+                     if (nicas_cmp%hor(il1)%rh_c1b(ic1b)>zero) then
+                        hnd(jc1u) = nn_dist(j)/nicas_cmp%hor(il1)%rh_c1b(ic1b)
+                        if (supeq(hnd(jc1u),half)) hnd(jc1u) = mpl%msv%valr
+                     elseif (nn_dist(j)>zero) then
+                        hnd(jc1u) = mpl%msv%valr
+                     else
+                        hnd(jc1u) = zero
+                     end if
+                  end if
+                  if (nicas_cmp%horizontal) then
+                     if (il0==jl0) vnd(jc1u) = zero
+                  else
+                     distv = abs(nicas_cmp%hor(il1)%vunit_c1u(ic1u)-nicas_cmp%hor(jl1)%vunit_c1u(jc1u))
+                     if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
+                        vnd(jc1u) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
+                        if (supeq(vnd(jc1u),half)) vnd(jc1u) = mpl%msv%valr
+                     elseif (distv>zero) then
+                        vnd(jc1u) = mpl%msv%valr
+                     else
+                        vnd(jc1u) = zero
+                     end if
                   end if
                end if
             end if
