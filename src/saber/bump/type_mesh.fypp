@@ -70,7 +70,6 @@ contains
    procedure :: dealloc => mesh_dealloc
    procedure :: barycentric => mesh_barycentric
    procedure :: compute_grad => mesh_compute_grad
-   procedure :: compute_grad_op => mesh_compute_grad_op
    procedure :: compute_c1_interp => mesh_compute_c1_interp
    procedure :: compute_c1_interp_op => mesh_compute_c1_interp_op
    procedure :: count_bnda => mesh_count_bnda
@@ -652,141 +651,6 @@ call gradl(mpl,mesh%n,ieff,mesh%x,mesh%y,mesh%z,field_eff,mesh%list,mesh%lptr,me
 end subroutine mesh_compute_grad
 
 !----------------------------------------------------------------------
-! Subroutine: mesh_compute_grad_op
-!> Compute gradient operator (indices and weights)
-!----------------------------------------------------------------------
-subroutine mesh_compute_grad_op(mesh,mpl,i,n_s,col,Svec)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(in) :: mesh                   !< Mesh
-type(mpl_type),intent(inout) :: mpl                   !< MPI data
-integer,intent(in) :: i                               !< Index
-integer,intent(out) :: n_s                            !< Operator size
-integer,intent(out) :: col(1+mesh%maxcols)            !< Input indices
-real(kind_real),intent(out) :: Svec(1+mesh%maxcols,3) !< Coefficients
-
-! Local variables
-integer :: j,jnext,knext,i_s,ieff
-integer,allocatable :: k(:)
-real(kind_real) :: cx,sx,cy,sy,gamma,wgt,wgt_sum
-real(kind_real),allocatable :: xp(:),yp(:),zp(:)
-real(kind_real),allocatable :: Svec_tmp_1(:,:),Svec_tmp_2(:,:)
-
-! Set name
-@:set_name(mesh_compute_grad_op)
-
-! Probe in
-@:probe_in()
-
-! Inverse order
-ieff = mesh%order_inv(i)
-
-! Construct the rotation
-call constr(mesh%x(ieff),mesh%y(ieff),mesh%z(ieff),cx,sx,cy,sy)
-
-! Allocation
-n_s = mesh%rows(ieff)%cols+1
-allocate(Svec_tmp_1(n_s,2))
-allocate(Svec_tmp_2(n_s,2))
-allocate(k(mesh%rows(ieff)%cols))
-allocate(xp(mesh%rows(ieff)%cols))
-allocate(yp(mesh%rows(ieff)%cols))
-allocate(zp(mesh%rows(ieff)%cols))
-
-! Loop over neigbors
-do j=1,mesh%rows(ieff)%cols
-   ! Get index
-   k(j) = mesh%rows(ieff)%nodes(j)
-
-   ! Get rotated coordinates
-   call aplyr(mpl,mesh%x(k(j)),mesh%y(k(j)),mesh%z(k(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
-end do
-
-! Initialization
-wgt_sum = zero
-
-! Initialize col and Svec_tmp_2
-i_s = 1
-col(i_s) = ieff
-do j=1,mesh%rows(ieff)%cols
-   i_s = i_s+1
-   col(i_s) = k(j)
-end do
-Svec_tmp_2 = zero
-
-! Loop over triangles
-do j=1,mesh%rows(ieff)%cols
-   ! Get next neighbor
-   if (j<mesh%rows(ieff)%cols) then
-      jnext = j+1
-   else
-      jnext = 1
-   end if
-   knext = k(jnext)
-
-   ! Compute plane's normal vector components
-   ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
-   ! Warning: in second equation of (8) for beta, "y"s should be "x"s
-   gamma = xp(j)*yp(jnext)-xp(jnext)*yp(j)
-   if (abs(gamma)>zero) then
-      Svec_tmp_1 = zero
-      do i_s=1,n_s
-         if (col(i_s)==ieff) then
-            Svec_tmp_1(i_s,1) = Svec_tmp_1(i_s,1)+yp(j)-yp(jnext)
-            Svec_tmp_1(i_s,2) = Svec_tmp_1(i_s,2)+xp(jnext)-xp(j)
-         end if
-         if (col(i_s)==k(j)) then
-            Svec_tmp_1(i_s,1) = Svec_tmp_1(i_s,1)+yp(jnext)
-            Svec_tmp_1(i_s,2) = Svec_tmp_1(i_s,2)-xp(jnext)
-         end if
-         if (col(i_s)==knext) then
-            Svec_tmp_1(i_s,1) = Svec_tmp_1(i_s,1)-yp(j)
-            Svec_tmp_1(i_s,2) = Svec_tmp_1(i_s,2)+xp(j)
-         end if
-      end do
-      Svec_tmp_1 = Svec_tmp_1/gamma
-
-      ! Weighted sum
-      wgt = two/abs(gamma)
-      do i_s=1,n_s
-         Svec_tmp_2(i_s,:) = Svec_tmp_2(i_s,:)+wgt*Svec_tmp_1(i_s,:)
-      end do
-      wgt_sum = wgt_sum+wgt
-   else
-      call mpl%abort('${subr}$','gamma should not be zero')
-   end if
-end do
-
-! Averaged gradient components
-Svec_tmp_2 = Svec_tmp_2/wgt_sum
-
-! Grid indices
-do i_s=1,n_s
-   col(i_s) = mesh%order(col(i_s))
-end do
-
-! Apply inverse rotation
-Svec(1:n_s,1) = cy*Svec_tmp_2(:,1)
-Svec(1:n_s,2) = cx*Svec_tmp_2(:,2)-sx*sy*Svec_tmp_2(:,1)
-Svec(1:n_s,3) = -sx*Svec_tmp_2(:,2)-cx*sy*Svec_tmp_2(:,1)
-
-! Release memory
-deallocate(Svec_tmp_1)
-deallocate(Svec_tmp_2)
-deallocate(k)
-deallocate(xp)
-deallocate(yp)
-deallocate(zp)
-
-! Probe out
-@:probe_out()
-
-end subroutine mesh_compute_grad_op
-
-
-!----------------------------------------------------------------------
 ! Subroutine: mesh_compute_c1_interp
 !> Compute C1 interpolation (SSRF estimator)
 !----------------------------------------------------------------------
@@ -851,7 +715,7 @@ do i_dst=1,n_dst
    b = b/sum(b)
 
    ! Get interpolated value
-   field_dst(i_dst) = fval(b(1),b(2),b(3),p1,p2,p3,field_eff(ib(1)),field_eff(ib(2)),field_eff(ib(3)),g1,g2,g3)
+   field_dst(i_dst) = fval(mpl,b(1),b(2),b(3),p1,p2,p3,field_eff(ib(1)),field_eff(ib(2)),field_eff(ib(3)),g1,g2,g3)
 end do
 
 ! Probe out

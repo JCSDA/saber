@@ -2265,10 +2265,9 @@ integer :: is,isu,isa,isb
 integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:),order_inv_sa(:)
-integer,allocatable :: n_s_grad(:),col_grad(:,:)
 real(kind_real) :: nc1_real,lon,lat,alon,alat
 real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2),g(3)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),Svec_grad(:,:,:)
+real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 real(kind_real),allocatable :: fld_src_c1a(:),fld_src_c1b(:),fld_src_c1(:)
 real(kind_real),allocatable :: grad_ref_c1a(:,:),grad_ssrf_c1a(:,:),grad_op_c1a(:,:),grad_op_c1(:,:)
 logical :: valid
@@ -2276,6 +2275,7 @@ logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
 logical,allocatable :: gmask_c1(:),gmask_c1a(:)
 character(len=6) :: gridid
 type(atlas_structuredgrid) :: agrid
+type(linop_type),allocatable :: grad(:)
 
 ! Set name
 @:set_name(nicas_cmp_compute_horizontal)
@@ -2780,9 +2780,7 @@ if (nam%interp_test) then
       allocate(grad_ssrf_c1a(nicas_cmp%hor(il1)%nc1a,3))
       allocate(grad_op_c1a(nicas_cmp%hor(il1)%nc1a,3))
       allocate(grad_op_c1(nicas_cmp%hor(il1)%nc1,3))
-      allocate(n_s_grad(nicas_cmp%hor(il1)%nc1a))
-      allocate(col_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,nicas_cmp%hor(il1)%nc1a))
-      allocate(Svec_grad(1+nicas_cmp%hor(il1)%mesh_c1%maxcols,3,nicas_cmp%hor(il1)%nc1a))
+      allocate(grad(nicas_cmp%hor(il1)%nc1a))
 
       ! Function parameters
       alon = 3.0_kind_real
@@ -2827,14 +2825,14 @@ if (nam%interp_test) then
       ! Compute gradient operator
       do ic1a=1,nicas_cmp%hor(il1)%nc1a
          ic1 = nicas_cmp%hor(il1)%c1a_to_c1(ic1a)
-         call nicas_cmp%hor(il1)%mesh_c1%compute_grad_op(mpl,ic1,n_s_grad(ic1a),col_grad(:,ic1a),Svec_grad(:,:,ic1a))
+         call grad(ic1a)%compute_grad(mpl,ic1,nicas_cmp%hor(il1)%mesh_c1,nicas_cmp%hor(il1)%tree_c1)
       end do
 
       ! Apply operator
       do ic1a=1,nicas_cmp%hor(il1)%nc1a
          grad_op_c1a(ic1a,:) = zero
-         do i_s=1,n_s_grad(ic1a)
-            grad_op_c1a(ic1a,:) = grad_op_c1a(ic1a,:)+Svec_grad(i_s,:,ic1a)*fld_src_c1(col_grad(i_s,ic1a))
+         do i_s=1,grad(ic1a)%n_s
+            grad_op_c1a(ic1a,:) = grad_op_c1a(ic1a,:)+grad(ic1a)%Svec(i_s,:)*fld_src_c1(grad(ic1a)%col(i_s))
          end do
       end do
 
@@ -2855,22 +2853,23 @@ if (nam%interp_test) then
       ! Print results
       write(mpl%info,'(a22,a,i3,a)') '','Level ',il1,': '
       if (nicas_cmp%verbosity) call mpl%flush
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-X: ', &
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-X:       ', &
  & sum(abs(grad_ssrf_c1a(:,1)-grad_ref_c1a(:,1)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
  & sum(abs(grad_op_c1a(:,1)-grad_ref_c1a(:,1)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
       if (nicas_cmp%verbosity) call mpl%flush
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-Y: ', &
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-Y:       ', &
  & sum(abs(grad_ssrf_c1a(:,2)-grad_ref_c1a(:,2)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
  & sum(abs(grad_op_c1a(:,2)-grad_ref_c1a(:,2)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
       if (nicas_cmp%verbosity) call mpl%flush
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-Z: ', &
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-Z:       ', &
  & sum(abs(grad_ssrf_c1a(:,3)-grad_ref_c1a(:,3)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
  & sum(abs(grad_op_c1a(:,3)-grad_ref_c1a(:,3)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
       if (nicas_cmp%verbosity) call mpl%flush
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a,e15.8,a)') '','Function:   ', &
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a,e15.8,a)') '','Function:         ', &
  & sum(abs(nicas_cmp%fld_ssrf(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (SSRF) / ', &
- & sum(abs(nicas_cmp%fld_op(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (operator) / ', &
- & sum(abs(nicas_cmp%fld_ssrf_from_op(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (SSRF from operator)'
+ & sum(abs(nicas_cmp%fld_op(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (operator)'
+      write(mpl%info,'(a25,a,e15.8,a,e15.8,a,e15.8,a)') '','Check operator:   ', &
+ & sum(abs(nicas_cmp%fld_op(:,il0)-nicas_cmp%fld_ssrf_from_op(:,il0)))/real(geom%nc0a,kind_real)
       if (nicas_cmp%verbosity) call mpl%flush
 
       ! Release memory
@@ -2881,9 +2880,6 @@ if (nam%interp_test) then
       deallocate(grad_ssrf_c1a)
       deallocate(grad_op_c1a)
       deallocate(grad_op_c1)
-      deallocate(n_s_grad)
-      deallocate(col_grad)
-      deallocate(Svec_grad)
    end do
 end if
 

@@ -16,6 +16,7 @@ use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,eq,infeq,sup
+use tools_ssrfpack, only: constr,aplyr
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -66,6 +67,7 @@ contains
    procedure :: linop_interp_lat
    procedure :: linop_interp_nn
    generic :: interp => linop_interp,linop_interp_lat,linop_interp_nn
+   procedure :: compute_grad => linop_compute_grad
 end type linop_type
 
 private
@@ -842,12 +844,13 @@ logical,intent(in),optional :: c1            !< C1 interpolation
 
 ! Local variables
 integer :: i_dst,i,j,n_s,i_s,next,i_s_grad,i_src
-integer :: nn_index(1),ib(3),n_s_tmp
-integer,allocatable :: n_s_grad(:),col_grad(:,:),row(:),col(:),nn_index_ext(:),col_ind(:),col_tmp(:)
+integer :: nn_index(1),ib(3),n_s_tmp,n_s_max
+integer,allocatable :: row(:),col(:),nn_index_ext(:),col_ind(:),col_tmp(:)
 real(kind_real) :: nn_dist(1),b(3),af(3),ag(3,3)
-real(kind_real),allocatable :: Svec_grad(:,:,:),S(:),S_tmp(:)
+real(kind_real),allocatable :: S(:),S_tmp(:)
 logical :: lc1,valid,found,missing(n_dst)
 character(len=7) :: cfmt
+type(linop_type) :: grad(n_src)
 
 ! Set name
 @:set_name(linop_interp)
@@ -867,32 +870,33 @@ if (ifmt>0) then
    call mpl%prog_init(n_dst)
 end if
 
+if (lc1) then
+   ! Compute gradient operator
+   do i_src=1,n_src
+      if (mask_src(i_src)) then
+         call grad(i_src)%compute_grad(mpl,i_src,mesh_src,tree_src)
+      else
+         call mpl%abort('${subr}$','source mask not implemented for C1 interpolation')
+      end if
+   end do
+end if
+
 ! Allocation
 if (lc1) then
    ! C1 function
-   allocate(n_s_grad(n_src))
-   allocate(col_grad(1+mesh_src%maxcols,n_src))
-   allocate(Svec_grad(1+mesh_src%maxcols,3,n_src))
-   allocate(col_ind(3*(1+mesh_src%maxcols)))
-   allocate(row(3*n_dst*(1+mesh_src%maxcols)))
-   allocate(col(3*n_dst*(1+mesh_src%maxcols)))
-   allocate(S(3*n_dst*(1+mesh_src%maxcols)))
+   n_s_max = 0
+   do i_src=1,n_src
+      n_s_max = max(n_s_max,grad(i_src)%n_s)
+   end do
+   n_s_max = n_s_max+1
+   allocate(row(3*n_dst*n_s_max))
+   allocate(col(3*n_dst*n_s_max))
+   allocate(S(3*n_dst*n_s_max))
 else
    ! C0 function
    allocate(row(3*n_dst))
    allocate(col(3*n_dst))
    allocate(S(3*n_dst))
-end if
-
-if (lc1) then
-   ! Compute gradient operator
-   do i_src=1,n_src
-      if (mask_src(i_src)) then
-         call mesh_src%compute_grad_op(mpl,i_src,n_s_grad(i_src),col_grad(:,i_src),Svec_grad(:,:,i_src))
-      else
-         call mpl%abort('${subr}$','source mask not implemented for C1 interpolation')
-      end if
-   end do
 end if
 
 n_s = 0
@@ -924,6 +928,9 @@ do i_dst=1,n_dst
          if (valid) then
             if (lc1) then
                ! C1 function
+ 
+               ! Allocation
+               allocate(col_ind(3*n_s_max))
 
                ! Normalize coordinates
                if (sum(b)>zero) then
@@ -942,10 +949,10 @@ do i_dst=1,n_dst
                   col_ind(n_s_tmp) = ib(i)
                end do
                do i=1,3
-                  do i_s_grad=1,n_s_grad(ib(i))
-                     if (all(col_ind(1:n_s_tmp)/=col_grad(i_s_grad,ib(i)))) then
+                  do i_s_grad=1,grad(ib(i))%n_s
+                     if (all(col_ind(1:n_s_tmp)/=grad(ib(i))%col(i_s_grad))) then
                         n_s_tmp = n_s_tmp+1
-                        col_ind(n_s_tmp) = col_grad(i_s_grad,ib(i))
+                        col_ind(n_s_tmp) = grad(ib(i))%col(i_s_grad)
                      end if
                   end do
                end do
@@ -963,8 +970,9 @@ do i_dst=1,n_dst
                   do i=1,3
                      if (col_tmp(i_s)==ib(i)) S_tmp(i_s) = S_tmp(i_s)+af(i)
                      do j=1,3
-                        do i_s_grad=1,n_s_grad(ib(j))
-                           if (col_tmp(i_s)==col_grad(i_s_grad,ib(j))) S_tmp(i_s) = S_tmp(i_s)+Svec_grad(i_s_grad,i,ib(j))*ag(i,j)
+                        do i_s_grad=1,grad(ib(j))%n_s
+                           if (col_tmp(i_s)==grad(ib(j))%col(i_s_grad)) S_tmp(i_s) = S_tmp(i_s) &
+ & +grad(ib(j))%Svec(i_s_grad,i)*ag(i,j)
                         end do
                      end do
                   end do
@@ -989,6 +997,7 @@ do i_dst=1,n_dst
                end do
 
                ! Release memory
+               deallocate(col_ind)
                deallocate(col_tmp)
                deallocate(S_tmp)
             else
@@ -1093,10 +1102,9 @@ linop%S = S(1:linop%n_s)
 
 ! Release memory
 if (lc1) then
-   deallocate(n_s_grad)
-   deallocate(col_grad)
-   deallocate(Svec_grad)
-   deallocate(col_ind)
+   do i_src=1,n_src
+      call grad(i_src)%dealloc
+   end do
 end if
 deallocate(row)
 deallocate(col)
@@ -1330,5 +1338,206 @@ linop%S = S(1:linop%n_s)
 @:probe_out()
 
 end subroutine linop_interp_nn
+
+!----------------------------------------------------------------------
+! Subroutine: linop_compute_grad
+!> Compute gradient
+!----------------------------------------------------------------------
+subroutine linop_compute_grad(linop,mpl,i,mesh,tree)
+
+implicit none
+
+! Passed variables
+class(linop_type),intent(inout) :: linop !< Linear operator
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: i                  !< Index
+type(mesh_type),intent(in) :: mesh       !< Mesh
+type(tree_type),intent(in) :: tree       !< Tree
+
+! Local variables
+integer,parameter :: nn_grad = 8
+integer :: j,j_next,km_next,i_s,im
+integer,allocatable :: km(:),nn_index(:)
+real(kind_real) :: cx,sx,cy,sy,gamma,wgt,wgt_sum
+real(kind_real),allocatable :: xp(:),yp(:),zp(:)
+real(kind_real),allocatable :: Svec_tmp(:,:)
+
+! Set name
+@:set_name(linop_compute_grad)
+
+! Probe in
+@:probe_in()
+
+! Inverse order
+im = mesh%order_inv(i)
+
+! Construct the rotation
+call constr(mesh%x(im),mesh%y(im),mesh%z(im),cx,sx,cy,sy)
+
+if (.false.) then
+   ! Allocation
+   linop%n_s = nn_grad+1
+   call linop%alloc(3)
+   allocate(Svec_tmp(linop%n_s,2))
+   allocate(nn_index(nn_grad+1))
+   allocate(km(nn_grad+1))
+   allocate(xp(nn_grad+1))
+   allocate(yp(nn_grad+1))
+   allocate(zp(nn_grad+1))
+
+   ! Get nearest neighbors
+   call tree%find_nearest_neighbors(mesh%lon(im),mesh%lat(im),nn_grad+1,nn_index)
+   
+   ! Loop over neigbors
+   do j=1,nn_grad+1
+      ! Inverse order
+      km(j) = mesh%order_inv(nn_index(j))
+
+      ! Get rotated coordinates
+      call aplyr(mpl,mesh%x(km(j)),mesh%y(km(j)),mesh%z(km(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
+   end do
+
+   ! Initialization
+   wgt_sum = zero
+   linop%col = nn_index
+   Svec_tmp = zero
+
+   ! Loop over neigbors
+   do j=2,nn_grad+1
+      if ((xp(j)>zero).and.(yp(j)>zero)) then
+         ! Weight
+         wgt = one/(xp(j)**2+yp(j)**2)
+         wgt_sum = wgt_sum+wgt
+
+         ! Add contribution
+         do i_s=1,linop%n_s
+            if (linop%col(i_s)==nn_index(1)) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)-wgt/xp(j)
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)-wgt/yp(j)
+            end if
+            if (linop%col(i_s)==nn_index(j)) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt/xp(j)
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt/yp(j)
+            end if
+         end do
+      end if
+   end do
+
+   ! Averaged gradient
+   if (wgt_sum>zero) then
+      Svec_tmp = Svec_tmp/wgt_sum
+   else
+      call mpl%abort('${subr}$','zero weight sum')
+   end if
+
+   ! Apply inverse rotation
+   linop%Svec(1:linop%n_s,1) = cy*Svec_tmp(:,1)
+   linop%Svec(1:linop%n_s,2) = cx*Svec_tmp(:,2)-sx*sy*Svec_tmp(:,1)
+   linop%Svec(1:linop%n_s,3) = -sx*Svec_tmp(:,2)-cx*sy*Svec_tmp(:,1)
+
+   ! Release memory
+   deallocate(Svec_tmp)
+   deallocate(nn_index)
+   deallocate(km)
+   deallocate(xp)
+   deallocate(yp)
+   deallocate(zp)
+else
+   ! Allocation
+   linop%n_s = mesh%rows(im)%cols+1
+   call linop%alloc(3)
+   allocate(Svec_tmp(linop%n_s,2))
+   allocate(km(mesh%rows(im)%cols))
+   allocate(xp(mesh%rows(im)%cols))
+   allocate(yp(mesh%rows(im)%cols))
+   allocate(zp(mesh%rows(im)%cols))
+   
+   ! Loop over neigbors
+   do j=1,mesh%rows(im)%cols
+      ! Get index
+      km(j) = mesh%rows(im)%nodes(j)
+   
+      ! Get rotated coordinates
+      call aplyr(mpl,mesh%x(km(j)),mesh%y(km(j)),mesh%z(km(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
+   end do
+   
+   ! Initialization
+   wgt_sum = zero
+   i_s = 1
+   linop%col(i_s) = im
+   do j=1,mesh%rows(im)%cols
+      i_s = i_s+1
+      linop%col(i_s) = km(j)
+   end do
+   Svec_tmp = zero
+   
+   ! Loop over triangles
+   do j=1,mesh%rows(im)%cols
+      ! Get next neighbor
+      if (j<mesh%rows(im)%cols) then
+         j_next = j+1
+      else
+         j_next = 1
+      end if
+      km_next = km(j_next)
+   
+      ! Compute plane's normal vector components
+      ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
+      ! Warning: in second equation of (8) for beta, "y"s should be "x"s
+      gamma = xp(j)*yp(j_next)-xp(j_next)*yp(j)
+      if (abs(gamma)>zero) then
+         ! Weight
+         wgt = two/abs(gamma)
+         wgt_sum = wgt_sum+wgt
+
+         ! Add contribution
+         do i_s=1,linop%n_s
+            if (linop%col(i_s)==im) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt*(yp(j)-yp(j_next))/gamma
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt*(xp(j_next)-xp(j))/gamma
+            end if
+            if (linop%col(i_s)==km(j)) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt*yp(j_next)/gamma
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)-wgt*xp(j_next)/gamma
+            end if
+            if (linop%col(i_s)==km_next) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)-wgt*yp(j)/gamma
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt*xp(j)/gamma
+            end if
+         end do
+      else
+         call mpl%abort('${subr}$','gamma should not be zero')
+      end if
+   end do
+   
+   ! Averaged gradient
+   if (wgt_sum>zero) then
+      Svec_tmp = Svec_tmp/wgt_sum
+   else
+      call mpl%abort('${subr}$','zero weight sum')
+   end if
+   
+   ! Grid indices
+   do i_s=1,linop%n_s
+      linop%col(i_s) = mesh%order(linop%col(i_s))
+   end do
+   
+   ! Apply inverse rotation
+   linop%Svec(1:linop%n_s,1) = cy*Svec_tmp(:,1)
+   linop%Svec(1:linop%n_s,2) = cx*Svec_tmp(:,2)-sx*sy*Svec_tmp(:,1)
+   linop%Svec(1:linop%n_s,3) = -sx*Svec_tmp(:,2)-cx*sy*Svec_tmp(:,1)
+   
+   ! Release memory
+   deallocate(Svec_tmp)
+   deallocate(km)
+   deallocate(xp)
+   deallocate(yp)
+   deallocate(zp)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine linop_compute_grad
 
 end module type_linop
