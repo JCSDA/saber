@@ -2868,6 +2868,7 @@ if (nam%interp_test) then
       write(mpl%info,'(a25,a,e15.8,a,e15.8,a,e15.8,a)') '','Function:         ', &
  & sum(abs(nicas_cmp%fld_ssrf(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (SSRF) / ', &
  & sum(abs(nicas_cmp%fld_op(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (operator)'
+      if (nicas_cmp%verbosity) call mpl%flush
       write(mpl%info,'(a25,a,e15.8,a,e15.8,a,e15.8,a)') '','Check operator:   ', &
  & sum(abs(nicas_cmp%fld_op(:,il0)-nicas_cmp%fld_ssrf_from_op(:,il0)))/real(geom%nc0a,kind_real)
       if (nicas_cmp%verbosity) call mpl%flush

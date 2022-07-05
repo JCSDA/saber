@@ -11,14 +11,17 @@
 !----------------------------------------------------------------------
 module tools_ssrfpack
 
-use tools_const, only: zero,quarter,one,two,three,four,six,pi
+use tools_const, only: zero,quarter,half,one,two,three,four,six,pi
 use tools_kinds, only: kind_real
-use tools_repro, only: supeq
+use tools_repro, only: infeq,supeq
 use tools_stripack, only: getnp
 use type_mpl, only: mpl_type
 @:use_probe()
 
 implicit none
+
+! Tension factor
+real(kind_real),parameter :: sig = zero
 
 interface aplyr
    module procedure ssrfpack_aplyr
@@ -58,6 +61,9 @@ interface rotate
 end interface
 interface setup
    module procedure ssrfpack_setup
+end interface
+interface snhcsh
+   module procedure ssrfpack_snhcsh
 end interface
 
 private
@@ -147,10 +153,10 @@ g(3) = -sx*g2p-cx*t
 end subroutine ssrfpack_aplyrt
 
 !----------------------------------------------------------------------
-! Subroutine: ssrfpack_arcint_op
-!> Compute operator to interpolate value f and gradient vector g at p, between p1 and p2
+! Subroutine: ssrfpack_arcint
+!> Compute interpolatation value f and gradient vector g at p, between p1 and p2
 !----------------------------------------------------------------------
-subroutine ssrfpack_arcint_op(mpl,p,p1,p2,a,al,bb1,bb2,un,unorm)
+subroutine ssrfpack_arcint(mpl,p,p1,p2,f1,f2,g1,g2,f,g)
 
 implicit none
 
@@ -159,12 +165,163 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 real(kind_real),intent(in) :: p(3)   !< Interpolation point
 real(kind_real),intent(in) :: p1(3)  !< First vertex
 real(kind_real),intent(in) :: p2(3)  !< Second vertex
-real(kind_real),intent(out) :: a     !< Interpolation coefficient
-real(kind_real),intent(out) :: al    !< Interpolation coefficient
-real(kind_real),intent(out) :: bb1   !< Interpolation coefficient
-real(kind_real),intent(out) :: bb2   !< Interpolation coefficient
-real(kind_real),intent(out) :: un(3) !< Interpolation coefficient
-real(kind_real),intent(out) :: unorm !< Interpolation coefficient
+real(kind_real),intent(in) :: f1     !< First vertex value
+real(kind_real),intent(in) :: f2     !< Second vertex value
+real(kind_real),intent(in) :: g1(3)  !< First vertex gradient
+real(kind_real),intent(in) :: g2(3)  !< Second vertex gradient
+real(kind_real),intent(out) :: f     !< Interpolated values
+real(kind_real),intent(out) :: g(3)  !< Interpolated gradient
+
+! Local variables
+real(kind_real) :: a,al,b1,b2,d1,d2,gn,gt,s,tau1,tau2,un(3),unorm,sb1,sb2,sm,cm,cmm,sm2,cm2,dum,sinh,sinh2
+real(kind_real) :: e,e1,e2,ems,tm,ts,tm1,tm2,tp1,tp2
+
+! Set name
+@:set_name(ssrfpack_arcint)
+
+! Probe in
+@:probe_in()
+
+! Compute un
+un(1) = p1(2)*p2(3)-p1(3)*p2(2)
+un(2) = p1(3)*p2(1)-p1(1)*p2(3)
+un(3) = p1(1)*p2(2)-p1(2)*p2(1)
+
+! Compute unorm
+unorm = sqrt(un(1)**2+un(2)**2+un(3)**2)
+if (.not.(unorm>zero)) call mpl%abort('${subr}$','unorm is not positive')
+
+! Normalize un
+un = un/unorm
+
+! Compute tangential derivatives at the endpoints
+tau1 = (g1(1)*p2(1)+g1(2)*p2(2)+g1(3)*p2(3))/unorm
+tau2 =-(g2(1)*p1(1)+g2(2)*p1(2)+g2(3)*p1(3))/unorm
+
+! Compute first arc-length
+a = arclen(p1,p2)
+if (.not.(a>zero)) call mpl%abort('${subr}$','arc length is not positive')
+
+! Compute second arc-length
+al = arclen(p1,p)
+
+! Factors
+b2 = al/a
+b1 = one-b2
+s = (f2-f1)/a
+d1 = s-tau1
+d2 = tau2-s
+
+if (sig<1.0e-9_kind_real) then
+   ! Hermite cubic interpolation
+   f = f1+al*(tau1+b2*(d1+b1*(d1-d2)))
+   gt = tau1+b2*(d1+d2+three*b1*(d1-d2))
+elseif (infeq(sig,half)) then
+   ! Approximations designed to avoid cancellation error in the hyperbolic functions
+   sb2 = sig*b2
+   call snhcsh(sig,sm,cm,cmm)
+   call snhcsh(sb2,sm2,cm2,dum)
+   sinh = sm+sig
+   sinh2 = sm2+sb2
+   e = sig*sm-two*cmm
+   f = f1+al*tau1+a*((cm*sm2-sm*cm2)*(d1+d2)+sig*(cm*cm2-sinh*sm2)*d1)/(sig*e)
+   gt = tau1+((cm*cm2-sm*sinh2)*(d1+d2)+sig*(cm*sinh2-sinh*cm2)*d1)/e
+else
+   ! Negative exponentials in order to avoid overflow
+   sb1 = sig*b1
+   sb2 = sig-sb1
+   e1 = exp(-sb1)
+   e2 = exp(-sb2)
+   ems = e1*e2
+   tm = one-ems
+   ts = tm**2
+   tm1 = one-e1
+   tm2 = one-e2
+   e = tm*(sig*(one+ems)-two*tm)
+   f = f1+al*s+a*(tm*tm1*tm2*(d1+d2)+sig*((e2*tm1**2-b1*ts)*d1+(e1*tm2**2-b2*ts)*d2))/(sig*e)
+   tp2 = one+e1
+   tp2 = one+e2
+   gt = s+(tm1*(tm*tp2-sig*e2*tp1)*d1-tm2*(tm*tp1-sig*e1*tp2)*d2)/e
+end if
+
+! Compute gn
+gn = b1*(un(1)*g1(1)+un(2)*g1(2)+un(3)*g1(3))+b2*(un(1)*g2(1)+un(2)*g2(2)+un(3)*g2(3))
+
+! Compute g = gt*(un x p)+gn*un
+g(1) = gt*(un(2)*p(3)-un(3)*p(2))+gn*un(1)
+g(2) = gt*(un(3)*p(1)-un(1)*p(3))+gn*un(2)
+g(3) = gt*(un(1)*p(2)-un(2)*p(1))+gn*un(3)
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_arcint
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_arcint_check
+!> Compute interpolatation value f and gradient vector g at p, between p1 and p2, using arcint_op
+!----------------------------------------------------------------------
+subroutine ssrfpack_arcint_check(mpl,p,p1,p2,f1,f2,g1,g2,f,g)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+real(kind_real),intent(in) :: p(3)   !< Interpolation point
+real(kind_real),intent(in) :: p1(3)  !< First vertex
+real(kind_real),intent(in) :: p2(3)  !< Second vertex
+real(kind_real),intent(in) :: f1     !< First vertex value
+real(kind_real),intent(in) :: f2     !< Second vertex value
+real(kind_real),intent(in) :: g1(3)  !< First vertex gradient
+real(kind_real),intent(in) :: g2(3)  !< Second vertex gradient
+real(kind_real),intent(out) :: f     !< Interpolated values
+real(kind_real),intent(out) :: g(3)  !< Interpolated gradient
+
+! Local variables
+real(kind_real) :: f_mat(8),g_mat(8,3),v(8)
+
+! Set name
+@:set_name(ssrfpack_arcint_check)
+
+! Probe in
+@:probe_in()
+
+! Get operators
+call arcint_op(mpl,p,p1,p2,f_mat,g_mat)
+
+! Input vector
+v = (/f1,f2,g1(1),g1(2),g1(3),g2(1),g2(2),g2(3)/)
+
+! Apply matrices
+f = dot_product(f_mat,v)
+g(1) = dot_product(g_mat(:,1),v)
+g(2) = dot_product(g_mat(:,2),v)
+g(3) = dot_product(g_mat(:,3),v)
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_arcint_check
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_arcint_op
+!> Compute operator to interpolate value f and gradient vector g at p, between p1 and p2
+!----------------------------------------------------------------------
+subroutine ssrfpack_arcint_op(mpl,p,p1,p2,f_mat,g_mat)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: p(3)        !< Interpolation point
+real(kind_real),intent(in) :: p1(3)       !< First vertex
+real(kind_real),intent(in) :: p2(3)       !< Second vertex
+real(kind_real),intent(out) :: f_mat(8)   !< Interpolation matrix for the value
+real(kind_real),intent(out) :: g_mat(8,3) !< Interpolation matrix for the gradient
+
+! Local variables
+real(kind_real) :: a,al,b1,b2,un(3),unorm,sb1,sb2,sm,cm,cmm,sm2,cm2,dum,sinh,sinh2,e,e1,e2,ems,tm,ts,tm1,tm2,tp1,tp2
+real(kind_real) :: f1_mat(8),d1_mat(8),d2_mat(8),gn_mat(8),gt_mat(8),s_mat(8),tau1_mat(8),tau2_mat(8)
 
 ! Set name
 @:set_name(ssrfpack_arcint_op)
@@ -192,80 +349,64 @@ if (.not.(a>zero)) call mpl%abort('${subr}$','arc length is not positive')
 al = arclen(p1,p)
 
 ! Factors
-bb2 = al/a
-bb1 = one-bb2
+b2 = al/a
+b1 = one-b2
+if (sig<1.0e-9_kind_real) then
+   ! Hermite cubic interpolation
+   ! No other factor
+elseif (infeq(sig,half)) then
+   ! Approximations designed to avoid cancellation error in the hyperbolic functions
+   sb2 = sig*b2
+   call snhcsh(sig,sm,cm,cmm)
+   call snhcsh(sb2,sm2,cm2,dum)
+   sinh = sm+sig
+   sinh2 = sm2+sb2
+   e = sig*sm-two*cmm
+else
+   ! Negative exponentials in order to avoid overflow
+   sb1 = sig*b1
+   sb2 = sig-sb1
+   e1 = exp(-sb1)
+   e2 = exp(-sb2)
+   ems = e1*e2
+   tm = one-ems
+   ts = tm**2
+   tm1 = one-e1
+   tm2 = one-e2
+   e = tm*(sig*(one+ems)-two*tm)
+   tp2 = one+e1
+   tp2 = one+e2
+end if
+
+! Matrices
+f1_mat = (/one,zero,zero,zero,zero,zero,zero,zero/)
+tau1_mat = (/zero,zero,p2(1)/unorm,p2(2)/unorm,p2(3)/unorm,zero,zero,zero/)
+tau2_mat = (/zero,zero,zero,zero,zero,-p1(1)/unorm,-p1(2)/unorm,-p1(3)/unorm/)
+s_mat = (/-one/a,one/a,zero,zero,zero,zero,zero,zero/)
+d1_mat = s_mat-tau1_mat
+d2_mat = tau2_mat-s_mat
+if (sig<1.0e-9_kind_real) then
+   ! Hermite cubic interpolation
+   f_mat = f1_mat+al*(tau1_mat+b2*(d1_mat+b1*(d1_mat-d2_mat)))
+   gt_mat = tau1_mat+b2*(d1_mat+d2_mat+three*b1*(d1_mat-d2_mat))
+elseif (infeq(sig,half)) then
+   ! Approximations designed to avoid cancellation error in the hyperbolic functions
+   f_mat = f1_mat+al*tau1_mat+a*((cm*sm2-sm*cm2)*(d1_mat+d2_mat)+sig*(cm*cm2-sinh*sm2)*d1_mat)/(sig*e)
+   gt_mat = tau1_mat+((cm*cm2-sm*sinh2)*(d1_mat+d2_mat)+sig*(cm*sinh2-sinh*cm2)*d1_mat)/e
+else
+   ! Negative exponentials in order to avoid overflow
+   f_mat = f1_mat+al*s_mat+a*(tm*tm1*tm2*(d1_mat+d2_mat)+sig*((e2*tm1**2-b1*ts)*d1_mat+(e1*tm2**2-b2*ts)*d2_mat))/(sig*e)
+   gt_mat = s_mat+(tm1*(tm*tp2-sig*e2*tp1)*d1_mat-tm2*(tm*tp1-sig*e1*tp2)*d2_mat)/e
+end if
+gn_mat = (/zero,zero,b1*un(1),b1*un(2),b1*un(3),b2*un(1),b2*un(2),b2*un(3)/)
+g_mat(:,1) = gt_mat*(un(2)*p(3)-un(3)*p(2))+gn_mat*un(1)
+g_mat(:,2) = gt_mat*(un(3)*p(1)-un(1)*p(3))+gn_mat*un(2)
+g_mat(:,3) = gt_mat*(un(1)*p(2)-un(2)*p(1))+gn_mat*un(3)
 
 ! Probe out
 @:probe_out()
 
 end subroutine ssrfpack_arcint_op
-
-!----------------------------------------------------------------------
-! Subroutine: ssrfpack_arcint
-!> Compute interpolatation value f and gradient vector g at p, between p1 and p2
-!----------------------------------------------------------------------
-subroutine ssrfpack_arcint(mpl,p,p1,p2,f1,f2,g1,g2,f,g)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl  !< MPI data
-real(kind_real),intent(in) :: p(3)   !< Interpolation point
-real(kind_real),intent(in) :: p1(3)  !< First vertex
-real(kind_real),intent(in) :: p2(3)  !< Second vertex
-real(kind_real),intent(in) :: f1     !< First vertex value
-real(kind_real),intent(in) :: f2     !< Second vertex value
-real(kind_real),intent(in) :: g1(3)  !< First vertex gradient
-real(kind_real),intent(in) :: g2(3)  !< Second vertex gradient
-real(kind_real),intent(out) :: f     !< Interpolated values
-real(kind_real),intent(out) :: g(3)  !< Interpolated gradient
-
-! Local variables
-real(kind_real) :: a,al,bb1,bb2,d1,d2,gn,gt,s,tau1,tau2,un(3),unorm
-
-! Compute un
-un(1) = p1(2)*p2(3)-p1(3)*p2(2)
-un(2) = p1(3)*p2(1)-p1(1)*p2(3)
-un(3) = p1(1)*p2(2)-p1(2)*p2(1)
-
-! Compute unorm
-unorm = sqrt(un(1)**2+un(2)**2+un(3)**2)
-if (.not.(unorm>zero)) call mpl%abort('${subr}$','unorm is not positive')
-
-! Normalize un
-un = un/unorm
-
-! Compute tangential derivatives at the endpoints
-tau1 = (g1(1)*p2(1)+g1(2)*p2(2)+g1(3)*p2(3))/unorm
-tau2 =-(g2(1)*p1(1)+g2(2)*p1(2)+g2(3)*p1(3))/unorm
-
-! Compute first arc-length
-a = arclen(p1,p2)
-if (.not.(a>zero)) call mpl%abort('${subr}$','arc length is not positive')
-
-! Compute second arc-length
-al = arclen(p1,p)
-
-! Factors
-bb2 = al/a
-bb1 = one-bb2
-s = (f2-f1)/a
-d1 = s-tau1
-d2 = tau2-s
-
-! Hermite cubic interpolation
-f = f1+al*(tau1+bb2*(d1+bb1*(d1-d2)))
-gt = tau1+bb2*(d1+d2+three*bb1*(d1-d2))
-
-! Compute gn
-gn = bb1*(un(1)*g1(1)+un(2)*g1(2)+un(3)*g1(3))+bb2*(un(1)*g2(1)+un(2)*g2(2)+un(3)*g2(3))
-
-! Compute g = gt*(un x p)+gn*un
-g(1) = gt*(un(2)*p(3)-un(3)*p(2))+gn*un(1)
-g(2) = gt*(un(3)*p(1)-un(1)*p(3))+gn*un(2)
-g(3) = gt*(un(1)*p(2)-un(2)*p(1))+gn*un(3)
-
-end subroutine ssrfpack_arcint
 
 !----------------------------------------------------------------------
 ! Subroutine: ssrfpack_arclen
@@ -285,6 +426,12 @@ real(kind_real) :: al
 ! Local variables
 integer :: i
 real(kind_real) :: d
+
+! Set name
+@:set_name(ssrfpack_arclen)
+
+! Probe in
+@:probe_in()
 
 ! Initialization
 d = zero
@@ -368,7 +515,7 @@ real(kind_real),intent(out) :: ag(3,3) !< Gradient weights
 
 ! Local variables
 integer :: i
-real(kind_real) :: c1,c2,c3,csum,s1,s2,s3,u1n,u2n,u3n
+real(kind_real) :: c1,c2,c3,csum,c1n,c2n,c3n,s1,s2,s3,u1n,u2n,u3n
 real(kind_real) :: a(3),al(3),bb1(3),bb2(3),q1(3),q2(3),q3(3),u1(3),u2(3),u3(3),un(3,3),unorm(3)
 
 ! Set name
@@ -389,9 +536,9 @@ if (.not.(csum>zero)) then
    ag = zero
 else
    ! Normalize c1, c2, and c3
-   c1 = c1/csum
-   c2 = c2/csum
-   c3 = c3/csum
+   c1n = c1/csum
+   c2n = c2/csum
+   c3n = c3/csum
 
    ! Compute (s1,s2,s3), (u1,u2,u3) and (u1n,u2n,u3n)
    s1 = b2 + b3
@@ -426,181 +573,181 @@ else
 
    ! Compute function weights
    af(1) = &
- & +c1*b1**2*(three-two*b1) &
- & +c2*(one-b2)**2*(one+two*b2)*al(2)/a(2)*bb2(2)*(one+two*bb1(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(1)*(un(2,2)*q2(3)-un(3,2)*q2(2))*six*bb1(2)*bb2(2)/a(2) &
- & +c2*(one-b2)**2*b2/u2n*v2(2)*(un(3,2)*q2(1)-un(1,2)*q2(3))*six*bb1(2)*bb2(2)/a(2) &
- & +c2*(one-b2)**2*b2/u2n*v2(3)*(un(1,2)*q2(2)-un(2,2)*q2(1))*six*bb1(2)*bb2(2)/a(2) &
- & +c3*(one-b3)**2*(one+two*b3)*(one-al(3)/a(3)*bb2(3)*(one+two*bb1(3))) &
- & -c3*(one-b3)**2*b3/u3n*v3(1)*(un(2,3)*q3(3)-un(3,3)*q3(2))*six*bb1(3)*bb2(3)/a(3) &
- & -c3*(one-b3)**2*b3/u3n*v3(2)*(un(3,3)*q3(1)-un(1,3)*q3(3))*six*bb1(3)*bb2(3)/a(3) &
- & -c3*(one-b3)**2*b3/u3n*v3(3)*(un(1,3)*q3(2)-un(2,3)*q3(1))*six*bb1(3)*bb2(3)/a(3)
+ & +c1n*b1**2*(three-two*b1) &
+ & +c2n*(one-b2)**2*(one+two*b2)*al(2)/a(2)*bb2(2)*(one+two*bb1(2)) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(1)*(un(2,2)*q2(3)-un(3,2)*q2(2))*six*bb1(2)*bb2(2)/a(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(2)*(un(3,2)*q2(1)-un(1,2)*q2(3))*six*bb1(2)*bb2(2)/a(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(3)*(un(1,2)*q2(2)-un(2,2)*q2(1))*six*bb1(2)*bb2(2)/a(2) &
+ & +c3n*(one-b3)**2*(one+two*b3)*(one-al(3)/a(3)*bb2(3)*(one+two*bb1(3))) &
+ & -c3n*(one-b3)**2*b3/u3n*v3(1)*(un(2,3)*q3(3)-un(3,3)*q3(2))*six*bb1(3)*bb2(3)/a(3) &
+ & -c3n*(one-b3)**2*b3/u3n*v3(2)*(un(3,3)*q3(1)-un(1,3)*q3(3))*six*bb1(3)*bb2(3)/a(3) &
+ & -c3n*(one-b3)**2*b3/u3n*v3(3)*(un(1,3)*q3(2)-un(2,3)*q3(1))*six*bb1(3)*bb2(3)/a(3)
    af(2) = &
- & +c1*(one-b1)**2*(one+two*b1)*(one-al(1)/a(1)*bb2(1)*(one+two*bb1(1))) &
- & -c1*(one-b1)**2*b1/u1n*v1(1)*(un(2,1)*q1(3)-un(3,1)*q1(2))*six*bb1(1)*bb2(1)/a(1) &
- & -c1*(one-b1)**2*b1/u1n*v1(2)*(un(3,1)*q1(1)-un(1,1)*q1(3))*six*bb1(1)*bb2(1)/a(1) &
- & -c1*(one-b1)**2*b1/u1n*v1(3)*(un(1,1)*q1(2)-un(2,1)*q1(1))*six*bb1(1)*bb2(1)/a(1) &
- & +c2*b2**2*(three-two*b2) &
- & +c3*(one-b3)**2*(one+two*b3)*al(3)/a(3)*bb2(3)*(one+two*bb1(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(1)*(un(2,3)*q3(3)-un(3,3)*q3(2))*six*bb1(3)*bb2(3)/a(3) &
- & +c3*(one-b3)**2*b3/u3n*v3(2)*(un(3,3)*q3(1)-un(1,3)*q3(3))*six*bb1(3)*bb2(3)/a(3) &
- & +c3*(one-b3)**2*b3/u3n*v3(3)*(un(1,3)*q3(2)-un(2,3)*q3(1))*six*bb1(3)*bb2(3)/a(3)
+ & +c1n*(one-b1)**2*(one+two*b1)*(one-al(1)/a(1)*bb2(1)*(one+two*bb1(1))) &
+ & -c1n*(one-b1)**2*b1/u1n*v1(1)*(un(2,1)*q1(3)-un(3,1)*q1(2))*six*bb1(1)*bb2(1)/a(1) &
+ & -c1n*(one-b1)**2*b1/u1n*v1(2)*(un(3,1)*q1(1)-un(1,1)*q1(3))*six*bb1(1)*bb2(1)/a(1) &
+ & -c1n*(one-b1)**2*b1/u1n*v1(3)*(un(1,1)*q1(2)-un(2,1)*q1(1))*six*bb1(1)*bb2(1)/a(1) &
+ & +c2n*b2**2*(three-two*b2) &
+ & +c3n*(one-b3)**2*(one+two*b3)*al(3)/a(3)*bb2(3)*(one+two*bb1(3)) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(1)*(un(2,3)*q3(3)-un(3,3)*q3(2))*six*bb1(3)*bb2(3)/a(3) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(2)*(un(3,3)*q3(1)-un(1,3)*q3(3))*six*bb1(3)*bb2(3)/a(3) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(3)*(un(1,3)*q3(2)-un(2,3)*q3(1))*six*bb1(3)*bb2(3)/a(3)
    af(3) = &
- & +c1*(one-b1)**2*(one+two*b1)*al(1)/a(1)*bb2(1)*(one+two*bb1(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(1)*(un(2,1)*q1(3)-un(3,1)*q1(2))*six*bb1(1)*bb2(1)/a(1) &
- & +c1*(one-b1)**2*b1/u1n*v1(2)*(un(3,1)*q1(1)-un(1,1)*q1(3))*six*bb1(1)*bb2(1)/a(1) &
- & +c1*(one-b1)**2*b1/u1n*v1(3)*(un(1,1)*q1(2)-un(2,1)*q1(1))*six*bb1(1)*bb2(1)/a(1) &
- & +c2*(one-b2)**2*(one+two*b2)*(one-al(2)/a(2)*bb2(2)*(one+two*bb1(2))) &
- & -c2*(one-b2)**2*b2/u2n*v2(1)*(un(2,2)*q2(3)-un(3,2)*q2(2))*six*bb1(2)*bb2(2)/a(2) &
- & -c2*(one-b2)**2*b2/u2n*v2(2)*(un(3,2)*q2(1)-un(1,2)*q2(3))*six*bb1(2)*bb2(2)/a(2) &
- & -c2*(one-b2)**2*b2/u2n*v2(3)*(un(1,2)*q2(2)-un(2,2)*q2(1))*six*bb1(2)*bb2(2)/a(2) &
- & +c3*b3**2*(three-two*b3)
+ & +c1n*(one-b1)**2*(one+two*b1)*al(1)/a(1)*bb2(1)*(one+two*bb1(1)) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(1)*(un(2,1)*q1(3)-un(3,1)*q1(2))*six*bb1(1)*bb2(1)/a(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(2)*(un(3,1)*q1(1)-un(1,1)*q1(3))*six*bb1(1)*bb2(1)/a(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(3)*(un(1,1)*q1(2)-un(2,1)*q1(1))*six*bb1(1)*bb2(1)/a(1) &
+ & +c2n*(one-b2)**2*(one+two*b2)*(one-al(2)/a(2)*bb2(2)*(one+two*bb1(2))) &
+ & -c2n*(one-b2)**2*b2/u2n*v2(1)*(un(2,2)*q2(3)-un(3,2)*q2(2))*six*bb1(2)*bb2(2)/a(2) &
+ & -c2n*(one-b2)**2*b2/u2n*v2(2)*(un(3,2)*q2(1)-un(1,2)*q2(3))*six*bb1(2)*bb2(2)/a(2) &
+ & -c2n*(one-b2)**2*b2/u2n*v2(3)*(un(1,2)*q2(2)-un(2,2)*q2(1))*six*bb1(2)*bb2(2)/a(2) &
+ & +c3n*b3**2*(three-two*b3)
 
    ! Compute gradient weights
    ag(1,1) = &
- & +c1*(one-b1)*b1**2*u1(1) &
- & +c2*(one-b2)**2*(one+two*b2)*al(2)*bb2(2)*bb1(2)*v3(1)/unorm(2) &
- & +c2*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb2(2)*un(1,2)+(un(2,2)*q2(3) &
+ & +c1n*(one-b1)*b1**2*u1(1) &
+ & +c2n*(one-b2)**2*(one+two*b2)*al(2)*bb2(2)*bb1(2)*v3(1)/unorm(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb2(2)*un(1,2)+(un(2,2)*q2(3) &
  & -un(3,2)*q2(2))*(three*bb2(2)*bb1(2)-bb2(2))*v3(1)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb2(2)*un(1,2)+(un(3,2)*q2(1) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb2(2)*un(1,2)+(un(3,2)*q2(1) &
  & -un(1,2)*q2(3))*(three*bb2(2)*bb1(2)-bb2(2))*v3(1)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb2(2)*un(1,2)+(un(1,2)*q2(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb2(2)*un(1,2)+(un(1,2)*q2(2) &
  & -un(2,2)*q2(1))*(three*bb2(2)*bb1(2)-bb2(2))*v3(1)/unorm(2)) &
- & +c3*(one-b3)**2*(one+two*b3)*al(3)*(one-bb2(3)*(one+bb1(3)))*v2(1)/unorm(3) &
- & +c3*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb1(3)*un(1,3)+(un(2,3)*q3(3) &
+ & +c3n*(one-b3)**2*(one+two*b3)*al(3)*(one-bb2(3)*(one+bb1(3)))*v2(1)/unorm(3) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb1(3)*un(1,3)+(un(2,3)*q3(3) &
  & -un(3,3)*q3(2))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(1)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb1(3)*un(1,3)+(un(3,3)*q3(1) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb1(3)*un(1,3)+(un(3,3)*q3(1) &
  & -un(1,3)*q3(3))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(1)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb1(3)*un(1,3)+(un(1,3)*q3(2) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb1(3)*un(1,3)+(un(1,3)*q3(2) &
  & -un(2,3)*q3(1))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(1)/unorm(3))
    ag(2,1) = &
- & +c1*(one-b1)*b1**2*u1(2) &
- & +c2*(one-b2)**2*(one+two*b2)*al(2)*bb2(2)*bb1(2)*v3(2)/unorm(2) &
- & +c2*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb2(2)*un(2,2)+(un(2,2)*q2(3) &
+ & +c1n*(one-b1)*b1**2*u1(2) &
+ & +c2n*(one-b2)**2*(one+two*b2)*al(2)*bb2(2)*bb1(2)*v3(2)/unorm(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb2(2)*un(2,2)+(un(2,2)*q2(3) &
  & -un(3,2)*q2(2))*(three*bb2(2)*bb1(2)-bb2(2))*v3(2)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb2(2)*un(2,2)+(un(3,2)*q2(1) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb2(2)*un(2,2)+(un(3,2)*q2(1) &
  & -un(1,2)*q2(3))*(three*bb2(2)*bb1(2)-bb2(2))*v3(2)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb2(2)*un(2,2)+(un(1,2)*q2(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb2(2)*un(2,2)+(un(1,2)*q2(2) &
  & -un(2,2)*q2(1))*(three*bb2(2)*bb1(2)-bb2(2))*v3(2)/unorm(2)) &
- & +c3*(one-b3)**2*(one+two*b3)*al(3)*(one-bb2(3)*(one+bb1(3)))*v2(2)/unorm(3) &
- & +c3*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb1(3)*un(2,3)+(un(2,3)*q3(3) &
+ & +c3n*(one-b3)**2*(one+two*b3)*al(3)*(one-bb2(3)*(one+bb1(3)))*v2(2)/unorm(3) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb1(3)*un(2,3)+(un(2,3)*q3(3) &
  & -un(3,3)*q3(2))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(2)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb1(3)*un(2,3)+(un(3,3)*q3(1) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb1(3)*un(2,3)+(un(3,3)*q3(1) &
  & -un(1,3)*q3(3))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(2)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb1(3)*un(2,3)+(un(1,3)*q3(2) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb1(3)*un(2,3)+(un(1,3)*q3(2) &
  & -un(2,3)*q3(1))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(2)/unorm(3))
    ag(3,1) = &
- & +c1*(one-b1)*b1**2*u1(3) &
- & +c2*(one-b2)**2*(one+two*b2)*al(2)*bb2(2)*bb1(2)*v3(3)/unorm(2) &
- & +c2*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb2(2)*un(3,2)+(un(2,2)*q2(3) &
+ & +c1n*(one-b1)*b1**2*u1(3) &
+ & +c2n*(one-b2)**2*(one+two*b2)*al(2)*bb2(2)*bb1(2)*v3(3)/unorm(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb2(2)*un(3,2)+(un(2,2)*q2(3) &
  & -un(3,2)*q2(2))*(three*bb2(2)*bb1(2)-bb2(2))*v3(3)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb2(2)*un(3,2)+(un(3,2)*q2(1) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb2(2)*un(3,2)+(un(3,2)*q2(1) &
  & -un(1,2)*q2(3))*(three*bb2(2)*bb1(2)-bb2(2))*v3(3)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb2(2)*un(3,2)+(un(1,2)*q2(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb2(2)*un(3,2)+(un(1,2)*q2(2) &
  & -un(2,2)*q2(1))*(three*bb2(2)*bb1(2)-bb2(2))*v3(3)/unorm(2)) &
- & +c3*(one-b3)**2*(one+two*b3)*al(3)*(one-bb2(3)*(one+bb1(3)))*v2(3)/unorm(3) &
- & +c3*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb1(3)*un(3,3)+(un(2,3)*q3(3) &
+ & +c3n*(one-b3)**2*(one+two*b3)*al(3)*(one-bb2(3)*(one+bb1(3)))*v2(3)/unorm(3) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb1(3)*un(3,3)+(un(2,3)*q3(3) &
  & -un(3,3)*q3(2))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(3)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb1(3)*un(3,3)+(un(3,3)*q3(1) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb1(3)*un(3,3)+(un(3,3)*q3(1) &
  & -un(1,3)*q3(3))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(3)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb1(3)*un(3,3)+(un(1,3)*q3(2) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb1(3)*un(3,3)+(un(1,3)*q3(2) &
  & -un(2,3)*q3(1))*(one-bb2(3)-three*bb1(3)*bb2(3))*v2(3)/unorm(3))
    ag(1,2) = &
- & +c1*(one-b1)**2*(one+two*b1)*al(1)*(one-bb2(1)*(one+bb1(1)))*v3(1)/unorm(1) &
- & +c1*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb1(1)*un(1,1)+(un(2,1)*q1(3) &
+ & +c1n*(one-b1)**2*(one+two*b1)*al(1)*(one-bb2(1)*(one+bb1(1)))*v3(1)/unorm(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb1(1)*un(1,1)+(un(2,1)*q1(3) &
  & -un(3,1)*q1(2))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(1)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb1(1)*un(1,1)+(un(3,1)*q1(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb1(1)*un(1,1)+(un(3,1)*q1(1) &
  & -un(1,1)*q1(3))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(1)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb1(1)*un(1,1)+(un(1,1)*q1(2) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb1(1)*un(1,1)+(un(1,1)*q1(2) &
  & -un(2,1)*q1(1))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(1)/unorm(1)) &
- & +c2*(one-b2)*b2**2*u2(1) &
- & +c3*(one-b3)**2*(one+two*b3)*al(3)*bb2(3)*bb1(3)*v1(1)/unorm(3) &
- & +c3*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb2(3)*un(1,3)+(un(2,3)*q3(3) &
+ & +c2n*(one-b2)*b2**2*u2(1) &
+ & +c3n*(one-b3)**2*(one+two*b3)*al(3)*bb2(3)*bb1(3)*v1(1)/unorm(3) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb2(3)*un(1,3)+(un(2,3)*q3(3) &
  & -un(3,3)*q3(2))*(three*bb2(3)*bb1(3)-bb2(3))*v1(1)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb2(3)*un(1,3)+(un(3,3)*q3(1) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb2(3)*un(1,3)+(un(3,3)*q3(1) &
  & -un(1,3)*q3(3))*(three*bb2(3)*bb1(3)-bb2(3))*v1(1)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb2(3)*un(1,3)+(un(1,3)*q3(2) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb2(3)*un(1,3)+(un(1,3)*q3(2) &
  & -un(2,3)*q3(1))*(three*bb2(3)*bb1(3)-bb2(3))*v1(1)/unorm(3))
    ag(2,2) = &
- & +c1*(one-b1)**2*(one+two*b1)*al(1)*(one-bb2(1)*(one+bb1(1)))*v3(2)/unorm(1) &
- & +c1*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb1(1)*un(2,1)+(un(2,1)*q1(3) &
+ & +c1n*(one-b1)**2*(one+two*b1)*al(1)*(one-bb2(1)*(one+bb1(1)))*v3(2)/unorm(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb1(1)*un(2,1)+(un(2,1)*q1(3) &
  & -un(3,1)*q1(2))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(2)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb1(1)*un(2,1)+(un(3,1)*q1(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb1(1)*un(2,1)+(un(3,1)*q1(1) &
  & -un(1,1)*q1(3))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(2)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb1(1)*un(2,1)+(un(1,1)*q1(2) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb1(1)*un(2,1)+(un(1,1)*q1(2) &
  & -un(2,1)*q1(1))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(2)/unorm(1)) &
- & +c2*(one-b2)*b2**2*u2(2) &
- & +c3*(one-b3)**2*(one+two*b3)*al(3)*bb2(3)*bb1(3)*v1(2)/unorm(3) &
- & +c3*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb2(3)*un(2,3)+(un(2,3)*q3(3) &
+ & +c2n*(one-b2)*b2**2*u2(2) &
+ & +c3n*(one-b3)**2*(one+two*b3)*al(3)*bb2(3)*bb1(3)*v1(2)/unorm(3) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb2(3)*un(2,3)+(un(2,3)*q3(3) &
  & -un(3,3)*q3(2))*(three*bb2(3)*bb1(3)-bb2(3))*v1(2)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb2(3)*un(2,3)+(un(3,3)*q3(1) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb2(3)*un(2,3)+(un(3,3)*q3(1) &
  & -un(1,3)*q3(3))*(three*bb2(3)*bb1(3)-bb2(3))*v1(2)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb2(3)*un(2,3)+(un(1,3)*q3(2) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb2(3)*un(2,3)+(un(1,3)*q3(2) &
  & -un(2,3)*q3(1))*(three*bb2(3)*bb1(3)-bb2(3))*v1(2)/unorm(3))
    ag(3,2) = &
- & +c1*(one-b1)**2*(one+two*b1)*al(1)*(one-bb2(1)*(one+bb1(1)))*v3(3)/unorm(1) &
- & +c1*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb1(1)*un(3,1)+(un(2,1)*q1(3) &
+ & +c1n*(one-b1)**2*(one+two*b1)*al(1)*(one-bb2(1)*(one+bb1(1)))*v3(3)/unorm(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb1(1)*un(3,1)+(un(2,1)*q1(3) &
  & -un(3,1)*q1(2))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(3)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb1(1)*un(3,1)+(un(3,1)*q1(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb1(1)*un(3,1)+(un(3,1)*q1(1) &
  & -un(1,1)*q1(3))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(3)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb1(1)*un(3,1)+(un(1,1)*q1(2) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb1(1)*un(3,1)+(un(1,1)*q1(2) &
  & -un(2,1)*q1(1))*(one-bb2(1)-three*bb1(1)*bb2(1))*v3(3)/unorm(1)) &
- & +c2*(one-b2)*b2**2*u2(3) &
- & +c3*(one-b3)**2*(one+two*b3)*al(3)*bb2(3)*bb1(3)*v1(3)/unorm(3) &
- & +c3*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb2(3)*un(3,3)+(un(2,3)*q3(3) &
+ & +c2n*(one-b2)*b2**2*u2(3) &
+ & +c3n*(one-b3)**2*(one+two*b3)*al(3)*bb2(3)*bb1(3)*v1(3)/unorm(3) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(1)*(un(1,3)*bb2(3)*un(3,3)+(un(2,3)*q3(3) &
  & -un(3,3)*q3(2))*(three*bb2(3)*bb1(3)-bb2(3))*v1(3)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb2(3)*un(3,3)+(un(3,3)*q3(1) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(2)*(un(2,3)*bb2(3)*un(3,3)+(un(3,3)*q3(1) &
  & -un(1,3)*q3(3))*(three*bb2(3)*bb1(3)-bb2(3))*v1(3)/unorm(3)) &
- & +c3*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb2(3)*un(3,3)+(un(1,3)*q3(2) &
+ & +c3n*(one-b3)**2*b3/u3n*v3(3)*(un(3,3)*bb2(3)*un(3,3)+(un(1,3)*q3(2) &
  & -un(2,3)*q3(1))*(three*bb2(3)*bb1(3)-bb2(3))*v1(3)/unorm(3))
    ag(1,3) = &
- & +c1*(one-b1)**2*(one+two*b1)*al(1)*bb2(1)*bb1(1)*v2(1)/unorm(1) &
- & +c1*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb2(1)*un(1,1)+(un(2,1)*q1(3) &
+ & +c1n*(one-b1)**2*(one+two*b1)*al(1)*bb2(1)*bb1(1)*v2(1)/unorm(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb2(1)*un(1,1)+(un(2,1)*q1(3) &
  & -un(3,1)*q1(2))*(three*bb2(1)*bb1(1)-bb2(1))*v2(1)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb2(1)*un(1,1)+(un(3,1)*q1(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb2(1)*un(1,1)+(un(3,1)*q1(1) &
  & -un(1,1)*q1(3))*(three*bb2(1)*bb1(1)-bb2(1))*v2(1)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb2(1)*un(1,1)+(un(1,1)*q1(2) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb2(1)*un(1,1)+(un(1,1)*q1(2) &
  & -un(2,1)*q1(1))*(three*bb2(1)*bb1(1)-bb2(1))*v2(1)/unorm(1)) &
- & +c2*(one-b2)**2*(one+two*b2)*al(2)*(one-bb2(2)*(one+bb1(2)))*v1(1)/unorm(2) &
- & +c2*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb1(2)*un(1,2)+(un(2,2)*q2(3) &
+ & +c2n*(one-b2)**2*(one+two*b2)*al(2)*(one-bb2(2)*(one+bb1(2)))*v1(1)/unorm(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb1(2)*un(1,2)+(un(2,2)*q2(3) &
  & -un(3,2)*q2(2))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(1)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb1(2)*un(1,2)+(un(3,2)*q2(1) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb1(2)*un(1,2)+(un(3,2)*q2(1) &
  & -un(1,2)*q2(3))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(1)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb1(2)*un(1,2)+(un(1,2)*q2(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb1(2)*un(1,2)+(un(1,2)*q2(2) &
  & -un(2,2)*q2(1))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(1)/unorm(2)) &
- & +c3*(one-b3)*b3**2*u3(1)
+ & +c3n*(one-b3)*b3**2*u3(1)
    ag(2,3) = &
- & +c1*(one-b1)**2*(one+two*b1)*al(1)*bb2(1)*bb1(1)*v2(2)/unorm(1) &
- & +c1*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb2(1)*un(2,1)+(un(2,1)*q1(3) &
+ & +c1n*(one-b1)**2*(one+two*b1)*al(1)*bb2(1)*bb1(1)*v2(2)/unorm(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb2(1)*un(2,1)+(un(2,1)*q1(3) &
  & -un(3,1)*q1(2))*(three*bb2(1)*bb1(1)-bb2(1))*v2(2)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb2(1)*un(2,1)+(un(3,1)*q1(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb2(1)*un(2,1)+(un(3,1)*q1(1) &
  & -un(1,1)*q1(3))*(three*bb2(1)*bb1(1)-bb2(1))*v2(2)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb2(1)*un(2,1)+(un(1,1)*q1(2) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb2(1)*un(2,1)+(un(1,1)*q1(2) &
  & -un(2,1)*q1(1))*(three*bb2(1)*bb1(1)-bb2(1))*v2(2)/unorm(1)) &
- & +c2*(one-b2)**2*(one+two*b2)*al(2)*(one-bb2(2)*(one+bb1(2)))*v1(2)/unorm(2) &
- & +c2*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb1(2)*un(2,2)+(un(2,2)*q2(3) &
+ & +c2n*(one-b2)**2*(one+two*b2)*al(2)*(one-bb2(2)*(one+bb1(2)))*v1(2)/unorm(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb1(2)*un(2,2)+(un(2,2)*q2(3) &
  & -un(3,2)*q2(2))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(2)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb1(2)*un(2,2)+(un(3,2)*q2(1) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb1(2)*un(2,2)+(un(3,2)*q2(1) &
  & -un(1,2)*q2(3))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(2)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb1(2)*un(2,2)+(un(1,2)*q2(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb1(2)*un(2,2)+(un(1,2)*q2(2) &
  & -un(2,2)*q2(1))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(2)/unorm(2)) &
- & +c3*(one-b3)*b3**2*u3(2)
+ & +c3n*(one-b3)*b3**2*u3(2)
    ag(3,3) = &
- & +c1*(one-b1)**2*(one+two*b1)*al(1)*bb2(1)*bb1(1)*v2(3)/unorm(1) &
- & +c1*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb2(1)*un(3,1)+(un(2,1)*q1(3) &
+ & +c1n*(one-b1)**2*(one+two*b1)*al(1)*bb2(1)*bb1(1)*v2(3)/unorm(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(1)*(un(1,1)*bb2(1)*un(3,1)+(un(2,1)*q1(3) &
  & -un(3,1)*q1(2))*(three*bb2(1)*bb1(1)-bb2(1))*v2(3)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb2(1)*un(3,1)+(un(3,1)*q1(1) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(2)*(un(2,1)*bb2(1)*un(3,1)+(un(3,1)*q1(1) &
  & -un(1,1)*q1(3))*(three*bb2(1)*bb1(1)-bb2(1))*v2(3)/unorm(1)) &
- & +c1*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb2(1)*un(3,1)+(un(1,1)*q1(2) &
+ & +c1n*(one-b1)**2*b1/u1n*v1(3)*(un(3,1)*bb2(1)*un(3,1)+(un(1,1)*q1(2) &
  & -un(2,1)*q1(1))*(three*bb2(1)*bb1(1)-bb2(1))*v2(3)/unorm(1)) &
- & +c2*(one-b2)**2*(one+two*b2)*al(2)*(one-bb2(2)*(one+bb1(2)))*v1(3)/unorm(2) &
- & +c2*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb1(2)*un(3,2)+(un(2,2)*q2(3) &
+ & +c2n*(one-b2)**2*(one+two*b2)*al(2)*(one-bb2(2)*(one+bb1(2)))*v1(3)/unorm(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(1)*(un(1,2)*bb1(2)*un(3,2)+(un(2,2)*q2(3) &
  & -un(3,2)*q2(2))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(3)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb1(2)*un(3,2)+(un(3,2)*q2(1) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(2)*(un(2,2)*bb1(2)*un(3,2)+(un(3,2)*q2(1) &
  & -un(1,2)*q2(3))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(3)/unorm(2)) &
- & +c2*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb1(2)*un(3,2)+(un(1,2)*q2(2) &
+ & +c2n*(one-b2)**2*b2/u2n*v2(3)*(un(3,2)*bb1(2)*un(3,2)+(un(1,2)*q2(2) &
  & -un(2,2)*q2(1))*(one-bb2(2)-three*bb1(2)*bb2(2))*v1(3)/unorm(2)) &
- & +c3*(one-b3)*b3**2*u3(3)
+ & +c3n*(one-b3)*b3**2*u3(3)
 end if
 
 ! Probe out
@@ -636,8 +783,13 @@ real(kind_real) :: v
 
 ! Local variables
 integer :: i
-real(kind_real) :: c1,c2,c3,ds,dv,f,g(3),q1(3),q2(3),q3(3),csum,s1,s2,s3,u1(3),u2(3),u3(3),u1n,u2n,u3n
+real(kind_real) :: c1,c2,c3,csum,c1n,c2n,c3n,ds,dv,f,g(3),q1(3),q2(3),q3(3),s1,s2,s3,u1(3),u2(3),u3(3),u1n,u2n,u3n
 
+! Set name
+@:set_name(ssrfpack_fval)
+
+! Probe in
+@:probe_in()
 
 ! Compute c1, c2 and c3
 c1 = b2*b3
@@ -650,14 +802,14 @@ if (.not.(csum>zero)) then
    v = b1*f1+b2*f2+b3*f3
 else
    ! Normalize c1, c2, and c3
-   c1 = c1/csum
-   c2 = c2/csum
-   c3 = c3/csum
+   c1n = c1/csum
+   c2n = c2/csum
+   c3n = c3/csum
 
    ! Compute (s1,s2,s3), (u1,u2,u3) and (u1n,u2n,u3n)
-   s1 = b2 + b3
-   s2 = b3 + b1
-   s3 = b1 + b2
+   s1 = b2+b3
+   s2 = b3+b1
+   s3 = b1+b2
    u1n = zero
    u2n = zero
    u3n = zero
@@ -665,9 +817,9 @@ else
       u1(i) = (b2*v2(i)+b3*v3(i))/s1
       u2(i) = (b3*v3(i)+b1*v1(i))/s2
       u3(i) = (b1*v1(i)+b2*v2(i))/s3
-      u1n = u1n+u1(i)*u1(i)
-      u2n = u2n+u2(i)*u2(i)
-      u3n = u3n+u3(i)*u3(i)
+      u1n = u1n+u1(i)**2
+      u2n = u2n+u2(i)**2
+      u3n = u3n+u3(i)**2
    end do
 
    ! Compute q1, q2, and q3
@@ -687,20 +839,23 @@ else
    call arcint(mpl,q1,v2,v3,f2,f3,g2,g3,f,g)
    dv = g1(1)*u1(1)+g1(2)*u1(2)+g1(3)*u1(3)
    ds = -(g(1)*v1(1)+g(2)*v1(2)+g(3)*v1(3))/u1n
-   v = v+c1*hval(b1,f1,f,dv,ds)
+   v = v+c1n*hval(b1,f1,f,dv,ds)
 
    ! Contribution from side opposite v2
    call arcint(mpl,q2,v3,v1,f3,f1,g3,g1,f,g)
    dv = g2(1)*u2(1)+g2(2)*u2(2)+g2(3)*u2(3)
    ds = -(g(1)*v2(1)+g(2)*v2(2)+g(3)*v2(3))/u2n
-   v = v+c2*hval(b2,f2,f,dv,ds)
+   v = v+c2n*hval(b2,f2,f,dv,ds)
 
    ! Contribution from side opposite v3
    call arcint(mpl,q3,v1,v2,f1,f2,g1,g2,f,g)
    dv = g3(1)*u3(1)+g3(2)*u3(2)+g3(3)*u3(3)
    ds = -(g(1)*v3(1)+g(2)*v3(2)+g(3)*v3(3))/u3n
-   v = v+c3*hval(b3,f3,f,dv,ds)
+   v = v+c3n*hval(b3,f3,f,dv,ds)
 end if
+
+! Probe out
+@:probe_out()
 
 end function ssrfpack_fval
 
@@ -720,6 +875,12 @@ real(kind_real),intent(out) :: s   !< Plus or minus b/r, or 1 if r = 0
 
 ! Local variables
 real(kind_real) :: aa,bb,r,u,v
+
+! Set name
+@:set_name(ssrfpack_givens)
+
+! Probe in
+@:probe_in()
 
 ! Copy
 aa = a
@@ -750,7 +911,10 @@ else
    s = zero
 end if
 
-END subroutine ssrfpack_givens
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_givens
 
 !----------------------------------------------------------------------
 ! Subroutine: ssrfpack_givens
@@ -781,6 +945,12 @@ real(kind_real),parameter :: dtol = 1.0e-2_kind_real
 real(kind_real),parameter :: sf = one
 integer :: i,im1,ip1,j,jp1,l,lm1,lmax,lmin,lnp,np,npts(lmx)
 real(kind_real) :: a(6,6),av,avsq,c,cx,cy,df,dmin,dsum,dx,dy,rf,rin,s,sx,sy,wt,xp,yp,zp
+
+! Set name
+@:set_name(ssrfpack_gradl)
+
+! Probe in
+@:probe_in()
 
 ! Check for errors
 if ((n<7).or.(k<1).or.(k>n)) call mpl%abort('${subr}$','n or k is outside its valid range')
@@ -888,6 +1058,9 @@ dy = dy/av
 ! Rotate the gradient (dx,dy,0) back into the original coordinate system
 call aplyrt(dx,dy,cx,sx,cy,sy,g)
 
+! Probe out
+@:probe_out()
+
 end subroutine ssrfpack_gradl
 
 !----------------------------------------------------------------------
@@ -909,7 +1082,13 @@ real(kind_real),intent(in) :: hp2 !< Product of d(p1,p2) with first order deriva
 real(kind_real) :: v
 
 ! Local variables
-real(kind_real) ::  b1,b2,d1,d2,s
+real(kind_real) ::  b1,b2,d1,d2,s,sb1,sb2,sm,cm,cmm,sm2,cm2,dum,sinh,e,e1,e2,ems,tm,ts,tm1,tm2
+
+! Set name
+@:set_name(ssrfpack_hval)
+
+! Probe in
+@:probe_in()
 
 ! Factors
 b1 = b
@@ -920,8 +1099,34 @@ s = h2-h1
 d1 = s-hp1
 d2 = hp2-s
 
-! Hermite cubic interpolation
-v = h1+b2*(hp1+b2*(d1+b1*(d1-d2)))
+if (sig<1.0e-9_kind_real) then
+   ! Hermite cubic interpolation
+   v = h1+b2*(hp1+b2*(d1+b1*(d1-d2)))
+elseif (infeq(sig,half)) then
+   ! Approximations designed to avoid cancellation error in the hyperbolic functions
+   sb2 = sig*b2
+   call snhcsh(sig,sm,cm,cmm)
+   call snhcsh(sb2,sm2,cm2,dum)
+   sinh = sm+sig
+   e = sig*sm-two*cmm
+   v = h1+b2*hp1+((cm*sm2-sm*cm2)*(d1+d2)+sig*(cm*cm2-sinh*sm2)*d1)/(sig*e)
+else
+   ! Negative exponentials in order to avoid overflow
+   sb1 = sig*b1
+   sb2 = sig-sb1
+   e1 = exp(-sb1)
+   e2 = exp(-sb2)
+   ems = e1*e2
+   tm = one-ems
+   ts = tm**2
+   tm1 = one-e1
+   tm2 = one-e2
+   e = tm*(sig*(one+ems)-two*tm)
+   v = h1+b2*s+(tm*tm1*tm2*(d1+d2)+sig*((e2*tm1**2-b1*ts)*d1+(e1*tm2**2-b2*ts)*d2))/(sig*e)
+end if
+
+! Probe out
+@:probe_out()
 
 end function ssrfpack_hval
 
@@ -944,6 +1149,12 @@ real(kind_real),intent(inout) :: y(n) !< Y-components of the vectors to be rotat
 integer :: i
 real(kind_real) :: xi,yi
 
+! Set name
+@:set_name(ssrfpack_rotate)
+
+! Probe in
+@:probe_in()
+
 do i=1,n
   xi = x(i)
   yi = y(i)
@@ -951,11 +1162,14 @@ do i=1,n
   y(i) = -s*xi+c*yi
 end do
 
+! Probe out
+@:probe_out()
+
 end subroutine ssrfpack_rotate
 
 !----------------------------------------------------------------------
 ! Subroutine: ssrfpack_setup
-!> Applies the Givens plane rotation
+!> Set-up the i-th row of an augmented regression matrix for a weighted least squares fit of a quadratic function
 !----------------------------------------------------------------------
 subroutine ssrfpack_setup(xi,yi,wi,wk,s1,s2,wt,row)
 
@@ -974,6 +1188,12 @@ real(kind_real),intent(inout) :: row(6) !< Array containing a row of the augment
 ! Local variables
 real(kind_real) :: w1,w2
 
+! Set name
+@:set_name(ssrfpack_setup)
+
+! Probe in
+@:probe_in()
+
 ! Setup
 w1 = wt/s1
 w2 = wt/s2
@@ -984,6 +1204,61 @@ row(4) = xi*w1
 row(5) = yi*w1
 row(6) = (wi-wk)*wt
 
+! Probe out
+@:probe_out()
+
 end subroutine ssrfpack_setup
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_snhcsh
+!> Approximations to the modified hyperbolic functions
+!----------------------------------------------------------------------
+subroutine ssrfpack_snhcsh(x,sinhm,coshm,coshmm)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: x       !< Point at which the functions are to be evaluated
+real(kind_real),intent(out) :: sinhm  !< sinh(x)-x
+real(kind_real),intent(out) :: coshm  !< cosh(x)-1
+real(kind_real),intent(out) :: coshmm !< cosh(x)-1-x**2/2
+
+! Local variables
+real(kind_real),parameter :: c1 = 0.1666666666659E0_kind_real
+real(kind_real),parameter :: c2 = 0.8333333431546E-2_kind_real
+real(kind_real),parameter :: c3 = 0.1984107350948E-3_kind_real
+real(kind_real),parameter :: c4 = 0.2768286868175E-5_kind_real
+real(kind_real) :: ax,expx,f,xc,xs,xsd2,xsd4
+
+! Set name
+@:set_name(ssrfpack_snhcsh)
+
+! Probe in
+@:probe_in()
+
+ax = abs(x)
+xs = ax**2
+if (infeq(ax,half)) then
+   ! Approximations for small x
+   xc = x*xs
+   sinhm = xc*(((c4*xs+c3)*xs+c2)*xs+c1)
+   xsd4 = quarter*xs
+   xsd2 = two*xsd4
+   f = (((c4*xsd4+c3)*xsd4+c2)*xsd4+c1)*xsd4
+   coshmm = xsd2*f*(f+two)
+   coshm = coshmm+xsd2
+else
+   ! Approximations for large x
+   expx = exp(ax)
+   sinhm = -half*(((one/expx+ax)+ax)-expx)
+   if (x<zero) sinhm = -sinhm
+   coshm = half*((one/expx-two)+expx)
+   coshmm = coshm-half*xs
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_snhcsh
 
 end module tools_ssrfpack
