@@ -590,6 +590,7 @@
 #:set subr_list = subr_list + ["ssrfpack_givens"]
 #:set subr_list = subr_list + ["ssrfpack_gradl"]
 #:set subr_list = subr_list + ["ssrfpack_hval"]
+#:set subr_list = subr_list + ["ssrfpack_hval_op"]
 #:set subr_list = subr_list + ["ssrfpack_rotate"]
 #:set subr_list = subr_list + ["ssrfpack_setup"]
 #:set subr_list = subr_list + ["ssrfpack_snhcsh"]
