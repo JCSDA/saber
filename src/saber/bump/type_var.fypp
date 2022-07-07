@@ -214,7 +214,7 @@ character(len=1024) :: fname_var,grpname
 @:probe_in()
 
 ! Read variance
-write(mpl%info,'(a7,a)') '','Read variance'
+write(mpl%test,'(a7,a)') '','Read variance'
 call mpl%flush
 
 ! Initialization
@@ -305,7 +305,7 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Write variance
-write(mpl%info,'(a7,a)') '','Write variance'
+write(mpl%test,'(a7,a)') '','Write variance'
 call mpl%flush
 
 ! Create file
@@ -389,9 +389,9 @@ real(kind_real) :: pert_c0a(geom%nc0a,geom%nl0,nam%nv)
 @:probe_in()
 
 ! Update variance
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Update variance'
+write(mpl%test,'(a)') '--- Update variance'
 call mpl%flush
 
 ! Indices
@@ -546,7 +546,7 @@ if (nam%forced_var) then
    ! Missing fourth-order centered moment
    var%m4 = mpl%msv%valr
 elseif (nam%new_var) then
-   write(mpl%info,'(a7,a)') '','Compute variance'
+   write(mpl%test,'(a7,a)') '','Compute variance'
    call mpl%flush
 
    ! Initialization
@@ -641,7 +641,7 @@ type(nicas_cmp_type) :: nicas_cmp
 @:probe_in()
 
 ! Filter variance
-write(mpl%info,'(a7,a)') '','Filter variance'
+write(mpl%test,'(a7,a)') '','Filter variance'
 call mpl%flush
 
 ! Initial averaged value
@@ -668,7 +668,7 @@ else
    do iv=1,nam%nv
       ! Block index
       ib = bpar%v_to_b(iv)
-      write(mpl%info,'(a10,a,a)') '','Variable ',trim(nam%variables(iv))
+      write(mpl%test,'(a10,a,a)') '','Variable ',trim(nam%variables(iv))
       call mpl%flush
 
       ! Global sum
@@ -774,11 +774,11 @@ else
          call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
 
          ! Print results
-         write(mpl%info,'(a13,a)') '','Optimal filtering length-scale:'
+         write(mpl%test,'(a13,a)') '','Optimal filtering length-scale:'
          call mpl%flush
          do il0=1,geom%nl0
             if (m2sqasy(il0)>zero) then
-               write(mpl%info,'(a16,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm, &
+               write(mpl%test,'(a16,a,i3,a,f10.2,a,e12.5)') '','Level ',il0,': rhflt = ',rhflt(il0)*reqkm, &
  & ' km, rel. diff. = ',(m2prod(il0)-m2sqasy(il0))/m2sqasy(il0)
                call mpl%flush
             end if
@@ -838,11 +838,11 @@ else
          call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
 
          ! Print results
-         write(mpl%info,'(a13,a,i2,a)') '','Optimal number of passes (max. is ',nam%var_npass,')'
+         write(mpl%test,'(a13,a,i2,a)') '','Optimal number of passes (max. is ',nam%var_npass,')'
          call mpl%flush
          do il0=1,geom%nl0
             if (m2sqasy(il0)>zero) then
-               write(mpl%info,'(a16,a,i3,a,i2,a,f10.2,a,e12.5)') '','Level ',il0,': ',ipass_min(il0),' x ',rhflt(il0)*reqkm, &
+               write(mpl%test,'(a16,a,i3,a,i2,a,f10.2,a,e12.5)') '','Level ',il0,': ',ipass_min(il0),' x ',rhflt(il0)*reqkm, &
  & 'km, rel. diff. = ',(m2prod(il0)-m2sqasy(il0))/m2sqasy(il0)
                call mpl%flush
             end if
@@ -852,14 +852,14 @@ else
 end if
 
 ! Averaged value (initial / final)
-write(mpl%info,'(a7,a)') '','Averaged value (initial / final):'
+write(mpl%test,'(a7,a)') '','Averaged value (initial / final):'
 call mpl%flush
 do iv=1,nam%nv
-   write(mpl%info,'(a10,a,a)') '','Variable ',trim(nam%variables(iv))
+   write(mpl%test,'(a10,a,a)') '','Variable ',trim(nam%variables(iv))
    call mpl%flush
    do il0=1,geom%nl0
       m2avg = global_average(mpl,var%m2(:,il0,iv),geom%gmask_c0a(:,il0))
-      write(mpl%info,'(a13,a,i3,a,e12.5,a,e12.5)') '','Level ',il0,' ~> ',m2avg_init(il0,iv),' / ',m2avg
+      write(mpl%test,'(a13,a,i3,a,e12.5,a,e12.5)') '','Level ',il0,' ~> ',m2avg_init(il0,iv),' / ',m2avg
       call mpl%flush
    end do
 end do

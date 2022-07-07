@@ -657,7 +657,7 @@ logical,allocatable :: lcheck_lonlat(:,:),gmask_llw(:),lcheck_c0b(:),lcheck_llb(
 
 if (nam%new_wind) then
    ! Define regular grid
-   write(mpl%info,'(a7,a)') '','Define regular grid: '
+   write(mpl%test,'(a7,a)') '','Define regular grid: '
    call mpl%flush(.false.)
 
    ! Allocation
@@ -743,7 +743,7 @@ if (nam%new_wind) then
    gmask_llw = .true.
 
    ! Nearest neighbor interpolation from subset Sc0 to regular grid
-   write(mpl%info,'(a7,a)') '','Nearest neighbor interpolation from subset Sc0 to regular grid'
+   write(mpl%test,'(a7,a)') '','Nearest neighbor interpolation from subset Sc0 to regular grid'
    call mpl%flush
 
    ! Nearest neighbor interpolation from subset Sc0 to regular grid
@@ -751,7 +751,7 @@ if (nam%new_wind) then
    call wind%interp_c0b_to_llw%interp(mpl,geom%nc0u,geom%gmask_hor_c0u,geom%tree_c0u,wind%nllw,lon_llw,lat_llw,gmask_llw,7)
 
    ! Define halo B, compute conversions and communications for subset Sc0
-   write(mpl%info,'(a7,a)') '','Define halo B, compute conversions and communications for subset Sc0'
+   write(mpl%test,'(a7,a)') '','Define halo B, compute conversions and communications for subset Sc0'
    call mpl%flush
 
    ! Allocation
@@ -810,7 +810,7 @@ if (nam%new_wind) then
    deallocate(c0b_to_c0)
 
    ! Conversion from psi/chi to u/v on regular grid, halo A
-   write(mpl%info,'(a7,a)') '','Conversion from psi/chi to u/v on regular grid, halo A'
+   write(mpl%test,'(a7,a)') '','Conversion from psi/chi to u/v on regular grid, halo A'
    call mpl%flush
 
    ! Allocation
@@ -945,7 +945,7 @@ if (nam%new_wind) then
    end do
 
    ! Interpolation from regular grid to subset Sc0
-   write(mpl%info,'(a7,a)') '','Interpolation from regular grid to subset Sc0'
+   write(mpl%test,'(a7,a)') '','Interpolation from regular grid to subset Sc0'
    call mpl%flush
    wind%interp_llb_to_c0a%prefix = 'interp_llb_to_c0a'
    wind%interp_llb_to_c0a%n_dst = geom%nc0a
@@ -1015,7 +1015,7 @@ if (nam%new_wind) then
    end do
 
    ! Define halo B, compute conversions and communications for regular grid
-   write(mpl%info,'(a7,a)') '','Define halo B, compute conversions and communications for regular grid'
+   write(mpl%test,'(a7,a)') '','Define halo B, compute conversions and communications for regular grid'
    call mpl%flush
 
    ! Allocation
@@ -1098,7 +1098,7 @@ if (nam%check_adjoints) then
    call mpl%dot_prod(v,v_save,sum_v)
    sum1 = sum_psi+sum_chi
    sum2 = sum_u+sum_v
-   write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Adjoint test: ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+   write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Adjoint test: ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
    call mpl%flush
 end if
 

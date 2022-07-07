@@ -354,13 +354,13 @@ call geom%setup_c0(mpl)
 call geom%setup_universe(mpl,rng,nam)
 
 ! Setup tree
-write(mpl%info,'(a7,a)') '','Setup tree'
+write(mpl%test,'(a7,a)') '','Setup tree'
 call mpl%flush
 call geom%tree_c0u%alloc(mpl,geom%nc0u)
 call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
 
 ! Setup mesh (using stripack, since CGAL cannot compute boundary nodes)
-write(mpl%info,'(a7,a)') '','Setup mesh'
+write(mpl%test,'(a7,a)') '','Setup mesh'
 call mpl%flush
 call geom%mesh_c0u%alloc(geom%nc0u,.false.)
 call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,hull_bnd=.true.)
@@ -372,7 +372,7 @@ call geom%setup_mask_distance(mpl,nam)
 call geom%setup_mask_check(mpl,nam)
 
 ! Setup horizontal distance
-write(mpl%info,'(a7,a)') '','Setup horizontal distance'
+write(mpl%test,'(a7,a)') '','Setup horizontal distance'
 call mpl%flush
 allocate(geom%disth(nam%nc3))
 do jc3=1,nam%nc3
@@ -381,7 +381,7 @@ end do
 if (maxval(geom%disth)>nam%universe_rad) call mpl%abort('${subr}$','horizontal distance larger than universe radius')
 
 ! Setup angular sector
-write(mpl%info,'(a7,a)') '','Setup angular sector'
+write(mpl%test,'(a7,a)') '','Setup angular sector'
 call mpl%flush
 allocate(geom%as(nam%nc4))
 geom%das = pi/real(nam%nc4,kind_real)
@@ -397,7 +397,7 @@ call geom%setup_io(mpl,nam)
 
 if (nam%full_grid_smoother_nn>0) then
    ! Compute full grid smoother
-   write(mpl%info,'(a7,a)') '','Compute full grid smoother'
+   write(mpl%test,'(a7,a)') '','Compute full grid smoother'
    call mpl%flush
    call geom%compute_smoother(mpl,nam)
 end if
@@ -406,35 +406,35 @@ end if
 geom%allocated = .true.
 
 ! Print summary
-write(mpl%info,'(a7,a)') '','Geometry summary:'
+write(mpl%test,'(a7,a)') '','Geometry summary:'
 call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','Model grid size:         ',geom%nmg
+write(mpl%test,'(a10,a,i8)') '','Model grid size:         ',geom%nmg
 call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
+write(mpl%test,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
 call mpl%flush
-write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Number of duplicated points (halo):    ',(geom%nmg-geom%nc0), &
+write(mpl%test,'(a10,a,i6,a,f6.2,a)') '','Number of duplicated points (halo):    ',(geom%nmg-geom%nc0), &
  & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*hundred,'%)'
 call mpl%flush
-write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
+write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',geom%lat_min*rad2deg,' / ',geom%lat_max*rad2deg
+write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',geom%lat_min*rad2deg,' / ',geom%lat_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a10,a,e10.3,a)') '','Domain area (% of Earth area):',hundred*geom%area_max_c0/(four*pi),'%'
+write(mpl%test,'(a10,a,e10.3,a)') '','Domain area (% of Earth area):',hundred*geom%area_max_c0/(four*pi),'%'
 call mpl%flush
-write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
+write(mpl%test,'(a10,a)') '','Valid points (% of total domain):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a13,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
+   write(mpl%test,'(a13,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
  & hundred*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
-write(mpl%info,'(a10,a)') '','Vertical unit:'
+write(mpl%test,'(a10,a)') '','Vertical unit:'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a13,a,i3,a,e10.3,a)') '','Level ',nam%levs(il0),' ~> ',geom%vunitavg(il0),' vert. unit'
+   write(mpl%test,'(a13,a,i3,a,e10.3,a)') '','Level ',nam%levs(il0),' ~> ',geom%vunitavg(il0),' vert. unit'
    call mpl%flush
 end do
-write(mpl%info,'(a10,a)') '','Distribution (local / universe):'
+write(mpl%test,'(a10,a)') '','Distribution (local / universe):'
 call mpl%flush
 do iproc=1,mpl%nproc
    write(mpl%info,'(a13,a,i6,a,i8,a,i8)') '','Task ',iproc,': ',geom%proc_to_nc0a(iproc),' / ',geom%proc_to_nc0u(iproc)
@@ -643,7 +643,7 @@ real(kind_real) :: norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a7,a)') '','Setup subset Sc0'
+write(mpl%test,'(a7,a)') '','Setup subset Sc0'
 call mpl%flush
 
 ! Allocation
@@ -790,6 +790,14 @@ call grid_hash(mpl,geom%nc0a,geom%nc0,geom%nl0,geom%c0a_to_c0,geom%lon_c0a,geom%
 ! Compute independent levels
 call independent_levels(mpl,geom%nl0,hash,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0,7)
 
+! Test grid hash
+write(mpl%test,'(a7,a)') '','Geometry grid hash: '
+call mpl%flush
+do il0=1,geom%nl0
+   write(mpl%test,'(a10,a,i3,a,i12)') '','Level ',il0,': ',hash(il0)
+   call mpl%flush
+end do
+
 ! Probe out
 @:probe_out()
 
@@ -823,7 +831,7 @@ real(kind_real),allocatable :: area_c0u(:)
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a7,a)') '','Setup universe'
+write(mpl%test,'(a7,a)') '','Setup universe'
 call mpl%flush
 
 ! Allocation
@@ -914,7 +922,7 @@ end do
 if (nam%default_seed) call rng%reseed(mpl)
 
 ! Communicate data from halo A to universe on subset Sc0
-write(mpl%info,'(a10,a)') '','Communicate data from halo A to universe on subset Sc0'
+write(mpl%test,'(a10,a)') '','Communicate data from halo A to universe on subset Sc0'
 call mpl%flush
 
 ! Subset Sc0 universe size
@@ -985,7 +993,7 @@ else
 end if
 
 ! Check that Sc0 points in universe are not duplicated
-write(mpl%info,'(a7,a)') '','Check that Sc0 points in universe are not duplicated'
+write(mpl%test,'(a7,a)') '','Check that Sc0 points in universe are not duplicated'
 call mpl%flush
 call qsort(geom%nc0u,geom%lon_c0u,geom%lat_c0u,order,.false.)
 do ic0u=2,geom%nc0u
@@ -1026,7 +1034,7 @@ type(tree_type) :: tree
 @:probe_in()
 
 if ((trim(nam%diag_draw_type)=='random_coast').or.(trim(nam%nicas_draw_type)=='random_coast')) then
-   write(mpl%info,'(a7,a)') '','Define minimum distance to mask'
+   write(mpl%test,'(a7,a)') '','Define minimum distance to mask'
    call mpl%flush
 
    ! Allocation
@@ -1097,7 +1105,7 @@ real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
 
 ! Setup mask check
 if (nam%mask_check) then
-   write(mpl%info,'(a7,a)') '','Setup mask check'
+   write(mpl%test,'(a7,a)') '','Setup mask check'
    call mpl%flush
 
    ! Allocation
@@ -1353,7 +1361,7 @@ type(tree_type) :: tree_dirac
 @:probe_in()
 
 if (nam%check_dirac.and.(nam%ndir>0)) then
-   write(mpl%info,'(a7,a)') '','Setup Dirac parameters'
+   write(mpl%test,'(a7,a)') '','Setup Dirac parameters'
    call mpl%flush
 
    ! Find level
@@ -2126,7 +2134,7 @@ else
    nfac = nfacmin
    retry = .true.
    write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i8,a)'
-   write(mpl%info,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required'
+   write(mpl%test,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required'
    if (verbosity) call mpl%flush
 
    do while (retry)
@@ -2236,7 +2244,7 @@ else
 
       ! Print result
       write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,a,a,i8,a)'
-      write(mpl%info,trim(cfmt)) '','Attempt with a ',trim(gridid),' grid: ',nss,' valid points found'
+      write(mpl%test,trim(cfmt)) '','Attempt with a ',trim(gridid),' grid: ',nss,' valid points found'
       if (verbosity) call mpl%flush
       retry = (nss<ns)
    end do
@@ -2285,7 +2293,7 @@ else
    s_to_ssa = mpl%msv%vali
    s_to_cx = mpl%msv%vali
    write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a)'
-   write(mpl%info,trim(cfmt)) '','Potential method: '
+   write(mpl%test,trim(cfmt)) '','Potential method: '
    if (verbosity) then
       call mpl%flush(.false.)
       call mpl%prog_init(ns)

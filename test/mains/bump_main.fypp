@@ -89,30 +89,30 @@ do iproc=1,mpl%nproc
 end do
 
 ! Header
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- You are running the BUMP main program -------------------------'
+write(mpl%test,'(a)') '--- You are running the BUMP main program -------------------------'
 call mpl%flush
 
 ! Model setup
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Setup model'
+write(mpl%test,'(a)') '--- Setup model'
 call mpl%flush
 call model%setup(mpl,bump%nam)
 
 ! Load ensembles
 if ((bump%nam%ens1_ne>0).and.(.not.(bump%nam%check_consistency.or.bump%nam%check_optimality))) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(mpl%test,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Load ensemble 1'
+   write(mpl%test,'(a)') '--- Load ensemble 1'
    call mpl%flush
    call model%load_ens(mpl,bump%nam,'ens1')
 end if
 if (bump%nam%ens2_ne>0) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(mpl%test,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Load ensemble 2'
+   write(mpl%test,'(a)') '--- Load ensemble 2'
    call mpl%flush
    call model%load_ens(mpl,bump%nam,'ens2')
 end if
@@ -125,12 +125,12 @@ if (bump%nam%ens2_ne>0) call bump%second_geometry(model%afunctionspace,model%fie
 
 ! Load members one by one
 if ((bump%nam%ens1_ne>0).and.(.not.(bump%nam%check_consistency.or.bump%nam%check_optimality))) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(mpl%test,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Add members of ensemble 1'
+   write(mpl%test,'(a)') '--- Add members of ensemble 1'
    call mpl%flush
    do ie=1,bump%nam%ens1_ne
-      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens1_ne
+      write(mpl%test,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens1_ne
       call mpl%flush
       if (bump%nam%update_vbal_cov) then
          call bump%update_vbal_cov(model%ens1(ie),ie)
@@ -145,12 +145,12 @@ if ((bump%nam%ens1_ne>0).and.(.not.(bump%nam%check_consistency.or.bump%nam%check
    end do
 end if
 if (bump%nam%ens2_ne>0) then
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(mpl%test,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Add members of ensemble 2'
+   write(mpl%test,'(a)') '--- Add members of ensemble 2'
    call mpl%flush
    do ie=1,bump%nam%ens2_ne
-      write(mpl%info,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens2_ne
+      write(mpl%test,'(a7,a,i4,a,i4)') '','Member ',ie,' / ',bump%nam%ens2_ne
       call mpl%flush
       if (bump%nam%update_mom) then
          call bump%update_mom(model%ens2(ie),ie,2)
@@ -162,33 +162,33 @@ if (bump%nam%ens2_ne>0) then
 end if
 
 ! Run drivers
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Run drivers'
+write(mpl%test,'(a)') '--- Run drivers'
 call mpl%flush
 call bump%run_drivers
 
 ! Test get_parameter interfaces
 if (bump%nam%check_get_param) then
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Test get_parameter interfaces'
+   write(bump%mpl%test,'(a)') '--- Test get_parameter interfaces'
    call bump%mpl%flush()
    call bump%test_get_parameter
    if (bump%nam%default_seed) call bump%rng%reseed(mpl)
 end if
 
 ! Release memory (partial)
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Release memory (partial)'
+write(mpl%test,'(a)') '--- Release memory (partial)'
 call mpl%flush
 call bump%partial_dealloc
 
 ! Test interfaces
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Test apply interfaces'
+write(mpl%test,'(a)') '--- Test apply interfaces'
 call mpl%flush
 call bump%test_apply_interfaces
 
@@ -206,11 +206,11 @@ call model%dealloc
 
 if ((trim(bump%nam%verbosity)=='all').or.((trim(bump%nam%verbosity)=='main').and.mpl%main)) then
    ! Close listings
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(mpl%test,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Close listings'
+   write(mpl%test,'(a)') '--- Close listings'
    call mpl%flush
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(mpl%test,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
    close(unit=mpl%lunit)
 end if

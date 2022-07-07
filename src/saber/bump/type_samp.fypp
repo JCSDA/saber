@@ -1140,22 +1140,22 @@ call samp%alloc(mpl,nam,geom)
 
 if (nam%load_samp_local) then
    ! Read local sampling
-   write(mpl%info,'(a7,a)') '','Read local sampling'
+   write(mpl%test,'(a7,a)') '','Read local sampling'
    call mpl%flush
    call samp%read_local(mpl,nam,geom)
 
    ! Compute MPI distribution, subset Sc1, halo A and universe
-   write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
+   write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
    call mpl%flush
    call samp%compute_mpi_c1au(mpl,rng,nam,geom)
 elseif (nam%load_samp_global) then
    ! Read global sampling
-   write(mpl%info,'(a7,a)') '','Read global sampling'
+   write(mpl%test,'(a7,a)') '','Read global sampling'
    call mpl%flush
    call samp%read_global(mpl,nam,geom)
 
    ! Compute MPI distribution, subset Sc1, halo A and universe
-   write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
+   write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
    call mpl%flush
    call samp%compute_mpi_c1au(mpl,rng,nam,geom)
 else
@@ -1168,7 +1168,7 @@ else
 
    if (present(other)) then
       ! Copy sampling, subset Sc1
-      write(mpl%info,'(a7,a,i5,a)') '','Copy sampling, subset Sc1 (nc1 = ',nam%nc1,')'
+      write(mpl%test,'(a7,a,i5,a)') '','Copy sampling, subset Sc1 (nc1 = ',nam%nc1,')'
       call mpl%flush
 
       ! Copy dimensions
@@ -1193,7 +1193,7 @@ else
    else
       ! Compute nearest neighbors for local diagnostics output
       if (nam%nldwv>0) then
-         write(mpl%info,'(a7,a)') '','Compute local diagnostics locations:'
+         write(mpl%test,'(a7,a)') '','Compute local diagnostics locations:'
          call mpl%flush
 
          ! Allocation
@@ -1231,7 +1231,7 @@ else
             end do
 
             ! Print results
-            write(mpl%info,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
+            write(mpl%test,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
  & ldwv_to_lon(ildwv)*rad2deg,' / ',ldwv_to_lat(ildwv)*rad2deg
             call mpl%flush
          end do
@@ -1242,20 +1242,20 @@ else
       end if
 
       ! Compute sampling, subset Sc1
-      write(mpl%info,'(a7,a,i5,a)') '','Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
+      write(mpl%test,'(a7,a,i5,a)') '','Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
       call mpl%flush
       call samp%compute_c1(mpl,nam,geom)
    end if
 
    ! Compute MPI distribution, subset Sc1, halo A and universe
-   write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
+   write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
    call mpl%flush
    call samp%compute_mpi_c1au(mpl,rng,nam,geom)
 
    if (samp%sc3) then
       if (present(other)) then
          ! Copy sampling, subset Sc3
-         write(mpl%info,'(a7,a,i5,a,i5,a)') '','Copy sampling, subset Sc3 (nc3 = ',nam%nc3,' / nc4 = ',nam%nc4,')'
+         write(mpl%test,'(a7,a,i5,a,i5,a)') '','Copy sampling, subset Sc3 (nc3 = ',nam%nc3,' / nc4 = ',nam%nc4,')'
          call mpl%flush
 
          ! Allocation
@@ -1269,7 +1269,7 @@ else
          samp%smask_c3a = other%smask_c3a
       else
          ! Compute sampling, subset Sc3
-         write(mpl%info,'(a7,a,i5,a,i5,a)') '','Compute sampling, subset Sc3 (nc3 = ',nam%nc3,' / nc4 = ',nam%nc4,')'
+         write(mpl%test,'(a7,a,i5,a,i5,a)') '','Compute sampling, subset Sc3 (nc3 = ',nam%nc3,' / nc4 = ',nam%nc4,')'
          call mpl%flush
          call samp%compute_c3(mpl,rng,nam,geom)
       end if
@@ -1278,7 +1278,7 @@ else
    if (samp%sc2) then
       if (present(other)) then
          ! Copy sampling, subset Sc2
-         write(mpl%info,'(a7,a,i5,a)') '','Copy sampling, subset Sc2 (nc2 = ',nam%nc2,')'
+         write(mpl%test,'(a7,a,i5,a)') '','Copy sampling, subset Sc2 (nc2 = ',nam%nc2,')'
          call mpl%flush
 
          ! Copy dimensions
@@ -1302,7 +1302,7 @@ else
          samp%c2a_to_c2 = other%c2a_to_c2
       else
          ! Compute sampling, subset Sc2
-         write(mpl%info,'(a7,a,i5,a)') '','Compute sampling, subset Sc2 (nc2 = ',nam%nc2,')'
+         write(mpl%test,'(a7,a,i5,a)') '','Compute sampling, subset Sc2 (nc2 = ',nam%nc2,')'
          call mpl%flush
          call samp%compute_c2(mpl,nam,geom)
       end if
@@ -1313,53 +1313,53 @@ end if
 
 if (samp%sc2) then
    ! Compute MPI distribution, subset Sc2, halo A and universe
-   write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc2, halo A and universe'
+   write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc2, halo A and universe'
    call mpl%flush
    call samp%compute_mpi_c2au(mpl,nam,geom)
 
    ! Compute MPI distribution, subset Sc2, halo B
-   write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc2, halo B'
+   write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc2, halo B'
    call mpl%flush
    call samp%compute_mpi_c2b(mpl,rng,nam,geom)
 end if
 
 ! Compute MPI distribution, subset Sc0, halo B
-write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc0, halo B'
+write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc0, halo B'
 call mpl%flush
 call samp%compute_mpi_c0b(mpl,geom)
 
 if (samp%sc3) then
    ! Compute MPI distribution, subset Sc0, halo C
-   write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc0, halo C'
+   write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc0, halo C'
    call mpl%flush
    call samp%compute_mpi_c0c(mpl,nam,geom)
 end if
 
 if (nam%new_hdiag.and.nam%local_diag) then
    ! Compute MPI distribution, subset Sc1, halos D
-   write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo D'
+   write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo D'
    call mpl%flush
    call samp%compute_mpi_d(mpl,nam,geom)
 end if
 
 if (nam%new_vbal) then
    ! Compute MPI distribution, subset Sc1, halo E
-   write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo E'
+   write(mpl%test,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo E'
    call mpl%flush
    call samp%compute_mpi_e(mpl,nam)
 end if
 
 if (samp%sc3) then
    ! Print results
-   write(mpl%info,'(a7,a)') '','Sampling efficiency (%):'
+   write(mpl%test,'(a7,a)') '','Sampling efficiency (%):'
    call mpl%flush
-   write(mpl%info,'(a10,a,a,f10.2,a)') '','Class size: ',trim(mpl%aqua),nam%dc*reqkm,trim(mpl%black)//' km'
+   write(mpl%test,'(a10,a,a,f10.2,a)') '','Class size: ',trim(mpl%aqua),nam%dc*reqkm,trim(mpl%black)//' km'
    call mpl%flush
    do il0=1,geom%nl0
-      write(mpl%info,'(a10,a,i3,a)') '','Level ',nam%levs(il0),':'
+      write(mpl%test,'(a10,a,i3,a)') '','Level ',nam%levs(il0),':'
       call mpl%flush
       do jc4=1,nam%nc4
-         write(mpl%info,'(a13,f6.2,a10)') '',geom%as(jc4)*rad2deg,' deg.  ~> '
+         write(mpl%test,'(a13,f6.2,a10)') '',geom%as(jc4)*rad2deg,' deg.  ~> '
          call mpl%flush(.false.)
          do jc3=1,nam%nc3
             nc1_valid = zss_count(samp%smask_c3a(:,jc3,jc4,il0))
@@ -1378,14 +1378,14 @@ if (samp%sc3) then
               color = mpl%peach
             end if
             if (jc3==1) color = ' '//trim(color)
-            write(mpl%info,ivalformat) trim(color),ival,trim(mpl%black)
+            write(mpl%test,ivalformat) trim(color),ival,trim(mpl%black)
             call mpl%flush(.false.)
             if (jc3<nam%nc3) then
-               write(mpl%info,'(a)') '-'
+               write(mpl%test,'(a)') '-'
                call mpl%flush(.false.)
             end if
          end do
-         write(mpl%info,'(a)') ''
+         write(mpl%test,'(a)') ''
          call mpl%flush
       end do
    end do
@@ -1394,7 +1394,7 @@ end if
 if (nam%write_samp_global) then
    if (.not.samp%io_c1%initialized) then
       ! Setup global I/O for subset Sc1
-      write(mpl%info,'(a7,a)') '','Setup global I/O for subset Sc1'
+      write(mpl%test,'(a7,a)') '','Setup global I/O for subset Sc1'
       call mpl%flush
       call samp%io_c1%init(mpl,'1',samp%nc1,samp%nc1a,samp%c1a_to_c1,samp%proc_to_c1_offset, &
  & lon_cxa=samp%lon_c1a,lat_cxa=samp%lat_c1a)
@@ -1402,7 +1402,7 @@ if (nam%write_samp_global) then
 
    if (samp%sc2.and.(.not.samp%io_c2%initialized)) then
       ! Setup global I/O for subset Sc2
-      write(mpl%info,'(a7,a)') '','Setup global I/O for subset Sc2'
+      write(mpl%test,'(a7,a)') '','Setup global I/O for subset Sc2'
       call mpl%flush
       call samp%io_c2%init(mpl,'2',samp%nc2,samp%nc2a,samp%c2a_to_c2,samp%proc_to_c2_offset, &
  & lon_cxa=samp%lon_c2a,lat_cxa=samp%lat_c2a)
@@ -1411,21 +1411,21 @@ end if
 
 if (nam%write_samp_local) then
    ! Write local sampling data
-   write(mpl%info,'(a7,a)') '','Write local sampling data'
+   write(mpl%test,'(a7,a)') '','Write local sampling data'
    call mpl%flush
    call samp%write_local(mpl,nam,geom)
 end if
 
 if (nam%write_samp_global) then
    ! Write global sampling data
-   write(mpl%info,'(a7,a)') '','Write global sampling data'
+   write(mpl%test,'(a7,a)') '','Write global sampling data'
    call mpl%flush
    call samp%write_global(mpl,nam,geom)
 end if
 
 if (nam%write_samp_grids) then
    ! Write sampling grids
-   write(mpl%info,'(a7,a)') '','Write sampling grids'
+   write(mpl%test,'(a7,a)') '','Write sampling grids'
    call mpl%flush
    call samp%write_grids(mpl,nam,geom)
 end if
@@ -1470,7 +1470,7 @@ allocate(samp%smask_hor_c0a(geom%nc0a))
 allocate(samp%nc0_smask(0:geom%nl0))
 
 ! Copy geometry mask
-write(mpl%info,'(a7,a)') '','Copy geometry mask'
+write(mpl%test,'(a7,a)') '','Copy geometry mask'
 call mpl%flush
 samp%smask_c0a = geom%gmask_c0a
 
@@ -1480,7 +1480,7 @@ call mpl%f_comm%allreduce(nsmask,fckit_mpi_sum())
 
 if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
    ! Compute sampling mask
-   write(mpl%info,'(a7,a)') '','Compute sampling mask'
+   write(mpl%test,'(a7,a)') '','Compute sampling mask'
    call mpl%flush
 
    ! Mask restriction
@@ -1488,7 +1488,7 @@ if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
       ! Latitude band
       read(nam%mask_type(4:6),'(i3)') latmin
       read(nam%mask_type(7:9),'(i3)') latmax
-      write(mpl%info,'(a10,a,i3,a,i3)') '','Latitude band between ',latmin,' and ',latmax
+      write(mpl%test,'(a10,a,i3,a,i3)') '','Latitude band between ',latmin,' and ',latmax
       call mpl%flush
       if (latmin>=latmax) call mpl%abort('${subr}$','latmin should be lower than latmax')
       do ic0a=1,geom%nc0a
@@ -1499,7 +1499,7 @@ if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
       end do
    elseif (trim(nam%mask_type)=='ldwv') then
       ! Disk around vertical diagnostic points
-      write(mpl%info,'(a10,a,e10.3,a)') '','Disk of ',1.1_kind_real*nam%local_rad*reqkm,' km around vertical diagonstic points'
+      write(mpl%test,'(a10,a,e10.3,a)') '','Disk of ',1.1_kind_real*nam%local_rad*reqkm,' km around vertical diagonstic points'
       call mpl%flush
       do ic0a=1,geom%nc0a
          valid = .false.
@@ -1526,7 +1526,7 @@ if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
 
       ! Check standard-deviation value
       do iv=1,nam%nv
-         write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
+         write(mpl%test,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
  & //' bound for standard-deviation'
          call mpl%flush
          if (trim(nam%mask_lu(iv))=='lower') then
@@ -1545,7 +1545,7 @@ if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
 
       ! Check input field value
       do iv=1,nam%nv
-         write(mpl%info,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
+         write(mpl%test,'(a10,a,e10.3,a)') '','Threshold ',nam%mask_th(iv),' used as a '//trim(nam%mask_lu(iv)) &
  & //' bound for standard-deviation'
          call mpl%flush
          if (trim(nam%mask_lu(iv))=='lower') then
@@ -1560,7 +1560,7 @@ if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
 
    ! Check vertically contiguous points
    if (nam%ncontig_th>0) then
-      write(mpl%info,'(a10,a,i3,a)') '','Mask restricted with at least ',min(nam%ncontig_th,geom%nl0), &
+      write(mpl%test,'(a10,a,i3,a)') '','Mask restricted with at least ',min(nam%ncontig_th,geom%nl0), &
  &  ' vertically contiguous points'
       call mpl%flush
       do ic0a=1,geom%nc0a
@@ -1595,10 +1595,10 @@ call mpl%f_comm%allreduce(samp%nc0_smask,fckit_mpi_sum())
 if (samp%nc0_smask(0)==0) call mpl%abort('${subr}$','no more points in the sampling mask')
 
 ! Print results
-write(mpl%info,'(a7,a)') '','Sampling valid points (% of domain mask):'
+write(mpl%test,'(a7,a)') '','Sampling valid points (% of domain mask):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ',hundred*real(samp%nc0_smask(il0),kind_real) &
+   write(mpl%test,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ',hundred*real(samp%nc0_smask(il0),kind_real) &
  & /real(geom%nc0_gmask(il0),kind_real),'%'
    call mpl%flush
 end do
@@ -1692,7 +1692,7 @@ case ('random_uniform','random_coast')
    end do
 
    ! Compte subsampling
-   write(mpl%info,'(a7,a)') '','Compute horizontal subset Sc1:'
+   write(mpl%test,'(a7,a)') '','Compute horizontal subset Sc1:'
    call mpl%flush
    call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
  & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,.true.,7,samp%nc1-nam%nldwv,c1_to_c0)
@@ -1743,7 +1743,7 @@ case ('random_uniform','random_coast')
    deallocate(c1_to_c0)
 case ('octahedral')
    ! Use an octahedral grid
-   write(mpl%info,'(a7,a)') '','Use an octahedral grid for subset Sc1 '
+   write(mpl%test,'(a7,a)') '','Use an octahedral grid for subset Sc1 '
    call mpl%flush
 
    ! Octahedral grid
@@ -1919,7 +1919,7 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
    call rng%resync(mpl)
 
    ! Initialization
-   write(mpl%info,'(a7,a)') '','Compute HDIAG pairs: '
+   write(mpl%test,'(a7,a)') '','Compute HDIAG pairs: '
    call mpl%flush(.false.)
    call mpl%prog_init(nam%nc3*nam%nc4*samp%nc1a)
    do ic1a=1,samp%nc1a
@@ -2015,7 +2015,7 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
 end if
 
 ! Check sampling mask
-write(mpl%info,'(a7,a)') '','Check sampling mask: '
+write(mpl%test,'(a7,a)') '','Check sampling mask: '
 call mpl%flush(.false.)
 call mpl%prog_init(samp%nc1a)
 do ic1a=1,samp%nc1a
@@ -2143,7 +2143,7 @@ else
    end do
 
    ! Initialize subsampling
-   write(mpl%info,'(a7,a)') '','Compute horizontal subset Sc2:'
+   write(mpl%test,'(a7,a)') '','Compute horizontal subset Sc2:'
    call mpl%flush
    call geom%initialize_sampling(mpl,samp%nc1a,samp%lon_c1a,samp%lat_c1a,smask_hor_c1a,rh_c1a,samp%c1a_to_c1, &
  & samp%nc1u,samp%c1u_to_c1a,samp%tree_c1u,samp%mesh_c1u,.true.,7,samp%nc2-nam%nldwv,c2_to_c1(nam%nldwv+1:samp%nc2))
@@ -2297,7 +2297,7 @@ if (samp%sc2) then
 end if
 
 ! Print results
-write(mpl%info,'(a10,a,i8)') '','nc1 = ',samp%nc1
+write(mpl%test,'(a10,a,i8)') '','nc1 = ',samp%nc1
 call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc1a = ',samp%nc1a
 call mpl%flush
@@ -2373,7 +2373,7 @@ call samp%com_c2_AU%ext(mpl,samp%lat_c2a,samp%lat_c2u)
 call samp%com_c2_AU%ext(mpl,samp%smask_c2a,samp%smask_c2u)
 
 ! Print results
-write(mpl%info,'(a10,a,i8)') '','nc2 = ',samp%nc2
+write(mpl%test,'(a10,a,i8)') '','nc2 = ',samp%nc2
 call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc2a = ',samp%nc2a
 call mpl%flush
@@ -3022,7 +3022,7 @@ deallocate(sbuf)
 deallocate(rbuf)
 
 ! Print results
-write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
+write(mpl%test,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
 call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc1d =      ',samp%nc1d
 call mpl%flush
@@ -3142,7 +3142,7 @@ call samp%com_c1_AE%setup(mpl,'com_c1_AE',samp%nc1a,samp%nc1e,samp%nc1,samp%c1a_
 deallocate(c1e_to_c1)
 
 ! Print results
-write(mpl%info,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
+write(mpl%test,'(a7,a,i6)') '','Parameters for processor #',mpl%myproc
 call mpl%flush
 write(mpl%info,'(a10,a,i8)') '','nc1e =      ',samp%nc1e
 call mpl%flush

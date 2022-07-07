@@ -2522,7 +2522,7 @@ real(kind_real),allocatable :: londir(:),latdir(:),lon_ldwv(:),lat_ldwv(:)
 @:probe_in()
 
 ! general_param
-write(mpl%info,'(a7,a)') '','General parameters'
+write(mpl%test,'(a7,a)') '','General parameters'
 call mpl%flush
 call mpl%write('datadir',nam%datadir)
 call mpl%write('prefix',nam%prefix)
@@ -2539,7 +2539,7 @@ call mpl%write('use_cgal',nam%use_cgal)
 call mpl%write('write_c0',nam%write_c0)
 
 ! driver_param
-write(mpl%info,'(a7,a)') '','Driver parameters'
+write(mpl%test,'(a7,a)') '','Driver parameters'
 call mpl%flush
 call mpl%write('method',nam%method)
 call mpl%write('strategy',nam%strategy)
@@ -2594,7 +2594,7 @@ call mpl%write('fname_nicas',nam%fname_nicas)
 call mpl%write('fname_wind',nam%fname_wind)
 
 ! model_param
-write(mpl%info,'(a7,a)') '','Model parameters'
+write(mpl%test,'(a7,a)') '','Model parameters'
 call mpl%flush
 call mpl%write('nl0',nam%nl0)
 call mpl%write('levs',nam%nl0,nam%levs(1:nam%nl0))
@@ -2610,19 +2610,19 @@ call mpl%write('qg_regional',nam%qg_regional)
 call mpl%write('qg_urban',nam%qg_urban)
 
 ! ens1_param
-write(mpl%info,'(a7,a)') '','Ensemble 1 parameters'
+write(mpl%test,'(a7,a)') '','Ensemble 1 parameters'
 call mpl%flush
 call mpl%write('ens1_ne',nam%ens1_ne)
 call mpl%write('ens1_nsub',nam%ens1_nsub)
 
 ! ens2_param
-write(mpl%info,'(a7,a)') '','Ensemble 2 parameters'
+write(mpl%test,'(a7,a)') '','Ensemble 2 parameters'
 call mpl%flush
 call mpl%write('ens2_ne',nam%ens2_ne)
 call mpl%write('ens2_nsub',nam%ens2_nsub)
 
 ! sampling_param
-write(mpl%info,'(a7,a)') '','Sampling parameters'
+write(mpl%test,'(a7,a)') '','Sampling parameters'
 call mpl%flush
 call mpl%write('load_samp_local',nam%load_samp_local)
 call mpl%write('load_samp_global',nam%load_samp_global)
@@ -2646,7 +2646,7 @@ call mpl%write('nl0r',nam%nl0r)
 call mpl%write('irmax',nam%irmax)
 
 ! diag_param
-write(mpl%info,'(a7,a)') '','Diagnostics parameters'
+write(mpl%test,'(a7,a)') '','Diagnostics parameters'
 call mpl%flush
 call mpl%write('ne',nam%ne)
 call mpl%write('ne_lr',nam%ne_lr)
@@ -2674,7 +2674,7 @@ call mpl%write('local_rad',nam%local_rad*req)
 call mpl%write('local_dlat',nam%local_dlat*rad2deg)
 
 ! fit_param
-write(mpl%info,'(a7,a)') '','Fit parameters'
+write(mpl%test,'(a7,a)') '','Fit parameters'
 call mpl%flush
 call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
@@ -2683,7 +2683,7 @@ call mpl%write('fit_ncmp',nam%nv+1,nam%fit_ncmp(0:nam%nv))
 call mpl%write('write_hdiag_detail',nam%write_hdiag_detail)
 
 ! nicas_param
-write(mpl%info,'(a7,a)') '','NICAS parameters'
+write(mpl%test,'(a7,a)') '','NICAS parameters'
 call mpl%flush
 call mpl%write('resol',nam%resol)
 call mpl%write('nc1max',nam%nc1max)
@@ -2703,7 +2703,7 @@ call mpl%write('pos_def_test',nam%pos_def_test)
 call mpl%write('write_nicas_grids',nam%write_nicas_grids)
 
 ! dirac_param
-write(mpl%info,'(a7,a)') '','Dirac parameters'
+write(mpl%test,'(a7,a)') '','Dirac parameters'
 call mpl%flush
 call mpl%write('ndir',nam%ndir)
 allocate(londir(nam%ndir))
@@ -2718,7 +2718,7 @@ call mpl%write('levdir',nam%ndir,nam%levdir(1:nam%ndir))
 call mpl%write('ivdir',nam%ndir,nam%ivdir(1:nam%ndir))
 
 ! output_param
-write(mpl%info,'(a7,a)') '','Output parameters'
+write(mpl%test,'(a7,a)') '','Output parameters'
 call mpl%flush
 call mpl%write('full_grid_smoother_nn',nam%full_grid_smoother_nn)
 call mpl%write('nldwv',nam%nldwv)
@@ -2734,7 +2734,7 @@ call mpl%write('lat_ldwv',nam%nldwv,lat_ldwv)
 call mpl%write('name_ldwv',nam%nldwv,nam%name_ldwv(1:nam%nldwv))
 
 ! wind_param
-write(mpl%info,'(a7,a)') '','Wind parameters'
+write(mpl%test,'(a7,a)') '','Wind parameters'
 call mpl%flush
 call mpl%write('wind_streamfunction',nam%wind_streamfunction)
 call mpl%write('wind_velocity_potential',nam%wind_velocity_potential)

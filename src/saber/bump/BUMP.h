@@ -534,6 +534,7 @@ template<typename MODEL> class BUMP {
   BUMP_Parameters_ params_;
   std::vector<int> keyBUMP_;
   std::vector<oops::Variables> activeVarsPerGrid_;
+  bool verbosity_;
 };
 
 // -----------------------------------------------------------------------------
@@ -549,6 +550,22 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
                   const EnsemblePtr_ ens2)
   : activeVars_(activeVars), params_(params), keyBUMP_(), activeVarsPerGrid_() {
   oops::Log::trace() << "BUMP<MODEL>::BUMP construction starting" << std::endl;
+
+  // BUMP verbosity level ('all', 'main' or 'none')
+  const boost::optional<std::string> &verbosity = params.verbosity.value();
+  if (verbosity == boost::none) {
+    verbosity_ = true;
+  } else {
+    if (*verbosity  == "all") {
+      verbosity_ = true;
+    } else if (*verbosity  == "main") {
+      verbosity_ = (geom1.getComm().rank() == 0);
+    } else if (*verbosity  == "none") {
+      verbosity_ = false;
+    } else {
+      ABORT("BUMP: wrong verbosity string");
+    }
+  }
 
   // Define base increments
   Increment_ dx1(geom1, activeVars_, xb.validTime());
@@ -655,7 +672,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   }
 
   // Read universe size
-  oops::Log::info() << "Read universe radius" << std::endl;
+  if (verbosity_) oops::Log::test() << "Read universe radius" << std::endl;
   atlas::FieldSet universe_rad = atlas::FieldSet();
   const boost::optional<eckit::LocalConfiguration> &universeRadius = params.universeRadius.value();
   if (universeRadius != boost::none) {
@@ -746,7 +763,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
     }
 
     // Print configuration for this grid
-    oops::Log::info() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
+    if (verbosity_) oops::Log::test() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
 
     // Create BUMP instance
     int keyBUMP = 0;
@@ -766,18 +783,18 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
   // Add members of ensemble 1
   if (ens1) {
-    oops::Log::info() << "--- Add members of ensemble 1" << std::endl;
+    if (verbosity_) oops::Log::test() << "--- Add members of ensemble 1" << std::endl;
     for (int ie = 0; ie < ens1_ne; ++ie) {
-      oops::Log::info() << "      Member " << ie+1 << " / " << ens1_ne << std::endl;
+      if (verbosity_) oops::Log::test() << "      Member " << ie+1 << " / " << ens1_ne << std::endl;
       this->addMember((*ens1)[ie].fieldSet(), ie, 1);
     }
   }
 
   // Add members of ensemble 2
   if (ens2) {
-    oops::Log::info() << "--- Add members of ensemble 2" << std::endl;
+    if (verbosity_) oops::Log::test() << "--- Add members of ensemble 2" << std::endl;
     for (int ie = 0; ie < ens2_ne; ++ie) {
-      oops::Log::info() << "      Member " << ie+1 << " / " << ens2_ne << std::endl;
+      if (verbosity_) oops::Log::test() << "      Member " << ie+1 << " / " << ens2_ne << std::endl;
       this->addMember((*ens2)[ie].fieldSet(), ie, 2);
     }
   }
@@ -786,7 +803,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   params_.validateAndDeserialize(conf);
 
   // Read number of components
-  oops::Log::info() << "    Read number of components" << std::endl;
+  if (verbosity_) oops::Log::test() << "    Read number of components" << std::endl;
   const boost::optional<BUMPInputNcmpParameters> &inputNcmp = params_.inputNcmp.value();
   if (inputNcmp != boost::none) {
     // Open file
@@ -822,8 +839,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
         // Set parameter
         this->setNcmp(igrid, ivar, ncmp);
-        oops::Log::test() << "Number of input BUMP components for " << variable << ": "
-                          << ncmp << std::endl;
+        if (verbosity_) oops::Log::test() << "Number of input BUMP components for " << variable
+                          << ": " << ncmp << std::endl;
       }
 
       // Close file
@@ -834,7 +851,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   }
 
   // Read parameters from files
-  oops::Log::info() << "    Read parameters from files" << std::endl;
+  if (verbosity_) oops::Log::test() << "    Read parameters from files" << std::endl;
   const boost::optional<std::vector<BUMPInputParameters<MODEL>>> &input = params_.input.value();
   if (input != boost::none) {
     // Set input parameters
@@ -846,8 +863,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
       const std::string & param = inputParam.param;
       const int & component = inputParam.component;
       this->setParameter(param, component, dx1.fieldSet());
-      oops::Log::test() << "Norm of input BUMP parameter " << param << " - " << component << ": "
-                        << dx1.norm() << std::endl;
+      if (verbosity_) oops::Log::test() << "Norm of input BUMP parameter " << param << " - "
+                                        << component << ": "<< dx1.norm() << std::endl;
     }
   }
 
@@ -860,9 +877,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   if (ensembleConfig1 != boost::none) {
     for (int ie = 0; ie < ens1_ne; ++ie) {
       // Read member
-      oops::Log::info() <<
+      if (verbosity_) oops::Log::test() <<
       "-------------------------------------------------------------------" << std::endl;
-      oops::Log::info() << "--- Load member " << ie+1 << " / " << ens1_ne << std::endl;
+      if (verbosity_) oops::Log::test() << "--- Load member " << ie+1 << " / " << ens1_ne
+                                        << std::endl;
       dx1.read(membersConfig1[ie]);
 
       if (update_vbal_cov != boost::none) {
@@ -888,9 +906,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   if (ensembleConfig2 != boost::none) {
     for (int ie = 0; ie < ens2_ne; ++ie) {
       // Read member
-      oops::Log::info() <<
+      if (verbosity_) oops::Log::test() <<
       "-------------------------------------------------------------------" << std::endl;
-      oops::Log::info() << "--- Load member " << ie+1 << " / " << ens2_ne << std::endl;
+      if (verbosity_) oops::Log::test() << "--- Load member " << ie+1 << " / " << ens2_ne
+                                        << std::endl;
       dx2.read(membersConfig2[ie]);
       if (update_mom != boost::none) {
         if (*update_mom) {
@@ -911,9 +930,9 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   const boost::optional<std::vector<BUMPOutputParameters<MODEL>>> &output = params_.output.value();
   if (outputNcmp != boost::none || output != boost::none) {
     // Write parameters
-    oops::Log::info() <<
+    if (verbosity_) oops::Log::test() <<
     "-------------------------------------------------------------------" << std::endl;
-    oops::Log::info() << "--- Write parameters" << std::endl;
+    if (verbosity_) oops::Log::test() << "--- Write parameters" << std::endl;
   }
   if (outputNcmp != boost::none) {
     // Open file
@@ -921,7 +940,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
     outfile.open(outputNcmp->filepath.value().c_str());
 
     if (outfile.is_open()) {
-      oops::Log::info() << "Write number of components in file "
+      if (verbosity_) oops::Log::test() << "Write number of components in file "
                         << outputNcmp->filepath.value() << std::endl;
 
       // Write parameter
@@ -931,7 +950,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
           this->getNcmp(jgrid, jvar, ncmp);
           outfile << activeVarsPerGrid_[jgrid][jvar] << ' ' << std::scientific
                   << std::setprecision(3) << ncmp << std::endl;
-          oops::Log::test() << "Number of BUMP output components for "
+          if (verbosity_) oops::Log::test() << "Number of BUMP output components for "
                             << activeVarsPerGrid_[jgrid][jvar] << ": " << ncmp << std::endl;
         }
       }
@@ -968,7 +987,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
         // Write parameter
         dx2.write(outputParam.incwrite);
-        oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component << ": "
+        if (verbosity_) oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component << ": "
                           << dx2.norm() << std::endl;
       } else {
         // Get parameter
@@ -978,8 +997,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
         // Write parameter
         dx1.write(outputParam.incwrite);
-        oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component << ": "
-                          << dx1.norm() << std::endl;
+        if (verbosity_) oops::Log::test() << "Norm of BUMP output parameter " << param << " - "
+                                          << component << ": "<< dx1.norm() << std::endl;
       }
     }
   }
@@ -988,21 +1007,22 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   const boost::optional<std::vector<eckit::LocalConfiguration>>
     &appConfs = params_.appConfs.value();
   if (appConfs != boost::none) {
-    oops::Log::info() <<
+    if (verbosity_) oops::Log::test() <<
     "-------------------------------------------------------------------" << std::endl;
-    oops::Log::info() << "--- Apply operators" << std::endl;
+    if (verbosity_) oops::Log::test() << "--- Apply operators" << std::endl;
     if (appConfs->size() > 0) {
       for (const auto & appConf : *appConfs) {
         // Read input file
         eckit::LocalConfiguration inputConf(appConf, "input");
-        oops::Log::info() << "       - Input file: " << inputConf << std::endl;
+        if (verbosity_) oops::Log::test() << "       - Input file: " << inputConf << std::endl;
         dx1.read(inputConf);
 
         // Apply BUMP operator
         std::vector<std::string> bumpOperators;
         appConf.get("bump operators", bumpOperators);
         for (const auto & bumpOperator : bumpOperators) {
-          oops::Log::info() << "         Apply operator " << bumpOperator << std::endl;
+          if (verbosity_) oops::Log::test() << "         Apply operator " << bumpOperator
+                                            << std::endl;
           if (bumpOperator == "multiplyVbal") {
             this->multiplyVbal(dx1.fieldSet());
           } else if (bumpOperator == "inverseMultiplyVbal") {
@@ -1027,7 +1047,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
         // Write file
         eckit::LocalConfiguration outputConf(appConf, "output");
-        oops::Log::info() << "         Output file: " << outputConf << std::endl;
+        if (verbosity_) oops::Log::test() << "         Output file: " << outputConf << std::endl;
         dx1.write(outputConf);
       }
     }

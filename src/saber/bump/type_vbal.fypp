@@ -513,9 +513,9 @@ integer :: iv,jv
 call vbal%alloc(mpl,nam,geom,bpar,samp,ens%nsub)
 
 ! Compute vertical covariances
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Compute vertical covariances'
+write(mpl%test,'(a)') '--- Compute vertical covariances'
 call mpl%flush
 do iv=1,nam%nv
    do jv=1,iv
@@ -562,9 +562,9 @@ integer :: iv,jv
 @:probe_in()
 
 ! Update vertical covariance
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Update vertical covariance'
+write(mpl%test,'(a)') '--- Update vertical covariance'
 call mpl%flush
 
 ! Allocation
@@ -731,9 +731,9 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Write vertical balance operators
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Write local vertical balance operators'
+write(mpl%test,'(a)') '--- Write local vertical balance operators'
 call mpl%flush
 
 ! Create files
@@ -974,9 +974,9 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Write vertical balance operators
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Write global vertical balance operators'
+write(mpl%test,'(a)') '--- Write global vertical balance operators'
 call mpl%flush
 
 ! Create files
@@ -1137,9 +1137,9 @@ do il0i=1,geom%nl0i
 end do
 
 ! Compute vertical balance operators
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
+write(mpl%test,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%info,'(a)') '--- Compute vertical balance operators'
+write(mpl%test,'(a)') '--- Compute vertical balance operators'
 call mpl%flush
 
 ! Allocation
@@ -1167,7 +1167,7 @@ do iv=1,nam%nv
    do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
          ! Compute cross-covariance
-         write(mpl%info,'(a7,a)') '','Compute cross-covariance between '//trim(nam%variables(iv))//' and unbalanced ' &
+         write(mpl%test,'(a7,a)') '','Compute cross-covariance between '//trim(nam%variables(iv))//' and unbalanced ' &
  & //trim(nam%variables(jv))
          call mpl%flush
          if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
@@ -1183,12 +1183,12 @@ do iv=1,nam%nv
          end if
 
          ! Spatial average
-         write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
+         write(mpl%test,'(a7,a)') '','Spatial average for cross-covariance:'
          call mpl%flush(.false.)
          call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp)
 
          ! Compute regression
-         write(mpl%info,'(a7,a)') '','Compute regression:'
+         write(mpl%test,'(a7,a)') '','Compute regression:'
          call mpl%flush(.false.)
          call vbal%blk(iv,jv)%compute_regression(mpl,nam,geom,samp,vbal%blk(jv,jv)%cov_c2b,vbal%blk(iv,jv)%cov_c2b)
       end if
@@ -1197,7 +1197,7 @@ do iv=1,nam%nv
    if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
       do jv=1,iv-1
          ! Compute A matrix
-         write(mpl%info,'(a7,a)') '','Compute A matrix between '//trim(nam%variables(iv))//' and '//trim(nam%variables(jv))
+         write(mpl%test,'(a7,a)') '','Compute A matrix between '//trim(nam%variables(iv))//' and '//trim(nam%variables(jv))
          call mpl%flush
          vbal%blk(iv,jv)%a_c1a = 0.0
          do ic1a=1,samp%nc1a
@@ -1211,7 +1211,7 @@ do iv=1,nam%nv
       end do
 
       ! Compute auto-covariance
-      write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
+      write(mpl%test,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
       call mpl%flush
       do ic1a=1,samp%nc1a
          vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = 0.0
@@ -1232,10 +1232,10 @@ do iv=1,nam%nv
    else
       ! Unbalance ensemble
       if (any(bpar%vbal_block(iv,:))) then
-         write(mpl%info,'(a7,a)') '','Unbalance ensemble members: '
+         write(mpl%test,'(a7,a)') '','Unbalance ensemble members: '
          call mpl%flush(.false.)
          do ie=1,ensu%ne
-            write(mpl%info,'(i6)') ie
+            write(mpl%test,'(i6)') ie
             call mpl%flush(.false.)
 
             ! Get member on subset Sc0
@@ -1257,7 +1257,7 @@ do iv=1,nam%nv
             ! Set member from subset Sc0
             call ensu%set_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
          end do
-         write(mpl%info,'(a)') ''
+         write(mpl%test,'(a)') ''
          call mpl%flush
 
          ! Recompute ensemble mean
@@ -1265,13 +1265,13 @@ do iv=1,nam%nv
       end if
 
       ! Compute auto-covariance
-      write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
+      write(mpl%test,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
       call mpl%flush
       call vbal%blk(iv,iv)%compute_covariance(mpl,nam,geom,samp,ensu)
    end if
 
    ! Spatial average
-   write(mpl%info,'(a7,a)') '','Spatial average for auto-covariance:'
+   write(mpl%test,'(a7,a)') '','Spatial average for auto-covariance:'
    call mpl%flush(.false.)
    call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp)
 end do
@@ -1551,7 +1551,7 @@ call vbal%apply(nam,geom,bpar,fld)
 call vbal%apply_inv(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse/norm
+write(mpl%test,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse/norm
 call mpl%flush
 
 ! Inverse / direct
@@ -1560,7 +1560,7 @@ call vbal%apply_inv(nam,geom,bpar,fld)
 call vbal%apply(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse/norm
+write(mpl%test,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse/norm
 call mpl%flush
 
 ! Direct / inverse, adjoint
@@ -1569,7 +1569,7 @@ call vbal%apply_ad(nam,geom,bpar,fld)
 call vbal%apply_inv_ad(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse/norm
+write(mpl%test,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse/norm
 call mpl%flush
 
 ! Inverse / direct
@@ -1578,7 +1578,7 @@ call vbal%apply_inv_ad(nam,geom,bpar,fld)
 call vbal%apply_ad(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse/norm
+write(mpl%test,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse/norm
 call mpl%flush
 
 ! Probe out
@@ -1628,7 +1628,7 @@ do iv=1,nam%nv
          call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld2(:,:,iv))
          call mpl%dot_prod(fld1(:,:,iv),fld2_save(:,:,iv),sum1)
          call mpl%dot_prod(fld2(:,:,iv),fld1_save(:,:,iv),sum2)
-         write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
+         write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
  & ' adjoint test:  ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
          call mpl%flush
       end if
@@ -1642,7 +1642,7 @@ call vbal%apply(nam,geom,bpar,fld1)
 call vbal%apply_ad(nam,geom,bpar,fld2)
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test:  ', &
+write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test:  ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 
@@ -1653,7 +1653,7 @@ call vbal%apply_inv(nam,geom,bpar,fld1)
 call vbal%apply_inv_ad(nam,geom,bpar,fld2)
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test: ', &
+write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test: ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 

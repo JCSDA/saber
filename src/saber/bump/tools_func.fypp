@@ -251,8 +251,8 @@ integer(kind_short),intent(out) :: rad_short !< Short integer value
 ! Probe in
 @:probe_in()
 
-! Convert to integer (use huge_short/2 for security)
-rad_short = int(rad_real/pi*real(huge_short/2),kind_short)
+! Convert to integer
+rad_short = int(rad_real/pi*real(huge_short),kind_short)
 
 ! Probe out
 @:probe_out()
@@ -383,7 +383,7 @@ end do
 
 ! Print levels
 write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
-write(mpl%info,trim(cfmt)) '','Compute independent levels: '
+write(mpl%test,trim(cfmt)) '','Compute independent levels: '
 call mpl%flush(.false.)
 do ilxi=1,nlxi
    ilx = lxi_to_lx(ilxi)
@@ -395,10 +395,10 @@ do ilxi=1,nlxi
    else
       cfmt = '(i3,a,i3,a)'
    end if
-   write(mpl%info,trim(cfmt)) ilx,'[',n,'] '
+   write(mpl%test,trim(cfmt)) ilx,'[',n,'] '
    call mpl%flush(.false.)
 end do
-write(mpl%info,'(a)') ''
+write(mpl%test,'(a)') ''
 call mpl%flush
 
 ! Probe out

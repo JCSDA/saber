@@ -811,9 +811,10 @@ double Fields::norm() const {
 void Fields::print(std::ostream & os) const {
   os << std::endl;
   os << *geom_;
-  os << "Fields:" << std::endl;
+  os << "Fields:";
 
   for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+    os << std::endl;
     double zz = 0.0;
     if (geom_->functionSpace().type() == "StructuredColumns") {
       atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
@@ -855,7 +856,7 @@ void Fields::print(std::ostream & os) const {
     }
     this->geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
     zz = sqrt(zz);
-    os << "  " << vars_[jvar] << ": " << zz << std::endl;
+    os << "  " << vars_[jvar] << ": " << zz;
   }
 }
 // -----------------------------------------------------------------------------

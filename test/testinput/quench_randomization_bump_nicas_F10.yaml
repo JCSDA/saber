@@ -34,3 +34,4 @@ output:
 
 test:
   reference filename: testref/quench_randomization_bump_nicas_F10/test.log.out
+  test output filename: testoutput/quench_randomization_bump_nicas_F10/test.log.out

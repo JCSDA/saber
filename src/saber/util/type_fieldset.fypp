@@ -371,7 +371,7 @@ do iv=1,fieldset%nv
    call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
 
    ! Print norm
-   write(mpl%info,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm
+   write(mpl%test,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm
    call mpl%flush
 
    ! Release pointer

@@ -234,11 +234,11 @@ type(mom_blk_type) :: mom_blk
 call avg%alloc(nam,geom,bpar,samp,mom%ne,mom%nsub,prefix)
 
 ! Compute averaged statistics
-write(mpl%info,'(a10,a)') '','Compute averaged statistics'
+write(mpl%test,'(a10,a)') '','Compute averaged statistics'
 call mpl%flush
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush(.false.)
 
       ! Global average
@@ -259,7 +259,7 @@ do ib=1,bpar%nb
          ! Release memory
          call mom_blk%dealloc
       else
-         write(mpl%info,'(a)') ' done'
+         write(mpl%test,'(a)') ' done'
          call mpl%flush
       end if
    end if
@@ -267,17 +267,17 @@ end do
 
 if (mpl%main.and.(nam%avg_nbins>0)) then
    ! Write histograms
-   write(mpl%info,'(a10,a)') '','Write histograms'
+   write(mpl%test,'(a10,a)') '','Write histograms'
    call mpl%flush
    call avg%write(mpl,nam,geom,bpar)
 end if
 
 ! Compute asymptotic statistics
-write(mpl%info,'(a10,a)') '','Compute asymptotic statistics:'
+write(mpl%test,'(a10,a)') '','Compute asymptotic statistics:'
 call mpl%flush
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush(.false.)
       call mpl%prog_init(samp%nc2a+1)
       do ic2a=0,samp%nc2a
@@ -367,7 +367,7 @@ real(kind_real) :: m11sq(nam%nc3,nam%nc4,bpar%nl0rmax,geom%nl0),nc1a(nam%nc3,nam
 @:probe_in()
 
 ! Initialization
-write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(bpar%nbe)),':'
+write(mpl%test,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(bpar%nbe)),':'
 call mpl%flush(.false.)
 call mpl%prog_init(samp%nc2a+1)
 

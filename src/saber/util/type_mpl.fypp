@@ -10,6 +10,7 @@
 module type_mpl
 
 use fckit_log_module, only: fckit_log
+use logger_mod, only: oops_log
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
 use iso_fortran_env, only: output_unit
 !$ use omp_lib
@@ -53,9 +54,11 @@ type mpl_type
    character(len=1024) :: verbosity  !< Verbosity level
    character(len=1024) :: debug      !< Debug buffer
    character(len=1024) :: info       !< Info buffer
+   character(len=1024) :: test       !< Test buffer
    character(len=1024) :: wng        !< Warning buffer
    character(len=1024) :: err        !< Error buffer
    integer :: lunit                  !< Listing unit
+   logical :: previous_advance_flag  !< Previous advance flag
 
    ! Display colors
    character(len=1024) :: black      !< Black color code
@@ -223,8 +226,10 @@ mpl%nthread = 1
 ! Set log at 'no message'
 mpl%debug = 'no_message'
 mpl%info = 'no_message'
+mpl%test = 'no_message'
 mpl%wng = 'no_message'
 mpl%err = 'no_message'
+mpl%previous_advance_flag = .true.
 
 ! Set default listing
 mpl%black = ' '
@@ -299,18 +304,18 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%debug(mpl%debug)
+            call oops_log%debug(mpl%debug)
             call fckit_log%flush
          else
-            write(mpl%lunit,'(a)') 'DEBUG: '//trim(mpl%debug)
+            write(mpl%lunit,'(a)') trim(mpl%debug)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%debug(mpl%debug,newl=.false.)
+            call oops_log%debug(mpl%debug,newl=.false.)
             call fckit_log%flush
          else
-            write(mpl%lunit,'(a)',advance='no') 'DEBUG: '//trim(mpl%debug)
+            write(mpl%lunit,'(a)',advance='no') trim(mpl%debug)
             call flush(mpl%lunit)
          end if
       end if
@@ -321,10 +326,13 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
 
    ! Check info message
    if (trim(mpl%info)/='no_message') then
+      ! Add prefix
+      if (mpl%previous_advance_flag) mpl%info = 'Info     : '//trim(mpl%info)
+
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%info(mpl%info)
+            call oops_log%info(mpl%info)
             call fckit_log%flush
          else
             write(mpl%lunit,'(a)') trim(mpl%info)
@@ -332,7 +340,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%info(mpl%info,newl=.false.)
+            call oops_log%info(mpl%info,newl=.false.)
             call fckit_log%flush
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%info)
@@ -344,23 +352,48 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       mpl%info = 'no_message'
    end if
 
+   ! Check test message
+   if (trim(mpl%test)/='no_message') then
+      ! Write message
+      if (ladvance_flag) then
+         if (mpl%msv%is(mpl%lunit)) then
+            call oops_log%test(mpl%test)
+            call fckit_log%flush
+         else
+            write(mpl%lunit,'(a)') trim(mpl%test)
+            call flush(mpl%lunit)
+         end if
+      else
+         if (mpl%msv%is(mpl%lunit)) then
+            call oops_log%test(mpl%test,newl=.false.)
+            call fckit_log%flush
+         else
+            write(mpl%lunit,'(a)',advance='no') trim(mpl%test)
+            call flush(mpl%lunit)
+         end if
+      end if
+
+      ! Set at 'no message'
+      mpl%test = 'no_message'
+   end if
+
    ! Check warning message
    if (trim(mpl%wng)/='no_message') then
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%warning('WARNING: '//trim(mpl%wng))
+            call oops_log%warning(mpl%wng)
             call fckit_log%flush
          else
-            write(mpl%lunit,'(a)') 'WARNING: '//trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
+            write(mpl%lunit,'(a)') trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%warning('WARNING: '//trim(mpl%wng),newl=.false.)
+            call oops_log%warning(mpl%wng,newl=.false.)
             call fckit_log%flush
          else
-            write(mpl%lunit,'(a)',advance='no') 'WARNING: '//trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
+            write(mpl%lunit,'(a)',advance='no') trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
             call flush(mpl%lunit)
          end if
       end if
@@ -374,18 +407,18 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%error(mpl%err)
+            call oops_log%error(mpl%err)
             call fckit_log%flush
          else
-            write(mpl%lunit,'(a)') 'ERROR: '//trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
+            write(mpl%lunit,'(a)') trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call fckit_log%error(mpl%err,newl=.false.)
+            call oops_log%error(mpl%err,newl=.false.)
             call fckit_log%flush
          else
-            write(mpl%lunit,'(a)',advance='no') 'ERROR: '//trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
+            write(mpl%lunit,'(a)',advance='no') trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
             call flush(mpl%lunit)
          end if
       end if
@@ -393,6 +426,9 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Set at 'no message'
       mpl%err = 'no_message'
    end if
+
+   ! Set previous advance flag
+   mpl%previous_advance_flag = ladvance_flag
 end if
 
 ! Probe out
@@ -461,7 +497,7 @@ class(mpl_type),intent(inout) :: mpl !< MPI data
 ! Probe in
 @:probe_in()
 
-write(mpl%info,'(a,i6,a,a,a)') '--- This is instance #',iinst,' (',trim(cinst),')'
+write(mpl%test,'(a,i6,a,a,a)') '--- This is instance #',iinst,' (',trim(cinst),')'
 call mpl%flush
 
 ! Probe out
@@ -491,7 +527,7 @@ character(len=1024),allocatable :: subfunc(:)
 probe_size = count(probe%instance(iinst)%timing_associated)
 
 ! Print number of instrumented functions/subroutines called
-write(mpl%info,'(a7,a,i3,a,i3)') '','Instrumented function/subroutines called: ',probe_size,'/',${subr_list_size}$
+write(mpl%test,'(a7,a,i3,a,i3)') '','Instrumented function/subroutines called: ',probe_size,'/',${subr_list_size}$
 call mpl%flush
 
 if (probe_size>0) then
@@ -536,7 +572,7 @@ if (probe_size>0) then
       subfunc = subfunc(order)
 
       ! Print timing in decreasing total time
-      write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing total time:'
+      write(mpl%test,'(a7,a,f6.2,a)') '','Decreasing total time:'
       call mpl%flush
       do i=probe_size,1,-1
          if (stats(i,1)/elapsed_total*hundred>min_total_timing) then
@@ -553,7 +589,7 @@ if (probe_size>0) then
       subfunc = subfunc(order)
 
       ! Print timing in decreasing number of calls
-      write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing number of calls:'
+      write(mpl%test,'(a7,a,f6.2,a)') '','Decreasing number of calls:'
       call mpl%flush
       do i=probe_size,max(probe_size-max_calls+1,1),-1
          write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
@@ -1160,7 +1196,7 @@ integer :: ithread
 ithread = 0
 !$ ithread = omp_get_thread_num()
 if (ithread==0) then
-   write(mpl%info,'(a)') ' 0%'
+   write(mpl%test,'(a)') ' 0%'
    call mpl%flush(.false.)
 end if
 
@@ -1210,9 +1246,9 @@ if (mpl%nprog>0) then
    do while ((int(prog)>mpl%progint).and.(ithread==0))
       if (mpl%progint<100) then
          if (mpl%progint<10) then
-            write(mpl%info,'(i2,a)') mpl%progint,'% '
+            write(mpl%test,'(i2,a)') mpl%progint,'% '
          else
-            write(mpl%info,'(i3,a)') mpl%progint,'% '
+            write(mpl%test,'(i3,a)') mpl%progint,'% '
          end if
          call mpl%flush(.false.)
       end if
@@ -1257,13 +1293,13 @@ ithread = 0
 do while ((mpl%progint<=100).and.(ithread==0))
    if (mpl%progint<100) then
       if (mpl%progint<10) then
-         write(mpl%info,'(i2,a)') mpl%progint,'% '
+         write(mpl%test,'(i2,a)') mpl%progint,'% '
       else
-         write(mpl%info,'(i3,a)') mpl%progint,'% '
+         write(mpl%test,'(i3,a)') mpl%progint,'% '
       end if
       call mpl%flush(.false.)
    else
-      write(mpl%info,'(a)') ' 100%'
+      write(mpl%test,'(a)') ' 100%'
       call mpl%flush(ladvance_flag)
    end if
    mpl%progint = mpl%progint+ddis
@@ -1326,9 +1362,9 @@ character(len=1024) :: cfmt
 
 ! Write in log file
 #:if dtype == 'string'
-   write(mpl%info,cfmt) '',trim(variables),'',': ',trim(var)
+   write(mpl%test,cfmt) '',trim(variables),'',': ',trim(var)
 #:else
-   write(mpl%info,cfmt) '',trim(variables),'',':',var
+   write(mpl%test,cfmt) '',trim(variables),'',':',var
 #:endif
 call mpl%flush
 
@@ -1366,7 +1402,7 @@ character(len=1024) :: cfmt
 
 ! Define format
 write(cfmt,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a)'
-write(mpl%info,cfmt) '',trim(variables),'',':'
+write(mpl%test,cfmt) '',trim(variables),'',':'
 call mpl%flush(.false.)
 do i=1,n
    #:if dtype == 'int'
@@ -1388,16 +1424,16 @@ do i=1,n
 
    #:if dtype == 'string'
       if (i==1) then
-         write(mpl%info,cfmt) ' '//trim(var(i)),','
+         write(mpl%test,cfmt) ' '//trim(var(i)),','
       else
-         write(mpl%info,cfmt) trim(var(i)),','
+         write(mpl%test,cfmt) trim(var(i)),','
       end if
    #:else
-      write(mpl%info,cfmt) var(i),','
+      write(mpl%test,cfmt) var(i),','
    #:endif
    call mpl%flush(.false.)
 end do
-write(mpl%info,'(a)') ''
+write(mpl%test,'(a)') ''
 call mpl%flush
 
 ! Probe out

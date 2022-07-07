@@ -232,25 +232,25 @@ else
 end if
 
 ! Header
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- You are running the BUMP library ------------------------------'
+write(bump%mpl%test,'(a)') '--- You are running the BUMP library ------------------------------'
 call bump%mpl%flush
 @:print_bump_instance()
 
 ! Write parallel setup
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a,i3,a,i2,a)') '--- Parallelization with ',bump%mpl%nproc,' MPI tasks and ', &
+write(bump%mpl%test,'(a,i3,a,i2,a)') '--- Parallelization with ',bump%mpl%nproc,' MPI tasks and ', &
  & bump%mpl%nthread,' OpenMP threads'
 call bump%mpl%flush
 
 if (present(universe_rad)) then
    if (universe_rad%size()>0) then
       ! Set universe radius
-      write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+      write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
       call bump%mpl%flush
-      write(bump%mpl%info,'(a)') '--- Set universe radius'
+      write(bump%mpl%test,'(a)') '--- Set universe radius'
       call bump%mpl%flush
 
       ! Initialization
@@ -277,23 +277,23 @@ if (present(universe_rad)) then
 
       ! Get global maximum
       call bump%mpl%f_comm%allreduce(bump%nam%universe_rad,fckit_mpi_max())
-      write(bump%mpl%info,'(a7,a,f10.2,a)') '','Universe radius: ',bump%nam%universe_rad/thousand,' km'
+      write(bump%mpl%test,'(a7,a,f10.2,a)') '','Universe radius: ',bump%nam%universe_rad/thousand,' km'
       call bump%mpl%flush
    end if
 end if
 
 ! Check namelist parameters
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Check namelist parameters'
+write(bump%mpl%test,'(a)') '--- Check namelist parameters'
 call bump%mpl%flush
 call bump%nam%check(bump%mpl)
 call bump%nam%write(bump%mpl)
 
 ! Set I/O parameters
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Set I/O parameters'
+write(bump%mpl%test,'(a)') '--- Set I/O parameters'
 call bump%mpl%flush
 
 ! Allocation
@@ -327,17 +327,17 @@ endif
 bump%mpl%f_comm_io = bump%mpl%f_comm%split(color,cname)
 
 ! Set reproducibility parameters
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Set reproducibility parameters'
+write(bump%mpl%test,'(a)') '--- Set reproducibility parameters'
 call bump%mpl%flush
 repro = bump%nam%repro
 rth = bump%nam%rth
 
 ! Initialize random number generator
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Initialize random number generator'
+write(bump%mpl%test,'(a)') '--- Initialize random number generator'
 call bump%mpl%flush
 call bump%rng%init(bump%mpl,bump%nam)
 
@@ -350,9 +350,9 @@ bump%nicas(1)%allocated = .false.
 bump%nicas(2)%allocated = .false.
 
 ! Initialize geometry
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Initialize geometry'
+write(bump%mpl%test,'(a)') '--- Initialize geometry'
 call bump%mpl%flush
 if (present(fieldset)) then
    call bump%geom(1)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace,fieldset)
@@ -362,27 +362,27 @@ end if
 if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
 ! Initialize block parameters
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Initialize block parameters'
+write(bump%mpl%test,'(a)') '--- Initialize block parameters'
 call bump%mpl%flush
 call bump%bpar%alloc(bump%nam,bump%geom(1))
 call bump%bpar%init(bump%mpl,bump%nam,bump%geom(1))
 
 if (bump%nam%ens1_ne>0) then
    ! Initialize ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Initialize ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Initialize ensemble 1'
    call bump%mpl%flush
    call bump%ens(1)%set_att(bump%nam%ens1_ne,bump%nam%ens1_nsub)
 end if
 
 if (bump%nam%ens2_ne>0) then
    ! Initialize ensemble 2
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Initialize ensemble 2'
+   write(bump%mpl%test,'(a)') '--- Initialize ensemble 2'
    call bump%mpl%flush
    call bump%ens(2)%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
 end if
@@ -415,9 +415,9 @@ type(fieldset_type),intent(in),optional :: fieldset     !< Fieldset containing g
 @:probe_in()
 
 ! Initialize second geometry
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Initialize second geometry'
+write(bump%mpl%test,'(a)') '--- Initialize second geometry'
 call bump%mpl%flush
 if (present(fieldset)) then
    call bump%geom(2)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace,fieldset)
@@ -486,7 +486,7 @@ else
 end if
 
 ! Print norm
-!write(bump%mpl%info,'(a,i6,a)') 'Ensemble 1 member ',ie,': '
+!write(bump%mpl%test,'(a,i6,a)') 'Ensemble 1 member ',ie,': '
 !call bump%mpl%flush
 !call bump%ens(iens)%mem(ie)%print(bump%mpl)
 
@@ -522,9 +522,9 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 
 if (ie==1) then
    ! Setup sampling
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Setup sampling'
+   write(bump%mpl%test,'(a)') '--- Setup sampling'
    call bump%mpl%flush
    call bump%samp(1)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
@@ -616,9 +616,9 @@ if ((iens/=1).and.(iens/=2)) call bump%mpl%abort('${subr}$','wrong ensemble numb
 
 if (ie==1) then
    ! Setup sampling
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a,i1)') '--- Setup sampling for ensemble ',iens
+   write(bump%mpl%test,'(a,i1)') '--- Setup sampling for ensemble ',iens
    call bump%mpl%flush
    if (iens==1) then
       call bump%samp(iens)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(iens))
@@ -665,31 +665,31 @@ class(bump_type),intent(inout) :: bump !< BUMP
 
 if (bump%nam%check_consistency.or.bump%nam%check_optimality) then  
    ! Copy namelist support radii into C matrix, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Copy namelist support radii into C matrix, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Copy namelist support radii into C matrix, ensemble 1'
    call bump%mpl%flush
    call bump%cmat(1)%from_nam(bump%mpl,bump%nam,bump%geom(1),bump%bpar)
 
    ! Setup C matrix sampling, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Setup C matrix sampling, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Setup C matrix sampling, ensemble 1'
    call bump%mpl%flush
    call bump%cmat(1)%setup_sampling(bump%mpl,bump%nam,bump%geom(1),bump%bpar)
 
    ! Run NICAS driver, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run NICAS driver, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Run NICAS driver, ensemble 1'
    call bump%mpl%flush
    call bump%nicas(1)%run_nicas(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar,bump%cmat(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
    ! Randomize ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a,i6,a)') '--- Randomize ensemble 1 (',bump%nam%ens1_ne,' members)'
+   write(bump%mpl%test,'(a,i6,a)') '--- Randomize ensemble 1 (',bump%nam%ens1_ne,' members)'
    call bump%mpl%flush
    call bump%nicas(1)%gen_ens_pert(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar,bump%nam%ens1_ne,bump%ens(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
@@ -700,27 +700,27 @@ end if
 
 if (bump%nam%ens1_ne>0.and.bump%ens(1)%loaded) then
    ! Compute mean for ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Compute mean for ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Compute mean for ensemble 1'
    call bump%mpl%flush
    call bump%ens(1)%compute_mean(bump%mpl,bump%nam,bump%geom(1))
 end if
 
 if (bump%nam%ens2_ne>0.and.bump%ens(2)%loaded) then
    ! Compute mean for ensemble 2
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Compute mean for ensemble 2'
+   write(bump%mpl%test,'(a)') '--- Compute mean for ensemble 2'
    call bump%mpl%flush
    call bump%ens(2)%compute_mean(bump%mpl,bump%nam,bump%geom(2))
 end if
 
 if (bump%nam%new_normality) then
    ! Run normality tests
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run normality tests'
+   write(bump%mpl%test,'(a)') '--- Run normality tests'
    call bump%mpl%flush
    call bump%ens(1)%normality(bump%mpl,bump%nam,bump%geom(1))
 end if
@@ -728,18 +728,18 @@ end if
 if (bump%nam%new_vbal_cov.or.bump%nam%load_vbal_cov.or.(bump%nam%new_vbal.and.(.not.bump%nam%update_vbal_cov)) &
  & .or.bump%nam%load_vbal.or.bump%nam%new_mom.or.bump%nam%load_mom) then
    ! Setup sampling for ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Setup sampling for ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Setup sampling for ensemble 1'
    call bump%mpl%flush
    call bump%samp(1)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%ens(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
    if (bump%geom(2)%allocated) then
       ! Setup sampling for ensemble 2
-      write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+      write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
       call bump%mpl%flush
-      write(bump%mpl%info,'(a)') '--- Setup sampling for ensemble 2'
+      write(bump%mpl%test,'(a)') '--- Setup sampling for ensemble 2'
       call bump%mpl%flush
       call bump%samp(2)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(2),bump%ens(2),bump%samp(1))
       if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
@@ -748,16 +748,16 @@ end if
 
 if (bump%nam%new_vbal_cov) then
    ! Run vertical covariance driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run vertical covariances driver'
+   write(bump%mpl%test,'(a)') '--- Run vertical covariances driver'
    call bump%mpl%flush
    call bump%vbal%cov_run(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%ens(1))
 elseif (bump%nam%load_vbal_cov) then
    ! Read vertical balance
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Read vertical covariances'
+   write(bump%mpl%test,'(a)') '--- Read vertical covariances'
    call bump%mpl%flush
    if (bump%nam%load_samp_local) then
       call bump%vbal%cov_read_local(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%nam%ens1_nsub)
@@ -768,16 +768,16 @@ end if
 
 if (bump%nam%new_vbal) then
    ! Run vertical balance driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run vertical balance driver'
+   write(bump%mpl%test,'(a)') '--- Run vertical balance driver'
    call bump%mpl%flush
    call bump%vbal%run_vbal(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%ens(1))
 elseif (bump%nam%load_vbal) then
    ! Read vertical balance
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Read vertical balance'
+   write(bump%mpl%test,'(a)') '--- Read vertical balance'
    call bump%mpl%flush
    if (bump%nam%load_samp_local) then
       call bump%vbal%read_local(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1))
@@ -788,9 +788,9 @@ end if
 
 if (bump%nam%new_vbal.or.bump%nam%load_vbal) then
    ! Run vertical balance tests driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run vertical balance tests driver'
+   write(bump%mpl%test,'(a)') '--- Run vertical balance tests driver'
    call bump%mpl%flush
    call bump%vbal%run_vbal_tests(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar)
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
@@ -798,9 +798,9 @@ end if
 
 if (bump%nam%new_var.or.bump%nam%load_var.or.(bump%var%bump_m2_counter>0)) then
    ! Run variance driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run variance driver'
+   write(bump%mpl%test,'(a)') '--- Run variance driver'
    call bump%mpl%flush
    call bump%var%run_var(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar,bump%ens(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
@@ -808,39 +808,39 @@ end if
 
 if (bump%nam%new_mom) then
    ! Compute sample moments
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Compute sample moments'
+   write(bump%mpl%test,'(a)') '--- Compute sample moments'
    call bump%mpl%flush
 
    ! Compute ensemble 1 sample moments
-   write(bump%mpl%info,'(a7,a)') '','Ensemble 1:'
+   write(bump%mpl%test,'(a7,a)') '','Ensemble 1:'
    call bump%mpl%flush
    call bump%mom(1)%compute(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%ens(1),'mom1')
 
    select case(trim(bump%nam%method))
    case ('hyb-rnd','hyb-ens')
       ! Compute ensemble 2 sample moments
-      write(bump%mpl%info,'(a7,a)') '','Ensemble 2:'
+      write(bump%mpl%test,'(a7,a)') '','Ensemble 2:'
       call bump%mpl%flush
       call bump%mom(2)%compute(bump%mpl,bump%nam,bump%geom(2),bump%bpar,bump%samp(2),bump%ens(2),'mom2')
    end select
 elseif (bump%nam%load_mom) then
    ! Load sample moments
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Load sample moments'
+   write(bump%mpl%test,'(a)') '--- Load sample moments'
    call bump%mpl%flush
 
    ! Load ensemble 1 sample moments
-   write(bump%mpl%info,'(a7,a)') '','Ensemble 1'
+   write(bump%mpl%test,'(a7,a)') '','Ensemble 1'
    call bump%mpl%flush
    call bump%mom(1)%read(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%ens(1),'mom1')
 
    select case(trim(bump%nam%method))
    case ('hyb-rnd','hyb-ens')
       ! Load ensemble 2 sample moments
-      write(bump%mpl%info,'(a7,a)') '','Ensemble 2'
+      write(bump%mpl%test,'(a7,a)') '','Ensemble 2'
       call bump%mpl%flush
       call bump%mom(2)%read(bump%mpl,bump%nam,bump%geom(2),bump%bpar,bump%samp(2),bump%ens(2),'mom2')
    end select
@@ -848,27 +848,27 @@ end if
 
 if (bump%nam%new_hdiag) then
    ! Run HDIAG driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run HDIAG driver'
+   write(bump%mpl%test,'(a)') '--- Run HDIAG driver'
    call bump%mpl%flush
    call bump%hdiag%run_hdiag(bump%mpl,bump%nam,bump%geom,bump%bpar,bump%samp,bump%mom)
 end if
 
 if (bump%nam%check_consistency) then
    ! Check HDIAG/NICAS consistency
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Check HDIAG/NICAS consistency'
+   write(bump%mpl%test,'(a)') '--- Check HDIAG/NICAS consistency'
    call bump%mpl%flush
    call bump%check_consistency
 end if
 
 if (bump%nam%check_set_param) then
    ! Test set_parameter interfaces
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Test set_parameter interfaces'
+   write(bump%mpl%test,'(a)') '--- Test set_parameter interfaces'
    call bump%mpl%flush()
    call bump%test_set_parameter
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
@@ -876,27 +876,27 @@ end if
 
 if (allocated(bump%cmat(1)%blk)) then
    ! Get C matrix from BUMP interface, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Get C matrix from BUMP interface, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Get C matrix from BUMP interface, ensemble 1'
    call bump%mpl%flush
    call bump%cmat(1)%from_bump(bump%mpl,bump%geom(1),bump%bpar)
 end if
 
 if (.not.bump%nam%check_optimality) then
    ! Copy namelist support radii into C matrix, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Copy namelist support radii into C matrix, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Copy namelist support radii into C matrix, ensemble 1'
    call bump%mpl%flush
    call bump%cmat(1)%from_nam(bump%mpl,bump%nam,bump%geom(1),bump%bpar)
 end if
 
 if (bump%nam%new_hdiag) then
    ! Copy HDIAG into C matrix, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Copy HDIAG into C matrix, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Copy HDIAG into C matrix, ensemble 1'
    call bump%mpl%flush
    select case(trim(bump%nam%method))
    case ('cor')
@@ -908,9 +908,9 @@ if (bump%nam%new_hdiag) then
    select case(trim(bump%nam%method))
    case ('hyb-ens')
       ! Copy HDIAG into C matrix, ensemble 2
-      write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+      write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
       call bump%mpl%flush
-      write(bump%mpl%info,'(a)') '--- Copy HDIAG into C matrix, ensemble 2'
+      write(bump%mpl%test,'(a)') '--- Copy HDIAG into C matrix, ensemble 2'
       call bump%mpl%flush
       call bump%cmat(2)%from_hdiag(bump%mpl,bump%geom(2),bump%bpar,bump%hdiag%loc(2),loc_scaling_factor)
    end select
@@ -918,54 +918,54 @@ end if
 
 if (bump%cmat(1)%allocated) then
    ! Setup C matrix sampling, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Setup C matrix sampling, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Setup C matrix sampling, ensemble 1'
    call bump%mpl%flush
    call bump%cmat(1)%setup_sampling(bump%mpl,bump%nam,bump%geom(1),bump%bpar)
 end if
 
 if (bump%cmat(2)%allocated) then
    ! Setup C matrix sampling, ensemble 2
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Setup C matrix sampling, ensemble 2'
+   write(bump%mpl%test,'(a)') '--- Setup C matrix sampling, ensemble 2'
    call bump%mpl%flush
    call bump%cmat(2)%setup_sampling(bump%mpl,bump%nam,bump%geom(2),bump%bpar)
 end if
 
 if (bump%nam%new_nicas.or.bump%nam%load_nicas_global) then
    ! Run NICAS driver, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run NICAS driver, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Run NICAS driver, ensemble 1'
    call bump%mpl%flush
    call bump%nicas(1)%run_nicas(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar,bump%cmat(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
    if (bump%nam%new_nicas.and.(trim(bump%nam%method)=='hyb-ens')) then
       ! Run NICAS driver, ensemble 2
-      write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+      write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
       call bump%mpl%flush
-      write(bump%mpl%info,'(a)') '--- Run NICAS driver, ensemble 2'
+      write(bump%mpl%test,'(a)') '--- Run NICAS driver, ensemble 2'
       call bump%mpl%flush
       call bump%nicas(2)%run_nicas(bump%mpl,bump%rng,bump%nam,bump%geom(2),bump%bpar,bump%cmat(2))
       if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
    end if
 elseif (bump%nam%load_nicas_local) then
    ! Read local NICAS parameters, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Read local NICAS parameters, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Read local NICAS parameters, ensemble 1'
    call bump%mpl%flush
    call bump%nicas(1)%read_local(bump%mpl,bump%nam,bump%geom(1),bump%bpar)
 end if
 
 if (bump%nam%check_optimality) then
    ! Check HDIAG/NICAS optimality
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Check HDIAG/NICAS optimality'
+   write(bump%mpl%test,'(a)') '--- Check HDIAG/NICAS optimality'
    call bump%mpl%flush
    call bump%check_optimality
 end if
@@ -976,18 +976,18 @@ call bump%cmat(2)%partial_dealloc
 
 if (bump%nam%new_nicas.or.bump%nam%load_nicas_local.or.bump%nam%load_nicas_global) then
    ! Run NICAS tests driver, ensemble 1
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run NICAS tests driver, ensemble 1'
+   write(bump%mpl%test,'(a)') '--- Run NICAS tests driver, ensemble 1'
    call bump%mpl%flush
    call bump%nicas(1)%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar,bump%ens(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
    if (bump%nam%new_nicas.and.(trim(bump%nam%method)=='hyb-ens')) then
       ! Run NICAS tests driver, ensemble 2
-      write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+      write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
       call bump%mpl%flush
-      write(bump%mpl%info,'(a)') '--- Run NICAS tests driver, ensemble 2'
+      write(bump%mpl%test,'(a)') '--- Run NICAS tests driver, ensemble 2'
       call bump%mpl%flush
       call bump%nicas(2)%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom(2),bump%bpar,bump%ens(2))
       if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
@@ -996,9 +996,9 @@ end if
 
 if (bump%nam%new_wind.or.bump%nam%load_wind_local) then
    ! Run psi/chi to u/v driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run psi/chi to u/v driver'
+   write(bump%mpl%test,'(a)') '--- Run psi/chi to u/v driver'
    call bump%mpl%flush
    call bump%wind%setup(bump%mpl,bump%rng,bump%nam,bump%geom(1))
 end if
@@ -1034,7 +1034,7 @@ real(kind_real) :: rh_diag,rv_diag
 
 do ib=1,bump%bpar%nbe
    if (bump%bpar%nicas_block(ib)) then
-      write(bump%mpl%info,'(a7,a)') '','Block: '//trim(bump%bpar%blockname(ib))
+      write(bump%mpl%test,'(a7,a)') '','Block: '//trim(bump%bpar%blockname(ib))
       call bump%mpl%flush
       iv = bump%bpar%b_to_v1(ib)
       do il0=1,bump%geom(1)%nl0
@@ -1042,7 +1042,7 @@ do ib=1,bump%bpar%nbe
          rv_diag = -one
          if (bump%nam%rh(il0,iv)>zero) rh_diag = bump%hdiag%cor(1)%blk(0,ib)%rh_l0(il0,1)/bump%nam%rh(il0,iv)
          if (bump%nam%rv(il0,iv)>zero) rv_diag = bump%hdiag%cor(1)%blk(0,ib)%rv_l0(il0,1)/bump%nam%rv(il0,iv)
-         write(bump%mpl%info,'(a10,a,i3,a,f6.3,a,f6.3)') '','Level ',bump%nam%levs(il0),' ~> ',rh_diag,' / ',rv_diag
+         write(bump%mpl%test,'(a10,a,i3,a,f6.3,a,f6.3)') '','Level ',bump%nam%levs(il0),' ~> ',rh_diag,' / ',rv_diag
          call bump%mpl%flush
       end do
    end if
@@ -1082,13 +1082,13 @@ type(nicas_type) :: nicas_test
 @:probe_in()
 
 ! Define test vectors
-write(bump%mpl%info,'(a4,a)') '','Define test vectors'
+write(bump%mpl%test,'(a4,a)') '','Define test vectors'
 call bump%mpl%flush
 call bump%geom(1)%define_test_vectors(bump%mpl,bump%rng,bump%nam,ntest,fld_save)
 if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
 ! Apply correlation operator to test vectors
-write(bump%mpl%info,'(a4,a)') '','Apply correlation operator to test vectors'
+write(bump%mpl%test,'(a4,a)') '','Apply correlation operator to test vectors'
 call bump%mpl%flush
 fld_ref = fld_save
 do itest=1,ntest
@@ -1099,9 +1099,9 @@ end do
 bump%ens(1)%ne = bump%nam%ne
 
 ! Compute mean for ensemble 1
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Compute mean for ensemble 1'
+write(bump%mpl%test,'(a)') '--- Compute mean for ensemble 1'
 call bump%mpl%flush
 call bump%ens(1)%compute_mean(bump%mpl,bump%nam,bump%geom(1))
 
@@ -1109,9 +1109,9 @@ do ifac=-nfac_opt,nfac_opt
    ! Multiplication factor
    fac(ifac) = one+0.05_kind_real*real(ifac,kind_real)
 
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a,f4.2,a)') '--- Generate NICAS with a multiplicative factor ',fac(ifac),' to length-scales'
+   write(bump%mpl%test,'(a,f4.2,a)') '--- Generate NICAS with a multiplicative factor ',fac(ifac),' to length-scales'
    call bump%mpl%flush
 
    ! Allocation
@@ -1119,7 +1119,7 @@ do ifac=-nfac_opt,nfac_opt
 
    do ib=1,bump%bpar%nbe
       if (bump%bpar%nicas_block(ib)) then
-         write(bump%mpl%info,'(a)') '--- Block: '//trim(bump%bpar%blockname(ib))
+         write(bump%mpl%test,'(a)') '--- Block: '//trim(bump%bpar%blockname(ib))
          call bump%mpl%flush
 
          ! Length-scales scaling
@@ -1142,9 +1142,9 @@ do ifac=-nfac_opt,nfac_opt
       end if
    end do
 
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Apply small ensemble with localization to test vectors'
+   write(bump%mpl%test,'(a)') '--- Apply small ensemble with localization to test vectors'
    call bump%mpl%flush
 
    do itest=1,ntest
@@ -1159,9 +1159,9 @@ do ifac=-nfac_opt,nfac_opt
    mse_avg(ifac) = sum(mse(:,ifac))/real(ntest,kind_real)
 
    ! Print scores
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a,f4.2,a,e15.8)') '--- Optimality results for a factor ',fac(ifac),', MSE: ',mse_avg(ifac)
+   write(bump%mpl%test,'(a,f4.2,a,e15.8)') '--- Optimality results for a factor ',fac(ifac),', MSE: ',mse_avg(ifac)
    call bump%mpl%flush
 
    ! Release memory
@@ -1169,18 +1169,18 @@ do ifac=-nfac_opt,nfac_opt
 end do
 
 ! Print scores summary
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Optimality results summary'
+write(bump%mpl%test,'(a)') '--- Optimality results summary'
 call bump%mpl%flush
 ifac_best = minloc(mse_avg,dim=1)-(nfac_opt+1)
 do ifac=-nfac_opt,nfac_opt
-   write(bump%mpl%info,'(a7,a,f4.2,a,e15.8)') '','Factor ',fac(ifac),', MSE: ',mse_avg(ifac)
+   write(bump%mpl%test,'(a7,a,f4.2,a,e15.8)') '','Factor ',fac(ifac),', MSE: ',mse_avg(ifac)
    call bump%mpl%flush(.false.)
    if (ifac==ifac_best) then
-      write(bump%mpl%info,'(a)') ' <~ best localization'
+      write(bump%mpl%test,'(a)') ' <~ best localization'
    else
-      write(bump%mpl%info,'(a)') ''
+      write(bump%mpl%test,'(a)') ''
    end if
    call bump%mpl%flush()
 end do
@@ -1822,7 +1822,7 @@ integer,intent(inout) :: ncmp          !< Number of components
 ! Probe in
 @:probe_in()
 
-write(bump%mpl%info,'(a7,a)') '','Get number of components'
+write(bump%mpl%test,'(a7,a)') '','Get number of components'
 call bump%mpl%flush
 
 ! Check variable index
@@ -1870,7 +1870,7 @@ logical :: found
 ! Probe in
 @:probe_in()
 
-write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
+write(bump%mpl%test,'(a7,a,a)') '','Get ',trim(param)
 call bump%mpl%flush
 
 ! Initialization
@@ -2260,7 +2260,7 @@ integer :: ib
 ! Probe in
 @:probe_in()
 
-write(bump%mpl%info,'(a7,a)') '','Set number of components'
+write(bump%mpl%test,'(a7,a)') '','Set number of components'
 call bump%mpl%flush
 
 ! Check variable index
@@ -2316,7 +2316,7 @@ logical :: found
 ! Probe in
 @:probe_in()
 
-write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
+write(bump%mpl%test,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush
 
 ! Set fieldset metadata
@@ -2490,7 +2490,7 @@ class(bump_type),intent(inout) :: bump !< BUMP
 ! Local variables
 integer :: ic0a,il0,iv
 integer(kind_short) :: lon_short,lat_short,il0_short,iv_short
-real(kind_real) :: fld_min,fld_max
+real(kind_real) :: fld_max
 real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 real(kind_real) :: fld_c0a_sym(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 real(kind_real) :: fld_c0a_req(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
@@ -2597,7 +2597,7 @@ type(fieldset_type) :: fieldset
 
 ! Test apply_vbal
 if (bump%nam%check_apply_vbal) then
-   write(bump%mpl%info,'(a7,a)') '','Test apply_vbal'
+   write(bump%mpl%test,'(a7,a)') '','Test apply_vbal'
    call bump%mpl%flush
 
    ! Allocation
@@ -2626,7 +2626,7 @@ end if
 
 ! Test apply_stddev
 if (bump%nam%check_apply_stddev) then
-   write(bump%mpl%info,'(a7,a)') '','Test apply_stddev'
+   write(bump%mpl%test,'(a7,a)') '','Test apply_stddev'
    call bump%mpl%flush
 
    ! Allocation
@@ -2653,7 +2653,7 @@ end if
 
 ! Test apply_nicas
 if (bump%nam%check_apply_nicas) then
-   write(bump%mpl%info,'(a7,a)') '','Test apply_nicas'
+   write(bump%mpl%test,'(a7,a)') '','Test apply_nicas'
    call bump%mpl%flush
 
    ! Get control variable size
@@ -2765,9 +2765,9 @@ class(bump_type),intent(inout) :: bump !< BUMP
 @:execution_stats()
 
 ! Number of open NetCDF files
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+write(bump%mpl%test,'(a)') '-------------------------------------------------------------------'
 call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- NetCDF I/O report'
+write(bump%mpl%test,'(a)') '--- NetCDF I/O report'
 call bump%mpl%flush
 call registry%report(bump%mpl)
 
