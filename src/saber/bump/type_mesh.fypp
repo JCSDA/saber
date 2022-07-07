@@ -12,8 +12,9 @@ use atlas_module, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,at
  & atlas_build_node_to_edge_connectivity,atlas_mesh_nodes,atlas_connectivity
 !$ use omp_lib
 use tools_const, only: zero,one,two,three,five,pi,req,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,sphere_dist,lonlat2xyz,xyz2lonlat,inside,vector_product,order_cc,det,zss_maxval
-use tools_kinds, only: kind_long,kind_real,huge_real
+use tools_func, only: fletcher32,lonlatmod,rad2short,sphere_dist,lonlat2xyz,xyz2lonlat,inside,vector_product,order_cc,det, &
+ &  zss_maxval
+use tools_kinds, only: kind_short,kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf
 use tools_stripack, only: trfind,trmesh,bnodes
@@ -138,9 +139,10 @@ real(kind_real),intent(in) :: lat(mesh%n) !< Latitudes
 logical,intent(in),optional :: hull_bnd   !< Flag to compute hull boundary vertices
 
 ! Local variables
-integer :: i,j,k,cols,maxedge,jtab(mesh%n),nb,ib
+integer :: i,j,k,cols,maxedge,jtab(mesh%n),nb,ib,hash
 integer,allocatable :: nodes(:,:),order(:),near(:),next(:),bnd(:)
 integer,pointer :: row(:)
+integer(kind_short) :: lon_short,lat_short
 integer(kind_long) :: hash_long
 real(kind_real) :: lon_pert(mesh%n),lat_pert(mesh%n)
 real(kind_real),allocatable :: lonlat(:,:),dist(:),x(:),y(:),z(:)
@@ -195,7 +197,10 @@ end do
 ! Perturb grid coordinates to avoid colinear points
 do i=1,mesh%n
    ! Compute hash
-   hash_long = int(fletcher32((/mesh%lon(i),mesh%lat(i)/)),kind_long)
+   call rad2short(mesh%lon(i),lon_short)
+   call rad2short(mesh%lat(i),lat_short)
+   hash = fletcher32((/lon_short,lat_short/))
+   hash_long = int(hash,kind_long)
 
    ! Generate pseudo-random numbers between -1e-10 and 1e-10 from the hash
    call rng%lcg(lon_pert(i),hash_long)

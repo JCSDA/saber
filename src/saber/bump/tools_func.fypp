@@ -14,7 +14,7 @@ use fckit_mpi_module, only: fckit_mpi_sum
 use iso_c_binding
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,one,two,three,four,five,eight,ten,pi,deg2rad,rad2deg
-use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
+use tools_kinds, only: kind_int,kind_short,kind_real,huge_int,huge_short,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small,eq
 use tools_wrfda, only: da_eof_decomposition
@@ -37,8 +37,11 @@ end interface
 interface lonlatmod
    module procedure func_lonlatmod
 end interface
-interface gridhash
-   module procedure func_gridhash
+interface rad2short
+   module procedure func_rad2short
+end interface
+interface grid_hash
+   module procedure func_grid_hash
 end interface
 interface independent_levels
    module procedure func_independent_levels
@@ -148,7 +151,7 @@ interface global_average
 end interface
 
 private
-public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
+public :: fletcher32,lonlatmod,rad2short,grid_hash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
  & vector_product,det,inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
  & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count,global_average
 
@@ -163,14 +166,13 @@ function func_fletcher32(var) result(value)
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: var(:) !< Variable
+integer(kind_short),intent(in) :: var(:) !< Variable
 
 ! Returned variable
 integer :: value
 
 ! Local values
-integer(c_int32_t) :: array_size
-integer(c_int16_t),allocatable :: array(:)
+integer :: var_size
 
 ! Set name
 @:set_name(func_fletcher32)
@@ -178,18 +180,11 @@ integer(c_int16_t),allocatable :: array(:)
 ! Probe in
 @:probe_in()
 
-! Allocation
-allocate(array(size(var)))
-
 ! Initialization
-array = transfer(var,(/0_kind_short/))
-array_size  = size(array)
+var_size  = size(var)
 
 ! Call C function
-value = c_fletcher32(array_size,array)
-
-! Release memory
-deallocate(array)
+value = c_fletcher32(var_size,var)
 
 ! Probe out
 @:probe_out()
@@ -239,24 +234,55 @@ if (abs(lat)>(half-1.0e-6_kind_real)*pi) lon = zero
 end subroutine func_lonlatmod
 
 !----------------------------------------------------------------------
-! Subroutine: func_gridhash
-!> Compute grid hash profile
+! Subroutine: func_rad2short
+!> Convert lontitude/latitude in radian into short integer for hash computation 
 !----------------------------------------------------------------------
-subroutine func_gridhash(ncx,nlx,lon_cx,lat_cx,mask_cx,grid_hash)
+subroutine func_rad2short(rad_real,rad_short)
 
 implicit none
 
 ! Passed variables
-integer,intent(in) :: ncx                 !< Number of points
-integer,intent(in) :: nlx                 !< Number of levels
-real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude [radians]
-real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude [radians]
-logical,intent(in) :: mask_cx(ncx,nlx)    !< Mask
-integer,intent(out) :: grid_hash(0:nlx)   !< Grid hash profile
+real(kind_real),intent(in) :: rad_real       !< Angle (longitude or latitude) [radians]
+integer(kind_short),intent(out) :: rad_short !< Short integer value
+
+! Set name
+@:set_name(func_rad2short)
+
+! Probe in
+@:probe_in()
+
+! Convert to integer (use huge_short/2 for security)
+rad_short = int(rad_real/pi*real(huge_short/2),kind_short)
+
+! Probe out
+@:probe_out()
+
+end subroutine func_rad2short
+
+!----------------------------------------------------------------------
+! Subroutine: func_grid_hash
+!> Compute grid hash profile
+!----------------------------------------------------------------------
+subroutine func_grid_hash(mpl,ncxa,ncx,nlx,cxa_to_cx,lon_cxa,lat_cxa,mask_cxa,grid_hash)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: ncxa                  !< Number of points (local)
+integer,intent(in) :: ncx                   !< Number of points (global)
+integer,intent(in) :: nlx                   !< Number of levels
+integer,intent(in) :: cxa_to_cx(ncxa)       !< Halo A to global
+real(kind_real),intent(in) :: lon_cxa(ncxa) !< Longitude [radians]
+real(kind_real),intent(in) :: lat_cxa(ncxa) !< Latitude [radians]
+logical,intent(in) :: mask_cxa(ncxa,nlx)    !< Mask
+integer,intent(out) :: grid_hash(nlx)       !< Grid hash profile
 
 ! Local variables
-integer :: ilx,ncx_eff,icx_eff,icx
-real(kind_real),allocatable :: lonlat(:)
+integer :: ilx,icx
+integer(kind_short) :: lonlat(2*ncx)
+real(kind_real) :: lon_cx(ncx),lat_cx(ncx)
+logical :: mask_cx(ncx,nlx)
 
 ! Set name
 @:set_name(func_grid_hash)
@@ -264,42 +290,37 @@ real(kind_real),allocatable :: lonlat(:)
 ! Probe in
 @:probe_in()
 
-do ilx=1,nlx
-   ! Count points in the mask
-   ncx_eff = count(mask_cx(:,ilx))
+! Gather lon/lat/mask points on root processor
+call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,lon_cxa,lon_cx,.false.)
+call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,lat_cxa,lat_cx,.false.)
+call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,mask_cxa,mask_cx,.false.)
 
-   if (ncx_eff>0) then
-      ! Allocation
-      allocate(lonlat(2*ncx_eff))
+if (mpl%main) then
+   ! Loop over levels
+   do ilx=1,nlx
+      ! Intialization
+      lonlat = 0_kind_short
 
-      ! Copy lonlat
-      icx_eff = 0
+      ! Loop over points
       do icx=1,ncx
          if (mask_cx(icx,ilx)) then
-            icx_eff = icx_eff+1
-            lonlat(icx_eff) = lon_cx(icx)
-            icx_eff = icx_eff+1
-            lonlat(icx_eff) = lat_cx(icx)
+            call rad2short(lon_cx(icx),lonlat(2*(icx-1)+1))
+            call rad2short(lat_cx(icx),lonlat(2*icx))
          end if
       end do
 
       ! Compute hash
       grid_hash(ilx) = fletcher32(lonlat)
+   end do
+end if
 
-      ! Release memory
-      deallocate(lonlat)
-   else
-      grid_hash(ilx) = 0
-   end if
-end do
-
-! Final grid hash
-grid_hash(0) = fletcher32(real(grid_hash(1:nlx),kind_real))
+! Broadcast grid hash profile
+call mpl%f_comm%broadcast(grid_hash,mpl%rootproc-1)
 
 ! Probe out
 @:probe_out()
 
-end subroutine func_gridhash
+end subroutine func_grid_hash
 
 !----------------------------------------------------------------------
 ! Subroutine: func_independent_levels
@@ -312,7 +333,7 @@ implicit none
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl   !< MPI data
 integer,intent(in) :: nlx             !< Number of levels
-integer,intent(in) :: grid_hash(nlx)  !< Grid hash profile
+integer,intent(in) :: grid_hash(nlx)  !< Global grid hash profile
 integer,intent(out) :: nlxi           !< Number of independent levels
 integer,intent(out) :: lx_to_lxi(nlx) !< Levels to independent levels
 integer,intent(out) :: lxi_to_lx(nlx) !< Independent levels to levels
@@ -320,7 +341,6 @@ integer,intent(in) :: ifmt            !< Indentation
 
 ! Local variables
 integer :: ilx,ilxi,jlx,jlxi,n
-integer :: proc_to_grid_hash(mpl%nproc),grid_hash_glb(nlx)
 character(len=1024) :: cfmt
 
 ! Set name
@@ -329,16 +349,10 @@ character(len=1024) :: cfmt
 ! Probe in
 @:probe_in()
 
-! Compute global hash value
-do ilx=1,nlx
-   call mpl%f_comm%allgather(grid_hash(ilx),proc_to_grid_hash)
-   grid_hash_glb(ilx) = fletcher32(real(proc_to_grid_hash,kind_real))
-end do
-
 ! Count independent levels
 nlxi = 1
 do ilx=2,nlx
-   if (all(grid_hash_glb(1:ilx-1)/=grid_hash_glb(ilx))) nlxi = nlxi+1
+   if (all(grid_hash(1:ilx-1)/=grid_hash(ilx))) nlxi = nlxi+1
 end do
 
 ! Initialization
@@ -350,7 +364,7 @@ ilxi = 1
 lx_to_lxi(ilx) = ilxi
 lxi_to_lx(ilxi) = ilx
 do ilx=2,nlx
-   if (all(grid_hash_glb(1:ilx-1)/=grid_hash_glb(ilx))) then
+   if (all(grid_hash(1:ilx-1)/=grid_hash(ilx))) then
       ! New independent level
       ilxi = ilxi+1
       lx_to_lxi(ilx) = ilxi
@@ -358,7 +372,7 @@ do ilx=2,nlx
    else
       ! Similar level
       do jlx=1,ilx-1
-         if (grid_hash_glb(jlx)==grid_hash_glb(ilx)) then
+         if (grid_hash(jlx)==grid_hash(ilx)) then
             jlxi = lx_to_lxi(jlx)
             lx_to_lxi(ilx) = jlxi
             exit

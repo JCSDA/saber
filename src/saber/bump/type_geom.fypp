@@ -15,7 +15,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_atlas, only: field_to_array
 use tools_const, only: zero,quarter,half,one,two,four,hundred,pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist,inside, &
+use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist,inside, &
  & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
 use tools_qsort, only: qsort
@@ -72,8 +72,6 @@ type geom_type
    logical,allocatable :: gmask_c0a(:,:)          !< Geometry mask
    logical,allocatable :: gmask_hor_c0a(:)        !< Union of horizontal geometry masks
    real(kind_real),allocatable :: mdist_c0a(:,:)  !< Minimum distance to mask
-   integer,allocatable :: grid_hash(:)            !< Local grid hash
-   integer,allocatable :: proc_to_grid_hash(:)    !< Processor to local grid hash
 
    ! Geometry data on subset Sc0, universe
    integer,allocatable :: proc_to_nc0u(:)         !< Processor to universe size for subset Sc0
@@ -156,7 +154,6 @@ contains
    procedure :: from_atlas => geom_from_atlas
    procedure :: setup_universe => geom_setup_universe
    procedure :: setup_c0 => geom_setup_c0
-   procedure :: setup_independent_levels => geom_setup_independent_levels
    procedure :: setup_mask_distance => geom_setup_mask_distance
    procedure :: setup_mask_check => geom_setup_mask_check
    procedure :: geom_index_from_lonlat_r0
@@ -232,8 +229,6 @@ if (allocated(geom%myuniverse)) deallocate(geom%myuniverse)
 if (allocated(geom%proc_to_nc0a)) deallocate(geom%proc_to_nc0a)
 if (allocated(geom%gmask_hor_c0a)) deallocate(geom%gmask_hor_c0a)
 if (allocated(geom%mdist_c0a)) deallocate(geom%mdist_c0a)
-if (allocated(geom%grid_hash)) deallocate(geom%grid_hash)
-if (allocated(geom%proc_to_grid_hash)) deallocate(geom%proc_to_grid_hash)
 if (allocated(geom%proc_to_nc0u)) deallocate(geom%proc_to_nc0u)
 if (allocated(geom%lon_c0u)) deallocate(geom%lon_c0u)
 if (allocated(geom%lat_c0u)) deallocate(geom%lat_c0u)
@@ -369,9 +364,6 @@ write(mpl%info,'(a7,a)') '','Setup mesh'
 call mpl%flush
 call geom%mesh_c0u%alloc(geom%nc0u,.false.)
 call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,hull_bnd=.true.)
-
-! Setup number of independent levels
-call geom%setup_independent_levels(mpl)
 
 ! Setup minimum distance to mask
 call geom%setup_mask_distance(mpl,nam)
@@ -641,6 +633,7 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 
 ! Local variables
 integer :: iproc,imga,ic0a,ic0,diff_grid,il0
+integer :: hash(geom%nl0)
 real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se
 real(kind_real) :: norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
 
@@ -692,8 +685,8 @@ allocate(geom%gmask_hor_c0a(geom%nc0a))
 allocate(geom%nc0_gmask(0:geom%nl0))
 allocate(geom%area_ver_c0(geom%nl0))
 allocate(geom%vunitavg(geom%nl0))
-allocate(geom%grid_hash(0:geom%nl0))
-allocate(geom%proc_to_grid_hash(mpl%nproc))
+allocate(geom%l0_to_l0i(geom%nl0))
+allocate(geom%l0i_to_l0(geom%nl0))
 
 ! Default area
 if (.not.geom%area_provided) then
@@ -792,8 +785,10 @@ do il0=1,geom%nl0
 end do
 
 ! Grid hash
-call gridhash(geom%nc0a,geom%nl0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,geom%grid_hash)
-call mpl%f_comm%allgather(geom%grid_hash(0),geom%proc_to_grid_hash)
+call grid_hash(mpl,geom%nc0a,geom%nc0,geom%nl0,geom%c0a_to_c0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,hash)
+
+! Compute independent levels
+call independent_levels(mpl,geom%nl0,hash,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0,7)
 
 ! Probe out
 @:probe_out()
@@ -1005,36 +1000,6 @@ deallocate(order)
 @:probe_out()
 
 end subroutine geom_setup_universe
-
-!----------------------------------------------------------------------
-! Subroutine: geom_setup_independent_levels
-!> Setup independent levels
-!----------------------------------------------------------------------
-subroutine geom_setup_independent_levels(geom,mpl)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-
-! Set name
-@:set_name(geom_setup_independent_levels)
-
-! Probe in
-@:probe_in()
-
-! Allocation
-allocate(geom%l0_to_l0i(geom%nl0))
-allocate(geom%l0i_to_l0(geom%nl0))
-
-! Compute independent levels
-call independent_levels(mpl,geom%nl0,geom%grid_hash(1:geom%nl0),geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0,7)
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_setup_independent_levels
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_setup_mask_distance

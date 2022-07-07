@@ -12,8 +12,8 @@ use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atla
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_const, only: zero,half,one,thousand,req,reqkm,deg2rad,rad2deg
-use tools_func, only: fletcher32,sphere_dist,zss_maxval,zss_minval,zss_sum
-use tools_kinds,only: kind_real
+use tools_func, only: fletcher32,rad2short,sphere_dist,zss_maxval,zss_minval,zss_sum
+use tools_kinds,only: kind_short,kind_real
 use tools_netcdf, only: registry
 use tools_repro,only: repro,rth
 use type_bpar, only: bpar_type
@@ -2489,6 +2489,7 @@ class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Local variables
 integer :: ic0a,il0,iv
+integer(kind_short) :: lon_short,lat_short,il0_short,iv_short
 real(kind_real) :: fld_min,fld_max
 real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 real(kind_real) :: fld_c0a_sym(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
@@ -2507,10 +2508,13 @@ type(fieldset_type) :: fieldset,fieldset_sym,fieldset_req,fieldset_vert
 
 ! Initialization
 do iv=1,bump%nam%nv
+   iv_short = int(iv,kind_short)
    do il0=1,bump%geom(1)%nl0
+      il0_short = int(il0,kind_short)
       do ic0a=1,bump%geom(1)%nc0a
-         fld_c0a(ic0a,il0,iv) = abs(real(fletcher32((/bump%geom(1)%lon_c0a(ic0a),bump%geom(1)%lat_c0a(ic0a),real(iv,kind_real), &
- & real(il0,kind_real)/)),kind_real))
+         call rad2short(bump%geom(1)%lon_c0a(ic0a),lon_short)
+         call rad2short(bump%geom(1)%lat_c0a(ic0a),lat_short)
+         fld_c0a(ic0a,il0,iv) = abs(real(fletcher32((/lon_short,lat_short,il0_short,iv_short/))))
       end do
    end do
 end do
