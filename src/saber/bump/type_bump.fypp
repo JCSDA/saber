@@ -2518,11 +2518,9 @@ do iv=1,bump%nam%nv
       end do
    end do
 end do
-fld_min = zss_minval(fld_c0a)
 fld_max = zss_maxval(fld_c0a)
-call bump%mpl%f_comm%allreduce(fld_min,fckit_mpi_min())
 call bump%mpl%f_comm%allreduce(fld_max,fckit_mpi_max())
-fld_c0a = fld_c0a/abs(fld_max-fld_min)
+fld_c0a = fld_c0a/fld_max
 fld_c0a_sym = fld_c0a-half
 fld_c0a_req = fld_c0a*req
 fld_c0a_vert = (one+fld_c0a)*(maxval(bump%geom(1)%vunitavg)-minval(bump%geom(1)%vunitavg))
@@ -2556,7 +2554,7 @@ if (bump%nam%nc4==1) then
 else
   call bump%set_parameter('rh1',1,fieldset_req)
   call bump%set_parameter('rh2',1,fieldset_req)
-  call bump%set_parameter('rhc',1,fieldset)
+  call bump%set_parameter('rhc',1,fieldset_sym)
 end if
 call bump%set_parameter('rv',1,fieldset_vert)
 call bump%set_parameter('nicas_norm',1,fieldset)
