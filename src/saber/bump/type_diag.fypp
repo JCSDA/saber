@@ -212,12 +212,12 @@ if (present(hyb_coef_only)) lhyb_coef_only = hyb_coef_only
 
 if (nam%local_diag) then
    ! Horizontal filtering
-   write(mpl%test,'(a10,a)') '','Horizontal filtering:'
+   write(mpl%info,'(a10,a)') '','Horizontal filtering:'
    call mpl%flush
 
    do ib=1,bpar%nbe
       if (bpar%fit_block(ib)) then
-         write(mpl%test,'(a13,a,a)') '','Block ',trim(bpar%blockname(ib))
+         write(mpl%info,'(a13,a,a)') '','Block ',trim(bpar%blockname(ib))
          call mpl%flush
 
          ! Allocation
@@ -373,7 +373,7 @@ end if
 
 if (nam%diag_rvflt>zero) then
    ! Vertical filtering
-   write(mpl%test,'(a10,a)') '','Vertical filtering'
+   write(mpl%info,'(a10,a)') '','Vertical filtering'
    call mpl%flush
 
    do ib=1,bpar%nbe
@@ -430,7 +430,7 @@ real(kind_real),allocatable :: fit_iso(:,:,:)
 ! Probe in
 @:probe_in()
 
-write(mpl%test,'(a10,a)') '','Fit RMSE:'
+write(mpl%info,'(a10,a)') '','Fit RMSE:'
 call mpl%flush
 
 do ib=1,bpar%nbe
@@ -531,12 +531,12 @@ logical :: lhyb_coef_only
 lhyb_coef_only = .false.
 if (present(hyb_coef_only)) lhyb_coef_only = hyb_coef_only
 
-write(mpl%test,'(a10,a)') '','Interpolate fit diagnostics:'
+write(mpl%info,'(a10,a)') '','Interpolate fit diagnostics:'
 call mpl%flush
 
 do ib=1,bpar%nbe
    if (bpar%fit_block(ib)) then
-      write(mpl%test,'(a13,a,a)') '','Block ',trim(bpar%blockname(ib))
+      write(mpl%info,'(a13,a,a)') '','Block ',trim(bpar%blockname(ib))
       call mpl%flush
 
       ! Allocation
@@ -699,7 +699,7 @@ real(kind_real),allocatable :: a_dir(:,:),rh_dir(:,:),H11_dir(:,:),H22_dir(:,:),
 @:probe_in()
 
 if (nam%check_dirac) then
-   write(mpl%test,'(a10,a)') '','Compute diagnostics dirac test'
+   write(mpl%info,'(a10,a)') '','Compute diagnostics dirac test'
    call mpl%flush
 
    ! Maximum number of components
@@ -866,11 +866,11 @@ integer :: ib,ic2a,il0
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
-write(mpl%test,'(a10,a)') '','Copy covariance:'
+write(mpl%info,'(a10,a)') '','Copy covariance:'
 call mpl%flush
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib))
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib))
       call mpl%flush
 
       ! Copy covariance
@@ -882,11 +882,11 @@ do ib=1,bpar%nb
 end do
 
 ! Print results
-write(mpl%test,'(a10,a)') '','Results:'
+write(mpl%info,'(a10,a)') '','Results:'
 call mpl%flush
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
-      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib))
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib))
       call mpl%flush
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
@@ -933,11 +933,11 @@ integer :: ib,iv,ic2a,icmp,il0
 ! Allocation
 call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
-write(mpl%test,'(a10,a)') '','Copy and fit correlation:'
+write(mpl%info,'(a10,a)') '','Copy and fit correlation:'
 call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush(.false.)
 
       ! Initialization
@@ -972,11 +972,11 @@ call diag%interp(mpl,nam,geom,bpar,samp)
 call diag%test_dirac(mpl,nam,geom,bpar)
 
 ! Print results
-write(mpl%test,'(a10,a)') '','Results:'
+write(mpl%info,'(a10,a)') '','Results:'
 call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
 
       do il0=1,geom%nl0
@@ -988,10 +988,10 @@ do ib=1,bpar%nbe
       end do
       if (bpar%fit_block(ib)) then
          if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
-            write(mpl%test,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
+            write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
             call mpl%flush
             do icmp=1,diag%blk(0,ib)%ncmp
-               write(mpl%test,'(a16,a,i1)') '','Component : ',icmp
+               write(mpl%info,'(a16,a,i1)') '','Component : ',icmp
                call mpl%flush
                do il0=1,geom%nl0
                   if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
@@ -1053,7 +1053,7 @@ call diag%alloc(mpl,nam,geom,bpar,samp,prefix)
 
 if (nam%forced_radii.and.(.not.nam%check_optimality)) then
    ! Compute forced localization function
-   write(mpl%test,'(a10,a)') '','Compute forced localization function'
+   write(mpl%info,'(a10,a)') '','Compute forced localization function'
    call mpl%flush
    do ib=1,bpar%nbe
       if (bpar%diag_block(ib)) then
@@ -1094,11 +1094,11 @@ if (nam%forced_radii.and.(.not.nam%check_optimality)) then
       end if
    end do
 else
-   write(mpl%test,'(a10,a)') '','Compute and fit localization:'
+   write(mpl%info,'(a10,a)') '','Compute and fit localization:'
    call mpl%flush
    do ib=1,bpar%nbe
       if (bpar%diag_block(ib)) then
-         write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+         write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
          call mpl%flush(.false.)
 
          ! Initialization
@@ -1133,11 +1133,11 @@ call diag%interp(mpl,nam,geom,bpar,samp)
 call diag%test_dirac(mpl,nam,geom,bpar)
 
 ! Print results
-write(mpl%test,'(a10,a)') '','Results:'
+write(mpl%info,'(a10,a)') '','Results:'
 call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
 
       do il0=1,geom%nl0
@@ -1149,10 +1149,10 @@ do ib=1,bpar%nbe
       end do
       if (bpar%fit_block(ib)) then
          if (mpl%msv%isnot(diag%blk(0,ib)%ncmp)) then
-            write(mpl%test,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
+            write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ib)%ncmp,trim(mpl%black)
             call mpl%flush
             do icmp=1,diag%blk(0,ib)%ncmp
-               write(mpl%test,'(a16,a,i1)') '','Component : ',icmp
+               write(mpl%info,'(a16,a,i1)') '','Component : ',icmp
                call mpl%flush
                do il0=1,geom%nl0
                   if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
@@ -1213,11 +1213,11 @@ integer :: ib,iv,ic2a,il0
 ! Allocation
 call diag%alloc(mpl,nam,geom(2),bpar,samp,prefix)
 
-write(mpl%test,'(a10,a)') '','Compute and fit hybridization:'
+write(mpl%info,'(a10,a)') '','Compute and fit hybridization:'
 call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush(.false.)
 
       ! Initialization
@@ -1244,11 +1244,11 @@ call loc1%interp(mpl,nam,geom(1),bpar,samp,.true.)
 call diag%interp(mpl,nam,geom(1),bpar,samp,.true.)
 
 ! Print results
-write(mpl%test,'(a10,a)') '','Results:'
+write(mpl%info,'(a10,a)') '','Results:'
 call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
-      write(mpl%test,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
 
       do il0=1,geom(2)%nl0

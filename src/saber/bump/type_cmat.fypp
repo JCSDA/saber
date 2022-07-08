@@ -310,7 +310,7 @@ if (nam%forced_radii) then
 
    ! Convolution parameters
    if (nam%forced_radii) then
-      write(mpl%test,'(a7,a)') '','Copy namelist radii into C matrix'
+      write(mpl%info,'(a7,a)') '','Copy namelist radii into C matrix'
       call mpl%flush
 
       do iv=0,nam%nv
@@ -391,11 +391,11 @@ end if
 do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) then
       if (from_bump(ib)) then
-         write(mpl%test,'(a7,a,a)') '','Block ',trim(bpar%blockname(ib))
+         write(mpl%info,'(a7,a,a)') '','Block ',trim(bpar%blockname(ib))
          call mpl%flush
 
          ! Copy values
-         write(mpl%test,'(a10,a,i3,a)') '','BUMP import for ',cmat%blk(ib)%ncmp,' components'
+         write(mpl%info,'(a10,a,i3,a)') '','BUMP import for ',cmat%blk(ib)%ncmp,' components'
          call mpl%flush
 
          ! Amplitudes

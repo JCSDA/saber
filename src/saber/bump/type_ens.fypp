@@ -842,7 +842,7 @@ allocate(ens%norm_m4(geom%nc0a,geom%nl0,nam%nv))
 allocate(ens%norm_kurt(geom%nc0a,geom%nl0,nam%nv))
 
 ! Compute variance and kurtosis
-write(mpl%test,'(a7,a)') '','Compute variance and kurtosis'
+write(mpl%info,'(a7,a)') '','Compute variance and kurtosis'
 call mpl%flush
 call ens%compute_moments(mpl,nam,geom)
 call ens%get_c0(mpl,nam,geom,'m2',0,ens%norm_m2)
@@ -947,7 +947,7 @@ do iv=1,nam%nv
 end do
 
 ! Write normality diagnostics
-write(mpl%test,'(a7,a)') '','Write normality diagnostics'
+write(mpl%info,'(a7,a)') '','Write normality diagnostics'
 call mpl%flush
 
 ! Create file

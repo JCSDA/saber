@@ -3,9 +3,8 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-if( oops_FOUND )
-    add_subdirectory( quench )
-endif()
+# Add quench testbed
+add_subdirectory( quench )
 
 # Use find_branch function in jedi-cmake
 include( git_functions )
@@ -32,18 +31,13 @@ endif()
 
 # Default test selection variables (TIER-independent)
 set( SABER_TEST_VALGRIND 0 )
-set( SABER_TEST_OOPS 0 )
-set( SABER_TEST_INTERPOLATION 0 )
-if( oops_qg_FOUND )
-    set( SABER_TEST_OOPS 1 )
-    set( SABER_TEST_INTERPOLATION 1 )
-endif()
+set( SABER_TEST_INTERPOLATION 1 )
 set( SABER_TEST_GSI 0 )
-if( gsibclim_FOUND AND oops_qg_FOUND)
+if( gsibclim_FOUND)
     set( SABER_TEST_GSI 1 )
 endif()
 set( SABER_TEST_SPECTRALB 0 )
-if( atlas_TRANS_FOUND AND oops_qg_FOUND)
+if( atlas_TRANS_FOUND)
     set( SABER_TEST_SPECTRALB 1 )
 endif()
 
@@ -60,17 +54,7 @@ endif()
 if( DEFINED ENV{SABER_TEST_VALGRIND} )
     set( SABER_TEST_VALGRIND $ENV{SABER_TEST_VALGRIND} )
 endif()
-if( oops_qg_FOUND )
-    if( DEFINED ENV{SABER_TEST_OOPS} )
-        set( SABER_TEST_OOPS $ENV{SABER_TEST_OOPS} )
-    endif()
-endif()
-if( SABER_TEST_OOPS )
-    if( DEFINED ENV{SABER_TEST_OOPS} )
-        set( SABER_TEST_OOPS $ENV{SABER_TEST_OOPS} )
-    endif()
-endif()
-if( gsibclim_FOUND AND oops_qg_FOUND )
+if( gsibclim_FOUND )
     if( DEFINED ENV{SABER_TEST_GSI} )
         set( SABER_TEST_GSI $ENV{SABER_TEST_GSI} )
     endif()
@@ -80,7 +64,7 @@ if( SABER_TEST_GSI )
         set( SABER_TEST_GSI $ENV{SABER_TEST_GSI} )
     endif()
 endif()
-if( atlas_TRANS_FOUND AND oops_qg_FOUND)
+if( atlas_TRANS_FOUND)
     if( DEFINED ENV{SABER_TEST_SPECTRALB} )
         set( SABER_TEST_SPECTRALB $ENV{SABER_TEST_SPECTRALB} )
     endif()
@@ -98,7 +82,6 @@ message( STATUS "  - SABER_TEST_MPI:           ${SABER_TEST_MPI}" )
 message( STATUS "  - SABER_TEST_OMP:           ${SABER_TEST_OMP}" )
 message( STATUS "  - SABER_TEST_MULTI:         ${SABER_TEST_MULTI}" )
 message( STATUS "  - SABER_TEST_VALGRIND:      ${SABER_TEST_VALGRIND}" )
-message( STATUS "  - SABER_TEST_OOPS:          ${SABER_TEST_OOPS}" )
 message( STATUS "  - SABER_TEST_GSI:           ${SABER_TEST_GSI}" )
 message( STATUS "  - SABER_TEST_SPECTRALB:     ${SABER_TEST_SPECTRALB}" )
 
@@ -129,10 +112,8 @@ if( SABER_TEST_MULTI )
 endif()
 file( STRINGS testlist/saber_test_tier1-oops.txt saber_test_oops_tmp )
 list( APPEND saber_test_full ${saber_test_oops_tmp} )
-if( SABER_TEST_OOPS )
-    message( STATUS "  - TIER 1 OOPS-specific" )
-    list( APPEND saber_test_oops ${saber_test_oops_tmp} )
-endif()
+message( STATUS "  - TIER 1 OOPS-specific" )
+list( APPEND saber_test_oops ${saber_test_oops_tmp} )
 file( STRINGS testlist/saber_test_tier1-gsi.txt saber_test_gsi_tmp )
 list( APPEND saber_test_full ${saber_test_gsi_tmp} )
 if( SABER_TEST_GSI )
@@ -160,10 +141,8 @@ if( SABER_TEST_TIER GREATER 1 )
     list( APPEND saber_ref_tar saber_ref_tier2.tar.gz )
     file( STRINGS testlist/saber_test_tier2-oops.txt saber_test_oops_tmp )
     list( APPEND saber_test_full ${saber_test_oops_tmp} )
-    if( SABER_TEST_OOPS )
-        message( STATUS "  - TIER 2 OOPS-specific" )
-        list( APPEND saber_test_oops ${saber_test_oops_tmp} )
-    endif()
+    message( STATUS "  - TIER 2 OOPS-specific" )
+    list( APPEND saber_test_oops ${saber_test_oops_tmp} )
 endif()
 
 # Set download URL
@@ -280,67 +259,65 @@ ecbuild_add_executable( TARGET  saber_bump.x
 # Process fypp files
 fckit_target_preprocess_fypp( saber_bump.x )
 
-if( SABER_TEST_OOPS )
-    ecbuild_add_executable( TARGET  saber_qg_4dvar.x
-                            SOURCES mains/qg4DVar.cc
-                            LIBS    ${oops_qg_LIBRARIES}
-                                    saber )
+ecbuild_add_executable( TARGET  saber_qg_4dvar.x
+                        SOURCES mains/qg4DVar.cc
+                        LIBS    ${oops_qg_LIBRARIES}
+                                saber )
 
-    ecbuild_add_executable( TARGET  saber_qg_convertstate.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgConvertState.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
+ecbuild_add_executable( TARGET  saber_qg_convertstate.x
+                        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgConvertState.cc
+                        LIBS    ${oops_qg_LIBRARIES} )
 
-    ecbuild_add_executable( TARGET  saber_qg_dirac.x
-                            SOURCES mains/qgDirac.cc
-                            LIBS    ${oops_qg_LIBRARIES}
-                                    saber )
+ecbuild_add_executable( TARGET  saber_qg_dirac.x
+                        SOURCES mains/qgDirac.cc
+                        LIBS    ${oops_qg_LIBRARIES}
+                                saber )
 
-    ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgEnsRecenter.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
+ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
+                        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgEnsRecenter.cc
+                        LIBS    ${oops_qg_LIBRARIES} )
 
-    ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
-                            SOURCES mains/qgErrorCovarianceTraining.cc
-                            LIBS    ${oops_qg_LIBRARIES}
-                                    saber )
+ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
+                        SOURCES mains/qgErrorCovarianceTraining.cc
+                        LIBS    ${oops_qg_LIBRARIES}
+                                saber )
 
-    ecbuild_add_executable( TARGET  saber_qg_forecast.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgForecast.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
+ecbuild_add_executable( TARGET  saber_qg_forecast.x
+                        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgForecast.cc
+                        LIBS    ${oops_qg_LIBRARIES} )
 
-    ecbuild_add_executable( TARGET  saber_qg_gen_ens_pert_B.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgGenEnsPertB.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
+ecbuild_add_executable( TARGET  saber_qg_gen_ens_pert_B.x
+                        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgGenEnsPertB.cc
+                        LIBS    ${oops_qg_LIBRARIES} )
 
-    ecbuild_add_executable( TARGET  saber_qg_hofx.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgHofX.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
+ecbuild_add_executable( TARGET  saber_qg_hofx.x
+                        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgHofX.cc
+                        LIBS    ${oops_qg_LIBRARIES} )
 
-#    ecbuild_add_executable( TARGET  saber_interpolation_bump.x
-#                            SOURCES mains/InterpolationBump.cc
-#                            LIBS    ${oops_qg_LIBRARIES}
-#                                    saber )
+#ecbuild_add_executable( TARGET  saber_interpolation_bump.x
+#                        SOURCES mains/InterpolationBump.cc
+#                        LIBS    ${oops_qg_LIBRARIES}
+#                                saber )
 
-    ecbuild_add_executable( TARGET  saber_quench_randomization.x
-                            SOURCES mains/quenchRandomization.cc
-                            LIBS    quench
-                                    saber )
+ecbuild_add_executable( TARGET  saber_quench_randomization.x
+                        SOURCES mains/quenchRandomization.cc
+                        LIBS    quench
+                                saber )
 
-    ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
-                            SOURCES mains/quenchErrorCovarianceTraining.cc
-                            LIBS    quench
-                                    saber )
+ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
+                        SOURCES mains/quenchErrorCovarianceTraining.cc
+                        LIBS    quench
+                                saber )
 
-    ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
-                            SOURCES mains/quenchSaberBlockTest.cc
-                            LIBS    quench
-                                    saber )
+ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
+                        SOURCES mains/quenchSaberBlockTest.cc
+                        LIBS    quench
+                                saber )
 
-    ecbuild_add_executable( TARGET  saber_quench_dirac.x
-                            SOURCES mains/quenchDirac.cc
-                            LIBS    quench
-                                    saber )
-endif()
+ecbuild_add_executable( TARGET  saber_quench_dirac.x
+                        SOURCES mains/quenchDirac.cc
+                        LIBS    quench
+                                saber )
 
 # Mono-core tests
 set( mpi 1 )
@@ -528,82 +505,179 @@ if( SABER_TEST_TIER GREATER 1 )
 endif()
 
 # OOPS tests
-if( SABER_TEST_OOPS )
-    # Link to yaml files
-    foreach( test ${saber_test_oops} )
-        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
-                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
-    endforeach()
 
-    # Most OOPS tests: 1 MPI task and 2 OpenMP threads
+# Link to yaml files
+foreach( test ${saber_test_oops} )
+    execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                     ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                     ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
+endforeach()
+
+# Most OOPS tests: 1 MPI task and 2 OpenMP threads
+set( mpi 1 )
+set( omp 2 )
+
+# Truth
+ecbuild_add_test( TARGET saber_test_qg_truth
+                  MPI ${mpi}
+                  OMP ${omp}
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
+                  ARGS testinput/qg_truth.yaml
+                  DEPENDS saber_qg_forecast.x )
+
+
+# Forecast
+ecbuild_add_test( TARGET saber_test_qg_forecast
+                  MPI ${mpi}
+                  OMP ${omp}
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
+                  ARGS testinput/qg_forecast.yaml
+                  DEPENDS saber_qg_forecast.x )
+
+# Ensemble generation
+ecbuild_add_test( TARGET saber_test_qg_gen_ens_pert_B
+                  MPI ${mpi}
+                  OMP ${omp}
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
+                  ARGS testinput/qg_gen_ens_pert_B.yaml
+                  DEPENDS saber_qg_gen_ens_pert_B.x )
+
+# Make observations
+ecbuild_add_test( TARGET saber_test_qg_make_obs_3d
+                  MPI ${mpi}
+                  OMP ${omp}
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
+                  ARGS testinput/qg_make_obs_3d.yaml
+                  DEPENDS saber_qg_hofx.x )
+
+ecbuild_add_test( TARGET saber_test_qg_make_obs_4d_12h
+                  MPI ${mpi}
+                  OMP ${omp}
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
+                  ARGS testinput/qg_make_obs_4d_12h.yaml
+                  DEPENDS saber_qg_hofx.x )
+
+ecbuild_add_test( TARGET saber_test_qg_make_obs_4d_24h
+                  MPI ${mpi}
+                  OMP ${omp}
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
+                  ARGS testinput/qg_make_obs_4d_24h.yaml
+                  DEPENDS saber_qg_hofx.x )
+
+# Ens recenter test
+foreach( test ${saber_test_oops} )
+    string( FIND ${test} "qg_ens_recenter" qg_ens_recenter )
+    if( qg_ens_recenter MATCHES 0 )
+        ecbuild_add_test( TARGET saber_test_qg_ens_recenter
+                          MPI ${mpi}
+                          OMP ${omp}
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_ens_recenter.x
+                          ARGS testinput/${test}.yaml
+                          DEPENDS saber_qg_ens_recenter.x )
+    endif()
+endforeach()
+
+# Error covariance training tests
+foreach( test ${saber_test_oops} )
+    string( FIND ${test} "qg_error_covariance_training" qg_error_covariance_training )
+    if( qg_error_covariance_training MATCHES 0 )
+        ecbuild_add_test( TARGET saber_test_${test}
+                          MPI ${mpi}
+                          OMP ${omp}
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_error_covariance_training.x
+                          ARGS testinput/${test}.yaml
+                          DEPENDS saber_qg_error_covariance_training.x )
+    endif()
+endforeach()
+
+foreach( test ${saber_test_oops} )
+    # Number of tasks
+    string( FIND ${test} "4d" 4dpos REVERSE )
+    string( LENGTH ${test} length )
+    math( EXPR 4d ${length}-${4dpos}-2 )
+    if( (4d MATCHES 0) OR (test MATCHES qg_4densvar_bump) )
+        set( mpi 7 )
+        set( omp 1 )
+    else()
+        set( mpi 1 )
+        set( omp 2 )
+    endif()
+
+    # Dirac tests
+    string( FIND ${test} "qg_dirac" qg_dirac )
+    if( qg_dirac MATCHES 0 )
+        ecbuild_add_test( TARGET saber_test_${test}
+                          MPI ${mpi}
+                          OMP ${omp}
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
+                          ARGS testinput/${test}.yaml
+                          DEPENDS saber_qg_dirac.x )
+    endif()
+
+    # Variational tests
+    string( FIND ${test} "qg_3d" qg_3d )
+    string( FIND ${test} "qg_4d" qg_4d )
+    if( (qg_3d MATCHES 0) OR (qg_4d MATCHES 0) )
+        ecbuild_add_test( TARGET saber_test_${test}
+                          MPI ${mpi}
+                          OMP ${omp}
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
+                          ARGS testinput/${test}.yaml
+                          DEPENDS saber_qg_4dvar.x )
+    endif()
+endforeach()
+
+if( SABER_TEST_TIER GREATER 1 )
+    # High-resolution OOPS tests: 1 MPI task and 4 OpenMP threads
     set( mpi 1 )
-    set( omp 2 )
+    set( omp 4 )
 
     # Truth
-    ecbuild_add_test( TARGET saber_test_qg_truth
+    ecbuild_add_test( TARGET saber_test_qg_hr_truth
                       MPI ${mpi}
                       OMP ${omp}
                       COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
-                      ARGS testinput/qg_truth.yaml
+                      ARGS testinput/qg_hr_truth.yaml
                       DEPENDS saber_qg_forecast.x )
 
-
     # Forecast
-    ecbuild_add_test( TARGET saber_test_qg_forecast
+    ecbuild_add_test( TARGET saber_test_qg_hr_forecast
                       MPI ${mpi}
                       OMP ${omp}
                       COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
-                      ARGS testinput/qg_forecast.yaml
+                      ARGS testinput/qg_hr_forecast.yaml
                       DEPENDS saber_qg_forecast.x )
 
     # Ensemble generation
-    ecbuild_add_test( TARGET saber_test_qg_gen_ens_pert_B
+    ecbuild_add_test( TARGET saber_test_qg_hr_gen_ens_pert_B
                       MPI ${mpi}
                       OMP ${omp}
                       COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
-                      ARGS testinput/qg_gen_ens_pert_B.yaml
+                      ARGS testinput/qg_hr_gen_ens_pert_B.yaml
                       DEPENDS saber_qg_gen_ens_pert_B.x )
 
-    # Make observations
-    ecbuild_add_test( TARGET saber_test_qg_make_obs_3d
+
+    # Low-resolution truth
+    ecbuild_add_test( TARGET saber_test_qg_lr_truth
                       MPI ${mpi}
                       OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
-                      ARGS testinput/qg_make_obs_3d.yaml
-                      DEPENDS saber_qg_hofx.x )
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_convertstate.x
+                      ARGS testinput/qg_lr_truth.yaml
+                      DEPENDS saber_qg_convertstate.x )
 
-    ecbuild_add_test( TARGET saber_test_qg_make_obs_4d_12h
+
+    # Low-resolution ensemble generation
+    ecbuild_add_test( TARGET saber_test_qg_lr_gen_ens_pert_B
                       MPI ${mpi}
                       OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
-                      ARGS testinput/qg_make_obs_4d_12h.yaml
-                      DEPENDS saber_qg_hofx.x )
-
-    ecbuild_add_test( TARGET saber_test_qg_make_obs_4d_24h
-                      MPI ${mpi}
-                      OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
-                      ARGS testinput/qg_make_obs_4d_24h.yaml
-                      DEPENDS saber_qg_hofx.x )
-
-    # Ens recenter test
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "qg_ens_recenter" qg_ens_recenter )
-        if( qg_ens_recenter MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_qg_ens_recenter
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_ens_recenter.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_qg_ens_recenter.x )
-        endif()
-    endforeach()
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
+                      ARGS testinput/qg_lr_gen_ens_pert_B.yaml
+                      DEPENDS saber_qg_gen_ens_pert_B.x )
 
     # Error covariance training tests
     foreach( test ${saber_test_oops} )
-        string( FIND ${test} "qg_error_covariance_training" qg_error_covariance_training )
-        if( qg_error_covariance_training MATCHES 0 )
+        string( FIND ${test} "qg_hr_error_covariance_training" qg_hr_error_covariance_training )
+        if( qg_hr_error_covariance_training MATCHES 0 )
             ecbuild_add_test( TARGET saber_test_${test}
                               MPI ${mpi}
                               OMP ${omp}
@@ -612,171 +686,73 @@ if( SABER_TEST_OOPS )
                               DEPENDS saber_qg_error_covariance_training.x )
         endif()
     endforeach()
-
-    foreach( test ${saber_test_oops} )
-        # Number of tasks
-        string( FIND ${test} "4d" 4dpos REVERSE )
-        string( LENGTH ${test} length )
-        math( EXPR 4d ${length}-${4dpos}-2 )
-        if( (4d MATCHES 0) OR (test MATCHES qg_4densvar_bump) )
-            set( mpi 7 )
-            set( omp 1 )
-        else()
-            set( mpi 1 )
-            set( omp 2 )
-        endif()
-
-        # Dirac tests
-        string( FIND ${test} "qg_dirac" qg_dirac )
-        if( qg_dirac MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_qg_dirac.x )
-        endif()
-
-        # Variational tests
-        string( FIND ${test} "qg_3d" qg_3d )
-        string( FIND ${test} "qg_4d" qg_4d )
-        if( (qg_3d MATCHES 0) OR (qg_4d MATCHES 0) )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_qg_4dvar.x )
-        endif()
-    endforeach()
-
-    if( SABER_TEST_TIER GREATER 1 )
-        # High-resolution OOPS tests: 1 MPI task and 4 OpenMP threads
-        set( mpi 1 )
-        set( omp 4 )
-
-        # Truth
-        ecbuild_add_test( TARGET saber_test_qg_hr_truth
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
-                          ARGS testinput/qg_hr_truth.yaml
-                          DEPENDS saber_qg_forecast.x )
-
-        # Forecast
-        ecbuild_add_test( TARGET saber_test_qg_hr_forecast
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
-                          ARGS testinput/qg_hr_forecast.yaml
-                          DEPENDS saber_qg_forecast.x )
-
-        # Ensemble generation
-        ecbuild_add_test( TARGET saber_test_qg_hr_gen_ens_pert_B
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
-                          ARGS testinput/qg_hr_gen_ens_pert_B.yaml
-                          DEPENDS saber_qg_gen_ens_pert_B.x )
-
-
-        # Low-resolution truth
-        ecbuild_add_test( TARGET saber_test_qg_lr_truth
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_convertstate.x
-                          ARGS testinput/qg_lr_truth.yaml
-                          DEPENDS saber_qg_convertstate.x )
-
-
-        # Low-resolution ensemble generation
-        ecbuild_add_test( TARGET saber_test_qg_lr_gen_ens_pert_B
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
-                          ARGS testinput/qg_lr_gen_ens_pert_B.yaml
-                          DEPENDS saber_qg_gen_ens_pert_B.x )
-
-        # Error covariance training tests
-        foreach( test ${saber_test_oops} )
-            string( FIND ${test} "qg_hr_error_covariance_training" qg_hr_error_covariance_training )
-            if( qg_hr_error_covariance_training MATCHES 0 )
-                ecbuild_add_test( TARGET saber_test_${test}
-                                  MPI ${mpi}
-                                  OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_error_covariance_training.x
-                                  ARGS testinput/${test}.yaml
-                                  DEPENDS saber_qg_error_covariance_training.x )
-            endif()
-        endforeach()
-    endif()
-
-#    # Interpolation tests
-#    set( mpi 4 )
-#    set( omp 1 )
-#    ecbuild_add_test( TARGET saber_test_interpolation_bump
-#                      MPI ${mpi}
-#                      OMP ${omp}
-#                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_interpolation_bump.x
-#                      ARGS    testinput/interpolation_bump.yaml
-#                      DEPENDS saber_interpolation_bump.x )
-
-    # QUENCH tests
-    set( mpi 2 )
-    set( omp 2 )
-
-    # Randomization tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_randomization" quench )
-        if( quench MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_randomization.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_quench_randomization.x )
-        endif()
-    endforeach()
-
-    # Error covariance training tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_error_covariance_training" quench )
-        if( quench MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_quench_error_covariance_training.x )
-        endif()
-    endforeach()
-
-    # Adjoint/inverse tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_saber_block_test" quench )
-        if( quench MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_quench_saber_block_test.x )
-        endif()
-    endforeach()
-
-    # Dirac tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_dirac" quench )
-        if( quench MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_quench_dirac.x )
-        endif()
-    endforeach()
 endif()
+
+## Interpolation tests
+#set( mpi 4 )
+#set( omp 1 )
+#ecbuild_add_test( TARGET saber_test_interpolation_bump
+#                  MPI ${mpi}
+#                  OMP ${omp}
+#                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_interpolation_bump.x
+#                  ARGS    testinput/interpolation_bump.yaml
+#                  DEPENDS saber_interpolation_bump.x )
+
+# QUENCH tests
+set( mpi 2 )
+set( omp 2 )
+
+# Randomization tests
+foreach( test ${saber_test_oops} )
+    string( FIND ${test} "quench_randomization" quench )
+    if( quench MATCHES 0 )
+        ecbuild_add_test( TARGET saber_test_${test}
+                          MPI ${mpi}
+                          OMP ${omp}
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_randomization.x
+                          ARGS testinput/${test}.yaml
+                          DEPENDS saber_quench_randomization.x )
+    endif()
+endforeach()
+
+# Error covariance training tests
+foreach( test ${saber_test_oops} )
+    string( FIND ${test} "quench_error_covariance_training" quench )
+    if( quench MATCHES 0 )
+        ecbuild_add_test( TARGET saber_test_${test}
+                          MPI ${mpi}
+                          OMP ${omp}
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
+                          ARGS testinput/${test}.yaml
+                          DEPENDS saber_quench_error_covariance_training.x )
+    endif()
+endforeach()
+
+# Adjoint/inverse tests
+foreach( test ${saber_test_oops} )
+    string( FIND ${test} "quench_saber_block_test" quench )
+    if( quench MATCHES 0 )
+        ecbuild_add_test( TARGET saber_test_${test}
+                          MPI ${mpi}
+                          OMP ${omp}
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
+                          ARGS testinput/${test}.yaml
+                          DEPENDS saber_quench_saber_block_test.x )
+    endif()
+endforeach()
+
+# Dirac tests
+foreach( test ${saber_test_oops} )
+    string( FIND ${test} "quench_dirac" quench )
+    if( quench MATCHES 0 )
+        ecbuild_add_test( TARGET saber_test_${test}
+                          MPI ${mpi}
+                          OMP ${omp}
+                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                          ARGS testinput/${test}.yaml
+                          DEPENDS saber_quench_dirac.x )
+    endif()
+endforeach()
 
 # Tests depending on GSI B Climatology
 if( SABER_TEST_GSI )

@@ -208,7 +208,7 @@ type(nicas_type) :: nicas_tmp
 ! Probe in
 @:probe_in()
 
-write(mpl%test,'(a7,a)') '','Read NICAS local data'
+write(mpl%info,'(a7,a)') '','Read NICAS local data'
 call mpl%flush
 
 ! Allocation
@@ -353,7 +353,7 @@ type(nicas_type) :: nicas_tmp
 ! Probe in
 @:probe_in()
 
-write(mpl%test,'(a7,a)') '','Write NICAS local data'
+write(mpl%info,'(a7,a)') '','Write NICAS local data'
 call mpl%flush
 
 ! Write NICAS blocks
@@ -467,7 +467,7 @@ integer :: ib
 ! Probe in
 @:probe_in()
 
-write(mpl%test,'(a7,a)') '','Read NICAS global data'
+write(mpl%info,'(a7,a)') '','Read NICAS global data'
 call mpl%flush
 
 ! Open file
@@ -517,7 +517,7 @@ integer :: ib,icmp
 ! Probe in
 @:probe_in()
 
-write(mpl%test,'(a7,a)') '','Write NICAS global data'
+write(mpl%info,'(a7,a)') '','Write NICAS global data'
 call mpl%flush
 
 ! Open file
@@ -789,16 +789,16 @@ call nicas%alloc(bpar)
 
 if (nam%load_nicas_global) then
    ! Read global NICAS parameters
-   write(mpl%test,'(a)') '-------------------------------------------------------------------'
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%test,'(a)') '--- Read global NICAS parameters'
+   write(mpl%info,'(a)') '--- Read global NICAS parameters'
    call mpl%flush
    call nicas%read_global(mpl,nam,geom,bpar)
 else
    ! Copy and filter C matrix data
-   write(mpl%test,'(a)') '-------------------------------------------------------------------'
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%test,'(a)') '--- Copy and filter C matrix data'
+   write(mpl%info,'(a)') '--- Copy and filter C matrix data'
    call mpl%flush
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) call nicas%blk(ib)%copy_cmat(mpl,nam,geom,bpar,cmat%blk(ib))
@@ -806,14 +806,14 @@ else
 end if
 
 ! Compute NICAS parameters
-write(mpl%test,'(a)') '-------------------------------------------------------------------'
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%test,'(a)') '--- Compute NICAS parameters'
+write(mpl%info,'(a)') '--- Compute NICAS parameters'
 call mpl%flush
 
 do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) then
-      write(mpl%test,'(a)') '--- Block: '//trim(bpar%blockname(ib))
+      write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
       call mpl%flush
    end if
 
@@ -823,9 +823,9 @@ end do
 
 if (nam%write_nicas_local.or.nam%write_nicas_global.or.nam%write_nicas_grids) then
    ! Write NICAS parameters
-   write(mpl%test,'(a)') '-------------------------------------------------------------------'
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%test,'(a)') '--- Write NICAS parameters'
+   write(mpl%info,'(a)') '--- Write NICAS parameters'
    call mpl%flush
 
    ! Write local data
@@ -876,20 +876,20 @@ character(len=1024) :: grpname
 
 if (nam%check_adjoints) then
    ! Test adjoint
-   write(mpl%test,'(a)') '-------------------------------------------------------------------'
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%test,'(a)') '--- Test NICAS adjoint'
+   write(mpl%info,'(a)') '--- Test NICAS adjoint'
    call mpl%flush
    call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
-         write(mpl%test,'(a)') '--- Block: '//trim(bpar%blockname(ib))
+         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
          call nicas%blk(ib)%test_adjoint(mpl,rng,geom)
 
          do icmp=1,nicas%blk(ib)%ncmp
-            write(mpl%test,'(a7,a,i1)') '','Component: ',icmp
+            write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
             call mpl%flush
             call nicas%blk(ib)%cmp(icmp)%test_adjoint(mpl,rng,nam,geom,bpar)
          end do
@@ -899,17 +899,17 @@ end if
 
 if (nam%check_normalization>0) then
    ! Test normalization
-   write(mpl%test,'(a)') '-------------------------------------------------------------------'
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%test,'(a)') '--- Test NICAS normalization'
+   write(mpl%info,'(a)') '--- Test NICAS normalization'
    call mpl%flush
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
-         write(mpl%test,'(a)') '--- Block: '//trim(bpar%blockname(ib))
+         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
          do icmp=1,nicas%blk(ib)%ncmp
-            write(mpl%test,'(a7,a,i1)') '','Component: ',icmp
+            write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
             call mpl%flush
             call nicas%blk(ib)%cmp(icmp)%test_normalization(mpl,rng,nam,geom)
          end do
@@ -919,9 +919,9 @@ end if
 
 if (nam%check_dirac) then
    ! Apply NICAS to diracs
-   write(mpl%test,'(a)') '-------------------------------------------------------------------'
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%test,'(a)') '--- Apply NICAS blocks to diracs'
+   write(mpl%info,'(a)') '--- Apply NICAS blocks to diracs'
    call mpl%flush
 
    if (nam%write_c0) then
@@ -973,18 +973,18 @@ if (nam%check_dirac) then
    end if
 
    ! Apply NICAS to diracs
-   write(mpl%test,'(a)') '-------------------------------------------------------------------'
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%test,'(a)') '--- Apply NICAS to diracs'
+   write(mpl%info,'(a)') '--- Apply NICAS to diracs'
    call mpl%flush
    call nicas%test_dirac(mpl,nam,geom,bpar,ens)
 
    ! Apply NICAS block to diracs
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
-         write(mpl%test,'(a)') '-------------------------------------------------------------------'
+         write(mpl%info,'(a)') '-------------------------------------------------------------------'
          call mpl%flush
-         write(mpl%test,'(a)') '--- Block: '//trim(bpar%blockname(ib))
+         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
          call nicas%blk(ib)%test_dirac(mpl,nam,geom,bpar)
       end if
@@ -1003,9 +1003,9 @@ end if
 
 if (nam%check_randomization) then
    ! Test NICAS randomization
-   write(mpl%test,'(a)') '-------------------------------------------------------------------'
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%test,'(a)') '--- Test NICAS randomization'
+   write(mpl%info,'(a)') '--- Test NICAS randomization'
    call mpl%flush
    call nicas%test_randomization(mpl,rng,nam,geom,bpar)
 end if
@@ -1725,13 +1725,13 @@ allocate(fld_ref(geom%nc0a,geom%nl0,nam%nv,ntest))
 allocate(fld_save(geom%nc0a,geom%nl0,nam%nv,ntest))
 
 ! Define test vectors
-write(mpl%test,'(a4,a)') '','Define test vectors'
+write(mpl%info,'(a4,a)') '','Define test vectors'
 call mpl%flush
 call geom%define_test_vectors(mpl,rng,nam,ntest,fld_save)
 if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
-write(mpl%test,'(a4,a)') '','Apply NICAS to test vectors: '
+write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors: '
 call mpl%flush(.false.)
 call mpl%prog_init(ntest)
 fld_ref = fld_save
@@ -1747,22 +1747,22 @@ call mpl%prog_final
 ! Save namelist variables
 ens1_ne = nam%ens1_ne
 
-write(mpl%test,'(a4,a)') '','Test randomization for various ensemble sizes:'
+write(mpl%info,'(a4,a)') '','Test randomization for various ensemble sizes:'
 call mpl%flush
 do ifac=1,nfac_rnd
    ! Ensemble size
    nefac(ifac) = max(int(real(ifac,kind_real)/real(nfac_rnd,kind_real)*real(ens1_ne,kind_real)),3)
    nam%ens1_ne = nefac(ifac)
-   write(mpl%test,'(a7,a,i6,a)') '','Ensemble sizes: ',nefac(ifac),' members'
+   write(mpl%info,'(a7,a,i6,a)') '','Ensemble sizes: ',nefac(ifac),' members'
    call mpl%flush
 
    ! Randomize ensemble
-   write(mpl%test,'(a10,a)') '','Randomization'
+   write(mpl%info,'(a10,a)') '','Randomization'
    call mpl%flush
    call nicas%gen_ens_pert(mpl,rng,nam,geom,bpar,nefac(ifac),ens)
 
    ! Test randomized ensemble
-   write(mpl%test,'(a10,a)') '','Apply NICAS to test vectors: '
+   write(mpl%info,'(a10,a)') '','Apply NICAS to test vectors: '
    call mpl%flush(.false.)
    call mpl%prog_init(ntest)
    do itest=1,ntest

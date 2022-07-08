@@ -261,28 +261,28 @@ do ib=1,bpar%nbe
    jv = bpar%b_to_v2(ib)
    if (bpar%vbal_block(iv,jv).or.bpar%diag_block(ib).or.bpar%avg_block(ib).or.bpar%fit_block(ib) &
  & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib))) then
-      write(mpl%test,'(a7,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
+      write(mpl%info,'(a7,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
-      write(mpl%test,'(a10,a,i3)') '','Effective number of levels:    ',bpar%nl0r(ib)
+      write(mpl%info,'(a10,a,i3)') '','Effective number of levels:    ',bpar%nl0r(ib)
       call mpl%flush
-      write(mpl%test,'(a10,a,i3)') '','Maximum horizontal class:      ',bpar%nc3(ib)
+      write(mpl%info,'(a10,a,i3)') '','Maximum horizontal class:      ',bpar%nc3(ib)
       call mpl%flush
-      write(mpl%test,'(a10,a,i3)') '','Maximum angular sector:        ',bpar%nc4(ib)
+      write(mpl%info,'(a10,a,i3)') '','Maximum angular sector:        ',bpar%nc4(ib)
       call mpl%flush
       if ((iv>0).and.(jv>0)) then
-         write(mpl%test,'(a10,a,l1)') '','Vertical balance block:          ',bpar%vbal_block(iv,jv)
+         write(mpl%info,'(a10,a,l1)') '','Vertical balance block:          ',bpar%vbal_block(iv,jv)
          call mpl%flush
       end if
-      write(mpl%test,'(a10,a,l1)') '','HDIAG block:                     ',bpar%diag_block(ib)
+      write(mpl%info,'(a10,a,l1)') '','HDIAG block:                     ',bpar%diag_block(ib)
       call mpl%flush
-      write(mpl%test,'(a10,a,l1)') '','Averaging block:                 ',bpar%avg_block(ib)
+      write(mpl%info,'(a10,a,l1)') '','Averaging block:                 ',bpar%avg_block(ib)
       call mpl%flush
-      write(mpl%test,'(a10,a,l1)') '','Fit block:                       ',bpar%fit_block(ib)
+      write(mpl%info,'(a10,a,l1)') '','Fit block:                       ',bpar%fit_block(ib)
       call mpl%flush
-      write(mpl%test,'(a10,a,l1)') '','NICAS block:                     ',bpar%nicas_block(ib)
+      write(mpl%info,'(a10,a,l1)') '','NICAS block:                     ',bpar%nicas_block(ib)
       call mpl%flush
       if (mpl%msv%isnot(bpar%cv_block(ib))) then
-         write(mpl%test,'(a10,a,i3)') '','Control variable block index:  ',bpar%cv_block(ib)
+         write(mpl%info,'(a10,a,i3)') '','Control variable block index:  ',bpar%cv_block(ib)
          call mpl%flush
       end if
    end if

@@ -856,7 +856,7 @@ character(len=7) :: cfmt
 ! Compute interpolation
 if (ifmt>0) then
    write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
-   write(mpl%test,cfmt) '','Compute interpolation: '
+   write(mpl%info,cfmt) '','Compute interpolation: '
    call mpl%flush(.false.)
    call mpl%prog_init(n_dst)
 end if
@@ -1016,7 +1016,7 @@ call qsort(n_src,lat_src_tmp,order)
 ! Compute interpolation
 if (ifmt>0) then
    write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
-   write(mpl%test,cfmt) '','Compute interpolation: '
+   write(mpl%info,cfmt) '','Compute interpolation: '
    call mpl%flush(.false.)
    call mpl%prog_init(n_dst)
 end if
@@ -1127,7 +1127,7 @@ character(len=7) :: cfmt
 ! Compute interpolation
 if (ifmt>0) then
    write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
-   write(mpl%test,cfmt) '','Compute interpolation: '
+   write(mpl%info,cfmt) '','Compute interpolation: '
    call mpl%flush(.false.)
    call mpl%prog_init(n_dst)
 end if

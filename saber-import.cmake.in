@@ -1,5 +1,5 @@
 # saber-import.cmake
-# find_dependency calls for OOPS target dependencies
+# find_dependency calls for SABER target dependencies
 
 include(CMakeFindDependencyMacro)
 
@@ -40,9 +40,8 @@ if((@LAPACK_FOUND@ AND NOT LAPACK_FOUND) OR (@MKL_FOUND@ AND NOT MKL_FOUND))
     endif()
 endif()
 
-if(@oops_FOUND@) # oops_FOUND
-    find_dependency(oops)
-    set(saber_oops_FOUND True) #COMPONENT 'oops'
+if(NOT oops_FOUND)
+    find_dependency(oops REQUIRED)
 endif()
 
 if(@gsiblcim_FOUND@) # gsiblcim_FOUND

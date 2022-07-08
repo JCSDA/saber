@@ -146,7 +146,7 @@ write(mpl%info,'(a7,a,i3)') '','Number of opened files: ',registry%nopened
 call mpl%flush
 write(mpl%info,'(a7,a,i3)') '','Number of closed files: ',registry%nclosed
 call mpl%flush
-write(mpl%test,'(a7,a,i3)') '','Registry status: ',count(registry%id(:,1)/=-1)
+write(mpl%info,'(a7,a,i3)') '','Registry status: ',count(registry%id(:,1)/=-1)
 call mpl%flush
 
 ! Probe out

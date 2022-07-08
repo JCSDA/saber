@@ -1237,7 +1237,7 @@ if (.not.allocated(nicas_cmp%a)) then
 end if
 
 ! Read vertical sampling
-write(mpl%test,'(a16,a)') '','Read vertical sampling'
+write(mpl%info,'(a16,a)') '','Read vertical sampling'
 call mpl%flush
 
 ! Get dimension
@@ -1268,7 +1268,7 @@ call mpl%f_comm%broadcast(nicas_cmp%vlev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nicas_cmp%l1_to_l0,mpl%rootproc-1)
 
 ! Read horizontal sampling
-write(mpl%test,'(a16,a)') '','Read horizontal sampling:'
+write(mpl%info,'(a16,a)') '','Read horizontal sampling:'
 call mpl%flush
 
 ! Allocation
@@ -1277,7 +1277,7 @@ allocate(nicas_cmp%hor(nicas_cmp%nl1))
 do il1=1,nicas_cmp%nl1
    ! Get group name
    write(levname,'(a,i3.3)') 'sublevel_',il1
-   write(mpl%test,'(a19,a,i3)') '','Sublevel: ',il1
+   write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
    call mpl%flush
 
    if (mpl%main) then
@@ -1365,7 +1365,7 @@ do il1=1,nicas_cmp%nl1
 end do
 
 ! Define subgrid
-write(mpl%test,'(a16,a)') '','Define subgrid'
+write(mpl%info,'(a16,a)') '','Define subgrid'
 call mpl%flush
 
 ! Count subgrid points on halo A
@@ -1474,7 +1474,7 @@ deallocate(order_inv_s)
 deallocate(order_inv_sa)
 
 ! Read convolution
-write(mpl%test,'(a16,a)') '','Read convolution'
+write(mpl%info,'(a16,a)') '','Read convolution'
 call mpl%flush
 
 ! Get dimension
@@ -1564,7 +1564,7 @@ if (.not.nam%output_nicas_norm) call mpl%warning('${subr}$','norm is not written
 if (.not.nam%output_nicas_a) call mpl%warning('${subr}$','amplitude is not written, make sure it is relevant')
 
 ! Define vertical sampling
-write(mpl%test,'(a16,a)') '','Define vertical sampling'
+write(mpl%info,'(a16,a)') '','Define vertical sampling'
 call mpl%flush
 
 ! Define dimension
@@ -1575,13 +1575,13 @@ nicas_cmp%vlev_id = define_var(mpl,nicas_cmp%cmpid,'vlev','int',(/nicas_cmp%nl0_
 nicas_cmp%l1_to_l0_id = define_var(mpl,nicas_cmp%cmpid,'l1_to_l0','int',(/nl1_id/))
 
 ! Define horizontal sampling
-write(mpl%test,'(a16,a)') '','Define horizontal sampling'
+write(mpl%info,'(a16,a)') '','Define horizontal sampling'
 call mpl%flush
 
 do il1=1,nicas_cmp%nl1
    ! Get group name
    write(levname,'(a,i3.3)') 'sublevel_',il1
-   write(mpl%test,'(a19,a,i3)') '','Sublevel: ',il1
+   write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
    call mpl%flush
 
    ! Define group
@@ -1596,7 +1596,7 @@ do il1=1,nicas_cmp%nl1
 end do
 
 ! Define convolution
-write(mpl%test,'(a16,a)') '','Define convolution'
+write(mpl%info,'(a16,a)') '','Define convolution'
 call mpl%flush
 
 ! Allocation
@@ -1653,7 +1653,7 @@ type(io_type) :: io_c1,io_s
 @:probe_in()
 
 ! Write vertical sampling
-write(mpl%test,'(a16,a)') '','Write vertical sampling'
+write(mpl%info,'(a16,a)') '','Write vertical sampling'
 call mpl%flush
 
 ! Convert logical to integer
@@ -1664,13 +1664,13 @@ call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%vlev_id,vlev_int)
 call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%l1_to_l0_id,nicas_cmp%l1_to_l0)
 
 ! Write horizontal sampling
-write(mpl%test,'(a16,a)') '','Write horizontal sampling'
+write(mpl%info,'(a16,a)') '','Write horizontal sampling'
 call mpl%flush
 
 do il1=1,nicas_cmp%nl1
    ! Get group name
    write(levname,'(a,i3.3)') 'sublevel_',il1
-   write(mpl%test,'(a19,a,i3)') '','Sublevel: ',il1
+   write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
    call mpl%flush
 
    ! Setup fields output
@@ -1686,7 +1686,7 @@ do il1=1,nicas_cmp%nl1
 end do
 
 ! Write convolution
-write(mpl%test,'(a16,a)') '','Write convolution'
+write(mpl%info,'(a16,a)') '','Write convolution'
 call mpl%flush
 
 ! Setup fields output
@@ -1915,42 +1915,42 @@ if (.not.nam%load_nicas_global) then
 end if
 
 ! Compute adaptive sampling, vertical
-write(mpl%test,'(a10,a)') '','Compute adaptive sampling, vertical'
+write(mpl%info,'(a10,a)') '','Compute adaptive sampling, vertical'
 if (nicas_cmp%verbosity) call mpl%flush
 call nicas_cmp%compute_vertical(mpl,nam,geom)
 
 ! Compute adaptive sampling, horizontal
-write(mpl%test,'(a10,a)') '','Compute adaptive sampling, horizontal'
+write(mpl%info,'(a10,a)') '','Compute adaptive sampling, horizontal'
 if (nicas_cmp%verbosity) call mpl%flush
 call nicas_cmp%compute_horizontal(mpl,rng,nam,geom)
 
 ! Compute convolution data
-write(mpl%test,'(a10,a)') '','Compute convolution data'
+write(mpl%info,'(a10,a)') '','Compute convolution data'
 if (nicas_cmp%verbosity) call mpl%flush
 call nicas_cmp%compute_convol(mpl,nam,geom)
 
 if (.not.nicas_cmp%smoother) then
    ! Compute internal normalization
-   write(mpl%test,'(a10,a)') '','Compute internal normalization'
+   write(mpl%info,'(a10,a)') '','Compute internal normalization'
    if (nicas_cmp%verbosity) call mpl%flush
    call nicas_cmp%compute_internal_normalization(mpl,nam)
 
    if (nicas_cmp%compute_norm) then
       ! Compute normalization
-      write(mpl%test,'(a10,a)') '','Compute normalization'
+      write(mpl%info,'(a10,a)') '','Compute normalization'
       if (nicas_cmp%verbosity) call mpl%flush
       call nicas_cmp%compute_normalization(mpl,nam,geom)
    end if
 end if
 
 ! Print results
-write(mpl%test,'(a10,a,i6)') '','Parameters for processor #',mpl%myproc
+write(mpl%info,'(a10,a,i6)') '','Parameters for processor #',mpl%myproc
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%test,'(a13,a,i8)') '','nc0 =        ',geom%nc0
+write(mpl%info,'(a13,a,i8)') '','nc0 =        ',geom%nc0
 if (nicas_cmp%verbosity) call mpl%flush
 write(mpl%info,'(a13,a,i8)') '','nc0a =       ',geom%nc0a
 if (nicas_cmp%verbosity) call mpl%flush
-write(mpl%test,'(a13,a,i8)') '','nl0 =        ',geom%nl0
+write(mpl%info,'(a13,a,i8)') '','nl0 =        ',geom%nl0
 if (nicas_cmp%verbosity) call mpl%flush
 write(mpl%test,'(a13,a,i8)') '','nl1 =        ',nicas_cmp%nl1
 do il1=1,nicas_cmp%nl1
@@ -1969,7 +1969,7 @@ do il1=1,nicas_cmp%nl1
    write(mpl%info,'(a13,a,i3,a,i8)') '','interp_c1b_to_c0a(',il1,')%n_s = ',nicas_cmp%interp_c1b_to_c0a(il1)%n_s
    if (nicas_cmp%verbosity) call mpl%flush
 end do
-write(mpl%test,'(a13,a,i8)') '','v%n_s =      ',nicas_cmp%v%n_s
+write(mpl%info,'(a13,a,i8)') '','v%n_s =      ',nicas_cmp%v%n_s
 if (nicas_cmp%verbosity) call mpl%flush
 write(mpl%info,'(a13,a,i9)') '','c%n_s =     ',nicas_cmp%c%n_s
 if (nicas_cmp%verbosity) call mpl%flush
@@ -2073,7 +2073,7 @@ logical :: slev(geom%nl0)
 
 if (.not.nam%load_nicas_global) then
    ! Vertical sampling
-   write(mpl%test,'(a13,a)') '','Compute vertical subset L1'
+   write(mpl%info,'(a13,a)') '','Compute vertical subset L1'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2293,13 +2293,13 @@ if (.not.nam%load_nicas_global) then
 end if
 
 ! Vertically dependent horizontal subsampling
-write(mpl%test,'(a13,a)') '','Compute vertically dependent horizontal subsampling: '
+write(mpl%info,'(a13,a)') '','Compute vertically dependent horizontal subsampling: '
 if (nicas_cmp%verbosity) call mpl%flush
 do il1=1,nicas_cmp%nl1
    ! Index
    il0 = nicas_cmp%l1_to_l0(il1)
 
-   write(mpl%test,'(a16,a,i3,a,i3,a,i3,a)') '','Sublevel ',il1,'/',nicas_cmp%nl1,' (level ',il0,'):'
+   write(mpl%info,'(a16,a,i3,a,i3,a,i3,a)') '','Sublevel ',il1,'/',nicas_cmp%nl1,' (level ',il0,'):'
    if (nicas_cmp%verbosity) call mpl%flush
 
    if (.not.nam%load_nicas_global) then
@@ -2332,7 +2332,7 @@ do il1=1,nicas_cmp%nl1
          c1_to_c0 = mpl%msv%vali
 
          ! Compute sampling
-         write(mpl%test,'(a19,a)') '','Compute horizontal subset Sc1:'
+         write(mpl%info,'(a19,a)') '','Compute horizontal subset Sc1:'
          if (nicas_cmp%verbosity) call mpl%flush
          call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,nicas_cmp%rhs(:,il0),geom%c0a_to_c0, &
  & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,nicas_cmp%verbosity,16,nicas_cmp%hor(il1)%nc1,c1_to_c0)
@@ -2368,7 +2368,7 @@ do il1=1,nicas_cmp%nl1
          deallocate(c1_to_c0)
       case ('octahedral')
          ! Use an octahedral grid
-         write(mpl%test,'(a19,a)') '','Use an octahedral grid for subset Sc1 '
+         write(mpl%info,'(a19,a)') '','Use an octahedral grid for subset Sc1 '
          call mpl%flush
 
          ! Octahedral grid
@@ -2466,7 +2466,7 @@ do il1=1,nicas_cmp%nl1
    end if
 
    ! Compute halo A and universe conversions and communication for subset Sc1
-   write(mpl%test,'(a19,a)') '','Compute halo A and universe conversions and communication for subset Sc1'
+   write(mpl%info,'(a19,a)') '','Compute halo A and universe conversions and communication for subset Sc1'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Get subset Sc1 size on universe
@@ -2505,7 +2505,7 @@ do il1=1,nicas_cmp%nl1
    call nicas_cmp%com_c1_AU(il1)%ext(mpl,nicas_cmp%hor(il1)%vunit_c1a,nicas_cmp%hor(il1)%vunit_c1u)
 
    ! Get global lon/lat
-   write(mpl%test,'(a19,a)') '','Get global lon/lat'
+   write(mpl%info,'(a19,a)') '','Get global lon/lat'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2519,7 +2519,7 @@ do il1=1,nicas_cmp%nl1
  & lat_c1,.true.)
 
    ! Get global order
-   write(mpl%test,'(a19,a)') '','Get global order'
+   write(mpl%info,'(a19,a)') '','Get global order'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2548,7 +2548,7 @@ do il1=1,nicas_cmp%nl1
    deallocate(order_inv_c1)
 
    ! Initialize universe tree
-   write(mpl%test,'(a19,a)') '','Initialize universe tree'
+   write(mpl%info,'(a19,a)') '','Initialize universe tree'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2558,7 +2558,7 @@ do il1=1,nicas_cmp%nl1
    call nicas_cmp%hor(il1)%tree_c1u%init(nicas_cmp%hor(il1)%lon_c1u,nicas_cmp%hor(il1)%lat_c1u)
 
    ! Compute interpolation from subset Sc1 to subset Sc0
-   write(mpl%test,'(a19,a)') '','Compute interpolation from subset Sc1 to subset Sc0'
+   write(mpl%info,'(a19,a)') '','Compute interpolation from subset Sc1 to subset Sc0'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2587,7 +2587,7 @@ do il1=1,nicas_cmp%nl1
    call tree_c1%dealloc
 
    ! Compute interpolation from subset Sc0 to subset Sc1
-   write(mpl%test,'(a19,a)') '','Compute interpolation from subset Sc0 to subset Sc1'
+   write(mpl%info,'(a19,a)') '','Compute interpolation from subset Sc0 to subset Sc1'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2607,7 +2607,7 @@ do il1=1,nicas_cmp%nl1
    deallocate(gmask_c1a)
 
    ! Define halo B, compute conversions and communications for subset Sc1
-   write(mpl%test,'(a19,a)') '','Define halo B, compute conversions and communications for subset Sc1'
+   write(mpl%info,'(a19,a)') '','Define halo B, compute conversions and communications for subset Sc1'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Allocation
@@ -2675,7 +2675,7 @@ do il1=1,nicas_cmp%nl1
  & nicas_cmp%hor(il1)%c1a_to_c1,nicas_cmp%hor(il1)%c1b_to_c1)
 
    ! Define halo B, compute conversions and communications for subset Sc0'
-   write(mpl%test,'(a19,a)') '','Define halo B, compute conversions and communications for subset Sc0'
+   write(mpl%info,'(a19,a)') '','Define halo B, compute conversions and communications for subset Sc0'
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Define halo B (including halo A) for subset Sc0
@@ -2749,7 +2749,7 @@ do il1=1,nicas_cmp%nl1
 end do
 
 ! Define subgrid and conversions
-write(mpl%test,'(a16,a)') '','Define subgrid, conversions and communication'
+write(mpl%info,'(a16,a)') '','Define subgrid, conversions and communication'
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Count subgrid points
@@ -2976,11 +2976,11 @@ associate(ib=>nicas_cmp%ib)
 
 if (.not.nam%load_nicas_global) then
    ! Compute horizontal and vertical parameters
-   write(mpl%test,'(a13,a)') '','Compute horizontal and vertical parameters'
+   write(mpl%info,'(a13,a)') '','Compute horizontal and vertical parameters'
    if (nicas_cmp%verbosity) call mpl%flush
 
    do il1=1,nicas_cmp%nl1
-      write(mpl%test,'(a16,a,i3,a)') '','Level ',il1,':'
+      write(mpl%info,'(a16,a,i3,a)') '','Level ',il1,':'
       if (nicas_cmp%verbosity) call mpl%flush
 
       ! Index
@@ -3008,7 +3008,7 @@ if (.not.nam%load_nicas_global) then
       end if
 
       ! Interpolate
-      write(mpl%test,'(a19,a)') '','Interpolate'
+      write(mpl%info,'(a19,a)') '','Interpolate'
       if (nicas_cmp%verbosity) call mpl%flush
 
       ! Halo extension
@@ -3034,7 +3034,7 @@ if (.not.nam%load_nicas_global) then
       end if
 
       ! Communication
-      write(mpl%test,'(a19,a)') '','Communication'
+      write(mpl%info,'(a19,a)') '','Communication'
       if (nicas_cmp%verbosity) call mpl%flush
       call nicas_cmp%com_c1_AB(il1)%ext(mpl,rh_c1a,nicas_cmp%hor(il1)%rh_c1b)
       if (.not.nicas_cmp%horizontal) then
@@ -3238,7 +3238,7 @@ do il1=1,nicas_cmp%nl1
 end do
 
 ! Count and find nearest neighbors
-write(mpl%test,'(a13,a)') '','Count and find nearest neighbors, compute distances: '
+write(mpl%info,'(a13,a)') '','Count and find nearest neighbors, compute distances: '
 if (nicas_cmp%verbosity) call mpl%flush(.false.)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
 !$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il0,jl1,jl0,rv_th,nn,j,jc1u,valid,dx,dy,distv,distv_min), &
@@ -3388,7 +3388,7 @@ do ithread=1,mpl%nthread
 end do
 
 ! Initialization
-write(mpl%test,'(a13,a)') '','Compute weights: '
+write(mpl%info,'(a13,a)') '','Compute weights: '
 if (nicas_cmp%verbosity) call mpl%flush(.false.)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
 c_n_s = 0
@@ -3696,7 +3696,7 @@ nicas_cmp%norm = mpl%msv%valr
 do il0=1,geom%nl0
    if (nicas_cmp%vlev(il0)) then
       il0i = geom%l0_to_l0i(il0)
-      write(mpl%test,'(a13,a,i3,a)') '','Level ',nam%levs(il0),': '
+      write(mpl%info,'(a13,a,i3,a)') '','Level ',nam%levs(il0),': '
       if (nicas_cmp%verbosity) call mpl%flush(.false.)
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
 
@@ -4574,7 +4574,7 @@ call rng%desync(mpl)
 
 if (nicas_cmp%smoother) then
    ! Check smoother integral
-   write(mpl%test,'(a10,a)') '','Check smoother integral'
+   write(mpl%info,'(a10,a)') '','Check smoother integral'
    if (nicas_cmp%verbosity) call mpl%flush
    do itest=1,nam%check_normalization
       ! Initialization
@@ -4594,7 +4594,7 @@ if (nicas_cmp%smoother) then
    if (nicas_cmp%verbosity) call mpl%flush
 else
    ! Check internal normalization
-   write(mpl%test,'(a10,a)') '','Check internal normalization'
+   write(mpl%info,'(a10,a)') '','Check internal normalization'
    if (nicas_cmp%verbosity) call mpl%flush
    do itest=1,nam%check_normalization
       ! Initialization
@@ -4621,7 +4621,7 @@ else
    if (nicas_cmp%verbosity) call mpl%flush
 
    ! Check normalization
-   write(mpl%test,'(a10,a)') '','Check normalization'
+   write(mpl%info,'(a10,a)') '','Check normalization'
    if (nicas_cmp%verbosity) call mpl%flush
    do itest=1,nam%check_normalization
       ! Allocation

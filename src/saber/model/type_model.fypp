@@ -892,12 +892,12 @@ end select
 
 ! Loop over sub-ensembles
 do isub=1,nsub
-   write(mpl%test,'(a7,a)') '','Reading ensemble member:'
+   write(mpl%info,'(a7,a)') '','Reading ensemble member:'
    call mpl%flush(.false.)
 
    ! Loop over members for a given sub-ensemble
    do ie_sub=1,ne/nsub
-      write(mpl%test,'(i6)') ie_sub
+      write(mpl%info,'(i6)') ie_sub
       call mpl%flush(.false.)
 
       ! Read member
@@ -909,7 +909,7 @@ do isub=1,nsub
          call model%read_member(mpl,nam,filename,ie_sub,model%ens2(ie))
       end select
    end do
-   write(mpl%test,'(a)') ''
+   write(mpl%info,'(a)') ''
    call mpl%flush
 end do
 

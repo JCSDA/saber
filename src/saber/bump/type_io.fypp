@@ -310,7 +310,7 @@ do icx=1,io%ncx
 end do
 
 ! Print results
-write(mpl%test,'(a7,a)') '','I/O splitting:'
+write(mpl%info,'(a7,a)') '','I/O splitting:'
 call mpl%flush
 do iprocio=1,nprocio
    write(mpl%info,'(a10,a,i6,a,i8,a,i6)') '','Chunk ',iprocio,' ~> ',procio_to_ncxio(iprocio),' grid-points handled by task ', &

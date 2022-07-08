@@ -40,6 +40,7 @@ type nam_type
    character(len=1024) :: model                               !< Model name ('aro', 'arp', 'cartg', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
    character(len=1024) :: verbosity                           !< Verbosity level ('all', 'main' or 'none')
    logical :: colorlog                                        !< Add colors to the log (for display on terminal)
+   logical :: testing                                         !< Stream test messages into a dedicated channel
    logical :: default_seed                                    !< Default seed for random numbers
    logical :: repro                                           !< Inter-compilers reproducibility
    real(kind_real) :: rth                                     !< Reproducibility threshold
@@ -268,6 +269,7 @@ nam%prefix = ''
 nam%model = 'online'
 nam%verbosity = 'all'
 nam%colorlog = .false.
+nam%testing = .false.
 nam%default_seed = .true.
 nam%repro = .true.
 nam%rth = 1.0e-12_kind_real
@@ -504,6 +506,7 @@ character(len=1024) :: prefix
 character(len=1024) :: model
 character(len=1024) :: verbosity
 logical :: colorlog
+logical :: testing
 logical :: default_seed
 logical :: repro
 real(kind_real) :: rth
@@ -665,6 +668,7 @@ namelist/general_param/ &
  & model, &
  & verbosity, &
  & colorlog, &
+ & testing, &
  & default_seed, &
  & repro, &
  & rth, &
@@ -836,6 +840,7 @@ if (mpl%main) then
    model = 'online'
    verbosity = 'all'
    colorlog = .false.
+   testing = .false.
    default_seed = .true.
    repro = .true.
    rth = 1.0e-12_kind_real
@@ -1057,6 +1062,7 @@ if (mpl%main) then
    nam%model = model
    nam%verbosity = verbosity
    nam%colorlog = colorlog
+   nam%testing = testing
    nam%default_seed = default_seed
    nam%repro = repro
    nam%rth = rth
@@ -1273,6 +1279,7 @@ call mpl%f_comm%broadcast(nam%prefix,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%model,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%verbosity,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%colorlog,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%testing,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%default_seed,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%repro,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%rth,mpl%rootproc-1)
@@ -1503,6 +1510,7 @@ if (conf%has('verbosity')) then
    nam%verbosity = str
 end if
 if (conf%has('colorlog')) call conf%get_or_die('colorlog',nam%colorlog)
+if (conf%has('testing')) call conf%get_or_die('testing',nam%testing)
 if (conf%has('default_seed')) call conf%get_or_die('default_seed',nam%default_seed)
 if (conf%has('repro')) call conf%get_or_die('repro',nam%repro)
 if (conf%has('rth')) call conf%get_or_die('rth',nam%rth)
@@ -2522,13 +2530,14 @@ real(kind_real),allocatable :: londir(:),latdir(:),lon_ldwv(:),lat_ldwv(:)
 @:probe_in()
 
 ! general_param
-write(mpl%test,'(a7,a)') '','General parameters'
+write(mpl%info,'(a7,a)') '','General parameters'
 call mpl%flush
 call mpl%write('datadir',nam%datadir)
 call mpl%write('prefix',nam%prefix)
 call mpl%write('model',nam%model)
 call mpl%write('verbosity',nam%verbosity)
 call mpl%write('colorlog',nam%colorlog)
+call mpl%write('testing',nam%testing)
 call mpl%write('default_seed',nam%default_seed)
 call mpl%write('repro',nam%repro)
 call mpl%write('rth',nam%rth)
@@ -2539,7 +2548,7 @@ call mpl%write('use_cgal',nam%use_cgal)
 call mpl%write('write_c0',nam%write_c0)
 
 ! driver_param
-write(mpl%test,'(a7,a)') '','Driver parameters'
+write(mpl%info,'(a7,a)') '','Driver parameters'
 call mpl%flush
 call mpl%write('method',nam%method)
 call mpl%write('strategy',nam%strategy)
@@ -2594,7 +2603,7 @@ call mpl%write('fname_nicas',nam%fname_nicas)
 call mpl%write('fname_wind',nam%fname_wind)
 
 ! model_param
-write(mpl%test,'(a7,a)') '','Model parameters'
+write(mpl%info,'(a7,a)') '','Model parameters'
 call mpl%flush
 call mpl%write('nl0',nam%nl0)
 call mpl%write('levs',nam%nl0,nam%levs(1:nam%nl0))
@@ -2610,19 +2619,19 @@ call mpl%write('qg_regional',nam%qg_regional)
 call mpl%write('qg_urban',nam%qg_urban)
 
 ! ens1_param
-write(mpl%test,'(a7,a)') '','Ensemble 1 parameters'
+write(mpl%info,'(a7,a)') '','Ensemble 1 parameters'
 call mpl%flush
 call mpl%write('ens1_ne',nam%ens1_ne)
 call mpl%write('ens1_nsub',nam%ens1_nsub)
 
 ! ens2_param
-write(mpl%test,'(a7,a)') '','Ensemble 2 parameters'
+write(mpl%info,'(a7,a)') '','Ensemble 2 parameters'
 call mpl%flush
 call mpl%write('ens2_ne',nam%ens2_ne)
 call mpl%write('ens2_nsub',nam%ens2_nsub)
 
 ! sampling_param
-write(mpl%test,'(a7,a)') '','Sampling parameters'
+write(mpl%info,'(a7,a)') '','Sampling parameters'
 call mpl%flush
 call mpl%write('load_samp_local',nam%load_samp_local)
 call mpl%write('load_samp_global',nam%load_samp_global)
@@ -2646,7 +2655,7 @@ call mpl%write('nl0r',nam%nl0r)
 call mpl%write('irmax',nam%irmax)
 
 ! diag_param
-write(mpl%test,'(a7,a)') '','Diagnostics parameters'
+write(mpl%info,'(a7,a)') '','Diagnostics parameters'
 call mpl%flush
 call mpl%write('ne',nam%ne)
 call mpl%write('ne_lr',nam%ne_lr)
@@ -2674,7 +2683,7 @@ call mpl%write('local_rad',nam%local_rad*req)
 call mpl%write('local_dlat',nam%local_dlat*rad2deg)
 
 ! fit_param
-write(mpl%test,'(a7,a)') '','Fit parameters'
+write(mpl%info,'(a7,a)') '','Fit parameters'
 call mpl%flush
 call mpl%write('diag_rhflt',nam%diag_rhflt*req)
 call mpl%write('diag_rvflt',nam%diag_rvflt)
@@ -2683,7 +2692,7 @@ call mpl%write('fit_ncmp',nam%nv+1,nam%fit_ncmp(0:nam%nv))
 call mpl%write('write_hdiag_detail',nam%write_hdiag_detail)
 
 ! nicas_param
-write(mpl%test,'(a7,a)') '','NICAS parameters'
+write(mpl%info,'(a7,a)') '','NICAS parameters'
 call mpl%flush
 call mpl%write('resol',nam%resol)
 call mpl%write('nc1max',nam%nc1max)
@@ -2703,7 +2712,7 @@ call mpl%write('pos_def_test',nam%pos_def_test)
 call mpl%write('write_nicas_grids',nam%write_nicas_grids)
 
 ! dirac_param
-write(mpl%test,'(a7,a)') '','Dirac parameters'
+write(mpl%info,'(a7,a)') '','Dirac parameters'
 call mpl%flush
 call mpl%write('ndir',nam%ndir)
 allocate(londir(nam%ndir))
@@ -2718,7 +2727,7 @@ call mpl%write('levdir',nam%ndir,nam%levdir(1:nam%ndir))
 call mpl%write('ivdir',nam%ndir,nam%ivdir(1:nam%ndir))
 
 ! output_param
-write(mpl%test,'(a7,a)') '','Output parameters'
+write(mpl%info,'(a7,a)') '','Output parameters'
 call mpl%flush
 call mpl%write('full_grid_smoother_nn',nam%full_grid_smoother_nn)
 call mpl%write('nldwv',nam%nldwv)
@@ -2734,7 +2743,7 @@ call mpl%write('lat_ldwv',nam%nldwv,lat_ldwv)
 call mpl%write('name_ldwv',nam%nldwv,nam%name_ldwv(1:nam%nldwv))
 
 ! wind_param
-write(mpl%test,'(a7,a)') '','Wind parameters'
+write(mpl%info,'(a7,a)') '','Wind parameters'
 call mpl%flush
 call mpl%write('wind_streamfunction',nam%wind_streamfunction)
 call mpl%write('wind_velocity_potential',nam%wind_velocity_potential)

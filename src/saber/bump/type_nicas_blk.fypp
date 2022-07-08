@@ -176,7 +176,7 @@ associate(ib=>nicas_blk%ib)
 
 ! Get group name
 call nam%io_key_value(bpar%blockname(ib),blkname)
-write(mpl%test,'(a13,a)') '','Block: '//trim(blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Get group
@@ -201,7 +201,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
 
    ! Get component
-   write(mpl%test,'(a16,a,i1)') '','Component: ',icmp
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    if (nicas_blk%ncmp==1) then
@@ -252,7 +252,7 @@ associate(ib=>nicas_blk%ib)
 
 ! Get group name
 call nam%io_key_value(bpar%blockname(ib),blkname)
-write(mpl%test,'(a13,a)') '','Block: '//trim(blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Define group
@@ -263,7 +263,7 @@ call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
-   write(mpl%test,'(a16,a,i1)') '','Component: ',icmp
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    if (nicas_blk%ncmp==1) then
@@ -537,7 +537,7 @@ associate(ib=>nicas_blk%ib)
 
 ! Get group name
 call nam%io_key_value(bpar%blockname(ib),blkname)
-write(mpl%test,'(a13,a)') '','Block: '//trim(blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Get group
@@ -565,7 +565,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
 
    ! Get component
-   write(mpl%test,'(a16,a,i1)') '','Component: ',icmp
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    if (nicas_blk%ncmp==1) then
@@ -616,7 +616,7 @@ associate(ib=>nicas_blk%ib)
 
 ! Get group name
 call nam%io_key_value(bpar%blockname(ib),blkname)
-write(mpl%test,'(a10,a)') '','Block: '//trim(blkname)
+write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Define group
@@ -627,7 +627,7 @@ call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
-   write(mpl%test,'(a16,a,i1)') '','Component: ',icmp
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    if (nicas_blk%ncmp==1) then
@@ -716,7 +716,7 @@ associate(ib=>nicas_blk%ib)
 
 ! Get group name
 call nam%io_key_value(bpar%blockname(ib),blkname)
-write(mpl%test,'(a10,a)') '','Block: '//trim(blkname)
+write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Define group
@@ -724,7 +724,7 @@ nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
-   write(mpl%test,'(a16,a,i1)') '','Component: ',icmp
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    if (nicas_blk%ncmp==1) then
@@ -809,7 +809,7 @@ associate(ib=>nicas_blk%ib)
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
 do icmp=1,nicas_blk%ncmp
-   write(mpl%test,'(a7,a,i1)') '','Component: ',icmp
+   write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
    call mpl%flush
  
    ! Set attributes
@@ -1202,7 +1202,7 @@ end do
 if (nam%write_c0) call geom%io%fld_write(mpl,nicas_blk%blkid,nicas_blk%dirac_id,fld_tot,geom%gmask_c0a)
 
 ! Print results
-write(mpl%test,'(a7,a)') '','Values at dirac points:'
+write(mpl%info,'(a7,a)') '','Values at dirac points:'
 if (nicas_blk%verbosity) call mpl%flush
 do idir=1,geom%ndir
    if (geom%iprocdir(idir)==mpl%myproc) val = fld_tot(geom%ic0adir(idir),geom%il0dir(idir))
@@ -1215,7 +1215,7 @@ do idir=1,geom%ndir
       if (nicas_blk%verbosity) call mpl%flush
    end if
 end do
-write(mpl%test,'(a7,a)') '','Min - max: '
+write(mpl%info,'(a7,a)') '','Min - max: '
 if (nicas_blk%verbosity) call mpl%flush
 do il0=1,geom%nl0
    valmin = zss_minval(fld_tot(:,il0),mask=geom%gmask_c0a(:,il0))

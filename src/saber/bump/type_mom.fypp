@@ -401,9 +401,9 @@ real(kind_real),allocatable :: fld_c3a(:,:,:,:),wgt_dir(:),pert_c0a(:,:,:)
 @:probe_in()
 
 ! Update moments
-write(mpl%test,'(a)') '-------------------------------------------------------------------'
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
 call mpl%flush
-write(mpl%test,'(a)') '--- Update moments'
+write(mpl%info,'(a)') '--- Update moments'
 call mpl%flush
 
 ! Indices
@@ -639,7 +639,7 @@ if (ie==mom%ne) then
 
    ! Write sample moments
    if (nam%write_mom) then
-      write(mpl%test,'(a10,a)') '','Write sample moments'
+      write(mpl%info,'(a10,a)') '','Write sample moments'
       call mpl%flush
       call mom%write(mpl,nam,geom,bpar,samp)
    end if
@@ -694,16 +694,16 @@ call mom%init(nam,bpar)
 ! Loop on sub-ensembles
 do isub=1,ens%nsub
    if (ens%nsub==1) then
-      write(mpl%test,'(a10,a)') '','Full ensemble, member:'
+      write(mpl%info,'(a10,a)') '','Full ensemble, member:'
       call mpl%flush(.false.)
    else
-      write(mpl%test,'(a10,a,i6,a)') '','Sub-ensemble ',isub,', member:'
+      write(mpl%info,'(a10,a,i6,a)') '','Sub-ensemble ',isub,', member:'
       call mpl%flush(.false.)
    end if
 
    ! Compute centered moments
    do ie_sub=1,ens%ne/ens%nsub
-      write(mpl%test,'(i6)') ie_sub
+      write(mpl%info,'(i6)') ie_sub
       call mpl%flush(.false.)
 
       ! Full ensemble index
@@ -795,7 +795,7 @@ do isub=1,ens%nsub
          end do
       end if
    end do
-   write(mpl%test,'(a)') ''
+   write(mpl%info,'(a)') ''
    call mpl%flush
 end do
 
@@ -880,7 +880,7 @@ end if
 
 ! Write sample moments
 if (nam%write_mom) then
-   write(mpl%test,'(a10,a)') '','Write sample moments'
+   write(mpl%info,'(a10,a)') '','Write sample moments'
    call mpl%flush
    call mom%write(mpl,nam,geom,bpar,samp)
 end if

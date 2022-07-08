@@ -137,6 +137,8 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<std::string> verbosity{"verbosity", this};
   // Add colors to the log (for display on terminal)
   oops::OptionalParameter<bool> colorlog{"colorlog", this};
+  // Stream test messages into a dedicated channel
+  oops::OptionalParameter<bool> testing{"testing", this};
   // Default seed for random numbers
   oops::OptionalParameter<bool> default_seed{"default_seed", this};
   // Inter-compilers reproducibility
@@ -563,7 +565,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
     } else if (*verbosity  == "none") {
       verbosity_ = false;
     } else {
-      ABORT("BUMP: wrong verbosity string");
+      ABORT("BUMP::BUMP: wrong verbosity string");
     }
   }
 
@@ -579,7 +581,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   if (ensembleConfig1 != boost::none) {
     // Abort if both "members" and "members from template" are specified
     if (ensembleConfig1->has("members") && ensembleConfig1->has("members from template"))
-      ABORT("BUMP: both members and members from template are specified");
+      ABORT("BUMP::BUMP: both members and members from template are specified");
 
     if (ensembleConfig1->has("members")) {
       // Explicit members
@@ -617,7 +619,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
         count += 1;
       }
     } else {
-      ABORT("BUMP: ensemble 1 not specified");
+      ABORT("BUMP::BUMP: ensemble 1 not specified");
     }
   }
 
@@ -629,7 +631,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   if (ensembleConfig2 != boost::none) {
     // Abort if both "members" and "members from template" are specified
     if (ensembleConfig2->has("members") && ensembleConfig2->has("members from template"))
-      ABORT("BUMP: both members and members from template are specified");
+      ABORT("BUMP::BUMP: both members and members from template are specified");
 
     if (ensembleConfig2->has("members")) {
       // Explicit members
@@ -667,12 +669,12 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
         count += 1;
       }
     } else {
-      ABORT("BUMP: ensemble 2 not specified");
+      ABORT("BUMP::BUMP: ensemble 2 not specified");
     }
   }
 
   // Read universe size
-  if (verbosity_) oops::Log::test() << "Read universe radius" << std::endl;
+  if (verbosity_) oops::Log::info() << "Info     : Read universe radius" << std::endl;
   atlas::FieldSet universe_rad = atlas::FieldSet();
   const boost::optional<eckit::LocalConfiguration> &universeRadius = params.universeRadius.value();
   if (universeRadius != boost::none) {
@@ -763,9 +765,11 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
     }
 
     // Print configuration for this grid
-    if (verbosity_) oops::Log::test() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
+    if (verbosity_) oops::Log::info() << "Info     : Grid " << jgrid << ": " << grids[jgrid]
+      << std::endl;
 
     // Create BUMP instance
+    if (verbosity_) oops::Log::info() << "Info     : Create BUMP instance " << jgrid << std::endl;
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, &geom1.getComm(),
                     geom1.functionSpace().get(),
@@ -783,18 +787,20 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
   // Add members of ensemble 1
   if (ens1) {
-    if (verbosity_) oops::Log::test() << "--- Add members of ensemble 1" << std::endl;
+    if (verbosity_) oops::Log::info() << "Info     : --- Add members of ensemble 1" << std::endl;
     for (int ie = 0; ie < ens1_ne; ++ie) {
-      if (verbosity_) oops::Log::test() << "      Member " << ie+1 << " / " << ens1_ne << std::endl;
+      if (verbosity_) oops::Log::info() << "Info     :       Member " << ie+1 << " / " << ens1_ne
+        << std::endl;
       this->addMember((*ens1)[ie].fieldSet(), ie, 1);
     }
   }
 
   // Add members of ensemble 2
   if (ens2) {
-    if (verbosity_) oops::Log::test() << "--- Add members of ensemble 2" << std::endl;
+    if (verbosity_) oops::Log::info() << "Info     : --- Add members of ensemble 2" << std::endl;
     for (int ie = 0; ie < ens2_ne; ++ie) {
-      if (verbosity_) oops::Log::test() << "      Member " << ie+1 << " / " << ens2_ne << std::endl;
+      if (verbosity_) oops::Log::info() << "Info     :       Member " << ie+1 << " / " << ens2_ne
+        << std::endl;
       this->addMember((*ens2)[ie].fieldSet(), ie, 2);
     }
   }
@@ -803,7 +809,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   params_.validateAndDeserialize(conf);
 
   // Read number of components
-  if (verbosity_) oops::Log::test() << "    Read number of components" << std::endl;
+  if (verbosity_) oops::Log::info() << "Info     :     Read number of components" << std::endl;
   const boost::optional<BUMPInputNcmpParameters> &inputNcmp = params_.inputNcmp.value();
   if (inputNcmp != boost::none) {
     // Open file
@@ -840,7 +846,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
         // Set parameter
         this->setNcmp(igrid, ivar, ncmp);
         if (verbosity_) oops::Log::test() << "Number of input BUMP components for " << variable
-                          << ": " << ncmp << std::endl;
+          << ": " << ncmp << std::endl;
       }
 
       // Close file
@@ -851,7 +857,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   }
 
   // Read parameters from files
-  if (verbosity_) oops::Log::test() << "    Read parameters from files" << std::endl;
+  if (verbosity_) oops::Log::info() << "Info     :     Read parameters from files" << std::endl;
   const boost::optional<std::vector<BUMPInputParameters<MODEL>>> &input = params_.input.value();
   if (input != boost::none) {
     // Set input parameters
@@ -864,7 +870,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
       const int & component = inputParam.component;
       this->setParameter(param, component, dx1.fieldSet());
       if (verbosity_) oops::Log::test() << "Norm of input BUMP parameter " << param << " - "
-                                        << component << ": "<< dx1.norm() << std::endl;
+        << component << ": "<< dx1.norm() << std::endl;
     }
   }
 
@@ -877,10 +883,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   if (ensembleConfig1 != boost::none) {
     for (int ie = 0; ie < ens1_ne; ++ie) {
       // Read member
-      if (verbosity_) oops::Log::test() <<
-      "-------------------------------------------------------------------" << std::endl;
-      if (verbosity_) oops::Log::test() << "--- Load member " << ie+1 << " / " << ens1_ne
-                                        << std::endl;
+      if (verbosity_) oops::Log::info() <<
+      "Info     : -------------------------------------------------------------------" << std::endl;
+      if (verbosity_) oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens1_ne
+        << std::endl;
       dx1.read(membersConfig1[ie]);
 
       if (update_vbal_cov != boost::none) {
@@ -906,10 +912,10 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   if (ensembleConfig2 != boost::none) {
     for (int ie = 0; ie < ens2_ne; ++ie) {
       // Read member
-      if (verbosity_) oops::Log::test() <<
-      "-------------------------------------------------------------------" << std::endl;
-      if (verbosity_) oops::Log::test() << "--- Load member " << ie+1 << " / " << ens2_ne
-                                        << std::endl;
+      if (verbosity_) oops::Log::info() <<
+      "Info     : -------------------------------------------------------------------" << std::endl;
+      if (verbosity_) oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens2_ne
+        << std::endl;
       dx2.read(membersConfig2[ie]);
       if (update_mom != boost::none) {
         if (*update_mom) {
@@ -930,9 +936,9 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   const boost::optional<std::vector<BUMPOutputParameters<MODEL>>> &output = params_.output.value();
   if (outputNcmp != boost::none || output != boost::none) {
     // Write parameters
-    if (verbosity_) oops::Log::test() <<
-    "-------------------------------------------------------------------" << std::endl;
-    if (verbosity_) oops::Log::test() << "--- Write parameters" << std::endl;
+    if (verbosity_) oops::Log::info() <<
+    "Info     : -------------------------------------------------------------------" << std::endl;
+    if (verbosity_) oops::Log::info() << "Info     : --- Write parameters" << std::endl;
   }
   if (outputNcmp != boost::none) {
     // Open file
@@ -941,7 +947,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
     if (outfile.is_open()) {
       if (verbosity_) oops::Log::test() << "Write number of components in file "
-                        << outputNcmp->filepath.value() << std::endl;
+        << outputNcmp->filepath.value() << std::endl;
 
       // Write parameter
       for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
@@ -949,16 +955,16 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
           int ncmp;
           this->getNcmp(jgrid, jvar, ncmp);
           outfile << activeVarsPerGrid_[jgrid][jvar] << ' ' << std::scientific
-                  << std::setprecision(3) << ncmp << std::endl;
+            << std::setprecision(3) << ncmp << std::endl;
           if (verbosity_) oops::Log::test() << "Number of BUMP output components for "
-                            << activeVarsPerGrid_[jgrid][jvar] << ": " << ncmp << std::endl;
+            << activeVarsPerGrid_[jgrid][jvar] << ": " << ncmp << std::endl;
         }
       }
 
       // Close file
       outfile.close();
     } else {
-      ABORT("BUMP::write: cannot open file");
+      ABORT("BUMP::BUMP: cannot open file");
     }
   }
   if (output != boost::none) {
@@ -987,8 +993,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
         // Write parameter
         dx2.write(outputParam.incwrite);
-        if (verbosity_) oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component << ": "
-                          << dx2.norm() << std::endl;
+        if (verbosity_) oops::Log::test() << "Norm of BUMP output parameter " << param << " - "
+          << component << ": " << dx2.norm() << std::endl;
       } else {
         // Get parameter
         dx1.zero(xb.validTime());
@@ -998,7 +1004,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
         // Write parameter
         dx1.write(outputParam.incwrite);
         if (verbosity_) oops::Log::test() << "Norm of BUMP output parameter " << param << " - "
-                                          << component << ": "<< dx1.norm() << std::endl;
+          << component << ": "<< dx1.norm() << std::endl;
       }
     }
   }
@@ -1007,22 +1013,23 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   const boost::optional<std::vector<eckit::LocalConfiguration>>
     &appConfs = params_.appConfs.value();
   if (appConfs != boost::none) {
-    if (verbosity_) oops::Log::test() <<
-    "-------------------------------------------------------------------" << std::endl;
-    if (verbosity_) oops::Log::test() << "--- Apply operators" << std::endl;
+    if (verbosity_) oops::Log::info() <<
+    "Info     : -------------------------------------------------------------------" << std::endl;
+    if (verbosity_) oops::Log::info() << "Info     : --- Apply operators" << std::endl;
     if (appConfs->size() > 0) {
       for (const auto & appConf : *appConfs) {
         // Read input file
         eckit::LocalConfiguration inputConf(appConf, "input");
-        if (verbosity_) oops::Log::test() << "       - Input file: " << inputConf << std::endl;
+        if (verbosity_) oops::Log::info() << "Info     :        - Input file: " << inputConf
+          << std::endl;
         dx1.read(inputConf);
 
         // Apply BUMP operator
         std::vector<std::string> bumpOperators;
         appConf.get("bump operators", bumpOperators);
         for (const auto & bumpOperator : bumpOperators) {
-          if (verbosity_) oops::Log::test() << "         Apply operator " << bumpOperator
-                                            << std::endl;
+          if (verbosity_) oops::Log::info() << "Info     :          Apply operator " << bumpOperator
+            << std::endl;
           if (bumpOperator == "multiplyVbal") {
             this->multiplyVbal(dx1.fieldSet());
           } else if (bumpOperator == "inverseMultiplyVbal") {
@@ -1038,7 +1045,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
           } else if (bumpOperator == "multiplyNicas") {
             this->multiplyNicas(dx1.fieldSet());
           } else {
-              ABORT("Wrong bump operator: " + bumpOperator);
+              ABORT("BUMP::BUMP: wrong bump operator: " + bumpOperator);
           }
         }
 
@@ -1047,7 +1054,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
 
         // Write file
         eckit::LocalConfiguration outputConf(appConf, "output");
-        if (verbosity_) oops::Log::test() << "         Output file: " << outputConf << std::endl;
+        if (verbosity_) oops::Log::info() << "Info     :          Output file: " << outputConf
+          << std::endl;
         dx1.write(outputConf);
       }
     }

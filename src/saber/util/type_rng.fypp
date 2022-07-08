@@ -104,10 +104,10 @@ rng%seed = int(seed,kind_long)
 
 ! Print result
 if (nam%default_seed) then
-   write(mpl%test,'(a7,a)') '','Linear congruential generator initialized with a default seed'
+   write(mpl%info,'(a7,a)') '','Linear congruential generator initialized with a default seed'
    call mpl%flush
 else
-   write(mpl%test,'(a7,a)') '','Linear congruential generator initialized'
+   write(mpl%info,'(a7,a)') '','Linear congruential generator initialized'
    call mpl%flush
 end if
 
