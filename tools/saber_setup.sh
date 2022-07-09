@@ -7,9 +7,10 @@
 #----------------------------------------------------------------------
 
 # Get arguments
-TESTFILE_DIR_SABER=$1
-CMAKE_CURRENT_BINARY_DIR=$2
-CMAKE_BINARY_DIR=$3
+TESTDATA_DIR=$1
+TESTREF_DIR=$2
+CMAKE_CURRENT_BINARY_DIR=$3
+CMAKE_BINARY_DIR=$4
 
 # Clear working directories
 rm -fr ${CMAKE_CURRENT_BINARY_DIR}/testdata
@@ -28,10 +29,12 @@ while IFS= read -r line; do
    mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testref/${line}
 done < ${CMAKE_BINARY_DIR}/bin/saber_testdir
 
-# Link data and reference files
+# Link data files
 while IFS= read -r line; do
-   ln -sf ${TESTFILE_DIR_SABER}/testdata/${line} ${CMAKE_CURRENT_BINARY_DIR}/testdata/${line}
+   ln -sf ${TESTDATA_DIR}/${line} ${CMAKE_CURRENT_BINARY_DIR}/testdata/${line}
 done < ${CMAKE_BINARY_DIR}/bin/saber_testdata
+
+# Link reference file
 while IFS= read -r line; do
-   ln -sf ${TESTFILE_DIR_SABER}/testref/${line} ${CMAKE_CURRENT_BINARY_DIR}/testref/${line}
+   ln -sf ${TESTREF_DIR}/${line} ${CMAKE_CURRENT_BINARY_DIR}/testref/${line}
 done < ${CMAKE_BINARY_DIR}/bin/saber_testref

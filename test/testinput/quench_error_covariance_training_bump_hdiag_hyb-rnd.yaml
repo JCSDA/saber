@@ -33,6 +33,7 @@ background error:
     input variables: *vars
     output variables: *vars
     bump:
+      testing: true
       datadir: testdata
       forced_radii: true
       method: cor

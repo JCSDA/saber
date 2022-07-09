@@ -6,6 +6,7 @@ background error:
     input variables: &vars [var]
     output variables: *vars
     bump:
+      testing: true
       datadir: testdata
       fname_nicas: quench_error_covariance_training_bump_nicas/test_nicas
       load_nicas_local: true

@@ -246,7 +246,8 @@ foreach( file ${saber_ref} )
     file( APPEND ${CMAKE_BINARY_DIR}/bin/saber_testref "${file}\n" )
 endforeach()
 execute_process( COMMAND bash ${CMAKE_BINARY_DIR}/bin/saber_setup.sh
-                         ${SABER_TESTFILES_PATH}
+                         ${SABER_TESTFILES_PATH}/testdata
+                         ${CMAKE_CURRENT_SOURCE_DIR}/testref
                          ${CMAKE_CURRENT_BINARY_DIR}
                          ${CMAKE_BINARY_DIR} )
 

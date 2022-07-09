@@ -35,6 +35,7 @@ lowres ensemble:
     nmembers: 50
     zero padding: 6
 bump:
+  testing: true
   datadir: testdata
   dc: 500.0e3
   method: hyb-ens

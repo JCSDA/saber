@@ -19,6 +19,7 @@ ensemble:
     nmembers: 10
     zero padding: 6
 bump:
+  testing: true
   datadir: testdata
   ne: 10
   new_var: true

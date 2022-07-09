@@ -17,6 +17,7 @@ background:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
 bump:
+  testing: true
   datadir: testdata
   dc: 500.0e3
   method: hyb-ens
