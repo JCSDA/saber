@@ -2,13 +2,14 @@
 datadir: "testdata"
 prefix: "bump_vbal_write_grids/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
-new_vbal: 1
-write_vbal: 1
+new_vbal: true
+write_vbal: true
 
 # model_param
-nl: 4
+nl0: 4
 levs: [1,2,3,4]
 nv: 3
 variables: ["u","q","cosu_plus_q2"]
@@ -19,8 +20,8 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-write_samp_local: 1
-write_samp_grids: 1
+write_samp_local: true
+write_samp_grids: true
 nc1: 500
 nc2: 250
 

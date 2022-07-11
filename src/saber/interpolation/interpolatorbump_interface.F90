@@ -18,16 +18,17 @@ use type_fieldset, only: fieldset_type
 private
 
 ! BUMP interpolator registry
+#define LIST_KEY_TYPE c_int
 #define LISTED_TYPE bump_interpolator
-#include "oops/util/linkedList_i.f"
-type(registry_t) :: bump_interpolator_registry
+#include "saber/external/tools_linkedlist_interface.fypp"
+type(registry_type) :: bump_interpolator_registry
 
 contains
 
 !----------------------------------------------------------------------
 ! Linked list implementation
 !----------------------------------------------------------------------
-#include "oops/util/linkedList_c.f"
+#include "saber/external/tools_linkedlist_implementation.fypp"
 
 !-------------------------------------------------------------------------------
 ! Subroutine bint_create_c
@@ -55,7 +56,7 @@ type(fieldset_type) :: fieldset
 ! Interface
 f_comm = fckit_mpi_comm(c_comm)
 f_config = fckit_configuration(c_config)
-call bump_interpolator_registry%init()
+call bump_interpolator_registry%init(f_comm)
 call bump_interpolator_registry%add(c_key_bint)
 call bump_interpolator_registry%get(c_key_bint,bint)
 fspace1 = atlas_functionspace(c_fspace1)

@@ -135,7 +135,7 @@ subroutine bint_init(bint,comm, &
                    & lon1d_out,lat1d_out, &
                    & lon_out,lat_out, &
                    & afunctionspace_out, &
-                   & nl,fieldset,config)
+                   & nl0,fieldset,config)
 
 implicit none
 
@@ -152,8 +152,8 @@ real(kind_real),intent(in),optional :: lat1d_out(:)                 !< Output la
 real(kind_real),intent(in),optional :: lon_out(:)                   !< Output longitudes [in degrees]
 real(kind_real),intent(in),optional :: lat_out(:)                   !< Output latitudes [in degrees]
 type(atlas_functionspace),intent(in),optional :: afunctionspace_out !< Output ATLAS functionspace
-integer,intent(in),optional :: nl                                   !< Number of levels
-type(fieldset_type),intent(in),optional :: fieldset                 !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit), gmask (geometry mask) and smask (sampling mask). Each of these named fields is optional, if omitted default values will be provided
+integer,intent(in),optional :: nl0                                  !< Number of levels
+type(fieldset_type),intent(in),optional :: fieldset                 !< Metadata needed for the interpolation, rendered as an ATLAS FieldSet with the following named fields: area (cell area), vunit (vertical unit) and gmask (geometry mask). Each of these named fields is optional, if omitted default values will be provided
 type(fckit_configuration),intent(in),optional :: config             !< Configuration
 
 ! Local variables
@@ -182,10 +182,10 @@ call bint%bump%nam%init(comm%size())
 bint%bump%nam%prefix = 'bump_interpolator'
 bint%bump%nam%datadir = 'testdata'
 bint%bump%nam%verbosity = 'none'
-if (present(nl)) then
-   bint%bump%nam%nl = nl
+if (present(nl0)) then
+   bint%bump%nam%nl0 = nl0
 else
-   bint%bump%nam%nl = 1
+   bint%bump%nam%nl0 = 1
 end if
 bint%bump%nam%nv = 1
 bint%bump%nam%variables(1) = 'var'
@@ -205,7 +205,7 @@ if (present(config)) then
    end if
 
    ! Optionally set levels
-   if (config%has('nlevels')) call config%get_or_die('nlevels',bint%bump%nam%nl)
+   if (config%has('nlevels')) call config%get_or_die('nlevels',bint%bump%nam%nl0)
 
    ! Optionally set missing values for integers and reals
    if (config%has('missingvalue_int')) call config%get_or_die('missingvalue_int',msvali)
@@ -303,7 +303,7 @@ if (bint%bump%mpl%main) then
 end if
 
 ! Unpack output grid from output functionspace
-bint%geom_out%nl0 = bint%bump%nam%nl
+bint%geom_out%nl0 = bint%bump%nam%nl0
 call bint%geom_out%from_atlas(bint%bump%mpl,bint%afunctionspace_out)
 bint%nouta = size(bint%geom_out%lon_mga)
 
@@ -315,7 +315,7 @@ if (bint%bump%mpl%main) then
    call fckit_log%info('-------------------------------------------------------------------')
    call fckit_log%info('--- Run bump_interpolation driver')
 end if
-call bint%driver(bint%bump%mpl,bint%bump%nam,bint%bump%geom)
+call bint%driver(bint%bump%mpl,bint%bump%nam,bint%bump%geom(1))
 
 ! Release memory (partial)
 if (bint%bump%mpl%main) then
@@ -371,7 +371,7 @@ if (any(.not.geom%myuniverse)) call mpl%abort('${subr}$','universe should be glo
 ! Check whether output grid points are inside the hull boundaries
 if (bint%nouta > 0) then
    do iouta=1,bint%nouta
-      call inside(mpl,bint%bump%geom%mesh_c0u%vbnd,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
+      call inside(mpl,bint%bump%geom(1)%mesh_c0u%vbnd,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
       if (.not.maskouta(iouta)) then
          ! Check for very close points
          call geom%tree_c0u%find_nearest_neighbors(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta), &
@@ -482,7 +482,8 @@ end if
 
 ! Compute scores
 if (nout_eff > 0) then
-   call mpl%f_comm%allreduce(real(bint%com%nhalo,kind_real),C_max,fckit_mpi_max())
+   C_max = real(bint%com%nhalo,kind_real)
+   call mpl%f_comm%allreduce(C_max,fckit_mpi_max())
    C_max = C_max/(three*real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
    N_max = real(maxval(proc_to_nouta_eff),kind_real)/(real(nout_eff,kind_real)/real(mpl%nproc,kind_real))
 
@@ -534,9 +535,9 @@ type(atlas_field) :: afield_in,afield_out
 @:probe_in()
 
 ! Allocation
-allocate(array_in_mga(bint%bump%geom%nmga,bint%bump%geom%nl0))
-if (.not.bint%bump%geom%same_grid) allocate(array_in_c0a(bint%bump%geom%nc0a,bint%bump%geom%nl0))
-allocate(array_out(bint%nouta,bint%bump%geom%nl0))
+allocate(array_in_mga(bint%bump%geom(1)%nmga,bint%bump%geom(1)%nl0))
+if (.not.bint%bump%geom(1)%same_grid) allocate(array_in_c0a(bint%bump%geom(1)%nc0a,bint%bump%geom(1)%nl0))
+allocate(array_out(bint%nouta,bint%bump%geom(1)%nl0))
 
 do ifield=1,fieldset_in%size()
    ! Copy field and field name
@@ -547,20 +548,20 @@ do ifield=1,fieldset_in%size()
    if (fieldset_out%has_field(fieldname)) then
       afield_out = fieldset_out%field(name=fieldname)
    else
-      afield_out = bint%afunctionspace_out%create_field(name=fieldname,kind=atlas_real(kind_real),levels=bint%bump%geom%nl0)
+      afield_out = bint%afunctionspace_out%create_field(name=fieldname,kind=atlas_real(kind_real),levels=bint%bump%geom(1)%nl0)
       call fieldset_out%add(afield_out)
    end if
 
    ! ATLAS field to BUMP array
    call field_to_array(afield_in,bint%bump%mpl,array_in_mga)
 
-   if (bint%bump%geom%same_grid) then
+   if (bint%bump%geom(1)%same_grid) then
       ! Apply interpolation
       call bint%apply_interp(array_in_mga,array_out)
    else
       ! Model grid to subset Sc0
       array_in_c0a = zero
-      call bint%bump%geom%copy_mga_to_c0a(bint%bump%mpl,array_in_mga,array_in_c0a)
+      call bint%bump%geom(1)%copy_mga_to_c0a(bint%bump%mpl,array_in_mga,array_in_c0a)
 
       ! Apply interpolation
       call bint%apply_interp(array_in_c0a,array_out)
@@ -576,7 +577,7 @@ end do
 
 ! Release memory
 deallocate(array_in_mga)
-if (.not.bint%bump%geom%same_grid) deallocate(array_in_c0a)
+if (.not.bint%bump%geom(1)%same_grid) deallocate(array_in_c0a)
 deallocate(array_out)
 
 ! Probe out
@@ -646,12 +647,12 @@ if (present(nn)) lnn = nn
       nl_out = size(array_out,${rank_out}$)
    end if
 #:endif
-bint%bump%geom%nl0 = nl_in
+bint%bump%geom(1)%nl0 = nl_in
 
 ! Allocation
-allocate(vec_in(bint%bump%geom%nmga,bint%bump%geom%nl0))
-if (.not.bint%bump%geom%same_grid) allocate(vec_in_tmp(bint%bump%geom%nc0a,bint%bump%geom%nl0))
-allocate(vec_out(bint%nouta,bint%bump%geom%nl0))
+allocate(vec_in(bint%bump%geom(1)%nmga,bint%bump%geom(1)%nl0))
+if (.not.bint%bump%geom(1)%same_grid) allocate(vec_in_tmp(bint%bump%geom(1)%nc0a,bint%bump%geom(1)%nl0))
+allocate(vec_out(bint%nouta,bint%bump%geom(1)%nl0))
 
 ! Pack input data
 #{if rank_in == 1}# vec_in(:,1) = array_in #{endif}#
@@ -665,18 +666,18 @@ allocate(vec_out(bint%nouta,bint%bump%geom%nl0))
 #:if rank_in == 3
    do il=1,nl_in
       if (ltrans_in) then
-         vec_in(:,il) = reshape(transpose(array_in(:,:,il)),(/bint%bump%geom%nmga/))
+         vec_in(:,il) = reshape(transpose(array_in(:,:,il)),(/bint%bump%geom(1)%nmga/))
       else
-         vec_in(:,il) = reshape(array_in(:,:,il),(/bint%bump%geom%nmga/))
+         vec_in(:,il) = reshape(array_in(:,:,il),(/bint%bump%geom(1)%nmga/))
       end if
    end do
 #:endif
 
 ! Interpolate
-if (bint%bump%geom%same_grid) then
+if (bint%bump%geom(1)%same_grid) then
    call bint%apply_interp(vec_in,vec_out,lnn)
 else
-   call bint%bump%geom%copy_mga_to_c0a(bint%bump%mpl,vec_in,vec_in_tmp)
+   call bint%bump%geom(1)%copy_mga_to_c0a(bint%bump%mpl,vec_in,vec_in_tmp)
    call bint%apply_interp(vec_in_tmp,vec_out,lnn)
 end if
 
@@ -718,10 +719,10 @@ subroutine bint_apply_interp_${dtype}$(bint,array_in,array_out,nn)
 implicit none
 
 ! Passed variables
-class(bump_interpolator),intent(inout) :: bint                                  !< BUMP interpolator
-${ftype[dtype]}$,intent(in) :: array_in(bint%bump%geom%nc0a,bint%bump%geom%nl0) !< Input field
-${ftype[dtype]}$,intent(out) :: array_out(bint%nouta,bint%bump%geom%nl0)        !< Output field
-logical,intent(in),optional :: nn                                               !< Nearest neighbor interpolation
+class(bump_interpolator),intent(inout) :: bint                                        !< BUMP interpolator
+${ftype[dtype]}$,intent(in) :: array_in(bint%bump%geom(1)%nc0a,bint%bump%geom(1)%nl0) !< Input field
+${ftype[dtype]}$,intent(out) :: array_out(bint%nouta,bint%bump%geom(1)%nl0)           !< Output field
+logical,intent(in),optional :: nn                                                     !< Nearest neighbor interpolation
 
 ! Local variables
 #{if dtype == 'real'}# integer :: ilev #{endif}#
@@ -742,7 +743,7 @@ lnn = .false.
 if (present(nn)) lnn = nn
 
 ! Allocation
-allocate(array_in_ext(bint%nc0b,bint%bump%geom%nl0))
+allocate(array_in_ext(bint%nc0b,bint%bump%geom(1)%nl0))
 
 ! Halo extension
 call bint%com%ext(bint%bump%mpl,array_in,array_in_ext)
@@ -755,7 +756,7 @@ if (bint%nouta > 0) then
       else
          ! Horizontal interpolation
          !$omp parallel do schedule(static) private(ilev)
-         do ilev=1,bint%bump%geom%nl0
+         do ilev=1,bint%bump%geom(1)%nl0
             call bint%h%apply(bint%bump%mpl,array_in_ext(:,ilev),array_out(:,ilev))
          end do
          !$omp end parallel do
@@ -808,9 +809,9 @@ type(atlas_field) :: afield_in,afield_out
 @:probe_in()
 
 ! Allocation
-allocate(array_in_mga(bint%bump%geom%nmga,bint%bump%geom%nl0))
-if (.not.bint%bump%geom%same_grid) allocate(array_in_c0a(bint%bump%geom%nc0a,bint%bump%geom%nl0))
-allocate(array_out(bint%nouta,bint%bump%geom%nl0))
+allocate(array_in_mga(bint%bump%geom(1)%nmga,bint%bump%geom(1)%nl0))
+if (.not.bint%bump%geom(1)%same_grid) allocate(array_in_c0a(bint%bump%geom(1)%nc0a,bint%bump%geom(1)%nl0))
+allocate(array_out(bint%nouta,bint%bump%geom(1)%nl0))
 
 do ifield=1,fieldset_out%size()
    ! Copy field and field name
@@ -821,13 +822,13 @@ do ifield=1,fieldset_out%size()
    if (fieldset_in%has_field(fieldname)) then
       afield_in = fieldset_in%field(name=fieldname)
    else
-      afield_in = bint%afunctionspace_in%create_field(name=fieldname,kind=atlas_real(kind_real),levels=bint%bump%geom%nl0)
+      afield_in = bint%afunctionspace_in%create_field(name=fieldname,kind=atlas_real(kind_real),levels=bint%bump%geom(1)%nl0)
       call fieldset_in%add(afield_in)
    end if
 
    ! ATLAS field to BUMP array
    call field_to_array(afield_out,bint%bump%mpl,array_out)
-   if (bint%bump%geom%same_grid) then
+   if (bint%bump%geom(1)%same_grid) then
       ! Apply interpolation operator adjoint
       call bint%apply_interp_ad(array_out,array_in_mga)
    else
@@ -835,7 +836,7 @@ do ifield=1,fieldset_out%size()
       call bint%apply_interp_ad(array_out,array_in_c0a)
 
       ! Subset Sc0 to model grid
-      call bint%bump%geom%copy_c0a_to_mga(bint%bump%mpl,array_in_c0a,array_in_mga)
+      call bint%bump%geom(1)%copy_c0a_to_mga(bint%bump%mpl,array_in_c0a,array_in_mga)
    end if
 
    ! BUMP array to ATLAS field
@@ -848,7 +849,7 @@ end do
 
 ! Release memory
 deallocate(array_in_mga)
-if (.not.bint%bump%geom%same_grid) deallocate(array_in_c0a)
+if (.not.bint%bump%geom(1)%same_grid) deallocate(array_in_c0a)
 deallocate(array_out)
 
 ! Probe out
@@ -914,12 +915,12 @@ if (present(trans_in)) ltrans_in = trans_in
       nl_in = size(array_in,${rank_in}$)
    end if
 #:endif
-bint%bump%geom%nl0 = nl_in
+bint%bump%geom(1)%nl0 = nl_in
 
 ! Allocation
-allocate(vec_out(bint%nouta,bint%bump%geom%nl0))
-if (.not.bint%bump%geom%same_grid) allocate(vec_in_tmp(bint%bump%geom%nc0a,bint%bump%geom%nl0))
-allocate(vec_in(bint%bump%geom%nmga,bint%bump%geom%nl0))
+allocate(vec_out(bint%nouta,bint%bump%geom(1)%nl0))
+if (.not.bint%bump%geom(1)%same_grid) allocate(vec_in_tmp(bint%bump%geom(1)%nc0a,bint%bump%geom(1)%nl0))
+allocate(vec_in(bint%bump%geom(1)%nmga,bint%bump%geom(1)%nl0))
 
 ! Pack output data
 #{if rank_out == 1}# vec_out(:,1) = array_out #{endif}#
@@ -941,11 +942,11 @@ allocate(vec_in(bint%bump%geom%nmga,bint%bump%geom%nl0))
 #:endif
 
 ! Interpolate
-if (bint%bump%geom%same_grid) then
+if (bint%bump%geom(1)%same_grid) then
    call bint%apply_interp_ad(vec_out,vec_in)
 else
    call bint%apply_interp_ad(vec_out,vec_in_tmp)
-   call bint%bump%geom%copy_c0a_to_mga(bint%bump%mpl,vec_in_tmp,vec_in)
+   call bint%bump%geom(1)%copy_c0a_to_mga(bint%bump%mpl,vec_in_tmp,vec_in)
 end if
 
 ! Unpack input data
@@ -970,7 +971,7 @@ shp_in = shape(array_in)
 
 ! Release memory
 deallocate(vec_out)
-if (.not.bint%bump%geom%same_grid) deallocate(vec_in_tmp)
+if (.not.bint%bump%geom(1)%same_grid) deallocate(vec_in_tmp)
 deallocate(vec_in)
 
 ! Probe out
@@ -990,13 +991,13 @@ subroutine bint_apply_interp_ad(bint,array_out,array_in)
 implicit none
 
 ! Passed variables
-class(bump_interpolator),intent(inout) :: bint                                  !< BUMP interpolator
-real(kind_real),intent(in) :: array_out(bint%nouta,bint%bump%geom%nl0)          !< Field on input grid
-real(kind_real),intent(out) :: array_in(bint%bump%geom%nc0a,bint%bump%geom%nl0) !< Field on output grid
+class(bump_interpolator),intent(inout) :: bint                                        !< BUMP interpolator
+real(kind_real),intent(in) :: array_out(bint%nouta,bint%bump%geom(1)%nl0)             !< Field on input grid
+real(kind_real),intent(out) :: array_in(bint%bump%geom(1)%nc0a,bint%bump%geom(1)%nl0) !< Field on output grid
 
 ! Local variables
 integer :: ilev
-real(kind_real) :: array_in_ext(bint%nc0b,bint%bump%geom%nl0)
+real(kind_real) :: array_in_ext(bint%nc0b,bint%bump%geom(1)%nl0)
 
 ! Set name
 @:set_name(bint_apply_interp_ad)
@@ -1010,7 +1011,7 @@ real(kind_real) :: array_in_ext(bint%nc0b,bint%bump%geom%nl0)
 if (bint%nouta > 0) then
    ! Horizontal interpolation
    !$omp parallel do schedule(static) private(ilev)
-   do ilev=1,bint%bump%geom%nl0
+   do ilev=1,bint%bump%geom(1)%nl0
       call bint%h%apply_ad(bint%bump%mpl,array_out(:,ilev),array_in_ext(:,ilev))
    end do
    !$omp end parallel do

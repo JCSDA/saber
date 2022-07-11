@@ -1,13 +1,10 @@
-# (C) Copyright 2017-2020 UCAR.
+# (C) Copyright 2017-2022 UCAR.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set(_subdirs bump external gaugrid interpolation model util)
-if( oops_FOUND )
-    list(APPEND _subdirs oops)
-endif()
+set(_subdirs bump external gsi interpolation model oops spectralb util)
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
@@ -21,7 +18,9 @@ ecbuild_add_library( TARGET ${PROJECT_NAME}
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
                      LINKER_LANGUAGE CXX )
 
-target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran )
+if(OPENMP)
+  target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran )
+endif()
 target_link_libraries( ${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran )
 target_link_libraries( ${PROJECT_NAME} PUBLIC MPI::MPI_Fortran )
 target_link_libraries( ${PROJECT_NAME} PUBLIC ${LAPACK_LIBRARIES} )
@@ -30,6 +29,9 @@ target_link_libraries( ${PROJECT_NAME} PUBLIC fckit )
 target_link_libraries( ${PROJECT_NAME} PUBLIC atlas_f )
 if( oops_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
+endif()
+if( gsibclim_FOUND )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC gsibclim)
 endif()
 
 # Enable including of local header Fortran file templates

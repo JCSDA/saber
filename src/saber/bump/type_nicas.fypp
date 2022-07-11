@@ -8,10 +8,9 @@
 !----------------------------------------------------------------------
 module type_nicas
 
-use atlas_module, only: atlas_fieldset
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_status
 use tools_const, only: zero,one,two,ten,rad2deg,reqkm,pi
-use tools_func, only: fletcher32,sphere_dist,cholesky,fit_diag,zss_sum
+use tools_func, only: fletcher32,sphere_dist,zss_sum
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,check_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort
@@ -35,17 +34,18 @@ use type_samp, only: samp_type
 implicit none
 
 integer,parameter :: nfac_rnd = 9 !< Number of ensemble size factors for randomization
-integer,parameter :: nfac_opt = 4 !< Number of length-scale factors for optimization
-integer,parameter :: ntest = 50   !< Number of tests
+integer,parameter :: ntest = 50   !< Number of test vectors
 
 ! NICAS derived type
 type nicas_type
-   character(len=1024) :: prefix              !< Prefix
-   type(nicas_blk_type),allocatable :: blk(:) !< NICAS data blocks
-   logical :: allocated                       !< Allocation flag
-   integer,allocatable :: grpid(:)            !< group ID
-   integer,allocatable :: dirac_id(:)         !< dirac ID
-   integer,allocatable :: bens_id(:)          !< bens ID
+   character(len=1024) :: prefix                    !< Prefix
+   type(nicas_blk_type),allocatable :: blk(:)       !< NICAS data blocks
+   logical :: allocated                             !< Allocation flag
+   integer,allocatable :: blkid(:)                  !< block ID
+   integer,allocatable :: dirac_id(:)               !< dirac ID
+   integer,allocatable :: bens_id(:)                !< bens ID
+   real(kind_real),allocatable :: dirac(:,:,:)      !< Dirac field
+   real(kind_real),allocatable :: dirac_bens(:,:,:) !< Dirac field for localized ensemble application
 contains
    procedure :: alloc => nicas_alloc
    procedure :: partial_dealloc => nicas_partial_dealloc
@@ -69,15 +69,7 @@ contains
    procedure :: test_adjoint => nicas_test_adjoint
    procedure :: test_dirac => nicas_test_dirac
    procedure :: test_randomization => nicas_test_randomization
-   procedure :: test_optimality => nicas_test_optimality
 end type nicas_type
-
-interface test_consistency
-   module procedure nicas_test_consistency
-end interface
-interface define_test_vectors
-   module procedure nicas_define_test_vectors
-end interface
 
 private
 public :: nicas_type
@@ -110,17 +102,8 @@ do ib=1,bpar%nbe
    ! Set block index
    nicas%blk(ib)%ib = ib
 
-   ! Verbosity flag
+   ! Set verbosity
    nicas%blk(ib)%verbosity = .true.
-
-   ! Smoother flag
-   nicas%blk(ib)%smoother = .false.
-
-   ! Horizontal flag
-   nicas%blk(ib)%horizontal = .false.
-
-   ! Initialize norm computation flag
-   nicas%blk(ib)%compute_norm = .true.
 end do
 
 ! Update allocation flag
@@ -155,7 +138,7 @@ if (allocated(nicas%blk)) then
       call nicas%blk(ib)%partial_dealloc
    end do
 end if
-if (allocated(nicas%grpid)) deallocate(nicas%grpid)
+if (allocated(nicas%blkid)) deallocate(nicas%blkid)
 if (allocated(nicas%dirac_id)) deallocate(nicas%dirac_id)
 if (allocated(nicas%bens_id)) deallocate(nicas%bens_id)
 
@@ -189,6 +172,8 @@ if (allocated(nicas%blk)) then
    end do
    deallocate(nicas%blk)
 end if
+if (allocated(nicas%dirac)) deallocate(nicas%dirac)
+if (allocated(nicas%dirac_bens)) deallocate(nicas%dirac_bens)
 
 ! Update allocation flag
 nicas%allocated = .false.
@@ -214,7 +199,7 @@ type(geom_type),intent(in) :: geom       !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
-integer :: ib,iproc,iprocio,ncid,is,isa
+integer :: ib,icmp,iproc,iprocio,ncid,is,isa
 type(nicas_type) :: nicas_tmp
 
 ! Set name
@@ -248,12 +233,15 @@ do iproc=1,mpl%nproc
 
       if (iproc==iprocio) then
          do ib=1,bpar%nbe
-            if (bpar%B_block(ib)) then
+            if (bpar%nicas_block(ib)) then
                ! Copy global ID
                nicas%blk(ib)%ncid = ncid
 
                ! Read data
                call nicas%blk(ib)%read_local(mpl,nam,geom,bpar)
+            else
+               ! No component
+               nicas%blk(ib)%ncmp = 0
             end if
          end do
       else
@@ -261,13 +249,16 @@ do iproc=1,mpl%nproc
          call nicas_tmp%alloc(bpar)
 
          do ib=1,bpar%nbe
-            if (bpar%B_block(ib)) then
+            if (bpar%nicas_block(ib)) then
                ! Copy global ID
                nicas_tmp%blk(ib)%ncid = ncid
 
                ! Read data
                call nicas_tmp%blk(ib)%read_local(mpl,nam,geom,bpar)
-           end if
+            else
+               ! No component
+               nicas_tmp%blk(ib)%ncmp = 0
+            end if
          end do
 
           ! Send data to task iproc
@@ -293,37 +284,40 @@ call mpl%update_tag(4)
 ! Set other fields
 do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) then
-      ! Number of processors
-      nicas%blk(ib)%nproc = mpl%nproc
+      do icmp=1,nicas%blk(ib)%ncmp
+         ! Number of processors
+         nicas%blk(ib)%cmp(icmp)%nproc = mpl%nproc
 
-      ! Allocation
-      allocate(nicas%blk(ib)%myuniverse(mpl%nproc))
-      allocate(nicas%blk(ib)%proc_to_nsa(mpl%nproc))
-      allocate(nicas%blk(ib)%proc_to_s_offset(mpl%nproc))
-      allocate(nicas%blk(ib)%sa_to_s(nicas%blk(ib)%nsa))
+         ! Allocation
+         allocate(nicas%blk(ib)%cmp(icmp)%myuniverse(mpl%nproc))
+         allocate(nicas%blk(ib)%cmp(icmp)%proc_to_nsa(mpl%nproc))
+         allocate(nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(mpl%nproc))
+         allocate(nicas%blk(ib)%cmp(icmp)%sa_to_s(nicas%blk(ib)%cmp(icmp)%nsa))
 
-      ! Copy universe
-      nicas%blk(ib)%myuniverse = geom%myuniverse
+         ! Copy universe
+         nicas%blk(ib)%cmp(icmp)%myuniverse = geom%myuniverse
 
-      ! Communication
-      call mpl%f_comm%allgather(nicas%blk(ib)%nsa,nicas%blk(ib)%proc_to_nsa)
+         ! Communication
+         call mpl%f_comm%allgather(nicas%blk(ib)%cmp(icmp)%nsa,nicas%blk(ib)%cmp(icmp)%proc_to_nsa)
 
-      ! Subset Sc1 offset for halo A
-      nicas%blk(ib)%proc_to_s_offset(1) = 0
-      do iproc=2,mpl%nproc
-         nicas%blk(ib)%proc_to_s_offset(iproc) = nicas%blk(ib)%proc_to_s_offset(iproc-1)+nicas%blk(ib)%proc_to_nsa(iproc-1)
-      end do
+         ! Subset Sc1 offset for halo A
+         nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(1) = 0
+         do iproc=2,mpl%nproc
+            nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(iproc) = nicas%blk(ib)%cmp(icmp)%proc_to_s_offset(iproc-1) &
+ & +nicas%blk(ib)%cmp(icmp)%proc_to_nsa(iproc-1)
+         end do
 
-      ! Global subgrid size
-      nicas%blk(ib)%ns = sum(nicas%blk(ib)%proc_to_nsa)
+         ! Global subgrid size
+         nicas%blk(ib)%cmp(icmp)%ns = sum(nicas%blk(ib)%cmp(icmp)%proc_to_nsa)
 
-      ! Automatic conversions on subgrid
-      do is=1,nicas%blk(ib)%ns
-         iproc = nicas%blk(ib)%s_to_proc(is)
-         if (iproc==mpl%myproc) then
-            isa = nicas%blk(ib)%s_to_sa(is)
-            nicas%blk(ib)%sa_to_s(isa) = is
-         end if
+         ! Automatic conversions on subgrid
+         do is=1,nicas%blk(ib)%cmp(icmp)%ns
+            iproc = nicas%blk(ib)%cmp(icmp)%s_to_proc(is)
+            if (iproc==mpl%myproc) then
+               isa = nicas%blk(ib)%cmp(icmp)%s_to_sa(is)
+               nicas%blk(ib)%cmp(icmp)%sa_to_s(isa) = is
+            end if
+         end do
       end do
    end if
 end do
@@ -350,7 +344,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
 integer :: ncid,nc0a_id,nl0_id
-integer :: ib,iproc,iprocio
+integer :: ib,icmp,iproc,iprocio
 type(nicas_type) :: nicas_tmp
 
 ! Set name
@@ -385,11 +379,13 @@ do iproc=1,mpl%nproc
 
       if (iproc==iprocio) then
          do ib=1,bpar%nbe
-            if (bpar%B_block(ib)) then
+            if (bpar%nicas_block(ib)) then
                ! Copy global IDs
                nicas%blk(ib)%ncid = ncid
-               nicas%blk(ib)%nc0a_id = nc0a_id
-               nicas%blk(ib)%nl0_id = nl0_id
+               do icmp=1,nicas%blk(ib)%ncmp
+                  nicas%blk(ib)%cmp(icmp)%nc0a_id = nc0a_id
+                  nicas%blk(ib)%cmp(icmp)%nl0_id = nl0_id
+               end do
 
                ! Write data (definition mode)
                call nicas%blk(ib)%write_local_def(mpl,nam,bpar)
@@ -397,8 +393,8 @@ do iproc=1,mpl%nproc
          end do
 
          do ib=1,bpar%nbe
-            ! Write data (definition mode)
-            if (bpar%B_block(ib)) call nicas%blk(ib)%write_local_data(mpl,geom,bpar)
+            ! Write data (data mode)
+            if (bpar%nicas_block(ib)) call nicas%blk(ib)%write_local_data(mpl,geom)
          end do
       else
          ! Allocation
@@ -408,11 +404,13 @@ do iproc=1,mpl%nproc
          call nicas_tmp%receive(mpl,geom,bpar,iproc)
 
          do ib=1,bpar%nbe
-            if (bpar%B_block(ib)) then
+            if (bpar%nicas_block(ib)) then
                ! Copy global IDs
                nicas_tmp%blk(ib)%ncid = ncid
-               nicas_tmp%blk(ib)%nc0a_id = nc0a_id
-               nicas_tmp%blk(ib)%nl0_id = nl0_id
+               do icmp=1,nicas%blk(ib)%ncmp
+                  nicas_tmp%blk(ib)%cmp(icmp)%nc0a_id = nc0a_id
+                  nicas_tmp%blk(ib)%cmp(icmp)%nl0_id = nl0_id
+               end do
 
                ! Write data (definition mode)
                call nicas_tmp%blk(ib)%write_local_def(mpl,nam,bpar)
@@ -420,8 +418,8 @@ do iproc=1,mpl%nproc
          end do
 
          do ib=1,bpar%nbe
-            ! Write data (definition mode)
-            if (bpar%B_block(ib)) call nicas_tmp%blk(ib)%write_local_data(mpl,geom,bpar)
+            ! Write data (data mode)
+            if (bpar%nicas_block(ib)) call nicas_tmp%blk(ib)%write_local_data(mpl,geom)
          end do
 
          ! Release memory
@@ -476,12 +474,15 @@ call mpl%flush
 ncid = open_file(mpl,nam%fname_nicas)
 
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib)) then
+   if (bpar%nicas_block(ib)) then
       ! Copy global ID
       nicas%blk(ib)%ncid = ncid
 
       ! Read global data
       call nicas%blk(ib)%read_global(mpl,nam,geom,bpar)
+   else
+     ! No component
+      nicas%blk(ib)%ncmp = 0
    end if
 end do
 
@@ -508,7 +509,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variable
 integer :: ncid,nc0_id,nl0_id
-integer :: ib
+integer :: ib,icmp
 
 ! Set name
 @:set_name(nicas_write_global)
@@ -527,20 +528,22 @@ nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
 nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib)) then
+   if (bpar%nicas_block(ib)) then
       ! Copy global IDs
       nicas%blk(ib)%ncid = ncid
-      nicas%blk(ib)%nc0_id = nc0_id
-      nicas%blk(ib)%nl0_id = nl0_id
+      do icmp=1,nicas%blk(ib)%ncmp
+         nicas%blk(ib)%cmp(icmp)%nc0_id = nc0_id
+         nicas%blk(ib)%cmp(icmp)%nl0_id = nl0_id
+      end do
 
       ! Write global data (definition mode)
-      call nicas%blk(ib)%write_global_def(mpl,nam,geom,bpar)
+      if (bpar%nicas_block(ib)) call nicas%blk(ib)%write_global_def(mpl,nam,bpar)
    end if
 end do
 
 do ib=1,bpar%nbe
    ! Write global data (data mode)
-   if (bpar%B_block(ib)) call nicas%blk(ib)%write_global_data(mpl,nam,geom,bpar)
+   if (bpar%nicas_block(ib)) call nicas%blk(ib)%write_global_data(mpl,geom)
 end do
 
 ! Close file
@@ -633,8 +636,8 @@ nbufi = 0
 nbufr = 0
 nbufl = 0
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib)) then
-      call nicas%blk(ib)%buffer_size(mpl,geom,bpar,nnbufi,nnbufr,nnbufl)
+   if (bpar%nicas_block(ib)) then
+      call nicas%blk(ib)%buffer_size(mpl,geom,nnbufi,nnbufr,nnbufl)
       nbufi = nbufi+nnbufi
       nbufr = nbufr+nnbufr
       nbufl = nbufl+nnbufl
@@ -653,9 +656,9 @@ ibufl = 0
 
 ! Serialize
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib)) then
-      call nicas%blk(ib)%buffer_size(mpl,geom,bpar,nnbufi,nnbufr,nnbufl)
-      call nicas%blk(ib)%serialize(mpl,geom,bpar,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
+   if (bpar%nicas_block(ib)) then
+      call nicas%blk(ib)%buffer_size(mpl,geom,nnbufi,nnbufr,nnbufl)
+      call nicas%blk(ib)%serialize(mpl,geom,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
  & bufl(ibufl+1:ibufl+nnbufl))
       ibufi = ibufi+nnbufi
       ibufr = ibufr+nnbufr
@@ -733,11 +736,11 @@ ibufl = 0
 
 ! Deserialize
 do ib=1,bpar%nbe
-   if (bpar%B_block(ib)) then
+   if (bpar%nicas_block(ib)) then
       nnbufi = bufi(ibufi+1)
       nnbufr = bufi(ibufi+2)
       nnbufl = bufi(ibufi+3)
-      call nicas%blk(ib)%deserialize(mpl,geom,bpar,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
+      call nicas%blk(ib)%deserialize(mpl,geom,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
  & bufl(ibufl+1:ibufl+nnbufl))
       ibufi = ibufi+nnbufi
       ibufr = ibufr+nnbufr
@@ -810,26 +813,12 @@ call mpl%flush
 
 do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) then
-      write(mpl%info,'(a)') '-------------------------------------------------------------------'
-      call mpl%flush
       write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
       call mpl%flush
    end if
 
    ! NICAS parameters
    if (bpar%nicas_block(ib)) call nicas%blk(ib)%compute_parameters(mpl,rng,nam,geom)
-
-   if (.not.nam%load_nicas_global) then
-      ! Coefficient
-      if (bpar%B_block(ib)) then
-         ! Copy weights
-         nicas%blk(ib)%wgt = cmat%blk(ib)%wgt
-         if (bpar%nicas_block(ib)) then
-            allocate(nicas%blk(ib)%coef_ens(geom%nc0a,geom%nl0))
-            nicas%blk(ib)%coef_ens = cmat%blk(ib)%coef_ens
-         end if
-      end if
-   end if
 end do
 
 if (nam%write_nicas_local.or.nam%write_nicas_global.or.nam%write_nicas_grids) then
@@ -876,7 +865,7 @@ type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
 integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
-integer :: ib,iv
+integer :: ib,iv,icmp
 character(len=1024) :: grpname
 
 ! Set name
@@ -891,23 +880,41 @@ if (nam%check_adjoints) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Test NICAS adjoint'
    call mpl%flush
+   call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
-         write(mpl%info,'(a)') '-------------------------------------------------------------------'
-         call mpl%flush
          write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
          call mpl%flush
          call nicas%blk(ib)%test_adjoint(mpl,rng,geom)
+
+         do icmp=1,nicas%blk(ib)%ncmp
+            write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
+            call mpl%flush
+            call nicas%blk(ib)%cmp(icmp)%test_adjoint(mpl,rng,nam,geom,bpar)
+         end do
       end if
    end do
+end if
 
-   ! Test NICAS adjoint
+if (nam%check_normalization>0) then
+   ! Test normalization
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
-   write(mpl%info,'(a)') '--- Test NICAS adjoint'
+   write(mpl%info,'(a)') '--- Test NICAS normalization'
    call mpl%flush
-   call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
+
+   do ib=1,bpar%nbe
+      if (bpar%nicas_block(ib)) then
+         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
+         call mpl%flush
+         do icmp=1,nicas%blk(ib)%ncmp
+            write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
+            call mpl%flush
+            call nicas%blk(ib)%cmp(icmp)%test_normalization(mpl,rng,nam,geom)
+         end do
+      end if
+   end do
 end if
 
 if (nam%check_dirac) then
@@ -917,62 +924,53 @@ if (nam%check_dirac) then
    write(mpl%info,'(a)') '--- Apply NICAS blocks to diracs'
    call mpl%flush
 
-   ! Allocation
-   allocate(nicas%grpid(nam%nv))
-   allocate(nicas%dirac_id(nam%nv))
-   if (allocated(ens%mem).and.(trim(nam%method)/='cor')) allocate(nicas%bens_id(nam%nv))
+   if (nam%write_c0) then
+      ! Allocation
+      allocate(nicas%blkid(nam%nv))
+      allocate(nicas%dirac_id(nam%nv))
+      if (allocated(ens%mem).and.(trim(nam%method)/='cor')) allocate(nicas%bens_id(nam%nv))
 
-   ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
+      ! Create file
+      ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
 
-   ! Define dimensions
-   nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-   nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
-
-   ! Define variables
-   lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
-   lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
-   vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
-   do ib=1,bpar%nbe
-      if (bpar%nicas_block(ib)) then
-         ! Get group name
-         call nam%io_key_value(bpar%blockname(ib),grpname)
-
-         ! Define group
-         nicas%blk(ib)%grpid = define_grp(mpl,ncid,grpname)
-
-         ! Define variable
-         nicas%blk(ib)%dirac_id = define_var(mpl,nicas%blk(ib)%grpid,'nicas_blk','real',(/nc0_id,nl0_id/))
-      end if
-   end do
-   do iv=1,nam%nv
-      ! Get group name
-      call nam%io_key_value(nam%variables(iv),grpname)
-
-      ! Define group
-      nicas%grpid(iv) = define_grp(mpl,ncid,grpname)
+      ! Define dimensions
+      nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+      nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
       ! Define variables
-      nicas%dirac_id(iv) = define_var(mpl,nicas%grpid(iv),'nicas','real',(/nc0_id,nl0_id/))
-      if (allocated(ens%mem).and.(trim(nam%method)/='cor')) nicas%bens_id(iv) = define_var(mpl,nicas%grpid(iv),'Bens','real', &
+      lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
+      lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
+      vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
+      do ib=1,bpar%nbe
+         if (bpar%nicas_block(ib)) then
+            ! Get group name
+            call nam%io_key_value(bpar%blockname(ib),grpname)
+
+            ! Define group
+            nicas%blk(ib)%blkid = define_grp(mpl,ncid,grpname)
+
+            ! Define variable
+            nicas%blk(ib)%dirac_id = define_var(mpl,nicas%blk(ib)%blkid,'nicas_blk','real',(/nc0_id,nl0_id/))
+         end if
+      end do
+      do iv=1,nam%nv
+         ! Get group name
+         call nam%io_key_value(nam%variables(iv),grpname)
+
+         ! Define group
+         nicas%blkid(iv) = define_grp(mpl,ncid,grpname)
+
+         ! Define variables
+         nicas%dirac_id(iv) = define_var(mpl,nicas%blkid(iv),'nicas','real',(/nc0_id,nl0_id/))
+         if (allocated(ens%mem).and.(trim(nam%method)/='cor')) nicas%bens_id(iv) = define_var(mpl,nicas%blkid(iv),'Bens','real', &
  & (/nc0_id,nl0_id/))
-   end do
+      end do
 
-   ! Write variables
-   call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
-   call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
-   call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
-
-   ! Apply NICAS block to diracs
-   do ib=1,bpar%nbe
-      if (bpar%nicas_block(ib)) then
-         write(mpl%info,'(a)') '-------------------------------------------------------------------'
-         call mpl%flush
-         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
-         call mpl%flush
-         call nicas%blk(ib)%test_dirac(mpl,nam,geom)
-      end if
-   end do
+      ! Write variables
+      call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
+      call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
+      call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
+   end if
 
    ! Apply NICAS to diracs
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -981,8 +979,26 @@ if (nam%check_dirac) then
    call mpl%flush
    call nicas%test_dirac(mpl,nam,geom,bpar,ens)
 
-   ! Close file
-   call close_file(mpl,ncid)
+   ! Apply NICAS block to diracs
+   do ib=1,bpar%nbe
+      if (bpar%nicas_block(ib)) then
+         write(mpl%info,'(a)') '-------------------------------------------------------------------'
+         call mpl%flush
+         write(mpl%info,'(a)') '--- Block: '//trim(bpar%blockname(ib))
+         call mpl%flush
+         call nicas%blk(ib)%test_dirac(mpl,nam,geom,bpar)
+      end if
+   end do
+
+   if (nam%write_c0) then
+      ! Close file
+      call close_file(mpl,ncid)
+
+      ! Release memory
+      deallocate(nicas%blkid)
+      deallocate(nicas%dirac_id)
+      if (allocated(ens%mem).and.(trim(nam%method)/='cor')) deallocate(nicas%bens_id)
+   end if
 end if
 
 if (nam%check_randomization) then
@@ -992,24 +1008,6 @@ if (nam%check_randomization) then
    write(mpl%info,'(a)') '--- Test NICAS randomization'
    call mpl%flush
    call nicas%test_randomization(mpl,rng,nam,geom,bpar)
-end if
-
-if (nam%check_consistency) then
-   ! Test HDIAG-NICAS consistency
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Test HDIAG-NICAS consistency'
-   call mpl%flush
-   call test_consistency(mpl,rng,nam,geom,bpar)
-end if
-
-if (nam%check_optimality) then
-   ! Test HDIAG optimality
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Test HDIAG optimality'
-   call mpl%flush
-   call nicas%test_optimality(mpl,rng,nam,geom,bpar)
 end if
 
 ! Probe out
@@ -1033,7 +1031,7 @@ type(cv_type),intent(inout) :: cv          !< Control vector
 logical,intent(in),optional :: getsizeonly !< Flag to get the control variable size only (no allocation)
 
 ! Local variables
-integer :: ib
+integer :: ib,jb,icmp
 logical :: lgetsizeonly
 
 ! Set name
@@ -1054,23 +1052,26 @@ cv%n = 0
 cv%nbe = bpar%nbe
 
 do ib=1,bpar%nbe
-   if (mpl%msv%isnot(bpar%cv_block(ib))) then
-      ! Copy block size
-      cv%blk(ib)%n = nicas%blk(bpar%cv_block(ib))%nsa
+   ! CV block
+   jb = bpar%cv_block(ib)
 
-      ! Update total size
-      cv%n = cv%n+nicas%blk(bpar%cv_block(ib))%nsa
+   if (mpl%msv%isnot(jb)) then
+      ! Copy number of components
+      cv%blk(ib)%ncmp = nicas%blk(jb)%ncmp
 
-      if (.not.lgetsizeonly) then
-         ! Allocation
-         allocate(cv%blk(ib)%alpha(cv%blk(ib)%n))
+      ! Allocation
+      allocate(cv%blk(ib)%cmp(cv%blk(ib)%ncmp))
 
-         ! Initialization
-         cv%blk(ib)%alpha = mpl%msv%valr
-      end if
+      do icmp=1,cv%blk(ib)%ncmp
+         ! Allocation and initialization
+         if (.not.lgetsizeonly) call cv%blk(ib)%cmp(icmp)%alloc(mpl,nicas%blk(jb)%cmp(icmp)%nsa)
+
+         ! Update total size
+         cv%n = cv%n+nicas%blk(jb)%cmp(icmp)%nsa
+      end do
    else
       ! Set zero size
-      cv%blk(ib)%n = 0
+      cv%blk(ib)%ncmp = 0
    end if
 end do
 
@@ -1095,7 +1096,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(cv_type),intent(out) :: cv          !< Control vector
 
 ! Local variables
-integer :: ib,jb
+integer :: ib,jb,icmp
 integer,allocatable :: order_s(:)
 real(kind_real),allocatable :: alpha(:)
 
@@ -1114,32 +1115,36 @@ do ib=1,bpar%nbe
    jb = bpar%cv_block(ib)
 
    if (mpl%msv%isnot(jb)) then
-      ! Allocation
-      if (mpl%main) then
-         allocate(order_s(nicas%blk(jb)%ns))
-         allocate(alpha(nicas%blk(jb)%ns))
-      else
-         allocate(order_s(0))
-         allocate(alpha(0))
-      end if
+      do icmp=1,cv%blk(ib)%ncmp
+         ! Allocation
+         if (mpl%main) then
+            allocate(order_s(nicas%blk(jb)%cmp(icmp)%ns))
+            allocate(alpha(nicas%blk(jb)%cmp(icmp)%ns))
+         else
+            allocate(order_s(0))
+            allocate(alpha(0))
+         end if
 
-      ! Communication
-      call mpl%loc_to_glb(nicas%blk(jb)%nsa,nicas%blk(jb)%ns,nicas%blk(jb)%sa_to_s,nicas%blk(jb)%order_sa,order_s)
+         ! Communication
+         call mpl%loc_to_glb(nicas%blk(jb)%cmp(icmp)%nsa,nicas%blk(jb)%cmp(icmp)%ns,nicas%blk(jb)%cmp(icmp)%sa_to_s, &
+ & nicas%blk(jb)%cmp(icmp)%order_sa,order_s)
 
-      if (mpl%main) then
-         ! Random vector
-         call rng%rand_gau(alpha)
+         if (mpl%main) then
+            ! Random vector
+            call rng%rand_gau(alpha)
 
-         ! Reorder random vector
-         alpha(order_s) = alpha
-      end if
+            ! Reorder random vector
+            alpha(order_s) = alpha
+         end if
 
-      ! Copy local section
-      call mpl%glb_to_loc(nicas%blk(jb)%nsa,nicas%blk(jb)%ns,nicas%blk(jb)%sa_to_s,alpha,cv%blk(ib)%alpha)
+         ! Copy local section
+         call mpl%glb_to_loc(nicas%blk(jb)%cmp(icmp)%nsa,nicas%blk(jb)%cmp(icmp)%ns,nicas%blk(jb)%cmp(icmp)%sa_to_s,alpha, &
+ & cv%blk(ib)%cmp(icmp)%alpha)
 
-      ! Release memory
-      deallocate(order_s)
-      deallocate(alpha)
+         ! Release memory
+         deallocate(order_s)
+         deallocate(alpha)
+      end do
    end if
 end do
 
@@ -1165,7 +1170,7 @@ type(bpar_type),intent(in) :: bpar                              !< Block paramet
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 
 ! Local variable
-real(kind_real) :: prod,prod_tot
+real(kind_real) :: prod
 real(kind_real),allocatable :: fld_save(:,:,:)
 type(cv_type) :: cv
 
@@ -1190,8 +1195,8 @@ call nicas%apply_sqrt(mpl,nam,geom,bpar,cv,fld)
 if (nam%pos_def_test) then
    ! Positivity test
    prod = zss_sum(fld_save*fld)
-   call mpl%f_comm%allreduce(prod,prod_tot,fckit_mpi_sum())
-   if (prod_tot<zero) call mpl%abort('${subr}$','negative result in nicas_apply')
+   call mpl%f_comm%allreduce(prod,fckit_mpi_sum())
+   if (prod<zero) call mpl%abort('${subr}$','negative result in nicas_apply')
 
    ! Release memory
    deallocate(fld_save)
@@ -1220,9 +1225,8 @@ type(cv_type),intent(in) :: cv                                !< Control variabl
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 
 ! Local variable
-integer :: ib,iv,jv,ic0a,il0
-real(kind_real),allocatable :: fld_3d(:,:),fld_tmp(:,:,:)
-real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
+integer :: ib,iv,jv
+real(kind_real),allocatable :: fld_3d(:,:)
 
 ! Set name
 @:set_name(nicas_apply_sqrt)
@@ -1236,18 +1240,7 @@ case ('common')
    allocate(fld_3d(geom%nc0a,geom%nl0))
 
    ! Apply common NICAS
-   call nicas%blk(bpar%nbe)%apply_sqrt(mpl,geom,cv%blk(bpar%nbe)%alpha,fld_3d)
-
-   if (nam%nonunit_diag) then
-      ! Apply common ensemble coefficient square-root
-      !$omp parallel do schedule(static) private(il0,ic0a)
-      do il0=1,geom%nl0
-         do ic0a=1,geom%nc0a
-            if (geom%gmask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
-         end do
-      end do
-     !$omp end parallel do
-   end if
+   call nicas%blk(bpar%nbe)%apply_sqrt(mpl,geom,cv%blk(bpar%nbe),fld_3d)
 
    ! Build final vector
    do iv=1,nam%nv
@@ -1258,69 +1251,28 @@ case ('common')
    deallocate(fld_3d)
 case ('common_weighted')
    ! Allocation
-   allocate(fld_tmp(geom%nc0a,geom%nl0,nam%nv))
-   allocate(wgt(nam%nv,nam%nv))
-   allocate(wgt_diag(nam%nv))
-   allocate(wgt_u(nam%nv,nam%nv))
+   allocate(fld_3d(geom%nc0a,geom%nl0))
 
-   ! Copy weights
-   wgt = zero
-   wgt_diag = zero
-   do ib=1,bpar%nb
-      if (bpar%B_block(ib)) then
-         ! Variable indices
-         iv = bpar%b_to_v1(ib)
-         jv = bpar%b_to_v2(ib)
-         wgt(iv,jv) = nicas%blk(ib)%wgt
-         if (iv==jv) wgt_diag(iv) = wgt(iv,iv)
-      end if
-   end do
-
-   ! Normalize weights
-   do iv=1,nam%nv
-      do jv=1,nam%nv
-         wgt(iv,jv) = wgt(iv,jv)/sqrt(wgt_diag(iv)*wgt_diag(jv))
-      end do
-   end do
-
-   ! Cholesky decomposition
-   call cholesky(mpl,nam%nv,wgt,wgt_u)
+   ! Initialization
+   fld = zero
 
    do ib=1,bpar%nb
       if (mpl%msv%isnot(bpar%cv_block(ib))) then
          ! Variable index
-         iv = bpar%b_to_v1(ib)
+         jv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(bpar%nbe)%apply_sqrt(mpl,geom,cv%blk(ib)%alpha,fld_tmp(:,:,iv))
+         call nicas%blk(bpar%nbe)%apply_sqrt(mpl,geom,cv%blk(ib),fld_3d)
 
-         if (nam%nonunit_diag) then
-            ! Apply common ensemble coefficient square-root
-            !$omp parallel do schedule(static) private(il0,ic0a)
-            do il0=1,geom%nl0
-               do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld_tmp(ic0a,il0,iv) = fld_tmp(ic0a,il0,iv) &
- & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
-               end do
-            end do
-            !$omp end parallel do
-         end if
+         ! Apply weights
+         do iv=jv,nam%nv
+            fld(:,:,iv) = fld(:,:,iv)+nam%loc_wgt_sqrt(iv,jv)*fld_3d
+         end do
       end if
    end do
 
-   ! Apply weights
-   fld = zero
-   do iv=1,nam%nv
-      do jv=1,iv
-         fld(:,:,iv) = fld(:,:,iv)+wgt_u(iv,jv)*fld_tmp(:,:,jv)
-      end do
-   end do
-
    ! Release memory
-   deallocate(fld_tmp)
-   deallocate(wgt)
-   deallocate(wgt_diag)
-   deallocate(wgt_u)
+   deallocate(fld_3d)
 case ('specific_univariate')
    do ib=1,bpar%nb
       if (bpar%nicas_block(ib)) then
@@ -1328,18 +1280,7 @@ case ('specific_univariate')
          iv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply_sqrt(mpl,geom,cv%blk(ib)%alpha,fld(:,:,iv))
-
-         if (nam%nonunit_diag) then
-            ! Apply specific ensemble coefficient square-root
-            !$omp parallel do schedule(static) private(il0,ic0a)
-            do il0=1,geom%nl0
-               do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv) = fld(ic0a,il0,iv)*sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
-               end do
-            end do
-            !$omp end parallel do
-         end if
+         call nicas%blk(ib)%apply_sqrt(mpl,geom,cv%blk(ib),fld(:,:,iv))
       end if
    end do
 case ('specific_multivariate')
@@ -1349,18 +1290,7 @@ case ('specific_multivariate')
          iv = bpar%b_to_v1(ib)
 
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply_sqrt(mpl,geom,cv%blk(1)%alpha,fld(:,:,iv))
-
-         if (nam%nonunit_diag) then
-            ! Apply specific ensemble coefficient square-root
-            !$omp parallel do schedule(static) private(il0,ic0a)
-            do il0=1,geom%nl0
-               do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0,iv) = fld(ic0a,il0,iv)*sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
-               end do
-            end do
-            !$omp end parallel do
-         end if
+         call nicas%blk(ib)%apply_sqrt(mpl,geom,cv%blk(1),fld(:,:,iv))
       end if
    end do
 end select
@@ -1388,9 +1318,8 @@ real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
 type(cv_type),intent(out) :: cv                              !< Control variable
 
 ! Local variable
-integer :: ib,iv,jv,ic0a,il0
+integer :: ib,iv,jv,icmp
 real(kind_real),allocatable :: fld_3d(:,:),fld_tmp(:,:,:)
-real(kind_real),allocatable :: wgt(:,:),wgt_diag(:),wgt_u(:,:)
 type(cv_type) :: cv_tmp
 
 ! Set name
@@ -1413,114 +1342,50 @@ case ('common')
       fld_3d = fld_3d+fld(:,:,iv)
    end do
 
-   if (nam%nonunit_diag) then
-      ! Apply common ensemble coefficient square-root
-      !$omp parallel do schedule(static) private(il0,ic0a)
-      do il0=1,geom%nl0
-         do ic0a=1,geom%nc0a
-            if (geom%gmask_c0a(ic0a,il0)) fld_3d(ic0a,il0) = fld_3d(ic0a,il0)*sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
-         end do
-      end do
-      !$omp end parallel do
-   end if
-
    ! Apply common NICAS
-   call nicas%blk(bpar%nbe)%apply_sqrt_ad(mpl,geom,fld_3d,cv%blk(bpar%nbe)%alpha)
+   call nicas%blk(bpar%nbe)%apply_sqrt_ad(mpl,geom,fld_3d,cv%blk(bpar%nbe))
 
    ! Release memory
    deallocate(fld_3d)
 case ('common_weighted')
    ! Allocation
-   allocate(fld_tmp(geom%nc0a,geom%nl0,nam%nv))
-   allocate(wgt(nam%nv,nam%nv))
-   allocate(wgt_diag(nam%nv))
-   allocate(wgt_u(nam%nv,nam%nv))
-
-   ! Copy weights
-   wgt = zero
-   wgt_diag = zero
-   do ib=1,bpar%nb
-      if (bpar%B_block(ib)) then
-         ! Variable indices
-         iv = bpar%b_to_v1(ib)
-         jv = bpar%b_to_v2(ib)
-         wgt(iv,jv) = nicas%blk(ib)%wgt
-         if (iv==jv) wgt_diag(iv) = wgt(iv,iv)
-      end if
-   end do
-
-   ! Normalize weights
-   do iv=1,nam%nv
-      do jv=1,nam%nv
-         wgt(iv,jv) = wgt(iv,jv)/sqrt(wgt_diag(iv)*wgt_diag(jv))
-      end do
-   end do
-
-   ! Cholesky decomposition
-   call cholesky(mpl,nam%nv,wgt,wgt_u)
-
-   ! Apply weights
-   fld_tmp = zero
-   do iv=1,nam%nv
-      do jv=iv,nam%nv
-         fld_tmp(:,:,iv) = fld_tmp(:,:,iv)+wgt_u(jv,iv)*fld(:,:,jv)
-      end do
-   end do
+   allocate(fld_3d(geom%nc0a,geom%nl0))
 
    do ib=1,bpar%nb
       if (mpl%msv%isnot(bpar%cv_block(ib))) then
          ! Variable index
          iv = bpar%b_to_v1(ib)
 
-         if (nam%nonunit_diag) then
-            ! Apply common ensemble coefficient square-root
-            !$omp parallel do schedule(static) private(il0,ic0a)
-            do il0=1,geom%nl0
-               do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld_tmp(ic0a,il0,iv) = fld_tmp(ic0a,il0,iv) &
- & *sqrt(nicas%blk(bpar%nbe)%coef_ens(ic0a,il0))
-               end do
-            end do
-            !$omp end parallel do
-         end if
+         ! Initialization
+         fld_3d = zero
+         do jv=iv,nam%nv
+            fld_3d = fld_3d+nam%loc_wgt_sqrt(jv,iv)*fld(:,:,jv)
+         end do
 
          ! Apply specific NICAS
-         call nicas%blk(bpar%nbe)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv%blk(ib)%alpha)
+         call nicas%blk(bpar%nbe)%apply_sqrt_ad(mpl,geom,fld_3d,cv%blk(ib))
       end if
    end do
 
    ! Release memory
-   deallocate(fld_tmp)
-   deallocate(wgt)
-   deallocate(wgt_diag)
-   deallocate(wgt_u)
+   deallocate(fld_3d)
 case ('specific_univariate')
    ! Allocation
    allocate(fld_tmp(geom%nc0a,geom%nl0,nam%nv))
 
    ! Initialization
    fld_tmp = fld
-   cv%blk(1)%alpha = zero
+   do icmp=1,cv%blk(1)%ncmp
+      cv%blk(1)%cmp(icmp)%alpha = zero
+   end do
 
    do ib=1,bpar%nb
       if (bpar%nicas_block(ib)) then
          ! Indices
          iv = bpar%b_to_v1(ib)
 
-         if (nam%nonunit_diag) then
-            ! Apply common ensemble coefficient square-root
-            !$omp parallel do schedule(static) private(il0,ic0a)
-            do il0=1,geom%nl0
-               do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld_tmp(ic0a,il0,iv) = fld_tmp(ic0a,il0,iv) &
- & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
-               end do
-            end do
-            !$omp end parallel do
-         end if
-
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv%blk(ib)%alpha)
+         call nicas%blk(ib)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv%blk(ib))
       end if
    end do
 
@@ -1533,30 +1398,22 @@ case ('specific_multivariate')
 
    ! Initialization
    fld_tmp = fld
-   cv%blk(1)%alpha = zero
+   do icmp=1,cv%blk(1)%ncmp
+      cv%blk(1)%cmp(icmp)%alpha = zero
+   end do
 
    do ib=1,bpar%nb
       if (bpar%nicas_block(ib)) then
          ! Variable index
          iv = bpar%b_to_v1(ib)
 
-         if (nam%nonunit_diag) then
-            ! Apply common ensemble coefficient square-root
-            !$omp parallel do schedule(static) private(il0,ic0a)
-            do il0=1,geom%nl0
-               do ic0a=1,geom%nc0a
-                  if (geom%gmask_c0a(ic0a,il0)) fld_tmp(ic0a,il0,iv) = fld_tmp(ic0a,il0,iv) &
- & *sqrt(nicas%blk(ib)%coef_ens(ic0a,il0))
-               end do
-            end do
-            !$omp end parallel do
-         end if
-
          ! Apply specific NICAS
-         call nicas%blk(ib)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv_tmp%blk(1)%alpha)
+         call nicas%blk(ib)%apply_sqrt_ad(mpl,geom,fld_tmp(:,:,iv),cv_tmp%blk(1))
 
          ! Sum control variable
-         cv%blk(1)%alpha = cv%blk(1)%alpha+cv_tmp%blk(1)%alpha
+         do icmp=1,cv%blk(1)%ncmp
+            cv%blk(1)%cmp(icmp)%alpha = cv%blk(1)%cmp(icmp)%alpha+cv_tmp%blk(1)%cmp(icmp)%alpha
+         end do
       end if
    end do
 
@@ -1697,9 +1554,10 @@ type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
 real(kind_real) :: sum1,sum2
-real(kind_real) :: fld1_loc(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real) :: fld2_loc(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
+real(kind_real) :: fld1(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
+real(kind_real) :: fld2(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
+logical :: lbens
 
 ! Set name
 @:set_name(nicas_test_adjoint)
@@ -1707,8 +1565,11 @@ real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
 ! Probe in
 @:probe_in()
 
+! Initialization
+lbens = (allocated(ens%mem).and.(trim(nam%method)/='cor'))
+
 ! Allocation
-if (allocated(ens%mem)) then
+if (lbens) then
    allocate(fld1_bens(geom%nc0a,geom%nl0,nam%nv))
    allocate(fld2_bens(geom%nc0a,geom%nl0,nam%nv))
 end if
@@ -1718,12 +1579,11 @@ call rng%rand(zero,one,fld1_save)
 call rng%rand(zero,one,fld2_save)
 
 ! Adjoint test
-fld1_loc = fld1_save
-fld2_loc = fld2_save
-call nicas%apply(mpl,nam,geom,bpar,fld1_loc)
-call nicas%apply(mpl,nam,geom,bpar,fld2_loc)
-
-if (allocated(ens%mem)) then
+fld1 = fld1_save
+fld2 = fld2_save
+call nicas%apply(mpl,nam,geom,bpar,fld1)
+call nicas%apply(mpl,nam,geom,bpar,fld2)
+if (lbens) then
    fld1_bens = fld1_save
    fld2_bens = fld2_save
    call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld1_bens)
@@ -1731,21 +1591,21 @@ if (allocated(ens%mem)) then
 end if
 
 ! Print result
-call mpl%dot_prod(fld1_loc,fld2_save,sum1)
-call mpl%dot_prod(fld2_loc,fld1_save,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','NICAS adjoint test:                       ', &
+call mpl%dot_prod(fld1,fld2_save,sum1)
+call mpl%dot_prod(fld2,fld1_save,sum2)
+write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Full NICAS adjoint test:                        ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
-if (allocated(ens%mem)) then
+if (lbens) then
    call mpl%dot_prod(fld1_bens,fld2_save,sum1)
    call mpl%dot_prod(fld2_bens,fld1_save,sum2)
-   write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Ensemble B adjoint test:                  ', &
+   write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Ensemble B adjoint test:                        ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
    call mpl%flush
 end if
 
 ! Release memory
-if (allocated(ens%mem)) then
+if (lbens) then
    deallocate(fld1_bens)
    deallocate(fld2_bens)
 end if
@@ -1764,17 +1624,17 @@ subroutine nicas_test_dirac(nicas,mpl,nam,geom,bpar,ens)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas     !< NICAS data
-type(mpl_type),intent(inout) :: mpl       !< MPI data
-type(nam_type),intent(in) :: nam          !< Namelist
-type(geom_type),intent(in) :: geom        !< Geometry
-type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(ens_type),intent(in) :: ens          !< Ensemble
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
+type(bpar_type),intent(in) :: bpar       !< Block parameters
+type(ens_type),intent(in) :: ens         !< Ensemble
 
 ! Local variables
-integer :: idir,iv
-real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real),allocatable :: fld_bens(:,:,:)
+integer :: ic0a,idir,iv
+real(kind_real),allocatable :: fld_c0a(:,:,:),fld_ens_c0a(:,:,:)
+logical :: lbens
 
 ! Set name
 @:set_name(nicas_test_dirac)
@@ -1782,33 +1642,49 @@ real(kind_real),allocatable :: fld_bens(:,:,:)
 ! Probe in
 @:probe_in()
 
-! Generate dirac field
-fld = zero
-do idir=1,geom%ndir
-   if (geom%iprocdir(idir)==mpl%myproc) fld(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
-end do
+! Initialization
+lbens = (allocated(ens%mem).and.(trim(nam%method)/='cor'))
 
-! Allocation and initialization
-if (allocated(ens%mem).and.(trim(nam%method)/='cor')) then
-   allocate(fld_bens(geom%nc0a,geom%nl0,nam%nv))
-   fld_bens = fld
+! Allocation
+allocate(fld_c0a(geom%nc0a,geom%nl0,nam%nv))
+allocate(nicas%dirac(geom%nc0a,geom%nl0,nam%nv))
+if (lbens) then
+   allocate(fld_ens_c0a(geom%nc0a,geom%nl0,nam%nv))
+   allocate(nicas%dirac_bens(geom%nc0a,geom%nl0,nam%nv))
 end if
 
-! Apply NICAS to dirac
-call nicas%apply(mpl,nam,geom,bpar,fld)
+! Initialization
+nicas%dirac = zero
+if (lbens) nicas%dirac_bens = zero
 
-! Apply localized ensemble covariance
-if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_bens)
+do idir=1,geom%ndir
+   ! Generate dirac field
+   fld_c0a = zero
+   if (geom%iprocdir(idir)==mpl%myproc) fld_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
+   if (lbens) fld_ens_c0a = fld_c0a
 
-! Write variable
-do iv=1,nam%nv
-   call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%dirac_id(iv),fld(:,:,iv),geom%gmask_c0a)
-   if (allocated(ens%mem).and.(trim(nam%method)/='cor')) call geom%io%fld_write(mpl,nicas%grpid(iv),nicas%bens_id(iv), &
- & fld_bens(:,:,iv),geom%gmask_c0a)
+   ! Apply NICAS to dirac
+   call nicas%apply(mpl,nam,geom,bpar,fld_c0a)
+
+   ! Apply localized ensemble covariance
+   if (lbens) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_ens_c0a)
+
+   ! Copy points
+   do ic0a=1,geom%nc0a
+      if (idir==geom%dirac_index(ic0a)) then
+         nicas%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
+         if (lbens) nicas%dirac_bens(ic0a,:,:) = fld_ens_c0a(ic0a,:,:)
+      end if
+   end do
 end do
 
-! Release memory
-if (allocated(ens%mem).and.(trim(nam%method)/='cor')) deallocate(fld_bens)
+if (nam%write_c0) then
+   ! Write fields
+   do iv=1,nam%nv
+      call geom%io%fld_write(mpl,nicas%blkid(iv),nicas%dirac_id(iv),nicas%dirac(:,:,iv),geom%gmask_c0a)
+      if (lbens) call geom%io%fld_write(mpl,nicas%blkid(iv),nicas%bens_id(iv),nicas%dirac_bens(:,:,iv),geom%gmask_c0a)
+   end do
+end if
 
 ! Probe out
 @:probe_out()
@@ -1851,7 +1727,7 @@ allocate(fld_save(geom%nc0a,geom%nl0,nam%nv,ntest))
 ! Define test vectors
 write(mpl%info,'(a4,a)') '','Define test vectors'
 call mpl%flush
-call define_test_vectors(mpl,rng,nam,geom,ntest,fld_save)
+call geom%define_test_vectors(mpl,rng,nam,ntest,fld_save)
 if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
@@ -1948,415 +1824,5 @@ deallocate(fld_save)
 @:probe_out()
 
 end subroutine nicas_test_randomization
-
-!----------------------------------------------------------------------
-! Subroutine: nicas_test_consistency
-!> Test HDIAG-NICAS consistency with a randomization method
-!----------------------------------------------------------------------
-subroutine nicas_test_consistency(mpl,rng,nam,geom,bpar)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl   !< MPI data
-type(rng_type),intent(inout) :: rng   !< Random number generator
-type(nam_type),intent(inout) :: nam   !< Namelist variables
-type(geom_type),intent(inout) :: geom !< Geometry
-type(bpar_type),intent(in) :: bpar    !< Block parameters
-
-! Local variables
-integer,parameter :: nrad = 5
-integer :: irad,ib,il0,iv
-real(kind_real) :: rh(geom%nl0,0:nam%nv),rv(geom%nl0,0:nam%nv)
-real(kind_real) :: rad(nrad),rh_diag(geom%nl0,bpar%nbe,nrad),rv_diag(geom%nl0,bpar%nbe,nrad)
-logical :: new_mom,new_hdiag,write_nicas_local,write_nicas_global
-character(len=1024) :: prefix
-type(cmat_type) :: cmat
-type(ens_type) :: ens
-type(hdiag_type) :: hdiag
-type(mom_type) :: mom
-type(nicas_type) :: nicas_test
-type(samp_type) :: samp
-
-! Set name
-@:set_name(nicas_test_consistency)
-
-! Probe in
-@:probe_in()
-
-! Initialization
-cmat%allocated = .false.
-rh_diag = mpl%msv%valr
-rv_diag = mpl%msv%valr
-
-! Save namelist parameters
-prefix = nam%prefix
-new_mom = nam%new_mom
-new_hdiag = nam%new_hdiag
-write_nicas_local = nam%write_nicas_local
-write_nicas_global = nam%write_nicas_global
-rh = nam%rh(1:geom%nl0,0:nam%nv)
-rv = nam%rv(1:geom%nl0,0:nam%nv)
-
-! Set namelist variables
-nam%new_mom = .true.
-nam%new_hdiag = .true.
-nam%write_nicas_local = .false.
-nam%write_nicas_global = .false.
-
-! Setup sampling
-call samp%setup(mpl,rng,nam,geom)
-if (nam%default_seed) call rng%reseed(mpl)
-
-do irad=1,nrad
-   ! Set radius factor
-   rad(irad) = real(irad,kind_real)/real(nrad,kind_real)
-
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a,f4.2)') '--- Radii factor: ',rad(irad)
-   call mpl%flush
-
-   ! Set namelist variables
-   write(nam%prefix,'(a,a,i2.2)') trim(prefix),'_',int(rad(irad)*ten)
-   nam%rh(1:geom%nl0,0:nam%nv) = rh*rad(irad)
-   nam%rv(1:geom%nl0,0:nam%nv) = rv*rad(irad)
-
-   ! Copy namelist support radii into C matrix
-   call cmat%from_nam(mpl,nam,geom,bpar)
-
-   ! Setup C matrix sampling
-   call cmat%setup_sampling(mpl,nam,geom,bpar)
-
-   ! Run NICAS driver
-   call nicas_test%run_nicas(mpl,rng,nam,geom,bpar,cmat)
-   if (nam%default_seed) call rng%reseed(mpl)
-
-   ! Randomize ensemble
-   call nicas_test%gen_ens_pert(mpl,rng,nam,geom,bpar,nam%ens1_ne,ens)
-   if (nam%default_seed) call rng%reseed(mpl)
-
-   ! Compute moments
-   call mom%compute(mpl,nam,geom,bpar,samp,ens,'mom')
-
-   ! Run HDIAG driver
-   call hdiag%run_hdiag(mpl,nam,geom,bpar,samp,mom)
-
-   ! Save result
-   do ib=1,bpar%nbe
-      if (bpar%nicas_block(ib)) then
-         iv = bpar%b_to_v1(ib)
-         do il0=1,geom%nl0
-            if ((hdiag%cor_1%blk(0,ib)%fit_rh(il0)>zero).and.(nam%rh(il0,iv)>zero)) &
- & rh_diag(il0,ib,irad) = hdiag%cor_1%blk(0,ib)%fit_rh(il0)/nam%rh(il0,iv)
-            if ((hdiag%cor_1%blk(0,ib)%fit_rv(il0)>zero).and.(nam%rv(il0,iv)>zero)) &
- & rv_diag(il0,ib,irad) = hdiag%cor_1%blk(0,ib)%fit_rv(il0)/nam%rv(il0,iv)
-         end do
-      end if
-   end do
-
-   ! Release memory
-   call cmat%dealloc
-   call nicas_test%dealloc
-   call ens%dealloc
-   call mom%dealloc
-   call hdiag%dealloc
-end do
-
-! Print factors
-do irad=1,nrad
-   write(mpl%info,'(a7,a,f4.2,a)') '','Radii factor: ',rad(irad),':'
-   call mpl%flush
-   do ib=1,bpar%nbe
-      if (bpar%nicas_block(ib)) then
-         write(mpl%info,'(a10,a)') '','Block: '//trim(bpar%blockname(ib))
-         do il0=1,geom%nl0
-            if (mpl%msv%isnot(rh_diag(il0,ib,irad))) then
-               write(mpl%info,'(a13,a,i3,a,f5.3)') '','Level ',nam%levs(il0),' ~> ',rh_diag(il0,ib,irad)
-               call mpl%flush(.false.)
-            end if
-            if (mpl%msv%isnot(rv_diag(il0,ib,irad))) then
-               write(mpl%info,'(a,f5.3)') ' / ',rv_diag(il0,ib,irad)
-               call mpl%flush
-            else
-               write(mpl%info,'(a)') ''
-               call mpl%flush
-            end if
-         end do
-      end if
-   end do
-end do
-
-! Release memory
-call samp%dealloc
-
-! Reset namelist parameters
-nam%prefix = prefix
-nam%new_mom = new_mom
-nam%new_hdiag = new_hdiag
-nam%write_nicas_local = write_nicas_local
-nam%write_nicas_global = write_nicas_global
-nam%rh(1:geom%nl0,0:nam%nv) = rh
-nam%rv(1:geom%nl0,0:nam%nv) = rv
-
-! Probe out
-@:probe_out()
-
-end subroutine nicas_test_consistency
-
-!----------------------------------------------------------------------
-! Subroutine: nicas_test_optimality
-!> Test HDIAG localization optimality with a randomization method
-!----------------------------------------------------------------------
-subroutine nicas_test_optimality(nicas,mpl,rng,nam,geom,bpar)
-
-implicit none
-
-! Passed variables
-class(nicas_type),intent(inout) :: nicas !< NICAS data
-type(mpl_type),intent(inout) :: mpl      !< MPI data
-type(rng_type),intent(inout) :: rng      !< Random number generator
-type(nam_type),intent(inout) :: nam      !< Namelist variables
-type(geom_type),intent(in) :: geom       !< Geometry
-type(bpar_type),intent(in) :: bpar       !< Block parameters
-
-! Local variables
-integer :: ib,ifac,itest,il0,iv
-real(kind_real) :: fac(-nfac_opt:nfac_opt),mse(ntest,-nfac_opt:nfac_opt),mse_sum,mse_max,rh_sum,rh_tot,rv_sum,rv_tot
-real(kind_real) :: fld_ref(geom%nc0a,geom%nl0,nam%nv,ntest),fld_save(geom%nc0a,geom%nl0,nam%nv,ntest)
-real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv)
-logical :: new_mom,new_hdiag
-character(len=1024) :: method
-type(cmat_type) :: cmat
-type(diag_type) :: loc_opt
-type(hdiag_type) :: hdiag
-type(ens_type) :: ens_loc,ens_test
-type(mom_type) :: mom
-type(nicas_type) :: nicas_test
-type(samp_type) :: samp
-
-! Set name
-@:set_name(nicas_test_optimality)
-
-! Probe in
-@:probe_in()
-
-! Define test vectors
-write(mpl%info,'(a4,a)') '','Define test vectors'
-call mpl%flush
-call define_test_vectors(mpl,rng,nam,geom,ntest,fld_save)
-if (nam%default_seed) call rng%reseed(mpl)
-
-! Apply NICAS to test vectors
-write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors'
-call mpl%flush
-fld_ref = fld_save
-do itest=1,ntest
-   call nicas%apply(mpl,nam,geom,bpar,fld_ref(:,:,:,itest))
-end do
-
-! Randomize ensemble to compute localization
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Randomize ensemble to compute localization'
-call mpl%flush
-call nicas%gen_ens_pert(mpl,rng,nam,geom,bpar,nam%ens1_ne,ens_loc)
-if (nam%default_seed) call rng%reseed(mpl)
-
-! Save namelist variables
-method = nam%method
-new_mom = nam%new_mom
-new_hdiag = nam%new_hdiag
-
-! Set namelist variables
-nam%method = 'loc'
-nam%new_mom = .true.
-nam%new_hdiag = .true.
-
-! Setup sampling
-call samp%setup(mpl,rng,nam,geom,ens_loc)
-if (nam%default_seed) call rng%reseed(mpl)
-
-! Compute moments
-call mom%compute(mpl,nam,geom,bpar,samp,ens_loc,'mom')
-
-! Run HDIAG driver
-call hdiag%run_hdiag(mpl,nam,geom,bpar,samp,mom)
-
-! Randomize ensemble to test localization
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Randomize ensemble to test localization'
-call mpl%flush
-call nicas%gen_ens_pert(mpl,rng,nam,geom,bpar,nam%ne,ens_test)
-if (nam%default_seed) call rng%reseed(mpl)
-
-! Allocation
-call loc_opt%alloc(mpl,nam,geom,bpar,samp,'loc_opt')
-
-! Initialization
-mse_max = huge_real
-
-do ifac=-nfac_opt,nfac_opt
-   ! Copy HDIAG into C matrix
-   call cmat%from_hdiag(mpl,nam,geom,bpar,samp,hdiag)
-
-   ! Setup C matrix sampling
-   call cmat%setup_sampling(mpl,nam,geom,bpar)
-
-   ! Multiplication factor
-   fac(ifac) = one+real(ifac,kind_real)/real(nfac_opt+1,kind_real)
-
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a,f4.2,a)') '--- Generate NICAS with a multiplicative factor ',fac(ifac),' to length-scales'
-   call mpl%flush
-
-   ! Allocation
-   call nicas_test%alloc(bpar)
-
-   do ib=1,bpar%nbe
-      if (bpar%nicas_block(ib)) then
-         ! Length-scales multiplication
-         cmat%blk(ib)%rhs = fac(ifac)*cmat%blk(ib)%rhs
-         cmat%blk(ib)%rvs = fac(ifac)*cmat%blk(ib)%rvs
-         cmat%blk(ib)%rh = fac(ifac)*cmat%blk(ib)%rh
-         cmat%blk(ib)%rv = fac(ifac)*cmat%blk(ib)%rv
-
-         ! Copy length-scales
-         call nicas_test%blk(ib)%copy_cmat(mpl,nam,geom,bpar,cmat%blk(ib))
-
-         ! Compute NICAS parameters
-         call nicas_test%blk(ib)%compute_parameters(mpl,rng,nam,geom)
-      end if
-
-      if (bpar%B_block(ib)) then
-         ! Copy weights
-         nicas_test%blk(ib)%wgt = cmat%blk(ib)%wgt
-         if (bpar%nicas_block(ib)) then
-            allocate(nicas_test%blk(ib)%coef_ens(geom%nc0a,geom%nl0))
-            nicas_test%blk(ib)%coef_ens = cmat%blk(ib)%coef_ens
-         end if
-      end if
-   end do
-
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Apply ensemble B to test vectors'
-   call mpl%flush
-
-   do itest=1,ntest
-      ! Test NICAS
-      fld = fld_save(:,:,:,itest)
-      call nicas_test%apply_bens(mpl,nam,geom,bpar,ens_test,fld)
-
-      ! RMSE
-      mse_sum = zss_sum((fld-fld_ref(:,:,:,itest))**2,mask=mpl%msv%isnot(fld_ref(:,:,:,itest)))
-      call mpl%f_comm%allreduce(mse_sum,mse(itest,ifac),fckit_mpi_sum())
-   end do
-
-   ! Test score
-   if (sum(mse(:,ifac))<mse_max) then
-      mse_max = sum(mse(:,ifac))
-      do ib=1,bpar%nbe
-         if (bpar%nicas_block(ib)) then
-            iv = bpar%b_to_v1(ib)
-            do il0=1,geom%nl0
-               rh_sum = zss_sum(cmat%blk(ib)%rh(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rh(:,il0)))
-               call mpl%f_comm%allreduce(rh_sum,rh_tot,fckit_mpi_sum())
-               loc_opt%blk(0,ib)%fit_rh = rh_tot/real(geom%nc0_gmask(il0),kind_real)
-               if ((nam%nl>1).and.(nam%rv(il0,iv)>zero)) then
-                  rv_sum = zss_sum(cmat%blk(ib)%rv(:,il0),mask=mpl%msv%isnot(cmat%blk(ib)%rv(:,il0)))
-                  call mpl%f_comm%allreduce(rv_sum,rv_tot,fckit_mpi_sum())
-                  loc_opt%blk(0,ib)%fit_rv = rv_tot/real(geom%nc0_gmask(il0),kind_real)
-               end if
-            end do
-         end if
-      end do
-   end if
-
-   ! Print scores
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a,f4.2,a,e15.8)') '--- Optimality results for a factor ',fac(ifac),', MSE: ', &
- & sum(mse(:,ifac))/real(ntest,kind_real)
-   call mpl%flush
-
-   ! Release memory
-   call cmat%dealloc
-   call nicas_test%dealloc
-end do
-
-! Print scores summary
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Optimality results summary'
-call mpl%flush
-do ifac=-nfac_opt,nfac_opt
-   write(mpl%info,'(a7,a,f4.2,a,e15.8)') '','Factor ',fac(ifac),', MSE: ',sum(mse(:,ifac))/real(ntest,kind_real)
-   call mpl%flush
-end do
-
-! Reset namelist variables
-nam%method = method
-nam%new_mom = new_mom
-nam%new_hdiag = new_hdiag
-
-! Release memory
-call ens_loc%dealloc
-call ens_test%dealloc
-call samp%dealloc
-call mom%dealloc
-call hdiag%dealloc
-
-! Probe out
-@:probe_out()
-
-end subroutine nicas_test_optimality
-
-!----------------------------------------------------------------------
-! Subroutine: nicas_define_test_vectors
-!> Define test vectors
-!----------------------------------------------------------------------
-subroutine nicas_define_test_vectors(mpl,rng,nam,geom,ntest,fld)
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl                                 !< MPI data
-type(rng_type),intent(inout) :: rng                                 !< Random number generator
-type(nam_type),intent(in) :: nam                                    !< Namelist
-type(geom_type),intent(in) :: geom                                  !< Geometry
-integer,intent(in) :: ntest                                         !< Number of vectors
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,ntest) !< Field
-
-! Local variables
-integer :: itest
-integer :: il0dir,iprocdir,ic0adir
-
-! Set name
-@:set_name(nicas_define_test_vectors)
-
-! Probe in
-@:probe_in()
-
-! Resynchronize random number generator
-call rng%resync(mpl)
-
-do itest=1,ntest
-   ! Define random dirac location
-   call rng%rand(1,geom%nl0,il0dir)
-   call geom%rand_point(mpl,rng,il0dir,iprocdir,ic0adir)
-
-   ! Define test vector
-   fld(:,:,:,itest) = zero
-   if (iprocdir==mpl%myproc) fld(ic0adir,il0dir,1,itest) = one
-end do
-
-! Desynchronize random number generator
-call rng%desync(mpl)
-
-! Probe out
-@:probe_out()
-
-end subroutine nicas_define_test_vectors
 
 end module type_nicas

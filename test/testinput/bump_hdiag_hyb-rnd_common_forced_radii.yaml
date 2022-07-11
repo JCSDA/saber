@@ -2,15 +2,16 @@
 datadir: "testdata"
 prefix: "bump_hdiag_hyb-rnd_common_forced_radii/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "hyb-rnd"
 strategy: "common"
-new_hdiag: 1
-write_hdiag: 1
+new_hdiag: true
+write_hdiag: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
@@ -29,11 +30,12 @@ nl0r: 2
 
 # diag_param
 ne: 50
+ne_lr: 10
 
 # fit_param
 
 # nicas_param
-forced_radii: 1
+forced_radii: true
 rh:
   u: [4000.0e3]
   q: [4000.0e3]

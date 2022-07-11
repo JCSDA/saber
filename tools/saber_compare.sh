@@ -53,7 +53,7 @@ if test "${test%%_*}" = "bump" ; then
       fi
 
       for file in `ls testdata/${test}/test_${mpi}-${omp}_*.nc 2>/dev/null` ; do
-         if test ! -e ${file}; then
+         if test ! -h ${file}; then
             # Get suffix
             tmp=${file#testdata/${test}/test_${mpi}-${omp}_}
             suffix=${tmp%.nc}
@@ -173,15 +173,6 @@ if test "${test%%_*}" = "bump" ; then
          fi
       done
    fi
-fi
-
-# QG tests
-if test "${test%%_*}" = "qg" ; then
-   # Grep
-   grep 'Test     : ' testoutput/${test}/test.log.out > testdata/${test}/test.log.out
-
-   # Diff
-   diff -s testref/${test}/test.log.out testdata/${test}/test.log.out
 fi
 
 # Exit

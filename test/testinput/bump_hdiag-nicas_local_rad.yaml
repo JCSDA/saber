@@ -2,19 +2,21 @@
 datadir: "testdata"
 prefix: "bump_hdiag-nicas_local_rad/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "loc"
 strategy: "common"
-new_hdiag: 1
-write_hdiag: 1
-new_nicas: 1
-write_nicas_global: 1
-check_adjoints: 1
-check_dirac: 1
+new_hdiag: true
+write_hdiag: true
+new_nicas: true
+write_nicas_global: true
+check_adjoints: true
+check_normalization: 10
+check_dirac: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
@@ -33,7 +35,7 @@ nl0r: 2
 
 # diag_param
 ne: 50
-local_diag: 1
+local_diag: true
 local_rad: 2000.0e3
 
 # fit_param
@@ -47,7 +49,6 @@ londir: [-85.0]
 latdir: [65.0]
 levdir: [1]
 ivdir: [1]
-itsdir: [1]
 
 # output_param
 

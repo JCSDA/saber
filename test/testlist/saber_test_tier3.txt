@@ -1,3 +1,0 @@
-bump_hdiag_optimality
-bump_nicas_consistency
-bump_nicas_randomization

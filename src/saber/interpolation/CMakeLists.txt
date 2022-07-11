@@ -5,6 +5,8 @@
 
 list(APPEND interpolation_src_files_list
 
+interpolatorbump_f.h
+interpolatorbump_interface.F90
 interpolatorbump_mod.fypp
 
 )
@@ -14,8 +16,6 @@ if( oops_FOUND )
 
     InterpolatorBump.h
     InterpolatorBump.cc
-    interpolatorbump_f.h
-    interpolatorbump_interface.F90
 
     )
 endif()

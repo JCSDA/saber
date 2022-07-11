@@ -3,19 +3,21 @@ datadir: "testdata"
 prefix: "bump_hdiag-nicas_universe_rad/test__MPI_-_OMP_"
 model: "qg"
 universe_rad: 2500.0e3
+write_c0: true
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_hdiag: 1
-write_hdiag: 1
-new_nicas: 1
-write_nicas_global: 1
-check_adjoints: 1
-check_dirac: 1
+new_hdiag: true
+write_hdiag: true
+new_nicas: true
+write_nicas_global: true
+check_adjoints: true
+check_normalization: 10
+check_dirac: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
@@ -45,7 +47,6 @@ londir: [-85.0]
 latdir: [65.0]
 levdir: [1]
 ivdir: [1]
-itsdir: [1]
 
 # output_param
 

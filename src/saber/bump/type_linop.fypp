@@ -15,7 +15,7 @@ use tools_func, only: sphere_dist,zss_maxval,zss_minval
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
-use tools_repro, only: inf,eq,infeq,sup
+use tools_repro, only: rth,inf,eq,infeq,sup
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -60,7 +60,6 @@ contains
    procedure :: deserialize => linop_deserialize
    procedure :: apply => linop_apply
    procedure :: apply_ad => linop_apply_ad
-   procedure :: apply_sym => linop_apply_sym
    procedure :: add_op => linop_add_op
    procedure :: gather => linop_gather
    procedure :: linop_interp
@@ -219,9 +218,9 @@ linop%grpid = inquire_grp(mpl,ncid,linop%prefix)
 
 ! Get dimensions
 linop%n_s = inquire_dim_size(mpl,linop%grpid,'n_s',0)
-call get_att(mpl,linop%grpid,'n_src',linop%n_src)
-call get_att(mpl,linop%grpid,'n_dst',linop%n_dst)
-call get_att(mpl,linop%grpid,'nvec',nvec)
+call get_att(mpl,linop%grpid,0,'n_src',linop%n_src)
+call get_att(mpl,linop%grpid,0,'n_dst',linop%n_dst)
+call get_att(mpl,linop%grpid,0,'nvec',nvec)
 
 ! Allocation
 call linop%alloc(nvec)
@@ -277,9 +276,9 @@ integer :: n_s_id,nvec_id
 linop%grpid = define_grp(mpl,ncid,linop%prefix)
 
 ! Define dimensions
-call put_att(mpl,linop%grpid,'n_src',linop%n_src)
-call put_att(mpl,linop%grpid,'n_dst',linop%n_dst)
-call put_att(mpl,linop%grpid,'nvec',linop%nvec)
+call put_att(mpl,linop%grpid,0,'n_src',linop%n_src)
+call put_att(mpl,linop%grpid,0,'n_dst',linop%n_dst)
+call put_att(mpl,linop%grpid,0,'nvec',linop%nvec)
 
 if (linop%n_s>0) then
    ! Define dimensions
@@ -699,101 +698,20 @@ end if
 end subroutine linop_apply_ad
 
 !----------------------------------------------------------------------
-! Subroutine: linop_apply_sym
-!> Apply linear operator, symmetric
-!----------------------------------------------------------------------
-subroutine linop_apply_sym(linop,mpl,fld,ivec)
-
-implicit none
-
-! Passed variables
-class(linop_type),intent(in) :: linop             !< Linear operator
-type(mpl_type),intent(inout) :: mpl               !< MPI data
-real(kind_real),intent(inout) :: fld(linop%n_src) !< Source/destination vector
-integer,intent(in),optional :: ivec               !< Index of the vector of linear operators with similar row and col
-
-! Local variables
-integer :: i_s,ithread
-real(kind_real) :: fld_arr(linop%n_dst,mpl%nthread)
-
-! Set name
-@:set_name(linop_apply_sym)
-
-! Probe in
-@:probe_in()
-
-if (check_data) then
-   ! Check linear operation
-   if (zss_minval(linop%col)<1) call mpl%abort('${subr}$','col<1 for symmetric linear operation '//trim(linop%prefix))
-   if (zss_maxval(linop%col)>linop%n_src) call mpl%abort('${subr}$','col>n_src for symmetric linear operation '//trim(linop%prefix))
-   if (zss_minval(linop%row)<1) call mpl%abort('${subr}$','row<1 for symmetric linear operation '//trim(linop%prefix))
-   if (zss_maxval(linop%row)>linop%n_src) call mpl%abort('${subr}$','row>n_dst for symmetric linear operation '//trim(linop%prefix))
-   if (linop%n_s>0) then
-      if (present(ivec)) then
-         if (any(ieee_is_nan(linop%Svec))) call mpl%abort('${subr}$','NaN in Svec for symmetric linear operation '//trim(linop%prefix))
-      else
-         if (any(ieee_is_nan(linop%S))) call mpl%abort('${subr}$','NaN in S for symmetric linear operation '//trim(linop%prefix))
-      end if
-   end if
-
-   ! Check input
-   if (linop%n_src>0) then
-      if (any(fld>huge_real)) call mpl%abort('${subr}$', &
- & 'Overflowing number in fld for symmetric linear operation '//trim(linop%prefix))
-      if (any(ieee_is_nan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
-   end if
-end if
-
-! Apply weights
-fld_arr = zero
-!$omp parallel do schedule(static) private(i_s,ithread)
-do i_s=1,linop%n_s
-   ithread = 1
-!$ ithread = omp_get_thread_num()+1
-   if (present(ivec)) then
-      fld_arr(linop%row(i_s),ithread) = fld_arr(linop%row(i_s),ithread)+linop%Svec(i_s,ivec)*fld(linop%col(i_s))
-      if (linop%col(i_s)/=linop%row(i_s)) fld_arr(linop%col(i_s),ithread) = fld_arr(linop%col(i_s),ithread) &
- & +linop%Svec(i_s,ivec)*fld(linop%row(i_s))
-   else
-      fld_arr(linop%row(i_s),ithread) = fld_arr(linop%row(i_s),ithread)+linop%S(i_s)*fld(linop%col(i_s))
-      if (linop%col(i_s)/=linop%row(i_s)) fld_arr(linop%col(i_s),ithread) = fld_arr(linop%col(i_s),ithread) &
- & +linop%S(i_s)*fld(linop%row(i_s))
-   end if
-end do
-!$omp end parallel do
-
-! Sum over threads
-fld = zero
-do ithread=1,mpl%nthread
-   fld = fld+fld_arr(:,ithread)
-end do
-
-if (check_data) then
-   ! Check output
-   if (linop%n_src>0) then
-      if (any(ieee_is_nan(fld))) call mpl%abort('${subr}$','NaN in fld for symmetric linear operation '//trim(linop%prefix))
-   end if
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine linop_apply_sym
-
-!----------------------------------------------------------------------
 ! Subroutine: linop_add_op
 !> Add operation
 !----------------------------------------------------------------------
-subroutine linop_add_op(linop,n_s,row,col,S)
+subroutine linop_add_op(linop,n_s,row,col,S,Svec)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop !< Linear operators
-integer,intent(inout) :: n_s             !< Number of operations
-integer,intent(in) :: row                !< Row index
-integer,intent(in) :: col                !< Column index
-real(kind_real),intent(in) :: S          !< Value
+class(linop_type),intent(inout) :: linop                !< Linear operators
+integer,intent(inout) :: n_s                            !< Number of operations
+integer,intent(in) :: row                               !< Row index
+integer,intent(in) :: col                               !< Column index
+real(kind_real),intent(in),optional :: S                !< Value
+real(kind_real),intent(in),optional :: Svec(linop%nvec) !< Values
 
 ! Local variables
 type(linop_type) :: linop_tmp
@@ -813,12 +731,16 @@ if (n_s>linop%n_s) then
    ! Reallocate larger linear operation
    call linop%dealloc
    linop%n_s = 2*linop_tmp%n_s
-   call linop%alloc
+   call linop%alloc(linop_tmp%nvec)
 
    ! Copy data
    linop%row(1:linop_tmp%n_s) = linop_tmp%row
    linop%col(1:linop_tmp%n_s) = linop_tmp%col
-   linop%S(1:linop_tmp%n_s) = linop_tmp%S
+   if (linop%nvec>0) then
+      linop%Svec(1:linop_tmp%n_s,:) = linop_tmp%Svec
+   else
+      linop%S(1:linop_tmp%n_s) = linop_tmp%S
+   end if
 
    ! Release memory
    call linop_tmp%dealloc
@@ -827,7 +749,11 @@ end if
 ! New operation
 linop%row(n_s) = row
 linop%col(n_s) = col
-linop%S(n_s) = S
+if (linop%nvec>0) then
+   linop%Svec(n_s,:) = Svec
+else
+   linop%S(n_s) = S
+end if
 
 ! Probe out
 @:probe_out()
@@ -862,14 +788,18 @@ if (mpl%nthread>1) then
    linop%n_s = sum(n_s_arr)
 
    ! Allocation
-   call linop%alloc
+   call linop%alloc(linop_arr(1)%nvec)
 
    ! Gather data
    offset = 0
    do ithread=1,mpl%nthread
       linop%row(offset+1:offset+n_s_arr(ithread)) = linop_arr(ithread)%row(1:n_s_arr(ithread))
       linop%col(offset+1:offset+n_s_arr(ithread)) = linop_arr(ithread)%col(1:n_s_arr(ithread))
-      linop%S(offset+1:offset+n_s_arr(ithread)) = linop_arr(ithread)%S(1:n_s_arr(ithread))
+      if (linop%nvec>0) then
+         linop%Svec(offset+1:offset+n_s_arr(ithread),:) = linop_arr(ithread)%Svec(1:n_s_arr(ithread),:)
+      else
+         linop%S(offset+1:offset+n_s_arr(ithread)) = linop_arr(ithread)%S(1:n_s_arr(ithread))
+      end if
       offset = offset+n_s_arr(ithread)
    end do
 else
@@ -914,7 +844,7 @@ integer :: i_dst,i,n_s,i_s,next
 integer :: nn_index(1),ib(3),row(3*n_dst),col(3*n_dst)
 integer,allocatable :: nn_index_ext(:)
 real(kind_real) :: nn_dist(1),b(3),S(3*n_dst)
-logical :: valid,valid_arc,found,missing(n_dst)
+logical :: valid,found,missing(n_dst)
 character(len=7) :: cfmt
 
 ! Set name
@@ -944,17 +874,14 @@ do i_dst=1,n_dst
          ! Check mask
          if (valid) then
             do i=1,3
-               if (b(i)>zero) valid = valid.and.mask_src(ib(i))
+               if (b(i)>rth) valid = valid.and.mask_src(ib(i))
             end do
          end if
 
          ! Check arcs
          if (valid.and.nam%mask_check) then
             do i=1,3
-               if (b(i)>zero) then
-                  call mesh_mask%check_arc(mpl,lon_src(ib(i)),lat_src(ib(i)),il0,lon_dst(i_dst),lat_dst(i_dst),il0,valid_arc)
-                  valid = valid.and.valid_arc
-               end if
+               if (b(i)>rth) call mesh_mask%check_arc(mpl,lon_src(ib(i)),lat_src(ib(i)),lon_dst(i_dst),lat_dst(i_dst),il0,valid)
             end do
          end if
 

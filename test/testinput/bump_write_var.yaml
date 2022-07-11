@@ -2,15 +2,16 @@
 datadir: "testdata"
 prefix: "bump_write_var/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_var: 1
-write_var: 1
+new_var: true
+write_var: true
 
 # model_param
-nl: 4
+nl0: 4
 levs: [1,2,3,4]
 nv: 2
 variables: ["u","q"]

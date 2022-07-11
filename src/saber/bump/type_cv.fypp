@@ -40,7 +40,7 @@ class(cv_type),intent(in) :: cv          !< Control variable
 real(kind_real),intent(out) :: pcv(cv%n) !< Packed control variable
 
 ! Local variable
-integer :: ib,offset
+integer :: ib,icmp,offset
 
 ! Set name
 @:set_name(cv_pack)
@@ -52,13 +52,15 @@ integer :: ib,offset
 offset = 0
 
 do ib=1,cv%nbe
-   if (cv%blk(ib)%n>0) then
-      ! Pack control variable
-      pcv(offset+1:offset+cv%blk(ib)%n) = cv%blk(ib)%alpha
+   do icmp=1,cv%blk(ib)%ncmp
+      if (cv%blk(ib)%cmp(icmp)%n>0) then
+         ! Pack control variable
+         pcv(offset+1:offset+cv%blk(ib)%cmp(icmp)%n) = cv%blk(ib)%cmp(icmp)%alpha
 
-      ! Update
-      offset = offset+cv%blk(ib)%n
-   end if
+         ! Update
+         offset = offset+cv%blk(ib)%cmp(icmp)%n
+      end if
+   end do
 end do
 
 ! Probe out
@@ -77,7 +79,7 @@ class(cv_type),intent(inout) :: cv      !< Control variable
 real(kind_real),intent(in) :: pcv(cv%n) !< Packed control variable
 
 ! Local variable
-integer :: ib,offset
+integer :: ib,icmp,offset
 
 ! Set name
 @:set_name(cv_unpack)
@@ -89,13 +91,15 @@ integer :: ib,offset
 offset = 0
 
 do ib=1,cv%nbe
-   if (cv%blk(ib)%n>0) then
-      ! Unpack control variable
-      cv%blk(ib)%alpha = pcv(offset+1:offset+cv%blk(ib)%n)
+   do icmp=1,cv%blk(ib)%ncmp
+      if (cv%blk(ib)%cmp(icmp)%n>0) then
+         ! Unpack control variable
+         cv%blk(ib)%cmp(icmp)%alpha = pcv(offset+1:offset+cv%blk(ib)%cmp(icmp)%n)
 
-      ! Update
-      offset = offset+cv%blk(ib)%n
-   end if
+         ! Update
+        offset = offset+cv%blk(ib)%cmp(icmp)%n
+      end if
+   end do
 end do
 
 ! Probe out

@@ -1,7 +1,7 @@
 #:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
-! Module: tools_atlas
-!> Random numbers generator derived type
+! Module: type_fieldset
+!> Fieldset derived type (extension of ATLAS fieldset)
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -21,6 +21,9 @@ use type_mpl, only: mpl_type
 implicit none
 
 type,extends(atlas_fieldset) :: fieldset_type
+   integer :: nmga                                 ! Model grid on model grid, halo A
+   integer :: nl0                                  ! Number of levels
+   integer :: nv                                   ! Number of variables
    logical,allocatable :: mask3d(:,:)              ! 3D mask
    character(len=1024),allocatable :: variables(:) ! Variables names
    character(len=1024) :: lev2d                    ! Level for 2D variables
@@ -73,7 +76,7 @@ character(len=*),intent(in) :: variables(:)            !< Variables names
 character(len=*),intent(in) :: lev2d                   !< Level for 2D variables
 
 ! Local variables
-integer :: nmga,nl0,nv,iv
+integer :: iv
 type(atlas_field) :: afield
 
 ! Set name
@@ -86,31 +89,31 @@ type(atlas_field) :: afield
 if (fieldset%is_null()) fieldset = atlas_fieldset()
 
 ! Get number of nodes
-nmga = size(gmask,1)
+fieldset%nmga = size(gmask,1)
 
 ! Get number of levels
-nl0 = size(gmask,2)
+fieldset%nl0 = size(gmask,2)
 
 ! Get number of variables
-nv = size(variables)
+fieldset%nv = size(variables)
 
 ! Allocation
-if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(nmga,nl0))
-if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(nv))
+if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(fieldset%nmga,fieldset%nl0))
+if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(fieldset%nv))
 
 ! Copy mask, variables and lev2d
 fieldset%mask3d = gmask
-do iv=1,nv
+do iv=1,fieldset%nv
    fieldset%variables(iv) = trim(variables(iv))
 end do
 fieldset%lev2d = trim(lev2d)
 
 ! Create fields if necessary
-do iv=1,nv
+do iv=1,fieldset%nv
    ! Check field existence
    if (.not.fieldset%has_field(fieldset%variables(iv))) then
       ! Create output field
-      afield = afunctionspace%create_field(name=fieldset%variables(iv),kind=atlas_real(kind_real),levels=nl0)
+      afield = afunctionspace%create_field(name=fieldset%variables(iv),kind=atlas_real(kind_real),levels=fieldset%nl0)
 
       ! Add field
       call fieldset%add(afield)
@@ -147,7 +150,7 @@ logical,intent(in),optional :: copy                  !< Copy fields data
 logical,intent(in),optional :: pass                  !< Pass fields pointers
 
 ! Local variables
-integer :: nmga,nl0,nv,iv,nl
+integer :: iv,nl0in
 real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:)
 real(kind_real),pointer :: ptr_1_out(:),ptr_2_out(:,:)
 logical :: lcopy,lpass
@@ -171,37 +174,37 @@ if (fieldset_out%is_null()) fieldset_out = atlas_fieldset()
 
 if (present(gmask).and.present(variables).and.present(lev2d)) then
    ! Get number of nodes
-   nmga = size(gmask,1)
+   fieldset_out%nmga = size(gmask,1)
 
    ! Get number of levels
-   nl0 = size(gmask,2)
+   fieldset_out%nl0 = size(gmask,2)
 
    ! Get number of variables
-   nv = size(variables)
+   fieldset_out%nv = size(variables)
 
    ! Allocation
-   if (.not.allocated(fieldset_out%mask3d)) allocate(fieldset_out%mask3d(nmga,nl0))
-   if (.not.allocated(fieldset_out%variables)) allocate(fieldset_out%variables(nv))
+   if (.not.allocated(fieldset_out%mask3d)) allocate(fieldset_out%mask3d(fieldset_out%nmga,fieldset_out%nl0))
+   if (.not.allocated(fieldset_out%variables)) allocate(fieldset_out%variables(fieldset_out%nv))
 
    ! Copy mask and variables
    fieldset_out%mask3d = gmask
-   do iv=1,nv
+   do iv=1,fieldset_out%nv
       fieldset_out%variables(iv) = trim(variables(iv))
    end do
    fieldset_out%lev2d = lev2d
 elseif (allocated(fieldset_in%mask3d).and.allocated(fieldset_in%variables)) then
    ! Get number of nodes
-   nmga = size(fieldset_in%mask3d,1)
+   fieldset_out%nmga = fieldset_in%nmga
 
    ! Get number of levels
-   nl0 = size(fieldset_in%mask3d,2)
+   fieldset_out%nl0 = fieldset_in%nl0
 
    ! Get number of variables
-   nv = size(fieldset_in%variables)
+   fieldset_out%nv = size(fieldset_in%variables)
 
    ! Allocation
-   if (.not.allocated(fieldset_out%mask3d)) allocate(fieldset_out%mask3d(nmga,nl0))
-   if (.not.allocated(fieldset_out%variables)) allocate(fieldset_out%variables(nv))
+   if (.not.allocated(fieldset_out%mask3d)) allocate(fieldset_out%mask3d(fieldset_out%nmga,fieldset_out%nl0))
+   if (.not.allocated(fieldset_out%variables)) allocate(fieldset_out%variables(fieldset_out%nv))
 
    ! Copy mask, variables and lev2d
    fieldset_out%mask3d = fieldset_in%mask3d
@@ -212,7 +215,7 @@ else
 end if
 
 ! Pass or create/copy fields if necessary
-do iv=1,nv
+do iv=1,fieldset_out%nv
    ! Get input field
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
 
@@ -226,10 +229,10 @@ do iv=1,nv
          afunctionspace = afield_in%functionspace()
 
          ! Get number of levels
-         nl = afield_in%levels()
+         nl0in = afield_in%levels()
 
          ! Create output field
-         afield_out = afunctionspace%create_field(name=fieldset_out%variables(iv),kind=atlas_real(kind_real),levels=nl)
+         afield_out = afunctionspace%create_field(name=fieldset_out%variables(iv),kind=atlas_real(kind_real),levels=nl0in)
 
          ! Add field
          call fieldset_out%add(afield_out)
@@ -244,11 +247,11 @@ do iv=1,nv
          case (1)
             call afield_in%data(ptr_1_in)
             call afield_out%data(ptr_1_out)
-            ptr_1_out = ptr_1_in
+            if (fieldset_out%nmga>0) ptr_1_out = ptr_1_in
          case (2)
             call afield_in%data(ptr_2_in)
             call afield_out%data(ptr_2_out)
-            ptr_2_out = ptr_2_in
+            if (fieldset_out%nmga>0) ptr_2_out = ptr_2_in
          case default
             call mpl%abort('${subr}$','wrong field rank')
          end select
@@ -286,7 +289,7 @@ character(len=*),intent(in) :: variables(:)    !< Variables names
 character(len=*),intent(in) :: lev2d           !< Level for 2D variables
 
 ! Local variables
-integer :: nmga,nl0,nv,iv
+integer :: iv
 
 ! Set name
 @:set_name(fieldset_set_metadata)
@@ -295,21 +298,21 @@ integer :: nmga,nl0,nv,iv
 @:probe_in()
 
 ! Get number of nodes
-nmga = size(gmask,1)
+fieldset%nmga = size(gmask,1)
 
 ! Get number of levels
-nl0 = size(gmask,2)
+fieldset%nl0 = size(gmask,2)
 
 ! Get number of variables
-nv = size(variables)
+fieldset%nv = size(variables)
 
 ! Allocation
-if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(nmga,nl0))
-if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(nv))
+if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(fieldset%nmga,fieldset%nl0))
+if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(fieldset%nv))
 
 ! Copy mask and variables
 fieldset%mask3d = gmask
-do iv=1,nv
+do iv=1,fieldset%nv
    fieldset%variables(iv) = trim(variables(iv))
 end do
 fieldset%lev2d = trim(lev2d)
@@ -336,7 +339,7 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 
 ! Local variables
 integer :: iv
-real(kind_real) :: norm,norm_tot
+real(kind_real) :: norm
 real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
 type(atlas_field) :: afield
 
@@ -350,7 +353,7 @@ type(atlas_field) :: afield
 call fieldset%check(mpl)
 
 ! Loop over fields
-do iv=1,size(fieldset%variables)
+do iv=1,fieldset%nv
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
@@ -358,17 +361,17 @@ do iv=1,size(fieldset%variables)
    select case (afield%rank())
    case (1)
       call afield%data(ptr_1)
-      norm = zss_sum(ptr_1**2,mask=mpl%msv%isnot(ptr_1))
+      if (fieldset%nmga>0) norm = zss_sum(ptr_1**2,mask=mpl%msv%isnot(ptr_1))
    case (2)
       call afield%data(ptr_2)
-      norm = zss_sum(ptr_2**2,mask=mpl%msv%isnot(ptr_2))
+      if (fieldset%nmga>0) norm = zss_sum(ptr_2**2,mask=mpl%msv%isnot(ptr_2))
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-   call mpl%f_comm%allreduce(norm,norm_tot,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
 
    ! Print norm
-   write(mpl%info,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm_tot
+   write(mpl%info,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm
    call mpl%flush
 
    ! Release pointer
@@ -407,7 +410,7 @@ type(atlas_field) :: afield
 call fieldset%check(mpl)
 
 ! Loop over fields
-do iv=1,size(fieldset%variables)
+do iv=1,fieldset%nv
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
@@ -415,10 +418,10 @@ do iv=1,size(fieldset%variables)
    select case (afield%rank())
    case (1)
       call afield%data(ptr_1)
-      ptr_1 = zero
+      if (fieldset%nmga>0) ptr_1 = zero
    case (2)
       call afield%data(ptr_2)
-      ptr_2 = zero
+      if (fieldset%nmga>0) ptr_2 = zero
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -463,7 +466,7 @@ type(atlas_field) :: afield_in,afield_out
 call fieldset_out%check(mpl,fieldset_in)
 
 ! Loop over fields
-do iv=1,size(fieldset_out%variables)
+do iv=1,fieldset_out%nv
    ! Fields
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
@@ -473,11 +476,11 @@ do iv=1,size(fieldset_out%variables)
    case (1)
       call afield_in%data(ptr_1_in)
       call afield_out%data(ptr_1_out)
-      ptr_1_out = ptr_1_out+ptr_1_in
+      if (fieldset_out%nmga>0) ptr_1_out = ptr_1_out+ptr_1_in
    case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
-      ptr_2_out = ptr_2_out+ptr_2_in
+      if (fieldset_out%nmga>0) ptr_2_out = ptr_2_out+ptr_2_in
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -523,7 +526,7 @@ type(atlas_field) :: afield_in,afield_out
 call fieldset_out%check(mpl,fieldset_in)
 
 ! Loop over fields
-do iv=1,size(fieldset_out%variables)
+do iv=1,fieldset_out%nv
    ! Fields
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
@@ -533,11 +536,11 @@ do iv=1,size(fieldset_out%variables)
    case (1)
       call afield_in%data(ptr_1_in)
       call afield_out%data(ptr_1_out)
-      ptr_1_out = ptr_1_out-ptr_1_in
+      if (fieldset_out%nmga>0) ptr_1_out = ptr_1_out-ptr_1_in
    case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
-      ptr_2_out = ptr_2_out-ptr_2_in
+      if (fieldset_out%nmga>0) ptr_2_out = ptr_2_out-ptr_2_in
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -583,7 +586,7 @@ type(atlas_field) :: afield
 call fieldset%check(mpl)
 
 ! Loop over fields
-do iv=1,size(fieldset%variables)
+do iv=1,fieldset%nv
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
@@ -591,10 +594,10 @@ do iv=1,size(fieldset%variables)
    select case (afield%rank())
    case (1)
       call afield%data(ptr_1)
-      ptr_1 = ptr_1*factor
+      if (fieldset%nmga>0) ptr_1 = ptr_1*factor
    case (2)
       call afield%data(ptr_2)
-      ptr_2 = ptr_2*factor
+      if (fieldset%nmga>0) ptr_2 = ptr_2*factor
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -639,7 +642,7 @@ type(atlas_field) :: afield_in,afield_out
 call fieldset_out%check(mpl,fieldset_in)
 
 ! Loop over fields
-do iv=1,size(fieldset_out%variables)
+do iv=1,fieldset_out%nv
    ! Fields
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
@@ -649,11 +652,11 @@ do iv=1,size(fieldset_out%variables)
    case (1)
       call afield_in%data(ptr_1_in)
       call afield_out%data(ptr_1_out)
-      ptr_1_out = ptr_1_out*ptr_1_in
+      if (fieldset_out%nmga>0) ptr_1_out = ptr_1_out*ptr_1_in
    case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
-      ptr_2_out = ptr_2_out*ptr_2_in
+      if (fieldset_out%nmga>0) ptr_2_out = ptr_2_out*ptr_2_in
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -702,7 +705,7 @@ call fieldset_out%check(mpl,fieldset_in)
 call fieldset_in%apply_mask(mpl,one)
 
 ! Loop over fields
-do iv=1,size(fieldset_out%variables)
+do iv=1,fieldset_out%nv
    ! Fields
    afield_in = fieldset_in%field(fieldset_out%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
@@ -712,11 +715,11 @@ do iv=1,size(fieldset_out%variables)
    case (1)
       call afield_in%data(ptr_1_in)
       call afield_out%data(ptr_1_out)
-      ptr_1_out = ptr_1_out/ptr_1_in
+      if (fieldset_out%nmga>0) ptr_1_out = ptr_1_out/ptr_1_in
    case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
-      ptr_2_out = ptr_2_out/ptr_2_in
+      if (fieldset_out%nmga>0) ptr_2_out = ptr_2_out/ptr_2_in
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -761,7 +764,7 @@ type(atlas_field) :: afield
 call fieldset%check(mpl)
 
 ! Loop over fields
-do iv=1,size(fieldset%variables)
+do iv=1,fieldset%nv
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
@@ -769,10 +772,10 @@ do iv=1,size(fieldset%variables)
    select case (afield%rank())
    case (1)
       call afield%data(ptr_1)
-      ptr_1 = ptr_1**2
+      if (fieldset%nmga>0) ptr_1 = ptr_1**2
    case (2)
       call afield%data(ptr_2)
-      ptr_2 = ptr_2**2
+      if (fieldset%nmga>0) ptr_2 = ptr_2**2
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -819,7 +822,7 @@ call fieldset%check(mpl)
 call fieldset%apply_mask(mpl,zero)
 
 ! Loop over fields
-do iv=1,size(fieldset%variables)
+do iv=1,fieldset%nv
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
@@ -827,10 +830,10 @@ do iv=1,size(fieldset%variables)
    select case (afield%rank())
    case (1)
       call afield%data(ptr_1)
-      ptr_1 = sqrt(ptr_1)
+      if (fieldset%nmga>0) ptr_1 = sqrt(ptr_1)
    case (2)
       call afield%data(ptr_2)
-      ptr_2 = sqrt(ptr_2)
+      if (fieldset%nmga>0) ptr_2 = sqrt(ptr_2)
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
@@ -860,7 +863,7 @@ class(fieldset_type),intent(in) :: fieldset !< Fieldset
 type(mpl_type),intent(inout) :: mpl         !< MPI data
 
 ! Local variables
-integer :: nmga,nl0,nv,iv
+integer :: iv
 type(atlas_field) :: afield
 
 ! Set name
@@ -869,15 +872,6 @@ type(atlas_field) :: afield
 ! Probe in
 @:probe_in()
 
-! Get number of nodes
-nmga = size(fieldset%mask3d,1)
-
-! Get number of levels
-nl0 = size(fieldset%mask3d,2)
-
-! Get number of variables
-nv = size(fieldset%variables)
-
 ! Check allocation
 if (.not.allocated(fieldset%mask3d)) call mpl%abort('${subr}$','mask is not allocated')
 if (.not.allocated(fieldset%variables)) call mpl%abort('${subr}$','variables is not allocated')
@@ -885,15 +879,15 @@ if (.not.allocated(fieldset%variables)) call mpl%abort('${subr}$','variables is 
 ! Check lev2d
 if (.not.((trim(fieldset%lev2d)=='first').or.(trim(fieldset%lev2d)=='last'))) call mpl%abort('${subr}$','wrong lev2d')
 
-do iv=1,nv
+do iv=1,fieldset%nv
    ! Check that all variables are present
    if (.not.fieldset%has_field(fieldset%variables(iv))) call mpl%abort('${subr}$', &
  & 'missing variable '//trim(fieldset%variables(iv)))
 
    ! Check sizes
    afield = fieldset%field(fieldset%variables(iv))
-   if (get_atlas_field_size(mpl,afield)/=nmga) call mpl%abort('${subr}$','wrong horizontal size')
-   if ((afield%levels()/=0).and.(afield%levels()/=nl0)) call mpl%abort('${subr}$','wrong number of levels')
+   if (get_atlas_field_size(mpl,afield)/=fieldset%nmga) call mpl%abort('${subr}$','wrong horizontal size')
+   if ((afield%levels()/=0).and.(afield%levels()/=fieldset%nl0)) call mpl%abort('${subr}$','wrong number of levels')
 end do
 
 ! Probe out
@@ -915,7 +909,7 @@ type(mpl_type),intent(inout) :: mpl             !< MPI data
 class(fieldset_type),intent(in) :: fieldset_in  !< Input fieldset
 
 ! Local variables
-integer :: nv,iv
+integer :: iv
 integer,allocatable :: shp_in(:),shp_out(:)
 type(atlas_field) :: afield_in,afield_out
 
@@ -936,11 +930,8 @@ end if
 if (any(fieldset_in%variables/=fieldset_out%variables)) call mpl%abort('${subr}$','inconsistent variables')
 if (fieldset_in%lev2d/=fieldset_out%lev2d) call mpl%abort('${subr}$','inconsistent lev2d')
 
-! Get number of variables
-nv = size(fieldset_in%variables)
-
 ! Check shapes consistency
-do iv=1,nv
+do iv=1,fieldset_in%nv
    ! Get fields
    afield_in = fieldset_in%field(fieldset_in%variables(iv))
    afield_out = fieldset_out%field(fieldset_out%variables(iv))
@@ -974,7 +965,7 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 real(kind_real),intent(in),optional :: msvalr  !< Specific missing value
 
 ! Local variables
-integer :: nmga,nl0,nv,iv,il0,imga
+integer :: iv,il0,imga
 real(kind_real) :: lmsvalr
 real(kind_real),allocatable :: fld(:,:,:)
 
@@ -993,25 +984,16 @@ if (size(fieldset%mask3d)>0) then
       lmsvalr = mpl%msv%valr
       if (present(msvalr)) lmsvalr = msvalr
 
-      ! Get number of nodes
-      nmga = size(fieldset%mask3d,1)
-
-      ! Get number of levels
-      nl0 = size(fieldset%mask3d,2)
-
-      ! Get number of variables
-      nv = size(fieldset%variables)
-
       ! Allocation
-      allocate(fld(nmga,nl0,nv))
+      allocate(fld(fieldset%nmga,fieldset%nl0,fieldset%nv))
 
       ! Conversion to array
       call fieldset%to_array(mpl,fld)
 
       ! Apply missing value to mask points
-      do iv=1,nv
-         do il0=1,nl0
-            do imga=1,nmga
+      do iv=1,fieldset%nv
+         do il0=1,fieldset%nl0
+            do imga=1,fieldset%nmga
                if (.not.fieldset%mask3d(imga,il0)) fld(imga,il0,iv) = lmsvalr
             end do
          end do

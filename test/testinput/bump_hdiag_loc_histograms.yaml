@@ -2,15 +2,16 @@
 datadir: "testdata"
 prefix: "bump_hdiag_loc_histograms/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "loc"
 strategy: "common"
-new_hdiag: 1
-write_hdiag: 1
+new_hdiag: true
+write_hdiag: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]

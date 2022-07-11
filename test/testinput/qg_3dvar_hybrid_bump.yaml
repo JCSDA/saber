@@ -5,32 +5,30 @@ cost function:
   analysis variables: [x]
   background:
     date: 2010-01-01T12:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
   background error:
     covariance model: hybrid
     components:
     - covariance:
         covariance model: ensemble
         localization:
-          bump:
-            datadir: testdata
-            fname_nicas: qg_parameters_bump_loc/test_nicas
-            load_nicas_local: 1
-            prefix: qg_3dvar_hybrid_bump/test
-            strategy: common
-          localization method: BUMP
-          localization variables: [x]
-        members:
-        - date: 2010-01-01T12:00:00Z
-          filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc
-        - date: 2010-01-01T12:00:00Z
-          filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H.nc
-        - date: 2010-01-01T12:00:00Z
-          filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H.nc
-        - date: 2010-01-01T12:00:00Z
-          filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H.nc
-        - date: 2010-01-01T12:00:00Z
-          filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H.nc
+          localization method: SABER
+          saber block:
+            saber block name: BUMP_NICAS
+            input variables: [x]
+            output variables: [x]
+            bump:
+              datadir: testdata
+              fname_nicas: qg_error_covariance_training_bump_loc/test_nicas
+              load_nicas_local: true
+              prefix: qg_3dvar_hybrid_bump/test
+              strategy: common
+        members from template:
+          template:
+            date: 2010-01-01T12:00:00Z
+            filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
+          pattern: '%mem%'
+          nmembers: 5
       weight:
         value: 0.5
     - covariance:
@@ -42,43 +40,41 @@ cost function:
       weight:
         value: 0.5
   observations:
-  - obs operator:
-      obs type: Stream
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3dvar_hybrid_bump.obs3d.nc
-      obs type: Stream
-    obs error:
-      covariance model: diagonal
-  - obs operator:
-      obs type: Wind
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3dvar_hybrid_bump.obs3d.nc
-      obs type: Wind
-    obs error:
-      covariance model: diagonal
-  - obs operator:
-      obs type: WSpeed
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs3d.nc
-      obsdataout:
-        obsfile: testdata/qg_3dvar_hybrid_bump.obs3d.nc
-      obs type: WSpeed
-    obs error:
-      covariance model: diagonal
+    observers:
+    - obs operator:
+        obs type: Stream
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
+        obs type: Stream
+      obs error:
+        covariance model: diagonal
+    - obs operator:
+        obs type: Wind
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
+        obs type: Wind
+      obs error:
+        covariance model: diagonal
+    - obs operator:
+        obs type: WSpeed
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+        obsdataout:
+          obsfile: testdata/qg_3dvar_hybrid_bump/qg_3dvar_hybrid_bump.obs3d.nc
+        obs type: WSpeed
+      obs error:
+        covariance model: diagonal
   geometry:
     nx: 40
     ny: 20
     depths: [4500.0, 5500.0]
-  model:
-    name: QG
-    tstep: PT1H
 variational:
   minimizer:
     algorithm: DRIPCG
@@ -124,4 +120,3 @@ output:
 
 test:
   reference filename: testref/qg_3dvar_hybrid_bump/test.log.out
-  test output filename: testoutput/qg_3dvar_hybrid_bump/test.log.out

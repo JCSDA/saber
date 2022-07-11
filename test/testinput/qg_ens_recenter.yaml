@@ -1,28 +1,28 @@
 center:
   date: 2010-01-01T12:00:00Z
-  filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc
+  filename: testdata/qg_gen_ens_pert_B/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc
 
 ensemble:
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.1.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.2.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.3.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.4.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.5.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.6.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.7.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.8.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.9.2009-12-31T00:00:00Z.P1DT12H.nc
  - date: 2010-01-01T12:00:00Z
-   filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H.nc
+   filename: testdata/qg_gen_ens_pert_B/forecast.ens.10.2009-12-31T00:00:00Z.P1DT12H.nc
 
 recenter variables: [x]
 
@@ -32,7 +32,7 @@ geometry:
   depths: [4500.0, 5500.0]
 
 recentered output:
-  datadir: testdata
+  datadir: testdata/qg_ens_recenter
   exp: recenter
   type: ens
   date: 2010-01-01T12:00:00Z
@@ -40,11 +40,10 @@ recentered output:
 zero center: true
 
 ensemble mean output:
-  datadir: testdata
+  datadir: testdata/qg_ens_recenter
   exp: ensmean
   type: an
   date: 2010-01-01T12:00:00Z
 
 test:
   reference filename: testref/qg_ens_recenter/test.log.out
-  test output filename: testoutput/qg_ens_recenter/test.log.out

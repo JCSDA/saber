@@ -110,15 +110,19 @@ if (afield%levels()==0) then
       nl2d = nl0
    end if
    call afield%data(ptr_1)
-   #{if rank == 2}# array(:,nl2d) = ptr_1 #{endif}#
-   #{if rank == 3}# array(:,:,nl2d) = reshape(ptr_1,shp(1:2)) #{endif}#
+   if (nmga>0) then
+      #{if rank == 2}# array(:,nl2d) = ptr_1(1:nmga) #{endif}#
+      #{if rank == 3}# array(:,:,nl2d) = reshape(ptr_1(1:nmga),shp(1:2)) #{endif}#
+   end if
 else
    if (nl0>afield%levels()) call mpl%abort('${subr}$','not enough levels in ATLAS field')
    call afield%data(ptr_2)
-   do il0=1,nl0
-      #{if rank == 2}# array(:,il0) = ptr_2(il0,:) #{endif}#
-      #{if rank == 3}# array(:,:,il0) = reshape(ptr_2(il0,:),shp(1:2)) #{endif}#
-   end do
+   if (nmga>0) then
+      do il0=1,nl0
+         #{if rank == 2}# array(:,il0) = ptr_2(il0,1:nmga) #{endif}#
+         #{if rank == 3}# array(:,:,il0) = reshape(ptr_2(il0,1:nmga),shp(1:2)) #{endif}#
+      end do
+   end if
 end if
 
 ! Probe out
@@ -200,6 +204,7 @@ integer :: nmga,nnodes,nl0,nl2d,il0
 integer :: shp(${rank}$)
 ${ftype[dtype]}$,pointer :: ptr_1(:),ptr_2(:,:)
 character(len=1024) :: llev2d
+type(atlas_functionspace) :: afunctionspace
 
 ! Set name
 @:set_name(atlas_field_from_array_${dtype}$_r${rank}$)
@@ -240,16 +245,24 @@ if (afield%levels()==0) then
       nl2d = nl0
    end if
    call afield%data(ptr_1)
-   #{if rank == 2}# ptr_1 = array(:,nl2d) #{endif}#
-   #{if rank == 3}# ptr_1 = reshape(array(:,:,nl2d),(/product(shp(1:2))/)) #{endif}#
+   if (nmga>0) then
+      #{if rank == 2}# ptr_1(1:nmga) = array(:,nl2d) #{endif}#
+      #{if rank == 3}# ptr_1(1:nmga) = reshape(array(:,:,nl2d),(/product(shp(1:2))/)) #{endif}#
+   end if
 else
    if (nl0>afield%levels()) call mpl%abort('${subr}$','not enough levels in ATLAS field')
    call afield%data(ptr_2)
-   do il0=1,nl0
-      #{if rank == 2}# ptr_2(il0,:) = array(:,il0) #{endif}#
-      #{if rank == 3}# ptr_2(il0,:) = reshape(array(:,:,il0),(/product(shp(1:2))/)) #{endif}#
-   end do
+   if (nmga>0) then
+      do il0=1,nl0
+         #{if rank == 2}# ptr_2(il0,1:nmga) = array(:,il0) #{endif}#
+         #{if rank == 3}# ptr_2(il0,1:nmga) = reshape(array(:,:,il0),(/product(shp(1:2))/)) #{endif}#
+      end do
+   end if
 end if
+
+! Halo exchange
+afunctionspace = afield%functionspace()
+call afunctionspace%halo_exchange(afield)
 
 ! Probe out
 @:probe_out()

@@ -1,158 +1,30 @@
 background error:
   covariance model: ensemble
   localization:
-    localization method: ID
-  members:
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1DT6H.nc
-  - states:
-    - date: 2010-01-01T00:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D.nc
-    - date: 2010-01-01T01:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT1H.nc
-    - date: 2010-01-01T02:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT2H.nc
-    - date: 2010-01-01T03:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT3H.nc
-    - date: 2010-01-01T04:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT4H.nc
-    - date: 2010-01-01T05:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT5H.nc
-    - date: 2010-01-01T06:00:00Z
-      filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1DT6H.nc
+    localization method: SABER
+    saber block:
+      saber block name: ID
+      input variables: [x]
+      output variables: [x]
+  members from template:
+    template:
+      states:
+      - date: 2010-01-01T00:00:00Z
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1D.nc
+      - date: 2010-01-01T01:00:00Z
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT1H.nc
+      - date: 2010-01-01T02:00:00Z
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT2H.nc
+      - date: 2010-01-01T03:00:00Z
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT3H.nc
+      - date: 2010-01-01T04:00:00Z
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT4H.nc
+      - date: 2010-01-01T05:00:00Z
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT5H.nc
+      - date: 2010-01-01T06:00:00Z
+        filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT6H.nc
+    pattern: '%mem%'
+    nmembers: 10
 dirac:
   date: 2010-01-01T12:00:00Z
   ixdir: [20]
@@ -166,32 +38,23 @@ geometry:
 initial condition:
   states:
   - date: 2010-01-01T00:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
   - date: 2010-01-01T01:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT1H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT1H.nc
   - date: 2010-01-01T02:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT2H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT2H.nc
   - date: 2010-01-01T03:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT3H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT3H.nc
   - date: 2010-01-01T04:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT4H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT4H.nc
   - date: 2010-01-01T05:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT5H.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT5H.nc
   - date: 2010-01-01T06:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1DT6H.nc
-model:
-  tstep: PT1H
-output B:
-  datadir: testdata/qg_dirac_bump_loc_4d
-  date: 2010-01-01T00:00:00Z
-  exp: B
-  type: an
-output localization:
-  datadir: testdata/qg_dirac_bump_loc_4d
-  date: 2010-01-01T00:00:00Z
-  exp: localization
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT6H.nc
+output dirac:
+  datadir: testdata/qg_dirac_id_loc_4d
+  exp: '%id%'
   type: an
 
 test:
   reference filename: testref/qg_dirac_id_loc_4d/test.log.out
-  test output filename: testoutput/qg_dirac_id_loc_4d/test.log.out

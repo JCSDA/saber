@@ -1,22 +1,21 @@
 #:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_cv_blk
-!> Control vector derived type
+!> Control vector block derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
 !----------------------------------------------------------------------
 module type_cv_blk
 
-use tools_kinds, only: kind_real
-@:use_probe()
+use type_cv_cmp, only: cv_cmp_type
 
 implicit none
 
 ! Control vector block derived type
 type cv_blk_type
-   integer :: n                            !< Control variable block size
-   real(kind_real),allocatable :: alpha(:) !< Control vector block field
+   integer :: ncmp                         !< Number of components
+   type(cv_cmp_type),allocatable :: cmp(:) !< Control vector components
 end type cv_blk_type
 
 private

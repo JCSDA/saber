@@ -2,19 +2,21 @@
 datadir: "testdata"
 prefix: "bump_hdiag-nicas_network/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_hdiag: 1
-write_hdiag: 1
-new_nicas: 1
-write_nicas_global: 1
-check_adjoints: 1
-check_dirac: 1
+new_hdiag: true
+write_hdiag: true
+new_nicas: true
+write_nicas_global: true
+check_adjoints: true
+check_normalization: 10
+check_dirac: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 1
 variables: ["u"]
@@ -25,7 +27,7 @@ ens1_ne: 50
 # ens2_param
 
 # sampling_param
-mask_check: 1
+mask_check: true
 nc1: 500
 nc3: 15
 dc: 400.0e3
@@ -38,7 +40,7 @@ ne: 50
 
 # nicas_param
 resol: 8.0
-network: 1
+network: true
 
 # dirac_param
 ndir: 1
@@ -46,7 +48,6 @@ londir: [-85.0]
 latdir: [65.0]
 levdir: [1]
 ivdir: [1]
-itsdir: [1]
 
 # output_param
 

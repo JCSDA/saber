@@ -1,0 +1,31 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 20
+  levels: 10
+  halo: 3
+input variables: &vars [var]
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+ensemble:
+  members from template:
+    template:
+      date: 2010-01-01T12:00:00Z
+      filepath: testdata/quench_randomization_bump_nicas_F20/member_%mem%
+      state variables: *vars
+    pattern: '%mem%'
+    nmembers: 10
+    zero padding: 6
+bump:
+  datadir: testdata
+  ne: 10
+  new_var: true
+  prefix: quench_error_covariance_training_bump_stddev/test
+  output:
+  - filepath: testdata/quench_error_covariance_training_bump_stddev/stddev
+    parameter: stddev
+
+test:
+  reference filename: testref/quench_error_covariance_training_bump_stddev/test.log.out

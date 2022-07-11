@@ -1,0 +1,114 @@
+ &SETUP
+!  qoption=2,
+!  pseudo_q2=.false.,
+ /
+ &GRIDOPTS
+   JCAP=42,NLAT=32,NLON=64,nsig=127,
+ /
+ &BKGERR
+   vs=0.7,
+   hzscl=1.7,0.8,0.5,
+   hswgt=0.45,0.3,0.25,
+   bw=0.0,norsp=4,
+   bkgv_flowdep=.false.,bkgv_rewgtfct=1.5,
+   fpsproj=.true.,
+   adjustozvar=.false.,
+   bkgv_write=.true.,
+   bkgv_write_cv=.true.,
+   simcv=.true,
+ /
+
+met_guess::
+!var     level   crtm_use    desc                 orig_name
+  ps        1      -1         surface_pressure     ps
+# z         1      -1         geopotential_height  phis
+# u       127       2         zonal_wind           u
+# v       127       2         meridional_wind      v
+# div     127      -1         zonal_wind           div
+# vor     127      -1         meridional_wind      vor
+  tv      127       2         virtial_temperature  tv
+# q       127       2         specific_humidity    sphu
+# oz      127       2         ozone                ozone
+# cw      127      -1         cloud_condensate     qctot
+# ql      127      12         Water                qltot
+# qi      127      12         Ice                  qitot
+# qr      127      12         Rain                 qrtot
+# qs      127      12         Snow                 qstot
+# qg      127      10         Graupel              qg
+# qh      127      10         Hail                 qh
+# cf      127       2         cloud_frac4rad(fcld) cloud
+::
+
+state_derivatives::
+!var  level  src
+#ps   1      met_guess
+#u    127    met_guess
+#v    127    met_guess
+#tv   127    met_guess
+#q    127    met_guess
+#oz   127    met_guess
+#cw   127    met_guess
+#ql   127    met_guess
+#qi   127    met_guess
+#qr   127    met_guess
+#qs   127    met_guess
+#prse 128    met_guess
+#sst  central  --> I don't think this is needed
+::
+
+state_tendencies::
+!var  levels  source
+#prse 128     met_guess
+#oz   127     met_guess
+#u    127     met_guess
+#v    127     met_guess
+#tv   127     met_guess
+#q    127     met_guess
+#cw   127     met_guess
+#ql   127     met_guess
+#qi   127     met_guess
+#qr   127     met_guess
+#qs   127     met_guess
+::
+
+state_vector::
+!var     level  itracer source     funcof
+#u       127      0     met_guess    u
+#v       127      0     met_guess    v
+ tv      127      0     met_guess    tv
+#tsen    127      0     met_guess    tv,q
+#q       127      1     met_guess    q
+#oz      127      1     met_guess    oz
+#cw      127      1     met_guess    cw
+#ql      127      1     met_guess    ql
+#qi      127      1     met_guess    qi
+#qr      127      1     met_guess    qr
+#qs      127      1     met_guess    qs
+#prse    128      0     met_guess    prse
+#co      127      1     chem_guess   co
+#co2     127      1     chem_guess   co2
+ ps        1      0     met_guess    prse
+#sst       1      0     met_guess    sst
+::
+
+control_vector::
+!var     level  itracer as/tsfc_sdv  an_amp0   source  funcof  be
+ sf      127      0       0.45        -1.0     state    u:v     -1.00   
+ vp      127      0       0.55        -1.0     state    u:v     -1.00
+ t       127      0       0.90        -1.0     state    tv      -1.00
+#q       127      1       0.60        -1.0     state    q       -1.00
+#oz      127      1       0.20        -1.0     state    oz      -1.00
+#co      127      1       0.20        -1.0     state    co      -1.00
+#cw      127      1       1.00        -1.0     state    cw      -1.00
+#ql      127      1       0.00        -1.0     state    ql      -1.00
+#qi      127      1       0.00        -1.0     state    qi      -1.00
+#qr      127      1       0.00        -1.0     state    qr      -1.00
+#qs      127      1       0.00        -1.0     state    qs      -1.00
+#ps        1      0       0.75        -1.0     state    prse    -1.00
+#sst       1      0       2.40        -1.0     state    sst     -1.00
+#sst       1      0       1.20        -1.0     state    sst     -1.00
+#stl       1      0       3.00        -1.0     motley   sst     -1.00
+#sti       1      0       3.00        -1.0     motley   sst     -1.00
+!             sf    vp    t    q    oz   q2 qi ql qr qs    ps
+! afcts_ = "0.51  0.65 0.98 0.62  0.20 0.64  1  1  1  1  0.83"
+::

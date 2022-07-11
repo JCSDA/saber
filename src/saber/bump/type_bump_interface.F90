@@ -19,16 +19,19 @@ implicit none
 private
 
 ! BUMP registry
+#define LIST_KEY_TYPE c_int
 #define LISTED_TYPE bump_type
-#include "oops/util/linkedList_i.f"
-type(registry_t) :: bump_registry
+#include "saber/external/tools_linkedlist_interface.fypp"
+type(registry_type) :: bump_registry
+
+public :: bump_registry
 
 contains
 
 !----------------------------------------------------------------------
 ! Linked list implementation
 !----------------------------------------------------------------------
-#include "oops/util/linkedList_c.f"
+#include "saber/external/tools_linkedlist_implementation.fypp"
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create_c
@@ -41,8 +44,8 @@ implicit none
 ! Passed variables
 integer(c_int),intent(inout) :: key_bump         !< BUMP
 type(c_ptr),intent(in),value :: c_comm           !< FCKIT MPI communicator wrapper
-type(c_ptr),intent(in),value :: c_afunctionspace !< ATLAS function space
-type(c_ptr),intent(in),value :: c_afieldset      !< ATLAS fieldset containing geometry elements
+type(c_ptr),intent(in),value :: c_afunctionspace !< Function space
+type(c_ptr),intent(in),value :: c_afieldset      !< SABER geometry fields
 type(c_ptr),intent(in),value :: c_conf           !< FCKIT configuration
 type(c_ptr),intent(in),value :: c_grid           !< FCKIT grid configuration
 type(c_ptr),intent(in),value :: c_universe_rad   !< ATLAS fieldset optionally containing universe radius
@@ -57,10 +60,10 @@ type(fckit_configuration) :: f_grid
 type(fieldset_type) :: f_universe_rad
 
 ! Interface
-call bump_registry%init()
+f_comm = fckit_mpi_comm(c_comm)
+call bump_registry%init(f_comm)
 call bump_registry%add(key_bump)
 call bump_registry%get(key_bump,bump)
-f_comm = fckit_mpi_comm(c_comm)
 f_afunctionspace = atlas_functionspace(c_afunctionspace)
 f_fieldset = atlas_fieldset(c_afieldset)
 f_conf = fckit_configuration(c_conf)
@@ -71,6 +74,34 @@ f_universe_rad = atlas_fieldset(c_universe_rad)
 call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf,f_grid,f_universe_rad)
 
 end subroutine bump_create_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_second_geometry_c
+!> Second geometry
+!----------------------------------------------------------------------
+subroutine bump_second_geometry_c(key_bump,c_afunctionspace,c_afieldset) bind(c,name='bump_second_geometry_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(inout) :: key_bump         !< BUMP
+type(c_ptr),intent(in),value :: c_afunctionspace !< ATLAS function space
+type(c_ptr),intent(in),value :: c_afieldset      !< ATLAS fieldset containing geometry elements
+
+! Local variables
+type(bump_type),pointer :: bump
+type(atlas_functionspace) :: f_afunctionspace
+type(fieldset_type) :: f_fieldset
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_afunctionspace = atlas_functionspace(c_afunctionspace)
+f_fieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call bump%second_geometry(f_afunctionspace,f_fieldset)
+
+end subroutine bump_second_geometry_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_add_member_c
@@ -155,7 +186,7 @@ end subroutine bump_update_var_c
 ! Subroutine: bump_update_mom_c
 !> Update moments, one member at a time
 !----------------------------------------------------------------------
-subroutine bump_update_mom_c(key_bump,c_afieldset,ie) bind(c,name='bump_update_mom_f90')
+subroutine bump_update_mom_c(key_bump,c_afieldset,ie,iens) bind(c,name='bump_update_mom_f90')
 
 implicit none
 
@@ -163,6 +194,7 @@ implicit none
 integer(c_int),intent(in) :: key_bump       !< BUMP
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 integer(c_int),intent(in) :: ie             !< Member index
+integer(c_int),intent(in) :: iens           !< Ensemble index
 
 ! Local variables
 type(bump_type),pointer :: bump
@@ -173,7 +205,7 @@ call bump_registry%get(key_bump,bump)
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%update_mom(f_fieldset,ie)
+call bump%update_mom(f_fieldset,ie,iens)
 
 end subroutine bump_update_mom_c
 
@@ -478,26 +510,24 @@ end subroutine bump_randomize_c
 ! Subroutine: bump_psichi_to_uv_c
 !> psi/chi to u/v transform
 !----------------------------------------------------------------------
-subroutine bump_psichi_to_uv_c(key_bump,c_afieldset_in,c_afieldset_out) bind(c,name='bump_psichi_to_uv_f90')
+subroutine bump_psichi_to_uv_c(key_bump,c_afieldset) bind(c,name='bump_psichi_to_uv_f90')
 
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: key_bump           !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset_in  !< ATLAS fieldset pointer (input)
-type(c_ptr),intent(in),value :: c_afieldset_out !< ATLAS fieldset pointer (output)
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset_in,f_fieldset_out
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_fieldset_in = atlas_fieldset(c_afieldset_in)
-f_fieldset_out = atlas_fieldset(c_afieldset_out)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%psichi_to_uv(f_fieldset_in,f_fieldset_out)
+call bump%psichi_to_uv(f_fieldset)
 
 end subroutine bump_psichi_to_uv_c
 
@@ -505,92 +535,141 @@ end subroutine bump_psichi_to_uv_c
 ! Subroutine: bump_psichi_to_uv_ad_c
 !> psi/chi to u/v transform, adjoint
 !----------------------------------------------------------------------
-subroutine bump_psichi_to_uv_ad_c(key_bump,c_afieldset_in,c_afieldset_out) bind(c,name='bump_psichi_to_uv_ad_f90')
+subroutine bump_psichi_to_uv_ad_c(key_bump,c_afieldset) bind(c,name='bump_psichi_to_uv_ad_f90')
 
 implicit none
 
 ! Passed variables
-integer(c_int),intent(in) :: key_bump           !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset_in  !< ATLAS fieldset pointer (input)
-type(c_ptr),intent(in),value :: c_afieldset_out !< ATLAS fieldset pointer (output)
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset_in,f_fieldset_out
+type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
-f_fieldset_in = atlas_fieldset(c_afieldset_in)
-f_fieldset_out = atlas_fieldset(c_afieldset_out)
+f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%psichi_to_uv_ad(f_fieldset_in,f_fieldset_out)
+call bump%psichi_to_uv_ad(f_fieldset)
 
 end subroutine bump_psichi_to_uv_ad_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_get_parameter_c
-!> Get a parameter
+! Subroutine: bump_get_ncmp_c
+!> Get number of components
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_c(key_bump,nstr,cstr,c_afieldset) bind(c,name='bump_get_parameter_f90')
+subroutine bump_get_ncmp_c(key_bump,iv,c_ncmp) bind(c,name='bump_get_ncmp_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump  !< BUMP
+integer(c_int),intent(in) :: iv        !< Variable index
+integer(c_int),intent(inout) :: c_ncmp !< Number of components
+
+! Local variables
+type(bump_type),pointer :: bump
+
+! Interface
+call bump_registry%get(key_bump,bump)
+
+! Call Fortran
+call bump%get_ncmp(iv+1,c_ncmp)
+
+end subroutine bump_get_ncmp_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_get_parameter_c
+!> Get a parameter as field
+!----------------------------------------------------------------------
+subroutine bump_get_parameter_c(key_bump,npar,cpar,icmp,igeom,c_afieldset) bind(c,name='bump_get_parameter_f90')
 
 implicit none
 
 ! Passed variables
 integer(c_int),intent(in) :: key_bump       !< BUMP
-integer(c_int),intent(in) :: nstr           !< Parameter name size
-character(c_char),intent(in) :: cstr(nstr)  !< Parameter name
+integer(c_int),intent(in) :: npar           !< Parameter name size
+character(c_char),intent(in) :: cpar(npar)  !< Parameter name
+integer(c_int),intent(in) :: icmp           !< Component index
+integer(c_int),intent(in) :: igeom          !< Geometry index
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
 integer :: istr
-character(len=nstr) :: param
+character(len=npar) :: param
 type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
 param = ''
-do istr=1,nstr
-  param = trim(param)//cstr(istr)
+do istr=1,npar
+  param = trim(param)//cpar(istr)
 end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%get_parameter(param,f_fieldset)
+call bump%get_parameter(param,icmp,igeom,f_fieldset)
 
 end subroutine bump_get_parameter_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_set_parameter_c
-!> Set a parameter
+! Subroutine: bump_set_ncmp_c
+!> Set number of components
 !----------------------------------------------------------------------
-subroutine bump_set_parameter_c(key_bump,nstr,cstr,c_afieldset) bind(c,name='bump_set_parameter_f90')
+subroutine bump_set_ncmp_c(key_bump,iv,c_ncmp) bind(c,name='bump_set_ncmp_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump !< BUMP
+integer(c_int),intent(in) :: iv       !< Variable index
+integer(c_int),intent(in) :: c_ncmp   !< Number of components
+
+! Local variables
+type(bump_type),pointer :: bump
+
+! Interface
+call bump_registry%get(key_bump,bump)
+
+! Call Fortran
+call bump%set_ncmp(iv+1,c_ncmp)
+
+end subroutine bump_set_ncmp_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_set_parameter_c
+!> Set parameter
+!----------------------------------------------------------------------
+subroutine bump_set_parameter_c(key_bump,npar,cpar,icmp,c_afieldset) bind(c,name='bump_set_parameter_f90')
 
 implicit none
 
 ! Passed variables
 integer(c_int),intent(in) :: key_bump       !< BUMP
-integer(c_int),intent(in) :: nstr           !< Parameter name size
-character(c_char),intent(in) :: cstr(nstr)  !< Parameter name
+integer(c_int),intent(in) :: npar           !< Parameter name size
+character(c_char),intent(in) :: cpar(npar)  !< Parameter name
+integer(c_int),intent(in) :: icmp           !< Component index
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
 type(bump_type),pointer :: bump
 integer :: istr
-character(len=nstr) :: param
+character(len=npar) :: param
 type(fieldset_type) :: f_fieldset
 
 ! Interface
 call bump_registry%get(key_bump,bump)
 param = ''
-do istr=1,nstr
-  param = trim(param)//cstr(istr)
+do istr=1,npar
+  param = trim(param)//cpar(istr)
 end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%set_parameter(param,f_fieldset)
+call bump%set_parameter(param,icmp,f_fieldset)
 
 end subroutine bump_set_parameter_c
 
