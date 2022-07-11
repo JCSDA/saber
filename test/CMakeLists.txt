@@ -208,9 +208,9 @@ else( DEFINED GIT_TAG_FUNC )
 
     if( DEFINED ENV{ECBUILD_DOWNLOAD_BASE_URL} )
         set( ECBUILD_DOWNLOAD_BASE_URL "$ENV{ECBUILD_DOWNLOAD_BASE_URL}/saber/${GIT_TAG_FUNC}" )
-        set( checksum "1")
+        set( checksum "0")
     else()
-        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147b_jcsda/version/1.0.0/file )
+        set( ECBUILD_DOWNLOAD_BASE_URL https://gdex.ucar.edu/dataset/jedi-skylab/file )
         set( checksum "0")
     endif()
     message( STATUS "Files downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} )
@@ -222,7 +222,7 @@ else( DEFINED GIT_TAG_FUNC )
     list( APPEND SABER_DATA_DOWNLOADER_ARGS
           ${ECBUILD_DOWNLOAD_BASE_URL}
           ${CMAKE_SOURCE_DIR}/test-data-release
-          "saber_testinput_tier_1.tar.gz"
+          "saber_testinput_tier_1_1.3.0.tar.gz"
           ${checksum} )
 
     # Create test-data-release in source directory
