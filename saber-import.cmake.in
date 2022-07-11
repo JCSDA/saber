@@ -40,8 +40,9 @@ if((@LAPACK_FOUND@ AND NOT LAPACK_FOUND) OR (@MKL_FOUND@ AND NOT MKL_FOUND))
     endif()
 endif()
 
-if(NOT oops_FOUND)
-    find_dependency(oops REQUIRED)
+if(@oops_FOUND@) # oops_FOUND
+    find_dependency(oops)
+    set(saber_oops_FOUND True) #COMPONENT 'oops'
 endif()
 
 if(@gsiblcim_FOUND@) # gsiblcim_FOUND

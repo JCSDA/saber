@@ -1,14 +1,14 @@
        Compute independent levels:  1[10] 
-          Level   1:   1401815810
-          Level   2:   1401815810
-          Level   3:   1401815810
-          Level   4:   1401815810
-          Level   5:   1401815810
-          Level   6:   1401815810
-          Level   7:   1401815810
-          Level   8:   1401815810
-          Level   9:   1401815810
-          Level  10:   1401815810
+          Level   1:  -1556544766
+          Level   2:  -1556544766
+          Level   3:  -1556544766
+          Level   4:  -1556544766
+          Level   5:  -1556544766
+          Level   6:  -1556544766
+          Level   7:  -1556544766
+          Level   8:  -1556544766
+          Level   9:  -1556544766
+          Level  10:  -1556544766
           Model grid size:              800
           Subset Sc0 size:              800
           Number of duplicated points (halo):         0 (  0.00%)
@@ -79,7 +79,7 @@
              nc1(  5) =        376
              nc1(  6) =        376
              ns =             2256
-Norm of BUMP output parameter loc_rh - 1: 1.4059444550851400e+09
-Norm of BUMP output parameter loc_rv - 1: 2.2670651302851497e+03
-Norm of BUMP output parameter hyb_coef_ens - 1: 1.3726584370283612e+02
-Norm of BUMP output parameter hyb_coef_sta - 1: 3.9568783153805590e+01
+Norm of BUMP output parameter loc_rh - 1: 1.4059444550852396e+09
+Norm of BUMP output parameter loc_rv - 1: 2.2670651302851320e+03
+Norm of BUMP output parameter hyb_coef_ens - 1: 1.3726584370284917e+02
+Norm of BUMP output parameter hyb_coef_sta - 1: 3.9568783153809818e+01

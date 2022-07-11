@@ -151,8 +151,6 @@ void Geometry::print(std::ostream & os) const {
   os << "- size: " << grid_.size() << std::endl;
   os << "Function space:" << std::endl;
   os << "- type: " << functionSpace_.type() << std::endl;
-  os << "- size: " << functionSpace_.size() << std::endl;
-  os << "- nb_partitions: " << functionSpace_.nb_partitions() << std::endl;
   os << "- halo: " << halo_ << std::endl;
   os << "Vertical levels: " << std::endl;
   os << "- number: " << levels_ << std::endl;

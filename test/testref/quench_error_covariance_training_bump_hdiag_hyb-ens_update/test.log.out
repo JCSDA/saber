@@ -1,14 +1,14 @@
        Compute independent levels:  1[10] 
-          Level   1:   -907080636
-          Level   2:   -907080636
-          Level   3:   -907080636
-          Level   4:   -907080636
-          Level   5:   -907080636
-          Level   6:   -907080636
-          Level   7:   -907080636
-          Level   8:   -907080636
-          Level   9:   -907080636
-          Level  10:   -907080636
+          Level   1:   1737034820
+          Level   2:   1737034820
+          Level   3:   1737034820
+          Level   4:   1737034820
+          Level   5:   1737034820
+          Level   6:   1737034820
+          Level   7:   1737034820
+          Level   8:   1737034820
+          Level   9:   1737034820
+          Level  10:   1737034820
           Model grid size:             3200
           Subset Sc0 size:             3200
           Number of duplicated points (halo):         0 (  0.00%)
@@ -36,16 +36,16 @@
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
        Compute independent levels:  1[10] 
-          Level   1:   1401815810
-          Level   2:   1401815810
-          Level   3:   1401815810
-          Level   4:   1401815810
-          Level   5:   1401815810
-          Level   6:   1401815810
-          Level   7:   1401815810
-          Level   8:   1401815810
-          Level   9:   1401815810
-          Level  10:   1401815810
+          Level   1:  -1556544766
+          Level   2:  -1556544766
+          Level   3:  -1556544766
+          Level   4:  -1556544766
+          Level   5:  -1556544766
+          Level   6:  -1556544766
+          Level   7:  -1556544766
+          Level   8:  -1556544766
+          Level   9:  -1556544766
+          Level  10:  -1556544766
           Model grid size:              800
           Subset Sc0 size:              800
           Number of duplicated points (halo):         0 (  0.00%)
@@ -342,5 +342,5 @@
                 Level:   8 ~> hybrid coefficients: 0.49 / 0.54
                 Level:   9 ~> hybrid coefficients: 0.42 / 0.62
                 Level:  10 ~> hybrid coefficients: 0.40 / 0.62
-Norm of BUMP output parameter cor_rh - 1: 8.4715904753703701e+08
-Norm of BUMP output parameter cor_rv - 1: 1.3801841699720180e+03
+Norm of BUMP output parameter cor_rh - 1: 8.4715904753703642e+08
+Norm of BUMP output parameter cor_rv - 1: 1.3801841699721942e+03

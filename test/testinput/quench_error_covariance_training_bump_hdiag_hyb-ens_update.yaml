@@ -18,7 +18,7 @@ background:
   state variables: *vars
 bump:
   testing: true
-  datadir: testdata
+  datadir: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_
   dc: 500.0e3
   method: hyb-ens
   nc1: 500
@@ -27,20 +27,20 @@ bump:
   ne_lr: 50
   new_hdiag: true
   nl0r: 10
-  prefix: quench_error_covariance_training_bump_hdiag_hyb-ens_update/test
+  prefix: test
   strategy: specific_univariate
   update_mom: true
   write_hdiag: true
   output:
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/cor_rh
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/cor_rh
     parameter: cor_rh
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/cor_rv
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/cor_rv
     parameter: cor_rv
   ensemble:
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filepath: testdata/quench_randomization_bump_nicas_F20/member_%mem%
+        filepath: testdata/quench_randomization_bump_nicas_F20/_MPI_-_OMP_/member_%mem%
         state variables: *vars
       pattern: '%mem%'
       nmembers: 10
@@ -49,7 +49,7 @@ bump:
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filepath: testdata/quench_randomization_bump_nicas_F10/member_%mem%
+        filepath: testdata/quench_randomization_bump_nicas_F10/_MPI_-_OMP_/member_%mem%
         state variables: *vars
       pattern: '%mem%'
       nmembers: 50

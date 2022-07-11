@@ -280,6 +280,7 @@ integer,intent(out) :: grid_hash(nlx)       !< Grid hash profile
 
 ! Local variables
 integer :: ilx,icx
+integer :: order_cx(ncx)
 integer(kind_short) :: lonlat(2*ncx)
 real(kind_real) :: lon_cx(ncx),lat_cx(ncx)
 logical :: mask_cx(ncx,nlx)
@@ -301,11 +302,14 @@ if (mpl%main) then
       ! Intialization
       lonlat = 0_kind_short
 
+      ! Reorder lon/lat
+      call qsort(ncx,lon_cx,lat_cx,order_cx,.false.)
+
       ! Loop over points
       do icx=1,ncx
          if (mask_cx(icx,ilx)) then
-            call rad2short(lon_cx(icx),lonlat(2*(icx-1)+1))
-            call rad2short(lat_cx(icx),lonlat(2*icx))
+            call rad2short(lon_cx(order_cx(icx)),lonlat(2*(icx-1)+1))
+            call rad2short(lat_cx(order_cx(icx)),lonlat(2*icx))
          end if
       end do
 

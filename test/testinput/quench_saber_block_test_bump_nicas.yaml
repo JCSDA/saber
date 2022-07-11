@@ -18,9 +18,9 @@ saber blocks:
   bump:
     testing: true
     datadir: testdata
-    fname_nicas: quench_error_covariance_training_bump_nicas/test_nicas
+    fname_nicas: quench_error_covariance_training_bump_nicas/_MPI_-_OMP_/test_nicas
     load_nicas_local: true
-    prefix: quench_saber_block_test_bump_nicas/test
+    prefix: quench_saber_block_test_bump_nicas/_MPI_-_OMP_/test
     strategy: specific_univariate
 
 test:

@@ -18,11 +18,11 @@ background error:
     output variables: *vars
     bump:
       testing: true
-      datadir: testdata
+      datadir: testdata/quench_randomization_bump_nicas_F10/_MPI_-_OMP_
       forced_radii: true
       method: cor
       new_nicas: true
-      prefix: quench_randomization_bump_nicas_F10/test
+      prefix: test
       resol: 8.0
       rh:
         var: [7.0e6]
@@ -31,7 +31,7 @@ background error:
       strategy: specific_univariate
   randomization size: 50
 output:
-  filepath: testdata/quench_randomization_bump_nicas_F10/member
+  filepath: testdata/quench_randomization_bump_nicas_F10/_MPI_-_OMP_/member
 
 test:
   reference filename: testref/quench_randomization_bump_nicas_F10/test.log.out

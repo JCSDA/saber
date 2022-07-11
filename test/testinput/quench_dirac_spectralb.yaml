@@ -23,8 +23,7 @@ dirac:
   level: [1]
   variable: *vars
 output dirac:
-  filepath: testdata/quench_dirac_spectralb/dirac_%id%
+  filepath: testdata/quench_dirac_spectralb/_MPI_-_OMP_/dirac_%id%
 
 test:
   reference filename: testref/quench_dirac_spectralb/test.log.out
-  test output filename: testoutput/quench_dirac_spectralb/test.log.out

@@ -3,11 +3,11 @@ background:
   state variables: &vars [var]
 bump:
   testing: true
-  datadir: testdata
+  datadir: testdata/quench_error_covariance_training_bump_nicas/_MPI_-_OMP_
   forced_radii: true
   method: cor
   new_nicas: true
-  prefix: quench_error_covariance_training_bump_nicas/test
+  prefix: test
   resol: 8.0
   rh:
     var: [10.0e6]
@@ -15,9 +15,9 @@ bump:
     var: [10]
   strategy: specific_univariate
   output:
-  - filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rh
+  - filepath: testdata/quench_error_covariance_training_bump_nicas/_MPI_-_OMP_/cor_rh
     parameter: cor_rh
-  - filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rv
+  - filepath: testdata/quench_error_covariance_training_bump_nicas/_MPI_-_OMP_/cor_rv
     parameter: cor_rv
   write_nicas_local: true
 geometry:

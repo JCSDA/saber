@@ -3,10 +3,8 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
+list(APPEND bump_src_files_list
 
-set(bump_src_files
-
-# Fortran / C sources
 tools_fit.fypp
 tools_func.c
 tools_func.fypp
@@ -15,6 +13,8 @@ type_avg.fypp
 type_avg_blk.fypp
 type_bpar.fypp
 type_bump.fypp
+type_bump.h
+type_bump_interface.F90
 type_cmat.fypp
 type_cmat_blk.fypp
 type_com.fypp
@@ -42,15 +42,22 @@ type_var.fypp
 type_vbal.fypp
 type_vbal_blk.fypp
 type_wind.fypp
+)
 
-# C++ interfaces
-BUMP.h
-BUMP_NICAS.h
-BUMP_PsiChiToUV.h
-BUMP_StdDev.h
-BUMP_VerticalBalance.h
-type_bump.h
-type_bump_interface.F90
+if( oops_FOUND )
+    list(APPEND bump_src_files_list
+
+    BUMP.h
+    BUMP_NICAS.h
+    BUMP_PsiChiToUV.h
+    BUMP_StdDev.h
+    BUMP_VerticalBalance.h
+    )
+endif()
+
+set( bump_src_files
+
+${bump_src_files_list}
 
 PARENT_SCOPE
 )

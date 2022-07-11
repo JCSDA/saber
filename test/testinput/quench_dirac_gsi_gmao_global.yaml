@@ -35,7 +35,7 @@ initial condition:
   date: 2010-01-01T12:00:00Z
   state variables: [stream_function,velocity_potential,air_temperature]
 output dirac:
-  filepath: testdata/quench_dirac_gsi_gmao_global/dirac_%id%
+  filepath: testdata/quench_dirac_gsi_gmao_global/_MPI_-_OMP_/dirac_%id%
 
 test:
   reference filename: testref/quench_dirac_gsi_gmao_global/test.log.out

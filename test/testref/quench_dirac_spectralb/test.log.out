@@ -5,8 +5,6 @@ Quench geometry grid:
 - size: 1800
 Function space:
 - type: StructuredColumns
-- size: 1800
-- nb_partitions: 1
 - halo: 0
 Vertical levels: 
 - number: 70
@@ -20,8 +18,6 @@ Quench geometry grid:
 - size: 1800
 Function space:
 - type: StructuredColumns
-- size: 1800
-- nb_partitions: 1
 - halo: 0
 Vertical levels: 
 - number: 70

@@ -36,7 +36,6 @@ find_package( NetCDF REQUIRED COMPONENTS C Fortran )
 find_package( eckit 1.11.6 REQUIRED COMPONENTS MPI )
 find_package( fckit 0.7.0  REQUIRED )
 find_package( atlas 0.27.0 REQUIRED COMPONENTS OMP_Fortran )
-find_package( oops 1.0.0 REQUIRED COMPONENTS qg )
 
 if( ENABLE_MKL )
     find_package( MKL )
@@ -48,6 +47,7 @@ else()
 endif()
 
 # Optionals
+find_package( oops QUIET )
 find_package( gsibclim QUIET )
 
 # Optional SABER blocks
