@@ -2,15 +2,16 @@
 datadir: "testdata"
 prefix: "bump_hdiag_ldwv/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_hdiag: 1
-write_hdiag: 1
+new_hdiag: true
+write_hdiag: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
@@ -29,7 +30,7 @@ nl0r: 2
 
 # diag_param
 ne: 50
-local_diag: 1
+local_diag: true
 local_rad: 1000.0e3
 
 # fit_param

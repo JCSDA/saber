@@ -117,7 +117,7 @@ do iv=1,nam%nv
       fld_id = inquire_var(mpl,ncid,nam%variables(iv))
 
       ! Read data
-      do il0=1,nam%nl
+      do il0=1,nam%nl0
          call get_var(mpl,ncid,fld_id,fld_mg(:,il0),(/1,nam%levs(il0)/),(/model%nmg,1/))
       end do
    end if

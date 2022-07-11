@@ -170,7 +170,9 @@ integer,intent(in) :: key                !< Calling subroutine/function key
 ! Local variables
 integer :: key_prev
 
+#ifdef _OPENMP
 if (omp_get_thread_num()==0) then
+#endif
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
       write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%in (',iinst,') called by '//trim(subr)
@@ -221,7 +223,9 @@ if (omp_get_thread_num()==0) then
          end if
       end if
    end if
+#ifdef _OPENMP
 end if
+#endif
 
 end subroutine probe_in
 
@@ -240,8 +244,9 @@ integer,intent(in) :: key                !< Calling subroutine/function key
 ! Local variables
 integer :: key_prev,clock_end
 real(kind_real) :: elapsed,elapsed_own
-
+#ifdef _OPENMP
 if (omp_get_thread_num()==0) then
+#endif
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
       write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%out (',iinst,')'
@@ -292,7 +297,9 @@ if (omp_get_thread_num()==0) then
 
    ! Update level
    probe%instance(iinst)%level = probe%instance(iinst)%level-1
+#ifdef _OPENMP
 end if
+#endif
 
 end subroutine probe_out
 
@@ -312,7 +319,9 @@ integer,intent(in) :: lunit           !< Logical unit
 integer :: i,indent
 character(len=3) :: cindent
 
+#ifdef _OPENMP
 if (omp_get_thread_num()==0) then
+#endif
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
       write(output_unit,'(a,i5,a)') 'Error: wrong instance probe%traceback (',iinst,')'
@@ -339,7 +348,9 @@ if (omp_get_thread_num()==0) then
 
    ! Flush
    call flush(lunit)
+#ifdef _OPENMP
 end if
+#endif
 
 end subroutine probe_traceback
 

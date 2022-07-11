@@ -14,46 +14,34 @@ cost function:
     tstep: PT1H
   background:
     date: 2010-01-01T00:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
   background error:
     covariance model: hybrid
     components:
     - covariance:
         covariance model: ensemble
         localization:
-          bump:
-            datadir: testdata
-            fname_nicas: qg_parameters_bump_loc/test_nicas
-            io_keys:
-            - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
-            io_values:
-            - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
-            load_nicas_local: 1
-            prefix: qg_4dvar_drplanczos_hybrid_bump/test
-            strategy: common
-          localization method: BUMP
-          localization variables: [x]
-        members:
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.1.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.2.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.3.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.4.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.5.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.6.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.7.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.8.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.9.2009-12-31T00:00:00Z.P1D.nc
-        - date: 2010-01-01T00:00:00Z
-          filename: testdata/forecast.ens.10.2009-12-31T00:00:00Z.P1D.nc
+          localization method: SABER
+          saber block:
+            saber block name: BUMP_NICAS
+            input variables: [x]
+            output variables: [x]
+            bump:
+              datadir: testdata
+              fname_nicas: qg_error_covariance_training_bump_loc/test_nicas
+              io_keys:
+              - x_2010-01-01T00:00:00Z-x_2010-01-01T00:00:00Z
+              io_values:
+              - x_2010-01-01T12:00:00Z-x_2010-01-01T12:00:00Z
+              load_nicas_local: true
+              prefix: qg_4dvar_drplanczos_hybrid_bump/test
+              strategy: common
+        members from template:
+          template:
+            date: 2010-01-01T00:00:00Z
+            filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1D.nc
+          pattern: '%mem%'
+          nmembers: 10
       weight:
         value: 0.5
     - covariance:
@@ -65,36 +53,37 @@ cost function:
       weight:
         value: 0.5
   observations:
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: Stream
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: Stream
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: Wind
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: Wind
-  - obs error:
-      covariance model: diagonal
-    obs operator:
-      obs type: WSpeed
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: WSpeed
+    observers:
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: Stream
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: Stream
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: Wind
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: Wind
+    - obs error:
+        covariance model: diagonal
+      obs operator:
+        obs type: WSpeed
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_hybrid_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: WSpeed
   constraints:
   - jcdfi:
       filtered variables: [x]
@@ -153,4 +142,4 @@ output:
 
 test:
   reference filename: testref/qg_4dvar_drplanczos_hybrid_bump/test.log.out
-  test output filename: testoutput/qg_4dvar_drplanczos_hybrid_bump/test.log.out
+  float relative tolerance: 4e-6

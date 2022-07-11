@@ -7,7 +7,7 @@ if(@jedicmake_FOUND@ AND NOT jedicmake_FOUND)
     find_dependency(jedicmake REQUIRED)
 endif()
 
-if(NOT OpenMP_Fortran_FOUND)
+if(@OPENMP@)
     find_dependency(OpenMP REQUIRED COMPONENTS Fortran)
 endif()
 
@@ -43,6 +43,11 @@ endif()
 if(@oops_FOUND@) # oops_FOUND
     find_dependency(oops)
     set(saber_oops_FOUND True) #COMPONENT 'oops'
+endif()
+
+if(@gsiblcim_FOUND@) # gsiblcim_FOUND
+    find_dependency(gsiblcim)
+    set(saber_gsiblcim_FOUND True) #COMPONENT 'gsiblcim'
 endif()
 
 #Export Fortran compiler version for checking module compatibility

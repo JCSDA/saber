@@ -434,7 +434,7 @@ do ic1a=1,samp%nc1a
    cov_c1a_pack(ic1a,:) = reshape(vbal_blk%cov_c1a(ic1a,:,:),(/geom%nl0**2/))
 end do
 
-! Communication
+! Halo extension
 call samp%com_c1_AE%ext(mpl,cov_c1a_pack,cov_c1e_pack)
 
 ! Unpack data in halo E

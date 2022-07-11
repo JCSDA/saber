@@ -5,59 +5,58 @@ cost function:
   analysis variables: [x]
   background:
     date: 2010-01-01T00:00:00Z
-    filename: testdata/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
+    filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1D.nc
   background error:
-    bump:
-      datadir: testdata
-      fname_nicas: qg_parameters_bump_cov/test_nicas
-      load_nicas_local: 1
-      prefix: qg_4dvar_drplanczos_bump/test
-      strategy: specific_univariate
-    covariance model: BUMP
-    variable changes:
-    - variable change: StdDev
+    covariance model: SABER
+    saber blocks:
+    - saber block name: BUMP_NICAS
+      saber central block: true
+      iterative inverse: true
       input variables: [x]
       output variables: [x]
       bump:
         datadir: testdata
-        fname_var: [qg_parameters_bump_cov/test_var]
-        io_keys:
-        - x_2010-01-01T00:00:00Z
-        io_values:
-        - x_2010-01-01T12:00:00Z
-        load_var: 1
+        fname_nicas: qg_error_covariance_training_bump_cov/test_nicas
+        load_nicas_local: true
         prefix: qg_4dvar_drplanczos_bump/test
+        strategy: specific_univariate
+    - saber block name: StdDev
+      input variables: [x]
+      output variables: [x]
+      file:
+        filename: testdata/qg_error_covariance_training_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc
   observations:
-  - obs operator:
-      obs type: Stream
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: Stream
-    obs error:
-      covariance model: diagonal
-  - obs operator:
-      obs type: Wind
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: Wind
-    obs error:
-      covariance model: diagonal
-  - obs operator:
-      obs type: WSpeed
-    obs space:
-      obsdatain:
-        obsfile: testdata/truth.obs4d_24h.nc
-      obsdataout:
-        obsfile: testdata/qg_4dvar_drplanczos_bump.obs4d_24h.nc
-      obs type: WSpeed
-    obs error:
-      covariance model: diagonal
+    observers:
+    - obs operator:
+        obs type: Stream
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: Stream
+      obs error:
+        covariance model: diagonal
+    - obs operator:
+        obs type: Wind
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: Wind
+      obs error:
+        covariance model: diagonal
+    - obs operator:
+        obs type: WSpeed
+      obs space:
+        obsdatain:
+          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+        obsdataout:
+          obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+        obs type: WSpeed
+      obs error:
+        covariance model: diagonal
   constraints:
   - jcdfi:
       alpha: 1.0e-13
@@ -121,4 +120,3 @@ output:
 
 test:
   reference filename: testref/qg_4dvar_drplanczos_bump/test.log.out
-  test output filename: testoutput/qg_4dvar_drplanczos_bump/test.log.out

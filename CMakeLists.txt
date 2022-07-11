@@ -9,7 +9,9 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber VERSION 1.2.0 LANGUAGES CXX Fortran )
+project( saber VERSION 1.3.0 LANGUAGES CXX Fortran )
+
+option(OPENMP "Build saber with OpenMP support" ON)
 
 ## Ecbuild integration
 find_package( ecbuild QUIET )
@@ -26,12 +28,15 @@ include( ${PROJECT_NAME}_compiler_flags )
 ## Dependencies
 # Required
 find_package( jedicmake REQUIRED )  # Prefer find modules from jedi-cmake
-find_package( OpenMP REQUIRED COMPONENTS Fortran )
+if(OPENMP)
+  find_package( OpenMP REQUIRED COMPONENTS Fortran )
+endif()
 find_package( MPI REQUIRED COMPONENTS Fortran )
-find_package( NetCDF REQUIRED COMPONENTS Fortran )
+find_package( NetCDF REQUIRED COMPONENTS C Fortran )
 find_package( eckit 1.11.6 REQUIRED COMPONENTS MPI )
 find_package( fckit 0.7.0  REQUIRED )
-find_package( atlas 0.20.2 REQUIRED COMPONENTS OMP_Fortran )
+find_package( atlas 0.27.0 REQUIRED COMPONENTS OMP_Fortran )
+
 if( ENABLE_MKL )
     find_package( MKL )
 endif()
@@ -40,10 +45,36 @@ if( MKL_FOUND )
 else()
     find_package( LAPACK REQUIRED )
 endif()
+
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
+find_package( gsibclim QUIET )
 
-## SABER instrumentation
+# Optional SABER blocks
+if( gsibclim_FOUND )
+    message( STATUS "SABER block GSI is enabled" )
+    add_definitions(-Dgsibclim_FOUND=1)
+else()
+    message( STATUS "SABER block GSI is not enabled" )
+    add_definitions(-Dgsibclim_FOUND=0)
+endif()
+# TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+if( atlas_VERSION GREATER_EQUAL 0.29.0 )
+    message( STATUS "ATLAS version higher or equal to 0.29.0" )
+    if( atlas_TRANS_FOUND )
+        message( STATUS "SABER block SPECTRALB is enabled" )
+        add_definitions(-Datlas_TRANS_FOUND=1)
+    else()
+        message( STATUS "SABER block SPECTRALB is not enabled" )
+        add_definitions(-Datlas_TRANS_FOUND=0)
+    endif()
+else()
+    message( STATUS "ATLAS version lower than 0.29.0" )
+    message( STATUS "SABER block SPECTRALB is not enabled" )
+    add_definitions(-Datlas_TRANS_FOUND=0)
+endif()
+
+## SABER instrumentation
 set( ENABLE_SABER_INSTRUMENTATION 0 )
 if( DEFINED ENV{ENABLE_SABER_INSTRUMENTATION} )
     set( ENABLE_SABER_INSTRUMENTATION $ENV{ENABLE_SABER_INSTRUMENTATION} )

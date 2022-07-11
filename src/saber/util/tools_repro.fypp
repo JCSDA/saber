@@ -239,7 +239,7 @@ logical :: test
 
 test = .false.
 if (repro) then
-      if ((abs(x)>zero).or.(abs(y)>zero)) then
+   if ((abs(x)>zero).or.(abs(y)>zero)) then
       test = abs(x-y)<rth*(abs(x+y))
    else
       test = .true.

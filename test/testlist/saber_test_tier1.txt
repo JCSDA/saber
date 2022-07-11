@@ -8,12 +8,8 @@ bump_hdiag-nicas_local_dlat
 bump_hdiag-nicas_local_rad
 bump_hdiag-nicas_loc_common
 bump_hdiag-nicas_mask_check
-bump_hdiag-nicas_redundant
 bump_hdiag-nicas_regional
 bump_hdiag-nicas_urban
-bump_lct-nicas_one_scale
-bump_read_cmat
-bump_read_cmat_serial
 bump_read_mom
 bump_read_nicas_global
 bump_read_nicas_local
@@ -26,8 +22,6 @@ bump_read_vbal_global
 bump_read_vbal_local
 bump_var_forced_var
 bump_vbal
-bump_write_cmat
-bump_write_cmat_serial
 bump_write_mom
 bump_write_nicas_global
 bump_write_nicas_local

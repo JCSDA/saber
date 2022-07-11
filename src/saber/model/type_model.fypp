@@ -5,6 +5,7 @@
 #:include 'model_geos.fypp'
 #:include 'model_gfs.fypp'
 #:include 'model_ifs.fypp'
+#:include 'model_cartg.fypp'
 #:include 'model_mpas.fypp'
 #:include 'model_nemo.fypp'
 #:include 'model_norcpm.fypp'
@@ -21,7 +22,7 @@
 !----------------------------------------------------------------------
 module type_model
 
-use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace,atlas_metadata
+use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use tools_atlas, only: create_atlas_function_space
 use tools_const, only: zero,hundredth,tenth,quarter,half,one,four,thousand,pi,deg2rad,rad2deg,req,ps
 use tools_func, only: lonlatmod
@@ -31,7 +32,7 @@ use tools_netcdf, only: open_file,get_att,inquire_dim,inquire_dim_size,inquire_v
 use tools_repro, only: inf
 use type_fieldset, only: fieldset_type
 use type_mpl, only: mpl_type
-use type_nam, only: nam_type,nvmax
+use type_nam, only: nam_type,nvmax,ncompmax
 @:use_probe()
 use type_rng, only: rng_type
 use type_tree, only: tree_type
@@ -86,6 +87,11 @@ type model_type
    ! Ensembles
    type(fieldset_type),allocatable :: ens1(:)  !< Ensemble 1 members
    type(fieldset_type),allocatable :: ens2(:)  !< Ensemble 2 members
+
+   ! Model-specific parameters
+   integer :: ncomp                            !< Number of components
+   integer,allocatable  :: nlev_comp(:)        !< Number of levels for each component in files
+   integer,allocatable  :: nl0_comp(:)         !< Number of levels for each component actually used
 contains
    ! Model specific procedures
    procedure :: aro_coord => model_aro_coord
@@ -102,6 +108,8 @@ contains
    procedure :: gfs_read => model_gfs_read
    procedure :: ifs_coord => model_ifs_coord
    procedure :: ifs_read => model_ifs_read
+   procedure :: cartg_coord => model_cartg_coord
+   procedure :: cartg_read => model_cartg_read
    procedure :: mpas_coord => model_mpas_coord
    procedure :: mpas_read => model_mpas_read
    procedure :: nemo_coord => model_nemo_coord
@@ -137,6 +145,7 @@ contains
 @:include_geos()
 @:include_gfs()
 @:include_ifs()
+@:include_cartg()
 @:include_mpas()
 @:include_nemo()
 @:include_norcpm()
@@ -222,6 +231,8 @@ if (allocated(model%ens2)) then
 end if
 call model%afunctionspace%final()
 call model%fieldset%final()
+if (allocated(model%nlev_comp)) deallocate(model%nlev_comp)
+if (allocated(model%nl0_comp)) deallocate(model%nl0_comp)
 
 ! Probe out
 @:probe_out()
@@ -242,21 +253,16 @@ type(mpl_type),intent(inout) :: mpl      !< MPI data
 type(nam_type),intent(inout) :: nam      !< Namelist variables
 
 ! Local variables
-integer :: img,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,i,nv_save,ildw,itile,ilon,ilat,ilonsub,ilatsub,imgt
+integer :: img,iproc,imga,il0,nmga,ny,nres,iy,delta,ix,itile,ilon,ilat,ilonsub,ilatsub,imgt
 integer :: deltalon,deltalat,nprocpertile,nreslon,nreslat,nxmax
 integer,allocatable :: nx(:),nlatsub(:),nlonsub(:,:),lonlattile_to_proc(:,:,:),imga_arr(:)
-integer(kind_int),pointer :: gmask_ptr(:,:),smask_ptr(:,:)
+integer(kind_int),pointer :: gmask_ptr(:,:)
 real(kind_real) :: dlat,dlon
 real(kind_real),allocatable :: lon_mga(:),lat_mga(:)
 real(kind_real),allocatable :: lon_inf(:),lon_sup(:),lat_inf(:),lat_sup(:)
-real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:),real_ptr(:,:)
-logical :: maskval
+real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:)
 logical :: found
-character(len=1024) :: variables,filename
-character(len=1024),dimension(nvmax) :: variables_save
-type(atlas_field) :: afield_meta,afield,afield_area,afield_vunit,afield_gmask,afield_smask
-type(atlas_metadata) :: ametadata
-type(fieldset_type) :: fieldset
+type(atlas_field) :: afield_area,afield_vunit,afield_gmask
 
 ! Set name
 @:set_name(model_setup)
@@ -268,7 +274,7 @@ type(fieldset_type) :: fieldset
 mpl%datadir = nam%datadir
 
 ! Number of levels
-model%nl0 = nam%nl
+model%nl0 = nam%nl0
 
 ! Select model
 if (trim(nam%model)=='aro') call model%aro_coord(mpl,nam)
@@ -278,6 +284,7 @@ if (trim(nam%model)=='gem') call model%gem_coord(mpl,nam)
 if (trim(nam%model)=='geos') call model%geos_coord(mpl,nam)
 if (trim(nam%model)=='gfs') call model%gfs_coord(mpl,nam)
 if (trim(nam%model)=='ifs') call model%ifs_coord(mpl,nam)
+if (nam%model(1:5)=='cartg') call model%cartg_coord(mpl,nam)
 if (trim(nam%model)=='mpas') call model%mpas_coord(mpl,nam)
 if (trim(nam%model)=='nemo') call model%nemo_coord(mpl,nam)
 if (trim(nam%model)=='norcpm') call model%norcpm_coord(mpl,nam)
@@ -492,20 +499,6 @@ call create_atlas_function_space(model%nmga,lon_mga,lat_mga,model%afunctionspace
 ! Create fieldset
 model%fieldset = atlas_fieldset()
 
-! Add meta field containing metadata
-afield_meta = atlas_field(name='meta',kind=atlas_integer(kind_int),shape=(/0/))
-ametadata = afield_meta%metadata()
-select case (trim(nam%model))
-case('nemo','qg')
-   ! Redundant points
-   call ametadata%set('unique_points',.false.)
-case default
-   ! Unique points
-   call ametadata%set('unique_points',.true.)
-end select
-call model%fieldset%add(afield_meta)
-call ametadata%final()
-
 ! Add area
 if (mpl%msv%isanynot(model%area)) then
    afield_area = model%afunctionspace%create_field(name='area',kind=atlas_real(kind_real),levels=0)
@@ -522,11 +515,6 @@ call model%fieldset%add(afield_vunit)
 afield_gmask = model%afunctionspace%create_field(name='gmask',kind=atlas_integer(kind_int),levels=model%nl0)
 call afield_gmask%data(gmask_ptr)
 call model%fieldset%add(afield_gmask)
-
-! Add sampling mask
-afield_smask = model%afunctionspace%create_field(name='smask',kind=atlas_integer(kind_int),levels=model%nl0)
-call afield_smask%data(smask_ptr)
-call model%fieldset%add(afield_smask)
 
 ! Conversion
 imga = 0
@@ -688,90 +676,6 @@ if (nam%check_no_point_mask) then
    deallocate(nx)
 end if
 
-! Define sampling mask
-smask_ptr = gmask_ptr
-select case(trim(nam%mask_type))
-case ('none','stddev')
-   ! All points accepted in sampling
-case ('ldwv')
-   ! All points accepted in sampling
-   do ildw=1,nam%nldwv
-      if (nam%img_ldwv(ildw)>0) then
-         ! Find lon/lat based on model grid index
-         if (nam%img_ldwv(ildw)<=model%nmg) then
-            nam%lon_ldwv(ildw) = model%lon(nam%img_ldwv(ildw))*rad2deg
-            nam%lat_ldwv(ildw) = model%lat(nam%img_ldwv(ildw))*rad2deg
-         else
-            call mpl%abort('${subr}$','model grid index is positive but too large')
-         end if
-      end if
-      write(mpl%info,'(a7,a,e15.8,a,e15.8)') '','Profile '//trim(nam%name_ldwv(ildw))//' required at lon/lat: ', &
- & nam%lon_ldwv(ildw),' / ',nam%lat_ldwv(ildw)
-      call mpl%flush
-      if (.not.any(model%mask(nam%img_ldwv(ildw),:))) call mpl%warning('${subr}$', &
- & 'profile '//trim(nam%name_ldwv(ildw))//' is not valid')
-   end do
-case default
-   if (nam%mask_type(1:3)=='lat') then
-      ! All points accepted in sampling
-   else
-      i = index(trim(nam%mask_type),'@')
-      if (i>1) then
-         ! Get variable and filename
-         variables = nam%mask_type(1:i-1)
-         filename = nam%mask_type(i+1:)
-         write(mpl%info,'(a7,a)') '','Read sampling mask from variable '//trim(variables)//' in file '//trim(filename)
-         call mpl%flush
-         write(mpl%info,'(a7,a,e10.3,a)') '','Threshold ',nam%mask_th(1),' used as a '//trim(nam%mask_lu(1))//' bound'
-         call mpl%flush
-
-         ! Save namelist parameters
-         nv_save = nam%nv
-         variables_save = nam%variables
-
-         ! Set namelist parameters
-         nam%nv = 1
-         nam%variables(1) = variables
-
-         ! Read file
-         fieldset = atlas_fieldset()
-         call model%read(mpl,nam,filename,fieldset)
-
-         ! Get data
-         afield = fieldset%field(variables)
-         call afield%data(real_ptr)
-
-         ! Compute mask
-         do il0=1,model%nl0
-            do imga=1,model%nmga
-               if (trim(nam%mask_lu(1))=='lower') then
-                  maskval = (real_ptr(il0,imga)>nam%mask_th(1))
-               elseif (trim(nam%mask_lu(1))=='upper') then
-                  maskval = (real_ptr(il0,imga)<nam%mask_th(1))
-               else
-                  call mpl%abort('${subr}$','mask_lu not recognized')
-               end if
-               if (maskval) then
-                  smask_ptr(il0,imga) = 1
-               else
-                  smask_ptr(il0,imga) = 0
-               end if
-            end do
-         end do
-
-         ! Reset namelist parameters
-         nam%nv = nv_save
-         nam%variables = variables_save
-
-         ! Release pointers
-         call afield%final()
-         call fieldset%final()
-      else
-         call mpl%abort('${subr}$','mask_type should be formatted as VARIABLE@FILE to read a mask from file')
-      end if
-   end if
-end select
-
 if (model%ntile>1) then
    ! Allocation
    allocate(model%tilepool(mpl%nproc,model%ntile))
@@ -827,11 +731,9 @@ end if
 ! Release memory
 deallocate(lon_mga)
 deallocate(lat_mga)
-call afield_meta%final()
 call afield_area%final()
 call afield_vunit%final()
 call afield_gmask%final()
-call afield_smask%final()
 
 ! Probe out
 @:probe_out()
@@ -854,7 +756,7 @@ character(len=*),intent(in) :: filename       !< File name
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
-integer :: iv
+integer :: imga,il0,iv
 real(kind_real) :: fld_mga(model%nmga,model%nl0,nam%nv)
 real(kind_real),pointer :: real_ptr(:,:)
 type(atlas_field) :: afield
@@ -873,6 +775,7 @@ if (trim(nam%model)=='gem') call model%gem_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='geos') call model%geos_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='gfs') call model%gfs_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='ifs') call model%ifs_read(mpl,nam,filename,fld_mga)
+if (nam%model(1:5)=='cartg') call model%cartg_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='mpas') call model%mpas_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='nemo') call model%nemo_read(mpl,nam,filename,fld_mga)
 if (trim(nam%model)=='norcpm') call model%norcpm_read(mpl,nam,filename,fld_mga)
@@ -890,7 +793,11 @@ do iv=1,nam%nv
 
    ! Copy data
    call afield%data(real_ptr)
-   real_ptr = transpose(fld_mga(:,:,iv))
+   do il0=1,model%nl0
+      do imga=1,model%nmga
+         real_ptr(il0,imga) = fld_mga(imga,il0,iv)
+      end do
+   end do
 end do
 
 ! Probe out

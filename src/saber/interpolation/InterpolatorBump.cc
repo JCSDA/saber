@@ -13,7 +13,6 @@
 #include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
 
-#include "oops/base/InterpolatorBase.h"
 #include "saber/interpolation/InterpolatorBump.h"
 #include "saber/interpolation/interpolatorbump_f.h"
 

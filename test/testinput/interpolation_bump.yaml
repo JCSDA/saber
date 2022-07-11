@@ -1,13 +1,15 @@
----
 test_interpolation_interface:
-    interpolator: "bump"
-    nlevels: 2
-    missingvalue_int: -999
-    missingvalue_real: -999.0
-    NRandom: 24
-    Seed: 2345
-    tolerance: 1.e-2
-    bump: # parameters passed directly to bump
-        prefix: Data/bump/interpolation_interface
-        datadir: testdata
-        verbosity: main
+  interpolator: "bump"
+  nlevels: 2
+  missingvalue_int: -999
+  missingvalue_real: -999.0
+  NRandom: 24
+  Seed: 2345
+  tolerance: 1.e-2
+  bump:
+    prefix: interpolation_bump/test
+    datadir: testdata
+    verbosity: main
+
+test:
+  reference filename: testref/interpolation_bump/test.log.out

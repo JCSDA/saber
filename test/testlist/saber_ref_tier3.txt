@@ -1,4 +1,0 @@
-bump_hdiag_optimality/test_1-1_diag.nc
-bump_nicas_consistency/test_1-1_nicas.nc
-bump_nicas_randomization/test_1-1_nicas.nc
-bump_nicas_randomization/test_1-1_randomization.nc

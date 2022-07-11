@@ -2,15 +2,16 @@
 datadir: "testdata"
 prefix: "bump_var_filter_uniform/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_var: 1
-write_var: 1
+new_var: true
+write_var: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
@@ -24,7 +25,7 @@ ens1_ne: 50
 
 # diag_param
 ne: 50
-var_filter: 1
+var_filter: true
 
 # fit_param
 

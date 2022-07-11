@@ -72,8 +72,8 @@ model%mask = .true.
 ! Vertical unit
 do img=1,model%nmg
    if (nam%logpres) then
-      model%vunit(img,1:nam%nl) = log(a(nam%levs(1:nam%nl))+b(nam%levs(1:nam%nl))*ps)
-      if (model%nl0>nam%nl) model%vunit(img,model%nl0) = log(ps)
+      model%vunit(img,1:nam%nl0) = log(a(nam%levs(1:nam%nl0))+b(nam%levs(1:nam%nl0))*ps)
+      if (model%nl0>nam%nl0) model%vunit(img,model%nl0) = log(ps)
    else
       model%vunit(img,:) = real(nam%levs(1:model%nl0),kind_real)
    end if
@@ -137,8 +137,8 @@ do iv=1,nam%nv
       rank = inquire_var_rank(mpl,ncid,nam%variables(iv))
 
       ! Get offset and factor
-      call get_att(mpl,ncid,'add_offset',add_offset,fld_id)
-      call get_att(mpl,ncid,'scale_factor',scale_factor,fld_id)
+      call get_att(mpl,ncid,fld_id,'add_offset',add_offset)
+      call get_att(mpl,ncid,fld_id,'scale_factor',scale_factor)
 
       ! Read data
       select case (rank)
@@ -154,7 +154,7 @@ do iv=1,nam%nv
             fld_tmp(:,:,model%nl0) = add_offset+scale_factor*real(fld_tmp_int,kind_real)
          end if
       case (3)
-         do il0=1,nam%nl
+         do il0=1,nam%nl0
             ! 3D data
             call get_var(mpl,ncid,fld_id,fld_tmp_int,(/1,1,nam%levs(il0)/),(/model%nlon,model%nlat,1/))
 

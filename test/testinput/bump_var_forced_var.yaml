@@ -2,15 +2,16 @@
 datadir: "testdata"
 prefix: "bump_var_forced_var/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_var: 1
-write_var: 1
+new_var: true
+write_var: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
@@ -23,7 +24,7 @@ ens1_ne: 50
 # sampling_param
 
 # diag_param
-forced_var: 1
+forced_var: true
 stddev:
   u: [2.0,1.0]
   q: [1.0,0.5]

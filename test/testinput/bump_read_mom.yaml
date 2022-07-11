@@ -2,17 +2,18 @@
 datadir: "testdata"
 prefix: "bump_read_mom/test__MPI_-_OMP_"
 model: "qg"
+write_c0: true
 
 # driver_param
 method: "cor"
 strategy: "specific_univariate"
-new_mom: 0
-load_mom: 1
-new_hdiag: 1
-write_hdiag: 1
+new_mom: false
+load_mom: true
+new_hdiag: true
+write_hdiag: true
 
 # model_param
-nl: 2
+nl0: 2
 levs: [1,2]
 nv: 2
 variables: ["u","q"]
