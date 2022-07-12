@@ -13,7 +13,7 @@ use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_node
  & atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_metadata,atlas_structuredgrid,atlas_regionalgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
-use tools_atlas, only: field_to_array
+use tools_atlas, only: get_grid,field_to_array
 use tools_const, only: zero,quarter,half,one,two,four,hundred,pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist,inside, &
  & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
@@ -2083,16 +2083,16 @@ integer,intent(in) :: ns                    !< Number of samplings points (globa
 integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global)
 
 ! Local variables
-integer :: ncxa_eff,ncx_eff,offset,isa,icxa,is,icx,nfac,nssa,nss,nx,ny,issa,n,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode
+integer :: ncxa_eff,ncx_eff,offset,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode
 integer :: s_to_cxa(ns),nn_index(1)
 integer,allocatable :: proc_to_ncxa_eff(:),proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
-real(kind_real) :: nss_real,lat_mid,dx,dy,alpha,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
+real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
 real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 logical :: retry,valid
 logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:)
-character(len=1024) :: gridid,cfmt
+character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
 
 ! Set name
@@ -2176,20 +2176,14 @@ else
       nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0
 
       if (nss_real<real(nssmax,kind_real)) then
-         ! Integer value
-         nss = floor(nss_real)
-
-         ! Global octahedral grid
-         n = int(-4.5_kind_real+sqrt(20.25_kind_real+quarter*real(nss,kind_real)))+1
-         write(gridid,'(a,i5.5)') 'O',n
-         agrid = atlas_structuredgrid(gridid)
-         nss = 4*n**2+36*n
+         ! Global grid
+         call get_grid(mpl,floor(nss_real),agrid,nss)
 
          ! Initialization
          lmask_cxa = .false.
          cxa_to_node = mpl%msv%vali
 
-         ! Loop over octahedral grid points
+         ! Loop over grid points
          inode = 0
          do iy=1,int(agrid%ny(),kind_int)
             do ix=1,int(agrid%nx(iy),kind_int)
@@ -2217,23 +2211,10 @@ else
             end do
          end do
       else
-         ! Number of required points at regional scale
-         nss = nfac*ns
-
-         ! Shape ratio
-         lat_mid = half*(geom%lat_min+geom%lat_max)
-         call sphere_dist(geom%lon_min,lat_mid,geom%lon_max,lat_mid,dx)
-         call sphere_dist(zero,geom%lat_min,zero,geom%lat_max,dy)
-         alpha = dy/dx
-         nx = ceiling(sqrt(real(nss,kind_real)/alpha))
-         ny = ceiling(alpha*real(nx,kind_real))
-
          ! Regional grid
-         write(gridid,'(a,i4.4,a,i4.4)') 'regional_',nx,'x',ny
-         agrid = atlas_regionalgrid(nx,ny,geom%lat_max*rad2deg,geom%lon_min*rad2deg,geom%lat_min*rad2deg,geom%lon_max*rad2deg)
-         nss = nx*ny
+         call get_grid(mpl,nfac*ns,geom%lon_min,geom%lon_max,geom%lat_min,geom%lat_max,agrid,nss)
 
-         ! Loop over regional grid points
+         ! Loop over grid points
          inode = 0
          do iy=1,int(agrid%ny(),kind_int)
             do ix=1,int(agrid%nx(iy),kind_int)
@@ -2270,8 +2251,8 @@ else
       call mpl%f_comm%allreduce(nssa,nss,fckit_mpi_sum())
 
       ! Print result
-      write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,a,a,i8,a)'
-      write(mpl%info,trim(cfmt)) '','Attempt with a ',trim(gridid),' grid: ',nss,' valid points found'
+      write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',i8,a)'
+      write(mpl%info,trim(cfmt)) '',nss,' valid points found'
       if (verbosity) call mpl%flush
       retry = (nss<ns)
    end do

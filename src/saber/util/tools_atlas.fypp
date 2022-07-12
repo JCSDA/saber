@@ -9,17 +9,21 @@
 !----------------------------------------------------------------------
 module tools_atlas
 
-use atlas_module, only: atlas_field,atlas_integer,atlas_real,atlas_functionspace,atlas_functionspace_nodecolumns, &
- & atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns
-use tools_const, only: rad2deg
+use atlas_module, only: atlas_structuredgrid,atlas_regionalgrid,atlas_field,atlas_integer,atlas_real,atlas_functionspace, &
+ & atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns
+use tools_const, only: zero,quarter,half,rad2deg
 use tools_kinds, only: kind_int,kind_real
-use tools_func, only: convert_i2l,convert_l2i
+use tools_func, only: sphere_dist,convert_i2l,convert_l2i
 use tools_netcdf, only: create_file
 use type_mpl, only: mpl_type
 @:use_probe()
 
 implicit none
 
+interface get_grid
+   module procedure atlas_get_global_grid
+   module procedure atlas_get_regional_grid
+end interface
 interface field_to_array
    #:for rank in ranks_23
       #:for dtype in dtypes_irl
@@ -42,9 +46,104 @@ interface get_atlas_field_size
 end interface
 
 private
+public :: get_grid
 public :: field_to_array,field_from_array,create_atlas_function_space,get_atlas_field_size
 
 contains
+
+!----------------------------------------------------------------------
+! Subroutine: atlas_get_global_grid
+!> Define global ATLAS grid (reduced Gaussian) from minimum number of points
+!----------------------------------------------------------------------
+subroutine atlas_get_global_grid(mpl,nmin,agrid,n)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl               !< MPI data
+integer,intent(in) :: nmin                        !< Minimum number of points
+type(atlas_structuredgrid),intent(inout) :: agrid !< ATLAS grid
+integer,intent(out),optional :: n                 !< Grid size
+
+! Local variables
+integer :: trunc
+character(len=6) :: gridid
+
+! Set name
+@:set_name(atlas_get_global_grid)
+
+! Probe in
+@:probe_in()
+
+! Check number of points
+if (nmin<3) call mpl%abort('${subr}$','minimum number of points is too small')
+
+! Get truncation
+trunc = int(-4.5_kind_real+sqrt(20.25_kind_real+quarter*real(nmin,kind_real)))+1
+
+! Define ID
+write(gridid,'(a,i5.5)') 'O',trunc
+
+! Define grid
+agrid = atlas_structuredgrid(gridid)
+
+! Define number of points
+if (present(n)) n = 4*trunc**2+36*trunc
+
+! Probe out
+@:probe_out()
+
+end subroutine atlas_get_global_grid
+
+!----------------------------------------------------------------------
+! Subroutine: atlas_get_regional_grid
+!> Define regional ATLAS grid from minimum number of points
+!----------------------------------------------------------------------
+subroutine atlas_get_regional_grid(mpl,nmin,lon_min,lon_max,lat_min,lat_max,agrid,n)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl               !< MPI data
+integer,intent(in) :: nmin                        !< Minimum number of points
+real(kind_real),intent(in) :: lon_min             !< Minimum longitude
+real(kind_real),intent(in) :: lon_max             !< Maximum longitude
+real(kind_real),intent(in) :: lat_min             !< Minimum latitude
+real(kind_real),intent(in) :: lat_max             !< Maximum latitude
+type(atlas_structuredgrid),intent(inout) :: agrid !< ATLAS grid
+integer,intent(out),optional :: n                 !< Grid size
+
+! Local variables
+integer :: nx,ny
+real(kind_real) :: lat_mid,dx,dy,alpha
+
+! Set name
+@:set_name(atlas_get_global_grid)
+
+! Probe in
+@:probe_in()
+
+! Check number of points
+if (nmin<3) call mpl%abort('${subr}$','minimum number of points is too small')
+
+! Shape ratio
+lat_mid = half*(lat_min+lat_max)
+call sphere_dist(lon_min,lat_mid,lon_max,lat_mid,dx)
+call sphere_dist(zero,lat_min,zero,lat_max,dy)
+alpha = dy/dx
+nx = ceiling(sqrt(real(nmin,kind_real)/alpha))
+ny = ceiling(alpha*real(nx,kind_real))
+
+! Regional grid
+agrid = atlas_regionalgrid(nx,ny,lat_max*rad2deg,lon_min*rad2deg,lat_min*rad2deg,lon_max*rad2deg)
+
+! Define number of points
+if (present(n)) n = nx*ny
+
+! Probe out
+@:probe_out()
+
+end subroutine atlas_get_regional_grid
 
 #:for rank in ranks_23
    #:for dtype in dtypes_ir
