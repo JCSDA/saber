@@ -6,11 +6,6 @@
 if( oops_FOUND )
     list(APPEND oops_src_files_list
 
-    # Logger
-    Logger_f.cc
-    Logger_f.h
-    logger_mod.F90
-
     # SABER blocks base
     SaberBlockBase.h
     SaberBlockParametersBase.h
@@ -38,7 +33,8 @@ if( oops_FOUND )
 else()
     list(APPEND oops_src_files_list
 
-    # Logger
+    # Logger from FCKIT
+    # TODO
 
     )
 endif()

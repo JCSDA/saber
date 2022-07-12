@@ -14,7 +14,7 @@ saber blocks:
   input variables: *vars
   output variables: *vars
   file:
-    filepath: testdata/quench_error_covariance_training_bump_stddev/_MPI_-_OMP_/stddev
+    filepath: testdata/quench_error_covariance_training_stddev/_MPI_-_OMP_/stddev
 
 test:
-  reference filename: testref/quench_saber_block_test_bump_stddev/test.log.out
+  reference filename: testref/quench_saber_block_test_stddev/test.log.out

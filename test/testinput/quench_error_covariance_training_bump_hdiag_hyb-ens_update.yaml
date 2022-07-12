@@ -17,7 +17,6 @@ background:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
 bump:
-  testing: true
   datadir: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_
   dc: 500.0e3
   method: hyb-ens
@@ -29,18 +28,26 @@ bump:
   nl0r: 10
   prefix: test
   strategy: specific_univariate
+  testing: true
   update_mom: true
   write_hdiag: true
   output:
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/cor_rh
-    parameter: cor_rh
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/cor_rv
-    parameter: cor_rv
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/loc_rh
+    parameter: loc_rh
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/loc_rv
+    parameter: loc_rv
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/hyb_coef_ens
+    parameter: hyb_coef_ens
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/loc_rh_lr
+    parameter: loc_rh_lr
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/loc_rv_lr
+    parameter: loc_rv_lr
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/_MPI_-_OMP_/hyb_coef_ens_lr
   ensemble:
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filepath: testdata/quench_randomization_bump_nicas_F20/_MPI_-_OMP_/member_%mem%
+        filepath: testdata/quench_randomization_bump_nicas_F20L10/_MPI_-_OMP_/member_%mem%
         state variables: *vars
       pattern: '%mem%'
       nmembers: 10
@@ -49,7 +56,7 @@ bump:
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filepath: testdata/quench_randomization_bump_nicas_F10/_MPI_-_OMP_/member_%mem%
+        filepath: testdata/quench_randomization_bump_nicas_F10L10/_MPI_-_OMP_/member_%mem%
         state variables: *vars
       pattern: '%mem%'
       nmembers: 50

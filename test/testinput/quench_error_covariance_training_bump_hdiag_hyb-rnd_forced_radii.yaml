@@ -33,15 +33,16 @@ background error:
     input variables: *vars
     output variables: *vars
     bump:
-      dc: 800.0e3
       datadir: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd_forced_radii/_MPI_-_OMP_
+      forced_radii: true
       method: cor
-      nc1: 500
-      nc3: 10
-      ne: 50
       new_nicas: true
       prefix: test
       resol: 8.0
+      rh:
+        var: [10.0e6]
+      rv:
+        var: [10]
       strategy: specific_univariate
       testing: true
   randomization size: 30
@@ -60,13 +61,13 @@ bump:
   testing: true
   write_hdiag: true
   output:
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rh
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/_MPI_-_OMP_/loc_rh
     parameter: loc_rh
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rv
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/_MPI_-_OMP_/loc_rv
     parameter: loc_rv
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_ens
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/_MPI_-_OMP_/hyb_coef_ens
     parameter: hyb_coef_ens
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_sta
+  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/_MPI_-_OMP_/hyb_coef_sta
     parameter: hyb_coef_sta
 
 test:

@@ -1,8 +1,15 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 20
+  levels: 10
+  halo: 3
+input variables: &vars [var]
 background:
   date: 2010-01-01T12:00:00Z
-  state variables: &vars [var]
+  state variables: *vars
 bump:
-  testing: true
   datadir: testdata/quench_error_covariance_training_bump_nicas/_MPI_-_OMP_
   forced_radii: true
   method: cor
@@ -14,20 +21,13 @@ bump:
   rv:
     var: [10]
   strategy: specific_univariate
+  testing: true
+  write_nicas_local: true
   output:
   - filepath: testdata/quench_error_covariance_training_bump_nicas/_MPI_-_OMP_/cor_rh
     parameter: cor_rh
   - filepath: testdata/quench_error_covariance_training_bump_nicas/_MPI_-_OMP_/cor_rv
     parameter: cor_rv
-  write_nicas_local: true
-geometry:
-  function space: StructuredColumns
-  grid:
-    type : regular_gaussian
-    N : 20
-  levels: 10
-  halo: 3
-input variables: *vars
 
 test:
   reference filename: testref/quench_error_covariance_training_bump_nicas/test.log.out

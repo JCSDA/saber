@@ -140,46 +140,46 @@ if( oops_FOUND )
         else()
             set( SABER_TESTFILES_PATH $ENV{LOCAL_PATH_JEDI_TESTFILES}/saber/develop )
         endif()
-        message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
-    elseif( DEFINED GIT_BRANCH_FUNC )
-        # Data loaded from saber-data repo
-        set( SABER_TESTFILES_PATH ${CMAKE_SOURCE_DIR}/saber-data )
-        message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
-    else( DEFINED GIT_TAG_FUNC )
-        # ECBUILD_DOWNLOAD_BASE_URL env var can be used to force test files and
-        # crtm coef to be downloaded from other databases such as S3 instead of DASH
-        # example ECBUILD_DOWNLOAD_BASE_URL=https://jedi-test-files.s3.amazonaws.com
-    
-        if( DEFINED ENV{ECBUILD_DOWNLOAD_BASE_URL} )
-            set( ECBUILD_DOWNLOAD_BASE_URL "$ENV{ECBUILD_DOWNLOAD_BASE_URL}/saber/${GIT_TAG_FUNC}" )
-            set( checksum "1")
-        else()
-            set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147b_jcsda/version/1.0.0/file )
-            set( checksum "0")
-        endif()
-        message( STATUS "Files downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} )
-    
-        # Set SABER_TESTFILES_PATH
-        set( SABER_TESTFILES_PATH ${CMAKE_SOURCE_DIR}/test-data-release/saber/${GIT_TAG_FUNC} )
-        message( STATUS "Files downloaded into: " ${SABER_TESTFILES_PATH} )
-    
-        list( APPEND SABER_DATA_DOWNLOADER_ARGS
-              ${ECBUILD_DOWNLOAD_BASE_URL}
-              ${CMAKE_SOURCE_DIR}/test-data-release
-              "saber_testinput_tier_1.tar.gz"
-              ${checksum} )
-    
-        # Create test-data-release in source directory
-        file( MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/test-data-release )
-    
-        # Create download script
-        set ( FILENAME saber_data_downloader.py )
-        set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
-        set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
-    
-        # Set configure file
-        if( EXISTS "${SOURCE_FILE}.in" )
-          configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
+    message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
+elseif( DEFINED GIT_BRANCH_FUNC )
+    # Data loaded from saber-data repo
+    set( SABER_TESTFILES_PATH ${CMAKE_SOURCE_DIR}/saber-data )
+    message( STATUS "Files loaded from: " ${SABER_TESTFILES_PATH} )
+else( DEFINED GIT_TAG_FUNC )
+    # ECBUILD_DOWNLOAD_BASE_URL env var can be used to force test files and
+    # crtm coef to be downloaded from other databases such as S3 instead of DASH
+    # example ECBUILD_DOWNLOAD_BASE_URL=https://jedi-test-files.s3.amazonaws.com
+
+    if( DEFINED ENV{ECBUILD_DOWNLOAD_BASE_URL} )
+        set( ECBUILD_DOWNLOAD_BASE_URL "$ENV{ECBUILD_DOWNLOAD_BASE_URL}/saber/${GIT_TAG_FUNC}" )
+        set( checksum "0")
+    else()
+        set( ECBUILD_DOWNLOAD_BASE_URL https://gdex.ucar.edu/dataset/jedi-skylab/file )
+        set( checksum "0")
+    endif()
+    message( STATUS "Files downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} )
+
+    # Set SABER_TESTFILES_PATH
+    set( SABER_TESTFILES_PATH ${CMAKE_SOURCE_DIR}/test-data-release/saber/${GIT_TAG_FUNC} )
+    message( STATUS "Files downloaded into: " ${SABER_TESTFILES_PATH} )
+
+    list( APPEND SABER_DATA_DOWNLOADER_ARGS
+          ${ECBUILD_DOWNLOAD_BASE_URL}
+          ${CMAKE_SOURCE_DIR}/test-data-release
+          "saber_testinput_tier_1_1.3.0.tar.gz"
+          ${checksum} )
+
+    # Create test-data-release in source directory
+    file( MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/test-data-release )
+
+    # Create download script
+    set ( FILENAME saber_data_downloader.py )
+    set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
+    set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
+
+    # Set configure file
+    if( EXISTS "${SOURCE_FILE}.in" )
+      configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
         else()
           configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
         endif()

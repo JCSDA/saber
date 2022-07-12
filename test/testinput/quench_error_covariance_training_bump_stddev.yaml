@@ -13,17 +13,17 @@ ensemble:
   members from template:
     template:
       date: 2010-01-01T12:00:00Z
-      filepath: testdata/quench_randomization_bump_nicas_F20/_MPI_-_OMP_/member_%mem%
+      filepath: testdata/quench_randomization_bump_nicas_F20L10/_MPI_-_OMP_/member_%mem%
       state variables: *vars
     pattern: '%mem%'
     nmembers: 10
     zero padding: 6
 bump:
-  testing: true
   datadir: testdata/quench_error_covariance_training_bump_stddev/_MPI_-_OMP_
   ne: 10
   new_var: true
   prefix: test
+  testing: true
   output:
   - filepath: testdata/quench_error_covariance_training_bump_stddev/_MPI_-_OMP_/stddev
     parameter: stddev

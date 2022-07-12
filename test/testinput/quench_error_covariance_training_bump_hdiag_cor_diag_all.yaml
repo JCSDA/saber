@@ -1,0 +1,36 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 10
+  levels: 2
+  halo: 0
+input variables: &vars [var1,var2]
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+ensemble:
+  members from template:
+    template:
+      date: 2010-01-01T12:00:00Z
+      filepath: testdata/quench_randomization_bump_nicas_F10L2/_MPI_-_OMP_/member_%mem%
+      state variables: *vars
+    pattern: '%mem%'
+    nmembers: 25
+    zero padding: 6
+bump:
+  datadir: testdata/quench_error_covariance_training_bump_hdiag_cor_diag_all/_MPI_-_OMP_
+  dc: 800.0e3
+  method: cor
+  nc1: 500
+  nc3: 10
+  ne: 25
+  new_hdiag: true
+  nl0r: 2
+  prefix: test
+  strategy: diag_all
+  testing: true
+  write_hdiag: true
+
+test:
+  reference filename: testref/quench_error_covariance_training_bump_hdiag_cor_diag_all/test.log.out
