@@ -300,7 +300,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%debug(mpl%debug)
-            call fckit_log%flush
+            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)') 'DEBUG: '//trim(mpl%debug)
             call flush(mpl%lunit)
@@ -308,7 +308,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%debug(mpl%debug,newl=.false.)
-            call fckit_log%flush
+            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)',advance='no') 'DEBUG: '//trim(mpl%debug)
             call flush(mpl%lunit)
@@ -325,7 +325,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info(mpl%info)
-            call fckit_log%flush
+            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)') trim(mpl%info)
             call flush(mpl%lunit)
@@ -333,7 +333,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%info(mpl%info,newl=.false.)
-            call fckit_log%flush
+            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%info)
             call flush(mpl%lunit)
@@ -350,7 +350,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%warning('WARNING: '//trim(mpl%wng))
-            call fckit_log%flush
+            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)') 'WARNING: '//trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
             call flush(mpl%lunit)
@@ -358,7 +358,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%warning('WARNING: '//trim(mpl%wng),newl=.false.)
-            call fckit_log%flush
+            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)',advance='no') 'WARNING: '//trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
             call flush(mpl%lunit)
@@ -375,7 +375,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%error(mpl%err)
-            call fckit_log%flush
+            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)') 'ERROR: '//trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
             call flush(mpl%lunit)
@@ -383,7 +383,7 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             call fckit_log%error(mpl%err,newl=.false.)
-            call fckit_log%flush
+            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)',advance='no') 'ERROR: '//trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
             call flush(mpl%lunit)
